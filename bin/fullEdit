@@ -1,0 +1,47 @@
+#!/bin/env sh
+
+prog=edit
+follow_alias=-P
+
+if [ $# -gt 0 ] ; then
+   if [ "-" != "$1" ]; then
+      prog=$1
+   fi
+   shift
+fi
+
+if [ $# -gt 0 ] ; then
+   orig="$1"
+   lower=`echo $orig | tr A-Z a-z`
+   if [ "y" == "$lower" ]; then
+      follow_alias=-L
+   fi
+   shift
+fi
+
+for i in `find $follow_alias . -name \*.hh      \
+-o -name \*.cc                                  \
+-o -name \*.cpp                                 \
+-o -name \*.cxx                                 \
+-o -name \*.c                                   \
+-o -name \*.C                                   \
+-o -name \*.hh                                  \
+-o -name \*.hpp                                 \
+-o -name \*.hxx                                 \
+-o -name \*.h                                   \
+-o -name \*.H                                   \
+-o -name \*.in                                  \
+-o -name \*.java                                \
+-o -name \*.sh                                  \
+-o -name \*.py                                  \
+-o -name \*.sql                                 \
+-o -name Makefile                               \
+-o -name makefile                               \
+-o -name CMakeLists.txt                         \
+-o -name \*.cmake                               \
+-o -name \*.proto
+` ; do
+   list="$list $i"
+done
+
+$prog $list $*

@@ -1,0 +1,15 @@
+#!/bin/env sh
+
+dir=`pwd`
+
+while [ "$dir" != "/" ]
+   do
+   # if [ -r "$dir/.root" ] ; then
+   if [ -r "$dir/.root" ] && [ `echo $dir | grep -c "submodule" ` -le 0 ]; then
+      echo "$dir"
+      exit
+   else
+      dir=`cd $dir; cd ..; pwd`
+   fi
+done
+
