@@ -201,8 +201,9 @@ Only works with GNU Emacs."
           (setq filename (etags-select-match-string 1))
           (unless (file-name-absolute-p filename)
             (setq filename (concat tag-file-path filename))))
-        (save-excursion
-          (set-buffer etags-select-buffer-name)
+        (with-current-buffer etags-select-buffer-name
+        ;; (save-excursion
+        ;;   (set-buffer etags-select-buffer-name)
           (when (not (string= filename current-filename))
             (insert "\nIn: " filename "\n")
             (setq current-filename filename))
@@ -247,26 +248,28 @@ to do."
 
 (defun etags-select-build-completion-table ()
   "Build tag completion table."
-  (save-excursion
-    (set-buffer etags-select-source-buffer)
+  (with-current-buffer etags-select-source-buffer
+  ;; (save-excursion
+  ;;   (set-buffer etags-select-source-buffer)
     (let ((tag-files (etags-select-get-tag-files)))
       (mapcar (lambda (tag-file) (etags-select-get-tag-table-buffer tag-file)) tag-files))))
 
-;; (defun etags-select-get-tag-files ()
-;;   "Get tag files."
-;;   (if etags-select-use-xemacs-etags-p
-;;       (buffer-tag-table-list)
-;;     (mapcar 'tags-expand-table-name tags-table-list)))
+(defun etags-select-remove-placeholders()
+  "Remove placeholder entries from tags-table-computed-list"
+  (let ((list tags-table-computed-list))
+    (while list
+      (if (eq (car list) t)
+          (progn
+            (tags-table-extend-computed-list)
+            (setq list tags-table-computed-list))
+        (setq list (cdr list))))))
 
 (defun etags-select-get-tag-files ()
   "Get tag files."
   (if etags-select-use-xemacs-etags-p
       (buffer-tag-table-list)
-    (mapcar 'tags-expand-table-name tags-table-list)
-	(tags-table-check-computed-list)
-	(tags-table-extend-computed-list)
-	tags-table-computed-list
-))
+    (etags-select-remove-placeholders)
+	tags-table-computed-list))
 
 (defun etags-select-get-completion-table ()
   "Get the tag completion table."
@@ -307,7 +310,7 @@ to do."
     (setq buffer-read-only nil)
     (erase-buffer)
     (insert "Finding tag: " tagname "\n")
-    (mapcar (lambda (tag-file)
+    (mapc (lambda (tag-file)
               (setq tag-count (etags-select-insert-matches tagname tag-file tag-count)))
             tag-files)
     (cond ((= tag-count 0)
@@ -328,6 +331,7 @@ to do."
            (setq etags-select-opened-window (selected-window))
            (select-window (split-window-vertically))
            (switch-to-buffer etags-select-buffer-name)
+           (shrink-window-if-larger-than-buffer)
            (etags-select-mode tagname)))))
 
 (defun etags-select-goto-tag (&optional arg other-window)
@@ -370,7 +374,10 @@ Use the C-u prefix to prevent the etags-select window from closing."
       (goto-char (point-min))
       (while (> search-count 0)
         (unless (re-search-forward (concat "^\\s-*" text-to-search-for) nil t)
-          (message "TAGS file out of date ... stopping at closest match")
+          (message
+           (concat
+            "TAGS file out of date ... stopping at closest match (looking for "
+            text-to-search-for ")"))
           (setq search-count 1))
         (setq search-count (1- search-count)))
       (beginning-of-line)
@@ -443,10 +450,8 @@ Use the C-u prefix to prevent the etags-select window from closing."
 (defvar etags-select-mode-map nil "'etags-select-mode' keymap.")
 (if (not etags-select-mode-map)
     (let ((map (make-keymap)))
-      (define-key map [(return)] 'etags-select-goto-tag)
-      (define-key map [(meta return)] 'etags-select-goto-tag-other-window)
-;;       (define-key map (kbd "RET") 'etags-select-goto-tag)
-;;       (define-key map (kbd "M-RET") 'etags-select-goto-tag-other-window)
+      (define-key map (kbd "RET") 'etags-select-goto-tag)
+      (define-key map (kbd "M-RET") 'etags-select-goto-tag-other-window)
       (define-key map [(down)] 'etags-select-next-tag)
       (define-key map [(up)] 'etags-select-previous-tag)
       (define-key map "n" 'etags-select-next-tag)

@@ -1,0 +1,43 @@
+#!/bin/env sh
+# Usage: upmake dir prog [ addtl_opts ]
+# where dir is the build directory (- to use default)
+# prog is the command to run (make, etc.)
+# (- defaults to make)
+# and addtl_opts will be passed to the command when run
+
+subdir=build/make
+command=make
+
+if [ $# -gt 0 ] ; then
+   if [ "-" != "$1" ]; then
+      subdir=$1
+   fi
+   shift
+fi
+
+if [$# -gt 0 ] ; then
+   if [ "-" != "$1" ]; then
+      command=$1
+   fi
+   shift
+fi
+
+root=`findRoot`
+if [ "x$root" = x ]; then
+   echo "Error: upmake did not find the project root."
+   exit
+fi
+
+echo "Executing $command in $root/$subdir"
+( cd $root/$subdir ; $command $* )
+
+# while [ "$dir" != "/" ]
+# do
+#    if [ -r "$dir/.root" ] ; then
+#       echo "Executing $command in $dir/$subdir"
+#       ( cd $dir/$subdir ; $command $* )
+#       exit
+#    else
+#       dir=`cd $dir; cd ..; pwd`
+#    fi
+# done

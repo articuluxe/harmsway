@@ -1,0 +1,334 @@
+;; -*- Mode: Emacs-Lisp -*-
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;; Dan Harms coding.el ;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+
+(global-set-key "\C-c\C-c" 'comment-region)
+(global-set-key "\C-c\C-u" 'uncomment-region)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; c++-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(add-hook
+  'c-mode-common-hook
+  '(lambda ()
+     (setq-default indent-tabs-mode nil)
+     (setq c-auto-newline t)
+     (c-toggle-hungry-state t)
+     (setq comment-column 40)
+     (setq compile-command "upmake - -")
+     (setq grep-command
+           "find -L `findRoot` -name TAGS -o -name '*tags' -o -name '*.log' -o -name '#*' -prune -o -type f -print0 | xargs -0 grep -Isn ")
+     (define-key c++-mode-map (kbd "\C-c RET") 'drh-compile)
+     (define-key c++-mode-map "\C-cm" 'drh-recompile)
+     (define-key c++-mode-map "\C-ck" 'kill-compilation)
+     (define-key c++-mode-map "\C-cg" 'grep)
+     (define-key c++-mode-map "\C-c\C-c" 'comment-region)
+     (define-key c++-mode-map "\C-c\C-u" 'uncomment-region)
+     (setq comment-start "/*") (setq comment-end "*/")
+     (c-add-style "drh"
+       (quote
+         ((c-basic-offset . 3)
+          (c-cleanup-list . (
+                             empty-defun-braces
+                             defun-close-semi
+                             one-liner-defun
+                             scope-operator
+                             list-close-comma
+                             compact-empty-funcall
+                             ))
+          (c-offsets-alist . (
+                              (innamespace          . 1)
+                              (substatement-open    . 0)
+                              (inline-open          . 0)
+                              (statement-case-intro . +)
+                              (statement-case-open  . +)
+;                              (statement-cont       . c-lineup-math)
+                              (access-label         . -2)
+                              (comment-intro        . c-lineup-comment)
+                              (member-init-intro    . +)
+                              (arglist-cont-nonempty . +)
+;                              (comment-intro        . 0)
+;                              (arglist-intro . c-lineup-arglist-intro-after-paren)
+;                              (arglist-close . c-lineup-arglist)
+          )
+         )
+        )
+       )
+     t)
+   )
+)
+
+(add-hook 'c++-mode-hook
+      '(lambda()
+        (font-lock-add-keywords
+         nil '(;; complete some fundamental keywords
+           ("\\<\\(void\\|unsigned\\|signed\\|char\\|short\\|bool\\|int\\|long\\|float\\|double\\)\\>" . font-lock-keyword-face)
+           ;; add the new C++11 keywords
+           ("\\<\\(alignof\\|alignas\\|constexpr\\|decltype\\|noexcept\\|nullptr\\|static_assert\\|thread_local\\|override\\|final\\)\\>" . font-lock-keyword-face)
+           ;; hexadecimal numbers
+           ("\\<0[xX][0-9A-Fa-f]+\\>" . font-lock-constant-face)
+           ("[tT][oO][dD][oO]" . font-lock-warning-face)
+           ))
+        ) t)
+
+
+(defun print-current-function() "Print current function under point."
+  (interactive)
+  (message (which-function)))
+(global-set-key "\C-cp" 'print-current-function)
+
+(defun toggle-c-comment-delimiters()
+  "Toggle the comment delimiters for c-derived programming languages."
+  (interactive)
+  (if (= 0 (length comment-end))
+      (progn
+        (setq comment-start "/*")
+        (setq comment-end "*/")
+        (message "/* Using comments like this */")
+        )
+    (progn
+      (setq comment-start "//")
+      (setq comment-end "")
+      (message "// Using comments like this"))))
+(global-set-key "\C-c/" 'toggle-c-comment-delimiters)
+
+(defun find-my-tags-file() "Find tags file"
+  (interactive)
+  (let ((my-tags-file (find-file-upwards "TAGS")))
+    (if my-tags-file
+        (progn
+          (message "Loading tags file: %s" my-tags-file)
+          (run-with-timer 2 nil 'visit-tags-table my-tags-file))
+      (message "Did not find tags file")
+      )))
+
+;; include ifdefs
+(defun add-header-include-ifdefs (&optional arg)
+  "Add header include guards. With optional prefix argument, query for the
+   base name. Otherwise, the base file name is used."
+  (interactive "P")
+  (let ((str
+         (replace-regexp-in-string
+          "\\." "_"
+          (file-name-nondirectory (buffer-file-name)))))
+    (save-excursion
+      (if arg
+          (setq str (concat
+                     (read-string "Include guard: " nil nil str) "_H")))
+      (setq str (upcase (concat "_REX_" str "_")))
+      (goto-char (point-min))
+      (insert "#ifndef " str "\n#define " str "\n\n")
+      (goto-char (point-max))
+      (insert "\n#endif")
+      (insert-char ?\s c-basic-offset)
+      (insert "/* #ifndef " str " */\n")
+      )))
+(global-set-key "\C-ci" 'add-header-include-ifdefs)
+
+;; class header
+(defun insert-class-header (&optional arg)
+  "Insert a formatted class header given the current selection or position."
+  (interactive "P")
+  (let ((str
+         (if (region-active-p)
+             (buffer-substring-no-properties (region-beginning)(region-end))
+           (thing-at-point 'symbol))))
+    (if (or arg (= 0 (length str)))
+        (setq str (read-string "Enter the title symbol: ")))
+                                        ; (message "symbol %s is %d chars long" str (length str))(read-char)
+                                        ;   (move-beginning-of-line nil)
+    (c-beginning-of-defun)
+    (insert "//----------------------------------------------------------------------------\n")
+    (insert "//---- " str " ")
+    (let ((len (- 70 (length str)))(i 0))
+      (while (< i len)
+        (insert "-")
+        (setq i (1+ i))))
+    (insert "\n//----------------------------------------------------------------------------\n")
+    ))
+(global-set-key "\C-ch" 'insert-class-header)
+
+;; casting
+(defvar my/cast-history-list nil)
+(defun insert-cast (start end)
+  "Insert code for a cast around a region."
+  (interactive "r")
+  (let ((initial (if my/cast-history-list
+                     (car my/cast-history-list)
+                   "static"))
+        type str)
+    (setq type (read-string "Enter the data type to cast to: "))
+    (setq str (ido-completing-read "Enter the type of cast: "
+                                   '("static" "dynamic" "reinterpret" "const")
+                                   nil t nil my/cast-history-list "static"))
+    (if (= 0 (length str))
+        (setq str initial))
+    (save-excursion
+      (goto-char end)(insert ")")
+      (goto-char start)(insert str "_cast<" type ">("))))
+(global-set-key "\C-cc" 'insert-cast)
+
+;; namespace
+(defun wrap-namespace-region (start end)
+  "Insert enclosing namespace brackets around a region."
+  (interactive "r")
+  (let ((str))
+    (setq str (read-string "Enter the namespace name: "))
+    (save-excursion
+      (goto-char end) (insert "\n}")
+      (insert-char ?\s c-basic-offset)
+      (insert "// end ")
+      (if (= 0 (length str))
+          (insert "anonymous "))
+      (insert "namespace " str "\n")
+      (goto-char start)
+      (insert "namespace ")
+      (if (not (= 0 (length str)))
+          (insert str " "))
+      (insert "{\n\n"))))
+(global-set-key "\C-cn" 'wrap-namespace-region)
+
+(defun remove-leading-whitespace (start end)
+  "Remove a region's leading whitespace"
+  (interactive "r")
+  (save-excursion
+    (save-restriction
+      (narrow-to-region start end)
+      (goto-char (point-min))
+      (while (looking-at "\\s-")
+        (replace-match "" nil nil)))))
+
+(defun remove-trailing-whitespace (start end)
+  "Remove a region's trailing whitespace"
+  (interactive "r")
+  (save-excursion
+    (save-restriction
+      (narrow-to-region start end)
+      (goto-char (point-max))
+      (backward-char)
+      (while (looking-at "\\s-")
+        (replace-match "" nil nil)
+        (backward-char)))))
+
+(defun remove-embedded-newlines (start end)
+  "Remove a region's embedded newlines"
+  (interactive "r")
+  (save-excursion
+    (save-restriction
+      (narrow-to-region start end)
+      (goto-char (point-min))
+      (while (re-search-forward "\n" nil t)
+        (replace-match "" nil nil)))))
+
+(defun cleanup-func-param-spacing (start end is-decl)
+  "clean up spacing of a single function parameter"
+  (interactive "r")
+  (save-excursion
+    (save-restriction
+      (narrow-to-region start end)
+      (goto-char (point-min))
+      ;; remove multiple consecutive whitespace
+      (while (re-search-forward "\\s-\\{2,\\}" nil t)
+        (replace-match " " nil nil))
+    (goto-char (point-min))
+    ;; remove whitespace before punctuation or parentheses
+    (while (re-search-forward "\\s-+\\(\\s.\\|\\s\(\\|\\s\)\\)" nil t)
+      (replace-match "\\1" nil nil))
+    (goto-char (point-min))
+    ;; remove whitespace after punctuation or parentheses
+    (while (re-search-forward "\\(\\s.\\|\\s\(\\|\\s\)\\)\\s-+" nil t)
+      (replace-match "\\1" nil nil))
+    (goto-char (point-min))
+    (if is-decl
+         ;; for declarations, add a space if not present before parameter name
+         (let ((identifier "\\sw\\|_\\|:"))
+           (while (re-search-forward (concat "\\(.*?\\)\\s-?\\(\\(?:"
+                                             identifier
+                                             "\\)+\\)\\s-*$" nil t))
+             (replace-match "\\1 \\2" nil nil)))))))
+
+(defun clean-up-func-param (start end do-spacing is-decl)
+  "Cleans up one (comma-separated) param of a function declaration."
+  (save-excursion
+    (save-restriction
+      (narrow-to-region start end)
+      ;; if we're later indenting, dispose of old newlines
+      (if indent
+          (remove-embedded-newlines (point-min)(point-max)))
+      (when do-spacing
+        (cleanup-func-param-spacing (point-min)(point-max) is-decl)
+        (remove-leading-whitespace (point-min)(point-max))
+        (remove-trailing-whitespace (point-min)(point-max))))))
+
+(defun clean-up-func-params (start end indent is-decl should-comment)
+  "Does the actual work of cleaning up spacing and (optionally) indentation of a function declaration"
+  (let ((saved nil))
+    (save-excursion
+      (save-restriction
+        (narrow-to-region start end) ; separate by ',' and process each parameter
+        (goto-char (point-min))
+        (setq saved (cons (point) saved))
+        (let ((start (point-min)))
+          (catch 'break
+            (while (<= (point) (point-max))
+              (cond
+               ((or (looking-at ",") (eq (point) (point-max)))
+                (progn
+                  (goto-char
+                   (save-excursion
+                     (save-restriction
+                       (narrow-to-region start (point))
+                       (goto-char (point-min))
+                       ;; isolate any initializer
+                       (if (re-search-forward "=" nil t)
+                           (let ((is-quoted nil))
+                             (backward-char)
+                             (clean-up-func-param (point-min)(point) t is-decl)
+                             ;; ensure spaces around the '='
+                             (insert " ")
+                             (forward-char)
+                             (insert " ")
+                             ;; don't strip whitespace or otherwise clean up quoted strings
+                             (save-excursion
+                               (when (re-search-forward
+                                      "\\s-*\\(\\s\"+\\)\\(.*\\)\\(\\s\"+\\)\\s-*" nil t)
+                                 (setq is-quoted t)
+                                 (replace-match "\\1\\2\\3" nil nil)))
+                             (clean-up-func-param (point) (point-max) (not is-quoted) nil)
+                             (if should-comment
+                                 ;; begin comment before the '='
+                                 (comment-region (- (point) 3) (point-max)))
+                             (point-max))
+                         (clean-up-func-param (point-min) (point-max) t is-decl)
+                         (point-max))
+                         )))
+                   ;; save this point to insert newline later
+                   (setq saved (cons (point) saved))
+                   ;; stop at region end
+                   (if (eq (point) (point-max))
+                       (throw 'break nil))
+                   (forward-char) ; at end of buffer this would quit
+                   (insert " ")
+                   (setq start (point))))
+                ((looking-at "\\s\(")
+                 (forward-list 1))      ;skip past parentheses
+                (t (forward-char))
+               ))))))
+      (if indent
+          (mapc (lambda(pos) ; points later in buffer are processed first
+                  (progn
+                    (goto-char pos)
+                    (newline-and-indent)))
+                saved)
+        ;; if not inserting newlines (maintaining those present), we may need to re-indent
+        (indent-region start end))))
+
+(global-set-key "\e\eiy" (lambda(start end)(interactive "r")
+                           (clean-up-func-params start end t t t)))
+(global-set-key "\e\ein" (lambda(start end)(interactive "r")
+                           (clean-up-func-params start end t t nil)))
+(global-set-key "\e\ed" (lambda(start end)(interactive "r")
+                           (clean-up-func-params start end nil t nil)))
+(global-set-key "\e\ec" (lambda(start end)(interactive "r")
+                           (clean-up-func-params start end t nil nil)))
+(global-set-key "\e\eu" (lambda(start end)(interactive "r")
+                           (clean-up-func-params start end nil nil nil)))

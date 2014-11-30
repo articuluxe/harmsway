@@ -1,0 +1,4 @@
+#!/bin/env sh
+prog=$EMACSX
+
+$prog $* &
