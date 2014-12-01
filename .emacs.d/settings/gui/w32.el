@@ -48,4 +48,4 @@
         (top . 5) (left . 5) (height . 55) (width . 80)
         )
       )
-(pos-tip-w32-max-width-height)          ;maximize frame temporarily
+;;(pos-tip-w32-max-width-height t)          ;maximize frame temporarily

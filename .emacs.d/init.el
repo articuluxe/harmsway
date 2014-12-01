@@ -14,7 +14,7 @@
 (add-to-list 'load-path (concat my/plugins-directory "yasnippet/"))
 (defconst my/user-settings
   (concat my/user-directory "settings/users/" user-login-name))
-(when (file-exists-p my/user-settings) (load my/user-settings))
+(load my/user-settings)
 
 (set-register ?i (cons 'file user-init-file)) ;edit init file
 
@@ -24,8 +24,10 @@
   (make-directory my/autosave-dir t))
 (setq auto-save-file-name-transforms
       `((".*" ,(concat my/autosave-dir "\\1") t)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; backups ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defconst my/backup-dir (concat my/user-directory "backups/"))
+(defconst my/backup-dir (concat my/user-directory "backups/"
+  (format-time-string "%Y-%m-%d")))
 (unless (file-directory-p my/backup-dir)
   (make-directory my/backup-dir t))
 (setq backup-directory-alist `(("." . ,my/backup-dir)))
@@ -149,6 +151,7 @@
 
 
 
+(load-library "utils")
 
 
 (require 'log-viewer)
@@ -370,15 +373,26 @@
 (global-set-key "\C-\M-y" 'popup-kill-ring)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; os ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(let ((os-dir (concat my/user-directory "settings/os/"))
-      (system (symbol-name system-type))
-      system-file)
-  (setq system-file
-        (concat os-dir (car (reverse (split-string system "\\/" t)))))
+(let* ((system (car (reverse (split-string (symbol-name system-type)
+                                           "\\/" t))))
+       (os-dir (concat my/user-directory "settings/os/" system "/"))
+       (system-file (concat os-dir system))
+       (path-file (concat os-dir "path"))
+       (include-file (concat os-dir "include"))
+       (lib-file (concat os-dir "lib"))
+       (libpath-file (concat os-dir "libpath"))
+       )
   ;; load os file
-  (if (file-exists-p system-file)
-      (load system-file)
-    (error "Unhandled system-type %s" system))
+  (load system-file)
+  ;; check for any additional environment variables
+  (if (file-exists-p path-file)
+      (load-environment-variable-from-file "PATH" path-file))
+  (if (file-exists-p include-file)
+      (load-environment-variable-from-file "INCLUDE" include-file))
+  (if (file-exists-p lib-file)
+      (load-environment-variable-from-file "LIB" lib-file))
+  (if (file-exists-p libpath-file)
+      (load-environment-variable-from-file "LIBPATH" libpath-file))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; gui ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -387,16 +401,17 @@
       gui-file)
   ;; load gui file
   (setq gui-file (concat gui-dir (if (null gui) "tty" gui)))
-  (if (file-exists-p gui-file)
-      (load gui-file)
-    (error "Unhandled window-system %s" gui))
+  (load gui-file)
   )
 
 
 
 (add-hook 'before-save-hook 'do-before-save-hook)
 (defun do-before-save-hook() "Presave hook"
-  (when (memq major-mode '(c++-mode emacs-lisp-mode))
+  (when (memq major-mode '(c++-mode emacs-lisp-mode perl-mode
+                                    java-mode python-mode dos-mode
+                                    nxml-mode protobuf-mode folio-mode
+                                    sh-mode))
     (delete-trailing-whitespace)
 ))
 
@@ -469,6 +484,9 @@
              (define-key emacs-lisp-mode-map "\r" 'reindent-then-newline-and-indent)
              (define-key emacs-lisp-mode-map "\C-c\C-c" 'comment-region)
              (define-key emacs-lisp-mode-map "\C-c\C-u" 'uncomment-region)
+             (define-key emacs-lisp-mode-map (kbd "\C-c RET")
+               '(lambda()(interactive)
+                  (byte-compile-file (buffer-file-name))))
              ))
 (add-hook 'emacs-lisp-mode-hook 'eldoc-mode)
 (add-hook 'after-save-hook (lambda()
@@ -477,6 +495,5 @@
                                    (byte-compile-file buffer-file-name)))))
 
 
-(load-library "utils")
 (load-library "compiling")
 (load-library "coding")

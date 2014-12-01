@@ -151,3 +151,31 @@
                          ((or (null parent) (equal parent (directory-file-name parent))) nil)
                          (t (funcall find-file-r (directory-file-name parent))))))))
     (funcall find-file-r default-directory)))
+
+(defun goto-line-with-feedback()
+  "Show line numbers temporarily while prompting for the target line."
+  (interactive)
+  (if (and (or (not (boundp 'linum-mode)) (not linum-mode))
+           (not current-prefix-arg))
+      (unwind-protect
+          (progn
+            (linum-mode 1)
+            (call-interactively 'goto-line))
+        (linum-mode -1))
+    (call-interactively 'goto-line)))
+(global-set-key [remap goto-line] 'goto-line-with-feedback)
+
+(defun read-file-into-list-of-lines(file)
+  "Read a file into a list of strings split line by line."
+  (interactive)
+  (with-temp-buffer
+    (insert-file-contents file)
+    (split-string (buffer-string) "\n" t)))
+
+(defun load-environment-variable-from-file(var file &optional sep)
+  "Loads each line from the specified file into the environment var."
+  (interactive)
+  (unless sep (setq sep ";"))
+  (setenv var (concat (mapconcat 'identity
+                                 (read-file-into-list-of-lines file)
+                                 sep) sep (getenv var))))
