@@ -357,16 +357,21 @@
 ;; disable TAB keys
 (define-key yas-minor-mode-map (kbd "<tab>") nil)
 (define-key yas-minor-mode-map (kbd "TAB") nil)
-(define-key yas-keymap [(tab)] nil)
-(define-key yas-keymap (kbd "TAB") nil)
-(define-key yas-keymap [(shift tab)] nil)
-(define-key yas-keymap [backtab] nil)
+;; (define-key yas-keymap [(tab)] nil)
+;; (define-key yas-keymap (kbd "TAB") nil)
+;; (define-key yas-keymap [(shift tab)] nil)
+;; (define-key yas-keymap [backtab] nil)
 ;; add our own keybindings
 (define-key yas-minor-mode-map (kbd "\C-cse") 'yas-expand)
+(define-key yas-minor-mode-map (kbd "\C-csn") 'yas-new-snippet)
+(define-key yas-minor-mode-map (kbd "\C-csv") 'yas-visit-snippet-file)
 (define-key yas-minor-mode-map "\C-csi" 'yas-insert-snippet)
 ;; integrate with auto-complete
-(global-set-key [backtab] (lambda()(interactive)
-                            (auto-complete '(ac-source-yasnippet))))
+(defun my/expand-yasnippet() (interactive)
+  (auto-complete '(ac-source-yasnippet)))
+(global-set-key [backtab] 'my/expand-yasnippet)
+(global-set-key [(shift tab)] 'my/expand-yasnippet)
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;; popup-kill-ring ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'popup-kill-ring)

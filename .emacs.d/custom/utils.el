@@ -175,7 +175,7 @@
 (defun load-environment-variable-from-file(var file &optional sep)
   "Loads each line from the specified file into the environment var."
   (interactive)
-  (unless sep (setq sep ";"))
+  (unless sep (setq sep path-separator))
   (setenv var (concat (mapconcat 'identity
                                  (read-file-into-list-of-lines file)
                                  sep) sep (getenv var))))
