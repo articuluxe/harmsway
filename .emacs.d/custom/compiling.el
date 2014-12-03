@@ -40,6 +40,7 @@
                         (bury-buffer buf)
                         (if one-window-in-frame
                             (delete-window (get-buffer-window buf t))
-                          (switch-to-prev-buffer (get-buffer-window buf t) 'kill)
-                          )) buffer)))
+                          (switch-to-prev-buffer (get-buffer-window buf t)
+                                                 'kill))) buffer)))
+
 (add-hook 'compilation-finish-functions 'bury-compile-buffer-if-successful)
