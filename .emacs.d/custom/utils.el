@@ -4,62 +4,62 @@
 ;;
 
 
-; Jump to matching parentheses
+                                        ; Jump to matching parentheses
 (defun jump-to-matching-paren() "Go to matching paren" (interactive)
   (if (looking-at "\\s\(")
       (forward-list 1)
     (backward-char)
     (if (looking-at "\\s\)")
         (progn
-         (forward-char 1)
-         (forward-list -1))
+          (forward-char 1)
+          (forward-list -1))
       (forward-char 1))))
 (global-set-key "\e\ep" 'jump-to-matching-paren)
 
 (defun highlight-paren-right()
   "search forward for a parenthesized sexp and set region if found"
-   (interactive)
-   (let ((pos (search-forward-regexp "\\s\(" nil t)))
-     (when pos
-       (set-mark-command nil)
-       (backward-char)
-       (forward-list 1)
-       (backward-char)
-       (setq deactivate-mark nil))))
+  (interactive)
+  (let ((pos (search-forward-regexp "\\s\(" nil t)))
+    (when pos
+      (set-mark-command nil)
+      (backward-char)
+      (forward-list 1)
+      (backward-char)
+      (setq deactivate-mark nil))))
 (global-set-key "\M-]" 'highlight-paren-right)
 
 (defun highlight-paren-left()
   "search backward for a parenthesized sexp and set region if found"
-   (interactive)
-   (let ((pos (search-backward-regexp "\\s\)" nil t)))
-     (when pos
-       (set-mark-command nil)
-       (forward-char)
-       (forward-list -1)
-       (forward-char)
-       (setq deactivate-mark nil))))
+  (interactive)
+  (let ((pos (search-backward-regexp "\\s\)" nil t)))
+    (when pos
+      (set-mark-command nil)
+      (forward-char)
+      (forward-list -1)
+      (forward-char)
+      (setq deactivate-mark nil))))
 (global-set-key "\M-[" 'highlight-paren-left)
 
 (defun highlight-enclosing-paren(&optional arg)
   "assume point is bounded by paren and set region to that exp"
-   (interactive "P")
-   (if arg
-       (let ((pos (search-forward-regexp "\\s\)" nil t)))
-         (when pos
-           (backward-char)
-           (set-mark-command nil)
-           (forward-char)
-           (forward-list -1)
-           (forward-char)
-           (setq deactivate-mark nil)))
-     (let ((pos (search-backward-regexp "\\s\(" nil t)))
-       (when pos
-         (forward-char)
-         (set-mark-command nil)
-         (backward-char)
-         (forward-list 1)
-         (backward-char)
-         (setq deactivate-mark nil)))))
+  (interactive "P")
+  (if arg
+      (let ((pos (search-forward-regexp "\\s\)" nil t)))
+        (when pos
+          (backward-char)
+          (set-mark-command nil)
+          (forward-char)
+          (forward-list -1)
+          (forward-char)
+          (setq deactivate-mark nil)))
+    (let ((pos (search-backward-regexp "\\s\(" nil t)))
+      (when pos
+        (forward-char)
+        (set-mark-command nil)
+        (backward-char)
+        (forward-list 1)
+        (backward-char)
+        (setq deactivate-mark nil)))))
 (global-set-key "\M-p" 'highlight-enclosing-paren)
 
 (defun enclose-by-braces (left right)
@@ -99,44 +99,18 @@
 
 ;; word count
 (defun wordcount () "print buffer word count in minibuffer" (interactive)
-   (save-excursion
-     (let ((count 0))
-       (goto-char (point-min))
-       (while (< (point) (point-max))
-         (forward-word 1)
-         (setq count (1+ count)))
-       (message "buffer contains %d words" count))))
+  (save-excursion
+    (let ((count 0))
+      (goto-char (point-min))
+      (while (< (point) (point-max))
+        (forward-word 1)
+        (setq count (1+ count)))
+      (message "buffer contains %d words" count))))
 
 ;; indent entire file
 (defun indent-buffer () "indent entire buffer" (interactive)
-   (indent-region (point-min) (point-max) nil))
+  (indent-region (point-min) (point-max) nil))
 (global-set-key "\C-cq" 'indent-buffer)
-
-(defun window-toggle-split-direction()
-  "Switch window split from horizontal to vertical, or vice versa."
-  (interactive)
-  (let ((done))
-    (dolist (dirs '((right . down) (down . right)))
-      (unless done
-        (let* ((win (selected-window))
-               (nextdir (car dirs))
-               (neighbor-dir (cdr dirs))
-               (next-win (windmove-find-other-window nextdir win))
-               (neighbor1 (windmove-find-other-window neighbor-dir win))
-               (neighbor2 (if next-win (with-selected-window next-win
-                                         (windmove-find-other-window
-                                          neighbor-dir next-win)))))
-          (setq done (and (eq neighbor1 neighbor2)
-                          (not (eq (minibuffer-window) next-win))))
-          (if done
-              (let* ((other-buf (window-buffer next-win)))
-                (delete-window next-win)
-                (if (eq nextdir 'right)
-                    (split-window-vertically)
-                  (split-window-horizontally))
-                (set-window-buffer (windmove-find-other-window neighbor-dir)
-                                   other-buf))))))))
-(global-set-key "\C-cx" 'window-toggle-split-direction)
 
 (defun find-file-upwards (file-to-find)
   "Recursively search upward for file; returns path to file or nil if not found."
@@ -146,8 +120,8 @@
                              (possible-file (concat parent file-to-find)))
                         (cond
                          ((file-exists-p possible-file) possible-file) ; found
-                         ; parent of ~ is nil, parent of / is itself
-                         ; This terminating condition accounts for both
+                                        ; parent of ~ is nil, parent of / is itself
+                                        ; This terminating condition accounts for both
                          ((or (null parent) (equal parent (directory-file-name parent))) nil)
                          (t (funcall find-file-r (directory-file-name parent))))))))
     (funcall find-file-r default-directory)))
@@ -179,3 +153,78 @@
   (setenv var (concat (mapconcat 'identity
                                  (read-file-into-list-of-lines file)
                                  sep) sep (getenv var))))
+
+(defun window-toggle-split-direction()
+  "Switch window split from horizontal to vertical, or vice versa."
+  (interactive)
+  (let ((done))
+    (dolist (dirs '((right . down) (down . right)))
+      (unless done
+        (let* ((win (selected-window))
+               (nextdir (car dirs))
+               (neighbor-dir (cdr dirs))
+               (next-win (windmove-find-other-window nextdir win))
+               (neighbor1 (windmove-find-other-window neighbor-dir win))
+               (neighbor2 (if next-win (with-selected-window next-win
+                                         (windmove-find-other-window
+                                          neighbor-dir next-win)))))
+          (setq done (and (eq neighbor1 neighbor2)
+                          (not (eq (minibuffer-window) next-win))))
+          (if done
+              (let* ((other-buf (window-buffer next-win)))
+                (delete-window next-win)
+                (if (eq nextdir 'right)
+                    (split-window-vertically)
+                  (split-window-horizontally))
+                (set-window-buffer (windmove-find-other-window neighbor-dir)
+                                   other-buf))))))))
+(global-set-key "\C-c\C-z" 'window-toggle-split-direction)
+
+;; from Steve Yegge
+(defun swap-buffers() "Swap the first 2 buffers" (interactive)
+  (when (> (length (window-list)) 1)
+    (let* ((win1 (car (window-list)))
+           (win2 (cadr (window-list)))
+           (buf1 (window-buffer win1))
+           (buf2 (window-buffer win2))
+           (pos1 (window-start win1))
+           (pos2 (window-start win2)))
+      (set-window-buffer win1 buf2)
+      (set-window-buffer win2 buf1)
+      (set-window-start win1 pos2)
+      (set-window-start win2 pos1))))
+(global-set-key "\C-cz" 'swap-buffers)
+
+(defun rename-file-and-buffer(new-name)
+  "Renames both current buffer and file it's visiting."
+  (interactive "sNew name: ")
+  (let ((name (buffer-name))
+        (filename (buffer-file-name)))
+    (if (not filename)
+        (message "Buffer '%s' is not visiting a file" name)
+      (if (get-buffer new-name)
+          (message "A buffer named '%s' already exists" new-name)
+        (progn
+          (rename-file name new-name 1)
+          (rename-buffer new-name)
+          (set-visited-file-name new-name)
+          (set-buffer-modified-p nil))))))
+
+(defun move-buffer-file(dir)
+  "Moves both current buffer and file it's visiting."
+  (interactive "DNew directory: ")
+  (let* ((name (buffer-name))
+         (filename (buffer-file-name))
+         (dir
+          (if (string-match dir "\\(?:/\\|\\\\)$")
+              (substring dir 0 -1)
+            dir))
+         (newname (concat dir "/" name)))
+    (if (not filename)
+        (message "Buffer '%s' is not visiting a file" name)
+      (progn
+        (copy-file filename newname 1)
+        (delete-file filename)
+        (set-visited-file-name newname)
+        (set-buffer-modified-p nil)
+        t))))

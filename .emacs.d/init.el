@@ -10,8 +10,6 @@
 (add-to-list 'load-path my/plugins-directory)
 (add-to-list 'load-path (concat my/user-directory "modes/"))
 (add-to-list 'load-path (concat my/user-directory "custom/"))
-(add-to-list 'load-path (concat my/plugins-directory "auto-complete/"))
-(add-to-list 'load-path (concat my/plugins-directory "yasnippet/"))
 (defconst my/user-settings
   (concat my/user-directory "settings/users/" user-login-name))
 (load my/user-settings)
@@ -26,8 +24,8 @@
       `((".*" ,(concat my/autosave-dir "\\1") t)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; backups ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defconst my/backup-dir (concat my/user-directory "backups/"
-  (format-time-string "%Y-%m-%d")))
+(defconst my/backup-dir
+  (concat my/user-directory "backups/" (format-time-string "%Y-%m-%d")))
 (unless (file-directory-p my/backup-dir)
   (make-directory my/backup-dir t))
 (setq backup-directory-alist `(("." . ,my/backup-dir)))
@@ -95,6 +93,7 @@
 (set-cursor-color "yellow")
 (set-mouse-color "white")
 (global-font-lock-mode t)
+(setq fill-column 78)
 (setq font-lock-maximum-decoration t)
 (mouse-avoidance-mode 'cat-and-mouse)
 (blink-cursor-mode 1)
@@ -170,6 +169,10 @@
           (lambda() (make-local-variable 'comment-fill)
             (setq comment-fill "*")))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; popwin ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'popwin)
+(popwin-mode 1)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ido ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (ido-mode 1)
 (setq ido-max-prospects 25)
@@ -221,7 +224,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dired ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'dired-x)                      ; C-x C-j now runs 'dired-jump
-(require 'dired-details)
+(require 'dired-details+)
 (setq-default dired-listing-switches "-alhvGg")
 (setq dired-details-initially-hide nil)
 (defadvice shell-command
@@ -295,6 +298,54 @@
 (setq framemove-hook-into-windmove t)
 ;;(setq windmove-wrap-around t)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; frame-cmds ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; this also loads 'frame-fns
+(require 'frame-cmds)
+(global-set-key [(meta up)]                    'move-frame-up)
+(global-set-key [(meta down)]                  'move-frame-down)
+(global-set-key [(meta left)]                  'move-frame-left)
+(global-set-key [(meta right)]                 'move-frame-right)
+(global-set-key [(meta shift ?v)]              'move-frame-to-screen-top)
+(global-set-key [(control shift ?v)]           'move-frame-to-screen-bottom)
+(global-set-key [(control shift prior)]        'move-frame-to-screen-left)
+(global-set-key [(control shift next)]         'move-frame-to-screen-right)
+(global-set-key [(control shift home)]         'move-frame-to-screen-top-left)
+(global-set-key [(control meta down)]          'enlarge-frame)
+(global-set-key [(control meta right)]         'enlarge-frame-horizontally)
+(global-set-key [(control meta up)]            'shrink-frame)
+(global-set-key [(control meta left)]          'shrink-frame-horizontally)
+(global-set-key [(control ?x) (control ?z)]    'iconify-everything)
+(global-set-key [(control ?z)]                 'iconify/show-frame)
+;(global-set-key [mode-line mouse-3]            'mouse-iconify/show-frame)
+;(global-set-key [mode-line C-mouse-3]          'mouse-remove-window)
+(global-set-key [(control meta ?z)]            'show-hide)
+;(global-set-key [vertical-line C-down-mouse-1] 'show-hide)
+;(global-set-key [C-down-mouse-1]               'mouse-show-hide-mark-unmark)
+(substitute-key-definition 'delete-window      'remove-window global-map)
+(define-key ctl-x-map "o"                      'other-window-or-frame)
+(define-key ctl-x-4-map "1"                    'delete-other-frames)
+(define-key ctl-x-5-map "h"                    'show-*Help*-buffer)
+(substitute-key-definition 'delete-window      'delete-windows-for global-map)
+(define-key global-map "\C-xt."                'save-frame-config)
+
+(defun my/tile-frames-vertically()
+  "Tile frames vertically. You can restore prior frame position via going to register \\C-l."
+  (interactive)
+  (save-frame-config)
+  (tile-frames-vertically))
+(global-set-key "\e\ev" 'my/tile-frames-vertically)
+(defun my/tile-frames-horizontally()
+  "Tile frames horizontally. You can restore prior frame position via going to register \\C-l."
+  (interactive)
+  (save-frame-config)
+  (tile-frames-horizontally))
+(global-set-key "\e\eh" 'my/tile-frames-horizontally)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;; color-theme ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(add-to-list 'load-path (concat my/plugins-directory "color-theme/"))
+(require 'color-theme)
+(color-theme-initialize)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smerge ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun try-smerge()
   (save-excursion
@@ -310,6 +361,7 @@
 (setq multi-term-program "/bin/tcsh")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-complete ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(add-to-list 'load-path (concat my/plugins-directory "auto-complete/"))
 (require 'auto-complete)
 (add-to-list 'ac-dictionary-directories
              (concat user-emacs-directory "plugins/auto-complete/dict"))
@@ -345,6 +397,7 @@
              (setq ac-sources (add-to-list 'ac-sources 'ac-source-etags))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; YASnippet ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(add-to-list 'load-path (concat my/plugins-directory "yasnippet/"))
 (require 'yasnippet)
 (yas-global-mode 1)
 (setq yas-snippet-dirs (concat my/user-directory "snippets/"))
@@ -418,7 +471,7 @@
                                     nxml-mode protobuf-mode folio-mode
                                     sh-mode))
     (delete-trailing-whitespace)
-))
+    ))
 
 ;;;;;;; MODES ;;;;;;;
 (setq auto-mode-alist
@@ -443,9 +496,7 @@
              ("\\.bat$"      . dos-mode)
              ("\\.log$"      . log-viewer-mode)
             )
-     auto-mode-alist
-   )
-)
+     auto-mode-alist))
 
 
 
@@ -458,6 +509,17 @@
              (setq sh-indentation 3)
              (define-key sh-mode-map "\C-c\C-c" 'comment-region)
              (define-key sh-mode-map "\C-c\C-u" 'uncomment-region)
+             ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dos-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(add-hook 'dos-mode-hook
+          '(lambda()
+             (setq-default indent-tabs-mode nil)
+             (define-key dos-mode-map "\r" 'reindent-then-newline-and-indent)
+             (setq dos-basic-offset 3)
+             (setq dos-indentation 3)
+             (define-key dos-mode-map "\C-c\C-c" 'comment-region)
+             (define-key dos-mode-map "\C-c\C-u" 'uncomment-region)
              ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; xml-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
