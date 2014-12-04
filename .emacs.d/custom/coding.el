@@ -5,6 +5,17 @@
 
 (global-set-key "\C-c\C-c" 'comment-region)
 (global-set-key "\C-c\C-u" 'uncomment-region)
+
+(defvar my/project-root nil)
+(defvar my/build-sub-dir nil)
+(defun find-project-root(&optional arg)
+  "Find the project's root directory.  Force recalculation if optional arg
+   supplied."
+  (interactive)
+  (when (or (null my/project-root) arg)
+    (setq my/project-root
+          (expand-file-name (find-file-dir-upwards ".root")))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; c++-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (add-hook
@@ -13,12 +24,13 @@
      (setq-default indent-tabs-mode nil)
      (setq c-auto-newline t)
      (c-toggle-hungry-state t)
-     (setq comment-column 40)
+     ;; (setq comment-column 40)
+     (make-local-variable 'compile-command)
      (setq compile-command "upmake - -")
      (setq grep-command
            "find -L `findRoot` -name TAGS -o -name '*tags' -o -name '*.log' -o -name '#*' -prune -o -type f -print0 | xargs -0 grep -Isn ")
-     (define-key c++-mode-map (kbd "\C-c RET") 'drh-compile)
-     (define-key c++-mode-map "\C-cm" 'drh-recompile)
+     (define-key c++-mode-map (kbd "\C-c RET") 'my/compile)
+     (define-key c++-mode-map "\C-cm" 'my/recompile)
      (define-key c++-mode-map "\C-ck" 'kill-compilation)
      (define-key c++-mode-map "\C-cg" 'grep)
      (define-key c++-mode-map "\C-c\C-c" 'comment-region)
@@ -243,7 +255,7 @@
          (let ((identifier "\\sw\\|_\\|:"))
            (while (re-search-forward (concat "\\(.*?\\)\\s-?\\(\\(?:"
                                              identifier
-                                             "\\)+\\)\\s-*$" nil t))
+                                             "\\)+\\)\\s-*$") nil t)
              (replace-match "\\1 \\2" nil nil)))))))
 
 (defun clean-up-func-param (start end do-spacing is-decl)

@@ -31,5 +31,6 @@
         ))
 
 (set-face-font 'default "Consolas-11")
+(color-theme-deep-blue)
 
 ;;(pos-tip-w32-max-width-height t)          ;maximize frame temporarily

@@ -3,20 +3,30 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;; Dan Harms compiling.el ;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 
+(defvar one-window-in-frame nil)
+(defvar my/compile-command "make")
 
-                                        ; automatically scroll compilation window
+;; automatically scroll compilation window
 (setq compilation-scroll-output t)
 
-(defun my-compilation-mode-hook()
+(defun my/compilation-mode-hook()
   (setq truncate-lines nil) ; is buffer local
   (set (make-local-variable 'truncate-partial-width-windows) nil))
-(add-hook 'compilation-mode-hook 'my-compilation-mode-hook)
+(add-hook 'compilation-mode-hook 'my/compilation-mode-hook)
 
-(defun drh-compile() (interactive)
+(defun create-compile-command() "Initialize the compile command."
+  (interactive)
+  (find-project-root)
+  (format "cd %s && %s"
+          (concat my/project-root my/build-sub-dir)
+          my/compile-command))
+
+(defun my/compile() (interactive)
   (setq one-window-in-frame (one-window-p t))
+  (setq compile-command (create-compile-command))
   (call-interactively 'compile)
   )
-(defun drh-recompile() (interactive)
+(defun my/recompile() (interactive)
   (setq one-window-in-frame (one-window-p t))
   (call-interactively 'recompile)
   )

@@ -11,7 +11,7 @@
 (add-to-list 'load-path (concat my/user-directory "modes/"))
 (add-to-list 'load-path (concat my/user-directory "custom/"))
 (defconst my/user-settings
-  (concat my/user-directory "settings/users/" user-login-name))
+  (concat my/user-directory "settings/user/" user-login-name))
 (load my/user-settings)
 
 (set-register ?i (cons 'file user-init-file)) ;edit init file
@@ -113,6 +113,7 @@
 (global-set-key "\e\es" 'speedbar)
 (global-set-key "\e\eo" 'speedbar-get-focus)
 (global-set-key "\C-cv" 'ff-find-other-file)
+(global-set-key "\C-x\C-b" 'electric-buffer-list)
 
 ;; (global-set-key [f7] 'select-previous-window)
 ;; (global-set-key [f8] 'select-next-window)
@@ -463,7 +464,11 @@
   (load gui-file)
   )
 
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; host ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(let ((host-dir (concat my/user-directory "settings/host/"))
+      (host-file (downcase system-name)))
+  ;; load host file (if present)
+  (load host-file t))
 
 (add-hook 'before-save-hook 'do-before-save-hook)
 (defun do-before-save-hook() "Presave hook"
@@ -558,7 +563,12 @@
              ))
 (add-hook 'emacs-lisp-mode-hook 'eldoc-mode)
 (add-hook 'after-save-hook (lambda()
-                             (if (eq major-mode 'emacs-lisp-mode)
+                             (when (and
+                                  (eq major-mode 'emacs-lisp-mode)
+                                  (not (string-match
+                                        "^\\.dir-locals.el$"
+                                        (file-name-nondirectory
+                                         (buffer-file-name)))))
                                  (save-excursion
                                    (byte-compile-file buffer-file-name)))))
 
