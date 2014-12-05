@@ -114,6 +114,7 @@
 
 (defun find-file-upwards (file-to-find)
   "Recursively search upward for file; returns path to file or nil if not found."
+  (interactive)
   (let*
       ((find-file-r (lambda (path)
                       (let* ((parent (file-name-directory path))
@@ -125,6 +126,12 @@
                          ((or (null parent) (equal parent (directory-file-name parent))) nil)
                          (t (funcall find-file-r (directory-file-name parent))))))))
     (funcall find-file-r default-directory)))
+
+(defun find-file-dir-upwards (file-to-find)
+  "Recursively search upward for file; returns file's directory or nil if not found."
+  (interactive)
+  (let ((file (find-file-upwards file-to-find)))
+    (if file (file-name-directory file) nil)))
 
 (defun goto-line-with-feedback()
   "Show line numbers temporarily while prompting for the target line."
@@ -150,7 +157,7 @@
   "Loads each line from the specified file into the environment var."
   (interactive)
   (unless sep (setq sep path-separator))
-  (setenv var (concat (mapconcat 'identity
+  (setenv var (concat (mapconcat 'convert-standard-filename
                                  (read-file-into-list-of-lines file)
                                  sep) sep (getenv var))))
 
@@ -228,3 +235,64 @@
         (set-visited-file-name newname)
         (set-buffer-modified-p nil)
         t))))
+
+(defvar full-edit-accept-patterns
+  '( "\\.cpp$" "\\.cc$" "\\.cxx$" "\\.c$" "\\.C$"
+     "\\.h$" "\\.hh$" "\\.hpp$" "\\.hxx$" "\\.H$"
+     "\\.sh$" "\\.py$" "\\.sql$" "\\.java$" "\\.in$"
+     "\\.proto$"
+     "^CMakeLists.txt$" "\\.cmake$"
+     "^Makefile$" "^makefile$"
+     ))
+(defvar full-edit-reject-patterns
+  '( "\\.exe$" "\\.pdb$" "\\.obj$"
+     ))
+
+(defun test-list-for-string(list regex)
+  "Check if a list contains a string by regexp."
+  (let ((lst list)
+        curr)
+    (catch 'found
+      (while lst
+        (setq curr (car lst))
+        (if (string-match curr regex)
+            (throw 'found t)
+          (setq lst (cdr lst))))
+      nil)))
+
+(defun find-all-files(dir &optional symbolic)
+  "Find (open) all files recursively below a directory.  Results are
+  filtered via full-edit-accept-patterns and full-edit-reject-patterns.
+  With optional prefix argument, will follow symbolic targets."
+  (interactive)
+  (let* ((all-results
+          (directory-files
+           dir t "^\\([^.]\\|\\.[^.]\\|\\.\\..\\)" t))
+         (files (remove-if 'file-directory-p all-results))
+         (dirs (remove-if-not 'file-directory-p all-results)))
+    (setq files (if symbolic
+                    (remove-if-not 'file-symlink-p files)
+                  (remove-if 'file-symlink-p files)))
+    (setq dirs (if symbolic
+                   (remove-if-not 'file-symlink-p dirs)
+                 (remove-if 'file-symlink-p dirs)))
+    (mapc #'(lambda(file)
+              (and
+               (test-list-for-string full-edit-accept-patterns
+                                     (file-name-nondirectory file))
+               (not (test-list-for-string full-edit-reject-patterns
+                                          (file-name-nondirectory file)))
+               (find-file-noselect file)))
+          files)
+    (mapc 'find-all-files dirs)
+    ))
+
+(defun full-edit(root &optional arg)
+  "Find (open) all files recursively below a directory."
+  (interactive
+   `(,(ido-read-directory-name "Directory: " nil nil t)))
+  (if root
+      (find-all-files (expand-file-name root arg))
+    (message "No directory given")))
+
+(global-set-key "\C-c\C-f" 'full-edit)
