@@ -7,6 +7,7 @@
 (global-set-key "\C-c\C-u" 'uncomment-region)
 
 (defvar my/project-root nil)
+(defvar project-name nil)
 (defvar my/build-sub-dir nil)
 (defun find-project-root(&optional arg)
   "Find the project's root directory.  Force recalculation if optional arg
@@ -123,10 +124,13 @@
           "\\." "_"
           (file-name-nondirectory (buffer-file-name)))))
     (save-excursion
-      (if arg
+      (if arg                           ;ask user for stem
           (setq str (concat
-                     (read-string "Include guard: " nil nil str) "_H")))
-      (setq str (upcase (concat "_REX_" str "_")))
+                     (read-string "Include guard stem: " nil nil str) "_H"))
+        ;; no arg; if project-name is defined, prepend it
+        (when project-name
+          (setq str (concat project-name "_" str))))
+      (setq str (upcase (concat "_" str "_")))
       (goto-char (point-min))
       (insert "#ifndef " str "\n#define " str "\n\n")
       (goto-char (point-max))

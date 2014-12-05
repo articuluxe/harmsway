@@ -185,7 +185,7 @@
                   (split-window-horizontally))
                 (set-window-buffer (windmove-find-other-window neighbor-dir)
                                    other-buf))))))))
-(global-set-key "\C-c\C-z" 'window-toggle-split-direction)
+(global-set-key "\C-x4z" 'window-toggle-split-direction)
 
 ;; from Steve Yegge
 (defun swap-buffers() "Swap the first 2 buffers" (interactive)
@@ -200,7 +200,7 @@
       (set-window-buffer win2 buf1)
       (set-window-start win1 pos2)
       (set-window-start win2 pos1))))
-(global-set-key "\C-cz" 'swap-buffers)
+(global-set-key "\C-x4s" 'swap-buffers)
 
 (defun rename-file-and-buffer(new-name)
   "Renames both current buffer and file it's visiting."
@@ -270,12 +270,9 @@
            dir t "^\\([^.]\\|\\.[^.]\\|\\.\\..\\)" t))
          (files (remove-if 'file-directory-p all-results))
          (dirs (remove-if-not 'file-directory-p all-results)))
-    (setq files (if symbolic
-                    (remove-if-not 'file-symlink-p files)
-                  (remove-if 'file-symlink-p files)))
-    (setq dirs (if symbolic
-                   (remove-if-not 'file-symlink-p dirs)
-                 (remove-if 'file-symlink-p dirs)))
+    (unless symbolic
+      (setq files (remove-if 'file-symlink-p files))
+      (setq dirs (remove-if 'file-symlink-p dirs)))
     (mapc #'(lambda(file)
               (and
                (test-list-for-string full-edit-accept-patterns
@@ -284,15 +281,18 @@
                                           (file-name-nondirectory file)))
                (find-file-noselect file)))
           files)
-    (mapc 'find-all-files dirs)
+    (mapc #'(lambda(dir)
+              (find-all-files dir symbolic))
+          dirs)
     ))
 
 (defun full-edit(root &optional arg)
   "Find (open) all files recursively below a directory."
   (interactive
-   `(,(ido-read-directory-name "Directory: " nil nil t)))
+   `(,(ido-read-directory-name "Directory: " nil nil t)
+     ,current-prefix-arg))
   (if root
-      (find-all-files (expand-file-name root arg))
+      (find-all-files (expand-file-name root) arg)
     (message "No directory given")))
 
 (global-set-key "\C-c\C-f" 'full-edit)
