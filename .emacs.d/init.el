@@ -1,9 +1,9 @@
 ;; -*- Mode: Emacs-Lisp -*-
 ;;
 ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;; Dan Harms init.el ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Dan Harms init.el ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; load-path ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; load-path ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defconst my/user-directory (expand-file-name user-emacs-directory))
 (defconst my/plugins-directory (concat my/user-directory "plugins/"))
 (add-to-list 'load-path my/user-directory)
@@ -16,14 +16,14 @@
 
 (set-register ?\C-i (cons 'file user-init-file)) ;edit init file
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-save ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-save ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defconst my/autosave-dir (concat my/user-directory "autosaves/"))
 (unless (file-directory-p my/autosave-dir)
   (make-directory my/autosave-dir t))
 (setq auto-save-file-name-transforms
       `((".*" ,(concat my/autosave-dir "\\1") t)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; backups ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; backups ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defconst my/backup-dir
   (concat my/user-directory "backups/" (format-time-string "%Y-%m-%d")))
 (unless (file-directory-p my/backup-dir)
@@ -85,8 +85,7 @@
 
 ;; visual settings
 (menu-bar-mode -1)
-(tool-bar-mode -1)
-(scroll-bar-mode -1)
+(setq-default fill-column 80)
 ; default colors
 (set-foreground-color "white")
 (set-background-color "black")
@@ -100,7 +99,7 @@
 (when (display-graphic-p)
   (global-unset-key "\C-z"))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; key-bindings ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; key-bindings ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (global-unset-key (kbd "<f1>"))
 (global-set-key "\M-r" 'revert-buffer)
 (global-set-key "\M-]" 'jump-to-match-paren)
@@ -120,7 +119,7 @@
 ;(global-set-key [f9] 'previous-error)
 ;(global-set-key [f10] 'next-error)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; tags ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; tags ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq tags-revert-without-query t)
 (global-set-key "\C-ct" 'find-my-tags-file)
 (global-set-key "\M-." 'etags-select-find-tag)
@@ -163,19 +162,19 @@
 (require 'folio-electric)
 (require 'pos-tip)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;; line-comment-banner ;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;; line-comment-banner ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'line-comment-banner)
 (global-set-key [?\C-\;] 'line-comment-banner)
 (add-hook 'c-mode-common-hook
           (lambda() (make-local-variable 'comment-fill)
             (setq comment-fill "*")))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; popwin ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; popwin ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'popwin)
 (popwin-mode 1)
 (global-set-key [f1] popwin:keymap)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ido ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ido ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (ido-mode 1)
 (setq ido-max-prospects 25)
 ;; (setq ido-enable-flex-matching t)
@@ -207,24 +206,24 @@
                     (ido-completing-read
                      "M-x " (all-completions "" obarray 'commandp))))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; undo-tree ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; undo-tree ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'undo-tree)
 (global-undo-tree-mode)
 (global-set-key "\C-cu" (lambda()(interactive)(setq buffer-undo-tree nil)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; tramp ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; tramp ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq tramp-default-method "ssh")
 (setq tramp-default-user my/user-name)
-;;"dharms")
 (defvar my/tramp-file-list nil)
 (defun my/open-tramp-file() (interactive)
   (find-file (ido-completing-read "Remote file: " my/tramp-file-list)))
+;; TODO: make the following a configurable list
 (add-to-list 'my/tramp-file-list '(
                                    "/ssh:dharms@chl-ls-rex01:~/"
                                    ))
 (global-set-key "\C-c\C-t" 'my/open-tramp-file)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dired ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dired ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'dired-x)                      ; C-x C-j now runs 'dired-jump
 (require 'dired-details+)
 (setq-default dired-listing-switches "-alhvGg")
@@ -274,7 +273,7 @@
             (call-interactively command))
           (dired-get-marked-files))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; diff ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; diff ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-after-load 'diff-mode '(progn
                                (set-face-attribute 'diff-added nil
                                                    :foreground "white"
@@ -290,17 +289,17 @@
                                                    )
                                ))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; shebang ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; shebang ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'shebang)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; framemove ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; framemove ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'windmove)
 (require 'framemove)
 (windmove-default-keybindings)
 (setq framemove-hook-into-windmove t)
 ;;(setq windmove-wrap-around t)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; frame-cmds ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; frame-cmds ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; this also loads 'frame-fns
 (require 'frame-cmds)
 (global-set-key [(meta up)]                    'move-frame-up)
@@ -343,12 +342,12 @@
   (tile-frames-horizontally))
 (global-set-key "\e\eh" 'my/tile-frames-horizontally)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;; color-theme ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; color-theme ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-to-list 'load-path (concat my/plugins-directory "color-theme/"))
 (require 'color-theme)
 (color-theme-initialize)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smerge ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smerge ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun try-smerge()
   (save-excursion
     (goto-char (point-min))
@@ -358,11 +357,11 @@
 (add-hook 'after-save-hook (lambda() (if (smerge-mode) (try-smerge))))
 (setq smerge-command-prefix "\e")
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; multi-term ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; multi-term ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'multi-term)
 (setq multi-term-program "/bin/tcsh")
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-complete ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-complete ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-to-list 'load-path (concat my/plugins-directory "auto-complete/"))
 (require 'auto-complete)
 (add-to-list 'ac-dictionary-directories
@@ -398,7 +397,7 @@
           '(lambda()
              (setq ac-sources (add-to-list 'ac-sources 'ac-source-etags))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; YASnippet ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; YASnippet ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-to-list 'load-path (concat my/plugins-directory "yasnippet/"))
 (require 'yasnippet)
 (yas-global-mode 1)
@@ -428,11 +427,17 @@
 (global-set-key [(shift tab)] 'my/expand-yasnippet)
 
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;; popup-kill-ring ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; popup-kill-ring ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'popup-kill-ring)
 (global-set-key "\C-\M-y" 'popup-kill-ring)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; os ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; speedbar ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(add-hook 'speedbar-mode-hook
+          '(lambda()
+             (when (display-graphic-p)
+               (setq-default gdb-speedbar-auto-raise t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; os ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (let* ((system (car (reverse (split-string (symbol-name system-type)
                                            "\\/" t))))
        (os-dir (concat my/user-directory "settings/os/" system "/"))
@@ -455,16 +460,16 @@
       (load-environment-variable-from-file "LIBPATH" libpath-file))
   )
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; gui ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; gui ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (let ((gui-dir (concat my/user-directory "settings/gui/"))
-      (gui (symbol-name window-system))
+      (gui window-system)
       gui-file)
   ;; load gui file
-  (setq gui-file (concat gui-dir (if (null gui) "tty" gui)))
+  (setq gui-file (concat gui-dir (if (null gui) "tty" (symbol-name gui))))
   (load gui-file)
   )
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; host ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; host ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (let* ((host-dir (concat my/user-directory "settings/host/"))
 	   (host-file (concat host-dir system-name)))
   ;; load host file (if present)
@@ -479,7 +484,7 @@
     (delete-trailing-whitespace)
     ))
 
-;;;;;;; MODES ;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; modes ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq auto-mode-alist
    (append '(("\\.C$"        . c++-mode)
              ("\\.cc$"       . c++-mode)
@@ -506,7 +511,7 @@
 
 
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; sh-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; sh-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-hook 'sh-mode-hook
           '(lambda()
              (setq-default indent-tabs-mode nil)
@@ -517,7 +522,7 @@
              (define-key sh-mode-map "\C-c\C-u" 'uncomment-region)
              ))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dos-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dos-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-hook 'dos-mode-hook
           '(lambda()
              (setq-default indent-tabs-mode nil)
@@ -528,7 +533,7 @@
              (define-key dos-mode-map "\C-c\C-u" 'uncomment-region)
              ))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; xml-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; xml-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-hook 'nxml-mode-hook
           '(lambda()
              (setq-default indent-tabs-mode nil)
@@ -541,7 +546,7 @@
 ;; Note that 'comment-strip-start-length also exists for other modes if needed.
 (add-to-list 'comment-strip-start-length (cons 'nxml-mode 3))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; python-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; python-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-hook 'python-mode-hook
           '(lambda()
              (setq-default indent-tabs-mode nil)
@@ -550,7 +555,7 @@
              (define-key python-mode-map "\C-c\C-u" 'uncomment-region)
              ))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;; emacs-lisp-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; emacs-lisp-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-hook 'emacs-lisp-mode-hook
           '(lambda()
              (setq indent-tabs-mode nil)

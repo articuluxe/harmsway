@@ -1,6 +1,7 @@
 ;; -*- Mode: Emacs-Lisp -*-
 ;;
 ;;
+
 (setq default-frame-alist
       '(
         ;; (cursor-color . "red")

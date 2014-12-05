@@ -1,7 +1,11 @@
 ;; -*- Mode: Emacs-Lisp -*-
 ;;
 ;;
-;(setq frame-title-format "%b")
+
+(tool-bar-mode -1)
+(scroll-bar-mode -1)
+
+;; (setq frame-title-format "%b")
 
 ;; toggle full-screen
 (defun w32-maximize-frame() "Maximize current frame on windows"
