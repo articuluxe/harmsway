@@ -19,3 +19,5 @@
         (cursor-type . (bar . 2))
         (height . 70) (width . 80)
         ))
+
+(color-theme-blue-mood)

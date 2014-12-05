@@ -185,7 +185,7 @@
                   (split-window-horizontally))
                 (set-window-buffer (windmove-find-other-window neighbor-dir)
                                    other-buf))))))))
-(global-set-key "\C-c\C-z" 'window-toggle-split-direction)
+(global-set-key "\C-x4z" 'window-toggle-split-direction)
 
 ;; from Steve Yegge
 (defun swap-buffers() "Swap the first 2 buffers" (interactive)
@@ -200,7 +200,7 @@
       (set-window-buffer win2 buf1)
       (set-window-start win1 pos2)
       (set-window-start win2 pos1))))
-(global-set-key "\C-cz" 'swap-buffers)
+(global-set-key "\C-x4s" 'swap-buffers)
 
 (defun rename-file-and-buffer(new-name)
   "Renames both current buffer and file it's visiting."

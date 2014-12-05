@@ -14,7 +14,7 @@
   (concat my/user-directory "settings/user/" user-login-name))
 (load my/user-settings)
 
-(set-register ?i (cons 'file user-init-file)) ;edit init file
+(set-register ?\C-i (cons 'file user-init-file)) ;edit init file
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-save ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defconst my/autosave-dir (concat my/user-directory "autosaves/"))
@@ -465,8 +465,8 @@
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; host ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(let ((host-dir (concat my/user-directory "settings/host/"))
-      (host-file (downcase system-name)))
+(let* ((host-dir (concat my/user-directory "settings/host/"))
+	   (host-file (concat host-dir system-name)))
   ;; load host file (if present)
   (load host-file t))
 
