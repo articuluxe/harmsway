@@ -1,0 +1,8 @@
+;; -*- Mode: Emacs-Lisp -*-
+;;
+;;
+
+(color-theme-deep-blue)
+
+;; (add-to-list 'safe-local-variable-values '(my/build-sub-dir . "build"))
+;; (add-to-list 'safe-local-variable-values '(project-name . "punch"))

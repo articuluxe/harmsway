@@ -348,3 +348,25 @@
                            (clean-up-func-params start end t nil nil)))
 (global-set-key "\e\eu" (lambda(start end)(interactive "r")
                            (clean-up-func-params start end nil nil nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; gud ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defun my/gud-hook()
+  (set (make-local-variable 'gdb-show-main) t)
+  ;; highlight recently-changed variables
+  (set (make-local-variable 'gdb-show-changed-values) t)
+  ;; watch expressions sharing same variable name
+  (set (make-local-variable 'gdb-use-colon-colon-notation) t)
+  (set (make-local-variable 'gdb-create-source-file-list) nil)
+  (gdb-many-windows 1))
+(add-hook 'gud-mode-hook 'my/gud-hook)
+
+(defun my/launch-gdb() "Launch gdb automatically in the test directory."
+  (interactive)
+  (let ((exec-dir default-directory)
+        exec)
+    (when my/project-root
+      (setq exec-dir (concat my/project-root my/build-sub-dir
+                             "output/tests/")))
+    (setq exec (ido-read-file-name "Executable: " exec-dir nil t))
+    (gdb (concat "gdb -i=mi " exec))))
+(global-set-key [f4] 'my/launch-gdb)

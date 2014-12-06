@@ -2,6 +2,9 @@
 ;;
 ;;
 
+(tool-bar-mode -1)
+(scroll-bar-mode -1)
+
 ;; toggle full-screen
 (defun ns-toggle-full-screen() (interactive)
   (set-frame-parameter nil 'fullscreen
@@ -19,5 +22,3 @@
         (cursor-type . (bar . 2))
         (height . 70) (width . 80)
         ))
-
-(color-theme-blue-mood)
