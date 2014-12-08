@@ -77,6 +77,8 @@
 ;; allow converting regions to upper/lower case
 (put 'upcase-region 'disabled nil)
 (put 'downcase-region 'disabled nil)
+(put 'scroll-left 'disabled nil)
+(put 'scroll-right 'disabled nil)
 ;; disable nuisances
 (put 'overwrite-mode 'disabled t)
 (fset 'yes-or-no-p 'y-or-n-p)
@@ -594,3 +596,16 @@
                                          (buffer-file-name)))))
                                  (save-excursion
                                    (byte-compile-file buffer-file-name)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; conf-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(add-hook 'conf-mode-hook
+          '(lambda()
+             (setq indent-tabs-mode nil)
+             ;; conf-colon-mode still bound to "\C-c:"
+             (local-unset-key "\C-c\C-c")
+             ;; conf-unix-mode now bound to "\C-cu"
+             (local-unset-key "\C-c\C-u")
+             (define-key conf-mode-map "\C-cu" 'conf-unix-mode)
+             (define-key conf-mode-map "\C-c\C-c" 'comment-region)
+             (define-key conf-mode-map "\C-c\C-u" 'uncomment-region)
+             ))

@@ -13,7 +13,8 @@
   (make-local-variable 'font-lock-defaults)
   (setq log-viewer-mode-font-lock-keywords
         (list
-         (list "\\(ERROR\\|FATAL\\|WARN\\|error\\)" '(1 font-lock-warning-face))
+         (list "\\(ERROR\\|FATAL\\|WARN\\|[^W]error\\)"
+               '(1 font-lock-warning-face))
 
          ;; log statements
          ;; TODO: insert regex here
