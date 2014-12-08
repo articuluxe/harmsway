@@ -4,7 +4,6 @@
 ;;
 
 
-                                        ; Jump to matching parentheses
 (defun jump-to-matching-paren() "Go to matching paren" (interactive)
   (if (looking-at "\\s\(")
       (forward-list 1)

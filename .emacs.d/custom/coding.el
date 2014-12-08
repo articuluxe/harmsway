@@ -1,6 +1,6 @@
 ;; -*- Mode: Emacs-Lisp -*-
 ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;; Dan Harms coding.el ;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;; Dan Harms coding.el ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 
 (global-set-key "\C-c\C-c" 'comment-region)
@@ -17,7 +17,7 @@
     (setq my/project-root
           (expand-file-name (find-file-dir-upwards ".root")))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; c++-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; c++-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (add-hook
   'c-mode-common-hook
@@ -79,8 +79,8 @@
            ("\\<\\(alignof\\|alignas\\|constexpr\\|decltype\\|noexcept\\|nullptr\\|static_assert\\|thread_local\\|override\\|final\\)\\>" . font-lock-keyword-face)
            ;; hexadecimal numbers
            ("\\<0[xX][0-9A-Fa-f]+\\>" . font-lock-constant-face)
-           ("[tT][oO][dD][oO]" . font-lock-warning-face)
-           ))
+           ("\\<[tT][oO][dD][oO]\\>" . font-lock-warning-face)
+           ) t)
         ) t)
 
 
@@ -349,7 +349,7 @@
 (global-set-key "\e\eu" (lambda(start end)(interactive "r")
                            (clean-up-func-params start end nil nil nil)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; gud ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; gud ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun my/gud-hook()
   (set (make-local-variable 'gdb-show-main) t)
   ;; highlight recently-changed variables
@@ -370,3 +370,46 @@
     (setq exec (ido-read-file-name "Executable: " exec-dir nil t))
     (gdb (concat "gdb -i=mi " exec))))
 (global-set-key [f4] 'my/launch-gdb)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;; c++11 enum class hack ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; TODO: doesn't work
+(defun inside-class-enum-p (pos)
+  "Checks if POS is within the braces of a c++ \"enum class\"."
+  (interactive)
+  (ignore-errors
+    (save-excursion
+      (goto-char pos)
+      (up-list -1)
+      (backward-sexp 1)
+      (looking-back "enum\\s-+class\\s-+[^}]*")))) ;or end with '+'
+
+(defun align-enum-class (langelem)
+  (if (inside-class-enum-p (c-langelem-pos langelem))
+      0
+    (c-lineup-topmost-intro-cont langelem)))
+
+(defun align-enum-class-closing-brace (langelem)
+  (if (inside-class-enum-p (c-langelem-pos langelem))
+      '-                                ;or '0
+    '+))
+
+(defun fix-enum-class()
+  "Setup c++-mode to better handle \"class enum\"."
+  (add-to-list 'c-offsets-alist '(topmost-intro-cont . align-enum-class))
+  (add-to-list 'c-offsets-alist
+               '(statement-cont . align-enum-class-closing-brace)))
+(add-hook 'c++-mode-hook 'fix-enum-class)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;; c++11 lambda hack ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defadvice c-lineup-arglist (around my activate)
+  "Improve indentation of continued c++11 lambda function opened as argument."
+  (setq ad-return-value
+        (if (and (equal major-mode 'c++-mode)
+                 (ignore-errors
+                   (save-excursion
+                     (goto-char (c-langelem-pos langelem))
+                     ;; detect "[...](" or "[...]{" preceded by "," or "("
+                     ;; and with uclosed brace
+                     (looking-at ".*[(,][ \t]*\\[[^]]*\\][ \t]*[({][^}]*$"))))
+            0                           ;no additional indent
+          ad-do-it)))                   ;default behavior
