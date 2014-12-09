@@ -35,16 +35,25 @@
                                         ; the compile is about to start
                                      ))
 
+(defun check-compile-buffer-errors(buffer)
+  "Check the current buffer for compile warnings or errors"
+  (with-current-buffer buffer
+    (catch 'found
+      (goto-char 1)
+      (while (search-forward-regexp "\\([Ww]arning\\|[Ee]rror\\)" nil t)
+        ;; this ignores the compile line "-Werror" that cmake echoes
+        (goto-char (match-beginning 1))
+        (unless (looking-back "-W" (- (point) 2))
+          (throw 'found t))
+        (goto-char (match-end 1)))
+      nil)))
+
 (defun bury-compile-buffer-if-successful (buffer string)
   "Bury a compilation buffer if it succeeded without warnings."
   (if (and
        (string-match "compilation" (buffer-name buffer))
        (string-match "finished" string)
-       (not
-        (with-current-buffer buffer
-          (goto-char 1)
-          (search-forward "warning" nil t)
-          )))
+       (not (check-compile-buffer-errors buffer)))
       (run-with-timer 2 nil
                       (lambda (buf)
                         (bury-buffer buf)

@@ -367,7 +367,7 @@
     (when my/project-root
       (setq exec-dir (concat my/project-root my/build-sub-dir
                              "output/tests/")))
-    (setq exec (ido-read-file-name "Executable: " exec-dir nil t))
+    (setq exec (ido-read-file-name "Debug executable: " exec-dir nil t))
     (gdb (concat "gdb -i=mi " exec))))
 (global-set-key [f4] 'my/launch-gdb)
 

@@ -288,7 +288,7 @@
 (defun full-edit(root &optional arg)
   "Find (open) all files recursively below a directory."
   (interactive
-   `(,(ido-read-directory-name "Directory: " nil nil t)
+   `(,(ido-read-directory-name "Full-Edit Directory: " nil nil t)
      ,current-prefix-arg))
   (if root
       (find-all-files (expand-file-name root) arg)
