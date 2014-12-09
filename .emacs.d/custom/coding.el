@@ -29,7 +29,7 @@
      (make-local-variable 'compile-command)
      (setq compile-command "upmake - -")
      (setq grep-command
-           "find -L `findRoot` -name TAGS -o -name '*tags' -o -name '*.log' -o -name '#*' -prune -o -type f -print0 | xargs -0 grep -Isn ")
+           "find -L `findRoot`/src -name TAGS -o -name '*tags' -o -name '*.log' -o -name '#*' -prune -o -type f -print0 | xargs -0 grep -Isn ")
      (define-key c++-mode-map (kbd "\C-c RET") 'my/compile)
      (define-key c++-mode-map "\C-cm" 'my/recompile)
      (define-key c++-mode-map "\C-ck" 'kill-compilation)
@@ -79,7 +79,7 @@
            ("\\<\\(alignof\\|alignas\\|constexpr\\|decltype\\|noexcept\\|nullptr\\|static_assert\\|thread_local\\|override\\|final\\)\\>" . font-lock-keyword-face)
            ;; hexadecimal numbers
            ("\\<0[xX][0-9A-Fa-f]+\\>" . font-lock-constant-face)
-           ("\\<[tT][oO][dD][oO]\\>" . font-lock-warning-face)
+           ("\\<[tT][oO][dD][oO]\\>" 0 font-lock-warning-face t)
            ) t)
         ) t)
 

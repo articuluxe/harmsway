@@ -127,6 +127,35 @@
 (require 'buff-menu+)
 (global-set-key "\C-x\C-b" 'ibuffer)
 (global-set-key "\C-x\S-b" 'electric-buffer-list)
+;; human-readable sizes
+(define-ibuffer-column size-h
+  (:name "Size" :inline t)
+  (cond
+   ((> (buffer-size) 1048576)
+    (format "%7.1fM" (/ (buffer-size) 1048576.0)))
+   ((> (buffer-size) 131072)
+    (format "%7.0fk" (/ (buffer-size) 1024.0)))
+   ((> (buffer-size) 1024)
+    (format "%7.1fk" (/ (buffer-size) 1024.0)))
+   (t (format "%8d" (buffer-size)))))
+(setq ibuffer-formats
+      '((mark modified read-only " "
+              (name 18 18 :left :elide)
+              " "
+              (size-h 9 -1 :right)
+              " "
+              (mode 16 16 :left :elide)
+              " "
+              filename-and-process)
+        (mark modified read-only " "
+              (size-h 9 -1 :right)
+              " "
+              (name 26 -1))
+        (mark modified read-only " "
+              (size-h 9 -1 :right)
+              " "
+              (filename-and-process 26 -1))
+        ))
 
 ;; (global-set-key [f7] 'select-previous-window)
 ;; (global-set-key [f8] 'select-next-window)
@@ -264,6 +293,7 @@
 (require 'dired-details+)
 (setq-default dired-listing-switches "-alhvGg")
 (setq dired-details-initially-hide nil)
+(put 'dired-find-alternate-file 'disabled nil)
 (defadvice shell-command
   (after shell-in-new-buffer (command &optional output-buffer error-buffer))
   (when (get-buffer "*Async Shell Command*")
@@ -473,6 +503,9 @@
              (when (display-graphic-p)
                (setq-default gdb-speedbar-auto-raise t))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; htmlize ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'htmlize)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; os ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (let* ((system (car (reverse (split-string (symbol-name system-type)
                                            "\\/" t))))
@@ -601,6 +634,7 @@
                   (byte-compile-file (buffer-file-name))))
              ))
 (add-hook 'emacs-lisp-mode-hook 'eldoc-mode)
+(require 'bytecomp)
 (add-hook 'after-save-hook
           (lambda()
             (when (and
