@@ -47,6 +47,8 @@
 (setq use-dialog-box nil)
 (setq large-file-warning-threshold nil)
 (setq kill-do-not-save-duplicates t)
+(file-name-shadow-mode 1)
+(setq enable-recursive-minibuffers t)
 ; truncate long lines
 (setq-default truncate-lines t)
 ; search is case-sensitive by default
@@ -106,14 +108,25 @@
 (global-set-key "\M-]" 'jump-to-match-paren)
 (global-set-key "\C-ca" 'align)
 (global-set-key "\C-cr" 'align-repeat-regexp)
-(global-set-key "\C-cw" 'wordcount)
 (global-set-key [f5] 'toggle-truncate-lines)
 (global-set-key "\C-c " 'global-whitespace-mode)
 (global-set-key "\C-cf" 'font-lock-fontify-buffer)
 (global-set-key "\e\es" 'speedbar)
 (global-set-key "\e\eo" 'speedbar-get-focus)
 (global-set-key "\C-cv" 'ff-find-other-file)
-(global-set-key "\C-x\C-b" 'electric-buffer-list)
+(global-set-key (kbd "M-#") 'sort-lines)
+(global-set-key (kbd "C-#") 'sort-paragraphs)
+(global-set-key "\C-xw" 'write-region)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ibuffer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'ibuffer)
+;; Newer "tabulated list mode" in buff-menu.el breaks buffer-menu+ 21.0.
+;; We'll shadow the current buff-menu.el with our local emacs-23 version.
+(when (version<= "24.2" emacs-version)
+  (load "buff-menu.el"))
+(require 'buff-menu+)
+(global-set-key "\C-x\C-b" 'ibuffer)
+(global-set-key "\C-x\S-b" 'electric-buffer-list)
 
 ;; (global-set-key [f7] 'select-previous-window)
 ;; (global-set-key [f8] 'select-next-window)
@@ -179,6 +192,7 @@
 (setq popwin:special-display-config
       '(
         help-mode
+        (compilation-mode :noselect t)
         (completion-list-mode :noselect t)            ;noselect?
         ("*Ido Completions*" :noselect t)
         (grep-mode :noselect t)
@@ -587,15 +601,17 @@
                   (byte-compile-file (buffer-file-name))))
              ))
 (add-hook 'emacs-lisp-mode-hook 'eldoc-mode)
-(add-hook 'after-save-hook (lambda()
-                             (when (and
-                                  (eq major-mode 'emacs-lisp-mode)
-                                  (not (string-match
-                                        "^\\.dir-locals.el$"
-                                        (file-name-nondirectory
-                                         (buffer-file-name)))))
-                                 (save-excursion
-                                   (byte-compile-file buffer-file-name)))))
+(add-hook 'after-save-hook
+          (lambda()
+            (when (and
+                   (eq major-mode 'emacs-lisp-mode)
+                   (file-exists-p (byte-compile-dest-file (buffer-file-name)))
+                   (not (string-match
+                         "^\\.dir-locals.el$"
+                         (file-name-nondirectory
+                          (buffer-file-name)))))
+              (save-excursion
+                (byte-compile-file buffer-file-name)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; conf-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-hook 'conf-mode-hook

@@ -3,6 +3,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;; Dan Harms utils.el ;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 
+(defun kill-all-other-buffers() "kill all buffers save for current one"
+  (interactive)
+  (mapc 'kill-buffer (delq (current-buffer) (buffer-list))))
+(global-set-key "\C-x\S-k" 'kill-all-other-buffers)
 
 (defun jump-to-matching-paren() "Go to matching paren" (interactive)
   (if (looking-at "\\s\(")
@@ -96,15 +100,18 @@
   (interactive "r\nsAlign regexp: ")
   (align-regexp start end (concat "\\(\\s-*\\)" regexp) 1 1 t))
 
-;; word count
-(defun wordcount () "print buffer word count in minibuffer" (interactive)
-  (save-excursion
-    (let ((count 0))
-      (goto-char (point-min))
-      (while (< (point) (point-max))
-        (forward-word 1)
-        (setq count (1+ count)))
-      (message "buffer contains %d words" count))))
+;; word count (superceded by 'count-words-region "C-u M-=" in recent emacsen)
+(when (version< emacs-version "24.0")
+  (progn
+    (defun wordcount () "print buffer word count in minibuffer" (interactive)
+      (save-excursion
+        (let ((count 0))
+          (goto-char (point-min))
+          (while (< (point) (point-max))
+            (forward-word 1)
+            (setq count (1+ count)))
+          (message "buffer contains %d words" count))))
+    (global-set-key "M-=" 'wordcount)))
 
 ;; indent entire file
 (defun indent-buffer () "indent entire buffer" (interactive)

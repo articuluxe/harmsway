@@ -1,9 +1,0 @@
-# -*- mode: snippet; require-final-newline: nil -*-
-# name: for_try
-# key: for
-# binding: direct-keybinding
-# --
-for (int i = ${1:0}; i < ${2:N}; ++i)
-{
-$0
-}
