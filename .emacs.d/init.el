@@ -274,18 +274,15 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; undo-tree ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'undo-tree)
 (global-undo-tree-mode)
+;; reset the undo tree history (useful after reverting buffer)
 (global-set-key "\C-cu" (lambda()(interactive)(setq buffer-undo-tree nil)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; tramp ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq tramp-default-method "ssh")
 (setq tramp-default-user my/user-name)
-(defvar my/tramp-file-list nil)
+(defvar my/tramp-file-list '())
 (defun my/open-tramp-file() (interactive)
   (find-file (ido-completing-read "Remote file: " my/tramp-file-list)))
-;; TODO: make the following a configurable list
-(add-to-list 'my/tramp-file-list '(
-                                   "/ssh:dharms@chl-ls-rex01:~/"
-                                   ))
 (global-set-key "\C-c\C-t" 'my/open-tramp-file)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dired ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

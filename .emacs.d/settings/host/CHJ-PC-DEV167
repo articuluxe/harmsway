@@ -2,6 +2,11 @@
 ;;
 ;;
 
+(add-to-list 'my/tramp-file-list '(
+                                   "/plink:dharms@chd-ls-rex07:/home/logs/rex"
+                                   "/plink:dharms@chd-ls-rex08:/home/logs/rex"
+                                   ))
+
 (color-theme-deep-blue)
 
 ;; (add-to-list 'safe-local-variable-values '(my/build-sub-dir . "build"))

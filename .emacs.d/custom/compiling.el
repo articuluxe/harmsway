@@ -4,7 +4,8 @@
 ;;
 
 (defvar one-window-in-frame nil)
-(defvar my/compile-command "make")
+(defvar my/compile-command)
+(defvar my/compile-sub-command "make")
 
 ;; automatically scroll compilation window
 (setq compilation-scroll-output t)
@@ -16,20 +17,23 @@
 
 (defun create-compile-command() "Initialize the compile command."
   (interactive)
-  (find-project-root)
-  (format "cd %s && %s"
-          (concat my/project-root my/build-sub-dir)
-          my/compile-command))
+  (if (and (find-project-root) my/build-sub-dir)
+      (format "cd %s && %s"
+              (concat my/project-root my/build-sub-dir)
+              my/compile-sub-command)
+    (message "Can't create compile command: unknown %s"
+             (if (null my/project-root)
+                 "project root" "build sub-dir"))
+    nil))
 
 (defun my/compile() (interactive)
   (setq one-window-in-frame (one-window-p t))
-  (setq compile-command (create-compile-command))
-  (call-interactively 'compile)
-  )
+  (when (setq my/compile-command (create-compile-command))
+    (setq compile-command my/compile-command)
+    (call-interactively 'compile)))
 (defun my/recompile() (interactive)
   (setq one-window-in-frame (one-window-p t))
-  (call-interactively 'recompile)
-  )
+  (call-interactively 'recompile))
 
 (add-hook 'compilation-start-hook '(lambda (process)
                                         ; the compile is about to start

@@ -14,8 +14,11 @@
    supplied."
   (interactive)
   (when (or (null my/project-root) arg)
-    (setq my/project-root
-          (expand-file-name (find-file-dir-upwards ".root")))))
+    (let ((root (find-file-dir-upwards ".root")))
+      (if root (setq my/project-root (expand-file-name root))
+        (message "Could not find .root"))))
+  my/project-root)
+(global-set-key "\C-c\C-p" 'find-project-root)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; c++-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -26,8 +29,7 @@
      (setq c-auto-newline t)
      (c-toggle-hungry-state t)
      ;; (setq comment-column 40)
-     (make-local-variable 'compile-command)
-     (setq compile-command "upmake - -")
+     (make-local-variable 'my/compile-command)
      (setq grep-command
            "find -L `findRoot`/src -name TAGS -o -name '*tags' -o -name '*.log' -o -name '#*' -prune -o -type f -print0 | xargs -0 grep -Isn ")
      (define-key c++-mode-map (kbd "\C-c RET") 'my/compile)
@@ -362,11 +364,12 @@
 
 (defun my/launch-gdb() "Launch gdb automatically in the test directory."
   (interactive)
-  (let ((exec-dir default-directory)
-        exec)
-    (when my/project-root
+  (let (exec-dir exec)
+    (when (find-project-root)
       (setq exec-dir (concat my/project-root my/build-sub-dir
                              "output/tests/")))
+    (unless (and exec-dir (file-exists-p exec-dir))
+      (setq exec-dir default-directory))
     (setq exec (ido-read-file-name "Debug executable: " exec-dir nil t))
     (gdb (concat "gdb -i=mi " exec))))
 (global-set-key [f4] 'my/launch-gdb)
