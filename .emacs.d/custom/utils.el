@@ -266,16 +266,15 @@
           (setq lst (cdr lst))))
       nil)))
 
-(defun find-all-files(dir &optional symbolic)
-  "Find (open) all files recursively below a directory.  Results are
-  filtered via full-edit-accept-patterns and full-edit-reject-patterns.
-  With optional prefix argument, will follow symbolic targets."
-  (interactive)
+(defun gather-all-files(dir reporter &optional symbolic)
+  "Gather a list of filenames recursively below a directory.  Results are
+  filtered via full-edit-accept-patterns and full-edit-reject-patterns."
   (let* ((all-results
           (directory-files
            dir t "^\\([^.]\\|\\.[^.]\\|\\.\\..\\)" t))
          (files (remove-if 'file-directory-p all-results))
-         (dirs (remove-if-not 'file-directory-p all-results)))
+         (dirs (remove-if-not 'file-directory-p all-results))
+         (result '()))
     (unless symbolic
       (setq files (remove-if 'file-symlink-p files))
       (setq dirs (remove-if 'file-symlink-p dirs)))
@@ -285,20 +284,41 @@
                                      (file-name-nondirectory file))
                (not (test-list-for-string full-edit-reject-patterns
                                           (file-name-nondirectory file)))
-               (find-file-noselect file)))
+               (setq result (cons file result))
+               (progress-reporter-update reporter)
+               ))
           files)
     (mapc #'(lambda(dir)
-              (find-all-files dir symbolic))
+              (setq result (nconc result
+                                  (gather-all-files dir reporter symbolic))))
           dirs)
+    result
     ))
 
+(defun open-file-list(files) "Find (open) each of a list of filenames."
+  (let* ((i 0)
+         (len (length files))
+         (reporter (make-progress-reporter "Opening files..." 0 len)))
+    (mapc #'(lambda(file)
+              (find-file-noselect file)
+              (setq i (+ i 1))
+              (progress-reporter-update reporter i)
+              ) files)
+    (progress-reporter-done reporter)))
+
 (defun full-edit(root &optional arg)
-  "Find (open) all files recursively below a directory."
+  "Find (open) all files recursively below a directory.
+   With optional prefix argument, will follow symbolic targets."
   (interactive
    `(,(ido-read-directory-name "Full-Edit Directory: " nil nil t)
      ,current-prefix-arg))
   (if root
-      (find-all-files (expand-file-name root) arg)
+      (let* ((reporter (make-progress-reporter "Gathering files..."))
+             (files (gather-all-files (expand-file-name root)
+                                      reporter arg)))
+        (progress-reporter-done reporter)
+        (open-file-list files)
+        )
     (message "No directory given")))
 
 (global-set-key "\C-c\C-f" 'full-edit)
