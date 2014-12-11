@@ -32,7 +32,7 @@ fi
 
 ctags -Re $cpp_options -f $proto_c_file $dir/build/make/protobuf_dir
 ctags -Re $cpp_options --langdef=pb --langmap=pb:.proto --regex-pb="/(message|enum)[ \t]+([^ \t{]+)/\2/" -f $proto_file $dir/src/protobuf_dir
-ctags -Re $cpp_options --etags-include=$c_file --etags-include=$boost_file --etags-include=$proto_c_file --etags-include=$proto_file
+ctags -Re $cpp_options --etags-include=$c_file --etags-include=$boost_file --etags-include=$proto_file --etags-include=$proto_c_file
 
 # to include local variables (l) and function prototypes (p):
 # ctags --c++-kinds=+lp -Re

@@ -104,6 +104,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; key-bindings ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (global-unset-key (kbd "<f1>"))
+(global-set-key [(next)] 'scroll-up-line)
+(global-set-key [(prior)] 'scroll-down-line)
 (global-set-key "\M-r" 'revert-buffer)
 (global-set-key "\M-]" 'jump-to-match-paren)
 (global-set-key "\C-ca" 'align)
@@ -157,11 +159,6 @@
               (filename-and-process 26 -1))
         ))
 
-;; (global-set-key [f7] 'select-previous-window)
-;; (global-set-key [f8] 'select-next-window)
-;(global-set-key [f9] 'previous-error)
-;(global-set-key [f10] 'next-error)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; tags ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq tags-revert-without-query t)
 (global-set-key "\C-ct" 'find-my-tags-file)
@@ -206,6 +203,7 @@
 (require 'folio-mode)
 (require 'folio-electric)
 (require 'pos-tip)
+(require 'qt-pro)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;; line-comment-banner ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'line-comment-banner)
@@ -288,6 +286,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dired ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'dired-x)                      ; C-x C-j now runs 'dired-jump
 (require 'dired-details+)
+(require 'dired-sort)
 (setq-default dired-listing-switches "-alhvGg")
 (setq dired-details-initially-hide nil)
 (put 'dired-find-alternate-file 'disabled nil)
@@ -471,7 +470,7 @@
                              ;; yas-completing-prompt
                              ;; yas-no-prompt
                              ))
-;; disable TAB keys
+;; disable TAB key to activate a snippet (I prefer TAB merely indent)
 (define-key yas-minor-mode-map (kbd "<tab>") nil)
 (define-key yas-minor-mode-map (kbd "TAB") nil)
 ;; (define-key yas-keymap [(tab)] nil)
@@ -479,16 +478,15 @@
 ;; (define-key yas-keymap [(shift tab)] nil)
 ;; (define-key yas-keymap [backtab] nil)
 ;; add our own keybindings
-(define-key yas-minor-mode-map (kbd "\C-cse") 'yas-expand)
-(define-key yas-minor-mode-map (kbd "\C-csn") 'yas-new-snippet)
-(define-key yas-minor-mode-map (kbd "\C-csv") 'yas-visit-snippet-file)
+(define-key yas-minor-mode-map "\C-cse" 'yas-expand)
 (define-key yas-minor-mode-map "\C-csi" 'yas-insert-snippet)
+(define-key yas-minor-mode-map "\C-csn" 'yas-new-snippet)
+(define-key yas-minor-mode-map "\C-csv" 'yas-visit-snippet-file)
 ;; integrate with auto-complete
 (defun my/expand-yasnippet() (interactive)
   (auto-complete '(ac-source-yasnippet)))
 (global-set-key [backtab] 'my/expand-yasnippet)
 (global-set-key [(shift tab)] 'my/expand-yasnippet)
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; popup-kill-ring ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'popup-kill-ring)
@@ -572,6 +570,7 @@
              ("\\.folio$"    . folio-mode)
              ("\\.bat$"      . dos-mode)
              ("\\.log$"      . log-viewer-mode)
+             ("\\.pro$"      . qt-pro-mode)
             )
      auto-mode-alist))
 

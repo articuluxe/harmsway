@@ -75,13 +75,18 @@
 (add-hook 'c++-mode-hook
       '(lambda()
         (font-lock-add-keywords
-         nil '(;; complete some fundamental keywords
-           ("\\<\\(void\\|unsigned\\|signed\\|char\\|short\\|bool\\|int\\|long\\|float\\|double\\)\\>" . font-lock-keyword-face)
+         nil '(;; complete some fundamental keywords (+ Qt)
+           ("\\<\\(void\\|unsigned\\|signed\\|char\\|short\\|bool\\|int\\|long\\|float\\|double\\|slots\\|signals\\)\\>" . font-lock-keyword-face)
            ;; add the new C++11 keywords
            ("\\<\\(alignof\\|alignas\\|constexpr\\|decltype\\|noexcept\\|nullptr\\|static_assert\\|thread_local\\|override\\|final\\)\\>" . font-lock-keyword-face)
            ;; hexadecimal numbers
            ("\\<0[xX][0-9A-Fa-f]+\\>" . font-lock-constant-face)
+           ;; TODO declarations
            ("\\<[tT][oO][dD][oO]\\>" 0 font-lock-warning-face t)
+           ;; Qt fontification
+           ("\\<Q_OBJECT\\|SIGNAL\\|SLOT\\>" . font-lock-keyword-face)
+           ("\\<QT?\\(_\\sw+\\)+\\>" . font-lock-keyword-face)
+           ("\\<Q[A-Z][A-Za-z0-9]*\\>" . font-lock-type-face)
            ) t)
         ) t)
 
