@@ -17,8 +17,22 @@
     (let ((root (find-file-dir-upwards ".root")))
       (if root (setq my/project-root (expand-file-name root))
         (message "Could not find .root"))))
+  (message "Project root is %s" my/project-root)
   my/project-root)
 (global-set-key "\C-c\C-p" 'find-project-root)
+
+(setq grep-command
+      (concat
+       "find -P "
+       "."
+       " \"(\" -name \"*moc_*\" -o -name \"*qrc_*\" \")\" "
+       "-prune -o -type f \"(\" -name \"*.cpp\" -o -name \"*.h\" "
+       "-o -name \"*.cc\" -o -name \"*.hh\" -o -name \"*.cxx\" "
+       "-o -name \"*.hxx\" -o -name \"*.h\" -o -name \"*.c\" "
+       "-o -name \"*.H\" -o -name \"*.C\" -o -name \"*.el\" "
+       "-o -name \"*.sql\" -o -name \"*.py\" -o -name \"*.proto\" "
+       "\")\" -print0 | xargs -0 grep -Isn "))
+(global-set-key "\C-cg" 'grep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; c++-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -30,14 +44,12 @@
      (c-toggle-hungry-state t)
      ;; (setq comment-column 40)
      (make-local-variable 'my/compile-command)
-     (setq grep-command
-           "find -L `findRoot`/src -name TAGS -o -name '*tags' -o -name '*.log' -o -name '#*' -prune -o -type f -print0 | xargs -0 grep -Isn ")
      (define-key c++-mode-map (kbd "\C-c RET") 'my/compile)
      (define-key c++-mode-map "\C-cm" 'my/recompile)
      (define-key c++-mode-map "\C-ck" 'kill-compilation)
-     (define-key c++-mode-map "\C-cg" 'grep)
      (define-key c++-mode-map "\C-c\C-c" 'comment-region)
      (define-key c++-mode-map "\C-c\C-u" 'uncomment-region)
+     (define-key c++-mode-map "\C-c\C-p" 'find-project-root)
      (setq comment-start "/*") (setq comment-end "*/")
      (c-add-style "drh"
        (quote
