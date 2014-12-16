@@ -8,6 +8,15 @@
   (mapc 'kill-buffer (delq (current-buffer) (buffer-list))))
 (global-set-key "\C-x\S-k" 'kill-all-other-buffers)
 
+(defun now() "Insert string for current time formatted like '2:34 PM'."
+  (interactive)
+  (insert (format-time-string "%D %-I:%M %p")))
+
+(defun today() "Insert string for today's date nicely formatted in American style,
+  e.g. Sunday, September 17, 2000."
+  (interactive)
+  (insert (format-time-string "%A, %B %e, %Y")))
+
 (defun jump-to-matching-paren() "Go to matching paren" (interactive)
   (if (looking-at "\\s\(")
       (forward-list 1)

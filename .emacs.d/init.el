@@ -74,8 +74,6 @@
 (show-paren-mode t)
 ; don't add new-lines to end of buffer on scroll
 (setq next-line-add-newlines nil)
-; reuse frames
-(setq-default display-buffer-reuse-frames t)
 ;; allow converting regions to upper/lower case
 (put 'upcase-region 'disabled nil)
 (put 'downcase-region 'disabled nil)
@@ -204,6 +202,11 @@
 (require 'folio-electric)
 (require 'pos-tip)
 (require 'qt-pro)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; copyright ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'copyright)
+;; copyright-update is added to my/before-save-hook below
+(setq copyright-query nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;; line-comment-banner ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'line-comment-banner)
@@ -539,13 +542,15 @@
   ;; load host file (if present)
   (load host-file t))
 
-(add-hook 'before-save-hook 'do-before-save-hook)
-(defun do-before-save-hook() "Presave hook"
+(add-hook 'before-save-hook 'my/before-save-hook)
+(defun my/before-save-hook() "Presave hook"
   (when (memq major-mode '(c++-mode emacs-lisp-mode perl-mode
                                     java-mode python-mode dos-mode
                                     nxml-mode protobuf-mode folio-mode
                                     sh-mode))
     (delete-trailing-whitespace)
+    (copyright-update nil t)
+    (time-stamp)
     ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; modes ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

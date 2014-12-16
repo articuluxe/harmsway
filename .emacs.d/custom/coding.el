@@ -138,10 +138,13 @@
   "Add header include guards. With optional prefix argument, query for the
    base name. Otherwise, the base file name is used."
   (interactive "P")
-  (let ((str
-         (replace-regexp-in-string
-          "\\." "_"
-          (file-name-nondirectory (buffer-file-name)))))
+  (let* ((name (if (buffer-file-name)
+                   (file-name-nondirectory (buffer-file-name))
+                 (buffer-name)))
+         (str
+          (replace-regexp-in-string
+           "\\." "_"
+           name)))
     (save-excursion
       (if arg                           ;ask user for stem
           (setq str (concat
@@ -166,19 +169,24 @@
   (let ((str
          (if (region-active-p)
              (buffer-substring-no-properties (region-beginning)(region-end))
-           (thing-at-point 'symbol))))
+           (thing-at-point 'symbol)))
+        (i 0) len)
     (if (or arg (= 0 (length str)))
         (setq str (read-string "Enter the title symbol: ")))
                                         ; (message "symbol %s is %d chars long" str (length str))(read-char)
                                         ;   (move-beginning-of-line nil)
     (c-beginning-of-defun)
-    (insert "//----------------------------------------------------------------------------\n")
+    (insert "//")
+    (insert-char ?- (- fill-column 2))
+    (insert "\n")
     (insert "//---- " str " ")
-    (let ((len (- 70 (length str)))(i 0))
-      (while (< i len)
-        (insert "-")
-        (setq i (1+ i))))
-    (insert "\n//----------------------------------------------------------------------------\n")
+    (setq len (- (- fill-column 8) (length str)))
+    (while (< i len)
+      (insert "-")
+      (setq i (1+ i)))
+    (insert "\n//")
+    (insert-char ?- (- fill-column 2))
+    (insert "\n")
     ))
 (global-set-key "\C-ch" 'insert-class-header)
 
@@ -281,7 +289,7 @@
                                              "\\)+\\)\\s-*$") nil t)
              (replace-match "\\1 \\2" nil nil)))))))
 
-(defun clean-up-func-param (start end do-spacing is-decl)
+(defun clean-up-func-param (start end indent do-spacing is-decl)
   "Cleans up one (comma-separated) param of a function declaration."
   (save-excursion
     (save-restriction
@@ -317,7 +325,7 @@
                        (if (re-search-forward "=" nil t)
                            (let ((is-quoted nil))
                              (backward-char)
-                             (clean-up-func-param (point-min)(point) t is-decl)
+                             (clean-up-func-param (point-min)(point) indent t is-decl)
                              ;; ensure spaces around the '='
                              (insert " ")
                              (forward-char)
@@ -328,12 +336,13 @@
                                       "\\s-*\\(\\s\"+\\)\\(.*\\)\\(\\s\"+\\)\\s-*" nil t)
                                  (setq is-quoted t)
                                  (replace-match "\\1\\2\\3" nil nil)))
-                             (clean-up-func-param (point) (point-max) (not is-quoted) nil)
+                             (clean-up-func-param (point) (point-max) indent
+                                                  (not is-quoted) nil)
                              (if should-comment
                                  ;; begin comment before the '='
                                  (comment-region (- (point) 3) (point-max)))
                              (point-max))
-                         (clean-up-func-param (point-min) (point-max) t is-decl)
+                         (clean-up-func-param (point-min) (point-max) indent t is-decl)
                          (point-max))
                          )))
                    ;; save this point to insert newline later
