@@ -208,6 +208,17 @@
 ;; copyright-update is added to my/before-save-hook below
 (setq copyright-query nil)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-insert ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'autoinsert)
+(auto-insert-mode 1)
+
+;; (setq auto-insert-directory (concat my/user-directory "templates/"))
+;; (define-auto-insert "\.el" "my-emacs-lisp-template.el")
+;; (setq auto-insert-query nil)
+;; (setq auto-insert 'other)
+;; (setq auto-insert-directory (concat my/user-directory "autoinsert/"))
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;; line-comment-banner ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'line-comment-banner)
 (global-set-key [?\C-\;] 'line-comment-banner)

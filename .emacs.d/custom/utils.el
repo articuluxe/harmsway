@@ -3,16 +3,20 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;; Dan Harms utils.el ;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 
-(defun kill-all-other-buffers() "kill all buffers save for current one"
+(defun kill-other-buffers(&optional arg)
+  "Kill all buffers (except optionally for current one)."
   (interactive)
-  (mapc 'kill-buffer (delq (current-buffer) (buffer-list))))
-(global-set-key "\C-x\S-k" 'kill-all-other-buffers)
+  (if arg
+      (mapc 'kill-buffer (delq (current-buffer) (buffer-list)))
+    (mapc 'kill-buffer (buffer-list))))
+(global-set-key "\C-x\S-k" 'kill-other-buffers)
 
 (defun now() "Insert string for current time formatted like '2:34 PM'."
   (interactive)
   (insert (format-time-string "%D %-I:%M %p")))
 
-(defun today() "Insert string for today's date nicely formatted in American style,
+(defun today()
+  "Insert string for today's date nicely formatted in American style,
   e.g. Sunday, September 17, 2000."
   (interactive)
   (insert (format-time-string "%A, %B %e, %Y")))
@@ -255,7 +259,7 @@
   '( "\\.cpp$" "\\.cc$" "\\.cxx$" "\\.c$" "\\.C$"
      "\\.h$" "\\.hh$" "\\.hpp$" "\\.hxx$" "\\.H$"
      "\\.sh$" "\\.py$" "\\.sql$" "\\.java$" "\\.in$"
-     "\\.proto$"
+     "\\.proto$" "\\.el$"
      "^CMakeLists.txt$" "\\.cmake$"
      "^Makefile$" "^makefile$"
      ))
