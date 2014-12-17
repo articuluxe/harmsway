@@ -192,7 +192,7 @@
 (load-library "compiling")
 (load-library "coding")
 
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; modes ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'log-viewer)
 (require 'cmake-mode)
 (require 'protobuf-mode)
@@ -218,6 +218,9 @@
 ;; (setq auto-insert 'other)
 ;; (setq auto-insert-directory (concat my/user-directory "autoinsert/"))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; hide-lines ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'hide-lines)
+(global-set-key "\C-c\\" 'hide-lines)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;; line-comment-banner ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'line-comment-banner)
