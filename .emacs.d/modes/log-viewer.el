@@ -31,7 +31,7 @@
          (list "\\([^[:space:];|=<',]+\\)=\\([^[:space:];|=',]*\\)"
                '(1 font-lock-variable-name-face)
                '(2 font-lock-constant-face))
-         ;; (list "<.*>" '(0 font-lock-doc-face))
+         (list "<.*?>" '(0 font-lock-doc-face))
          ;; text within brackets
          (list "\\[.*?\\]" '(0 font-lock-keyword-face))
          ;; ip address:port (overrides prior fontification)

@@ -9,6 +9,8 @@
 (defvar my/project-root nil)
 (defvar project-name nil)
 (defvar my/build-sub-dir nil)
+(defvar my/src-sub-dir nil)
+
 (defun find-project-root(&optional arg)
   "Find the project's root directory.  Force recalculation if optional arg
    supplied."
@@ -21,18 +23,33 @@
   my/project-root)
 (global-set-key "\C-c\C-p" 'find-project-root)
 
-(setq grep-command
-      (concat
-       "find -P "
-       "."
-       " \"(\" -name \"*moc_*\" -o -name \"*qrc_*\" \")\" "
-       "-prune -o -type f \"(\" -name \"*.cpp\" -o -name \"*.h\" "
-       "-o -name \"*.cc\" -o -name \"*.hh\" -o -name \"*.cxx\" "
-       "-o -name \"*.hxx\" -o -name \"*.h\" -o -name \"*.c\" "
-       "-o -name \"*.H\" -o -name \"*.C\" -o -name \"*.el\" "
-       "-o -name \"*.sql\" -o -name \"*.py\" -o -name \"*.proto\" "
-       "\")\" -print0 | xargs -0 grep -Isn "))
-(global-set-key "\C-cg" 'grep)
+(require 'grep)
+(defun my/grep (&optional arg)
+  "A wrapper around grep to provide convenient shortcuts to
+   adjust the root directory.  With a prefix arg of 16 (C-u C-u),
+   use the current directory.  With a prefix arg of 4 (C-u), or
+   if the variable 'my/project-root is not defined, the directory
+   will be chosen interactively by the user using ido.
+   Otherwise, use the value of my/project-root, concatenated with
+   my/src-sub-dir, if defined."
+  (interactive "p")
+  (let ((dir
+         (cond ((= arg 16) ".")
+               ((or (= arg 4) (null my/project-root))
+                (ido-read-directory-name "Grep root: " nil nil t))
+               (t (concat my/project-root my/src-sub-dir)))))
+    (grep-apply-setting
+     'grep-command
+     (concat "find -P " dir
+             " \"(\" -name \"*moc_*\" -o -name \"*qrc_*\" \")\" "
+             "-prune -o -type f \"(\" -name \"*.cpp\" -o -name \"*.h\" "
+             "-o -name \"*.cc\" -o -name \"*.hh\" -o -name \"*.cxx\" "
+             "-o -name \"*.hxx\" -o -name \"*.h\" -o -name \"*.c\" "
+             "-o -name \"*.H\" -o -name \"*.C\" -o -name \"*.el\" "
+             "-o -name \"*.sql\" -o -name \"*.py\" -o -name \"*.proto\" "
+             "\")\" -print0 | xargs -0 grep -Isn "))
+    (command-execute 'grep)))
+(global-set-key "\C-cg" 'my/grep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; c++-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -129,7 +146,7 @@
     (if my-tags-file
         (progn
           (message "Loading tags file: %s" my-tags-file)
-          (run-with-timer 2 nil 'visit-tags-table my-tags-file))
+          (run-with-timer 1 nil 'visit-tags-table my-tags-file))
       (message "Did not find tags file")
       )))
 

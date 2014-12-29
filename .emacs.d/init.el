@@ -229,6 +229,10 @@
           (lambda() (make-local-variable 'comment-fill)
             (setq comment-fill "*")))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; list-register ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'list-register)
+(global-set-key (kbd "\C-xrv") 'list-register)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; popwin ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'popwin)
 (popwin-mode 1)
@@ -236,7 +240,7 @@
 (setq popwin:special-display-config
       '(
         help-mode
-        (compilation-mode :noselect t)
+;        (compilation-mode :noselect t)
         (completion-list-mode :noselect t)            ;noselect?
         ("*Ido Completions*" :noselect t)
         (grep-mode :noselect t)
