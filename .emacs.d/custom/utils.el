@@ -255,6 +255,16 @@
         (set-buffer-modified-p nil)
         t))))
 
+(defun move-buffer-to-new-frame()
+  "Moves current window to new frame, and removes it from its original frame."
+  (interactive)
+  (if (<= (length (window-list)) 1)
+      (message "Only 1 window on this frame, leaving it alone.")
+    (let ((win (selected-window)))
+      (make-frame-command)
+      (remove-window win))))
+(global-set-key "\C-x5x" 'move-buffer-to-new-frame)
+
 (defvar full-edit-accept-patterns
   '( "\\.cpp$" "\\.cc$" "\\.cxx$" "\\.c$" "\\.C$"
      "\\.h$" "\\.hh$" "\\.hpp$" "\\.hxx$" "\\.H$"

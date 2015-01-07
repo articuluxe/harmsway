@@ -72,6 +72,7 @@
 ; Ignore case when completing file names
 (setq read-file-name-completion-ignore-case nil)
 (show-paren-mode t)
+(size-indication-mode 1)
 ; don't add new-lines to end of buffer on scroll
 (setq next-line-add-newlines nil)
 ;; allow converting regions to upper/lower case

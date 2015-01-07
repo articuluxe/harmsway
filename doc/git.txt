@@ -1,0 +1,2 @@
+
+add .gitignore patterns to .git/info/exclude.  These will not be checked in.

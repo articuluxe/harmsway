@@ -80,7 +80,7 @@
                              compact-empty-funcall
                              ))
           (c-offsets-alist . (
-                              (innamespace          . 1)
+                              (innamespace          . 0)
                               (substatement-open    . 0)
                               (inline-open          . 0)
                               (statement-case-intro . +)
