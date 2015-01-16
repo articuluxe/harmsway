@@ -126,10 +126,13 @@
           (message "buffer contains %d words" count))))
     (global-set-key "M-=" 'wordcount)))
 
+;; clean up buffer
 ;; indent entire file
-(defun indent-buffer () "indent entire buffer" (interactive)
-  (indent-region (point-min) (point-max) nil))
-(global-set-key "\C-cq" 'indent-buffer)
+(defun clean-up-buffer () "clean up the entire buffer" (interactive)
+  (delete-trailing-whitespace)
+  (indent-region (point-min) (point-max) nil)
+  (untabify (point-min) (point-max)))
+(global-set-key "\C-cq" 'clean-up-buffer)
 
 (defun find-file-upwards (file-to-find)
   "Recursively search upward for file; returns path to file or nil if not found."

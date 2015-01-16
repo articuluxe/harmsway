@@ -1,6 +1,9 @@
 ############################## Starting .tcshrc ##############################
-setenv PATH .:/Users/dharms/bin:/usr/local/bin:/opt/local/bin:/Users/dharms/src/dist/bin:/usr/local/mysql/bin:
+setenv PATH .:/Users/dharms/bin:/usr/local/bin:/opt/local/bin:/Users/dharms/src/dist/bin:/usr/local/mysql/bin:$PATH
 setenv DYLD_LIBRARY_PATH /usr/local/lib:/Users/dharms/src/dist/lib
+setenv EMACSX /Applications/Emacs.app/Contents/MacOS/Emacs
+setenv CSTDLIB_ROOT /opt/local/include/gcc48/c++
+setenv BOOST_ROOT /usr/local/include/boost
 
 if ($?prompt) set prompt = "%B%n:%b%~> "
 set autolist

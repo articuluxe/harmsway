@@ -1,12 +1,12 @@
-#!/bin/env sh
+#!/usr/bin/env sh
 
 dir=`findRoot`
 force_overwrite=
 cpp_kinds=+l
 cpp_options="--c++-kinds=$cpp_kinds --file-scope=no"
-c_loc=/usr/include/c++/4.7.2
+c_loc=$(eval echo \$\{CSTDLIB_ROOT\})
 c_file=~/src/c++-tags
-boost_loc=/usr/include/boost
+boost_loc=$(eval echo \$\{BOOST_ROOT\})
 boost_file=~/src/boost-tags
 proto_c_file=$dir/src/proto-c-tags
 proto_file=$dir/src/proto-tags
@@ -24,15 +24,20 @@ if [ $# -gt 0 ] ; then
 fi
 
 if [ ! -r $c_file ] || [ ! "x$force_overwrite" = x ] ; then
+   echo "Generating TAGS for $c_loc"
    ctags -Re --language-force=c++ -h=".h.H.hh.hpp.hxx.h++.inc.def." $cpp_options -f $c_file $c_loc
 fi
 if [ ! -r $boost_file ] || [ ! "x$force_overwrite" = x ]; then
+   echo "Generating TAGS for $boost_loc"
    ctags -Re $cpp_options --exclude=typeof --exclude=phoenix --exclude=spirit -f $boost_file $boost_loc
 fi
 
-ctags -Re $cpp_options -f $proto_c_file $dir/build/make/protobuf_dir
-ctags -Re $cpp_options --langdef=pb --langmap=pb:.proto --regex-pb="/(message|enum)[ \t]+([^ \t{]+)/\2/" -f $proto_file $dir/src/protobuf_dir
-ctags -Re $cpp_options --etags-include=$c_file --etags-include=$boost_file --etags-include=$proto_file --etags-include=$proto_c_file
+# ctags -Re $cpp_options -f $proto_c_file $dir/build/make/protobuf_dir
+# ctags -Re $cpp_options --langdef=pb --langmap=pb:.proto --regex-pb="/(message|enum)[ \t]+([^ \t{]+)/\2/" -f $proto_file $dir/src/protobuf_dir
+echo "Generating TAGS recursively from `pwd`"
+ctags -Re $cpp_options --etags-include=$c_file --etags-include=$boost_file
+#--etags-include=$proto_file --etags-include=$proto_c_file
+echo "Done generating TAGS file."
 
 # to include local variables (l) and function prototypes (p):
 # ctags --c++-kinds=+lp -Re
