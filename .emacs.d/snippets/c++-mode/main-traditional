@@ -1,0 +1,12 @@
+# -*- mode: snippet; require-final-newline: nil -*-
+# name: main-traditional
+# key: main
+# binding: direct-keybinding
+# --
+#include <iostream>
+
+int main(${1:int argc, char* argv[]})
+{
+$0
+return 0;
+}

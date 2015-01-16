@@ -1,1 +1,54 @@
+
+# TAGS files
+TAGS
+
+# Lisp files
 *.elc
+.dir-locals.el
+
+# Git files
+*.bundle
+
+# Build results
+[Dd]ebug/
+[Rr]elease/
+x64/
+build/
+[Bb]in/
+[Oo]bj/
+
+# Visual Studio files
+
+# User-specific
+*.suo
+*.user
+*.sln.docstates
+
+# MSTest results
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+
+*_i.c
+*_p.c
+*.ilk
+*.obj
+*.pch
+*.pdb
+*.pgc
+*.pgd
+*.rsp
+.builds
+*.scc
+
+# Visual C++ cache files
+ipch/
+*.ncb
+*.opensdf
+*.sdf
+*.cachefile
+
+# OS files
+Thumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store

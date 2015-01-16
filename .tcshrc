@@ -1,0 +1,20 @@
+############################## Starting .tcshrc ##############################
+setenv PATH .:/Users/dharms/bin:/usr/local/bin:/opt/local/bin:/Users/dharms/src/dist/bin:/usr/local/mysql/bin:$PATH
+setenv DYLD_LIBRARY_PATH /usr/local/lib:/Users/dharms/src/dist/lib
+setenv EMACSX /Applications/Emacs.app/Contents/MacOS/Emacs
+setenv CSTDLIB_ROOT /opt/local/include/gcc48/c++
+setenv BOOST_ROOT /usr/local/include/boost
+
+if ($?prompt) set prompt = "%B%n:%b%~> "
+set autolist
+set symlinks=chase
+
+################################## Aliases ###################################
+alias ls ls -CFG
+alias ll ls -lFG
+alias la ls -AFG
+alias edit /Applications/Emacs.app/Contents/MacOS/Emacs \!:1-$ \&
+alias viewman 'man -t \!* | open -f -a /Applications/Preview.app'
+alias checkip 'hostname | cut -d'-' -f 2-5 | cut -d'.' -f 1 | tr '-' '.''
+#alias convertLF perl -pe 's/\r\n|\r/\n/g'
+#alias macless 'tr "\r" "\n" < \!^ |& less'

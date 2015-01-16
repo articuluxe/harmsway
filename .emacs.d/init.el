@@ -1,31 +1,31 @@
 ;; -*- Mode: Emacs-Lisp -*-
 ;;
 ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;; Dan Harms init.el ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Dan Harms init.el ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; load-path ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; load-path ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defconst my/user-directory (expand-file-name user-emacs-directory))
 (defconst my/plugins-directory (concat my/user-directory "plugins/"))
 (add-to-list 'load-path my/user-directory)
 (add-to-list 'load-path my/plugins-directory)
 (add-to-list 'load-path (concat my/user-directory "modes/"))
 (add-to-list 'load-path (concat my/user-directory "custom/"))
-(add-to-list 'load-path (concat my/plugins-directory "auto-complete/"))
-(add-to-list 'load-path (concat my/plugins-directory "yasnippet/"))
 (defconst my/user-settings
-  (concat my/user-directory "settings/users/" user-login-name))
-(when (file-exists-p my/user-settings) (load my/user-settings))
+  (concat my/user-directory "settings/user/" user-login-name))
+(load my/user-settings)
 
-(set-register ?i (cons 'file user-init-file)) ;edit init file
+(set-register ?\C-i (cons 'file user-init-file)) ;edit init file
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-save ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-save ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defconst my/autosave-dir (concat my/user-directory "autosaves/"))
 (unless (file-directory-p my/autosave-dir)
   (make-directory my/autosave-dir t))
 (setq auto-save-file-name-transforms
       `((".*" ,(concat my/autosave-dir "\\1") t)))
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; backups ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defconst my/backup-dir (concat my/user-directory "backups/"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; backups ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defconst my/backup-dir
+  (concat my/user-directory "backups/" (format-time-string "%Y-%m-%d")))
 (unless (file-directory-p my/backup-dir)
   (make-directory my/backup-dir t))
 (setq backup-directory-alist `(("." . ,my/backup-dir)))
@@ -47,6 +47,8 @@
 (setq use-dialog-box nil)
 (setq large-file-warning-threshold nil)
 (setq kill-do-not-save-duplicates t)
+(file-name-shadow-mode 1)
+(setq enable-recursive-minibuffers t)
 ; truncate long lines
 (setq-default truncate-lines t)
 ; search is case-sensitive by default
@@ -70,13 +72,14 @@
 ; Ignore case when completing file names
 (setq read-file-name-completion-ignore-case nil)
 (show-paren-mode t)
+(size-indication-mode 1)
 ; don't add new-lines to end of buffer on scroll
 (setq next-line-add-newlines nil)
-; reuse frames
-(setq-default display-buffer-reuse-frames t)
 ;; allow converting regions to upper/lower case
 (put 'upcase-region 'disabled nil)
 (put 'downcase-region 'disabled nil)
+(put 'scroll-left 'disabled nil)
+(put 'scroll-right 'disabled nil)
 ;; disable nuisances
 (put 'overwrite-mode 'disabled t)
 (fset 'yes-or-no-p 'y-or-n-p)
@@ -85,8 +88,7 @@
 
 ;; visual settings
 (menu-bar-mode -1)
-(tool-bar-mode -1)
-(scroll-bar-mode -1)
+(setq-default fill-column 78)
 ; default colors
 (set-foreground-color "white")
 (set-background-color "black")
@@ -99,26 +101,64 @@
 (when (display-graphic-p)
   (global-unset-key "\C-z"))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; key-bindings ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; key-bindings ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (global-unset-key (kbd "<f1>"))
+(global-set-key [(next)] 'scroll-up-line)
+(global-set-key [(prior)] 'scroll-down-line)
 (global-set-key "\M-r" 'revert-buffer)
 (global-set-key "\M-]" 'jump-to-match-paren)
 (global-set-key "\C-ca" 'align)
 (global-set-key "\C-cr" 'align-repeat-regexp)
-(global-set-key "\C-cw" 'wordcount)
 (global-set-key [f5] 'toggle-truncate-lines)
 (global-set-key "\C-c " 'global-whitespace-mode)
 (global-set-key "\C-cf" 'font-lock-fontify-buffer)
 (global-set-key "\e\es" 'speedbar)
 (global-set-key "\e\eo" 'speedbar-get-focus)
 (global-set-key "\C-cv" 'ff-find-other-file)
+(global-set-key (kbd "M-#") 'sort-lines)
+(global-set-key (kbd "C-#") 'sort-paragraphs)
+(global-set-key "\C-xw" 'write-region)
 
-;; (global-set-key [f7] 'select-previous-window)
-;; (global-set-key [f8] 'select-next-window)
-;(global-set-key [f9] 'previous-error)
-;(global-set-key [f10] 'next-error)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ibuffer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'ibuffer)
+;; Newer "tabulated list mode" in buff-menu.el breaks buffer-menu+ 21.0.
+;; We'll shadow the current buff-menu.el with our local emacs-23 version.
+(when (version<= "24.2" emacs-version)
+  (load "buff-menu.el"))
+(require 'buff-menu+)
+(global-set-key "\C-x\C-b" 'ibuffer)
+(global-set-key "\C-x\S-b" 'electric-buffer-list)
+;; human-readable sizes
+(define-ibuffer-column size-h
+  (:name "Size" :inline t)
+  (cond
+   ((> (buffer-size) 1048576)
+    (format "%7.1fM" (/ (buffer-size) 1048576.0)))
+   ((> (buffer-size) 131072)
+    (format "%7.0fk" (/ (buffer-size) 1024.0)))
+   ((> (buffer-size) 1024)
+    (format "%7.1fk" (/ (buffer-size) 1024.0)))
+   (t (format "%8d" (buffer-size)))))
+(setq ibuffer-formats
+      '((mark modified read-only " "
+              (name 18 18 :left :elide)
+              " "
+              (size-h 9 -1 :right)
+              " "
+              (mode 16 16 :left :elide)
+              " "
+              filename-and-process)
+        (mark modified read-only " "
+              (size-h 9 -1 :right)
+              " "
+              (name 26 -1))
+        (mark modified read-only " "
+              (size-h 9 -1 :right)
+              " "
+              (filename-and-process 26 -1))
+        ))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; tags ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; tags ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq tags-revert-without-query t)
 (global-set-key "\C-ct" 'find-my-tags-file)
 (global-set-key "\M-." 'etags-select-find-tag)
@@ -149,8 +189,11 @@
 
 
 
+(load-library "utils")
+(load-library "compiling")
+(load-library "coding")
 
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; modes ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'log-viewer)
 (require 'cmake-mode)
 (require 'protobuf-mode)
@@ -159,15 +202,64 @@
 (require 'folio-mode)
 (require 'folio-electric)
 (require 'pos-tip)
+(require 'qt-pro)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;; line-comment-banner ;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; copyright ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'copyright)
+;; copyright-update is added to my/before-save-hook below
+(setq copyright-query nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-insert ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'autoinsert)
+(auto-insert-mode 1)
+
+;; (setq auto-insert-directory (concat my/user-directory "templates/"))
+;; (define-auto-insert "\.el" "my-emacs-lisp-template.el")
+;; (setq auto-insert-query nil)
+;; (setq auto-insert 'other)
+;; (setq auto-insert-directory (concat my/user-directory "autoinsert/"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; hide-lines ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'hide-lines)
+(global-set-key "\C-c\\" 'hide-lines)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;; line-comment-banner ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'line-comment-banner)
 (global-set-key [?\C-\;] 'line-comment-banner)
 (add-hook 'c-mode-common-hook
           (lambda() (make-local-variable 'comment-fill)
             (setq comment-fill "*")))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ido ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; list-register ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'list-register)
+(global-set-key (kbd "\C-xrv") 'list-register)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; popwin ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'popwin)
+(popwin-mode 1)
+(global-set-key [f1] popwin:keymap)
+(setq popwin:special-display-config
+      '(
+        help-mode
+;        (compilation-mode :noselect t)
+        (completion-list-mode :noselect t)            ;noselect?
+        ("*Ido Completions*" :noselect t)
+        (grep-mode :noselect t)
+        (occur-mode :noselect t)
+        "*Shell Command Output*"
+        ("^\\*terminal<[[:digit:]]>\\*" :regexp t)
+        ))
+;; (push '(" *undo-tree*" :width 0.5 :position right)
+;;       popwin:special-display-config)
+;; (push '("*undo-tree Diff*" :height 0.5 :position bottom)
+;;       popwin:special-display-config)
+;; use popwin for term buffers
+(require 'popwin-term)
+(push '(term-mode :position :top :height 0.25 :stick t)
+      popwin:special-display-config)
+(define-key popwin:keymap "t" 'popwin-term:term)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ido ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (ido-mode 1)
 (setq ido-max-prospects 25)
 ;; (setq ido-enable-flex-matching t)
@@ -199,28 +291,27 @@
                     (ido-completing-read
                      "M-x " (all-completions "" obarray 'commandp))))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; undo-tree ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; undo-tree ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'undo-tree)
 (global-undo-tree-mode)
+;; reset the undo tree history (useful after reverting buffer)
 (global-set-key "\C-cu" (lambda()(interactive)(setq buffer-undo-tree nil)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; tramp ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; tramp ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq tramp-default-method "ssh")
 (setq tramp-default-user my/user-name)
-;;"dharms")
-(defvar my/tramp-file-list nil)
+(defvar my/tramp-file-list '())
 (defun my/open-tramp-file() (interactive)
   (find-file (ido-completing-read "Remote file: " my/tramp-file-list)))
-(add-to-list 'my/tramp-file-list '(
-                                   "/ssh:dharms@chl-ls-rex01:~/"
-                                   ))
 (global-set-key "\C-c\C-t" 'my/open-tramp-file)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dired ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dired ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'dired-x)                      ; C-x C-j now runs 'dired-jump
-(require 'dired-details)
+(require 'dired-details+)
+(require 'dired-sort)
 (setq-default dired-listing-switches "-alhvGg")
 (setq dired-details-initially-hide nil)
+(put 'dired-find-alternate-file 'disabled nil)
 (defadvice shell-command
   (after shell-in-new-buffer (command &optional output-buffer error-buffer))
   (when (get-buffer "*Async Shell Command*")
@@ -256,7 +347,7 @@
   (vector 'remap 'end-of-buffer) 'dired-jump-to-bottom)
 
 (defun my-dired-do-command (command)
-  "Run command on marked files. Any files not alreay open will be opened.
+  "Run command on marked files. Any files not already open will be opened.
  After this command has been run, any buffers it's modified will remain
  open and unsaved."
   (interactive "Run on marked files M-x ")
@@ -266,7 +357,7 @@
             (call-interactively command))
           (dired-get-marked-files))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; diff ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; diff ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-after-load 'diff-mode '(progn
                                (set-face-attribute 'diff-added nil
                                                    :foreground "white"
@@ -282,17 +373,65 @@
                                                    )
                                ))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; shebang ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; shebang ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'shebang)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; framemove ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; framemove ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'windmove)
 (require 'framemove)
 (windmove-default-keybindings)
 (setq framemove-hook-into-windmove t)
 ;;(setq windmove-wrap-around t)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smerge ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; frame-cmds ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; this also loads 'frame-fns
+(require 'frame-cmds)
+(global-set-key [(meta up)]                    'move-frame-up)
+(global-set-key [(meta down)]                  'move-frame-down)
+(global-set-key [(meta left)]                  'move-frame-left)
+(global-set-key [(meta right)]                 'move-frame-right)
+(global-set-key [(meta shift ?v)]              'move-frame-to-screen-top)
+(global-set-key [(control shift ?v)]           'move-frame-to-screen-bottom)
+(global-set-key [(control shift prior)]        'move-frame-to-screen-left)
+(global-set-key [(control shift next)]         'move-frame-to-screen-right)
+(global-set-key [(control shift home)]         'move-frame-to-screen-top-left)
+(global-set-key [(control meta down)]          'enlarge-frame)
+(global-set-key [(control meta right)]         'enlarge-frame-horizontally)
+(global-set-key [(control meta up)]            'shrink-frame)
+(global-set-key [(control meta left)]          'shrink-frame-horizontally)
+(global-set-key [(control ?x) (control ?z)]    'iconify-everything)
+(global-set-key [(control ?z)]                 'iconify/show-frame)
+;(global-set-key [mode-line mouse-3]            'mouse-iconify/show-frame)
+;(global-set-key [mode-line C-mouse-3]          'mouse-remove-window)
+(global-set-key [(control meta ?z)]            'show-hide)
+;(global-set-key [vertical-line C-down-mouse-1] 'show-hide)
+;(global-set-key [C-down-mouse-1]               'mouse-show-hide-mark-unmark)
+(substitute-key-definition 'delete-window      'remove-window global-map)
+(define-key ctl-x-map "o"                      'other-window-or-frame)
+(define-key ctl-x-4-map "1"                    'delete-other-frames)
+(define-key ctl-x-5-map "h"                    'show-*Help*-buffer)
+(substitute-key-definition 'delete-window      'delete-windows-for global-map)
+(define-key global-map "\C-xt."                'save-frame-config)
+
+(defun my/tile-frames-vertically()
+  "Tile frames vertically. You can restore prior frame position via going to register \\C-l."
+  (interactive)
+  (save-frame-config)
+  (tile-frames-vertically))
+(global-set-key "\e\ev" 'my/tile-frames-vertically)
+(defun my/tile-frames-horizontally()
+  "Tile frames horizontally. You can restore prior frame position via going to register \\C-l."
+  (interactive)
+  (save-frame-config)
+  (tile-frames-horizontally))
+(global-set-key "\e\eh" 'my/tile-frames-horizontally)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; color-theme ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(add-to-list 'load-path (concat my/plugins-directory "color-theme/"))
+(require 'color-theme)
+(color-theme-initialize)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smerge ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun try-smerge()
   (save-excursion
     (goto-char (point-min))
@@ -302,11 +441,12 @@
 (add-hook 'after-save-hook (lambda() (if (smerge-mode) (try-smerge))))
 (setq smerge-command-prefix "\e")
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; multi-term ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; multi-term ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'multi-term)
 (setq multi-term-program "/bin/tcsh")
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-complete ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-complete ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(add-to-list 'load-path (concat my/plugins-directory "auto-complete/"))
 (require 'auto-complete)
 (add-to-list 'ac-dictionary-directories
              (concat user-emacs-directory "plugins/auto-complete/dict"))
@@ -341,7 +481,8 @@
           '(lambda()
              (setq ac-sources (add-to-list 'ac-sources 'ac-source-etags))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; YASnippet ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; YASnippet ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(add-to-list 'load-path (concat my/plugins-directory "yasnippet/"))
 (require 'yasnippet)
 (yas-global-mode 1)
 (setq yas-snippet-dirs (concat my/user-directory "snippets/"))
@@ -351,56 +492,87 @@
                              ;; yas-completing-prompt
                              ;; yas-no-prompt
                              ))
-;; disable TAB keys
+;; disable TAB key to activate a snippet (I prefer TAB merely indent)
 (define-key yas-minor-mode-map (kbd "<tab>") nil)
 (define-key yas-minor-mode-map (kbd "TAB") nil)
-(define-key yas-keymap [(tab)] nil)
-(define-key yas-keymap (kbd "TAB") nil)
-(define-key yas-keymap [(shift tab)] nil)
-(define-key yas-keymap [backtab] nil)
+;; (define-key yas-keymap [(tab)] nil)
+;; (define-key yas-keymap (kbd "TAB") nil)
+;; (define-key yas-keymap [(shift tab)] nil)
+;; (define-key yas-keymap [backtab] nil)
 ;; add our own keybindings
-(define-key yas-minor-mode-map (kbd "\C-cse") 'yas-expand)
+(define-key yas-minor-mode-map "\C-cse" 'yas-expand)
 (define-key yas-minor-mode-map "\C-csi" 'yas-insert-snippet)
+(define-key yas-minor-mode-map "\C-csn" 'yas-new-snippet)
+(define-key yas-minor-mode-map "\C-csv" 'yas-visit-snippet-file)
 ;; integrate with auto-complete
-(global-set-key [backtab] (lambda()(interactive)
-                            (auto-complete '(ac-source-yasnippet))))
+(defun my/expand-yasnippet() (interactive)
+  (auto-complete '(ac-source-yasnippet)))
+(global-set-key [backtab] 'my/expand-yasnippet)
+(global-set-key [(shift tab)] 'my/expand-yasnippet)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;; popup-kill-ring ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; popup-kill-ring ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'popup-kill-ring)
 (global-set-key "\C-\M-y" 'popup-kill-ring)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; os ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(let ((os-dir (concat my/user-directory "settings/os/"))
-      (system (symbol-name system-type))
-      system-file)
-  (setq system-file
-        (concat os-dir (car (reverse (split-string system "\\/" t)))))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; speedbar ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(add-hook 'speedbar-mode-hook
+          '(lambda()
+             (when (display-graphic-p)
+               (setq-default gdb-speedbar-auto-raise t))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; htmlize ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'htmlize)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; os ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(let* ((system (car (reverse (split-string (symbol-name system-type)
+                                           "\\/" t))))
+       (os-dir (concat my/user-directory "settings/os/" system "/"))
+       (system-file (concat os-dir system))
+       (path-file (concat os-dir "path"))
+       (include-file (concat os-dir "include"))
+       (lib-file (concat os-dir "lib"))
+       (libpath-file (concat os-dir "libpath"))
+       )
   ;; load os file
-  (if (file-exists-p system-file)
-      (load system-file)
-    (error "Unhandled system-type %s" system))
+  (load system-file)
+  ;; check for any additional environment variables
+  (if (file-exists-p path-file)
+      (load-environment-variable-from-file "PATH" path-file))
+  (if (file-exists-p include-file)
+      (load-environment-variable-from-file "INCLUDE" include-file))
+  (if (file-exists-p lib-file)
+      (load-environment-variable-from-file "LIB" lib-file))
+  (if (file-exists-p libpath-file)
+      (load-environment-variable-from-file "LIBPATH" libpath-file))
   )
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; gui ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; gui ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (let ((gui-dir (concat my/user-directory "settings/gui/"))
-      (gui (symbol-name window-system))
+      (gui window-system)
       gui-file)
   ;; load gui file
-  (setq gui-file (concat gui-dir (if (null gui) "tty" gui)))
-  (if (file-exists-p gui-file)
-      (load gui-file)
-    (error "Unhandled window-system %s" gui))
+  (setq gui-file (concat gui-dir (if (null gui) "tty" (symbol-name gui))))
+  (load gui-file)
   )
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; host ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(let* ((host-dir (concat my/user-directory "settings/host/"))
+	   (host-file (concat host-dir system-name)))
+  ;; load host file (if present)
+  (load host-file t))
 
-
-(add-hook 'before-save-hook 'do-before-save-hook)
-(defun do-before-save-hook() "Presave hook"
-  (when (memq major-mode '(c++-mode emacs-lisp-mode))
+(add-hook 'before-save-hook 'my/before-save-hook)
+(defun my/before-save-hook() "Presave hook"
+  (when (memq major-mode '(c++-mode emacs-lisp-mode perl-mode
+                                    java-mode python-mode dos-mode
+                                    nxml-mode protobuf-mode folio-mode
+                                    sh-mode))
     (delete-trailing-whitespace)
-))
+    (copyright-update nil t)
+    (time-stamp)
+    ))
 
-;;;;;;; MODES ;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; modes ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq auto-mode-alist
    (append '(("\\.C$"        . c++-mode)
              ("\\.cc$"       . c++-mode)
@@ -422,14 +594,11 @@
              ("\\.folio$"    . folio-mode)
              ("\\.bat$"      . dos-mode)
              ("\\.log$"      . log-viewer-mode)
+             ("\\.pro$"      . qt-pro-mode)
             )
-     auto-mode-alist
-   )
-)
+     auto-mode-alist))
 
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; sh-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; sh-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-hook 'sh-mode-hook
           '(lambda()
              (setq-default indent-tabs-mode nil)
@@ -440,7 +609,18 @@
              (define-key sh-mode-map "\C-c\C-u" 'uncomment-region)
              ))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; xml-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dos-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(add-hook 'dos-mode-hook
+          '(lambda()
+             (setq-default indent-tabs-mode nil)
+             (define-key dos-mode-map "\r" 'reindent-then-newline-and-indent)
+             (setq dos-basic-offset 3)
+             (setq dos-indentation 3)
+             (define-key dos-mode-map "\C-c\C-c" 'comment-region)
+             (define-key dos-mode-map "\C-c\C-u" 'uncomment-region)
+             ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; xml-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-hook 'nxml-mode-hook
           '(lambda()
              (setq-default indent-tabs-mode nil)
@@ -453,7 +633,7 @@
 ;; Note that 'comment-strip-start-length also exists for other modes if needed.
 (add-to-list 'comment-strip-start-length (cons 'nxml-mode 3))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; python-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; python-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-hook 'python-mode-hook
           '(lambda()
              (setq-default indent-tabs-mode nil)
@@ -462,21 +642,40 @@
              (define-key python-mode-map "\C-c\C-u" 'uncomment-region)
              ))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;; emacs-lisp-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; emacs-lisp-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-hook 'emacs-lisp-mode-hook
           '(lambda()
              (setq indent-tabs-mode nil)
              (define-key emacs-lisp-mode-map "\r" 'reindent-then-newline-and-indent)
              (define-key emacs-lisp-mode-map "\C-c\C-c" 'comment-region)
              (define-key emacs-lisp-mode-map "\C-c\C-u" 'uncomment-region)
+             (define-key emacs-lisp-mode-map (kbd "\C-c RET")
+               '(lambda()(interactive)
+                  (byte-compile-file (buffer-file-name))))
              ))
 (add-hook 'emacs-lisp-mode-hook 'eldoc-mode)
-(add-hook 'after-save-hook (lambda()
-                             (if (eq major-mode 'emacs-lisp-mode)
-                                 (save-excursion
-                                   (byte-compile-file buffer-file-name)))))
+(require 'bytecomp)
+(add-hook 'after-save-hook
+          (lambda()
+            (when (and
+                   (eq major-mode 'emacs-lisp-mode)
+                   (file-exists-p (byte-compile-dest-file (buffer-file-name)))
+                   (not (string-match
+                         "^\\.dir-locals.el$"
+                         (file-name-nondirectory
+                          (buffer-file-name)))))
+              (save-excursion
+                (byte-compile-file buffer-file-name)))))
 
-
-(load-library "utils")
-(load-library "compiling")
-(load-library "coding")
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; conf-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(add-hook 'conf-mode-hook
+          '(lambda()
+             (setq indent-tabs-mode nil)
+             ;; conf-colon-mode still bound to "\C-c:"
+             (local-unset-key "\C-c\C-c")
+             ;; conf-unix-mode now bound to "\C-cu"
+             (local-unset-key "\C-c\C-u")
+             (define-key conf-mode-map "\C-cu" 'conf-unix-mode)
+             (define-key conf-mode-map "\C-c\C-c" 'comment-region)
+             (define-key conf-mode-map "\C-c\C-u" 'uncomment-region)
+             ))

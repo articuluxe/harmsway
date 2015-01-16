@@ -1,4 +1,4 @@
-#!/bin/env sh
+#!/usr/bin/env sh
 
 dir=`pwd`
 
@@ -12,4 +12,3 @@ while [ "$dir" != "/" ]
       dir=`cd $dir; cd ..; pwd`
    fi
 done
-

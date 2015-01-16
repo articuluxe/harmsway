@@ -13,7 +13,8 @@
   (make-local-variable 'font-lock-defaults)
   (setq log-viewer-mode-font-lock-keywords
         (list
-         (list "\\(ERROR\\|FATAL\\|WARN\\|error\\)" '(1 font-lock-warning-face))
+         (list "\\(ERROR\\|FATAL\\|WARN\\|[^W]error\\)"
+               '(1 font-lock-warning-face))
 
          ;; log statements
          ;; TODO: insert regex here
@@ -30,7 +31,7 @@
          (list "\\([^[:space:];|=<',]+\\)=\\([^[:space:];|=',]*\\)"
                '(1 font-lock-variable-name-face)
                '(2 font-lock-constant-face))
-         ;; (list "<.*>" '(0 font-lock-doc-face))
+         (list "<.*?>" '(0 font-lock-doc-face))
          ;; text within brackets
          (list "\\[.*?\\]" '(0 font-lock-keyword-face))
          ;; ip address:port (overrides prior fontification)

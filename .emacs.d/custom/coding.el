@@ -1,11 +1,57 @@
 ;; -*- Mode: Emacs-Lisp -*-
 ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;; Dan Harms coding.el ;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;; Dan Harms coding.el ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 
 (global-set-key "\C-c\C-c" 'comment-region)
 (global-set-key "\C-c\C-u" 'uncomment-region)
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; c++-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defvar my/project-root nil)
+(defvar project-name nil)
+(defvar my/build-sub-dir nil)
+(defvar my/src-sub-dir nil)
+
+(defun find-project-root(&optional arg)
+  "Find the project's root directory.  Force recalculation if optional arg
+   supplied."
+  (interactive)
+  (when (or (null my/project-root) arg)
+    (let ((root (find-file-dir-upwards ".root")))
+      (if root (setq my/project-root (expand-file-name root))
+        (message "Could not find .root"))))
+  (message "Project root is %s" my/project-root)
+  my/project-root)
+(global-set-key "\C-c\C-p" 'find-project-root)
+
+(require 'grep)
+(defun my/grep (&optional arg)
+  "A wrapper around grep to provide convenient shortcuts to
+   adjust the root directory.  With a prefix arg of 16 (C-u C-u),
+   use the current directory.  With a prefix arg of 4 (C-u), or
+   if the variable 'my/project-root is not defined, the directory
+   will be chosen interactively by the user using ido.
+   Otherwise, use the value of my/project-root, concatenated with
+   my/src-sub-dir, if defined."
+  (interactive "p")
+  (let ((dir
+         (cond ((= arg 16) ".")
+               ((or (= arg 4) (null my/project-root))
+                (ido-read-directory-name "Grep root: " nil nil t))
+               (t (concat my/project-root my/src-sub-dir)))))
+    (grep-apply-setting
+     'grep-command
+     (concat "find -P " dir
+             " \"(\" -name \"*moc_*\" -o -name \"*qrc_*\" \")\" "
+             "-prune -o -type f \"(\" -name \"*.cpp\" -o -name \"*.h\" "
+             "-o -name \"*.cc\" -o -name \"*.hh\" -o -name \"*.cxx\" "
+             "-o -name \"*.hxx\" -o -name \"*.h\" -o -name \"*.c\" "
+             "-o -name \"*.H\" -o -name \"*.C\" -o -name \"*.el\" "
+             "-o -name \"*.sql\" -o -name \"*.py\" -o -name \"*.proto\" "
+             "\")\" -print0 | xargs -0 grep -Isn "))
+    (command-execute 'grep)))
+(global-set-key "\C-cg" 'my/grep)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; c++-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (add-hook
   'c-mode-common-hook
@@ -13,16 +59,14 @@
      (setq-default indent-tabs-mode nil)
      (setq c-auto-newline t)
      (c-toggle-hungry-state t)
-     (setq comment-column 40)
-     (setq compile-command "upmake - -")
-     (setq grep-command
-           "find -L `findRoot` -name TAGS -o -name '*tags' -o -name '*.log' -o -name '#*' -prune -o -type f -print0 | xargs -0 grep -Isn ")
-     (define-key c++-mode-map (kbd "\C-c RET") 'drh-compile)
-     (define-key c++-mode-map "\C-cm" 'drh-recompile)
+     ;; (setq comment-column 40)
+     (make-local-variable 'my/compile-command)
+     (define-key c++-mode-map (kbd "\C-c RET") 'my/compile)
+     (define-key c++-mode-map "\C-cm" 'my/recompile)
      (define-key c++-mode-map "\C-ck" 'kill-compilation)
-     (define-key c++-mode-map "\C-cg" 'grep)
      (define-key c++-mode-map "\C-c\C-c" 'comment-region)
      (define-key c++-mode-map "\C-c\C-u" 'uncomment-region)
+     (define-key c++-mode-map "\C-c\C-p" 'find-project-root)
      (setq comment-start "/*") (setq comment-end "*/")
      (c-add-style "drh"
        (quote
@@ -36,7 +80,7 @@
                              compact-empty-funcall
                              ))
           (c-offsets-alist . (
-                              (innamespace          . 1)
+                              (innamespace          . 0)
                               (substatement-open    . 0)
                               (inline-open          . 0)
                               (statement-case-intro . +)
@@ -60,14 +104,19 @@
 (add-hook 'c++-mode-hook
       '(lambda()
         (font-lock-add-keywords
-         nil '(;; complete some fundamental keywords
-           ("\\<\\(void\\|unsigned\\|signed\\|char\\|short\\|bool\\|int\\|long\\|float\\|double\\)\\>" . font-lock-keyword-face)
+         nil '(;; complete some fundamental keywords (+ Qt)
+           ("\\<\\(void\\|unsigned\\|signed\\|char\\|short\\|bool\\|int\\|long\\|float\\|double\\|slots\\|signals\\)\\>" . font-lock-keyword-face)
            ;; add the new C++11 keywords
            ("\\<\\(alignof\\|alignas\\|constexpr\\|decltype\\|noexcept\\|nullptr\\|static_assert\\|thread_local\\|override\\|final\\)\\>" . font-lock-keyword-face)
            ;; hexadecimal numbers
            ("\\<0[xX][0-9A-Fa-f]+\\>" . font-lock-constant-face)
-           ("[tT][oO][dD][oO]" . font-lock-warning-face)
-           ))
+           ;; TODO declarations
+           ("\\<[tT][oO][dD][oO]\\>" 0 font-lock-warning-face t)
+           ;; Qt fontification
+           ("\\<Q_OBJECT\\|SIGNAL\\|SLOT\\>" . font-lock-keyword-face)
+           ("\\<QT?\\(_\\sw+\\)+\\>" . font-lock-keyword-face)
+           ("\\<Q[A-Z][A-Za-z0-9]*\\>" . font-lock-type-face)
+           ) t)
         ) t)
 
 
@@ -97,7 +146,7 @@
     (if my-tags-file
         (progn
           (message "Loading tags file: %s" my-tags-file)
-          (run-with-timer 2 nil 'visit-tags-table my-tags-file))
+          (run-with-timer 1 nil 'visit-tags-table my-tags-file))
       (message "Did not find tags file")
       )))
 
@@ -106,15 +155,21 @@
   "Add header include guards. With optional prefix argument, query for the
    base name. Otherwise, the base file name is used."
   (interactive "P")
-  (let ((str
-         (replace-regexp-in-string
-          "\\." "_"
-          (file-name-nondirectory (buffer-file-name)))))
+  (let* ((name (if (buffer-file-name)
+                   (file-name-nondirectory (buffer-file-name))
+                 (buffer-name)))
+         (str
+          (replace-regexp-in-string
+           "\\." "_"
+           name)))
     (save-excursion
-      (if arg
+      (if arg                           ;ask user for stem
           (setq str (concat
-                     (read-string "Include guard: " nil nil str) "_H")))
-      (setq str (upcase (concat "_REX_" str "_")))
+                     (read-string "Include guard stem: " nil nil str) "_H"))
+        ;; no arg; if project-name is defined, prepend it
+        (when project-name
+          (setq str (concat project-name "_" str))))
+      (setq str (upcase (concat "_" str "_")))
       (goto-char (point-min))
       (insert "#ifndef " str "\n#define " str "\n\n")
       (goto-char (point-max))
@@ -131,19 +186,24 @@
   (let ((str
          (if (region-active-p)
              (buffer-substring-no-properties (region-beginning)(region-end))
-           (thing-at-point 'symbol))))
+           (thing-at-point 'symbol)))
+        (i 0) len)
     (if (or arg (= 0 (length str)))
         (setq str (read-string "Enter the title symbol: ")))
                                         ; (message "symbol %s is %d chars long" str (length str))(read-char)
                                         ;   (move-beginning-of-line nil)
     (c-beginning-of-defun)
-    (insert "//----------------------------------------------------------------------------\n")
+    (insert "//")
+    (insert-char ?- (- fill-column 2))
+    (insert "\n")
     (insert "//---- " str " ")
-    (let ((len (- 70 (length str)))(i 0))
-      (while (< i len)
-        (insert "-")
-        (setq i (1+ i))))
-    (insert "\n//----------------------------------------------------------------------------\n")
+    (setq len (- (- fill-column 8) (length str)))
+    (while (< i len)
+      (insert "-")
+      (setq i (1+ i)))
+    (insert "\n//")
+    (insert-char ?- (- fill-column 2))
+    (insert "\n")
     ))
 (global-set-key "\C-ch" 'insert-class-header)
 
@@ -243,10 +303,10 @@
          (let ((identifier "\\sw\\|_\\|:"))
            (while (re-search-forward (concat "\\(.*?\\)\\s-?\\(\\(?:"
                                              identifier
-                                             "\\)+\\)\\s-*$" nil t))
+                                             "\\)+\\)\\s-*$") nil t)
              (replace-match "\\1 \\2" nil nil)))))))
 
-(defun clean-up-func-param (start end do-spacing is-decl)
+(defun clean-up-func-param (start end indent do-spacing is-decl)
   "Cleans up one (comma-separated) param of a function declaration."
   (save-excursion
     (save-restriction
@@ -282,7 +342,7 @@
                        (if (re-search-forward "=" nil t)
                            (let ((is-quoted nil))
                              (backward-char)
-                             (clean-up-func-param (point-min)(point) t is-decl)
+                             (clean-up-func-param (point-min)(point) indent t is-decl)
                              ;; ensure spaces around the '='
                              (insert " ")
                              (forward-char)
@@ -293,12 +353,13 @@
                                       "\\s-*\\(\\s\"+\\)\\(.*\\)\\(\\s\"+\\)\\s-*" nil t)
                                  (setq is-quoted t)
                                  (replace-match "\\1\\2\\3" nil nil)))
-                             (clean-up-func-param (point) (point-max) (not is-quoted) nil)
+                             (clean-up-func-param (point) (point-max) indent
+                                                  (not is-quoted) nil)
                              (if should-comment
                                  ;; begin comment before the '='
                                  (comment-region (- (point) 3) (point-max)))
                              (point-max))
-                         (clean-up-func-param (point-min) (point-max) t is-decl)
+                         (clean-up-func-param (point-min) (point-max) indent t is-decl)
                          (point-max))
                          )))
                    ;; save this point to insert newline later
@@ -332,3 +393,69 @@
                            (clean-up-func-params start end t nil nil)))
 (global-set-key "\e\eu" (lambda(start end)(interactive "r")
                            (clean-up-func-params start end nil nil nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; gud ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defun my/gud-hook()
+  (set (make-local-variable 'gdb-show-main) t)
+  ;; highlight recently-changed variables
+  (set (make-local-variable 'gdb-show-changed-values) t)
+  ;; watch expressions sharing same variable name
+  (set (make-local-variable 'gdb-use-colon-colon-notation) t)
+  (set (make-local-variable 'gdb-create-source-file-list) nil)
+  (gdb-many-windows 1))
+(add-hook 'gud-mode-hook 'my/gud-hook)
+
+(defun my/launch-gdb() "Launch gdb automatically in the test directory."
+  (interactive)
+  (let (exec-dir exec)
+    (when (find-project-root)
+      (setq exec-dir (concat my/project-root my/build-sub-dir
+                             "output/tests/")))
+    (unless (and exec-dir (file-exists-p exec-dir))
+      (setq exec-dir default-directory))
+    (setq exec (ido-read-file-name "Debug executable: " exec-dir nil t))
+    (gdb (concat "gdb -i=mi " exec))))
+(global-set-key [f4] 'my/launch-gdb)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;; c++11 enum class hack ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; TODO: doesn't work
+(defun inside-class-enum-p (pos)
+  "Checks if POS is within the braces of a c++ \"enum class\"."
+  (interactive)
+  (ignore-errors
+    (save-excursion
+      (goto-char pos)
+      (up-list -1)
+      (backward-sexp 1)
+      (looking-back "enum\\s-+class\\s-+[^}]*")))) ;or end with '+'
+
+(defun align-enum-class (langelem)
+  (if (inside-class-enum-p (c-langelem-pos langelem))
+      0
+    (c-lineup-topmost-intro-cont langelem)))
+
+(defun align-enum-class-closing-brace (langelem)
+  (if (inside-class-enum-p (c-langelem-pos langelem))
+      '-                                ;or '0
+    '+))
+
+(defun fix-enum-class()
+  "Setup c++-mode to better handle \"class enum\"."
+  (add-to-list 'c-offsets-alist '(topmost-intro-cont . align-enum-class))
+  (add-to-list 'c-offsets-alist
+               '(statement-cont . align-enum-class-closing-brace)))
+(add-hook 'c++-mode-hook 'fix-enum-class)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;; c++11 lambda hack ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defadvice c-lineup-arglist (around my activate)
+  "Improve indentation of continued c++11 lambda function opened as argument."
+  (setq ad-return-value
+        (if (and (equal major-mode 'c++-mode)
+                 (ignore-errors
+                   (save-excursion
+                     (goto-char (c-langelem-pos langelem))
+                     ;; detect "[...](" or "[...]{" preceded by "," or "("
+                     ;; and with uclosed brace
+                     (looking-at ".*[(,][ \t]*\\[[^]]*\\][ \t]*[({][^}]*$"))))
+            0                           ;no additional indent
+          ad-do-it)))                   ;default behavior

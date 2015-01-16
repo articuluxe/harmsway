@@ -1,0 +1,30 @@
+;; -*- Mode: Emacs-Lisp -*-
+;;
+;;
+
+(setq my/tramp-file-list
+      (append '(
+                "/plink:dharms@chd-ls-rex01:/home/logs/rex/"
+                "/plink:dharms@chd-ls-rex02:/home/logs/rex/"
+                "/plink:dharms@chd-ls-rex03:/home/logs/rex/"
+                "/plink:dharms@chd-ls-rex04:/home/logs/rex/"
+                "/plink:dharms@chd-ls-rex05:/home/logs/rex/"
+                "/plink:dharms@chd-ls-rex06:/home/logs/rex/"
+                "/plink:dharms@chd-ls-rex07:/home/logs/rex/"
+                "/plink:dharms@chd-ls-rex08:/home/logs/rex/"
+                "/plink:dharms@chd-ls-rex09:/home/logs/rex/"
+                "/plink:dharms@chd-ls-rex10:/home/logs/rex/"
+                "/plink:dharms@chd-ls-rex11:/home/logs/rex/"
+                "/plink:dharms@chd-ls-rex12:/home/logs/rex/"
+                "/plink:dharms@chd-ls-rex13:/home/logs/rex/"
+                "/plink:dharms@chd-ls-rex14:/home/logs/rex/"
+                "/plink:dharms@chd-ls-rex15:/home/logs/rex/"
+                "/plink:dharms@chd-ls-rex16:/home/logs/rex/"
+                "/plink:dharms@chd-ls-rex17:/home/logs/rex/"
+                "/plink:dharms@chd-ls-rex18:/home/logs/rex/"
+                ) my/tramp-file-list))
+
+(color-theme-deep-blue)
+
+;; (add-to-list 'safe-local-variable-values '(my/build-sub-dir . "build"))
+;; (add-to-list 'safe-local-variable-values '(project-name . "punch"))
