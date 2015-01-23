@@ -6,10 +6,16 @@
 (global-set-key "\C-c\C-c" 'comment-region)
 (global-set-key "\C-c\C-u" 'uncomment-region)
 
-(defvar my/project-root nil)
+;; project name
 (defvar project-name nil)
+;; project root
+(defvar my/project-root nil)
+;; relative path to makefiles
 (defvar my/build-sub-dir nil)
+;; relative path to source file root
 (defvar my/src-sub-dir nil)
+;; relative path to debug executables (under project root and my/build-sub-dir)
+(defvar my/debug-sub-dir "tests/")
 
 (defun find-project-root(&optional arg)
   "Find the project's root directory.  Force recalculation if optional arg
@@ -405,12 +411,13 @@
   (gdb-many-windows 1))
 (add-hook 'gud-mode-hook 'my/gud-hook)
 
-(defun my/launch-gdb() "Launch gdb automatically in the test directory."
+(defun my/launch-gdb()
+  "Launch gdb automatically in the test directory."
   (interactive)
   (let (exec-dir exec)
     (when (find-project-root)
       (setq exec-dir (concat my/project-root my/build-sub-dir
-                             "output/tests/")))
+                             my/debug-sub-dir)))
     (unless (and exec-dir (file-exists-p exec-dir))
       (setq exec-dir default-directory))
     (setq exec (ido-read-file-name "Debug executable: " exec-dir nil t))

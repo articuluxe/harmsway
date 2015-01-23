@@ -1,0 +1,6 @@
+# -*- mode: snippet; require-final-newline: nil -*-
+# name: boost_check_equal
+# key: boost_check_equal
+# binding: direct-keybinding
+# --
+BOOST_CHECK_EQUAL($0);

@@ -459,9 +459,8 @@
 (setq-default ac-sources (append '(ac-source-filename) ac-sources))
 (setq ac-use-menu-map t)
 (setq ac-auto-start t)
-;; TODO: unix vs windows
-(define-key ac-mode-map (kbd "M-TAB") 'auto-complete)
-(define-key ac-mode-map (kbd "<lwindow> TAB") 'auto-complete)
+(define-key ac-mode-map (kbd "M-/") 'auto-complete)
+;(define-key ac-mode-map (kbd "<lwindow> TAB") 'auto-complete)
 (define-key ac-mode-map (kbd "\C-c TAB") (lambda()(interactive)
                                            (setq ac-auto-start
                                                  (null ac-auto-start))))
@@ -507,8 +506,10 @@
 ;; integrate with auto-complete
 (defun my/expand-yasnippet() (interactive)
   (auto-complete '(ac-source-yasnippet)))
-(global-set-key [backtab] 'my/expand-yasnippet)
-(global-set-key [(shift tab)] 'my/expand-yasnippet)
+;; (global-set-key [backtab] 'my/expand-yasnippet)
+;; (global-set-key [(shift tab)] 'my/expand-yasnippet)
+(global-set-key (kbd "M-/") 'my/expand-yasnippet)
+;(global-set-key [(shift tab)] 'my/expand-yasnippet)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; popup-kill-ring ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'popup-kill-ring)

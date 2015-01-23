@@ -1,0 +1,6 @@
+# -*- mode: snippet; require-final-newline: nil -*-
+# name: boost_check
+# key: boost_check
+# binding: direct-keybinding
+# --
+BOOST_CHECK($0);
