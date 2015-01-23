@@ -45,15 +45,25 @@
     (catch 'found
       (goto-char 1)
       (while (search-forward-regexp "\\([Ww]arning\\|[Ee]rror\\)" nil t)
-        ;; this ignores the compile line "-Werror" that cmake echoes
         (goto-char (match-beginning 1))
-        (unless (looking-back "-W" (- (point) 2))
+        (unless
+            (or
+             ;; ignore the compile line "-Werror" that cmake echoes
+             (save-match-data
+               (looking-back "-W" (- (point) 2)))
+             ;; ignore boost test output "No errors detected"
+             (and
+              (save-match-data
+                (looking-back "[Nn]o " (- (point) 3)))
+              (save-match-data
+                (looking-at "errors detected")))
+             )
           (throw 'found t))
         (goto-char (match-end 1)))
       nil)))
 
 (defun bury-compile-buffer-if-successful (buffer string)
-  "Bury a compilation buffer if it succeeded without warnings."
+  "Bury a compilation buffer if it succeeded without warnings or errors."
   (if (and
        (string-match "compilation" (buffer-name buffer))
        (string-match "finished" string)
