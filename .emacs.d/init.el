@@ -506,10 +506,8 @@
 ;; integrate with auto-complete
 (defun my/expand-yasnippet() (interactive)
   (auto-complete '(ac-source-yasnippet)))
-;; (global-set-key [backtab] 'my/expand-yasnippet)
-;; (global-set-key [(shift tab)] 'my/expand-yasnippet)
-(global-set-key (kbd "M-/") 'my/expand-yasnippet)
-;(global-set-key [(shift tab)] 'my/expand-yasnippet)
+(global-set-key [backtab] 'my/expand-yasnippet)
+(global-set-key [(shift tab)] 'my/expand-yasnippet)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; popup-kill-ring ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'popup-kill-ring)
