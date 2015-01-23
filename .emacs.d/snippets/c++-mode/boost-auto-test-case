@@ -1,5 +1,5 @@
 # -*- mode: snippet; require-final-newline: nil -*-
-# name: boost_auto_test_case
+# name: boost-auto-test-case
 # key: boost_auto_test_case
 # binding: direct-keybinding
 # --

@@ -1,6 +1,6 @@
 # -*- mode: snippet; require-final-newline: nil -*-
 # name: include-app
-# key: include
+# key: include_app
 # binding: direct-keybinding
 # --
 #include "$0"
