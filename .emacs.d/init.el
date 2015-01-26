@@ -6,7 +6,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; load-path ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defconst my/user-directory (expand-file-name user-emacs-directory))
 (defconst my/plugins-directory (concat my/user-directory "plugins/"))
-(add-to-list 'load-path my/user-directory)
 (add-to-list 'load-path my/plugins-directory)
 (add-to-list 'load-path (concat my/user-directory "modes/"))
 (add-to-list 'load-path (concat my/user-directory "custom/"))
@@ -196,6 +195,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; modes ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'log-viewer)
 (require 'cmake-mode)
+;; work around bug in cc-mode in emacs 24.4
+;; see debbugs.gnu.org/db/18/18845.html
+(eval-when-compile
+  (if (and (= emacs-major-version 24) (= emacs-minor-version 4))
+      (require 'cl)))
 (require 'protobuf-mode)
 (require 'dos)
 (require 'etags-select)
@@ -210,8 +214,7 @@
 (setq copyright-query nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-insert ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'autoinsert)
-(auto-insert-mode 1)
+;(require 'autoinsert)
 
 ;; (setq auto-insert-directory (concat my/user-directory "templates/"))
 ;; (define-auto-insert "\.el" "my-emacs-lisp-template.el")
@@ -290,6 +293,16 @@
                    (intern
                     (ido-completing-read
                      "M-x " (all-completions "" obarray 'commandp))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; rich-minority ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'rich-minority)
+(rich-minority-mode 1)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smart-mode-line ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(add-to-list 'load-path (concat my/plugins-directory "smart-mode-line/"))
+(require 'smart-mode-line)
+(setq sml/no-confirm-load-theme t)
+(sml/setup)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; undo-tree ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'undo-tree)
@@ -480,9 +493,49 @@
           '(lambda()
              (setq ac-sources (add-to-list 'ac-sources 'ac-source-etags))))
 
+
+(defvar my/include-dirs '())
+(add-to-list 'my/include-dirs (getenv "CSTDLIB_ROOT"))
+
+(defun my/gather-include-files()
+  (let ((files (directory-files default-directory)))
+    (mapc (lambda(dir)
+            (message "Looking at %s" dir)
+            (setq files (append (directory-files dir) files))
+            ) my/include-dirs) files))
+
+(ac-define-source include-files
+  '((candidates . my/gather-include-files)
+    (requires . 0)
+    (symbol . "/")
+    (cache)))
+
+;; (ac-define-source files-in-current-dir
+;;   '((candidates . (directory-files default-directory))
+;;     (requires . 0)
+;;     (symbol . "/")
+;;     (cache)))
+
+;; (defun ac-include-files-candidate()
+;;   )
+;; (defvar ac-include-files nil)
+;; (ac-define-source include-dirs
+;;   '((init . (setq ac-include-files nil))
+;;     (candidates . ac-include-files-candidate)
+;;     (prefix . valid-file)
+;;     (requires . 0)
+;;     (action . ac-start)
+;;     (limit . nil)))
+(defun my/complete-include-dirs() (interactive)
+;  (auto-complete '(ac-source-files-in-current-dir))
+  (auto-complete '(ac-source-include-files))
+  )
+(global-set-key "\C-c#" 'my/complete-include-dirs)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; YASnippet ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-to-list 'load-path (concat my/plugins-directory "yasnippet/"))
 (require 'yasnippet)
+(add-to-list 'safe-local-variable-values '(require-final-newline . nil))
 (yas-global-mode 1)
 (setq yas-snippet-dirs (concat my/user-directory "snippets/"))
 (setq yas-prompt-functions '(
