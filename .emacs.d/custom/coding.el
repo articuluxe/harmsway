@@ -125,6 +125,10 @@
            ) t)
         ) t)
 
+(add-to-list 'compilation-error-regexp-alist 'boost-test)
+(add-to-list 'compilation-error-regexp-alist-alist
+             '(boost-test
+               "^[[:digit:]]+:\\s-*\\(.*\\):\\([[:digit:]]+\\):\\s-+error" 1 2))
 
 (defun print-current-function() "Print current function under point."
   (interactive)
