@@ -3,4 +3,4 @@
 # key: boost_check_equal
 # binding: direct-keybinding
 # --
-BOOST_CHECK_EQUAL($0, $1);
+BOOST_CHECK_EQUAL($1, $2);
