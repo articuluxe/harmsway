@@ -97,6 +97,7 @@
 (setq font-lock-maximum-decoration t)
 (mouse-avoidance-mode 'cat-and-mouse)
 (blink-cursor-mode 1)
+(setq blink-cursor-blinks 0)
 (when (display-graphic-p)
   (global-unset-key "\C-z"))
 
