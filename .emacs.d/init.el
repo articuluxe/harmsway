@@ -481,6 +481,7 @@
 (setq ac-menu-height 20)
 (require 'auto-complete-etags)
 (require 'auto-complete-nxml)
+(require 'auto-complete-c-headers)
 (add-hook 'c-mode-common-hook
           '(lambda()
              (set (make-local-variable 'ac-auto-start) nil)
@@ -488,50 +489,13 @@
              (setq ac-sources (remove 'ac-source-yasnippet ac-sources))
              (setq ac-sources (remove 'ac-source-gtags ac-sources))
              (setq ac-sources (add-to-list 'ac-sources 'ac-source-etags))
+             (setq ac-sources (add-to-list 'ac-sources 'ac-source-c-headers))
              ) t)                       ;append to hook list to take effect
                                         ;after ac-config-default
 (add-hook 'protobuf-mode-hook
           '(lambda()
              (setq ac-sources (add-to-list 'ac-sources 'ac-source-etags))))
 
-
-(defvar my/include-dirs '())
-(add-to-list 'my/include-dirs (getenv "CSTDLIB_ROOT"))
-
-(defun my/gather-include-files()
-  (let ((files (directory-files default-directory)))
-    (mapc (lambda(dir)
-            (message "Looking at %s" dir)
-            (setq files (append (directory-files dir) files))
-            ) my/include-dirs) files))
-
-(ac-define-source include-files
-  '((candidates . my/gather-include-files)
-    (requires . 0)
-    (symbol . "/")
-    (cache)))
-
-;; (ac-define-source files-in-current-dir
-;;   '((candidates . (directory-files default-directory))
-;;     (requires . 0)
-;;     (symbol . "/")
-;;     (cache)))
-
-;; (defun ac-include-files-candidate()
-;;   )
-;; (defvar ac-include-files nil)
-;; (ac-define-source include-dirs
-;;   '((init . (setq ac-include-files nil))
-;;     (candidates . ac-include-files-candidate)
-;;     (prefix . valid-file)
-;;     (requires . 0)
-;;     (action . ac-start)
-;;     (limit . nil)))
-(defun my/complete-include-dirs() (interactive)
-;  (auto-complete '(ac-source-files-in-current-dir))
-  (auto-complete '(ac-source-include-files))
-  )
-(global-set-key "\C-c#" 'my/complete-include-dirs)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; YASnippet ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-to-list 'load-path (concat my/plugins-directory "yasnippet/"))

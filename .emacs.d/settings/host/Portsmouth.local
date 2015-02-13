@@ -2,6 +2,10 @@
 ;;
 ;;
 
+(setq achead:include-directories
+      (list (getenv "CSTDLIB_ROOT")
+            (getenv "BOOST_ROOT")))
+
 (add-to-list 'safe-local-variable-values '(my/build-sub-dir . "build/"))
 (add-to-list 'safe-local-variable-values '(my/src-sub-dir . "punch/"))
 (add-to-list 'safe-local-variable-values '(project-name . "punch"))
