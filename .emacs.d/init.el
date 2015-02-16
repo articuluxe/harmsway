@@ -326,6 +326,24 @@
 (setq-default dired-listing-switches "-alhvGg")
 (setq dired-details-initially-hide nil)
 (put 'dired-find-alternate-file 'disabled nil)
+
+(defun my/dired-sort()
+  "Toggle sorting in dired buffers."
+  (interactive)
+  (let ((type (ido-completing-read
+               "Sort by: "
+               '( "extension" "ctime" "utime" "time" "name")
+               nil t)))
+    ;; on os x, extension (X) not supported;
+    ;; also, ctime means time file status was last changed
+    (cond ((string= type "extension") (dired-sort-extension))
+          ((string= type "ctime") (dired-sort-ctime))
+          ((string= type "utime") (dired-sort-utime))
+          ((string= type "time") (dired-sort-time))
+          ((string= type "name") (dired-sort-name))
+          (t (error "unknown dired sort %s" type)))))
+;; TODO: choose a key for this
+
 (defadvice shell-command
   (after shell-in-new-buffer (command &optional output-buffer error-buffer))
   (when (get-buffer "*Async Shell Command*")
@@ -482,14 +500,20 @@
 (require 'auto-complete-etags)
 (require 'auto-complete-nxml)
 (require 'auto-complete-c-headers)
+(setq achead:include-patterns (list
+                               "\\.\\(h\\|hpp\\|hh\\|hxx\\|H\\)$"
+                               "/[a-zA-Z-_]+$"
+                               ))
+(setq achead:include-directories '("."))
+
 (add-hook 'c-mode-common-hook
           '(lambda()
              (set (make-local-variable 'ac-auto-start) nil)
              ;; we'll define a special key event for yasnippet
              (setq ac-sources (remove 'ac-source-yasnippet ac-sources))
              (setq ac-sources (remove 'ac-source-gtags ac-sources))
-             (setq ac-sources (add-to-list 'ac-sources 'ac-source-etags))
-             (setq ac-sources (add-to-list 'ac-sources 'ac-source-c-headers))
+             (add-to-list 'ac-sources 'ac-source-etags)
+             (add-to-list 'ac-sources 'ac-source-c-headers)
              ) t)                       ;append to hook list to take effect
                                         ;after ac-config-default
 (add-hook 'protobuf-mode-hook
@@ -504,8 +528,8 @@
 (yas-global-mode 1)
 (setq yas-snippet-dirs (concat my/user-directory "snippets/"))
 (setq yas-prompt-functions '(
-                             yas-x-prompt
                              yas-ido-prompt
+                             yas-x-prompt
                              ;; yas-completing-prompt
                              ;; yas-no-prompt
                              ))
