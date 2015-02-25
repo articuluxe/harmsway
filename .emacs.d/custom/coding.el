@@ -6,44 +6,23 @@
 (global-set-key "\C-c\C-c" 'comment-region)
 (global-set-key "\C-c\C-u" 'uncomment-region)
 
-;; project name
-(defvar project-name nil)
-;; project root
-(defvar my/project-root nil)
-;; relative path to makefiles
-(defvar my/build-sub-dir nil)
-;; relative path to source file root
-(defvar my/src-sub-dir nil)
-;; relative path to debug executables (under project root and my/build-sub-dir)
-(defvar my/debug-sub-dir "tests/")
-
-(defun find-project-root(&optional arg)
-  "Find the project's root directory.  Force recalculation if optional arg
-   supplied."
-  (interactive)
-  (when (or (null my/project-root) arg)
-    (let ((root (find-file-dir-upwards ".root")))
-      (if root (setq my/project-root (expand-file-name root))
-        (message "Could not find .root"))))
-  (message "Project root is %s" my/project-root)
-  my/project-root)
-(global-set-key "\C-c\C-p" 'find-project-root)
-
 (require 'grep)
 (defun my/grep (&optional arg)
   "A wrapper around grep to provide convenient shortcuts to
    adjust the root directory.  With a prefix arg of 16 (C-u C-u),
    use the current directory.  With a prefix arg of 4 (C-u), or
-   if the variable 'my/project-root is not defined, the directory
-   will be chosen interactively by the user using ido.
-   Otherwise, use the value of my/project-root, concatenated with
-   my/src-sub-dir, if defined."
+   if the variable 'project-root is not defined in the current
+   profile, the directory will be chosen interactively by the user
+   using ido.  Otherwise, use the value of project-root,
+   concatenated with src-sub-dir, if defined."
   (interactive "p")
-  (let ((dir
-         (cond ((= arg 16) ".")
-               ((or (= arg 4) (null my/project-root))
-                (ido-read-directory-name "Grep root: " nil nil t))
-               (t (concat my/project-root my/src-sub-dir)))))
+  (let* ((root (profile-current-get 'project-root))
+         (dir
+          (cond ((= arg 16) ".")
+                ((or (= arg 4) (null root))
+                 (ido-read-directory-name "Grep root: " nil nil t))
+                (t (concat root
+                           (profile-current-get 'src-sub-dir))))))
     (grep-apply-setting
      'grep-command
      (concat "find -P " dir
@@ -72,7 +51,6 @@
      (define-key c++-mode-map "\C-ck" 'kill-compilation)
      (define-key c++-mode-map "\C-c\C-c" 'comment-region)
      (define-key c++-mode-map "\C-c\C-u" 'uncomment-region)
-     (define-key c++-mode-map "\C-c\C-p" 'find-project-root)
      (setq comment-start "/*") (setq comment-end "*/")
      (c-add-style "drh"
        (quote
@@ -168,6 +146,7 @@
   (let* ((name (if (buffer-file-name)
                    (file-name-nondirectory (buffer-file-name))
                  (buffer-name)))
+         (project-name (profile-current-get 'project-name))
          (str
           (replace-regexp-in-string
            "\\." "_"
@@ -418,10 +397,13 @@
 (defun my/launch-gdb()
   "Launch gdb automatically in the test directory."
   (interactive)
-  (let (exec-dir exec)
-    (when (find-project-root)
-      (setq exec-dir (concat my/project-root my/build-sub-dir
-                             my/debug-sub-dir)))
+  (let ((root (profile-current-get 'project-root))
+        exec-dir exec)
+    (when root
+      (setq exec-dir (concat root
+                             (profile-current-get 'build-sub-dir)
+                             (profile-current-get 'debug-sub-dir)
+                             )))
     (unless (and exec-dir (file-exists-p exec-dir))
       (setq exec-dir default-directory))
     (setq exec (ido-read-file-name "Debug executable: " exec-dir nil t))

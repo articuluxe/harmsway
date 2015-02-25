@@ -4,7 +4,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Dan Harms init.el ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; load-path ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defconst my/user-directory (expand-file-name user-emacs-directory))
+(defconst my/user-directory (expand-file-name
+                             (if (boundp 'user-emacs-directory)
+                                 user-emacs-directory
+                               "~/.emacs.d/")))
 (defconst my/plugins-directory (concat my/user-directory "plugins/"))
 (add-to-list 'load-path my/plugins-directory)
 (add-to-list 'load-path (concat my/user-directory "modes/"))
@@ -477,11 +480,26 @@
 (require 'multi-term)
 (setq multi-term-program "/bin/tcsh")
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; profiles ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'profiles+)
+(profile-define "default" "dharms" "danielrharms@gmail.com"
+                ;; relative path to makefiles
+                'build-sub-dir "build/"
+                ;; relative path to source file root
+                'src-sub-dir "src/"
+                ;; relative path to debug executables (under project-root and
+                ;; build-sub-dir)
+                'debug-sub-dir "tests/"
+                ;; specific compiler invocation command
+                'compile-sub-command "make"
+                )
+(profile-set-default "default")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-complete ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-to-list 'load-path (concat my/plugins-directory "auto-complete/"))
 (require 'auto-complete)
 (add-to-list 'ac-dictionary-directories
-             (concat user-emacs-directory "plugins/auto-complete/dict"))
+             (concat my/plugins-directory "auto-complete/dict/"))
 (mapc (lambda(mode)
         (add-to-list 'ac-modes mode))
       '(sql-mode nxml-mode cmake-mode folio-mode protobuf-mode
@@ -491,6 +509,7 @@
 (setq-default ac-sources (append '(ac-source-filename) ac-sources))
 (setq ac-use-menu-map t)
 (setq ac-auto-start t)
+(setq ac-ignore-case nil)
 (define-key ac-mode-map (kbd "M-/") 'auto-complete)
 ;(define-key ac-mode-map (kbd "<lwindow> TAB") 'auto-complete)
 (define-key ac-mode-map (kbd "\C-c TAB") (lambda()(interactive)
@@ -597,10 +616,17 @@
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; host ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(let* ((host-dir (concat my/user-directory "settings/host/"))
+(let* ((host-dir
+        (file-name-as-directory
+         (concat my/user-directory "settings/host/" system-name)))
 	   (host-file (concat host-dir system-name)))
   ;; load host file (if present)
-  (load host-file t))
+  (load host-file t)
+  ;; also load any profiles
+  (mapc (lambda (file)
+          (load-file file))
+        (directory-files host-dir t "\\.profile$")))
+
 
 (add-hook 'before-save-hook 'my/before-save-hook)
 (defun my/before-save-hook() "Presave hook"

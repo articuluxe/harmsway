@@ -124,7 +124,7 @@
             (forward-word 1)
             (setq count (1+ count)))
           (message "buffer contains %d words" count))))
-    (global-set-key "M-=" 'wordcount)))
+    (global-set-key "\M-=" 'wordcount)))
 
 ;; clean up buffer
 ;; indent entire file

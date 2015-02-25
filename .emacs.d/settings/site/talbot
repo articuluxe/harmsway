@@ -1,0 +1,5 @@
+;; -*- Mode: Emacs-Lisp -*-
+;;
+;;
+
+(color-theme-blue-mood)

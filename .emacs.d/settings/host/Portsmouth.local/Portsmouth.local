@@ -1,0 +1,15 @@
+;; -*- Mode: Emacs-Lisp -*-
+;;
+;;
+
+(let ((site-file (concat my/user-directory "settings/site/" "talbot")))
+  (when (file-exists-p site-file)
+    (load site-file)))
+
+(defun my/add-c-headers()
+  (message "Calling my/add-c-headers");drh
+  (make-local-variable 'achead:include-directories)
+  (when (getenv "CSTDLIB_ROOT")
+    (add-to-list 'achead:include-directories (getenv "CSTDLIB_ROOT")))
+  (when (getenv "BOOST_ROOT")
+    (add-to-list 'achead:include-directories (getenv "BOOST_ROOT"))))
