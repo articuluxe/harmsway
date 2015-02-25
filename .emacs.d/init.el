@@ -69,6 +69,7 @@
 (winner-mode 1)
 ; append unique parent directory to buffers of same name
 (toggle-uniquify-buffer-names)
+(setq uniquify-buffer-name-style 'post-forward-angle-brackets)
 ; Preserve line position on scroll
 (setq scroll-preserve-screen-position t)
 ; Ignore case when completing file names
@@ -200,6 +201,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; modes ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'log-viewer)
 (require 'cmake-mode)
+(require 'cmake-font-lock)
+(add-hook 'cmake-mode-hook 'cmake-font-lock-activate)
 ;; work around bug in cc-mode in emacs 24.4
 ;; see debbugs.gnu.org/db/18/18845.html
 (eval-when-compile
@@ -574,6 +577,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; popup-kill-ring ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'popup-kill-ring)
 (global-set-key "\C-\M-y" 'popup-kill-ring)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; zop-to-char ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'zop-to-char)
+(global-set-key "\M-z" 'zop-to-char)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; speedbar ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-hook 'speedbar-mode-hook
