@@ -623,6 +623,19 @@
   (load gui-file)
   )
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; site ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defun my/load-site-file (name)
+  "Load a site file associated with site NAME, and perform related
+customization."
+  (let* ((site-dir
+          (file-name-as-directory
+           (concat my/user-directory "settings/site/" name)))
+         (site-file (concat site-dir name)))
+    (when (file-exists-p site-file)
+      (load site-file))
+    (add-to-list 'yas-snippet-dirs
+                 (concat site-dir "snippets"))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; host ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (let* ((host-dir
         (file-name-as-directory
