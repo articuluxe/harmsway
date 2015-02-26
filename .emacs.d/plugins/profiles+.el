@@ -2,7 +2,7 @@
 ;;; profiles+.el --- Extensions to 'profiles.el'
 ;; Copyright (C) 2015  Dan Harms
 ;; Created: Thursday, February 19, 2015
-;; Time-stamp: <2015-02-24 19:28:19 dharms>
+;; Time-stamp: <2015-02-26 14:48:53 dharms>
 
 ;; Author: Dan Harms
 ;; Keywords:
@@ -125,8 +125,9 @@ of the buffer."
            (curr (profile-current-get 'project-root))
            (root-file (car root))
            (root-dir (cdr root))
-           (profile-basename (profile-find-profile-basename root-file)))
-      (when root-dir
+           profile-basename)
+      (when (and root root-file root-dir)
+        (setq profile-basename (profile-find-profile-basename root-file))
         (unless (string-equal root-dir (profile-current-get 'project-root))
           ;; this profile has not been loaded before
           (if (string-match "\\.profile$" root-file)
