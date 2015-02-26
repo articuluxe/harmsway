@@ -222,15 +222,6 @@
 ;; copyright-update is added to my/before-save-hook below
 (setq copyright-query nil)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-insert ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;(require 'autoinsert)
-
-;; (setq auto-insert-directory (concat my/user-directory "templates/"))
-;; (define-auto-insert "\.el" "my-emacs-lisp-template.el")
-;; (setq auto-insert-query nil)
-;; (setq auto-insert 'other)
-;; (setq auto-insert-directory (concat my/user-directory "autoinsert/"))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; hide-lines ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'hide-lines)
 (global-set-key "\C-c\\" 'hide-lines)
@@ -527,13 +518,15 @@
 (setq ac-menu-height 20)
 (require 'auto-complete-etags)
 (require 'auto-complete-nxml)
+;; c-headers
 (require 'auto-complete-c-headers)
 (setq achead:include-patterns (list
                                "\\.\\(h\\|hpp\\|hh\\|hxx\\|H\\)$"
                                "/[a-zA-Z-_]+$"
                                ))
-(setq achead:ac-prefix
-      "#\\s-*\\(?:include\\|import\\)\\s-*[<\"]\\s-*\\([^\"<>' \t\r\n]+\\)")
+;; doesn't work...
+;; (setq achead:ac-prefix
+;;       "#?\\(?:include\\|import\\)\\s-*[<\"]\\s-*\\([^\"<>' \t\r\n]+\\)")
 (setq achead:include-directories '("."))
 
 (add-hook 'c-mode-common-hook
@@ -580,6 +573,29 @@
   (auto-complete '(ac-source-yasnippet)))
 (global-set-key [backtab] 'my/expand-yasnippet)
 (global-set-key [(shift tab)] 'my/expand-yasnippet)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-insert ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'autoinsert)
+(defun my/autoinsert-yas-expand ()
+  "Replace text in yasnippet template."
+  (yas-expand-snippet (buffer-string) (point-min) (point-max)))
+(setq auto-insert 'other)
+(setq auto-insert-directory (concat my/scratch-directory "templates/"))
+(setq auto-insert-alist '(
+                          (("\\.el$" . "Emacs Lisp") .
+                           ["template.el" my/autoinsert-yas-expand])
+                          (("\\.sh$" . "Sh") .
+                           ["template.sh" my/autoinsert-yas-expand])
+                          (("\\.bat$" . "Dos") .
+                           ["template.bat" my/autoinsert-yas-expand])
+                          (("CMakeLists.txt" . "CMake") .
+                           ["template.cmake" my/autoinsert-yas-expand])
+                          (("\\.\\(h\\|hh\\|H\\|hpp\\|hxx\\)$" . "c++") .
+                           ["template.h" my/autoinsert-yas-expand])
+                          (("\\.\\(cpp\\|cc\\|C\\|c\\|cxx\\)$" . "c++") .
+                           ["template.cpp" my/autoinsert-yas-expand])
+      ))
+(global-set-key "\C-cst" 'auto-insert)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; popup-kill-ring ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'popup-kill-ring)
