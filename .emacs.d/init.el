@@ -8,6 +8,7 @@
                              (if (boundp 'user-emacs-directory)
                                  user-emacs-directory
                                "~/.emacs.d/")))
+(defconst my/scratch-directory (concat my/user-directory "etc/"))
 (defconst my/plugins-directory (concat my/user-directory "plugins/"))
 (add-to-list 'load-path my/plugins-directory)
 (add-to-list 'load-path (concat my/user-directory "modes/"))
@@ -502,8 +503,12 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-complete ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-to-list 'load-path (concat my/plugins-directory "auto-complete/"))
 (require 'auto-complete)
+;; user dictionary
+(add-to-list 'ac-user-dictionary-files
+             (concat my/scratch-directory "user-dict"))
+;; mode/extension directory (in addition to "plugins/auto-complete/dict")
 (add-to-list 'ac-dictionary-directories
-             (concat my/plugins-directory "auto-complete/dict/"))
+             (concat my/scratch-directory "dict/"))
 (mapc (lambda(mode)
         (add-to-list 'ac-modes mode))
       '(sql-mode nxml-mode cmake-mode folio-mode protobuf-mode
@@ -527,6 +532,8 @@
                                "\\.\\(h\\|hpp\\|hh\\|hxx\\|H\\)$"
                                "/[a-zA-Z-_]+$"
                                ))
+(setq achead:ac-prefix
+      "#\\s-*\\(?:include\\|import\\)\\s-*[<\"]\\s-*\\([^\"<>' \t\r\n]+\\)")
 (setq achead:include-directories '("."))
 
 (add-hook 'c-mode-common-hook

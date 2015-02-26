@@ -1,0 +1,7 @@
+auto-complete: add key words for dos mode, cmake mode
+               c-headers: stop completing if file exists; "."
+
+windmove: wrap
+
+etags: display source file
+
