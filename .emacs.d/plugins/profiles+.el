@@ -1,10 +1,10 @@
-;; -*- Mode: Emacs-Lisp; lexical-binding: nil -*-
-;;; profiles+.el --- Extensions to 'profiles.el'
-;; Copyright (C) 2015  Dan Harms
-;; Created: Thursday, February 19, 2015
-;; Time-stamp: <2015-02-26 14:48:53 dharms>
-
-;; Author: Dan Harms
+;; -*- Mode: Emacs-Lisp -*-
+;; profiles+.el --- Extensions to 'profiles.el'
+;; Copyright (C) 2015  Dan Harms (dharms)
+;; Author: Dan Harms <danielrharms@gmail.com>
+;; Created: Saturday, February 28, 2015
+;; Version: 1.0
+;; Modified Time-stamp: <2015-02-28 03:28:29 dharms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -20,11 +20,11 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-;;; Commentary:
+;; Commentary:
 
 ;;
 
-;;; Code:
+;; Code:
 
 (require 'profiles)
 (setq profile-path-alist-file nil)
