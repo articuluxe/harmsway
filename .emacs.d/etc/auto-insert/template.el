@@ -1,11 +1,11 @@
-;; -*- Mode: Emacs-Lisp; lexical-binding: nil -*-
+;; -*- Mode: Emacs-Lisp -*-
 ;; ${1:`(file-name-nondirectory (buffer-file-name))`} --- ${2:Short description}
-;; Copyright (C) `(format-time-string "%Y")`  `(user-full-name)`
-;; Author: `(user-full-name)` <`(user-login-name)`>
+;; Copyright (C) `(format-time-string "%Y")`  `(user-full-name)` (`(user-login-name)`)
+;; Author: `(user-full-name)` <`user-mail-address`>
 ;; Created: `(today)`
-;; Modified Time-stamp: <2015-02-26 13:19:05 dharms>
-
-;; Keywords:
+;; Version: ${3:1.0}
+;; Modified Time-stamp: <2015-02-27 03:49:08 dharms>
+;; Keywords: $4
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -26,5 +26,6 @@
 
 ;; Code:
 
+$0
 
 ;; $1 ends here

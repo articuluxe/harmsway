@@ -1,8 +1,31 @@
 ;; -*- Mode: Emacs-Lisp -*-
+;; init.el --- Initialization file
+;; Copyright (C) 2015  Dan Harms (dharms)
+;; Author: Dan Harms <danielrharms@gmail.com>
+;; Created: Friday, February 27, 2015
+;; Version: 1.0
+;; Modified Time-stamp: <2015-02-27 19:38:38 dharms>
+;; Keywords:
+
+;; This program is free software; you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+;; Commentary:
+
 ;;
-;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Dan Harms init.el ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
+
+;; Code:
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; load-path ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defconst my/user-directory (expand-file-name
                              (if (boundp 'user-emacs-directory)
@@ -40,9 +63,9 @@
       kept-new-versions 10
       auto-save-timeout 60
       auto-save-interval 0              ;disable autosaves due to input events
-)
+      )
 
-; Suppress GNU startup message
+;; Suppress GNU startup message
 (setq inhibit-startup-message t)
 (setq inhibit-default-init t)
 (setq line-number-mode t)
@@ -52,32 +75,32 @@
 (setq kill-do-not-save-duplicates t)
 (file-name-shadow-mode 1)
 (setq enable-recursive-minibuffers t)
-; truncate long lines
+;;  truncate long lines
 (setq-default truncate-lines t)
-; search is case-sensitive by default
+;; search is case-sensitive by default
 (setq-default case-fold-search nil)
 ;; interactive regexp-search space character stands only for 1 char
 (setq-default search-whitespace-regexp nil)
-; default tab width
+;; default tab width
 (setq-default tab-width 4)
-; Show selections
+;; Show selections
 (transient-mark-mode 1)
 ;; show current function
 (which-function-mode t)
-; Insertion while text is selected deletes the selected text
+;; Insertion while text is selected deletes the selected text
 (delete-selection-mode 1)
 ;; winner mode
 (winner-mode 1)
-; append unique parent directory to buffers of same name
+;; append unique parent directory to buffers of same name
 (toggle-uniquify-buffer-names)
 (setq uniquify-buffer-name-style 'post-forward-angle-brackets)
-; Preserve line position on scroll
+;; Preserve line position on scroll
 (setq scroll-preserve-screen-position t)
-; Ignore case when completing file names
+;; Ignore case when completing file names
 (setq read-file-name-completion-ignore-case nil)
 (show-paren-mode t)
 (size-indication-mode 1)
-; don't add new-lines to end of buffer on scroll
+;; don't add new-lines to end of buffer on scroll
 (setq next-line-add-newlines nil)
 ;; allow converting regions to upper/lower case
 (put 'upcase-region 'disabled nil)
@@ -93,7 +116,7 @@
 ;; visual settings
 (menu-bar-mode -1)
 (setq-default fill-column 78)
-; default colors
+;; default colors
 (set-foreground-color "white")
 (set-background-color "black")
 (set-cursor-color "yellow")
@@ -171,16 +194,6 @@
 (global-set-key [?\C-\M-.] 'etags-select-find-tag-at-point)
 
 ;;;;;;; FUNCTIONS ;;;;;;;
-;; (defun select-next-window () "Switch to next window"
-;;   (interactive)
-;;   (select-window (next-window)))
-;; (defun select-previous-window () "Switch to previous window"
-;;   (interactive)
-;;   (select-window (previous-window)))
-;; ; Jump to matching parentheses
-;; (defun jump-to-match-paren () "goto matching paren" (interactive)
-;;    (cond ((looking-at "\\s\(") (forward-list 1) (backward-char 1))
-;;      ((looking-at "\\s\)") (forward-char 1) (forward-list -1))))
 ;; ; man-page lookups
 ;; (defun openman () "lookup man page" (interactive)
 ;;    (manual-entry (current-word)))
@@ -315,7 +328,7 @@
 (setq tramp-default-user my/user-name)
 (defvar my/tramp-file-list '())
 (defun my/open-tramp-file() (interactive)
-  (find-file (ido-completing-read "Remote file: " my/tramp-file-list)))
+       (find-file (ido-completing-read "Remote file: " my/tramp-file-list)))
 (global-set-key "\C-c\C-t" 'my/open-tramp-file)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dired ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -344,7 +357,7 @@
 ;; TODO: choose a key for this
 
 (defadvice shell-command
-  (after shell-in-new-buffer (command &optional output-buffer error-buffer))
+    (after shell-in-new-buffer (command &optional output-buffer error-buffer))
   (when (get-buffer "*Async Shell Command*")
     (with-current-buffer "*Async Shell Command*"
       (rename-uniquely))))
@@ -352,12 +365,11 @@
 
 ;; launch command
 (defun dired-launch-command() (interactive)
-  (dired-do-shell-command
-   (case system-type
-     (darwin "open")
-     (gnu/linux "open")
-     )
-   nil (dired-get-marked-files t current-prefix-arg)))
+       (dired-do-shell-command
+        (case system-type
+          (darwin "open")
+          (gnu/linux "open")
+          ) nil (dired-get-marked-files t current-prefix-arg)))
 
 (add-hook 'dired-load-hook
           '(lambda()
@@ -367,13 +379,13 @@
 
 ;; easily go to top or bottom
 (defun dired-back-to-top() (interactive)
-  (goto-char (point-min))
-  (dired-next-line 4))
+       (goto-char (point-min))
+       (dired-next-line 4))
 (define-key dired-mode-map
   (vector 'remap 'beginning-of-buffer) 'dired-back-to-top)
 (defun dired-jump-to-bottom() (interactive)
-  (goto-char (point-max))
-  (dired-next-line -1))
+       (goto-char (point-max))
+       (dired-next-line -1))
 (define-key dired-mode-map
   (vector 'remap 'end-of-buffer) 'dired-jump-to-bottom)
 
@@ -445,13 +457,15 @@
 (define-key global-map "\C-xt."                'save-frame-config)
 
 (defun my/tile-frames-vertically()
-  "Tile frames vertically. You can restore prior frame position via going to register \\C-l."
+  "Tile frames vertically. You can restore prior frame position via going to
+register \\C-l."
   (interactive)
   (save-frame-config)
   (tile-frames-vertically))
 (global-set-key "\e\ev" 'my/tile-frames-vertically)
 (defun my/tile-frames-horizontally()
-  "Tile frames horizontally. You can restore prior frame position via going to register \\C-l."
+  "Tile frames horizontally. You can restore prior frame position via going to
+register \\C-l."
   (interactive)
   (save-frame-config)
   (tile-frames-horizontally))
@@ -570,31 +584,43 @@
 (define-key yas-minor-mode-map "\C-csv" 'yas-visit-snippet-file)
 ;; integrate with auto-complete
 (defun my/expand-yasnippet() (interactive)
-  (auto-complete '(ac-source-yasnippet)))
+       (auto-complete '(ac-source-yasnippet)))
 (global-set-key [backtab] 'my/expand-yasnippet)
 (global-set-key [(shift tab)] 'my/expand-yasnippet)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-insert ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'autoinsert)
-(defun my/autoinsert-yas-expand ()
-  "Replace text in yasnippet template."
-  (yas-expand-snippet (buffer-string) (point-min) (point-max)))
+(require 'auto-insert-choose+)
 (setq auto-insert 'other)
-(setq auto-insert-directory (concat my/scratch-directory "templates/"))
+(setq auto-insert-directory (concat my/scratch-directory "auto-insert/"))
+;; list of different templates to choose from
+(defvar auto-insert-c-header-alist '())
+(defvar auto-insert-c-impl-alist '())
+(auto-insert-choose+-add-entry 'auto-insert-c-header-alist "template.h")
+(auto-insert-choose+-add-entry 'auto-insert-c-impl-alist "template.cpp")
+
+;; The "normal" entries (using auto-insert) can list the file name and
+;; the yas-expand helper.  If you want to be able to choose among
+;; different templates per mode or file extension, then use the
+;; auto-insert-choose+ functionality: populate an alist per file type
+;; with the different templates, then associate a lambda with a defun
+;; that selects between them: completion, ido, popup.
 (setq auto-insert-alist '(
-                          (("\\.el$" . "Emacs Lisp") .
-                           ["template.el" my/autoinsert-yas-expand])
+                          ((emacs-lisp-mode . "Emacs Lisp") .
+                           ["template.el" auto-insert-choose-yas-expand])
                           (("\\.sh$" . "Sh") .
-                           ["template.sh" my/autoinsert-yas-expand])
+                           ["template.sh" auto-insert-choose-yas-expand])
                           (("\\.bat$" . "Dos") .
-                           ["template.bat" my/autoinsert-yas-expand])
+                           ["template.bat" auto-insert-choose-yas-expand])
                           (("CMakeLists.txt" . "CMake") .
-                           ["template.cmake" my/autoinsert-yas-expand])
-                          (("\\.\\(h\\|hh\\|H\\|hpp\\|hxx\\)$" . "c++") .
-                           ["template.h" my/autoinsert-yas-expand])
-                          (("\\.\\(cpp\\|cc\\|C\\|c\\|cxx\\)$" . "c++") .
-                           ["template.cpp" my/autoinsert-yas-expand])
-      ))
+                           ["template.cmake" auto-insert-choose-yas-expand])
+                          (("\\.\\(h\\|hh\\|H\\|hpp\\|hxx\\)$" . "c++")
+                           lambda nil (auto-insert-choose-and-call-popup
+                                       auto-insert-c-header-alist))
+                          (("\\.\\(cpp\\|cc\\|C\\|c\\|cxx\\)$" . "c++")
+                           lambda nil (auto-insert-choose-and-call-popup
+                                       auto-insert-c-impl-alist))
+                          ))
 (global-set-key "\C-cst" 'auto-insert)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; popup-kill-ring ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -674,40 +700,40 @@ customization."
 
 (add-hook 'before-save-hook 'my/before-save-hook)
 (defun my/before-save-hook() "Presave hook"
-  (when (memq major-mode '(c++-mode emacs-lisp-mode perl-mode
-                                    java-mode python-mode dos-mode
-                                    nxml-mode protobuf-mode folio-mode
-                                    sh-mode))
-    (delete-trailing-whitespace)
-    (copyright-update nil t)
-    (time-stamp)
-    ))
+       (when (memq major-mode '(c++-mode emacs-lisp-mode perl-mode
+                                         java-mode python-mode dos-mode
+                                         nxml-mode protobuf-mode folio-mode
+                                         sh-mode))
+         (delete-trailing-whitespace)
+         (copyright-update nil t)
+         (time-stamp)
+         ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; modes ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq auto-mode-alist
-   (append '(("\\.C$"        . c++-mode)
-             ("\\.cc$"       . c++-mode)
-             ("\\.cpp$"      . c++-mode)
-             ("\\.inl$"      . c++-mode)
-             ("\\.c$"        . c++-mode)
-             ("\\.H$"        . c++-mode)
-             ("\\.hh$"       . c++-mode)
-             ("\\.hpp$"      . c++-mode)
-             ("\\.h$"        . c++-mode)
-             ("\\.java$"     . java-mode)
-             ("\\.pl$"       . perl-mode)
-             ("\\.pm$"       . perl-mode)
-             ("SConstruct"   . python-mode)
-             ("SConscript"   . python-mode)
-             ("CMakeLists\\.txt$"   . cmake-mode)
-             ("\\.cmake$"    . cmake-mode)
-             ("\\.proto$"    . protobuf-mode)
-             ("\\.folio$"    . folio-mode)
-             ("\\.bat$"      . dos-mode)
-             ("\\.log$"      . log-viewer-mode)
-             ("\\.pro$"      . qt-pro-mode)
-            )
-     auto-mode-alist))
+      (append '(("\\.C$"        . c++-mode)
+                ("\\.cc$"       . c++-mode)
+                ("\\.cpp$"      . c++-mode)
+                ("\\.inl$"      . c++-mode)
+                ("\\.c$"        . c++-mode)
+                ("\\.H$"        . c++-mode)
+                ("\\.hh$"       . c++-mode)
+                ("\\.hpp$"      . c++-mode)
+                ("\\.h$"        . c++-mode)
+                ("\\.java$"     . java-mode)
+                ("\\.pl$"       . perl-mode)
+                ("\\.pm$"       . perl-mode)
+                ("SConstruct"   . python-mode)
+                ("SConscript"   . python-mode)
+                ("CMakeLists\\.txt$"   . cmake-mode)
+                ("\\.cmake$"    . cmake-mode)
+                ("\\.proto$"    . protobuf-mode)
+                ("\\.folio$"    . folio-mode)
+                ("\\.bat$"      . dos-mode)
+                ("\\.log$"      . log-viewer-mode)
+                ("\\.pro$"      . qt-pro-mode)
+                )
+              auto-mode-alist))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; sh-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-hook 'sh-mode-hook
@@ -790,3 +816,4 @@ customization."
              (define-key conf-mode-map "\C-c\C-c" 'comment-region)
              (define-key conf-mode-map "\C-c\C-u" 'uncomment-region)
              ))
+;; init.el ends here
