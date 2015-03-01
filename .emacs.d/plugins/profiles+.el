@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-02-28 03:28:29 dharms>
+;; Modified Time-stamp: <2015-03-01 00:38:52 dharms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -62,10 +62,10 @@ The returned property is not evaluated.  This overrides the function in
              (profile-lookup-property-polymorphic profile-current property)))))
 
 ;;;###autoload
-(defun profile-current-funcall (property)
+(defun profile-current-funcall (property project-root)
   "Return the function call of PROPERTY's value for the current
 profile `profile-current'."
-  (funcall (get profile-current property)))
+  (funcall (get profile-current property) project-root))
 
 ;;;###autoload
 (defun profile-find-profile-basename (name)
@@ -101,14 +101,22 @@ like any of the following: `.profile', `my.profile', `.my.profile', `.root',
         (cons profile--root-file (expand-file-name root))
       (setq profile--root-file nil))))
 
-;; called when a profile is loaded
-(defun profile--on-loaded () "Initializes a loaded profile."
-       (when (and c-buffer-is-cc-mode
-                  profile-current
-                  (profile-current-get 'funcall))
-         (profile-current-funcall 'funcall)))
+;; called when a file is opened and assigned a profile
+(defun profile--on-file-opened () "Initialize a file after opening and
+assigning a profile."
+       (when (and profile-current
+                  (profile-current-get 'on-file-open))
+         (profile-current-funcall 'on-file-open
+                                  (profile-current-get 'project-root))))
 
-(add-hook 'find-file-hook 'profile--on-loaded)
+(add-hook 'find-file-hook 'profile--on-file-opened)
+
+;; called when a profile is initialized
+(defun profile--on-profile-init () "Initialize a loaded profile."
+       (when (and profile-current
+                  (profile-current-get 'on-profile-init))
+         (profile-current-funcall 'on-profile-init
+                                  (profile-current-get 'project-root))))
 
 ;; override the advice
 (defadvice find-file-noselect-1
@@ -148,7 +156,8 @@ of the buffer."
                   (profile-current-put 'project-name profile-basename)))
             ;; new profile, but not from a .profile
             (profile-current-put 'project-root root-dir)
-            ))))))
+            )
+          (profile--on-profile-init))))))
 
 (provide 'profiles+)
 

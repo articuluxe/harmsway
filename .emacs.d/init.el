@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-02-27 19:38:38 dharms>
+;; Modified Time-stamp: <2015-03-01 02:09:39 dharms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -188,10 +188,15 @@
         ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; tags ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; select
+(require 'etags-select)
 (setq tags-revert-without-query t)
 (global-set-key "\C-ct" 'find-my-tags-file)
 (global-set-key "\M-." 'etags-select-find-tag)
 (global-set-key [?\C-\M-.] 'etags-select-find-tag-at-point)
+;; table
+(require 'etags-table)
+(setq etags-table-search-up-depth nil)  ;todo
 
 ;;;;;;; FUNCTIONS ;;;;;;;
 ;; ; man-page lookups
@@ -224,7 +229,6 @@
       (require 'cl)))
 (require 'protobuf-mode)
 (require 'dos)
-(require 'etags-select)
 (require 'folio-mode)
 (require 'folio-electric)
 (require 'pos-tip)
@@ -504,6 +508,12 @@ register \\C-l."
                 'compile-sub-command "make"
                 )
 (profile-set-default "default")
+(profile-define "harmsway" "dharms" "danielrharms@gmail.com"
+                'project-name "harmsway"
+                'src-sub-dir ".emacs.d/"
+                )
+(setq profile-path-alist (cons (cons "src/projects/harmsway" "harmsway")
+                               profile-path-alist))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-complete ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-to-list 'load-path (concat my/plugins-directory "auto-complete/"))
