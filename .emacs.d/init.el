@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-03-01 02:09:39 dharms>
+;; Modified Time-stamp: <2015-03-01 03:59:04 dharms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -116,6 +116,23 @@
 ;; visual settings
 (menu-bar-mode -1)
 (setq-default fill-column 78)
+(setq-default frame-title-format
+              '(:eval
+                (format "%s@%s: %s %s"
+                        (or (file-remote-p default-directory 'user)
+                            user-real-login-name)
+                        (or (file-remote-p default-directory 'host)
+                            system-name)
+                        (if dired-directory
+                            (concat "{" (buffer-name) "}")
+                          (buffer-name))
+                        (if (profile-current-get 'project-name)
+                            (concat
+                             "("
+                             (upcase (profile-current-get 'project-name))
+                             ")")
+                          "")           ;else empty if no project name
+                        )))
 ;; default colors
 (set-foreground-color "white")
 (set-background-color "black")

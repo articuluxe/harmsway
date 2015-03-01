@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-02-28 03:25:16 dharms>
+;; Modified Time-stamp: <2015-03-01 03:58:09 dharms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -48,7 +48,8 @@
                            (profile-current-get 'src-sub-dir))))))
     (grep-apply-setting
      'grep-command
-     (concat "find -P " dir
+     (concat "find -P "
+             (directory-file-name dir) ;grep doesn't need the trailing slash
              " \"(\" -name \"*moc_*\" -o -name \"*qrc_*\" \")\" "
              "-prune -o -type f \"(\" -name \"*.cpp\" -o -name \"*.h\" "
              "-o -name \"*.cc\" -o -name \"*.hh\" -o -name \"*.cxx\" "
