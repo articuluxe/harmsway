@@ -1,6 +1,6 @@
 ;;; etags-select.el --- Select from multiple tags
 
-;; Copyright (C) 2007  Scott Frazer
+;; Copyright (C) 2007, 2015  Scott Frazer
 
 ;; Author: Scott Frazer <frazer.scott@gmail.com>
 ;; Maintainer: Scott Frazer <frazer.scott@gmail.com>
@@ -268,8 +268,15 @@ to do."
   "Get tag files."
   (if etags-select-use-xemacs-etags-p
       (buffer-tag-table-list)
-    (etags-select-remove-placeholders)
-	tags-table-computed-list))
+    (mapcar 'tags-expand-table-name tags-table-list)))
+
+;; this version is only useful when using a single TAGS file that includes
+;; other TAGS files, i.e. when using tag-file-name.  Therefore, when using
+;; tags-table-list, e.g. with etags-table, use the original, not this.
+;; (defun etags-select-get-tag-files() "Get tag files."
+;; (if etags-select-use-xemacs-etags-p
+;; (buffer-tag-table-list) (etags-select-remove-placeholders)
+;; tags-table-computed-list))
 
 (defun etags-select-get-completion-table ()
   "Get the tag completion table."

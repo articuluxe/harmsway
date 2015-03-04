@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-03-01 03:59:04 dharms>
+;; Modified Time-stamp: <2015-03-03 20:09:43 dharms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -116,23 +116,6 @@
 ;; visual settings
 (menu-bar-mode -1)
 (setq-default fill-column 78)
-(setq-default frame-title-format
-              '(:eval
-                (format "%s@%s: %s %s"
-                        (or (file-remote-p default-directory 'user)
-                            user-real-login-name)
-                        (or (file-remote-p default-directory 'host)
-                            system-name)
-                        (if dired-directory
-                            (concat "{" (buffer-name) "}")
-                          (buffer-name))
-                        (if (profile-current-get 'project-name)
-                            (concat
-                             "("
-                             (upcase (profile-current-get 'project-name))
-                             ")")
-                          "")           ;else empty if no project name
-                        )))
 ;; default colors
 (set-foreground-color "white")
 (set-background-color "black")
@@ -213,7 +196,7 @@
 (global-set-key [?\C-\M-.] 'etags-select-find-tag-at-point)
 ;; table
 (require 'etags-table)
-(setq etags-table-search-up-depth nil)  ;todo
+(setq etags-table-search-up-depth 12)
 
 ;;;;;;; FUNCTIONS ;;;;;;;
 ;; ; man-page lookups
@@ -698,6 +681,25 @@ register \\C-l."
   (setq gui-file (concat gui-dir (if (null gui) "tty" (symbol-name gui))))
   (load gui-file)
   )
+
+(setq-default frame-title-format
+              '(:eval
+                (format "%s@%s: %s %s"
+                        (or (file-remote-p default-directory 'user)
+                            user-real-login-name)
+                        (or (file-remote-p default-directory 'host)
+                            system-name)
+                        (if dired-directory
+                            (concat "{" (buffer-name) "}")
+                          (buffer-name))
+                        (if (profile-current-get 'project-name)
+                            (concat
+                             "("
+                             (upcase (profile-current-get 'project-name))
+                             ")")
+                          "")           ;else empty if no project name
+                        )))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; site ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun my/load-site-file (name)
