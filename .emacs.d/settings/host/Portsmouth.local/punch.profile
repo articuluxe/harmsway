@@ -21,3 +21,4 @@
                         )
 (setq profile-path-alist (cons (cons "src/projects/punch" "punch")
                                profile-path-alist))
+(add-to-list 'sml/replacer-regexp-list '("^~/src/projects/punch/" ":PUNCH:") t)

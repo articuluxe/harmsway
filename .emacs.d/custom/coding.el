@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-03-01 03:58:09 dharms>
+;; Modified Time-stamp: <2015-03-04 13:25:01 dharms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -182,7 +182,7 @@
         ;; no arg; if project-name is defined, prepend it
         (when project-name
           (setq str (concat project-name "_" str))))
-      (setq str (upcase (concat "_" str "_")))
+      (setq str (upcase (concat "__" str "__")))
       (goto-char (point-min))
       (insert "#ifndef " str "\n#define " str "\n\n")
       (goto-char (point-max))

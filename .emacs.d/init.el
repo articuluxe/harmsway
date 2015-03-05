@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-03-03 20:09:43 dharms>
+;; Modified Time-stamp: <2015-03-05 12:28:04 dharms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -134,7 +134,8 @@
 (global-unset-key (kbd "<f1>"))
 (global-set-key [(next)] 'scroll-up-line)
 (global-set-key [(prior)] 'scroll-down-line)
-(global-set-key "\M-r" 'revert-buffer)
+(global-set-key "\C-x\C-r" (lambda()(interactive)(revert-buffer nil t)))
+;; TODO: "\M-r" is unbound
 (global-set-key "\M-]" 'jump-to-match-paren)
 (global-set-key "\C-ca" 'align)
 (global-set-key "\C-cr" 'align-repeat-regexp)
@@ -314,6 +315,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; rich-minority ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'rich-minority)
 (rich-minority-mode 1)
+(setq rm-blacklist '(" AC" " yas" " Undo-Tree" " Abbrev"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smart-mode-line ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-to-list 'load-path (concat my/plugins-directory "smart-mode-line/"))
@@ -342,6 +344,10 @@
 (setq-default dired-listing-switches "-alhvGg")
 (setq dired-details-initially-hide nil)
 (put 'dired-find-alternate-file 'disabled nil)
+;; next window's dired window used as target for current window operations
+(setq dired-dwim-target t)
+;; search only in filenames
+(setq dired-isearch-filenames t)
 
 (defun my/dired-sort()
   "Toggle sorting in dired buffers."
@@ -514,6 +520,7 @@ register \\C-l."
                 )
 (setq profile-path-alist (cons (cons "src/projects/harmsway" "harmsway")
                                profile-path-alist))
+(add-to-list 'sml/replacer-regexp-list '("^~/src/projects/harmsway/" ":HW:") t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-complete ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-to-list 'load-path (concat my/plugins-directory "auto-complete/"))

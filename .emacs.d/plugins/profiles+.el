@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-03-01 00:38:52 dharms>
+;; Modified Time-stamp: <2015-03-04 20:36:40 dharms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -153,7 +153,18 @@ of the buffer."
                 (unless (profile-current-get 'project-root)
                   (profile-current-put 'project-root root-dir))
                 (unless (profile-current-get 'project-name)
-                  (profile-current-put 'project-name profile-basename)))
+                  (profile-current-put 'project-name profile-basename))
+                (add-to-list 'sml/replacer-regexp-list
+                             (list (concat "^"
+                                           (abbreviate-file-name
+                                            (profile-current-get
+                                             'project-root)))
+                                   (concat ":"
+                                           (upcase
+                                            (profile-current-get
+                                             'project-name))
+                                           ":")) t)
+                )
             ;; new profile, but not from a .profile
             (profile-current-put 'project-root root-dir)
             )

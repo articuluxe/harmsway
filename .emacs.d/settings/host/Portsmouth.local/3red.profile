@@ -17,3 +17,4 @@
                         )
 (setq profile-path-alist (cons (cons "src/projects/3red" "3red")
                                profile-path-alist))
+(add-to-list 'sml/replacer-regexp-list '("^~/src/projects/3red/" ":3RED:") t)
