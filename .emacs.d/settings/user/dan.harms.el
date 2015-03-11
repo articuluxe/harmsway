@@ -1,10 +1,10 @@
 ;; -*- Mode: Emacs-Lisp -*-
-;; windows-nt.el --- windows os settings file
+;; dan.harms.el --- user settings file
 ;; Copyright (C) 2015  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-03-11 18:01:16 dan.harms>
+;; Modified Time-stamp: <2015-02-28 03:14:59 dharms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -26,13 +26,7 @@
 
 ;; Code:
 
-(setq-default comint-process-echoes t)
-(setq w32-get-true-file-attributes nil)
+(defconst my/user-name user-login-name)
+(setq user-mail-address "dan.harms@xrtrading.com")
 
-(setq tramp-default-method "plink")
-
-(add-to-list 'full-edit-reject-patterns "^moc")
-(add-to-list 'full-edit-reject-patterns "^qrc")
-(add-to-list 'full-edit-reject-patterns "^ui")
-
-;; windows-nt.el ends here
+;; dan.harms.el ends here

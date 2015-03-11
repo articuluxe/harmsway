@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-03-04 13:25:01 dharms>
+;; Modified Time-stamp: <2015-03-11 07:49:22 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -54,7 +54,8 @@
              "-prune -o -type f \"(\" -name \"*.cpp\" -o -name \"*.h\" "
              "-o -name \"*.cc\" -o -name \"*.hh\" -o -name \"*.cxx\" "
              "-o -name \"*.hxx\" -o -name \"*.h\" -o -name \"*.c\" "
-             "-o -name \"*.H\" -o -name \"*.C\" -o -name \"*.el\" "
+             "-o -name \"*.H\" -o -name \"*.C\" -o -name \"*.hpp\" "
+             "-o -name \"*.el\" "
              "-o -name \"*.sql\" -o -name \"*.py\" -o -name \"*.proto\" "
              "\")\" -print0 | xargs -0 grep -Isn "))
     (command-execute 'grep)))
@@ -63,51 +64,46 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; c++-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (add-hook
-  'c-mode-common-hook
-  '(lambda ()
-     (setq-default indent-tabs-mode nil)
-     (setq c-auto-newline t)
-     (c-toggle-hungry-state t)
-     ;; (setq comment-column 40)
-     (make-local-variable 'my/compile-command)
-     (define-key c++-mode-map (kbd "\C-c RET") 'my/compile)
-     (define-key c++-mode-map "\C-cm" 'my/recompile)
-     (define-key c++-mode-map "\C-ck" 'kill-compilation)
-     (define-key c++-mode-map "\C-c\C-c" 'comment-region)
-     (define-key c++-mode-map "\C-c\C-u" 'uncomment-region)
-     (setq comment-start "/*") (setq comment-end "*/")
-     (c-add-style "drh"
-       (quote
-         ((c-basic-offset . 3)
-          (c-cleanup-list . (
-                             empty-defun-braces
-                             defun-close-semi
-                             one-liner-defun
-                             scope-operator
-                             list-close-comma
-                             compact-empty-funcall
-                             ))
-          (c-offsets-alist . (
-                              (innamespace          . 0)
-                              (substatement-open    . 0)
-                              (inline-open          . 0)
-                              (statement-case-intro . +)
-                              (statement-case-open  . +)
-;                              (statement-cont       . c-lineup-math)
-                              (access-label         . -2)
-                              (comment-intro        . c-lineup-comment)
-                              (member-init-intro    . +)
-                              (arglist-cont-nonempty . +)
-;                              (comment-intro        . 0)
-;                              (arglist-intro . c-lineup-arglist-intro-after-paren)
-;                              (arglist-close . c-lineup-arglist)
-          )
-         )
-        )
-       )
-     t)
-   )
-)
+ 'c-mode-common-hook
+ (lambda ()
+   (setq-default indent-tabs-mode nil)
+   (setq c-auto-newline t)
+   (c-toggle-hungry-state t)
+   ;; (setq comment-column 40)
+   (make-local-variable 'my/compile-command)
+   (define-key c++-mode-map (kbd "\C-c RET") 'my/compile)
+   (define-key c++-mode-map "\C-cm" 'my/recompile)
+   (define-key c++-mode-map "\C-ck" 'kill-compilation)
+   (define-key c++-mode-map "\C-c\C-c" 'comment-region)
+   (define-key c++-mode-map "\C-c\C-u" 'uncomment-region)
+   (setq comment-start "/*") (setq comment-end "*/")
+   (c-add-style "default-style"
+                (quote
+                 ((c-basic-offset . 3)
+                  (c-cleanup-list . (
+                                     empty-defun-braces
+                                     defun-close-semi
+                                     one-liner-defun
+                                     scope-operator
+                                     list-close-comma
+                                     compact-empty-funcall
+                                     ))
+                  (c-offsets-alist . (
+                                      (innamespace           . 0)
+                                      (substatement-open     . 0)
+                                      (inline-open           . 0)
+                                      (statement-case-intro  . +)
+                                      (statement-case-open   . +)
+;(statement-cont . c-lineup-math)
+                                      (access-label          . -2)
+                                      (comment-intro         . c-lineup-comment)
+                                      (member-init-intro     . +)
+                                      (arglist-cont-nonempty . +)
+;(comment-intro . 0)
+;(arglist-intro . c-lineup-arglist-intro-after-paren)
+;(arglist-close . c-lineup-arglist)
+                                      )))))
+   ))
 
 (add-hook 'c++-mode-hook
       '(lambda()
