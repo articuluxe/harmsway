@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-03-05 12:28:04 dharms>
+;; Modified Time-stamp: <2015-03-13 13:52:44 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -41,6 +41,10 @@
 (load my/user-settings)
 
 (set-register ?\C-i (cons 'file user-init-file)) ;edit init file
+(set-register ?\C-d (cons 'file "~/Documents"))
+(set-register ?\C-e (cons 'file "~/Desktop"))
+(set-register ?\C-w (cons 'file "~/Downloads"))
+(set-register ?\C-s (cons 'file "~/src"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-save ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defconst my/autosave-dir (concat my/user-directory "autosaves/"))
@@ -332,6 +336,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; tramp ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq tramp-default-method "ssh")
 (setq tramp-default-user my/user-name)
+(setq explicit-shell-file-name "/bin/bash")
 (defvar my/tramp-file-list '())
 (defun my/open-tramp-file() (interactive)
        (find-file (ido-completing-read "Remote file: " my/tramp-file-list)))
@@ -671,7 +676,13 @@ register \\C-l."
   (load system-file)
   ;; check for any additional environment variables
   (if (file-exists-p path-file)
-      (load-environment-variable-from-file "PATH" path-file))
+      (progn
+        (load-environment-variable-from-file "PATH" path-file)
+        ;; replicate path (delimiter-separated string of paths) into
+        ;; exec-path (list of paths); by convention, ends in exec-dir
+        (setq exec-path (append
+                         (read-file-into-list-of-lines path-file)
+                         (convert-standard-filename exec-directory)))))
   (if (file-exists-p include-file)
       (load-environment-variable-from-file "INCLUDE" include-file))
   (if (file-exists-p lib-file)

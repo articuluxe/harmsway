@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-03-11 17:33:23 dan.harms>
+;; Modified Time-stamp: <2015-03-13 13:37:08 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -26,7 +26,7 @@
 
 ;; Code:
 
-(setq explicit-shell-file-name "c:/msys/1.0/bin/bash")
+(setq shell-file-name "c:/msys/1.0/bin/bash")
 ;; todo: set "/bin/bash" for remote files
 
 ;; company coding style
@@ -37,6 +37,10 @@
                          (quote ("default-style" ;derives from my default
                                  (c-basic-offset . 4)
                                  )) t)) t)
+
+(add-to-list 'sml/replacer-regexp-list
+             '("/plink:dan.harms@\\([^:]+\\):" ":\\1:") t)
+(add-to-list 'sml/replacer-regexp-list '("/home/dan\\.harms" "~") t)
 
 (sml/apply-theme 'respectful)
 (color-theme-solarized-dark)

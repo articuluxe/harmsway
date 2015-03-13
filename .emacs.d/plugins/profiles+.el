@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-03-04 20:36:40 dharms>
+;; Modified Time-stamp: <2015-03-13 17:03:24 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -86,17 +86,17 @@ like any of the following: `.profile', `my.profile', `.my.profile', `.root',
          (locate-dominating-file
           dir
           (lambda(parent)
-            (let ((res (directory-files parent t "\\.profile$")))
+            (let ((res (directory-files parent t "\\sw+\\.profile$")))
               (when res
                 (setq profile--root-file (car res))))))))
     (unless root
       (setq root
             (locate-dominating-file dir ".root")
             profile--root-file ".root"))
-    (unless root
-      (setq root
-            (locate-dominating-file dir ".git")
-            profile--root-file ".git"))
+    ;; (unless root
+    ;;   (setq root
+    ;;         (locate-dominating-file dir ".git")
+    ;;         profile--root-file ".git"))
     (if root
         (cons profile--root-file (expand-file-name root))
       (setq profile--root-file nil))))
@@ -105,18 +105,50 @@ like any of the following: `.profile', `my.profile', `.my.profile', `.root',
 (defun profile--on-file-opened () "Initialize a file after opening and
 assigning a profile."
        (when (and profile-current
-                  (profile-current-get 'on-file-open))
+                  (profile-current-get 'on-file-open)
+                  (fboundp (intern-soft
+                            (profile-current-get 'on-file-open))))
          (profile-current-funcall 'on-file-open
                                   (profile-current-get 'project-root))))
 
 (add-hook 'find-file-hook 'profile--on-file-opened)
 
+;; (defvar profile-local-tags-dir-root "~/src/tags/")
+;; (defun profile-remote-host (file)
+;;   (if (tramp-tramp-file-p file)
+;;       (tramp-file-name-host (tramp-dissect-file-name file))
+;;     nil))
+;; (defun profile-local-tags-dir (file root)
+;;   (let ((host (profile-remote-host file)))
+;;     (if host
+;;         (concat (replace-regexp-in-string "\\/" "!" root t nil)
+;;                 "/" profile-local-tags-dir-root host "/"
+;;                 "/"
+;;                 ) nil)))
+
+(defun profile--compute-tag-dir ()
+  "Helper function that computes where a project's local TAGS live."
+  (let ((base (profile-current-get 'tag-sub-dir))
+        (dir default-directory))
+    (when (tramp-tramp-file-p dir)
+      (profile-current-put 'remote-host
+                           (tramp-file-name-host
+                            (tramp-dissect-file-name dir))))
+    (concat (profile-current-get 'project-root)
+            (or base "tags/"))))
+
 ;; called when a profile is initialized
 (defun profile--on-profile-init () "Initialize a loaded profile."
-       (when (and profile-current
-                  (profile-current-get 'on-profile-init))
-         (profile-current-funcall 'on-profile-init
-                                  (profile-current-get 'project-root))))
+       (let ((root (profile-current-get 'project-root)))
+         (when (and profile-current
+                    (profile-current-get 'on-profile-init)
+                    (fboundp (intern-soft
+                              (profile-current-get 'on-profile-init)))
+                    (not (profile-current-get 'profile-inited)))
+           (unless (profile-current-get 'tag-dir)
+             (profile-current-put 'tag-dir (profile--compute-tag-dir)))
+           (profile-current-funcall 'on-profile-init root)
+           (profile-current-put 'profile-inited t))))
 
 ;; override the advice
 (defadvice find-file-noselect-1
@@ -134,10 +166,13 @@ of the buffer."
            (root-file (car root))
            (root-dir (cdr root))
            profile-basename)
+      (message "profile-dbg: root is %s, curr is %s" root curr) ;drh
       (when (and root root-file root-dir)
         (setq profile-basename (profile-find-profile-basename root-file))
         (unless (string-equal root-dir (profile-current-get 'project-root))
           ;; this profile has not been loaded before
+          (message "profile-dbg root-dir was %s, not %s" root-dir
+                   (profile-current-get 'project-root)) ;drh
           (if (string-match "\\.profile$" root-file)
               (progn                    ;load the new profile
                 (load-file root-file)
@@ -167,8 +202,8 @@ of the buffer."
                 )
             ;; new profile, but not from a .profile
             (profile-current-put 'project-root root-dir)
-            )
-          (profile--on-profile-init))))))
+            )))
+      (profile--on-profile-init))))
 
 (provide 'profiles+)
 

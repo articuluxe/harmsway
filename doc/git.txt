@@ -1,2 +1,26 @@
+# INIT
+git config --global user.name "Dan Harms"
+git config --global user.email danielrharms@gmail.com
+git config --global core.editor emacs
+git config --global color.ui true
+git config --global merge.tool <tool>
+# ON WINDOWS
+git config --system core.autocrlf input
 
-add .gitignore patterns to .git/info/exclude.  These will not be checked in.
+#add .gitignore patterns to .git/info/exclude.  These will not be checked in.
+
+# BRANCHING
+# checkout and track remote branch
+git checkout --track origin/<branch>
+# set existing branch to track remote
+git branch -u origin/<branch>
+git branch --set-upstream-to origin/<branch>
+
+git clean -dfx
+
+
+# VIEW COMMITS [plus files changed / patches ]
+git log --oneline --decorate --graph [--stat/p]
+
+# SHOW
+git show <branch>:<path-to-file>
