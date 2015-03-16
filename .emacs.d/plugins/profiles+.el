@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-03-13 17:03:24 dan.harms>
+;; Modified Time-stamp: <2015-03-15 23:59:54 dharms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -27,6 +27,8 @@
 ;; Code:
 
 (require 'profiles)
+(require 'tramp)
+
 (setq profile-path-alist-file nil)
 
 ;;;###autoload
@@ -62,10 +64,10 @@ The returned property is not evaluated.  This overrides the function in
              (profile-lookup-property-polymorphic profile-current property)))))
 
 ;;;###autoload
-(defun profile-current-funcall (property project-root)
+(defun profile-current-funcall (property project-root-dir)
   "Return the function call of PROPERTY's value for the current
 profile `profile-current'."
-  (funcall (get profile-current property) project-root))
+  (funcall (get profile-current property) project-root-dir))
 
 ;;;###autoload
 (defun profile-find-profile-basename (name)
@@ -77,16 +79,16 @@ basename, such as `mybase'."
 
 (defvar profile--root-file)
 ;;;###autoload
-(defun profile-find-root (dir)
+(defun profile-find-root (dir &optional absolute)
   "Searches for the project root as may be defined in current profile,
 starting from DIR and moving up the directory tree.  Profile files can look
-like any of the following: `.profile', `my.profile', `.my.profile', `.root',
+like any of the following: `.eprof', `my.eprof', `.my.eprof', `.root',
 `.git'."
   (let ((root
          (locate-dominating-file
           dir
           (lambda(parent)
-            (let ((res (directory-files parent t "\\sw+\\.profile$")))
+            (let ((res (directory-files parent t "\\sw+\\.[er]prof$")))
               (when res
                 (setq profile--root-file (car res))))))))
     (unless root
@@ -98,8 +100,21 @@ like any of the following: `.profile', `my.profile', `.my.profile', `.root',
     ;;         (locate-dominating-file dir ".git")
     ;;         profile--root-file ".git"))
     (if root
-        (cons profile--root-file (expand-file-name root))
+        (if absolute
+            (cons profile--root-file (expand-file-name root))
+          (cons profile--root-file root))
       (setq profile--root-file nil))))
+
+(defun profile--real-file-name (filename)
+  "Return the tag's correct destination file, FILENAME.  This may prepend a
+remote prefix."
+  (message "tags looking up real-file-name %s" filename)
+  (if (file-name-absolute-p filename) filename
+    (concat (profile-current-get 'project-root-dir)
+            (profile-current-get 'src-sub-dir)
+            filename)))
+
+(setq etags-select-real-file-name 'profile--real-file-name)
 
 ;; called when a file is opened and assigned a profile
 (defun profile--on-file-opened () "Initialize a file after opening and
@@ -109,7 +124,7 @@ assigning a profile."
                   (fboundp (intern-soft
                             (profile-current-get 'on-file-open))))
          (profile-current-funcall 'on-file-open
-                                  (profile-current-get 'project-root))))
+                                  (profile-current-get 'project-root-dir))))
 
 (add-hook 'find-file-hook 'profile--on-file-opened)
 
@@ -126,29 +141,40 @@ assigning a profile."
 ;;                 "/"
 ;;                 ) nil)))
 
-(defun profile--compute-tag-dir ()
+(defun profile--compute-tags-dir ()
   "Helper function that computes where a project's local TAGS live."
-  (let ((base (profile-current-get 'tag-sub-dir))
+  (let ((base (profile-current-get 'tags-sub-dir))
         (dir default-directory))
     (when (tramp-tramp-file-p dir)
       (profile-current-put 'remote-host
                            (tramp-file-name-host
                             (tramp-dissect-file-name dir))))
-    (concat (profile-current-get 'project-root)
+    (concat (profile-current-get 'project-root-dir)
             (or base "tags/"))))
 
+(defun profile--compute-project-stem (root-dir)
+  "Helper function that computes a project's stem, useful in regular
+expression matching.  The presumption is that the ROOT-DIR is a relative
+path, possibly including a `~' representing the user's home directory."
+  (replace-regexp-in-string "~" "" root-dir))
+
 ;; called when a profile is initialized
-(defun profile--on-profile-init () "Initialize a loaded profile."
-       (let ((root (profile-current-get 'project-root)))
-         (when (and profile-current
-                    (profile-current-get 'on-profile-init)
-                    (fboundp (intern-soft
-                              (profile-current-get 'on-profile-init)))
-                    (not (profile-current-get 'profile-inited)))
-           (unless (profile-current-get 'tag-dir)
-             (profile-current-put 'tag-dir (profile--compute-tag-dir)))
-           (profile-current-funcall 'on-profile-init root)
-           (profile-current-put 'profile-inited t))))
+(defun profile--on-profile-init ()
+  "Initialize a loaded profile."
+  (let ((root (profile-current-get 'project-root-dir)))
+    (when (and profile-current
+               (profile-current-get 'on-profile-init)
+               (fboundp (intern-soft
+                         (profile-current-get 'on-profile-init)))
+               (not (profile-current-get 'profile-inited)))
+      (unless (profile-current-get 'tags-dir)
+        (profile-current-put 'tags-dir (profile--compute-tags-dir)))
+      (message "drh on profile init tags-dir %s"
+               (profile-current-get 'tags-dir))
+      (profile-current-put 'project-root-stem
+                           (profile--compute-project-stem root))
+      (profile-current-funcall 'on-profile-init root)
+      (profile-current-put 'profile-inited t))))
 
 ;; override the advice
 (defadvice find-file-noselect-1
@@ -162,18 +188,18 @@ of the buffer."
           (intern-soft (profile-find-path-alist
                         (expand-file-name filename)) profile-obarray))
     (let* ((root (profile-find-root (file-name-directory filename)))
-           (curr (profile-current-get 'project-root))
+           (curr (profile-current-get 'project-root-dir))
            (root-file (car root))
            (root-dir (cdr root))
            profile-basename)
       (message "profile-dbg: root is %s, curr is %s" root curr) ;drh
       (when (and root root-file root-dir)
         (setq profile-basename (profile-find-profile-basename root-file))
-        (unless (string-equal root-dir (profile-current-get 'project-root))
+        (unless (string-equal root-dir (profile-current-get 'project-root-dir))
           ;; this profile has not been loaded before
           (message "profile-dbg root-dir was %s, not %s" root-dir
-                   (profile-current-get 'project-root)) ;drh
-          (if (string-match "\\.profile$" root-file)
+                   (profile-current-get 'project-root-dir)) ;drh
+          (if (string-match "\\.[er]prof$" root-file)
               (progn                    ;load the new profile
                 (load-file root-file)
                 ;; update the path alist to activate any new profiles
@@ -185,23 +211,26 @@ of the buffer."
                       (intern-soft (profile-find-path-alist
                                     (expand-file-name filename))
                                    profile-obarray))
-                (unless (profile-current-get 'project-root)
-                  (profile-current-put 'project-root root-dir))
+                (unless (profile-current-get 'project-root-dir)
+                  (profile-current-put 'project-root-dir root-dir))
                 (unless (profile-current-get 'project-name)
                   (profile-current-put 'project-name profile-basename))
                 (add-to-list 'sml/replacer-regexp-list
                              (list (concat "^"
                                            (abbreviate-file-name
                                             (profile-current-get
-                                             'project-root)))
+                                             'project-root-dir)))
                                    (concat ":"
                                            (upcase
                                             (profile-current-get
                                              'project-name))
                                            ":")) t)
+                (message "Loaded profile %s located at %s"
+                         (profile-current-get 'project-name)
+                         (profile-current-get 'project-root-dir))
                 )
             ;; new profile, but not from a .profile
-            (profile-current-put 'project-root root-dir)
+            (profile-current-put 'project-root-dir root-dir)
             )))
       (profile--on-profile-init))))
 

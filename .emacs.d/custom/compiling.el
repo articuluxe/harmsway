@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-02-28 03:25:56 dharms>
+;; Modified Time-stamp: <2015-03-15 23:31:46 dharms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -40,16 +40,16 @@
 (defun create-compile-command()
   "Initialize the compile command."
   (interactive)
-  (if (and (profile-current-get 'project-root)
+  (if (and (profile-current-get 'project-root-dir)
            (profile-current-get 'compile-sub-command))
       (format "cd %s && %s"
               (concat
-               (profile-current-get 'project-root)
+               (profile-current-get 'project-root-dir)
                (profile-current-get 'build-sub-dir))
               (profile-current-get 'compile-sub-command))
     (message "Can't create compile command: unknown %s"
-             (if (null (profile-current-get 'project-root))
-                 "project-root" "compile-sub-command"))
+             (if (null (profile-current-get 'project-root-dir))
+                 "project-root-dir" "compile-sub-command"))
     nil))
 
 (defun my/compile() (interactive)

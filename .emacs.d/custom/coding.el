@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-03-11 07:49:22 dan.harms>
+;; Modified Time-stamp: <2015-03-15 23:31:51 dharms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -34,12 +34,12 @@
   "A wrapper around grep to provide convenient shortcuts to
    adjust the root directory.  With a prefix arg of 16 (C-u C-u),
    use the current directory.  With a prefix arg of 4 (C-u), or
-   if the variable 'project-root is not defined in the current
+   if the variable 'project-root-dir is not defined in the current
    profile, the directory will be chosen interactively by the user
-   using ido.  Otherwise, use the value of project-root,
+   using ido.  Otherwise, use the value of project-root-dir,
    concatenated with src-sub-dir, if defined."
   (interactive "p")
-  (let* ((root (profile-current-get 'project-root))
+  (let* ((root (profile-current-get 'project-root-dir))
          (dir
           (cond ((= arg 16) ".")
                 ((or (= arg 4) (null root))
@@ -417,7 +417,7 @@
 (defun my/launch-gdb()
   "Launch gdb automatically in the test directory."
   (interactive)
-  (let ((root (profile-current-get 'project-root))
+  (let ((root (profile-current-get 'project-root-dir))
         exec-dir exec)
     (when root
       (setq exec-dir (concat root

@@ -138,6 +138,9 @@ Only works with GNU Emacs."
   :group 'etags-select-mode
   :type 'boolean)
 
+;;;###autoload
+(defvar etags-select-real-file-name '(lambda(file) file))
+
  ;;; Variables
 
 (defvar etags-select-buffer-name "*etags-select*"
@@ -200,7 +203,10 @@ Only works with GNU Emacs."
           (re-search-forward "^\\(.*?\\),")
           (setq filename (etags-select-match-string 1))
           (unless (file-name-absolute-p filename)
-            (setq filename (concat tag-file-path filename))))
+;drh            (setq filename (concat tag-file-path filename))))
+            (setq filename (expand-file-name
+                            (concat tag-file-path filename))))
+          )
         (with-current-buffer etags-select-buffer-name
         ;; (save-excursion
         ;;   (set-buffer etags-select-buffer-name)
@@ -361,6 +367,9 @@ Use the C-u prefix to prevent the etags-select window from closing."
       (goto-char tag-point)
       (re-search-backward "^In: \\(.*\\)$")
       (setq filename (etags-select-match-string 1))
+;drh      (message "selecting tag (pre) %s" filename)
+      (setq filename (funcall etags-select-real-file-name filename))
+;drh      (message "selecting tag (post) %s" filename)
       (setq filename-point (point))
       (goto-char tag-point)
       (while (re-search-backward (concat "^.*?\\]\\s-+" text-to-search-for) filename-point t)

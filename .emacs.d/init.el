@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-03-13 13:52:44 dan.harms>
+;; Modified Time-stamp: <2015-03-16 00:16:52 dharms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -201,7 +201,8 @@
 (global-set-key [?\C-\M-.] 'etags-select-find-tag-at-point)
 ;; table
 (require 'etags-table)
-(setq etags-table-search-up-depth 12)
+(setq etags-table-search-up-depth nil)
+;; drh todo: settingn to 12 screws up tag lookup
 
 ;;;;;;; FUNCTIONS ;;;;;;;
 ;; ; man-page lookups
@@ -512,8 +513,8 @@ register \\C-l."
                 'build-sub-dir "build/"
                 ;; relative path to source file root
                 'src-sub-dir "src/"
-                ;; relative path to debug executables (under project-root and
-                ;; build-sub-dir)
+                ;; relative path to debug executables (under project-root-dir
+                ;; and build-sub-dir)
                 'debug-sub-dir "tests/"
                 ;; specific compiler invocation command
                 'compile-sub-command "make"
@@ -742,7 +743,7 @@ customization."
   ;; also load any profiles
   (mapc (lambda (file)
           (load-file file))
-        (directory-files host-dir t "\\.profile$")))
+        (directory-files host-dir t "\\.[er]prof$")))
 
 
 (add-hook 'before-save-hook 'my/before-save-hook)
