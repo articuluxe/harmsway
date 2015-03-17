@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-03-16 00:16:52 dharms>
+;; Modified Time-stamp: <2015-03-17 15:58:31 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -197,8 +197,17 @@
 (require 'etags-select)
 (setq tags-revert-without-query t)
 (global-set-key "\C-ct" 'find-my-tags-file)
-(global-set-key "\M-." 'etags-select-find-tag)
-(global-set-key [?\C-\M-.] 'etags-select-find-tag-at-point)
+(defvar tag-lookup-target-profile nil
+  "The working profile in effect when a tag is first looked up.")
+(defun my/store-profile ()
+  (setq tag-lookup-target-profile (symbol-name profile-current)))
+(global-set-key "\M-." (lambda()(interactive)
+                         (my/store-profile)
+                         (etags-select-find-tag)))
+(global-set-key [?\C-\M-.] (lambda()(interactive)
+                             (my/store-profile)
+                             (etags-select-find-tag-at-point)))
+
 ;; table
 (require 'etags-table)
 (setq etags-table-search-up-depth nil)
@@ -341,7 +350,7 @@
 (defvar my/tramp-file-list '())
 (defun my/open-tramp-file() (interactive)
        (find-file (ido-completing-read "Remote file: " my/tramp-file-list)))
-(global-set-key "\C-c\C-t" 'my/open-tramp-file)
+(global-set-key [f6] 'my/open-tramp-file)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dired ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'dired-x)                      ; C-x C-j now runs 'dired-jump
@@ -524,9 +533,10 @@ register \\C-l."
                 'project-name "harmsway"
                 'src-sub-dir ".emacs.d/"
                 )
-(setq profile-path-alist (cons (cons "src/projects/harmsway" "harmsway")
+(setq profile-path-alist (cons (cons "src/\\(projects/\\)?harmsway" "harmsway")
                                profile-path-alist))
-(add-to-list 'sml/replacer-regexp-list '("^~/src/projects/harmsway/" ":HW:") t)
+(add-to-list 'sml/replacer-regexp-list
+             '("^~/src/\\(projects/\\)?harmsway/" ":HW:") t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-complete ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-to-list 'load-path (concat my/plugins-directory "auto-complete/"))

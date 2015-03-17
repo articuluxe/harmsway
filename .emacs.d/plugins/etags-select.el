@@ -139,7 +139,15 @@ Only works with GNU Emacs."
   :type 'boolean)
 
 ;;;###autoload
-(defvar etags-select-real-file-name '(lambda(file) file))
+(defvar etags-select-real-file-name
+  '(lambda(file) file))
+
+;;;###autoload
+(defvar etags-select-insert-file-name
+  '(lambda(filename tag-file-path)
+     (if (file-name-absolute-p filename)
+         filename
+       (concat tag-file-path filename))))
 
  ;;; Variables
 
@@ -202,10 +210,14 @@ Only works with GNU Emacs."
           (re-search-backward "\f")
           (re-search-forward "^\\(.*?\\),")
           (setq filename (etags-select-match-string 1))
-          (unless (file-name-absolute-p filename)
-;drh            (setq filename (concat tag-file-path filename))))
-            (setq filename (expand-file-name
-                            (concat tag-file-path filename))))
+          ;; (message "drh current file %s dir %s" buffer-file-name default-directory)
+          ;; (message "drh tags select tag-file-path %s filename %s expanded %s abbreviated %s abbreviated(expanded) %s"
+          ;;          tag-file-path filename (expand-file-name filename)
+          ;;          (abbreviate-file-name filename)
+          ;;          (abbreviate-file-name (expand-file-name filename)))
+          (setq filename
+                (funcall etags-select-insert-file-name
+                         filename tag-file-path))
           )
         (with-current-buffer etags-select-buffer-name
         ;; (save-excursion
@@ -367,9 +379,10 @@ Use the C-u prefix to prevent the etags-select window from closing."
       (goto-char tag-point)
       (re-search-backward "^In: \\(.*\\)$")
       (setq filename (etags-select-match-string 1))
-;drh      (message "selecting tag (pre) %s" filename)
+      ;; (message "selecting tag (pre) %s" filename)
+      ;; (message "drh current file %s dir %s" buffer-file-name default-directory)
       (setq filename (funcall etags-select-real-file-name filename))
-;drh      (message "selecting tag (post) %s" filename)
+      ;; (message "selecting tag (post) %s" filename)
       (setq filename-point (point))
       (goto-char tag-point)
       (while (re-search-backward (concat "^.*?\\]\\s-+" text-to-search-for) filename-point t)

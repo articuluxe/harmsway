@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-03-15 23:31:51 dharms>
+;; Modified Time-stamp: <2015-03-17 16:24:10 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -45,7 +45,11 @@
                 ((or (= arg 4) (null root))
                  (ido-read-directory-name "Grep root: " nil nil t))
                 (t (concat root
-                           (profile-current-get 'src-sub-dir))))))
+                           (profile-current-get 'src-sub-dir)))))
+         (remote (file-remote-p dir)))
+    (when remote
+      (setq dir
+            (replace-regexp-in-string (regexp-quote remote) "" dir)))
     (grep-apply-setting
      'grep-command
      (concat "find -P "

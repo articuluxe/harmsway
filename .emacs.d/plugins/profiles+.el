@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-03-15 23:59:54 dharms>
+;; Modified Time-stamp: <2015-03-17 16:01:04 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -108,13 +108,33 @@ like any of the following: `.eprof', `my.eprof', `.my.eprof', `.root',
 (defun profile--real-file-name (filename)
   "Return the tag's correct destination file, FILENAME.  This may prepend a
 remote prefix."
-  (message "tags looking up real-file-name %s" filename)
-  (if (file-name-absolute-p filename) filename
-    (concat (profile-current-get 'project-root-dir)
-            (profile-current-get 'src-sub-dir)
-            filename)))
-
+  ;; (message "tags looking up real-file-name %s profile %s stored %s"
+  ;;          filename (print profile-current)
+  ;;          tag-lookup-target-profile);drh
+  (let ((file (if (file-name-absolute-p filename)
+                  filename
+                (concat (profile-get tag-lookup-target-profile
+                                     'project-root-dir)
+                        (profile-get tag-lookup-target-profile
+                                     'src-sub-dir)))))
+    (concat (profile-get tag-lookup-target-profile 'remote-prefix)
+            file)))
 (setq etags-select-real-file-name 'profile--real-file-name)
+
+(defun profile--insert-file-name (filename tag-file-path)
+  (message "tags inserting real-file-name %s tag file %s profile %s"
+           filename tag-file-path profile-current)
+  (if (file-name-absolute-p filename)
+      filename
+    ;; (abbreviate-file-name
+    ;;  (expand-file-name
+    (concat (profile-get tag-lookup-target-profile
+                         'project-root-dir)
+            (profile-get tag-lookup-target-profile
+                         'src-sub-dir)
+            filename)
+    ))
+(setq etags-select-insert-file-name 'profile--insert-file-name)
 
 ;; called when a file is opened and assigned a profile
 (defun profile--on-file-opened () "Initialize a file after opening and
@@ -141,22 +161,34 @@ assigning a profile."
 ;;                 "/"
 ;;                 ) nil)))
 
+(defun profile--compute-remote-properties ()
+  "Compute the properties associated with a remote filename."
+  (with-parsed-tramp-file-name default-directory file
+    (profile-current-put 'remote-host file-host)
+    (profile-current-put
+     'remote-prefix
+     (tramp-make-tramp-file-name file-method file-user file-host ""))
+    ))
+
 (defun profile--compute-tags-dir ()
   "Helper function that computes where a project's local TAGS live."
   (let ((base (profile-current-get 'tags-sub-dir))
-        (dir default-directory))
-    (when (tramp-tramp-file-p dir)
-      (profile-current-put 'remote-host
-                           (tramp-file-name-host
-                            (tramp-dissect-file-name dir))))
-    (concat (profile-current-get 'project-root-dir)
-            (or base "tags/"))))
+        (dir default-directory)
+        (env (getenv "EMACS_TAGS_DIR")))
+    ;; (message "drh compute tags dir base %s dir %s env %s" base dir env)
+    (if (tramp-tramp-file-p dir)
+        (if env (file-name-as-directory env)
+          (prog1 nil
+            (error
+             "Unknown local tags dir for remote file (set EMACS_TAGS_DIR)")))
+      (concat (profile-current-get 'project-root-dir)
+              (or base "tags/")))))
 
 (defun profile--compute-project-stem (root-dir)
   "Helper function that computes a project's stem, useful in regular
 expression matching.  The presumption is that the ROOT-DIR is a relative
 path, possibly including a `~' representing the user's home directory."
-  (replace-regexp-in-string "~" "" root-dir))
+  (replace-regexp-in-string "~/" "" root-dir))
 
 ;; called when a profile is initialized
 (defun profile--on-profile-init ()
@@ -169,14 +201,15 @@ path, possibly including a `~' representing the user's home directory."
                (not (profile-current-get 'profile-inited)))
       (unless (profile-current-get 'tags-dir)
         (profile-current-put 'tags-dir (profile--compute-tags-dir)))
-      (message "drh on profile init tags-dir %s"
-               (profile-current-get 'tags-dir))
+      ;; (message "drh on profile init tags-dir %s"
+      ;;          (profile-current-get 'tags-dir))
+      (profile--compute-remote-properties)
       (profile-current-put 'project-root-stem
                            (profile--compute-project-stem root))
       (profile-current-funcall 'on-profile-init root)
       (profile-current-put 'profile-inited t))))
 
-;; override the advice
+;; override the advice from `profiles.el'
 (defadvice find-file-noselect-1
     (before before-find-file-noselect-1 activate)
   "Set the buffer local variable `profile-current' right after the creation
@@ -192,13 +225,13 @@ of the buffer."
            (root-file (car root))
            (root-dir (cdr root))
            profile-basename)
-      (message "profile-dbg: root is %s, curr is %s" root curr) ;drh
+;      (message "profile-dbg: root is %s, curr is %s" root curr) ;drh
       (when (and root root-file root-dir)
         (setq profile-basename (profile-find-profile-basename root-file))
         (unless (string-equal root-dir (profile-current-get 'project-root-dir))
           ;; this profile has not been loaded before
-          (message "profile-dbg root-dir was %s, not %s" root-dir
-                   (profile-current-get 'project-root-dir)) ;drh
+          ;; (message "profile-dbg root-dir was %s, not %s" root-dir
+          ;;          (profile-current-get 'project-root-dir)) ;drh
           (if (string-match "\\.[er]prof$" root-file)
               (progn                    ;load the new profile
                 (load-file root-file)
@@ -225,9 +258,11 @@ of the buffer."
                                             (profile-current-get
                                              'project-name))
                                            ":")) t)
-                (message "Loaded profile %s located at %s"
+                (message "Loaded profile %s located at %s;\n"
+                         "tags-dir is %s"
                          (profile-current-get 'project-name)
-                         (profile-current-get 'project-root-dir))
+                         (profile-current-get 'project-root-dir)
+                         (profile-current-get 'tags-dir))
                 )
             ;; new profile, but not from a .profile
             (profile-current-put 'project-root-dir root-dir)
