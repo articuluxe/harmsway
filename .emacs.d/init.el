@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-03-17 23:40:22 dharms>
+;; Modified Time-stamp: <2015-03-18 16:45:43 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -40,6 +40,7 @@
   (concat my/user-directory "settings/user/" user-login-name))
 (load my/user-settings)
 
+(set-register ?~ (cons 'file "~/"))
 (set-register ?\C-i (cons 'file user-init-file)) ;edit init file
 (set-register ?\C-d (cons 'file "~/Documents"))
 (set-register ?\C-e (cons 'file "~/Desktop"))
@@ -347,6 +348,9 @@
 (setq tramp-default-method "ssh")
 (setq tramp-default-user my/user-name)
 (setq explicit-shell-file-name "/bin/bash")
+(setq vc-ignore-dir-regexp
+      (format "\\(%s\\)\\|\\(%s\\)"
+              vc-ignore-dir-regexp tramp-file-name-regexp))
 (defvar my/tramp-file-list '())
 (defun my/open-tramp-file() (interactive)
        (find-file (ido-completing-read "Remote file: " my/tramp-file-list)))
@@ -739,6 +743,7 @@ customization."
            (concat my/user-directory "settings/site/" name)))
          (site-file (concat site-dir name)))
     (when (file-exists-p site-file)
+;      (setq site-name (file-name-base site-file))
       (load site-file))
     (add-to-list 'yas-snippet-dirs
                  (concat site-dir "snippets"))))

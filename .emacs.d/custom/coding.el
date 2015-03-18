@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-03-17 16:24:10 dan.harms>
+;; Modified Time-stamp: <2015-03-18 15:15:19 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -163,6 +163,7 @@
       )))
 
 ;; include ifdefs
+(defvar site-name nil "A possibly empty name of the current site.")
 (defun add-header-include-ifdefs (&optional arg)
   "Add header include guards. With optional prefix argument, query for the
    base name. Otherwise, the base file name is used."
@@ -180,6 +181,8 @@
           (setq str (concat
                      (read-string "Include guard stem: " nil nil str) "_H"))
         ;; no arg; if project-name is defined, prepend it
+        (when site-name
+          (setq str (concat site-name "_" str)))
         (when project-name
           (setq str (concat project-name "_" str))))
       (setq str (upcase (concat "__" str "__")))
