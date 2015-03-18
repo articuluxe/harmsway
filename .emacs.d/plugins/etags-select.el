@@ -210,11 +210,6 @@ Only works with GNU Emacs."
           (re-search-backward "\f")
           (re-search-forward "^\\(.*?\\),")
           (setq filename (etags-select-match-string 1))
-          ;; (message "drh current file %s dir %s" buffer-file-name default-directory)
-          ;; (message "drh tags select tag-file-path %s filename %s expanded %s abbreviated %s abbreviated(expanded) %s"
-          ;;          tag-file-path filename (expand-file-name filename)
-          ;;          (abbreviate-file-name filename)
-          ;;          (abbreviate-file-name (expand-file-name filename)))
           (setq filename
                 (funcall etags-select-insert-file-name
                          filename tag-file-path))
@@ -379,10 +374,7 @@ Use the C-u prefix to prevent the etags-select window from closing."
       (goto-char tag-point)
       (re-search-backward "^In: \\(.*\\)$")
       (setq filename (etags-select-match-string 1))
-      ;; (message "selecting tag (pre) %s" filename)
-      ;; (message "drh current file %s dir %s" buffer-file-name default-directory)
       (setq filename (funcall etags-select-real-file-name filename))
-      ;; (message "selecting tag (post) %s" filename)
       (setq filename-point (point))
       (goto-char tag-point)
       (while (re-search-backward (concat "^.*?\\]\\s-+" text-to-search-for) filename-point t)

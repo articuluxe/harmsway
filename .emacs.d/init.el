@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-03-17 15:58:31 dan.harms>
+;; Modified Time-stamp: <2015-03-17 23:40:22 dharms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -196,7 +196,7 @@
 ;; select
 (require 'etags-select)
 (setq tags-revert-without-query t)
-(global-set-key "\C-ct" 'find-my-tags-file)
+(global-set-key "\C-ct" 'find-my-tags-file) ;drh todo
 (defvar tag-lookup-target-profile nil
   "The working profile in effect when a tag is first looked up.")
 (defun my/store-profile ()
@@ -210,8 +210,8 @@
 
 ;; table
 (require 'etags-table)
+;; we store our tags in a specific directory
 (setq etags-table-search-up-depth nil)
-;; drh todo: settingn to 12 screws up tag lookup
 
 ;;;;;;; FUNCTIONS ;;;;;;;
 ;; ; man-page lookups
