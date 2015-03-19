@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-03-18 15:15:19 dan.harms>
+;; Modified Time-stamp: <2015-03-19 08:15:49 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -59,8 +59,9 @@
              "-o -name \"*.cc\" -o -name \"*.hh\" -o -name \"*.cxx\" "
              "-o -name \"*.hxx\" -o -name \"*.h\" -o -name \"*.c\" "
              "-o -name \"*.H\" -o -name \"*.C\" -o -name \"*.hpp\" "
-             "-o -name \"*.el\" "
+             "-o -name \"*.in\" -o -name \"*.ac\" -o -name \"*.el\" "
              "-o -name \"*.sql\" -o -name \"*.py\" -o -name \"*.proto\" "
+             "-o -name \"*.sh\" "
              "\")\" -print0 | xargs -0 grep -Isn "))
     (command-execute 'grep)))
 (global-set-key "\C-cg" 'my/grep)

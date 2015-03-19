@@ -7,10 +7,6 @@ fi
 
 # User specific environment and startup programs
 
-PATH=~/bin:/sbin/:$PATH:$HOME/bin
-
-export PATH
-
 # Set proper permissions on ~/.ssh directory
 
 dotssh="${HOME}/.ssh"
@@ -25,3 +21,8 @@ fi
 
 unset dotssh
 unset sshconf
+
+# do not execute remaining file for non-interactive shells
+[[ $- != *i* ]] && return
+
+echo "Interactive shell loaded .bash_profile..."

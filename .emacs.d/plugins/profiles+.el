@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-03-17 23:50:31 dharms>
+;; Modified Time-stamp: <2015-03-19 18:03:00 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -235,7 +235,8 @@ of the buffer."
                                             (profile-current-get
                                              'project-name))
                                            ":")) t)
-                (message "Loaded profile %s located at %s;\n src %s; bld %s; tags %s %s"
+                (message "Loaded profile %s for project %s located at %s;\n src %s; bld %s; tags %s %s"
+                         (profile-current-name)
                          (profile-current-get 'project-name)
                          (profile-current-get 'project-root-dir)
                          (profile-current-get 'src-sub-dir)
@@ -244,7 +245,7 @@ of the buffer."
                          (if (profile-current-get 'remote-prefix)
                              (concat "; "
                                      (profile-current-get 'remote-prefix))
-                           nil)
+                           "")
                          )
                 )
             ;; new profile, but not from a .profile

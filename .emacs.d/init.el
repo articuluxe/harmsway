@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-03-18 16:45:43 dan.harms>
+;; Modified Time-stamp: <2015-03-19 11:32:38 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -197,7 +197,8 @@
 ;; select
 (require 'etags-select)
 (setq tags-revert-without-query t)
-(global-set-key "\C-ct" 'find-my-tags-file) ;drh todo
+(require 'gen-tags)
+(global-set-key "\C-ct" 'generate-tags);find-my-tags-file) ;drh todo
 (defvar tag-lookup-target-profile nil
   "The working profile in effect when a tag is first looked up.")
 (defun my/store-profile ()
@@ -348,6 +349,8 @@
 (setq tramp-default-method "ssh")
 (setq tramp-default-user my/user-name)
 (setq explicit-shell-file-name "/bin/bash")
+(require 'tramp)
+(add-to-list 'tramp-remote-path 'tramp-own-remote-path)
 (setq vc-ignore-dir-regexp
       (format "\\(%s\\)\\|\\(%s\\)"
               vc-ignore-dir-regexp tramp-file-name-regexp))
@@ -554,7 +557,9 @@ register \\C-l."
 (mapc (lambda(mode)
         (add-to-list 'ac-modes mode))
       '(sql-mode nxml-mode cmake-mode folio-mode protobuf-mode
-                 python-mode dos-mode gud-mode))
+                 python-mode dos-mode gud-mode sh-mode
+                 makefile-mode makefile-automake-mode makefile-gmake-mode
+                 autoconf-mode))
 (require 'auto-complete-config)
 (ac-config-default)
 (setq-default ac-sources (append '(ac-source-filename) ac-sources))
@@ -645,7 +650,7 @@ register \\C-l."
 (setq auto-insert-alist '(
                           ((emacs-lisp-mode . "Emacs Lisp") .
                            ["template.el" auto-insert-choose-yas-expand])
-                          (("\\.sh$" . "Sh") .
+                          ((sh-mode . "Sh") .
                            ["template.sh" auto-insert-choose-yas-expand])
                           (("\\.bat$" . "Dos") .
                            ["template.bat" auto-insert-choose-yas-expand])
@@ -667,6 +672,7 @@ register \\C-l."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; zop-to-char ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'zop-to-char)
 (global-set-key "\M-z" 'zop-to-char)
+(global-set-key "\M-Z" 'zop-up-to-char)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; speedbar ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-hook 'speedbar-mode-hook
@@ -746,7 +752,7 @@ customization."
 ;      (setq site-name (file-name-base site-file))
       (load site-file))
     (add-to-list 'yas-snippet-dirs
-                 (concat site-dir "snippets"))))
+                 (concat site-dir "snippets/"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; host ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (let* ((host-dir

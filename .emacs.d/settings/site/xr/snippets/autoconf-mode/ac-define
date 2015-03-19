@@ -1,0 +1,6 @@
+# -*- mode: snippet; require-final-newline: nil -*-
+# name: ac-define
+# key: ac_define
+# binding: direct-keybinding
+# --
+AC_DEFINE(${1:DEFINE}, ${2:value}, ${3:description})
