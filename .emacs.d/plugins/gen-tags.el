@@ -4,7 +4,7 @@
 ;; Author:  <dan.harms@xrtrading.com>
 ;; Created: Wednesday, March 18, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-03-19 17:37:56 dan.harms>
+;; Modified Time-stamp: <2015-03-20 18:03:16 dan.harms>
 ;; Keywords: etags, ctags
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -35,40 +35,61 @@
                                   " --file-scope=no"
                                   " --tag-relative=no"))
 (defvar gen-tags-alist)
-  '(("xr-common" "snap/xr-common/")
-    )
-
-(defun generate-tags ()
-  (gen-tags-internal gen-tags-exe (nth 1 gen-tags-alist)
-                     "tags" (cdr (cdr gen-tags-alist)))
+'(("xr-common" "snap/xr-common/" ctags-cpp-options)
   )
+(defvar gen-tags-target-sub-dir "tags/")
+(defun generate-tags ()
+  (if (profile-current-get 'project-name)
+      (gen-tags-files gen-tags-alist)
+    (error "Could not generate tags: no active profile")))
 
-(defun gen-tags-internal (exec src-sub-dir dest-sub-dir arg-list)
+(defun gen-tags-files (alist)
+  "Generate a series of tags files."
+  (let ((local-dest-dir
+         (concat
+          (profile-current-get 'remote-prefix)
+          (profile-current-get 'project-root-dir)
+          gen-tags-target-sub-dir))
+        (remote-dest-dir (profile-current-get 'tags-dir))
+        )
+    (message "local-dest-dir:%s remote-dest-dir:%s"
+             local-dest-dir remote-dest-dir)
+    (make-directory local-dest-dir t)
+    (dolist element alist
+            (gen-tags-file
+             (map 'gen-tags-file
+                  (nth 0 element)
+                  (nth 1 element)
+                  (cdr (cdr element)))))
+    ))
+
+(defun gen-tags-file (src-name src-sub-dir arg-list)
   "Generate a tags file."
   (interactive)
-  (let ((default-directory
-          (concat
-           (profile-current-get 'remote-prefix)
-           (profile-current-get 'project-root-dir)
-           src-sub-dir))
-        (dest (concat
-               (profile-current-get 'remote-prefix)
-               (profile-current-get 'project-root-dir)
-               (or dest-sub-dir "tags")))
-        (process))
+  (let* ((default-directory
+           (concat
+            (profile-current-get 'remote-prefix)
+            (profile-current-get 'project-root-dir)
+            src-sub-dir))
+         (sub-name (concat src-name "-tags"))
+         (local-dest-file (concat local-dest-dir sub-name))
+         (remote-dest-file (concat remote-dest-dir sub-name))
+         (msg process))
+    (setq msg (format "Generating tags for %s into %s..."
+                      default-directory local-dest-file))
     ;; todo: create remote-prefix/project-root-dir/dest-sub-dir if necessary
-    (message "Generating tags for %s into %s..."
-             default-directory dest)
+    (message msg)
     (setq process (apply 'start-file-process
                          "generate TAGS" (get-buffer-create " *gen-TAGS*")
-                         (append '("/bin/sh" "-c" exec) arg-list)))
-;                         '("/bin/sh" "-c" exec)))
+                         (append '("/bin/sh" "-c" gen-tags-exe) arg-list)))
+                                        ;                         '("/bin/sh" "-c" exec)))
     (set-process-sentinel
      process
      (lambda (proc change)
        (when (string-match "\\(finished\\|exited\\)" change)
-;         (kill-buffer " *gen-TAGS*")
-         (message "gen-TAGS done")))
+                                        ;         (kill-buffer " *gen-TAGS*")
+         ;; todo: copy-file (locally) to tags-dir
+         (message (concat msg "done."))))
      )))
 
 (provide 'gen-tags)
