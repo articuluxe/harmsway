@@ -2,7 +2,7 @@
 ;;
 ;;
 
-(defun add-punch-tags (project-root)
+(defun on-punch-init (project-root)
   (setq etags-table-alist
         (cons (list
                (concat "^\\(.*\\)"
@@ -20,12 +20,13 @@
                ;; "/Users/dharms/src/boost-tags"
                ) etags-table-alist)))
 
-(profile-define-derived "punch" "default" "dharms" "danielrharms@gmail.com"
+(profile-define-derived "punch" "default"
+                        "dharms" "danielrharms@gmail.com"
                         'project-name "punch"
                         'build-sub-dir "build/"
                         'src-sub-dir "punch/"
                         'on-file-open 'my/add-c-headers
-                        'on-profile-init 'add-punch-tags
+                        'on-profile-init 'on-punch-init
                         )
 (setq profile-path-alist (cons (cons "src/projects/punch" "punch")
                                profile-path-alist))

@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-03-23 11:37:57 dan.harms>
+;; Modified Time-stamp: <2015-03-23 13:10:42 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -198,7 +198,7 @@
 (require 'etags-select)
 (setq tags-revert-without-query t)
 (require 'gen-tags)
-(global-set-key "\C-ct" 'generate-tags);find-my-tags-file) ;drh todo
+(global-set-key "\C-ct" 'gen-tags-generate-tags)
 (defvar tag-lookup-target-profile nil
   "The working profile in effect when a tag is first looked up.")
 (defun my/store-profile ()

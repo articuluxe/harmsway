@@ -4,7 +4,7 @@
 ;; Author:  <dan.harms@xrtrading.com>
 ;; Created: Wednesday, March 18, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-03-20 18:03:16 dan.harms>
+;; Modified Time-stamp: <2015-03-22 20:03:38 dharms>
 ;; Keywords: etags, ctags
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -30,67 +30,150 @@
   (cond ((file-exists-p "/bin/ctags") "/bin/ctags")
         ((file-exists-p "/usr/bin/ctags") "/usr/bin/ctags")
         (t "ctags")))
-(defvar ctags-cpp-kinds "+l")
-(defvar ctags-cpp-options (concat "--c++-kinds=" ctags-cpp-kinds
-                                  " --file-scope=no"
-                                  " --tag-relative=no"))
-(defvar gen-tags-alist)
-'(("xr-common" "snap/xr-common/" ctags-cpp-options)
-  )
+(defvar gen-tags-ctags-cpp-kinds "+l")
+(defvar gen-tags-ctags-cpp-options
+  (list
+   (concat "--c++-kinds=" gen-tags-ctags-cpp-kinds)
+   "--file-scope=no"
+   "--tag-relative=no"))
+(defvar gen-tags-alist
+  (list
+;   (append (list "xr-common" "snap/xr-common/") ctags-cpp-options))
+   (append (list "punch" "punch/" "/usr/local/bin/ctags";; gen-tags-exe
+                 "-Re")
+           gen-tags-ctags-cpp-options)
+   (append (list "clib" "/opt/local/include/gcc48/c++/"
+                 "/usr/local/bin/ctags" "-Re"
+                 "--language-force=c++"
+                 "-h=\".h.H.hh.hpp.hxx.h++.inc.def.\"")
+           gen-tags-ctags-cpp-options)
+   ))
 (defvar gen-tags-target-sub-dir "tags/")
-(defun generate-tags ()
-  (if (profile-current-get 'project-name)
-      (gen-tags-files gen-tags-alist)
-    (error "Could not generate tags: no active profile")))
+(defvar gen-tags--iter nil)
+(defvar gen-tags--buffer nil)
+(defvar gen-tags--remote nil
+  "Are we generating tags for a remote source repository?")
+(defun gen-tags-generate-tags () (interactive)
+       (unless (profile-current-get 'project-name)
+         (error "Could not generate tags: no active profile"))
+       (setq gen-tags--buffer
+             (get-buffer-create " *gen-TAGS*"))
+       (setq gen-tags--iter gen-tags-alist)
+       (gen-tags-first-file))
 
-(defun gen-tags-files (alist)
+(defvar gen-tags--msg)
+(defvar gen-tags--local-dest-file nil)
+(defvar gen-tags--remote-dest-dir nil)
+(defvar gen-tags--local-dest-dir nil)
+
+(defun gen-tags-first-file ()
   "Generate a series of tags files."
-  (let ((local-dest-dir
-         (concat
-          (profile-current-get 'remote-prefix)
-          (profile-current-get 'project-root-dir)
-          gen-tags-target-sub-dir))
-        (remote-dest-dir (profile-current-get 'tags-dir))
+  (setq gen-tags--remote-dest-dir (profile-current-get 'tags-dir))
+  (setq gen-tags--local-dest-dir
+        (concat
+         (profile-current-get 'remote-prefix)
+         (profile-current-get 'project-root-dir)
+         gen-tags-target-sub-dir))
+  (if gen-tags--iter
+      (progn
+        (message "local-dest-dir:%s remote-dest-dir:%s"
+                 gen-tags--local-dest-dir gen-tags--remote-dest-dir)
+        (make-directory gen-tags--local-dest-dir t)
+        (gen-tags-next-file)
         )
-    (message "local-dest-dir:%s remote-dest-dir:%s"
-             local-dest-dir remote-dest-dir)
-    (make-directory local-dest-dir t)
-    (dolist element alist
-            (gen-tags-file
-             (map 'gen-tags-file
-                  (nth 0 element)
-                  (nth 1 element)
-                  (cdr (cdr element)))))
+    (with-current-buffer gen-tags--buffer
+      (insert (now) "Starting to generate tags."))
     ))
+      ;; (setq curr (car gen-tags--iter))
+      ;; (set
+      ;; (mapc (lambda(element)
+      ;;         (gen-tags-next-file
+      ;;          (nth 0 element)
+      ;;          (nth 1 element)
+      ;;          (cdr (cdr element))))
+      ;;       alist)))
 
-(defun gen-tags-file (src-name src-sub-dir arg-list)
+(defun gen-tags-next-file ()
   "Generate a tags file."
   (interactive)
-  (let* ((default-directory
-           (concat
-            (profile-current-get 'remote-prefix)
-            (profile-current-get 'project-root-dir)
-            src-sub-dir))
-         (sub-name (concat src-name "-tags"))
-         (local-dest-file (concat local-dest-dir sub-name))
-         (remote-dest-file (concat remote-dest-dir sub-name))
-         (msg process))
-    (setq msg (format "Generating tags for %s into %s..."
-                      default-directory local-dest-file))
-    ;; todo: create remote-prefix/project-root-dir/dest-sub-dir if necessary
-    (message msg)
-    (setq process (apply 'start-file-process
-                         "generate TAGS" (get-buffer-create " *gen-TAGS*")
-                         (append '("/bin/sh" "-c" gen-tags-exe) arg-list)))
+  (if gen-tags--iter
+    (let* ((src-name (nth 0 (car gen-tags--iter)))
+           (src-dir (nth 1 (car gen-tags--iter)))
+           (arg-list (cdr (cdr (car gen-tags--iter))))
+           (default-directory
+             (if (file-name-absolute-p src-dir)
+                 src-dir
+               (concat
+                (profile-current-get 'project-root-dir)
+                src-dir)))
+           (sub-name (concat src-name "-tags"))
+;           (local-dest-file
+           (remote-dest-file (concat gen-tags--remote-dest-dir sub-name))
+           process args)
+      (if gen-tags--remote
+          (setq default-directory
+                (concat (profile-current-get 'remote-prefix)
+                        default-directory)))
+      (setq gen-tags--local-dest-file (concat gen-tags--local-dest-dir sub-name))
+      (setq gen-tags--msg (format "Generating tags for %s into %s..."
+                                  default-directory gen-tags--local-dest-file))
+      ;; todo: create remote-prefix/project-root-dir/dest-sub-dir if necessary
+      (message gen-tags--msg)
+      (message "arg-list is %s" arg-list)
+      (setq args
+            (append arg-list
+                    (list "-f" gen-tags--local-dest-file
+                          default-directory)))
+      (message "all args are %s" args)
+      ;; (setq drh
+      ;;                      (append (list "-Re") arg-list
+      ;;                              (list "-f" gen-tags--local-dest-file
+      ;;                                    default-directory)
+      ;;                              ))
+      ;; /bin/sh -c "<script>" requires its argument (the script) be
+      ;; quoted by strings; and apply expects a list as its last argument,
+      ;; to be flattened out when the process is called.  Hence the
+      ;; massaging of the input below to be a list containing a single item:
+      ;; a string of all arguments to be passed, starting with the executable.
+      (setq process (apply 'start-file-process
+                           "generate TAGS"
+                           gen-tags--buffer
+;                           (get-buffer-create " *gen-TAGS*")
+                           "/bin/sh" "-c"
+                           (list (mapconcat 'identity args " "))
+                                        ;                                          (append (list exe) args) " "))
+
+                           ;; (apply 'start-file-process "mine" (get-buffer-create "mine")
+                           ;;        "/bin/sh" "-c" (list (mapconcat 'identity '("ls" "-l" "-h") " ")))
+
+                           ;; (setq process (apply 'start-file-process
+                           ;;                      "generate TAGS" (get-buffer-create " *gen-TAGS*")
+                           ;;                      "/bin/sh" "-c" exe
+                           ;;                      args
+                           ;; (append arg-list
+                           ;;         (list "-f" gen-tags--local-dest-file
+                           ;;               default-directory))
+
+                           ;; (append (list "-Re") arg-list
+                           ;;         (list "-f" gen-tags--local-dest-file
+                           ;;               default-directory)
+                           ))
                                         ;                         '("/bin/sh" "-c" exec)))
-    (set-process-sentinel
-     process
-     (lambda (proc change)
-       (when (string-match "\\(finished\\|exited\\)" change)
+      (set-process-sentinel
+       process
+       (lambda (proc change)
+         (when (string-match "\\(finished\\|exited\\)" change)
                                         ;         (kill-buffer " *gen-TAGS*")
-         ;; todo: copy-file (locally) to tags-dir
-         (message (concat msg "done."))))
-     )))
+           ;; todo: copy-file (locally) to tags-dir
+           (message (concat gen-tags--msg "done."))
+           (message "Done generating %s" gen-tags--local-dest-file)
+;           (if
+           (setq gen-tags--iter (cdr gen-tags--iter))
+           (gen-tags-next-file))
+         )))
+    (with-current-buffer gen-tags--buffer
+      (insert (now) "Done generating tags."))
+    ))
 
 (provide 'gen-tags)
 
