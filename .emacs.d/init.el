@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-03-19 11:32:38 dan.harms>
+;; Modified Time-stamp: <2015-03-23 11:37:57 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -297,11 +297,12 @@
 (define-key popwin:keymap "t" 'popwin-term:term)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ido ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'ido)
 (ido-mode 1)
 (setq ido-max-prospects 25)
 ;; (setq ido-enable-flex-matching t)
 ;; (setq ido-case-fold t)
-;; (ido-auto-merge-work-directories-length -1) ;would disable auto-merge
+(ido-auto-merge-work-directories-length -1) ;disables auto-merge
 (add-to-list 'ido-work-directory-list-ignore-regexps tramp-file-name-regexp)
 ;; ask before reusing an existing buffer
 (setq-default ido-default-buffer-method 'maybe-frame)
