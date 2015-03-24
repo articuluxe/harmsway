@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-03-22 09:46:21 dharms>
+;; Modified Time-stamp: <2015-03-23 23:43:01 dharms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -215,6 +215,8 @@
 ;; we store our tags in a specific directory
 (setq etags-table-search-up-depth nil)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; s ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 's)
 ;;;;;;; FUNCTIONS ;;;;;;;
 ;; ; man-page lookups
 ;; (defun openman () "lookup man page" (interactive)
@@ -683,6 +685,10 @@ register \\C-l."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; htmlize ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'htmlize)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; guide-key ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'guide-key)
+(guide-key-mode 1)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; os ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (let* ((system (car (reverse (split-string (symbol-name system-type)
                                            "\\/" t))))
@@ -860,6 +866,8 @@ customization."
                   (byte-compile-file (buffer-file-name))))
              ))
 (add-hook 'emacs-lisp-mode-hook 'eldoc-mode)
+(require 'lisp-extra-font-lock)
+(lisp-extra-font-lock-global-mode 1)
 (require 'bytecomp)
 (add-hook 'after-save-hook
           (lambda()
