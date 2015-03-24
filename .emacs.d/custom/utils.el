@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-02-28 03:26:25 dharms>
+;; Modified Time-stamp: <2015-03-24 07:29:17 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -327,32 +327,33 @@
     (unless symbolic
       (setq files (remove-if 'file-symlink-p files))
       (setq dirs (remove-if 'file-symlink-p dirs)))
-    (mapc #'(lambda(file)
-              (and
-               (test-list-for-string full-edit-accept-patterns
-                                     (file-name-nondirectory file))
-               (not (test-list-for-string full-edit-reject-patterns
-                                          (file-name-nondirectory file)))
-               (setq result (cons file result))
-               (progress-reporter-update reporter)
-               ))
+    (mapc (lambda(file)
+            (and
+             (test-list-for-string full-edit-accept-patterns
+                                   (file-name-nondirectory file))
+             (not (test-list-for-string full-edit-reject-patterns
+                                        (file-name-nondirectory file)))
+             (setq result (cons file result))
+             (progress-reporter-update reporter)
+             ))
           files)
-    (mapc #'(lambda(dir)
-              (setq result (nconc result
-                                  (gather-all-files dir reporter symbolic))))
+    (mapc (lambda(dir)
+            (setq result (nconc result
+                                (gather-all-files dir reporter symbolic))))
           dirs)
     result
     ))
 
-(defun open-file-list(files) "Find (open) each of a list of filenames."
+(defun open-file-list(files)
+  "Find (open) each of a list of filenames."
   (let* ((i 0)
          (len (length files))
          (reporter (make-progress-reporter "Opening files..." 0 len)))
-    (mapc #'(lambda(file)
-              (find-file-noselect file)
-              (setq i (+ i 1))
-              (progress-reporter-update reporter i)
-              ) files)
+    (mapc (lambda(file)
+            (find-file-noselect file)
+            (setq i (+ i 1))
+            (progress-reporter-update reporter i)
+            ) files)
     (progress-reporter-done reporter)))
 
 (defun full-edit(root &optional arg)

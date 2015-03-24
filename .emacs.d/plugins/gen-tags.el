@@ -4,7 +4,7 @@
 ;; Author:  <dan.harms@xrtrading.com>
 ;; Created: Wednesday, March 18, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-03-23 18:04:56 dan.harms>
+;; Modified Time-stamp: <2015-03-24 16:46:10 dan.harms>
 ;; Keywords: etags, ctags
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -27,7 +27,8 @@
 ;; Code:
 
 (defvar gen-tags-exe
-  (cond ((file-exists-p "/bin/ctags") "/bin/ctags")
+  (cond ((file-exists-p "/usr/local/bin/ctags") "/usr/local/bin/ctags")
+        ((file-exists-p "/bin/ctags") "/bin/ctags")
         ((file-exists-p "/usr/bin/ctags") "/usr/bin/ctags")
         (t "ctags"))
   "The ctags executable.")
@@ -52,15 +53,15 @@
    ))
 (defvar gen-tags-target-sub-dir "tags/"
   "Default sub-dir in which to put generated tag files.")
+(defvar gen-tags-copy-remote nil)
 (defvar gen-tags--iter nil "Current item being processed.")
+(defvar gen-tags--total-num 0 "Total number of TAGS files to create.")
+(defvar gen-tags--curr-num 0 "Current number of TAGS file being created.")
 (defvar gen-tags--buffer nil "gen-TAGS buffer.")
 (defvar gen-tags--remote nil
   "Are tags being generating for a remote source repository?")
-(defun gen-tags-generate-tags () (interactive)
-       (unless (profile-current-get 'project-name)
-         (error "Could not generate tags: no active profile"))
-       (gen-tags--first-file))
-
+(defvar gen-tags--progress nil
+  "An internal progress reporter.")
 (defvar gen-tags--msg)
 (defvar gen-tags--intermediate-dest-dir nil
   "An intermediate staging location for each TAGS file being generated.
@@ -74,6 +75,11 @@ this will be the same as the tags-dir.")
 (defvar gen-tags--final-dest-file nil
   "The final file being written for the current TAGS generation.")
 
+(defun gen-tags-generate-tags () (interactive)
+       (unless (profile-current-get 'project-name)
+         (error "Could not generate tags: no active profile"))
+       (gen-tags--first-file))
+
 (defun gen-tags--on-start ()
   "Called when TAGS generation begins."
   (message "local-dest-dir:%s remote-dest-dir:%s"
@@ -84,6 +90,7 @@ this will be the same as the tags-dir.")
 
 (defun gen-tags--on-finish ()
   "Called when TAGS generation completes."
+  (progress-reporter-done gen-tags--progress)
   (with-current-buffer gen-tags--buffer
     (insert (format "TAGS generation finished at %s %s.\n\n\n"
             (today) (now)))))
@@ -91,6 +98,9 @@ this will be the same as the tags-dir.")
 (defun gen-tags--first-file ()
   "Generate a series of tags files."
   (setq gen-tags--buffer (get-buffer-create " *gen-TAGS*"))
+  (setq gen-tags--total-num (length gen-tags-alist))
+  (setq gen-tags--progress
+        (make-progress-reporter "Generating TAGS..." 0 gen-tags--total-num))
   (setq gen-tags--iter gen-tags-alist)
   (setq gen-tags--remote (profile-current-get 'remote-prefix))
   (setq gen-tags--final-dest-dir (profile-current-get 'tags-dir))
@@ -155,7 +165,7 @@ this will be the same as the tags-dir.")
       (setq default-directory
             (concat gen-tags--remote default-directory)))
     ;; /bin/sh -c "<script>" requires its argument (the script) be
-    ;; quoted by strings; and apply expects a list as its last argument,
+    ;; quoted by strings; and `apply' expects a list as its last argument,
     ;; to be flattened out when the process is called.  Hence the
     ;; massaging of the input below to be a list containing a single item:
     ;; a string of all arguments to be passed, starting with the executable.
@@ -171,13 +181,15 @@ this will be the same as the tags-dir.")
        (when (string-match "\\(finished\\|exited\\)" change)
                                         ;         (kill-buffer " *gen-TAGS*")
          (with-current-buffer gen-tags--buffer
-           (insert gen-tags--msg "done."))
-         (when gen-tags--remote
+           (insert "done.\n"))
+         (when (and gen-tags--remote gen-tags-copy-remote)
            (copy-file
             (concat gen-tags--remote
                     gen-tags--intermediate-dest-file)
             gen-tags--final-dest-file t))
          (setq gen-tags--iter (cdr gen-tags--iter))
+         (setq gen-tags--curr-num (1+ gen-tags--curr-num))
+         (progress-reporter-update gen-tags--progress gen-tags--curr-num)
          (gen-tags--try-gen-next-file))
        )))
   )

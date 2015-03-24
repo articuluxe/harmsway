@@ -1,9 +1,13 @@
+ # -*- Mode: sh -*-
+
 # INIT
 git config --global user.name "Dan Harms"
 git config --global user.email danielrharms@gmail.com
 git config --global core.editor emacs
 git config --global color.ui true
 git config --global merge.tool <tool>
+git config --global diff.tool <tool>
+git config --global difftool.prompt false
 # ON WINDOWS
 git config --system core.autocrlf input
 
@@ -18,6 +22,11 @@ git branch --set-upstream-to origin/<branch>
 
 git clean -dfx
 
+# DIFF
+# name and status only
+git diff --name-status
+# show change magnitude
+git diff --stat
 
 # VIEW COMMITS [plus files changed / patches ]
 git log --oneline --decorate --graph [--stat/p]

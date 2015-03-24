@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-03-23 23:34:22 dharms>
+;; Modified Time-stamp: <2015-03-24 08:25:43 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -31,7 +31,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; preproc-font-lock ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'preproc-font-lock)
-(preproc-font-lock-global-mode 1)
+(global-set-key "\C-c#"
+                (lambda()(interactive)
+                  (preproc-font-lock-global-mode
+                   (if preproc-font-lock-mode 0 1))))
 
 (require 'grep)
 (defun my/grep (&optional arg)
