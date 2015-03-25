@@ -4,7 +4,7 @@
 ;; Author:  <dan.harms@xrtrading.com>
 ;; Created: Wednesday, March 18, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-03-24 16:46:10 dan.harms>
+;; Modified Time-stamp: <2015-03-25 00:14:37 dharms>
 ;; Keywords: etags, ctags
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -39,18 +39,9 @@
    "--file-scope=no"
    "--tag-relative=no")
   "Default ctags cpp options.")
-(defvar gen-tags-alist
-  (list
-;   (append (list "xr-common" "snap/xr-common/") ctags-cpp-options))
-   (append (list "punch" "punch/" "/usr/local/bin/ctags";; gen-tags-exe
-                 "-Re")
-           gen-tags-ctags-cpp-options)
-   (append (list "clib" "/opt/local/include/gcc48/c++/"
-                 "/usr/local/bin/ctags" "-Re"
-                 "--language-force=c++"
-                 "-h=\".h.H.hh.hpp.hxx.h++.inc.def.\"")
-           gen-tags-ctags-cpp-options)
-   ))
+(defvar gen-tags-alist '()
+  "A list whose every element is a sub-list specifying how to generate a
+TAGS file.")
 (defvar gen-tags-target-sub-dir "tags/"
   "Default sub-dir in which to put generated tag files.")
 (defvar gen-tags-copy-remote nil)
@@ -60,8 +51,6 @@
 (defvar gen-tags--buffer nil "gen-TAGS buffer.")
 (defvar gen-tags--remote nil
   "Are tags being generating for a remote source repository?")
-(defvar gen-tags--progress nil
-  "An internal progress reporter.")
 (defvar gen-tags--msg)
 (defvar gen-tags--intermediate-dest-dir nil
   "An intermediate staging location for each TAGS file being generated.
@@ -90,7 +79,6 @@ this will be the same as the tags-dir.")
 
 (defun gen-tags--on-finish ()
   "Called when TAGS generation completes."
-  (progress-reporter-done gen-tags--progress)
   (with-current-buffer gen-tags--buffer
     (insert (format "TAGS generation finished at %s %s.\n\n\n"
             (today) (now)))))
@@ -99,8 +87,6 @@ this will be the same as the tags-dir.")
   "Generate a series of tags files."
   (setq gen-tags--buffer (get-buffer-create " *gen-TAGS*"))
   (setq gen-tags--total-num (length gen-tags-alist))
-  (setq gen-tags--progress
-        (make-progress-reporter "Generating TAGS..." 0 gen-tags--total-num))
   (setq gen-tags--iter gen-tags-alist)
   (setq gen-tags--remote (profile-current-get 'remote-prefix))
   (setq gen-tags--final-dest-dir (profile-current-get 'tags-dir))
@@ -189,7 +175,6 @@ this will be the same as the tags-dir.")
             gen-tags--final-dest-file t))
          (setq gen-tags--iter (cdr gen-tags--iter))
          (setq gen-tags--curr-num (1+ gen-tags--curr-num))
-         (progress-reporter-update gen-tags--progress gen-tags--curr-num)
          (gen-tags--try-gen-next-file))
        )))
   )
