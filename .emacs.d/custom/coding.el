@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-03-24 08:25:43 dan.harms>
+;; Modified Time-stamp: <2015-03-25 00:12:03 dharms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -184,15 +184,16 @@
           (replace-regexp-in-string
            "\\." "_"
            name)))
+    (setq str (upcase (s-snake-case str)))
     (save-excursion
       (if arg                           ;ask user for stem
           (setq str (concat
                      (read-string "Include guard stem: " nil nil str) "_H"))
-        ;; no arg; if project-name is defined, prepend it
-        (when site-name
-          (setq str (concat site-name "_" str)))
+        ;; no arg; if project-name or site-name are defined, prepend them
         (when project-name
           (setq str (concat project-name "_" str))))
+        (when site-name
+          (setq str (concat site-name "_" str)))
       (setq str (upcase (concat "__" str "__")))
       (goto-char (point-min))
       (insert "#ifndef " str "\n#define " str "\n\n")

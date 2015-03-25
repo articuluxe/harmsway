@@ -2,7 +2,37 @@
 ;;
 ;;
 
+(defvar punch-ctags-alist)
+(defvar punch-tags-files)
+
+(defun ctags-derive-tag-files (alist)
+  "Extract a list of TAGS files from ALIST, which is in the format of a
+list of lists of properties.  See `gen-tags'."
+  (mapcar (lambda(name)
+            (setq name (concat name "-tags")))
+          (mapcar 'car alist)))
+
 (defun on-punch-init (project-root)
+  (setq punch-ctags-alist
+        (list
+         (append (list "punch" "punch/" gen-tags-exe "-Re"
+                       ) gen-tags-ctags-cpp-options)
+         (append (list "clib" "/opt/local/include/gcc48/c++/"
+                       gen-tags-exe "-Re"
+                       "--language-force=c++"
+                       "-h=\".h.H.hh.hpp.hxx.h++.inc.def.\""
+                       ) gen-tags-ctags-cpp-options)
+         (append (list "boost" "/usr/local/include/boost/"
+                       gen-tags-exe "-Re"
+                       "--exclude=typeof"
+                       "--exclude=fusion"
+                       "--exclude=phoenix"
+                       "--exclude=spirit"
+                       ) gen-tags-ctags-cpp-options)
+         ))
+  (setq punch-tags-files (ctags-derive-tag-files punch-ctags-alist))
+  ;; todo
+  (setq gen-tags-alist punch-ctags-alist)
   (setq etags-table-alist
         (cons (list
                (concat "^\\(.*\\)"
@@ -10,7 +40,7 @@
                        "\\(.*\\)$") ;this needs to capture
                                         ;the entire line
                (expand-file-name
-                (concat (profile-current-get 'tags-dir) "TAGS"))
+                (concat (profile-current-get 'tags-dir) "punch-tags"))
 ; unneeded (concat "\\1" (profile-current-get 'src-sub-dir) "TAGS")
                (expand-file-name
                 (concat (profile-current-get 'tags-dir) "clib-tags"))

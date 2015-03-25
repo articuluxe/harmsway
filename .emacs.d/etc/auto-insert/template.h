@@ -2,9 +2,9 @@
 // ${1:`(file-name-nondirectory (buffer-file-name))`} --- ${2:Short description}
 // Copyright (C) `(format-time-string "%Y")`  `(user-full-name)` (`(user-login-name)`)
 // Author: `(user-full-name)` <`user-mail-address`>
-// Created: `(today)`
+// Created: `(insert-today)`
 // Version: ${3:1.0}
-// Modified Time-stamp: <2015-02-27 03:48:53 dharms>
+// Modified Time-stamp: <2015-03-24 23:30:03 dharms>
 // Keywords: $4
 
 // This program is free software; you can redistribute it and/or modify

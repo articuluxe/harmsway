@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-03-24 07:29:17 dan.harms>
+;; Modified Time-stamp: <2015-03-24 23:28:58 dharms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -34,15 +34,25 @@
     (mapc 'kill-buffer (buffer-list))))
 (global-set-key "\C-x\S-k" 'kill-other-buffers)
 
-(defun now() "Insert string for current time formatted like '2:34 PM'."
+(defun insert-now()
+  "Insert string for current time formatted like `2:34 PM'."
   (interactive)
-  (insert (format-time-string "%D %-I:%M %p")))
+  (insert (now)))
+(defun now()
+  "Return string for current time formatted like `2:34 PM'."
+  (interactive)
+  (format-time-string "%D %-I:%M %p"))
 
-(defun today()
+(defun insert-today()
   "Insert string for today's date nicely formatted in American style,
   e.g. Sunday, September 17, 2000."
   (interactive)
-  (insert (format-time-string "%A, %B %e, %Y")))
+  (insert (today)))
+(defun today()
+  "Return string for today's date nicely formatted in American style,
+  e.g. Sunday, September 17, 2000."
+  (interactive)
+  (format-time-string "%A, %B %e, %Y"))
 
 (defun jump-to-matching-paren() "Go to matching paren" (interactive)
   (if (looking-at "\\s\(")
