@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-03-25 00:12:03 dharms>
+;; Modified Time-stamp: <2015-03-25 14:49:20 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -216,8 +216,8 @@
     (if (or arg (= 0 (length str)))
         (setq str (read-string "Enter the title symbol: ")))
                                         ; (message "symbol %s is %d chars long" str (length str))(read-char)
-                                        ;   (move-beginning-of-line nil)
     (c-beginning-of-defun)
+    (move-beginning-of-line nil)
     (insert "//")
     (insert-char ?- (- fill-column 2))
     (insert "\n")

@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-03-24 07:08:44 dan.harms>
+;; Modified Time-stamp: <2015-03-25 15:10:58 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -273,6 +273,11 @@
 (require 'list-register)
 (global-set-key (kbd "\C-xrv") 'list-register)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; idle-highlight ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'idle-highlight-mode)
+(setq idle-highlight-idle-time 1)
+(add-hook 'prog-mode-hook #'idle-highlight-mode)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; popwin ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'popwin)
 (popwin-mode 1)
@@ -334,7 +339,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; rich-minority ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'rich-minority)
 (rich-minority-mode 1)
-(setq rm-blacklist '(" AC" " yas" " Undo-Tree" " Abbrev"))
+(setq rm-blacklist '(" AC" " yas" " Undo-Tree" " Abbrev" " Guide" " Hi"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smart-mode-line ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-to-list 'load-path (concat my/plugins-directory "smart-mode-line/"))
@@ -759,7 +764,7 @@ customization."
 ;      (setq site-name (file-name-base site-file))
       (load site-file))
     (add-to-list 'yas-snippet-dirs
-                 (concat site-dir "snippets/"))))
+                 (concat site-dir "snippets/") t)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; host ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (let* ((host-dir
@@ -813,34 +818,37 @@ customization."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; sh-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-hook 'sh-mode-hook
-          '(lambda()
-             (setq-default indent-tabs-mode nil)
-             (define-key sh-mode-map "\r" 'reindent-then-newline-and-indent)
-             (setq sh-basic-offset 3)
-             (setq sh-indentation 3)
-             (define-key sh-mode-map "\C-c\C-c" 'comment-region)
-             (define-key sh-mode-map "\C-c\C-u" 'uncomment-region)
-             ))
+          (lambda()
+            (setq-default indent-tabs-mode nil)
+            (idle-highlight-mode 1)
+            (define-key sh-mode-map "\r" 'reindent-then-newline-and-indent)
+            (setq sh-basic-offset 3)
+            (setq sh-indentation 3)
+            (define-key sh-mode-map "\C-c\C-c" 'comment-region)
+            (define-key sh-mode-map "\C-c\C-u" 'uncomment-region)
+            ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dos-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-hook 'dos-mode-hook
-          '(lambda()
-             (setq-default indent-tabs-mode nil)
-             (define-key dos-mode-map "\r" 'reindent-then-newline-and-indent)
-             (setq dos-basic-offset 3)
-             (setq dos-indentation 3)
-             (define-key dos-mode-map "\C-c\C-c" 'comment-region)
-             (define-key dos-mode-map "\C-c\C-u" 'uncomment-region)
-             ))
+          (lambda()
+            (setq-default indent-tabs-mode nil)
+            (idle-highlight-mode 1)
+            (define-key dos-mode-map "\r" 'reindent-then-newline-and-indent)
+            (setq dos-basic-offset 3)
+            (setq dos-indentation 3)
+            (define-key dos-mode-map "\C-c\C-c" 'comment-region)
+            (define-key dos-mode-map "\C-c\C-u" 'uncomment-region)
+            ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; xml-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-hook 'nxml-mode-hook
-          '(lambda()
-             (setq-default indent-tabs-mode nil)
-             (define-key nxml-mode-map "\r" 'reindent-then-newline-and-indent)
-             (define-key nxml-mode-map "\C-c\C-c" 'comment-region)
-             (define-key nxml-mode-map "\C-c\C-u" 'uncomment-region)
-             ))
+          (lambda()
+            (setq-default indent-tabs-mode nil)
+            (idle-highlight-mode 1)
+            (define-key nxml-mode-map "\r" 'reindent-then-newline-and-indent)
+            (define-key nxml-mode-map "\C-c\C-c" 'comment-region)
+            (define-key nxml-mode-map "\C-c\C-u" 'uncomment-region)
+            ))
 (require 'mz-comment-fix)
 ;; the following is a hack to fix nested XML commenting in Emacs 24.
 ;; Note that 'comment-strip-start-length also exists for other modes if needed.
@@ -848,24 +856,24 @@ customization."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; python-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-hook 'python-mode-hook
-          '(lambda()
-             (setq-default indent-tabs-mode nil)
-             (define-key python-mode-map "\r" 'reindent-then-newline-and-indent)
-             (define-key python-mode-map "\C-c\C-c" 'comment-region)
-             (define-key python-mode-map "\C-c\C-u" 'uncomment-region)
-             ))
+          (lambda()
+            (setq-default indent-tabs-mode nil)
+            (define-key python-mode-map "\r" 'reindent-then-newline-and-indent)
+            (define-key python-mode-map "\C-c\C-c" 'comment-region)
+            (define-key python-mode-map "\C-c\C-u" 'uncomment-region)
+            ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; emacs-lisp-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-hook 'emacs-lisp-mode-hook
-          '(lambda()
-             (setq indent-tabs-mode nil)
-             (define-key emacs-lisp-mode-map "\r" 'reindent-then-newline-and-indent)
-             (define-key emacs-lisp-mode-map "\C-c\C-c" 'comment-region)
-             (define-key emacs-lisp-mode-map "\C-c\C-u" 'uncomment-region)
-             (define-key emacs-lisp-mode-map (kbd "\C-c RET")
-               '(lambda()(interactive)
-                  (byte-compile-file (buffer-file-name))))
-             ))
+          (lambda()
+            (setq indent-tabs-mode nil)
+            (define-key emacs-lisp-mode-map "\r" 'reindent-then-newline-and-indent)
+            (define-key emacs-lisp-mode-map "\C-c\C-c" 'comment-region)
+            (define-key emacs-lisp-mode-map "\C-c\C-u" 'uncomment-region)
+            (define-key emacs-lisp-mode-map (kbd "\C-c RET")
+              (lambda()(interactive)
+                (byte-compile-file (buffer-file-name))))
+            ))
 (add-hook 'emacs-lisp-mode-hook 'eldoc-mode)
 (require 'lisp-extra-font-lock)
 (lisp-extra-font-lock-global-mode 1)
@@ -884,14 +892,15 @@ customization."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; conf-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-hook 'conf-mode-hook
-          '(lambda()
-             (setq indent-tabs-mode nil)
-             ;; conf-colon-mode still bound to "\C-c:"
-             (local-unset-key "\C-c\C-c")
-             ;; conf-unix-mode now bound to "\C-cu"
-             (local-unset-key "\C-c\C-u")
-             (define-key conf-mode-map "\C-cu" 'conf-unix-mode)
-             (define-key conf-mode-map "\C-c\C-c" 'comment-region)
-             (define-key conf-mode-map "\C-c\C-u" 'uncomment-region)
-             ))
+          (lambda()
+            (setq indent-tabs-mode nil)
+            (idle-highlight-mode 1)
+            ;; conf-colon-mode still bound to "\C-c:"
+            (local-unset-key "\C-c\C-c")
+            ;; conf-unix-mode now bound to "\C-cu"
+            (local-unset-key "\C-c\C-u")
+            (define-key conf-mode-map "\C-cu" 'conf-unix-mode)
+            (define-key conf-mode-map "\C-c\C-c" 'comment-region)
+            (define-key conf-mode-map "\C-c\C-u" 'uncomment-region)
+            ))
 ;; init.el ends here

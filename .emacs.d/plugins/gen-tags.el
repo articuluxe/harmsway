@@ -4,7 +4,7 @@
 ;; Author:  <dan.harms@xrtrading.com>
 ;; Created: Wednesday, March 18, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-03-25 00:14:37 dharms>
+;; Modified Time-stamp: <2015-03-25 18:02:04 dan.harms>
 ;; Keywords: etags, ctags
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -26,6 +26,7 @@
 
 ;; Code:
 
+;; customization variables
 (defvar gen-tags-exe
   (cond ((file-exists-p "/usr/local/bin/ctags") "/usr/local/bin/ctags")
         ((file-exists-p "/bin/ctags") "/bin/ctags")
@@ -45,6 +46,23 @@ TAGS file.")
 (defvar gen-tags-target-sub-dir "tags/"
   "Default sub-dir in which to put generated tag files.")
 (defvar gen-tags-copy-remote nil)
+
+;; client-facing convenience functions
+(defun gen-tags-collect-tag-filestems (alist)
+  "Extract the TAGS file stems from ALIST, which is in the format of a
+list of lists of properties.  See `gen-tags'. Return a list of the results."
+  (mapcar (lambda(name)
+            (setq name (concat name "-tags")))
+          (mapcar 'car alist)))
+
+(defun gen-tags-collect-tag-filenames (lst root)
+  "Extract the TAGS file names from LST, which is a list of file stems,
+see `gen-tags-collect-tag-filestems'.  Return a list of the results."
+  (mapcar (lambda(name)
+            (expand-file-name
+             (concat root name))) lst))
+
+;; internal variables
 (defvar gen-tags--iter nil "Current item being processed.")
 (defvar gen-tags--total-num 0 "Total number of TAGS files to create.")
 (defvar gen-tags--curr-num 0 "Current number of TAGS file being created.")
@@ -52,6 +70,8 @@ TAGS file.")
 (defvar gen-tags--remote nil
   "Are tags being generating for a remote source repository?")
 (defvar gen-tags--msg)
+(defvar gen-tags--start-time 0
+  "Time TAGS generation commenced.")
 (defvar gen-tags--intermediate-dest-dir nil
   "An intermediate staging location for each TAGS file being generated.
 This is useful for generating TAGS on a remote server.")
@@ -69,22 +89,17 @@ this will be the same as the tags-dir.")
          (error "Could not generate tags: no active profile"))
        (gen-tags--first-file))
 
-(defun gen-tags--on-start ()
-  "Called when TAGS generation begins."
-  (message "local-dest-dir:%s remote-dest-dir:%s"
-           gen-tags--intermediate-dest-dir gen-tags--final-dest-dir)
-  (with-current-buffer gen-tags--buffer
-    (insert (format "TAGS generation started at %s %s.\n\n"
-            (today) (now)))))
-
 (defun gen-tags--on-finish ()
   "Called when TAGS generation completes."
-  (with-current-buffer gen-tags--buffer
-    (insert (format "TAGS generation finished at %s %s.\n\n\n"
-            (today) (now)))))
+  (let ((elapsed (float-time
+                  (time-subtract (current-time) gen-tags--start-time))))
+    (with-current-buffer gen-tags--buffer
+      (insert
+       (format "TAGS generation finished at %s (it took %.3f seconds).\n\n\n"
+               (current-time-string) elapsed)))))
 
 (defun gen-tags--first-file ()
-  "Generate a series of tags files."
+  "Start generating a series of TAGS files."
   (setq gen-tags--buffer (get-buffer-create " *gen-TAGS*"))
   (setq gen-tags--total-num (length gen-tags-alist))
   (setq gen-tags--iter gen-tags-alist)
@@ -105,9 +120,16 @@ this will be the same as the tags-dir.")
     (setq gen-tags--intermediate-dest-dir
           gen-tags--final-dest-dir))
   (make-directory gen-tags--final-dest-dir t)
-  (gen-tags--on-start)
-  (gen-tags--try-gen-next-file)
-  )
+  (save-selected-window
+    (select-window (split-window-vertically))
+    (with-current-buffer gen-tags--buffer
+      ;(switch-to-buffer gen-tags--buffer)
+      (message "local-dest-dir:%s remote-dest-dir:%s"
+               gen-tags--intermediate-dest-dir gen-tags--final-dest-dir)
+      (insert (format "TAGS generation started at %s.\n\n"
+                      (current-time-string)))))
+  (setq gen-tags--start-time (current-time))
+  (gen-tags--try-gen-next-file))
 
 (defun gen-tags--try-gen-next-file ()
   "Generate a tags file."
@@ -138,14 +160,6 @@ this will be the same as the tags-dir.")
                                 gen-tags--intermediate-dest-file))
     (with-current-buffer gen-tags--buffer
       (insert gen-tags--msg))
-
-    (message "arg-list is %s" arg-list)
-    (setq args
-          (append arg-list
-                  (list "-f" gen-tags--intermediate-dest-file
-                        default-directory)))
-    (message "all args are %s" args)
-
     ;; if remote, we need the remote prefix
     (when gen-tags--remote
       (setq default-directory
@@ -167,17 +181,19 @@ this will be the same as the tags-dir.")
        (when (string-match "\\(finished\\|exited\\)" change)
                                         ;         (kill-buffer " *gen-TAGS*")
          (with-current-buffer gen-tags--buffer
-           (insert "done.\n"))
-         (when (and gen-tags--remote gen-tags-copy-remote)
-           (copy-file
-            (concat gen-tags--remote
-                    gen-tags--intermediate-dest-file)
-            gen-tags--final-dest-file t))
-         (setq gen-tags--iter (cdr gen-tags--iter))
-         (setq gen-tags--curr-num (1+ gen-tags--curr-num))
-         (gen-tags--try-gen-next-file))
-       )))
-  )
+           (insert "done.\n")
+           (when (and gen-tags--remote gen-tags-copy-remote)
+             (let ((start (current-time)))
+               (copy-file
+                (concat gen-tags--remote
+                        gen-tags--intermediate-dest-file)
+                gen-tags--final-dest-file t)
+               (insert " (remote transfer took %.3f sec.)"
+                       (float-time (time-subtract (current-time) start)))))
+           (setq gen-tags--iter (cdr gen-tags--iter))
+           (setq gen-tags--curr-num (1+ gen-tags--curr-num))
+           (gen-tags--try-gen-next-file)))
+       ))))
 
 (provide 'gen-tags)
 

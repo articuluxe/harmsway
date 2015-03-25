@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-03-19 18:03:00 dan.harms>
+;; Modified Time-stamp: <2015-03-25 16:53:10 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -153,18 +153,31 @@ assigning a profile."
                              (tramp-make-tramp-file-name
                               file-method file-user file-host ""))))))
 
+(defun profile--compute-remote-subdir-stem ()
+  "Helper function that computes a remote project's stem in a format
+useful for uniquely naming the local TAGS directory."
+  (concat
+   (replace-regexp-in-string
+    "/\\|\\\\" "!" (profile-current-get 'remote-host) t t)
+   "!"
+   (replace-regexp-in-string
+    "/\\|\\\\" "!" (profile-current-get 'project-root-stem))))
+
 (defun profile--compute-tags-dir ()
   "Helper function that computes where a project's local TAGS live."
-  (let ((base (profile-current-get 'tags-sub-dir))
-        (dir default-directory)
-        (env (getenv "EMACS_TAGS_DIR")))
+  (let ((dir default-directory)
+        (base (or (getenv "EMACS_TAGS_DIR") "~"))
+        (sub (or (profile-current-get 'tags-sub-dir) ".tags/"))
+        dest-dir)
+    (when (not (tramp-tramp-file-p dir))
+      ;; in the local case, set our base according to the project
+      (setq base (profile-current-get 'project-root-dir)))
+    (setq dest-dir (concat (file-name-as-directory base) sub))
     (if (tramp-tramp-file-p dir)
-        (if env (file-name-as-directory env)
-          (prog1 nil
-            (error
-             "Unknown local tags dir for remote file (set EMACS_TAGS_DIR)")))
-      (concat (profile-current-get 'project-root-dir)
-              (or base "tags/")))))
+        (concat dest-dir
+                (file-name-as-directory
+                 (profile--compute-remote-subdir-stem)))
+      dest-dir)))
 
 (defun profile--compute-project-stem (root-dir)
   "Helper function that computes a project's stem, useful in regular
@@ -177,16 +190,18 @@ path, possibly including a `~' representing the user's home directory."
   "Initialize a loaded profile."
   (let ((root (profile-current-get 'project-root-dir)))
     (when (and profile-current
-               (profile-current-get 'on-profile-init)
-               (fboundp (intern-soft
-                         (profile-current-get 'on-profile-init)))
                (not (profile-current-get 'profile-inited)))
-      (unless (profile-current-get 'tags-dir)
-        (profile-current-put 'tags-dir (profile--compute-tags-dir)))
+      ;; run this init code once per profile loaded
       (profile--compute-remote-properties)
       (profile-current-put 'project-root-stem
                            (profile--compute-project-stem root))
-      (profile-current-funcall 'on-profile-init root)
+      (unless (profile-current-get 'tags-dir)
+        (profile-current-put 'tags-dir (profile--compute-tags-dir)))
+      ;; if there's a valid init function, call it
+      (when (and (profile-current-get 'on-profile-init)
+                 (fboundp (intern-soft
+                           (profile-current-get 'on-profile-init))))
+        (profile-current-funcall 'on-profile-init root))
       (profile-current-put 'profile-inited t))))
 
 ;; override the advice from `profiles.el'
