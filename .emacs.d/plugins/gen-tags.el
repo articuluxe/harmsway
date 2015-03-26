@@ -4,7 +4,7 @@
 ;; Author:  <dan.harms@xrtrading.com>
 ;; Created: Wednesday, March 18, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-03-26 00:40:08 dharms>
+;; Modified Time-stamp: <2015-03-26 09:44:33 dan.harms>
 ;; Keywords: etags, ctags
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -70,6 +70,7 @@ see `gen-tags-collect-tag-filestems'.  Return a list of the results."
 (defvar gen-tags--msg)
 (defvar gen-tags--start-time 0
   "Time TAGS generation commenced.")
+(defvar gen-tags--curr-profile nil "Current profile name.")
 (defvar gen-tags--intermediate-dest-dir nil
   "An intermediate staging location for each TAGS file being generated.
 This is useful for generating TAGS on a remote server.")
@@ -82,10 +83,15 @@ this will be the same as the tags-dir.")
 (defvar gen-tags--final-dest-file nil
   "The final file being written for the current TAGS generation.")
 
-(defun gen-tags-generate-tags () (interactive)
-       (unless (profile-current-get 'project-name)
-         (error "Could not generate tags: no active profile"))
-       (gen-tags--first-file))
+(defun gen-tags-generate-tags (&optional arg)
+  "Generate TAGS files according to the current profile.  If optional
+ARG is supplied, also copy them to the local machine, if you are
+running on a remote host."
+  (interactive)
+  (unless (profile-current-get 'project-name)
+    (error "Could not generate tags: no active profile"))
+  (setq gen-tags-copy-remote current-prefix-arg)
+  (gen-tags--first-file))
 
 (defun gen-tags--on-finish ()
   "Called when TAGS generation completes."
@@ -101,6 +107,7 @@ this will be the same as the tags-dir.")
   (let ((remote-tags-dir (or
                           (profile-current-get 'remote-tags-dir)
                           ".tags/")))
+    (setq gen-tags--curr-profile (symbol-name profile-current))
     (setq gen-tags--buffer (get-buffer-create " *gen-TAGS*"))
     (setq gen-tags--total-num (length gen-tags-alist))
     (setq gen-tags--iter gen-tags-alist)
@@ -132,6 +139,7 @@ this will be the same as the tags-dir.")
 
 (defun gen-tags--try-gen-next-file ()
   "Generate a tags file."
+  (profile-set-current gen-tags--curr-profile)
   (if gen-tags--iter
       (gen-tags--gen-next-file)
     (gen-tags--on-finish)))
@@ -182,7 +190,6 @@ this will be the same as the tags-dir.")
      process
      (lambda (proc change)
        (when (string-match "\\(finished\\|exited\\)" change)
-                                        ;         (kill-buffer " *gen-TAGS*")
          (with-current-buffer gen-tags--buffer
            (insert "done.\n")
            (when (and gen-tags--remote gen-tags-copy-remote)
@@ -191,12 +198,15 @@ this will be the same as the tags-dir.")
                 (concat gen-tags--remote
                         gen-tags--intermediate-dest-file)
                 gen-tags--final-dest-file t)
-               (insert " (remote transfer took %.3f sec.)"
-                       (float-time (time-subtract (current-time) start)))))
+               (insert
+                (format
+                 " Copied to %s (remote transfer took %.3f sec.)\n"
+                 gen-tags--final-dest-file
+                 (float-time (time-subtract (current-time) start))))))
            (setq gen-tags--iter (cdr gen-tags--iter))
            (setq gen-tags--curr-num (1+ gen-tags--curr-num))
-           (gen-tags--try-gen-next-file)))
-       ))))
+           (gen-tags--try-gen-next-file)))))
+       ))
 
 (provide 'gen-tags)
 

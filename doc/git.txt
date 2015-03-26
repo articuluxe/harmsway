@@ -8,7 +8,7 @@ git config --global color.ui true
 git config --global merge.tool <tool>
 git config --global diff.tool <tool>
 git config --global difftool.prompt false
-# ON WINDOWS
+# on windows
 git config --system core.autocrlf input
 
 #add .gitignore patterns to .git/info/exclude.  These will not be checked in.
@@ -18,7 +18,15 @@ git config --system core.autocrlf input
 git checkout --track origin/<branch>
 # set existing branch to track remote
 git branch -u origin/<branch>
-git branch --set-upstream-to origin/<branch>
+git branch --track origin/<branch>
+# push branch upstream
+git push origin <local>[:<remote>]
+# push branch upstream and set up tracking
+git push -u origin <branch>
+# delete local branch
+git branch -d <branch>
+# delete remote branch
+git push origin :<branch>
 
 git clean -dfx
 

@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-03-26 00:17:50 dharms>
+;; Modified Time-stamp: <2015-03-26 12:04:02 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -74,7 +74,7 @@ profile `profile-current'."
   "Given a typical profile file such as `.mybase.profile', returns the
 basename, such as `mybase'."
   (when
-      (string-match "\\.?\\(\\sw+\\)$" (file-name-base name))
+      (string-match "\\.?\\([^.]+\\)$" (file-name-base name))
   (match-string 1 (file-name-base name))))
 
 (defvar profile--root-file)
