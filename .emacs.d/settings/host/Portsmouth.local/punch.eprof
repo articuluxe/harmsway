@@ -6,20 +6,6 @@
 (defvar punch-tag-filestems)
 (defvar punch-tag-filenames)
 
-(defun ctags-collect-tag-filestems (alist)
-  "Extract the TAGS file stems from ALIST, which is in the format of a
-list of lists of properties.  See `gen-tags'. Return a list of the results."
-  (mapcar (lambda(name)
-            (setq name (concat name "-tags")))
-          (mapcar 'car alist)))
-
-(defun ctags-collect-tag-filenames (lst root)
-  "Extract the TAGS file names from LST, which is a list of file stems,
-see `ctags-collect-tag-filestems'.  Return a list of the results."
-  (mapcar (lambda(name)
-            (expand-file-name
-             (concat root name))) lst))
-
 (defun on-punch-init (project-root)
   (setq punch-ctags-alist
         (list
@@ -38,29 +24,24 @@ see `ctags-collect-tag-filestems'.  Return a list of the results."
                        "--exclude=spirit"
                        ) gen-tags-ctags-cpp-options)
          ))
-  (setq gen-tags-alist punch-ctags-alist)
+  (setq gen-tags-alist punch-ctags-alist) ;todo: put this in file-open
+  ;; todo: also put registers in file-open
+  ;; and ac-headers
 
-  (setq punch-tag-filestems (ctags-collect-tag-filestems punch-ctags-alist))
-  (setq punch-tag-filenames (ctags-collect-tag-filenames
-                             punch-tag-filestems
-                             (profile-current-get 'tags-dir)))
+  (setq punch-tag-filestems
+        (gen-tags-collect-tag-filestems punch-ctags-alist))
+  (setq punch-tag-filenames
+        (gen-tags-collect-tag-filenames
+         punch-tag-filestems
+         (profile-current-get 'tags-dir)))
   (setq etags-table-alist
         (cons (append
                (list
                 ;; this first element needs to capture the entire line
-               (concat "^\\(.*\\)"
-                       (profile-current-get 'project-root-stem)
-                       "\\(.*\\)$"))
+                (concat "^\\(.*\\)"
+                        (profile-current-get 'project-root-stem)
+                        "\\(.*\\)$"))
                punch-tag-filenames
-;;                (expand-file-name
-;;                 (concat (profile-current-get 'tags-dir) "punch-tags"))
-;; ; unneeded (concat "\\1" (profile-current-get 'src-sub-dir) "TAGS")
-;;                (expand-file-name
-;;                 (concat (profile-current-get 'tags-dir) "clib-tags"))
-;;                (expand-file-name
-;;                 (concat (profile-current-get 'tags-dir) "boost-tags"))
-               ;; "/Users/dharms/src/clib-tags" ;these need to be absolute
-               ;; "/Users/dharms/src/boost-tags"
                ) etags-table-alist)))
 
 (profile-define-derived "punch" "default"

@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-03-25 16:53:10 dan.harms>
+;; Modified Time-stamp: <2015-03-26 00:17:50 dharms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -193,10 +193,12 @@ path, possibly including a `~' representing the user's home directory."
                (not (profile-current-get 'profile-inited)))
       ;; run this init code once per profile loaded
       (profile--compute-remote-properties)
-      (profile-current-put 'project-root-stem
-                           (profile--compute-project-stem root))
-      (unless (profile-current-get 'tags-dir)
-        (profile-current-put 'tags-dir (profile--compute-tags-dir)))
+      (when root
+        (profile-current-put 'project-root-stem
+                             (profile--compute-project-stem root)))
+      (when root
+        (unless (profile-current-get 'tags-dir)
+          (profile-current-put 'tags-dir (profile--compute-tags-dir))))
       ;; if there's a valid init function, call it
       (when (and (profile-current-get 'on-profile-init)
                  (fboundp (intern-soft

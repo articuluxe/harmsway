@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-03-25 15:10:58 dan.harms>
+;; Modified Time-stamp: <2015-03-26 00:36:52 dharms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -544,11 +544,35 @@ register \\C-l."
                 'compile-sub-command "make"
                 )
 (profile-set-default "default")
+(defvar harms-ctags-alist)
+(defvar harms-tag-filenames)
 (profile-define "harmsway" "dharms" "danielrharms@gmail.com"
                 'project-name "harmsway"
                 'src-sub-dir ".emacs.d/"
-                )
-(setq profile-path-alist (cons (cons "src/\\(projects/\\)?harmsway" "harmsway")
+                ;; 'on-profile-init
+                ;; (lambda()
+                ;;   (setq harms-ctags-alist
+                ;;         (list (list "harmsway" ".emacs.d/"
+                ;;                     gen-tags-exe "-Re")))
+                ;;   (setq harms-tag-filenames
+                ;;         (gen-tags-collect-tag-filenames
+                ;;          (gen-tags-collect-tag-filestems
+                ;;           harms-ctags-alist)
+                ;;          (profile-current-get 'tags-dir)))
+                ;;   (setq etags-table-alist
+                ;;         (cons (append (list
+                ;;                        (concat
+                ;;                         "^\\(.*\\)"
+                ;;                         (profile-current-get
+                ;;                          'project-root-stem)
+                ;;                         "\\(.*\\)$"))
+                ;;                       harms-tag-filenames
+                ;;                       ) etags-table-alist))
+                ;; )
+)
+
+(setq profile-path-alist (cons (cons "src/\\(projects/\\)?harmsway"
+                                     "harmsway")
                                profile-path-alist))
 (add-to-list 'sml/replacer-regexp-list
              '("^~/src/\\(projects/\\)?harmsway/" ":HW:") t)
