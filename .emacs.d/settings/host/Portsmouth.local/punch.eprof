@@ -5,6 +5,16 @@
 (defvar punch-ctags-alist)
 (defvar punch-tag-filestems)
 (defvar punch-tag-filenames)
+(defvar punch-include-files)
+
+(defun on-punch-file-open (project-root)
+  (setq gen-tags-alist punch-ctags-alist)
+  (when c-buffer-is-cc-mode
+    (make-local-variable 'achead:include-directories)
+    (setq achead:include-directories punch-include-files)
+    (setq ff-search-directories (append '(".")
+                                        punch-include-files))
+    ))
 
 (defun on-punch-init (project-root)
   (setq punch-ctags-alist
@@ -24,9 +34,6 @@
                        "--exclude=spirit"
                        ) gen-tags-ctags-cpp-options)
          ))
-  (setq gen-tags-alist punch-ctags-alist) ;todo: put this in file-open
-  ;; todo: also put registers in file-open
-  ;; and ac-headers
 
   (setq punch-tag-filestems
         (gen-tags-collect-tag-filestems punch-ctags-alist))
@@ -42,17 +49,22 @@
                         (profile-current-get 'project-root-stem)
                         "\\(.*\\)$"))
                punch-tag-filenames
-               ) etags-table-alist)))
+               ) etags-table-alist))
+
+  (setq punch-include-files
+        (gen-tags-collect-include-files punch-ctags-alist))
+
+  (add-to-list
+   'sml/replacer-regexp-list
+   (list (profile-current-get 'project-root-dir ":PUNCH:") t))
 
 (profile-define-derived "punch" "default"
                         "dharms" "danielrharms@gmail.com"
                         'project-name "punch"
                         'build-sub-dir "build/"
                         'src-sub-dir "punch/"
-                        'on-file-open 'my/add-c-headers
+                        'on-file-open 'on-punch-file-open
                         'on-profile-init 'on-punch-init
                         )
 (setq profile-path-alist (cons (cons "src/projects/punch" "punch")
                                profile-path-alist))
-
-(add-to-list 'sml/replacer-regexp-list '("^~/src/projects/punch/" ":PUNCH:") t)

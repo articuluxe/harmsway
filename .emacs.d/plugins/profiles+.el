@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-03-26 12:04:02 dan.harms>
+;; Modified Time-stamp: <2015-03-27 17:52:38 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -194,8 +194,9 @@ path, possibly including a `~' representing the user's home directory."
       ;; run this init code once per profile loaded
       (profile--compute-remote-properties)
       (when root
-        (profile-current-put 'project-root-stem
-                             (profile--compute-project-stem root)))
+        (unless (profile-current-get 'project-root-stem)
+          (profile-current-put 'project-root-stem
+                               (profile--compute-project-stem root))))
       (when root
         (unless (profile-current-get 'tags-dir)
           (profile-current-put 'tags-dir (profile--compute-tags-dir))))
@@ -222,6 +223,13 @@ of the buffer."
            (root-file (car root))
            (root-dir (cdr root))
            profile-basename)
+      ;; (when (tramp-tramp-file-p root-file)
+      ;;   (setq root-file
+      ;;         (tramp-file-name-localname
+      ;;          (tramp-dissect-file-name root-file))
+      ;;         root-dir
+      ;;         (tramp-file-name-localname
+      ;;          (tramp-dissect-file-name root-dir))))
       (when (and root root-file root-dir)
         (setq profile-basename (profile-find-profile-basename root-file))
         (unless (string-equal root-dir (profile-current-get 'project-root-dir))

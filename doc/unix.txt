@@ -4,7 +4,7 @@
 # Author:  <dan.harms@xrtrading.com>
 # Created: Friday, March 20, 2015
 # Version: 1.0
-# Modified Time-stamp: <2015-03-20 13:26:48 dan.harms>
+# Modified Time-stamp: <2015-03-27 13:48:36 dan.harms>
 # Keywords: help
 
 # ensure core dump on SEGV
@@ -14,5 +14,8 @@ ifconfig eth0 mtu 1000
 # limit interface mtu (persistent)
 # edit /etc/sysconfig/network-scripts/ifcfg-eth0
 MTU=1000
+
+# find out which distro you're running
+cat /etc/*-release
 
 # unix.txt ends here

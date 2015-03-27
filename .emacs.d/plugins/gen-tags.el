@@ -4,7 +4,7 @@
 ;; Author:  <dan.harms@xrtrading.com>
 ;; Created: Wednesday, March 18, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-03-26 09:44:33 dan.harms>
+;; Modified Time-stamp: <2015-03-27 17:12:53 dan.harms>
 ;; Keywords: etags, ctags
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -25,6 +25,8 @@
 ;;
 
 ;; Code:
+
+(require 'find-file)
 
 ;; customization variables
 (defvar gen-tags-exe
@@ -48,7 +50,8 @@ TAGS file.")
 ;; client-facing convenience functions
 (defun gen-tags-collect-tag-filestems (alist)
   "Extract the TAGS file stems from ALIST, which is in the format of a
-list of lists of properties.  See `gen-tags'. Return a list of the results."
+list of lists of properties.  See `gen-tags-alist'. Return a list of the
+results."
   (mapcar (lambda(name)
             (setq name (concat name "-tags")))
           (mapcar 'car alist)))
@@ -59,6 +62,23 @@ see `gen-tags-collect-tag-filestems'.  Return a list of the results."
   (mapcar (lambda(name)
             (expand-file-name
              (concat root name))) lst))
+
+(defun gen-tags-collect-include-files (alist &optional prepend-remote)
+  "Extract the include directories from ALIST, which is in the format of a
+list of lists of properties, see `gen-tags-alist'. Return a list of the
+results."
+  (mapcar (lambda(path)
+            (let ((include
+                   (if (file-name-absolute-p path)
+                       path
+                     (concat
+                      (profile-current-get 'project-root-dir) path))))
+              (setq path
+                    (if prepend-remote
+                        (concat (profile-current-get 'remote-prefix)
+                                include)
+                      include))))
+          (mapcar 'cadr alist)))
 
 ;; internal variables
 (defvar gen-tags--iter nil "Current item being processed.")
@@ -132,7 +152,7 @@ running on a remote host."
     (make-directory gen-tags--final-dest-dir t)
     (display-buffer gen-tags--buffer)
     (with-current-buffer gen-tags--buffer
-      (insert (format "TAGS generation started at %s.\n\n"
+      (insert (format "TAGS generation started at %s\n\n"
                       (current-time-string)))))
   (setq gen-tags--start-time (current-time))
   (gen-tags--try-gen-next-file))

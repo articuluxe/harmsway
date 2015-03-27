@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-03-22 19:31:29 dharms>
+;; Modified Time-stamp: <2015-03-27 13:22:05 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -37,12 +37,5 @@
              (list (concat "^" clib-root) ":C++:") t)
 (add-to-list 'sml/replacer-regexp-list
              (list (concat "^" boost-root) ":BOOST:") t)
-
-(defun my/add-c-headers (project-root)
-  (when c-buffer-is-cc-mode
-    (make-local-variable 'achead:include-directories)
-    (add-to-list 'achead:include-directories clib-root)
-    (add-to-list 'achead:include-directories boost-root)
-    ))
 
 ;; Portsmouth.local ends here
