@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-03-27 17:52:38 dan.harms>
+;; Modified Time-stamp: <2015-03-30 08:36:51 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -250,16 +250,16 @@ of the buffer."
                   (profile-current-put 'project-root-dir root-dir))
                 (unless (profile-current-get 'project-name)
                   (profile-current-put 'project-name profile-basename))
-                (add-to-list 'sml/replacer-regexp-list
-                             (list (concat "^"
-                                           (abbreviate-file-name
-                                            (profile-current-get
-                                             'project-root-dir)))
-                                   (concat ":"
-                                           (upcase
-                                            (profile-current-get
-                                             'project-name))
-                                           ":")) t)
+                ;; (add-to-list 'sml/replacer-regexp-list
+                ;;              (list (concat "^"
+                ;;                            (abbreviate-file-name
+                ;;                             (profile-current-get
+                ;;                              'project-root-dir)))
+                ;;                    (concat ":"
+                ;;                            (upcase
+                ;;                             (profile-current-get
+                ;;                              'project-name))
+                ;;                            ":")) t)
                 (message "Loaded profile %s for project %s located at %s;\n src %s; bld %s; tags %s %s"
                          (profile-current-name)
                          (profile-current-get 'project-name)

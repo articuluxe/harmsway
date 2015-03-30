@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-03-25 14:49:20 dan.harms>
+;; Modified Time-stamp: <2015-03-30 09:58:30 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -117,23 +117,24 @@
                                       )))))
    ))
 
-(add-hook 'c++-mode-hook
-      '(lambda()
-        (font-lock-add-keywords
-         nil '(;; complete some fundamental keywords (+ Qt)
-           ("\\<\\(void\\|unsigned\\|signed\\|char\\|short\\|bool\\|int\\|long\\|float\\|double\\|slots\\|signals\\)\\>" . font-lock-keyword-face)
-           ;; add the new C++11 keywords
-           ("\\<\\(alignof\\|alignas\\|constexpr\\|decltype\\|noexcept\\|nullptr\\|static_assert\\|thread_local\\|override\\|final\\)\\>" . font-lock-keyword-face)
-           ;; hexadecimal numbers
-           ("\\<0[xX][0-9A-Fa-f]+\\>" . font-lock-constant-face)
-           ;; TODO declarations
-           ("\\<[tT][oO][dD][oO]\\>" 0 font-lock-warning-face t)
-           ;; Qt fontification
-           ("\\<Q_OBJECT\\|SIGNAL\\|SLOT\\>" . font-lock-keyword-face)
-           ("\\<QT?\\(_\\sw+\\)+\\>" . font-lock-keyword-face)
-           ("\\<Q[A-Z][A-Za-z0-9]*\\>" . font-lock-type-face)
-           ) t)
-        ) t)
+(add-hook
+ 'c++-mode-hook
+ (lambda()
+   (font-lock-add-keywords
+    nil '(;; complete some fundamental keywords (+ Qt)
+          ("\\<\\(void\\|unsigned\\|signed\\|char\\|short\\|bool\\|int\\|long\\|float\\|double\\|slots\\|signals\\)\\>" . font-lock-keyword-face)
+          ;; add the new C++11 keywords
+          ("\\<\\(alignof\\|alignas\\|constexpr\\|decltype\\|noexcept\\|nullptr\\|static_assert\\|thread_local\\|override\\|final\\)\\>" . font-lock-keyword-face)
+          ;; hexadecimal numbers
+          ("\\<0[xX][0-9A-Fa-f]+\\>" . font-lock-constant-face)
+          ;; TODO declarations
+          ("\\<[tT][oO][dD][oO]\\>" 0 font-lock-warning-face t)
+          ;; Qt fontification
+          ("\\<Q_OBJECT\\|SIGNAL\\|SLOT\\>" . font-lock-keyword-face)
+          ("\\<QT?\\(_\\sw+\\)+\\>" . font-lock-keyword-face)
+          ("\\<Q[A-Z][A-Za-z0-9]*\\>" . font-lock-type-face)
+          ) t)
+   ) t)
 
 (add-to-list 'compilation-error-regexp-alist 'boost-test)
 (add-to-list 'compilation-error-regexp-alist-alist

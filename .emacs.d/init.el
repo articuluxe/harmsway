@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-03-27 15:27:41 dan.harms>
+;; Modified Time-stamp: <2015-03-30 17:46:56 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -295,6 +295,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; list-register ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'list-register)
 (global-set-key (kbd "\C-xrv") 'list-register)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; iedit ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(setq iedit-toggle-key-default (kbd "M-r"))
+(require 'iedit)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; idle-highlight ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'idle-highlight-mode)
@@ -862,6 +866,7 @@ customization."
                 ("\\.bat$"      . dos-mode)
                 ("\\.log$"      . log-viewer-mode)
                 ("\\.pro$"      . qt-pro-mode)
+                ("\\.otq$"      . conf-mode) ;one-tick-query files
                 )
               auto-mode-alist))
 
