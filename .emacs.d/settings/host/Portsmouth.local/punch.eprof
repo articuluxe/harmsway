@@ -8,12 +8,13 @@
 (defvar punch-include-files)
 
 (defun on-punch-file-open (project-root)
-  (setq gen-tags-alist punch-ctags-alist)
+  (set (make-local-variable gen-tags-alist)
+       punch-ctags-alist)
   (when c-buffer-is-cc-mode
-    (make-local-variable 'achead:include-directories)
-    (setq achead:include-directories punch-include-files)
-    (setq ff-search-directories (append '(".")
-                                        punch-include-files))
+    (set (make-local-variable 'achead:include-directories)
+         punch-include-files)
+    (setq ff-search-directories
+          (append '(".") punch-include-files))
     ))
 
 (defun on-punch-init (project-root)
@@ -21,7 +22,10 @@
         (list
          (append (list "punch" "punch/" gen-tags-exe "-Re"
                        ) gen-tags-ctags-cpp-options)
-         (append (list "clib" "/opt/local/include/gcc48/c++/"
+         (append (list "clib" "/usr/include/"
+                       gen-tags-exe "-Re"
+                       ) gen-tags-ctags-cpp-options)
+         (append (list "c++lib" "/opt/local/include/gcc48/c++/"
                        gen-tags-exe "-Re"
                        "--language-force=c++"
                        "-h=\".h.H.hh.hpp.hxx.h++.inc.def.\""
@@ -56,7 +60,8 @@
 
   (add-to-list
    'sml/replacer-regexp-list
-   (list (profile-current-get 'project-root-dir ":PUNCH:") t))
+   (list (profile-current-get 'project-root-dir ":PUNCH:")) t)
+  )
 
 (profile-define-derived "punch" "default"
                         "dharms" "danielrharms@gmail.com"
