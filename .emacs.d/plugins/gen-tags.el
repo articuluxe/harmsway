@@ -4,7 +4,7 @@
 ;; Author:  <dan.harms@xrtrading.com>
 ;; Created: Wednesday, March 18, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-03-27 17:12:53 dan.harms>
+;; Modified Time-stamp: <2015-03-30 22:34:04 dharms>
 ;; Keywords: etags, ctags
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -152,6 +152,7 @@ running on a remote host."
     (make-directory gen-tags--final-dest-dir t)
     (display-buffer gen-tags--buffer)
     (with-current-buffer gen-tags--buffer
+      (goto-char (point-max))
       (insert (format "TAGS generation started at %s\n\n"
                       (current-time-string)))))
   (setq gen-tags--start-time (current-time))

@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-03-30 17:46:56 dan.harms>
+;; Modified Time-stamp: <2015-03-30 22:45:35 dharms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -287,7 +287,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;; line-comment-banner ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'line-comment-banner)
-(global-set-key [?\C-\;] 'line-comment-banner)
+(global-set-key [?\C-c?\C-/] 'line-comment-banner)
 (add-hook 'c-mode-common-hook
           (lambda() (make-local-variable 'comment-fill)
             (setq comment-fill "*")))
@@ -297,7 +297,6 @@
 (global-set-key (kbd "\C-xrv") 'list-register)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; iedit ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(setq iedit-toggle-key-default (kbd "M-r"))
 (require 'iedit)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; idle-highlight ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -329,6 +328,10 @@
 (push '(term-mode :position :top :height 0.25 :stick t)
       popwin:special-display-config)
 (define-key popwin:keymap "t" 'popwin-term:term)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; bookmark+ ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(add-to-list 'load-path (concat my/plugins-directory "bookmark+/"))
+(require 'bookmark+)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ido ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'ido)
