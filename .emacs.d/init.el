@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-03-30 22:45:35 dharms>
+;; Modified Time-stamp: <2015-03-31 14:02:12 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -369,7 +369,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; rich-minority ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'rich-minority)
 (rich-minority-mode 1)
-(setq rm-blacklist '(" AC" " yas" " Undo-Tree" " Abbrev" " Guide" " Hi"))
+(setq rm-blacklist '(" AC" " yas" " Undo-Tree" " Abbrev" " Guide" " Hi" " $"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smart-mode-line ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-to-list 'load-path (concat my/plugins-directory "smart-mode-line/"))
@@ -442,10 +442,10 @@
           ) nil (dired-get-marked-files t current-prefix-arg)))
 
 (add-hook 'dired-load-hook
-          '(lambda()
-             (define-key dired-mode-map (kbd "<prior>") 'dired-up-directory)
-             (define-key dired-mode-map "l" 'dired-launch-command)
-             ))
+          (lambda()
+            (define-key dired-mode-map (kbd "<prior>") 'dired-up-directory)
+            (define-key dired-mode-map "l" 'dired-launch-command)
+            ))
 
 ;; easily go to top or bottom
 (defun dired-back-to-top() (interactive)
@@ -648,18 +648,18 @@ register \\C-l."
 (setq achead:include-directories '("."))
 
 (add-hook 'c-mode-common-hook
-          '(lambda()
-             (set (make-local-variable 'ac-auto-start) nil)
-             ;; we'll define a special key event for yasnippet
-             (setq ac-sources (remove 'ac-source-yasnippet ac-sources))
-             (setq ac-sources (remove 'ac-source-gtags ac-sources))
-             (add-to-list 'ac-sources 'ac-source-etags)
-             (add-to-list 'ac-sources 'ac-source-c-headers)
-             ) t)                       ;append to hook list to take effect
-                                        ;after ac-config-default
+          (lambda()
+            (set (make-local-variable 'ac-auto-start) nil)
+            ;; we'll define a special key event for yasnippet
+            (setq ac-sources (remove 'ac-source-yasnippet ac-sources))
+            (setq ac-sources (remove 'ac-source-gtags ac-sources))
+            (add-to-list 'ac-sources 'ac-source-etags)
+            (add-to-list 'ac-sources 'ac-source-c-headers)
+            ) t)                       ;append to hook list to take effect
+                                       ;after ac-config-default
 (add-hook 'protobuf-mode-hook
-          '(lambda()
-             (setq ac-sources (add-to-list 'ac-sources 'ac-source-etags))))
+          (lambda()
+            (setq ac-sources (add-to-list 'ac-sources 'ac-source-etags))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; YASnippet ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -738,9 +738,9 @@ register \\C-l."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; speedbar ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-hook 'speedbar-mode-hook
-          '(lambda()
-             (when (display-graphic-p)
-               (setq-default gdb-speedbar-auto-raise t))))
+          (lambda()
+            (when (display-graphic-p)
+              (setq-default gdb-speedbar-auto-raise t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; htmlize ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'htmlize)

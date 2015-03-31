@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-03-24 23:28:58 dharms>
+;; Modified Time-stamp: <2015-03-31 18:04:39 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -53,6 +53,46 @@
   e.g. Sunday, September 17, 2000."
   (interactive)
   (format-time-string "%A, %B %e, %Y"))
+
+(defun choose-via-popup (alist prompt)
+  "Make a choice among ALIST, a list of choices, with PROMPT as a possible
+prompt.  ALIST can either be a list of strings, or an alist, where every
+element is a cons cell, the car of which is the display string given to the
+user, and the cdr of which is the resultant value to be used if that cell
+is selected."
+  (popup-menu*
+   (mapcar (lambda(elt)
+             (if (consp elt)
+                 (popup-make-item (car elt) :value (cdr elt))
+               (popup-make-item elt :value elt)))
+           alist)
+   :isearch t
+   :prompt prompt
+   ))
+
+(defun choose-via-ido (alist prompt)
+  "Make a choice among ALIST, a list of choices, with PROMPT as a possible
+prompt.  ALIST can either be a list of strings, or an alist, where every
+element is a cons cell, the car of which is the display string given to the
+user, and the cdr of which is the resultant value to be used if that cell
+is selected."
+  (let ((res
+         (ido-completing-read
+          prompt
+          (mapcar (lambda(elt)
+                    (if (consp elt)
+                        (car elt)
+                      elt))
+                  alist))))
+    (or (cdr (assoc res alist))
+        res)))
+(defvar my/choose-func 'choose-via-popup)
+(global-set-key "\C-c\C-a" (lambda()(interactive)
+                             (setq my/choose-func
+                                   (quote
+                                    (if (eq my/choose-func 'choose-via-popup)
+                                        choose-via-ido)
+                                    choose-via-popup))))
 
 (defun jump-to-matching-paren() "Go to matching paren" (interactive)
   (if (looking-at "\\s\(")
