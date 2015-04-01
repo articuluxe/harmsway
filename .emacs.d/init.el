@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-03-31 14:02:12 dan.harms>
+;; Modified Time-stamp: <2015-04-01 10:09:43 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -275,6 +275,7 @@
 (require 'folio-electric)
 (require 'pos-tip)
 (require 'qt-pro)
+(require 'csharp-mode)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; copyright ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'copyright)
@@ -328,6 +329,10 @@
 (push '(term-mode :position :top :height 0.25 :stick t)
       popwin:special-display-config)
 (define-key popwin:keymap "t" 'popwin-term:term)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; hl-line ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'hl-line+)
+(global-set-key "\M-sl" 'hl-line-flash)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; bookmark+ ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-to-list 'load-path (concat my/plugins-directory "bookmark+/"))
@@ -870,6 +875,7 @@ customization."
                 ("\\.log$"      . log-viewer-mode)
                 ("\\.pro$"      . qt-pro-mode)
                 ("\\.otq$"      . conf-mode) ;one-tick-query files
+                ("\\.cs$"       . csharp-mode)
                 )
               auto-mode-alist))
 

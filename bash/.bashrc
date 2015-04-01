@@ -8,7 +8,9 @@ fi
 echo "Loading .bashrc..."
 
 # User specific aliases and functions
-export PATH=.:$HOME/bin:/usr/local/gcc-4.5.1/bin:/sbin/:$PATH
+gcc=/usr/local/gcc-4.5.1/bin
+python=/opt/anaconda-python-2.7.8/bin
+export PATH=.:$HOME/bin:$gcc:$python:/sbin/:$PATH
 export MANPATH=
 export DISPLAY=10.10.102.229:0.0
 

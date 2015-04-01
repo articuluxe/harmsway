@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-03-30 08:36:51 dan.harms>
+;; Modified Time-stamp: <2015-04-01 17:46:44 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -71,7 +71,7 @@ profile `profile-current'."
 
 ;;;###autoload
 (defun profile-find-profile-basename (name)
-  "Given a typical profile file such as `.mybase.profile', returns the
+  "Given a typical profile file such as `.mybase.eprof', returns the
 basename, such as `mybase'."
   (when
       (string-match "\\.?\\([^.]+\\)$" (file-name-base name))
@@ -82,23 +82,14 @@ basename, such as `mybase'."
 (defun profile-find-root (dir &optional absolute)
   "Searches for the project root as may be defined in current profile,
 starting from DIR and moving up the directory tree.  Profile files can look
-like any of the following: `.eprof', `my.eprof', `.my.eprof', `.root',
-`.git'."
+like any of the following: `.eprof', `my.eprof', `.my.eprof'."
   (let ((root
          (locate-dominating-file
           dir
           (lambda(parent)
-            (let ((res (directory-files parent t "\\sw+\\.[er]prof$")))
+            (let ((res (directory-files parent t "\\sw+\\.eprof$")))
               (when res
                 (setq profile--root-file (car res))))))))
-    (unless root
-      (setq root
-            (locate-dominating-file dir ".root")
-            profile--root-file ".root"))
-    ;; (unless root
-    ;;   (setq root
-    ;;         (locate-dominating-file dir ".git")
-    ;;         profile--root-file ".git"))
     (if root
         (if absolute
             (cons profile--root-file (expand-file-name root))
@@ -121,8 +112,6 @@ remote prefix."
 (defun profile--insert-file-name (filename tag-file-path)
   (if (file-name-absolute-p filename)
       filename
-    ;; (abbreviate-file-name
-    ;;  (expand-file-name
     (concat (profile-get tag-lookup-target-profile
                          'project-root-dir)
             (profile-get tag-lookup-target-profile
@@ -143,15 +132,14 @@ assigning a profile."
 
 (add-hook 'find-file-hook 'profile--on-file-opened)
 
-(defun profile--compute-remote-properties ()
-  "Compute the properties associated with a remote filename."
-  (let ((dir default-directory))
-    (when (file-remote-p dir)
-      (with-parsed-tramp-file-name dir file
-        (profile-current-put 'remote-host file-host)
-        (profile-current-put 'remote-prefix
-                             (tramp-make-tramp-file-name
-                              file-method file-user file-host ""))))))
+(defun profile--compute-remote-properties (dir)
+  "Compute the properties associated with DIR, a (possibly remote) filename."
+  (when (file-remote-p dir)
+    (with-parsed-tramp-file-name dir file
+      `( ,file-host ,file-localname
+                   ,(tramp-make-tramp-file-name
+                     file-method file-user file-host "")
+                   ))))
 
 (defun profile--compute-remote-subdir-stem ()
   "Helper function that computes a remote project's stem in a format
@@ -185,14 +173,27 @@ expression matching.  The presumption is that the ROOT-DIR is a relative
 path, possibly including a `~' representing the user's home directory."
   (replace-regexp-in-string "~/" "" root-dir))
 
+;; log a profile upon initialization
+(defun profile--log-profile ()
+  (let ((name (symbol-name profile-current)))
+    (unless (eq name "default")
+      (message "Loaded profile %s (project %s) at %s"
+               name
+               (profile-current-get 'project-name)
+               (profile-current-get 'project-root-dir)
+               ))))
+
 ;; called when a profile is initialized
-(defun profile--on-profile-init ()
+(defun profile--on-profile-init (remote-host remote-prefix)
   "Initialize a loaded profile."
   (let ((root (profile-current-get 'project-root-dir)))
     (when (and profile-current
                (not (profile-current-get 'profile-inited)))
       ;; run this init code once per profile loaded
-      (profile--compute-remote-properties)
+      (when remote-host
+        (profile-current-put 'remote-host remote-host))
+      (when remote-prefix
+        (profile-current-put 'remote-prefix remote-prefix))
       (when root
         (unless (profile-current-get 'project-root-stem)
           (profile-current-put 'project-root-stem
@@ -200,6 +201,7 @@ path, possibly including a `~' representing the user's home directory."
       (when root
         (unless (profile-current-get 'tags-dir)
           (profile-current-put 'tags-dir (profile--compute-tags-dir))))
+      (profile--log-profile)
       ;; if there's a valid init function, call it
       (when (and (profile-current-get 'on-profile-init)
                  (fboundp (intern-soft
@@ -222,34 +224,40 @@ of the buffer."
            (curr (profile-current-get 'project-root-dir))
            (root-file (car root))
            (root-dir (cdr root))
+           (remote-properties
+            (profile--compute-remote-properties
+             (or root-dir default-directory)))
+           remote-host
+           remote-localname remote-prefix
            profile-basename)
-      ;; (when (tramp-tramp-file-p root-file)
-      ;;   (setq root-file
-      ;;         (tramp-file-name-localname
-      ;;          (tramp-dissect-file-name root-file))
-      ;;         root-dir
-      ;;         (tramp-file-name-localname
-      ;;          (tramp-dissect-file-name root-dir))))
-      (when (and root root-file root-dir)
-        (setq profile-basename (profile-find-profile-basename root-file))
-        (unless (string-equal root-dir (profile-current-get 'project-root-dir))
-          ;; this profile has not been loaded before
-          (if (string-match "\\.[er]prof$" root-file)
-              (progn                    ;load the new profile
-                (load-file root-file)
-                ;; update the path alist to activate any new profiles
-                (setq profile-path-alist
-                      (cons (cons
-                             (file-relative-name root-dir "~")
-                             profile-basename) profile-path-alist))
-                (setq profile-current
-                      (intern-soft (profile-find-path-alist
-                                    (expand-file-name filename))
-                                   profile-obarray))
-                (unless (profile-current-get 'project-root-dir)
-                  (profile-current-put 'project-root-dir root-dir))
-                (unless (profile-current-get 'project-name)
-                  (profile-current-put 'project-name profile-basename))
+      (when remote-properties
+        (setq remote-host (car remote-properties))
+        (setq remote-localname (cadr remote-properties))
+        (setq remote-prefix (caddr remote-properties)))
+      (when (and root root-file root-dir
+                 (string-match "\\.eprof$" root-file)
+                 (not (string-equal root-dir
+                                    (profile-current-get 'project-root-dir))))
+        ;; apparently this is a new profile not yet loaded into the path
+        (load-file root-file)
+        (when remote-properties
+          (setq root-dir remote-localname))
+        (setq profile-basename
+              (profile-find-profile-basename root-file))
+        ;; update the path alist to activate any new profiles
+        (setq profile-path-alist
+              (cons (cons
+                     (file-relative-name root-dir "~")
+                     profile-basename) profile-path-alist))
+        (setq profile-current
+              (intern-soft (profile-find-path-alist
+                            (expand-file-name filename))
+                           profile-obarray))
+        (unless (profile-current-get 'project-root-dir)
+          (profile-current-put 'project-root-dir root-dir))
+        (unless (profile-current-get 'project-name)
+          (profile-current-put 'project-name profile-basename))
+        )
                 ;; (add-to-list 'sml/replacer-regexp-list
                 ;;              (list (concat "^"
                 ;;                            (abbreviate-file-name
@@ -260,23 +268,7 @@ of the buffer."
                 ;;                             (profile-current-get
                 ;;                              'project-name))
                 ;;                            ":")) t)
-                (message "Loaded profile %s for project %s located at %s;\n src %s; bld %s; tags %s %s"
-                         (profile-current-name)
-                         (profile-current-get 'project-name)
-                         (profile-current-get 'project-root-dir)
-                         (profile-current-get 'src-sub-dir)
-                         (profile-current-get 'build-sub-dir)
-                         (profile-current-get 'tags-dir)
-                         (if (profile-current-get 'remote-prefix)
-                             (concat "; "
-                                     (profile-current-get 'remote-prefix))
-                           "")
-                         )
-                )
-            ;; new profile, but not from a .profile
-            (profile-current-put 'project-root-dir root-dir)
-            )))
-      (profile--on-profile-init))))
+      (profile--on-profile-init remote-host remote-prefix))))
 
 (provide 'profiles+)
 

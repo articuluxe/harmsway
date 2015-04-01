@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-03-31 18:04:39 dan.harms>
+;; Modified Time-stamp: <2015-04-01 09:45:16 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -87,7 +87,7 @@ is selected."
     (or (cdr (assoc res alist))
         res)))
 (defvar my/choose-func 'choose-via-popup)
-(global-set-key "\C-c\C-a" (lambda()(interactive)
+(global-set-key "\C-c\C-r" (lambda()(interactive)
                              (setq my/choose-func
                                    (quote
                                     (if (eq my/choose-func 'choose-via-popup)

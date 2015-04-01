@@ -4,7 +4,7 @@
 ;; Author:  <dan.harms@xrtrading.com>
 ;; Created: Wednesday, March 18, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-03-30 22:34:04 dharms>
+;; Modified Time-stamp: <2015-04-01 17:20:43 dan.harms>
 ;; Keywords: etags, ctags
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -79,6 +79,20 @@ results."
                                 include)
                       include))))
           (mapcar 'cadr alist)))
+
+(defun gen-tags-collect-sml-regexps (alist)
+  "Extract from ALIST, which is in the format of a list of lists of
+properties, see `gen-tags-alist', a list of cons cells representing a
+modeline replacement pair for sml, see `sml/replacer-regexp-list'."
+  (mapcar (lambda(elt)
+            (let ((path (cadr elt))
+                  (title (upcase (car elt))))
+              (cons (if (file-name-absolute-p path)
+                        path
+                      (concat
+                       (profile-current-get 'project-root-dir) path))
+                    (concat title ":"))))
+          alist))
 
 ;; internal variables
 (defvar gen-tags--iter nil "Current item being processed.")
