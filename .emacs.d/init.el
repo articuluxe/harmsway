@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-04-01 10:09:43 dan.harms>
+;; Modified Time-stamp: <2015-04-02 14:24:53 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -261,6 +261,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; modes ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'log-viewer)
+(require 'csv-mode)
 (require 'cmake-mode)
 (require 'cmake-font-lock)
 (add-hook 'cmake-mode-hook 'cmake-font-lock-activate)
@@ -334,6 +335,10 @@
 (require 'hl-line+)
 (global-set-key "\M-sl" 'hl-line-flash)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; crosshairs ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'crosshairs)
+(global-set-key "\M-sL" 'crosshairs-flash)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; bookmark+ ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-to-list 'load-path (concat my/plugins-directory "bookmark+/"))
 (require 'bookmark+)
@@ -363,13 +368,21 @@
                      ido-temp-list))))
 (add-hook 'ido-make-file-list-hook 'ido-sort-mtime)
 (add-hook 'ido-make-dir-list-hook 'ido-sort-mtime)
-;; also use ido to switch modes
-(global-set-key "\e\ex"
-                (lambda() (interactive)
-                  (call-interactively
-                   (intern
-                    (ido-completing-read
-                     "M-x " (all-completions "" obarray 'commandp))))))
+;; ;; also use ido to switch modes
+;; (global-set-key "\e\ex"
+;;                 (lambda() (interactive)
+;;                   (call-interactively
+;;                    (intern
+;;                     (ido-completing-read
+;;                      "M-x " (all-completions "" obarray 'commandp))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smex ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'smex)
+(smex-initialize)
+(global-set-key (kbd "M-x") 'smex)
+(global-set-key (kbd "M-X") 'smex-major-mode-commands)
+;; the old M-x
+(global-set-key "\e\ex" 'execute-extended-command)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; rich-minority ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'rich-minority)
@@ -867,6 +880,7 @@ customization."
                 ("\\.pm$"       . perl-mode)
                 ("SConstruct"   . python-mode)
                 ("SConscript"   . python-mode)
+                ("\\.[Cc][Ss][Vv]$" . csv-mode)
                 ("CMakeLists\\.txt$"   . cmake-mode)
                 ("\\.cmake$"    . cmake-mode)
                 ("\\.proto$"    . protobuf-mode)

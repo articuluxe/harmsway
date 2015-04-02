@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-04-01 17:46:44 dan.harms>
+;; Modified Time-stamp: <2015-04-02 14:10:21 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -176,7 +176,7 @@ path, possibly including a `~' representing the user's home directory."
 ;; log a profile upon initialization
 (defun profile--log-profile ()
   (let ((name (symbol-name profile-current)))
-    (unless (eq name "default")
+    (unless (string-equal name "default")
       (message "Loaded profile %s (project %s) at %s"
                name
                (profile-current-get 'project-name)
@@ -241,7 +241,8 @@ of the buffer."
         ;; apparently this is a new profile not yet loaded into the path
         (load-file root-file)
         (when remote-properties
-          (setq root-dir remote-localname))
+          (setq root-dir (abbreviate-file-name remote-localname)))
+        ;; todo: does the non-remote root-dir need to be made relative too?
         (setq profile-basename
               (profile-find-profile-basename root-file))
         ;; update the path alist to activate any new profiles
