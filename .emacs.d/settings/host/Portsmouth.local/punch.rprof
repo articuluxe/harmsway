@@ -6,24 +6,28 @@
 (defvar punch-tag-filestems)
 (defvar punch-tag-filenames)
 (defvar punch-include-files)
+(defvar punch-include-ff-files)
+(defvar punch-sml-alist)
 
 (defun on-punch-file-open (project-root)
-  (set (make-local-variable gen-tags-alist)
+  (set (make-local-variable 'gen-tags-alist)
        punch-ctags-alist)
   (when c-buffer-is-cc-mode
     (set (make-local-variable 'achead:include-directories)
          punch-include-files)
     (setq ff-search-directories
-          (append '(".") punch-include-files))
+          (append '(".") punch-include-ff-files))
     ))
 
 (defun on-punch-init (project-root)
+  ;; TAGS
   (setq punch-ctags-alist
         (list
          (append (list "punch" "punch/" gen-tags-exe "-Re"
                        ) gen-tags-ctags-cpp-options)
          (append (list "clib" "/usr/include/"
                        gen-tags-exe "-Re"
+                       "--exclude=c++"
                        ) gen-tags-ctags-cpp-options)
          (append (list "c++lib" "/opt/local/include/gcc48/c++/"
                        gen-tags-exe "-Re"
@@ -57,12 +61,33 @@
 
   (setq punch-include-files
         (gen-tags-collect-include-files punch-ctags-alist))
+  (setq punch-include-ff-files
+        (gen-tags-collect-include-files punch-ctags-alist t))
 
-  (add-to-list
-   'sml/replacer-regexp-list
-   (list (profile-current-get 'project-root-dir ":PUNCH:")) t)
+  ;; mode-line
+  (setq punch-sml-alist (gen-tags-collect-sml-regexps punch-ctags-alist))
+  (mapc (lambda (elt)
+          (add-to-list
+           'sml/replacer-regexp-list
+           (list (car elt) (cdr elt)) t))
+        punch-sml-alist)
+
+  ;; (add-to-list
+  ;;  'sml/replacer-regexp-list
+  ;;  (list (profile-current-get 'project-root-dir ":PUNCH:")) t)
+
+  ;; registers
+  (set-register ?r (cons 'file (concat
+                                (profile-current-get 'remote-prefix)
+                                (profile-current-get 'project-root-dir))))
+  (set-register ?c (cons 'file (concat
+                                (profile-current-get 'remote-prefix)
+                                (profile-current-get 'project-root-dir)
+                                (profile-current-get 'src-sub-dir))))
+
   )
 
+;; define the profile
 (profile-define-derived "punch" "default"
                         "dharms" "danielrharms@gmail.com"
                         'project-name "punch"

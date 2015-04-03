@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-04-02 14:10:21 dan.harms>
+;; Modified Time-stamp: <2015-04-02 23:20:48 dharms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -240,9 +240,11 @@ of the buffer."
                                     (profile-current-get 'project-root-dir))))
         ;; apparently this is a new profile not yet loaded into the path
         (load-file root-file)
+        ;; todo: this doesn't work; when remote, project-root-dir is
+        ;; absolute, and abbreviate-file-name doesn't transform remote
+        ;; names
         (when remote-properties
           (setq root-dir (abbreviate-file-name remote-localname)))
-        ;; todo: does the non-remote root-dir need to be made relative too?
         (setq profile-basename
               (profile-find-profile-basename root-file))
         ;; update the path alist to activate any new profiles
@@ -259,16 +261,6 @@ of the buffer."
         (unless (profile-current-get 'project-name)
           (profile-current-put 'project-name profile-basename))
         )
-                ;; (add-to-list 'sml/replacer-regexp-list
-                ;;              (list (concat "^"
-                ;;                            (abbreviate-file-name
-                ;;                             (profile-current-get
-                ;;                              'project-root-dir)))
-                ;;                    (concat ":"
-                ;;                            (upcase
-                ;;                             (profile-current-get
-                ;;                              'project-name))
-                ;;                            ":")) t)
       (profile--on-profile-init remote-host remote-prefix))))
 
 (provide 'profiles+)
