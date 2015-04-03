@@ -1,11 +1,33 @@
 ;; -*- Mode: Emacs-Lisp -*-
+;; compiling.el --- utilities concerned with compiling
+;; Copyright (C) 2015  Dan Harms (dharms)
+;; Author: Dan Harms <danielrharms@gmail.com>
+;; Created: Saturday, February 28, 2015
+;; Version: 1.0
+;; Modified Time-stamp: <2015-03-15 23:31:46 dharms>
+;; Keywords:
+
+;; This program is free software; you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+;; Commentary:
+
 ;;
-;;;;;;;;;;;;;;;;;;;;;;;;; Dan Harms compiling.el ;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
+
+;; Code:
 
 (defvar one-window-in-frame nil)
 (defvar my/compile-command)
-(defvar my/compile-sub-command "make")
 
 ;; automatically scroll compilation window
 (setq compilation-scroll-output t)
@@ -15,15 +37,19 @@
   (set (make-local-variable 'truncate-partial-width-windows) nil))
 (add-hook 'compilation-mode-hook 'my/compilation-mode-hook)
 
-(defun create-compile-command() "Initialize the compile command."
+(defun create-compile-command()
+  "Initialize the compile command."
   (interactive)
-  (if (and (find-project-root) my/build-sub-dir)
+  (if (and (profile-current-get 'project-root-dir)
+           (profile-current-get 'compile-sub-command))
       (format "cd %s && %s"
-              (concat my/project-root my/build-sub-dir)
-              my/compile-sub-command)
+              (concat
+               (profile-current-get 'project-root-dir)
+               (profile-current-get 'build-sub-dir))
+              (profile-current-get 'compile-sub-command))
     (message "Can't create compile command: unknown %s"
-             (if (null my/project-root)
-                 "project root" "build sub-dir"))
+             (if (null (profile-current-get 'project-root-dir))
+                 "project-root-dir" "compile-sub-command"))
     nil))
 
 (defun my/compile() (interactive)
@@ -45,15 +71,25 @@
     (catch 'found
       (goto-char 1)
       (while (search-forward-regexp "\\([Ww]arning\\|[Ee]rror\\)" nil t)
-        ;; this ignores the compile line "-Werror" that cmake echoes
         (goto-char (match-beginning 1))
-        (unless (looking-back "-W" (- (point) 2))
+        (unless
+            (or
+             ;; ignore the compile line "-Werror" that cmake echoes
+             (save-match-data
+               (looking-back "-W" (- (point) 2)))
+             ;; ignore boost test output "No errors detected"
+             (and
+              (save-match-data
+                (looking-back "[Nn]o " (- (point) 3)))
+              (save-match-data
+                (looking-at "errors detected")))
+             )
           (throw 'found t))
         (goto-char (match-end 1)))
       nil)))
 
 (defun bury-compile-buffer-if-successful (buffer string)
-  "Bury a compilation buffer if it succeeded without warnings."
+  "Bury a compilation buffer if it succeeded without warnings or errors."
   (if (and
        (string-match "compilation" (buffer-name buffer))
        (string-match "finished" string)
@@ -67,3 +103,5 @@
                                                  'kill))) buffer)))
 
 (add-hook 'compilation-finish-functions 'bury-compile-buffer-if-successful)
+
+;; compiling.el ends here

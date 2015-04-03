@@ -1,7 +1,30 @@
 ;; -*- Mode: Emacs-Lisp -*-
+;; utils.el --- misc. utilities
+;; Copyright (C) 2015  Dan Harms (dharms)
+;; Author: Dan Harms <danielrharms@gmail.com>
+;; Created: Saturday, February 28, 2015
+;; Version: 1.0
+;; Modified Time-stamp: <2015-04-01 09:45:16 dan.harms>
+;; Keywords:
+
+;; This program is free software; you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+;; Commentary:
+
 ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;; Dan Harms utils.el ;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
+
+;; Code:
 
 (defun kill-other-buffers(&optional arg)
   "Kill all buffers (except optionally for current one)."
@@ -11,15 +34,65 @@
     (mapc 'kill-buffer (buffer-list))))
 (global-set-key "\C-x\S-k" 'kill-other-buffers)
 
-(defun now() "Insert string for current time formatted like '2:34 PM'."
+(defun insert-now()
+  "Insert string for current time formatted like `2:34 PM'."
   (interactive)
-  (insert (format-time-string "%D %-I:%M %p")))
+  (insert (now)))
+(defun now()
+  "Return string for current time formatted like `2:34 PM'."
+  (interactive)
+  (format-time-string "%D %-I:%M %p"))
 
-(defun today()
+(defun insert-today()
   "Insert string for today's date nicely formatted in American style,
   e.g. Sunday, September 17, 2000."
   (interactive)
-  (insert (format-time-string "%A, %B %e, %Y")))
+  (insert (today)))
+(defun today()
+  "Return string for today's date nicely formatted in American style,
+  e.g. Sunday, September 17, 2000."
+  (interactive)
+  (format-time-string "%A, %B %e, %Y"))
+
+(defun choose-via-popup (alist prompt)
+  "Make a choice among ALIST, a list of choices, with PROMPT as a possible
+prompt.  ALIST can either be a list of strings, or an alist, where every
+element is a cons cell, the car of which is the display string given to the
+user, and the cdr of which is the resultant value to be used if that cell
+is selected."
+  (popup-menu*
+   (mapcar (lambda(elt)
+             (if (consp elt)
+                 (popup-make-item (car elt) :value (cdr elt))
+               (popup-make-item elt :value elt)))
+           alist)
+   :isearch t
+   :prompt prompt
+   ))
+
+(defun choose-via-ido (alist prompt)
+  "Make a choice among ALIST, a list of choices, with PROMPT as a possible
+prompt.  ALIST can either be a list of strings, or an alist, where every
+element is a cons cell, the car of which is the display string given to the
+user, and the cdr of which is the resultant value to be used if that cell
+is selected."
+  (let ((res
+         (ido-completing-read
+          prompt
+          (mapcar (lambda(elt)
+                    (if (consp elt)
+                        (car elt)
+                      elt))
+                  alist))))
+    (or (cdr (assoc res alist))
+        res)))
+(defvar my/choose-func 'choose-via-popup)
+(global-set-key "\C-c\C-r" (lambda()(interactive)
+                             (setq my/choose-func
+                                   (quote
+                                    (if (eq my/choose-func 'choose-via-popup)
+                                        choose-via-ido)
+                                    choose-via-popup))))
 
 (defun jump-to-matching-paren() "Go to matching paren" (interactive)
   (if (looking-at "\\s\(")
@@ -124,7 +197,7 @@
             (forward-word 1)
             (setq count (1+ count)))
           (message "buffer contains %d words" count))))
-    (global-set-key "M-=" 'wordcount)))
+    (global-set-key "\M-=" 'wordcount)))
 
 ;; clean up buffer
 ;; indent entire file
@@ -304,32 +377,33 @@
     (unless symbolic
       (setq files (remove-if 'file-symlink-p files))
       (setq dirs (remove-if 'file-symlink-p dirs)))
-    (mapc #'(lambda(file)
-              (and
-               (test-list-for-string full-edit-accept-patterns
-                                     (file-name-nondirectory file))
-               (not (test-list-for-string full-edit-reject-patterns
-                                          (file-name-nondirectory file)))
-               (setq result (cons file result))
-               (progress-reporter-update reporter)
-               ))
+    (mapc (lambda(file)
+            (and
+             (test-list-for-string full-edit-accept-patterns
+                                   (file-name-nondirectory file))
+             (not (test-list-for-string full-edit-reject-patterns
+                                        (file-name-nondirectory file)))
+             (setq result (cons file result))
+             (progress-reporter-update reporter)
+             ))
           files)
-    (mapc #'(lambda(dir)
-              (setq result (nconc result
-                                  (gather-all-files dir reporter symbolic))))
+    (mapc (lambda(dir)
+            (setq result (nconc result
+                                (gather-all-files dir reporter symbolic))))
           dirs)
     result
     ))
 
-(defun open-file-list(files) "Find (open) each of a list of filenames."
+(defun open-file-list(files)
+  "Find (open) each of a list of filenames."
   (let* ((i 0)
          (len (length files))
          (reporter (make-progress-reporter "Opening files..." 0 len)))
-    (mapc #'(lambda(file)
-              (find-file-noselect file)
-              (setq i (+ i 1))
-              (progress-reporter-update reporter i)
-              ) files)
+    (mapc (lambda(file)
+            (find-file-noselect file)
+            (setq i (+ i 1))
+            (progress-reporter-update reporter i)
+            ) files)
     (progress-reporter-done reporter)))
 
 (defun full-edit(root &optional arg)
@@ -348,3 +422,5 @@
     (message "No directory given")))
 
 (global-set-key "\C-c\C-f" 'full-edit)
+
+;; utils.el ends here

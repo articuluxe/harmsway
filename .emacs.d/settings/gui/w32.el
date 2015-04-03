@@ -1,6 +1,30 @@
 ;; -*- Mode: Emacs-Lisp -*-
+;; w32.el --- windows gui settings file
+;; Copyright (C) 2015  Dan Harms (dharms)
+;; Author: Dan Harms <danielrharms@gmail.com>
+;; Created: Saturday, February 28, 2015
+;; Version: 1.0
+;; Modified Time-stamp: <2015-04-03 09:20:55 dan.harms>
+;; Keywords:
+
+;; This program is free software; you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+;; Commentary:
+
 ;;
-;;
+
+;; Code:
 
 (tool-bar-mode -1)
 (scroll-bar-mode -1)
@@ -11,8 +35,6 @@
 ;; don't accelerate scrolling
 (setq mouse-wheel-progressive-speed nil)
 (setq mouse-wheel-follow-mouse nil)
-
-;; (setq frame-title-format "%b")
 
 ;; toggle full-screen
 (defun w32-maximize-frame() "Maximize current frame on windows"
@@ -33,7 +55,7 @@
 
 (setq initial-frame-alist
       '(
-        (top . 5) (left . 5) (height . 53) (width . 80)
+        (top . 5) (left . 5) (height . 55) (width . 80)
         ))
 (setq default-frame-alist
       '(
@@ -44,3 +66,5 @@
 (set-face-font 'default "Consolas-11")
 
 ;;(pos-tip-w32-max-width-height t)          ;maximize frame temporarily
+
+;; w32.el ends here

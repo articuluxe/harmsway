@@ -1,6 +1,6 @@
 ;;; etags-select.el --- Select from multiple tags
 
-;; Copyright (C) 2007  Scott Frazer
+;; Copyright (C) 2007, 2015  Scott Frazer
 
 ;; Author: Scott Frazer <frazer.scott@gmail.com>
 ;; Maintainer: Scott Frazer <frazer.scott@gmail.com>
@@ -138,6 +138,17 @@ Only works with GNU Emacs."
   :group 'etags-select-mode
   :type 'boolean)
 
+;;;###autoload
+(defvar etags-select-real-file-name
+  '(lambda(file) file))
+
+;;;###autoload
+(defvar etags-select-insert-file-name
+  '(lambda(filename tag-file-path)
+     (if (file-name-absolute-p filename)
+         filename
+       (concat tag-file-path filename))))
+
  ;;; Variables
 
 (defvar etags-select-buffer-name "*etags-select*"
@@ -199,8 +210,10 @@ Only works with GNU Emacs."
           (re-search-backward "\f")
           (re-search-forward "^\\(.*?\\),")
           (setq filename (etags-select-match-string 1))
-          (unless (file-name-absolute-p filename)
-            (setq filename (concat tag-file-path filename))))
+          (setq filename
+                (funcall etags-select-insert-file-name
+                         filename tag-file-path))
+          )
         (with-current-buffer etags-select-buffer-name
         ;; (save-excursion
         ;;   (set-buffer etags-select-buffer-name)
@@ -268,8 +281,15 @@ to do."
   "Get tag files."
   (if etags-select-use-xemacs-etags-p
       (buffer-tag-table-list)
-    (etags-select-remove-placeholders)
-	tags-table-computed-list))
+    (mapcar 'tags-expand-table-name tags-table-list)))
+
+;; this version is only useful when using a single TAGS file that includes
+;; other TAGS files, i.e. when using tag-file-name.  Therefore, when using
+;; tags-table-list, e.g. with etags-table, use the original, not this.
+;; (defun etags-select-get-tag-files() "Get tag files."
+;; (if etags-select-use-xemacs-etags-p
+;; (buffer-tag-table-list) (etags-select-remove-placeholders)
+;; tags-table-computed-list))
 
 (defun etags-select-get-completion-table ()
   "Get the tag completion table."
@@ -354,6 +374,7 @@ Use the C-u prefix to prevent the etags-select window from closing."
       (goto-char tag-point)
       (re-search-backward "^In: \\(.*\\)$")
       (setq filename (etags-select-match-string 1))
+      (setq filename (funcall etags-select-real-file-name filename))
       (setq filename-point (point))
       (goto-char tag-point)
       (while (re-search-backward (concat "^.*?\\]\\s-+" text-to-search-for) filename-point t)

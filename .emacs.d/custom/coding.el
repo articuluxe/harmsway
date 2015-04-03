@@ -1,52 +1,74 @@
 ;; -*- Mode: Emacs-Lisp -*-
+;; coding.el --- coding utilities
+;; Copyright (C) 2015  Dan Harms (dharms)
+;; Author: Dan Harms <danielrharms@gmail.com>
+;; Created: Saturday, February 28, 2015
+;; Version: 1.0
+;; Modified Time-stamp: <2015-04-01 10:14:10 dan.harms>
+;; Keywords:
+
+;; This program is free software; you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+;; Commentary:
+
 ;;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;; Dan Harms coding.el ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;
+
+;; Code:
 
 (global-set-key "\C-c\C-c" 'comment-region)
 (global-set-key "\C-c\C-u" 'uncomment-region)
 
-(defvar my/project-root nil)
-(defvar project-name nil)
-(defvar my/build-sub-dir nil)
-(defvar my/src-sub-dir nil)
-
-(defun find-project-root(&optional arg)
-  "Find the project's root directory.  Force recalculation if optional arg
-   supplied."
-  (interactive)
-  (when (or (null my/project-root) arg)
-    (let ((root (find-file-dir-upwards ".root")))
-      (if root (setq my/project-root (expand-file-name root))
-        (message "Could not find .root"))))
-  (message "Project root is %s" my/project-root)
-  my/project-root)
-(global-set-key "\C-c\C-p" 'find-project-root)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;; preproc-font-lock ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'preproc-font-lock)
+(global-set-key "\C-c#"
+                (lambda()(interactive)
+                  (preproc-font-lock-global-mode
+                   (if preproc-font-lock-mode 0 1))))
 
 (require 'grep)
 (defun my/grep (&optional arg)
   "A wrapper around grep to provide convenient shortcuts to
    adjust the root directory.  With a prefix arg of 16 (C-u C-u),
    use the current directory.  With a prefix arg of 4 (C-u), or
-   if the variable 'my/project-root is not defined, the directory
-   will be chosen interactively by the user using ido.
-   Otherwise, use the value of my/project-root, concatenated with
-   my/src-sub-dir, if defined."
+   if the variable 'project-root-dir is not defined in the current
+   profile, the directory will be chosen interactively by the user
+   using ido.  Otherwise, use the value of project-root-dir,
+   concatenated with src-sub-dir, if defined."
   (interactive "p")
-  (let ((dir
-         (cond ((= arg 16) ".")
-               ((or (= arg 4) (null my/project-root))
-                (ido-read-directory-name "Grep root: " nil nil t))
-               (t (concat my/project-root my/src-sub-dir)))))
+  (let* ((root (profile-current-get 'project-root-dir))
+         (dir
+          (cond ((= arg 16) ".")
+                ((or (= arg 4) (null root))
+                 (ido-read-directory-name "Grep root: " nil nil t))
+                (t (concat root
+                           (profile-current-get 'src-sub-dir)))))
+         (remote (file-remote-p dir)))
+    (when remote
+      (setq dir
+            (replace-regexp-in-string (regexp-quote remote) "" dir)))
     (grep-apply-setting
      'grep-command
-     (concat "find -P " dir
+     (concat "find -P "
+             (directory-file-name dir) ;grep doesn't need the trailing slash
              " \"(\" -name \"*moc_*\" -o -name \"*qrc_*\" \")\" "
              "-prune -o -type f \"(\" -name \"*.cpp\" -o -name \"*.h\" "
              "-o -name \"*.cc\" -o -name \"*.hh\" -o -name \"*.cxx\" "
              "-o -name \"*.hxx\" -o -name \"*.h\" -o -name \"*.c\" "
-             "-o -name \"*.H\" -o -name \"*.C\" -o -name \"*.el\" "
+             "-o -name \"*.H\" -o -name \"*.C\" -o -name \"*.hpp\" "
+             "-o -name \"*.in\" -o -name \"*.ac\" -o -name \"*.el\" "
              "-o -name \"*.sql\" -o -name \"*.py\" -o -name \"*.proto\" "
+             "-o -name \"*.sh\" -o -name \"*.cs\" "
              "\")\" -print0 | xargs -0 grep -Isn "))
     (command-execute 'grep)))
 (global-set-key "\C-cg" 'my/grep)
@@ -54,71 +76,70 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; c++-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (add-hook
-  'c-mode-common-hook
-  '(lambda ()
-     (setq-default indent-tabs-mode nil)
-     (setq c-auto-newline t)
-     (c-toggle-hungry-state t)
-     ;; (setq comment-column 40)
-     (make-local-variable 'my/compile-command)
-     (define-key c++-mode-map (kbd "\C-c RET") 'my/compile)
-     (define-key c++-mode-map "\C-cm" 'my/recompile)
-     (define-key c++-mode-map "\C-ck" 'kill-compilation)
-     (define-key c++-mode-map "\C-c\C-c" 'comment-region)
-     (define-key c++-mode-map "\C-c\C-u" 'uncomment-region)
-     (define-key c++-mode-map "\C-c\C-p" 'find-project-root)
-     (setq comment-start "/*") (setq comment-end "*/")
-     (c-add-style "drh"
-       (quote
-         ((c-basic-offset . 3)
-          (c-cleanup-list . (
-                             empty-defun-braces
-                             defun-close-semi
-                             one-liner-defun
-                             scope-operator
-                             list-close-comma
-                             compact-empty-funcall
-                             ))
-          (c-offsets-alist . (
-                              (innamespace          . 0)
-                              (substatement-open    . 0)
-                              (inline-open          . 0)
-                              (statement-case-intro . +)
-                              (statement-case-open  . +)
-;                              (statement-cont       . c-lineup-math)
-                              (access-label         . -2)
-                              (comment-intro        . c-lineup-comment)
-                              (member-init-intro    . +)
-                              (arglist-cont-nonempty . +)
-;                              (comment-intro        . 0)
-;                              (arglist-intro . c-lineup-arglist-intro-after-paren)
-;                              (arglist-close . c-lineup-arglist)
-          )
-         )
-        )
-       )
-     t)
-   )
-)
+ 'c-mode-common-hook
+ (lambda ()
+   (setq-default indent-tabs-mode nil)
+   (setq c-auto-newline t)
+   (c-toggle-hungry-state t)
+   ;; (setq comment-column 40)
+   (make-local-variable 'my/compile-command)
+   (define-key c++-mode-map (kbd "\C-c RET") 'my/compile)
+   (define-key c++-mode-map "\C-cm" 'my/recompile)
+   (define-key c++-mode-map "\C-ck" 'kill-compilation)
+   (define-key c++-mode-map "\C-c\C-c" 'comment-region)
+   (define-key c++-mode-map "\C-c\C-u" 'uncomment-region)
+   (setq comment-start "/*") (setq comment-end "*/")
+   (c-add-style "default-style"
+                (quote
+                 ((c-basic-offset . 3)
+                  (c-cleanup-list . (
+                                     empty-defun-braces
+                                     defun-close-semi
+                                     one-liner-defun
+                                     scope-operator
+                                     list-close-comma
+                                     compact-empty-funcall
+                                     ))
+                  (c-offsets-alist . (
+                                      (innamespace           . 0)
+                                      (substatement-open     . 0)
+                                      (inline-open           . 0)
+                                      (statement-case-intro  . +)
+                                      (statement-case-open   . +)
+;(statement-cont . c-lineup-math)
+                                      (access-label          . -2)
+                                      (comment-intro         . c-lineup-comment)
+                                      (member-init-intro     . +)
+                                      (arglist-cont-nonempty . +)
+;(comment-intro . 0)
+;(arglist-intro . c-lineup-arglist-intro-after-paren)
+;(arglist-close . c-lineup-arglist)
+                                      )))))
+   ))
 
-(add-hook 'c++-mode-hook
-      '(lambda()
-        (font-lock-add-keywords
-         nil '(;; complete some fundamental keywords (+ Qt)
-           ("\\<\\(void\\|unsigned\\|signed\\|char\\|short\\|bool\\|int\\|long\\|float\\|double\\|slots\\|signals\\)\\>" . font-lock-keyword-face)
-           ;; add the new C++11 keywords
-           ("\\<\\(alignof\\|alignas\\|constexpr\\|decltype\\|noexcept\\|nullptr\\|static_assert\\|thread_local\\|override\\|final\\)\\>" . font-lock-keyword-face)
-           ;; hexadecimal numbers
-           ("\\<0[xX][0-9A-Fa-f]+\\>" . font-lock-constant-face)
-           ;; TODO declarations
-           ("\\<[tT][oO][dD][oO]\\>" 0 font-lock-warning-face t)
-           ;; Qt fontification
-           ("\\<Q_OBJECT\\|SIGNAL\\|SLOT\\>" . font-lock-keyword-face)
-           ("\\<QT?\\(_\\sw+\\)+\\>" . font-lock-keyword-face)
-           ("\\<Q[A-Z][A-Za-z0-9]*\\>" . font-lock-type-face)
-           ) t)
-        ) t)
+(add-hook
+ 'c++-mode-hook
+ (lambda()
+   (font-lock-add-keywords
+    nil '(;; complete some fundamental keywords (+ Qt)
+          ("\\<\\(void\\|unsigned\\|signed\\|char\\|short\\|bool\\|int\\|long\\|float\\|double\\|slots\\|signals\\)\\>" . font-lock-keyword-face)
+          ;; add the new C++11 keywords
+          ("\\<\\(alignof\\|alignas\\|constexpr\\|decltype\\|noexcept\\|nullptr\\|static_assert\\|thread_local\\|override\\|final\\)\\>" . font-lock-keyword-face)
+          ;; hexadecimal numbers
+          ("\\<0[xX][0-9A-Fa-f]+\\>" . font-lock-constant-face)
+          ;; TODO declarations
+          ("\\<[tT][oO][dD][oO]\\>" 0 font-lock-warning-face t)
+          ;; Qt fontification
+          ("\\<Q_OBJECT\\|SIGNAL\\|SLOT\\>" . font-lock-keyword-face)
+          ("\\<QT?\\(_\\sw+\\)+\\>" . font-lock-keyword-face)
+          ("\\<Q[A-Z][A-Za-z0-9]*\\>" . font-lock-type-face)
+          ) t)
+   ) t)
 
+(add-to-list 'compilation-error-regexp-alist 'boost-test)
+(add-to-list 'compilation-error-regexp-alist-alist
+             '(boost-test
+               "^[[:digit:]]+:\\s-*\\(.*\\):\\([[:digit:]]+\\):\\s-+\\(fatal\\s-\\)?error" 1 2))
 
 (defun print-current-function() "Print current function under point."
   (interactive)
@@ -151,6 +172,7 @@
       )))
 
 ;; include ifdefs
+(defvar site-name nil "A possibly empty name of the current site.")
 (defun add-header-include-ifdefs (&optional arg)
   "Add header include guards. With optional prefix argument, query for the
    base name. Otherwise, the base file name is used."
@@ -158,18 +180,22 @@
   (let* ((name (if (buffer-file-name)
                    (file-name-nondirectory (buffer-file-name))
                  (buffer-name)))
+         (project-name (profile-current-get 'project-name))
          (str
           (replace-regexp-in-string
            "\\." "_"
            name)))
+    (setq str (upcase (s-snake-case str)))
     (save-excursion
       (if arg                           ;ask user for stem
           (setq str (concat
                      (read-string "Include guard stem: " nil nil str) "_H"))
-        ;; no arg; if project-name is defined, prepend it
+        ;; no arg; if project-name or site-name are defined, prepend them
         (when project-name
           (setq str (concat project-name "_" str))))
-      (setq str (upcase (concat "_" str "_")))
+        (when site-name
+          (setq str (concat site-name "_" str)))
+      (setq str (upcase (concat "__" str "__")))
       (goto-char (point-min))
       (insert "#ifndef " str "\n#define " str "\n\n")
       (goto-char (point-max))
@@ -191,8 +217,8 @@
     (if (or arg (= 0 (length str)))
         (setq str (read-string "Enter the title symbol: ")))
                                         ; (message "symbol %s is %d chars long" str (length str))(read-char)
-                                        ;   (move-beginning-of-line nil)
     (c-beginning-of-defun)
+    (move-beginning-of-line nil)
     (insert "//")
     (insert-char ?- (- fill-column 2))
     (insert "\n")
@@ -405,12 +431,16 @@
   (gdb-many-windows 1))
 (add-hook 'gud-mode-hook 'my/gud-hook)
 
-(defun my/launch-gdb() "Launch gdb automatically in the test directory."
+(defun my/launch-gdb()
+  "Launch gdb automatically in the test directory."
   (interactive)
-  (let (exec-dir exec)
-    (when (find-project-root)
-      (setq exec-dir (concat my/project-root my/build-sub-dir
-                             "output/tests/")))
+  (let ((root (profile-current-get 'project-root-dir))
+        exec-dir exec)
+    (when root
+      (setq exec-dir (concat root
+                             (profile-current-get 'build-sub-dir)
+                             (profile-current-get 'debug-sub-dir)
+                             )))
     (unless (and exec-dir (file-exists-p exec-dir))
       (setq exec-dir default-directory))
     (setq exec (ido-read-file-name "Debug executable: " exec-dir nil t))
@@ -459,3 +489,5 @@
                      (looking-at ".*[(,][ \t]*\\[[^]]*\\][ \t]*[({][^}]*$"))))
             0                           ;no additional indent
           ad-do-it)))                   ;default behavior
+
+;; coding.el ends here

@@ -1,2 +1,46 @@
+ # -*- Mode: sh -*-
 
-add .gitignore patterns to .git/info/exclude.  These will not be checked in.
+# INIT
+git config --global user.name "Dan Harms"
+git config --global user.email danielrharms@gmail.com
+git config --global core.editor emacs
+git config --global color.ui true
+git config --global merge.tool <tool>
+git config --global diff.tool <tool>
+git config --global difftool.prompt false
+# on windows
+git config --system core.autocrlf input
+
+#add .gitignore patterns to .git/info/exclude.  These will not be checked in.
+
+# BRANCHING
+# checkout and track remote branch
+git checkout --track origin/<branch>
+# set existing branch to track remote
+git branch -u origin/<branch>
+git branch --track origin/<branch>
+# push branch upstream
+git push origin <local>[:<remote>]
+# push branch upstream and set up tracking
+git push -u origin <branch>
+# delete local branch
+git branch -d <branch>
+# delete remote branch
+git push origin :<branch>
+
+git clean -dfx
+
+# DIFF
+# name and status only
+git diff --name-status
+# show change magnitude
+git diff --stat
+
+# VIEW COMMITS [plus files changed / patches ]
+git log --oneline --decorate --graph [--stat/p]
+
+# SHOW
+git show <branch>:<path-to-file>
+
+# STASH
+git stash <show|save|drop|push|pop> stash@\{0\}
