@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-02-28 03:22:36 dharms>
+;; Modified Time-stamp: <2015-04-03 09:20:55 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -36,8 +36,6 @@
 (setq mouse-wheel-progressive-speed nil)
 (setq mouse-wheel-follow-mouse nil)
 
-;; (setq frame-title-format "%b")
-
 ;; toggle full-screen
 (defun w32-maximize-frame() "Maximize current frame on windows"
   (interactive)
@@ -57,7 +55,7 @@
 
 (setq initial-frame-alist
       '(
-        (top . 5) (left . 5) (height . 53) (width . 80)
+        (top . 5) (left . 5) (height . 55) (width . 80)
         ))
 (setq default-frame-alist
       '(

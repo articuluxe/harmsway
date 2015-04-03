@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-04-02 14:24:53 dan.harms>
+;; Modified Time-stamp: <2015-04-03 13:34:40 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -43,9 +43,10 @@
 (set-register ?~ (cons 'file "~/"))
 (set-register ?\C-i (cons 'file user-init-file)) ;edit init file
 (set-register ?\C-d (cons 'file "~/Documents"))
-(set-register ?\C-e (cons 'file "~/Desktop"))
+(set-register ?\C-k (cons 'file "~/Desktop"))
 (set-register ?\C-w (cons 'file "~/Downloads"))
 (set-register ?\C-s (cons 'file "~/src"))
+(set-register ?\C-e (cons 'file "~/src/harmsway/.emacs.d"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-save ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defconst my/autosave-dir (concat my/user-directory "autosaves/"))
@@ -300,6 +301,18 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; iedit ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'iedit)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; aes ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'aes)
+(setq aes-always-ask-for-passwords nil)
+(setq aes-enable-plaintext-password-storage t)
+(setq aes-delete-passwords-after-idle 0)
+(aes-enable-auto-decryption)
+(defconst my/aes-default-group "  default")
+(add-hook 'aes-path-passwd-hook (lambda (path) my/aes-default-group))
+(setq aes--plaintext-passwords
+      (list (cons my/aes-default-group
+                  (getenv "EMACS_PWD"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; idle-highlight ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'idle-highlight-mode)
