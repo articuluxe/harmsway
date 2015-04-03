@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-04-03 13:34:40 dan.harms>
+;; Modified Time-stamp: <2015-04-03 14:03:29 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -857,7 +857,8 @@ customization."
          (concat my/user-directory "settings/host/" system-name)))
 	   (host-file (concat host-dir system-name)))
   ;; load host file (if present)
-  (load host-file t)
+  (with-demoted-errors "Error while loading host-file: %s"
+    (load host-file t))
   ;; also load any profiles
   ;; todo: drh
   ;; (mapc (lambda (file)
@@ -871,7 +872,7 @@ customization."
        (when (memq major-mode '(c++-mode emacs-lisp-mode perl-mode
                                          java-mode python-mode dos-mode
                                          nxml-mode protobuf-mode folio-mode
-                                         sh-mode))
+                                         sh-mode csharp-mode))
          (delete-trailing-whitespace)
          (copyright-update nil t)
          (time-stamp)
