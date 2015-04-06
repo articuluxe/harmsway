@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-04-02 23:20:48 dharms>
+;; Modified Time-stamp: <2015-04-06 17:41:06 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -244,7 +244,10 @@ of the buffer."
         ;; absolute, and abbreviate-file-name doesn't transform remote
         ;; names
         (when remote-properties
-          (setq root-dir (abbreviate-file-name remote-localname)))
+          (setq root-dir                ;HACK!!!!!
+                (replace-regexp-in-string
+                 "/home/dan.harms" ;(shell-command "echo ~")
+                 "~" remote-localname t)))
         (setq profile-basename
               (profile-find-profile-basename root-file))
         ;; update the path alist to activate any new profiles

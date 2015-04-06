@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-03-15 23:31:46 dharms>
+;; Modified Time-stamp: <2015-04-06 17:59:40 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -40,30 +40,31 @@
 (defun create-compile-command()
   "Initialize the compile command."
   (interactive)
-  (if (and (profile-current-get 'project-root-dir)
-           (profile-current-get 'compile-sub-command))
-      (format "cd %s && %s"
-              (concat
-               (profile-current-get 'project-root-dir)
-               (profile-current-get 'build-sub-dir))
-              (profile-current-get 'compile-sub-command))
-    (message "Can't create compile command: unknown %s"
-             (if (null (profile-current-get 'project-root-dir))
-                 "project-root-dir" "compile-sub-command"))
-    nil))
+  (let ((root (or (profile-current-get 'project-root-dir) "./"))
+        (command (or (profile-current-get 'compile-sub-command) "make"))
+        (sub-dirs (profile-current-get 'build-sub-dirs))
+        sub-dir)
+    (setq sub-dir
+          (cond ((eq (length sub-dirs) 1) (car sub-dirs))
+                ((null sub-dirs) "")
+                (t (funcall my/choose-func sub-dirs "Compile in: "))))
+    (format "cd %s && %s"
+            (concat root sub-dir) command)
+    ))
 
+(defvar my/compile-command-fn #'create-compile-command)
 (defun my/compile() (interactive)
   (setq one-window-in-frame (one-window-p t))
-  (when (setq my/compile-command (create-compile-command))
+  (when (setq my/compile-command (funcall my/compile-command-fn))
     (setq compile-command my/compile-command)
     (call-interactively 'compile)))
 (defun my/recompile() (interactive)
   (setq one-window-in-frame (one-window-p t))
   (call-interactively 'recompile))
 
-(add-hook 'compilation-start-hook '(lambda (process)
+(add-hook 'compilation-start-hook (lambda (process)
                                         ; the compile is about to start
-                                     ))
+                                    ))
 
 (defun check-compile-buffer-errors(buffer)
   "Check the current buffer for compile warnings or errors"
