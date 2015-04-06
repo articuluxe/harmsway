@@ -15,17 +15,17 @@ set qt_file=rex-qt-tags
 
 rem analyze c++ standard library (if not present: delete to regenerate)
 if not exist %c_file% (
-   echo %c_file% not present, regenerating...
-   %ctags% -Re --language-force=c++ -h=".h.H.hh.hpp.hxx.h++.inc.def." %c++-options% -f %c_file% %c_loc%
+    echo %c_file% not present, regenerating...
+    %ctags% -Re --language-force=c++ -h=".h.H.hh.hpp.hxx.h++.inc.def." %c++-options% -f %c_file% %c_loc%
 )
 
 rem analyze qt files (if not present: delete to regenerate)
 set temp_file=%curr_dir%\.%qt_file%
 if not exist %qt_file% (
-   echo Generating Qt file name list in %temp_file%...
-   ( dir /s /b %qt_loc%\*.h;%qt_loc%\*.cpp | findstr /v tests | findstr /v mkspecs | findstr /v 3rdparty | findstr /v examples | findstr /v qtwebkit | findstr /v qtdoc ) > %temp_file%
-   echo %qt_file% not present, regenerating...
-   %ctags% -e %c++-options% -f %qt_file% -L %temp_file%
+    echo Generating Qt file name list in %temp_file%...
+    ( dir /s /b %qt_loc%\*.h;%qt_loc%\*.cpp | findstr /v tests | findstr /v mkspecs | findstr /v 3rdparty | findstr /v examples | findstr /v qtwebkit | findstr /v qtdoc ) > %temp_file%
+    echo %qt_file% not present, regenerating...
+    %ctags% -e %c++-options% -f %qt_file% -L %temp_file%
 )
 
 rem analyze protobuf files

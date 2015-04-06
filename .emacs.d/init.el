@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-04-03 14:03:29 dan.harms>
+;; Modified Time-stamp: <2015-04-06 13:25:12 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -273,11 +273,13 @@
       (require 'cl)))
 (require 'protobuf-mode)
 (require 'dos)
+(require 'dos-indent)
 (require 'folio-mode)
 (require 'folio-electric)
 (require 'pos-tip)
 (require 'qt-pro)
 (require 'csharp-mode)
+(require 'json-mode)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; copyright ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'copyright)
