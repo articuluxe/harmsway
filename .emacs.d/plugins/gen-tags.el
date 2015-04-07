@@ -4,7 +4,7 @@
 ;; Author:  <dan.harms@xrtrading.com>
 ;; Created: Wednesday, March 18, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-04-01 17:20:43 dan.harms>
+;; Modified Time-stamp: <2015-04-06 23:23:20 dharms>
 ;; Keywords: etags, ctags
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -42,15 +42,12 @@
    "--file-scope=no"
    "--tag-relative=no")
   "Default ctags cpp options.")
-(defvar gen-tags-alist '()
-  "A list whose every element is a sub-list specifying how to generate a
-TAGS file.")
 (defvar gen-tags-copy-remote nil)
 
 ;; client-facing convenience functions
 (defun gen-tags-collect-tag-filestems (alist)
   "Extract the TAGS file stems from ALIST, which is in the format of a
-list of lists of properties.  See `gen-tags-alist'. Return a list of the
+list of lists of properties.  See `ctags-alist'. Return a list of the
 results."
   (mapcar (lambda(name)
             (setq name (concat name "-tags")))
@@ -65,7 +62,7 @@ see `gen-tags-collect-tag-filestems'.  Return a list of the results."
 
 (defun gen-tags-collect-include-files (alist &optional prepend-remote)
   "Extract the include directories from ALIST, which is in the format of a
-list of lists of properties, see `gen-tags-alist'. Return a list of the
+list of lists of properties, see `ctags-alist'. Return a list of the
 results."
   (mapcar (lambda(path)
             (let ((include
@@ -82,16 +79,16 @@ results."
 
 (defun gen-tags-collect-sml-regexps (alist)
   "Extract from ALIST, which is in the format of a list of lists of
-properties, see `gen-tags-alist', a list of cons cells representing a
+properties, see `ctags-alist', a list of cons cells representing a
 modeline replacement pair for sml, see `sml/replacer-regexp-list'."
   (mapcar (lambda(elt)
             (let ((path (cadr elt))
-                  (title (upcase (car elt))))
+                  (title (car elt)))
               (cons (if (file-name-absolute-p path)
                         path
                       (concat
                        (profile-current-get 'project-root-dir) path))
-                    (concat title ":"))))
+                    (concat (upcase title) ":"))))
           alist))
 
 ;; internal variables
@@ -138,13 +135,14 @@ running on a remote host."
 
 (defun gen-tags--first-file ()
   "Start generating a series of TAGS files."
-  (let ((remote-tags-dir (or
+  (let ((tags-alist (profile-current-get 'ctags-alist))
+        (remote-tags-dir (or
                           (profile-current-get 'remote-tags-dir)
                           ".tags/")))
     (setq gen-tags--curr-profile (symbol-name profile-current))
     (setq gen-tags--buffer (get-buffer-create " *gen-TAGS*"))
-    (setq gen-tags--total-num (length gen-tags-alist))
-    (setq gen-tags--iter gen-tags-alist)
+    (setq gen-tags--total-num (length tags-alist))
+    (setq gen-tags--iter tags-alist)
     (setq gen-tags--remote (profile-current-get 'remote-prefix))
     (setq gen-tags--final-dest-dir (profile-current-get 'tags-dir))
     (if gen-tags--remote

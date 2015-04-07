@@ -1,100 +1,67 @@
-;; -*- Mode: Emacs-Lisp -*-
-;;
-;;
-
-(defvar punch-ctags-alist)
-(defvar punch-tag-filestems)
-(defvar punch-tag-filenames)
-(defvar punch-include-files)
-(defvar punch-include-ff-files)
-(defvar punch-sml-alist)
-
-(defun on-punch-file-open (project-root)
-  (set (make-local-variable 'gen-tags-alist)
-       punch-ctags-alist)
-  (when c-buffer-is-cc-mode
-    (set (make-local-variable 'achead:include-directories)
-         punch-include-files)
-    (setq ff-search-directories
-          (append '(".") punch-include-ff-files))
-    ))
-
-(defun on-punch-init (project-root)
-  ;; TAGS
-  (setq punch-ctags-alist
-        (list
-         (append (list "punch" "punch/" gen-tags-exe "-Re"
-                       ) gen-tags-ctags-cpp-options)
-         (append (list "clib" "/usr/include/"
-                       gen-tags-exe "-Re"
-                       "--exclude=c++"
-                       ) gen-tags-ctags-cpp-options)
-         (append (list "c++lib" "/opt/local/include/gcc48/c++/"
-                       gen-tags-exe "-Re"
-                       "--language-force=c++"
-                       "-h=\".h.H.hh.hpp.hxx.h++.inc.def.\""
-                       ) gen-tags-ctags-cpp-options)
-         (append (list "boost" "/usr/local/include/boost/"
-                       gen-tags-exe "-Re"
-                       "--exclude=typeof"
-                       "--exclude=fusion"
-                       "--exclude=phoenix"
-                       "--exclude=spirit"
-                       ) gen-tags-ctags-cpp-options)
-         ))
-
-  (setq punch-tag-filestems
-        (gen-tags-collect-tag-filestems punch-ctags-alist))
-  (setq punch-tag-filenames
-        (gen-tags-collect-tag-filenames
-         punch-tag-filestems
-         (profile-current-get 'tags-dir)))
-  (setq etags-table-alist
-        (cons (append
-               (list
-                ;; this first element needs to capture the entire line
-                (concat "^\\(.*\\)"
-                        (profile-current-get 'project-root-stem)
-                        "\\(.*\\)$"))
-               punch-tag-filenames
-               ) etags-table-alist))
-
-  (setq punch-include-files
-        (gen-tags-collect-include-files punch-ctags-alist))
-  (setq punch-include-ff-files
-        (gen-tags-collect-include-files punch-ctags-alist t))
-
-  ;; mode-line
-  (setq punch-sml-alist (gen-tags-collect-sml-regexps punch-ctags-alist))
-  (mapc (lambda (elt)
-          (add-to-list
-           'sml/replacer-regexp-list
-           (list (car elt) (cdr elt)) t))
-        punch-sml-alist)
-
-  ;; (add-to-list
-  ;;  'sml/replacer-regexp-list
-  ;;  (list (profile-current-get 'project-root-dir ":PUNCH:")) t)
-
-  ;; registers
-  (set-register ?r (cons 'file (concat
-                                (profile-current-get 'remote-prefix)
-                                (profile-current-get 'project-root-dir))))
-  (set-register ?c (cons 'file (concat
-                                (profile-current-get 'remote-prefix)
-                                (profile-current-get 'project-root-dir)
-                                (profile-current-get 'src-sub-dir))))
-
-  )
-
-;; define the profile
-(profile-define-derived "punch" "default"
-                        "dharms" "danielrharms@gmail.com"
-                        'project-name "punch"
-                        'build-sub-dir "build/"
-                        'src-sub-dir "punch/"
-                        'on-file-open 'on-punch-file-open
-                        'on-profile-init 'on-punch-init
-                        )
-(setq profile-path-alist (cons (cons "src/projects/punch" "punch")
-                               profile-path-alist))
+aes-encrypted V 1.3-OCB-B-4-4-M
+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
+GCJSjzi91CaekgnIoA==
