@@ -35,6 +35,11 @@ git clean -dfx
 git diff --name-status
 # show change magnitude
 git diff --stat
+# changes between 2 branches
+git diff topic master
+git diff topic..master
+# changes on master since topic was branched off
+git diff topic...master
 
 # VIEW COMMITS [plus files changed / patches ]
 git log --oneline --decorate --graph [--stat/p]
