@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-04-06 17:41:06 dan.harms>
+;; Modified Time-stamp: <2015-04-07 22:28:17 dharms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -76,6 +76,84 @@ basename, such as `mybase'."
   (when
       (string-match "\\.?\\([^.]+\\)$" (file-name-base name))
   (match-string 1 (file-name-base name))))
+
+;;;###autoload
+(defun profile-collect-include-files (alist &optional prepend-remote)
+  "Extract the include directories from ALIST, which is in the format of a
+list of lists of properties, see `ctags-alist'. Return a list of the
+results."
+  (mapcar (lambda(path)
+            (let ((include
+                   (if (file-name-absolute-p path)
+                       path
+                     (concat
+                      (profile-current-get 'project-root-dir) path))))
+              (setq path
+                    (if prepend-remote
+                        (concat (profile-current-get 'remote-prefix)
+                                include)
+                      include))))
+          (mapcar 'cadr alist)))
+
+;;;###autoload
+(defun profile-set-include-files ()
+  "Set useful include file settings for use in programming modes,
+according to the current profile."
+    (profile-current-put 'include-files
+                         (profile-collect-include-files
+                          (profile-current-get 'ctags-alist)))
+    (profile-current-put 'include-ff-files
+                         (profile-collect-include-files
+                          (profile-current-get 'ctags-alist) t))
+    )
+
+;;;###autoload
+(defun profile-collect-grep-dirs ()
+  "Extract the list of include directories according to the current
+profile."
+  (mapcar (lambda (path)
+            (let ((full
+                   (if (file-name-absolute-p path)
+                       path
+                     (concat
+                      (profile-current-get 'project-root-dir) path))))
+              (cons path full)))
+          (mapcar 'cadr (profile-current-get 'ctags-alist))))
+
+;;;###autoload
+(defun profile-set-grep-dirs ()
+  "Set include directory settings useful for grep, according to the
+current profile."
+  (profile-current-put 'grep-dirs
+                       (profile-collect-grep-dirs)))
+
+;;;###autoload
+(defun profile-collect-sml-regexps (alist)
+  "Extract from ALIST, which is in the format of a list of lists of
+properties, see `ctags-alist', a list of cons cells representing a
+modeline replacement pair for sml, see `sml/replacer-regexp-list'."
+  (mapcar (lambda(elt)
+            (let ((path (cadr elt))
+                  (title (car elt)))
+              (cons (if (file-name-absolute-p path)
+                        path
+                      (concat
+                       (profile-current-get 'project-root-dir) path))
+                    (concat (upcase title) ":"))))
+          alist))
+
+;;;###autoload
+(defun profile-set-mode-line-from-include-files ()
+  "Set useful mode line abbreviations, see `sml/replacer-regexp-alist',
+according to the current profile."
+  (let ((sml-alist (profile-collect-sml-regexps
+                    (profile-current-get 'ctags-alist))))
+    (mapc (lambda (elt)
+            (add-to-list 'sml/replacer-regexp-list
+                         (list (car elt) (cdr elt)) t))
+          sml-alist)))
+
+
 
 (defvar profile--root-file)
 ;;;###autoload

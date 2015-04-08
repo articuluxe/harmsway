@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-04-01 10:14:10 dan.harms>
+;; Modified Time-stamp: <2015-04-07 23:15:03 dharms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -47,12 +47,15 @@
    concatenated with src-sub-dir, if defined."
   (interactive "p")
   (let* ((root (profile-current-get 'project-root-dir))
+         (dirs (profile-current-get 'grep-dirs))
+         (first (cdr (car dirs)))
+         (prompt "Grep root: ")
          (dir
-          (cond ((= arg 16) ".")
-                ((or (= arg 4) (null root))
-                 (ido-read-directory-name "Grep root: " nil nil t))
-                (t (concat root
-                           (profile-current-get 'src-sub-dir)))))
+          (cond ((or (null root) (null dirs) (= arg 64))
+                 (ido-read-directory-name prompt nil nil t))
+                ((= arg 16) ".")
+                ((= arg 4) (funcall my/choose-func dirs prompt))
+                (t first)))
          (remote (file-remote-p dir)))
     (when remote
       (setq dir
@@ -243,9 +246,12 @@
                    "static"))
         type str)
     (setq type (read-string "Enter the data type to cast to: "))
-    (setq str (ido-completing-read "Enter the type of cast: "
-                                   '("static" "dynamic" "reinterpret" "const")
-                                   nil t nil my/cast-history-list "static"))
+    (setq str (funcall my/choose-func
+                       '("static" "dynamic" "reinterpret" "const")
+                       "Enter the type of cast: "))
+    ;; (setq str (ido-completing-read "Enter the type of cast: "
+    ;;                                '("static" "dynamic" "reinterpret" "const")
+    ;;                                nil t nil my/cast-history-list "static"))
     (if (= 0 (length str))
         (setq str initial))
     (save-excursion

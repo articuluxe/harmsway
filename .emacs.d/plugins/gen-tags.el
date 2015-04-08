@@ -4,7 +4,7 @@
 ;; Author:  <dan.harms@xrtrading.com>
 ;; Created: Wednesday, March 18, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-04-06 23:23:20 dharms>
+;; Modified Time-stamp: <2015-04-07 22:12:51 dharms>
 ;; Keywords: etags, ctags
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -60,36 +60,23 @@ see `gen-tags-collect-tag-filestems'.  Return a list of the results."
             (expand-file-name
              (concat root name))) lst))
 
-(defun gen-tags-collect-include-files (alist &optional prepend-remote)
-  "Extract the include directories from ALIST, which is in the format of a
-list of lists of properties, see `ctags-alist'. Return a list of the
-results."
-  (mapcar (lambda(path)
-            (let ((include
-                   (if (file-name-absolute-p path)
-                       path
-                     (concat
-                      (profile-current-get 'project-root-dir) path))))
-              (setq path
-                    (if prepend-remote
-                        (concat (profile-current-get 'remote-prefix)
-                                include)
-                      include))))
-          (mapcar 'cadr alist)))
-
-(defun gen-tags-collect-sml-regexps (alist)
-  "Extract from ALIST, which is in the format of a list of lists of
-properties, see `ctags-alist', a list of cons cells representing a
-modeline replacement pair for sml, see `sml/replacer-regexp-list'."
-  (mapcar (lambda(elt)
-            (let ((path (cadr elt))
-                  (title (car elt)))
-              (cons (if (file-name-absolute-p path)
-                        path
-                      (concat
-                       (profile-current-get 'project-root-dir) path))
-                    (concat (upcase title) ":"))))
-          alist))
+(defun gen-tags-set-tags-table ()
+  "Set the tags table (for use by `etags-table') according to the current
+profile, see `ctags-alist'."
+  (let* ((tag-filestems (gen-tags-collect-tag-filestems
+                         (profile-current-get 'ctags-alist)))
+         (tag-filenames (gen-tags-collect-tag-filenames
+                         tag-filestems
+                         (profile-current-get 'tags-dir))))
+    (setq etags-table-alist
+          (cons (append
+                 (list
+                  ;; this first element needs to capture the entire path
+                  (concat "^\\(.*\\)"
+                          (profile-current-get 'project-root-stem)
+                          "\\(.*\\)$"))
+                 tag-filenames
+                 ) etags-table-alist))))
 
 ;; internal variables
 (defvar gen-tags--iter nil "Current item being processed.")
