@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-04-07 22:28:17 dharms>
+;; Modified Time-stamp: <2015-04-10 17:24:39 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -125,7 +125,9 @@ profile."
   "Set include directory settings useful for grep, according to the
 current profile."
   (profile-current-put 'grep-dirs
-                       (profile-collect-grep-dirs)))
+                       (append
+                        (profile-collect-grep-dirs)
+                        (list (profile-current-get 'project-root-dir)))))
 
 ;;;###autoload
 (defun profile-collect-sml-regexps (alist)

@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-04-06 13:25:12 dan.harms>
+;; Modified Time-stamp: <2015-04-10 16:15:08 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -331,6 +331,7 @@
 ;        (compilation-mode :noselect t)
         (completion-list-mode :noselect t)            ;noselect?
         ("*Ido Completions*" :noselect t)
+        ("*Isearch completions*" :noselect t)
         (grep-mode :noselect t)
         (occur-mode :noselect t)
         "*Shell Command Output*"
@@ -402,7 +403,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; rich-minority ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'rich-minority)
 (rich-minority-mode 1)
-(setq rm-blacklist '(" AC" " yas" " Undo-Tree" " Abbrev" " Guide" " Hi" " $"))
+(setq rm-blacklist
+      '(" AC" " yas" " Undo-Tree" " Abbrev" " Guide" " Hi" " $" " ,"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smart-mode-line ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-to-list 'load-path (concat my/plugins-directory "smart-mode-line/"))
@@ -481,11 +483,16 @@
             ))
 
 ;; easily go to top or bottom
-(defun dired-back-to-top() (interactive)
-       (goto-char (point-min))
-       (dired-next-line 4))
+(defun dired-back-to-top()
+  (interactive)
+  (let ((sorting-by-date (string-match-p dired-sort-by-date-regexp
+                                         dired-actual-switches)))
+    (goto-char (point-min))
+    (dired-next-line
+     (if sorting-by-date 2 4))))
 (define-key dired-mode-map
   (vector 'remap 'beginning-of-buffer) 'dired-back-to-top)
+
 (defun dired-jump-to-bottom() (interactive)
        (goto-char (point-max))
        (dired-next-line -1))
@@ -747,7 +754,7 @@ register \\C-l."
                            ["template.el" auto-insert-choose-yas-expand])
                           ((sh-mode . "Sh") .
                            ["template.sh" auto-insert-choose-yas-expand])
-                          (("\\.bat$" . "Dos") .
+                          ((dos-mode . "Dos") .
                            ["template.bat" auto-insert-choose-yas-expand])
                           (("CMakeLists.txt" . "CMake") .
                            ["template.cmake" auto-insert-choose-yas-expand])
