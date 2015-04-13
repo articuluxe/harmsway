@@ -1,0 +1,6 @@
+# -*- mode: snippet; require-final-newline: nil -*-
+# name: pragma-once
+# key: pragma_once
+# binding: direct-keybinding
+# --
+#pragma once

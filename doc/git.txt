@@ -1,6 +1,6 @@
  # -*- Mode: sh -*-
 
-# INIT
+#################################### INIT ####################################
 git config --global user.name "Dan Harms"
 git config --global user.email danielrharms@gmail.com
 git config --global core.editor emacs
@@ -13,7 +13,7 @@ git config --system core.autocrlf input
 
 #add .gitignore patterns to .git/info/exclude.  These will not be checked in.
 
-# BRANCHING
+################################# BRANCHING ##################################
 # checkout and track remote branch
 git checkout --track origin/<branch>
 # set existing branch to track remote
@@ -30,7 +30,7 @@ git push origin :<branch>
 
 git clean -dfx
 
-# DIFF
+#################################### DIFF ####################################
 # name and status only
 git diff --name-status
 # show change magnitude
@@ -41,11 +41,29 @@ git diff topic..master
 # changes on master since topic was branched off
 git diff topic...master
 
+################################ VIEW COMMITS ################################
 # VIEW COMMITS [plus files changed / patches ]
 git log --oneline --decorate --graph [--stat/p]
+# view commits on feature branch not on master
+git log master..feature
+git log ^master feature
+# view commits on A or B but not C
+git log A B ^C
+# view what is in master or feature but not common to them
+git log --left-right master...feature
+# view what I would push to a remote
+git log origin/master..HEAD
+# PARENT SELECTOR: first parent of HEAD
+HEAD^^
+# second parent of head
+HEAD^2
+# GRANDPARENT SELECTOR (depth-first)
+HEAD~
+# 2nd ancestor
+HEAD~2
 
-# SHOW
+#################################### SHOW ####################################
 git show <branch>:<path-to-file>
 
-# STASH
+################################### STASH ####################################
 git stash <show|save|drop|push|pop> stash@\{0\}

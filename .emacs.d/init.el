@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-04-10 16:15:08 dan.harms>
+;; Modified Time-stamp: <2015-04-13 17:11:30 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -511,20 +511,21 @@
           (dired-get-marked-files))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; diff ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(eval-after-load 'diff-mode '(progn
-                               (set-face-attribute 'diff-added nil
-                                                   :foreground "white"
-                                                   :background "blue"
-                                                   )
-                               (set-face-attribute 'diff-removed nil
-                                                   :foreground "white"
-                                                   :background "red3"
-                                                   )
-                               (set-face-attribute 'diff-changed nil
-                                                   :foreground "white"
-                                                   :background "purple"
-                                                   )
-                               ))
+(when (version< emacs-version "24.3")
+  (eval-after-load 'diff-mode '(progn
+                                 (set-face-attribute 'diff-added nil
+                                                     :foreground "white"
+                                                     :background "blue"
+                                                     )
+                                 (set-face-attribute 'diff-removed nil
+                                                     :foreground "white"
+                                                     :background "red3"
+                                                     )
+                                 (set-face-attribute 'diff-changed nil
+                                                     :foreground "white"
+                                                     :background "purple"
+                                                     )
+                                 )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; shebang ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'shebang)
@@ -707,7 +708,7 @@ register \\C-l."
 (require 'yasnippet)
 (add-to-list 'safe-local-variable-values '(require-final-newline . nil))
 (yas-global-mode 1)
-(setq yas-snippet-dirs (concat my/user-directory "snippets/"))
+(setq yas-snippet-dirs (list (concat my/user-directory "snippets/")))
 (setq yas-prompt-functions '(
                              yas-ido-prompt
                              yas-x-prompt
@@ -838,9 +839,11 @@ register \\C-l."
                             (concat "{" (buffer-name) "}")
                           (buffer-name))
                         (if (profile-current-get 'project-name)
+                            ;; the parent profile "default" happens to
+                            ;; have an empty 'project-name attribute
                             (concat
                              "("
-                             (upcase (profile-current-get 'project-name))
+                             (upcase (symbol-name profile-current))
                              ")")
                           "")           ;else empty if no project name
                         )))
