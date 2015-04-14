@@ -63,7 +63,9 @@ HEAD~
 HEAD~2
 
 #################################### SHOW ####################################
-git show <branch>:<path-to-file>
+git show origin/<branch>:path/from/root/to/file
+git show origin/<branch>:./relative/path/to/file
+
 
 ################################### STASH ####################################
 git stash <show|save|drop|push|pop> stash@\{0\}
