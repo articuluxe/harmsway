@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-04-13 17:11:30 dan.harms>
+;; Modified Time-stamp: <2015-04-15 10:35:48 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -113,6 +113,7 @@
 (put 'downcase-region 'disabled nil)
 (put 'scroll-left 'disabled nil)
 (put 'scroll-right 'disabled nil)
+(put 'narrow-to-region 'disabled nil)
 ;; disable nuisances
 (put 'overwrite-mode 'disabled t)
 (fset 'yes-or-no-p 'y-or-n-p)
