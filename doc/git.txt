@@ -3,7 +3,7 @@
 #################################### INIT ####################################
 git config --global user.name "Dan Harms"
 git config --global user.email danielrharms@gmail.com
-git config --global core.editor emacs
+git config --global core.editor "emacs -nw"
 git config --global color.ui true
 git config --global merge.tool <tool>
 git config --global diff.tool <tool>
@@ -61,6 +61,20 @@ HEAD^2
 HEAD~
 # 2nd ancestor
 HEAD~2
+# view commits affecting files
+git log --follow -- file1 file2
+# search commits for a string (pickaxe)
+git log -S"string"
+# search commits for a regex
+git log -G"regex"
+# group commits by author [sort by number of commits]
+git shortlog [-n]
+# committer name, hash, date
+git log --pretty=format:"%cn committed %h on %cd"
+# other options (incomplete)
+ --after="2014-7-1" --before="yesterday" --after="2 weeks ago"
+ --author="John\|mary.jane@company"
+ --grep="JIRA-.*"
 
 #################################### SHOW ####################################
 git show origin/<branch>:path/from/root/to/file
@@ -69,3 +83,11 @@ git show origin/<branch>:./relative/path/to/file
 
 ################################### STASH ####################################
 git stash <show|save|drop|push|pop> stash@\{0\}
+
+################################### PATCH ####################################
+# create patch from last revision
+git format-patch HEAD~
+# apply patch to working directory
+git apply [--check] [--reject] some.patch
+# directly commit a patch
+git am some.patch

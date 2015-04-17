@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-04-15 10:35:48 dan.harms>
+;; Modified Time-stamp: <2015-04-17 09:03:02 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -371,18 +371,20 @@
 ;; ask before reusing an existing buffer
 (setq-default ido-default-buffer-method 'maybe-frame)
 (setq-default ido-default-file-method 'maybe-frame)
-;; sort files by descending modified time
+;; sort files by descending modified time (except remotely, which is dog-slow)
 (defun ido-sort-mtime()
-  (setq ido-temp-list
-        (sort ido-temp-list
-              (lambda (a b)
-                (time-less-p
-                 (sixth (file-attributes (concat ido-current-directory b)))
-                 (sixth (file-attributes (concat ido-current-directory a)))))))
-  (ido-to-end
-   (delq nil (mapcar (lambda (x)
-                       (and (char-equal (string-to-char x) ?.) x))
-                     ido-temp-list))))
+  (unless (tramp-tramp-file-p default-directory)
+    (setq ido-temp-list
+          (sort ido-temp-list
+                (lambda (a b)
+                  (time-less-p
+                   (sixth (file-attributes (concat ido-current-directory b)))
+                   (sixth (file-attributes (concat ido-current-directory a)))))))
+    ;; (ido-to-end
+    ;;  (delq nil (mapcar (lambda (x)
+    ;;                      (and (char-equal (string-to-char x) ?.) x))
+    ;;                    ido-temp-list)))
+    ))
 (add-hook 'ido-make-file-list-hook 'ido-sort-mtime)
 (add-hook 'ido-make-dir-list-hook 'ido-sort-mtime)
 ;; ;; also use ido to switch modes
@@ -512,6 +514,9 @@
           (dired-get-marked-files))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; diff ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; only highlight current chunk
+(setq-default ediff-highlight-all-diffs 'nil)
+;; better colors in older versions
 (when (version< emacs-version "24.3")
   (eval-after-load 'diff-mode '(progn
                                  (set-face-attribute 'diff-added nil
