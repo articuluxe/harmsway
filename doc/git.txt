@@ -53,14 +53,10 @@ git log A B ^C
 git log --left-right master...feature
 # view what I would push to a remote
 git log origin/master..HEAD
-# PARENT SELECTOR: first parent of HEAD
-HEAD^^
-# second parent of head
-HEAD^2
-# GRANDPARENT SELECTOR (depth-first)
-HEAD~
-# 2nd ancestor
-HEAD~2
+# PARENT SELECTOR: first/second parent of HEAD
+HEAD^    /    HEAD^2
+# GRANDPARENT SELECTOR (depth-first) / 2nd ancestor
+HEAD~    /    HEAD~2
 # view commits affecting files
 git log --follow -- file1 file2
 # search commits for a string (pickaxe)

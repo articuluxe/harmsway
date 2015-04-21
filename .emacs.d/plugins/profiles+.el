@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-04-10 17:24:39 dan.harms>
+;; Modified Time-stamp: <2015-04-21 09:37:00 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -103,8 +103,11 @@ according to the current profile."
                          (profile-collect-include-files
                           (profile-current-get 'ctags-alist)))
     (profile-current-put 'include-ff-files
-                         (profile-collect-include-files
-                          (profile-current-get 'ctags-alist) t))
+                         ;; ff-search-directories doesn't need a trailing
+                         ;; slash
+                         (mapcar 'directory-file-name
+                                 (profile-collect-include-files
+                                  (profile-current-get 'ctags-alist) t)))
     )
 
 ;;;###autoload
