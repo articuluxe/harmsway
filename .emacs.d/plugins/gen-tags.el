@@ -4,7 +4,7 @@
 ;; Author:  <dan.harms@xrtrading.com>
 ;; Created: Wednesday, March 18, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-04-07 22:12:51 dharms>
+;; Modified Time-stamp: <2015-04-21 12:18:24 dan.harms>
 ;; Keywords: etags, ctags
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -203,7 +203,7 @@ running on a remote host."
     (setq process (apply 'start-file-process
                          "generate TAGS"
                          gen-tags--buffer
-                         "/bin/sh" "-c"
+                         "sh" "-c"
                          (list (mapconcat 'identity args " "))
                          ))
     (set-process-sentinel

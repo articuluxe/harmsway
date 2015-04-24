@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-04-21 09:37:00 dan.harms>
+;; Modified Time-stamp: <2015-04-23 08:56:53 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -29,17 +29,23 @@
 (require 'profiles)
 (require 'tramp)
 
+;; disable the base class file
 (setq profile-path-alist-file nil)
 
 ;;;###autoload
 (defun profile-define-derived (profile parent &optional name mail &rest plist)
-  "Create or replace PROFILE with NAME and MAIL.  PROFILE, NAME and MAIL are
-   all required to be string values.  Optional argument PLIST is a property
-   list.  The new profile shares the properties of its parent, unless it
-   chooses to override any of them."
-  (setplist (intern profile profile-obarray)
-            (append (list 'name name 'mailing-address mail 'parent parent)
-                    plist)))
+  "Create PROFILE with NAME and MAIL.  Unlike `profile-define',
+if there is an existing profile with the same NAME, it is NOT
+overridden (the existing plist is left alone).  This is to
+support project files situated in project hierarchies.  PROFILE,
+NAME and MAIL are all required to be string values.  Optional
+argument PLIST is a property list.  The new profile shares the
+properties of its parent, unless it chooses to override any of
+them."
+  (unless (intern-soft profile profile-obarray)
+    (setplist (intern profile profile-obarray)
+              (append (list 'name name 'mailing-address mail 'parent parent)
+                      plist))))
 
 ;;;###autoload
 (defun profile-lookup-property-polymorphic (profile property)
@@ -334,10 +340,9 @@ of the buffer."
         (setq profile-basename
               (profile-find-profile-basename root-file))
         ;; update the path alist to activate any new profiles
-        (setq profile-path-alist
-              (cons (cons
-                     (file-relative-name root-dir "~")
-                     profile-basename) profile-path-alist))
+        (add-to-list 'profile-path-alist
+                     (cons (file-relative-name root-dir "~")
+                           profile-basename))
         (setq profile-current
               (intern-soft (profile-find-path-alist
                             (expand-file-name filename))
