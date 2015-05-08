@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-04-17 09:03:02 dan.harms>
+;; Modified Time-stamp: <2015-05-08 16:38:54 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -756,22 +756,25 @@ register \\C-l."
 ;; auto-insert-choose+ functionality: populate an alist per file type
 ;; with the different templates, then associate a lambda with a defun
 ;; that selects between them: completion, ido, popup.
-(setq auto-insert-alist '(
-                          ((emacs-lisp-mode . "Emacs Lisp") .
-                           ["template.el" auto-insert-choose-yas-expand])
-                          ((sh-mode . "Sh") .
-                           ["template.sh" auto-insert-choose-yas-expand])
-                          ((dos-mode . "Dos") .
-                           ["template.bat" auto-insert-choose-yas-expand])
-                          (("CMakeLists.txt" . "CMake") .
-                           ["template.cmake" auto-insert-choose-yas-expand])
-                          (("\\.\\(h\\|hh\\|H\\|hpp\\|hxx\\)$" . "c++")
-                           lambda nil (auto-insert-choose-and-call-popup
-                                       auto-insert-c-header-alist))
-                          (("\\.\\(cpp\\|cc\\|C\\|c\\|cxx\\)$" . "c++")
-                           lambda nil (auto-insert-choose-and-call-popup
-                                       auto-insert-c-impl-alist))
-                          ))
+(setq auto-insert-alist
+      '(
+        ((emacs-lisp-mode . "Emacs Lisp") .
+         ["template.el" auto-insert-choose-yas-expand])
+        ((sh-mode . "Sh") .
+         ["template.sh" auto-insert-choose-yas-expand])
+        ((dos-mode . "Dos") .
+         ["template.bat" auto-insert-choose-yas-expand])
+        (("CMakeLists.txt" . "CMake") .
+         ["template.cmake" auto-insert-choose-yas-expand])
+        ((autoconf-mode . "Autoconf") .
+         ["template.configure.ac" auto-insert-choose-yas-expand])
+        (("\\.\\(h\\|hh\\|H\\|hpp\\|hxx\\)$" . "c++")
+         lambda nil (auto-insert-choose-and-call-popup
+                     auto-insert-c-header-alist))
+        (("\\.\\(cpp\\|cc\\|C\\|c\\|cxx\\)$" . "c++")
+         lambda nil (auto-insert-choose-and-call-popup
+                     auto-insert-c-impl-alist))
+        ))
 (global-set-key "\C-cst" 'auto-insert)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; popup-kill-ring ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
