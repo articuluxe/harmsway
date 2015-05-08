@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-04-06 17:59:40 dan.harms>
+;; Modified Time-stamp: <2015-05-08 07:50:11 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -37,13 +37,17 @@
   (set (make-local-variable 'truncate-partial-width-windows) nil))
 (add-hook 'compilation-mode-hook 'my/compilation-mode-hook)
 
-(defun create-compile-command()
+(defun create-compile-command(&optional arg)
   "Initialize the compile command."
   (interactive)
   (let ((root (or (profile-current-get 'project-root-dir) "./"))
         (command (or (profile-current-get 'compile-sub-command) "make"))
         (sub-dirs (profile-current-get 'build-sub-dirs))
         sub-dir)
+    (when current-prefix-arg
+      (setq root (ido-read-directory-name "Root dir:" root nil t))
+      (when (file-remote-p root)
+        (setq root (with-parsed-tramp-file-name root file file-localname))))
     (setq sub-dir
           (cond ((eq (length sub-dirs) 1) (car sub-dirs))
                 ((null sub-dirs) "")

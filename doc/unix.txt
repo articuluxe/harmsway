@@ -4,8 +4,11 @@
 # Author:  <dan.harms@xrtrading.com>
 # Created: Friday, March 20, 2015
 # Version: 1.0
-# Modified Time-stamp: <2015-03-27 13:48:36 dan.harms>
+# Modified Time-stamp: <2015-04-29 11:01:16 dan.harms>
 # Keywords: help
+
+# find all libraries defining a symbol
+find /path/to/root -name \*.a -exec sh -c 'nm -C "$0" | grep symbol && echo "$0"' {} \;
 
 # ensure core dump on SEGV
 ulimit -c unlimited
