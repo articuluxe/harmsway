@@ -1,0 +1,24 @@
+# -*- Mode: makefile-automake -*-
+# ${1:`(file-name-nondirectory (buffer-file-name))`} --- ${2:Short description}
+# Copyright (C) `(format-time-string "%Y")`  `(user-full-name)` (`(user-login-name)`)
+# Author: `(user-full-name)` <`user-mail-address`>
+# Created: `(insert-today)`
+# Version: ${3:1.0}
+# Modified Time-stamp: <2015-02-26 13:20:30 dharms>
+# Keywords: $4
+# expand-env: ((yas-indent-line 'fixed))
+
+# Additional include paths
+AM_CXXFLAGS = -I$(top_srcdir)/${5:<source dir>} @AM_CXXFLAGS@
+
+############################# Programs to build ##############################
+# Final binaries
+bin_PROGRAMS = ${6:executable}
+
+# list of sources
+$6_SOURCES = \
+	ErfXr.cpp
+# Additional libraries needed
+$6_LDADD = $(top_builddir)/${7:<library>}/lib$7.a $(AM_LDFLAGS)
+
+# $1 ends here

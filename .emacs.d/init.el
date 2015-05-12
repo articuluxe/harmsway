@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-05-08 16:38:54 dan.harms>
+;; Modified Time-stamp: <2015-05-12 15:08:48 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -316,6 +316,7 @@
 (setq aes--plaintext-passwords
       (list (cons my/aes-default-group
                   (getenv "EMACS_PWD"))))
+(global-set-key "\C-cz" 'aes-toggle-encryption)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; idle-highlight ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'idle-highlight-mode)
@@ -745,10 +746,25 @@ register \\C-l."
 (setq auto-insert 'other)
 (setq auto-insert-directory (concat my/scratch-directory "auto-insert/"))
 ;; list of different templates to choose from
+;; c++
 (defvar auto-insert-c-header-alist '())
 (defvar auto-insert-c-impl-alist '())
 (auto-insert-choose+-add-entry 'auto-insert-c-header-alist "template.h")
 (auto-insert-choose+-add-entry 'auto-insert-c-impl-alist "template.cpp")
+;; autoconf
+(defvar auto-insert-autoconf-alist '())
+(auto-insert-choose+-add-entry 'auto-insert-autoconf-alist
+                               "configure-standard.ac")
+(auto-insert-choose+-add-entry 'auto-insert-autoconf-alist
+                               "configure-library.ac")
+;; Makefile.am
+(defvar auto-insert-makefile-am-alist '())
+(auto-insert-choose+-add-entry 'auto-insert-makefile-am-alist
+                               "Makefile-toplevel.am")
+(auto-insert-choose+-add-entry 'auto-insert-makefile-am-alist
+                               "Makefile-library.am")
+(auto-insert-choose+-add-entry 'auto-insert-makefile-am-alist
+                               "Makefile-executable.am")
 
 ;; The "normal" entries (using auto-insert) can list the file name and
 ;; the yas-expand helper.  If you want to be able to choose among
@@ -758,19 +774,34 @@ register \\C-l."
 ;; that selects between them: completion, ido, popup.
 (setq auto-insert-alist
       '(
+        ;; lisp
         ((emacs-lisp-mode . "Emacs Lisp") .
          ["template.el" auto-insert-choose-yas-expand])
+        ;; sh
         ((sh-mode . "Sh") .
          ["template.sh" auto-insert-choose-yas-expand])
+        ;; dos
         ((dos-mode . "Dos") .
          ["template.bat" auto-insert-choose-yas-expand])
+        ;; python
+        ((python-mode . "Python") .
+         ["template.py" auto-insert-choose-yas-expand])
+        ;; CMake
         (("CMakeLists.txt" . "CMake") .
          ["template.cmake" auto-insert-choose-yas-expand])
-        ((autoconf-mode . "Autoconf") .
-         ["template.configure.ac" auto-insert-choose-yas-expand])
+        ;; autoconf
+        ((autoconf-mode . "Autoconf")
+         lambda nil (auto-insert-choose-and-call-popup
+                     auto-insert-autoconf-alist))
+        ;; makefile-automake
+        ((makefile-automake-mode . "Makefile-Automake")
+         lambda nil (auto-insert-choose-and-call-popup
+                     auto-insert-makefile-am-alist))
+        ;; c headers
         (("\\.\\(h\\|hh\\|H\\|hpp\\|hxx\\)$" . "c++")
          lambda nil (auto-insert-choose-and-call-popup
                      auto-insert-c-header-alist))
+        ;; c impl
         (("\\.\\(cpp\\|cc\\|C\\|c\\|cxx\\)$" . "c++")
          lambda nil (auto-insert-choose-and-call-popup
                      auto-insert-c-impl-alist))

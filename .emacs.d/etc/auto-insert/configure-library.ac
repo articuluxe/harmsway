@@ -1,0 +1,39 @@
+dnl -*- Mode: autoconf -*-
+dnl ${1:`(file-name-nondirectory (buffer-file-name))`} --- ${2:Short description}
+dnl Copyright (C) `(format-time-string "%Y")`  `(user-full-name)` (`(user-login-name)`)
+dnl Author: `(user-full-name)` <`user-mail-address`>
+dnl Created: `(insert-today)`
+dnl Version: ${3:1.0}
+dnl Modified Time-stamp: <2015-02-26 13:20:30 dharms>
+dnl Keywords: $4
+
+AC_INIT([${1:library}],[${2:version}],[${3:dan.harms@xrtrading.com}])
+# Check if source folder is available
+AC_CONFIG_SRCDIR([${4:source_file}])
+# c++ preprocessor
+AC_PROG_CXXCPP
+AC_PROG_CXX
+AC_PROG_RANLIB
+
+PACKAGE=$2
+VERSION=${3:0.1.0}
+AM_INIT_AUTOMAKE([$PACKAGE],[$VERSION])
+# use the c++ compiler
+AC_LANG([C++])
+# check for header files
+AC_HEADER_STDC
+AC_CHECK_HEADERS([string])
+AC_CHECK_HEADERS([iostream])
+# typedefs, structures, compiler characteristics
+AC_TYPE_SIZE_T
+# Additional compiler/linker flags across Makefiles
+AC_SUBST([AM_CXXFLAGS])
+AC_SUBST([AM_LDFLAGS])
+# autotools will prepare these files
+AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([${5:src/Makefile}])
+AC_CONFIG_FILES([${6:lib/Makefile}])
+# generate files
+AC_OUTPUT
+
+dnl $1 ends here

@@ -12,6 +12,7 @@ gcc=/usr/local/gcc-4.5.1/bin
 python=/opt/anaconda-python-2.7.8/bin
 export PATH=.:$HOME/bin:$gcc:/sbin/:$PATH:$python
 export MANPATH=
+export NAME=Dan Harms
 export DISPLAY=10.10.102.157:0.0
 
 bind Space:magic-space
