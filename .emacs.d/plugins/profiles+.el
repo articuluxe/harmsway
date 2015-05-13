@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-04-23 08:56:53 dan.harms>
+;; Modified Time-stamp: <2015-05-12 22:36:08 dharms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -164,7 +164,42 @@ according to the current profile."
                          (list (car elt) (cdr elt)) t))
           sml-alist)))
 
+;;;###autoload
+(defun profile-set-sml-and-registers-from-build-sub-dirs ()
+  "Set the sml mode line according to the build-sub-dirs setting of the
+current profile.  See `sml/replacer-regexp-alist'.  Also optionally set
+some convenience registers to access the build-sub-dirs."
+  (let ((sml-alist (profile-current-get 'build-sub-dirs)))
+    (mapc (lambda (elt)
+            (let* ((dir (car elt))
+                   (name (or (cadr elt)
+                             (concat (upcase
+                                      (directory-file-name dir)) ":")))
+                   (reg (caddr elt)))
+              (add-to-list 'sml/replacer-regexp-list
+                           (list dir name))
+              (and reg (characterp reg)
+                   (set-register
+                    reg (cons 'file (concat
+                                     (profile-current-get 'remote-prefix)
+                                     (profile-current-get 'project-root-dir)
+                                     dir))))
+              ))
+          sml-alist)))
 
+;;;###autoload
+(defun profile-on-c-file-open (project-root)
+  "Helper function to perform the typical actions desired when a
+c-language file is opened and a profile is active.  These typical
+actions include setting include directories."
+  (when c-buffer-is-cc-mode
+    (set (make-local-variable 'achead:include-directories)
+         (profile-current-get 'include-files))
+    (setq ff-search-directories
+          (append
+           '(".")
+           (profile-current-get 'include-ff-files)))
+    ))
 
 (defvar profile--root-file)
 ;;;###autoload
