@@ -1,0 +1,48 @@
+;; -*- Mode: Emacs-Lisp -*-
+;;
+;;
+
+(defun on-${1:`(profile-find-profile-basename buffer-file-name)`}-init (project-root)
+  ;; TAGS
+  (profile-current-put
+   'ctags-alist
+   (list
+    (append (list "$1" "${2:<src-sub-dir>}/" gen-tags-exe "-Re"
+                  ) gen-tags-ctags-cpp-options)
+    (append (list "clib" "/usr/include/"
+                  gen-tags-exe "-Re"
+                  "--exclude=c++"
+                  ) gen-tags-ctags-cpp-options)
+    (append (list "c++lib" "/opt/local/include/gcc48/c++/"
+                  gen-tags-exe "-Re"
+                  "--language-force=c++"
+                  "-h=\".h.H.hh.hpp.hxx.h++.inc.def.\""
+                  ) gen-tags-ctags-cpp-options)
+    (append (list "boost" "/usr/local/include/boost/"
+                  gen-tags-exe "-Re"
+                  "--exclude=typeof"
+                  "--exclude=fusion"
+                  "--exclude=phoenix"
+                  "--exclude=spirit"
+                  ) gen-tags-ctags-cpp-options)
+    ))
+
+  (gen-tags-set-tags-table)
+  (profile-set-include-files)
+  (profile-set-grep-dirs)
+  (profile-set-mode-line-from-include-files)
+  (profile-set-sml-and-registers-from-build-sub-dirs)
+
+  )
+
+;; define the profile
+(profile-define-derived
+ "${3:$1}"
+ "default"
+ "`user-login-name`" "`user-mail-address`"
+ 'project-name "$1"
+ 'build-sub-dirs '(("${4:<build-dir>}/")
+                   )
+ 'on-file-open #'profile-on-c-file-open
+ 'on-profile-init #'on-$1-init
+ )

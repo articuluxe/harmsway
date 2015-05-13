@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-05-12 15:08:48 dan.harms>
+;; Modified Time-stamp: <2015-05-13 16:51:49 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -612,9 +612,7 @@ register \\C-l."
 (require 'profiles+)
 (profile-define "default" "dharms" "danielrharms@gmail.com"
                 ;; relative path to makefiles
-                'build-sub-dir "build/"
-                ;; relative path to source file root
-                'src-sub-dir "src/"
+                'build-sub-dirs '(("build/" "BLD:"))
                 ;; relative path to debug executables (under project-root-dir
                 ;; and build-sub-dir)
                 'debug-sub-dir "tests/"
@@ -805,6 +803,11 @@ register \\C-l."
         (("\\.\\(cpp\\|cc\\|C\\|c\\|cxx\\)$" . "c++")
          lambda nil (auto-insert-choose-and-call-popup
                      auto-insert-c-impl-alist))
+        ;; profiles
+        (("\\.eprof$" . "Profiles") .
+         ["template.eprof" auto-insert-choose-yas-expand])
+        (("\\.rprof$" . "Remote Profiles") .
+         ["template.rprof" auto-insert-choose-yas-expand])
         ))
 (global-set-key "\C-cst" 'auto-insert)
 
