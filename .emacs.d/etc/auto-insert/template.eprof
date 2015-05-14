@@ -16,7 +16,7 @@
     (append (list "c++lib" "/opt/local/include/gcc48/c++/"
                   gen-tags-exe "-Re"
                   "--language-force=c++"
-                  "-h=\".h.H.hh.hpp.hxx.h++.inc.def.\""
+                  "-h=\\".h.H.hh.hpp.hxx.h++.inc.def.\\""
                   ) gen-tags-ctags-cpp-options)
     (append (list "boost" "/usr/local/include/boost/"
                   gen-tags-exe "-Re"

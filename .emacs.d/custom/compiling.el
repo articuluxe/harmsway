@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-05-12 23:02:15 dharms>
+;; Modified Time-stamp: <2015-05-14 10:34:21 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -49,7 +49,7 @@
       (when (file-remote-p root)
         (setq root (with-parsed-tramp-file-name root file file-localname))))
     (setq sub-dir
-          (cond ((eq (length sub-dirs) 1) (car sub-dirs))
+          (cond ((eq (length sub-dirs) 1) (car (car sub-dirs)))
                 ((null sub-dirs) "")
                 (t (funcall my/choose-func
                             (mapcar 'car sub-dirs)
