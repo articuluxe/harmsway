@@ -4,7 +4,7 @@
 # Author:  <dan.harms@xrtrading.com>
 # Created: Friday, March 20, 2015
 # Version: 1.0
-# Modified Time-stamp: <2015-04-29 11:01:16 dan.harms>
+# Modified Time-stamp: <2015-05-14 08:56:45 dan.harms>
 # Keywords: help
 
 # find all libraries defining a symbol
@@ -17,8 +17,31 @@ ifconfig eth0 mtu 1000
 # limit interface mtu (persistent)
 # edit /etc/sysconfig/network-scripts/ifcfg-eth0
 MTU=1000
-
+# show process using a file
+fuser
 # find out which distro you're running
 cat /etc/*-release
+
+################################ command line ################################
+# last command
+!!
+# last command's argument
+!$
+# last command's 1st argument
+!^
+# all of last command's arguments
+!*
+# <cmd>'s nth argument
+!<cmd>:n
+# run last command <cmd>
+!<cmd>
+# multiple files
+touch file{1,2,3}
+# rename
+mv file.{old,new}
+# operate on all files except python/shell
+rm !(*.py|*.sh)
+# result of last command
+$?
 
 # unix.txt ends here
