@@ -4,7 +4,7 @@
 # Author:  <dan.harms@xrtrading.com>
 # Created: Friday, March 20, 2015
 # Version: 1.0
-# Modified Time-stamp: <2015-05-14 08:56:45 dan.harms>
+# Modified Time-stamp: <2015-05-16 14:35:31 dharms>
 # Keywords: help
 
 # find all libraries defining a symbol
@@ -21,6 +21,10 @@ MTU=1000
 fuser
 # find out which distro you're running
 cat /etc/*-release
+
+# convert from .erf to .pcap
+tshark -r <file>.erf -q -z io,phs
+editcap -F libpcap -T ether <file>.erf <file>.pcap
 
 ################################ command line ################################
 # last command

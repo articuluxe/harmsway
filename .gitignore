@@ -1,6 +1,7 @@
 
 # TAGS files
 TAGS
+.tags/
 
 # Lisp files
 *.elc

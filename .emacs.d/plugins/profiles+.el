@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-05-12 22:36:08 dharms>
+;; Modified Time-stamp: <2015-05-16 15:27:40 dharms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -185,7 +185,16 @@ some convenience registers to access the build-sub-dirs."
                                      (profile-current-get 'project-root-dir)
                                      dir))))
               ))
-          sml-alist)))
+          sml-alist))
+  ;; also, set a global register to go to the root dir
+  (set-register ?r (cons 'file
+                         (concat (profile-current-get 'remote-prefix)
+                                 (profile-current-get 'project-root-dir))))
+  ;; and another to go to the first (priveleged) src-dir
+  (when (< 0 (length (profile-current-get 'grep-dirs)))
+    (set-register
+     ?c (cons 'file (cdr (car (profile-current-get 'grep-dirs))))))
+  )
 
 ;;;###autoload
 (defun profile-on-c-file-open (project-root)
