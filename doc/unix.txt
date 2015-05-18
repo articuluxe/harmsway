@@ -4,7 +4,7 @@
 # Author:  <dan.harms@xrtrading.com>
 # Created: Friday, March 20, 2015
 # Version: 1.0
-# Modified Time-stamp: <2015-05-14 08:56:45 dan.harms>
+# Modified Time-stamp: <2015-05-15 08:38:52 dan.harms>
 # Keywords: help
 
 # find all libraries defining a symbol
@@ -25,6 +25,12 @@ cat /etc/*-release
 ################################ command line ################################
 # last command
 !!
+# run last command <cmd>
+!<cmd>
+# last command beginning with <prefix>
+!<prefix>
+# last command containing <substring>
+!?<substring>
 # last command's argument
 !$
 # last command's 1st argument
@@ -33,8 +39,8 @@ cat /etc/*-release
 !*
 # <cmd>'s nth argument
 !<cmd>:n
-# run last command <cmd>
-!<cmd>
+# edit prior command
+^replace^replacement
 # multiple files
 touch file{1,2,3}
 # rename

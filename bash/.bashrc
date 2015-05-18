@@ -15,7 +15,10 @@ export MANPATH=
 export NAME=Dan Harms
 export DISPLAY=10.10.102.157:0.0
 
+# auto-expand !-key-chords on <space>
 bind Space:magic-space
+# verify commands before running abbrev.
+shopt -s histverify
 source ~/.git-completion.sh
 source ~/.git-prompt.sh
 export PS1="\[\e[31m\]\h\[\e[m\]\[\e[31m\]:\[\e[m\]\[\e[33m\]\w\[\e[m\]\[\e[31m\]\$(__git_ps1 \" (%s)\")\[\e[m\]> "
