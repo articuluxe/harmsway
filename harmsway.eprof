@@ -1,0 +1,32 @@
+;; -*- Mode: Emacs-Lisp -*-
+;;
+;;
+
+(defun on-harmsway-init (project-root)
+  ;; TAGS
+  (profile-current-put
+   'ctags-alist
+   (list
+    (append (list "harmsway" ".emacs.d/" gen-tags-exe "-Re"
+                  ) gen-tags-ctags-cpp-options)
+    ))
+
+  (gen-tags-set-tags-table)
+  (profile-set-include-files)
+  (profile-set-grep-dirs)
+  (profile-set-mode-line-from-include-files)
+  (profile-set-sml-and-registers-from-build-sub-dirs)
+
+  )
+
+;; define the profile
+(profile-define-derived
+ "harmsway"
+ "default"
+ "dharms" "danielrharms@gmail.com"
+ 'project-name "harmsway"
+ 'build-sub-dirs '((".emacs.d/" "ED:")
+                   )
+ 'on-file-open #'profile-on-c-file-open
+ 'on-profile-init #'on-harmsway-init
+ )
