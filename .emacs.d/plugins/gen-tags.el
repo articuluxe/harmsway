@@ -4,7 +4,7 @@
 ;; Author:  <dan.harms@xrtrading.com>
 ;; Created: Wednesday, March 18, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-04-21 12:18:24 dan.harms>
+;; Modified Time-stamp: <2015-05-19 12:11:01 dan.harms>
 ;; Keywords: etags, ctags
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -189,8 +189,10 @@ running on a remote host."
       (insert gen-tags--msg))
     (setq args
           (append arg-list
+                  ;; ctags on windows will barf if the source
+                  ;; directory has a trailing slash
                   (list "-f" gen-tags--intermediate-dest-file
-                        default-directory)))
+                        (directory-file-name default-directory))))
     ;; if remote, we need the remote prefix
     (when gen-tags--remote
       (setq default-directory

@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-05-14 10:34:21 dan.harms>
+;; Modified Time-stamp: <2015-05-19 10:11:35 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -37,7 +37,7 @@
   (set (make-local-variable 'truncate-partial-width-windows) nil))
 (add-hook 'compilation-mode-hook 'my/compilation-mode-hook)
 
-(defun create-compile-command(&optional arg)
+(defun create-compile-command()
   "Initialize the compile command."
   (interactive)
   (let ((root (or (profile-current-get 'project-root-dir) "./"))

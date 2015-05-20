@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-05-16 11:33:59 dharms>
+;; Modified Time-stamp: <2015-05-20 13:44:19 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -972,9 +972,13 @@ customization."
 (add-hook 'python-mode-hook
           (lambda()
             (setq-default indent-tabs-mode nil)
-            (define-key python-mode-map "\r" 'reindent-then-newline-and-indent)
+            (define-key python-mode-map "\C-j" 'newline-and-indent)
             (define-key python-mode-map "\C-c\C-c" 'comment-region)
             (define-key python-mode-map "\C-c\C-u" 'uncomment-region)
+            (define-key python-mode-map "\C-M-g" 'python-nav-forward-sexp)
+            (define-key python-mode-map (kbd "\C-c RET")
+              (lambda()(interactive)
+                (compile (concat "python " (buffer-name)))))
             ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; emacs-lisp-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

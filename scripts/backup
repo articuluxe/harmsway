@@ -1,5 +1,15 @@
-#!/bin/env sh
+#!/usr/bin/env sh
+# -*- Mode: sh -*-
+# backup --- backup importan files
+# Copyright (C) 2015  Dan Harms (dan.harms)
+# Author: Dan Harms <dan.harms@xrtrading.com>
+# Created: Monday, May 18, 2015
+# Version: 1.0
+# Modified Time-stamp: <2015-05-18 16:22:36 dan.harms>
+# Keywords: configuration
 
 output=~/location/my_backup.tgz
 
 tar -C ~ --overwrite -czf $output bin doc .tcshrc .emacs.d .ssh .gitconfig .gitignore
+
+# backup ends here

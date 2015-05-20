@@ -4,7 +4,7 @@
 # Author:  <dan.harms@xrtrading.com>
 # Created: Friday, March 20, 2015
 # Version: 1.0
-# Modified Time-stamp: <2015-05-18 09:20:00 dan.harms>
+# Modified Time-stamp: <2015-05-20 09:48:48 dan.harms>
 # Keywords: help
 
 # find all libraries defining a symbol
@@ -34,7 +34,7 @@ editcap -F libpcap -T ether <file>.erf <file>.pcap
 # last command beginning with <prefix>
 !<prefix>
 # last command containing <substring>
-!?<substring>
+!?<substring>?
 # last command's argument
 !$
 # last command's 1st argument
@@ -45,6 +45,7 @@ editcap -F libpcap -T ether <file>.erf <file>.pcap
 !<cmd>:n
 # edit prior command
 ^replace^replacement
+!!:s/replace/replacement
 # multiple files
 touch file{1,2,3}
 # rename

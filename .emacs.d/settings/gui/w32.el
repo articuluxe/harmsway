@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-04-03 09:20:55 dan.harms>
+;; Modified Time-stamp: <2015-05-20 11:10:22 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -30,7 +30,8 @@
 (scroll-bar-mode -1)
 
 ;; scroll one line at a time
-(setq scroll-step 1)
+(setq scroll-conservatively 10000)
+;(setq scroll-step 1)
 (setq mouse-wheel-scroll-amount '(1 ((shift) . 1)))
 ;; don't accelerate scrolling
 (setq mouse-wheel-progressive-speed nil)
