@@ -4,7 +4,7 @@
 # Author:  <dan.harms@xrtrading.com>
 # Created: Friday, March 20, 2015
 # Version: 1.0
-# Modified Time-stamp: <2015-05-20 09:48:48 dan.harms>
+# Modified Time-stamp: <2015-05-21 13:06:03 dan.harms>
 # Keywords: help
 
 # find all libraries defining a symbol
@@ -43,9 +43,10 @@ editcap -F libpcap -T ether <file>.erf <file>.pcap
 !*
 # <cmd>'s nth argument
 !<cmd>:n
-# edit prior command
+# edit prior command (1st occurrence)
 ^replace^replacement
-!!:s/replace/replacement
+# edit prior command (all occurrences)
+!!:gs/replace/replacement
 # multiple files
 touch file{1,2,3}
 # rename

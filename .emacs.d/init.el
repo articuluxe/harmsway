@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-05-20 13:44:19 dan.harms>
+;; Modified Time-stamp: <2015-05-21 12:16:31 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -425,7 +425,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; tramp ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq tramp-default-method "ssh")
 (setq tramp-default-user my/user-name)
-(setq explicit-shell-file-name "/bin/bash")
 (require 'tramp)
 (add-to-list 'tramp-remote-path 'tramp-own-remote-path)
 (setq vc-ignore-dir-regexp
