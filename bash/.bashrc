@@ -35,7 +35,7 @@ gcc-init()
       return
    fi
    echo "Using gcc $1"
-   cp ~/config/env/gcc/"$1"/.env ./.gcc-env
+   cp -f ~/config/env/gcc/"$1"/.env ./.gcc-env
 }
 gcc-setup() { source .gcc-env; }
 
@@ -47,7 +47,11 @@ snap-init()
       return
    fi
    echo "Using snap version $1"
-   cp ~/config/env/snap/"$1"/.env ./.snap-env
+   cp -f ~/config/env/snap/"$1"/.env ./.snap-env
+   cd snap/.git/hooks &&
+      ln -sf -T ../../buildtools/pre-commit pre-commit &&
+      cd ../../.. &&
+      mkdir -p sim mock debug release
 }
 snap-setup()
 {
