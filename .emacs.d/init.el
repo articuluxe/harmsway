@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-05-21 12:16:31 dan.harms>
+;; Modified Time-stamp: <2015-05-26 09:34:30 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -322,6 +322,10 @@
 (require 'idle-highlight-mode)
 (setq idle-highlight-idle-time 10)
 ;(add-hook 'prog-mode-hook #'idle-highlight-mode)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ascii ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'ascii)
+(global-set-key [f7] 'ascii-display)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; popwin ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'popwin)

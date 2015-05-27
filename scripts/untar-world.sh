@@ -5,7 +5,7 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Monday, May 18, 2015
 # Version: 1.0
-# Modified Time-stamp: <2015-05-22 10:09:25 dan.harms>
+# Modified Time-stamp: <2015-05-25 11:37:28 dan.harms>
 # Keywords: configuration
 
 input=~/config.tar
@@ -24,6 +24,7 @@ fi
 # remove and backup .ssh
 if [ -d ~/.ssh ] ; then
    tar czf ~/.ssh.bk_$date.tgz --force-local .ssh
+   rm -rf ~/.ssh
 fi
 
 echo About to unpack $input...

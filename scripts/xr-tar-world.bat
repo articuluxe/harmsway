@@ -1,11 +1,11 @@
 @echo off
 rem -*- Mode: dos -*-
-rem tar-world.bat --- tar up the world
+rem xr-tar-world.bat --- tar up the world
 rem Copyright (C) 2015  Dan Harms (dan.harms)
 rem Author: Dan Harms <dan.harms@xrtrading.com>
 rem Created: Thursday, May 21, 2015
 rem Version: 1.0
-rem Modified Time-stamp: <2015-05-22 08:53:12 dan.harms>
+rem Modified Time-stamp: <2015-05-27 16:09:55 dan.harms>
 rem Keywords: tar whole world
 
 setlocal
@@ -19,6 +19,9 @@ set verbose=
 
 echo Generating %curr_dir%\%dest%...
 
+if exist %dest% (
+    del %dest%
+)
 %tar% c%verbose%f %dest% config doc .gitignore
 %tar% u%verbose%f %dest% --transform=s/scripts/bin/ scripts
 %tar% u%verbose%f %dest% --transform=s$bash/$$ bash
@@ -30,4 +33,4 @@ echo ...done generating %dest%
 
 endlocal
 
-rem tar-world.bat ends here
+rem xr-tar-world.bat ends here

@@ -13,6 +13,7 @@ fi
 export PATH=.:$HOME/bin:/sbin/:/usr/lib64:$PATH
 export ORIGPATH=$PATH
 export MANPATH=
+export EDITOR='emacs -nw'
 export NAME='Dan Harms'
 export DISPLAY=10.10.102.157:0.0
 

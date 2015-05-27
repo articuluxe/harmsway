@@ -57,8 +57,8 @@ git log origin/master..HEAD
 HEAD^    /    HEAD^2
 # GRANDPARENT SELECTOR (depth-first) / 2nd ancestor
 HEAD~    /    HEAD~2
-# view commits affecting files
-git log --follow -- file1 file2
+# view all commits affecting file(s)
+git log --follow -- file1 [file2]
 # search commits for a string (pickaxe)
 git log -S"string"
 # search commits for a regex
