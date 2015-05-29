@@ -14,6 +14,7 @@ export PATH=.:$HOME/bin:/sbin/:/usr/lib64:$PATH
 export ORIGPATH=$PATH
 export MANPATH=
 export EDITOR='emacs -nw'
+export EMACSX=emacs
 export NAME='Dan Harms'
 export DISPLAY=10.10.102.157:0.0
 
@@ -25,7 +26,6 @@ source ~/config/git-completion.sh
 source ~/config/git-prompt.sh
 export PS1="\[\e[31m\]\h\[\e[m\]\[\e[31m\]:\[\e[m\]\[\e[33m\]\w\[\e[m\]\[\e[31m\]\$(__git_ps1 \" (%s)\")\[\e[m\]> "
 alias emacs='emacs -nw'
-alias edit='emacs'
 alias emacs-compile="emacs --batch --eval \'(byte-recompile-directory \"~/.emacs.d\" 0)'"
 
 # gcc

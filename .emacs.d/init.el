@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-05-26 09:34:30 dan.harms>
+;; Modified Time-stamp: <2015-05-29 11:18:30 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -925,7 +925,6 @@ customization."
                 ("\\.cmake$"    . cmake-mode)
                 ("\\.proto$"    . protobuf-mode)
                 ("\\.folio$"    . folio-mode)
-                ("\\.bat$"      . dos-mode)
                 ("\\.log$"      . log-viewer-mode)
                 ("\\.pro$"      . qt-pro-mode)
                 ("\\.otq$"      . conf-mode) ;one-tick-query files

@@ -4,7 +4,7 @@
 # Author:  <dan.harms@xrtrading.com>
 # Created: Friday, March 20, 2015
 # Version: 1.0
-# Modified Time-stamp: <2015-05-21 13:06:03 dan.harms>
+# Modified Time-stamp: <2015-05-29 16:23:39 dan.harms>
 # Keywords: help
 
 # find all libraries defining a symbol
@@ -25,6 +25,10 @@ cat /etc/*-release
 # convert from .erf to .pcap
 tshark -r <file>.erf -q -z io,phs
 editcap -F libpcap -T ether <file>.erf <file>.pcap
+
+#################################### gdb #####################################
+# print first 8 elements of a std::vector<std::string> vec
+p *(vec._M_impl._M_start)@8
 
 ################################ command line ################################
 # last command
