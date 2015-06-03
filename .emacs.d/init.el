@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-05-29 11:18:30 dan.harms>
+;; Modified Time-stamp: <2015-06-01 13:17:41 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -743,6 +743,11 @@ register \\C-l."
 ;; that selects between them: completion, ido, popup.
 (setq auto-insert-alist
       '(
+        ;; profiles
+        (("\\.eprof$" . "Profiles") .
+         ["template.eprof" auto-insert-choose-yas-expand])
+        (("\\.rprof$" . "Remote Profiles") .
+         ["template.rprof" auto-insert-choose-yas-expand])
         ;; lisp
         ((emacs-lisp-mode . "Emacs Lisp") .
          ["template.el" auto-insert-choose-yas-expand])
@@ -774,11 +779,6 @@ register \\C-l."
         (("\\.\\(cpp\\|cc\\|C\\|c\\|cxx\\)$" . "c++")
          lambda nil (auto-insert-choose-and-call-popup
                      auto-insert-c-impl-alist))
-        ;; profiles
-        (("\\.eprof$" . "Profiles") .
-         ["template.eprof" auto-insert-choose-yas-expand])
-        (("\\.rprof$" . "Remote Profiles") .
-         ["template.rprof" auto-insert-choose-yas-expand])
         ))
 (global-set-key "\C-cst" 'auto-insert)
 
