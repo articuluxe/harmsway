@@ -1,0 +1,6 @@
+# -*- mode: snippet; require-final-newline: nil -*-
+# name: c_str
+# key: c_str
+# binding: direct-keybinding
+# --
+c_str()
