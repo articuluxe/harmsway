@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-04-07 23:15:03 dharms>
+;; Modified Time-stamp: <2015-06-04 11:58:18 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -85,6 +85,8 @@
    (setq c-auto-newline t)
    (c-toggle-hungry-state t)
    ;; (setq comment-column 40)
+   (setq hide-ifdef-lines t)
+   (hide-ifdef-mode 1)
    (make-local-variable 'my/compile-command)
    (define-key c++-mode-map (kbd "\C-c RET") 'my/compile)
    (define-key c++-mode-map "\C-cm" 'my/recompile)

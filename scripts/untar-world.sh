@@ -5,10 +5,21 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Monday, May 18, 2015
 # Version: 1.0
-# Modified Time-stamp: <2015-05-25 11:37:28 dan.harms>
+# Modified Time-stamp: <2015-06-11 16:17:33 dan.harms>
 # Keywords: configuration
 
-input=~/config.tar
+input=
+
+if [ $# -gt 0 ] ; then
+   input=$1
+   shift
+fi
+
+if [ "x$input" = "x" ] ; then
+   echo "Error: need an input file."
+   exit
+fi
+
 date=$(date '+%F-%T')
 
 if [ $# -gt 0 ] ; then

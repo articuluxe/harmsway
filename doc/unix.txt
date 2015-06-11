@@ -4,7 +4,7 @@
 # Author:  <dan.harms@xrtrading.com>
 # Created: Friday, March 20, 2015
 # Version: 1.0
-# Modified Time-stamp: <2015-06-01 10:16:49 dan.harms>
+# Modified Time-stamp: <2015-06-05 14:36:31 dan.harms>
 # Keywords: help
 
 # find all libraries defining a symbol
@@ -29,6 +29,8 @@ editcap -F libpcap -T ether <file>.erf <file>.pcap
 #################################### gdb #####################################
 # print first 8 elements of a std::vector<std::string> vec
 p *(vec._M_impl._M_start)@8
+# conditional breakpoints
+break <line> if strcmp(str, "str") == 0
 
 ################################ command line ################################
 # last command

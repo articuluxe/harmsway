@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-02-28 03:31:38 dharms>
+;; Modified Time-stamp: <2015-06-11 12:13:21 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -51,7 +51,7 @@
          ;; '(6 font-lock-variable-name-face)
 
          ;; single quote strings
-         (list "'.*'" '(0 font-lock-string-face))
+         (list "'.*?'" '(0 font-lock-string-face))
          ;; key=value pairs
          (list "\\([^[:space:];|=<',]+\\)=\\([^[:space:];|=',]*\\)"
                '(1 font-lock-variable-name-face)

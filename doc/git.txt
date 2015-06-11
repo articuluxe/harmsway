@@ -76,9 +76,14 @@ git log --pretty=format:"%cn committed %h on %cd"
 git show origin/<branch>:path/from/root/to/file
 git show origin/<branch>:./relative/path/to/file
 
+################################### SQUASH ###################################
+# squash last 4 commits
+git rebase -i HEAD~4
 
 ################################### STASH ####################################
 git stash <show|save|drop|push|pop> stash@\{0\}
+# interactively staging hunks:
+"y:stage n:don't stage a:all-in-file d:skip-file q:quit"
 
 ################################### PATCH ####################################
 # create patch from last revision

@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-06-01 13:17:41 dan.harms>
+;; Modified Time-stamp: <2015-06-04 10:03:16 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -615,7 +615,7 @@ register \\C-l."
 (require 'profiles+)
 (profile-define "default" "dharms" "danielrharms@gmail.com"
                 ;; relative path to makefiles
-                'build-sub-dirs '(("build/" "BLD:"))
+                ;; 'build-sub-dirs '(("build/" "BLD:"))
                 ;; relative path to debug executables (under project-root-dir
                 ;; and build-sub-dir)
                 'debug-sub-dir "tests/"
