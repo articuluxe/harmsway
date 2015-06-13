@@ -1,9 +1,9 @@
  # -*- Mode: sh -*-
 
-# INIT
+#################################### INIT ####################################
 git config --global user.name "Dan Harms"
 git config --global user.email danielrharms@gmail.com
-git config --global core.editor emacs
+git config --global core.editor "emacs -nw"
 git config --global color.ui true
 git config --global merge.tool <tool>
 git config --global diff.tool <tool>
@@ -13,7 +13,7 @@ git config --system core.autocrlf input
 
 #add .gitignore patterns to .git/info/exclude.  These will not be checked in.
 
-# BRANCHING
+################################# BRANCHING ##################################
 # checkout and track remote branch
 git checkout --track origin/<branch>
 # set existing branch to track remote
@@ -30,17 +30,65 @@ git push origin :<branch>
 
 git clean -dfx
 
-# DIFF
+#################################### DIFF ####################################
 # name and status only
 git diff --name-status
 # show change magnitude
 git diff --stat
+# changes between 2 branches
+git diff topic master
+git diff topic..master
+# changes on master since topic was branched off
+git diff topic...master
 
+################################ VIEW COMMITS ################################
 # VIEW COMMITS [plus files changed / patches ]
 git log --oneline --decorate --graph [--stat/p]
+# view commits on feature branch not on master
+git log master..feature
+git log ^master feature
+# view commits on A or B but not C
+git log A B ^C
+# view what is in master or feature but not common to them
+git log --left-right master...feature
+# view what I would push to a remote
+git log origin/master..HEAD
+# PARENT SELECTOR: first/second parent of HEAD
+HEAD^    /    HEAD^2
+# GRANDPARENT SELECTOR (depth-first) / 2nd ancestor
+HEAD~    /    HEAD~2
+# view all commits affecting file(s)
+git log --follow -- file1 [file2]
+# search commits for a string (pickaxe)
+git log -S"string"
+# search commits for a regex
+git log -G"regex"
+# group commits by author [sort by number of commits]
+git shortlog [-n]
+# committer name, hash, date
+git log --pretty=format:"%cn committed %h on %cd"
+# other options (incomplete)
+ --after="2014-7-1" --before="yesterday" --after="2 weeks ago"
+ --author="John\|mary.jane@company"
+ --grep="JIRA-.*"
 
-# SHOW
-git show <branch>:<path-to-file>
+#################################### SHOW ####################################
+git show origin/<branch>:path/from/root/to/file
+git show origin/<branch>:./relative/path/to/file
 
-# STASH
+################################### SQUASH ###################################
+# squash last 4 commits
+git rebase -i HEAD~4
+
+################################### STASH ####################################
 git stash <show|save|drop|push|pop> stash@\{0\}
+# interactively staging hunks:
+"y:stage n:don't stage a:all-in-file d:skip-file q:quit"
+
+################################### PATCH ####################################
+# create patch from last revision
+git format-patch HEAD~
+# apply patch to working directory
+git apply [--check] [--reject] some.patch
+# directly commit a patch
+git am some.patch

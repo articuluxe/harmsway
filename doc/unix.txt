@@ -4,8 +4,11 @@
 # Author:  <dan.harms@xrtrading.com>
 # Created: Friday, March 20, 2015
 # Version: 1.0
-# Modified Time-stamp: <2015-03-27 13:48:36 dan.harms>
+# Modified Time-stamp: <2015-06-05 14:36:31 dan.harms>
 # Keywords: help
+
+# find all libraries defining a symbol
+find /path/to/root -name \*.a -exec sh -c 'nm -C "$0" | grep symbol && echo "$0"' {} \;
 
 # ensure core dump on SEGV
 ulimit -c unlimited
@@ -14,8 +17,51 @@ ifconfig eth0 mtu 1000
 # limit interface mtu (persistent)
 # edit /etc/sysconfig/network-scripts/ifcfg-eth0
 MTU=1000
-
+# show process using a file
+fuser
 # find out which distro you're running
 cat /etc/*-release
+
+# convert from .erf to .pcap
+tshark -r <file>.erf -q -z io,phs
+editcap -F libpcap -T ether <file>.erf <file>.pcap
+
+#################################### gdb #####################################
+# print first 8 elements of a std::vector<std::string> vec
+p *(vec._M_impl._M_start)@8
+# conditional breakpoints
+break <line> if strcmp(str, "str") == 0
+
+################################ command line ################################
+# last command
+!!
+# run last command <cmd>
+!<cmd>
+# last command beginning with <prefix>
+!<prefix>
+# last command containing <substring>
+!?<substring>?
+# last command's argument
+!$
+# last command's 1st argument
+!^
+# all of last command's arguments
+!*
+# <cmd>'s nth argument
+!<cmd>:n
+# edit prior command (1st occurrence)
+^replace^replacement
+# edit prior command (all occurrences)
+!!:gs/replace/replacement
+# multiple files
+touch file{1,2,3}
+# rename
+mv file.{old,new}
+# operate on all files except python/shell
+rm !(*.py|*.sh)
+# result of last command
+$?
+# redirect stdout+stderr
+<command> >& output.txt
 
 # unix.txt ends here

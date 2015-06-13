@@ -1,0 +1,44 @@
+#!/bin/sh
+":"; exec emacs --quick --script "$0" -- "$@" # -*- mode: emacs-lisp; lexical-binding: t; -*-
+
+(setq debug-on-error t)
+
+(let (opts
+      (param-str "option")
+      (param-val)
+      done-parsing
+      )
+  (pop argv)                            ;discard -- separator
+  (while argv
+    (let ((option (pop argv)))
+      (cond
+       (done-parsing (push option opts))
+       ;; don't process args after "--", just store in a list
+       ((string= option "--")
+        (setq done-parsing t))
+       ;; --option value
+       ((string= option (concat "--" param-str))
+        (setq param-val (pop argv)))
+       ;; --option=value
+       ((string-match (concat "\\`--" param-str
+                              "=\\(\\(?:.\\|\n\\)*\\)\\'")
+                      option)
+        (setq param-val (match-string 1 option)))
+       ;; todo: allow unknown params?
+       ((string-prefix-p "--" option)
+        (message "Unknown option: %s" option)
+        (kill-emacs 1))
+       (t (push option opts)))
+      ;; todo: allow missing params?
+      (unless (> (length param-val) 0)
+        (message "Missing argument for --option")
+        (kill-emacs 1))))
+  )
+
+(princ (format "Script starting..."))
+(terpri)                                ;print newline
+
+(princ (format "Script done."))
+(terpri)
+
+(kill-emacs 0)

@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-04-02 23:20:48 dharms>
+;; Modified Time-stamp: <2015-05-16 15:27:40 dharms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -29,17 +29,23 @@
 (require 'profiles)
 (require 'tramp)
 
+;; disable the base class file
 (setq profile-path-alist-file nil)
 
 ;;;###autoload
 (defun profile-define-derived (profile parent &optional name mail &rest plist)
-  "Create or replace PROFILE with NAME and MAIL.  PROFILE, NAME and MAIL are
-   all required to be string values.  Optional argument PLIST is a property
-   list.  The new profile shares the properties of its parent, unless it
-   chooses to override any of them."
-  (setplist (intern profile profile-obarray)
-            (append (list 'name name 'mailing-address mail 'parent parent)
-                    plist)))
+  "Create PROFILE with NAME and MAIL.  Unlike `profile-define',
+if there is an existing profile with the same NAME, it is NOT
+overridden (the existing plist is left alone).  This is to
+support project files situated in project hierarchies.  PROFILE,
+NAME and MAIL are all required to be string values.  Optional
+argument PLIST is a property list.  The new profile shares the
+properties of its parent, unless it chooses to override any of
+them."
+  (unless (intern-soft profile profile-obarray)
+    (setplist (intern profile profile-obarray)
+              (append (list 'name name 'mailing-address mail 'parent parent)
+                      plist))))
 
 ;;;###autoload
 (defun profile-lookup-property-polymorphic (profile property)
@@ -76,6 +82,133 @@ basename, such as `mybase'."
   (when
       (string-match "\\.?\\([^.]+\\)$" (file-name-base name))
   (match-string 1 (file-name-base name))))
+
+;;;###autoload
+(defun profile-collect-include-files (alist &optional prepend-remote)
+  "Extract the include directories from ALIST, which is in the format of a
+list of lists of properties, see `ctags-alist'. Return a list of the
+results."
+  (mapcar (lambda(path)
+            (let ((include
+                   (if (file-name-absolute-p path)
+                       path
+                     (concat
+                      (profile-current-get 'project-root-dir) path))))
+              (setq path
+                    (if prepend-remote
+                        (concat (profile-current-get 'remote-prefix)
+                                include)
+                      include))))
+          (mapcar 'cadr alist)))
+
+;;;###autoload
+(defun profile-set-include-files ()
+  "Set useful include file settings for use in programming modes,
+according to the current profile."
+    (profile-current-put 'include-files
+                         (profile-collect-include-files
+                          (profile-current-get 'ctags-alist)))
+    (profile-current-put 'include-ff-files
+                         ;; ff-search-directories doesn't need a trailing
+                         ;; slash
+                         (mapcar 'directory-file-name
+                                 (profile-collect-include-files
+                                  (profile-current-get 'ctags-alist) t)))
+    )
+
+;;;###autoload
+(defun profile-collect-grep-dirs ()
+  "Extract the list of include directories according to the current
+profile."
+  (mapcar (lambda (path)
+            (let ((full
+                   (if (file-name-absolute-p path)
+                       path
+                     (concat
+                      (profile-current-get 'project-root-dir) path))))
+              (cons path full)))
+          (mapcar 'cadr (profile-current-get 'ctags-alist))))
+
+;;;###autoload
+(defun profile-set-grep-dirs ()
+  "Set include directory settings useful for grep, according to the
+current profile."
+  (profile-current-put 'grep-dirs
+                       (append
+                        (profile-collect-grep-dirs)
+                        (list (profile-current-get 'project-root-dir)))))
+
+;;;###autoload
+(defun profile-collect-sml-regexps (alist)
+  "Extract from ALIST, which is in the format of a list of lists of
+properties, see `ctags-alist', a list of cons cells representing a
+modeline replacement pair for sml, see `sml/replacer-regexp-list'."
+  (mapcar (lambda(elt)
+            (let ((path (cadr elt))
+                  (title (car elt)))
+              (cons (if (file-name-absolute-p path)
+                        path
+                      (concat
+                       (profile-current-get 'project-root-dir) path))
+                    (concat (upcase title) ":"))))
+          alist))
+
+;;;###autoload
+(defun profile-set-mode-line-from-include-files ()
+  "Set useful mode line abbreviations, see `sml/replacer-regexp-alist',
+according to the current profile."
+  (let ((sml-alist (profile-collect-sml-regexps
+                    (profile-current-get 'ctags-alist))))
+    (mapc (lambda (elt)
+            (add-to-list 'sml/replacer-regexp-list
+                         (list (car elt) (cdr elt)) t))
+          sml-alist)))
+
+;;;###autoload
+(defun profile-set-sml-and-registers-from-build-sub-dirs ()
+  "Set the sml mode line according to the build-sub-dirs setting of the
+current profile.  See `sml/replacer-regexp-alist'.  Also optionally set
+some convenience registers to access the build-sub-dirs."
+  (let ((sml-alist (profile-current-get 'build-sub-dirs)))
+    (mapc (lambda (elt)
+            (let* ((dir (car elt))
+                   (name (or (cadr elt)
+                             (concat (upcase
+                                      (directory-file-name dir)) ":")))
+                   (reg (caddr elt)))
+              (add-to-list 'sml/replacer-regexp-list
+                           (list dir name))
+              (and reg (characterp reg)
+                   (set-register
+                    reg (cons 'file (concat
+                                     (profile-current-get 'remote-prefix)
+                                     (profile-current-get 'project-root-dir)
+                                     dir))))
+              ))
+          sml-alist))
+  ;; also, set a global register to go to the root dir
+  (set-register ?r (cons 'file
+                         (concat (profile-current-get 'remote-prefix)
+                                 (profile-current-get 'project-root-dir))))
+  ;; and another to go to the first (priveleged) src-dir
+  (when (< 0 (length (profile-current-get 'grep-dirs)))
+    (set-register
+     ?c (cons 'file (cdr (car (profile-current-get 'grep-dirs))))))
+  )
+
+;;;###autoload
+(defun profile-on-c-file-open (project-root)
+  "Helper function to perform the typical actions desired when a
+c-language file is opened and a profile is active.  These typical
+actions include setting include directories."
+  (when c-buffer-is-cc-mode
+    (set (make-local-variable 'achead:include-directories)
+         (profile-current-get 'include-files))
+    (setq ff-search-directories
+          (append
+           '(".")
+           (profile-current-get 'include-ff-files)))
+    ))
 
 (defvar profile--root-file)
 ;;;###autoload
@@ -244,14 +377,16 @@ of the buffer."
         ;; absolute, and abbreviate-file-name doesn't transform remote
         ;; names
         (when remote-properties
-          (setq root-dir (abbreviate-file-name remote-localname)))
+          (setq root-dir                ;HACK!!!!!
+                (replace-regexp-in-string
+                 "/home/dan.harms" ;(shell-command "echo ~")
+                 "~" remote-localname t)))
         (setq profile-basename
               (profile-find-profile-basename root-file))
         ;; update the path alist to activate any new profiles
-        (setq profile-path-alist
-              (cons (cons
-                     (file-relative-name root-dir "~")
-                     profile-basename) profile-path-alist))
+        (add-to-list 'profile-path-alist
+                     (cons (file-relative-name root-dir "~")
+                           profile-basename))
         (setq profile-current
               (intern-soft (profile-find-path-alist
                             (expand-file-name filename))

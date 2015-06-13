@@ -76,13 +76,17 @@ shebang-file is \"ask\", the user will be prompted."
     (goto-char 1)
     (if
         (re-search-forward "^#![ ]?\\([a-zA-Z_./]+\\)" 50 t) ; int. < 50-2 chars
-        (let ((interpreter (buffer-substring (match-beginning 1) (match-end 1))))
+        (let
+            ((interpreter (buffer-substring (match-beginning 1) (match-end 1)))
+             (prefix (file-remote-p buffer-file-name)))
           (if (or
                 ;; doesn't begin with /
                 (not (= (string-match "/" interpreter) 0))
                 ;; non (existent and executable)
-                (not (and (file-exists-p interpreter)
-                          (file-executable-p interpreter))))
+                (not (and (file-exists-p
+                           (concat prefix interpreter))
+                          (file-executable-p
+                           (concat prefix interpreter)))))
               (message
                "%sWarning: `%s' is not a valid interpreter."
                (if (and (boundp 'prefix-function-name)

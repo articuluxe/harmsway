@@ -1,5 +1,0 @@
-#!/bin/env sh
-
-output=~/location/my_backup.tgz
-
-tar -C ~ --overwrite -czf $output bin doc .tcshrc .emacs.d .ssh .gitconfig .gitignore

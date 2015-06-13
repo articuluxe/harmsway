@@ -1,100 +1,31 @@
-;; -*- Mode: Emacs-Lisp -*-
-;;
-;;
-
-(defvar punch-ctags-alist)
-(defvar punch-tag-filestems)
-(defvar punch-tag-filenames)
-(defvar punch-include-files)
-(defvar punch-include-ff-files)
-(defvar punch-sml-alist)
-
-(defun on-punch-file-open (project-root)
-  (set (make-local-variable 'gen-tags-alist)
-       punch-ctags-alist)
-  (when c-buffer-is-cc-mode
-    (set (make-local-variable 'achead:include-directories)
-         punch-include-files)
-    (setq ff-search-directories
-          (append '(".") punch-include-ff-files))
-    ))
-
-(defun on-punch-init (project-root)
-  ;; TAGS
-  (setq punch-ctags-alist
-        (list
-         (append (list "punch" "punch/" gen-tags-exe "-Re"
-                       ) gen-tags-ctags-cpp-options)
-         (append (list "clib" "/usr/include/"
-                       gen-tags-exe "-Re"
-                       "--exclude=c++"
-                       ) gen-tags-ctags-cpp-options)
-         (append (list "c++lib" "/opt/local/include/gcc48/c++/"
-                       gen-tags-exe "-Re"
-                       "--language-force=c++"
-                       "-h=\".h.H.hh.hpp.hxx.h++.inc.def.\""
-                       ) gen-tags-ctags-cpp-options)
-         (append (list "boost" "/usr/local/include/boost/"
-                       gen-tags-exe "-Re"
-                       "--exclude=typeof"
-                       "--exclude=fusion"
-                       "--exclude=phoenix"
-                       "--exclude=spirit"
-                       ) gen-tags-ctags-cpp-options)
-         ))
-
-  (setq punch-tag-filestems
-        (gen-tags-collect-tag-filestems punch-ctags-alist))
-  (setq punch-tag-filenames
-        (gen-tags-collect-tag-filenames
-         punch-tag-filestems
-         (profile-current-get 'tags-dir)))
-  (setq etags-table-alist
-        (cons (append
-               (list
-                ;; this first element needs to capture the entire line
-                (concat "^\\(.*\\)"
-                        (profile-current-get 'project-root-stem)
-                        "\\(.*\\)$"))
-               punch-tag-filenames
-               ) etags-table-alist))
-
-  (setq punch-include-files
-        (gen-tags-collect-include-files punch-ctags-alist))
-  (setq punch-include-ff-files
-        (gen-tags-collect-include-files punch-ctags-alist t))
-
-  ;; mode-line
-  (setq punch-sml-alist (gen-tags-collect-sml-regexps punch-ctags-alist))
-  (mapc (lambda (elt)
-          (add-to-list
-           'sml/replacer-regexp-list
-           (list (car elt) (cdr elt)) t))
-        punch-sml-alist)
-
-  ;; (add-to-list
-  ;;  'sml/replacer-regexp-list
-  ;;  (list (profile-current-get 'project-root-dir ":PUNCH:")) t)
-
-  ;; registers
-  (set-register ?r (cons 'file (concat
-                                (profile-current-get 'remote-prefix)
-                                (profile-current-get 'project-root-dir))))
-  (set-register ?c (cons 'file (concat
-                                (profile-current-get 'remote-prefix)
-                                (profile-current-get 'project-root-dir)
-                                (profile-current-get 'src-sub-dir))))
-
-  )
-
-;; define the profile
-(profile-define-derived "punch" "default"
-                        "dharms" "danielrharms@gmail.com"
-                        'project-name "punch"
-                        'build-sub-dir "build/"
-                        'src-sub-dir "punch/"
-                        'on-file-open 'on-punch-file-open
-                        'on-profile-init 'on-punch-init
-                        )
-(setq profile-path-alist (cons (cons "src/projects/punch" "punch")
-                               profile-path-alist))
+aes-encrypted V 1.3-OCB-B-4-4-M
+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

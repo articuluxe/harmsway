@@ -1,0 +1,27 @@
+# -*- Mode: makefile-automake -*-
+# ${1:`(file-name-nondirectory (buffer-file-name))`} --- ${2:Short description}
+# Copyright (C) `(format-time-string "%Y")`  `(user-full-name)` (`(user-login-name)`)
+# Author: `(user-full-name)` <`user-mail-address`>
+# Created: `(insert-today)`
+# Version: ${3:1.0}
+# Modified Time-stamp: <2015-02-26 13:20:30 dharms>
+# Keywords: $4
+# expand-env: ((yas-indent-line 'fixed))
+
+# Additional include paths
+AM_CXXFLAGS = -I$(top_srcdir)/${5:<source dir>} @AM_CXXFLAGS@
+
+############################# Libraries to build #############################
+# static libraries to build
+lib_LIBRARIES = lib${6:<library name>}.a
+# where to install headers
+lib$6_adir = $(includedir)/$6
+# list of header files
+lib$6_a_HEADERS = \
+	${7:header file}
+# sources to add to library and source distribution
+lib$6_a_SOURCES =								\
+	$(lib$6_a_HEADERS)							\
+	${8:source file}
+
+# $1 ends here

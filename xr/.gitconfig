@@ -1,0 +1,11 @@
+[user]
+	name = Dan Harms
+	email = dan.harms@xrtrading.com
+[core]
+	editor = emacs -nw
+[color]
+	ui = true
+[diff]
+	tool = kompare
+[difftool]
+	prompt = false

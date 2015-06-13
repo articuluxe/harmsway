@@ -4,7 +4,7 @@
 ;; Author:  <dan.harms@xrtrading.com>
 ;; Created: Wednesday, March 18, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-04-01 17:20:43 dan.harms>
+;; Modified Time-stamp: <2015-05-19 12:11:01 dan.harms>
 ;; Keywords: etags, ctags
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -42,15 +42,12 @@
    "--file-scope=no"
    "--tag-relative=no")
   "Default ctags cpp options.")
-(defvar gen-tags-alist '()
-  "A list whose every element is a sub-list specifying how to generate a
-TAGS file.")
 (defvar gen-tags-copy-remote nil)
 
 ;; client-facing convenience functions
 (defun gen-tags-collect-tag-filestems (alist)
   "Extract the TAGS file stems from ALIST, which is in the format of a
-list of lists of properties.  See `gen-tags-alist'. Return a list of the
+list of lists of properties.  See `ctags-alist'. Return a list of the
 results."
   (mapcar (lambda(name)
             (setq name (concat name "-tags")))
@@ -63,36 +60,23 @@ see `gen-tags-collect-tag-filestems'.  Return a list of the results."
             (expand-file-name
              (concat root name))) lst))
 
-(defun gen-tags-collect-include-files (alist &optional prepend-remote)
-  "Extract the include directories from ALIST, which is in the format of a
-list of lists of properties, see `gen-tags-alist'. Return a list of the
-results."
-  (mapcar (lambda(path)
-            (let ((include
-                   (if (file-name-absolute-p path)
-                       path
-                     (concat
-                      (profile-current-get 'project-root-dir) path))))
-              (setq path
-                    (if prepend-remote
-                        (concat (profile-current-get 'remote-prefix)
-                                include)
-                      include))))
-          (mapcar 'cadr alist)))
-
-(defun gen-tags-collect-sml-regexps (alist)
-  "Extract from ALIST, which is in the format of a list of lists of
-properties, see `gen-tags-alist', a list of cons cells representing a
-modeline replacement pair for sml, see `sml/replacer-regexp-list'."
-  (mapcar (lambda(elt)
-            (let ((path (cadr elt))
-                  (title (upcase (car elt))))
-              (cons (if (file-name-absolute-p path)
-                        path
-                      (concat
-                       (profile-current-get 'project-root-dir) path))
-                    (concat title ":"))))
-          alist))
+(defun gen-tags-set-tags-table ()
+  "Set the tags table (for use by `etags-table') according to the current
+profile, see `ctags-alist'."
+  (let* ((tag-filestems (gen-tags-collect-tag-filestems
+                         (profile-current-get 'ctags-alist)))
+         (tag-filenames (gen-tags-collect-tag-filenames
+                         tag-filestems
+                         (profile-current-get 'tags-dir))))
+    (setq etags-table-alist
+          (cons (append
+                 (list
+                  ;; this first element needs to capture the entire path
+                  (concat "^\\(.*\\)"
+                          (profile-current-get 'project-root-stem)
+                          "\\(.*\\)$"))
+                 tag-filenames
+                 ) etags-table-alist))))
 
 ;; internal variables
 (defvar gen-tags--iter nil "Current item being processed.")
@@ -138,13 +122,14 @@ running on a remote host."
 
 (defun gen-tags--first-file ()
   "Start generating a series of TAGS files."
-  (let ((remote-tags-dir (or
+  (let ((tags-alist (profile-current-get 'ctags-alist))
+        (remote-tags-dir (or
                           (profile-current-get 'remote-tags-dir)
                           ".tags/")))
     (setq gen-tags--curr-profile (symbol-name profile-current))
     (setq gen-tags--buffer (get-buffer-create " *gen-TAGS*"))
-    (setq gen-tags--total-num (length gen-tags-alist))
-    (setq gen-tags--iter gen-tags-alist)
+    (setq gen-tags--total-num (length tags-alist))
+    (setq gen-tags--iter tags-alist)
     (setq gen-tags--remote (profile-current-get 'remote-prefix))
     (setq gen-tags--final-dest-dir (profile-current-get 'tags-dir))
     (if gen-tags--remote
@@ -204,8 +189,10 @@ running on a remote host."
       (insert gen-tags--msg))
     (setq args
           (append arg-list
+                  ;; ctags on windows will barf if the source
+                  ;; directory has a trailing slash
                   (list "-f" gen-tags--intermediate-dest-file
-                        default-directory)))
+                        (directory-file-name default-directory))))
     ;; if remote, we need the remote prefix
     (when gen-tags--remote
       (setq default-directory
@@ -218,7 +205,7 @@ running on a remote host."
     (setq process (apply 'start-file-process
                          "generate TAGS"
                          gen-tags--buffer
-                         "/bin/sh" "-c"
+                         "sh" "-c"
                          (list (mapconcat 'identity args " "))
                          ))
     (set-process-sentinel

@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-04-01 09:45:16 dan.harms>
+;; Modified Time-stamp: <2015-05-06 15:13:02 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -29,7 +29,7 @@
 (defun kill-other-buffers(&optional arg)
   "Kill all buffers (except optionally for current one)."
   (interactive)
-  (if arg
+  (if current-prefix-arg
       (mapc 'kill-buffer (delq (current-buffer) (buffer-list)))
     (mapc 'kill-buffer (buffer-list))))
 (global-set-key "\C-x\S-k" 'kill-other-buffers)
@@ -88,11 +88,12 @@ is selected."
         res)))
 (defvar my/choose-func 'choose-via-popup)
 (global-set-key "\C-c\C-r" (lambda()(interactive)
-                             (setq my/choose-func
-                                   (quote
-                                    (if (eq my/choose-func 'choose-via-popup)
-                                        choose-via-ido)
-                                    choose-via-popup))))
+                             (if (eq my/choose-func 'choose-via-popup)
+                                 (progn
+                                   (setq my/choose-func 'choose-via-ido)
+                                   (message "Choosing via ido"))
+                               (setq my/choose-func 'choose-via-popup)
+                               (message "Choosing via popup"))))
 
 (defun jump-to-matching-paren() "Go to matching paren" (interactive)
   (if (looking-at "\\s\(")

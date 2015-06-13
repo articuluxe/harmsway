@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-04-03 14:03:29 dan.harms>
+;; Modified Time-stamp: <2015-06-04 10:03:16 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -113,6 +113,7 @@
 (put 'downcase-region 'disabled nil)
 (put 'scroll-left 'disabled nil)
 (put 'scroll-right 'disabled nil)
+(put 'narrow-to-region 'disabled nil)
 ;; disable nuisances
 (put 'overwrite-mode 'disabled t)
 (fset 'yes-or-no-p 'y-or-n-p)
@@ -273,11 +274,13 @@
       (require 'cl)))
 (require 'protobuf-mode)
 (require 'dos)
+(require 'dos-indent)
 (require 'folio-mode)
 (require 'folio-electric)
 (require 'pos-tip)
 (require 'qt-pro)
 (require 'csharp-mode)
+(require 'json-mode)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; copyright ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'copyright)
@@ -313,11 +316,16 @@
 (setq aes--plaintext-passwords
       (list (cons my/aes-default-group
                   (getenv "EMACS_PWD"))))
+(global-set-key "\C-cz" 'aes-toggle-encryption)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; idle-highlight ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'idle-highlight-mode)
 (setq idle-highlight-idle-time 10)
 ;(add-hook 'prog-mode-hook #'idle-highlight-mode)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ascii ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'ascii)
+(global-set-key [f7] 'ascii-display)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; popwin ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'popwin)
@@ -329,6 +337,7 @@
 ;        (compilation-mode :noselect t)
         (completion-list-mode :noselect t)            ;noselect?
         ("*Ido Completions*" :noselect t)
+        ("*Isearch completions*" :noselect t)
         (grep-mode :noselect t)
         (occur-mode :noselect t)
         "*Shell Command Output*"
@@ -367,18 +376,20 @@
 ;; ask before reusing an existing buffer
 (setq-default ido-default-buffer-method 'maybe-frame)
 (setq-default ido-default-file-method 'maybe-frame)
-;; sort files by descending modified time
+;; sort files by descending modified time (except remotely, which is dog-slow)
 (defun ido-sort-mtime()
-  (setq ido-temp-list
-        (sort ido-temp-list
-              (lambda (a b)
-                (time-less-p
-                 (sixth (file-attributes (concat ido-current-directory b)))
-                 (sixth (file-attributes (concat ido-current-directory a)))))))
-  (ido-to-end
-   (delq nil (mapcar (lambda (x)
-                       (and (char-equal (string-to-char x) ?.) x))
-                     ido-temp-list))))
+  (unless (tramp-tramp-file-p default-directory)
+    (setq ido-temp-list
+          (sort ido-temp-list
+                (lambda (a b)
+                  (time-less-p
+                   (sixth (file-attributes (concat ido-current-directory b)))
+                   (sixth (file-attributes (concat ido-current-directory a)))))))
+    ;; (ido-to-end
+    ;;  (delq nil (mapcar (lambda (x)
+    ;;                      (and (char-equal (string-to-char x) ?.) x))
+    ;;                    ido-temp-list)))
+    ))
 (add-hook 'ido-make-file-list-hook 'ido-sort-mtime)
 (add-hook 'ido-make-dir-list-hook 'ido-sort-mtime)
 ;; ;; also use ido to switch modes
@@ -400,7 +411,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; rich-minority ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'rich-minority)
 (rich-minority-mode 1)
-(setq rm-blacklist '(" AC" " yas" " Undo-Tree" " Abbrev" " Guide" " Hi" " $"))
+(setq rm-blacklist
+      '(" AC" " yas" " Undo-Tree" " Abbrev" " Guide" " Hi" " $" " ,"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smart-mode-line ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-to-list 'load-path (concat my/plugins-directory "smart-mode-line/"))
@@ -417,7 +429,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; tramp ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq tramp-default-method "ssh")
 (setq tramp-default-user my/user-name)
-(setq explicit-shell-file-name "/bin/bash")
 (require 'tramp)
 (add-to-list 'tramp-remote-path 'tramp-own-remote-path)
 (setq vc-ignore-dir-regexp
@@ -479,11 +490,16 @@
             ))
 
 ;; easily go to top or bottom
-(defun dired-back-to-top() (interactive)
-       (goto-char (point-min))
-       (dired-next-line 4))
+(defun dired-back-to-top()
+  (interactive)
+  (let ((sorting-by-date (string-match-p dired-sort-by-date-regexp
+                                         dired-actual-switches)))
+    (goto-char (point-min))
+    (dired-next-line
+     (if sorting-by-date 2 4))))
 (define-key dired-mode-map
   (vector 'remap 'beginning-of-buffer) 'dired-back-to-top)
+
 (defun dired-jump-to-bottom() (interactive)
        (goto-char (point-max))
        (dired-next-line -1))
@@ -502,20 +518,24 @@
           (dired-get-marked-files))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; diff ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(eval-after-load 'diff-mode '(progn
-                               (set-face-attribute 'diff-added nil
-                                                   :foreground "white"
-                                                   :background "blue"
-                                                   )
-                               (set-face-attribute 'diff-removed nil
-                                                   :foreground "white"
-                                                   :background "red3"
-                                                   )
-                               (set-face-attribute 'diff-changed nil
-                                                   :foreground "white"
-                                                   :background "purple"
-                                                   )
-                               ))
+;; only highlight current chunk
+(setq-default ediff-highlight-all-diffs 'nil)
+;; better colors in older versions
+(when (version< emacs-version "24.3")
+  (eval-after-load 'diff-mode '(progn
+                                 (set-face-attribute 'diff-added nil
+                                                     :foreground "white"
+                                                     :background "blue"
+                                                     )
+                                 (set-face-attribute 'diff-removed nil
+                                                     :foreground "white"
+                                                     :background "red3"
+                                                     )
+                                 (set-face-attribute 'diff-changed nil
+                                                     :foreground "white"
+                                                     :background "purple"
+                                                     )
+                                 )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; shebang ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'shebang)
@@ -595,9 +615,7 @@ register \\C-l."
 (require 'profiles+)
 (profile-define "default" "dharms" "danielrharms@gmail.com"
                 ;; relative path to makefiles
-                'build-sub-dir "build/"
-                ;; relative path to source file root
-                'src-sub-dir "src/"
+                ;; 'build-sub-dirs '(("build/" "BLD:"))
                 ;; relative path to debug executables (under project-root-dir
                 ;; and build-sub-dir)
                 'debug-sub-dir "tests/"
@@ -605,38 +623,6 @@ register \\C-l."
                 'compile-sub-command "make"
                 )
 (profile-set-default "default")
-(defvar harms-ctags-alist)
-(defvar harms-tag-filenames)
-(profile-define "harmsway" "dharms" "danielrharms@gmail.com"
-                'project-name "harmsway"
-                'src-sub-dir ".emacs.d/"
-                ;; 'on-profile-init
-                ;; (lambda()
-                ;;   (setq harms-ctags-alist
-                ;;         (list (list "harmsway" ".emacs.d/"
-                ;;                     gen-tags-exe "-Re")))
-                ;;   (setq harms-tag-filenames
-                ;;         (gen-tags-collect-tag-filenames
-                ;;          (gen-tags-collect-tag-filestems
-                ;;           harms-ctags-alist)
-                ;;          (profile-current-get 'tags-dir)))
-                ;;   (setq etags-table-alist
-                ;;         (cons (append (list
-                ;;                        (concat
-                ;;                         "^\\(.*\\)"
-                ;;                         (profile-current-get
-                ;;                          'project-root-stem)
-                ;;                         "\\(.*\\)$"))
-                ;;                       harms-tag-filenames
-                ;;                       ) etags-table-alist))
-                ;; )
-)
-
-(setq profile-path-alist (cons (cons "src/\\(projects/\\)?harmsway"
-                                     "harmsway")
-                               profile-path-alist))
-(add-to-list 'sml/replacer-regexp-list
-             '("^~/src/\\(projects/\\)?harmsway/" ":HW:") t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-complete ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-to-list 'load-path (concat my/plugins-directory "auto-complete/"))
@@ -698,7 +684,7 @@ register \\C-l."
 (require 'yasnippet)
 (add-to-list 'safe-local-variable-values '(require-final-newline . nil))
 (yas-global-mode 1)
-(setq yas-snippet-dirs (concat my/user-directory "snippets/"))
+(setq yas-snippet-dirs (list (concat my/user-directory "snippets/")))
 (setq yas-prompt-functions '(
                              yas-ido-prompt
                              yas-x-prompt
@@ -729,10 +715,25 @@ register \\C-l."
 (setq auto-insert 'other)
 (setq auto-insert-directory (concat my/scratch-directory "auto-insert/"))
 ;; list of different templates to choose from
+;; c++
 (defvar auto-insert-c-header-alist '())
 (defvar auto-insert-c-impl-alist '())
 (auto-insert-choose+-add-entry 'auto-insert-c-header-alist "template.h")
 (auto-insert-choose+-add-entry 'auto-insert-c-impl-alist "template.cpp")
+;; autoconf
+(defvar auto-insert-autoconf-alist '())
+(auto-insert-choose+-add-entry 'auto-insert-autoconf-alist
+                               "configure-standard.ac")
+(auto-insert-choose+-add-entry 'auto-insert-autoconf-alist
+                               "configure-library.ac")
+;; Makefile.am
+(defvar auto-insert-makefile-am-alist '())
+(auto-insert-choose+-add-entry 'auto-insert-makefile-am-alist
+                               "Makefile-toplevel.am")
+(auto-insert-choose+-add-entry 'auto-insert-makefile-am-alist
+                               "Makefile-library.am")
+(auto-insert-choose+-add-entry 'auto-insert-makefile-am-alist
+                               "Makefile-executable.am")
 
 ;; The "normal" entries (using auto-insert) can list the file name and
 ;; the yas-expand helper.  If you want to be able to choose among
@@ -740,22 +741,45 @@ register \\C-l."
 ;; auto-insert-choose+ functionality: populate an alist per file type
 ;; with the different templates, then associate a lambda with a defun
 ;; that selects between them: completion, ido, popup.
-(setq auto-insert-alist '(
-                          ((emacs-lisp-mode . "Emacs Lisp") .
-                           ["template.el" auto-insert-choose-yas-expand])
-                          ((sh-mode . "Sh") .
-                           ["template.sh" auto-insert-choose-yas-expand])
-                          (("\\.bat$" . "Dos") .
-                           ["template.bat" auto-insert-choose-yas-expand])
-                          (("CMakeLists.txt" . "CMake") .
-                           ["template.cmake" auto-insert-choose-yas-expand])
-                          (("\\.\\(h\\|hh\\|H\\|hpp\\|hxx\\)$" . "c++")
-                           lambda nil (auto-insert-choose-and-call-popup
-                                       auto-insert-c-header-alist))
-                          (("\\.\\(cpp\\|cc\\|C\\|c\\|cxx\\)$" . "c++")
-                           lambda nil (auto-insert-choose-and-call-popup
-                                       auto-insert-c-impl-alist))
-                          ))
+(setq auto-insert-alist
+      '(
+        ;; profiles
+        (("\\.eprof$" . "Profiles") .
+         ["template.eprof" auto-insert-choose-yas-expand])
+        (("\\.rprof$" . "Remote Profiles") .
+         ["template.rprof" auto-insert-choose-yas-expand])
+        ;; lisp
+        ((emacs-lisp-mode . "Emacs Lisp") .
+         ["template.el" auto-insert-choose-yas-expand])
+        ;; sh
+        ((sh-mode . "Sh") .
+         ["template.sh" auto-insert-choose-yas-expand])
+        ;; dos
+        ((dos-mode . "Dos") .
+         ["template.bat" auto-insert-choose-yas-expand])
+        ;; python
+        ((python-mode . "Python") .
+         ["template.py" auto-insert-choose-yas-expand])
+        ;; CMake
+        (("CMakeLists.txt" . "CMake") .
+         ["template.cmake" auto-insert-choose-yas-expand])
+        ;; autoconf
+        ((autoconf-mode . "Autoconf")
+         lambda nil (auto-insert-choose-and-call-popup
+                     auto-insert-autoconf-alist))
+        ;; makefile-automake
+        ((makefile-automake-mode . "Makefile-Automake")
+         lambda nil (auto-insert-choose-and-call-popup
+                     auto-insert-makefile-am-alist))
+        ;; c headers
+        (("\\.\\(h\\|hh\\|H\\|hpp\\|hxx\\)$" . "c++")
+         lambda nil (auto-insert-choose-and-call-popup
+                     auto-insert-c-header-alist))
+        ;; c impl
+        (("\\.\\(cpp\\|cc\\|C\\|c\\|cxx\\)$" . "c++")
+         lambda nil (auto-insert-choose-and-call-popup
+                     auto-insert-c-impl-alist))
+        ))
 (global-set-key "\C-cst" 'auto-insert)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; popup-kill-ring ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -829,9 +853,11 @@ register \\C-l."
                             (concat "{" (buffer-name) "}")
                           (buffer-name))
                         (if (profile-current-get 'project-name)
+                            ;; the parent profile "default" happens to
+                            ;; have an empty 'project-name attribute
                             (concat
                              "("
-                             (upcase (profile-current-get 'project-name))
+                             (upcase (symbol-name profile-current))
                              ")")
                           "")           ;else empty if no project name
                         )))
@@ -899,7 +925,6 @@ customization."
                 ("\\.cmake$"    . cmake-mode)
                 ("\\.proto$"    . protobuf-mode)
                 ("\\.folio$"    . folio-mode)
-                ("\\.bat$"      . dos-mode)
                 ("\\.log$"      . log-viewer-mode)
                 ("\\.pro$"      . qt-pro-mode)
                 ("\\.otq$"      . conf-mode) ;one-tick-query files
@@ -949,9 +974,13 @@ customization."
 (add-hook 'python-mode-hook
           (lambda()
             (setq-default indent-tabs-mode nil)
-            (define-key python-mode-map "\r" 'reindent-then-newline-and-indent)
+            (define-key python-mode-map "\C-j" 'newline-and-indent)
             (define-key python-mode-map "\C-c\C-c" 'comment-region)
             (define-key python-mode-map "\C-c\C-u" 'uncomment-region)
+            (define-key python-mode-map "\C-M-g" 'python-nav-forward-sexp)
+            (define-key python-mode-map (kbd "\C-c RET")
+              (lambda()(interactive)
+                (compile (concat "python " (buffer-name)))))
             ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; emacs-lisp-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
