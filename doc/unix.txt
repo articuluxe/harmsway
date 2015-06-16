@@ -4,7 +4,7 @@
 # Author:  <dan.harms@xrtrading.com>
 # Created: Friday, March 20, 2015
 # Version: 1.0
-# Modified Time-stamp: <2015-06-05 14:36:31 dan.harms>
+# Modified Time-stamp: <2015-06-16 15:17:58 dan.harms>
 # Keywords: help
 
 # find all libraries defining a symbol
@@ -61,6 +61,12 @@ mv file.{old,new}
 rm !(*.py|*.sh)
 # result of last command
 $?
+
+# redirect stderr
+<command> 2> output.txt
+# redirect stderr to stdout
+<command> 1>&2
+<command> 2>&1
 # redirect stdout+stderr
 <command> >& output.txt
 

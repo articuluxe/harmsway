@@ -26,7 +26,6 @@ source ~/config/git-completion.sh
 source ~/config/git-prompt.sh
 export PS1="\[\e[31m\]\h\[\e[m\]\[\e[31m\]:\[\e[m\]\[\e[33m\]\w\[\e[m\]\[\e[31m\]\$(__git_ps1 \" (%s)\")\[\e[m\]> "
 alias emacs='emacs -nw'
-alias emacs-compile="emacs --batch --eval \'(byte-recompile-directory \"~/.emacs.d\" 0)'"
 
 # gcc
 gcc-init()

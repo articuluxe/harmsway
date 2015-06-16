@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-06-12 16:51:58 dan.harms>
+;; Modified Time-stamp: <2015-06-16 15:41:57 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -400,33 +400,41 @@
     ))
 (add-hook 'ido-make-file-list-hook 'ido-sort-mtime)
 (add-hook 'ido-make-dir-list-hook 'ido-sort-mtime)
-;; ;; also use ido to switch modes
-;; (global-set-key "\e\ex"
-;;                 (lambda() (interactive)
-;;                   (call-interactively
-;;                    (intern
-;;                     (ido-completing-read
-;;                      "M-x " (all-completions "" obarray 'commandp))))))
+
+(when (< emacs-major-version 24)
+  ;; use ido to switch modes when smex is not available
+  (global-set-key (kbd "M-x")
+                  (lambda() (interactive)
+                    (call-interactively
+                     (intern
+                      (ido-completing-read
+                       "M-x " (all-completions "" obarray 'commandp)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smex ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'smex)
-(smex-initialize)
-(global-set-key (kbd "M-x") 'smex)
-(global-set-key (kbd "M-X") 'smex-major-mode-commands)
+(when (<= 24 emacs-major-version)
+  (require 'smex)
+  (smex-initialize)
+  (global-set-key (kbd "M-x") 'smex)
+  (global-set-key (kbd "M-X") 'smex-major-mode-commands))
 ;; the old M-x
 (global-set-key "\e\ex" 'execute-extended-command)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; rich-minority ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'rich-minority)
-(rich-minority-mode 1)
-(setq rm-blacklist
-      '(" AC" " yas" " Undo-Tree" " Abbrev" " Guide" " Hi" " $" " ,"))
+(when (version<= "24.3" emacs-version)
+  ;; this dependency actually comes from smart-mode-line, which uses
+  ;; rich-minority.
+  (require 'rich-minority)
+  (rich-minority-mode 1)
+  (setq rm-blacklist
+        '(" AC" " yas" " Undo-Tree" " Abbrev" " Guide" " Hi" " $" " ,"))
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smart-mode-line ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(add-to-list 'load-path (concat my/plugins-directory "smart-mode-line/"))
-(require 'smart-mode-line)
-(setq sml/no-confirm-load-theme t)
-(sml/setup)
+(when (version<= "24.3" emacs-version)
+  (add-to-list 'load-path (concat my/plugins-directory "smart-mode-line/"))
+  (require 'smart-mode-line)
+  (setq sml/no-confirm-load-theme t)
+  (sml/setup))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; undo-tree ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'undo-tree)
@@ -810,8 +818,9 @@ register \\C-l."
 (require 'htmlize)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; guide-key ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'guide-key)
-(guide-key-mode 1)
+(when (version< "24.3" emacs-version)
+  (require 'guide-key)
+  (guide-key-mode 1))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; os ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (let* ((system (car (reverse (split-string (symbol-name system-type)

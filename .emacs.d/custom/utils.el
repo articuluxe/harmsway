@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-05-06 15:13:02 dan.harms>
+;; Modified Time-stamp: <2015-06-16 10:35:16 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -208,20 +208,23 @@ is selected."
   (untabify (point-min) (point-max)))
 (global-set-key "\C-cq" 'clean-up-buffer)
 
-(defun find-file-upwards (file-to-find)
+(defun find-file-upwards (dir file-to-find)
   "Recursively search upward for file; returns path to file or nil if not found."
   (interactive)
   (let*
-      ((find-file-r (lambda (path)
-                      (let* ((parent (file-name-directory path))
-                             (possible-file (concat parent file-to-find)))
-                        (cond
-                         ((file-exists-p possible-file) possible-file) ; found
-                                        ; parent of ~ is nil, parent of / is itself
-                                        ; This terminating condition accounts for both
-                         ((or (null parent) (equal parent (directory-file-name parent))) nil)
-                         (t (funcall find-file-r (directory-file-name parent))))))))
-    (funcall find-file-r default-directory)))
+      ((find-file-r
+        (lambda (path)
+          (let* ((parent (file-name-directory path))
+                 files)
+            (cond
+             ((or (null parent) (equal parent (directory-file-name parent))) nil)
+             ((setq files (directory-files parent t file-to-find))
+              (car files))              ;found
+             ;; parent of ~ is nil, parent of / is itself
+             ;; This terminating condition accounts for both
+             (t (funcall find-file-r
+                         (directory-file-name parent))))))))
+    (funcall find-file-r (or dir default-directory))))
 
 (defun find-file-dir-upwards (file-to-find)
   "Recursively search upward for file; returns file's directory or nil if not found."

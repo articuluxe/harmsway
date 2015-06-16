@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-05-16 15:27:40 dharms>
+;; Modified Time-stamp: <2015-06-16 10:28:55 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -217,12 +217,15 @@ actions include setting include directories."
 starting from DIR and moving up the directory tree.  Profile files can look
 like any of the following: `.eprof', `my.eprof', `.my.eprof'."
   (let ((root
-         (locate-dominating-file
-          dir
-          (lambda(parent)
-            (let ((res (directory-files parent t "\\sw+\\.eprof$")))
-              (when res
-                (setq profile--root-file (car res))))))))
+         (if (<= 24 emacs-major-version)
+             (locate-dominating-file
+              dir
+              (lambda(parent)
+                (let ((res (directory-files parent t "\\sw+\\.eprof$")))
+                  (when res
+                    (setq profile--root-file (car res))))))
+           (find-file-upwards dir "\\sw+\\.eprof$")
+           )))
     (if root
         (if absolute
             (cons profile--root-file (expand-file-name root))

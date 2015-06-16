@@ -6,9 +6,9 @@
 ;; Maintainer: Drew Adams (concat "drew.adams" "@" "oracle" ".com")
 ;; Copyright (C) 2000-2015, Drew Adams, all rights reserved.
 ;; Created: Fri Sep 15 07:58:41 2000
-;; Last-Updated: Sat Feb 21 18:43:52 2015 (-0800)
+;; Last-Updated: Fri Mar 20 19:39:17 2015 (-0700)
 ;;           By: dradams
-;;     Update #: 15034
+;;     Update #: 15038
 ;; URL: http://www.emacswiki.org/bookmark+-doc.el
 ;; Doc URL: http://www.emacswiki.org/BookmarkPlus
 ;; Keywords: bookmarks, bookmark+, placeholders, annotations, search,
@@ -564,6 +564,12 @@
 ;;         but for all of the marked bookmarks, in the current sort
 ;;         order.  That is, it describes each of the marked bookmarks.
 ;;
+;;         `C-down' and `C-up' move the cursor down and up a line,
+;;         respectively, but they also show the description of the
+;;         bookmark corresponding to the new cursor location.  This is
+;;         a quick way to cycle among bookmark descriptions, in the
+;;         current sort order.
+;;
 ;;     - General Bookmark+ documentation.
 ;;
 ;;       . Anywhere in Emacs, `M-x bmkp-bmenu-mode-status-help' shows
@@ -994,6 +1000,10 @@
 ;;  edit the annotation (e.g., using `C-u a' in buffer `*Bookmark
 ;;  List*'), but it is ignored when the annotation is "shown" (e.g.,
 ;;  using `a').
+;;
+;;  In the `*Bookmark List*' display, `M-down' and `M-up' move the
+;;  cursor down and up a line, respectively, but they also show the
+;;  annotation, if any, of the bookmark at the new cursor location.
  
 ;;(@* "Bookmark Tags")
 ;;  ** Bookmark Tags **
