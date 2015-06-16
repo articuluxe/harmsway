@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-06-11 12:13:21 dan.harms>
+;; Modified Time-stamp: <2015-06-12 09:27:39 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -51,14 +51,14 @@
          ;; '(6 font-lock-variable-name-face)
 
          ;; single quote strings
-         (list "'.*?'" '(0 font-lock-string-face))
+         (list "'.+?'" '(0 font-lock-string-face))
          ;; key=value pairs
          (list "\\([^[:space:];|=<',]+\\)=\\([^[:space:];|=',]*\\)"
                '(1 font-lock-variable-name-face)
                '(2 font-lock-constant-face))
-         (list "<.*?>" '(0 font-lock-doc-face))
+         (list "<.+?>" '(0 font-lock-doc-face))
          ;; text within brackets
-         (list "\\[.*?\\]" '(0 font-lock-keyword-face))
+         (list "\\[.+?\\]" '(0 font-lock-keyword-face))
          ;; ip address:port (overrides prior fontification)
          (list "\\(\\(?:[[:digit:]]+\\.\\)\\{3\\}[[:digit:]]+\\):\\([[:digit:]]+\\)"
                '(1 font-lock-variable-name-face t)

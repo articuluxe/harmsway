@@ -5,7 +5,7 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Monday, May 18, 2015
 # Version: 1.0
-# Modified Time-stamp: <2015-06-11 16:17:33 dan.harms>
+# Modified Time-stamp: <2015-06-12 09:01:57 dan.harms>
 # Keywords: configuration
 
 input=
@@ -20,7 +20,7 @@ if [ "x$input" = "x" ] ; then
    exit
 fi
 
-date=$(date '+%F-%T')
+date=$(date '+%F_%T' | tr ':' '-')
 
 if [ $# -gt 0 ] ; then
    input=$1
@@ -46,6 +46,11 @@ pushd ~/.ssh
 ln -sf id_rsa_drh_npp id_rsa
 ln -sf Dan.Harms.pub id_rsa.pub
 chmod 600 ~/.ssh/id_rsa
+popd
+
+# remove intermediate directories, if empty
+pushd ~
+rmdir --ignore-fail-on-non-empty bash tcsh xr
 popd
 
 # untar-world.sh ends here

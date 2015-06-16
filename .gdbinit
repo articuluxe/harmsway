@@ -7,6 +7,9 @@
 # Modified Time-stamp: <2015-06-11 16:17:33 dan.harms>
 # Keywords: configuration
 
+# save history
+set history save
+
 # quit immediately
 define qquit
   set confirm off

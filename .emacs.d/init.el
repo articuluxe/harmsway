@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-06-04 10:03:16 dan.harms>
+;; Modified Time-stamp: <2015-06-12 16:51:58 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -240,7 +240,8 @@
 ;; (setq file-of-tag-function 'my/etags-file-of-tag)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; s ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 's)
+(when (version< "24.3" emacs-version)
+  (require 's))
 
 ;;;;;;; FUNCTIONS ;;;;;;;
 ;; ; man-page lookups
@@ -272,15 +273,22 @@
 (eval-when-compile
   (if (and (= emacs-major-version 24) (= emacs-minor-version 4))
       (require 'cl)))
-(require 'protobuf-mode)
+(if (= emacs-major-version 23)
+	(progn
+	  (autoload 'protobuf-mode "protobuf-mode" "Major mode for editing protobuf files." t)
+	  (autoload 'csharp-mode "csharp-mode" "Major mode for editing csharp files." t)
+	  )
+  (require 'protobuf-mode)
+  (require 'csharp-mode)
+  )
 (require 'dos)
 (require 'dos-indent)
 (require 'folio-mode)
 (require 'folio-electric)
 (require 'pos-tip)
 (require 'qt-pro)
-(require 'csharp-mode)
-(require 'json-mode)
+(when (version< emacs-version "23")
+  (require 'json-mode))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; copyright ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'copyright)
@@ -638,7 +646,8 @@ register \\C-l."
       '(sql-mode nxml-mode cmake-mode folio-mode protobuf-mode
                  python-mode dos-mode gud-mode sh-mode
                  makefile-mode makefile-automake-mode makefile-gmake-mode
-                 autoconf-mode))
+                 autoconf-mode gdb-script-mode
+                 mock-mode))
 (require 'auto-complete-config)
 (ac-config-default)
 (setq-default ac-sources (append '(ac-source-filename) ac-sources))
