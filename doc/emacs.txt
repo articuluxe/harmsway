@@ -1,0 +1,4 @@
+# -*- Mode: emacs-lisp; -*-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; FONTS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; select font on graphical systems
+(x-select-font nil t)
