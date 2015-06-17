@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-06-04 11:58:18 dan.harms>
+;; Modified Time-stamp: <2015-06-17 09:13:48 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -188,9 +188,11 @@
          (project-name (profile-current-get 'project-name))
          (str
           (replace-regexp-in-string
-           "\\." "_"
+           "\\.\\|-" "_"
            name)))
-    (setq str (upcase (s-snake-case str)))
+    (if (fboundp 's-snake-case)
+        (setq str (upcase (s-snake-case str)))
+      (setq str (upcase str)))
     (save-excursion
       (if arg                           ;ask user for stem
           (setq str (concat
