@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-06-16 15:41:57 dan.harms>
+;; Modified Time-stamp: <2015-06-17 15:49:36 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -536,6 +536,13 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; diff ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; only highlight current chunk
 (setq-default ediff-highlight-all-diffs 'nil)
+;; don't use a separate control frame
+(setq ediff-window-setup-function 'ediff-setup-windows-plain)
+;; toggle between control frame and control window
+(add-hook 'ediff-keymap-setup-hook
+          (lambda()
+            (define-key ediff-mode-map "t" 'ediff-toggle-multiframe)
+            ))
 ;; better colors in older versions
 (when (version< emacs-version "24.3")
   (eval-after-load 'diff-mode '(progn
