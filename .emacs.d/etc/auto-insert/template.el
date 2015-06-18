@@ -4,7 +4,8 @@
 ;; Author: `(user-full-name)` <`user-mail-address`>
 ;; Created: `(insert-today)`
 ;; Version: ${3:1.0}
-;; Modified Time-stamp: <2015-03-24 23:29:53 dharms>
+;; Modified Time-stamp: <2015-06-18 13:44:36 dan.harms>
+;; Modified by:
 ;; Keywords: $4
 
 ;; This program is free software; you can redistribute it and/or modify

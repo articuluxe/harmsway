@@ -5,6 +5,7 @@
 # Created: `(insert-today)`
 # Version: ${3:1.0}
 # Modified Time-stamp: <2015-02-26 13:20:30 dharms>
+# Modified by:
 # Keywords: $4
 # expand-env: ((yas-indent-line 'fixed))
 

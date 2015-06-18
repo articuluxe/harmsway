@@ -2,3 +2,5 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; FONTS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; select font on graphical systems
 (x-select-font nil t)
+;; increase/decrease font size dynamically
+C-x C-+   /   C-x C--

@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-06-17 15:49:36 dan.harms>
+;; Modified Time-stamp: <2015-06-18 13:41:14 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -732,6 +732,21 @@ register \\C-l."
        (auto-complete '(ac-source-yasnippet)))
 (global-set-key [backtab] 'my/expand-yasnippet)
 (global-set-key [(shift tab)] 'my/expand-yasnippet)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; headers ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;(autoload 'auto-update-file-header "header2")
+(require 'header2)
+(add-hook 'write-file-functions 'auto-update-file-header)
+(defun my/update-last-modifier ()
+  "Update header line indicating identity of last modifier."
+  (delete-and-forget-line)
+  (insert (format " %s" (let ((name (user-full-name)))
+                          (if (and name (not (string= name "")))
+                              name
+                            (user-login-name))))))
+;; use my own function, because delete-trailing-whitespace prevents a
+;; space after the colon
+(register-file-header-action "Modified by[ \t]*:" 'my/update-last-modifier)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-insert ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'autoinsert)

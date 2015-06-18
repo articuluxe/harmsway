@@ -5,6 +5,7 @@ dnl Author: `(user-full-name)` <`user-mail-address`>
 dnl Created: `(insert-today)`
 dnl Version: ${3:1.0}
 dnl Modified Time-stamp: <2015-02-26 13:20:30 dharms>
+dnl Modified by:
 dnl Keywords: $4
 
 AC_INIT([${1:library}],[${2:version}],[${3:dan.harms@xrtrading.com}])
