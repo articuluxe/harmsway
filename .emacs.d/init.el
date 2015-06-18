@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-06-18 13:41:14 dan.harms>
+;; Modified Time-stamp: <2015-06-18 14:37:56 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -77,7 +77,6 @@
 (setq line-number-mode t)
 (setq column-number-mode t)
 (setq use-dialog-box nil)
-(setq large-file-warning-threshold nil)
 (setq kill-do-not-save-duplicates t)
 (file-name-shadow-mode 1)
 (setq enable-recursive-minibuffers t)
@@ -633,6 +632,12 @@ register \\C-l."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; multi-term ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'multi-term)
 (setq multi-term-program "/bin/tcsh")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; vlf ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(setq large-file-warning-threshold 100000000) ;100MB
+(add-to-list 'load-path (concat my/plugins-directory "vlf/"))
+(require 'vlf-setup)
+(setq vlf-batch-size 10000000)          ;10MB
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; profiles ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'profiles+)
