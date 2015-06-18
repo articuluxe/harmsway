@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-06-16 10:28:55 dan.harms>
+;; Modified Time-stamp: <2015-06-17 17:07:23 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -210,7 +210,7 @@ actions include setting include directories."
            (profile-current-get 'include-ff-files)))
     ))
 
-(defvar profile--root-file)
+(defvar profile--root-file nil)
 ;;;###autoload
 (defun profile-find-root (dir &optional absolute)
   "Searches for the project root as may be defined in current profile,

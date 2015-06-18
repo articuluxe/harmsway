@@ -5,7 +5,7 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Monday, May 18, 2015
 # Version: 1.0
-# Modified Time-stamp: <2015-06-12 09:01:57 dan.harms>
+# Modified Time-stamp: <2015-06-17 16:48:18 dan.harms>
 # Keywords: configuration
 
 input=
@@ -51,6 +51,8 @@ popd
 # remove intermediate directories, if empty
 pushd ~
 rmdir --ignore-fail-on-non-empty bash tcsh xr
+# and byte-compile emacs
+emacscomp.sh .emacs.d
 popd
 
 # untar-world.sh ends here
