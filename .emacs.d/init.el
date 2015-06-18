@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-06-18 14:37:56 dan.harms>
+;; Modified Time-stamp: <2015-06-18 15:18:12 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -471,17 +471,18 @@
   (interactive)
   (let ((type (ido-completing-read
                "Sort by: "
-               '( "extension" "ctime" "utime" "time" "name")
+               '( "size" "extension" "ctime" "utime" "time" "name")
                nil t)))
     ;; on os x, extension (X) not supported;
     ;; also, ctime means time file status was last changed
-    (cond ((string= type "extension") (dired-sort-extension))
+    (cond ((string= type "size") (dired-sort-size))
+          ((string= type "extension") (dired-sort-extension))
           ((string= type "ctime") (dired-sort-ctime))
           ((string= type "utime") (dired-sort-utime))
           ((string= type "time") (dired-sort-time))
           ((string= type "name") (dired-sort-name))
           (t (error "unknown dired sort %s" type)))))
-;; TODO: choose a key for this
+(define-key dired-mode-map "`" 'my/dired-sort)
 
 (defadvice shell-command
     (after shell-in-new-buffer (command &optional output-buffer error-buffer))
