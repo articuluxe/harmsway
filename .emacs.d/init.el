@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-06-18 15:18:12 dan.harms>
+;; Modified Time-stamp: <2015-06-19 09:02:38 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -425,7 +425,8 @@
   (require 'rich-minority)
   (rich-minority-mode 1)
   (setq rm-blacklist
-        '(" AC" " yas" " Undo-Tree" " Abbrev" " Guide" " Hi" " $" " ,"))
+        '(" AC" " yas" " Undo-Tree" " Abbrev" " Guide" " Hi" " $" " ,"
+          " Ifdef" ))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smart-mode-line ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
