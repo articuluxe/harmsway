@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-06-17 09:13:48 dan.harms>
+;; Modified Time-stamp: <2015-06-19 13:19:29 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -39,12 +39,15 @@
 (require 'grep)
 (defun my/grep (&optional arg)
   "A wrapper around grep to provide convenient shortcuts to
-   adjust the root directory.  With a prefix arg of 16 (C-u C-u),
-   use the current directory.  With a prefix arg of 4 (C-u), or
-   if the variable 'project-root-dir is not defined in the current
-   profile, the directory will be chosen interactively by the user
-   using ido.  Otherwise, use the value of project-root-dir,
-   concatenated with src-sub-dir, if defined."
+   adjust the root directory. With a prefix arg of 64 (C-u C-u
+   C-u), or if the variable 'project-root-dir is not defined in
+   the current profile, the search directory will be chosen
+   interactively by the user using ido. With a prefix arg of
+   16 (C-u C-u), use the current directory. With a prefix arg of
+   4 (C-u), the directory will be chosen interactively by the
+   user among the src directories configured using the current
+   profile. Otherwise, use the first src directory configured
+   in the profile."
   (interactive "p")
   (let* ((root (profile-current-get 'project-root-dir))
          (dirs (profile-current-get 'grep-dirs))
@@ -72,7 +75,9 @@
              "-o -name \"*.in\" -o -name \"*.ac\" -o -name \"*.el\" "
              "-o -name \"*.sql\" -o -name \"*.py\" -o -name \"*.proto\" "
              "-o -name \"*.sh\" -o -name \"*.cs\" "
-             "\")\" -print0 | xargs -0 grep -Isn "))
+             "\")\" -print0 | xargs -0 grep -Isn "
+             (thing-at-point 'symbol t)
+             ))
     (command-execute 'grep)))
 (global-set-key "\C-cg" 'my/grep)
 

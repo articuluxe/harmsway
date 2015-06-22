@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-06-19 09:02:38 dan.harms>
+;; Modified Time-stamp: <2015-06-22 08:24:02 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -32,8 +32,10 @@
                                  user-emacs-directory
                                "~/.emacs.d/")))
 (defconst my/scratch-directory (concat my/user-directory "etc/"))
+(defconst my/elisp-directory (concat my/user-directory "elisp/"))
 (defconst my/plugins-directory (concat my/user-directory "plugins/"))
 (add-to-list 'load-path my/plugins-directory)
+(add-to-list 'load-path my/elisp-directory)
 (add-to-list 'load-path (concat my/user-directory "modes/"))
 (add-to-list 'load-path (concat my/user-directory "custom/"))
 (defconst my/user-settings
@@ -320,9 +322,11 @@
 (aes-enable-auto-decryption)
 (defconst my/aes-default-group "  default")
 (add-hook 'aes-path-passwd-hook (lambda (path) my/aes-default-group))
+;; if the environment variable is not defined, we will be prompted
+;; for the password
 (setq aes--plaintext-passwords
-      (list (cons my/aes-default-group
-                  (getenv "EMACS_PWD"))))
+      (let ((pwd (or (getenv "EMACS_PWD") "nil")))
+        (list (cons my/aes-default-group pwd))))
 (global-set-key "\C-cz" 'aes-toggle-encryption)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; idle-highlight ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -634,6 +638,10 @@ register \\C-l."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; multi-term ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'multi-term)
 (setq multi-term-program "/bin/tcsh")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; bash-completion ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'bash-completion)
+(bash-completion-setup)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; vlf ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq large-file-warning-threshold 100000000) ;100MB

@@ -17,7 +17,7 @@
 ;;; this program; if not, write to the Free Software Foundation, Inc., 59 Temple
 ;;; Place - Suite 330, Boston, MA 02111-1307, USA.
 ;;;
-;;; Copyright (C) 2009, 2015 Sylvain Bougerel
+;;; Copyright (C) 2009 Sylvain Bougerel
 
 ;;; ----------------------------------------------------------------------------
 ;;; Installation:
@@ -164,20 +164,20 @@ interactively.")
   "Make PROFILE-NAME the current profile. The current profile is
 a buffer local variable"
   (unless (intern-soft profile-name profile-obarray)
-    (error "Profile %s does not exist" profile-name))
+    (error "Profile " profile-name " does not exists"))
   (setq profile-current (intern-soft profile-name profile-obarray)))
 
 ;;;###autoload
 (defun profile-set-default (profile-name)
   "Make PROFILE-NAME the default profile. The profile must exists."
   (interactive "i")
-  (if (called-interactively-p 'interactive)
+  (if (interactive-p)
       (setq profile-name
             (completing-read "Set default profile: "
                              profile-obarray nil t
                              (symbol-name profile-current)))
     (unless (intern-soft profile-name profile-obarray)
-      (error "Profile %s does not exist" profile-name)))
+      (error "Profile " profile-name " does not exists")))
   (set-default 'profile-current (intern-soft profile-name profile-obarray)))
 
 ;;;###autoload
@@ -186,7 +186,7 @@ a buffer local variable"
 and MAIL are all required to be string values. Optional argument
 PLIST is a property list."
   (interactive "i")
-  (if (called-interactively-p 'interactive)
+  (if (interactive-p)
       (progn
         (setq profile (read-string "Name of the profile: "))
         (setq name (read-string "Your name: "))
@@ -204,7 +204,7 @@ PLIST is a property list."
 value."
   (unless (stringp profile) (error "Parameter profile is not a string"))
   (unless (intern-soft profile profile-obarray)
-    (error "Profile %s does not exist" profile))
+    (error "Profile " profile " does not exists"))
   (put (intern-soft profile profile-obarray) property value))
 
 ;;;###autoload
@@ -212,7 +212,7 @@ value."
   "Get PROPERTY's VALUE from `profile-current'."
   (unless (stringp profile) (error "Parameter profile is not a string"))
   (unless (intern-soft profile profile-obarray)
-    (error "Profile %s does not exist" profile))
+    (error "Profile " profile " does not exists"))
   (get (intern-soft profile profile-obarray) property))
 
 ;;;###autoload
@@ -276,7 +276,7 @@ name, or the buffer's name."
 and a specific PROFILE-NAME from the user if called
 interactively."
   (interactive "i\ni") ; ignore both arguments, we'll set them later
-  (if (called-interactively-p 'interactive)
+  (if (interactive-p)
       (progn
         (setq regexp (read-file-name "Path regexp: "
                                      (buffer-file-name)))
@@ -285,7 +285,7 @@ interactively."
                                profile-obarray nil t
                                (symbol-name profile-current))))
     (unless (intern-soft profile-name profile-obarray)
-      (error "Profile %s does not exist" profile-name)))
+      (error "Profile " profile-name " does not exists")))
   (setq profile-path-alist
         (cons (cons regexp profile-name) profile-path-alist))
   (profile-save-path-alist))
@@ -298,13 +298,13 @@ function allows a user the open the file FILENAME with a
 different profile PROFILE-NAME than the default profile and
 remember this setting."
   (interactive "GFind file: \ni")
-  (if (called-interactively-p 'interactive)
+  (if (interactive-p)
       (setq profile-name
             (completing-read "Apply profile: "
                              profile-obarray nil t
                              (symbol-name profile-current)))
     (unless (intern-soft profile-name profile-obarray)
-      (error "Profile %s does not exist" profile-name)))
+      (error "Profile " profile-name " does not exists")))
   (setq profile-path-alist
         (cons (cons filename profile-name) profile-path-alist))
   (profile-save-path-alist)
