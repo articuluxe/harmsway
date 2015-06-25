@@ -5,10 +5,10 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Tuesday, June 16, 2015
 # Version: 1.0
-# Modified Time-stamp: <2015-06-16 15:20:23 dan.harms>
+# Modified Time-stamp: <2015-06-23 09:39:23 dan.harms>
 # Keywords: emacs configuration
 
-dir=
+dir=$(pwd)
 if [ $# -gt 0 ] ; then
    dir="$1"
    shift

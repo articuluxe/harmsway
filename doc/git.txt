@@ -35,6 +35,9 @@ git clean -dfx
 git diff --name-status
 # show change magnitude
 git diff --stat
+# highlight word differences
+git diff --word-diff=color
+git diff --color-words[=<regex>]
 # changes between 2 branches
 git diff topic master
 git diff topic..master

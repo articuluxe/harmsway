@@ -5,8 +5,8 @@ rem Copyright (C) 2015  Dan Harms (dan.harms)
 rem Author: Dan Harms <dan.harms@xrtrading.com>
 rem Created: Thursday, May 21, 2015
 rem Version: 1.0
-rem Modified Time-stamp: <2015-06-19 09:35:04 dan.harms>
-rem Keywords: tar whole world
+rem Modified Time-stamp: <2015-06-23 09:47:54 dan.harms>
+rem Keywords: install perfect editor
 
 setlocal
 setlocal enabledelayedexpansion
@@ -26,26 +26,26 @@ set script_dir=%~dp0
 set int=emacs.tar
 set dest=.emacs.d
 
-echo Generating %curr_dir%\%int%...
+echo "Generating %curr_dir%\%int%..."
 
 if exist %int% (
-    echo Removing existing %int%...
+    echo "Removing existing %int%..."
     del %int%
 )
-echo Tarring .emacs.d into %int%...
+echo "Tarring .emacs.d into %int%..."
 "%tar%" c%verbose%f %int% --exclude=*.elc --exclude=.git --exclude=.tags .emacs.d
 
 if "%HOME%". == . (
-    echo HOME directory undefined, aborting.
+    echo "HOME directory undefined, aborting."
     exit /b
 )
 
 if exist "%HOME%\%dest%" (
-    echo Removing "%HOME%\%dest%"...
+    echo "Removing %HOME%\%dest%..."
     rmdir "%HOME%\%dest%" /s /q
 )
 
-echo Untarring %int% into "%HOME%"...
+echo "Untarring %int% into %HOME%..."
 "%tar%" -C "%HOME%" -x%verbose%f %int%
 
 rem emacs will need forward slashes escaped, so double them
@@ -54,9 +54,9 @@ set cmd=(byte-recompile-directory \"%path%\" 0 t)
 
 %emacs% --batch -u %user% --eval "%cmd%"
 
-echo ...Done.
+echo "...Done."
 
-%timeout% /t 2
+%timeout% /t 5
 
 endlocal
 

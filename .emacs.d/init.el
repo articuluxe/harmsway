@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-06-22 08:24:02 dan.harms>
+;; Modified Time-stamp: <2015-06-25 15:00:48 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -34,10 +34,12 @@
 (defconst my/scratch-directory (concat my/user-directory "etc/"))
 (defconst my/elisp-directory (concat my/user-directory "elisp/"))
 (defconst my/plugins-directory (concat my/user-directory "plugins/"))
-(add-to-list 'load-path my/plugins-directory)
-(add-to-list 'load-path my/elisp-directory)
-(add-to-list 'load-path (concat my/user-directory "modes/"))
-(add-to-list 'load-path (concat my/user-directory "custom/"))
+(eval-and-compile
+  (add-to-list 'load-path my/plugins-directory)
+  (add-to-list 'load-path my/elisp-directory)
+  (add-to-list 'load-path (concat my/user-directory "modes/"))
+  (add-to-list 'load-path (concat my/user-directory "custom/"))
+  )
 (defconst my/user-settings
   (concat my/user-directory "settings/user/" user-login-name))
 (load my/user-settings)
@@ -373,7 +375,8 @@
 (global-set-key "\M-sL" 'crosshairs-flash)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; bookmark+ ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(add-to-list 'load-path (concat my/plugins-directory "bookmark+/"))
+(eval-and-compile
+  (add-to-list 'load-path (concat my/plugins-directory "bookmark+/")))
 (require 'bookmark+)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ido ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -435,7 +438,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smart-mode-line ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (when (version<= "24.3" emacs-version)
-  (add-to-list 'load-path (concat my/plugins-directory "smart-mode-line/"))
+  (eval-and-compile
+    (add-to-list 'load-path (concat my/plugins-directory "smart-mode-line/")))
   (require 'smart-mode-line)
   (setq sml/no-confirm-load-theme t)
   (sml/setup))
@@ -621,7 +625,8 @@ register \\C-l."
 (global-set-key "\e\eh" 'my/tile-frames-horizontally)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; color-theme ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(add-to-list 'load-path (concat my/plugins-directory "color-theme/"))
+(eval-and-compile
+  (add-to-list 'load-path (concat my/plugins-directory "color-theme/")))
 (require 'color-theme)
 (color-theme-initialize)
 
@@ -645,7 +650,8 @@ register \\C-l."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; vlf ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq large-file-warning-threshold 100000000) ;100MB
-(add-to-list 'load-path (concat my/plugins-directory "vlf/"))
+(eval-and-compile
+  (add-to-list 'load-path (concat my/plugins-directory "vlf/")))
 (require 'vlf-setup)
 (setq vlf-batch-size 10000000)          ;10MB
 
@@ -663,7 +669,8 @@ register \\C-l."
 (profile-set-default "default")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-complete ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(add-to-list 'load-path (concat my/plugins-directory "auto-complete/"))
+(eval-and-compile
+  (add-to-list 'load-path (concat my/plugins-directory "auto-complete/")))
 (require 'auto-complete)
 ;; user dictionary
 (add-to-list 'ac-user-dictionary-files
@@ -719,7 +726,8 @@ register \\C-l."
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; YASnippet ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(add-to-list 'load-path (concat my/plugins-directory "yasnippet/"))
+(eval-and-compile
+  (add-to-list 'load-path (concat my/plugins-directory "yasnippet/")))
 (require 'yasnippet)
 (add-to-list 'safe-local-variable-values '(require-final-newline . nil))
 (yas-global-mode 1)

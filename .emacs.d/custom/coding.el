@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-06-19 13:19:29 dan.harms>
+;; Modified Time-stamp: <2015-06-25 14:11:47 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -173,7 +173,7 @@
 
 (defun find-my-tags-file() "Find tags file"
   (interactive)
-  (let ((my-tags-file (find-file-upwards "TAGS")))
+  (let ((my-tags-file (find-file-upwards nil "TAGS")))
     (if my-tags-file
         (progn
           (message "Loading tags file: %s" my-tags-file)
