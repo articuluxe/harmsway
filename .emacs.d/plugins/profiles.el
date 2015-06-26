@@ -151,6 +151,15 @@ parameters.")
 more profiles using `profile-create' in your \"~/.emacs\" or
 interactively.")
 
+(defmacro profile--called-interactively-p (&optional kind)
+  "A backward-compatible version of `called-interactively-p'.
+Optional KIND is as documented at `called-interactively-p'
+in GNU Emacs 24.1 or higher.
+This was shamelessly stolen from yasnippet."
+  (if (string< emacs-version "24.1")
+      '(called-interactively-p)
+    `(called-interactively-p ,kind)))
+
 ;;; ----------------------------------------------------------------------------
 ;;; Functions
 
@@ -171,7 +180,7 @@ a buffer local variable"
 (defun profile-set-default (profile-name)
   "Make PROFILE-NAME the default profile. The profile must exists."
   (interactive "i")
-  (if (called-interactively-p 'interactive)
+  (if (profile--called-interactively-p 'interactive)
       (setq profile-name
             (completing-read "Set default profile: "
                              profile-obarray nil t
@@ -186,7 +195,7 @@ a buffer local variable"
 and MAIL are all required to be string values. Optional argument
 PLIST is a property list."
   (interactive "i")
-  (if (called-interactively-p 'interactive)
+  (if (profile--called-interactively-p 'interactive)
       (progn
         (setq profile (read-string "Name of the profile: "))
         (setq name (read-string "Your name: "))
@@ -276,7 +285,7 @@ name, or the buffer's name."
 and a specific PROFILE-NAME from the user if called
 interactively."
   (interactive "i\ni") ; ignore both arguments, we'll set them later
-  (if (called-interactively-p 'interactive)
+  (if (profile--called-interactively-p 'interactive)
       (progn
         (setq regexp (read-file-name "Path regexp: "
                                      (buffer-file-name)))
@@ -298,7 +307,7 @@ function allows a user the open the file FILENAME with a
 different profile PROFILE-NAME than the default profile and
 remember this setting."
   (interactive "GFind file: \ni")
-  (if (called-interactively-p 'interactive)
+  (if (profile--called-interactively-p 'interactive)
       (setq profile-name
             (completing-read "Apply profile: "
                              profile-obarray nil t
