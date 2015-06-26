@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-06-25 15:00:48 dan.harms>
+;; Modified Time-stamp: <2015-06-26 09:06:49 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -731,7 +731,9 @@ register \\C-l."
 (require 'yasnippet)
 (add-to-list 'safe-local-variable-values '(require-final-newline . nil))
 (yas-global-mode 1)
-(setq yas-snippet-dirs (list (concat my/user-directory "snippets/")))
+(setq yas-snippet-dirs (list
+                        (concat my/user-directory "snippets/")
+                        (concat my/plugins-directory "yasnippet/snippets/")))
 (setq yas-prompt-functions '(
                              yas-ido-prompt
                              yas-x-prompt
@@ -937,9 +939,9 @@ customization."
     (when (file-exists-p site-file)
 ;      (setq site-name (file-name-base site-file))
       (load site-file))
-    (add-to-list 'yas-snippet-dirs
-                 (concat site-dir "snippets/") t)))
-
+    (setq yas-snippet-dirs (cons (concat site-dir "snippets/")
+                                 yas-snippet-dirs))
+    ))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; host ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (let* ((host-dir
         (file-name-as-directory
