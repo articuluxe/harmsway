@@ -14,7 +14,6 @@ ulimit -c unlimited
 source ~/config/git-completion.sh
 source ~/config/git-prompt.sh
 export PS1="\[\e[31m\]\h\[\e[m\]\[\e[31m\]:\[\e[m\]\[\e[33m\]\w\[\e[m\]\[\e[31m\]\$(__git_ps1 \" (%s)\")\[\e[m\]> "
-alias emacs='emacs -nw'
 
 # Load any local settings
 if [ -f ~/.bash_local ]; then

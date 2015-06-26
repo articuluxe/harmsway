@@ -2,7 +2,7 @@
 	name = Dan Harms
 	email = dan.harms@xrtrading.com
 [core]
-	editor = emacs -nw
+	editor = $EDITOR
 [color]
 	ui = true
 [diff]

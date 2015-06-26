@@ -2,7 +2,7 @@
 	name = Dan Harms
 	email = danielrharms@gmail.com
 [core]
-	editor = emacs -nw
+	editor = $EDITOR
 [color]
 	ui = true
 [diff]
