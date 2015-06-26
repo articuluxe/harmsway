@@ -1,13 +1,13 @@
-# .bash_local
 # -*- Mode: sh -*-
+# .bash_local
 
 # User specific aliases and functions
 # gcc=/usr/local/gcc-4.5.1/bin
 # python=/opt/anaconda-python-2.7.8/bin
 export PATH=.:$HOME/bin:/sbin/:/usr/lib64:$PATH
 export MANPATH=
-export EDITOR='emacs -nw'
 export EMACSX=emacs
+export EDITOR='emacs -nw'
 export NAME='Dan Harms'
 export ORIGPATH=$PATH
 export DISPLAY=10.10.102.157:0.0

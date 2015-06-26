@@ -1,0 +1,16 @@
+[user]
+	name = Dan Harms
+	email = danielrharms@gmail.com
+[core]
+	editor = emacs -nw
+[color]
+	ui = true
+[diff]
+	tool = opendiff
+[difftool]
+	prompt = false
+[merge]
+    tool = ediff
+[mergetool "ediff"]
+    cmd = emacs --eval \"(ediff-merge-files-with-ancestor \\\"$LOCAL\\\" \\\"$REMOTE\\\" \\\"$BASE\\\" nil \\\"$MERGED\\\")\"
+    

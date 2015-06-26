@@ -5,7 +5,7 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Monday, May 18, 2015
 # Version: 1.0
-# Modified Time-stamp: <2015-06-17 16:48:18 dan.harms>
+# Modified Time-stamp: <2015-06-26 05:36:43 dharms>
 # Keywords: configuration
 
 input=
@@ -21,11 +21,6 @@ if [ "x$input" = "x" ] ; then
 fi
 
 date=$(date '+%F_%T' | tr ':' '-')
-
-if [ $# -gt 0 ] ; then
-   input=$1
-   shift
-fi
 
 # remove and backup .emacs.d
 if [ -d ~/.emacs.d ] ; then
