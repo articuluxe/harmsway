@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-06-26 09:06:49 dan.harms>
+;; Modified Time-stamp: <2015-06-26 09:14:27 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -273,6 +273,9 @@
 (add-hook 'cmake-mode-hook 'cmake-font-lock-activate)
 ;; work around bug in cc-mode in emacs 24.4
 ;; see debbugs.gnu.org/db/18/18845.html
+(eval-and-compile
+  (and (< emacs-major-version 24)
+       (add-to-list 'load-path (concat my/elisp-directory "compat/"))))
 (eval-when-compile
   (if (and (= emacs-major-version 24) (= emacs-minor-version 4))
       (require 'cl)))
