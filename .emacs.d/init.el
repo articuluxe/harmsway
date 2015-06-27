@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-06-26 09:14:27 dan.harms>
+;; Modified Time-stamp: <2015-06-26 23:11:00 dharms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -27,20 +27,20 @@
 ;; Code:
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; load-path ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defconst my/user-directory (expand-file-name
+(eval-and-compile
+  (defvar my/user-directory (expand-file-name
                              (if (boundp 'user-emacs-directory)
                                  user-emacs-directory
                                "~/.emacs.d/")))
-(defconst my/scratch-directory (concat my/user-directory "etc/"))
-(defconst my/elisp-directory (concat my/user-directory "elisp/"))
-(defconst my/plugins-directory (concat my/user-directory "plugins/"))
-(eval-and-compile
+  (defvar my/scratch-directory (concat my/user-directory "etc/"))
+  (defvar my/elisp-directory (concat my/user-directory "elisp/"))
+  (defvar my/plugins-directory (concat my/user-directory "plugins/"))
   (add-to-list 'load-path my/plugins-directory)
   (add-to-list 'load-path my/elisp-directory)
   (add-to-list 'load-path (concat my/user-directory "modes/"))
   (add-to-list 'load-path (concat my/user-directory "custom/"))
   )
-(defconst my/user-settings
+(defvar my/user-settings
   (concat my/user-directory "settings/user/" user-login-name))
 (load my/user-settings)
 
@@ -53,14 +53,14 @@
 (set-register ?\C-e (cons 'file "~/src/harmsway/.emacs.d"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-save ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defconst my/autosave-dir (concat my/user-directory "autosaves/"))
+(defvar my/autosave-dir (concat my/user-directory "autosaves/"))
 (unless (file-directory-p my/autosave-dir)
   (make-directory my/autosave-dir t))
 (setq auto-save-file-name-transforms
       `((".*" ,(concat my/autosave-dir "\\1") t)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; backups ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defconst my/backup-dir
+(defvar my/backup-dir
   (concat my/user-directory "backups/" (format-time-string "%Y-%m-%d")))
 (unless (file-directory-p my/backup-dir)
   (make-directory my/backup-dir t))
@@ -325,7 +325,7 @@
 (setq aes-enable-plaintext-password-storage t)
 (setq aes-delete-passwords-after-idle 0)
 (aes-enable-auto-decryption)
-(defconst my/aes-default-group "  default")
+(defvar my/aes-default-group "  default")
 (add-hook 'aes-path-passwd-hook (lambda (path) my/aes-default-group))
 ;; if the environment variable is not defined, we will be prompted
 ;; for the password
@@ -735,7 +735,7 @@ register \\C-l."
 (add-to-list 'safe-local-variable-values '(require-final-newline . nil))
 (yas-global-mode 1)
 (setq yas-snippet-dirs (list
-                        (concat my/user-directory "snippets/")
+                        (concat my/scratch-directory "snippets/")
                         (concat my/plugins-directory "yasnippet/snippets/")))
 (setq yas-prompt-functions '(
                              yas-ido-prompt
