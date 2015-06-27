@@ -13,7 +13,7 @@
                   gen-tags-exe "-Re"
                   "--exclude=c++"
                   ) gen-tags-ctags-cpp-options)
-    (append (list "c++lib" "/opt/local/include/gcc48/c++/"
+    (append (list "c++lib" "{3:`(file-name-directory (getenv "CSTDLIB_INC"))`}"
                   gen-tags-exe "-Re"
                   "--language-force=c++"
                   "-h=\\".h.H.hh.hpp.hxx.h++.inc.def.\\""
@@ -37,11 +37,11 @@
 
 ;; define the profile
 (profile-define-derived
- "${3:$1}"
+ "${4:$1}"
  "default"
  "`user-login-name`" "`user-mail-address`"
  'project-name "$1"
- 'build-sub-dirs '(("${4:<build-dir>}/")
+ 'build-sub-dirs '(("${5:<build-dir>}/")
                    )
  'on-file-open #'profile-on-c-file-open
  'on-profile-init #'on-$1-init

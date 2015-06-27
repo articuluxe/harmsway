@@ -6,14 +6,17 @@
 # python=/opt/anaconda-python-2.7.8/bin
 export PATH=.:$HOME/bin:/sbin/:/usr/lib64:$PATH
 export MANPATH=
-export EMACSX=emacs
-export EDITOR='emacs -nw'
 export NAME='Dan Harms'
 export ORIGPATH=$PATH
 export DISPLAY=10.10.102.157:0.0
 
+export EMACSX=emacs
+export EDITOR='emacs -nw'
+alias emacs='emacs -nw'
+
 export CSTDLIB_ROOT=/usr/local/gcc-4.9.1
-#todo: include/c++/4.9.1
+export CSTDLIB_INC=$CSTDLIB_ROOT/include/c++/4.9.1
+export CSTDLIB_BIN=$CSTDLIB_ROOT/bin/gcc
 
 export ONE_TICK_CONFIG=/opt/1tick/client_data/config/one_tick_config.txt
 
