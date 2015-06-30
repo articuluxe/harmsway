@@ -20,6 +20,9 @@ export CSTDLIB_BIN=$CSTDLIB_ROOT/bin/gcc
 
 export ONE_TICK_CONFIG=/opt/1tick/client_data/config/one_tick_config.txt
 
+# default to latest
+use gcc491
+
 # gcc
 gcc-init()
 {
@@ -41,6 +44,11 @@ snap-init()
    fi
    echo "Using snap version $1"
    cp -f ~/config/env/snap/"$1"/.env ./.snap-env
+   cp -f ~/config/snap-"$1".eprof .
+   if [ ! -d snap/.git/hooks ]; then
+      echo "Snap repository missing; rerun after installing it."
+      return
+   fi
    cd snap/.git/hooks &&
       ln -sf -T ../../buildtools/pre-commit pre-commit &&
       cd ../../.. &&

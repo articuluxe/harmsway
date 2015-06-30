@@ -4,7 +4,7 @@
 # Author:  <dan.harms@xrtrading.com>
 # Created: Friday, March 20, 2015
 # Version: 1.0
-# Modified Time-stamp: <2015-06-16 15:17:58 dan.harms>
+# Modified Time-stamp: <2015-06-29 13:59:49 dan.harms>
 # Keywords: help
 
 # find all libraries defining a symbol
@@ -19,6 +19,8 @@ ifconfig eth0 mtu 1000
 MTU=1000
 # show process using a file
 fuser
+# print out a process's call stack
+pstack <pid>
 # find out which distro you're running
 cat /etc/*-release
 

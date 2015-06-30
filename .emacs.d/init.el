@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-06-26 09:14:27 dan.harms>
+;; Modified Time-stamp: <2015-06-30 12:31:26 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -146,7 +146,6 @@
 (global-set-key [(prior)] 'scroll-down-line)
 (global-set-key "\C-x\C-r" (lambda()(interactive)(revert-buffer nil t)))
 ;; TODO: "\M-r" is unbound
-(global-set-key "\M-]" 'jump-to-match-paren)
 (global-set-key "\C-ca" 'align)
 (global-set-key "\C-cr" 'align-repeat-regexp)
 (global-set-key [f5] 'toggle-truncate-lines)
