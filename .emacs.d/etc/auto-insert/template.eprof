@@ -13,7 +13,7 @@
                   gen-tags-exe "-Re"
                   "--exclude=c++"
                   ) gen-tags-ctags-cpp-options)
-    (append (list "c++lib" "{3:`(file-name-directory (getenv "CSTDLIB_INC"))`}"
+    (append (list "c++lib" "${3:`(file-name-as-directory (getenv "CSTDLIB_INC"))`}"
                   gen-tags-exe "-Re"
                   "--language-force=c++"
                   "-h=\\".h.H.hh.hpp.hxx.h++.inc.def.\\""

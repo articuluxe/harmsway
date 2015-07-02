@@ -5,7 +5,7 @@ rem Copyright (C) 2015  Dan Harms (dan.harms)
 rem Author: Dan Harms <dan.harms@xrtrading.com>
 rem Created: Thursday, May 21, 2015
 rem Version: 1.0
-rem Modified Time-stamp: <2015-06-23 09:47:54 dan.harms>
+rem Modified Time-stamp: <2015-07-02 14:18:26 dan.harms>
 rem Keywords: install perfect editor
 
 setlocal
@@ -34,6 +34,8 @@ if exist %int% (
 )
 echo "Tarring .emacs.d into %int%..."
 "%tar%" c%verbose%f %int% --exclude=*.elc --exclude=.git --exclude=.tags .emacs.d
+
+del %int%
 
 if "%HOME%". == . (
     echo "HOME directory undefined, aborting."
