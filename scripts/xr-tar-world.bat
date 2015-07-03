@@ -5,7 +5,7 @@ rem Copyright (C) 2015  Dan Harms (dan.harms)
 rem Author: Dan Harms <dan.harms@xrtrading.com>
 rem Created: Thursday, May 21, 2015
 rem Version: 1.0
-rem Modified Time-stamp: <2015-06-18 11:05:51 dan.harms>
+rem Modified Time-stamp: <2015-07-03 08:35:43 dan.harms>
 rem Keywords: tar whole world
 
 setlocal
@@ -27,7 +27,7 @@ echo Generating %curr_dir%\%dest%...
 if exist %dest% (
     del %dest%
 )
-%tar% c%verbose%f %dest% config doc .gitignore .gdbinit
+%tar% c%verbose%f %dest% config doc src .gitignore .gdbinit
 %tar% u%verbose%f %dest% --transform=s/scripts/bin/ scripts
 %tar% u%verbose%f %dest% --transform=s$bash/$$ bash
 %tar% u%verbose%f %dest% --transform=s$tcsh/$$ tcsh
