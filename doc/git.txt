@@ -79,6 +79,10 @@ git log --pretty=format:"%cn committed %h on %cd"
 git show origin/<branch>:path/from/root/to/file
 git show origin/<branch>:./relative/path/to/file
 
+################################### COMMIT ###################################
+# change last commit
+git commit --amend
+
 ################################### SQUASH ###################################
 # squash last 4 commits
 git rebase -i HEAD~4

@@ -4,7 +4,7 @@
 # Author:  <dan.harms@xrtrading.com>
 # Created: Friday, March 20, 2015
 # Version: 1.0
-# Modified Time-stamp: <2015-06-29 13:59:49 dan.harms>
+# Modified Time-stamp: <2015-07-03 10:23:03 dan.harms>
 # Keywords: help
 
 # find all libraries defining a symbol
@@ -43,7 +43,7 @@ break <line> if strcmp(str, "str") == 0
 !<prefix>
 # last command containing <substring>
 !?<substring>?
-# last command's argument
+# last command's [last] argument
 !$
 # last command's 1st argument
 !^
@@ -70,6 +70,6 @@ $?
 <command> 1>&2
 <command> 2>&1
 # redirect stdout+stderr
-<command> >& output.txt
+<command> &> output.txt
 
 # unix.txt ends here

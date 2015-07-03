@@ -17,4 +17,4 @@ alias emacs=$EDITOR
 export CSTDLIB_ROOT=/opt/local/include/gcc48/c++
 # todo: fix these (drh)
 export CSTDLIB_INC=$CSTDLIB_ROOT/include/c++/4.9.1
-export CSTDLIB_BIN=$CSTDLIB_ROOT/bin/gcc
+export CSTDLIB_BIN=$CSTDLIB_ROOT/bin

@@ -16,7 +16,7 @@ alias emacs='emacs -nw'
 
 export CSTDLIB_ROOT=/usr/local/gcc-4.9.1
 export CSTDLIB_INC=$CSTDLIB_ROOT/include/c++/4.9.1
-export CSTDLIB_BIN=$CSTDLIB_ROOT/bin/gcc
+export CSTDLIB_BIN=$CSTDLIB_ROOT/bin
 
 export ONE_TICK_CONFIG=/opt/1tick/client_data/config/one_tick_config.txt
 
