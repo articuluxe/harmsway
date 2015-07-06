@@ -25,7 +25,7 @@
  "default"
  "dharms" "danielrharms@gmail.com"
  'project-name "harmsway"
- 'build-sub-dirs '((".emacs.d/" "ED:")
+ 'build-sub-dirs '((".emacs.d/" "ED:" ?e)
                    )
  'on-file-open #'profile-on-c-file-open
  'on-profile-init #'on-harmsway-init
