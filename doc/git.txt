@@ -95,6 +95,8 @@ git stash <show|save|drop|push|pop> stash@\{0\}
 ################################### PATCH ####################################
 # create patch from last revision
 git format-patch HEAD~
+# create patch from working files
+git diff [--cached] > some.patch
 # apply patch to working directory
 git apply [--check] [--reject] some.patch
 # directly commit a patch

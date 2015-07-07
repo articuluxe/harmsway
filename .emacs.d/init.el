@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-06-30 12:31:26 dan.harms>
+;; Modified Time-stamp: <2015-07-06 14:44:25 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -734,7 +734,7 @@ register \\C-l."
 (add-to-list 'safe-local-variable-values '(require-final-newline . nil))
 (yas-global-mode 1)
 (setq yas-snippet-dirs (list
-                        (concat my/user-directory "snippets/")
+                        (concat my/scratch-directory "snippets/")
                         (concat my/plugins-directory "yasnippet/snippets/")))
 (setq yas-prompt-functions '(
                              yas-ido-prompt
