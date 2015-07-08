@@ -9,6 +9,7 @@ export DYLD_LIBRARY_PATH=/usr/local/lib:$HOME/src/dist/lib
 export MANPATH=
 export NAME='Dan Harms'
 export ORIGPATH=$PATH
+export TERM=xterm-256color
 
 export EMACSX=/Applications/Emacs.app/Contents/MacOS/Emacs
 export EDITOR="$EMACSX -nw"
