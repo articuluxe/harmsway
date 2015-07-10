@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-07-10 13:47:23 dan.harms>
+;; Modified Time-stamp: <2015-07-10 14:31:25 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -162,7 +162,7 @@
 ;; I believe due to a defadvice referring to `filename' in the original
 ;; code being advised.  But I couldn't find where.
 ;; More recent emacsen seem to handle the error.
-(when (version< "24.3" emacs-version)
+(when (version< emacs-version "24.3")
   (defvar filename nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ibuffer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
