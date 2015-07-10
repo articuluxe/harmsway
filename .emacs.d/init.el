@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-07-06 14:44:25 dan.harms>
+;; Modified Time-stamp: <2015-07-10 13:47:23 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -157,6 +157,13 @@
 (global-set-key (kbd "M-#") 'sort-lines)
 (global-set-key (kbd "C-#") 'sort-paragraphs)
 (global-set-key "\C-xw" 'write-region)
+
+;; This horrible hack gets around a "reference to free variable" warning,
+;; I believe due to a defadvice referring to `filename' in the original
+;; code being advised.  But I couldn't find where.
+;; More recent emacsen seem to handle the error.
+(when (version< "24.3" emacs-version)
+  (defvar filename nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ibuffer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'ibuffer)
