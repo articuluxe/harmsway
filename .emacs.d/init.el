@@ -739,10 +739,10 @@ register \\C-l."
   (add-to-list 'load-path (concat my/plugins-directory "yasnippet/")))
 (require 'yasnippet)
 (add-to-list 'safe-local-variable-values '(require-final-newline . nil))
-(yas-global-mode 1)
 (setq yas-snippet-dirs (list
                         (concat my/scratch-directory "snippets/")
                         (concat my/plugins-directory "yasnippet/snippets/")))
+(yas-global-mode 1)
 (setq yas-prompt-functions '(
                              yas-ido-prompt
                              yas-x-prompt
@@ -950,6 +950,7 @@ customization."
       (load site-file))
     (setq yas-snippet-dirs (cons (concat site-dir "snippets/")
                                  yas-snippet-dirs))
+    (yas-reload-all)
     ))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; host ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (let* ((host-dir
