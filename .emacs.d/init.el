@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-07-01 08:16:42 dharms>
+;; Modified Time-stamp: <2015-07-11 08:25:57 dharms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -157,6 +157,13 @@
 (global-set-key (kbd "M-#") 'sort-lines)
 (global-set-key (kbd "C-#") 'sort-paragraphs)
 (global-set-key "\C-xw" 'write-region)
+
+;; This horrible hack gets around a "reference to free variable" warning,
+;; I believe due to a defadvice referring to `filename' in the original
+;; code being advised.  But I couldn't find where.
+;; More recent emacsen seem to handle the error.
+(when (version< emacs-version "24.3")
+  (defvar filename nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ibuffer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'ibuffer)
@@ -732,10 +739,10 @@ register \\C-l."
   (add-to-list 'load-path (concat my/plugins-directory "yasnippet/")))
 (require 'yasnippet)
 (add-to-list 'safe-local-variable-values '(require-final-newline . nil))
-(yas-global-mode 1)
 (setq yas-snippet-dirs (list
                         (concat my/scratch-directory "snippets/")
                         (concat my/plugins-directory "yasnippet/snippets/")))
+(yas-global-mode 1)
 (setq yas-prompt-functions '(
                              yas-ido-prompt
                              yas-x-prompt
@@ -943,6 +950,7 @@ customization."
       (load site-file))
     (setq yas-snippet-dirs (cons (concat site-dir "snippets/")
                                  yas-snippet-dirs))
+    (yas-reload-all)
     ))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; host ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (let* ((host-dir
