@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-06-25 14:11:47 dan.harms>
+;; Modified Time-stamp: <2015-07-20 14:44:24 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -99,6 +99,10 @@
    (define-key c++-mode-map "\C-c\C-c" 'comment-region)
    (define-key c++-mode-map "\C-c\C-u" 'uncomment-region)
    (setq comment-start "/*") (setq comment-end "*/")
+   ;; skips the final included file, ending in `:', when traversing compile
+   ;; errors.  See
+   ;; `http://stackoverflow.com/questions/15489319/how-can-i-skip-in-file-included-from-in-emacs-c-compilation-mode'
+   (setf (nth 5 (assoc 'gcc-include compilation-error-regexp-alist-alist)) 0)
    (c-add-style "default-style"
                 (quote
                  ((c-basic-offset . 3)
