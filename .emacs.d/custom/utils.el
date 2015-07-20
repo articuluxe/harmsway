@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-06-16 10:35:16 dan.harms>
+;; Modified Time-stamp: <2015-07-20 15:03:17 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -105,6 +105,16 @@ is selected."
           (forward-list -1))
       (forward-char 1))))
 (global-set-key "\e\ep" 'jump-to-matching-paren)
+
+(defun my/indent-line-relative()
+  "Indent current line according to previous line."
+  (interactive)
+  (save-excursion
+    (move-beginning-of-line nil)
+    (delete-horizontal-space)
+    (indent-relative-maybe)
+    ))
+(global-set-key "\esi" 'my/indent-line-relative)
 
 (defun highlight-paren-right()
   "search forward for a parenthesized sexp and set region if found"
