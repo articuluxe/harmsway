@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-07-11 08:25:57 dharms>
+;; Modified Time-stamp: <2015-07-24 17:14:45 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -103,6 +103,8 @@
 ;; append unique parent directory to buffers of same name
 (toggle-uniquify-buffer-names)
 (setq uniquify-buffer-name-style 'post-forward-angle-brackets)
+;; don't try to create "other files"
+(setq ff-always-try-to-create nil)
 ;; Preserve line position on scroll
 (setq scroll-preserve-screen-position t)
 ;; Ignore case when completing file names
