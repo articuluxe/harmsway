@@ -563,6 +563,13 @@
           (lambda()
             (define-key ediff-mode-map "t" 'ediff-toggle-multiframe)
             ))
+;; ensure wide display does not persist after quitting ediff
+(defun my/toggle-ediff-wide-display()
+  "Turn off wide-display mode (if enabled) before quitting ediff."
+  (interactive)
+  (when ediff-wide-display-p
+    (ediff-toggle-wide-display)))
+(add-hook 'ediff-cleanup-hook 'my/toggle-ediff-wide-display)
 ;; better colors in older versions
 (when (version< emacs-version "24.3")
   (eval-after-load 'diff-mode '(progn
