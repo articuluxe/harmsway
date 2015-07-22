@@ -2,7 +2,7 @@
 # .bash_local
 
 # User specific aliases and functions
-# gcc=/usr/local/gcc-4.5.1/bin
+
 # python=/opt/anaconda-python-2.7.8/bin
 export PATH=.:$HOME/bin:/usr/local/bin:$PATH
 export DYLD_LIBRARY_PATH=/usr/local/lib:$HOME/src/dist/lib
@@ -15,7 +15,6 @@ export EMACSX=/Applications/Emacs.app/Contents/MacOS/Emacs
 export EDITOR="$EMACSX -nw"
 alias emacs=$EDITOR
 
-export CSTDLIB_ROOT=/opt/local/include/gcc48/c++
-# todo: fix these (drh)
-export CSTDLIB_INC=$CSTDLIB_ROOT/include/c++/4.9.1
+export CSTDLIB_ROOT=/opt/local
+export CSTDLIB_INC=$CSTDLIB_ROOT/include/gcc48/c++
 export CSTDLIB_BIN=$CSTDLIB_ROOT/bin
