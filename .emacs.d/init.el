@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-07-24 17:14:45 dan.harms>
+;; Modified Time-stamp: <2015-07-24 17:15:18 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -166,6 +166,10 @@
 ;; More recent emacsen seem to handle the error.
 (when (version< emacs-version "24.3")
   (defvar filename nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;; discover-my-major ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'discover-my-major)
+(global-set-key (kbd "C-h C-m") 'discover-my-major)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ibuffer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'ibuffer)
@@ -680,7 +684,7 @@ register \\C-l."
                 ;; 'build-sub-dirs '(("build/" "BLD:"))
                 ;; relative path to debug executables (under project-root-dir
                 ;; and build-sub-dir)
-                'debug-sub-dir "tests/"
+                ;; 'debug-sub-dirs '("tests/")
                 ;; specific compiler invocation command
                 'compile-sub-command "make"
                 )
