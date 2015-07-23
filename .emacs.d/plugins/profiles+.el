@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-06-17 17:07:23 dan.harms>
+;; Modified Time-stamp: <2015-07-22 08:06:18 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -177,7 +177,7 @@ some convenience registers to access the build-sub-dirs."
                                       (directory-file-name dir)) ":")))
                    (reg (caddr elt)))
               (add-to-list 'sml/replacer-regexp-list
-                           (list dir name))
+                           (list dir name) t)
               (and reg (characterp reg)
                    (set-register
                     reg (cons 'file (concat
@@ -203,12 +203,11 @@ c-language file is opened and a profile is active.  These typical
 actions include setting include directories."
   (when c-buffer-is-cc-mode
     (set (make-local-variable 'achead:include-directories)
-         (profile-current-get 'include-files))
-    (setq ff-search-directories
-          (append
-           '(".")
-           (profile-current-get 'include-ff-files)))
-    ))
+         (profile-current-get 'include-files)))
+  (setq ff-search-directories
+        (append '(".")
+                (profile-current-get 'include-ff-files)))
+    )
 
 (defvar profile--root-file nil)
 ;;;###autoload
