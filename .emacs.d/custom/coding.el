@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-07-20 14:44:24 dan.harms>
+;; Modified Time-stamp: <2015-07-22 08:32:50 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -454,12 +454,17 @@
   "Launch gdb automatically in the test directory."
   (interactive)
   (let ((root (profile-current-get 'project-root-dir))
+        (prefix (profile-current-get 'remote-prefix))
+        (sub-dirs (profile-current-get 'debug-sub-dirs))
         exec-dir exec)
     (when root
-      (setq exec-dir (concat root
-                             (profile-current-get 'build-sub-dir)
-                             (profile-current-get 'debug-sub-dir)
-                             )))
+      (setq exec-dir
+            (concat
+             prefix root
+             (cond ((eq (length sub-dirs) 1) (car sub-dirs))
+                   ((null sub-dirs) "")
+                   (t (funcall my/choose-func
+                               sub-dirs "Debug dir:"))))))
     (unless (and exec-dir (file-exists-p exec-dir))
       (setq exec-dir default-directory))
     (setq exec (ido-read-file-name "Debug executable: " exec-dir nil t))

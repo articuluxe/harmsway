@@ -3,7 +3,7 @@
 # key: test_case
 # binding: direct-keybinding
 # --
-TEST_CASE($1, "${2:$1}")
+TEST_CASE($1, "[${2:$1}]")
 {
 $0
 }

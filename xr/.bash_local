@@ -55,8 +55,7 @@ snap-init()
    fi
    cd snap/.git/hooks &&
       ln -sf -T ../../buildtools/pre-commit pre-commit &&
-      cd ../../.. &&
-      mkdir -p sim mock debug release
+      cd ../../..
 }
 snap-setup()
 {

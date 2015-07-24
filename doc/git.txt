@@ -27,6 +27,9 @@ git push -u origin <branch>
 git branch -d <branch>
 # delete remote branch
 git push origin :<branch>
+# ensure master is up to date, without checking it out
+git fetch --all
+git fetch origin master:master
 
 git clean -dfx
 
@@ -43,6 +46,12 @@ git diff topic master
 git diff topic..master
 # changes on master since topic was branched off
 git diff topic...master
+# changes to a file since master
+git diff master -- /path/to/file
+# changes to a file between HEAD and master
+git diff master.. path/to/file
+# changes to a file between 2 branches
+git diff branch1 branch2 -- path/to/file
 
 ################################ VIEW COMMITS ################################
 # VIEW COMMITS [plus files changed / patches ]
