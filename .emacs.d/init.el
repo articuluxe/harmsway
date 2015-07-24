@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-07-24 17:15:45 dan.harms>
+;; Modified Time-stamp: <2015-07-24 17:16:32 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -394,6 +394,12 @@
   (add-to-list 'load-path (concat my/plugins-directory "bookmark+/")))
 (require 'bookmark+)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; recentf ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'recentf)
+(setq recentf-max-saved-items 200
+      recentf-max-menu-items 12)
+(recentf-mode 1)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ido ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'ido)
 (ido-mode 1)
@@ -430,6 +436,15 @@
                      (intern
                       (ido-completing-read
                        "M-x " (all-completions "" obarray 'commandp)))))))
+;; for recentf
+(defun recentf-ido-find-file()
+  "Find a recent file using ido."
+  (interactive)
+  (let ((file (ido-completing-read
+               "Choose recent file:"
+               recentf-list nil t)))
+    (when file (find-file file))))
+(global-set-key "\er" 'recentf-ido-find-file)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smex ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (when (<= 24 emacs-major-version)
