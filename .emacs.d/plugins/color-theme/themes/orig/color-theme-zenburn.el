@@ -4,7 +4,7 @@
 
 ;; Author: Daniel Brockman <daniel@brockman.se>
 ;; URL: http://www.brockman.se/software/zenburn/zenburn.el
-;; Updated: 2015-07-24 13:24
+;; Updated: 2015-07-22 10:30
 
 ;; Adrian C. and Bastien Guerry added org-mode faces.
 
@@ -142,15 +142,13 @@ to values."
   '(unless (zenburn-format-spec-works-p)
      (zenburn-define-format-spec)))
 
-;; removed by drh: screwed up sml
-;; cf: https://github.com/bbatsov/zenburn-emacs/issues/3
-;; (setq-default mode-line-buffer-identification
-;;               (list (propertize "%12b" 'face
-;;                                 (list :weight 'bold
-;;                                       :foreground zenburn-yellow))))
-;; (setq-default mode-line-frame-identification "")
+(setq-default mode-line-buffer-identification
+              (list (propertize "%12b" 'face
+                                (list :weight 'bold
+                                      :foreground zenburn-yellow))))
+(setq-default mode-line-frame-identification "")
 (setq-default erc-mode-line-format
-              (concat (propertize "%S" 'face
+              (concat (propertize "%t" 'face
                                   (list :weight 'bold
                                         :foreground zenburn-yellow))
                       " %a"))
@@ -221,10 +219,6 @@ static char *gnus-pointer[] = {
      '(italic ((t (:slant italic))))
      '(underline ((t (:underline t))))
      ;; '(variable-pitch ((t (:font "-*-utopia-regular-r-*-*-12-*-*-*-*-*-*-*"))))
-
-     ;; added by drh: screwed up sml
-     ;; cf: https://github.com/bbatsov/zenburn-emacs/issues/3
-     `(mode-line-buffer-id ((t (:foreground ,zenburn-yellow :weight bold))))
 
      `(zenburn-background-1 ((t (:background ,zenburn-bg+1))))
      `(zenburn-background-2 ((t (:background ,zenburn-bg+2))))

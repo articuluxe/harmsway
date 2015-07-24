@@ -2,8 +2,8 @@
 ;; Author: Yavuz Arkun
 
 ;; Original Author of zenburn.el: Daniel Brockman <daniel@brockman.se>
-;; 
-;; 
+;;
+;;
 
 ;; This file is free software; you can redistribute it and/or
 ;; modify it under the terms of the GNU General Public License as
@@ -168,13 +168,15 @@ to values."
   (unless (zenash-format-spec-works-p)
     (zenash-define-format-spec)))
 
-(setq-default mode-line-buffer-identification
-              (list (propertize "%12b" 'face
-                                (list :weight 'bold
-                                      :foreground zenash-bg-3))))
-(setq-default mode-line-frame-identification "")
+;; removed by drh: screwed up sml
+;; cf: https://github.com/bbatsov/zenburn-emacs/issues/3
+;; (setq-default mode-line-buffer-identification
+;;               (list (propertize "%12b" 'face
+;;                                 (list :weight 'bold
+;;                                       :foreground zenash-bg-3))))
+;; (setq-default mode-line-frame-identification "")
 (setq-default erc-mode-line-format
-              (concat (propertize "%t" 'face
+              (concat (propertize "%S" 'face
                                   (list :weight 'bold
                                         :foreground zenash-bg-3))
                       " %a"))
@@ -221,13 +223,13 @@ static char *gnus-pointer[] = {
   (color-theme-install
    (append
     (list 'color-theme-zenash
-          
+
      `((background-color . ,zenash-bg)
        (background-mode . light)
        (border-color . ,zenash-bg)
        (foreground-color . ,zenash-fg)
        (mouse-color . ,zenash-fg))
-      
+
      `((emms-mode-line-icon-color . ,zenash-fg)
        (goto-address-mail-face . italic)
        (goto-address-mail-mouse-face . secondary-selection)
@@ -254,7 +256,7 @@ static char *gnus-pointer[] = {
      `(zenash-background-2             ((t (:background ,zenash-bg-2))))
      `(zenash-background+1             ((t (:background ,zenash-bg+1))))
      `(zenash-background+2             ((t (:background ,zenash-bg+2))))
-     
+
      `(zenash-primary-1                ((t (:foreground ,zenash-blue :weight bold))))
      `(zenash-primary-2                ((t (:foreground ,zenash-red :weight bold))))
      `(zenash-primary-3                ((t (:foreground ,zenash-green :weight bold))))
@@ -264,6 +266,10 @@ static char *gnus-pointer[] = {
      `(zenash-highlight-damp           ((t (:foreground ,zenash-ll-1 :background ,zenash-bg-1))))
      `(zenash-highlight-alerting       ((t (:background ,zenash-bg+2))))
      `(zenash-highlight-subtle         ((t (:background ,zenash-bg+1))))
+
+     ;; added by drh: screwed up sml
+     ;; cf: https://github.com/bbatsov/zenburn-emacs/issues/3
+     `(mode-line-buffer-id             ((t (:foreground ,zenash-yellow :weight bold))))
 
      `(zenash-lowlight-1               ((t (:foreground ,zenash-ll-1))))
      `(zenash-lowlight-2               ((t (:foreground ,zenash-ll-2))))
@@ -339,11 +345,11 @@ static char *gnus-pointer[] = {
      `(isearch-lazy-highlight          ((t (:background ,zenash-bg-2))))
 
      `(idle-highlight-face             ((t (:inherit isearch-lazy-highlight))))
-     
+
      `(hover-highlight                 ((t (:background ,zenash-bg+2))))
      `(link                            ((t (:foreground ,zenash-red-1 :weight bold))))
      `(link-visited                    ((t (:foreground ,zenash-red-1))))
-     
+
      `(info-xref                       ((t (:foreground ,zenash-red-1 :weight bold))))
      `(info-xref-visited               ((t (:inherit info-xref :weight normal))))
      `(info-header-xref                ((t (:inherit info-xref))))
@@ -368,10 +374,10 @@ static char *gnus-pointer[] = {
      `(org-link                        ((t (:inherit link))))
      `(org-todo                        ((t (:inherit font-lock-variable-name))))
      `(org-formula                     ((t (:inherit font-lock-variable-name))))
-     
+
      `(flyspell-incorrect              ((t (:inherit font-lock-warning))))
      `(flyspell-duplicate              ((t (:inherit font-lock-warning))))
-     
+
      `(term-default-bg                 ((t (nil))))
      `(term-default-bg-inv             ((t (nil))))
      `(term-default-fg                 ((t (nil))))
@@ -393,7 +399,7 @@ static char *gnus-pointer[] = {
      `(eshell-ls-special               ((t (:foreground ,zenash-dark-magenta))))
      `(eshell-ls-symlink               ((t (:foreground ,zenash-cyan :weight bold))))
 
-     
+
      ;; FIXME: Map these to ansi-term`s faces (`term-red`, etc.).
      `(zenash-term-dark-gray           ((t (:foreground ,zenash-dark-gray))))
      `(zenash-term-light-blue          ((t (:foreground ,zenash-light-blue))))
@@ -509,7 +515,7 @@ static char *gnus-pointer[] = {
      `(magit-log-tag-label              ((t (:foreground ,zenash-blue))))
      `(magit-log-head-label             ((t (:foreground ,zenash-blue))))
      `(magit-item-mark                  ((t (:inherit isearch-lazy-highlight))))
-     
+
      `(emms-pbi-song                   ((t (:foreground ,zenash-yellow))))
      `(emms-pbi-current                ((t (:inherit zenash-primary-1))))
      `(emms-pbi-mark-marked            ((t (:inherit zenash-primary-2))))
