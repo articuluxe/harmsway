@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-07-24 17:15:18 dan.harms>
+;; Modified Time-stamp: <2015-07-24 17:15:45 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -167,10 +167,6 @@
 (when (version< emacs-version "24.3")
   (defvar filename nil))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;; discover-my-major ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'discover-my-major)
-(global-set-key (kbd "C-h C-m") 'discover-my-major)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ibuffer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'ibuffer)
 ;; Newer "tabulated list mode" in buff-menu.el breaks buffer-menu+ 21.0.
@@ -327,6 +323,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; list-register ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'list-register)
 (global-set-key (kbd "\C-xrv") 'list-register)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;; discover-my-major ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'discover-my-major)
+(global-set-key (kbd "C-h C-m") 'discover-my-major)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; iedit ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'iedit)
