@@ -5,7 +5,7 @@ rem Copyright (C) 2015  Dan Harms (dan.harms)
 rem Author: Dan Harms <dan.harms@xrtrading.com>
 rem Created: Thursday, May 21, 2015
 rem Version: 1.0
-rem Modified Time-stamp: <2015-07-06 14:40:33 dan.harms>
+rem Modified Time-stamp: <2015-07-25 12:43:59 dharms>
 rem Keywords: install perfect editor
 
 setlocal
@@ -26,19 +26,20 @@ set script_dir=%~dp0
 set int=emacs.tar
 set dest=.emacs.d
 
+if "%HOME%". == . (
+    echo "HOME directory undefined, aborting."
+    exit /b
+)
+
 echo "Generating %curr_dir%\%int%..."
 
 if exist %int% (
     echo "Removing existing %int%..."
     del %int%
 )
+
 echo "Tarring .emacs.d into %int%..."
 "%tar%" c%verbose%f %int% --exclude=*.elc --exclude=.git --exclude=.tags .emacs.d
-
-if "%HOME%". == . (
-    echo "HOME directory undefined, aborting."
-    exit /b
-)
 
 if exist "%HOME%\%dest%" (
     echo "Removing %HOME%\%dest%..."

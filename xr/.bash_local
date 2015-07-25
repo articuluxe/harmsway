@@ -7,11 +7,12 @@
 python=/opt/anaconda-python-2.7.8/bin
 # todo?: export PYTHON_PATH=~/git/snap/scripts
 
-export PATH=.:$HOME/bin:/sbin/:/usr/lib64:$python:$PATH
+export PATH=$HOME/bin:/sbin/:/usr/lib64:$python:$PATH:.
 export MANPATH=
 export NAME='Dan Harms'
 export ORIGPATH=$PATH
 export TERM=xterm-256color
+export TAR=tar
 export DISPLAY=10.10.102.157:0.0
 
 export EMACSX=emacs

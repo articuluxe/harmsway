@@ -5,11 +5,11 @@
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Friday, May 29, 2015
 # Version: 1.0
-# Modified Time-stamp: <2015-06-26 05:35:22 dharms>
+# Modified Time-stamp: <2015-07-25 16:20:12 dharms>
 # Keywords: configuration
 
-tar=/usr/bin/gnutar
-dest=world.tgz
+tar=$TAR
+dest=world.tar
 verbose=
 
 if [ $# -gt 0 ] ; then
@@ -23,12 +23,12 @@ if [ -f "$dest" ] ; then
    rm -f $dest
 fi
 
-$tar c"$verbose"zf $dest config doc .gitignore
-$tar u"$verbose"zf $dest --transform=s/scripts/bin/ scripts
-$tar u"$verbose"zf $dest --transform=s/bash\\/// bash
-$tar u"$verbose"zf $dest --transform=s/tcsh\\/// tcsh
-$tar u"$verbose"zf $dest --transform=s/talbot\\/// talbot
-$tar u"$verbose"zf $dest --exclude=*.elc .emacs.d
+$tar c"$verbose"f $dest config doc src .gitignore .gdbinit
+$tar u"$verbose"f $dest --transform=s/scripts/bin/ scripts
+$tar u"$verbose"f $dest --transform=s/bash\\/// bash
+$tar u"$verbose"f $dest --transform=s/tcsh\\/// tcsh
+$tar u"$verbose"f $dest --transform=s/talbot\\/// talbot
+$tar u"$verbose"f $dest --exclude=*.elc .emacs.d
 
 echo ...done generating $dest
 
