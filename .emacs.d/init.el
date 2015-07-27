@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-07-27 09:18:33 dan.harms>
+;; Modified Time-stamp: <2015-07-27 15:07:34 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -133,14 +133,27 @@
 (set-background-color "black")
 (set-cursor-color "yellow")
 (set-mouse-color "white")
-(global-font-lock-mode t)
-(setq font-lock-maximum-decoration t)
 (mouse-avoidance-mode 'cat-and-mouse)
 (blink-cursor-mode 1)
 (setq blink-cursor-blinks 0)
 (setq ring-bell-function (lambda() ()))
 (when (display-graphic-p)
   (global-unset-key "\C-z"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; fonts ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(global-font-lock-mode t)
+(setq font-lock-maximum-decoration t)
+(defun my/syntax-color-hex-values()
+  "Syntax color text of the form #FF1100 in a buffer.
+Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
+  (interactive)
+  (font-lock-add-keywords
+   nil
+   '(("#[AaBbCcDdEeFf[:digit:]]\\{6\\}"
+      (0 (put-text-property
+          (match-beginning 0)
+          (match-end 0)
+          'face (list :background (match-string-no-properties 0))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; key-bindings ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (global-unset-key (kbd "<f1>"))
@@ -1109,6 +1122,7 @@ customization."
             (define-key emacs-lisp-mode-map (kbd "\C-c RET")
               (lambda()(interactive)
                 (byte-compile-file (buffer-file-name))))
+            (my/syntax-color-hex-values)
             ))
 (add-hook 'emacs-lisp-mode-hook 'eldoc-mode)
 (require 'lisp-extra-font-lock)
@@ -1139,4 +1153,11 @@ customization."
             (define-key conf-mode-map "\C-c\C-c" 'comment-region)
             (define-key conf-mode-map "\C-c\C-u" 'uncomment-region)
             ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; html-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(add-hook 'html-mode-hook 'my/syntax-color-hex-values)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; css-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(add-hook 'css-mode-hook 'my/syntax-color-hex-values)
+
 ;; init.el ends here
