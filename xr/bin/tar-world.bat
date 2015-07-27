@@ -1,11 +1,11 @@
 @echo off
 rem -*- Mode: dos -*-
-rem xr-tar-world.bat --- tar up the world (xr style)
+rem tar-world.bat --- tar up the world (xr style)
 rem Copyright (C) 2015  Dan Harms (dan.harms)
 rem Author: Dan Harms <dan.harms@xrtrading.com>
 rem Created: Thursday, May 21, 2015
 rem Version: 1.0
-rem Modified Time-stamp: <2015-07-03 08:35:43 dan.harms>
+rem Modified Time-stamp: <2015-07-27 05:55:30 dharms>
 rem Keywords: tar whole world
 
 setlocal
@@ -40,4 +40,4 @@ timeout 2
 
 endlocal
 
-rem xr-tar-world.bat ends here
+rem tar-world.bat ends here

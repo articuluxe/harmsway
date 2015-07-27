@@ -1,11 +1,11 @@
 #!/usr/bin/env sh
 # -*- Mode: sh -*-
-# talbot-tar-world.sh --- tar up important configuration files
+# tar-world.sh --- tar up important configuration files
 # Copyright (C) 2015  Dan Harms (dharms)
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Friday, May 29, 2015
 # Version: 1.0
-# Modified Time-stamp: <2015-07-25 16:20:12 dharms>
+# Modified Time-stamp: <2015-07-27 05:54:35 dharms>
 # Keywords: configuration
 
 tar=$TAR
@@ -32,4 +32,4 @@ $tar u"$verbose"f $dest --exclude=*.elc .emacs.d
 
 echo ...done generating $dest
 
-# talbot-tar-world.sh ends here
+# tar-world.sh ends here

@@ -1,14 +1,15 @@
 #!/usr/bin/env sh
 # -*- Mode: sh -*-
-# talbot-untar-world.sh --- untar important files
+# untar-world.sh --- untar important files
 # Copyright (C) 2015  Dan Harms (dan.harms)
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Monday, May 18, 2015
 # Version: 1.0
-# Modified Time-stamp: <2015-07-25 12:54:50 dharms>
+# Modified Time-stamp: <2015-07-27 05:54:49 dharms>
 # Keywords: configuration
 
 tar=/usr/bin/gnutar
+int=emacs_int.tar
 input=
 
 if [ $# -gt 0 ] ; then
@@ -23,10 +24,23 @@ fi
 
 date=$(date '+%F_%T' | tr ':' '-')
 
-# remove and backup .emacs.d
-if [ -d ~/.emacs.d ] ; then
-   $tar czf ~/.emacs.d.bk_$date.tgz --force-local ~/.emacs.d
-   rm -rf ~/.emacs.d
+pushd ~
+
+# there's an existing .emacs.d
+if [ -d .emacs.d ] ; then
+   # copy interesting files
+   tar cf $int .emacs.d/ac-comphist.dat
+   tar uf $int .emacs.d/recentf
+   tar uf $int .emacs.d/smex-items
+   tar uf $int .emacs.d/autosaves
+   tar uf $int .emacs.d/backups
+   # backup for posterity
+   $tar czf .emacs.d.bk_$date.tgz --force-local .emacs.d
+   # restore files
+   rm -rf .emacs.d
+   mkdir .emacs.d
+   tar -C .emacs.d -xpf $int
+   rm -f $int
 fi
 # # remove and backup .ssh
 # if [ -d ~/.ssh ] ; then
@@ -45,10 +59,9 @@ $tar -C ~ --overwrite -xpvf $input
 # popd
 
 # remove intermediate directories, if empty
-pushd ~
 rmdir -p bash tcsh talbot
 # and byte-compile emacs
 emacscomp.sh .emacs.d
 popd
 
-# talbot-untar-world.sh ends here
+# untar-world.sh ends here

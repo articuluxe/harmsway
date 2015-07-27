@@ -7,6 +7,9 @@
 # Modified Time-stamp: <2015-06-11 16:17:33 dan.harms>
 # Keywords: configuration
 
+# C++ pretty-printing
+source ~/stl-views.gdb
+
 # save history
 set history save
 set history filename ~/.gdb_history
