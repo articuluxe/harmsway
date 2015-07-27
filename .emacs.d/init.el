@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-07-24 17:16:32 dan.harms>
+;; Modified Time-stamp: <2015-07-27 09:18:33 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -393,6 +393,19 @@
 (eval-and-compile
   (add-to-list 'load-path (concat my/plugins-directory "bookmark+/")))
 (require 'bookmark+)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; savehist ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'savehist)
+(setq savehist-additional-variables
+      '(search-ring regexp-search-ring kill-ring compile-history)
+      savehist-file (concat my/user-directory "history")
+      savehist-save-minibuffer-history t
+      history-length 50
+      history-delete-duplicates t
+      )
+(put 'minibuffer-history 'history-length 100)
+(put 'kill-ring 'history-length 25)
+(savehist-mode 1)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; recentf ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'recentf)
