@@ -228,6 +228,7 @@ static char *gnus-pointer[] = {
        (background-mode . light)
        (border-color . ,zenash-bg)
        (foreground-color . ,zenash-fg)
+       (cursor-color . ,zenash-yellow-1) ;added by drh
        (mouse-color . ,zenash-fg))
 
      `((emms-mode-line-icon-color . ,zenash-fg)
