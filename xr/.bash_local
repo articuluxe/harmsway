@@ -11,8 +11,8 @@ export PATH=$HOME/bin:/sbin/:/usr/lib64:$python:$PATH:.
 export MANPATH=
 export NAME='Dan Harms'
 export ORIGPATH=$PATH
-export TERM=xterm-256color
-export TAR=tar
+# export TERM=xterm-256color
+export TAR=/bin/tar
 export DISPLAY=10.10.102.157:0.0
 
 export EMACSX=emacs
