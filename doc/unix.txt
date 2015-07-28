@@ -4,8 +4,13 @@
 # Author:  <dan.harms@xrtrading.com>
 # Created: Friday, March 20, 2015
 # Version: 1.0
-# Modified Time-stamp: <2015-07-03 10:23:03 dan.harms>
+# Modified Time-stamp: <2015-07-28 11:15:27 dan.harms>
 # Keywords: help
+
+# install x
+yum groupinstall basic-desktop desktop-platform x11 fonts
+# change default runlevel in /etc/inittab:
+id:5:initdefault:
 
 # find all libraries defining a symbol
 find /path/to/root -name \*.a -exec sh -c 'nm -C "$0" | grep symbol && echo "$0"' {} \;

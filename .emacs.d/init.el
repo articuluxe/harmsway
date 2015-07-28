@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-07-27 15:07:34 dan.harms>
+;; Modified Time-stamp: <2015-07-28 09:35:25 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -424,6 +424,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (require 'recentf)
 (setq recentf-max-saved-items 200
       recentf-max-menu-items 12)
+(setq recentf-exclude '( "-tags\\'" ))
 (recentf-mode 1)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ido ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -481,6 +482,10 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 ;; the old M-x
 (global-set-key "\e\ex" 'execute-extended-command)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; powerline ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; todo: does not interoperate with sml
+;(require 'powerline)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; rich-minority ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (when (version<= "24.3" emacs-version)
   ;; this dependency actually comes from smart-mode-line, which uses
@@ -509,6 +514,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; tramp ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq tramp-default-method "ssh")
 (setq tramp-default-user my/user-name)
+(setq tramp-auto-save-directory my/autosave-dir)
 (require 'tramp)
 (add-to-list 'tramp-remote-path 'tramp-own-remote-path)
 (setq vc-ignore-dir-regexp
