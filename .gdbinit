@@ -8,7 +8,7 @@
 # Keywords: configuration
 
 # C++ pretty-printing
-source ~/stl-views.gdb
+source ~/config/stl-views.gdb
 
 # save history
 set history save
