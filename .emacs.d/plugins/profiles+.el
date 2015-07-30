@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-07-22 08:06:18 dan.harms>
+;; Modified Time-stamp: <2015-07-29 10:28:11 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -79,9 +79,10 @@ profile `profile-current'."
 (defun profile-find-profile-basename (name)
   "Given a typical profile file such as `.mybase.eprof', returns the
 basename, such as `mybase'."
-  (when
-      (string-match "\\.?\\([^.]+\\)$" (file-name-base name))
-  (match-string 1 (file-name-base name))))
+  (let ((base (file-name-base name)))
+    (when
+      (string-match "\\.?\\(.*\\)" base)
+    (match-string 1 base))))
 
 ;;;###autoload
 (defun profile-collect-include-files (alist &optional prepend-remote)
