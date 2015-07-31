@@ -5,7 +5,7 @@
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Saturday, July 25, 2015
 # Version: 1.0
-# Modified Time-stamp: <2015-07-31 11:56:08 dan.harms>
+# Modified Time-stamp: <2015-07-31 17:04:43 dan.harms>
 # Modified by: Dan Harms
 # Keywords: configuration
 
@@ -21,6 +21,19 @@ if [ $# -gt 0 ] ; then
    verbose=v
    shift
 fi
+
+################################### begin ####################################
+exit
+myarray=(`cat file.txt`)
+num=${#myarray[*]}
+counter=0
+while [ $counter -lt $num ]
+do
+   echo " Element $counter is ${myarray[$counter]}"
+   counter=$(( $counter + 1 ))
+done
+#################################### end #####################################
+
 
 echo "Tarring .emacs.d into $int..."
 $tar c"$verbose"f $int --exclude=*.elc .emacs.d

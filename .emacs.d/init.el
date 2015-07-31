@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-07-31 12:47:00 dan.harms>
+;; Modified Time-stamp: <2015-07-31 16:56:33 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -179,6 +179,16 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 ;; More recent emacsen seem to handle the error.
 (when (version< emacs-version "24.3")
   (defvar filename nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; rainbow ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(when (version< "24.3" emacs-version)
+  (require 'rainbow-mode)
+  ;; enable for emacs-lisp-mode
+  (add-to-list 'rainbow-html-colors-major-mode-list 'emacs-lisp-mode)
+  (add-to-list 'rainbow-x-colors-major-mode-list 'emacs-lisp-mode)
+  (add-to-list 'rainbow-ansi-colors-major-mode-list 'emacs-lisp-mode)
+  (add-to-list 'rainbow-r-colors-major-mode-list 'emacs-lisp-mode)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ibuffer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'ibuffer)
@@ -424,7 +434,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (require 'recentf)
 (setq recentf-max-saved-items 200
       recentf-max-menu-items 12)
-(setq recentf-exclude '( "-tags\\'" ))
+(setq recentf-exclude '( "-tags\\'" "ido\.last\\'" ))
 (recentf-mode 1)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ido ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -482,6 +492,10 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 ;; the old M-x
 (global-set-key "\e\ex" 'execute-extended-command)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; imenu ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'imenu-anywhere)
+(global-set-key "\C-cj" 'imenu-anywhere)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; powerline ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; todo: does not interoperate with sml
 ;(require 'powerline)
@@ -494,7 +508,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (rich-minority-mode 1)
   (setq rm-blacklist
         '(" AC" " yas" " Undo-Tree" " Abbrev" " Guide" " Hi" " $" " ,"
-          " Ifdef" ))
+          " Ifdef" " Rbow"))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smart-mode-line ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1130,7 +1144,9 @@ customization."
             (define-key emacs-lisp-mode-map (kbd "\C-c RET")
               (lambda()(interactive)
                 (byte-compile-file (buffer-file-name))))
-            (my/syntax-color-hex-values)
+            (if (featurep 'rainbow-mode)
+                (rainbow-turn-on)
+              (my/syntax-color-hex-values))
             ))
 (add-hook 'emacs-lisp-mode-hook 'eldoc-mode)
 (require 'lisp-extra-font-lock)
@@ -1163,9 +1179,19 @@ customization."
             ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; html-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(add-hook 'html-mode-hook 'my/syntax-color-hex-values)
+(add-hook 'html-mode-hook
+          (lambda()
+            (if (featurep 'rainbow-mode)
+                (rainbow-turn-on)
+              (my/syntax-color-hex-values))
+            ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; css-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(add-hook 'css-mode-hook 'my/syntax-color-hex-values)
+(add-hook 'css-mode-hook
+          (lambda()
+            (if (featurep 'rainbow-mode)
+                (rainbow-turn-on)
+              (my/syntax-color-hex-values))
+            ))
 
 ;; init.el ends here
