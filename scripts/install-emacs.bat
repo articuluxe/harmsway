@@ -5,7 +5,7 @@ rem Copyright (C) 2015  Dan Harms (dan.harms)
 rem Author: Dan Harms <dan.harms@xrtrading.com>
 rem Created: Thursday, May 21, 2015
 rem Version: 1.0
-rem Modified Time-stamp: <2015-07-25 12:43:59 dharms>
+rem Modified Time-stamp: <2015-07-31 13:03:05 dan.harms>
 rem Keywords: install perfect editor
 
 setlocal
@@ -21,35 +21,43 @@ set tar=c:\msys\1.0\bin\tar
 set emacs=c:\emacs-24.4\bin\emacs
 set user=%USERNAME%
 set timeout=c:\Windows\System32\timeout
-set curr_dir=%cd%
+set orig_dir=%cd%
 set script_dir=%~dp0
 set int=emacs.tar
-set dest=.emacs.d
+set manifest=.bk_manifest
+set backup=emacs_bk.tar
 
 if "%HOME%". == . (
     echo "HOME directory undefined, aborting."
     exit /b
 )
 
-echo "Generating %curr_dir%\%int%..."
-
 if exist %int% (
-    echo "Removing existing %int%..."
     del %int%
 )
 
-echo "Tarring .emacs.d into %int%..."
-"%tar%" c%verbose%f %int% --exclude=*.elc --exclude=.git --exclude=.tags .emacs.d
+echo Tarring .emacs.d into %int%...
+%tar% c%verbose%f %int% --exclude=*.elc .emacs.d
 
-if exist "%HOME%\%dest%" (
-    echo "Removing %HOME%\%dest%..."
-    rmdir "%HOME%\%dest%" /s /q
+cd %HOME%
+if exist .emacs.d (
+    if exist %backup% del %backup%
+    for /f %%i in (%orig_dir%\.emacs.d\%manifest%) do (
+        call :backup %%i %backup%
+    )
+    %timeout% /t 2
+    rmdir .emacs.d /s /q
+    mkdir .emacs.d
+    if exist %backup% (
+        %tar% -xvpf %backup% --overwrite
+        del %backup%
+    )
 )
 
-echo "Untarring %int% into %HOME%..."
-"%tar%" -C "%HOME%" -x%verbose%f %int%
+echo Untarring %int% into %cd%...
+%tar% -x%verbose%pf %orig_dir:C:=%\%int% --overwrite
 
-del %int%
+del %orig_dir%\%int%
 
 rem emacs will need forward slashes escaped, so double them
 set path=%HOME:\=\\%\\.emacs.d
@@ -57,9 +65,20 @@ set cmd=(byte-recompile-directory \"%path%\" 0 t)
 
 %emacs% --batch -u %user% --eval "%cmd%"
 
-echo "...Done."
-
 %timeout% /t 5
+
+rem end main
+exit /b %ERRORLEVEL%
+
+rem function: call :func "arg1"
+:backup
+set file=%1
+set tarfile=%2
+if exist .emacs.d\%file% (
+    echo Backing up %file%
+    %tar% -r%verbose%f %tarfile% .emacs.d/%file%
+)
+exit /b 0
 
 endlocal
 
