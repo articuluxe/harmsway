@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-07-30 09:02:47 dan.harms>
+;; Modified Time-stamp: <2015-07-31 12:47:00 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -792,7 +792,9 @@ register \\C-l."
 (add-hook 'protobuf-mode-hook
           (lambda()
             (setq ac-sources (add-to-list 'ac-sources 'ac-source-etags))))
-
+(defun my/expand-imenu() (interactive)
+       (auto-complete '(ac-source-imenu)))
+(global-set-key "\C-c\C-v" 'my/expand-imenu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; YASnippet ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
