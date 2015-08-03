@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-07-31 16:56:33 dan.harms>
+;; Modified Time-stamp: <2015-08-03 11:55:59 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -439,7 +439,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ido ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'ido)
-(ido-mode 1)
+(setq ido-save-directory-list-file (concat my/user-directory "ido-last"))
 (setq ido-max-prospects 25)
 ;; (setq ido-enable-flex-matching t)
 ;; (setq ido-case-fold t)
@@ -448,6 +448,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 ;; ask before reusing an existing buffer
 (setq-default ido-default-buffer-method 'maybe-frame)
 (setq-default ido-default-file-method 'maybe-frame)
+(ido-mode 1)
 ;; sort files by descending modified time (except remotely, which is dog-slow)
 (defun ido-sort-mtime()
   (unless (tramp-tramp-file-p default-directory)
