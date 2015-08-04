@@ -507,6 +507,14 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; imenu ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'imenu-anywhere)
+(setq imenu-example--function-name-regexp-c
+      (concat
+       "^[ \t]*[a-zA-Z0-9]+[ \t]?"
+       "\\([a-zA-Z0-9_*]+[ \t]+\\)?"
+       "\\([a-zA-Z0-9_*]+[ \t]+\\)?"
+       "\\([*&]+[ \t]*\\)?"
+       "\\([a-zA-Z0-9_*]+\\)[ \t]*("
+       ))
 (global-set-key "\C-cj" 'imenu-anywhere)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; powerline ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
