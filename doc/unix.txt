@@ -4,7 +4,7 @@
 # Author:  <dan.harms@xrtrading.com>
 # Created: Friday, March 20, 2015
 # Version: 1.0
-# Modified Time-stamp: <2015-07-28 11:15:27 dan.harms>
+# Modified Time-stamp: <2015-08-04 12:46:32 dan.harms>
 # Keywords: help
 
 # install x
@@ -68,6 +68,10 @@ mv file.{old,new}
 rm !(*.py|*.sh)
 # result of last command
 $?
+# edit current line using $EDITOR, then execute
+\C-x \C-e
+# execute current line, then present subsequent from history
+\C-o
 
 # redirect stderr
 <command> 2> output.txt

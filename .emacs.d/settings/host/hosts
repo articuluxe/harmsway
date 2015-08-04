@@ -1,0 +1,7 @@
+(setq my/host-plist
+      '(
+        (:host "carvzn-snap-06h.lnx.xrtrading.local" :site "xr")
+        (:host "chihq-benchmark-32e.lnx.xrtrading.local" :site "xr")
+        (:host "hq-snapdev-77v.lnx.xrtrading.local" :site "xr")
+        (:host "hq-snapdev-55a.lnx.xrtrading.local" :site "xr")
+        ))

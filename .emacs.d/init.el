@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-08-04 15:17:29 dan.harms>
+;; Modified Time-stamp: <2015-08-04 16:21:10 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -42,7 +42,7 @@
   )
 (defvar my/user-settings
   (concat my/user-directory "settings/user/" user-login-name))
-(load my/user-settings)
+(load my/user-settings t)
 
 (set-register ?~ (cons 'file "~/"))
 (set-register ?\C-i (cons 'file user-init-file)) ;edit init file
@@ -281,6 +281,11 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 ;;                                          (list method user host str hop))))
 ;;             (expand-file-name str basedir)))))))
 ;; (setq file-of-tag-function 'my/etags-file-of-tag)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dash ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(when (version< "24.3" emacs-version)
+  (require 'dash)
+  (eval-after-load "dash" '(dash-enable-font-lock)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; s ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (when (version< "24.3" emacs-version)
@@ -1044,27 +1049,32 @@ customization."
            (concat my/user-directory "settings/site/" name)))
          (site-file (concat site-dir name)))
     (when (file-exists-p site-file)
-;      (setq site-name (file-name-base site-file))
+      ;; (setq site-name (file-name-base site-file))
       (load site-file))
     (setq yas-snippet-dirs (cons (concat site-dir "snippets/")
                                  yas-snippet-dirs))
     (yas-reload-all)
     ))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; host ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(let* ((host-dir
+(defvar my/host-plist '())
+(let* ((system system-name)
+       (hosts-dir (concat my/user-directory "settings/host/"))
+       (hosts-file (concat hosts-dir "hosts"))
+       (host-dir
         (file-name-as-directory
-         (concat my/user-directory "settings/host/" system-name)))
-	   (host-file (concat host-dir system-name)))
+         (concat hosts-dir system)))
+	   (host-file (concat host-dir system)))
   ;; load host file (if present)
-  (with-demoted-errors "Error while loading host-file: %s"
-    (load host-file t))
-  ;; also load any profiles
-  ;; todo: drh
-  ;; (mapc (lambda (file)
-  ;;         (load-file file))
-  ;;       (directory-files host-dir t "\\.[er]prof$"))
-  )
-
+  (if (file-exists-p host-file)
+      (load host-file t)
+    ;; otherwise look for current host in hosts file
+    (load hosts-file t)
+    (mapc
+     (lambda(plist)
+       (and (string= (plist-get plist :host) system)
+            (plist-get plist :site)
+            (my/load-site-file (plist-get plist :site))))
+     my/host-plist)))
 
 (add-hook 'before-save-hook 'my/before-save-hook)
 (defun my/before-save-hook() "Presave hook"

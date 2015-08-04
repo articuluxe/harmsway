@@ -1,6 +1,5 @@
 ;; -*- Mode: Emacs-Lisp -*-
 ;; uniquify-recentf.el --- Uniquify recentf results
-;; Copyright (C) 2015  Dan Harms (dan.harms)
 ;; Implement functionality similar to uniquify to make recentf results bearable
 ;; Requires s.el and dash.el - awesome libraries from Magnar Sveen
 ;; Hat-tip : Baishampayan Ghose for the clojure implementation at

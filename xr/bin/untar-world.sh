@@ -5,12 +5,21 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Monday, May 18, 2015
 # Version: 1.0
-# Modified Time-stamp: <2015-07-29 11:45:46 dan.harms>
+# Modified Time-stamp: <2015-08-04 16:35:14 dan.harms>
 # Keywords: configuration
 
 tar=$TAR
-int=emacs_int.tar
+manifest=.bk_manifest
+backup=emacs_bk.tar
 input=
+
+function backup_file
+{
+   if [ -f .emacs.d/$1 ] ; then
+      echo Backing up $1
+      $tar -rvf $backup .emacs.d/$1
+   fi
+}
 
 if [ $# -gt 0 ] ; then
    input=$1
@@ -27,22 +36,28 @@ date=$(date '+%F_%T' | tr ':' '-')
 pushd ~
 
 # there's an existing .emacs.d
-if [ -d .emacs.d ] ; then
-   # copy interesting files
-   tar cf $int .emacs.d/ac-comphist.dat
-   tar uf $int .emacs.d/recentf
-   tar uf $int .emacs.d/smex-items
-   tar uf $int .emacs.d/history
-   tar uf $int .emacs.d/autosaves
-   tar uf $int .emacs.d/backups
+tar --overwrite -xpf $input .emacs.d/$manifest
+if [ -d .emacs.d ] && [ -f .emacs.d/$manifest ] ; then
+   rm -f $backup
+   files=(`cat .emacs.d/$manifest`)
+   numfiles=${#files[*]}
+   i=0
+   while [ $i -lt $numfiles ]
+   do
+      backup_file ${files[$i]}
+      i=$(( $i+1 ))
+   done
    # backup for posterity
    tar czf .emacs.d.bk_$date.tgz --force-local .emacs.d
    # restore interesting files
    rm -rf .emacs.d
    mkdir .emacs.d
-   tar -C .emacs.d -xpf $int
-   rm -f $int
+   if [ -r $backup ] ; then
+      tar -xpf $backup
+      rm -f $backup
+   fi
 fi
+
 # remove and backup .ssh
 if [ -d .ssh ] ; then
    $tar czf .ssh.bk_$date.tgz --force-local .ssh
@@ -50,7 +65,7 @@ if [ -d .ssh ] ; then
 fi
 
 echo About to unpack $input...
-tar -C ~ --overwrite -xpvf $input
+tar --overwrite -xpvf $input
 
 # adjust .ssh
 pushd ~/.ssh
