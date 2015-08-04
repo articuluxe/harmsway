@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-08-04 11:20:52 dan.harms>
+;; Modified Time-stamp: <2015-08-04 15:17:29 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -197,6 +197,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (define-key ctl-x-4-map "\C-h" 'rotate:main-horizontal)
 (define-key ctl-x-4-map "v" 'rotate:even-vertical)
 (define-key ctl-x-4-map "\C-v" 'rotate:main-vertical)
+(define-key ctl-x-4-map "t" 'rotate:tiled)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ibuffer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'ibuffer)
