@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-08-03 11:55:59 dan.harms>
+;; Modified Time-stamp: <2015-08-04 08:38:54 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -160,7 +160,6 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (global-set-key [(next)] 'scroll-up-line)
 (global-set-key [(prior)] 'scroll-down-line)
 (global-set-key "\C-x\C-r" (lambda()(interactive)(revert-buffer nil t)))
-;; TODO: "\M-r" is unbound
 (global-set-key "\C-ca" 'align)
 (global-set-key "\C-cr" 'align-repeat-regexp)
 (global-set-key [f5] 'toggle-truncate-lines)
@@ -189,6 +188,15 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (add-to-list 'rainbow-ansi-colors-major-mode-list 'emacs-lisp-mode)
   (add-to-list 'rainbow-r-colors-major-mode-list 'emacs-lisp-mode)
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; rotate ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'rotate)
+(define-key ctl-x-4-map "l" 'rotate-layout)
+(define-key ctl-x-4-map "w" 'rotate-window)
+(define-key ctl-x-4-map "h" 'rotate:even-horizontal)
+(define-key ctl-x-4-map "\C-h" 'rotate:main-horizontal)
+(define-key ctl-x-4-map "v" 'rotate:even-vertical)
+(define-key ctl-x-4-map "\C-v" 'rotate:main-vertical)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ibuffer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'ibuffer)
