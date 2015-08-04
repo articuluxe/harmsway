@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-08-04 08:38:54 dan.harms>
+;; Modified Time-stamp: <2015-08-04 11:20:52 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -444,6 +444,9 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
       recentf-max-menu-items 12)
 (setq recentf-exclude '( "-tags\\'" "ido\.last\\'" ))
 (recentf-mode 1)
+(when (version< "24.3" emacs-version)
+  (require 'uniquify-recentf)
+  (global-set-key "\er" 'uniquify-recentf-ido-recentf-open))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ido ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'ido)
@@ -483,14 +486,15 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
                       (ido-completing-read
                        "M-x " (all-completions "" obarray 'commandp)))))))
 ;; for recentf
-(defun recentf-ido-find-file()
-  "Find a recent file using ido."
-  (interactive)
-  (let ((file (ido-completing-read
-               "Choose recent file:"
-               recentf-list nil t)))
-    (when file (find-file file))))
-(global-set-key "\er" 'recentf-ido-find-file)
+(unless (featurep 'uniquify-recentf)
+  (defun recentf-ido-find-file()
+    "Find a recent file using ido."
+    (interactive)
+    (let ((file (ido-completing-read
+                 "Choose recent file:"
+                 recentf-list nil t)))
+      (when file (find-file file))))
+  (global-set-key "\er" 'recentf-ido-find-file))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smex ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (when (<= 24 emacs-major-version)
