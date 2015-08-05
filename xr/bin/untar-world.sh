@@ -5,10 +5,10 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Monday, May 18, 2015
 # Version: 1.0
-# Modified Time-stamp: <2015-08-04 16:35:14 dan.harms>
+# Modified Time-stamp: <2015-08-05 10:08:32 dan.harms>
 # Keywords: configuration
 
-tar=$TAR
+tar=tar
 manifest=.bk_manifest
 backup=emacs_bk.tar
 input=

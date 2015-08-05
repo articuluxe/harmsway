@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-08-04 16:21:10 dan.harms>
+;; Modified Time-stamp: <2015-08-05 10:55:27 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -554,7 +554,8 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; tramp ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq tramp-default-method "ssh")
-(setq tramp-default-user my/user-name)
+(when (boundp 'my/user-name)
+  (setq tramp-default-user my/user-name))
 (setq tramp-auto-save-directory my/autosave-dir)
 (require 'tramp)
 (add-to-list 'tramp-remote-path 'tramp-own-remote-path)
