@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-08-05 10:55:27 dan.harms>
+;; Modified Time-stamp: <2015-08-06 13:08:05 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -167,7 +167,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (global-set-key "\C-cf" 'font-lock-fontify-buffer)
 (global-set-key "\e\es" 'speedbar)
 (global-set-key "\e\eo" 'speedbar-get-focus)
-(global-set-key "\C-cv" 'ff-find-other-file)
+(global-set-key "\C-x\C-g" 'ff-find-other-file)
 (global-set-key (kbd "M-#") 'sort-lines)
 (global-set-key (kbd "C-#") 'sort-paragraphs)
 (global-set-key "\C-xw" 'write-region)
@@ -513,14 +513,15 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; imenu ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'imenu-anywhere)
-(setq imenu-example--function-name-regexp-c
-      (concat
-       "^[ \t]*[a-zA-Z0-9]+[ \t]?"
-       "\\([a-zA-Z0-9_*]+[ \t]+\\)?"
-       "\\([a-zA-Z0-9_*]+[ \t]+\\)?"
-       "\\([*&]+[ \t]*\\)?"
-       "\\([a-zA-Z0-9_*]+\\)[ \t]*("
-       ))
+(require 'cc-mode+)
+;; (setq imenu-example--function-name-regexp-c
+;;       (concat
+;;        "^[ \t]*[a-zA-Z0-9]+[ \t]?"
+;;        "\\([a-zA-Z0-9_*]+[ \t]+\\)?"
+;;        "\\([a-zA-Z0-9_*]+[ \t]+\\)?"
+;;        "\\([*&]+[ \t]*\\)?"
+;;        "\\([a-zA-Z0-9_*]+\\)[ \t]*("
+;;        ))
 (global-set-key "\C-cj" 'imenu-anywhere)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; powerline ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -836,7 +837,7 @@ register \\C-l."
             (setq ac-sources (add-to-list 'ac-sources 'ac-source-etags))))
 (defun my/expand-imenu() (interactive)
        (auto-complete '(ac-source-imenu)))
-(global-set-key "\C-c\C-v" 'my/expand-imenu)
+(global-set-key "\C-xg" 'my/expand-imenu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; YASnippet ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
