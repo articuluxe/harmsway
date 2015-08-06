@@ -1,0 +1,14 @@
+rem -*- Mode: dos -*-
+rem dos.txt --- helpful commands
+rem Copyright (C) 2015  Dan Harms (dan.harms)
+rem Author: Dan Harms <dan.harms@xrtrading.com>
+rem Created: Thursday, August  6, 2015
+rem Version: 1.0
+rem Modified Time-stamp: <2015-08-06 10:40:54 dan.harms>
+rem Modified by: Dan Harms
+rem Keywords: dos help
+
+rem redirect all output to a file
+script.bat > output.txt 2>&1
+
+rem dos.txt ends here
