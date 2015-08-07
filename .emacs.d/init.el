@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-08-06 13:08:05 dan.harms>
+;; Modified Time-stamp: <2015-08-07 12:22:06 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -512,6 +512,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (global-set-key "\e\ex" 'execute-extended-command)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; imenu ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defvar imenu-anywhere-buffer-list-function 'current-buffer)
 (require 'imenu-anywhere)
 (require 'cc-mode+)
 ;; (setq imenu-example--function-name-regexp-c
