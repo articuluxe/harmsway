@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-07-22 08:32:50 dan.harms>
+;; Modified Time-stamp: <2015-08-07 14:13:24 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -470,6 +470,7 @@
     (setq exec (ido-read-file-name "Debug executable: " exec-dir nil t))
     (gdb (concat "gdb -i=mi " exec))))
 (global-set-key [f4] 'my/launch-gdb)
+(global-set-key "\C-c4" 'my/launch-gdb)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;; c++11 enum class hack ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; TODO: doesn't work

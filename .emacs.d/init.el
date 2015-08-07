@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-08-07 12:22:06 dan.harms>
+;; Modified Time-stamp: <2015-08-07 14:12:50 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -163,6 +163,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (global-set-key "\C-ca" 'align)
 (global-set-key "\C-cr" 'align-repeat-regexp)
 (global-set-key [f5] 'toggle-truncate-lines)
+(global-set-key "\C-c5" 'toggle-truncate-lines)
 (global-set-key "\C-c " 'global-whitespace-mode)
 (global-set-key "\C-cf" 'font-lock-fontify-buffer)
 (global-set-key "\e\es" 'speedbar)
@@ -396,6 +397,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (require 'popwin)
 (popwin-mode 1)
 (global-set-key [f1] popwin:keymap)
+(global-set-key "\C-c1" popwin:keymap)
 (setq popwin:special-display-config
       '(
         help-mode
@@ -564,10 +566,43 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (setq vc-ignore-dir-regexp
       (format "\\(%s\\)\\|\\(%s\\)"
               vc-ignore-dir-regexp tramp-file-name-regexp))
-(defvar my/tramp-file-list '())
-(defun my/open-tramp-file() (interactive)
-       (find-file (ido-completing-read "Remote file: " my/tramp-file-list)))
-(global-set-key [f6] 'my/open-tramp-file)
+
+(defvar my/remote-host-list '())
+(defun my/connect-to-remote-host()
+  "Connect to a remote host from `my/remote-host-list'."
+  (interactive)
+  (let ((hosts
+         (mapcar (lambda (plist)
+                   (let* ((delim (char-to-string ?:))
+                          (stem (plist-get plist :host))
+                          (user (or (plist-get plist :user)
+                                    my/user-name))
+                          (pwd (plist-get plist :password))
+                          (desc (plist-get plist :description))
+                          (category (plist-get plist :category))
+                          (display (concat user delim stem))
+                          (connect (concat
+                                    "/"
+                                    tramp-default-method
+                                    ":" user "@" stem ":~")))
+                     (when category
+                       (setq display
+                             (concat category delim display)))
+                     (when desc
+                       (setq display
+                             (concat display delim desc)))
+                     (and stem (cons display connect))))
+                 my/remote-host-list))
+        result cell)
+    (setq result
+          (funcall my/choose-func
+                   (mapcar 'car hosts)
+                   "Remote host: "))
+    (when result
+      (setq cell (assoc result hosts))
+      (find-file (cdr cell)))))
+(global-set-key [f6] 'my/connect-to-remote-host)
+(global-set-key "\C-c6" 'my/connect-to-remote-host)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dired ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'dired-x)                      ; C-x C-j now runs 'dired-jump
@@ -1066,10 +1101,14 @@ customization."
        (host-dir
         (file-name-as-directory
          (concat hosts-dir system)))
-	   (host-file (concat host-dir system)))
+	   (host-file (concat host-dir system))
+       (remote-hosts-file (concat host-dir "remote-hosts")))
   ;; load host file (if present)
   (if (file-exists-p host-file)
-      (load host-file t)
+      (progn
+        (load host-file t)
+        (when (file-exists-p remote-hosts-file)
+          (load remote-hosts-file t)))
     ;; otherwise look for current host in hosts file
     (load hosts-file t)
     (mapc
@@ -1077,7 +1116,8 @@ customization."
        (and (string= (plist-get plist :host) system)
             (plist-get plist :site)
             (my/load-site-file (plist-get plist :site))))
-     my/host-plist)))
+     my/host-plist))
+  )
 
 (add-hook 'before-save-hook 'my/before-save-hook)
 (defun my/before-save-hook() "Presave hook"
