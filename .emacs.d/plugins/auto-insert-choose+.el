@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-02-27 19:25:33 dharms>
+;; Modified Time-stamp: <2015-08-07 08:39:01 dan.harms>
 ;; Keywords: convenience
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -57,6 +57,14 @@ Intended for use in `auto-insert-alist'"
                                  (lambda ()
                                    (insert-file-contents
                                     (concat auto-insert-directory ,name))
+                                   (auto-insert-choose-yas-expand))))
+
+(defmacro auto-insert-choose+-add-entry-other-dir (alist dir name)
+  "Helper macro to add template file NAME to ALIST."
+  `(auto-insert-choose-add-entry ,alist ,name
+                                 (lambda ()
+                                   (insert-file-contents
+                                    (eval-when-compile (concat ,dir ,name)))
                                    (auto-insert-choose-yas-expand))))
 
 (provide 'auto-insert-choose+)
