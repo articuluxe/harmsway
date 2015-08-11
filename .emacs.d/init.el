@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-08-07 14:12:50 dan.harms>
+;; Modified Time-stamp: <2015-08-10 13:15:25 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -514,7 +514,10 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (global-set-key "\e\ex" 'execute-extended-command)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; imenu ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defvar imenu-anywhere-buffer-list-function 'current-buffer)
+;; I prefer imenu-anywhere to return imenu results only for the current
+;; buffer, not all open buffers.
+(defvar imenu-anywhere-buffer-list-function
+  (lambda() (list (current-buffer))))
 (require 'imenu-anywhere)
 (require 'cc-mode+)
 ;; (setq imenu-example--function-name-regexp-c
