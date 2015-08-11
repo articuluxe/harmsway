@@ -61,8 +61,7 @@ Based on the TextMate theme Monokai"
      (region ((t (:background "#49483E"))))
 
      ;; Parenthesis matching
-;orig     (show-paren-match-face ((t (:foreground "#2e3436" :background "#3E3D32"))))
-     (show-paren-match-face ((t (:foreground "#66D9EF" :background "#729fcf"))))
+     (show-paren-match-face ((t (:foreground "#2e3436" :background "#3E3D32"))))
      (show-paren-mismatch-face ((t (:foreground "#2e3436" :background "#ef2929"))))
 
      ;; Calendar
