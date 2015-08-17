@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Friday, August  7, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-08-14 12:27:15 dan.harms>
+;; Modified Time-stamp: <2015-08-17 16:45:49 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: homiak tramp remote hosts
 
@@ -48,26 +48,22 @@
              (when suffix
                (setq category (concat category ":" suffix)))
              (setq user (xml-get-attribute node 'Username))
-             ;; (replace-regexp-in-string
-             ;;  "\\`[^[:space:]]+\\(.*\\'\\)"
-             ;;  "" cat nil nil 1)
              (setq my/remote-host-list
                    (cons
                     (list :host
-                          (concat "\""
-                                  (match-string-no-properties 1 cat) "\"")
+                          (match-string-no-properties 1 cat)
                           :user
-                          (if (length user) user "dan.harms")
+                          (if (> 0 (length user)) user user-login-name)
                           :password
                           (xml-get-attribute node 'Password)
                           :description
-                          (concat "\"" (xml-get-attribute node 'Descr) "\"")
+                          (xml-get-attribute node 'Descr)
                           :category
-                          (concat "\"" category "\"")
+                          category
                           )
                     my/remote-host-list)))
             ((string= type "Container")
-             (loop-for-each elt (xml-get-children node 'Node); (xml-node-children node)
+             (loop-for-each elt (xml-get-children node 'Node)
                (parse-homiak--visit-node elt category))
              )))))
 
@@ -78,6 +74,7 @@
         root)
     (if file
         (progn
+          (setq my/remote-host-list '())
           (setq root (car (xml-parse-file file)))
           (loop-for-each elt (xml-node-children root)
             (when (listp elt)

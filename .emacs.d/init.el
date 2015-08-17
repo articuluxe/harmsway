@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-08-10 13:15:25 dan.harms>
+;; Modified Time-stamp: <2015-08-17 16:49:58 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -571,14 +571,15 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
               vc-ignore-dir-regexp tramp-file-name-regexp))
 
 (defvar my/remote-host-list '())
-(defun my/connect-to-remote-host()
+(defun my/connect-to-remote-host(&optional arg)
   "Connect to a remote host from `my/remote-host-list'."
-  (interactive)
+  (interactive "P")
   (let ((hosts
          (mapcar (lambda (plist)
                    (let* ((delim (char-to-string ?:))
                           (stem (plist-get plist :host))
-                          (user (or (plist-get plist :user)
+                          (user (or (unless arg
+                                      (plist-get plist :user))
                                     my/user-name))
                           (pwd (plist-get plist :password))
                           (desc (plist-get plist :description))

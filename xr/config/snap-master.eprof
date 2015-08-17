@@ -40,16 +40,16 @@
                   gen-tags-exe "-Re")
             gen-tags-ctags-cpp-options)
     (append (list "rcomm"
-                  "snap-static/remotecomm/remotecomm-3.0.4/include/"
+                  "snap-static/remotecomm/remotecomm-3.0.4-1/include/"
                   gen-tags-exe "-Re") gen-tags-ctags-cpp-options)
     (append (list "rdfp"
-                  "snap-static/IntelRDFPMathLib/10U1-custom/LIBRARY/"
+                  "snap-static/IntelRDFPMathLib/10U1-1-custom/LIBRARY/"
                   gen-tags-exe "-Re") gen-tags-ctags-cpp-options)
     (append (list "sparsehash"
                   "snap-static/sparsehash/sparsehash-2.0.2/include/"
                   gen-tags-exe "-Re") gen-tags-ctags-cpp-options)
     (append (list "strencode"
-                  "snap-static/stringencoders/3.10-custom/src/"
+                  "snap-static/stringencoders/3.10-1-custom/src/"
                   gen-tags-exe "-Re") gen-tags-ctags-cpp-options)
     (append (list "volley"
                   "snap-static/volley/1.1.0.7.2/include/"

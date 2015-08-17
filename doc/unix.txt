@@ -4,7 +4,7 @@
 # Author:  <dan.harms@xrtrading.com>
 # Created: Friday, March 20, 2015
 # Version: 1.0
-# Modified Time-stamp: <2015-08-04 12:46:32 dan.harms>
+# Modified Time-stamp: <2015-08-17 14:58:33 dan.harms>
 # Keywords: help
 
 # install x
@@ -36,6 +36,15 @@ editcap -F libpcap -T ether <file>.erf <file>.pcap
 #################################### gdb #####################################
 # print first 8 elements of a std::vector<std::string> vec
 p *(vec._M_impl._M_start)@8
+# print first 20 characters of a std::string
+p *(str._M_dataplus._M_p)@20
+# print raw memory as 21 hex bytes
+x/21xb 0x0000abcd
+# print as null-terminated string
+x/1sb 0x00abcd01
+# show last instruction
+x/i $pc
+disas $pc
 # conditional breakpoints
 break <line> if strcmp(str, "str") == 0
 
