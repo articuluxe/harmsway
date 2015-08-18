@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-08-17 16:49:58 dan.harms>
+;; Modified Time-stamp: <2015-08-18 11:48:04 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -449,7 +449,8 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; recentf ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'recentf)
 (setq recentf-max-saved-items 200
-      recentf-max-menu-items 12)
+      recentf-max-menu-items 12
+      recentf-save-file (concat my/user-directory "recentf"))
 (setq recentf-exclude '( "-tags\\'" "ido\.last\\'" ))
 (recentf-mode 1)
 (when (version< "24.3" emacs-version)
@@ -519,16 +520,51 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (defvar imenu-anywhere-buffer-list-function
   (lambda() (list (current-buffer))))
 (require 'imenu-anywhere)
-(require 'cc-mode+)
-;; (setq imenu-example--function-name-regexp-c
-;;       (concat
-;;        "^[ \t]*[a-zA-Z0-9]+[ \t]?"
-;;        "\\([a-zA-Z0-9_*]+[ \t]+\\)?"
-;;        "\\([a-zA-Z0-9_*]+[ \t]+\\)?"
-;;        "\\([*&]+[ \t]*\\)?"
-;;        "\\([a-zA-Z0-9_*]+\\)[ \t]*("
-;;        ))
 (global-set-key "\C-cj" 'imenu-anywhere)
+
+;; TODO: this regexp has false positives, but at least handles when
+;; functions have whitespace (i.e. in namespaces).  I don't know which
+;; is better.  The answer may be to not use imenu at all.
+;; (require 'cc-mode+)
+(defvar my/imenu-generic-expression
+  `((nil
+     ,(concat
+       "\\s-*"                     ; beginning of line is required
+       "\\(template[ \t]*<[^>]+>[ \t]*\\)?" ; there may be a "template <...>"
+       "\\([a-zA-Z0-9_:]+[ \t]+\\)?"        ; type specs; there can be no
+       "\\([a-zA-Z0-9_:]+[ \t]+\\)?"        ; more than 3 tokens, right?
+
+       "\\("                            ; last type spec including */&
+       "[a-zA-Z0-9_:]+"
+       "\\([ \t]*[*&]+[ \t]*\\|[ \t]+\\)" ; either pointer/ref sign or whitespace
+       "\\)?"                             ; if there is a last type spec
+       "\\s-+\\("                      ; name; take that into the imenu entry
+       "[a-zA-Z0-9_:~]+"          ; member function, ctor or dtor...
+                                        ; (may not contain * because then
+                                        ; "a::operator char*" would become "char*"!)
+       "\\|"
+       "\\([a-zA-Z0-9_:~]*::\\)?operator"
+       "[^a-zA-Z1-9_][^(]*"             ; ...or operator
+       " \\)"
+       "[ \t]*([^)]*)[ \t\n]*[^;]"    ; require something other than a ; after
+                                        ; the (...) to avoid prototypes.  Can't
+                                        ; catch cases with () inside the parentheses
+                                        ; surrounding the parameters
+                                        ; (like "int foo(int a=bar()) {...}"
+
+       ) 6)
+    ("Class"
+     ,(concat
+       "\\s-*"                       ; beginning of line is required
+       "\\(template[ \t]*<[^>]+>[ \t]*\\)?" ; there may be a "template <...>"
+       "class[ \t]+"
+       "\\([a-zA-Z0-9_]+\\)"            ; this is the string we want to get
+       "[ \t]*[:{]"
+       ) 2)))
+
+(add-hook 'c++-mode-hook
+          (lambda() (setq imenu-generic-expression
+                          my/imenu-generic-expression)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; powerline ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; todo: does not interoperate with sml
