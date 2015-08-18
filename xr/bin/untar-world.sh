@@ -5,7 +5,7 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Monday, May 18, 2015
 # Version: 1.0
-# Modified Time-stamp: <2015-08-05 10:08:32 dan.harms>
+# Modified Time-stamp: <2015-08-17 22:10:53 dharms>
 # Keywords: configuration
 
 tar=tar
@@ -36,7 +36,7 @@ date=$(date '+%F_%T' | tr ':' '-')
 pushd ~
 
 # there's an existing .emacs.d
-tar --overwrite -xpf $input .emacs.d/$manifest
+$tar --overwrite -xpf $input .emacs.d/$manifest
 if [ -d .emacs.d ] && [ -f .emacs.d/$manifest ] ; then
    rm -f $backup
    files=(`cat .emacs.d/$manifest`)
@@ -48,12 +48,12 @@ if [ -d .emacs.d ] && [ -f .emacs.d/$manifest ] ; then
       i=$(( $i+1 ))
    done
    # backup for posterity
-   tar czf .emacs.d.bk_$date.tgz --force-local .emacs.d
+   $tar czf .emacs.d.bk_$date.tgz --force-local .emacs.d
    # restore interesting files
    rm -rf .emacs.d
    mkdir .emacs.d
    if [ -r $backup ] ; then
-      tar -xpf $backup
+      $tar -xpf $backup
       rm -f $backup
    fi
 fi
@@ -65,7 +65,7 @@ if [ -d .ssh ] ; then
 fi
 
 echo About to unpack $input...
-tar --overwrite -xpvf $input
+$tar --overwrite -xpvf $input
 
 # adjust .ssh
 pushd ~/.ssh

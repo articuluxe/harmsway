@@ -5,7 +5,7 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Monday, May 18, 2015
 # Version: 1.0
-# Modified Time-stamp: <2015-08-04 16:35:08 dan.harms>
+# Modified Time-stamp: <2015-08-17 22:11:27 dharms>
 # Keywords: configuration
 
 tar=$TAR
@@ -36,7 +36,7 @@ date=$(date '+%F_%T' | tr ':' '-')
 pushd ~
 
 # there's an existing .emacs.d
-tar --overwrite -xpf $input .emacs.d/$manifest
+$tar --overwrite -xpf $input .emacs.d/$manifest
 if [ -d .emacs.d ] && [ -f .emacs.d/$manifest ] ; then
    rm -f $backup
    files=(`cat .emacs.d/$manifest`)
@@ -53,7 +53,7 @@ if [ -d .emacs.d ] && [ -f .emacs.d/$manifest ] ; then
    rm -rf .emacs.d
    mkdir .emacs.d
    if [ -r $backup ] ; then
-      tar -xpf $backup
+      $tar -xpf $backup
       rm -f $backup
    fi
 fi
