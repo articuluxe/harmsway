@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-08-18 11:48:04 dan.harms>
+;; Modified Time-stamp: <2015-08-20 08:35:11 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -725,7 +725,9 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; diff ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; only highlight current chunk
-(setq-default ediff-highlight-all-diffs 'nil)
+(setq-default ediff-highlight-all-diffs 'nil
+              ediff-keep-variants nil
+              )
 ;; don't use a separate control frame
 (setq ediff-window-setup-function 'ediff-setup-windows-plain)
 ;; toggle between control frame and control window

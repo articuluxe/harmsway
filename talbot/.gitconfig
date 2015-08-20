@@ -6,19 +6,19 @@
 [color]
 	ui = true
 [diff]
-	tool = emacsgui
+	tool = diffgui
 [difftool]
 	prompt = false
-[difftool.emacsterm]
+[difftool.diffterm]
 	cmd = /usr/bin/env LOCAL=$LOCAL REMOTE=$REMOTE $EDITOR --load ~/config/difftool.el
-[difftool.emacsgui]
+[difftool.diffgui]
 	cmd = /usr/bin/env LOCAL=$LOCAL REMOTE=$REMOTE $EMACSX --load ~/config/difftool.el
 [merge]
-	tool = emacsgui
+	tool = mergegui
 [mergetool]
 	prompt = false
-[mergetool.emacsterm]
+[mergetool.mergeterm]
 	cmd = /usr/bin/env LOCAL=$LOCAL REMOTE=$REMOTE BASE=$BASE MERGED=$MERGED $EDITOR --load ~/config/mergetool.el 
-[mergetool.emacsgui]
+[mergetool.mergegui]
 	cmd = /usr/bin/env LOCAL=$LOCAL REMOTE=$REMOTE BASE=$BASE MERGED=$MERGED $EMACSX --load ~/config/mergetool.el
     

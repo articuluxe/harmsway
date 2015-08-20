@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Tuesday, August 18, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-08-19 17:03:37 dan.harms>
+;; Modified Time-stamp: <2015-08-20 09:21:36 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: git ediff
 
@@ -27,15 +27,16 @@
 
 ;; Code:
 
-(defun ediff-write-merge-buffer ()
-  (let ((file ediff-merge-store-file))
-    (set-buffer ediff-buffer-C)
-    (write-region (point-min) (point-max) file)
-    (message "Merge buffer saved in: %s" file)
-    (set-buffer-modified-p nil)
-    (sit-for 1)))
+;; (defun ediff-write-merge-buffer ()
+;;   (let ((file ediff-merge-store-file))
+;;     (set-buffer ediff-buffer-C)
+;;     (write-region (point-min) (point-max) file)
+;;     (message "Merge buffer saved in: %s" file)
+;;     (set-buffer-modified-p nil)
+;;     (sit-for 1)))
+;; (setq ediff-quit-merge-hook 'ediff-write-merge-buffer)
 (setq ediff-quit-hook 'kill-emacs
-      ediff-quit-merge-hook 'ediff-write-merge-buffer)
+      ediff-autostore-merges t)
 (add-to-list 'initial-frame-alist '(fullscreen . fullwidth))
 (ediff-merge-files-with-ancestor
  (getenv "LOCAL")

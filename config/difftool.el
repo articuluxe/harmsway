@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Tuesday, August 18, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-08-19 10:20:33 dan.harms>
+;; Modified Time-stamp: <2015-08-20 09:22:14 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: git diff
 
@@ -30,7 +30,6 @@
 (setq ediff-quit-hook 'kill-emacs
       ediff-split-window-function 'split-window-horizontally)
 (add-to-list 'initial-frame-alist '(fullscreen . fullwidth))
-;(add-hook 'ediff-startup-hook 'ediff-toggle-wide-display)
 (ediff-files
  (getenv "LOCAL")
  (getenv "REMOTE"))
