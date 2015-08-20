@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-07-29 10:28:11 dan.harms>
+;; Modified Time-stamp: <2015-08-20 16:58:05 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -177,8 +177,9 @@ some convenience registers to access the build-sub-dirs."
                              (concat (upcase
                                       (directory-file-name dir)) ":")))
                    (reg (caddr elt)))
-              (add-to-list 'sml/replacer-regexp-list
-                           (list dir name) t)
+              (unless (= 0 (length dir))
+                (add-to-list 'sml/replacer-regexp-list
+                             (list dir name) t))
               (and reg (characterp reg)
                    (set-register
                     reg (cons 'file (concat
