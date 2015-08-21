@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-08-20 16:58:05 dan.harms>
+;; Modified Time-stamp: <2015-08-21 15:59:14 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -325,7 +325,7 @@ path, possibly including a `~' representing the user's home directory."
   "Initialize a loaded profile."
   (let ((root (profile-current-get 'project-root-dir)))
     (when (and profile-current
-               (not (profile-current-get 'profile-inited)))
+               (not (profile-current-get 'profile-inited t)))
       ;; run this init code once per profile loaded
       (when remote-host
         (profile-current-put 'remote-host remote-host))
