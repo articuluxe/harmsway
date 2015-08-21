@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-08-20 08:35:11 dan.harms>
+;; Modified Time-stamp: <2015-08-21 12:18:27 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -50,6 +50,7 @@
 (set-register ?\C-k (cons 'file "~/Desktop"))
 (set-register ?\C-w (cons 'file "~/Downloads"))
 (set-register ?\C-s (cons 'file "~/src"))
+(set-register ?\C-h (cons 'file "~/src/harmsway"))
 (set-register ?\C-e (cons 'file "~/src/harmsway/.emacs.d"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-save ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -431,7 +432,16 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; bookmark+ ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
   (add-to-list 'load-path (concat my/plugins-directory "bookmark+/")))
+(setq bookmark-default-file (concat my/user-directory "bookmarks")
+      bmkp-bmenu-state-file (concat my/user-directory
+                                    "emacs-bmk-bmenu-state.el")
+      bookmark-save-flag nil
+      )
 (require 'bookmark+)
+(add-hook 'after-init-hook
+          (lambda ()
+            (bookmark-bmenu-list)
+            (switch-to-buffer "*Bookmark List*")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; savehist ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'savehist)
@@ -849,7 +859,7 @@ register \\C-l."
 (require 'profiles+)
 (profile-define "default" "dharms" "danielrharms@gmail.com"
                 ;; relative path to makefiles
-                ;; 'build-sub-dirs '(("build/" "BLD:"))
+                'build-sub-dirs '((""))
                 ;; relative path to debug executables (under project-root-dir
                 ;; and build-sub-dir)
                 ;; 'debug-sub-dirs '("tests/")

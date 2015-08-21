@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Tuesday, August 18, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-08-20 09:21:36 dan.harms>
+;; Modified Time-stamp: <2015-08-21 16:48:30 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: git ediff
 
@@ -36,7 +36,7 @@
 ;;     (sit-for 1)))
 ;; (setq ediff-quit-merge-hook 'ediff-write-merge-buffer)
 (setq ediff-quit-hook 'kill-emacs
-      ediff-autostore-merges t)
+      ediff-autostore-merges nil)
 (add-to-list 'initial-frame-alist '(fullscreen . fullwidth))
 (ediff-merge-files-with-ancestor
  (getenv "LOCAL")
