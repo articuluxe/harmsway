@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-08-21 12:18:27 dan.harms>
+;; Modified Time-stamp: <2015-08-24 07:59:19 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -440,8 +440,9 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (require 'bookmark+)
 (add-hook 'after-init-hook
           (lambda ()
-            (bookmark-bmenu-list)
-            (switch-to-buffer "*Bookmark List*")))
+            (unless (> (length command-line-args) 1)
+              (bookmark-bmenu-list)
+              (switch-to-buffer "*Bookmark List*"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; savehist ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'savehist)
