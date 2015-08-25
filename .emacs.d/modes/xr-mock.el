@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Wednesday, June 10, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-08-25 05:37:51 dharms>
+;; Modified Time-stamp: <2015-08-25 08:36:02 dan.harms>
 ;; Keywords: mock script
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -84,6 +84,6 @@
                lambda nil
                (buffer-substring (match-beginning 2) (match-end 2))) t)
 
-(provide 'mock)
+(provide 'xr-mock)
 
 ;; xr-mock-mode.el ends here

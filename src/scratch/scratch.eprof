@@ -1,0 +1,43 @@
+;; -*- Mode: Emacs-Lisp -*-
+;;
+;;
+
+(defun on-scratch-init (project-root)
+  ;; TAGS
+  (profile-current-put
+   'ctags-alist
+   (list
+    (append (list "scratch" "" gen-tags-exe "-Re"
+                  ) gen-tags-ctags-cpp-options)
+    (append (list "clib" "/usr/include/"
+                  gen-tags-exe "-Re"
+                  "--exclude=c++"
+                  "--exclude=boost"
+                  "--exclude=X11"
+                  "--exclude=python"
+                  ) gen-tags-ctags-cpp-options)
+    (append (list "c++lib" "/usr/local/gcc-4.9.1/include/c++/4.9.1/"
+                  gen-tags-exe "-Re"
+                  "--language-force=c++"
+                  "-h=\".h.H.hh.hpp.hxx.h++.inc.def.\""
+                  ) gen-tags-ctags-cpp-options)
+    ))
+
+  (gen-tags-set-tags-table)
+  (profile-set-include-files)
+  (profile-set-grep-dirs)
+  (profile-set-mode-line-from-include-files)
+  (profile-set-sml-and-registers-from-build-sub-dirs)
+
+  )
+
+;; define the profile
+(profile-define-derived
+ "scratch"
+ "default"
+ "dan.harms" "dan.harms@xrtrading.com"
+ 'project-name "scratch"
+ 'build-sub-dirs '((""))
+ 'on-file-open #'profile-on-c-file-open
+ 'on-profile-init #'on-scratch-init
+ )

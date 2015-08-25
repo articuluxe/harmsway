@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-08-24 08:45:51 dan.harms>
+;; Modified Time-stamp: <2015-08-25 10:17:02 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -441,6 +441,10 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
       bookmark-save-flag nil
       )
 (require 'bookmark+)
+(global-set-key [f7] 'bmkp-previous-bookmark)
+(global-set-key "\C-c7" 'bmkp-previous-bookmark)
+(global-set-key [f8] 'bmkp-next-bookmark)
+(global-set-key "\C-c8" 'bmkp-next-bookmark)
 (add-hook 'after-init-hook
           (lambda ()
             (unless (> (length command-line-args) 1)

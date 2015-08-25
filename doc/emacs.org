@@ -1,4 +1,5 @@
-;; -*- Mode: emacs-lisp; eval: (linkd-mode 1); -*-
+;; -*- Mode: org; -*-
+* Fonts
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; FONTS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; select font on graphical systems
 (x-select-font nil t)
@@ -9,7 +10,8 @@ C-x C-+   /   C-x C--
 (@> "Bookmark Tags")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Bookmarks ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
+* Bookmarks
+** List
 ;; (@* "List") (C-x p)
 r             rename
 M-r/R         relocate [marked]
@@ -31,7 +33,7 @@ s s           cycle sorting
 s r           reverse sorting
 s b           sort by last file/buffer access
 s v           sort by bookmark visit frequency
-
+** Tags
 ;; (@* "Tags") (C-x p t)
 C-x p ?       describe bookmark
 T +           add
