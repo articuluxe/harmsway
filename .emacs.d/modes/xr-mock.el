@@ -1,10 +1,10 @@
 ;; -*- Mode: Emacs-Lisp -*-
-;; mock-mode.el --- major mode to view mock scripts
+;; xr-mock-mode.el --- major mode to view mock scripts
 ;; Copyright (C) 2015  Dan Harms (dan.harms)
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Wednesday, June 10, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-06-11 11:44:37 dan.harms>
+;; Modified Time-stamp: <2015-08-25 05:37:51 dharms>
 ;; Keywords: mock script
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -76,6 +76,14 @@
   (run-hooks 'mock-mode-hook)
   )
 
+(add-to-list 'auto-mode-alist
+             '("mockobjects/testscripts/.*\\.\\(txt\\|script\\|defines\\)$"
+               . mock-mode))
+(add-to-list 'ff-special-constructs
+             '("^\\(?:@@\\)?\\(include\\|sourceFiles\\|scriptfile\\)\\s-*=\\s-*\\(.*\\)"
+               lambda nil
+               (buffer-substring (match-beginning 2) (match-end 2))) t)
+
 (provide 'mock)
 
-;; mock-mode.el ends here
+;; xr-mock-mode.el ends here
