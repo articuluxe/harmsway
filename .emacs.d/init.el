@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-08-25 10:17:02 dan.harms>
+;; Modified Time-stamp: <2015-08-26 08:59:24 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -753,13 +753,33 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
           (lambda()
             (define-key ediff-mode-map "t" 'ediff-toggle-multiframe)
             ))
+
 ;; ensure wide display does not persist after quitting ediff
+(defvar ediff-last-windows nil "Last ediff window configuration.")
+(defun ediff-restore-windows ()
+  "Restore window configuration to `ediff-last-windows'."
+  (set-window-configuration ediff-last-windows)
+  (remove-hook 'ediff-after-quit-hook-internal
+               'ediff-restore-windows))
+(defadvice ediff-buffers (around ediff-restore-windows activate)
+  (setq ediff-last-windows (current-window-configuration))
+  (add-hook 'ediff-after-quit-hook-internal 'ediff-restore-windows)
+  ad-do-it)
+
 (defun my/toggle-ediff-wide-display()
   "Turn off wide-display mode (if enabled) before quitting ediff."
   (interactive)
   (when ediff-wide-display-p
     (ediff-toggle-wide-display)))
-(add-hook 'ediff-cleanup-hook 'my/toggle-ediff-wide-display)
+(add-hook 'ediff-cleanup-hook
+          (lambda ()
+            (my/toggle-ediff-wide-display)
+            (ediff-janitor t nil)
+            ))
+
+;; resume prior window configuration
+(add-hook 'ediff-after-quit-hook-internal 'winner-undo)
+
 ;; better colors in older versions
 (when (version< emacs-version "24.3")
   (eval-after-load 'diff-mode '(progn
