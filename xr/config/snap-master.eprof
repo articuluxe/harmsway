@@ -47,7 +47,9 @@
                   gen-tags-exe "-Re") gen-tags-ctags-cpp-options)
     (append (list "sparsehash"
                   "snap-static/sparsehash/sparsehash-2.0.2/include/"
-                  gen-tags-exe "-Re") gen-tags-ctags-cpp-options)
+                  gen-tags-exe "-Re"
+                  "--language-force=c++"
+                  ) gen-tags-ctags-cpp-options)
     (append (list "strencode"
                   "snap-static/stringencoders/3.10-1-custom/include/"
                   gen-tags-exe "-Re") gen-tags-ctags-cpp-options)
