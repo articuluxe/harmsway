@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-06-25 08:55:00 dan.harms>
+;; Modified Time-stamp: <2015-08-28 13:03:24 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -60,7 +60,7 @@
          ;; text within brackets
          (list "\\[.+?\\]" '(0 font-lock-keyword-face))
          ;; ip address:port (overrides prior fontification)
-         (list "\\(\\(?:[[:digit:]]+\\.\\)\\{3\\}[[:digit:]]+\\):\\([[:digit:]]+\\)"
+         (list "\\(\\(?:[[:digit:]]+\\.\\)\\{3\\}[[:digit:]]+\\)\\(:[[:digit:]]\\{2,5\\}\\)?"
                '(1 font-lock-variable-name-face t)
                '(2 font-lock-constant-face t))
          ;; personal debug statements
