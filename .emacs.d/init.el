@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-08-26 08:59:24 dan.harms>
+;; Modified Time-stamp: <2015-08-31 14:26:58 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -396,6 +396,12 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ascii ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'ascii)
 (global-set-key "\M-sa" 'ascii-display)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; magit ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(unless (version< emacs-version "24.4")
+  (add-to-list 'load-path (concat my/plugins-directory "magit/lisp/"))
+  (require 'with-editor)
+  (require 'magit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; popwin ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'popwin)
