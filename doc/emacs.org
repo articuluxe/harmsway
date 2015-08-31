@@ -1,4 +1,25 @@
 ;; -*- Mode: org; -*-
+
+
+[DEBUG]
+M-x toggle-debug-on-error
+M-: (setq debug-on-error t)
+C-x C-e      eval-last-sexp
+M-C-x        eval-defun
+M-x debug-on-entry <func>
+(debug nil (current-buffer))
+trace-function 
+
+C-x RET f unix   change buffer's file coding system
+C-x C-m f   change file's default text encoding
+C-q <x>     to enter control character <x>
+C-c C-s     check line syntax
+C-u C-x =
+list-faces-display   list and display faces
+C-x C-+   enlarge font
+C-x C--    decrease font
+
+
 * Fonts
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; FONTS ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; select font on graphical systems
@@ -59,3 +80,275 @@ C-x j y       load a bookmark file [switch with prefix]
 ;; Cycle
 C-x p p/n     cycle prev/next bookmark in current buffer
 C-x p b/f     cycle prev/next bookmark in list
+
+
+[REGISTER]
+C-x r s %d copy region into register %d
+C-u C-x r s %d cut text into register %d
+C-x r i %d insert register %d
+C-x r  +     append text to register
+C-x r <sp> %d  save position in register %d
+C-x r j %d   jump to register %d
+C-x r w %d   store selected frame's window config in register %d
+C-x r f %d   save state of all frames in register %d
+
+[IDO]
+C-l     reread directory
+C-t     toggle regexp
+C-p    toggle prefix/substring match
+C-c    toggle case-sensitivity
+C-d     dired
+M-n, M-p   prior history
+C-f, C-b   fall back to traditional methods
+M-m    create directory in current dir
+
+[BOOKMARK]
+C-x r m [%n] set file's bookmark [possibly named %n] at point
+C-x r b %n   jump to bookmark %n
+C-x r l      list all bookmarks
+
+[MACRO]
+C-x (        start recording keyboard macro
+C-x )        stop recording
+C-x e        replay
+C-x C-k r   apply macro to all lines in region
+
+[POPWIN]     [f1]-
+b   Popup buffer
+l    Popup last buffer
+f    Find file
+1   temporarily enlarge buffer, C-g exits
+
+
+M-s          center a line horizontally
+M-i          move to next tab stop
+M-m          move to first non-blank character on line
+C-x TAB   shift lines
+
+C-l        recenter (center, top, bottom)
+M-C-l  smart recenter
+C-u 0 C-l    scroll current line to top of buffer
+M-%d         repeat command %d times
+C-u %d       repeat command %d times [defaults to 4]
+C-x z        repeat prev. command
+C-x esc esc    Repeat last minibuffer command
+C-g          cancel
+C-x u        undo
+M-!          run shell
+M-|     run shell with selection piped as input
+C-u M-!      paste result of shell command into buffer
+M-p          previous command in minibuffer history
+M-n          next command in minibuffer history
+C-u C-<sp>   goto last mark in current buffer
+C-x C-<sp>   goto last mark in all buffers
+
+C-a         move to start of line
+C-e         move to end of line
+M-f         move forward 1 word
+M-b         move back 1 word
+M-{         move to start of paragraph
+M-}         move to end of paragraph
+M-<         move to top of buffer
+M->         move to end of buffer
+C-v         page down
+M-v         page up
+C-u C-space   move to last edit point
+C-j         newline-and-indent
+M-^       merge 2 lines
+M-C-o    split line
+C-x C-x    move to last mark
+M-g g    goto line
+
+C-x b       move to buffer
+C-x C-b     list buffers
+C-x k       kill buffer
+C-x 2       split window vertically
+C-x 3       split window horizontally
+C-x o       select other window
+C-x 0       delete current window
+C-x 1       delete other windows
+C-x 4 0     close current window, kill buffer
+C-x <left,right> switch to next/prior buffer
+C-x ^       make window taller
+C-x }       make window wider
+C-x {       make window narrower
+C-x -       shrink window to fit
+C-x +       balance window heights
+M-C-v       scroll other window
+C-x <       scroll window left
+C-x >       scroll window right
+C-x 4 o     select buffer in other window
+C-x 4 f     load file in new window
+C-x 5 2     create new frame from buffer
+C-x 5 b     select buffer in new frame
+C-x 5 f     load file in new frame
+C-x 5 0     delete frame
+C-x 5 o     select other frame
+C-x 5 1     delete other frames
+C-x C-q     toggle read-only
+
+C-k         kill line forward
+M- C-k    Kill line backward
+M-d         kill word forward
+M-DEL       kill word backward
+M-z %d      kill up to <d> (zap-to-char)
+C-y         paste killed text
+C-u C-y paste forward
+M-y         paste previously killed text
+C-w         kill region
+M-C-w   append to previously killed
+C-o         insert blank line
+C-x C-o     delete all but 1 consecutive blank lines
+M-\         delete horizontal space
+M-<sp>      delete horizontal space but leave one space
+M-k         kill forward to sentence end
+C-x DEL   kill backward to sentence start
+
+[RECTANGLE]
+C-x r k     kill rectangle
+C-x r d     delete rectangle
+C-x r y     yank rectangle
+C-x r o     insert blank space into rectangle
+C-x r t     insert string into rectangle
+M-x clear-rectangle  replace rectangle with spaces
+
+C-s         search forward
+C-r         search backward
+M-C-s       search forward (regexp)
+M-c         toggle case-sensitivity during search
+M-r     Toggle regexp
+M-tab     search prior search history
+C-w    insert search string from point
+M-C-y  increase search string 1 char
+M-C-w  decrease search string 1 char
+M-e     edit search string
+C-j       resume searching
+M-s C-e   select rest of line to search
+M-%         query replace
+^              Prior occurrence
+,      Replace but don't move on
+C-q C-j     search/replace new line (\n)
+C-r       recursive editing
+C-w    delete, then recursive edit
+M-C-c    Stop recursive edit
+C-]     stop recursive edit and replacement
+E        edit replacement string
+C-_       undo last replacement
+M-s o     occur mode
+M-x 
+ find-name-dired
+find-dired     (recursive)
+find-grep-dired
+
+DIRED
+d mark for deletion
+m/u    mark/unmark
+*!  unmark all files (also U)
+%d mark for deletion with regex
+u remove deletion mark
+x delete marked files
+f or Enter   visit file
+o   visit file in other window
+C-o   Visit file in other window in background
+i     insert subdirectory
+^   Visit parent directory 
+$   toggle subdirectory 
+M-$   hide all subdirectories
+C  copy marked files
+D  delete marked files
+R  rename marked files
+C-_      undo dired changes
+A   search by regex
+M-,    Next search result
+Q    replace by regexp
+t          toggle mark
+*c     change mark
+%m     mark by regexp file name
+%g      mark by regexp contained
+%R    file rename by regex
+
+REGEXP:
+\s-   white space 
+\,(match-string 10)   regexp replacement quoted group > 10
+
+M-@      mark word
+C-t         transpose 2 chars
+M-t         transpose 2 words
+C-M-t      transpose 2 sexp's (arg of 0 transposes point and mark)
+C-x C-t     transpose 2 lines
+M-l         convert word to lowercase [preface with \M-- to change last word]
+M-u         convert word to uppercase
+M-c         convert word to capitalized initial
+C-x C-l     convert region to lower-case
+C-x C-u     convert region to upper-case
+
+C-x C-f     load file
+C-x C-s     save file
+C-x s       save all
+C-x C-w     save as
+C-x i       insert file
+M-x revert-buffer
+C-x l      line count
+C-u M-=   word count region 
+
+[C/C++ MODE]
+C-x h       select buffer
+M-C-h       select function
+C-c C-q     indent function
+M-C-\       indent region
+  Prefix with M-%n to align to left margin with %n spaces
+M-C-q       indent expression
+M-C-a       move to beginning of function
+M-C-e       move to end of function
+M-a         move to beginning of statement
+M-e         move to end of statement
+M-C-f       move forward by sexp or parentheses
+M-C-b       move backward by sexp or parentheses
+C-c C-w    toggle subword mode
+C-c C-d     toggle hungry-delete
+C-d       hungry delete forward
+C-c C-d   electric delete forward
+M-/         completion/word expansion
+M-C-/     dynamic abbrev expansion
+C-c C-e     run preprocessor on region
+M-;         insert comment
+C-u M-;   kill comment
+M-C-j       continue comment on next line (see comment-multi-line)
+M-q       fill paragraph
+C-u M-;     remove comment
+C-c C-c     comment region
+M-C-q       comment-region
+C-c C-\     back-slashify
+C-:          insert scope operator ::
+C-c <ret>   compile
+C-x `       visit next error
+C-u C-x `   visit first error
+M-g n     visit next error
+M-g p     visit previous error
+M-x grep    run grep
+C-q         quote next character (remove electricity)
+
+M-s o                  occur
+M-x multi-occur
+M-x occur-rename-buffer
+
+M-x xxx-mode   switch to xxx-mode
+M-x apropos mode   list available commands containing “mode”
+
+C-c C-s     check a line’s syntax
+
+hanoi
+gomoku
+blackbox
+mpuz
+5x5
+dunnet
+lm
+life
+pong
+solitaire
+tetris
+snake
+doctor
+yow
+zone

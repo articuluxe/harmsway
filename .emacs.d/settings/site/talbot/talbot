@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-02-27 19:45:07 dharms>
+;; Modified Time-stamp: <2015-08-29 22:29:36 dharms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -25,6 +25,17 @@
 ;;
 
 ;; Code:
+
+(add-hook
+ 'c-mode-common-hook
+ (lambda()
+   (c-add-style "talbot-style"
+                (quote ("default-style" ;derives from my default
+                        (c-offsets-alist
+                         . (
+                            ;; insert customizations
+                            ))
+                        )) t)) t)
 
 (color-theme-blue-mood)
 

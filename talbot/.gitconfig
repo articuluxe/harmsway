@@ -12,7 +12,13 @@
 [difftool.diffterm]
 	cmd = /usr/bin/env LOCAL=$LOCAL REMOTE=$REMOTE $EDITOR --load ~/config/difftool.el
 [difftool.diffgui]
-	cmd = /usr/bin/env LOCAL=$LOCAL REMOTE=$REMOTE $EMACSX --load ~/config/difftool.el
+	cmd = $EMACSX --eval \"(progn\
+	(color-theme-zenburn)\
+	(setq ediff-quit-hook 'kill-emacs \
+	ediff-split-window-function 'split-window-horizontally\
+	ediff-keep-variants t)\
+	(add-to-list 'initial-frame-alist '(fullscreen . fullwidth))\
+	(ediff-files \\\"$LOCAL\\\" \\\"$REMOTE\\\"))\"
 [merge]
 	tool = mergegui
 [mergetool]

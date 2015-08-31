@@ -13,6 +13,7 @@ source ~/config/stl-views.gdb
 # save history
 set history save
 set history filename ~/.gdb_history
+set history size unlimited
 
 # quit immediately
 define qquit
