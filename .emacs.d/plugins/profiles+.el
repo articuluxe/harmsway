@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-08-21 15:59:14 dan.harms>
+;; Modified Time-stamp: <2015-09-01 08:47:15 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -288,12 +288,12 @@ useful for uniquely naming the local TAGS directory."
    (replace-regexp-in-string
     "/\\|\\\\" "!" (profile-current-get 'project-root-stem))))
 
-(defun profile--compute-tags-dir ()
+(defun profile--compute-tags-dir (dir)
   "Helper function that computes where a project's local TAGS live."
-  (let ((dir default-directory)
-        (base (or (getenv "EMACS_TAGS_DIR") "~"))
+  (let ((base (or (getenv "EMACS_TAGS_DIR") "~"))
         (sub (or (profile-current-get 'tags-sub-dir) ".tags/"))
         dest-dir)
+    (unless dir (setq dir default-directory))
     (when (not (tramp-tramp-file-p dir))
       ;; in the local case, set our base according to the project
       (setq base (profile-current-get 'project-root-dir)))
@@ -337,7 +337,7 @@ path, possibly including a `~' representing the user's home directory."
                                (profile--compute-project-stem root))))
       (when root
         (unless (profile-current-get 'tags-dir)
-          (profile-current-put 'tags-dir (profile--compute-tags-dir))))
+          (profile-current-put 'tags-dir (profile--compute-tags-dir root))))
       (profile--log-profile)
       ;; if there's a valid init function, call it
       (when (and (profile-current-get 'on-profile-init)
