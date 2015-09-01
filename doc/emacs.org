@@ -48,7 +48,7 @@ C-x p 0       make new empty bookmark file
 C-x p w       save as bookmarks file
 C-x p y       create bookmark file bookmark
 D             delete marked
-Y - +/-       copy [move] marked to other file
+Y > +/-       copy [move] marked to other file
 Y > 0         add marked to new bookmark file
 s s           cycle sorting
 s r           reverse sorting
@@ -81,6 +81,8 @@ C-x j y       load a bookmark file [switch with prefix]
 C-x p p/n     cycle prev/next bookmark in current buffer
 C-x p b/f     cycle prev/next bookmark in list
 
+
+* Register
 
 [REGISTER]
 C-x r s %d copy region into register %d

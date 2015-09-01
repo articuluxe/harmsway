@@ -405,7 +405,14 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (unless (version< emacs-version "24.4")
   (add-to-list 'load-path (concat my/plugins-directory "magit/lisp/"))
   (require 'with-editor)
-  (require 'magit))
+  (require 'magit)
+  (setq magit-revert-buffers nil
+        inhibit-magit-revert t
+        )
+  (global-magit-file-buffer-mode 1)
+  (global-set-key "\C-xg" 'magit-status)
+  (global-set-key "\C-x\M-g" 'magit-dispatch-popup)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; popwin ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'popwin)
@@ -963,7 +970,7 @@ register \\C-l."
             (setq ac-sources (add-to-list 'ac-sources 'ac-source-etags))))
 (defun my/expand-imenu() (interactive)
        (auto-complete '(ac-source-imenu)))
-(global-set-key "\C-xg" 'my/expand-imenu)
+(global-set-key "\C-c\C-j" 'my/expand-imenu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; YASnippet ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
