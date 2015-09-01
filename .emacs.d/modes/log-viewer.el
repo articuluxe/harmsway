@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-08-28 13:03:24 dan.harms>
+;; Modified Time-stamp: <2015-09-01 10:27:23 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -27,6 +27,15 @@
 ;; Code:
 
 (defgroup log-viewer-mode nil "*log file mode" :group 'log-viewer)
+
+(defun log-viewer-hide-ctrl-a ()
+  "Don't show C-a in log files.  This helps delimit fields in the
+fix protocol, using a pipe `|'."
+  (interactive)
+  (setq buffer-display-table (make-display-table))
+  (aset buffer-display-table ?\^A [?|]))
+
+(add-hook 'log-viewer-mode-hook #'log-viewer-hide-ctrl-a)
 
 (defun log-viewer-mode()
   "Log-viewer mode is a mode for browsing log files."
