@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-03-11 18:01:16 dan.harms>
+;; Modified Time-stamp: <2015-09-02 08:52:42 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -25,6 +25,11 @@
 ;;
 
 ;; Code:
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; everything ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(setq everything-ffap-integration nil)  ;for now
+(setq everything-cmd "C:/Program Files/Everything/es.exe")
+(require 'everything)
 
 (setq-default comint-process-echoes t)
 (setq w32-get-true-file-attributes nil)
