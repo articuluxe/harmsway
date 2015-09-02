@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-09-01 08:47:15 dan.harms>
+;; Modified Time-stamp: <2015-09-02 12:12:16 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -337,7 +337,10 @@ path, possibly including a `~' representing the user's home directory."
                                (profile--compute-project-stem root))))
       (when root
         (unless (profile-current-get 'tags-dir)
-          (profile-current-put 'tags-dir (profile--compute-tags-dir root))))
+          (profile-current-put
+           'tags-dir
+           (profile--compute-tags-dir
+            (concat remote-prefix root)))))
       (profile--log-profile)
       ;; if there's a valid init function, call it
       (when (and (profile-current-get 'on-profile-init)
