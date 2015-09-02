@@ -10,17 +10,8 @@
                   "-Re") gen-tags-ctags-cpp-options)
     (append (list "xr-common" "snap/xr-common/src/" gen-tags-exe
                   "-Re") gen-tags-ctags-cpp-options)
-    (append (list "btec"
-                  "snap-static/brokertec/src/"
-                  gen-tags-exe "-Re") gen-tags-ctags-cpp-options)
     (append (list "catch"
                   "snap-static/Catch/v1.1.3-custom/"
-                  gen-tags-exe "-Re") gen-tags-ctags-cpp-options)
-    (append (list "espeed"
-                  "snap-static/eSpeed/eSpeedAPI-1.32.0.1/"
-                  gen-tags-exe "-Re") gen-tags-ctags-cpp-options)
-    (append (list "just"
-                  "snap-static/just-thread/1.7.4/gcc4.5-64-bit/include/"
                   gen-tags-exe "-Re") gen-tags-ctags-cpp-options)
     (append (list "libcfg"
                   "snap-static/libconfig/libconfig-1.4.8/include/"
@@ -58,9 +49,6 @@
                   gen-tags-exe "-Re") gen-tags-ctags-cpp-options)
     (append (list "xerces"
                   "snap-static/xerces/3.1.1/xerces-c-3.1.1/"
-                  gen-tags-exe "-Re") gen-tags-ctags-cpp-options)
-    (append (list "zeromq"
-                  "snap-static/zeromq/zeromq-3.2.2-custom/include/"
                   gen-tags-exe "-Re") gen-tags-ctags-cpp-options)
 
     (append (list "clib" "/usr/include/"
