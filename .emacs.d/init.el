@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-09-01 14:23:40 dan.harms>
+;; Modified Time-stamp: <2015-09-03 16:56:50 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -1221,7 +1221,11 @@ customization."
        (when (memq major-mode '(c++-mode emacs-lisp-mode perl-mode
                                          java-mode python-mode dos-mode
                                          nxml-mode protobuf-mode folio-mode
-                                         sh-mode csharp-mode))
+                                         sh-mode csharp-mode
+                                         gdb-script-mode
+                                         gitignore-mode
+                                         gitconfig-mode
+                                         gitattributes-mode))
          (delete-trailing-whitespace)
          (copyright-update nil t)
          (time-stamp)
