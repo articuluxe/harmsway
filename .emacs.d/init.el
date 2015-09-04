@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-09-03 16:56:50 dan.harms>
+;; Modified Time-stamp: <2015-09-04 12:00:53 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -408,6 +408,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (require 'magit)
   (setq magit-revert-buffers nil
         inhibit-magit-revert t
+        magit-completing-read-function 'magit-ido-completing-read
         )
   (global-magit-file-buffer-mode 1)
   (global-set-key "\C-xg" 'magit-status)
