@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-04-06 22:43:10 dharms>
+;; Modified Time-stamp: <2015-09-04 06:07:20 dharms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -31,13 +31,5 @@
 ;(setq gen-tags-exe "/usr/local/bin/ctags")
 
 (load-file (concat host-dir "punch.rprof"))
-
-;; (defvar clib-root (getenv "CSTDLIB_ROOT"))
-;; (defvar boost-root (getenv "BOOST_ROOT"))
-
-;; (add-to-list 'sml/replacer-regexp-list
-;;              (list (concat "^" clib-root) ":C++:") t)
-;; (add-to-list 'sml/replacer-regexp-list
-;;              (list (concat "^" boost-root) ":BOOST:") t)
 
 ;; Portsmouth.local ends here
