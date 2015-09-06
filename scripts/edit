@@ -1,3 +1,14 @@
 #!/usr/bin/env sh
+# -*- Mode: sh -*-
+# edit --- open a graphical emacs session
+# Copyright (C) 2015  Dan Harms (dharms)
+# Author: Dan Harms <danielrharms@gmail.com>
+# Created: Friday, September  4, 2015
+# Version: 1.0
+# Modified Time-stamp: <2015-09-04 21:43:30 dharms>
+# Modified by: Dan Harms
+# Keywords: emacs gui
 
 $($EMACSX "$@") &
+
+# edit ends here
