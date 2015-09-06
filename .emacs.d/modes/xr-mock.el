@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Wednesday, June 10, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-08-27 08:23:17 dan.harms>
+;; Modified Time-stamp: <2015-09-06 03:59:48 dharms>
 ;; Keywords: mock script
 
 ;; Code:
@@ -17,8 +17,8 @@
   (setq major-mode 'mock-mode)
   (setq mode-name "mock-view")
   (set-syntax-table (let ((table (make-syntax-table nil)))
-                      (modify-syntax-entry ?# "< b" table)
-                      (modify-syntax-entry ?\n "> b" table)
+                      (modify-syntax-entry ?# "<" table)
+                      (modify-syntax-entry ?\n ">" table)
                       table))
   (make-local-variable 'font-lock-defaults)
   (setq mock-mode-font-lock-keywords
@@ -44,9 +44,6 @@
          (list "\\([^[:space:];|=<',]+\\)=\\([^[:space:];|=',]*\\)"
                '(1 font-lock-variable-name-face)
                '(2 font-lock-constant-face))
-         ;; comment delimiters
-         (list "\\(=begin\\|begin_comment\\|=end\\|end_comment\\)"
-               '(0 font-lock-comment-face))
          ;; 1tick instruments
          (list "\\<[A-Za-z0-9_]+@[[:alpha:]]+\\_>"
                '(0 font-lock-constant-face))
@@ -54,6 +51,13 @@
          (list "'.*?'" '(0 font-lock-string-face))
         ))
   (setq font-lock-defaults '(mock-mode-font-lock-keywords))
+  (set (make-local-variable 'syntax-propertize-function)
+       (syntax-propertize-rules
+        ("\\(=\\)\\<begin\\_>" (1 "< b"))
+        ("\\_<\\(b\\)egin_comment\\_>" (1 "< b"))
+        ("=\\<en\\(d\\)\\_>" (1 "> b"))
+        ("\\_<end_commen\\(t\\)\\_>" (1 "> b"))
+        ))
   (setq comment-start "#" comment-end "")
   (run-hooks 'mock-mode-hook)
   )
