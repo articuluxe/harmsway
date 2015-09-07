@@ -438,6 +438,10 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (define-key my/git-keymap "dF" 'magit-diff-unpulled)
   )
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; git-timemachine ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'git-timemachine)
+(define-key my/git-keymap "t" 'git-timemachine)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; popwin ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'popwin)
 (popwin-mode 1)
