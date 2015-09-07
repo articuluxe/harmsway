@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-09-04 12:00:53 dan.harms>
+;; Modified Time-stamp: <2015-09-07 14:22:26 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -402,6 +402,8 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (global-set-key "\M-sa" 'ascii-display)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; magit ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define-prefix-command 'my/git-keymap)
+(global-set-key "\C-cm" 'my/git-keymap)
 (unless (version< emacs-version "24.4")
   (add-to-list 'load-path (concat my/plugins-directory "magit/lisp/"))
   (require 'with-editor)
@@ -409,10 +411,31 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (setq magit-revert-buffers nil
         inhibit-magit-revert t
         magit-completing-read-function 'magit-ido-completing-read
+        magit-status-buffer-name-format "*magit: %b*"
+        magit-log-show-margin t
+        magit-log-show-refname-after-summary nil
+        magit-no-confirm '()
+        magit-diff-refine-hunk t
         )
   (global-magit-file-buffer-mode 1)
-  (global-set-key "\C-xg" 'magit-status)
-  (global-set-key "\C-x\M-g" 'magit-dispatch-popup)
+  ;; add ido shortcut
+  (if (version< emacs-version "25.1")
+      (add-hook
+       'ido-setup-hook
+       (lambda() (define-key ido-completion-map
+                   (kbd "C-x g") 'ido-enter-magit-status)))
+    (define-key ido-common-completion-map
+      (kbd "C-x g") 'ido-enter-magit-status))
+  ;; git commands
+  (define-key my/git-keymap "s" 'magit-status)
+  (define-key my/git-keymap "\M-s" 'magit-dispatch-popup)
+  (define-key my/git-keymap "f" 'magit-find-file)
+  (define-key my/git-keymap "4f" 'magit-find-file-other-window)
+  (define-key my/git-keymap "h" 'magit-log-buffer-file)
+  (define-key my/git-keymap "y" 'magit-cherry)
+  (define-key my/git-keymap "t" 'magit-toggle-margin)
+  (define-key my/git-keymap "dP" 'magit-diff-unpushed)
+  (define-key my/git-keymap "dF" 'magit-diff-unpulled)
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; popwin ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
