@@ -979,7 +979,7 @@ static char *gnus-pointer[] = {
     )))
 
 ;;;###autoload
-(defalias 'zenash #'color-theme-zenash)
+;(defalias 'zenash #'color-theme-zenash)
 
 (provide 'zenash)
 ;;; zenash.el ends here.

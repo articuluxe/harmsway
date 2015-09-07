@@ -901,6 +901,8 @@ register \\C-l."
 (eval-and-compile
   (add-to-list 'load-path (concat my/plugins-directory "color-theme/")))
 (require 'color-theme)
+(eval-when-compile
+  (add-to-list 'load-path (concat my/plugins-directory "color-theme/themes/")))
 (color-theme-initialize)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smerge ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -4,7 +4,7 @@
 
 ;; Author: Daniel Brockman <daniel@brockman.se>
 ;; URL: http://www.brockman.se/software/zenburn/zenburn.el
-;; Updated: 2015-07-24 13:24
+;; Updated: 2015-09-07 12:01
 
 ;; Adrian C. and Bastien Guerry added org-mode faces.
 
@@ -1172,7 +1172,7 @@ static char *gnus-pointer[] = {
        widget-single-line-field-face))
     )))
 
-(defalias 'zenburn #'color-theme-zenburn)
+;(defalias 'zenburn #'color-theme-zenburn)
 
 (provide 'zenburn)
 
