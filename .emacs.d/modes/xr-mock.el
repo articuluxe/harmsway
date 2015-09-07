@@ -2,8 +2,8 @@
 ;; xr-mock-mode.el --- major mode to view mock scripts
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Wednesday, June 10, 2015
-;; Version: 1.0
-;; Modified Time-stamp: <2015-09-06 03:59:48 dharms>
+;; Version: 1.1
+;; Modified Time-stamp: <2015-09-07 11:08:04 dan.harms>
 ;; Keywords: mock script
 
 ;; Code:
@@ -21,6 +21,7 @@
                       (modify-syntax-entry ?\n ">" table)
                       table))
   (make-local-variable 'font-lock-defaults)
+  (eval-when-compile (defvar mock-mode-font-lock-keywords nil)) ;silence compilation warning
   (setq mock-mode-font-lock-keywords
         (list
          ;; opening timestamp
