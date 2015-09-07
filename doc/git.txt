@@ -10,6 +10,8 @@ git config --global diff.tool <tool>
 git config --global difftool.prompt false
 # on windows
 git config --system core.autocrlf input
+# for magit: set environment variable
+(setenv "GIT_SSH" "C:\Program Files\Portable PuTTY\plink.exe")
 
 #add .gitignore patterns to .git/info/exclude.  These will not be checked in.
 

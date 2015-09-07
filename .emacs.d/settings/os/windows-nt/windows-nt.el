@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-09-02 08:52:42 dan.harms>
+;; Modified Time-stamp: <2015-09-07 08:14:30 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -31,11 +31,15 @@
 (setq everything-cmd "C:/Program Files/Everything/es.exe")
 (require 'everything)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ssh-agency ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'ssh-agency)
+
 (setq-default comint-process-echoes t)
 (setq w32-get-true-file-attributes nil)
 
 (setq tramp-default-method "plink")
 
+;; qt
 (add-to-list 'full-edit-reject-patterns "^moc")
 (add-to-list 'full-edit-reject-patterns "^qrc")
 (add-to-list 'full-edit-reject-patterns "^ui")
