@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-09-07 14:22:26 dan.harms>
+;; Modified Time-stamp: <2015-09-08 12:40:52 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -427,15 +427,26 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
     (define-key ido-common-completion-map
       (kbd "C-x g") 'ido-enter-magit-status))
   ;; git commands
-  (define-key my/git-keymap "s" 'magit-status)
-  (define-key my/git-keymap "\M-s" 'magit-dispatch-popup)
+  (define-key my/git-keymap "g" 'magit-status)
+  (define-key my/git-keymap "\M-g" 'magit-dispatch-popup)
+  ;; view arbitrary blobs
   (define-key my/git-keymap "f" 'magit-find-file)
   (define-key my/git-keymap "4f" 'magit-find-file-other-window)
+  ;; show all commits that touch current file
   (define-key my/git-keymap "h" 'magit-log-buffer-file)
   (define-key my/git-keymap "y" 'magit-cherry)
+  ;; to see all differences, even those automatically merged
+  (define-key my/git-keymap "e" 'ediff-merge-revisions-with-ancestor)
   (define-key my/git-keymap "t" 'magit-toggle-margin)
   (define-key my/git-keymap "dP" 'magit-diff-unpushed)
   (define-key my/git-keymap "dF" 'magit-diff-unpulled)
+  (define-key my/git-keymap "b" 'magit-blame)
+  ;; unstage all changes (like SU but forces HEAD)
+  (define-key my/git-keymap "U" 'magit-unstage-all)
+  (define-key my/git-keymap "s" 'magit-stage-file)
+  (define-key my/git-keymap "u" 'magit-unstage-file)
+  ;; soft reset; hard reset can use C-u x
+  (define-key my/git-keymap "r" 'magit-reset-soft)
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; git-timemachine ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
