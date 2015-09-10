@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-09-08 12:40:52 dan.harms>
+;; Modified Time-stamp: <2015-09-10 17:01:29 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -129,6 +129,10 @@
 ;; visual settings
 (menu-bar-mode -1)
 (setq-default fill-column 78)
+(defun my/disable-scroll-bars (frame)
+  (modify-frame-parameters frame
+                           '((vertical-scroll-bars . nil)
+                             (horizontal-scroll-bars . nil))))
 ;; default colors
 (set-foreground-color "white")
 (set-background-color "black")

@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-05-20 11:10:22 dan.harms>
+;; Modified Time-stamp: <2015-09-10 17:02:17 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -28,6 +28,7 @@
 
 (tool-bar-mode -1)
 (scroll-bar-mode -1)
+(add-hook 'after-make-frame-functions 'my/disable-scroll-bars)
 
 ;; scroll one line at a time
 (setq scroll-conservatively 10000)
