@@ -344,6 +344,21 @@ M-x xxx-mode   switch to xxx-mode
 M-x apropos mode   list available commands containing “mode”
 
 
+* Org
+
+** Outline
+M-<up/down>  move section
+M-<left/right> promote/demote
+S-<up/down>  cycle priority
+S-<left/right> cycle TODO status
+M-S-<up/down> move section
+M-S-<left/right> promote/demote section
+
+** Links
+C-c C-l    insert link
+C-c C-l    edit link
+C-c C-o    goto link
+
 * Games
 hanoi
 gomoku

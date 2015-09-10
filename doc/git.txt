@@ -97,6 +97,16 @@ git commit --amend
 ################################### SQUASH ###################################
 # squash last 4 commits
 git rebase -i HEAD~4
+# merge feature branch using one big commit
+git merge master                # into feature first
+git checkout main
+git merge --squash <feature>
+# ...which is equivalent to:
+git checkout <feature>
+git diff main > feature.patch
+git checkout main
+git apply feature.patch
+git add .
 
 ################################### STASH ####################################
 git stash <show|save|drop|push|pop> stash@\{0\}
