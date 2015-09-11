@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-09-10 17:01:29 dan.harms>
+;; Modified Time-stamp: <2015-09-10 22:32:07 dharms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -856,6 +856,15 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
                                                      :background "purple"
                                                      )
                                  )))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ediff-trees ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'ediff-trees)
+(define-prefix-command 'my/ediff-trees-keymap)
+(global-set-key "\C-ce" 'my/ediff-trees-keymap)
+(define-key my/ediff-trees-keymap (kbd "n") 'ediff-trees-examine-next)
+(define-key my/ediff-trees-keymap (kbd "p") 'ediff-trees-examine-previous)
+(define-key my/ediff-trees-keymap (kbd "\C-n") 'ediff-trees-examine-next-regexp)
+(define-key my/ediff-trees-keymap (kbd "\C-p") 'ediff-trees-examine-previous-regexp)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; shebang ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'shebang)
