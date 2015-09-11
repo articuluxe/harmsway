@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-09-10 22:32:07 dharms>
+;; Modified Time-stamp: <2015-09-11 08:39:23 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -407,7 +407,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; magit ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-prefix-command 'my/git-keymap)
-(global-set-key "\C-cm" 'my/git-keymap)
+(global-set-key "\M-sm" 'my/git-keymap)
 (unless (version< emacs-version "24.4")
   (add-to-list 'load-path (concat my/plugins-directory "magit/lisp/"))
   (require 'with-editor)
@@ -417,6 +417,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
         magit-completing-read-function 'magit-ido-completing-read
         magit-status-buffer-name-format "*magit: %b*"
         magit-log-show-margin t
+        magit-popup-show-common-commands nil
         magit-log-show-refname-after-summary nil
         magit-no-confirm '()
         magit-diff-refine-hunk t
