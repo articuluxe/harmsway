@@ -112,6 +112,17 @@
     (ert-simulate-command `(yas-mock-insert "abc"))
     (should (string= (yas--buffer-contents) "abcabcabcabc"))))
 
+(ert-deftest delete-numberless-inner-snippet-issue-562 ()
+  (with-temp-buffer
+    (yas-minor-mode 1)
+    (yas-expand-snippet "${3:${test}bla}$0${2:ble}")
+    (ert-simulate-command '(yas-next-field-or-maybe-expand))
+    (should (looking-at "testblable"))
+    (ert-simulate-command '(yas-next-field-or-maybe-expand))
+    (ert-simulate-command '(yas-skip-and-clear-or-delete-char))
+    (should (looking-at "ble"))
+    (should (null (yas--snippets-at-point)))))
+
 ;; (ert-deftest in-snippet-undo ()
 ;;   (with-temp-buffer
 ;;     (yas-minor-mode 1)
@@ -190,6 +201,7 @@
 
 (ert-deftest be-careful-when-escaping-in-yas-selected-text-2 ()
   (with-temp-buffer
+    (yas-minor-mode 1)
     (let ((yas-selected-text "He)}o world!"))
       (yas-expand-snippet "Look ma! ${1:`(yas-selected-text)`} OK?")
       (should (string= (yas--buffer-contents) "Look ma! He)}o world! OK?")))))
@@ -421,6 +433,14 @@ TODO: correct this bug!"
           ("lisp-interaction-mode" ("sc" . "brother from another mother"))))
        ,@body))))
 
+(ert-deftest snippet-lookup ()
+  "Test `yas-lookup-snippet'."
+  (yas-with-some-interesting-snippet-dirs
+   (yas-reload-all 'no-jit)
+   (should (equal (yas-lookup-snippet "printf" 'c-mode) "printf($1);"))
+   (should (equal (yas-lookup-snippet "def" 'c-mode) "# define"))
+   (should-not (yas-lookup-snippet "no such snippet" nil 'noerror))
+   (should-not (yas-lookup-snippet "printf" 'emacs-lisp-mode 'noerror))))
 
 (ert-deftest basic-jit-loading ()
   "Test basic loading and expansion of snippets"
