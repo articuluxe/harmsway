@@ -4,7 +4,8 @@
 # Author:  <dan.harms@xrtrading.com>
 # Created: Friday, March 20, 2015
 # Version: 1.0
-# Modified Time-stamp: <2015-08-17 14:58:33 dan.harms>
+# Modified Time-stamp: <2015-09-11 14:57:17 dan.harms>
+# Modified by: Dan Harms
 # Keywords: help
 
 # install x
@@ -32,6 +33,10 @@ cat /etc/*-release
 # convert from .erf to .pcap
 tshark -r <file>.erf -q -z io,phs
 editcap -F libpcap -T ether <file>.erf <file>.pcap
+
+# compile emacs
+mkdir bld && cd bld
+../configure --with-png=no
 
 #################################### gdb #####################################
 # print first 8 elements of a std::vector<std::string> vec
