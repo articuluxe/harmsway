@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-09-11 08:39:23 dan.harms>
+;; Modified Time-stamp: <2015-09-14 08:39:48 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -929,6 +929,9 @@ register \\C-l."
 (eval-when-compile
   (add-to-list 'load-path (concat my/plugins-directory "color-theme/themes/")))
 (color-theme-initialize)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; palette ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'palette)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smerge ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun try-smerge()
