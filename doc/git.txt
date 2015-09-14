@@ -97,6 +97,10 @@ git commit --amend
 ################################### SQUASH ###################################
 # squash last 4 commits
 git rebase -i HEAD~4
+# edit an old commit
+git rebase -i HEAD~4
+git commit --amend
+git rebase --continue
 # merge feature branch using one big commit
 git merge master                # into feature first
 git checkout main

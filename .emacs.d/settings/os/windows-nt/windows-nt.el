@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-09-07 08:14:30 dan.harms>
+;; Modified Time-stamp: <2015-09-14 08:42:21 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -30,6 +30,7 @@
 (setq everything-ffap-integration nil)  ;for now
 (setq everything-cmd "C:/Program Files/Everything/es.exe")
 (require 'everything)
+(global-set-key "\C-c0g" 'everything-find-file)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ssh-agency ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'ssh-agency)
