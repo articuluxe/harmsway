@@ -15,6 +15,10 @@ git config --system core.autocrlf input
 
 #add .gitignore patterns to .git/info/exclude.  These will not be checked in.
 
+################################## REMOTES ###################################
+# set username
+git remote set-url origin git@github.com:username/repo.git
+
 ################################# BRANCHING ##################################
 # checkout and track remote branch
 git checkout --track origin/<branch>

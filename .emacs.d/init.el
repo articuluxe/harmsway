@@ -453,11 +453,18 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (define-key my/git-keymap "u" 'magit-unstage-file)
   ;; soft reset; hard reset can use C-u x
   (define-key my/git-keymap "r" 'magit-reset-soft)
+  ;; add argument --no-merges to log
+  (magit-define-popup-switch 'magit-log-popup
+    ?m "Omit merge commits" "--no-merges")
+  (setq magit-log-arguments (cons "--no-merges"
+                                  magit-log-arguments))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; git-timemachine ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'git-timemachine)
-(define-key my/git-keymap "t" 'git-timemachine)
+(unless (version< emacs-version "24.4")
+  (require 'git-timemachine)
+  (define-key my/git-keymap "t" 'git-timemachine)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; popwin ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'popwin)
