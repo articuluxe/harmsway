@@ -1,7 +1,0 @@
-(setq my/remote-host-list
-      '(
-        (:host "carvzn-snap-06h" :category "Dan's" :description "desc")
-        (:host "chihq-benchmark-32e" :category "mine")
-        (:host "hq-snapdev-77v" :description "unknown")
-        (:host "hq-snapdev-55a" :description "Dan's Workstation")
-        ))

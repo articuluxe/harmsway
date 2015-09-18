@@ -4,7 +4,8 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-09-14 08:39:48 dan.harms>
+;; Modified Time-stamp: <2015-09-18 08:30:32 dan.harms>
+;; Modified by: Dan Harms
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -1257,13 +1258,11 @@ customization."
         (file-name-as-directory
          (concat hosts-dir system)))
 	   (host-file (concat host-dir system))
-       (remote-hosts-file (concat host-dir "remote-hosts")))
+       (remote-hosts-file (concat my/user-directory "remote-hosts")))
   ;; load host file (if present)
   (if (file-exists-p host-file)
       (progn
-        (load host-file t)
-        (when (file-exists-p remote-hosts-file)
-          (load remote-hosts-file t)))
+        (load host-file t))
     ;; otherwise look for current host in hosts file
     (load hosts-file t)
     (mapc
@@ -1272,6 +1271,9 @@ customization."
             (plist-get plist :site)
             (my/load-site-file (plist-get plist :site))))
      my/host-plist))
+  ;; load remote hosts file if present
+  (when (file-exists-p remote-hosts-file)
+    (load remote-hosts-file t))
   )
 
 (add-hook 'before-save-hook 'my/before-save-hook)
