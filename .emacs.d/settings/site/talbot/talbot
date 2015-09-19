@@ -4,7 +4,8 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-08-29 22:29:36 dharms>
+;; Modified Time-stamp: <2015-09-19 07:22:08 dharms>
+;; Modified by: Dan Harms
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -36,7 +37,5 @@
                             ;; insert customizations
                             ))
                         )) t)) t)
-
-(color-theme-blue-mood)
 
 ;; talbot ends here

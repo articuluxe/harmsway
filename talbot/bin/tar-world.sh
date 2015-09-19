@@ -5,7 +5,8 @@
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Friday, May 29, 2015
 # Version: 1.0
-# Modified Time-stamp: <2015-07-27 05:54:35 dharms>
+# Modified Time-stamp: <2015-09-19 07:15:40 dharms>
+# Modified by: Dan Harms
 # Keywords: configuration
 
 tar=$TAR
@@ -24,11 +25,11 @@ if [ -f "$dest" ] ; then
 fi
 
 $tar c"$verbose"f $dest config doc src .gitignore .gdbinit
+$tar u"$verbose"f $dest --exclude=*.elc .emacs.d
 $tar u"$verbose"f $dest --transform=s/scripts/bin/ scripts
 $tar u"$verbose"f $dest --transform=s/bash\\/// bash
 $tar u"$verbose"f $dest --transform=s/tcsh\\/// tcsh
 $tar u"$verbose"f $dest --transform=s/talbot\\/// talbot
-$tar u"$verbose"f $dest --exclude=*.elc .emacs.d
 
 echo ...done generating $dest
 
