@@ -1,0 +1,54 @@
+--- color-theme-6.6.0/color-theme.el	2006-05-28 09:07:29.000000000 -0400
++++ color-theme.el	2011-10-03 14:56:19.000000000 -0400
+@@ -756,8 +756,23 @@
+ ;; the following lambda is the result from the above calculation
+ ;; (color-theme-spec-resolve-height (lambda (f) (* (funcall (lambda (f) (* 2 f)) f) 2.0)) 5)
+ 
++(defvar color-theme-spec-resolve-inheritance-stack nil)
++
++(defun plist-del (plist prop)
++  (when plist
++    (if (eq (car plist) prop)
++        (cddr plist)
++      (cons (car plist)
++            (cons (cadr plist)
++                  (plist-del (cddr plist) prop))))))
++      
++(defun assert-plist (l)
++ (unless (= 0 (% (length l) 2))
++   (error "not a plist: %s" l)))
++
+ (defun color-theme-spec-resolve-inheritance (atts)
+   "Resolve all occurences of the :inherit attribute."
++  (assert-plist atts)
+   (let ((face (plist-get atts :inherit)))
+     ;; From the Emacs 21 NEWS file: "Attributes from inherited faces are
+     ;; merged into the face like an underlying face would be." --
+@@ -766,7 +781,12 @@
+     (when face
+       ;; remove :inherit face from atts -- this assumes only one
+       ;; :inherit attribute.
+-      (setq atts (delq ':inherit (delq face atts)))
++      (if (member atts color-theme-spec-resolve-inheritance-stack)
++          (error (format "inheritance loop: %s" atts))
++        (push atts color-theme-spec-resolve-inheritance-stack)
++        (unwind-protect
++
++      (setq atts (plist-del atts :inherit))
+       (let ((more-atts (color-theme-spec-resolve-inheritance
+ 			(color-theme-face-attr-construct
+ 			 face (selected-frame))))
+@@ -786,8 +806,11 @@
+ 		((not (plist-get atts att))
+ 		 (setq atts (cons att (cons val atts))))
+ 		  
+-))))
++)))
++      (pop color-theme-spec-resolve-inheritance-stack)))
++      )
+     atts))
++
+ ;; (color-theme-spec-resolve-inheritance '(:bold t))
+ ;; (color-theme-spec-resolve-inheritance '(:bold t :foreground "blue"))
+ ;; (color-theme-face-attr-construct 'font-lock-comment-face (selected-frame))
+ 
