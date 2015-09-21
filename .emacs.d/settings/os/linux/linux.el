@@ -4,7 +4,8 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-02-28 03:16:18 dharms>
+;; Modified Time-stamp: <2015-09-21 08:38:45 dan.harms>
+;; Modified by: Dan Harms
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -26,6 +27,9 @@
 
 ;; Code:
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Process Viewer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'proced)
+(global-set-key "\C-c0p" 'proced)
 
 
 ;; linux.el ends here
