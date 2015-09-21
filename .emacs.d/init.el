@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-09-18 08:30:32 dan.harms>
+;; Modified Time-stamp: <2015-09-21 16:20:45 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1323,6 +1323,7 @@ customization."
                 ("\\.pro$"      . qt-pro-mode)
                 ("\\.otq$"      . conf-mode) ;one-tick-query files
                 ("\\.cs$"       . csharp-mode)
+                ("\\.bmk$"      . emacs-lisp-mode)
                 )
               auto-mode-alist))
 
