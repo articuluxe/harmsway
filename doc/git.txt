@@ -16,7 +16,7 @@ git config --system core.autocrlf input
 #add .gitignore patterns to .git/info/exclude.  These will not be checked in.
 
 ################################## REMOTES ###################################
-# set username
+# set username (for pushing)
 git remote set-url origin git@github.com:username/repo.git
 
 ################################# BRANCHING ##################################
@@ -107,7 +107,7 @@ git commit --amend
 git rebase --continue
 # merge feature branch using one big commit
 git merge master                # into feature first
-git checkout main
+git checkout master
 git merge --squash <feature>
 # ...which is equivalent to:
 git checkout <feature>
