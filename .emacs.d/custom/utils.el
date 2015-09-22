@@ -4,7 +4,8 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-08-07 14:07:37 dan.harms>
+;; Modified Time-stamp: <2015-09-22 11:56:36 dan.harms>
+;; Modified by: Dan Harms
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -86,15 +87,42 @@ is selected."
                   alist))))
     (or (cdr (assoc res alist))
         res)))
+
+(defun choose-via-ivy (alist prompt)
+  "Make a choice among ALIST, a list of choices, with PROMPT as a possible
+prompt.  ALIST can either be a list of strings, or an alist, where every
+element is a cons cell, the car of which is the display string given to the
+user, and the cdr of which is the resultant value to be used if that cell
+is selected."
+  (let ((res
+         (ivy-completing-read
+          prompt
+          (mapcar (lambda(elt)
+                    (if (consp elt)
+                        (car elt)
+                      elt))
+                  alist))))
+    (or (cdr (assoc res alist))
+        res)))
+
+(defun my/choose-choose-func ()
+  "Toggle between available selection frameworks.  Current choices include
+ `ido', `popup' and `ivy'."
+  (interactive)
+  (if (eq my/choose-func 'choose-via-popup)
+      (progn
+        (setq my/choose-func 'choose-via-ido)
+        (message "Choosing via ido"))
+    (if (eq my/choose-func 'choose-via-ido)
+        (progn
+          (setq my/choose-func 'choose-via-ivy)
+          (message "Choosing via ivy"))
+      (setq my/choose-func 'choose-via-popup)
+      (message "Choosing via popup"))))
+
 (defvar my/choose-func 'choose-via-popup
   "Make a selection among a list of choices.")
-(global-set-key "\C-c\C-r" (lambda()(interactive)
-                             (if (eq my/choose-func 'choose-via-popup)
-                                 (progn
-                                   (setq my/choose-func 'choose-via-ido)
-                                   (message "Choosing via ido"))
-                               (setq my/choose-func 'choose-via-popup)
-                               (message "Choosing via popup"))))
+(global-set-key "\C-c\C-r" 'my/choose-choose-func)
 
 (defun jump-to-matching-paren() "Go to matching paren" (interactive)
   (if (looking-at "\\s\(")

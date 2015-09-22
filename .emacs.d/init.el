@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-09-21 16:20:45 dan.harms>
+;; Modified Time-stamp: <2015-09-22 15:34:01 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -540,9 +540,13 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
       recentf-save-file (concat my/user-directory "recentf"))
 (setq recentf-exclude '( "-tags\\'" "ido\.last\\'" ))
 (recentf-mode 1)
+(defvar uniquify-recentf-func 'recentf-open-files
+  "Select recent files from `recentf' via a completion function.")
+(defun my/call-recentf-func () (interactive) (funcall uniquify-recentf-func))
+(global-set-key "\er" 'my/call-recentf-func)
 (when (version< "24.3" emacs-version)
   (require 'uniquify-recentf)
-  (global-set-key "\er" 'uniquify-recentf-ido-recentf-open))
+  (setq uniquify-recentf-func 'uniquify-recentf-ido-recentf-open))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ido ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'ido)
@@ -556,6 +560,11 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (setq-default ido-default-buffer-method 'maybe-frame)
 (setq-default ido-default-file-method 'maybe-frame)
 (ido-mode 1)
+(defvar my/completion-framework-alist (list
+                                       (cons "ido" 'my/activate-ido))
+  "An alist of completion frameworks to choose among.  Each value is a
+ cons cell (`description' . `activation-function' ).")
+
 ;; sort files by descending modified time (except remotely, which is dog-slow)
 (defun ido-sort-mtime()
   (unless (tramp-tramp-file-p default-directory)
@@ -591,6 +600,46 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
                  recentf-list nil t)))
       (when file (find-file file))))
   (global-set-key "\er" 'recentf-ido-find-file))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; swiper/ivy ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(unless (version< emacs-version "24.1")
+  (eval-and-compile
+    (add-to-list 'load-path (concat my/plugins-directory "swiper/")))
+  (require 'swiper)
+  (global-set-key "\M-ss" 'swiper)
+  (define-key isearch-mode-map (kbd "C-o") 'swiper-from-isearch)
+  (require 'ivy)
+  (add-to-list 'my/completion-framework-alist
+               (cons "ivy" 'my/activate-ivy))
+  (global-set-key "\e\eii" 'ivy-resume)
+  )
+
+(defun my/activate-ido ()
+  "Activate ido as a completion framework."
+  (when (boundp 'ivy-mode)
+    (ivy-mode 0))
+  (setq magit-completing-read-function 'magit-ido-completing-read)
+  (setq uniquify-recentf-func 'uniquify-recentf-ido-recentf-open)
+  (ido-mode 1)
+  (message "Using ido for completion"))
+
+(defun my/activate-ivy ()
+  "Activate ivy as a completion framework."
+  (when (boundp 'ido-mode)
+    (ido-mode 0))
+  (setq magit-completing-read-function 'ivy-completing-read)
+  (setq uniquify-recentf-func 'uniquify-recentf-ivy-recentf-open)
+  (ivy-mode 1)
+  (message "Using ivy for completion"))
+
+;; choose the completion framework in use
+(defun my/choose-completion ()
+  "Choose among completion frameworks. Uses the completion framework
+ specified by `my/choose-func'. Current choices are ido and ivy."
+  (interactive)
+  (funcall (funcall my/choose-func my/completion-framework-alist
+                    "Completion framework:")))
+(global-set-key "\C-c\C-e" 'my/choose-completion)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smex ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (when (<= 24 emacs-major-version)
@@ -665,7 +714,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (rich-minority-mode 1)
   (setq rm-blacklist
         '(" AC" " yas" " Undo-Tree" " Abbrev" " Guide" " Hi" " $" " ,"
-          " Ifdef" " Rbow"))
+          " Ifdef" " Rbow" " ivy"))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smart-mode-line ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

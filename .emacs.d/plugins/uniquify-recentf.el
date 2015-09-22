@@ -92,6 +92,20 @@
         (find-file (cadr (assoc short-filename filename-map)))
       (message "Aborting"))))
 
+(defun uniquify-recentf-ivy-recentf-open ()
+  "Use `ivy-completing-read' to \\[find-file] a recent file"
+  (interactive)
+  (let* ((unique-filenames (uniquify-recentf-vm-uniquify recentf-list))
+         (filename-map (-partition 2 (-interleave unique-filenames
+                                                  recentf-list)))
+         (short-filename (ivy-completing-read "Choose recent file: "
+                                              unique-filenames
+                                              nil
+                                              t)))
+    (if short-filename
+        (find-file (cadr (assoc short-filename filename-map)))
+      (message "Aborting"))))
+
 (provide 'uniquify-recentf)
 
 ;; uniquify-recentf.el ends here
