@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-09-21 08:40:32 dan.harms>
+;; Modified Time-stamp: <2015-09-22 08:59:43 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -32,8 +32,8 @@
 (global-set-key "\C-c0p" 'vkill)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; spotlight ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; (require 'spotlight)
-;; (global-set-key "\C-c0g" 'spotlight)
+(require 'spotlight)
+(global-set-key "\C-c0g" 'spotlight)
 
 
 ;; darwin.el ends here

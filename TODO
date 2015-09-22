@@ -1,3 +1,5 @@
+# -*- Mode: org -*-
+
 auto-complete: add key words for dos mode, cmake mode
                c-headers: stop completing if file exists; "."
 
@@ -5,3 +7,5 @@ windmove: wrap
 
 etags: display source file
 
+see `grep-host-defaults-alist' in grep.el; opening a remote file, grepping,
+then trying to grep a local file fails
