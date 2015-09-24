@@ -1418,10 +1418,11 @@ customization."
 (add-hook 'python-mode-hook
           (lambda()
             (setq-default indent-tabs-mode nil)
+            (setq forward-sexp-function nil)
             (define-key python-mode-map "\C-j" 'newline-and-indent)
             (define-key python-mode-map "\C-c\C-c" 'comment-region)
             (define-key python-mode-map "\C-c\C-u" 'uncomment-region)
-            (define-key python-mode-map "\C-M-g" 'python-nav-forward-sexp)
+            (define-key python-mode-map [?\C-\M-g] 'python-nav-forward-sexp)
             (define-key python-mode-map (kbd "\C-c RET")
               (lambda()(interactive)
                 (compile (concat "python " (buffer-name)))))
