@@ -359,6 +359,28 @@ C-c C-l    insert link
 C-c C-l    edit link
 C-c C-o    goto link
 
+#+BEGIN_SRC text
+[[link][description]]
+<<anchor>>
+<<<radio target>>>
+#+END_SRC
+
+[[location][This]] is a link to a <<location>>.
+
+** Tables
+C-c C-c     realign table
+C-c SPC     blank field at point
+TAB, S-TAB  move to next/prior field
+M-<left/right>   move column left/right
+M-<up/down>      move row up/down
+M-S-<right>   insert new column to left of cursor
+M-S-<left>    kill current column
+M-S-<up>      kill current row
+M-S-<down>    insert new row above cursor (below with prefix)
+C-c -         insert horizontal line
+C-c ^         sort rows based on current column
+C-c |         convert region to table
+
 * Games
 hanoi
 gomoku
