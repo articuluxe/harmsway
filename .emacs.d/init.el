@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-09-22 15:34:01 dan.harms>
+;; Modified Time-stamp: <2015-09-24 14:00:33 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -703,8 +703,12 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
                           my/imenu-generic-expression)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; powerline ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; todo: does not interoperate with sml
-;(require 'powerline)
+(eval-and-compile
+  (add-to-list 'load-path (concat my/plugins-directory "powerline/"))
+  (require 'powerline)
+  ;; does not interact with rich-minority mode: try delight.el?
+  ;; (powerline-default-theme)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; rich-minority ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (when (version<= "24.3" emacs-version)
@@ -714,7 +718,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (rich-minority-mode 1)
   (setq rm-blacklist
         '(" AC" " yas" " Undo-Tree" " Abbrev" " Guide" " Hi" " $" " ,"
-          " Ifdef" " Rbow" " ivy"))
+          " Ifdef" " Rbow" " ivy" " ElDoc"))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smart-mode-line ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
