@@ -8,6 +8,7 @@ TAGS
 .dir-locals.el
 
 # Git files
+*.patch
 *.bundle
 
 # Build results
