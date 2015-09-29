@@ -345,6 +345,39 @@ M-x apropos mode   list available commands containing “mode”
 
 
 * Org
+** Formatting
+*** Text can be /italic/, *bold*, _underlined_, =literal= or ~code~.
+** Blocks
+< e TAB inserts an example block:
+#+BEGIN_EXAMPLE
+Text inside here will not be interpreted.
+#+END_EXAMPLE
+
+< q TAB inserts a quotation block:
+#+BEGIN_QUOTE
+This is a quotation block.
+#+END_QUOTE
+
+< c TAB inserts a centered block:
+#+BEGIN_CENTER
+Text in here will be centered when exported.
+#+END_CENTER
+
+** Source Blocks
+< s TAB: insert source code block:
+#+BEGIN_SRC sh
+echo "Hello $USER! Today is $(date)"
+exit
+#+END_SRC
+
+#+RESULTS:
+: Hello ! Today is Tue Sep 29 13:12:41 CDT 2015
+
+#+BEGIN_SRC text
+[[link][description]]
+<<anchor>>
+<<<radio target>>>
+#+END_SRC
 
 ** Outline
 M-<up/down>  move section
@@ -359,11 +392,6 @@ C-c C-l    insert link
 C-c C-l    edit link
 C-c C-o    goto link
 
-#+BEGIN_SRC text
-[[link][description]]
-<<anchor>>
-<<<radio target>>>
-#+END_SRC
 
 [[location][This]] is a link to a <<location>>.
 
@@ -380,6 +408,7 @@ M-S-<down>    insert new row above cursor (below with prefix)
 C-c -         insert horizontal line
 C-c ^         sort rows based on current column
 C-c |         convert region to table
+
 
 * Games
 hanoi
