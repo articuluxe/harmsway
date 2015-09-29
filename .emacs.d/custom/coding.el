@@ -4,7 +4,8 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-08-07 14:13:24 dan.harms>
+;; Modified Time-stamp: <2015-09-29 17:02:56 dan.harms>
+;; Modified by: Dan Harms
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -66,7 +67,10 @@
     (grep-apply-setting
      'grep-command
      (concat "find -P "
-             (directory-file-name dir) ;grep doesn't need the trailing slash
+             ;; some variants of grep dislike the trailing slash
+             (directory-file-name
+              ;; and relative paths
+              (expand-file-name dir))
              " \"(\" -name \"*moc_*\" -o -name \"*qrc_*\" \")\" "
              "-prune -o -type f \"(\" -name \"*.cpp\" -o -name \"*.h\" "
              "-o -name \"*.cc\" -o -name \"*.hh\" -o -name \"*.cxx\" "
