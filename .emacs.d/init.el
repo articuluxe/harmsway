@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-09-24 14:00:33 dan.harms>
+;; Modified Time-stamp: <2015-09-29 17:02:25 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -612,6 +612,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (add-to-list 'my/completion-framework-alist
                (cons "ivy" 'my/activate-ivy))
   (global-set-key "\e\eii" 'ivy-resume)
+  (require 'counsel)
   )
 
 (defun my/activate-ido ()
@@ -647,8 +648,10 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (smex-initialize)
   (global-set-key (kbd "M-x") 'smex)
   (global-set-key (kbd "M-X") 'smex-major-mode-commands))
-;; the old M-x
-(global-set-key "\e\ex" 'execute-extended-command)
+(if (boundp 'ivy-mode)
+    (global-set-key "\e\ex" 'counsel-M-x)
+  ;; the old M-x
+  (global-set-key "\e\ex" 'execute-extended-command))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; imenu ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; I prefer imenu-anywhere to return imenu results only for the current
@@ -809,10 +812,11 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (defun my/dired-sort()
   "Toggle sorting in dired buffers."
   (interactive)
-  (let ((type (ido-completing-read
-               "Sort by: "
-               '( "size" "extension" "ctime" "utime" "time" "name")
-               nil t)))
+  ( let ((type
+          (funcall
+           my/choose-func
+           '( "size" "extension" "ctime" "utime" "time" "name")
+           "Sort by:")))
     ;; on os x, extension (X) not supported;
     ;; also, ctime means time file status was last changed
     (cond ((string= type "size") (dired-sort-size))
