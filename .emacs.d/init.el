@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-09-29 17:02:25 dan.harms>
+;; Modified Time-stamp: <2015-09-30 11:02:10 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -170,7 +170,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (global-set-key "\C-cr" 'align-repeat-regexp)
 (global-set-key [f5] 'toggle-truncate-lines)
 (global-set-key "\C-c5" 'toggle-truncate-lines)
-(global-set-key "\C-c " 'global-whitespace-mode)
+(global-set-key "\C-c " 'whitespace-mode)
 (global-set-key "\C-cf" 'font-lock-fontify-buffer)
 (global-set-key "\e\es" 'speedbar)
 (global-set-key "\e\eo" 'speedbar-get-focus)
