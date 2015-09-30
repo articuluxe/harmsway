@@ -38,11 +38,12 @@
 ;;; Options
 
 (defgroup ssh-agency ()
-  "Using ssh-agent on `windows-nt'.")
+  "Using ssh-agent on `windows-nt'."
+  :group 'comm)
 
 (defcustom ssh-agency-bin-dir
   (when (eq system-type 'windows-nt)
-    ;; Git for Windows keeps ssh exes in its bin/ directory.
+    ;; Git for Windows 1.x keeps ssh exes in its bin/ directory.
     (-when-let* ((git-exe (executable-find "git.exe"))
                  (git-dir (directory-file-name (file-name-directory git-exe))))
       (if (equal (file-name-nondirectory git-dir) "cmd")
@@ -52,18 +53,28 @@
   :group 'ssh-agency
   :type 'directory)
 
+(defun ssh-agency-executable-find (exe)
+  "Computes default value for `ssh-agency-EXE-executable'."
+  (or (with-temp-buffer
+        (if (save-excursion
+              (= (call-process "git" nil '(t t) nil "-c"
+                              (concat "alias.X=!which " exe " | cygpath -wf -") "X") 0))
+            ;; Note: filename *must* include ".exe" or
+            ;; `w32-short-file-name' returns nil.
+            (executable-find (buffer-substring-no-properties 1 (line-end-position)))))
+      (if ssh-agency-bin-dir
+          (let ((bin (expand-file-name exe ssh-agency-bin-dir)))
+            (and (file-executable-p bin) bin)))
+      (executable-find exe)))
+
 (defcustom ssh-agency-add-executable
-  (if ssh-agency-bin-dir
-      (expand-file-name "ssh-add.exe" ssh-agency-bin-dir)
-    (executable-find "ssh-add"))
+  (ssh-agency-executable-find "ssh-add.exe")
   "Location of ssh-add executable."
   :group 'ssh-agency
   :type '(file :must-match t))
 
 (defcustom ssh-agency-agent-executable
-  (if ssh-agency-bin-dir
-      (expand-file-name "ssh-agent.exe" ssh-agency-bin-dir)
-    (executable-find "ssh-agent"))
+  (ssh-agency-executable-find "ssh-agent.exe")
   "Location of ssh-agent execuable."
   :group 'ssh-agency
   :type '(file :must-match t))
@@ -107,7 +118,7 @@ ssh-agency always finds the agent without consulting this file."
    ;; `start' to get one. Quoting both the executable and the first
    ;; argument breaks Windows' argument parsing, so we use the short
    ;; name for the executable instead of quoting it.
-   (concat "start /WAIT \"ssh-add\" " (w32-short-file-name ssh-agency-add-executable)
+   (concat "start \"ssh-add\" /WAIT " (w32-short-file-name ssh-agency-add-executable)
            ;; When the argument is quoted `ssh-add' doesn't recognize
            ;; file abbreviations like `~', so expand first (also, it's
            ;; possible that Emacs and `ssh-add' will have different
