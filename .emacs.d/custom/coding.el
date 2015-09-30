@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-09-29 17:02:56 dan.harms>
+;; Modified Time-stamp: <2015-09-30 09:22:39 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -61,16 +61,19 @@
                 ((= arg 4) (funcall my/choose-func dirs prompt))
                 (t first)))
          (remote (file-remote-p dir)))
-    (when remote
+    (when remote                        ;remove remote prefix if present
       (setq dir
             (replace-regexp-in-string (regexp-quote remote) "" dir)))
+    (unless (file-remote-p default-directory)
+      (setq dir
+            ;; some variants of grep don't handle relative paths
+            ;; (but expand-file-name doesn't work remotely)
+            (expand-file-name dir)))
     (grep-apply-setting
      'grep-command
      (concat "find -P "
-             ;; some variants of grep dislike the trailing slash
-             (directory-file-name
-              ;; and relative paths
-              (expand-file-name dir))
+             ;; some greps dislike trailing slashes
+             (directory-file-name dir)
              " \"(\" -name \"*moc_*\" -o -name \"*qrc_*\" \")\" "
              "-prune -o -type f \"(\" -name \"*.cpp\" -o -name \"*.h\" "
              "-o -name \"*.cc\" -o -name \"*.hh\" -o -name \"*.cxx\" "
