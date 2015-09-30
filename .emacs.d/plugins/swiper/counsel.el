@@ -33,6 +33,7 @@
 ;;; Code:
 
 (require 'swiper)
+(require 'etags)
 
 (defvar counsel-completion-beg nil
   "Completion bounds start.")
@@ -169,6 +170,7 @@
 
 (defun counsel--find-symbol (x)
   "Find symbol definition that corresponds to string X."
+  (ring-insert find-tag-marker-ring (point-marker))
   (let ((full-name (get-text-property 0 'full-name x)))
     (if full-name
         (find-library full-name)
@@ -554,6 +556,11 @@ Skip some dotfiles unless `ivy-text' requires them."
               (ivy--regex str))))
     '("" "working...")))
 
+(defun counsel-delete-process ()
+  (let ((process (get-process " *counsel*")))
+    (when process
+      (delete-process process))))
+
 ;;;###autoload
 (defun counsel-locate ()
   "Call locate shell command."
@@ -563,7 +570,8 @@ Skip some dotfiles unless `ivy-text' requires them."
             :history 'counsel-locate-history
             :action (lambda (file)
                       (when file
-                        (find-file file)))))
+                        (find-file file)))
+            :unwind #'counsel-delete-process))
 
 (defun counsel--generic (completion-fn)
   "Complete thing at point with COMPLETION-FN."
@@ -725,7 +733,6 @@ CMD is a command name."
 (declare-function smex-detect-new-commands "ext:smex")
 (declare-function smex-update "ext:smex")
 (declare-function smex-rank "ext:smex")
-(declare-function package-installed-p "package")
 
 ;;;###autoload
 (defun counsel-M-x (&optional initial-input)
@@ -745,9 +752,7 @@ Optional INITIAL-INPUT is the initial input in the minibuffer."
          (cands obarray)
          (pred 'commandp)
          (sort t))
-    (when (or (featurep 'smex)
-              (package-installed-p 'smex))
-      (require 'smex)
+    (when (require 'smex nil 'noerror)
       (unless smex-initialized-p
         (smex-initialize))
       (smex-detect-new-commands)
@@ -984,7 +989,9 @@ Usable with `ivy-resume', `ivy-next-line-and-call' and
   "Grep in the current directory for STRING."
   (if (< (length string) 3)
       (counsel-more-chars 3)
-    (let ((regex (counsel-unquote-regex-parens (ivy--regex string))))
+    (let ((regex (counsel-unquote-regex-parens
+                  (setq ivy--old-re
+                        (ivy--regex string)))))
       (counsel--async-command
        (format "ag --noheading --nocolor %S" regex))
       nil)))
@@ -999,7 +1006,9 @@ INITIAL-INPUT can be given as the initial minibuffer input."
             :dynamic-collection t
             :history 'counsel-git-grep-history
             :action #'counsel-git-grep-action
-            :unwind #'swiper--cleanup))
+            :unwind (lambda ()
+                      (counsel-delete-process)
+                      (swiper--cleanup))))
 
 (defun counsel-recoll-function (string &optional _pred &rest _unused)
   "Grep in the current directory for STRING."
