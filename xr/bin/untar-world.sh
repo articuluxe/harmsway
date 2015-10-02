@@ -5,7 +5,8 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Monday, May 18, 2015
 # Version: 1.0
-# Modified Time-stamp: <2015-08-17 22:10:53 dharms>
+# Modified Time-stamp: <2015-10-02 08:15:42 dan.harms>
+# Modified by: Dan Harms
 # Keywords: configuration
 
 tar=tar
@@ -77,6 +78,10 @@ popd
 # remove intermediate directories, if empty
 pushd ~
 rmdir --ignore-fail-on-non-empty bash tcsh xr
+# protect .netrc
+if [ -f .netrc ] ; then
+   chmod 600 .netrc
+fi
 # and byte-compile emacs
 emacscomp.sh .emacs.d
 popd

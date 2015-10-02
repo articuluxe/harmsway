@@ -4,7 +4,7 @@
 # Author:  <dan.harms@xrtrading.com>
 # Created: Friday, March 20, 2015
 # Version: 1.0
-# Modified Time-stamp: <2015-09-29 11:03:12 dan.harms>
+# Modified Time-stamp: <2015-10-02 12:09:17 dan.harms>
 # Modified by: Dan Harms
 # Keywords: help
 
@@ -43,6 +43,12 @@ mkdir bld && cd bld
 ../configure --with-png=no
 
 #################################### gdb #####################################
+# temporary breakpoint
+tbreak
+# set breakpoint on all functions matching regexp
+rbreak [file:]<regexp>
+# set watchpoint on a variable
+watch <variable>
 # print first 8 elements of a std::vector<std::string> vec
 p *(vec._M_impl._M_start)@8
 # print first 20 characters of a std::string
