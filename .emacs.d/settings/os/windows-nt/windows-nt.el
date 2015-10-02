@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-09-21 08:39:18 dan.harms>
+;; Modified Time-stamp: <2015-10-02 08:16:38 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -38,7 +38,9 @@
 (global-set-key "\C-c0g" 'everything-find-file)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ssh-agency ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'ssh-agency)
+;(require 'ssh-agency)
+
+(setq shell-file-name "sh")             ;finds msys
 
 (setq-default comint-process-echoes t)
 (setq w32-get-true-file-attributes nil)

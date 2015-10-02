@@ -1022,7 +1022,7 @@ register \\C-l."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; multi-term ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'multi-term)
-(setq multi-term-program "/bin/tcsh")
+;(setq multi-term-program "/bin/tcsh")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; bash-completion ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'bash-completion)
