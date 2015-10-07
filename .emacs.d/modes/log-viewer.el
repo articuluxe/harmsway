@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-09-01 10:27:23 dan.harms>
+;; Modified Time-stamp: <2015-10-06 15:19:29 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -47,7 +47,7 @@ fix protocol, using a pipe `|'."
   (make-local-variable 'font-lock-defaults)
   (setq log-viewer-mode-font-lock-keywords
         (list
-         (list "\\(ERROR\\|FATAL\\|WARN\\|[^W]error\\)"
+         (list "\\<\\(ERROR\\|FATAL\\|WARN\\|[^W]error\\)\\>"
                '(1 font-lock-warning-face))
 
          ;; log statements
