@@ -27,9 +27,6 @@
 
 ;; Code:
 
-(defvar-local imenu-scan-results '()
-  "list of results")
-
 (defun imenu-scan-buffer-properties (face)
   (let ((pt (point-min))
         (res '())
