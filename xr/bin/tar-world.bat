@@ -1,14 +1,14 @@
-@echo off
 rem -*- Mode: dos -*-
 rem tar-world.bat --- tar up the world (xr style)
 rem Copyright (C) 2015  Dan Harms (dan.harms)
 rem Author: Dan Harms <dan.harms@xrtrading.com>
 rem Created: Thursday, May 21, 2015
 rem Version: 1.0
-rem Modified Time-stamp: <2015-09-18 08:30:11 dan.harms>
+rem Modified Time-stamp: <2015-10-06 14:09:11 dan.harms>
 rem Modified by: Dan Harms
 rem Keywords: tar whole world
 
+@echo off
 setlocal
 setlocal enabledelayedexpansion
 

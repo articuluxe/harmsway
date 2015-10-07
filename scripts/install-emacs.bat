@@ -1,13 +1,14 @@
-@echo off
 rem -*- Mode: dos -*-
 rem xr-install-emacs.bat --- install emacs (xr style)
 rem Copyright (C) 2015  Dan Harms (dan.harms)
 rem Author: Dan Harms <dan.harms@xrtrading.com>
 rem Created: Thursday, May 21, 2015
 rem Version: 1.0
-rem Modified Time-stamp: <2015-07-31 13:03:05 dan.harms>
+rem Modified Time-stamp: <2015-10-06 14:06:38 dan.harms>
+rem Modified by: Dan Harms
 rem Keywords: install perfect editor
 
+@echo off
 setlocal
 setlocal enabledelayedexpansion
 
