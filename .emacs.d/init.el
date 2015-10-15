@@ -1144,6 +1144,8 @@ register \\C-l."
 ;(autoload 'auto-update-file-header "header2")
 (require 'header2)
 (add-hook 'write-file-functions 'auto-update-file-header)
+
+;; last modification time
 (defun my/update-last-modifier ()
   "Update header line indicating identity of last modifier."
   (delete-and-forget-line)
@@ -1154,6 +1156,18 @@ register \\C-l."
 ;; use my own function, because delete-trailing-whitespace prevents a
 ;; space after the colon
 (register-file-header-action "Modified by[ \t]*:" 'my/update-last-modifier)
+
+;; file name
+(defun my/update-file-name ()
+  "Update the line that indicates the file name."
+  (beginning-of-line)
+  ;; Verify looking at a file name for this mode.
+  (when (looking-at (concat (regexp-quote (header-prefix-string)) " *\\([^ ]+\\) +\\-\\-"))
+    (goto-char (match-beginning 1))
+    (delete-region (match-beginning 1) (match-end 1))
+    (insert (file-name-nondirectory (buffer-file-name)))))
+
+(register-file-header-action "^[ \t]*.+ *\\([^ ]+\\) +\\-\\-" 'my/update-file-name)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-insert ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'autoinsert)
