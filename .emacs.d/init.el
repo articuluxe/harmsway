@@ -1063,7 +1063,7 @@ register \\C-l."
       '(sql-mode nxml-mode cmake-mode folio-mode protobuf-mode
                  python-mode dos-mode gud-mode sh-mode
                  makefile-mode makefile-automake-mode makefile-gmake-mode
-                 autoconf-mode gdb-script-mode
+                 autoconf-mode gdb-script-mode awk-mode
                  mock-mode))
 (require 'auto-complete-config)
 (ac-config-default)
@@ -1357,7 +1357,7 @@ customization."
        (when (memq major-mode '(c++-mode emacs-lisp-mode perl-mode
                                          java-mode python-mode dos-mode
                                          nxml-mode protobuf-mode folio-mode
-                                         sh-mode csharp-mode
+                                         sh-mode csharp-mode awk-mode
                                          gdb-script-mode
                                          gitignore-mode
                                          gitconfig-mode
@@ -1490,6 +1490,14 @@ customization."
             (define-key conf-mode-map "\C-cu" 'conf-unix-mode)
             (define-key conf-mode-map "\C-c\C-c" 'comment-region)
             (define-key conf-mode-map "\C-c\C-u" 'uncomment-region)
+            ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; awk-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(add-hook 'awk-mode-hook
+          (lambda()
+            (setq comment-start "#") (setq comment-end "")
+            (define-key awk-mode-map "\C-c\C-c" 'comment-region)
+            (define-key awk-mode-map "\C-c\C-u" 'uncomment-region)
             ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; html-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
