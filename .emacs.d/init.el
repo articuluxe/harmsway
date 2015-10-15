@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-10-02 08:35:07 dan.harms>
+;; Modified Time-stamp: <2015-10-14 16:35:49 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -619,8 +619,15 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   "Activate ido as a completion framework."
   (when (boundp 'ivy-mode)
     (ivy-mode 0))
+  ;; magit
   (setq magit-completing-read-function 'magit-ido-completing-read)
+  ;; recentf
   (setq uniquify-recentf-func 'uniquify-recentf-ido-recentf-open)
+  ;; M-x
+  (global-set-key (kbd "M-x") 'smex)
+  (if (boundp 'ivy-mode)
+      (global-set-key "\e\ex" 'counsel-M-x)
+    (global-set-key "\e\ex" 'execute-extended-command))
   (ido-mode 1)
   (message "Using ido for completion"))
 
@@ -628,8 +635,13 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   "Activate ivy as a completion framework."
   (when (boundp 'ido-mode)
     (ido-mode 0))
+  ;; magit
   (setq magit-completing-read-function 'ivy-completing-read)
+  ;; recentf
   (setq uniquify-recentf-func 'uniquify-recentf-ivy-recentf-open)
+  ;; M-x
+  (global-set-key (kbd "M-x") 'counsel-M-x)
+  (global-set-key "\e\ex" 'smex)
   (ivy-mode 1)
   (message "Using ivy for completion"))
 
