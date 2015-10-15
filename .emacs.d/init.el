@@ -1146,6 +1146,8 @@ register \\C-l."
 (define-key yas-minor-mode-map "\C-csi" 'yas-insert-snippet)
 (define-key yas-minor-mode-map "\C-csn" 'yas-new-snippet)
 (define-key yas-minor-mode-map "\C-csv" 'yas-visit-snippet-file)
+(define-key yas-minor-mode-map "\C-cs?" 'yas-describe-tables)
+
 ;; integrate with auto-complete
 (defun my/expand-yasnippet() (interactive)
        (auto-complete '(ac-source-yasnippet)))

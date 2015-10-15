@@ -4,7 +4,7 @@
 # Author:  <dan.harms@xrtrading.com>
 # Created: Friday, March 20, 2015
 # Version: 1.0
-# Modified Time-stamp: <2015-10-02 12:09:17 dan.harms>
+# Modified Time-stamp: <2015-10-13 13:41:02 dan.harms>
 # Modified by: Dan Harms
 # Keywords: help
 
@@ -43,6 +43,8 @@ mkdir bld && cd bld
 ../configure --with-png=no
 
 #################################### gdb #####################################
+# set a variable
+set var name=value
 # temporary breakpoint
 tbreak
 # set breakpoint on all functions matching regexp
