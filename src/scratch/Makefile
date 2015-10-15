@@ -1,5 +1,6 @@
 CC=g++ -std=c++14
-CFLAGS=-c -Wall
+# -std=gnu++11
+CFLAGS=-c -g -Wall
 LDFLAGS=
 SOURCES=scratch.cpp
 OBJECTS=$(SOURCES:.cpp=.o)
