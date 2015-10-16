@@ -4,7 +4,7 @@ rem Copyright (C) 2015  Dan Harms (dan.harms)
 rem Author: Dan Harms <dan.harms@xrtrading.com>
 rem Created: Thursday, May 21, 2015
 rem Version: 1.0
-rem Modified Time-stamp: <2015-10-06 14:09:11 dan.harms>
+rem Modified Time-stamp: <2015-10-16 12:12:44 dan.harms>
 rem Modified by: Dan Harms
 rem Keywords: tar whole world
 
@@ -28,7 +28,7 @@ echo Generating %curr_dir%\%dest%...
 if exist %dest% (
     del %dest%
 )
-%tar% c%verbose%f %dest% config doc src .gitignore .gdbinit
+%tar% c%verbose%f %dest% config doc src .gdbinit
 %tar% u%verbose%f %dest% --exclude=*.elc .emacs.d
 %tar% u%verbose%f %dest% --transform=s/scripts/bin/ scripts
 %tar% u%verbose%f %dest% --transform=s$bash/$$ bash
