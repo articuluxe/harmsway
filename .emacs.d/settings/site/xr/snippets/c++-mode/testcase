@@ -1,6 +1,9 @@
 # -*- mode: snippet; require-final-newline: nil -*-
-# name: pragma-once
-# key: pragma_once
+# name: testcase
+# key: testcase
 # binding: direct-keybinding
 # --
-#pragma once
+TEST_CASE($1, "[${2:$1}]")
+{
+$0
+}

@@ -1,9 +1,6 @@
 # -*- mode: snippet; require-final-newline: nil -*-
-# name: test-case
-# key: test_case
+# name: boostcheck
+# key: boostcheck
 # binding: direct-keybinding
 # --
-TEST_CASE($1, "[${2:$1}]")
-{
-$0
-}
+BOOST_CHECK($0);

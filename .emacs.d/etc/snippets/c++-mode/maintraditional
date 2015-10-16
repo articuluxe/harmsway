@@ -1,6 +1,6 @@
 # -*- mode: snippet; require-final-newline: nil -*-
-# name: main-traditional
-# key: main_traditional
+# name: maintraditional
+# key: maintraditional
 # binding: direct-keybinding
 # --
 #include <iostream>

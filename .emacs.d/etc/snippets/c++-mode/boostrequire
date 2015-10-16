@@ -1,6 +1,6 @@
 # -*- mode: snippet; require-final-newline: nil -*-
-# name: boost-require
-# key: boost_require
+# name: boostrequire
+# key: boostrequire
 # binding: direct-keybinding
 # --
 BOOST_REQUIRE($0);

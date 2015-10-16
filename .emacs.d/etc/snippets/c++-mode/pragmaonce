@@ -1,6 +1,6 @@
 # -*- mode: snippet; require-final-newline: nil -*-
-# name: boost-check-equal
-# key: boost_check_equal
+# name: pragmaonce
+# key: pragmaonce
 # binding: direct-keybinding
 # --
-BOOST_CHECK_EQUAL($1, $2);
+#pragma once

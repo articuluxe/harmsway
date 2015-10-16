@@ -1,6 +1,6 @@
 # -*- mode: snippet; require-final-newline: nil -*-
-# name: boost-test-suite
-# key: boost_test_suite
+# name: boosttestsuite
+# key: boosttestsuite
 # binding: direct-keybinding
 # --
 BOOST_AUTO_TEST_SUITE(${1:test_suite})

@@ -1,6 +1,6 @@
 # -*- mode: snippet; require-final-newline: nil -*-
-# name: include-app
-# key: include_app
+# name: boostcheckequal
+# key: boostcheckequal
 # binding: direct-keybinding
 # --
-#include "$0"
+BOOST_CHECK_EQUAL($1, $2);
