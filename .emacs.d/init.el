@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-10-14 16:35:49 dan.harms>
+;; Modified Time-stamp: <2015-10-16 11:50:05 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1273,6 +1273,13 @@ register \\C-l."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; htmlize ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'htmlize)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; awk-it ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'awk-it)
+(global-set-key "\C-c0aa" 'awk-it)
+(global-set-key "\C-c0ap" 'awk-it-with-separator)
+(global-set-key "\C-c0as" 'awk-it-single)
+(global-set-key "\C-c0ag" 'awk-it-single-with-separator)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; guide-key ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (when (version< "24.3" emacs-version)
