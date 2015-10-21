@@ -425,7 +425,8 @@ INITIAL-INPUT can be given as the initial minibuffer input."
               :keymap counsel-git-grep-map
               :action #'counsel-git-grep-action
               :unwind #'swiper--cleanup
-              :history 'counsel-git-grep-history)))
+              :history 'counsel-git-grep-history
+              :caller 'counsel-git-grep)))
 
 (defcustom counsel-find-file-at-point nil
   "When non-nil, add file-at-point to the list of candidates."
@@ -499,6 +500,10 @@ Skip some dotfiles unless `ivy-text' requires them."
                  candidates))
         (setq ivy--old-re regexp))))
 
+(defvar counsel--async-time nil
+  "Store the time when a new process was started.
+Or the time of the last minibuffer update.")
+
 (defun counsel--async-command (cmd)
   (let* ((counsel--process " *counsel*")
          (proc (get-process counsel--process))
@@ -511,7 +516,9 @@ Skip some dotfiles unless `ivy-text' requires them."
                 counsel--process
                 counsel--process
                 cmd))
-    (set-process-sentinel proc #'counsel--async-sentinel)))
+    (setq counsel--async-time (current-time))
+    (set-process-sentinel proc #'counsel--async-sentinel)
+    (set-process-filter proc #'counsel--async-filter)))
 
 (defun counsel--async-sentinel (process event)
   (if (string= event "finished\n")
@@ -527,6 +534,24 @@ Skip some dotfiles unless `ivy-text' requires them."
           (setq ivy--all-candidates '("Error"))
           (setq ivy--old-cands ivy--all-candidates)
           (ivy--exhibit)))))
+
+(defun counsel--async-filter (process str)
+  "Receive from PROCESS the output STR.
+Update the minibuffer with the amount of lines collected every
+0.5 seconds since the last update."
+  (with-current-buffer (process-buffer process)
+    (insert str))
+  (let (size)
+    (when (time-less-p
+           ;; 0.5s
+           '(0 0 500000 0)
+           (time-since counsel--async-time))
+      (with-current-buffer (process-buffer process)
+        (goto-char (point-min))
+        (setq size (- (buffer-size) (forward-line (buffer-size)))))
+      (ivy--insert-minibuffer
+       (format "\ncollected: %d" size))
+      (setq counsel--async-time (current-time)))))
 
 (defun counsel-locate-action-extern (x)
   "Use xdg-open shell command on X."
@@ -589,8 +614,9 @@ Skip some dotfiles unless `ivy-text' requires them."
             :dynamic-collection t
             :history 'counsel-locate-history
             :action (lambda (file)
-                      (when file
-                        (find-file file)))
+                      (with-ivy-window
+                        (when file
+                          (find-file file))))
             :unwind #'counsel-delete-process))
 
 (defun counsel--generic (completion-fn)
@@ -716,8 +742,17 @@ The libraries are offered from `load-path'."
   "Quickly and asynchronously count the amount of git grep REGEX matches.
 When NO-ASYNC is non-nil, do it synchronously."
   (let ((default-directory counsel--git-grep-dir)
-        (cmd (format "git grep -i -c '%s' | sed 's/.*:\\(.*\\)/\\1/g' | awk '{s+=$1} END {print s}'"
-                     (replace-regexp-in-string "'" "''" regex)))
+        (cmd
+         (concat
+          (format
+           (replace-regexp-in-string
+            "--full-name" "-c"
+            counsel-git-grep-cmd)
+           ;; "git grep -i -c '%s'"
+           (replace-regexp-in-string
+            "-" "\\\\-"
+            (replace-regexp-in-string "'" "''" regex)))
+          " | sed 's/.*:\\(.*\\)/\\1/g' | awk '{s+=$1} END {print s}'"))
         (counsel-ggc-process " *counsel-gg-count*"))
     (if no-async
         (string-to-number (shell-command-to-string cmd))
@@ -1012,18 +1047,19 @@ Usable with `ivy-resume', `ivy-next-line-and-call' and
   "Grep in the current directory for STRING."
   (if (< (length string) 3)
       (counsel-more-chars 3)
-    (let ((regex (counsel-unquote-regex-parens
+    (let ((default-directory counsel--git-grep-dir)
+          (regex (counsel-unquote-regex-parens
                   (setq ivy--old-re
                         (ivy--regex string)))))
       (counsel--async-command
        (format "ag --noheading --nocolor %S" regex))
       nil)))
 
-(defun counsel-ag (&optional initial-input)
+(defun counsel-ag (&optional initial-input initial-directory)
   "Grep for a string in the current directory using ag.
 INITIAL-INPUT can be given as the initial minibuffer input."
   (interactive)
-  (setq counsel--git-grep-dir default-directory)
+  (setq counsel--git-grep-dir (or initial-directory default-directory))
   (ivy-read "ag: " 'counsel-ag-function
             :initial-input initial-input
             :dynamic-collection t

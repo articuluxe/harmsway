@@ -68,16 +68,24 @@
            (ivy-with '(let ((ivy-re-builders-alist '((t . ivy--regex-fuzzy))))
                        (ivy-read "pattern: " '("package-list-packages" "something-else")))
                      "plp C-m")
-           "package-list-packages")))
+           "package-list-packages"))
+  (should (equal
+           (ivy-with '(ivy-read "test" '("aaab" "aaac"))
+                     "a C-n <tab> C-m")
+           "aaac"))
+  (should (equal
+           (ivy-with '(ivy-read "pattern: " '("can do" "can" "can't do"))
+                     "can C-m")
+           "can")))
 
 (ert-deftest swiper--re-builder ()
   (setq swiper--width 4)
   (should (string= (swiper--re-builder "^")
                    "."))
   (should (string= (swiper--re-builder "^a")
-                   "^[0-9][0-9 ]\\{4\\}\\(a\\)"))
+                   "^ ?\\(a\\)"))
   (should (string= (swiper--re-builder "^a b")
-                   "^[0-9][0-9 ]\\{4\\}\\(a\\).*?\\(b\\)")))
+                   "^ \\(a\\).*?\\(b\\)")))
 
 (ert-deftest ivy--split ()
   (should (equal (ivy--split "King of the who?")
