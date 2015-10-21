@@ -5,8 +5,8 @@
 # Created: `(insert-today)`
 # Version: ${3:1.0}
 # Modified Time-stamp: <2015-02-26 13:20:30 dharms>
-# Modified by:
+# Modified by: Dan Harms
 # Keywords: $4
 CMAKE_MINIMUM_REQUIRED(VERSION 2.8)
 $0
-# $1 ends here
+# code ends here

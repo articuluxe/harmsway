@@ -5,7 +5,7 @@
 # Created: `(insert-today)`
 # Version: ${3:1.0}
 # Modified Time-stamp: <2015-02-26 13:20:30 dharms>
-# Modified by:
+# Modified by: Dan Harms
 # Keywords: $4
 # expand-env: ((yas-indent-line 'fixed))
 
@@ -25,4 +25,4 @@ lib$6_a_SOURCES =								\
 	$(lib$6_a_HEADERS)							\
 	${8:source file}
 
-# $1 ends here
+# code ends here

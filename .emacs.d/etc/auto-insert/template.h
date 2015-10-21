@@ -4,8 +4,8 @@
 // Author: `(user-full-name)` <`user-mail-address`>
 // Created: `(insert-today)`
 // Version: ${3:1.0}
-// Modified Time-stamp: <2015-06-18 13:41:44 dan.harms>
-// Modified by:
+// Modified Time-stamp: <2015-10-21 16:25:28 dan.harms>
+// Modified by: Dan Harms
 // Keywords: $4
 
 // This program is free software; you can redistribute it and/or modify
@@ -27,4 +27,4 @@
 
 $0
 
-// $1 ends here
+// code ends here

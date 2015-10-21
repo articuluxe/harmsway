@@ -5,7 +5,7 @@ dnl Author: `(user-full-name)` <`user-mail-address`>
 dnl Created: `(insert-today)`
 dnl Version: ${3:1.0}
 dnl Modified Time-stamp: <2015-02-26 13:20:30 dharms>
-dnl Modified by:
+dnl Modified by: Dan Harms
 dnl Keywords: $4
 
 AC_INIT([${1:project}],[${2:version}],[${3:dan.harms@xrtrading.com}])
@@ -35,4 +35,4 @@ AC_CONFIG_FILES([${5:src/Makefile}])
 # generate files
 AC_OUTPUT
 
-dnl $1 ends here
+dnl code ends here
