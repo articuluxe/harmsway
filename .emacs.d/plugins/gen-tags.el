@@ -4,7 +4,8 @@
 ;; Author:  <dan.harms@xrtrading.com>
 ;; Created: Wednesday, March 18, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-05-19 12:11:01 dan.harms>
+;; Modified Time-stamp: <2015-10-21 16:28:39 dan.harms>
+;; Modified by: Dan Harms
 ;; Keywords: etags, ctags
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -116,6 +117,7 @@ running on a remote host."
   (let ((elapsed (float-time
                   (time-subtract (current-time) gen-tags--start-time))))
     (with-current-buffer gen-tags--buffer
+      (goto-char (point-max))
       (insert
        (format "\nTAGS generation finished at %s (it took %.3f seconds).\n\n\n"
                (current-time-string) elapsed)))))
@@ -186,6 +188,7 @@ running on a remote host."
                                 default-directory
                                 gen-tags--intermediate-dest-file))
     (with-current-buffer gen-tags--buffer
+      (goto-char (point-max))
       (insert gen-tags--msg))
     (setq args
           (append arg-list
@@ -213,6 +216,7 @@ running on a remote host."
      (lambda (proc change)
        (when (string-match "\\(finished\\|exited\\)" change)
          (with-current-buffer gen-tags--buffer
+           (goto-char (point-max))
            (insert "done.\n")
            (when (and gen-tags--remote gen-tags-copy-remote)
              (let ((start (current-time)))
@@ -232,4 +236,4 @@ running on a remote host."
 
 (provide 'gen-tags)
 
-;; gen-tags.el ends here
+;; code ends here
