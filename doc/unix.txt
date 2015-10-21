@@ -4,7 +4,7 @@
 # Author:  <dan.harms@xrtrading.com>
 # Created: Friday, March 20, 2015
 # Version: 1.0
-# Modified Time-stamp: <2015-10-13 13:41:02 dan.harms>
+# Modified Time-stamp: <2015-10-21 16:27:09 dan.harms>
 # Modified by: Dan Harms
 # Keywords: help
 
@@ -51,6 +51,10 @@ tbreak
 rbreak [file:]<regexp>
 # set watchpoint on a variable
 watch <variable>
+# dump output to a file
+set logging file file.txt
+set logging on
+set pagination off
 # print first 8 elements of a std::vector<std::string> vec
 p *(vec._M_impl._M_start)@8
 # print first 20 characters of a std::string
@@ -64,6 +68,11 @@ x/i $pc
 disas $pc
 # conditional breakpoints
 break <line> if strcmp(str, "str") == 0
+# print a backtrace each time a breakpoint hits
+command <breakpoint #>
+backtrace 10
+continue
+end
 
 ################################ command line ################################
 # last command
@@ -107,4 +116,8 @@ $?
 # redirect stdout+stderr
 <command> &> output.txt
 
-# unix.txt ends here
+#################################### awk #####################################
+# look at TAB-separated values
+awk 'BEGIN {FS="\t"}; {if ($12 == "ESH6") print $40; }' <file>
+
+# code ends here
