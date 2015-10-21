@@ -1,3 +1,6 @@
+# profile files
+*.eprof
+*.rprof
 
 # TAGS files
 TAGS
