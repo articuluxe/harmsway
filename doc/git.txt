@@ -119,6 +119,8 @@ git add .
 
 ################################### STASH ####################################
 git stash <show|save|drop|push|pop> stash@\{0\}
+# selectively stage
+git stash save -p "name of stash"
 # interactively staging hunks:
 "y:stage n:don't stage a:all-in-file d:skip-file q:quit"
 

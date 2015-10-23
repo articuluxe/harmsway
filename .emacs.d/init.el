@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-10-21 16:26:48 dan.harms>
+;; Modified Time-stamp: <2015-10-23 16:31:09 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -166,8 +166,8 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (global-set-key [(next)] 'scroll-up-line)
 (global-set-key [(prior)] 'scroll-down-line)
 (global-set-key "\C-x\C-r" (lambda()(interactive)(revert-buffer nil t)))
-(global-set-key "\C-ca" 'align)
-(global-set-key "\C-cr" 'align-repeat-regexp)
+(global-set-key "\C-caa" 'align)
+(global-set-key "\C-car" 'align-repeat-regexp)
 (global-set-key [f5] 'toggle-truncate-lines)
 (global-set-key "\C-c5" 'toggle-truncate-lines)
 (global-set-key "\C-c " 'whitespace-mode)
@@ -1061,6 +1061,11 @@ register \\C-l."
                 )
 (profile-set-default "default")
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; rtags ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(eval-and-compile
+  (add-to-list 'load-path (concat my/plugins-directory "rtags/")))
+(require 'rtags)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-complete ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
   (add-to-list 'load-path (concat my/plugins-directory "auto-complete/")))
@@ -1090,6 +1095,9 @@ register \\C-l."
                                            (setq ac-auto-start
                                                  (null ac-auto-start))))
 (setq ac-menu-height 20)
+(require 'rtags-ac)
+(setq rtags-completions-enabled t)
+(rtags-enable-standard-keybindings c-mode-base-map)
 (require 'auto-complete-etags)
 (require 'auto-complete-nxml)
 ;; c-headers
@@ -1116,6 +1124,9 @@ register \\C-l."
 (add-hook 'protobuf-mode-hook
           (lambda()
             (setq ac-sources (add-to-list 'ac-sources 'ac-source-etags))))
+(defun my/rtags-complete() (interactive)
+       (auto-complete '(ac-source-rtags)))
+(global-set-key (kbd "\C-c r TAB") 'my/rtags-complete)
 (defun my/expand-imenu() (interactive)
        (auto-complete '(ac-source-imenu)))
 (global-set-key "\C-c\C-j" 'my/expand-imenu)
