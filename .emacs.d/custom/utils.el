@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-09-22 11:56:36 dan.harms>
+;; Modified Time-stamp: <2015-10-26 05:54:03 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -133,7 +133,13 @@ is selected."
           (forward-char 1)
           (forward-list -1))
       (forward-char 1))))
-(global-set-key "\e\ep" 'jump-to-matching-paren)
+(global-set-key "\e\e\\" 'jump-to-matching-paren)
+
+(defun switch-to-most-recent-buffer()
+  "Switch to most recent buffer.  Repeated calls toggle buffers."
+  (interactive)
+  (switch-to-buffer (other-buffer (current-buffer) 1)))
+(global-set-key "\e\ep" 'switch-to-most-recent-buffer)
 
 (defun my/indent-line-relative()
   "Indent current line according to previous line."
@@ -189,7 +195,7 @@ is selected."
         (forward-list 1)
         (backward-char)
         (setq deactivate-mark nil)))))
-(global-set-key "\M-p" 'highlight-enclosing-paren)
+(global-set-key "\esp" 'highlight-enclosing-paren)
 
 (defun enclose-by-braces (left right)
   "insert braces around a region or point"

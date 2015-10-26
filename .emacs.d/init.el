@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-10-23 16:31:09 dan.harms>
+;; Modified Time-stamp: <2015-10-26 05:54:24 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -600,6 +600,11 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
                  recentf-list nil t)))
       (when file (find-file file))))
   (global-set-key "\er" 'recentf-ido-find-file))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ace-window ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'avy)
+(require 'ace-window)
+(global-set-key "\M-p" 'ace-window)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; swiper/ivy ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (unless (version< emacs-version "24.1")
