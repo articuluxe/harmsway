@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-10-02 08:16:09 dan.harms>
+;; Modified Time-stamp: <2015-10-26 11:04:29 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -32,8 +32,9 @@
 (add-hook 'after-make-frame-functions 'my/disable-scroll-bars)
 
 ;; scroll one line at a time
-(setq scroll-conservatively 10000)
-;(setq scroll-step 1)
+(setq scroll-conservatively 0)
+(setq scroll-step 1)
+;; (setq scroll-conservatively 10000)
 (setq mouse-wheel-scroll-amount '(1 ((shift) . 1)))
 ;; don't accelerate scrolling
 (setq mouse-wheel-progressive-speed nil)
