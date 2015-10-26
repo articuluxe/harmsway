@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-10-26 05:54:24 dharms>
+;; Modified Time-stamp: <2015-10-26 12:19:51 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1170,6 +1170,11 @@ register \\C-l."
        (auto-complete '(ac-source-yasnippet)))
 (global-set-key [backtab] 'my/expand-yasnippet)
 (global-set-key [(shift tab)] 'my/expand-yasnippet)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; flycheck ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'flycheck)
+(add-hook 'after-init-hook #'global-flycheck-mode)
+(setq flycheck-global-modes '(emacs-lisp-mode))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; headers ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;(autoload 'auto-update-file-header "header2")
