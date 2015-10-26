@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-10-26 12:19:51 dan.harms>
+;; Modified Time-stamp: <2015-10-26 16:20:52 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1175,6 +1175,8 @@ register \\C-l."
 (require 'flycheck)
 (add-hook 'after-init-hook #'global-flycheck-mode)
 (setq flycheck-global-modes '(emacs-lisp-mode))
+(require 'flycheck-pos-tip)
+(setq flycheck-display-errors-function #'flycheck-pos-tip-error-messages)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; headers ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;(autoload 'auto-update-file-header "header2")
