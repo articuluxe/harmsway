@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-10-26 16:20:52 dharms>
+;; Modified Time-stamp: <2015-10-26 20:13:28 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1283,6 +1283,10 @@ register \\C-l."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; popup-kill-ring ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'popup-kill-ring)
 (global-set-key "\C-\M-y" 'popup-kill-ring)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;; popup-global-mark-ring ;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'popup-global-mark-ring)
+(global-set-key "\e\ey" 'popup-global-mark-ring)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; zop-to-char ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'zop-to-char)
