@@ -906,6 +906,10 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (global-set-key "\C-c0s" 'sunrise)
   )
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; neotree ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'neotree)
+(global-set-key "\C-c0n" 'neotree-toggle)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; diff ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; only highlight current chunk
 (setq-default ediff-highlight-all-diffs 'nil
