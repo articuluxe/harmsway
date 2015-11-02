@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-10-26 20:13:28 dharms>
+;; Modified Time-stamp: <2015-11-02 13:41:06 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -896,6 +896,15 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
             (find-file filename)
             (call-interactively command))
           (dired-get-marked-files))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;; sunrise-commander ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(eval-and-compile
+  (add-to-list 'load-path (concat my/plugins-directory "sunrise/"))
+  (require 'sunrise-commander)
+  (require 'sunrise-x-tree)
+  (require 'sunrise-x-w32-addons)
+  (global-set-key "\C-c0s" 'sunrise)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; diff ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; only highlight current chunk
