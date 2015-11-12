@@ -86,6 +86,7 @@
 (setq kill-do-not-save-duplicates t)
 (file-name-shadow-mode 1)
 (setq enable-recursive-minibuffers t)
+(setq isearch-allow-scroll t)
 ;;  truncate long lines
 (setq-default truncate-lines t)
 ;; search is case-sensitive by default
@@ -174,7 +175,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (global-set-key "\C-cf" 'font-lock-fontify-buffer)
 (global-set-key "\e\es" 'speedbar)
 (global-set-key "\e\eo" 'speedbar-get-focus)
-(global-set-key "\C-x\C-g" 'ff-find-other-file)
+(global-set-key "\M-sf" 'ff-find-other-file)
 (global-set-key (kbd "M-#") 'sort-lines)
 (global-set-key (kbd "C-#") 'sort-paragraphs)
 (global-set-key "\C-xw" 'write-region)

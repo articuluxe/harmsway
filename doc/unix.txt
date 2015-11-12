@@ -4,7 +4,7 @@
 # Author:  <dan.harms@xrtrading.com>
 # Created: Friday, March 20, 2015
 # Version: 1.0
-# Modified Time-stamp: <2015-10-21 16:27:09 dan.harms>
+# Modified Time-stamp: <2015-11-12 09:12:57 dan.harms>
 # Modified by: Dan Harms
 # Keywords: help
 
@@ -37,6 +37,11 @@ cat /etc/*-release
 # convert from .erf to .pcap
 tshark -r <file>.erf -q -z io,phs
 editcap -F libpcap -T ether <file>.erf <file>.pcap
+
+# repeat a command every n seconds
+watch -n 5 who
+# repeat a command in a loop
+while sleep 1; do who; done
 
 # compile emacs
 mkdir bld && cd bld
@@ -117,7 +122,13 @@ $?
 <command> &> output.txt
 
 #################################### awk #####################################
+# seach a field for a specific regex
+awk '$5 ~ /regex/ {print $5;}' file
 # look at TAB-separated values
 awk 'BEGIN {FS="\t"}; {if ($12 == "ESH6") print $40; }' <file>
+# echo lines with fewer lines
+awk -F, 'NF < 18 { print $0;}' <file>
+# find which column matches a regex
+head -1 file.csv | awk -F, '{for (i=1; i <= NF; ++i) { if ($i ~ /regex/) {print i,$i;}}}'
 
 # code ends here
