@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-09-02 12:12:16 dan.harms>
+;; Modified Time-stamp: <2015-11-12 17:05:14 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -74,6 +74,41 @@ The returned property is not evaluated.  This overrides the function in
   "Return the function call of PROPERTY's value for the current
 profile `profile-current'."
   (funcall (get profile-current property) project-root-dir))
+
+;;;###autoload
+(defun profile-open-dired-on-dir ()
+  "Open a dired buffer on one of the directories listed in the profile.
+These could come from various sources."
+  (interactive)
+  (let* ((cats (list "src" "build" "debug"))
+         (cat (funcall my/choose-func cats "Choose among:"))
+         choices dir path)
+    (cond ((string= cat "src")
+           (setq choices (mapcar
+                          (lambda(dir)
+                            (if (consp dir)
+                                (car dir)
+                              dir))
+                          (profile-current-get 'grep-dirs))))
+          ((string= cat "build")
+           (setq choices (mapcar
+                          'car
+                          (profile-current-get 'build-sub-dirs))))
+          ((string= cat "debug")
+           (setq choices (profile-current-get 'debug-sub-dirs))))
+    (unless choices
+      (error "No %s directories available" cat))
+    (setq dir (funcall my/choose-func choices "Open dired: "))
+    (when dir
+      (setq path
+            (concat
+             (profile-current-get 'remote-prefix)
+             (unless (file-name-absolute-p dir)
+               (profile-current-get 'project-root-dir))
+             dir))
+      (if (file-readable-p path)
+          (dired path)
+        (error "%s does not exist!" path)))))
 
 ;;;###autoload
 (defun profile-find-profile-basename (name)

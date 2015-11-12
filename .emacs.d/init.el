@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-11-02 13:41:06 dan.harms>
+;; Modified Time-stamp: <2015-11-12 16:20:43 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1078,6 +1078,7 @@ register \\C-l."
                 'compile-sub-command "make"
                 )
 (profile-set-default "default")
+(global-set-key "\C-c0d" 'profile-open-dired-on-dir)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; rtags ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
