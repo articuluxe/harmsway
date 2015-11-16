@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-09-22 16:28:09 dan.harms>
+;; Modified Time-stamp: <2015-11-16 08:53:53 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -30,6 +30,8 @@
 (tool-bar-mode -1)
 (scroll-bar-mode -1)
 (add-hook 'after-make-frame-functions 'my/disable-scroll-bars)
+
+(global-set-key "\C-c0q11" 'toggle-frame-fullscreen)
 
 ;; scroll one line at a time
 (setq scroll-step 1)
