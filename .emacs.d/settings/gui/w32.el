@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-10-26 11:04:29 dan.harms>
+;; Modified Time-stamp: <2015-11-16 08:31:54 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -55,6 +55,7 @@
       (w32-maximize-frame)
     (w32-minimize-frame)))
 (global-set-key [f11] 'w32-toggle-full-screen)
+(global-set-key "\C-c0q11" 'w32-toggle-full-screen)
 
 
 (setq initial-frame-alist

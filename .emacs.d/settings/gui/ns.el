@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-09-10 22:34:39 dharms>
+;; Modified Time-stamp: <2015-11-16 08:34:20 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -44,6 +44,7 @@
                        (if (frame-parameter nil 'fullscreen)
                            nil 'fullboth)))
 (global-set-key [f11] 'ns-toggle-full-screen)
+(global-set-key "\C-c0q11" 'ns-toggle-full-screen)
 
 (setq initial-frame-alist
       '(
