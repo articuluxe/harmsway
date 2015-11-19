@@ -4,7 +4,7 @@ rem Copyright (C) 2015  Dan Harms (dan.harms)
 rem Author: Dan Harms <dan.harms@xrtrading.com>
 rem Created: Thursday, May 21, 2015
 rem Version: 1.0
-rem Modified Time-stamp: <2015-11-18 14:03:52 dan.harms>
+rem Modified Time-stamp: <2015-11-19 09:46:42 dan.harms>
 rem Modified by: Dan Harms
 rem Keywords: install perfect editor
 
@@ -28,6 +28,8 @@ set int=emacs.tar
 set manifest=.bk_manifest
 set backup=emacs_bk.tar
 
+for /f "usebackq" %%i in (`hostname`) do set host=%%i
+
 if "%HOME%". == . (
     echo "HOME directory undefined, aborting."
     exit /b
@@ -40,6 +42,7 @@ if exist %int% (
 echo Tarring .emacs.d into %int%...
 %tar% c%verbose%f %int% --exclude=*.elc .emacs.d
 %tar% u%verbose%f %int% --transform=s$xr/$$ xr/.emacs.d
+%tar% u%verbose%f %int% --transform=s$%host%/$$ %host%/.emacs.d
 
 cd %HOME%
 if exist .emacs.d (
