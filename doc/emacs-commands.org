@@ -66,11 +66,11 @@ T c/M-w       copy tags
 T p/C-y       add yanked tags
 T q           replace with yanked tags
 T m/u [* + % ~]   tag [un]mark all, some, regexp, not
-;; Set (C-x p)
+** Set (C-x p)
 C-x p m       set bookmark
 C-x p RET     set/delete autonamed bookmark
 C-x p e/d     edit/delete bookmark
-;; Jump (C-x j)
+** Jump (C-x j)
 C-x [4] j j   jump to bookmark [other window]
 C-x p o       jump other window
 C-x j y       load a bookmark file [switch with prefix]
