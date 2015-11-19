@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-09-30 09:22:39 dan.harms>
+;; Modified Time-stamp: <2015-11-19 08:54:00 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -113,6 +113,7 @@
    (c-add-style "default-style"
                 (quote
                  ((c-basic-offset . 3)
+                  (c-electric-pound-behavior . (alignleft))
                   (c-cleanup-list . (
                                      empty-defun-braces
                                      defun-close-semi
@@ -120,6 +121,7 @@
                                      scope-operator
                                      list-close-comma
                                      compact-empty-funcall
+                                     comment-close-slash
                                      ))
                   (c-offsets-alist . (
                                       (innamespace           . 0)
