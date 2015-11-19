@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-11-12 16:20:43 dan.harms>
+;; Modified Time-stamp: <2015-11-19 16:43:27 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -351,6 +351,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (require 'qt-pro)
 (when (version< emacs-version "23")
   (require 'json-mode))
+(require 'nhexl-mode)
 ;; git
 (require 'gitignore-mode)
 (require 'gitconfig-mode)
