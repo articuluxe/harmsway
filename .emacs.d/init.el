@@ -397,7 +397,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (setq aes--plaintext-passwords
       (let ((pwd (or (getenv "EMACS_PWD") "nil")))
         (list (cons my/aes-default-group pwd))))
-(global-set-key "\C-cz" 'aes-toggle-encryption)
+(global-set-key "\C-c0z" 'aes-toggle-encryption)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; idle-highlight ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'idle-highlight-mode)

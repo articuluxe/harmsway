@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-10-26 05:54:03 dharms>
+;; Modified Time-stamp: <2015-11-20 13:58:03 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -394,7 +394,7 @@ is selected."
   '( "\\.cpp$" "\\.cc$" "\\.cxx$" "\\.c$" "\\.C$"
      "\\.h$" "\\.hh$" "\\.hpp$" "\\.hxx$" "\\.H$"
      "\\.sh$" "\\.py$" "\\.sql$" "\\.java$" "\\.in$"
-     "\\.proto$" "\\.el$"
+     "\\.proto$" "\\.el$" "\\.cs$"
      "^CMakeLists.txt$" "\\.cmake$"
      "^Makefile$" "^makefile$"
      ))
