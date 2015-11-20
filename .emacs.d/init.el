@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-11-19 16:43:27 dan.harms>
+;; Modified Time-stamp: <2015-11-20 16:38:06 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -616,6 +616,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (global-set-key "\M-ss" 'swiper)
   (define-key isearch-mode-map (kbd "C-o") 'swiper-from-isearch)
   (require 'ivy)
+  (setq ivy-wrap t)
   (add-to-list 'my/completion-framework-alist
                (cons "ivy" 'my/activate-ivy))
   (global-set-key "\e\eii" 'ivy-resume)
