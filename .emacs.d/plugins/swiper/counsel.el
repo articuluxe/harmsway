@@ -159,26 +159,29 @@
 (defun counsel-find-symbol ()
   "Jump to the definition of the current symbol."
   (interactive)
-  (ivy-set-action #'counsel--find-symbol)
-  (ivy-done))
+  (ivy-exit-with-action #'counsel--find-symbol))
 
 (defun counsel--info-lookup-symbol ()
   "Lookup the current symbol in the info docs."
   (interactive)
-  (ivy-set-action #'counsel-info-lookup-symbol)
-  (ivy-done))
+  (ivy-exit-with-action #'counsel-info-lookup-symbol))
 
 (defun counsel--find-symbol (x)
   "Find symbol definition that corresponds to string X."
-  (ring-insert find-tag-marker-ring (point-marker))
+  (with-no-warnings
+    (ring-insert find-tag-marker-ring (point-marker)))
   (let ((full-name (get-text-property 0 'full-name x)))
     (if full-name
         (find-library full-name)
       (let ((sym (read x)))
-        (cond ((boundp sym)
+        (cond ((and (eq (ivy-state-caller ivy-last)
+                        'counsel-describe-variable)
+                    (boundp sym))
                (find-variable sym))
               ((fboundp sym)
                (find-function sym))
+              ((boundp sym)
+               (find-variable sym))
               ((or (featurep sym)
                    (locate-library
                     (prin1-to-string sym)))
@@ -224,7 +227,8 @@
      :sort t
      :action (lambda (x)
                (describe-variable
-                (intern x))))))
+                (intern x)))
+     :caller 'counsel-describe-variable)))
 
 (ivy-set-actions
  'counsel-describe-variable
@@ -235,6 +239,10 @@
  'counsel-describe-function
  '(("i" counsel-info-lookup-symbol "info")
    ("d" counsel--find-symbol "definition")))
+
+(ivy-set-actions
+ 'counsel-M-x
+ '(("d" counsel--find-symbol "definition")))
 
 ;;;###autoload
 (defun counsel-describe-function ()
@@ -255,7 +263,8 @@
               :sort t
               :action (lambda (x)
                         (describe-function
-                         (intern x))))))
+                         (intern x)))
+              :caller 'counsel-describe-function)))
 
 (defvar info-lookup-mode)
 (declare-function info-lookup->completions "info-look")
@@ -333,7 +342,9 @@
                   "git ls-files --full-name --")
                  "\n"
                  t))
-         (action (lambda (x) (find-file x))))
+         (action `(lambda (x)
+                    (let ((default-directory ,default-directory))
+                      (find-file x)))))
     (ivy-read "Find file: " cands
               :action action)))
 
@@ -367,7 +378,31 @@
 (defvar counsel-git-grep-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-l") 'counsel-git-grep-recenter)
+    (define-key map (kbd "M-q") 'counsel-git-grep-query-replace)
     map))
+
+(defun counsel-git-grep-query-replace ()
+  "Start `query-replace' with string to replace from last search string."
+  (interactive)
+  (if (null (window-minibuffer-p))
+      (user-error
+       "Should only be called in the minibuffer through `counsel-git-grep-map'")
+    (let* ((enable-recursive-minibuffers t)
+           (from (ivy--regex ivy-text))
+           (to (query-replace-read-to from "Query replace" t)))
+      (ivy-exit-with-action
+       (lambda (_)
+         (let (done-buffers)
+           (dolist (cand ivy--old-cands)
+             (when (string-match "\\`\\(.*?\\):\\([0-9]+\\):\\(.*\\)\\'" cand)
+               (with-ivy-window
+                 (let ((file-name (match-string-no-properties 1 cand)))
+                   (setq file-name (expand-file-name file-name counsel--git-grep-dir))
+                   (unless (member file-name done-buffers)
+                     (push file-name done-buffers)
+                     (find-file file-name)
+                     (goto-char (point-min)))
+                   (perform-replace from to t t nil)))))))))))
 
 (defun counsel-git-grep-recenter ()
   (interactive)
@@ -607,10 +642,12 @@ Update the minibuffer with the amount of lines collected every
       (delete-process process))))
 
 ;;;###autoload
-(defun counsel-locate ()
-  "Call locate shell command."
+(defun counsel-locate (&optional initial-input)
+  "Call the \"locate\" shell command.
+INITIAL-INPUT can be given as the initial minibuffer input."
   (interactive)
   (ivy-read "Locate: " #'counsel-locate-function
+            :initial-input initial-input
             :dynamic-collection t
             :history 'counsel-locate-history
             :action (lambda (file)
@@ -792,6 +829,20 @@ CMD is a command name."
 (declare-function smex-update "ext:smex")
 (declare-function smex-rank "ext:smex")
 
+(defun counsel--M-x-prompt ()
+  "M-x plus the string representation of `current-prefix-arg'."
+  (if (not current-prefix-arg)
+      "M-x "
+    (concat
+     (if (eq current-prefix-arg '-)
+         "- "
+       (if (integerp current-prefix-arg)
+           (format "%d " current-prefix-arg)
+         (if (= (car current-prefix-arg) 4)
+             "C-u "
+           (format "%d " (car current-prefix-arg)))))
+     "M-x ")))
+
 ;;;###autoload
 (defun counsel-M-x (&optional initial-input)
   "Ivy version of `execute-extended-command'.
@@ -818,7 +869,7 @@ Optional INITIAL-INPUT is the initial input in the minibuffer."
       (setq cands smex-ido-cache)
       (setq pred nil)
       (setq sort nil))
-    (ivy-read "M-x " cands
+    (ivy-read (counsel--M-x-prompt) cands
               :predicate pred
               :require-match t
               :history 'extended-command-history
@@ -888,7 +939,8 @@ Usable with `ivy-resume', `ivy-next-line-and-call' and
             :action
             '(1
               ("p" helm-rhythmbox-play-song "Play song")
-              ("e" counsel-rhythmbox-enqueue-song "Enqueue song"))))
+              ("e" counsel-rhythmbox-enqueue-song "Enqueue song"))
+            :caller 'counsel-rhythmbox))
 
 (defvar counsel-org-tags nil
   "Store the current list of tags.")
