@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-11-19 08:54:00 dan.harms>
+;; Modified Time-stamp: <2015-11-20 09:14:05 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -29,6 +29,8 @@
 
 (global-set-key "\C-c\C-c" 'comment-region)
 (global-set-key "\C-c\C-u" 'uncomment-region)
+
+(require 'cc-chainsaw)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; preproc-font-lock ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'preproc-font-lock)
