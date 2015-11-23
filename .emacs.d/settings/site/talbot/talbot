@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-11-20 11:54:48 dan.harms>
+;; Modified Time-stamp: <2015-11-22 21:43:50 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -42,7 +42,6 @@
           (lambda()
             (setq my/choose-func 'choose-via-ivy)
             (my/activate-ivy)
-            (color-theme-solarized-dark)
             ))
 
 ;; talbot ends here
