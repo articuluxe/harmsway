@@ -506,6 +506,10 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (require 'crosshairs)
 (global-set-key "\M-sL" 'crosshairs-flash)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; beacon ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'beacon)
+(beacon-mode 1)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; bookmark+ ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
   (add-to-list 'load-path (concat my/plugins-directory "bookmark+/")))
@@ -747,7 +751,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (rich-minority-mode 1)
   (setq rm-blacklist
         '(" AC" " yas" " Undo-Tree" " Abbrev" " Guide" " Hi" " $" " ,"
-          " Ifdef" " Rbow" " ivy" " ElDoc"))
+          " Ifdef" " Rbow" " ivy" " ElDoc" " (*)"))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smart-mode-line ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
