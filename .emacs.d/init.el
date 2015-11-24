@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-11-20 16:38:06 dan.harms>
+;; Modified Time-stamp: <2015-11-24 10:34:37 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -330,8 +330,11 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 ;; work around bug in cc-mode in emacs 24.4
 ;; see debbugs.gnu.org/db/18/18845.html
 (eval-and-compile
-  (and (< emacs-major-version 24)
-       (add-to-list 'load-path (concat my/elisp-directory "compat/"))))
+  (when (< emacs-major-version 24)
+    (add-to-list 'load-path (concat my/elisp-directory "compat/24/0/-/")))
+  (when (< emacs-major-version 25)
+    (add-to-list 'load-path (concat my/elisp-directory "compat/25/0/-/")))
+  )
 (eval-when-compile
   (if (and (= emacs-major-version 24) (= emacs-minor-version 4))
       (require 'cl)))
