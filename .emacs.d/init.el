@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-11-24 10:34:37 dan.harms>
+;; Modified Time-stamp: <2015-11-24 14:11:17 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -350,6 +350,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (require 'dos-indent)
 (require 'folio-mode)
 (require 'folio-electric)
+(require 'markdown-mode)
 (require 'pos-tip)
 (require 'qt-pro)
 (when (version< emacs-version "23")
@@ -1484,6 +1485,8 @@ customization."
                 ("\\.otq$"      . conf-mode) ;one-tick-query files
                 ("\\.cs$"       . csharp-mode)
                 ("\\.bmk$"      . emacs-lisp-mode)
+                ("README\\.md$" . gfm-mode)
+                ("\\.md$"       . markdown-mode)
                 )
               auto-mode-alist))
 
