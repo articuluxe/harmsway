@@ -1333,6 +1333,10 @@ register \\C-l."
 (global-set-key "\C-c0as" 'awk-it-single)
 (global-set-key "\C-c0ag" 'awk-it-single-with-separator)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; list-environment ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'list-environment)
+(global-set-key "\C-c0e" 'list-environment)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; guide-key ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (when (version< "24.3" emacs-version)
   (require 'guide-key)
