@@ -7,7 +7,7 @@
   (profile-current-put
    'ctags-alist
    (list
-    (append (list "harmsway" ".emacs.d/" gen-tags-exe "-Re"
+    (append (list "harmsway" "" gen-tags-exe "-Re"
                   ) gen-tags-ctags-cpp-options)
     ))
 

@@ -8,10 +8,7 @@ if [ -f ~/.pwd ]; then
 	. ~/.pwd
 fi
 
-# gcc=/usr/local/gcc-4.5.1/bin
-
 python=/opt/anaconda-python-2.7.8/bin
-# todo?: export PYTHON_PATH=~/git/snap/scripts
 
 export PATH=$HOME/bin:/sbin/:/usr/lib64:$python:$PATH:.
 export MANPATH=
