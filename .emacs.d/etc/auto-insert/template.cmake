@@ -1,5 +1,5 @@
 # -*- Mode: cmake -*-
-# ${1:`(file-name-nondirectory (buffer-file-name))`} --- ${2:Short description}
+# ${1:`(file-name-nondirectory (or buffer-file-name (buffer-name)))`} --- ${2:Short description}
 # Copyright (C) `(format-time-string "%Y")`  `(user-full-name)` (`(user-login-name)`)
 # Author: `(user-full-name)` <`user-mail-address`>
 # Created: `(insert-today)`

@@ -1,5 +1,5 @@
 dnl -*- Mode: autoconf -*-
-dnl ${1:`(file-name-nondirectory (buffer-file-name))`} --- ${2:Short description}
+dnl ${1:`(file-name-nondirectory (or buffer-file-name (buffer-name)))`} --- ${2:Short description}
 dnl Copyright (C) `(format-time-string "%Y")`  `(user-full-name)` (`(user-login-name)`)
 dnl Author: `(user-full-name)` <`user-mail-address`>
 dnl Created: `(insert-today)`
