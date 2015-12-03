@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-11-24 14:11:17 dan.harms>
+;; Modified Time-stamp: <2015-12-03 08:37:15 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -360,6 +360,9 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (require 'gitignore-mode)
 (require 'gitconfig-mode)
 (require 'gitattributes-mode)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; yascroll ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'yascroll)
+(global-yascroll-bar-mode 1)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; copyright ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'copyright)
