@@ -187,6 +187,79 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (when (version< emacs-version "24.3")
   (defvar filename nil))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dash ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(when (version< "24.3" emacs-version)
+  (require 'dash)
+  (eval-after-load "dash" '(dash-enable-font-lock)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; s ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(when (version< "24.3" emacs-version)
+  (require 's))
+
+(require 'deferred)
+(require 'concurrent)
+(require 'epc)
+(require 'epcs)
+
+;;;;;;; FUNCTIONS ;;;;;;;
+;; ; man-page lookups
+;; (defun openman () "lookup man page" (interactive)
+;;    (manual-entry (current-word)))
+;; ; convert tabs to spaces
+;; (defun untabify-buffer () "untabify current buffer" (interactive)
+;;    (save-excursion
+;;      (untabify (point-min) (point-max))))
+;; ; shell command on region
+;; (defun shell-command-on-buffer (cmd) (interactive "sShell command on buffer: ")
+;;   (shell-command-on-region (point-min) (point-max) cmd t t
+;; ))
+
+
+
+(load-library "utils")
+(load-library "compiling")
+(load-library "coding")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; modes ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'log-viewer)
+(require 'csv-mode)
+(require 'cmake-mode)
+(require 'cmake-font-lock)
+(add-hook 'cmake-mode-hook 'cmake-font-lock-activate)
+;; work around bug in cc-mode in emacs 24.4
+;; see debbugs.gnu.org/db/18/18845.html
+(eval-and-compile
+  (when (< emacs-major-version 24)
+    (add-to-list 'load-path (concat my/elisp-directory "compat/24/0/-/")))
+  (when (< emacs-major-version 25)
+    (add-to-list 'load-path (concat my/elisp-directory "compat/25/0/-/")))
+  )
+(eval-when-compile
+  (if (and (= emacs-major-version 24) (= emacs-minor-version 4))
+      (require 'cl)))
+(if (= emacs-major-version 23)
+	(progn
+	  (autoload 'protobuf-mode "protobuf-mode" "Major mode for editing protobuf files." t)
+	  (autoload 'csharp-mode "csharp-mode" "Major mode for editing csharp files." t)
+	  )
+  (require 'protobuf-mode)
+  (require 'csharp-mode)
+  )
+(require 'dos)
+(require 'dos-indent)
+(require 'folio-mode)
+(require 'folio-electric)
+(require 'markdown-mode)
+(require 'pos-tip)
+(require 'qt-pro)
+(when (version< emacs-version "23")
+  (require 'json-mode))
+(require 'nhexl-mode)
+;; git
+(require 'gitignore-mode)
+(require 'gitconfig-mode)
+(require 'gitattributes-mode)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; rainbow ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (when (version< "24.3" emacs-version)
   (require 'rainbow-mode)
@@ -293,73 +366,6 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 ;;             (expand-file-name str basedir)))))))
 ;; (setq file-of-tag-function 'my/etags-file-of-tag)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dash ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(when (version< "24.3" emacs-version)
-  (require 'dash)
-  (eval-after-load "dash" '(dash-enable-font-lock)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; s ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(when (version< "24.3" emacs-version)
-  (require 's))
-
-;;;;;;; FUNCTIONS ;;;;;;;
-;; ; man-page lookups
-;; (defun openman () "lookup man page" (interactive)
-;;    (manual-entry (current-word)))
-;; ; convert tabs to spaces
-;; (defun untabify-buffer () "untabify current buffer" (interactive)
-;;    (save-excursion
-;;      (untabify (point-min) (point-max))))
-;; ; shell command on region
-;; (defun shell-command-on-buffer (cmd) (interactive "sShell command on buffer: ")
-;;   (shell-command-on-region (point-min) (point-max) cmd t t
-;; ))
-
-
-
-(load-library "utils")
-(load-library "compiling")
-(load-library "coding")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; modes ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'log-viewer)
-(require 'csv-mode)
-(require 'cmake-mode)
-(require 'cmake-font-lock)
-(add-hook 'cmake-mode-hook 'cmake-font-lock-activate)
-;; work around bug in cc-mode in emacs 24.4
-;; see debbugs.gnu.org/db/18/18845.html
-(eval-and-compile
-  (when (< emacs-major-version 24)
-    (add-to-list 'load-path (concat my/elisp-directory "compat/24/0/-/")))
-  (when (< emacs-major-version 25)
-    (add-to-list 'load-path (concat my/elisp-directory "compat/25/0/-/")))
-  )
-(eval-when-compile
-  (if (and (= emacs-major-version 24) (= emacs-minor-version 4))
-      (require 'cl)))
-(if (= emacs-major-version 23)
-	(progn
-	  (autoload 'protobuf-mode "protobuf-mode" "Major mode for editing protobuf files." t)
-	  (autoload 'csharp-mode "csharp-mode" "Major mode for editing csharp files." t)
-	  )
-  (require 'protobuf-mode)
-  (require 'csharp-mode)
-  )
-(require 'dos)
-(require 'dos-indent)
-(require 'folio-mode)
-(require 'folio-electric)
-(require 'markdown-mode)
-(require 'pos-tip)
-(require 'qt-pro)
-(when (version< emacs-version "23")
-  (require 'json-mode))
-(require 'nhexl-mode)
-;; git
-(require 'gitignore-mode)
-(require 'gitconfig-mode)
-(require 'gitattributes-mode)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; yascroll ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'yascroll)
 (global-yascroll-bar-mode 1)
