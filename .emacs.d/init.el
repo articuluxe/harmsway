@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-12-03 08:37:15 dan.harms>
+;; Modified Time-stamp: <2015-12-03 16:20:18 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1538,9 +1538,25 @@ customization."
 (add-to-list 'comment-strip-start-length (cons 'nxml-mode 3))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; python-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defun my/expand-jedi() (interactive)
+       (auto-complete '(ac-source-jedi-direct)))
+(eval-and-compile
+  (when (executable-find "python")
+    (require 'virtualenvwrapper)
+    ;(setq venv-location "?")
+    (add-to-list 'load-path (concat my/elisp-directory "emacs-jedi/"))
+    (setq jedi:setup-keys t)
+    (setq jedi:complete-on-dot t)
+    (setq jedi:tooltip-method '(popup))
+    (require 'jedi)
+    ;; (add-hook 'python-mode-hook 'jedi:setup)
+    ))
 (add-hook 'python-mode-hook
           (lambda()
             (setq-default indent-tabs-mode nil)
+            (setq-local electric-indent-chars
+                        (remq ?: electric-indent-chars))
+            (define-key python-mode-map [(ctrl tab)] 'my/expand-jedi)
             (setq forward-sexp-function nil)
             (define-key python-mode-map "\C-j" 'newline-and-indent)
             (define-key python-mode-map "\C-c\C-c" 'comment-region)
