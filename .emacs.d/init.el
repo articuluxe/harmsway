@@ -136,8 +136,8 @@
                            '((vertical-scroll-bars . nil)
                              (horizontal-scroll-bars . nil))))
 ;; default colors
-(set-foreground-color "white")
-(set-background-color "black")
+;; (set-foreground-color "white")
+;; (set-background-color "black")
 (set-cursor-color "yellow")
 (set-mouse-color "white")
 (mouse-avoidance-mode 'cat-and-mouse)
@@ -519,6 +519,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; beacon ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'beacon)
 (beacon-mode 1)
+(add-to-list 'beacon-dont-blink-major-modes 'etags-select-mode)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; bookmark+ ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile

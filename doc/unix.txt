@@ -4,7 +4,7 @@
 # Author:  <dan.harms@xrtrading.com>
 # Created: Friday, March 20, 2015
 # Version: 1.0
-# Modified Time-stamp: <2015-11-19 09:08:22 dan.harms>
+# Modified Time-stamp: <2015-11-25 08:35:24 dan.harms>
 # Modified by: Dan Harms
 # Keywords: help
 
@@ -132,5 +132,17 @@ awk 'BEGIN {FS="\t"}; {if ($12 == "ESH6") print $40; }' <file>
 awk -F, 'NF < 18 { print $0;}' <file>
 # find which column matches a regex
 head -1 file.csv | awk -F, '{for (i=1; i <= NF; ++i) { if ($i ~ /regex/) {print i,$i;}}}'
+
+#################################### cron ####################################
+# ensure service is running
+service crond/atd status
+# edit/list/remove cron for current user
+crontab -e [l r]
+# add an at job (Ctrl-D ends)
+at HH:MM/midnight/noon/teatime
+at MMDDYY
+at now + 1 minutes/hours/days/weeks
+# view pending jobs for current user
+atq
 
 # code ends here

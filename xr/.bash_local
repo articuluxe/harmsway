@@ -30,6 +30,7 @@ export ONE_TICK_CONFIG=/opt/1tick/client_data/config/one_tick_config.txt
 
 # default to latest
 use gcc491
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/boost156/lib
 
 # gcc
 gcc-init()
