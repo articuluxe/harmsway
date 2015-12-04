@@ -562,6 +562,16 @@ Or the time of the last minibuffer update.")
           (setq ivy--all-candidates
                 (ivy--sort-maybe
                  (split-string (buffer-string) "\n" t)))
+          (if (null ivy--old-cands)
+              (setq ivy--index
+                    (or (ivy--preselect-index
+                         (ivy-state-preselect ivy-last)
+                         ivy--all-candidates)
+                        0))
+            (ivy--recompute-index
+             ivy-text
+             (funcall ivy--regex-function ivy-text)
+             ivy--all-candidates))
           (setq ivy--old-cands ivy--all-candidates))
         (ivy--exhibit))
     (if (string= event "exited abnormally with code 1\n")
@@ -812,15 +822,19 @@ When NO-ASYNC is non-nil, do it synchronously."
                (when (= 0 (cl-incf counsel-gg-state))
                  (ivy--exhibit)))))))))
 
-(defun counsel--M-x-transformer (cmd)
-  "Add a binding to CMD if it's bound in the current window.
-CMD is a command name."
-  (let ((binding (substitute-command-keys (format "\\[%s]" cmd))))
+(defun counsel--M-x-transformer (cand-pair)
+  "Add a binding to CAND-PAIR cdr if the car is bound in the current window.
+CAND-PAIR is (command-name . extra-info)."
+  (let* ((command-name (car cand-pair))
+         (extra-info (cdr cand-pair))
+         (binding (substitute-command-keys (format "\\[%s]" command-name))))
     (setq binding (replace-regexp-in-string "C-x 6" "<f2>" binding))
     (if (string-match "^M-x" binding)
-        cmd
-      (format "%s (%s)" cmd
-              (propertize binding 'face 'font-lock-keyword-face)))))
+        cand-pair
+      (cons command-name
+            (if extra-info
+                (format " %s (%s)" extra-info (propertize binding 'face 'font-lock-keyword-face))
+              (format " (%s)" (propertize binding 'face 'font-lock-keyword-face)))))))
 
 (defvar smex-initialized-p)
 (defvar smex-ido-cache)
@@ -853,11 +867,11 @@ Optional INITIAL-INPUT is the initial input in the minibuffer."
                                     ivy-initial-inputs-alist))))
   (let* ((store ivy-format-function)
          (ivy-format-function
-          (lambda (cands)
+          (lambda (cand-pairs)
             (funcall
              store
              (with-ivy-window
-               (mapcar #'counsel--M-x-transformer cands)))))
+               (mapcar #'counsel--M-x-transformer cand-pairs)))))
          (cands obarray)
          (pred 'commandp)
          (sort t))
@@ -877,11 +891,13 @@ Optional INITIAL-INPUT is the initial input in the minibuffer."
               (lambda (cmd)
                 (when (featurep 'smex)
                   (smex-rank (intern cmd)))
-                (let ((prefix-arg current-prefix-arg))
+                (let ((prefix-arg current-prefix-arg)
+                      (ivy-format-function store))
                   (command-execute (intern cmd) 'record)))
               :sort sort
               :keymap counsel-describe-map
-              :initial-input initial-input)))
+              :initial-input initial-input
+              :caller 'counsel-M-x)))
 
 (declare-function powerline-reset "ext:powerline")
 
@@ -1104,9 +1120,10 @@ Usable with `ivy-resume', `ivy-next-line-and-call' and
                   (setq ivy--old-re
                         (ivy--regex string)))))
       (counsel--async-command
-       (format "ag --noheading --nocolor %S" regex))
+       (format "ag --vimgrep %S" regex))
       nil)))
 
+;;;###autoload
 (defun counsel-ag (&optional initial-input initial-directory)
   "Grep for a string in the current directory using ag.
 INITIAL-INPUT can be given as the initial minibuffer input."
@@ -1120,6 +1137,51 @@ INITIAL-INPUT can be given as the initial minibuffer input."
             :unwind (lambda ()
                       (counsel-delete-process)
                       (swiper--cleanup))))
+
+;;;###autoload
+(defun counsel-grep ()
+  "Grep for a string in the current file."
+  (interactive)
+  (setq counsel--git-grep-dir (buffer-file-name))
+  (ivy-read "grep: " 'counsel-grep-function
+            :dynamic-collection t
+            :preselect (format "%d:%s"
+                               (line-number-at-pos)
+                               (buffer-substring-no-properties
+                                (line-beginning-position)
+                                (line-end-position)))
+            :history 'counsel-git-grep-history
+            :update-fn (lambda ()
+                         (counsel-grep-action ivy--current))
+            :action #'counsel-grep-action
+            :unwind (lambda ()
+                      (counsel-delete-process)
+                      (swiper--cleanup))
+            :caller 'counsel-grep))
+
+(defun counsel-grep-function (string &optional _pred &rest _unused)
+  "Grep in the current directory for STRING."
+  (if (< (length string) 3)
+      (counsel-more-chars 3)
+    (let ((regex (counsel-unquote-regex-parens
+                  (setq ivy--old-re
+                        (ivy--regex string)))))
+      (counsel--async-command
+       (format "grep -nP --ignore-case '%s' %s" regex counsel--git-grep-dir))
+      nil)))
+
+(defun counsel-grep-action (x)
+  (when (string-match "\\`\\([0-9]+\\):\\(.*\\)\\'" x)
+    (with-ivy-window
+      (let ((file-name counsel--git-grep-dir)
+            (line-number (match-string-no-properties 1 x)))
+        (find-file file-name)
+        (goto-char (point-min))
+        (forward-line (1- (string-to-number line-number)))
+        (re-search-forward (ivy--regex ivy-text t) (line-end-position) t)
+        (unless (eq ivy-exit 'done)
+          (swiper--cleanup)
+          (swiper--add-overlays (ivy--regex ivy-text)))))))
 
 (defun counsel-recoll-function (string &optional _pred &rest _unused)
   "Grep in the current directory for STRING."

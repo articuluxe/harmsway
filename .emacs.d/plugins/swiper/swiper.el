@@ -226,6 +226,7 @@
                                  occur-edit-mode
                                  bongo-mode
                                  eww-mode
+                                 twittering-mode
                                  w3m-mode)))
     (unless (> (buffer-size) 100000)
       (if (fboundp 'font-lock-ensure)
@@ -254,7 +255,11 @@ count."
            (< (buffer-size) 20000))
       (progn
         (when (eq major-mode 'org-mode)
-          (outline-show-all))
+          (require 'outline)
+          (if (fboundp 'outline-show-all)
+              (outline-show-all)
+            (with-no-warnings
+              (show-all))))
         (setq swiper-use-visual-line t))
     (setq swiper-use-visual-line nil))
   (let ((n-lines (count-lines (point-min) (point-max))))
@@ -276,13 +281,19 @@ count."
                         " "
                         (replace-regexp-in-string
                          "\t" "    "
-                         (buffer-substring
-                          (point)
-                          (if swiper-use-visual-line
+                         (if swiper-use-visual-line
+                             (buffer-substring
+                              (save-excursion
+                                (beginning-of-visual-line)
+                                (point))
                               (save-excursion
                                 (end-of-visual-line)
-                                (point))
+                                (point)))
+                           (buffer-substring
+                            (point)
                             (line-end-position)))))))
+              (when (eq major-mode 'twittering-mode)
+                (remove-text-properties 0 (length str) '(field) str))
               (put-text-property 0 1 'display
                                  (format swiper--format-spec
                                          (cl-incf line-number))
@@ -349,22 +360,24 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
               (point-min)
               (save-excursion (beginning-of-visual-line) (point)))
            (1- (line-number-at-pos))))
-        (minibuffer-allow-text-properties t))
+        (minibuffer-allow-text-properties t)
+        res)
     (unwind-protect
-         (ivy-read
-          "Swiper: "
-          candidates
-          :initial-input initial-input
-          :keymap swiper-map
-          :preselect preselect
-          :require-match t
-          :update-fn #'swiper--update-input-ivy
-          :unwind #'swiper--cleanup
-          :action #'swiper--action
-          :re-builder #'swiper--re-builder
-          :history 'swiper-history
-          :caller 'swiper)
-      (when (null ivy-exit)
+         (setq res
+               (ivy-read
+                "Swiper: "
+                candidates
+                :initial-input initial-input
+                :keymap swiper-map
+                :preselect preselect
+                :require-match t
+                :update-fn #'swiper--update-input-ivy
+                :unwind #'swiper--cleanup
+                :action #'swiper--action
+                :re-builder #'swiper--re-builder
+                :history 'swiper-history
+                :caller 'swiper))
+      (unless res
         (goto-char swiper--opoint)))))
 
 (defun swiper-toggle-face-matching ()
@@ -425,22 +438,23 @@ Matched candidates should have `swiper-invocation-face'."
              (num (if (string-match "^[0-9]+" str)
                       (string-to-number (match-string 0 str))
                     0)))
-        (goto-char (point-min))
-        (when (cl-plusp num)
+        (unless (eq this-command 'ivy-yank-word)
           (goto-char (point-min))
-          (if swiper-use-visual-line
-              (line-move (1- num))
-            (forward-line (1- num)))
-          (if (and (equal ivy-text "")
-                   (>= swiper--opoint (line-beginning-position))
-                   (<= swiper--opoint (line-end-position)))
-              (goto-char swiper--opoint)
-            (re-search-forward re (line-end-position) t))
-          (isearch-range-invisible (line-beginning-position)
-                                   (line-end-position))
-          (unless (and (>= (point) (window-start))
-                       (<= (point) (window-end (ivy-state-window ivy-last) t)))
-            (recenter)))
+          (when (cl-plusp num)
+            (goto-char (point-min))
+            (if swiper-use-visual-line
+                (line-move (1- num))
+              (forward-line (1- num)))
+            (if (and (equal ivy-text "")
+                     (>= swiper--opoint (line-beginning-position))
+                     (<= swiper--opoint (line-end-position)))
+                (goto-char swiper--opoint)
+              (re-search-forward re (line-end-position) t))
+            (isearch-range-invisible (line-beginning-position)
+                                     (line-end-position))
+            (unless (and (>= (point) (window-start))
+                         (<= (point) (window-end (ivy-state-window ivy-last) t)))
+              (recenter))))
         (swiper--add-overlays re)))))
 
 (defun swiper--add-overlays (re &optional beg end wnd)
@@ -512,8 +526,9 @@ WND, when specified is the window."
       (swiper--ensure-visible)
       (when (/= (point) swiper--opoint)
         (unless (and transient-mark-mode mark-active)
-          (push-mark swiper--opoint t)
-          (message "Mark saved where search started"))))))
+          (when (eq ivy-exit 'done)
+            (push-mark swiper--opoint t)
+            (message "Mark saved where search started")))))))
 
 ;; (define-key isearch-mode-map (kbd "C-o") 'swiper-from-isearch)
 (defun swiper-from-isearch ()
