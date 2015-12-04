@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-12-03 16:20:18 dan.harms>
+;; Modified Time-stamp: <2015-12-04 16:40:20 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -520,6 +520,10 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (require 'beacon)
 (beacon-mode 1)
 (add-to-list 'beacon-dont-blink-major-modes 'etags-select-mode)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; eyebrowse ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'eyebrowse)
+(eyebrowse-mode 1)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; bookmark+ ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
