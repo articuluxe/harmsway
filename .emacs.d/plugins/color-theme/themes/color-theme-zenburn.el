@@ -4,7 +4,7 @@
 
 ;; Author: Daniel Brockman <daniel@brockman.se>
 ;; URL: http://www.brockman.se/software/zenburn/zenburn.el
-;; Updated: 2015-09-07 12:01
+;; Updated: 2015-12-04 08:34
 
 ;; Adrian C. and Bastien Guerry added org-mode faces.
 
@@ -694,11 +694,11 @@ static char *gnus-pointer[] = {
        ((t (:inherit font-lock-warning))))
 
      '(jabber-title-small
-       ((t (:inherit zenburn-title :height 1.2))))
+       ((t (:inherit zenburn-title))))
      '(jabber-title-medium
-       ((t (:inherit jabber-title-small :height 1.2))))
+       ((t (:inherit jabber-title-small))))
      '(jabber-title-large
-       ((t (:inherit jabber-title-medium :height 1.2))))
+       ((t (:inherit jabber-title-medium))))
 
      '(jabber-chat-prompt-local
        ((t (:inherit zenburn-primary-1))))
@@ -829,13 +829,13 @@ static char *gnus-pointer[] = {
 
      ;; TODO
      '(outline-8 ((t (:inherit default))))
-     '(outline-7 ((t (:inherit outline-8 :height 1.0))))
-     '(outline-6 ((t (:inherit outline-7 :height 1.0))))
-     '(outline-5 ((t (:inherit outline-6 :height 1.0))))
-     '(outline-4 ((t (:inherit outline-5 :height 1.0))))
-     '(outline-3 ((t (:inherit outline-4 :height 1.0))))
-     '(outline-2 ((t (:inherit outline-3 :height 1.0))))
-     '(outline-1 ((t (:inherit outline-2 :height 1.0))))
+     '(outline-7 ((t (:inherit outline-8))))
+     '(outline-6 ((t (:inherit outline-7))))
+     '(outline-5 ((t (:inherit outline-6))))
+     '(outline-4 ((t (:inherit outline-5))))
+     '(outline-3 ((t (:inherit outline-4))))
+     '(outline-2 ((t (:inherit outline-3))))
+     '(outline-1 ((t (:inherit outline-2))))
 
      '(setnu-line-number ((t (:inherit zenburn-lowlight-2))))
 

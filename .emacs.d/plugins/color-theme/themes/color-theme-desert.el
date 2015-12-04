@@ -104,9 +104,9 @@
           '(jabber-roster-user-dnd ((t (:inherit font-lock-comment-face))))
           '(jabber-roster-user-error ((t (:inherit font-lock-warning-face))))
 
-          '(jabber-title-small ((t (:height 1.2 :weight bold))))
-          '(jabber-title-medium ((t (:inherit jabber-title-small :height 1.2))))
-          '(jabber-title-large ((t (:inherit jabber-title-medium :height 1.2))))
+          '(jabber-title-small ((t ( :weight bold))))
+          '(jabber-title-medium ((t (:inherit jabber-title-small))))
+          '(jabber-title-large ((t (:inherit jabber-title-medium))))
 
           '(jabber-chat-prompt-local ((t (:inherit font-lock-string-face :bold t))))
           '(jabber-chat-prompt-foreign ((t (:inherit font-lock-function-name-face :bold nil))))

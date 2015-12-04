@@ -360,13 +360,13 @@ static char *gnus-pointer[] = {
      `(info-header-node                ((t (:weight normal))))
 
      `(outline-8                       ((t (:inherit default :foreground ,zenash-fg+1))))
-     `(outline-7                       ((t (:inherit outline-8 :height 1.0))))
-     `(outline-6                       ((t (:inherit outline-7 :height 1.0))))
-     `(outline-5                       ((t (:inherit outline-6 :height 1.0))))
-     `(outline-4                       ((t (:inherit outline-5 :height 1.0))))
-     `(outline-3                       ((t (:inherit outline-4 :height 1.0))))
-     `(outline-2                       ((t (:inherit outline-3 :height 1.0))))
-     `(outline-1                       ((t (:inherit outline-2 :height 1.0))))
+     `(outline-7                       ((t (:inherit outline-8))))
+     `(outline-6                       ((t (:inherit outline-7))))
+     `(outline-5                       ((t (:inherit outline-6))))
+     `(outline-4                       ((t (:inherit outline-5))))
+     `(outline-3                       ((t (:inherit outline-4))))
+     `(outline-2                       ((t (:inherit outline-3))))
+     `(outline-1                       ((t (:inherit outline-2))))
 
      `(org-hide                        ((t (:foreground ,zenash-bg))))
      `(org-special-keyword             ((t (:inherit font-lock-comment))))
@@ -627,9 +627,9 @@ static char *gnus-pointer[] = {
      `(jabber-roster-user-dnd      ((t (:inherit zenash-primary-5))))
      `(jabber-roster-user-error    ((t (:inherit font-lock-warning))))
 
-     `(jabber-title-small          ((t (:inherit zenash-title :height 1.2))))
-     `(jabber-title-medium         ((t (:inherit jabber-title-small :height 1.2))))
-     `(jabber-title-large          ((t (:inherit jabber-title-medium :height 1.2))))
+     `(jabber-title-small          ((t (:inherit zenash-title))))
+     `(jabber-title-medium         ((t (:inherit jabber-title-small))))
+     `(jabber-title-large          ((t (:inherit jabber-title-medium))))
 
      `(jabber-chat-prompt-local    ((t (:inherit zenash-primary-1))))
      `(jabber-chat-prompt-foreign  ((t (:inherit zenash-primary-2))))
