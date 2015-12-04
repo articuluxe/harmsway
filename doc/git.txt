@@ -117,6 +117,14 @@ git checkout main
 git apply feature.patch
 git add .
 
+################################# SUBMODULE ##################################
+# update a submodule
+cd sub
+git pull origin master
+cd ..; git status
+git add sub
+git commit -m "updated submodule sub"
+
 ################################### STASH ####################################
 git stash <show|save|drop|push|pop> stash@\{0\}
 # selectively stage
