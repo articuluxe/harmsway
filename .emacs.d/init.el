@@ -245,6 +245,8 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (require 'protobuf-mode)
   (require 'csharp-mode)
   )
+
+(require 'dart-mode)
 (require 'dos)
 (require 'dos-indent)
 (require 'folio-mode)
@@ -1501,6 +1503,7 @@ customization."
                 ("\\.bmk$"      . emacs-lisp-mode)
                 ("README\\.md$" . gfm-mode)
                 ("\\.md$"       . markdown-mode)
+                ("\\.dart$"     . dart-mode)
                 )
               auto-mode-alist))
 
@@ -1527,6 +1530,10 @@ customization."
             (define-key dos-mode-map "\C-c\C-c" 'comment-region)
             (define-key dos-mode-map "\C-c\C-u" 'uncomment-region)
             ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dart-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(setq dart-enable-analysis-server t)
+;not sure this is needed (add-hook 'dart-mode-hook 'flycheck-mode)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; xml-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-hook 'nxml-mode-hook
