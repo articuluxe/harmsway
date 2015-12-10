@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-12-04 16:40:20 dan.harms>
+;; Modified Time-stamp: <2015-12-10 14:46:18 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1213,7 +1213,7 @@ register \\C-l."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; flycheck ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'flycheck)
 (add-hook 'after-init-hook #'global-flycheck-mode)
-(setq flycheck-global-modes '(emacs-lisp-mode))
+(setq flycheck-global-modes '(emacs-lisp-mode python-mode dart-mode))
 (require 'flycheck-pos-tip)
 (setq flycheck-display-errors-function #'flycheck-pos-tip-error-messages)
 
@@ -1377,7 +1377,7 @@ register \\C-l."
         ;; exec-path (list of paths); by convention, ends in exec-dir
         (setq exec-path (append
                          (read-file-into-list-of-lines path-file)
-                         (convert-standard-filename exec-directory)))))
+                         (list (convert-standard-filename exec-directory))))))
   (if (file-exists-p include-file)
       (load-environment-variable-from-file "INCLUDE" include-file))
   (if (file-exists-p lib-file)
@@ -1554,7 +1554,15 @@ customization."
     (setq jedi:complete-on-dot t)
     (setq jedi:tooltip-method '(popup))
     (require 'jedi)
-    ;; (add-hook 'python-mode-hook 'jedi:setup)
+    (require 'direx)
+    (require 'jedi-direx)
+    (add-hook 'jedi-mode-hook 'jedi-direx:setup)
+    (add-hook 'python-mode-hook 'jedi:setup)
+    )
+  (unless (executable-find "flake8")
+    (add-to-list 'flycheck-disabled-checkers 'python-flake8)
+    (add-to-list 'flycheck-checkers 'python-pyflakes)
+    (require 'flycheck-pyflakes)
     ))
 (add-hook 'python-mode-hook
           (lambda()
@@ -1570,6 +1578,7 @@ customization."
             (define-key python-mode-map (kbd "\C-c RET")
               (lambda()(interactive)
                 (compile (concat "python " (buffer-name)))))
+            (define-key python-mode-map "\C-cx" 'jedi-direx:pop-to-buffer)
             ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; emacs-lisp-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
