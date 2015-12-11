@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-12-10 14:46:18 dan.harms>
+;; Modified Time-stamp: <2015-12-10 22:55:16 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1215,7 +1215,8 @@ register \\C-l."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; flycheck ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'flycheck)
 (add-hook 'after-init-hook #'global-flycheck-mode)
-(setq flycheck-global-modes '(emacs-lisp-mode python-mode dart-mode))
+(setq flycheck-global-modes '(emacs-lisp-mode python-mode dart-mode
+                                              sh-mode))
 (require 'flycheck-pos-tip)
 (setq flycheck-display-errors-function #'flycheck-pos-tip-error-messages)
 
