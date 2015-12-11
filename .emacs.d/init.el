@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-12-10 22:55:16 dharms>
+;; Modified Time-stamp: <2015-12-11 09:42:31 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1518,6 +1518,7 @@ customization."
             (setq sh-indentation 3)
             (define-key sh-mode-map "\C-c\C-c" 'comment-region)
             (define-key sh-mode-map "\C-c\C-u" 'uncomment-region)
+            (add-to-list 'flycheck-disabled-checkers 'sh-posix-dash)
             ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dos-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -4,7 +4,7 @@
 # Author:  <dan.harms@xrtrading.com>
 # Created: Friday, March 20, 2015
 # Version: 1.0
-# Modified Time-stamp: <2015-11-25 08:35:24 dan.harms>
+# Modified Time-stamp: <2015-12-10 16:32:09 dan.harms>
 # Modified by: Dan Harms
 # Keywords: help
 
@@ -32,6 +32,7 @@ fuser
 # print out a process's call stack
 pstack <pid>
 # find out which distro you're running
+facter lsbdistrelease
 cat /etc/*-release
 
 # convert from .erf to .pcap
