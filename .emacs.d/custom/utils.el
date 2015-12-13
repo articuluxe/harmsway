@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-11-20 13:58:03 dan.harms>
+;; Modified Time-stamp: <2015-12-14 05:34:49 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -245,12 +245,20 @@ is selected."
           (message "buffer contains %d words" count))))
     (global-set-key "\M-=" 'wordcount)))
 
-;; clean up buffer
-;; indent entire file
-(defun clean-up-buffer () "clean up the entire buffer" (interactive)
-  (delete-trailing-whitespace)
-  (indent-region (point-min) (point-max) nil)
-  (untabify (point-min) (point-max)))
+(defun clean-up-buffer (begin end)
+  "Clean up either the current region, or the entire buffer if no region
+is selected.  Cleaning up entails: indenting, removing tabs, and deleting
+trailing whitespace."
+  (interactive (if (use-region-p)
+                   (list (region-beginning)
+                         (region-end))
+                 (list nil nil)))
+  (save-restriction
+    (narrow-to-region (or begin (point-min))
+                      (or end (point-max)))
+    (delete-trailing-whitespace)
+    (indent-region (point-min) (point-max) nil)
+    (untabify (point-min) (point-max))))
 (global-set-key "\C-cq" 'clean-up-buffer)
 
 (defun find-file-upwards (dir file-to-find)
@@ -298,7 +306,7 @@ is selected."
   (interactive)
   (let ((root-prefix my/find-file-root-prefix))
     (call-interactively 'find-file)))
-(global-set-key "\esff" 'my/find-file-as-root)
+(global-set-key "\esrf" 'my/find-file-as-root)
 
 (defun my/find-current-file-as-root()
   "Open the current file for editing by root."
@@ -306,7 +314,7 @@ is selected."
   (set-visited-file-name (concat my/find-file-root-prefix
                                  (buffer-file-name)))
   (setq buffer-read-only nil))
-(global-set-key "\esfr" 'my/find-current-file-as-root)
+(global-set-key "\esrr" 'my/find-current-file-as-root)
 
 (defun read-file-into-list-of-lines(file)
   "Read a file into a list of strings split line by line."
