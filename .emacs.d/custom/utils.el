@@ -290,6 +290,24 @@ is selected."
     (call-interactively 'goto-line)))
 (global-set-key [remap goto-line] 'goto-line-with-feedback)
 
+(defvar my/find-file-root-prefix "/sudo::"
+  "root prefix for tramp as root")
+
+(defun my/find-file-as-root()
+  "Open a file for editing by root."
+  (interactive)
+  (let ((root-prefix my/find-file-root-prefix))
+    (call-interactively 'find-file)))
+(global-set-key "\esff" 'my/find-file-as-root)
+
+(defun my/find-current-file-as-root()
+  "Open the current file for editing by root."
+  (interactive)
+  (set-visited-file-name (concat my/find-file-root-prefix
+                                 (buffer-file-name)))
+  (setq buffer-read-only nil))
+(global-set-key "\esfr" 'my/find-current-file-as-root)
+
 (defun read-file-into-list-of-lines(file)
   "Read a file into a list of strings split line by line."
   (interactive)
