@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-12-14 06:05:43 dharms>
+;; Modified Time-stamp: <2015-12-14 12:32:09 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1564,21 +1564,23 @@ customization."
   (when (executable-find "python")
     (require 'virtualenvwrapper)
     ;(setq venv-location "?")
+    ;; add jedi if installed
     (add-to-list 'load-path (concat my/elisp-directory "emacs-jedi/"))
-    (setq jedi:setup-keys t)
-    (setq jedi:complete-on-dot t)
-    (setq jedi:tooltip-method '(popup))
-    (require 'jedi)
-    (require 'direx)
-    (require 'jedi-direx)
-    (add-hook 'jedi-mode-hook 'jedi-direx:setup)
-    (add-hook 'python-mode-hook 'jedi:setup)
-    )
-  (unless (executable-find "flake8")
-    (add-to-list 'flycheck-disabled-checkers 'python-flake8)
-    (add-to-list 'flycheck-checkers 'python-pyflakes)
-    (require 'flycheck-pyflakes)
-    ))
+    (unless (call-process "python" nil nil nil "-c" "import jedi")
+      (setq jedi:setup-keys t)
+      (setq jedi:complete-on-dot t)
+      (setq jedi:tooltip-method '(popup))
+      (require 'jedi)
+      (require 'direx)
+      (require 'jedi-direx)
+      (add-hook 'jedi-mode-hook 'jedi-direx:setup)
+      (add-hook 'python-mode-hook 'jedi:setup)
+      )
+    (unless (executable-find "flake8")
+      (add-to-list 'flycheck-disabled-checkers 'python-flake8)
+      (add-to-list 'flycheck-checkers 'python-pyflakes)
+      (require 'flycheck-pyflakes)
+      )))
 (add-hook 'python-mode-hook
           (lambda()
             (setq-default indent-tabs-mode nil)
