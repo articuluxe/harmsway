@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-12-11 09:42:31 dan.harms>
+;; Modified Time-stamp: <2015-12-14 06:05:43 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -475,7 +475,13 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
     ?m "Omit merge commits" "--no-merges")
   (setq magit-log-arguments (cons "--no-merges"
                                   magit-log-arguments))
+  ;; show status buffer alone
+  (setq magit-status-buffer-switch-function
+        (lambda (buffer)
+          (switch-to-buffer buffer)
+          (delete-other-windows)))
   )
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; git-timemachine ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (unless (version< emacs-version "24.4")
