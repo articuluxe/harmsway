@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-12-14 12:32:09 dharms>
+;; Modified Time-stamp: <2015-12-14 23:41:22 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -652,6 +652,18 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (global-set-key "\e\eii" 'ivy-resume)
   (setq counsel-find-file-ignore-regexp "\\.elc$")
   (require 'counsel)
+  ;; fallback to basic find-file
+  (define-key counsel-find-file-map "\C-x\C-f"
+    (lambda ()
+      (interactive)
+      (ivy-set-action
+       (lambda (x)
+         (let ((completing-read-function 'completing-read-default))
+           (call-interactively 'find-file))))
+      (ivy-done)))
+  ;; make matches appear fancy
+  (unless (version< emacs-version "24.5")
+    (setq ivy-display-style 'fancy))
   )
 
 (defun my/activate-ido ()
