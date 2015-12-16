@@ -1462,6 +1462,9 @@ customization."
          (concat hosts-dir system)))
 	   (host-file (concat host-dir system))
        (remote-hosts-file (concat my/user-directory "remote-hosts")))
+  ;; load remote hosts file if present
+  (when (file-exists-p remote-hosts-file)
+    (load remote-hosts-file t))
   ;; load host file (if present)
   (if (file-exists-p host-file)
       (progn
@@ -1474,9 +1477,6 @@ customization."
             (plist-get plist :site)
             (my/load-site-file (plist-get plist :site))))
      my/host-plist))
-  ;; load remote hosts file if present
-  (when (file-exists-p remote-hosts-file)
-    (load remote-hosts-file t))
   )
 
 (add-hook 'before-save-hook 'my/before-save-hook)
