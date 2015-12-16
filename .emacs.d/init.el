@@ -1573,12 +1573,12 @@ customization."
 (defun my/expand-jedi() (interactive)
        (auto-complete '(ac-source-jedi-direct)))
 (eval-and-compile
+  (add-to-list 'load-path (concat my/elisp-directory "emacs-jedi/"))
   (when (executable-find "python")
     (require 'virtualenvwrapper)
     ;(setq venv-location "?")
     ;; add jedi if installed
-    (add-to-list 'load-path (concat my/elisp-directory "emacs-jedi/"))
-    (unless (call-process "python" nil nil nil "-c" "import jedi")
+    (when (eq 0 (call-process "python" nil nil nil "-c" "import jedi"))
       (setq jedi:setup-keys t)
       (setq jedi:complete-on-dot t)
       (setq jedi:tooltip-method '(popup))
