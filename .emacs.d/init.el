@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-12-14 23:41:22 dharms>
+;; Modified Time-stamp: <2015-12-16 15:22:25 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -188,9 +188,10 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (defvar filename nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dash ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(when (version< "24.3" emacs-version)
-  (require 'dash)
-  (eval-after-load "dash" '(dash-enable-font-lock)))
+(eval-and-compile
+  (when (version< "24.3" emacs-version)
+    (require 'dash)
+    (eval-after-load "dash" '(dash-enable-font-lock))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; s ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (when (version< "24.3" emacs-version)
@@ -428,6 +429,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (global-set-key "\M-sm" 'my/git-keymap)
 (unless (version< emacs-version "24.4")
   (add-to-list 'load-path (concat my/plugins-directory "magit/lisp/"))
+  (eval-and-compile (setq magit-need-cygwin-noglob nil))
   (require 'with-editor)
   (require 'magit)
   (setq magit-revert-buffers nil
@@ -460,9 +462,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (define-key my/git-keymap "y" 'magit-cherry)
   ;; to see all differences, even those automatically merged
   (define-key my/git-keymap "e" 'ediff-merge-revisions-with-ancestor)
-  (define-key my/git-keymap "t" 'magit-toggle-margin)
-  (define-key my/git-keymap "dP" 'magit-diff-unpushed)
-  (define-key my/git-keymap "dF" 'magit-diff-unpulled)
+  (define-key my/git-keymap "m" 'magit-toggle-margin)
   (define-key my/git-keymap "b" 'magit-blame)
   ;; unstage all changes (like SU but forces HEAD)
   (define-key my/git-keymap "U" 'magit-unstage-all)
@@ -476,10 +476,10 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (setq magit-log-arguments (cons "--no-merges"
                                   magit-log-arguments))
   ;; show status buffer alone
-  (setq magit-status-buffer-switch-function
-        (lambda (buffer)
-          (switch-to-buffer buffer)
-          (delete-other-windows)))
+  (setq magit-post-display-buffer-hook
+        (lambda ()
+          (when (derived-mode-p 'magit-status-mode)
+            (delete-other-windows))))
   )
 
 
