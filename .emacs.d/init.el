@@ -651,6 +651,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
                (cons "ivy" 'my/activate-ivy))
   (global-set-key "\e\eii" 'ivy-resume)
   (setq counsel-find-file-ignore-regexp "\\.elc$")
+  (setf (cdr (assoc 'counsel-M-x ivy-initial-inputs-alist)) "")
   (require 'counsel)
   ;; fallback to basic find-file
   (define-key counsel-find-file-map "\C-x\C-f"
