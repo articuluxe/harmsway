@@ -98,8 +98,8 @@
  'debug-sub-dirs '(
                    "snap/bin/debug/xr-snap/src/xr/snap/"
                    "snap/bin/release/xr-snap/src/xr/snap/"
-                   "snap/bin/debug-mock/xr-snap/src/xr/snap/"
-                   "snap/bin/debug-sim/xr-snap/src/xr/snap/"
+                   "snap/bin/mock-debug/xr-snap/src/xr/snap/"
+                   "snap/bin/sim-debug/xr-snap/src/xr/snap/"
                    "snap/bin/mock/xr-snap/src/xr/snap/"
                    "snap/bin/sim/xr-snap/src/xr/snap/"
                    )

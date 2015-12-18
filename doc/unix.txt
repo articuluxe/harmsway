@@ -4,7 +4,7 @@
 # Author:  <dan.harms@xrtrading.com>
 # Created: Friday, March 20, 2015
 # Version: 1.0
-# Modified Time-stamp: <2015-12-10 16:32:09 dan.harms>
+# Modified Time-stamp: <2015-12-17 14:06:51 dan.harms>
 # Modified by: Dan Harms
 # Keywords: help
 
@@ -79,6 +79,22 @@ command <breakpoint #>
 backtrace 10
 continue
 end
+
+################################# wireshark ##################################
+# list interfaces
+tshark -D
+# capture
+tshark -i<interface> -w <output>.pcap
+# capture files up to 10240 KB or after 1 second elapsed
+tshark -b filesize:10240 -b duration:1 -w <output>.pcap
+# capture 20 files each 100 KB, then stop
+tshark -b filesize:100 -a files:20 -w <output>.pcap
+# rolling capture of 4 GB of data (128 files of 32 MB)
+dumpcap -i<interface> -w <output>.pcap -b filesize:32768 -b files:128
+# filters:
+fix and ip.[addr|src|dst] == 69.50.112.200
+# match first 3 octets
+ip.src == 69.50.112.200/24
 
 ################################ command line ################################
 # last command

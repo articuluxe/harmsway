@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-12-18 00:22:19 dharms>
+;; Modified Time-stamp: <2015-12-18 15:18:50 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1079,7 +1079,7 @@ register \\C-l."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; workgroups ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'workgroups)
 (setq wg-default-buffer "*Bookmark List*")
-(setq wg-restore-position t)
+;; doesn't work, isn't needed? (setq wg-restore-position t)
 (setq wg-query-for-save-on-emacs-exit nil)
 (workgroups-mode 1)
 
