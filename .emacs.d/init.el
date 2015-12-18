@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-12-17 23:33:09 dharms>
+;; Modified Time-stamp: <2015-12-18 00:22:19 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1079,6 +1079,7 @@ register \\C-l."
 (require 'workgroups)
 (setq wg-default-buffer "*Bookmark List*")
 (setq wg-restore-position t)
+(setq wg-query-for-save-on-emacs-exit nil)
 (workgroups-mode 1)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; color-theme ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1100,7 +1101,6 @@ register \\C-l."
      (if (re-search-forward "^<<<<<<<" nil t) 1 0))))
 (add-hook 'find-file-hook 'try-smerge t)
 (add-hook 'after-save-hook (lambda() (if (smerge-mode) (try-smerge))))
-(setq smerge-command-prefix "\e")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; multi-term ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'multi-term)
