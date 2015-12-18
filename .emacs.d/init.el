@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-12-16 15:22:25 dan.harms>
+;; Modified Time-stamp: <2015-12-17 23:33:09 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -786,7 +786,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (rich-minority-mode 1)
   (setq rm-blacklist
         '(" AC" " yas" " Undo-Tree" " Abbrev" " Guide" " Hi" " $" " ,"
-          " Ifdef" " Rbow" " ivy" " ElDoc" " (*)"))
+          " Ifdef" " Rbow" " ivy" " ElDoc" " (*)" " wg"))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smart-mode-line ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1074,6 +1074,12 @@ register \\C-l."
   (save-frame-config)
   (tile-frames-horizontally))
 (global-set-key "\e\eh" 'my/tile-frames-horizontally)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; workgroups ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'workgroups)
+(setq wg-default-buffer "*Bookmark List*")
+(setq wg-restore-position t)
+(workgroups-mode 1)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; color-theme ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
