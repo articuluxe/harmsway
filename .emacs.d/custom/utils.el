@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-12-14 05:34:49 dharms>
+;; Modified Time-stamp: <2015-12-22 11:46:35 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -406,14 +406,15 @@ trailing whitespace."
         (set-buffer-modified-p nil)
         t))))
 
-(defun move-buffer-to-new-frame()
-  "Moves current window to new frame, and removes it from its original frame."
+(defun move-buffer-to-new-frame(&optional arg)
+  "Moves current window to new frame, and optionally (with a prefix arg)
+removes it from its original frame."
   (interactive)
-  (if (<= (length (window-list)) 1)
-      (message "Only 1 window on this frame, leaving it alone.")
-    (let ((win (selected-window)))
-      (make-frame-command)
-      (remove-window win))))
+  (let ((win (selected-window)))
+    (make-frame-command)
+    (and current-prefix-arg
+         (> (length (window-list)) 1)
+         (remove-window win))))
 (global-set-key "\C-x5x" 'move-buffer-to-new-frame)
 
 (defvar full-edit-accept-patterns
