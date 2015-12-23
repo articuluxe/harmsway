@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-12-29 16:55:38 dan.harms>
+;; Modified Time-stamp: <2015-12-29 22:45:56 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -489,32 +489,21 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (define-key my/git-keymap "t" 'git-timemachine)
   )
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; popwin ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'popwin)
-(popwin-mode 1)
-(global-set-key [f1] popwin:keymap)
-(global-set-key "\C-c1" popwin:keymap)
-(setq popwin:special-display-config
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; shackle ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'shackle)
+(setq shackle-default-ratio 0.4)
+(setq shackle-rules
       '(
-        help-mode
-;        (compilation-mode :noselect t)
-        (completion-list-mode :noselect t)            ;noselect?
-        ("*Ido Completions*" :noselect t)
-        ("*Isearch completions*" :noselect t)
-        (grep-mode :noselect t)
-        (occur-mode :noselect t)
-        "*Shell Command Output*"
-        ("^\\*terminal<[[:digit:]]>\\*" :regexp t)
-        ))
-;; (push '(" *undo-tree*" :width 0.5 :position right)
-;;       popwin:special-display-config)
-;; (push '("*undo-tree Diff*" :height 0.5 :position bottom)
-;;       popwin:special-display-config)
-;; use popwin for term buffers
-(require 'popwin-term)
-(push '(term-mode :position :top :height 0.25 :stick t)
-      popwin:special-display-config)
-(define-key popwin:keymap "t" 'popwin-term:term)
+        (occur-mode :select nil)
+        (grep-mode :select nil)
+        (help-mode :select t)
+        (completion-list-mode :select nil)
+        ("*Shell Command Output*" :select t); :align right)
+        ("COMMIT_EDITMSG" :select t)
+        )
+      shackle-default-rule '(:select t)
+      )
+(shackle-mode 1)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; hl-line ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'hl-line+)
