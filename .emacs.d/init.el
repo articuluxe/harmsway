@@ -518,10 +518,6 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (beacon-mode 1)
 (add-to-list 'beacon-dont-blink-major-modes 'etags-select-mode)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; eyebrowse ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'eyebrowse)
-(eyebrowse-mode 1)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; bookmark+ ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
   (add-to-list 'load-path (concat my/plugins-directory "bookmark+/")))
