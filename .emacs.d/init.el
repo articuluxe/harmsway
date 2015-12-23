@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-12-29 22:45:56 dharms>
+;; Modified Time-stamp: <2015-12-29 22:46:57 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -488,6 +488,11 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (require 'git-timemachine)
   (define-key my/git-keymap "t" 'git-timemachine)
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; shell-pop ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'shell-pop)
+(global-set-key (kbd "<f1>") 'shell-pop)
+(global-set-key "\C-c1" 'shell-pop)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; shackle ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'shackle)
