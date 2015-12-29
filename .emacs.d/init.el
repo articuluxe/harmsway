@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-12-18 15:18:50 dan.harms>
+;; Modified Time-stamp: <2015-12-29 16:55:38 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -727,6 +727,10 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 
 (require 'imenu-scan)
 
+(require 'popup-imenu)
+(setq popup-imenu-position 'point)
+(global-set-key "\C-c\C-j" 'popup-imenu)
+
 ;; ;; TODO: this regexp has false positives, but at least handles when
 ;; ;; functions have whitespace (i.e. in namespaces).  I don't know which
 ;; ;; is better.  The answer may be to not use imenu at all.
@@ -1200,7 +1204,7 @@ register \\C-l."
 (global-set-key (kbd "\C-c r TAB") 'my/rtags-complete)
 (defun my/expand-imenu() (interactive)
        (auto-complete '(ac-source-imenu)))
-(global-set-key "\C-c\C-j" 'my/expand-imenu)
+(global-set-key "\C-c0j" 'my/expand-imenu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; YASnippet ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
