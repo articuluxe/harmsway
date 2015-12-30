@@ -1076,6 +1076,8 @@ register \\C-l."
 (setq wg-default-buffer "*Bookmark List*")
 ;; doesn't work, isn't needed? (setq wg-restore-position t)
 (setq wg-query-for-save-on-emacs-exit nil)
+(define-key wg-map (kbd "<left>") 'wg-switch-left)
+(define-key wg-map (kbd "<right>") 'wg-switch-right)
 (workgroups-mode 1)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; color-theme ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
