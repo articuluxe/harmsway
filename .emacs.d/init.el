@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-12-29 22:47:41 dharms>
+;; Modified Time-stamp: <2015-12-30 10:08:27 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -498,6 +498,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; shackle ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'shackle)
 (setq shackle-default-ratio 0.4)
+(setq shackle-select-reused-windows t)
 (setq shackle-rules
       '(
         (occur-mode :select nil)
@@ -507,7 +508,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
         ("*Shell Command Output*" :select t); :align right)
         ("COMMIT_EDITMSG" :select t)
         )
-      shackle-default-rule '(:select t)
+      shackle-default-rule '(:select nil)
       )
 (shackle-mode 1)
 
@@ -782,7 +783,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (rich-minority-mode 1)
   (setq rm-blacklist
         '(" AC" " yas" " Undo-Tree" " Abbrev" " Guide" " Hi" " $" " ,"
-          " Ifdef" " Rbow" " ivy" " ElDoc" " (*)" " wg"))
+          " Ifdef" " Rbow" " ivy" " ElDoc" " (*)" " wg" " ⛓"))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smart-mode-line ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
