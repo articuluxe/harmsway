@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-12-29 22:46:57 dharms>
+;; Modified Time-stamp: <2015-12-29 22:47:41 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -83,6 +83,7 @@
 (setq line-number-mode t)
 (setq column-number-mode t)
 (setq use-dialog-box nil)
+(setq gc-cons-threshold 20000000)
 (setq kill-do-not-save-duplicates t)
 (file-name-shadow-mode 1)
 (setq enable-recursive-minibuffers t)
