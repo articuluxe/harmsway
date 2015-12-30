@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-12-22 11:46:35 dan.harms>
+;; Modified Time-stamp: <2015-12-30 09:59:50 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -26,6 +26,8 @@
 ;;
 
 ;; Code:
+
+(require 'popup-imenu)
 
 (defun kill-other-buffers(&optional arg)
   "Kill all buffers (except optionally for current one)."
@@ -62,12 +64,14 @@ element is a cons cell, the car of which is the display string given to the
 user, and the cdr of which is the resultant value to be used if that cell
 is selected."
   (popup-menu*
-   (mapcar (lambda(elt)
-             (if (consp elt)
-                 (popup-make-item (car elt) :value (cdr elt))
-               (popup-make-item elt :value elt)))
-           alist)
+   (delete-consecutive-dups
+    (mapcar (lambda(elt)
+              (if (consp elt)
+                  (popup-make-item (car elt) :value (cdr elt))
+                (popup-make-item elt :value elt)))
+            alist))
    :isearch t
+   :isearch-filter (popup-imenu--filter)
    :prompt prompt
    ))
 
