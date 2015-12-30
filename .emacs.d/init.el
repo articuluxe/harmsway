@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-12-30 10:08:27 dan.harms>
+;; Modified Time-stamp: <2015-12-30 13:26:57 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -428,8 +428,9 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; magit ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-prefix-command 'my/git-keymap)
 (global-set-key "\M-sm" 'my/git-keymap)
+(eval-and-compile
+  (add-to-list 'load-path (concat my/plugins-directory "magit/lisp/")))
 (unless (version< emacs-version "24.4")
-  (add-to-list 'load-path (concat my/plugins-directory "magit/lisp/"))
   (eval-and-compile (setq magit-need-cygwin-noglob nil))
   (require 'with-editor)
   (require 'magit)
@@ -505,6 +506,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
         (grep-mode :select nil)
         (help-mode :select t)
         (completion-list-mode :select nil)
+        (compilation-mode :select nil)
         ("*Shell Command Output*" :select t); :align right)
         ("COMMIT_EDITMSG" :select t)
         )
@@ -1076,6 +1078,7 @@ register \\C-l."
 (require 'workgroups)
 (setq wg-default-buffer "*Bookmark List*")
 ;; doesn't work, isn't needed? (setq wg-restore-position t)
+;; TODO: set initial string to "( -<{ }>- )"
 (setq wg-query-for-save-on-emacs-exit nil)
 (define-key wg-map (kbd "<left>") 'wg-switch-left)
 (define-key wg-map (kbd "<right>") 'wg-switch-right)
@@ -1085,7 +1088,7 @@ register \\C-l."
 (eval-and-compile
   (add-to-list 'load-path (concat my/plugins-directory "color-theme/")))
 (require 'color-theme)
-(eval-when-compile
+(eval-and-compile
   (add-to-list 'load-path (concat my/plugins-directory "color-theme/themes/")))
 (color-theme-initialize)
 
@@ -1236,10 +1239,11 @@ register \\C-l."
 (global-set-key [(shift tab)] 'my/expand-yasnippet)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; flycheck ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(setq-default flycheck-emacs-lisp-load-path 'inherit)
 (require 'flycheck)
 (add-hook 'after-init-hook #'global-flycheck-mode)
-(setq flycheck-global-modes '(emacs-lisp-mode python-mode dart-mode
-                                              sh-mode))
+(setq flycheck-global-modes
+      '(emacs-lisp-mode python-mode dart-mode sh-mode))
 (require 'flycheck-pos-tip)
 (setq flycheck-display-errors-function #'flycheck-pos-tip-error-messages)
 
@@ -1584,7 +1588,7 @@ customization."
     ;(setq venv-location "?")
     ;; add jedi if installed
     (when (eq 0 (call-process "python" nil nil nil "-c" "import jedi"))
-      (setq jedi:setup-keys t)
+;      (setq jedi:setup-keys t)
       (setq jedi:complete-on-dot t)
       (setq jedi:tooltip-method '(popup))
       (require 'jedi)
