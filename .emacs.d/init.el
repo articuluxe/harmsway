@@ -1088,6 +1088,13 @@ register \\C-l."
 (define-key wg-map (kbd "<right>") 'wg-switch-right)
 (workgroups-mode 1)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; workgroups2 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; (require 'workgroups2)
+;; (setq wg-prefix-key "\C-z")
+;; ;; (define-key workgroups-mode-map (kbd "<left>") 'wg-switch-left)
+;; ;; (define-key workgroups-mode-map (kbd "<right>") 'wg-switch-right)
+;; (workgroups-mode 1)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; color-theme ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
   (add-to-list 'load-path (concat my/plugins-directory "color-theme/")))
