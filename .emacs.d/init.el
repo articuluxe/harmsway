@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-12-30 13:26:57 dan.harms>
+;; Modified Time-stamp: <2015-12-31 09:52:26 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -801,6 +801,10 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (global-undo-tree-mode)
 ;; reset the undo tree history (useful after reverting buffer)
 (global-set-key "\C-cu" (lambda()(interactive)(setq buffer-undo-tree nil)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; goto-chg ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'goto-chg)
+(global-set-key [?\C-.] 'goto-last-change)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; tramp ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq tramp-default-method "ssh")
