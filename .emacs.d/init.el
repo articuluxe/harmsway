@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-12-31 09:52:26 dan.harms>
+;; Modified Time-stamp: <2015-12-31 16:09:47 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1097,10 +1097,9 @@ register \\C-l."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; color-theme ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
-  (add-to-list 'load-path (concat my/plugins-directory "color-theme/")))
-(require 'color-theme)
-(eval-and-compile
+  (add-to-list 'load-path (concat my/plugins-directory "color-theme/"))
   (add-to-list 'load-path (concat my/plugins-directory "color-theme/themes/")))
+(require 'color-theme)
 (color-theme-initialize)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; palette ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1590,8 +1589,6 @@ customization."
 (add-to-list 'comment-strip-start-length (cons 'nxml-mode 3))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; python-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defun my/expand-jedi() (interactive)
-       (auto-complete '(ac-source-jedi-direct)))
 (eval-and-compile
   (add-to-list 'load-path (concat my/elisp-directory "emacs-jedi/"))
   (when (executable-find "python")
@@ -1607,6 +1604,8 @@ customization."
       (require 'jedi-direx)
       (add-hook 'jedi-mode-hook 'jedi-direx:setup)
       (add-hook 'python-mode-hook 'jedi:setup)
+      (defun my/expand-jedi() (interactive)
+             (auto-complete '(ac-source-jedi-direct)))
       )
     (unless (executable-find "flake8")
       (add-to-list 'flycheck-disabled-checkers 'python-flake8)
@@ -1618,7 +1617,6 @@ customization."
             (setq-default indent-tabs-mode nil)
             (setq-local electric-indent-chars
                         (remq ?: electric-indent-chars))
-            (define-key python-mode-map [(ctrl tab)] 'my/expand-jedi)
             (setq forward-sexp-function nil)
             (define-key python-mode-map "\C-j" 'newline-and-indent)
             (define-key python-mode-map "\C-c\C-c" 'comment-region)
@@ -1627,7 +1625,9 @@ customization."
             (define-key python-mode-map (kbd "\C-c RET")
               (lambda()(interactive)
                 (compile (concat "python " (buffer-name)))))
-            (define-key python-mode-map "\C-cx" 'jedi-direx:pop-to-buffer)
+            (when (featurep 'jedi)
+              (define-key python-mode-map [(ctrl tab)] 'my/expand-jedi)
+              (define-key python-mode-map "\C-cx" 'jedi-direx:pop-to-buffer))
             ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; emacs-lisp-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
