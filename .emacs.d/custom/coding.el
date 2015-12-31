@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-12-17 05:57:30 dharms>
+;; Modified Time-stamp: <2015-12-31 15:39:48 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -29,6 +29,10 @@
 
 (global-set-key "\C-c\C-c" 'comment-region)
 (global-set-key "\C-c\C-u" 'uncomment-region)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; c-includer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'c-includer)
+(global-set-key "\C-cit" 'makey-key-mode-popup-c-includer-brackets)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; cc-chainsaw ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'cc-chainsaw)
@@ -238,7 +242,7 @@
       (insert-char ?\s c-basic-offset)
       (insert "/* #ifndef " str " */\n")
       )))
-(global-set-key "\C-ci" 'add-header-include-ifdefs)
+(global-set-key "\C-cii" 'add-header-include-ifdefs)
 
 ;; class header
 (defun insert-class-header (&optional arg)
