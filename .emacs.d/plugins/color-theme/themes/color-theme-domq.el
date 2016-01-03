@@ -2,9 +2,9 @@
 
 (require 'color-theme)
 (defun color-theme-domq ()
-  """Color theme by Dominique Quatravaux, created 2008-02-25.
+  "Color theme by Dominique Quatravaux, created 2008-02-25.
 
-Inspired by RedHat 7.1's color theme back in the times."""
+Inspired by RedHat 7.1's color theme back in the times."
   (interactive)
   (color-theme-install
    '(color-theme-domq
