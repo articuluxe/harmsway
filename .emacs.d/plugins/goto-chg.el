@@ -89,6 +89,7 @@
 (defvar glc-default-span 8 "*goto-last-change don't visit the same point twice. glc-default-span tells how far around a visited point not to visit again.")
 (defvar glc-current-span 8 "Internal for goto-last-change.\nA copy of glc-default-span or the ARG passed to goto-last-change.")
 (defvar glc-probe-depth 0 "Internal for goto-last-change.\nIt is non-zero between successive goto-last-change.")
+(defvar glc-direction 0 "Internal for goto-last-change.")
 
 ;;todo: Find begin and end of line, then use it somewhere
 
