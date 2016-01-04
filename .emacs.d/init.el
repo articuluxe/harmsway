@@ -504,7 +504,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
       '(
         (occur-mode :select nil)
         (grep-mode :select nil)
-        (help-mode :select t)
+        ("*Help*" :select t)
         (completion-list-mode :select nil)
         (compilation-mode :select nil)
         ("*Shell Command Output*" :select t); :align right)
@@ -1022,6 +1022,12 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (define-key my/ediff-trees-keymap (kbd "p") 'ediff-trees-examine-previous)
 (define-key my/ediff-trees-keymap (kbd "\C-n") 'ediff-trees-examine-next-regexp)
 (define-key my/ediff-trees-keymap (kbd "\C-p") 'ediff-trees-examine-previous-regexp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; diff-hl ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(eval-and-compile
+  (add-to-list 'load-path (concat my/plugins-directory "diff-hl/")))
+(require 'diff-hl)
+(require 'diff-hl-flydiff)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; git-gutter ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq git-gutter:lighter "")
