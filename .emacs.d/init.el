@@ -1,10 +1,10 @@
 ;; -*- Mode: Emacs-Lisp -*-
 ;; init.el --- Initialization file
-;; Copyright (C) 2015  Dan Harms (dharms)
+;; Copyright (C) 2015, 2016  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-12-31 16:09:47 dan.harms>
+;; Modified Time-stamp: <2016-01-03 23:16:20 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1022,6 +1022,20 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (define-key my/ediff-trees-keymap (kbd "p") 'ediff-trees-examine-previous)
 (define-key my/ediff-trees-keymap (kbd "\C-n") 'ediff-trees-examine-next-regexp)
 (define-key my/ediff-trees-keymap (kbd "\C-p") 'ediff-trees-examine-previous-regexp)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; git-gutter ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(setq git-gutter:lighter "")
+(setq git-gutter:hide-gutter t)
+(require 'git-gutter)
+(global-git-gutter-mode 1)
+(global-set-key "\C-xvp" 'git-gutter:previous-hunk)
+(global-set-key "\C-xvn" 'git-gutter:next-hunk)
+(global-set-key "\C-xvd" 'git-gutter:popup-hunk)
+(global-set-key "\C-xvt" 'git-gutter:toggle)
+(global-set-key "\C-xvs" 'git-gutter:stage-hunk)
+(global-set-key "\C-xvr" 'git-gutter:revert-hunk)
+(global-set-key "\C-xvc" 'git-gutter:clear)
+(global-set-key "\C-xvu" 'git-gutter:update-all-windows)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; shebang ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'shebang)
