@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-01-03 23:16:20 dharms>
+;; Modified Time-stamp: <2016-01-04 12:41:22 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1032,6 +1032,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; git-gutter ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq git-gutter:lighter "")
 (setq git-gutter:hide-gutter t)
+(setq git-gutter:diff-option "-w")
 (require 'git-gutter)
 (global-git-gutter-mode 1)
 (global-set-key "\C-xvp" 'git-gutter:previous-hunk)
