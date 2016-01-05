@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-01-04 12:41:22 dan.harms>
+;; Modified Time-stamp: <2016-01-04 22:50:15 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1276,6 +1276,8 @@ register \\C-l."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; flycheck ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq-default flycheck-emacs-lisp-load-path 'inherit)
 (require 'flycheck)
+(require 'flycheck-checkbashisms)
+(add-hook 'flycheck-mode-hook #'flycheck-checkbashisms-setup)
 (add-hook 'after-init-hook #'global-flycheck-mode)
 (setq flycheck-global-modes
       '(emacs-lisp-mode python-mode dart-mode sh-mode))
