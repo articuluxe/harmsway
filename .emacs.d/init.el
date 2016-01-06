@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-01-04 22:50:15 dharms>
+;; Modified Time-stamp: <2016-01-05 12:39:25 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1724,5 +1724,20 @@ customization."
                 (rainbow-turn-on)
               (my/syntax-color-hex-values))
             ))
+
+(defun yaml-next-field() "Jump to next yaml field."
+       (interactive)
+       (search-forward-regexp ": *"))
+(defun yaml-prev-field() "Jump to previous yaml field."
+       (interactive)
+       (search-backward-regexp ": *"))
+(add-hook 'yaml-mode-hook
+          (lambda()
+            (define-key yaml-mode-map "\C-m" 'newline-and-indent)
+            (define-key yaml-mode-map "\M-\r" 'insert-ts)
+            (define-key yaml-mode-map (kbd "C-<tab>") 'yaml-next-field)
+            (define-key yaml-mode-map (kbd "C-S-<tab>") 'yaml-prev-field)
+            ))
+
 
 ;; code ends here
