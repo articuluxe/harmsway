@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-01-05 12:39:25 dan.harms>
+;; Modified Time-stamp: <2016-01-06 16:50:06 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -221,6 +221,14 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (load-library "utils")
 (load-library "compiling")
 (load-library "coding")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; multi-line ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(eval-and-compile
+  (add-to-list 'load-path (concat my/plugins-directory "multi-line/"))
+  (require 'multi-line)
+  (global-set-key "\C-cl" 'multi-line)
+  )
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; modes ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'log-viewer)

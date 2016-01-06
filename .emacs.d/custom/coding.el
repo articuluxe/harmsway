@@ -1,10 +1,10 @@
 ;; -*- Mode: Emacs-Lisp -*-
 ;; coding.el --- coding utilities
-;; Copyright (C) 2015  Dan Harms (dharms)
+;; Copyright (C) 2015, 2016  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-12-31 15:39:48 dan.harms>
+;; Modified Time-stamp: <2016-01-06 16:50:11 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -36,13 +36,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; cc-chainsaw ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'cc-chainsaw)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; multi-line ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(eval-and-compile
-  (add-to-list 'load-path (concat my/plugins-directory "multi-line/"))
-  (require 'multi-line)
-  (global-set-key "\C-cl" 'multi-line)
-  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; preproc-font-lock ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'preproc-font-lock)
