@@ -511,11 +511,11 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (setq shackle-rules
       '(
         (occur-mode :select nil)
-        (grep-mode :select nil)
+        (grep-mode :select nil :align bottom)
         ("*Help*" :select t)
         (completion-list-mode :select nil)
         (compilation-mode :select nil)
-        ("*Shell Command Output*" :select t); :align right)
+        ("*Shell Command Output*" :select t)
         ("COMMIT_EDITMSG" :select t)
         )
       shackle-default-rule '(:select nil)
@@ -793,7 +793,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (rich-minority-mode 1)
   (setq rm-blacklist
         '(" AC" " yas" " Undo-Tree" " Abbrev" " Guide" " Hi" " $" " ,"
-          " Ifdef" " Rbow" " ivy" " ElDoc" " (*)" " wg" " ⛓"))
+          " Ifdef" " Rbow" " ivy" " ElDoc" " (*)" " wg" " ⛓" " GitGutter"))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smart-mode-line ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1038,11 +1038,12 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (require 'diff-hl-flydiff)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; git-gutter ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(setq git-gutter:lighter "")
 (setq git-gutter:hide-gutter t)
 (setq git-gutter:diff-option "-w")
 (require 'git-gutter)
 (global-git-gutter-mode 1)
+(setq git-gutter:update-interval 1)
+(git-gutter:start-update-timer)
 (global-set-key "\C-xvp" 'git-gutter:previous-hunk)
 (global-set-key "\C-xvn" 'git-gutter:next-hunk)
 (global-set-key "\C-xvd" 'git-gutter:popup-hunk)
