@@ -157,8 +157,8 @@ one of the major-modes on this list, the beacon will not
 blink."
   :type '(repeat symbol))
 
-(defcustom beacon-dont-blink-commands '(recenter-top-bottom next-line previous-line
-                                                      forward-line)
+(defcustom beacon-dont-blink-commands '(next-line previous-line
+                                            forward-line)
   "A list of commands that should not make the beacon blink.
 Use this for commands that scroll the window in very
 predictable ways, when the blink would be more distracting
@@ -255,15 +255,22 @@ Only returns `beacon-size' elements."
 
 (defun beacon--color-range ()
   "Return a list of background colors for the beacon."
-  (let* ((default-bg (or (background-color-at-point)
+  (let* ((default-bg (or (save-excursion
+                           (unless (eobp)
+                             (forward-line 1)
+                             (unless (or (bobp) (not (bolp)))
+                               (forward-char -1)))
+                           (background-color-at-point))
                          (face-background 'default)))
-         (bg (color-values (if (string-match "\\`unspecified-" default-bg)
+         (bg (color-values (if (or (not (stringp default-bg))
+                                   (string-match "\\`unspecified-" default-bg))
                                (face-attribute 'beacon-fallback-background :background)
                              default-bg)))
          (fg (cond
               ((stringp beacon-color) (color-values beacon-color))
-              ((< (color-distance "black" bg)
-                  (color-distance "white" bg))
+              ((and (stringp bg)
+                    (< (color-distance "black" bg)
+                       (color-distance "white" bg)))
                (make-list 3 (* beacon-color 65535)))
               (t (make-list 3 (* (- 1 beacon-color) 65535))))))
     (apply #'seq-mapn (lambda (r g b) (format "#%04x%04x%04x" r g b))
