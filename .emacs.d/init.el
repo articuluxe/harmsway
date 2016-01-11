@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-01-06 16:50:06 dan.harms>
+;; Modified Time-stamp: <2016-01-08 08:59:11 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1036,6 +1036,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (add-to-list 'load-path (concat my/plugins-directory "diff-hl/")))
 (require 'diff-hl)
 (require 'diff-hl-flydiff)
+(require 'diff-hl-margin)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; git-gutter ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq git-gutter:hide-gutter t)
