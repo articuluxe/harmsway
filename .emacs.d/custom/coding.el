@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-01-06 16:50:11 dan.harms>
+;; Modified Time-stamp: <2016-01-11 16:29:18 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -113,6 +113,7 @@
    (define-key c++-mode-map "\C-c\C-c" 'comment-region)
    (define-key c++-mode-map "\C-c\C-u" 'uncomment-region)
    (setq comment-start "/*") (setq comment-end "*/")
+   (define-key c++-mode-map "\C-c/" 'toggle-c-comment-delimiters)
    ;; skips the final included file, ending in `:', when traversing compile
    ;; errors.  See
    ;; `http://stackoverflow.com/questions/15489319/how-can-i-skip-in-file-included-from-in-emacs-c-compilation-mode'
@@ -147,6 +148,16 @@
                                       )))))
    ))
 
+(add-hook 'prog-mode-hook
+          (lambda()
+            (font-lock-add-keywords
+             nil '(
+                   ;; TODO declarations
+                   ("\\<[tT][oO][dD][oO]\\>" 0 font-lock-warning-face t)
+                   ;; FIXME
+                   ("\\<[fF][iI][xX][mM][eE]\\>" 0 font-lock-warning-face t)
+                   ) t)) t)
+
 (add-hook
  'c++-mode-hook
  (lambda()
@@ -158,7 +169,7 @@
           ;; hexadecimal numbers
           ("\\<0[xX][0-9A-Fa-f]+\\>" . font-lock-constant-face)
           ;; TODO declarations
-          ("\\<[tT][oO][dD][oO]\\>" 0 font-lock-warning-face t)
+;          ("\\<[tT][oO][dD][oO]\\>" 0 font-lock-warning-face t)
           ;; Qt fontification
           ("\\<Q_OBJECT\\|SIGNAL\\|SLOT\\>" . font-lock-keyword-face)
           ("\\<QT?\\(_\\sw+\\)+\\>" . font-lock-keyword-face)
@@ -189,7 +200,6 @@
       (setq comment-start "//")
       (setq comment-end "")
       (message "// Using comments like this"))))
-(global-set-key "\C-c/" 'toggle-c-comment-delimiters)
 
 (defun find-my-tags-file() "Find tags file"
   (interactive)
