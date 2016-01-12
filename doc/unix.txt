@@ -1,10 +1,10 @@
 # -*- Mode: sh; comment-start: "#" -*-
 # unix.txt --- misc. helpful commands
-# Copyright (C) 2015   (dan.harms)
+# Copyright (C) 2015, 2016   (dan.harms)
 # Author:  <dan.harms@xrtrading.com>
 # Created: Friday, March 20, 2015
 # Version: 1.0
-# Modified Time-stamp: <2015-12-17 14:06:51 dan.harms>
+# Modified Time-stamp: <2016-01-12 11:38:21 dan.harms>
 # Modified by: Dan Harms
 # Keywords: help
 
@@ -46,7 +46,7 @@ while sleep 1; do who; done
 
 # compile emacs
 mkdir bld && cd bld
-../configure --with-png=no
+../configure [--with-png=no]
 
 #################################### gdb #####################################
 # set a variable
@@ -95,6 +95,14 @@ dumpcap -i<interface> -w <output>.pcap -b filesize:32768 -b files:128
 fix and ip.[addr|src|dst] == 69.50.112.200
 # match first 3 octets
 ip.src == 69.50.112.200/24
+
+# close a socket without killing process
+netstat -np
+# locate socket's file descriptor within process
+lsof -np <pid>
+# connect to process
+gdb -p <pid>
+"call close(<fd>)" "q"
 
 ################################ command line ################################
 # last command
