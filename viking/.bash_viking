@@ -1,0 +1,11 @@
+# -*- Mode: sh -*-
+# .bash_viking
+
+export python=~/anaconda2/bin
+export PATH=$HOME/bin:/sbin/:/usr/lib64:$python:$PATH:.
+
+export CSTDLIB_ROOT=/usr/local/gcc-4.9.1
+export CSTDLIB_INC=$CSTDLIB_ROOT/include/c++/4.9.1
+export CSTDLIB_BIN=$CSTDLIB_ROOT/bin
+
+#export DISPLAY=10.10.102.157:0.0
