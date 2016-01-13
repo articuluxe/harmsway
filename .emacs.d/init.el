@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-01-08 08:59:11 dan.harms>
+;; Modified Time-stamp: <2016-01-12 22:57:49 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -167,7 +167,6 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (global-unset-key (kbd "<f1>"))
 (global-set-key [(next)] 'scroll-up-line)
 (global-set-key [(prior)] 'scroll-down-line)
-(global-set-key "\C-x\C-r" (lambda()(interactive)(revert-buffer nil t)))
 (global-set-key "\C-caa" 'align)
 (global-set-key "\C-car" 'align-repeat-regexp)
 (global-set-key [f5] 'toggle-truncate-lines)
@@ -197,7 +196,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; s ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (when (version< "24.3" emacs-version)
   (require 's))
-
+(require 'f)
 (require 'deferred)
 (require 'concurrent)
 (require 'epc)

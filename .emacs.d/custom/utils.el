@@ -1,10 +1,10 @@
 ;; -*- Mode: Emacs-Lisp -*-
 ;; utils.el --- misc. utilities
-;; Copyright (C) 2015  Dan Harms (dharms)
+;; Copyright (C) 2015, 2016  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-12-30 09:59:50 dan.harms>
+;; Modified Time-stamp: <2016-01-09 08:06:23 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -28,6 +28,14 @@
 ;; Code:
 
 (require 'popup-imenu)
+
+(defun my/revert-buffer ()
+    "Revert a buffer automatically."
+    (interactive)
+    (let ((truncate truncate-lines))
+      (revert-buffer nil t)
+      (setq truncate-lines truncate)))
+(global-set-key "\C-x\C-r" 'my/revert-buffer)
 
 (defun kill-other-buffers(&optional arg)
   "Kill all buffers (except optionally for current one)."
@@ -109,6 +117,10 @@ is selected."
     (or (cdr (assoc res alist))
         res)))
 
+(defvar my/choose-func 'choose-via-popup
+  "Make a selection among a list of choices.")
+(global-set-key "\C-c\C-r" 'my/choose-choose-func)
+
 (defun my/choose-choose-func ()
   "Toggle between available selection frameworks.  Current choices include
  `ido', `popup' and `ivy'."
@@ -123,10 +135,6 @@ is selected."
           (message "Choosing via ivy"))
       (setq my/choose-func 'choose-via-popup)
       (message "Choosing via popup"))))
-
-(defvar my/choose-func 'choose-via-popup
-  "Make a selection among a list of choices.")
-(global-set-key "\C-c\C-r" 'my/choose-choose-func)
 
 (defun jump-to-matching-paren() "Go to matching paren" (interactive)
   (if (looking-at "\\s\(")
