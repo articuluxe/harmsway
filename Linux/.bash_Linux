@@ -1,11 +1,6 @@
 # -*- Mode: sh -*-
 # .bash_Linux
 
-# source the host file
-if [ -f ~/.bash_talbot ]; then
-   . ~/.bash_talbot
-fi
-
 export MANPATH=
 export NAME='Dan Harms'
 export TAR=$(which tar)

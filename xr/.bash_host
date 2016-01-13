@@ -1,0 +1,86 @@
+# -*- Mode: sh -*-
+# .bash_local
+
+# User specific aliases and functions
+
+# Source personal data
+if [ -f ~/.pwd ]; then
+	. ~/.pwd
+fi
+
+python=/opt/anaconda-python-2.7.8/bin
+
+export PATH=$HOME/bin:/sbin/:/usr/lib64:$python:$PATH:.
+# export TERM=xterm-256color
+export DISPLAY=10.10.102.157:0.0
+
+export CSTDLIB_ROOT=/usr/local/gcc-4.9.1
+export CSTDLIB_INC=$CSTDLIB_ROOT/include/c++/4.9.1
+export CSTDLIB_BIN=$CSTDLIB_ROOT/bin
+
+# source the host file
+if [ -f ~/.bash_xr ]; then
+   . ~/.bash_xr
+fi
+
+# export ONE_TICK_CONFIG=/opt/1tick/client_data/config/one_tick_config.txt
+
+# # default to latest
+# use gcc491
+# export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/boost156/lib
+
+# # gcc
+# gcc-init()
+# {
+#    if [ -z "$1" ]; then
+#       echo "Missing gcc version; exiting..."
+#       return
+#    fi
+#    echo "Using gcc $1"
+#    cp -f ~/config/env/gcc/"$1"/.env ./.gcc-env
+# }
+# gcc-setup() { source .gcc-env; }
+
+# # SNAP
+# snap-init()
+# {
+#    if [ -z "$1" ]; then
+#       echo "Missing snap version; exiting..."
+#       return
+#    fi
+#    echo "Using snap version $1"
+#    cp -f ~/config/env/snap/"$1"/.env ./.snap-env
+#    cp -f ~/config/snap-"$1".eprof .
+#    if [ ! -d snap/.git/hooks ]; then
+#       echo "Snap repository missing; rerun after installing it."
+#       return
+#    fi
+#    cd snap/.git/hooks &&
+#       ln -sf -T ../../buildtools/pre-commit pre-commit &&
+#       cd ../../..
+# }
+# snap-setup()
+# {
+#    export SNAP_ROOT=`pwd` && source .snap-env;
+#    export PYTHONPATH=$SNAP_ROOT/snap/scripts
+# }
+
+# # distcc
+# distcc-init()
+# {
+#    distcc=/usr/bin/distcc
+#    masquerade_dir=~/bin/distcc
+
+#    sudo iptables -A INPUT -s 0/0 -i eth0 -p TCP --dport 3632 -j ACCEPT
+#    mkdir -p $masquerade_dir
+#    pushd $masquerade_dir
+#    ln -sf $distcc gcc
+#    ln -sf $distcc cc
+#    ln -sf $distcc g++
+#    ln -sf $distcc c++
+#    popd
+# }
+# distcc-start()
+# {
+#    distccd --daemon --log-file=~/logs/distcc.log --allow 10.10.102.0/23 10.10.103.0/23 --jobs=4
+# }

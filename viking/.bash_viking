@@ -1,6 +1,11 @@
 # -*- Mode: sh -*-
 # .bash_viking
 
+# source the host file
+if [ -f ~/.bash_talbot ]; then
+   . ~/.bash_talbot
+fi
+
 export python=~/anaconda2/bin
 export PATH=$HOME/bin:/sbin/:/usr/lib64:$python:$PATH:.
 
