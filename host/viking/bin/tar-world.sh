@@ -5,13 +5,14 @@
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Friday, May 29, 2015
 # Version: 1.0
-# Modified Time-stamp: <2016-01-14 16:39:52 dan.harms>
+# Modified Time-stamp: <2016-01-14 17:05:27 dan.harms>
 # Modified by: Dan Harms
 # Keywords: configuration
 
 tar=$TAR
 os=$(uname)
 host=$(hostname -s)
+site=talbot
 dest=world.tar
 verbose=
 
@@ -33,6 +34,7 @@ $tar u"$verbose"f $dest --transform=s/bash\\/// bash
 $tar u"$verbose"f $dest --transform=s/tcsh\\/// tcsh
 $tar u"$verbose"f $dest --transform=s/os/$os\\/// os/$os
 $tar u"$verbose"f $dest --transform=s/host/$host\\/// host/$host
+$tar u"$verbose"f $dest --transform=s/site/$site\\/// site/$site
 
 echo ...done generating $dest
 

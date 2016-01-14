@@ -5,7 +5,7 @@ rem Copyright (C) 2015, 2016  Dan Harms (dan.harms)
 rem Author: Dan Harms <dan.harms@xrtrading.com>
 rem Created: Thursday, May 21, 2015
 rem Version: 1.0
-rem Modified Time-stamp: <2016-01-14 16:37:17 dan.harms>
+rem Modified Time-stamp: <2016-01-14 17:04:44 dan.harms>
 rem Modified by: Dan Harms
 rem Keywords: tar whole world
 
@@ -15,6 +15,7 @@ setlocal enabledelayedexpansion
 set tar=c:\msys\1.0\bin\tar
 set uname=c:\msys\1.0\bin\uname
 set hostname=c:\MinGW\msys\1.0\bin\hostname
+set site=xr
 
 set verbose=
 if not %1. == . (
@@ -42,6 +43,7 @@ if exist %dest% (
 %tar% u%verbose%f %dest% --transform=s$tcsh/$$ tcsh
 %tar% u%verbose%f %dest% --transform=s$os/%os%/$$ os/%os%
 %tar% u%verbose%f %dest% --transform=s$host/%host%/$$ host/%host%
+%tar% u%verbose%f %dest% --transform=s$site/%site%/$$ site/%site%
 
 echo ...done generating %dest%
 
