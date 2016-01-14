@@ -5,7 +5,7 @@
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Friday, May 29, 2015
 # Version: 1.0
-# Modified Time-stamp: <2016-01-14 05:57:43 dharms>
+# Modified Time-stamp: <2016-01-14 16:39:52 dan.harms>
 # Modified by: Dan Harms
 # Keywords: configuration
 
@@ -31,8 +31,8 @@ $tar u"$verbose"f $dest --exclude=*.elc .emacs.d
 $tar u"$verbose"f $dest --transform=s/scripts/bin/ scripts
 $tar u"$verbose"f $dest --transform=s/bash\\/// bash
 $tar u"$verbose"f $dest --transform=s/tcsh\\/// tcsh
-$tar u"$verbose"f $dest --transform=s/$os\\/// $os
-$tar u"$verbose"f $dest --transform=s/$host\\/// $host
+$tar u"$verbose"f $dest --transform=s/os/$os\\/// os/$os
+$tar u"$verbose"f $dest --transform=s/host/$host\\/// host/$host
 
 echo ...done generating $dest
 
