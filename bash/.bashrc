@@ -16,7 +16,7 @@ source ~/config/git-prompt.sh
 export PS1="\[\e[31m\]\h\[\e[m\]\[\e[31m\]:\[\e[m\]\[\e[33m\]\w\[\e[m\]\[\e[31m\]\$(__git_ps1 \" (%s)\")\[\e[m\]> "
 
 os=$(uname)
-host=$(hostname)
+host=$(hostname -s)
 
 # Load any os settings
 if [ -f ~/.bash_$os ]; then

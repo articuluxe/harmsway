@@ -1,21 +1,17 @@
 # -*- Mode: sh -*-
-# .bash_local
+# .bash_Portsmouth
 
-# User specific aliases and functions
+# source the host file
+if [ -f ~/.bash_talbot ]; then
+   . ~/.bash_talbot
+fi
 
 # python=/opt/anaconda-python-2.7.8/bin
 cmake=/Applications/CMake.app/Contents/bin
 export PATH=$HOME/bin:/usr/local/bin:$cmake:$PATH:.
 export DYLD_LIBRARY_PATH=/usr/local/lib:$HOME/src/dist/lib
-export MANPATH=
-export NAME='Dan Harms'
-export ORIGPATH=$PATH
-# export TERM=xterm-256color
-export TAR=/usr/bin/gnutar
 
-export EMACSX=/Applications/Emacs.app/Contents/MacOS/Emacs
-export EDITOR="$EMACSX -nw"
-alias emacs=$EDITOR
+# export TERM=xterm-256color
 
 export CSTDLIB_ROOT=/opt/local
 export CSTDLIB_INC=$CSTDLIB_ROOT/include/gcc48/c++

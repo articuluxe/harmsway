@@ -1,0 +1,11 @@
+# -*- Mode: sh -*-
+# .bash_Darwin
+
+export MANPATH=
+export NAME='Dan Harms'
+
+export TAR=/usr/bin/gnutar
+
+export EMACSX=/Applications/Emacs.app/Contents/MacOS/Emacs
+export EDITOR="$EMACSX -nw"
+alias emacs=$EDITOR
