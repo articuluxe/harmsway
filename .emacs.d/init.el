@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-01-08 08:59:11 dan.harms>
+;; Modified Time-stamp: <2016-01-14 13:22:29 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1652,6 +1652,8 @@ customization."
 (add-hook 'python-mode-hook
           (lambda()
             (setq-default indent-tabs-mode nil)
+            (setq python-indent-guess-indent-offset nil)
+            (setq python-indent-offset 4)
             (setq-local electric-indent-chars
                         (remq ?: electric-indent-chars))
             (setq forward-sexp-function nil)
@@ -1661,7 +1663,7 @@ customization."
             (define-key python-mode-map [?\C-\M-g] 'python-nav-forward-sexp)
             (define-key python-mode-map (kbd "\C-c RET")
               (lambda()(interactive)
-                (compile (concat "python " (buffer-name)))))
+                (compile (concat "python " (buffer-file-name)))))
             (when (featurep 'jedi)
               (define-key python-mode-map [(ctrl tab)] 'my/expand-jedi)
               (define-key python-mode-map "\C-cx" 'jedi-direx:pop-to-buffer))
