@@ -1,16 +1,19 @@
 #!/usr/bin/env sh
 # -*- Mode: sh -*-
 # untar-world.sh --- untar important files
-# Copyright (C) 2015  Dan Harms (dan.harms)
+# Copyright (C) 2015, 2016  Dan Harms (dan.harms)
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Monday, May 18, 2015
 # Version: 1.0
-# Modified Time-stamp: <2015-08-17 22:11:27 dharms>
+# Modified Time-stamp: <2016-01-15 08:22:57 dan.harms>
 # Keywords: configuration
 
 tar=$TAR
 manifest=.bk_manifest
 backup=emacs_bk.tar
+os=$(uname)
+host=$(hostname -s)
+site=talbot
 input=
 
 function backup_file
@@ -62,7 +65,7 @@ echo About to unpack $input...
 $tar --overwrite -xpvf $input
 
 # remove intermediate directories, if empty
-rmdir -p bash tcsh talbot
+rmdir -p bash tcsh os/$os site/$site host/$host
 # and byte-compile emacs
 emacscomp.sh .emacs.d
 

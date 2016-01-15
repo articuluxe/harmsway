@@ -5,13 +5,16 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Monday, May 18, 2015
 # Version: 1.0
-# Modified Time-stamp: <2016-01-12 23:12:44 dharms>
+# Modified Time-stamp: <2016-01-15 08:20:14 dan.harms>
 # Modified by: Dan Harms
 # Keywords: configuration
 
 tar=tar
 manifest=.bk_manifest
 backup=emacs_bk.tar
+os=$(uname)
+host=$(hostname -s)
+site=talbot
 input=
 
 function backup_file
@@ -77,7 +80,7 @@ $tar --overwrite -xpvf $input
 
 # remove intermediate directories, if empty
 pushd ~
-rmdir --ignore-fail-on-non-empty bash tcsh Linux talbot viking
+rmdir --ignore-fail-on-non-empty bash tcsh os/$os site/$site host/$host
 # protect .netrc
 if [ -f .netrc ] ; then
    chmod 600 .netrc
