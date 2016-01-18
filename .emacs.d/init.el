@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-01-14 13:22:29 dan.harms>
+;; Modified Time-stamp: <2016-01-18 08:59:54 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1293,6 +1293,17 @@ register \\C-l."
       '(emacs-lisp-mode python-mode dart-mode sh-mode))
 (require 'flycheck-pos-tip)
 (setq flycheck-display-errors-function #'flycheck-pos-tip-error-messages)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; flyspell ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(when (executable-find "hunspell")
+  (require 'flyspell)
+  (add-hook 'prog-mode-hook #'flyspell-prog-mode)
+  (mapc (lambda (hook) (add-hook hook #'flyspell-mode))
+        '(text-mode-hook conf-mode-hook markdown-mode))
+  (require 'flyspell-popup)
+  (define-key flyspell-mode-map "\e\e4" #'flyspell-popup-correct)
+  ;; (add-hook 'flyspell-mode-hook #'flyspell-popup-auto-correct-mode)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; headers ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;(autoload 'auto-update-file-header "header2")
