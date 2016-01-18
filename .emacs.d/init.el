@@ -222,6 +222,83 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (load-library "compiling")
 (load-library "coding")
 
+(defvar my/remote-host-list '())
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; aes ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'aes)
+(setq aes-always-ask-for-passwords nil)
+(setq aes-enable-plaintext-password-storage t)
+(setq aes-delete-passwords-after-idle 0)
+(aes-enable-auto-decryption)
+(defvar my/aes-default-group "  default")
+(add-hook 'aes-path-passwd-hook (lambda (path) my/aes-default-group))
+;; if the environment variable is not defined, we will be prompted
+;; for the password
+(setq aes--plaintext-passwords
+      (let ((pwd (or (getenv "EMACS_PWD") "nil")))
+        (list (cons my/aes-default-group pwd))))
+(global-set-key "\C-c0z" 'aes-toggle-encryption)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; os ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(let* ((system (car (reverse (split-string (symbol-name system-type)
+                                           "\\/" t))))
+       (os-dir (concat my/user-directory "settings/os/" system "/"))
+       (system-file (concat os-dir system))
+       (path-file (concat os-dir "path"))
+       (include-file (concat os-dir "include"))
+       (lib-file (concat os-dir "lib"))
+       (libpath-file (concat os-dir "libpath"))
+       )
+  ;; load os file
+  (load system-file)
+  ;; check for any additional environment variables
+  (if (file-exists-p path-file)
+      (progn
+        (load-environment-variable-from-file "PATH" path-file)
+        ;; replicate path (delimiter-separated string of paths) into
+        ;; exec-path (list of paths); by convention, ends in exec-dir
+        (setq exec-path (append
+                         (read-file-into-list-of-lines path-file)
+                         (list (convert-standard-filename exec-directory))))))
+  (if (file-exists-p include-file)
+      (load-environment-variable-from-file "INCLUDE" include-file))
+  (if (file-exists-p lib-file)
+      (load-environment-variable-from-file "LIB" lib-file))
+  (if (file-exists-p libpath-file)
+      (load-environment-variable-from-file "LIBPATH" libpath-file))
+  )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; gui ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(let ((gui-dir (concat my/user-directory "settings/gui/"))
+      (gui window-system)
+      gui-file)
+  ;; load gui file
+  (setq gui-file (concat gui-dir (if (null gui) "tty" (symbol-name gui))))
+  (load gui-file)
+  )
+
+(setq-default frame-title-format
+              '(:eval
+                (format "%s@%s: %s %s"
+                        (or (file-remote-p default-directory 'user)
+                            user-real-login-name)
+                        (or (file-remote-p default-directory 'host)
+                            system-name)
+                        (if dired-directory
+                            (concat "{" (buffer-name) "}")
+                          (buffer-name))
+                        (if (profile-current-get 'project-name)
+                            ;; the parent profile "default" happens to
+                            ;; have an empty 'project-name attribute
+                            (concat
+                             "("
+                             (upcase (symbol-name profile-current))
+                             ")")
+                          "")           ;else empty if no project name
+                        )))
+
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; multi-line ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
   (add-to-list 'load-path (concat my/plugins-directory "multi-line/"))
@@ -408,21 +485,6 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; iedit ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'iedit)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; aes ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'aes)
-(setq aes-always-ask-for-passwords nil)
-(setq aes-enable-plaintext-password-storage t)
-(setq aes-delete-passwords-after-idle 0)
-(aes-enable-auto-decryption)
-(defvar my/aes-default-group "  default")
-(add-hook 'aes-path-passwd-hook (lambda (path) my/aes-default-group))
-;; if the environment variable is not defined, we will be prompted
-;; for the password
-(setq aes--plaintext-passwords
-      (let ((pwd (or (getenv "EMACS_PWD") "nil")))
-        (list (cons my/aes-default-group pwd))))
-(global-set-key "\C-c0z" 'aes-toggle-encryption)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; idle-highlight ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'idle-highlight-mode)
@@ -793,7 +855,8 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (rich-minority-mode 1)
   (setq rm-blacklist
         '(" AC" " yas" " Undo-Tree" " Abbrev" " Guide" " Hi" " $" " ,"
-          " Ifdef" " Rbow" " ivy" " ElDoc" " (*)" " wg" " ⛓" " GitGutter"))
+          " Ifdef" " Rbow" " ivy" " ElDoc" " (*)" " wg" " ⛓" " GitGutter"
+          " Fly"))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smart-mode-line ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -825,7 +888,6 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
       (format "\\(%s\\)\\|\\(%s\\)"
               vc-ignore-dir-regexp tramp-file-name-regexp))
 
-(defvar my/remote-host-list '())
 (defun my/connect-to-remote-host(&optional arg)
   "Connect to a remote host from `my/remote-host-list'."
   (interactive "P")
@@ -1445,64 +1507,20 @@ register \\C-l."
   (require 'guide-key)
   (guide-key-mode 1))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; os ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(let* ((system (car (reverse (split-string (symbol-name system-type)
-                                           "\\/" t))))
-       (os-dir (concat my/user-directory "settings/os/" system "/"))
-       (system-file (concat os-dir system))
-       (path-file (concat os-dir "path"))
-       (include-file (concat os-dir "include"))
-       (lib-file (concat os-dir "lib"))
-       (libpath-file (concat os-dir "libpath"))
-       )
-  ;; load os file
-  (load system-file)
-  ;; check for any additional environment variables
-  (if (file-exists-p path-file)
-      (progn
-        (load-environment-variable-from-file "PATH" path-file)
-        ;; replicate path (delimiter-separated string of paths) into
-        ;; exec-path (list of paths); by convention, ends in exec-dir
-        (setq exec-path (append
-                         (read-file-into-list-of-lines path-file)
-                         (list (convert-standard-filename exec-directory))))))
-  (if (file-exists-p include-file)
-      (load-environment-variable-from-file "INCLUDE" include-file))
-  (if (file-exists-p lib-file)
-      (load-environment-variable-from-file "LIB" lib-file))
-  (if (file-exists-p libpath-file)
-      (load-environment-variable-from-file "LIBPATH" libpath-file))
-  )
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; gui ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(let ((gui-dir (concat my/user-directory "settings/gui/"))
-      (gui window-system)
-      gui-file)
-  ;; load gui file
-  (setq gui-file (concat gui-dir (if (null gui) "tty" (symbol-name gui))))
-  (load gui-file)
-  )
-
-(setq-default frame-title-format
-              '(:eval
-                (format "%s@%s: %s %s"
-                        (or (file-remote-p default-directory 'user)
-                            user-real-login-name)
-                        (or (file-remote-p default-directory 'host)
-                            system-name)
-                        (if dired-directory
-                            (concat "{" (buffer-name) "}")
-                          (buffer-name))
-                        (if (profile-current-get 'project-name)
-                            ;; the parent profile "default" happens to
-                            ;; have an empty 'project-name attribute
-                            (concat
-                             "("
-                             (upcase (symbol-name profile-current))
-                             ")")
-                          "")           ;else empty if no project name
-                        )))
-
+(add-hook 'before-save-hook 'my/before-save-hook)
+(defun my/before-save-hook() "Presave hook"
+       (when (memq major-mode '(c++-mode emacs-lisp-mode perl-mode
+                                         java-mode python-mode dos-mode
+                                         nxml-mode protobuf-mode folio-mode
+                                         sh-mode csharp-mode awk-mode
+                                         gdb-script-mode
+                                         gitignore-mode
+                                         gitconfig-mode
+                                         gitattributes-mode))
+         (delete-trailing-whitespace)
+         (copyright-update nil t)
+         (time-stamp)
+         ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; site ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun my/load-site-file (name)
@@ -1545,21 +1563,6 @@ customization."
             (my/load-site-file (plist-get plist :site))))
      my/host-plist))
   )
-
-(add-hook 'before-save-hook 'my/before-save-hook)
-(defun my/before-save-hook() "Presave hook"
-       (when (memq major-mode '(c++-mode emacs-lisp-mode perl-mode
-                                         java-mode python-mode dos-mode
-                                         nxml-mode protobuf-mode folio-mode
-                                         sh-mode csharp-mode awk-mode
-                                         gdb-script-mode
-                                         gitignore-mode
-                                         gitconfig-mode
-                                         gitattributes-mode))
-         (delete-trailing-whitespace)
-         (copyright-update nil t)
-         (time-stamp)
-         ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; modes ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq auto-mode-alist
