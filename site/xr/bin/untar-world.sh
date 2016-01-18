@@ -5,7 +5,7 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Monday, May 18, 2015
 # Version: 1.0
-# Modified Time-stamp: <2016-01-15 09:03:43 dan.harms>
+# Modified Time-stamp: <2016-01-17 16:08:25 dharms>
 # Modified by: Dan Harms
 # Keywords: configuration
 
@@ -25,6 +25,14 @@ function backup_file
    fi
 }
 
+if [ -z "$tar" ]; then
+   tar=$(which tar)
+   echo "Using $tar"
+fi
+if [ -z "$tar" ]; then
+   echo "! no tar available; quitting"
+   exit 1
+fi
 if [ $# -gt 0 ] ; then
    input=$1
    shift

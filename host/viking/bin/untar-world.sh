@@ -5,11 +5,11 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Monday, May 18, 2015
 # Version: 1.0
-# Modified Time-stamp: <2016-01-15 08:20:14 dan.harms>
+# Modified Time-stamp: <2016-01-17 16:08:33 dharms>
 # Modified by: Dan Harms
 # Keywords: configuration
 
-tar=tar
+tar=$TAR
 manifest=.bk_manifest
 backup=emacs_bk.tar
 os=$(uname)
@@ -25,6 +25,14 @@ function backup_file
    fi
 }
 
+if [ -z "$tar" ]; then
+   tar=$(which tar)
+   echo "Using $tar"
+fi
+if [ -z "$tar" ]; then
+   echo "! no tar available; quitting"
+   exit 1
+fi
 if [ $# -gt 0 ] ; then
    input=$1
    shift
@@ -62,24 +70,10 @@ if [ -d .emacs.d ] && [ -f .emacs.d/$manifest ] ; then
    fi
 fi
 
-# # remove and backup .ssh
-# if [ -d .ssh ] ; then
-#    $tar czf .ssh.bk_$date.tgz --force-local .ssh
-#    rm -rf .ssh
-# fi
-
 echo About to unpack $input...
 $tar --overwrite -xpvf $input
 
-# # adjust .ssh
-# pushd ~/.ssh
-# ln -sf id_rsa_drh_npp id_rsa
-# ln -sf Dan.Harms.pub id_rsa.pub
-# chmod 600 ~/.ssh/id_rsa
-# popd
-
 # remove intermediate directories, if empty
-pushd ~
 rmdir --ignore-fail-on-non-empty bash tcsh os/$os site/$site host/$host
 # protect .netrc
 if [ -f .netrc ] ; then
@@ -87,7 +81,6 @@ if [ -f .netrc ] ; then
 fi
 # and byte-compile emacs
 emacscomp.sh .emacs.d
-popd
 
 popd
 
