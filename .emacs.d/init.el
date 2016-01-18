@@ -1374,6 +1374,8 @@ register \\C-l."
   (define-key flyspell-mode-map "\C-c\\b" 'flyspell-buffer)
   (define-key flyspell-mode-map "\C-c\\r" 'flyspell-region)
   (add-hook 'prog-mode-hook #'flyspell-prog-mode)
+  (require 'ace-popup-menu)
+  (ace-popup-menu-mode 1)
   (mapc (lambda (hook) (add-hook hook #'flyspell-mode))
         '(text-mode-hook conf-mode-hook markdown-mode))
   (require 'flyspell-popup)
