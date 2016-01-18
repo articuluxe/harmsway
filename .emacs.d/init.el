@@ -1268,6 +1268,7 @@ register \\C-l."
 (setq ac-use-menu-map t)
 (setq ac-auto-start t)
 (setq ac-ignore-case nil)
+(ac-flyspell-workaround)
 (define-key ac-mode-map (kbd "M-/") 'auto-complete)
 ;(define-key ac-mode-map (kbd "<lwindow> TAB") 'auto-complete)
 (define-key ac-mode-map (kbd "\C-c TAB") (lambda()(interactive)
