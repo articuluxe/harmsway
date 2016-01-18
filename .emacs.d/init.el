@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-01-18 08:59:54 dan.harms>
+;; Modified Time-stamp: <2016-01-18 10:09:08 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -586,14 +586,15 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; hl-line ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'hl-line+)
-(global-set-key "\M-sl" 'hl-line-flash)
+(global-set-key "\M-sL" 'hl-line-flash)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; crosshairs ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'crosshairs)
-(global-set-key "\M-sL" 'crosshairs-flash)
+(global-set-key "\M-sl" 'crosshairs-flash)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; beacon ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'beacon)
+(global-set-key "\M-s\C-l" 'beacon-blink)
 (beacon-mode 1)
 (add-to-list 'beacon-dont-blink-major-modes 'etags-select-mode)
 
