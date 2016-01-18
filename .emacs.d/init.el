@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-01-18 10:09:08 dan.harms>
+;; Modified Time-stamp: <2016-01-18 16:45:52 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1361,6 +1361,18 @@ register \\C-l."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; flyspell ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (when (executable-find "hunspell")
   (require 'flyspell)
+  (define-key flyspell-mode-map [?\C-,] nil)
+  (define-key flyspell-mode-map [?\C-\;] nil)
+  (define-key flyspell-mode-map [?\C-\.] nil)
+  (define-key flyspell-mode-map [?\C-\M-i] nil)
+  (define-key flyspell-mode-map "\C-c\\c" 'flyspell-auto-correct-word)
+  (define-key flyspell-mode-map "\C-c\\a" 'flyspell-auto-correct-previous-word)
+  (define-key flyspell-mode-map "\C-c\\n" 'flyspell-goto-next-error)
+  (define-key flyspell-mode-map "\C-c\\\\" 'flyspell-popup-correct)
+  (define-key flyspell-mode-map "\C-c\\s" 'flyspell-correct-word-before-point)
+  (define-key flyspell-mode-map "\C-c\\w" 'ispell-word)
+  (define-key flyspell-mode-map "\C-c\\b" 'flyspell-buffer)
+  (define-key flyspell-mode-map "\C-c\\r" 'flyspell-region)
   (add-hook 'prog-mode-hook #'flyspell-prog-mode)
   (mapc (lambda (hook) (add-hook hook #'flyspell-mode))
         '(text-mode-hook conf-mode-hook markdown-mode))
