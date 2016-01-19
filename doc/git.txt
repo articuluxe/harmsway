@@ -135,6 +135,8 @@ git stash save -p "name of stash"
 ################################### PATCH ####################################
 # create patch from last revision
 git format-patch HEAD~
+# create patch from arbitrary revision (only that revision)
+git format-patch -1 <sha>
 # create patch from working files
 git diff [--cached] > some.patch
 # apply patch to working directory
