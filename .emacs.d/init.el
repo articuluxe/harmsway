@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-01-18 16:45:52 dan.harms>
+;; Modified Time-stamp: <2016-01-19 09:40:38 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -879,7 +879,6 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (global-set-key [?\C-.] 'goto-last-change)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; tramp ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(setq tramp-default-method "ssh")
 (when (boundp 'my/user-name)
   (setq tramp-default-user my/user-name))
 (setq tramp-auto-save-directory my/autosave-dir)
@@ -1099,15 +1098,19 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (add-to-list 'load-path (concat my/plugins-directory "diff-hl/")))
 (require 'diff-hl)
 (require 'diff-hl-flydiff)
-(require 'diff-hl-margin)
+(global-diff-hl-mode 1)
+(diff-hl-flydiff-mode 1)
+(unless (display-graphic-p)
+  (require 'diff-hl-margin)
+  (diff-hl-margin-mode 1))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; git-gutter ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq git-gutter:hide-gutter t)
 (setq git-gutter:diff-option "-w")
 (require 'git-gutter)
-(global-git-gutter-mode 1)
+;; (global-git-gutter-mode 1)
 (setq git-gutter:update-interval 1)
-(git-gutter:start-update-timer)
+;; (git-gutter:start-update-timer)
 (global-set-key "\C-xvp" 'git-gutter:previous-hunk)
 (global-set-key "\C-xvn" 'git-gutter:next-hunk)
 (global-set-key "\C-xvd" 'git-gutter:popup-hunk)
@@ -1243,8 +1246,10 @@ register \\C-l."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; rtags ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
-  (add-to-list 'load-path (concat my/plugins-directory "rtags/")))
-(require 'rtags)
+  (add-to-list 'load-path (concat my/plugins-directory "rtags/"))
+  (when (executable-find "rdm")
+	(require 'rtags)
+	))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-complete ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
@@ -1276,9 +1281,15 @@ register \\C-l."
                                            (setq ac-auto-start
                                                  (null ac-auto-start))))
 (setq ac-menu-height 20)
-(require 'rtags-ac)
-(setq rtags-completions-enabled t)
-(rtags-enable-standard-keybindings c-mode-base-map)
+;; rtags
+(when (featurep 'rtags)
+  (require 'rtags-ac)
+  (setq rtags-completions-enabled t)
+  (rtags-enable-standard-keybindings c-mode-base-map)
+  (defun my/rtags-complete() (interactive)
+		 (auto-complete '(ac-source-rtags)))
+  (global-set-key (kbd "\C-c r TAB") 'my/rtags-complete)
+  )
 (require 'auto-complete-etags)
 (require 'auto-complete-nxml)
 ;; c-headers
@@ -1305,9 +1316,6 @@ register \\C-l."
 (add-hook 'protobuf-mode-hook
           (lambda()
             (setq ac-sources (add-to-list 'ac-sources 'ac-source-etags))))
-(defun my/rtags-complete() (interactive)
-       (auto-complete '(ac-source-rtags)))
-(global-set-key (kbd "\C-c r TAB") 'my/rtags-complete)
 (defun my/expand-imenu() (interactive)
        (auto-complete '(ac-source-imenu)))
 (global-set-key "\C-c0j" 'my/expand-imenu)

@@ -5,6 +5,12 @@ auto-complete: add key words for dos mode, cmake mode
 
 windmove: wrap
 
+ace-popup-menu: not called under window-system-p (e.g. flyspell)
+
+ispell: custom dictionaries
+
+check-bashisms: flycheck checker error, unknown /usr/bin/env
+
 etags: display source file
 
 see `grep-host-defaults-alist' in grep.el; opening a remote file, grepping,
