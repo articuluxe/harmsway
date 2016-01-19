@@ -3,6 +3,7 @@
 	email = danielrharms@gmail.com
 [core]
 	editor = $EDITOR
+	excludesfile = ~/.gitignore
 [color]
 	ui = true
 [diff]
@@ -24,7 +25,6 @@
 [mergetool]
 	prompt = false
 [mergetool.mergeterm]
-	cmd = /usr/bin/env LOCAL=$LOCAL REMOTE=$REMOTE BASE=$BASE MERGED=$MERGED $EDITOR --load ~/config/mergetool.el 
+	cmd = /usr/bin/env LOCAL=$LOCAL REMOTE=$REMOTE BASE=$BASE MERGED=$MERGED $EDITOR --load ~/config/mergetool.el
 [mergetool.mergegui]
 	cmd = /usr/bin/env LOCAL=$LOCAL REMOTE=$REMOTE BASE=$BASE MERGED=$MERGED $EMACSX --load ~/config/mergetool.el
-    
