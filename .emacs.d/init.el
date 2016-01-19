@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-01-19 09:40:38 dan.harms>
+;; Modified Time-stamp: <2016-01-19 21:01:44 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1309,6 +1309,7 @@ register \\C-l."
             ;; we'll define a special key event for yasnippet
             (setq ac-sources (remove 'ac-source-yasnippet ac-sources))
             (setq ac-sources (remove 'ac-source-gtags ac-sources))
+            (add-to-list 'ac-sources 'ac-source-rtags)
             (add-to-list 'ac-sources 'ac-source-etags)
             (add-to-list 'ac-sources 'ac-source-c-headers)
             ) t)                       ;append to hook list to take effect
