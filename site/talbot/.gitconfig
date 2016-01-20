@@ -6,6 +6,8 @@
 	excludesfile = ~/.gitignore
 [color]
 	ui = true
+[push]
+	default = simple
 [diff]
 	tool = diffgui
 [difftool]

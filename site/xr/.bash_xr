@@ -1,5 +1,5 @@
 # -*- Mode: sh -*-
-# .bash_local
+# .bash_xr
 
 export ORIGPATH=$PATH
 export ONE_TICK_CONFIG=/opt/1tick/client_data/config/one_tick_config.txt
