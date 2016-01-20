@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-01-19 21:01:44 dharms>
+;; Modified Time-stamp: <2016-01-19 21:02:48 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1370,6 +1370,7 @@ register \\C-l."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; flyspell ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (when (executable-find "hunspell")
   (require 'flyspell)
+  (setq ispell-program-name (executable-find "hunspell"))
   (define-key flyspell-mode-map [?\C-,] nil)
   (define-key flyspell-mode-map [?\C-\;] nil)
   (define-key flyspell-mode-map [?\C-\.] nil)
