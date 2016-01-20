@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-01-12 22:57:49 dharms>
+;; Modified Time-stamp: <2016-01-19 21:05:20 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -221,6 +221,83 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (load-library "compiling")
 (load-library "coding")
 
+(defvar my/remote-host-list '())
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; aes ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'aes)
+(setq aes-always-ask-for-passwords nil)
+(setq aes-enable-plaintext-password-storage t)
+(setq aes-delete-passwords-after-idle 0)
+(aes-enable-auto-decryption)
+(defvar my/aes-default-group "  default")
+(add-hook 'aes-path-passwd-hook (lambda (path) my/aes-default-group))
+;; if the environment variable is not defined, we will be prompted
+;; for the password
+(setq aes--plaintext-passwords
+      (let ((pwd (or (getenv "EMACS_PWD") "nil")))
+        (list (cons my/aes-default-group pwd))))
+(global-set-key "\C-c0z" 'aes-toggle-encryption)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; os ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(let* ((system (car (reverse (split-string (symbol-name system-type)
+                                           "\\/" t))))
+       (os-dir (concat my/user-directory "settings/os/" system "/"))
+       (system-file (concat os-dir system))
+       (path-file (concat os-dir "path"))
+       (include-file (concat os-dir "include"))
+       (lib-file (concat os-dir "lib"))
+       (libpath-file (concat os-dir "libpath"))
+       )
+  ;; load os file
+  (load system-file)
+  ;; check for any additional environment variables
+  (if (file-exists-p path-file)
+      (progn
+        (load-environment-variable-from-file "PATH" path-file)
+        ;; replicate path (delimiter-separated string of paths) into
+        ;; exec-path (list of paths); by convention, ends in exec-dir
+        (setq exec-path (append
+                         (read-file-into-list-of-lines path-file)
+                         (list (convert-standard-filename exec-directory))))))
+  (if (file-exists-p include-file)
+      (load-environment-variable-from-file "INCLUDE" include-file))
+  (if (file-exists-p lib-file)
+      (load-environment-variable-from-file "LIB" lib-file))
+  (if (file-exists-p libpath-file)
+      (load-environment-variable-from-file "LIBPATH" libpath-file))
+  )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; gui ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(let ((gui-dir (concat my/user-directory "settings/gui/"))
+      (gui window-system)
+      gui-file)
+  ;; load gui file
+  (setq gui-file (concat gui-dir (if (null gui) "tty" (symbol-name gui))))
+  (load gui-file)
+  )
+
+(setq-default frame-title-format
+              '(:eval
+                (format "%s@%s: %s %s"
+                        (or (file-remote-p default-directory 'user)
+                            user-real-login-name)
+                        (or (file-remote-p default-directory 'host)
+                            system-name)
+                        (if dired-directory
+                            (concat "{" (buffer-name) "}")
+                          (buffer-name))
+                        (if (profile-current-get 'project-name)
+                            ;; the parent profile "default" happens to
+                            ;; have an empty 'project-name attribute
+                            (concat
+                             "("
+                             (upcase (symbol-name profile-current))
+                             ")")
+                          "")           ;else empty if no project name
+                        )))
+
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; multi-line ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
   (add-to-list 'load-path (concat my/plugins-directory "multi-line/"))
@@ -408,21 +485,6 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; iedit ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'iedit)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; aes ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'aes)
-(setq aes-always-ask-for-passwords nil)
-(setq aes-enable-plaintext-password-storage t)
-(setq aes-delete-passwords-after-idle 0)
-(aes-enable-auto-decryption)
-(defvar my/aes-default-group "  default")
-(add-hook 'aes-path-passwd-hook (lambda (path) my/aes-default-group))
-;; if the environment variable is not defined, we will be prompted
-;; for the password
-(setq aes--plaintext-passwords
-      (let ((pwd (or (getenv "EMACS_PWD") "nil")))
-        (list (cons my/aes-default-group pwd))))
-(global-set-key "\C-c0z" 'aes-toggle-encryption)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; idle-highlight ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'idle-highlight-mode)
 (setq idle-highlight-idle-time 10)
@@ -523,14 +585,15 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; hl-line ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'hl-line+)
-(global-set-key "\M-sl" 'hl-line-flash)
+(global-set-key "\M-sL" 'hl-line-flash)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; crosshairs ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'crosshairs)
-(global-set-key "\M-sL" 'crosshairs-flash)
+(global-set-key "\M-sl" 'crosshairs-flash)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; beacon ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'beacon)
+(global-set-key "\M-s\C-l" 'beacon-blink)
 (beacon-mode 1)
 (add-to-list 'beacon-dont-blink-major-modes 'etags-select-mode)
 
@@ -792,7 +855,8 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (rich-minority-mode 1)
   (setq rm-blacklist
         '(" AC" " yas" " Undo-Tree" " Abbrev" " Guide" " Hi" " $" " ,"
-          " Ifdef" " Rbow" " ivy" " ElDoc" " (*)" " wg" " ⛓" " GitGutter"))
+          " Ifdef" " Rbow" " ivy" " ElDoc" " (*)" " wg" " ⛓" " GitGutter"
+          " Fly"))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smart-mode-line ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -814,7 +878,6 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (global-set-key [?\C-.] 'goto-last-change)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; tramp ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(setq tramp-default-method "ssh")
 (when (boundp 'my/user-name)
   (setq tramp-default-user my/user-name))
 (setq tramp-auto-save-directory my/autosave-dir)
@@ -824,7 +887,6 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
       (format "\\(%s\\)\\|\\(%s\\)"
               vc-ignore-dir-regexp tramp-file-name-regexp))
 
-(defvar my/remote-host-list '())
 (defun my/connect-to-remote-host(&optional arg)
   "Connect to a remote host from `my/remote-host-list'."
   (interactive "P")
@@ -1035,15 +1097,19 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (add-to-list 'load-path (concat my/plugins-directory "diff-hl/")))
 (require 'diff-hl)
 (require 'diff-hl-flydiff)
-(require 'diff-hl-margin)
+(global-diff-hl-mode 1)
+(diff-hl-flydiff-mode 1)
+(unless (display-graphic-p)
+  (require 'diff-hl-margin)
+  (diff-hl-margin-mode 1))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; git-gutter ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq git-gutter:hide-gutter t)
 (setq git-gutter:diff-option "-w")
 (require 'git-gutter)
-(global-git-gutter-mode 1)
+;; (global-git-gutter-mode 1)
 (setq git-gutter:update-interval 1)
-(git-gutter:start-update-timer)
+;; (git-gutter:start-update-timer)
 (global-set-key "\C-xvp" 'git-gutter:previous-hunk)
 (global-set-key "\C-xvn" 'git-gutter:next-hunk)
 (global-set-key "\C-xvd" 'git-gutter:popup-hunk)
@@ -1179,8 +1245,10 @@ register \\C-l."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; rtags ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
-  (add-to-list 'load-path (concat my/plugins-directory "rtags/")))
-(require 'rtags)
+  (add-to-list 'load-path (concat my/plugins-directory "rtags/"))
+  (when (executable-find "rdm")
+	(require 'rtags)
+	))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-complete ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
@@ -1205,15 +1273,22 @@ register \\C-l."
 (setq ac-use-menu-map t)
 (setq ac-auto-start t)
 (setq ac-ignore-case nil)
+(ac-flyspell-workaround)
 (define-key ac-mode-map (kbd "M-/") 'auto-complete)
 ;(define-key ac-mode-map (kbd "<lwindow> TAB") 'auto-complete)
 (define-key ac-mode-map (kbd "\C-c TAB") (lambda()(interactive)
                                            (setq ac-auto-start
                                                  (null ac-auto-start))))
 (setq ac-menu-height 20)
-(require 'rtags-ac)
-(setq rtags-completions-enabled t)
-(rtags-enable-standard-keybindings c-mode-base-map)
+;; rtags
+(when (featurep 'rtags)
+  (require 'rtags-ac)
+  (setq rtags-completions-enabled t)
+  (rtags-enable-standard-keybindings c-mode-base-map)
+  (defun my/rtags-complete() (interactive)
+		 (auto-complete '(ac-source-rtags)))
+  (global-set-key (kbd "\C-c r TAB") 'my/rtags-complete)
+  )
 (require 'auto-complete-etags)
 (require 'auto-complete-nxml)
 ;; c-headers
@@ -1233,6 +1308,7 @@ register \\C-l."
             ;; we'll define a special key event for yasnippet
             (setq ac-sources (remove 'ac-source-yasnippet ac-sources))
             (setq ac-sources (remove 'ac-source-gtags ac-sources))
+            (add-to-list 'ac-sources 'ac-source-rtags)
             (add-to-list 'ac-sources 'ac-source-etags)
             (add-to-list 'ac-sources 'ac-source-c-headers)
             ) t)                       ;append to hook list to take effect
@@ -1240,9 +1316,6 @@ register \\C-l."
 (add-hook 'protobuf-mode-hook
           (lambda()
             (setq ac-sources (add-to-list 'ac-sources 'ac-source-etags))))
-(defun my/rtags-complete() (interactive)
-       (auto-complete '(ac-source-rtags)))
-(global-set-key (kbd "\C-c r TAB") 'my/rtags-complete)
 (defun my/expand-imenu() (interactive)
        (auto-complete '(ac-source-imenu)))
 (global-set-key "\C-c0j" 'my/expand-imenu)
@@ -1292,6 +1365,32 @@ register \\C-l."
       '(emacs-lisp-mode python-mode dart-mode sh-mode))
 (require 'flycheck-pos-tip)
 (setq flycheck-display-errors-function #'flycheck-pos-tip-error-messages)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; flyspell ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(when (executable-find "hunspell")
+  (require 'flyspell)
+  (setq ispell-program-name (executable-find "hunspell"))
+  (define-key flyspell-mode-map [?\C-,] nil)
+  (define-key flyspell-mode-map [?\C-\;] nil)
+  (define-key flyspell-mode-map [?\C-\.] nil)
+  (define-key flyspell-mode-map [?\C-\M-i] nil)
+  (define-key flyspell-mode-map "\C-c\\c" 'flyspell-auto-correct-word)
+  (define-key flyspell-mode-map "\C-c\\a" 'flyspell-auto-correct-previous-word)
+  (define-key flyspell-mode-map "\C-c\\n" 'flyspell-goto-next-error)
+  (define-key flyspell-mode-map "\C-c\\\\" 'flyspell-popup-correct)
+  (define-key flyspell-mode-map "\C-c\\s" 'flyspell-correct-word-before-point)
+  (define-key flyspell-mode-map "\C-c\\w" 'ispell-word)
+  (define-key flyspell-mode-map "\C-c\\b" 'flyspell-buffer)
+  (define-key flyspell-mode-map "\C-c\\r" 'flyspell-region)
+  (add-hook 'prog-mode-hook #'flyspell-prog-mode)
+  (require 'ace-popup-menu)
+  (ace-popup-menu-mode 1)
+  (mapc (lambda (hook) (add-hook hook #'flyspell-mode))
+        '(text-mode-hook conf-mode-hook markdown-mode))
+  (require 'flyspell-popup)
+  (define-key flyspell-mode-map "\e\e4" #'flyspell-popup-correct)
+  ;; (add-hook 'flyspell-mode-hook #'flyspell-popup-auto-correct-mode)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; headers ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;(autoload 'auto-update-file-header "header2")
@@ -1433,64 +1532,20 @@ register \\C-l."
   (require 'guide-key)
   (guide-key-mode 1))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; os ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(let* ((system (car (reverse (split-string (symbol-name system-type)
-                                           "\\/" t))))
-       (os-dir (concat my/user-directory "settings/os/" system "/"))
-       (system-file (concat os-dir system))
-       (path-file (concat os-dir "path"))
-       (include-file (concat os-dir "include"))
-       (lib-file (concat os-dir "lib"))
-       (libpath-file (concat os-dir "libpath"))
-       )
-  ;; load os file
-  (load system-file)
-  ;; check for any additional environment variables
-  (if (file-exists-p path-file)
-      (progn
-        (load-environment-variable-from-file "PATH" path-file)
-        ;; replicate path (delimiter-separated string of paths) into
-        ;; exec-path (list of paths); by convention, ends in exec-dir
-        (setq exec-path (append
-                         (read-file-into-list-of-lines path-file)
-                         (list (convert-standard-filename exec-directory))))))
-  (if (file-exists-p include-file)
-      (load-environment-variable-from-file "INCLUDE" include-file))
-  (if (file-exists-p lib-file)
-      (load-environment-variable-from-file "LIB" lib-file))
-  (if (file-exists-p libpath-file)
-      (load-environment-variable-from-file "LIBPATH" libpath-file))
-  )
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; gui ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(let ((gui-dir (concat my/user-directory "settings/gui/"))
-      (gui window-system)
-      gui-file)
-  ;; load gui file
-  (setq gui-file (concat gui-dir (if (null gui) "tty" (symbol-name gui))))
-  (load gui-file)
-  )
-
-(setq-default frame-title-format
-              '(:eval
-                (format "%s@%s: %s %s"
-                        (or (file-remote-p default-directory 'user)
-                            user-real-login-name)
-                        (or (file-remote-p default-directory 'host)
-                            system-name)
-                        (if dired-directory
-                            (concat "{" (buffer-name) "}")
-                          (buffer-name))
-                        (if (profile-current-get 'project-name)
-                            ;; the parent profile "default" happens to
-                            ;; have an empty 'project-name attribute
-                            (concat
-                             "("
-                             (upcase (symbol-name profile-current))
-                             ")")
-                          "")           ;else empty if no project name
-                        )))
-
+(add-hook 'before-save-hook 'my/before-save-hook)
+(defun my/before-save-hook() "Presave hook"
+       (when (memq major-mode '(c++-mode emacs-lisp-mode perl-mode
+                                         java-mode python-mode dos-mode
+                                         nxml-mode protobuf-mode folio-mode
+                                         sh-mode csharp-mode awk-mode
+                                         gdb-script-mode
+                                         gitignore-mode
+                                         gitconfig-mode
+                                         gitattributes-mode))
+         (delete-trailing-whitespace)
+         (copyright-update nil t)
+         (time-stamp)
+         ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; site ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun my/load-site-file (name)
@@ -1533,21 +1588,6 @@ customization."
             (my/load-site-file (plist-get plist :site))))
      my/host-plist))
   )
-
-(add-hook 'before-save-hook 'my/before-save-hook)
-(defun my/before-save-hook() "Presave hook"
-       (when (memq major-mode '(c++-mode emacs-lisp-mode perl-mode
-                                         java-mode python-mode dos-mode
-                                         nxml-mode protobuf-mode folio-mode
-                                         sh-mode csharp-mode awk-mode
-                                         gdb-script-mode
-                                         gitignore-mode
-                                         gitconfig-mode
-                                         gitattributes-mode))
-         (delete-trailing-whitespace)
-         (copyright-update nil t)
-         (time-stamp)
-         ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; modes ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq auto-mode-alist
@@ -1651,6 +1691,8 @@ customization."
 (add-hook 'python-mode-hook
           (lambda()
             (setq-default indent-tabs-mode nil)
+            (setq python-indent-guess-indent-offset nil)
+            (setq python-indent-offset 4)
             (setq-local electric-indent-chars
                         (remq ?: electric-indent-chars))
             (setq forward-sexp-function nil)
@@ -1660,7 +1702,7 @@ customization."
             (define-key python-mode-map [?\C-\M-g] 'python-nav-forward-sexp)
             (define-key python-mode-map (kbd "\C-c RET")
               (lambda()(interactive)
-                (compile (concat "python " (buffer-name)))))
+                (compile (concat "python " (buffer-file-name)))))
             (when (featurep 'jedi)
               (define-key python-mode-map [(ctrl tab)] 'my/expand-jedi)
               (define-key python-mode-map "\C-cx" 'jedi-direx:pop-to-buffer))

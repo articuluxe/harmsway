@@ -1,10 +1,10 @@
 rem -*- Mode: dos -*-
 rem xr-install-emacs.bat --- install emacs (xr style)
-rem Copyright (C) 2015  Dan Harms (dan.harms)
+rem Copyright (C) 2015, 2016  Dan Harms (dan.harms)
 rem Author: Dan Harms <dan.harms@xrtrading.com>
 rem Created: Thursday, May 21, 2015
 rem Version: 1.0
-rem Modified Time-stamp: <2015-12-03 10:07:42 dan.harms>
+rem Modified Time-stamp: <2016-01-18 08:45:03 dan.harms>
 rem Modified by: Dan Harms
 rem Keywords: install perfect editor
 
@@ -41,8 +41,8 @@ if exist %int% (
 
 echo Tarring .emacs.d into %int%...
 %tar% c%verbose%f %int% --exclude=*.elc .emacs.d
-%tar% u%verbose%f %int% --transform=s$xr/$$ xr/.emacs.d
-%tar% u%verbose%f %int% --transform=s$%host%/$$ %host%/.emacs.d
+%tar% u%verbose%f %int% --transform=s$site/xr/$$ site/xr/.emacs.d
+%tar% u%verbose%f %int% --transform=s$host/%host%/$$ host/%host%/.emacs.d
 
 cd %HOME%
 if exist .emacs.d (
