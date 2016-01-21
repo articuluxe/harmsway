@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-01-20 16:56:11 dharms>
+;; Modified Time-stamp: <2016-01-21 16:25:33 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1032,10 +1032,33 @@ to overwrite the final element."
 (global-set-key "\C-c0n" 'neotree-toggle)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; diff ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; better colors in older versions
+(when (version< emacs-version "24.3")
+  (eval-after-load 'diff-mode '(progn
+                                 (set-face-attribute 'diff-added nil
+                                                     :foreground "white"
+                                                     :background "blue"
+                                                     )
+                                 (set-face-attribute 'diff-removed nil
+                                                     :foreground "white"
+                                                     :background "red3"
+                                                     )
+                                 (set-face-attribute 'diff-changed nil
+                                                     :foreground "white"
+                                                     :background "purple"
+                                                     )
+                                 )))
+(global-set-key "\M-sdd" (lambda() (interactive)
+                           (diff-buffer-with-file (current-buffer))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ediff ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; only highlight current chunk
 (setq-default ediff-highlight-all-diffs 'nil
               ediff-keep-variants nil
               )
+(global-set-key "\M-sde" #'ediff-current-file)
+(global-set-key "\M-sdb" #'ediff-buffers)
+(global-set-key "\M-sdf" #'ediff-files)
 ;; don't use a separate control frame
 (setq ediff-window-setup-function 'ediff-setup-windows-plain)
 ;; toggle between control frame and control window
@@ -1069,23 +1092,6 @@ to overwrite the final element."
 
 ;; resume prior window configuration
 (add-hook 'ediff-after-quit-hook-internal 'winner-undo)
-
-;; better colors in older versions
-(when (version< emacs-version "24.3")
-  (eval-after-load 'diff-mode '(progn
-                                 (set-face-attribute 'diff-added nil
-                                                     :foreground "white"
-                                                     :background "blue"
-                                                     )
-                                 (set-face-attribute 'diff-removed nil
-                                                     :foreground "white"
-                                                     :background "red3"
-                                                     )
-                                 (set-face-attribute 'diff-changed nil
-                                                     :foreground "white"
-                                                     :background "purple"
-                                                     )
-                                 )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ediff-trees ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'ediff-trees)
