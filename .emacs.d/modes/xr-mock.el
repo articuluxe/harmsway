@@ -1,9 +1,9 @@
 ;; -*- Mode: Emacs-Lisp -*-
-;; xr-mock-mode.el --- major mode to view mock scripts
+;; xr-mock.el --- major mode to view mock scripts
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Wednesday, June 10, 2015
 ;; Version: 1.1
-;; Modified Time-stamp: <2015-09-07 11:08:04 dan.harms>
+;; Modified Time-stamp: <2016-01-21 14:24:26 dan.harms>
 ;; Keywords: mock script
 
 ;; Code:
@@ -32,7 +32,7 @@
                '(0 font-lock-builtin-face))
          (list "\\_<\\(Exit\\|SetSaturdayCheck\\|\\(Dump\\(Time\\|Quotes\\|QtyAtPrice\\)\\)\\)\\_>"
                '(0 font-lock-builtin-face))
-         (list "\\_<\\(Dump\\(Open\\)?Orders\\)\\|\\(\\(Set\\|Start\\|Stop\\|AddTo\\)Clock\\)\\_>"
+         (list "\\_<\\(Dump\\(Open\\)?Orders\\)\\|\\(\\(Set\\|Start\\|Stop\\|AddTo\\)Clock\\)\\|\\(Log\\)\\_>"
                '(0 font-lock-builtin-face))
          (list "\\_<\\(To\\|From\\)\\(Opt\\|Cmd\\)?\\>"
                '(0 font-lock-keyword-face))
