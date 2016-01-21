@@ -18,7 +18,15 @@ export CSTDLIB_ROOT=/usr/local/gcc-4.9.1
 export CSTDLIB_INC=$CSTDLIB_ROOT/include/c++/4.9.1
 export CSTDLIB_BIN=$CSTDLIB_ROOT/bin
 
-# source the host file
+# source the site file
 if [ -f ~/.bash_xr ]; then
    . ~/.bash_xr
 fi
+
+use_gcc()
+{
+   export CC=$CSTDLIB_BIN/gcc
+   export CXX=$CSTDLIB_BIN/g++
+}
+
+use_gcc

@@ -1,11 +1,6 @@
 # -*- Mode: sh -*-
 # .bash_viking
 
-# source the host file
-if [ -f ~/.bash_talbot ]; then
-   . ~/.bash_talbot
-fi
-
 export python=~/anaconda2/bin
 export PATH=$HOME/bin:/sbin/:/usr/lib64:$python:$PATH:.
 
@@ -14,6 +9,12 @@ export CSTDLIB_INC=/usr/local/include/c++/5.3.0/
 export CSTDLIB_BIN=/usr/local/bin
 
 export LD_LIBRARY_PATH=/usr/local/lib
+
+# source the site file
+if [ -f ~/.bash_talbot ]; then
+   . ~/.bash_talbot
+fi
+
 
 use_clang()
 {
