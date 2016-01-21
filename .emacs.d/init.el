@@ -1312,7 +1312,8 @@ register \\C-l."
             ;; we'll define a special key event for yasnippet
             (setq ac-sources (remove 'ac-source-yasnippet ac-sources))
             (setq ac-sources (remove 'ac-source-gtags ac-sources))
-            (add-to-list 'ac-sources 'ac-source-rtags)
+            (when (featurep 'rtags)
+              (add-to-list 'ac-sources 'ac-source-rtags))
             (add-to-list 'ac-sources 'ac-source-etags)
             (add-to-list 'ac-sources 'ac-source-c-headers)
             ) t)                       ;append to hook list to take effect
