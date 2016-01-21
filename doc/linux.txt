@@ -1,0 +1,19 @@
+# -*- Mode: sh -*-
+# linux.txt --- linux administration hints
+# Copyright (C) 2016  Dan Harms (dharms)
+# Author: Dan Harms <danielrharms@gmail.com>
+# Created: Monday, January 18, 2016
+# Version: 1.0
+# Modified Time-stamp: <2016-01-18 06:50:03 dharms>
+# Modified by: Dan Harms
+# Keywords: linux docs
+
+# install alternate rpm repo (epel)
+wget http://download.fedoraproject.org/pub/epel/6/i386/epel-release-6-8.noarch.rpm
+rpm -ivh epel-release-6-8.noarch.rpm
+sudo rpm -ivh epel-release-6-8.noarch.rpm
+sudo yum install aspell-en
+ls
+
+
+# code ends here

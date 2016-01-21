@@ -1,0 +1,24 @@
+  120  sudo yum install svn
+  121  sudo yum install texinfo-tex
+  122  sudo yum install flex
+  123  sudo yum install zip
+  124  sudo yum install libgcc.i686
+  125  sudo yum install glibc-devel.i686
+  126  sudo yum install libgcc.i686
+  127  svn ls svn://gcc.gnu.org/svn/gcc/tags | grep release
+  128  mkdir gcc-5-3-0
+  129  cd gcc-5-3-0/
+  130  svn co svn://gcc.gnu.org/svn/gcc/tags/gcc_5_3_0_release
+  131  cd gcc_5_3_0_release/
+  132  contrib/download_prerequisites 
+  133  cd ..
+  139  cd gcc-5-3-0
+  141  mkdir bld
+  148  cd bld/
+  150  ../gcc_5_3_0_release/configure 
+  152  make -j 2
+  154  sudo make install
+  155  which gcc
+  156  gcc --version
+  157  which g++
+  158  g++ --version

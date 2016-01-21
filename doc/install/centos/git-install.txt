@@ -1,0 +1,5 @@
+   70  cd git-2.4.10
+   72  less INSTALL 
+   73  make
+   74  make install
+   75  which git
