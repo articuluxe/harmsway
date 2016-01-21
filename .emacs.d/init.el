@@ -548,8 +548,9 @@ to overwrite the final element."
   ;; add argument --no-merges to log
   (magit-define-popup-switch 'magit-log-popup
     ?m "Omit merge commits" "--no-merges")
-  (setq magit-log-arguments (cons "--no-merges"
-                                  magit-log-arguments))
+  (setq magit-log-arguments (append
+                             (list "--no-merges" "--color")
+                             magit-log-arguments))
   ;; show status buffer alone
   (setq magit-post-display-buffer-hook
         (lambda ()
@@ -608,8 +609,10 @@ to overwrite the final element."
       bmkp-bmenu-state-file (concat my/user-directory
                                     "emacs-bmk-bmenu-state.el")
       bookmark-save-flag nil
+      bmkp-crosshairs-flag nil
       )
 (require 'bookmark+)
+(add-hook 'bookmark-after-jump-hook #'crosshairs-flash)
 (global-set-key [f7] 'bmkp-previous-bookmark)
 (global-set-key "\C-c7" 'bmkp-previous-bookmark)
 (global-set-key [f8] 'bmkp-next-bookmark)
