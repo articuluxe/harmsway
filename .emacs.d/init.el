@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-01-19 21:05:20 dharms>
+;; Modified Time-stamp: <2016-01-20 16:56:11 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -29,21 +29,31 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; load-path ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
-  (defvar my/user-directory (expand-file-name
+  (defconst my/user-directory (expand-file-name
                              (if (boundp 'user-emacs-directory)
                                  user-emacs-directory
                                "~/.emacs.d/")))
-  (defvar my/scratch-directory (concat my/user-directory "etc/"))
-  (defvar my/elisp-directory (concat my/user-directory "elisp/"))
-  (defvar my/plugins-directory (concat my/user-directory "plugins/"))
+  (defconst my/scratch-directory (concat my/user-directory "etc/"))
+  (defconst my/elisp-directory (concat my/user-directory "elisp/"))
+  (defconst my/plugins-directory (concat my/user-directory "plugins/"))
   (add-to-list 'load-path my/plugins-directory)
   (add-to-list 'load-path my/elisp-directory)
   (add-to-list 'load-path (concat my/user-directory "modes/"))
   (add-to-list 'load-path (concat my/user-directory "custom/"))
   )
-(defvar my/user-settings
+(defconst my/user-settings
   (concat my/user-directory "settings/user/" user-login-name))
 (load my/user-settings t)
+(defconst my/system-name
+  (car (reverse (split-string (symbol-name system-type) "\\/" t)))
+  "A simplified result from uname.")
+(defconst my/os-dir
+  (concat my/user-directory "settings/os/" my/system-name "/")
+  "Directory in which os-specific settings reside.")
+(defconst my/gui-dir
+  (concat my/user-directory "settings/gui/")
+  "A path to a directory containing window-system-specific settings.")
+
 
 (set-register ?~ (cons 'file "~/"))
 (set-register ?\C-i (cons 'file user-init-file)) ;edit init file
@@ -238,43 +248,37 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
         (list (cons my/aes-default-group pwd))))
 (global-set-key "\C-c0z" 'aes-toggle-encryption)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; os ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(let* ((system (car (reverse (split-string (symbol-name system-type)
-                                           "\\/" t))))
-       (os-dir (concat my/user-directory "settings/os/" system "/"))
-       (system-file (concat os-dir system))
-       (path-file (concat os-dir "path"))
-       (include-file (concat os-dir "include"))
-       (lib-file (concat os-dir "lib"))
-       (libpath-file (concat os-dir "libpath"))
-       )
-  ;; load os file
-  (load system-file)
-  ;; check for any additional environment variables
-  (if (file-exists-p path-file)
-      (progn
-        (load-environment-variable-from-file "PATH" path-file)
-        ;; replicate path (delimiter-separated string of paths) into
-        ;; exec-path (list of paths); by convention, ends in exec-dir
-        (setq exec-path (append
-                         (read-file-into-list-of-lines path-file)
-                         (list (convert-standard-filename exec-directory))))))
-  (if (file-exists-p include-file)
-      (load-environment-variable-from-file "INCLUDE" include-file))
-  (if (file-exists-p lib-file)
-      (load-environment-variable-from-file "LIB" lib-file))
-  (if (file-exists-p libpath-file)
-      (load-environment-variable-from-file "LIBPATH" libpath-file))
-  )
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; gui ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(let ((gui-dir (concat my/user-directory "settings/gui/"))
-      (gui window-system)
-      gui-file)
-  ;; load gui file
-  (setq gui-file (concat gui-dir (if (null gui) "tty" (symbol-name gui))))
-  (load gui-file)
-  )
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; path ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defun my/load-environment-variables-from-file (dir &optional append-exec-path)
+  "Load a set of predetermined environment variables from a location on disk,
+given by DIR.  If APPEND_EXEC_PATH is non-nil, the existing
+exec-path will have any new elements prepended to it; otherwise,
+the default is to set the final element of exec-path to the
+exec-directory.  The point is that subsequent calls may not want
+to overwrite the final element."
+  (let ((path-file (concat dir "path"))
+        (include-file (concat dir "include"))
+        (lib-file (concat dir "lib"))
+        (libpath-file (concat dir "libpath")))
+    ;; check for any additional environment variables
+    (if (file-exists-p path-file)
+        (progn
+          (load-environment-variable-from-file "PATH" path-file)
+          ;; replicate path (delimiter-separated string of paths) into
+          ;; exec-path (list of paths); by convention, ends in exec-dir
+          (setq exec-path (append
+                           (read-file-into-list-of-lines path-file)
+                           (if append-exec-path
+                               exec-path
+                             (list (convert-standard-filename exec-directory)))))))
+    (if (file-exists-p include-file)
+        (load-environment-variable-from-file "INCLUDE" include-file))
+    (if (file-exists-p lib-file)
+        (load-environment-variable-from-file "LIB" lib-file))
+    (if (file-exists-p libpath-file)
+        (load-environment-variable-from-file "LIBPATH" libpath-file))
+    ))
+(my/load-environment-variables-from-file my/os-dir)
 
 (setq-default frame-title-format
               '(:eval
@@ -1546,6 +1550,18 @@ register \\C-l."
          (copyright-update nil t)
          (time-stamp)
          ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; os ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(let* ((system-file (concat my/os-dir my/system-name)))
+  ;; load os file
+  (load system-file))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; gui ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(let ((gui window-system)
+      gui-file)
+  ;; load gui file
+  (setq gui-file (concat my/gui-dir (if (null gui) "tty" (symbol-name gui))))
+  (load gui-file))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; site ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun my/load-site-file (name)
