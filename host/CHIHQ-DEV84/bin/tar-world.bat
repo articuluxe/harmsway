@@ -5,7 +5,7 @@ rem Copyright (C) 2015, 2016  Dan Harms (dan.harms)
 rem Author: Dan Harms <dan.harms@xrtrading.com>
 rem Created: Thursday, May 21, 2015
 rem Version: 1.0
-rem Modified Time-stamp: <2016-01-14 17:04:44 dan.harms>
+rem Modified Time-stamp: <2016-01-22 09:35:23 dan.harms>
 rem Modified by: Dan Harms
 rem Keywords: tar whole world
 
@@ -41,8 +41,9 @@ if exist %dest% (
 %tar% u%verbose%f %dest% --transform=s/scripts/bin/ scripts
 %tar% u%verbose%f %dest% --transform=s$bash/$$ bash
 %tar% u%verbose%f %dest% --transform=s$tcsh/$$ tcsh
-%tar% u%verbose%f %dest% --transform=s$os/%os%/$$ os/%os%
-%tar% u%verbose%f %dest% --transform=s$host/%host%/$$ host/%host%
+%tar% u%verbose%f %dest% --transform=s$os/Linux/$$ os/Linux
+rem don't need to copy from host here: xr installs will
+rem load their renamed host file from site/xr
 %tar% u%verbose%f %dest% --transform=s$site/%site%/$$ site/%site%
 
 echo ...done generating %dest%

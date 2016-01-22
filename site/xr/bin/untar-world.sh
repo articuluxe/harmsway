@@ -5,7 +5,7 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Monday, May 18, 2015
 # Version: 1.0
-# Modified Time-stamp: <2016-01-17 16:08:25 dharms>
+# Modified Time-stamp: <2016-01-22 09:40:29 dan.harms>
 # Modified by: Dan Harms
 # Keywords: configuration
 
@@ -88,12 +88,12 @@ popd
 
 # remove intermediate directories, if empty
 pushd ~
-rmdir --ignore-fail-on-non-empty bash tcsh os/$os site/$site host/$host
+rmdir --ignore-fail-on-non-empty bash tcsh os/$os os site/$site site
 # protect .netrc
 if [ -f .netrc ] ; then
    chmod 600 .netrc
 fi
-# rename host file for distribution
+# rename host file as part of distribution
 if [ -f .bash_host ]; then
    mv .bash_host .bash_$host
 fi

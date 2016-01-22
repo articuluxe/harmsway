@@ -5,7 +5,7 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Monday, May 18, 2015
 # Version: 1.0
-# Modified Time-stamp: <2016-01-17 16:08:33 dharms>
+# Modified Time-stamp: <2016-01-22 09:43:55 dan.harms>
 # Modified by: Dan Harms
 # Keywords: configuration
 
@@ -74,7 +74,7 @@ echo About to unpack $input...
 $tar --overwrite -xpvf $input
 
 # remove intermediate directories, if empty
-rmdir --ignore-fail-on-non-empty bash tcsh os/$os site/$site host/$host
+rmdir --ignore-fail-on-non-empty bash tcsh os/$os os site/$site site host/$host host
 # protect .netrc
 if [ -f .netrc ] ; then
    chmod 600 .netrc
