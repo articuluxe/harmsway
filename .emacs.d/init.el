@@ -1062,6 +1062,7 @@ to overwrite the final element."
 (global-set-key "\M-sde" #'ediff-current-file)
 (global-set-key "\M-sdb" #'ediff-buffers)
 (global-set-key "\M-sdf" #'ediff-files)
+(global-set-key "\M-sdr" #'ediff-revision)
 ;; don't use a separate control frame
 (setq ediff-window-setup-function 'ediff-setup-windows-plain)
 ;; toggle between control frame and control window
