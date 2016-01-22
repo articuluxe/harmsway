@@ -1,10 +1,9 @@
-;; -*- Mode: Emacs-Lisp -*-
-;; ${1:`(file-name-nondirectory (or buffer-file-name (buffer-name)))`} --- ${2:Short description}
+;;; ${1:`(file-name-nondirectory (or buffer-file-name (buffer-name)))`} --- ${2:Short description}
 ;; Copyright (C) `(format-time-string "%Y")`  `(user-full-name)` (`(user-login-name)`)
 ;; Author: `(user-full-name)` <`user-mail-address`>
 ;; Created: `(insert-today)`
 ;; Version: ${3:1.0}
-;; Modified Time-stamp: <2015-12-02 09:25:39 dan.harms>
+;; Modified Time-stamp: <2016-01-21 17:33:42 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: $4
 
@@ -21,12 +20,12 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-;; Commentary:
+;;; Commentary:
 
 ;;
 
-;; Code:
+;;; Code:
 
 $0
 
-;; code ends here
+;;; $1 ends here
