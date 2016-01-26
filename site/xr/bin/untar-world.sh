@@ -5,7 +5,7 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Monday, May 18, 2015
 # Version: 1.0
-# Modified Time-stamp: <2016-01-22 09:40:29 dan.harms>
+# Modified Time-stamp: <2016-01-26 11:46:02 dan.harms>
 # Modified by: Dan Harms
 # Keywords: configuration
 
@@ -88,7 +88,7 @@ popd
 
 # remove intermediate directories, if empty
 pushd ~
-rmdir --ignore-fail-on-non-empty bash tcsh os/$os os site/$site site
+rmdir -p --ignore-fail-on-non-empty bash tcsh os/$os site/$site
 # protect .netrc
 if [ -f .netrc ] ; then
    chmod 600 .netrc
