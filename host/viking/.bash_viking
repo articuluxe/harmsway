@@ -26,6 +26,7 @@ use_gcc()
 {
    export CC=/usr/local/bin/gcc
    export CXX=/usr/local/bin/g++
+   export CXX_FLAGS=-std=c++14 -Wall -Wextra -pedantic -Wno-unused-local-typedefs
 }
 
 use_gcc

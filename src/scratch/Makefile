@@ -1,18 +1,19 @@
-CC=g++ -std=c++14
-# -std=gnu++11
-CFLAGS=-c -g -Wall
+CXXFLAGS=$(CXX_FLAGS) -c -g
 LDFLAGS=
 SOURCES=scratch.cpp
 OBJECTS=$(SOURCES:.cpp=.o)
 EXE=scratch
+INC=
+LIB=
+LIB_INC=
 
 all: $(SOURCES) $(EXE)
 
 $(EXE): $(OBJECTS)
-	$(CC) $(LDFLAGS) $(OBJECTS) $(LIB_INC) $(LIB) -o $@
+	$(CXX) $(LDFLAGS) $(OBJECTS) $(LIB_INC) $(LIB) -o $@
 
 .cpp.o:
-	$(CC) $(CFLAGS) $(INC) $(LIB_INC) $(LIB) $< -o $@
+	$(CXX) $(CXXFLAGS) $(INC) $(LIB_INC) $(LIB) $< -o $@
 
 clean:
 	rm -f $(EXE) $(OBJECTS)
