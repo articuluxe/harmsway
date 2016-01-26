@@ -3,7 +3,7 @@ autosaves
 backups
 bookmark-files
 bookmarks
-emacs-bmk-bmenu-state.el
+emacs-bmk-bmenu-state
 history
 ido-last
 recentf

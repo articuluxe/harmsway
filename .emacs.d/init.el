@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-01-21 16:25:33 dan.harms>
+;; Modified Time-stamp: <2016-01-26 15:20:40 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -607,9 +607,10 @@ to overwrite the final element."
   (add-to-list 'load-path (concat my/plugins-directory "bookmark+/")))
 (setq bookmark-default-file (concat my/user-directory "bookmarks")
       bmkp-bmenu-state-file (concat my/user-directory
-                                    "emacs-bmk-bmenu-state.el")
+                                    "emacs-bmk-bmenu-state")
       bookmark-save-flag nil
       bmkp-crosshairs-flag nil
+      bmkp-last-as-first-bookmark-file nil
       )
 (require 'bookmark+)
 (add-hook 'bookmark-after-jump-hook #'crosshairs-flash)
