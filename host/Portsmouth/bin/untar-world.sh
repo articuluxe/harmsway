@@ -5,7 +5,7 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Monday, May 18, 2015
 # Version: 1.0
-# Modified Time-stamp: <2016-01-22 09:43:37 dan.harms>
+# Modified Time-stamp: <2016-01-23 10:06:13 dharms>
 # Keywords: configuration
 
 tar=$TAR
@@ -73,7 +73,7 @@ echo About to unpack $input...
 $tar --overwrite -xpvf $input
 
 # remove intermediate directories, if empty
-rmdir -p bash tcsh os/$os os site/$site site host/$host host
+rmdir -p bash tcsh os/$os site/$site host/$host
 # and byte-compile emacs
 emacscomp.sh .emacs.d
 
