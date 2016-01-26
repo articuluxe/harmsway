@@ -1,10 +1,10 @@
 ;; -*- Mode: Emacs-Lisp -*-
 ;; profiles+.el --- Extensions to 'profiles.el'
-;; Copyright (C) 2015  Dan Harms (dharms)
+;; Copyright (C) 2015, 2016  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-11-12 17:05:14 dan.harms>
+;; Modified Time-stamp: <2016-01-26 17:50:21 dharms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -242,9 +242,12 @@ actions include setting include directories."
     (set (make-local-variable 'achead:include-directories)
          (profile-current-get 'include-files)))
   (setq ff-search-directories
+        ;; current dir, include dirs, project root
         (append '(".")
-                (profile-current-get 'include-ff-files)))
-    )
+                (profile-current-get 'include-ff-files)
+                (list
+                 `,(directory-file-name
+                    (profile-current-get 'project-root-dir))))))
 
 (defvar profile--root-file nil)
 ;;;###autoload
