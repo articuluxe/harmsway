@@ -15,3 +15,5 @@ etags: display source file
 
 see `grep-host-defaults-alist' in grep.el; opening a remote file, grepping,
 then trying to grep a local file fails
+
+dired: ability to compress a folder, rather than have to compress each constituent file

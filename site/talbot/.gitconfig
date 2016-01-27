@@ -8,6 +8,8 @@
 	ui = true
 [push]
 	default = simple
+[pull]
+	rebase = true
 [diff]
 	tool = diffgui
 [difftool]
@@ -30,3 +32,5 @@
 	cmd = /usr/bin/env LOCAL=$LOCAL REMOTE=$REMOTE BASE=$BASE MERGED=$MERGED $EDITOR --load ~/config/mergetool.el
 [mergetool.mergegui]
 	cmd = /usr/bin/env LOCAL=$LOCAL REMOTE=$REMOTE BASE=$BASE MERGED=$MERGED $EMACSX --load ~/config/mergetool.el
+[branch "master"]
+	mergeoptions = --squash

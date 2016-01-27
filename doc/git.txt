@@ -6,6 +6,9 @@ git config --global user.email danielrharms@gmail.com
 git config --global core.editor "emacs -nw"
 git config --global color.ui true
 git config --global core.excludesfile ~/.gitignore
+git config --global --add pull.rebase true
+git config --global --add push.default simple
+git config --global --add branch.master.mergeoptions --squash
 git config --global merge.tool <tool>
 git config --global diff.tool <tool>
 git config --global difftool.prompt false

@@ -1406,6 +1406,8 @@ register \\C-l."
   (require 'flyspell-popup)
   (define-key flyspell-mode-map "\e\e4" #'flyspell-popup-correct)
   ;; (add-hook 'flyspell-mode-hook #'flyspell-popup-auto-correct-mode)
+  (defun my/toggle-flyspell() (interactive)
+         (lambda() (flyspell-mode (if flyspell-mode 0 1))))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; headers ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
