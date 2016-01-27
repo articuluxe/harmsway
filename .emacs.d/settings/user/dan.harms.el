@@ -1,10 +1,10 @@
 ;; -*- Mode: Emacs-Lisp -*-
 ;; dan.harms.el --- user settings file
-;; Copyright (C) 2015  Dan Harms (dharms)
+;; Copyright (C) 2015, 2016  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-02-28 03:14:59 dharms>
+;; Modified Time-stamp: <2016-01-27 07:31:08 dharms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -28,5 +28,9 @@
 
 (defconst my/user-name user-login-name)
 (setq user-mail-address "dan.harms@xrtrading.com")
+
+(add-hook 'c-mode-common-hook
+          (lambda() (font-lock-add-keywords
+                     nil '(("\\<drh\\>" 0 'font-lock-warning-face t)) t)) t)
 
 ;; dan.harms.el ends here
