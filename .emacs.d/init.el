@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-01-26 15:20:40 dan.harms>
+;; Modified Time-stamp: <2016-01-27 16:44:05 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1402,7 +1402,7 @@ register \\C-l."
   (require 'ace-popup-menu)
   (ace-popup-menu-mode 1)
   (mapc (lambda (hook) (add-hook hook #'flyspell-mode))
-        '(text-mode-hook conf-mode-hook markdown-mode))
+        '(text-mode-hook markdown-mode))
   (require 'flyspell-popup)
   (define-key flyspell-mode-map "\e\e4" #'flyspell-popup-correct)
   ;; (add-hook 'flyspell-mode-hook #'flyspell-popup-auto-correct-mode)
