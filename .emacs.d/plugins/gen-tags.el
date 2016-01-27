@@ -1,10 +1,10 @@
 ;; -*- Mode: Emacs-Lisp -*-
 ;; gen-tags.el --- Generate TAGS files
-;; Copyright (C) 2015   (dan.harms)
+;; Copyright (C) 2015, 2016   (dan.harms)
 ;; Author:  <dan.harms@xrtrading.com>
 ;; Created: Wednesday, March 18, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-10-21 16:28:39 dan.harms>
+;; Modified Time-stamp: <2016-01-27 16:49:30 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: etags, ctags
 
@@ -31,9 +31,10 @@
 
 ;; customization variables
 (defvar gen-tags-exe
-  (cond ((file-exists-p "/usr/local/bin/ctags") "/usr/local/bin/ctags")
-        ((file-exists-p "/bin/ctags") "/bin/ctags")
-        ((file-exists-p "/usr/bin/ctags") "/usr/bin/ctags")
+  (cond ((executable-find "ctags") "ctags")
+        ((executable-find "/usr/local/bin/ctags") "/usr/local/bin/ctags")
+        ((executable-find "/bin/ctags") "/bin/ctags")
+        ((executable-find "/usr/bin/ctags") "/usr/bin/ctags")
         (t "ctags"))
   "The ctags executable.")
 (defvar gen-tags-ctags-cpp-kinds "+l" "Default ctags cpp-kinds options.")
