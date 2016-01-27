@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-01-26 17:50:21 dharms>
+;; Modified Time-stamp: <2016-01-27 16:40:54 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -246,8 +246,9 @@ actions include setting include directories."
         (append '(".")
                 (profile-current-get 'include-ff-files)
                 (list
-                 `,(directory-file-name
-                    (profile-current-get 'project-root-dir))))))
+                 `,(concat
+                    (profile-current-get 'remote-prefix)
+                    (directory-file-name (profile-current-get 'project-root-dir)))))))
 
 (defvar profile--root-file nil)
 ;;;###autoload
