@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-01-27 16:44:05 dan.harms>
+;; Modified Time-stamp: <2016-01-28 08:27:40 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -313,9 +313,14 @@ to overwrite the final element."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; modes ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'log-viewer)
 (require 'csv-mode)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; cmake ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'cmake-mode)
 (require 'cmake-font-lock)
 (add-hook 'cmake-mode-hook 'cmake-font-lock-activate)
+(defun my/cmake-fix-underscore()
+  (modify-syntax-entry ?_ "_" cmake-mode-syntax-table))
+(add-hook 'cmake-mode-hook #'my/cmake-fix-underscore)
+
 ;; work around bug in cc-mode in emacs 24.4
 ;; see debbugs.gnu.org/db/18/18845.html
 (eval-and-compile
