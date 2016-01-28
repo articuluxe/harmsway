@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-01-28 08:27:40 dan.harms>
+;; Modified Time-stamp: <2016-01-28 16:54:10 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1119,9 +1119,8 @@ to overwrite the final element."
 (require 'diff-hl-flydiff)
 (global-diff-hl-mode 1)
 (diff-hl-flydiff-mode 1)
-(unless (display-graphic-p)
-  (require 'diff-hl-margin)
-  (diff-hl-margin-mode 1))
+(require 'diff-hl-margin)
+(diff-hl-margin-mode 1)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; git-gutter ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq git-gutter:hide-gutter t)
