@@ -1,10 +1,9 @@
-;; -*- Mode: Emacs-Lisp -*-
 ;; dharms.el --- user settings file
 ;; Copyright (C) 2015, 2016  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-01-27 07:25:26 dharms>
+;; Modified Time-stamp: <2016-01-28 08:44:53 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -20,18 +19,19 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-;; Commentary:
+;;; Commentary:
 
 ;;
 
-;; Code:
+;;; Code:
 
 (defconst my/user-name user-login-name)
 (setq user-mail-address "danielrharms@gmail.com")
 
-(add-hook 'c-mode-common-hook
-          (lambda() (font-lock-add-keywords
-                     nil '(("\\<drh\\>" 0 'font-lock-warning-face t)) t)) t)
+(add-hook
+ 'prog-mode-hook
+ (lambda() (font-lock-add-keywords
+            nil '(("\\<[Dd][Rr][Hh]\\>" 0 'font-lock-warning-face t)) t)) t)
 
 
-;; dharms.el ends here
+;;; dharms.el ends here
