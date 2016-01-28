@@ -121,8 +121,6 @@
 (setq ff-always-try-to-create nil)
 ;; Preserve line position on scroll
 (setq scroll-preserve-screen-position t)
-;; Ignore case when completing file names
-(setq read-file-name-completion-ignore-case nil)
 (show-paren-mode t)
 (size-indication-mode 1)
 ;; don't add new-lines to end of buffer on scroll
@@ -1269,6 +1267,14 @@ register \\C-l."
 	(require 'rtags)
 	))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; completion ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(setq tab-always-indent 'complete)      ;or t to avoid completion
+(add-to-list 'completion-styles 'initials t)
+(setq completion-auto-help nil)
+(setq completion-cycle-threshold t)     ;always cycle
+;; Ignore case when completing file names
+(setq read-file-name-completion-ignore-case nil)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-complete ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
   (add-to-list 'load-path (concat my/plugins-directory "auto-complete/")))
@@ -1284,21 +1290,53 @@ register \\C-l."
       '(sql-mode nxml-mode cmake-mode folio-mode protobuf-mode
                  python-mode dos-mode gud-mode sh-mode
                  makefile-mode makefile-automake-mode makefile-gmake-mode
-                 autoconf-mode gdb-script-mode awk-mode
-                 mock-mode))
+                 autoconf-mode gdb-script-mode awk-mode csv-mode
+                 mock-mode org-mode html-mode text-mode sql-mode
+                 sql-interactive-mode
+                 git-commit-mode
+                 ))
 (require 'auto-complete-config)
-(ac-config-default)
-(setq-default ac-sources (append '(ac-source-filename) ac-sources))
+(setq-default ac-sources
+              '(ac-source-abbrev
+                ac-source-dictionary
+                ac-source-words-in-buffer
+                ac-source-words-in-same-mode-buffers
+                ac-source-filename
+                ))
+;; (ac-config-default)
+;; (setq-default ac-sources (append '(ac-source-filename) ac-sources))
+
+(setq ac-expand-on-auto-complete nil)
+(setq ac-auto-start nil)
+(setq ac-dwim nil)
 (setq ac-use-menu-map t)
-(setq ac-auto-start t)
-(setq ac-ignore-case nil)
-(ac-flyspell-workaround)
-(define-key ac-mode-map (kbd "M-/") 'auto-complete)
-;(define-key ac-mode-map (kbd "<lwindow> TAB") 'auto-complete)
-(define-key ac-mode-map (kbd "\C-c TAB") (lambda()(interactive)
-                                           (setq ac-auto-start
-                                                 (null ac-auto-start))))
+(setq ac-ignore-case 'smart)
 (setq ac-menu-height 20)
+
+(add-hook 'emacs-lisp-mode-hook 'ac-emacs-lisp-mode-setup)
+;(add-hook 'c-mode-common-hook 'ac-cc-mode-setup)
+(add-hook 'ruby-mode-hook 'ac-ruby-mode-setup)
+(add-hook 'css-mode-hook 'ac-css-mode-setup)
+(add-hook 'auto-complete-mode-hook 'ac-common-setup)
+(global-auto-complete-mode t)
+
+(defun my/auto-complete-at-point ()
+  (when (and (not (minibufferp))
+             (fboundp 'auto-complete-mode)
+             auto-complete-mode)
+    #'auto-complete))
+
+(defun my/add-ac-completion-at-point ()
+  (add-to-list 'completion-at-point-functions 'my/auto-complete-at-point))
+(add-hook 'auto-complete-mode-hook 'my/add-ac-completion-at-point)
+
+
+(ac-flyspell-workaround)
+;(define-key ac-mode-map (kbd "M-/") 'auto-complete)
+;(define-key ac-mode-map (kbd "<lwindow> TAB") 'auto-complete)
+;; (define-key ac-mode-map (kbd "\C-c TAB") (lambda()(interactive)
+;;                                            (setq ac-auto-start
+;;                                                  (null ac-auto-start))))
 ;; rtags
 (when (featurep 'rtags)
   (require 'rtags-ac)
@@ -1323,14 +1361,16 @@ register \\C-l."
 
 (add-hook 'c-mode-common-hook
           (lambda()
-            (set (make-local-variable 'ac-auto-start) nil)
+;            (set (make-local-variable 'ac-auto-start) nil)
             ;; we'll define a special key event for yasnippet
-            (setq ac-sources (remove 'ac-source-yasnippet ac-sources))
-            (setq ac-sources (remove 'ac-source-gtags ac-sources))
+            ;; (setq ac-sources (remove 'ac-source-yasnippet ac-sources))
+            ;; (setq ac-sources (remove 'ac-source-gtags ac-sources))
             (when (featurep 'rtags)
               (add-to-list 'ac-sources 'ac-source-rtags))
             (add-to-list 'ac-sources 'ac-source-etags)
             (add-to-list 'ac-sources 'ac-source-c-headers)
+            (setq c-tab-always-indent nil)
+            (setq c-insert-tab-function 'indent-for-tab-command)
             ) t)                       ;append to hook list to take effect
                                        ;after ac-config-default
 (add-hook 'protobuf-mode-hook
@@ -1412,6 +1452,7 @@ register \\C-l."
   ;; (add-hook 'flyspell-mode-hook #'flyspell-popup-auto-correct-mode)
   (defun my/toggle-flyspell() (interactive)
          (lambda() (flyspell-mode (if flyspell-mode 0 1))))
+;  (global-set-key "\C-c\\t" #'my/toggle-flyspell)
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; headers ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
