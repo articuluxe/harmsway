@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-01-28 22:58:48 dharms>
+;; Modified Time-stamp: <2016-01-28 23:24:48 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1262,10 +1262,9 @@ register \\C-l."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; rtags ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
-  (add-to-list 'load-path (concat my/plugins-directory "rtags/"))
-  (when (executable-find "rdm")
-	(require 'rtags)
-	))
+  (add-to-list 'load-path (concat my/plugins-directory "rtags/")))
+(defvar rtags-exec (executable-find "rdm"))
+(require 'rtags)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; completion ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq tab-always-indent 'complete)      ;or t to avoid completion
@@ -1303,9 +1302,6 @@ register \\C-l."
                 ac-source-words-in-same-mode-buffers
                 ac-source-filename
                 ))
-;; (ac-config-default)
-;; (setq-default ac-sources (append '(ac-source-filename) ac-sources))
-
 (setq ac-expand-on-auto-complete nil)
 (setq ac-auto-start nil)
 (setq ac-dwim nil)
@@ -1330,15 +1326,11 @@ register \\C-l."
   (add-to-list 'completion-at-point-functions 'my/auto-complete-at-point))
 (add-hook 'auto-complete-mode-hook 'my/add-ac-completion-at-point)
 
-
 (ac-flyspell-workaround)
-;(define-key ac-mode-map (kbd "M-/") 'auto-complete)
-;(define-key ac-mode-map (kbd "<lwindow> TAB") 'auto-complete)
-;; (define-key ac-mode-map (kbd "\C-c TAB") (lambda()(interactive)
-;;                                            (setq ac-auto-start
-;;                                                  (null ac-auto-start))))
+
 ;; rtags
-(when (featurep 'rtags)
+
+(when rtags-exec
   (require 'rtags-ac)
   (setq rtags-completions-enabled t)
   (rtags-enable-standard-keybindings c-mode-base-map)
@@ -1346,8 +1338,8 @@ register \\C-l."
 		 (auto-complete '(ac-source-rtags)))
   (global-set-key (kbd "\C-c r TAB") 'my/rtags-complete)
   )
-(when (executable-find "clang")
-  (require 'auto-complete-clang))
+(require 'auto-complete-clang)
+(defvar clang-exec (executable-find "clang"))
 (require 'auto-complete-etags)
 (require 'auto-complete-nxml)
 ;; c-headers
@@ -1363,16 +1355,10 @@ register \\C-l."
 
 (add-hook 'c-mode-common-hook
           (lambda()
-;            (set (make-local-variable 'ac-auto-start) nil)
-            ;; we'll define a special key event for yasnippet
-            ;; (setq ac-sources (remove 'ac-source-yasnippet ac-sources))
-            ;; (setq ac-sources (remove 'ac-source-gtags ac-sources))
-            (when (featurep 'rtags)
-              (add-to-list 'ac-sources 'ac-source-rtags)
-              )
-            (when (featurep 'auto-complete-clang)
-              (add-to-list 'ac-sources 'ac-source-clang)
-              (define-key c-mode-base-map [?\C-\M-i] 'ac-complete-clang)
+            (when rtags-exec
+              (add-to-list 'ac-sources 'ac-source-rtags))
+            (when clang-exec
+              (define-key c-mode-base-map [?\M-/] 'ac-complete-clang)
               ;; (add-to-list 'ac-omni-completion-sources
               ;;              (cons "\\." '(ac-source-clang)))
               ;; (add-to-list 'ac-omni-completion-sources
