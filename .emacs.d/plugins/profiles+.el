@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-01-28 22:48:27 dharms>
+;; Modified Time-stamp: <2016-01-29 09:04:01 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -238,6 +238,7 @@ some convenience registers to access the build-sub-dirs."
   (let ((cmd (concat "echo | " compiler " -v -x c++ -E - 2>&1 | "
                      "grep -A 20 starts | grep include | grep -v search")))
     (split-string (shell-command-to-string cmd))))
+(defvar profile-clang-standard-version "c++14")
 
 ;;;###autoload
 (defun profile-on-c-file-open (project-root)
@@ -256,7 +257,8 @@ actions include setting include directories."
                     (or (getenv "CXX") "g++")))))
       (set (make-local-variable 'ac-clang-flags)
            (append
-            '("-std=c++14" "-code-completion-macros" "-code-completion-patterns")
+            `(,(concat "-std=" profile-clang-standard-version)
+              "-code-completion-macros" "-code-completion-patterns")
             (mapcar (lambda(x) (concat "-I" (expand-file-name x)))
                     (profile-current-get 'include-files))
             (list `,(concat "-I"
