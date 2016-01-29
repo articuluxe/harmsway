@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-01-28 16:54:10 dan.harms>
+;; Modified Time-stamp: <2016-01-28 22:58:48 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1346,6 +1346,8 @@ register \\C-l."
 		 (auto-complete '(ac-source-rtags)))
   (global-set-key (kbd "\C-c r TAB") 'my/rtags-complete)
   )
+(when (executable-find "clang")
+  (require 'auto-complete-clang))
 (require 'auto-complete-etags)
 (require 'auto-complete-nxml)
 ;; c-headers
@@ -1366,7 +1368,16 @@ register \\C-l."
             ;; (setq ac-sources (remove 'ac-source-yasnippet ac-sources))
             ;; (setq ac-sources (remove 'ac-source-gtags ac-sources))
             (when (featurep 'rtags)
-              (add-to-list 'ac-sources 'ac-source-rtags))
+              (add-to-list 'ac-sources 'ac-source-rtags)
+              )
+            (when (featurep 'auto-complete-clang)
+              (add-to-list 'ac-sources 'ac-source-clang)
+              (define-key c-mode-base-map [?\C-\M-i] 'ac-complete-clang)
+              ;; (add-to-list 'ac-omni-completion-sources
+              ;;              (cons "\\." '(ac-source-clang)))
+              ;; (add-to-list 'ac-omni-completion-sources
+              ;;              (cons "->" '(ac-source-clang)))
+              )
             (add-to-list 'ac-sources 'ac-source-etags)
             (add-to-list 'ac-sources 'ac-source-c-headers)
             (setq c-tab-always-indent nil)
@@ -1374,8 +1385,7 @@ register \\C-l."
             ) t)                       ;append to hook list to take effect
                                        ;after ac-config-default
 (add-hook 'protobuf-mode-hook
-          (lambda()
-            (setq ac-sources (add-to-list 'ac-sources 'ac-source-etags))))
+          (lambda()(add-to-list 'ac-sources 'ac-source-etags)))
 (defun my/expand-imenu() (interactive)
        (auto-complete '(ac-source-imenu)))
 (global-set-key "\C-c0j" 'my/expand-imenu)

@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-01-27 16:40:54 dan.harms>
+;; Modified Time-stamp: <2016-01-28 22:48:27 dharms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -233,6 +233,12 @@ some convenience registers to access the build-sub-dirs."
      ?c (cons 'file (cdr (car (profile-current-get 'grep-dirs))))))
   )
 
+(defun profile--gather-compiler-includes (compiler)
+  "Return a list of include directories for COMPILER.  They will be absolute."
+  (let ((cmd (concat "echo | " compiler " -v -x c++ -E - 2>&1 | "
+                     "grep -A 20 starts | grep include | grep -v search")))
+    (split-string (shell-command-to-string cmd))))
+
 ;;;###autoload
 (defun profile-on-c-file-open (project-root)
   "Helper function to perform the typical actions desired when a
@@ -240,7 +246,27 @@ c-language file is opened and a profile is active.  These typical
 actions include setting include directories."
   (when c-buffer-is-cc-mode
     (set (make-local-variable 'achead:include-directories)
-         (profile-current-get 'include-files)))
+         (profile-current-get 'include-files))
+    (when (executable-find "clang")
+      (or (profile-current-get 'compiler-include-dirs)
+          (profile-current-put
+           'compiler-include-dirs
+           (mapcar (lambda(x) (concat "-I" x))
+                   (profile--gather-compiler-includes
+                    (or (getenv "CXX") "g++")))))
+      (set (make-local-variable 'ac-clang-flags)
+           (append
+            '("-std=c++14" "-code-completion-macros" "-code-completion-patterns")
+            (mapcar (lambda(x) (concat "-I" (expand-file-name x)))
+                    (profile-current-get 'include-files))
+            (list `,(concat "-I"
+                     (profile-current-get 'remote-prefix)
+                     (directory-file-name
+                      (expand-file-name
+                       (profile-current-get 'project-root-dir)))))
+            (profile-current-get 'compiler-include-dirs)
+            )))
+    )
   (setq ff-search-directories
         ;; current dir, include dirs, project root
         (append '(".")
@@ -248,7 +274,9 @@ actions include setting include directories."
                 (list
                  `,(concat
                     (profile-current-get 'remote-prefix)
-                    (directory-file-name (profile-current-get 'project-root-dir)))))))
+                    (directory-file-name
+                     (expand-file-name
+                      (profile-current-get 'project-root-dir))))))))
 
 (defvar profile--root-file nil)
 ;;;###autoload
