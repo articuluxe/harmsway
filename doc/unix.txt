@@ -4,7 +4,7 @@
 # Author:  <dan.harms@xrtrading.com>
 # Created: Friday, March 20, 2015
 # Version: 1.0
-# Modified Time-stamp: <2016-01-12 21:45:37 dharms>
+# Modified Time-stamp: <2016-01-28 23:29:32 dharms>
 # Modified by: Dan Harms
 # Keywords: help
 
@@ -22,6 +22,9 @@ find /path/to/root -name \*.a -exec sh -c 'nm -C "$0" | grep symbol && echo "$0"
 find . -name "pattern" -exec echo {} \; -exec grep <str> {} \;
 # find with multiple -exec (non-short-circuit)
 find . -name "pattern" \( -exec echo {} \; -o -exec true \; \) -exec grep <str> {} \;
+
+# find a compiler's set of include directories (works on gcc and clang)
+g++/clang++ -E -x c++ - -v < /dev/null
 
 # ensure core dump on SEGV
 ulimit -c unlimited
