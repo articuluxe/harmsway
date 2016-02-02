@@ -41,8 +41,6 @@
 	(dired-hidden-dirs)
 	(handler . bmkp-jump-dired))
 #1=(#("snap-3.08 (hq-snapdev-77v)" 0 26
-	  (bmkp-full-record #1#)
-	  26 29
 	  (bmkp-full-record #1#))
 	(tags "3.08" "snap" "hq-snapdev-77v")
 	(buffer-name . "snap<xr>")
