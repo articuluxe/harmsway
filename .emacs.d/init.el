@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-01-28 23:24:48 dharms>
+;; Modified Time-stamp: <2016-02-02 16:55:18 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1062,6 +1062,7 @@ to overwrite the final element."
 ;; only highlight current chunk
 (setq-default ediff-highlight-all-diffs 'nil
               ediff-keep-variants nil
+              ediff-forward-word-function 'forward-char
               )
 (global-set-key "\M-sde" #'ediff-current-file)
 (global-set-key "\M-sdb" #'ediff-buffers)
