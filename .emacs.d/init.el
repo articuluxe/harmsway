@@ -1299,7 +1299,6 @@ register \\C-l."
 (setq-default ac-sources
               '(ac-source-abbrev
                 ac-source-dictionary
-                ac-source-words-in-buffer
                 ac-source-words-in-same-mode-buffers
                 ac-source-filename
                 ))
