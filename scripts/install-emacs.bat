@@ -4,7 +4,7 @@ rem Copyright (C) 2015, 2016  Dan Harms (dan.harms)
 rem Author: Dan Harms <dan.harms@xrtrading.com>
 rem Created: Thursday, May 21, 2015
 rem Version: 1.0
-rem Modified Time-stamp: <2016-01-18 08:45:03 dan.harms>
+rem Modified Time-stamp: <2016-02-04 17:05:47 dan.harms>
 rem Modified by: Dan Harms
 rem Keywords: install perfect editor
 
@@ -19,6 +19,7 @@ if not %1. == . (
 )
 
 set tar=c:\msys\1.0\bin\tar
+set grep=c:\msys\1.0\bin\grep
 set emacs=c:\emacs-24.4\bin\emacs
 set user=%USERNAME%
 set timeout=c:\Windows\System32\timeout
@@ -27,6 +28,7 @@ set script_dir=%~dp0
 set int=emacs.tar
 set manifest=.bk_manifest
 set backup=emacs_bk.tar
+set install_log=emacs-install.log
 
 for /f "usebackq" %%i in (`hostname`) do set host=%%i
 
@@ -68,7 +70,12 @@ rem emacs will need forward slashes escaped, so double them
 set path=%HOME:\=\\%\\.emacs.d
 set cmd=(byte-recompile-directory \"%path%\" 0 t)
 
-%emacs% --batch -u %user% --eval "%cmd%"
+echo Compiling emacs files in directory %path%...
+echo.
+%emacs% --batch -u %user% --eval "%cmd%" > %install_log% 2>&1
+%grep% -i error %install_log%
+%grep% -e '^Done' %install_log%
+echo.
 
 rem %timeout% /t 5
 pause

@@ -5,7 +5,7 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Tuesday, June 16, 2015
 # Version: 1.0
-# Modified Time-stamp: <2016-01-31 17:49:42 dharms>
+# Modified Time-stamp: <2016-02-04 17:07:56 dan.harms>
 # Keywords: emacs configuration
 
 emacs=$EDITOR
@@ -20,11 +20,14 @@ fi
 
 cmd="(byte-recompile-directory \"$dir\" 0 t)"
 echo "Compiling emacs files in directory $dir..."
+echo -e '\n'
 
 $emacs --batch -u $user --eval "$cmd" &> emacs-install-log-$date.log
 #Done (Total of 292 files compiled, 2 failed in 33 directories)
 grep -i 'error' emacs-install-log-$date.log
 grep -e '^Done' emacs-install-log-$date.log
+echo -e '\n'
+
 gzip emacs-install-log-$date.log
 
 # emacscomp.sh ends here
