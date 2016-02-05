@@ -1,11 +1,11 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 # -*- Mode: sh -*-
 # emacscomp.sh --- byte-compile emacs lisp files
 # Copyright (C) 2015, 2016  Dan Harms (dan.harms)
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Tuesday, June 16, 2015
 # Version: 1.0
-# Modified Time-stamp: <2016-02-04 21:09:24 dharms>
+# Modified Time-stamp: <2016-02-05 05:45:39 dharms>
 # Keywords: emacs configuration
 
 emacs=$EDITOR
@@ -21,13 +21,13 @@ fi
 
 cmd="(byte-recompile-directory \"$dir\" 0 t)"
 echo "Compiling emacs files in directory $dir..."
-echo -e '\n'
+echo -e
 
 $emacs --batch -u $user --eval "$cmd" &> $logname
 #Done (Total of 292 files compiled, 2 failed in 33 directories)
 grep -i 'error' $logname
 grep -e '^Done' $logname
-echo -e '\n'
+echo -e
 
 gzip $logname
 
