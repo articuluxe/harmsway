@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-02-02 16:55:18 dan.harms>
+;; Modified Time-stamp: <2016-02-09 09:49:56 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1292,15 +1292,16 @@ register \\C-l."
                  makefile-mode makefile-automake-mode makefile-gmake-mode
                  autoconf-mode gdb-script-mode awk-mode csv-mode
                  mock-mode org-mode html-mode text-mode sql-mode
-                 sql-interactive-mode
-                 git-commit-mode
+                 sql-interactive-mode conf-mode
+                 git-commit-mode mock-mode
                  ))
 (require 'auto-complete-config)
 (setq-default ac-sources
-              '(ac-source-abbrev
+              '(ac-source-yasnippet
                 ac-source-dictionary
                 ac-source-words-in-same-mode-buffers
                 ac-source-filename
+                ac-source-files-in-current-dir
                 ))
 (setq ac-expand-on-auto-complete nil)
 (setq ac-auto-start nil)
@@ -1386,26 +1387,22 @@ register \\C-l."
                         (concat my/plugins-directory "yasnippet/snippets/")))
 (yas-global-mode 1)
 (setq yas-prompt-functions '(
+                             yas-completing-prompt
                              yas-ido-prompt
                              yas-x-prompt
-                             ;; yas-completing-prompt
-                             ;; yas-no-prompt
+                             yas-dropdown-prompt
+                             yas-no-prompt
                              ))
-;; disable TAB key to activate a snippet (I prefer TAB merely indent)
-(define-key yas-minor-mode-map (kbd "<tab>") nil)
-(define-key yas-minor-mode-map (kbd "TAB") nil)
-;; (define-key yas-keymap [(tab)] nil)
-;; (define-key yas-keymap (kbd "TAB") nil)
-;; (define-key yas-keymap [(shift tab)] nil)
-;; (define-key yas-keymap [backtab] nil)
+;; to disable TAB key to activate a snippet:
+;; (define-key yas-minor-mode-map (kbd "<tab>") nil)
+;; (define-key yas-minor-mode-map (kbd "TAB") nil)
 ;; add our own keybindings
 (define-key yas-minor-mode-map "\C-cse" 'yas-expand)
 (define-key yas-minor-mode-map "\C-csi" 'yas-insert-snippet)
 (define-key yas-minor-mode-map "\C-csn" 'yas-new-snippet)
 (define-key yas-minor-mode-map "\C-csv" 'yas-visit-snippet-file)
 (define-key yas-minor-mode-map "\C-cs?" 'yas-describe-tables)
-
-;; integrate with auto-complete
+;; integrate with auto-complete (shows only snippets)
 (defun my/expand-yasnippet() (interactive)
        (auto-complete '(ac-source-yasnippet)))
 (global-set-key [backtab] 'my/expand-yasnippet)
