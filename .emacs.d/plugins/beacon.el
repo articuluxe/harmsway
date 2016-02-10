@@ -5,7 +5,7 @@
 ;; Author: Artur Malabarba <emacs@endlessparentheses.com>
 ;; URL: https://github.com/Malabarba/beacon
 ;; Keywords: convenience
-;; Version: 0.6.1
+;; Version: 1.0
 ;; Package-Requires: ((seq "1.11"))
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -150,6 +150,7 @@ For instance, if you want to disable beacon on buffers where
 (add-hook 'beacon-dont-blink-predicates #'window-minibuffer-p)
 
 (defcustom beacon-dont-blink-major-modes '(t magit-status-mode magit-popup-mode
+                                       inf-ruby-mode
                                        gnus-summary-mode gnus-group-mode)
   "A list of major-modes where the beacon won't blink.
 Whenever the current buffer satisfies `derived-mode-p' for
@@ -300,8 +301,10 @@ Only returns `beacon-size' elements."
     (o
      (delete-overlay o)
      (save-excursion
-       (while (progn (forward-char 1)
-                     (setq o (beacon--ov-at-point)))
+       (while (and (condition-case nil
+                       (progn (forward-char 1) t)
+                     (end-of-buffer nil))
+                   (setq o (beacon--ov-at-point)))
          (let ((colors (overlay-get o 'beacon-colors)))
            (if (not colors)
                (move-overlay o (1- (point)) (point))
