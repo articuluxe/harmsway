@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-01-09 08:06:23 dharms>
+;; Modified Time-stamp: <2016-02-10 17:36:16 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -383,6 +383,20 @@ trailing whitespace."
       (set-window-start win1 pos2)
       (set-window-start win2 pos1))))
 (global-set-key "\C-x4s" 'swap-buffers)
+
+(defun my/toggle-window-dedicated ()
+  "Toggle whether active window is dedicated."
+  (interactive)
+  (message
+   (if
+       (let (window (get-buffer-window (current-buffer)))
+         (set-window-dedicated-p
+          window
+          (not (window-dedicated-p window))))
+       "Window '%s' is dedicated."
+     "Window '%s' is not dedicated.")
+   (current-buffer)))
+(global-set-key "\C-c0w" 'my/toggle-window-dedicated)
 
 (defun rename-file-and-buffer(new-name)
   "Renames both current buffer and file it's visiting."
