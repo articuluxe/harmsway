@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-02-09 09:49:56 dan.harms>
+;; Modified Time-stamp: <2016-02-11 14:31:03 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -737,9 +737,10 @@ to overwrite the final element."
          (let ((completing-read-function 'completing-read-default))
            (call-interactively 'find-file))))
       (ivy-done)))
-  ;; make matches appear fancy
-  (unless (version< emacs-version "24.5")
-    (setq ivy-display-style 'fancy))
+  ;; make matches appear fancy; supposedly doesn't work under 24.5
+  ;; but seems OK to me
+  (setq ivy-display-style 'fancy)
+  (setq ivy-extra-directories '("./"))
   )
 
 (defun my/activate-ido ()

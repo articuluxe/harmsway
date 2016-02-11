@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-02-08 16:19:54 dan.harms>
+;; Modified Time-stamp: <2016-02-11 08:52:47 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -168,7 +168,7 @@
           ;; hexadecimal numbers
           ("\\<0[xX][0-9A-Fa-f]+\\>" . font-lock-constant-face)
           ;; Qt fontification
-          ("\\<Q_OBJECT\\|SIGNAL\\|SLOT\\|slots\\|signals\\>" . font-lock-keyword-face)
+          ("\\<\\(Q_OBJECT\\|SIGNAL\\|SLOT\\|slots\\|signals\\)\\>" . font-lock-keyword-face)
           ("\\<QT?\\(_\\sw+\\)+\\>" . font-lock-keyword-face)
           ;; This is fairly aggressive; can reenable if desired
           ;; ("\\<Q[A-Z][A-Za-z0-9]*\\>" . font-lock-type-face)
