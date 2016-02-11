@@ -125,6 +125,24 @@ Note: it is recommended to run each sandbox is separate emacs process.")
   :type 'boolean
   :safe 'booleanp)
 
+(defcustom rtags-wrap-results t
+  "Whether rtags-next-match/rtags-prev-match wraps around"
+  :group 'rtags
+  :type 'boolean
+  :safe 'booleanp)
+
+(defcustom rtags-close-taglist-on-focus-lost nil
+  "Whether rtags-taglist should close when it loses focus"
+  :group 'rtags
+  :type 'boolean
+  :safe 'booleanp)
+
+(defcustom rtags-close-taglist-on-selection t
+  "Whether rtags-taglist should close when something is selected"
+  :group 'rtags
+  :type 'boolean
+  :safe 'booleanp)
+
 (defcustom rtags-follow-symbol-try-harder t
   "Fall back to string-matching if follow symbol fails."
   :group 'rtags
@@ -202,6 +220,12 @@ Note: it is recommended to run each sandbox is separate emacs process.")
   :group 'rtags
   :type 'boolean
   :safe 'booleanp)
+
+(defcustom rtags-socket-file nil
+  "Socket file to pass to rc"
+  :group 'rtags
+  :type 'string
+  :safe 'stringp)
 
 (defcustom rtags-track-container nil
   "When on continually update current container (function/class/namespace) on intervals."
@@ -535,6 +559,12 @@ to case differences."
   (when (overlayp rtags-current-line-overlay)
     (move-overlay rtags-current-line-overlay (point-at-bol) (point-at-eol))))
 
+(defun rtags-init-current-line-overlay ()
+  (when rtags-highlight-current-line
+    (let ((overlay (make-overlay (point-at-bol) (point-at-eol) (current-buffer))))
+      (overlay-put overlay 'face 'rtags-current-line)
+      (setq-local rtags-current-line-overlay overlay))))
+
 (define-derived-mode rtags-mode fundamental-mode
   (set (make-local-variable 'font-lock-defaults)
        '(rtags-font-lock-keywords (save-excursion
@@ -548,10 +578,7 @@ to case differences."
   (run-hooks 'rtags-mode-hook)
   (goto-char (point-min))
   (setq next-error-function 'rtags-next-prev-match)
-  (when rtags-highlight-current-line
-    (let ((overlay (make-overlay (point-at-bol) (point-at-eol) (current-buffer))))
-      (overlay-put overlay 'face 'rtags-current-line)
-      (setq-local rtags-current-line-overlay overlay)))
+  (rtags-init-current-line-overlay)
   (setq buffer-read-only t))
 
 (defun rtags-wrap-word (word)
@@ -589,6 +616,7 @@ to case differences."
   (setq mode-name "rtags-references-tree-mode")
   (use-local-map rtags-references-tree-mode-map)
   (goto-char (point-min))
+  (rtags-init-current-line-overlay)
   (setq buffer-read-only t))
 
 (defun rtags-reset-bookmarks ()
@@ -617,20 +645,23 @@ to case differences."
         (helm-keyboard-quit))
       (when (> (count-lines (point-max) (point-min)) 1)
         (while (not (eq by 0))
-          (cond ((and next
-                      (goto-char (point-at-eol))
-                      (re-search-forward "^\\(.*?\\):\\([0-9]+\\):\\([0-9]+\\)" nil t)))
-                (next
-                 (goto-char (point-min))
-                 (message "%s Wrapped" rtags-buffer-name))
-                ((and (not next)
-                      (goto-char (point-at-bol))
-                      (re-search-backward "^\\(.*?\\):\\([0-9]+\\):\\([0-9]+\\)" nil t)))
-                (t
-                 (goto-char (point-max))
-                 (re-search-backward "^\\(.*?\\):\\([0-9]+\\):\\([0-9]+\\)" nil t))
-                (message "%s Wrapped" rtags-buffer-name))
-          (beginning-of-line)
+          (let ((match (save-excursion
+                         (if next
+                             (and (goto-char (point-at-eol))
+                                  (re-search-forward "^\\(.*?\\):\\([0-9]+\\):\\([0-9]+\\)" nil t))
+                           (and (goto-char (point-at-bol))
+                                (re-search-backward "^\\(.*?\\):\\([0-9]+\\):\\([0-9]+\\)" nil t))))))
+            (when (cond (match (goto-char match))
+                        ((and rtags-wrap-results next)
+                         (goto-char (point-min))
+                         (re-search-forward "^\\(.*?\\):\\([0-9]+\\):\\([0-9]+\\)" nil t)
+                         (message "%s Wrapped" rtags-buffer-name))
+                        ((and rtags-wrap-results (not next))
+                         (goto-char (point-max))
+                         (re-search-backward "^\\(.*?\\):\\([0-9]+\\):\\([0-9]+\\)" nil t)
+                         (message "%s Wrapped" rtags-buffer-name))
+                        (t nil))
+              (beginning-of-line)))
           (if next
               (decf by)
             (incf by)))
@@ -841,6 +872,9 @@ Can be used both for path and location."
               (path nil)
               (default-directory (push (concat "--current-file=" (rtags-untrampify default-directory)) arguments))
               (t nil))
+
+        (when rtags-socket-file
+          (push (concat "-n" (expand-file-name rtags-socket-file)) arguments))
 
         (when rtags-rc-log-enabled
           (rtags-log (concat rc " " (rtags-combine-strings arguments))))
@@ -2408,7 +2442,8 @@ is true. References to references will be treated as references to the reference
   (when rtags-enabled
     (rtags-restart-update-current-project-timer)
     (rtags-update-current-error)
-    (rtags-close-taglist)
+    (when rtags-close-taglist-on-focus-lost
+      (rtags-close-taglist))
     (rtags-update-completions-timer)
     (rtags-restart-find-container-timer)
     (rtags-restart-tracking-timer)
@@ -2639,7 +2674,6 @@ is true. References to references will be treated as references to the reference
             (incf end 5))
           (set-text-properties start end (list 'rtags-bookmark-index (cons bookmark-idx start)))))
       (forward-line))
-    (shrink-window-if-larger-than-buffer)
     (rtags-mode))
 
 (defun rtags-handle-results-buffer (&optional noautojump quiet path other-window)
@@ -2668,7 +2702,8 @@ The option OTHER-WINDOW is only applicable if rtags is configured not to show th
                     (count-lines (point-min) (point-max))))
          ;; Optionally jump to first result and open results buffer
          (when (and rtags-popup-results-buffer (not rtags-use-helm)
-             (switch-to-buffer-other-window rtags-buffer-name)))
+           (switch-to-buffer-other-window rtags-buffer-name))
+           (shrink-window-if-larger-than-buffer))
          (if rtags-use-helm
              (helm :sources '(rtags-helm-source))
            (when (and rtags-jump-to-first-match (not noautojump))
@@ -2810,7 +2845,9 @@ The option OTHER-WINDOW is only applicable if rtags is configured not to show th
          (bookmark (and (car idx) (format "RTags_%d" (car idx))))
          (window (selected-window)))
     (cond ((eq major-mode 'rtags-taglist-mode)
-           (rtags-goto-location (cdr (assoc line rtags-taglist-locations)) nil other-window))
+           (rtags-goto-location (cdr (assoc line rtags-taglist-locations)) nil other-window)
+           (when rtags-close-taglist-on-selection
+             (rtags-close-taglist)))
           ((rtags-is-class-hierarchy-buffer)
            (save-excursion
              (goto-char (point-at-bol))
@@ -3184,9 +3221,9 @@ definition."
     (if (> (length tagname) 0)
         (setq prompt (concat prompt ": (default: " tagname ") "))
       (setq prompt (concat prompt ": ")))
-    (if (fboundp 'completing-read-default)
-        (setq input (completing-read-default prompt (function rtags-symbolname-complete) nil nil nil 'rtags-symbol-history))
-      (setq input (completing-read prompt (function rtags-symbolname-complete) nil nil nil 'rtags-symbol-history)))
+    (setq input (cond ((fboundp 'completing-read-default)
+                       (completing-read-default prompt (function rtags-symbolname-complete) nil nil nil 'rtags-symbol-history))
+                      (t (completing-read prompt (function rtags-symbolname-complete) nil nil nil 'rtags-symbol-history))))
     (setq rtags-symbol-history (rtags-remove-last-if-duplicated rtags-symbol-history))
     (when (not (equal "" input))
       (setq tagname input))
@@ -3417,11 +3454,13 @@ definition."
 
 (defconst rtags-symbol-chars "ABCDEFGHIKLMNOPQRSTUVWXYZabcdefghiklmnopqrstuvwxyz0123456789_")
 (defun rtags-calculate-completion-point ()
-  (when (or (= (point) (point-at-eol))
-            (looking-at "[\\n A-Za-z0-9_]"))
-    (save-excursion
-      (if (= (skip-chars-backward " ") 0)
-          (skip-chars-backward rtags-symbol-chars))
+  (save-excursion
+    (when (cond ((= (point) (point-at-eol)))
+                ((looking-at "[\\n A-Za-z0-9_]"))
+                ((looking-back "[\\n A-Za-z0-9_]") (backward-char 1) t)
+                (t nil))
+      (when (= (skip-chars-backward " ") 0)
+        (skip-chars-backward rtags-symbol-chars))
       (point))))
 ;; (if (or (= (char-before) 46) ;; '.'
 ;;         (= (char-before) 32) ;; ' '
