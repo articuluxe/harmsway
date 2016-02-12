@@ -135,6 +135,10 @@ git stash save -p "name of stash"
 # interactively staging hunks:
 "y:stage n:don't stage a:all-in-file d:skip-file q:quit"
 
+################################ CHERRY-PICK #################################
+# cherry-pick a commit without committing (index need not match HEAD)
+git cherry-pick -n <sha>
+
 ################################### PATCH ####################################
 # create patch from last revision
 git format-patch HEAD~
