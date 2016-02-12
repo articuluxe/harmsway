@@ -1,6 +1,6 @@
 ;;; magit-blame.el --- blame support for Magit  -*- lexical-binding: t -*-
 
-;; Copyright (C) 2012-2015  The Magit Project Contributors
+;; Copyright (C) 2012-2016  The Magit Project Contributors
 ;;
 ;; You should have received a copy of the AUTHORS.md file which
 ;; lists all contributors.  If not, see http://magit.vc/authors.
@@ -153,7 +153,8 @@ and then turned on again when turning off the latter."
 (defvar-local magit-blame-separator nil)
 
 (define-minor-mode magit-blame-mode
-  "Display blame information inline."
+  "Display blame information inline.
+\n\\{magit-blame-mode-map}"
   :lighter magit-blame-mode-lighter
   (cond (magit-blame-mode
          (when (called-interactively-p 'any)

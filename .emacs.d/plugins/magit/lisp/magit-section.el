@@ -1,6 +1,6 @@
 ;;; magit-section.el --- section functionality  -*- lexical-binding: t -*-
 
-;; Copyright (C) 2010-2015  The Magit Project Contributors
+;; Copyright (C) 2010-2016  The Magit Project Contributors
 ;;
 ;; You should have received a copy of the AUTHORS.md file which
 ;; lists all contributors.  If not, see http://magit.vc/authors.
@@ -91,16 +91,18 @@ diff-related sections being the only exception."
   :options '(magit-diff-unhighlight))
 
 (defcustom magit-section-set-visibility-hook
-  '(magit-diff-expansion-threshold magit-revision-set-visibility)
+  '(magit-diff-expansion-threshold
+    magit-section-set-visibility-from-cache)
   "Hook used to set the initial visibility of a section.
 Stop at the first function that returns non-nil.  The value
 should be `show' or `hide'.  If no function returns non-nil
 determine the visibility as usual, i.e. use the hardcoded
 section specific default (see `magit-insert-section')."
-  :package-version '(magit . "2.1.0")
+  :package-version '(magit . "2.4.0")
   :group 'magit-section
   :type 'hook
-  :options '(magit-diff-expansion-threshold magit-revision-set-visibility))
+  :options '(magit-diff-expansion-threshold
+             magit-section-set-visibility-from-cache))
 
 (defface magit-section-highlight
   '((((class color) (background light)) :background "grey95")
@@ -311,6 +313,7 @@ With a prefix argument also expand it." heading)
     (magit-section-update-highlight))
   (-when-let (beg (magit-section-content section))
     (remove-overlays beg (magit-section-end section) 'invisible t))
+  (magit-section-update-visibility-cache section)
   (dolist (child (magit-section-children section))
     (if (magit-section-hidden child)
         (magit-section-hide child)
@@ -932,6 +935,48 @@ invisible."
         (or (magit-get-section (magit-section-ident it))
             (magit-section-goto-successor-1 it)))))
 
+;;; Visibility
+
+(defvar-local magit-section-visibility-cache nil)
+(put 'magit-section-visibility-cache 'permanent-local t)
+
+(defun magit-section-set-visibility-from-cache (section)
+  "Set SECTION's visibility to the cached value.
+Currently the cache can only be used to remember that a section's
+body should be collapsed, not that it should be expanded.  Return
+either `hide' or nil."
+  (and (member (magit-section-visibility-ident section)
+               magit-section-visibility-cache)
+       'hide))
+
+(cl-defun magit-section-cache-visibility
+    (&optional (section magit-insert-section--current))
+  (let ((ident (magit-section-visibility-ident section)))
+    (if (magit-section-hidden section)
+        (cl-pushnew ident magit-section-visibility-cache :test #'equal)
+      (setq magit-section-visibility-cache
+            (delete ident magit-section-visibility-cache)))))
+
+(defun magit-section-update-visibility-cache (section)
+  (setq magit-section-visibility-cache
+        (delete (magit-section-visibility-ident section)
+                magit-section-visibility-cache)))
+
+(defun magit-section-visibility-ident (section)
+  (let ((type  (magit-section-type  section))
+        (value (magit-section-value section)))
+    (cons type
+          (cond ((not (memq type '(unpulled unpushed))) value)
+                ((string-match-p "@{upstream}" value) value)
+                ;; Unfortunately Git chokes on "@{push}" when the
+                ;; value of `push.default' does not allow a 1:1
+                ;; mapping.  But collapsed logs of unpushed and
+                ;; unpulled commits in the status buffer should
+                ;; remain invisible after changing branches.
+                ;; So we have to pretend the value is constant.
+                ((string-match-p "\\`\\.\\." value) "..@{push}")
+                (t "@{push}..")))))
+
 ;;; Utilities
 
 (cl-defun magit-section-selected-p (section &optional (selection nil sselection))
@@ -1043,10 +1088,13 @@ Add FUNCTION at the beginning of the hook list unless optional
 APPEND is non-nil, in which case FUNCTION is added at the end.
 If FUNCTION already is a member then move it to the new location.
 
-If optional AT is non-nil and a member of the hook list, then add
-FUNCTION next to that instead.  Add before or after AT depending
-on APPEND.  If only FUNCTION is a member of the list, then leave
-it where ever it already is.
+If optional AT is non-nil and a member of the hook list, then
+add FUNCTION next to that instead.  Add before or after AT, or
+replace AT with FUNCTION depending on APPEND.  If APPEND is the
+symbol `replace', then replace AT with FUNCTION.  For any other
+non-nil value place FUNCTION right after AT.  If nil, then place
+FUNCTION right before AT.  If FUNCTION already is a member of the
+list but AT is not, then leave FUNCTION where ever it already is.
 
 If optional LOCAL is non-nil, then modify the hook's buffer-local
 value rather than its global value.  This makes the hook local by
@@ -1072,15 +1120,20 @@ again use `remove-hook'."
     (if at
         (when (setq at (member at value))
           (setq value (delq function value))
-          (if append
-              (push function (cdr at))
-            (push (car at) (cdr at))
-            (setcar at function)))
+          (cond ((eq append 'replace)
+                 (setcar at function))
+                (append
+                 (push function (cdr at)))
+                (t
+                 (push (car at) (cdr at))
+                 (setcar at function))))
       (setq value (delq function value)))
     (unless (member function value)
       (setq value (if append
                       (append value (list function))
                     (cons function value))))
+    (when (eq append 'replace)
+      (setq value (delq at value)))
     (if local
         (set hook value)
       (set-default hook value))))

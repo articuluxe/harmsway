@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-02-11 14:31:03 dan.harms>
+;; Modified Time-stamp: <2016-02-14 09:39:49 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -288,7 +288,8 @@ to overwrite the final element."
                         (if dired-directory
                             (concat "{" (buffer-name) "}")
                           (buffer-name))
-                        (if (profile-current-get 'project-name)
+                        (if (and (featurep 'profiles+)
+                                 (profile-current-get 'project-name))
                             ;; the parent profile "default" happens to
                             ;; have an empty 'project-name attribute
                             (concat
@@ -510,17 +511,14 @@ to overwrite the final element."
   (eval-and-compile (setq magit-need-cygwin-noglob nil))
   (require 'with-editor)
   (require 'magit)
-  (setq magit-revert-buffers nil
-        inhibit-magit-revert t
-        magit-completing-read-function 'magit-ido-completing-read
-        magit-status-buffer-name-format "*magit: %b*"
+  (setq magit-status-buffer-name-format "*magit: %b*"
         magit-log-show-margin t
         magit-popup-show-common-commands nil
         magit-log-show-refname-after-summary nil
         magit-no-confirm '()
         magit-diff-refine-hunk t
         )
-  (global-magit-file-buffer-mode 1)
+  (global-magit-file-mode 1)
   ;; add ido shortcut
   (if (version< emacs-version "25.1")
       (add-hook

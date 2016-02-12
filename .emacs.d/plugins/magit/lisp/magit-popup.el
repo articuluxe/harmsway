@@ -1,6 +1,6 @@
 ;;; magit-popup.el --- Define prefix-infix-suffix command combos  -*- lexical-binding: t -*-
 
-;; Copyright (C) 2010-2015  The Magit Project Contributors
+;; Copyright (C) 2010-2016  The Magit Project Contributors
 ;;
 ;; You should have received a copy of the AUTHORS.md file which
 ;; lists all contributors.  If not, see http://magit.vc/authors.
@@ -69,6 +69,7 @@
 (declare-function magit-set 'magit-git)
 
 ;; For branch actions.
+(declare-function magit-branch-set-face 'magit-git)
 (declare-function magit-local-branch-p 'magit-git)
 
 ;;; Settings
@@ -83,6 +84,16 @@
   :group 'magit-popup)
 
 ;;;; Custom Options
+
+(defcustom magit-popup-display-buffer-action '((display-buffer-below-selected))
+  "The action used to display a popup buffer.
+
+Popup buffers are displayed using `display-buffer' with the value
+of this option as ACTION argument.  You can also set this to nil
+and instead add an entry to `display-buffer-alist'."
+  :package-version '(magit-popup . "2.4.0")
+  :group 'magit-popup
+  :type 'sexp)
 
 (defcustom magit-popup-manpage-package
   (if (memq system-type '(windows-nt ms-dos)) 'woman 'man)
@@ -237,7 +248,7 @@ make it impossible to invoke certain actions.")
 
 (define-button-type 'magit-popup-variable-button
   'supertype 'magit-popup-button
-  'function  'magit-invoke-popup-variable
+  'function  'magit-invoke-popup-action
   'property  :variables
   'heading   "Variables\n"
   'formatter 'magit-popup-format-variable-button
@@ -1017,9 +1028,7 @@ restored."
 
 (defun magit-popup-mode-display-buffer (buffer mode)
   (let ((winconf (current-window-configuration)))
-    (split-window-vertically)
-    (other-window 1)
-    (switch-to-buffer buffer)
+    (select-window (display-buffer buffer magit-popup-display-buffer-action))
     (funcall mode)
     (setq magit-popup-previous-winconf winconf)))
 
@@ -1107,10 +1116,7 @@ of events shared by all popups and before point is adjusted.")
                     (insert "\n"))))
               (unless (equal item '(""))
                 (if item
-                    (progn (apply 'insert-button item)
-                           (unless (memq (get-text-property 4 'face (car item))
-                                         '(bold nil))
-                             (insert ?\n)))
+                    (apply 'insert-button item)
                   (insert ?\s)))))
           (insert (if (= (char-before) ?\n) "\n" "\n\n")))))))
 
@@ -1195,9 +1201,9 @@ of events shared by all popups and before point is adjusted.")
     (when fun
       (setq dsc
             (-when-let (branch (funcall fun))
-              (propertize branch 'face (if (magit-local-branch-p branch)
-                                           'magit-branch-local
-                                         'magit-branch-remote)))))
+              (if (next-single-property-change 0 'face (concat "0" branch))
+                  branch
+                (magit-branch-set-face branch)))))
     (when dsc
       (list (format-spec
              (button-type-get type 'format)

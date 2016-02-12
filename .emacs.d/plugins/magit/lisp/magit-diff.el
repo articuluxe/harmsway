@@ -1,6 +1,6 @@
 ;;; magit-diff.el --- inspect Git diffs  -*- lexical-binding: t -*-
 
-;; Copyright (C) 2010-2015  The Magit Project Contributors
+;; Copyright (C) 2010-2016  The Magit Project Contributors
 ;;
 ;; You should have received a copy of the AUTHORS.md file which
 ;; lists all contributors.  If not, see http://magit.vc/authors.
@@ -629,7 +629,7 @@ If no DWIM context is found, nil is returned."
       (branch (let ((current (magit-get-current-branch))
                     (atpoint (magit-section-value it)))
                 (if (equal atpoint current)
-                    (--if-let (magit-get-tracked-branch)
+                    (--if-let (magit-get-upstream-branch)
                         (format "%s...%s" it current)
                       (if (magit-anything-modified-p)
                           current
@@ -671,6 +671,7 @@ a \"revA...revB\" range.  Otherwise, always construct
                           (magit-get-current-branch)))))
 
 (defun magit-diff-setup (rev-or-range const args files)
+  (require 'magit)
   (magit-mode-setup #'magit-diff-mode rev-or-range const args files))
 
 ;;;###autoload
@@ -759,9 +760,6 @@ be committed."
                     nil (list (expand-file-name a)
                               (expand-file-name b))))
 
-(defvar-local magit-diff-hidden-files nil)
-(put 'magit-diff-hidden-files 'permanent-local t)
-
 ;;;###autoload
 (defun magit-show-commit (rev &optional args files module)
   "Show the revision at point.
@@ -792,11 +790,7 @@ for a revision."
           (unless (equal rev prev)
             (dolist (child (cdr (magit-section-children magit-root-section)))
               (when (eq (magit-section-type child) 'file)
-                (let ((file (magit-section-value child)))
-                  (if (magit-section-hidden child)
-                      (add-to-list 'magit-diff-hidden-files file)
-                    (setq magit-diff-hidden-files
-                          (delete file magit-diff-hidden-files))))))))))
+                (magit-section-cache-visibility child)))))))
     (magit-mode-setup #'magit-revision-mode rev nil args files)))
 
 (defun magit-diff-refresh (args files)
@@ -959,7 +953,10 @@ which, as the name suggests always visits the actual file."
               ((or `file `files)  (car (magit-section-children current)))
               (`list (car (magit-section-children
                            (car (magit-section-children current)))))))
-      (when hunk
+      (when (and hunk
+                 ;; Currently the `hunk' type is also abused for file
+                 ;; mode changes.  Luckily such sections have no value.
+                 (magit-section-value hunk))
         (setq line (magit-diff-hunk-line   hunk)
               col  (magit-diff-hunk-column hunk)))
       (setq buffer (if rev
@@ -967,14 +964,14 @@ which, as the name suggests always visits the actual file."
                      (or (get-file-buffer file)
                          (find-file-noselect file))))
       (magit-display-file-buffer buffer)
-      (when line
-        (goto-char (point-min))
-        (forward-line (1- line))
-        (when col
-          (move-to-column col)))
-      (when unmerged-p
-        (smerge-start-session))
       (with-current-buffer buffer
+        (when line
+          (goto-char (point-min))
+          (forward-line (1- line))
+          (when col
+            (move-to-column col)))
+        (when unmerged-p
+          (smerge-start-session))
         (run-hooks 'magit-diff-visit-file-hook)))))
 
 (defvar magit-display-file-buffer-function
@@ -1434,9 +1431,9 @@ section or a child thereof."
         (insert (propertize (if new
                                 (concat "new module " module)
                               (concat "modified   " module))
-                            'face 'magit-diff-file-heading)
-                (cond (dirty   " (modified content)")
-                      (deleted " (deleted submodule)")))
+                            'face 'magit-diff-file-heading))
+        (cond (dirty   (insert " (modified content)"))
+              (deleted (insert " (deleted submodule)")))
         (insert ?\n)))))
 
 (defun magit-diff-wash-hunk ()
@@ -1655,13 +1652,6 @@ or a ref which is not a branch, then it inserts nothing."
          (list offset align-to
                (if magit-revision-use-gravatar-kludge slice2 slice1)
                (if magit-revision-use-gravatar-kludge slice1 slice2)))))))
-
-(defun magit-revision-set-visibility (section)
-  "Preserve section visibility when displaying another commit."
-  (and (derived-mode-p 'magit-revision-mode)
-       (eq (magit-section-type section) 'file)
-       (member (magit-section-value section) magit-diff-hidden-files)
-       'hide))
 
 ;;; Diff Sections
 

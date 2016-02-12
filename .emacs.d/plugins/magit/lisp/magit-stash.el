@@ -1,6 +1,6 @@
 ;;; magit-stash.el --- stash support for Magit  -*- lexical-binding: t -*-
 
-;; Copyright (C) 2008-2015  The Magit Project Contributors
+;; Copyright (C) 2008-2016  The Magit Project Contributors
 ;;
 ;; You should have received a copy of the AUTHORS.md file which
 ;; lists all contributors.  If not, see http://magit.vc/authors.
@@ -222,10 +222,10 @@ When the region is active offer to drop all contained stashes."
         (if (eq keep 'worktree)
             (with-temp-buffer
               (magit-git-insert "diff" "--cached")
-              (magit-run-git-with-input nil
-                "apply" "--reverse" "--cached" "--ignore-space-change" "-")
-              (magit-run-git-with-input nil
-                "apply" "--reverse" "--ignore-space-change" "-"))
+              (magit-run-git-with-input
+               "apply" "--reverse" "--cached" "--ignore-space-change" "-")
+              (magit-run-git-with-input
+               "apply" "--reverse" "--ignore-space-change" "-"))
           (unless (eq keep t)
             (if (eq keep 'index)
                 (magit-call-git "checkout" "--" ".")
@@ -240,10 +240,7 @@ When the region is active offer to drop all contained stashes."
                                                 (t "local"))))))
 
 (defun magit-stash-store (message ref commit)
-  (magit-reflog-enable ref t)
-  (unless (magit-git-success "update-ref" "-m" message ref commit
-                             (or (magit-rev-verify ref) ""))
-    (error "Cannot update %s with %s" ref commit)))
+  (magit-update-ref ref message commit t))
 
 (defun magit-stash-create (message index worktree untracked)
   (unless (magit-rev-parse "--verify" "HEAD")
