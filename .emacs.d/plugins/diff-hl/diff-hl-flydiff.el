@@ -1,4 +1,4 @@
-;; Copyright (C) 2015 Free Software Foundation, Inc.
+;; Copyright (C) 2015, 2016 Free Software Foundation, Inc.
 
 ;; Author:   Jonathan Hayase <PythonNut@gmail.com>
 ;; URL:      https://github.com/dgutov/diff-hl
@@ -105,19 +105,18 @@ the user should be returned."
       (if (file-exists-p automatic-backup)
           (rename-file automatic-backup filename nil)
         (with-current-buffer filebuf
-          (let ((failed t)
-                (coding-system-for-read 'no-conversion)
+          (let ((coding-system-for-read 'no-conversion)
                 (coding-system-for-write 'no-conversion))
-            (unwind-protect
+            (condition-case nil
                 (with-temp-file filename
                   (let ((outbuf (current-buffer)))
                     ;; Change buffer to get local value of
                     ;; vc-checkout-switches.
                     (with-current-buffer filebuf
                       (vc-call find-revision file revision outbuf))))
-              (setq failed nil)
-              (when (and failed (file-exists-p filename))
-                (delete-file filename)))))))
+              (error
+               (when (file-exists-p filename)
+                 (delete-file filename))))))))
     filename))
 
 (defun diff-hl-flydiff-buffer-with-head (file &optional backend)
@@ -125,7 +124,8 @@ the user should be returned."
 This requires the external program `diff' to be in your `exec-path'."
   (interactive)
   (vc-ensure-vc-buffer)
-  (with-current-buffer (get-buffer (current-buffer))
+  (setq diff-hl-flydiff-modified-tick (buffer-modified-tick))
+  (save-current-buffer
     (let* ((temporary-file-directory
             (if (file-directory-p "/dev/shm/")
                 "/dev/shm/"
@@ -136,19 +136,15 @@ This requires the external program `diff' to be in your `exec-path'."
       (diff-no-select rev (current-buffer) "-U 0 --strip-trailing-cr" 'noasync
                       (get-buffer-create " *diff-hl-diff*")))))
 
-(defun diff-hl-flydiff/update (old-fun &optional auto)
-  (unless (and auto
-               (or
-                (= diff-hl-flydiff-modified-tick (buffer-modified-tick))
-                (file-remote-p default-directory)
-                (not (buffer-modified-p))))
-    (funcall old-fun)))
+(defun diff-hl-flydiff-update ()
+  (unless (or
+           (not diff-hl-mode)
+           (= diff-hl-flydiff-modified-tick (buffer-modified-tick))
+           (file-remote-p default-directory))
+    (diff-hl-update)))
 
 (defun diff-hl-flydiff/modified-p (state)
   (buffer-modified-p))
-
-(defun diff-hl-flydiff/update-modified-tick (&rest args)
-  (setq diff-hl-flydiff-modified-tick (buffer-modified-tick)))
 
 ;;;###autoload
 (define-minor-mode diff-hl-flydiff-mode
@@ -157,25 +153,19 @@ This requires the external program `diff' to be in your `exec-path'."
   :global t
   (if diff-hl-flydiff-mode
       (progn
-        (advice-add 'diff-hl-update :around #'diff-hl-flydiff/update)
         (advice-add 'diff-hl-overlay-modified :override #'ignore)
 
         (advice-add 'diff-hl-modified-p :before-until
                     #'diff-hl-flydiff/modified-p)
         (advice-add 'diff-hl-changes-buffer :override
                     #'diff-hl-flydiff-buffer-with-head)
-        (advice-add 'diff-hl-change :after
-                    #'diff-hl-flydiff/update-modified-tick)
-
         (setq diff-hl-flydiff-timer
-              (run-with-idle-timer diff-hl-flydiff-delay t #'diff-hl-update t)))
+              (run-with-idle-timer diff-hl-flydiff-delay t #'diff-hl-flydiff-update)))
 
-    (advice-remove 'diff-hl-update #'diff-hl-flydiff/update)
     (advice-remove 'diff-hl-overlay-modified #'ignore)
 
     (advice-remove 'diff-hl-modified-p #'diff-hl-flydiff/modified-p)
     (advice-remove 'diff-hl-changes-buffer #'diff-hl-flydiff-buffer-with-head)
-    (advice-remove 'diff-hl-change #'diff-hl-flydiff/update-modified-tick)
 
     (cancel-timer diff-hl-flydiff-timer)))
 

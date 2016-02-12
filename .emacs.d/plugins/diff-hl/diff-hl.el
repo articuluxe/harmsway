@@ -1,11 +1,11 @@
-;;; diff-hl.el --- Highlight uncommitted changes -*- lexical-binding: t -*-
+;;; diff-hl.el --- Highlight uncommitted changes using VC -*- lexical-binding: t -*-
 
-;; Copyright (C) 2012-2015  Free Software Foundation, Inc.
+;; Copyright (C) 2012-2016  Free Software Foundation, Inc.
 
 ;; Author:   Dmitry Gutov <dgutov@yandex.ru>
 ;; URL:      https://github.com/dgutov/diff-hl
 ;; Keywords: vc, diff
-;; Version:  1.8.1
+;; Version:  1.8.3
 ;; Package-Requires: ((cl-lib "0.2"))
 
 ;; This file is part of GNU Emacs.
@@ -445,6 +445,14 @@ in the source file, or the last line of the hunk above it."
   (interactive)
   (diff-hl-next-hunk t))
 
+(defun diff-hl-mark-hunk ()
+  (interactive)
+  (let ((hunk (diff-hl-hunk-overlay-at (point))))
+    (unless hunk
+      (error "No hunk at point"))
+    (goto-char (overlay-start hunk))
+    (push-mark (overlay-end hunk) nil t)))
+
 (defvar diff-hl-command-map
   (let ((map (make-sparse-keymap)))
     (define-key map "n" 'diff-hl-revert-hunk)
@@ -480,8 +488,8 @@ in the source file, or the last line of the hunk above it."
         ;; doesn't care about changed VC state.
         ;; https://github.com/magit/magit/issues/603
         (add-hook 'magit-revert-buffer-hook 'diff-hl-update nil t)
-        ;; Magit 2+ doesn't do the above and calls this instead,
-        ;; but only when it doesn't call `revert-buffer':
+        ;; Magit versions 2.0-2.3 don't do the above and call this
+        ;; instead, but only when they dosn't call `revert-buffer':
         (add-hook 'magit-not-reverted-hook 'diff-hl-update nil t)
         (add-hook 'auto-revert-mode-hook 'diff-hl-update nil t)
         (add-hook 'text-scale-mode-hook 'diff-hl-define-bitmaps nil t))
@@ -508,6 +516,32 @@ in the source file, or the last line of the hunk above it."
                        map)))
       (scan diff-hl-command-map)
       (smartrep-define-key diff-hl-mode-map diff-hl-command-prefix smart-keys))))
+
+(declare-function magit-toplevel "magit-git")
+(declare-function magit-unstaged-files "magit-git")
+
+(defun diff-hl-magit-post-refresh ()
+  (let* ((topdir (magit-toplevel))
+         (modified-files
+          (mapcar (lambda (file) (expand-file-name file topdir))
+                  (magit-unstaged-files t)))
+         (unmodified-states '(up-to-date ignored unregistered)))
+    (dolist (buf (buffer-list))
+      (when (and (buffer-local-value 'diff-hl-mode buf)
+                 (not (buffer-modified-p buf))
+                 (file-in-directory-p (buffer-file-name buf) topdir))
+        (with-current-buffer buf
+          (let* ((file buffer-file-name)
+                 (backend (vc-backend file)))
+            (when backend
+              (cond
+               ((member file modified-files)
+                (when (memq (vc-state file) unmodified-states)
+                  (vc-state-refresh file backend))
+                (diff-hl-update))
+               ((not (memq (vc-state file backend) unmodified-states))
+                (vc-state-refresh file backend)
+                (diff-hl-update))))))))))
 
 (defun diff-hl-dir-update ()
   (dolist (pair (if (vc-dir-marked-files)
