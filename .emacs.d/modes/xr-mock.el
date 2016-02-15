@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Wednesday, June 10, 2015
 ;; Version: 1.1
-;; Modified Time-stamp: <2016-02-11 16:49:33 dan.harms>
+;; Modified Time-stamp: <2016-02-15 08:45:33 dan.harms>
 ;; Keywords: mock script
 
 ;; Code:
@@ -32,7 +32,7 @@
                '(0 font-lock-builtin-face))
          (list "\\_<\\(Exit\\|SetSaturdayCheck\\|\\(Dump\\(Time\\|Quotes\\|QtyAtPrice\\)\\)\\)\\_>"
                '(0 font-lock-builtin-face))
-         (list "\\_<\\(Dump\\(Open\\)?Orders\\)\\|\\(\\(Set\\|Start\\|Stop\\|AddTo\\)Clock\\)\\|\\(Log\\)\\|\\(SocketReceiveDisconnect\\)\\_>"
+         (list "\\_<\\(Dump\\(Open\\)?Orders\\)\\|\\(\\(Set\\|Start\\|Stop\\|AddTo\\)Clock\\)\\|\\(\\_<Log\\_>\\)\\|\\(SocketReceiveDisconnect\\)\\_>"
                '(0 font-lock-builtin-face))
          (list "\\_<\\(To\\|From\\)\\(Opt\\|Cmd\\)?\\>"
                '(0 font-lock-keyword-face))
