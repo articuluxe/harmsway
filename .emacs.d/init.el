@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-02-14 09:39:49 dharms>
+;; Modified Time-stamp: <2016-02-15 10:45:38 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -517,8 +517,10 @@ to overwrite the final element."
         magit-log-show-refname-after-summary nil
         magit-no-confirm '()
         magit-diff-refine-hunk t
+        magit-auto-revert-tracked-only t
         )
   (global-magit-file-mode 1)
+  (magit-auto-revert-mode 0)
   ;; add ido shortcut
   (if (version< emacs-version "25.1")
       (add-hook
