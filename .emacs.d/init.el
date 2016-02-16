@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-02-15 10:45:38 dan.harms>
+;; Modified Time-stamp: <2016-02-16 09:10:16 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -305,7 +305,7 @@ to overwrite the final element."
 (eval-and-compile
   (add-to-list 'load-path (concat my/plugins-directory "multi-line/"))
   (require 'multi-line)
-  (global-set-key "\C-cl" 'multi-line)
+  (global-set-key "\C-cw" 'multi-line)
   )
 
 
@@ -473,7 +473,7 @@ to overwrite the final element."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; hide-lines ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'hide-lines)
-(global-set-key "\C-c\\" 'hide-lines)
+(global-set-key "\C-cl" 'hide-lines)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;; line-comment-banner ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'line-comment-banner)
