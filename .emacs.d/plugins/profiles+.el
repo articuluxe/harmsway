@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-01-29 09:04:01 dan.harms>
+;; Modified Time-stamp: <2016-02-16 23:29:40 dharms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -248,6 +248,7 @@ actions include setting include directories."
   (when c-buffer-is-cc-mode
     (set (make-local-variable 'achead:include-directories)
          (profile-current-get 'include-files))
+    ;; set 'compiler-include-dirs for ac-clang
     (when (executable-find "clang")
       (or (profile-current-get 'compiler-include-dirs)
           (profile-current-put
@@ -268,7 +269,25 @@ actions include setting include directories."
                        (profile-current-get 'project-root-dir)))))
             (profile-current-get 'compiler-include-dirs)
             )))
-    )
+    ;; set flycheck for c++
+    (when (eq major-mode 'c++-mode)
+      (if (executable-find "clang")
+          (progn                        ;clang
+            (set (make-local-variable 'flycheck-clang-language-standard)
+                 "c++14")
+            (set (make-local-variable 'flycheck-clang-standard-library)
+                 "libc++")
+            (set (make-local-variable 'flycheck-clang-include-path)
+                 (profile-current-get 'include-files))
+            (add-to-list 'flycheck-disabled-checkers 'c/c++-gcc)
+            )
+        ;; gcc
+        (set (make-local-variable 'flycheck-gcc-language-standard)
+             "c++14")
+        (set (make-local-variable 'flycheck-gcc-include-path)
+             (profile-current-get 'include-files))
+        (add-to-list 'flycheck-disabled-checkers 'c/c++-clang)
+        )))
   (setq ff-search-directories
         ;; current dir, include dirs, project root
         (append '(".")
