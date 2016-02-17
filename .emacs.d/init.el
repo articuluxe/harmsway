@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-02-16 09:10:16 dan.harms>
+;; Modified Time-stamp: <2016-02-16 19:08:42 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -576,14 +576,14 @@ to overwrite the final element."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; shackle ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'shackle)
 (setq shackle-default-ratio 0.4)
-(setq shackle-select-reused-windows t)
+(setq shackle-select-reused-windows nil)
 (setq shackle-rules
       '(
         (occur-mode :select nil)
-        (grep-mode :select nil :align bottom)
+        (grep-mode :popup t :select nil :align bottom)
         ("*Help*" :select t)
         (completion-list-mode :select nil)
-        (compilation-mode :select nil)
+        (compilation-mode :popup t :select nil :align bottom)
         ("*Shell Command Output*" :select t)
         ("COMMIT_EDITMSG" :select t)
         )
