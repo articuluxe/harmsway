@@ -1,21 +1,31 @@
 # -*- Mode: org -*-
 
-auto-complete: add key words for dos mode, cmake mode
-               c-headers: stop completing if file exists; "."
+* auto-complete
+1) add key words for dos mode, cmake mode
+2) c-headers: stop completing if file exists; "."
+3) buffer modified even if inserting same string
 
-windmove: wrap
+* windmove
+1) wrap
 
-ace-popup-menu: not called under window-system-p (e.g. flyspell)
+* ace-popup-menu
+1) not called under window-system-p (e.g. flyspell)
 
-ispell: custom dictionaries
+* ispell
+1) custom dictionaries
 
-check-bashisms: flycheck checker error, unknown /usr/bin/env
+* check-bashisms
+1) flycheck checker error, unknown /usr/bin/env
 
-etags: display source file
+* etags
+1) display source file
 
-see `grep-host-defaults-alist' in grep.el; opening a remote file, grepping,
-then trying to grep a local file fails
+* grep
+1) opening a remote file, grepping, then trying to grep a local file fails
+** see `grep-host-defaults-alist' in grep.el; 
 
-dired: ability to compress a folder, rather than have to compress each constituent file
+* dired
+1) ability to compress a folder, rather than have to compress each constituent file
 
-yascroll: out of line when lines wrapped
+* yascroll
+1) out of line when lines wrapped
