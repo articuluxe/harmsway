@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-02-16 19:22:53 dharms>
+;; Modified Time-stamp: <2016-02-18 17:37:05 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1419,6 +1419,11 @@ register \\C-l."
       '(emacs-lisp-mode python-mode dart-mode sh-mode c++-mode))
 (require 'flycheck-pos-tip)
 (setq flycheck-display-errors-function #'flycheck-pos-tip-error-messages)
+(setq flycheck-pos-tip-display-errors-tty-function
+      (lambda (errors)
+        (let ((message (mapconcat #'flycheck-error-format-message-and-id
+                                  errors "\n\n")))
+          (popup-tip message))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; flyspell ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (when (executable-find "hunspell")
