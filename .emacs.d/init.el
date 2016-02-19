@@ -581,7 +581,8 @@ to overwrite the final element."
       '(
         (occur-mode :select nil)
         (grep-mode :popup t :select nil :align bottom)
-        ("*Help*" :select t)
+        ("*Help*" :popup t :select t)
+        (diff-mode :popup t :select t)
         (completion-list-mode :select nil)
         (compilation-mode :popup t :select nil :align bottom)
         ("*Shell Command Output*" :select t)
