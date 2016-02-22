@@ -1066,7 +1066,7 @@ Can be used both for path and location."
 ;;;###autoload
 (defun rtags-symbol-type ()
   (interactive)
-  (let* ((info (rtags-symbol-info-internal nil))
+  (let* ((info (rtags-symbol-info-internal))
          (type (cdr (assoc 'type info))))
     (when (called-interactively-p 'any)
       (if type
@@ -1701,8 +1701,11 @@ Can be used both for path and location."
 (defvar rtags-location-stack-index 0)
 (defvar rtags-location-stack nil)
 
-(defun rtags-location-stack-push ()
-  (let ((bm (rtags-current-location)))
+(defun rtags-location-stack-push (&optional loc-arg)
+  "Push current location into location stack.
+If loc-arg is non-nil, then push it instead.
+See `rtags-current-location' for loc-arg format."
+  (let ((bm (or loc-arg (rtags-current-location))))
     (while (> rtags-location-stack-index 0)
       (decf rtags-location-stack-index)
       (pop rtags-location-stack))
@@ -1779,6 +1782,7 @@ Can be used both for path and location."
     (define-key map (concat prefix "L") (function rtags-copy-and-print-current-location))
     (define-key map (concat prefix "X") (function rtags-fix-fixit-at-point))
     (define-key map (concat prefix "B") (function rtags-show-rtags-buffer))
+    (define-key map (concat prefix "K") (function rtags-make-member))
     (define-key map (concat prefix "I") (function rtags-imenu))
     (define-key map (concat prefix "T") (function rtags-taglist))
     (define-key map (concat prefix "h") (function rtags-print-class-hierarchy))
@@ -3161,6 +3165,7 @@ The option OTHER-WINDOW is only applicable if rtags is configured not to show th
   (when (and (or (buffer-file-name) dired-directory)
              (not (eq (current-buffer) rtags-last-update-current-project-buffer))
              default-directory
+	     (not (and (tramp-tramp-file-p default-directory) (not rtags-tramp-enabled)))
              (file-directory-p default-directory))
     (setq rtags-last-update-current-project-buffer (current-buffer))
     (let* ((rc (rtags-executable-find "rc"))
@@ -3783,13 +3788,15 @@ If `rtags-display-summary-as-tooltip' is t, a tooltip is displayed."
           (let ((location (cdr (assoc 'location target))))
             (when (string-match "\\(.*\\):[0-9]+:[0-9]+:?" location)
               (let ((buffer (find-file-noselect (match-string-no-properties 1 location))))
-                ;; (message "GOT BUF %s" (buffer-file-name buffer))
+                ;; (message "GOT target %s for %s (%d:%d)" location (rtags-current-location)
+                         ;; (cdr (assoc 'endLine target))
+                         ;; (cdr (assoc 'endColumn target)))
                 (with-current-buffer buffer
-                  (rtags-goto-line-col (cdr (assoc 'endLine sym))
-                                       (cdr (assoc 'endColumn sym)))
+                  (rtags-goto-line-col (cdr (assoc 'endLine target))
+                                       (cdr (assoc 'endColumn target)))
                   (cons buffer (1+ (point))))))))))))
 
-(defun rtags-find-peer (range)
+(defun rtags-find-location-for-function (range)
   (let (loc)
     (save-excursion
       (while (and (not loc)
@@ -3804,24 +3811,41 @@ If `rtags-display-summary-as-tooltip' is t, a tooltip is displayed."
         (forward-word)
         (forward-char -1)
         (setq loc (rtags-peer-member-end-location))))
+    (unless loc
+      ;; Need to handle creation of a buffer with appropriate name
+      (if (member (downcase (file-name-extension (buffer-file-name))) (list "c" "cxx" "cc" "cpp" "c++"))
+          (setq loc (cons (current-buffer) (+ (cdr range) 2)))
+        (let ((fn (buffer-file-name)))
+          (find-file (concat (file-name-sans-extension fn) ".cpp"))
+          (insert "#include \"" (file-name-nondirectory fn) "\"\n")
+          (setq loc (cons (current-buffer) (point))))))
     loc))
+
+(defun rtags-find-member-function ()
+  (save-excursion
+    (let ((start (point))
+          (start (point-at-bol))
+          (valid (list "CXXMethod" "CXXConstructor" "CXXDestructor" "FunctionTemplate"))
+          (sym (rtags-symbol-info-internal nil nil t)))
+      (unless (and sym (member (cdr (assoc 'kind sym)) valid))
+        (goto-char (point-at-eol))
+        (while (and (not sym) (>= (point) start))
+          (setq sym (rtags-symbol-info-internal nil nil t))
+          (unless (and sym (member (cdr (assoc 'kind sym)) valid))
+            (setq sym nil)
+            (backward-word))))
+      sym)))
 
 ;;;###autoload
 (defun rtags-make-member ()
   (interactive)
-  (let* ((member (rtags-symbol-info-internal))
+  (let* ((member (rtags-find-member-function))
          (parent (cdr (assoc 'parent member)))
          (kind (cdr (assoc 'kind member))))
-    (cond ((not kind) (error "No symbol here that I know of"))
-          ((string= kind "CXXMethod"))
-          ((string= kind "CXXConstructor"))
-          ((string= kind "CXXDestructor"))
-          (t (error "Not an appropriate method/constructor/destructor: %s" kind)))
-
+    (unless (and kind (member (cdr (assoc 'kind parent)) (list "ClassDecl" "StructDecl" "ClassTemplate")))
+      (error "No appropriate symbol here that I know of"))
     (when (cdr (assoc 'definition member))
       (error "This is already the definition"))
-    (unless parent
-      (error "Can't find parent"))
     (when (rtags-real-target member)
       (error "%s is already implemented here: %s"
              (cdr (assoc 'symbolName member))
@@ -3829,12 +3853,16 @@ If `rtags-display-summary-as-tooltip' is t, a tooltip is displayed."
     (let ((range (rtags-range-for-symbol-info parent)))
       (unless range
         (error "Can't find the range"))
-      (let ((loc (rtags-find-peer range)))
+      (let ((loc (rtags-find-location-for-function range)))
         (unless loc
           (error "Can't find a location for this function"))
         (switch-to-buffer (car loc))
         (goto-char (cdr loc))
-        (insert (cdr (assoc 'symbolName member)) "\n{}")))))
+        (insert "\n" (cdr (assoc 'symbolName member)) "\n{")
+        (save-excursion
+          (insert "}\n")
+          (unless (eobp)
+            (insert "\n")))))))
 
 (defvar rtags-check-includes-received-output nil)
 (defun rtags-check-includes-filter (process output)
