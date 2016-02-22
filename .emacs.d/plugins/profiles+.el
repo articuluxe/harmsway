@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-02-16 23:29:40 dharms>
+;; Modified Time-stamp: <2016-02-22 13:17:19 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -274,7 +274,7 @@ actions include setting include directories."
       (if (executable-find "clang")
           (progn                        ;clang
             (set (make-local-variable 'flycheck-clang-language-standard)
-                 "c++14")
+                 profile-clang-standard-version)
             (set (make-local-variable 'flycheck-clang-standard-library)
                  "libc++")
             (set (make-local-variable 'flycheck-clang-include-path)
