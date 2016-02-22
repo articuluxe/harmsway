@@ -8,6 +8,9 @@ export ONE_TICK_CONFIG=/opt/1tick/client_data/config/one_tick_config.txt
 use gcc491
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/boost156/lib
 
+# reset display to local host
+local-display() { export DISPLAY=:0.0; }
+
 # gcc
 gcc-init()
 {
