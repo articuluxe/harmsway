@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-02-18 17:37:05 dharms>
+;; Modified Time-stamp: <2016-02-23 08:43:25 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -180,7 +180,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (global-set-key [f5] 'toggle-truncate-lines)
 (global-set-key "\C-c5" 'toggle-truncate-lines)
 (global-set-key "\C-c " 'whitespace-mode)
-(global-set-key "\C-cf" 'font-lock-fontify-buffer)
+(global-set-key "\C-c0f" 'font-lock-fontify-buffer)
 (global-set-key "\e\es" 'speedbar)
 (global-set-key "\e\eo" 'speedbar-get-focus)
 (global-set-key "\M-sf" 'ff-find-other-file)
@@ -726,6 +726,10 @@ to overwrite the final element."
   (add-to-list 'my/completion-framework-alist
                (cons "ivy" 'my/activate-ivy))
   (global-set-key "\e\eii" 'ivy-resume)
+  ;; counsel
+  (global-set-key "\C-cff" 'counsel-git)
+  (global-set-key "\C-cfg" 'counsel-git-grep)
+  (global-set-key "\C-cfs" 'counsel-git-stash)
   (setq counsel-find-file-ignore-regexp "\\.elc$")
   (setf (cdr (assoc 'counsel-M-x ivy-initial-inputs-alist)) "")
   (require 'counsel)
