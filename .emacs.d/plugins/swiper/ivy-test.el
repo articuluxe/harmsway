@@ -21,6 +21,7 @@
 
 (require 'ert)
 (require 'ivy)
+(require 'counsel)
 
 (defvar ivy-expr nil
   "Holds a test expression to evaluate with `ivy-eval'.")
@@ -99,6 +100,11 @@
                   "and  I  am"
                    "your  king."))))
 
+(ert-deftest ivy--regex ()
+  (should (equal (ivy--regex
+                  "\\(?:interactive\\|swiper\\) \\(?:list\\|symbol\\)")
+                 "\\(\\(?:interactive\\|swiper\\)\\).*?\\(\\(?:list\\|symbol\\)\\)")))
+
 (ert-deftest ivy--regex-fuzzy ()
   (should (string= (ivy--regex-fuzzy "tmux")
                    "\\(t\\).*\\(m\\).*\\(u\\).*\\(x\\)"))
@@ -160,3 +166,8 @@
                  '("the" "The")))
   (should (equal (ivy--filter "The" '("foo" "the" "The"))
                  '("The"))))
+
+(ert-deftest counsel-unquote-regex-parens ()
+  (should (equal (counsel-unquote-regex-parens
+                  (ivy--regex "foo bar"))
+                 "(foo).*?(bar)")))
