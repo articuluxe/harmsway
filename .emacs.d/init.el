@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-02-23 08:43:25 dan.harms>
+;; Modified Time-stamp: <2016-02-24 12:49:46 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1107,6 +1107,19 @@ to overwrite the final element."
 
 ;; resume prior window configuration
 (add-hook 'ediff-after-quit-hook-internal 'winner-undo)
+
+;; add a merge both command
+(defun ediff-copy-both-to-C ()
+  (interactive)
+  (ediff-copy-diff
+   ediff-current-difference nil 'C nil
+   (concat
+    (ediff-get-region-contents ediff-current-difference 'A ediff-control-buffer)
+    (ediff-get-region-contents ediff-current-difference 'B ediff-control-buffer))))
+(defun my/add-merge-to-ediff-mode-map ()
+  "Add a `merge A and B to C' command to ediff."
+  (define-key ediff-mode-map "c" 'ediff-copy-both-to-C))
+(add-hook 'ediff-keymap-setup-hook 'my/add-merge-to-ediff-mode-map)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ediff-trees ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'ediff-trees)
