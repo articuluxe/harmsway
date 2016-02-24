@@ -1,10 +1,10 @@
 ;; -*- Mode: Emacs-Lisp -*-
 ;; compiling.el --- utilities concerned with compiling
-;; Copyright (C) 2015  Dan Harms (dharms)
+;; Copyright (C) 2015, 2016  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-05-19 10:11:35 dan.harms>
+;; Modified Time-stamp: <2016-02-24 17:22:14 dharms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -25,6 +25,8 @@
 ;;
 
 ;; Code:
+
+(require 'dash)
 
 (defvar one-window-in-frame nil)
 (defvar my/compile-command)
@@ -72,25 +74,35 @@
                                         ; the compile is about to start
                                     ))
 
+(defun my/check-compile-buffer-cmake-werror ()
+  "Ignores the compile line `-Werror' that cmake echoes."
+  (save-match-data
+    (looking-back "-W" (- (point) 2))))
+(defun my/check-compile-buffer-boost-test-output ()
+  "Ignores the BOOST test output `No errors detected'."
+  (and
+   (save-match-data
+     (looking-back "[Nn]o " (- (point) 3)))
+   (save-match-data
+     (looking-at "errors detected"))))
+
+(defvar my/ignore-compile-error-functions
+  `(my/check-compile-buffer-cmake-werror
+    my/check-compile-buffer-boost-test-output
+    )
+  "List of functions to filter compile errors.
+If any return true, the current error is ignored."
+  )
+
 (defun check-compile-buffer-errors(buffer)
-  "Check the current buffer for compile warnings or errors"
+  "Check the current buffer for compile warnings or errors."
   (with-current-buffer buffer
     (catch 'found
       (goto-char 1)
       (while (search-forward-regexp "\\([Ww]arning\\|[Ee]rror\\)" nil t)
         (goto-char (match-beginning 1))
         (unless
-            (or
-             ;; ignore the compile line "-Werror" that cmake echoes
-             (save-match-data
-               (looking-back "-W" (- (point) 2)))
-             ;; ignore boost test output "No errors detected"
-             (and
-              (save-match-data
-                (looking-back "[Nn]o " (- (point) 3)))
-              (save-match-data
-                (looking-at "errors detected")))
-             )
+            (-any 'funcall my/ignore-compile-error-functions)
           (throw 'found t))
         (goto-char (match-end 1)))
       nil)))
