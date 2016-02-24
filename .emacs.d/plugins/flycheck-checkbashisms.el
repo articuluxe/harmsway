@@ -5,7 +5,7 @@
 
 ;; Author: Cuong Le <cuong.manhle.vn@gmail.com>
 ;; Keywords: convenience, tools, sh, unix
-;; Version: 1.2
+;; Version: 1.4-git
 ;; URL: https://github.com/Gnouc/flycheck-checkbashisms
 ;; Package-Requires: ((emacs "24") (flycheck "0.25"))
 
@@ -71,6 +71,7 @@ Enable this also make `flycheck-checkbashisms-newline' effects"
   "A linter for sh script.
 See URL: `https://anonscm.debian.org/cgit/collab-maint/devscripts.git/tree/scripts/checkbashisms.pl'"
   :command ("checkbashisms"
+            "-f"
             (option-flag "-n" flycheck-checkbashisms-newline)
             (option-flag "-p" flycheck-checkbashisms-posix)
             "-")
