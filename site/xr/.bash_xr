@@ -47,6 +47,12 @@ snap-setup()
    export PYTHONPATH=$SNAP_ROOT/snap/scripts
 }
 
+# mock
+mock-setup()
+{
+   export LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH
+}
+
 # distcc
 distcc-init()
 {
