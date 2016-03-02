@@ -5,11 +5,13 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Tuesday, March  1, 2016
 # Version: 1.0
-# Modified Time-stamp: <2016-03-01 17:03:37 dan.harms>
+# Modified Time-stamp: <2016-03-02 16:31:12 dan.harms>
 # Modified by: Dan Harms
 # Keywords: mock scripting
 
 archive=mock.tar
+
+rm -f $archive
 
 # snap, dependencies
 tar -cf $archive xr-snap
@@ -30,8 +32,10 @@ tar -rf $archive --directory=/usr/local/boost156/lib libboost_system.so.1.56.0
 (cd ../../../..; make all-local)
 tar -rf $archive mockobjects/Base.config
 tar -rf $archive mockobjects/testscripts
-tar -rf $archive mockrun.sh
+tar -rf $archive mockrun.sh CMEmsgw.csv
 
 gzip -f $archive
+
+echo "Created $archive; saved $archive.gz"
 
 # code ends here
