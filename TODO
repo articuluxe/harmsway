@@ -10,6 +10,7 @@
 
 * ace-popup-menu
 1) not called under window-system-p (e.g. flyspell)
+** flyspell-correct-word-before-point calls flyspell-emacs-popup; let-bind window-system?
 
 * ispell
 1) custom dictionaries
