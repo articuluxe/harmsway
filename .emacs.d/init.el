@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-03-03 13:35:42 dan.harms>
+;; Modified Time-stamp: <2016-03-03 14:09:14 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -958,6 +958,8 @@ to overwrite the final element."
 (require 'ls-lisp+)
 ;; omit dot-files in dired-omit-mode (C-x M-o)
 (setq dired-omit-files (concat dired-omit-files "\\|^\\..+$"))
+(require 'dired-filter)
+(define-key dired-mode-map "." dired-filter-mark-map)
 ;; sorting
 (require 'dired-sort)
 (setq-default dired-listing-switches "-alhvGg")
