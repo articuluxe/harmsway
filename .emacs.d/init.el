@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-02-24 12:49:46 dan.harms>
+;; Modified Time-stamp: <2016-03-03 13:35:42 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -953,10 +953,14 @@ to overwrite the final element."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dired ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'dired-x)                      ; C-x C-j now runs 'dired-jump
-(require 'dired-details+)
+(setq diredp-hide-details-initially-flag nil)
+(require 'dired+)
+(require 'ls-lisp+)
+;; omit dot-files in dired-omit-mode (C-x M-o)
+(setq dired-omit-files (concat dired-omit-files "\\|^\\..+$"))
+;; sorting
 (require 'dired-sort)
 (setq-default dired-listing-switches "-alhvGg")
-(setq dired-details-initially-hide nil)
 (put 'dired-find-alternate-file 'disabled nil)
 ;; next window's dired window used as target for current window operations
 (setq dired-dwim-target t)
@@ -966,11 +970,11 @@ to overwrite the final element."
 (defun my/dired-sort()
   "Toggle sorting in dired buffers."
   (interactive)
-  ( let ((type
-          (funcall
-           my/choose-func
-           '( "size" "extension" "ctime" "utime" "time" "name")
-           "Sort by:")))
+  (let ((type
+         (funcall
+          my/choose-func
+          '( "size" "extension" "ctime" "utime" "time" "name")
+          "Sort by:")))
     ;; on os x, extension (X) not supported;
     ;; also, ctime means time file status was last changed
     (cond ((string= type "size") (dired-sort-size))
