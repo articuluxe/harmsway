@@ -1,7 +1,6 @@
 # -*- Mode: sh -*-
 # .bash_xr
 
-export ORIGPATH=$PATH
 export ONE_TICK_CONFIG=/opt/1tick/client_data/config/one_tick_config.txt
 
 # default to latest
@@ -9,12 +8,13 @@ use gcc491
 use cdh5
 use cdh5-dev
 
+export ORIGPATH=$PATH
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/boost156/lib
 # what `use cdh5' prepends to LD_LIBRARY_PATH:
 # /usr/java/latest/jre/lib/amd64/server
 
 # reset display to local host
-local-display() { export DISPLAY=:0.0; }
+display-local() { export DISPLAY=:0.0; }
 
 # gcc
 gcc-init()
