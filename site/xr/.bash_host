@@ -9,6 +9,8 @@ if [ -f ~/.personal ]; then
 fi
 
 python=/opt/anaconda-python-2.7.8/bin
+# what `use cdh5 prepends to $PATH:
+java=/usr/java/latest/bin:/usr/java/latest/jre/bin
 
 export PATH=$HOME/bin:/sbin/:/usr/lib64:$python:$PATH:.
 # export TERM=xterm-256color
