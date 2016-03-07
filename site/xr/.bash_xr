@@ -53,9 +53,36 @@ snap-setup()
 }
 
 # mock
+mock-init()
+{
+   if [ -z "$1" ]; then
+      echo "Missing mock install target (sub-directory); exiting..."
+      return
+   fi
+   echo "Installing mock to $1"
+   if [ -d "$1" ]; then
+      rm -rf "$1"
+   fi
+   mkdir -p "$1"
+   archive=mock.tar.gz
+   tar --overwrite -C "$1" -xzf $archive
+   echo "Unzipped $archive into $1"
+}
+
 mock-setup()
 {
-   export LD_LIBRARY_PATH=.:$LD_LIBRARY_PATH
+   export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:.
+}
+
+mock-update()
+{
+   archive=mock.tar.gz
+   subdir=${PWD##*/}
+   cd ..
+   tar --overwrite -C $subdir -xzf $archive
+   cd $subdir
+   mtime=$(stat -c %y xr-snap)
+   echo "Unzipped $archive; snap dated $mtime"
 }
 
 # distcc
