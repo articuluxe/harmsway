@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-03-03 14:09:14 dan.harms>
+;; Modified Time-stamp: <2016-03-08 17:40:38 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -108,6 +108,17 @@
 (setq-default tab-width 4)
 ;; Show selections
 (transient-mark-mode 1)
+;; enable repeatedly popping mark without prefix
+(setq set-mark-command-repeat-pop t)
+(defun my/multi-pop-to-mark (orig-fun &rest args)
+  "Call ORIG-FUN until the cursor moves. Try the repeated popping
+up to 10 times."
+  (let ((p (point)))
+    (dotimes (i 10)
+      (when (= p (point))
+        (apply orig-fun args)))))
+(advice-add 'pop-to-mark-command :around
+            #'my/multi-pop-to-mark)
 ;; show current function
 (which-function-mode t)
 ;; Insertion while text is selected deletes the selected text
