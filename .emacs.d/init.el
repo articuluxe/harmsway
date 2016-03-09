@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-03-09 08:36:46 dan.harms>
+;; Modified Time-stamp: <2016-03-09 13:02:15 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1333,7 +1333,8 @@ register \\C-l."
                  ))
 (require 'auto-complete-config)
 (setq-default ac-sources
-              '(ac-source-yasnippet
+              '(
+                ;ac-source-yasnippet
                 ac-source-dictionary
                 ac-source-words-in-same-mode-buffers
                 ac-source-filename
@@ -1429,9 +1430,9 @@ register \\C-l."
                              yas-dropdown-prompt
                              yas-no-prompt
                              ))
-;; to disable TAB key to activate a snippet:
-;; (define-key yas-minor-mode-map (kbd "<tab>") nil)
-;; (define-key yas-minor-mode-map (kbd "TAB") nil)
+;; disable TAB key from activating a snippet
+(define-key yas-minor-mode-map (kbd "<tab>") nil)
+(define-key yas-minor-mode-map (kbd "TAB") nil)
 ;; add our own keybindings
 (define-key yas-minor-mode-map "\C-cse" 'yas-expand)
 (define-key yas-minor-mode-map "\C-csi" 'yas-insert-snippet)
@@ -1441,8 +1442,9 @@ register \\C-l."
 ;; integrate with auto-complete (shows only snippets)
 (defun my/expand-yasnippet() (interactive)
        (auto-complete '(ac-source-yasnippet)))
-(global-set-key [backtab] 'my/expand-yasnippet)
-(global-set-key [(shift tab)] 'my/expand-yasnippet)
+(global-set-key [backtab] 'yas-expand)
+(global-set-key [(shift tab)] 'yas-expand)
+(setq yas-fallback-behavior '(apply my/expand-yasnippet))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; flycheck ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq-default flycheck-emacs-lisp-load-path 'inherit)
