@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-03-08 17:40:38 dharms>
+;; Modified Time-stamp: <2016-03-09 08:36:46 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1851,6 +1851,7 @@ customization."
 (add-hook 'conf-mode-hook
           (lambda()
             (setq indent-tabs-mode nil)
+            (subword-mode 1)
             ;; (idle-highlight-mode 1)
             ;; conf-colon-mode still bound to "\C-c:"
             (local-unset-key "\C-c\C-c")
