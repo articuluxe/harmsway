@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-02-24 17:22:14 dharms>
+;; Modified Time-stamp: <2016-03-12 16:17:44 dharms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -47,7 +47,7 @@
         (sub-dirs (profile-current-get 'build-sub-dirs))
         sub-dir)
     (when current-prefix-arg
-      (setq root (ido-read-directory-name "Root dir:" root nil t))
+      (setq root (read-directory-name "Root dir:" root nil t))
       (when (file-remote-p root)
         (setq root (with-parsed-tramp-file-name root file file-localname))))
     (setq sub-dir

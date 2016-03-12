@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-02-10 17:36:16 dharms>
+;; Modified Time-stamp: <2016-03-12 16:17:41 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -512,7 +512,7 @@ removes it from its original frame."
   "Find (open) all files recursively below a directory.
    With optional prefix argument, will follow symbolic targets."
   (interactive
-   `(,(ido-read-directory-name "Full-Edit Directory: " nil nil t)
+   `(,(read-directory-name "Full-Edit Directory: " nil nil t)
      ,current-prefix-arg))
   (if root
       (let* ((reporter (make-progress-reporter "Gathering files..."))

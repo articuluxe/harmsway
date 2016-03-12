@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-02-11 08:52:47 dan.harms>
+;; Modified Time-stamp: <2016-03-12 16:17:46 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -63,7 +63,7 @@
          (prompt "Grep root: ")
          (dir
           (cond ((or (null root) (null dirs) (= arg 64))
-                 (ido-read-directory-name prompt nil nil t))
+                 (read-directory-name prompt nil nil t))
                 ((= arg 16) ".")
                 ((= arg 4) (funcall my/choose-func dirs prompt))
                 (t first)))
@@ -491,7 +491,7 @@
                                sub-dirs "Debug dir:"))))))
     (unless (and exec-dir (file-exists-p exec-dir))
       (setq exec-dir default-directory))
-    (setq exec (ido-read-file-name "Debug executable: " exec-dir nil t))
+    (setq exec (read-file-name "Debug executable: " exec-dir nil t))
     (gdb (concat "gdb -i=mi " exec))))
 (global-set-key [f4] 'my/launch-gdb)
 (global-set-key "\C-c4" 'my/launch-gdb)
