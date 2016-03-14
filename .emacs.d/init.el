@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-03-09 13:02:15 dan.harms>
+;; Modified Time-stamp: <2016-03-14 17:26:41 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -965,6 +965,7 @@ to overwrite the final element."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dired ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'dired-x)                      ; C-x C-j now runs 'dired-jump
 (setq diredp-hide-details-initially-flag nil)
+(define-key dired-mode-map "\C-o" 'dired-display-file) ;remap
 (require 'dired+)
 (require 'ls-lisp+)
 ;; omit dot-files in dired-omit-mode (C-x M-o)
