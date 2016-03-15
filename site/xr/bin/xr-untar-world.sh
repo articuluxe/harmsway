@@ -5,7 +5,7 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Monday, May 18, 2015
 # Version: 1.0
-# Modified Time-stamp: <2016-01-26 11:46:02 dan.harms>
+# Modified Time-stamp: <2016-03-15 09:01:12 dan.harms>
 # Modified by: Dan Harms
 # Keywords: configuration
 
@@ -87,7 +87,6 @@ chmod 600 ~/.ssh/id_rsa
 popd
 
 # remove intermediate directories, if empty
-pushd ~
 rmdir -p --ignore-fail-on-non-empty bash tcsh os/$os site/$site
 # protect .netrc
 if [ -f .netrc ] ; then
@@ -99,7 +98,6 @@ if [ -f .bash_host ]; then
 fi
 # and byte-compile emacs
 emacscomp.sh .emacs.d
-popd
 
 popd
 

@@ -5,7 +5,7 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Monday, May 18, 2015
 # Version: 1.0
-# Modified Time-stamp: <2016-01-23 10:07:27 dharms>
+# Modified Time-stamp: <2016-03-15 08:59:11 dan.harms>
 # Modified by: Dan Harms
 # Keywords: configuration
 
@@ -14,7 +14,7 @@ manifest=.bk_manifest
 backup=emacs_bk.tar
 os=$(uname)
 host=$(hostname -s)
-site=talbot
+site=xr
 input=
 
 function backup_file
