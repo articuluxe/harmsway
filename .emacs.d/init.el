@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-03-19 15:38:26 dharms>
+;; Modified Time-stamp: <2016-03-21 06:16:40 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -607,6 +607,7 @@ to overwrite the final element."
         (grep-mode :popup t :select nil :align bottom)
         ("*Help*" :popup t :select t)
         (diff-mode :popup t :select t)
+        (apropos-mode :popup t :select t)
         (completion-list-mode :select nil)
         (compilation-mode :popup t :select nil :align bottom)
         ("*Shell Command Output*" :select t)
