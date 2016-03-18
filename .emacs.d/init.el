@@ -366,6 +366,7 @@ to overwrite the final element."
 (when (version< emacs-version "23")
   (require 'json-mode))
 (require 'nhexl-mode)
+(require 'sed-mode)
 ;; git
 (require 'gitignore-mode)
 (require 'gitconfig-mode)
@@ -1734,6 +1735,7 @@ customization."
                 ("README\\.md$" . gfm-mode)
                 ("\\.md$"       . markdown-mode)
                 ("\\.dart$"     . dart-mode)
+                ("\\.sed$"      . sed-mode)
                 )
               auto-mode-alist))
 
