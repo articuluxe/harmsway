@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-03-14 17:26:41 dharms>
+;; Modified Time-stamp: <2016-03-18 08:09:53 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -319,6 +319,10 @@ to overwrite the final element."
   (global-set-key "\C-cw" 'multi-line)
   )
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; sudo-edit ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(require 'sudo-edit)
+(global-set-key "\C-c0rr" 'sudo-edit)
+(global-set-key "\C-c0rf" 'sudo-edit-current-file)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; modes ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'log-viewer)

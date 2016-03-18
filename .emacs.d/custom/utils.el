@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-03-12 16:17:41 dharms>
+;; Modified Time-stamp: <2016-03-18 08:09:45 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -313,20 +313,20 @@ trailing whitespace."
 (defvar my/find-file-root-prefix "/sudo::"
   "root prefix for tramp as root")
 
-(defun my/find-file-as-root()
-  "Open a file for editing by root."
-  (interactive)
-  (let ((root-prefix my/find-file-root-prefix))
-    (call-interactively 'find-file)))
-(global-set-key "\esrf" 'my/find-file-as-root)
+;; (defun my/find-file-as-root()
+;;   "Open a file for editing by root."
+;;   (interactive)
+;;   (let ((root-prefix my/find-file-root-prefix))
+;;     (call-interactively 'find-file)))
+;; (global-set-key "\esrf" 'my/find-file-as-root)
 
-(defun my/find-current-file-as-root()
-  "Open the current file for editing by root."
-  (interactive)
-  (set-visited-file-name (concat my/find-file-root-prefix
-                                 (buffer-file-name)))
-  (setq buffer-read-only nil))
-(global-set-key "\esrr" 'my/find-current-file-as-root)
+;; (defun my/find-current-file-as-root()
+;;   "Open the current file for editing by root."
+;;   (interactive)
+;;   (set-visited-file-name (concat my/find-file-root-prefix
+;;                                  (buffer-file-name)))
+;;   (setq buffer-read-only nil))
+;; (global-set-key "\esrr" 'my/find-current-file-as-root)
 
 (defun read-file-into-list-of-lines(file)
   "Read a file into a list of strings split line by line."
