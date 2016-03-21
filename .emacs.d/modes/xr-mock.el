@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Wednesday, June 10, 2015
 ;; Version: 1.2
-;; Modified Time-stamp: <2016-03-07 09:06:48 dan.harms>
+;; Modified Time-stamp: <2016-03-17 11:14:34 dan.harms>
 ;; Keywords: mock script
 
 ;; Code:
@@ -76,7 +76,7 @@
    . mock-mode))
 (add-to-list
  'ff-special-constructs
- '("^\\(?:@@\\)?\\(include\\|sourceFiles\\|scriptfile\\)\\s-*=\\s-*\\(.*\\)"
+ '("^\\(?:@@\\)?\\(?:.*\\.\\)?\\(include\\|sourceFiles\\|scriptfile\\)\\s-*=\\s-*\\(.*\\)"
    lambda nil (buffer-substring (match-beginning 2) (match-end 2))) t)
 
 (defun mock-goto-line (n)
