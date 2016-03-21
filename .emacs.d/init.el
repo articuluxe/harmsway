@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-03-18 08:09:53 dharms>
+;; Modified Time-stamp: <2016-03-19 15:38:26 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -394,6 +394,14 @@ to overwrite the final element."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ibuffer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'ibuffer)
+(setq ibuffer-expert t)
+(setq ibuffer-show-empty-filter-groups nil)
+(require 'ibuffer-vc)
+(add-hook 'ibuffer-mode-hook
+          (lambda()
+            (ibuffer-auto-mode 1)
+            (ibuffer-vc-set-filter-groups-by-vc-root)
+            ))
 ;; Newer "tabulated list mode" in buff-menu.el breaks buffer-menu+ 21.0.
 ;; We'll shadow the current buff-menu.el with our local emacs-23 version.
 (when (version<= "24.2" emacs-version)
@@ -413,7 +421,7 @@ to overwrite the final element."
     (format "%7.1fk" (/ (buffer-size) 1024.0)))
    (t (format "%8d" (buffer-size)))))
 (setq ibuffer-formats
-      '((mark modified read-only " "
+      '((mark modified read-only vc-status-mini " "
               (name 18 18 :left :elide)
               " "
               (size-h 9 -1 :right)
@@ -421,11 +429,11 @@ to overwrite the final element."
               (mode 16 16 :left :elide)
               " "
               filename-and-process)
-        (mark modified read-only " "
+        (mark modified read-only vc-status-mini " "
               (size-h 9 -1 :right)
               " "
               (name 26 -1))
-        (mark modified read-only " "
+        (mark modified read-only vc-status-mini " "
               (size-h 9 -1 :right)
               " "
               (filename-and-process 26 -1))
@@ -970,8 +978,8 @@ to overwrite the final element."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dired ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (require 'dired-x)                      ; C-x C-j now runs 'dired-jump
 (setq diredp-hide-details-initially-flag nil)
-(define-key dired-mode-map "\C-o" 'dired-display-file) ;remap
 (require 'dired+)
+(define-key dired-mode-map "\C-o" 'dired-display-file) ;remap
 (require 'ls-lisp+)
 ;; omit dot-files in dired-omit-mode (C-x M-o)
 (setq dired-omit-files (concat dired-omit-files "\\|^\\..+$"))
