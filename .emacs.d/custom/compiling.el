@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-03-12 16:17:44 dharms>
+;; Modified Time-stamp: <2016-03-22 09:38:11 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -28,7 +28,6 @@
 
 (require 'dash)
 
-(defvar one-window-in-frame nil)
 (defvar my/compile-command)
 
 ;; automatically scroll compilation window
@@ -61,13 +60,23 @@
     ))
 
 (defvar my/compile-command-fn #'create-compile-command)
-(defun my/compile() (interactive)
-  (setq one-window-in-frame (one-window-p t))
+(defvar should-close-compilation-window nil)
+
+(defun my/compile()
+  "A custom compilation command.  Allows customizing the compilation,
+as well as the behavior of the `*compilation*' window upon completion."
+  (interactive)
+  (setq should-close-compilation-window
+        (not (get-buffer-window "*compilation*" 'visible)))
   (when (setq my/compile-command (funcall my/compile-command-fn))
     (setq compile-command my/compile-command)
     (call-interactively 'compile)))
-(defun my/recompile() (interactive)
-  (setq one-window-in-frame (one-window-p t))
+
+(defun my/recompile()
+  "A custom re-compilation command."
+  (interactive)
+  (setq should-close-compilation-window
+        (not (get-buffer-window "*compilation*" 'visible)))
   (call-interactively 'recompile))
 
 (add-hook 'compilation-start-hook (lambda (process)
@@ -115,11 +124,12 @@ If any return true, the current error is ignored."
        (not (check-compile-buffer-errors buffer)))
       (run-with-timer 2 nil
                       (lambda (buf)
-                        (bury-buffer buf)
-                        (if one-window-in-frame
-                            (delete-window (get-buffer-window buf t))
-                          (switch-to-prev-buffer (get-buffer-window buf t)
-                                                 'kill))) buffer)))
+                        (let ((win (get-buffer-window buf t)))
+                          (bury-buffer buf)
+                          (if should-close-compilation-window
+                              (delete-window win)
+                            (switch-to-prev-buffer win 'kill))))
+                      buffer)))
 
 (add-hook 'compilation-finish-functions 'bury-compile-buffer-if-successful)
 
