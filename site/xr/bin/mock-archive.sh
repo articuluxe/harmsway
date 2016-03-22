@@ -5,7 +5,7 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Tuesday, March  1, 2016
 # Version: 1.0
-# Modified Time-stamp: <2016-03-02 16:31:12 dan.harms>
+# Modified Time-stamp: <2016-03-22 11:30:05 dan.harms>
 # Modified by: Dan Harms
 # Keywords: mock scripting
 
@@ -29,7 +29,7 @@ tar -rf $archive --directory=/usr/local/boost156/lib libboost_regex.so.1.56.0
 tar -rf $archive --directory=/usr/local/boost156/lib libboost_system.so.1.56.0
 
 # test files
-(cd ../../../..; make all-local)
+(cd ../../../..; make mock-scripts)
 tar -rf $archive mockobjects/Base.config
 tar -rf $archive mockobjects/testscripts
 tar -rf $archive mockrun.sh CMEmsgw.csv

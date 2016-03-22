@@ -9,6 +9,7 @@ M-C-x        eval-defun
 M-x debug-on-entry <func>
 (debug nil (current-buffer))
 trace-function 
+M-x pp-macroexpand-last-sexp
 
 C-x RET f unix   change buffer's file coding system
 C-x C-m f   change file's default text encoding

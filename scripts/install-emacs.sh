@@ -1,11 +1,11 @@
 #!/usr/bin/env sh
 # -*- Mode: sh -*-
 # install-emacs.sh --- install emacs
-# Copyright (C) 2015  Dan Harms (dharms)
+# Copyright (C) 2015, 2016  Dan Harms (dharms)
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Saturday, July 25, 2015
 # Version: 1.0
-# Modified Time-stamp: <2015-08-03 05:44:28 dharms>
+# Modified Time-stamp: <2016-03-22 09:36:22 dan.harms>
 # Modified by: Dan Harms
 # Keywords: configuration
 
@@ -27,6 +27,9 @@ function backup_file
 {
    if [ -f .emacs.d/$1 ] ; then
       echo Backing up $1
+      $tar -rvf $backup .emacs.d/$1
+   elif [ -d .emacs.d/$1 ] ; then
+      echo Backing up directory $1
       $tar -rvf $backup .emacs.d/$1
    fi
 }
