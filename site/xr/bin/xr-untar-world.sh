@@ -1,11 +1,11 @@
 #!/usr/bin/env sh
 # -*- Mode: sh -*-
-# untar-world.sh --- untar important files
+# xr-untar-world.sh --- untar important files
 # Copyright (C) 2015, 2016  Dan Harms (dan.harms)
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Monday, May 18, 2015
 # Version: 1.0
-# Modified Time-stamp: <2016-03-15 09:01:12 dan.harms>
+# Modified Time-stamp: <2016-03-23 16:58:19 dan.harms>
 # Modified by: Dan Harms
 # Keywords: configuration
 
@@ -21,6 +21,9 @@ function backup_file
 {
    if [ -f .emacs.d/$1 ] ; then
       echo Backing up $1
+      $tar -rvf $backup .emacs.d/$1
+   elif [ -d .emacs.d/$1 ] ; then
+      echo Backing up directory $1
       $tar -rvf $backup .emacs.d/$1
    fi
 }

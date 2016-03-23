@@ -5,7 +5,7 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Monday, May 18, 2015
 # Version: 1.0
-# Modified Time-stamp: <2016-03-15 08:59:11 dan.harms>
+# Modified Time-stamp: <2016-03-23 16:57:04 dan.harms>
 # Modified by: Dan Harms
 # Keywords: configuration
 
@@ -21,6 +21,9 @@ function backup_file
 {
    if [ -f .emacs.d/$1 ] ; then
       echo Backing up $1
+      $tar -rvf $backup .emacs.d/$1
+   elif [ -d .emacs.d/$1 ] ; then
+      echo Backing up directory $1
       $tar -rvf $backup .emacs.d/$1
    fi
 }
