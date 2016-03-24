@@ -1,9 +1,9 @@
 ;;; c-includer.el --- c-style include statement utilities
-;; Copyright (C) 2015  Dan Harms (dan.harms)
+;; Copyright (C) 2015, 2016  Dan Harms (dan.harms)
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Wednesday, December 30, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-12-31 15:44:34 dan.harms>
+;; Modified Time-stamp: <2016-03-24 14:31:48 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: c++ coding
 
@@ -40,7 +40,8 @@
 ;; (defvar ooka nil)
 
 (defun c-includer-brackets (begin end)
-  "Adjust the quotes or brackets around `#include' statements."
+  "Adjust the quotes or brackets around `#include' statements.
+Operates on region, if BEGIN and END are given, or the whole buffer."
   (interactive (if (use-region-p)
                    (list (region-beginning) (region-end))
                  (list nil nil)))
