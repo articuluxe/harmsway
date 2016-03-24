@@ -54,6 +54,8 @@
   (concat my/user-directory "settings/gui/")
   "A path to a directory containing window-system-specific settings.")
 
+(eval-when-compile (require 'use-package))
+(require 'bind-key)
 
 (set-register ?~ (cons 'file "~/"))
 (set-register ?\C-i (cons 'file user-init-file)) ;edit init file
