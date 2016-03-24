@@ -1,10 +1,10 @@
 ;; -*- Mode: Emacs-Lisp -*-
 ;; parse-remote-hosts-xml.el --- parse a homiak mremote file
-;; Copyright (C) 2015  Dan Harms (dan.harms)
+;; Copyright (C) 2015, 2016  Dan Harms (dan.harms)
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Friday, August  7, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-08-17 16:45:49 dan.harms>
+;; Modified Time-stamp: <2016-03-24 11:10:00 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: homiak tramp remote hosts
 
@@ -70,7 +70,7 @@
 (defun parse-homiak-mremotes ()
   "Parse mremote configuration for xr remote hosts from David Homiak."
   (interactive)
-  (let ((file (ido-read-file-name "XML File: " nil nil t))
+  (let ((file (read-file-name "XML File: " nil nil t))
         root)
     (if file
         (progn
@@ -82,7 +82,7 @@
       (error "No input file specified."))
     (if my/remote-host-list
         (progn
-          (setq file (ido-read-file-name "Output file:"))
+          (setq file (read-file-name "Output file:"))
           (if file
               (save-sexp-save-setq file 'my/remote-host-list)
             (error "No output file specified.")))
