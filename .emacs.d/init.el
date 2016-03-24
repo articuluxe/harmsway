@@ -1078,6 +1078,9 @@ to overwrite the final element."
 (require 'neotree)
 (global-set-key "\C-c0n" 'neotree-toggle)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; deft ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package deft :bind ("C-c d" . deft))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; diff ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; better colors in older versions
 (when (version< emacs-version "24.3")
