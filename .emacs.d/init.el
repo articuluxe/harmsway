@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-03-21 06:16:40 dharms>
+;; Modified Time-stamp: <2016-03-25 11:27:55 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1780,6 +1780,11 @@ customization."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dart-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq dart-enable-analysis-server t)
+(add-hook 'dart-mode
+          (lambda()
+            (define-key dart-mode-map "\C-c\C-c" 'comment-region)
+            (define-key dart-mode-map "\C-c\C-u" 'uncomment-region)
+            ))
 ;not sure this is needed (add-hook 'dart-mode-hook 'flycheck-mode)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; xml-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

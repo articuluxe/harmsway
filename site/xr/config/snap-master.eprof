@@ -8,6 +8,10 @@
    (list
     (append (list "snap" "snap/xr-snap/src/xr/snap/" gen-tags-exe
                   "-Re") gen-tags-ctags-cpp-options)
+    (append (list "xr-core" "xr_core/" gen-tags-exe
+                  "-Re") gen-tags-ctags-cpp-options)
+    (append (list "spawn" "spawn/" gen-tags-exe
+                  "-Re") gen-tags-ctags-cpp-options)
     (append (list "xr-common" "snap/xr-common/src/" gen-tags-exe
                   "-Re") gen-tags-ctags-cpp-options)
     (append (list "catch"

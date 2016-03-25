@@ -1,10 +1,10 @@
 ;; -*- Mode: Emacs-Lisp -*-
 ;; hosts --- an abbreviated hosts file for emacs settings
-;; Copyright (C) 2015  Dan Harms (dharms)
+;; Copyright (C) 2015, 2016  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Monday, August 17, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-08-17 22:16:06 dharms>
+;; Modified Time-stamp: <2016-03-25 09:12:23 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: emacs config hostnames hosts
 
@@ -30,6 +30,7 @@
 (setq my/host-plist
       '(
         ;; xr
+        (:host "chihq-dev-02d-1.xrtrading.local" :site "xr")
         (:host "carvzn-snap-06h.lnx.xrtrading.local" :site "xr")
         (:host "chihq-benchmark-32e.lnx.xrtrading.local" :site "xr")
         (:host "hq-snapdev-77v.lnx.xrtrading.local" :site "xr")

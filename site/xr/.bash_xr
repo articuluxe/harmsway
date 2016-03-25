@@ -7,11 +7,17 @@ export ONE_TICK_CONFIG=/opt/1tick/client_data/config/one_tick_config.txt
 use gcc491
 use cdh5
 use cdh5-dev
+use dart_a_114
+use llvm_a_361
 
 export ORIGPATH=$PATH
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/usr/local/boost156/lib
 # what `use cdh5' prepends to LD_LIBRARY_PATH:
 # /usr/java/latest/jre/lib/amd64/server
+# what `use dart_a_114' prepends to LD_LIBRARY_PATH:
+# /opt/x3p/xrt_a/dart/1.14/ReleaseX64/dart-sdk/lib
+# what `use dart_a_114' prepends to PATH:
+# /opt/x3p/xrt_a/dart/1.14/ReleaseX64/dart-sdk/bin:/opt/x3p/xrt_a/dart/1.14/ReleaseX64
 
 # reset display to local host
 display-local() { export DISPLAY=:0.0; }
