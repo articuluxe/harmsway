@@ -1,10 +1,10 @@
 ;; -*- Mode: Emacs-Lisp -*-
 ;; windows-nt.el --- windows os settings file
-;; Copyright (C) 2015  Dan Harms (dharms)
+;; Copyright (C) 2015, 2016  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-10-02 08:16:38 dan.harms>
+;; Modified Time-stamp: <2016-03-28 06:36:25 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -28,14 +28,15 @@
 ;; Code:
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Process Viewer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'proced)
-(global-set-key "\C-c0p" 'proced)
+(use-package proced :bind ("C-c 0p" . proced))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; everything ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(setq everything-ffap-integration nil)  ;for now
-(setq everything-cmd "C:/Program Files/Everything/es.exe")
-(require 'everything)
-(global-set-key "\C-c0g" 'everything-find-file)
+(use-package everything
+  :bind ("C-c 0g" . everything-find-file)
+  :init
+  (setq everything-ffap-integration nil)  ;for now
+  (setq everything-cmd "C:/Program Files/Everything/es.exe")
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ssh-agency ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;(require 'ssh-agency)

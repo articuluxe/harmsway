@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-03-25 11:27:55 dan.harms>
+;; Modified Time-stamp: <2016-03-27 20:17:49 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -30,9 +30,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; load-path ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
   (defconst my/user-directory (expand-file-name
-                             (if (boundp 'user-emacs-directory)
-                                 user-emacs-directory
-                               "~/.emacs.d/")))
+                               (if (boundp 'user-emacs-directory)
+                                   user-emacs-directory
+                                 "~/.emacs.d/")))
   (defconst my/scratch-directory (concat my/user-directory "etc/"))
   (defconst my/elisp-directory (concat my/user-directory "elisp/"))
   (defconst my/plugins-directory (concat my/user-directory "plugins/"))
@@ -214,14 +214,13 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
     (require 'dash)
     (eval-after-load "dash" '(dash-enable-font-lock))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; s ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(when (version< "24.3" emacs-version)
-  (require 's))
-(require 'f)
-(require 'deferred)
-(require 'concurrent)
-(require 'epc)
-(require 'epcs)
+;; (when (version< "24.3" emacs-version)
+;;   (require 's))
+;; (require 'f)
+;; (require 'deferred)
+;; (require 'concurrent)
+;; (require 'epc)
+;; (require 'epcs)
 
 ;;;;;;; FUNCTIONS ;;;;;;;
 ;; ; man-page lookups
@@ -245,19 +244,22 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (defvar my/remote-host-list '())
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; aes ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'aes)
-(setq aes-always-ask-for-passwords nil)
-(setq aes-enable-plaintext-password-storage t)
-(setq aes-delete-passwords-after-idle 0)
-(aes-enable-auto-decryption)
 (defvar my/aes-default-group "  default")
-(add-hook 'aes-path-passwd-hook (lambda (path) my/aes-default-group))
-;; if the environment variable is not defined, we will be prompted
-;; for the password
-(setq aes--plaintext-passwords
-      (let ((pwd (or (getenv "EMACS_PWD") "nil")))
-        (list (cons my/aes-default-group pwd))))
-(global-set-key "\C-c0z" 'aes-toggle-encryption)
+(use-package aes
+  :demand t
+  :config
+  (setq aes-always-ask-for-passwords nil)
+  (setq aes-enable-plaintext-password-storage t)
+  (setq aes-delete-passwords-after-idle 0)
+  (aes-enable-auto-decryption)
+  (add-hook 'aes-path-passwd-hook (lambda (path) my/aes-default-group))
+  ;; if the environment variable is not defined, we will be prompted
+  ;; for the password
+  (setq aes--plaintext-passwords
+        (let ((pwd (or (getenv "EMACS_PWD") "nil")))
+          (list (cons my/aes-default-group pwd))))
+  (global-set-key "\C-c0z" 'aes-toggle-encryption)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; path ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun my/load-environment-variables-from-file (dir &optional append-exec-path)
@@ -315,27 +317,35 @@ to overwrite the final element."
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; multi-line ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(eval-and-compile
-  (add-to-list 'load-path (concat my/plugins-directory "multi-line/"))
-  (require 'multi-line)
-  (global-set-key "\C-cw" 'multi-line)
+(use-package
+  multi-line
+  :load-path (lambda() (concat my/plugins-directory "multi-line/"))
+  :bind ("C-c w" . multi-line)
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; sudo-edit ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'sudo-edit)
-(global-set-key "\C-c0rr" 'sudo-edit)
-(global-set-key "\C-c0rf" 'sudo-edit-current-file)
+(use-package
+  sudo-edit
+  :bind
+  (("C-c 0rr" . sudo-edit)
+   ("C-c 0rf" . sudo-edit-current-file))
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; modes ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'log-viewer)
-(require 'csv-mode)
+(use-package log-viewer :mode ("\\.log$" . log-viewer-mode))
+(use-package csv-mode :mode ("\\.[Cc][Ss][Vv]$" . csv-mode))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; cmake ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'cmake-mode)
-(require 'cmake-font-lock)
-(add-hook 'cmake-mode-hook 'cmake-font-lock-activate)
-(defun my/cmake-fix-underscore()
-  (modify-syntax-entry ?_ "_" cmake-mode-syntax-table))
-(add-hook 'cmake-mode-hook #'my/cmake-fix-underscore)
+(use-package
+  cmake-mode
+  :mode ("CMakeLists\\.txt$" "\\.cmake$")
+  :config
+  (use-package cmake-font-lock)
+  (defun my/cmake-fix-underscore()
+    (modify-syntax-entry ?_ "_" cmake-mode-syntax-table))
+  (add-hook 'cmake-mode-hook #'my/cmake-fix-underscore)
+  (add-hook 'cmake-mode-hook 'cmake-font-lock-activate)
+  )
 
 ;; work around bug in cc-mode in emacs 24.4
 ;; see debbugs.gnu.org/db/18/18845.html
@@ -349,34 +359,46 @@ to overwrite the final element."
   (if (and (= emacs-major-version 24) (= emacs-minor-version 4))
       (require 'cl)))
 (if (= emacs-major-version 23)
-	(progn
-	  (autoload 'protobuf-mode "protobuf-mode" "Major mode for editing protobuf files." t)
-	  (autoload 'csharp-mode "csharp-mode" "Major mode for editing csharp files." t)
-	  )
-  (require 'protobuf-mode)
-  (require 'csharp-mode)
+    (progn
+      (autoload 'protobuf-mode "protobuf-mode" "Major mode for editing protobuf files." t)
+      (autoload 'csharp-mode "csharp-mode" "Major mode for editing csharp files." t)
+      )
+  (use-package protobuf-mode :mode "\\.proto$")
+  (use-package csharp-mode :mode "\\.cs$")
   )
 
-(require 'dart-mode)
-(require 'dos)
-(require 'dos-indent)
-(require 'folio-mode)
-(require 'folio-electric)
-(require 'markdown-mode)
-(require 'pos-tip)
-(require 'qt-pro)
-(when (version< emacs-version "23")
-  (require 'json-mode))
-(require 'nhexl-mode)
-(require 'sed-mode)
+(use-package dart-mode :mode "\\.dart$" :interpreter "dart")
+(use-package dos :mode ("\\.bat$" . dos-mode) :config (use-package dos-indent))
+(use-package folio-mode :mode "\\.folio$"
+  :config (use-package folio-electric))
+
+(use-package markdown-mode :mode "\\.md$")
+(use-package pos-tip :defer t)
+(use-package qt-pro :mode "\\.pro$")
+(use-package json-mode
+  :if (version< emacs-version "23")
+  )
+
+(use-package nhexl-mode :defer t)
+(use-package sed-mode :mode "\\.sed$" :interpreter "sed")
 ;; git
-(require 'gitignore-mode)
-(require 'gitconfig-mode)
-(require 'gitattributes-mode)
+(use-package gitignore-mode
+  :mode ("/\\.gitignore\\'"
+         "/info/exclude\\'"
+         "/git/ignore\\'"))
+(use-package gitconfig-mode
+  :mode ("/\\.gitconfig\\'"      "/\\.git/config\\'"
+         "/modules/.*/config\\'" "/git/config\\'"
+         "/\\.gitmodules\\'"     "/etc/gitconfig\\'"))
+(use-package gitattributes-mode
+  :mode ("/\\.gitattributes\\'"
+         "/info/attributes\\'"
+         "/git/attributes\\'"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; rainbow ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(when (version< "24.3" emacs-version)
-  (require 'rainbow-mode)
+(use-package rainbow-mode
+  :if (version< "24.3" emacs-version)
+  :config
   ;; enable for emacs-lisp-mode
   (add-to-list 'rainbow-html-colors-major-mode-list 'emacs-lisp-mode)
   (add-to-list 'rainbow-x-colors-major-mode-list 'emacs-lisp-mode)
@@ -385,86 +407,107 @@ to overwrite the final element."
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; rotate ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'rotate)
-(define-key ctl-x-4-map "l" 'rotate-layout)
-(define-key ctl-x-4-map "w" 'rotate-window)
-(define-key ctl-x-4-map "h" 'rotate:even-horizontal)
-(define-key ctl-x-4-map "\C-h" 'rotate:main-horizontal)
-(define-key ctl-x-4-map "v" 'rotate:even-vertical)
-(define-key ctl-x-4-map "\C-v" 'rotate:main-vertical)
-(define-key ctl-x-4-map "t" 'rotate:tiled)
+(use-package rotate
+  :bind (:map ctl-x-4-map
+              ("l" . rotate-layout)
+              ("w" . rotate-window)
+              ("h" . rotate:even-horizontal)
+              ("\C-h" . rotate:main-horizontal)
+              ("v" . rotate:even-vertical)
+              ("\C-v" . rotate:main-vertical)
+              ("t" . rotate:tiled)
+              ))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ibuffer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'ibuffer)
-(setq ibuffer-expert t)
-(setq ibuffer-show-empty-filter-groups nil)
-(require 'ibuffer-vc)
-(add-hook 'ibuffer-mode-hook
-          (lambda()
-            (ibuffer-auto-mode 1)
-            (ibuffer-vc-set-filter-groups-by-vc-root)
-            ))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; buff-menu ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Newer "tabulated list mode" in buff-menu.el breaks buffer-menu+ 21.0.
 ;; We'll shadow the current buff-menu.el with our local emacs-23 version.
 (when (version<= "24.2" emacs-version)
   (load "buff-menu.el"))
-(require 'buff-menu+)
-(global-set-key "\C-x\C-b" 'ibuffer)
-(global-set-key "\C-x\S-b" 'electric-buffer-list)
-;; human-readable sizes
-(define-ibuffer-column size-h
-  (:name "Size" :inline t)
-  (cond
-   ((> (buffer-size) 1048576)
-    (format "%7.1fM" (/ (buffer-size) 1048576.0)))
-   ((> (buffer-size) 131072)
-    (format "%7.0fk" (/ (buffer-size) 1024.0)))
-   ((> (buffer-size) 1024)
-    (format "%7.1fk" (/ (buffer-size) 1024.0)))
-   (t (format "%8d" (buffer-size)))))
-(setq ibuffer-formats
-      '((mark modified read-only vc-status-mini " "
-              (name 18 18 :left :elide)
-              " "
-              (size-h 9 -1 :right)
-              " "
-              (mode 16 16 :left :elide)
-              " "
-              filename-and-process)
-        (mark modified read-only vc-status-mini " "
-              (size-h 9 -1 :right)
-              " "
-              (name 26 -1))
-        (mark modified read-only vc-status-mini " "
-              (size-h 9 -1 :right)
-              " "
-              (filename-and-process 26 -1))
-        ))
+(use-package buff-menu+ :bind ("C-x S-b" . electric-buffer-list))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ibuffer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package ibuffer
+  :bind ("C-x C-b" . ibuffer)
+  :init
+  (setq ibuffer-expert t)
+  (setq ibuffer-show-empty-filter-groups nil)
+  (add-hook 'ibuffer-mode-hook
+            (lambda()
+              (ibuffer-auto-mode 1)
+              (ibuffer-vc-set-filter-groups-by-vc-root)
+              ))
+  :config
+  (use-package ibuffer-vc)
+  ;; human-readable sizes
+  (define-ibuffer-column size-h
+    (:name "Size" :inline t)
+    (cond
+     ((> (buffer-size) 1048576)
+      (format "%7.1fM" (/ (buffer-size) 1048576.0)))
+     ((> (buffer-size) 131072)
+      (format "%7.0fk" (/ (buffer-size) 1024.0)))
+     ((> (buffer-size) 1024)
+      (format "%7.1fk" (/ (buffer-size) 1024.0)))
+     (t (format "%8d" (buffer-size)))))
+  (setq ibuffer-formats
+        '((mark modified read-only vc-status-mini " "
+                (name 18 18 :left :elide)
+                " "
+                (size-h 9 -1 :right)
+                " "
+                (mode 16 16 :left :elide)
+                " "
+                filename-and-process)
+          (mark modified read-only vc-status-mini " "
+                (size-h 9 -1 :right)
+                " "
+                (name 26 -1))
+          (mark modified read-only vc-status-mini " "
+                (size-h 9 -1 :right)
+                " "
+                (filename-and-process 26 -1))
+          ))
+  )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; gen-tags ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package gen-tags
+  :demand t                             ;load immediately
+  :init
+  (setq gen-tags-exe "ctags")
+  :bind ("C-c t" . gen-tags-generate-tags)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; tags ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; select
-(require 'etags-select)
-(setq tags-revert-without-query t)
-(require 'gen-tags)
-(global-set-key "\C-ct" 'gen-tags-generate-tags)
 (defvar tag-lookup-target-profile nil
   "The working profile in effect when a tag is first looked up.")
 (defun my/store-profile ()
   (setq tag-lookup-target-profile (symbol-name profile-current)))
-(global-set-key "\M-." (lambda()(interactive)
-                         (my/store-profile)
-                         (etags-select-find-tag)))
-(global-set-key [?\C-\M-.] (lambda()(interactive)
-                             (my/store-profile)
-                             (etags-select-find-tag-at-point)))
-;; show stack
-(require 'etags-stack)
-(global-set-key "\C-c\C-t" 'etags-stack-show)
+(defun my/tags-find-tag ()
+  (interactive)
+  (my/store-profile)
+  (etags-select-find-tag))
+(defun my/tags-find-tag-at-point ()
+  (interactive)
+  (my/store-profile)
+  (etags-select-find-tag-at-point))
 
-;; table
-(require 'etags-table)
-;; we store our tags in a specific directory
-(setq etags-table-search-up-depth nil)
+;; select
+(use-package etags-select
+  :init
+  (setq tags-revert-without-query t)
+  :bind (("M-." . my/tags-find-tag)
+         ([?\C-\M-.] . my/tags-find-tag-at-point))
+  :demand t
+  :config
+  ;; stack
+  (use-package etags-stack :bind ("C-c C-t" . etags-stack-show))
+  ;; table
+  (use-package etags-table
+    :init
+    ;; we store our tags in a specific directory
+    (setq etags-table-search-up-depth nil)
+    )
+  )
 
 ;; This (unused) snippet overrides tag lookup for standard tags, not
 ;; etags-select.  This would (untested) make tag lookup tramp-aware.  See
@@ -489,54 +532,56 @@ to overwrite the final element."
 ;; (setq file-of-tag-function 'my/etags-file-of-tag)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; yascroll ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'yascroll)
-(global-yascroll-bar-mode 1)
+(use-package yascroll :config (global-yascroll-bar-mode 1))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; copyright ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'copyright)
-;; copyright-update is added to my/before-save-hook below
-(setq copyright-query nil)
+(use-package copyright
+  :init
+  ;; copyright-update is added to my/before-save-hook below
+  (setq copyright-query nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; hide-lines ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'hide-lines)
-(global-set-key "\C-cl" 'hide-lines)
+(use-package hide-lines :bind ("C-c l" . hide-lines))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;; line-comment-banner ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'line-comment-banner)
-(global-set-key [?\C-c?\C-/] 'line-comment-banner)
-(add-hook 'c-mode-common-hook
-          (lambda() (make-local-variable 'comment-fill)
-            (setq comment-fill "*")))
+(use-package line-comment-banner
+  :bind ([?\C-c?\C-/] . line-comment-banner)
+  :config
+  (add-hook 'c-mode-common-hook
+            (lambda() (make-local-variable 'comment-fill)
+              (setq comment-fill "*")))
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; list-register ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'list-register)
-(global-set-key (kbd "\C-xrv") 'list-register)
+(use-package list-register :bind ("C-x rv" . list-register))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; discover-my-major ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'discover-my-major)
-(global-set-key (kbd "C-h C-m") 'discover-my-major)
+(use-package discover-my-major :bind ("C-h C-m" . discover-my-major))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; iedit ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'iedit)
+(use-package iedit)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; idle-highlight ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'idle-highlight-mode)
-(setq idle-highlight-idle-time 10)
-;(add-hook 'prog-mode-hook #'idle-highlight-mode)
+(use-package idle-highlight-mode
+  :disabled t
+  :init
+  (setq idle-highlight-idle-time 10)
+  :config
+  (add-hook 'prog-mode-hook #'idle-highlight-mode)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ascii ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'ascii)
-(global-set-key "\M-sa" 'ascii-display)
+(use-package ascii :bind ("M-s a" . ascii-display))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; magit ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-prefix-command 'my/git-keymap)
 (global-set-key "\M-sm" 'my/git-keymap)
 (eval-and-compile
   (add-to-list 'load-path (concat my/plugins-directory "magit/lisp/")))
-(unless (version< emacs-version "24.4")
+(use-package magit
+  :if (not (version< emacs-version "24.4"))
+  :init
   (eval-and-compile (setq magit-need-cygwin-noglob nil))
-  (require 'with-editor)
-  (require 'magit)
   (setq magit-status-buffer-name-format "*magit: %b*"
         magit-log-show-margin t
         magit-popup-show-common-commands nil
@@ -545,6 +590,24 @@ to overwrite the final element."
         magit-diff-refine-hunk t
         magit-auto-revert-tracked-only t
         )
+  ;; git commands
+  :bind (:map my/git-keymap
+              ("g" . magit-status)
+              ("M-g" . magit-dispatch-popup)
+              ("f" . magit-find-file) ;; view arbitrary blobs
+              ("4f" . magit-find-file-other-window)
+              ("h" . magit-log-buffer-file) ;; show all commits that touch current file
+              ("y" . magit-cherry)
+              ("e" . ediff-merge-revisions-with-ancestor) ;; to see all differences, even those automatically merged
+              ("m" . magit-toggle-margin)
+              ("b" . magit-blame)
+              ("U" . magit-unstage-all) ;; unstage all changes (like SU but forces HEAD)
+              ("s" . magit-stage-file)
+              ("u" . magit-unstage-file)
+              ("r" . magit-reset-soft) ;; soft reset; hard reset can use C-u x
+              )
+  :config
+  (use-package with-editor)
   (global-magit-file-mode 1)
   (magit-auto-revert-mode 0)
   ;; add ido shortcut
@@ -555,25 +618,7 @@ to overwrite the final element."
                    (kbd "C-x g") 'ido-enter-magit-status)))
     (define-key ido-common-completion-map
       (kbd "C-x g") 'ido-enter-magit-status))
-  ;; git commands
-  (define-key my/git-keymap "g" 'magit-status)
-  (define-key my/git-keymap "\M-g" 'magit-dispatch-popup)
-  ;; view arbitrary blobs
-  (define-key my/git-keymap "f" 'magit-find-file)
-  (define-key my/git-keymap "4f" 'magit-find-file-other-window)
-  ;; show all commits that touch current file
-  (define-key my/git-keymap "h" 'magit-log-buffer-file)
-  (define-key my/git-keymap "y" 'magit-cherry)
-  ;; to see all differences, even those automatically merged
-  (define-key my/git-keymap "e" 'ediff-merge-revisions-with-ancestor)
-  (define-key my/git-keymap "m" 'magit-toggle-margin)
-  (define-key my/git-keymap "b" 'magit-blame)
-  ;; unstage all changes (like SU but forces HEAD)
-  (define-key my/git-keymap "U" 'magit-unstage-all)
-  (define-key my/git-keymap "s" 'magit-stage-file)
-  (define-key my/git-keymap "u" 'magit-unstage-file)
-  ;; soft reset; hard reset can use C-u x
-  (define-key my/git-keymap "r" 'magit-reset-soft)
+
   ;; add argument --no-merges to log
   (magit-define-popup-switch 'magit-log-popup
     ?m "Omit merge commits" "--no-merges")
@@ -587,179 +632,203 @@ to overwrite the final element."
             (delete-other-windows))))
   )
 
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; git-timemachine ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(unless (version< emacs-version "24.4")
-  (require 'git-timemachine)
-  (define-key my/git-keymap "t" 'git-timemachine)
-  )
+;; ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; git-timemachine ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package git-timemachine
+  :bind (:map my/git-keymap ("t" . git-timemachine)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; shell-pop ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'shell-pop)
-(global-set-key (kbd "<f1>") 'shell-pop)
-(global-set-key "\C-c1" 'shell-pop)
+(use-package shell-pop
+  :bind (("<f1>" . shell-pop)
+         ("C-c 1" . shell-pop)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; shackle ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'shackle)
-(setq shackle-default-ratio 0.4)
-(setq shackle-select-reused-windows nil)
-(setq shackle-rules
-      '(
-        (occur-mode :select nil)
-        (grep-mode :popup t :select nil :align bottom)
-        ("*Help*" :popup t :select t)
-        (diff-mode :popup t :select t)
-        (apropos-mode :popup t :select t)
-        (completion-list-mode :select nil)
-        (compilation-mode :popup t :select nil :align bottom)
-        ("*Shell Command Output*" :select t)
-        ("COMMIT_EDITMSG" :select t)
+(use-package shackle
+  :config
+  (setq shackle-default-ratio 0.4)
+  (setq shackle-select-reused-windows nil)
+  (setq shackle-rules
+        '(
+          (occur-mode :select nil)
+          (grep-mode :popup t :select nil :align bottom)
+          ("*Help*" :popup t :select t)
+          (diff-mode :popup t :select t)
+          (apropos-mode :popup t :select t)
+          (completion-list-mode :select nil)
+          (compilation-mode :popup t :select nil :align bottom)
+          ("*Shell Command Output*" :select t)
+          ("COMMIT_EDITMSG" :select t)
+          )
+        shackle-default-rule '(:select nil)
         )
-      shackle-default-rule '(:select nil)
-      )
-(shackle-mode 1)
+  (shackle-mode 1)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; hl-line ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'hl-line+)
-(global-set-key "\M-sL" 'hl-line-flash)
+(use-package hl-line+ :bind ("M-s L" . hl-line-flash))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; crosshairs ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'crosshairs)
-(global-set-key "\M-sl" 'crosshairs-flash)
+(use-package crosshairs :bind ("M-s l" . crosshairs-flash))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; beacon ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'beacon)
-(global-set-key "\M-s\C-l" 'beacon-blink)
-(beacon-mode 1)
-(add-to-list 'beacon-dont-blink-major-modes 'etags-select-mode)
+(use-package beacon
+  :bind ("M-s C-l" . beacon-blink)
+  :demand t
+  :config
+  (add-to-list 'beacon-dont-blink-major-modes 'etags-select-mode)
+  (beacon-mode 1)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; bookmark+ ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
   (add-to-list 'load-path (concat my/plugins-directory "bookmark+/")))
-(setq bookmark-default-file (concat my/user-directory "bookmarks")
-      bmkp-bmenu-state-file (concat my/user-directory
-                                    "emacs-bmk-bmenu-state")
-      bookmark-save-flag nil
-      bmkp-crosshairs-flag nil
-      bmkp-last-as-first-bookmark-file nil
-      )
-(require 'bookmark+)
-(add-hook 'bookmark-after-jump-hook #'crosshairs-flash)
-(global-set-key [f7] 'bmkp-previous-bookmark)
-(global-set-key "\C-c7" 'bmkp-previous-bookmark)
-(global-set-key [f8] 'bmkp-next-bookmark)
-(global-set-key "\C-c8" 'bmkp-next-bookmark)
-(add-hook 'after-init-hook
-          (lambda ()
-            (unless (> (length command-line-args) 1)
-              (bookmark-bmenu-list)
-              (switch-to-buffer "*Bookmark List*"))))
+(use-package bookmark+
+  :bind (("<f7>" . bmkp-previous-bookmark)
+         ("C-c 7" . bmkp-previous-bookmark)
+         ("<f8>" . bmkp-next-bookmark)
+         ("C-c 8" . bmkp-next-bookmark)
+         )
+  :config
+  (setq bookmark-default-file (concat my/user-directory "bookmarks")
+        bmkp-bmenu-state-file (concat my/user-directory
+                                      "emacs-bmk-bmenu-state")
+        bookmark-save-flag nil
+        bmkp-crosshairs-flag nil
+        bmkp-last-as-first-bookmark-file nil
+        )
+  (add-hook 'bookmark-after-jump-hook #'crosshairs-flash)
+  (add-hook 'after-init-hook
+            (lambda ()
+              (unless (> (length command-line-args) 1)
+                (bookmark-bmenu-list)
+                (switch-to-buffer "*Bookmark List*"))))
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; savehist ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'savehist)
-(setq savehist-additional-variables
-      '(search-ring regexp-search-ring kill-ring compile-history)
-      savehist-file (concat my/user-directory "history")
-      savehist-save-minibuffer-history t
-      history-length 50
-      history-delete-duplicates t
-      )
-(put 'minibuffer-history 'history-length 100)
-(put 'kill-ring 'history-length 25)
-(savehist-mode 1)
+(use-package savehist
+  :defer 2
+  :config
+  (setq savehist-additional-variables
+        '(search-ring regexp-search-ring kill-ring compile-history)
+        savehist-file (concat my/user-directory "history")
+        savehist-save-minibuffer-history t
+        history-length 50
+        history-delete-duplicates t
+        )
+  (put 'minibuffer-history 'history-length 100)
+  (put 'kill-ring 'history-length 25)
+  (savehist-mode 1)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; recentf ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'recentf)
-(setq recentf-max-saved-items 200
-      recentf-max-menu-items 12
-      recentf-save-file (concat my/user-directory "recentf"))
-(setq recentf-exclude '( "-tags\\'" "ido\.last\\'" ))
-(recentf-mode 1)
-(defvar uniquify-recentf-func 'recentf-open-files
-  "Select recent files from `recentf' via a completion function.")
-(defun my/call-recentf-func () (interactive) (funcall uniquify-recentf-func))
-(global-set-key "\er" 'my/call-recentf-func)
-(when (version< "24.3" emacs-version)
-  (require 'uniquify-recentf)
-  (setq uniquify-recentf-func 'uniquify-recentf-ido-recentf-open))
+(use-package recentf
+  :defer 2
+  :config
+  (setq recentf-max-saved-items 200
+        recentf-max-menu-items 12
+        recentf-save-file (concat my/user-directory "recentf"))
+  (setq recentf-exclude '( "-tags\\'" "ido\.last\\'" ))
+  (recentf-mode 1)
+  )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; uniquify-recentf ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package uniquify-recentf
+  :if (version< "24.3" emacs-version)
+  :init
+  (defvar uniquify-recentf-func 'recentf-open-files
+    "Select recent files from `recentf' via a completion function.")
+  :config
+  (defun my/call-recentf-func () (interactive) (funcall uniquify-recentf-func))
+  (global-set-key "\er" 'my/call-recentf-func)
+  (setq uniquify-recentf-func 'uniquify-recentf-ido-recentf-open)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ido ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'ido)
-(setq ido-save-directory-list-file (concat my/user-directory "ido-last"))
-(setq ido-max-prospects 25)
-;; (setq ido-enable-flex-matching t)
-;; (setq ido-case-fold t)
-(setq ido-auto-merge-work-directories-length -1) ;disables auto-merge
-(add-to-list 'ido-work-directory-list-ignore-regexps tramp-file-name-regexp)
-;; ask before reusing an existing buffer
-(setq-default ido-default-buffer-method 'maybe-frame)
-(setq-default ido-default-file-method 'maybe-frame)
-(ido-mode 1)
 (defvar my/completion-framework-alist (list
                                        (cons "ido" 'my/activate-ido))
   "An alist of completion frameworks to choose among.  Each value is a
  cons cell (`description' . `activation-function' ).")
+(use-package ido
+  :demand t
+  :config
+  (setq ido-save-directory-list-file (concat my/user-directory "ido-last"))
+  (setq ido-max-prospects 25)
+  ;; (setq ido-enable-flex-matching t)
+  ;; (setq ido-case-fold t)
+  (setq ido-auto-merge-work-directories-length -1) ;disables auto-merge
+  (add-to-list 'ido-work-directory-list-ignore-regexps tramp-file-name-regexp)
+  ;; ask before reusing an existing buffer
+  (setq-default ido-default-buffer-method 'maybe-frame)
+  (setq-default ido-default-file-method 'maybe-frame)
+  (ido-mode 1)
 
-;; sort files by descending modified time (except remotely, which is dog-slow)
-(defun ido-sort-mtime()
-  (unless (tramp-tramp-file-p default-directory)
-    (setq ido-temp-list
-          (sort ido-temp-list
-                (lambda (a b)
-                  (time-less-p
-                   (sixth (file-attributes (concat ido-current-directory b)))
-                   (sixth (file-attributes (concat ido-current-directory a)))))))
-    ;; (ido-to-end
-    ;;  (delq nil (mapcar (lambda (x)
-    ;;                      (and (char-equal (string-to-char x) ?.) x))
-    ;;                    ido-temp-list)))
-    ))
-(add-hook 'ido-make-file-list-hook 'ido-sort-mtime)
-(add-hook 'ido-make-dir-list-hook 'ido-sort-mtime)
+  ;; sort files by descending modified time (except remotely, which is dog-slow)
+  (defun ido-sort-mtime()
+    (unless (tramp-tramp-file-p default-directory)
+      (setq ido-temp-list
+            (sort ido-temp-list
+                  (lambda (a b)
+                    (time-less-p
+                     (sixth (file-attributes (concat ido-current-directory b)))
+                     (sixth (file-attributes (concat ido-current-directory a)))))))
+      ;; (ido-to-end
+      ;;  (delq nil (mapcar (lambda (x)
+      ;;                      (and (char-equal (string-to-char x) ?.) x))
+      ;;                    ido-temp-list)))
+      ))
+  (add-hook 'ido-make-file-list-hook 'ido-sort-mtime)
+  (add-hook 'ido-make-dir-list-hook 'ido-sort-mtime)
 
-(when (< emacs-major-version 24)
-  ;; use ido to switch modes when smex is not available
-  (global-set-key (kbd "M-x")
-                  (lambda() (interactive)
-                    (call-interactively
-                     (intern
-                      (ido-completing-read
-                       "M-x " (all-completions "" obarray 'commandp)))))))
-;; for recentf
-(unless (featurep 'uniquify-recentf)
-  (defun recentf-ido-find-file()
-    "Find a recent file using ido."
-    (interactive)
-    (let ((file (ido-completing-read
-                 "Choose recent file:"
-                 recentf-list nil t)))
-      (when file (find-file file))))
-  (global-set-key "\er" 'recentf-ido-find-file))
+  (when (< emacs-major-version 24)
+    ;; use ido to switch modes when smex is not available
+    (global-set-key (kbd "M-x")
+                    (lambda() (interactive)
+                      (call-interactively
+                       (intern
+                        (ido-completing-read
+                         "M-x " (all-completions "" obarray 'commandp)))))))
+  ;; for recentf
+  (unless (featurep 'uniquify-recentf)
+    (defun recentf-ido-find-file()
+      "Find a recent file using ido."
+      (interactive)
+      (let ((file (ido-completing-read
+                   "Choose recent file:"
+                   recentf-list nil t)))
+        (when file (find-file file))))
+    (global-set-key "\er" 'recentf-ido-find-file))
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ace-window ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'avy)
-(require 'ace-window)
-(global-set-key "\M-p" 'ace-window)
+(use-package ace-window :bind ("M-p" . ace-window))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; swiper/ivy ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(unless (version< emacs-version "24.1")
-  (eval-and-compile
-    (add-to-list 'load-path (concat my/plugins-directory "swiper/")))
-  (require 'swiper)
-  (global-set-key "\M-ss" 'swiper)
-  (define-key isearch-mode-map (kbd "C-o") 'swiper-from-isearch)
-  (require 'ivy)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; swiper ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(eval-and-compile
+  (add-to-list 'load-path (concat my/plugins-directory "swiper/")))
+(use-package swiper
+  :if (not (version< emacs-version "24.1"))
+  :bind (("M-s s" . swiper)
+         :map isearch-mode-map
+         ("C-o" . swiper-from-isearch))
+  )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ivy ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package ivy
+  :config
   (setq ivy-wrap t)
   (add-to-list 'my/completion-framework-alist
                (cons "ivy" 'my/activate-ivy))
   (global-set-key "\e\eii" 'ivy-resume)
-  ;; counsel
-  (global-set-key "\C-cff" 'counsel-git)
-  (global-set-key "\C-cfg" 'counsel-git-grep)
-  (global-set-key "\C-cfs" 'counsel-git-stash)
+  )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; counsel ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package counsel
+  :bind (("C-c ff" . counsel-git)
+         ("C-c fg" . counsel-git-grep)
+         ("C-c fs" . counsel-git-stash))
+  :commands counsel-M-x
+  :config
   (setq counsel-find-file-ignore-regexp "\\.elc$")
   (setf (cdr (assoc 'counsel-M-x ivy-initial-inputs-alist)) "")
-  (require 'counsel)
   ;; fallback to basic find-file
   (define-key counsel-find-file-map "\C-x\C-f"
     (lambda ()
@@ -815,29 +884,34 @@ to overwrite the final element."
 (global-set-key "\C-c\C-e" 'my/choose-completion)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smex ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(when (<= 24 emacs-major-version)
-  (require 'smex)
+(use-package smex
+  :if (<= 24 emacs-major-version)
+  :bind (("M-x" . smex)
+         ("M-X" . smex-major-mode-commands))
+  :config
   (smex-initialize)
-  (global-set-key (kbd "M-x") 'smex)
-  (global-set-key (kbd "M-X") 'smex-major-mode-commands))
-(if (boundp 'ivy-mode)
-    (global-set-key "\e\ex" 'counsel-M-x)
-  ;; the old M-x
-  (global-set-key "\e\ex" 'execute-extended-command))
+  (if (boundp 'ivy-mode)
+      (global-set-key "\e\ex" 'counsel-M-x)
+    ;; the old M-x
+    (global-set-key "\e\ex" 'execute-extended-command))
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; imenu ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; I prefer imenu-anywhere to return imenu results only for the current
 ;; buffer, not all open buffers.
-(defvar imenu-anywhere-buffer-list-function
-  (lambda() (list (current-buffer))))
-(require 'imenu-anywhere)
-(global-set-key "\C-cj" 'imenu-anywhere)
+(use-package imenu-anywhere
+  :bind ("C-c j" . imenu-anywhere)
+  :init
+  (defvar imenu-anywhere-buffer-list-function
+    (lambda() (list (current-buffer))))
+  )
+(use-package imenu-scan)
 
-(require 'imenu-scan)
-
-(require 'popup-imenu)
-(setq popup-imenu-position 'point)
-(global-set-key "\C-c\C-j" 'popup-imenu)
+(use-package popup-imenu
+  :bind ("C-c C-j" . popup-imenu)
+  :config
+  (setq popup-imenu-position 'point)
+  )
 
 ;; ;; TODO: this regexp has false positives, but at least handles when
 ;; ;; functions have whitespace (i.e. in namespaces).  I don't know which
@@ -885,17 +959,18 @@ to overwrite the final element."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; powerline ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
-  (add-to-list 'load-path (concat my/plugins-directory "powerline/"))
-  (require 'powerline)
-  ;; does not interact with rich-minority mode: try delight.el?
-  ;; (powerline-default-theme)
-  )
+  (add-to-list 'load-path (concat my/plugins-directory "powerline/")))
+
+;; does not interact with rich-minority mode: try delight.el?
+;; (powerline-default-theme)
+(use-package powerline)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; rich-minority ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(when (version<= "24.3" emacs-version)
+(use-package rich-minority
   ;; this dependency actually comes from smart-mode-line, which uses
   ;; rich-minority.
-  (require 'rich-minority)
+  :if (version<= "24.3" emacs-version)
+  :config
   (rich-minority-mode 1)
   (setq rm-blacklist
         '(" AC" " yas" " Undo-Tree" " Abbrev" " Guide" " Hi" " $" " ,"
@@ -904,32 +979,37 @@ to overwrite the final element."
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smart-mode-line ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(when (version<= "24.3" emacs-version)
-  (eval-and-compile
-    (add-to-list 'load-path (concat my/plugins-directory "smart-mode-line/")))
-  (require 'smart-mode-line)
+(eval-and-compile
+  (add-to-list 'load-path (concat my/plugins-directory "smart-mode-line/")))
+(use-package smart-mode-line
+  :if (version<= "24.3" emacs-version)
+  :config
   (setq sml/no-confirm-load-theme t)
-  (sml/setup))
+  (sml/setup)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; undo-tree ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'undo-tree)
-(global-undo-tree-mode)
-;; reset the undo tree history (useful after reverting buffer)
-(global-set-key "\C-cu" (lambda()(interactive)(setq buffer-undo-tree nil)))
+(use-package undo-tree
+  :demand t
+  :config
+  ;; reset the undo tree history (useful after reverting buffer)
+  (global-set-key "\C-cu" (lambda()(interactive)(setq buffer-undo-tree nil)))
+  (global-undo-tree-mode))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; goto-chg ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'goto-chg)
-(global-set-key [?\C-.] 'goto-last-change)
+(use-package goto-chg :bind ([?\C-.] . goto-last-change))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; tramp ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(when (boundp 'my/user-name)
-  (setq tramp-default-user my/user-name))
-(setq tramp-auto-save-directory my/autosave-dir)
-(require 'tramp)
-(add-to-list 'tramp-remote-path 'tramp-own-remote-path)
-(setq vc-ignore-dir-regexp
-      (format "\\(%s\\)\\|\\(%s\\)"
-              vc-ignore-dir-regexp tramp-file-name-regexp))
+(use-package tramp
+  :config
+  (when (boundp 'my/user-name)
+    (setq tramp-default-user my/user-name))
+  (setq tramp-auto-save-directory my/autosave-dir)
+  (add-to-list 'tramp-remote-path 'tramp-own-remote-path)
+  (setq vc-ignore-dir-regexp
+        (format "\\(%s\\)\\|\\(%s\\)"
+                vc-ignore-dir-regexp tramp-file-name-regexp))
+  )
 
 (defun my/connect-to-remote-host(&optional arg)
   "Connect to a remote host from `my/remote-host-list'."
@@ -979,104 +1059,108 @@ to overwrite the final element."
    ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dired ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'dired-x)                      ; C-x C-j now runs 'dired-jump
-(setq diredp-hide-details-initially-flag nil)
-(require 'dired+)
-(define-key dired-mode-map "\C-o" 'dired-display-file) ;remap
-(require 'ls-lisp+)
-;; omit dot-files in dired-omit-mode (C-x M-o)
-(setq dired-omit-files (concat dired-omit-files "\\|^\\..+$"))
-(require 'dired-filter)
-(define-key dired-mode-map "." dired-filter-mark-map)
-;; sorting
-(require 'dired-sort)
-(setq-default dired-listing-switches "-alhvGg")
-(put 'dired-find-alternate-file 'disabled nil)
-;; next window's dired window used as target for current window operations
-(setq dired-dwim-target t)
-;; search only in filenames
-(setq dired-isearch-filenames t)
+(use-package dired
+  :defer t
+  :config
+  (use-package dired-x)                 ; C-x C-j now runs 'dired-jump
+  (setq diredp-hide-details-initially-flag nil)
+  (use-package dired+)
+  (define-key dired-mode-map "\C-o" 'dired-display-file) ;remap
+  (use-package ls-lisp+)
+  ;; omit dot-files in dired-omit-mode (C-x M-o)
+  (setq dired-omit-files (concat dired-omit-files "\\|^\\..+$"))
+  (use-package dired-filter)
+  (define-key dired-mode-map "." dired-filter-mark-map)
+  ;; sorting
+  (use-package dired-sort)
+  (setq-default dired-listing-switches "-alhvGg")
+  (put 'dired-find-alternate-file 'disabled nil)
+  ;; next window's dired window used as target for current window operations
+  (setq dired-dwim-target t)
+  ;; search only in filenames
+  (setq dired-isearch-filenames t)
 
-(defun my/dired-sort()
-  "Toggle sorting in dired buffers."
-  (interactive)
-  (let ((type
-         (funcall
-          my/choose-func
-          '( "size" "extension" "ctime" "utime" "time" "name")
-          "Sort by:")))
-    ;; on os x, extension (X) not supported;
-    ;; also, ctime means time file status was last changed
-    (cond ((string= type "size") (dired-sort-size))
-          ((string= type "extension") (dired-sort-extension))
-          ((string= type "ctime") (dired-sort-ctime))
-          ((string= type "utime") (dired-sort-utime))
-          ((string= type "time") (dired-sort-time))
-          ((string= type "name") (dired-sort-name))
-          (t (error "unknown dired sort %s" type)))))
-(define-key dired-mode-map "`" 'my/dired-sort)
+  (defun my/dired-sort()
+    "Toggle sorting in dired buffers."
+    (interactive)
+    (let ((type
+           (funcall
+            my/choose-func
+            '( "size" "extension" "ctime" "utime" "time" "name")
+            "Sort by:")))
+      ;; on os x, extension (X) not supported;
+      ;; also, ctime means time file status was last changed
+      (cond ((string= type "size") (dired-sort-size))
+            ((string= type "extension") (dired-sort-extension))
+            ((string= type "ctime") (dired-sort-ctime))
+            ((string= type "utime") (dired-sort-utime))
+            ((string= type "time") (dired-sort-time))
+            ((string= type "name") (dired-sort-name))
+            (t (error "unknown dired sort %s" type)))))
+  (define-key dired-mode-map "`" 'my/dired-sort)
 
-(defadvice shell-command
-    (after shell-in-new-buffer (command &optional output-buffer error-buffer))
-  (when (get-buffer "*Async Shell Command*")
-    (with-current-buffer "*Async Shell Command*"
-      (rename-uniquely))))
-(ad-activate 'shell-command)
+  (defadvice shell-command
+      (after shell-in-new-buffer (command &optional output-buffer error-buffer))
+    (when (get-buffer "*Async Shell Command*")
+      (with-current-buffer "*Async Shell Command*"
+        (rename-uniquely))))
+  (ad-activate 'shell-command)
 
-;; launch command
-(defun dired-launch-command() (interactive)
-       (dired-do-shell-command
-        (case system-type
-          (darwin "open")
-          (gnu/linux "open")
-          ) nil (dired-get-marked-files t current-prefix-arg)))
+  ;; launch command
+  (defun dired-launch-command() (interactive)
+         (dired-do-shell-command
+          (case system-type
+            (darwin "open")
+            (gnu/linux "open")
+            ) nil (dired-get-marked-files t current-prefix-arg)))
 
-(add-hook 'dired-load-hook
-          (lambda()
-            (define-key dired-mode-map (kbd "<prior>") 'dired-up-directory)
-            (define-key dired-mode-map "l" 'dired-launch-command)
-            ))
+  (add-hook 'dired-load-hook
+            (lambda()
+              (define-key dired-mode-map (kbd "<prior>") 'dired-up-directory)
+              (define-key dired-mode-map "l" 'dired-launch-command)
+              ))
 
-;; easily go to top or bottom
-(defun dired-back-to-top()
-  (interactive)
-  (let ((sorting-by-date (string-match-p dired-sort-by-date-regexp
-                                         dired-actual-switches)))
-    (goto-char (point-min))
-    (dired-next-line
-     (if sorting-by-date 2 4))))
-(define-key dired-mode-map
-  (vector 'remap 'beginning-of-buffer) 'dired-back-to-top)
+  ;; easily go to top or bottom
+  (defun dired-back-to-top()
+    (interactive)
+    (let ((sorting-by-date (string-match-p dired-sort-by-date-regexp
+                                           dired-actual-switches)))
+      (goto-char (point-min))
+      (dired-next-line
+       (if sorting-by-date 2 4))))
+  (define-key dired-mode-map
+    (vector 'remap 'beginning-of-buffer) 'dired-back-to-top)
 
-(defun dired-jump-to-bottom() (interactive)
-       (goto-char (point-max))
-       (dired-next-line -1))
-(define-key dired-mode-map
-  (vector 'remap 'end-of-buffer) 'dired-jump-to-bottom)
+  (defun dired-jump-to-bottom() (interactive)
+         (goto-char (point-max))
+         (dired-next-line -1))
+  (define-key dired-mode-map
+    (vector 'remap 'end-of-buffer) 'dired-jump-to-bottom)
 
-(defun my-dired-do-command (command)
-  "Run command on marked files. Any files not already open will be opened.
+  (defun my-dired-do-command (command)
+    "Run command on marked files. Any files not already open will be opened.
  After this command has been run, any buffers it's modified will remain
  open and unsaved."
-  (interactive "Run on marked files M-x ")
-  (save-window-excursion
-    (mapc (lambda (filename)
-            (find-file filename)
-            (call-interactively command))
-          (dired-get-marked-files))))
+    (interactive "Run on marked files M-x ")
+    (save-window-excursion
+      (mapc (lambda (filename)
+              (find-file filename)
+              (call-interactively command))
+            (dired-get-marked-files))))
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; sunrise-commander ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
-  (add-to-list 'load-path (concat my/plugins-directory "sunrise/"))
-  (require 'sunrise-commander)
-  (require 'sunrise-x-tree)
-  (require 'sunrise-x-w32-addons)
-  (global-set-key "\C-c0s" 'sunrise)
+  (add-to-list 'load-path (concat my/plugins-directory "sunrise/")))
+(use-package sunrise-commander
+  :bind ("C-c 0s" . sunrise)
+  :config
+  (use-package sunrise-x-tree)
+  (use-package sunrise-x-w32-addons)
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; neotree ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'neotree)
-(global-set-key "\C-c0n" 'neotree-toggle)
+(use-package neotree :bind ("C-c 0n" . neotree-toggle))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; deft ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package deft :bind ("C-c d" . deft))
@@ -1159,83 +1243,96 @@ to overwrite the final element."
 (add-hook 'ediff-keymap-setup-hook 'my/add-merge-to-ediff-mode-map)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ediff-trees ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'ediff-trees)
 (define-prefix-command 'my/ediff-trees-keymap)
-(global-set-key "\C-ce" 'my/ediff-trees-keymap)
-(define-key my/ediff-trees-keymap (kbd "n") 'ediff-trees-examine-next)
-(define-key my/ediff-trees-keymap (kbd "p") 'ediff-trees-examine-previous)
-(define-key my/ediff-trees-keymap (kbd "\C-n") 'ediff-trees-examine-next-regexp)
-(define-key my/ediff-trees-keymap (kbd "\C-p") 'ediff-trees-examine-previous-regexp)
+(use-package ediff-trees
+  :bind (("C-c e" . my/ediff-trees-keymap)
+         :map my/ediff-trees-keymap
+         ("n" . ediff-trees-examine-next)
+         ("p" . ediff-trees-examine-previous)
+         ("C-n" . ediff-trees-examine-next-regexp)
+         ("C-p" . ediff-trees-examine-previous-regexp)
+         ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; diff-hl ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
   (add-to-list 'load-path (concat my/plugins-directory "diff-hl/")))
-(require 'diff-hl)
-(require 'diff-hl-flydiff)
-(global-diff-hl-mode 1)
-(diff-hl-flydiff-mode 1)
-(require 'diff-hl-margin)
-(diff-hl-margin-mode 1)
+(use-package diff-hl
+  :config
+  (use-package diff-hl-flydiff :config (diff-hl-flydiff-mode 1))
+  (global-diff-hl-mode 1)
+  (use-package diff-hl-margin :config (diff-hl-margin-mode 1))
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; git-gutter ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(setq git-gutter:hide-gutter t)
-(setq git-gutter:diff-option "-w")
-(require 'git-gutter)
-;; (global-git-gutter-mode 1)
-(setq git-gutter:update-interval 1)
-;; (git-gutter:start-update-timer)
-(global-set-key "\C-xvp" 'git-gutter:previous-hunk)
-(global-set-key "\C-xvn" 'git-gutter:next-hunk)
-(global-set-key "\C-xvd" 'git-gutter:popup-hunk)
-(global-set-key "\C-xvt" 'git-gutter:toggle)
-(global-set-key "\C-xvs" 'git-gutter:stage-hunk)
-(global-set-key "\C-xvr" 'git-gutter:revert-hunk)
-(global-set-key "\C-xvc" 'git-gutter:clear)
-(global-set-key "\C-xvu" 'git-gutter:update-all-windows)
+(use-package git-gutter
+  :disabled t
+  :init
+  (setq git-gutter:hide-gutter t)
+  (setq git-gutter:diff-option "-w")
+  :config
+  (global-git-gutter-mode 1)
+  (setq git-gutter:update-interval 1)
+  (git-gutter:start-update-timer)
+  (global-set-key "\C-xvp" 'git-gutter:previous-hunk)
+  (global-set-key "\C-xvn" 'git-gutter:next-hunk)
+  (global-set-key "\C-xvd" 'git-gutter:popup-hunk)
+  (global-set-key "\C-xvt" 'git-gutter:toggle)
+  (global-set-key "\C-xvs" 'git-gutter:stage-hunk)
+  (global-set-key "\C-xvr" 'git-gutter:revert-hunk)
+  (global-set-key "\C-xvc" 'git-gutter:clear)
+  (global-set-key "\C-xvu" 'git-gutter:update-all-windows)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; shebang ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'shebang)
+(use-package shebang)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; point-undo ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'point-undo)
-(global-set-key [?\C-,] 'point-undo)
+(use-package point-undo :bind ([?\C-,] . point-undo))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; framemove ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'windmove)
-(require 'framemove)
-(windmove-default-keybindings)
-(setq framemove-hook-into-windmove t)
-;;(setq windmove-wrap-around t)
+(use-package framemove
+  :config
+  (use-package windmove)
+  (windmove-default-keybindings)
+  (setq framemove-hook-into-windmove t)
+  ;;(setq windmove-wrap-around t)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; frame-cmds ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; this also loads 'frame-fns
-(require 'frame-cmds)
-(global-set-key [(meta up)]                    'move-frame-up)
-(global-set-key [(meta down)]                  'move-frame-down)
-(global-set-key [(meta left)]                  'move-frame-left)
-(global-set-key [(meta right)]                 'move-frame-right)
-(global-set-key [(meta shift ?v)]              'move-frame-to-screen-top)
-(global-set-key [(control shift ?v)]           'move-frame-to-screen-bottom)
-(global-set-key [(control shift prior)]        'move-frame-to-screen-left)
-(global-set-key [(control shift next)]         'move-frame-to-screen-right)
-(global-set-key [(control shift home)]         'move-frame-to-screen-top-left)
-(global-set-key [(control meta down)]          'enlarge-frame)
-(global-set-key [(control meta right)]         'enlarge-frame-horizontally)
-(global-set-key [(control meta up)]            'shrink-frame)
-(global-set-key [(control meta left)]          'shrink-frame-horizontally)
-(global-set-key [(control ?x) (control ?z)]    'iconify-everything)
-(global-set-key [(control ?z)]                 'iconify/show-frame)
-;(global-set-key [mode-line mouse-3]            'mouse-iconify/show-frame)
-;(global-set-key [mode-line C-mouse-3]          'mouse-remove-window)
-(global-set-key [(control meta ?z)]            'show-hide)
-;(global-set-key [vertical-line C-down-mouse-1] 'show-hide)
-;(global-set-key [C-down-mouse-1]               'mouse-show-hide-mark-unmark)
-(substitute-key-definition 'delete-window      'remove-window global-map)
-(define-key ctl-x-map "o"                      'other-window-or-frame)
-(define-key ctl-x-4-map "1"                    'delete-other-frames)
-(define-key ctl-x-5-map "h"                    'show-*Help*-buffer)
-(substitute-key-definition 'delete-window      'delete-windows-for global-map)
-(define-key global-map "\C-xt."                'save-frame-config)
+(use-package frame-cmds
+  :bind (([(meta up)]      . move-frame-up)
+         ([(meta down)]    . move-frame-down)
+         ([(meta left)]    . move-frame-left)
+         ([(meta right)]   . move-frame-right)
+         ([(meta shift ?v)]. move-frame-to-screen-top)
+         ([(control shift ?v)] . move-frame-to-screen-bottom)
+         ([(control shift prior)] . move-frame-to-screen-left)
+         ([(control shift next)] . move-frame-to-screen-right)
+         ([(control shift home)] . move-frame-to-screen-top-left)
+         ([(control meta down)] . enlarge-frame)
+         ([(control meta right)] . enlarge-frame-horizontally)
+         ([(control meta up)] . shrink-frame)
+         ([(control meta left)] . shrink-frame-horizontally)
+         ([(control ?x) (control ?z)] . iconify-everything)
+         ([(control ?z)] . iconify/show-frame)
+         ;; ([mode-line mouse-3] . mouse-iconify/show-frame)
+         ;; ([mode-line C-mouse-3] . mouse-remove-window)
+         ([(control meta ?z)] . show-hide)
+         ;; ([vertical-line C-down-mouse-1] . show-hide)
+         ;; ([C-down-mouse-1] . mouse-show-hide-mark-unmark)
+         ("C-x t." . save-frame-config)
+         ;; :map ctl-x-map
+         ;; ("o" . other-window-or-frame)
+         ;; :map ctl-x-4-map
+         ;; ("1" . delete-other-frames)
+         ;; :map ctl-x-5-map
+         ;; ("h" . show-*Help*-buffer)
+         )
+  :config
+  (substitute-key-definition 'delete-window      'delete-windows-for global-map)
+  (substitute-key-definition 'delete-window      'remove-window global-map)
+  )
 
 (defun my/tile-frames-vertically()
   "Tile frames vertically. You can restore prior frame position via going to
@@ -1253,14 +1350,19 @@ register \\C-l."
 (global-set-key "\e\eh" 'my/tile-frames-horizontally)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; workgroups ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'workgroups)
-(setq wg-default-buffer "*Bookmark List*")
-;; doesn't work, isn't needed? (setq wg-restore-position t)
-;; TODO: set initial string to "( -<{ }>- )"
-(setq wg-query-for-save-on-emacs-exit nil)
-(define-key wg-map (kbd "<left>") 'wg-switch-left)
-(define-key wg-map (kbd "<right>") 'wg-switch-right)
-(workgroups-mode 1)
+(use-package workgroups
+  :demand t
+  :bind (:map wg-map
+              ("<left>" . wg-switch-left)
+              ("<right>" . wg-switch-right)
+              )
+  :config
+  (setq wg-default-buffer "*Bookmark List*")
+  ;; doesn't work, isn't needed? (setq wg-restore-position t)
+  ;; TODO: set initial string to "( -<{ }>- )"
+  (setq wg-query-for-save-on-emacs-exit nil)
+  (workgroups-mode 1)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; workgroups2 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; (require 'workgroups2)
@@ -1273,55 +1375,68 @@ register \\C-l."
 (eval-and-compile
   (add-to-list 'load-path (concat my/plugins-directory "color-theme/"))
   (add-to-list 'load-path (concat my/plugins-directory "color-theme/themes/")))
-(require 'color-theme)
-(color-theme-initialize)
+(use-package color-theme
+  :config
+  (add-hook 'after-init-hook #'color-theme-initialize)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; palette ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'palette)
+(use-package palette)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smerge ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defun try-smerge()
-  (save-excursion
-    (goto-char (point-min))
-    (smerge-mode
-     (if (re-search-forward "^<<<<<<<" nil t) 1 0))))
-(add-hook 'find-file-hook 'try-smerge t)
-(add-hook 'after-save-hook (lambda() (if (smerge-mode) (try-smerge))))
+(use-package smerge-mode
+  :config
+  (defun try-smerge()
+    (save-excursion
+      (goto-char (point-min))
+      (smerge-mode
+       (if (re-search-forward "^<<<<<<<" nil t) 1 0))))
+  (add-hook 'find-file-hook 'try-smerge t)
+  (add-hook 'after-save-hook (lambda() (if (smerge-mode) (try-smerge))))
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; multi-term ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'multi-term)
-;(setq multi-term-program "/bin/tcsh")
+(use-package multi-term :commands multi-term)
+                                        ;(setq multi-term-program "/bin/tcsh")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; bash-completion ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'bash-completion)
-(bash-completion-setup)
+(use-package bash-completion
+  :defer t
+  :config
+  (bash-completion-setup))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; vlf ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(setq large-file-warning-threshold 100000000) ;100MB
 (eval-and-compile
   (add-to-list 'load-path (concat my/plugins-directory "vlf/")))
-(require 'vlf-setup)
-(setq vlf-batch-size 10000000)          ;10MB
+(use-package vlf-setup
+  :config
+  (setq large-file-warning-threshold 100000000) ;100MB
+  (setq vlf-batch-size 10000000)                ;10MB
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; profiles ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'profiles+)
-(profile-define "default" "dharms" "danielrharms@gmail.com"
-                ;; relative path to makefiles
-                'build-sub-dirs '((""))
-                ;; relative path to debug executables (under project-root-dir
-                ;; and build-sub-dir)
-                ;; 'debug-sub-dirs '("tests/")
-                ;; specific compiler invocation command
-                'compile-sub-command "make"
-                )
-(profile-set-default "default")
-(global-set-key "\C-c0d" 'profile-open-dired-on-dir)
+(use-package profiles+
+  :config
+  (profile-define "default" "dharms" "danielrharms@gmail.com"
+                  ;; relative path to makefiles
+                  'build-sub-dirs '((""))
+                  ;; relative path to debug executables (under project-root-dir
+                  ;; and build-sub-dir)
+                  ;; 'debug-sub-dirs '("tests/")
+                  ;; specific compiler invocation command
+                  'compile-sub-command "make"
+                  )
+  (profile-set-default "default")
+  (global-set-key "\C-c0d" 'profile-open-dired-on-dir)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; rtags ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
   (add-to-list 'load-path (concat my/plugins-directory "rtags/")))
 (defvar rtags-exec (executable-find "rdm"))
-(require 'rtags)
+(use-package rtags
+  :disabled t
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; completion ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq tab-always-indent 'complete)      ;or t to avoid completion
@@ -1334,188 +1449,201 @@ register \\C-l."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-complete ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
   (add-to-list 'load-path (concat my/plugins-directory "auto-complete/")))
-(require 'auto-complete)
-;; user dictionary
-(add-to-list 'ac-user-dictionary-files
-             (concat my/scratch-directory "user-dict"))
-;; mode/extension directory (in addition to "plugins/auto-complete/dict")
-(add-to-list 'ac-dictionary-directories
-             (concat my/scratch-directory "dict/"))
-(mapc (lambda(mode)
-        (add-to-list 'ac-modes mode))
-      '(sql-mode nxml-mode cmake-mode folio-mode protobuf-mode
-                 python-mode dos-mode gud-mode sh-mode
-                 makefile-mode makefile-automake-mode makefile-gmake-mode
-                 autoconf-mode gdb-script-mode awk-mode csv-mode
-                 mock-mode org-mode html-mode text-mode sql-mode
-                 sql-interactive-mode conf-mode
-                 git-commit-mode mock-mode
-                 ))
-(require 'auto-complete-config)
-(setq-default ac-sources
-              '(
-                ;ac-source-yasnippet
-                ac-source-dictionary
-                ac-source-words-in-same-mode-buffers
-                ac-source-filename
-                ac-source-files-in-current-dir
-                ))
-(setq ac-expand-on-auto-complete nil)
-(setq ac-auto-start nil)
-(setq ac-dwim nil)
-(setq ac-use-menu-map t)
-(setq ac-ignore-case 'smart)
-(setq ac-menu-height 20)
+(use-package auto-complete
+  :init
+  (add-hook 'emacs-lisp-mode-hook 'ac-emacs-lisp-mode-setup)
+                                        ;(add-hook 'c-mode-common-hook 'ac-cc-mode-setup)
+  (add-hook 'ruby-mode-hook 'ac-ruby-mode-setup)
+  (add-hook 'css-mode-hook 'ac-css-mode-setup)
+  (add-hook 'auto-complete-mode-hook 'ac-common-setup)
+  :config
+  ;; user dictionary
+  (add-to-list 'ac-user-dictionary-files
+               (concat my/scratch-directory "user-dict"))
+  ;; mode/extension directory (in addition to "plugins/auto-complete/dict")
+  (add-to-list 'ac-dictionary-directories
+               (concat my/scratch-directory "dict/"))
+  (mapc (lambda(mode)
+          (add-to-list 'ac-modes mode))
+        '(sql-mode nxml-mode cmake-mode folio-mode protobuf-mode
+                   python-mode dos-mode gud-mode sh-mode
+                   makefile-mode makefile-automake-mode makefile-gmake-mode
+                   autoconf-mode gdb-script-mode awk-mode csv-mode
+                   mock-mode org-mode html-mode text-mode sql-mode
+                   sql-interactive-mode conf-mode
+                   git-commit-mode mock-mode
+                   ))
+  (use-package auto-complete-config)
+  (setq-default ac-sources
+                '(
+                                        ;ac-source-yasnippet
+                  ac-source-dictionary
+                  ac-source-words-in-same-mode-buffers
+                  ac-source-filename
+                  ac-source-files-in-current-dir
+                  ))
+  (setq ac-expand-on-auto-complete nil)
+  (setq ac-auto-start nil)
+  (setq ac-dwim nil)
+  (setq ac-use-menu-map t)
+  (setq ac-ignore-case 'smart)
+  (setq ac-menu-height 20)
+  (global-auto-complete-mode t)
 
-(add-hook 'emacs-lisp-mode-hook 'ac-emacs-lisp-mode-setup)
-;(add-hook 'c-mode-common-hook 'ac-cc-mode-setup)
-(add-hook 'ruby-mode-hook 'ac-ruby-mode-setup)
-(add-hook 'css-mode-hook 'ac-css-mode-setup)
-(add-hook 'auto-complete-mode-hook 'ac-common-setup)
-(global-auto-complete-mode t)
+  (defun my/auto-complete-at-point ()
+    (when (and (not (minibufferp))
+               (fboundp 'auto-complete-mode)
+               auto-complete-mode)
+      #'auto-complete))
 
-(defun my/auto-complete-at-point ()
-  (when (and (not (minibufferp))
-             (fboundp 'auto-complete-mode)
-             auto-complete-mode)
-    #'auto-complete))
+  (defun my/add-ac-completion-at-point ()
+    (add-to-list 'completion-at-point-functions 'my/auto-complete-at-point))
+  (add-hook 'auto-complete-mode-hook 'my/add-ac-completion-at-point)
 
-(defun my/add-ac-completion-at-point ()
-  (add-to-list 'completion-at-point-functions 'my/auto-complete-at-point))
-(add-hook 'auto-complete-mode-hook 'my/add-ac-completion-at-point)
+  (ac-flyspell-workaround)
 
-(ac-flyspell-workaround)
+  ;; rtags
+  (when rtags-exec
+    (require 'rtags-ac)
+    (setq rtags-completions-enabled t)
+    (rtags-enable-standard-keybindings c-mode-base-map)
+    (defun my/rtags-complete() (interactive)
+           (auto-complete '(ac-source-rtags)))
+    (global-set-key (kbd "\C-c r TAB") 'my/rtags-complete)
+    )
+  (use-package auto-complete-clang)
+  (defvar clang-exec (executable-find "clang"))
 
-;; rtags
+  (use-package auto-complete-etags)
+  (use-package auto-complete-nxml)
+  ;; c-headers
+  (use-package auto-complete-c-headers)
+  (setq achead:include-patterns (list
+                                 "\\.\\(h\\|hpp\\|hh\\|hxx\\|H\\)$"
+                                 "/[a-zA-Z-_]+$"
+                                 ))
+  ;; doesn't work...
+  ;; (setq achead:ac-prefix
+  ;;       "#?\\(?:include\\|import\\)\\s-*[<\"]\\s-*\\([^\"<>' \t\r\n]+\\)")
+  (setq achead:include-directories '("."))
 
-(when rtags-exec
-  (require 'rtags-ac)
-  (setq rtags-completions-enabled t)
-  (rtags-enable-standard-keybindings c-mode-base-map)
-  (defun my/rtags-complete() (interactive)
-		 (auto-complete '(ac-source-rtags)))
-  (global-set-key (kbd "\C-c r TAB") 'my/rtags-complete)
+  (add-hook 'c-mode-common-hook
+            (lambda()
+              (when rtags-exec
+                (add-to-list 'ac-sources 'ac-source-rtags))
+              (when clang-exec
+                (define-key c-mode-base-map [?\M-/] 'ac-complete-clang)
+                ;; (add-to-list 'ac-omni-completion-sources
+                ;;              (cons "\\." '(ac-source-clang)))
+                ;; (add-to-list 'ac-omni-completion-sources
+                ;;              (cons "->" '(ac-source-clang)))
+                )
+              (add-to-list 'ac-sources 'ac-source-etags)
+              (add-to-list 'ac-sources 'ac-source-c-headers)
+              (setq c-tab-always-indent nil)
+              (setq c-insert-tab-function 'indent-for-tab-command)
+              ) t)                       ;append to hook list to take effect
+                                        ;after ac-config-default
+  (add-hook 'protobuf-mode-hook
+            (lambda()(add-to-list 'ac-sources 'ac-source-etags)))
+  (defun my/expand-imenu() (interactive)
+         (auto-complete '(ac-source-imenu)))
+  (global-set-key "\C-c0j" 'my/expand-imenu)
   )
-(require 'auto-complete-clang)
-(defvar clang-exec (executable-find "clang"))
-(require 'auto-complete-etags)
-(require 'auto-complete-nxml)
-;; c-headers
-(require 'auto-complete-c-headers)
-(setq achead:include-patterns (list
-                               "\\.\\(h\\|hpp\\|hh\\|hxx\\|H\\)$"
-                               "/[a-zA-Z-_]+$"
-                               ))
-;; doesn't work...
-;; (setq achead:ac-prefix
-;;       "#?\\(?:include\\|import\\)\\s-*[<\"]\\s-*\\([^\"<>' \t\r\n]+\\)")
-(setq achead:include-directories '("."))
-
-(add-hook 'c-mode-common-hook
-          (lambda()
-            (when rtags-exec
-              (add-to-list 'ac-sources 'ac-source-rtags))
-            (when clang-exec
-              (define-key c-mode-base-map [?\M-/] 'ac-complete-clang)
-              ;; (add-to-list 'ac-omni-completion-sources
-              ;;              (cons "\\." '(ac-source-clang)))
-              ;; (add-to-list 'ac-omni-completion-sources
-              ;;              (cons "->" '(ac-source-clang)))
-              )
-            (add-to-list 'ac-sources 'ac-source-etags)
-            (add-to-list 'ac-sources 'ac-source-c-headers)
-            (setq c-tab-always-indent nil)
-            (setq c-insert-tab-function 'indent-for-tab-command)
-            ) t)                       ;append to hook list to take effect
-                                       ;after ac-config-default
-(add-hook 'protobuf-mode-hook
-          (lambda()(add-to-list 'ac-sources 'ac-source-etags)))
-(defun my/expand-imenu() (interactive)
-       (auto-complete '(ac-source-imenu)))
-(global-set-key "\C-c0j" 'my/expand-imenu)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; YASnippet ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
   (add-to-list 'load-path (concat my/plugins-directory "yasnippet/")))
-(require 'yasnippet)
-(add-to-list 'safe-local-variable-values '(require-final-newline . nil))
-(setq yas-snippet-dirs (list
-                        (concat my/scratch-directory "snippets/")
-                        (concat my/plugins-directory "yasnippet/snippets/")))
-(yas-global-mode 1)
-(setq yas-prompt-functions '(
-                             yas-completing-prompt
-                             yas-ido-prompt
-                             yas-x-prompt
-                             yas-dropdown-prompt
-                             yas-no-prompt
-                             ))
-;; disable TAB key from activating a snippet
-(define-key yas-minor-mode-map (kbd "<tab>") nil)
-(define-key yas-minor-mode-map (kbd "TAB") nil)
-;; add our own keybindings
-(define-key yas-minor-mode-map "\C-cse" 'yas-expand)
-(define-key yas-minor-mode-map "\C-csi" 'yas-insert-snippet)
-(define-key yas-minor-mode-map "\C-csn" 'yas-new-snippet)
-(define-key yas-minor-mode-map "\C-csv" 'yas-visit-snippet-file)
-(define-key yas-minor-mode-map "\C-cs?" 'yas-describe-tables)
-;; integrate with auto-complete (shows only snippets)
-(defun my/expand-yasnippet() (interactive)
-       (auto-complete '(ac-source-yasnippet)))
-(global-set-key [backtab] 'yas-expand)
-(global-set-key [(shift tab)] 'yas-expand)
-(setq yas-fallback-behavior '(apply my/expand-yasnippet))
+(use-package yasnippet
+  :init
+  (add-to-list 'safe-local-variable-values '(require-final-newline . nil))
+  (setq yas-snippet-dirs (list
+                          (concat my/scratch-directory "snippets/")
+                          (concat my/plugins-directory "yasnippet/snippets/")))
+  (setq yas-prompt-functions '(
+                               yas-completing-prompt
+                               yas-ido-prompt
+                               yas-x-prompt
+                               yas-dropdown-prompt
+                               yas-no-prompt
+                               ))
+  :config
+  (bind-keys
+   :map yas-minor-mode-map
+   ;; disable TAB key from activating a snippet
+   ("<tab>" . nil)
+   ("TAB" . nil)
+   ;; add our own keybindings
+   ("C-c se" . yas-expand)
+   ("C-c si" . yas-insert-snippet)
+   ("C-c sn" . yas-new-snippet)
+   ("C-c sv" . yas-visit-snippet-file)
+   ("C-c s?" . yas-describe-tables)
+   )
+  ;; integrate with auto-complete (shows only snippets)
+  (defun my/expand-yasnippet() (interactive)
+         (auto-complete '(ac-source-yasnippet)))
+  (global-set-key [backtab] 'yas-expand)
+  (global-set-key [(shift tab)] 'yas-expand)
+  (setq yas-fallback-behavior '(apply my/expand-yasnippet))
+  (add-hook 'after-init-hook (lambda() (yas-global-mode 1)))
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; flycheck ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(setq-default flycheck-emacs-lisp-load-path 'inherit)
-(require 'flycheck)
-(require 'flycheck-checkbashisms)
-(add-hook 'flycheck-mode-hook #'flycheck-checkbashisms-setup)
-(add-hook 'after-init-hook #'global-flycheck-mode)
-(setq flycheck-global-modes
-      '(emacs-lisp-mode python-mode dart-mode sh-mode c++-mode))
-(require 'flycheck-pos-tip)
-(setq flycheck-display-errors-function #'flycheck-pos-tip-error-messages)
-(setq flycheck-pos-tip-display-errors-tty-function
-      (lambda (errors)
-        (let ((message (mapconcat #'flycheck-error-format-message-and-id
-                                  errors "\n\n")))
-          (popup-tip message))))
+(use-package flycheck
+  :init
+  (setq flycheck-emacs-lisp-package-user-dir
+        (concat my/user-directory "elpa/"))
+  (add-hook 'flycheck-mode-hook #'flycheck-checkbashisms-setup)
+  (add-hook 'after-init-hook #'global-flycheck-mode)
+  :config
+  (setq flycheck-global-modes
+        '(emacs-lisp-mode python-mode dart-mode sh-mode c++-mode))
+  (setq-default flycheck-emacs-lisp-load-path 'inherit)
+  (use-package flycheck-checkbashisms)
+  (use-package flycheck-pos-tip)
+  (setq flycheck-display-errors-function #'flycheck-pos-tip-error-messages)
+  (setq flycheck-pos-tip-display-errors-tty-function
+        (lambda (errors)
+          (let ((message (mapconcat #'flycheck-error-format-message-and-id
+                                    errors "\n\n")))
+            (popup-tip message))))
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; flyspell ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(when (executable-find "hunspell")
-  (require 'flyspell)
+(use-package flyspell
+  :if (executable-find "hunspell")
+  :demand t
+  :bind (:map flyspell-mode-map
+              ("C-c \\c" . flyspell-auto-correct-word)
+              ("C-c \\a" . flyspell-auto-correct-previous-word)
+              ("C-c \\n" . flyspell-goto-next-error)
+                                        ;              ("C-c \\\\" . flyspell-popup-correct)
+              ("C-c \\s" . flyspell-correct-word-before-point)
+              ("C-c \\w" . ispell-word)
+              ("C-c \\b" . flyspell-buffer)
+              ("C-c \\r" . flyspell-region)
+              )
+  :init
   (setq ispell-program-name (executable-find "hunspell"))
+  (add-hook 'prog-mode-hook #'flyspell-prog-mode)
+  :config
   (define-key flyspell-mode-map [?\C-,] nil)
   (define-key flyspell-mode-map [?\C-\;] nil)
   (define-key flyspell-mode-map [?\C-\.] nil)
   (define-key flyspell-mode-map [?\C-\M-i] nil)
-  (define-key flyspell-mode-map "\C-c\\c" 'flyspell-auto-correct-word)
-  (define-key flyspell-mode-map "\C-c\\a" 'flyspell-auto-correct-previous-word)
-  (define-key flyspell-mode-map "\C-c\\n" 'flyspell-goto-next-error)
-  (define-key flyspell-mode-map "\C-c\\\\" 'flyspell-popup-correct)
-  (define-key flyspell-mode-map "\C-c\\s" 'flyspell-correct-word-before-point)
-  (define-key flyspell-mode-map "\C-c\\w" 'ispell-word)
-  (define-key flyspell-mode-map "\C-c\\b" 'flyspell-buffer)
-  (define-key flyspell-mode-map "\C-c\\r" 'flyspell-region)
-  (add-hook 'prog-mode-hook #'flyspell-prog-mode)
-  (require 'ace-popup-menu)
-  (ace-popup-menu-mode 1)
+  (use-package ace-popup-menu :config (ace-popup-menu-mode 1))
   (mapc (lambda (hook) (add-hook hook #'flyspell-mode))
         '(text-mode-hook markdown-mode))
-  (require 'flyspell-popup)
-  (define-key flyspell-mode-map "\e\e4" #'flyspell-popup-correct)
   ;; (add-hook 'flyspell-mode-hook #'flyspell-popup-auto-correct-mode)
-  (defun my/toggle-flyspell() (interactive)
-         (lambda() (flyspell-mode (if flyspell-mode 0 1))))
-;  (global-set-key "\C-c\\t" #'my/toggle-flyspell)
+  ;; (defun my/toggle-flyspell() (interactive)
+  ;;        (lambda() (flyspell-mode (if flyspell-mode 0 1))))
+  ;; (global-set-key "\C-c\\t" #'my/toggle-flyspell)
   )
+(use-package flyspell-popup
+  :bind (:map flyspell-mode-map ("C-c \\\\" . flyspell-popup-correct)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; headers ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;(autoload 'auto-update-file-header "header2")
-(require 'header2)
-(add-hook 'write-file-functions 'auto-update-file-header)
-
 ;; last modification time
 (defun my/update-last-modifier ()
   "Update header line indicating identity of last modifier."
@@ -1524,10 +1652,6 @@ register \\C-l."
                           (if (and name (not (string= name "")))
                               name
                             (user-login-name))))))
-;; use my own function, because delete-trailing-whitespace prevents a
-;; space after the colon
-(register-file-header-action "Modified by[ \t]*:" 'my/update-last-modifier)
-
 ;; file name
 (defun my/update-file-name ()
   "Update the line that indicates the file name."
@@ -1537,94 +1661,102 @@ register \\C-l."
     (goto-char (match-beginning 1))
     (delete-region (match-beginning 1) (match-end 1))
     (insert (file-name-nondirectory (buffer-file-name)))))
-
-(register-file-header-action "^[ \t]*.+ *\\([^ ]+\\) +\\-\\-" 'my/update-file-name)
+(use-package header2
+  :commands auto-update-file-header
+  :init
+  (add-hook 'write-file-functions 'auto-update-file-header)
+  :config
+  ;; use my own function, because delete-trailing-whitespace prevents a
+  ;; space after the colon
+  (register-file-header-action "Modified by[ \t]*:" 'my/update-last-modifier)
+  (register-file-header-action "^[ \t]*.+ *\\([^ ]+\\) +\\-\\-" 'my/update-file-name)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-insert ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'autoinsert)
-(require 'auto-insert-choose+)
-(setq auto-insert 'other)
-(setq auto-insert-directory (concat my/scratch-directory "auto-insert/"))
-;; list of different templates to choose from
-;; c++
-(defvar auto-insert-c-header-alist '())
-(defvar auto-insert-c-impl-alist '())
-(auto-insert-choose+-add-entry 'auto-insert-c-header-alist "template.h")
-(auto-insert-choose+-add-entry 'auto-insert-c-impl-alist "template.cpp")
-;; autoconf
-(defvar auto-insert-autoconf-alist '())
-(auto-insert-choose+-add-entry 'auto-insert-autoconf-alist
-                               "configure-standard.ac")
-(auto-insert-choose+-add-entry 'auto-insert-autoconf-alist
-                               "configure-library.ac")
-;; Makefile.am
-(defvar auto-insert-makefile-am-alist '())
-(auto-insert-choose+-add-entry 'auto-insert-makefile-am-alist
-                               "Makefile-toplevel.am")
-(auto-insert-choose+-add-entry 'auto-insert-makefile-am-alist
-                               "Makefile-library.am")
-(auto-insert-choose+-add-entry 'auto-insert-makefile-am-alist
-                               "Makefile-executable.am")
-
-;; The "normal" entries (using auto-insert) can list the file name and
-;; the yas-expand helper.  If you want to be able to choose among
-;; different templates per mode or file extension, then use the
-;; auto-insert-choose+ functionality: populate an alist per file type
-;; with the different templates, then associate a lambda with a defun
-;; that selects between them: completion, ido, popup.
-(setq auto-insert-alist
-      '(
-        ;; profiles
-        (("\\.eprof$" . "Profiles") .
-         ["template.eprof" auto-insert-choose-yas-expand])
-        (("\\.rprof$" . "Remote Profiles") .
-         ["template.rprof" auto-insert-choose-yas-expand])
-        ;; lisp
-        ((emacs-lisp-mode . "Emacs Lisp") .
-         ["template.el" auto-insert-choose-yas-expand])
-        ;; sh
-        ((sh-mode . "Sh") .
-         ["template.sh" auto-insert-choose-yas-expand])
-        ;; dos
-        ((dos-mode . "Dos") .
-         ["template.bat" auto-insert-choose-yas-expand])
-        ;; python
-        ((python-mode . "Python") .
-         ["template.py" auto-insert-choose-yas-expand])
-        ;; CMake
-        (("CMakeLists.txt" . "CMake") .
-         ["template.cmake" auto-insert-choose-yas-expand])
-        ;; autoconf
-        ((autoconf-mode . "Autoconf")
-         lambda nil (auto-insert-choose-and-call-popup
-                     auto-insert-autoconf-alist))
-        ;; makefile-automake
-        ((makefile-automake-mode . "Makefile-Automake")
-         lambda nil (auto-insert-choose-and-call-popup
-                     auto-insert-makefile-am-alist))
-        ;; c headers
-        (("\\.\\(h\\|hh\\|H\\|hpp\\|hxx\\)$" . "c++")
-         lambda nil (auto-insert-choose-and-call-popup
-                     auto-insert-c-header-alist))
-        ;; c impl
-        (("\\.\\(cpp\\|cc\\|C\\|c\\|cxx\\)$" . "c++")
-         lambda nil (auto-insert-choose-and-call-popup
-                     auto-insert-c-impl-alist))
-        ))
-(global-set-key "\C-cst" 'auto-insert)
+(use-package auto-insert-choose+
+  :bind ("C-c st" . auto-insert)
+  :demand t
+  :init
+  (setq auto-insert 'other)
+  (setq auto-insert-directory (concat my/scratch-directory "auto-insert/"))
+  ;; list of different templates to choose from
+  ;; c++
+  (defvar auto-insert-c-header-alist '())
+  (defvar auto-insert-c-impl-alist '())
+  ;; autoconf
+  (defvar auto-insert-autoconf-alist '())
+  ;; Makefile.am
+  (defvar auto-insert-makefile-am-alist '())
+  :config
+  (auto-insert-choose+-add-entry 'auto-insert-c-header-alist "template.h")
+  (auto-insert-choose+-add-entry 'auto-insert-c-impl-alist "template.cpp")
+  (auto-insert-choose+-add-entry 'auto-insert-autoconf-alist
+                                 "configure-standard.ac")
+  (auto-insert-choose+-add-entry 'auto-insert-autoconf-alist
+                                 "configure-library.ac")
+  (auto-insert-choose+-add-entry 'auto-insert-makefile-am-alist
+                                 "Makefile-toplevel.am")
+  (auto-insert-choose+-add-entry 'auto-insert-makefile-am-alist
+                                 "Makefile-library.am")
+  (auto-insert-choose+-add-entry 'auto-insert-makefile-am-alist
+                                 "Makefile-executable.am")
+  ;; The "normal" entries (using auto-insert) can list the file name and
+  ;; the yas-expand helper.  If you want to be able to choose among
+  ;; different templates per mode or file extension, then use the
+  ;; auto-insert-choose+ functionality: populate an alist per file type
+  ;; with the different templates, then associate a lambda with a defun
+  ;; that selects between them: completion, ido, popup.
+  (setq auto-insert-alist
+        '(
+          ;; profiles
+          (("\\.eprof$" . "Profiles") .
+           ["template.eprof" auto-insert-choose-yas-expand])
+          (("\\.rprof$" . "Remote Profiles") .
+           ["template.rprof" auto-insert-choose-yas-expand])
+          ;; lisp
+          ((emacs-lisp-mode . "Emacs Lisp") .
+           ["template.el" auto-insert-choose-yas-expand])
+          ;; sh
+          ((sh-mode . "Sh") .
+           ["template.sh" auto-insert-choose-yas-expand])
+          ;; dos
+          ((dos-mode . "Dos") .
+           ["template.bat" auto-insert-choose-yas-expand])
+          ;; python
+          ((python-mode . "Python") .
+           ["template.py" auto-insert-choose-yas-expand])
+          ;; CMake
+          (("CMakeLists.txt" . "CMake") .
+           ["template.cmake" auto-insert-choose-yas-expand])
+          ;; autoconf
+          ((autoconf-mode . "Autoconf")
+           lambda nil (auto-insert-choose-and-call-popup
+                       auto-insert-autoconf-alist))
+          ;; makefile-automake
+          ((makefile-automake-mode . "Makefile-Automake")
+           lambda nil (auto-insert-choose-and-call-popup
+                       auto-insert-makefile-am-alist))
+          ;; c headers
+          (("\\.\\(h\\|hh\\|H\\|hpp\\|hxx\\)$" . "c++")
+           lambda nil (auto-insert-choose-and-call-popup
+                       auto-insert-c-header-alist))
+          ;; c impl
+          (("\\.\\(cpp\\|cc\\|C\\|c\\|cxx\\)$" . "c++")
+           lambda nil (auto-insert-choose-and-call-popup
+                       auto-insert-c-impl-alist))
+          ))
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; popup-kill-ring ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'popup-kill-ring)
-(global-set-key "\C-\M-y" 'popup-kill-ring)
+(use-package popup-kill-ring :bind ("C-M-y" . popup-kill-ring))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;; popup-global-mark-ring ;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'popup-global-mark-ring)
-(global-set-key "\e\ey" 'popup-global-mark-ring)
+(use-package popup-global-mark-ring :bind ("\e\ey" . popup-global-mark-ring))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; zop-to-char ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'zop-to-char)
-(global-set-key "\M-z" 'zop-to-char)
-(global-set-key "\M-Z" 'zop-up-to-char)
+(use-package zop-to-char
+  :bind (("M-z" . zop-to-char)
+         ("M-Z" . zop-up-to-char)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; speedbar ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-hook 'speedbar-mode-hook
@@ -1633,23 +1765,30 @@ register \\C-l."
               (setq-default gdb-speedbar-auto-raise t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; htmlize ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'htmlize)
+(use-package htmlize
+  :commands
+  (htmlize-buffer htmlize-region htmlize-file htmlize-many-files
+                  htmlize-many-files-dired))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; awk-it ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'awk-it)
-(global-set-key "\C-c0aa" 'awk-it)
-(global-set-key "\C-c0ap" 'awk-it-with-separator)
-(global-set-key "\C-c0as" 'awk-it-single)
-(global-set-key "\C-c0ag" 'awk-it-single-with-separator)
+(use-package awk-it
+  :bind (("C-c 0aa" . awk-it)
+         ("C-c 0ap" . awk-it-with-separator)
+         ("C-c 0as" . awk-it-single)
+         ("C-c 0ag" . awk-it-single-with-separator)
+         ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; list-environment ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'list-environment)
-(global-set-key "\C-c0e" 'list-environment)
+(use-package list-environment :bind ("C-c 0e" . list-environment))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; guide-key ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(when (version< "24.3" emacs-version)
-  (require 'guide-key)
-  (guide-key-mode 1))
+(use-package guide-key
+  :if (version< "24.3" emacs-version)
+  :disabled t
+  :config
+  (guide-key-mode 1)
+  )
+
 
 (add-hook 'before-save-hook 'my/before-save-hook)
 (defun my/before-save-hook() "Presave hook"
@@ -1691,7 +1830,7 @@ customization."
       (load site-file))
     (setq yas-snippet-dirs (cons (concat site-dir "snippets/")
                                  yas-snippet-dirs))
-    (yas-reload-all)
+    (when (fboundp 'yas-reload-all) (yas-reload-all))
     ))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; host ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defvar my/host-plist '())
@@ -1701,7 +1840,7 @@ customization."
        (host-dir
         (file-name-as-directory
          (concat hosts-dir system)))
-	   (host-file (concat host-dir system))
+       (host-file (concat host-dir system))
        (remote-hosts-file (concat my/user-directory "remote-hosts")))
   ;; load remote hosts file if present
   (when (file-exists-p remote-hosts-file)
@@ -1736,20 +1875,9 @@ customization."
                 ("\\.pm$"       . perl-mode)
                 ("SConstruct"   . python-mode)
                 ("SConscript"   . python-mode)
-                ("\\.[Cc][Ss][Vv]$" . csv-mode)
-                ("CMakeLists\\.txt$"   . cmake-mode)
-                ("\\.cmake$"    . cmake-mode)
-                ("\\.proto$"    . protobuf-mode)
-                ("\\.folio$"    . folio-mode)
-                ("\\.log$"      . log-viewer-mode)
-                ("\\.pro$"      . qt-pro-mode)
                 ("\\.otq$"      . conf-mode) ;one-tick-query files
-                ("\\.cs$"       . csharp-mode)
                 ("\\.bmk$"      . emacs-lisp-mode)
                 ("README\\.md$" . gfm-mode)
-                ("\\.md$"       . markdown-mode)
-                ("\\.dart$"     . dart-mode)
-                ("\\.sed$"      . sed-mode)
                 )
               auto-mode-alist))
 
@@ -1803,28 +1931,31 @@ customization."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; python-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
-  (add-to-list 'load-path (concat my/elisp-directory "emacs-jedi/"))
-  (when (executable-find "python")
-    (require 'virtualenvwrapper)
-    ;(setq venv-location "?")
-    ;; add jedi if installed
-    (when (eq 0 (call-process "python" nil nil nil "-c" "import jedi"))
-;      (setq jedi:setup-keys t)
-      (setq jedi:complete-on-dot t)
-      (setq jedi:tooltip-method '(popup))
-      (require 'jedi)
-      (require 'direx)
-      (require 'jedi-direx)
-      (add-hook 'jedi-mode-hook 'jedi-direx:setup)
-      (add-hook 'python-mode-hook 'jedi:setup)
-      (defun my/expand-jedi() (interactive)
-             (auto-complete '(ac-source-jedi-direct)))
-      )
-    (unless (executable-find "flake8")
-      (add-to-list 'flycheck-disabled-checkers 'python-flake8)
-      (add-to-list 'flycheck-checkers 'python-pyflakes)
-      (require 'flycheck-pyflakes)
-      )))
+  (add-to-list 'load-path (concat my/elisp-directory "emacs-jedi/")))
+(use-package python
+  :if (executable-find "python")
+  :defer t
+  :config
+  (use-package virtualenvwrapper)
+                                        ;(setq venv-location "?")
+  ;; add jedi if installed
+  (when (eq 0 (call-process "python" nil nil nil "-c" "import jedi"))
+                                        ;      (setq jedi:setup-keys t)
+    (setq jedi:complete-on-dot t)
+    (setq jedi:tooltip-method '(popup))
+    (use-package jedi)
+    (use-package direx)
+    (use-package jedi-direx)
+    (add-hook 'jedi-mode-hook 'jedi-direx:setup)
+    (add-hook 'python-mode-hook 'jedi:setup)
+    (defun my/expand-jedi() (interactive)
+           (auto-complete '(ac-source-jedi-direct)))
+    )
+  (unless (executable-find "flake8")
+    (add-to-list 'flycheck-disabled-checkers 'python-flake8)
+    (add-to-list 'flycheck-checkers 'python-pyflakes)
+    (use-package flycheck-pyflakes)
+    ))
 (add-hook 'python-mode-hook
           (lambda()
             (setq-default indent-tabs-mode nil)
@@ -1862,9 +1993,9 @@ customization."
 (add-hook 'emacs-lisp-mode-hook 'eldoc-mode)
 (require 'lisp-extra-font-lock)
 (lisp-extra-font-lock-global-mode 1)
-(require 'bytecomp)
 (add-hook 'after-save-hook
           (lambda()
+            (require 'bytecomp)
             (when (and
                    (eq major-mode 'emacs-lisp-mode)
                    (file-exists-p (byte-compile-dest-file (buffer-file-name)))

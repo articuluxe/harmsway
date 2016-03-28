@@ -1,10 +1,10 @@
 ;; -*- Mode: Emacs-Lisp -*-
 ;; darwin.el --- os settings file
-;; Copyright (C) 2015  Dan Harms (dharms)
+;; Copyright (C) 2015, 2016  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-09-22 08:59:43 dan.harms>
+;; Modified Time-stamp: <2016-03-28 06:35:09 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -28,12 +28,9 @@
 ;; Code:
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Process Viewer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'vkill)
-(global-set-key "\C-c0p" 'vkill)
+(use-package vkill :bind ("C-c 0p" . vkill))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; spotlight ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'spotlight)
-(global-set-key "\C-c0g" 'spotlight)
-
+(use-package spotlight :bind ("C-c 0g" . spotlight))
 
 ;; darwin.el ends here

@@ -1,10 +1,10 @@
 ;; -*- Mode: Emacs-Lisp -*-
 ;; linux.el --- linux os settings file
-;; Copyright (C) 2015  Dan Harms (dharms)
+;; Copyright (C) 2015, 2016  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-09-21 08:38:45 dan.harms>
+;; Modified Time-stamp: <2016-03-28 06:34:12 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -28,8 +28,6 @@
 ;; Code:
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Process Viewer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'proced)
-(global-set-key "\C-c0p" 'proced)
-
+(use-package proced :bind ("C-c 0p" . proced))
 
 ;; linux.el ends here
