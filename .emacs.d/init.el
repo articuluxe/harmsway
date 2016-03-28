@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-03-28 17:06:51 dan.harms>
+;; Modified Time-stamp: <2016-03-28 22:52:16 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -731,14 +731,14 @@ to overwrite the final element."
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; uniquify-recentf ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defvar uniquify-recentf-func 'recentf-open-files
+  "Select recent files from `recentf' via a completion function.")
+(defun my/call-recentf-func () (interactive) (funcall uniquify-recentf-func))
 (use-package uniquify-recentf
+  :bind ("M-r" . my/call-recentf-func)
+  :commands uniquify-recentf-ivy-recentf-open uniquify-recentf-ido-recentf-open
   :if (version< "24.3" emacs-version)
-  :init
-  (defvar uniquify-recentf-func 'recentf-open-files
-    "Select recent files from `recentf' via a completion function.")
   :config
-  (defun my/call-recentf-func () (interactive) (funcall uniquify-recentf-func))
-  (global-set-key "\er" 'my/call-recentf-func)
   (setq uniquify-recentf-func 'uniquify-recentf-ido-recentf-open)
   )
 
@@ -787,15 +787,15 @@ to overwrite the final element."
                         (ido-completing-read
                          "M-x " (all-completions "" obarray 'commandp)))))))
   ;; for recentf
-  (unless (featurep 'uniquify-recentf)
-    (defun recentf-ido-find-file()
-      "Find a recent file using ido."
-      (interactive)
-      (let ((file (ido-completing-read
-                   "Choose recent file:"
-                   recentf-list nil t)))
-        (when file (find-file file))))
-    (global-set-key "\er" 'recentf-ido-find-file))
+  ;; (unless (featurep 'uniquify-recentf)
+  ;;   (defun recentf-ido-find-file()
+  ;;     "Find a recent file using ido."
+  ;;     (interactive)
+  ;;     (let ((file (ido-completing-read
+  ;;                  "Choose recent file:"
+  ;;                  recentf-list nil t)))
+  ;;       (when file (find-file file))))
+  ;;   (global-set-key "\er" 'recentf-ido-find-file))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ace-window ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
