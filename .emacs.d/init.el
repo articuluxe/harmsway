@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-03-27 20:17:49 dharms>
+;; Modified Time-stamp: <2016-03-28 17:06:51 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -726,7 +726,7 @@ to overwrite the final element."
   (setq recentf-max-saved-items 200
         recentf-max-menu-items 12
         recentf-save-file (concat my/user-directory "recentf"))
-  (setq recentf-exclude '( "-tags\\'" "ido\.last\\'" ))
+  (setq recentf-exclude '( "-tags\\'" "ido\.last\\'" "emacs-bmk-bmenu-state"))
   (recentf-mode 1)
   )
 
@@ -1163,7 +1163,14 @@ to overwrite the final element."
 (use-package neotree :bind ("C-c 0n" . neotree-toggle))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; deft ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package deft :bind ("C-c d" . deft))
+(use-package deft
+  :bind ("C-c d" . deft)
+  :commands deft-find-file
+  :config
+  (setq deft-extensions '("txt" "org" "md"))
+  (setq deft-recursive t)
+  (setq deft-use-filename-as-title t)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; diff ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; better colors in older versions
@@ -1329,6 +1336,7 @@ to overwrite the final element."
          ;; :map ctl-x-5-map
          ;; ("h" . show-*Help*-buffer)
          )
+  :commands remove-window
   :config
   (substitute-key-definition 'delete-window      'delete-windows-for global-map)
   (substitute-key-definition 'delete-window      'remove-window global-map)
@@ -1792,14 +1800,27 @@ register \\C-l."
 
 (add-hook 'before-save-hook 'my/before-save-hook)
 (defun my/before-save-hook() "Presave hook"
-       (when (memq major-mode '(c++-mode emacs-lisp-mode perl-mode
-                                         java-mode python-mode dos-mode
-                                         nxml-mode protobuf-mode folio-mode
-                                         sh-mode csharp-mode awk-mode
-                                         gdb-script-mode
-                                         gitignore-mode
-                                         gitconfig-mode
-                                         gitattributes-mode))
+       (when (memq major-mode
+                   '(c++-mode
+                     emacs-lisp-mode
+                     perl-mode
+                     java-mode
+                     python-mode
+                     dos-mode
+                     nxml-mode
+                     protobuf-mode
+                     dart-mode
+                     folio-mode
+                     markdown-mode
+                     sh-mode
+                     csharp-mode
+                     awk-mode
+                     sed-mode
+                     gdb-script-mode
+                     gitignore-mode
+                     gitconfig-mode
+                     gitattributes-mode
+                     ))
          (delete-trailing-whitespace)
          (copyright-update nil t)
          (time-stamp)
