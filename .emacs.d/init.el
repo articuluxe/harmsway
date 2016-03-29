@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-03-29 21:57:14 dharms>
+;; Modified Time-stamp: <2016-03-29 21:57:53 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -149,6 +149,14 @@ up to 10 times."
 (fset 'yes-or-no-p 'y-or-n-p)
 ;; reuse frames
 (setq-default display-buffer-reuse-frames t)
+;; allow stopping isearch at opposite end
+(define-key isearch-mode-map [(control return)]
+  #'my/isearch-exit-other-end)
+(defun my/isearch-exit-other-end ()
+  "Exit isearch, at the opposite end of the string."
+  (interactive)
+  (isearch-exit)
+  (goto-char isearch-other-end))
 
 ;; visual settings
 (menu-bar-mode -1)
