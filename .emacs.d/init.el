@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-03-29 16:58:33 dan.harms>
+;; Modified Time-stamp: <2016-03-29 21:57:14 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -401,7 +401,10 @@ to overwrite the final element."
 (use-package folio-mode :mode "\\.folio$"
   :config (use-package folio-electric))
 
-(use-package markdown-mode :mode "\\.md$")
+(use-package markdown-mode
+  :mode ("\\.md$" "\\.markdown$"
+         "LICENSE$" "README$" "INSTALL$" "CONTRIBUTORS$" "COPYING$"
+         ))
 (use-package pos-tip :defer t)
 (use-package qt-pro :mode "\\.pro$")
 (use-package json-mode
@@ -1199,7 +1202,7 @@ to overwrite the final element."
   :config
   (setq deft-extensions '("md" "org" "txt"))
   (setq deft-recursive t)
-  (setq deft-use-filename-as-title t)
+  ;; (setq deft-use-filename-as-title t)
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; diff ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1661,18 +1664,18 @@ register \\C-l."
   (define-key flyspell-mode-map [?\C-\.] nil)
   (define-key flyspell-mode-map [?\C-\M-i] nil)
   (bind-keys
-   (:map flyspell-mode-map
-		 ("C-c \\c" . flyspell-auto-correct-word)
-		 ("C-c \\a" . flyspell-auto-correct-previous-word)
-		 ("C-c \\n" . flyspell-goto-next-error)
-		 ("C-c \\s" . flyspell-correct-word-before-point)
-		 ("C-c \\w" . ispell-word)
-		 ("C-c \\b" . flyspell-buffer)
-		 ("C-c \\r" . flyspell-region)
-		 ))
+   :map flyspell-mode-map
+   ("C-c \\c" . flyspell-auto-correct-word)
+   ("C-c \\a" . flyspell-auto-correct-previous-word)
+   ("C-c \\n" . flyspell-goto-next-error)
+   ("C-c \\s" . flyspell-correct-word-before-point)
+   ("C-c \\w" . ispell-word)
+   ("C-c \\b" . flyspell-buffer)
+   ("C-c \\r" . flyspell-region)
+   )
   (use-package ace-popup-menu :config (ace-popup-menu-mode 1))
   (mapc (lambda (hook) (add-hook hook #'flyspell-mode))
-        '(text-mode-hook markdown-mode))
+        '(text-mode-hook markdown-mode org-mode))
   ;; (add-hook 'flyspell-mode-hook #'flyspell-popup-auto-correct-mode)
   ;; (defun my/toggle-flyspell() (interactive)
   ;;        (lambda() (flyspell-mode (if flyspell-mode 0 1))))
@@ -1928,7 +1931,6 @@ customization."
                 ("SConscript"   . python-mode)
                 ("\\.otq$"      . conf-mode) ;one-tick-query files
                 ("\\.bmk$"      . emacs-lisp-mode)
-                ("README\\.md$" . gfm-mode)
                 )
               auto-mode-alist))
 
