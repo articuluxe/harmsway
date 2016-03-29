@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-03-28 22:53:03 dharms>
+;; Modified Time-stamp: <2016-03-29 05:52:43 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1651,16 +1651,6 @@ register \\C-l."
 (use-package flyspell
   :if (executable-find "hunspell")
   :demand t
-  :bind (:map flyspell-mode-map
-              ("C-c \\c" . flyspell-auto-correct-word)
-              ("C-c \\a" . flyspell-auto-correct-previous-word)
-              ("C-c \\n" . flyspell-goto-next-error)
-                                        ;              ("C-c \\\\" . flyspell-popup-correct)
-              ("C-c \\s" . flyspell-correct-word-before-point)
-              ("C-c \\w" . ispell-word)
-              ("C-c \\b" . flyspell-buffer)
-              ("C-c \\r" . flyspell-region)
-              )
   :init
   (setq ispell-program-name (executable-find "hunspell"))
   (add-hook 'prog-mode-hook #'flyspell-prog-mode)
@@ -1669,6 +1659,16 @@ register \\C-l."
   (define-key flyspell-mode-map [?\C-\;] nil)
   (define-key flyspell-mode-map [?\C-\.] nil)
   (define-key flyspell-mode-map [?\C-\M-i] nil)
+  (bind-keys
+   (:map flyspell-mode-map
+		 ("C-c \\c" . flyspell-auto-correct-word)
+		 ("C-c \\a" . flyspell-auto-correct-previous-word)
+		 ("C-c \\n" . flyspell-goto-next-error)
+		 ("C-c \\s" . flyspell-correct-word-before-point)
+		 ("C-c \\w" . ispell-word)
+		 ("C-c \\b" . flyspell-buffer)
+		 ("C-c \\r" . flyspell-region)
+		 ))
   (use-package ace-popup-menu :config (ace-popup-menu-mode 1))
   (mapc (lambda (hook) (add-hook hook #'flyspell-mode))
         '(text-mode-hook markdown-mode))
