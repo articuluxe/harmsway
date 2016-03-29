@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-03-28 06:34:12 dharms>
+;; Modified Time-stamp: <2016-03-29 17:07:10 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -29,5 +29,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Process Viewer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package proced :bind ("C-c 0p" . proced))
+
+(with-eval-after-load 'counsel (bind-key "C-c 0g" 'counsel-locate))
 
 ;; linux.el ends here
