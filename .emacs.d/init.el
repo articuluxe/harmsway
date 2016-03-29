@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-03-30 05:48:14 dharms>
+;; Modified Time-stamp: <2016-03-30 08:12:49 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -157,6 +157,9 @@ up to 10 times."
   (interactive)
   (isearch-exit)
   (goto-char isearch-other-end))
+(unless (boundp 'warning-suppress-types)
+  (setq warning-suppress-types nil))
+(push '(undo discard-info) warning-suppress-types)
 
 ;; visual settings
 (menu-bar-mode -1)
