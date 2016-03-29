@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-03-29 05:52:43 dharms>
+;; Modified Time-stamp: <2016-03-29 16:58:33 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -405,6 +405,7 @@ to overwrite the final element."
 (use-package pos-tip :defer t)
 (use-package qt-pro :mode "\\.pro$")
 (use-package json-mode
+  :mode "\\.json$"
   :if (version< emacs-version "23")
   )
 
@@ -1196,7 +1197,7 @@ to overwrite the final element."
   :bind ("C-c d" . deft)
   :commands deft-find-file
   :config
-  (setq deft-extensions '("txt" "org" "md"))
+  (setq deft-extensions '("md" "org" "txt"))
   (setq deft-recursive t)
   (setq deft-use-filename-as-title t)
   )
@@ -2086,6 +2087,14 @@ customization."
                 (rainbow-turn-on)
               (my/syntax-color-hex-values))
             ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; yaml-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package yaml-mode
+             :mode ("\\.yaml$" "\\.yml$")
+             )
+;; (add-hook 'yaml-mode-hook
+;;           (lambda()
+;;             ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; css-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-hook 'css-mode-hook
