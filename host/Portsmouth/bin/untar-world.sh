@@ -5,7 +5,7 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Monday, May 18, 2015
 # Version: 1.0
-# Modified Time-stamp: <2016-01-23 10:06:13 dharms>
+# Modified Time-stamp: <2016-03-29 06:00:56 dharms>
 # Keywords: configuration
 
 tar=$TAR
@@ -20,6 +20,9 @@ function backup_file
 {
    if [ -f .emacs.d/$1 ] ; then
       echo Backing up $1
+      $tar -rvf $backup .emacs.d/$1
+   elif [ -d .emacs.d/$1 ] ; then
+      echo Backing up directory $1
       $tar -rvf $backup .emacs.d/$1
    fi
 }
