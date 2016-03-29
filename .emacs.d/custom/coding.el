@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-03-12 16:17:46 dharms>
+;; Modified Time-stamp: <2016-03-28 22:46:14 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -30,21 +30,20 @@
 (global-set-key "\C-c\C-c" 'comment-region)
 (global-set-key "\C-c\C-u" 'uncomment-region)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; c-includer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'c-includer)
-(global-set-key "\C-cit" 'makey-key-mode-popup-c-includer-brackets)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; cc-chainsaw ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'cc-chainsaw)
+(use-package cc-chainsaw :disabled t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; preproc-font-lock ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(require 'preproc-font-lock)
-(global-set-key "\C-c#"
-                (lambda()(interactive)
-                  (preproc-font-lock-global-mode
-                   (if preproc-font-lock-mode 0 1))))
+(defun my/preproc-font-lock ()
+  "Toggle preprocessor font lock."
+  (interactive)
+  (require 'preproc-font-lock)
+  (preproc-font-lock-mode
+   (if preproc-font-lock-mode 0 1)))
+(use-package preproc-font-lock
+  :bind ("C-c #" . my/preproc-font-lock)
+  :commands preproc-font-lock-mode)
 
-(require 'grep)
 (defun my/grep (&optional arg)
   "A wrapper around grep to provide convenient shortcuts to
    adjust the root directory. With a prefix arg of 64 (C-u C-u
@@ -76,6 +75,7 @@
             ;; some variants of grep don't handle relative paths
             ;; (but expand-file-name doesn't work remotely)
             (expand-file-name dir)))
+    (require 'grep)
     (grep-apply-setting
      'grep-command
      (concat "find -P "
@@ -100,6 +100,7 @@
 (add-hook
  'c-mode-common-hook
  (lambda ()
+   (require 'compile)
    (setq-default indent-tabs-mode nil)
    (setq c-auto-newline t)
    (c-toggle-hungry-state t)
@@ -175,10 +176,11 @@
           ) t)
    ) t)
 
-(add-to-list 'compilation-error-regexp-alist 'boost-test)
-(add-to-list 'compilation-error-regexp-alist-alist
-             '(boost-test
-               "^[[:digit:]]+:\\s-*\\(.*\\):\\([[:digit:]]+\\):\\s-+\\(fatal\\s-\\)?error" 1 2))
+(with-eval-after-load 'compile
+  (add-to-list 'compilation-error-regexp-alist 'boost-test)
+  (add-to-list 'compilation-error-regexp-alist-alist
+               '(boost-test
+                 "^[[:digit:]]+:\\s-*\\(.*\\):\\([[:digit:]]+\\):\\s-+\\(fatal\\s-\\)?error" 1 2)))
 
 (defun print-current-function() "Print current function under point."
   (interactive)
@@ -316,153 +318,6 @@
       (insert "{\n\n"))))
 (global-set-key "\C-cn" 'wrap-namespace-region)
 
-(defun remove-leading-whitespace (start end)
-  "Remove a region's leading whitespace"
-  (interactive "r")
-  (save-excursion
-    (save-restriction
-      (narrow-to-region start end)
-      (goto-char (point-min))
-      (while (looking-at "\\s-")
-        (replace-match "" nil nil)))))
-
-(defun remove-trailing-whitespace (start end)
-  "Remove a region's trailing whitespace"
-  (interactive "r")
-  (save-excursion
-    (save-restriction
-      (narrow-to-region start end)
-      (goto-char (point-max))
-      (backward-char)
-      (while (looking-at "\\s-")
-        (replace-match "" nil nil)
-        (backward-char)))))
-
-(defun remove-embedded-newlines (start end)
-  "Remove a region's embedded newlines"
-  (interactive "r")
-  (save-excursion
-    (save-restriction
-      (narrow-to-region start end)
-      (goto-char (point-min))
-      (while (re-search-forward "\n" nil t)
-        (replace-match "" nil nil)))))
-
-(defun cleanup-func-param-spacing (start end is-decl)
-  "clean up spacing of a single function parameter"
-  (interactive "r")
-  (save-excursion
-    (save-restriction
-      (narrow-to-region start end)
-      (goto-char (point-min))
-      ;; remove multiple consecutive whitespace
-      (while (re-search-forward "\\s-\\{2,\\}" nil t)
-        (replace-match " " nil nil))
-    (goto-char (point-min))
-    ;; remove whitespace before punctuation or parentheses
-    (while (re-search-forward "\\s-+\\(\\s.\\|\\s\(\\|\\s\)\\)" nil t)
-      (replace-match "\\1" nil nil))
-    (goto-char (point-min))
-    ;; remove whitespace after punctuation or parentheses
-    (while (re-search-forward "\\(\\s.\\|\\s\(\\|\\s\)\\)\\s-+" nil t)
-      (replace-match "\\1" nil nil))
-    (goto-char (point-min))
-    (if is-decl
-         ;; for declarations, add a space if not present before parameter name
-         (let ((identifier "\\sw\\|_\\|:"))
-           (while (re-search-forward (concat "\\(.*?\\)\\s-?\\(\\(?:"
-                                             identifier
-                                             "\\)+\\)\\s-*$") nil t)
-             (replace-match "\\1 \\2" nil nil)))))))
-
-(defun clean-up-func-param (start end indent do-spacing is-decl)
-  "Cleans up one (comma-separated) param of a function declaration."
-  (save-excursion
-    (save-restriction
-      (narrow-to-region start end)
-      ;; if we're later indenting, dispose of old newlines
-      (if indent
-          (remove-embedded-newlines (point-min)(point-max)))
-      (when do-spacing
-        (cleanup-func-param-spacing (point-min)(point-max) is-decl)
-        (remove-leading-whitespace (point-min)(point-max))
-        (remove-trailing-whitespace (point-min)(point-max))))))
-
-(defun clean-up-func-params (start end indent is-decl should-comment)
-  "Does the actual work of cleaning up spacing and (optionally) indentation of a function declaration"
-  (let ((saved nil))
-    (save-excursion
-      (save-restriction
-        (narrow-to-region start end) ; separate by ',' and process each parameter
-        (goto-char (point-min))
-        (setq saved (cons (point) saved))
-        (let ((start (point-min)))
-          (catch 'break
-            (while (<= (point) (point-max))
-              (cond
-               ((or (looking-at ",") (eq (point) (point-max)))
-                (progn
-                  (goto-char
-                   (save-excursion
-                     (save-restriction
-                       (narrow-to-region start (point))
-                       (goto-char (point-min))
-                       ;; isolate any initializer
-                       (if (re-search-forward "=" nil t)
-                           (let ((is-quoted nil))
-                             (backward-char)
-                             (clean-up-func-param (point-min)(point) indent t is-decl)
-                             ;; ensure spaces around the '='
-                             (insert " ")
-                             (forward-char)
-                             (insert " ")
-                             ;; don't strip whitespace or otherwise clean up quoted strings
-                             (save-excursion
-                               (when (re-search-forward
-                                      "\\s-*\\(\\s\"+\\)\\(.*\\)\\(\\s\"+\\)\\s-*" nil t)
-                                 (setq is-quoted t)
-                                 (replace-match "\\1\\2\\3" nil nil)))
-                             (clean-up-func-param (point) (point-max) indent
-                                                  (not is-quoted) nil)
-                             (if should-comment
-                                 ;; begin comment before the '='
-                                 (comment-region (- (point) 3) (point-max)))
-                             (point-max))
-                         (clean-up-func-param (point-min) (point-max) indent t is-decl)
-                         (point-max))
-                         )))
-                   ;; save this point to insert newline later
-                   (setq saved (cons (point) saved))
-                   ;; stop at region end
-                   (if (eq (point) (point-max))
-                       (throw 'break nil))
-                   (forward-char) ; at end of buffer this would quit
-                   (insert " ")
-                   (setq start (point))))
-                ((looking-at "\\s\(")
-                 (forward-list 1))      ;skip past parentheses
-                (t (forward-char))
-               ))))))
-      (if indent
-          (mapc (lambda(pos) ; points later in buffer are processed first
-                  (progn
-                    (goto-char pos)
-                    (newline-and-indent)))
-                saved)
-        ;; if not inserting newlines (maintaining those present), we may need to re-indent
-        (indent-region start end))))
-
-(global-set-key "\e\eiy" (lambda(start end)(interactive "r")
-                           (clean-up-func-params start end t t t)))
-(global-set-key "\e\ein" (lambda(start end)(interactive "r")
-                           (clean-up-func-params start end t t nil)))
-(global-set-key "\e\ed" (lambda(start end)(interactive "r")
-                           (clean-up-func-params start end nil t nil)))
-(global-set-key "\e\ec" (lambda(start end)(interactive "r")
-                           (clean-up-func-params start end t nil nil)))
-(global-set-key "\e\eu" (lambda(start end)(interactive "r")
-                           (clean-up-func-params start end nil nil nil)))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; gud ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun my/gud-hook()
   (set (make-local-variable 'gdb-show-main) t)
@@ -534,7 +389,7 @@
                    (save-excursion
                      (goto-char (c-langelem-pos langelem))
                      ;; detect "[...](" or "[...]{" preceded by "," or "("
-                     ;; and with uclosed brace
+                     ;; and with unclosed brace
                      (looking-at ".*[(,][ \t]*\\[[^]]*\\][ \t]*[({][^}]*$"))))
             0                           ;no additional indent
           ad-do-it)))                   ;default behavior

@@ -1,7 +1,8 @@
 # -*- Mode: sh -*-
 # .bash_viking
 
-export python=~/anaconda2/bin
+python=~/anaconda2/bin
+dart=/usr/local/dart/1.15.0/dart-sdk
 export PATH=$HOME/bin:/sbin/:/usr/lib64:$python:$PATH:.
 
 export CSTDLIB_ROOT=/usr/local
