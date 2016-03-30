@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-03-18 08:09:45 dharms>
+;; Modified Time-stamp: <2016-03-29 22:12:05 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -310,8 +310,8 @@ trailing whitespace."
     (call-interactively 'goto-line)))
 (global-set-key [remap goto-line] 'goto-line-with-feedback)
 
-(defvar my/find-file-root-prefix "/sudo::"
-  "root prefix for tramp as root")
+;; (defvar my/find-file-root-prefix "/sudo::"
+;;   "root prefix for tramp as root")
 
 ;; (defun my/find-file-as-root()
 ;;   "Open a file for editing by root."
@@ -442,87 +442,5 @@ removes it from its original frame."
          (> (length (window-list)) 1)
          (remove-window win))))
 (global-set-key "\C-x5x" 'move-buffer-to-new-frame)
-
-(defvar full-edit-accept-patterns
-  '( "\\.cpp$" "\\.cc$" "\\.cxx$" "\\.c$" "\\.C$"
-     "\\.h$" "\\.hh$" "\\.hpp$" "\\.hxx$" "\\.H$"
-     "\\.sh$" "\\.py$" "\\.sql$" "\\.java$" "\\.in$"
-     "\\.proto$" "\\.el$" "\\.cs$"
-     "^CMakeLists.txt$" "\\.cmake$"
-     "^Makefile$" "^makefile$"
-     ))
-(defvar full-edit-reject-patterns
-  '( "\\.exe$" "\\.pdb$" "\\.obj$"
-     ))
-
-(defun test-list-for-string(list regex)
-  "Check if a list contains a string by regexp."
-  (let ((lst list)
-        curr)
-    (catch 'found
-      (while lst
-        (setq curr (car lst))
-        (if (string-match curr regex)
-            (throw 'found t)
-          (setq lst (cdr lst))))
-      nil)))
-
-(defun gather-all-files(dir reporter &optional symbolic)
-  "Gather a list of filenames recursively below a directory.  Results are
-  filtered via full-edit-accept-patterns and full-edit-reject-patterns."
-  (let* ((all-results
-          (directory-files
-           dir t "^\\([^.]\\|\\.[^.]\\|\\.\\..\\)" t))
-         (files (remove-if 'file-directory-p all-results))
-         (dirs (remove-if-not 'file-directory-p all-results))
-         (result '()))
-    (unless symbolic
-      (setq files (remove-if 'file-symlink-p files))
-      (setq dirs (remove-if 'file-symlink-p dirs)))
-    (mapc (lambda(file)
-            (and
-             (test-list-for-string full-edit-accept-patterns
-                                   (file-name-nondirectory file))
-             (not (test-list-for-string full-edit-reject-patterns
-                                        (file-name-nondirectory file)))
-             (setq result (cons file result))
-             (progress-reporter-update reporter)
-             ))
-          files)
-    (mapc (lambda(dir)
-            (setq result (nconc result
-                                (gather-all-files dir reporter symbolic))))
-          dirs)
-    result
-    ))
-
-(defun open-file-list(files)
-  "Find (open) each of a list of filenames."
-  (let* ((i 0)
-         (len (length files))
-         (reporter (make-progress-reporter "Opening files..." 0 len)))
-    (mapc (lambda(file)
-            (find-file-noselect file)
-            (setq i (+ i 1))
-            (progress-reporter-update reporter i)
-            ) files)
-    (progress-reporter-done reporter)))
-
-(defun full-edit(root &optional arg)
-  "Find (open) all files recursively below a directory.
-   With optional prefix argument, will follow symbolic targets."
-  (interactive
-   `(,(read-directory-name "Full-Edit Directory: " nil nil t)
-     ,current-prefix-arg))
-  (if root
-      (let* ((reporter (make-progress-reporter "Gathering files..."))
-             (files (gather-all-files (expand-file-name root)
-                                      reporter arg)))
-        (progress-reporter-done reporter)
-        (open-file-list files)
-        )
-    (message "No directory given")))
-
-(global-set-key "\C-c\C-f" 'full-edit)
 
 ;; utils.el ends here

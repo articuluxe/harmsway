@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-03-29 21:57:53 dharms>
+;; Modified Time-stamp: <2016-03-29 22:11:42 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -322,6 +322,8 @@ to overwrite the final element."
                           "")           ;else empty if no project name
                         )))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; full-edit ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package full-edit :bind ("C-c C-f" . full-edit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; c-includer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package c-includer
