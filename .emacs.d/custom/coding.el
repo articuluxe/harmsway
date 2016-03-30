@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-03-28 22:46:14 dharms>
+;; Modified Time-stamp: <2016-03-30 09:45:45 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -88,7 +88,7 @@
              "-o -name \"*.H\" -o -name \"*.C\" -o -name \"*.hpp\" "
              "-o -name \"*.in\" -o -name \"*.ac\" -o -name \"*.el\" "
              "-o -name \"*.sql\" -o -name \"*.py\" -o -name \"*.proto\" "
-             "-o -name \"*.sh\" -o -name \"*.cs\" "
+             "-o -name \"*.sh\" -o -name \"*.cs\" -o -name \"*.dart\" "
              "\")\" -print0 | xargs -0 grep -Isn "
              (thing-at-point 'symbol t)
              ))
