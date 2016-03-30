@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-03-28 06:36:25 dharms>
+;; Modified Time-stamp: <2016-03-30 08:16:07 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -49,8 +49,10 @@
 (setq tramp-default-method "plink")
 
 ;; qt
-(add-to-list 'full-edit-reject-patterns "^moc")
-(add-to-list 'full-edit-reject-patterns "^qrc")
-(add-to-list 'full-edit-reject-patterns "^ui")
+(with-eval-after-load 'full-edit
+  (add-to-list 'full-edit-reject-patterns "^moc")
+  (add-to-list 'full-edit-reject-patterns "^qrc")
+  (add-to-list 'full-edit-reject-patterns "^ui")
+  )
 
 ;; windows-nt.el ends here

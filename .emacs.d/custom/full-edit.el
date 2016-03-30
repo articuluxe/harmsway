@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Tuesday, March 29, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-03-29 22:10:29 dharms>
+;; Modified Time-stamp: <2016-03-30 08:16:08 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -33,10 +33,12 @@
      "\\.proto$" "\\.el$" "\\.cs$"
      "^CMakeLists.txt$" "\\.cmake$"
      "^Makefile$" "^makefile$"
-     ))
+     )
+  "List of regexps which `full-edit' will open.")
 (defvar full-edit-reject-patterns
   '( "\\.exe$" "\\.pdb$" "\\.obj$"
-     ))
+     )
+  "List of regexps which `full-edit' will ignore.")
 
 (defun test-list-for-string(list regex)
   "Check if a list contains a string by regexp."
@@ -52,7 +54,7 @@
 
 (defun gather-all-files(dir reporter &optional symbolic)
   "Gather a list of filenames recursively below a directory.  Results are
-  filtered via full-edit-accept-patterns and full-edit-reject-patterns."
+  filtered via `full-edit-accept-patterns' and `full-edit-reject-patterns'."
   (let* ((all-results
           (directory-files
            dir t "^\\([^.]\\|\\.[^.]\\|\\.\\..\\)" t))
