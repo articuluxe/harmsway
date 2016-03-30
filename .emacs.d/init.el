@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-03-30 08:12:49 dan.harms>
+;; Modified Time-stamp: <2016-03-30 08:53:42 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -464,12 +464,8 @@ to overwrite the final element."
               ("t" . rotate:tiled)
               ))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; buff-menu ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Newer "tabulated list mode" in buff-menu.el breaks buffer-menu+ 21.0.
-;; We'll shadow the current buff-menu.el with our local emacs-23 version.
-(when (version<= "24.2" emacs-version)
-  (load "buff-menu.el"))
-(use-package buff-menu+ :bind ("C-x S-b" . electric-buffer-list))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;; electric-buffer-list ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package ebuff-menu :bind ("C-x M-b" . electric-buffer-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ibuffer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package ibuffer
