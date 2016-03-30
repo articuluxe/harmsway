@@ -1111,6 +1111,7 @@ to overwrite the final element."
   (use-package ls-lisp+)
   ;; omit dot-files in dired-omit-mode (C-x M-o)
   (setq dired-omit-files (concat dired-omit-files "\\|^\\..+$"))
+  (setq ls-lisp-dirs-first t)
   (use-package dired-filter)
   (define-key dired-mode-map "." dired-filter-mark-map)
   ;; sorting
@@ -1209,7 +1210,7 @@ to overwrite the final element."
   :bind ("C-c d" . deft)
   :commands deft-find-file
   :config
-  (setq deft-extensions '("md" "org" "txt"))
+  (setq deft-extensions '("org" "md" "txt"))
   (setq deft-recursive t)
   ;; (setq deft-use-filename-as-title t)
   )
