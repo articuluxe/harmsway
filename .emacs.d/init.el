@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-03-29 22:11:42 dharms>
+;; Modified Time-stamp: <2016-03-30 05:48:14 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1664,11 +1664,10 @@ register \\C-l."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; flyspell ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package flyspell
   :if (executable-find "hunspell")
-  :demand t
   :init
   (setq ispell-program-name (executable-find "hunspell"))
-  (add-hook 'prog-mode-hook #'flyspell-prog-mode)
   :config
+  (add-hook 'prog-mode-hook #'flyspell-prog-mode)
   (define-key flyspell-mode-map [?\C-,] nil)
   (define-key flyspell-mode-map [?\C-\;] nil)
   (define-key flyspell-mode-map [?\C-\.] nil)
@@ -1691,8 +1690,9 @@ register \\C-l."
   ;;        (lambda() (flyspell-mode (if flyspell-mode 0 1))))
   ;; (global-set-key "\C-c\\t" #'my/toggle-flyspell)
   )
-(use-package flyspell-popup
-  :bind (:map flyspell-mode-map ("C-c \\\\" . flyspell-popup-correct)))
+(with-eval-after-load 'flyspell
+  (require 'flyspell-popup)
+  (bind-key "C-c \\\\" 'flyspell-popup-correct flyspell-mode-map))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; headers ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; last modification time
