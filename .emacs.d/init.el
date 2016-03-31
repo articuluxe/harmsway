@@ -1,10 +1,9 @@
-;; -*- Mode: Emacs-Lisp -*-
 ;; init.el --- Initialization file
 ;; Copyright (C) 2015, 2016  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-03-30 08:53:42 dan.harms>
+;; Modified Time-stamp: <2016-03-31 01:05:07 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -21,11 +20,11 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-;; Commentary:
+;;; Commentary:
 
 ;;
 
-;; Code:
+;;; Code:
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; load-path ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile

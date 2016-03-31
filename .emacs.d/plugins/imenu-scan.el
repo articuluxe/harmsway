@@ -1,10 +1,9 @@
-;; -*- Mode: Emacs-Lisp -*-
 ;; imenu-scan.el --- scan buffer for imenu results
-;; Copyright (C) 2015  Dan Harms (dan.harms)
+;; Copyright (C) 2015, 2016  Dan Harms (dan.harms)
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Thursday, October  1, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-10-02 14:08:18 dan.harms>
+;; Modified Time-stamp: <2016-03-30 18:27:20 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: imenu font-lock programming
 
@@ -21,11 +20,11 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-;; Commentary:
+;;; Commentary:
 
 ;;
 
-;; Code:
+;;; Code:
 
 (defun imenu-scan-buffer-properties (face)
   (let ((pt (point-min))

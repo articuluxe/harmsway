@@ -1,10 +1,9 @@
-;; -*- Mode: Emacs-Lisp -*-
 ;; utils.el --- misc. utilities
 ;; Copyright (C) 2015, 2016  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-03-29 22:12:05 dharms>
+;; Modified Time-stamp: <2016-03-30 18:25:28 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -21,11 +20,11 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-;; Commentary:
+;;; Commentary:
 
 ;;
 
-;; Code:
+;;; Code:
 
 (require 'popup-imenu)
 
@@ -64,6 +63,14 @@
   e.g. Sunday, September 17, 2000."
   (interactive)
   (format-time-string "%A, %B %e, %Y"))
+
+(defun sanityinc/eval-last-sexp-or-region (prefix)
+  "Eval region from BEG to END if active, otherwise the last sexp."
+  (interactive "P")
+  (if (and (mark) (use-region-p))
+      (eval-region (min (point) (mark)) (max (point) (mark)))
+    (pp-eval-last-sexp prefix)))
+(bind-key "C-x C-M-e" #'sanityinc/eval-last-sexp-or-region)
 
 (defun choose-via-popup (alist prompt)
   "Make a choice among ALIST, a list of choices, with PROMPT as a possible

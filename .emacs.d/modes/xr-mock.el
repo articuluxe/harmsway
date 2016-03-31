@@ -1,12 +1,11 @@
-;; -*- Mode: Emacs-Lisp -*-
 ;; xr-mock.el --- major mode to view mock scripts
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Wednesday, June 10, 2015
 ;; Version: 1.2
-;; Modified Time-stamp: <2016-03-17 11:14:34 dan.harms>
+;; Modified Time-stamp: <2016-03-30 18:27:19 dharms>
 ;; Keywords: mock script
 
-;; Code:
+;;; Code:
 
 (defgroup mock-mode nil "*mock script mode" :group 'mock)
 

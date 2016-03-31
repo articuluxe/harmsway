@@ -1,10 +1,9 @@
-;; -*- Mode: Emacs-Lisp -*-
 ;; linux.el --- linux os settings file
 ;; Copyright (C) 2015, 2016  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-03-29 17:07:10 dan.harms>
+;; Modified Time-stamp: <2016-03-31 01:04:16 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -21,11 +20,11 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-;; Commentary:
+;;; Commentary:
 
 ;;
 
-;; Code:
+;;; Code:
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Process Viewer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package proced :bind ("C-c 0p" . proced))

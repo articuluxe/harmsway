@@ -1,10 +1,9 @@
-;; -*- Mode: Emacs-Lisp -*-
 ;; folio-electric.el --- font lock settings for folio major mode
-;; Copyright (C) 2015  Dan Harms (dharms)
+;; Copyright (C) 2015, 2016  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-02-28 03:32:57 dharms>
+;; Modified Time-stamp: <2016-03-30 18:27:19 dharms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -20,11 +19,11 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-;; Commentary:
+;;; Commentary:
 
 ;;
 
-;; Code:
+;;; Code:
 (require 'folio-mode)
 (defgroup folio-electric nil
   "Minor mode providing electric editing for folio files."

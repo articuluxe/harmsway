@@ -1,4 +1,3 @@
-;; -*- Mode: Emacs-Lisp -*-
 ;; uniquify-recentf.el --- Uniquify recentf results
 ;; Implement functionality similar to uniquify to make recentf results bearable
 ;; Requires s.el and dash.el - awesome libraries from Magnar Sveen
@@ -6,7 +5,7 @@
 ;; https://gist.github.com/ghoseb/8432086
 ;; Forked by Dan Harms Tuesday, August  4, 2015 08/04/15 11:14 AM
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-06-18 13:44:36 dan.harms>
+;; Modified Time-stamp: <2016-03-30 18:27:20 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: uniquify recentf ido
 
@@ -23,11 +22,11 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-;; Commentary:
+;;; Commentary:
 
 ;;
 
-;; Code:
+;;; Code:
 (require 'recentf)
 
 (require 's)

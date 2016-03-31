@@ -1,10 +1,9 @@
-;; -*- Mode: Emacs-Lisp -*-
 ;; gen-tags.el --- Generate TAGS files
 ;; Copyright (C) 2015, 2016   (dan.harms)
 ;; Author:  <dan.harms@xrtrading.com>
 ;; Created: Wednesday, March 18, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-01-27 16:49:30 dan.harms>
+;; Modified Time-stamp: <2016-03-30 18:27:20 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: etags, ctags
 
@@ -21,11 +20,11 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-;; Commentary:
+;;; Commentary:
 
 ;;
 
-;; Code:
+;;; Code:
 
 (require 'find-file)
 

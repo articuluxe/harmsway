@@ -1,10 +1,9 @@
-;; -*- Mode: Emacs-Lisp -*-
 ;; difftool.el --- use emacs as a diff tool for git
-;; Copyright (C) 2015  Dan Harms (dan.harms)
+;; Copyright (C) 2015, 2016  Dan Harms (dan.harms)
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Tuesday, August 18, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2015-08-20 09:22:14 dan.harms>
+;; Modified Time-stamp: <2016-03-30 18:27:18 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: git diff
 
@@ -21,11 +20,11 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-;; Commentary:
+;;; Commentary:
 
 ;;
 
-;; Code:
+;;; Code:
 
 (setq ediff-quit-hook 'kill-emacs
       ediff-split-window-function 'split-window-horizontally)

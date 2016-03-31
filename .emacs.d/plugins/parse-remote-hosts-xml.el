@@ -1,10 +1,9 @@
-;; -*- Mode: Emacs-Lisp -*-
 ;; parse-remote-hosts-xml.el --- parse a homiak mremote file
 ;; Copyright (C) 2015, 2016  Dan Harms (dan.harms)
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Friday, August  7, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-03-24 11:10:00 dan.harms>
+;; Modified Time-stamp: <2016-03-30 18:27:20 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: homiak tramp remote hosts
 
@@ -21,11 +20,11 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-;; Commentary:
+;;; Commentary:
 
 ;;
 
-;; Code:
+;;; Code:
 
 (require 'xml)
 (require 'loop)

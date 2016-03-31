@@ -1,10 +1,9 @@
-;; -*- Mode: Emacs-Lisp -*-
 ;; coding.el --- coding utilities
 ;; Copyright (C) 2015, 2016  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-03-30 09:45:45 dan.harms>
+;; Modified Time-stamp: <2016-03-31 01:03:53 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -21,11 +20,11 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-;; Commentary:
+;;; Commentary:
 
 ;;
 
-;; Code:
+;;; Code:
 
 (global-set-key "\C-c\C-c" 'comment-region)
 (global-set-key "\C-c\C-u" 'uncomment-region)
