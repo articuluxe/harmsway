@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-03-31 01:05:07 dharms>
+;; Modified Time-stamp: <2016-03-31 01:06:52 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1210,6 +1210,7 @@ to overwrite the final element."
   :commands deft-find-file
   :config
   (setq deft-extensions '("org" "md" "txt"))
+  (setq deft-default-extension "org")
   (setq deft-recursive t)
   ;; (setq deft-use-filename-as-title t)
   )
