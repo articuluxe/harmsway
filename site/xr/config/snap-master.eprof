@@ -15,44 +15,44 @@
     (append (list "xr-common" "snap/xr-common/src/" gen-tags-exe
                   "-Re") gen-tags-ctags-cpp-options)
     (append (list "catch"
-                  "snap-static/Catch/v1.1.3-custom/"
+                  "/opt/x3p/xrt_a/catch/1.1.3.custom/"
                   gen-tags-exe "-Re") gen-tags-ctags-cpp-options)
     (append (list "libcfg"
-                  "snap-static/libconfig/libconfig-1.4.8/include/"
+                  "/opt/x3p/xrt_a/libconfig/1.4.8/include/"
                   gen-tags-exe "-Re") gen-tags-ctags-cpp-options)
-    (append (list "mberg"
-                  "snap-static/meinberg/3.4.0/mbglib/common/"
+    (append (list "dbl"
+                  "/opt/x3p/xrt_a/dbl/2.0.1.19670.2680/include/"
                   gen-tags-exe
                   "-Re") gen-tags-ctags-cpp-options)
-    (append (list "omni" "snap-static/omni/src/" gen-tags-exe "-Re")
+    (append (list "omni" "/opt/x3p/xrt_a/omni/0.0.1/src/" gen-tags-exe "-Re")
             gen-tags-ctags-cpp-options)
     (append (list "omd"
-                  "snap-static/one_market_data/20150105/one_tick/include/"
+                  "/opt/x3p/xrt_a/one_market_data/20150105/include/"
                   gen-tags-exe "-Re")
             gen-tags-ctags-cpp-options)
     (append (list "qed"
-                  "snap-static/qed-client/2.1.0/include/"
+                  "/opt/x3p/xrt_a/qed-client/2.1.0/include/"
                   gen-tags-exe "-Re")
             gen-tags-ctags-cpp-options)
     (append (list "rcomm"
-                  "snap-static/remotecomm/remotecomm-3.0.4-1/include/"
+                  "/opt/x3p/xrt_a/remotecomm/3.0.4.1/include/"
                   gen-tags-exe "-Re") gen-tags-ctags-cpp-options)
     (append (list "rdfp"
-                  "snap-static/IntelRDFPMathLib/10U1-1-custom/LIBRARY/"
+                  "/opt/x3p/xrt_a/intelrdfpmathlib/10U1.1.custom/include/"
                   gen-tags-exe "-Re") gen-tags-ctags-cpp-options)
     (append (list "sparsehash"
-                  "snap-static/sparsehash/sparsehash-2.0.2/include/"
+                  "/opt/x3p/xrt_a/sparsehash/2.0.2/include/"
                   gen-tags-exe "-Re"
                   "--language-force=c++"
                   ) gen-tags-ctags-cpp-options)
     (append (list "strencode"
-                  "snap-static/stringencoders/3.10-1-custom/include/"
+                  "/opt/x3p/xrt_a/stringencoders/3.10.1.custom/include/"
                   gen-tags-exe "-Re") gen-tags-ctags-cpp-options)
     (append (list "volley"
-                  "snap-static/volley/1.1.0.7.2/include/"
+                  "/opt/x3p/xrt_a/volley/1.1.0.7.2/include/"
                   gen-tags-exe "-Re") gen-tags-ctags-cpp-options)
     (append (list "xerces"
-                  "snap-static/xerces/3.1.1/xerces-c-3.1.1/"
+                  "/opt/x3p/xrt_a/xerces-c/3.1.1/"
                   gen-tags-exe "-Re") gen-tags-ctags-cpp-options)
 
     (append (list "clib" "/usr/include/"
@@ -66,7 +66,7 @@
                   "-h=\".h.H.hh.hpp.hxx.h++.inc.def.\""
                   ) gen-tags-ctags-cpp-options)
 
-    (append (list "boost" "/usr/local/boost156/include/"
+    (append (list "boost" "/opt/x3p/xrt_a/boost/1.56.0/include/"
                   gen-tags-exe "-Re"
                   "--exclude=typeof"
                   "--exclude=fusion"
