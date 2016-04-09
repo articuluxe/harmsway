@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-03-30 18:25:28 dharms>
+;; Modified Time-stamp: <2016-04-09 18:31:38 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -349,6 +349,19 @@ trailing whitespace."
   (setenv var (concat (mapconcat 'convert-standard-filename
                                  (read-file-into-list-of-lines file)
                                  sep) sep (getenv var))))
+
+(defun shell-command-redirected-output (cmd)
+  "Run a shell command, with the option of separately redirecting
+stdout and stderr. Use instead of `shell-command-to-string'.
+Substitute the `nil' in '(t nil)' with a filename to redirect
+stderr into that file."
+  (interactive "sCmd: ")
+  (with-output-to-string
+    (with-current-buffer standard-output
+      (process-file shell-file-name nil
+                    '(t nil) nil
+                    shell-command-switch
+                    cmd))))
 
 (defun window-toggle-split-direction()
   "Switch window split from horizontal to vertical, or vice versa."
