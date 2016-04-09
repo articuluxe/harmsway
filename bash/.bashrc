@@ -22,6 +22,7 @@ host=$(hostname -s)
 if [ -f ~/.bash_$os ]; then
 	. ~/.bash_$os
 fi
+
 # Load any local settings
 if [ -f ~/.bash_$host ]; then
 	. ~/.bash_$host
@@ -31,3 +32,5 @@ fi
 if [ -f ~/.personal ]; then
 	. ~/.personal
 fi
+
+[ "${INSIDE_EMACS}" != "" ] && export TERM=emacs
