@@ -9,13 +9,18 @@
     (append (list "snap" "snap/xr-snap/src/xr/snap/" gen-tags-exe
                   "-Re") gen-tags-ctags-cpp-options)
     (append (list "xr-core" "xr_core/" gen-tags-exe
-                  "-Re") gen-tags-ctags-cpp-options)
+                  "-Re"
+                  "--exclude=dist"
+                  ) gen-tags-ctags-cpp-options)
     (append (list "spawn" "spawn/" gen-tags-exe
                   "-Re") gen-tags-ctags-cpp-options)
     (append (list "xr-common" "snap/xr-common/src/" gen-tags-exe
                   "-Re") gen-tags-ctags-cpp-options)
     (append (list "catch"
                   "/opt/x3p/xrt_a/catch/1.1.3.custom/"
+                  gen-tags-exe "-Re") gen-tags-ctags-cpp-options)
+    (append (list "cereal"
+                  "/opt/x3p/xrt_a/cereal/1.1.2/include/"
                   gen-tags-exe "-Re") gen-tags-ctags-cpp-options)
     (append (list "libcfg"
                   "/opt/x3p/xrt_a/libconfig/1.4.8/include/"

@@ -4,14 +4,14 @@
 export ONE_TICK_CONFIG=/opt/1tick/client_data/config/one_tick_config.txt
 
 # default to latest
-use gcc491
+# use gcc491
 # use cdh5
 # use cdh5-dev
 # use dart_a_114
 # use llvm_a_361
 
 export ORIGPATH=$PATH
-export LD_LIBRARY_PATH=/usr/java/latest/jre/lib/amd64/server:/opt/x3p/xrt_a/llvm/3.6.1/lib:/opt/anaconda-python-2.7.8/lib:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=/usr/java/latest/jre/lib/amd64/server:/opt/x3p/xrt_a/llvm/3.6.1/lib:/opt/x3p/xrt_a/base/lib64:/opt/anaconda-python-2.7.8/lib:$LD_LIBRARY_PATH
 export PATH=/opt/x3p/xrt_a/llvm/3.6.1/bin:$PATH
 #/usr/local/boost156/lib
 
