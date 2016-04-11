@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-03-30 18:21:30 dharms>
+;; Modified Time-stamp: <2016-04-11 08:08:37 dharms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -63,7 +63,8 @@
 
 (defvar ac-etags-cache nil)
 (defun ac-etags-init()
-  (tags-completion-table)
+  (with-demoted-errors "%s"
+    (tags-completion-table))
   (mapatoms (lambda(item)
               (if (symbolp item) (push (symbol-name item) ac-etags-cache)))
             tags-completion-table))

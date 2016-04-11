@@ -1,6 +1,6 @@
 ;;; etags-select.el --- Select from multiple tags
 
-;; Copyright (C) 2007, 2015  Scott Frazer
+;; Copyright (C) 2007, 2015, 2016  Scott Frazer
 
 ;; Author: Scott Frazer <frazer.scott@gmail.com>
 ;; Maintainer: Scott Frazer <frazer.scott@gmail.com>
@@ -194,6 +194,10 @@ Only works with GNU Emacs."
                            "\\)"))
         (case-fold-search (etags-select-case-fold-search))
         full-tagname tag-line filename current-filename)
+    (catch 'exit
+      ;; don't error out if tags-table doesn't exist
+    (unless tag-table-buffer
+      (throw 'exit 0))
     (set-buffer tag-table-buffer)
     (modify-syntax-entry ?_ "w")
     (goto-char (point-min))
@@ -223,12 +227,14 @@ Only works with GNU Emacs."
           (insert (int-to-string tag-count) " [" full-tagname "] " tag-line "\n"))))
     (modify-syntax-entry ?_ "_")
     tag-count))
+  )
 
 (defun etags-select-get-tag-table-buffer (tag-file)
   "Get tag table buffer for a tag file."
   (if etags-select-use-xemacs-etags-p
       (get-tag-table-buffer tag-file)
-    (visit-tags-table-buffer tag-file)
+    (with-demoted-errors "%s"
+      (visit-tags-table-buffer tag-file))
     (get-file-buffer tag-file)))
 
 ;;;###autoload
