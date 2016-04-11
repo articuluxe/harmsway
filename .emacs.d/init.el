@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-03-31 01:06:52 dharms>
+;; Modified Time-stamp: <2016-04-11 17:39:02 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -864,8 +864,11 @@ to overwrite the final element."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; counsel ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package counsel
   :bind (("C-c ff" . counsel-git)
-         ("C-c fg" . counsel-git-grep)
-         ("C-c fs" . counsel-git-stash))
+         ("C-c fr" . counsel-git-grep)
+         ("C-c fg" . counsel-grep)
+         ("C-c fs" . counsel-git-stash)
+         ("C-c fi" . counsel-imenu)
+         )
   :commands counsel-M-x
   :config
   (setq counsel-find-file-ignore-regexp "\\.elc$")
