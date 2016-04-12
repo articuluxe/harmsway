@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-04-12 08:05:22 dharms>
+;; Modified Time-stamp: <2016-04-12 17:49:39 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -250,6 +250,32 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (load-library "utils")
 (load-library "compiling")
 (load-library "coding")
+
+(use-package custom-grep
+ :bind ("C-c g" . my/grep)
+ :commands 'grep)
+(use-package custom-coding
+  :bind (("C-c p" . print-current-function)
+         ("C-c ii" . add-header-include-ifdefs)
+         ("C-c h" . insert-class-header)
+         ("C-c c" . insert-cast)
+         ("C-c n" . wrap-namespace-region)
+  ))
+(use-package custom-gud
+  :bind (("C-c 4" . my/launch-gdb)
+         ([f4] . my/launch-gdb)
+         )
+  :config
+  (add-hook 'gud-mode-hook
+            (lambda()
+              (set (make-local-variable 'gdb-show-main) t)
+              ;; highlight recently-changed variables
+              (set (make-local-variable 'gdb-show-changed-values) t)
+              ;; watch expressions sharing same variable name
+              (set (make-local-variable 'gdb-use-colon-colon-notation) t)
+              (set (make-local-variable 'gdb-create-source-file-list) nil)
+              (gdb-many-windows 1)
+              )))
 
 (defvar my/remote-host-list '())
 

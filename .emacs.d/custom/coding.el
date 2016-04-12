@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-03-31 01:03:53 dharms>
+;; Modified Time-stamp: <2016-04-12 17:49:49 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -43,58 +43,20 @@
   :bind ("C-c #" . my/preproc-font-lock)
   :commands preproc-font-lock-mode)
 
-(defun my/grep (&optional arg)
-  "A wrapper around grep to provide convenient shortcuts to
-   adjust the root directory. With a prefix arg of 64 (C-u C-u
-   C-u), or if the variable 'project-root-dir is not defined in
-   the current profile, the search directory will be chosen
-   interactively by the user using ido. With a prefix arg of
-   16 (C-u C-u), use the current directory. With a prefix arg of
-   4 (C-u), the directory will be chosen interactively by the
-   user among the src directories configured using the current
-   profile. Otherwise, use the first src directory configured
-   in the profile."
-  (interactive "p")
-  (let* ((root (profile-current-get 'project-root-dir))
-         (dirs (profile-current-get 'grep-dirs))
-         (first (cdr (car dirs)))
-         (prompt "Grep root: ")
-         (dir
-          (cond ((or (null root) (null dirs) (= arg 64))
-                 (read-directory-name prompt nil nil t))
-                ((= arg 16) ".")
-                ((= arg 4) (funcall my/choose-func dirs prompt))
-                (t first)))
-         (remote (file-remote-p dir)))
-    (when remote                        ;remove remote prefix if present
-      (setq dir
-            (replace-regexp-in-string (regexp-quote remote) "" dir)))
-    (unless (file-remote-p default-directory)
-      (setq dir
-            ;; some variants of grep don't handle relative paths
-            ;; (but expand-file-name doesn't work remotely)
-            (expand-file-name dir)))
-    (require 'grep)
-    (grep-apply-setting
-     'grep-command
-     (concat "find -P "
-             ;; some greps dislike trailing slashes
-             (directory-file-name dir)
-             " \"(\" -name \"*moc_*\" -o -name \"*qrc_*\" \")\" "
-             "-prune -o -type f \"(\" -name \"*.cpp\" -o -name \"*.h\" "
-             "-o -name \"*.cc\" -o -name \"*.hh\" -o -name \"*.cxx\" "
-             "-o -name \"*.hxx\" -o -name \"*.h\" -o -name \"*.c\" "
-             "-o -name \"*.H\" -o -name \"*.C\" -o -name \"*.hpp\" "
-             "-o -name \"*.in\" -o -name \"*.ac\" -o -name \"*.el\" "
-             "-o -name \"*.sql\" -o -name \"*.py\" -o -name \"*.proto\" "
-             "-o -name \"*.sh\" -o -name \"*.cs\" -o -name \"*.dart\" "
-             "\")\" -print0 | xargs -0 grep -Isn "
-             (thing-at-point 'symbol t)
-             ))
-    (command-execute 'grep)))
-(global-set-key "\C-cg" 'my/grep)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; c++-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defun toggle-c-comment-delimiters()
+  "Toggle the comment delimiters for c-derived programming languages."
+  (interactive)
+  (if (= 0 (length comment-end))
+      (progn
+        (setq comment-start "/*")
+        (setq comment-end "*/")
+        (message "/* Using comments like this */")
+        )
+    (progn
+      (setq comment-start "//")
+      (setq comment-end "")
+      (message "// Using comments like this"))))
 
 (add-hook
  'c-mode-common-hook
@@ -181,24 +143,6 @@
                '(boost-test
                  "^[[:digit:]]+:\\s-*\\(.*\\):\\([[:digit:]]+\\):\\s-+\\(fatal\\s-\\)?error" 1 2)))
 
-(defun print-current-function() "Print current function under point."
-  (interactive)
-  (message (which-function)))
-(global-set-key "\C-cp" 'print-current-function)
-
-(defun toggle-c-comment-delimiters()
-  "Toggle the comment delimiters for c-derived programming languages."
-  (interactive)
-  (if (= 0 (length comment-end))
-      (progn
-        (setq comment-start "/*")
-        (setq comment-end "*/")
-        (message "/* Using comments like this */")
-        )
-    (progn
-      (setq comment-start "//")
-      (setq comment-end "")
-      (message "// Using comments like this"))))
 
 (defun find-my-tags-file() "Find tags file"
   (interactive)
@@ -209,146 +153,6 @@
           (run-with-timer 1 nil 'visit-tags-table my-tags-file))
       (message "Did not find tags file")
       )))
-
-;; include ifdefs
-(defvar site-name nil "A possibly empty name of the current site.")
-(defun add-header-include-ifdefs (&optional arg)
-  "Add header include guards. With optional prefix argument, query for the
-   base name. Otherwise, the base file name is used."
-  (interactive "P")
-  (let* ((name (if (buffer-file-name)
-                   (file-name-nondirectory (buffer-file-name))
-                 (buffer-name)))
-         (project-name (profile-current-get 'project-name))
-         (str
-          (replace-regexp-in-string
-           "\\.\\|-" "_"
-           name)))
-    (if (fboundp 's-snake-case)
-        (setq str (upcase (s-snake-case str)))
-      (setq str (upcase str)))
-    (save-excursion
-      (if arg                           ;ask user for stem
-          (setq str (concat
-                     (read-string "Include guard stem: " nil nil str) "_H"))
-        ;; no arg; if project-name or site-name are defined, prepend them
-        (when project-name
-          (setq str (concat project-name "_" str))))
-        (when site-name
-          (setq str (concat site-name "_" str)))
-      (setq str (upcase (concat "__" str "__")))
-      (goto-char (point-min))
-      (insert "#ifndef " str "\n#define " str "\n\n")
-      (goto-char (point-max))
-      (insert "\n#endif")
-      (insert-char ?\s c-basic-offset)
-      (insert "/* #ifndef " str " */\n")
-      )))
-(global-set-key "\C-cii" 'add-header-include-ifdefs)
-
-;; class header
-(defun insert-class-header (&optional arg)
-  "Insert a formatted class header given the current selection or position."
-  (interactive "P")
-  (let ((str
-         (if (region-active-p)
-             (buffer-substring-no-properties (region-beginning)(region-end))
-           (thing-at-point 'symbol)))
-        (i 0) len)
-    (if (or arg (= 0 (length str)))
-        (setq str (read-string "Enter the title symbol: ")))
-                                        ; (message "symbol %s is %d chars long" str (length str))(read-char)
-    (c-beginning-of-defun)
-    (move-beginning-of-line nil)
-    (insert "//")
-    (insert-char ?- (- fill-column 2))
-    (insert "\n")
-    (insert "//---- " str " ")
-    (setq len (- (- fill-column 8) (length str)))
-    (while (< i len)
-      (insert "-")
-      (setq i (1+ i)))
-    (insert "\n//")
-    (insert-char ?- (- fill-column 2))
-    (insert "\n")
-    ))
-(global-set-key "\C-ch" 'insert-class-header)
-
-;; casting
-(defvar my/cast-history-list nil)
-(defun insert-cast (start end)
-  "Insert code for a cast around a region."
-  (interactive "r")
-  (let ((initial (if my/cast-history-list
-                     (car my/cast-history-list)
-                   "static"))
-        type str)
-    (setq type (read-string "Enter the data type to cast to: "))
-    (setq str (funcall my/choose-func
-                       '("static" "dynamic" "reinterpret" "const")
-                       "Enter the type of cast: "))
-    ;; (setq str (ido-completing-read "Enter the type of cast: "
-    ;;                                '("static" "dynamic" "reinterpret" "const")
-    ;;                                nil t nil my/cast-history-list "static"))
-    (if (= 0 (length str))
-        (setq str initial))
-    (save-excursion
-      (goto-char end)(insert ")")
-      (goto-char start)(insert str "_cast<" type ">("))))
-(global-set-key "\C-cc" 'insert-cast)
-
-;; namespace
-(defun wrap-namespace-region (start end)
-  "Insert enclosing namespace brackets around a region."
-  (interactive "r")
-  (let ((str))
-    (setq str (read-string "Enter the namespace name: "))
-    (save-excursion
-      (goto-char end) (insert "\n}")
-      (insert-char ?\s c-basic-offset)
-      (insert "// end ")
-      (if (= 0 (length str))
-          (insert "anonymous "))
-      (insert "namespace " str "\n")
-      (goto-char start)
-      (insert "namespace ")
-      (if (not (= 0 (length str)))
-          (insert str " "))
-      (insert "{\n\n"))))
-(global-set-key "\C-cn" 'wrap-namespace-region)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; gud ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defun my/gud-hook()
-  (set (make-local-variable 'gdb-show-main) t)
-  ;; highlight recently-changed variables
-  (set (make-local-variable 'gdb-show-changed-values) t)
-  ;; watch expressions sharing same variable name
-  (set (make-local-variable 'gdb-use-colon-colon-notation) t)
-  (set (make-local-variable 'gdb-create-source-file-list) nil)
-  (gdb-many-windows 1))
-(add-hook 'gud-mode-hook 'my/gud-hook)
-
-(defun my/launch-gdb()
-  "Launch gdb automatically in the test directory."
-  (interactive)
-  (let ((root (profile-current-get 'project-root-dir))
-        (prefix (profile-current-get 'remote-prefix))
-        (sub-dirs (profile-current-get 'debug-sub-dirs))
-        exec-dir exec)
-    (when root
-      (setq exec-dir
-            (concat
-             prefix root
-             (cond ((eq (length sub-dirs) 1) (car sub-dirs))
-                   ((null sub-dirs) "")
-                   (t (funcall my/choose-func
-                               sub-dirs "Debug dir:"))))))
-    (unless (and exec-dir (file-exists-p exec-dir))
-      (setq exec-dir default-directory))
-    (setq exec (read-file-name "Debug executable: " exec-dir nil t))
-    (gdb (concat "gdb -i=mi " exec))))
-(global-set-key [f4] 'my/launch-gdb)
-(global-set-key "\C-c4" 'my/launch-gdb)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;; c++11 enum class hack ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; TODO: doesn't work
