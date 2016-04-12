@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-04-11 17:39:02 dharms>
+;; Modified Time-stamp: <2016-04-12 08:05:22 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -372,21 +372,6 @@ to overwrite the final element."
    ("C-c 0rf" . sudo-edit-current-file))
   )
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; modes ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package log-viewer :mode ("\\.log$" . log-viewer-mode))
-(use-package csv-mode :mode ("\\.[Cc][Ss][Vv]$" . csv-mode))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; cmake ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package
-  cmake-mode
-  :mode ("CMakeLists\\.txt$" "\\.cmake$")
-  :config
-  (use-package cmake-font-lock)
-  (defun my/cmake-fix-underscore()
-    (modify-syntax-entry ?_ "_" cmake-mode-syntax-table))
-  (add-hook 'cmake-mode-hook #'my/cmake-fix-underscore)
-  (add-hook 'cmake-mode-hook 'cmake-font-lock-activate)
-  )
 
 ;; work around bug in cc-mode in emacs 24.4
 ;; see debbugs.gnu.org/db/18/18845.html
@@ -408,37 +393,7 @@ to overwrite the final element."
   (use-package csharp-mode :mode "\\.cs$")
   )
 
-(use-package dart-mode :mode "\\.dart$" :interpreter "dart")
-(use-package dos :mode ("\\.bat$" . dos-mode) :config (use-package dos-indent))
-(use-package folio-mode :mode "\\.folio$"
-  :config (use-package folio-electric))
-
-(use-package markdown-mode
-  :mode ("\\.md$" "\\.markdown$"
-         "LICENSE$" "README$" "INSTALL$" "CONTRIBUTORS$" "COPYING$"
-         ))
 (use-package pos-tip :defer t)
-(use-package qt-pro :mode "\\.pro$")
-(use-package json-mode
-  :mode "\\.json$"
-  :if (version< emacs-version "23")
-  )
-
-(use-package nhexl-mode :defer t)
-(use-package sed-mode :mode "\\.sed$" :interpreter "sed")
-;; git
-(use-package gitignore-mode
-  :mode ("/\\.gitignore\\'"
-         "/info/exclude\\'"
-         "/git/ignore\\'"))
-(use-package gitconfig-mode
-  :mode ("/\\.gitconfig\\'"      "/\\.git/config\\'"
-         "/modules/.*/config\\'" "/git/config\\'"
-         "/\\.gitmodules\\'"     "/etc/gitconfig\\'"))
-(use-package gitattributes-mode
-  :mode ("/\\.gitattributes\\'"
-         "/info/attributes\\'"
-         "/git/attributes\\'"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; rainbow ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package rainbow-mode
@@ -780,7 +735,7 @@ to overwrite the final element."
   :commands uniquify-recentf-ivy-recentf-open uniquify-recentf-ido-recentf-open
   :if (version< "24.3" emacs-version)
   :config
-  (setq uniquify-recentf-func 'uniquify-recentf-ido-recentf-open)
+  (setq uniquify-recentf-func 'uniquify-recentf-ivy-recentf-open)
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ido ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1947,100 +1902,78 @@ customization."
                 )
               auto-mode-alist))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; sh-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(add-hook 'sh-mode-hook
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; awk-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(add-hook 'awk-mode-hook
           (lambda()
-            (setq-default indent-tabs-mode nil)
-            ;; (idle-highlight-mode 1)
-            (define-key sh-mode-map "\r" 'reindent-then-newline-and-indent)
-            (setq sh-basic-offset 3)
-            (setq sh-indentation 3)
-            (define-key sh-mode-map "\C-c\C-c" 'comment-region)
-            (define-key sh-mode-map "\C-c\C-u" 'uncomment-region)
-            (add-to-list 'flycheck-disabled-checkers 'sh-posix-dash)
+            (setq comment-start "#") (setq comment-end "")
+            (define-key awk-mode-map "\C-c\C-c" 'comment-region)
+            (define-key awk-mode-map "\C-c\C-u" 'uncomment-region)
             ))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dos-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(add-hook 'dos-mode-hook
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; conf-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(add-hook 'conf-mode-hook
           (lambda()
-            (setq-default indent-tabs-mode nil)
+            (setq indent-tabs-mode nil)
+            (subword-mode 1)
             ;; (idle-highlight-mode 1)
-            (define-key dos-mode-map "\r" 'reindent-then-newline-and-indent)
-            (setq dos-basic-offset 3)
-            (setq dos-indentation 3)
-            (define-key dos-mode-map "\C-c\C-c" 'comment-region)
-            (define-key dos-mode-map "\C-c\C-u" 'uncomment-region)
+            ;; conf-colon-mode still bound to "\C-c:"
+            (local-unset-key "\C-c\C-c")
+            ;; conf-unix-mode now bound to "\C-cu"
+            (local-unset-key "\C-c\C-u")
+            (define-key conf-mode-map "\C-cu" 'conf-unix-mode)
+            (define-key conf-mode-map "\C-c\C-c" 'comment-region)
+            (define-key conf-mode-map "\C-c\C-u" 'uncomment-region)
             ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; cmake-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package
+  cmake-mode
+  :mode ("CMakeLists\\.txt$" "\\.cmake$")
+  :config
+  (use-package cmake-font-lock)
+  (defun my/cmake-fix-underscore()
+    (modify-syntax-entry ?_ "_" cmake-mode-syntax-table))
+  (add-hook 'cmake-mode-hook #'my/cmake-fix-underscore)
+  (add-hook 'cmake-mode-hook 'cmake-font-lock-activate)
+  )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; css-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(add-hook 'css-mode-hook
+          (lambda()
+            (if (featurep 'rainbow-mode)
+                (rainbow-turn-on)
+              (my/syntax-color-hex-values))
+            ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; csv-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package csv-mode :mode ("\\.[Cc][Ss][Vv]$" . csv-mode))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dart-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(setq dart-enable-analysis-server t)
-(add-hook 'dart-mode
-          (lambda()
-            (define-key dart-mode-map "\C-c\C-c" 'comment-region)
-            (define-key dart-mode-map "\C-c\C-u" 'uncomment-region)
-            ))
+(use-package dart-mode :mode "\\.dart$" :interpreter "dart"
+  :init
+  (setq dart-enable-analysis-server t)
+  :config
+  (add-hook 'dart-mode
+            (lambda()
+              (define-key dart-mode-map "\C-c\C-c" 'comment-region)
+              (define-key dart-mode-map "\C-c\C-u" 'uncomment-region)
+              )))
 ;not sure this is needed (add-hook 'dart-mode-hook 'flycheck-mode)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; xml-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(add-hook 'nxml-mode-hook
-          (lambda()
-            (setq-default indent-tabs-mode nil)
-            ;; (idle-highlight-mode 1)
-            (define-key nxml-mode-map "\r" 'reindent-then-newline-and-indent)
-            (define-key nxml-mode-map "\C-c\C-c" 'comment-region)
-            (define-key nxml-mode-map "\C-c\C-u" 'uncomment-region)
-            ))
-(require 'mz-comment-fix)
-;; the following is a hack to fix nested XML commenting in Emacs 24.
-;; Note that 'comment-strip-start-length also exists for other modes if needed.
-(add-to-list 'comment-strip-start-length (cons 'nxml-mode 3))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; python-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(eval-and-compile
-  (add-to-list 'load-path (concat my/elisp-directory "emacs-jedi/")))
-(use-package python
-  :if (executable-find "python")
-  :defer t
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dos-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package dos :mode ("\\.bat$" . dos-mode)
   :config
-  (use-package virtualenvwrapper)
-                                        ;(setq venv-location "?")
-  ;; add jedi if installed
-  (when (eq 0 (call-process "python" nil nil nil "-c" "import jedi"))
-                                        ;      (setq jedi:setup-keys t)
-    (setq jedi:complete-on-dot t)
-    (setq jedi:tooltip-method '(popup))
-    (use-package jedi)
-    (use-package direx)
-    (use-package jedi-direx)
-    (add-hook 'jedi-mode-hook 'jedi-direx:setup)
-    (add-hook 'python-mode-hook 'jedi:setup)
-    (defun my/expand-jedi() (interactive)
-           (auto-complete '(ac-source-jedi-direct)))
-    )
-  (unless (executable-find "flake8")
-    (add-to-list 'flycheck-disabled-checkers 'python-flake8)
-    (add-to-list 'flycheck-checkers 'python-pyflakes)
-    (use-package flycheck-pyflakes)
-    ))
-(add-hook 'python-mode-hook
-          (lambda()
-            (setq-default indent-tabs-mode nil)
-            (setq python-indent-guess-indent-offset nil)
-            (setq python-indent-offset 4)
-            (setq-local electric-indent-chars
-                        (remq ?: electric-indent-chars))
-            (setq forward-sexp-function nil)
-            (define-key python-mode-map "\C-j" 'newline-and-indent)
-            (define-key python-mode-map "\C-c\C-c" 'comment-region)
-            (define-key python-mode-map "\C-c\C-u" 'uncomment-region)
-            (define-key python-mode-map [?\C-\M-g] 'python-nav-forward-sexp)
-            (define-key python-mode-map (kbd "\C-c RET")
-              (lambda()(interactive)
-                (compile (concat "python " (buffer-file-name)))))
-            (when (featurep 'jedi)
-              (define-key python-mode-map [(ctrl tab)] 'my/expand-jedi)
-              (define-key python-mode-map "\C-cx" 'jedi-direx:pop-to-buffer))
-            ))
+  (use-package dos-indent)
+  (add-hook 'dos-mode-hook
+            (lambda()
+              (setq-default indent-tabs-mode nil)
+              ;; (idle-highlight-mode 1)
+              (define-key dos-mode-map "\r" 'reindent-then-newline-and-indent)
+              (setq dos-basic-offset 3)
+              (setq dos-indentation 3)
+              (define-key dos-mode-map "\C-c\C-c" 'comment-region)
+              (define-key dos-mode-map "\C-c\C-u" 'uncomment-region)
+              )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; emacs-lisp-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-hook 'emacs-lisp-mode-hook
@@ -2072,28 +2005,23 @@ customization."
               (save-excursion
                 (byte-compile-file buffer-file-name)))))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; conf-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(add-hook 'conf-mode-hook
-          (lambda()
-            (setq indent-tabs-mode nil)
-            (subword-mode 1)
-            ;; (idle-highlight-mode 1)
-            ;; conf-colon-mode still bound to "\C-c:"
-            (local-unset-key "\C-c\C-c")
-            ;; conf-unix-mode now bound to "\C-cu"
-            (local-unset-key "\C-c\C-u")
-            (define-key conf-mode-map "\C-cu" 'conf-unix-mode)
-            (define-key conf-mode-map "\C-c\C-c" 'comment-region)
-            (define-key conf-mode-map "\C-c\C-u" 'uncomment-region)
-            ))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; folio-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package folio-mode :mode "\\.folio$"
+  :config (use-package folio-electric))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; awk-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(add-hook 'awk-mode-hook
-          (lambda()
-            (setq comment-start "#") (setq comment-end "")
-            (define-key awk-mode-map "\C-c\C-c" 'comment-region)
-            (define-key awk-mode-map "\C-c\C-u" 'uncomment-region)
-            ))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; git-modes ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package gitignore-mode
+  :mode ("/\\.gitignore\\'"
+         "/info/exclude\\'"
+         "/git/ignore\\'"))
+(use-package gitconfig-mode
+  :mode ("/\\.gitconfig\\'"      "/\\.git/config\\'"
+         "/modules/.*/config\\'" "/git/config\\'"
+         "/\\.gitmodules\\'"     "/etc/gitconfig\\'"))
+(use-package gitattributes-mode
+  :mode ("/\\.gitattributes\\'"
+         "/info/attributes\\'"
+         "/git/attributes\\'"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; html-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-hook 'html-mode-hook
@@ -2103,34 +2031,120 @@ customization."
               (my/syntax-color-hex-values))
             ))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; json-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package json-mode
+  :mode "\\.json$"
+  :if (version< emacs-version "23")
+  )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; log-viewer-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package log-viewer :mode ("\\.log$" . log-viewer-mode))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; markdown-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package markdown-mode
+  :mode ("\\.md$" "\\.markdown$"
+         "LICENSE$" "README$" "INSTALL$" "CONTRIBUTORS$" "COPYING$"
+         ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; nhexl-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package nhexl-mode :defer t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; python-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(eval-and-compile
+  (add-to-list 'load-path (concat my/elisp-directory "emacs-jedi/")))
+(use-package python
+  :if (executable-find "python")
+  :defer t
+  :config
+  (use-package virtualenvwrapper)
+                                        ;(setq venv-location "?")
+  ;; add jedi if installed
+  (when (eq 0 (call-process "python" nil nil nil "-c" "import jedi"))
+                                        ;      (setq jedi:setup-keys t)
+    (setq jedi:complete-on-dot t)
+    (setq jedi:tooltip-method '(popup))
+    (use-package jedi)
+    (use-package direx)
+    (use-package jedi-direx)
+    (add-hook 'jedi-mode-hook 'jedi-direx:setup)
+    (add-hook 'python-mode-hook 'jedi:setup)
+    (defun my/expand-jedi() (interactive)
+           (auto-complete '(ac-source-jedi-direct)))
+    )
+  (unless (executable-find "flake8")
+    (add-to-list 'flycheck-disabled-checkers 'python-flake8)
+    (add-to-list 'flycheck-checkers 'python-pyflakes)
+    (use-package flycheck-pyflakes)
+    )
+  (add-hook 'python-mode-hook
+            (lambda()
+              (setq-default indent-tabs-mode nil)
+              (setq python-indent-guess-indent-offset nil)
+              (setq python-indent-offset 4)
+              (setq-local electric-indent-chars
+                          (remq ?: electric-indent-chars))
+              (setq forward-sexp-function nil)
+              (define-key python-mode-map "\C-j" 'newline-and-indent)
+              (define-key python-mode-map "\C-c\C-c" 'comment-region)
+              (define-key python-mode-map "\C-c\C-u" 'uncomment-region)
+              (define-key python-mode-map [?\C-\M-g] 'python-nav-forward-sexp)
+              (define-key python-mode-map (kbd "\C-c RET")
+                (lambda()(interactive)
+                  (compile (concat "python " (buffer-file-name)))))
+              (when (featurep 'jedi)
+                (define-key python-mode-map [(ctrl tab)] 'my/expand-jedi)
+                (define-key python-mode-map "\C-cx" 'jedi-direx:pop-to-buffer))
+              )))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; qt-pro-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package qt-pro :mode "\\.pro$")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; sed-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package sed-mode :mode "\\.sed$" :interpreter "sed")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; sh-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(add-hook 'sh-mode-hook
+          (lambda()
+            (setq-default indent-tabs-mode nil)
+            ;; (idle-highlight-mode 1)
+            (define-key sh-mode-map "\r" 'reindent-then-newline-and-indent)
+            (setq sh-basic-offset 3)
+            (setq sh-indentation 3)
+            (define-key sh-mode-map "\C-c\C-c" 'comment-region)
+            (define-key sh-mode-map "\C-c\C-u" 'uncomment-region)
+            (add-to-list 'flycheck-disabled-checkers 'sh-posix-dash)
+            ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; xml-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(add-hook 'nxml-mode-hook
+          (lambda()
+            (setq-default indent-tabs-mode nil)
+            ;; (idle-highlight-mode 1)
+            (define-key nxml-mode-map "\r" 'reindent-then-newline-and-indent)
+            (define-key nxml-mode-map "\C-c\C-c" 'comment-region)
+            (define-key nxml-mode-map "\C-c\C-u" 'uncomment-region)
+            ))
+(require 'mz-comment-fix)
+;; the following is a hack to fix nested XML commenting in Emacs 24.
+;; Note that 'comment-strip-start-length also exists for other modes if needed.
+(add-to-list 'comment-strip-start-length (cons 'nxml-mode 3))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; yaml-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package yaml-mode
-             :mode ("\\.yaml$" "\\.yml$")
-             )
-;; (add-hook 'yaml-mode-hook
-;;           (lambda()
-;;             ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; css-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(add-hook 'css-mode-hook
-          (lambda()
-            (if (featurep 'rainbow-mode)
-                (rainbow-turn-on)
-              (my/syntax-color-hex-values))
-            ))
-
-(defun yaml-next-field() "Jump to next yaml field."
-       (interactive)
-       (search-forward-regexp ": *"))
-(defun yaml-prev-field() "Jump to previous yaml field."
-       (interactive)
-       (search-backward-regexp ": *"))
-(add-hook 'yaml-mode-hook
-          (lambda()
-            (define-key yaml-mode-map "\C-m" 'newline-and-indent)
-            (define-key yaml-mode-map "\M-\r" 'insert-ts)
-            (define-key yaml-mode-map (kbd "C-<tab>") 'yaml-next-field)
-            (define-key yaml-mode-map (kbd "C-S-<tab>") 'yaml-prev-field)
-            ))
+  :mode ("\\.yaml$" "\\.yml$")
+  :config
+  (defun yaml-next-field() "Jump to next yaml field."
+         (interactive)
+         (search-forward-regexp ": *"))
+  (defun yaml-prev-field() "Jump to previous yaml field."
+         (interactive)
+         (search-backward-regexp ": *"))
+  (add-hook 'yaml-mode-hook
+            (lambda()
+              (define-key yaml-mode-map "\C-m" 'newline-and-indent)
+              (define-key yaml-mode-map "\M-\r" 'insert-ts)
+              (define-key yaml-mode-map (kbd "C-<tab>") 'yaml-next-field)
+              (define-key yaml-mode-map (kbd "C-S-<tab>") 'yaml-prev-field)
+              )))
 
 ;; code ends here
