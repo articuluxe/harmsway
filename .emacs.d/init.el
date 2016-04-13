@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-04-12 17:49:39 dharms>
+;; Modified Time-stamp: <2016-04-13 08:24:28 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1935,6 +1935,11 @@ customization."
             (define-key awk-mode-map "\C-c\C-c" 'comment-region)
             (define-key awk-mode-map "\C-c\C-u" 'uncomment-region)
             ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; cask-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package cask-mode
+  :mode "/Cask\\'"
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; conf-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-hook 'conf-mode-hook
