@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Tuesday, April 12, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-04-12 17:30:44 dharms>
+;; Modified Time-stamp: <2016-04-14 09:23:09 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: grep coding
 
@@ -48,7 +48,11 @@ profile."
                 ((= arg 16) ".")
                 ((= arg 4) (funcall my/choose-func dirs prompt))
                 (t first)))
-         (remote (file-remote-p dir)))
+         (remote (file-remote-p dir))
+         (search-string
+          (if (region-active-p)
+              (buffer-substring (region-beginning) (region-end))
+            (thing-at-point 'symbol t))))
     (when remote                        ;remove remote prefix if present
       (setq dir
             (replace-regexp-in-string (regexp-quote remote) "" dir)))
@@ -72,7 +76,7 @@ profile."
              "-o -name \"*.sql\" -o -name \"*.py\" -o -name \"*.proto\" "
              "-o -name \"*.sh\" -o -name \"*.cs\" -o -name \"*.dart\" "
              "\")\" -print0 | xargs -0 grep -Isn "
-             (thing-at-point 'symbol t)
+             (shell-quote-argument search-string)
              ))
     (command-execute 'grep)))
 
