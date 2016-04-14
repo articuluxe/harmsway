@@ -20,6 +20,10 @@
 ;; see <http://www.gnu.org/licenses/>.
 
 (require 'ert)
+
+;; useful for #'ivy-read-remap. It must arrive before (require 'ivy)
+(define-key global-map (kbd "<S-right>") #'end-of-buffer)
+
 (require 'ivy)
 (require 'counsel)
 
@@ -79,6 +83,12 @@
                      "can C-m")
            "can")))
 
+(ert-deftest ivy-read-remap ()
+  (should (equal
+           (ivy-with '(ivy-read "pattern: " '("blue" "yellow" "red"))
+                  "<S-right> C-m")
+           "red")))
+
 (ert-deftest swiper--re-builder ()
   (setq swiper--width 4)
   (should (string= (swiper--re-builder "^")
@@ -97,8 +107,10 @@
                  '("Who are" "the Brittons?")))
   (should (equal (ivy--split "We're  all  Britons and   I   am your   king.")
                  '("We're all Britons"
-                  "and  I  am"
-                   "your  king."))))
+                   "and  I  am"
+                   "your  king.")))
+  (should (equal (ivy--split "^[^ ]") '("^[^ ]")))
+  (should (equal (ivy--split "^[^ ] bar") '("^[^ ]" "bar"))))
 
 (ert-deftest ivy--regex ()
   (should (equal (ivy--regex
@@ -143,7 +155,7 @@
 
 (ert-deftest ivy--format ()
   (should (string= (let ((ivy--index 10)
-                         (ivy-format-function (lambda (x) (mapconcat (lambda (y) (car y)) x "\n")))
+                         (ivy-format-function (lambda (x) (mapconcat #'identity x "\n")))
                          (cands '("NAME"
                                   "SYNOPSIS"
                                   "DESCRIPTION"
@@ -170,4 +182,7 @@
 (ert-deftest counsel-unquote-regex-parens ()
   (should (equal (counsel-unquote-regex-parens
                   (ivy--regex "foo bar"))
-                 "(foo).*?(bar)")))
+                 "(foo).*?(bar)"))
+  (should (equal (counsel-unquote-regex-parens
+                  (ivy--regex "(foo bar"))
+                 "(\\(foo).*?(bar)")))

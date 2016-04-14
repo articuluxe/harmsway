@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-04-13 08:24:28 dan.harms>
+;; Modified Time-stamp: <2016-04-14 10:20:46 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -849,6 +849,7 @@ to overwrite the final element."
          ("C-c fg" . counsel-grep)
          ("C-c fs" . counsel-git-stash)
          ("C-c fi" . counsel-imenu)
+         ("C-c fl" . counsel-git-log)
          )
   :commands counsel-M-x
   :config
