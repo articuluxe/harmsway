@@ -4,7 +4,7 @@
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Monday, January 18, 2016
 # Version: 1.0
-# Modified Time-stamp: <2016-01-27 08:16:44 dan.harms>
+# Modified Time-stamp: <2016-04-13 12:08:25 dan.harms>
 # Modified by: Dan Harms
 # Keywords: linux docs
 
@@ -23,5 +23,8 @@ sudo rpm -ivh epel-release-6-8.noarch.rpm
 sudo yum install aspell-en
 ls
 
+# list fonts
+xfontsel
+xlsfonts | grep -i liberation | grep 12
 
 # code ends here
