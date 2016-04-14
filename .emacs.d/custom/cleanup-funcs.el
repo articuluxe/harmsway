@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Monday, March 28, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-03-28 17:42:34 dharms>
+;; Modified Time-stamp: <2016-04-14 08:05:22 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: c++
 
@@ -26,7 +26,17 @@
 
 ;;; Code:
 
-(defun remove-leading-whitespace (start end)
+(require 'makey)
+
+(defvar c-cleanup-func-indent nil
+  "Should parameter lists be indented.")
+(defvar c-cleanup-func-is-decl nil
+  "Non-nil if a parameter list should be treated as a declaration.")
+(defvar c-cleanup-func-should-comment nil
+  "Non-nil if default parameter values should be commented out.")
+
+
+(defun c-remove-leading-whitespace (start end)
   "Remove a region's leading whitespace.
 Region is delimited by START and END."
   (interactive "r")
@@ -37,7 +47,7 @@ Region is delimited by START and END."
       (while (looking-at "\\s-")
         (replace-match "" nil nil)))))
 
-(defun remove-trailing-whitespace (start end)
+(defun c-remove-trailing-whitespace (start end)
   "Remove a region's trailing whitespace.
 Region is delimited by START and END."
   (interactive "r")
@@ -50,7 +60,7 @@ Region is delimited by START and END."
         (replace-match "" nil nil)
         (backward-char)))))
 
-(defun remove-embedded-newlines (start end)
+(defun c-remove-embedded-newlines (start end)
   "Remove a region's embedded newlines.
 Region is delimited by START and END."
   (interactive "r")
@@ -61,7 +71,7 @@ Region is delimited by START and END."
       (while (re-search-forward "\n" nil t)
         (replace-match "" nil nil)))))
 
-(defun cleanup-func-param-spacing (start end is-decl)
+(defun c-cleanup-func-param-spacing (start end is-decl)
   "Clean up spacing of a single function parameter."
   (interactive "r")
   (save-excursion
@@ -88,20 +98,20 @@ Region is delimited by START and END."
                                              "\\)+\\)\\s-*$") nil t)
              (replace-match "\\1 \\2" nil nil)))))))
 
-(defun clean-up-func-param (start end indent do-spacing is-decl)
+(defun c-cleanup-func-param (start end indent do-spacing is-decl)
   "Cleans up one (comma-separated) param of a function declaration."
   (save-excursion
     (save-restriction
       (narrow-to-region start end)
       ;; if we're later indenting, dispose of old newlines
       (if indent
-          (remove-embedded-newlines (point-min)(point-max)))
+          (c-remove-embedded-newlines (point-min)(point-max)))
       (when do-spacing
-        (cleanup-func-param-spacing (point-min)(point-max) is-decl)
-        (remove-leading-whitespace (point-min)(point-max))
-        (remove-trailing-whitespace (point-min)(point-max))))))
+        (c-cleanup-func-param-spacing (point-min)(point-max) is-decl)
+        (c-remove-leading-whitespace (point-min)(point-max))
+        (c-remove-trailing-whitespace (point-min)(point-max))))))
 
-(defun clean-up-func-params (start end indent is-decl should-comment)
+(defun c-cleanup-func-params (start end indent is-decl should-comment)
   "Does the actual work of cleaning up spacing and (optionally) indentation of a function declaration"
   (let ((saved nil))
     (save-excursion
@@ -124,7 +134,7 @@ Region is delimited by START and END."
                        (if (re-search-forward "=" nil t)
                            (let ((is-quoted nil))
                              (backward-char)
-                             (clean-up-func-param (point-min)(point) indent t is-decl)
+                             (c-cleanup-func-param (point-min)(point) indent t is-decl)
                              ;; ensure spaces around the '='
                              (insert " ")
                              (forward-char)
@@ -135,13 +145,13 @@ Region is delimited by START and END."
                                       "\\s-*\\(\\s\"+\\)\\(.*\\)\\(\\s\"+\\)\\s-*" nil t)
                                  (setq is-quoted t)
                                  (replace-match "\\1\\2\\3" nil nil)))
-                             (clean-up-func-param (point) (point-max) indent
+                             (c-cleanup-func-param (point) (point-max) indent
                                                   (not is-quoted) nil)
                              (if should-comment
                                  ;; begin comment before the '='
                                  (comment-region (- (point) 3) (point-max)))
                              (point-max))
-                         (clean-up-func-param (point-min) (point-max) indent t is-decl)
+                         (c-cleanup-func-param (point-min) (point-max) indent t is-decl)
                          (point-max))
                          )))
                    ;; save this point to insert newline later
@@ -164,6 +174,28 @@ Region is delimited by START and END."
                 saved)
         ;; if not inserting newlines (maintaining those present), we may need to re-indent
         (indent-region start end))))
+
+(makey-initialize-key-groups
+ `((c-cleanup-funcs
+    (description "Adjust spacing of parameter lists.")
+    (actions
+     ("Cleanup"
+      ("a" "arrange" c-cleanup-cleanup)))
+    (lisp-switches
+     ("-c" "comment" c-cleanup-func-should-comment t nil)
+     ("-i" "indent" c-cleanup-func-indent t nil)
+     ("-d" "decl" c-cleanup-func-is-decl t nil)
+     ))))
+
+(defun c-cleanup-cleanup() "Cleanup func param spacing."
+       (interactive)
+       (if (use-region-p)
+           (c-cleanup-func-params
+            (region-beginning)
+            (region-end)
+            c-cleanup-func-indent
+            c-cleanup-func-is-decl
+            c-cleanup-func-should-comment)))
 
 (provide 'cleanup-funcs)
 ;;; clean-up-funcs.el ends here

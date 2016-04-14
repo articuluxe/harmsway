@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-04-14 10:20:46 dan.harms>
+;; Modified Time-stamp: <2016-04-14 21:37:15 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -358,30 +358,8 @@ to overwrite the final element."
   :bind ("C-c it" . makey-key-mode-popup-c-includer-brackets))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; cleanup-funcs ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; todo
-(defun my/cleanup-funcs-1 (start end)
-  (interactive "r")
-  (clean-up-func-params start end t t t))
-(defun my/cleanup-funcs-2 (start end)
-  (interactive "r")
-  (clean-up-func-params start end t t nil))
-(defun my/cleanup-funcs-3 (start end)
-  (interactive "r")
-  (clean-up-func-params start end nil t nil))
-(defun my/cleanup-funcs-4 (start end)
-  (interactive "r")
-  (clean-up-func-params start end t nil nil))
-(defun my/cleanup-funcs-5 (start end)
-  (interactive "r")
-  (clean-up-func-params start end nil nil nil))
 (use-package cleanup-funcs
-  :bind (("\e\eiy" . my/cleanup-funcs-1)
-         ("\e\ein" . my/cleanup-funcs-2)
-         ("\e\ed" . my/cleanup-funcs-3)
-         ("\e\ec" . my/cleanup-funcs-4)
-         ("\e\eu" . my/cleanup-funcs-5)
-         )
-  :commands clean-up-func-params)
+  :bind ("C-c ic" . makey-key-mode-popup-c-cleanup-funcs))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; multi-line ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package
