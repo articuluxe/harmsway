@@ -4,7 +4,7 @@
 # Author:  <dan.harms@xrtrading.com>
 # Created: Friday, March 20, 2015
 # Version: 1.0
-# Modified Time-stamp: <2016-01-28 23:29:32 dharms>
+# Modified Time-stamp: <2016-04-14 13:57:21 dan.harms>
 # Modified by: Dan Harms
 # Keywords: help
 
@@ -78,6 +78,12 @@ x/1sb 0x00abcd01
 # show last instruction
 x/i $pc
 disas $pc
+# show in what function an unknown address is located
+p/a 0x54320
+# print last value in hex
+p/x
+# ...as char
+p/c
 # conditional breakpoints
 break <line> if strcmp(str, "str") == 0
 # print a backtrace each time a breakpoint hits
