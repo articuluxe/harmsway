@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-04-14 21:31:46 dharms>
+;; Modified Time-stamp: <2016-04-15 17:34:52 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -27,22 +27,6 @@
 ;;; Code:
 
 (require 'popup-imenu)
-
-(defun my/revert-buffer ()
-    "Revert a buffer automatically."
-    (interactive)
-    (let ((truncate truncate-lines))
-      (revert-buffer nil t)
-      (setq truncate-lines truncate)))
-(global-set-key "\C-x\C-r" 'my/revert-buffer)
-
-(defun kill-other-buffers(&optional arg)
-  "Kill all buffers (except optionally for current one)."
-  (interactive)
-  (if current-prefix-arg
-      (mapc 'kill-buffer (delq (current-buffer) (buffer-list)))
-    (mapc 'kill-buffer (buffer-list))))
-(global-set-key "\C-x\S-k" 'kill-other-buffers)
 
 (defun insert-now()
   "Insert string for current time formatted like `2:34 PM'."
@@ -143,12 +127,6 @@ is selected."
       (setq my/choose-func 'choose-via-popup)
       (message "Choosing via popup"))))
 
-(defun switch-to-most-recent-buffer()
-  "Switch to most recent buffer.  Repeated calls toggle buffers."
-  (interactive)
-  (switch-to-buffer (other-buffer (current-buffer) 1)))
-(global-set-key "\e\ep" 'switch-to-most-recent-buffer)
-
 (defun find-file-upwards (dir file-to-find)
   "Recursively search upward for file; returns path to file or nil if not found."
   (interactive)
@@ -231,105 +209,5 @@ stderr into that file."
                     '(t nil) nil
                     shell-command-switch
                     cmd))))
-
-(defun window-toggle-split-direction()
-  "Switch window split from horizontal to vertical, or vice versa."
-  (interactive)
-  (let ((done))
-    (dolist (dirs '((right . down) (down . right)))
-      (unless done
-        (let* ((win (selected-window))
-               (nextdir (car dirs))
-               (neighbor-dir (cdr dirs))
-               (next-win (windmove-find-other-window nextdir win))
-               (neighbor1 (windmove-find-other-window neighbor-dir win))
-               (neighbor2 (if next-win (with-selected-window next-win
-                                         (windmove-find-other-window
-                                          neighbor-dir next-win)))))
-          (setq done (and (eq neighbor1 neighbor2)
-                          (not (eq (minibuffer-window) next-win))))
-          (if done
-              (let* ((other-buf (window-buffer next-win)))
-                (delete-window next-win)
-                (if (eq nextdir 'right)
-                    (split-window-vertically)
-                  (split-window-horizontally))
-                (set-window-buffer (windmove-find-other-window neighbor-dir)
-                                   other-buf))))))))
-(global-set-key "\C-x4z" 'window-toggle-split-direction)
-
-;; from Steve Yegge
-(defun swap-buffers() "Swap the first 2 buffers" (interactive)
-  (when (> (length (window-list)) 1)
-    (let* ((win1 (car (window-list)))
-           (win2 (cadr (window-list)))
-           (buf1 (window-buffer win1))
-           (buf2 (window-buffer win2))
-           (pos1 (window-start win1))
-           (pos2 (window-start win2)))
-      (set-window-buffer win1 buf2)
-      (set-window-buffer win2 buf1)
-      (set-window-start win1 pos2)
-      (set-window-start win2 pos1))))
-(global-set-key "\C-x4s" 'swap-buffers)
-
-(defun my/toggle-window-dedicated ()
-  "Toggle whether active window is dedicated."
-  (interactive)
-  (message
-   (if
-       (let (window (get-buffer-window (current-buffer)))
-         (set-window-dedicated-p
-          window
-          (not (window-dedicated-p window))))
-       "Window '%s' is dedicated."
-     "Window '%s' is not dedicated.")
-   (current-buffer)))
-(global-set-key "\C-c0w" 'my/toggle-window-dedicated)
-
-(defun rename-file-and-buffer(new-name)
-  "Renames both current buffer and file it's visiting."
-  (interactive "sNew name: ")
-  (let ((name (buffer-name))
-        (filename (buffer-file-name)))
-    (if (not filename)
-        (message "Buffer '%s' is not visiting a file" name)
-      (if (get-buffer new-name)
-          (message "A buffer named '%s' already exists" new-name)
-        (progn
-          (rename-file name new-name 1)
-          (rename-buffer new-name)
-          (set-visited-file-name new-name)
-          (set-buffer-modified-p nil))))))
-
-(defun move-buffer-file(dir)
-  "Moves both current buffer and file it's visiting."
-  (interactive "DNew directory: ")
-  (let* ((name (buffer-name))
-         (filename (buffer-file-name))
-         (dir
-          (if (string-match dir "\\(?:/\\|\\\\)$")
-              (substring dir 0 -1)
-            dir))
-         (newname (concat dir "/" name)))
-    (if (not filename)
-        (message "Buffer '%s' is not visiting a file" name)
-      (progn
-        (copy-file filename newname 1)
-        (delete-file filename)
-        (set-visited-file-name newname)
-        (set-buffer-modified-p nil)
-        t))))
-
-(defun move-buffer-to-new-frame(&optional arg)
-  "Moves current window to new frame, and optionally (with a prefix arg)
-removes it from its original frame."
-  (interactive)
-  (let ((win (selected-window)))
-    (make-frame-command)
-    (and current-prefix-arg
-         (> (length (window-list)) 1)
-         (remove-window win))))
-(global-set-key "\C-x5x" 'move-buffer-to-new-frame)
 
 ;; utils.el ends here

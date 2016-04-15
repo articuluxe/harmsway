@@ -250,6 +250,19 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
          ("\e\e<" . enclose-by-braces-caret)
          ))
 
+(use-package custom-buffer-utils
+  :bind (("C-x C-r" . my/revert-buffer)
+         ("C-x S-k" . kill-other-buffers)
+         ("\e\ep" . switch-to-most-recent-buffer)
+         ("C-x 4z" . window-toggle-split-direction)
+         ("C-x 4s" . swap-buffers)
+         ("C-c 0w" . my/toggle-window-dedicated)
+         ("C-x 5x" . move-buffer-to-new-frame)
+         )
+  :commands
+  (move-buffer-file move-buffer-to-new-frame)
+  )
+
 (use-package custom-word-count
   :if (version< emacs-version "24.0")
   :bind ("M-=" . wordcount)
@@ -257,7 +270,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 
 (use-package custom-grep
  :bind ("C-c g" . my/grep)
- :commands 'grep)
+ :commands grep)
 (use-package custom-coding
   :bind (("C-c p" . print-current-function)
          ("C-c ii" . add-header-include-ifdefs)
@@ -740,7 +753,8 @@ to overwrite the final element."
 (defun my/call-recentf-func () (interactive) (funcall uniquify-recentf-func))
 (use-package uniquify-recentf
   :bind ("M-r" . my/call-recentf-func)
-  :commands uniquify-recentf-ivy-recentf-open uniquify-recentf-ido-recentf-open
+  :commands
+  (uniquify-recentf-ivy-recentf-open uniquify-recentf-ido-recentf-open)
   :if (version< "24.3" emacs-version)
   :config
   (setq uniquify-recentf-func 'uniquify-recentf-ivy-recentf-open)
