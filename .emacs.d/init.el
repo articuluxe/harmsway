@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-04-15 08:56:47 dan.harms>
+;; Modified Time-stamp: <2016-04-15 09:08:29 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -866,6 +866,8 @@ to overwrite the final element."
   "Activate ido as a completion framework."
   (when (boundp 'ivy-mode)
     (ivy-mode 0))
+  ;; find file
+  (global-set-key "\C-x\C-f" 'find-file)
   ;; magit
   (setq magit-completing-read-function 'magit-ido-completing-read)
   ;; recentf
@@ -882,6 +884,8 @@ to overwrite the final element."
   "Activate ivy as a completion framework."
   (when (boundp 'ido-mode)
     (ido-mode 0))
+  ;; find file
+  (global-set-key "\C-x\C-f" 'counsel-find-file)
   ;; magit
   (setq magit-completing-read-function 'ivy-completing-read)
   ;; recentf
