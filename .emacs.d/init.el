@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-04-14 21:37:43 dharms>
+;; Modified Time-stamp: <2016-04-15 08:29:09 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -101,8 +101,6 @@
 (setq isearch-allow-scroll t)
 ;;  truncate long lines
 (setq-default truncate-lines t)
-;; search is case-sensitive by default
-(setq-default case-fold-search nil)
 ;; interactive regexp-search space character stands only for 1 char
 (setq-default search-whitespace-regexp nil)
 ;; default tab width
