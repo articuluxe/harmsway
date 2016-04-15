@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-04-15 08:29:09 dan.harms>
+;; Modified Time-stamp: <2016-04-15 08:56:47 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -98,7 +98,6 @@
 (setq kill-do-not-save-duplicates t)
 (file-name-shadow-mode 1)
 (setq enable-recursive-minibuffers t)
-(setq isearch-allow-scroll t)
 ;;  truncate long lines
 (setq-default truncate-lines t)
 ;; interactive regexp-search space character stands only for 1 char
@@ -146,18 +145,6 @@ up to 10 times."
 (fset 'yes-or-no-p 'y-or-n-p)
 ;; reuse frames
 (setq-default display-buffer-reuse-frames t)
-;; allow stopping isearch at opposite end
-(define-key isearch-mode-map [(control return)]
-  #'my/isearch-exit-other-end)
-(defun my/isearch-exit-other-end ()
-  "Exit isearch, at the opposite end of the string."
-  (interactive)
-  (isearch-exit)
-  (goto-char isearch-other-end))
-(unless (boundp 'warning-suppress-types)
-  (setq warning-suppress-types nil))
-(push '(undo discard-info) warning-suppress-types)
-
 ;; visual settings
 (menu-bar-mode -1)
 (setq-default fill-column 78)
@@ -818,6 +805,16 @@ to overwrite the final element."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ace-window ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package ace-window :bind ("M-p" . ace-window))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; isearch ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(setq isearch-allow-scroll t)
+;; allow stopping isearch at opposite end
+(defun my/isearch-exit-other-end ()
+  "Exit isearch, at the opposite end of the string."
+  (interactive)
+  (isearch-exit)
+  (goto-char isearch-other-end))
+(define-key isearch-mode-map [(control return)] #'my/isearch-exit-other-end)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; swiper ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
   (add-to-list 'load-path (concat my/plugins-directory "swiper/")))
@@ -1009,9 +1006,13 @@ to overwrite the final element."
   (sml/setup)
   )
 
+;; undo
+(unless (boundp 'warning-suppress-types)
+  (setq warning-suppress-types nil))
+(push '(undo discard-info) warning-suppress-types)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; undo-tree ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package undo-tree
-  :demand t
   :config
   ;; reset the undo tree history (useful after reverting buffer)
   (global-set-key "\C-cu" (lambda()(interactive)(setq buffer-undo-tree nil)))
