@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-04-09 18:31:38 dharms>
+;; Modified Time-stamp: <2016-04-14 21:31:46 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -143,142 +143,11 @@ is selected."
       (setq my/choose-func 'choose-via-popup)
       (message "Choosing via popup"))))
 
-(defun jump-to-matching-paren() "Go to matching paren" (interactive)
-  (if (looking-at "\\s\(")
-      (forward-list 1)
-    (backward-char)
-    (if (looking-at "\\s\)")
-        (progn
-          (forward-char 1)
-          (forward-list -1))
-      (forward-char 1))))
-(global-set-key "\e\e\\" 'jump-to-matching-paren)
-
 (defun switch-to-most-recent-buffer()
   "Switch to most recent buffer.  Repeated calls toggle buffers."
   (interactive)
   (switch-to-buffer (other-buffer (current-buffer) 1)))
 (global-set-key "\e\ep" 'switch-to-most-recent-buffer)
-
-(defun my/indent-line-relative()
-  "Indent current line according to previous line."
-  (interactive)
-  (save-excursion
-    (move-beginning-of-line nil)
-    (delete-horizontal-space)
-    (indent-relative-maybe)
-    ))
-(global-set-key "\esi" 'my/indent-line-relative)
-
-(defun highlight-paren-right()
-  "search forward for a parenthesized sexp and set region if found"
-  (interactive)
-  (let ((pos (search-forward-regexp "\\s\(" nil t)))
-    (when pos
-      (set-mark-command nil)
-      (backward-char)
-      (forward-list 1)
-      (backward-char)
-      (setq deactivate-mark nil))))
-(global-set-key "\M-]" 'highlight-paren-right)
-
-(defun highlight-paren-left()
-  "search backward for a parenthesized sexp and set region if found"
-  (interactive)
-  (let ((pos (search-backward-regexp "\\s\)" nil t)))
-    (when pos
-      (set-mark-command nil)
-      (forward-char)
-      (forward-list -1)
-      (forward-char)
-      (setq deactivate-mark nil))))
-(global-set-key "\M-[" 'highlight-paren-left)
-
-(defun highlight-enclosing-paren(&optional arg)
-  "assume point is bounded by paren and set region to that exp"
-  (interactive "P")
-  (if arg
-      (let ((pos (search-forward-regexp "\\s\)" nil t)))
-        (when pos
-          (backward-char)
-          (set-mark-command nil)
-          (forward-char)
-          (forward-list -1)
-          (forward-char)
-          (setq deactivate-mark nil)))
-    (let ((pos (search-backward-regexp "\\s\(" nil t)))
-      (when pos
-        (forward-char)
-        (set-mark-command nil)
-        (backward-char)
-        (forward-list 1)
-        (backward-char)
-        (setq deactivate-mark nil)))))
-(global-set-key "\esp" 'highlight-enclosing-paren)
-
-(defun enclose-by-braces (left right)
-  "insert braces around a region or point"
-  (interactive "r")
-  (if (use-region-p) ; act on region
-      (let ((start (region-beginning))
-            (end (region-end)))
-        (save-excursion
-          (goto-char end)
-          (insert right)
-          (goto-char start)
-          (insert left)))
-    (progn ; act around point
-      (insert left right)
-      (backward-char 1))))
-(global-set-key "\e\e(" (lambda()(interactive)(enclose-by-braces ?( ?) )))
-(global-set-key "\e\e[" (lambda()(interactive)(enclose-by-braces ?[ ?] )))
-(global-set-key "\e\e{" (lambda()(interactive)(enclose-by-braces ?{ ?} )))
-(global-set-key "\e\e<" (lambda()(interactive)(enclose-by-braces ?< ?> )))
-
-(defun highlight-current-sexp(&optional arg)
-  "Highlight the current sexp around point"
-  (interactive "P")
-  (let ((n (if arg arg 1)))
-    (unless (looking-at "\\_<")
-      (backward-sexp n))
-    (set-mark-command nil)
-    (forward-sexp n)
-    (setq deactivate-mark nil)))
-(global-set-key "\e\er" 'highlight-current-sexp)
-
-(defun align-repeat-regexp (start end regexp)
-  "Repeat alignment for regexp"
-  (interactive "r\nsAlign regexp: ")
-  (align-regexp start end (concat "\\(\\s-*\\)" regexp) 1 1 t))
-
-;; word count (superceded by 'count-words-region "C-u M-=" in recent emacsen)
-(when (version< emacs-version "24.0")
-  (progn
-    (defun wordcount () "print buffer word count in minibuffer" (interactive)
-      (save-excursion
-        (let ((count 0))
-          (goto-char (point-min))
-          (while (< (point) (point-max))
-            (forward-word 1)
-            (setq count (1+ count)))
-          (message "buffer contains %d words" count))))
-    (global-set-key "\M-=" 'wordcount)))
-
-(defun clean-up-buffer (begin end)
-  "Clean up either the current region, or the entire buffer if no region
-is selected.  Cleaning up entails: indenting, removing tabs, and deleting
-trailing whitespace."
-  (interactive (if (use-region-p)
-                   (list (region-beginning)
-                         (region-end))
-                 (list nil nil)))
-  (save-restriction
-    (narrow-to-region (or begin (point-min))
-                      (or end (point-max)))
-    (delete-trailing-whitespace)
-    (indent-region (point-min) (point-max) nil)
-    (untabify (point-min) (point-max))))
-(global-set-key "\C-cq" 'clean-up-buffer)
 
 (defun find-file-upwards (dir file-to-find)
   "Recursively search upward for file; returns path to file or nil if not found."

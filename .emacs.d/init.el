@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-04-14 21:37:15 dharms>
+;; Modified Time-stamp: <2016-04-14 21:37:43 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -250,6 +250,25 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (load-library "utils")
 (load-library "compiling")
 (load-library "coding")
+
+(use-package custom-text-utils
+  :bind (("M-s i" . my/indent-line-relative)
+         ("\e\e\\" . jump-to-matching-paren)
+         ("M-]" . highlight-paren-right)
+         ("M-[" . highlight-paren-left)
+         ("M-s p" . highlight-enclosing-paren)
+         ("\e\er" . highlight-current-sexp)
+         ("C-c q" . clean-up-buffer)
+         ("\e\e(" . enclose-by-braces-paren)
+         ("\e\e[" . enclose-by-braces-bracket)
+         ("\e\e{" . enclose-by-braces-brace)
+         ("\e\e<" . enclose-by-braces-caret)
+         ))
+
+(use-package custom-word-count
+  :if (version< emacs-version "24.0")
+  :bind ("M-=" . wordcount)
+  )
 
 (use-package custom-grep
  :bind ("C-c g" . my/grep)
