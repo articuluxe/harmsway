@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Tuesday, April 12, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-04-14 09:23:09 dan.harms>
+;; Modified Time-stamp: <2016-04-15 10:17:47 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: grep coding
 
@@ -26,8 +26,12 @@
 
 ;;; Code:
 
+(require 'grep)
+(require 'profiles+)
+
 (defun my/grep (&optional arg)
-  "Provides a wrapper around grep to provide convenient shortcuts
+  "Grep for a search string in a project or directory.
+Provides a wrapper around grep to provide convenient shortcuts
 to adjust the root directory.  With a prefix ARG of 64 (C-u C-u
 C-u), or if the variable 'project-root-dir is not defined in the
 current profile, the search directory will be chosen
@@ -61,7 +65,6 @@ profile."
             ;; some variants of grep don't handle relative paths
             ;; (but expand-file-name doesn't work remotely)
             (expand-file-name dir)))
-    (require 'grep)
     (grep-apply-setting
      'grep-command
      (concat "find -P "
@@ -76,8 +79,7 @@ profile."
              "-o -name \"*.sql\" -o -name \"*.py\" -o -name \"*.proto\" "
              "-o -name \"*.sh\" -o -name \"*.cs\" -o -name \"*.dart\" "
              "\")\" -print0 | xargs -0 grep -Isn "
-             (shell-quote-argument search-string)
-             ))
+             (when search-string (shell-quote-argument search-string))))
     (command-execute 'grep)))
 
 (provide 'custom-grep)
