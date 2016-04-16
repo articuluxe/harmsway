@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-04-15 09:08:29 dan.harms>
+;; Modified Time-stamp: <2016-04-16 00:14:40 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -888,49 +888,6 @@ to overwrite the final element."
   (setq ivy-extra-directories '("./"))
   )
 
-(defun my/activate-ido ()
-  "Activate ido as a completion framework."
-  (when (boundp 'ivy-mode)
-    (ivy-mode 0))
-  ;; find file
-  (global-set-key "\C-x\C-f" 'find-file)
-  ;; magit
-  (setq magit-completing-read-function 'magit-ido-completing-read)
-  ;; recentf
-  (setq uniquify-recentf-func 'uniquify-recentf-ido-recentf-open)
-  ;; M-x
-  (global-set-key (kbd "M-x") 'smex)
-  (if (boundp 'ivy-mode)
-      (global-set-key "\e\ex" 'counsel-M-x)
-    (global-set-key "\e\ex" 'execute-extended-command))
-  (ido-mode 1)
-  (message "Using ido for completion"))
-
-(defun my/activate-ivy ()
-  "Activate ivy as a completion framework."
-  (when (boundp 'ido-mode)
-    (ido-mode 0))
-  ;; find file
-  (global-set-key "\C-x\C-f" 'counsel-find-file)
-  ;; magit
-  (setq magit-completing-read-function 'ivy-completing-read)
-  ;; recentf
-  (setq uniquify-recentf-func 'uniquify-recentf-ivy-recentf-open)
-  ;; M-x
-  (global-set-key (kbd "M-x") 'counsel-M-x)
-  (global-set-key "\e\ex" 'smex)
-  (ivy-mode 1)
-  (message "Using ivy for completion"))
-
-;; choose the completion framework in use
-(defun my/choose-completion ()
-  "Choose among completion frameworks. Uses the completion framework
- specified by `my/choose-func'. Current choices are ido and ivy."
-  (interactive)
-  (funcall (funcall my/choose-func my/completion-framework-alist
-                    "Completion framework:")))
-(global-set-key "\C-c\C-e" 'my/choose-completion)
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smex ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package smex
   :if (<= 24 emacs-major-version)
@@ -1509,7 +1466,13 @@ register \\C-l."
   (setq completion-cycle-threshold t)     ;always cycle
   ;; Ignore case when completing file names
   (setq read-file-name-completion-ignore-case nil)
-  :bind ("C-c C-r" . my/choose-choose-func)
+  :demand t
+  :bind
+  (("C-c C-r" . my/choose-choose-func)
+   ("C-c C-e" . my/choose-completion)
+   )
+  :commands
+  (my/activate-ido my/activate-ivy)
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-complete ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

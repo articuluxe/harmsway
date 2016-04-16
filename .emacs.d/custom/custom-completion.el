@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, April 15, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-04-15 17:49:16 dharms>
+;; Modified Time-stamp: <2016-04-16 00:25:22 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: completion
 
@@ -96,6 +96,47 @@ is selected."
       (setq my/choose-func 'choose-via-popup)
       (message "Choosing via popup"))))
 
+(defun my/activate-ido ()
+  "Activate ido as a completion framework."
+  (when (boundp 'ivy-mode)
+    (ivy-mode 0))
+  ;; find file
+  (global-set-key "\C-x\C-f" 'find-file)
+  ;; magit
+  (setq magit-completing-read-function 'magit-ido-completing-read)
+  ;; recentf
+  (setq uniquify-recentf-func 'uniquify-recentf-ido-recentf-open)
+  ;; M-x
+  (global-set-key (kbd "M-x") 'smex)
+  (if (boundp 'ivy-mode)
+      (global-set-key "\e\ex" 'counsel-M-x)
+    (global-set-key "\e\ex" 'execute-extended-command))
+  (ido-mode 1)
+  (message "Using ido for completion"))
+
+(defun my/activate-ivy ()
+  "Activate ivy as a completion framework."
+  (when (boundp 'ido-mode)
+    (ido-mode 0))
+  ;; find file
+  (global-set-key "\C-x\C-f" 'counsel-find-file)
+  ;; magit
+  (setq magit-completing-read-function 'ivy-completing-read)
+  ;; recentf
+  (setq uniquify-recentf-func 'uniquify-recentf-ivy-recentf-open)
+  ;; M-x
+  (global-set-key (kbd "M-x") 'counsel-M-x)
+  (global-set-key "\e\ex" 'smex)
+  (ivy-mode 1)
+  (message "Using ivy for completion"))
+
+;; choose the completion framework in use
+(defun my/choose-completion ()
+  "Choose among completion frameworks. Uses the completion framework
+ specified by `my/choose-func'. Current choices are ido and ivy."
+  (interactive)
+  (funcall (funcall my/choose-func my/completion-framework-alist
+                    "Completion framework:")))
 
 (provide 'custom-completion)
 ;;; custom-completion.el ends here
