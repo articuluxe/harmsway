@@ -1,9 +1,9 @@
-;; utils.el --- misc. utilities
+;; custom-utils.el --- misc. utilities
 ;; Copyright (C) 2015, 2016  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-04-15 17:34:52 dharms>
+;; Modified Time-stamp: <2016-04-15 23:35:09 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -54,78 +54,6 @@
   (if (and (mark) (use-region-p))
       (eval-region (min (point) (mark)) (max (point) (mark)))
     (pp-eval-last-sexp prefix)))
-(bind-key "C-x C-M-e" #'sanityinc/eval-last-sexp-or-region)
-
-(defun choose-via-popup (alist prompt)
-  "Make a choice among ALIST, a list of choices, with PROMPT as a possible
-prompt.  ALIST can either be a list of strings, or an alist, where every
-element is a cons cell, the car of which is the display string given to the
-user, and the cdr of which is the resultant value to be used if that cell
-is selected."
-  (popup-menu*
-   (delete-consecutive-dups
-    (mapcar (lambda(elt)
-              (if (consp elt)
-                  (popup-make-item (car elt) :value (cdr elt))
-                (popup-make-item elt :value elt)))
-            alist))
-   :isearch t
-   :isearch-filter (popup-imenu--filter)
-   :prompt prompt
-   ))
-
-(defun choose-via-ido (alist prompt)
-  "Make a choice among ALIST, a list of choices, with PROMPT as a possible
-prompt.  ALIST can either be a list of strings, or an alist, where every
-element is a cons cell, the car of which is the display string given to the
-user, and the cdr of which is the resultant value to be used if that cell
-is selected."
-  (let ((res
-         (ido-completing-read
-          prompt
-          (mapcar (lambda(elt)
-                    (if (consp elt)
-                        (car elt)
-                      elt))
-                  alist))))
-    (or (cdr (assoc res alist))
-        res)))
-
-(defun choose-via-ivy (alist prompt)
-  "Make a choice among ALIST, a list of choices, with PROMPT as a possible
-prompt.  ALIST can either be a list of strings, or an alist, where every
-element is a cons cell, the car of which is the display string given to the
-user, and the cdr of which is the resultant value to be used if that cell
-is selected."
-  (let ((res
-         (ivy-completing-read
-          prompt
-          (mapcar (lambda(elt)
-                    (if (consp elt)
-                        (car elt)
-                      elt))
-                  alist))))
-    (or (cdr (assoc res alist))
-        res)))
-
-(defvar my/choose-func 'choose-via-popup
-  "Make a selection among a list of choices.")
-(global-set-key "\C-c\C-r" 'my/choose-choose-func)
-
-(defun my/choose-choose-func ()
-  "Toggle between available selection frameworks.  Current choices include
- `ido', `popup' and `ivy'."
-  (interactive)
-  (if (eq my/choose-func 'choose-via-popup)
-      (progn
-        (setq my/choose-func 'choose-via-ido)
-        (message "Choosing via ido"))
-    (if (eq my/choose-func 'choose-via-ido)
-        (progn
-          (setq my/choose-func 'choose-via-ivy)
-          (message "Choosing via ivy"))
-      (setq my/choose-func 'choose-via-popup)
-      (message "Choosing via popup"))))
 
 (defun find-file-upwards (dir file-to-find)
   "Recursively search upward for file; returns path to file or nil if not found."
@@ -182,21 +110,6 @@ is selected."
 ;;   (setq buffer-read-only nil))
 ;; (global-set-key "\esrr" 'my/find-current-file-as-root)
 
-(defun read-file-into-list-of-lines(file)
-  "Read a file into a list of strings split line by line."
-  (interactive)
-  (with-temp-buffer
-    (insert-file-contents file)
-    (split-string (buffer-string) "\n" t)))
-
-(defun load-environment-variable-from-file(var file &optional sep)
-  "Loads each line from the specified file into the environment var."
-  (interactive)
-  (unless sep (setq sep path-separator))
-  (setenv var (concat (mapconcat 'convert-standard-filename
-                                 (read-file-into-list-of-lines file)
-                                 sep) sep (getenv var))))
-
 (defun shell-command-redirected-output (cmd)
   "Run a shell command, with the option of separately redirecting
 stdout and stderr. Use instead of `shell-command-to-string'.
@@ -210,4 +123,5 @@ stderr into that file."
                     shell-command-switch
                     cmd))))
 
+(provide 'custom-utils)
 ;; utils.el ends here

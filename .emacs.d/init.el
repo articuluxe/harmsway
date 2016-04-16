@@ -232,9 +232,17 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 
 
 
-(load-library "utils")
 (load-library "compiling")
 (load-library "coding")
+
+(use-package custom-utils
+  :bind
+  ("C-x C-M-e" . sanityinc/eval-last-sexp-or-region)
+  :commands
+  (insert-now now insert-today today find-file-upwards find-file-dir-upwards
+              goto-line-with-feedback
+              shell-command-redirected-output
+              ))
 
 (use-package custom-text-utils
   :bind (("M-s i" . my/indent-line-relative)
@@ -250,9 +258,13 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
          ("\e\e<" . enclose-by-braces-caret)
          ))
 
+(use-package custom-environment
+  :commands (read-file-into-list-of-lines
+             load-environment-variable-from-file))
+
 (use-package custom-buffer-utils
   :bind (("C-x C-r" . my/revert-buffer)
-         ("C-x S-k" . kill-other-buffers)
+         ("C-x K" . kill-other-buffers)
          ("\e\ep" . switch-to-most-recent-buffer)
          ("C-x 4z" . window-toggle-split-direction)
          ("C-x 4s" . swap-buffers)
@@ -1489,12 +1501,16 @@ register \\C-l."
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; completion ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(setq tab-always-indent 'complete)      ;or t to avoid completion
-(add-to-list 'completion-styles 'initials t)
-(setq completion-auto-help nil)
-(setq completion-cycle-threshold t)     ;always cycle
-;; Ignore case when completing file names
-(setq read-file-name-completion-ignore-case nil)
+(use-package custom-completion
+  :init
+  (setq tab-always-indent 'complete)      ;or t to avoid completion
+  (add-to-list 'completion-styles 'initials t)
+  (setq completion-auto-help nil)
+  (setq completion-cycle-threshold t)     ;always cycle
+  ;; Ignore case when completing file names
+  (setq read-file-name-completion-ignore-case nil)
+  :bind ("C-c C-r" . my/choose-choose-func)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-complete ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
