@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-04-18 07:55:06 dharms>
+;; Modified Time-stamp: <2016-04-18 17:44:57 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -306,7 +306,16 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
               (gdb-many-windows 1)
               )))
 
-(defvar my/remote-host-list '())
+;;;;;;;;;;;;;;;;;;;;;;;;;;; remote-host-connector ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package remote-host-connector
+ :bind (("C-c 6" . my/connect-to-remote-host)
+        ([f6] . my/connect-to-remote-host)
+        )
+ :init
+ (defvar my/remote-hosts-file "")
+ (defvar my/remote-host-list '())
+ :defines my/remote-hosts-file
+ )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; aes ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defvar my/aes-default-group "  default")
@@ -1023,43 +1032,6 @@ to overwrite the final element."
         (format "\\(%s\\)\\|\\(%s\\)"
                 vc-ignore-dir-regexp tramp-file-name-regexp))
   )
-
-(defun my/connect-to-remote-host(&optional arg)
-  "Connect to a remote host from `my/remote-host-list'."
-  (interactive "P")
-  (let ((hosts
-         (mapcar (lambda (plist)
-                   (let* ((delim (char-to-string ?:))
-                          (stem (plist-get plist :host))
-                          (user (or (unless arg
-                                      (plist-get plist :user))
-                                    my/user-name))
-                          (pwd (plist-get plist :password))
-                          (desc (plist-get plist :description))
-                          (category (plist-get plist :category))
-                          (display (concat user delim stem))
-                          (connect (concat
-                                    "/"
-                                    tramp-default-method
-                                    ":" user "@" stem ":~")))
-                     (when category
-                       (setq display
-                             (concat category delim display)))
-                     (when desc
-                       (setq display
-                             (concat display delim desc)))
-                     (and stem (cons display connect))))
-                 my/remote-host-list))
-        result cell)
-    (setq result
-          (funcall my/choose-func
-                   (mapcar 'car hosts)
-                   "Remote host: "))
-    (when result
-      (setq cell (assoc result hosts))
-      (find-file (cdr cell)))))
-(global-set-key [f6] 'my/connect-to-remote-host)
-(global-set-key "\C-c6" 'my/connect-to-remote-host)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; org ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package org
@@ -1895,11 +1867,9 @@ customization."
        (host-dir
         (file-name-as-directory
          (concat hosts-dir system)))
-       (host-file (concat host-dir system))
-       (remote-hosts-file (concat my/user-directory "remote-hosts")))
-  ;; load remote hosts file if present
-  (when (file-exists-p remote-hosts-file)
-    (load remote-hosts-file t))
+       (host-file (concat host-dir system)))
+  ;; store location of remote hosts file for later
+  (setq my/remote-hosts-file (concat my/user-directory "remote-hosts"))
   ;; load host file (if present)
   (if (file-exists-p host-file)
       (progn
