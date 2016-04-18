@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-04-16 00:14:40 dharms>
+;; Modified Time-stamp: <2016-04-16 13:00:16 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1010,6 +1010,7 @@ to overwrite the final element."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; tramp ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package tramp
+  :defer t
   :config
   (when (boundp 'my/user-name)
     (setq tramp-default-user my/user-name))
@@ -1058,14 +1059,18 @@ to overwrite the final element."
 (global-set-key "\C-c6" 'my/connect-to-remote-host)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; org ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(setq org-src-fontify-natively t)
-(org-babel-do-load-languages
- 'org-babel-load-languages
- '(
-   (sh . t)
-   (python . t)
-   (C . t)
-   ))
+(use-package org
+  :defer t
+  :init
+  (setq org-src-fontify-natively t)
+  :config
+  (org-babel-do-load-languages
+   'org-babel-load-languages
+   '(
+     (sh . t)
+     (python . t)
+     (C . t)
+     )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dired ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package dired
