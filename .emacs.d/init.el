@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-04-16 13:00:16 dharms>
+;; Modified Time-stamp: <2016-04-18 07:55:06 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -639,6 +639,8 @@ to overwrite the final element."
   (use-package with-editor)
   (global-magit-file-mode 1)
   (magit-auto-revert-mode 0)
+  ;; add this as of magit 2.4.0
+  ;; (add-hook 'magit-post-refresh-hook 'diff-hl-magit-post-refresh)
   ;; add ido shortcut
   (if (version< emacs-version "25.1")
       (add-hook
@@ -716,6 +718,7 @@ to overwrite the final element."
          ("<f8>" . bmkp-next-bookmark)
          ("C-c 8" . bmkp-next-bookmark)
          )
+  :demand t
   :config
   (setq bookmark-default-file (concat my/user-directory "bookmarks")
         bmkp-bmenu-state-file (concat my/user-directory
@@ -734,7 +737,7 @@ to overwrite the final element."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; savehist ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package savehist
-  :defer 2
+  :defer 10
   :config
   (setq savehist-additional-variables
         '(search-ring regexp-search-ring kill-ring compile-history)
@@ -750,7 +753,7 @@ to overwrite the final element."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; recentf ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package recentf
-  :defer 2
+  :defer 10
   :config
   (setq recentf-max-saved-items 200
         recentf-max-menu-items 12
@@ -1280,10 +1283,15 @@ to overwrite the final element."
 (eval-and-compile
   (add-to-list 'load-path (concat my/plugins-directory "diff-hl/")))
 (use-package diff-hl
+  :defer 5
   :config
   (use-package diff-hl-flydiff :config (diff-hl-flydiff-mode 1))
   (global-diff-hl-mode 1)
-  (use-package diff-hl-margin :config (diff-hl-margin-mode 1))
+  (add-hook 'dired-mode-hook 'diff-hl-dir-mode)
+  ;; uncomment to use graphical display outside of terminal
+  ;; (unless (display-graphic-p)
+    (use-package diff-hl-margin :config (diff-hl-margin-mode 1))
+    ;; )
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; git-gutter ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
