@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-03-30 18:27:20 dharms>
+;; Modified Time-stamp: <2016-04-17 22:23:22 dharms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -244,7 +244,7 @@ some convenience registers to access the build-sub-dirs."
   "Helper function to perform the typical actions desired when a
 c-language file is opened and a profile is active.  These typical
 actions include setting include directories."
-  (when c-buffer-is-cc-mode
+  (when (and (boundp 'c-buffer-is-cc-mode) c-buffer-is-cc-mode)
     (set (make-local-variable 'achead:include-directories)
          (profile-current-get 'include-files))
     ;; set 'compiler-include-dirs for ac-clang
