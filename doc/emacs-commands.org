@@ -110,7 +110,10 @@ M-m    create directory in current dir
 C-x (        start recording keyboard macro
 C-x )        stop recording
 C-x e        replay
-C-x C-k r   apply macro to all lines in region
+C-x C-k b    bind last macro to a key sequence
+C-x C-k 0-9  good macro key sequences
+C-x C-k n    give last macro a name
+C-x C-k r    apply macro to all lines in region
 
 * Popwin
 [f1]
