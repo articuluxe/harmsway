@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-04-19 23:06:19 dharms>
+;; Modified Time-stamp: <2016-04-19 23:06:51 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -314,7 +314,6 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
  :init
  (defvar my/remote-hosts-file "")
  (defvar my/remote-host-list '())
- :defines my/remote-hosts-file
  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; aes ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -584,7 +583,7 @@ to overwrite the final element."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;; line-comment-banner ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package line-comment-banner
   :bind ([?\C-c?\C-/] . line-comment-banner)
-  :config
+  :init
   (add-hook 'c-mode-common-hook
             (lambda() (make-local-variable 'comment-fill)
               (setq comment-fill "*")))
