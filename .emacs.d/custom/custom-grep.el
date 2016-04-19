@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Tuesday, April 12, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-04-15 10:17:47 dan.harms>
+;; Modified Time-stamp: <2016-04-19 18:15:38 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: grep coding
 
@@ -28,6 +28,7 @@
 
 (require 'grep)
 (require 'profiles+)
+(require 's)
 
 (defun my/grep (&optional arg)
   "Grep for a search string in a project or directory.
@@ -79,7 +80,12 @@ profile."
              "-o -name \"*.sql\" -o -name \"*.py\" -o -name \"*.proto\" "
              "-o -name \"*.sh\" -o -name \"*.cs\" -o -name \"*.dart\" "
              "\")\" -print0 | xargs -0 grep -Isn "
-             (when search-string (shell-quote-argument search-string))))
+             (when search-string
+               (s-replace
+                "\\*" "\\\\*"
+                ;; shell-quote the search-string.  `shell-quote-argument'
+                ;; escapes embedded `*' but grep needs them double-escaped.
+                (shell-quote-argument search-string)))))
     (command-execute 'grep)))
 
 (provide 'custom-grep)
