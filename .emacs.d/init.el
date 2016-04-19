@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-04-19 13:10:30 dan.harms>
+;; Modified Time-stamp: <2016-04-19 23:06:19 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1255,12 +1255,13 @@ to overwrite the final element."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; diff-hl ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
   (add-to-list 'load-path (concat my/plugins-directory "diff-hl/")))
+(use-package  diff-hl-dired
+  :init (add-hook 'dired-mode-hook 'diff-hl-dired-mode-unless-remote))
 (use-package diff-hl
-  :defer 5
+  :defer 2
   :config
   (use-package diff-hl-flydiff :config (diff-hl-flydiff-mode 1))
   (global-diff-hl-mode 1)
-  (add-hook 'dired-mode-hook 'diff-hl-dir-mode)
   ;; uncomment to use graphical display outside of terminal
   ;; (unless (display-graphic-p)
     (use-package diff-hl-margin :config (diff-hl-margin-mode 1))
