@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-04-18 17:44:57 dharms>
+;; Modified Time-stamp: <2016-04-19 13:10:30 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1050,11 +1050,18 @@ to overwrite the final element."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dired ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package dired
   :defer t
+  :init
+  (add-hook 'dired-load-hook
+            (lambda()
+              (define-key dired-mode-map (kbd "<prior>") 'dired-up-directory)
+              (define-key dired-mode-map "l" 'dired-launch-command)
+              ))
   :config
   (use-package dired-x)                 ; C-x C-j now runs 'dired-jump
   (setq diredp-hide-details-initially-flag nil)
   (use-package dired+)
   (define-key dired-mode-map "\C-o" 'dired-display-file) ;remap
+  (define-key dired-mode-map "\M-p" nil)                 ;unbind
   (use-package ls-lisp+)
   ;; omit dot-files in dired-omit-mode (C-x M-o)
   (setq dired-omit-files (concat dired-omit-files "\\|^\\..+$"))
@@ -1103,12 +1110,6 @@ to overwrite the final element."
             (darwin "open")
             (gnu/linux "open")
             ) nil (dired-get-marked-files t current-prefix-arg)))
-
-  (add-hook 'dired-load-hook
-            (lambda()
-              (define-key dired-mode-map (kbd "<prior>") 'dired-up-directory)
-              (define-key dired-mode-map "l" 'dired-launch-command)
-              ))
 
   ;; easily go to top or bottom
   (defun dired-back-to-top()
