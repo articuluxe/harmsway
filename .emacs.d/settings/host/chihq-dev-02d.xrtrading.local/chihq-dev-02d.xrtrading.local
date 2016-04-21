@@ -1,10 +1,10 @@
 ;; -*- Mode: Emacs-Lisp -*-
-;; chihq-dev-02d.xrtrading.local --- host file
+;;; chihq-dev-02d.xrtrading.local --- host file
 ;; Copyright (C) 2015, 2016  Dan Harms (dan.harms)
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Monday, March 14, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-04-14 10:54:07 dan.harms>
+;; Modified Time-stamp: <2016-04-21 08:58:36 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: config
 
@@ -28,6 +28,8 @@
 ;;; Code:
 
 (my/load-site-file "xr")
+
+;(setq profile-gcc-standard-version "c++11")
 
 (set-frame-font "Monospace 10" nil t)
 ; #<font-spec xft nil Monospace nil nil normal normal nil 10.0 nil nil nil ((:name . "Monospace"))>

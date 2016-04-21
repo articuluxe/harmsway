@@ -1,12 +1,12 @@
 ;; -*- Mode: Emacs-Lisp -*-
-;;; hosts --- an abbreviated hosts file for emacs settings
-;; Copyright (C) 2015, 2016  Dan Harms (dharms)
-;; Author: Dan Harms <danielrharms@gmail.com>
-;; Created: Monday, August 17, 2015
+;;; chihq-dev-02d.xrtrading.local --- host file
+;; Copyright (C) 2015, 2016  Dan Harms (dan.harms)
+;; Author: Dan Harms <dan.harms@xrtrading.com>
+;; Created: Monday, March 14, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-04-21 09:24:05 dan.harms>
+;; Modified Time-stamp: <2016-04-21 08:58:36 dan.harms>
 ;; Modified by: Dan Harms
-;; Keywords: emacs config hostnames hosts
+;; Keywords: config
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -27,13 +27,10 @@
 
 ;;; Code:
 
-(setq my/host-plist
-      '(
-        ;; xr
-        (:host "carvzn-snap-06h.lnx.xrtrading.local" :site "xr")
-        (:host "chihq-benchmark-32e.lnx.xrtrading.local" :site "xr")
-        (:host "hq-snapdev-77v.lnx.xrtrading.local" :site "xr")
-        (:host "hq-snapdev-55a.lnx.xrtrading.local" :site "xr")
-        ))
+(my/load-site-file "xr")
 
-;;; hosts ends here
+(setq profile-gcc-standard-version "c++11")
+
+; #<font-spec xft nil Monospace nil nil normal normal nil 10.0 nil nil nil ((:name . "Monospace"))>
+
+;; chihq-dev-02d.lnx.xrtrading.local ends here

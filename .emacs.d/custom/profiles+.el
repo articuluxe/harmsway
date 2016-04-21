@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-04-17 22:23:22 dharms>
+;; Modified Time-stamp: <2016-04-21 08:32:45 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -238,6 +238,7 @@ some convenience registers to access the build-sub-dirs."
                      "grep -A 20 starts | grep include | grep -v search")))
     (split-string (shell-command-to-string cmd))))
 (defvar profile-clang-standard-version "c++14")
+(defvar profile-gcc-standard-version "c++14")
 
 ;;;###autoload
 (defun profile-on-c-file-open (project-root)
@@ -282,7 +283,7 @@ actions include setting include directories."
             )
         ;; gcc
         (set (make-local-variable 'flycheck-gcc-language-standard)
-             "c++14")
+             profile-gcc-standard-version)
         (set (make-local-variable 'flycheck-gcc-include-path)
              (profile-current-get 'include-files))
         (add-to-list 'flycheck-disabled-checkers 'c/c++-clang)
