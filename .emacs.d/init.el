@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-04-22 07:46:38 dharms>
+;; Modified Time-stamp: <2016-04-22 15:33:19 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -598,15 +598,29 @@ to overwrite the final element."
 (use-package discover-my-major :bind ("C-h C-m" . discover-my-major))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; expand-region ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; this removes the binding for "M-'" to 'abbrev-prefix-mark, without which we
+;; can use "M-'" as a prefix binding (one which happens to work in the
+;; terminal as well).
+(define-key esc-map "'" nil)
 (eval-and-compile
   (add-to-list 'load-path (concat my/plugins-directory "expand-region/")))
-(use-package expand-region :bind ("M-'" . er/expand-region))
+(use-package expand-region
+  :bind (("C-'" . er/expand-region)
+         ("M-' '" . er/expand-region)
+         ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; embrace ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package embrace :bind ("\e\e'" . embrace-commander))
+(use-package embrace
+  :bind (("C-=" . embrace-commander)
+         ("M-' =" . embrace-commander)
+         ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; iedit ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package iedit)
+(use-package
+ iedit
+ :bind (("C-;" . iedit-mode)
+        ("M-' ;" . iedit-mode)
+        ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; idle-highlight ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package idle-highlight-mode
@@ -1029,7 +1043,10 @@ to overwrite the final element."
   (global-undo-tree-mode))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; goto-chg ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package goto-chg :bind ([?\C-.] . goto-last-change))
+(use-package goto-chg
+  :bind (([?\C-.] . goto-last-change)
+         ("M-' ." . goto-last-change)
+         ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; tramp ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package tramp
@@ -1303,7 +1320,10 @@ to overwrite the final element."
 (use-package shebang)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; point-undo ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package point-undo :bind ([?\C-,] . point-undo))
+(use-package point-undo
+  :bind (([?\C-,] . point-undo)
+         ("M-' ," . point-undo)
+         ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; framemove ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package framemove
