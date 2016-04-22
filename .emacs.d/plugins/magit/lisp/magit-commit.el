@@ -116,7 +116,7 @@ an error while using those is harder to recover from."
                (?a "Amend"          magit-commit-amend)
                (?A "Augment"        magit-commit-augment))
     :max-action-columns 4
-    :default-action 'magit-commit))
+    :default-action magit-commit))
 
 (magit-define-popup-keys-deferred 'magit-commit-popup)
 
@@ -166,7 +166,7 @@ to inverse the meaning of the prefix argument.  \n(git commit
   (when (setq args (magit-commit-assert args (not override-date)))
     (let ((process-environment process-environment))
       (unless override-date
-        (setenv "GIT_COMMITTER_DATE" (magit-rev-format "%cD")))
+        (push (magit-rev-format "GIT_COMMITTER_DATE=%cD") process-environment))
       (magit-run-git-with-editor "commit" "--amend" "--no-edit" args))))
 
 ;;;###autoload
@@ -186,7 +186,7 @@ and ignore the option.
                        magit-commit-reword-override-date)))
   (let ((process-environment process-environment))
     (unless override-date
-      (setenv "GIT_COMMITTER_DATE" (magit-rev-format "%cD")))
+      (push (magit-rev-format "GIT_COMMITTER_DATE=%cD") process-environment))
     (magit-run-git-with-editor "commit" "--amend" "--only" args)))
 
 ;;;###autoload
@@ -245,10 +245,14 @@ depending on the value of option `magit-commit-squash-confirm'."
                           current-prefix-arg
                           magit-commit-squash-confirm))))
         (let ((magit-commit-show-diff nil))
-          (magit-run-git-with-editor "commit"
-                                     (unless edit "--no-edit")
-                                     (concat option "=" commit)
-                                     args))
+          (push (concat option "=" commit) args)
+          (unless edit
+            (push "--no-edit" args))
+          (if rebase
+              (with-editor "GIT_EDITOR"
+                (let ((magit-process-popup-time -1))
+                  (magit-call-git "commit" args)))
+            (magit-run-git-with-editor "commit" args)))
       (magit-log-select
         `(lambda (commit)
            (magit-commit-squash-internal ,option commit ',args ,rebase ,edit t)
@@ -311,6 +315,8 @@ depending on the value of option `magit-commit-squash-confirm'."
           (funcall it (car (magit-diff-arguments))))
       (quit))))
 
+;; Mention `magit-diff-while-committing' because that's
+;; always what I search for when I try to find this line.
 (add-hook 'server-switch-hook 'magit-commit-diff)
 
 (add-to-list 'with-editor-server-window-alist

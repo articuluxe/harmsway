@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-04-22 05:47:34 dharms>
+;; Modified Time-stamp: <2016-04-22 07:46:38 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -636,6 +636,7 @@ to overwrite the final element."
         magit-no-confirm '()
         magit-diff-refine-hunk t
         magit-auto-revert-tracked-only t
+        magit-prefer-remote-upstream t
         )
   ;; git commands
   :bind (:map my/git-keymap
@@ -652,6 +653,7 @@ to overwrite the final element."
               ("s" . magit-stage-file)
               ("u" . magit-unstage-file)
               ("r" . magit-reset-soft) ;; soft reset; hard reset can use C-u x
+              ("d" . magit-diff-buffer-file-popup)
               )
   :config
   (use-package with-editor)
