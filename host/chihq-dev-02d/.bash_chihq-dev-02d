@@ -11,16 +11,17 @@ export PATH=$HOME/bin:/sbin/:$python:$PATH:.
 # removed :/usr/lib64
 # export TERM=xterm-256color
 # export DISPLAY=10.10.102.157:0.0
+#export LD_LIBRARY_PATH=/usr/lib64:$LD_LIBRARY_PATH
 
 export CSTDLIB_ROOT=/opt/x3p/xrt_a/base
 #/usr/local/gcc-4.9.1
 export CSTDLIB_INC=$CSTDLIB_ROOT/include/c++/4.9.1
 export CSTDLIB_BIN=$CSTDLIB_ROOT/bin
 
-# source the site file
-if [ -f ~/.bash_xr ]; then
-   . ~/.bash_xr
-fi
+# # source the site file
+# if [ -f ~/.bash_xr ]; then
+#    . ~/.bash_xr
+# fi
 
 vm()
 {
