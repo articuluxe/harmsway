@@ -4,7 +4,7 @@
 # Author:  <dan.harms@xrtrading.com>
 # Created: Friday, March 20, 2015
 # Version: 1.0
-# Modified Time-stamp: <2016-04-14 13:57:21 dan.harms>
+# Modified Time-stamp: <2016-04-21 12:23:10 dan.harms>
 # Modified by: Dan Harms
 # Keywords: help
 
@@ -53,44 +53,6 @@ while sleep 1; do who; done
 # compile emacs
 mkdir bld && cd bld
 ../configure [--with-png=no]
-
-#################################### gdb #####################################
-# set a variable
-set var name=value
-# temporary breakpoint
-tbreak
-# set breakpoint on all functions matching regexp
-rbreak [file:]<regexp>
-# set watchpoint on a variable
-watch <variable>
-# dump output to a file
-set logging file file.txt
-set logging on
-set pagination off
-# print first 8 elements of a std::vector<std::string> vec
-p *(vec._M_impl._M_start)@8
-# print first 20 characters of a std::string
-p *(str._M_dataplus._M_p)@20
-# print raw memory as 21 hex bytes
-x/21xb 0x0000abcd
-# print as null-terminated string
-x/1sb 0x00abcd01
-# show last instruction
-x/i $pc
-disas $pc
-# show in what function an unknown address is located
-p/a 0x54320
-# print last value in hex
-p/x
-# ...as char
-p/c
-# conditional breakpoints
-break <line> if strcmp(str, "str") == 0
-# print a backtrace each time a breakpoint hits
-command <breakpoint #>
-backtrace 10
-continue
-end
 
 ################################# wireshark ##################################
 # list interfaces
