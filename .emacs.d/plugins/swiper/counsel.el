@@ -144,8 +144,9 @@ Or the time of the last minibuffer update.")
             (ivy--sort-maybe
              cands))
            (setq counsel-grep-last-line nil)
-           (setq counsel--async-duration
-                 (time-to-seconds (time-since counsel--async-start)))
+           (when counsel--async-start
+             (setq counsel--async-duration
+                   (time-to-seconds (time-since counsel--async-start))))
            (let ((re (funcall ivy--regex-function ivy-text)))
              (unless (stringp re)
                (setq re (caar re)))
@@ -1495,6 +1496,29 @@ the command."
                              :caller 'counsel-grep))
       (unless res
         (goto-char init-point)))))
+
+;;** `counsel-grep-or-swiper'
+(defcustom counsel-grep-swiper-limit 300000
+  "When the buffer is larger than this, use `counsel-grep' instead of `swiper'."
+  :type 'integer
+  :group 'ivy)
+
+;;;###autoload
+(defun counsel-grep-or-swiper ()
+  "Call `swiper' for small buffers and `counsel-grep' for large ones."
+  (interactive)
+  (if (and (buffer-file-name)
+           (not (buffer-narrowed-p))
+           (not (ignore-errors
+                  (file-remote-p (buffer-file-name))))
+           (> (buffer-size)
+              (if (eq major-mode 'org-mode)
+                  (/ counsel-grep-swiper-limit 4)
+                counsel-grep-swiper-limit)))
+      (progn
+        (save-buffer)
+        (counsel-grep))
+    (swiper--ivy (swiper--candidates))))
 
 ;;** `counsel-recoll'
 (defun counsel-recoll-function (string)

@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-04-19 23:06:51 dharms>
+;; Modified Time-stamp: <2016-04-22 05:47:34 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -53,7 +53,9 @@
   (concat my/user-directory "settings/gui/")
   "A path to a directory containing window-system-specific settings.")
 
-(eval-when-compile (require 'use-package))
+(eval-when-compile
+  (setq use-package-verbose t)
+  (require 'use-package))
 (require 'bind-key)
 
 (set-register ?~ (cons 'file "~/"))
@@ -594,6 +596,14 @@ to overwrite the final element."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; discover-my-major ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package discover-my-major :bind ("C-h C-m" . discover-my-major))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; expand-region ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(eval-and-compile
+  (add-to-list 'load-path (concat my/plugins-directory "expand-region/")))
+(use-package expand-region :bind ("M-'" . er/expand-region))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; embrace ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package embrace :bind ("\e\e'" . embrace-commander))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; iedit ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package iedit)

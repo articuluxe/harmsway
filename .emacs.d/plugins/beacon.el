@@ -5,8 +5,8 @@
 ;; Author: Artur Malabarba <emacs@endlessparentheses.com>
 ;; URL: https://github.com/Malabarba/beacon
 ;; Keywords: convenience
-;; Version: 1.0
-;; Package-Requires: ((seq "1.11"))
+;; Version: 1.2.1
+;; Package-Requires: ((seq "2.14"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -236,7 +236,7 @@ COLORS applied to each one."
            (seq-filter (lambda (o) (overlay-get o 'beacon))
                        (overlays-at (point))))))
 
-(defun beacon--vanish ()
+(defun beacon--vanish (&rest _)
   "Turn off the beacon."
   (when (timerp beacon--timer)
     (cancel-timer beacon--timer))
@@ -387,6 +387,11 @@ The same is true for DELTA-X and horizonta movement."
   (cond
    ;; Sanity check.
    ((not (markerp beacon--previous-place)))
+   ;; Blink for switching buffers.
+   ((and beacon-blink-when-buffer-changes
+         (not (eq (marker-buffer beacon--previous-place)
+                  (current-buffer))))
+    (beacon-blink-automated))
    ;; Blink for switching windows.
    ((and beacon-blink-when-window-changes
          (not (eq beacon--previous-window (selected-window))))
@@ -443,11 +448,13 @@ unreliable, so just blink immediately."
         (add-hook 'window-scroll-functions #'beacon--window-scroll-function)
         (add-hook 'focus-in-hook #'beacon--blink-on-focus)
         (add-hook 'post-command-hook #'beacon--post-command)
+        (add-hook 'before-change-functions #'beacon--vanish)
         (add-hook 'pre-command-hook #'beacon--record-vars)
         (add-hook 'pre-command-hook #'beacon--vanish))
     (remove-hook 'focus-in-hook #'beacon--blink-on-focus)
     (remove-hook 'window-scroll-functions #'beacon--window-scroll-function)
     (remove-hook 'post-command-hook #'beacon--post-command)
+    (remove-hook 'before-change-functions #'beacon--vanish)
     (remove-hook 'pre-command-hook #'beacon--record-vars)
     (remove-hook 'pre-command-hook #'beacon--vanish)))
 

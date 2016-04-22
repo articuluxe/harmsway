@@ -174,8 +174,12 @@
 (declare-function multiple-cursors-mode "ext:multiple-cursors-core")
 
 (defun swiper-mc ()
+  "Create a fake cursor for each `swiper' candidate."
+  (interactive)
   (unless (require 'multiple-cursors nil t)
     (error "multiple-cursors isn't installed"))
+  (unless (window-minibuffer-p)
+    (error "Call me only from `swiper'"))
   (let ((cands (nreverse ivy--old-cands)))
     (unless (string= ivy-text "")
       (ivy-exit-with-action
@@ -673,7 +677,8 @@ Run `swiper' for those buffers."
                      (1- len) len 'display
                      (concat
                       (make-string
-                       (- ww (string-width s) (length (buffer-name)) 3)
+                       (max 0
+                            (- ww (string-width s) (length (buffer-name)) 3))
                        ?\ )
                       (buffer-name))
                      s)
