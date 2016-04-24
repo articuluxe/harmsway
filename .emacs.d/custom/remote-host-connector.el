@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Monday, April 18, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-04-18 17:46:11 dharms>
+;; Modified Time-stamp: <2016-04-24 08:16:52 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: remote hosts
 
@@ -30,16 +30,13 @@
   "Location of remote hosts file.")
 (defvar my/remote-host-list '()
   "List of remote hosts.")
-(defvar my/remote-host--inited nil
-  "True if the remote hosts file been read in yet.")
+
+(when (file-exists-p my/remote-hosts-file)
+  (load my/remote-hosts-file t))
 
 (defun my/connect-to-remote-host(&optional arg)
   "Connect to a remote host from `my/remote-host-list'."
   (interactive "P")
-  (and (not my/remote-host--inited)
-       (file-exists-p my/remote-hosts-file)
-       (load my/remote-hosts-file t)
-       (setq my/remote-host--inited t))
   (let ((hosts
          (mapcar (lambda (plist)
                    (let* ((delim (char-to-string ?:))
