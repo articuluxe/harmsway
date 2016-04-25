@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-04-23 14:37:50 dharms>
+;; Modified Time-stamp: <2016-04-25 13:04:34 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -877,6 +877,9 @@ to overwrite the final element."
   (isearch-exit)
   (goto-char isearch-other-end))
 (define-key isearch-mode-map [(control return)] #'my/isearch-exit-other-end)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; occur ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(global-set-key (kbd "M-s M-o") 'multi-occur-in-matching-buffers)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; swiper ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
