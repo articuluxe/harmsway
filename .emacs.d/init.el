@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-04-25 13:04:34 dan.harms>
+;; Modified Time-stamp: <2016-04-25 23:19:56 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -401,11 +401,23 @@ to overwrite the final element."
   :bind ("C-c ic" . makey-key-mode-popup-c-cleanup-funcs))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; multi-line ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(eval-and-compile
+  (add-to-list 'load-path (concat my/plugins-directory "multi-line/")))
 (use-package
   multi-line
-  :load-path (lambda() (concat my/plugins-directory "multi-line/"))
   :bind ("C-c w" . multi-line)
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; emacs-refactor ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(eval-and-compile
+  (add-to-list 'load-path (concat my/plugins-directory "emacs-refactor/")))
+(use-package
+ emr
+ :init
+ (with-eval-after-load 'prog-mode
+   (add-hook 'prog-mode-hook 'emr-initialize)
+   (bind-key "C-c b" 'emr-show-refactor-menu)
+   ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; sudo-edit ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package
