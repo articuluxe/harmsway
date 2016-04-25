@@ -220,7 +220,9 @@ See also: `-reduce-r-from', `-reduce'"
 (defun -filter (pred list)
   "Return a new list of the items in LIST for which PRED returns a non-nil value.
 
-Alias: `-select'"
+Alias: `-select'
+
+See also: `-keep'"
   (--filter (funcall pred it) list))
 
 (defalias '-select '-filter)
@@ -1157,7 +1159,9 @@ predicate PRED, in ascending order."
 (defun -find-index (pred list)
   "Take a predicate PRED and a LIST and return the index of the
 first element in the list satisfying the predicate, or nil if
-there is no such element."
+there is no such element.
+
+See also `-first'."
   (car (-find-indices pred list)))
 
 (defmacro --find-index (form list)
@@ -1168,7 +1172,9 @@ there is no such element."
 (defun -find-last-index (pred list)
   "Take a predicate PRED and a LIST and return the index of the
 last element in the list satisfying the predicate, or nil if
-there is no such element."
+there is no such element.
+
+See also `-last'."
   (-last-item (-find-indices pred list)))
 
 (defmacro --find-last-index (form list)
@@ -1182,6 +1188,29 @@ as `(nth i list)` for all i from INDICES."
     (--each indices
       (!cons (nth it list) r))
     (nreverse r)))
+
+(defun -select-columns (columns table)
+  "Select COLUMNS from TABLE.
+
+TABLE is a list of lists where each element represents one row.
+It is assumed each row has the same length.
+
+Each row is transformed such that only the specified COLUMNS are
+selected.
+
+See also: `-select-column', `-select-by-indices'"
+  (--map (-select-by-indices columns it) table))
+
+(defun -select-column (column table)
+  "Select COLUMN from TABLE.
+
+TABLE is a list of lists where each element represents one row.
+It is assumed each row has the same length.
+
+The single selected column is returned as a list.
+
+See also: `-select-columns', `-select-by-indices'"
+  (--mapcat (-select-by-indices (list column) it) table))
 
 (defmacro -> (x &optional form &rest more)
   "Thread the expr through the forms. Insert X as the second item
@@ -2335,6 +2364,8 @@ structure such as plist or alist."
                              "-find-last-index"
                              "--find-last-index"
                              "-select-by-indices"
+                             "-select-columns"
+                             "-select-column"
                              "-grade-up"
                              "-grade-down"
                              "->"
