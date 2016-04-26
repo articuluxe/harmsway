@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-04-25 23:19:56 dharms>
+;; Modified Time-stamp: <2016-04-26 08:30:25 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -262,7 +262,9 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 
 (use-package custom-environment
   :commands (read-file-into-list-of-lines
-             load-environment-variable-from-file))
+             load-environment-variable-from-file
+             my/load-environment-variables-from-file
+             ))
 
 (use-package custom-buffer-utils
   :bind (("C-x C-r" . my/revert-buffer)
@@ -337,35 +339,6 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; path ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defun my/load-environment-variables-from-file (dir &optional append-exec-path)
-  "Load a set of predetermined environment variables from a location on disk,
-given by DIR.  If APPEND_EXEC_PATH is non-nil, the existing
-exec-path will have any new elements prepended to it; otherwise,
-the default is to set the final element of exec-path to the
-exec-directory.  The point is that subsequent calls may not want
-to overwrite the final element."
-  (let ((path-file (concat dir "path"))
-        (include-file (concat dir "include"))
-        (lib-file (concat dir "lib"))
-        (libpath-file (concat dir "libpath")))
-    ;; check for any additional environment variables
-    (if (file-exists-p path-file)
-        (progn
-          (load-environment-variable-from-file "PATH" path-file)
-          ;; replicate path (delimiter-separated string of paths) into
-          ;; exec-path (list of paths); by convention, ends in exec-dir
-          (setq exec-path (append
-                           (read-file-into-list-of-lines path-file)
-                           (if append-exec-path
-                               exec-path
-                             (list (convert-standard-filename exec-directory)))))))
-    (if (file-exists-p include-file)
-        (load-environment-variable-from-file "INCLUDE" include-file))
-    (if (file-exists-p lib-file)
-        (load-environment-variable-from-file "LIB" lib-file))
-    (if (file-exists-p libpath-file)
-        (load-environment-variable-from-file "LIBPATH" libpath-file))
-    ))
 (my/load-environment-variables-from-file my/os-dir)
 
 (setq-default frame-title-format
