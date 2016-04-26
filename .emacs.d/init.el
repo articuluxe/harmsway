@@ -523,8 +523,6 @@ to overwrite the final element."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; gen-tags ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package gen-tags
   :demand t                             ;load immediately
-  :init
-  (setq gen-tags-exe "ctags")
   :bind ("C-c t" . gen-tags-generate-tags)
   )
 

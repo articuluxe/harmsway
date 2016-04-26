@@ -3,7 +3,7 @@
 ;; Author:  <dan.harms@xrtrading.com>
 ;; Created: Wednesday, March 18, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-03-30 18:27:20 dharms>
+;; Modified Time-stamp: <2016-04-26 08:14:21 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: etags, ctags
 
@@ -30,11 +30,9 @@
 
 ;; customization variables
 (defvar gen-tags-exe
-  (cond ((executable-find "ctags") "ctags")
-        ((executable-find "/usr/local/bin/ctags") "/usr/local/bin/ctags")
-        ((executable-find "/bin/ctags") "/bin/ctags")
-        ((executable-find "/usr/bin/ctags") "/usr/bin/ctags")
-        (t "ctags"))
+  (or (executable-find "exctags")
+      (executable-find "ctags")
+      "ctags")
   "The ctags executable.")
 (defvar gen-tags-ctags-cpp-kinds "+l" "Default ctags cpp-kinds options.")
 (defvar gen-tags-ctags-cpp-options
