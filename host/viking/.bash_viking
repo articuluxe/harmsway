@@ -3,7 +3,8 @@
 
 python=~/anaconda2/bin
 dart=/usr/local/dart/1.15.0/dart-sdk
-export PATH=$HOME/bin:/sbin/:/usr/lib64:$python:$PATH:.
+cask=$HOME/.cask/bin
+export PATH=$HOME/bin:/sbin/:/usr/lib64:$python:$cask:$PATH:.
 
 export CSTDLIB_ROOT=/usr/local
 export CSTDLIB_INC=/usr/local/include/c++/5.3.0/
