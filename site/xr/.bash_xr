@@ -22,6 +22,8 @@ export PATH=/opt/x3p/xrt_a/llvm/3.6.1/bin:$PATH
 # what `use dart_a_114' prepends to PATH:
 # /opt/x3p/xrt_a/dart/1.14/ReleaseX64/dart-sdk/bin:/opt/x3p/xrt_a/dart/1.14/ReleaseX64
 
+export CXX_FLAGS="-std=c++0x -Wall -Wextra -pedantic -Wno-unused-local-typedefs"
+
 # reset display to local host
 display-local() { export DISPLAY=:0.0; }
 
