@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-04-27 05:47:52 dharms>
+;; Modified Time-stamp: <2016-04-28 22:06:17 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1608,7 +1608,8 @@ register \\C-l."
   (add-to-list 'safe-local-variable-values '(require-final-newline . nil))
   (setq yas-snippet-dirs (list
                           (concat my/scratch-directory "snippets/")
-                          (concat my/plugins-directory "yasnippet/snippets/")))
+                          ;; (concat my/plugins-directory "yasnippet/snippets/")
+                          ))
   (setq yas-prompt-functions '(
                                yas-completing-prompt
                                yas-ido-prompt
@@ -1616,6 +1617,7 @@ register \\C-l."
                                yas-dropdown-prompt
                                yas-no-prompt
                                ))
+  (add-hook 'after-init-hook (lambda() (yas-global-mode 1)))
   :config
   (bind-keys
    :map yas-minor-mode-map
@@ -1635,7 +1637,6 @@ register \\C-l."
   (global-set-key [backtab] 'yas-expand)
   (global-set-key [(shift tab)] 'yas-expand)
   (setq yas-fallback-behavior '(apply my/expand-yasnippet))
-  (add-hook 'after-init-hook (lambda() (yas-global-mode 1)))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; flycheck ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
