@@ -3,7 +3,7 @@
 ;; Copyright (C) 2016  Junpeng Qiu
 
 ;; Author: Junpeng Qiu <qjpchmail@gmail.com>
-;; Package-Requires: ((emacs "24.4") (expand-region "0.10.0"))
+;; Package-Requires: ((cl-lib "0.5") (expand-region "0.10.0"))
 ;; Keywords: extensions
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -40,11 +40,13 @@
 ;; 3 Customization
 ;; .. 3.1 Adding More Semantic Units
 ;; .. 3.2 Adding More Surrounding Pairs
+;; .. 3.3 Example Settings
 ;; 4 For `evil-surround' Users
 ;; .. 4.1 Where `embrace' is better
-;; .. 4.2 Where= `evil-surround' is better
+;; .. 4.2 Where `evil-surround' is better
 ;; .. 4.3 Why not use together?
 ;; 5 Contributions
+;; 6 Related Packages
 
 
 ;; Add/Change/Delete pairs based on [expand-region].
@@ -231,6 +233,47 @@
 ;;   If you want add something like the `t' key for the tag, you can look
 ;;   at the function `embrace-add-pair-regexp' in the source code.
 
+;;   Note that if you're using `embrace-add-pair' to add an existing key,
+;;   then it will replace the old one.
+
+
+;; 3.3 Example Settings
+;; ~~~~~~~~~~~~~~~~~~~~
+
+;;   I recommend binding a convenient key for `embrace-commander'. For
+;;   example,
+;;   ,----
+;;   | (global-set-key (kbd "C-,") #'embrace-commander)
+;;   `----
+
+;;   We have defined several example hook functions that provide additional
+;;   key bindings which can be used in different major modes. Right now
+;;   there are hooks for `LaTeX-mode' and `org-mode':
+
+;;   `LaTeX-mode':
+;;    Key  Left      Right
+;;   ----------------------
+;;    =    \verb |   |
+;;    ~    \texttt{  }
+;;    *    \textbf{  }
+
+;;   `org-mode':
+;;    Key  Left  Right
+;;   ------------------
+;;    =    =     =
+;;    ~    ~     ~
+;;    *    *     *
+;;    _    _     _
+;;    +    +     +
+
+;;   To use them:
+;;   ,----
+;;   | (add-hook 'LaTeX-mode-hook 'embrace-LaTeX-mode-hook)
+;;   | (add-hook 'org-mode-hook 'embrace-org-mode-hook)
+;;   `----
+
+;;   Welcome to add some settings for more major modes.
+
 
 ;; 4 For `evil-surround' Users
 ;; ===========================
@@ -253,8 +296,8 @@
 ;;   *TL;DR*: `embrace' is more customizable.
 
 
-;; 4.2 Where= `evil-surround' is better
-;; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+;; 4.2 Where `evil-surround' is better
+;; ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ;;   `expand-region' works on semantic units, which can be different in
 ;;   different major modes, which causes `embrace' to have different
@@ -307,13 +350,18 @@
 ;;   | (?\( ?\[ ?\{ ?\) ?\] ?\} ?\" ?\' ?b ?B ?t)
 ;;   `----
 
-;;   Only these keys are processed by `evil-surround'. This variable is
-;;   also buffer-local. You should change it in the hook:
+;;   Note that this variable is also buffer-local. You should change it in
+;;   the hook:
 ;;   ,----
 ;;   | (add-hook 'LaTeX-mode-hook
 ;;   |     (lambda ()
 ;;   |        (add-to-list 'embrace-evil-surround-key ?o)))
 ;;   `----
+
+;;   Only these keys saved in the variable are processed by
+;;   `evil-surround', and all the other keys will be processed by
+;;   `embrace'. You can customize `embrace' in the way described in the
+;;   previous *Customization* section to add support for additional pairs.
 
 
 ;; 5 Contributions
@@ -324,6 +372,23 @@
 ;;   perfect yet. Contributions are always welcome!
 
 
+;; 6 Related Packages
+;; ==================
+
+;;   - [expand-region]
+;;   - [evil-surround]
+;;   - [change-inner]
+;;   - [smartparens]
+
+
+;; [expand-region] https://github.com/magnars/expand-region.el
+
+;; [evil-surround] https://github.com/timcharper/evil-surround
+
+;; [change-inner] https://github.com/magnars/change-inner.el
+
+;; [smartparens] https://github.com/Fuco1/smartparens
+
 ;;; Code:
 
 (require 'expand-region)
@@ -331,10 +396,6 @@
 
 (cl-defstruct embrace-pair-struct
   key left right left-regexp right-regexp read-function)
-
-(defvar embrace-evil-surround-key '(?\( ?\[ ?\{ ?\) ?\] ?\} ?\" ?\' ?b ?B ?t)
-  "Keys that should be processed by `evil-surround'")
-(make-variable-buffer-local 'embrace-evil-surround-key)
 
 (defvar embrace-semantic-units-alist '((?w . er/mark-word)
                                        (?s . er/mark-symbol)
@@ -376,7 +437,8 @@
                   (?\} . ("{ " . " }"))
                   (?\[ . ("[" . "]"))
                   (?\] . ("[ " . " ]"))
-                  (?> . ("<" . ">"))
+                  (?< . ("<" . ">"))
+                  (?> . ("< " . " >"))
                   (?\" . ("\"" . "\""))
                   (?\' . ("\'" . "\'"))))
     (embrace-add-pair (car pair) (cadr pair) (cddr pair)))
@@ -388,7 +450,7 @@
 
 (defun embrace-with-tag ()
   (let* ((input (read-string "Tag: "))
-         (match (string-match "\\([0-9a-z-]+\\)\\(.*?\\)[>]*$" input))
+         (_ (string-match "\\([0-9a-z-]+\\)\\(.*?\\)[>]*$" input))
          (tag  (match-string 1 input))
          (rest (match-string 2 input)))
     (cons (format "<%s%s>" (or tag "") (or rest ""))
@@ -399,7 +461,7 @@
     (cons (format "%s(" (or fname "")) ")")))
 
 (defun embrace--get-region-overlay (open close)
-  (cl-letf (((symbol-function 'message) (lambda (&rest args) nil)))
+  (cl-letf (((symbol-function 'message) (lambda (&rest _) nil)))
     (let ((expand-region-fast-keys-enabled nil))
       (save-excursion
         (when (looking-at open)
@@ -458,7 +520,7 @@
           (when change-p overlay))
       (unless change-p (delete-overlay overlay)))))
 
-(defun embrace--internal (change-p)
+(defun embrace--change-internal (change-p)
   (let* ((char (read-char "Delete pair: "))
          (overlay (embrace--delete char change-p)))
     (and change-p
@@ -468,26 +530,32 @@
 ;;;###autoload
 (defun embrace-delete ()
   (interactive)
-  (embrace--internal nil))
+  (embrace--change-internal nil))
 
 ;;;###autoload
 (defun embrace-change ()
   (interactive)
-  (embrace--internal t))
+  (embrace--change-internal t))
+
+(defun embrace--add-internal (beg end char)
+  (let ((overlay (make-overlay beg end nil nil t)))
+    (embrace--insert char overlay)
+    (delete-overlay overlay)))
 
 ;;;###autoload
 (defun embrace-add ()
   (interactive)
-  (let ((mark-func (assoc-default (read-char "Semantic unit: ")
-                                  embrace-semantic-units-alist))
-        overlay)
-    (unless (fboundp mark-func)
-      (error "No such a semantic unit"))
+  (let (mark-func)
     (save-excursion
-      (funcall mark-func)
-      (setq overlay (make-overlay (region-beginning) (region-end) nil nil t))
-      (embrace--insert (read-char "Add pair: ") overlay)
-      (delete-overlay overlay))))
+      ;; only ask for semantic unit if region isn't already set
+      (unless (use-region-p)
+        (setq mark-func (assoc-default (read-char "Semantic unit: ")
+                                       embrace-semantic-units-alist))
+        (unless (fboundp mark-func)
+          (error "No such a semantic unit"))
+        (funcall mark-func))
+      (embrace--add-internal (region-beginning) (region-end)
+                             (read-char "Add pair: ")))))
 
 ;;;###autoload
 (defun embrace-commander ()
@@ -502,70 +570,6 @@
       (call-interactively 'embrace-delete))
      (t
       (error "Unknow command")))))
-
-;;; `evil-surround' integration
-(defun embrace-evil-surround-delete (char &optional outer inner)
-  (interactive "c")
-  (cond
-   ((and outer inner)
-    (delete-region (overlay-start outer) (overlay-start inner))
-    (delete-region (overlay-end inner) (overlay-end outer))
-    (goto-char (overlay-start outer)))
-   (t
-    (if (member char embrace-evil-surround-key)
-        (let* ((outer (evil-surround-outer-overlay char))
-               (inner (evil-surround-inner-overlay char)))
-          (unwind-protect
-              (when (and outer inner)
-                (evil-surround-delete char outer inner))
-            (when outer (delete-overlay outer))
-            (when inner (delete-overlay inner))))
-      (embrace--delete char)))))
-
-(defun embrace-evil-surround-change (char &optional outer inner)
-  (interactive "c")
-  (let (overlay)
-    (cond
-     ((and outer inner)
-      (evil-surround-delete char outer inner)
-      (let ((key (read-char)))
-        (if (member key embrace-evil-surround-key)
-            (evil-surround-region (overlay-start outer)
-                                  (overlay-end outer)
-                                  nil (if (evil-surround-valid-char-p key) key char))
-          (embrace--insert key (copy-overlay outer)))))
-     (t
-      (if (member char embrace-evil-surround-key)
-          (let* ((outer (evil-surround-outer-overlay char))
-                 (inner (evil-surround-inner-overlay char)))
-            (unwind-protect
-                (when (and outer inner)
-                  (evil-surround-change char outer inner))
-              (when outer (delete-overlay outer))
-              (when inner (delete-overlay inner))))
-        (setq overlay (embrace--delete char t))
-        (let ((key (read-char)))
-          (if (member key embrace-evil-surround-key)
-              (evil-surround-region (overlay-start overlay)
-                                    (overlay-end overlay)
-                                    nil (if (evil-surround-valid-char-p key) key char))
-            (embrace--insert key overlay))
-          (when overlay (delete-overlay overlay))))))))
-
-;;;###autoload
-(defun embrace-enable-evil-surround-integration ()
-  (interactive)
-  (when (require 'evil-surround nil t)
-    (advice-add 'evil-surround-change :override 'embrace-evil-surround-change)
-    (advice-add 'evil-surround-delete :override 'embrace-evil-surround-delete)))
-
-;;;###autoload
-(defun embrace-disable-evil-surround-integration ()
-  (interactive)
-  (when (require 'evil-surround nil t)
-    (advice-remove 'evil-surround-change 'embrace-evil-surround-change)
-    (advice-remove 'evil-surround-delete 'embrace-evil-surround-delete)))
-
 
 ;; -------- ;;
 ;; Bindings ;;
@@ -585,7 +589,8 @@
                  (?/ "/" . "/")
                  (?* "*" . "*")
                  (?_ "_" . "_")
-                 (?+ "+" . "+")))
+                 (?+ "+" . "+")
+                 (?k "@@html:<kbd>@@" . "@@html:</kbd>@@")))
     (embrace-add-pair (car lst) (cadr lst) (cddr lst))))
 
 (provide 'embrace)
