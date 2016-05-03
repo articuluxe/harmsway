@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-05-03 13:24:44 dan.harms>
+;; Modified Time-stamp: <2016-05-03 22:49:17 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1326,7 +1326,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   drag-stuff
   :defer 3
   :init
-  (setq drag-stuff-modifier 'super)
+  (setq drag-stuff-modifier '(meta shift))
   :config
   (drag-stuff-global-mode 1)
   )
