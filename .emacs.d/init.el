@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-04-29 09:10:58 dan.harms>
+;; Modified Time-stamp: <2016-05-03 13:24:44 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -100,10 +100,14 @@
 (setq kill-do-not-save-duplicates t)
 (file-name-shadow-mode 1)
 (setq enable-recursive-minibuffers t)
-;;  truncate long lines
-(setq-default truncate-lines t)
 ;; interactive regexp-search space character stands only for 1 char
 (setq-default search-whitespace-regexp nil)
+;;  truncate long lines
+(setq-default truncate-lines t)
+(defun my/set-word-processor()
+  (setq truncate-lines nil)
+  (setq word-wrap t)
+  )
 ;; default tab width
 (setq-default tab-width 4)
 ;; Show selections
@@ -2088,7 +2092,10 @@ customization."
 (use-package markdown-mode
   :mode ("\\.md$" "\\.markdown$"
          "LICENSE$" "README$" "INSTALL$" "CONTRIBUTORS$" "COPYING$"
-         ))
+         )
+  :init
+  (add-hook 'markdown-mode-hook #'my/set-word-processor)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; nhexl-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package nhexl-mode :defer t)
@@ -2158,6 +2165,9 @@ customization."
             (define-key sh-mode-map "\C-c\C-u" 'uncomment-region)
             (add-to-list 'flycheck-disabled-checkers 'sh-posix-dash)
             ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; text-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(add-hook 'text-mode-hook #'my/set-word-processor)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; xml-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-hook 'nxml-mode-hook
