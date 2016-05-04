@@ -1,3 +1,13 @@
+# -*- Mode: sh -*-
+# gdb.txt --- gdb tips and tricks
+# Copyright (C) 2016  Dan Harms (dharms)
+# Author: Dan Harms <danielrharms@gmail.com>
+# Created: Tuesday, May  3, 2016
+# Version: 1.0
+# Modified Time-stamp: <2016-05-03 22:52:27 dharms>
+# Modified by: Dan Harms
+# Keywords: gdb help doc
+
 #################################### gdb #####################################
 # set a variable
 set var name=value
@@ -36,3 +46,4 @@ backtrace 10
 continue
 end
 
+# code ends here

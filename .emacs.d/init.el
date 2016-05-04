@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-05-03 22:49:17 dharms>
+;; Modified Time-stamp: <2016-05-03 23:16:39 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1357,7 +1357,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
          ([(control meta up)] . shrink-frame)
          ([(control meta left)] . shrink-frame-horizontally)
          ([(control ?x) (control ?z)] . iconify-everything)
-         ([(control ?z)] . iconify/show-frame)
+         ;; ([(control ?z)] . iconify/show-frame)
          ;; ([mode-line mouse-3] . mouse-iconify/show-frame)
          ;; ([mode-line C-mouse-3] . mouse-remove-window)
          ([(control meta ?z)] . show-hide)
@@ -1375,22 +1375,22 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   :config
   (substitute-key-definition 'delete-window      'delete-windows-for global-map)
   (substitute-key-definition 'delete-window      'remove-window global-map)
+  ;; disabling in favor of rotate
+  ;;   (defun my/tile-frames-vertically()
+  ;;     "Tile frames vertically. You can restore prior frame position via going to
+  ;; register \\C-l."
+  ;;     (interactive)
+  ;;     (save-frame-config)
+  ;;     (tile-frames-vertically))
+  ;;   (defun my/tile-frames-horizontally()
+  ;;     "Tile frames horizontally. You can restore prior frame position via going to
+  ;; register \\C-l."
+  ;;     (interactive)
+  ;;     (save-frame-config)
+  ;;     (tile-frames-horizontally))
+  ;;   (bind-key "\e\ev" 'my/tile-frames-vertically)
+  ;;   (bind-key "\e\eh" 'my/tile-frames-horizontally)
   )
-
-(defun my/tile-frames-vertically()
-  "Tile frames vertically. You can restore prior frame position via going to
-register \\C-l."
-  (interactive)
-  (save-frame-config)
-  (tile-frames-vertically))
-(global-set-key "\e\ev" 'my/tile-frames-vertically)
-(defun my/tile-frames-horizontally()
-  "Tile frames horizontally. You can restore prior frame position via going to
-register \\C-l."
-  (interactive)
-  (save-frame-config)
-  (tile-frames-horizontally))
-(global-set-key "\e\eh" 'my/tile-frames-horizontally)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; workgroups ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package workgroups
