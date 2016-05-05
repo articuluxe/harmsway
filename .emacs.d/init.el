@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-05-03 23:16:39 dharms>
+;; Modified Time-stamp: <2016-05-04 23:02:55 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -105,8 +105,14 @@
 ;;  truncate long lines
 (setq-default truncate-lines t)
 (defun my/set-word-processor()
-  (setq truncate-lines nil)
-  (setq word-wrap t)
+  (visual-line-mode 1)
+  ;; uncomment to move by logical lines, not visual lines
+  ;; (setq line-move-visual nil)
+  ;; uncomment as an alternative to visual-line-mode that only word
+  ;; wraps, without removing wrap indicators in the fringe, and without
+  ;; altering movement commands to use visual lines rather than logical ones.
+  ;; (setq truncate-lines nil)
+  ;; (setq word-wrap t)
   )
 ;; default tab width
 (setq-default tab-width 4)
