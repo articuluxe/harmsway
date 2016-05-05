@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-05-04 23:02:55 dharms>
+;; Modified Time-stamp: <2016-05-09 07:43:07 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1928,6 +1928,8 @@ customization."
             (plist-get plist :site)
             (my/load-site-file (plist-get plist :site))))
      my/host-plist))
+  ;; look for environment variable definitions
+  (my/load-environment-variables-from-file hosts-dir)
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; modes ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
