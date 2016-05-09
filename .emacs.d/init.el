@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-05-09 07:43:07 dharms>
+;; Modified Time-stamp: <2016-05-09 08:09:45 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -116,8 +116,6 @@
   )
 ;; default tab width
 (setq-default tab-width 4)
-;; Show selections
-(transient-mark-mode 1)
 ;; enable repeatedly popping mark without prefix
 (setq set-mark-command-repeat-pop t)
 (defun my/multi-pop-to-mark (orig-fun &rest args)
@@ -131,8 +129,6 @@ up to 10 times."
             #'my/multi-pop-to-mark)
 ;; show current function
 (which-function-mode t)
-;; Insertion while text is selected deletes the selected text
-(delete-selection-mode 1)
 ;; winner mode
 (winner-mode 1)
 ;; append unique parent directory to buffers of same name
@@ -382,6 +378,13 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; cleanup-funcs ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package cleanup-funcs
   :bind ("C-c ic" . makey-key-mode-popup-c-cleanup-funcs))
+
+;; Show selections
+(transient-mark-mode 1)
+;; Insertion while text is selected deletes the selected text
+(delete-selection-mode 1)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; region-state ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package region-state :demand t :config (region-state-mode 1))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; multi-line ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
