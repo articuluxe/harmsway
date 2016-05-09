@@ -1,9 +1,9 @@
 ;;; s.el --- The long lost Emacs string manipulation library.
 
-;; Copyright (C) 2012 Magnar Sveen
+;; Copyright (C) 2012-2015 Magnar Sveen
 
 ;; Author: Magnar Sveen <magnars@gmail.com>
-;; Version: 1.9.0
+;; Version: 1.10.0
 ;; Keywords: strings
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -76,10 +76,10 @@ See also `s-split'."
               (push sub r)))
           (setq op (goto-char (match-end 0)))
           (setq n (1- n)))
-        (if (/= (point) (point-max))
-            (push (buffer-substring-no-properties op (point-max)) r)
-          (unless omit-nulls
-            (push "" r))))
+        (let ((sub (buffer-substring-no-properties op (point-max))))
+          (unless (and omit-nulls
+                       (equal sub ""))
+            (push sub r))))
       (nreverse r))))
 
 (defun s-lines (s)
@@ -333,13 +333,13 @@ This is a simple wrapper around the built-in `string-match-p'."
   (replace-regexp-in-string (regexp-quote old) new s t t))
 
 (defun s--aget (alist key)
-  (cdr (assoc key alist)))
+  (cdr (assoc-string key alist)))
 
 (defun s-replace-all (replacements s)
   "REPLACEMENTS is a list of cons-cells. Each `car` is replaced with `cdr` in S."
   (replace-regexp-in-string (regexp-opt (mapcar 'car replacements))
                             (lambda (it) (s--aget replacements it))
-                            s))
+                            s t t))
 
 (defun s-downcase (s)
   "Convert S to lower case.
@@ -419,6 +419,19 @@ ignored after the first."
         (push (nreverse strings) all-strings)))
     (nreverse all-strings)))
 
+(defun s-matched-positions-all (regexp string &optional subexp-depth)
+  "Return a list of matched positions for REGEXP in STRING.
+SUBEXP-DEPTH is 0 by default."
+  (if (null subexp-depth)
+      (setq subexp-depth 0))
+  (let ((pos 0) result)
+    (while (and (string-match regexp string pos)
+                (< pos (length string)))
+      (let ((m (match-end subexp-depth)))
+        (push (cons (match-beginning subexp-depth) (match-end subexp-depth)) result)
+        (setq pos (match-end 0))))
+    (nreverse result)))
+
 (defun s-match (regexp s &optional start)
   "When the given expression matches the string, this function returns a list
 of the whole matching string and a string for each matched subexpressions.
@@ -440,13 +453,14 @@ When START is non-nil the search will start at that index."
 
 (defun s-slice-at (regexp s)
   "Slices S up at every index matching REGEXP."
-  (save-match-data
-    (let (i)
-      (setq i (string-match regexp s 1))
-      (if i
-          (cons (substring s 0 i)
-                (s-slice-at regexp (substring s i)))
-        (list s)))))
+  (if (= 0 (length s)) (list "")
+    (save-match-data
+      (let (i)
+        (setq i (string-match regexp s 1))
+        (if i
+            (cons (substring s 0 i)
+                  (s-slice-at regexp (substring s i)))
+          (list s))))))
 
 (defun s-split-words (s)
   "Split S into list of words."
@@ -537,12 +551,14 @@ transformation."
                           (funcall 's--aget extra var))
                          ((eq replacer 'elt)
                           (funcall replacer extra var))
+                         ((eq replacer 'oref)
+                          (funcall #'slot-value extra (intern var)))
                          (t
                           (set-match-data saved-match-data)
                           (if extra
                               (funcall replacer var extra)
                             (funcall replacer var))))))
-                   (if v v (signal 's-format-resolve md)))
+                   (if v (format "%s" v) (signal 's-format-resolve md)))
                (set-match-data replacer-match-data)))) template
                ;; Need literal to make sure it works
                t t)

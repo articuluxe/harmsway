@@ -4,7 +4,7 @@
 
 ;; Author: Johan Andersson <johan.rejeep@gmail.com>
 ;; Maintainer: Johan Andersson <johan.rejeep@gmail.com>
-;; Version: 0.17.3
+;; Version: 0.18.2
 ;; Keywords: files, directories
 ;; URL: http://github.com/rejeep/f.el
 ;; Package-Requires: ((s "1.7.0") (dash "2.2.0"))
@@ -76,7 +76,8 @@ If PATH is not allowed to be modified, throw error."
 
 (defun f-expand (path &optional dir)
   "Expand PATH relative to DIR (or `default-directory')."
-  (directory-file-name (expand-file-name path dir)))
+  (let (file-name-handler-alist)
+    (directory-file-name (expand-file-name path dir))))
 
 (defun f-filename (path)
   "Return the name of PATH."
@@ -112,7 +113,10 @@ If PATH is not allowed to be modified, throw error."
         (concat (apply 'f-join (nreverse re)) "/")))))))
 
 (defun f-ext (path)
-  "Return the file extension of PATH."
+  "Return the file extension of PATH.
+
+The extension, in a file name, is the part that follows the last
+'.', excluding version numbers and backup suffixes."
   (file-name-extension path))
 
 (defun f-no-ext (path)
@@ -339,7 +343,10 @@ If FORCE is t, a directory will be deleted recursively."
   "Return t if extension of PATH is EXT, false otherwise.
 
 If EXT is nil or omitted, return t if PATH has any extension,
-false otherwise."
+false otherwise.
+
+The extension, in a file name, is the part that follows the last
+'.', excluding version numbers and backup suffixes."
   (if ext
       (string= (f-ext path) ext)
     (not (eq (f-ext path) nil))))
