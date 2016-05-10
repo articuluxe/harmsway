@@ -350,6 +350,7 @@ M-x apropos mode   list available commands containing “mode”
 
 
 * Org
+
 ** Formatting
 *** Text can be /italic/, *bold*, _underlined_, =literal= or ~code~.
 ** Blocks
@@ -388,7 +389,9 @@ exit
 M-<up/down>  move section
 M-<left/right> promote/demote
 S-<up/down>  cycle priority
+M-<p/n>      move section (windmove-disputed)
 S-<left/right> cycle TODO status
+M--, M-+      cycle TODO status (windmove-disputed)
 M-S-<up/down> move section
 M-S-<left/right> promote/demote section
 

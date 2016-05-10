@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-05-09 08:09:45 dharms>
+;; Modified Time-stamp: <2016-05-09 23:14:14 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1071,6 +1071,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   :defer t
   :init
   (setq org-src-fontify-natively t)
+  (setq org-replace-disputed-keys t)
   :config
   (org-babel-do-load-languages
    'org-babel-load-languages
