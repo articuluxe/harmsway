@@ -2,7 +2,7 @@
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Wednesday, June 10, 2015
 ;; Version: 1.2
-;; Modified Time-stamp: <2016-03-30 18:27:19 dharms>
+;; Modified Time-stamp: <2016-05-10 15:22:04 dan.harms>
 ;; Keywords: mock script
 
 ;;; Code:
@@ -52,7 +52,7 @@
          (list "\\<[A-Za-z0-9_]+@[[:alpha:]]+\\_>"
                '(0 font-lock-constant-face))
          ;; single quote strings
-         (list "'.*?'" '(0 font-lock-string-face))
+         (list "'.+?'" '(0 font-lock-string-face))
         ))
   (setq font-lock-defaults '(mock-mode-font-lock-keywords))
   (set (make-local-variable 'syntax-propertize-function)
@@ -80,7 +80,7 @@
 
 (defun mock-goto-line (n)
   "Go to a line in a mock script, exclusive of continuation lines."
-  (interactive "nGoto line: ")
+  (interactive "nGoto mock line: ")
   (goto-char (point-min))
   (while (> n 1)
     (unless (search-forward-regexp "\\\\$" (line-end-position) t)
@@ -89,4 +89,4 @@
 
 (provide 'xr-mock)
 
-;; xr-mock-mode.el ends here
+;;; xr-mock.el ends here
