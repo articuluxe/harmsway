@@ -394,6 +394,7 @@ S-<left/right> cycle TODO status
 M--, M-+      cycle TODO status (windmove-disputed)
 M-S-<up/down> move section
 M-S-<left/right> promote/demote section
+C-c C-q       add tags to headlines
 
 ** Links
 C-c C-l    insert link
