@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-04-21 08:32:45 dan.harms>
+;; Modified Time-stamp: <2016-05-12 17:04:46 dharms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -73,6 +73,35 @@ The returned property is not evaluated.  This overrides the function in
   "Return the function call of PROPERTY's value for the current
 profile `profile-current'."
   (funcall (get profile-current property) project-root-dir))
+
+(defun profile-soft-reset ()
+  "Reset the current profile to the default value.
+This does not otherwise remove the profile itself from memory."
+  (interactive)
+  ;; kill-local-variable won't do it due to permanent-local property
+  (setq profile-current
+        (default-value 'profile-current)))
+
+(defun profile--remove-profile (profile)
+  "Delete the profile PROFILE, which can be a symbol or string (name)."
+  (unintern profile profile-obarray))
+
+(defun profile--delete-profile-from-alist (profile)
+  "Remove a profile PROFILE from the internal data structure."
+  (setq profile-path-alist
+        (seq-remove
+         (lambda(elt)
+           ;; string-equal handles a symbol using its print-name
+           (string-equal (cdr elt) profile))
+         profile-path-alist)))
+
+(defun profile-hard-reset ()
+  "Remove all traces of current profile."
+  (interactive)
+  (profile--delete-profile-from-alist profile-current)
+  (profile--remove-profile profile-current)
+  (profile-soft-reset)
+  )
 
 ;;;###autoload
 (defun profile-open-dired-on-dir ()
