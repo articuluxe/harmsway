@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, April 15, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-04-26 08:27:55 dharms>
+;; Modified Time-stamp: <2016-05-13 17:33:13 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: environment utils
 
@@ -26,15 +26,26 @@
 
 ;;; Code:
 
-(defun read-file-into-list-of-lines(file)
+(defun read-file-into-list-of-lines (file)
   "Read a file into a list of strings split line by line."
   (interactive)
   (with-temp-buffer
     (insert-file-contents file)
     (split-string (buffer-string) "\n" t)))
 
-(defun load-environment-variable-from-file(var file &optional sep)
-  "Loads each line from the specified file into the environment var."
+(defun load-environment-variables-from-file (file)
+  "Load each line from the specified file, of the form `var=val'.
+For each line, sets environment variable `var' equal to `val'."
+  (interactive "fChoose the file: ")
+  (mapc (lambda(line)
+          (when (string-match "\\(.+\\)=\\(.+\\)" line)
+            (setenv (match-string-no-properties 1 line)
+                    (match-string-no-properties 2 line))))
+        (read-file-into-list-of-lines file)))
+
+(defun load-environment-variable-from-file (var file &optional sep)
+  "Load each line from the FILE into the environment variable VAR.
+SEP can be a separator."
   (interactive)
   (unless sep (setq sep path-separator))
   (setenv var (concat (mapconcat 'convert-standard-filename
