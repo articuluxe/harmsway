@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-05-12 22:56:48 dharms>
+;; Modified Time-stamp: <2016-05-13 15:25:10 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -384,7 +384,10 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 ;; Insertion while text is selected deletes the selected text
 (delete-selection-mode 1)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; region-state ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package region-state :demand t :config (region-state-mode 1))
+(use-package region-state
+  :disabled t
+  :demand t
+  :config (region-state-mode 1))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; multi-line ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
