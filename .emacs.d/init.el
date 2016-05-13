@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-05-09 23:14:14 dharms>
+;; Modified Time-stamp: <2016-05-12 22:56:48 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -873,6 +873,17 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (isearch-exit)
   (goto-char isearch-other-end))
 (define-key isearch-mode-map [(control return)] #'my/isearch-exit-other-end)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; plur ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package
+  plur
+  :if (not (version< emacs-version "24.4"))
+  :bind (("M-s M-s" . plur-isearch-forward)
+        ("M-s M-a" . plur-replace)
+        ("M-s M-q" . plur-query-replace)
+        :map isearch-mode-map
+        ("C-p" . plur-isearch-forward)
+        ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; occur ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (global-set-key (kbd "M-s M-o") 'multi-occur-in-matching-buffers)
