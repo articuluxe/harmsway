@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-05-12 17:04:46 dharms>
+;; Modified Time-stamp: <2016-05-13 17:14:29 dharms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -144,8 +144,8 @@ These could come from various sources."
 basename, such as `mybase'."
   (let ((base (file-name-base name)))
     (when
-      (string-match "\\.?\\(.*\\)" base)
-    (match-string 1 base))))
+        (string-match "\\.?\\(.*\\)" base)
+      (match-string 1 base))))
 
 ;;;###autoload
 (defun profile-collect-include-files (alist &optional prepend-remote)
@@ -169,16 +169,16 @@ results."
 (defun profile-set-include-files ()
   "Set useful include file settings for use in programming modes,
 according to the current profile."
-    (profile-current-put 'include-files
-                         (profile-collect-include-files
-                          (profile-current-get 'ctags-alist)))
-    (profile-current-put 'include-ff-files
-                         ;; ff-search-directories doesn't need a trailing
-                         ;; slash
-                         (mapcar 'directory-file-name
-                                 (profile-collect-include-files
-                                  (profile-current-get 'ctags-alist) t)))
-    )
+  (profile-current-put 'include-files
+                       (profile-collect-include-files
+                        (profile-current-get 'ctags-alist)))
+  (profile-current-put 'include-ff-files
+                       ;; ff-search-directories doesn't need a trailing
+                       ;; slash
+                       (mapcar 'directory-file-name
+                               (profile-collect-include-files
+                                (profile-current-get 'ctags-alist) t)))
+  )
 
 ;;;###autoload
 (defun profile-collect-grep-dirs ()
@@ -292,10 +292,10 @@ actions include setting include directories."
             (mapcar (lambda(x) (concat "-I" (expand-file-name x)))
                     (profile-current-get 'include-files))
             (list `,(concat "-I"
-                     (profile-current-get 'remote-prefix)
-                     (directory-file-name
-                      (expand-file-name
-                       (profile-current-get 'project-root-dir)))))
+                            (profile-current-get 'remote-prefix)
+                            (directory-file-name
+                             (expand-file-name
+                              (profile-current-get 'project-root-dir)))))
             (profile-current-get 'compiler-include-dirs)
             )))
     ;; set flycheck for c++
@@ -391,9 +391,9 @@ assigning a profile."
   (when (file-remote-p dir)
     (with-parsed-tramp-file-name dir file
       `( ,file-host ,file-localname
-                   ,(tramp-make-tramp-file-name
-                     file-method file-user file-host "")
-                   ))))
+                    ,(tramp-make-tramp-file-name
+                      file-method file-user file-host "")
+                    ))))
 
 (defun profile--compute-remote-subdir-stem ()
   "Helper function that computes a remote project's stem in a format
@@ -471,7 +471,12 @@ path, possibly including a `~' representing the user's home directory."
     (before before-find-file-noselect-1 activate)
   "Set the buffer local variable `profile-current' right after the creation
 of the buffer."
-  (with-current-buffer buf
+  (profile--init buf filename))
+
+(defun profile--init (buffer filename)
+  "Initialize a profile, in BUFFER, visiting FILENAME."
+  (interactive "bChoose a buffer: \nfChoose a file: ")
+  (with-current-buffer buffer
     (make-local-variable 'profile-current)
     (put 'profile-current 'permanent-local t)
     (setq profile-current
@@ -495,7 +500,7 @@ of the buffer."
                  (string-match "\\.eprof$" root-file)
                  (not (string-equal root-dir
                                     (profile-current-get 'project-root-dir))))
-        ;; apparently this is a new profile not yet loaded into the path
+        ;; apparently this is a new profile not yet initialized
         (load-file root-file)
         ;; todo: this doesn't work; when remote, project-root-dir is
         ;; absolute, and abbreviate-file-name doesn't transform remote
@@ -505,6 +510,10 @@ of the buffer."
                 (replace-regexp-in-string
                  "/home/dan.harms" ;(shell-command "echo ~")
                  "~" remote-localname t)))
+        (message "drh Loading profile host:%s prefix:%s remotename:%s ~:%s HOME:%s root-dir:%s regexp:%s"
+                 remote-host remote-prefix remote-localname
+                 (shell-command-to-string "echo ~")
+                 (getenv "HOME") root-dir (file-relative-name root-dir "~"))
         (setq profile-basename
               (profile-find-profile-basename root-file))
         ;; update the path alist to activate any new profiles
