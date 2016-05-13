@@ -2,6 +2,7 @@
 # .bash_host
 
 # User specific aliases and functions
+export SITE=xr
 
 python=/opt/anaconda-python-2.7.8/bin
 # what `use cdh5 prepends to $PATH:
@@ -17,9 +18,10 @@ export CSTDLIB_ROOT=/usr
 export CSTDLIB_INC=$CSTDLIB_ROOT/include/c++/4.8.2
 export CSTDLIB_BIN=$CSTDLIB_ROOT/bin
 
-# # source the site file
-# if [ -f ~/.bash_xr ]; then
-#    . ~/.bash_xr
+# on this host we don't need to
+# source the site file
+# if [ -f ~/.bash_$SITE ]; then
+#    . ~/.bash_$SITE
 # fi
 
 vm()

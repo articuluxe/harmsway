@@ -5,7 +5,7 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Monday, May 18, 2015
 # Version: 1.0
-# Modified Time-stamp: <2016-03-23 16:57:04 dan.harms>
+# Modified Time-stamp: <2016-05-12 17:26:27 dharms>
 # Modified by: Dan Harms
 # Keywords: configuration
 
@@ -14,7 +14,7 @@ manifest=.bk_manifest
 backup=emacs_bk.tar
 os=$(uname)
 host=$(hostname -s)
-site=xr
+site=$SITE
 input=
 
 function backup_file

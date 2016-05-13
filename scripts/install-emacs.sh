@@ -5,7 +5,7 @@
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Saturday, July 25, 2015
 # Version: 1.0
-# Modified Time-stamp: <2016-04-19 08:33:07 dan.harms>
+# Modified Time-stamp: <2016-05-12 17:14:58 dharms>
 # Modified by: Dan Harms
 # Keywords: configuration
 
@@ -40,8 +40,8 @@ $tar c"$verbose"f $int --exclude=*.elc .emacs.d
 if [ -d host/$host/.emacs.d ] ; then
    $tar u"$verbose"f $int --transform=s%host/$host%% host/$host/.emacs.d
 fi
-if [ -n $site -a -d site/$site/.emacs.d ] ; then
-   $tar u"$verbose"f $int --transform=s%site/$site%% site/$site/.emacs.d
+if [ -n $SITE -a -d site/$SITE/.emacs.d ] ; then
+   $tar u"$verbose"f $int --transform=s%site/$SITE%% site/$SITE/.emacs.d
 fi
 mv -f $int ~
 

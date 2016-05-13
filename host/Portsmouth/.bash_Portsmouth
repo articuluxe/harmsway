@@ -1,9 +1,11 @@
 # -*- Mode: sh -*-
 # .bash_Portsmouth
 
+export SITE=talbot
+
 # source the host file
-if [ -f ~/.bash_talbot ]; then
-   . ~/.bash_talbot
+if [ -f ~/.bash_$SITE ]; then
+   . ~/.bash_$SITE
 fi
 
 # python=/opt/anaconda-python-2.7.8/bin

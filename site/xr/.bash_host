@@ -2,6 +2,8 @@
 # .bash_host
 
 # User specific aliases and functions
+export SITE=xr
+export LHOME=/lhome/dan.harms
 
 python=/opt/anaconda-python-2.7.8/bin
 # what `use cdh5 prepends to $PATH:
@@ -18,14 +20,19 @@ export CSTDLIB_INC=$CSTDLIB_ROOT/include/c++/4.9.1
 export CSTDLIB_BIN=$CSTDLIB_ROOT/bin
 
 # source the site file
-if [ -f ~/.bash_xr ]; then
-   . ~/.bash_xr
+if [ -f ~/.bash_$SITE ]; then
+   . ~/.bash_$SITE
 fi
 
 vm()
 {
    ssh -A chihq-dev-02d-1
    # 10.10.102.109
+}
+
+lhome()
+{
+   cd $LHOME
 }
 
 use_gcc()

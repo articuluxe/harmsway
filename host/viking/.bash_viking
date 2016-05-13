@@ -1,6 +1,7 @@
 # -*- Mode: sh -*-
 # .bash_viking
 
+export SITE=talbot
 python=~/anaconda2/bin
 dart=/usr/local/dart/1.15.0/dart-sdk
 cask=$HOME/.cask/bin
@@ -13,8 +14,8 @@ export CSTDLIB_BIN=/usr/local/bin
 export LD_LIBRARY_PATH=/usr/local/lib
 
 # source the site file
-if [ -f ~/.bash_talbot ]; then
-   . ~/.bash_talbot
+if [ -f ~/.bash_$SITE ]; then
+   . ~/.bash_$SITE
 fi
 
 

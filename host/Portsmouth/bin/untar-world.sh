@@ -5,7 +5,7 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Monday, May 18, 2015
 # Version: 1.0
-# Modified Time-stamp: <2016-03-29 06:00:56 dharms>
+# Modified Time-stamp: <2016-05-12 17:21:00 dharms>
 # Keywords: configuration
 
 tar=$TAR
@@ -13,7 +13,7 @@ manifest=.bk_manifest
 backup=emacs_bk.tar
 os=$(uname)
 host=$(hostname -s)
-site=talbot
+site=$SITE
 input=
 
 function backup_file

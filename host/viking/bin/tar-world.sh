@@ -5,14 +5,14 @@
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Friday, May 29, 2015
 # Version: 1.0
-# Modified Time-stamp: <2016-01-16 15:22:19 dharms>
+# Modified Time-stamp: <2016-05-12 17:19:58 dharms>
 # Modified by: Dan Harms
 # Keywords: configuration
 
 tar=$TAR
 os=$(uname)
 host=$(hostname -s)
-site=talbot
+site=$SITE
 dest=world.tar
 verbose=
 
