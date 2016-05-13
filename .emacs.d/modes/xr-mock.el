@@ -2,7 +2,7 @@
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Wednesday, June 10, 2015
 ;; Version: 1.2
-;; Modified Time-stamp: <2016-05-10 15:22:04 dan.harms>
+;; Modified Time-stamp: <2016-05-13 09:51:10 dan.harms>
 ;; Keywords: mock script
 
 ;;; Code:
@@ -39,7 +39,7 @@
                '(0 font-lock-builtin-face))
          (list "\\_<\\(To\\|From\\)\\(Opt\\|Cmd\\)?\\>"
                '(0 font-lock-keyword-face))
-         (list "\\(CommandConsole\\)"
+         (list "\\(CommandConsole\\|SetValidLogin\\|SetInvalidLogin\\)"
                '(0 font-lock-keyword-face))
          ;; functions
          (list "@@\\sw+=\\([^(]+()\\)"
