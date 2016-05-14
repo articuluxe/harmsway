@@ -4,6 +4,7 @@
 
 ;; Author: Oleh Krehel <ohwoeowho@gmail.com>
 ;; URL: https://github.com/abo-abo/swiper
+;; Version: 0.8.0
 ;; Package-Requires: ((emacs "24.1"))
 ;; Keywords: matching
 
@@ -175,6 +176,15 @@ Only \"./\" and \"../\" apply here. They appear in reverse order."
   "Set CMD extra exit points to ACTIONS."
   (setq ivy--actions-list
         (plist-put ivy--actions-list cmd actions)))
+
+(defun ivy-add-actions (cmd actions)
+  "Add CMD extra exit points to ACTIONS."
+  (setq ivy--actions-list
+        (plist-put ivy--actions-list cmd
+                   (delete-dups
+                    (append
+                     actions
+                     (plist-get ivy--actions-list cmd))))))
 
 (defvar ivy--display-transformers-list nil
   "A list of str->str transformers per command.")
@@ -1129,6 +1139,17 @@ Prioritize directories."
         nil
       (string< x y))))
 
+(declare-function ido-file-extension-lessp "ido")
+
+(defun ivy-sort-file-function-using-ido (x y)
+  "Compare two files X and Y using `ido-file-extensions-order'
+
+This function is suitable as a replacement for
+`ivy-sort-file-function-default' in `ivy-sort-functions-alist'."
+  (if (and (bound-and-true-p ido-file-extensions-order))
+      (ido-file-extension-lessp x y)
+    (ivy-sort-file-function-default x y)))
+
 (defcustom ivy-sort-functions-alist
   '((read-file-name-internal . ivy-sort-file-function-default)
     (internal-complete-buffer . nil)
@@ -1234,6 +1255,7 @@ This variable is let-bound to nil by functions that take care of
 the restoring themselves.")
 
 ;;** Entry Point
+;;;###autoload
 (cl-defun ivy-read (prompt collection
                     &key
                       predicate require-match initial-input
@@ -1416,7 +1438,9 @@ This is useful for recursive `ivy-read'."
                                 :test #'equal)))
                (setq coll (all-completions "" collection predicate))))
             ((eq collection 'read-file-name-internal)
-             (if (and initial-input (file-directory-p initial-input))
+             (if (and initial-input
+                      (not (equal initial-input ""))
+                      (file-directory-p initial-input))
                  (progn
                    (setq ivy--directory initial-input)
                    (setq initial-input nil))
@@ -2146,14 +2170,21 @@ CANDIDATES are assumed to be static."
                           ivy--old-cands)))
                       (t
                        (ivy--re-filter re candidates)))))
-        (ivy--recompute-index name re-str cands)
+        (if (memq (cdr (assoc (ivy-state-caller ivy-last) ivy-index-functions-alist))
+                  '(ivy-recompute-index-swiper
+                    ivy-recompute-index-swiper-async))
+            (progn
+              (ivy--recompute-index name re-str cands)
+              (setq ivy--old-cands (ivy--sort name cands)))
+          (setq ivy--old-cands (ivy--sort name cands))
+          (ivy--recompute-index name re-str ivy--old-cands))
         (setq ivy--old-re
               (if (eq ivy--regex-function 'ivy--regex-ignore-order)
                   re
-                (if cands
+                (if ivy--old-cands
                     re-str
                   "")))
-        (setq ivy--old-cands (ivy--sort name cands))))))
+        ivy--old-cands))))
 
 (defun ivy--set-candidates (x)
   "Update `ivy--all-candidates' with X."
@@ -2440,7 +2471,8 @@ SEPARATOR is used to join the candidates."
 
 (defun ivy--format-minibuffer-line (str)
   (let ((start
-         (if (and (memq (ivy-state-caller ivy-last) '(counsel-git-grep))
+         (if (and (memq (ivy-state-caller ivy-last)
+                        '(counsel-git-grep counsel-ag counsel-pt))
                   (string-match "^[^:]+:[^:]+:" str))
              (match-end 0)
            0))
@@ -2693,7 +2725,7 @@ BUFFER may be a string or nil."
     "kill")
    ("j"
     ivy--switch-buffer-other-window-action
-    "other")
+    "other window")
    ("r"
     ivy--rename-buffer-action
     "rename")))

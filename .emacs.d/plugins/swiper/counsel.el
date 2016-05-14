@@ -4,7 +4,8 @@
 
 ;; Author: Oleh Krehel <ohwoeowho@gmail.com>
 ;; URL: https://github.com/abo-abo/swiper
-;; Package-Requires: ((emacs "24.1") (swiper "0.4.0"))
+;; Version: 0.8.0
+;; Package-Requires: ((emacs "24.1") (swiper "0.8.0"))
 ;; Keywords: completion, matching
 
 ;; This file is part of GNU Emacs.
@@ -636,7 +637,7 @@ The libraries are offered from `load-path'."
   (condition-case nil
       (progn
         (mapc #'disable-theme custom-enabled-themes)
-        (load-theme (intern x))
+        (load-theme (intern x) t)
         (when (fboundp 'powerline-reset)
           (powerline-reset)))
     (error "Problem loading theme %s" x)))
@@ -1096,7 +1097,7 @@ done") "\n" t)))
 (add-to-list 'ivy-ffap-url-functions 'counsel-emacs-url-p)
 (ivy-set-actions
  'counsel-find-file
- '(("f" find-file-other-window "other window")))
+ '(("j" find-file-other-window "other window")))
 
 (defcustom counsel-find-file-at-point nil
   "When non-nil, add file-at-point to the list of candidates."
@@ -2096,7 +2097,8 @@ And insert it into the minibuffer. Useful during
                 (imenu . counsel-imenu)
                 (load-library . counsel-load-library)
                 (load-theme . counsel-load-theme)
-                (yank-pop . counsel-yank-pop)))
+                (yank-pop . counsel-yank-pop)
+                (info-lookup-symbol . counsel-info-lookup-symbol)))
       (define-key map (vector 'remap (car binding)) (cdr binding)))
     map)
   "Map for `counsel-mode'. Remaps built-in functions to counsel
