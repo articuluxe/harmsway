@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-05-13 15:25:10 dan.harms>
+;; Modified Time-stamp: <2016-05-14 00:12:23 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -908,6 +908,12 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (add-to-list 'my/completion-framework-alist
                (cons "ivy" 'my/activate-ivy))
   (global-set-key "\e\eii" 'ivy-resume)
+  (defun ivy-insert-action (x)
+    (with-ivy-window
+      (insert x)))
+  (ivy-set-actions
+   t
+   '(("I" ivy-insert-action "insert")))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; counsel ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
