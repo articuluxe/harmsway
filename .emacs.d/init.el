@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-05-14 00:12:23 dharms>
+;; Modified Time-stamp: <2016-05-16 01:31:01 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1099,7 +1099,9 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
      (sh . t)
      (python . t)
      (C . t)
-     )))
+     ))
+  (require 'ox-md)                      ;markdown export
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dired ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package dired
@@ -1205,7 +1207,12 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; neotree ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package neotree :bind ("C-c 0n" . neotree-toggle))
+(use-package neotree
+  :bind ("C-c 0n" . neotree-toggle)
+  :init
+  (setq neo-show-hidden-files t)
+  (setq neo-theme 'arrow)               ;or 'ascii
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; deft ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package deft
