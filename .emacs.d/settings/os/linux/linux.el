@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-03-31 01:04:16 dharms>
+;; Modified Time-stamp: <2016-05-16 01:33:54 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -25,6 +25,12 @@
 ;;
 
 ;;; Code:
+
+;; dired
+(setq-default
+ dired-listing-switches
+ (concat (default-value 'dired-listing-switches)
+         " --group-directories-first"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Process Viewer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package proced :bind ("C-c 0p" . proced))

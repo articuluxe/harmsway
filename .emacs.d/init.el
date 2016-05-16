@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-05-16 01:31:01 dharms>
+;; Modified Time-stamp: <2016-05-16 01:31:57 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1122,16 +1122,18 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   ;; omit dot-files in dired-omit-mode (C-x M-o)
   (setq dired-omit-files (concat dired-omit-files "\\|^\\..+$"))
   (setq ls-lisp-dirs-first t)
+  (setq dired-recursive-copies 'always)
+  (setq dired-recursive-deletes 'always)
+  ;; next window's dired window used as target for current window operations
+  (setq dired-dwim-target t)
+  ;; search only in filenames
+  (setq dired-isearch-filenames t)
   (use-package dired-filter)
   (define-key dired-mode-map "." dired-filter-mark-map)
   ;; sorting
   (use-package dired-sort)
   (setq-default dired-listing-switches "-alhvGg")
   (put 'dired-find-alternate-file 'disabled nil)
-  ;; next window's dired window used as target for current window operations
-  (setq dired-dwim-target t)
-  ;; search only in filenames
-  (setq dired-isearch-filenames t)
 
   (defun my/dired-sort()
     "Toggle sorting in dired buffers."
