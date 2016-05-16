@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, April 15, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-05-13 17:33:13 dharms>
+;; Modified Time-stamp: <2016-05-16 06:11:02 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: environment utils
 
@@ -27,14 +27,14 @@
 ;;; Code:
 
 (defun read-file-into-list-of-lines (file)
-  "Read a file into a list of strings split line by line."
+  "Read FILE into a list of strings split line by line."
   (interactive)
   (with-temp-buffer
     (insert-file-contents file)
     (split-string (buffer-string) "\n" t)))
 
 (defun load-environment-variables-from-file (file)
-  "Load each line from the specified file, of the form `var=val'.
+  "Load each line from FILE, of the form `var=val'.
 For each line, sets environment variable `var' equal to `val'."
   (interactive "fChoose the file: ")
   (mapc (lambda(line)
@@ -44,7 +44,7 @@ For each line, sets environment variable `var' equal to `val'."
         (read-file-into-list-of-lines file)))
 
 (defun load-environment-variable-from-file (var file &optional sep)
-  "Load each line from the FILE into the environment variable VAR.
+  "Load into the environment variable VAR each line from the FILE.
 SEP can be a separator."
   (interactive)
   (unless sep (setq sep path-separator))
@@ -53,12 +53,13 @@ SEP can be a separator."
                                  sep) sep (getenv var))))
 
 (defun my/load-environment-variables-from-file (dir &optional append-exec-path)
-  "Load a set of predetermined environment variables from a location on disk,
-given by DIR.  If APPEND_EXEC_PATH is non-nil, the existing
-exec-path will have any new elements prepended to it; otherwise,
-the default is to set the final element of exec-path to the
-exec-directory.  The point is that subsequent calls may not want
-to overwrite the final element."
+  "Update a series of predetermined environment variables according
+to several files that may be present under DIR.  If
+APPEND_EXEC_PATH is non-nil, the existing exec-path will have any
+new elements prepended to it; otherwise, the default is to set
+the final element of `exec-path' to the exec-directory.  The
+point is that subsequent calls may not want to overwrite the
+final element."
   (let ((path-file (concat dir "path"))
         (include-file (concat dir "include"))
         (lib-file (concat dir "lib"))
