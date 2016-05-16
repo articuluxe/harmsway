@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-05-16 01:31:57 dharms>
+;; Modified Time-stamp: <2016-05-16 11:04:17 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -712,7 +712,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (setq shackle-select-reused-windows nil)
   (setq shackle-rules
         '(
-          (occur-mode :select nil)
+          (occur-mode :popup t :select nil :align bottom)
           (grep-mode :popup t :select nil :align bottom)
           ("*Help*" :popup t :select t)
           (diff-mode :popup t :select t)
