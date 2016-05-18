@@ -5,7 +5,7 @@
 ;; Author: Artur Malabarba <emacs@endlessparentheses.com>
 ;; URL: https://github.com/Malabarba/beacon
 ;; Keywords: convenience
-;; Version: 1.2.1
+;; Version: 1.3.0
 ;; Package-Requires: ((seq "2.14"))
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -166,6 +166,10 @@ predictable ways, when the blink would be more distracting
 than helpful.."
   :type '(repeat symbol))
 
+(defcustom beacon-before-blink-hook nil
+  "Hook run immediately before blinking the beacon."
+  :type 'hook)
+
 
 ;;; Internal variables
 (defvar beacon--window-scrolled nil)
@@ -321,6 +325,7 @@ unconditionally (even if `beacon-mode' is disabled), and this can
 be invoked as a user command or called from lisp code."
   (interactive)
   (beacon--vanish)
+  (run-hooks 'beacon-before-blink-hook)
   (beacon--shine)
   (setq beacon--timer
         (run-at-time beacon-blink-delay
