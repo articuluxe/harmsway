@@ -620,6 +620,9 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
  :bind (("C-;" . iedit-mode)
         ("M-' ;" . iedit-mode)
         ))
+(use-package
+ iedit-rect
+ :bind ("C-x r RET" . iedit-rectangle-mode))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; idle-highlight ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package idle-highlight-mode
