@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2013-10-07 11:26:05 Victor Ren>
+;; Time-stamp: <2016-05-17 12:25:04 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous refactoring
 ;; Version: 0.97
@@ -161,7 +161,7 @@ An example of how to use this variable: todo")
 
 (defvar iedit-help-map
   (let ((map (make-sparse-keymap)))
-    (define-key map (char-to-string help-char) 'iedit-help-for-help)
+    (define-key map (vector (event-convert-list `(,help-char))) 'iedit-help-for-help)
     (define-key map [help] 'iedit-help-for-help)
     (define-key map [f1] 'iedit-help-for-help)
     (define-key map "?" 'iedit-help-for-help)
@@ -219,10 +219,17 @@ This is like `describe-bindings', but displays only Iedit keys."
 
 ;;; Default key bindings:
 (when iedit-toggle-key-default
-  (define-key global-map iedit-toggle-key-default 'iedit-mode)
-  (define-key isearch-mode-map iedit-toggle-key-default 'iedit-mode-from-isearch)
-  (define-key esc-map iedit-toggle-key-default 'iedit-execute-last-modification)
-  (define-key help-map iedit-toggle-key-default 'iedit-mode-toggle-on-function))
+  (let ((key-def (lookup-key (current-global-map) iedit-toggle-key-default)))
+    (if key-def
+        (display-warning 'iedit (format "Iedit default key %S is occupied by %s."
+                                        (key-description iedit-toggle-key-default)
+                                        key-def)
+                         :warning)
+      (define-key global-map iedit-toggle-key-default 'iedit-mode)
+      (define-key isearch-mode-map iedit-toggle-key-default 'iedit-mode-from-isearch)
+      (define-key esc-map iedit-toggle-key-default 'iedit-execute-last-modification)
+      (define-key help-map iedit-toggle-key-default 'iedit-mode-toggle-on-function)
+      (message "Iedit default key binding is %s" (key-description iedit-toggle-key-default)))))
 
 ;; Avoid to restore Iedit mode when restoring desktop
 (add-to-list 'desktop-minor-mode-handlers
@@ -238,6 +245,8 @@ This is like `describe-bindings', but displays only Iedit keys."
     (define-key map (kbd "M-I") 'iedit-restrict-current-line)
     (define-key map (kbd "M-{") 'iedit-expand-up-a-line)
     (define-key map (kbd "M-}") 'iedit-expand-down-a-line)
+    (define-key map (kbd "M-[") 'iedit-expand-up-to-occurrence)
+    (define-key map (kbd "M-]") 'iedit-expand-down-to-occurrence)
     (define-key map (kbd "M-G") 'iedit-apply-global-modification)
     (define-key map (kbd "M-C") 'iedit-toggle-case-sensitive)
     map)
@@ -246,7 +255,7 @@ This is like `describe-bindings', but displays only Iedit keys."
 (defvar iedit-mode-keymap
   (let ((map (make-sparse-keymap)))
     (set-keymap-parent map iedit-lib-keymap)
-    (define-key map (char-to-string help-char) iedit-help-map)
+    (define-key map (vector (event-convert-list `(,help-char))) iedit-help-map)
     (define-key map [help] iedit-help-map)
     (define-key map [f1] iedit-help-map)
     (define-key map (kbd "M-;") 'iedit-toggle-selection)
@@ -529,6 +538,8 @@ the initial string globally."
   "Restrict Iedit mode to current line."
   (interactive)
   (iedit-restrict-region (iedit-char-at-bol) (iedit-char-at-eol))
+  (setq iedit-num-lines-to-expand-up 0
+        iedit-num-lines-to-expand-down 0)
   (message "Restricted to current line, %d match%s."
            (length iedit-occurrences-overlays)
            (if (= 1 (length iedit-occurrences-overlays)) "" "es")))
@@ -582,6 +593,34 @@ the region back up one line."
   (interactive "P")
   (iedit-expand-by-a-line 'bottom
                           (if arg -1 1)))
+
+(defun iedit-expand-down-to-occurrence ()
+  "Expand the search region downwards until reaching a new occurrence.
+If no such occurrence can be found, throw an error."
+  (interactive)
+  (iedit-expand-to-occurrence t))
+
+(defun iedit-expand-up-to-occurrence ()
+  "Expand the search region upwards until reaching a new occurrence.
+If no such occurrence can be found, throw an error."
+  (interactive)
+  (iedit-expand-to-occurrence nil))
+
+(defun iedit-expand-to-occurrence (forward)
+  "Expand to next or previous occurrence."
+  (let ((pos (iedit-add-occurrence-overlay
+                (iedit-regexp-quote (iedit-current-occurrence-string))
+                (if forward
+                    (1+ (iedit-last-occurrence))
+                  (iedit-first-occurrence))
+                forward)))
+    (when pos
+      (goto-char pos)
+      (setq iedit-mode (propertize
+                        (concat " Iedit:" (number-to-string
+                                           (length iedit-occurrences-overlays)))
+                        'face 'font-lock-warning-face))
+      (force-mode-line-update))))
 
 (defun iedit-restrict-region (beg end &optional inclusive)
   "Restricting Iedit mode in a region."
