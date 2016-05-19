@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-05-13 17:14:29 dharms>
+;; Modified Time-stamp: <2016-05-19 07:46:47 dharms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -185,12 +185,9 @@ according to the current profile."
   "Extract the list of include directories according to the current
 profile."
   (mapcar (lambda (path)
-            (let ((full
-                   (if (file-name-absolute-p path)
-                       path
-                     (concat
-                      (profile-current-get 'project-root-dir) path))))
-              (cons path full)))
+            (if (and path (f-absolute? path))
+                path
+              (concat (profile-current-get 'project-root-dir) path)))
           (mapcar 'cadr (profile-current-get 'ctags-alist))))
 
 ;;;###autoload
@@ -198,9 +195,10 @@ profile."
   "Set include directory settings useful for grep, according to the
 current profile."
   (profile-current-put 'grep-dirs
-                       (append
-                        (profile-collect-grep-dirs)
-                        (list (profile-current-get 'project-root-dir)))))
+                       (delete-dups
+                        (append
+                         (profile-collect-grep-dirs)
+                         (list (profile-current-get 'project-root-dir))))))
 
 ;;;###autoload
 (defun profile-collect-sml-regexps (alist)
@@ -213,7 +211,7 @@ modeline replacement pair for sml, see `sml/replacer-regexp-list'."
               (cons (if (file-name-absolute-p path)
                         path
                       (concat
-                       (profile-current-get 'project-root-dir) path))
+                       (f-short (profile-current-get 'project-root-dir)) path))
                     (concat (upcase title) ":"))))
           alist))
 
@@ -258,7 +256,7 @@ some convenience registers to access the build-sub-dirs."
   ;; and another to go to the first (priveleged) src-dir
   (when (< 0 (length (profile-current-get 'grep-dirs)))
     (set-register
-     ?c (cons 'file (cdr (car (profile-current-get 'grep-dirs))))))
+     ?c (cons 'file (car (profile-current-get 'grep-dirs)))))
   )
 
 (defun profile--gather-compiler-includes (compiler)
@@ -344,6 +342,7 @@ like any of the following: `.eprof', `my.eprof', `.my.eprof'."
                     (setq profile--root-file (car res))))))
            (find-file-upwards dir "\\sw+\\.eprof$")
            )))
+    (message "drh profile-find-root found root:%s, dir:%s, absolute:%s" root dir absolute)
     (if root
         (if absolute
             (cons profile--root-file (expand-file-name root))
@@ -375,8 +374,8 @@ remote prefix."
 (setq etags-select-insert-file-name 'profile--insert-file-name)
 
 ;; called when a file is opened and assigned a profile
-(defun profile--on-file-opened () "Initialize a file after opening and
-assigning a profile."
+(defun profile--on-file-opened ()
+  "Initialize a file after opening and assigning a profile."
        (when (and profile-current
                   (profile-current-get 'on-file-open)
                   (fboundp (intern-soft
@@ -437,6 +436,15 @@ path, possibly including a `~' representing the user's home directory."
                (profile-current-get 'project-root-dir)
                ))))
 
+(defun profile--abbreviate-remote-root (remote-name)
+  "Abbreviate REMOTE-NAME, a remote project root, as necessary.
+It is usually preferable to have a short project prefix.  This
+may just come down to substituting `~' for the home directory.
+Note that `abbreviate-file-name' doesn't work for remote paths."
+  (let ((home
+         (string-trim (shell-command-to-string "echo ~"))))
+    (replace-regexp-in-string home "~" remote-name t)))
+
 ;; called when a profile is initialized
 (defun profile--on-profile-init (remote-host remote-prefix)
   "Initialize a loaded profile."
@@ -458,6 +466,7 @@ path, possibly including a `~' representing the user's home directory."
            'tags-dir
            (profile--compute-tags-dir
             (concat remote-prefix root)))))
+      (message "drh set tags-dir:%s" (profile-current-get 'tags-dir))
       (profile--log-profile)
       ;; if there's a valid init function, call it
       (when (and (profile-current-get 'on-profile-init)
@@ -482,7 +491,8 @@ of the buffer."
     (setq profile-current
           (intern-soft (profile-find-path-alist
                         (expand-file-name filename)) profile-obarray))
-    (let* ((root (profile-find-root (file-name-directory filename)))
+    (message "drh profile-init filename:%s dir:%s" filename (file-name-directory filename))
+    (let* ((root (profile-find-root (file-name-directory filename) t)) ;drh
            (curr (profile-current-get 'project-root-dir))
            (root-file (car root))
            (root-dir (cdr root))
@@ -502,30 +512,22 @@ of the buffer."
                                     (profile-current-get 'project-root-dir))))
         ;; apparently this is a new profile not yet initialized
         (load-file root-file)
-        ;; todo: this doesn't work; when remote, project-root-dir is
-        ;; absolute, and abbreviate-file-name doesn't transform remote
-        ;; names
-        (when remote-properties
-          (setq root-dir                ;HACK!!!!!
-                (replace-regexp-in-string
-                 "/home/dan.harms" ;(shell-command "echo ~")
-                 "~" remote-localname t)))
+        (setq profile-basename
+              (profile-find-profile-basename root-file))
         (message "drh Loading profile host:%s prefix:%s remotename:%s ~:%s HOME:%s root-dir:%s regexp:%s"
                  remote-host remote-prefix remote-localname
                  (shell-command-to-string "echo ~")
                  (getenv "HOME") root-dir (file-relative-name root-dir "~"))
-        (setq profile-basename
-              (profile-find-profile-basename root-file))
-        ;; update the path alist to activate any new profiles
-        (add-to-list 'profile-path-alist
-                     (cons (file-relative-name root-dir "~")
-                           profile-basename))
+        (add-to-list 'profile-path-alist (cons root-dir profile-basename))
         (setq profile-current
               (intern-soft (profile-find-path-alist
                             (expand-file-name filename))
                            profile-obarray))
         (unless (profile-current-get 'project-root-dir)
           (profile-current-put 'project-root-dir root-dir))
+        ;; in case root-dir was listed in the .eprof file as relative
+        (when (f-relative? (profile-current-get 'project-root-dir))
+          (profile-current-put 'project-name (f-long (profile-current-get 'project-root-dir))))
         (unless (profile-current-get 'project-name)
           (profile-current-put 'project-name profile-basename))
         )

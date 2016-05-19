@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Tuesday, April 12, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-04-19 18:15:38 dharms>
+;; Modified Time-stamp: <2016-05-17 23:45:31 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: grep coding
 
@@ -45,7 +45,9 @@ profile."
   (interactive "p")
   (let* ((root (profile-current-get 'project-root-dir))
          (dirs (profile-current-get 'grep-dirs))
-         (first (cdr (car dirs)))
+         (first (if (consp (car dirs))
+                    (cdr (car dirs))
+                  (car dirs)))
          (prompt "Grep root: ")
          (dir
           (cond ((or (null root) (null dirs) (= arg 64))
