@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-03-30 18:27:20 dharms>
+;; Modified Time-stamp: <2016-05-19 14:46:37 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -37,7 +37,7 @@
   (set (make-local-variable 'truncate-partial-width-windows) nil))
 (add-hook 'compilation-mode-hook 'my/compilation-mode-hook)
 
-(defun create-compile-command()
+(defun create-compile-command-standard()
   "Initialize the compile command."
   (interactive)
   (let ((root (or (profile-current-get 'project-root-dir) "./"))
@@ -58,7 +58,45 @@
             (concat root sub-dir) command)
     ))
 
-(defvar my/compile-command-fn #'create-compile-command)
+(defun create-compile-command-repo()
+  "Initialize the compile command."
+  (interactive)
+  (let ((root (or (profile-current-get 'project-root-dir) "./"))
+        (command (or (profile-current-get 'compile-sub-command) "make"))
+        (sub-dirs (profile-current-get 'build-sub-dirs))
+        sub-dir)
+    (when current-prefix-arg
+      (setq root (read-directory-name "Root dir:" root nil t))
+      (when (file-remote-p root)
+        (setq root (with-parsed-tramp-file-name root file file-localname))))
+    (setq sub-dir
+          (cond ((eq (length sub-dirs) 1) (car (car sub-dirs)))
+                ((null sub-dirs) "")
+                (t (funcall my/choose-func
+                            (mapcar 'car sub-dirs)
+                            "Compile in: "))))
+    (format "source %srepo-setup.sh && cd %s && %s"
+            root (concat root sub-dir) command)
+    ))
+
+(defvar my/compile-command-functions-list
+  (list 'create-compile-command-standard 'create-compile-command-repo)
+  "List of functions to create compilation commands.")
+
+(defvar my/compile-command-fn #'create-compile-command-standard
+  "Default create compilation command.")
+
+(defun my/choose-compile-command-function ()
+  "Choose a compile command among `my/compile-command-functions-list'."
+  (interactive)
+  (let* ((lst (mapcar (lambda(cmd) (cons (symbol-name cmd) cmd))
+                      my/compile-command-functions-list))
+         (res (funcall my/choose-func
+                      lst
+                      "Choose the compile command function: ")))
+    (when res
+      (setq my/compile-command-fn res))))
+
 (defvar should-close-compilation-window nil)
 
 (defun my/compile()
