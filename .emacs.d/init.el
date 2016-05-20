@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-05-20 08:51:25 dan.harms>
+;; Modified Time-stamp: <2016-05-21 08:18:01 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1466,6 +1466,10 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   :config
   (add-hook 'after-init-hook #'color-theme-initialize)
   )
+;; note: to alter custom-themes:
+;; (load theme 'zenburn t)
+;; (custom-theme-set-faces 'zenburn
+;;  `(default ((t (:foreground "red" :background "white")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; palette ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package palette)

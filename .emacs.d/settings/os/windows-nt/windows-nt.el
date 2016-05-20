@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-04-27 08:36:53 dan.harms>
+;; Modified Time-stamp: <2016-05-20 08:05:45 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -60,5 +60,8 @@
   (add-to-list 'full-edit-reject-patterns "^qrc")
   (add-to-list 'full-edit-reject-patterns "^ui")
   )
+
+;; compilation example:
+;; (setq compile-command "C:\VC\VCVARS.bat & devenv /nologo /build Debug proj.vcxproj")
 
 ;; windows-nt.el ends here
