@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-05-19 17:33:52 dharms>
+;; Modified Time-stamp: <2016-05-20 08:51:25 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -723,6 +723,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
           (apropos-mode :popup t :select t)
           (completion-list-mode :select nil)
           (compilation-mode :popup t :select nil :align bottom)
+          (command-history-mode :popup t :select t)
           ("*Shell Command Output*" :select t)
           ("COMMIT_EDITMSG" :select t)
           )
