@@ -40,6 +40,8 @@ git push origin :<branch>
 # ensure master is up to date, without checking it out
 git fetch --all
 git fetch origin master:master
+# list all branches created by me
+git for-each-ref --format=' %(authorname) %09 %(refname)' | grep Harms
 
 git clean -dfx
 
