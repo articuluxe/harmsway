@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-05-16 11:04:17 dan.harms>
+;; Modified Time-stamp: <2016-05-19 17:33:52 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -113,6 +113,7 @@
   ;; altering movement commands to use visual lines rather than logical ones.
   ;; (setq truncate-lines nil)
   ;; (setq word-wrap t)
+  (setq default-justification 'full)
   )
 ;; default tab width
 (setq-default tab-width 4)
