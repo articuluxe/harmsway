@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-05-25 08:02:36 dharms>
+;; Modified Time-stamp: <2016-05-25 18:07:27 dharms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -28,6 +28,7 @@
 (require 'f)
 (require 'profiles)
 (require 'tramp)
+(require 'custom-environment)
 
 ;; disable the base class file
 (setq profile-path-alist-file nil)
@@ -145,8 +146,16 @@ This does not otherwise remove the profile itself from memory."
             ))
   nil))
 
-(defun profile-init-profile-load ()
-  "Initialize a profile after its data structures have been set up."
+(defun profile-load-environment-file (name)
+  "Load environment from file NAME, if it exists in the profile's root."
+  (interactive)
+  (let* ((root (profile-current-get 'project-root-dir))
+         (file (concat root name)))
+    (when (f-exists? file)
+      (load-environment-variables-from-file file))))
+
+(defun profile-load ()
+  "Load a profile after its data structures have been set up."
   (interactive)
   (let ((profile profile-current)
         (name (symbol-name profile-current)))

@@ -3,6 +3,7 @@
 ;;
 
 (defun on-${1:`(profile-find-profile-basename buffer-file-name)`}-init (project-root)
+  (profile-load-environment-file ".repo-env")
   ;; TAGS
   (profile-current-put
    'ctags-alist
@@ -30,7 +31,7 @@
                   ) gen-tags-ctags-cpp-options)
     ))
 
-  (profile-init-profile-load)
+  (profile-load)
 
   )
 
