@@ -30,11 +30,7 @@
                   ) gen-tags-ctags-cpp-options)
     ))
 
-  (gen-tags-set-tags-table)
-  (profile-set-include-files)
-  (profile-set-grep-dirs)
-  (profile-set-mode-line-from-include-files)
-  (profile-set-sml-and-registers-from-build-sub-dirs)
+  (profile-init-profile-load)
 
   )
 

@@ -3,7 +3,7 @@
 ;; Author:  <dan.harms@xrtrading.com>
 ;; Created: Wednesday, March 18, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-04-26 08:14:21 dharms>
+;; Modified Time-stamp: <2016-05-24 18:01:16 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: etags, ctags
 
@@ -49,7 +49,7 @@
 list of lists of properties.  See `ctags-alist'. Return a list of the
 results."
   (mapcar (lambda(name)
-            (setq name (concat name "-tags")))
+            (concat name "-tags"))
           (mapcar 'car alist)))
 
 (defun gen-tags-collect-tag-filenames (lst root)
@@ -59,20 +59,20 @@ see `gen-tags-collect-tag-filestems'.  Return a list of the results."
             (expand-file-name
              (concat root name))) lst))
 
-(defun gen-tags-set-tags-table ()
-  "Set the tags table (for use by `etags-table') according to the current
-profile, see `ctags-alist'."
+(defun gen-tags-set-tags-table (profile)
+  "Set the tags table (for use by `etags-table') according to profile
+PROFILE, see `ctags-alist'."
   (let* ((tag-filestems (gen-tags-collect-tag-filestems
-                         (profile-current-get 'ctags-alist)))
+                         (profile-get profile 'ctags-alist)))
          (tag-filenames (gen-tags-collect-tag-filenames
                          tag-filestems
-                         (profile-current-get 'tags-dir))))
+                         (profile-get profile 'tags-dir))))
     (setq etags-table-alist
           (cons (append
                  (list
                   ;; this first element needs to capture the entire path
                   (concat "^\\(.*\\)"
-                          (profile-current-get 'project-root-stem)
+                          (profile-get profile 'project-root-stem)
                           "\\(.*\\)$"))
                  tag-filenames
                  ) etags-table-alist))))

@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-05-19 07:46:47 dharms>
+;; Modified Time-stamp: <2016-05-25 08:02:36 dharms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -25,31 +25,31 @@
 
 ;;; Code:
 
+(require 'f)
 (require 'profiles)
 (require 'tramp)
 
 ;; disable the base class file
 (setq profile-path-alist-file nil)
 
-;;;###autoload
 (defun profile-define-derived (profile parent &optional name mail &rest plist)
-  "Create PROFILE with NAME and MAIL.  Unlike `profile-define',
-if there is an existing profile with the same NAME, it is NOT
-overridden (the existing plist is left alone).  This is to
-support project files situated in project hierarchies.  PROFILE,
-NAME and MAIL are all required to be string values.  Optional
-argument PLIST is a property list.  The new profile shares the
-properties of its parent, unless it chooses to override any of
-them."
+  "Create PROFILE with PARENT as parent, and NAME and MAIL.
+Unlike `profile-define', if there is an existing profile with the
+same NAME, it is NOT overridden (the existing plist is left
+alone).  This is to support project files situated in project
+hierarchies.  PROFILE, NAME and MAIL are all required to be
+string values.  Optional argument PLIST is a property list.  The
+new profile shares the properties of its parent, unless it
+chooses to override any of them."
   (unless (intern-soft profile profile-obarray)
     (setplist (intern profile profile-obarray)
               (append (list 'name name 'mailing-address mail 'parent parent)
                       plist))))
 
-;;;###autoload
 (defun profile-lookup-property-polymorphic (profile property)
-  "Lookup PROPERTY in PROFILE.  If not found, and PROFILE has a
-parent, lookup PROPERTY in one of its parents."
+  "Lookup in PROFILE the value of PROPERTY.
+If not found, and PROFILE has a parent, lookup PROPERTY in one of
+its parents."
   (let ((val (get profile property))
         (parent-name (get profile 'parent)))
     (or val
@@ -58,20 +58,19 @@ parent, lookup PROPERTY in one of its parents."
              (profile-lookup-property-polymorphic
               (intern-soft parent-name profile-obarray) property)))))
 
-;;;###autoload
 (defun profile-current-get (property &optional ignore-parent)
-  "Return the value of PROPERTY for the current profile `profile-current'.
-The returned property is not evaluated.  This overrides the function in
-`profiles.el'."
+  "Return the value of PROPERTY for current profile `profile-current'.
+IGNORE_PARENT should be non-nil to avoid checking for the
+property up the inheritance tree.  The returned property is not
+evaluated.  This overrides the function in `profiles.el'."
   (let ((val (get profile-current property)))
     (or val
         (and (null ignore-parent)
              (profile-lookup-property-polymorphic profile-current property)))))
 
-;;;###autoload
 (defun profile-current-funcall (property project-root-dir)
-  "Return the function call of PROPERTY's value for the current
-profile `profile-current'."
+  "Return function call of PROPERTY for `profile-current'.
+PROJECT-ROOT-DIR is the root dir of the profile."
   (funcall (get profile-current property) project-root-dir))
 
 (defun profile-soft-reset ()
@@ -95,13 +94,78 @@ This does not otherwise remove the profile itself from memory."
            (string-equal (cdr elt) profile))
          profile-path-alist)))
 
-(defun profile-hard-reset ()
-  "Remove all traces of current profile."
+(defun profile-hard-reset (&optional profile)
+  "Remove all traces of PROFILE."
   (interactive)
-  (profile--delete-profile-from-alist profile-current)
-  (profile--remove-profile profile-current)
-  (profile-soft-reset)
-  )
+  (let ((prof (or profile profile-current)))
+    (profile--delete-profile-from-alist prof)
+    (profile--remove-profile prof)
+    (profile-soft-reset)
+    ))
+
+(define-error 'profile-error "Profile+ error")
+(define-error 'profile-error-non-fatal "Profile load stopped" 'profile-error)
+(define-error 'profile-error-aborted "Profile load aborted" 'profile-error)
+
+(defvar profile--ignore-load-errors nil
+  "Internal variable is non-nil if user desires errors to be skipped.")
+
+(defun profile--query-error (profile err)
+  "Ask user what to do if error ERR occurs while loading PROFILE."
+  (interactive)
+  (let ((buf (get-buffer-create "*Profile Error*")))
+    (with-current-buffer buf
+      (erase-buffer)
+      (insert "An error occurred while loading profile \""
+              (symbol-name profile)
+              "\":\n\n"
+              err
+              "\n\nWould you like to continue loading this profile?  Please select:\n\n"
+              " (y) Continue loading profile, ignoring this error\n"
+              " (!) Continue loading profile, ignoring this and future errors\n"
+              " (n) Stop loading profile\n"
+              " (a) Abort loading of profile, and revert profile load\n"
+              ))
+    (pop-to-buffer buf)
+    (let ((choices '(?y ?n ?a ?!))
+          (prompt "Please type y, n, ! or a: ")
+          ch)
+      (while (null ch)
+        (setq ch (read-char-choice prompt choices)))
+      (quit-window t)
+      (cond ((eq ch ?n)
+             (signal 'profile-error-non-fatal err))
+            ((eq ch ?a)
+             (profile-hard-reset profile)
+             (signal 'profile-error-aborted
+                     (format "Aborted (and reset) profile \"%s\" (%s)"
+                             (symbol-name profile) err)))
+            ((eq ch ?!)
+             (setq profile--ignore-load-errors t))
+            ))
+  nil))
+
+(defun profile-init-profile-load ()
+  "Initialize a profile after its data structures have been set up."
+  (interactive)
+  (let ((profile profile-current)
+        (name (symbol-name profile-current)))
+    (condition-case err
+        (progn
+          (profile-validate-include-files profile)
+          (gen-tags-set-tags-table name)
+          (profile-set-include-files name)
+          (profile-set-grep-dirs name)
+          (profile-set-mode-line-from-include-files name)
+          (profile-set-sml-and-registers-from-build-sub-dirs name)
+          )
+      ('profile-error-non-fatal
+       (message "Stopped loading profile \"%s\" (%s)" name (cdr err)))
+      ('profile-error-aborted
+       (error (cdr err)))
+      ('profile-error
+       (message "Generic profile error: %s" (cdr err)))
+    )))
 
 ;;;###autoload
 (defun profile-open-dired-on-dir ()
@@ -138,100 +202,130 @@ These could come from various sources."
           (dired path)
         (error "%s does not exist!" path)))))
 
-;;;###autoload
 (defun profile-find-profile-basename (name)
-  "Given a typical profile file such as `.mybase.eprof', returns the
-basename, such as `mybase'."
+  "Return profile NAME's basename.
+Given a typical profile file such as `.mybase.eprof', returns `mybase'."
   (let ((base (file-name-base name)))
     (when
         (string-match "\\.?\\(.*\\)" base)
       (match-string 1 base))))
 
-;;;###autoload
-(defun profile-collect-include-files (alist &optional prepend-remote)
-  "Extract the include directories from ALIST, which is in the format of a
-list of lists of properties, see `ctags-alist'. Return a list of the
-results."
-  (mapcar (lambda(path)
-            (let ((include
-                   (if (file-name-absolute-p path)
-                       path
-                     (concat
-                      (profile-current-get 'project-root-dir) path))))
-              (setq path
-                    (if prepend-remote
-                        (concat (profile-current-get 'remote-prefix)
-                                include)
-                      include))))
-          (mapcar 'cadr alist)))
+(defun profile-validate-include-files (profile)
+  "Validate the set of include files of profile PROFILE."
+  (interactive)
+  (let* ((name (symbol-name profile))
+         (remote (profile-get name 'remote-prefix))
+         (root (profile-get name 'project-root-dir))
+         (lst (profile-get name 'ctags-alist))
+         entry path)
+    (setq profile--ignore-load-errors nil)
+    (setq lst
+          (seq-filter (lambda (elt)
+                        (setq entry (cadr elt))
+                        (setq path
+                              (concat remote
+                                      (concat
+                                       (when (or (zerop (length entry))
+                                                 (f-relative? entry))
+                                         root)
+                                       entry)))
+                        (cond ((or (null entry) profile--ignore-load-errors)
+                               nil)
+                              ((f-exists? path) path)
+                              (t
+                               (profile--query-error
+                                profile
+                                (format "%s does not exist!" path)))))
+                      lst))
+    (profile-put name 'ctags-alist lst)))
 
-;;;###autoload
-(defun profile-set-include-files ()
-  "Set useful include file settings for use in programming modes,
-according to the current profile."
-  (profile-current-put 'include-files
-                       (profile-collect-include-files
-                        (profile-current-get 'ctags-alist)))
-  (profile-current-put 'include-ff-files
-                       ;; ff-search-directories doesn't need a trailing
-                       ;; slash
-                       (mapcar 'directory-file-name
-                               (profile-collect-include-files
-                                (profile-current-get 'ctags-alist) t)))
-  )
+(defun profile-collect-include-files (lst profile)
+  "Extract include directories from LST, for profile PROFILE.
+LST is in the format of a list of lists of properties, see
+`ctags-alist'.  Return a list of the results.  Each entry is a
+cons cell (`fullpath' . `path') where `fullpath' prepends a
+remote prefix, if one exists."
+  (let ((remote (profile-get profile 'remote-prefix))
+        (root (profile-get profile 'project-root-dir))
+        res)
+    (mapcar (lambda(path)
+              (setq res
+                    (concat
+                     (when (or (null path) (f-relative? path)) root)
+                     path))
+              (cons (concat remote res) res))
+            (mapcar 'cadr lst))))
 
-;;;###autoload
-(defun profile-collect-grep-dirs ()
-  "Extract the list of include directories according to the current
-profile."
+(defun profile-set-include-files (profile)
+  "Set useful include file settings for use in programming modes.
+The current profile is PROFILE."
+  (let ((lst (profile-collect-include-files
+              (profile-get profile 'ctags-alist) profile)))
+    (profile-put profile 'include-files (mapcar 'cdr lst))
+    (profile-put profile 'include-ff-files
+                         ;; ff-search-directories doesn't need a trailing
+                         ;; slash
+                         (mapcar 'directory-file-name
+                                 (mapcar 'car lst)))))
+
+(defun profile-collect-grep-dirs (lst root)
+  "Extract list of include directories suitable for `grep' actions.
+LST is a list in the format of `ctags-alist'.  ROOT is the root
+directory of the current profile."
   (mapcar (lambda (path)
             (if (and path (f-absolute? path))
                 path
-              (concat (profile-current-get 'project-root-dir) path)))
-          (mapcar 'cadr (profile-current-get 'ctags-alist))))
+              (concat root path)))
+          (mapcar 'cadr lst)))
 
-;;;###autoload
-(defun profile-set-grep-dirs ()
-  "Set include directory settings useful for grep, according to the
-current profile."
-  (profile-current-put 'grep-dirs
-                       (delete-dups
-                        (append
-                         (profile-collect-grep-dirs)
-                         (list (profile-current-get 'project-root-dir))))))
+(defun profile-set-grep-dirs (profile)
+  "Set include directory settings useful for `grep'.
+PROFILE is the current profile."
+  (let ((root (profile-get profile 'project-root-dir)))
+    (profile-put profile 'grep-dirs
+                 (delete-dups
+                  (append
+                   (profile-collect-grep-dirs
+                    (profile-get profile 'ctags-alist)
+                    root)
+                   (list root))))))
 
-;;;###autoload
-(defun profile-collect-sml-regexps (alist)
-  "Extract from ALIST, which is in the format of a list of lists of
-properties, see `ctags-alist', a list of cons cells representing a
-modeline replacement pair for sml, see `sml/replacer-regexp-list'."
-  (mapcar (lambda(elt)
-            (let ((path (cadr elt))
-                  (title (car elt)))
-              (cons (if (file-name-absolute-p path)
-                        path
-                      (concat
-                       (f-short (profile-current-get 'project-root-dir)) path))
-                    (concat (upcase title) ":"))))
-          alist))
+(defun profile-collect-sml-regexps (lst profile root)
+  "Extract a list of cons cells representing a modeline replacement pair.
+LST is a list of lists of properties, see `ctags-alist'.  PROFILE is the
+current profile.  ROOT is the current profile root.  The return value
+will be a list cons cells, see `sml/replacer-regexp-list'."
+  (let (path title)
+    (mapcar (lambda(elt)
+              (setq path (cadr elt))
+              (setq title (car elt))
+              (cons
+               (when path
+                 (if (f-absolute? path) path
+                   (f-short path)))
+               (concat (upcase title) ":")))
+            lst)))
 
-;;;###autoload
-(defun profile-set-mode-line-from-include-files ()
-  "Set useful mode line abbreviations, see `sml/replacer-regexp-alist',
-according to the current profile."
-  (let ((sml-alist (profile-collect-sml-regexps
-                    (profile-current-get 'ctags-alist))))
+(defun profile-set-mode-line-from-include-files (profile)
+  "Set useful mode line abbreviations according to profile PROFILE.
+See `sml/replacer-regexp-alist'."
+  (let* ((root (profile-get profile 'project-root-dir))
+         (sml-alist (profile-collect-sml-regexps
+                     (profile-get profile 'ctags-alist)
+                     profile root)))
     (mapc (lambda (elt)
-            (add-to-list 'sml/replacer-regexp-list
-                         (list (car elt) (cdr elt)) t))
+            (when (car elt)
+              (add-to-list 'sml/replacer-regexp-list
+                           (list (car elt) (cdr elt)) t)))
           sml-alist)))
 
-;;;###autoload
-(defun profile-set-sml-and-registers-from-build-sub-dirs ()
-  "Set the sml mode line according to the build-sub-dirs setting of the
-current profile.  See `sml/replacer-regexp-alist'.  Also optionally set
-some convenience registers to access the build-sub-dirs."
-  (let ((sml-alist (profile-current-get 'build-sub-dirs)))
+(defun profile-set-sml-and-registers-from-build-sub-dirs (profile)
+  "Set sml modeline according to `build-sub-dirs' setting of profile PROFILE.
+See `sml/replacer-regexp-alist'.  Also optionally set some
+convenience registers to access the build-sub-dirs."
+  (let ((sml-alist (profile-get profile 'build-sub-dirs))
+        (root (profile-get profile 'project-root-dir))
+        (remote (profile-get profile 'remote-prefix)))
     (mapc (lambda (elt)
             (let* ((dir (car elt))
                    (name (or (cadr elt)
@@ -243,21 +337,15 @@ some convenience registers to access the build-sub-dirs."
                              (list dir name) t))
               (and reg (characterp reg)
                    (set-register
-                    reg (cons 'file (concat
-                                     (profile-current-get 'remote-prefix)
-                                     (profile-current-get 'project-root-dir)
-                                     dir))))
+                    reg (cons 'file (concat remote root dir))))
               ))
-          sml-alist))
-  ;; also, set a global register to go to the root dir
-  (set-register ?r (cons 'file
-                         (concat (profile-current-get 'remote-prefix)
-                                 (profile-current-get 'project-root-dir))))
-  ;; and another to go to the first (priveleged) src-dir
-  (when (< 0 (length (profile-current-get 'grep-dirs)))
-    (set-register
-     ?c (cons 'file (car (profile-current-get 'grep-dirs)))))
-  )
+          sml-alist)
+    ;; also, set a global register to go to the root dir
+    (set-register ?r (cons 'file (concat remote root)))
+    ;; and another to go to the first (priveleged) src-dir
+    (when (< 0 (length (profile-get profile 'grep-dirs)))
+      (set-register
+       ?c (cons 'file (car (profile-get profile 'grep-dirs)))))))
 
 (defun profile--gather-compiler-includes (compiler)
   "Return a list of include directories for COMPILER.  They will be absolute."
@@ -267,11 +355,9 @@ some convenience registers to access the build-sub-dirs."
 (defvar profile-clang-standard-version "c++14")
 (defvar profile-gcc-standard-version "c++14")
 
-;;;###autoload
 (defun profile-on-c-file-open (project-root)
-  "Helper function to perform the typical actions desired when a
-c-language file is opened and a profile is active.  These typical
-actions include setting include directories."
+  "Initialize settings for a c-language file, given PROJECT-ROOT.
+These typical actions include setting include directories."
   (when (and (boundp 'c-buffer-is-cc-mode) c-buffer-is-cc-mode)
     (set (make-local-variable 'achead:include-directories)
          (profile-current-get 'include-files))
@@ -327,11 +413,12 @@ actions include setting include directories."
                       (profile-current-get 'project-root-dir))))))))
 
 (defvar profile--root-file nil)
-;;;###autoload
+
 (defun profile-find-root (dir &optional absolute)
-  "Searches for the project root as may be defined in current profile,
-starting from DIR and moving up the directory tree.  Profile files can look
-like any of the following: `.eprof', `my.eprof', `.my.eprof'."
+  "Search for project root, starting from DIR and moving up the file tree.
+ABSOLUTE if non-nil will return an absolute path.  Profile files
+can look like any of the following: `.eprof', `my.eprof',
+`.my.eprof'."
   (let ((root
          (if (<= 24 emacs-major-version)
              (locate-dominating-file
@@ -395,8 +482,8 @@ remote prefix."
                     ))))
 
 (defun profile--compute-remote-subdir-stem ()
-  "Helper function that computes a remote project's stem in a format
-useful for uniquely naming the local TAGS directory."
+  "Compute a remote project's stem.
+Format is useful for uniquely naming the local TAGS directory."
   (concat
    (replace-regexp-in-string
     "/\\|\\\\" "!" (profile-current-get 'remote-host) t t)
@@ -405,7 +492,7 @@ useful for uniquely naming the local TAGS directory."
     "/\\|\\\\" "!" (profile-current-get 'project-root-stem))))
 
 (defun profile--compute-tags-dir (dir)
-  "Helper function that computes where a project's local TAGS live."
+  "Compute where a project's local TAGS live, with root DIR."
   (let ((base (or (getenv "EMACS_TAGS_DIR") "~"))
         (sub (or (profile-current-get 'tags-sub-dir) ".tags/"))
         dest-dir)
@@ -421,13 +508,14 @@ useful for uniquely naming the local TAGS directory."
       dest-dir)))
 
 (defun profile--compute-project-stem (root-dir)
-  "Helper function that computes a project's stem, useful in regular
-expression matching.  The presumption is that the ROOT-DIR is a relative
-path, possibly including a `~' representing the user's home directory."
+  "Compute a project's stem, useful in regular expression matching.
+ROOT-DIR describes the profile's base directory.  The presumption
+is that the ROOT-DIR is a relative path, possibly including a `~'
+representing the user's home directory."
   (replace-regexp-in-string "~/" "" root-dir))
 
-;; log a profile upon initialization
 (defun profile--log-profile ()
+  "Log a profile upon initialization."
   (let ((name (symbol-name profile-current)))
     (unless (string-equal name "default")
       (message "Loaded profile %s (project %s) at %s"
@@ -447,7 +535,9 @@ Note that `abbreviate-file-name' doesn't work for remote paths."
 
 ;; called when a profile is initialized
 (defun profile--on-profile-init (remote-host remote-prefix)
-  "Initialize a loaded profile."
+  "Initialize a loaded profile.
+REMOTE-HOST and REMOTE-PREFIX, if non-nil, pertain to the remote
+path."
   (let ((root (profile-current-get 'project-root-dir)))
     (when (and profile-current
                (not (profile-current-get 'profile-inited t)))
@@ -472,14 +562,14 @@ Note that `abbreviate-file-name' doesn't work for remote paths."
       (when (and (profile-current-get 'on-profile-init)
                  (fboundp (intern-soft
                            (profile-current-get 'on-profile-init))))
+        (message "drh calling on-profile-init profile:%s" (symbol-name
+                                                           profile-current))
         (profile-current-funcall 'on-profile-init root))
       (profile-current-put 'profile-inited t))))
 
 ;; override the advice from `profiles.el'
 (defadvice find-file-noselect-1
     (before before-find-file-noselect-1 activate)
-  "Set the buffer local variable `profile-current' right after the creation
-of the buffer."
   (profile--init buf filename))
 
 (defun profile--init (buffer filename)
@@ -507,7 +597,7 @@ of the buffer."
         (setq remote-localname (cadr remote-properties))
         (setq remote-prefix (caddr remote-properties)))
       (when (and root root-file root-dir
-                 (string-match "\\.eprof$" root-file)
+                 (string-match "\\.[er]prof$" root-file)
                  (not (string-equal root-dir
                                     (profile-current-get 'project-root-dir))))
         ;; apparently this is a new profile not yet initialized
