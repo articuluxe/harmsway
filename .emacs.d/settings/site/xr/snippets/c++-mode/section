@@ -3,4 +3,7 @@
 # key: section
 # binding: direct-keybinding
 # --
-SECTION($0);
+SECTION("$1")
+{
+$0
+}
