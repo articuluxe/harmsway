@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-05-25 18:07:27 dharms>
+;; Modified Time-stamp: <2016-05-26 17:06:07 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -117,6 +117,7 @@ This does not otherwise remove the profile itself from memory."
   (let ((buf (get-buffer-create "*Profile Error*")))
     (with-current-buffer buf
       (erase-buffer)
+      (toggle-truncate-lines -1)
       (insert "An error occurred while loading profile \""
               (symbol-name profile)
               "\":\n\n"
@@ -150,7 +151,8 @@ This does not otherwise remove the profile itself from memory."
   "Load environment from file NAME, if it exists in the profile's root."
   (interactive)
   (let* ((root (profile-current-get 'project-root-dir))
-         (file (concat root name)))
+         (prefix (profile-current-get 'remote-prefix))
+         (file (concat prefix root name)))
     (when (f-exists? file)
       (load-environment-variables-from-file file))))
 
@@ -238,9 +240,9 @@ Given a typical profile file such as `.mybase.eprof', returns `mybase'."
                                                  (f-relative? entry))
                                          root)
                                        entry)))
-                        (cond ((or (null entry) profile--ignore-load-errors)
-                               nil)
+                        (cond ((null entry) nil)
                               ((f-exists? path) path)
+                              (profile--ignore-load-errors nil)
                               (t
                                (profile--query-error
                                 profile
@@ -438,7 +440,6 @@ can look like any of the following: `.eprof', `my.eprof',
                     (setq profile--root-file (car res))))))
            (find-file-upwards dir "\\sw+\\.eprof$")
            )))
-    (message "drh profile-find-root found root:%s, dir:%s, absolute:%s" root dir absolute)
     (if root
         (if absolute
             (cons profile--root-file (expand-file-name root))
@@ -483,7 +484,7 @@ remote prefix."
 
 (defun profile--compute-remote-properties (dir)
   "Compute the properties associated with DIR, a (possibly remote) filename."
-  (when (file-remote-p dir)
+  (when (and dir (file-remote-p dir))
     (with-parsed-tramp-file-name dir file
       `( ,file-host ,file-localname
                     ,(tramp-make-tramp-file-name
@@ -565,14 +566,11 @@ path."
            'tags-dir
            (profile--compute-tags-dir
             (concat remote-prefix root)))))
-      (message "drh set tags-dir:%s" (profile-current-get 'tags-dir))
       (profile--log-profile)
       ;; if there's a valid init function, call it
       (when (and (profile-current-get 'on-profile-init)
                  (fboundp (intern-soft
                            (profile-current-get 'on-profile-init))))
-        (message "drh calling on-profile-init profile:%s" (symbol-name
-                                                           profile-current))
         (profile-current-funcall 'on-profile-init root))
       (profile-current-put 'profile-inited t))))
 
@@ -590,14 +588,14 @@ path."
     (setq profile-current
           (intern-soft (profile-find-path-alist
                         (expand-file-name filename)) profile-obarray))
-    (message "drh profile-init filename:%s dir:%s" filename (file-name-directory filename))
-    (let* ((root (profile-find-root (file-name-directory filename) t)) ;drh
+    (let* ((root (profile-find-root (file-name-directory filename) t))
            (curr (profile-current-get 'project-root-dir))
            (root-file (car root))
            (root-dir (cdr root))
            (remote-properties
             (profile--compute-remote-properties
-             (or root-dir default-directory)))
+             root-dir))
+;             (or root-dir default-directory)))
            remote-host
            remote-localname remote-prefix
            profile-basename)
@@ -613,10 +611,8 @@ path."
         (load-file root-file)
         (setq profile-basename
               (profile-find-profile-basename root-file))
-        (message "drh Loading profile host:%s prefix:%s remotename:%s ~:%s HOME:%s root-dir:%s regexp:%s"
-                 remote-host remote-prefix remote-localname
-                 (shell-command-to-string "echo ~")
-                 (getenv "HOME") root-dir (file-relative-name root-dir "~"))
+        (when remote-properties
+          (setq root-dir remote-localname))
         (add-to-list 'profile-path-alist (cons root-dir profile-basename))
         (setq profile-current
               (intern-soft (profile-find-path-alist

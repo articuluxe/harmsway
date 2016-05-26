@@ -274,7 +274,6 @@ profile `profile-current'."
 the FILENAME or return the default value for `profile-current'.
 If FILENAME is nil, then match against the buffer's current file
 name, or the buffer's name."
-  (message "drh: profile find path for %s" filename)
   (or
    (assoc-default (or filename (buffer-file-name) (buffer-name))
                   profile-path-alist 'string-match)
