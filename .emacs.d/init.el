@@ -932,6 +932,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
          )
   :commands counsel-M-x
   :config
+  (setq counsel-find-file-at-point t)
   (setq counsel-find-file-ignore-regexp "\\.elc$")
   (setf (cdr (assoc 'counsel-M-x ivy-initial-inputs-alist)) "")
   ;; fallback to basic find-file
