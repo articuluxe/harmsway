@@ -5,7 +5,7 @@
 ;; Author: Artur Malabarba <emacs@endlessparentheses.com>
 ;; URL: https://github.com/Malabarba/beacon
 ;; Keywords: convenience
-;; Version: 1.3.0
+;; Version: 1.3.1
 ;; Package-Requires: ((seq "2.14"))
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -242,10 +242,12 @@ COLORS applied to each one."
 
 (defun beacon--vanish (&rest _)
   "Turn off the beacon."
-  (when (timerp beacon--timer)
-    (cancel-timer beacon--timer))
-  (mapc #'delete-overlay beacon--ovs)
-  (setq beacon--ovs nil))
+  (unless (string-match "\\` \\*\\(temp-buffer\\|Echo Area.*\\)\\*"
+                        (buffer-name))
+    (when (timerp beacon--timer)
+      (cancel-timer beacon--timer))
+    (mapc #'delete-overlay beacon--ovs)
+    (setq beacon--ovs nil)))
 
 
 ;;; Colors
