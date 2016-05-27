@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-05-21 08:18:01 dharms>
+;; Modified Time-stamp: <2016-05-26 23:26:37 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1076,6 +1076,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; goto-last-change ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package
  goto-last-change
+ :disabled t
  :bind ("C-M-," . goto-last-change)
  )
 
