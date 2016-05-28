@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-05-30 15:59:18 dan.harms>
+;; Modified Time-stamp: <2016-05-31 06:06:42 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -245,12 +245,14 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (load-library "coding")
 
 (use-package custom-utils
-  :bind
-  ("C-x C-M-e" . sanityinc/eval-last-sexp-or-region)
+  :bind (("C-x C-M-e" . sanityinc/eval-last-sexp-or-region)
+         ("C-h C-f" . find-function-view))
   :commands
   (insert-now now insert-today today find-file-upwards find-file-dir-upwards
               goto-line-with-feedback
               shell-command-redirected-output
+              sanityinc/eval-last-sexp-or-region
+              find-function-view
               ))
 
 (use-package custom-text-utils

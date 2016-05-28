@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-04-15 23:35:09 dharms>
+;; Modified Time-stamp: <2016-05-28 06:49:48 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -91,6 +91,13 @@
         (linum-mode -1))
     (call-interactively 'goto-line)))
 (global-set-key [remap goto-line] 'goto-line-with-feedback)
+
+;; from Marcin Borkowski
+(defun find-function-view (func)
+  "Find and view the definition of FUNC."
+  (interactive (find-function-read))
+  (find-function-do-it func nil 'switch-to-buffer)
+  (view-mode 1))
 
 ;; (defvar my/find-file-root-prefix "/sudo::"
 ;;   "root prefix for tramp as root")
