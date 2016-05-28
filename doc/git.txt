@@ -42,6 +42,8 @@ git fetch --all
 git fetch origin master:master
 # list all branches created by me
 git for-each-ref --format=' %(authorname) %09 %(refname)' | grep Harms
+# point a fork back to its upstream for a pull request
+git remote add upstream git@github.com:proj/name.git
 
 git clean -dfx
 
