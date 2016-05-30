@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Tuesday, April 12, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-04-12 17:44:36 dharms>
+;; Modified Time-stamp: <2016-05-27 17:24:06 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: coding
 
@@ -25,6 +25,7 @@
 ;;
 
 ;;; Code:
+(require 's)
 
 (defun print-current-function() "Print current function under point."
   (interactive)
@@ -124,12 +125,12 @@ query for the base name. Otherwise, the base file name is used."
       (goto-char end) (insert "\n}")
       (insert-char ?\s c-basic-offset)
       (insert "// end ")
-      (if (= 0 (length str))
+      (if (zerop (length str))
           (insert "anonymous "))
       (insert "namespace " str "\n")
       (goto-char start)
       (insert "namespace ")
-      (if (not (= 0 (length str)))
+      (if (not (zerop (length str)))
           (insert str " "))
       (insert "{\n\n"))))
 
