@@ -154,3 +154,9 @@ git diff [--cached] > some.patch
 git apply [--check] [--reject] some.patch
 # directly commit a patch
 git am some.patch
+
+################################### BUNDLE ###################################
+# create a bundle
+git bundle create repo.bundle master
+# use a bundle
+git clone repo.bundle -b master repo
