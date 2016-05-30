@@ -24,12 +24,6 @@ if [ -f ~/.bash_$SITE ]; then
    . ~/.bash_$SITE
 fi
 
-vm()
-{
-   ssh -A chihq-dev-02d-1
-   # 10.10.102.109
-}
-
 lhome()
 {
    cd $LHOME

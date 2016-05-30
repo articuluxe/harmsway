@@ -3,6 +3,7 @@
 
 # User specific aliases and functions
 export SITE=xr
+export VM=chihq-dev-02d-1
 
 python=/opt/anaconda-python-2.7.8/bin
 # what `use cdh5 prepends to $PATH:
@@ -23,12 +24,6 @@ export CSTDLIB_BIN=$CSTDLIB_ROOT/bin
 # if [ -f ~/.bash_$SITE ]; then
 #    . ~/.bash_$SITE
 # fi
-
-vm()
-{
-   ssh -A chihq-dev-02d-1
-   # 10.10.102.109
-}
 
 use_gcc()
 {

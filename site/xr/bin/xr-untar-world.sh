@@ -5,11 +5,11 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Monday, May 18, 2015
 # Version: 1.0
-# Modified Time-stamp: <2016-05-12 17:22:22 dharms>
+# Modified Time-stamp: <2016-05-30 11:23:52 dan.harms>
 # Modified by: Dan Harms
 # Keywords: configuration
 
-tar=tar
+tar=$TAR
 manifest=.bk_manifest
 backup=emacs_bk.tar
 os=$(uname)
@@ -73,21 +73,8 @@ if [ -d .emacs.d ] && [ -f .emacs.d/$manifest ] ; then
    fi
 fi
 
-# remove and backup .ssh
-if [ -d .ssh ] ; then
-   $tar czf .ssh.bk_$date.tgz --force-local .ssh
-   rm -rf .ssh
-fi
-
 echo About to unpack $input...
 $tar --overwrite -xpvf $input
-
-# adjust .ssh
-pushd ~/.ssh
-ln -sf id_rsa_drh_npp id_rsa
-ln -sf Dan.Harms.pub id_rsa.pub
-chmod 600 ~/.ssh/id_rsa
-popd
 
 # remove intermediate directories, if empty
 rmdir -p --ignore-fail-on-non-empty bash tcsh os/$os site/$site

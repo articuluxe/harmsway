@@ -1,11 +1,11 @@
 #!/usr/bin/env sh
 # -*- Mode: sh -*-
-# tar-world.sh --- tar up important configuration files
+# xr-tar-world.sh --- tar up important configuration files
 # Copyright (C) 2015, 2016  Dan Harms (dharms)
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Friday, May 29, 2015
 # Version: 1.0
-# Modified Time-stamp: <2016-05-30 11:23:02 dan.harms>
+# Modified Time-stamp: <2016-05-30 09:36:36 dan.harms>
 # Modified by: Dan Harms
 # Keywords: configuration
 
@@ -13,7 +13,7 @@ tar=$TAR
 os=$(uname)
 host=$(hostname -s)
 site=$SITE
-dest=world.tar
+dest=xr-world.tar
 verbose=
 
 if [ -z "$tar" ]; then
@@ -41,9 +41,11 @@ $tar u"$verbose"f $dest --transform=s/scripts/bin/ scripts
 $tar u"$verbose"f $dest --transform=s/bash\\/// bash
 $tar u"$verbose"f $dest --transform=s/tcsh\\/// tcsh
 $tar u"$verbose"f $dest --transform=s%os/$os\\/%% os/$os
-$tar u"$verbose"f $dest --transform=s%host/$host\\/%% host/$host
+# $tar u"$verbose"f $dest --transform=s%host/$host\\/%% host/$host
+# xr installs will load a renamed host file from site/xr
 $tar u"$verbose"f $dest --transform=s%site/$site\\/%% site/$site
+#$tar --delete .ssh -f $dest
 
 echo ...done generating $dest
 
-# tar-world.sh ends here
+# xr-tar-world.sh ends here

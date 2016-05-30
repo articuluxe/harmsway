@@ -5,14 +5,14 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Tuesday, June 16, 2015
 # Version: 1.0
-# Modified Time-stamp: <2016-02-05 05:45:39 dharms>
+# Modified Time-stamp: <2016-05-30 09:01:00 dan.harms>
 # Keywords: emacs configuration
 
 emacs=$EDITOR
 dir=$(pwd)
 user=$USER
 date=$(date '+%F_%T' | tr ':' '-')
-logname=emacs-install-log-$date.log
+logname=.emacs-install-log-$date.log
 
 if [ $# -gt 0 ] ; then
    dir="$1"
