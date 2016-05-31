@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-05-31 06:06:42 dharms>
+;; Modified Time-stamp: <2016-05-31 09:11:06 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2136,7 +2136,7 @@ customization."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; json-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package json-mode
   :mode "\\.json$"
-  :if (version< emacs-version "23")
+  :if (version< "23" emacs-version)
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; log-viewer-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
