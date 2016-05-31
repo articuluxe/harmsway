@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-05-31 09:11:06 dan.harms>
+;; Modified Time-stamp: <2016-05-31 11:50:22 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -132,9 +132,6 @@ up to 10 times."
 (which-function-mode t)
 ;; winner mode
 (winner-mode 1)
-;; append unique parent directory to buffers of same name
-(toggle-uniquify-buffer-names)
-(setq uniquify-buffer-name-style 'post-forward-angle-brackets)
 ;; don't try to create "other files"
 (setq ff-always-try-to-create nil)
 ;; Preserve line position on scroll
@@ -800,6 +797,15 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
         recentf-save-file (concat my/user-directory "recentf"))
   (setq recentf-exclude '( "-tags\\'" "ido\.last\\'" "emacs-bmk-bmenu-state"))
   (recentf-mode 1)
+  )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; uniquify ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package uniquify
+  :config
+  ;; append unique parent directory to buffers of same name
+  (setq uniquify-buffer-name-style 'post-forward-angle-brackets)
+  (setq uniquify-after-kill-buffer-p t)
+  (setq uniquify-ignore-buffers-re "^\\*")
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; uniquify-recentf ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
