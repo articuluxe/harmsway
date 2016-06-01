@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-05-26 17:06:07 dan.harms>
+;; Modified Time-stamp: <2016-06-01 17:04:36 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -29,6 +29,7 @@
 (require 'profiles)
 (require 'tramp)
 (require 'custom-environment)
+(require 'bookmark+)
 
 ;; disable the base class file
 (setq profile-path-alist-file nil)
@@ -169,13 +170,19 @@ This does not otherwise remove the profile itself from memory."
           (profile-set-grep-dirs name)
           (profile-set-mode-line-from-include-files name)
           (profile-set-sml-and-registers-from-build-sub-dirs name)
+          (bmkp-switch-bookmark-file-create
+           (concat
+            (profile-get name 'remote-prefix)
+            (profile-get name 'project-root-dir)
+            "repo.bmk") t)
           )
       ('profile-error-non-fatal
+       (profile-put name 'profile-inited nil)
        (message "Stopped loading profile \"%s\" (%s)" name (cdr err)))
-      ('profile-error-aborted
+      ((profile-error-aborted profile-error)
+       (ignore-errors
+         (profile-put name 'profile-inited nil))
        (error (cdr err)))
-      ('profile-error
-       (message "Generic profile error: %s" (cdr err)))
     )))
 
 ;;;###autoload
@@ -552,6 +559,7 @@ path."
     (when (and profile-current
                (not (profile-current-get 'profile-inited t)))
       ;; run this init code once per profile loaded
+      (profile-current-put 'profile-inited t)
       (when remote-host
         (profile-current-put 'remote-host remote-host))
       (when remote-prefix
@@ -571,8 +579,7 @@ path."
       (when (and (profile-current-get 'on-profile-init)
                  (fboundp (intern-soft
                            (profile-current-get 'on-profile-init))))
-        (profile-current-funcall 'on-profile-init root))
-      (profile-current-put 'profile-inited t))))
+        (profile-current-funcall 'on-profile-init root)))))
 
 ;; override the advice from `profiles.el'
 (defadvice find-file-noselect-1
@@ -595,7 +602,6 @@ path."
            (remote-properties
             (profile--compute-remote-properties
              root-dir))
-;             (or root-dir default-directory)))
            remote-host
            remote-localname remote-prefix
            profile-basename)
