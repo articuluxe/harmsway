@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-04-12 17:49:49 dharms>
+;; Modified Time-stamp: <2016-06-02 16:52:30 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -120,15 +120,18 @@
                    ("\\<[fF][iI][xX][mM][eE]\\>" 0 font-lock-warning-face t)
                    ) t)) t)
 
+(with-eval-after-load 'cc-mode (require 'modern-cpp-font-lock))
+
 (add-hook
  'c++-mode-hook
  (lambda()
+   (modern-c++-font-lock-mode 1)
    (font-lock-add-keywords
     nil '(;; complete some fundamental keywords (+ Qt)
           ;; add the new C++11 keywords (override and final already there)
-          ("\\<\\(alignof\\|alignas\\|constexpr\\|decltype\\|noexcept\\|nullptr\\|static_assert\\|thread_local\\|override\\|final\\)\\>" . font-lock-keyword-face)
+          ;; ("\\<\\(alignof\\|alignas\\|constexpr\\|decltype\\|noexcept\\|nullptr\\|static_assert\\|thread_local\\|override\\|final\\)\\>" . font-lock-keyword-face)
           ;; hexadecimal numbers
-          ("\\<0[xX][0-9A-Fa-f]+\\>" . font-lock-constant-face)
+          ;; ("\\<0[xX][0-9A-Fa-f]+\\>" . font-lock-constant-face)
           ;; Qt fontification
           ("\\<\\(Q_OBJECT\\|SIGNAL\\|SLOT\\|slots\\|signals\\)\\>" . font-lock-keyword-face)
           ("\\<QT?\\(_\\sw+\\)+\\>" . font-lock-keyword-face)
