@@ -1,12 +1,12 @@
 ;;; multi-line.el --- multi-line statements -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2015 Ivan Malison
+;; Copyright (C) 2015-2016 Ivan Malison
 
 ;; Author: Ivan Malison <IvanMalison@gmail.com>
 ;; Keywords: multi line length whitespace programming
 ;; URL: https://github.com/IvanMalison/multi-line
 ;; Version: 0.0.0
-;; Package-Requires: ((emacs "24"))
+;; Package-Requires: ((emacs "24") (s "1.9.0"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -25,7 +25,7 @@
 
 ;; multi-line aims to provide a flexible framework for automatically
 ;; multi-lining and single-lining function invocations and
-;; definitions, array and map literals and more. It relies on
+;; definitions, array and map literals and more.  It relies on
 ;; functions that are defined on a per major mode basis wherever it
 ;; can so that it functions correctly across many different
 ;; programming languages.
@@ -102,20 +102,20 @@ FIND-STRATEGY is a class with the method multi-line-find-next."
   (oset selector :default-strategy strategy))
 
 (defvar multi-line-master-strategy
-      (make-instance multi-line-major-mode-strategy-selector))
+  (make-instance multi-line-major-mode-strategy-selector))
 
 (defun multi-line-lisp-advance-fn ()
   "Advance to the start of the next multi-line split for Lisp."
   (re-search-forward "[^[:space:]\n]")
   (backward-char))
 
-(defvar multi-line-skip-respacer
+(defvar multi-line-skip-first-and-last-respacer
   (make-instance multi-line-always-newline
                  :skip-first t :skip-last t))
 
 (defvar multi-line-skip-fill-respacer
   (make-instance multi-line-fixed-fill-respacer
-                 :newline-respacer multi-line-skip-respacer))
+                 :newline-respacer multi-line-skip-first-and-last-respacer))
 
 (defvar multi-line-skip-fill-stragety
   (make-instance multi-line-strategy

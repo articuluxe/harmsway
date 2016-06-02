@@ -205,6 +205,8 @@
     emms-playlist-mode
     emms-stream-mode
     erc-mode
+    forth-mode
+    forth-block-mode
     org-agenda-mode
     dired-mode
     jabber-chat-mode
@@ -326,6 +328,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
 (defun swiper-occur (&optional revert)
   "Generate a custom occur buffer for `swiper'.
 When REVERT is non-nil, regenerate the current *ivy-occur* buffer."
+  (require 'subr-x)
   (let* ((buffer (ivy-state-buffer ivy-last))
          (fname (propertize
                  (with-ivy-window

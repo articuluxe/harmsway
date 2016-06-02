@@ -1,6 +1,6 @@
 ;;; multi-line-find.el --- multi-line statements -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2015 Ivan Malison
+;; Copyright (C) 2015-2016 Ivan Malison
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -42,7 +42,7 @@
     (setq this-point (point))
     (condition-case nil
         (while (and (not (equal this-point last-point))
-                           (not (setq last (multi-line-should-stop strategy))))
+                    (not (setq last (multi-line-should-stop strategy))))
                  (forward-sexp)
                  (setq last-point this-point)
                  (setq this-point (point)))

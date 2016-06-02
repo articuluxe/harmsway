@@ -82,6 +82,7 @@ in the avy overlays."
                      (const avy-copy-line)
                      (const avy-copy-region)
                      (const avy-move-line)
+                     (const avy-move-region)
                      (function :tag "Other command"))
           :value-type (repeat :tag "Keys" character)))
 
@@ -111,6 +112,7 @@ If the commands isn't on the list, `avy-style' is used."
                      (const avy-copy-line)
                      (const avy-copy-region)
                      (const avy-move-line)
+                     (const avy-move-region)
                      (function :tag "Other command"))
           :value-type (choice
                        (const :tag "Pre" pre)
@@ -961,17 +963,49 @@ The window scope is determined by `avy-all-windows' (ARG negates it)."
      (line-end-position))))
 
 ;;;###autoload
-(defun avy-goto-char-2 (char1 char2 &optional arg)
+(defun avy-goto-char-2 (char1 char2 &optional arg beg end)
   "Jump to the currently visible CHAR1 followed by CHAR2.
 The window scope is determined by `avy-all-windows' (ARG negates it)."
   (interactive (list (read-char "char 1: " t)
                      (read-char "char 2: " t)
-                     current-prefix-arg))
+                     current-prefix-arg
+                     nil nil))
+  (when (eq char1 ?)
+    (setq char1 ?\n))
+  (when (eq char2 ?)
+    (setq char2 ?\n))
   (avy-with avy-goto-char-2
     (avy--generic-jump
      (regexp-quote (string char1 char2))
      arg
-     avy-style)))
+     avy-style
+     beg end)))
+
+;;;###autoload
+(defun avy-goto-char-2-above (char1 char2 &optional arg)
+  "Jump to the currently visible CHAR1 followed by CHAR2.
+This is a scoped version of `avy-goto-char-2', where the scope is
+the visible part of the current buffer up to point."
+  (interactive (list (read-char "char 1: " t)
+                     (read-char "char 2: " t)
+                     current-prefix-arg))
+  (avy-with avy-goto-char-2-above
+    (avy-goto-char-2
+     char1 char2 arg
+     (window-start) (point))))
+
+;;;###autoload
+(defun avy-goto-char-2-below (char1 char2 &optional arg)
+  "Jump to the currently visible CHAR1 followed by CHAR2.
+This is a scoped version of `avy-goto-char-2', where the scope is
+the visible part of the current buffer following point."
+  (interactive (list (read-char "char 1: " t)
+                     (read-char "char 2: " t)
+                     current-prefix-arg))
+  (avy-with avy-goto-char-2-below
+    (avy-goto-char-2
+     char1 char2 arg
+     (point) (window-end (selected-window) t))))
 
 ;;;###autoload
 (defun avy-isearch ()
@@ -980,7 +1014,9 @@ The window scope is determined by `avy-all-windows' (ARG negates it)."
   (avy-with avy-isearch
     (let ((avy-background nil))
       (avy--process
-       (avy--regex-candidates isearch-string)
+       (avy--regex-candidates (if isearch-regexp
+                                  isearch-string
+                                (regexp-quote isearch-string)))
        (avy--style-fn avy-style))
       (isearch-done))))
 
@@ -993,7 +1029,7 @@ The window scope is determined by `avy-all-windows' (ARG negates it)."
     (avy--generic-jump avy-goto-word-0-regexp arg avy-style)))
 
 ;;;###autoload
-(defun avy-goto-word-1 (char &optional arg)
+(defun avy-goto-word-1 (char &optional arg beg end)
   "Jump to the currently visible CHAR at a word start.
 The window scope is determined by `avy-all-windows' (ARG negates it)."
   (interactive (list (read-char "char: " t)
@@ -1009,7 +1045,27 @@ The window scope is determined by `avy-all-windows' (ARG negates it)."
                          (concat
                           "\\b"
                           str)))))
-      (avy--generic-jump regex arg avy-style))))
+      (avy--generic-jump regex arg avy-style beg end))))
+
+;;;###autoload
+(defun avy-goto-word-1-above (char &optional arg)
+  "Jump to the currently visible CHAR at a word start.
+This is a scoped version of `avy-goto-word-1', where the scope is
+the visible part of the current buffer up to point. "
+  (interactive (list (read-char "char: " t)
+                     current-prefix-arg))
+  (avy-with avy-goto-word-1
+    (avy-goto-word-1 char arg (window-start) (point))))
+
+;;;###autoload
+(defun avy-goto-word-1-below (char &optional arg)
+  "Jump to the currently visible CHAR at a word start.
+This is a scoped version of `avy-goto-word-1', where the scope is
+the visible part of the current buffer following point. "
+  (interactive (list (read-char "char: " t)
+                     current-prefix-arg))
+  (avy-with avy-goto-word-1
+    (avy-goto-word-1 char arg (point) (window-end (selected-window) t))))
 
 (declare-function subword-backward "subword")
 (defvar subword-backward-regexp)
@@ -1049,7 +1105,12 @@ should return true."
                             (and predicate (funcall predicate)))
                     (unless (get-char-property (point) 'invisible)
                       (push (cons (point) (selected-window)) window-cands)))
-                  (subword-backward)))
+                  (subword-backward))
+                (and (= (point) ws)
+                     (or (null predicate)
+                         (and predicate (funcall predicate)))
+                     (not (get-char-property (point) 'invisible))
+                     (push (cons (point) (selected-window)) window-cands)))
               (setq candidates (nconc candidates window-cands))))))
       (avy--process candidates (avy--style-fn avy-style)))))
 
@@ -1247,6 +1308,22 @@ The window scope is determined by `avy-all-windows' or
                  (insert str)))
               (t
                (user-error "Unexpected `avy-line-insert-style'")))))))
+
+;;;###autoload
+(defun avy-move-region ()
+  "Select two lines and move the text between them here."
+  (interactive)
+  (avy-with avy-move-region
+    (let* ((beg (avy--line))
+           (end (save-excursion
+                  (goto-char (avy--line))
+                  (forward-line)
+                  (point)))
+           (text (buffer-substring beg end))
+           (pad (if (bolp) "" "\n")))
+      (move-beginning-of-line nil)
+      (delete-region beg end)
+      (insert text pad))))
 
 ;;;###autoload
 (defun avy-setup-default ()
