@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-06-02 09:09:14 dan.harms>
+;; Modified Time-stamp: <2016-06-02 11:05:38 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -246,7 +246,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
          ("C-h C-f" . find-function-view))
   :commands
   (insert-now now insert-today today find-file-upwards find-file-dir-upwards
-              goto-line-with-feedback
+              goto-line-with-feedback goto-line
               shell-command-redirected-output
               sanityinc/eval-last-sexp-or-region
               find-function-view
