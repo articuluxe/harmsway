@@ -27,4 +27,6 @@
 [mergetool.mergegui]
 	cmd = /usr/bin/env LOCAL=$LOCAL REMOTE=$REMOTE BASE=$BASE MERGED=$MERGED $EMACSX --load ~/config/mergetool.el
 [branch "master"]
-	mergeoptions = --squash
+    mergeoptions = --squash
+[credential]
+    helper = gnome-keyring

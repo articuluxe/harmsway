@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-05-31 11:50:22 dan.harms>
+;; Modified Time-stamp: <2016-06-02 09:09:14 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -718,6 +718,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
           (occur-mode :popup t :select nil :align bottom)
           (grep-mode :popup t :select nil :align bottom)
           ("*Help*" :popup t :select t)
+          (help-mode :popup t :select t)
           (diff-mode :popup t :select t)
           (apropos-mode :popup t :select t)
           (completion-list-mode :select nil)

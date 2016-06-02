@@ -5,11 +5,11 @@
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Saturday, July 25, 2015
 # Version: 1.0
-# Modified Time-stamp: <2016-05-12 17:14:58 dharms>
+# Modified Time-stamp: <2016-06-02 08:35:52 dan.harms>
 # Modified by: Dan Harms
 # Keywords: configuration
 
-tar=$TAR
+tar=${TAR:-`which tar`}
 verbose=
 emacs=$EDITOR
 user=$USER
@@ -17,12 +17,12 @@ host=$(hostname -s)
 int=emacs.tar
 manifest=.bk_manifest
 backup=emacs_bk.tar
-orig_dir=`pwd`
+orig_dir=${1:-~/src/harmsway}
 
-if [ $# -gt 0 ] ; then
-   verbose=v
-   shift
-fi
+# if [ $# -gt 0 ] ; then
+#    verbose=v
+#    shift
+# fi
 
 function backup_file
 {
@@ -35,7 +35,14 @@ function backup_file
    fi
 }
 
-echo "Tarring .emacs.d into $int..."
+if [ ! -d $orig_dir ]; then
+   echo "$orig_dir does not exist; exiting..."
+   exit 1
+fi
+
+echo "Tarring $orig_dir/.emacs.d into $int..."
+cd $orig_dir
+
 $tar c"$verbose"f $int --exclude=*.elc .emacs.d
 if [ -d host/$host/.emacs.d ] ; then
    $tar u"$verbose"f $int --transform=s%host/$host%% host/$host/.emacs.d
@@ -47,7 +54,7 @@ mv -f $int ~
 
 echo "Untarring $int into $HOME..."
 
-pushd ~
+cd ~
 
 if [ -d .emacs.d ] ; then
    rm -f $backup
@@ -71,7 +78,6 @@ tar -x"$verbose"pf $int
 rm -f $int
 
 emacscomp.sh .emacs.d
-popd
 
 echo "...Done installing emacs.d"
 
