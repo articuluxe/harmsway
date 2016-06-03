@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Monday, March 14, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-04-21 08:58:36 dan.harms>
+;; Modified Time-stamp: <2016-06-03 15:55:19 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: config
 
@@ -30,6 +30,12 @@
 (my/load-site-file "xr")
 
 ;(setq profile-gcc-standard-version "c++11")
+(with-eval-after-load 'remote-host-connector
+  (setq my/remote-host-list
+        (append
+         (list
+          '(:host "chihq-dev-02d-1" :user "dan.harms" :password "" :description "Dan Harms's Dev Workstation VM (virtual machine)" :category "snap")
+          ) my/remote-host-list)))
 
 (set-frame-font "Monospace 10" nil t)
 ; #<font-spec xft nil Monospace nil nil normal normal nil 10.0 nil nil nil ((:name . "Monospace"))>
