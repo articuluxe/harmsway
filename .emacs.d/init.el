@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-06-02 11:05:38 dan.harms>
+;; Modified Time-stamp: <2016-06-07 08:06:00 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -315,6 +315,12 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
               (set (make-local-variable 'gdb-create-source-file-list) nil)
               (gdb-many-windows 1)
               )))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; outrespace ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package
+ outrespace
+ :bind ("C-c z" . outrespace-mode)
+ )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;; remote-host-connector ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package remote-host-connector
