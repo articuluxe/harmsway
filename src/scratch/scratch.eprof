@@ -17,7 +17,8 @@
                   "--exclude=X11"
                   "--exclude=python"
                   ) gen-tags-ctags-cpp-options)
-    (append (list "c++lib" "/usr/local/gcc-4.9.1/include/c++/4.9.1/"
+    (append (list "c++lib"
+                  (substitute-in-file-name "$CSTDLIB_INC")
                   gen-tags-exe "-Re"
                   "--language-force=c++"
                   "-h=\".h.H.hh.hpp.hxx.h++.inc.def.\""

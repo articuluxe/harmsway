@@ -19,6 +19,8 @@ export CSTDLIB_ROOT=/opt/x3p/xrt_a/base
 export CSTDLIB_INC=$CSTDLIB_ROOT/include/c++/4.9.1
 export CSTDLIB_BIN=$CSTDLIB_ROOT/bin
 
+export COMPILER_PATH=$CSTDLIB_BIN
+
 # source the site file
 if [ -f ~/.bash_$SITE ]; then
    . ~/.bash_$SITE

@@ -19,6 +19,8 @@ export CSTDLIB_ROOT=/usr
 export CSTDLIB_INC=$CSTDLIB_ROOT/include/c++/4.8.2
 export CSTDLIB_BIN=$CSTDLIB_ROOT/bin
 
+export COMPILER_PATH=$CSTDLIB_BIN
+
 # on this host we don't need to
 # source the site file
 # if [ -f ~/.bash_$SITE ]; then
