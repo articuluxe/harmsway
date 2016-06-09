@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-06-07 08:06:00 dharms>
+;; Modified Time-stamp: <2016-06-09 16:38:06 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1732,10 +1732,13 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; flyspell ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package flyspell
   :if (executable-find "hunspell")
+  :defer t
   :init
   (setq ispell-program-name (executable-find "hunspell"))
-  :config
   (add-hook 'prog-mode-hook #'flyspell-prog-mode)
+  (mapc (lambda (hook) (add-hook hook #'flyspell-mode))
+        '(text-mode-hook markdown-mode org-mode))
+  :config
   (define-key flyspell-mode-map [?\C-,] nil)
   (define-key flyspell-mode-map [?\C-\;] nil)
   (define-key flyspell-mode-map [?\C-\.] nil)
@@ -1751,8 +1754,6 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
    ("C-c \\r" . flyspell-region)
    )
   (use-package ace-popup-menu :config (ace-popup-menu-mode 1))
-  (mapc (lambda (hook) (add-hook hook #'flyspell-mode))
-        '(text-mode-hook markdown-mode org-mode))
   ;; (add-hook 'flyspell-mode-hook #'flyspell-popup-auto-correct-mode)
   ;; (defun my/toggle-flyspell() (interactive)
   ;;        (lambda() (flyspell-mode (if flyspell-mode 0 1))))
