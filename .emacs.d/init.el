@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-06-09 16:38:06 dan.harms>
+;; Modified Time-stamp: <2016-06-10 13:00:51 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -945,7 +945,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
          ("C-c fi" . counsel-imenu)
          ("C-c fl" . counsel-git-log)
          )
-  :commands counsel-M-x
+  :commands (counsel-M-x counsel-find-file)
   :config
   (setq counsel-find-file-at-point t)
   (setq counsel-find-file-ignore-regexp "\\.elc$")
