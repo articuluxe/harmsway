@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Monday, August 17, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-04-21 09:24:05 dan.harms>
+;; Modified Time-stamp: <2016-06-10 13:49:05 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: emacs config hostnames hosts
 
@@ -32,8 +32,10 @@
         ;; xr
         (:host "carvzn-snap-06h.lnx.xrtrading.local" :site "xr")
         (:host "chihq-benchmark-32e.lnx.xrtrading.local" :site "xr")
-        (:host "hq-snapdev-77v.lnx.xrtrading.local" :site "xr")
+        (:host "chihq-xmock-01h.xrtrading.local" :site "xr")
+        (:host "chihq-xmock-02c.xrtrading.local" :site "xr")
         (:host "hq-snapdev-55a.lnx.xrtrading.local" :site "xr")
+        (:host "hq-snapdev-77v.lnx.xrtrading.local" :site "xr")
         ))
 
 ;;; hosts ends here
