@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-06-01 17:04:36 dan.harms>
+;; Modified Time-stamp: <2016-06-10 11:15:20 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -154,6 +154,7 @@ This does not otherwise remove the profile itself from memory."
   (let* ((root (profile-current-get 'project-root-dir))
          (prefix (profile-current-get 'remote-prefix))
          (file (concat prefix root name)))
+    (setenv "REPO_ROOT" root)
     (when (f-exists? file)
       (load-environment-variables-from-file file))))
 
