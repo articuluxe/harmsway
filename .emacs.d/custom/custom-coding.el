@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Tuesday, April 12, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-05-27 17:24:06 dharms>
+;; Modified Time-stamp: <2016-06-10 17:06:54 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: coding
 
@@ -114,25 +114,6 @@ query for the base name. Otherwise, the base file name is used."
     (save-excursion
       (goto-char end)(insert ")")
       (goto-char start)(insert str "_cast<" type ">("))))
-
-;; namespace
-(defun wrap-namespace-region (start end)
-  "Insert enclosing namespace brackets around a region."
-  (interactive "r")
-  (let ((str))
-    (setq str (read-string "Enter the namespace name: "))
-    (save-excursion
-      (goto-char end) (insert "\n}")
-      (insert-char ?\s c-basic-offset)
-      (insert "// end ")
-      (if (zerop (length str))
-          (insert "anonymous "))
-      (insert "namespace " str "\n")
-      (goto-char start)
-      (insert "namespace ")
-      (if (not (zerop (length str)))
-          (insert str " "))
-      (insert "{\n\n"))))
 
 (provide 'custom-coding)
 ;;; custom-coding.el ends here

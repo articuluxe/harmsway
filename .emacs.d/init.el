@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-06-10 13:00:51 dan.harms>
+;; Modified Time-stamp: <2016-06-13 06:57:57 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -243,7 +243,9 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 
 (use-package custom-utils
   :bind (("C-x C-M-e" . sanityinc/eval-last-sexp-or-region)
-         ("C-h C-f" . find-function-view))
+         ("C-h C-f" . find-function-view)
+         ("M-g g" . goto-line-with-feedback)
+         )
   :commands
   (insert-now now insert-today today find-file-upwards find-file-dir-upwards
               goto-line-with-feedback goto-line
@@ -298,7 +300,6 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
          ("C-c ii" . add-header-include-ifdefs)
          ("C-c h" . insert-class-header)
          ("C-c c" . insert-cast)
-         ("C-c n" . wrap-namespace-region)
   ))
 (use-package custom-gud
   :bind (("C-c 4" . my/launch-gdb)
@@ -319,7 +320,9 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; outrespace ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package
  outrespace
- :bind ("C-c z" . outrespace-mode)
+ :bind (("C-c z" . outrespace-mode)
+        ("C-c n" . outre-wrap-namespace-region)
+        )
  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;; remote-host-connector ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
