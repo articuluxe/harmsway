@@ -26,6 +26,3 @@ unset sshconf
 [[ $- != *i* ]] && return
 
 echo "Interactive shell loaded .bash_profile..."
-
-# auto-expand !-key-chords on <space>
-bind Space:magic-space
