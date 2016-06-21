@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-06-17 17:27:06 dharms>
+;; Modified Time-stamp: <2016-06-21 17:49:12 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -321,9 +321,11 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (use-package
  outrespace
  :bind (("C-c z" . outrespace-mode)     ;temporary
+        ("C-c np" . outre-print-enclosing-ns-name)
         ("C-c nn" . outre-wrap-namespace-region)
         ("C-c nj" . outre-ivy-jump-to-ns)
-        ("C-c nc" . outre-change-enclosing-ns-name)
+        ("C-c nc" . outre-change-ns-name)
+        ("C-c nC" . outre-change-enclosing-ns-name)
         )
  )
 
