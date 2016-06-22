@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-06-21 17:49:12 dharms>
+;; Modified Time-stamp: <2016-06-22 17:05:16 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1064,7 +1064,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (setq rm-blacklist
         '(" AC" " yas" " Undo-Tree" " Abbrev" " Guide" " Hi" " $" " ,"
           " Ifdef" " Rbow" " ivy" " ElDoc" " (*)" " wg" " ⛓" " GitGutter"
-          " Fly" " drag"))
+          " Fly" " drag" " mc++fl"))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smart-mode-line ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
