@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-06-22 17:05:16 dan.harms>
+;; Modified Time-stamp: <2016-06-26 21:29:21 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -326,6 +326,8 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
         ("C-c nj" . outre-ivy-jump-to-ns)
         ("C-c nc" . outre-change-ns-name)
         ("C-c nC" . outre-change-enclosing-ns-name)
+        ("C-c nd" . outre-delete-ns-by-name)
+        ("C-c nD" . outre-delete-enclosing-ns)
         )
  )
 
