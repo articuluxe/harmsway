@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-03-30 18:27:21 dharms>
+;; Modified Time-stamp: <2016-07-01 16:54:43 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -25,6 +25,10 @@
 ;;
 
 ;;; Code:
+
+(eval-when-compile
+  (setq use-package-verbose t)
+  (require 'use-package))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Process Viewer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package vkill :bind ("C-c 0p" . vkill))
