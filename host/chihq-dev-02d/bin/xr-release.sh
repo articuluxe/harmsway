@@ -5,26 +5,28 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Monday, May 30, 2016
 # Version: 1.0
-# Modified Time-stamp: <2016-06-10 13:43:10 dan.harms>
+# Modified Time-stamp: <2016-07-05 08:06:33 dharms>
 # Modified by: Dan Harms
 # Keywords: xr config
 
-host=$(hostname -s)
-hosts="
-$VM
-hq-snapdev-77v
-chihq-xmock-01h
-chihq-xmock-02c
-carvzn-snap-06h
-chihq-benchmark-32e
-"
+hostfile=~/src/harmsway/site/xr/.emacs.d/settings/host/hosts/xr
+
+if [ -f "$hostfile" ]; then
+   hosts=(`cat $hostfile`)
+else
+   echo "No host file $hostfile; output will not be distributed"
+fi
 
 cd ~/src/harmsway/
-host/$host/bin/xr-tar-world.sh
+host/xr/bin/xr-tar-world.sh
 
-for host in $hosts; do
-   echo "Copying xr-world.tar to $host"
-   scp xr-world.tar $host:~
+numhosts=${#hosts[*]}
+i=0
+while [ $i -lt $numhosts ]
+do
+   echo "Copying xr-world.tar to ${hosts[$i]}"
+   scp xr-world.tar ${hosts[$i]}:~
+   i=$(( $i+1 ))
 done
 
 # code ends here

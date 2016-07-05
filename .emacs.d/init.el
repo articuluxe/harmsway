@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-06-26 21:29:21 dharms>
+;; Modified Time-stamp: <2016-07-05 07:51:59 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1976,9 +1976,13 @@ customization."
     ))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; host ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defvar my/host-plist '())
-(let* ((system system-name)
+(defun my/unqualify-host-name (hst)
+  "Remove the fully qualified suffix, if any, from a hostname HST."
+  (when (string-match "^\\([^.]+\\)\\.?.*$" hst)
+    (match-string-no-properties 1 hst)))
+
+(let* ((system (my/unqualify-host-name system-name))
        (hosts-dir (concat my/user-directory "settings/host/"))
-       (hosts-file (concat hosts-dir "hosts"))
        (host-dir
         (file-name-as-directory
          (concat hosts-dir system)))
@@ -1987,10 +1991,20 @@ customization."
   (setq my/remote-hosts-file (concat my/user-directory "remote-hosts"))
   ;; load host file (if present)
   (if (file-exists-p host-file)
-      (progn
-        (load host-file t))
+      (load host-file t)
     ;; otherwise look for current host in hosts file
-    (load hosts-file t)
+    ;; first populate my/host-plist
+    (mapc (lambda (file)
+            (let ((site (f-base file)))
+              (mapc (lambda (entry)
+                      (setq
+                       my/host-plist
+                       (cons
+                        `(:host ,entry :site ,site)
+                        my/host-plist)))
+                    (read-file-into-list-of-lines file))))
+          (f-files (concat hosts-dir "hosts/")))
+    ;; now analyze my/host-plist for the current hostname
     (mapc
      (lambda(plist)
        (and (string= (plist-get plist :host) system)
