@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-07-05 07:51:59 dharms>
+;; Modified Time-stamp: <2016-07-05 17:05:51 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -755,11 +755,11 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; beacon ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package beacon
-  :bind ("M-s C-l" . beacon-blink)
-  :demand t
+  :bind (("M-s C-l" . beacon-blink)
+         ("C-c 0b" . beacon-mode))
+  :defer t
   :config
   (add-to-list 'beacon-dont-blink-major-modes 'etags-select-mode)
-  (beacon-mode 1)
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; bookmark+ ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
