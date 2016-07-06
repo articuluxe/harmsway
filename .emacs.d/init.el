@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-07-05 17:05:51 dharms>
+;; Modified Time-stamp: <2016-07-06 17:44:59 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1722,14 +1722,18 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   :init
   (setq flycheck-emacs-lisp-package-user-dir
         (concat my/user-directory "elpa/"))
-  (add-hook 'flycheck-mode-hook #'flycheck-checkbashisms-setup)
+  (defun my/setup-flycheck ()
+    (flycheck-checkbashisms-setup)
+    (flycheck-bashate-setup))
+  (add-hook 'flycheck-mode-hook #'my/setup-flycheck)
   (add-hook 'after-init-hook #'global-flycheck-mode)
   :config
   (setq flycheck-global-modes
         '(emacs-lisp-mode python-mode dart-mode sh-mode c++-mode))
   (setq-default flycheck-emacs-lisp-load-path 'inherit)
-  (use-package flycheck-checkbashisms)
   (use-package flycheck-pos-tip)
+  (use-package flycheck-checkbashisms)
+  (use-package flycheck-bashate)
   (setq flycheck-display-errors-function #'flycheck-pos-tip-error-messages)
   (setq flycheck-pos-tip-display-errors-tty-function
         (lambda (errors)
