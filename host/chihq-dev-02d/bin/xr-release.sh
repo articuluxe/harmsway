@@ -5,7 +5,7 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Monday, May 30, 2016
 # Version: 1.0
-# Modified Time-stamp: <2016-07-05 08:06:33 dharms>
+# Modified Time-stamp: <2016-07-06 12:34:27 dan.harms>
 # Modified by: Dan Harms
 # Keywords: xr config
 
@@ -18,7 +18,7 @@ else
 fi
 
 cd ~/src/harmsway/
-host/xr/bin/xr-tar-world.sh
+host/chihq-dev-02d/bin/xr-tar-world.sh
 
 numhosts=${#hosts[*]}
 i=0
