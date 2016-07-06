@@ -24,6 +24,8 @@ export PATH=/opt/x3p/xrt_a/llvm/3.6.1/bin:$PATH
 
 export CXX_FLAGS="-std=c++0x -Wall -Wextra -pedantic -Wno-unused-local-typedefs"
 
+# set display to windows host
+display-remote() { export DISPLAY=10.10.102.157:0.0; }
 # reset display to local host
 display-local() { export DISPLAY=:0.0; }
 

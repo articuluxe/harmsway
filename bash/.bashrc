@@ -15,6 +15,7 @@ function ahead_behind
    git rev-list --left-right --count $curr_branch...$curr_remote/$curr_merge_branch | tr -s '\t' '|';
 }
 
+set -o emacs
 # auto-expand !-key-chords on <space>
 bind Space:magic-space
 # verify commands before running abbrev.
