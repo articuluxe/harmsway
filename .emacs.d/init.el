@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-07-06 17:44:59 dharms>
+;; Modified Time-stamp: <2016-07-07 08:20:58 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2254,8 +2254,8 @@ customization."
             (setq-default indent-tabs-mode nil)
             ;; (idle-highlight-mode 1)
             (define-key sh-mode-map "\r" 'reindent-then-newline-and-indent)
-            (setq sh-basic-offset 3)
-            (setq sh-indentation 3)
+            (setq sh-basic-offset 4)
+            (setq sh-indentation 4)
             (define-key sh-mode-map "\C-c\C-c" 'comment-region)
             (define-key sh-mode-map "\C-c\C-u" 'uncomment-region)
             (add-to-list 'flycheck-disabled-checkers 'sh-posix-dash)
