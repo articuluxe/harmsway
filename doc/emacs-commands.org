@@ -355,7 +355,14 @@ M-x apropos mode   list available commands containing “mode”
 * Org
 
 ** Formatting
-*** Text can be /italic/, *bold*, _underlined_, =literal= or ~code~.
+*** Text can be /italic/, *bold*, _underlined_, =literal= or ~code~.  Even +strike-thru+!
+*** Unordered lists
+     - one :: this is a description
+     - two :: this is another description
+*** Ordered lists
+     1. first
+     2. second
+
 ** Blocks
 < e TAB inserts an example block:
 #+BEGIN_EXAMPLE
@@ -389,6 +396,8 @@ exit
 #+END_SRC
 
 ** Outline
+M-RET        new heading
+M-S-RET      new heading at same level
 M-<up/down>  move section
 M-<left/right> promote/demote
 S-<up/down>  cycle priority
@@ -399,11 +408,18 @@ M-S-<up/down> move section
 M-S-<left/right> promote/demote section
 C-c C-q       add tags to headlines
 
+** TODOs
+C-c C-t    cycle TODO states
+C-c C-s    schedule a task
+
+** Tags
+C-c C-c    add a tag
+
 ** Links
 C-c C-l    insert link
 C-c C-l    edit link
 C-c C-o    goto link
-
+M-M-e      org-store-link
 
 [[location][This]] is a link to a <<location>>.
 

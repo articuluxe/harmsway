@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-07-07 08:20:58 dharms>
+;; Modified Time-stamp: <2016-07-11 08:09:41 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -66,6 +66,7 @@
 (set-register ?\C-s (cons 'file "~/src"))
 (set-register ?\C-h (cons 'file "~/src/harmsway"))
 (set-register ?\C-e (cons 'file "~/src/harmsway/.emacs.d"))
+(set-register ?\C-o (cons 'file "~/org"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-save ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defvar my/autosave-dir (concat my/user-directory "autosaves/"))
@@ -1118,12 +1119,23 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; org ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(global-set-key "\e\ea" #'org-agenda)
+(global-set-key "\e\el" #'org-store-link)
 (use-package org
   :defer t
   :init
   (setq org-src-fontify-natively t)
   (setq org-replace-disputed-keys t)
+  (setq org-log-done 'time)
+  (setq org-agenda-files
+        '("~/org/home.org"))
   :config
+  (setq org-todo-keywords
+        '((sequence "TODO(t)" "BLOCKED(b)" "Done(d)")))
+  (setq org-tag-alist '(("@home" . ?h)
+                        ("@work" . ?w)
+                        ("@mobile" . ?m)
+                        ))
   (org-babel-do-load-languages
    'org-babel-load-languages
    '(
@@ -1773,7 +1785,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   ;; (global-set-key "\C-c\\t" #'my/toggle-flyspell)
   )
 (with-eval-after-load 'flyspell
-  (require 'flyspell-popup)
+  (require 'flyspell-popup)             ;and/or flyspell-correct-ivy
   (bind-key "C-c \\\\" 'flyspell-popup-correct flyspell-mode-map))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; headers ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
