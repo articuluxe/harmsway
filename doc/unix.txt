@@ -4,7 +4,7 @@
 # Author:  <dan.harms@xrtrading.com>
 # Created: Friday, March 20, 2015
 # Version: 1.0
-# Modified Time-stamp: <2016-04-21 12:23:10 dan.harms>
+# Modified Time-stamp: <2016-07-07 13:59:32 dan.harms>
 # Modified by: Dan Harms
 # Keywords: help
 
@@ -127,6 +127,8 @@ $?
 awk '$5 ~ /regex/ {print $5;}' file
 # look at TAB-separated values
 awk 'BEGIN {FS="\t"}; {if ($12 == "ESH6") print $40; }' <file>
+# average a column
+awk '/^num/ {n++; sum+=$2} END {print n?sum/n:0}' file
 # echo lines with fewer lines
 awk -F, 'NF < 18 { print $0;}' <file>
 # find which column matches a regex

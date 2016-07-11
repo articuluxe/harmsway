@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Friday, August  7, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-03-30 18:27:20 dharms>
+;; Modified Time-stamp: <2016-07-08 16:58:18 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: homiak tramp remote hosts
 
@@ -52,7 +52,7 @@
                     (list :host
                           (match-string-no-properties 1 cat)
                           :user
-                          (if (> 0 (length user)) user user-login-name)
+                          (if (> (length user) 0) user user-login-name)
                           :password
                           (xml-get-attribute node 'Password)
                           :description

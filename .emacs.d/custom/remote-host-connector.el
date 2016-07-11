@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Monday, April 18, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-04-24 08:16:52 dharms>
+;; Modified Time-stamp: <2016-07-08 17:05:29 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: remote hosts
 
@@ -26,6 +26,9 @@
 
 ;;; Code:
 
+(require 'tramp)
+(require 'custom-completion)
+
 (defvar my/remote-hosts-file ""
   "Location of remote hosts file.")
 (defvar my/remote-host-list '()
@@ -37,30 +40,28 @@
 (defun my/connect-to-remote-host(&optional arg)
   "Connect to a remote host from `my/remote-host-list'."
   (interactive "P")
-  (let ((hosts
-         (mapcar (lambda (plist)
-                   (let* ((delim (char-to-string ?:))
-                          (stem (plist-get plist :host))
-                          (user (or (unless arg
-                                      (plist-get plist :user))
-                                    my/user-name))
-                          (pwd (plist-get plist :password))
-                          (desc (plist-get plist :description))
-                          (category (plist-get plist :category))
-                          (display (concat user delim stem))
-                          (connect (concat
-                                    "/"
-                                    tramp-default-method
-                                    ":" user "@" stem ":~")))
-                     (when category
-                       (setq display
-                             (concat category delim display)))
-                     (when desc
-                       (setq display
-                             (concat display delim desc)))
-                     (and stem (cons display connect))))
-                 my/remote-host-list))
-        result cell)
+  (let ((delim (char-to-string ?:))
+        stem user desc cat disp conn hosts result cell)
+    (setq hosts
+          (mapcar (lambda (plist)
+                    (setq stem (plist-get plist :host))
+                    (setq desc (plist-get plist :description))
+                    (setq cat (plist-get plist :category))
+                    (setq user (or (unless arg
+                                     (plist-get plist :user))
+                                   my/user-name))
+                    (setq disp (concat user delim stem))
+                    (setq conn
+                          (concat "/" tramp-default-method
+                                  ":" user "@" stem ":~"))
+                  (when cat
+                    (setq disp
+                          (concat cat delim disp)))
+                  (when desc
+                    (setq disp
+                          (concat disp delim desc)))
+                  (and stem (cons disp conn)))
+                  my/remote-host-list))
     (setq result
           (funcall my/choose-func
                    (mapcar 'car hosts)
