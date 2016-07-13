@@ -4,7 +4,7 @@
 # Author:  <dan.harms@xrtrading.com>
 # Created: Friday, March 20, 2015
 # Version: 1.0
-# Modified Time-stamp: <2016-07-07 13:59:32 dan.harms>
+# Modified Time-stamp: <2016-07-13 08:55:17 dharms>
 # Modified by: Dan Harms
 # Keywords: help
 
@@ -53,6 +53,10 @@ while sleep 1; do who; done
 # compile emacs
 mkdir bld && cd bld
 ../configure [--with-png=no]
+
+# compare 2 directories
+diff -qr one two
+comm -3 <(ls -l one) <(ls -l two)
 
 ################################# wireshark ##################################
 # list interfaces
