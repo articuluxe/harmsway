@@ -419,7 +419,7 @@ C-c C-c    add a tag
 C-c C-l    insert link
 C-c C-l    edit link
 C-c C-o    goto link
-M-M-e      org-store-link
+M-M-l      org-store-link
 
 [[location][This]] is a link to a <<location>>.
 

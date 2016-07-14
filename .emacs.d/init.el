@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-07-11 08:09:41 dharms>
+;; Modified Time-stamp: <2016-07-12 08:29:03 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1131,7 +1131,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
         '("~/org/home.org"))
   :config
   (setq org-todo-keywords
-        '((sequence "TODO(t)" "BLOCKED(b)" "Done(d)")))
+        '((sequence "TODO(t)" "BLOCKED(b)" "DONE(d)")))
   (setq org-tag-alist '(("@home" . ?h)
                         ("@work" . ?w)
                         ("@mobile" . ?m)
