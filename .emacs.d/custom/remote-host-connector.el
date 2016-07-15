@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Monday, April 18, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-07-08 17:05:29 dan.harms>
+;; Modified Time-stamp: <2016-07-15 08:18:04 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: remote hosts
 
@@ -33,6 +33,7 @@
   "Location of remote hosts file.")
 (defvar my/remote-host-list '()
   "List of remote hosts.")
+(defvar my/user-name)                   ;silence warning
 
 (when (file-exists-p my/remote-hosts-file)
   (load my/remote-hosts-file t))

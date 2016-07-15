@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Tuesday, March 29, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-03-30 08:16:08 dan.harms>
+;; Modified Time-stamp: <2016-07-15 08:15:56 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -40,7 +40,7 @@
      )
   "List of regexps which `full-edit' will ignore.")
 
-(defun test-list-for-string(list regex)
+(defun full-edit-test-list-for-string(list regex)
   "Check if a list contains a string by regexp."
   (let ((lst list)
         curr)
@@ -52,7 +52,7 @@
           (setq lst (cdr lst))))
       nil)))
 
-(defun gather-all-files(dir reporter &optional symbolic)
+(defun full-edit-gather-all-files(dir reporter &optional symbolic)
   "Gather a list of filenames recursively below a directory.  Results are
   filtered via `full-edit-accept-patterns' and `full-edit-reject-patterns'."
   (let* ((all-results
@@ -66,22 +66,27 @@
       (setq dirs (remove-if 'file-symlink-p dirs)))
     (mapc (lambda(file)
             (and
-             (test-list-for-string full-edit-accept-patterns
-                                   (file-name-nondirectory file))
-             (not (test-list-for-string full-edit-reject-patterns
-                                        (file-name-nondirectory file)))
+             (full-edit-test-list-for-string
+              full-edit-accept-patterns
+              (file-name-nondirectory file))
+             (not (full-edit-test-list-for-string
+                   full-edit-reject-patterns
+                   (file-name-nondirectory file)))
              (setq result (cons file result))
              (progress-reporter-update reporter)
              ))
           files)
     (mapc (lambda(dir)
-            (setq result (nconc result
-                                (gather-all-files dir reporter symbolic))))
+            (setq
+             result
+             (nconc
+              result
+              (full-edit-gather-all-files dir reporter symbolic))))
           dirs)
     result
     ))
 
-(defun open-file-list(files)
+(defun full-edit-open-file-list(files)
   "Find (open) each of a list of filenames."
   (let* ((i 0)
          (len (length files))
@@ -101,10 +106,10 @@
      ,current-prefix-arg))
   (if root
       (let* ((reporter (make-progress-reporter "Gathering files..."))
-             (files (gather-all-files (expand-file-name root)
-                                      reporter arg)))
+             (files (full-edit-gather-all-files (expand-file-name root)
+                                                reporter arg)))
         (progress-reporter-done reporter)
-        (open-file-list files)
+        (full-edit-open-file-list files)
         )
     (message "No directory given")))
 

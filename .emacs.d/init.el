@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-07-15 17:08:17 dan.harms>
+;; Modified Time-stamp: <2016-07-18 04:49:12 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -54,6 +54,7 @@
   "A path to a directory containing window-system-specific settings.")
 
 (eval-when-compile
+  (defvar use-package-verbose)          ;silence warning
   (setq use-package-verbose t)
   (require 'use-package))
 (require 'bind-key)
@@ -134,6 +135,7 @@ up to 10 times."
 ;; winner mode
 (winner-mode 1)
 ;; don't try to create "other files"
+(defvar ff-always-try-to-create)        ;silence warning
 (setq ff-always-try-to-create nil)
 ;; Preserve line position on scroll
 (setq scroll-preserve-screen-position t)
@@ -306,6 +308,10 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   :bind (("C-c 4" . my/launch-gdb)
          ([f4] . my/launch-gdb)
          )
+  :defines (gdb-show-main
+            gdb-show-changed-values
+            gdb-use-colon-colon-notation
+            gdb-create-source-file-list)
   :config
   (add-hook 'gud-mode-hook
             (lambda()
@@ -653,6 +659,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (use-package ascii :bind ("M-s a" . ascii-display))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; magit ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defvar my/git-keymap)
 (define-prefix-command 'my/git-keymap)
 (global-set-key "\M-sm" 'my/git-keymap)
 (eval-and-compile
@@ -661,8 +668,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   :if (not (version< emacs-version "24.4"))
   :init
   (eval-and-compile (setq magit-need-cygwin-noglob nil))
-  (setq magit-status-buffer-name-format "*magit: %b*"
-        magit-log-show-margin t
+  (setq magit-log-show-margin t
         magit-popup-show-common-commands nil
         magit-log-show-refname-after-summary nil
         magit-no-confirm '()
@@ -1832,6 +1838,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (use-package auto-insert-choose+
   :bind ("C-c st" . auto-insert)
   :demand t
+  :defines (auto-insert auto-insert-directory auto-insert-alist)
   :init
   (setq auto-insert 'other)
   (setq auto-insert-directory (concat my/scratch-directory "auto-insert/"))
@@ -2116,6 +2123,7 @@ customization."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dart-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package dart-mode :mode "\\.dart$" :interpreter "dart"
+  :defines dart-enable-analysis-server
   :init
   (setq dart-enable-analysis-server t)
   :config
@@ -2128,6 +2136,7 @@ customization."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dos-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package dos :mode ("\\.bat$" . dos-mode)
+  :defines (dos-basic-offset dos-indentation)
   :config
   (use-package dos-indent)
   (add-hook 'dos-mode-hook
