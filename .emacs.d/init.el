@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-07-15 12:28:59 dan.harms>
+;; Modified Time-stamp: <2016-07-15 17:08:17 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1816,6 +1816,17 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (register-file-header-action "Modified by[ \t]*:" 'my/update-last-modifier)
   (register-file-header-action "^[ \t]*.+ *\\([^ ]+\\) +\\-\\-" 'my/update-file-name)
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; request-deferred ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package request-deferred :commands request-deferred)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; web ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package web
+  :commands (web-http-call web-http-get web-http-post
+                           web-json-post web-get))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; restclient ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package restclient :commands restclient-mode)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-insert ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package auto-insert-choose+
