@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-07-12 08:29:03 dharms>
+;; Modified Time-stamp: <2016-07-15 12:28:59 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2272,6 +2272,9 @@ customization."
             (define-key sh-mode-map "\C-c\C-u" 'uncomment-region)
             (add-to-list 'flycheck-disabled-checkers 'sh-posix-dash)
             ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; strace-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package strace-mode :mode "\\.strace$")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; text-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-hook 'text-mode-hook #'my/set-word-processor)
