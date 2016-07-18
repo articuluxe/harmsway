@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-07-18 04:49:12 dharms>
+;; Modified Time-stamp: <2016-07-18 14:21:48 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -954,12 +954,12 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; counsel ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package counsel
-  :bind (("C-c ff" . counsel-git)
-         ("C-c fr" . counsel-git-grep)
-         ("C-c fg" . counsel-grep)
-         ("C-c fs" . counsel-git-stash)
-         ("C-c fi" . counsel-imenu)
-         ("C-c fl" . counsel-git-log)
+  :bind (("M-s M-f" . counsel-git)
+         ("M-s M-r" . counsel-git-grep)
+         ("M-s M-g" . counsel-grep)
+         ("M-s M-z" . counsel-git-stash)
+         ("M-s M-i" . counsel-imenu)
+         ("M-s M-l" . counsel-git-log)
          )
   :commands (counsel-M-x counsel-find-file)
   :config
