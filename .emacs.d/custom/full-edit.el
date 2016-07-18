@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Tuesday, March 29, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-07-15 08:15:56 dharms>
+;; Modified Time-stamp: <2016-07-18 17:14:13 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -58,12 +58,12 @@
   (let* ((all-results
           (directory-files
            dir t "^\\([^.]\\|\\.[^.]\\|\\.\\..\\)" t))
-         (files (remove-if 'file-directory-p all-results))
-         (dirs (remove-if-not 'file-directory-p all-results))
+         (files (seq-remove 'file-directory-p all-results))
+         (dirs (seq-filter 'file-directory-p all-results))
          (result '()))
     (unless symbolic
-      (setq files (remove-if 'file-symlink-p files))
-      (setq dirs (remove-if 'file-symlink-p dirs)))
+      (setq files (seq-remove 'file-symlink-p files))
+      (setq dirs (seq-remove 'file-symlink-p dirs)))
     (mapc (lambda(file)
             (and
              (full-edit-test-list-for-string
