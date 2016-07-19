@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-07-18 14:21:48 dan.harms>
+;; Modified Time-stamp: <2016-07-19 08:52:31 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -668,14 +668,14 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   :if (not (version< emacs-version "24.4"))
   :init
   (eval-and-compile (setq magit-need-cygwin-noglob nil))
-  (setq magit-log-show-margin t
-        magit-popup-show-common-commands nil
-        magit-log-show-refname-after-summary nil
-        magit-no-confirm '()
-        magit-diff-refine-hunk t
-        magit-auto-revert-tracked-only t
-        magit-prefer-remote-upstream t
-        )
+  (setq magit-log-show-margin t)
+  (setq magit-popup-show-common-commands nil)
+  (setq magit-log-show-refname-after-summary nil)
+  (setq magit-no-confirm '())
+  (setq magit-diff-refine-hunk t)
+  (setq magit-process-find-password-functions 'magit-process-password-auth-source)
+  (setq magit-auto-revert-tracked-only t)
+  (setq magit-prefer-remote-upstream t)
   ;; git commands
   :bind (:map my/git-keymap
               ("g" . magit-status)
