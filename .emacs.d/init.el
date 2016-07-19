@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-07-19 08:52:31 dan.harms>
+;; Modified Time-stamp: <2016-07-19 09:55:25 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1544,9 +1544,12 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (eval-and-compile
   (add-to-list 'load-path (concat my/plugins-directory "vlf/")))
 (use-package vlf-setup
-  :config
+  :defines vlf-tune-enabled
+  :init
+  ;; for files over 100MB, only open 100MB at a time
   (setq large-file-warning-threshold 100000000) ;100MB
-  (setq vlf-batch-size 10000000)                ;10MB
+  (setq vlf-batch-size 100000000)       ;100MB
+  (setq vlf-tune-enabled nil)           ;don't adjust batch size dynamically
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; profiles ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
