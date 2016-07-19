@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-07-19 09:55:25 dan.harms>
+;; Modified Time-stamp: <2016-07-20 05:10:07 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1969,7 +1969,6 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
                      protobuf-mode
                      dart-mode
                      folio-mode
-                     markdown-mode
                      sh-mode
                      csharp-mode
                      awk-mode
@@ -2154,6 +2153,19 @@ customization."
               )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; emacs-lisp-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defun my/compile-lisp-file ()
+  "Byte-compile a lisp code file."
+  (require 'bytecomp)
+  (when (and
+         (eq major-mode 'emacs-lisp-mode)
+         (file-exists-p (byte-compile-dest-file (buffer-file-name)))
+         (not (string-match
+               "^\\.dir-locals.el$"
+               (file-name-nondirectory
+                (buffer-file-name)))))
+    (save-excursion
+      (byte-compile-file buffer-file-name))))
+
 (add-hook 'emacs-lisp-mode-hook
           (lambda()
             (setq indent-tabs-mode nil)
@@ -2170,18 +2182,7 @@ customization."
 (add-hook 'emacs-lisp-mode-hook 'eldoc-mode)
 (require 'lisp-extra-font-lock)
 (lisp-extra-font-lock-global-mode 1)
-(add-hook 'after-save-hook
-          (lambda()
-            (require 'bytecomp)
-            (when (and
-                   (eq major-mode 'emacs-lisp-mode)
-                   (file-exists-p (byte-compile-dest-file (buffer-file-name)))
-                   (not (string-match
-                         "^\\.dir-locals.el$"
-                         (file-name-nondirectory
-                          (buffer-file-name)))))
-              (save-excursion
-                (byte-compile-file buffer-file-name)))))
+(add-hook 'after-save-hook #'my/compile-lisp-file)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; folio-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package folio-mode :mode "\\.folio$"
@@ -2220,9 +2221,16 @@ customization."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; markdown-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package markdown-mode
-  :mode ("\\.md$" "\\.markdown$"
-         "LICENSE$" "README$" "INSTALL$" "CONTRIBUTORS$" "COPYING$"
+  :mode (("README\\.md$" . gfm-mode)
+         ("\\.md$" . markdown-mode)
+         ("\\.markdown$" . markdown-mode)
+         ("LICENSE$" . markdown-mode)
+         ("README$" . markdown-mode)
+         ("INSTALL$" . markdown-mode)
+         ("CONTRIBUTORS$" . markdown-mode)
+         ("COPYING$" . markdown-mode)
          )
+  :commands (markdown-mode gfm-mode)
   :init
   (add-hook 'markdown-mode-hook #'my/set-word-processor)
   )
