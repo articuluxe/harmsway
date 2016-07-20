@@ -5,19 +5,19 @@
 export SITE=xr
 export LHOME=/lhome/dan.harms
 
-python=/opt/anaconda-python-2.7.8/bin
-# what `use cdh5 prepends to $PATH:
-java=/usr/java/latest/bin:/usr/java/latest/jre/bin
-
-export PATH=$HOME/bin:/sbin/:$python:$PATH:.
-# removed :/usr/lib64
-# export TERM=xterm-256color
-# export DISPLAY=10.10.102.157:0.0
-
+# clang
+CLANG_ROOT=/opt/x3p/xrt_a/llvm/3.6.1
+CLANG_LIB=$CLANG_ROOT/lib
+CLANG_BIN=$CLANG_ROOT/bin
+# gcc
 export CSTDLIB_ROOT=/opt/x3p/xrt_a/base
 #/usr/local/gcc-4.9.1
 export CSTDLIB_INC=$CSTDLIB_ROOT/include/c++/4.9.1
 export CSTDLIB_BIN=$CSTDLIB_ROOT/bin
+
+python=/opt/anaconda-python-2.7.8/bin
+#java=/usr/java/latest/bin:/usr/java/latest/jre/bin
+export PATH=$CLANG_BIN:$python:$HOME/bin:$PATH:.
 
 export COMPILER_PATH=$CSTDLIB_BIN
 
@@ -35,6 +35,11 @@ use_gcc()
 {
    export CC=$CSTDLIB_BIN/gcc
    export CXX=$CSTDLIB_BIN/g++
+}
+
+use_clang() {
+    export CC=$CLANG_BIN/clang
+    export CXX=$CLANG_BIN/clang++
 }
 
 use_gcc
