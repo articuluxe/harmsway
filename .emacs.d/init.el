@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-07-20 08:31:27 dharms>
+;; Modified Time-stamp: <2016-07-21 08:39:28 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2112,6 +2112,12 @@ customization."
     (modify-syntax-entry ?_ "_" cmake-mode-syntax-table))
   (add-hook 'cmake-mode-hook #'my/cmake-fix-underscore)
   (add-hook 'cmake-mode-hook 'cmake-font-lock-activate)
+  )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; crontab-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package crontab-mode
+  :mode ("\\.cron\\(tab\\)?$" "cron\\(tab\\)?\\.")
+  :commands crontab-get
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; css-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
