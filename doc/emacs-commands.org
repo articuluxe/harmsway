@@ -395,6 +395,15 @@ exit
 <<<radio target>>>
 #+END_SRC
 
+** Links
+C-c C-l    insert link
+C-c C-l    edit link
+C-c C-o    goto link
+M-M-o-l    org-store-link
+M-M-o-c    org-capture
+
+[[location][This]] is a link to a <<location>>.
+
 ** Outline
 M-RET        new heading
 M-S-RET      new heading at same level
@@ -402,26 +411,24 @@ M-<up/down>  move section
 M-<left/right> promote/demote
 S-<up/down>  cycle priority
 M-<p/n>      move section (windmove-disputed)
-S-<left/right> cycle TODO status
-M--, M-+      cycle TODO status (windmove-disputed)
 M-S-<up/down> move section
 M-S-<left/right> promote/demote section
 C-c C-q       add tags to headlines
 
 ** TODOs
-C-c C-t    cycle TODO states
+C-c C-t    select TODO state
+M-S-+      promote TODO state
+M--        demote TODO state
 C-c C-s    schedule a task
 
 ** Tags
 C-c C-c    add a tag
 
-** Links
-C-c C-l    insert link
-C-c C-l    edit link
-C-c C-o    goto link
-M-M-l      org-store-link
+** Agenda
+M-M-o-a     agenda
+C-c .       add date
+C-u C-c .   add date and time
 
-[[location][This]] is a link to a <<location>>.
 
 ** Tables
 C-c C-c     realign table

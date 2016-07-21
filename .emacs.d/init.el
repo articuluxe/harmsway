@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-07-20 05:10:07 dharms>
+;; Modified Time-stamp: <2016-07-20 08:31:27 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -198,8 +198,6 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (global-set-key "\C-c5" 'toggle-truncate-lines)
 (global-set-key "\C-c " 'whitespace-mode)
 (global-set-key "\C-c0f" 'font-lock-fontify-buffer)
-(global-set-key "\e\es" 'speedbar)
-(global-set-key "\e\eo" 'speedbar-get-focus)
 (global-set-key "\M-sf" 'ff-find-other-file)
 (global-set-key (kbd "M-#") 'sort-lines)
 (global-set-key (kbd "C-#") 'sort-paragraphs)
@@ -1125,8 +1123,9 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; org ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(global-set-key "\e\ea" #'org-agenda)
-(global-set-key "\e\el" #'org-store-link)
+(global-set-key "\e\eoa" #'org-agenda)
+(global-set-key "\e\eol" #'org-store-link)
+(global-set-key "\e\eoc" #'org-capture)
 (use-package org
   :defer t
   :init
@@ -1141,6 +1140,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (setq org-tag-alist '(("@home" . ?h)
                         ("@work" . ?w)
                         ("@mobile" . ?m)
+                        ("@urgent" . ?u)
                         ))
   (org-babel-do-load-languages
    'org-babel-load-languages
@@ -1925,6 +1925,8 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
          ("\e\ez" . zop-up-to-char)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; speedbar ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(global-set-key "\e\ess" 'speedbar)
+(global-set-key "\e\eso" 'speedbar-get-focus)
 (add-hook 'speedbar-mode-hook
           (lambda()
             (when (display-graphic-p)
