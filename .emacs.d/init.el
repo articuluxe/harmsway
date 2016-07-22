@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-07-21 08:39:28 dan.harms>
+;; Modified Time-stamp: <2016-07-22 16:40:35 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1120,6 +1120,19 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (setq vc-ignore-dir-regexp
         (format "\\(%s\\)\\|\\(%s\\)"
                 vc-ignore-dir-regexp tramp-file-name-regexp))
+  )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; outline-magic ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defun my/add-outline-cycle-binding (map)
+  (bind-key "C-c -" 'outline-cycle map))
+(use-package outline-magic
+  :commands outline-cycle
+  :init
+  (setq outline-structedit-modifiers '(control shift)) ;TODO: doesn't work
+  (add-hook 'outline-mode-hook
+            (lambda() (my/add-outline-cycle-binding outline-mode-map)))
+  (add-hook 'outline-minor-mode-hook
+            (lambda() (my/add-outline-cycle-binding outline-minor-mode-map)))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; org ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
