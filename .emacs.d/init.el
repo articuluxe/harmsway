@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-07-22 16:40:35 dan.harms>
+;; Modified Time-stamp: <2016-07-24 08:56:26 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1144,14 +1144,18 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   :init
   (setq org-src-fontify-natively t)
   (setq org-replace-disputed-keys t)
+  (setq org-catch-invisible-edits 'show-and-error)
   (setq org-log-done 'time)
-  (setq org-agenda-files
-        '("~/org/home.org"))
+  (setq org-enforce-todo-dependencies t)
+  (setq org-enforce-todo-checkbox-dependencies t)
   :config
   (setq org-todo-keywords
-        '((sequence "TODO(t)" "BLOCKED(b)" "DONE(d)")))
-  (setq org-tag-alist '(("@home" . ?h)
+        '((sequence "TODO(t)" "WORKING(w)" "BLOCKED(b)"
+                    "|" "WONTFIX(x)" "DONE(d)")))
+  (setq org-tag-alist '((:startgroup . nil)
+                        ("@home" . ?h)
                         ("@work" . ?w)
+                        (:endgroup . nil)
                         ("@mobile" . ?m)
                         ("@urgent" . ?u)
                         ))
@@ -1429,6 +1433,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   :init
   (setq drag-stuff-modifier '(meta shift))
   :config
+  (add-to-list 'drag-stuff-except-modes 'org-mode)
   (drag-stuff-global-mode 1)
   )
 

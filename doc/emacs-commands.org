@@ -226,6 +226,7 @@ M-k         kill forward to sentence end
 C-x DEL   kill backward to sentence start
 
 * Rectangle
+C-x SPC     rectangular mark
 C-x r k     kill rectangle
 C-x r d     delete rectangle
 C-x r y     yank rectangle
@@ -409,31 +410,59 @@ M-RET        new heading
 M-S-RET      new heading at same level
 M-<up/down>  move section
 M-<left/right> promote/demote
-S-<up/down>  cycle priority
-M-<p/n>      move section (windmove-disputed)
 M-S-<up/down> move section
 M-S-<left/right> promote/demote section
-C-c C-q       add tags to headlines
+M-h           mark element
+C-c @         mark subtree
+C-c /         create sparse tree
+M-g n/p       move forward/back in sparse tree
+C-c C-x d     insert drawer
 
 ** TODOs
 C-c C-t    select TODO state
 M-S-+      promote TODO state
 M--        demote TODO state
 C-c C-s    schedule a task
+C-c C-x o  toggle an entry's ordered property 
+     :PROPERTIES:
+     :ORDERED t
+     :END:
+C-c C-c    [ ] toggle a checkbox in a plain list
+
+** Priorities
+C-c ,       set priority
+M-<p/n>     change priority (windmove-disputed)
 
 ** Tags
-C-c C-c    add a tag
+C-c C-q    add a tag
+C-c C-c    add a tag for current headline
 
 ** Agenda
+   SCHEDULED: <2029-12-25 Tue>
 M-M-o-a     agenda
 C-c .       add date
+C-c !       add inactive date
 C-u C-c .   add date and time
+C-c C-d     insert deadline
+C-c / d     sparse tree to check deadlines
+C-c / b     sparse tree for deadlines before a date
+C-c / a     sparse tree for deadlines after a date
+   Repeater: +1h/d/m/w/y :: repeat every hour/day/month/week/year
+     ++1w :: when marked done, shift at least 1w, but into future
+     .+1m :: when marked done, shift one month from now
+Warning:  -2d
 
+
+** Export
+C-c C-e     export
 
 ** Tables
+C-c |         convert region to table
+C-c RET     insert divider line and advance to next row
 C-c C-c     realign table
 C-c SPC     blank field at point
 TAB, S-TAB  move to next/prior field
+RET          move to next row
 M-<left/right>   move column left/right
 M-<up/down>      move row up/down
 M-S-<right>   insert new column to left of cursor
@@ -442,7 +471,8 @@ M-S-<up>      kill current row
 M-S-<down>    insert new row above cursor (below with prefix)
 C-c -         insert horizontal line
 C-c ^         sort rows based on current column
-C-c |         convert region to table
+C-c +         sum numbers in current column
+C-c `         edit current field in separate window
 
 
 * Games
