@@ -1,0 +1,8 @@
+# -*- mode: snippet; require-final-newline: nil -*-
+# name: localvars
+# key: localvars
+# binding: direct-keybinding
+# --
+# Local Variables:
+# eval: $1
+# End:
