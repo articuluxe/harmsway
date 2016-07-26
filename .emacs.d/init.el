@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-07-24 08:56:26 dharms>
+;; Modified Time-stamp: <2016-07-26 06:24:06 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -64,6 +64,7 @@
 (set-register ?\C-d (cons 'file "~/Documents"))
 (set-register ?\C-k (cons 'file "~/Desktop"))
 (set-register ?\C-w (cons 'file "~/Downloads"))
+(set-register ?\C-p (cons 'file "~/Dropbox"))
 (set-register ?\C-s (cons 'file "~/src"))
 (set-register ?\C-h (cons 'file "~/src/harmsway"))
 (set-register ?\C-e (cons 'file "~/src/harmsway/.emacs.d"))
