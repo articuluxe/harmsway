@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-07-26 06:24:06 dharms>
+;; Modified Time-stamp: <2016-07-26 06:27:27 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1147,12 +1147,14 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (setq org-replace-disputed-keys t)
   (setq org-catch-invisible-edits 'show-and-error)
   (setq org-log-done 'time)
+  ;; todos
   (setq org-enforce-todo-dependencies t)
   (setq org-enforce-todo-checkbox-dependencies t)
   :config
   (setq org-todo-keywords
         '((sequence "TODO(t)" "WORKING(w)" "BLOCKED(b)"
                     "|" "WONTFIX(x)" "DONE(d)")))
+  ;; tags
   (setq org-tag-alist '((:startgroup . nil)
                         ("@home" . ?h)
                         ("@work" . ?w)
@@ -1160,6 +1162,8 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
                         ("@mobile" . ?m)
                         ("@urgent" . ?u)
                         ))
+  ;; capture
+  (setq org-default-notes-file "~/Dropbox/notes/todo.org")
   (org-babel-do-load-languages
    'org-babel-load-languages
    '(
@@ -1289,9 +1293,15 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   :commands deft-find-file
   :config
   (setq deft-extensions '("org" "md" "txt"))
-  (setq deft-default-extension "md")
+  (setq deft-default-extension "org")
   (setq deft-recursive t)
-  ;; (setq deft-use-filename-as-title t)
+  (setq deft-use-filename-as-title nil)
+  (setq deft-use-filter-string-for-filename t)
+  (setq deft-org-mode-title-prefix t)
+  (setq deft-file-naming-rules
+        '((case-fn . capitalize)
+          (noslash . "")
+          (nospace . "")))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; diff ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
