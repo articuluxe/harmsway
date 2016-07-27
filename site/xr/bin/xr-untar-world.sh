@@ -5,7 +5,7 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Monday, May 18, 2015
 # Version: 1.0
-# Modified Time-stamp: <2016-05-30 11:23:52 dan.harms>
+# Modified Time-stamp: <2016-07-26 08:27:06 dan.harms>
 # Modified by: Dan Harms
 # Keywords: configuration
 
@@ -87,7 +87,7 @@ if [ -f .bash_host ]; then
    mv .bash_host .bash_$host
 fi
 # and byte-compile emacs
-emacscomp.sh .emacs.d
+bin/emacscomp.sh .emacs.d
 
 popd
 

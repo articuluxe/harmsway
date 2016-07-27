@@ -5,7 +5,7 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Monday, May 18, 2015
 # Version: 1.0
-# Modified Time-stamp: <2016-05-12 17:26:27 dharms>
+# Modified Time-stamp: <2016-07-27 09:43:22 dan.harms>
 # Modified by: Dan Harms
 # Keywords: configuration
 
@@ -83,7 +83,7 @@ if [ -f .netrc ] ; then
    chmod 600 .netrc
 fi
 # and byte-compile emacs
-emacscomp.sh .emacs.d
+bin/emacscomp.sh .emacs.d
 
 popd
 

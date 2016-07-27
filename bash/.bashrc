@@ -61,4 +61,6 @@ if [ -f ~/.personal ]; then
     . ~/.personal
 fi
 
-[ "${INSIDE_EMACS}" != "" ] && export TERM=emacs
+if [ "${INSIDE_EMACS}" != "" ]; then
+    export TERM=emacs
+fi
