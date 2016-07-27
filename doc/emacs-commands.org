@@ -423,6 +423,7 @@ C-c C-t    select TODO state
 M-S-+      promote TODO state
 M--        demote TODO state
 C-c C-s    schedule a task
+C-c C-x p  set a property
 C-c C-x o  toggle an entry's ordered property 
      :PROPERTIES:
      :ORDERED t
@@ -436,6 +437,8 @@ M-<p/n>     change priority (windmove-disputed)
 ** Tags
 C-c C-q    add a tag
 C-c C-c    add a tag for current headline
+C-c / m    create sparse-tree for matching tags/properties
+C-c / p    create sparse-tree for single property or {regexp}
 
 ** Agenda
    SCHEDULED: <2029-12-25 Tue>
@@ -443,7 +446,9 @@ M-M-o-a     agenda
 C-c .       add date
 C-c !       add inactive date
 C-u C-c .   add date and time
-C-c C-d     insert deadline
+C-c C-d     insert DEADLINE
+C-c C-s     insert SCHEDULE 
+C-c >       goto calendar for date
 C-c / d     sparse tree to check deadlines
 C-c / b     sparse tree for deadlines before a date
 C-c / a     sparse tree for deadlines after a date
@@ -455,6 +460,9 @@ Warning:  -2d
 
 ** Export
 C-c C-e     export
+
+** Archive
+C-c C-x C-a     archive subtree
 
 ** Tables
 C-c |         convert region to table

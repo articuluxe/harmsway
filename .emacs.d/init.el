@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-07-26 06:27:27 dharms>
+;; Modified Time-stamp: <2016-07-26 17:16:07 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1140,14 +1140,17 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (global-set-key "\e\eoa" #'org-agenda)
 (global-set-key "\e\eol" #'org-store-link)
 (global-set-key "\e\eoc" #'org-capture)
+(global-set-key "\e\eos" #'org-sort-entries)
 (use-package org
   :defer t
   :init
   (setq org-src-fontify-natively t)
   (setq org-replace-disputed-keys t)
   (setq org-catch-invisible-edits 'show-and-error)
-  (setq org-log-done 'time)
+  ;; (setq org-use-speed-commands t)
+  ;; (setq org-startup-indented t)
   ;; todos
+  (setq org-log-done 'time)
   (setq org-enforce-todo-dependencies t)
   (setq org-enforce-todo-checkbox-dependencies t)
   :config
