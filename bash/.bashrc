@@ -30,21 +30,25 @@ function __prompt_command() {
     PS1=""
     local rst='\[\e[0m\]'
     local red='\[\e[0;31m\]'
+    local redb='\[\e[1;31m\]'
     local green='\[\e[0;32m\]'
     local yellow='\[\e[0;33m\]'
     local blue='\[\e[0;34m\]'
-    local purple='\[\e[1;35m\]'
+    local purple='\[\e[0;35m\]'
 
-    PS1+="${red}\h:${rst}${yellow}\w${rst}${blue}\$(__git_ps1 \" (%s)\")${rst}"
+    PS1+="${red}\h:${rst}${yellow}\w${rst}${purple}\$(__git_ps1 \" (%s)\")${rst}"
     if [ $EXIT != 0 ]; then
-        PS1+=" ${red}[${EXIT}]${purple}>${rst} "
+        PS1+=" ${redb}[${EXIT}]${rst}${blue}>${rst} "
     else
-        PS1+="${purple}>${rst} "
+        PS1+="${blue}>${rst} "
     fi
 }
 
 os=$(uname)
 host=$(hostname -s)
+# for Windows:
+
+# host=$HOSTNAME
 
 # Load any os settings
 if [ -f ~/.bash_$os ]; then
