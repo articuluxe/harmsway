@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-08-05 16:02:14 dan.harms>
+;; Modified Time-stamp: <2016-08-08 06:14:48 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -324,17 +324,20 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
               )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; outrespace ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package
- outrespace
- :bind (("C-c z" . outrespace-mode)     ;temporary
-        ("C-c np" . outre-print-enclosing-ns-name)
-        ("C-c nn" . outre-wrap-namespace-region)
-        ("C-c nj" . outre-ivy-jump-to-ns)
-        ("C-c nc" . outre-change-ns-name)
-        ("C-c nC" . outre-change-enclosing-ns-name)
-        ("C-c nd" . outre-delete-ns-by-name)
-        ("C-c nD" . outre-delete-enclosing-ns)
-        )
+(use-package outrespace
+  :commands (outre-print-enclosing-ns-name
+             outre-wrap-namespace-region
+             outre-ivy-jump-to-ns
+             outre-change-ns-name
+             outre-change-enclosing-ns-name
+             outre-delete-ns-by-name
+             outre-delete-enclosing-ns
+             )
+  :bind ("C-c z" . outrespace-mode)     ;temporary
+  :after cc-mode
+  :config
+  ;; (setq outrespace-prefix-key "\C-cx")  ;to change prefix
+  (outrespace-define-prefix global-map)
  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;; remote-host-connector ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
