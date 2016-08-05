@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Tuesday, April 12, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-05-17 23:45:31 dharms>
+;; Modified Time-stamp: <2016-08-04 15:34:28 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: grep coding
 
@@ -81,6 +81,7 @@ profile."
              "-o -name \"*.in\" -o -name \"*.ac\" -o -name \"*.el\" "
              "-o -name \"*.sql\" -o -name \"*.py\" -o -name \"*.proto\" "
              "-o -name \"*.sh\" -o -name \"*.cs\" -o -name \"*.dart\" "
+             "-o -name \"*.xml\" "
              "\")\" -print0 | xargs -0 grep -Isn "
              (when search-string
                (s-replace
