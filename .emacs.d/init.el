@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-07-26 17:16:07 dharms>
+;; Modified Time-stamp: <2016-08-05 16:02:14 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -198,7 +198,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (global-set-key [f5] 'toggle-truncate-lines)
 (global-set-key "\C-c5" 'toggle-truncate-lines)
 (global-set-key "\C-c " 'whitespace-mode)
-(global-set-key "\C-c0f" 'font-lock-fontify-buffer)
+(global-set-key "\C-c0fb" 'font-lock-fontify-buffer)
 (global-set-key "\M-sf" 'ff-find-other-file)
 (global-set-key (kbd "M-#") 'sort-lines)
 (global-set-key (kbd "C-#") 'sort-paragraphs)
@@ -652,6 +652,19 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (setq idle-highlight-idle-time 10)
   :config
   (add-hook 'prog-mode-hook #'idle-highlight-mode)
+  )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; figlet ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package figlet
+  :bind (("C-c 0ff" . figlet)
+         ("C-c 0fc" . figlet-comment)
+         ("C-c 0fr" . figlet-figletify-region)
+         ("C-c 0fC" . figlet-figletify-region-comment)
+         ("C-c 0fp" . figlet-preview-fonts)
+         )
+  :commands (figlet figlet-comment figlet-figletify-region
+                    figlet-figletify-region-comment
+                    figlet-preview-fonts)
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ascii ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
