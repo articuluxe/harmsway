@@ -3,100 +3,15 @@
 
 export ONE_TICK_CONFIG=/opt/1tick/client_data/config/one_tick_config.txt
 
-# default to latest
-# use gcc491
-# use cdh5
-# use cdh5-dev
-# use dart_a_114
-# use llvm_a_361
-
 export ORIGPATH=$PATH
 export LD_LIBRARY_PATH=/usr/java/latest/jre/lib/amd64/server:/opt/x3p/xrt_a/llvm/3.6.1/lib:/opt/x3p/xrt_a/base/lib64:/opt/anaconda-python-2.7.8/lib:$LD_LIBRARY_PATH
-#export PATH=/opt/x3p/xrt_a/llvm/3.6.1/bin:$PATH
-#/usr/local/boost156/lib
-
-# what `use cdh5' prepends to LD_LIBRARY_PATH:
-# /usr/java/latest/jre/lib/amd64/server
-# what `use dart_a_114' prepends to LD_LIBRARY_PATH:
-# /opt/x3p/xrt_a/dart/1.14/ReleaseX64/dart-sdk/lib
-# what `use dart_a_114' prepends to PATH:
-# /opt/x3p/xrt_a/dart/1.14/ReleaseX64/dart-sdk/bin:/opt/x3p/xrt_a/dart/1.14/ReleaseX64
 
 export CXX_FLAGS="-std=c++0x -Wall -Wextra -pedantic -Wno-unused-local-typedefs"
 
-# set display to windows host
+# set display to windows host (CHIHQ-DEV84)
 display-remote() { export DISPLAY=10.10.102.157:0.0; }
 # reset display to local host
 display-local() { export DISPLAY=:0.0; }
-
-# gcc
-gcc-init()
-{
-   if [ -z "$1" ]; then
-      echo "Missing gcc version; exiting..."
-      return
-   fi
-   echo "Using gcc $1"
-   cp -f ~/config/env/gcc/"$1"/.env ./.gcc-env
-}
-gcc-setup() { source .gcc-env; }
-
-# SNAP
-snap-init()
-{
-   if [ -z "$1" ]; then
-      echo "Missing snap version; exiting..."
-      return
-   fi
-   echo "Using snap version $1"
-   cp -f ~/config/env/snap/"$1"/.env ./.snap-env
-   cp -f ~/config/snap-"$1".eprof .
-   if [ ! -d snap/.git/hooks ]; then
-      echo "Snap repository missing; rerun after installing it."
-      return
-   fi
-   cd snap/.git/hooks &&
-      ln -sf -T ../../buildtools/pre-commit pre-commit &&
-      cd ../../..
-}
-snap-setup()
-{
-   export SNAP_ROOT=`pwd` && source .snap-env;
-   export PYTHONPATH=$SNAP_ROOT/snap/scripts
-}
-
-# mock
-mock-init()
-{
-   if [ -z "$1" ]; then
-      echo "Missing mock install target (sub-directory); exiting..."
-      return
-   fi
-   echo "Installing mock to $1"
-   if [ -d "$1" ]; then
-      rm -rf "$1"
-   fi
-   mkdir -p "$1"
-   archive=mock.tar.gz
-   tar --overwrite -C "$1" -xzf $archive
-   echo "Unzipped $archive into $1"
-}
-
-mock-setup()
-{
-   export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:.
-}
-
-mock-update()
-{
-   archive=mock.tar.gz
-   subdir=${PWD##*/}
-   cd ..
-   tar --overwrite -C $subdir -xzf $archive
-   cd $subdir
-   mtime=$(stat -c %y xr-snap)
-   echo "Unzipped $archive; snap dated $mtime"
-}
 
 # distcc
 distcc-init()

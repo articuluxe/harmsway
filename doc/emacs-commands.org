@@ -408,8 +408,8 @@ M-M-o-c    org-capture
 ** Outline
 M-RET        new heading
 M-S-RET      new heading at same level
-M-<up/down>  move section
-M-<left/right> promote/demote
+M-<up/down>  move heading
+M-<left/right> promote/demote heading
 M-S-<up/down> move section
 M-S-<left/right> promote/demote section
 M-h           mark element
