@@ -5,7 +5,7 @@
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Thursday, May  5, 2016
 # Version: 1.0
-# Modified Time-stamp: <2016-05-05 10:26:58 dharms>
+# Modified Time-stamp: <2016-08-09 14:35:04 dan.harms>
 # Modified by: Dan Harms
 # Keywords: bash script
 
@@ -33,4 +33,4 @@ select opt in $opts "Quit"; do
    fi
 done
 
-# edit ends here
+# _fileselect.sh ends here

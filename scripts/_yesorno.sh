@@ -1,16 +1,16 @@
 #!/usr/bin/env sh
 # -*- Mode: sh -*-
-# yesorno.sh --- ask user a yes or no question
+# _yesorno.sh --- ask user a yes or no question
 # Copyright (C) 2016  Dan Harms (dharms)
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Wednesday, June  8, 2016
 # Version: 1.0
-# Modified Time-stamp: <2016-06-08 22:10:17 dharms>
+# Modified Time-stamp: <2016-08-09 08:52:55 dan.harms>
 # Modified by: Dan Harms
 # Keywords: scripting
 
 # call like this:
-# yesorno.sh
+# _yesorno.sh
 # [ $? == 1 ] && exit
 # #User selected yes
 
