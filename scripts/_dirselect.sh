@@ -1,21 +1,21 @@
 #!/usr/bin/env sh
 # -*- Mode: sh -*-
-# _fileselect.sh --- select a file from disk
+# _dirselect.sh --- select a dir from disk
 # Copyright (C) 2016  Dan Harms (dharms)
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Thursday, May  5, 2016
 # Version: 1.0
-# Modified Time-stamp: <2016-08-12 11:26:48 dan.harms>
+# Modified Time-stamp: <2016-08-12 11:27:12 dan.harms>
 # Modified by: Dan Harms
 # Keywords: bash script
 
 dir=${1:-$(pwd)}
 prompt=${2:-"Select a file or directory: "}
-# construct array of files in dir
+# construct array of directories in dir
 dirs=("$dir"/*)
 # loop through, replace with basename
 for e in "${dirs[@]}" ; do
-    if [ ! -d $e -a -f $e ]; then
+    if [ -d $e ]; then
         dirsbase=( ${dirsbase[@]} $(basename $e) )
     fi
 done
@@ -34,4 +34,4 @@ select opt in $opts "Quit"; do
     fi
 done
 
-# _fileselect.sh ends here
+# code ends here
