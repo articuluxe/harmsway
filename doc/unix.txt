@@ -4,7 +4,7 @@
 # Author:  <dan.harms@xrtrading.com>
 # Created: Friday, March 20, 2015
 # Version: 1.0
-# Modified Time-stamp: <2016-07-13 08:55:17 dharms>
+# Modified Time-stamp: <2016-08-11 12:58:10 dan.harms>
 # Modified by: Dan Harms
 # Keywords: help
 
@@ -91,6 +91,8 @@ gdb -p <pid>
 !<prefix>
 # last command containing <substring>
 !?<substring>?
+# entire command line typed so far
+!#
 # last command's [last] argument
 !$
 # last command's 1st argument
@@ -99,10 +101,12 @@ gdb -p <pid>
 !*
 # <cmd>'s nth argument
 !<cmd>:n
+# last ls command's third through fifth arguments
+!ls:3-5
 # edit prior command (1st occurrence)
 ^replace^replacement
-# edit prior command (all occurrences)
-!!:gs/replace/replacement
+# edit prior command (all occurrences) (use & in new to refer to old
+!!:gs/old/new
 # multiple files
 touch file{1,2,3}
 # rename
