@@ -5,7 +5,7 @@
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Friday, August  5, 2016
 # Version: 1.0
-# Modified Time-stamp: <2016-08-09 16:32:55 dharms>
+# Modified Time-stamp: <2016-08-15 08:35:47 dharms>
 # Modified by: Dan Harms
 # Keywords: backup archive
 
@@ -20,12 +20,11 @@ if [ -z "$tar" ]; then
     exit 1
 fi
 
-date=$(date '+%Y%m%d')
-time=$(date '+%H%M%S')
-when=$date-$time
+. _archive_utils.sh
 
 if [ $# -ne 2 ]; then
-    echo "Usage: $0 <source> <dest>"
+    exe=$(basename $0)
+    echo "Usage: $exe <source> <dest>"
     exit 1
 fi
 
@@ -34,27 +33,21 @@ if [ ! -r "$1" ]; then
     exit 1
 fi
 
-echo "Backing up $1 to $2"
 stem=$(sanitize $1)
 base=$2/$stem
 mkdir -p $base
-digit=0
-tar -g $base/$stem.snar -czpf $base/$stem_${digit}.tar.gz $1
+cd $base
+shopt -s nullglob
+files=( ${stem}_*.tar.gz )
+max=${#files[@]}
+digit=$(printf "%03d" $max)
+file=${stem}_${digit}.tar.gz
 
-function sanitize {
-    clean=$1
-    # remove any leading and trailing slashes
-    clean=$(echo $clean | sed -e 's$^/$$')
-    clean=$(echo $clean | sed -e 's%/$%%')
-    # replace slashes with dots
-    clean=${clean////.}
-    # replace underscores with dots
-    clean=${clean//_/.}
-    # allow only alphanumeric + .
-    clean=${clean//[^a-zA-Z0-9]/.}
-    # collapse consecutive dots
-    clean=$(echo $clean | tr -s '\0-\255')
-    echo "$clean"
-}
+parent=$(dirname $1)
+child=$(basename $1)
+cd $parent
+tar -g $base/$stem.snar -czpf $base/$file $child
+echo "Crated a level $max backup of $child in $base"
+tar -G -tvvpf $base/$file
 
 # code ends here
