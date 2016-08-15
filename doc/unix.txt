@@ -4,7 +4,7 @@
 # Author:  <dan.harms@xrtrading.com>
 # Created: Friday, March 20, 2015
 # Version: 1.0
-# Modified Time-stamp: <2016-08-11 12:58:10 dan.harms>
+# Modified Time-stamp: <2016-08-15 15:55:31 dan.harms>
 # Modified by: Dan Harms
 # Keywords: help
 
@@ -127,8 +127,6 @@ $?
 <command> 2>&1
 # redirect stdout+stderr
 <command> &> output.txt
-# redirect all output to a single file on DOS:
-<command> [args] > output.txt 2>&1
 
 #################################### awk #####################################
 # seach a field for a specific regex
