@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-08-08 13:17:52 dan.harms>
+;; Modified Time-stamp: <2016-08-15 17:49:36 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -933,7 +933,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   plur
   :if (not (version< emacs-version "24.4"))
   :bind (("M-s M-s" . plur-isearch-forward)
-        ("M-s M-a" . plur-replace)
+        ("M-s q" . plur-replace)
         ("M-s M-q" . plur-query-replace)
         :map isearch-mode-map
         ("C-p" . plur-isearch-forward)
@@ -948,6 +948,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (use-package swiper
   :if (not (version< emacs-version "24.1"))
   :bind (("M-s s" . swiper)
+         ("M-s M-a" . swiper-all)
          :map isearch-mode-map
          ("C-o" . swiper-from-isearch))
   )
@@ -975,6 +976,9 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
          ("M-s M-z" . counsel-git-stash)
          ("M-s M-i" . counsel-imenu)
          ("M-s M-l" . counsel-git-log)
+         ("M-s M-e" . counsel-find-file-extern)
+         ("M-s M-d" . counsel-dired-jump)
+         ("M-s M-v" . counsel-file-jump)
          )
   :commands (counsel-M-x counsel-find-file)
   :config
