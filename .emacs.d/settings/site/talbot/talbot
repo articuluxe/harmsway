@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-07-25 17:29:36 dharms>
+;; Modified Time-stamp: <2016-08-16 17:54:27 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -29,8 +29,8 @@
 
 (setq deft-directory "~/Dropbox/notes")
 
-(with-eval-after-load 'org-mode
-  (add-to-list 'org-agenda-files "~/Dropbox/talbot.org"))
+(with-eval-after-load 'org
+  (add-to-list 'org-agenda-files "~/Dropbox"))
 
 (add-hook
  'c-mode-common-hook
