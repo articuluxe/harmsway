@@ -938,6 +938,7 @@ Describe the selected candidate."
         (goto-char (point-min))
         (forward-line (1- (string-to-number line-number)))
         (re-search-forward (ivy--regex ivy-text t) (line-end-position) t)
+        (swiper--ensure-visible)
         (unless (eq ivy-exit 'done)
           (swiper--cleanup)
           (swiper--add-overlays (ivy--regex ivy-text)))))))
@@ -1036,7 +1037,7 @@ INITIAL-INPUT can be given as the initial minibuffer input."
   (if (< (length str) 3)
       (counsel-more-chars 3)
     (let ((regex (setq ivy--old-re
-                       (ivy--regex str))))
+                       (ivy--regex str t))))
       (counsel--async-command (format counsel-git-grep-cmd regex))
       nil)))
 
