@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-08-16 10:25:10 dan.harms>
+;; Modified Time-stamp: <2016-08-17 10:28:49 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2170,9 +2170,14 @@ customization."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; crontab-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package crontab-mode
-  :mode ("\\.cron\\(tab\\)?$" "cron\\(tab\\)?\\.")
+  :mode ("\\.\\(ana\\)?cron\\(tab\\)?$" "\\(ana\\)?cron\\(tab\\)?\\.")
   :commands crontab-get
-  )
+  :config
+  (add-hook 'crontab-mode-hook
+            (lambda ()
+              (define-key crontab-mode-map "\C-c\C-c" 'comment-region)
+              (define-key crontab-mode-map "\C-c\C-u" 'uncomment-region)
+              )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; css-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-hook 'css-mode-hook
@@ -2191,7 +2196,7 @@ customization."
   :init
   (setq dart-enable-analysis-server t)
   :config
-  (add-hook 'dart-mode
+  (add-hook 'dart-mode-hook
             (lambda()
               (define-key dart-mode-map "\C-c\C-c" 'comment-region)
               (define-key dart-mode-map "\C-c\C-u" 'uncomment-region)
