@@ -5,11 +5,11 @@
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Tuesday, August  9, 2016
 # Version: 1.0
-# Modified Time-stamp: <2016-08-09 08:30:10 dharms>
+# Modified Time-stamp: <2016-08-17 12:47:05 dan.harms>
 # Modified by: Dan Harms
 # Keywords: archive backup
 
-target=${1:-"~/backups"}
+target=${1:-~/backups}
 
 _backup.sh ~/Dropbox/notes "$target"
 _backup.sh ~/Dropbox/movies "$target"

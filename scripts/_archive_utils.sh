@@ -5,7 +5,7 @@
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Wednesday, August 10, 2016
 # Version: 1.0
-# Modified Time-stamp: <2016-08-10 17:28:21 dharms>
+# Modified Time-stamp: <2016-08-17 13:12:58 dan.harms>
 # Modified by: Dan Harms
 # Keywords: backup archive
 
@@ -23,6 +23,10 @@ function sanitize {
     # collapse consecutive dots
     clean=$(echo $clean | tr -s '\0-\255')
     echo "$clean"
+}
+
+function is_absolute_path {
+    [ "$1" != "${1#/}" ]
 }
 
 # code ends here

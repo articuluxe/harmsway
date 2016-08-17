@@ -5,7 +5,7 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Tuesday, August  9, 2016
 # Version: 1.0
-# Modified Time-stamp: <2016-08-15 08:34:32 dharms>
+# Modified Time-stamp: <2016-08-17 13:52:34 dan.harms>
 # Modified by: Dan Harms
 # Keywords: archive backup
 
@@ -16,7 +16,7 @@ if [ -z "$tar" ]; then
     echo "Using $tar"
 fi
 if [ -z "$tar" ]; then
-    echo "! no tar available; quitting"
+    echo "!!! no tar available; quitting"
     exit 1
 fi
 
@@ -28,14 +28,28 @@ if [ $# -ne 2 ]; then
     exit 1
 fi
 
-if [ ! -r "$1" ]; then
-    echo "$1 is not readable; exiting..."
+dir=$1
+# require readable source in current dir, or absolute path
+is_absolute_path "$dir"
+if [ $? == 1 ]; then
+    dir="$PWD/$dir"
+fi
+if [ ! -d "$dir" ]; then
+    echo "!!! invalid directory $dir; exiting..."
+    exit 1
+fi
+if [ ! -r "$dir" ]; then
+    echo "!!! $dir is not readable; exiting..."
     exit 1
 fi
 
-dir=$1
-if [ ! -d $dir ]; then
-    echo "! invalid directory $dir; exiting..."
+output=$2
+is_absolute_path "$output"
+if [ $? == 1 ]; then
+    output="$PWD/$output"
+fi
+if [ -r "$output" ]; then
+    echo "!!! output directory $output already exists; exiting..."
     exit 1
 fi
 
@@ -57,7 +71,6 @@ i=0
 for file in ${files[@]}; do
     filenames[i]=$file
     tim=$(stat -c "%y" $file)
-    echo time is $tim
     filetimes[i]=$tim
     i=$(($i+1))
 done
@@ -92,11 +105,10 @@ done
 
 IFS=$OIFS
 
-output=$2
 mkdir -p $output
 cd $output
 
-echo going to restore from $start to $end inside $output
+echo Restoring levels from $start to $end inside $output
 
 for ((j=$start; j <= $end; ++j)); do
     tar -G -xpzf "$dir/${filenames[$j]}"
