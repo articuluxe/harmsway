@@ -1,0 +1,14 @@
+#!/bin/sh
+
+if [ $# -ne 2 ] ; then
+    echo "Usage: `basename $0` <orig.suffix> <added.suffix>"
+    exit 1
+fi
+
+OLD=$1
+NEW=$2
+set $(find . -type f -name \*$OLD)
+
+for file in $*  ; do
+    cp $file $file$NEW
+done

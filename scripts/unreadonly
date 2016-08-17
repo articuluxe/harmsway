@@ -1,0 +1,11 @@
+#!/bin/sh
+
+while read LINE; do
+   for file in $LINE ; do
+      if [ "1" == `GetFileInfo -al $file` ] ; then                                                     
+         echo "Removing read-only status of $file"                                                     
+         SetFile -a l $file                                                                            
+      fi                                                                                               
+      chmod 644 $file                                                                                  
+   done
+done

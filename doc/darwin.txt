@@ -1,0 +1,31 @@
+# -*- Mode: sh -*-
+# darwin.txt --- helpful notes for mac os x
+# Copyright (C) 2016  Dan Harms (dharms)
+# Author: Dan Harms <danielrharms@gmail.com>
+# Created: Monday, May  2, 2016
+# Version: 1.0
+# Modified Time-stamp: <2016-08-17 06:40:24 dharms>
+# Modified by: Dan Harms
+# Keywords: mac help docs
+
+# show what file permissions are preventing modification
+ls -lOe <file/dir>
+# remove the locked property
+chflags nouchg <file/dir>
+
+# prevent tar from including resource forks in tar archives
+export COPYFILE_DISABLE
+
+# convert documents
+textutil -convert <txt|html|rtf|rtfd|doc|wordml|webarhive> file
+
+# ldd
+otool -L
+
+# X11 full screen toggle
+command-option-a
+
+# maintain Epson Stylus Inkjet Printers
+escputil
+
+# code ends here
