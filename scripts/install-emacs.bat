@@ -4,7 +4,7 @@ rem Copyright (C) 2015, 2016  Dan Harms (dan.harms)
 rem Author: Dan Harms <dan.harms@xrtrading.com>
 rem Created: Thursday, May 21, 2015
 rem Version: 1.0
-rem Modified Time-stamp: <2016-08-16 09:50:44 dan.harms>
+rem Modified Time-stamp: <2016-08-18 12:20:00 dan.harms>
 rem Modified by: Dan Harms
 rem Keywords: install perfect editor
 
@@ -34,8 +34,8 @@ if "%MSYS%". == . (
 set msys="%MSYS%\bin"
 set emacs="%EMACS%\bin\emacs"
 
-set tar=%msys%\tar
-set grep=%msys%\grep
+set tar="%msys%\tar"
+set grep="%msys%\grep"
 set user=%USERNAME%
 set timeout=c:\Windows\System32\timeout
 set orig_dir=%cd%
