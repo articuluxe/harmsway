@@ -5,9 +5,10 @@
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Tuesday, August  9, 2016
 # Version: 1.0
-# Modified Time-stamp: <2016-08-17 17:15:52 dharms>
+# Modified Time-stamp: <2016-08-18 17:23:58 dharms>
 # Modified by: Dan Harms
 # Keywords: archive backup
+PATH=/bin:/sbin:~/bin
 
 target=${1:-~/backups}
 
