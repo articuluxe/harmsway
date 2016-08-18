@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-08-18 14:41:27 dan.harms>
+;; Modified Time-stamp: <2016-08-19 06:17:25 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -436,8 +436,8 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (use-package
   sudo-edit
   :bind
-  (("C-c 0rr" . sudo-edit)
-   ("C-c 0rf" . sudo-edit-current-file))
+  (("C-c 0rf" . sudo-edit)
+   ("C-c 0rr" . sudo-edit-current-file))
   )
 
 
