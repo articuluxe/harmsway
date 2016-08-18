@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-06-10 13:03:04 dan.harms>
+;; Modified Time-stamp: <2016-08-18 17:48:49 dharms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -292,7 +292,7 @@ The current profile is PROFILE."
 LST is a list in the format of `ctags-alist'.  ROOT is the root
 directory of the current profile."
   (mapcar (lambda (path)
-            (if (and path (f-absolute? path))
+            (if (and path (file-name-absolute-p path))
                 path
               (concat root path)))
           (mapcar 'cadr lst)))
@@ -309,19 +309,25 @@ PROFILE is the current profile."
                     root)
                    (list root))))))
 
-(defun profile-collect-sml-regexps (lst profile root)
+(defun profile-collect-sml-regexps (lst profile remote root)
   "Extract a list of cons cells representing a modeline replacement pair.
-LST is a list of lists of properties, see `ctags-alist'.  PROFILE is the
-current profile.  ROOT is the current profile root.  The return value
-will be a list cons cells, see `sml/replacer-regexp-list'."
+LST is a list of lists of properties, see `ctags-alist'.  PROFILE
+is the current profile.  REMOTE, if non-nil, is the remote
+prefix to prepend to the root.  ROOT is the current profile root.
+The return value will be a list of cons cells, see
+`sml/replacer-regexp-list'."
   (let (path title)
     (mapcar (lambda(elt)
               (setq path (cadr elt))
               (setq title (car elt))
+              (if (or (string-empty-p path)
+                      (not (file-name-absolute-p path)))
+                  (setq path (concat root path)))
+              (if remote
+                  (setq path (concat remote path))
+                (setq path (profile--abbreviate-dir path)))
               (cons
-               (when path
-                 (if (f-absolute? path) path
-                   (f-short path)))
+               path
                (concat (upcase title) ":")))
             lst)))
 
@@ -329,9 +335,10 @@ will be a list cons cells, see `sml/replacer-regexp-list'."
   "Set useful mode line abbreviations according to profile PROFILE.
 See `sml/replacer-regexp-alist'."
   (let* ((root (profile-get profile 'project-root-dir))
+         (remote (profile-get profile 'remote-prefix))
          (sml-alist (profile-collect-sml-regexps
                      (profile-get profile 'ctags-alist)
-                     profile root)))
+                     profile remote root)))
     (mapc (lambda (elt)
             (when (car elt)
               (add-to-list 'sml/replacer-regexp-list
@@ -542,14 +549,14 @@ representing the user's home directory."
                (profile-current-get 'project-root-dir)
                ))))
 
-(defun profile--abbreviate-remote-root (remote-name)
-  "Abbreviate REMOTE-NAME, a remote project root, as necessary.
+(defun profile--abbreviate-dir (name)
+  "Abbreviate NAME, a (possibly remote) project root, as necessary.
 It is usually preferable to have a short project prefix.  This
 may just come down to substituting `~' for the home directory.
 Note that `abbreviate-file-name' doesn't work for remote paths."
   (let ((home
          (string-trim (shell-command-to-string "echo ~"))))
-    (replace-regexp-in-string home "~" remote-name t)))
+    (replace-regexp-in-string home "~" name t)))
 
 ;; called when a profile is initialized
 (defun profile--on-profile-init (remote-host remote-prefix)
