@@ -14,6 +14,10 @@ function ahead_behind {
     git rev-list --left-right --count $curr_branch...$curr_remote/$curr_merge_branch | tr -s '\t' '|';
 }
 
+function git-list-branches {
+    git for-each-ref --format='%(authorname) %09 %(refname)'
+}
+
 set -o emacs
 # auto-expand !-key-chords on <space>
 bind Space:magic-space
