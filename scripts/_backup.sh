@@ -5,7 +5,7 @@
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Friday, August  5, 2016
 # Version: 1.0
-# Modified Time-stamp: <2016-08-19 06:40:57 dharms>
+# Modified Time-stamp: <2016-08-19 17:08:07 dharms>
 # Modified by: Dan Harms
 # Keywords: backup archive
 
@@ -51,6 +51,7 @@ mkdir -p $base
 cd $base
 shopt -s nullglob
 files=( ${stem}_*.tar.gz )
+shopt -u nullglob
 max=${#files[@]}
 if [[ $max > 999 ]]; then
     echo "!!! 1000 backups already exist; start over! Exiting..."
