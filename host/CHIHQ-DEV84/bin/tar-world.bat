@@ -5,22 +5,29 @@ rem Copyright (C) 2015, 2016  Dan Harms (dan.harms)
 rem Author: Dan Harms <dan.harms@xrtrading.com>
 rem Created: Thursday, May 21, 2015
 rem Version: 1.0
-rem Modified Time-stamp: <2016-01-22 09:35:23 dan.harms>
+rem Modified Time-stamp: <2016-08-19 09:49:54 dan.harms>
 rem Modified by: Dan Harms
 rem Keywords: tar whole world
 
 setlocal
 setlocal enabledelayedexpansion
 
-set tar=c:\msys\1.0\bin\tar
-set uname=c:\msys\1.0\bin\uname
-set hostname=c:\MinGW\msys\1.0\bin\hostname
-set site=xr
-
 set verbose=
 if not %1. == . (
     set verbose=v
 )
+
+if "%MSYS%". == . (
+    echo "MSYS directory undefined, aborting."
+    exit /b
+)
+
+set msys="%MSYS%\bin"
+set tar="%msys%\tar"
+set uname="%msys%\uname"
+set hostname="c:\MinGW\msys\1.0\bin\hostname"
+set site=xr
+
 
 set curr_dir=%cd%
 set script_dir=%~dp0
