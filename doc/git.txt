@@ -14,6 +14,7 @@ git config --global diff.tool <tool>
 git config --global difftool.prompt false
 # on windows
 git config --system core.autocrlf input
+git config --global credential.helper wincred
 # for magit: set environment variable
 (setenv "GIT_SSH" "C:\Program Files\Portable PuTTY\plink.exe")
 
@@ -40,6 +41,8 @@ git push origin :<branch>
 # ensure master is up to date, without checking it out
 git fetch --all
 git fetch origin master:master
+# prune local tracking branches gone from the remote
+git fetch -p origin
 # list all branches created by me
 git for-each-ref --format=' %(authorname) %09 %(refname)' | grep Harms
 # point a fork back to its upstream for a pull request
