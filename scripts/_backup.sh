@@ -5,7 +5,7 @@
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Friday, August  5, 2016
 # Version: 1.0
-# Modified Time-stamp: <2016-08-17 15:47:08 dan.harms>
+# Modified Time-stamp: <2016-08-19 06:40:57 dharms>
 # Modified by: Dan Harms
 # Keywords: backup archive
 
@@ -62,10 +62,10 @@ file=${stem}_${digit}.tar.gz
 parent=$(dirname $1)
 child=$(basename $1)
 cd $parent
-tar -g "$base/$stem.snar" -czpf "$base/$file" "$child"
+$tar -g "$base/$stem.snar" -czpf "$base/$file" "$child"
 echo -e
 echo "Created a level $max backup of $1 in $base"
 echo -e
-tar -G -tvvpf $base/$file
+$tar -G -tvvpf $base/$file
 
 # code ends here

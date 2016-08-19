@@ -5,12 +5,23 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Tuesday, August  9, 2016
 # Version: 1.0
-# Modified Time-stamp: <2016-08-09 10:35:13 dan.harms>
+# Modified Time-stamp: <2016-08-19 06:38:36 dharms>
 # Modified by: Dan Harms
 # Keywords: tar
 
 base=${1:-"basedir"}
 output=${2:-"output"}
+
+tar=$TAR
+
+if [ -z "$tar" ]; then
+    tar=$(which tar)
+    echo "Using $tar"
+fi
+if [ -z "$tar" ]; then
+    echo "!!! no tar available; quitting"
+    exit 1
+fi
 
 echo "setting up $base"
 
@@ -22,9 +33,9 @@ echo "This is written in stage 1" >> SinceStage1
 echo "This should be removed in stage 3" >> toRemoveIn3
 cd ..
 
-tar -g test.snar -cpf test_0.tar $base
+$tar -g test.snar -cpf test_0.tar $base
 cp test.snar test0.snar
-tar -G -tvvpf test_0.tar
+$tar -G -tvvpf test_0.tar
 
 # stage 2
 cd $base
@@ -32,9 +43,9 @@ echo " and updated in stage 2" >> SinceStage1
 echo "This is created in stage 2" >> SinceStage2
 cd ..
 
-tar -g test.snar -cpf test_1.tar $base
+$tar -g test.snar -cpf test_1.tar $base
 cp test.snar test1.snar
-tar -G -tvvpf test_1.tar
+$tar -G -tvvpf test_1.tar
 
 # stage 3
 cd $base
@@ -43,17 +54,17 @@ echo " and updated in stage 3" >> SinceStage2
 rm toRemoveIn3
 cd ..
 
-tar -g test.snar -cpf test_2.tar $base
+$tar -g test.snar -cpf test_2.tar $base
 cp test.snar test2.snar
-tar -G -tvvpf test_2.tar
+$tar -G -tvvpf test_2.tar
 
 # extract
 mkdir -p $output
 cp test.snar test_*.tar $output
 cd $output
-tar -G -xpf test_0.tar
-tar -G -xpf test_1.tar
-tar -G -xpf test_2.tar
+$tar -G -xpf test_0.tar
+$tar -G -xpf test_1.tar
+$tar -G -xpf test_2.tar
 cd ..
 
 # code ends here
