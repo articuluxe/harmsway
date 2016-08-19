@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-08-18 17:48:49 dharms>
+;; Modified Time-stamp: <2016-08-19 14:30:51 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -323,8 +323,7 @@ The return value will be a list of cons cells, see
               (if (or (string-empty-p path)
                       (not (file-name-absolute-p path)))
                   (setq path (concat root path)))
-              (if remote
-                  (setq path (concat remote path))
+              (unless remote
                 (setq path (profile--abbreviate-dir path)))
               (cons
                path
