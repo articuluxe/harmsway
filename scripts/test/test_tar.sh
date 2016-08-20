@@ -5,7 +5,7 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Tuesday, August  9, 2016
 # Version: 1.0
-# Modified Time-stamp: <2016-08-19 06:38:36 dharms>
+# Modified Time-stamp: <2016-08-20 08:01:32 dharms>
 # Modified by: Dan Harms
 # Keywords: tar
 
@@ -37,6 +37,8 @@ $tar -g test.snar -cpf test_0.tar $base
 cp test.snar test0.snar
 $tar -G -tvvpf test_0.tar
 
+sleep 1                         # needed on darwin
+
 # stage 2
 cd $base
 echo " and updated in stage 2" >> SinceStage1
@@ -46,6 +48,8 @@ cd ..
 $tar -g test.snar -cpf test_1.tar $base
 cp test.snar test1.snar
 $tar -G -tvvpf test_1.tar
+
+sleep 1                         # needed on darwin
 
 # stage 3
 cd $base
@@ -65,6 +69,10 @@ cd $output
 $tar -G -xpf test_0.tar
 $tar -G -xpf test_1.tar
 $tar -G -xpf test_2.tar
-cd ..
+
+echo "SinceStage1:"
+cat $base/SinceStage1
+echo "SinceStage2:"
+cat $base/SinceStage2
 
 # code ends here
