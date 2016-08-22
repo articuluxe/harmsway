@@ -1,0 +1,38 @@
+[user]
+	name = Dan Harms
+	email = danielrharms@gmail.com
+[core]
+	editor = $EDITOR
+	excludesfile = ~/.gitignore
+[color]
+	ui = true
+[push]
+	default = simple
+[pull]
+	rebase = true
+[diff]
+	tool = diffgui
+[difftool]
+	prompt = false
+[difftool.diffterm]
+	cmd = /usr/bin/env LOCAL=$LOCAL REMOTE=$REMOTE $EDITOR --load ~/config/difftool.el
+[difftool.diffgui]
+	cmd = $EMACSX --eval \"(progn\
+	(color-theme-zenburn)\
+	(setq ediff-quit-hook 'kill-emacs \
+	ediff-split-window-function 'split-window-horizontally\
+	ediff-keep-variants t)\
+	(add-to-list 'initial-frame-alist '(fullscreen . fullwidth))\
+	(ediff-files \\\"$LOCAL\\\" \\\"$REMOTE\\\"))\"
+[merge]
+	tool = mergegui
+[mergetool]
+	prompt = false
+[mergetool.mergeterm]
+	cmd = /usr/bin/env LOCAL=$LOCAL REMOTE=$REMOTE BASE=$BASE MERGED=$MERGED $EDITOR --load ~/config/mergetool.el
+[mergetool.mergegui]
+	cmd = /usr/bin/env LOCAL=$LOCAL REMOTE=$REMOTE BASE=$BASE MERGED=$MERGED $EMACSX --load ~/config/mergetool.el
+[branch "master"]
+	mergeoptions = --squash
+[credential]
+	helper = cache --timeout=28800
