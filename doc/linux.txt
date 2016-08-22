@@ -4,7 +4,7 @@
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Monday, January 18, 2016
 # Version: 1.0
-# Modified Time-stamp: <2016-04-13 12:08:25 dan.harms>
+# Modified Time-stamp: <2016-08-22 08:28:27 dharms>
 # Modified by: Dan Harms
 # Keywords: linux docs
 
@@ -26,5 +26,8 @@ ls
 # list fonts
 xfontsel
 xlsfonts | grep -i liberation | grep 12
+
+# does sudo require a tty? Comment out /etc/sudoers:
+#Defaults    requiretty
 
 # code ends here

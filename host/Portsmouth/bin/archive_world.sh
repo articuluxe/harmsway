@@ -5,12 +5,13 @@
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Tuesday, August  9, 2016
 # Version: 1.0
-# Modified Time-stamp: <2016-08-22 04:57:37 dharms>
+# Modified Time-stamp: <2016-08-22 08:16:34 dharms>
 # Modified by: Dan Harms
 # Keywords: archive backup
 
 target=${1:-~/backups}
+date=$( date '+%Y%m' )
 
-_backup.sh ~/Dropbox/notes "$target"
+_backup.sh ~/Dropbox/notes "$target-$date"
 
 # code ends here
