@@ -4,7 +4,7 @@
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Monday, May  2, 2016
 # Version: 1.0
-# Modified Time-stamp: <2016-08-17 06:40:24 dharms>
+# Modified Time-stamp: <2016-08-23 05:10:34 dharms>
 # Modified by: Dan Harms
 # Keywords: mac help docs
 
@@ -27,5 +27,35 @@ command-option-a
 
 # maintain Epson Stylus Inkjet Printers
 escputil
+
+# change time machine backup interval (seconds)
+sudo defaults write /System/Library/LaunchDaemons/com.apple.backupd-autoStartInterval -int 1800
+
+# convert line breaks
+perl -pi -e 's/\r\n?/\n/g' file.txt
+
+
+############################### open firmware ################################
+to continue a normal boot
+mac-boot
+bye
+# shutdown
+shut-down
+# reset open firmware settings
+reset-nvram
+reset-all
+# eject a floppy
+eject cd
+mac-boot
+# manipulate boot device
+printenv/setenv boot-device
+
+############################ start-up key combos #############################
+# ignore the selected boot volume
+command-option-shift-delete
+# boot from cd-rom
+C
+# boot from internal hard disk
+D
 
 # code ends here
