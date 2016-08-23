@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-08-19 06:17:25 dharms>
+;; Modified Time-stamp: <2016-08-23 10:59:31 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -122,15 +122,16 @@
 (setq-default tab-width 4)
 ;; enable repeatedly popping mark without prefix
 (setq set-mark-command-repeat-pop t)
-(defun my/multi-pop-to-mark (orig-fun &rest args)
-  "Call ORIG-FUN until the cursor moves. Try the repeated popping
+(unless (version< emacs-version "24.4")
+  (defun my/multi-pop-to-mark (orig-fun &rest args)
+    "Call ORIG-FUN until the cursor moves. Try the repeated popping
 up to 10 times."
-  (let ((p (point)))
-    (dotimes (i 10)
-      (when (= p (point))
-        (apply orig-fun args)))))
-(advice-add 'pop-to-mark-command :around
-            #'my/multi-pop-to-mark)
+    (let ((p (point)))
+      (dotimes (i 10)
+        (when (= p (point))
+          (apply orig-fun args)))))
+  (advice-add 'pop-to-mark-command :around
+              #'my/multi-pop-to-mark))
 ;; show current function
 (which-function-mode t)
 ;; winner mode
