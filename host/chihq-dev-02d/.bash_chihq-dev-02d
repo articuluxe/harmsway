@@ -4,6 +4,7 @@
 # User specific aliases and functions
 export SITE=xr
 export VM=chihq-dev-02d-1
+unset SSH_ASKPASS
 
 python=/opt/anaconda-python-2.7.8/bin
 # what `use cdh5 prepends to $PATH:
