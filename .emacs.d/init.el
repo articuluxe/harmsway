@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-08-23 10:59:31 dan.harms>
+;; Modified Time-stamp: <2016-08-24 12:45:08 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -708,6 +708,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
               ("u" . magit-unstage-file)
               ("r" . magit-reset-soft) ;; soft reset; hard reset can use C-u x
               ("d" . magit-diff-buffer-file-popup)
+              ("c" . magit-clone)
               )
   :config
   (use-package with-editor)
