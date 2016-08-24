@@ -2346,6 +2346,9 @@ customization."
               (setq-local electric-indent-chars
                           (remq ?: electric-indent-chars))
               (setq forward-sexp-function nil)
+              (local-unset-key [backtab]) ;save backtab for yasnippet
+                                        ; S-TAB ran dedent-line in python,
+                                        ; we can just use TAB instead
               (define-key python-mode-map "\C-j" 'newline-and-indent)
               (define-key python-mode-map "\C-c\C-c" 'comment-region)
               (define-key python-mode-map "\C-c\C-u" 'uncomment-region)
