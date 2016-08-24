@@ -22,11 +22,15 @@
 
 ;;; Code:
 
+(require 'cl-lib)
 (require 'eieio)
+
+(require 'multi-line-cycle)
 
 (defclass multi-line-respacer () nil)
 
-(defmethod multi-line-respace ((respacer multi-line-respacer) markers)
+(defmethod multi-line-respace ((respacer multi-line-respacer) markers
+                               &optional context)
   (cl-loop for marker being the elements of markers using (index i) do
            (goto-char (marker-position marker))
            (multi-line-respace-one respacer i markers)))
@@ -69,7 +73,7 @@
 (defmethod multi-line-should-newline ((respacer multi-line-fill-respacer)
                                       index markers)
   (let ((marker-length (length markers)))
-    ;; Always newline when we are at the first or last marker so that
+    ;; XXX: Always newline when we are at the first or last marker so that
     ;; the newline-respacer can decide about whether or not the
     ;; respace should happen.
     (or (equal 0 index)

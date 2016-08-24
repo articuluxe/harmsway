@@ -23,6 +23,7 @@
 ;;; Code:
 
 (require 'eieio)
+
 (require 'multi-line-respace)
 (require 'multi-line-shared)
 
@@ -53,7 +54,8 @@
   ((respacer :initarg :respacer)
    (decorator :initarg :decorator)))
 
-(defmethod multi-line-respace ((decorator multi-line-decorator) markers)
+(defmethod multi-line-respace ((decorator multi-line-decorator) markers
+                               &optional context)
   (funcall
    (oref decorator :decorator) (oref decorator :respacer) markers))
 
@@ -89,14 +91,15 @@ execute FORMS after respacing all splits.  FORMS can use the
 variables index and markers which will be appropriately populated
 by the executor."
   `(multi-line-post-decorator
-   ,name (when (equal index (- (length markers) 1))
-            ,@forms)))
+     ,name (when (equal index (- (length markers) 1))
+             (goto-char (marker-position (car (last markers))))
+             ,@forms)))
 
 (multi-line-pre-decorator multi-line-space-clearing-respacer
   (multi-line-clear-whitespace-at-point))
 
-(multi-line-post-decorator multi-line-trailing-comma-respacer
-  (multi-line-add-trailing-comma index markers))
+(multi-line-post-all-decorator multi-line-trailing-comma-respacer
+  (multi-line-add-remove-or-leave-final-comma))
 
 (multi-line-post-all-decorator multi-line-reindenting-respacer
   (indent-region (marker-position (car markers))
