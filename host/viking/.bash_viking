@@ -2,6 +2,8 @@
 # .bash_viking
 
 export SITE=talbot
+unset SSH_ASKPASS
+
 python=~/anaconda2/bin
 dart=/usr/local/dart/1.15.0/dart-sdk
 cask=$HOME/.cask/bin
