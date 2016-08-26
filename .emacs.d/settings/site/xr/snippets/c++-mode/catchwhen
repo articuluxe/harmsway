@@ -1,0 +1,9 @@
+# -*- mode: snippet; require-final-newline: nil -*-
+# name: catchwhen
+# key: catchwhen
+# binding: direct-keybinding
+# --
+WHEN("$1")
+{
+$0
+}

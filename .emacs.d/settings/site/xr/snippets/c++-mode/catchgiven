@@ -1,9 +1,9 @@
 # -*- mode: snippet; require-final-newline: nil -*-
-# name: section
-# key: section
+# name: catchgiven
+# key: catchgiven
 # binding: direct-keybinding
 # --
-SECTION("$1")
+GIVEN("$1")
 {
 $0
 }

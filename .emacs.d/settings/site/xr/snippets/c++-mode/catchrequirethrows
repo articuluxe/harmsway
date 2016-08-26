@@ -1,0 +1,6 @@
+# -*- mode: snippet; require-final-newline: nil -*-
+# name: catchrequirethrows
+# key: catchrequirethrows
+# binding: direct-keybinding
+# --
+REQUIRE_THROWS($0);

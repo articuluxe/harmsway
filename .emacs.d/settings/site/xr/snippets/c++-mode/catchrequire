@@ -1,0 +1,6 @@
+# -*- mode: snippet; require-final-newline: nil -*-
+# name: catchrequire
+# key: catchrequire
+# binding: direct-keybinding
+# --
+REQUIRE($0);

@@ -1,6 +1,9 @@
 # -*- mode: snippet; require-final-newline: nil -*-
-# name: require
-# key: require
+# name: catchsection
+# key: catchsection
 # binding: direct-keybinding
 # --
-REQUIRE($0);
+SECTION("$1")
+{
+$0
+}

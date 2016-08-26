@@ -1,0 +1,9 @@
+# -*- mode: snippet; require-final-newline: nil -*-
+# name: catchthen
+# key: catchthen
+# binding: direct-keybinding
+# --
+THEN("$1")
+{
+$0
+}

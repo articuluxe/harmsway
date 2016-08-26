@@ -1,6 +1,6 @@
 # -*- mode: snippet; require-final-newline: nil -*-
-# name: testcase
-# key: testcase
+# name: catchtestcase
+# key: catchtestcase
 # binding: direct-keybinding
 # --
 TEST_CASE($1, "[${2:$1}]")
