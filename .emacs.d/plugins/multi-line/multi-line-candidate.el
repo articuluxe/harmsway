@@ -1,4 +1,4 @@
-;;; multi-line-enter.el --- multi-line statements -*- lexical-binding: t; -*-
+;;; multi-line-candidate.el --- multi-line statements -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2015-2016 Ivan Malison
 
@@ -17,20 +17,19 @@
 
 ;;; Commentary:
 
-;; multi-line-enter defines various approaches for going to the
-;; beginning of a statement that can be multi-lined.
+;; multi-line-candidate defines a wrapper object for a marker with some
+;; additional context
 
 ;;; Code:
 
 (require 'eieio)
-(require 'multi-line-shared)
 
-(defclass multi-line-up-list-enter-strategy () nil)
+(defclass multi-line-candidate ()
+  ((marker :initarg :marker :initform (point-marker))
+   (original-spacing :initarg :original-spacing)))
 
-(cl-defmethod multi-line-enter ((_enter multi-line-up-list-enter-strategy)
-                                &optional _context)
-  (multi-line-up-list-back)
-  (forward-char))
+(cl-defmethod multi-line-candidate-position ((candidate multi-line-candidate))
+  (marker-position (oref candidate marker)))
 
-(provide 'multi-line-enter)
-;;; multi-line-enter.el ends here
+(provide 'multi-line-candidate)
+;;; multi-line-candidate.el ends here

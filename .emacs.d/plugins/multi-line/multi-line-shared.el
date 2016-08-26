@@ -22,17 +22,32 @@
 
 ;;; Code:
 
+(require 'cl-lib)
+(require 'dash)
 (require 's)
 
 (defun multi-line-clear-whitespace-at-point ()
-  "Erase any surrounding whitespace."
+  "Clear the whitespace at point."
   (interactive)
-  (re-search-backward "[^[:space:]\n]")
-  (forward-char)
-  (let ((start (point)))
-    (re-search-forward "[^[:space:]\n]")
-    (backward-char)
-    (kill-region start (point))))
+  (cl-destructuring-bind (start . end)
+      (multi-line-space-markers)
+    (delete-region (marker-position start) (marker-position end))))
+
+(cl-defun multi-line-space-markers
+    (&optional (space-matches-string "[:space:]\n"))
+  "Get markers delimiting whitespace at point.
+
+SPACE-MATCHES-STRING is as a string containing concatenated
+character classes that will be used to find whitespace."
+  (let ((space-excludes-string (format "[^%s]" space-matches-string)))
+    (re-search-backward space-excludes-string)
+    (forward-char)
+    (let* ((start (point-marker))
+           (end (progn
+                  (re-search-forward space-excludes-string)
+                  (backward-char)
+                  (point-marker))))
+      (cons start end))))
 
 (defun multi-line-add-remove-or-leave-final-comma ()
   (save-excursion
@@ -54,6 +69,8 @@
 (defun multi-line-up-list-back ()
   "Go to the beginning of a statement from inside the statement."
   (interactive)
+  ;; TODO: This could really used some explanation. I have no idea what is going
+  ;; on here now.
   (let ((string-start (nth 8 (syntax-ppss))))
     (when string-start
       (goto-char string-start)))
@@ -76,20 +93,25 @@
 (defmacro multi-line-predicate-and (&rest predicates)
   `(lambda (&rest args)
      (and ,@(cl-loop for predicate in predicates
-                     collect (quote (apply predicate args))))))
+                     collect `(apply ,predicate args)))))
 
-(defun multi-line-last-predicate (index markers)
-  (equal index (- (length markers) 1)))
+(defun multi-line-last-predicate (index candidates)
+  (equal index (- (length candidates) 1)))
 
-(defun multi-line-first-predicate (index markers)
+(defun multi-line-first-predicate (index _candidates)
   (equal index 0))
 
 (defalias 'multi-line-first-or-last-predicate
   (multi-line-predicate-or 'multi-line-first-predicate
                            'multi-line-last-predicate))
 
-(defun multi-line-is-last-index (index alist)
-  (equal index (- (length markers) 1)))
+(defun multi-line-remove-at-indices (skip-indices list)
+  (-remove-at-indices (multi-line-actual-indices skip-indices list) list))
+
+(defun multi-line-actual-indices (skip-indices list)
+  (let ((list-length (length list)))
+    (cl-loop for index in skip-indices
+           collect (mod index list-length))))
 
 (provide 'multi-line-shared)
 ;;; multi-line-shared.el ends here

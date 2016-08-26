@@ -5,8 +5,8 @@
 ;; Author: Ivan Malison <IvanMalison@gmail.com>
 ;; Keywords: multi line length whitespace programming
 ;; URL: https://github.com/IvanMalison/multi-line
-;; Version: 0.0.0
-;; Package-Requires: ((emacs "24") (s "1.9.0") (cl-lib "0.5"))
+;; Package-Requires: ((emacs "24") (s "1.9.0") (cl-lib "0.5") (dash "2.12.0") (shut-up "0.3.2"))
+;; Version: 0.1.2
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -43,11 +43,11 @@
 (require 'multi-line-shared)
 
 (defvar multi-line-default-single-line-respacer
-  (multi-line-clearing-reindenting-respacer (multi-line-never-newline)))
+  (multi-line-clearing-reindenting-respacer
+   (multi-line-never-newline)))
 
 (defvar multi-line-skip-first-and-last-respacer
-  (make-instance multi-line-always-newline
-                 :skip-first t :skip-last t))
+  (multi-line-removing-respacer :respacer (multi-line-always-newline)))
 
 (cl-defun multi-line-respacers-with-single-line
     (respacers
@@ -56,58 +56,51 @@
    (append respacers (list (cons :single-line single-line-respacer)))))
 
 (defun multi-line-default-respacers (&rest respacers)
-  "Add a single-line strategy to RESPACERS and make a cycling respacer strategy."
+  "Add a single-line strategy to RESPACERS and make a cycling respace strategy."
   (multi-line-respacers-with-single-line respacers))
 
 (defvar multi-line-skip-fill-respacer
-  (multi-line-clearing-reindenting-respacer
-   (multi-line-fill-column-respacer
-    :newline-respacer multi-line-skip-first-and-last-respacer)))
+  (multi-line-fill-column-respacer
+   :first-index 1 :final-index -2))
 
 (defvar multi-line-default-respacer-list
   (mapcar 'multi-line-clearing-reindenting-respacer
-          (list (multi-line-fill-column-respacer)
-                (multi-line-always-newline)
-                (multi-line-fill-column-respacer
-                 :newline-respacer multi-line-skip-first-and-last-respacer))))
+          (let ((always-newline (multi-line-always-newline)))
+            (list (multi-line-selecting-respacer
+                   :indices-to-respacer (list (cons (list 0 -1) always-newline))
+                   :default (multi-line-fill-column-respacer))
+                  always-newline
+                  (multi-line-fill-column-respacer
+                   :first-index 1 :final-index -2)))))
 
 (defvar multi-line-default-respacer
   (multi-line-respacers-with-single-line multi-line-default-respacer-list))
 
 (defclass multi-line-strategy ()
   ((enter :initarg :enter :initform
-          (make-instance multi-line-up-list-enter-strategy))
+          (multi-line-up-list-enter-strategy))
    (find :initarg :find :initform
-         (make-instance multi-line-forward-sexp-find-strategy))
+         (multi-line-forward-sexp-find-strategy))
    (respace :initarg :respace :initform (progn
                                           multi-line-default-respacer))))
 
-(defmethod multi-line-markers ((strategy multi-line-strategy) &optional context)
-  "Get the markers for multi-line candidates for the statement at point."
-  (let ((enter-strategy (oref strategy :enter))
-        (find-strategy (oref strategy :find)))
+(cl-defmethod multi-line-candidates ((strategy multi-line-strategy)
+                                     &optional context)
+  "Get the multi-line candidates at point."
+  (let ((enter-strategy (oref strategy enter))
+        (find-strategy (oref strategy find)))
     (multi-line-enter enter-strategy context)
-    ;; TODO: This logic should probably be part of the find-strategy
-    (nconc (list (point-marker))        ;start marker
-           (cl-loop until (equal (multi-line-find-next find-strategy context) :done)
-                    collect (point-marker))
-           (list (point-marker))        ;end marker
-           )))
+    (multi-line-find find-strategy context)))
 
-(defmethod multi-line-execute ((strategy multi-line-strategy) &optional context)
+(cl-defmethod multi-line-execute ((strategy multi-line-strategy) &optional context)
   (when (or (eq context t) (equal context 'single-line))
     (setq context (plist-put nil :respacer-name :single-line)))
   (save-excursion
-    (let ((markers (multi-line-markers strategy)))
-      (multi-line-respace (oref strategy :respace) markers context))))
-
-(defmethod multi-line-execute-one ((strategy multi-line-strategy)
-                                   marker i markers respacer)
-  (goto-char (marker-position marker))
-  (multi-line-respace-one respacer i markers))
+    (let ((candidates (multi-line-candidates strategy)))
+      (multi-line-respace (oref strategy respace) candidates context))))
 
 (defvar-local multi-line-current-strategy
-  (make-instance multi-line-strategy)
+  (multi-line-strategy)
   "The multi-line strategy that will be used by the command `multi-line'.")
 
 (defun multi-line-lisp-advance-fn ()
@@ -121,16 +114,14 @@
 (defvar multi-line-mode-to-hook nil)
 
 (defmacro multi-line-defhook
-    (mode-name strategy-form &optional use-global-enable)
-  (let* ((mode-string (symbol-name mode-name))
-         (base-string (concat multi-line-defhook-prefix (symbol-name mode-name)))
+    (the-mode-name strategy-form &optional use-global-enable)
+  (let* ((mode-string (symbol-name the-mode-name))
+         (base-string (concat multi-line-defhook-prefix mode-string))
          (variable-name (intern (concat base-string "-strategy")))
          (hook-name (intern (concat base-string "-mode-hook")))
          (mode-hook-name (intern (concat mode-string "-mode-hook"))))
-    `(eval-and-compile
-       (defvar ,variable-name)
-       ;; Doing a setq separately lets use override any existing value
-       (setq ,variable-name ,strategy-form)
+    `(progn
+       (defvar ,variable-name ,strategy-form)
        (defun ,hook-name ()
          (setq-local multi-line-current-strategy ,variable-name))
        ,(if use-global-enable
@@ -141,7 +132,8 @@
 (put 'multi-line-defhook 'lisp-indent-function 1)
 
 (defvar multi-line-lisp-respacer
-  (multi-line-default-respacers multi-line-skip-fill-respacer))
+  (multi-line-default-respacers (multi-line-clearing-reindenting-respacer
+                                 multi-line-skip-fill-respacer)))
 
 (defvar multi-line-lisp-strategy
   (multi-line-strategy
@@ -149,11 +141,19 @@
           :split-regex "[[:space:]\n]+"
           :done-regex "[[:space:]]*)"
           :split-advance-fn 'multi-line-lisp-advance-fn)
-   :enter (multi-line-up-list-enter-strategy)
    :respace multi-line-lisp-respacer) t)
 
-(multi-line-defhook lisp multi-line-lisp-strategy t)
+(defvar multi-line-add-trailing-comma-strategy
+  (multi-line-strategy
+   :respace (multi-line-respacers-with-single-line
+             (mapcar 'multi-line-trailing-comma-respacer
+                     multi-line-default-respacer-list)
+             (multi-line-trailing-comma-respacer
+              multi-line-default-single-line-respacer))))
 
+(multi-line-defhook python multi-line-add-trailing-comma-strategy t)
+(multi-line-defhook go multi-line-add-trailing-comma-strategy t)
+(multi-line-defhook lisp multi-line-lisp-strategy t)
 (multi-line-defhook emacs-lisp multi-line-lisp-strategy t)
 
 (multi-line-defhook clojure
@@ -162,16 +162,7 @@
           :split-regex "[[:space:]\n]+"
           :done-regex "[[:space:]]*)]}"
           :split-advance-fn 'multi-line-lisp-advance-fn)
-   :enter (multi-line-up-list-enter-strategy)
    :respace multi-line-lisp-respacer) t)
-
-(multi-line-defhook go
-  (multi-line-strategy
-   :respace (multi-line-respacers-with-single-line
-             (mapcar 'multi-line-trailing-comma-respacer
-                     multi-line-default-respacer-list)
-             (multi-line-trailing-comma-respacer
-              multi-line-default-single-line-respacer))) t)
 
 ;;;###autoload
 (defun multi-line-enable-mode-hooks ()
@@ -195,7 +186,8 @@
 
 When ARG is provided single-line the statement at point instead."
   (interactive "P")
-  (let ((for-single-line (if arg t nil))) ; TODO(imalison): better cast to bool
+  ;; TODO(imalison): Is there a better way to cast to bool?
+  (let ((for-single-line (if arg t nil)))
     (multi-line-execute multi-line-current-strategy for-single-line)))
 
 ;;;###autoload
