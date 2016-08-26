@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-08-24 12:45:08 dan.harms>
+;; Modified Time-stamp: <2016-08-26 16:53:37 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -729,7 +729,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (magit-define-popup-switch 'magit-log-popup
     ?m "Omit merge commits" "--no-merges")
   (setq magit-log-arguments (append
-                             (list "--no-merges" "--color")
+                             (list "--color")
                              magit-log-arguments))
   ;; show status buffer alone
   (setq magit-post-display-buffer-hook
