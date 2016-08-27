@@ -16,7 +16,7 @@
 ;;	Rémi Vanicat      <vanicat@debian.org>
 ;;	Yann Hodique      <yann.hodique@gmail.com>
 
-;; Package-Requires: ((emacs "24.4") (async "20150909.2257") (dash "20151021.113") (with-editor "20160408.201") (git-commit "20160425.430") (magit-popup "20160512.328"))
+;; Package-Requires: ((emacs "24.4") (async "20160711.223") (dash "20160820.501") (with-editor "20160812.1457") (git-commit "20160519.950") (magit-popup "20160813.642"))
 ;; Keywords: git tools vc
 ;; Homepage: https://github.com/magit/magit
 
@@ -590,11 +590,12 @@ detached `HEAD'."
   "Insert a header line about branch usually pulled into current branch."
   (when pull
     (magit-insert-section (branch pull)
-      (insert (format "%-10s"
-                      (or keyword
-                          (if (magit-get-boolean "branch" branch "rebase")
-                              "Rebase: "
-                            "Merge: "))))
+      (let ((rebase (magit-git-string "config"
+                                      (format "branch.%s.rebase" branch))))
+        (if (equal rebase "false")
+            (setq rebase nil)
+          (setq rebase (magit-get-boolean "pull.rebase")))
+        (insert (format "%-10s" (or keyword (if rebase "Rebase: " "Merge: ")))))
       (--when-let (and magit-status-show-hashes-in-headers
                        (magit-rev-format "%h" pull))
         (insert (propertize it 'face 'magit-hash) ?\s))
@@ -868,13 +869,13 @@ Insert a header line with the name and description of the
 current branch.  The description is taken from the Git variable
 `branch.<NAME>.description'; if that is undefined then no header
 line is inserted at all."
-  (-when-let* ((branch (magit-get-current-branch))
-               (desc (magit-get "branch" branch "description"))
-               (desc-lines (split-string desc "\n")))
-    (magit-insert-section (branchdesc branch t)
-      (magit-insert-heading branch ": " (car desc-lines))
-      (insert (mapconcat 'identity (cdr desc-lines) "\n"))
-      (insert "\n\n"))))
+  (let ((branch (magit-get-current-branch)))
+    (--when-let (magit-git-lines
+                 "config" (format "branch.%s.description" branch))
+      (magit-insert-section (branchdesc branch t)
+        (magit-insert-heading branch ": " (car it))
+        (insert (mapconcat 'identity (cdr it) "\n"))
+        (insert "\n\n")))))
 
 (defconst magit-refs-branch-line-re
   (concat "^"
@@ -2809,7 +2810,7 @@ Usually this is just its basename."
                ;; If there are no tags, use the date in MELPA format.
                (magit-git-string "show" "--no-patch" "--format=%cd-g%h"
                                  "--date=format:%Y%m%d.%H%M"))))
-    (if (string-match-p "\\`[0-9]" v)
+    (if (and v (string-match-p "\\`[0-9]" v))
         (concat " " v)
       v)))
 

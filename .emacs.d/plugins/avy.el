@@ -485,7 +485,8 @@ multiple DISPLAY-FN invokations."
 
 (defun avy-resume ()
   "Stub to hold last avy command.
-Commands using `avy-with' macro can be resumed.")
+Commands using `avy-with' macro can be resumed."
+  (interactive))
 
 (defmacro avy-with (command &rest body)
   "Set `avy-keys' according to COMMAND and execute BODY.
@@ -631,14 +632,14 @@ Use OVERLAY-FN to visualize the decision overlay."
 (defun avy--next-visible-point ()
   "Return the next closest point without 'invisible property."
   (let ((s (point)))
-    (while (and (not (= (point-max) (setq s (next-overlay-change s))))
+    (while (and (not (= (point-max) (setq s (next-char-property-change s))))
                 (get-char-property s 'invisible)))
     s))
 
 (defun avy--next-invisible-point ()
   "Return the next closest point with 'invisible property."
   (let ((s (point)))
-    (while (and (not (= (point-max) (setq s (next-overlay-change s))))
+    (while (and (not (= (point-max) (setq s (next-char-property-change s))))
                 (not (get-char-property s 'invisible))))
     s))
 
@@ -1062,6 +1063,8 @@ The window scope is determined by `avy-all-windows' (ARG negates it)."
                         ((and avy-word-punc-regexp
                               (string-match avy-word-punc-regexp str))
                          (regexp-quote str))
+                        ((<= char 26)
+                         str)
                         (t
                          (concat
                           (if symbol "\\_<" "\\b")
