@@ -24,11 +24,10 @@
 ;;; Commentary:
 
 ;; multi-line aims to provide a flexible framework for automatically
-;; multi-lining and single-lining function invocations and
-;; definitions, array and map literals and more. It relies on
-;; functions that are defined on a per major mode basis wherever it
-;; can so that it behaves correctly across many different programming
-;; languages.
+;; multi-lining and single-lining function invocations and definitions,
+;; array and map literals and more. It relies on functions that are
+;; defined on a per major mode basis wherever it can so that it operates
+;; correctly across many different programming languages.
 
 ;;; Code:
 
@@ -46,8 +45,20 @@
   (multi-line-clearing-reindenting-respacer
    (multi-line-never-newline)))
 
+(defvar multi-line-always-newline-respacer
+  (make-instance multi-line-always-newline))
+
+(defvar multi-line-force-first-and-last-respacer
+  (make-instance
+   multi-line-selecting-respacer
+   :indices-to-respacer (list
+                         (cons (list 0 -1)
+                               multi-line-always-newline-respacer))
+   :default (make-instance multi-line-fill-column-respacer)))
+
 (defvar multi-line-skip-first-and-last-respacer
-  (multi-line-removing-respacer :respacer (multi-line-always-newline)))
+  (make-instance multi-line-fill-column-respacer
+                 :first-index 1 :final-index -2))
 
 (cl-defun multi-line-respacers-with-single-line
     (respacers
@@ -60,39 +71,38 @@
   (multi-line-respacers-with-single-line respacers))
 
 (defvar multi-line-skip-fill-respacer
-  (multi-line-fill-column-respacer
-   :first-index 1 :final-index -2))
+  (make-instance multi-line-fill-column-respacer
+                 :first-index 1 :final-index -2))
 
 (defvar multi-line-default-respacer-list
   (mapcar 'multi-line-clearing-reindenting-respacer
-          (let ((always-newline (multi-line-always-newline)))
-            (list (multi-line-selecting-respacer
-                   :indices-to-respacer (list (cons (list 0 -1) always-newline))
-                   :default (multi-line-fill-column-respacer))
-                  always-newline
-                  (multi-line-fill-column-respacer
-                   :first-index 1 :final-index -2)))))
+          (list multi-line-force-first-and-last-respacer
+                multi-line-always-newline-respacer
+                multi-line-skip-first-and-last-respacer)))
 
 (defvar multi-line-default-respacer
   (multi-line-respacers-with-single-line multi-line-default-respacer-list))
 
+(defun multi-line-get-default-respacer ()
+  multi-line-default-respacer)
+
 (defclass multi-line-strategy ()
   ((enter :initarg :enter :initform
-          (multi-line-up-list-enter-strategy))
+          (make-instance multi-line-up-list-enter-strategy))
    (find :initarg :find :initform
-         (multi-line-forward-sexp-find-strategy))
-   (respace :initarg :respace :initform (progn
-                                          multi-line-default-respacer))))
+         (make-instance multi-line-forward-sexp-find-strategy))
+   (respace :initarg :respace
+            :initform (multi-line-get-default-respacer))))
 
-(cl-defmethod multi-line-candidates ((strategy multi-line-strategy)
-                                     &optional context)
+(defmethod multi-line-candidates ((strategy multi-line-strategy)
+                                  &optional context)
   "Get the multi-line candidates at point."
   (let ((enter-strategy (oref strategy enter))
         (find-strategy (oref strategy find)))
     (multi-line-enter enter-strategy context)
     (multi-line-find find-strategy context)))
 
-(cl-defmethod multi-line-execute ((strategy multi-line-strategy) &optional context)
+(defmethod multi-line-execute ((strategy multi-line-strategy) &optional context)
   (when (or (eq context t) (equal context 'single-line))
     (setq context (plist-put nil :respacer-name :single-line)))
   (save-excursion
@@ -100,7 +110,7 @@
       (multi-line-respace (oref strategy respace) candidates context))))
 
 (defvar-local multi-line-current-strategy
-  (multi-line-strategy)
+  (make-instance multi-line-strategy)
   "The multi-line strategy that will be used by the command `multi-line'.")
 
 (defun multi-line-lisp-advance-fn ()
@@ -121,7 +131,8 @@
          (hook-name (intern (concat base-string "-mode-hook")))
          (mode-hook-name (intern (concat mode-string "-mode-hook"))))
     `(progn
-       (defvar ,variable-name ,strategy-form)
+       (defvar ,variable-name)
+       (setq ,variable-name ,strategy-form)
        (defun ,hook-name ()
          (setq-local multi-line-current-strategy ,variable-name))
        ,(if use-global-enable
@@ -136,15 +147,15 @@
                                  multi-line-skip-fill-respacer)))
 
 (defvar multi-line-lisp-strategy
-  (multi-line-strategy
-   :find (multi-line-forward-sexp-find-strategy
-          :split-regex "[[:space:]\n]+"
-          :done-regex "[[:space:]]*)"
-          :split-advance-fn 'multi-line-lisp-advance-fn)
+  (make-instance multi-line-strategy
+   :find (make-instance multi-line-forward-sexp-find-strategy
+                        :split-regex "[[:space:]\n]+"
+                        :done-regex "[[:space:]]*)"
+                        :split-advance-fn 'multi-line-lisp-advance-fn)
    :respace multi-line-lisp-respacer) t)
 
 (defvar multi-line-add-trailing-comma-strategy
-  (multi-line-strategy
+  (make-instance multi-line-strategy
    :respace (multi-line-respacers-with-single-line
              (mapcar 'multi-line-trailing-comma-respacer
                      multi-line-default-respacer-list)
@@ -157,8 +168,9 @@
 (multi-line-defhook emacs-lisp multi-line-lisp-strategy t)
 
 (multi-line-defhook clojure
-  (multi-line-strategy
-   :find (multi-line-forward-sexp-find-strategy
+  (make-instance multi-line-strategy
+   :find (make-instance
+          multi-line-forward-sexp-find-strategy
           :split-regex "[[:space:]\n]+"
           :done-regex "[[:space:]]*)]}"
           :split-advance-fn 'multi-line-lisp-advance-fn)

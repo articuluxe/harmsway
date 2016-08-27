@@ -33,14 +33,15 @@
    (split-advance-fn :initarg :split-advance-fn :initform
                      'multi-line-comma-advance)))
 
-(cl-defmethod multi-line-should-stop ((strategy multi-line-forward-sexp-find-strategy))
+(defmethod multi-line-should-stop
+  ((strategy multi-line-forward-sexp-find-strategy))
   (cond
    ((looking-at (oref strategy done-regex)) :done)
    ((looking-at (oref strategy split-regex)) :candidate)
    (t nil)))
 
-(cl-defmethod multi-line-find-next ((strategy multi-line-forward-sexp-find-strategy)
-                                    &optional _context)
+(defmethod multi-line-find-next
+  ((strategy multi-line-forward-sexp-find-strategy) &optional _context)
   (let (last last-point this-point)
     (setq this-point (point))
     (condition-case _ignored
@@ -54,9 +55,9 @@
       (funcall (oref strategy split-advance-fn)))
     last))
 
-(cl-defmethod multi-line-find ((strategy multi-line-forward-sexp-find-strategy)
-                               &optional context)
-  (nconc (list (multi-line-candidate))
+(defmethod multi-line-find ((strategy multi-line-forward-sexp-find-strategy)
+                            &optional context)
+  (nconc (list (make-instance multi-line-candidate))
          (progn
            ;; XXX: This is a hack to make hash literals work in ruby. For some
            ;; reason if you execute forward sexp at a '{' but there is a newline
@@ -64,8 +65,8 @@
            ;; hash body.
            (re-search-forward "[^[:space:]\n]") (backward-char)
            (cl-loop until (equal (multi-line-find-next strategy context) :done)
-                    collect (multi-line-candidate)))
-         (list (multi-line-candidate))))
+                    collect (make-instance multi-line-candidate)))
+         (list (make-instance multi-line-candidate))))
 
 (provide 'multi-line-find)
 ;;; multi-line-find.el ends here

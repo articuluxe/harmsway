@@ -49,7 +49,7 @@
   ((respacer :initarg :respacer)
    (decorator :initarg :decorator)))
 
-(cl-defmethod multi-line-respace-one ((decorator multi-line-each-decorator)
+(defmethod multi-line-respace-one ((decorator multi-line-each-decorator)
                                    index candidates)
   (funcall (oref decorator decorator) (oref decorator respacer) index
            candidates))
@@ -60,11 +60,11 @@ execute FORMS before respacing.  FORMS can use the variables index
 and candidates which will be appropriately populated by the
 executor."
   `(defun ,name (decorated-respacer)
-     (multi-line-each-decorator
-      :respacer decorated-respacer
-      :decorator (lambda (respacer index candidates)
-                   ,@forms
-                   (multi-line-respace-one respacer index candidates)))))
+     (make-instance multi-line-each-decorator
+                    :respacer decorated-respacer
+                    :decorator (lambda (respacer index candidates)
+                                 ,@forms
+                                 (multi-line-respace-one respacer index candidates)))))
 
 (defmacro multi-line-post-decorator (name &rest forms)
   "Build a constructor with name NAME that builds respacers that
@@ -72,11 +72,11 @@ execute FORMS after respacing.  FORMS can use the variables index
 and candidates which will be appropriately populated by the
 executor."
   `(defun ,name (respacer)
-     (multi-line-each-decorator
-      :respacer respacer
-      :decorator (lambda (respacer index candidates)
-                   (multi-line-respace-one respacer index candidates)
-                   ,@forms))))
+     (make-instance multi-line-each-decorator
+                    :respacer respacer
+                    :decorator (lambda (respacer index candidates)
+                                 (multi-line-respace-one respacer index candidates)
+                                 ,@forms))))
 
 (defmacro multi-line-post-all-decorator (name &rest forms)
   "Build a constructor with name NAME that builds respacers that
@@ -94,7 +94,8 @@ by the executor."
 (multi-line-post-all-decorator multi-line-trailing-comma-respacer
   (multi-line-add-remove-or-leave-final-comma))
 
-(multi-line-post-all-decorator multi-line-reindenting-respacer
+(multi-line-post-all-decorator
+  multi-line-reindenting-respacer
   (shut-up
     (indent-region (multi-line-candidate-position (car candidates))
                    (multi-line-candidate-position (nth index candidates)))))
@@ -106,7 +107,7 @@ by the executor."
 (defclass multi-line-space-restoring-respacer ()
   ((respacer :initarg :respacer)))
 
-(cl-defmethod multi-line-respace-one ((respacer multi-line-space-restoring-respacer)
+(defmethod multi-line-respace-one ((respacer multi-line-space-restoring-respacer)
                                    index candidates)
   (cl-destructuring-bind (startm . endm) (multi-line-space-markers)
     (let* ((start (marker-position startm))
