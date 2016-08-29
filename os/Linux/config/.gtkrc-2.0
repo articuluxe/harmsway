@@ -1,0 +1,8 @@
+# change tooltip color on xfce
+style "my-tooltips"
+{
+    bg[NORMAL] = "#FF0000"
+    fg[NORMAL] = "#0000FF"
+}
+
+widget "*tooltip*" style "my-tooltips"
