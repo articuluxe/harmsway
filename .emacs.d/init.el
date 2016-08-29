@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-08-26 16:53:37 dan.harms>
+;; Modified Time-stamp: <2016-08-29 16:30:59 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -419,8 +419,10 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (add-to-list 'load-path (concat my/plugins-directory "multi-line/")))
 (use-package
   multi-line
-  :bind ("C-c w" . multi-line)
-  )
+  :bind (("C-c w" . multi-line)
+         ([f9] . multi-line)
+         ("C-c 9" . multi-line)
+         ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; emacs-refactor ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
