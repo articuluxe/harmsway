@@ -1,0 +1,9 @@
+# -*- mode: snippet; require-final-newline: nil -*-
+# name: catchtestfixture
+# key: catchtestfixture
+# binding: direct-keybinding
+# --
+TEST_FIXTURE(${1:FixtureName})
+{
+$0
+}
