@@ -4,9 +4,12 @@
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Monday, May  2, 2016
 # Version: 1.0
-# Modified Time-stamp: <2016-08-23 05:10:34 dharms>
+# Modified Time-stamp: <2016-08-29 06:39:22 dharms>
 # Modified by: Dan Harms
 # Keywords: mac help docs
+
+# reclaim unused space in sparse disk images
+hdiutil compact <name>.sparseimage
 
 # show what file permissions are preventing modification
 ls -lOe <file/dir>
