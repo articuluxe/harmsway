@@ -1,11 +1,12 @@
-;;; sudo-edit.el --- Edit files as root               -*- lexical-binding: t -*-
+;;; sudo-edit.el --- Open files as another user       -*- lexical-binding: t -*-
 
-;; Copyright (C) 2014 Nathaniel Flath <flat0103@gmail.com>
+;; Copyright (C) 2014, 2016 Nathaniel Flath <flat0103@gmail.com>
 
 ;; Author: Nathaniel Flath <flat0103@gmail.com>
 ;; URL: https://github.com/nflath/sudo-edit
+;; Keywords: convenience
 ;; Version: 0.0.1
-;; Package-Requires: ((emacs "24.4"))
+;; Package-Requires: ((emacs "24") (cl-lib "0.5"))
 
 ;; This file is not part of GNU Emacs.
 
@@ -28,8 +29,7 @@
 
 ;;; Commentary:
 
-;; This file provides several utility functions for opening buffers
-;; as root using 'sudo'.  They are:
+;; This package allows to open files as another user, by default "root":
 ;;
 ;;     `sudo-edit'
 ;;
@@ -45,14 +45,66 @@
 
 ;;; Code:
 (eval-when-compile
-  (require 'subr-x))
+  (require 'cl-lib)
+  (require 'subr-x nil 'no-error))
 
 (require 'tramp)
 
-(defun sudo-edit-filename (file-name)
-  "Return a sudo edit name for a FILE-NAME."
-  (if (file-remote-p file-name)
-      (let* ((vec (tramp-dissect-file-name file-name))
+;; Compatibility for Emacs 24.3 and earlier
+(eval-and-compile
+  (unless (fboundp 'string-prefix-p)
+    (defun string-prefix-p (prefix string &optional ignore-case)
+      "Return non-nil if PREFIX is a prefix of STRING.
+If IGNORE-CASE is non-nil, the comparison is done without paying attention
+to case differences."
+      (let ((prefix-length (length prefix)))
+        (if (> prefix-length (length string)) nil
+          (eq t (compare-strings prefix 0 prefix-length string
+                                 0 prefix-length ignore-case))))))
+
+  (unless (fboundp 'string-suffix-p)
+    (defun string-suffix-p (suffix string  &optional ignore-case)
+      "Return non-nil if SUFFIX is a suffix of STRING.
+If IGNORE-CASE is non-nil, the comparison is done without paying
+attention to case differences."
+      (let ((start-pos (- (length string) (length suffix))))
+        (and (>= start-pos 0)
+             (eq t (compare-strings suffix nil nil
+                                    string start-pos nil ignore-case))))))
+
+  (unless (featurep 'subr-x)
+    (defsubst string-remove-prefix (prefix string)
+      "Remove PREFIX from STRING if present."
+      (if (string-prefix-p prefix string)
+          (substring string (length prefix))
+        string))
+
+    (defsubst string-remove-suffix (suffix string)
+      "Remove SUFFIX from STRING if present."
+      (if (string-suffix-p suffix string)
+          (substring string 0 (- (length string) (length suffix)))
+        string))
+
+    (defsubst string-blank-p (string)
+      "Check whether STRING is either empty or only whitespace."
+      (string-match-p "\\`[ \t\n\r]*\\'" string))))
+
+(defgroup sudo-edit nil
+  "Edit files as another user."
+  :prefix "sudo-edit-"
+  :group 'convenience)
+
+(defcustom sudo-edit-user "root"
+  "Default user to edit a file with `sudo-edit'."
+  :type 'string
+  :group 'sudo-edit)
+
+(defvar sudo-edit-user-history nil)
+
+(defun sudo-edit-filename (filename user)
+  "Return a tramp edit name for a FILENAME as USER."
+  (if (file-remote-p filename)
+      (let* ((vec (tramp-dissect-file-name filename))
              (hop (tramp-make-tramp-file-name
                    (tramp-file-name-method vec)
                    (tramp-file-name-user vec)
@@ -62,26 +114,27 @@
         (setq hop (string-remove-prefix tramp-prefix-format hop))
         (setq hop (string-remove-suffix tramp-postfix-host-format hop))
         (setq hop (concat hop tramp-postfix-hop-format))
-        (tramp-make-tramp-file-name
-         "sudo"
-         ""
-         (tramp-file-name-host vec)
-         (tramp-file-name-localname vec)
-         hop))
-    (concat "/sudo::" file-name)))
+        (tramp-make-tramp-file-name "sudo" user (tramp-file-name-host vec) (tramp-file-name-localname vec) hop))
+    (tramp-make-tramp-file-name "sudo" user "localhost" filename)))
 
 ;;;###autoload
 (defun sudo-edit (&optional arg)
-  "Edit currently visited file as root.
+  "Edit currently visited file as another user, by default `sudo-edit-user'.
 
 With a prefix ARG prompt for a file to visit.  Will also prompt
 for a file to visit if current buffer is not visiting a file."
   (interactive "P")
-  (if (or arg (not buffer-file-name))
-      (find-file (sudo-edit-filename (read-file-name "Find file(as root): ")))
-    (let ((position (point)))
-      (find-alternate-file (sudo-edit-filename buffer-file-name))
-      (goto-char position))))
+  (let ((user (if arg
+                  (completing-read "User: " (system-users) nil nil nil 'sudo-edit-user-history sudo-edit-user)
+                sudo-edit-user))
+        (filename (or buffer-file-name
+                      (and (derived-mode-p 'dired-mode) default-directory))))
+    (cl-assert (not (string-blank-p user)) nil "User must not be a empty string")
+    (if (or arg (not filename))
+        (find-file (sudo-edit-filename (read-file-name (format "Find file (as \"%s\"): " user)) user))
+      (let ((position (point)))
+        (find-alternate-file (sudo-edit-filename filename user))
+        (goto-char position)))))
 
 (define-obsolete-function-alias 'sudo-edit-current-file 'sudo-edit)
 
