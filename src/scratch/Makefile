@@ -1,4 +1,4 @@
-CXXFLAGS=$(CXX_FLAGS) -c -g
+CXXFLAGS=$(CXX_FLAGS) -Wno-unused-parameter -c -g
 LDFLAGS=
 SOURCES=scratch.cpp
 OBJECTS=$(SOURCES:.cpp=.o)
