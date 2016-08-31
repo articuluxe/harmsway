@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-08-29 16:30:59 dan.harms>
+;; Modified Time-stamp: <2016-08-31 17:41:18 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -351,10 +351,43 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
  (defvar my/remote-host-list '())
  )
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; epa ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package epa
+  :bind (("C-c 09l" . epa-list-keys)
+         ("C-c 09L" . epa-list-secret-keys)
+         ("C-c 09k" . epa-delete-keys)
+         ("C-c 09i" . epa-import-keys)
+         ("C-c 09I" . epa-import-keys-region)
+         ("C-c 09a" . epa-import-armor-in-region)
+         ("C-c 09x" . epa-export-keys)
+         ("C-c 09y" . epa-insert-keys)
+         ("C-c 09q" . epa-select-keys)
+         ("C-c 09d" . epa-decrypt-file)
+         ("C-c 09D" . epa-decrypt-region)
+         ("C-c 09e" . epa-encrypt-file)
+         ("C-c 09E" . epa-encrypt-region)
+         ("C-c 09A" . epa-decrypt-armor-in-region)
+         ("C-c 09v" . epa-verify-file)
+         ("C-c 09V" . epa-verify-region)
+         ("C-c 09C" . epa-verify-cleartext-in-region)
+         ("C-c 09s" . epa-sign-file)
+         ("C-c 09S" . epa-sign-region)
+         )
+  :config
+  (setq epg-gpg-program "gpg2")
+  (setq epa-file-select-keys nil)
+  (setenv "GPG_AGENT_INFO" nil)
+  )
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; aes ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defvar my/aes-default-group "  default")
 (use-package aes
   :demand t
+  :bind (("C-c 08e" . aes-encrypt-current-buffer)
+         ("C-c 08d" . aes-decrypt-current-buffer)
+         ("C-c 08t" . aes-toggle-encryption)
+         ("C-c 08x" . aes-remove-encryption-hook)
+         )
   :config
   (setq aes-always-ask-for-passwords nil)
   (setq aes-enable-plaintext-password-storage t)
@@ -366,7 +399,6 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (setq aes--plaintext-passwords
         (let ((pwd (or (getenv "EMACS_PWD") "nil")))
           (list (cons my/aes-default-group pwd))))
-  (global-set-key "\C-c0z" 'aes-toggle-encryption)
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; path ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
