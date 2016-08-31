@@ -1,0 +1,6 @@
+# -*- mode: snippet; require-final-newline: nil -*-
+# name: catchlog
+# key: catchlog
+# binding: direct-keybinding
+# --
+${1:$$(yas-choose-value '("INFO" "WARN" "FAIL" "CAPTURE"))}($0)
