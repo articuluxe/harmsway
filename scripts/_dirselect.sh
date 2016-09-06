@@ -5,12 +5,12 @@
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Thursday, May  5, 2016
 # Version: 1.0
-# Modified Time-stamp: <2016-08-12 11:27:12 dan.harms>
+# Modified Time-stamp: <2016-09-06 16:19:23 dharms>
 # Modified by: Dan Harms
 # Keywords: bash script
 
 dir=${1:-$(pwd)}
-prompt=${2:-"Select a file or directory: "}
+prompt=${2:-"Select a directory: "}
 # construct array of directories in dir
 dirs=("$dir"/*)
 # loop through, replace with basename

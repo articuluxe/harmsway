@@ -4,7 +4,7 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Thursday, September 24, 2015
 # Version: 1.0
-# Modified Time-stamp: <2016-09-01 13:23:31 dan.harms>
+# Modified Time-stamp: <2016-09-06 16:28:20 dharms>
 # Modified by: Dan Harms
 # Keywords: emacs pipe stdin
 
@@ -15,7 +15,7 @@ exe=$EMACSX
 
 # example: echo "hello world" | emacspipe -
 
-if [ $1 = - ]; then
+if [[ $1 = - ]]; then
     temp=$(mktemp emacs-stdin-$USER.XXXXXXXX --tmpdir)
     cat - > $temp
     shift
