@@ -1,6 +1,6 @@
 ;;; sudo-edit.el --- Open files as another user       -*- lexical-binding: t -*-
 
-;; Copyright (C) 2014, 2016 Nathaniel Flath <flat0103@gmail.com>
+;; Copyright (C) 2014 Nathaniel Flath <flat0103@gmail.com>
 
 ;; Author: Nathaniel Flath <flat0103@gmail.com>
 ;; URL: https://github.com/nflath/sudo-edit
@@ -115,7 +115,7 @@ attention to case differences."
         (setq hop (string-remove-suffix tramp-postfix-host-format hop))
         (setq hop (concat hop tramp-postfix-hop-format))
         (tramp-make-tramp-file-name "sudo" user (tramp-file-name-host vec) (tramp-file-name-localname vec) hop))
-    (tramp-make-tramp-file-name "sudo" user "localhost" filename)))
+    (tramp-make-tramp-file-name "sudo" user "localhost" (expand-file-name filename))))
 
 ;;;###autoload
 (defun sudo-edit (&optional arg)

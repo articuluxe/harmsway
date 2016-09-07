@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-08-31 17:41:18 dharms>
+;; Modified Time-stamp: <2016-09-07 10:48:09 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -468,13 +468,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
    ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; sudo-edit ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package
-  sudo-edit
-  :bind
-  (("C-c 0rf" . sudo-edit)
-   ("C-c 0rr" . sudo-edit-current-file))
-  )
-
+(use-package sudo-edit :bind ("C-c 0rr" . sudo-edit))
 
 ;; work around bug in cc-mode in emacs 24.4
 ;; see debbugs.gnu.org/db/18/18845.html
