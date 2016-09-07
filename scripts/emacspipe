@@ -4,7 +4,7 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Thursday, September 24, 2015
 # Version: 1.0
-# Modified Time-stamp: <2016-09-06 16:28:20 dharms>
+# Modified Time-stamp: <2016-09-07 10:12:26 dan.harms>
 # Modified by: Dan Harms
 # Keywords: emacs pipe stdin
 
@@ -14,6 +14,9 @@ exe=$EMACSX
 # or: emacsclient -c -n $@
 
 # example: echo "hello world" | emacspipe -
+
+# todo: explore the following alternative:
+# echo "hello world" | sh -c '$EDITOR "$@" < /dev/tty' $EDITOR
 
 if [[ $1 = - ]]; then
     temp=$(mktemp emacs-stdin-$USER.XXXXXXXX --tmpdir)
