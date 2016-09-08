@@ -397,8 +397,7 @@ exit
 #+END_SRC
 
 ** Links
-C-c C-l    insert link
-C-c C-l    edit link
+C-c C-l    insert/edit link
 C-c C-o    goto link
 M-M-o-l    org-store-link
 M-M-o-c    org-capture
