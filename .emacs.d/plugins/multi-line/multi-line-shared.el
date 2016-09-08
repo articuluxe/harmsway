@@ -77,8 +77,9 @@ character classes that will be used to find whitespace."
   (up-list) (backward-sexp))
 
 (defun multi-line-comma-advance ()
-  "Advance to the next comma."
-  (re-search-forward ","))
+  "Pass over a comma when it is present."
+  (when (looking-at "[[:space:]\n]*,")
+   (re-search-forward ",")))
 
 (defun multi-line-is-newline-between-markers (first second)
   (s-contains? "\n"
@@ -111,7 +112,14 @@ character classes that will be used to find whitespace."
 (defun multi-line-actual-indices (skip-indices list)
   (let ((list-length (length list)))
     (cl-loop for index in skip-indices
-           collect (mod index list-length))))
+             collect (mod index list-length))))
+
+(defun multi-line-interpret-prefix-as-number (prefix)
+  (cond
+   ((numberp prefix) prefix)
+   ((and (-non-nil prefix) (listp prefix))
+    (truncate (log (car prefix) 4)))
+   (0)))
 
 (provide 'multi-line-shared)
 ;;; multi-line-shared.el ends here

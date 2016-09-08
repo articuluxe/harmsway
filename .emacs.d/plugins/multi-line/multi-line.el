@@ -6,7 +6,7 @@
 ;; Keywords: multi line length whitespace programming
 ;; URL: https://github.com/IvanMalison/multi-line
 ;; Package-Requires: ((emacs "24") (s "1.9.0") (cl-lib "0.5") (dash "2.12.0") (shut-up "0.3.2"))
-;; Version: 0.1.2
+;; Version: 0.1.4
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -46,18 +46,18 @@
    (multi-line-never-newline)))
 
 (defvar multi-line-always-newline-respacer
-  (make-instance multi-line-always-newline))
+  (make-instance 'multi-line-always-newline))
 
 (defvar multi-line-force-first-and-last-respacer
   (make-instance
-   multi-line-selecting-respacer
+   'multi-line-selecting-respacer
    :indices-to-respacer (list
                          (cons (list 0 -1)
                                multi-line-always-newline-respacer))
-   :default (make-instance multi-line-fill-column-respacer)))
+   :default (make-instance 'multi-line-fill-column-respacer)))
 
 (defvar multi-line-skip-first-and-last-respacer
-  (make-instance multi-line-fill-column-respacer
+  (make-instance 'multi-line-fill-column-respacer
                  :first-index 1 :final-index -2))
 
 (cl-defun multi-line-respacers-with-single-line
@@ -71,7 +71,7 @@
   (multi-line-respacers-with-single-line respacers))
 
 (defvar multi-line-skip-fill-respacer
-  (make-instance multi-line-fill-column-respacer
+  (make-instance 'multi-line-fill-column-respacer
                  :first-index 1 :final-index -2))
 
 (defvar multi-line-default-respacer-list
@@ -110,13 +110,12 @@
       (multi-line-respace (oref strategy respace) candidates context))))
 
 (defvar-local multi-line-current-strategy
-  (make-instance multi-line-strategy)
+  (make-instance 'multi-line-strategy)
   "The multi-line strategy that will be used by the command `multi-line'.")
 
 (defun multi-line-lisp-advance-fn ()
   "Advance to the start of the next multi-line split for Lisp."
-  (re-search-forward "[^[:space:]\n]")
-  (backward-char))
+  nil)
 
 (eval-and-compile
   (defvar multi-line-defhook-prefix "multi-line-"))
@@ -146,16 +145,24 @@
   (multi-line-default-respacers (multi-line-clearing-reindenting-respacer
                                  multi-line-skip-fill-respacer)))
 
+(defvar multi-line-lisp-find-strategy
+  (make-instance
+   'multi-line-keyword-pairing-finder :child
+   (make-instance 'multi-line-forward-sexp-find-strategy
+                  :split-regex "[[:space:]\n]+"
+                  :done-regex "[[:space:]]*)"
+                  :split-advance-fn 'multi-line-lisp-advance-fn)))
+
 (defvar multi-line-lisp-strategy
-  (make-instance multi-line-strategy
-   :find (make-instance multi-line-forward-sexp-find-strategy
-                        :split-regex "[[:space:]\n]+"
-                        :done-regex "[[:space:]]*)"
-                        :split-advance-fn 'multi-line-lisp-advance-fn)
+  (make-instance
+   'multi-line-strategy
+   :find multi-line-lisp-find-strategy
+   :enter (make-instance 'multi-line-up-list-enter-strategy
+                         :skip-chars "`',@")
    :respace multi-line-lisp-respacer) t)
 
 (defvar multi-line-add-trailing-comma-strategy
-  (make-instance multi-line-strategy
+  (make-instance 'multi-line-strategy
    :respace (multi-line-respacers-with-single-line
              (mapcar 'multi-line-trailing-comma-respacer
                      multi-line-default-respacer-list)
@@ -164,16 +171,25 @@
 
 (multi-line-defhook python multi-line-add-trailing-comma-strategy t)
 (multi-line-defhook go multi-line-add-trailing-comma-strategy t)
+(multi-line-defhook ruby multi-line-add-trailing-comma-strategy t)
+
 (multi-line-defhook lisp multi-line-lisp-strategy t)
 (multi-line-defhook emacs-lisp multi-line-lisp-strategy t)
 
+(defvar multi-line-clojure-find-strategy
+  (make-instance
+   'multi-line-keyword-pairing-finder :child
+   (make-instance 'multi-line-forward-sexp-find-strategy
+                  :split-regex "[[:space:]\n]+"
+                  :done-regex "[[:space:]]*)]}"
+                  :split-advance-fn 'multi-line-lisp-advance-fn)))
+
 (multi-line-defhook clojure
-  (make-instance multi-line-strategy
-   :find (make-instance
-          multi-line-forward-sexp-find-strategy
-          :split-regex "[[:space:]\n]+"
-          :done-regex "[[:space:]]*)]}"
-          :split-advance-fn 'multi-line-lisp-advance-fn)
+  (make-instance
+   'multi-line-strategy
+   :find multi-line-clojure-find-strategy
+   :enter (make-instance 'multi-line-up-list-enter-strategy
+                         :skip-chars "#~`'@,")
    :respace multi-line-lisp-respacer) t)
 
 ;;;###autoload
