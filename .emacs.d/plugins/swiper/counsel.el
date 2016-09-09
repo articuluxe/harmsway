@@ -5,7 +5,7 @@
 ;; Author: Oleh Krehel <ohwoeowho@gmail.com>
 ;; URL: https://github.com/abo-abo/swiper
 ;; Version: 0.8.0
-;; Package-Requires: ((emacs "24.1") (swiper "0.8.0"))
+;; Package-Requires: ((emacs "24.3") (swiper "0.8.0"))
 ;; Keywords: completion, matching
 
 ;; This file is part of GNU Emacs.
@@ -1203,6 +1203,9 @@ done") "\n" t)))
                   :action 'counsel-git-stash-kill-action
                   :caller 'counsel-git-stash)))))
 ;;** `counsel-git-log'
+(defvar counsel-git-log-cmd "GIT_PAGER=cat git log --grep '%s'"
+  "Command used for \"git log\".")
+
 (defun counsel-git-log-function (input)
   (if (< (length input) 3)
       (counsel-more-chars 3)
@@ -1211,10 +1214,8 @@ done") "\n" t)))
     (counsel--async-command
      ;; "git log --grep" likes to have groups quoted e.g. \(foo\).
      ;; But it doesn't like the non-greedy ".*?".
-     (format "GIT_PAGER=cat git log --grep '%s'"
-             (replace-regexp-in-string
-              "\\.\\*\\?" ".*"
-              ivy--old-re)))
+     (format counsel-git-log-cmd
+             (replace-regexp-in-string "\\.\\*\\?" ".*" ivy--old-re)))
     nil))
 
 (defun counsel-git-log-action (x)
@@ -1382,6 +1383,19 @@ When INITIAL-INPUT is non-nil, use it in the minibuffer during completion."
           (format "http://debbugs.gnu.org/cgi/bugreport.cgi?bug=%s"
                   (substring url 1)))))))
 
+;;** `counsel-recentf'
+(defvar recentf-list)
+
+;;;###autoload
+(defun counsel-recentf ()
+  "Find a file on `recentf-list'."
+  (interactive)
+  (ivy-read "Recentf: " recentf-list
+            :action (lambda (f)
+                      (with-ivy-window
+                        (find-file f)))
+            :caller 'counsel-recentf))
+
 ;;** `counsel-locate'
 (defcustom counsel-locate-cmd (cond ((eq system-type 'darwin)
                                      'counsel-locate-cmd-noregex)
@@ -1474,6 +1488,26 @@ INITIAL-INPUT can be given as the initial minibuffer input."
                           (find-file file))))
             :unwind #'counsel-delete-process
             :caller 'counsel-locate))
+
+;;** `counsel-dpkg'
+;;;###autoload
+(defun counsel-dpkg ()
+  "Call the \"dpkg\" shell command."
+  (interactive)
+  (let ((cands (mapcar
+                (lambda (x)
+                  (let ((y (split-string x "  +")))
+                    (cons (format "%-40s   %s"
+                                  (ivy--truncate-string
+                                   (nth 1 y) 40)
+                                  (nth 4 y))
+                          (mapconcat #'identity y " "))))
+                (split-string
+                 (shell-command-to-string "dpkg -l | tail -n+6") "\n" t))))
+    (ivy-read "dpkg: " cands
+              :action (lambda (x)
+                        (message (cdr x)))
+              :caller 'counsel-dpkg)))
 
 ;;** File Jump and Dired Jump
 
@@ -1722,6 +1756,7 @@ the command."
                              :history 'counsel-git-grep-history
                              :update-fn (lambda ()
                                           (counsel-grep-action ivy--current))
+                             :re-builder #'ivy--regex
                              :action #'counsel-grep-action
                              :unwind (lambda ()
                                        (counsel-delete-process)
@@ -2064,6 +2099,7 @@ INITIAL-INPUT can be given as the initial minibuffer input."
 
 ;;** `counsel-imenu'
 (defvar imenu-auto-rescan)
+(defvar imenu-auto-rescan-maxout)
 (declare-function imenu--subalist-p "imenu")
 (declare-function imenu--make-index-alist "imenu")
 
@@ -2097,6 +2133,9 @@ PREFIX is used to create the key."
   (unless (featurep 'imenu)
     (require 'imenu nil t))
   (let* ((imenu-auto-rescan t)
+         (imenu-auto-rescan-maxout (if current-prefix-arg
+                                       (buffer-size)
+                                     imenu-auto-rescan-maxout))
          (items (imenu--make-index-alist t))
          (items (delete (assoc "*Rescan*" items) items)))
     (ivy-read "imenu items:" (counsel-imenu-get-candidates-from items)
