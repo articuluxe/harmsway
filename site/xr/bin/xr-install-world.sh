@@ -5,7 +5,7 @@
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Thursday, August 18, 2016
 # Version: 1.0
-# Modified Time-stamp: <2016-09-06 19:22:25 dharms>
+# Modified Time-stamp: <2016-09-09 13:44:04 dan.harms>
 # Modified by: Dan Harms
 # Keywords: xr install
 
@@ -22,6 +22,6 @@ if [ ! -f "$file" ]; then
     exit 1
 fi
 
-xr-install-world.sh $file
+xr-untar-world.sh $file
 
 # code ends here
