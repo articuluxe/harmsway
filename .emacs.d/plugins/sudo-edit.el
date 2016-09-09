@@ -1,6 +1,6 @@
 ;;; sudo-edit.el --- Open files as another user       -*- lexical-binding: t -*-
 
-;; Copyright (C) 2014, 2016 Nathaniel Flath <flat0103@gmail.com>
+;; Copyright (C) 2014 Nathaniel Flath <flat0103@gmail.com>
 
 ;; Author: Nathaniel Flath <flat0103@gmail.com>
 ;; URL: https://github.com/nflath/sudo-edit
@@ -102,9 +102,12 @@ attention to case differences."
 (defvar sudo-edit-user-history nil)
 
 (defun sudo-edit-out-of-band-ssh-p (vec)
-  "Check if tramp VEC use ssh as login program."
-  (and (tramp-get-method-parameter vec 'tramp-copy-program)
-       (string-equal (tramp-get-method-parameter vec 'tramp-login-program) "ssh")))
+  "Check if tramp VEC is a out-of-band method and use ssh."
+  (and (or (tramp-get-method-parameter vec 'tramp-copy-program)
+           (tramp-get-method-parameter (tramp-file-name-method vec) 'tramp-copy-program))
+       (string= (or (tramp-get-method-parameter vec 'tramp-login-program)
+                    (tramp-get-method-parameter (tramp-file-name-method vec) 'tramp-login-program))
+                "ssh")))
 
 (defun sudo-edit-filename (filename user)
   "Return a tramp edit name for a FILENAME as USER."
