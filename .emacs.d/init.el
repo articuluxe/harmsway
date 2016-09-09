@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-09-07 10:48:09 dan.harms>
+;; Modified Time-stamp: <2016-09-09 13:18:59 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1845,6 +1845,9 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
           (let ((message (mapconcat #'flycheck-error-format-message-and-id
                                     errors "\n\n")))
             (popup-tip message))))
+  ;; hack because flycheck unreasonably demands package installation
+  (unless (fboundp 'pkg-info-version-info)
+    (defun pkg-info-version-info (_) "unknown"))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; flyspell ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
