@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-09-09 13:18:59 dan.harms>
+;; Modified Time-stamp: <2016-09-12 11:53:38 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -191,6 +191,10 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
           'face (list :background (match-string-no-properties 0))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; key-bindings ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; this removes the binding for "M-'" to 'abbrev-prefix-mark, without which we
+;; can use "M-'" as a prefix binding (one which happens to work in the
+;; terminal as well).
+(define-key esc-map "'" nil)
 (global-unset-key (kbd "<f1>"))
 (global-set-key [(next)] 'scroll-up-line)
 (global-set-key [(prior)] 'scroll-down-line)
@@ -451,9 +455,8 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (add-to-list 'load-path (concat my/plugins-directory "multi-line/")))
 (use-package
   multi-line
-  :bind (("C-c w" . multi-line)
-         ([f9] . multi-line)
-         ("C-c 9" . multi-line)
+  :bind (("C-\\" . multi-line)
+         ("M-' \\" . multi-line)
          ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; emacs-refactor ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -650,10 +653,6 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (use-package discover-my-major :bind ("C-h C-m" . discover-my-major))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; expand-region ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; this removes the binding for "M-'" to 'abbrev-prefix-mark, without which we
-;; can use "M-'" as a prefix binding (one which happens to work in the
-;; terminal as well).
-(define-key esc-map "'" nil)
 (eval-and-compile
   (add-to-list 'load-path (concat my/plugins-directory "expand-region/")))
 (use-package expand-region
