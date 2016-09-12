@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-09-12 11:53:38 dan.harms>
+;; Modified Time-stamp: <2016-09-12 12:11:06 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -857,7 +857,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; recentf ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package recentf
-  :defer 10
+  :defer 5
   :config
   (setq recentf-max-saved-items 200
         recentf-max-menu-items 12
@@ -1000,7 +1000,8 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; counsel ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package counsel
   :bind (("M-s M-f" . counsel-git)
-         ("M-s M-r" . counsel-git-grep)
+         ("M-s M-r" . counsel-recentf)
+         ("M-s M-p" . counsel-git-grep)
          ("M-s M-g" . counsel-grep)
          ("M-s M-z" . counsel-git-stash)
          ("M-s M-i" . counsel-imenu)
