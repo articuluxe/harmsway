@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-09-12 12:11:06 dan.harms>
+;; Modified Time-stamp: <2016-09-12 19:11:11 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2365,7 +2365,33 @@ customization."
     (defun my/expand-jedi() (interactive)
            (auto-complete '(ac-source-jedi-direct)))
     )
-  (unless (executable-find "flake8")
+  (if (executable-find "flake8")
+      (progn
+        (flycheck-define-checker python-flake8
+          "A Python syntax and style checker using Flake8.
+
+Requires Flake8 2.0 or newer. See URL
+`https://flake8.readthedocs.io/'."
+          :command ("flake8"
+                    "--format=default"
+                    (config-file "--config" flycheck-flake8rc)
+                    (option "--max-complexity" flycheck-flake8-maximum-complexity nil
+                            flycheck-option-int)
+                    (option "--max-line-length" flycheck-flake8-maximum-line-length nil
+                            flycheck-option-int)
+                    "-")
+          :standard-input t
+          :error-filter (lambda (errors)
+                          (let ((errors (flycheck-sanitize-errors errors)))
+                            (seq-do #'flycheck-flake8-fix-error-level errors)
+                            errors))
+          :error-patterns
+          ((warning line-start
+                    "stdin:" line ":" (optional column ":") " "
+                    (id (one-or-more (any alpha)) (one-or-more digit)) " "
+                    (message (one-or-more not-newline))
+                    line-end))
+          :modes python-mode))
     (add-to-list 'flycheck-disabled-checkers 'python-flake8)
     (add-to-list 'flycheck-checkers 'python-pyflakes)
     (use-package flycheck-pyflakes)
