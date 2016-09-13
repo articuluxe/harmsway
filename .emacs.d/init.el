@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-09-12 19:11:11 dharms>
+;; Modified Time-stamp: <2016-09-13 15:46:56 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -196,6 +196,8 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 ;; terminal as well).
 (define-key esc-map "'" nil)
 (global-unset-key (kbd "<f1>"))
+;; add shortcut for terminals where C-S-DEL doesn't work
+(global-set-key (kbd "M-' DEL") 'kill-whole-line)
 (global-set-key [(next)] 'scroll-up-line)
 (global-set-key [(prior)] 'scroll-down-line)
 (global-set-key "\C-caa" 'align)
@@ -1006,6 +1008,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
          ("M-s M-r" . counsel-recentf)
          ("M-s M-p" . counsel-git-grep)
          ("M-s M-g" . counsel-grep)
+         ("M-s M-y" . counsel-yank-pop)
          ("M-s M-z" . counsel-git-stash)
          ("M-s M-i" . counsel-imenu)
          ("M-s M-l" . counsel-git-log)
