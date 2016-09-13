@@ -1,0 +1,33 @@
+#!/usr/bin/env sh
+# -*- Mode: sh -*-
+# wireshark.txt --- wireshark help
+# Copyright (C) 2016  Dan Harms (dan.harms)
+# Author: Dan Harms <dan.harms@xrtrading.com>
+# Created: Tuesday, September 13, 2016
+# Version: 1.0
+# Modified Time-stamp: <2016-09-13 09:20:42 dan.harms>
+# Modified by: Dan Harms
+# Keywords: wireshark
+
+# convert from .erf to .pcap
+tshark -r <file>.erf -q -z io,phs
+editcap -F libpcap -T ether <file>.erf <file>.pcap
+
+# list interfaces
+tshark -D
+# capture
+tshark -i<interface> -w <output>.pcap
+# capture files up to 10240 KB or after 1 second elapsed
+tshark -b filesize:10240 -b duration:1 -w <output>.pcap
+# capture 20 files each 100 KB, then stop
+tshark -b filesize:100 -a files:20 -w <output>.pcap
+# rolling capture of 4 GB of data (128 files of 32 MB)
+dumpcap -i<interface> -w <output>.pcap -b filesize:32768 -b files:128
+
+########################################### filters ###########################################
+fix and ip.[addr|src|dst] == 69.50.112.200
+# match first 3 octets
+ip.src == 69.50.112.200/24
+
+
+# code ends here

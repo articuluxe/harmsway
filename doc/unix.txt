@@ -4,7 +4,7 @@
 # Author:  <dan.harms@xrtrading.com>
 # Created: Friday, March 20, 2015
 # Version: 1.0
-# Modified Time-stamp: <2016-08-15 15:55:31 dan.harms>
+# Modified Time-stamp: <2016-09-19 10:18:10 dan.harms>
 # Modified by: Dan Harms
 # Keywords: help
 
@@ -41,10 +41,6 @@ pstack <pid>
 facter lsbdistrelease
 cat /etc/*-release
 
-# convert from .erf to .pcap
-tshark -r <file>.erf -q -z io,phs
-editcap -F libpcap -T ether <file>.erf <file>.pcap
-
 # repeat a command every n seconds
 watch -n 5 who
 # repeat a command in a loop
@@ -57,22 +53,6 @@ mkdir bld && cd bld
 # compare 2 directories
 diff -qr one two
 comm -3 <(ls -l one) <(ls -l two)
-
-################################# wireshark ##################################
-# list interfaces
-tshark -D
-# capture
-tshark -i<interface> -w <output>.pcap
-# capture files up to 10240 KB or after 1 second elapsed
-tshark -b filesize:10240 -b duration:1 -w <output>.pcap
-# capture 20 files each 100 KB, then stop
-tshark -b filesize:100 -a files:20 -w <output>.pcap
-# rolling capture of 4 GB of data (128 files of 32 MB)
-dumpcap -i<interface> -w <output>.pcap -b filesize:32768 -b files:128
-# filters:
-fix and ip.[addr|src|dst] == 69.50.112.200
-# match first 3 octets
-ip.src == 69.50.112.200/24
 
 # close a socket without killing process
 netstat -np
@@ -127,6 +107,9 @@ $?
 <command> 2>&1
 # redirect stdout+stderr
 <command> &> output.txt
+
+# debug a bash script
+set -xv
 
 #################################### awk #####################################
 # seach a field for a specific regex

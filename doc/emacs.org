@@ -33,6 +33,8 @@ C-x C-+   /   C-x C--
 * Bookmarks
 ** List
 ;; (@* "List") (C-x p)
+C-h p         describe current
+C-h >         describe marked
 r             rename
 M-r/R         relocate [marked]
 e/E           edit [marked]
