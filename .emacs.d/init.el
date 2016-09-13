@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-09-13 15:46:56 dan.harms>
+;; Modified Time-stamp: <2016-09-13 21:40:43 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1212,6 +1212,10 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (setq org-enforce-todo-dependencies t)
   (setq org-enforce-todo-checkbox-dependencies t)
   :config
+  (require 'org-crypt)
+  (org-crypt-use-before-save-magic)
+  (setq org-tags-exclude-from-inheritance '("crypt"))
+  (setq org-crypt-key nil)
   (setq org-todo-keywords
         '((sequence "TODO(t)" "WORKING(w)" "BLOCKED(b)"
                     "|" "WONTFIX(x)" "DONE(d)")))
