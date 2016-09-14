@@ -1151,6 +1151,8 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   :config
   ;; reset the undo tree history (useful after reverting buffer)
   (global-set-key "\C-cu" (lambda()(interactive)(setq buffer-undo-tree nil)))
+  (setq undo-tree-visualizer-diff t)
+  (setq undo-tree-visualizer-timestamps t)
   (global-undo-tree-mode))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; goto-chg ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
