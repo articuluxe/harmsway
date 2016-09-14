@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-09-13 21:41:12 dharms>
+;; Modified Time-stamp: <2016-09-14 02:10:32 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1184,15 +1184,17 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; outline-magic ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun my/add-outline-cycle-binding (map)
   (bind-key "C-c -" 'outline-cycle map))
-(use-package outline-magic
-  :commands outline-cycle
-  :init
-  (setq outline-structedit-modifiers '(control shift)) ;TODO: doesn't work
-  (add-hook 'outline-mode-hook
-            (lambda() (my/add-outline-cycle-binding outline-mode-map)))
-  (add-hook 'outline-minor-mode-hook
-            (lambda() (my/add-outline-cycle-binding outline-minor-mode-map)))
-  )
+(use-package
+ outline-magic
+ :bind ("C-c -" . outline-cycle)
+ :commands outline-cycle
+ :init
+ (setq outline-structedit-modifiers '(control shift)) ;TODO: doesn't work
+ (add-hook 'outline-mode-hook
+           (lambda() (my/add-outline-cycle-binding outline-mode-map)))
+ (add-hook 'outline-minor-mode-hook
+           (lambda() (my/add-outline-cycle-binding outline-minor-mode-map)))
+ )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; org ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (global-set-key "\e\eoa" #'org-agenda)
