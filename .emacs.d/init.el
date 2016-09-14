@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-09-14 02:10:32 dharms>
+;; Modified Time-stamp: <2016-09-14 08:22:56 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1008,13 +1008,15 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
          ("M-s M-r" . counsel-recentf)
          ("M-s M-p" . counsel-git-grep)
          ("M-s M-g" . counsel-grep)
-         ("M-s M-y" . counsel-yank-pop)
          ("M-s M-z" . counsel-git-stash)
          ("M-s M-i" . counsel-imenu)
          ("M-s M-l" . counsel-git-log)
          ("M-s M-e" . counsel-find-file-extern)
          ("M-s M-d" . counsel-dired-jump)
          ("M-s M-v" . counsel-file-jump)
+         ("M-s M-y" . counsel-yank-pop)
+         :map ivy-minibuffer-map
+         ("M-y" . ivy-next-line-and-call)
          )
   :commands (counsel-M-x counsel-find-file)
   :config
