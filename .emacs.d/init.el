@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-09-13 21:40:43 dharms>
+;; Modified Time-stamp: <2016-09-13 21:41:12 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -885,7 +885,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   "Select recent files from `recentf' via a completion function.")
 (defun my/call-recentf-func () (interactive) (funcall uniquify-recentf-func))
 (use-package uniquify-recentf
-  :bind ("M-r" . my/call-recentf-func)
+  ;; :bind ("M-r" . my/call-recentf-func)
   :commands
   (uniquify-recentf-ivy-recentf-open uniquify-recentf-ido-recentf-open)
   :if (version< "24.3" emacs-version)
@@ -2046,6 +2046,20 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; list-environment ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package list-environment :bind ("C-c 0e" . list-environment))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; sort-words ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package sort-words :commands sort-words)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;; highlight-indentation ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package highlight-indentation
+  :bind ("C-c 0h" . highlight-indentation-mode)
+  )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; rotate-text ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package rotate-text
+  :bind (("M-r" . rotate-text)
+         ("M-R" . rotate-text-backward)
+         ))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; guide-key ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package guide-key
   :if (version< "24.3" emacs-version)
@@ -2261,6 +2275,12 @@ customization."
               (define-key dos-mode-map "\C-c\C-c" 'comment-region)
               (define-key dos-mode-map "\C-c\C-u" 'uncomment-region)
               )))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; elf-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package elf-mode
+  :config
+  (elf-setup-default)                   ;adds entry to magic-mode-alist
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; emacs-lisp-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun my/compile-lisp-file ()
