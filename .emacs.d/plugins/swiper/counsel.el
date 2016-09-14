@@ -28,7 +28,15 @@
 ;; Just call one of the interactive functions in this file to complete
 ;; the corresponding thing using `ivy'.
 ;;
-;; Currently available: Elisp symbols, Clojure symbols, Git files.
+;; Currently available:
+;; - Symbol completion for Elisp, Common Lisp, Python and Clojure.
+;; - Describe fuctions for Elisp: function, variable, library, command,
+;;   bindings, theme.
+;; - Navigation functions: imenu, ace-line, semantic, outline
+;; - Git utilities: git-files, git-grep, git-log, git-stash.
+;; - Grep utitilies: grep, ag, pt, recoll.
+;; - System utilities: process list, rhythmbox, linux-app.
+;; - Many more.
 
 ;;; Code:
 
@@ -352,13 +360,14 @@ Update the minibuffer with the amount of lines collected every
 (defun counsel-unicode-char ()
   "Insert a Unicode character at point."
   (interactive)
-  (let ((minibuffer-allow-text-properties t))
+  (let ((minibuffer-allow-text-properties t)
+        (ivy-sort-max-size (expt 256 6)))
     (setq ivy-completion-beg (point))
     (setq ivy-completion-end (point))
     (ivy-read "Unicode name: "
               (mapcar (lambda (x)
                         (propertize
-                         (format "% -6X% -60s%c" (cdr x) (car x) (cdr x))
+                         (format "%06X % -60s%c" (cdr x) (car x) (cdr x))
                          'result (cdr x)))
                       (ucs-names))
               :action (lambda (char)
@@ -367,7 +376,8 @@ Update the minibuffer with the amount of lines collected every
                           (setq ivy-completion-beg (point))
                           (insert-char (get-text-property 0 'result char))
                           (setq ivy-completion-end (point))))
-              :history 'counsel-unicode-char-history)))
+              :history 'counsel-unicode-char-history
+              :sort t)))
 
 ;;* Elisp symbols
 ;;** `counsel-describe-variable'
@@ -1385,11 +1395,14 @@ When INITIAL-INPUT is non-nil, use it in the minibuffer during completion."
 
 ;;** `counsel-recentf'
 (defvar recentf-list)
+(declare-function recentf-mode "recentf")
 
 ;;;###autoload
 (defun counsel-recentf ()
   "Find a file on `recentf-list'."
   (interactive)
+  (require 'recentf)
+  (recentf-mode)
   (ivy-read "Recentf: " recentf-list
             :action (lambda (f)
                       (with-ivy-window
@@ -1593,8 +1606,10 @@ If non-nil, EXTRA-AG-ARGS string is appended to `counsel-ag-base-command'."
                             (concat extra-ag-args
                                     " -- "
                                     (shell-quote-argument regex)))))
-        (counsel--async-command ag-cmd))
-      nil)))
+        (if (file-remote-p default-directory)
+            (split-string (shell-command-to-string ag-cmd) "\n" t)
+          (counsel--async-command ag-cmd)
+          nil)))))
 
 ;;;###autoload
 (defun counsel-ag (&optional initial-input initial-directory extra-ag-args ag-prompt)
@@ -2049,6 +2064,11 @@ INITIAL-INPUT can be given as the initial minibuffer input."
           (mapconcat #'identity seq "\n")))
     (error str)))
 
+(defcustom counsel-yank-pop-separator "\n"
+  "Separator for the kill ring strings in `counsel-yank-pop'."
+  :group 'ivy
+  :type 'string)
+
 (defun counsel--yank-pop-format-function (cand-pairs)
   (ivy--format-function-generic
    (lambda (str)
@@ -2061,7 +2081,7 @@ INITIAL-INPUT can be given as the initial minibuffer input."
    (lambda (str)
      (counsel--yank-pop-truncate str))
    cand-pairs
-   "\n"))
+   counsel-yank-pop-separator))
 
 (defun counsel-yank-pop-action (s)
   "Insert S into the buffer, overwriting the previous yank."

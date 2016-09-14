@@ -457,8 +457,7 @@ When non-nil, it should contain at least one %d.")
   "Quit the minibuffer and call ACTION afterwards."
   (ivy-set-action
    `(lambda (x)
-      (with-ivy-window
-        (funcall ',action x))
+      (funcall ',action x)
       (ivy-set-action ',(ivy-state-action ivy-last))))
   (setq ivy-exit 'done)
   (exit-minibuffer))
@@ -954,6 +953,8 @@ Example use:
                             (if (setq idx (get-text-property 0 'idx ivy--current))
                                 (nth idx collection)
                               (assoc ivy--current collection)))))
+                    (ivy--directory
+                     (expand-file-name ivy--current ivy--directory))
                     ((equal ivy--current "")
                      ivy-text)
                     (t
@@ -2213,6 +2214,14 @@ Should be run via minibuffer `post-command-hook'."
           (ivy--filter ivy-text ivy--all-candidates))))
       (setq ivy--old-text ivy-text))))
 
+(defvar ivy-flip (and (require 'lv nil t)
+                      nil)
+  "When non-nil, the candidates are above the input, instead of below.
+This depends on `lv' feature provided by the package `hydra'.")
+
+(defvar lv-force-update)
+(declare-function lv-message "ext:lv")
+
 (defun ivy--insert-minibuffer (text)
   "Insert TEXT into minibuffer with appropriate cleanup."
   (let ((resize-mini-windows nil)
@@ -2225,10 +2234,16 @@ Should be run via minibuffer `post-command-hook'."
     (ivy--insert-prompt)
     ;; Do nothing if while-no-input was aborted.
     (when (stringp text)
-      (let ((buffer-undo-list t))
-        (save-excursion
-          (forward-line 1)
-          (insert text))))
+      (if ivy-flip
+          (let ((lv-force-update t))
+            (lv-message
+             (if (string-match "\\`\n" text)
+                 (substring text 1)
+               text)))
+        (let ((buffer-undo-list t))
+          (save-excursion
+            (forward-line 1)
+            (insert text)))))
     (when (display-graphic-p)
       (ivy--resize-minibuffer-to-fit))
     ;; prevent region growing due to text remove/add
