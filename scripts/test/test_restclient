@@ -1,0 +1,20 @@
+:query = Emacs
+
+# Wikipedia API calls
+
+## Emacs extract on Wikipedia
+GET https://en.wikipedia.org/w/api.php?format=json&action=query&prop=extracts&exintro=&explaintext=&titles=:query
+
+## Lisp extract on Wikipedia
+GET https://en.wikipedia.org/w/api.php?format=json&action=query&prop=extracts&exintro=&explaintext=&titles=lisp
+
+# Duck Duck Go API calls
+
+## Duck Duck Go 'instant answer' search for Emacs
+GET http://api.duckduckgo.com/?format=json&q=:query
+
+# Local Variables:
+# mode: restclient
+# outline-regexp: "#+"
+# eval: (outline-minor-mode)
+# End:
