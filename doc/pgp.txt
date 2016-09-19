@@ -1,0 +1,47 @@
+#!/usr/bin/env sh
+# pgp.txt --- help regarding pgp
+# Copyright (C) 2016  Dan Harms (dharms)
+# Author: Dan Harms <danielrharms@gmail.com>
+# Created: Wednesday, September 14, 2016
+# Version: 1.0
+# Modified Time-stamp: <2016-09-19 06:04:56 dharms>
+# Modified by: Dan Harms
+# Keywords: pgp gpg
+
+# Generate keys
+gpg --gen-key
+# List keys
+gpg --list-keys
+# Edit key
+gpg --edit-key
+
+# Generate backups:
+gpg --armor --export > pgp-public-keys.asc
+gpg --armor --export-secret-keys > pgp-private-keys.asc
+gpg --armor --export-secret-subkeys > pgp-private-subkeys.asc
+gpg --export-ownertrust > pgp-ownertrust.asc
+# Generate revocation certificate:
+gpg --armor --gen-revoke <KEY_ID> > pgp-revocation.asc
+# Upload keys to a key server
+gpg --send-key --keyserver <KEY_SERVER> <MASTER_KEY_ID>
+
+# Restore from backup:
+## Text backups
+gpg --import pgp-public-keys.asc
+gpg --import pgp-private-keys.asc
+gpg --import pgp-private-subkeys.asc
+gpg --import-ownertrust pgp-ownertrust.asc
+## Other media
+export GNUPGHOME=/media/location
+gpg -K
+## or
+gpg --homedir=/media/location -K
+# Revoke certificate:
+gpg --import pgp-revocation.asc
+
+# code ends here
+# Local Variables:
+# mode: sh
+# outline-regexp: "#+"
+# eval: (outline-minor-mode)
+# End:
