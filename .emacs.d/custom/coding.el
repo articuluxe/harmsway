@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-07-01 16:54:40 dharms>
+;; Modified Time-stamp: <2016-09-20 17:46:52 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -142,6 +142,8 @@
           ;; This is fairly aggressive; can reenable if desired
           ;; ("\\<Q[A-Z][A-Za-z0-9]*\\>" . font-lock-type-face)
           ) t)
+   ;; add some c++-specific rotate-text keywords
+   (setq rotate-text-local-symbols '(("class" "struct")))
    ) t)
 
 (with-eval-after-load 'compile
