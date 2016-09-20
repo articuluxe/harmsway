@@ -20,6 +20,9 @@ list-faces-display   list and display faces
 C-x C-+   enlarge font
 C-x C--    decrease font
 
+* Help
+C-h i      bring up the info menu
+m <topic>  jump to <topic>
 
 * Fonts
 ;; select font on graphical systems

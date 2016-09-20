@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-09-14 08:22:56 dharms>
+;; Modified Time-stamp: <2016-09-19 18:38:57 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -379,6 +379,11 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
          ("C-c 09s" . epa-sign-file)
          ("C-c 09S" . epa-sign-region)
          )
+  :init
+  (defun my/add-epa-file-encrypt-to ()
+    "Add a file local variable for `epa-file-encrypt-to'."
+    (interactive)
+    (add-file-local-variable 'epa-file-encrypt-to user-mail-address))
   :config
   (setq epg-gpg-program "gpg2")
   (setq epa-file-select-keys nil)

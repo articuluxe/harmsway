@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-01-28 08:44:53 dan.harms>
+;; Modified Time-stamp: <2016-09-19 18:38:26 dharms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -26,7 +26,7 @@
 ;;; Code:
 
 (defconst my/user-name user-login-name)
-(setq user-mail-address "danielrharms@gmail.com")
+(setq user-mail-address "enniomore@icloud.com")
 
 (add-hook
  'prog-mode-hook
