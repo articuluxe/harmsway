@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-09-19 18:38:57 dharms>
+;; Modified Time-stamp: <2016-09-20 21:33:18 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -469,13 +469,16 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; emacs-refactor ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
   (add-to-list 'load-path (concat my/plugins-directory "emacs-refactor/")))
-(use-package
- emr
- :init
- (with-eval-after-load 'prog-mode
-   (add-hook 'prog-mode-hook 'emr-initialize)
-   (bind-key "C-c b" 'emr-show-refactor-menu)
-   ))
+(use-package emr
+  :defer t
+  :init
+  (with-eval-after-load 'prog-mode
+    (require 'emr)
+    (bind-key "C-c b" 'emr-show-refactor-menu)
+    )
+  :config
+  (emr-initialize)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; sudo-edit ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package sudo-edit :bind ("C-c 0rr" . sudo-edit))
