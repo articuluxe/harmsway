@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-09-20 17:46:52 dharms>
+;; Modified Time-stamp: <2016-09-21 09:21:56 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -122,7 +122,8 @@
                    ("\\<[tT][oO][dD][oO]\\>" 0 font-lock-warning-face t)
                    ;; FIXME
                    ("\\<[fF][iI][xX][mM][eE]\\>" 0 font-lock-warning-face t)
-                   ) t)) t)
+                   ) t)
+            ) t)
 
 (with-eval-after-load 'cc-mode (require 'modern-cpp-font-lock))
 
