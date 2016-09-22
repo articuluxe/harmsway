@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-09-21 17:48:59 dharms>
+;; Modified Time-stamp: <2016-09-21 22:34:56 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -980,6 +980,11 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
         :map isearch-mode-map
         ("C-p" . plur-isearch-forward)
         ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; hydra ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(eval-and-compile
+  (add-to-list 'load-path (concat my/plugins-directory "hydra/")))
+(use-package hydra :defer t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; occur ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (global-set-key (kbd "M-s M-o") 'multi-occur-in-matching-buffers)
