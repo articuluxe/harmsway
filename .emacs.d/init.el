@@ -2328,7 +2328,16 @@ customization."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; nhexl-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package nhexl-mode :defer t)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; pcap-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; pandoc-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package
+ pandoc-mode
+ :init
+ (setq pandoc-data-dir (concat my/scratch-directory "pandoc/"))
+ (mapc (lambda (hook) (add-hook hook 'pandoc-mode))
+       '(markdown-mode-hook org-mode-hook))
+ )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; pcap-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package pcap-mode
   :mode ("\\.pcap$" . pcap-mode)
   )
