@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-09-21 09:21:56 dan.harms>
+;; Modified Time-stamp: <2016-09-22 11:17:44 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -71,6 +71,7 @@
    (c-toggle-hungry-state t)
    ;; (setq comment-column 40)
    (setq hide-ifdef-lines t)
+   (setq hide-ifdef-shadow t)
    (hide-ifdef-mode 1)
    (make-local-variable 'my/compile-command)
    (define-key c++-mode-map (kbd "\C-c RET") 'my/compile)
