@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-09-23 05:49:17 dharms>
+;; Modified Time-stamp: <2016-09-23 08:51:48 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1034,7 +1034,12 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   :commands (counsel-M-x counsel-find-file)
   :config
   (setq counsel-find-file-at-point t)
-  (setq counsel-find-file-ignore-regexp "\\.elc$") ;toggle with C-c C-a
+  (setq counsel-find-file-ignore-regexp
+        (concat
+         "\\(?:^[#.]\\)"                ;start with # or .
+         "\\|\\(?:[#~]$\\)"             ;end with # or ~
+         "\\|\\(?:\\.elc$\\)"           ;byte-compiled
+         ))                             ;toggle with C-c C-a
   (setf (cdr (assoc 'counsel-M-x ivy-initial-inputs-alist)) "")
   ;; fallback to basic find-file
   (define-key counsel-find-file-map "\C-x\C-f"
