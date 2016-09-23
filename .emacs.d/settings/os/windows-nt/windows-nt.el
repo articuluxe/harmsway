@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-07-01 16:54:42 dharms>
+;; Modified Time-stamp: <2016-09-22 17:52:43 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -64,6 +64,10 @@
   (add-to-list 'full-edit-reject-patterns "^qrc")
   (add-to-list 'full-edit-reject-patterns "^ui")
   )
+;; counsel
+(with-eval-after-load 'counsel
+  ;; or "set GIT_PAGER=cat && git log --grep \"%s\""
+  (setq counsel-git-log-cmd "git log --grep \"%s\""))
 
 ;; compilation example:
 ;; (setq compile-command "C:\VC\VCVARS.bat & devenv /nologo /build Debug proj.vcxproj")
