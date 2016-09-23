@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-09-21 22:34:56 dharms>
+;; Modified Time-stamp: <2016-09-22 10:58:10 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1213,6 +1213,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
               (define-key dired-mode-map (kbd "<prior>") 'dired-up-directory)
               (define-key dired-mode-map "l" 'dired-launch-command)
               ))
+  (add-hook 'dired-mode-hook 'auto-revert-mode)
   :config
   (use-package dired-x)                 ; C-x C-j now runs 'dired-jump
   (setq diredp-hide-details-initially-flag nil)
