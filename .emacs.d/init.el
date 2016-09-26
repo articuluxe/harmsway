@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-09-26 08:35:06 dan.harms>
+;; Modified Time-stamp: <2016-09-27 06:22:43 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -508,6 +508,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; rainbow ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package rainbow-mode
   :if (version< "24.3" emacs-version)
+  :disabled t
   :config
   ;; enable for emacs-lisp-mode
   (add-to-list 'rainbow-html-colors-major-mode-list 'emacs-lisp-mode)
