@@ -30,6 +30,8 @@ git checkout --track origin/<branch>
 # set existing branch to track remote
 git branch -u origin/<branch>
 git branch --track origin/<branch>
+# push only 1 commit (must be in order)
+git push origin <sha>:master
 # push branch upstream
 git push origin <local>[:<remote>]
 # push branch upstream and set up tracking
