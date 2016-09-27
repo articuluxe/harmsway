@@ -441,6 +441,8 @@ line numbers. For the buffer, use `ivy--regex' instead."
                       (prog1 (format "^ ?\\(%s\\)" re)
                         (setq ivy--subexps 1))
                     (format "^ %s" re))))
+               ((eq (bound-and-true-p search-default-mode) 'char-fold-to-regexp)
+                (mapconcat #'char-fold-to-regexp (ivy--split str) ".*"))
                (t
                 (funcall re-builder str)))))
     (cond ((stringp re)
@@ -786,8 +788,10 @@ Run `swiper' for those buffers."
           (list "")
         (setq ivy--old-cands (nreverse cands))))))
 
+(defvar swiper-window-width 80)
+
 (defun swiper--all-format-function (cands)
-  (let* ((ww (window-width))
+  (let* ((ww swiper-window-width)
          (col2 1)
          (cands-with-buffer
           (mapcar (lambda (s)
@@ -825,7 +829,8 @@ Run `swiper' for those buffers."
 (defun swiper-all ()
   "Run `swiper' for all opened buffers."
   (interactive)
-  (let ((ivy-format-function #'swiper--all-format-function))
+  (let* ((swiper-window-width (- (frame-width) (if (display-graphic-p) 0 1)))
+         (ivy-format-function #'swiper--all-format-function))
     (ivy-read "swiper-all: " 'swiper-all-function
               :action 'swiper-all-action
               :unwind #'swiper--cleanup
