@@ -1037,7 +1037,8 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (setq counsel-find-file-at-point t)
   (setq counsel-find-file-ignore-regexp
         (concat
-         "\\(?:^[#.]\\)"                ;start with # or .
+         "\\(?:^[#]\\)"                 ;start with #
+         "\\|\\(?:^\\.[^.]\\)"          ; or a single .
          "\\|\\(?:[#~]$\\)"             ;end with # or ~
          "\\|\\(?:\\.elc$\\)"           ;byte-compiled
          ))                             ;toggle with C-c C-a
@@ -1054,7 +1055,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   ;; make matches appear fancy; supposedly doesn't work under 24.5
   ;; but seems OK to me
   (setq ivy-display-style 'fancy)
-  (setq ivy-extra-directories nil)
+  (setq ivy-extra-directories '("../"))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smex ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
