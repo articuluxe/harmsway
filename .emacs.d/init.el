@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-09-27 06:22:43 dharms>
+;; Modified Time-stamp: <2016-09-28 08:49:54 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1729,7 +1729,16 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (use-package auto-complete-clang)
   (defvar clang-exec (executable-find "clang"))
 
-  (use-package auto-complete-etags)
+  (use-package ac-etags
+   :init
+   (defface ac-etags-candidate-face
+     '((t (:inherit ac-candidate-face)))
+     "Face for etags candidates (overridden to default)")
+   (defface ac-etags-selection-face
+     '((t (:inherit ac-selection-face)))
+     "Face for etags selections (overridden to default)")
+   :config (ac-etags-setup)
+   )
   (use-package auto-complete-nxml)
   ;; c-headers
   (use-package auto-complete-c-headers)
