@@ -1,0 +1,6 @@
+mkdir /usr/java
+cd /usr/java
+sudo mv ~/Downloads/jre-8u101-linux-i586.tar.gz .
+sudo tar xzf jre-8u101-linux-i586.tar.gz
+cd ~/.mozilla/plugins
+ln -s /usr/java/jre1.8.0_101/lib/i386/libnpjp2.so .
