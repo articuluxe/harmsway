@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-09-28 08:49:54 dharms>
+;; Modified Time-stamp: <2016-09-30 09:05:19 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -755,6 +755,8 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (use-package with-editor)
   (global-magit-file-mode 1)
   (magit-auto-revert-mode 0)
+  (setq magit-repository-directories
+        `(,(cons (expand-file-name "~/src") 2)))
   ;; add this as of magit 2.4.0
   ;; (add-hook 'magit-post-refresh-hook 'diff-hl-magit-post-refresh)
   ;; add ido shortcut
