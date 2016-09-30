@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-09-30 09:05:19 dharms>
+;; Modified Time-stamp: <2016-09-30 12:43:34 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1002,6 +1002,11 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
          :map isearch-mode-map
          ("C-o" . swiper-from-isearch))
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; avy ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package avy
+ :bind (("M-s '" . avy-goto-line)
+        ("M-s M-'" . avy-goto-char)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ivy ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package ivy
