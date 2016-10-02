@@ -1,6 +1,6 @@
 ;;; ac-etags.el --- etags/ctags completion source for auto-complete
 
-;; Copyright (C) 2015, 2016 by Syohei YOSHIDA
+;; Copyright (C) 2015 by Syohei YOSHIDA
 
 ;; Author: Syohei YOSHIDA <syohex@gmail.com>
 ;; URL: https://github.com/syohex/emacs-ac-etags
@@ -71,10 +71,10 @@
          (all-completions
           prefix
           (with-demoted-errors "%s"
-            (tags-completion-table)
-            ))))
-    (puthash prefix candidates ac-etags--completion-cache)
-    candidates))
+            (tags-completion-table)))))
+    (when candidates
+      (puthash prefix candidates ac-etags--completion-cache)
+      candidates)))
 
 (defun ac-etags--candidates ()
   (when tags-table-list
