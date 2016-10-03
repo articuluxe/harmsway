@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-09-30 12:43:34 dharms>
+;; Modified Time-stamp: <2016-10-03 12:52:21 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -659,6 +659,21 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; list-register ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package list-register :bind ("C-x rv" . list-register))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; mwim ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defun my/mwim ()
+  "Switch between code beginning, line beginning, code end, and line end."
+  (interactive "^")
+  (mwim-goto-next-position
+    (mwim-code-beginning)
+    (mwim-line-beginning)
+    (mwim-code-end)
+    (mwim-line-end)))
+(use-package mwim
+;  :bind ("M-m" . mwim-beginning-of-code-or-line-or-comment)
+  :bind ("M-m" . my/mwim)
+  :demand t                             ;   :(
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; discover-my-major ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package discover-my-major :bind ("C-h C-m" . discover-my-major))
