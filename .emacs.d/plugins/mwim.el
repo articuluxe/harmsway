@@ -1,4 +1,4 @@
-;;; mwim.el --- Move to the beginning/end of line or code  -*- lexical-binding: t -*-
+;;; mwim.el --- Switch between the beginning/end of line or code  -*- lexical-binding: t -*-
 
 ;; Copyright © 2015, 2016 Alex Kost
 
@@ -12,12 +12,12 @@
 ;; it under the terms of the GNU General Public License as published by
 ;; the Free Software Foundation, either version 3 of the License, or
 ;; (at your option) any later version.
-
+;;
 ;; This program is distributed in the hope that it will be useful,
 ;; but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;; GNU General Public License for more details.
-
+;;
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -25,12 +25,14 @@
 
 ;; MWIM stands for "Move Where I Mean".  This package is inspired by
 ;; <http://www.emacswiki.org/emacs/BackToIndentationOrBeginning>.  It
-;; provides commands for moving to the beginning/end of code, line or
-;; comment.
+;; provides commands to switch between various positions on the current
+;; line (particularly, to move to the beginning/end of code, line or
+;; comment).
 
 ;; To install the package manually, add the following to your init file:
 ;;
 ;;   (add-to-list 'load-path "/path/to/mwim-dir")
+;;   (autoload 'mwim "mwim" nil t)
 ;;   (autoload 'mwim-beginning "mwim" nil t)
 ;;   (autoload 'mwim-end "mwim" nil t)
 ;;   (autoload 'mwim-beginning-of-code-or-line "mwim" nil t)
@@ -46,7 +48,7 @@
 
 (defgroup mwim nil
   "Move Where I Mean.
-Move the point to the beginning/end of code or line."
+Move the point to various line positions."
   :group 'convenience)
 
 (defcustom mwim-beginning-of-line-function #'beginning-of-line
@@ -63,6 +65,51 @@ Move the point to the beginning/end of code or line."
                  (function :tag "Another function"))
   :group 'mwim)
 
+(defcustom mwim-next-position-function nil
+  "Function used to define the next position.
+
+This function is called with a list of functions returning
+available point positions as a single argument.  It should return
+the next position where the point will be moved.
+
+There are 2 functions to choose from: `mwim-next-position' and
+`mwim-next-unique-position'.
+
+`mwim-next-position' is faster as it calculates positions only
+when needed, however there are some special cases when this
+function will not return an expected position (when there are
+more than 3 potential positions, and some of them are the same).
+
+With `mwim-next-unique-position' you will always switch between
+all available positions, but it is slower as it calculates all
+positions at once.  Most likely, however, this slowness will be
+insignificant as the number of potential positions is not big.
+
+If this variable is nil, an appropriate function will be chosen
+automatically.  This is the recommended value, as it provides the
+speed when possible, and guaranteed cycling between all positions
+for complex cases."
+  :type '(choice (const nil :tag "Choose automatically")
+                 (function-item mwim-next-position)
+                 (function-item mwim-next-unique-position)
+                 (function :tag "Another function"))
+  :group 'mwim)
+
+(defcustom mwim-beginning-position-functions
+  '(mwim-code-beginning
+    mwim-line-beginning
+    mwim-comment-beginning)
+  "List of functions used by `\\[mwim-beginning]' command."
+  :type '(repeat function)
+  :group 'mwim)
+
+(defcustom mwim-end-position-functions
+  '(mwim-code-end
+    mwim-line-end)
+  "List of functions used by `\\[mwim-end]' command."
+  :type '(repeat function)
+  :group 'mwim)
+
 
 ;;; Calculating positions
 
@@ -71,50 +118,50 @@ Move the point to the beginning/end of code or line."
   (declare (debug t) (indent 0))
   `(save-excursion ,@body (point)))
 
-(defun mwim-first-position (expressions &optional position)
+(defun mwim-first-position (functions &optional position)
   "Return the first point position that is not POSITION from
-positions defined after evaluating EXPRESSIONS.
+positions defined after calling FUNCTIONS.
 
 If POSITION is nil, use the current point position.
 
-Initially, the first expression is evaluated.  If the resulting
-position is not the same as POSITION, return it.  Otherwise,
-evaluate the second expression, etc.
+Initially, the first function is called (without arguments).  If
+the resulting position is not the same as POSITION, return it.
+Otherwise, call the second function, etc.
 
-If after evaluating all EXPRESSIONS, all resulting positions are
+If after calling all FUNCTIONS, all resulting positions are
 the same as POSITION, return nil."
   (or position (setq position (point)))
-  (pcase expressions
+  (pcase functions
     (`(,first . ,rest)
-     (let ((pos (eval first)))
+     (let ((pos (funcall first)))
        (if (and pos (/= pos position))
            pos
          (mwim-first-position rest position))))))
 
-(defun mwim-next-position (expressions &optional position fallback-position)
+(defun mwim-next-position (functions &optional position fallback-position)
   "Return the next point position after POSITION from positions
-defined after evaluating EXPRESSIONS.
+defined after calling FUNCTIONS.
 
 If POSITION is nil, use the current point position.
 
-Initially, the first expression is evaluated.  If the resulting
-position is the same as POSITION, return position defined after
-evaluating the second expression.  If it is not the same, compare
-the second position with POSITION, etc.
+Initially, the first function is called (without arguments).  If
+the resulting position is the same as POSITION, return position
+defined after calling the second function.  If it is not the
+same, compare the second position with POSITION, etc.
 
-If after evaluating all EXPRESSIONS, POSITION is not one of the
+If after calling all FUNCTIONS, POSITION is not one of the
 found positions, return FALLBACK-POSITION.  If it is nil, return
 the first position."
   (or position (setq position (point)))
-  (if (null expressions)
+  (if (null functions)
       fallback-position
-    (pcase expressions
+    (pcase functions
       (`(,first . ,rest)
-       ;; If the last expression is reached, there is no point to evaluate
-       ;; it, as the point should be moved to the first position anyway.
+       ;; If the last function is reached, there is no point to call it,
+       ;; as the point should be moved to the first position anyway.
        (if (and (null rest) fallback-position)
            fallback-position
-         (let ((pos (eval first)))
+         (let ((pos (funcall first)))
            (if (and pos (= pos position))
                (or (mwim-first-position rest position)
                    fallback-position
@@ -122,17 +169,67 @@ the first position."
              (mwim-next-position rest position
                                  (or fallback-position pos)))))))))
 
-(defun mwim-move-to-next-position (expressions)
-  "Move point to position defined after evaluating the first expression.
-If the point is already there, move to the position defined after
-evaluating the second expression from the list of EXPRESSIONS, etc."
-  (let ((pos (mwim-next-position expressions)))
+(defun mwim-delq-dups (list)
+  "Like `delete-dups' but using `eq'."
+  (let ((tail list))
+    (while tail
+      (setcdr tail (delq (car tail) (cdr tail)))
+      (setq tail (cdr tail))))
+  list)
+
+(defun mwim-next-unique-position (functions &optional position
+                                            sort-predicate)
+  "Return the next point position after POSITION from positions
+defined after calling FUNCTIONS.
+
+If POSITION is nil, use the current point position.
+
+Initially, all positions are calculated (all functions are
+called).  If POSITION is the same as one of the resulting
+positions, return the next one, otherwise return the first
+position.
+
+If SORT-PREDICATE is non-nil, it should be a function taken by
+`sort'.  It is used to sort available positions, so most likely
+you want to use either `<' or `>' for SORT-PREDICATE."
+  (or position (setq position (point)))
+  (let* ((positions (mwim-delq-dups
+                     (delq nil (mapcar #'funcall functions))))
+         (positions (if sort-predicate
+                        (sort positions sort-predicate)
+                      positions))
+         (next-positions (cdr (memq position positions))))
+    (car (or next-positions positions))))
+
+(defun mwim-move-to-next-position (functions &optional sort-predicate)
+  "Move point to position returned by the first function.
+If the point is already there, move to the position returned by
+the second function, etc.
+
+FUNCTIONS are called without arguments and should return either a
+number (point position) or nil (if this position should be
+skipped).
+
+If SORT-PREDICATE is non-nil, `mwim-next-unique-position' is
+called with it."
+  (let ((pos (if sort-predicate
+                 (mwim-next-unique-position functions (point)
+                                            sort-predicate)
+               (funcall (or mwim-next-position-function
+                            (if (> (length functions) 3)
+                                #'mwim-next-unique-position
+                              #'mwim-next-position))
+                        functions))))
     (when pos (goto-char pos))))
 
+;; This macro is not really needed, it is an artifact from the past.  It
+;; is left in case some people use it to define their commands.
 (defmacro mwim-goto-next-position (&rest expressions)
   "Wrapper for `mwim-move-to-next-position'."
   (declare (indent 0))
-  `(mwim-move-to-next-position ',expressions))
+  `(mwim-move-to-next-position
+    (list ,@(mapcar (lambda (exp) `(lambda () ,exp))
+                    expressions))))
 
 
 ;;; Position functions
@@ -160,9 +257,16 @@ Return nil, if there is no comment beginning on the current line."
          (<= (line-beginning-position) beg)
          beg)))
 
-;; For using in `mwim-define-command' macro to generate commands to move
-;; to the beginning of comment.
-(defalias 'mwim-comment-beginning #'mwim-line-comment-beginning)
+(defun mwim-line-comment-text-beginning ()
+  "Return position of a comment start on the current line.
+Comment start means beginning of the text inside the comment.
+Return nil, if there is no comment beginning on the current line."
+  (save-excursion
+    (goto-char (line-beginning-position))
+    (let ((beg (comment-search-forward (line-end-position) t)))
+      (when beg (point)))))
+
+(defalias 'mwim-comment-beginning #'mwim-line-comment-text-beginning)
 
 (defun mwim-line-beginning ()
   "Return position in the beginning of line.
@@ -184,35 +288,6 @@ Use `mwim-end-of-line-function'."
 
 
 ;;; Moving commands
-
-(defvar mwim-beginning-expressions
-  '((mwim-code-beginning)
-    (mwim-line-beginning))
-  "List of expressions used by `\\[mwim-beginning]' command.
-Each expression should return either a number (point position) or
-nil (if this position should be skipped) after evaluating.")
-
-(defvar mwim-end-expressions
-  '((mwim-code-end)
-    (mwim-line-end))
-  "List of expressions used by `\\[mwim-end]' command.
-See also `mwim-beginning-expressions'.")
-
-;;;###autoload
-(defun mwim-beginning ()
-  "Move point to a beginning position.
-Move to the next position defined by `mwim-beginning-expressions'.
-See `mwim-move-to-next-position' for details."
-  (interactive "^")
-  (mwim-move-to-next-position mwim-beginning-expressions))
-
-;;;###autoload
-(defun mwim-end ()
-  "Move point to an end position.
-Move to the next position defined by `mwim-end-expressions'.
-See `mwim-move-to-next-position' for details."
-  (interactive "^")
-  (mwim-move-to-next-position mwim-end-expressions))
 
 (defun mwim-beginning-of-comment ()
   "Move point to the beginning of comment on the current line.
@@ -292,7 +367,7 @@ See `forward-line' for details.")
        (if (or (null arg) (= 0 arg))
            (mwim-move-to-next-position
             ',(mapcar (lambda (object)
-                        `(,(intern (format "mwim-%S-%S" object position))))
+                        (intern (format "mwim-%S-%S" object position)))
                       objects))
          (forward-line arg)
          (,direct-fun)))))
@@ -308,6 +383,44 @@ See `forward-line' for details.")
 ;;;###autoload (autoload 'mwim-beginning-of-code-or-line-or-comment "mwim" nil t)
 ;;;###autoload (autoload 'mwim-end-of-line-or-code "mwim" nil t)
 ;;;###autoload (autoload 'mwim-end-of-code-or-line "mwim" nil t)
+
+;;;###autoload
+(defun mwim-beginning (&optional arg)
+  "Move point to the next beginning position
+Available positions are defined by `mwim-beginning-position-functions'.
+See `mwim-move-to-next-position' for details.
+Interactively, with prefix argument, move to the previous position."
+  (interactive "^P")
+  (mwim-move-to-next-position
+   (if arg
+       (reverse mwim-beginning-position-functions)
+     mwim-beginning-position-functions)))
+
+;;;###autoload
+(defun mwim-end (&optional arg)
+  "Move point to the next end position.
+Available positions are defined by `mwim-end-position-functions'.
+See `mwim-move-to-next-position' for details.
+Interactively, with prefix argument, move to the previous position."
+  (interactive "^P")
+  (mwim-move-to-next-position
+   (if arg
+       (reverse mwim-end-position-functions)
+     mwim-end-position-functions)))
+
+;;;###autoload
+(defun mwim (&optional arg)
+  "Switch between various positions on the current line.
+
+Available positions are defined by using both
+`mwim-beginning-position-functions' and
+`mwim-end-position-functions'.
+
+Interactively, with prefix argument, move to the previous position."
+  (interactive "^P")
+  (mwim-move-to-next-position (append mwim-beginning-position-functions
+                                      mwim-end-position-functions)
+                              (if arg #'> #'<)))
 
 (provide 'mwim)
 
