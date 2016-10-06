@@ -1360,11 +1360,13 @@ When INITIAL-INPUT is non-nil, use it in the minibuffer during completion."
           (file-name-as-directory (file-name-nondirectory dir-file-name)))))
 
 (defun counsel-at-git-issue-p ()
-  "Whe point is at an issue in a Git-versioned file, return the issue string."
+  "When point is at an issue in a Git-versioned file, return the issue string."
   (and (looking-at "#[0-9]+")
        (or
         (eq (vc-backend (buffer-file-name)) 'Git)
-        (memq major-mode '(magit-commit-mode)))
+        (or
+         (memq major-mode '(magit-commit-mode))
+         (bound-and-true-p magit-commit-mode)))
        (match-string-no-properties 0)))
 
 (defun counsel-github-url-p ()
@@ -1409,8 +1411,12 @@ When INITIAL-INPUT is non-nil, use it in the minibuffer during completion."
   (ivy-read "Recentf: " recentf-list
             :action (lambda (f)
                       (with-ivy-window
-                        (find-file f)))
+                       (find-file f)))
             :caller 'counsel-recentf))
+(ivy-set-actions
+ 'counsel-recentf
+ '(("j" find-file-other-window "other-window")
+   ("x" counsel-find-file-extern "open externally")))
 
 ;;** `counsel-locate'
 (defcustom counsel-locate-cmd (cond ((eq system-type 'darwin)
@@ -1698,7 +1704,8 @@ the command."
                   (setq ivy--old-re
                         (ivy--regex string)))))
       (counsel--async-command
-       (format counsel-grep-base-command regex counsel--git-grep-dir))
+       (format counsel-grep-base-command regex
+               (shell-quote-argument counsel--git-grep-dir)))
       nil)))
 
 (defun counsel-grep-action (x)
@@ -2298,7 +2305,7 @@ And insert it into the minibuffer. Useful during
                      (lookup-key keymap (kbd (nth 0 x)))))
                   heads)))
     (ivy-read "head: " head-names
-              :action #'call-interactively)
+              :action (lambda (x) (call-interactively (cdr x))))
     (hydra-keyboard-quit)))
 ;;** `counsel-semantic'
 (declare-function semantic-tag-start "tag")
