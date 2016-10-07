@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-10-07 22:53:22 dharms>
+;; Modified Time-stamp: <2016-10-07 22:53:48 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1116,7 +1116,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   ;; make matches appear fancy; supposedly doesn't work under 24.5
   ;; but seems OK to me
   (setq ivy-display-style 'fancy)
-  (setq ivy-extra-directories '("../"))
+  (setq ivy-extra-directories '("../" "./"))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smex ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
