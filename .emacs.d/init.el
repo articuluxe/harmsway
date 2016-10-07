@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-10-07 10:18:55 dan.harms>
+;; Modified Time-stamp: <2016-10-07 22:53:22 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -723,7 +723,23 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   :init
   (setq mc/list-file (concat my/user-directory "mc-lists.el"))
   (setq mc/edit-lines-empty-lines 'ignore)
+  :config
+  (add-to-list 'mc/cursor-specific-vars 'iy-go-to-char-start-pos)
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; phi-search ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package phi-search
+  :bind (("C-S-s" . phi-search)
+         ("C-S-r" . phi-search-backward)
+         ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; iy-go-to-char ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package iy-go-to-char
+  :bind (("\e\ef" . iy-go-to-char)
+         ("\e\eb" . iy-go-to-char-backward)
+         ("\e\eF" . iy-go-to-or-up-to-continue)
+         ("\e\eB" . iy-go-to-or-up-to-continue-backward)
+         ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; idle-highlight ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package idle-highlight-mode
