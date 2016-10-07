@@ -6,6 +6,7 @@ bookmarks
 emacs-bmk-bmenu-state
 history
 ido-last
+mc-lists.el
 recentf
 smex-items
 workgroups

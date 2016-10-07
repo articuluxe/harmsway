@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-10-04 21:44:20 dharms>
+;; Modified Time-stamp: <2016-10-06 22:17:17 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -690,6 +690,39 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
  iedit-rect
  :bind ("C-x r RET" . iedit-rectangle-mode))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; multiple-cursors ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(eval-and-compile
+  (add-to-list 'load-path (concat my/plugins-directory "multiple-cursors/")))
+(use-package multiple-cursors
+  :bind (("C-S-c C-S-c" . mc/edit-lines)
+         ;; mark one more occurrence
+         ("C->" . mc/mark-next-like-this)
+         ("C-S-n w" . mc/mark-next-word-like-this)
+         ("C-S-n W" . mc/mark-next-like-this-word)
+         ("C-S-n s" . mc/mark-next-symbol-like-this)
+         ("C-S-n S" . mc/mark-next-like-this-symbol)
+         ("C-<" . mc/mark-previous-like-this)
+         ("C-S-p w" . mc/mark-previous-word-like-this)
+         ("C-S-p W" . mc/mark-previous-like-this-word)
+         ("C-S-p s" . mc/mark-previous-symbol-like-this)
+         ("C-S-p S" . mc/mark-previous-like-this-symbol)
+         ("C-c C-S-c" . mc/mark-more-like-this-extended)
+         ;; mark many occurrences
+         ("C-: ;" . mc/mark-all-like-this)
+         ("C-: w" . mc/mark-all-words-like-this)
+         ("C-: s" . mc/mark-all-symbols-like-this)
+         ("C-c C-;" . mc/mark-all-in-region)
+         ("C-c C-:" . mc/mark-all-in-region-regexp)
+         ("C-S-h ;" . mc/mark-all-like-this-in-defun)
+         ("C-S-h w" . mc/mark-all-words-like-this-in-defun)
+         ("C-S-h s" . mc/mark-all-symbols-like-this-in-defun)
+         ("C-S-h C-S-h" . mc/mark-all-like-this-dwim)
+         ("C-: C-:" . mc/mark-all-dwim)
+         )
+  :init
+  (setq mc/list-file (concat my/user-directory "mc-lists.el"))
+  )
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; idle-highlight ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package idle-highlight-mode
   :disabled t
@@ -699,7 +732,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (add-hook 'prog-mode-hook #'idle-highlight-mode)
   )
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; figlet ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; figlet ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package figlet
   :bind (("C-c 0ff" . figlet)
          ("C-c 0fc" . figlet-comment)
