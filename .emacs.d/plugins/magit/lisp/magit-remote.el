@@ -62,8 +62,7 @@ Then show the status buffer for the new repository."
                      (match-string 1 url))))))
   (setq directory (file-name-as-directory (expand-file-name directory)))
   (magit-run-git-async "clone" repository
-                       ;; Stop cygwin git making a "c:" directory.
-                       (magit-convert-git-filename directory))
+                       (magit-convert-filename-for-git directory))
   ;; Don't refresh the buffer we're calling from.
   (process-put magit-this-process 'inhibit-refresh t)
   (set-process-sentinel
@@ -426,9 +425,10 @@ removed after restarting Emacs."
   "Popup console for push commands."
   'magit-commands
   :man-page "git-push"
-  :switches `((?f "Force"         "--force-with-lease")
-              (?h "Disable hooks" "--no-verify")
-              (?d "Dry run"       "--dry-run")
+  :switches `((?f "Force with lease" "--force-with-lease")
+              (?F "Force"            "--force")
+              (?h "Disable hooks"    "--no-verify")
+              (?d "Dry run"          "--dry-run")
               ,@(and (not magit-push-current-set-remote-if-missing)
                      '((?u "Set upstream"  "--set-upstream"))))
   :actions '("Configure"
