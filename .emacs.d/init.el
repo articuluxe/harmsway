@@ -718,9 +718,11 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
          ("C-S-h s" . mc/mark-all-symbols-like-this-in-defun)
          ("C-S-h C-S-h" . mc/mark-all-like-this-dwim)
          ("C-: C-:" . mc/mark-all-dwim)
+         ("C-S-c C-SPC" . mc/mark-pop)
          )
   :init
   (setq mc/list-file (concat my/user-directory "mc-lists.el"))
+  (setq mc/edit-lines-empty-lines 'ignore)
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; idle-highlight ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
