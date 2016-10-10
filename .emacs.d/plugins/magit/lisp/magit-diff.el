@@ -34,7 +34,7 @@
 ;; For `magit-diff-popup'
 (declare-function magit-stash-show 'magit-stash)
 ;; For `magit-diff-visit-file'
-(declare-function magit-dired-jump 'magit)
+(declare-function dired-jump 'dired-x)
 (declare-function magit-find-file-noselect 'magit)
 (declare-function magit-status-internal 'magit)
 ;; For `magit-diff-while-committing'
@@ -112,11 +112,8 @@ instead customize `magit-diff-highlight-hunk-region-functions'."
                         "Magit 2.9.0")
 
 (defcustom magit-diff-highlight-hunk-region-functions
-  `(magit-diff-highlight-hunk-region-dim-outside
-    ,@(and magit-diff-show-lines-boundary
-           (list (if t ;(version< emacs-version "25.1")
-                     'magit-diff-highlight-hunk-region-using-overlays
-                   'magit-diff-highlight-hunk-region-using-underline))))
+  '(magit-diff-highlight-hunk-region-dim-outside
+    magit-diff-highlight-hunk-region-using-overlays)
   "The functions used to highlight the hunk-internal region.
 
 `magit-diff-highlight-hunk-region-dim-outside' overlays the outside
@@ -124,15 +121,12 @@ of the hunk internal selection with a face that causes the added and
 removed lines to have the same background color as context lines.
 This function should not be removed from the value of this option.
 
-  TEMPORARY NOTICE: there is a severe bug in
-  `magit-diff-highlight-hunk-region-using-underline'
-  and it has been temporarily removed.
-
 `magit-diff-highlight-hunk-region-using-overlays' and
 `magit-diff-highlight-hunk-region-using-underline' emphasize the
 region by placing delimiting horizonal lines before and after it.
-Which implementation is preferable depends on the Emacs version,
-and the more suitable one is part of the default value.
+Both of these functions have glitches which cannot be fixed due
+to limitations of Emacs' display engine.  For more information
+see https://github.com/magit/magit/issues/2758 ff.
 
 Instead of, or in addition to, using delimiting horizontal lines,
 to emphasize the boundaries, you may which to emphasize the text
@@ -146,6 +140,7 @@ calling the face function instead."
   :group 'magit-diff
   :type 'hook
   :options '(magit-diff-highlight-hunk-region-dim-outside
+             magit-diff-highlight-hunk-region-using-underline
              magit-diff-highlight-hunk-region-using-overlays
              magit-diff-highlight-hunk-region-using-face))
 
@@ -316,7 +311,7 @@ and https://debbugs.gnu.org/cgi/bugreport.cgi?bug=7847."
   :group 'magit-faces)
 
 (defface magit-diff-file-heading-highlight
-  '((t :inherit (magit-diff-file-heading magit-section-highlight)))
+  '((t :inherit (magit-section-highlight)))
   "Face for current diff file headings."
   :group 'magit-faces)
 
@@ -1030,15 +1025,23 @@ Customize variable `magit-diff-refine-hunk' to change the default mode."
 (defun magit-diff-visit-file (file &optional other-window force-worktree)
   "From a diff, visit the corresponding file at the appropriate position.
 
-When the file is already being displayed in another window of the
-same frame, then just select that window and adjust point.  With
-a prefix argument also display in another window.
-
 If the diff shows changes in the worktree, the index, or `HEAD',
-then visit the actual file.  Otherwise when the diff is about
-an older commit, then visit the respective blob using
-`magit-find-file'.  Also see `magit-diff-visit-file-worktree'
-which, as the name suggests always visits the actual file."
+then visit the actual file.  Otherwise, when the diff is about an
+older commit or a range, then visit the appropriate blob.
+
+If point is on a removed line, then visit the blob for the first
+parent of the commit which removed that line, i.e. the last
+commit where that line still existed.  Otherwise visit the blob
+for the commit whose changes are being shown.
+
+When the diff is about a range of commits, then, for the time
+being, the point this function jumps to often is only an
+approximation.
+
+When the file or blob to be displayed is already being displayed
+in another window of the same frame, then just select that window
+and adjust point.  Otherwise, or with a prefix argument, display
+the buffer in another window."
   (interactive (list (--if-let (magit-file-at-point)
                          (expand-file-name it)
                        (user-error "No file at point"))
@@ -1061,17 +1064,25 @@ which, as the name suggests always visits the actual file."
                      ((derived-mode-p 'magit-diff-mode)
                       (--when-let (car magit-refresh-args)
                         (and (string-match "\\.\\.\\([^.].*\\)?[ \t]*\\'" it)
-                             (match-string 1 it))))))
+                             (match-string 1 it))))
+                     ((derived-mode-p 'magit-status-mode)
+                      (magit-rev-name "HEAD"))))
           (unmerged-p (magit-anything-unmerged-p file))
           hunk line col buffer)
-      (when (and rev (magit-rev-head-p rev))
-        (setq rev nil))
-      (setq hunk
-            (pcase (magit-diff-scope)
-              ((or `hunk `region) current)
-              ((or `file `files)  (car (magit-section-children current)))
-              (`list (car (magit-section-children
-                           (car (magit-section-children current)))))))
+      (pcase (magit-diff-scope)
+        ((or `hunk `region)
+         (cond ((not rev))
+               ((save-excursion (goto-char (line-beginning-position))
+                                (looking-at "-"))
+                (setq rev (magit-rev-name (concat rev "~"))))
+               ((magit-rev-head-p rev)
+                (setq rev nil)))
+         (setq hunk current))
+        ((or `file `files)
+         (setq hunk (car (magit-section-children current))))
+        (`list
+         (setq hunk (car (magit-section-children
+                          (car (magit-section-children current)))))))
       (when (and hunk
                  ;; Currently the `hunk' type is also abused for file
                  ;; mode changes.  Luckily such sections have no value.
@@ -1138,9 +1149,12 @@ or `HEAD'."
          (prefix (- (length value) 2))
          (cpos   (marker-position (magit-section-content section)))
          (stop   (line-number-at-pos))
-         (cstart (save-excursion (goto-char cpos) (line-number-at-pos)))
-         (line   (car (last value))))
-    (string-match "^\\+\\([0-9]+\\)" line)
+         (cstart (save-excursion (goto-char cpos)
+                                 (line-number-at-pos)))
+         (prior  (save-excursion (goto-char (line-beginning-position))
+                                 (looking-at "-")))
+         (line   (nth (if prior 1 2) value)))
+    (string-match (format "^%s\\([0-9]+\\)" (if prior "-" "\\+")) line)
     (setq line (string-to-number (match-string 1 line)))
     (when (> cstart stop)
       (save-excursion
@@ -1151,7 +1165,8 @@ or `HEAD'."
       (goto-char cpos)
       (while (< (line-number-at-pos) stop)
         (unless (string-match-p
-                 "-" (buffer-substring (point) (+ (point) prefix)))
+                 (if prior "\\+" "-")
+                 (buffer-substring (point) (+ (point) prefix)))
           (cl-incf line))
         (forward-line)))
     line))
@@ -1166,7 +1181,7 @@ or `HEAD'."
 (defun magit-diff-visit-directory (directory &optional other-window)
   (if (equal (magit-toplevel directory)
              (magit-toplevel))
-      (magit-dired-jump other-window)
+      (dired-jump other-window (concat directory "/."))
     (let ((display-buffer-overriding-action
            (if other-window
                '(nil (inhibit-same-window t))
@@ -2217,6 +2232,33 @@ other method."
         (magit-diff--make-hunk-overlay end (1+ end) 'after-string  str))
     (magit-diff-highlight-hunk-region-using-face section)))
 
+(defun magit-diff-highlight-hunk-region-using-underline (section)
+  "Emphasize the hunk-internal region using delimiting horizontal lines.
+This is implemented by overlining and underlining the first and
+last (visual) lines of the region.  In Emacs 24, using this
+method causes `move-end-of-line' to jump to the next line, so
+we only use it in Emacs 25 where that glitch was fixed (see
+https://github.com/magit/magit/pull/2293 for more details)."
+  (if (window-system)
+      (let* ((beg (magit-diff-hunk-region-beginning))
+             (end (magit-diff-hunk-region-end))
+             (beg-eol (save-excursion (goto-char beg)
+                                      (end-of-visual-line)
+                                      (point)))
+             (end-bol (save-excursion (goto-char end)
+                                      (beginning-of-visual-line)
+                                      (point)))
+             (color (face-background 'magit-diff-lines-boundary nil t)))
+        (cl-flet ((ln (b e &rest face)
+                      (magit-diff--make-hunk-overlay
+                       b e 'face face 'after-string
+                       (magit-diff--hunk-after-string face))))
+          (if (= beg end-bol)
+              (ln beg beg-eol :overline color :underline color)
+            (ln beg beg-eol :overline color)
+            (ln end-bol end :underline color))))
+    (magit-diff-highlight-hunk-region-using-face section)))
+
 (defun magit-diff--make-hunk-overlay (start end &rest args)
   (let ((ov (make-overlay start end nil t)))
     (overlay-put ov 'evaporate t)
@@ -2227,8 +2269,11 @@ other method."
 (defun magit-diff--hunk-after-string (face)
   (propertize "\s"
               'face face
-              'display (list 'space :align-to `(+ (,(window-body-width nil t))
-                                                  ,(window-hscroll)))
+              'display (list 'space :align-to
+                             `(+ (0 . right)
+                                 ,(min (window-hscroll)
+                                       (- (line-end-position)
+                                          (line-beginning-position)))))
               ;; This prevents the cursor from being rendered at the
               ;; edge of the window.
               'cursor t))

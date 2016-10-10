@@ -235,10 +235,19 @@ the remote branch and then checking out the new local branch."
 ;;;; Miscellaneous
 
 (defcustom magit-branch-read-upstream-first t
-  "When creating a branch, read upstream before name of new branch."
+  "Whether to read upstream before name of new branch when creating a branch.
+
+`nil'      Read the branch name first.
+`t'        Read the upstream first.
+`fallback' Read the upstream first, but if it turns out that the chosen
+           value is not a valid upstream (because it cannot be resolved
+           as an existing revision), then treat it as the name of the
+           new branch and continue by reading the upstream next."
   :package-version '(magit . "2.2.0")
   :group 'magit-commands
-  :type 'boolean)
+  :type '(choice (const :tag "read branch name first" nil)
+                 (const :tag "read upstream first" t)
+                 (const :tag "read upstream first, with fallback" fallback)))
 
 (defcustom magit-branch-prefer-remote-upstream nil
   "Whether to favor remote upstreams when creating new branches.
@@ -1358,12 +1367,15 @@ is done using `magit-find-index-noselect'."
 ;;;###autoload
 (defun magit-dired-jump (&optional other-window)
   "Visit file at point using Dired.
-With a prefix argument, visit in other window.  If there
+With a prefix argument, visit in another window.  If there
 is no file at point then instead visit `default-directory'."
   (interactive "P")
-  (dired-jump other-window (--if-let (magit-file-at-point)
-                               (expand-file-name it)
-                             default-directory)))
+  (dired-jump other-window (-if-let (file (magit-file-at-point))
+                               (progn (setq file (expand-file-name file))
+                                      (if (file-directory-p file)
+                                          (concat file "/.")
+                                        file))
+                             (concat default-directory "/."))))
 
 ;;;###autoload
 (defun magit-checkout-file (rev file)
@@ -1491,21 +1503,35 @@ changes.
   (magit-run-git "checkout" "--orphan" args branch start-point))
 
 (defun magit-branch-read-args (prompt)
-  (let ((args (magit-branch-arguments)) start branch)
-    (cond (magit-branch-read-upstream-first
-           (setq start  (magit-read-starting-point prompt))
-           (setq branch (magit-read-string-ns
-                         "Branch name"
-                         (let ((def (mapconcat #'identity
-                                               (cdr (split-string start "/"))
-                                               "/")))
-                           (and (member start (magit-list-remote-branch-names))
-                                (not (member def (magit-list-local-branch-names)))
-                                def)))))
-          (t
-           (setq branch (magit-read-string-ns "Branch name"))
-           (setq start  (magit-read-starting-point prompt))))
-    (list branch start args)))
+  (let ((args (magit-branch-arguments)))
+    (if magit-branch-read-upstream-first
+        (let* ((default (and (or (memq this-command magit-no-confirm-default)
+                                 (memq magit-current-popup-action
+                                       magit-no-confirm-default))
+                             (magit--default-starting-point)))
+               (choice (or default
+                           (magit-read-starting-point prompt))))
+          (if (magit-rev-verify choice)
+              (list (magit-read-string-ns
+                     (if default
+                         (format "%s (starting at %s)" prompt choice)
+                       "Branch name")
+                     (let ((def (mapconcat #'identity
+                                           (cdr (split-string choice "/"))
+                                           "/")))
+                       (and (member choice (magit-list-remote-branch-names))
+                            (not (member def (magit-list-local-branch-names)))
+                            def)))
+                    choice args)
+            (if (eq magit-branch-read-upstream-first 'fallback)
+                (list choice
+                      (magit-read-starting-point (concat prompt " " choice))
+                      args)
+              (user-error "Not a valid starting-point: %s" choice))))
+      (let ((branch (magit-read-string-ns (concat prompt " named"))))
+        (list branch
+              (magit-read-starting-point (concat prompt " " branch))
+              args)))))
 
 ;;;###autoload
 (defun magit-branch-spinoff (branch &optional from &rest args)
@@ -1706,7 +1732,10 @@ defaulting to the branch at point."
 With prefix, forces the rename even if NEW already exists.
 \n(git branch -m|-M OLD NEW)."
   (interactive
-   (let ((branch (magit-read-local-branch "Rename branch")))
+   (let ((branch (or (and (memq 'magit-branch-rename magit-no-confirm-default)
+                          (or (magit-local-branch-at-point)
+                              (magit-get-current-branch)))
+                     (magit-read-local-branch "Rename branch"))))
      (list branch
            (magit-read-string-ns (format "Rename branch '%s' to" branch)
                                  nil 'magit-revision-history)
@@ -2047,9 +2076,8 @@ edit it.
                      (magit-merge-arguments)))
   (magit-merge-assert)
   (cl-pushnew "--no-ff" args :test #'equal)
-  (with-editor "GIT_EDITOR"
-    (let ((magit-process-popup-time -1))
-      (magit-run-git-async "merge" "--edit" args rev))))
+  (apply #'magit-run-git-with-editor "merge" "--edit"
+         (append args (list rev))))
 
 ;;;###autoload
 (defun magit-merge-nocommit (rev &optional args)
@@ -2276,7 +2304,7 @@ If FILE isn't tracked in Git fallback to using `delete-file'."
   (let ((choices (nconc (magit-list-files)
                         (unless tracked-only (magit-untracked-files)))))
     (magit-completing-read prompt choices nil t nil nil
-                           (car (member (or (magit-section-when (file))
+                           (car (member (or (magit-section-when (file submodule))
                                             (magit-file-relative-name
                                              nil tracked-only))
                                         choices)))))
@@ -2419,7 +2447,10 @@ If there is only one worktree, then insert nothing."
 With a prefix argument annotate the tag.
 \n(git tag [--annotate] NAME REV)"
   (interactive (list (magit-read-tag "Tag name")
-                     (magit-read-branch-or-commit "Place tag on")
+                     (or (and (memq 'magit-tag magit-no-confirm-default)
+                              (or (magit-branch-or-commit-at-point)
+                                  (magit-get-current-branch)))
+                         (magit-read-branch-or-commit "Place tag on"))
                      (let ((args (magit-tag-arguments)))
                        (when current-prefix-arg
                          (cl-pushnew "--annotate" args))
@@ -3463,13 +3494,10 @@ doesn't find the executable, then consult the info node
 
 (define-obsolete-function-alias 'global-magit-file-buffer-mode
   'global-magit-file-mode "Magit 2.3.0")
-
 (define-obsolete-function-alias 'magit-insert-head-header
   'magit-insert-head-branch-header "Magit 2.4.0")
-
 (define-obsolete-function-alias 'magit-insert-upstream-header
   'magit-insert-upstream-branch-header "Magit 2.4.0")
-
 (define-obsolete-function-alias 'magit-insert-pull-branch-header
   'magit-insert-upstream-branch-header "Magit 2.4.0")
 
