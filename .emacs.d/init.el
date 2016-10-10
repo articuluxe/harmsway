@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-10-07 22:53:48 dharms>
+;; Modified Time-stamp: <2016-10-07 23:45:45 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -84,14 +84,14 @@
   (make-directory my/backup-dir t))
 (setq backup-directory-alist `(("." . ,my/backup-dir)))
 (setq delete-by-moving-to-trash t)
-(setq backup-by-copying t
-      version-control t
-      delete-old-versions t
-      kept-old-versions 0               ;oldest versions to keep
-      kept-new-versions 10
-      auto-save-timeout 60
-      auto-save-interval 0              ;disable autosaves due to input events
-      )
+(setq backup-by-copying t)
+(setq version-control t)
+(setq delete-old-versions t)
+(setq kept-old-versions 0)              ;oldest versions to keep
+(setq kept-new-versions 10)
+(setq auto-save-timeout 60)
+(setq auto-save-interval 0)             ;disable autosaves due to input events
+
 
 ;; Suppress GNU startup message
 (setq inhibit-startup-message t)
@@ -894,13 +894,11 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
          )
   :demand t
   :config
-  (setq bookmark-default-file (concat my/user-directory "bookmarks")
-        bmkp-bmenu-state-file (concat my/user-directory
-                                      "emacs-bmk-bmenu-state")
-        bookmark-save-flag nil
-        bmkp-crosshairs-flag nil
-        bmkp-last-as-first-bookmark-file nil
-        )
+  (setq bookmark-default-file (concat my/user-directory "bookmarks"))
+  (setq bmkp-bmenu-state-file (concat my/user-directory "emacs-bmk-bmenu-state"))
+  (setq bookmark-save-flag nil)
+  (setq bmkp-crosshairs-flag nil)
+  (setq bmkp-last-as-first-bookmark-file nil)
   (add-hook 'bookmark-after-jump-hook #'crosshairs-flash)
   (add-hook 'after-init-hook
             (lambda ()
@@ -914,12 +912,11 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   :defer 10
   :config
   (setq savehist-additional-variables
-        '(search-ring regexp-search-ring kill-ring compile-history)
-        savehist-file (concat my/user-directory "history")
-        savehist-save-minibuffer-history t
-        history-length 50
-        history-delete-duplicates t
-        )
+        '(search-ring regexp-search-ring kill-ring compile-history))
+  (setq savehist-file (concat my/user-directory "history"))
+  (setq savehist-save-minibuffer-history t)
+  (setq history-length 50)
+  (setq history-delete-duplicates t)
   (put 'minibuffer-history 'history-length 100)
   (put 'kill-ring 'history-length 25)
   (savehist-mode 1)
@@ -929,9 +926,9 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (use-package recentf
   :defer 5
   :config
-  (setq recentf-max-saved-items 200
-        recentf-max-menu-items 12
-        recentf-save-file (concat my/user-directory "recentf"))
+  (setq recentf-max-saved-items 200)
+  (setq recentf-max-menu-items 12)
+  (setq recentf-save-file (concat my/user-directory "recentf"))
   (setq recentf-exclude '( "-tags\\'" "ido\.last\\'" "emacs-bmk-bmenu-state"))
   (recentf-mode 1)
   )
