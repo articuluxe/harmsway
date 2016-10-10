@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-10-12 08:42:54 dan.harms>
+;; Modified Time-stamp: <2016-10-12 08:43:23 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -907,6 +907,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
           (command-history-mode :popup t :select t)
           ("*Shell Command Output*" :select t)
           ("COMMIT_EDITMSG" :select t)
+          ("*gen-TAGS*" :popup t :select nil :align bottom)
           )
         shackle-default-rule '(:select nil)
         )
