@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-10-10 08:05:01 dharms>
+;; Modified Time-stamp: <2016-10-10 08:24:22 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -493,7 +493,14 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   )
 (eval-when-compile
   (if (and (= emacs-major-version 24) (= emacs-minor-version 4))
-      (require 'cl)))
+      (require 'cl))
+  (if (or (and (= emacs-major-version 24) (< emacs-minor-version 4))
+          (< emacs-major-version 24))
+      (unless (fboundp 'with-eval-after-load)
+        (defmacro with-eval-after-load (file &rest body)
+          (declare (indent 1) (debug t))
+          `(eval-after-load ,file '(progn ,@body)))))
+  )
 (if (= emacs-major-version 23)
     (progn
       (autoload 'protobuf-mode "protobuf-mode" "Major mode for editing protobuf files." t)
