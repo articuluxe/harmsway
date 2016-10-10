@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-10-07 23:45:45 dharms>
+;; Modified Time-stamp: <2016-10-10 08:05:01 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1039,6 +1039,10 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (eval-and-compile
   (add-to-list 'load-path (concat my/plugins-directory "hydra/")))
 (use-package hydra :defer t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; grep ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(with-eval-after-load 'grep
+  (use-package wgrep))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; occur ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (global-set-key (kbd "M-s M-o") 'multi-occur-in-matching-buffers)
