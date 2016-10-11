@@ -107,7 +107,14 @@
 (setq-default search-whitespace-regexp nil)
 ;;  truncate long lines
 (setq-default truncate-lines t)
+(bind-key "M-o c" 'canonically-space-region)
+(bind-key "C-x c" 'capitalize-region)
 (defun my/set-word-processor()
+  (turn-on-auto-fill)
+  (refill-mode)
+  (setq indent-tabs-mode nil)
+  (font-lock-mode -1)
+  (setq default-justification 'full)
   (visual-line-mode 1)
   ;; uncomment to move by logical lines, not visual lines
   ;; (setq line-move-visual nil)
@@ -116,7 +123,6 @@
   ;; altering movement commands to use visual lines rather than logical ones.
   ;; (setq truncate-lines nil)
   ;; (setq word-wrap t)
-  (setq default-justification 'full)
   )
 ;; default tab width
 (setq-default tab-width 4)
@@ -1750,12 +1756,12 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (mapc (lambda(mode)
           (add-to-list 'ac-modes mode))
         '(sql-mode nxml-mode cmake-mode folio-mode protobuf-mode
-                   python-mode dos-mode gud-mode sh-mode
+                   python-mode dos-mode gud-mode sh-mode text-mode
                    makefile-mode makefile-automake-mode makefile-gmake-mode
                    autoconf-mode gdb-script-mode awk-mode csv-mode
                    mock-mode org-mode html-mode text-mode sql-mode
-                   sql-interactive-mode conf-mode
-                   git-commit-mode mock-mode
+                   sql-interactive-mode conf-mode markdown-mode
+                   git-commit-mode mock-mode dart-mode
                    ))
   (use-package auto-complete-config)
   (setq-default ac-sources
