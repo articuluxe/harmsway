@@ -1080,6 +1080,12 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
         ("C-p" . plur-isearch-forward)
         ))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smartscan ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package smartscan
+  :bind (("M-n" . smartscan-symbol-go-forward)
+         ("M-p" . smartscan-symbol-go-backward))
+  )
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; hydra ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
   (add-to-list 'load-path (concat my/plugins-directory "hydra/")))
