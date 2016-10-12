@@ -2545,6 +2545,7 @@ Requires Flake8 2.0 or newer. See URL
               (when (featurep 'jedi)
                 (define-key python-mode-map [(ctrl tab)] 'my/expand-jedi)
                 (define-key python-mode-map "\C-cx" 'jedi-direx:pop-to-buffer))
+              (use-package sphinx-doc)
               )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; qt-pro-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
