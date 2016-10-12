@@ -716,27 +716,28 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
          ("C-\\ C-\\" . mc/edit-lines)
          ;; mark one more occurrence
          ("C->" . mc/mark-next-like-this)
-         ("C-\\ ]" . mc/mark-next-like-this)
+         ("C-\\ ." . mc/mark-next-like-this)
          ("C-<" . mc/mark-previous-like-this)
-         ("C-\\ [" . mc/mark-previous-like-this)
+         ("C-\\ ," . mc/mark-previous-like-this)
 
          ("C-+" . mc/mark-next-word-like-this)
-         ("C-\\ ." . mc/mark-next-word-like-this)
+         ("C-\\ =" . mc/mark-next-word-like-this)
          ("C-M-+" . mc/mark-next-like-this-word)
-         ("C-\\ M-." . mc/mark-next-like-this-word)
+         ("C-\\ M-=" . mc/mark-next-like-this-word)
          ("C-}" . mc/mark-next-symbol-like-this)
-         ("C-\\ >" . mc/mark-next-symbol-like-this)
+         ("C-\\ ]" . mc/mark-next-symbol-like-this)
          ("C-M-}" . mc/mark-next-like-this-symbol)
-         ("C-\\ M->" . mc/mark-next-like-this-symbol)
+         ("C-\\ M-]" . mc/mark-next-like-this-symbol)
 
          ("C-_" . mc/mark-previous-word-like-this)
-         ("C-\\ ," . mc/mark-previous-word-like-this)
+         ("C-\\ -" . mc/mark-previous-word-like-this)
          ("C-M-_" . mc/mark-previous-like-this-word)
-         ("C-\\ M-," . mc/mark-previous-like-this-word)
+         ("C-\\ M--" . mc/mark-previous-like-this-word)
          ("C-{" . mc/mark-previous-symbol-like-this)
-         ("C-\\ <" . mc/mark-previous-symbol-like-this)
+         ("C-\\ [" . mc/mark-previous-symbol-like-this)
          ("C-M-{" . mc/mark-previous-like-this-symbol)
-         ("C-\\ M-<" . mc/mark-previous-like-this-symbol)
+         ("C-\\ M-[ [" . mc/mark-previous-like-this-symbol)
+         ("C-\\ M-[ M-[" . mc/mark-previous-like-this-symbol)
 
          ("C-c C-\\" . mc/mark-more-like-this-extended)
 
@@ -773,21 +774,25 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; phi-search ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package phi-search
   :bind (("C-S-s" . phi-search)
-         ("C-\\ s" . phi-search)
+         ("C-\\ C-s" . phi-search)
          ("C-S-r" . phi-search-backward)
-         ("C-\\ r" . phi-search-backward)
+         ("C-\\ C-r" . phi-search-backward)
          )
   :config
   (add-to-list 'phi-search-additional-keybinds
-               '((kbd "M-RET") . 'phi-search-complete-at-beginning))
+               '((kbd "M-RET") . 'phi-search-complete-at-beginning)
+               '((kbd "M-<return>") . 'phi-search-complete-at-beginning)
+               )
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; iy-go-to-char ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package iy-go-to-char
-  :bind (("\e\ef" . iy-go-to-char)
-         ("\e\eb" . iy-go-to-char-backward)
-         ("\e\eF" . iy-go-to-or-up-to-continue)
-         ("\e\eB" . iy-go-to-or-up-to-continue-backward)
+  :bind (("C-S-f" . iy-go-to-char)
+         ("C-\\ f" . iy-go-to-char)
+         ("C-S-b" . iy-go-to-char-backward)
+         ("C-\\ b" . iy-go-to-char-backward)
+         ("C-\\ C-f" . iy-go-to-or-up-to-continue)
+         ("C-\\ C-b" . iy-go-to-or-up-to-continue-backward)
          ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; idle-highlight ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1235,6 +1240,8 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; undo-tree ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package undo-tree
   :config
+  ;; unset this key for use in other packages
+  (define-key undo-tree-map "\C-_" nil)
   ;; reset the undo tree history (useful after reverting buffer)
   (global-set-key "\C-cu" (lambda()(interactive)(setq buffer-undo-tree nil)))
   (setq undo-tree-visualizer-diff t)
