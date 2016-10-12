@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-10-12 08:43:56 dan.harms>
+;; Modified Time-stamp: <2016-10-12 10:41:49 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2561,7 +2561,7 @@ Requires Flake8 2.0 or newer. See URL
               (when (featurep 'jedi)
                 (define-key python-mode-map [(ctrl tab)] 'my/expand-jedi)
                 (define-key python-mode-map "\C-cx" 'jedi-direx:pop-to-buffer))
-              (use-package sphinx-doc)
+              (use-package sphinx-doc :config (sphinx-doc-mode 1))
               )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; qt-pro-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
