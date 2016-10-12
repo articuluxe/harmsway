@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-10-10 08:24:22 dharms>
+;; Modified Time-stamp: <2016-10-12 06:06:02 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -202,6 +202,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 ;; terminal as well).
 (define-key esc-map "'" nil)
 (global-unset-key (kbd "<f1>"))
+(global-unset-key (kbd "C-\\"))
 ;; add shortcut for terminals where C-S-DEL doesn't work
 (global-set-key (kbd "M-' DEL") 'kill-whole-line)
 (global-set-key [(next)] 'scroll-up-line)
@@ -468,8 +469,8 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (add-to-list 'load-path (concat my/plugins-directory "multi-line/")))
 (use-package
   multi-line
-  :bind (("C-\\" . multi-line)
-         ("M-' \\" . multi-line)
+  :bind (("C-`" . multi-line)
+         ("M-' `" . multi-line)
          ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; emacs-refactor ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -707,44 +708,75 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (eval-and-compile
   (add-to-list 'load-path (concat my/plugins-directory "multiple-cursors/")))
 (use-package multiple-cursors
-  :bind (("C-S-c C-S-c" . mc/edit-lines)
+  :bind (("C-| C-|" . mc/edit-lines)
+         ("C-\\ C-\\" . mc/edit-lines)
          ;; mark one more occurrence
          ("C->" . mc/mark-next-like-this)
-         ("C-S-n w" . mc/mark-next-word-like-this)
-         ("C-S-n W" . mc/mark-next-like-this-word)
-         ("C-S-n s" . mc/mark-next-symbol-like-this)
-         ("C-S-n S" . mc/mark-next-like-this-symbol)
+         ("C-\\ ]" . mc/mark-next-like-this)
          ("C-<" . mc/mark-previous-like-this)
-         ("C-S-p w" . mc/mark-previous-word-like-this)
-         ("C-S-p W" . mc/mark-previous-like-this-word)
-         ("C-S-p s" . mc/mark-previous-symbol-like-this)
-         ("C-S-p S" . mc/mark-previous-like-this-symbol)
-         ("C-c C-S-c" . mc/mark-more-like-this-extended)
+         ("C-\\ [" . mc/mark-previous-like-this)
+
+         ("C-+" . mc/mark-next-word-like-this)
+         ("C-\\ ." . mc/mark-next-word-like-this)
+         ("C-M-+" . mc/mark-next-like-this-word)
+         ("C-\\ M-." . mc/mark-next-like-this-word)
+         ("C-}" . mc/mark-next-symbol-like-this)
+         ("C-\\ >" . mc/mark-next-symbol-like-this)
+         ("C-M-}" . mc/mark-next-like-this-symbol)
+         ("C-\\ M->" . mc/mark-next-like-this-symbol)
+
+         ("C-_" . mc/mark-previous-word-like-this)
+         ("C-\\ ," . mc/mark-previous-word-like-this)
+         ("C-M-_" . mc/mark-previous-like-this-word)
+         ("C-\\ M-," . mc/mark-previous-like-this-word)
+         ("C-{" . mc/mark-previous-symbol-like-this)
+         ("C-\\ <" . mc/mark-previous-symbol-like-this)
+         ("C-M-{" . mc/mark-previous-like-this-symbol)
+         ("C-\\ M-<" . mc/mark-previous-like-this-symbol)
+
+         ("C-c C-\\" . mc/mark-more-like-this-extended)
+
          ;; mark many occurrences
-         ("C-: ;" . mc/mark-all-like-this)
-         ("C-: w" . mc/mark-all-words-like-this)
-         ("C-: s" . mc/mark-all-symbols-like-this)
-         ("C-c C-;" . mc/mark-all-in-region)
-         ("C-c C-:" . mc/mark-all-in-region-regexp)
+         ("C-\\ ;" . mc/mark-all-like-this)
+         ("C-\\ w" . mc/mark-all-words-like-this)
+         ("C-\\ s" . mc/mark-all-symbols-like-this)
+
+         ("C-c ;" . mc/mark-all-in-region)
+         ("C-c :" . mc/mark-all-in-region-regexp)
+
          ("C-S-h ;" . mc/mark-all-like-this-in-defun)
+         ("C-\\ h;" . mc/mark-all-like-this-in-defun)
          ("C-S-h w" . mc/mark-all-words-like-this-in-defun)
+         ("C-\\ hw" . mc/mark-all-words-like-this-in-defun)
          ("C-S-h s" . mc/mark-all-symbols-like-this-in-defun)
+         ("C-\\ hs" . mc/mark-all-symbols-like-this-in-defun)
+
          ("C-S-h C-S-h" . mc/mark-all-like-this-dwim)
-         ("C-: C-:" . mc/mark-all-dwim)
-         ("C-S-c C-SPC" . mc/mark-pop)
+         ("C-\\ hh" . mc/mark-all-like-this-dwim)
+         ("C-c M-;" . mc/mark-all-dwim)
+
+         ("C-S-SPC" . mc/mark-pop)
+         ("C-\\ C-SPC" . mc/mark-pop)
          )
   :init
   (setq mc/list-file (concat my/user-directory "mc-lists.el"))
   (setq mc/edit-lines-empty-lines 'ignore)
   :config
+  (define-key mc/keymap (kbd "RET") 'multiple-cursors-mode)
   (add-to-list 'mc/cursor-specific-vars 'iy-go-to-char-start-pos)
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; phi-search ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package phi-search
   :bind (("C-S-s" . phi-search)
+         ("C-\\ s" . phi-search)
          ("C-S-r" . phi-search-backward)
-         ))
+         ("C-\\ r" . phi-search-backward)
+         )
+  :config
+  (add-to-list 'phi-search-additional-keybinds
+               '((kbd "M-RET") . 'phi-search-complete-at-beginning))
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; iy-go-to-char ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package iy-go-to-char
@@ -1025,7 +1057,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ace-window ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package ace-window :bind ("M-p" . ace-window))
+(use-package ace-window :bind ("M--" . ace-window))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; isearch ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq isearch-allow-scroll t)
