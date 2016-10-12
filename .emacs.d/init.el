@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-10-12 08:43:23 dan.harms>
+;; Modified Time-stamp: <2016-10-12 08:43:56 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -109,11 +109,15 @@
 (setq-default truncate-lines t)
 (bind-key "M-o c" 'canonically-space-region)
 (bind-key "C-x c" 'capitalize-region)
-(defun my/set-word-processor()
+(defun my/toggle-word-processor ()
+  "TODO"
+  (interactive)
   (turn-on-auto-fill)
   (refill-mode)
-  (setq indent-tabs-mode nil)
   (font-lock-mode -1)
+  )
+(defun my/init-word-processor()
+  (setq indent-tabs-mode nil)
   (setq default-justification 'full)
   (visual-line-mode 1)
   ;; uncomment to move by logical lines, not visual lines
@@ -2463,7 +2467,7 @@ customization."
          )
   :commands (markdown-mode gfm-mode)
   :init
-  (add-hook 'markdown-mode-hook #'my/set-word-processor)
+  (add-hook 'markdown-mode-hook #'my/init-word-processor)
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; nhexl-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2583,7 +2587,7 @@ Requires Flake8 2.0 or newer. See URL
 (use-package strace-mode :mode "\\.strace$")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; text-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(add-hook 'text-mode-hook #'my/set-word-processor)
+(add-hook 'text-mode-hook #'my/init-word-processor)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; xml-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-hook 'nxml-mode-hook
