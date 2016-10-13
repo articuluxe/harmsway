@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-10-12 10:41:49 dan.harms>
+;; Modified Time-stamp: <2016-10-13 17:41:07 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -35,10 +35,11 @@
   (defconst my/scratch-directory (concat my/user-directory "etc/"))
   (defconst my/elisp-directory (concat my/user-directory "elisp/"))
   (defconst my/plugins-directory (concat my/user-directory "plugins/"))
-  (add-to-list 'load-path my/plugins-directory)
-  (add-to-list 'load-path my/elisp-directory)
-  (add-to-list 'load-path (concat my/user-directory "modes/"))
-  (add-to-list 'load-path (concat my/user-directory "custom/"))
+  (setq load-path (append `(,my/plugins-directory
+                            ,my/elisp-directory
+                            ,(concat my/user-directory "modes/")
+                            ,(concat my/user-directory "custom/"))
+                          load-path))
   )
 (defconst my/user-settings
   (concat my/user-directory "settings/user/" user-login-name))
@@ -470,7 +471,8 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; multi-line ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
-  (add-to-list 'load-path (concat my/plugins-directory "multi-line/")))
+  (setq load-path (cons (concat my/plugins-directory "multi-line/")
+                        load-path)))
 (use-package
   multi-line
   :bind (("C-`" . multi-line)
@@ -479,7 +481,8 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; emacs-refactor ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
-  (add-to-list 'load-path (concat my/plugins-directory "emacs-refactor/")))
+  (setq load-path (cons (concat my/plugins-directory "emacs-refactor/")
+                        load-path)))
 (use-package emr
   :defer t
   :init
@@ -498,9 +501,11 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 ;; see debbugs.gnu.org/db/18/18845.html
 (eval-and-compile
   (when (< emacs-major-version 24)
-    (add-to-list 'load-path (concat my/elisp-directory "compat/24/0/-/")))
+    (setq load-path (cons (concat my/elisp-directory "compat/24/0/-/")
+                          load-path)))
   (when (< emacs-major-version 25)
-    (add-to-list 'load-path (concat my/elisp-directory "compat/25/0/-/")))
+    (setq load-path (cons (concat my/elisp-directory "compat/25/0/-/")
+                          load-path)))
   )
 (eval-when-compile
   (if (and (= emacs-major-version 24) (= emacs-minor-version 4))
@@ -686,7 +691,8 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; expand-region ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
-  (add-to-list 'load-path (concat my/plugins-directory "expand-region/")))
+  (setq load-path (cons (concat my/plugins-directory "expand-region/")
+                        load-path)))
 (use-package expand-region
   :bind (("C-'" . er/expand-region)
          ("M-' '" . er/expand-region)
@@ -710,7 +716,8 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; multiple-cursors ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
-  (add-to-list 'load-path (concat my/plugins-directory "multiple-cursors/")))
+  (setq load-path (cons (concat my/plugins-directory "multiple-cursors/")
+                        load-path)))
 (use-package multiple-cursors
   :bind (("C-| C-|" . mc/edit-lines)
          ("C-\\ C-\\" . mc/edit-lines)
@@ -828,7 +835,8 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (define-prefix-command 'my/git-keymap)
 (global-set-key "\M-sm" 'my/git-keymap)
 (eval-and-compile
-  (add-to-list 'load-path (concat my/plugins-directory "magit/lisp/")))
+  (setq load-path (cons (concat my/plugins-directory "magit/lisp/")
+                        load-path)))
 (use-package magit
   :if (not (version< emacs-version "24.4"))
   :init
@@ -940,7 +948,8 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; bookmark+ ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
-  (add-to-list 'load-path (concat my/plugins-directory "bookmark+/")))
+  (setq load-path (cons (concat my/plugins-directory "bookmark+/")
+                        load-path)))
 (use-package bookmark+
   :bind (("<f7>" . bmkp-previous-bookmark)
          ("C-c 7" . bmkp-previous-bookmark)
@@ -1098,7 +1107,8 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; hydra ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
-  (add-to-list 'load-path (concat my/plugins-directory "hydra/")))
+  (setq load-path (cons (concat my/plugins-directory "hydra/")
+                        load-path)))
 (use-package hydra :defer t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; grep ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1110,7 +1120,8 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; swiper ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
-  (add-to-list 'load-path (concat my/plugins-directory "swiper/")))
+  (setq load-path (cons (concat my/plugins-directory "swiper/")
+                        load-path)))
 (use-package swiper
   :if (not (version< emacs-version "24.1"))
   :bind (("M-s s" . swiper)
@@ -1203,7 +1214,8 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; powerline ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
-  (add-to-list 'load-path (concat my/plugins-directory "powerline/")))
+  (setq load-path (cons (concat my/plugins-directory "powerline/")
+                        load-path)))
 
 ;; does not interact with rich-minority mode: try delight.el?
 ;; (powerline-default-theme)
@@ -1224,7 +1236,8 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smart-mode-line ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
-  (add-to-list 'load-path (concat my/plugins-directory "smart-mode-line/")))
+  (setq load-path (cons (concat my/plugins-directory "smart-mode-line/")
+                        load-path)))
 (use-package smart-mode-line
   :if (version<= "24.3" emacs-version)
   :config
@@ -1434,7 +1447,8 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; sunrise-commander ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
-  (add-to-list 'load-path (concat my/plugins-directory "sunrise/")))
+  (setq load-path (cons (concat my/plugins-directory "sunrise/")
+                        load-path)))
 (use-package sunrise-commander
   :bind ("C-c 0s" . sunrise)
   :config
@@ -1557,7 +1571,8 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; diff-hl ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
-  (add-to-list 'load-path (concat my/plugins-directory "diff-hl/")))
+  (setq load-path (cons (concat my/plugins-directory "diff-hl/")
+                        load-path)))
 (use-package  diff-hl-dired
   :init (add-hook 'dired-mode-hook 'diff-hl-dired-mode-unless-remote))
 (use-package diff-hl
@@ -1696,8 +1711,9 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; color-theme ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
-  (add-to-list 'load-path (concat my/plugins-directory "color-theme/"))
-  (add-to-list 'load-path (concat my/plugins-directory "color-theme/themes/")))
+  (setq load-path (append `(,(concat my/plugins-directory "color-theme/")
+                            ,(concat my/plugins-directory "color-theme/themes/")
+                            ) load-path)))
 (use-package color-theme
   :config
   (add-hook 'after-init-hook #'color-theme-initialize)
@@ -1734,7 +1750,8 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; vlf ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
-  (add-to-list 'load-path (concat my/plugins-directory "vlf/")))
+  (setq load-path (cons (concat my/plugins-directory "vlf/")
+                        load-path)))
 (use-package vlf-setup
   :defines vlf-tune-enabled
   :init
@@ -1762,7 +1779,8 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; rtags ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
-  (add-to-list 'load-path (concat my/plugins-directory "rtags/")))
+  (setq load-path (cons (concat my/plugins-directory "rtags/")
+                        load-path)))
 (defvar rtags-exec (executable-find "rdm"))
 (use-package rtags
   :disabled t
@@ -1788,7 +1806,8 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-complete ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
-  (add-to-list 'load-path (concat my/plugins-directory "auto-complete/")))
+  (setq load-path (cons (concat my/plugins-directory "auto-complete/")
+                        load-path)))
 (use-package auto-complete
   :init
   (add-hook 'emacs-lisp-mode-hook 'ac-emacs-lisp-mode-setup)
@@ -1804,7 +1823,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (add-to-list 'ac-dictionary-directories
                (concat my/scratch-directory "dict/"))
   (mapc (lambda(mode)
-          (add-to-list 'ac-modes mode))
+          (setq ac-modes (cons mode ac-modes)))
         '(sql-mode nxml-mode cmake-mode folio-mode protobuf-mode
                    python-mode dos-mode gud-mode sh-mode text-mode
                    makefile-mode makefile-automake-mode makefile-gmake-mode
@@ -1879,7 +1898,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (add-hook 'c-mode-common-hook
             (lambda()
               (when rtags-exec
-                (add-to-list 'ac-sources 'ac-source-rtags))
+                (setq ac-sources (cons ac-source-rtags ac-sources)))
               (when clang-exec
                 (define-key c-mode-base-map [?\M-/] 'ac-complete-clang)
                 ;; (add-to-list 'ac-omni-completion-sources
@@ -1887,14 +1906,16 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
                 ;; (add-to-list 'ac-omni-completion-sources
                 ;;              (cons "->" '(ac-source-clang)))
                 )
-              (add-to-list 'ac-sources 'ac-source-etags)
-              (add-to-list 'ac-sources 'ac-source-c-headers)
+              (setq ac-sources (append '(ac-source-etags
+                                         ac-source-c-headers
+                                         ) ac-sources))
               (setq c-tab-always-indent nil)
               (setq c-insert-tab-function 'indent-for-tab-command)
               ) t)                       ;append to hook list to take effect
                                         ;after ac-config-default
   (add-hook 'protobuf-mode-hook
-            (lambda()(add-to-list 'ac-sources 'ac-source-etags)))
+            (lambda()
+              (setq ac-sources (cons ac-source-etags ac-sources))))
   (defun my/expand-imenu() (interactive)
          (auto-complete '(ac-source-imenu)))
   (global-set-key "\C-c0j" 'my/expand-imenu)
@@ -1902,7 +1923,8 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; YASnippet ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
-  (add-to-list 'load-path (concat my/plugins-directory "yasnippet/")))
+  (setq load-path (cons (concat my/plugins-directory "yasnippet/")
+                        load-path)))
 (use-package yasnippet
   :init
   (add-to-list 'safe-local-variable-values '(require-final-newline . nil))
@@ -2496,7 +2518,8 @@ customization."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; python-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
-  (add-to-list 'load-path (concat my/elisp-directory "emacs-jedi/")))
+  (setq load-path (cons (concat my/elisp-directory "emacs-jedi/")
+                        load-path)))
 (use-package python
   :if (executable-find "python")
   :defer t
