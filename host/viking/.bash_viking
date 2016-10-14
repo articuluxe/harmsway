@@ -4,6 +4,10 @@
 export SITE=talbot
 unset SSH_ASKPASS
 
+export EMACSX=/usr/local/emacs/25.1/bin/emacs
+export EDITOR="$EMACSX -nw"
+alias emacs=$EDITOR
+
 python=~/anaconda2/bin
 dart=/usr/local/dart/1.15.0/dart-sdk
 cask=$HOME/.cask/bin

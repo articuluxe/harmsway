@@ -4,7 +4,3 @@
 export MANPATH=
 export NAME='Dan Harms'
 export TAR=$(which tar)
-
-export EMACSX=emacs
-export EDITOR='emacs -nw'
-alias emacs='emacs -nw'

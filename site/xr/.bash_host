@@ -5,6 +5,10 @@
 export SITE=xr
 export LHOME=/lhome/dan.harms
 
+export EMACSX=emacs
+export EDITOR="$EMACSX -nw"
+alias emacs=$EDITOR
+
 # clang
 CLANG_ROOT=/opt/x3p/xrt_a/llvm/3.6.1
 CLANG_LIB=$CLANG_ROOT/lib
