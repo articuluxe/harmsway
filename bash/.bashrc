@@ -49,10 +49,7 @@ function __prompt_command() {
 }
 
 os=$(uname)
-host=$(hostname -s)
-# for Windows:
-
-# host=$HOSTNAME
+host=${HOSTNAME:-`hostname -s`}
 
 # Load any os settings
 if [ -f ~/.bash_$os ]; then
