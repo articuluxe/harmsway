@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-09-22 11:17:44 dan.harms>
+;; Modified Time-stamp: <2016-10-13 23:58:55 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -74,6 +74,7 @@
    (setq hide-ifdef-shadow t)
    (hide-ifdef-mode 1)
    (make-local-variable 'my/compile-command)
+   (define-key c++-mode-map (kbd "C-S-o") 'c-context-open-line)
    (define-key c++-mode-map (kbd "\C-c RET") 'my/compile)
    (define-key c++-mode-map "\C-cm" 'my/recompile)
    (define-key c++-mode-map "\C-ck" 'kill-compilation)
@@ -126,18 +127,18 @@
                    ) t)
             ) t)
 
-(with-eval-after-load 'cc-mode (require 'modern-cpp-font-lock))
+(when (< emacs-major-version 25)
+  (with-eval-after-load 'cc-mode (require 'modern-cpp-font-lock)))
 
 (add-hook
  'c++-mode-hook
  (lambda()
-   (modern-c++-font-lock-mode 1)
+   (when (< emacs-major-version 25)
+     (modern-c++-font-lock-mode 1))
    (font-lock-add-keywords
     nil '(;; complete some fundamental keywords (+ Qt)
-          ;; add the new C++11 keywords (override and final already there)
-          ;; ("\\<\\(alignof\\|alignas\\|constexpr\\|decltype\\|noexcept\\|nullptr\\|static_assert\\|thread_local\\|override\\|final\\)\\>" . font-lock-keyword-face)
-          ;; hexadecimal numbers
-          ;; ("\\<0[xX][0-9A-Fa-f]+\\>" . font-lock-constant-face)
+          ;; add C++11 keywords still missing from the defaults for emacs 25
+          ("\\<\\(alignas\\|static_assert\\)\\>" . font-lock-keyword-face)
           ;; Qt fontification
           ("\\<\\(Q_OBJECT\\|SIGNAL\\|SLOT\\|slots\\|signals\\)\\>" . font-lock-keyword-face)
           ("\\<QT?\\(_\\sw+\\)+\\>" . font-lock-keyword-face)
@@ -164,48 +165,5 @@
           (run-with-timer 1 nil 'visit-tags-table my-tags-file))
       (message "Did not find tags file")
       )))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;; c++11 enum class hack ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; TODO: doesn't work
-(defun inside-class-enum-p (pos)
-  "Checks if POS is within the braces of a c++ \"enum class\"."
-  (interactive)
-  (ignore-errors
-    (save-excursion
-      (goto-char pos)
-      (up-list -1)
-      (backward-sexp 1)
-      (looking-back "enum\\s-+class\\s-+[^}]*")))) ;or end with '+'
-
-(defun align-enum-class (langelem)
-  (if (inside-class-enum-p (c-langelem-pos langelem))
-      0
-    (c-lineup-topmost-intro-cont langelem)))
-
-(defun align-enum-class-closing-brace (langelem)
-  (if (inside-class-enum-p (c-langelem-pos langelem))
-      '-                                ;or '0
-    '+))
-
-(defun fix-enum-class()
-  "Setup c++-mode to better handle \"class enum\"."
-  (add-to-list 'c-offsets-alist '(topmost-intro-cont . align-enum-class))
-  (add-to-list 'c-offsets-alist
-               '(statement-cont . align-enum-class-closing-brace)))
-(add-hook 'c++-mode-hook 'fix-enum-class)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;; c++11 lambda hack ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defadvice c-lineup-arglist (around my activate)
-  "Improve indentation of continued c++11 lambda function opened as argument."
-  (setq ad-return-value
-        (if (and (equal major-mode 'c++-mode)
-                 (ignore-errors
-                   (save-excursion
-                     (goto-char (c-langelem-pos langelem))
-                     ;; detect "[...](" or "[...]{" preceded by "," or "("
-                     ;; and with unclosed brace
-                     (looking-at ".*[(,][ \t]*\\[[^]]*\\][ \t]*[({][^}]*$"))))
-            0                           ;no additional indent
-          ad-do-it)))                   ;default behavior
 
 ;; coding.el ends here

@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-10-13 17:41:07 dharms>
+;; Modified Time-stamp: <2016-10-13 23:45:30 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2628,10 +2628,11 @@ Requires Flake8 2.0 or newer. See URL
             (define-key nxml-mode-map "\C-c\C-c" 'comment-region)
             (define-key nxml-mode-map "\C-c\C-u" 'uncomment-region)
             ))
-(require 'mz-comment-fix)
-;; the following is a hack to fix nested XML commenting in Emacs 24.
-;; Note that 'comment-strip-start-length also exists for other modes if needed.
-(add-to-list 'comment-strip-start-length (cons 'nxml-mode 3))
+(when (< emacs-major-version 25)
+  (require 'mz-comment-fix)
+  ;; the following is a hack to fix nested XML commenting in Emacs 24.
+  ;; Note that 'comment-strip-start-length also exists for other modes if needed.
+  (add-to-list 'comment-strip-start-length (cons 'nxml-mode 3)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; yaml-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package yaml-mode
