@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-10-14 00:10:35 dharms>
+;; Modified Time-stamp: <2016-10-14 08:28:43 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -434,7 +434,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
                         (or (file-remote-p default-directory 'user)
                             user-real-login-name)
                         (or (file-remote-p default-directory 'host)
-                            system-name)
+                            (system-name))
                         (if dired-directory
                             (concat "{" (buffer-name) "}")
                           (buffer-name))
@@ -2260,7 +2260,7 @@ customization."
   (when (string-match "^\\([^.]+\\)\\.?.*$" hst)
     (match-string-no-properties 1 hst)))
 
-(let* ((system (my/unqualify-host-name system-name))
+(let* ((system (my/unqualify-host-name (system-name)))
        (hosts-dir (concat my/user-directory "settings/host/"))
        (host-dir
         (file-name-as-directory
