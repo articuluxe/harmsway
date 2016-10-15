@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-10-13 23:58:55 dharms>
+;; Modified Time-stamp: <2016-10-15 08:51:40 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -74,12 +74,12 @@
    (setq hide-ifdef-shadow t)
    (hide-ifdef-mode 1)
    (make-local-variable 'my/compile-command)
-   (define-key c++-mode-map (kbd "C-S-o") 'c-context-open-line)
-   (define-key c++-mode-map (kbd "\C-c RET") 'my/compile)
-   (define-key c++-mode-map "\C-cm" 'my/recompile)
-   (define-key c++-mode-map "\C-ck" 'kill-compilation)
-   (define-key c++-mode-map "\C-c\C-c" 'comment-region)
-   (define-key c++-mode-map "\C-c\C-u" 'uncomment-region)
+   (define-key c-mode-base-map (kbd "C-S-o") 'c-context-open-line)
+   (define-key c-mode-base-map (kbd "\C-c RET") 'my/compile)
+   (define-key c-mode-base-map "\C-cm" 'my/recompile)
+   (define-key c-mode-base-map "\C-ck" 'kill-compilation)
+   (define-key c-mode-base-map "\C-c\C-c" 'comment-region)
+   (define-key c-mode-base-map "\C-c\C-u" 'uncomment-region)
    (setq comment-start "/*") (setq comment-end "*/")
    (define-key c++-mode-map "\C-c/" 'toggle-c-comment-delimiters)
    ;; skips the final included file, ending in `:', when traversing compile
@@ -113,7 +113,11 @@
 ;(comment-intro . 0)
 ;(arglist-intro . c-lineup-arglist-intro-after-paren)
 ;(arglist-close . c-lineup-arglist)
-                                      )))))
+                                      ))
+                  (c-hanging-semi&comma-criteria . (c-semi&comma-no-newlines-before-nonblanks
+                                                    c-semi&comma-no-newlines-for-oneline-inliners
+                                                    c-semi&comma-inside-parenlist))
+                  )))
    ))
 
 (add-hook 'prog-mode-hook
