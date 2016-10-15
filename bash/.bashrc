@@ -49,7 +49,10 @@ function __prompt_command() {
 }
 
 os=$(uname)
-host=${HOSTNAME:-`hostname -s`}
+# use $HOSTNAME if available (which works on windows);
+# if a FQDN, just take the device.
+domain=$(echo $HOSTNAME | sed -e 's/\..*$//')
+host=${domain:-`hostname -s`}
 
 # Load any os settings
 if [ -f ~/.bash_$os ]; then
