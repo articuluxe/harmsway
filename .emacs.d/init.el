@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-10-14 08:28:43 dharms>
+;; Modified Time-stamp: <2016-10-16 09:05:30 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -211,6 +211,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 ;; add shortcut for terminals where C-S-DEL doesn't work
 (global-set-key (kbd "M-' DEL") 'kill-whole-line)
 (global-set-key (kbd "C-x M-;") 'comment-line)
+(global-set-key (kbd "C-x M-p") 'transpose-paragraphs)
 (global-set-key [(next)] 'scroll-up-line)
 (global-set-key [(prior)] 'scroll-down-line)
 (global-set-key "\C-caa" 'align)
