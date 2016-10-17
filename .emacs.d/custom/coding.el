@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-10-15 08:51:40 dharms>
+;; Modified Time-stamp: <2016-10-17 17:30:58 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -62,6 +62,68 @@
       (setq comment-end "")
       (message "// Using comments like this"))))
 
+(with-eval-after-load 'cc-mode
+  (define-key c-mode-base-map (kbd "\C-c RET") 'my/compile)
+  (define-key c-mode-base-map "\C-cm" 'my/recompile)
+  (define-key c-mode-base-map "\C-ck" 'kill-compilation)
+  (define-key c-mode-base-map "\C-c\C-c" 'comment-region)
+  (define-key c-mode-base-map "\C-c\C-u" 'uncomment-region)
+  (setq comment-start "/*") (setq comment-end "*/")
+  (define-key c++-mode-map "\C-c/" 'toggle-c-comment-delimiters)
+  (define-key c-mode-base-map (kbd "C-S-o") 'c-context-open-line)
+  (define-key c-mode-base-map (kbd "C-c C-;")
+    (lambda() (interactive) (c-try-one-liner)))
+  ;; skips the final included file, ending in `:', when traversing compile
+  ;; errors.  See
+  ;; `http://stackoverflow.com/questions/15489319/how-can-i-skip-in-file-included-from-in-emacs-c-compilation-mode'
+  (setf (nth 5 (assoc 'gcc-include compilation-error-regexp-alist-alist)) 0)
+  (c-add-style
+   "default-style"
+   (quote
+    ((c-basic-offset . 3)
+     (c-electric-pound-behavior . (alignleft))
+     (c-cleanup-list . (
+                        empty-defun-braces
+                        defun-close-semi
+                        one-liner-defun
+                        scope-operator
+                        list-close-comma
+                        compact-empty-funcall
+                        comment-close-slash
+                        ))
+     (c-offsets-alist . (
+                         (innamespace           . 0)
+                         (substatement-open     . 0)
+                         (inline-open           . 0)
+                         (statement-case-intro  . +)
+                         (statement-case-open   . +)
+                                        ;(statement-cont . c-lineup-math)
+                         (access-label          . -2)
+                         (comment-intro         . c-lineup-comment)
+                         (member-init-intro     . +)
+                         (arglist-cont-nonempty . +)
+                                        ;(comment-intro . 0)
+                                        ;(arglist-intro . c-lineup-arglist-intro-after-paren)
+                                        ;(arglist-close . c-lineup-arglist)
+                         ))
+     (c-hanging-braces-alist . ((brace-list-open)
+                                (brace-entry-open)
+                                (statement-cont)
+                                (substatement-open after)
+                                (block-close . c-snug-do-while)
+                                (extern-lang-open after)
+                                (namespace-open after)
+                                (module-open after)
+                                (composition-open after)
+                                (inexpr-class-open after)
+                                (inexpr-class-close before)
+                                (arglist-cont-nonempty)
+                                (inline-close)))
+     (c-hanging-semi&comma-criteria . (c-semi&comma-no-newlines-before-nonblanks
+                                       c-semi&comma-no-newlines-for-oneline-inliners
+                                       c-semi&comma-inside-parenlist))
+     ))))
+
 (add-hook
  'c-mode-common-hook
  (lambda ()
@@ -74,50 +136,6 @@
    (setq hide-ifdef-shadow t)
    (hide-ifdef-mode 1)
    (make-local-variable 'my/compile-command)
-   (define-key c-mode-base-map (kbd "C-S-o") 'c-context-open-line)
-   (define-key c-mode-base-map (kbd "\C-c RET") 'my/compile)
-   (define-key c-mode-base-map "\C-cm" 'my/recompile)
-   (define-key c-mode-base-map "\C-ck" 'kill-compilation)
-   (define-key c-mode-base-map "\C-c\C-c" 'comment-region)
-   (define-key c-mode-base-map "\C-c\C-u" 'uncomment-region)
-   (setq comment-start "/*") (setq comment-end "*/")
-   (define-key c++-mode-map "\C-c/" 'toggle-c-comment-delimiters)
-   ;; skips the final included file, ending in `:', when traversing compile
-   ;; errors.  See
-   ;; `http://stackoverflow.com/questions/15489319/how-can-i-skip-in-file-included-from-in-emacs-c-compilation-mode'
-   (setf (nth 5 (assoc 'gcc-include compilation-error-regexp-alist-alist)) 0)
-   (c-add-style "default-style"
-                (quote
-                 ((c-basic-offset . 3)
-                  (c-electric-pound-behavior . (alignleft))
-                  (c-cleanup-list . (
-                                     empty-defun-braces
-                                     defun-close-semi
-                                     one-liner-defun
-                                     scope-operator
-                                     list-close-comma
-                                     compact-empty-funcall
-                                     comment-close-slash
-                                     ))
-                  (c-offsets-alist . (
-                                      (innamespace           . 0)
-                                      (substatement-open     . 0)
-                                      (inline-open           . 0)
-                                      (statement-case-intro  . +)
-                                      (statement-case-open   . +)
-;(statement-cont . c-lineup-math)
-                                      (access-label          . -2)
-                                      (comment-intro         . c-lineup-comment)
-                                      (member-init-intro     . +)
-                                      (arglist-cont-nonempty . +)
-;(comment-intro . 0)
-;(arglist-intro . c-lineup-arglist-intro-after-paren)
-;(arglist-close . c-lineup-arglist)
-                                      ))
-                  (c-hanging-semi&comma-criteria . (c-semi&comma-no-newlines-before-nonblanks
-                                                    c-semi&comma-no-newlines-for-oneline-inliners
-                                                    c-semi&comma-inside-parenlist))
-                  )))
    ))
 
 (add-hook 'prog-mode-hook
