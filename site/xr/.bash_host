@@ -5,7 +5,11 @@
 export SITE=xr
 export LHOME=/lhome/dan.harms
 
-export EMACSX=emacs
+emacsbin=/usr/local/emacs/emacs
+if [ ! -f "$emacsbin" ]; then
+    emacsbin=emacs
+fi
+export EMACSX=$emacsbin
 export EDITOR="$EMACSX -nw"
 alias emacs=$EDITOR
 
