@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-10-16 09:05:30 dharms>
+;; Modified Time-stamp: <2016-10-17 14:02:45 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -755,8 +755,8 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
          ("C-\\ w" . mc/mark-all-words-like-this)
          ("C-\\ s" . mc/mark-all-symbols-like-this)
 
-         ("C-c ;" . mc/mark-all-in-region)
-         ("C-c :" . mc/mark-all-in-region-regexp)
+         ("C-\\ C-;" . mc/mark-all-in-region)
+         ("C-\\ M-;" . mc/mark-all-in-region-regexp)
 
          ("C-S-h ;" . mc/mark-all-like-this-in-defun)
          ("C-\\ h;" . mc/mark-all-like-this-in-defun)
