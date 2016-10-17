@@ -842,7 +842,7 @@ Describe the selected candidate."
        (if (facep s)
            (push (symbol-name s) cands))))
     (ivy-read "Face: " cands
-              :preselect (face-at-point t)
+              :preselect (symbol-name (face-at-point t))
               :action #'describe-face)))
 ;;* Git
 ;;** `counsel-git'
@@ -1151,6 +1151,9 @@ When REVERT is non-nil, regenerate the current *ivy-occur* buffer."
   (unless (eq major-mode 'ivy-occur-grep-mode)
     (ivy-occur-grep-mode)
     (setq default-directory counsel--git-grep-dir))
+  (setq ivy-text
+        (and (string-match "\"\\(.*\\)\"" (buffer-name))
+             (match-string 1 (buffer-name))))
   (let ((cands (split-string
                 (shell-command-to-string
                  (format counsel-git-grep-cmd
