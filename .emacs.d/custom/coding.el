@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-10-17 17:30:58 dharms>
+;; Modified Time-stamp: <2016-10-18 06:13:03 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -68,7 +68,6 @@
   (define-key c-mode-base-map "\C-ck" 'kill-compilation)
   (define-key c-mode-base-map "\C-c\C-c" 'comment-region)
   (define-key c-mode-base-map "\C-c\C-u" 'uncomment-region)
-  (setq comment-start "/*") (setq comment-end "*/")
   (define-key c++-mode-map "\C-c/" 'toggle-c-comment-delimiters)
   (define-key c-mode-base-map (kbd "C-S-o") 'c-context-open-line)
   (define-key c-mode-base-map (kbd "C-c C-;")
@@ -128,14 +127,15 @@
  'c-mode-common-hook
  (lambda ()
    (require 'compile)
+   (make-local-variable 'my/compile-command)
    (setq-default indent-tabs-mode nil)
    (setq c-auto-newline t)
    (c-toggle-hungry-state t)
+   (setq comment-start "/*") (setq comment-end "*/")
    ;; (setq comment-column 40)
    (setq hide-ifdef-lines t)
    (setq hide-ifdef-shadow t)
    (hide-ifdef-mode 1)
-   (make-local-variable 'my/compile-command)
    ))
 
 (add-hook 'prog-mode-hook
