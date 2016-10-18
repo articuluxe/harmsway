@@ -738,7 +738,6 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
          ("C-M-}" . mc/mark-next-like-this-symbol)
          ("C-\\ M-]" . mc/mark-next-like-this-symbol)
 
-         ("C-_" . mc/mark-previous-word-like-this)
          ("C-\\ -" . mc/mark-previous-word-like-this)
          ("C-M-_" . mc/mark-previous-like-this-word)
          ("C-\\ M--" . mc/mark-previous-like-this-word)
@@ -778,6 +777,10 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   :config
   (define-key mc/keymap (kbd "RET") 'multiple-cursors-mode)
   (add-to-list 'mc/cursor-specific-vars 'iy-go-to-char-start-pos)
+  ;; On terminals this conflicts with undo (had to take this out of the
+  ;; autoloads to make the conditional work).
+  (when (display-graphic-p)
+    (bind-key "C-_" 'mc/mark-previous-word-like-this))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; phi-search ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
