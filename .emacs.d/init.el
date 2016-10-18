@@ -1137,8 +1137,12 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; avy ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package avy
- :bind (("M-s '" . avy-goto-line)
-        ("M-s M-'" . avy-goto-char)))
+  :bind (("M-\" c" . avy-goto-char)
+         ("M-\" v" . avy-goto-char-2)
+         ("M-\" t" . avy-goto-char-timer)
+         ("M-\" w" . avy-goto-word-1)
+         ("M-\" l" . avy-goto-line)
+         ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ivy ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package ivy
