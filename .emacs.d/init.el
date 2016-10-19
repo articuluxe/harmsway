@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-10-18 06:24:26 dharms>
+;; Modified Time-stamp: <2016-10-19 08:30:38 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1475,7 +1475,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; deft ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package deft
-  :bind ("C-c d" . deft)
+  :bind ("C-c M-d" . deft)
   :commands deft-find-file
   :config
   (setq deft-extensions '("org" "md" "txt"))
