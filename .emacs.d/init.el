@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-10-19 08:30:38 dharms>
+;; Modified Time-stamp: <2016-10-20 06:25:23 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1773,7 +1773,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; profiles ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package profiles+
   :config
-  (profile-define "default" "dharms" "danielrharms@gmail.com"
+  (profile-define "default" my/user-name user-mail-address
                   ;; relative path to makefiles
                   'build-sub-dirs '((""))
                   ;; relative path to debug executables (under project-root-dir
