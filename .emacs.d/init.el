@@ -110,25 +110,6 @@
 (setq-default truncate-lines t)
 (bind-key "M-o c" 'canonically-space-region)
 (bind-key "C-x c" 'capitalize-region)
-(defun my/toggle-word-processor ()
-  "TODO"
-  (interactive)
-  (turn-on-auto-fill)
-  (refill-mode)
-  (font-lock-mode -1)
-  )
-(defun my/init-word-processor()
-  (setq indent-tabs-mode nil)
-  (setq default-justification 'full)
-  (visual-line-mode 1)
-  ;; uncomment to move by logical lines, not visual lines
-  ;; (setq line-move-visual nil)
-  ;; uncomment as an alternative to visual-line-mode that only word
-  ;; wraps, without removing wrap indicators in the fringe, and without
-  ;; altering movement commands to use visual lines rather than logical ones.
-  ;; (setq truncate-lines nil)
-  ;; (setq word-wrap t)
-  )
 ;; default tab width
 (setq-default tab-width 4)
 ;; enable repeatedly popping mark without prefix
@@ -343,6 +324,12 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
               (set (make-local-variable 'gdb-create-source-file-list) nil)
               (gdb-many-windows 1)
               )))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; good-word ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package good-word
+  :commands good-word/init-word-processor
+  :bind ("M-o w" . hydra-toggle-word-processor/body)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; outrespace ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package outrespace
@@ -1114,7 +1101,11 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (eval-and-compile
   (setq load-path (cons (concat my/plugins-directory "hydra/")
                         load-path)))
-(use-package hydra :defer t)
+(use-package hydra
+  :defer t
+  :init
+  (setq lv-use-separator t)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; grep ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (with-eval-after-load 'grep
@@ -2505,7 +2496,7 @@ customization."
          )
   :commands (markdown-mode gfm-mode)
   :init
-  (add-hook 'markdown-mode-hook #'my/init-word-processor)
+  (add-hook 'markdown-mode-hook #'good-word/init-word-processor)
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; nhexl-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2626,7 +2617,7 @@ Requires Flake8 2.0 or newer. See URL
 (use-package strace-mode :mode "\\.strace$")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; text-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(add-hook 'text-mode-hook #'my/init-word-processor)
+(add-hook 'text-mode-hook #'good-word/init-word-processor)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; xml-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-hook 'nxml-mode-hook
