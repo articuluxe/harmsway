@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-10-21 09:44:45 dan.harms>
+;; Modified Time-stamp: <2016-10-24 06:32:51 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1577,7 +1577,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (use-package  diff-hl-dired
   :init (add-hook 'dired-mode-hook 'diff-hl-dired-mode-unless-remote))
 (use-package diff-hl
-  :defer 2
+  :defer 1
   :config
   (use-package diff-hl-flydiff :config (diff-hl-flydiff-mode 1))
   (global-diff-hl-mode 1)
@@ -1729,7 +1729,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smerge ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package smerge-mode
-  :config
+  :init
   (defun try-smerge()
     (save-excursion
       (goto-char (point-min))
@@ -1737,6 +1737,9 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
        (if (re-search-forward "^<<<<<<<" nil t) 1 0))))
   (add-hook 'find-file-hook 'try-smerge t)
   (add-hook 'after-save-hook (lambda() (if (smerge-mode) (try-smerge))))
+  :config
+  (define-key smerge-mode-map "\M-n" 'smerge-next)
+  (define-key smerge-mode-map "\M-p" 'smerge-prev)
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; multi-term ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
