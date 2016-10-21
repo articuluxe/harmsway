@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-10-20 06:25:23 dharms>
+;; Modified Time-stamp: <2016-10-21 09:44:45 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -114,6 +114,7 @@
 (setq-default tab-width 4)
 ;; enable repeatedly popping mark without prefix
 (setq set-mark-command-repeat-pop t)
+(setq auto-revert-verbose nil)
 (unless (version< emacs-version "24.4")
   (defun my/multi-pop-to-mark (orig-fun &rest args)
     "Call ORIG-FUN until the cursor moves. Try the repeated popping
