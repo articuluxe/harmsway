@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Tuesday, October 18, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-10-20 18:11:06 dharms>
+;; Modified Time-stamp: <2016-10-21 07:03:09 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: text writing
 
@@ -27,9 +27,20 @@
 ;;; Code:
 
 (require 'hydra)
+(eval-when-compile
+  (setq use-package-verbose t)
+  (require 'use-package))
+
+(use-package adaptive-wrap
+  :config
+  (setq-default adaptive-wrap-extra-indent 2)
+  )
 
 (defun good-word/init-word-processor()
   (setq indent-tabs-mode nil)
+  (add-hook 'visual-line-mode-hook
+            (lambda()
+              (adaptive-wrap-prefix-mode)))
   (visual-line-mode 1)
   ;; uncomment to move by logical lines, not visual lines
   ;; (setq line-move-visual nil)
@@ -43,6 +54,7 @@
 (defhydra hydra-toggle-word-processor (:color teal)
   "word-processor"
   ("f" auto-fill-mode "auto-fill-mode")
+  ("a" adaptive-wrap-prefix-mode "adaptive-wrap")
   ("r" refill-mode "refill-mode")
   ("l" font-lock-mode "font-lock-mode")
   ("t" toggle-truncate-lines "truncate lines")
