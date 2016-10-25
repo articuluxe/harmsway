@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, April 15, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-06-10 13:09:27 dan.harms>
+;; Modified Time-stamp: <2016-10-25 15:11:59 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: environment utils
 
@@ -61,10 +61,10 @@ new elements prepended to it; otherwise, the default is to set
 the final element of `exec-path' to the exec-directory.  The
 point is that subsequent calls may not want to overwrite the
 final element."
-  (let ((path-file (concat dir "path"))
-        (include-file (concat dir "include"))
-        (lib-file (concat dir "lib"))
-        (libpath-file (concat dir "libpath")))
+  (let ((path-file (concat dir "PATH"))
+        (include-file (concat dir "INCLUDE"))
+        (lib-file (concat dir "LIB"))
+        (libpath-file (concat dir "LIBPATH")))
     ;; check for any additional environment variables
     (if (file-exists-p path-file)
         (progn
