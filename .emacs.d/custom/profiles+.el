@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-08-19 14:30:51 dan.harms>
+;; Modified Time-stamp: <2016-10-25 15:57:56 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -323,8 +323,7 @@ The return value will be a list of cons cells, see
               (if (or (string-empty-p path)
                       (not (file-name-absolute-p path)))
                   (setq path (concat root path)))
-              (unless remote
-                (setq path (profile--abbreviate-dir path)))
+              (setq path (profile--abbreviate-dir path))
               (cons
                path
                (concat (upcase title) ":")))
@@ -552,7 +551,8 @@ representing the user's home directory."
   "Abbreviate NAME, a (possibly remote) project root, as necessary.
 It is usually preferable to have a short project prefix.  This
 may just come down to substituting `~' for the home directory.
-Note that `abbreviate-file-name' doesn't work for remote paths."
+Note that `abbreviate-file-name' doesn't work for remote paths,
+in case you are tempted to try to use it."
   (let ((home
          (string-trim (shell-command-to-string "echo ~"))))
     (replace-regexp-in-string home "~" name t)))
