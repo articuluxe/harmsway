@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-10-24 06:32:51 dharms>
+;; Modified Time-stamp: <2016-10-25 08:22:23 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -341,6 +341,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
              outre-change-enclosing-ns-name
              outre-delete-ns-by-name
              outre-delete-enclosing-ns
+             outre-highlight-ns-by-name
              )
   :bind ("C-c z" . outrespace-mode)     ;temporary
   :after cc-mode
