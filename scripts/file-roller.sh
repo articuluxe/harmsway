@@ -5,7 +5,7 @@
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Monday, October  3, 2016
 # Version: 1.0
-# Modified Time-stamp: <2016-10-04 16:36:34 dharms>
+# Modified Time-stamp: <2016-10-26 16:30:08 dan.harms>
 # Modified by: Dan Harms
 # Keywords: file roll diff
 
@@ -42,7 +42,7 @@ if [ $? == 1 ]; then
     # there was an update
     mv $stage $file
     ln -sf $file $base
-    echo "<<<<< $base has been updated at $date >>>>>"
+    echo "<<<<< $base has been updated as of $date >>>>>"
     echo -e
     echo "Diff:"
     echo -e
