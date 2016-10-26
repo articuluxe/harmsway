@@ -2418,7 +2418,7 @@ customization."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; emacs-lisp-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun my/compile-lisp-file ()
-  "Byte-compile a lisp code file."
+  "Byte-compile a Lisp code file."
   (require 'bytecomp)
   (when (and
          (eq major-mode 'emacs-lisp-mode)
