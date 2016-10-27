@@ -2607,17 +2607,21 @@ Requires Flake8 2.0 or newer. See URL
 (use-package sed-mode :mode "\\.sed$" :interpreter "sed")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; sh-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(add-hook 'sh-mode-hook
-          (lambda()
-            (setq-default indent-tabs-mode nil)
-            ;; (idle-highlight-mode 1)
-            (define-key sh-mode-map "\r" 'reindent-then-newline-and-indent)
-            (setq sh-basic-offset 4)
-            (setq sh-indentation 4)
-            (define-key sh-mode-map "\C-c\C-c" 'comment-region)
-            (define-key sh-mode-map "\C-c\C-u" 'uncomment-region)
-            (add-to-list 'flycheck-disabled-checkers 'sh-posix-dash)
-            ))
+(use-package sh-script
+  :defer t
+  :init
+  (add-hook 'sh-mode-hook
+            (lambda()
+              (setq indent-tabs-mode nil)
+              (add-to-list 'flycheck-disabled-checkers 'sh-posix-dash)
+              ))
+  :config
+  (setq sh-basic-offset 4)
+  (setq sh-indentation 4)
+  (define-key sh-mode-map "\r" 'reindent-then-newline-and-indent)
+  (define-key sh-mode-map "\C-c\C-c" 'comment-region)
+  (define-key sh-mode-map "\C-c\C-u" 'uncomment-region)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; strace-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package strace-mode :mode "\\.strace$")
