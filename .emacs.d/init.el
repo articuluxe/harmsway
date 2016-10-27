@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-10-25 08:22:23 dharms>
+;; Modified Time-stamp: <2016-10-27 13:12:05 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1978,7 +1978,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (add-hook 'after-init-hook #'global-flycheck-mode)
   :config
   (setq flycheck-global-modes
-        '(emacs-lisp-mode python-mode dart-mode sh-mode c++-mode))
+        '(emacs-lisp-mode python-mode dart-mode sh-mode c++-mode json-mode))
   (setq-default flycheck-emacs-lisp-load-path 'inherit)
   (use-package flycheck-pos-tip)
   (use-package flycheck-checkbashisms)
@@ -2482,6 +2482,7 @@ customization."
   (add-hook 'json-mode-hook
             (lambda()
               (subword-mode 1)
+              (add-to-list 'flycheck-disabled-checkers 'json-jsonlint)
               ))
   )
 
