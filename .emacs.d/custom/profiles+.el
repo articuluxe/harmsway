@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-10-25 15:57:56 dan.harms>
+;; Modified Time-stamp: <2016-10-27 22:42:44 dharms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -113,21 +113,26 @@ This does not otherwise remove the profile itself from memory."
   "Internal variable is non-nil if user desires errors to be skipped.")
 
 (defun profile--query-error (profile err)
-  "Ask user what to do if error ERR occurs while loading PROFILE."
+  "While loading PROFILE, error ERR has occurred; ask the user what to do."
   (interactive)
   (let ((buf (get-buffer-create "*Profile Error*")))
     (with-current-buffer buf
       (erase-buffer)
       (toggle-truncate-lines -1)
       (insert "An error occurred while loading profile \""
-              (symbol-name profile)
+              (propertize (symbol-name profile) 'face 'bold)
               "\":\n\n"
-              err
-              "\n\nWould you like to continue loading this profile?  Please select:\n\n"
-              " (y) Continue loading profile, ignoring this error\n"
-              " (!) Continue loading profile, ignoring this and future errors\n"
-              " (n) Stop loading profile\n"
-              " (a) Abort loading of profile, and revert profile load\n"
+              (propertize err 'face '(bold error))
+              "\n\nWould you like to continue loading this profile?  "
+              "Please select:\n\n "
+              (propertize "[y]" 'face '(bold warning))
+              " Continue loading profile, ignoring this error\n "
+              (propertize "[!]" 'face '(bold warning))
+              " Continue loading profile, ignoring this and future errors\n "
+              (propertize "[n]" 'face '(bold warning))
+              " Stop loading profile\n "
+              (propertize "[a]" 'face '(bold warning))
+              " Abort loading of profile, and revert profile load\n"
               ))
     (pop-to-buffer buf)
     (let ((choices '(?y ?n ?a ?!))
