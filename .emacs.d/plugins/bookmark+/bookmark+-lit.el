@@ -4,11 +4,11 @@
 ;; Description: Bookmark highlighting for Bookmark+.
 ;; Author: Drew Adams
 ;; Maintainer: Drew Adams
-;; Copyright (C) 2010-2015, Drew Adams, all rights reserved.
+;; Copyright (C) 2010-2016, Drew Adams, all rights reserved.
 ;; Created: Wed Jun 23 07:49:32 2010 (-0700)
-;; Last-Updated: Thu Apr  2 14:48:56 2015 (-0700)
+;; Last-Updated: Sat Sep 10 19:21:49 2016 (-0700)
 ;;           By: dradams
-;;     Update #: 904
+;;     Update #: 910
 ;; URL: http://www.emacswiki.org/bookmark+-lit.el
 ;; Doc URL: http://www.emacswiki.org/BookmarkPlus
 ;; Keywords: bookmarks, highlighting, bookmark+
@@ -331,18 +331,18 @@ will be the buffer before jumping."
 (defcustom bmkp-light-priorities '((bmkp-autonamed-overlays        . 160)
                                    (bmkp-non-autonamed-overlays    . 150))
   "*Priorities of bookmark highlighting overlay types.
-As an idea, `ediff' uses 100+, `isearch' uses 1001."
+As an idea, `isearch' uses 1000 and 1001."
   :group 'bookmark-plus :type '(alist :key-type symbol :value-type integer))
 
-;; Not used for Emacs 20-21.
-(when (fboundp 'fringe-columns)
+;; Not used for Emacs 20-21 or Emacs built without fringe support.
+(when (and (fboundp 'fringe-columns)  (boundp 'fringe-bitmaps))
   (defcustom bmkp-light-left-fringe-bitmap 'left-triangle
     "*Symbol for the left fringe bitmap to use to highlight a bookmark.
 This option is not used for Emacs versions before Emacs 22."
     :type (cons 'choice (mapcar (lambda (bb) (list 'const bb)) fringe-bitmaps))
     :group 'bookmark-plus)
 
-  ;; Not used for Emacs 20-21.
+  ;; Not used for Emacs 20-21 or Emacs built without fringe support.
   (defcustom bmkp-light-right-fringe-bitmap 'right-triangle
     "*Symbol for the right fringe bitmap to use to highlight a bookmark.
 This option is not used for Emacs versions before Emacs 22."
@@ -1116,8 +1116,7 @@ Returns:
  or `bmkp-light-non-autonamed' otherwise."
   (setq bookmark  (bookmark-get-bookmark bookmark 'NOERROR))
   (or (bmkp-lighting-face bookmark)
-      (and bookmark  (if (bmkp-string-match-p (format bmkp-autoname-format ".*")
-                                              (bmkp-bookmark-name-from-record bookmark))
+      (and bookmark  (if (bmkp-autonamed-bookmark-p bookmark)
                          'bmkp-light-autonamed
                        'bmkp-light-non-autonamed))))
 
@@ -1131,8 +1130,7 @@ Returns:
  or the value of `bmkp-light-style-non-autonamed' otherwise."
   (setq bookmark  (bookmark-get-bookmark bookmark 'NOERROR))
   (or (bmkp-lighting-style bookmark)
-      (and bookmark  (if (bmkp-string-match-p (format bmkp-autoname-format ".*")
-                                              (bmkp-bookmark-name-from-record bookmark))
+      (and bookmark  (if (bmkp-autonamed-bookmark-p bookmark)
                          bmkp-light-style-autonamed
                        bmkp-light-style-non-autonamed))))
 

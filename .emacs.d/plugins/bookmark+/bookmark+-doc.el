@@ -4,11 +4,11 @@
 ;; Description: Documentation for package Bookmark+
 ;; Author: Drew Adams
 ;; Maintainer: Drew Adams (concat "drew.adams" "@" "oracle" ".com")
-;; Copyright (C) 2000-2015, Drew Adams, all rights reserved.
+;; Copyright (C) 2000-2016, Drew Adams, all rights reserved.
 ;; Created: Fri Sep 15 07:58:41 2000
-;; Last-Updated: Fri Mar 20 19:39:17 2015 (-0700)
+;; Last-Updated: Sat Sep 10 19:40:24 2016 (-0700)
 ;;           By: dradams
-;;     Update #: 15038
+;;     Update #: 15075
 ;; URL: http://www.emacswiki.org/bookmark+-doc.el
 ;; Doc URL: http://www.emacswiki.org/BookmarkPlus
 ;; Keywords: bookmarks, bookmark+, placeholders, annotations, search,
@@ -525,19 +525,35 @@
 ;;     All of these prefix keys correspond to prefix-map variables, so
 ;;     you need not use these particular prefixes.  You can bind these
 ;;     maps to any prefix keys you want.  These are the maps, together
-;;     with their predefined bindings.  (Note that the keymap for
-;;     setting bookmarks is bound to a prefix in `bookmark-map'.)
+;;     with their predefined bindings.
 ;;
-;;       `bookmark-map'               - `C-x p' 
+;;       `bookmark-map'               - `C-x p'
 ;;       `bmkp-set-map'               - `C-x p c'
+;;       `bmkp-tags-map'              - `C-x p t'
 ;;       `bmkp-jump-map'              - `C-x j'
 ;;       `bmkp-jump-other-window-map' - `C-x 4 j'
 ;;
-;;     In addition, mode-specific bookmarking commands are bound in
-;;     some other modes: Occur, Compilation (including Grep),
-;;     Buffer-menu, Gnus, Info, Man, Woman, W3M, and Dired (if you use
-;;     library `Dired+').  These keys let you set or jump to bookmarks
-;;     specific to the modes.
+;;     Those are the prefix keys that are available by default.  To
+;;     change them, just customize these user options, each of which
+;;     is a list of the key sequences to use as prefix key.
+;;
+;;     - `bmkp-bookmark-map-prefix-keys'          - default: ("^Xp")
+;;     - `bmkp-jump-map-prefix-keys'              - default: ("^Xj")
+;;     - `bmkp-jump-other-window-map-prefix-keys' - default: ("^X4j")
+;;
+;;     (`^X' here is actually the Control-X character.)
+;;
+;;     Keymaps `bmkp-set-map' and `bmkp-tags-map' are always on
+;;     `bookmark-map', whatever prefix keys it is on.  So if, for
+;;     example, you customize `bmkp-bookmark-map-prefix-keys' to be
+;;     ("^Xp" [f9]) then the keys in `bmkp-set-map' have both prefix
+;;     `C-x p c' and prefix `<f9> c'.
+;;
+;;     In addition to keys on Bookmark+ keymaps, Bookmark+ binds some
+;;     mode-specific bookmarking commands in some other modes: Occur,
+;;     Compilation (including Grep), Buffer-menu, Gnus, Info, Man,
+;;     Woman, W3M, and Dired (if you use library `Dired+').  These
+;;     keys let you set or jump to bookmarks specific to the modes.
 ;;
 ;;  * Helpful help.
 ;;
@@ -815,7 +831,9 @@
 ;;  More precisely, the bookmark jump commands are on the prefix maps
 ;;  `bmkp-jump-map' and `bmkp-jump-other-window-map', which have the
 ;;  default bindings `C-x j' and `C-x 4 j'.  You can bind these maps
-;;  to any keys you like.
+;;  to any keys you like, by customizing options
+;;  `bmkp-jump-map-prefix-keys' and
+;;  `bmkp-jump-other-window-map-prefix-keys'.
 ;;
 ;;  If you do not remember the different type-specfic bindings, you
 ;;  can use commands `bmkp-jump-to-type' and
@@ -1269,12 +1287,12 @@
 ;;  also create variable-list bookmarks non-interactively, using
 ;;  function `bmkp-create-variable-list-bookmark'.
 ;;
-;;  If you use library `wide-n.el', then you can move among multiple
+;;  If you use library `zones.el', then you can move among multiple
 ;;  restrictions (narrowings) in a buffer.  The restrictions are
-;;  stored in buffer-local variable `wide-n-restrictions'.  Command
-;;  `bmkp-set-restrictions-bookmark' bookmarks this value for the
-;;  current buffer.  Jumping to such a bookmark restores the saved
-;;  ring/stack of restrictions.
+;;  stored in buffer-local variable `zz-izones'.  Command
+;;  `bmkp-set-izones-bookmark' bookmarks this value for the current
+;;  buffer.  Jumping to such a bookmark restores the saved ring/stack
+;;  of restrictions.
  
 ;;(@* "Editing Bookmarks")
 ;;  ** Editing Bookmarks **
@@ -2542,33 +2560,49 @@
 ;;(@* "Filtering Bookmarks (Hiding and Showing)")
 ;;  *** Filtering Bookmarks (Hiding and Showing) ***
 ;;
-;;  You can hide and show different sets of bookmarks in the bookmark
-;;  list.  There are commands to show only bookmarks of a particular
-;;  type - e.g. `I S' to show only Info bookmarks, `X S' to show only
-;;  the temporary bookmarks.
+;;  There are three ways to show only certain bookmarks.
 ;;
-;;  These are, in effect, shortcuts for first marking those bookmarks
-;;  and then showing only the marked bookmarks (and then unmarking).
-;;  For example, `F S' is a shortcut for `F M >' (and then `U RET').
+;;  1. Filter by bookmark type.
 ;;
-;;  You can also filter to show only the bookmarks that match a given
-;;  regexp.  There are two ways to do this:
+;;  2. Filter bookmarks incrementally and temporarily, using pattern
+;;     matching.
 ;;
-;;  * Use `P B' (for "pattern", "bookmark") and type a regexp.  The
-;;    bookmarks are filtered incrementally, as you type.  Only the
-;;    bookmark name is matched (not the file name).  Hit any
-;;    non-inserting key, such as `RET', to finish defining the
-;;    pattern.
+;;  3. Filter out the marked or unmarked bookmarks.
 ;;
-;;    Similarly, hit `P F' for bookmarks whose file names match a
-;;    regexp, `P A' for bookmarks whose annotations match a regexp,
-;;    and `P T' for bookmarks with one or more tags that match a
-;;    regexp.  See (@> "Bookmark Tags"), above, for information about
-;;    tags.
+;;  * Filtering by bookmark type
 ;;
-;;  * Just as in Dired, use `% m' to mark the bookmarks that match a
-;;    regexp.  Then use `>' to show only the marked bookmarks.  See
-;;    (@> "Marking and Unmarking Bookmarks"), above.
+;;    The commands that show only bookmarks of a particular type are
+;;    bound to keys that end in `S' (for "show").  For example, `I S'
+;;    shows only Info bookmarks, and `X S' shows only temporary
+;;    bookmarks.
+;;
+;;    The type filter is reflected in the bookmark-list display title.
+;;    It says `All Bookmarks' if no type filter is used.  Otherwise it
+;;    tells you what kind of bookmarks are listed: `Autonamed
+;;    Bookmarks', `File and Directory Bookmarks', and so on.
+;;
+;;    Note: It is only filtering by bookmark type that is remembered
+;;    when you save a bookmark-list display state or you create a
+;;    bookmark-list bookmark.  See (@> "State-Restoring Commands and Bookmarks").
+;;
+;;  * Filtering incrementally by pattern matching
+;;
+;;    These commands show only bookmarks that in some way match a
+;;    pattern (regexp) that you type.  The bookmarks are filtered
+;;    incrementally as you type the pattern.  Hit any non-inserting
+;;    key, such as `RET', to finish defining the pattern.
+;;
+;;    The commands for this are bound to keys that start with `P' (for
+;;    "pattern").  For example, `P B' shows only bookmarks whose names
+;;    match the regexp, `P F' shows those whose file names match, and
+;;    `P T' shows those that have one or more tags that match.
+;;    (See (@> "Bookmark Tags"), above, for information about tags.)
+;;
+;;  * Filtering based on marking
+;;
+;;    Just as in Dired, you can use `% m' to mark the bookmarks that
+;;    match a regexp.  Then use `>' to show only the marked bookmarks.
+;;    See (@> "Marking and Unmarking Bookmarks"), above.
 ;;
 ;;    This method has the advantage that you can show the complement,
 ;;    the bookmarks that do *not* match the regexp, by using `<'
@@ -2917,9 +2951,9 @@
 ;;
 ;;  Bookmark+ does not define such key bindings, but you can.  What it
 ;;  does is define repeatable keys on the `bookmark-map' keymap, which
-;;  has prefix `C-x p'.  To do this it binds similar commands that can
-;;  be repeated by simply repeating the key-sequence suffix.  These
-;;  are the keys:
+;;  by default has prefix `C-x p'.  To do this it binds similar
+;;  commands that can be repeated by simply repeating the key-sequence
+;;  suffix.  These are the (default) keys:
 ;;
 ;;  Forward:  `C-x p f', `C-x p C-f', `C-x p right'
 ;;  Backward: `C-x p b', `C-x p C-b', `C-x p left'
@@ -3060,8 +3094,9 @@
 ;;
 ;;  `C-x p RET' creates a bookmark at point without prompting you for
 ;;  the name.  It is named using the current buffer name preceded by
-;;  the position in the buffer.  For example, the autonamed bookmark
-;;  in buffer `foo.el' at position 58356 is `000058356 foo.el'.
+;;  the position in the buffer.  For example, the default name of the
+;;  autonamed bookmark in buffer `foo.el' at position 58356 is
+;;  `000058356 foo.el'.
 ;;
 ;;  (You can customize the format of autonamed bookmarks using options
 ;;  `bmkp-autoname-bookmark-function' and `bmkp-autoname-format'.)
@@ -3077,11 +3112,11 @@
 ;;  updated to reflect the new location jumped to.  This is true for
 ;;  any bookmark.
 ;;
-;;  In the case of an autonamed bookmark, the bookmark name reflects
-;;  the recorded position when you create it.  And when you jump to
-;;  it, both the name and the recorded position are updated to reflect
-;;  the jump destination.  So jumping to an autonamed bookmark keeps
-;;  its persistent record in sync with the buffer location.
+;;  In the case of an autonamed bookmark, the bookmark name typically
+;;  reflects the recorded position when you create it.  And when you
+;;  jump to it, both the name and the recorded position are updated to
+;;  reflect the jump destination.  So jumping to an autonamed bookmark
+;;  keeps its persistent record in sync with the buffer location.
 ;;
 ;;  You will thus notice that the names of autonamed bookmarks can
 ;;  change as you visit them (e.g. cycling).  The bookmarks are
@@ -3106,7 +3141,7 @@
 ;;  bookmark at any given buffer position.
 ;;
 ;;  `C-x p RET' has a third use: With a prefix argument, it prompts
-;;  you to confirm the deletion of *all* autonamed bookmarks for the
+;;  you to confirm the deletion of *ALL* autonamed bookmarks for the
 ;;  current buffer.
 ;;
 ;;  (You can also use `C-x p delete' (that's the `delete' key), bound
@@ -3284,13 +3319,13 @@
 ;;  Option `bmkp-auto-idle-bookmark-mode-set-function' defines the
 ;;  bookmark-setting function.  By default, its value is
 ;;  `bmkp-set-autonamed-bookmark-at-line', which sets an autonamed
-;;  bookmark at (the beginning of) the current line.  You typically
-;;  want bookmarks that are created automatically to be autonamed,
-;;  both because the name is unimportant and because setting an
-;;  autonamed bookmark requires no interaction on your part.  But you
-;;  can use any setting function you like as the option value.  (You
-;;  can always rename an autonamed bookmark later, if you want to keep
-;;  it and give it a meaningful name.)
+;;  bookmark at (the beginning of) the current line.  If you want
+;;  bookmarks to be created automatically then you typically want them
+;;  to be autonamed, both because the name is unimportant and because
+;;  setting an autonamed bookmark requires no interaction on your
+;;  part.  But you can use any setting function you like as the option
+;;  value.  (You can always rename an autonamed bookmark later, if you
+;;  want to keep it and give it a meaningful name.)
 ;;
 ;;  Option `bmkp-auto-idle-bookmark-min-distance' is the minimum
 ;;  number of characters between automatic bookmark positions.  If the

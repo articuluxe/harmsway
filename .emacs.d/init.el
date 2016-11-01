@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-11-02 06:36:48 dharms>
+;; Modified Time-stamp: <2016-11-02 09:14:41 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -954,10 +954,22 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (setq load-path (cons (concat my/plugins-directory "bookmark+/")
                         load-path)))
 (use-package bookmark+
-  :bind (("<f7>" . bmkp-previous-bookmark)
-         ("C-c 7" . bmkp-previous-bookmark)
-         ("<f8>" . bmkp-next-bookmark)
-         ("C-c 8" . bmkp-next-bookmark)
+  :bind (
+         ;; C-x p <left>
+         ("<f7>" . bmkp-previous-bookmark-repeat)
+         ;; C-x p <up>
+         ("<S-f7>" . bmkp-previous-bookmark-this-file/buffer-repeat)
+         ("C-c 7" . bmkp-previous-bookmark-repeat)
+         ("C-c M-7" . bmkp-previous-bookmark-this-file/buffer-repeat)
+         ;; C-x p <right>
+         ("<f8>" . bmkp-next-bookmark-repeat)
+         ;; C-x p <down>
+         ("<S-f8>" . bmkp-next-bookmark-this-file/buffer-repeat)
+         ("C-c 8" . bmkp-next-bookmark-repeat)
+         ("C-c M-8" . bmkp-next-bookmark-this-file/buffer-repeat)
+         ("C-x p%l" . bmkp-set-autonamed-bookmark-at-line)
+         ("C-x p%b" . bmkp-set-autonamed-regexp-buffer)
+         ("C-x p%r" . bmkp-set-autonamed-regexp-region)
          )
   :demand t
   :config
@@ -1124,6 +1136,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; occur ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (global-set-key (kbd "M-s M-o") 'multi-occur-in-matching-buffers)
+(bind-key "C-c b" 'bmkp-occur-create-autonamed-bookmarks occur-mode-map)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; swiper ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile

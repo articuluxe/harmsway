@@ -36,6 +36,7 @@ C-x C-+   /   C-x C--
 * Bookmarks
 ** List
 ;; (@* "List") (C-x p)
+M-d >         open dired for marked
 C-h p         describe current
 C-h >         describe marked
 r             rename
@@ -75,8 +76,8 @@ T q           replace with yanked tags
 T m/u [* + % ~]   tag [un]mark all, some, regexp, not
 ** Set (C-x p)
 C-x p m       set bookmark
-C-x p RET     set/delete autonamed bookmark
-C-x p c a     set autonamed bookmark for file
+C-x p RET     set/delete autonamed bookmark (with prefix, delete all in current buffer)
+C-x p c a     set autofile bookmark
 C-x p e       view bookmarks
 C-x p d       delete bookmark
 C-x p ,       view bookmarks in current file
@@ -84,10 +85,11 @@ C-x p ,       view bookmarks in current file
 C-x [4] j j   jump to bookmark [other window]
 C-x p o       jump other window
 C-x j y       load a bookmark file [switch with prefix]
+C-x j a       visit autofile bookmark
 C-x j , ,     jump to bookmark in current buffer
 ** Cycle
-C-x p p/n     cycle prev/next bookmark in current buffer
-C-x p b/f     cycle prev/next bookmark in list
+C-x p p/n [down/up]       cycle prev/next bookmark in current buffer
+C-x p b/f [right/left]    cycle prev/next bookmark in list
 ** Old
 C-x r m [%n] set file's bookmark [possibly named %n] at point
 C-x r b %n   jump to bookmark %n
