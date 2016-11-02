@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-10-27 13:12:05 dan.harms>
+;; Modified Time-stamp: <2016-11-02 06:36:48 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -196,8 +196,6 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (global-set-key (kbd "C-x M-p") 'transpose-paragraphs)
 (global-set-key [(next)] 'scroll-up-line)
 (global-set-key [(prior)] 'scroll-down-line)
-(global-set-key "\C-caa" 'align)
-(global-set-key "\C-car" 'align-repeat-regexp)
 (global-set-key [f5] 'toggle-truncate-lines)
 (global-set-key "\C-c5" 'toggle-truncate-lines)
 (global-set-key "\C-c " 'whitespace-mode)
@@ -325,6 +323,17 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
               (set (make-local-variable 'gdb-create-source-file-list) nil)
               (gdb-many-windows 1)
               )))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; align ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defun align-values (start end)
+  "Vertically align region based on lengths of the first value of each line."
+  (interactive "r")
+  (align-regexp start end
+                "\\S-+\\(\\s-+\\)"
+                1 2 nil))
+(global-set-key "\C-caa" 'align)
+(global-set-key "\C-car" 'align-regexp)
+(global-set-key "\C-cav" 'align-values)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; good-word ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package good-word
