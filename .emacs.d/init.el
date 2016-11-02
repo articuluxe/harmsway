@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-11-03 14:13:32 dan.harms>
+;; Modified Time-stamp: <2016-11-04 06:18:19 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2053,6 +2053,17 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (with-eval-after-load 'flyspell
   (require 'flyspell-popup)             ;and/or flyspell-correct-ivy
   (bind-key "C-c \\\\" 'flyspell-popup-correct flyspell-mode-map))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; semantic ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(setq semantic-default-submodes
+      (append '(global-semantic-stickyfunc-mode
+                global-semantic-decoration-mode
+                ) semantic-default-submodes))
+(add-hook 'semantic-init-hooks
+          (lambda()
+            (when (cedet-ectag-version-check t)
+              (semantic-load-enable-primary-exuberant-ctags-support))
+            ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; headers ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; last modification time
