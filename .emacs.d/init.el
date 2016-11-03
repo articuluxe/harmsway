@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-11-03 10:14:41 dan.harms>
+;; Modified Time-stamp: <2016-11-03 14:13:32 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -606,6 +606,10 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; tags ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(when (> emacs-major-version 24)
+  (global-set-key "\M-*" 'xref-pop-marker-stack)
+  (global-set-key "\M-," 'tags-loop-continue)
+  )
 (defvar tag-lookup-target-profile nil
   "The working profile in effect when a tag is first looked up.")
 (defun my/store-profile ()
