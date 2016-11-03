@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-11-02 23:46:15 dharms>
+;; Modified Time-stamp: <2016-11-03 10:14:41 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -745,7 +745,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
          ("C-\\ M-[ M-[" . mc/mark-previous-like-this-symbol)
 
          ("C-| C-|" . mc/mark-more-like-this-extended)
-         ("C-c C-\\" . mc/mark-more-like-this-extended)
+         ("C-\\ C-c" . mc/mark-more-like-this-extended)
 
          ;; mark many occurrences
          ("C-\\ ;" . mc/mark-all-like-this)
