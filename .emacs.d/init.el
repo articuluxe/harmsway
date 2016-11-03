@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-11-02 23:33:28 dharms>
+;; Modified Time-stamp: <2016-11-02 23:46:15 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -719,8 +719,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (setq load-path (cons (concat my/plugins-directory "multiple-cursors/")
                         load-path)))
 (use-package multiple-cursors
-  :bind (("C-| C-|" . mc/edit-lines)
-         ("C-\\ C-\\" . mc/edit-lines)
+  :bind (("C-\\ C-\\" . mc/edit-lines)
          ;; mark one more occurrence
          ("C->" . mc/mark-next-like-this)
          ("C-\\ ." . mc/mark-next-like-this)
@@ -745,6 +744,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
          ("C-\\ M-[ [" . mc/mark-previous-like-this-symbol)
          ("C-\\ M-[ M-[" . mc/mark-previous-like-this-symbol)
 
+         ("C-| C-|" . mc/mark-more-like-this-extended)
          ("C-c C-\\" . mc/mark-more-like-this-extended)
 
          ;; mark many occurrences
