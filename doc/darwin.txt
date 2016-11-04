@@ -3,7 +3,7 @@
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Monday, May  2, 2016
 # Version: 1.0
-# Modified Time-stamp: <2016-09-14 02:18:37 dharms>
+# Modified Time-stamp: <2016-11-04 15:40:44 dharms>
 # Modified by: Dan Harms
 # Keywords: mac help docs
 
@@ -55,10 +55,16 @@ printenv/setenv boot-device
 ############################ start-up key combos #############################
 # ignore the selected boot volume
 command-option-shift-delete
+# choose the startup disk
+<option>
 # boot from cd-rom
-C
+c
 # boot from internal hard disk
-D
+d
+# start up in target disk mode
+t
+# start up in target display mode (using thunderbolt cable)
+<command>-<f2>
 
 # code ends here
 # Local Variables:
