@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-11-04 06:18:19 dharms>
+;; Modified Time-stamp: <2016-11-04 13:20:57 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2549,9 +2549,11 @@ customization."
 (use-package
  pandoc-mode
  :defer t
+ :commands pandoc-mode
  :init
  (setq pandoc-data-dir (concat my/scratch-directory "pandoc/"))
- (mapc (lambda (hook) (add-hook hook 'pandoc-mode))
+ (mapc (lambda (hook)
+         (add-hook hook 'pandoc-mode))
        '(markdown-mode-hook org-mode-hook))
  )
 
