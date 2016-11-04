@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-11-04 13:20:57 dharms>
+;; Modified Time-stamp: <2016-11-04 17:23:49 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1901,7 +1901,6 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
            (auto-complete '(ac-source-rtags)))
     (global-set-key (kbd "\C-c r TAB") 'my/rtags-complete)
     )
-  (use-package auto-complete-clang)
   (defvar clang-exec (executable-find "clang"))
 
   (use-package ac-etags
@@ -1914,24 +1913,30 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
      "Face for etags selections (overridden to default)")
    :config (ac-etags-setup)
    )
-  (use-package auto-complete-nxml)
-  ;; c-headers
-  (use-package auto-complete-c-headers)
-  (setq achead:include-patterns (list
-                                 "\\.\\(h\\|hpp\\|hh\\|hxx\\|H\\)$"
-                                 "/[a-zA-Z-_]+$"
-                                 ))
-  ;; doesn't work...
-  ;; (setq achead:ac-prefix
-  ;;       "#?\\(?:include\\|import\\)\\s-*[<\"]\\s-*\\([^\"<>' \t\r\n]+\\)")
-  (setq achead:include-directories '("."))
 
   (add-hook 'c-mode-common-hook
             (lambda()
+              ;; c-headers
+              (use-package
+               auto-complete-c-headers
+               :init
+               (setq achead:include-patterns (list
+                                              "\\.\\(h\\|hpp\\|hh\\|hxx\\|H\\)$"
+                                              "/[a-zA-Z-_]+$"
+                                              ))
+               ;; doesn't work...
+               ;; (setq achead:ac-prefix
+               ;;       "#?\\(?:include\\|import\\)\\s-*[<\"]\\s-*\\([^\"<>' \t\r\n]+\\)")
+               (setq achead:include-directories '("."))
+               )
               (when rtags-exec
                 (setq ac-sources (cons ac-source-rtags ac-sources)))
               (when clang-exec
-                (define-key c-mode-base-map [?\M-/] 'ac-complete-clang)
+                (use-package
+                 auto-complete-clang
+                 :config
+                 (define-key c-mode-base-map [?\M-/] 'ac-complete-clang)
+                 )
                 ;; (add-to-list 'ac-omni-completion-sources
                 ;;              (cons "\\." '(ac-source-clang)))
                 ;; (add-to-list 'ac-omni-completion-sources
@@ -2677,6 +2682,7 @@ Requires Flake8 2.0 or newer. See URL
             (define-key nxml-mode-map "\r" 'reindent-then-newline-and-indent)
             (define-key nxml-mode-map "\C-c\C-c" 'comment-region)
             (define-key nxml-mode-map "\C-c\C-u" 'uncomment-region)
+            (use-package auto-complete-nxml)
             ))
 (when (< emacs-major-version 25)
   (require 'mz-comment-fix)
