@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-11-04 17:23:49 dharms>
+;; Modified Time-stamp: <2016-11-07 14:22:57 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1111,7 +1111,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (use-package
   plur
   :if (not (version< emacs-version "24.4"))
-  :bind (("M-s M-s" . plur-isearch-forward)
+  :bind (("M-s M-s q" . plur-isearch-forward)
         ("M-s q" . plur-replace)
         ("M-s M-q" . plur-query-replace)
         :map isearch-mode-map
