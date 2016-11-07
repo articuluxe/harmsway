@@ -3,7 +3,7 @@
 ;; Author:  <dan.harms@xrtrading.com>
 ;; Created: Wednesday, March 18, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-05-25 23:52:02 dan.harms>
+;; Modified Time-stamp: <2016-11-07 09:19:23 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: etags, ctags
 
@@ -149,7 +149,7 @@ running on a remote host."
       (setq gen-tags--intermediate-dest-dir
             gen-tags--final-dest-dir))
     (make-directory gen-tags--final-dest-dir t)
-    (display-buffer gen-tags--buffer)
+    (pop-to-buffer gen-tags--buffer)
     (with-current-buffer gen-tags--buffer
       (goto-char (point-max))
       (insert (format "TAGS generation started at %s\n\n"
