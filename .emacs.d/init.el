@@ -1866,7 +1866,6 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (use-package auto-complete-config)
   (setq-default ac-sources
                 '(
-                                        ;ac-source-yasnippet
                   ac-source-dictionary
                   ac-source-words-in-same-mode-buffers
                   ac-source-filename
@@ -1901,7 +1900,33 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
            (auto-complete '(ac-source-rtags)))
     (global-set-key (kbd "\C-c r TAB") 'my/rtags-complete)
     )
+  ;; clang
   (defvar clang-exec (executable-find "clang"))
+  (when clang-exec
+    (with-eval-after-load 'cc-mode
+      (use-package auto-complete-clang
+        :config
+        (define-key c-mode-base-map [?\M-/] 'ac-complete-clang)
+        )
+      ;; (add-to-list 'ac-omni-completion-sources
+      ;;              (cons "\\." '(ac-source-clang)))
+      ;; (add-to-list 'ac-omni-completion-sources
+      ;;              (cons "->" '(ac-source-clang)))
+      ))
+  ;; c-headers
+  (with-eval-after-load 'cc-mode
+    (use-package
+      auto-complete-c-headers
+      :init
+      (setq achead:include-patterns (list
+                                     "\\.\\(h\\|hpp\\|hh\\|hxx\\|H\\)$"
+                                     "/[a-zA-Z-_]+$"
+                                     ))
+      ;; doesn't work...
+      ;; (setq achead:ac-prefix
+      ;;       "#?\\(?:include\\|import\\)\\s-*[<\"]\\s-*\\([^\"<>' \t\r\n]+\\)")
+      (setq achead:include-directories '("."))
+      ))
 
   (use-package ac-etags
    :init
@@ -1916,32 +1941,8 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 
   (add-hook 'c-mode-common-hook
             (lambda()
-              ;; c-headers
-              (use-package
-               auto-complete-c-headers
-               :init
-               (setq achead:include-patterns (list
-                                              "\\.\\(h\\|hpp\\|hh\\|hxx\\|H\\)$"
-                                              "/[a-zA-Z-_]+$"
-                                              ))
-               ;; doesn't work...
-               ;; (setq achead:ac-prefix
-               ;;       "#?\\(?:include\\|import\\)\\s-*[<\"]\\s-*\\([^\"<>' \t\r\n]+\\)")
-               (setq achead:include-directories '("."))
-               )
               (when rtags-exec
                 (setq ac-sources (cons ac-source-rtags ac-sources)))
-              (when clang-exec
-                (use-package
-                 auto-complete-clang
-                 :config
-                 (define-key c-mode-base-map [?\M-/] 'ac-complete-clang)
-                 )
-                ;; (add-to-list 'ac-omni-completion-sources
-                ;;              (cons "\\." '(ac-source-clang)))
-                ;; (add-to-list 'ac-omni-completion-sources
-                ;;              (cons "->" '(ac-source-clang)))
-                )
               (setq ac-sources (append '(ac-source-etags
                                          ac-source-c-headers
                                          ) ac-sources))
