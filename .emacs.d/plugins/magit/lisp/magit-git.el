@@ -480,7 +480,10 @@ returning the truename."
 
 (defun magit-inside-gitdir-p ()
   "Return t if `default-directory' is below a repository directory."
-  (magit-rev-parse-p "--is-inside-git-dir"))
+  ;; This does not work if the gitdir is not located inside the
+  ;; working tree: (magit-rev-parse-p "--is-inside-git-dir").
+  (-when-let (gitdir (magit-git-dir))
+    (file-in-directory-p default-directory gitdir)))
 
 (defun magit-inside-worktree-p ()
   "Return t if `default-directory' is below the work tree of a repository."
@@ -884,7 +887,11 @@ which is different from the current branch and still exists."
   (let ((remote (magit-get "branch" branch "remote")))
     (and remote (not (equal remote "."))
          ;; The user has opted in...
-         (or force (member branch magit-branch-prefer-remote-upstream))
+         (or force
+             (--any (if (magit-git-success "check-ref-format" "--branch" it)
+                        (equal it branch)
+                      (string-match-p it branch))
+                    magit-branch-prefer-remote-upstream))
          ;; and local BRANCH tracks a remote branch...
          (let ((upstream (magit-get-upstream-branch branch)))
            ;; whose upstream...
@@ -1275,6 +1282,15 @@ Return a list of two integers: (A>B B>A)."
   (concat "\\`\\([^ \t]*[^.]\\)?"       ; revA
           "\\(\\.\\.\\.?\\)"            ; range marker
           "\\([^.][^ \t]*\\)?\\'"))     ; revB
+
+(defun magit-split-range (range)
+  (when (string-match magit-range-re range)
+    (let ((beg (or (match-string 1 range) "HEAD"))
+          (end (or (match-string 3 range) "HEAD")))
+      (cons (if (string-equal (match-string 2) "...")
+                (magit-git-string "merge-base" beg end)
+              beg)
+            end))))
 
 ;;; Completion
 

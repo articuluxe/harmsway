@@ -16,7 +16,7 @@
 ;;	Rémi Vanicat      <vanicat@debian.org>
 ;;	Yann Hodique      <yann.hodique@gmail.com>
 
-;; Package-Requires: ((emacs "24.4") (async "20160711.223") (dash "20160820.501") (with-editor "20160929.734") (git-commit "20160519.950") (magit-popup "20160813.642"))
+;; Package-Requires: ((emacs "24.4") (async "20160711.223") (dash "20160820.501") (with-editor "20160929.734") (git-commit "20160929.801") (magit-popup "20160821.1338"))
 ;; Keywords: git tools vc
 ;; Homepage: https://github.com/magit/magit
 
@@ -130,26 +130,6 @@ all."
 
 (defvar magit-status-refresh-hook nil
   "Hook run after a status buffer has been refreshed.")
-
-(make-obsolete-variable 'magit-status-refresh-hook "\
-use `magit-pre-refresh-hook', `magit-post-refresh-hook',
-  `magit-refresh-buffer-hook', or `magit-status-mode-hook' instead.
-
-  If you want to run a function every time the status buffer is
-  refreshed, in order to do something with that buffer, then use:
-
-    (add-hook 'magit-refresh-buffer-hook
-              (lambda ()
-                (when (derived-mode-p 'magit-status-mode)
-                  ...)))
-
-  If your hook function should run regardless of whether the
-  status buffer exists or not, then use `magit-pre-refresh-hook'
-  or `magit-post-refresh-hook'.
-
-  If your hook function only has to be run once, when the buffer
-  is first created, then `magit-status-mode-hook' instead.
-" "Magit 2.4.0")
 
 (defcustom magit-status-expand-stashes t
   "Whether the list of stashes is expanded initially."
@@ -265,11 +245,20 @@ for remote branches, but not for local branches.
 
 You might prefer to always use some remote branch as upstream.
 If the chosen starting-point is (1) a local branch, (2) whose
-name is a member of the value of this option, (3) the upstream of
-that local branch is a remote branch with the same name, and (4)
-that remote branch can be fast-forwarded to the local branch,
-then the chosen branch is used as starting-point, but its own
-upstream is used as the upstream of the new branch.
+name matches a member of the value of this option, (3) the
+upstream of that local branch is a remote branch with the same
+name, and (4) that remote branch can be fast-forwarded to the
+local branch, then the chosen branch is used as starting-point,
+but its own upstream is used as the upstream of the new branch.
+
+Members of this option's value are treated as branch names that
+have to match exactly unless they contain a character that makes
+them invalid as a branch name.  Recommended characters to use
+to trigger interpretation as a regexp are \"*\" and \"^\".  Some
+other characters which you might expect to be invalid, actually
+are not, e.g. \".+$\" are all perfectly valid.  More precisely,
+if `git check-ref-format --branch STRING' exits with a non-zero
+status, then treat STRING as a regexp.
 
 Assuming the chosen branch matches these conditions you would end
 up with with e.g.:
@@ -465,13 +454,33 @@ an alist that supports the keys `:right-align' and `:pad-right'."
   :group 'magit-faces)
 
 (defface magit-signature-bad
-  '((t :foreground "red"))
+  '((t :foreground "red" :weight bold))
   "Face for bad signatures."
   :group 'magit-faces)
 
 (defface magit-signature-untrusted
   '((t :foreground "cyan"))
   "Face for good untrusted signatures."
+  :group 'magit-faces)
+
+(defface magit-signature-expired
+  '((t :foreground "orange"))
+  "Face for signatures that have expired."
+  :group 'magit-faces)
+
+(defface magit-signature-expired-key
+  '((t :inherit magit-signature-expired))
+  "Face for signatures made by an expired key."
+  :group 'magit-faces)
+
+(defface magit-signature-revoked
+  '((t :foreground "violet red"))
+  "Face for signatures made by a revoked key."
+  :group 'magit-faces)
+
+(defface magit-signature-error
+  '((t :foreground "firebrick3"))
+  "Face for signatures that cannot be checked (e.g. missing key)."
   :group 'magit-faces)
 
 (defface magit-cherry-unmatched
@@ -1020,7 +1029,7 @@ reference, but it is not checked out."
          (let ((ref (magit-section-value (magit-current-section))))
            (if current-prefix-arg
                (magit-show-refs ref)
-             (if (magit-section-when [branch remote])
+             (if (magit-section-match [branch remote])
                  (let ((start ref)
                        (arg "-b"))
                    (string-match "^[^/]+/\\(.+\\)" ref)
@@ -2336,11 +2345,11 @@ If DEFAULT is non-nil, use this as the default value instead of
 
 ;;;###autoload
 (defun magit-worktree-checkout (path branch)
+  "Checkout BRANCH in a new worktree at PATH."
   (interactive
    (let ((branch (magit-read-local-branch "Checkout")))
      (list (read-directory-name (format "Checkout %s in new worktree: " branch))
            branch)))
-  "Checkout BRANCH in a new worktree at PATH."
   (magit-run-git "worktree" "add" (expand-file-name path) branch)
   (magit-diff-visit-directory path))
 
@@ -2949,20 +2958,23 @@ Use the options `magit-repository-directories'
 and `magit-repository-directories-depth' to
 control which repositories are displayed."
   (interactive)
-  (with-current-buffer (get-buffer-create "*Magit Repositories*")
-    (magit-repolist-mode)
-    (setq tabulated-list-entries
-          (mapcar (-lambda ((id . path))
-                    (let ((default-directory path))
-                      (list path
-                            (vconcat (--map (or (funcall (nth 2 it) id) "")
-                                            magit-repolist-columns)))))
-                  (magit-list-repos-uniquify
-                   (--map (cons (file-name-nondirectory (directory-file-name it))
-                                it)
-                          (magit-list-repos)))))
-    (tabulated-list-print)
-    (switch-to-buffer (current-buffer))))
+  (if magit-repository-directories
+      (with-current-buffer (get-buffer-create "*Magit Repositories*")
+        (magit-repolist-mode)
+        (setq tabulated-list-entries
+              (mapcar (-lambda ((id . path))
+                        (let ((default-directory path))
+                          (list path
+                                (vconcat (--map (or (funcall (nth 2 it) id) "")
+                                                magit-repolist-columns)))))
+                      (magit-list-repos-uniquify
+                       (--map (cons (file-name-nondirectory (directory-file-name it))
+                                    it)
+                              (magit-list-repos)))))
+        (tabulated-list-print)
+        (switch-to-buffer (current-buffer)))
+    (message "You need to customize `magit-repository-directories' %s"
+             "before you can list repositories")))
 
 (defvar magit-repolist-mode-map
   (let ((map (make-sparse-keymap)))
@@ -2976,7 +2988,7 @@ control which repositories are displayed."
   "Show the status for the repository at point."
   (interactive)
   (--if-let (tabulated-list-get-id)
-      (magit-status-internal it)
+      (magit-status-internal (expand-file-name it))
     (user-error "There is no repository at point")))
 
 (define-derived-mode magit-repolist-mode tabulated-list-mode "Repos"
@@ -3082,9 +3094,10 @@ With prefix argument simply read a directory name using
   (cond ((file-readable-p (expand-file-name ".git" directory))
          (list directory))
         ((and (> depth 0) (magit-file-accessible-directory-p directory))
-         (--mapcat (when (file-directory-p it)
-                     (magit-list-repos-1 it (1- depth)))
-                   (directory-files directory t "^[^.]" t)))))
+         (--mapcat (and (file-directory-p it)
+                        (magit-list-repos-1 it (1- depth)))
+                   (directory-files directory t
+                                    directory-files-no-dot-files-regexp t)))))
 
 (defun magit-list-repos-uniquify (alist)
   (let (result (dict (make-hash-table :test 'equal)))
@@ -3491,6 +3504,26 @@ where an absolute path is used for performance reasons.
 If the value already is just \"git\" but TRAMP never-the-less
 doesn't find the executable, then consult the info node
 `(tramp)Remote programs'.\n" remote) :error)))))
+
+(make-obsolete-variable 'magit-status-refresh-hook "\
+use `magit-pre-refresh-hook', `magit-post-refresh-hook',
+  `magit-refresh-buffer-hook', or `magit-status-mode-hook' instead.
+
+  If you want to run a function every time the status buffer is
+  refreshed, in order to do something with that buffer, then use:
+
+    (add-hook 'magit-refresh-buffer-hook
+              (lambda ()
+                (when (derived-mode-p 'magit-status-mode)
+                  ...)))
+
+  If your hook function should run regardless of whether the
+  status buffer exists or not, then use `magit-pre-refresh-hook'
+  or `magit-post-refresh-hook'.
+
+  If your hook function only has to be run once, when the buffer
+  is first created, then `magit-status-mode-hook' instead.
+" "Magit 2.4.0")
 
 (define-obsolete-function-alias 'global-magit-file-buffer-mode
   'global-magit-file-mode "Magit 2.3.0")

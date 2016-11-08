@@ -460,8 +460,11 @@ Magit is documented in info node `(magit)'."
   (add-hook 'post-command-hook #'magit-section-update-highlight t t)
   (setq-local redisplay-highlight-region-function 'magit-highlight-region)
   (setq-local redisplay-unhighlight-region-function 'magit-unhighlight-region)
-  (when (fboundp 'linum-mode)
-    (linum-mode -1)))
+  (when (bound-and-true-p global-linum-mode)
+    (linum-mode -1))
+  (when (and (fboundp 'nlinum-mode)
+             (bound-and-true-p global-nlinum-mode))
+    (nlinum-mode -1)))
 
 (defvar-local magit-region-overlays nil)
 
@@ -998,7 +1001,7 @@ argument (the prefix) non-nil means save all with no questions."
      arg (-partial (lambda (topdir)
                      (and buffer-file-name
                           ;; Avoid needlessly connecting to unrelated remotes.
-                          (string-prefix-p topdir buffer-file-name)
+                          (string-prefix-p topdir (file-truename buffer-file-name))
                           (equal (magit-rev-parse-safe "--show-toplevel")
                                  topdir)))
                    topdir))))

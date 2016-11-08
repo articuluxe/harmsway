@@ -125,9 +125,7 @@ please see https://github.com/magit/magit/wiki/Emacsclient."))
          "emacsclient" path
          (cl-mapcan
           (lambda (v) (cl-mapcar (lambda (e) (concat v e)) exec-suffixes))
-          (nconc (and (boundp 'debian-emacs-flavor)
-                      (list (format ".%s" debian-emacs-flavor)))
-                 (cl-mapcon (lambda (v)
+          (nconc (cl-mapcon (lambda (v)
                               (setq v (mapconcat #'identity (reverse v) "."))
                               (list v (concat "-" v) (concat ".emacs" v)))
                             (reverse version-lst))
