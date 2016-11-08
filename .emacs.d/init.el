@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-11-08 08:30:57 dharms>
+;; Modified Time-stamp: <2016-11-08 08:55:28 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -832,10 +832,15 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ascii ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package ascii :bind ("M-s a" . ascii-display))
+(use-package ascii :bind ("M-s M-s a" . ascii-display))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ascii-table ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package ascii-table :commands ascii-table)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 0xc ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package 0xc
+ :bind (("M-s M-s hc" . 0xc-convert)
+        ("M-s M-s h." . 0xc-convert-point)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; magit ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defvar my/git-keymap)
