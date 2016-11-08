@@ -4,7 +4,7 @@
 
 ;; Author: Johan Andersson <johan.rejeep@gmail.com>
 ;; Maintainer: Johan Andersson <johan.rejeep@gmail.com>
-;; Version: 0.18.2
+;; Version: 0.19.0
 ;; Keywords: files, directories
 ;; URL: http://github.com/rejeep/f.el
 ;; Package-Requires: ((s "1.7.0") (dash "2.2.0"))
@@ -127,7 +127,7 @@ The extension, in a file name, is the part that follows the last
   "Return PATH but with EXT as the new extension.
 EXT must not be nil or empty."
   (if (s-blank? ext)
-      (error "extension cannot be empty or nil.")
+      (error "Extension cannot be empty or nil")
     (concat (f-no-ext path) "." ext)))
 
 (defun f-base (path)
@@ -140,7 +140,7 @@ EXT must not be nil or empty."
 
 (defalias 'f-abbrev 'f-short)
 (defun f-short (path)
-  "Return abbrev of PATH. See `abbreviate-file-name'."
+  "Return abbrev of PATH.  See `abbreviate-file-name'."
   (abbreviate-file-name path))
 
 (defun f-long (path)
@@ -181,13 +181,13 @@ ending slash."
     uniq-filenames-next))
 
 (defun f-uniquify (files)
-  "Return unique suffixes of PATHS.
+  "Return unique suffixes of FILES.
 
 This function expects no duplicate paths."
   (-map 'car (f--uniquify files)))
 
 (defun f-uniquify-alist (files)
-  "Return alist mapping PATHS to unique suffixes of PATHS.
+  "Return alist mapping FILES to unique suffixes of FILES.
 
 This function expects no duplicate paths."
   (-map 'cadr (f--uniquify files)))
@@ -240,6 +240,23 @@ DATA is a unibyte string.  PATH is a file name to write to."
         (set-buffer-multibyte nil)
         (insert data)))))
 
+(defalias 'f-append 'f-append-text)
+(defun f-append-text (text coding path)
+  "Append TEXT with CODING to PATH.
+
+If PATH does not exist, it is created."
+  (f-append-bytes (encode-coding-string text coding) path))
+
+(defun f-append-bytes (data path)
+  "Append binary DATA to PATH.
+
+If PATH does not exist, it is created."
+  (let ((content
+         (if (f-file? path)
+             (f-read-bytes path)
+           "")))
+    (f-write-bytes (concat content data) path)))
+
 
 ;;;; Destructive
 
@@ -263,7 +280,7 @@ If FORCE is t, a directory will be deleted recursively."
       (delete-directory path force))))
 
 (defun f-symlink (source path)
-  "Create a symlink to `source` from `path`."
+  "Create a symlink to SOURCE from PATH."
   (f--destructive path (make-symbolic-link source path)))
 
 (defun f-move (from to)
@@ -288,6 +305,15 @@ If FORCE is t, a directory will be deleted recursively."
                 (copy-directory from new-to)))
           (copy-directory from to))))))
 
+(defun f-copy-contents (from to)
+  "Copy contents in directory FROM, to directory TO."
+  (unless (f-exists? to)
+    (error "Cannot copy contents to non existing directory %s" to))
+  (unless (f-dir? from)
+    (error "Cannot copy contents as %s is a file" from))
+  (--each (f-entries from)
+    (f-copy it to)))
+
 (defun f-touch (path)
   "Update PATH last modification date or create if it does not exist."
   (f--destructive path
@@ -302,42 +328,64 @@ If FORCE is t, a directory will be deleted recursively."
   "Return t if PATH exists, false otherwise."
   (file-exists-p path))
 
+(defalias 'f-exists-p 'f-exists?)
+
 (defalias 'f-dir? 'f-directory?)
+(defalias 'f-dir-p 'f-dir?)
+
 (defun f-directory? (path)
   "Return t if PATH is directory, false otherwise."
   (file-directory-p path))
+
+(defalias 'f-directory-p 'f-directory?)
 
 (defun f-file? (path)
   "Return t if PATH is file, false otherwise."
   (file-regular-p path))
 
+(defalias 'f-file-p 'f-file?)
+
 (defun f-symlink? (path)
   "Return t if PATH is symlink, false otherwise."
   (not (not (file-symlink-p path))))
+
+(defalias 'f-symlink-p 'f-symlink?)
 
 (defun f-readable? (path)
   "Return t if PATH is readable, false otherwise."
   (file-readable-p path))
 
+(defalias 'f-readable-p 'f-readable?)
+
 (defun f-writable? (path)
   "Return t if PATH is writable, false otherwise."
   (file-writable-p path))
+
+(defalias 'f-writable-p 'f-writable?)
 
 (defun f-executable? (path)
   "Return t if PATH is executable, false otherwise."
   (file-executable-p path))
 
+(defalias 'f-executable-p 'f-executable?)
+
 (defun f-absolute? (path)
   "Return t if PATH is absolute, false otherwise."
   (file-name-absolute-p path))
+
+(defalias 'f-absolute-p 'f-absolute?)
 
 (defun f-relative? (path)
   "Return t if PATH is relative, false otherwise."
   (not (f-absolute? path)))
 
+(defalias 'f-relative-p 'f-relative?)
+
 (defun f-root? (path)
   "Return t if PATH is root directory, false otherwise."
   (not (f-parent path)))
+
+(defalias 'f-root-p 'f-root?)
 
 (defun f-ext? (path &optional ext)
   "Return t if extension of PATH is EXT, false otherwise.
@@ -351,22 +399,34 @@ The extension, in a file name, is the part that follows the last
       (string= (f-ext path) ext)
     (not (eq (f-ext path) nil))))
 
+(defalias 'f-ext-p 'f-ext?)
+
 (defalias 'f-equal? 'f-same?)
+(defalias 'f-equal-p 'f-equal?)
+
 (defun f-same? (path-a path-b)
-  "Return t if PATH-A and PATH-b are references to same file."
-  (equal
-   (f-canonical (f-expand path-a))
-   (f-canonical (f-expand path-b))))
+  "Return t if PATH-A and PATH-B are references to same file."
+  (when (and (f-exists? path-a)
+             (f-exists? path-b))
+    (equal
+     (f-canonical (f-expand path-a))
+     (f-canonical (f-expand path-b)))))
+
+(defalias 'f-same-p 'f-same?)
 
 (defun f-parent-of? (path-a path-b)
   "Return t if PATH-A is parent of PATH-B."
   (--when-let (f-parent path-b)
     (f-same? path-a it)))
 
+(defalias 'f-parent-of-p 'f-parent-of?)
+
 (defun f-child-of? (path-a path-b)
   "Return t if PATH-A is child of PATH-B."
   (--when-let (f-parent path-a)
     (f-same? it path-b)))
+
+(defalias 'f-child-of-p 'f-child-of?)
 
 (defun f-ancestor-of? (path-a path-b)
   "Return t if PATH-A is ancestor of PATH-B."
@@ -374,11 +434,23 @@ The extension, in a file name, is the part that follows the last
     (s-starts-with? (f-full path-a)
                     (f-full path-b))))
 
+(defalias 'f-ancestor-of-p 'f-ancestor-of?)
+
 (defun f-descendant-of? (path-a path-b)
   "Return t if PATH-A is desendant of PATH-B."
   (unless (f-same? path-a path-b)
     (s-starts-with? (f-full path-b)
                     (f-full path-a))))
+
+(defalias 'f-descendant-of-p 'f-descendant-of?)
+
+(defun f-hidden? (path)
+  "Return t if PATH is hidden, nil otherwise."
+  (unless (f-exists? path)
+    (error "Path does not exist: %s" path))
+  (string= (substring path 0 1) "."))
+
+(defalias 'f-hidden-p 'f-hidden?)
 
 
 ;;;; Stats
@@ -386,7 +458,7 @@ The extension, in a file name, is the part that follows the last
 (defun f-size (path)
   "Return size of PATH.
 
-If PATH is a file, return size of that file. If PATH is
+If PATH is a file, return size of that file.  If PATH is
 directory, return sum of all files in PATH."
   (if (f-directory? path)
       (-sum (-map 'f-size (f-files path nil t)))
@@ -395,9 +467,9 @@ directory, return sum of all files in PATH."
 (defun f-depth (path)
   "Return the depth of PATH.
 
-At first, PATH is expanded with `f-expand'. Then the full path is used to
+At first, PATH is expanded with `f-expand'.  Then the full path is used to
 detect the depth.
-'/' will be zero depth, '/usr' will be one depth. And so on."
+'/' will be zero depth,  '/usr' will be one depth.  And so on."
   (- (length (f-split (f-expand path))) 1))
 
 
@@ -453,7 +525,7 @@ detect the depth.
 (defun f-entries (path &optional fn recursive)
   "Find all files and directories in PATH.
 
-FN - called for each found file and directory. If FN returns a thruthy
+FN - called for each found file and directory.  If FN returns a thruthy
 value, file or directory will be included.
 RECURSIVE - Search for files and directories recursive."
   (let ((entries (f--collect-entries path recursive)))
@@ -469,7 +541,7 @@ RECURSIVE - Search for files and directories recursive."
     ,recursive))
 
 (defun f-directories (path &optional fn recursive)
-  "Find all directories in PATH. See `f-entries`."
+  "Find all directories in PATH.  See `f-entries`."
   (let ((directories (-select 'f-directory? (f--collect-entries path recursive))))
     (if fn (-select fn directories) directories)))
 
@@ -483,34 +555,9 @@ RECURSIVE - Search for files and directories recursive."
     ,recursive))
 
 (defun f-files (path &optional fn recursive)
-  "Find all files in PATH. See `f-entries`."
+  "Find all files in PATH.  See `f-entries`."
   (let ((files (-select 'f-file? (f--collect-entries path recursive))))
     (if fn (-select fn files) files)))
-
-(defmacro f--up (body &optional dir)
-  "Anaphoric version of `f-up'."
-  `(f-up
-    (lambda (path)
-      (let ((it path))
-        ,body))
-    ,dir))
-
-(make-obsolete 'f-up 'f-traverse-upwards "0.14.0")
-
-(defun f-up (fn &optional dir)
-  "Traverse up as long as FN returns nil, starting at DIR."
-  (unless dir
-    (setq dir default-directory))
-  (when (f-relative? dir)
-    (setq dir (f-expand dir)))
-  (unless (f-exists? dir)
-    (error "File %s does not exist" dir))
-  (let ((parent (f-parent dir)))
-    (if (and parent (f-root? parent))
-        parent
-      (if (funcall fn dir)
-          dir
-       (with-no-warnings (f-up fn parent))))))
 
 (defmacro f--traverse-upwards (body &optional path)
   "Anaphoric version of `f-traverse-upwards'."
@@ -521,17 +568,15 @@ RECURSIVE - Search for files and directories recursive."
     ,path))
 
 (defun f-traverse-upwards (fn &optional path)
-  "Traverse up as long as FN returns nil, starting at PATH.
+  "Traverse up as long as FN return nil, starting at PATH.
 
 If FN returns a non-nil value, the path sent as argument to FN is
-returned. If no function callback return a non-nil value, nil is
+returned.  If no function callback return a non-nil value, nil is
 returned."
   (unless path
     (setq path default-directory))
   (when (f-relative? path)
     (setq path (f-expand path)))
-  (unless (f-exists? path)
-    (error "File %s does not exist" path))
   (if (funcall fn path)
       path
     (unless (f-root? path)

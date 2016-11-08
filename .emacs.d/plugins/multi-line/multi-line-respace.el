@@ -92,9 +92,11 @@
 
 (defmethod multi-line-min-max-column-if-no-newline
   ((respacer multi-line-fill-respacer) index candidates)
-  (let* ((candidate-length (length candidates))
-         (next-index (+ index 1))
-         (final-index (multi-line-final-index respacer candidate-length))
+  "Compute the minimum line length of the current expression,
+assuming that no newline is inserted at the current candidate."
+
+  (let* ((next-index (+ index 1))
+         (final-index (multi-line-final-index respacer (length candidates)))
          (next-candidate (nth next-index candidates))
          (next-candidate-position
           (if next-candidate

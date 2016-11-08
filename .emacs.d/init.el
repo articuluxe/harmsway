@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-11-07 14:22:57 dan.harms>
+;; Modified Time-stamp: <2016-11-08 08:30:57 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1650,6 +1650,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   :init
   (setq drag-stuff-modifier '(meta shift))
   :config
+  (drag-stuff-define-keys)
   (add-to-list 'drag-stuff-except-modes 'org-mode)
   (drag-stuff-global-mode 1)
   )

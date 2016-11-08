@@ -4,7 +4,7 @@
 
 ;; Author: Johan Andersson <johan.rejeep@gmail.com>
 ;; Maintainer: Johan Andersson <johan.rejeep@gmail.com>
-;; Version: 0.2.0
+;; Version: 0.3.0
 ;; Keywords: speed, convenience
 ;; URL: http://github.com/rejeep/drag-stuff
 
@@ -338,9 +338,7 @@
   "Drag stuff around."
   :init-value nil
   :lighter " drag"
-  :keymap drag-stuff-mode-map
-  (when drag-stuff-mode
-    (drag-stuff-define-keys)))
+  :keymap drag-stuff-mode-map)
 
 ;;;###autoload
 (defun turn-on-drag-stuff-mode ()
