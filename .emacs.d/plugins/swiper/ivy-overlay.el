@@ -69,14 +69,18 @@ Then attach the overlay the character before point."
   (overlay-put ivy-overlay-at 'display str)
   (overlay-put ivy-overlay-at 'after-string ""))
 
+(declare-function org-current-level "org")
+(defvar org-indent-indentation-per-level)
+
 (defun ivy-display-function-overlay (str)
   "Called from the minibuffer, display STR in an overlay in Ivy window.
 Hide the minibuffer contents and cursor."
   (add-face-text-property (minibuffer-prompt-end) (point-max)
                           '(:foreground "white"))
-  (let ((cursor-pos (1+ (- (point) (minibuffer-prompt-end)))))
+  (let ((cursor-pos (1+ (- (point) (minibuffer-prompt-end))))
+        (ivy-window (ivy--get-window ivy-last)))
     (setq cursor-type nil)
-    (with-ivy-window
+    (with-selected-window ivy-window
       (when cursor-type
         (setq ivy--old-cursor-type cursor-type))
       (setq cursor-type nil)

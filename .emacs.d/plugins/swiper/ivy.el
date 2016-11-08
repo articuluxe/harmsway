@@ -315,6 +315,8 @@ action functions.")
   prompt collection
   predicate require-match initial-input
   history preselect keymap update-fn sort
+  ;; The frame in which `ivy-read' was called
+  frame
   ;; The window in which `ivy-read' was called
   window
   ;; The buffer in which `ivy-read' was called
@@ -974,7 +976,8 @@ Example use:
           (if (eq action 'identity)
               (funcall action x)
             (select-window (ivy--get-window ivy-last))
-            (prog1 (funcall action x)
+            (prog1 (let ((default-directory (ivy-state-directory ivy-last)))
+                     (funcall action x))
               (unless (or (eq ivy-exit 'done)
                           (equal (selected-window)
                                  (active-minibuffer-window))
@@ -1423,6 +1426,7 @@ customizations apply to the current completion session."
            :update-fn update-fn
            :sort sort
            :action action
+           :frame (selected-frame)
            :window (selected-window)
            :buffer (current-buffer)
            :unwind unwind
@@ -1476,6 +1480,8 @@ customizations apply to the current completion session."
 (defun ivy--reset-state (state)
   "Reset the ivy to STATE.
 This is useful for recursive `ivy-read'."
+  (unless (equal (selected-frame) (ivy-state-frame state))
+    (select-window (active-minibuffer-window)))
   (let ((prompt (or (ivy-state-prompt state) ""))
         (collection (ivy-state-collection state))
         (predicate (ivy-state-predicate state))
@@ -1518,22 +1524,24 @@ This is useful for recursive `ivy-read'."
                                 :test #'equal)))
                (setq coll (all-completions "" collection predicate))))
             ((eq collection 'read-file-name-internal)
-             (if (and initial-input
-                      (not (equal initial-input ""))
-                      (file-directory-p initial-input))
-                 (progn
-                   (when (and (eq this-command 'dired-do-copy)
-                              (equal (file-name-nondirectory initial-input) ""))
-                     (setf (ivy-state-preselect state) (setq preselect nil)))
-                   (setq ivy--directory initial-input)
-                   (setq initial-input nil)
-                   (when preselect
-                     (let ((preselect-directory (file-name-directory preselect)))
-                       (when (and preselect-directory
-                                  (not (equal (expand-file-name preselect-directory)
-                                              (expand-file-name ivy--directory))))
-                         (setf (ivy-state-preselect state) (setq preselect nil))))))
-               (setq ivy--directory default-directory))
+             (setq ivy--directory default-directory)
+             (when (and initial-input
+                        (not (equal initial-input "")))
+               (cond ((file-directory-p initial-input)
+                      (when (and (eq this-command 'dired-do-copy)
+                                 (equal (file-name-nondirectory initial-input) ""))
+                        (setf (ivy-state-preselect state) (setq preselect nil)))
+                      (setq ivy--directory initial-input)
+                      (setq initial-input nil)
+                      (when preselect
+                        (let ((preselect-directory (file-name-directory preselect)))
+                          (when (and preselect-directory
+                                     (not (equal (expand-file-name preselect-directory)
+                                                 (expand-file-name ivy--directory))))
+                            (setf (ivy-state-preselect state) (setq preselect nil))))))
+                     ((file-exists-p (file-name-directory initial-input))
+                      (setq ivy--directory (file-name-directory initial-input))
+                      (setf (ivy-state-preselect state) (file-name-nondirectory initial-input)))))
              (require 'dired)
              (when preselect
                (let ((preselect-directory (file-name-directory preselect)))
@@ -2028,7 +2036,11 @@ depending on the number of candidates."
     (setq truncate-lines t))
   (setq-local max-mini-window-height ivy-height)
   (when ivy-fixed-height-minibuffer
-    (set-window-text-height (selected-window) ivy-height))
+    (set-window-text-height (selected-window)
+                            (+ ivy-height
+                               (if ivy-add-newline-after-prompt
+                                   1
+                                 0))))
   (add-hook 'post-command-hook #'ivy--exhibit nil t)
   ;; show completions with empty input
   (ivy--exhibit))
@@ -2195,6 +2207,11 @@ If SUBEXP is nil, the text properties are applied to the whole match."
                  (file-exists-p ivy--current))))
          (ivy--cd (expand-file-name ivy--current ivy--directory)))))
 
+(defcustom ivy-magic-tilde t
+  "When non-nil, ~ will move home when selecting files.
+Otherwise, ~/ will move home."
+  :type 'boolean)
+
 (defun ivy--exhibit ()
   "Insert Ivy completions display.
 Should be run via minibuffer `post-command-hook'."
@@ -2216,10 +2233,12 @@ Should be run via minibuffer `post-command-hook'."
             (ivy--insert-minibuffer
              (ivy--format ivy--all-candidates))))
       (cond (ivy--directory
-             (if (string-match "/\\'" ivy-text)
-                 (ivy--magic-file-slash)
-               (if (string-match "\\`~\\'" ivy-text)
-                   (ivy--cd (expand-file-name "~/")))))
+             (cond ((or (string= "~/" ivy-text)
+                        (and (string= "~" ivy-text)
+                             ivy-magic-tilde))
+                    (ivy--cd (expand-file-name "~/")))
+                   ((string-match "/\\'" ivy-text)
+                    (ivy--magic-file-slash))))
             ((eq (ivy-state-collection ivy-last) 'internal-complete-buffer)
              (when (or (and (string-match "\\` " ivy-text)
                             (not (string-match "\\` " ivy--old-text)))
@@ -2431,7 +2450,7 @@ The alist VAL is a sorting function with the signature of
            (function :tag "Custom sort function"))))
 
 (defun ivy--sort-files-by-date (_name candidates)
-  "Re-soft CANDIDATES according to file modification date."
+  "Re-sort CANDIDATES according to file modification date."
   (let ((default-directory ivy--directory))
     (cl-sort (copy-sequence candidates)
              (lambda (f1 f2)
@@ -2473,25 +2492,39 @@ Prefix matches to NAME are put ahead of the list."
        (nreverse res-prefix)
        (nreverse res-noprefix)))))
 
+(defvar ivy--virtual-buffers nil
+  "Store the virtual buffers alist.")
+
 (defun ivy-sort-function-buffer (name candidates)
-  "Re-sort CANDIDATES.
-Prefer first \"^*NAME\", then \"^NAME\"."
+  "Re-sort CANDIDATES, a list of buffer names that contain NAME.
+Sort open buffers before virtual buffers, and prefix matches
+before substring matches."
   (if (or (string-match "^\\^" name) (string= name ""))
       candidates
     (let* ((base-re (funcall ivy--regex-function name))
            (base-re (if (consp base-re) (caar base-re) base-re))
            (re-prefix (concat "^\\*" base-re))
            res-prefix
-           res-noprefix)
+           res-noprefix
+           res-virtual-prefix
+           res-virtual-noprefix)
       (unless (cl-find-if (lambda (s) (string-match re-prefix s)) candidates)
         (setq re-prefix (concat "^" base-re)))
       (dolist (s candidates)
-        (if (string-match re-prefix s)
-            (push s res-prefix)
-          (push s res-noprefix)))
+        (cond
+         ((and (assoc s ivy--virtual-buffers) (string-match re-prefix s))
+          (push s res-virtual-prefix))
+         ((assoc s ivy--virtual-buffers)
+          (push s res-virtual-noprefix))
+         ((string-match re-prefix s)
+          (push s res-prefix))
+         (t
+          (push s res-noprefix))))
       (nconc
        (nreverse res-prefix)
-       (nreverse res-noprefix)))))
+       (nreverse res-noprefix)
+       (nreverse res-virtual-prefix)
+       (nreverse res-virtual-noprefix)))))
 
 (defun ivy--recompute-index (name re-str cands)
   (let* ((caller (ivy-state-caller ivy-last))
@@ -2800,9 +2833,6 @@ CANDS is a list of strings."
              (res (concat "\n" (funcall ivy-format-function cands))))
         (put-text-property 0 (length res) 'read-only nil res)
         res))))
-
-(defvar ivy--virtual-buffers nil
-  "Store the virtual buffers alist.")
 
 (defvar recentf-list)
 
@@ -3148,6 +3178,7 @@ Skip buffers that match `ivy-ignore-buffers'."
   "Switch to another buffer in another window."
   (interactive)
   (ivy-read "Switch to buffer in other window: " 'internal-complete-buffer
+            :matcher #'ivy--switch-buffer-matcher
             :preselect (buffer-name (other-buffer (current-buffer)))
             :action #'ivy--switch-buffer-other-window-action
             :keymap ivy-switch-buffer-map
@@ -3337,6 +3368,7 @@ There is no limit on the number of *ivy-occur* buffers."
               (funcall occur-fn)
             (ivy-occur-mode)
             (insert (format "%d candidates:\n" (length ivy--old-cands)))
+            (read-only-mode)
             (ivy--occur-insert-lines
              (mapcar
               (lambda (cand) (concat "    " cand))
