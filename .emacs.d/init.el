@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-11-08 08:55:28 dharms>
+;; Modified Time-stamp: <2016-11-09 05:50:10 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -852,7 +852,6 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (use-package magit
   :if (not (version< emacs-version "24.4"))
   :init
-  (eval-and-compile (setq magit-need-cygwin-noglob nil))
   (setq magit-log-show-margin t)
   (setq magit-popup-show-common-commands nil)
   (setq magit-log-show-refname-after-summary nil)
