@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-11-09 05:50:10 dan.harms>
+;; Modified Time-stamp: <2016-11-10 13:58:19 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1109,7 +1109,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (interactive)
   (isearch-exit)
   (goto-char isearch-other-end))
-(define-key isearch-mode-map [(control return)] #'my/isearch-exit-other-end)
+(define-key isearch-mode-map [(meta return)] #'my/isearch-exit-other-end)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; plur ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package
