@@ -364,12 +364,20 @@ M-x apropos mode   list available commands containing “mode”
 
 ** Formatting
 *** Text can be /italic/, *bold*, _underlined_, =literal= or ~code~.  Even +strike-thru+!
+** Lists
+C-c *     promote a list item into a headline
 *** Unordered lists
      - one :: this is a description
      - two :: this is another description
 *** Ordered lists
      1. first
      2. second
+*** Checkboxes
+**** Add a counter [/]
+C-c C-c    [ ] toggle a checkbox in a plain list
+ - [ ] Item One
+ - [ ] Item Two
+
 
 ** Blocks
 < e TAB inserts an example block:
@@ -406,6 +414,8 @@ exit
 ** Links
 C-c C-l    insert/edit link
 C-c C-o    goto link
+C-c &      pop back to prior
+C-c %      manually push a link position onto mark-ring
 M-M-o-l    org-store-link
 M-M-o-c    org-capture
 
@@ -420,11 +430,16 @@ M-S-<up/down> move section
 M-S-<left/right> promote/demote section
 M-h           mark element
 C-c @         mark subtree
+C-c C-x M-w   copy subtree
+C-c C-x C-w   cut subtree
+C-c C-x C-y   paste subtree
+C-c C-x c     clone subtree
 C-c /         create sparse tree
 M-g n/p       move forward/back in sparse tree
 C-c C-x d     insert drawer
 
 ** TODOs
+*** Default: #+TODO: TODO | DONE
 C-c C-t    select TODO state
 M-S-+      promote TODO state
 M--        demote TODO state
@@ -434,17 +449,18 @@ C-c C-x o  toggle an entry's ordered property
      :PROPERTIES:
      :ORDERED t
      :END:
-C-c C-c    [ ] toggle a checkbox in a plain list
 
 ** Priorities
 C-c ,       set priority
 M-<p/n>     change priority (windmove-disputed)
 
 ** Tags
+*** Default: #+TAGS: @work @home
 C-c C-q    add a tag
 C-c C-c    add a tag for current headline
 C-c / m    create sparse-tree for matching tags/properties
 C-c / p    create sparse-tree for single property or {regexp}
+
 
 ** Agenda
    SCHEDULED: <2029-12-25 Tue>
@@ -462,21 +478,28 @@ C-c / a     sparse tree for deadlines after a date
      ++1w :: when marked done, shift at least 1w, but into future
      .+1m :: when marked done, shift one month from now
 Warning:  -2d
+Range: [2016-11-07 Mon]--[2016-10-31 Mon]
+C-c C-y     calculate length of range [prefix inserts]
 
 
 ** Export
 C-c C-e     export
+C-c C-w     refile
 
 ** Archive
 C-c C-x C-a     archive subtree
 
 ** Tables
+*** Add width to a column: <12>
+*** realign table with narrowed columns at startup: #+STARTUP: align
 C-c |         convert region to table
 C-c RET     insert divider line and advance to next row
+M-RET       split field at cursor, move rest below
 C-c C-c     realign table
 C-c SPC     blank field at point
 TAB, S-TAB  move to next/prior field
 RET          move to next row
+S-RET        copy from prior row
 M-<left/right>   move column left/right
 M-<up/down>      move row up/down
 M-S-<right>   insert new column to left of cursor
@@ -487,6 +510,8 @@ C-c -         insert horizontal line
 C-c ^         sort rows based on current column
 C-c +         sum numbers in current column
 C-c `         edit current field in separate window
+C-c ?         show current cell
+C-c }         show cell grid
 
 
 * Games
