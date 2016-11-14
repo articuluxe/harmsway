@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-11-10 13:58:19 dan.harms>
+;; Modified Time-stamp: <2016-11-14 09:28:40 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -724,6 +724,9 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
                         load-path)))
 (use-package multiple-cursors
   :bind (("C-\\ C-\\" . mc/edit-lines)
+         ("C-\\ C-a" . mc/edit-beginnings-of-lines)
+         ("C-\\ C-e" . mc/edit-ends-of-lines)
+         ("C-\\ /" . set-rectangular-region-anchor)
          ;; mark one more occurrence
          ("C->" . mc/mark-next-like-this)
          ("C-\\ ." . mc/mark-next-like-this)
