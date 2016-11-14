@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-11-14 10:41:56 dan.harms>
+;; Modified Time-stamp: <2016-11-14 17:00:02 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -678,6 +678,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;; line-comment-banner ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package line-comment-banner
   :bind ([?\C-c?\C-/] . line-comment-banner)
+  :defines comment-fill
   :init
   (add-hook 'c-mode-common-hook
             (lambda() (make-local-variable 'comment-fill)
@@ -922,7 +923,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; shackle ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package shackle
   :config
-  (setq shackle-default-ratio 0.4)
+  (setq shackle-default-size 0.4)
   (setq shackle-select-reused-windows nil)
   (setq shackle-rules
         '(
@@ -1051,6 +1052,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
  cons cell (`description' . `activation-function' ).")
 (use-package ido
   :demand t
+  :defines (ido-temp-list)
   :config
   (setq ido-save-directory-list-file (concat my/user-directory "ido-last"))
   (setq ido-max-prospects 25)
@@ -1795,7 +1797,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (setq load-path (cons (concat my/plugins-directory "vlf/")
                         load-path)))
 (use-package vlf-setup
-  :defines vlf-tune-enabled
+  :defines (vlf-tune-enabled vlf-batch-size vlf-tune-enabled)
   :init
   ;; for files over 100MB, only open 100MB at a time
   (setq large-file-warning-threshold 100000000) ;100MB
@@ -2696,10 +2698,10 @@ Requires Flake8 2.0 or newer. See URL
             (define-key nxml-mode-map "\C-c\C-u" 'uncomment-region)
             (use-package auto-complete-nxml)
             ))
-(when (< emacs-major-version 25)
-  (require 'mz-comment-fix)
-  ;; the following is a hack to fix nested XML commenting in Emacs 24.
-  ;; Note that 'comment-strip-start-length also exists for other modes if needed.
+(use-package mz-comment-fix
+  :if (< emacs-major-version 25)
+  :defines comment-strip-start-length
+  :config
   (add-to-list 'comment-strip-start-length (cons 'nxml-mode 3)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; yaml-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
