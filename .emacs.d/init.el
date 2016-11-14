@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-11-14 09:28:40 dan.harms>
+;; Modified Time-stamp: <2016-11-14 10:41:56 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -859,7 +859,6 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (setq magit-popup-show-common-commands nil)
   (setq magit-log-show-refname-after-summary nil)
   (setq magit-no-confirm '())
-  (setq magit-diff-refine-hunk t)
   (setq magit-process-find-password-functions 'magit-process-password-auth-source)
   (setq magit-auto-revert-tracked-only t)
   (setq magit-prefer-remote-upstream t)
@@ -1533,14 +1532,17 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
                                                      :background "purple"
                                                      )
                                  )))
-(global-set-key "\M-sdd" (lambda() (interactive)
-                           (diff-buffer-with-file (current-buffer))))
+(defun my/diff-buffer-with-file ()
+  (interactive)
+  (diff-buffer-with-file (current-buffer)))
+(global-set-key "\M-sdd" #'my/diff-buffer-with-file)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ediff ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; only highlight current chunk
 (setq-default ediff-highlight-all-diffs 'nil
               ediff-keep-variants nil
               ediff-forward-word-function 'forward-char
+              ediff-auto-refine 'nix
               )
 (global-set-key "\M-sde" #'ediff-current-file)
 (global-set-key "\M-sdb" #'ediff-buffers)
@@ -1598,6 +1600,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (use-package ediff-trees
   :bind (("C-c e" . my/ediff-trees-keymap)
          :map my/ediff-trees-keymap
+         ("e" . ediff-trees)
          ("n" . ediff-trees-examine-next)
          ("p" . ediff-trees-examine-previous)
          ("C-n" . ediff-trees-examine-next-regexp)
