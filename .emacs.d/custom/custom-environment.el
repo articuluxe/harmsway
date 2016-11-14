@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, April 15, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-10-25 15:11:59 dan.harms>
+;; Modified Time-stamp: <2016-11-14 08:40:41 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: environment utils
 
@@ -64,7 +64,8 @@ final element."
   (let ((path-file (concat dir "PATH"))
         (include-file (concat dir "INCLUDE"))
         (lib-file (concat dir "LIB"))
-        (libpath-file (concat dir "LIBPATH")))
+        (libpath-file (concat dir "LIBPATH"))
+        (env-file (concat dir "env")))
     ;; check for any additional environment variables
     (if (file-exists-p path-file)
         (progn
@@ -82,6 +83,8 @@ final element."
         (load-environment-variable-from-file "LIB" lib-file))
     (if (file-exists-p libpath-file)
         (load-environment-variable-from-file "LIBPATH" libpath-file))
+    (if (file-exists-p env-file)
+        (load-environment-variables-from-file env-file))
     ))
 
 (provide 'custom-environment)
