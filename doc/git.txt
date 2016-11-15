@@ -78,6 +78,8 @@ git log --oneline --decorate --graph [--stat/p]
 # view commits on feature branch not on master
 git log master..feature
 git log ^master feature
+# view commits on either A or B but not both
+git log A...B
 # view commits on A or B but not C
 git log A B ^C
 # view what is in master or feature but not common to them
