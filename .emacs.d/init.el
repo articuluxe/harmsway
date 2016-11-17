@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-11-14 17:00:02 dan.harms>
+;; Modified Time-stamp: <2016-11-17 08:54:48 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1051,7 +1051,6 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   "An alist of completion frameworks to choose among.  Each value is a
  cons cell (`description' . `activation-function' ).")
 (use-package ido
-  :demand t
   :defines (ido-temp-list)
   :config
   (setq ido-save-directory-list-file (concat my/user-directory "ido-last"))
