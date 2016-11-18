@@ -422,6 +422,7 @@ M-M-o-c    org-capture
 [[location][This]] is a link to a <<location>>.
 
 ** Outline
+C-c -        create a list
 M-RET        new heading
 M-S-RET      new heading at same level
 M-<up/down>  move heading
