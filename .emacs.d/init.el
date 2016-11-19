@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-11-17 08:54:48 dharms>
+;; Modified Time-stamp: <2016-11-18 08:34:32 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1037,7 +1037,8 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   "Select recent files from `recentf' via a completion function.")
 (defun my/call-recentf-func () (interactive) (funcall uniquify-recentf-func))
 (use-package uniquify-recentf
-  ;; :bind ("M-r" . my/call-recentf-func)
+  :bind ("M-r" . my/call-recentf-func)
+  :disabled t
   :commands
   (uniquify-recentf-ivy-recentf-open uniquify-recentf-ido-recentf-open)
   :if (version< "24.3" emacs-version)
@@ -1052,6 +1053,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
  cons cell (`description' . `activation-function' ).")
 (use-package ido
   :defines (ido-temp-list)
+  :defer t
   :config
   (setq ido-save-directory-list-file (concat my/user-directory "ido-last"))
   (setq ido-max-prospects 25)
