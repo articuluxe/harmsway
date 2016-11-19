@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-11-18 08:34:32 dharms>
+;; Modified Time-stamp: <2016-11-19 11:26:23 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1358,6 +1358,8 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (setq org-log-done 'time)
   (setq org-enforce-todo-dependencies t)
   (setq org-enforce-todo-checkbox-dependencies t)
+  (setq org-agenda-custom-commands
+        '(("o" occur-tree "org")))
   :config
   (require 'org-crypt)
   (org-crypt-use-before-save-magic)
@@ -2574,7 +2576,7 @@ customization."
  (setq pandoc-data-dir (concat my/scratch-directory "pandoc/"))
  (mapc (lambda (hook)
          (add-hook hook 'pandoc-mode))
-       '(markdown-mode-hook org-mode-hook))
+       '(markdown-mode-hook))
  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; pcap-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

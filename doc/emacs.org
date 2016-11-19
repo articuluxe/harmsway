@@ -37,6 +37,7 @@ C-x C-+   /   C-x C--
 ** List
 ;; (@* "List") (C-x p)
 M-d >         open dired for marked
+M-q           query-replace in marked files
 C-h p         describe current
 C-h >         describe marked
 r             rename
@@ -47,14 +48,19 @@ S             save
 g             refresh
 C-u g         revert to file
 J/j           jump to bookmark [other window]
+j >           jump to each marked bookmark in other windows
 L/l           replace/add bookmarks from file
 M-l           load marked bookmark files
 C-x p 0       make new empty bookmark file
 C-x p w       save as bookmarks file
 C-x p y       create bookmark file bookmark
 D             delete marked
-Y > +/-       copy [move] marked to other file
-Y > 0         add marked to new bookmark file
+Y > +/-       copy/move marked to other file
+Y > 0         add marked to new bookmark file. C-u: create a bookmark to it
+>/<           show only marked/unmarked bookmarks
+F M           mark file bookmarks
+F S           show only file bookmarks
+.             show all bookmarks, turn off sorting
 s s           cycle sorting
 s r           reverse sorting
 s b           sort by last file/buffer access
@@ -429,12 +435,22 @@ M-<up/down>  move heading
 M-<left/right> promote/demote heading
 M-S-<up/down> move section
 M-S-<left/right> promote/demote section
+C-c C-n/p     next/previous heading
+C-c C-f/b     next/previous heading same level
+C-c C-u       up to higher level
+C-c C-j       jump, maintain outline visibility
+C-c TAB       expose children [prefix: n children]
+C-u C-u TAB        regain initial buffer visibility
+C-u C-u C-u TAB    show all
+C-c C-r       reveal context around point
+C-c C-k       show all headings, content for one subtree
 M-h           mark element
 C-c @         mark subtree
 C-c C-x M-w   copy subtree
 C-c C-x C-w   cut subtree
 C-c C-x C-y   paste subtree
 C-c C-x c     clone subtree
+C-c ^         sort entries
 C-c /         create sparse tree
 M-g n/p       move forward/back in sparse tree
 C-c C-x d     insert drawer
