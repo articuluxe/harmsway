@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-11-19 11:26:23 dharms>
+;; Modified Time-stamp: <2016-11-20 08:45:59 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -465,7 +465,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (delete-selection-mode 1)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; region-state ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package region-state
-  :disabled t
+  :disabled
   :demand t
   :config (region-state-mode 1))
 
@@ -531,7 +531,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; rainbow ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package rainbow-mode
   :if (version< "24.3" emacs-version)
-  :disabled t
+  :disabled
   :config
   ;; enable for emacs-lisp-mode
   (add-to-list 'rainbow-html-colors-major-mode-list 'emacs-lisp-mode)
@@ -815,7 +815,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; idle-highlight ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package idle-highlight-mode
-  :disabled t
+  :disabled
   :init
   (setq idle-highlight-idle-time 10)
   :config
@@ -1038,7 +1038,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (defun my/call-recentf-func () (interactive) (funcall uniquify-recentf-func))
 (use-package uniquify-recentf
   :bind ("M-r" . my/call-recentf-func)
-  :disabled t
+  :disabled
   :commands
   (uniquify-recentf-ivy-recentf-open uniquify-recentf-ido-recentf-open)
   :if (version< "24.3" emacs-version)
@@ -1307,7 +1307,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; goto-last-change ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package
  goto-last-change
- :disabled t
+ :disabled
  :bind ("C-M-," . goto-last-change)
  )
 
@@ -1631,7 +1631,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; git-gutter ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package git-gutter
-  :disabled t
+  :disabled
   :init
   (setq git-gutter:hide-gutter t)
   (setq git-gutter:diff-option "-w")
@@ -1830,7 +1830,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
                         load-path)))
 (defvar rtags-exec (executable-find "rdm"))
 (use-package rtags
-  :disabled t
+  :disabled
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; completion ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2256,7 +2256,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; guide-key ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package guide-key
   :if (version< "24.3" emacs-version)
-  :disabled t
+  :disabled
   :config
   (guide-key-mode 1)
   )
