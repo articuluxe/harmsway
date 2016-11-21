@@ -375,6 +375,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (interactive)
   (add-file-local-variable-prop-line 'epa-file-encrypt-to
                                      (concat "(" user-mail-address ")")))
+(setenv "GPG_AGENT_INFO" nil)
 (use-package epa
   :bind (("C-c 09l" . epa-list-keys)
          ("C-c 09L" . epa-list-secret-keys)
@@ -401,7 +402,6 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   :config
   (setq epg-gpg-program "gpg2")
   (setq epa-file-select-keys nil)
-  (setenv "GPG_AGENT_INFO" nil)
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; aes ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
