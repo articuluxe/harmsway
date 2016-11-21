@@ -868,6 +868,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   ;; git commands
   :bind (:map my/git-keymap
               ("g" . magit-status)
+              ("l" . magit-list-repositories)
               ("M-g" . magit-dispatch-popup)
               ("f" . magit-find-file) ;; view arbitrary blobs
               ("4f" . magit-find-file-other-window)
