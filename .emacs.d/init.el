@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-11-20 08:45:59 dharms>
+;; Modified Time-stamp: <2016-11-20 09:24:13 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -370,6 +370,11 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; epa ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defun my/add-epa-file-encrypt-to ()
+  "Add a file local variable for `epa-file-encrypt-to'."
+  (interactive)
+  (add-file-local-variable-prop-line 'epa-file-encrypt-to
+                                     (concat "(" user-mail-address ")")))
 (use-package epa
   :bind (("C-c 09l" . epa-list-keys)
          ("C-c 09L" . epa-list-secret-keys)
@@ -390,12 +395,9 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
          ("C-c 09C" . epa-verify-cleartext-in-region)
          ("C-c 09s" . epa-sign-file)
          ("C-c 09S" . epa-sign-region)
+         ("C-c 099" . my/add-epa-file-encrypt-to)
          )
   :init
-  (defun my/add-epa-file-encrypt-to ()
-    "Add a file local variable for `epa-file-encrypt-to'."
-    (interactive)
-    (add-file-local-variable 'epa-file-encrypt-to user-mail-address))
   :config
   (setq epg-gpg-program "gpg2")
   (setq epa-file-select-keys nil)
