@@ -424,6 +424,7 @@ C-c &      pop back to prior
 C-c %      manually push a link position onto mark-ring
 M-M-o-l    org-store-link
 M-M-o-c    org-capture
+C-c C-x C-v  toggle images inline
 
 [[location][This]] is a link to a <<location>>.
 

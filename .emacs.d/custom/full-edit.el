@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Tuesday, March 29, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-07-18 17:14:13 dharms>
+;; Modified Time-stamp: <2016-11-22 17:16:01 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -25,6 +25,8 @@
 ;;
 
 ;;; Code:
+
+(require 'seq)
 
 (defvar full-edit-accept-patterns
   '( "\\.cpp$" "\\.cc$" "\\.cxx$" "\\.c$" "\\.C$"
