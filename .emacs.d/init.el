@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-11-20 09:24:13 dharms>
+;; Modified Time-stamp: <2016-11-23 12:41:24 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2128,7 +2128,10 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
                            web-json-post web-get))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; restclient ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package restclient :commands restclient-mode)
+(use-package restclient
+  :mode ("\\.http$" . restclient-mode)
+  :commands restclient-mode
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-insert ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package auto-insert-choose+
