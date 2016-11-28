@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-11-30 08:49:26 dharms>
+;; Modified Time-stamp: <2016-12-01 06:29:34 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -147,7 +147,7 @@ up to 10 times."
 (mouse-avoidance-mode 'cat-and-mouse)
 (blink-cursor-mode 1)
 (setq blink-cursor-blinks 0)
-(setq ring-bell-function (lambda() ()))
+(setq ring-bell-function 'ignore)
 (when (display-graphic-p)
   (global-unset-key "\C-z"))
 
