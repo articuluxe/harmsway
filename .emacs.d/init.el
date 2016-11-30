@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-11-23 12:41:24 dan.harms>
+;; Modified Time-stamp: <2016-11-30 08:49:26 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -71,28 +71,11 @@
 (set-register ?\C-e (cons 'file "~/src/harmsway/.emacs.d"))
 (set-register ?\C-o (cons 'file "~/org"))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-save ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defvar my/autosave-dir (concat my/user-directory "autosaves/"))
-(unless (file-directory-p my/autosave-dir)
-  (make-directory my/autosave-dir t))
-(setq auto-save-file-name-transforms
-      `((".*" ,(concat my/autosave-dir "\\1") t)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; backups ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defvar my/backup-dir
-  (concat my/user-directory "backups/" (format-time-string "%Y-%m-%d")))
-(unless (file-directory-p my/backup-dir)
-  (make-directory my/backup-dir t))
-(setq backup-directory-alist `(("." . ,my/backup-dir)))
-(setq delete-by-moving-to-trash t)
-(setq backup-by-copying t)
-(setq version-control t)
-(setq delete-old-versions t)
-(setq kept-old-versions 0)              ;oldest versions to keep
-(setq kept-new-versions 10)
-(setq auto-save-timeout 60)
-(setq auto-save-interval 0)             ;disable autosaves due to input events
-
+(use-package custom-backups
+  :init
+  (setq my/backup-exclude-regex
+        "recentf\\|ido-last\\|emacs-bmk-bmenu-state")
+  )
 
 ;; Suppress GNU startup message
 (setq inhibit-startup-message t)
@@ -1320,6 +1303,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   :config
   (when (boundp 'my/user-name)
     (setq tramp-default-user my/user-name))
+  ;; my/autosave-dir defined in custom-backups.el
   (setq tramp-auto-save-directory my/autosave-dir)
   (add-to-list 'tramp-remote-path 'tramp-own-remote-path)
   (setq vc-ignore-dir-regexp
