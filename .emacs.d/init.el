@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-12-01 06:29:34 dharms>
+;; Modified Time-stamp: <2016-12-05 11:04:56 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1090,7 +1090,11 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ace-window ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package ace-window :bind ("M--" . ace-window))
+(use-package ace-window
+  :bind ("M--" . ace-window)
+  :init
+  (setq aw-reverse-frame-list t)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; isearch ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq isearch-allow-scroll t)
