@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-12-06 15:52:03 dan.harms>
+;; Modified Time-stamp: <2016-12-06 16:25:46 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1774,8 +1774,10 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
                             ,(concat my/plugins-directory "color-theme/themes/")
                             ) load-path)))
 (use-package color-theme
+  :defer t
   :config
-  (add-hook 'after-init-hook #'color-theme-initialize)
+  (color-theme-initialize)
+  ;; (add-hook 'after-init-hook #'color-theme-initialize)
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; palette ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
