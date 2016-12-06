@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-12-06 14:42:33 dan.harms>
+;; Modified Time-stamp: <2016-12-06 15:52:03 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1752,6 +1752,21 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; themes ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq custom-theme-directory (concat my/scratch-directory "themes/"))
+(setq custom-safe-themes t)
+(set-face-attribute 'default nil :slant 'italic)
+;; solarized
+(setq solarized-use-more-italic t)
+(setq solarized-distinct-fringe-background t)
+(setq solarized-use-variable-pitch nil)
+(setq solarized-height-minus-1 1)
+(setq solarized-height-plus-1 1)
+(setq solarized-height-plus-2 1)
+(setq solarized-height-plus-3 1)
+(setq solarized-height-plus-4 1)
+;; note: to alter custom-themes:
+;; (load theme 'zenburn t)
+;; (custom-theme-set-faces 'zenburn
+;;  `(default ((t (:foreground "red" :background "white")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; color-theme ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
@@ -1762,10 +1777,6 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   :config
   (add-hook 'after-init-hook #'color-theme-initialize)
   )
-;; note: to alter custom-themes:
-;; (load theme 'zenburn t)
-;; (custom-theme-set-faces 'zenburn
-;;  `(default ((t (:foreground "red" :background "white")))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; palette ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package palette)
