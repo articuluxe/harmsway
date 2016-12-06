@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-12-06 09:16:13 dan.harms>
+;; Modified Time-stamp: <2016-12-06 14:42:33 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1749,6 +1749,9 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 ;; ;; (define-key workgroups-mode-map (kbd "<left>") 'wg-switch-left)
 ;; ;; (define-key workgroups-mode-map (kbd "<right>") 'wg-switch-right)
 ;; (workgroups-mode 1)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; themes ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(setq custom-theme-directory (concat my/scratch-directory "themes/"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; color-theme ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
