@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-12-06 08:36:32 dan.harms>
+;; Modified Time-stamp: <2016-12-06 09:16:13 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -699,7 +699,11 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
  iedit
  :bind (("C-;" . iedit-mode)
         ("M-' ;" . iedit-mode)
-        ))
+        )
+ :config
+ ;; S-TAB does not work in the terminal
+ (bind-key "M-' TAB" 'iedit-prev-occurrence iedit-lib-keymap)
+ )
 (use-package
  iedit-rect
  :bind ("C-x r RET" . iedit-rectangle-mode))
