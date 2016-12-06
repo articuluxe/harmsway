@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-12-05 14:32:49 dan.harms>
+;; Modified Time-stamp: <2016-12-06 08:26:58 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -915,16 +915,16 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
         '(
           (occur-mode :popup t :select nil :align bottom)
           (grep-mode :popup t :select nil :align bottom)
-          ("*Help*" :popup t :select t)
+          ("Help" :regexp t :popup t :select t)
           (help-mode :popup t :select t)
           (diff-mode :popup t :select t)
           (apropos-mode :popup t :select t)
           (completion-list-mode :select nil)
           (compilation-mode :popup t :select nil :align bottom)
           (command-history-mode :popup t :select t)
-          ("*Shell Command Output*" :select t)
+          ("Shell Command Output" :popup t :select nil)
           ("COMMIT_EDITMSG" :select t)
-          ("*gen-TAGS*" :popup t :select nil :align bottom)
+          ("gen-TAGS" :regexp t :popup t :select nil :align bottom)
           )
         shackle-default-rule '(:select nil)
         )
