@@ -2,4 +2,8 @@
 /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 brew install gnu-tar
 
+brew install coreutils
+(setq insert-directory-program "gls")
+(setq dired-use-ls-dired t)
+
 
