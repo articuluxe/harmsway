@@ -1,169 +1,137 @@
-;;; desert-theme.el --- desert theme
+;;; desert-theme.el --- A port of a well-known VIM theme.
 
 ;; Copyright (C) Sergei Lebedev
-;; Copyright (C) 2013 by Syohei YOSHIDA
-
-;; Author: Syohei YOSHIDA <syohex@gmail.com>
-;; URL: https://github.com/emacs-jp/replace-colorthemes
-;; Version: 0.01
-
-;; This program is free software; you can redistribute it and/or modify
-;; it under the terms of the GNU General Public License as published by
-;; the Free Software Foundation, either version 3 of the License, or
-;; (at your option) any later version.
-
-;; This program is distributed in the hope that it will be useful,
-;; but WITHOUT ANY WARRANTY; without even the implied warranty of
-;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-;; GNU General Public License for more details.
-
-;; You should have received a copy of the GNU General Public License
-;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-;;; Commentary:
 ;;
-;; Port of desert theme from `color-themes'
+;; This program is free software; you can redistribute it and/or
+;; modify it under the terms of the GNU General Public License as
+;; published by the Free Software Foundation; either version 3 of
+;; the License, or (at your option) any later version.
+;;
+;; This program is distributed in the hope that it will be
+;; useful, but WITHOUT ANY WARRANTY; without even the implied
+;; warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR
+;; PURPOSE.  See the GNU General Public License for more details.
+;;
+;; You should have received a copy of the GNU General Public
+;; License along with this program; if not, write to the Free
+;; Software Foundation, Inc., 59 Temple Place, Suite 330, Boston,
+;; MA 02111-1307 USA
+;;
+;; Author: Sergei Lebedev <superbobry@gmail.com>
+;; Keywords:
+;; Requirements:
+;; Status: not intended to be distributed yet
 
-;;; Code:
 
 (deftheme desert
-  "desert theme")
+  "A port of a well-known VIM theme.")
 
-(custom-theme-set-faces
- 'desert
+;; Please, install rainbow-mode
+;; Colors with +x are lighter. Colors with -x are darker.
+(let ((desert-fg            "ghost white")
+      (desert-bg-1          "gray15")
+      (desert-bg            "gray20")
+      (desert-bg+1          "gray40")
+      (desert-bg+2          "gray60")
+      (desert-yellow-1      "yellow2")
+      (desert-yellow        "yellow")
+      (desert-khaki         "khaki")
+      (desert-olive         "OliveDrab")
+      (desert-green         "PaleGreen3")
+      (desert-blue          "LightSkyBlue3")
+      (desert-pink          "#ffa0a0")
+      (desert-red           "IndianRed3")
+      (desert-warning-fg    "goldenrod"))
+  (custom-theme-set-variables
+   'desert
+   '(frame-background-mode (quote dark)))
 
- '(default ((t (:background "gray20" :foreground "ghost white"))))
+  (custom-theme-set-faces
+   'desert
+   `(default ((t (:foreground ,desert-fg :background ,desert-bg))))
+   `(cursor ((t (:background ,desert-khaki))))
+   `(fringe ((t (:background ,desert-bg))))
+   `(font-lock-builtin-face ((t (:foreground ,desert-red))))
+   `(font-lock-comment-face ((t (:foreground ,desert-blue))))
+   `(font-lock-comment-delimiter-face ((t (:foreground ,desert-blue))))
+   `(font-lock-doc-face ((t (:foreground ,desert-red))))
+   `(font-lock-keyword-face ((t (:foreground ,desert-khaki :bold t))))
+   `(font-lock-string-face ((t (:foreground ,desert-pink))))
+   `(font-lock-type-face ((t (:foreground ,desert-green))))
+   `(font-lock-variable-name-face ((t (:foreground ,desert-fg))))
+   `(font-lock-warning-face ((t (:foreground ,desert-warning-fg :bold t :inherit nil))))
+   `(font-lock-function-name-face ((t (:foreground ,desert-green :bold t))))
+   `(font-lock-constant-face ((t (:foreground ,desert-pink))))
 
- '(ac-candidate-face ((t (:background "gray15" :foreground "ghost white"))))
- '(ac-completion-face ((t (:background "olivedrab" :foreground "khaki"))))
- '(ac-selection-face ((t (:foreground "khaki" :background "olivedrab"))))
- '(bold ((t (:bold t :weight bold))))
- '(bold-italic ((t (:italic t :bold t :slant italic :weight bold))))
- '(border ((t (nil))))
- '(buffer-menu-buffer ((t (:bold t :foreground "khaki" :weight bold))))
- '(button ((t (:bold t :weight bold :underline nil :foreground "MediumPurple3" :background "gray20"))))
+   `(minibuffer-prompt ((t (:foreground ,desert-khaki :bold t))))
+   `(Buffer-menu-buffer ((t (:foreground ,desert-khaki))))
+   `(header-line ((t (:background ,desert-bg-1 :box (:color ,desert-bg :line-width 2)))))
+   `(mode-line ((t (:inherit header-line :foreground ,desert-bg+2 :background ,desert-bg-1))))
+   `(mode-line-inactive ((t (:inherit mode-line))))
+   `(mode-line-buffer-id ((t (:foreground ,desert-warning-fg :bold t))))
 
- '(completions-annotations ((t (:underline t))))
- '(completions-common-part ((t (:foreground "ghost white" :background "gray20"))))
- '(completions-first-difference ((t (:bold t :weight bold))))
+   `(linum ((t (:foreground ,desert-yellow :background ,desert-bg))))
+   `(highlight ((t (:foreground ,desert-khaki :background ,desert-olive))))
+   `(region ((t (:foreground ,desert-khaki :background ,desert-olive))))
+   `(show-paren-mismatch ((t (:foreground ,desert-red :background ,desert-bg :bold t))))
+   `(show-paren-match ((t (:foreground ,desert-fg :background "darkcyan" :bold t))))
+   `(trailing-whitespace ((t (:background nil :inherit font-lock-warning-face))))
+   `(match ((t (:weight bold))))
 
- '(cursor ((t (:background "khaki"))))
+   ;; dired
+   `(dired-directory ((t (:foreground ,desert-khaki))))
 
- '(dired-directory ((t (:bold t :weight bold :foreground "PaleGreen3"))))
- '(dired-flagged ((t (:bold t :weight bold :foreground "Pink"))))
- '(dired-header ((t (:bold t :weight bold :foreground "PaleGreen3"))))
- '(dired-ignored ((t (:foreground "grey70"))))
- '(dired-mark ((t (:foreground "#ffa0a0"))))
- '(dired-marked ((t (:bold t :weight bold :foreground "DarkOrange"))))
- '(dired-perm-write ((t (:foreground "LightSkyBlue3"))))
- '(dired-symlink ((t (:foreground "khaki"))))
- '(dired-warning ((t (:bold t :weight bold :foreground "goldenrod"))))
+   ;; link
+   `(link ((t (:background ,desert-bg :foreground ,desert-red :bold t :underline nil))))
+   `(link-visited ((t (:inherit link :bold nil))))
 
- '(elscreen-tab-background-face ((t (:background "gray15"))))
- '(elscreen-tab-control-face
-   ((t (:bold t :weight bold :foreground "goldenrod" :background "gray15" :underline nil))))
- '(elscreen-tab-current-screen-face
-   ((t (:bold t :background "gray15" :foreground "goldenrod" :weight bold))))
- '(elscreen-tab-other-screen-face ((t (:background "gray15" :foreground "gray60"))))
+   ;; isearch
+   `(isearch ((t (:foreground ,desert-khaki :background ,desert-olive))))
+   `(isearch-lazy-light ((t (:background ,desert-bg :foreground ,desert-fg :bold t))))
 
- '(error ((t (:bold t :foreground "Pink" :weight bold))))
- '(escape-glyph ((t (:foreground "cyan"))))
- '(file-name-shadow ((t (:foreground "grey70"))))
+   ;; compilation
+   `(compilation-info ((t (:foreground ,desert-green :bold t :inherit nil))))
+   `(compilation-warning ((t (:foreground ,desert-khaki :bold t :inherit nil))))
 
- '(font-lock-builtin-face ((t (:foreground "MediumPurple3"))))
- '(font-lock-comment-delimiter-face ((t (:foreground "LightSkyBlue3"))))
- '(font-lock-comment-face ((t (:foreground "LightSkyBlue3"))))
- '(font-lock-constant-face ((t (:foreground "#ffa0a0"))))
- '(font-lock-doc-face ((t (:foreground "IndianRed3"))))
- '(font-lock-function-name-face ((t (:bold t :foreground "PaleGreen3" :weight bold))))
- '(font-lock-keyword-face ((t (:foreground "khaki"))))
- '(font-lock-negation-char-face ((t (nil))))
- '(font-lock-preprocessor-face ((t (:foreground "MediumPurple3"))))
- '(font-lock-regexp-grouping-backslash ((t (:bold t :weight bold))))
- '(font-lock-regexp-grouping-construct ((t (:bold t :weight bold))))
- '(font-lock-string-face ((t (:foreground "#ffa0a0"))))
- '(font-lock-type-face ((t (:bold t :foreground "PaleGreen3" :weight bold))))
- '(font-lock-variable-name-face ((t (:foreground "ghost white"))))
- '(font-lock-warning-face ((t (:bold t :foreground "goldenrod" :weight bold))))
+   ;; jabber.el
+   `(jabber-roster-user-chatty ((t (:inherit font-lock-type-face :bold t))))
+   `(jabber-roster-user-online ((t (:inherit font-lock-keyword-face :bold t))))
+   `(jabber-roster-user-offline ((t (:foreground ,desert-bg+1 :background ,desert-bg))))
+   `(jabber-roster-user-away ((t (:inherit font-lock-doc-face))))
+   `(jabber-roster-user-xa ((t (:inherit font-lock-doc-face))))
+   `(jabber-roster-user-dnd ((t (:inherit font-lock-comment-face))))
+   `(jabber-roster-user-error ((t (:inherit font-lock-warning-face))))
 
- '(fringe ((t (:background "gray20"))))
- '(glyphless-char ((t (:height 0.6))))
- '(header-line ((t (:background "gray15" :box (:color "gray20" :line-width 2)))))
- '(help-argument-name ((t (nil))))
- '(highlight ((t (:background "olivedrab" :foreground "khaki"))))
- '(ido-first-match ((t (:bold t :foreground "PaleGreen3" :weight bold))))
- '(ido-only-match ((t (:bold t :foreground "PaleGreen3" :weight bold))))
- '(ido-subdir ((t (:bold t :weight bold :foreground "khaki"))))
+   `(jabber-title-small ((t (:height 1.2 :weight bold))))
+   `(jabber-title-medium ((t (:inherit jabber-title-small :height 1.2))))
+   `(jabber-title-large ((t (:inherit jabber-title-medium :height 1.2))))
 
- '(isearch ((t (:background "olivedrab" :foreground "khaki"))))
- '(isearch-fail ((t (:background "red4"))))
- '(isearch-lazy-light
-   ((t (:bold t :background "gray20" :foreground "ghost white" :weight bold))))
+   `(jabber-chat-prompt-local ((t (:inherit font-lock-string-face :bold t))))
+   `(jabber-chat-prompt-foreign ((t (:inherit font-lock-function-name-face :bold nil))))
+   `(jabber-chat-prompt-system ((t (:inherit font-lock-comment-face :bold t))))
+   `(jabber-rare-time-face ((t (:inherit font-lock-function-name-face :bold nil))))
 
- '(italic ((t (:underline t))))
+   `(jabber-activity-face ((t (:inherit jabber-chat-prompt-foreign))))
+   `(jabber-activity-personal-face ((t (:inherit jabber-chat-prompt-local :bold t))))
 
- '(jabber-activity-face ((t (:bold t :weight bold :foreground "PaleGreen3"))))
- '(jabber-activity-personal-face ((t (:bold t :foreground "#ffa0a0" :weight bold))))
- '(jabber-chat-prompt-foreign ((t (:bold t :foreground "PaleGreen3" :weight bold))))
- '(jabber-chat-prompt-local ((t (:bold t :foreground "#ffa0a0" :weight bold))))
- '(jabber-chat-prompt-system ((t (:bold t :foreground "LightSkyBlue3" :weight bold))))
- '(jabber-rare-time-face ((t (:bold t :foreground "PaleGreen3" :weight bold))))
- '(jabber-roster-user-away ((t (:foreground "IndianRed3"))))
- '(jabber-roster-user-chatty ((t (:bold t :foreground "PaleGreen3" :weight bold))))
- '(jabber-roster-user-dnd ((t (:foreground "LightSkyBlue3"))))
- '(jabber-roster-user-error ((t (:bold t :weight bold :foreground "goldenrod"))))
- '(jabber-roster-user-offline ((t (:background "gray20" :foreground "gray40"))))
- '(jabber-roster-user-online ((t (:bold t :foreground "khaki" :weight bold))))
- '(jabber-roster-user-xa ((t (:foreground "IndianRed3"))))
- '(jabber-title-large ((t (:bold t :weight bold :height 1.728))))
- '(jabber-title-medium ((t (:bold t :weight bold :height 1.44))))
- '(jabber-title-small ((t (:bold t :weight bold :height 1.2))))
+   ;; ido
+   `(ido-first-match ((t (:foreground ,desert-green :bold t))))
+   `(ido-only-match ((t (:foreground ,desert-green :bold t))))
+   `(ido-subdir ((t (:foreground ,desert-khaki :bold t))))
 
- '(lazy-highlight ((t (:background "paleturquoise4"))))
- '(link ((t (:bold t :background "gray20" :foreground "MediumPurple3" :underline nil :weight bold))))
- '(link-visited ((t (:bold t :underline nil :foreground "MediumPurple3" :background "gray20" :weight bold))))
- '(linum ((t (:background "gray20" :foreground "yellow"))))
- '(match ((t (:bold t :weight bold))))
- '(menu ((t (nil))))
- '(minibuffer-prompt ((t (:bold t :foreground "khaki" :weight bold))))
+   ;; auto-complete
+   `(ac-candidate-face ((t (:background ,desert-bg-1 :foreground ,desert-fg))))
+   `(ac-selection-face ((t (:inherit highlight))))
+   `(ac-completion-face ((t (:inherit ac-selection-face))))
 
- '(mode-line
-   ((t (:box (:color "gray20" :line-width 2)
-             :background "gray15" :foreground "gray60"))))
- '(mode-line-buffer-id
-   ((t (:bold t :background "gray15" :box (:color "gray20" :line-width 2)
-              :foreground "goldenrod" :weight bold))))
- '(mode-line-emphasis ((t (:bold t :weight bold))))
- '(mode-line-highlight ((t (:box (:line-width 2 :color "grey40" :style released-button)))))
- '(mode-line-inactive
-   ((t (:foreground "gray60" :background "gray15"
-                    :box (:color "gray20" :line-width 2)))))
-
- '(mouse ((t (:background "khaki"))))
- '(next-error ((t (:background "olivedrab" :foreground "khaki"))))
- '(nobreak-space ((t (:foreground "cyan" :underline t))))
- '(query-replace ((t (:foreground "khaki" :background "olivedrab"))))
- '(region ((t (:foreground "khaki" :background "olivedrab"))))
- '(scroll-bar ((t (nil))))
- '(secondary-selection ((t (:background "SkyBlue4"))))
- '(shadow ((t (:foreground "grey70"))))
- '(show-paren-match ((t (:bold t :foreground "PaleGreen3" :weight bold))))
- '(show-paren-mismatch ((t (:bold t :foreground "goldenrod" :weight bold))))
- '(success ((t (:bold t :foreground "Green1" :weight bold))))
- '(tool-bar
-   ((t (:background "grey75" :foreground "black" :box (:line-width 1 :style released-button)))))
- '(tooltip ((t (:background "lightyellow" :foreground "black"))))
- '(trailing-whitespace ((t (:bold t :weight bold :foreground "goldenrod"))))
- '(underline ((t (:underline t))))
-
- '(vertical-border ((t (nil))))
- '(warning ((t (:bold t :foreground "DarkOrange" :weight bold))))
- '(widget-button ((t (:bold t :weight bold))))
- '(widget-button-pressed ((t (:foreground "red1"))))
- '(widget-documentation ((t (:foreground "lime green"))))
- '(widget-field ((t (:background "dim gray"))))
- '(widget-inactive ((t (:foreground "grey70"))))
- '(widget-single-line-field ((t (:background "dim gray")))) )
+   ;; elscreen
+   `(elscreen-tab-background-face ((t (:background ,desert-bg-1))))
+   `(elscreen-tab-other-screen-face
+     ((t (:background ,desert-bg-1 :foreground ,desert-bg+2))))
+   `(elscreen-tab-current-screen-face
+     ((t (:background ,desert-bg-1 :foreground ,desert-warning-fg :bold t))))
+   `(elscreen-tab-control-face
+     ((t (:inherit elscreen-tab-current-screen-face :underline nil))))))
 
 ;;;###autoload
 (when load-file-name
@@ -171,5 +139,11 @@
                (file-name-as-directory (file-name-directory load-file-name))))
 
 (provide-theme 'desert)
+
+;; Local Variables:
+;; no-byte-compile: t
+;; indent-tabs-mode: nil
+;; eval: (when (fboundp 'rainbow-mode) (rainbow-mode +1))
+;; End:
 
 ;;; desert-theme.el ends here
