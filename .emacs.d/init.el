@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-12-06 22:51:54 dharms>
+;; Modified Time-stamp: <2016-12-07 08:04:50 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2603,6 +2603,7 @@ customization."
   :defer t
   :config
   (use-package virtualenvwrapper)
+  (use-package sphinx-doc)
                                         ;(setq venv-location "?")
   ;; add jedi if installed
   (when (eq 0 (call-process "python" nil nil nil "-c" "import jedi"))
@@ -2669,7 +2670,7 @@ Requires Flake8 2.0 or newer. See URL
               (when (featurep 'jedi)
                 (define-key python-mode-map [(ctrl tab)] 'my/expand-jedi)
                 (define-key python-mode-map "\C-cx" 'jedi-direx:pop-to-buffer))
-              (use-package sphinx-doc :config (sphinx-doc-mode 1))
+              (sphinx-doc-mode 1)
               )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; qt-pro-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
