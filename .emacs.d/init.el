@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-12-07 08:04:50 dharms>
+;; Modified Time-stamp: <2016-12-07 17:47:46 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1769,9 +1769,10 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (set-face-attribute 'font-lock-comment-face nil :slant 'italic)
   (let ((sym (intern x)))
     (cond ((eq sym 'wombat)
-           (custom-theme-set-faces sym `(cursor ((t (:background "#8ac6f2"))))))
-          ))
-  )
+           (custom-theme-set-faces sym '(cursor ((t (:background "#8ac6f2"))))))
+          ((eq sym 'misterioso)
+           (custom-theme-set-faces sym '(cursor ((t (:background "#cae682"))))))
+          )))
 (advice-add 'counsel-load-theme-action :after #'my/after-load-theme)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; palette ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
