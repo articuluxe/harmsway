@@ -1772,6 +1772,9 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
            (custom-theme-set-faces sym '(cursor ((t (:background "#8ac6f2"))))))
           ((eq sym 'misterioso)
            (custom-theme-set-faces sym '(cursor ((t (:background "#cae682"))))))
+          ((eq sym 'granger)
+           (custom-theme-set-faces sym '(font-lock-comment-delimiter-face
+                                         ((t (:foreground "#496b83"))))))
           )))
 (advice-add 'counsel-load-theme-action :after #'my/after-load-theme)
 
