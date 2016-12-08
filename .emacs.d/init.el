@@ -1767,6 +1767,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (defun my/after-load-theme (x)
   "Run custom code after a theme X is loaded."
   (set-face-attribute 'font-lock-comment-face nil :slant 'italic)
+  (set-face-attribute 'font-lock-comment-delimiter-face nil :slant 'italic)
   (let ((sym (intern x)))
     (cond ((eq sym 'wombat)
            (custom-theme-set-faces sym '(cursor ((t (:background "#8ac6f2"))))))
