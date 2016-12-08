@@ -1774,18 +1774,6 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   )
 (advice-add 'counsel-load-theme-action :after #'my/after-load-theme)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; color-theme ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(eval-and-compile
-  (setq load-path (append `(,(concat my/plugins-directory "color-theme/")
-                            ,(concat my/plugins-directory "color-theme/themes/")
-                            ) load-path)))
-(use-package color-theme
-  :defer t
-  :config
-  (color-theme-initialize)
-  ;; (add-hook 'after-init-hook #'color-theme-initialize)
-  )
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; palette ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package palette)
 
