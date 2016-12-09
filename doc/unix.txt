@@ -4,7 +4,7 @@
 # Author:  <dan.harms@xrtrading.com>
 # Created: Friday, March 20, 2015
 # Version: 1.0
-# Modified Time-stamp: <2016-09-19 10:18:10 dan.harms>
+# Modified Time-stamp: <2016-12-09 12:49:17 dan.harms>
 # Modified by: Dan Harms
 # Keywords: help
 
@@ -54,6 +54,8 @@ mkdir bld && cd bld
 diff -qr one two
 comm -3 <(ls -l one) <(ls -l two)
 
+# send signal to halted process
+pkill -SIGUSR2 -n emacs
 # close a socket without killing process
 netstat -np
 # locate socket's file descriptor within process
