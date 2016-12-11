@@ -5,7 +5,3 @@ export MANPATH=
 export NAME='Dan Harms'
 
 export TAR=gtar
-
-export EMACSX=/Applications/emacs-25.1/Emacs.app/Contents/MacOS/Emacs
-export EDITOR="$EMACSX -nw"
-alias emacs=$EDITOR
