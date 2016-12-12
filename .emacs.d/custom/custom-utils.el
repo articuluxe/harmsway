@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-05-28 06:49:48 dharms>
+;; Modified Time-stamp: <2016-12-09 17:51:07 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -55,6 +55,7 @@
       (eval-region (min (point) (mark)) (max (point) (mark)))
     (pp-eval-last-sexp prefix)))
 
+;; todo: deprecate
 (defun find-file-upwards (dir file-to-find)
   "Recursively search upward for file; returns path to file or nil if not found."
   (interactive)
@@ -73,6 +74,7 @@
                          (directory-file-name parent))))))))
     (funcall find-file-r (or dir default-directory))))
 
+;; todo: deprecate
 (defun find-file-dir-upwards (file-to-find)
   "Recursively search upward for file; returns file's directory or nil if not found."
   (interactive)
