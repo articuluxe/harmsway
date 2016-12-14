@@ -5,16 +5,14 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Monday, May 30, 2016
 # Version: 1.0
-# Modified Time-stamp: <2016-05-30 10:49:39 dan.harms>
+# Modified Time-stamp: <2016-12-14 14:49:01 dan.harms>
 # Modified by: Dan Harms
 # Keywords: xr config
 
 bundle=ctags.bundle
 hosts="
 $VM
-hq-snapdev-77v
 carvzn-snap-06h
-chihq-benchmark-32e
 "
 
 cd ~/src/ctags/
