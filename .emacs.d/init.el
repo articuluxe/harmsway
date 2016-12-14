@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-12-13 14:04:43 dharms>
+;; Modified Time-stamp: <2016-12-14 15:17:16 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1158,11 +1158,11 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; avy ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package avy
-  :bind (("M-\" c" . avy-goto-char)
-         ("M-\" v" . avy-goto-char-2)
-         ("M-\" t" . avy-goto-char-timer)
-         ("M-\" w" . avy-goto-word-1)
-         ("M-\" l" . avy-goto-line)
+  :bind (("\e\ec" . avy-goto-char)
+         ("\e\ev" . avy-goto-char-2)
+         ("\e\et" . avy-goto-char-timer)
+         ("\e\ew" . avy-goto-word-1)
+         ("\e\el" . avy-goto-line)
          ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ivy ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
