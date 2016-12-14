@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-12-09 15:19:59 dan.harms>
+;; Modified Time-stamp: <2016-12-13 14:04:43 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1773,6 +1773,12 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
           ((eq sym 'misterioso)
            (custom-theme-set-faces sym '(cursor ((t (:background "#cae682"))))))
           ((eq sym 'granger)
+           (custom-theme-set-faces
+            sym `(font-lock-comment-delimiter-face
+                  ((t (:foreground ,(face-attribute
+                                     'font-lock-comment-face
+                                     :foreground nil 'default)))))))
+          ((eq sym 'brin)
            (custom-theme-set-faces
             sym `(font-lock-comment-delimiter-face
                   ((t (:foreground ,(face-attribute
