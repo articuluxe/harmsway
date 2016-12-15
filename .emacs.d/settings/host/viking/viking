@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-01-10 22:56:31 dharms>
+;; Modified Time-stamp: <2016-12-15 17:34:24 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -26,6 +26,11 @@
 ;;
 
 ;; Code:
+
+(add-to-list 'default-frame-alist
+             '(height . 70))
+(add-to-list 'default-frame-alist
+             '(width . 95))
 
 (my/load-site-file "talbot")
 

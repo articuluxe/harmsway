@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-03-30 18:27:21 dharms>
+;; Modified Time-stamp: <2016-12-15 17:47:07 dharms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -25,10 +25,6 @@
 
 ;;; Code:
 
-(setq default-frame-alist
-      '(
-        ;; (cursor-color . "red")
-        (cursor-type . (bar . 2))
-        ))
+(setq default-frame-alist '((cursor-type . bar)))
 
 ;; tty.el ends here

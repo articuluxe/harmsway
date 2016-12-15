@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-05-14 23:41:47 dharms>
+;; Modified Time-stamp: <2016-12-15 17:47:22 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -46,15 +46,11 @@
 (global-set-key [f11] 'ns-toggle-full-screen)
 (global-set-key "\C-c0q11" 'ns-toggle-full-screen)
 
+(setq default-frame-alist '((cursor-type . bar)))
+
 (setq initial-frame-alist
       '(
-        (top . 25) (left . 50) (height . 70) (width . 80)
-        ))
-(setq default-frame-alist
-      '(
-        ;; (cursor-color . "yellow")
-        (cursor-type . (bar . 2))
-        (height . 70) (width . 80)
+        (top . 25) (left . 50)
         ))
 
 ;; ns.el ends here

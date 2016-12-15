@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Monday, March 14, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-04-21 08:58:36 dan.harms>
+;; Modified Time-stamp: <2016-12-15 17:44:11 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: config
 
@@ -26,6 +26,11 @@
 ;;
 
 ;;; Code:
+
+(add-to-list 'default-frame-alist
+             '(height . 70))
+(add-to-list 'default-frame-alist
+             '(width . 95))
 
 (my/load-site-file "xr")
 

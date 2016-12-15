@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-03-30 18:27:21 dharms>
+;; Modified Time-stamp: <2016-12-15 17:48:04 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -39,14 +39,11 @@
 (setq mouse-wheel-progressive-speed nil)
 (setq mouse-wheel-follow-mouse nil)
 
+(setq default-frame-alist '((cursor-type . bar)))
+
 (setq initial-frame-alist
       '(
-        (top . 5) (left . 5) (height . 70) (width . 95)
-        ))
-(setq default-frame-alist
-      '(
-        (cursor-type . (bar . 2))
-        (height . 70) (width . 95)
+        (top . 5) (left . 5)
         ))
 
 ;; x.el ends here
