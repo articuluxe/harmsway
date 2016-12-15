@@ -2,8 +2,21 @@
 /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 brew install gnu-tar
 
+# python
+sudo easy_install pip
+sudo -H pip install jedi
+sudo -H pip install epc
+sudo -H pip install flake8
+
+# gnupg
+brew install homebrew/versions/gnupg21
+
 brew install coreutils
 (setq insert-directory-program "gls")
 (setq dired-use-ls-dired t)
 
 
+
+;; Local Variables:
+;; mode: sh
+;; End:

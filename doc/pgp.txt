@@ -4,7 +4,7 @@
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Wednesday, September 14, 2016
 # Version: 1.0
-# Modified Time-stamp: <2016-09-19 06:04:56 dharms>
+# Modified Time-stamp: <2016-12-18 19:20:09 dharms>
 # Modified by: Dan Harms
 # Keywords: pgp gpg
 
@@ -14,6 +14,9 @@ gpg --gen-key
 gpg --list-keys
 # Edit key
 gpg --edit-key
+## Assign trust
+trust
+5
 
 # Generate backups:
 gpg --armor --export > pgp-public-keys.asc
