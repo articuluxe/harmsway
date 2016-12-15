@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-12-14 15:17:16 dan.harms>
+;; Modified Time-stamp: <2016-12-15 10:52:33 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1195,6 +1195,8 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
          ("M-s M-y" . counsel-yank-pop)
          ("M-s M-b" . counsel-load-library)
          ("M-s M-m" . counsel-load-theme)
+         ("M-s M-x" . counsel-command-history)
+         ("M-s M-k" . counsel-descbinds)
          :map ivy-minibuffer-map
          ("M-y" . ivy-next-line-and-call)
          )

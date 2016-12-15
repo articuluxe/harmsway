@@ -1,6 +1,6 @@
 ;;; counsel.el --- Various completion functions using Ivy -*- lexical-binding: t -*-
 
-;; Copyright (C) 2015  Free Software Foundation, Inc.
+;; Copyright (C) 2015-2016  Free Software Foundation, Inc.
 
 ;; Author: Oleh Krehel <ohwoeowho@gmail.com>
 ;; URL: https://github.com/abo-abo/swiper
@@ -77,7 +77,7 @@
            (directory-file-name dir)) "/"))
 
 (defun counsel-string-compose (prefix str)
-  "Make PREFIX the display prefix of STR though text properties."
+  "Make PREFIX the display prefix of STR through text properties."
   (let ((str (copy-sequence str)))
     (put-text-property
      0 1 'display
@@ -1682,10 +1682,18 @@ If non-nil, EXTRA-AG-ARGS string is appended to BASE-CMD."
           (regex (counsel-unquote-regex-parens
                   (setq ivy--old-re
                         (ivy--regex string)))))
-      (let ((ag-cmd (format base-cmd
-                            (concat extra-ag-args
-                                    " -- "
-                                    (shell-quote-argument regex)))))
+      (let* ((args-end (string-match " -- " extra-ag-args))
+             (file (if args-end
+                       (substring-no-properties extra-ag-args (+ args-end 3))
+                     ""))
+             (extra-ag-args (if args-end
+                                (substring-no-properties extra-ag-args 0 args-end)
+                              extra-ag-args))
+             (ag-cmd (format base-cmd
+                             (concat extra-ag-args
+                                     " -- "
+                                     (shell-quote-argument regex)
+                                     file))))
         (if (file-remote-p default-directory)
             (split-string (shell-command-to-string ag-cmd) "\n" t)
           (counsel--async-command ag-cmd)
@@ -1707,7 +1715,7 @@ If non-nil, EXTRA-AG-ARGS string is appended to BASE-CMD."
                                     " in directory: "))))
     (setq extra-ag-args
           (or extra-ag-args
-              (let* ((pos (position ?  counsel-ag-base-command))
+              (let* ((pos (cl-position ?  counsel-ag-base-command))
                      (command (substring-no-properties counsel-ag-base-command 0 pos))
                      (ag-args (replace-regexp-in-string
                                "%s" "" (substring-no-properties counsel-ag-base-command pos))))
@@ -3027,6 +3035,89 @@ candidate."
               :history 'counsel-faces-history
               :caller 'counsel-faces
               :sort t)))
+
+;;** `counsel-command-history'
+(defun counsel-command-history-action-eval (cmd)
+  "Eval the command CMD."
+    (eval (read cmd)))
+
+(defun counsel-command-history-action-edit-and-eval (cmd)
+  "Edit and eval the command CMD."
+    (edit-and-eval-command "Eval: " (read cmd)))
+
+(ivy-set-actions
+ 'counsel-command-history
+ '(("r" counsel-command-history-action-eval           "eval command")
+   ("e" counsel-command-history-action-edit-and-eval  "edit and eval command")))
+
+(defun counsel-command-history ()
+  "Show the history of commands."
+  (interactive)
+  (ivy-read "%d Command: " (mapcar #'prin1-to-string command-history)
+          :require-match t
+          :action #'counsel-command-history-action-eval
+          :caller 'counsel-command-history))
+
+;;** `counsel-org-agenda-headlines'
+(defvar org-odd-levels-only)
+(declare-function org-set-startup-visibility "org")
+(declare-function org-show-entry "org")
+(declare-function org-map-entries "org")
+(declare-function org-heading-components "org")
+
+(defun counsel-org-agenda-headlines-action-goto (headline)
+  "Go to the `org-mode' agenda HEADLINE."
+  (find-file (nth 1 headline))
+  (org-set-startup-visibility)
+  (goto-char (nth 2 headline))
+  (org-show-entry))
+
+(ivy-set-actions
+ 'counsel-org-agenda-headlines
+ '(("g" counsel-org-agenda-headlines-action-goto "goto headline")))
+
+(defvar counsel-org-agenda-headlines-history nil
+  "History for `counsel-org-agenda-headlines'.")
+
+(defun counsel-org-agenda-headlines--candidates ()
+  "Return a list of completion candidates for `counsel-org-agenda-headlines'."
+  (org-map-entries
+   (lambda ()
+     (let* ((components (org-heading-components))
+            (level (make-string
+                    (if org-odd-levels-only
+                        (nth 1 components)
+                      (nth 0 components))
+                    ?*))
+            (todo (nth 2 components))
+            (priority (nth 3 components))
+            (text (nth 4 components))
+            (tags (nth 5 components)))
+       (list
+        (mapconcat
+         'identity
+         (cl-remove-if 'null
+                       (list
+                        level
+                        todo
+                        (if priority (format "[#%c]" priority))
+                        text
+                        tags))
+         " ")
+        (buffer-file-name) (point))))
+   nil
+   'agenda))
+
+;;;###autoload
+(defun counsel-org-agenda-headlines ()
+  "Choose from headers of `org-mode' files in the agenda."
+  (interactive)
+  (let ((minibuffer-allow-text-properties t))
+    (ivy-read "Org headline: "
+              (counsel-org-agenda-headlines--candidates)
+              :action #'counsel-org-agenda-headlines-action-goto
+              :history 'counsel-org-agenda-headlines-history
+              :caller 'counsel-org-agenda-headlines)))
 
 ;** `counsel-mode'
 (defvar counsel-mode-map
