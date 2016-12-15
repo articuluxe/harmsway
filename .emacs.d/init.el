@@ -1677,6 +1677,16 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   ;;(setq windmove-wrap-around t)
   )
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; buffer-move ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package
+ buffer-move
+ :bind (([(control shift up)] . buf-move-up)
+        ([(control shift down)] . buf-move-down)
+        ([(control shift left)] . buf-move-left)
+        ([(control shift right)] . buf-move-right)
+        ([(control shift end)] . buf-move)
+        ))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; frame-cmds ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; this also loads 'frame-fns
 (use-package frame-cmds
