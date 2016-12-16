@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Thursday, November  3, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-12-09 17:53:12 dharms>
+;; Modified Time-stamp: <2016-12-15 18:01:45 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: profiles project
 
@@ -27,6 +27,9 @@
 ;;
 
 ;;; Code:
+
+(require 'f)
+(require 'tramp)
 
 (defvar prof-obarray
   (let ((intern-obarray (make-vector 7 0)))
@@ -109,29 +112,32 @@ This does not otherwise remove any profiles from memory."
            (string-equal (cdr elt) profile))
          prof-path-alist)))
 
-(defun prof-find-file-upwards (dir file-to-find)
-  "Recursively search upward for file; returns path to file or nil if not found."
-  (interactive)
-  (let*
-      ((find-file-r
-        (lambda (path)
-          (let* ((parent (file-name-directory path))
-                 files)
-            (cond
-             ((or (null parent) (equal parent (directory-file-name parent))) nil)
-             ((setq files (directory-files parent t file-to-find))
-              (car files))              ;found
-             ;; parent of ~ is nil, parent of / is itself
-             ;; This terminating condition accounts for both
-             (t (funcall find-file-r
-                         (directory-file-name parent))))))))
-    (funcall find-file-r (or dir default-directory))))
+(defun prof-find-file-upwards-helper (path file)
+  "Helper function to search upward from PATH for FILE."
+  (let* ((parent (file-name-directory path))
+         files)
+    (cond
+     ;; parent of ~ is nil, parent of / is itself
+     ;; This terminating condition accounts for both
+     ((or (null parent) (equal parent (directory-file-name parent)))
+      nil)
+     ((setq files (directory-files parent t file))
+      (car files))                      ;found
+     (t (prof-find-file-upwards-helper
+         (directory-file-name parent))))))
 
-(defun prof-find-file-dir-upwards (file-to-find)
-  "Recursively search upward for file; returns file's directory or nil if not found."
+(defun prof-find-file-upwards (dir file)
+  "Recursively search upward from DIR for FILE.
+Return path to file or nil if not found."
   (interactive)
-  (let ((file (prof-find-file-upwards file-to-find)))
-    (if file (file-name-directory file) nil)))
+  (prof-find-file-upwards-helper (or dir default-directory) file))
+
+(defun prof-find-file-dir-upwards (file)
+  "Recursively search upward for FILE.
+Return that file's directory or nil if not found."
+  (interactive)
+  (let ((file (prof-find-file-upwards nil file)))
+    (when file (file-name-directory file))))
 
 (defun prof--find-root (dir &optional absolute)
   "Search for the project root, starting from DIR and moving up the file tree.
@@ -153,11 +159,28 @@ will be absolute.  Profile files can look like any of the following:
           (cons file (expand-file-name root))
         (cons file root)))))
 
+(defun prof--find-prof-basename (name)
+  "Return basename of profile located at NAME.
+For example, given a profile file `.mybase.eprof', the basename would be
+`mybase'."
+  (let ((base (file-name-base name)))
+    (when (string-match "\\.?\\(.+\\)" base)
+      (match-string-no-properties 1 base))))
+
+(defun prof--compute-remote-props (dir)
+  "Compute the remote properties associated with DIR.
+DIR may be remote."
+  (and dir (file-remote-p dir)
+       (with-parsed-tramp-file-name dir file
+         `( ,file-host ,file-localname
+                       ,(tramp-make-tramp-file-name
+                         file-method file-user file-host "")))))
+
 (defun prof--on-prof-activated (profile)
   "A profile PROFILE has been activated."
-  (unless (eq profile prof-current)
-    (setq prof-current profile)
-    ))
+  (and profile
+       (not (eq profile prof-current))
+       (setq prof-current profile)))
 
 (defadvice find-file-noselect-1
     (before before-find-file-no-select-1 activate)
@@ -174,8 +197,37 @@ will be absolute.  Profile files can look like any of the following:
     (let* ((root (prof--find-root (file-name-directory filename) t))
            (root-file (car root))
            (root-dir (cdr root))
-           ))
-    ))
+           (remote-props (prof--compute-remote-props root-dir))
+           remote-host remote-localname remote-prefix prof-basename)
+      (when remote-props
+        (setq remote-host (car remote-props))
+        (setq remote-localname (cadr remote-props))
+        (setq remote-prefix (caddr remote-props)))
+      (when (and root root-file root-dir
+                 (string-match "\\.[er]prof$" root-file)
+                 (not (string-equal root-dir
+                                    (prof-get prof-local :root-dir))))
+        ;; a new profile, not yet inited
+        (load-file root-file)
+        (setq prof-basename (prof--find-prof-basename root-file))
+        (when remote-props
+          (setq root-dir remote-localname))
+        (add-to-list 'prof-path-alist (cons root-dir prof-basename))
+        (setq prof-local
+              (intern-soft (prof-find-path-alist
+                            (expand-file-name filename)) prof-obarray))
+        (unless (prof-get prof-local :root-dir)
+          (prof-put prof-local :root-dir root-dir))
+        ;; change to absolute if necessary: in case the profile listed
+        ;; root-dir as relative
+        (when (f-relative? (prof-get prof-local :root-dir))
+          (prof-put prof-local :project-name
+                    (f-long (prof-get prof-local :root-dir))))
+        (unless (prof-get prof-local :project-name)
+          (prof-put prof-local :project-name prof-basename)))
+      ;; (prof--on-init                    ;etc
+      ;;  )
+      )))
 
 (provide 'profile)
 ;;; profile.el ends here
