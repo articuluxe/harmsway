@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-12-15 10:52:33 dan.harms>
+;; Modified Time-stamp: <2016-12-16 14:24:56 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1775,6 +1775,13 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (setq solarized-height-plus-3 1)
 (setq solarized-height-plus-4 1)
 
+(defvar my/sml-dark-themes '(jonadabian-slate)
+  "List of themes to which should be applied a dark sml theme.")
+(defvar my/sml-light-themes '()
+  "List of themes to which should be applied a light sml theme.")
+(defvar my/sml-respectful-themes '()
+  "List of themes to which should be applied a respectful sml theme.")
+
 (defun my/after-load-theme (x)
   "Run custom code after a theme X is loaded."
   (set-face-attribute 'font-lock-comment-face nil :slant 'italic)
@@ -1796,6 +1803,13 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
                   ((t (:foreground ,(face-attribute
                                      'font-lock-comment-face
                                      :foreground nil 'default)))))))
+          )
+    (cond ((memq sym my/sml-dark-themes)
+           (load-theme 'smart-mode-line-dark t))
+          ((memq sym my/sml-light-themes)
+           (load-theme 'smart-mode-line-light t))
+          ((memq sym my/sml-respectful-themes)
+           (load-theme 'smart-mode-line-respectful t))
           )))
 (advice-add 'counsel-load-theme-action :after #'my/after-load-theme)
 
