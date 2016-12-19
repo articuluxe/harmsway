@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-12-16 14:24:56 dan.harms>
+;; Modified Time-stamp: <2016-12-18 19:21:39 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -382,6 +382,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
          ("C-c 099" . my/add-epa-file-encrypt-to)
          )
   :init
+  (setq epa-pinentry-mode 'loopback)
   :config
   (setq epg-gpg-program "gpg2")
   (setq epa-file-select-keys nil)
