@@ -382,7 +382,6 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
          ("C-c 099" . my/add-epa-file-encrypt-to)
          )
   :init
-  (setq epa-pinentry-mode 'loopback)
   :config
   (setq epg-gpg-program "gpg2")
   (setq epa-file-select-keys nil)
