@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-12-15 17:34:24 dharms>
+;; Modified Time-stamp: <2016-12-19 17:33:55 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -21,19 +21,17 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-;; Commentary:
+;;; Commentary:
 
 ;;
 
-;; Code:
+;;; Code:
 
 (add-to-list 'default-frame-alist
-             '(height . 70))
+             (cons 'height (my/get-ideal-frame-height 75)))
 (add-to-list 'default-frame-alist
-             '(width . 95))
+             '(width . 90))
 
 (my/load-site-file "talbot")
 
-;(setq gen-tags-exe "/usr/local/bin/ctags")
-
-;; viking ends here
+;;; viking ends here

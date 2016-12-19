@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-12-18 19:21:39 dharms>
+;; Modified Time-stamp: <2016-12-19 17:31:51 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2337,6 +2337,12 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
          (copyright-update nil t)
          (time-stamp)
          ))
+
+(defun my/get-ideal-frame-height (&optional pixels)
+  "Return an ideal height for frames, given a toolbar height of PIXELS.
+This function's result only has value if it is preceded by any font changes."
+  (/ (- (display-pixel-height) (or pixels 90))
+     (frame-char-height)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; os ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (let* ((system-file (concat my/os-dir my/system-name)))

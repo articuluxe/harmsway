@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Monday, March 14, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-12-16 16:38:16 dan.harms>
+;; Modified Time-stamp: <2016-12-19 17:27:35 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: config
 
@@ -30,14 +30,9 @@
 (set-frame-font "Monospace 10" nil t)
 ; #<font-spec xft nil Monospace nil nil normal normal nil 10.0 nil nil nil ((:name . "Monospace"))>
 
-;; need to do this after setting the font
-(defun get-ideal-window-height ()
-  "Return an ideal window height for frames."
-  (/ (- (display-pixel-height) 90)
-     (frame-char-height)))
 
 (add-to-list 'default-frame-alist
-             (cons 'height (get-ideal-window-height)))
+             (cons 'height (my/get-ideal-frame-height)))
 (add-to-list 'default-frame-alist
              '(width . 95))
 
@@ -48,7 +43,11 @@
   (setq my/remote-host-list
         (append
          (list
-          '(:host "chihq-dev-02d-1" :user "dan.harms" :password "" :description "Dan Harms's Dev Workstation VM (virtual machine)" :category "snap")
+          '(:host "chihq-dev-02d-1"
+                  :user "dan.harms"
+                  :password ""
+                  :description "Dan Harms's Dev Workstation VM (virtual machine)"
+                  :category "snap")
           ) my/remote-host-list)))
 
 ;; chihq-dev-02d.lnx.xrtrading.local ends here
