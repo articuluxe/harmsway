@@ -4,7 +4,7 @@
 # Author:  <dan.harms@xrtrading.com>
 # Created: Friday, March 20, 2015
 # Version: 1.0
-# Modified Time-stamp: <2016-12-09 12:49:17 dan.harms>
+# Modified Time-stamp: <2016-12-20 12:53:10 dan.harms>
 # Modified by: Dan Harms
 # Keywords: help
 
@@ -41,15 +41,6 @@ pstack <pid>
 facter lsbdistrelease
 cat /etc/*-release
 
-# repeat a command every n seconds
-watch -n 5 who
-# repeat a command in a loop
-while sleep 1; do who; done
-
-# compile emacs
-mkdir bld && cd bld
-../configure [--with-png=no]
-
 # compare 2 directories
 diff -qr one two
 comm -3 <(ls -l one) <(ls -l two)
@@ -63,6 +54,13 @@ lsof -np <pid>
 # connect to process
 gdb -p <pid>
 "call close(<fd>)" "q"
+# count system's open file descriptors
+sysctl fs.file-nr
+# retrieve user's file descriptor limit
+ulimit -Hn
+# count file descriptors are in use by user
+sudo lsof -u <UID> 2>/dev/null | sc -l
+# edit /etc/security/limits.conf to change limit: user soft nproc 2000
 
 ################################ command line ################################
 # last command
@@ -124,17 +122,5 @@ awk '/^num/ {n++; sum+=$2} END {print n?sum/n:0}' file
 awk -F, 'NF < 18 { print $0;}' <file>
 # find which column matches a regex
 head -1 file.csv | awk -F, '{for (i=1; i <= NF; ++i) { if ($i ~ /regex/) {print i,$i;}}}'
-
-#################################### cron ####################################
-# ensure service is running
-service crond/atd status
-# edit/list/remove cron for current user
-crontab -e [l r]
-# add an at job (Ctrl-D ends)
-at HH:MM/midnight/noon/teatime
-at MMDDYY
-at now + 1 minutes/hours/days/weeks
-# view pending jobs for current user
-atq
 
 # code ends here
