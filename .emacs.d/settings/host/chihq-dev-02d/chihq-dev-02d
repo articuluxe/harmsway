@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Monday, March 14, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-12-19 17:27:35 dharms>
+;; Modified Time-stamp: <2016-12-20 09:12:59 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: config
 
@@ -32,7 +32,7 @@
 
 
 (add-to-list 'default-frame-alist
-             (cons 'height (my/get-ideal-frame-height)))
+             (cons 'height (my/get-ideal-frame-height 80)))
 (add-to-list 'default-frame-alist
              '(width . 95))
 
