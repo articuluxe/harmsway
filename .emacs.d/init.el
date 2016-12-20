@@ -1775,7 +1775,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (setq solarized-height-plus-3 1)
 (setq solarized-height-plus-4 1)
 
-(defvar my/sml-dark-themes '(jonadabian-slate)
+(defvar my/sml-dark-themes '(jonadabian-slate obsidian)
   "List of themes to which should be applied a dark sml theme.")
 (defvar my/sml-light-themes '()
   "List of themes to which should be applied a light sml theme.")
