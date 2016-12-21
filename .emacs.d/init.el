@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-12-21 11:11:00 dan.harms>
+;; Modified Time-stamp: <2016-12-21 14:50:10 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -131,7 +131,8 @@ up to 10 times."
 (put 'overwrite-mode 'disabled t)
 (fset 'yes-or-no-p 'y-or-n-p)
 ;; reuse frames
-(setq-default display-buffer-reuse-frames t)
+(when (version< emacs-version "24.3")
+  (setq-default display-buffer-reuse-frames t))
 ;; visual settings
 (menu-bar-mode -1)
 (setq-default fill-column 78)
@@ -139,11 +140,6 @@ up to 10 times."
   (modify-frame-parameters frame
                            '((vertical-scroll-bars . nil)
                              (horizontal-scroll-bars . nil))))
-;; default colors
-;; (set-foreground-color "white")
-;; (set-background-color "black")
-(set-cursor-color "yellow")
-(set-mouse-color "white")
 (mouse-avoidance-mode 'cat-and-mouse)
 (blink-cursor-mode 1)
 (setq blink-cursor-blinks 0)

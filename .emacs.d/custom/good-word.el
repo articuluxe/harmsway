@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Tuesday, October 18, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-10-21 07:03:09 dharms>
+;; Modified Time-stamp: <2016-12-21 16:39:57 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: text writing
 
@@ -33,7 +33,7 @@
 
 (use-package adaptive-wrap
   :config
-  (setq-default adaptive-wrap-extra-indent 2)
+  (setq-default adaptive-wrap-extra-indent -2)
   )
 
 (defun good-word/init-word-processor()
