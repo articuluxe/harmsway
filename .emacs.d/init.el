@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-12-21 14:50:10 dan.harms>
+;; Modified Time-stamp: <2016-12-21 15:42:44 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2564,6 +2564,7 @@ customization."
          )
   :commands (markdown-mode gfm-mode)
   :init
+  (setq markdown-command "Markdown.pl")
   (add-hook 'markdown-mode-hook #'good-word/init-word-processor)
   )
 
