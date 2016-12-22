@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Wednesday, December 21, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-12-21 12:52:38 dan.harms>
+;; Modified Time-stamp: <2016-12-22 11:16:55 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: themes colors
 
@@ -41,9 +41,11 @@
 (defvar my/sml-dark-themes
   '(jonadabian jonadabian-slate obsidian deeper-blue)
   "List of themes to which should be applied a dark sml theme.")
-(defvar my/sml-light-themes '()
+(defvar my/sml-light-themes
+  '(dichromacy)
   "List of themes to which should be applied a light sml theme.")
-(defvar my/sml-respectful-themes '()
+(defvar my/sml-respectful-themes
+  '()
   "List of themes to which should be applied a respectful sml theme.")
 
 (defun my/after-load-theme (x)

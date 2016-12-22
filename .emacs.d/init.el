@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-12-22 11:00:09 dan.harms>
+;; Modified Time-stamp: <2016-12-22 14:17:33 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -984,7 +984,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; savehist ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package savehist
-  :defer 10
+  :defer 3
   :config
   (setq savehist-additional-variables
         '(search-ring regexp-search-ring kill-ring compile-history))
@@ -999,7 +999,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; recentf ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package recentf
-  :defer 5
+  :defer 2
   :config
   (setq recentf-max-saved-items 200)
   (setq recentf-max-menu-items 12)
@@ -1375,9 +1375,16 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (org-babel-do-load-languages
    'org-babel-load-languages
    '(
-     (sh . t)
-     (python . t)
      (C . t)
+     (dot . t)
+     (emacs-lisp . t)
+     (plantuml . t)
+     (python . t)
+     (sed . t)
+     (sh . t)
+     (shell . t)
+     (sql . t)
+     (sqlite . t)
      ))
   (require 'ox-md)                      ;markdown export
   )
@@ -1613,7 +1620,6 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (use-package  diff-hl-dired
   :init (add-hook 'dired-mode-hook 'diff-hl-dired-mode-unless-remote))
 (use-package diff-hl
-  :defer 1
   :config
   (use-package diff-hl-flydiff :config (diff-hl-flydiff-mode 1))
   (global-diff-hl-mode 1)
@@ -1654,7 +1660,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; drag-stuff ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package
   drag-stuff
-  :defer 3
+  :defer 1
   :init
   (setq drag-stuff-modifier '(meta shift))
   :config
