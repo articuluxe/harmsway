@@ -2605,7 +2605,8 @@ customization."
   :config
   (use-package virtualenvwrapper)
   (use-package sphinx-doc)
-                                        ;(setq venv-location "?")
+  (use-package python-switch-quotes)
+  ;;(setq venv-location "?")
   ;; add jedi if installed
   (when (eq 0 (call-process "python" nil nil nil "-c" "import jedi"))
                                         ;      (setq jedi:setup-keys t)
@@ -2672,6 +2673,7 @@ Requires Flake8 2.0 or newer. See URL
                 (define-key python-mode-map [(ctrl tab)] 'my/expand-jedi)
                 (define-key python-mode-map "\C-cx" 'jedi-direx:pop-to-buffer))
               (sphinx-doc-mode 1)
+              (define-key python-mode-map "\C-c'" 'python-switch-quotes)
               )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; qt-pro-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
