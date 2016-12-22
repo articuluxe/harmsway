@@ -1617,10 +1617,9 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   :config
   (use-package diff-hl-flydiff :config (diff-hl-flydiff-mode 1))
   (global-diff-hl-mode 1)
-  ;; uncomment to use graphical display outside of terminal
-  ;; (unless (display-graphic-p)
+  (unless (display-graphic-p)
     (use-package diff-hl-margin :config (diff-hl-margin-mode 1))
-    ;; )
+    )
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; git-gutter ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
