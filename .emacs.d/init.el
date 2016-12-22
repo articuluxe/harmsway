@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-12-21 19:16:27 dharms>
+;; Modified Time-stamp: <2016-12-22 06:46:33 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2592,8 +2592,8 @@ customization."
 (use-package plantuml-mode
   :mode ("\\.plantuml$" . plantuml-mode)
   :init
-  (add-to-list 'org-src-lang-modes '("plantuml" . plantuml))
-  )
+  (with-eval-after-load 'org-src
+    (add-to-list 'org-src-lang-modes '("plantuml" . plantuml))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; python-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
