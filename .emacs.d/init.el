@@ -924,9 +924,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
           ("Shell Command Output" :regexp t :popup t :select nil)
           ("COMMIT_EDITMSG" :select t)
           ("gen-TAGS" :regexp t :popup t :select nil :align bottom)
-          )
-        shackle-default-rule '(:select nil)
-        )
+          ))
   (shackle-mode 1)
   )
 
