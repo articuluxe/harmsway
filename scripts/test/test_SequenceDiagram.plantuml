@@ -1,0 +1,37 @@
+@startuml
+/' This is a comment '/
+
+skinparam titleBorderRoundCorner 15
+skinparam titleBorderThickness 2
+skinparam titleBorderColor red
+skinparam titleBackgroundColor Aqua-CadetBlue
+
+title Simple communication\nexample
+
+caption This is a caption
+
+database db
+
+== startup ==
+
+Alice -> Bob: question
+activate Bob
+...
+Bob --> Bob: Should I answer?
+db <- Bob: consult
+...several minutes later...
+note right: this could be asynchronous
+
+== end of startup ==
+
+Bob --> Alice: response
+deactivate Bob
+
+header
+<font color=red>Warning:</font>
+Do not use in production.
+endheader
+
+center footer Generated for demonstration
+
+@enduml
