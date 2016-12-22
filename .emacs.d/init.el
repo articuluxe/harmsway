@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-12-21 15:42:44 dan.harms>
+;; Modified Time-stamp: <2016-12-21 19:16:27 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2586,6 +2586,13 @@ customization."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; pcap-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package pcap-mode
   :mode ("\\.pcap$" . pcap-mode)
+  )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; plantuml ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package plantuml-mode
+  :mode ("\\.plantuml$" . plantuml-mode)
+  :init
+  (add-to-list 'org-src-lang-modes '("plantuml" . plantuml))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; python-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
