@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Wednesday, December 21, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-12-22 11:16:55 dan.harms>
+;; Modified Time-stamp: <2016-12-23 09:29:51 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: themes colors
 
@@ -53,6 +53,12 @@
   (set-face-attribute 'font-lock-comment-face nil :slant 'italic)
   (set-face-attribute 'font-lock-comment-delimiter-face nil :slant 'italic)
   (let ((sym (intern x)))
+    (when (eq (face-attribute 'diff-hl-insert :background nil t) 'unspecified)
+      (custom-theme-set-faces
+       sym `(diff-hl-insert ((t (:background "green4" :foreground "green3"))))))
+    (when (eq (face-attribute 'diff-hl-delete :background nil t) 'unspecified)
+      (custom-theme-set-faces
+       sym `(diff-hl-delete ((t (:background "red4" :foreground "red3"))))))
     (cond ((eq sym 'wombat)
            (custom-theme-set-faces sym '(cursor ((t (:background "#8ac6f2"))))))
           ((eq sym 'misterioso)
