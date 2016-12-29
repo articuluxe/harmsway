@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-12-23 08:25:38 dharms>
+;; Modified Time-stamp: <2016-12-28 23:23:21 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1379,7 +1379,6 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
      (plantuml . t)
      (python . t)
      (sh . t)
-     (shell . t)
      (sql . t)
      (sqlite . t)
      ))
