@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-12-28 23:23:21 dharms>
+;; Modified Time-stamp: <2016-12-29 09:11:34 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1339,7 +1339,6 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (use-package org
   :defer t
   :init
-  (setq org-src-fontify-natively t)
   (setq org-replace-disputed-keys t)
   (setq org-catch-invisible-edits 'show-and-error)
   (setq org-use-property-inheritance t)
@@ -1352,6 +1351,12 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (setq org-enforce-todo-checkbox-dependencies t)
   (setq org-agenda-custom-commands
         '(("o" occur-tree "org")))
+  ;; babel
+  (setq org-src-fontify-natively t)
+  ;; following 3 variables are for white-space sensitive languages
+  (setq org-src-preserve-indentation t)
+  (setq org-src-tab-acts-natively t)
+  (setq org-edit-src-content-indentation 0)
   :config
   (require 'org-crypt)
   (org-crypt-use-before-save-magic)
