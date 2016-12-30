@@ -632,8 +632,8 @@
       (goto-char (point-min)))
     (if (get-buffer-window embrace--help-buffer)
         (display-buffer-reuse-window embrace--help-buffer alist)
-      (display-buffer-in-major-side-window
-       embrace--help-buffer 'bottom 0 alist))))
+      (display-buffer-in-side-window
+       embrace--help-buffer alist))))
 
 (defun embrace--pair-struct-to-keys (pair-struct)
   (list (propertize (format "%c" (embrace-pair-struct-key pair-struct))
@@ -918,7 +918,7 @@
 (defun embrace-ruby-mode-hook ()
   (dolist (lst '((?# "#{" "}")
                  (?d "do" "end")))
-    (embrace-add-pair (car lst) (cadr lst) (caddr lst))))
+    (embrace-add-pair (car lst) (cadr lst) (cl-caddr lst))))
 
 (provide 'embrace)
 ;;; embrace.el ends here
