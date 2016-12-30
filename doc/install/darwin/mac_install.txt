@@ -11,6 +11,11 @@ sudo -H pip install flake8
 # gnupg
 brew install homebrew/versions/gnupg21
 
+brew install pandoc
+
+brew install figlet
+brew install plantuml
+
 brew install coreutils
 (setq insert-directory-program "gls")
 (setq dired-use-ls-dired t)
