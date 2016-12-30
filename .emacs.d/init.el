@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-12-30 09:33:51 dan.harms>
+;; Modified Time-stamp: <2016-12-30 12:20:52 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1665,6 +1665,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; drag-stuff ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package
   drag-stuff
+  :disabled
   :defer 1
   :init
   (setq drag-stuff-modifier '(meta shift))
@@ -1673,6 +1674,12 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (add-to-list 'drag-stuff-except-modes 'org-mode)
   (drag-stuff-global-mode 1)
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; move-text ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package move-text
+  :bind (([(meta shift up)] . move-text-up)
+         ([(meta shift down)] . move-text-down)
+         ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; framemove ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package framemove
