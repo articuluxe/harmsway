@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-12-29 09:11:34 dharms>
+;; Modified Time-stamp: <2016-12-30 09:33:51 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1173,6 +1173,10 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
    t
    '(("I" ivy-insert-action "insert")))
   )
+(use-package ivy-rich
+  :init
+  (ivy-set-display-transformer 'ivy-switch-buffer
+                               'ivy-rich-switch-buffer-transformer))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; counsel ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package counsel
