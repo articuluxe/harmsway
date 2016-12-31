@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Thursday, November  3, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-12-15 18:01:45 dharms>
+;; Modified Time-stamp: <2016-12-30 16:43:26 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: profiles project
 
@@ -124,7 +124,7 @@ This does not otherwise remove any profiles from memory."
      ((setq files (directory-files parent t file))
       (car files))                      ;found
      (t (prof-find-file-upwards-helper
-         (directory-file-name parent))))))
+         (directory-file-name parent) file)))))
 
 (defun prof-find-file-upwards (dir file)
   "Recursively search upward from DIR for FILE.
@@ -147,7 +147,7 @@ will be absolute.  Profile files can look like any of the following:
 `.eprof', `my.eprof', `.my.eprof'."
   (let (root file)
     (setq root
-          (if (<= 24 emacs-major-version)
+          (if (functionp 'locate-dominating-file)
               (locate-dominating-file
                dir
                (lambda (parent)
@@ -176,6 +176,14 @@ DIR may be remote."
                        ,(tramp-make-tramp-file-name
                          file-method file-user file-host "")))))
 
+(defun prof--compute-stem (prof)
+  "Compute a project's stem. TODO."
+  (replace-regexp-in-string "~/" "" (prof-get prof :root-dir)))
+
+(defun prof--inited (prof)
+  "Initialize a profile PROF."
+  )
+
 (defun prof--on-prof-activated (profile)
   "A profile PROFILE has been activated."
   (and profile
@@ -193,12 +201,13 @@ DIR may be remote."
     (put 'prof-local 'permanent-local t)
     (setq prof-local
           (intern-soft (prof-find-path-alist
-                        (expand-file-name filename)) prof-obarray))
+                        (expand-file-name filename))
+                       prof-obarray))
     (let* ((root (prof--find-root (file-name-directory filename) t))
            (root-file (car root))
            (root-dir (cdr root))
            (remote-props (prof--compute-remote-props root-dir))
-           remote-host remote-localname remote-prefix prof-basename)
+           remote-host remote-localname remote-prefix basename)
       (when remote-props
         (setq remote-host (car remote-props))
         (setq remote-localname (cadr remote-props))
@@ -209,13 +218,15 @@ DIR may be remote."
                                     (prof-get prof-local :root-dir))))
         ;; a new profile, not yet inited
         (load-file root-file)
-        (setq prof-basename (prof--find-prof-basename root-file))
+        (setq basename (prof--find-prof-basename root-file))
         (when remote-props
           (setq root-dir remote-localname))
-        (add-to-list 'prof-path-alist (cons root-dir prof-basename))
+        (setq prof-path-alist (cons (cons root-dir basename)
+                                    prof-path-alist))
         (setq prof-local
               (intern-soft (prof-find-path-alist
-                            (expand-file-name filename)) prof-obarray))
+                            (expand-file-name filename))
+                           prof-obarray))
         (unless (prof-get prof-local :root-dir)
           (prof-put prof-local :root-dir root-dir))
         ;; change to absolute if necessary: in case the profile listed
@@ -224,7 +235,15 @@ DIR may be remote."
           (prof-put prof-local :project-name
                     (f-long (prof-get prof-local :root-dir))))
         (unless (prof-get prof-local :project-name)
-          (prof-put prof-local :project-name prof-basename)))
+          (prof-put prof-local :project-name basename))
+        (unless (prof-get prof-local :remote-host)
+          (prof-put prof-local :remote-host remote-host))
+        (unless (prof-get prof-local :remote-prefix)
+          (prof-put prof-local :remote-prefix remote-prefix))
+        (unless (prof-get prof-local :root-stem)
+          (prof-put prof-local :root-stem
+                    (prof--compute-stem prof-local)))
+        )
       ;; (prof--on-init                    ;etc
       ;;  )
       )))

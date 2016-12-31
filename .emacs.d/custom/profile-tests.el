@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Friday, December  9, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-12-09 17:38:55 dharms>
+;; Modified Time-stamp: <2016-12-30 07:17:43 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: profiles test
 
@@ -33,5 +33,15 @@
   (let ((byte-compile-error-on-warn t))
     (should (byte-compile-file "profile.el")) ;path?
     (delete-file "profile.elc" nil)))
+
+(ert-deftest profile-find-basename-test ()
+  (should (string-equal (prof--find-prof-basename "example.prof")
+                        "example"))
+  (should (string-equal (prof--find-prof-basename ".this.prof")
+                        "this"))
+  (should (not (string-equal (prof--find-prof-basename
+                              "unknown") "")))
+  )
+
 
 ;;; profile-tests.el ends here
