@@ -1,9 +1,9 @@
 ;; init.el --- Initialization file
-;; Copyright (C) 2015, 2016  Dan Harms (dharms)
+;; Copyright (C) 2015, 2016, 2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-12-30 12:20:52 dan.harms>
+;; Modified Time-stamp: <2017-01-01 12:15:44 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -444,11 +444,6 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (transient-mark-mode 1)
 ;; Insertion while text is selected deletes the selected text
 (delete-selection-mode 1)
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; region-state ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package region-state
-  :disabled
-  :demand t
-  :config (region-state-mode 1))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; multi-line ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
@@ -508,18 +503,6 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   )
 
 (use-package pos-tip :defer t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; rainbow ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package rainbow-mode
-  :if (version< "24.3" emacs-version)
-  :disabled
-  :config
-  ;; enable for emacs-lisp-mode
-  (add-to-list 'rainbow-html-colors-major-mode-list 'emacs-lisp-mode)
-  (add-to-list 'rainbow-x-colors-major-mode-list 'emacs-lisp-mode)
-  (add-to-list 'rainbow-ansi-colors-major-mode-list 'emacs-lisp-mode)
-  (add-to-list 'rainbow-r-colors-major-mode-list 'emacs-lisp-mode)
-  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; rotate ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package rotate
@@ -798,15 +781,6 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
          ("C-\\ C-b" . iy-go-to-or-up-to-continue-backward)
          ))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; idle-highlight ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package idle-highlight-mode
-  :disabled
-  :init
-  (setq idle-highlight-idle-time 10)
-  :config
-  (add-hook 'prog-mode-hook #'idle-highlight-mode)
-  )
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; figlet ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package figlet
   :bind (("C-c 0ff" . figlet)
@@ -1013,20 +987,6 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (setq uniquify-buffer-name-style 'post-forward-angle-brackets)
   (setq uniquify-after-kill-buffer-p t)
   (setq uniquify-ignore-buffers-re "^\\*")
-  )
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; uniquify-recentf ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defvar uniquify-recentf-func 'recentf-open-files
-  "Select recent files from `recentf' via a completion function.")
-(defun my/call-recentf-func () (interactive) (funcall uniquify-recentf-func))
-(use-package uniquify-recentf
-  :bind ("M-r" . my/call-recentf-func)
-  :disabled
-  :commands
-  (uniquify-recentf-ivy-recentf-open uniquify-recentf-ido-recentf-open)
-  :if (version< "24.3" emacs-version)
-  :config
-  (setq uniquify-recentf-func 'uniquify-recentf-ivy-recentf-open)
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ido ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1298,13 +1258,6 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   :bind (([?\C-.] . goto-last-change)
          ("M-' ." . goto-last-change)
          ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; goto-last-change ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package
- goto-last-change
- :disabled
- :bind ("C-M-," . goto-last-change)
- )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; tramp ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package tramp
@@ -1633,26 +1586,6 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
     )
   )
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; git-gutter ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package git-gutter
-  :disabled
-  :init
-  (setq git-gutter:hide-gutter t)
-  (setq git-gutter:diff-option "-w")
-  :config
-  (global-git-gutter-mode 1)
-  (setq git-gutter:update-interval 1)
-  (git-gutter:start-update-timer)
-  (global-set-key "\C-xvp" 'git-gutter:previous-hunk)
-  (global-set-key "\C-xvn" 'git-gutter:next-hunk)
-  (global-set-key "\C-xvd" 'git-gutter:popup-hunk)
-  (global-set-key "\C-xvt" 'git-gutter:toggle)
-  (global-set-key "\C-xvs" 'git-gutter:stage-hunk)
-  (global-set-key "\C-xvr" 'git-gutter:revert-hunk)
-  (global-set-key "\C-xvc" 'git-gutter:clear)
-  (global-set-key "\C-xvu" 'git-gutter:update-all-windows)
-  )
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; shebang ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package shebang)
 
@@ -1661,19 +1594,6 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   :bind (([?\C-,] . point-undo)
          ("M-' ," . point-undo)
          ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; drag-stuff ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package
-  drag-stuff
-  :disabled
-  :defer 1
-  :init
-  (setq drag-stuff-modifier '(meta shift))
-  :config
-  (drag-stuff-define-keys)
-  (add-to-list 'drag-stuff-except-modes 'org-mode)
-  (drag-stuff-global-mode 1)
-  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; move-text ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package move-text
@@ -2266,14 +2186,6 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   :bind (("M-r" . rotate-text)
          ("M-R" . rotate-text-backward)
          ))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; guide-key ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package guide-key
-  :if (version< "24.3" emacs-version)
-  :disabled
-  :config
-  (guide-key-mode 1)
-  )
 
 
 (add-hook 'before-save-hook 'my/before-save-hook)
