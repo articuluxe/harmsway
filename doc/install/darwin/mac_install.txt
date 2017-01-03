@@ -15,6 +15,7 @@ brew install pandoc
 
 brew install figlet
 brew install plantuml
+brew install cmake
 
 brew install coreutils
 (setq insert-directory-program "gls")
