@@ -478,6 +478,11 @@ C-c C-q    add a tag
 C-c C-c    add a tag for current headline
 C-c / m    create sparse-tree for matching tags/properties
 C-c / p    create sparse-tree for single property or {regexp}
+** Clocking
+C-c C-x C-i   clock in
+C-c C-x C-o   clock out
+** Columns
+C-c C-x C-c   activate column view
 
 
 ** Agenda
@@ -506,6 +511,8 @@ C-c C-w     refile
 
 ** Archive
 C-c C-x C-a     archive subtree
+C-c C-x C-s     archive subtree at point
+C-c C-x a       toggle archiving the current headline
 
 ** Tables
 *** Add width to a column: <12>
