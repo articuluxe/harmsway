@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-01-01 12:15:44 dharms>
+;; Modified Time-stamp: <2017-01-03 09:08:49 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -72,6 +72,7 @@
 (set-register ?\C-o (cons 'file "~/org"))
 
 (use-package custom-backups
+  :defines my/backup-exclude-regex
   :init
   (setq my/backup-exclude-regex
         "recentf\\|ido-last\\|emacs-bmk-bmenu-state")
@@ -137,6 +138,7 @@ up to 10 times."
 (menu-bar-mode -1)
 (setq-default fill-column 78)
 (defun my/disable-scroll-bars (frame)
+  "Disable scroll bars from frame FRAME."
   (modify-frame-parameters frame
                            '((vertical-scroll-bars . nil)
                              (horizontal-scroll-bars . nil))))
@@ -305,7 +307,9 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; align ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun align-values (start end)
-  "Vertically align region based on lengths of the first value of each line."
+  "Vertically align region from START to END.
+Alignment will be based on lengths of the first value of each
+line."
   (interactive "r")
   (align-regexp start end
                 "\\S-+\\(\\s-+\\)"
@@ -377,7 +381,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
          ("C-c 09S" . epa-sign-region)
          ("C-c 099" . my/add-epa-file-encrypt-to)
          )
-  :init
+  :defines epa-file-select-keys
   :config
   (setq epg-gpg-program "gpg2")
   (setq epa-file-select-keys nil)
@@ -522,6 +526,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ibuffer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package ibuffer
   :bind ("C-x C-b" . ibuffer)
+  :defines ibuffer-show-empty-filter-groups
   :init
   (setq ibuffer-expert t)
   (setq ibuffer-show-empty-filter-groups nil)
@@ -577,12 +582,15 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (defvar tag-lookup-target-profile nil
   "The working profile in effect when a tag is first looked up.")
 (defun my/store-profile ()
+  "Store the current profile."
   (setq tag-lookup-target-profile (symbol-name profile-current)))
 (defun my/tags-find-tag ()
+  "Find a tag based on the current profile."
   (interactive)
   (my/store-profile)
   (etags-select-find-tag))
 (defun my/tags-find-tag-at-point ()
+  "Find the tag at point based on the current profile."
   (interactive)
   (my/store-profile)
   (etags-select-find-tag-at-point))
@@ -632,6 +640,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; copyright ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package copyright
+  :defines copyright-query
   :init
   ;; copyright-update is added to my/before-save-hook below
   (setq copyright-query nil))
@@ -992,8 +1001,8 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ido ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defvar my/completion-framework-alist (list
                                        (cons "ido" 'my/activate-ido))
-  "An alist of completion frameworks to choose among.  Each value is a
- cons cell (`description' . `activation-function' ).")
+  "An alist of completion frameworks to choose among.
+Each value is a cons cell (`description' . `activation-function').")
 (use-package ido
   :defines (ido-temp-list)
   :defer t
@@ -1275,6 +1284,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; outline-magic ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun my/add-outline-cycle-binding (map)
+  "Add a key binding into keymap MAP for cycling outlines."
   (bind-key "C-c -" 'outline-cycle map))
 (use-package
  outline-magic
@@ -1295,6 +1305,19 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (global-set-key "\e\eos" #'org-sort-entries)
 (use-package org
   :defer t
+  :defines (
+            org-replace-disputed-keys
+            org-catch-invisible-edits
+            org-use-property-inheritance
+            org-use-tag-inheritance
+            org-log-done
+            org-enforce-todo-dependencies
+            org-enforce-todo-checkbox-dependencies
+            org-agenda-custom-commands
+            org-src-fontify-natively
+            org-src-preserve-indentation
+            org-src-tab-acts-natively
+            )
   :init
   (setq org-replace-disputed-keys t)
   (setq org-catch-invisible-edits 'show-and-error)
@@ -1396,7 +1419,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
             ((string= type "utime") (dired-sort-utime))
             ((string= type "time") (dired-sort-time))
             ((string= type "name") (dired-sort-name))
-            (t (error "unknown dired sort %s" type)))))
+            (t (error "Unknown dired sort %s" type)))))
   (define-key dired-mode-map "`" 'my/dired-sort)
 
   (defadvice shell-command
@@ -1497,6 +1520,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
                                                      )
                                  )))
 (defun my/diff-buffer-with-file ()
+  "Diff the current buffer with its file."
   (interactive)
   (diff-buffer-with-file (current-buffer)))
 (global-set-key "\M-sdd" #'my/diff-buffer-with-file)
@@ -1548,6 +1572,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 
 ;; add a merge both command
 (defun ediff-copy-both-to-C ()
+  "Add an ediff command to copy both variants."
   (interactive)
   (ediff-copy-diff
    ediff-current-difference nil 'C nil
@@ -2235,8 +2260,8 @@ This function's result only has value if it is preceded by any font changes."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; site ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun my/load-site-file (name)
-  "Load a site file associated with site NAME, and perform related
-customization."
+  "Load a site file associated with site NAME.
+This may perform related customization."
   (let* ((site-dir
           (file-name-as-directory
            (concat my/user-directory "settings/site/" name)))
