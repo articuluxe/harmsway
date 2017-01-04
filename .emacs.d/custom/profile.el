@@ -1,9 +1,9 @@
 ;;; profile.el --- manage profiles
-;; Copyright (C) 2016  Dan Harms (dharms)
+;; Copyright (C) 2016, 2017  Dan Harms (dharms)
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Thursday, November  3, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-12-30 16:43:26 dharms>
+;; Modified Time-stamp: <2017-01-03 17:32:57 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: profiles project
 
@@ -159,7 +159,7 @@ will be absolute.  Profile files can look like any of the following:
           (cons file (expand-file-name root))
         (cons file root)))))
 
-(defun prof--find-prof-basename (name)
+(defun prof--compute-basename (name)
   "Return basename of profile located at NAME.
 For example, given a profile file `.mybase.eprof', the basename would be
 `mybase'."
@@ -177,18 +177,46 @@ DIR may be remote."
                          file-method file-user file-host "")))))
 
 (defun prof--compute-stem (prof)
-  "Compute a project's stem. TODO."
+  "Compute a profile PROF's stem.
+This is useful in regexp-matching.  The profile's root-dir is
+probably a relative path, possibly including a `~' that
+represents the user's home directory."
   (replace-regexp-in-string "~/" "" (prof-get prof :root-dir)))
+
+(defun prof--loaded (prof)
+  "A profile PROF has been loaded.
+This may or may not be for the first time."
+  (unless (prof-get prof :inited)
+    (prof-put prof :inited t)
+    (prof--inited prof))
+  (unless (eq prof prof-current)
+    ;; todo: call hooks for profile change
+    (setq prof-current prof))
+  )
+
+(defun prof--log-profile-loaded (prof)
+  "Log a profile PROF upon initialization."
+  (let ((name (symbol-name prof)))
+    (unless (string-equal name "default")
+      (message "Loaded profile %s (project %s) at %s"
+               name
+               (prof-get prof :project-name)
+               (prof-get prof :root-dir)))))
+
+(defun prof--safe-funcall (prof property &rest rem)
+  "Call a function as defined in the PROPERTY of profile PROF.
+The function must exist and be bound."
+  (let ((func (intern-soft
+               (prof-get prof property))))
+    (and func (fboundp func) (funcall func rem))))
 
 (defun prof--inited (prof)
   "Initialize a profile PROF."
-  )
+  (prof--log-profile-loaded prof)
 
-(defun prof--on-prof-activated (profile)
-  "A profile PROFILE has been activated."
-  (and profile
-       (not (eq profile prof-current))
-       (setq prof-current profile)))
+  ;; todo
+  (prof--safe-funcall prof :init)
+  )
 
 (defadvice find-file-noselect-1
     (before before-find-file-no-select-1 activate)
@@ -218,7 +246,7 @@ DIR may be remote."
                                     (prof-get prof-local :root-dir))))
         ;; a new profile, not yet inited
         (load-file root-file)
-        (setq basename (prof--find-prof-basename root-file))
+        (setq basename (prof--compute-basename root-file))
         (when remote-props
           (setq root-dir remote-localname))
         (setq prof-path-alist (cons (cons root-dir basename)
@@ -244,8 +272,7 @@ DIR may be remote."
           (prof-put prof-local :root-stem
                     (prof--compute-stem prof-local)))
         )
-      ;; (prof--on-init                    ;etc
-      ;;  )
+      (prof--loaded prof-local)
       )))
 
 (provide 'profile)

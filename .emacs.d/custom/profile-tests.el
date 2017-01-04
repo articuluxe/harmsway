@@ -1,9 +1,9 @@
 ;;; profile-tests.el --- test profiles
-;; Copyright (C) 2016  Dan Harms (dharms)
+;; Copyright (C) 2016, 2017  Dan Harms (dharms)
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Friday, December  9, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-12-30 07:17:43 dharms>
+;; Modified Time-stamp: <2017-01-03 17:52:16 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: profiles test
 
@@ -29,19 +29,48 @@
 (require 'ert)
 (require 'profile)
 
+(defun prof-test-reset-all ()
+  "Reset all profile-related data structures to nil."
+  (setq prof-obarray (make-vector 7 0))
+  (intern "default" prof-obarray)
+  (setq prof-path-alist '())
+  (setq prof-current nil)
+  (setq prof-local (default-value 'prof-local))
+  )
+
 (ert-deftest profile-compile-test()
   (let ((byte-compile-error-on-warn t))
     (should (byte-compile-file "profile.el")) ;path?
     (delete-file "profile.elc" nil)))
 
-(ert-deftest profile-find-basename-test ()
-  (should (string-equal (prof--find-prof-basename "example.prof")
+(ert-deftest profile-compute-basename-test ()
+  (should (string-equal (prof--compute-basename "example.prof")
                         "example"))
-  (should (string-equal (prof--find-prof-basename ".this.prof")
+  (should (string-equal (prof--compute-basename ".this.prof")
                         "this"))
-  (should (not (string-equal (prof--find-prof-basename
+  (should (not (string-equal (prof--compute-basename
                               "unknown") "")))
   )
 
+(ert-deftest profile-compute-stem-test ()
+  (let ((prof (intern "temp" prof-obarray)) str)
+    ;; absolute path
+    (setq str "/home/me/temp/")
+    (prof-put prof :root-dir str)
+    (should (string= (prof--compute-stem prof) str))
+    ;; absolute, without trailing slash
+    (setq str "/home/me/temp")
+    (prof-put prof :root-dir str)
+    (should (string= (prof--compute-stem prof) str))
+    (prof-put prof :root-dir "~/me")
+    (should (string= (prof--compute-stem prof) "me"))
+    ))
+
+(ert-deftest profile-open-profile-test ()
+  (prof-test-reset-all)
+  (load-file (concat default-directory "tests/a/b/c/d/dfile"))
+  (should (equal prof-path-alist
+                 '("~/.emacs.d/wrong" . "c")))
+  )
 
 ;;; profile-tests.el ends here
