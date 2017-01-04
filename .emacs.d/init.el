@@ -1,9 +1,9 @@
 ;; init.el --- Initialization file
-;; Copyright (C) 2015, 2016, 2017  Dan Harms (dharms)
+;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-01-03 22:47:44 dharms>
+;; Modified Time-stamp: <2017-01-04 08:44:41 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2238,8 +2238,9 @@ Each value is a cons cell (`description' . `activation-function').")
                      gitattributes-mode
                      ))
          (delete-trailing-whitespace)
-         (copyright-update nil t)
-         (copyright-fix-years)
+         (save-excursion
+           (copyright-update nil t)
+           (copyright-fix-years))
          (time-stamp)
          ))
 
