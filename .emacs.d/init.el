@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-01-04 17:06:43 dan.harms>
+;; Modified Time-stamp: <2017-01-04 22:17:55 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1062,7 +1062,18 @@ Each value is a cons cell (`description' . `activation-function').")
   :bind ("M--" . ace-window)
   :init
   (setq aw-reverse-frame-list t)
-  )
+  (setq aw-dispatch-alist
+        '(
+          (?x aw-delete-window " Ace-Delete")
+          (?s aw-swap-window " Ace-Swap")
+          (?m aw-move-window " Ace-Move")
+          (?n aw-flip-window)
+          (?o delete-other-windows)
+          (?b balance-windows)
+          (?i delete-other-windows " Ace-Maximize")
+          (?v aw-split-window-vert " Ace-Split Vert")
+          (?h aw-split-window-horz " Ace-Split Horiz")
+          )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; isearch ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq isearch-allow-scroll t)
