@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-01-04 08:44:41 dan.harms>
+;; Modified Time-stamp: <2017-01-04 17:06:43 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1319,6 +1319,11 @@ Each value is a cons cell (`description' . `activation-function').")
             org-src-fontify-natively
             org-src-preserve-indentation
             org-src-tab-acts-natively
+            org-edit-src-content-indentation
+            org-columns-default-format
+            org-log-refile
+            org-refile-targets
+            org-archive-location
             )
   :init
   (setq org-replace-disputed-keys t)
@@ -1339,6 +1344,9 @@ Each value is a cons cell (`description' . `activation-function').")
   (setq org-src-preserve-indentation t)
   (setq org-src-tab-acts-natively t)
   (setq org-edit-src-content-indentation 0)
+  ;; columns
+  ;; (to see clocked time add: %10CLOCKSUM %15TIMESTAMP_IA)
+  (setq org-columns-default-format "%40ITEM %TODO %PRIORITY %TAGS")
   :config
   (require 'org-crypt)
   (org-crypt-use-before-save-magic)
@@ -1357,10 +1365,15 @@ Each value is a cons cell (`description' . `activation-function').")
                         ))
   ;; capture
   (setq org-default-notes-file "~/Dropbox/notes/todo.org")
+  ;; refiling
+  (setq org-log-refile 'time)
+  (setq org-refile-targets '((nil :maxlevel . 9)
+                             (org-agenda-files :maxlevel . 9)))
+  ;; archiving
+  (setq org-archive-location "~/org/archive.org::* From %s")
   (org-babel-do-load-languages
    'org-babel-load-languages
-   '(
-     (C . t)
+   '((C . t)
      (dot . t)
      (emacs-lisp . t)
      (plantuml . t)
