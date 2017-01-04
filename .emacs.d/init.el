@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-01-03 09:08:49 dan.harms>
+;; Modified Time-stamp: <2017-01-03 22:47:44 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -640,10 +640,12 @@ line."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; copyright ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package copyright
-  :defines copyright-query
+  :defines (copyright-query copyright-year-ranges)
   :init
   ;; copyright-update is added to my/before-save-hook below
-  (setq copyright-query nil))
+  (setq copyright-query nil)
+  (setq copyright-year-ranges t)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; hide-lines ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package hide-lines :bind ("C-c l" . hide-lines))
@@ -2237,6 +2239,7 @@ Each value is a cons cell (`description' . `activation-function').")
                      ))
          (delete-trailing-whitespace)
          (copyright-update nil t)
+         (copyright-fix-years)
          (time-stamp)
          ))
 
