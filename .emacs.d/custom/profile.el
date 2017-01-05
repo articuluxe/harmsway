@@ -1,9 +1,9 @@
 ;;; profile.el --- manage profiles
-;; Copyright (C) 2016, 2017  Dan Harms (dharms)
+;; Copyright (C) 2016-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Thursday, November  3, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-01-03 17:32:57 dharms>
+;; Modified Time-stamp: <2017-01-04 17:53:51 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: profiles project
 
@@ -57,19 +57,17 @@ of no matches, the default profile is instead used.")
   "Get from PROFILE the value associated with PROPERTY."
   (let ((p (intern-soft profile prof-obarray))
         parent parentname)
-    (if p
-        (or (get p property)
-            (and (not inhibit-polymorphism)
-                 parentname
-                 (setq parentname (get p :parent))
-                 (setq parent (intern-soft parentname prof-obarray))
-                 (prof-get parent property)))
-      (error "Invalid profile %s" profile))))
+    (when p
+      (or (get p property)
+          (and (not inhibit-polymorphism)
+               (setq parentname (get p :parent))
+               (setq parent (intern-soft parentname prof-obarray))
+               (prof-get parent property))))))
 
-(defun prof-define (profile &rest plist)
+(defun prof-define (profile-name &rest plist)
   "Create or replace a profile named PROFILE.
 Add to it the property list PLIST."
-  (let ((p (intern profile prof-obarray)))
+  (let ((p (intern profile-name prof-obarray)))
     (setplist p plist)))
 
 (defun prof-define-derived (profile parent &rest plist)
@@ -242,8 +240,9 @@ The function must exist and be bound."
         (setq remote-prefix (caddr remote-props)))
       (when (and root root-file root-dir
                  (string-match "\\.[er]prof$" root-file)
-                 (not (string-equal root-dir
-                                    (prof-get prof-local :root-dir))))
+                 (or (not prof-local)
+                     (not (string-equal root-dir
+                                        (prof-get prof-local :root-dir)))))
         ;; a new profile, not yet inited
         (load-file root-file)
         (setq basename (prof--compute-basename root-file))
