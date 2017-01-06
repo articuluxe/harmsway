@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Thursday, November  3, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-01-04 17:53:51 dharms>
+;; Modified Time-stamp: <2017-01-06 08:03:04 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: profiles project
 
@@ -28,8 +28,12 @@
 
 ;;; Code:
 
+(require 'profile-tags)
+(require 'profile-sml)
+
 (require 'f)
 (require 'tramp)
+(require 'switch-buffer-functions)
 
 (defvar prof-obarray
   (let ((intern-obarray (make-vector 7 0)))
@@ -43,6 +47,12 @@ of no matches, the default profile is instead used.")
 (defvar prof-local (intern-soft "default" prof-obarray))
 (defvar prof-current nil)
 
+;; hooks
+(defvar prof-on-profile-inited '()
+  "Hooks run when a profile is first loaded.")
+(defvar prof-on-profile-loaded '()
+  "Hooks run whenever a profile becomes active.")
+
 (defun prof-p (prof)
   "Return non-nil if PROF is a profile."
   (intern-soft prof prof-obarray))
@@ -54,7 +64,9 @@ of no matches, the default profile is instead used.")
       (error "Invalid profile %s" profile))))
 
 (defun prof-get (profile property &optional inhibit-polymorphism)
-  "Get from PROFILE the value associated with PROPERTY."
+  "Get from PROFILE the value associated with PROPERTY.
+INHIBIT-POLYMORPHISM, if non-nil, will constrain lookup from
+searching in any bases."
   (let ((p (intern-soft profile prof-obarray))
         parent parentname)
     (when p
@@ -64,10 +76,10 @@ of no matches, the default profile is instead used.")
                (setq parent (intern-soft parentname prof-obarray))
                (prof-get parent property))))))
 
-(defun prof-define (profile-name &rest plist)
+(defun prof-define (profile &rest plist)
   "Create or replace a profile named PROFILE.
 Add to it the property list PLIST."
-  (let ((p (intern profile-name prof-obarray)))
+  (let ((p (intern profile prof-obarray)))
     (setplist p plist)))
 
 (defun prof-define-derived (profile parent &rest plist)
@@ -81,6 +93,14 @@ Its parent is PARENT.  Add to it the property list PLIST."
   (assoc-default
    (or filename (buffer-file-name) (buffer-name))
    prof-path-alist 'string-match))
+
+(defun prof--safe-funcall (prof property &rest rem)
+  "Call a function from profile PROF stored in its PROPERTY tag.
+The function is called with arguments REM.  The function must
+exist and be bound."
+  (let ((func (intern-soft
+               (prof-get prof property))))
+    (and func (fboundp func) (funcall func rem))))
 
 (defun prof-soft-reset ()
   "Reset the current profile.
@@ -181,17 +201,6 @@ probably a relative path, possibly including a `~' that
 represents the user's home directory."
   (replace-regexp-in-string "~/" "" (prof-get prof :root-dir)))
 
-(defun prof--loaded (prof)
-  "A profile PROF has been loaded.
-This may or may not be for the first time."
-  (unless (prof-get prof :inited)
-    (prof-put prof :inited t)
-    (prof--inited prof))
-  (unless (eq prof prof-current)
-    ;; todo: call hooks for profile change
-    (setq prof-current prof))
-  )
-
 (defun prof--log-profile-loaded (prof)
   "Log a profile PROF upon initialization."
   (let ((name (symbol-name prof)))
@@ -201,24 +210,36 @@ This may or may not be for the first time."
                (prof-get prof :project-name)
                (prof-get prof :root-dir)))))
 
-(defun prof--safe-funcall (prof property &rest rem)
-  "Call a function as defined in the PROPERTY of profile PROF.
-The function must exist and be bound."
-  (let ((func (intern-soft
-               (prof-get prof property))))
-    (and func (fboundp func) (funcall func rem))))
-
 (defun prof--inited (prof)
   "Initialize a profile PROF."
-  (prof--log-profile-loaded prof)
-
-  ;; todo
-  (prof--safe-funcall prof :init)
   )
 
-(defadvice find-file-noselect-1
-    (before before-find-file-no-select-1 activate)
-  (prof--file-opened buf filename))
+(defun prof--loaded (prof)
+  "A profile PROF has been loaded.
+This may or may not be for the first time."
+  (unless (prof-get prof :inited)
+    (prof-put prof :inited t)
+    (run-hook-with-args 'prof-on-profile-inited prof)
+    (prof--safe-funcall prof :init)
+    (prof--log-profile-loaded prof)
+    )
+  (unless (eq prof prof-current)
+    (let ((prof-old prof-current))
+      (setq prof-current prof)
+      (run-hook-with-args 'prof-on-profile-loaded prof)
+      )))
+
+;; (add-hook 'switch-buffer-functions
+;;           (lambda (prev curr)
+;;             (when (local-variable-p 'prof-local curr)
+;;               (with-current-buffer curr ;todo: is there a better way?
+;;                 (setq prof-current prof-local)))))
+
+;; (defadvice find-file-noselect-1
+;;     (before before-find-file-no-select-1 activate)
+;;   (prof--file-opened buf filename))
+
+;(advice-add 'find-file-noselect-1 :before 'prof--file-opened)
 
 (defun prof--file-opened (buffer filename)
   "Initialize a profile, if necessary, for BUFFER, visiting FILENAME."

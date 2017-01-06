@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Friday, December  9, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-01-04 17:54:56 dharms>
+;; Modified Time-stamp: <2017-01-05 08:45:14 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: profiles test
 
@@ -45,7 +45,7 @@
 
 (ert-deftest prof-manipulate-properties-test ()
   (prof-test-reset-all)
-  (profile-define "test")
+  (prof-define "test")
   (let ((p (intern-soft "test" prof-obarray)))
     (should (prof-p p))
     (should-not (prof-get p :a))
@@ -57,8 +57,8 @@
 
 (ert-deftest prof-manipulate-properties-derived-test ()
   (prof-test-reset-all)
-  (profile-define "parent" :p 'value)
-  (profile-define-derived "child" "parent")
+  (prof-define "parent" :p 'value)
+  (prof-define-derived "child" "parent")
   (let ((p (intern "child" prof-obarray)))
     (should (prof-p p))
     (should (eq (prof-get p :p) 'value))
@@ -88,11 +88,21 @@
     (should (string= (prof--compute-stem prof) "me"))
     ))
 
+(ert-deftest prof-find-root-test ()
+  (let ((base default-directory) dir)
+    (setq dir (concat base "tests/a/b/c/d"))
+    (should (equal (prof--find-root dir t)
+                   (cons (concat base "tests/a/b/c/c.eprof")
+                         (concat base "tests/a/b/c/"))))
+    ))
+
 (ert-deftest prof-open-profile-test ()
   (prof-test-reset-all)
-  (find-file (concat default-directory "tests/a/b/c/d/dfile"))
-  (should (equal prof-path-alist
-                 '("~/.emacs.d/wrong" . "c")))
-  )
+  (let ((base (concat default-directory "tests/")))
+    (find-file (concat base "a/b/c/d/dfile"))
+    (should (equal prof-path-alist
+                   (list (cons (concat base "a/b/c/") "c"))))
+    (kill-buffer "dfile")
+  ))
 
 ;;; profile-tests.el ends here
