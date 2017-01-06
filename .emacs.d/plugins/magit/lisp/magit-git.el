@@ -1,6 +1,6 @@
 ;;; magit-git.el --- Git functionality  -*- lexical-binding: t -*-
 
-;; Copyright (C) 2010-2016  The Magit Project Contributors
+;; Copyright (C) 2010-2017  The Magit Project Contributors
 ;;
 ;; You should have received a copy of the AUTHORS.md file which
 ;; lists all contributors.  If not, see http://magit.vc/authors.
@@ -100,7 +100,7 @@
   `("--no-pager" "--literal-pathspecs" "-c" "core.preloadindex=true"
     ,@(and (eq system-type 'windows-nt)
            (list "-c" "i18n.logOutputEncoding=UTF-8")))
-  "Global git arguments.
+  "Global Git arguments.
 
 The arguments set here are used every time the git executable is
 run as a subprocess.  They are placed right after the executable
@@ -114,11 +114,11 @@ know what you are doing.  And think very hard before adding
 something; it will be used every time Magit runs Git for any
 purpose."
   :package-version '(magit . "2.9.0")
-  :group 'magit
+  :group 'magit-git-arguments
   :group 'magit-process
   :type '(repeat string))
 
-(defcustom magit-git-debug nil
+(defvar magit-git-debug nil
   "Whether to enable additional reporting of git errors.
 
 Magit basically calls git for one of these two reasons: for
@@ -134,10 +134,7 @@ option is non-nil and git returns with a non-zero exit status,
 then at least its standard error is inserted into this buffer.
 
 This is only intended for debugging purposes.  Do not enable this
-permanently, that would negatively affect performance"
-  :group 'magit
-  :group 'magit-process
-  :type 'boolean)
+permanently, that would negatively affect performance.")
 
 (defcustom magit-ref-namespaces
   '(("^@$"                       magit-head nil)
@@ -164,7 +161,7 @@ font FONT.  If FORMATTER is non-nil it should be a function that
 takes two arguments, the full ref and the face.  It is supposed
 to return a propertized label that represents the ref."
   :package-version '(magit . "2.1.0")
-  :group 'magit-modes
+  :group 'magit-miscellanous
   :type '(repeat
           (list regexp
                 face
@@ -875,15 +872,20 @@ which is different from the current branch and still exists."
                (concat "refs/remotes/" remote "/" (substring merge 11))))))))
 
 (cl-defun magit-get-upstream-branch
-    (&optional (branch (magit-get-current-branch)))
-  (when branch
-    (let ((remote (magit-get "branch" branch "remote"))
-          (merge  (magit-get "branch" branch "merge")))
-      (when (and remote merge (string-prefix-p "refs/heads/" merge))
-        (setq merge (substring merge 11))
-        (if (string-equal remote ".")
-            (propertize merge 'face 'magit-branch-local)
-          (propertize (concat remote "/" merge) 'face 'magit-branch-remote))))))
+    (&optional (branch (magit-get-current-branch)) verify)
+  (and branch
+       (-when-let* ((remote (magit-get "branch" branch "remote"))
+                    (merge  (magit-get "branch" branch "merge")))
+         (and (string-prefix-p "refs/heads/" merge)
+              (let* ((upstream (substring merge 11))
+                     (upstream
+                      (if (string-equal remote ".")
+                          (propertize upstream 'face 'magit-branch-local)
+                        (propertize (concat remote "/" upstream)
+                                    'face 'magit-branch-remote))))
+                (and (or (not verify)
+                         (magit-rev-verify upstream))
+                     upstream))))))
 
 (defun magit-get-indirect-upstream-branch (branch &optional force)
   (let ((remote (magit-get "branch" branch "remote")))
@@ -915,9 +917,13 @@ which is different from the current branch and still exists."
       (magit-get "remote.pushDefault")))
 
 (cl-defun magit-get-push-branch
-    (&optional (branch (magit-get-current-branch)))
-  (-when-let (remote (and branch (magit-get-push-remote branch)))
-    (concat remote "/" branch)))
+    (&optional (branch (magit-get-current-branch)) verify)
+  (and branch
+       (-when-let* ((remote (magit-get-push-remote branch))
+                    (push-branch (concat remote "/" branch)))
+         (and (or (not verify)
+                  (magit-rev-verify push-branch))
+              push-branch))))
 
 (defun magit-get-@{push}-branch (&optional branch)
   (let ((ref (magit-rev-parse "--symbolic-full-name"
@@ -1529,19 +1535,5 @@ Return a list of two integers: (A>B B>A)."
 (gv-define-setter magit-get (val &rest keys)
   `(magit-set ,val ,@keys))
 
-;;; magit-git.el ends soon
-
-(define-obsolete-variable-alias 'magit-git-standard-options
-  'magit-git-global-arguments "Magit 2.1.0")
-(define-obsolete-function-alias 'magit-get-tracked-ref
-  'magit-get-upstream-ref "Magit 2.4.0")
-(define-obsolete-function-alias 'magit-get-tracked-branch
-  'magit-get-upstream-branch "Magit 2.4.0")
-(define-obsolete-function-alias 'magit-get-tracked-remote
-  'magit-get-upstream-remote "Magit 2.4.0")
-
 (provide 'magit-git)
-;; Local Variables:
-;; indent-tabs-mode: nil
-;; End:
 ;;; magit-git.el ends here
