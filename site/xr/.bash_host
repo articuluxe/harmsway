@@ -25,7 +25,8 @@ export CSTDLIB_BIN=$CSTDLIB_ROOT/bin
 
 python=/opt/anaconda-python-2.7.8/bin
 #java=/usr/java/latest/bin:/usr/java/latest/jre/bin
-export PATH=$CLANG_BIN:$python:$HOME/bin:$PATH:.
+binpath=/bin:/sbin:/usr/bin:/usr/local/bin:/usr/local/sbin
+export PATH=$CLANG_BIN:$python:$HOME/bin:$binpath:.
 
 export COMPILER_PATH=$CSTDLIB_BIN
 
