@@ -1,9 +1,9 @@
 ;;; custom-themes.el --- customize themes
-;; Copyright (C) 2016  Dan Harms (dan.harms)
+;; Copyright (C) 2016-2017  Dan Harms (dan.harms)
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Wednesday, December 21, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-12-23 09:29:51 dan.harms>
+;; Modified Time-stamp: <2017-01-06 09:55:39 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: themes colors
 
@@ -37,6 +37,13 @@
 (setq solarized-height-plus-2 1)
 (setq solarized-height-plus-3 1)
 (setq solarized-height-plus-4 1)
+
+(defun my/make-all-font-sizes-the-same-please ()
+  "Make all faces use the default height."
+  (mapc (lambda (face)
+          (when (not (equal face 'default))
+            (set-face-attribute face nil :height 1.0)))
+        (face-list)))
 
 (defvar my/sml-dark-themes
   '(jonadabian jonadabian-slate obsidian deeper-blue)
@@ -77,6 +84,8 @@
                   ((t (:foreground ,(face-attribute
                                      'font-lock-comment-face
                                      :foreground nil 'default)))))))
+          ((eq sym 'xp)
+           (my/make-all-font-sizes-the-same-please))
           )
     (cond ((memq sym my/sml-dark-themes)
            (load-theme 'smart-mode-line-dark t))
