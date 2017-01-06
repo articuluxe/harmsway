@@ -2371,6 +2371,20 @@ This may perform related customization."
             (define-key awk-mode-map "\C-c\C-u" 'uncomment-region)
             ))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; bat-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package bat-mode :mode ("\\.bat$" "\\.cmd$")
+  :config
+  (use-package dos-indent)
+  (add-hook 'bat-mode-hook
+            (lambda()
+              (setq-default indent-tabs-mode nil)
+              (dos-indent)
+              (define-key bat-mode-map "\C-c\C-c" 'comment-region)
+              (define-key bat-mode-map "\C-c\C-u" 'uncomment-region)
+              ;; the following conflicted with C-c C-c
+              (define-key bat-mode-map "\C-c\C-r" 'bat-run)
+              )))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; cask-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package cask-mode
   :mode "/Cask\\'"
@@ -2437,22 +2451,6 @@ This may perform related customization."
               (define-key dart-mode-map "\C-c\C-u" 'uncomment-region)
               )))
 ;not sure this is needed (add-hook 'dart-mode-hook 'flycheck-mode)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dos-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package dos :mode ("\\.bat$" . dos-mode)
-  :defines (dos-basic-offset dos-indentation)
-  :config
-  (use-package dos-indent)
-  (add-hook 'dos-mode-hook
-            (lambda()
-              (setq-default indent-tabs-mode nil)
-              ;; (idle-highlight-mode 1)
-              (define-key dos-mode-map "\r" 'reindent-then-newline-and-indent)
-              (setq dos-basic-offset 3)
-              (setq dos-indentation 3)
-              (define-key dos-mode-map "\C-c\C-c" 'comment-region)
-              (define-key dos-mode-map "\C-c\C-u" 'uncomment-region)
-              )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; elf-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package elf-mode
