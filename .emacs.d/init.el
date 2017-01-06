@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-01-04 22:17:55 dharms>
+;; Modified Time-stamp: <2017-01-06 12:41:33 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1353,6 +1353,8 @@ Each value is a cons cell (`description' . `activation-function').")
   (setq org-src-preserve-indentation t)
   (setq org-src-tab-acts-natively t)
   (setq org-edit-src-content-indentation 0)
+  ;; ditaa
+  (setq org-ditaa-jar-path (expand-file-name "~/bin/ditaa.jar"))
   ;; columns
   ;; (to see clocked time add: %10CLOCKSUM %15TIMESTAMP_IA)
   (setq org-columns-default-format "%40ITEM %TODO %PRIORITY %TAGS")
@@ -1383,6 +1385,7 @@ Each value is a cons cell (`description' . `activation-function').")
   (org-babel-do-load-languages
    'org-babel-load-languages
    '((C . t)
+     (ditaa . t)
      (dot . t)
      (emacs-lisp . t)
      (plantuml . t)

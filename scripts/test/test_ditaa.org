@@ -1,0 +1,14 @@
+#+TITLE:ditaa test
+
+#+BEGIN_SRC ditaa :file ditaa-out.png :cmdline -r
++------------+
+|            |
+| Hello!     |
+|            |
++------------+
+
+#+END_SRC
+
+#+RESULTS:
+[[file:ditaa-out.png]]
+
