@@ -88,8 +88,6 @@
 (setq kill-do-not-save-duplicates t)
 (file-name-shadow-mode 1)
 (setq enable-recursive-minibuffers t)
-;; interactive regexp-search space character stands only for 1 char
-(setq-default search-whitespace-regexp nil)
 ;;  truncate long lines
 (setq-default truncate-lines t)
 (bind-key "M-o c" 'canonically-space-region)
