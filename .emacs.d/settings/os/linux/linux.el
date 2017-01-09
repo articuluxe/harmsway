@@ -1,9 +1,9 @@
 ;; linux.el --- linux os settings file
-;; Copyright (C) 2015, 2016  Dan Harms (dharms)
+;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-07-01 16:54:40 dharms>
+;; Modified Time-stamp: <2017-01-09 12:19:25 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -38,7 +38,5 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Process Viewer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package proced :bind ("C-c 0p" . proced))
-
-(with-eval-after-load 'counsel (bind-key "C-c 0g" 'counsel-locate))
 
 ;; linux.el ends here

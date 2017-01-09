@@ -1,9 +1,9 @@
 ;; windows-nt.el --- windows os settings file
-;; Copyright (C) 2015, 2016  Dan Harms (dharms)
+;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-09-22 17:52:43 dharms>
+;; Modified Time-stamp: <2017-01-09 12:13:59 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -39,14 +39,6 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Process Viewer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package proced :bind ("C-c 0p" . proced))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; everything ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package everything
-  :bind ("C-c 0g" . everything-find-file)
-  :init
-  (setq everything-ffap-integration nil)  ;for now
-  (setq everything-cmd "C:/Program Files/Everything/es.exe")
-  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ssh-agency ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;(require 'ssh-agency)

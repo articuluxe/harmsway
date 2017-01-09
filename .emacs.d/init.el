@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-01-06 12:41:33 dan.harms>
+;; Modified Time-stamp: <2017-01-09 12:18:23 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1175,6 +1175,7 @@ Each value is a cons cell (`description' . `activation-function').")
          ("M-s M-m" . counsel-load-theme)
          ("M-s M-x" . counsel-command-history)
          ("M-s M-k" . counsel-descbinds)
+         ("C-c 0g" . counsel-locate)
          :map ivy-minibuffer-map
          ("M-y" . ivy-next-line-and-call)
          )
