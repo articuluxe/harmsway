@@ -12,9 +12,7 @@ if [ -f ~/.bash_$SITE ]; then
    . ~/.bash_$SITE
 fi
 
-# python=/opt/anaconda-python-2.7.8/bin
-cmake=/Applications/CMake.app/Contents/bin
-export PATH=$HOME/bin:/usr/local/bin:$cmake:$PATH:.
+export PATH=$HOME/bin:/usr/local/bin:$PATH:.
 export DYLD_LIBRARY_PATH=/usr/local/lib:$HOME/src/dist/lib
 
 # export TERM=xterm-256color
