@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-01-09 12:22:03 dan.harms>
+;; Modified Time-stamp: <2017-01-10 05:56:38 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -32,5 +32,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Process Viewer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package vkill :bind ("C-c 0p" . vkill))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; spotlight ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package spotlight :bind ("C-c C-g" . spotlight))
 
 ;; darwin.el ends here

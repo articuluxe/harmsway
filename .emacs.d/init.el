@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-01-09 12:18:23 dan.harms>
+;; Modified Time-stamp: <2017-01-10 06:00:09 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1180,6 +1180,9 @@ Each value is a cons cell (`description' . `activation-function').")
          ("M-y" . ivy-next-line-and-call)
          )
   :commands (counsel-M-x counsel-find-file)
+  :init
+  (when (eq system-type 'darwin)
+    (setq counsel-locate-cmd 'counsel-locate-cmd-mdfind))
   :config
   (setq counsel-find-file-at-point t)
   (setq counsel-find-file-ignore-regexp
