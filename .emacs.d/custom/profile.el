@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Thursday, November  3, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-01-06 08:03:04 dharms>
+;; Modified Time-stamp: <2017-01-09 17:25:23 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: profiles project
 
@@ -47,11 +47,20 @@ of no matches, the default profile is instead used.")
 (defvar prof-local (intern-soft "default" prof-obarray))
 (defvar prof-current nil)
 
+;; Profile Properties:
+;;  - External:
+;;  - Internal:
+;; :root-dir :project-name :inited :init
+;; :remote-prefix :remote-host :root-stem
+
 ;; hooks
 (defvar prof-on-profile-inited '()
-  "Hooks run when a profile is first loaded.")
+  "Hooks run when a profile is first loaded.
+Hook functions are called with one parameter, the new profile.")
 (defvar prof-on-profile-loaded '()
-  "Hooks run whenever a profile becomes active.")
+  "Hooks run whenever a profile becomes active.
+Hook functions are called with two parameters: the new profile,
+and the old one: `lambda(new old)()'.")
 
 (defun prof-p (prof)
   "Return non-nil if PROF is a profile."
@@ -226,7 +235,7 @@ This may or may not be for the first time."
   (unless (eq prof prof-current)
     (let ((prof-old prof-current))
       (setq prof-current prof)
-      (run-hook-with-args 'prof-on-profile-loaded prof)
+      (run-hook-with-args 'prof-on-profile-loaded prof prof-old)
       )))
 
 ;; (add-hook 'switch-buffer-functions
