@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-01-10 06:00:09 dharms>
+;; Modified Time-stamp: <2017-01-10 17:34:51 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1363,6 +1363,7 @@ Each value is a cons cell (`description' . `activation-function').")
   ;; (to see clocked time add: %10CLOCKSUM %15TIMESTAMP_IA)
   (setq org-columns-default-format "%40ITEM %TODO %PRIORITY %TAGS")
   :config
+  (bind-key "C-c C-x t" 'org-table-recalculate-buffer-tables)
   (require 'org-crypt)
   (org-crypt-use-before-save-magic)
   (setq org-tags-exclude-from-inheritance '("crypt"))
