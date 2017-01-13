@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Wednesday, December 21, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-01-06 09:55:39 dan.harms>
+;; Modified Time-stamp: <2017-01-13 16:28:41 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: themes colors
 
@@ -45,6 +45,13 @@
             (set-face-attribute face nil :height 1.0)))
         (face-list)))
 
+(defun my/make-comment-delimiter-face-same-as-comment-face (sym)
+  (custom-theme-set-faces
+   sym `(font-lock-comment-delimiter-face
+         ((t (:foreground ,(face-attribute
+                            'font-lock-comment-face
+                            :foreground nil 'default)))))))
+
 (defvar my/sml-dark-themes
   '(jonadabian jonadabian-slate obsidian deeper-blue)
   "List of themes to which should be applied a dark sml theme.")
@@ -66,24 +73,18 @@
     (when (eq (face-attribute 'diff-hl-delete :background nil t) 'unspecified)
       (custom-theme-set-faces
        sym `(diff-hl-delete ((t (:background "red4" :foreground "red3"))))))
-    (cond ((eq sym 'wombat)
-           (custom-theme-set-faces sym '(cursor ((t (:background "#8ac6f2"))))))
+    (cond ((eq sym 'adwaita)
+           (setq wg-use-faces nil))
+          ((eq sym 'brin)
+           (my/make-comment-delimiter-face-same-as-comment-face sym))
+          ((eq sym 'granger)
+           (my/make-comment-delimiter-face-same-as-comment-face sym))
           ((eq sym 'misterioso)
            (custom-theme-set-faces sym '(cursor ((t (:background "#cae682"))))))
           ((eq sym 'obsidian)
            (custom-theme-set-faces sym '(cursor ((t (:background "#e8e2b7"))))))
-          ((eq sym 'granger)
-           (custom-theme-set-faces
-            sym `(font-lock-comment-delimiter-face
-                  ((t (:foreground ,(face-attribute
-                                     'font-lock-comment-face
-                                     :foreground nil 'default)))))))
-          ((eq sym 'brin)
-           (custom-theme-set-faces
-            sym `(font-lock-comment-delimiter-face
-                  ((t (:foreground ,(face-attribute
-                                     'font-lock-comment-face
-                                     :foreground nil 'default)))))))
+          ((eq sym 'wombat)
+           (custom-theme-set-faces sym '(cursor ((t (:background "#8ac6f2"))))))
           ((eq sym 'xp)
            (my/make-all-font-sizes-the-same-please))
           )
