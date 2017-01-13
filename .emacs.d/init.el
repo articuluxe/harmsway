@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-01-10 17:34:51 dharms>
+;; Modified Time-stamp: <2017-01-13 08:10:37 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1339,6 +1339,7 @@ Each value is a cons cell (`description' . `activation-function').")
             org-archive-location
             )
   :init
+  (setq org-startup-folded nil)
   (setq org-replace-disputed-keys t)
   (setq org-catch-invisible-edits 'show-and-error)
   (setq org-use-property-inheritance t)
