@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-01-13 08:10:37 dharms>
+;; Modified Time-stamp: <2017-01-16 10:39:57 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2039,7 +2039,7 @@ Each value is a cons cell (`description' . `activation-function').")
   (setq ispell-program-name (executable-find "hunspell"))
   (add-hook 'prog-mode-hook #'flyspell-prog-mode)
   (mapc (lambda (hook) (add-hook hook #'flyspell-mode))
-        '(text-mode-hook markdown-mode org-mode))
+        '(text-mode-hook markdown-mode-hook org-mode-hook))
   :config
   (define-key flyspell-mode-map [?\C-,] nil)
   (define-key flyspell-mode-map [?\C-\;] nil)
