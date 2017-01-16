@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Thursday, November  3, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-01-09 17:25:23 dharms>
+;; Modified Time-stamp: <2017-01-16 08:41:48 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: profiles project
 
@@ -50,12 +50,15 @@ of no matches, the default profile is instead used.")
 ;; Profile Properties:
 ;;  - External:
 ;;  - Internal:
-;; :root-dir :project-name :inited :init
+;; :root-dir :project-name :inited :initfun
 ;; :remote-prefix :remote-host :root-stem
 
 ;; hooks
-(defvar prof-on-profile-inited '()
-  "Hooks run when a profile is first loaded.
+(defvar prof-on-profile-pre-init '()
+  "Hooks run just before a profile is first initialized.
+Hook functions are called with one parameter, the new profile.")
+(defvar prof-on-profile-post-init '()
+  "Hooks run just after a profile is first initialized.
 Hook functions are called with one parameter, the new profile.")
 (defvar prof-on-profile-loaded '()
   "Hooks run whenever a profile becomes active.
@@ -103,10 +106,58 @@ Its parent is PARENT.  Add to it the property list PLIST."
    (or filename (buffer-file-name) (buffer-name))
    prof-path-alist 'string-match))
 
+(define-error 'prof-error "Profile error")
+(define-error 'prof-error-non-fatal "Profile load stopped" 'prof-error)
+(define-error 'prof-error-aborted "Profile load aborted" 'prof-error)
+
+(defvar prof--ignore-load-errors nil
+  "Internal variable is non-nil if user desires errors to be skipped.")
+
+(defun prof--query-error (profile err)
+  "While loading PROFILE, error ERR has occurred; ask the user what to do."
+  (interactive)
+  (let ((buf (get-buffer-create "*Profile Error*")))
+    (with-current-buffer buf
+      (erase-buffer)
+      (toggle-truncate-lines -1)
+      (insert "An error occurred while loading profile \""
+              (propertize (symbol-name profile) 'face 'bold)
+              "\":\n\n"
+              (propertize err 'face '(bold error))
+              "\n\nWould you like to continue loading this profile?  "
+              "Please select:\n\n "
+              (propertize "[y]" 'face '(bold warning))
+              " Continue loading profile, ignoring this error\n "
+              (propertize "[!]" 'face '(bold warning))
+              " Continue loading profile, ignoring this and future errors\n "
+              (propertize "[n]" 'face '(bold warning))
+              " Stop loading profile\n "
+              (propertize "[a]" 'face '(bold warning))
+              " Abort loading of profile, and revert profile load\n"
+              ))
+    (pop-to-buffer buf)
+    (let ((choices '(?y ?n ?a ?!))
+          (prompt "Please type y, n, ! or a: ")
+          ch)
+      (while (null ch)
+        (setq ch (read-char-choice prompt choices)))
+      (quit-window t)
+      (cond ((eq ch ?n)
+             (signal 'prof-error-non-fatal err))
+            ((eq ch ?a)
+             (prof-hard-reset profile)
+             (signal 'prof-error-aborted
+                     (format "Aborted (and reset) profile \"%s\" (%s)"
+                             (symbol-name profile) err)))
+            ((eq ch ?!)
+             (setq prof--ignore-load-errors t))
+            ))
+  nil))
+
 (defun prof--safe-funcall (prof property &rest rem)
   "Call a function from profile PROF stored in its PROPERTY tag.
-The function is called with arguments REM.  The function must
-exist and be bound."
+The function is called with arguments REM, if the function exists
+and is bound."
   (let ((func (intern-soft
                (prof-get prof property))))
     (and func (fboundp func) (funcall func rem))))
@@ -228,8 +279,10 @@ represents the user's home directory."
 This may or may not be for the first time."
   (unless (prof-get prof :inited)
     (prof-put prof :inited t)
-    (run-hook-with-args 'prof-on-profile-inited prof)
-    (prof--safe-funcall prof :init)
+    (run-hook-with-args 'prof-on-profile-pre-init prof)
+    (prof--safe-funcall prof :initfun)
+    ;; todo (profile-load prof)
+    (run-hook-with-args 'prof-on-profile-post-init prof)
     (prof--log-profile-loaded prof)
     )
   (unless (eq prof prof-current)
