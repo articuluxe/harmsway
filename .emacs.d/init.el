@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-01-16 10:39:57 dan.harms>
+;; Modified Time-stamp: <2017-01-17 11:21:50 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2270,8 +2270,9 @@ Each value is a cons cell (`description' . `activation-function').")
                      ))
          (delete-trailing-whitespace)
          (save-excursion
-           (copyright-update nil t)
-           (copyright-fix-years))
+           (let ((message-log-max nil))
+             (copyright-update nil t)
+             (copyright-fix-years)))
          (time-stamp)
          ))
 
