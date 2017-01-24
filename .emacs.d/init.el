@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-01-24 17:04:50 dharms>
+;; Modified Time-stamp: <2017-01-24 17:22:08 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2253,28 +2253,29 @@ Each value is a cons cell (`description' . `activation-function').")
 (add-hook 'before-save-hook 'my/before-save-hook)
 (defun my/before-save-hook() "Presave hook"
        (when (memq major-mode
-                   '(c++-mode
-                     emacs-lisp-mode
-                     perl-mode
-                     java-mode
-                     python-mode
-                     dos-mode
-                     nxml-mode
-                     protobuf-mode
-                     dart-mode
-                     folio-mode
-                     sh-mode
-                     csharp-mode
+                   '(
                      awk-mode
-                     sed-mode
+                     c++-mode
+                     csharp-mode
+                     dart-mode
+                     dos-mode
+                     emacs-lisp-mode
+                     folio-mode
                      gdb-script-mode
-                     gitignore-mode
-                     gitconfig-mode
                      gitattributes-mode
+                     gitconfig-mode
+                     gitignore-mode
+                     java-mode
+                     nxml-mode
+                     perl-mode
+                     protobuf-mode
+                     python-mode
+                     sed-mode
+                     sh-mode
                      ))
          (delete-trailing-whitespace)
          (save-excursion
-           (let ((message-log-max nil))
+           (let ((inhibit-message t))
              (copyright-update nil t)
              (copyright-fix-years)))
          (time-stamp)
