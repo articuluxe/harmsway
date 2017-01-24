@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-01-23 08:32:14 dharms>
+;; Modified Time-stamp: <2017-01-24 17:04:50 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2032,12 +2032,20 @@ Each value is a cons cell (`description' . `activation-function').")
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; flyspell ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defun my/toggle-flyspell-prog-mode ()
+  "Toggle flyspell-prog-mode in current buffer."
+  (interactive)
+  (if flyspell-mode
+      (turn-off-flyspell)
+    (flyspell-prog-mode)))
+(bind-key "C-c C-4" #'my/toggle-flyspell-prog-mode)
 (use-package flyspell
   :if (executable-find "hunspell")
   :defer t
   :init
   (setq ispell-program-name (executable-find "hunspell"))
-  (add-hook 'prog-mode-hook #'flyspell-prog-mode)
+  ;; to enable flyspell-prog-mode automatically:
+  ;; (add-hook 'prog-mode-hook #'flyspell-prog-mode)
   (mapc (lambda (hook) (add-hook hook #'flyspell-mode))
         '(text-mode-hook markdown-mode-hook org-mode-hook))
   (setq flyspell-issue-message-flag nil)
@@ -2057,14 +2065,9 @@ Each value is a cons cell (`description' . `activation-function').")
    ("C-c \\r" . flyspell-region)
    )
   (use-package ace-popup-menu :config (ace-popup-menu-mode 1))
-  ;; (add-hook 'flyspell-mode-hook #'flyspell-popup-auto-correct-mode)
-  ;; (defun my/toggle-flyspell() (interactive)
-  ;;        (lambda() (flyspell-mode (if flyspell-mode 0 1))))
-  ;; (global-set-key "\C-c\\t" #'my/toggle-flyspell)
-  )
-(with-eval-after-load 'flyspell
-  (require 'flyspell-popup)             ;and/or flyspell-correct-ivy
-  (bind-key "C-c \\\\" 'flyspell-popup-correct flyspell-mode-map))
+  (use-package flyspell-popup
+    :bind (:map flyspell-mode-map
+                ("C-c \\\\" . flyspell-popup-correct))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; semantic ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq semantic-default-submodes
