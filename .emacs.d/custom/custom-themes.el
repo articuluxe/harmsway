@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Wednesday, December 21, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-01-13 16:28:41 dan.harms>
+;; Modified Time-stamp: <2017-01-24 17:15:28 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: themes colors
 
@@ -82,7 +82,8 @@
           ((eq sym 'misterioso)
            (custom-theme-set-faces sym '(cursor ((t (:background "#cae682"))))))
           ((eq sym 'obsidian)
-           (custom-theme-set-faces sym '(cursor ((t (:background "#e8e2b7"))))))
+           (custom-theme-set-faces sym '(cursor ((t (:background "#e8e2b7")))))
+           (custom-theme-set-faces sym '(show-paren-match-face ((t (:background "#678cb1"))))))
           ((eq sym 'wombat)
            (custom-theme-set-faces sym '(cursor ((t (:background "#8ac6f2"))))))
           ((eq sym 'xp)
