@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-01-24 17:22:08 dharms>
+;; Modified Time-stamp: <2017-01-25 09:16:27 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -907,6 +907,7 @@ line."
           ("Shell Command Output" :regexp t :popup t :select nil)
           ("COMMIT_EDITMSG" :select t)
           ("gen-TAGS" :regexp t :popup t :select nil :align bottom)
+          ("json-path" :regexp t :popup t :select t :align bottom)
           ))
   (shackle-mode 1)
   )
@@ -2255,6 +2256,7 @@ Each value is a cons cell (`description' . `activation-function').")
        (when (memq major-mode
                    '(
                      awk-mode
+                     bat-mode
                      c++-mode
                      csharp-mode
                      dart-mode
@@ -2266,6 +2268,7 @@ Each value is a cons cell (`description' . `activation-function').")
                      gitconfig-mode
                      gitignore-mode
                      java-mode
+                     json-mode
                      nxml-mode
                      perl-mode
                      protobuf-mode
