@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Thursday, November  3, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-01-16 08:41:48 dharms>
+;; Modified Time-stamp: <2017-01-26 17:12:21 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: profiles project
 
@@ -32,8 +32,9 @@
 (require 'profile-sml)
 
 (require 'f)
-(require 'tramp)
+(require 'seq)
 (require 'switch-buffer-functions)
+(require 'tramp)
 
 (defvar prof-obarray
   (let ((intern-obarray (make-vector 7 0)))
@@ -152,7 +153,7 @@ Its parent is PARENT.  Add to it the property list PLIST."
             ((eq ch ?!)
              (setq prof--ignore-load-errors t))
             ))
-  nil))
+    nil))
 
 (defun prof--safe-funcall (prof property &rest rem)
   "Call a function from profile PROF stored in its PROPERTY tag.
@@ -189,6 +190,47 @@ This does not otherwise remove any profiles from memory."
            ;; string-equal handles a symbol using its print-name
            (string-equal (cdr elt) profile))
          prof-path-alist)))
+
+(defun prof--validate-include-files (prof)
+  "Validate the set of include files of profile PROF."
+  (let ((remote (prof-get prof :remote-prefix))
+        (root (prof-get prof :root-dir))
+        (lst (prof-get prof :dirs))     ;todo
+        entry path)
+    (setq prof--ignore-load-errors nil)
+    (setq lst
+          (seq-filter (lambda (elt)
+                        (setq entry (cadr elt)) ;todo
+                        (setq path
+                              (concat
+                               remote
+                               (concat
+                                (when (or (zerop (length entry))
+                                          (f-relative? entry))
+                                  root)
+                                entry)))
+                        (cond ((null entry) nil)
+                              ((f-exists? path) path)
+                              (prof--ignore-load-errors nil)
+                              (t
+                               (prof--query-error
+                                prof
+                                (format "%s does not exist!" path)))))
+                      lst))
+    (prof-put prof :dirs lst)))         ;todo
+
+(defun prof-load (prof)
+  "Load a profile PROF."
+  (condition-case err
+      t
+    ('prof-error-non-fatal
+     (prof-put prof :inited nil)
+     (message "Stopped loading prof \"%s\" (%s)"
+              (symbol-name prof) (cdr err)))
+    ((prof-error-aborted prof-error)
+     (ignore-errors
+       (prof-put prof :inited nil))
+     (error (cdr err)))))
 
 (defun prof-find-file-upwards-helper (path file)
   "Helper function to search upward from PATH for FILE."
@@ -281,7 +323,7 @@ This may or may not be for the first time."
     (prof-put prof :inited t)
     (run-hook-with-args 'prof-on-profile-pre-init prof)
     (prof--safe-funcall prof :initfun)
-    ;; todo (profile-load prof)
+    (prof-load prof)
     (run-hook-with-args 'prof-on-profile-post-init prof)
     (prof--log-profile-loaded prof)
     )
@@ -301,7 +343,7 @@ This may or may not be for the first time."
 ;;     (before before-find-file-no-select-1 activate)
 ;;   (prof--file-opened buf filename))
 
-;(advice-add 'find-file-noselect-1 :before 'prof--file-opened)
+(advice-add 'find-file-noselect-1 :before 'prof--file-opened)
 
 (defun prof--file-opened (buffer filename)
   "Initialize a profile, if necessary, for BUFFER, visiting FILENAME."

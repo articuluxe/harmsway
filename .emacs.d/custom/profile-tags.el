@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Thursday, January  5, 2017
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-01-06 08:07:24 dharms>
+;; Modified Time-stamp: <2017-01-25 08:34:14 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: profile tags
 
@@ -66,8 +66,7 @@ DIR gives the root directory."
                     (concat (prof-get prof :remote-prefix)
                             root))))))
 
-(add-hook 'prof-on-profile-inited
-          'profile-tags-on-init)
+(add-hook 'prof-on-profile-pre-init 'profile-tags-on-init)
 
 (provide 'profile-tags)
 ;;; profile-tags.el ends here

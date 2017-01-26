@@ -1,0 +1,33 @@
+;; -*- Mode: Emacs-Lisp -*-
+;;
+;;
+
+(defun on-c-init (prof)
+  )
+
+(prof-define-derived "c" "default"
+                     :name "c"
+                     :initfun #'on-c-init
+                     )
+
+;; (defun on-harmsway-init (project-root)
+;;   ;; TAGS
+;;   (profile-current-put
+;;    'ctags-alist
+;;    (list
+;;     (append (list "harmsway" "" gen-tags-exe "-Re"
+;;                   ) gen-tags-ctags-cpp-options)
+;;     ))
+;;   (profile-load))
+
+;; ;; define the profile
+;; (profile-define-derived
+;;  "harmsway"
+;;  "default"
+;;  "dharms" "danielrharms@gmail.com"
+;;  'project-name "harmsway"
+;;  'build-sub-dirs '((".emacs.d/" "ED:" ?e)
+;;                    )
+;;  'on-file-open #'profile-on-c-file-open
+;;  'on-profile-init #'on-harmsway-init
+;;  )

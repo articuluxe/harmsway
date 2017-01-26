@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Friday, December  9, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-01-05 08:45:14 dharms>
+;; Modified Time-stamp: <2017-01-25 17:37:15 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: profiles test
 
@@ -101,7 +101,8 @@
   (let ((base (concat default-directory "tests/")))
     (find-file (concat base "a/b/c/d/dfile"))
     (should (equal prof-path-alist
-                   (list (cons (concat base "a/b/c/") "c"))))
+                   (cons (cons (concat base "a/b/c/") "c") nil)))
+    (should (eq prof-local prof-current))
     (kill-buffer "dfile")
   ))
 
