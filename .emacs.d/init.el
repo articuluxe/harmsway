@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-01-25 09:16:27 dan.harms>
+;; Modified Time-stamp: <2017-01-26 13:09:08 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1506,6 +1506,8 @@ Each value is a cons cell (`description' . `activation-function').")
                         load-path)))
 (use-package sunrise-commander
   :bind ("C-c 0s" . sunrise)
+  :init
+  (setq sr-use-commander-keys nil)
   :config
   (use-package sunrise-x-tree)
   (use-package sunrise-x-w32-addons)
