@@ -1,0 +1,37 @@
+;;;; Emacs Bookmark Format Version 1 ;;;;
+;;; This format is meant to be slightly human-readable;
+;;; nevertheless, you probably don't want to edit it.
+;;; -*- End Of Bookmark File Format Version Stamp -*-
+(#1=(#("CME BBOServer [chihq-lbmsvc-01v]" 0 1
+	  (bmkp-full-record #1# idx 0)
+	  1 32
+	  (bmkp-full-record #1#))
+	(buffer-name . "bin")
+	(front-context-string . "brokertec_direct")
+	(rear-context-string . " 4k 09-09 17:00 ")
+	(front-context-region-string)
+	(rear-context-region-string)
+	(visits . 0)
+	(time . #2=(22510 42687 258642 300000))
+	(created . #2#)
+	(position . 231)
+	(filename . "/plink:dan.harms@chihq-lbmsvc-01v:/usr/local/dataservices/bin/")
+	(dired-directory . "/plink:dan.harms@chihq-lbmsvc-01v:/usr/local/dataservices/bin/")
+	(dired-marked)
+	(dired-switches . "-alhvGg")
+	(dired-subdirs)
+	(dired-hidden-dirs)
+	(handler . bmkp-jump-dired))
+#1=(#("cme_downloader.cron [chihq-lbmsvc-01v]" 0 38
+	  (bmkp-full-record #1#))
+	(filename . "/plink:dan.harms@chihq-lbmsvc-01v:/etc/cron.d/cme_downloader.cron")
+	(buffer-name . "cme_downloader.cron")
+	(front-context-string . "MAILTO=dan.harms")
+	(rear-context-string)
+	(front-context-region-string)
+	(rear-context-region-string)
+	(visits . 0)
+	(time . #2=(22510 42787 24642 300000))
+	(created . #2#)
+	(position . 1))
+)

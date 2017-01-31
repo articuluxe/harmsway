@@ -1,0 +1,53 @@
+;;;; Emacs Bookmark Format Version 1 ;;;;
+;;; This format is meant to be slightly human-readable;
+;;; nevertheless, you probably don't want to edit it.
+;;; -*- End Of Bookmark File Format Version Stamp -*-
+(#1=(#("snap-master [chitx1-tl-05c]" 0 1
+	  (bmkp-full-record #1# idx 0)
+	  1 27
+	  (bmkp-full-record #1#))
+	(tags
+	 #("chitx1-tl-05c" 0 1
+	   (idx 0))
+	 #("master" 0 1
+	   (idx 0))
+	 #("snap" 0 1
+	   (idx 1)))
+	(buffer-name . "snap<xr>")
+	(front-context-string . "app_framework\n  ")
+	(rear-context-string . " 4k 01-19 11:19 ")
+	(front-context-region-string)
+	(rear-context-region-string)
+	(visits . 0)
+	(time . #2=(22657 679 124290 300000))
+	(created . #2#)
+	(position . 265)
+	(filename . "/plink:dan.harms@chitx1-tl-05c:/home/dan.harms/src/snap-master/snap/xr-snap/src/xr/snap/")
+	(dired-directory . "/plink:dan.harms@chitx1-tl-05c:/home/dan.harms/src/snap-master/snap/xr-snap/src/xr/snap/")
+	(dired-marked)
+	(dired-switches . "-alhvGg")
+	(dired-subdirs)
+	(dired-hidden-dirs)
+	(handler . bmkp-jump-dired))
+#1=(#("trader-repo [chitx1-tl-05c]" 0 1
+	  (bmkp-full-record #1# idx 1)
+	  1 27
+	  (bmkp-full-record #1#))
+	(tags "chitx1-tl-05c")
+	(buffer-name . "trader-repo")
+	(front-context-string . ".git\n  drwxr-xr-")
+	(rear-context-string . " 4k 01-19 12:04 ")
+	(front-context-region-string)
+	(rear-context-region-string)
+	(visits . 0)
+	(time . #2=(22658 11591 604379 900000))
+	(created . #2#)
+	(position . 232)
+	(filename . "/plink:dan.harms@chitx1-tl-05c:/home/dan.harms/trader-repo/")
+	(dired-directory . "/plink:dan.harms@chitx1-tl-05c:/home/dan.harms/trader-repo/")
+	(dired-marked)
+	(dired-switches . "-alhvGg")
+	(dired-subdirs)
+	(dired-hidden-dirs)
+	(handler . bmkp-jump-dired))
+)

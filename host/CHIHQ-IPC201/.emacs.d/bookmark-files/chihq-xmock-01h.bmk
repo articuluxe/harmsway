@@ -1,0 +1,26 @@
+;;;; Emacs Bookmark Format Version 1 ;;;;
+;;; This format is meant to be slightly human-readable;
+;;; nevertheless, you probably don't want to edit it.
+;;; -*- End Of Bookmark File Format Version Stamp -*-
+(#1=(#("snap-master [chihq-xmock-01h]" 0 1
+	  (bmkp-full-record #1# idx 0)
+	  1 29
+	  (bmkp-full-record #1#))
+	(tags "xmock" "chihq-xmock-01h" "master" "snap")
+	(buffer-name . "snap<xr>")
+	(front-context-string . "app_framework\n  ")
+	(rear-context-string . " 4k 09-13 12:35 ")
+	(front-context-region-string)
+	(rear-context-region-string)
+	(visits . 0)
+	(time . #2=(22497 45583 449163 700000))
+	(created . #2#)
+	(position . 267)
+	(filename . "/plink:dan.harms@chihq-xmock-01h:/home/dan.harms/src/snap-master/snap/xr-snap/src/xr/snap/")
+	(dired-directory . "/plink:dan.harms@chihq-xmock-01h:/home/dan.harms/src/snap-master/snap/xr-snap/src/xr/snap/")
+	(dired-marked)
+	(dired-switches . "-alhvGg")
+	(dired-subdirs)
+	(dired-hidden-dirs)
+	(handler . bmkp-jump-dired))
+)
