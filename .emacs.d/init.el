@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-01-27 14:24:41 dan.harms>
+;; Modified Time-stamp: <2017-01-31 08:35:42 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2070,6 +2070,7 @@ Each value is a cons cell (`description' . `activation-function').")
    )
   (use-package ace-popup-menu :config (ace-popup-menu-mode 1))
   (use-package flyspell-popup
+    :demand t
     :bind (:map flyspell-mode-map
                 ("C-c \\\\" . flyspell-popup-correct))))
 
