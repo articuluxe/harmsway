@@ -1,11 +1,11 @@
 #!/usr/bin/env sh
 # -*- Mode: sh -*-
 # wireshark.txt --- wireshark help
-# Copyright (C) 2016  Dan Harms (dan.harms)
+# Copyright (C) 2016-2017  Dan Harms (dan.harms)
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Tuesday, September 13, 2016
 # Version: 1.0
-# Modified Time-stamp: <2016-09-13 09:20:42 dan.harms>
+# Modified Time-stamp: <2017-02-01 16:02:45 dan.harms>
 # Modified by: Dan Harms
 # Keywords: wireshark
 
@@ -23,8 +23,10 @@ tshark -b filesize:10240 -b duration:1 -w <output>.pcap
 tshark -b filesize:100 -a files:20 -w <output>.pcap
 # rolling capture of 4 GB of data (128 files of 32 MB)
 dumpcap -i<interface> -w <output>.pcap -b filesize:32768 -b files:128
+# print out ethernet packets destined to a particular address
+sudo tcpdump -nettti sf01 '(ether dst host 01:00:5E:08:0E:29)'
 
-########################################### filters ###########################################
+################################## filters ###################################
 fix and ip.[addr|src|dst] == 69.50.112.200
 # match first 3 octets
 ip.src == 69.50.112.200/24
