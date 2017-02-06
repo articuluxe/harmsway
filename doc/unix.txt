@@ -1,10 +1,10 @@
 # -*- Mode: sh; comment-start: "#" -*-
 # unix.txt --- misc. helpful commands
-# Copyright (C) 2015, 2016   (dan.harms)
+# Copyright (C) 2015-2017   (dan.harms)
 # Author:  <dan.harms@xrtrading.com>
 # Created: Friday, March 20, 2015
 # Version: 1.0
-# Modified Time-stamp: <2016-12-20 12:53:10 dan.harms>
+# Modified Time-stamp: <2017-02-03 10:19:45 dan.harms>
 # Modified by: Dan Harms
 # Keywords: help
 
@@ -25,6 +25,9 @@ find . -name "pattern" \( -exec echo {} \; -o -exec true \; \) -exec grep <str> 
 
 # find a compiler's set of include directories (works on gcc and clang)
 g++/clang++ -E -x c++ - -v < /dev/null
+
+# print debug info about what ld.so does at runtime
+LD_DEBUG=libs ./executable
 
 # ensure core dump on SEGV
 ulimit -c unlimited
