@@ -1,9 +1,9 @@
 ;; log-viewer.el --- major mode to view log files
-;; Copyright (C) 2015, 2016  Dan Harms (dharms)
+;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-03-30 18:27:19 dharms>
+;; Modified Time-stamp: <2017-02-08 11:18:31 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -70,7 +70,7 @@ fix protocol, using a pipe `|'."
          ;; ip address:port (overrides prior fontification)
          (list "\\(\\(?:[[:digit:]]+\\.\\)\\{3\\}[[:digit:]]+\\)\\(:[[:digit:]]\\{2,5\\}\\)?"
                '(1 font-lock-variable-name-face t)
-               '(2 font-lock-constant-face t))
+               '(2 font-lock-constant-face t t))
          ;; personal debug statements
          (list "drh" '(0 font-lock-comment-face t))
          ))
