@@ -28,6 +28,7 @@
 (require 'ert)
 (require 'ert-x)
 (require 'cl-lib)
+(require 'org)
 
 
 ;;; Snippet mechanics
@@ -242,6 +243,78 @@ $1   ------------------------")
     (should (string= (yas--buffer-contents) "XXXXX --------
 XXXXX   ---------------- XXXXX ----
 XXXXX   ------------------------"))))
+
+(ert-deftest single-line-multi-mirror-indentation-2 ()
+  "Like `single-line-multi-mirror-indentation' but 2 mirrors interleaved."
+  ;; See also Github issue #768.
+  (with-temp-buffer
+    (c-mode)
+    (yas-minor-mode 1)
+    (yas-expand-snippet "${1:one} ${2:two};\n$1 $2_;\n$2 $1_;\n")
+    (should (string= (yas--buffer-contents)
+                     "one two;\none two_;\ntwo one_;\n"))))
+
+(ert-deftest indent-org-property ()
+  "Handling of `org-mode' property indentation, see `org-property-format'."
+  ;; This is an interesting case because `org-indent-line' calls
+  ;; `replace-match' for properties.
+  (with-temp-buffer
+    (org-mode)
+    (yas-minor-mode +1)
+    (yas-expand-snippet "* Test ${1:test}\n:PROPERTIES:\n:ID: $1-after\n:END:")
+    (yas-mock-insert "foo bar")
+    (ert-simulate-command '(yas-next-field))
+    (goto-char (point-min))
+    (let ((expected (with-temp-buffer
+                      (insert (format (concat "* Test foo bar\n"
+                                              "  " org-property-format "\n"
+                                              "  " org-property-format "\n"
+                                              "  " org-property-format)
+                                      ":PROPERTIES:" ""
+                                      ":ID:" "foo bar-after"
+                                      ":END:" ""))
+                      (delete-trailing-whitespace)
+                      (buffer-string))))
+      ;; Some org-mode versions leave trailing whitespace, some don't.
+      (delete-trailing-whitespace)
+      (should (equal expected (buffer-string))))))
+
+(ert-deftest indent-cc-mode ()
+  "Handling of cc-mode's indentation."
+  ;; This is an interesting case because cc-mode deletes all the
+  ;; indentation before recreating it.
+  (with-temp-buffer
+    (c++-mode)
+    (yas-minor-mode +1)
+    (yas-expand-snippet "\
+int foo()
+{
+    if ($1) {
+        delete $1;
+        $1 = 0;
+    }
+}")
+    (yas-mock-insert "var")
+    (should (string= "\
+int foo()
+{
+  if (var) {
+    delete var;
+    var = 0;
+  }
+}" (buffer-string)))))
+
+(ert-deftest indent-snippet-mode ()
+  "Handling of snippet-mode indentation."
+  ;; This is an interesting case because newlines match [[:space:]] in
+  ;; snippet-mode.
+  (with-temp-buffer
+    (snippet-mode)
+    (yas-minor-mode +1)
+    (yas-expand-snippet "# -*- mode: snippet -*-\n# name: $1\n# key: $1\n# --\n")
+    (yas-mock-insert "foo")
+    (should (string= "# -*- mode: snippet -*-\n# name: foo\n# key: foo\n# --\n"
+                     (buffer-string)))))
 
 (ert-deftest indent-mirrors-on-update ()
   "Check that mirrors are always kept indented."
@@ -606,11 +679,11 @@ TODO: correct this bug!"
      (text-mode)
      (yas-minor-mode +1)
      (should (equal (yas-lookup-snippet "one") "one"))
-     (should (eq (key-binding "\C-c1") 'yas-expand-from-keymap))
+     (should (eq (yas--key-binding "\C-c1") 'yas-expand-from-keymap))
      (yas-define-snippets
       'text-mode '(("_1" "one!" "won" nil nil nil nil nil "uuid-1")))
      (should (null (yas-lookup-snippet "one" nil 'noerror)))
-     (should (null (key-binding "\C-c1")))
+     (should (null (yas--key-binding "\C-c1")))
      (should (equal (yas-lookup-snippet "won") "one!")))))
 
 (ert-deftest snippet-save ()
@@ -781,6 +854,7 @@ TODO: correct this bug!"
 ;;; Menu
 ;;;
 (defmacro yas-with-even-more-interesting-snippet-dirs (&rest body)
+  (declare (debug t))
   `(yas-saving-variables
     (yas-with-snippet-dirs
       `((".emacs.d/snippets"
@@ -816,16 +890,16 @@ TODO: correct this bug!"
   (let ((yas-use-menu t))
     (yas-with-even-more-interesting-snippet-dirs
      (yas-reload-all 'no-jit)
-     (let ((menu (cdr (gethash 'fancy-mode yas--menu-table))))
-       (should (eql 4 (length menu)))
+     (let ((menu-items (yas--collect-menu-items
+                        (gethash 'fancy-mode yas--menu-table))))
+       (should (eql 4 (length menu-items)))
        (dolist (item '("a-guy" "a-beggar"))
-         (should (cl-find item menu :key #'cl-third :test #'string=)))
-       (should-not (cl-find "an-outcast" menu :key #'cl-third :test #'string=))
+         (should (cl-find item menu-items :key #'cl-second :test #'string=)))
+       (should-not (cl-find "an-outcast" menu-items :key #'cl-second :test #'string=))
        (dolist (submenu '("sirs" "ladies"))
          (should (keymapp
-                  (cl-fourth
-                   (cl-find submenu menu :key #'cl-third :test #'string=)))))
-       ))))
+                  (cl-third
+                   (cl-find submenu menu-items :key #'cl-second :test #'string=)))))))))
 
 (ert-deftest test-group-menus ()
   "Test group-based menus using .yas-make-groups and the group directive"
@@ -900,16 +974,23 @@ TODO: be meaner"
 ;;; The infamous and problematic tab keybinding
 ;;;
 (ert-deftest test-yas-tab-binding ()
-  (with-temp-buffer
-    (yas-minor-mode -1)
-    (should (not (eq (key-binding (yas--read-keybinding "<tab>")) 'yas-expand)))
-    (yas-minor-mode 1)
-    (should (eq (key-binding (yas--read-keybinding "<tab>")) 'yas-expand))
-    (yas-expand-snippet "$1 $2 $3")
-    (should (eq (key-binding [(tab)]) 'yas-next-field-or-maybe-expand))
-    (should (eq (key-binding (kbd "TAB")) 'yas-next-field-or-maybe-expand))
-    (should (eq (key-binding [(shift tab)]) 'yas-prev-field))
-    (should (eq (key-binding [backtab]) 'yas-prev-field))))
+  (yas-saving-variables
+   (yas-with-snippet-dirs
+    '((".emacs.d/snippets"
+       ("fundamental-mode"
+        ("foo" . "foobar"))))
+    (yas-reload-all)
+    (with-temp-buffer
+      (yas-minor-mode -1)
+      (insert "foo")
+      (should (not (eq (key-binding (yas--read-keybinding "<tab>")) 'yas-expand)))
+      (yas-minor-mode 1)
+      (should (eq (key-binding (yas--read-keybinding "<tab>")) 'yas-expand))
+      (yas-expand-snippet "$1 $2 $3")
+      (should (eq (key-binding [(tab)]) 'yas-next-field-or-maybe-expand))
+      (should (eq (key-binding (kbd "TAB")) 'yas-next-field-or-maybe-expand))
+      (should (eq (key-binding [(shift tab)]) 'yas-prev-field))
+      (should (eq (key-binding [backtab]) 'yas-prev-field))))))
 
 (ert-deftest test-rebindings ()
   (let* ((yas-minor-mode-map (copy-keymap yas-minor-mode-map))
@@ -929,11 +1010,58 @@ TODO: be meaner"
       (should (eq (key-binding (kbd "SPC")) 'yas-expand)))))
 
 (ert-deftest test-yas-in-org ()
-  (with-temp-buffer
-    (org-mode)
-    (yas-minor-mode 1)
-    (should (eq (key-binding [(tab)]) 'yas-expand))
-    (should (eq (key-binding (kbd "TAB")) 'yas-expand))))
+  (yas-saving-variables
+   (yas-with-snippet-dirs
+    '((".emacs.d/snippets"
+       ("org-mode"
+        ("foo" . "foobar"))))
+    (yas-reload-all)
+    (with-temp-buffer
+      (org-mode)
+      (yas-minor-mode 1)
+      (insert "foo")
+      (should (eq (key-binding [(tab)]) 'yas-expand))
+      (should (eq (key-binding (kbd "TAB")) 'yas-expand))))))
+
+(ert-deftest yas-org-native-tab-in-source-block ()
+  "Test expansion of snippets in org source blocks."
+  :expected-result (if (fboundp 'org-in-src-block-p)
+                       :passed :failed)
+  (yas-saving-variables
+   (yas-with-snippet-dirs
+    '((".emacs.d/snippets"
+       ("text-mode"
+        ("T" . "${1:one} $1\n${2:two} $2\n<<$0>> done!"))))
+    (let ((text-mode-hook '(yas-minor-mode))
+          (org-src-tab-acts-natively t)
+          ;; Org 8.x requires this in order for
+          ;; `org-src-tab-acts-natively' to have effect.
+          (org-src-fontify-natively t))
+      (yas-reload-all)
+      ;; Org relies on font-lock to identify source blocks.
+      (yas--with-font-locked-temp-buffer
+       (org-mode)
+       (yas-minor-mode 1)
+       (insert "#+BEGIN_SRC text\nT\n#+END_SRC")
+       (if (fboundp 'font-lock-ensure)
+           (font-lock-ensure)
+         (jit-lock-fontify-now))
+       (re-search-backward "^T$") (goto-char (match-end 0))
+       (should (org-in-src-block-p))
+       (ert-simulate-command `(,(key-binding (kbd "TAB"))))
+       (ert-simulate-command `(,(key-binding (kbd "TAB"))))
+       (ert-simulate-command `(,(key-binding (kbd "TAB"))))
+       ;; Check snippet exit location.
+       (should (looking-at ">> done!"))
+       (goto-char (point-min))
+       (forward-line)
+       ;; Check snippet expansion, ignore leading whitespace due to
+       ;; `org-edit-src-content-indentation'.
+       (should (looking-at "\
+[[:space:]]*one one
+[[:space:]]*two two
+[[:space:]]*<<>> done!")))))))
+
 
 (ert-deftest test-yas-activate-extra-modes ()
   "Given a symbol, `yas-activate-extra-mode' should be able to
@@ -975,6 +1103,14 @@ add the snippets associated with the given mode."
                         (yas--buffer-contents)))))
   (yas-exit-all-snippets))
 
+(defun yas--collect-menu-items (menu-keymap)
+  (let ((yas--menu-items ()))
+    (map-keymap (lambda (_binding definition)
+                  (when (eq (car-safe definition) 'menu-item)
+                    (push definition yas--menu-items)))
+                menu-keymap)
+    yas--menu-items))
+
 (defun yas-should-not-expand (keys)
   (dolist (key keys)
     (yas-exit-all-snippets)
@@ -995,6 +1131,13 @@ add the snippets associated with the given mode."
 (defun yas-mock-yank (string)
   (let ((interprogram-paste-function (lambda () string)))
     (ert-simulate-command '(yank nil))))
+
+(defun yas--key-binding (key)
+  "Like `key-binding', but override `this-command-keys-vector'.
+This lets `yas--maybe-expand-from-keymap-filter' work as expected."
+  (cl-letf (((symbol-function 'this-command-keys-vector)
+             (lambda () (cl-coerce key 'vector))))
+    (key-binding key)))
 
 (defun yas-make-file-or-dirs (ass)
   (let ((file-or-dir-name (car ass))
