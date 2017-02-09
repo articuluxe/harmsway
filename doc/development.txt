@@ -1,0 +1,46 @@
+#!/usr/bin/env sh
+# -*- Mode: sh -*-
+# development.txt --- tips when developing
+# Copyright (C) 2017  Dan Harms (dan.harms)
+# Author: Dan Harms <dan.harms@xrtrading.com>
+# Created: Tuesday, February  7, 2017
+# Version: 1.0
+# Modified Time-stamp: <2017-02-07 15:59:13 dan.harms>
+# Modified by: Dan Harms
+# Keywords: gnu elf development
+
+# print out a process's call stack
+pstack <pid>
+
+# find a compiler's set of include directories (works on gcc and clang)
+g++/clang++ -E -x c++ - -v < /dev/null
+
+# find all libraries defining a symbol
+find /path/to/root -name \*.a -exec sh -c 'nm -C "$0" | grep symbol && echo "$0"' {} \;
+
+# send signal to halted process
+pkill -SIGUSR2 -n emacs
+# close a socket without killing process
+netstat -np
+# locate socket's file descriptor within process
+lsof -np <pid>
+# connect to process
+gdb -p <pid>
+"call close(<fd>)" "q"
+# count system's open file descriptors
+sysctl fs.file-nr
+# retrieve user's file descriptor limit
+ulimit -Hn
+# count file descriptors are in use by user
+sudo lsof -u <UID> 2>/dev/null | sc -l
+# edit /etc/security/limits.conf to change limit: user soft nproc 2000
+
+# print debug info about what ld.so does at runtime
+LD_DEBUG=libs ./executable
+# for elf:
+## show the soname
+readelf -d <shared_object> | grep SONAME
+## show required sonames
+readelf -d <executable/shared_object> | grep NEEDED
+
+# code ends here

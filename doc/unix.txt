@@ -4,7 +4,7 @@
 # Author:  <dan.harms@xrtrading.com>
 # Created: Friday, March 20, 2015
 # Version: 1.0
-# Modified Time-stamp: <2017-02-03 10:19:45 dan.harms>
+# Modified Time-stamp: <2017-02-07 15:59:19 dan.harms>
 # Modified by: Dan Harms
 # Keywords: help
 
@@ -16,18 +16,10 @@ yum groupinstall basic-desktop desktop-platform x11 fonts
 # change default runlevel in /etc/inittab:
 id:5:initdefault:
 
-# find all libraries defining a symbol
-find /path/to/root -name \*.a -exec sh -c 'nm -C "$0" | grep symbol && echo "$0"' {} \;
 # find with multiple -exec (short-circuit)
 find . -name "pattern" -exec echo {} \; -exec grep <str> {} \;
 # find with multiple -exec (non-short-circuit)
 find . -name "pattern" \( -exec echo {} \; -o -exec true \; \) -exec grep <str> {} \;
-
-# find a compiler's set of include directories (works on gcc and clang)
-g++/clang++ -E -x c++ - -v < /dev/null
-
-# print debug info about what ld.so does at runtime
-LD_DEBUG=libs ./executable
 
 # ensure core dump on SEGV
 ulimit -c unlimited
@@ -38,8 +30,6 @@ ifconfig eth0 mtu 1000
 MTU=1000
 # show process using a file
 fuser
-# print out a process's call stack
-pstack <pid>
 # find out which distro you're running
 facter lsbdistrelease
 cat /etc/*-release
@@ -47,23 +37,6 @@ cat /etc/*-release
 # compare 2 directories
 diff -qr one two
 comm -3 <(ls -l one) <(ls -l two)
-
-# send signal to halted process
-pkill -SIGUSR2 -n emacs
-# close a socket without killing process
-netstat -np
-# locate socket's file descriptor within process
-lsof -np <pid>
-# connect to process
-gdb -p <pid>
-"call close(<fd>)" "q"
-# count system's open file descriptors
-sysctl fs.file-nr
-# retrieve user's file descriptor limit
-ulimit -Hn
-# count file descriptors are in use by user
-sudo lsof -u <UID> 2>/dev/null | sc -l
-# edit /etc/security/limits.conf to change limit: user soft nproc 2000
 
 ################################ command line ################################
 # last command
