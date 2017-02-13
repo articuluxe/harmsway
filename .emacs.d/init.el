@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-02-12 18:51:59 dharms>
+;; Modified Time-stamp: <2017-02-13 16:42:04 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -789,6 +789,10 @@ line."
          ("C-\\ C-f" . iy-go-to-or-up-to-continue)
          ("C-\\ C-b" . iy-go-to-or-up-to-continue-backward)
          ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; phi-grep ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package phi-grep
+  :bind ("M-s M-s g" . phi-grep-in-file))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; figlet ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package figlet
