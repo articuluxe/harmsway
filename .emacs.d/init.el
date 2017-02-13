@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-01-31 08:35:42 dharms>
+;; Modified Time-stamp: <2017-02-12 18:51:59 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -866,6 +866,8 @@ line."
     (define-key ido-common-completion-map
       (kbd "C-x g") 'ido-enter-magit-status))
 
+  (add-hook 'magit-revision-mode-hook 'bug-reference-mode)
+  (add-hook 'git-commit-setup-hook 'bug-reference-mode)
   ;; add argument --no-merges to log
   (magit-define-popup-switch 'magit-log-popup
     ?m "Omit merge commits" "--no-merges")
