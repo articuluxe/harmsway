@@ -1,10 +1,10 @@
-rem -*- Mode: dos -*-
-rem xr-install-emacs.bat --- install emacs (xr style)
-rem Copyright (C) 2015, 2016  Dan Harms (dan.harms)
+rem -*- Mode: bat -*-
+rem install-emacs.bat --- install emacs (xr style)
+rem Copyright (C) 2015-2017  Dan Harms (dan.harms)
 rem Author: Dan Harms <dan.harms@xrtrading.com>
 rem Created: Thursday, May 21, 2015
 rem Version: 1.0
-rem Modified Time-stamp: <2016-08-18 12:20:00 dan.harms>
+rem Modified Time-stamp: <2017-02-14 11:19:12 dan.harms>
 rem Modified by: Dan Harms
 rem Keywords: install perfect editor
 

@@ -1,10 +1,10 @@
-rem -*- Mode: dos -*-
+rem -*- Mode: bat -*-
 rem start-pageant.bat --- start pageant on start up
-rem Copyright (C) 2015, 2016   (dan.harms)
+rem Copyright (C) 2015-2017   (dan.harms)
 rem Author:  <dan.harms@xrtrading.com>
 rem Created: Friday, April 10, 2015
 rem Version: 1.0
-rem Modified Time-stamp: <2016-08-22 08:49:10 dan.harms>
+rem Modified Time-stamp: <2017-02-14 11:19:55 dan.harms>
 rem Keywords: pageant ssh
 
 @echo off

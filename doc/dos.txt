@@ -1,4 +1,4 @@
-rem -*- Mode: dos -*-
+rem -*- Mode: bat -*-
 rem dos.txt --- helpful commands
 rem Copyright (C) 2015, 2016  Dan Harms (dan.harms)
 rem Author: Dan Harms <dan.harms@xrtrading.com>
