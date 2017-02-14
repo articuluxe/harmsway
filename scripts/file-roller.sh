@@ -1,22 +1,23 @@
 #!/usr/bin/env sh
 # -*- Mode: sh -*-
 # file-roller.sh --- roll a file if it changes over time
-# Copyright (C) 2016  Dan Harms (dharms)
+# Copyright (C) 2016-2017  Dan Harms (dharms)
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Monday, October  3, 2016
 # Version: 1.0
-# Modified Time-stamp: <2016-10-26 16:30:08 dan.harms>
+# Modified Time-stamp: <2017-02-14 14:11:49 dan.harms>
 # Modified by: Dan Harms
 # Keywords: file roll diff
 
 if [ $# -lt 2 ]; then
-    echo "Usage: $0 <dir> <file> [stage-extension]"
+    echo "Usage: $0 <dir> <file> [stage-extension] [diff-options]"
     exit 1
 fi
 
 dir=$1
 base=$2
 ext=${3:-"-stage"}
+diffopts=${4:-"-b"}
 stage=$base$ext
 date=$( date '+%F-%T' | tr ':' '-' )
 file=$base-$date
@@ -37,7 +38,7 @@ if [ ! -f "$base" ]; then
     exit 0
 fi
 
-output=$( diff $base $stage )
+output=$( diff $diffopts $base $stage )
 if [ $? == 1 ]; then
     # there was an update
     mv $stage $file

@@ -1,11 +1,11 @@
 #!/usr/bin/env sh
 # -*- Mode: sh -*-
 # cme-msgw-downloader.sh --- download and check file
-# Copyright (C) 2016  Dan Harms (dan.harms)
+# Copyright (C) 2016-2017  Dan Harms (dan.harms)
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Tuesday, November  1, 2016
 # Version: 1.0
-# Modified Time-stamp: <2016-11-01 15:03:45 dan.harms>
+# Modified Time-stamp: <2017-02-14 14:16:51 dan.harms>
 # Modified by: Dan Harms
 # Keywords: msgw
 
@@ -24,6 +24,6 @@ cd stage
 sshpass -p $pwd sftp $user@$site:$loc > /tmp/cme-msgw-downloader.log 2>&1
 mv $name ../$name-stage
 cd ..
-file-roller.sh $dir $name
+file-roller.sh $dir $name -stage -b\ -I\ '<configuration.*">'
 
 # code ends here
