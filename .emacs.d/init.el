@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-02-13 16:42:04 dan.harms>
+;; Modified Time-stamp: <2017-02-15 10:33:08 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -825,6 +825,11 @@ line."
 (eval-and-compile
   (setq load-path (cons (concat my/plugins-directory "magit/lisp/")
                         load-path)))
+(defun my/enter-magit-status-fullscreen ()
+  "Enter magit's status window, filling the entire frame."
+  (interactive)
+  (let ((magit-display-buffer-function #'magit-display-buffer-fullframe-status-v1))
+    (magit-status)))
 (use-package magit
   :if (not (version< emacs-version "24.4"))
   :init
@@ -837,6 +842,7 @@ line."
   ;; git commands
   :bind (:map my/git-keymap
               ("g" . magit-status)
+              ("SPC" . my/enter-magit-status-fullscreen)
               ("l" . magit-list-repositories)
               ("M-g" . magit-dispatch-popup)
               ("f" . magit-find-file) ;; view arbitrary blobs
@@ -859,8 +865,7 @@ line."
   (magit-auto-revert-mode 0)
   (setq magit-repository-directories
         `(,(cons (expand-file-name "~/src") 2)))
-  ;; add this as of magit 2.4.0
-  ;; (add-hook 'magit-post-refresh-hook 'diff-hl-magit-post-refresh)
+  (add-hook 'magit-post-refresh-hook 'diff-hl-magit-post-refresh)
   ;; add ido shortcut
   (if (version< emacs-version "25.1")
       (add-hook
@@ -878,11 +883,9 @@ line."
   (setq magit-log-arguments (append
                              (list "--color")
                              magit-log-arguments))
-  ;; show status buffer alone
-  (setq magit-post-display-buffer-hook
-        (lambda ()
-          (when (derived-mode-p 'magit-status-mode)
-            (delete-other-windows))))
+  (setq magit-display-buffer-function
+        #'magit-display-buffer-same-window-except-diff-v1)
+  ;; to display fullframe, use 'magit-display-buffer-fullframe-status-v1
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; git-timemachine ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
