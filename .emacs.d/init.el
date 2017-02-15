@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-02-15 10:33:08 dan.harms>
+;; Modified Time-stamp: <2017-02-15 14:01:41 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -927,6 +927,24 @@ line."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; crosshairs ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package crosshairs :bind ("M-s l" . crosshairs-flash))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; form-feed ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package form-feed
+  :bind ("C-c 0-" . form-feed-mode)
+  :disabled
+  :init
+  (setq form-feed-line-width -1)
+  (add-hook 'text-mode-hook 'form-feed-mode)
+  ;; markdown-mode does not work here: it resets its font-lock-keywords
+  ;; (add-hook 'markdown-mode-hook 'form-feed-mode t)
+  )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; page-break-lines ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package page-break-lines
+  :config
+  (setq page-break-lines-modes
+        (append '(markdown-mode text-mode) page-break-lines-modes))
+  (global-page-break-lines-mode))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; beacon ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package beacon
   :bind (("M-s C-l" . beacon-blink)
@@ -1258,7 +1276,7 @@ Each value is a cons cell (`description' . `activation-function').")
   (setq rm-blacklist
         '(" AC" " yas" " Undo-Tree" " Abbrev" " Guide" " Hi" " $" " ,"
           " Ifdef" " Rbow" " ivy" " ElDoc" " (*)" " wg" " ⛓" " GitGutter"
-          " Fly" " drag" " mc++fl" " ARev" " Spnxd"))
+          " Fly" " drag" " mc++fl" " ARev" " Spnxd" " PgLn" " ^L"))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smart-mode-line ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
