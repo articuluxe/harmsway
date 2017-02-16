@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-02-15 14:01:41 dan.harms>
+;; Modified Time-stamp: <2017-02-16 12:02:19 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2033,6 +2033,9 @@ Each value is a cons cell (`description' . `activation-function').")
   (global-set-key [(shift tab)] 'yas-expand)
   (setq yas-fallback-behavior '(apply my/expand-yasnippet))
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; quick-peek ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package quick-peek)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; flycheck ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package flycheck
