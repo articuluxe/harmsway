@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-02-16 12:02:19 dan.harms>
+;; Modified Time-stamp: <2017-02-20 10:21:56 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -75,7 +75,7 @@
   :defines my/backup-exclude-regex
   :init
   (setq my/backup-exclude-regex
-        "recentf\\|ido-last\\|emacs-bmk-bmenu-state")
+        "recentf\\|ido-last\\|emacs-bmk-bmenu-state\\|COMMIT_EDITMSG")
   )
 
 ;; Suppress GNU startup message
