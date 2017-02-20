@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Wednesday, December 21, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-02-06 12:45:06 dan.harms>
+;; Modified Time-stamp: <2017-02-20 10:16:29 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: themes colors
 
@@ -98,7 +98,8 @@
           ((eq sym 'wombat)
            (custom-theme-set-faces sym '(cursor ((t (:background "#8ac6f2"))))))
           ((eq sym 'xp)
-           (my/make-all-font-sizes-the-same-please))
+           (my/make-all-font-sizes-the-same-please)
+           (custom-theme-set-faces sym '(fringe ((t :background "LightYellow3")))))
           )
     (cond ((memq sym my/sml-dark-themes)
            (load-theme 'smart-mode-line-dark t))
