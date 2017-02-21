@@ -112,6 +112,14 @@ C-x r j %d   jump to register %d
 C-x r w %d   store selected frame's window config in register %d
 C-x r f %d   save state of all frames in register %d
 
+* 2-Column mode
+C-x 6 2     enter 2-column mode
+C-x 6 s     split current buffer into 2 columns using separator before point
+C-x 6 b     enter 2-column mode by associating another buffer
+C-x 6 RET   enter newline in both columns
+C-x 6 1     merge both columns back into 1
+C-x 6 d     dissociate the 2 buffers
+
 * Ido
 C-l     reread directory
 C-t     toggle regexp
