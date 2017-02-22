@@ -259,15 +259,32 @@ M-x clear-rectangle  replace rectangle with spaces
 C-s         search forward
 C-r         search backward
 M-C-s       search forward (regexp)
+M-C-r       search backward (regexp)
+** During search
+M-e         edit search string
+C-w         insert search string from point
+M-C-y       increase search string 1 char
+M-C-w       decrease search string 1 char
+M-y         yank last string
+M-s C-e     add rest of line to search string
+C-j         resume searching
 M-c         toggle case-sensitivity during search
-M-r     Toggle regexp
-M-tab     search prior search history
-C-w    insert search string from point
-M-C-y  increase search string 1 char
-M-C-w  decrease search string 1 char
-M-e     edit search string
-C-j       resume searching
-M-s C-e   select rest of line to search
+M-r         toggle regexp
+M-s w       search whole words
+M-s _       search whole symbols
+M-s i       search in invisible text
+M-s '       toggle character folding
+M-s SPC     toggle whitespace matching
+M-s e       edit search string
+*** With last search string
+M-%         launch query-replace
+C-M-%       launch query-replace-regexp
+M-s o       launch occur
+M-s h r     highlight regexp
+** Search history
+M-n         search for next item in search ring
+M-p         search for previous item in search ring
+C-M-i       complete search string using history
 ** Query/replace
 M-%         query replace
 ^              Prior occurrence
