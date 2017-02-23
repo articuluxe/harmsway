@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-02-20 10:21:56 dan.harms>
+;; Modified Time-stamp: <2017-02-23 12:58:41 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1460,6 +1460,7 @@ Each value is a cons cell (`description' . `activation-function').")
   (setq dired-isearch-filenames t)
   (use-package dired-filter)
   (define-key dired-mode-map "." dired-filter-mark-map)
+  (setq wdired-allow-to-change-permissions t)
   ;; sorting
   (use-package dired-sort)
   (setq-default dired-listing-switches "-alhvGg")
