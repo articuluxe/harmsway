@@ -1,10 +1,10 @@
 #!/usr/bin/env sh
 # pgp.txt --- help regarding pgp
-# Copyright (C) 2016  Dan Harms (dharms)
+# Copyright (C) 2016-2017  Dan Harms (dharms)
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Wednesday, September 14, 2016
 # Version: 1.0
-# Modified Time-stamp: <2016-12-18 19:20:09 dharms>
+# Modified Time-stamp: <2017-02-27 11:16:02 dan.harms>
 # Modified by: Dan Harms
 # Keywords: pgp gpg
 
@@ -24,9 +24,9 @@ gpg --armor --export-secret-keys > pgp-private-keys.asc
 gpg --armor --export-secret-subkeys > pgp-private-subkeys.asc
 gpg --export-ownertrust > pgp-ownertrust.asc
 # Generate revocation certificate:
-gpg --armor --gen-revoke <KEY_ID> > pgp-revocation.asc
+gpg --armor --gen-revoke KEY_ID > pgp-revocation.asc
 # Upload keys to a key server
-gpg --send-key --keyserver <KEY_SERVER> <MASTER_KEY_ID>
+gpg --send-key --keyserver KEY_SERVER MASTER_KEY_ID
 
 # Restore from backup:
 ## Text backups
