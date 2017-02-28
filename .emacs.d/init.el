@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-02-23 12:58:41 dan.harms>
+;; Modified Time-stamp: <2017-02-27 14:22:12 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1771,6 +1771,7 @@ Each value is a cons cell (`description' . `activation-function').")
               )
   :config
   (setq wg-default-buffer "*Bookmark List*")
+  (setq wg-use-faces nil)
   ;; doesn't work, isn't needed? (setq wg-restore-position t)
   ;; TODO: set initial string to "( -<{ }>- )"
   (setq wg-query-for-save-on-emacs-exit nil)
