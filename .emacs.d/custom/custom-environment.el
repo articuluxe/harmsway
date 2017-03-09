@@ -1,9 +1,9 @@
 ;;; custom-environment.el --- custom environmental utilities
-;; Copyright (C) 2016  Dan Harms (dharms)
+;; Copyright (C) 2016-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, April 15, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-11-14 08:40:41 dharms>
+;; Modified Time-stamp: <2017-03-08 22:37:11 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: environment utils
 
@@ -54,11 +54,10 @@ SEP can be a separator."
                                  sep) sep (getenv var))))
 
 (defun my/load-environment-variables-from-file (dir &optional append-exec-path)
-  "Update a series of predetermined environment variables according
-to several files that may be present under DIR.  If
-APPEND_EXEC_PATH is non-nil, the existing exec-path will have any
-new elements prepended to it; otherwise, the default is to set
-the final element of `exec-path' to the exec-directory.  The
+"Update environment variables according to files that may be present under DIR.
+If APPEND-EXEC-PATH is non-nil, the existing `exec-path' will have
+any new elements prepended to it; otherwise, the default is to
+set the final element of `exec-path' to the `exec-directory'.  The
 point is that subsequent calls may not want to overwrite the
 final element."
   (let ((path-file (concat dir "PATH"))
