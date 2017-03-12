@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-02-27 14:22:12 dan.harms>
+;; Modified Time-stamp: <2017-03-12 09:48:47 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -753,6 +753,8 @@ line."
 
          ("C-S-SPC" . mc/mark-pop)
          ("C-\\ C-SPC" . mc/mark-pop)
+
+         ("C-S-<mouse-1>" . mc/add-cursor-on-click)
          )
   :init
   (setq mc/list-file (concat my/user-directory "mc-lists.el"))
