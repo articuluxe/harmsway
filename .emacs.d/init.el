@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-03-12 09:48:47 dharms>
+;; Modified Time-stamp: <2017-03-15 11:17:13 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -860,8 +860,10 @@ line."
               ("r" . magit-reset-soft) ;; soft reset; hard reset can use C-u x
               ("d" . magit-diff-buffer-file-popup)
               ("c" . magit-clone)
+              ("x" . magit-clean)
               )
   :config
+  (put 'magit-clean 'disabled nil)
   (use-package with-editor)
   (global-magit-file-mode 1)
   (magit-auto-revert-mode 0)
