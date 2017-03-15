@@ -4,18 +4,17 @@
 export SITE=talbot
 unset SSH_ASKPASS
 
-export EMACSX=/usr/local/emacs/25.1/bin/emacs
+export EMACSX=emacs
 export EDITOR="$EMACSX -nw"
 alias emacs=$EDITOR
 
-python=~/anaconda2/bin
-dart=/usr/local/dart/1.15.0/dart-sdk
-cask=$HOME/.cask/bin
-export PATH=$HOME/bin:/sbin/:/usr/lib64:$python:$cask:$PATH:.
+# dart=/usr/local/dart/1.15.0/dart-sdk
+# cask=$HOME/.cask/bin
+export PATH=$HOME/bin:/usr/local/bin:/bin:/sbin:/usr/bin:.
 
 export CSTDLIB_ROOT=/usr/local
 export CSTDLIB_INC=/usr/local/include/c++/5.3.0/
-export CSTDLIB_BIN=/usr/local/bin
+export CSTDLIB_BIN=/usr/bin
 
 export LD_LIBRARY_PATH=/usr/local/lib
 
@@ -27,14 +26,14 @@ fi
 
 use_clang()
 {
-   export CC=/usr/local/bin/clang
-   export CXX=/usr/local/bin/clang++
+   export CC=/usr/bin/clang
+   export CXX=/usr/bin/clang++
 }
 
 use_gcc()
 {
-   export CC=/usr/local/bin/gcc
-   export CXX=/usr/local/bin/g++
+   export CC=/usr/bin/gcc
+   export CXX=/usr/bin/g++
    export CXX_FLAGS="-std=c++14 -Wall -Wextra -pedantic -Wno-unused-local-typedefs"
 }
 

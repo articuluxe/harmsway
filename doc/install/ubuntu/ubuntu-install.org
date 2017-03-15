@@ -1,0 +1,55 @@
+#+TITLE:Ubuntu install
+
+* boot
+** boot-repair
+sudo add-apt-repository ppa:yannubuntu/boot-repair
+sudu apt-get update
+sudo apt-get install boot-repair
+
+* git
+sudo apt install git
+* drivers
+sudo apt-get install i2c-tools
+* emacs
+** official
+sudo apt-get emacs
+sudo apt-get install emacs
+** local
+cd emacs-25.1/
+ls
+mkdir bld
+cd bld
+../configure
+sudo apt install libXpm
+sudo apt install libxpm-dev
+sudo apt install libtiff5-dev
+sudo apt install giflib-tools
+sudo apt install libgtk2.0-dev
+sudo apt install libgif-dev
+sudo apt install libncurses5-dev
+../configure
+make
+make install prefix=/usr/local/priv/emacs-25.1
+* stow
+sudo apt install stow
+sudo mkdir /usr/local/priv
+sudo chmod 755 /usr/local/priv
+sudo chown dharms /usr/local/priv
+sudo chgrp dharms /usr/local/priv
+cd /usr/local/priv
+** stow emacs
+sudo stow emacs-25.1
+rm emacs-25.1/bin/ctags
+sudo rm ../bin/ctags
+
+* dropbox
+sudo apt install dropbox
+dropbox start -i
+
+sudo apt install shellcheck
+sudo apt install cmake
+sudo apt install figlet
+sudo apt install hunspellxs
+sudo apt install plantuml
+
+

@@ -35,4 +35,4 @@
 [branch "master"]
 	mergeoptions = --squash
 [credential]
-	helper = cache --timeout=28800
+	helper = 'cache --timeout=28800'

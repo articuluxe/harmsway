@@ -3,7 +3,7 @@
 
 export EMACSX=/Applications/emacs-25.1.app/Contents/MacOS/Emacs
 export EDITOR="$EMACSX -nw"
-alias emacs=$EDITOR
+alias emacs="$EDITOR"
 
 export SITE=talbot
 

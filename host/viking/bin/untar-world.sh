@@ -1,11 +1,11 @@
-#!/usr/bin/env sh
+#!/bin/bash
 # -*- Mode: sh -*-
 # untar-world.sh --- untar important files
-# Copyright (C) 2015, 2016  Dan Harms (dan.harms)
+# Copyright (C) 2015-2017  Dan Harms (dan.harms)
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Monday, May 18, 2015
 # Version: 1.0
-# Modified Time-stamp: <2016-07-27 09:41:49 dan.harms>
+# Modified Time-stamp: <2017-03-15 16:45:24 dharms>
 # Modified by: Dan Harms
 # Keywords: configuration
 
