@@ -1,0 +1,125 @@
+# centos-install.org --- centos-centric installation help
+# Copyright (C) 2017  Dan Harms (dan.harms)
+# Author: Dan Harms <dan.harms@xrtrading.com>
+# Created: Wednesday, March 15, 2017
+# Version: 1.0
+# Modified Time-stamp: <2017-03-15 12:31:45 dan.harms>
+# Modified by: Dan Harms
+# Keywords: centos linux install
+
+* git
+#+BEGIN_SRC sh
+cd git-2.4.10
+less INSTALL
+make
+make install
+which git
+#+END_SRC
+
+* emacs
+#+BEGIN_SRC sh
+cd emacs-24.5
+mkdir build
+cd build
+../configure --prefix=/home/dharms
+sudo yum search libXpm
+sudo yum install libXpm
+sudo yum install libXpm-devel
+sudo yum search tiff
+sudo yum install libtiff
+sudo yum install libtiff-devel
+sudo yum search gif
+sudo yum install giflib
+sudo yum install giflib-devel
+../configure --prefix=/home/dharms
+make
+make install
+#+END_SRC
+
+* gcc
+#+BEGIN_SRC sh
+sudo yum install svn
+sudo yum install texinfo-tex
+sudo yum install flex
+sudo yum install zip
+sudo yum install libgcc.i686
+sudo yum install glibc-devel.i686
+sudo yum install libgcc.i686
+svn ls svn://gcc.gnu.org/svn/gcc/tags | grep release
+mkdir gcc-5-3-0
+cd gcc-5-3-0/
+svn co svn://gcc.gnu.org/svn/gcc/tags/gcc_5_3_0_release
+cd gcc_5_3_0_release/
+contrib/download_prerequisites
+cd ..
+cd gcc-5-3-0
+mkdir bld
+cd bld/
+../gcc_5_3_0_release/configure
+make -j 2
+sudo make install
+which gcc
+gcc --version
+which g++
+g++ --version
+#+END_SRC
+
+* clang
+#+BEGIN_SRC sh
+svn co http://llvm.org/svn/llvm-project/llvm/tags/RELEASE_371/final llvm-release-371
+ls
+cd llvm-release-371/tools/
+svn co http://llvm.org/svn/llvm-project/cfe/tags/RELEASE_371/final clang
+cd ../projects/
+svn co http://llvm.org/svn/llvm-project/compiler-rt/tags/RELEASE_371/final compiler-rt
+svn co http://llvm.org/svn/llvm-project/libcxx/tags/RELEASE_371/final libcxx
+svn co http://llvm.org/svn/llvm-project/libcxxabi/tags/RELEASE_371/final libcxxabi
+cd ..
+svn update
+cd ..
+mkdir llvm-release-371-bld
+cd llvm-release-371-bld/
+ls
+cmake -G "Unix Makefiles" -DCMAKE_BUILD_TYPE=Release -DCMAKE_C_COMPILER=/usr/local/bin/gcc -DCMAKE_CXX_COMPILER=/usr/local/bin/g++ ../llvm-release-371/
+make -j 2
+df -h
+which glibc
+find ~/src/gcc-5-3-0/ -type f -name libstdc\*
+ls -l /usr/lib/libstdc++.so.6*
+sudo cp /home/dharms/src/gcc-5-3-0/bld/stage1-i686-pc-linux-gnu/libstdc++-v3/src/.libs/libstdc++.so.6.0.21 /usr/lib
+sudo ln -s /usr/lib/libstdc++.so.6.0.21 /usr/lib/libstdc++.so.6
+make clean
+make -j 2
+sudo make install
+which clang
+which clang++
+clang --version
+#+END_SRC
+
+* java
+#+BEGIN_SRC sh
+mkdir /usr/java
+cd /usr/java
+sudo mv ~/Downloads/jre-8u101-linux-i586.tar.gz .
+sudo tar xzf jre-8u101-linux-i586.tar.gz
+cd ~/.mozilla/plugins
+ln -s /usr/java/jre1.8.0_101/lib/i386/libnpjp2.so .
+#+END_SRC
+
+* mysql
+#+BEGIN_SRC sh
+sudo yum install mysql-server
+sudo service mysqld start
+mysql_secure_installation
+mysql -u root -p<pwd>
+#+END_SRC
+#+BEGIN_SRC sql
+SELECT USER, Host, Password FROM mysql.user;
+CREATE DATABASE expenses;
+CREATE USER 'dharms'@'localhost' IDENTIFIED BY 'mysql';
+GRANT ALL PRIVILEGES ON expenses.* to dharms@localhost;
+FLUSH PRIVILEGES;
+SHOW GRANTS FOR 'dharms'@'localhost';
+#+END_SRC
+
+# code ends here
