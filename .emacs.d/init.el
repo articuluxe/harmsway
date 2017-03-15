@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-03-15 11:17:13 dan.harms>
+;; Modified Time-stamp: <2017-03-15 11:36:27 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1341,9 +1341,17 @@ Each value is a cons cell (`description' . `activation-function').")
  :init
  (setq outline-structedit-modifiers '(control shift)) ;TODO: doesn't work
  (add-hook 'outline-mode-hook
-           (lambda() (my/add-outline-cycle-binding outline-mode-map)))
+           (lambda()
+             (local-set-key (kbd "<f9>") outline-mode-prefix-map)
+             (local-set-key "\C-c9" outline-mode-prefix-map)
+             (my/add-outline-cycle-binding outline-mode-map)
+             ))
  (add-hook 'outline-minor-mode-hook
-           (lambda() (my/add-outline-cycle-binding outline-minor-mode-map)))
+           (lambda()
+             (local-set-key (kbd "<f9>") outline-mode-prefix-map)
+             (local-set-key "\C-c9" outline-mode-prefix-map)
+             (my/add-outline-cycle-binding outline-minor-mode-map)
+             ))
  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; org ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
