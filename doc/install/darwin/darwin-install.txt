@@ -21,6 +21,7 @@ brew install figlet
 brew install plantuml
 brew install cmake
 brew install hunspell
+brew install stow
 
 brew install coreutils
 (setq insert-directory-program "gls")

@@ -1,0 +1,20 @@
+#!/usr/bin/env sh
+# -*- Mode: sh -*-
+# ubuntu --- ubuntu-centric docs
+# Copyright (C) 2017  Dan Harms (dharms)
+# Author: Dan Harms <enniomore@icloud.com>
+# Created: Tuesday, March 14, 2017
+# Version: 1.0
+# Modified Time-stamp: <2017-03-14 22:42:48 dharms>
+# Modified by: Dan Harms
+# Keywords: linux ubuntu mint
+
+# install boot-repair
+sudo add-apt-repository ppa:yannubuntu/boot-repair
+sudu apt-get update
+sudo apt-get install boot-repair
+
+# update trackpad drivers for acer laptops
+sudo apt-get install i2c-tools
+
+# code ends here
