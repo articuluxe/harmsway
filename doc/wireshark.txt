@@ -5,7 +5,7 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Tuesday, September 13, 2016
 # Version: 1.0
-# Modified Time-stamp: <2017-02-01 16:02:45 dan.harms>
+# Modified Time-stamp: <2017-03-17 08:48:50 dan.harms>
 # Modified by: Dan Harms
 # Keywords: wireshark
 
@@ -31,5 +31,7 @@ fix and ip.[addr|src|dst] == 69.50.112.200
 # match first 3 octets
 ip.src == 69.50.112.200/24
 
+# set capability to enable use of raw sockets without root access
+sudo setcap cap_net_admin,cap_net_raw=ep EXE
 
 # code ends here
