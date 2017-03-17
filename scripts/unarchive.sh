@@ -1,11 +1,11 @@
-#!/usr/bin/env sh
+#!/bin/bash
 # -*- Mode: sh -*-
 # unarchive.sh --- unarchive a world archive
-# Copyright (C) 2016  Dan Harms (dan.harms)
+# Copyright (C) 2016-2017  Dan Harms (dan.harms)
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Tuesday, August  9, 2016
 # Version: 1.0
-# Modified Time-stamp: <2016-08-17 13:52:34 dan.harms>
+# Modified Time-stamp: <2017-03-16 17:39:12 dharms>
 # Modified by: Dan Harms
 # Keywords: archive backup
 
@@ -23,7 +23,7 @@ fi
 . _archive_utils.sh
 
 if [ $# -ne 2 ]; then
-    exe=$(basename $0)
+    exe=$(basename "$0")
     echo "Usage: $exe <source> <dest>"
     exit 1
 fi
@@ -53,9 +53,9 @@ if [ -r "$output" ]; then
     exit 1
 fi
 
-cd $dir
+cd "$dir"
 
-stem=$(basename $dir)
+stem=$(basename "$dir")
 stemlen=${#stem}
 shopt -s nullglob
 files=( ${stem}_*.tar.gz )
