@@ -4,15 +4,15 @@
 ;; Description: Documentation for package Bookmark+
 ;; Author: Drew Adams
 ;; Maintainer: Drew Adams (concat "drew.adams" "@" "oracle" ".com")
-;; Copyright (C) 2000-2016, Drew Adams, all rights reserved.
+;; Copyright (C) 2000-2017, Drew Adams, all rights reserved.
 ;; Created: Fri Sep 15 07:58:41 2000
-;; Last-Updated: Sat Sep 10 19:40:24 2016 (-0700)
+;; Last-Updated: Mon Jan  2 20:12:45 2017 (-0800)
 ;;           By: dradams
-;;     Update #: 15075
+;;     Update #: 15183
 ;; URL: http://www.emacswiki.org/bookmark+-doc.el
 ;; Doc URL: http://www.emacswiki.org/BookmarkPlus
 ;; Keywords: bookmarks, bookmark+, placeholders, annotations, search,
-;;           info, url, w3m, gnus
+;;           info, url, eww, w3m, gnus
 ;; Compatibility: GNU Emacs: 20.x, 21.x, 22.x, 23.x, 24.x, 25.x
 ;;
 ;; Features that might be required by this library:
@@ -117,7 +117,7 @@
 ;;  navigate around the sections of this doc.  Linkd mode will
 ;;  highlight this Index, as well as the cross-references and section
 ;;  headings throughout this file.  You can get `linkd.el' here:
-;;  http://dto.freeshell.org/notebook/Linkd.html.
+;;  http://www.emacswiki.org/emacs/download/linkd.el.
 ;;
 ;;  (@> "Documentation")
 ;;    (@> "Installing Bookmark+")
@@ -127,8 +127,10 @@
 ;;    (@> "Different Types of Jump Commands")
 ;;    (@> "Bookmark Annotations")
 ;;    (@> "Bookmark Tags")
-;;    (@> "Bookmark Tags Can Have Values")
-;;    (@> "Function, Sequence, and Variable-List Bookmarks")
+;;      (@> "Bookmark Tags Can Have Values")
+;;      (@> "Hierarchical Structures of Bookmarks?")
+;;    (@> "Function, Sequence, Variable-List,... Bookmarks")
+;;      (@> "Little Persistent Named Nothings")
 ;;    (@> "Editing Bookmarks")
 ;;      (@> "Bookmark Records: What A Bookmark Looks Like")
 ;;    (@> "Bookmark-List Views - Saving and Restoring State")
@@ -551,9 +553,10 @@
 ;;
 ;;     In addition to keys on Bookmark+ keymaps, Bookmark+ binds some
 ;;     mode-specific bookmarking commands in some other modes: Occur,
-;;     Compilation (including Grep), Buffer-menu, Gnus, Info, Man,
-;;     Woman, W3M, and Dired (if you use library `Dired+').  These
-;;     keys let you set or jump to bookmarks specific to the modes.
+;;     Compilation (including Grep), Buffer-menu, EWW, Gnus, Info,
+;;     Man, Woman, W3M, and Dired (if you use library `Dired+').
+;;     These keys let you set or jump to bookmarks specific to the
+;;     modes.
 ;;
 ;;  * Helpful help.
 ;;
@@ -1125,9 +1128,10 @@
 ;;  * (@> "Bookmarking the Marked Files in Dired")
 ;;  * (@> "Opening Bookmarks Using Windows File Associations")
 ;;  * (@> "Tag Commands and Keys")
- 
+;;
+;;
 ;;(@* "Bookmark Tags Can Have Values")
-;;  ** Bookmark Tags Can Have Values **
+;;  *** Bookmark Tags Can Have Values ***
 ;;
 ;;  Bookmark tags are simply names (strings) when you create them.
 ;;  Nearly all of the predefined operations that use tags use these
@@ -1180,9 +1184,70 @@
 ;;  You can use this tag to invoke functions that are specific to
 ;;  individual bookmarks; bookmarks can thus have their own, extra
 ;;  jump functions.
+;;
+;;
+;;(@* "Hierarchical Structures of Bookmarks?")
+;;  *** Hierarchical Structures of Bookmarks? ***
+;;
+;;  You can use tags to organize sets of bookmarks in various ways.
+;;  But what about a simple, hierarchical (tree-shaped) structure like
+;;  the one that you use for bookmarks in a web browser?  You can get
+;;  a similar effect with Bookmark+ by just using a tag-naming
+;;  convention such as this:
+;;
+;;  vacation/
+;;  vacation/2017/
+;;  vacation/2017/winter/
+;;  vacation/2017/winter/photos/
+;;  vacation/2017/summer/
+;;  vacation/2017/summer/photos/
+;;  vacation/2018/
+;;  ...
+;;
+;;  You need not tag any bookmarks with any particular part of such a
+;;  pseudo-hierarchy.  For example, you might tag some bookmarks with
+;;  vacation/2017/winter/ and some with vacation/2017/winter/photos/,
+;;  without bothering to have any that are tagged with just vacation/
+;;  or just vacation/2017/.
+;;
+;;  You are not limited to a single tree.  You can have a tag such as
+;;  vacation/2017/winter/ and a tag such as work/projects/2017/alpha/,
+;;  without any need for those to have a common ancestor.
+;;
+;;  How can you use such a tagging scheme?
+;;
+;;  When you jump to a bookmark using a command that asks for tags,
+;;  such as `C-x j t +' (`bmkp-some-tags-jump'), you can use
+;;  completion.  So you can, for example, type `vac TAB' to show all
+;;  of your vacation tags (in `*Completions*'), and drill down,
+;;  completing more, to pick whichever particular vacation tag you're
+;;  interested in.  This is similar to traversing a web-browser
+;;  tree-like bookmarks menu.  But jump commands that use tags let you
+;;  match any number of tags at the same time, not just one.
+;;
+;;  Completion against the set of existing tags is also available when
+;;  you add tags to a bookmark.  And if option
+;;  `bmkp-prompt-for-tags-flag' is non-`nil' then you are prompted to
+;;  add tags whenever you create or update a bookmark.  But unlike the
+;;  case for web-browser bookmark creation, classifying a bookmark
+;;  when you create it or update it is optional.  You can always add
+;;  tags later, or not at all.
+;;
+;;  Such a purely conventional, pseudo-hierarchy might sound like a
+;;  silly hack, but it is at least as quick to use as is adding a
+;;  bookmark to your tree of browser bookmarks.  And it is more
+;;  useful, because the organization is more flexible and you can have
+;;  multiple, independent hierarchies.
+;;
+;;  The tagging scheme just described can help you keep track of
+;;  things, even though it is very simple.  There is nothing special
+;;  about it.  You might come up with other conventions for
+;;  classifying tags, which you find more convenient or more powerful.
+;;  And remember that tags can be more than just names.  They give you
+;;  the full power of Lisp values - do with them whatever you like.
  
-;;(@* "Function, Sequence, and Variable-List Bookmarks")
-;;  ** Function, Sequence, and Variable-List Bookmarks **
+;;(@* "Function, Sequence, Variable-List,... Bookmarks")
+;;  ** Function, Sequence, Variable-List,... Bookmarks **
 ;;
 ;;  Bookmarks are typically thought of only as recorded locations.
 ;;  Invoking a bookmark, called "jumping" to it, traditionally means
@@ -1293,6 +1358,74 @@
 ;;  `bmkp-set-izones-bookmark' bookmarks this value for the current
 ;;  buffer.  Jumping to such a bookmark restores the saved ring/stack
 ;;  of restrictions.
+;;
+;;
+;;(@* "Little Persistent Named Nothings")
+;;  *** Little Persistent Named Nothings ***
+;;
+;;  OK, so a bookmark need not "go" anywhere.  Function, sequence,
+;;  variable-list, and some other kinds of bookmarks have no real
+;;  "location" to move to or restore.  But the bookmarks talked about
+;;  so far at least have an associated action: you can "jump" to them,
+;;  even if "jump" can mean a arbitrary action that might have nothing
+;;  to do with reaching a destination.
+;;
+;;  You can also have a *non-invokable* bookmark, that is, one that
+;;  you cannot jump to.  This is a bookmark whose handler is the
+;;  function `ignore', which does nothing.
+;;
+;;  What's the point of that?  To record something persistently,
+;;  without needing to manage the file(s) you record it in, and to be
+;;  able to access that something by name.
+;;
+;;  As an example, library Isearch+ provides one such use case.  It
+;;  lets you interactively add, modify, and remove Isearch filter
+;;  predicates on the fly, providing more power and flexibility in
+;;  searching.
+;;
+;;  (A filter predicate is a function that accepts the current
+;;  search-hit limits as arguments.  If it returns `nil' then that
+;;  search hit is excluded from searching; otherwise it is included.)
+;;
+;;  You can also, on the fly, encapsulate the current suite of filter
+;;  predicates as a new filter predicate.  That is, you can manipulate
+;;  a complex sequence of filters as a single predicate, using a
+;;  simple name.  And you can save the definition of that new
+;;  predicate in a file, so you can use it again in future Emacs
+;;  sessions.
+;;
+;;  Alternatively, you can just bookmark the search predicate.  The
+;;  data saved in the bookmark is the suite of filters that is the
+;;  advised value of `isearch-filter-predicate' at the time of
+;;  bookmarking.
+;;
+;;  Then, in a future Emacs session, while Isearching you can hit a
+;;  key and enter the bookmark name (with completion), to apply that
+;;  suite of filters again.
+;;
+;;  Bookmarking is easier than defining a new predicate and bothering
+;;  with a file to save it in.  This is the kind of thing that
+;;  bookmarks are for: persistently saving named bits of data for
+;;  later retrieval by name.
+;;
+;;  Because the saved data in this case (the filter definition) has no
+;;  use outside the context of searching, there is no way to invoke it
+;;  - no jump action.  Its handler is `ignore'.
+;;
+;;  You can apply all Bookmark+ features to non-invokable bookmarks:
+;;  sort, edit, tag - whatever.  Use Bookmark+ to organize them, even
+;;  if you cannot invoke them.
+;;
+;;  Non-invokable bookmarks are shown using face `bmkp-no-jump' in the
+;;  bookmark-list display.
+;;
+;;  It is also possible for a bookmark to have a handler other than
+;;  `ignore', so that it is invokable, but that its jump action is
+;;  appropriate only in certain contexts.  This is the case, for
+;;  instance, for an Icicles search-hits bookmark.  You cannot invoke
+;;  it outside the context of Icicles searching.  For this reason,
+;;  these bookmarks are also shown with face `bmkp-no-jump' in the
+;;  bookmark-list display.
  
 ;;(@* "Editing Bookmarks")
 ;;  ** Editing Bookmarks **
@@ -2654,7 +2787,7 @@
 ;;
 ;;  One use for this feature is to hide the component bookmarks that
 ;;  make up a sequence bookmark (see
-;;  (@> "Function, Sequence, and Variable-List Bookmarks")).  The
+;;  (@> "Function, Sequence, Variable-List,... Bookmarks")).  The
 ;;  default behavior when you create a sequence bookmark is in fact to
 ;;  omit its component bookmarks from the displayed list.
 ;;
@@ -3098,9 +3231,6 @@
 ;;  autonamed bookmark in buffer `foo.el' at position 58356 is
 ;;  `000058356 foo.el'.
 ;;
-;;  (You can customize the format of autonamed bookmarks using options
-;;  `bmkp-autoname-bookmark-function' and `bmkp-autoname-format'.)
-;;
 ;;  When you jump to any bookmark, the actual destination can differ
 ;;  from the recorded position, because the buffer text might have
 ;;  changed.  In that case, the position you jump to has been
@@ -3169,6 +3299,41 @@
 ;;              'bmkp-delete-autonamed-this-buffer-no-confirm)
 ;;    (add-hook 'kill-emacs-hook
 ;;              'bmkp-delete-autonamed-no-confirm)
+;;
+;;  You can customize the format of autonamed bookmarks using options
+;;  `bmkp-autoname-bookmark-function' and `bmkp-autoname-format'.
+;;
+;;  For example, if you want autonamed bookmarks to show the line and
+;;  column numbers, in the form `L<num>,C<num> <buffer>', where <num>
+;;  is a sequence of decimal digits and <buffer> is the buffer name,
+;;  then you can use a function such as this as the value of
+;;  `bmkp-autoname-bookmark-function':
+;;
+;;    (defun my-auto-l+c-name (position)
+;;      "Return a name for POSITION that uses line & column numbers."
+;;      (let ((line  (line-number-at-pos position))
+;;            (col   (save-excursion
+;;                     (goto-char position) (current-column))))
+;;        (format "L%d,C%d %s" col line (buffer-name))))
+;;
+;;  To enable Bookmark+ to recognize such bookmarks as autonamed, you
+;;  would then set `bmkp-autoname-format' to the format specification
+;;  "^L[0-9]+,C[0-9]+ %B", to match their names.  Here, the `%B' is a
+;;  Bookmark+ format specifier that corresponds to the buffer name.
+;;
+;;  Recognizing the buffer name in an autonamed bookmark is important
+;;  or commands that act only on autonamed bookmarks for a specific
+;;  buffer.  That includes commands `bmkp-autonamed-this-buffer-jump'
+;;  and `bmkp-delete-all-autonamed-for-this-buffer'.
+;;
+;;  You use the special format specifier `%B' for the buffer name,
+;;  instead of just `%s', because the format can have multiple `%'
+;;  sequences, and the buffer name could be anywhere in the bookmark
+;;  name.  Depending on the buffer, the buffer name could thus be
+;;  confused with other text in the bookmark name, unless you use `%B'
+;;  to show where it is.  You can use just `%s' for it if there is no
+;;  risk of ambiguity.  (Use `%s' in `bmkp-autoname-bookmark-function'
+;;  to insert the buffer name.)
  
 ;;(@* "Temporary Bookmarks")
 ;;  ** Temporary Bookmarks **
@@ -3380,6 +3545,7 @@
 ;;  non-autonamed bookmarks.  Bookmark highlighting uses a style and a
 ;;  face.  The available styles are these:
 ;;
+;;  * Region              - Highlight the region, if a region bookmark
 ;;  * Line                - Highlight line of the bookmark position
 ;;  * Position            - Highlight character at bookmark position
 ;;  * Line Beginning      - Highlight first character on line
@@ -3392,19 +3558,23 @@
 ;;  autonamed and non-autonamed bookmarks.  You can also customize the
 ;;  fringe bitmaps to use.
 ;;
-;;  * `bmkp-light-autonamed'           (face)
-;;  * `bmkp-light-non-autonamed'       (face)
-;;  * `bmkp-light-style-autonamed'     (option)
-;;  * `bmkp-light-style-non-autonamed' (option)
-;;  * `bmkp-light-left-fringe-bitmap'  (option)
-;;  * `bmkp-light-right-fringe-bitmap' (option)
+;;  * `bmkp-light-autonamed'                  (face)
+;;  * `bmkp-light-non-autonamed'              (face)
+;;  * `bmkp-light-autonamed-region'           (face)
+;;  * `bmkp-light-non-autonamed-region'       (face)
+;;  * `bmkp-light-style-autonamed'            (option)
+;;  * `bmkp-light-style-non-autonamed'        (option)
+;;  * `bmkp-light-style-autonamed-region'     (option)
+;;  * `bmkp-light-style-non-autonamed-region' (option)
+;;  * `bmkp-light-left-fringe-bitmap'         (option)
+;;  * `bmkp-light-right-fringe-bitmap'        (option)
 ;;
-;;  Note: A position or line highlight acts more or less like an Emacs
-;;  marker: it moves with the surrounding text.  As you edit the text
-;;  in the buffer, the highlighted location can thus become out of
-;;  sync with the recorded position.  This is normal.  When you jump
-;;  to the bookmark its highlight is automatically repositioned to the
-;;  recorded location, possibly adjusted according to the the
+;;  Note: A region, position, or line highlight acts more or less like
+;;  an Emacs marker: it moves with the surrounding text.  As you edit
+;;  the text in the buffer, the highlighted location can thus become
+;;  out of sync with the recorded position.  This is normal.  When you
+;;  jump to the bookmark, its highlight is automatically repositioned
+;;  to the recorded location, possibly adjusted according to the the
 ;;  surrounding context.
 ;;
 ;;  In addition to the default highlighting, which you can customize,
@@ -3595,11 +3765,13 @@
 ;;
 ;;  You can use the standard Org command `org-store-link' (`C-c l') in
 ;;  buffer `*Bookmark List*' to store a link to the bookmark at point.
+;;  (This is also item `Store Org Link' in the mouse-3 popup menu.)
 ;;
 ;;  Outside buffer `*Bookmark List*' you can use command
 ;;  `bmkp-store-org-link' to store a link to any bookmark.  You are
 ;;  prompted for the bookmark name.  You can even enter the name of a
-;;  bookmark that does not yet exist.
+;;  bookmark that does not yet exist.  (This is also item `Store Org
+;;  Link To...' on menu `Bookmarks'.)
 ;;
 ;;  If you use a numeric prefix arg with either command then the
 ;;  bookmark link stored will be for jumping to the bookmark in the

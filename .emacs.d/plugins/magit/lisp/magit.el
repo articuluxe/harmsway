@@ -16,7 +16,7 @@
 ;;	Rémi Vanicat      <vanicat@debian.org>
 ;;	Yann Hodique      <yann.hodique@gmail.com>
 
-;; Package-Requires: ((emacs "24.4") (async "20161103.1036") (dash "20161121.55") (with-editor "20170111.609") (git-commit "20170112.334") (magit-popup "20170104.924"))
+;; Package-Requires: ((emacs "24.4") (async "20170219.942") (dash "20170207.2056") (with-editor "20170111.609") (git-commit "20170214.347") (magit-popup "20170214.347"))
 ;; Keywords: git tools vc
 ;; Homepage: https://github.com/magit/magit
 
@@ -117,7 +117,7 @@
 (defface magit-head
   '((((class color) (background light)) :inherit magit-branch-local)
     (((class color) (background  dark)) :inherit magit-branch-local))
-  "Face for the symbolic ref \"HEAD\"."
+  "Face for the symbolic ref `HEAD'."
   :group 'magit-faces)
 
 (defface magit-refname

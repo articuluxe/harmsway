@@ -43,6 +43,9 @@
 (eval-when-compile (require 'dired))
 (declare-function dired-uncache 'dired)
 
+(eval-when-compile (require 'auth-source))
+(declare-function auth-source-search 'auth-source)
+
 ;;; Options
 
 (defcustom magit-git-output-coding-system
@@ -417,6 +420,7 @@ current when this function was called (if it is a Magit buffer
 and still alive), as well as the respective Magit status buffer.
 
 See `magit-start-process' and `with-editor' for more information."
+  (magit--record-separated-gitdir)
   (magit-with-editor (magit-run-git-async args)))
 
 (defun magit-run-git-sequencer (&rest args)
