@@ -553,6 +553,88 @@ TODO: correct this bug!"
                      "brother from another mother") ;; no newline should be here!
             )))
 
+(ert-deftest snippet-exit-hooks ()
+  (defvar yas--ran-exit-hook)
+  (with-temp-buffer
+    (yas-saving-variables
+     (let ((yas--ran-exit-hook nil)
+           (yas-triggers-in-field t))
+       (yas-with-snippet-dirs
+         '((".emacs.d/snippets"
+            ("emacs-lisp-mode"
+             ("foo" . "\
+# expand-env: ((yas-after-exit-snippet-hook (lambda () (setq yas--ran-exit-hook t))))
+# --
+FOO ${1:f1} ${2:f2}")
+             ("sub" . "\
+# expand-env: ((yas-after-exit-snippet-hook (lambda () (setq yas--ran-exit-hook 'sub))))
+# --
+SUB"))))
+         (yas-reload-all)
+         (emacs-lisp-mode)
+         (yas-minor-mode +1)
+         (insert "foo")
+         (ert-simulate-command '(yas-expand))
+         (should-not yas--ran-exit-hook)
+         (yas-mock-insert "sub")
+         (ert-simulate-command '(yas-expand))
+         (ert-simulate-command '(yas-next-field))
+         (should-not yas--ran-exit-hook)
+         (ert-simulate-command '(yas-next-field))
+         (should (eq yas--ran-exit-hook t)))))))
+
+(ert-deftest snippet-exit-hooks-bindings ()
+  "Check that `yas-after-exit-snippet-hook' is handled correctly
+in the case of a buffer-local variable and being overwritten by
+the expand-env field."
+  (defvar yas--ran-exit-hook)
+  (with-temp-buffer
+    (yas-saving-variables
+     (let ((yas--ran-exit-hook nil)
+           (yas-triggers-in-field t)
+           (yas-after-exit-snippet-hook nil))
+       (yas-with-snippet-dirs
+         '((".emacs.d/snippets"
+            ("emacs-lisp-mode"
+             ("foo" . "foobar\n")
+             ("baz" . "\
+# expand-env: ((yas-after-exit-snippet-hook (lambda () (setq yas--ran-exit-hook 'letenv))))
+# --
+foobaz\n"))))
+         (yas-reload-all)
+         (emacs-lisp-mode)
+         (yas-minor-mode +1)
+         (add-hook 'yas-after-exit-snippet-hook (lambda () (push 'global yas--ran-exit-hook)))
+         (add-hook 'yas-after-exit-snippet-hook (lambda () (push 'local yas--ran-exit-hook)) nil t)
+         (insert "baz")
+         (ert-simulate-command '(yas-expand))
+         (should (eq 'letenv yas--ran-exit-hook))
+         (insert "foo")
+         (ert-simulate-command '(yas-expand))
+         (should (eq 'global (nth 0 yas--ran-exit-hook)))
+         (should (eq 'local (nth 1 yas--ran-exit-hook))))))))
+
+(ert-deftest snippet-mirror-bindings ()
+  "Check that variables defined with the expand-env field are
+accessible from mirror transformations."
+  (with-temp-buffer
+    (yas-saving-variables
+     (let ((yas-triggers-in-field t)
+           (yas-good-grace nil))
+       (yas-with-snippet-dirs
+         '((".emacs.d/snippets"
+            ("emacs-lisp-mode"
+             ("baz" . "\
+# expand-env: ((func #'upcase))
+# --
+hello ${1:$(when (stringp yas-text) (funcall func yas-text))} foo${1:$$(concat \"baz\")}$0"))))
+         (yas-reload-all)
+         (emacs-lisp-mode)
+         (yas-minor-mode +1)
+         (insert "baz")
+         (ert-simulate-command '(yas-expand))
+         (should (string= (yas--buffer-contents) "hello BAZ foobaz\n")))))))
+
 (defvar yas--barbaz)
 (defvar yas--foobarbaz)
 
@@ -596,7 +678,7 @@ TODO: correct this bug!"
          (yas-should-expand '(("foo-barbaz" . "OKfoo-barbazOK")
                               ("foo " . "foo "))))))))
 
-(ert-deftest nested-snippet-expansion ()
+(ert-deftest nested-snippet-expansion-1 ()
   (with-temp-buffer
     (yas-minor-mode +1)
     (let ((yas-triggers-in-field t))
@@ -606,6 +688,52 @@ TODO: correct this bug!"
         (should (= (length snippets) 2))
         (should (= (length (yas--snippet-fields (nth 0 snippets))) 2))
         (should (= (length (yas--snippet-fields (nth 1 snippets))) 1))))))
+
+(ert-deftest nested-snippet-expansion-2 ()
+  (let ((yas-triggers-in-field t))
+    (yas-with-snippet-dirs
+      '((".emacs.d/snippets"
+         ("text-mode"
+          ("nest" . "one($1:$1) two($2).$0"))))
+      (yas-reload-all)
+      (text-mode)
+      (yas-minor-mode +1)
+      (insert "nest")
+      (ert-simulate-command '(yas-expand))
+      (yas-mock-insert "nest")
+      (ert-simulate-command '(yas-expand))
+      (yas-mock-insert "x")
+      (ert-simulate-command '(yas-next-field-or-maybe-expand))
+      (yas-mock-insert "y")
+      (ert-simulate-command '(yas-next-field-or-maybe-expand))
+      (ert-simulate-command '(yas-next-field-or-maybe-expand))
+      (yas-mock-insert "z")
+      (ert-simulate-command '(yas-next-field-or-maybe-expand))
+      (should (string= (buffer-string)
+                       "one(one(x:x) two(y).:one(x:x) two(y).) two(z).")))))
+
+(ert-deftest nested-snippet-expansion-3 ()
+  (let ((yas-triggers-in-field t))
+    (yas-with-snippet-dirs
+      '((".emacs.d/snippets"
+         ("text-mode"
+          ("rt" . "\
+\\sqrt${1:$(if (string-equal \"\" yas/text) \"\" \"[\")}${1:}${1:$(if (string-equal \"\" yas/text) \"\" \"]\")}{$2}$0"))))
+      (yas-reload-all)
+      (text-mode)
+      (yas-minor-mode +1)
+      (insert "rt")
+      (ert-simulate-command '(yas-expand))
+      (yas-mock-insert "3")
+      (ert-simulate-command '(yas-next-field-or-maybe-expand))
+      (yas-mock-insert "rt")
+      (ert-simulate-command '(yas-next-field-or-maybe-expand))
+      (yas-mock-insert "5")
+      (ert-simulate-command '(yas-next-field-or-maybe-expand))
+      (yas-mock-insert "2")
+      (ert-simulate-command '(yas-next-field-or-maybe-expand))
+      (ert-simulate-command '(yas-next-field-or-maybe-expand))
+      (should (string= (buffer-string) "\\sqrt[3]{\\sqrt[5]{2}}")))))
 
 
 ;;; Loading

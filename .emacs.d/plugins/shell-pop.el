@@ -1,15 +1,15 @@
 ;;; shell-pop.el --- helps you to use shell easily on Emacs. Only one key action to work. -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2009-2015  Kazuo Yagi
+;; Copyright (C) 2009-2017  Kazuo Yagi
 
 ;; Author:        Kazuo YAGI <kazuo.yagi@gmail.com>
 ;; Maintainer:    Kazuo YAGI <kazuo.yagi@gmail.com>
 ;; URL:           http://github.com/kyagi/shell-pop-el
-;; Version:       0.63
+;; Version:       0.64
 ;; Created:       2009-05-31 23:57:08
 ;; Keywords:      shell, terminal, tools
 ;; Compatibility: GNU 24.x
-;; Package-Requires: ((emacs "24"))
+;; Package-Requires: ((emacs "24") (cl-lib "0.5"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -58,6 +58,7 @@
 (declare-function eshell-process-interact "esh-proc")
 
 (require 'term)
+(require 'cl-lib)
 
 (defgroup shell-pop ()
   "Shell-pop"
@@ -71,6 +72,7 @@
 (defvar shell-pop-last-window nil)
 (defvar shell-pop-last-shell-buffer-index 1)
 (defvar shell-pop-last-shell-buffer-name "")
+(defvar shell-pop-window-configuration nil)
 ;; internal}
 
 (defcustom shell-pop-window-size 30
@@ -140,6 +142,15 @@ The value is a list with these items:
 (defcustom shell-pop-autocd-to-working-dir t
   "If non-nil, automatically `cd' to working directory of the
 buffer from which the `shell-pop' command was invoked."
+  :type 'boolean
+  :group 'shell-pop)
+
+(defcustom shell-pop-restore-window-configuration t
+  "If non-nil, restore the original window configuration when
+shell-pop is closed.
+
+shell-pop's window is deleted in any case. This variable has no
+effect when `shell-pop-window-position' value is \"full\"."
   :type 'boolean
   :group 'shell-pop)
 
@@ -296,7 +307,8 @@ The input format is the same as that of `kbd'."
              (shell-pop-get-internal-mode-buffer-window index)))
         (cwd (replace-regexp-in-string "\\\\" "/" default-directory)))
     (when (shell-pop--full-p)
-      (window-configuration-to-register :shell-pop)
+      (setq shell-pop-window-configuration
+            (list (current-window-configuration) (point-marker)))
       (delete-other-windows))
     (if w
         (select-window w)
@@ -318,11 +330,17 @@ The input format is the same as that of `kbd'."
 (defun shell-pop-out ()
   (run-hooks 'shell-pop-out-hook)
   (if (shell-pop--full-p)
-      (jump-to-register :shell-pop)
+      (let ((window-conf (cl-first shell-pop-window-configuration))
+            (marker (cl-second shell-pop-window-configuration)))
+        (set-window-configuration window-conf)
+        (when (marker-buffer marker)
+          (goto-char marker)))
     (when (and (not (one-window-p)) (not (= shell-pop-window-height 100)))
+      (bury-buffer)
       (delete-window)
       (select-window shell-pop-last-window))
-    (switch-to-buffer shell-pop-last-buffer)))
+    (when shell-pop-restore-window-configuration
+      (switch-to-buffer shell-pop-last-buffer))))
 
 (defun shell-pop-split-window ()
   (unless (shell-pop--full-p)

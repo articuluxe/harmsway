@@ -4,7 +4,7 @@
 
 ;; Author: Vasilij Schneidermann <v.schneidermann@gmail.com>
 ;; URL: https://github.com/wasamasa/shackle
-;; Version: 0.9.1
+;; Version: 0.9.2
 ;; Keywords: convenience
 ;; Package-Requires: ((cl-lib "0.5"))
 
@@ -438,7 +438,8 @@ it to do useful things such as selecting the popped up window
 afterwards and/or inhibiting `quit-window' from deleting the
 window."
   (save-excursion
-  (let ((window (shackle--display-buffer buffer alist plist)))
+  (let* ((ignore-window-parameters t)
+         (window (shackle--display-buffer buffer alist plist)))
     (when (plist-get plist :inhibit-window-quit)
       (shackle--inhibit-window-quit window))
     (when (and (plist-get plist :select) (window-live-p window))
