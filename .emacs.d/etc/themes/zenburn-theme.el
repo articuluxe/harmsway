@@ -1,10 +1,10 @@
 ;;; zenburn-theme.el --- A low contrast color theme for Emacs.
 
-;; Copyright (C) 2011-2016 Bozhidar Batsov
+;; Copyright (C) 2011-2017 Bozhidar Batsov
 
 ;; Author: Bozhidar Batsov <bozhidar@batsov.com>
 ;; URL: http://github.com/bbatsov/zenburn-emacs
-;; Version: 2.4
+;; Version: 2.5
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -21,7 +21,7 @@
 
 ;;; Commentary:
 
-;; A port of the popular Vim theme Zenburn for Emacs 24, built on top
+;; A port of the popular Vim theme Zenburn for Emacs 24+, built on top
 ;; of the new built-in theme support in Emacs 24.
 
 ;;; Credits:
@@ -340,6 +340,13 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(ctbl:face-cell-select ((t (:background ,zenburn-blue :foreground ,zenburn-bg))))
    `(ctbl:face-continue-bar ((t (:background ,zenburn-bg-05 :foreground ,zenburn-bg))))
    `(ctbl:face-row-select ((t (:background ,zenburn-cyan :foreground ,zenburn-bg))))
+;;;;; debbugs
+   `(debbugs-gnu-done ((t (:foreground ,zenburn-fg-1))))
+   `(debbugs-gnu-handled ((t (:foreground ,zenburn-green))))
+   `(debbugs-gnu-new ((t (:foreground ,zenburn-red))))
+   `(debbugs-gnu-pending ((t (:foreground ,zenburn-blue))))
+   `(debbugs-gnu-stale ((t (:foreground ,zenburn-orange))))
+   `(debbugs-gnu-tagged ((t (:foreground ,zenburn-red))))
 ;;;;; diff
    `(diff-added          ((t (:background "#335533" :foreground ,zenburn-green))))
    `(diff-changed        ((t (:background "#555511" :foreground ,zenburn-yellow-1))))
@@ -671,6 +678,22 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(hydra-face-blue ((t (:foreground ,zenburn-blue :background ,zenburn-bg))))
    `(hydra-face-pink ((t (:foreground ,zenburn-magenta :background ,zenburn-bg))))
    `(hydra-face-teal ((t (:foreground ,zenburn-cyan :background ,zenburn-bg))))
+;;;;; info+
+   `(info-command-ref-item ((t (:background ,zenburn-bg-1 :foreground ,zenburn-orange))))
+   `(info-constant-ref-item ((t (:background ,zenburn-bg-1 :foreground ,zenburn-magenta))))
+   `(info-double-quoted-name ((t (:inherit font-lock-comment-face))))
+   `(info-file ((t (:background ,zenburn-bg-1 :foreground ,zenburn-yellow))))
+   `(info-function-ref-item ((t (:background ,zenburn-bg-1 :inherit font-lock-function-name-face))))
+   `(info-macro-ref-item ((t (:background ,zenburn-bg-1 :foreground ,zenburn-yellow))))
+   `(info-menu ((t (:foreground ,zenburn-yellow))))
+   `(info-quoted-name ((t (:inherit font-lock-constant-face))))
+   `(info-reference-item ((t (:background ,zenburn-bg-1))))
+   `(info-single-quote ((t (:inherit font-lock-keyword-face))))
+   `(info-special-form-ref-item ((t (:background ,zenburn-bg-1 :foreground ,zenburn-yellow))))
+   `(info-string ((t (:inherit font-lock-string-face))))
+   `(info-syntax-class-item ((t (:background ,zenburn-bg-1 :foreground ,zenburn-blue+1))))
+   `(info-user-option-ref-item ((t (:background ,zenburn-bg-1 :foreground ,zenburn-red))))
+   `(info-variable-ref-item ((t (:background ,zenburn-bg-1 :foreground ,zenburn-orange))))
 ;;;;; irfc
    `(irfc-head-name-face ((t (:foreground ,zenburn-red :weight bold))))
    `(irfc-head-number-face ((t (:foreground ,zenburn-red :weight bold))))
@@ -1087,6 +1110,8 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(reb-match-1 ((t (:foreground ,zenburn-bg :background ,zenburn-blue))))
    `(reb-match-2 ((t (:foreground ,zenburn-bg :background ,zenburn-orange))))
    `(reb-match-3 ((t (:foreground ,zenburn-bg :background ,zenburn-red))))
+;;;;; regex-tool
+   `(regex-tool-matched-face ((t (:background ,zenburn-blue-4 :weight bold))))
 ;;;;; rpm-mode
    `(rpm-spec-dir-face ((t (:foreground ,zenburn-green))))
    `(rpm-spec-doc-face ((t (:foreground ,zenburn-green))))

@@ -1,1 +1,1 @@
-cp src/*.el ../../.emacs.d/modes
+cp src/modern-cpp-font-lock.el ../../.emacs.d/modes

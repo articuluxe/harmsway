@@ -5,6 +5,7 @@
 ;; Author: jaypei <jaypei97159@gmail.com>
 ;; URL: https://github.com/jaypei/emacs-neotree
 ;; Version: 0.5
+;; Package-Requires: ((cl-lib "0.5"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -34,6 +35,8 @@
 ;;
 
 ;;; Code:
+
+(require 'cl-lib)
 
 ;;
 ;; Constants
@@ -366,6 +369,13 @@ This variable is used in `neo-vc-for-node' when
 (defcustom neo-force-change-root nil
   "If not nil, do not prompt when switching root."
   :type 'boolean
+  :group 'neotree)
+
+(defcustom neo-filepath-sort-function 'string<
+  "Function to be called when sorting neotree nodes."
+  :type '(symbol (const :tag "Normal" string<)
+                 (const :tag "Sort Hidden at Bottom" neo-sort-hidden-last)
+                 (function :tag "Other"))
   :group 'neotree)
 
 ;;
@@ -1124,6 +1134,24 @@ Return nil if DIR is not an existing directory."
   "Returns true regardless of message value in the argument."
   t)
 
+(defun neo-sort-hidden-last (x y)
+    "Sort normally but with hidden files last."
+    (let ((x-hidden (neo-filepath-hidden-p x))
+          (y-hidden (neo-filepath-hidden-p y)))
+      (cond
+       ((and x-hidden (not y-hidden))
+        nil)
+       ((and (not x-hidden) y-hidden)
+        t)
+       (t
+        (string< x y)))))
+
+(defun neo-filepath-hidden-p (node)
+  "Return whether or not node is a hidden path."
+  (let ((shortname (neo-path--file-short-name node)))
+    (neo-util--filter
+     (lambda (x) (not (null (string-match-p x shortname))))
+     neo-hidden-regexp-list)))
 ;;
 ;; Buffer methods
 ;;
@@ -1351,12 +1379,11 @@ PATH is value."
             (otherwise        neo-vc-default-face)))))
 
 (defun neo-buffer--get-nodes (path)
-  (let* ((nodes (neo-util--walk-dir path))
-         (comp  #'(lambda (x y)
-                    (string< x y)))
-         (nodes (neo-util--filter 'neo-util--hidden-path-filter nodes)))
-    (cons (sort (neo-util--filter 'file-directory-p nodes) comp)
-          (sort (neo-util--filter #'(lambda (f) (not (file-directory-p f))) nodes) comp))))
+    (let* ((nodes (neo-util--walk-dir path))
+           (comp neo-filepath-sort-function)
+           (nodes (neo-util--filter 'neo-util--hidden-path-filter nodes)))
+      (cons (sort (neo-util--filter 'file-directory-p nodes) comp)
+            (sort (neo-util--filter #'(lambda (f) (not (file-directory-p f))) nodes) comp))))
 
 (defun neo-buffer--get-node-index (node nodes)
   "Return the index of NODE in NODES.
@@ -1533,9 +1560,12 @@ If RECURSIVE-P is non nil, find files will recursively."
         (when (neo-path--file-equal-p iter-curr-dir neo-buffer--start-node)
           (setq file-node-find-p t)
           (throw 'return nil))
-        (when (neo-path--file-equal-p iter-curr-dir "/")
-          (setq file-node-find-p nil)
-          (throw 'return nil))))
+        (let ((niter-curr-dir (file-remote-p iter-curr-dir 'localname)))
+          (unless niter-curr-dir
+            (setq niter-curr-dir iter-curr-dir))
+          (when (neo-path--file-equal-p niter-curr-dir "/")
+            (setq file-node-find-p nil)
+            (throw 'return nil)))))
     (when file-node-find-p
       (dolist (p file-node-list)
         (neo-buffer--set-expand p t))
@@ -1861,6 +1891,8 @@ If the current node is the first node then the last node is selected."
       (when (and is-file
                  (funcall neo-confirm-create-file (format "Do you want to create file %S ?"
                                                           filename)))
+        ;; ensure parent directory exist before saving
+        (mkdir (substring filename 0 (+ 1 (cl-position ?/ filename :from-end t))) t)
         ;; NOTE: create a empty file
         (write-region "" nil filename)
         (neo-buffer--save-cursor-pos filename)
@@ -1870,7 +1902,7 @@ If the current node is the first node then the last node is selected."
       (when (and (not is-file)
                  (funcall neo-confirm-create-directory (format "Do you want to create directory %S?"
                                                                filename)))
-        (mkdir filename)
+        (mkdir filename t)
         (neo-buffer--save-cursor-pos filename)
         (neo-buffer--refresh nil)))))
 

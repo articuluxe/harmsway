@@ -1,1 +1,3 @@
-cp src/*.el ../../.emacs.d/modes
+cp src/gitattributes-mode.el ../../.emacs.d/modes
+cp src/gitconfig-mode.el ../../.emacs.d/modes
+cp src/gitignore-mode.el ../../.emacs.d/modes

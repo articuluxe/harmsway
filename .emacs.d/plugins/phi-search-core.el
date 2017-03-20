@@ -1,6 +1,6 @@
 ;;; phi-search-core.el --- another incremental search & replace, compatible with "multiple-cursors"
 
-;; Copyright (C) 2013-2015 zk_phi
+;; Copyright (C) 2013- zk_phi
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -18,7 +18,7 @@
 
 ;; Author: zk_phi
 ;; URL: http://hins11.yu-yake.com/
-;; Version: 2.1.2
+;; Version: 2.1.3
 
 ;;; Commentary:
 
@@ -38,10 +38,11 @@
 ;; 2.1.0 use "phi-search--message" to display messages
 ;; 2.1.1 add option phi-search-highlight-mismatch-part
 ;; 2.1.2 prefer direct keymapping to remapping
+;; 2.1.3 add option "phi-search-overlay-priority"
 
 ;;; Code:
 
-(defconst phi-search-core-version "2.1.2")
+(defconst phi-search-core-version "2.1.3")
 
 ;; + customs
 
@@ -49,17 +50,25 @@
   "another incremental search interface"
   :group 'emacs)
 
+(defcustom phi-search-overlay-priority 1
+  "Priority which phi-search overlays get."
+  :group 'phi-search
+  :type 'integer)
+
 (defcustom phi-search-limit 1000
   "maximum number of accepted matches"
-  :group 'phi-search)
+  :group 'phi-search
+  :type 'integer)
 
 (defcustom phi-search-case-sensitive nil
   "when non-nil, phi-search become case sensitive"
-  :group 'phi-search)
+  :group 'phi-search
+  :type 'boolean)
 
 (defcustom phi-search-highlight-mismatch-part t
   "when non-nil, mismatch part of the input is highlighted."
-  :group 'phi-search)
+  :group 'phi-search
+  :type 'boolean)
 
 (defcustom phi-search-default-map
   (let ((kmap (make-sparse-keymap)))
@@ -76,11 +85,13 @@
     (define-key kmap (kbd "C-c C-c") 'phi-search-unlimit)
     kmap)
   "keymap for the phi-search prompt buffers"
-  :group 'phi-search)
+  :group 'phi-search
+  :type 'sexp)
 
 (defcustom phi-search-hook nil
   "hook run when phi-search buffer is prepared."
-  :group 'phi-search)
+  :group 'phi-search
+  :type 'hook)
 
 ;; + faces
 
@@ -246,6 +257,7 @@ omitted or nil, number of matches is limited to
         (while (and (phi-search--search-forward query nil phi-search--filter-function)
                     (let ((ov (make-overlay (match-beginning 0) (match-end 0))))
                       (overlay-put ov 'face 'phi-search-match-face)
+                      (overlay-put ov 'priority phi-search-overlay-priority)
                       (if (< (match-beginning 0) phi-search--original-position)
                           (push ov before)
                         (push ov after))

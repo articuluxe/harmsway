@@ -1,6 +1,6 @@
 ;;; phi-replace.el --- another incremental search & replace, compatible with "multiple-cursors"
 
-;; Copyright (C) 2013-2015 zk_phi
+;; Copyright (C) 2013- zk_phi
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -69,20 +69,24 @@
 
 (defcustom phi-replace-weight nil
   "weight for \"phi-replace\""
-  :group 'phi-search)
+  :group 'phi-search
+  :type 'number)
 
 (defcustom phi-replace-init-hook nil
   "hook run after initialization of phi-replace"
-  :group 'phi-search)
+  :group 'phi-search
+  :type 'hook)
 
 (defcustom phi-replace-additional-keybinds
   '(([remap phi-search-complete] . 'phi-replace-again-or-complete))
   "additional bindings used in phi-replace"
-  :group 'phi-search)
+  :group 'phi-search
+  :type 'list)
 
 (defcustom phi-replace-enable-preview t
   "wnen non-nil, show interactive preview of replace."
-  :group 'phi-search)
+  :group 'phi-search
+  :type 'boolean)
 
 ;; + faces
 
