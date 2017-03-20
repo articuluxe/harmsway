@@ -699,6 +699,12 @@ Optional INITIAL-INPUT is the initial input in the minibuffer."
       (setq cands smex-ido-cache)
       (setq pred nil)
       (setq sort nil))
+    ;; When `counsel-M-x' returns, `last-command' would be set to
+    ;; `counsel-M-x' because :action hasn't been invoked yet.
+    ;; Instead, preserve the old value of `this-command'.
+    (setq this-command last-command)
+    (setq real-this-command real-last-command)
+
     (ivy-read (counsel--M-x-prompt) cands
               :predicate pred
               :require-match t
@@ -897,9 +903,8 @@ Describe the selected candidate."
 
 (ivy-set-actions
  'counsel-git
- '(("j"
-    find-file-other-window
-    "other")))
+ '(("j" find-file-other-window "other")
+   ("x" counsel-find-file-extern "open externally")))
 
 ;;;###autoload
 (defun counsel-git ()
@@ -1857,7 +1862,7 @@ the command."
                   (setq ivy--old-re
                         (ivy--regex string)))))
       (counsel--async-command
-       (format counsel-grep-base-command regex
+       (format counsel-grep-base-command (shell-quote-argument regex)
                (shell-quote-argument counsel--git-grep-dir)))
       nil)))
 
@@ -2105,7 +2110,8 @@ INITIAL-INPUT can be given as the initial minibuffer input."
                        (counsel-org--set-tags))))))
            (counsel-org--set-tags)))
         ((eq this-command 'ivy-call)
-         (delete-minibuffer-contents))))
+         (with-selected-window (active-minibuffer-window)
+           (delete-minibuffer-contents)))))
 
 (defun counsel-org-tag-prompt ()
   (format "Tags (%s): "
@@ -2245,6 +2251,8 @@ Additional Actions:
 (defun counsel-package-action-describe (pkg-cons)
   "Call `describe-package' for package in PKG-CONS."
   (describe-package (cadr pkg-cons)))
+
+(declare-function package-desc-extras "package")
 
 (defun counsel-package-action-homepage (pkg-cons)
   "Open homepage for package in PKG-CONS."
@@ -2701,7 +2709,8 @@ And insert it into the minibuffer. Useful during
   (let ((files (apply 'append
                       (mapcar
                        (lambda (dir)
-                         (directory-files dir t ".*\\.desktop$"))
+                         (when (file-exists-p dir)
+                           (directory-files dir t ".*\\.desktop$")))
                        counsel-linux-apps-directories))))
     (dolist (file (cl-set-difference files (append (mapcar 'car counsel-linux-apps-alist)
                                                    counsel-linux-apps-faulty)
