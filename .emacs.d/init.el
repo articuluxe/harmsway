@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-03-15 11:36:27 dan.harms>
+;; Modified Time-stamp: <2017-03-20 21:59:15 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -819,6 +819,12 @@ line."
 (use-package 0xc
  :bind (("M-s M-s hc" . 0xc-convert)
         ("M-s M-s h." . 0xc-convert-point)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; elnode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(eval-and-compile
+  (setq load-path (cons (concat my/plugins-directory "elnode/")
+                        load-path)))
+(use-package elnode)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; magit ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defvar my/git-keymap)
