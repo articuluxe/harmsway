@@ -5,7 +5,7 @@
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Friday, March 17, 2017
 # Version: 1.0
-# Modified Time-stamp: <2017-03-22 06:33:31 dharms>
+# Modified Time-stamp: <2017-03-22 17:03:15 dan.harms>
 # Modified by: Dan Harms
 # Keywords: git repo
 
@@ -31,16 +31,16 @@ find "$dir" -type f -name clone | while read fname; do
     fi
     # update
     if [ -d "$parent/src" ]; then
-        cd src
+        pushd src &> /dev/null
         git fetch --all
-        res=$( git log HEAD.. --oneline )
+        res=$( git log HEAD..origin --oneline )
         if [ -n "$res" ]; then
-            echo -e
-            echo "Updating $repo due to the following differences:"
+            echo " -  Updating $repo due to the following differences:"
             echo "$res"
+            echo -e
             git pull
         fi
-        cd ..
+        popd &> /dev/null
     fi
     # install
     if [ -f "$parent/install" ]; then
