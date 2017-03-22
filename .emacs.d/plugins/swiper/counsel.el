@@ -160,9 +160,10 @@ Or the time of the last minibuffer update.")
              (unless (stringp re)
                (setq re (caar re)))
              (if (null ivy--old-cands)
-                 (unless (setq ivy--index (ivy--preselect-index
-                                           (ivy-state-preselect ivy-last)
-                                           ivy--all-candidates))
+                 (unless (ivy-set-index
+                          (ivy--preselect-index
+                           (ivy-state-preselect ivy-last)
+                           ivy--all-candidates))
                    (ivy--recompute-index
                     ivy-text re ivy--all-candidates))
                (ivy--recompute-index
@@ -1250,7 +1251,7 @@ When REVERT is non-nil, regenerate the current *ivy-occur* buffer."
 (defun counsel-git-grep-recenter ()
   (interactive)
   (with-ivy-window
-    (counsel-git-grep-action ivy--current)
+    (counsel-git-grep-action (ivy-state-current ivy-last))
     (recenter-top-bottom)))
 
 ;;** `counsel-git-stash'
@@ -1848,7 +1849,7 @@ RG-PROMPT, if non-nil, is passed as `ivy-read' prompt argument. "
       cands))))
 
 ;;** `counsel-grep'
-(defcustom counsel-grep-base-command "grep -nE \"%s\" %s"
+(defcustom counsel-grep-base-command "grep -nE '%s' %s"
   "Format string to use in `cousel-grep-function' to construct
 the command."
   :type 'string
@@ -1862,7 +1863,7 @@ the command."
                   (setq ivy--old-re
                         (ivy--regex string)))))
       (counsel--async-command
-       (format counsel-grep-base-command (shell-quote-argument regex)
+       (format counsel-grep-base-command regex
                (shell-quote-argument counsel--git-grep-dir)))
       nil)))
 
@@ -1941,7 +1942,7 @@ the command."
                                                   (line-end-position))))
                              :history 'counsel-git-grep-history
                              :update-fn (lambda ()
-                                          (counsel-grep-action ivy--current))
+                                          (counsel-grep-action (ivy-state-current ivy-last)))
                              :re-builder #'ivy--regex
                              :action #'counsel-grep-action
                              :unwind (lambda ()
@@ -2898,7 +2899,7 @@ selected candidate."
                       (list-colors-duplicates))
               :require-match t
               :update-fn (lambda ()
-                           (counsel-colors--update-highlight ivy--current))
+                           (counsel-colors--update-highlight (ivy-state-current ivy-last)))
               :action #'counsel-colors-action-insert-name
               :history 'counsel-colors-emacs-history
               :caller 'counsel-colors-emacs
@@ -3086,7 +3087,7 @@ selected candidate."
               :require-match t
               :action #'counsel-colors-action-insert-name
               :update-fn (lambda ()
-                           (counsel-colors--update-highlight ivy--current))
+                           (counsel-colors--update-highlight (ivy-state-current ivy-last)))
               :history 'counsel-colors-web-history
               :caller 'counsel-colors-web
               :sort t)))
