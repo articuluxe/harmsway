@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-03-23 12:03:50 dan.harms>
+;; Modified Time-stamp: <2017-03-23 16:59:32 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -963,6 +963,15 @@ line."
   :config
   (add-to-list 'beacon-dont-blink-major-modes 'etags-select-mode)
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; eyebrowse ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package eyebrowse
+  :demand t
+  :init
+  (setq eyebrowse-mode-line-separator ",")
+  (setq eyebrowse-wrap-around t)
+  )
+(eyebrowse-mode 1)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; bookmark+ ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
