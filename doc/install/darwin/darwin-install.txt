@@ -16,7 +16,8 @@ sudo -H pip install flake8
 brew install homebrew/versions/gnupg21
 
 brew install pandoc
-
+brew install dos2unix
+brew install readline
 brew install figlet
 brew install plantuml
 brew install cmake

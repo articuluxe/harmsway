@@ -7,6 +7,11 @@
 # Modified by: Dan Harms
 # Keywords: centos linux install
 
+* misc
+#+BEGIN_SRC sh
+sudo yum install dos2unix
+#+END_SRC
+
 * git
 #+BEGIN_SRC sh
 cd git-2.4.10
