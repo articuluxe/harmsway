@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-03-20 21:59:15 dharms>
+;; Modified Time-stamp: <2017-03-23 12:03:50 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1120,6 +1120,20 @@ Each value is a cons cell (`description' . `activation-function').")
   (isearch-exit)
   (goto-char isearch-other-end))
 (define-key isearch-mode-map [(meta return)] #'my/isearch-exit-other-end)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dumb-jump ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package dumb-jump
+  :bind (("M-o j" . dumb-jump-go)
+         ("M-o o" . dumb-jump-go-other-window)
+         ("M-o b" . dumb-jump-back)
+         ("M-o q" . dumb-jump-quick-look)
+         ("M-o n" . dumb-jump-go-prefer-external)
+         ("M-o m" . dumb-jump-go-prefer-external-other-window)
+         )
+  :config
+  (setq dumb-jump-selector 'ivy)
+  (push ".proviso" dumb-jump-project-denoters)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; plur ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package
