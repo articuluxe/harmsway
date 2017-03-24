@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-03-23 16:59:32 dan.harms>
+;; Modified Time-stamp: <2017-03-24 15:42:07 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1589,6 +1589,8 @@ Each value is a cons cell (`description' . `activation-function').")
   :init
   (setq neo-show-hidden-files t)
   (setq neo-theme 'arrow)               ;or 'ascii
+  (setq neo-window-width 30)
+  (setq neo-vc-integration '(face char))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; deft ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
