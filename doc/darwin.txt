@@ -1,11 +1,16 @@
 # darwin.txt --- helpful notes for mac os x
-# Copyright (C) 2016  Dan Harms (dharms)
+# Copyright (C) 2016-2017  Dan Harms (dharms)
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Monday, May  2, 2016
 # Version: 1.0
-# Modified Time-stamp: <2016-11-04 15:40:44 dharms>
+# Modified Time-stamp: <2017-03-23 07:07:24 dharms>
 # Modified by: Dan Harms
 # Keywords: mac help docs
+
+# show hidden files in finder
+defaults write com.apple.finder AppleShowAllFiles TRUE
+# restart finder
+killall Finder
 
 # reclaim unused space in sparse disk images
 hdiutil compact <name>.sparseimage
