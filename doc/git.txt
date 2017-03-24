@@ -21,8 +21,11 @@ git config --global credential.helper wincred
 #add .gitignore patterns to .git/info/exclude.  These will not be checked in.
 
 ################################## REMOTES ###################################
-# set username (for pushing)
-git remote set-url origin git@github.com:username/repo.git
+# set remote (for pushing)
+git remote add origin URL
+# add a remote
+git remote set-url origin URL
+git push -u origin master
 
 ################################# BRANCHING ##################################
 # checkout and track remote branch
