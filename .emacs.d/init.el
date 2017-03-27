@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-03-24 15:42:07 dan.harms>
+;; Modified Time-stamp: <2017-03-27 17:57:25 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2289,14 +2289,6 @@ Each value is a cons cell (`description' . `activation-function').")
 (use-package zop-to-char
   :bind (("M-z" . zop-to-char)
          ("\e\ez" . zop-up-to-char)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; speedbar ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(global-set-key "\e\ess" 'speedbar)
-(global-set-key "\e\eso" 'speedbar-get-focus)
-(add-hook 'speedbar-mode-hook
-          (lambda()
-            (when (display-graphic-p)
-              (setq-default gdb-speedbar-auto-raise t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; htmlize ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package htmlize
