@@ -1,5 +1,5 @@
 # -*- Mode: org; -*-
-*Emacs Commands*
+#+TITLE:Emacs Commands
 
 * Debug
 M-x toggle-debug-on-error
@@ -396,7 +396,11 @@ M-x apropos mode   list available commands containing “mode”
 ** Formatting
 *** Text can be /italic/, *bold*, _underlined_, =literal= or ~code~.  Even +strike-thru+!
 ** Lists
+C-c C-c   verify bullet and indentation consistency
+C-c -     cycle entire list through bullet types
 C-c *     promote a list item into a headline
+C-c C-*   promote a list of items into a headline
+C-c ^     sort a plain list
 *** Unordered lists
      - one :: this is a description
      - two :: this is another description
