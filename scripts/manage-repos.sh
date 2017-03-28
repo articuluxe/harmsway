@@ -5,7 +5,7 @@
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Friday, March 17, 2017
 # Version: 1.0
-# Modified Time-stamp: <2017-03-22 17:03:15 dan.harms>
+# Modified Time-stamp: <2017-03-28 09:13:08 dan.harms>
 # Modified by: Dan Harms
 # Keywords: git repo
 
@@ -18,7 +18,7 @@ fi
 
 cd "$dir"
 
-find "$dir" -type f -name clone | while read fname; do
+find "$dir" -type f -name clone | sort | while read fname; do
     parent=$( dirname "$fname" )
     pushd "$parent" &> /dev/null
     repo=$( basename "$PWD" )
