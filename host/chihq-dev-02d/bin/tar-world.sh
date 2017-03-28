@@ -1,11 +1,11 @@
 #!/usr/bin/env sh
 # -*- Mode: sh -*-
 # tar-world.sh --- tar up important configuration files
-# Copyright (C) 2015, 2016  Dan Harms (dharms)
+# Copyright (C) 2015-2017  Dan Harms (dharms)
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Friday, May 29, 2015
 # Version: 1.0
-# Modified Time-stamp: <2016-09-17 10:13:12 dharms>
+# Modified Time-stamp: <2017-03-28 10:43:30 dan.harms>
 # Modified by: Dan Harms
 # Keywords: configuration
 
@@ -42,7 +42,7 @@ $tar u"$verbose"f $dest --transform=s/bash\\/// bash
 $tar u"$verbose"f $dest --transform=s/tcsh\\/// tcsh
 $tar u"$verbose"f $dest --transform=s%os/$os\\/%% os/$os
 $tar u"$verbose"f $dest --transform=s%host/$host\\/%% host/$host
-$tar u"$verbose"f $dest --transform=s%site/$site\\/%% site/$site
+$tar u"$verbose"f $dest --transform=s%site/$site\\/%% --exclude=.git site/$site
 
 echo ...done generating $dest
 

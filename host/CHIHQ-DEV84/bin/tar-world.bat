@@ -1,11 +1,11 @@
 @echo off
 rem -*- Mode: dos -*-
 rem tar-world.bat --- tar up the world (xr style)
-rem Copyright (C) 2015, 2016  Dan Harms (dan.harms)
+rem Copyright (C) 2015-2017  Dan Harms (dan.harms)
 rem Author: Dan Harms <dan.harms@xrtrading.com>
 rem Created: Thursday, May 21, 2015
 rem Version: 1.0
-rem Modified Time-stamp: <2016-09-17 10:13:38 dharms>
+rem Modified Time-stamp: <2017-03-28 10:51:39 dan.harms>
 rem Modified by: Dan Harms
 rem Keywords: tar whole world
 
@@ -51,7 +51,7 @@ if exist %dest% (
 %tar% u%verbose%f %dest% --transform=s$os/Linux/$$ os/Linux
 rem don't need to copy from host here: xr installs will
 rem load their renamed host file from site/xr
-%tar% u%verbose%f %dest% --transform=s$site/%site%/$$ site/%site%
+%tar% u%verbose%f %dest% --transform=s$site/%site%/$$ --exclude=.git site/%site%
 
 echo ...done generating %dest%
 
