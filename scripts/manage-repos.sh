@@ -5,7 +5,7 @@
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Friday, March 17, 2017
 # Version: 1.0
-# Modified Time-stamp: <2017-03-28 09:13:08 dan.harms>
+# Modified Time-stamp: <2017-03-29 09:18:07 dan.harms>
 # Modified by: Dan Harms
 # Keywords: git repo
 
@@ -35,7 +35,8 @@ find "$dir" -type f -name clone | sort | while read fname; do
         git fetch --all
         res=$( git log HEAD..origin --oneline )
         if [ -n "$res" ]; then
-            echo " -  Updating $repo due to the following differences:"
+            echo -e
+            echo "--- Updating $repo due to the following differences:"
             echo "$res"
             echo -e
             git pull
