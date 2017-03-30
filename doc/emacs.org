@@ -532,7 +532,7 @@ C-c / a     sparse tree for deadlines after a date
 Warning:  -2d
 Range: [2016-11-07 Mon]--[2016-10-31 Mon]
 C-c C-y     calculate length of range [prefix inserts]
-
+C-c C-x c   clone a subtree with a time-shift
 
 ** Export
 C-c C-e     export
