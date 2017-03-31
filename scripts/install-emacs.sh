@@ -5,7 +5,7 @@
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Saturday, July 25, 2015
 # Version: 1.0
-# Modified Time-stamp: <2017-03-28 07:05:01 dharms>
+# Modified Time-stamp: <2017-03-31 12:37:31 dan.harms>
 # Modified by: Dan Harms
 # Keywords: configuration
 
@@ -26,12 +26,12 @@ orig_dir=${1:-~/src/harmsway}
 
 function backup_file
 {
-   if [ -f ".emacs.d/$1" ] ; then
+   if [ -f .emacs.d/"$1" ] ; then
       echo Backing up "$1"
-      $tar -rvf $backup ".emacs.d/$1"
-   elif [ -d ".emacs.d/$1" ] ; then
+      $tar -rvf $backup .emacs.d/"$1"
+   elif [ -d .emacs.d/"$1" ] ; then
       echo Backing up directory "$1"
-      $tar -rvf $backup ".emacs.d/$1"
+      $tar -rvf $backup .emacs.d/"$1"
    fi
 }
 
@@ -44,10 +44,10 @@ echo "Tarring $orig_dir/.emacs.d into $int..."
 cd "$orig_dir"
 
 $tar c"$verbose"f $int --exclude=*.elc .emacs.d
-if [ -d "host/$host/.emacs.d" ] ; then
+if [ -d host/"$host"/.emacs.d ] ; then
    $tar u"$verbose"f $int --transform=s%host/"$host"%% host/"$host"/.emacs.d
 fi
-if [ -n "$SITE" -a -d "site/$SITE/.emacs.d" ] ; then
+if [ -n "$SITE" -a -d site/"$SITE"/.emacs.d ] ; then
    $tar u"$verbose"f $int --transform=s%site/"$SITE"%% site/"$SITE"/.emacs.d
 fi
 mv -f $int ~
@@ -58,10 +58,10 @@ cd ~
 
 if [ -d .emacs.d ] ; then
    rm -f $backup
-   files=$( cat "$orig_dir/.emacs.d/$manifest" )
+   files=( `cat "$orig_dir"/.emacs.d/"$manifest"` )
    numfiles=${#files[*]}
    i=0
-   while [ $i -lt "$numfiles" ]
+   while [ $i -lt $numfiles ]
    do
       backup_file "${files[$i]}"
       i=$(( $i+1 ))
