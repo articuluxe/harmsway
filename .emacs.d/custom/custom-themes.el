@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Wednesday, December 21, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-02-20 10:16:29 dan.harms>
+;; Modified Time-stamp: <2017-03-31 11:30:55 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: themes colors
 
@@ -73,6 +73,9 @@
     (when (eq (face-attribute 'diff-hl-delete :background nil t) 'unspecified)
       (custom-theme-set-faces
        sym `(diff-hl-delete ((t (:background "red4" :foreground "red3"))))))
+    (when (eq (face-attribute 'diff-hl-change :background nil t) 'unspecified)
+      (custom-theme-set-faces
+       sym `(diff-hl-change ((t (:background "DodgerBlue3" :foreground "DodgerBlue1"))))))
     (cond ((eq sym 'adwaita)
            (setq wg-use-faces nil))
           ((memq sym '(ample ample-light ample-flat))
