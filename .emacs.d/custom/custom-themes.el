@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Wednesday, December 21, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-03-31 11:30:55 dan.harms>
+;; Modified Time-stamp: <2017-04-04 16:37:56 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: themes colors
 
@@ -82,6 +82,9 @@
            (my/make-comment-delimiter-face-same-as-comment-face sym))
           ((eq sym 'brin)
            (my/make-comment-delimiter-face-same-as-comment-face sym))
+          ((eq sym 'deep-blue)
+           (custom-theme-set-faces sym '(show-paren-match-face ((t (:bold t :background "coral")))))
+           (custom-theme-set-faces sym '(show-paren-mismatch-face ((t (:bold t :background "VioletRed4"))))))
           ((eq sym 'granger)
            (my/make-comment-delimiter-face-same-as-comment-face sym))
           ((eq sym 'ld-dark)
