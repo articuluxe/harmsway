@@ -1481,19 +1481,23 @@ The window scope is determined by `avy-all-windows' or
 
 ;;;###autoload
 (defun avy-move-region ()
-  "Select two lines and move the text between them here."
+  "Select two lines and move the text between them above the current line."
   (interactive)
   (avy-with avy-move-region
-    (let* ((beg (avy--line))
-           (end (save-excursion
-                  (goto-char (avy--line))
-                  (forward-line)
-                  (point)))
-           (text (buffer-substring beg end))
-           (pad (if (bolp) "" "\n")))
+    (let* ((initial-window (selected-window))
+           (beg (avy--line))
+           (end (avy--line))
+           text)
+      (when (> beg end)
+        (cl-rotatef beg end))
+      (setq end (save-excursion
+                  (goto-char end)
+                  (1+ (line-end-position))))
+      (setq text (buffer-substring beg end))
       (move-beginning-of-line nil)
       (delete-region beg end)
-      (insert text pad))))
+      (select-window initial-window)
+      (insert text))))
 
 ;;;###autoload
 (defun avy-kill-region (arg)
