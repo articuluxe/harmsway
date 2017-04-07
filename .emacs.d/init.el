@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-03-28 10:31:44 dan.harms>
+;; Modified Time-stamp: <2017-04-07 08:40:44 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1487,7 +1487,12 @@ Each value is a cons cell (`description' . `activation-function').")
   :config
   (use-package dired-x)                 ; C-x C-j now runs 'dired-jump
   (setq diredp-hide-details-initially-flag nil)
-  (use-package dired+)
+  (use-package dired+
+    :config
+    ;; dired+'s default chord for chmod conflicts with arrow keys in terminal
+   (define-key dired-mode-map [(meta shift ?o)] nil)
+   (define-key dired-mode-map [(control meta ?o)] 'diredp-chmod-this-file)
+   )
   (define-key dired-mode-map "\C-o" 'dired-display-file) ;remap
   (define-key dired-mode-map "\M-p" nil)                 ;unbind
   (use-package ls-lisp+)
