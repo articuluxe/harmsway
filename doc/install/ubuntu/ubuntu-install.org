@@ -2,19 +2,30 @@
 
 * boot
 ** boot-repair
+#+BEGIN_SRC sh
 sudo add-apt-repository ppa:yannubuntu/boot-repair
 sudu apt-get update
 sudo apt-get install boot-repair
+#+END_SRC
 
 * git
+#+BEGIN_SRC sh
 sudo apt install git
+#+END_SRC
+
 * drivers
+#+BEGIN_SRC sh
 sudo apt-get install i2c-tools
+#+END_SRC
+
 * emacs
 ** official
+#+BEGIN_SRC sh
 sudo apt-get emacs
 sudo apt-get install emacs
+#+END_SRC
 ** local
+#+BEGIN_SRC sh
 cd emacs-25.1/
 ls
 mkdir bld
@@ -30,22 +41,40 @@ sudo apt install libncurses5-dev
 ../configure
 make
 make install prefix=/usr/local/priv/emacs-25.1
+#+END_SRC
 * stow
+#+BEGIN_SRC sh
 sudo apt install stow
 sudo mkdir /usr/local/priv
 sudo chmod 755 /usr/local/priv
 sudo chown dharms /usr/local/priv
 sudo chgrp dharms /usr/local/priv
-cd /usr/local/priv
+#+END_SRC
 ** stow emacs
+#+BEGIN_SRC sh
+cd /usr/local/priv
 sudo stow emacs-25.1
 rm emacs-25.1/bin/ctags
 sudo rm ../bin/ctags
+#+END_SRC
 
 * dropbox
+#+BEGIN_SRC sh
 sudo apt install dropbox
 dropbox start -i
+#+END_SRC
 
+* boost
+#+BEGIN_SRC sh
+./bootstrap.sh --prefix=/usr/local/priv/boost-1.63
+./b2
+./b2 install
+cd /usr/local/priv
+sudo stow boost-1.63
+#+END_SRC
+
+sudo apt install python-dev
+sudo apt install doxygen
 sudo apt install shellcheck
 sudo apt install cmake
 sudo apt install figlet

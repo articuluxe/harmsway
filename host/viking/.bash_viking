@@ -12,9 +12,9 @@ alias emacs=$EDITOR
 # cask=$HOME/.cask/bin
 export PATH=$HOME/bin:/usr/local/bin:/bin:/sbin:/usr/bin:.
 
-export CSTDLIB_ROOT=/usr/local
-export CSTDLIB_INC=/usr/local/include/c++/5.3.0/
-export CSTDLIB_BIN=/usr/bin
+export CSTDLIB_ROOT=/usr
+export CSTDLIB_INC=$CSTDLIB_ROOT/include/c++/5.4.0/
+export CSTDLIB_BIN=$CSTDLIB_ROOT/bin
 
 export LD_LIBRARY_PATH=/usr/local/lib
 
