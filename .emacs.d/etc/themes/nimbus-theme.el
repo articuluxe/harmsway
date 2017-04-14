@@ -1,13 +1,13 @@
-;;; nimbus-theme.el --- An Awesome Dark Theme
+;;; nimbus-theme.el --- An awesome dark theme
 ;;
 ;; Filename: nimbus-theme.el
-;; Description: An awesome dark theme derived from ample.
+;; Description: An awesome dark theme
 ;; Author: Marcin Swieczkowski <scatman@bu.edu>
 ;; Created: Thu Mar  2 22:19:19 CET 2017
 ;; Version: 1.0.0
-;; Last-Updated: Sat Mar 18 16:17:29 CET 2017
+;; Last-Updated: Wed Apr 12 16:11:07 CEST 2017
 ;;           By: Marcin Swieczkowski
-;;     Update #: 2
+;;     Update #: 3
 ;; URL: https://github.com/m-cat/nimbus-theme
 ;; Keywords: faces
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -19,7 +19,8 @@
 ;; I made this theme because I liked the colors in ample theme but
 ;; didn't like how much gray there was. So I started with a few tweaks
 ;; here and there until it ended up looking quite a bit different, and
-;; this is the result.
+;; this is the result. The theme is being worked on actively and I add
+;; new faces all the time.
 ;;
 ;; Installing:
 ;;
@@ -69,7 +70,7 @@
       (nimbus/yellow         "#baba36")
       (nimbus/bright-yellow  "#fffe0a")
       (nimbus/purple         "#ab75c3")
-      (nimbus/deep-pink      "#ff1493")
+      (nimbus/pink           "#ff1493")
       (nimbus/light-gray     "#858585")
       (nimbus/gray           "#757575")
       (nimbus/dark-gray      "#656565")
@@ -80,10 +81,9 @@
       (nimbus/dark-red       "#9d2512")
       (nimbus/white          "white")
       (nimbus/black          "black")
-      (nimbus/light-black    "#0e0e0e")
 
       (nimbus/cursor         "#f57e00")
-      (nimbus/fringe         "#1f1f1f")
+      (nimbus/fringe         "gray14")
       (nimbus/region         "#303030")
 
       (nimbus/bg             "gray13")
@@ -165,7 +165,7 @@
    `(anzu-replace-to
      ((t (:foreground ,nimbus/yellow))))
 
-   ;; avy, colors chosen for contrast over aesthetic quality
+   ;; avy, colors chosen for good contrast
    `(avy-background-face
      ((t (:foreground ,nimbus/dark-gray))))
    `(avy-goto-char-timer-face
@@ -179,7 +179,21 @@
    `(avy-lead-face-2
      ((t (:foreground ,nimbus/black :background ,nimbus/white))))
 
-   ;; Line numbers
+   ;; cargo
+   `(cargo-process--ok-face
+     ((t (:foreground ,nimbus/green))))
+   `(cargo-process--errno-face
+     ((t (:inherit link))))
+   `(cargo-process--error-face
+     ((t (:inherit error))))
+   `(cargo-process--pointer-face
+     ((t (:foreground ,nimbus/purple))))
+   `(cargo-process--warning-face
+     ((t (:foreground ,nimbus/orange))))
+   `(cargo-process--standard-face
+     ((t (:foreground ,nimbus/yellow))))
+
+   ;; line numbers
    `(linum          ((t (:inherit fringe :foreground ,nimbus/dark-green))))
 
    `(popup-tip-face ((t (:background ,nimbus/fg :foreground ,nimbus/bg))))
@@ -242,12 +256,22 @@
    ;; volatile-highlights
    `(vh1/default-face ((t (:background ,nimbus/green))))
 
-   ;; mini buff
+   ;; mini buffer
    `(minibuffer-prompt ((t (:bold t))))
 
-   `(compilation-error      ((t (:foreground ,nimbus/red :bold t))))
-   `(compilation-warning    ((t (:foreground ,nimbus/orange :bold t))))
-   `(compilation-info       ((t (:foreground ,nimbus/green :bold t))))
+   ;; compile
+   `(compilation-info
+     ((t (:foreground ,nimbus/dark-green :bold t))))
+   `(compilation-warning
+     ((t (:foreground ,nimbus/orange :bold t :background ,nimbus/bg))))
+   `(compilation-error
+     ((t (:foreground ,nimbus/red :bold t))))
+   `(compilation-mode-line-exit
+     ((t (:inherit compilation-info :background ,nimbus/bg))))
+   `(compilation-mode-line-run
+     ((t (:inherit compilation-warning :background ,nimbus/bg))))
+   `(compilation-mode-line-fail
+     ((t (:inherit compilation-error :foreground ,nimbus/dark-red :background ,nimbus/bg))))
 
    ;; dired+
    `(diredp-autofile-name
@@ -426,7 +450,7 @@
 
    ;;show paren
    `(show-paren-match
-     ((t (:foreground ,nimbus/deep-pink))))
+     ((t (:foreground ,nimbus/pink))))
    `(show-paren-mismatch ((t (:inherit error))))
 
    ;; error
@@ -938,22 +962,22 @@
    `(org-hide
      ((t (:foreground ,nimbus/bg))))
    ;;`(org-latex-and-export-specials ((t (:foreground nil :background nil))))
-   ;; `(org-level-1
-   ;; ((t (:foreground ,nimbus/orange))))
-   ;; `(org-level-2
-   ;; ((t (:foreground ,nimbus/purple))))
-   ;;`(org-level-3
-   ;;((t (:foreground ,nimbus/green))))
-   ;;`(org-level-4
-   ;;((t (:foreground ,nimbus/yellow))))
-   ;;`(org-level-5
-   ;;((t (:foreground ,nimbus/lighter-blue))))
-   ;;`(org-level-6
-   ;;((t (:foreground ,nimbus/orange))))
-   ;;`(org-level-7
-   ;;((t (:foreground ,nimbus/purple))))
-   ;;`(org-level-8
-   ;;((t (:foreground ,nimbus/green))))
+   `(org-level-1
+   ((t (:foreground ,nimbus/dark-green))))
+   `(org-level-2
+   ((t (:foreground ,nimbus/yellow))))
+   `(org-level-3
+   ((t (:foreground ,nimbus/blue))))
+   `(org-level-4
+   ((t (:foreground ,nimbus/orange))))
+   `(org-level-5
+   ((t (:foreground ,nimbus/red))))
+   `(org-level-6
+   ((t (:foreground ,nimbus/purple))))
+   `(org-level-7
+   ((t (:foreground ,nimbus/brown))))
+   `(org-level-8
+   ((t (:foreground ,nimbus/green))))
    ;; `(org-level-9
    ;; ((t (:foreground ,nimbus/yellow))))
    ;;`(org-link                      ((t (:foreground nil :background nil))))

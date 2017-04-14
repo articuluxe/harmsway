@@ -1,11 +1,11 @@
 ;;; counsel.el --- Various completion functions using Ivy -*- lexical-binding: t -*-
 
-;; Copyright (C) 2015-2016  Free Software Foundation, Inc.
+;; Copyright (C) 2015-2017  Free Software Foundation, Inc.
 
 ;; Author: Oleh Krehel <ohwoeowho@gmail.com>
 ;; URL: https://github.com/abo-abo/swiper
-;; Version: 0.8.0
-;; Package-Requires: ((emacs "24.3") (swiper "0.8.0"))
+;; Version: 0.9.1
+;; Package-Requires: ((emacs "24.3") (swiper "0.9.0"))
 ;; Keywords: completion, matching
 
 ;; This file is part of GNU Emacs.
@@ -429,7 +429,7 @@ Update the minibuffer with the amount of lines collected every
                  (find-library
                   (prin1-to-string sym)))
                 (t
-                 (error "Couldn't fild definition of %s"
+                 (error "Couldn't find definition of %s"
                         sym))))))))
 
 (define-obsolete-function-alias 'counsel-symbol-at-point
@@ -904,7 +904,7 @@ Describe the selected candidate."
 
 (ivy-set-actions
  'counsel-git
- '(("j" find-file-other-window "other")
+ '(("j" find-file-other-window "other window")
    ("x" counsel-find-file-extern "open externally")))
 
 ;;;###autoload
@@ -1333,11 +1333,34 @@ done") "\n" t)))
             :action (lambda (x)
                       (let ((default-directory (file-name-directory x)))
                         (counsel-find-file)))))
+
+(defcustom counsel-root-command "sudo"
+  "Command to gain root privileges."
+  :type 'string
+  :group 'ivy)
+
+(defun counsel-find-file-as-root (x)
+  "Find file with root privileges."
+  (let* ((host (file-remote-p x 'host))
+         (file-name (format "/%s:%s:%s"
+                            counsel-root-command
+                            (or host "")
+                            (expand-file-name
+                             (if host
+                                 (file-remote-p x 'localname)
+                               x)))))
+    ;; If the current buffer visits the same file we are about to open,
+    ;; replace the current buffer with the new one.
+    (if (eq (current-buffer) (get-file-buffer x))
+        (find-alternate-file file-name)
+      (find-file file-name))))
+
 (ivy-set-actions
  'counsel-find-file
  '(("j" find-file-other-window "other window")
    ("b" counsel-find-file-cd-bookmark-action "cd bookmark")
-   ("x" counsel-find-file-extern "open externally")))
+   ("x" counsel-find-file-extern "open externally")
+   ("r" counsel-find-file-as-root "open as root")))
 
 (defcustom counsel-find-file-at-point nil
   "When non-nil, add file-at-point to the list of candidates."
@@ -1474,7 +1497,7 @@ When INITIAL-INPUT is non-nil, use it in the minibuffer during completion."
             :caller 'counsel-recentf))
 (ivy-set-actions
  'counsel-recentf
- '(("j" find-file-other-window "other-window")
+ '(("j" find-file-other-window "other window")
    ("x" counsel-find-file-extern "open externally")))
 
 ;;** `counsel-locate'
@@ -3281,6 +3304,7 @@ candidate."
                 (describe-bindings . counsel-descbinds)
                 (describe-function . counsel-describe-function)
                 (describe-variable . counsel-describe-variable)
+                (describe-face . counsel-describe-face)
                 (find-file . counsel-find-file)
                 (find-library . counsel-find-library)
                 (imenu . counsel-imenu)

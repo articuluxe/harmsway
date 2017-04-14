@@ -5,7 +5,7 @@
 ;; Author: 0rdy <mail@0rdy.com>
 ;; URL: https://github.com/0rdy/kaolin-theme
 ;; Package-Requires: ((emacs "24"))
-;; Version: 0.4.0
+;; Version: 0.5.0
 
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -65,6 +65,7 @@
       (alt-yellow      "#be9266")
       ;; (light-yellow "#c1b175")
       (light-yellow    "#c9bb87")
+      (wheat           "#b9c791")
 
       (jade            "#597a6e")
       (midnight-green  "#152628")
@@ -81,7 +82,6 @@
       ;; (teal-green      "#91c7ad")
       ;; (teal-green      "#80bea0")
       (teal-green      "#6fb593")
-      (wheat           "#b9c791")
 
       (dark-blue       "#2a4661")
       ;; TODO: Change blue color
@@ -162,7 +162,6 @@
          (hl         cyan)
          (hl-indent  gray)
          (builtin    teal)
-         (const      violet)
          (comment    gray)
          ;; Light
          ;; (comment    "#869a90")
@@ -175,6 +174,7 @@
          (str-alt    jade)
          (doc        str-alt)
          (type       orange)
+         (const      violet)
          (var        faded-blue)
          (num        faded-red)
          (warning    orange)
@@ -313,7 +313,7 @@
      `(org-meta-line ((,class (:inherit org-document-info-keyword))))
      `(org-document-info ((,class (:foreground ,teal))))
      `(org-footnote  ((,class (:foreground ,fg4 :underline t))))
-     `(org-link ((,class (:foreground ,blue :underline t))))
+     `(org-link ((,class (:foreground ,cyan :underline t))))
      `(org-special-keyword ((,class (:foreground ,functions))))
      `(org-block ((,class (:foreground ,fg3))))
      `(org-block-begin-line ((,class (:foreground ,deep-green))))
@@ -562,6 +562,15 @@
      `(web-mode-string-face ((,class (:foreground ,str))))
      `(web-mode-warning-face ((,class (:inherit ,font-lock-warning-face))))
 
+    ;; Speedbar
+     `(speedbar-separator-face ((,class (:background ,blue))))
+     `(speedbar-directory-face ((,class (:foreground ,teal))))
+     `(speedbar-file-face ((,class (:foreground ,green))))
+     `(speedbar-tag-face ((,class (:foreground ,faded-blue))))
+     `(speedbar-selected-face ((,class (:foreground ,teal-green))))
+     `(speedbar-highlight-face ((,class (:foreground ,hl))))
+     `(speedbar-button-face ((,class (:foreground ,jade))))
+
      ;; Haskell mode
      ;; `(haskell-operator-face ((,class (:foreground ,lime))))
      ;; `(haskell-type-face ((,class (:foreground ,light-yellow))))
@@ -572,6 +581,10 @@
 
      ;; Shell
      `(sh-quoted-exec ((,class (:foreground ,light-yellow))))
+
+     ;; Emmet
+     `(emmet-preview-input ((t (:foreground nil :background nil))))
+     `(emmet-preview-output ((t (:foreground nil :background nil))))
 
      ;; Clojure
      `(clojure-keyword-face ((,class (:inherit ,font-lock-variable-name-face))))
