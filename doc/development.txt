@@ -5,9 +5,14 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Tuesday, February  7, 2017
 # Version: 1.0
-# Modified Time-stamp: <2017-02-07 15:59:13 dan.harms>
+# Modified Time-stamp: <2017-04-11 13:21:25 dan.harms>
 # Modified by: Dan Harms
 # Keywords: gnu elf development
+
+# list processors/cpu's
+lscpu
+# Sockets x Cores per socket x Threads per core
+nproc --all
 
 # print out a process's call stack
 pstack <pid>

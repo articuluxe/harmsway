@@ -309,7 +309,8 @@ x delete marked files
 f or Enter   visit file
 o   visit file in other window
 C-o   Visit file in other window in background
-i     insert subdirectory
+i      insert subdirectory
+C-u k  remove subdirectory from header line
 ^   Visit parent directory 
 $   toggle subdirectory 
 M-$   hide all subdirectories
