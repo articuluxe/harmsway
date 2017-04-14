@@ -1,11 +1,11 @@
-#!/usr/bin/env sh
+#!/bin/bash
 # -*- Mode: sh -*-
 # file-roller.sh --- roll a file if it changes over time
 # Copyright (C) 2016-2017  Dan Harms (dharms)
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Monday, October  3, 2016
 # Version: 1.0
-# Modified Time-stamp: <2017-02-14 14:11:49 dan.harms>
+# Modified Time-stamp: <2017-04-14 07:14:45 dharms>
 # Modified by: Dan Harms
 # Keywords: file roll diff
 

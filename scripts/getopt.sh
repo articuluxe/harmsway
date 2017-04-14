@@ -24,7 +24,7 @@ while true; do
 done
 
 if [ $# -ne 0 ]; then
-   echo "unknown option(s): $@"
+   echo "unknown option(s): " "$@"
    exit 1
 fi
 

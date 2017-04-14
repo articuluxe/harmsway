@@ -1,11 +1,11 @@
-#!/usr/bin/env sh
+#!/bin/bash
 # -*- Mode: sh -*-
 # _fileselect.sh --- select a file from disk
-# Copyright (C) 2016  Dan Harms (dharms)
+# Copyright (C) 2016-2017  Dan Harms (dharms)
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Thursday, May  5, 2016
 # Version: 1.0
-# Modified Time-stamp: <2016-09-06 16:19:37 dharms>
+# Modified Time-stamp: <2017-04-14 07:05:36 dharms>
 # Modified by: Dan Harms
 # Keywords: bash script
 

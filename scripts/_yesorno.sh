@@ -1,11 +1,11 @@
-#!/usr/bin/env sh
+#!/bin/bash
 # -*- Mode: sh -*-
 # _yesorno.sh --- ask user a yes or no question
-# Copyright (C) 2016  Dan Harms (dharms)
+# Copyright (C) 2016-2017  Dan Harms (dharms)
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Wednesday, June  8, 2016
 # Version: 1.0
-# Modified Time-stamp: <2016-08-09 08:52:55 dan.harms>
+# Modified Time-stamp: <2017-04-14 07:17:09 dharms>
 # Modified by: Dan Harms
 # Keywords: scripting
 

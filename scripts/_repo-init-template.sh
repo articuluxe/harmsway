@@ -1,11 +1,11 @@
-#!/usr/bin/env sh
+#!/bin/bash
 # -*- Mode: sh -*-
-# repo-init-template.sh --- init a src repo
-# Copyright (C) 2016  Dan Harms (dan.harms)
+# _repo-init-template.sh --- init a src repo
+# Copyright (C) 2016-2017  Dan Harms (dan.harms)
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Tuesday, May  3, 2016
 # Version: 1.0
-# Modified Time-stamp: <2016-09-15 08:30:54 dharms>
+# Modified Time-stamp: <2017-04-14 07:16:56 dharms>
 # Modified by: Dan Harms
 # Keywords: src repo
 

@@ -1,11 +1,11 @@
-#!/usr/bin/env sh
+#!/bin/bash
 # -*- Mode: sh -*-
 # _backup.sh --- backup talbot host
-# Copyright (C) 2016  Dan Harms (dharms)
+# Copyright (C) 2016-2017  Dan Harms (dharms)
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Friday, August  5, 2016
 # Version: 1.0
-# Modified Time-stamp: <2016-08-19 17:08:07 dharms>
+# Modified Time-stamp: <2017-04-14 07:16:26 dharms>
 # Modified by: Dan Harms
 # Keywords: backup archive
 
