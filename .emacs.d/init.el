@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-04-18 12:36:02 dan.harms>
+;; Modified Time-stamp: <2017-04-18 12:46:51 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -912,6 +912,11 @@ line."
 (use-package terminal-here
   :bind ("C-c <f1>" . terminal-here-launch))
 ;; todo: bind terminal-here-project-launch, point to proviso
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; simpleclip ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package simpleclip
+  :config
+  (simpleclip-mode 1))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; shackle ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package shackle
