@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-04-18 09:32:27 dan.harms>
+;; Modified Time-stamp: <2017-04-18 12:36:02 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -907,6 +907,11 @@ line."
 (use-package shell-pop
   :bind (("<f1>" . shell-pop)
          ("C-c 1" . shell-pop)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; terminal-here ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package terminal-here
+  :bind ("C-c <f1>" . terminal-here-launch))
+;; todo: bind terminal-here-project-launch, point to proviso
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; shackle ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package shackle
