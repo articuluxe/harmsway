@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-04-07 08:40:44 dharms>
+;; Modified Time-stamp: <2017-04-18 09:32:27 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -867,6 +867,7 @@ line."
               ("d" . magit-diff-buffer-file-popup)
               ("c" . magit-clone)
               ("x" . magit-clean)
+              ("k" . magit-checkout-stage)
               )
   :config
   (put 'magit-clean 'disabled nil)
