@@ -15,7 +15,7 @@
 ;; Alex Harsanyi <AlexHarsanyi@gmail.com>
 
 ;; Maintainer: Matthew Carter <m@ahungry.com>
-;; Version: 2.6.1
+;; Version: 2.7.0
 ;; Homepage: https://github.com/ahungry/org-jira
 
 ;; This file is not part of GNU Emacs.
@@ -62,6 +62,9 @@
 
 ;;; News:
 
+;;;; Changes since 2.6.3:
+;; - Add the worklog related endpoint/calls.
+
 ;;;; Changes since 2.1.0:
 ;; - Remove os_username / os_password manual http request as part of sign in process
 ;;     This produces sysadmin level warnings on Jira when these are used under the latest Jira.
@@ -83,7 +86,7 @@
 (require 'json)
 (require 'url-parse)
 
-(defconst jiralib-version "2.6.1"
+(defconst jiralib-version "2.7.0"
   "Current version of jiralib.el.")
 
 (defgroup jiralib nil
@@ -257,7 +260,7 @@ as such, the CALLBACK should follow this type of form:
 If CALLBACK is set to nil then the request will occur with sync.
 This produces a noticeable slowdown and is not recommended by
 request.el, so if at all possible, it should be avoided."
-  ;; @todo Probably pass this all the way down, but I think
+  ;; @todo :auth: Probably pass this all the way down, but I think
   ;; it may be OK at the moment to just set the variable each time.
   (setq jiralib-complete-callback
         ;; Don't run with async if we don't have a login token yet.
@@ -289,7 +292,26 @@ request.el, so if at all possible, it should be avoided."
          (cl-coerce (cdr (assoc 'issueTypes response)) 'list)))
       ('getUser (jiralib--rest-call-it "/rest/api/2/user" :params `((username . ,(first params)))))
       ('getVersions (jiralib--rest-call-it (format "/rest/api/2/project/%s/versions" (first params))))
-      ('getWorklogs nil) ; fixme
+
+      ;; Worklog calls
+      ('getWorklogs
+       (jiralib--rest-call-it (format "/rest/api/2/issue/%s/worklog" (first params))))
+
+      ('addWorklog
+       (jiralib--rest-call-it (format "/rest/api/2/issue/%s/worklog" (first params))
+                              :type "POST"
+                              :data (json-encode (second params))))
+
+      ('updateWorklog
+       (jiralib--rest-call-it (format "/rest/api/2/issue/%s/worklog/%s" (first params) (second params))
+                              :type "PUT"
+                              :data (json-encode (third params))))
+
+      ('addWorklogAndAutoAdjustRemainingEstimate
+       (jiralib--rest-call-it (format "/rest/api/2/issue/%s/worklog" (first params))
+                              :type "POST"
+                              :data (json-encode (second params))))
+
       ('addComment (jiralib--rest-call-it
                     (format "/rest/api/2/issue/%s/comment" (first params))
                     :type "POST"
@@ -407,6 +429,7 @@ first is normally used."
   "Map all assoc elements in DATA to the value of FIELD in that element."
   (loop for element in data
         collect (cdr (assoc field element))))
+
 (defun jiralib-make-assoc-list (data key-field value-field)
   "Create an association list from a SOAP structure array.
 
@@ -654,6 +677,28 @@ When CALLBACK is present, this will run async."
     (jiralib-call "progressWorkflowAction"
                   callback issue-key action-id (jiralib-make-remote-field-values params))))
 
+
+(defun jiralib-format-datetime (&optional datetime)
+  "Convert a mixed DATETIME format into the Jira required datetime format.
+
+This will produce a datetime string such as:
+
+  2010-02-05T14:30:00.000+0000
+
+for being consumed in the Jira API.
+
+If DATETIME is not passed in, it will default to the current time."
+  (let* ((defaults (format-time-string "%Y-%m-%d %H:%M:%S" (current-time)))
+         (datetime (concat datetime (subseq defaults (length datetime))))
+         (parts (parse-time-string datetime)))
+    (format "%04d-%02d-%02dT%02d:%02d:%02d.000+0000"
+            (nth 5 parts)
+            (nth 4 parts)
+            (nth 3 parts)
+            (nth 2 parts)
+            (nth 1 parts)
+            (nth 0 parts))))
+
 (defvar jiralib-worklog-coming-soon-message
   "WORKLOG FEATURES ARE NOT IMPLEMENTED YET, COMING SOON!")
 
@@ -669,13 +714,15 @@ TIME-SPENT can be in one of the following formats: 10m, 120m
 hours; 10h, 120h days; 10d, 120d weeks.
 
 COMMENT will be added to this worklog."
-  (error jiralib-worklog-coming-soon-message)
-  (jiralib-call "addWorklogAndAutoAdjustRemainingEstimate"
-                nil
-                issue-key
-                `((startDate . ,start-date)
-                  (timeSpent . ,time-spent)
-                  (comment   . ,comment))))
+  (let ((formatted-start-date (jiralib-format-datetime start-date)))
+    (jiralib-call "addWorklogAndAutoAdjustRemainingEstimate"
+                  nil
+                  issue-key
+                  ;; Expects data such as: '{"timeSpent":"1h", "started":"2017-02-21T00:00:00.000+0000", "comment":"woot!"}'
+                  ;; and only that format will work (no loose formatting on the started date)
+                  `((started   . ,formatted-start-date)
+                    (timeSpent . ,time-spent)
+                    (comment   . ,comment)))))
 
 
 ;;;; Issue field accessors
@@ -794,20 +841,43 @@ will cache it."
           (jiralib-make-assoc-list (jiralib-call "getSubTaskIssueTypes" nil) 'id 'name)))
   jiralib-subtask-types-cache)
 
-
 (defun jiralib-get-comments (issue-key &optional callback)
   "Return all comments associated with issue ISSUE-KEY, invoking CALLBACK."
   (jiralib-call "getComments" callback issue-key))
 
-(defun jiralib-get-worklogs (issue-key)
-  "Return all worklogs associated with issue ISSUE-KEY."
-  (error jiralib-worklog-coming-soon-message)
-  (jiralib-call "getWorklogs" nil issue-key))
+(defun jiralib-get-worklogs (issue-key &optional callback)
+  "Return all worklogs associated with issue ISSUE-KEY, invoking CALLBACK."
+  (jiralib-call "getWorklogs" callback issue-key))
 
-(defun jiralib-update-worklog (worklog)
-  "Update the WORKLOG, updating the ETA for the related issue."
-  (error jiralib-worklog-coming-soon-message)
-  (jiralib-call "updateWorklogAndAutoAdjustRemainingEstimate" nil worklog))
+(defun jiralib-add-worklog (issue-id started time-spent-seconds comment &optional callback)
+  "Add the worklog linked to ISSUE-ID.
+
+Requires STARTED (a jira datetime), TIME-SPENT-SECONDS (integer) and a COMMENT.
+CALLBACK will be invoked if passed in upon endpoint completion."
+  ;; Call will fail if 0 seconds are set as the time, so always do at least one min.
+  (setq time-spent-seconds (max 60 time-spent-seconds))
+  (let ((worklog `((started . ,started)
+                   ;; @todo :worklog: timeSpentSeconds changes into incorrect values
+                   ;; in the Jira API (for instance, 89600 = 1 day, but Jira thinks 3 days...
+                   ;; We should convert to a Xd Xh Xm format from our seconds ourselves.
+                   (timeSpentSeconds . ,time-spent-seconds)
+                   (comment . ,comment))))
+    (jiralib-call "addWorklog" callback issue-id worklog)))
+
+(defun jiralib-update-worklog (issue-id worklog-id started time-spent-seconds comment &optional callback)
+  "Update the worklog linked to ISSUE-ID and WORKLOG-ID.
+
+Requires STARTED (a jira datetime), TIME-SPENT-SECONDS (integer) and a COMMENT.
+CALLBACK will be invoked if passed in upon endpoint completion."
+  ;; Call will fail if 0 seconds are set as the time, so always do at least one min.
+  (setq time-spent-seconds (max 60 time-spent-seconds))
+  (let ((worklog `((started . ,started)
+                   ;; @todo :worklog: timeSpentSeconds changes into incorrect values
+                   ;; in the Jira API (for instance, 89600 = 1 day, but Jira thinks 3 days...
+                   ;; We should convert to a Xd Xh Xm format from our seconds ourselves.
+                   (timeSpentSeconds . ,time-spent-seconds)
+                   (comment . ,comment))))
+    (jiralib-call "updateWorklog" callback issue-id worklog-id worklog)))
 
 (defvar jiralib-components-cache nil "An alist of project components.")
 

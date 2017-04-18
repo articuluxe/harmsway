@@ -29,7 +29,19 @@
   :group 'faces)
 
 (defcustom kaolin-bold t
-  "If nil, disable bold style."
+  "If nil, disable the bold style."
+  :group 'kaolin-theme)
+
+(defcustom kaolin-italic t
+  "If nil, disable the italic style."
+  :group 'kaolin-theme)
+
+(defcustom kaolin-underline t
+  "If nil, disable the underline style."
+  :group 'kaolin-theme)
+
+(defface kaolin-boolean nil
+  "Face to highlight boolean type"
   :group 'kaolin-theme)
 
 ;; Kaolin color palette
@@ -58,6 +70,7 @@
       (deep-pink       "#d24b83")
 
       ;; (orange          "#d2ab5d")
+      (alt-orange      "#d9a76f")
       (orange          "#dbac66")
       (light-orange    "#ddc085")
       (dark-yellow     "#555a2f")
@@ -100,12 +113,12 @@
       (light-purple    "#cea2ca")
       (alt-purple      "#8c4a64")
 
-      ;; (violet          "#b1a7c0")
-      ;; (violet          "#a498b5")
       (violet          "#ab98b5")
 
       ;; Face options
-      (bold         kaolin-bold))
+      (bold         kaolin-bold)
+      (italic       kaolin-italic)
+      (underline    kaolin-underline))
 
   ;; Theme colors
   (let* ((fg1  white)
@@ -134,15 +147,6 @@
          (rb6 violet)
          (rb7 alt-blue)
          (rb8 alt-yellow)
-
-         ;; (rb1 teal)
-         ;; (rb2 alt-purple)
-         ;; (rb3 green)
-         ;; (rb4 blue)
-         ;; (rb5 teal-blue)
-         ;; (rb6 faded-blue)
-         ;; (rb7 light-green)
-         ;; (rb8 alt-blue)
 
          (line-fg           fg4)
          (line-bg           bg2)
@@ -173,10 +177,11 @@
          (str        teal-green)
          (str-alt    jade)
          (doc        str-alt)
-         (type       orange)
+         (type       alt-orange)
          (const      violet)
          (var        faded-blue)
          (num        faded-red)
+         (bool       faded-red)
          (warning    orange)
          (err        red))
 
@@ -197,6 +202,9 @@
      `(font-lock-warning-face ((,class (:background nil :foreground ,warning))))
      `(font-lock-preprocessor-face ((,class (:foreground ,deep-pink :bold nil))))
 
+     ;; Kaolin faces
+     `(kaolin-boolean ((,class (:foreground ,bool))))
+
      ;; General
      `(default ((,class (:background ,bg1 :foreground ,fg1))))
      `(warning ((,class (:foreground ,warning))))
@@ -205,11 +213,11 @@
      `(secondary-selection ((,class (:background ,green :foreground ,bg1))))
      `(fringe ((,class (:background ,bg1 :foreground ,fg1))))
      `(cursor ((,class (:background ,cursor))))
-     `(isearch ((,class (:background nil :foreground ,light-green :bold ,bold :underline t))))
+     `(isearch ((,class (:background nil :foreground ,light-green :bold ,bold :underline ,underline))))
      `(vertical-border ((,class (:foreground ,win-border))))
      `(minibuffer-prompt ((,class (:foreground ,keyword :bold ,bold))))
-     `(default-italic ((,class (:italic t))))
-     `(link ((,class (:foreground ,const :underline t))))
+     `(default-italic ((,class (:italic ,italic))))
+     `(link ((,class (:foreground ,const :underline ,underline))))
      `(success ((,class (:background nil :foreground ,yellow))))
 
      ;; Dashboard
@@ -307,13 +315,13 @@
      `(org-code ((,class (:foreground ,green))))
      `(org-verbatim ((,class (:foreground ,light-yellow))))
      `(org-hide ((,class (:foreground ,bg2))))
-     `(org-date ((,class (:foreground ,light-yellow :underline t))))
+     `(org-date ((,class (:foreground ,light-yellow :underline ,underline))))
      `(org-document-title ((,class (:foreground ,teal :bold ,bold))))
      `(org-document-info-keyword ((,class (:foreground ,deep-green))))
      `(org-meta-line ((,class (:inherit org-document-info-keyword))))
      `(org-document-info ((,class (:foreground ,teal))))
-     `(org-footnote  ((,class (:foreground ,fg4 :underline t))))
-     `(org-link ((,class (:foreground ,cyan :underline t))))
+     `(org-footnote  ((,class (:foreground ,fg4 :underline ,underline))))
+     `(org-link ((,class (:foreground ,cyan :underline ,underline))))
      `(org-special-keyword ((,class (:foreground ,functions))))
      `(org-block ((,class (:foreground ,fg3))))
      `(org-block-begin-line ((,class (:foreground ,deep-green))))
@@ -322,7 +330,7 @@
      `(org-formula ((,class (:foreground ,orange))))
      `(org-quote ((,class (:inherit org-block :slant italic))))
      `(org-verse ((,class (:inherit org-block :slant italic))))
-     `(org-warning ((,class (:foreground ,warning :underline t))))
+     `(org-warning ((,class (:foreground ,warning :underline ,underline))))
      `(org-agenda-structure ((,class (:background ,bg3 :foreground ,fg3 :bold ,bold))))
      `(org-agenda-date ((,class (:foreground ,light-yellow :height 1.1))))
      `(org-agenda-date-weekend ((,class (:weight normal :foreground ,fg4))))
@@ -335,7 +343,7 @@
 
      ;; Latex
      `(font-latex-bold-face ((,class (:foreground ,type))))
-     `(font-latex-italic-face ((,class (:foreground ,key3 :italic t))))
+     `(font-latex-italic-face ((,class (:foreground ,key3 :italic ,italic))))
      `(font-latex-string-face ((,class (:foreground ,str))))
      `(font-latex-match-reference-keywords ((,class (:foreground ,const))))
      `(font-latex-match-variable-keywords ((,class (:foreground ,var))))
@@ -376,7 +384,7 @@
      `(js3-warning-face ((,class (:underline ,keyword))))
      `(js3-error-face ((,class (:underline ,err))))
 
-     `(ac-completion-face ((,class (:foreground ,keyword :underline t))))
+     `(ac-completion-face ((,class (:foreground ,keyword :underline ,underline))))
      `(info-quoted-name ((,class (:foreground ,builtin))))
      `(info-string ((,class (:foreground ,str))))
      `(icompletep-determined ((,class :foreground ,builtin)))
@@ -598,7 +606,7 @@
 
      ;; Evil ex
      `(evil-ex-info ((,class (:foreground ,orange))))
-     `(evil-ex-substitute-matches ((,class (:background ,bg1 :foreground ,red :underline t))))
+     `(evil-ex-substitute-matches ((,class (:background ,bg1 :foreground ,red :underline ,underline))))
      `(evil-ex-substitute-replacement ((,class (:background ,bg1 :foreground ,light-green))))
      '(evil-ex-lazy-highlight ((t (:inherit lazy-highlight))))
 

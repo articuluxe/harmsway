@@ -9,7 +9,7 @@
 ;;
 ;; Maintainer: Matthew Carter <m@ahungry.com>
 ;; URL: https://github.com/ahungry/org-jira
-;; Version: 2.6.2
+;; Version: 2.7.0
 ;; Keywords: ahungry jira org bug tracker
 ;; Package-Requires: ((emacs "24.5") (cl-lib "0.5") (request "0.2.0"))
 
@@ -37,6 +37,9 @@
 ;; issue servers.
 
 ;;; News:
+
+;;;; Changes since 2.6.3:
+;; - Sync up org-clocks and worklogs!  Set org-jira-worklog-sync-p to nil to avoid.
 
 ;;;; Changes since 2.6.1:
 ;; - Fix bug with getting all issues when worklog is an error trigger.
@@ -85,10 +88,11 @@
 ;;; Code:
 
 (require 'org)
+(require 'org-clock)
 (require 'jiralib)
 (require 'cl-lib)
 
-(defconst org-jira-version "2.6.1"
+(defconst org-jira-version "2.7.0"
   "Current version of org-jira.el.")
 
 (defgroup org-jira nil
@@ -191,6 +195,14 @@ instance."
   :group 'org-jira
   :type 'boolean)
 
+(defcustom org-jira-worklog-sync-p t
+  "Keep org clocks and jira worklog fields synced.
+You may wish to set this to nil if you track org clocks in
+your buffer that you do not want to send back to your Jira
+instance."
+  :group 'org-jira
+  :type 'boolean)
+
 (defvar org-jira-serv nil
   "Parameters of the currently selected blog.")
 
@@ -223,6 +235,7 @@ instance."
 
 (defvar org-jira-buffer-kill-prompt t
   "Ask before killing buffer.")
+
 (make-variable-buffer-local 'org-jira-buffer-kill-prompt)
 
 (defvar org-jira-mode-hook nil
@@ -318,10 +331,9 @@ instance."
     (define-key org-jira-map (kbd "C-c sc") 'org-jira-create-subtask)
     (define-key org-jira-map (kbd "C-c sg") 'org-jira-get-subtasks)
     (define-key org-jira-map (kbd "C-c cu") 'org-jira-update-comment)
-    (define-key org-jira-map (kbd "C-c wu") 'org-jira-update-worklog)
+    (define-key org-jira-map (kbd "C-c wu") 'org-jira-update-worklogs-from-org-clocks)
     (define-key org-jira-map (kbd "C-c tj") 'org-jira-todo-to-jira)
     org-jira-map))
-
 
 ;;;###autoload
 (define-minor-mode org-jira-mode
@@ -445,10 +457,11 @@ to change the property names this sets."
 Example: \"2012-01-09T08:59:15.000Z\" becomes \"2012-01-09
 16:59:15\", with the current timezone being +0800."
   (condition-case ()
-      (format-time-string "%Y-%m-%d %T"
-                          (apply
-                           'encode-time
-                           (parse-time-string (replace-regexp-in-string "T\\|\\.000" " " jira-time-str))))
+      (format-time-string
+       "%Y-%m-%d %T"
+       (apply
+        'encode-time
+        (parse-time-string (replace-regexp-in-string "T\\|\\.000" " " jira-time-str))))
     (error jira-time-str)))
 
 (defun org-jira--fix-encode-time-args (arg)
@@ -462,14 +475,101 @@ Example: \"2012-01-09T08:59:15.000Z\" becomes \"2012-01-09
 (defun org-jira-time-format-to-jira (org-time-str)
   "Convert ORG-TIME-STR back to jira time format."
   (condition-case ()
-      (format-time-string "%Y-%m-%dT%T.000Z"
-                          (apply 'encode-time
-                                 (org-jira--fix-encode-time-args (parse-time-string org-time-str))) t)
+      (format-time-string
+       "%Y-%m-%dT%T.000Z"
+       (apply 'encode-time
+              (org-jira--fix-encode-time-args (parse-time-string org-time-str)))
+       t)
     (error org-time-str)))
 
 (defun org-jira-get-comment-val (key comment)
   "Return the value associated with KEY of COMMENT."
   (org-jira-get-issue-val key comment))
+
+(defun org-jira-time-stamp-to-org-clock (time-stamp)
+  "Convert TIME-STAMP into org-clock format."
+  (format-time-string "%Y-%m-%d %a %H:%M" time-stamp))
+
+(defun org-jira-date-strip-letter-t (date)
+  "Convert DATE into a time stamp and then into org-clock format.
+Expects a date in format such as: 2017-02-26T00:08:00.000-0500 and
+returns in format 2017-02-26 00:08:00-0500."
+  (replace-regexp-in-string
+   "\\.000\\([-+]\\)" "\\1"
+   (replace-regexp-in-string "^\\(.*?\\)T" "\\1 " date)))
+
+(defun org-jira-date-to-org-clock (date)
+  "Convert DATE into a time stamp and then into org-clock format.
+Expects a date in format such as: 2017-02-26T00:08:00.000-0500."
+  (org-jira-time-stamp-to-org-clock
+   (date-to-time
+    (org-jira-date-strip-letter-t date))))
+
+(defun org-jira-worklogs-to-org-clocks (worklogs)
+  "Get a list of WORKLOGS and convert to org-clocks."
+  (mapcar
+   (lambda (worklog)
+     (let ((wl-start (cdr (assoc 'started worklog)))
+           (wl-time (cdr (assoc 'timeSpentSeconds worklog)))
+           (wl-end))
+       (setq wl-start (org-jira-date-to-org-clock wl-start))
+       (setq wl-end (org-jira-time-stamp-to-org-clock (time-add (date-to-time wl-start) wl-time)))
+       (list
+        wl-start
+        wl-end
+        (cdr (assoc 'comment worklog))
+        (cdr (assoc 'id worklog))
+        )
+       ))
+   worklogs)
+  )
+
+(defun org-jira-format-clock (clock-entry)
+  "Format a CLOCK-ENTRY given the (list start end).
+This format is typically generated from org-jira-worklogs-to-org-clocks call."
+  (format "CLOCK: [%s]--[%s]" (car clock-entry) (cadr clock-entry)))
+
+(defun org-jira-insert-clock (clock-entry)
+  "Insert a CLOCK-ENTRY given the (list start end).
+This format is typically generated from org-jira-worklogs-to-org-clocks call."
+  (insert (org-jira-format-clock clock-entry))
+  (org-beginning-of-line)
+  (org-ctrl-c-ctrl-c) ;; @todo Maybe not call directly?  does it matter? - used to resync the clock estimate
+  (org-end-of-line)
+  (insert "\n")
+  (insert (format "  :id: %s\n" (cadddr clock-entry)))
+  (when (caddr clock-entry) (insert (format "  %s\n" (caddr clock-entry)))) ;; No comment is nil, so don't print it
+  )
+
+(defun org-jira-logbook-reset (issue-id &optional clocks)
+  "Find logbook for ISSUE-ID, delete it.
+Re-create it with CLOCKS.  This is used for worklogs."
+  (interactive)
+  (let ((existing-logbook-p nil))
+    ;; See if the LOGBOOK already exists or not.
+    (ensure-on-issue-id
+     issue-id
+     (let ((drawer-name (or (org-clock-drawer-name) "LOGBOOK")))
+       (when (search-forward (format ":%s:" drawer-name) nil 1 1)
+         (setq existing-logbook-p t))))
+    (ensure-on-issue-id
+     issue-id
+     (let ((drawer-name (or (org-clock-drawer-name) "LOGBOOK")))
+       (if existing-logbook-p
+           (progn ;; If we had a logbook, drop it and re-create in a bit.
+             (search-forward (format ":%s:" drawer-name))
+             (org-beginning-of-line)
+             (org-cycle 0)
+             (dotimes (n 2) (org-kill-line)))
+         (progn ;; Otherwise, create a new one at the end of properties list
+           (search-forward ":END:")
+           (forward-line)))
+       (org-insert-drawer nil (format "%s" drawer-name)) ;; Doc says non-nil, but this requires nil
+       (mapc #'org-jira-insert-clock clocks)
+       ;; Clean up leftover newlines (we left 2 behind)
+       (search-forward-regexp "^$")
+       (org-kill-line)
+       ))))
 
 (defun org-jira-get-worklog-val (key WORKLOG)
   "Return the value associated with KEY of WORKLOG."
@@ -692,7 +792,11 @@ See`org-jira-get-issue-list'"
                                  (org-jira-insert (replace-regexp-in-string "^" "  " (org-jira-get-issue-val heading-entry issue))))))
                             '(description))
                       (org-jira-update-comments-for-current-issue)
-                      ;;(org-jira-update-worklogs-for-current-issue) ; Re-enable when worklog branch is done
+
+                      ;; only sync worklog clocks when the user sets it to be so.
+                      (when org-jira-worklog-sync-p
+                        (org-jira-update-worklogs-for-current-issue))
+
                       ))))))
           issues)
     (switch-to-buffer project-buffer)))
@@ -711,16 +815,106 @@ See`org-jira-get-issue-list'"
          (callback-add
           (cl-function
            (lambda (&rest data &allow-other-keys)
-             ;; @todo Has to be a better way to do this than delete region (like update the unmarked one)
+             ;; @todo :optim: Has to be a better way to do this than delete region (like update the unmarked one)
              (org-jira-delete-current-comment)
              (org-jira-update-comments-for-current-issue)))))
     (if comment-id
         (jiralib-edit-comment issue-id comment-id comment callback-edit)
       (jiralib-add-comment issue-id comment callback-add))))
 
+(defun org-jira-org-clock-to-date (org-time)
+  "Convert ORG-TIME formatted date into a plain date string."
+  (format-time-string
+   "%Y-%m-%dT%H:%M:%S.000%z"
+   (date-to-time org-time)))
+
+(defun org-jira-worklog-time-from-org-time (org-time)
+  "Take in an ORG-TIME and convert it into the portions of a worklog time.
+Expects input in format such as: [2017-04-05 Wed 01:00]--[2017-04-05 Wed 01:46] =>  0:46"
+  (let ((start (replace-regexp-in-string "^\\[\\(.*?\\)\\].*" "\\1" org-time))
+        (end (replace-regexp-in-string ".*--\\[\\(.*?\\)\\].*" "\\1" org-time)))
+    `((started . ,(org-jira-org-clock-to-date start))
+      (time-spent-seconds . ,(time-to-seconds
+                              (time-subtract
+                               (date-to-time end)
+                               (date-to-time start)))))))
+
+(defun org-jira-org-clock-to-jira-worklog (org-time clock-content)
+  "Given ORG-TIME and CLOCK-CONTENT, format a jira worklog entry."
+  (let ((lines (split-string clock-content "\n"))
+        worklog-id)
+    ;; See if we look like we have an id
+    (when (string-match ":id:" (first lines))
+      (setq worklog-id
+            (replace-regexp-in-string "^.*:id: \\([0-9]*\\)$" "\\1" (first lines)))
+      (when (> (string-to-number worklog-id) 0) ;; pop off the first id line if we found it valid
+        (setq lines (cdr lines))))
+    (setq lines (reverse (cdr (reverse lines)))) ;; drop last line
+    (let ((comment (org-trim (mapconcat 'identity lines "\n")))
+          (worklog-time (org-jira-worklog-time-from-org-time org-time)))
+      `((worklog-id . ,worklog-id)
+        (comment . ,comment)
+        (started . ,(cdr (assoc 'started worklog-time)))
+        (time-spent-seconds . ,(cdr (assoc 'time-spent-seconds worklog-time)))
+        ))))
+
+;;;###autoload
+(defun org-jira-update-worklogs-from-org-clocks ()
+  "Update or add a worklog based on the org clocks."
+  (interactive)
+  (let ((issue-id (org-jira-get-from-org 'issue 'key)))
+    (ensure-on-issue-id
+     issue-id
+     (search-forward (format ":%s:" (or (org-clock-drawer-name) "LOGBOOK"))  nil 1 1)
+     (org-beginning-of-line)
+     (org-cycle 1)
+     (while (search-forward "CLOCK: " nil 1 1)
+       (let ((org-time (buffer-substring-no-properties (point) (point-at-eol))))
+         (forward-line)
+         ;; See where the stuff ends (what point)
+         (let (next-clock-point)
+           (save-excursion
+             (search-forward-regexp "\\(CLOCK\\|:END\\):" nil 1 1)
+             (setq next-clock-point (point)))
+           (let ((clock-content
+                  (buffer-substring-no-properties (point) next-clock-point)))
+
+             ;; @todo :optim: This is inefficient, calling the resync on each update/insert event,
+             ;; ideally we would track and only insert/update changed entries, as well
+             ;; only call a resync once (when the entire list is processed, which will
+             ;; basically require a dry run to see how many items we should be updating.
+
+             ;; Update via jiralib call
+             (let* ((worklog (org-jira-org-clock-to-jira-worklog org-time clock-content))
+                    (comment-text (cdr (assoc 'comment worklog)))
+                    (comment-text (if (string= (org-trim comment-text) "") nil comment-text)))
+               (if (cdr (assoc 'worklog-id worklog))
+                   (jiralib-update-worklog
+                    issue-id
+                    (cdr (assoc 'worklog-id worklog))
+                    (cdr (assoc 'started worklog))
+                    (cdr (assoc 'time-spent-seconds worklog))
+                    comment-text
+                    (cl-function
+                     (lambda (&rest data &allow-other-keys)
+                       (org-jira-update-worklogs-for-current-issue))))
+                 ;; else
+                 (jiralib-add-worklog
+                  issue-id
+                  (cdr (assoc 'started worklog))
+                  (cdr (assoc 'time-spent-seconds worklog))
+                  comment-text
+                  (cl-function
+                   (lambda (&rest data &allow-other-keys)
+                     (org-jira-update-worklogs-for-current-issue))))
+                 )
+               )))))
+     )))
+
 (defun org-jira-update-worklog ()
   "Update a worklog for the current issue."
   (interactive)
+  (error "Deprecated, use org-jira-update-worklogs-from-org-clocks instead!")
   (let* ((issue-id (org-jira-get-from-org 'issue 'key))
          (worklog-id (org-jira-get-from-org 'worklog 'id))
          (timeSpent (org-jira-get-from-org 'worklog 'timeSpent))
@@ -731,7 +925,7 @@ See`org-jira-get-issue-list'"
          (startDate (org-jira-get-from-org 'worklog 'startDate))
          (startDate (if startDate
                         startDate
-                      (org-read-date nil nil nil "Inputh when did you start")))
+                      (org-read-date nil nil nil "Input when did you start")))
          (startDate (org-jira-time-format-to-jira startDate))
          (comment (replace-regexp-in-string "^  " "" (org-jira-get-worklog-comment worklog-id)))
          (worklog `((comment . ,comment)
@@ -774,17 +968,13 @@ See`org-jira-get-issue-list'"
 
 (defun org-jira-update-comments-for-current-issue ()
   "Update the comments for the current issue."
-  (let ((issue-id (org-jira-get-from-org 'issue 'key)))
+  (lexical-let ((issue-id (org-jira-get-from-org 'issue 'key)))
     ;; Run the call
     (jiralib-get-comments
      issue-id
      (cl-function
       (lambda (&rest data &allow-other-keys)
-        (let ((comments (org-jira-find-value (cl-getf data :data) 'comments))
-              (issue-id (replace-regexp-in-string
-                         ".*issue\\/\\(.*\\)\\/comment"
-                         "\\1"
-                         (request-response-url (cl-getf data :response)))))
+        (let ((comments (org-jira-find-value (cl-getf data :data) 'comments)))
           (mapc
            (lambda (comment)
              (ensure-on-issue-id
@@ -826,42 +1016,31 @@ See`org-jira-get-issue-list'"
                 (list comment)))
             comments))))))))
 
+(defun org-jira-sort-org-clocks (clocks)
+  "Given a CLOCKS list, sort it by start date descending."
+  ;; Expects data such as this:
+
+  ;; ((\"2017-02-26 Sun 00:08\" \"2017-02-26 Sun 01:08\" \"Hi\" \"10101\")
+  ;;  (\"2017-03-16 Thu 22:25\" \"2017-03-16 Thu 22:57\" \"Test\" \"10200\"))
+  (sort clocks
+        (lambda (a b)
+          (> (time-to-seconds (date-to-time (car a)))
+             (time-to-seconds (date-to-time (car b)))))))
+
 (defun org-jira-update-worklogs-for-current-issue ()
   "Update the worklogs for the current issue."
-  (let* ((issue-id (org-jira-get-from-org 'issue 'key))
-         (worklogs (jiralib-get-worklogs issue-id)))
-    (mapc (lambda (worklog)
-            (ensure-on-issue-id issue-id
-                                (let* ((worklog-id (concat "worklog-" (cdr (assoc 'id worklog))))
-                                       (worklog-author (or (car (rassoc
-                                                                 (cdr (assoc 'author worklog))
-                                                                 org-jira-users))
-                                                           (cdr (assoc 'author worklog))))
-                                       (worklog-headline (format "Worklog: %s" worklog-author)))
-                                  (setq p (org-find-entry-with-id worklog-id))
-                                  (when (and p (>= p (point-min))
-                                             (<= p (point-max)))
-                                    (goto-char p)
-                                    (org-narrow-to-subtree)
-                                    (delete-region (point-min) (point-max)))
-                                  (goto-char (point-max))
-                                  (unless (looking-at "^")
-                                    (insert "\n"))
-                                  (insert "** ")
-                                  (org-jira-insert worklog-headline "\n")
-                                  (org-narrow-to-subtree)
-                                  (org-jira-entry-put (point) "ID" worklog-id)
-                                  (let ((created (org-jira-get-worklog-val 'created worklog))
-                                        (updated (org-jira-get-worklog-val 'updated worklog)))
-                                    (org-jira-entry-put (point) "created" created)
-                                    (unless (string= created updated)
-                                      (org-jira-entry-put (point) "updated" updated)))
-                                  (org-jira-entry-put (point) "startDate" (org-jira-get-worklog-val 'startDate worklog))
-                                  (org-jira-entry-put (point) "timeSpent" (org-jira-get-worklog-val 'timeSpent worklog))
-                                  (goto-char (point-max))
-                                  (org-jira-insert (replace-regexp-in-string "^" "  " (or (cdr (assoc 'comment worklog)) ""))))))
-          worklogs)))
-
+  (lexical-let ((issue-id (org-jira-get-from-org 'issue 'key)))
+    ;; Run the call
+    (jiralib-get-worklogs
+     issue-id
+     (cl-function
+      (lambda (&rest data &allow-other-keys)
+        (ensure-on-issue-id
+         issue-id
+         (let ((worklogs (org-jira-find-value (cl-getf data :data) 'worklogs)))
+           (org-jira-logbook-reset
+            issue-id
+            (org-jira-sort-org-clocks (org-jira-worklogs-to-org-clocks worklogs))))))))))
 
 ;;;###autoload
 (defun org-jira-assign-issue ()
@@ -1202,7 +1381,7 @@ Where issue-id will be something such as \"EX-22\"."
          (org-jira-refresh-issue)))))))
 
 (defun org-jira-get-id-name-alist (name ids-to-names)
-  "Finds the id corresponding to NAME in IDS-TO-NAMES and returns an alist with id and name as keys"
+  "Find the id corresponding to NAME in IDS-TO-NAMES and return an alist with id and name as keys."
   (let ((id (car (rassoc name ids-to-names))))
     `((id . ,id)
       (name . ,name))))
@@ -1246,6 +1425,15 @@ otherwise it should return:
           (org-issue-assignee (cl-getf rest :assignee (org-jira-get-issue-val-from-org 'assignee)))
           (project (replace-regexp-in-string "-[0-9]+" "" issue-id))
           (project-components (jiralib-get-components project)))
+
+     ;; Lets fire off a worklog update async with the main issue
+     ;; update, why not?  This is better to fire first, because it
+     ;; doesn't auto-refresh any areas, while the end of the main
+     ;; update does a callback that reloads the worklog entries (so,
+     ;; we hope that wont occur until after this successfully syncs
+     ;; up).  Only do this sync if the user defcustom defines it as such.
+     (when org-jira-worklog-sync-p
+       (org-jira-update-worklogs-from-org-clocks))
 
      ;; Send the update to jira
      (let ((update-fields
