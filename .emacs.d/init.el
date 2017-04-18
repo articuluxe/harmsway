@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-04-18 12:46:51 dan.harms>
+;; Modified Time-stamp: <2017-04-18 13:17:34 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -915,6 +915,10 @@ line."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; simpleclip ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package simpleclip
+  :bind (("M-s M-s c" . simpleclip-copy)
+         ("M-s M-s x" . simpleclip-cut)
+         ("M-s M-s p" . simpleclip-paste))
+  :demand t
   :config
   (simpleclip-mode 1))
 
