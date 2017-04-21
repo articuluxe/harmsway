@@ -31,6 +31,6 @@ brew install coreutils
 
 
 
-;; Local Variables:
-;; mode: sh
-;; End:
+# Local Variables:
+# mode: sh
+# End:

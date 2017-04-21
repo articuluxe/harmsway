@@ -73,6 +73,23 @@ cd /usr/local/priv
 sudo stow boost-1.63
 #+END_SRC
 
+* ctags
+** from source
+#+BEGIN_SRC sh
+cd ~/src
+git clone https://github.com/universal-ctags/ctags.git my/ctags
+cd my/ctags
+autogen.sh
+configure --prefix=/usr/local/priv/ctags-20170421 --program-prefix=ex
+make
+make install
+cd /usr/local/priv
+sudo stow ctags-20170421
+#+END_SRC
+
+sudo apt install autoconf
+sudo apt install automake
+sudo apt install libtool
 sudo apt install python-dev
 sudo apt install doxygen
 sudo apt install shellcheck
