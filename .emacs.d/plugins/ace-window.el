@@ -70,7 +70,8 @@
   :prefix "aw-")
 
 (defcustom aw-keys '(?1 ?2 ?3 ?4 ?5 ?6 ?7 ?8 ?9)
-  "Keys for selecting window.")
+  "Keys for selecting window."
+  :type '(repeat character))
 
 (defcustom aw-scope 'global
   "The scope used by `ace-window'."
@@ -266,7 +267,7 @@ LEAF is (PT . WND)."
     (?c aw-split-window-fair " Ace - Split Fair Window")
     (?v aw-split-window-vert " Ace - Split Vert Window")
     (?b aw-split-window-horz " Ace - Split Horz Window")
-    (?i delete-other-windows " Ace - Maximize Window")
+    (?i delete-other-windows " Ace - Delete Other Windows")
     (?o delete-other-windows))
   "List of actions for `aw-dispatch-default'.")
 
@@ -359,11 +360,14 @@ Amend MODE-LINE to the mode line for the duration of the selection."
              #'aw-swap-window))
 
 ;;;###autoload
-(defun ace-maximize-window ()
-  "Ace maximize window."
+(defun ace-delete-other-windows ()
+  "Ace delete other windows."
   (interactive)
-  (aw-select " Ace - Maximize Window"
+  (aw-select " Ace - Delete Other Windows"
              #'delete-other-windows))
+
+(define-obsolete-function-alias
+  'ace-maximize-window 'ace-delete-other-windows "0.10.0")
 
 ;;;###autoload
 (defun ace-window (arg)

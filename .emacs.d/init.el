@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-04-18 13:17:34 dan.harms>
+;; Modified Time-stamp: <2017-04-21 06:36:00 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1130,7 +1130,7 @@ Each value is a cons cell (`description' . `activation-function').")
           (?n aw-flip-window)
           (?o delete-other-windows)
           (?b balance-windows)
-          (?i delete-other-windows " Ace-Maximize")
+          (?i delete-other-windows " Ace-Delete Other Windows")
           (?v aw-split-window-vert " Ace-Split Vert")
           (?h aw-split-window-horz " Ace-Split Horiz")
           )))

@@ -5,7 +5,7 @@
 ;; Author: 0rdy <mail@0rdy.com>
 ;; URL: https://github.com/0rdy/kaolin-theme
 ;; Package-Requires: ((emacs "24"))
-;; Version: 0.5.0
+;; Version: 0.6.0
 
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -81,6 +81,7 @@
       (wheat           "#b9c791")
 
       (jade            "#597a6e")
+      (dark-jade       "#2e4039")
       (midnight-green  "#152628")
       ;; (deep-green   "#30555a")
       (deep-green      "#39656b")
@@ -111,7 +112,8 @@
       (magenta         "#5454b6")
       ;; (light-purple "#9d769d")
       (light-purple    "#cea2ca")
-      (alt-purple      "#8c4a64")
+      ;; (alt-purple      "#8c4a64")
+      (alt-purple      "#915c83")
 
       (violet          "#ab98b5")
 
@@ -133,7 +135,7 @@
          (key3 "#41757b")
 
          (dim-buffer alt-black)
-         (hl-line bg2)
+         (hl-line    bg2)
          (tooltip-bg bg2)
          (tooltip-fg light-gray)
          (tooltip-hl alt-brown)
@@ -174,14 +176,13 @@
          (functions  teal)
          (str        teal-green)
          (str-alt    jade)
-         (str        teal-green)
-         (str-alt    jade)
          (doc        str-alt)
          (type       alt-orange)
          (const      violet)
          (var        faded-blue)
          (num        faded-red)
          (bool       faded-red)
+         (prep       alt-purple)
          (warning    orange)
          (err        red))
 
@@ -200,7 +201,7 @@
      `(font-lock-type-face ((,class (:foreground ,type))))
      `(font-lock-variable-name-face ((,class (:foreground ,var))))
      `(font-lock-warning-face ((,class (:background nil :foreground ,warning))))
-     `(font-lock-preprocessor-face ((,class (:foreground ,deep-pink :bold nil))))
+     `(font-lock-preprocessor-face ((,class (:foreground ,prep :bold nil))))
 
      ;; Kaolin faces
      `(kaolin-boolean ((,class (:foreground ,bool))))
@@ -237,7 +238,7 @@
      `(highlight-indent-guides-character-face  ((t (:foreground ,hl-indent))))
 
      ;; Linum & nlinum
-     `(linum ((t (:background ,bg1 :foreground ,gray))))
+     `(linum ((t (:background ,bg1 :foreground ,gray :bold nil))))
      `(nlinum-current-line ((t (:background ,bg1 :foreground ,green))))
 
      ;; Auto-dim-other-buffers
@@ -586,6 +587,8 @@
 
      ;; Perl6
      ;; `(perl6-identifier ((,class (:foreground ,cyan))))
+     `(perl6-phaser ((,class (:foreground ,cyan))))
+     `(perl6-type-constraint ((,class (:inherit font-lock-keyword-face))))
 
      ;; Shell
      `(sh-quoted-exec ((,class (:foreground ,light-yellow))))
