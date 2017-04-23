@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-04-21 10:11:02 dan.harms>
+;; Modified Time-stamp: <2017-04-23 11:44:59 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -140,6 +140,7 @@ up to 10 times."
   (modify-frame-parameters frame
                            '((vertical-scroll-bars . nil)
                              (horizontal-scroll-bars . nil))))
+(setq mouse-yank-at-point t)
 (mouse-avoidance-mode 'cat-and-mouse)
 (blink-cursor-mode 1)
 (setq blink-cursor-blinks 0)
