@@ -9,8 +9,8 @@ export EDITOR="$EMACSX -nw"
 alias emacs=$EDITOR
 
 # dart=/usr/local/dart/1.15.0/dart-sdk
-# cask=$HOME/.cask/bin
-export PATH=$HOME/bin:/usr/local/bin:/bin:/sbin:/usr/bin:.
+cask=$HOME/.cask/bin
+export PATH=$HOME/bin:$cask:/usr/local/bin:/bin:/sbin:/usr/bin:.
 
 export CSTDLIB_ROOT=/usr
 export CSTDLIB_INC=$CSTDLIB_ROOT/include/c++/5.4.0/
