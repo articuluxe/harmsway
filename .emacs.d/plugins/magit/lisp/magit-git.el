@@ -54,6 +54,18 @@
   (list (format "INSIDE_EMACS=%s,magit" emacs-version))
   "Prepended to `process-environment' while running git.")
 
+(defcustom magit-git-output-coding-system
+  (and (eq system-type 'windows-nt) 'utf-8)
+  "Coding system for receiving output from Git.
+
+If non-nil, the Git config value `i18n.logOutputEncoding' should
+be set via `magit-git-global-arguments' to value consistent with
+this."
+  :package-version '(magit . "2.9.0")
+  :group 'magit-process
+  :type '(choice (coding-system :tag "Coding system to decode Git output")
+                 (const :tag "Use system default" nil)))
+
 (defcustom magit-git-executable
   ;; Git might be installed in a different location on a remote, so
   ;; it is better not to use the full path to the executable, except
@@ -697,7 +709,10 @@ Sorted from longest to shortest CYGWIN name."
 
 (defun magit-decode-git-path (path)
   (if (eq (aref path 0) ?\")
-      (string-as-multibyte (read path))
+      (decode-coding-string (read path)
+                            (or magit-git-output-coding-system
+                                (car default-process-coding-system))
+                            t)
     path))
 
 (defun magit-file-at-point ()
@@ -1131,6 +1146,18 @@ SORTBY is a key or list of keys to pass to the `--sort' flag of
                  (list (match-string 1 it)))
             (magit-git-items "ls-files" "-z" "--stage")))
 
+(defun magit-get-submodule-name (path)
+  "Return the name of the submodule at PATH.
+PATH has to be relative to the super-repository."
+  (cadr (split-string
+         (car (or (magit-git-items
+                   "config" "-z"
+                   "-f" (expand-file-name ".gitmodules" (magit-toplevel))
+                   "--get-regexp" "^submodule\\..*\\.path$"
+                   (concat "^" (regexp-quote (directory-file-name path)) "$"))
+                  (error "No such submodule `%s'" path)))
+         "\n")))
+
 (defun magit-list-worktrees ()
   (let (worktrees worktree)
     (dolist (line (let ((magit-git-global-arguments
@@ -1330,7 +1357,9 @@ Return a list of two integers: (A>B B>A)."
 (defun magit-commit-tree (message &optional tree &rest parents)
   (magit-git-string "commit-tree" "--no-gpg-sign" "-m" message
                     (--mapcat (list "-p" it) (delq nil parents))
-                    (or tree (magit-git-string "write-tree"))))
+                    (or tree
+                        (magit-git-string "write-tree")
+                        (error "Cannot write tree"))))
 
 (defun magit-commit-worktree (message &optional arg &rest other-parents)
   (magit-with-temp-index "HEAD" arg

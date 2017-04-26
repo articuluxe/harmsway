@@ -6,10 +6,10 @@
 ;; Maintainer: Drew Adams (concat "drew.adams" "@" "oracle" ".com")
 ;; Copyright (C) 2000-2017, Drew Adams, all rights reserved.
 ;; Created: Fri Sep 15 07:58:41 2000
-;; Last-Updated: Mon Jan  2 20:12:45 2017 (-0800)
+;; Last-Updated: Fri Mar 31 18:52:00 2017 (-0700)
 ;;           By: dradams
-;;     Update #: 15183
-;; URL: http://www.emacswiki.org/bookmark+-doc.el
+;;     Update #: 15228
+;; URL: https://www.emacswiki.org/emacs/download/bookmark%2b-doc.el
 ;; Doc URL: http://www.emacswiki.org/BookmarkPlus
 ;; Keywords: bookmarks, bookmark+, placeholders, annotations, search,
 ;;           info, url, eww, w3m, gnus
@@ -168,6 +168,8 @@
 ;;      (@> "Temporary Bookmarking Mode")
 ;;      (@> "Making Bookmarks Temporary")
 ;;    (@> "Automatic Bookmarking")
+;;      (@> "Automatic Info Bookmarking")
+;;      (@> "Automatic Idle-Period Bookmarking")
 ;;    (@> "Highlighting Bookmark Locations")
 ;;      (@> "Defining How to Highlight")
 ;;      (@> "Highlighting On Demand")
@@ -3075,7 +3077,8 @@
 ;;
 ;;  Commands `bmkp-next-bookmark' and `bmkp-previous-bookmark' cycle
 ;;  to the next and previous bookmark in the navigation list (with
-;;  wraparound).
+;;  wraparound).  (There are also other-window versions of these
+;;  commands.)
 ;;
 ;;  You can bind these to any keys you like, but it's obviously better
 ;;  to choose keys that are easily repeatable (e.g. by holding them
@@ -3122,7 +3125,7 @@
 ;;  bookmarks, which record a specific set of bookmarks and their sort
 ;;  order: to later choose given sets in different contexts for
 ;;  cycling.
-;;  
+;;
 ;;
 ;;(@* "Cycling Dynamic Sets of Bookmarks")
 ;; *** "Cycling Dynamic Sets of Bookmarks" ***
@@ -3147,9 +3150,9 @@
 ;;  particular kind (e.g. only the autonamed bookmarks), then you can
 ;;  bind the relevant commands
 ;;  (e.g. `bmkp-next-autonamed-bookmark-repeat',
-;;  `bmkp-previous-autonamed-bookmark-repeat') to handy keys.
-;;  Otherwise, you can just use the cycling commands without binding
-;;  them.
+;;  `bmkp-previous-autonamed-bookmark-repeat', or their other-window
+;;  versions) to handy keys.  Otherwise, you can just use the cycling
+;;  commands without binding them.
 ;;
 ;;
 ;;(@* "Cycling in the Current File/Buffer")
@@ -3445,11 +3448,65 @@
 ;;(@* "Automatic Bookmarking")
 ;;  ** Automatic Bookmarking **
 ;;
-;;  You might or might not find automatic bookmarking useful.  The
-;;  idea is that Emacs sets a bookmark for you automatically, whenever
-;;  you are idle for a given period of time (option
-;;  `bmkp-auto-idle-bookmark-mode-delay').  Then you can navigate
-;;  among those bookmarks to visit spots where you spent some time
+;;  You might find automatic bookmarking useful.  The idea is that
+;;  Emacs sets a bookmark for you automatically.
+;;
+;;  Bookmark+ can do this either when you perform some action (besides
+;;  explicitly bookmarking) or whenever you are idle for a given
+;;  period of time (option `bmkp-auto-idle-bookmark-mode-delay').
+;;  
+;;
+;;(@* Automatic Info Bookmarking)
+;;  *** Automatic Info Bookmarking ***
+;;
+;;  The former feature is currently limited to Info bookmarks.  When
+;;  global minor mode `bmkp-info-auto-bookmark-mode' is enabled, each
+;;  Info node you visit can be bookmarked automatically, using the
+;;  default bookmark name, which is the Info manual name plus the node
+;;  name.  For example, node `Lisp Data Types' in the Elisp manual
+;;  gives you a bookmark named `(elisp) Lisp Data Types'.
+;;
+;;  When the mode is enabled and an Info node is visited, an existing
+;;  such bookmark is always updated.  If no such bookmark exists then
+;;  a new one is created if option `bmkp-info-auto-type' has value
+;;  `create-or-replace'.  If it has value `update-only' then no new
+;;  bookmark is created.  The default option value is `update-only'.
+;;  You can toggle the value using command
+;;  `bmkp-toggle-info-auto-type'.
+;;
+;;  With mode `bmkp-info-auto-bookmark-mode' enabled, even if you
+;;  create Info bookmarks with the given names (i.e., the default
+;;  names) only manually, they are updated automatically.  In
+;;  particular, updating a bookmark increments the recorded number of
+;;  visits to the Info node and the time of the last visit.
+;;
+;;  You can sort bookmarks in the bookmark-list display by the time of
+;;  last visit, using `s d', or by the number of visits, using `s v'.
+;;
+;;  This gives you an easy way to see which parts of the manuals you
+;;  have visited most recently and how much you have visited them.
+;;  Showing only Info bookmarks gives you the effect of a persistent
+;;  mini-manual of just the visited Info nodes.  Turn the mode off
+;;  anytime you do not want to record Info visits.
+;;
+;;  Also useful in this context, though not related to bookmarking, is
+;;  the ability to save your Info history persistently, so links to
+;;  visited nodes are shown using a different face.  This makes it
+;;  easy to see which parts of a manual you have already looked at.
+;;  (And checking a bookmark to a visited node shows you how much you
+;;  have visited it.)
+;;
+;;  If you use library `info+.el' then you have this complementary
+;;  ability save your Info history list persistently.  Just enable
+;;  minor mode `Info-persist-history-mode'.
+;;
+;;
+;;(@* Automatic Idle-Period Bookmarking)
+;;  *** Automatic Idle-Period Bookmarking ***
+;;
+;;  Automatic idle-period bookmarking uses autonamed bookmarks (see
+;;  (@> "Autonamed Bookmarks - Easy Come Easy Go")).  It lets you
+;;  navigate among them to visit spots where you spent some time
 ;;  (idly).
 ;;
 ;;  How many such automatic bookmarks would you want?  And where?

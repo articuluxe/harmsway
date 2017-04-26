@@ -2272,7 +2272,8 @@ Additional Actions:
 (defun counsel-package-action (pkg-cons)
   (let ((pkg (cadr pkg-cons)))
     (if (package-installed-p pkg)
-        (package-delete pkg)
+        (package-delete
+         (cadr (assoc pkg package-alist)))
       (package-install pkg))))
 
 (defun counsel-package-action-describe (pkg-cons)
@@ -2408,8 +2409,7 @@ Additional Actions:
          (mapcar #'ivy-cleanup-string
                  (cl-remove-if
                   (lambda (s)
-                    (or (< (length s) 3)
-                        (string-match "\\`[\n[:blank:]]+\\'" s)))
+                    (string-match "\\`[\n[:blank:]]+\\'" s))
                   (delete-dups kill-ring)))))
     (let ((ivy-format-function #'counsel--yank-pop-format-function)
           (ivy-height 5))
@@ -3383,7 +3383,7 @@ candidate."
   (interactive)
   (irony-completion-candidates-async 'counsel-irony-callback))
 
-(defun counsel-irony-callback ()
+(defun counsel-irony-callback (&optional _cands)
   (interactive)
   (let ((coll (irony-completion-at-point)))
     (when coll
@@ -3399,7 +3399,7 @@ candidate."
    (condition-case nil
        (concat
         x " "
-        (irony-completion--at-point-annotate x))
+        (irony-completion--capf-annotate x))
      (error x))
    x))
 
@@ -3407,7 +3407,7 @@ candidate."
 
 (declare-function irony-completion-candidates-async "ext:irony-completion")
 (declare-function irony-completion-at-point "ext:irony-completion")
-(declare-function irony-completion--at-point-annotate "ext:irony-completion")
+(declare-function irony-completion--capf-annotate "ext:irony-completion")
 
 ;;** `counsel-mode'
 (defvar counsel-mode-map

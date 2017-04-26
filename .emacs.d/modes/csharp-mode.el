@@ -298,7 +298,6 @@
 ;;          - Fix indentation for generic type-initializers.
 ;;          - Fix fontification of using and namespace-statements with
 ;;            underscores in them.
-;;          - Derive csharp-mode-map from prog-mode-map.
 ;;          - Fixes for indentation for many kinds of type-initializers.
 ;;
 ;;; Code:
@@ -1450,7 +1449,6 @@ This regexp is assumed to not match any non-operator identifier."
     ("finally" "finally" c-electric-continued-statement 0)))
 
 (defvar csharp-mode-map (let ((map (c-make-inherited-keymap)))
-                          (set-keymap-parent map prog-mode-map)
                           ;; Add bindings which are only useful for C#
                           map)
   "Keymap used in ‘csharp-mode’ buffers.")
