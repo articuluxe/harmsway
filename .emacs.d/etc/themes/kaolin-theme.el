@@ -5,7 +5,7 @@
 ;; Author: 0rdy <mail@0rdy.com>
 ;; URL: https://github.com/0rdy/kaolin-theme
 ;; Package-Requires: ((emacs "24"))
-;; Version: 0.6.0
+;; Version: 0.6.1
 
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -18,7 +18,10 @@
 ;; GNU General Public License for more details.
 
 ;;; Commentary:
-
+;;
+;; Kaolin is a dark jade, eye pleasing theme for Emacs with support
+;; a large number of specific modes and external packages.
+;;
 ;;; Code:
 
 (deftheme kaolin "A dark jade theme")
@@ -103,7 +106,8 @@
       ;; TODO: Change blue color
       ;; (blue            "#5485b6")
       (blue            "#5077a5")
-      (alt-blue        "#6666be")
+      ;; (alt-blue        "#6666be")
+      (alt-blue        "#267fb5")
       (cyan            "#54b6b6")
       ;; (faded-blue      "#857f96")
       (faded-blue      "#817f96")
@@ -126,9 +130,12 @@
 
   ;; Theme colors
   (let* ((fg1  white)
-         (fg2  "#b8bcb9")
-         (fg3  "#abafac")
-         (fg4  "#9ea39f")
+         ;; (fg2  "#b8bcb9")
+         ;; (fg3  "#abafac")
+         ;; (fg4  "#9ea39f")
+         (fg2  "#babac4")
+         (fg3  "#adadb9")
+         (fg4  "#9f9fad")
          (bg1  black)
          (bg2  "#282828")
          (bg3  "#353535")
@@ -204,6 +211,7 @@
      ;; Font-lock
      `(font-lock-builtin-face ((,class (:foreground ,builtin))))
      `(font-lock-comment-face ((,class (:foreground ,comment))))
+     `(font-lock-comment-delimiter-face ((,class (:foreground ,comment))))
      `(font-lock-constant-face ((,class (:foreground ,const))))
      `(font-lock-reference-face ((,class (:foreground ,const))))
      `(font-lock-string-face ((,class (:foreground ,str))))
@@ -215,6 +223,7 @@
      `(font-lock-variable-name-face ((,class (:foreground ,var))))
      `(font-lock-warning-face ((,class (:background nil :foreground ,warning))))
      `(font-lock-preprocessor-face ((,class (:foreground ,prep :bold nil))))
+     `(font-lock-negation-char-face ((,class (:foreground ,cyan :bold nil))))
 
      ;; Kaolin faces
      `(kaolin-boolean ((,class (:foreground ,bool))))
@@ -335,6 +344,7 @@
      `(org-checkbox ((,class (:foreground ,faded-blue :bold ,bold))))
      `(org-todo ((,class (:foreground ,red :bold ,bold))))
      `(org-done ((,class (:foreground ,lime  :bold ,bold))))
+     `(org-headline-done ((,class (:foreground ,teal-blue  :bold nil))))
      `(org-checkbox-statistics-todo ((,class (:foreground ,faded-blue :bold ,bold))))
      `(org-checkbox-statistics-done ((,class (:foreground ,lime :bold ,bold))))
      `(org-code ((,class (:foreground ,green))))

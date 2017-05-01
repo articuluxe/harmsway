@@ -183,6 +183,9 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(font-lock-warning-face ((t (:foreground ,zenburn-yellow-2 :weight bold))))
 
    `(c-annotation-face ((t (:inherit font-lock-constant-face))))
+;;;;; man
+   '(Man-overstrike ((t (:inherit font-lock-keyword-face))))
+   '(Man-underline  ((t (:inherit (font-lock-string-face underline)))))
 ;;;;; newsticker
    `(newsticker-date-face ((t (:foreground ,zenburn-fg))))
    `(newsticker-default-face ((t (:foreground ,zenburn-fg))))
@@ -201,6 +204,9 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(newsticker-treeview-obsolete-face ((t (:foreground ,zenburn-red))))
    `(newsticker-treeview-old-face ((t (:foreground ,zenburn-bg+3))))
    `(newsticker-treeview-selection-face ((t (:background ,zenburn-bg-1 :foreground ,zenburn-yellow))))
+;;;;; woman
+   '(woman-bold   ((t (:inherit font-lock-keyword-face))))
+   '(woman-italic ((t (:inherit (font-lock-string-face italic)))))
 ;;;; Third-party
 ;;;;; ace-jump
    `(ace-jump-face-background
@@ -314,6 +320,7 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(cider-test-failure-face ((t (:background ,zenburn-red-4))))
    `(cider-test-error-face ((t (:background ,zenburn-magenta))))
    `(cider-test-success-face ((t (:background ,zenburn-green-1))))
+   `(cider-fringe-good-face ((t (:foreground ,zenburn-green+4))))
 ;;;;; circe
    `(circe-highlight-nick-face ((t (:foreground ,zenburn-cyan))))
    `(circe-my-message-face ((t (:foreground ,zenburn-fg))))
@@ -611,6 +618,7 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(gnus-group-news-low-empty ((t (:foreground ,zenburn-bg+2))))
    `(gnus-signature ((t (:foreground ,zenburn-yellow))))
    `(gnus-x ((t (:background ,zenburn-fg :foreground ,zenburn-bg))))
+   `(mm-uu-extract ((t (:background ,zenburn-bg-05 :foreground ,zenburn-green+1))))
 ;;;;; guide-key
    `(guide-key/highlight-command-face ((t (:foreground ,zenburn-blue))))
    `(guide-key/key-face ((t (:foreground ,zenburn-green))))

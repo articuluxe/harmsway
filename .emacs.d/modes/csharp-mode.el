@@ -1157,7 +1157,9 @@ Currently handled:
     (goto-char beg)
     (while (re-search-forward "^\\s-*#\\(region\\|pragma\\) " end t)
       (when (looking-at "\\w")
-        (put-text-property (point) (1+ (point))
+        ;; mark the space separating the directive from the comment
+        ;; text as comment starter to allow correct word movement
+        (put-text-property (1- (point)) (point)
                            'syntax-table (string-to-syntax "< b"))))))
 
 ;; C# does generics.  Setting this to t tells the parser to put
@@ -2972,7 +2974,7 @@ Key bindings:
   (unless (or c-file-style
               (stringp c-default-style)
               (assq 'csharp-mode c-default-style))
-    (c-set-style "C#"))
+    (c-set-style "C#" 'do-not-override-customized-values))
 
   ;; `c-common-init' initializes most of the components of a CC Mode
   ;; buffer, including setup of the mode menu, font-lock, etc.

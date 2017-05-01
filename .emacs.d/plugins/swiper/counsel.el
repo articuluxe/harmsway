@@ -2232,6 +2232,7 @@ INITIAL-INPUT can be given as the initial minibuffer input."
 
 ;;** `counsel-package'
 (defvar package--initialized)
+(defvar package-alist)
 (defvar package-archive-contents)
 (declare-function package-installed-p "package")
 (declare-function package-delete "package")
@@ -2928,7 +2929,6 @@ Any desktop entries that fail to parse are recorded in `counsel-linux-apps-fault
   (unless company-candidates
     (company-complete))
   (when company-point
-    (company-complete-common)
     (when (looking-back company-common (line-beginning-position))
       (setq ivy-completion-beg (match-beginning 0))
       (setq ivy-completion-end (match-end 0)))
