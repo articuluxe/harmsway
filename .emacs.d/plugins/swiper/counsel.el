@@ -445,9 +445,21 @@ Update the minibuffer with the amount of lines collected every
          (push (symbol-name vv) cands))))
     cands))
 
+(defun counsel-describe-variable-transformer (var)
+  "Propertize VAR if it's a custom variable."
+  (if (custom-variable-p (intern var))
+      (propertize var 'face 'ivy-highlight-face)
+    var))
+
+(ivy-set-display-transformer
+ 'counsel-describe-variable 'counsel-describe-variable-transformer)
+
 ;;;###autoload
 (defun counsel-describe-variable ()
-  "Forward to `describe-variable'."
+  "Forward to `describe-variable'.
+
+Variables declared using `defcustom' are highlighted according to
+`ivy-highlight-face'."
   (interactive)
   (let ((enable-recursive-minibuffers t))
     (ivy-read
@@ -469,9 +481,21 @@ Update the minibuffer with the amount of lines collected every
  '(("I" counsel-info-lookup-symbol "info")
    ("d" counsel--find-symbol "definition")))
 
+(defun counsel-describe-function-transformer (function-name)
+  "Propertize FUNCTION-NAME if it's an interactive function."
+  (if (commandp (intern function-name))
+      (propertize function-name 'face 'ivy-highlight-face)
+    function-name))
+
+(ivy-set-display-transformer
+ 'counsel-describe-function 'counsel-describe-function-transformer)
+
 ;;;###autoload
 (defun counsel-describe-function ()
-  "Forward to `describe-function'."
+  "Forward to `describe-function'.
+
+Interactive functions \(i.e., commands) are highlighted according
+to `ivy-highlight-face'."
   (interactive)
   (let ((enable-recursive-minibuffers t))
     (ivy-read "Describe function: "
