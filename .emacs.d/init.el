@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-04-24 22:43:52 dharms>
+;; Modified Time-stamp: <2017-05-04 08:43:33 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -223,6 +223,15 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 
 (load-library "compiling")
 (load-library "coding")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; proviso ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(eval-and-compile
+  (setq load-path (cons (concat my/user-directory "ext/proviso/") load-path)))
+(use-package proviso
+  :disabled
+  :bind (("C-c g" . proviso-grep)
+         )
+  )
 
 (use-package custom-utils
   :bind (("C-x C-M-e" . sanityinc/eval-last-sexp-or-region)
