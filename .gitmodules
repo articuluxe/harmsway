@@ -1,0 +1,3 @@
+[submodule "proviso"]
+	path = ext/proviso
+	url = https://github.com/danrharms/proviso.git
