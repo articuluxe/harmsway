@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-05-09 07:29:42 dharms>
+;; Modified Time-stamp: <2017-05-09 08:47:31 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1500,6 +1500,51 @@ Each value is a cons cell (`description' . `activation-function').")
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dired ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; easily go to top or bottom
+;; from fuco1.github.io
+(defmacro my/beginning-of-buffer (mode &rest forms)
+  "Define a special form of `beginning-of-buffer' in MODE.
+Moves point to (point-min); then FORMS are evaluated."
+  (declare (indent 1))
+  (let ((fname (intern (concat "my/" (symbol-name mode) "-beginning-of-buffer")))
+        (mode-map (intern (concat (symbol-name mode) "-mode-map")))
+        (mode-hook (intern (concat (symbol-name mode) "-mode-hook"))))
+    `(progn
+       (defun ,fname ()
+         (interactive)
+         (let ((p (point)))
+           (goto-char (point-min))
+           ,@forms
+           (when (= p (point))
+             (goto-char (point-min)))))
+       (add-hook ',mode-hook
+                 (lambda()
+                   (define-key ,mode-map
+                     [remap beginning-of-buffer] ',fname))))))
+
+(defmacro my/end-of-buffer (mode &rest forms)
+  "Define a special form of `end-of-buffer' in MODE.
+Moves point to (point-max); then FORMS are evaluated."
+  (declare (indent 1))
+  (let ((fname (intern (concat "my/" (symbol-name mode) "-end-of-buffer")))
+        (mode-map (intern (concat (symbol-name mode) "-mode-map")))
+        (mode-hook (intern (concat (symbol-name mode) "-mode-hook"))))
+    `(progn
+       (defun ,fname ()
+         (interactive)
+         (let ((p (point)))
+           (goto-char (point-max))
+           ,@forms
+           (when (= p (point))
+             (goto-char (point-max)))))
+       (add-hook ',mode-hook
+                 (lambda()
+                   (define-key ,mode-map
+                     [remap end-of-buffer] ',fname))))))
+(my/beginning-of-buffer dired
+                        (while (not (ignore-errors (dired-get-filename)))
+                          (dired-next-line 1)))
+(my/end-of-buffer dired (dired-previous-line 1))
 (use-package dired
   :defer t
   :init
@@ -1571,23 +1616,6 @@ Each value is a cons cell (`description' . `activation-function').")
             (darwin "open")
             (gnu/linux "open")
             ) nil (dired-get-marked-files t current-prefix-arg)))
-
-  ;; easily go to top or bottom
-  (defun dired-back-to-top()
-    (interactive)
-    (let ((sorting-by-date (string-match-p dired-sort-by-date-regexp
-                                           dired-actual-switches)))
-      (goto-char (point-min))
-      (dired-next-line
-       (if sorting-by-date 2 4))))
-  (define-key dired-mode-map
-    (vector 'remap 'beginning-of-buffer) 'dired-back-to-top)
-
-  (defun dired-jump-to-bottom() (interactive)
-         (goto-char (point-max))
-         (dired-next-line -1))
-  (define-key dired-mode-map
-    (vector 'remap 'end-of-buffer) 'dired-jump-to-bottom)
 
   (defun my-dired-do-command (command)
     "Run command on marked files. Any files not already open will be opened.
