@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-05-04 08:43:33 dharms>
+;; Modified Time-stamp: <2017-05-09 07:29:42 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -710,8 +710,19 @@ line."
 (eval-and-compile
   (setq load-path (cons (concat my/plugins-directory "multiple-cursors/")
                         load-path)))
+(defun mc/add-cursor ()
+  "Add a fake cursor at point."
+  (interactive)
+  (require 'multiple-cursors)
+  (mc/create-fake-cursor-at-point))
+(defun mc/activate ()
+  "Activate `multiple-cursors-mode'."
+  (interactive)
+  (require 'multiple-cursors)
+  (mc/maybe-multiple-cursors-mode))
 (use-package multiple-cursors
-  :bind (("C-\\ C-\\" . mc/edit-lines)
+  :bind (
+         ("C-\\ C-\\ C-\\" . mc/edit-lines)
          ("C-\\ C-a" . mc/edit-beginnings-of-lines)
          ("C-\\ C-e" . mc/edit-ends-of-lines)
          ("C-\\ /" . set-rectangular-region-anchor)
@@ -765,6 +776,8 @@ line."
          ("C-\\ C-SPC" . mc/mark-pop)
 
          ("C-S-<mouse-1>" . mc/add-cursor-on-click)
+         ("C-\\ C-\\ C-." . mc/add-cursor)
+         ("C-c C-\\" . mc/activate)
          )
   :init
   (setq mc/list-file (concat my/user-directory "mc-lists.el"))
