@@ -1,11 +1,11 @@
 #!/usr/bin/env sh
 # -*- Mode: sh -*-
 # tar-world.sh --- tar up important configuration files
-# Copyright (C) 2015, 2016  Dan Harms (dharms)
+# Copyright (C) 2015-2017  Dan Harms (dharms)
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Friday, May 29, 2015
 # Version: 1.0
-# Modified Time-stamp: <2016-09-17 10:12:53 dharms>
+# Modified Time-stamp: <2017-05-09 07:10:57 dharms>
 # Modified by: Dan Harms
 # Keywords: configuration
 
@@ -37,6 +37,7 @@ fi
 
 $tar c"$verbose"f $dest config doc src .gdbinit .gnupg
 $tar u"$verbose"f $dest --exclude=*.elc .emacs.d
+$tar u"$verbose"f $dest --transform=s%ext%.emacs.d/ext% ext
 $tar u"$verbose"f $dest --transform=s/scripts/bin/ scripts
 $tar u"$verbose"f $dest --transform=s/bash\\/// bash
 $tar u"$verbose"f $dest --transform=s/tcsh\\/// tcsh
