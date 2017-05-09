@@ -1,7 +1,7 @@
 ;;; twilight-theme.el --- Twilight Color Theme for Emacs.
 
 ;; Copyright (C) 2008 Marcus Crafter <crafterm@redartisan.com>
-;; Copyright (C) 2015-2016 Jason Blevins <jrblevin@sdf.org>
+;; Copyright (C) 2015-2017 Jason Blevins <jrblevin@sdf.org>
 
 ;; Author: Marcus Crafter
 ;;	Jason Blevins
@@ -178,6 +178,16 @@
    `(isearch ((t (:foreground ,tw-bg :background ,tw-light-org))))
    `(isearch-fail ((t (:foreground ,tw-bg :background ,tw-mg-1))))
    `(isearch-lazy-highlight-face ((t (:foreground ,tw-fg :background ,tw-blu))))
+
+   ;; imenu-list
+   `(imenu-list-entry-face-0 ((t (:foreground ,tw-pale-org))))
+   `(imenu-list-entry-face-1 ((t (:foreground ,tw-light-org))))
+   `(imenu-list-entry-face-2 ((t (:foreground ,tw-med-org))))
+   `(imenu-list-entry-face-3 ((t (:foreground ,tw-dark-org))))
+   `(imenu-list-entry-subalist-face-0 ((t (:inherit imenu-list-entry-face-0 :weight bold))))
+   `(imenu-list-entry-subalist-face-1 ((t (:inherit imenu-list-entry-face-1 :weight bold))))
+   `(imenu-list-entry-subalist-face-2 ((t (:inherit imenu-list-entry-face-2 :weight bold))))
+   `(imenu-list-entry-subalist-face-3 ((t (:inherit imenu-list-entry-face-3 :weight bold))))
 
    ;; flyspell
    `(flyspell-incorrect ((t (:underline (:style wave :color ,tw-mg-1)))))

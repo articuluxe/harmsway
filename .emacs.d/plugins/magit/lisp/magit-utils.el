@@ -198,7 +198,7 @@ Global settings:
   When `magit-wip-before-change-mode' is enabled then these actions
   can fairly easily be undone: `discard', `reverse',
   `stage-all-changes', and `unstage-all-changes'.  If and only if
-  this mode is enabled then `safe-with-wip' has the same effect
+  this mode is enabled, then `safe-with-wip' has the same effect
   as adding all of these symbols individually."
   :package-version '(magit . "2.1.0")
   :group 'magit-essentials
@@ -551,7 +551,7 @@ See info node `(magit)Debugging Tools' for more information."
   "Bind variables to submatches according to VARLIST then evaluate BODY.
 Bind the symbols in VARLIST to submatches of the current match
 data, starting with 1 and incrementing by 1 for each symbol.  If
-the last match was against a string then that has to be provided
+the last match was against a string, then that has to be provided
 as STRING."
   (declare (indent 2) (debug (listp form body)))
   (let ((s (cl-gensym "string"))
@@ -567,7 +567,7 @@ as STRING."
 
 (defun magit-delete-match (&optional num)
   "Delete text matched by last search.
-If optional NUM is specified only delete that subexpression."
+If optional NUM is specified, only delete that subexpression."
   (delete-region (match-beginning (or num 0))
                  (match-end (or num 0))))
 
@@ -640,43 +640,6 @@ and https://github.com/magit/magit/issues/2295."
           ;; This `nreverse' call is the only code change made to the
           ;; `completion-pcm--all-completions' that shipped with Emacs 25.1.
           (nreverse poss))))))
-
-;;; Kludges for Org
-
-(eval-when-compile
-  (require 'org-element nil t)
-  (require 'ox-extra nil t))
-(declare-function org-element-adopt-elements  "org-element"
-                  (parent &rest children))
-(declare-function org-element-contents        "org-element" (element))
-(declare-function org-element-extract-element "org-element" (element))
-(declare-function org-element-map             "org-element"
-                  (data types fun &optional info
-                        first-match no-recursion with-affiliated))
-(declare-function org-element-type            "org-element" (element))
-
-(with-eval-after-load 'ox-extra ; see #2914
-  (defun org-extra--merge-sections (data _backend info)
-    (org-element-map data 'headline
-      (lambda (hl)
-        (let ((sections
-               (cl-loop
-                for el in (org-element-map (org-element-contents hl)
-                              '(headline section) #'identity info)
-                until (eq (org-element-type el) 'headline)
-                collect el)))
-          (when (and sections
-                     (> (length sections) 1))
-            (apply #'org-element-adopt-elements
-                   (car sections)
-                   (cl-mapcan (lambda (s) (org-element-contents s))
-                              (cdr sections)))
-            (mapc #'org-element-extract-element (cdr sections)))))
-      info))
-
-  (advice-add 'org-export-ignore-headlines :after
-              'org-extra--merge-sections
-              '((name . "org-export-ignore-headlines--merge-sections"))))
 
 ;;; Kludges for Incompatible Modes
 

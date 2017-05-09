@@ -191,7 +191,7 @@ called.  If any of them returns nil, then the commit is not
 performed and the buffer is not killed.  The user should then
 fix the issue and try again.
 
-The functions are called with one argument.  If it is non-nil
+The functions are called with one argument.  If it is non-nil,
 then that indicates that the user used a prefix argument to
 force finishing the session despite issues.  Functions should
 usually honor this wish and return non-nil."
@@ -235,6 +235,9 @@ already using it, then you probably shouldn't start doing so."
   :safe 'numberp
   :type '(choice (const :tag "use regular fill-column")
                  number))
+
+(make-obsolete-variable 'git-commit-fill-column 'fill-column
+                        "Magit 2.11.0" 'set)
 
 (defcustom git-commit-known-pseudo-headers
   '("Signed-off-by" "Acked-by" "Cc"
@@ -473,6 +476,7 @@ to `git-commit-fill-column'."
   (when (and (numberp git-commit-fill-column)
              (not (local-variable-p 'fill-column)))
     (setq fill-column git-commit-fill-column))
+  (setq-local comment-auto-fill-only-comments nil)
   (turn-on-auto-fill))
 
 (defun git-commit-turn-on-flyspell ()

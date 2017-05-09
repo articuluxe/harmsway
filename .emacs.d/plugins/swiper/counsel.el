@@ -1836,7 +1836,7 @@ This uses `counsel-ag' with `counsel-pt-base-command' replacing
     (counsel-ag initial-input)))
 
 ;;** `counsel-rg'
-(defcustom counsel-rg-base-command "rg -i --no-heading --line-number %s ."
+(defcustom counsel-rg-base-command "rg -i --no-heading --line-number --max-columns 150 %s ."
   "Used to in place of `counsel-rg-base-command' to search with
 ripgrep using `counsel-rg'."
   :type 'string
@@ -2417,6 +2417,10 @@ Additional Actions:
     (insert (substring-no-properties s))
     (setq ivy-completion-end (point))))
 
+(defun counsel-yank-pop-action-remove (s)
+  "Remove S from the kill ring."
+  (setq kill-ring (delete s kill-ring)))
+
 ;;;###autoload
 (defun counsel-yank-pop ()
   "Ivy replacement for `yank-pop'."
@@ -2441,6 +2445,10 @@ Additional Actions:
       (ivy-read "kill-ring: " candidates
                 :action 'counsel-yank-pop-action
                 :caller 'counsel-yank-pop))))
+
+(ivy-set-actions
+ 'counsel-yank-pop
+ '(("d" counsel-yank-pop-action-remove "delete")))
 
 ;;** `counsel-imenu'
 (defvar imenu-auto-rescan)

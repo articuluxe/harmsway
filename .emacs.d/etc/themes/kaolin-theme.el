@@ -5,7 +5,7 @@
 ;; Author: 0rdy <mail@0rdy.com>
 ;; URL: https://github.com/0rdy/kaolin-theme
 ;; Package-Requires: ((emacs "24"))
-;; Version: 0.6.1
+;; Version: 0.7.1
 
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -54,8 +54,8 @@
       (dark-gray       "#2a2a2a")
       (dim-gray        "#353535")
       (gray            "#545c5e")
-      ;; (light-gray   "#788486")
-      (light-gray      "#859092")
+      ;; (light-gray      "#859092")
+      (light-gray      "#9191a2")
       ;; (white           "#c5c8c6")
       (white           "#c8c8d0")
 
@@ -73,10 +73,14 @@
       ;; (deep-pink    "#d75f91")
       (deep-pink       "#d24b83")
 
-      ;; (orange          "#d2ab5d")
       (alt-orange      "#d9a76f")
       (orange          "#dbac66")
       (light-orange    "#ddc085")
+      ;; (pure-orange     "#cc3700")
+      ;; (pure-orange     "#cc4800")
+      ;; (pure-orange     "#cc5900")
+      ;; (pure-orange     "#cc6a00")
+
       (dark-yellow     "#555a2f")
       (yellow          "#acb370")
       (alt-yellow      "#be9266")
@@ -227,6 +231,7 @@
      `(default ((,class (:background ,bg1 :foreground ,fg1))))
      `(warning ((,class (:foreground ,warning))))
      `(error ((,class (:foreground ,err))))
+     ;; TODO: lighther shadow
      `(shadow ((,class (:foreground ,gray))))
      `(region ((,class (:background ,bg3))))
      `(secondary-selection ((,class (:background ,green :foreground ,bg1))))
@@ -240,7 +245,7 @@
      `(escape-glyph ((,class (:background nil :foreground ,cyan))))
 
      `(menu ((,class (:background ,bg2 :foreground ,fg2))))
-     `(header-line ((,class (:background ,bg4 :foreground ,teal))))
+     `(header-line ((,class (:background ,bg2 :foreground ,jade))))
      `(tooltip ((,class (:foreground ,tooltip-bg :foreground ,tooltip-fg))))
 
      `(match ((,class (:background nil :foreground ,cyan))))
@@ -256,6 +261,7 @@
      `(custom-changed ((,class (:background nil :foreground ,orange))))
      `(custom-invalid ((,class (:background nil :foreground ,red))))
      `(custom-face-tag ((,class (:background nil :foreground ,purple :bold ,bold))))
+     `(custom-link ((,class (:background nil :foreground ,teal :bold ,bold))))
      `(widget-button ((,class (:background nil :foreground ,green :bold ,bold))))
      `(widget-field ((,class (:background ,bg3 :foreground ,fg1 :box (:line-width 1 :color ,bg2 :style nil)))))
 
@@ -440,7 +446,7 @@
      `(slime-repl-inputed-output-face ((,class (:foreground ,type))))
 
      ;; Rainbow delimeters
-     `(show-paren-match-face ((,class (:background ,green :foreground ,bg2))))
+     `(show-paren-match-face ((,class (:background ,jade :foreground ,bg2))))
      `(show-paren-mismatch-face ((,class (:background ,red :foreground ,bg2))))
      `(rainbow-delimiters-unmatched-face ((,class :foreground ,warning)))
      `(rainbow-delimiters-depth-1-face ((,class (:foreground ,rb1))))
@@ -647,17 +653,43 @@
      ;; FIXME: find code with following face
      ;; `(tuareg-font-lock-multistage-face ((,class (:foreground ,alt-red))))
 
+     ;; Nim
+     `(nim-font-lock-export-face ((,class (:inherit font-lock-function-name-face :italic nil))))
+
+     ;; Ace-window
+     `(aw-leading-char-face ((,class (:foreground ,deep-pink :bold ,bold))))
+     `(aw-background-face ((,class (:foreground ,bg4 :bold ,bold))))
+
+     ;; Latex/Auctex
+     ;; `(font-latex-bold-face ((,class (:inherit bold))))
+     ;; `(font-latex-italic-face ((,class (:inherit italic))))
+     `(font-latex-warning-face ((,class (:inherit warning))))
+
+     `(font-latex-string-face ((,class (:inherit font-lock-string-face))))
+     `(font-latex-math-face ((,class (:foreground ,violet))))
+     `(font-latex-sedate-face ((,class (:foreground ,teal-blue))))
+     `(font-latex-script-char-face ((,class (:foreground ,violet))))
+     `(font-latex-sectioning-0-face ((,class (:foreground ,wheat :bold ,bold))))
+     `(font-latex-sectioning-1-face ((,class (:inherit font-latex-sectioning-0-face))))
+     `(font-latex-sectioning-2-face ((,class (:inherit font-latex-sectioning-0-face))))
+     `(font-latex-sectioning-3-face ((,class (:inherit font-latex-sectioning-0-face))))
+     `(font-latex-sectioning-4-face ((,class (:inherit font-latex-sectioning-0-face))))
+     `(font-latex-sectioning-5-face ((,class (:inherit font-latex-sectioning-0-face))))
+
      ;; which-function-mode
      `(which-func ((,class (:foreground ,orange))))
 
      ;; Evil ex
      `(evil-ex-info ((,class (:foreground ,orange))))
-     `(evil-ex-substitute-matches ((,class (:background ,bg1 :foreground ,red :underline ,underline))))
-     `(evil-ex-substitute-replacement ((,class (:background ,bg1 :foreground ,light-green))))
+     `(evil-ex-substitute-matches ((,class (:background nil :foreground ,red :underline ,underline))))
+     `(evil-ex-substitute-replacement ((,class (:background nil :foreground ,light-green))))
      '(evil-ex-lazy-highlight ((t (:inherit lazy-highlight))))
 
      ;; Ivy & Swiper
      `(ivy-current-match ((,class (:background nil :foreground ,light-green :bold nil))))
+     `(ivy-match-required-face ((,class (:background nil :foreground ,alt-red :bold nil))))
+     `(ivy-confirm-face ((,class (:background nil :foreground ,teal-green))))
+     `(ivy-action ((,class (:background nil :foreground ,teal-green :bold ,bold))))
      `(ivy-minibuffer-match-face-1 ((,class (:background ,bg3 :foreground ,fg1))))
      `(ivy-minibuffer-match-face-2 ((,class (:background ,dark-blue :foreground ,teal-blue :bold ,bold))))
      `(ivy-minibuffer-match-face-3 ((,class (:background ,dark-yellow :foreground ,light-orange :bold ,bold))))
