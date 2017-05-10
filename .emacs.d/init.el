@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-05-09 08:47:31 dharms>
+;; Modified Time-stamp: <2017-05-10 17:29:01 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -229,7 +229,11 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (setq load-path (cons (concat my/user-directory "ext/proviso/") load-path)))
 (use-package proviso
   :disabled
-  :bind (("C-c g" . proviso-grep)
+  ;; :demand t
+  :bind (("C-c pg" . proviso-grep)
+         ("C-c pt" . proviso-gentags-generate-tags)
+         ("C-c ppd" . proviso-display-echo-project-names)
+         ("C-c ppp" . proviso-display-projects)
          )
   )
 
@@ -288,7 +292,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
  :bind ("C-c g" . my/grep)
  :commands grep)
 (use-package custom-coding
-  :bind (("C-c p" . print-current-function)
+  :bind (("C-c C-p" . print-current-function)
          ("C-c ii" . add-header-include-ifdefs)
          ("C-c h" . insert-class-header)
          ("C-c c" . insert-cast)
