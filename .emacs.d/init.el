@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-05-10 17:29:01 dharms>
+;; Modified Time-stamp: <2017-05-11 06:09:07 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -40,6 +40,28 @@
                             ,(concat my/user-directory "modes/")
                             ,(concat my/user-directory "custom/"))
                           load-path))
+  (setq load-path (append
+                   `(
+                     ,(concat my/user-directory "ext/proviso/")
+                     ,(concat my/plugins-directory "multi-line/")
+                     ,(concat my/plugins-directory "emacs-refactor/")
+                     ,(concat my/plugins-directory "expand-region/")
+                     ,(concat my/plugins-directory "multiple-cursors/")
+                     ,(concat my/plugins-directory "elnode/")
+                     ,(concat my/plugins-directory "magit/lisp/")
+                     ,(concat my/plugins-directory "bookmark+/")
+                     ,(concat my/plugins-directory "hydra/")
+                     ,(concat my/plugins-directory "swiper/")
+                     ,(concat my/plugins-directory "powerline/")
+                     ,(concat my/plugins-directory "smart-mode-line/")
+                     ,(concat my/plugins-directory "sunrise/")
+                     ,(concat my/plugins-directory "diff-hl/")
+                     ,(concat my/plugins-directory "vlf/")
+                     ,(concat my/plugins-directory "rtags/")
+                     ,(concat my/plugins-directory "auto-complete/")
+                     ,(concat my/plugins-directory "yasnippet/")
+                     ,(concat my/elisp-directory "emacs-jedi/")
+                     ) load-path))
   )
 (defconst my/user-settings
   (concat my/user-directory "settings/user/" user-login-name))
@@ -225,8 +247,6 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (load-library "coding")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; proviso ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(eval-and-compile
-  (setq load-path (cons (concat my/user-directory "ext/proviso/") load-path)))
 (use-package proviso
   :disabled
   ;; :demand t
@@ -462,9 +482,6 @@ line."
 (delete-selection-mode 1)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; multi-line ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(eval-and-compile
-  (setq load-path (cons (concat my/plugins-directory "multi-line/")
-                        load-path)))
 (use-package
   multi-line
   :bind (("C-`" . multi-line)
@@ -472,9 +489,6 @@ line."
          ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; emacs-refactor ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(eval-and-compile
-  (setq load-path (cons (concat my/plugins-directory "emacs-refactor/")
-                        load-path)))
 (use-package emr
   :defer t
   :init
@@ -682,9 +696,6 @@ line."
 (use-package discover-my-major :bind ("C-h C-m" . discover-my-major))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; expand-region ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(eval-and-compile
-  (setq load-path (cons (concat my/plugins-directory "expand-region/")
-                        load-path)))
 (use-package expand-region
   :bind (("C-'" . er/expand-region)
          ("M-' '" . er/expand-region)
@@ -711,9 +722,6 @@ line."
  :bind ("C-x r RET" . iedit-rectangle-mode))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; multiple-cursors ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(eval-and-compile
-  (setq load-path (cons (concat my/plugins-directory "multiple-cursors/")
-                        load-path)))
 (defun mc/add-cursor ()
   "Add a fake cursor at point."
   (interactive)
@@ -848,18 +856,12 @@ line."
         ("M-s M-s h." . 0xc-convert-point)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; elnode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(eval-and-compile
-  (setq load-path (cons (concat my/plugins-directory "elnode/")
-                        load-path)))
 (use-package elnode)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; magit ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defvar my/git-keymap)
 (define-prefix-command 'my/git-keymap)
 (global-set-key "\M-sm" 'my/git-keymap)
-(eval-and-compile
-  (setq load-path (cons (concat my/plugins-directory "magit/lisp/")
-                        load-path)))
 (defun my/enter-magit-status-fullscreen ()
   "Enter magit's status window, filling the entire frame."
   (interactive)
@@ -1003,9 +1005,6 @@ line."
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; bookmark+ ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(eval-and-compile
-  (setq load-path (cons (concat my/plugins-directory "bookmark+/")
-                        load-path)))
 (use-package bookmark+
   :bind (
          ;; C-x p <left>
@@ -1191,9 +1190,6 @@ Each value is a cons cell (`description' . `activation-function').")
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; hydra ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(eval-and-compile
-  (setq load-path (cons (concat my/plugins-directory "hydra/")
-                        load-path)))
 (use-package hydra
   :defer t
   :init
@@ -1209,9 +1205,6 @@ Each value is a cons cell (`description' . `activation-function').")
 (bind-key "C-c b" 'bmkp-occur-create-autonamed-bookmarks occur-mode-map)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; swiper ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(eval-and-compile
-  (setq load-path (cons (concat my/plugins-directory "swiper/")
-                        load-path)))
 (use-package swiper
   :if (not (version< emacs-version "24.1"))
   :bind (("M-s s" . swiper)
@@ -1320,10 +1313,6 @@ Each value is a cons cell (`description' . `activation-function').")
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; powerline ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(eval-and-compile
-  (setq load-path (cons (concat my/plugins-directory "powerline/")
-                        load-path)))
-
 ;; does not interact with rich-minority mode: try delight.el?
 ;; (powerline-default-theme)
 (use-package powerline)
@@ -1342,9 +1331,6 @@ Each value is a cons cell (`description' . `activation-function').")
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smart-mode-line ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(eval-and-compile
-  (setq load-path (cons (concat my/plugins-directory "smart-mode-line/")
-                        load-path)))
 (use-package smart-mode-line
   :if (version<= "24.3" emacs-version)
   :config
@@ -1634,9 +1620,6 @@ Moves point to (point-max); then FORMS are evaluated."
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; sunrise-commander ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(eval-and-compile
-  (setq load-path (cons (concat my/plugins-directory "sunrise/")
-                        load-path)))
 (use-package sunrise-commander
   :bind ("C-c 0s" . sunrise)
   :init
@@ -1768,9 +1751,6 @@ Moves point to (point-max); then FORMS are evaluated."
          ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; diff-hl ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(eval-and-compile
-  (setq load-path (cons (concat my/plugins-directory "diff-hl/")
-                        load-path)))
 (use-package  diff-hl-dired
   :init (add-hook 'dired-mode-hook 'diff-hl-dired-mode-unless-remote))
 (use-package diff-hl
@@ -1924,9 +1904,6 @@ Moves point to (point-max); then FORMS are evaluated."
   (bash-completion-setup))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; vlf ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(eval-and-compile
-  (setq load-path (cons (concat my/plugins-directory "vlf/")
-                        load-path)))
 (use-package vlf-setup
   :defines (vlf-tune-enabled vlf-batch-size vlf-tune-enabled)
   :init
@@ -1953,9 +1930,6 @@ Moves point to (point-max); then FORMS are evaluated."
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; rtags ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(eval-and-compile
-  (setq load-path (cons (concat my/plugins-directory "rtags/")
-                        load-path)))
 (defvar rtags-exec (executable-find "rdm"))
 (use-package rtags
   :disabled
@@ -1980,9 +1954,6 @@ Moves point to (point-max); then FORMS are evaluated."
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-complete ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(eval-and-compile
-  (setq load-path (cons (concat my/plugins-directory "auto-complete/")
-                        load-path)))
 (use-package auto-complete
   :init
   (add-hook 'emacs-lisp-mode-hook 'ac-emacs-lisp-mode-setup)
@@ -2103,9 +2074,6 @@ Moves point to (point-max); then FORMS are evaluated."
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; YASnippet ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(eval-and-compile
-  (setq load-path (cons (concat my/plugins-directory "yasnippet/")
-                        load-path)))
 (use-package yasnippet
   :init
   (add-to-list 'safe-local-variable-values '(require-final-newline . nil))
@@ -2727,9 +2695,6 @@ This may perform related customization."
     (add-to-list 'org-src-lang-modes '("plantuml" . plantuml))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; python-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(eval-and-compile
-  (setq load-path (cons (concat my/elisp-directory "emacs-jedi/")
-                        load-path)))
 (use-package python
   :if (executable-find "python")
   :defer t
