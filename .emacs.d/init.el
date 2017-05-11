@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-05-11 06:09:07 dharms>
+;; Modified Time-stamp: <2017-05-11 06:22:44 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1160,7 +1160,8 @@ Each value is a cons cell (`description' . `activation-function').")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dumb-jump ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package dumb-jump
-  :bind (("M-o j" . dumb-jump-go)
+  :bind (("M-o M-j" . dumb-jump-go-prompt)
+         ("M-o j" . dumb-jump-go)
          ("M-o o" . dumb-jump-go-other-window)
          ("M-o b" . dumb-jump-back)
          ("M-o q" . dumb-jump-quick-look)
