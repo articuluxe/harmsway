@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-05-19 14:13:07 dan.harms>
+;; Modified Time-stamp: <2017-05-19 14:31:28 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -789,7 +789,7 @@ line."
 
          ("C-S-<mouse-1>" . mc/add-cursor-on-click)
          ("C-\\ C-\\ C-." . mc/add-cursor)
-         ("C-c C-\\" . mc/activate)
+         ("C-\\ C-\\ C-c" . mc/activate)
          )
   :init
   (setq mc/list-file (concat my/user-directory "mc-lists.el"))
