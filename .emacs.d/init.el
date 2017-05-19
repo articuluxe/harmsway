@@ -63,6 +63,7 @@
                      ,(concat my/elisp-directory "emacs-jedi/")
                      ) load-path))
   )
+(setq load-prefer-newer t)
 (defconst my/user-settings
   (concat my/user-directory "settings/user/" user-login-name))
 (load my/user-settings t)
