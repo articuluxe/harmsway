@@ -607,21 +607,27 @@ and `:slant'."
 (put 'magit-diff-section-file-args 'permanent-local t)
 (put 'magit-diff-section-arguments 'permanent-local t)
 
+(defun magit-diff-get-buffer-args ()
+  (cond ((and magit-use-sticky-arguments
+              (derived-mode-p 'magit-diff-mode))
+         (list (nth 2 magit-refresh-args)
+               (nth 3 magit-refresh-args)))
+        ((and (eq magit-use-sticky-arguments t)
+              (--when-let (magit-mode-get-buffer 'magit-diff-mode)
+                (with-current-buffer it
+                  (list (nth 2 magit-refresh-args)
+                        (nth 3 magit-refresh-args))))))
+        (t
+         (list (default-value 'magit-diff-arguments) nil))))
+
 (defun magit-diff-arguments (&optional refresh)
   (cond ((memq magit-current-popup '(magit-diff-popup magit-diff-refresh-popup))
          (magit-popup-export-file-args magit-current-popup-args))
-        ((derived-mode-p 'magit-diff-mode)
-         (list (nth 2 magit-refresh-args)
-               (nth 3 magit-refresh-args)))
-        (refresh
+        ((and refresh (not (derived-mode-p 'magit-diff-mode)))
          (list magit-diff-section-arguments
                magit-diff-section-file-args))
         (t
-         (-if-let (buffer (magit-mode-get-buffer 'magit-diff-mode))
-             (with-current-buffer buffer
-               (list (nth 2 magit-refresh-args)
-                     (nth 3 magit-refresh-args)))
-           (list (default-value 'magit-diff-arguments) nil)))))
+         (magit-diff-get-buffer-args))))
 
 ;;;###autoload
 (defun magit-diff-popup (arg)
@@ -633,11 +639,7 @@ and `:slant'."
          ;; we should get the current values.  However it is much
          ;; more likely that we will end up updating the diff buffer,
          ;; and we therefore use the value from that buffer.
-         (-if-let (buffer (magit-mode-get-buffer 'magit-diff-mode))
-             (with-current-buffer buffer
-               (magit-popup-import-file-args (nth 2 magit-refresh-args)
-                                             (nth 3 magit-refresh-args)))
-           (default-value 'magit-diff-arguments))))
+         (apply #'magit-popup-import-file-args (magit-diff-get-buffer-args))))
     (magit-invoke-popup 'magit-diff-popup nil arg)))
 
 ;;;###autoload
@@ -894,6 +896,12 @@ be committed."
 
 (defvar-local magit-buffer-revision-hash nil)
 
+(defun magit-show-commit--arguments ()
+  (-let [(args diff-files) (magit-diff-arguments)]
+    (list args (if (derived-mode-p 'magit-log-mode)
+                   (nth 2 magit-refresh-args)
+                 diff-files))))
+
 ;;;###autoload
 (defun magit-show-commit (rev &optional args files module)
   "Visit the revision at point in another buffer.
@@ -908,7 +916,7 @@ for a revision."
                        (magit-tag-at-point))))
      (nconc (cons (or (and (not current-prefix-arg) atpoint)
                       (magit-read-branch-or-commit "Show commit" atpoint))
-                  (magit-diff-arguments))
+                  (magit-show-commit--arguments))
             (and mcommit (list (magit-section-parent-value
                                 (magit-current-section)))))))
   (require 'magit)
@@ -1140,7 +1148,7 @@ whether `magit-diff-visit-file' uses this function."
 
 (defun magit-display-file-buffer-other-window (buffer)
   "Display BUFFER in another window.
-With a prefix argument display it the current window.
+With a prefix argument display it in the current window.
 Option `magit-display-file-buffer-function' controls
 whether `magit-diff-visit-file' uses this function."
   (if (or current-prefix-arg (get-buffer-window buffer))
@@ -1353,7 +1361,7 @@ commit or stash at point, then prompt for a commit."
                               (`scroll-down (point-max)))))))
           (let ((magit-display-buffer-noselect t))
             (if (eq cmd 'magit-show-commit)
-                (apply #'magit-show-commit rev (magit-diff-arguments))
+                (apply #'magit-show-commit rev (magit-show-commit--arguments))
               (funcall cmd rev))))
       (call-interactively #'magit-show-commit))))
 
@@ -1748,7 +1756,11 @@ Staging and applying changes is documented in info node
 
 \\{magit-revision-mode-map}"
   :group 'magit-revision
-  (hack-dir-local-variables-non-file-buffer))
+  (hack-dir-local-variables-non-file-buffer)
+  (setq imenu-prev-index-position-function
+        #'magit-revision-imenu-prev-index-position-function)
+  (setq imenu-extract-index-name-function
+        #'magit-revision-imenu-extract-index-name-function))
 
 (defun magit-revision-refresh-buffer (rev __const _args files)
   (setq header-line-format
@@ -1756,8 +1768,8 @@ Staging and applying changes is documented in info node
                             " " rev
                             (pcase (length files)
                               (0)
-                              (1 (concat " in file " (car files)))
-                              (_ (concat " in files "
+                              (1 (concat " limited to file " (car files)))
+                              (_ (concat " limited to files "
                                          (mapconcat #'identity files ", ")))))
                     'face 'magit-header-line))
   (setq magit-buffer-revision-hash (magit-rev-parse rev))
@@ -1931,6 +1943,24 @@ or a ref which is not a branch, then it inserts nothing."
          (list offset align-to
                (if magit-revision-use-gravatar-kludge slice2 slice1)
                (if magit-revision-use-gravatar-kludge slice1 slice2)))))))
+
+(defvar-local magit-revision-files nil)
+
+(defun magit-revision-toggle-file-filter ()
+  "Toggle the file restriction of the current revision buffer."
+  (interactive)
+  (with-current-buffer (or (and (derived-mode-p 'magit-revision-mode)
+                                (current-buffer))
+                           (magit-mode-get-buffer 'magit-revision-mode)
+                           (user-error "No revision buffer found"))
+    (let ((files (nth 3 magit-refresh-args)))
+      (unless (or magit-revision-files files)
+        (user-error "No file filter to toggle"))
+      (setf (nth 3 magit-refresh-args) (if (not files)
+                                           magit-revision-files
+                                         (setq magit-revision-files files)
+                                         nil))
+      (magit-refresh))))
 
 ;;; Diff Sections
 
@@ -2423,6 +2453,24 @@ https://github.com/magit/magit/pull/2293 for more details)."
       (diff-fixup-modifs (point-min) (point-max))
       (setq patch (buffer-string)))
     patch))
+
+;;;; Imenu Support
+
+(defun magit-revision-imenu-prev-index-position-function ()
+  "Move point to previous file line in current buffer.
+This function is used as a value for
+`imenu-prev-index-position-function'."
+  (magit-section--backward-find
+   (lambda ()
+     (and (equal (magit-section-type (magit-current-section)) 'file)
+          (equal (magit-section-type (magit-section-parent (magit-current-section))) 'commitbuf)))))
+
+(defun magit-revision-imenu-extract-index-name-function ()
+  "Return imenu name for line at point.
+This function is used as a value for
+`imenu-extract-index-name-function'.  Point should be at the
+beginning of the line."
+  (buffer-substring-no-properties (line-beginning-position) (line-end-position)))
 
 (provide 'magit-diff)
 ;;; magit-diff.el ends here

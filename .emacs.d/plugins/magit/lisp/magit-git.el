@@ -855,6 +855,26 @@ string \"true\", otherwise return nil."
 (defun magit-ref-exists-p (ref)
   (magit-git-success "show-ref" "--verify" ref))
 
+(defun magit-ref-equal (a b)
+  "Return t if the refs A and B are `equal'.
+A symbolic-ref pointing to some ref, is `equal' to that ref,
+as are two symbolic-refs pointing to the same ref."
+  (equal (magit-ref-fullname a)
+         (magit-ref-fullname b)))
+
+(defun magit-ref-eq (a b)
+  "Return t if the refs A and B are `eq'.
+A symbolic-ref is `eq' to itself, but not to the ref it points
+to, or to some other symbolic-ref that points to the same ref."
+  (let ((symbolic-a (magit-symbolic-ref-p a))
+        (symbolic-b (magit-symbolic-ref-p b)))
+    (or (and symbolic-a
+             symbolic-b
+             (equal a b))
+        (and (not symbolic-a)
+             (not symbolic-b)
+             (magit-ref-equal a b)))))
+
 (defun magit-headish ()
   "Return \"HEAD\" or if that doesn't exist the hash of the empty tree."
   (if (magit-no-commit-p)
@@ -997,6 +1017,33 @@ which is different from the current branch and still exists."
     (let ((remote (magit-get "branch" branch "remote")))
       (unless (equal remote ".")
         remote))))
+
+(defun magit-branch-merged-p (branch &optional target)
+  "Return non-nil if BRANCH is either merged into its upstream or TARGET.
+
+If optional TARGET is nil, then check whether BRANCH is merged
+into the current branch instead.  If TARGET is t, then check
+whether BRANCH is merged into any other local branch.  In both
+cases the upstream check is also performed.
+
+If BRANCH isn't merged into its upstream, TARGET is nil, and
+`HEAD' is detached, then return nil, even when BRANCH is merged
+into `HEAD' or some local branch.
+
+BRANCH can also be a revision or non-branch reference, though in
+that case the upstream check obviously is meaningless and always
+fails."
+  (or (magit-branch-merged-into-upstream-p branch)
+      (if (eq target t)
+          (delete (magit-name-local-branch branch)
+                  (magit-list-containing-branches branch))
+        (--when-let (or target (magit-get-current-branch))
+          (magit-git-success "merge-base" "--is-ancestor" branch it)))))
+
+(defun magit-branch-merged-into-upstream-p (branch)
+  "Return t if BRANCH is merged into its upstream."
+  (--when-let (magit-get-upstream-branch branch)
+    (magit-git-success "merge-base" "--is-ancestor" branch it)))
 
 (defun magit-split-branch-name (branch)
   (cond ((member branch (magit-list-local-branch-names))
@@ -1184,6 +1231,9 @@ PATH has to be relative to the super-repository."
              (setf (nth 3 worktree) (substring line 18)))
             ((string-equal line "detached"))))
     (nreverse worktrees)))
+
+(defun magit-symbolic-ref-p (name)
+  (magit-git-success "symbolic-ref" "--quiet" name))
 
 (defun magit-ref-p (rev)
   (or (car (member rev (magit-list-refs)))
