@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-05-19 06:55:01 dharms>
+;; Modified Time-stamp: <2017-05-19 14:13:07 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -845,7 +845,7 @@ line."
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ascii ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package ascii :bind ("M-s M-s a" . ascii-display))
+(use-package ascii :bind ("\e\ea" . ascii-display))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ascii-table ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package ascii-table :commands ascii-table)
