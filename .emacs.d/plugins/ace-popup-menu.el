@@ -1,10 +1,10 @@
 ;;; ace-popup-menu.el --- Replace GUI popup menu with something more efficient -*- lexical-binding: t; -*-
 ;;
-;; Copyright © 2015–2017 Mark Karpov <markkarpov@openmailbox.org>
+;; Copyright © 2015–2017 Mark Karpov <markkarpov92@gmail.com>
 ;;
-;; Author: Mark Karpov <markkarpov@openmailbox.org>
+;; Author: Mark Karpov <markkarpov92@gmail.com>
 ;; URL: https://github.com/mrkkrp/ace-popup-menu
-;; Version: 0.2.0
+;; Version: 0.2.1
 ;; Package-Requires: ((emacs "24.3") (avy-menu "0.1"))
 ;; Keywords: convenience, popup, menu
 ;;
@@ -51,7 +51,7 @@
 
 ;;;###autoload
 (define-minor-mode ace-popup-menu-mode
-  "Toggle `ace-popup-menu-mode' minor mode.
+  "Toggle the `ace-popup-menu-mode' minor mode.
 
 With a prefix argument ARG, enable `ace-popup-menu-mode' if ARG
 is positive, and disable it otherwise.  If called from Lisp,
@@ -60,7 +60,7 @@ enable the mode if ARG is omitted or NIL, and toggle it if ARG is
 
 This minor mode is global. When it's active any call to
 `x-popup-menu' will result in call of `ace-popup-menu'
-instead. This function in turn implements more efficient
+instead. This function in turn implements a more efficient
 interface to select an option from a list. Emacs Lisp code can
 also use `ace-popup-menu' directly, in this case it will work OK
 even if the mode is disabled."
@@ -73,12 +73,12 @@ even if the mode is disabled."
 (defun ace-popup-menu (position menu)
   "Pop up a menu in a temporary window and return user's selection.
 
-The argument POSITION is taken for compatibility and ignored
-unless it's NIL, in this case this function has no effect.  For
-meaning of MENU argument see description of `x-popup-menu'.
+Argument POSITION is taken for compatibility and ignored unless
+it's NIL, in which case this function has no effect.  For meaning
+of MENU argument see documentation for `x-popup-menu'.
 
 Every selectable item in the menu is labeled with a letter (or
-two).  User can press letter corresponding to desired menu item
+two).  User can press a key corresponding to desired menu item
 and he/she is done."
   (when position
     (avy-menu "*ace-popup-menu*"

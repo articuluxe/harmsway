@@ -366,11 +366,12 @@ Update the minibuffer with the amount of lines collected every
     (setq ivy-completion-beg (point))
     (setq ivy-completion-end (point))
     (ivy-read "Unicode name: "
-              (mapcar (lambda (x)
-                        (propertize
-                         (format "%06X % -60s%c" (cdr x) (car x) (cdr x))
-                         'result (cdr x)))
-                      (ucs-names))
+              (nreverse
+               (mapcar (lambda (x)
+                         (propertize
+                          (format "%06X % -60s%c" (cdr x) (car x) (cdr x))
+                          'result (cdr x)))
+                       (ucs-names)))
               :action (lambda (char)
                         (with-ivy-window
                           (delete-region ivy-completion-beg ivy-completion-end)
@@ -443,12 +444,12 @@ Update the minibuffer with the amount of lines collected every
        (when (or (get vv 'variable-documentation)
                  (and (boundp vv) (not (keywordp vv))))
          (push (symbol-name vv) cands))))
-    cands))
+    (delete "" cands)))
 
 (defun counsel-describe-variable-transformer (var)
   "Propertize VAR if it's a custom variable."
   (if (custom-variable-p (intern var))
-      (propertize var 'face 'ivy-highlight-face)
+      (ivy-append-face var 'ivy-highlight-face)
     var))
 
 (ivy-set-display-transformer
@@ -484,7 +485,7 @@ Variables declared using `defcustom' are highlighted according to
 (defun counsel-describe-function-transformer (function-name)
   "Propertize FUNCTION-NAME if it's an interactive function."
   (if (commandp (intern function-name))
-      (propertize function-name 'face 'ivy-highlight-face)
+      (ivy-append-face function-name 'ivy-highlight-face)
     function-name))
 
 (ivy-set-display-transformer
@@ -1929,21 +1930,27 @@ the command."
                    (setq file-name (match-string-no-properties 1 x))
                    (setq line-number (match-string-no-properties 2 x)))
                   (t nil))
-        (find-file file-name)
-        (setq line-number (string-to-number line-number))
-        (if (null counsel-grep-last-line)
-            (progn
-              (goto-char (point-min))
-              (forward-line (1- (setq counsel-grep-last-line line-number))))
-          (forward-line (- line-number counsel-grep-last-line))
-          (setq counsel-grep-last-line line-number))
-        (re-search-forward (ivy--regex ivy-text t) (line-end-position) t)
-        (run-hooks 'counsel-grep-post-action-hook)
-        (if (eq ivy-exit 'done)
-            (swiper--ensure-visible)
-          (isearch-range-invisible (line-beginning-position)
-                                   (line-end-position))
-          (swiper--add-overlays (ivy--regex ivy-text)))))))
+        ;; If the file buffer is already open, just get it. Prevent doing
+        ;; `find-file', as that file could have already been opened using
+        ;; `find-file-literally'.
+        (let ((buf (get-file-buffer file-name)))
+          (unless buf
+            (setq buf (find-file file-name)))
+          (with-current-buffer buf
+            (setq line-number (string-to-number line-number))
+            (if (null counsel-grep-last-line)
+                (progn
+                  (goto-char (point-min))
+                  (forward-line (1- (setq counsel-grep-last-line line-number))))
+              (forward-line (- line-number counsel-grep-last-line))
+              (setq counsel-grep-last-line line-number))
+            (re-search-forward (ivy--regex ivy-text t) (line-end-position) t)
+            (run-hooks 'counsel-grep-post-action-hook)
+            (if (eq ivy-exit 'done)
+                (swiper--ensure-visible)
+              (isearch-range-invisible (line-beginning-position)
+                                       (line-end-position))
+              (swiper--add-overlays (ivy--regex ivy-text)))))))))
 
 (defun counsel-grep-occur ()
   "Generate a custom occur buffer for `counsel-grep'."
@@ -2018,21 +2025,23 @@ the command."
 (defun counsel-grep-or-swiper ()
   "Call `swiper' for small buffers and `counsel-grep' for large ones."
   (interactive)
-  (if (and (buffer-file-name)
-           (not (buffer-narrowed-p))
-           (not (ignore-errors
-                  (file-remote-p (buffer-file-name))))
-           (not (string-match
-                 counsel-compressed-file-regex
-                 (buffer-file-name)))
-           (> (buffer-size)
-              (if (eq major-mode 'org-mode)
-                  (/ counsel-grep-swiper-limit 4)
-                counsel-grep-swiper-limit)))
-      (progn
-        (save-buffer)
-        (counsel-grep))
-    (swiper--ivy (swiper--candidates))))
+  (let ((fname (buffer-file-name)))
+    (if (and fname
+             (not (buffer-narrowed-p))
+             (not (ignore-errors
+                    (file-remote-p fname)))
+             (not (string-match
+                   counsel-compressed-file-regex
+                   fname))
+             (> (buffer-size)
+                (if (eq major-mode 'org-mode)
+                    (/ counsel-grep-swiper-limit 4)
+                  counsel-grep-swiper-limit)))
+        (progn
+          (when (file-writable-p fname)
+            (save-buffer))
+          (counsel-grep))
+      (swiper--ivy (swiper--candidates)))))
 
 ;;** `counsel-recoll'
 (defun counsel-recoll-function (string)
@@ -2227,6 +2236,180 @@ INITIAL-INPUT can be given as the initial minibuffer input."
            (org-agenda-set-tags nil nil))
       (fset 'org-set-tags store))))
 
+(defcustom counsel-org-goto-display-style 'path
+  "The style for displaying headlines in `counsel-org-goto' functions.
+
+If headline, the title and the leading stars are displayed.
+
+If path, the path hierarchy is displayed.  For each entry the title is shown.
+`counsel-org-goto-separator' is used as separator between entries.
+
+If title or any other value, only the title of the headline is displayed.
+
+Use `counsel-org-goto-display-tags' and `counsel-org-goto-display-todo' to
+display tags and todo keywords respectively."
+  :type '(choice
+          (const :tag "Title only" title)
+          (const :tag "Headline" headline)
+          (const :tag "Path" path))
+  :group 'ivy)
+
+(defcustom counsel-org-goto-separator "/"
+  "Character(s) to separate path entries in `counsel-org-goto' functions.
+This variable has no effect unless `counsel-org-goto-display-style' is
+set to path."
+  :type 'string
+  :group 'ivy)
+
+(defcustom counsel-org-goto-display-tags nil
+  "If non-nil, display tags in `counsel-org-goto' functions."
+  :type 'boolean
+  :group 'ivy)
+
+(defcustom counsel-org-goto-display-todo nil
+  "If non-nil, display todo keywords in `counsel-org-goto' functions."
+  :type 'boolean
+  :group 'ivy)
+
+(defcustom counsel-org-goto-face-style nil
+  "The face used for displaying headlines in `counsel-org-goto' functions.
+
+If org, the default faces from `org-mode' are applied, i.e. org-level-1
+through org-level-8.  Note that no cycling is in effect, therefore headlines
+on levels 9 and higher will not be styled.
+
+If verbatim, the face used in the buffer is applied.  For simple headlines
+this is usually the same as org except that it depends on how much of the
+buffer has been completely loaded.  If your buffer exceeds a certain size,
+headlines are styled lazily depending on which parts of the tree are visible.
+Headlines which are not styled yet in the buffer will appear unstyled in the
+minibuffer as well.  If your headlines contain parts which are fontified
+differently than the headline itself (eg. todo keywords, tags, links) and you
+want these parts to be styled properly, verbatim is the way to go, otherwise
+you are probably better off using org instead.
+
+If custom, the faces defined in `counsel-org-goto-custom-faces' are applied.
+Note that no cycling is in effect, therefore if there is no face defined
+for a certain level, headlines on that level will not be styled.
+
+If nil or any other value, no face is applied to the headline.
+
+See `counsel-org-goto-display-tags' and `counsel-org-goto-display-todo' if
+you want to display tags and todo keywords in your headlines."
+  :type '(choice
+          (const :tag "Same as org-mode" org)
+          (const :tag "Verbatim" verbatim)
+          (const :tag "Custom" custom))
+  :group 'ivy)
+
+(defcustom counsel-org-goto-custom-faces nil
+  "Custom faces for displaying headlines in `counsel-org-goto' functions.
+
+The n-th entry is used for headlines on level n, starting with n = 1.  If
+a headline is an a level for which there is no entry in the list, it will
+not be styled.
+
+This variable has no effect unless `counsel-org-goto-face-style' is set
+to custom."
+  :type '(repeat face)
+  :group 'ivy)
+
+(declare-function org-get-heading "org")
+(declare-function org-goto-marker-or-bmk "org")
+(declare-function outline-next-heading "outline")
+
+;;;###autoload
+(defun counsel-org-goto ()
+  "Go to a different location in the current file."
+  (interactive)
+  (let ((entries (counsel-org-goto--get-headlines)))
+    (ivy-read "Goto: "
+              entries
+              :history 'counsel-org-goto-history
+              :action 'counsel-org-goto-action
+              :caller 'counsel-org-goto)))
+
+;;;###autoload
+(defun counsel-org-goto-all ()
+  "Go to a different location in any org file."
+  (interactive)
+  (let (entries)
+    (dolist (b (buffer-list))
+      (with-current-buffer b
+        (when (derived-mode-p 'org-mode)
+          (if entries
+              (nconc entries (counsel-org-goto--get-headlines))
+            (setq entries (counsel-org-goto--get-headlines))))))
+    (ivy-read "Goto: "
+              entries
+              :history 'counsel-org-goto-history
+              :action 'counsel-org-goto-action
+              :caller 'counsel-org-goto-all)))
+
+(defun counsel-org-goto-action (x)
+  "Go to headline in candidate X."
+  (org-goto-marker-or-bmk (cdr x)))
+
+(defun counsel-org-goto--get-headlines ()
+  "Get all headlines from the current org buffer."
+  (save-excursion
+    (let (entries
+          start-pos
+          stack
+          (stack-level 0))
+      (goto-char (point-min))
+      (setq start-pos (or (and (org-at-heading-p)
+                               (point))
+                          (outline-next-heading)))
+      (while start-pos
+        (let ((name (org-get-heading
+                     (not counsel-org-goto-display-tags)
+                     (not counsel-org-goto-display-todo)))
+              level)
+          (search-forward " ")
+          (setq level
+                (- (length (buffer-substring-no-properties start-pos (point)))
+                   1))
+          (cond ((eq counsel-org-goto-display-style 'path)
+                 ;; Update stack. The empty entry guards against incorrect
+                 ;; headline hierarchies e.g. a level 3 headline immediately
+                 ;; following a level 1 entry.
+                 (while (<= level stack-level)
+                   (pop stack)
+                   (cl-decf stack-level))
+                 (while (> level stack-level)
+                   (push "" stack)
+                   (cl-incf stack-level))
+                 (setf (car stack) (counsel-org-goto--add-face name level))
+                 (setq name (mapconcat
+                             #'identity
+                             (reverse stack)
+                             counsel-org-goto-separator)))
+                (t
+                 (when (eq counsel-org-goto-display-style 'headline)
+                   (setq name (concat (make-string level ?*) " " name)))
+                 (setq name (counsel-org-goto--add-face name level))))
+          (push (cons name (point-marker)) entries))
+        (setq start-pos (outline-next-heading)))
+      (nreverse entries))))
+
+(defun counsel-org-goto--add-face (name level)
+  "Add face to headline NAME on LEVEL.
+The face can be customized through `counsel-org-goto-face-style'."
+  (or (and (eq counsel-org-goto-face-style 'org)
+           (propertize
+            name
+            'face
+            (concat "org-level-" (number-to-string level))))
+      (and (eq counsel-org-goto-face-style 'verbatim)
+           name)
+      (and (eq counsel-org-goto-face-style 'custom)
+           (propertize
+            name
+            'face
+            (nth (1- level) counsel-org-goto-custom-faces)))
+      (propertize name 'face 'minibuffer-prompt)))
+
 ;;** `counsel-mark-ring'
 (defun counsel--pad (string length)
   "Pad string to length with spaces."
@@ -2241,15 +2424,17 @@ INITIAL-INPUT can be given as the initial minibuffer input."
            (let ((padding (length (format "%s: " (line-number-at-pos (eobp))))))
              (save-mark-and-excursion
               (goto-char (point-min))
-              (mapcar (lambda (mark)
-                        (let* ((position (marker-position mark))
-                               (line-number (line-number-at-pos position))
-                               (line-marker (counsel--pad (format "%s:" line-number) padding))
-                               (bol (point-at-bol line-number))
-                               (eol (point-at-eol line-number))
-                               (line (buffer-substring bol eol)))
-                          (cons (format "%s%s" line-marker line) position)))
-                      (cl-remove-duplicates mark-ring :test #'equal)))))))
+              (sort (mapcar (lambda (mark)
+                              (let* ((position (marker-position mark))
+                                     (line-number (line-number-at-pos position))
+                                     (line-marker (counsel--pad (format "%s:" line-number) padding))
+                                     (bol (point-at-bol line-number))
+                                     (eol (point-at-eol line-number))
+                                     (line (buffer-substring bol eol)))
+                                (cons (format "%s%s" line-marker line) position)))
+                            (cl-remove-duplicates mark-ring :test #'equal))
+                    (lambda (m1 m2)
+                      (< (cdr m1) (cdr m2)))))))))
     (ivy-read "Marks: " candidates
               :action (lambda (elem)
                         (goto-char (cdr elem))))))
@@ -3440,6 +3625,39 @@ candidate."
 (declare-function irony-completion-candidates-async "ext:irony-completion")
 (declare-function irony-completion-at-point "ext:irony-completion")
 (declare-function irony-completion--capf-annotate "ext:irony-completion")
+
+;;** `counsel-apropos'
+;;;###autoload
+(defun counsel-apropos ()
+  "Show all matching symbols.
+See `apropos' for further information about what is considered
+a symbol and how to search for them."
+  (interactive)
+  (ivy-read "Search for symbol (word list or regexp): "
+            (counsel-symbol-list)
+            :history 'counsel-apropos-history
+            :action (lambda (pattern)
+                      (when (= (length pattern) 0)
+                        (user-error "Please specify a pattern"))
+                      ;; If the user selected a candidate form the list, we use
+                      ;; a pattern which matches only the selected symbol.
+                      (if (memq this-command '(ivy-immediate-done ivy-alt-done))
+                          ;; Regexp pattern are passed verbatim, other input is
+                          ;; split into words.
+                          (if (string-equal (regexp-quote pattern) pattern)
+                              (apropos (split-string pattern "[ \t]+" t))
+                            (apropos pattern))
+                        (apropos (concat "^" pattern "$"))))
+            :caller 'counsel-apropos))
+
+(defun counsel-symbol-list ()
+  "Return a list of all symbols."
+  (let (cands)
+    (mapatoms
+     (lambda (symbol)
+       (when (or (boundp symbol) (fboundp symbol))
+         (push (symbol-name symbol) cands))))
+    (delete "" cands)))
 
 ;;** `counsel-mode'
 (defvar counsel-mode-map

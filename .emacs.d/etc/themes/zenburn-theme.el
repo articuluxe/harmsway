@@ -141,6 +141,14 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(grep-hit-face ((t (:foreground ,zenburn-blue))))
    `(grep-match-face ((t (:foreground ,zenburn-orange :weight bold))))
    `(match ((t (:background ,zenburn-bg-1 :foreground ,zenburn-orange :weight bold))))
+;;;;; hi-lock
+   `(hi-blue    ((t (:background ,zenburn-cyan    :foreground ,zenburn-bg-1))))
+   `(hi-green   ((t (:background ,zenburn-green+4 :foreground ,zenburn-bg-1))))
+   `(hi-pink    ((t (:background ,zenburn-magenta :foreground ,zenburn-bg-1))))
+   `(hi-yellow  ((t (:background ,zenburn-yellow  :foreground ,zenburn-bg-1))))
+   `(hi-blue-b  ((t (:foreground ,zenburn-blue    :weight     bold))))
+   `(hi-green-b ((t (:foreground ,zenburn-green+2 :weight     bold))))
+   `(hi-red-b   ((t (:foreground ,zenburn-red     :weight     bold))))
 ;;;;; info
    `(Info-quoted ((t (:inherit font-lock-constant-face))))
 ;;;;; isearch
@@ -715,14 +723,15 @@ Also bind `class' to ((class color) (min-colors 89))."
                                       :underline t :weight bold))))
 ;;;;; ivy
    `(ivy-confirm-face ((t (:foreground ,zenburn-green :background ,zenburn-bg))))
-   `(ivy-match-required-face ((t (:foreground ,zenburn-red :background ,zenburn-bg))))
-   `(ivy-remote ((t (:foreground ,zenburn-blue :background ,zenburn-bg))))
-   `(ivy-subdir ((t (:foreground ,zenburn-yellow :background ,zenburn-bg))))
    `(ivy-current-match ((t (:foreground ,zenburn-yellow :weight bold :underline t))))
+   `(ivy-cursor ((t (:foreground ,zenburn-bg :background ,zenburn-fg))))
+   `(ivy-match-required-face ((t (:foreground ,zenburn-red :background ,zenburn-bg))))
    `(ivy-minibuffer-match-face-1 ((t (:background ,zenburn-bg+1))))
    `(ivy-minibuffer-match-face-2 ((t (:background ,zenburn-green-1))))
    `(ivy-minibuffer-match-face-3 ((t (:background ,zenburn-green))))
    `(ivy-minibuffer-match-face-4 ((t (:background ,zenburn-green+1))))
+   `(ivy-remote ((t (:foreground ,zenburn-blue :background ,zenburn-bg))))
+   `(ivy-subdir ((t (:foreground ,zenburn-yellow :background ,zenburn-bg))))
 ;;;;; ido-mode
    `(ido-first-match ((t (:foreground ,zenburn-yellow :weight bold))))
    `(ido-only-match ((t (:foreground ,zenburn-orange :weight bold))))
@@ -955,6 +964,18 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(nav-face-hdir ((t (:foreground ,zenburn-red))))
    `(nav-face-file ((t (:foreground ,zenburn-fg))))
    `(nav-face-hfile ((t (:foreground ,zenburn-red-4))))
+;;;;; merlin
+   `(merlin-type-face ((t (:inherit highlight))))
+   `(merlin-compilation-warning-face
+     ((((supports :underline (:style wave)))
+       (:underline (:style wave :color ,zenburn-orange)))
+      (t
+       (:underline ,zenburn-orange))))
+   `(merlin-compilation-error-face
+     ((((supports :underline (:style wave)))
+       (:underline (:style wave :color ,zenburn-red)))
+      (t
+       (:underline ,zenburn-red))))
 ;;;;; mu4e
    `(mu4e-cited-1-face ((t (:foreground ,zenburn-blue    :slant italic))))
    `(mu4e-cited-2-face ((t (:foreground ,zenburn-green+2 :slant italic))))
