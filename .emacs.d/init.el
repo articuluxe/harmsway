@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-05-19 14:31:28 dan.harms>
+;; Modified Time-stamp: <2017-05-21 10:50:57 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -415,6 +415,9 @@ line."
          ("C-c 099" . my/add-epa-file-encrypt-to)
          )
   :defines epa-file-select-keys
+  :init
+  ;; may no longer be necessary
+  (setq epa-file-cache-passphrase-for-symmetric-encryption t)
   :config
   (setq epg-gpg-program "gpg2")
   (setq epa-file-select-keys nil)
