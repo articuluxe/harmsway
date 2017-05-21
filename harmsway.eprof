@@ -8,6 +8,7 @@
    'ctags-alist
    (list
     (append (list "harmsway" "" gen-tags-exe "-Re"
+                  "--exclude=lisp"
                   ) gen-tags-ctags-cpp-options)
     ))
   (profile-load))
