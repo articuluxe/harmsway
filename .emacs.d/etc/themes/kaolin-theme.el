@@ -5,7 +5,7 @@
 ;; Author: 0rdy <mail@0rdy.com>
 ;; URL: https://github.com/0rdy/kaolin-theme
 ;; Package-Requires: ((emacs "24"))
-;; Version: 0.7.4
+;; Version: 0.8.0
 
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -41,6 +41,10 @@
 
 (defcustom kaolin-underline t
   "If nil, disable the underline style."
+  :group 'kaolin-theme)
+
+(defcustom kaolin-wave nil
+  "When t, use the wave underline style instead of regular underline."
   :group 'kaolin-theme)
 
 (defface kaolin-boolean nil
@@ -123,9 +127,10 @@
       (violet          "#ab98b5")
 
       ;; Face options
-      (bold         kaolin-bold)
-      (italic       kaolin-italic)
-      (underline    kaolin-underline))
+      (bold            kaolin-bold)
+      (italic          kaolin-italic)
+      (underline       kaolin-underline)
+      (underline-style (if kaolin-wave 'wave 'line)))
 
   ;; Theme colors
   (let* ((fg1  white)
@@ -186,10 +191,11 @@
          (str        teal-green)
          (str-alt    jade)
          (doc        str-alt)
+         ;; TODO: ?? deep-pink
          (type       alt-orange)
          (const      violet)
          (var        faded-blue)
-         ;; TODO: change number color ?? light-green
+         ;; TODO: change number color ?? light-green || deep-pink
          (num        faded-red)
          (bool       num)
          (prep       alt-purple)
@@ -254,7 +260,9 @@
      `(custom-face-tag ((,c (:background nil :foreground ,purple :bold ,bold))))
      `(custom-link ((,c (:background nil :foreground ,teal :bold ,bold))))
      `(widget-button ((,c (:background nil :foreground ,green :bold ,bold))))
+     `(widget-button-pressed ((,c (:background nil :foreground ,faded-red))))
      `(widget-field ((,c (:background ,bg3 :foreground ,fg1 :box (:line-width 1 :color ,bg2 :style nil)))))
+     `(widget-documentation ((,c (:background nil :foreground ,faded-blue))))
 
 
      ;; Additional highlighting
@@ -334,11 +342,15 @@
 
      ;; Flycheck
      `(flycheck-info ((,c (:foreground ,teal-blue))))
-     `(flycheck-warning ((,c (:underline (:style line :color ,warning)))))
-     `(flycheck-error ((,c (:underline (:style line :color ,err)))))
+     `(flycheck-warning ((,c (:underline (:style ,underline-style :color ,warning)))))
+     `(flycheck-error ((,c (:underline (:style ,underline-style :color ,err)))))
      `(flycheck-fringe-error ((,c (:foreground ,err))))
      `(flycheck-fringe-warning ((,c (:foreground ,warning))))
      `(flycheck-fringe-info ((,c (:foreground ,teal-blue))))
+
+     ;; Flyspell
+     `(flyspell-duplicate ((,c (:underline (:style ,underline-style :color ,warning)))))
+     `(flyspell-incorrect ((,c (:underline (:style ,underline-style :color ,err)))))
 
      ;; Hydra
      `(hydra-face-red ((,c (:foreground ,red))))
@@ -679,14 +691,38 @@
      `(font-latex-sectioning-4-face ((,c (:inherit font-latex-sectioning-0-face))))
      `(font-latex-sectioning-5-face ((,c (:inherit font-latex-sectioning-0-face))))
 
-     ;; which-function-mode
+     ;; Pulse
+     `(pulse-highlight-start-face ((,c (:background ,dark-yellow))))
+
+     ;; Which-function-mode
      `(which-func ((,c (:foreground ,orange))))
+
+     ;; Which-key
+     `(which-key-key-face ((,c (:foreground ,purple :bold ,bold))))
+     `(which-key-group-description-face ((,c (:foreground ,light-purple))))
+     `(which-key-local-map-description-face ((,c (:foreground ,teal-green))))
+     `(which-key-command-description-face ((,c (:foreground ,teal))))
+
+     ;; Ruler-mode
+     `(ruler-mode-default ((,c (:background ,bg2 :foreground ,gray))))
+     `(ruler-mode-column-number ((,c (:foreground ,faded-blue))))
+     `(ruler-mode-current-column ((,c (:foreground ,orange))))
+     `(ruler-mode-fill-column ((,c (:foreground ,deep-pink))))
+     `(ruler-mode-comment-column ((,c (:foreground ,teal-blue))))
+     `(ruler-mode-fringes ((,c (:foreground ,green))))
+     `(ruler-mode-pad ((,c (:foreground ,faded-blue))))
+     `(ruler-mode-tab-stop ((,c (:foreground ,violet))))
+     `(ruler-mode-goal-column ((,c (:foreground ,alt-red))))
 
      ;; Evil ex
      `(evil-ex-info ((,c (:foreground ,orange))))
      `(evil-ex-substitute-matches ((,c (:background nil :foreground ,red :underline ,underline))))
      `(evil-ex-substitute-replacement ((,c (:background nil :foreground ,light-green))))
-     '(evil-ex-lazy-highlight ((t (:inherit lazy-highlight))))
+     `(evil-ex-lazy-highlight ((t (:inherit lazy-highlight))))
+
+     ;; Vimish-fold
+     `(vimish-fold-overlay ((,c (:background ,bg2 :foreground ,comment))))
+     `(vimish-fold-fringe ((,c (:background nil :foreground ,jade))))
 
     ;; Avy
      `(avy-lead-face ((,c (:background ,dark-red :foreground ,white))))

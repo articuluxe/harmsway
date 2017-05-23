@@ -156,7 +156,7 @@ depending on DISPLAY for keys which are either :foreground or
    (warning :foreground orange)
 
    ;; search and highlighting
-   (match :background base5)
+   (match :background base4)
    (isearch :inverse-video t)
    (isearch-fail :foreground red)
    (lazy-highlight :foreground base2 :background yellow)
@@ -627,14 +627,16 @@ depending on DISPLAY for keys which are either :foreground or
    (ecb-type-tag-group-face :foreground magenta)
 
    ;; elfeed
+   (elfeed-log-debug-level-face :foreground base4)
    (elfeed-log-error-level-face :inherit error)
    (elfeed-log-info-level-face :inherit success)
    (elfeed-log-warn-level-face :inherit warning)
+   (elfeed-search-date-face :foreground violet)
    (elfeed-search-feed-face :foreground orange)
    (elfeed-search-tag-face :foreground green)
-   (elfeed-search-title-face :foreground base6)
-   (elfeed-search-title-unread-face :foreground base6 :weight bold)
-   (elfeed-search-date-face :foreground violet)
+   (elfeed-search-title-face :foreground base5)
+   (elfeed-search-unread-count-face :foreground orange)
+   (elfeed-search-unread-title-face :foreground base6 :weight bold)
 
    ;; emms
    (emms-playlist-track-face :foreground blue)
@@ -1053,6 +1055,13 @@ depending on DISPLAY for keys which are either :foreground or
    (web-mode-param-name-face :foreground base5)
    (web-mode-symbol-face :foreground yellow)
    (web-mode-whitespace-face :foreground base7 :background red)
+
+   ;; wgrep
+   (wgrep-delete-face :foreground red)
+   (wgrep-done-face :foreground blue)
+   (wgrep-face :foreground yellow)
+   (wgrep-file-face :foreground green)
+   (wgrep-reject-face :foreground violet :weight bold)
 
    ;; undo-tree
    (undo-tree-visualizer-default-face :inherit shadow)

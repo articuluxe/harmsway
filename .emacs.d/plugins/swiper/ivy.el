@@ -756,7 +756,10 @@ If the text hasn't changed as a result, forward to `ivy-alt-done'."
   (interactive)
   (let* ((parts (or (split-string ivy-text " " t) (list "")))
          (postfix (car (last parts)))
-         (completion-ignore-case t)
+         (case-fold-search (and ivy-case-fold-search
+                                (or (eq ivy-case-fold-search 'always)
+                                    (string= ivy-text (downcase ivy-text)))))
+         (completion-ignore-case case-fold-search)
          (startp (string-match "^\\^" postfix))
          (new (try-completion (if startp
                                   (substring postfix 1)
@@ -768,6 +771,9 @@ If the text hasn't changed as a result, forward to `ivy-alt-done'."
                                             (when i
                                               (substring str i))))
                                         ivy--old-cands)))))
+    (when (and (eq ivy-case-fold-search 'auto)
+               (stringp new))
+      (setq new (downcase new)))
     (cond ((eq new t) nil)
           ((string= new ivy-text) nil)
           (new
@@ -1703,15 +1709,6 @@ This is useful for recursive `ivy-read'."
                      (setq sort-fn (ivy--sort-function caller)))
             (setq coll (cl-sort (copy-sequence coll) sort-fn)))))
       (setq coll (ivy--set-candidates coll))
-      (when preselect
-        (unless (or (not (stringp preselect))
-                    (and require-match
-                         (not (eq collection 'internal-complete-buffer)))
-                    dynamic-collection
-                    (let ((re (regexp-quote preselect)))
-                      (cl-find-if (lambda (x) (string-match re x))
-                                  coll)))
-          (setq coll (cons preselect coll))))
       (setq ivy--old-re nil)
       (setq ivy--old-cands nil)
       (when (integerp preselect)
@@ -2310,8 +2307,9 @@ Possible choices are 'ivy-magic-slash-non-match-cd-selected,
   (ivy--cd dir))
 
 (defun ivy--magic-file-slash ()
-  (when (and (eq this-command 'self-insert-command)
-             (eolp))
+  (when (or (and (eq this-command 'self-insert-command)
+                 (eolp))
+            (eq this-command 'ivy-partial-or-done))
     (cond ((member ivy-text ivy--all-candidates)
            (ivy--cd (expand-file-name ivy-text ivy--directory)))
           ((string-match "//\\'" ivy-text)
