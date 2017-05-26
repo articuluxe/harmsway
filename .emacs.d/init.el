@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-05-21 10:50:57 dharms>
+;; Modified Time-stamp: <2017-05-26 08:41:03 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -249,13 +249,51 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; proviso ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package proviso
-  :disabled
-  ;; :demand t
-  :bind (("C-c pg" . proviso-grep)
-         ("C-c pt" . proviso-gentags-generate-tags)
+  :demand t
+  :bind (("C-c g" . proviso-grep)
+         ("C-c t" . proviso-gentags-generate-tags)
          ("C-c ppd" . proviso-display-echo-project-names)
          ("C-c ppp" . proviso-display-projects)
          )
+  )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; tags ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(when (> emacs-major-version 24)
+  (global-set-key "\M-*" 'xref-pop-marker-stack)
+  (global-set-key "\M-," 'tags-loop-continue)
+  )
+;; (defvar tag-lookup-target-profile nil
+;;   "The working profile in effect when a tag is first looked up.")
+;; (defun my/store-profile ()
+;;   "Store the current profile."
+;;   (setq tag-lookup-target-profile (symbol-name profile-current)))
+;; (defun my/tags-find-tag ()
+;;   "Find a tag based on the current profile."
+;;   (interactive)
+;;   (my/store-profile)
+;;   (etags-select-find-tag))
+;; (defun my/tags-find-tag-at-point ()
+;;   "Find the tag at point based on the current profile."
+;;   (interactive)
+;;   (my/store-profile)
+;;   (etags-select-find-tag-at-point))
+
+;; select
+(use-package proviso-etags-select
+  :init
+  (setq tags-revert-without-query t)
+  :bind (("M-." . etags-select-find-tag)
+         ([?\C-\M-.] . etags-select-find-tag-at-point))
+  :demand t
+  :config
+  ;; stack
+  (use-package etags-stack :bind ("C-c C-t" . etags-stack-show))
+  ;; table
+  (use-package etags-table
+    :init
+    ;; we store our tags in a specific directory
+    (setq etags-table-search-up-depth nil)
+    )
   )
 
 (use-package custom-utils
@@ -309,9 +347,6 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   :bind ("M-=" . wordcount)
   )
 
-(use-package custom-grep
- :bind ("C-c g" . my/grep)
- :commands grep)
 (use-package custom-coding
   :bind (("C-c C-p" . print-current-function)
          ("C-c ii" . add-header-include-ifdefs)
@@ -596,51 +631,6 @@ line."
                 " "
                 (filename-and-process 26 -1))
           ))
-  )
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; gen-tags ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package gen-tags
-  :demand t                             ;load immediately
-  :bind ("C-c t" . gen-tags-generate-tags)
-  )
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; tags ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(when (> emacs-major-version 24)
-  (global-set-key "\M-*" 'xref-pop-marker-stack)
-  (global-set-key "\M-," 'tags-loop-continue)
-  )
-(defvar tag-lookup-target-profile nil
-  "The working profile in effect when a tag is first looked up.")
-(defun my/store-profile ()
-  "Store the current profile."
-  (setq tag-lookup-target-profile (symbol-name profile-current)))
-(defun my/tags-find-tag ()
-  "Find a tag based on the current profile."
-  (interactive)
-  (my/store-profile)
-  (etags-select-find-tag))
-(defun my/tags-find-tag-at-point ()
-  "Find the tag at point based on the current profile."
-  (interactive)
-  (my/store-profile)
-  (etags-select-find-tag-at-point))
-
-;; select
-(use-package etags-select
-  :init
-  (setq tags-revert-without-query t)
-  :bind (("M-." . my/tags-find-tag)
-         ([?\C-\M-.] . my/tags-find-tag-at-point))
-  :demand t
-  :config
-  ;; stack
-  (use-package etags-stack :bind ("C-c C-t" . etags-stack-show))
-  ;; table
-  (use-package etags-table
-    :init
-    ;; we store our tags in a specific directory
-    (setq etags-table-search-up-depth nil)
-    )
   )
 
 ;; This (unused) snippet overrides tag lookup for standard tags, not
