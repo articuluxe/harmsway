@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-03-23 07:08:02 dharms>
+;; Modified Time-stamp: <2017-05-26 06:53:47 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -35,6 +35,6 @@
 (my/load-site-file "talbot")
 
 (setq profile-clang-standard-version "c++11")
-;; (setq epa-pinentry-mode 'loopback)      ;for gpg v2.1+
+(setq epa-pinentry-mode 'loopback)      ;for gpg v2.1+
 
 ;;; rubicon ends here
