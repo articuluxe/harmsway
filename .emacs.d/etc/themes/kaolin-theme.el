@@ -70,7 +70,6 @@
 
       (dark-red        "#832729")
       (red             "#d75f5f")
-      ;; (faded-red       "#ac4040")
       (faded-red       "#a94d53")
       (alt-red         "#c93232")
       (light-red       "#d66e75")
@@ -86,7 +85,6 @@
       (dark-yellow     "#555a2f")
       (yellow          "#acb370")
       (alt-yellow      "#be9266")
-      ;; (light-yellow "#c1b175")
       (light-yellow    "#c9bb87")
       (wheat           "#b9c791")
 
@@ -94,7 +92,6 @@
       (jade            "#597a6e")
       (light-jade      "#709688")
       (midnight-green  "#152628")
-      ;; (deep-green   "#30555a")
       (deep-green      "#39656b")
       (green           "#4a858c")
       (dark-green      "#39855f")
@@ -106,14 +103,12 @@
       ;; (teal-green      "#80bea0")
       (teal-green      "#6fb593")
 
+      (midnight-blue   "#1e2528")
       (dark-blue       "#2a4661")
       ;; TODO: Change blue color
-      ;; (blue            "#5485b6")
       (blue            "#5077a5")
-      ;; (alt-blue        "#6666be")
       (alt-blue        "#267fb5")
       (cyan            "#54b6b6")
-      ;; (faded-blue      "#857f96")
       (faded-blue      "#817f96")
 
       (midnight-purple "#1a121a")
@@ -121,7 +116,6 @@
       (purple          "#835d83")
       (magenta         "#5454b6")
       (light-purple    "#cea2ca")
-      ;; (alt-purple      "#8c4a64")
       (alt-purple      "#915c83")
 
       (violet          "#ab98b5")
@@ -141,9 +135,6 @@
          (bg2  "#282828")
          (bg3  "#353535")
          (bg4  "#414141")
-         ;; TODO: move this part
-         (key2 "#5f9298")
-         (key3 "#41757b")
 
          (dim-buffer alt-black)
          (hl-line    bg2)
@@ -179,6 +170,8 @@
 
          (cursor     light-gray)
          (keyword    green)
+         (key2       "#5f9298")
+         (key3       "#41757b")
          (hl         cyan)
          (hl-indent  gray)
          (builtin    teal)
@@ -250,6 +243,7 @@
      `(isearch-fail ((,c (:background nil :foreground ,red))))
 
      ;; Interface
+     `(button ((,c (:background ,bg4 :foreground ,teal :box (:line-width 3 :color ,bg3 :style nil)))))
      `(custom-button ((,c (:background ,bg4 :foreground ,teal :box (:line-width 3 :color ,bg3 :style nil)))))
      `(custom-button-mouse ((,c (:background ,bg3 :foreground ,cyan :box (:line-width 3 :color ,bg2 :style nil)))))
      `(custom-button-pressed ((,c (:background ,bg3 :foreground ,cyan :box (:line-width 3 :color ,bg2 :style pressed-button)))))
@@ -264,6 +258,7 @@
      `(widget-field ((,c (:background ,bg3 :foreground ,fg1 :box (:line-width 1 :color ,bg2 :style nil)))))
      `(widget-documentation ((,c (:background nil :foreground ,faded-blue))))
 
+     `(package-name ((,c (:background nil :foreground ,cyan))))
 
      ;; Additional highlighting
      `(highlight ((,c (:background ,bg2 :foreground ,hl))))
@@ -690,6 +685,16 @@
      `(font-latex-sectioning-3-face ((,c (:inherit font-latex-sectioning-0-face))))
      `(font-latex-sectioning-4-face ((,c (:inherit font-latex-sectioning-0-face))))
      `(font-latex-sectioning-5-face ((,c (:inherit font-latex-sectioning-0-face))))
+
+     ;; Rst-mode
+     `(rst-adornment ((,c (:foreground ,jade))))
+     `(rst-block ((,c (:foreground ,teal))))
+     `(rst-level-1 ((,c (:foreground ,violet))))
+     `(rst-level-2 ((,c (:foreground ,green))))
+     `(rst-level-3 ((,c (:foreground ,teal-blue))))
+     `(rst-level-4 ((,c (:foreground ,violet))))
+     `(rst-level-5 ((,c (:foreground ,green))))
+     `(rst-level-6 ((,c (:foreground ,teal-blue))))
 
      ;; Pulse
      `(pulse-highlight-start-face ((,c (:background ,dark-yellow))))

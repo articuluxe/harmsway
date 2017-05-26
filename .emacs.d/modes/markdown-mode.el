@@ -40,6 +40,27 @@
 ;; [Markdown]: http://daringfireball.net/projects/markdown/
 ;; [release notes]: http://jblevins.org/projects/markdown-mode/rev-2-1
 
+;;; Documentation:
+
+;; Documentation for Markdown Mode is available below, but Emacs is also
+;; a self-documenting editor.  That means that the source code itself
+;; contains additional documentation: each function has its own docstring
+;; available via `C-h f` (`describe-function'), individual keybindings
+;; can be investigated with `C-h k` (`describe-key'), and a complete list
+;; of keybindings is available using `C-h m` (`describe-mode').
+
+;; Additionally, to celebrate Markdown Mode's 10th birthday the package
+;; creator is writing a [Guide to Markdown Mode for Emacs][guide].  This
+;; ebook will supplement the existing documentation with in-depth
+;; discussion of advanced movement and editing commands, configuration
+;; examples, tips and tricks, and a survey of other packages that work
+;; with Markdown Mode.  It will be [published at Leanpub][guide] and
+;; possibly available through other channels.  Please visit
+;; the [book homepage][guide] to sign up to be notified when it is ready
+;; and to help determine the price.
+
+;;  [guide]: https://leanpub.com/markdown-mode
+
 ;;; Installation:
 
 ;; The recommended way to install markdown-mode is to install the package
@@ -551,9 +572,10 @@
 ;;   * `markdown-indent-function' - the function to use for automatic
 ;;     indentation (default: `markdown-indent-line').
 ;;
-;;   * `markdown-indent-on-enter' - set to a non-nil value to
-;;     automatically indent new lines and/or continue lists when the
-;;     enter key is pressed (default: `t')
+;;   * `markdown-indent-on-enter' - Set to a non-nil value to
+;;     automatically indent new lines when `RET' is pressed.
+;;     Set to `indent-and-new-item' to additionally continue lists
+;;     when `RET' is pressed (default: `indent').
 ;;
 ;;   * `markdown-enable-wiki-links' - syntax highlighting for wiki
 ;;     links (default: `nil').  Set this to a non-nil value to turn on
@@ -618,7 +640,7 @@
 ;;     for `markdown-reference-location'.
 ;;
 ;;   * `markdown-nested-imenu-heading-index' - Use nested imenu
-;;     heading instead of a flat index (default: `nil').  A nested
+;;     heading instead of a flat index (default: `t').  A nested
 ;;     index may provide more natural browsing from the menu, but a
 ;;     flat list may allow for faster keyboard navigation via tab
 ;;     completion.
@@ -945,13 +967,27 @@ line around the header title."
   :type 'function)
 
 (defcustom markdown-indent-on-enter t
-  "Indent new lines and continue lists when enter is pressed.
-When this variable is set to t, pressing RET will call
-`newline-and-indent' and will continue a list.  When set to nil,
-define RET to call `newline' as usual.  In the latter case, you
-can still use auto-indentation by pressing
-\\[newline-and-indent] or continue lists with
-\\[markdown-insert-list-item]."
+  "Determines indentation behavior when pressing \\[newline].
+Possible settings are nil, t, 'indent, and 'indent-and-new-item.
+
+When non-nil, pressing \\[newline] will call `newline-and-indent'
+to indent the following line according to the context using
+`markdown-indent-function'.  In this case, note that
+\\[electric-newline-and-maybe-indent] can still be used to insert
+a newline without indentation.
+
+When set to 'indent-and-new-item and the point is in a list item
+when \\[newline] is pressed, the list will be continued on the next
+line, where a new item will be inserted.
+
+When set to nil, simply call `newline' as usual.  In this case,
+you can still indent lines using \\[markdown-cycle] and continue
+lists with \\[markdown-insert-list-item].
+
+Note that this assumes the variable `electric-indent-mode' is
+non-nil (enabled).  When it is *disabled*, the behavior of
+\\[newline] and `\\[electric-newline-and-maybe-indent]' are
+reversed."
   :group 'markdown
   :type 'boolean)
 
@@ -1067,7 +1103,7 @@ and `iso-latin-1'.  Use `list-coding-systems' for more choices."
   :group 'markdown
   :type 'string)
 
-(defcustom markdown-nested-imenu-heading-index nil
+(defcustom markdown-nested-imenu-heading-index t
   "Use nested or flat imenu heading index.
 A nested index may provide more natural browsing from the menu,
 but a flat list may allow for faster keyboard navigation via tab
@@ -1436,13 +1472,13 @@ Function is called repeatedly until it returns nil. For details, see
   (save-match-data
     (save-excursion
       (let* ((new-start (progn (goto-char start)
-                               (if (re-search-backward
-                                    markdown-regex-block-separator-noindent nil t)
+                               (skip-chars-forward "\n")
+                               (if (re-search-backward "\n\n" nil t)
                                    (min start (match-end 0))
                                  (point-min))))
              (new-end (progn (goto-char end)
-                             (if (re-search-forward
-                                  markdown-regex-block-separator-noindent nil t)
+                             (skip-chars-backward "\n")
+                             (if (re-search-forward "\n\n" nil t)
                                  (max end (match-beginning 0))
                                (point-max))))
              (code-match (markdown-code-block-at-pos new-start))
@@ -4461,16 +4497,19 @@ duplicate positions, which are handled up by calling functions."
     (reverse positions)))
 
 (defun markdown-enter-key ()
-  "Handle RET according to customized settings.
-When `markdown-indent-on-enter' is nil, this is equivalent to
-`newline'.  Otherwise, indent following RET and when the point is
-in a list item, start a new item with the same indentation.  If
-the point is in an empty list item, remove it."
+  "Handle RET according to value of `markdown-indent-on-enter'.
+When it is nil, simply call `newline'.  Otherwise, indent the next line
+following RET using `markdown-indent-line'.  Furthermore, when it
+is set to 'indent-and-new-item and the point is in a list item,
+start a new item with the same indentation. If the point is in an
+empty list item, remove it (so that pressing RET twice when in a
+list simply adds a blank line)."
   (interactive)
   (if (not markdown-indent-on-enter)
       (newline)
-    (let ((bounds (markdown-cur-list-item-bounds)))
-      (if bounds
+    (let (bounds)
+      (if (and (memq markdown-indent-on-enter '(indent-and-new-item))
+               (setq bounds (markdown-cur-list-item-bounds)))
           (let ((beg (cl-first bounds))
                 (end (cl-second bounds))
                 (length (cl-fourth bounds)))
@@ -4949,7 +4988,10 @@ See also `markdown-mode-map'.")
      ["Check References" markdown-check-refs]
      ["Toggle Inline Images" markdown-toggle-inline-images
       :style radio
-      :selected markdown-inline-image-overlays])
+      :selected markdown-inline-image-overlays]
+     ["Toggle Wiki Links" markdown-toggle-wiki-links
+      :style radio
+      :selected markdown-enable-wiki-links])
     ("Styles"
      ["Bold" markdown-insert-bold]
      ["Italic" markdown-insert-italic]
@@ -5072,7 +5114,7 @@ See `imenu-create-index-function' and `imenu--index-alist' for details."
     (let* ((text (match-string-no-properties 3))
            (reference (match-string-no-properties 6))
            (target (downcase (if (string= reference "") text reference)))
-           (loc (cadr (markdown-reference-definition target))))
+           (loc (cadr (save-match-data (markdown-reference-definition target)))))
       (if loc
           (goto-char loc)
         (goto-char (match-beginning 0))
@@ -7186,9 +7228,6 @@ or \\[markdown-toggle-inline-images]."
     (make-local-hook 'after-change-functions)
     (make-local-hook 'font-lock-extend-region-functions)
     (make-local-hook 'window-configuration-change-hook))
-
-  ;; Initial syntax analysis
-  (markdown-syntax-propertize (point-min) (point-max))
 
   ;; Make checkboxes buttons
   (when markdown-make-gfm-checkboxes-buttons
