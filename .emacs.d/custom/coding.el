@@ -1,9 +1,9 @@
 ;; coding.el --- coding utilities
-;; Copyright (C) 2015, 2016  Dan Harms (dharms)
+;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-11-18 09:36:23 dan.harms>
+;; Modified Time-stamp: <2017-05-29 17:11:41 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -63,7 +63,6 @@
       (message "// Using comments like this"))))
 
 (with-eval-after-load 'cc-mode
-  (define-key c-mode-base-map (kbd "\C-c RET") 'my/compile)
   (define-key c-mode-base-map "\C-cm" 'my/recompile)
   (define-key c-mode-base-map "\C-ck" 'kill-compilation)
   (define-key c-mode-base-map "\C-c\C-c" 'comment-region)
@@ -127,7 +126,6 @@
  'c-mode-common-hook
  (lambda ()
    (require 'compile)
-   (make-local-variable 'my/compile-command)
    (setq-default indent-tabs-mode nil)
    (setq c-auto-newline t)
    (c-toggle-hungry-state t)

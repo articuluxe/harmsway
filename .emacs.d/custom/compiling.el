@@ -1,9 +1,9 @@
 ;; compiling.el --- utilities concerned with compiling
-;; Copyright (C) 2015, 2016  Dan Harms (dharms)
+;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-05-19 14:46:37 dan.harms>
+;; Modified Time-stamp: <2017-05-26 17:48:33 dharms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -27,8 +27,6 @@
 
 (require 'dash)
 
-(defvar my/compile-command)
-
 ;; automatically scroll compilation window
 (setq compilation-scroll-output t)
 
@@ -36,89 +34,6 @@
   (setq truncate-lines nil) ; is buffer local
   (set (make-local-variable 'truncate-partial-width-windows) nil))
 (add-hook 'compilation-mode-hook 'my/compilation-mode-hook)
-
-(defun create-compile-command-standard()
-  "Initialize the compile command."
-  (interactive)
-  (let ((root (or (profile-current-get 'project-root-dir) "./"))
-        (command (or (profile-current-get 'compile-sub-command) "make"))
-        (sub-dirs (profile-current-get 'build-sub-dirs))
-        sub-dir)
-    (when current-prefix-arg
-      (setq root (read-directory-name "Root dir:" root nil t))
-      (when (file-remote-p root)
-        (setq root (with-parsed-tramp-file-name root file file-localname))))
-    (setq sub-dir
-          (cond ((eq (length sub-dirs) 1) (car (car sub-dirs)))
-                ((null sub-dirs) "")
-                (t (funcall my/choose-func
-                            (mapcar 'car sub-dirs)
-                            "Compile in: "))))
-    (format "cd %s && %s"
-            (concat root sub-dir) command)
-    ))
-
-(defun create-compile-command-repo()
-  "Initialize the compile command."
-  (interactive)
-  (let ((root (or (profile-current-get 'project-root-dir) "./"))
-        (command (or (profile-current-get 'compile-sub-command) "make"))
-        (sub-dirs (profile-current-get 'build-sub-dirs))
-        sub-dir)
-    (when current-prefix-arg
-      (setq root (read-directory-name "Root dir:" root nil t))
-      (when (file-remote-p root)
-        (setq root (with-parsed-tramp-file-name root file file-localname))))
-    (setq sub-dir
-          (cond ((eq (length sub-dirs) 1) (car (car sub-dirs)))
-                ((null sub-dirs) "")
-                (t (funcall my/choose-func
-                            (mapcar 'car sub-dirs)
-                            "Compile in: "))))
-    (format "source %srepo-setup.sh && cd %s && %s"
-            root (concat root sub-dir) command)
-    ))
-
-(defvar my/compile-command-functions-list
-  (list 'create-compile-command-standard 'create-compile-command-repo)
-  "List of functions to create compilation commands.")
-
-(defvar my/compile-command-fn #'create-compile-command-standard
-  "Default create compilation command.")
-
-(defun my/choose-compile-command-function ()
-  "Choose a compile command among `my/compile-command-functions-list'."
-  (interactive)
-  (let* ((lst (mapcar (lambda(cmd) (cons (symbol-name cmd) cmd))
-                      my/compile-command-functions-list))
-         (res (funcall my/choose-func
-                      lst
-                      "Choose the compile command function: ")))
-    (when res
-      (setq my/compile-command-fn res))))
-
-(defvar should-close-compilation-window nil)
-
-(defun my/compile()
-  "A custom compilation command.  Allows customizing the compilation,
-as well as the behavior of the `*compilation*' window upon completion."
-  (interactive)
-  (setq should-close-compilation-window
-        (not (get-buffer-window "*compilation*" 'visible)))
-  (when (setq my/compile-command (funcall my/compile-command-fn))
-    (setq compile-command my/compile-command)
-    (call-interactively 'compile)))
-
-(defun my/recompile()
-  "A custom re-compilation command."
-  (interactive)
-  (setq should-close-compilation-window
-        (not (get-buffer-window "*compilation*" 'visible)))
-  (call-interactively 'recompile))
-
-(add-hook 'compilation-start-hook (lambda (process)
-                                        ; the compile is about to start
-                                    ))
 
 (defun my/check-compile-buffer-cmake-werror ()
   "Ignores the compile line `-Werror' that cmake echoes."
