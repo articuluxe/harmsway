@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-01-09 12:19:25 dan.harms>
+;; Modified Time-stamp: <2017-05-31 12:14:37 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -29,12 +29,6 @@
 (eval-when-compile
   (setq use-package-verbose t)
   (require 'use-package))
-
-;; dired
-(setq-default
- dired-listing-switches
- (concat (default-value 'dired-listing-switches)
-         " --group-directories-first"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Process Viewer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package proced :bind ("C-c 0p" . proced))
