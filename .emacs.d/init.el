@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-05-26 08:41:03 dharms>
+;; Modified Time-stamp: <2017-06-01 05:50:53 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1426,6 +1426,7 @@ Each value is a cons cell (`description' . `activation-function').")
   (setq org-catch-invisible-edits 'show-and-error)
   (setq org-use-property-inheritance t)
   (setq org-use-tag-inheritance t)
+  (setq org-return-follows-link t)
   ;; (setq org-use-speed-commands t)
   ;; (setq org-startup-indented t)
   ;; todos

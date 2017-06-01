@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-01-09 12:13:59 dan.harms>
+;; Modified Time-stamp: <2017-05-29 13:49:25 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -30,6 +30,7 @@
   (setq use-package-verbose t)
   (require 'use-package))
 
+;; keys
 (setq w32-pass-lwindow-to-system nil)
 (setq w32-lwindow-modifier 'super)
 (setq w32-pass-rwindow-to-system nil)
@@ -47,7 +48,7 @@
 
 (setq-default comint-process-echoes t)
 (setq w32-get-true-file-attributes nil)
-
+(setq w32-pipe-read-delay 0)
 (setq tramp-default-method "plink")
 
 ;; qt
