@@ -1,18 +1,21 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 # -*- Mode: sh -*-
 # xr-release.sh --- distribute xr release to hosts
-# Copyright (C) 2016  Dan Harms (dan.harms)
+# Copyright (C) 2016-2017  Dan Harms (dan.harms)
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Monday, May 30, 2016
 # Version: 1.0
-# Modified Time-stamp: <2016-07-06 12:34:27 dan.harms>
+# Modified Time-stamp: <2017-06-02 16:37:27 dharms>
 # Modified by: Dan Harms
 # Keywords: xr config
 
 hostfile=~/src/harmsway/site/xr/.emacs.d/settings/host/hosts/xr
 
 if [ -f "$hostfile" ]; then
-   hosts=(`cat $hostfile`)
+    while read -r host description
+    do
+        hosts+=($host)
+    done <"$hostfile"
 else
    echo "No host file $hostfile; output will not be distributed"
 fi
