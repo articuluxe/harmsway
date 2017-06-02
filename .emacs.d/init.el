@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-06-01 05:50:53 dharms>
+;; Modified Time-stamp: <2017-06-02 05:56:10 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1224,6 +1224,9 @@ Each value is a cons cell (`description' . `activation-function').")
   (add-to-list 'my/completion-framework-alist
                (cons "ivy" 'my/activate-ivy))
   (global-set-key "\e\eii" 'ivy-resume)
+  (setq ivy-display-style 'fancy)
+  (setq ivy-extra-directories '("../" "./"))
+  (setq ivy-count-format "(%d/%d) ")
   (defun ivy-insert-action (x)
     (with-ivy-window
       (insert x)))
@@ -1282,10 +1285,6 @@ Each value is a cons cell (`description' . `activation-function').")
          (let ((completing-read-function 'completing-read-default))
            (call-interactively 'find-file))))
       (ivy-done)))
-  ;; make matches appear fancy; supposedly doesn't work under 24.5
-  ;; but seems OK to me
-  (setq ivy-display-style 'fancy)
-  (setq ivy-extra-directories '("../" "./"))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smex ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
