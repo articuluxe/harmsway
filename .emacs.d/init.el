@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-06-01 13:30:29 dan.harms>
+;; Modified Time-stamp: <2017-06-02 10:14:18 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -862,6 +862,7 @@ line."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; elnode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package elnode)
 
+(setq vc-follow-symlinks t)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; magit ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defvar my/git-keymap)
 (define-prefix-command 'my/git-keymap)
