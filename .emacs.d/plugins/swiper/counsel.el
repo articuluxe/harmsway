@@ -1842,7 +1842,7 @@ If non-nil, EXTRA-AG-ARGS string is appended to BASE-CMD."
                                (match-string 1 (buffer-name)))))))
          (cands (split-string
                  (shell-command-to-string
-                  (format counsel-ag-base-command (shell-quote-argument regex)))
+                  (format counsel-ag-base-command (concat "-- " (shell-quote-argument regex))))
                  "\n"
                  t)))
     ;; Need precise number of header lines for `wgrep' to work.
@@ -2657,7 +2657,7 @@ Additional Actions:
          (mapcar #'ivy-cleanup-string
                  (cl-remove-if
                   (lambda (s)
-                    (string-match "\\`[\n[:blank:]]+\\'" s))
+                    (string-match "\\`[\n[:blank:]]*\\'" s))
                   (delete-dups kill-ring)))))
     (let ((ivy-format-function #'counsel--yank-pop-format-function)
           (ivy-height 5))

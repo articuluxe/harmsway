@@ -5,7 +5,7 @@
 ;; Author: 0rdy <mail@0rdy.com>
 ;; URL: https://github.com/0rdy/kaolin-theme
 ;; Package-Requires: ((emacs "24"))
-;; Version: 0.8.1
+;; Version: 0.8.2
 
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -165,6 +165,7 @@
          (rb6 light-brown)
          (rb7 light-green)
          (rb8 wheat)
+         (rb9 lavender)
 
          (diff-add    light-green)
          (diff-change violet)
@@ -201,10 +202,11 @@
          (doc        str-alt)
          ;; TODO: ?? pink
          (type       alt-orange)
+         ;; TODO: ?? light-yellow
          (const      violet)
          (var        faded-blue)
-         ;; TODO: change number color ?? light-green || pink
-         (num        faded-red)
+         ;; TODO: change number color ??  pink ?? light-yellow ?? alt-orange
+         (num        red)
          (bool       num)
          (prep       alt-purple)
          (warning    orange)
@@ -245,7 +247,8 @@
      `(vertical-border ((,c (:foreground ,win-border))))
      `(minibuffer-prompt ((,c (:foreground ,keyword :bold ,bold))))
      `(default-italic ((,c (:italic ,italic))))
-     `(link ((,c (:foreground ,cyan :underline ,underline))))
+     `(link ((,c (:foreground ,lavender :underline ,underline))))
+     `(link-visited ((,c (:inherit link :underline nil))))
      `(success ((,c (:background nil :foreground ,light-green))))
      `(escape-glyph ((,c (:background nil :foreground ,cyan))))
 
@@ -281,8 +284,8 @@
      `(lazy-highlight ((,c (:background ,bg3 :foreground ,fg2))))
      `(hl-line ((,c (:background ,bg2))))
      `(highlight-numbers-number ((,c (:foreground ,num))))
-     `(highlight-quoted-quote ((t (:foreground ,teal)))) ; Face to highlight Lisp quotes
-     `(highlight-quoted-symbol ((t (:foreground ,green)))) ; Face to highlight quoted Lisp symbols
+     `(highlight-quoted-quote ((t (:foreground ,teal))))
+     `(highlight-quoted-symbol ((t (:foreground ,green))))
 
      ;; Eldoc
      `(eldoc-highlight-function-argument ((t (:foreground ,violet))))
@@ -298,10 +301,11 @@
 
      ;; Linum & nlinum
      `(linum ((t (:background ,bg1 :foreground ,gray :bold nil))))
-     `(nlinum-current-line ((t (:background ,bg1 :foreground ,light-gray :bold ,bold))))
-     `(linum-relative-current-line ((t (:background ,bg1 :foreground ,light-gray :bold ,bold))))
-     `(nlinum-relative-current-face ((t (:background ,bg1 :foreground ,light-gray :bold ,bold))))
      `(linum-highlight-face ((t (:inherit linum))))
+     `(linum-relative-current-line ((t (:background ,bg1 :foreground ,light-gray :bold ,bold))))
+     `(nlinum-current-line ((t (:background ,bg1 :foreground ,light-gray :bold ,bold))))
+     `(nlinum-relative-current-face ((t (:background ,bg1 :foreground ,light-gray :bold ,bold))))
+     `(nlinum-hl-face ((t (:background ,bg1 :foreground ,light-gray :bold ,bold))))
 
      ;; Auto-dim-other-buffers
      `(auto-dim-other-buffers-face  ((t (:background ,dim-buffer))))
@@ -392,7 +396,7 @@
      `(org-meta-line ((,c (:inherit org-document-info-keyword))))
      `(org-document-info ((,c (:foreground ,teal))))
      `(org-footnote  ((,c (:foreground ,fg4 :underline ,underline))))
-     `(org-link ((,c (:foreground ,cyan :underline ,underline))))
+     `(org-link ((,c (:inherit link))))
      `(org-special-keyword ((,c (:foreground ,functions))))
      `(org-block ((,c (:foreground ,fg3))))
      `(org-block-begin-line ((,c (:foreground ,deep-green))))
@@ -463,7 +467,8 @@
      `(icompletep-determined ((,c :foreground ,builtin)))
 
      ;; Undo-tree
-     `(undo-tree-visualizer-current-face ((,c :foreground ,builtin)))
+     `(undo-tree-visualizer-active-branch-face ((,c :foreground ,fg1 :bold ,bold)))
+     `(undo-tree-visualizer-current-face ((,c :foreground ,cyan)))
      `(undo-tree-visualizer-default-face ((,c :foreground ,fg2)))
      `(undo-tree-visualizer-unmodified-face ((,c :foreground ,var)))
      `(undo-tree-visualizer-register-face ((,c :foreground ,type)))
@@ -483,6 +488,7 @@
      `(rainbow-delimiters-depth-6-face ((,c :foreground ,rb6)))
      `(rainbow-delimiters-depth-7-face ((,c :foreground ,rb7)))
      `(rainbow-delimiters-depth-8-face ((,c :foreground ,rb8)))
+     `(rainbow-delimiters-depth-9-face ((,c :foreground ,rb9)))
 
      ;; Diff
      `(diff-header ((,c (:background ,bg2))))
@@ -620,6 +626,7 @@
      `(company-tooltip-annotation ((,c (:foreground ,faded-blue))))
      `(company-scrollbar-bg ((,c (:background ,bg1))))
      `(company-scrollbar-fg ((,c (:foreground ,keyword))))
+     ;; TODO:
      `(company-template-field ((,c (:inherit region))))
      `(company-echo-common ((,c (:background ,bg1 :foreground ,light-yellow))))
      `(company-preview ((,c (:background ,bg1 :foreground ,key2))))
@@ -738,6 +745,20 @@
      `(ruler-mode-tab-stop ((,c (:foreground ,violet))))
      `(ruler-mode-goal-column ((,c (:foreground ,alt-red))))
 
+     ;; TODO: Message
+     `(message-header-name ((,c (:foreground ,deep-green))))
+     `(message-header-subject ((,c (:foreground ,teal-green))))
+     `(message-header-to ((,c (:foreground ,teal-green))))
+     `(message-header-other ((,c (:foreground ,teal))))
+
+     ;; Elfeed
+     `(elfeed-search-tag-face ((,c (:foreground ,light-yellow))))
+     `(elfeed-search-feed-face ((,c (:foreground ,green))))
+     `(elfeed-search-date-face ((,c (:foreground ,faded-blue))))
+     `(elfeed-search-unread-title-face ((,c (:foreground ,fg1))))
+     `(elfeed-search-unread-count-face ((,c (:foreground ,orange))))
+     `(elfeed-search-title-face ((,c (:foreground ,comment))))
+
      ;; Evil ex
      `(evil-ex-info ((,c (:foreground ,orange))))
      `(evil-ex-substitute-matches ((,c (:background nil :foreground ,red :underline ,underline))))
@@ -755,9 +776,13 @@
      `(avy-lead-face-2 ((,c (:background ,dark-purple :foreground ,white))))
 
      ;; Ivy & Swiper
+     `(ivy-modified-buffer ((,c (:foreground ,light-yellow))))
+     `(ivy-subdir ((,c (:foreground ,green :bold ,bold))))
+     `(ivy-virtual ((,c (:foreground ,violet))))
+     `(ivy-remote ((,c (:foreground ,teal))))
      `(ivy-current-match ((,c (:background ,hl-line :foreground ,light-green :bold t))))
      `(ivy-match-required-face ((,c (:background nil :foreground ,alt-red :bold nil))))
-     `(ivy-confirm-face ((,c (:background nil :foreground ,teal-green))))
+     `(ivy-confirm-face ((,c (:background nil :foreground ,light-orange))))
      `(ivy-action ((,c (:background nil :foreground ,teal-green :bold ,bold))))
      `(ivy-minibuffer-match-face-1 ((,c (:background ,bg3 :foreground ,fg1))))
      `(ivy-minibuffer-match-face-2 ((,c (:background ,dark-blue :foreground ,teal-blue :bold ,bold))))

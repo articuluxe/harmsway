@@ -5,8 +5,8 @@
 ;; Author: Roland Walker <walker@pobox.com>
 ;; Homepage: http://github.com/rolandwalker/simpleclip
 ;; URL: http://raw.githubusercontent.com/rolandwalker/simpleclip/master/simpleclip.el
-;; Version: 1.0.0
-;; Last-Updated: 25 Oct 2013
+;; Version: 1.0.2
+;; Last-Updated:  3 Jun 2017
 ;; Keywords: convenience
 ;;
 ;; Simplified BSD License
@@ -70,7 +70,8 @@
 ;;
 ;; Notes
 ;;
-;; `x-select-enable-primary' is not affected by `simpleclip-mode'.
+;; `simpleclip-mode' does not affect `x-select-enable-primary' or
+;; `select-enable-primary'.
 ;;
 ;; Access to the system clipboard from a TTY is provided for those
 ;; cases where a literal paste is needed -- for example, where
@@ -86,7 +87,9 @@
 ;;
 ;; Compatibility and Requirements
 ;;
-;;     GNU Emacs version 24.4-devel     : yes, at the time of writing
+;;     GNU Emacs version 25.1           : yes
+;;     GNU Emacs version 24.5           : yes
+;;     GNU Emacs version 24.4           : yes
 ;;     GNU Emacs version 24.3           : yes
 ;;     GNU Emacs version 23.3           : yes
 ;;     GNU Emacs version 22.2           : yes, with some limitations
@@ -122,14 +125,14 @@
 ;; without modification, are permitted provided that the following
 ;; conditions are met:
 ;;
-;;    1. Redistributions of source code must retain the above
-;;       copyright notice, this list of conditions and the following
-;;       disclaimer.
+;;   1. Redistributions of source code must retain the above
+;;      copyright notice, this list of conditions and the following
+;;      disclaimer.
 ;;
-;;    2. Redistributions in binary form must reproduce the above
-;;       copyright notice, this list of conditions and the following
-;;       disclaimer in the documentation and/or other materials
-;;       provided with the distribution.
+;;   2. Redistributions in binary form must reproduce the above
+;;      copyright notice, this list of conditions and the following
+;;      disclaimer in the documentation and/or other materials
+;;      provided with the distribution.
 ;;
 ;; This software is provided by Roland Walker "AS IS" and any express
 ;; or implied warranties, including, but not limited to, the implied
@@ -162,14 +165,15 @@
 ;;; declarations
 
 (eval-when-compile
-  (defvar x-select-enable-clipboard))
+  (defvar x-select-enable-clipboard)
+  (defvar select-enable-clipboard))
 
 ;;; customizable variables
 
 ;;;###autoload
 (defgroup simpleclip nil
   "Simplified access to the system clipboard."
-  :version "1.0.0"
+  :version "1.0.2"
   :link '(emacs-commentary-link :tag "Commentary" "simpleclip")
   :link '(url-link :tag "GitHub" "http://github.com/rolandwalker/simpleclip")
   :link '(url-link :tag "EmacsWiki" "http://emacswiki.org/emacs/Simpleclip")
@@ -183,6 +187,11 @@
 
 (defcustom simpleclip-edit-menu t
   "Rebind Cut/Copy/Paste in the Edit menu."
+  :type 'boolean
+  :group 'simpleclip)
+
+(defcustom simpleclip-unmark-on-copy nil
+  "Unmark region after copying."
   :type 'boolean
   :group 'simpleclip)
 
@@ -243,7 +252,7 @@ The format for key sequences is as defined by `kbd'."
 (defvar simpleclip-saved-ipf nil
   "Saved value of `interprogram-paste-function'.")
 (defvar simpleclip-saved-xsec nil
-  "Saved value of `x-select-enable-clipboard'.")
+  "Saved value of `x-select-enable-clipboard' or `select-enable-clipboard'.")
 
 ;; MS Windows workaround - w32-get-clipboard-data returns nil
 ;; when Emacs was the originator of the clipboard data.
@@ -279,9 +288,10 @@ The format for key sequences is as defined by `kbd'."
                               "Paste"
                               simpleclip-paste
                               :enable
-                              (and (if (fboundp 'x-selection-exists-p)
-                                       (x-selection-exists-p 'CLIPBOARD)
-                                     t)
+                              (and (or (and (fboundp 'gui-backend-selection-exists-p)
+                                            (gui-backend-selection-exists-p 'CLIPBOARD))
+                                       (and (fboundp 'x-selection-exists-p)
+                                            (x-selection-exists-p 'CLIPBOARD)))
                                    (not buffer-read-only))
                               :help
                               "Paste (from clipboard) text most recently cut/copied"))
@@ -317,8 +327,13 @@ in GNU Emacs 24.1 or higher."
          (or (w32-get-clipboard-data)
              simpleclip-contents))
         ((and (featurep 'mac)
+              (fboundp 'gui-get-selection))
+         (gui-get-selection 'CLIPBOARD 'NSStringPboardType))
+        ((and (featurep 'mac)
               (fboundp 'x-get-selection))
          (x-get-selection 'CLIPBOARD 'NSStringPboardType))
+        ((fboundp 'gui-get-selection)
+         (gui-get-selection 'CLIPBOARD))
         ((fboundp 'x-get-selection)
          (x-get-selection 'CLIPBOARD))
         (t
@@ -355,6 +370,8 @@ in GNU Emacs 24.1 or higher."
         ((fboundp 'w32-set-clipboard-data)
          (w32-set-clipboard-data str-val)
          (setq simpleclip-contents str-val))
+        ((fboundp 'guie-set-selection)
+         (gui-set-selection 'CLIPBOARD str-val))
         ((fboundp 'x-set-selection)
          (x-set-selection 'CLIPBOARD str-val))
         (t
@@ -399,19 +416,29 @@ is 'toggle."
    (simpleclip-mode
     (setq simpleclip-saved-icf interprogram-cut-function)
     (setq simpleclip-saved-ipf interprogram-paste-function)
-    (when (boundp 'x-select-enable-clipboard)
-      (setq simpleclip-saved-xsec x-select-enable-clipboard))
+    (cond
+      ((boundp 'select-enable-clipboard)
+       (setq simpleclip-saved-xsec select-enable-clipboard))
+      ((boundp 'x-select-enable-clipboard)
+       (setq simpleclip-saved-xsec x-select-enable-clipboard)))
     (setq interprogram-cut-function nil)
     (setq interprogram-paste-function nil)
-    (setq x-select-enable-clipboard nil)
+    (cond
+      ((boundp 'select-enable-clipboard)
+       (setq select-enable-clipboard nil))
+      ((boundp 'x-select-enable-clipboard)
+       (setq x-select-enable-clipboard nil)))
     (when (and (simpleclip-called-interactively-p 'interactive)
                (not simpleclip-less-feedback))
       (message "simpleclip mode enabled")))
    (t
     (setq interprogram-cut-function simpleclip-saved-icf)
     (setq interprogram-paste-function simpleclip-saved-ipf)
-    (when (boundp 'x-select-enable-clipboard)
-      (setq x-select-enable-clipboard simpleclip-saved-xsec))
+    (cond
+      ((boundp 'select-enable-clipboard)
+       (setq select-enable-clipboard simpleclip-saved-xsec))
+      ((boundp 'x-select-enable-clipboard)
+       (setq x-select-enable-clipboard simpleclip-saved-xsec)))
     (setq simpleclip-saved-icf nil)
     (setq simpleclip-saved-ipf nil)
     (setq simpleclip-saved-xsec nil)
@@ -433,7 +460,9 @@ is 'toggle."
   (when (and (not (minibufferp))
              (not simpleclip-less-feedback)
              (simpleclip-called-interactively-p 'interactive))
-    (message "copied to clipboard")))
+    (message "copied to clipboard"))
+  (when simpleclip-unmark-on-copy
+    (deactivate-mark)))
 
 ;;;###autoload
 (defun simpleclip-cut (beg end)
