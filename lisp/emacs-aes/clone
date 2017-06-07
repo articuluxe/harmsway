@@ -1,4 +1,1 @@
 git clone https://github.com/Sauermann/emacs-aes.git src
-cd src
-git checkout develop
-cd ..

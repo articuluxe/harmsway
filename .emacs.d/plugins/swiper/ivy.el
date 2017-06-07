@@ -351,7 +351,8 @@ action functions.")
   display-transformer-fn
   directory
   caller
-  current)
+  current
+  def)
 
 (defvar ivy-last (make-ivy-state)
   "The last parameters passed to `ivy-read'.
@@ -1415,12 +1416,18 @@ Directories come first."
           (cl-remove-if-not predicate seq)
         seq))))
 
+(defvar ivy-auto-select-single-candidate nil
+  "When non-nil, auto-select the candidate if it is the only one.
+When t, it is the same as if the user were prompted and selected the candidate
+by calling the default action.  This variable has no use unless the collection
+contains a single candidate.")
+
 ;;** Entry Point
 ;;;###autoload
 (cl-defun ivy-read (prompt collection
                     &key
                       predicate require-match initial-input
-                      history preselect keymap update-fn sort
+                      history preselect def keymap update-fn sort
                       action unwind re-builder matcher
                       dynamic-collection caller)
   "Read a string in the minibuffer, with completion.
@@ -1449,6 +1456,8 @@ KEYMAP is composed with `ivy-minibuffer-map'.
 
 If PRESELECT is not nil, then select the corresponding candidate
 out of the ones that match the INITIAL-INPUT.
+
+DEF is for compatibility with `completing-read'.
 
 UPDATE-FN is called each time the current candidate(s) is changed.
 
@@ -1530,7 +1539,8 @@ customizations apply to the current completion session."
            :dynamic-collection dynamic-collection
            :display-transformer-fn transformer-fn
            :directory default-directory
-           :caller caller))
+           :caller caller
+           :def def))
     (ivy--reset-state ivy-last)
     (prog1
         (unwind-protect
@@ -1544,12 +1554,18 @@ customizations apply to the current completion session."
                          ((display-graphic-p) nil)
                          ((null resize-mini-windows) 'grow-only)
                          (t resize-mini-windows))))
-                 (read-from-minibuffer
-                  prompt
-                  (ivy-state-initial-input ivy-last)
-                  (make-composed-keymap keymap ivy-minibuffer-map)
-                  nil
-                  hist)
+                 (if (and ivy-auto-select-single-candidate
+                          (= (length ivy--all-candidates) 1))
+                     (progn
+                       (setf (ivy-state-current ivy-last)
+                             (car ivy--all-candidates))
+                       (setq ivy-exit 'done))
+                   (read-from-minibuffer
+                    prompt
+                    (ivy-state-initial-input ivy-last)
+                    (make-composed-keymap keymap ivy-minibuffer-map)
+                    nil
+                    hist))
                  (when (eq ivy-exit 'done)
                    (let ((item (if ivy--directory
                                    (ivy-state-current ivy-last)
@@ -1584,7 +1600,8 @@ This is useful for recursive `ivy-read'."
         (dynamic-collection (ivy-state-dynamic-collection state))
         (initial-input (ivy-state-initial-input state))
         (require-match (ivy-state-require-match state))
-        (caller (ivy-state-caller state)))
+        (caller (ivy-state-caller state))
+        (def (ivy-state-def state)))
     (unless initial-input
       (setq initial-input (cdr (assoc this-command
                                       ivy-initial-inputs-alist))))
@@ -1699,6 +1716,12 @@ This is useful for recursive `ivy-read'."
              (setq coll (all-completions "" collection predicate)))
             (t
              (setq coll collection)))
+      (when def
+        (cond ((listp def)
+               (setq coll (cl-union def coll :test 'equal)))
+              ((member def coll))
+              (t
+               (push def coll))))
       (when sort
         (if (and (functionp collection)
                  (setq sort-fn (ivy--sort-function collection)))
@@ -1808,6 +1831,7 @@ INHERIT-INPUT-METHOD is currently ignored."
                                      (t
                                       initial-input))
                 :preselect (if (listp def) (car def) def)
+                :def def
                 :history history
                 :keymap nil
                 :sort t
@@ -1894,7 +1918,8 @@ The previous string is between `ivy-completion-beg' and `ivy-completion-end'."
         (if (null (cdr comps))
             (if (string= str (car comps))
                 (message "Sole match")
-              (setf (ivy-state-window ivy-last) (selected-window))
+              (unless (minibuffer-window-active-p (selected-window))
+                (setf (ivy-state-window ivy-last) (selected-window)))
               (ivy-completion-in-region-action
                (substring-no-properties
                 (car comps))))
@@ -2328,7 +2353,7 @@ Possible choices are 'ivy-magic-slash-non-match-cd-selected,
           ((and (file-exists-p ivy-text)
                 (not (string= ivy-text "/"))
                 (file-directory-p ivy-text))
-           (ivy--cd ivy-text))
+           (ivy--cd (expand-file-name ivy-text)))
           ((and (or (> ivy--index 0)
                     (= ivy--length 1)
                     (not (string= ivy-text "/")))
