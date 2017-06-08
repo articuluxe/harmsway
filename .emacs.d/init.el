@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-06-02 10:14:18 dan.harms>
+;; Modified Time-stamp: <2017-06-08 13:36:01 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -875,6 +875,10 @@ line."
 (use-package magit
   :if (not (version< emacs-version "24.4"))
   :init
+  ;; The following allows remote repositories to work under tramp on windows
+  ;; (plink), and we put git in our exec-path anyways, so the full path is
+  ;; unneeded.  This is also the default setting anyway on other platforms.
+  (setq magit-git-executable "git")
   (setq magit-popup-show-common-commands nil)
   (setq magit-log-show-refname-after-summary nil)
   (setq magit-no-confirm '())
