@@ -5,7 +5,7 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Monday, May 30, 2016
 # Version: 1.0
-# Modified Time-stamp: <2017-06-02 16:37:27 dharms>
+# Modified Time-stamp: <2017-06-08 11:35:59 dan.harms>
 # Modified by: Dan Harms
 # Keywords: xr config
 
@@ -14,7 +14,9 @@ hostfile=~/src/harmsway/site/xr/.emacs.d/settings/host/hosts/xr
 if [ -f "$hostfile" ]; then
     while read -r host description
     do
-        hosts+=($host)
+        if [ "${host:0:1}" != "#" ]; then
+            hosts+=($host)
+        fi
     done <"$hostfile"
 else
    echo "No host file $hostfile; output will not be distributed"
