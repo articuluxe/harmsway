@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, April 15, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-03-08 22:37:11 dharms>
+;; Modified Time-stamp: <2017-06-06 08:35:13 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: environment utils
 
@@ -36,7 +36,7 @@
 (defun load-environment-variables-from-file (file)
   "Load each line from FILE, of the form `var=val'.
 For each line, sets environment variable `var' equal to `val'."
-  (interactive "fChoose the file: ")
+  (interactive "fLoad environment variables from file: ")
   (mapc (lambda(line)
           (when (string-match "\\(.+\\)=\\(.+\\)" line)
             (setenv (match-string-no-properties 1 line)
