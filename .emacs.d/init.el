@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-06-09 06:48:36 dharms>
+;; Modified Time-stamp: <2017-06-09 17:25:56 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -286,8 +286,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
          ))
 
 (use-package custom-environment
-  :commands (read-file-into-list-of-lines
-             load-environment-variable-from-file
+  :commands (load-environment-variable-from-file
              my/load-environment-variables-from-file
              ))
 

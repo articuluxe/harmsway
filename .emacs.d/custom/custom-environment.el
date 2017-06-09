@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, April 15, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-06-06 08:35:13 dharms>
+;; Modified Time-stamp: <2017-06-09 08:33:34 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: environment utils
 
@@ -25,13 +25,7 @@
 ;;
 
 ;;; Code:
-
-(defun read-file-into-list-of-lines (file)
-  "Read FILE into a list of strings split line by line."
-  (interactive)
-  (with-temp-buffer
-    (insert-file-contents file)
-    (split-string (buffer-string) "\n" t)))
+(require 'read-file-into-list-of-lines)
 
 (defun load-environment-variables-from-file (file)
   "Load each line from FILE, of the form `var=val'.
