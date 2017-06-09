@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Monday, April 18, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-06-09 06:50:31 dharms>
+;; Modified Time-stamp: <2017-06-09 17:21:40 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: remote hosts
 
@@ -29,7 +29,7 @@
 (require 'subr-x)
 (require 'tramp)
 (require 'ivy)
-(require 'custom-environment)
+(require 'read-file-into-list-of-lines)
 
 (defvar remotehost-connect-hosts '()
   "List of hosts to connect to.")
