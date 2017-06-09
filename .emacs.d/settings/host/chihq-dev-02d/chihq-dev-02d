@@ -4,7 +4,7 @@
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Monday, March 14, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-03-28 11:06:05 dan.harms>
+;; Modified Time-stamp: <2017-06-09 12:24:33 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: config
 
@@ -42,15 +42,5 @@
   (push (cons (expand-file-name "~/org") 0) magit-repository-directories))
 
 ;(setq profile-gcc-standard-version "c++11")
-(with-eval-after-load 'remote-host-connector
-  (setq my/remote-host-list
-        (append
-         (list
-          '(:host "chihq-dev-02d-1"
-                  :user "dan.harms"
-                  :password ""
-                  :description "Dan Harms's Dev Workstation VM (virtual machine)"
-                  :category "snap")
-          ) my/remote-host-list)))
 
 ;; chihq-dev-02d.lnx.xrtrading.local ends here
