@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-06-08 20:51:33 dharms>
+;; Modified Time-stamp: <2017-06-09 06:48:36 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2448,16 +2448,17 @@ This may perform related customization."
   ;; 3) provides a list of remote hosts to connect to, via `remotehost-connect'
   ;;
   ;; First we populate the list of remote hosts
-  (mapc (lambda (file)
-          (let ((site (f-base file)))
-            (setq remotehost-connect-hosts
-                  (append
-                   ;; insert the site into each entry
-                   (mapcar (lambda (lst)
-                             (plist-put lst :site site))
-                           (remotehost-connect-read-file file))
-                   remotehost-connect-hosts))))
-        (f-files all-hosts-dir))
+  (when (file-exists-p all-hosts-dir)
+    (mapc (lambda (file)
+            (let ((site (f-base file)))
+              (setq remotehost-connect-hosts
+                    (append
+                     ;; insert the site into each entry
+                     (mapcar (lambda (lst)
+                               (plist-put lst :site site))
+                             (remotehost-connect-read-file file))
+                     remotehost-connect-hosts))))
+          (f-files all-hosts-dir)))
   ;; then we load the official host file, if it exists
   (if (file-exists-p host-file)
       (load host-file t)

@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Monday, April 18, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-06-08 17:53:20 dharms>
+;; Modified Time-stamp: <2017-06-09 06:50:31 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: remote hosts
 
@@ -69,7 +69,7 @@ followed by an optional description, separated by whitespace."
 
 ;;;###autoload
 (defun remotehost-connect (&optional user dir)
-  "Connect to a remote host from `my/remote-host-list'.
+  "Connect to a remote host from `remotehost-connect-hosts'.
 Optional argument USER allows overriding the remote user,
 when called interactively with a prefix argument.
 Optional argument DIR allows overriding the remote directory,
