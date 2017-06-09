@@ -134,6 +134,12 @@ git checkout main
 git apply feature.patch
 git add .
 
+#################################### TAGS ####################################
+# find the tag associated with a commit
+git describe <sha>
+# get the commit associated with a tag
+git rev-list -1 <tag>
+
 ################################# SUBMODULE ##################################
 # update a submodule
 cd sub

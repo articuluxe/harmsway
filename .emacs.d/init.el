@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-06-02 08:04:53 dharms>
+;; Modified Time-stamp: <2017-06-08 20:53:41 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -409,16 +409,6 @@ line."
   :config
   ;; (setq outrespace-prefix-key "\C-cx")  ;to change prefix
   (outrespace-define-prefix global-map)
- )
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;; remote-host-connector ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package remote-host-connector
- :bind (("C-c 6" . my/connect-to-remote-host)
-        ([f6] . my/connect-to-remote-host)
-        )
- :init
- (defvar my/remote-hosts-file "")
- (defvar my/remote-host-list '())
  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; epa ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -853,6 +843,7 @@ line."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; elnode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package elnode)
 
+(setq vc-follow-symlinks nil)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; magit ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defvar my/git-keymap)
 (define-prefix-command 'my/git-keymap)
@@ -865,6 +856,10 @@ line."
 (use-package magit
   :if (not (version< emacs-version "24.4"))
   :init
+  ;; The following allows remote repositories to work under tramp on windows
+  ;; (plink), and we put git in our exec-path anyways, so the full path is
+  ;; unneeded.  This is also the default setting anyway on other platforms.
+  (setq magit-git-executable "git")
   (setq magit-popup-show-common-commands nil)
   (setq magit-log-show-refname-after-summary nil)
   (setq magit-no-confirm '())
@@ -2389,6 +2384,13 @@ This function's result only has value if it is preceded by any font changes."
   (/ (- (display-pixel-height) (or pixels 90))
      (frame-char-height)))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;; remotehost-connect ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package remotehost-connect
+  :demand t
+  :bind (("C-c 6" . remotehost-connect)
+         ([f6] . remotehost-connect)
+         ))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; os ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (let* ((system-file (concat my/os-dir my/system-name)))
   ;; load os file
@@ -2425,35 +2427,37 @@ This may perform related customization."
 
 (let* ((system (my/unqualify-host-name (system-name)))
        (hosts-dir (concat my/user-directory "settings/host/"))
-       (host-dir
-        (file-name-as-directory
-         (concat hosts-dir system)))
+       (all-hosts-dir (concat hosts-dir "hosts/"))
+       (host-dir (file-name-as-directory (concat hosts-dir system)))
        (host-file (concat host-dir system)))
-  ;; store location of remote hosts file for later
-  (setq my/remote-hosts-file (concat my/user-directory "remote-hosts"))
-  ;; load host file (if present)
+  ;; the list of remote hosts contained in the plist `remotehost-connect-hosts'
+  ;; and sourced from a list of hosts in the file `hosts/site'
+  ;; serves 3 purposes:
+  ;; 1) outside of emacs, is used to release harmsway onto remote hosts
+  ;; 2) inside emacs, allows assigning hosts to a site without an
+  ;;    explicit host file
+  ;; 3) provides a list of remote hosts to connect to, via `remotehost-connect'
+  ;;
+  ;; First we populate the list of remote hosts
+  (mapc (lambda (file)
+          (let ((site (f-base file)))
+            (setq remotehost-connect-hosts
+                  (append
+                   ;; insert the site into each entry
+                   (mapcar (lambda (lst)
+                             (plist-put lst :site site))
+                           (remotehost-connect-read-file file))
+                   remotehost-connect-hosts))))
+        (f-files all-hosts-dir))
+  ;; then we load the official host file, if it exists
   (if (file-exists-p host-file)
       (load host-file t)
     ;; otherwise look for current host in hosts file
-    ;; first populate my/host-plist
-    (mapc (lambda (file)
-            (let ((site (f-base file)))
-              (mapc (lambda (entry)
-                      (setq
-                       my/host-plist
-                       (cons
-                        `(:host ,entry :site ,site)
-                        my/host-plist)))
-                    (read-file-into-list-of-lines file))))
-          (f-files (concat hosts-dir "hosts/")))
-    ;; now analyze my/host-plist for the current hostname
-    (mapc
-     (lambda(plist)
-       (and (string= (plist-get plist :host) system)
-            (plist-get plist :site)
-            (my/load-site-file (plist-get plist :site))))
-     my/host-plist))
-  ;; look for environment variable definitions
+    (dolist (plist remotehost-connect-hosts)
+      (and (string= (plist-get plist :host) system)
+           (plist-get plist :site)
+           (my/load-site-file (plist-get plist :site)))))
+  ;; finally also look for environment variable definitions
   (my/load-environment-variables-from-file host-dir)
   )
 
