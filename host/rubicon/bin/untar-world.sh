@@ -1,11 +1,11 @@
-#!/usr/bin/env sh
+#!/usr/bin/env bash
 # -*- Mode: sh -*-
 # untar-world.sh --- untar important files
-# Copyright (C) 2015, 2016  Dan Harms (dan.harms)
+# Copyright (C) 2015-2017  Dan Harms (dan.harms)
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Monday, May 18, 2015
 # Version: 1.0
-# Modified Time-stamp: <2016-07-27 09:43:30 dan.harms>
+# Modified Time-stamp: <2017-06-14 17:51:46 dharms>
 # Keywords: configuration
 
 tar=$TAR
@@ -15,68 +15,73 @@ os=$(uname)
 host=$(hostname -s)
 site=$SITE
 input=
+logdir=.install-logs
 
 function backup_file
 {
-   if [ -f .emacs.d/$1 ] ; then
-      echo Backing up $1
-      $tar -rvf $backup .emacs.d/$1
-   elif [ -d .emacs.d/$1 ] ; then
-      echo Backing up directory $1
-      $tar -rvf $backup .emacs.d/$1
-   fi
+    if [ -f ".emacs.d/$1" ] ; then
+        echo Backing up "$1"
+        $tar -rvf $backup ".emacs.d/$1"
+    elif [ -d ".emacs.d/$1" ] ; then
+        echo Backing up directory "$1"
+        $tar -rvf $backup ".emacs.d/$1"
+    fi
 }
 
 if [ -z "$tar" ]; then
-   tar=$(which tar)
-   echo "Using $tar"
+    tar=$(which tar)
+    echo "Using $tar"
 fi
 if [ -z "$tar" ]; then
-   echo "! no tar available; quitting"
-   exit 1
+    echo "! no tar available; quitting"
+    exit 1
 fi
 if [ $# -gt 0 ] ; then
-   input=$1
-   shift
+    input=$1
+    shift
 fi
 
 if [ "x$input" = "x" ] ; then
-   echo "Error: need an input file."
-   exit
+    echo "Error: need an input file."
+    exit
 fi
 
 date=$(date '+%F_%T' | tr ':' '-')
 
 pushd ~
+mkdir -p "$logdir"
 
 # there's an existing .emacs.d
-$tar --overwrite -xpf $input .emacs.d/$manifest
+$tar --overwrite -xpf "$input" .emacs.d/$manifest
 if [ -d .emacs.d ] && [ -f .emacs.d/$manifest ] ; then
-   rm -f $backup
-   files=(`cat .emacs.d/$manifest`)
-   numfiles=${#files[*]}
-   i=0
-   while [ $i -lt $numfiles ]
-   do
-      backup_file ${files[$i]}
-      i=$(( $i+1 ))
-   done
-   # backup for posterity
-   $tar czf .emacs.d.bk_$date.tgz --force-local .emacs.d
-   # restore interesting files
-   rm -rf .emacs.d
-   mkdir .emacs.d
-   if [ -r $backup ] ; then
-      $tar -xpf $backup
-      rm -f $backup
-   fi
+    rm -f $backup
+    _prune-empty-dirs.sh .emacs.d/backups
+    files=(`cat .emacs.d/$manifest`)
+    numfiles=${#files[*]}
+    i=0
+    while [ $i -lt $numfiles ]
+    do
+        backup_file ${files[$i]}
+        i=$(( $i+1 ))
+    done
+    # backup for posterity
+    $tar czf "$logdir/.emacs.d.bk_$date.tgz" --force-local .emacs.d
+    # restore interesting files
+    rm -rf .emacs.d
+    mkdir .emacs.d
+    if [ -r $backup ] ; then
+        $tar -xpf $backup
+        rm -f $backup
+    fi
 fi
 
-echo About to unpack $input...
-$tar --overwrite -xpvf $input
+echo About to unpack "$input"...
+$tar --overwrite -xpvf "$input"
 
 # remove intermediate directories, if empty
-rmdir -p bash tcsh os/$os site/$site host/$host
+for i in bash tcsh os/$os site/$site host/$host; do
+    rmdir -p "$i"
+done
 # and byte-compile emacs
 bin/emacscomp.sh .emacs.d
 
