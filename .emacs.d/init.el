@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-06-09 17:25:56 dharms>
+;; Modified Time-stamp: <2017-06-14 08:14:27 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2127,6 +2127,7 @@ Moves point to (point-max); then FORMS are evaluated."
   (setq flycheck-global-modes
         '(emacs-lisp-mode python-mode dart-mode sh-mode c++-mode json-mode))
   (setq-default flycheck-emacs-lisp-load-path 'inherit)
+  (setq-default flycheck-shellcheck-follow-sources nil)
   (use-package flycheck-pos-tip)
   (use-package flycheck-checkbashisms)
   (use-package flycheck-bashate)
