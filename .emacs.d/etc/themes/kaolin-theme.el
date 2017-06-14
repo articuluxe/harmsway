@@ -5,7 +5,7 @@
 ;; Author: 0rdy <mail@0rdy.com>
 ;; URL: https://github.com/0rdy/kaolin-theme
 ;; Package-Requires: ((emacs "24"))
-;; Version: 0.8.2
+;; Version: 0.8.4
 
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -53,7 +53,10 @@
 
 ;; Kaolin color palette
 (let ((c '((class color) (min-colors 89)))
-      (black           "#1b1b1b")
+      (black1          "#1b1b1b")
+      (black2          "#282828")
+      (black3          "#353535")
+      (black4          "#414141")
       (alt-black       "#181818")
       (dark-gray       "#2a2a2a")
       (dim-gray        "#353535")
@@ -61,8 +64,12 @@
       (alt-gray        "#60696b")
       ;; (light-gray      "#859092")
       (light-gray      "#9191a2")
-      ;; (white           "#c5c8c6")
-      (white           "#c8c8d0")
+      ;; (white1           "#c5c8c6")
+      (white1           "#c8c8d0")
+      (white2          "#babac4")
+      (white3          "#adadb9")
+      (white4          "#9f9fad")
+
 
       ;; TODO: (gray-brown     "#a5a19c")
       (brown           "#7d6360")
@@ -142,14 +149,14 @@
       (underline-style (if kaolin-wave 'wave 'line)))
 
   ;; Theme colors
-  (let* ((fg1  white)
-         (fg2  "#babac4")
-         (fg3  "#adadb9")
-         (fg4  "#9f9fad")
-         (bg1  black)
-         (bg2  "#282828")
-         (bg3  "#353535")
-         (bg4  "#414141")
+  (let* ((fg1  white1)
+         (fg2  white2)
+         (fg3  white3)
+         (fg4  white4)
+         (bg1  black1)
+         (bg2  black2)
+         (bg3  black3)
+         (bg4  black4)
 
          (dim-buffer alt-black)
          (hl-line    bg2)
@@ -172,7 +179,8 @@
          (diff-del    red)
 
          (line-fg           fg4)
-         (line-bg           bg2)
+         (line-bg1          bg2)
+         (line-bg2          dim-gray)
          (line-border       bg3)
          (segment-active    gray)
          (segment-inactive  gray)
@@ -308,7 +316,6 @@
      `(linum-relative-current-line ((t (:background ,bg1 :foreground ,linum-hl :bold ,bold))))
      `(nlinum-current-line ((t (:background ,bg1 :foreground ,linum-hl :bold ,bold))))
      `(nlinum-relative-current-face ((t (:background ,bg1 :foreground ,linum-hl :bold ,bold))))
-     `(nlinum-hl-face ((t (:background ,bg1 :foreground ,linum-hl :bold ,bold))))
 
      ;; Auto-dim-other-buffers
      `(auto-dim-other-buffers-face  ((t (:background ,dim-buffer))))
@@ -318,25 +325,25 @@
      `(fic-author-face  ((t (:background nil :foreground ,red :bold ,bold))))
 
      ;; Modeline
-     ;; `(mode-line ((,c (:box (:line-width 1 :color ,line-border) :bold ,bold :background ,line-bg :foreground ,line-fg))))
-     `(mode-line ((,c (:box (:line-width 2 :color ,dim-gray) :background ,line-bg :foreground ,faded-blue :bold ,bold))))
+     ;; `(mode-line ((,c (:box (:line-width 1 :color ,line-border) :bold ,bold :background ,line-bg1 :foreground ,line-fg))))
+     `(mode-line ((,c (:box (:line-width 2 :color ,line-bg2) :background ,line-bg1 :foreground ,faded-blue :bold ,bold))))
      `(mode-line-buffer-id ((,c (:background nil :foreground ,teal :bold ,bold))))
      `(mode-line-highlight ((,c (:foreground ,keyword :box nil :bold ,bold))))
      ;; `(mode-line-inactive ((,c (:box (:line-width 1 :color ,bg2 :style pressed-button) :background ,bg2 :foreground ,light-gray :weight normal))))
-     `(mode-line-inactive ((,c (:box (:line-width 2 :color ,line-bg) :background ,line-bg :foreground ,light-gray :bold ,bold))))
+     `(mode-line-inactive ((,c (:box (:line-width 2 :color ,line-bg1) :background ,line-bg1 :foreground ,light-gray :bold ,bold))))
      `(mode-line-emphasis ((,c (:foreground ,fg1))))
 
      ;; Telephone-line
-     `(telephone-line-accent-active ((t (:inherit mode-line :background ,dim-gray :foreground ,line-fg))))
-     `(telephone-line-accent-inactive ((t (:background ,line-bg :foreground ,light-gray :inherit mode-line-inactive))))
+     `(telephone-line-accent-active ((t (:inherit mode-line :background ,line-bg2 :foreground ,line-fg))))
+     `(telephone-line-accent-inactive ((t (:background ,line-bg1 :foreground ,light-gray :inherit mode-line-inactive))))
      `(telephone-line-evil ((t (:inherit mode-line))))
-     `(telephone-line-evil-normal ((t (:background ,dim-gray :foreground ,evil-normal :inherit telephone-line-evil))))
-     `(telephone-line-evil-insert ((t (:background ,dim-gray :foreground ,evil-insert :inherit telephone-line-evil))))
-     `(telephone-line-evil-visual ((t (:background ,dim-gray :foreground ,evil-visual :inherit telephone-line-evil))))
-     `(telephone-line-evil-replace ((t (:background ,dim-gray :foreground ,evil-replace :inherit telephone-line-evil))))
-     `(telephone-line-evil-motion ((t (:background ,dim-gray :foreground ,evil-motion :inherit telephone-line-evil))))
-     `(telephone-line-evil-operator ((t (:background ,dim-gray :foreground ,evil-operator :inherit telephone-line-evil))))
-     `(telephone-line-evil-emacs ((t (:background ,dim-gray :foreground ,evil-emacs :inherit telephone-line-evil))))
+     `(telephone-line-evil-normal ((t (:background ,line-bg2 :foreground ,evil-normal :inherit telephone-line-evil))))
+     `(telephone-line-evil-insert ((t (:background ,line-bg2 :foreground ,evil-insert :inherit telephone-line-evil))))
+     `(telephone-line-evil-visual ((t (:background ,line-bg2 :foreground ,evil-visual :inherit telephone-line-evil))))
+     `(telephone-line-evil-replace ((t (:background ,line-bg2 :foreground ,evil-replace :inherit telephone-line-evil))))
+     `(telephone-line-evil-motion ((t (:background ,line-bg2 :foreground ,evil-motion :inherit telephone-line-evil))))
+     `(telephone-line-evil-operator ((t (:background ,line-bg2 :foreground ,evil-operator :inherit telephone-line-evil))))
+     `(telephone-line-evil-emacs ((t (:background ,line-bg2 :foreground ,evil-emacs :inherit telephone-line-evil))))
 
      ;; Powerline
      `(powerline-active1 ((,c (:inherit mode-line))))
@@ -773,10 +780,10 @@
      `(vimish-fold-fringe ((,c (:background nil :foreground ,jade))))
 
     ;; Avy
-     `(avy-lead-face ((,c (:background ,dark-red :foreground ,white))))
-     `(avy-lead-face-0 ((,c (:background ,jade :foreground ,white))))
-     `(avy-lead-face-1 ((,c (:background ,dark-blue :foreground ,white))))
-     `(avy-lead-face-2 ((,c (:background ,dark-purple :foreground ,white))))
+     `(avy-lead-face ((,c (:background ,dark-red :foreground ,fg1))))
+     `(avy-lead-face-0 ((,c (:background ,jade :foreground ,fg1))))
+     `(avy-lead-face-1 ((,c (:background ,dark-blue :foreground ,fg1))))
+     `(avy-lead-face-2 ((,c (:background ,dark-purple :foreground ,fg1))))
 
      ;; Ivy & Swiper
      `(ivy-modified-buffer ((,c (:foreground ,light-yellow))))

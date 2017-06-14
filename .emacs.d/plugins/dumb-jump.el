@@ -366,6 +366,52 @@ using searcher git-grep."
            :tests ("class test:" "public class test implements Something")
            :not ("class testnot:" "public class testnot implements Something"))
 
+    ;; coq
+    (:type "function" :supports ("ag" "rg" "git-grep") :language "coq"
+           :regex "\\s*Variable\\s+JJJ\\b"
+           :tests ("Variable test")
+           :not ("Variable testx"))
+
+    (:type "function" :supports ("ag" "rg" "git-grep") :language "coq"
+           :regex "\\s*Inductive\\s+JJJ\\b"
+           :tests ("Inductive test")
+           :not ("Inductive testx"))
+
+    (:type "function" :supports ("ag" "rg" "git-grep") :language "coq"
+           :regex "\\s*Lemma\\s+JJJ\\b"
+           :tests ("Lemma test")
+           :not ("Lemma testx"))
+
+    (:type "function" :supports ("ag" "rg" "git-grep") :language "coq"
+           :regex "\\s*Definition\\s+JJJ\\b"
+           :tests ("Definition test")
+           :not ("Definition testx"))
+
+    (:type "function" :supports ("ag" "rg" "git-grep") :language "coq"
+           :regex "\\s*Hypothesis\\s+JJJ\\b"
+           :tests ("Hypothesis test")
+           :not ("Hypothesis testx"))
+
+    (:type "function" :supports ("ag" "rg" "git-grep") :language "coq"
+           :regex "\\s*Theorm\\s+JJJ\\b"
+           :tests ("Theorm test")
+           :not ("Theorm testx"))
+
+    (:type "function" :supports ("ag" "rg" "git-grep") :language "coq"
+           :regex "\\s*Fixpoint\\s+JJJ\\b"
+           :tests ("Fixpoint test")
+           :not ("Fixpoint testx"))
+
+    (:type "function" :supports ("ag" "rg" "git-grep") :language "coq"
+           :regex "\\s*Module\\s+JJJ\\b"
+           :tests ("Module test")
+           :not ("Module testx"))
+
+    (:type "function" :supports ("ag" "rg" "git-grep") :language "coq"
+           :regex "\\s*CoInductive\\s+JJJ\\b"
+           :tests ("CoInductive test")
+           :not ("CoInductive testx"))
+
     ;; python
     (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "python"
            :regex "\\s*JJJ\\s*=[^=\\n]+" :tests ("test = 1234") :not ("if test == 1234:"))
@@ -453,6 +499,11 @@ using searcher git-grep."
            :regex "function\\s*JJJ\\s*"
            :tests ("function test{" "function test {" "function test () {")
            :not   ("function nottest {"))
+
+    (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "shell"
+           :regex "JJJ\\\(\\\)\\s*\\{"
+           :tests ("test() {")
+           :not ("testx() {"))
 
     (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "shell"
            :regex "\\bJJJ\\s*=\\s*"
@@ -727,6 +778,7 @@ using searcher git-grep."
     (:language "c++" :ext "hh" :agtype "cpp" :rgtype "cpp")
     (:language "c++" :ext "c++" :agtype nil :rgtype nil)
     (:language "c++" :ext "h++" :agtype nil :rgtype nil)
+    (:language "coq" :ext "v" :agtype nil :rgtype nil)
     (:language "haskell" :ext "hs" :agtype "haskell" :rgtype "haskell")
     (:language "haskell" :ext "lhs" :agtype "haskell" :rgtype "haskell")
     (:language "objc" :ext "m" :agtype "objc" :rgtype "objc")
@@ -783,12 +835,12 @@ using searcher git-grep."
     (:language "rust" :ext "rs" :agtype "rust" :rgtype "rust")
     (:language "scala" :ext "scala" :agtype "scala" :rgtype "scala")
     (:language "scheme" :ext "scm" :agtype "scheme" :rgtype "lisp")
-    (:language "shell" :ext "sh" :agtype "shell" :rgtype "sh")
-    (:language "shell" :ext "bash" :agtype "shell" :rgtype "sh")
-    (:language "shell" :ext "csh" :agtype "shell" :rgtype "sh")
-    (:language "shell" :ext "ksh" :agtype "shell" :rgtype "sh")
-    (:language "shell" :ext "tcsh" :agtype "shell" :rgtype "sh")
-    (:language "swift" :ext "swift" :agtype "swift" :rgtype "swift"))
+    (:language "shell" :ext "sh" :agtype nil :rgtype nil)
+    (:language "shell" :ext "bash" :agtype nil :rgtype nil)
+    (:language "shell" :ext "csh" :agtype nil :rgtype nil)
+    (:language "shell" :ext "ksh" :agtype nil :rgtype nil)
+    (:language "shell" :ext "tcsh" :agtype nil :rgtype nil)
+    (:language "swift" :ext "swift" :agtype nil :rgtype "swift"))
   "Mapping of programming language(s) to file extensions."
   :group 'dumb-jump
   :type
@@ -1098,11 +1150,14 @@ to keep looking for another root."
                        (dumb-jump-get-language-from-mode))))
     (if (member language languages)
       language
-      (format ".%s file" (or (f-ext file) "?")))))
+      (format ".%s file" (or (f-ext file) "")))))
 
 (defun dumb-jump-get-language-from-mode ()
   "Extract the language from the 'major-mode' name.  Currently just everything before '-mode'."
-  (s-replace "-mode" "" (symbol-name major-mode)))
+  (let ((lookup '(sh "shell"))
+        (m (s-replace "-mode" "" (symbol-name major-mode))))
+        (or (plist-get lookup (intern m)) m)))
+
 
 (defun dumb-jump-get-language-by-filename (file)
   "Get the programming language from the FILE."
@@ -1812,7 +1867,7 @@ searcher symbol."
 (defun dumb-jump-generate-git-grep-command (look-for cur-file proj regexes lang exclude-paths)
   "Generate the git grep response based on the needle LOOK-FOR in the directory PROJ."
   (let* ((filled-regexes (dumb-jump-populate-regexes look-for regexes 'git-grep))
-         (ggtypes (dumb-jump-get-git-grep-type-by-language lang))
+         (ggtypes (when (f-ext cur-file) (dumb-jump-get-git-grep-type-by-language lang)))
          (cmd (concat dumb-jump-git-grep-cmd
                       " --color=never --line-number"
                       (if dumb-jump-git-grep-search-untracked
