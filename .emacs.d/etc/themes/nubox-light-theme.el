@@ -65,7 +65,7 @@
       (nubox_faded_magenta "#8f3f71")
       (nubox_faded_cyan "#427b58")
       (nubox_faded_orange "#af3a03"))
-  (let ((black  nubox_light0_hard)
+  (let ((black  nubox_truewhite)
         (black2 nubox_dark4)
         (white  nubox_dark1)
         (white2 nubox_trueblack)
@@ -85,7 +85,7 @@
      'nubox-light
      `(default ((t (:foreground ,white2 :background ,black))))
      `(cursor ((t (:background ,white2))))
-     `(escape-glyph ((t (:foreground ,blue))))
+     `(escape-glyph ((t (:foreground ,cyan2))))
      `(dired-async-failures ((t (:foreground ,red))))
      `(dired-async-message ((t (:weight bold :foreground ,white2))))
      `(dired-async-mode-message ((t (:weight bold :foreground ,white2))))
