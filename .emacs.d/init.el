@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-06-14 17:55:36 dharms>
+;; Modified Time-stamp: <2017-06-15 08:15:13 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -324,10 +324,12 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
          ("\e\e<" . enclose-by-braces-caret)
          ))
 
+(use-package load-environment-vars
+             :commands (load-environment-variable-from-file
+                        load-environment-variables-from-file))
+
 (use-package custom-environment
-  :commands (load-environment-variable-from-file
-             my/load-environment-variables-from-file
-             ))
+  :commands my/load-environment-variables-from-file)
 
 (use-package custom-buffer-utils
   :bind (("C-x C-r" . my/revert-buffer)

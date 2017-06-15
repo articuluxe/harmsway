@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, April 15, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-06-09 08:33:34 dharms>
+;; Modified Time-stamp: <2017-06-15 08:14:29 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: environment utils
 
@@ -26,26 +26,7 @@
 
 ;;; Code:
 (require 'read-file-into-list-of-lines)
-
-(defun load-environment-variables-from-file (file)
-  "Load each line from FILE, of the form `var=val'.
-For each line, sets environment variable `var' equal to `val'."
-  (interactive "fLoad environment variables from file: ")
-  (mapc (lambda(line)
-          (when (string-match "\\(.+\\)=\\(.+\\)" line)
-            (setenv (match-string-no-properties 1 line)
-                    (substitute-env-vars
-                     (match-string-no-properties 2 line)))))
-        (read-file-into-list-of-lines file)))
-
-(defun load-environment-variable-from-file (var file &optional sep)
-  "Load into the environment variable VAR each line from the FILE.
-SEP can be a separator."
-  (interactive)
-  (unless sep (setq sep path-separator))
-  (setenv var (concat (mapconcat 'convert-standard-filename
-                                 (read-file-into-list-of-lines file)
-                                 sep) sep (getenv var))))
+(require 'load-environment-vars)
 
 (defun my/load-environment-variables-from-file (dir &optional append-exec-path)
 "Update environment variables according to files that may be present under DIR.
