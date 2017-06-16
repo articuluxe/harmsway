@@ -1,3 +1,5 @@
+# proviso files
+*.proviso
 # profile files
 *.eprof
 *.rprof
