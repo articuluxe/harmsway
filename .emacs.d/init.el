@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-06-16 08:56:46 dharms>
+;; Modified Time-stamp: <2017-06-16 17:24:59 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1885,22 +1885,6 @@ Moves point to (point-max); then FORMS are evaluated."
   (setq large-file-warning-threshold 100000000) ;100MB
   (setq vlf-batch-size 100000000)       ;100MB
   (setq vlf-tune-enabled nil)           ;don't adjust batch size dynamically
-  )
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; profiles ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package profiles+
-  :config
-  (profile-define "default" my/user-name user-mail-address
-                  ;; relative path to makefiles
-                  'build-sub-dirs '((""))
-                  ;; relative path to debug executables (under project-root-dir
-                  ;; and build-sub-dir)
-                  ;; 'debug-sub-dirs '("tests/")
-                  ;; specific compiler invocation command
-                  'compile-sub-command "make"
-                  )
-  (profile-set-default "default")
-  (global-set-key "\C-c0d" 'profile-open-dired-on-dir)
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; rtags ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
