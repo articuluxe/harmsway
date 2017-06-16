@@ -5,7 +5,7 @@ rem Copyright (C) 2015-2017  Dan Harms (dan.harms)
 rem Author: Dan Harms <dan.harms@xrtrading.com>
 rem Created: Thursday, May 21, 2015
 rem Version: 1.0
-rem Modified Time-stamp: <2017-03-28 10:51:39 dan.harms>
+rem Modified Time-stamp: <2017-06-15 11:45:11 dan.harms>
 rem Modified by: Dan Harms
 rem Keywords: tar whole world
 
@@ -45,6 +45,7 @@ if exist %dest% (
 )
 %tar% c%verbose%f %dest% config doc src .gdbinit .gnupg
 %tar% u%verbose%f %dest% --exclude=*.elc .emacs.d
+%tar% u%verbose%f %dest% --transform=s%ext%.emacs.d/ext% ext
 %tar% u%verbose%f %dest% --transform=s/scripts/bin/ scripts
 %tar% u%verbose%f %dest% --transform=s$bash/$$ bash
 %tar% u%verbose%f %dest% --transform=s$tcsh/$$ tcsh
