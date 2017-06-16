@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-06-15 22:06:51 dharms>
+;; Modified Time-stamp: <2017-06-16 08:56:46 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -255,6 +255,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
          ("C-c pp" . proviso-display-print-project)
          ("C-c pn" . proviso-display-echo-project-names)
          ("C-c pe" . proviso-display-projects)
+         ("C-c pg" . proviso-refresh-current-project)
          )
   )
 
@@ -470,15 +471,10 @@ line."
                         (if dired-directory
                             (concat "{" (buffer-name) "}")
                           (buffer-name))
-                        (if (and (featurep 'profiles+)
-                                 (profile-current-get 'project-name))
-                            ;; the parent profile "default" happens to
-                            ;; have an empty 'project-name attribute
-                            (concat
-                             "("
-                             (upcase (symbol-name profile-current))
-                             ")")
-                          "")           ;else empty if no project name
+                        (if (and (featurep 'proviso)
+                                 (proviso-current-project-name))
+                            (concat "(" (upcase (proviso-current-project-name)) ")")
+                          "")
                         )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; full-edit ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
