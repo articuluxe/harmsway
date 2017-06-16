@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-05-29 17:11:41 dharms>
+;; Modified Time-stamp: <2017-06-15 20:55:23 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -63,8 +63,6 @@
       (message "// Using comments like this"))))
 
 (with-eval-after-load 'cc-mode
-  (define-key c-mode-base-map "\C-cm" 'my/recompile)
-  (define-key c-mode-base-map "\C-ck" 'kill-compilation)
   (define-key c-mode-base-map "\C-c\C-c" 'comment-region)
   (define-key c-mode-base-map "\C-c\C-u" 'uncomment-region)
   (define-key c++-mode-map "\C-c/" 'toggle-c-comment-delimiters)

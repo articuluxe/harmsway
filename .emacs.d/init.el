@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-06-15 08:15:13 dharms>
+;; Modified Time-stamp: <2017-06-15 22:06:51 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -263,21 +263,6 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (global-set-key "\M-*" 'xref-pop-marker-stack)
   (global-set-key "\M-," 'tags-loop-continue)
   )
-;; (defvar tag-lookup-target-profile nil
-;;   "The working profile in effect when a tag is first looked up.")
-;; (defun my/store-profile ()
-;;   "Store the current profile."
-;;   (setq tag-lookup-target-profile (symbol-name profile-current)))
-;; (defun my/tags-find-tag ()
-;;   "Find a tag based on the current profile."
-;;   (interactive)
-;;   (my/store-profile)
-;;   (etags-select-find-tag))
-;; (defun my/tags-find-tag-at-point ()
-;;   "Find the tag at point based on the current profile."
-;;   (interactive)
-;;   (my/store-profile)
-;;   (etags-select-find-tag-at-point))
 
 ;; select
 (use-package proviso-etags-select
