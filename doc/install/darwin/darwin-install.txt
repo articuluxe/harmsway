@@ -34,6 +34,11 @@ brew install cask
 # or
 curl -fsSL https://raw.githubusercontent.com/cask/cask/master/go | python
 
+# development version of universal-ctags
+brew tap universal-ctags/universal-ctags
+brew install --HEAD universal-ctags
+ln -s /usr/local/bin/ctags ~/bin/exctags
+
 # Local Variables:
 # mode: sh
 # End:
