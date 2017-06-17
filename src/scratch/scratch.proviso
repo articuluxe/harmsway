@@ -1,6 +1,7 @@
 (proviso-define "scratch"
                 :initfun (lambda (proj)
                            (proviso-put proj :proj-alist
-                                        `((:name "c++lib" :dir ,(getenv "CSTDLIB_INC"))
+                                        `((:name "scratch")
+                                          (:name "c++lib" :dir ,(getenv "CSTDLIB_INC"))
                                           (:name "clib" :dir "/usr/include"
                                                  :ctags-opts "--exclude=c++ --exclude=boost --exclude=X11")))))
