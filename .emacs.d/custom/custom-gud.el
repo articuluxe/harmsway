@@ -1,9 +1,9 @@
 ;;; custom-gud.el --- custom gud utilities
-;; Copyright (C) 2016  Dan Harms (dharms)
+;; Copyright (C) 2016-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Tuesday, April 12, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-04-12 17:49:44 dharms>
+;; Modified Time-stamp: <2017-06-17 15:09:36 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: gud gdb coding
 
@@ -40,8 +40,7 @@
              prefix root
              (cond ((eq (length sub-dirs) 1) (car sub-dirs))
                    ((null sub-dirs) "")
-                   (t (funcall my/choose-func
-                               sub-dirs "Debug dir:"))))))
+                   (t (completing-read "Debug dir: " sub-dirs))))))
     (unless (and exec-dir (file-exists-p exec-dir))
       (setq exec-dir default-directory))
     (setq exec (read-file-name "Debug executable: " exec-dir nil t))

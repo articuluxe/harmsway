@@ -1,9 +1,9 @@
 ;;; custom-coding.el --- custom coding utilities
-;; Copyright (C) 2016  Dan Harms (dharms)
+;; Copyright (C) 2016-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Tuesday, April 12, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-06-10 17:06:54 dharms>
+;; Modified Time-stamp: <2017-06-17 23:20:04 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: coding
 
@@ -103,12 +103,9 @@ query for the base name. Otherwise, the base file name is used."
                    "static"))
         type str)
     (setq type (read-string "Enter the data type to cast to: "))
-    (setq str (funcall my/choose-func
-                       '("static" "dynamic" "reinterpret" "const")
-                       "Enter the type of cast: "))
-    ;; (setq str (ido-completing-read "Enter the type of cast: "
-    ;;                                '("static" "dynamic" "reinterpret" "const")
-    ;;                                nil t nil my/cast-history-list "static"))
+    (setq str (completing-read "Enter the type of cast: "
+                               '("static" "dynamic" "reinterpret" "const")
+                               nil t nil my/cast-history-list))
     (if (= 0 (length str))
         (setq str initial))
     (save-excursion

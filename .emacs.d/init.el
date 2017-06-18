@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-06-17 15:01:02 dharms>
+;; Modified Time-stamp: <2017-06-17 23:12:18 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1046,10 +1046,6 @@ line."
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ido ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; (defvar my/completion-framework-alist (list
-;;                                        (cons "ido" 'my/activate-ido))
-;;   "An alist of completion frameworks to choose among.
-;; Each value is a cons cell (`description' . `activation-function').")
 ;; (use-package ido
 ;;   :defines (ido-temp-list)
 ;;   :defer t
@@ -1548,10 +1544,9 @@ Moves point to (point-max); then FORMS are evaluated."
     "Toggle sorting in dired buffers."
     (interactive)
     (let ((type
-           (funcall
-            my/choose-func
-            '( "size" "extension" "ctime" "utime" "time" "name")
-            "Sort by:")))
+           (completing-read "Sort by: "
+                            '( "size" "extension" "ctime" "utime" "time" "name")
+                            nil t)))
       ;; on os x, extension (X) not supported;
       ;; also, ctime means time file status was last changed
       (cond ((string= type "size") (dired-sort-size))
