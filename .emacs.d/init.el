@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-06-16 17:24:59 dharms>
+;; Modified Time-stamp: <2017-06-17 15:01:02 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1046,50 +1046,50 @@ line."
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ido ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defvar my/completion-framework-alist (list
-                                       (cons "ido" 'my/activate-ido))
-  "An alist of completion frameworks to choose among.
-Each value is a cons cell (`description' . `activation-function').")
-(use-package ido
-  :defines (ido-temp-list)
-  :defer t
-  :config
-  (setq ido-save-directory-list-file (concat my/user-directory "ido-last"))
-  (setq ido-max-prospects 25)
-  ;; (setq ido-enable-flex-matching t)
-  ;; (setq ido-case-fold t)
-  (setq ido-auto-merge-work-directories-length -1) ;disables auto-merge
-  (add-to-list 'ido-work-directory-list-ignore-regexps tramp-file-name-regexp)
-  ;; ask before reusing an existing buffer
-  (setq-default ido-default-buffer-method 'maybe-frame)
-  (setq-default ido-default-file-method 'maybe-frame)
-  (ido-mode 1)
+;; (defvar my/completion-framework-alist (list
+;;                                        (cons "ido" 'my/activate-ido))
+;;   "An alist of completion frameworks to choose among.
+;; Each value is a cons cell (`description' . `activation-function').")
+;; (use-package ido
+;;   :defines (ido-temp-list)
+;;   :defer t
+;;   :config
+;;   (setq ido-save-directory-list-file (concat my/user-directory "ido-last"))
+;;   (setq ido-max-prospects 25)
+;;   ;; (setq ido-enable-flex-matching t)
+;;   ;; (setq ido-case-fold t)
+;;   (setq ido-auto-merge-work-directories-length -1) ;disables auto-merge
+;;   (add-to-list 'ido-work-directory-list-ignore-regexps tramp-file-name-regexp)
+;;   ;; ask before reusing an existing buffer
+;;   (setq-default ido-default-buffer-method 'maybe-frame)
+;;   (setq-default ido-default-file-method 'maybe-frame)
+;;   (ido-mode 1)
 
-  ;; sort files by descending modified time (except remotely, which is dog-slow)
-  (defun ido-sort-mtime()
-    (unless (tramp-tramp-file-p default-directory)
-      (setq ido-temp-list
-            (sort ido-temp-list
-                  (lambda (a b)
-                    (time-less-p
-                     (sixth (file-attributes (concat ido-current-directory b)))
-                     (sixth (file-attributes (concat ido-current-directory a)))))))
-      ;; (ido-to-end
-      ;;  (delq nil (mapcar (lambda (x)
-      ;;                      (and (char-equal (string-to-char x) ?.) x))
-      ;;                    ido-temp-list)))
-      ))
-  (add-hook 'ido-make-file-list-hook 'ido-sort-mtime)
-  (add-hook 'ido-make-dir-list-hook 'ido-sort-mtime)
+;;   ;; sort files by descending modified time (except remotely, which is dog-slow)
+;;   (defun ido-sort-mtime()
+;;     (unless (tramp-tramp-file-p default-directory)
+;;       (setq ido-temp-list
+;;             (sort ido-temp-list
+;;                   (lambda (a b)
+;;                     (time-less-p
+;;                      (sixth (file-attributes (concat ido-current-directory b)))
+;;                      (sixth (file-attributes (concat ido-current-directory a)))))))
+;;       ;; (ido-to-end
+;;       ;;  (delq nil (mapcar (lambda (x)
+;;       ;;                      (and (char-equal (string-to-char x) ?.) x))
+;;       ;;                    ido-temp-list)))
+;;       ))
+;;   (add-hook 'ido-make-file-list-hook 'ido-sort-mtime)
+;;   (add-hook 'ido-make-dir-list-hook 'ido-sort-mtime)
 
-  (when (< emacs-major-version 24)
-    ;; use ido to switch modes when smex is not available
-    (global-set-key (kbd "M-x")
-                    (lambda() (interactive)
-                      (call-interactively
-                       (intern
-                        (ido-completing-read
-                         "M-x " (all-completions "" obarray 'commandp)))))))
+;;   (when (< emacs-major-version 24)
+;;     ;; use ido to switch modes when smex is not available
+;;     (global-set-key (kbd "M-x")
+;;                     (lambda() (interactive)
+;;                       (call-interactively
+;;                        (intern
+;;                         (ido-completing-read
+;;                          "M-x " (all-completions "" obarray 'commandp)))))))
   ;; for recentf
   ;; (unless (featurep 'uniquify-recentf)
   ;;   (defun recentf-ido-find-file()
@@ -1100,7 +1100,7 @@ Each value is a cons cell (`description' . `activation-function').")
   ;;                  recentf-list nil t)))
   ;;       (when file (find-file file))))
   ;;   (global-set-key "\er" 'recentf-ido-find-file))
-  )
+  ;; )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ace-window ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package ace-window
@@ -1197,25 +1197,25 @@ Each value is a cons cell (`description' . `activation-function').")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ivy ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package ivy
+  :demand t
   :config
   (setq ivy-wrap t)
-  (add-to-list 'my/completion-framework-alist
-               (cons "ivy" 'my/activate-ivy))
   (global-set-key "\e\eii" 'ivy-resume)
   (setq ivy-display-style 'fancy)
   (setq ivy-extra-directories '("../" "./"))
   (setq ivy-count-format "(%d/%d) ")
-  (defun ivy-insert-action (x)
-    (with-ivy-window
-      (insert x)))
-  (ivy-set-actions
-   t
-   '(("I" ivy-insert-action "insert")))
-  )
+  (ivy-mode 1)
+  ;; (defun ivy-insert-action (x)
+  ;;   (with-ivy-window
+  ;;     (insert x)))
+  ;; (ivy-set-actions
+  ;;  t
+  ;;  '(("I" ivy-insert-action "insert")))
 (use-package ivy-rich
   :init
   (ivy-set-display-transformer 'ivy-switch-buffer
                                'ivy-rich-switch-buffer-transformer))
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; counsel ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package counsel
@@ -1241,6 +1241,7 @@ Each value is a cons cell (`description' . `activation-function').")
          ("M-y" . ivy-next-line-and-call)
          )
   :commands (counsel-M-x counsel-find-file)
+  :demand t
   :init
   (when (eq system-type 'darwin)
     (setq counsel-locate-cmd 'counsel-locate-cmd-mdfind))
@@ -1263,20 +1264,16 @@ Each value is a cons cell (`description' . `activation-function').")
          (let ((completing-read-function 'completing-read-default))
            (call-interactively 'find-file))))
       (ivy-done)))
+  (counsel-mode 1)
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smex ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package smex
   :if (<= 24 emacs-major-version)
-  :bind (("M-x" . smex)
-         ("M-X" . smex-major-mode-commands))
   :config
   (smex-initialize)
-  (if (boundp 'ivy-mode)
-      (global-set-key "\e\ex" 'counsel-M-x)
-    ;; the old M-x
-    (global-set-key "\e\ex" 'execute-extended-command))
-  )
+  ;; the old M-x
+  (global-set-key "\e\ex" 'execute-extended-command))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; imenu ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package popup-imenu
@@ -1894,22 +1891,13 @@ Moves point to (point-max); then FORMS are evaluated."
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; completion ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package custom-completion
-  :init
-  (setq tab-always-indent 'complete)      ;or t to avoid completion
-  (add-to-list 'completion-styles 'initials t)
-  (setq completion-auto-help nil)
-  (setq completion-cycle-threshold t)     ;always cycle
-  ;; Ignore case when completing file names
-  (setq read-file-name-completion-ignore-case nil)
-  :demand t
-  :bind
-  (("C-c C-r" . my/choose-choose-func)
-   ("C-c C-e" . my/choose-completion)
-   )
-  :commands
-  (my/activate-ido my/activate-ivy)
-  )
+(setq tab-always-indent 'complete)      ;or t to avoid completion
+(add-to-list 'completion-styles 'initials t)
+(setq completion-auto-help nil)
+(setq completion-cycle-threshold t)     ;always cycle
+;; Ignore case when completing file names
+(setq read-file-name-completion-ignore-case nil)
+(setq uniquify-recentf-func 'uniquify-recentf-ivy-recentf-open)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-complete ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package auto-complete

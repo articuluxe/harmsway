@@ -1,10 +1,10 @@
 ;; -*- Mode: Emacs-Lisp -*-
 ;; talbot --- site file for talbot
-;; Copyright (C) 2015, 2016  Dan Harms (dharms)
+;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-08-16 17:54:27 dharms>
+;; Modified Time-stamp: <2017-06-17 14:53:36 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -42,11 +42,5 @@
                             ;; insert customizations
                             ))
                         )) t)) t)
-
-(add-hook 'after-init-hook
-          (lambda()
-            (setq my/choose-func 'choose-via-ivy)
-            (my/activate-ivy)
-            ))
 
 ;; talbot ends here
