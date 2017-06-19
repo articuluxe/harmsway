@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-06-19 13:41:46 dan.harms>
+;; Modified Time-stamp: <2017-06-19 13:45:37 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2069,15 +2069,17 @@ Moves point to (point-max); then FORMS are evaluated."
         '(emacs-lisp-mode python-mode dart-mode sh-mode c++-mode json-mode))
   (setq-default flycheck-emacs-lisp-load-path 'inherit)
   (setq-default flycheck-shellcheck-follow-sources nil)
-  (use-package flycheck-pos-tip)
   (use-package flycheck-checkbashisms)
   (use-package flycheck-bashate)
-  (setq flycheck-display-errors-function #'flycheck-pos-tip-error-messages)
-  (setq flycheck-pos-tip-display-errors-tty-function
-        (lambda (errors)
-          (let ((message (mapconcat #'flycheck-error-format-message-and-id
-                                    errors "\n\n")))
-            (popup-tip message))))
+  (use-package flycheck-popup-tip)
+  (add-hook 'flycheck-mode-hook #'flycheck-popup-tip-mode)
+  ;; (use-package flycheck-pos-tip)
+  ;; (setq flycheck-display-errors-function #'flycheck-pos-tip-error-messages)
+  ;; (setq flycheck-pos-tip-display-errors-tty-function
+  ;;       (lambda (errors)
+  ;;         (let ((message (mapconcat #'flycheck-error-format-message-and-id
+  ;;                                   errors "\n\n")))
+  ;;           (popup-tip message))))
   ;; hack because flycheck unreasonably demands package installation
   (unless (fboundp 'pkg-info-version-info)
     (defun pkg-info-version-info (_) "unknown"))
