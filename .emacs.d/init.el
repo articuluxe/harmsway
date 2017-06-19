@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-06-17 23:12:18 dharms>
+;; Modified Time-stamp: <2017-06-19 13:41:46 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2725,7 +2725,7 @@ Requires Flake8 2.0 or newer. See URL
               )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; qt-pro-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package qt-pro :mode "\\.pro$")
+(use-package qt-pro-mode :mode ("\\.pr[oi]$"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; sed-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package sed-mode :mode "\\.sed$" :interpreter "sed")

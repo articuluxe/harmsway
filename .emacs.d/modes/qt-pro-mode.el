@@ -1,41 +1,47 @@
-;;; qt-pro.el --- Qt Pro/Pri major mode
-
-;; Copyright (C) 2007  Free Software Foundation, Inc.
-
-;; Author: Todd Neal <tolchz@gmail.com>
+;;; qt-pro-mode.el --- Qt Pro/Pri major mode
+;;
+;;; Copyright (C) 2007  Free Software Foundation, Inc.
+;;
+;;; Author: Todd Neal <tolchz@gmail.com>
+;; Version: 1.0.0
 ;; Keywords: extensions
-
+;; Package-Requires: ((emacs "24"))
+;;
 ;; This file is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
 ;; the Free Software Foundation; either version 2, or (at your option)
 ;; any later version.
-
+;;
 ;; This file is distributed in the hope that it will be useful,
 ;; but WITHOUT ANY WARRANTY; without even the implied warranty of
 ;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 ;; GNU General Public License for more details.
-
+;;
 ;; You should have received a copy of the GNU General Public License
 ;; along with GNU Emacs; see the file COPYING.  If not, write to
 ;; the Free Software Foundation, Inc., 59 Temple Place - Suite 330,
 ;; Boston, MA 02111-1307, USA.
-                                        ;
-;; Commentary:
 ;;
-;; Version 1.0 (7 January 2007)
+;;; Commentary:
+;;
+;; Provides a major-mode for editing Qt build-system files.
+;;
+;;; Version 1.0 (7 January 2007)
 ;;
 ;; Based off simple.el
 ;;
-;; Add the following to your .emacs to install
-;; (require 'qt-pro)
+;; Add the following to your .emacs to install:
+;;
+;; (require 'qt-pro-mode)
 ;; (add-to-list 'auto-mode-alist '("\\.pr[io]$" . qt-pro-mode))
+;;
+;; or:
+;;
+;; (use-package qt-pro-mode
+;;   :ensure t
+;;   :mode ("\\.pro\\'" "\\.pri\\'"))
 
 ;;; Code:
-(defvar qt-pro-mode-map
-  (let ((map (make-sparse-keymap)))
-    (define-key map [foo] 'qt-pro-do-foo)
-    map)
-  "Keymap for `qt-pro-mode'.")
 
 (defvar qt-pro-mode-syntax-table
   (let ((st (make-syntax-table)))
@@ -69,7 +75,7 @@
                     "QMAKE_CXXFLAGS_WARN_OFF" "QMAKE_CXXFLAGS_WARN_ON" "QMAKE_DISTCLEAN"
                     "QMAKE_EXTENSION_SHLIB" "QMAKE_EXT_MOC" "QMAKE_EXT_UI" "QMAKE_EXT_PRL"
                     "QMAKE_EXT_LEX" "QMAKE_EXT_YACC" "QMAKE_EXT_OBJ" "QMAKE_EXT_CPP"
-                    "QMAKE_EXT_H" "QMAKE_FAILED_REQUIREMENTS" "QMAKE_FILETAGS"
+                    "QMAKE_EXT_H" "QMAKE_EXTRA_TARGETS" "QMAKE_FAILED_REQUIREMENTS" "QMAKE_FILETAGS"
                     "QMAKE_FRAMEWORK_BUNDLE_NAME" "QMAKE_FRAMEWORK_VERSION" "QMAKE_INCDIR"
                     "QMAKE_INCDIR_OPENGL" "QMAKE_INCDIR_QT" "QMAKE_INCDIR_THREAD"
                     "QMAKE_INCDIR_X11" "QMAKE_LFLAGS" "QMAKE_LFLAGS_CONSOLE"
@@ -89,8 +95,9 @@
                     "QMAKE_QMAKE" "QMAKE_QT_DLL" "QMAKE_RESOURCE_FLAGS" "QMAKE_RUN_CC"
                     "QMAKE_RUN_CC_IMP" "QMAKE_RUN_CXX" "QMAKE_RUN_CXX_IMP" "QMAKE_TARGET"
                     "QMAKE_UIC" "QT" "QTPLUGIN" "QT_VERSION" "QT_MAJOR_VERSION"
-                    "QT_MINOR_VERSION" "QT_PATCH_VERSION" "RC_FILE" "RCC_DIR" "REQUIRES"
-                    "RES_FILE" "RESOURCES" "SIGNATURE_FILE" "SOURCES" "SRCMOC" "SUBDIRS" "TARGET"
+                    "QT_MINOR_VERSION" "QT_PATCH_VERSION" "RC_FILE" "RCC_DIR"
+                    "RESOURCES" "REQUIRES"
+                    "RES_FILE" "SIGNATURE_FILE" "SOURCES" "SRCMOC" "SUBDIRS" "TARGET"
                     "TARGET_EXT" "TARGET_x" "TARGET_x.y.z" "TEMPLATE" "TRANSLATIONS"
                     "UICIMPLS" "UICOBJECTS" "UI_DIR" "UI_HEADERS_DIR" "UI_SOURCES_DIR"
                     "VERSION" "VER_MAJ" "VER_MIN" "VER_PAT" "VPATH" "YACCIMPLS"
@@ -99,13 +106,15 @@
   "Keyword highlighting specification for `qt-pro-mode'.")
 
 ;;;###autoload
-(define-derived-mode qt-pro-mode fundamental-mode "Qt-pro"
-  "A major mode for editing Qt-pro files."
-  :syntax-table qt-pro-mode-syntax-table
+(define-derived-mode qt-pro-mode prog-mode "Qt"
+  "A major mode for editing Qt build-system files."
   (set (make-local-variable 'comment-start) "# ")
   (set (make-local-variable 'comment-start-skip) "#+\\s-*")
-  (set (make-local-variable 'font-lock-defaults) '(qt-pro-font-lock-keywords))
-  )
+  (set (make-local-variable 'font-lock-defaults) '(qt-pro-font-lock-keywords)))
 
-(provide 'qt-pro)
-;;; qt-pro.el ends here
+
+(add-to-list 'auto-mode-alist '("\\.qrc\\'" . xml-mode))
+
+
+(provide 'qt-pro-mode)
+;;; qt-pro-mode.el ends here
