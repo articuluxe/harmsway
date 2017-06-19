@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-05-29 13:49:25 dan.harms>
+;; Modified Time-stamp: <2017-06-19 15:26:40 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -59,6 +59,7 @@
   )
 ;; counsel
 (with-eval-after-load 'counsel
+  (setq counsel-locate-cmd #'counsel-locate-cmd-es)
   ;; or "set GIT_PAGER=cat && git log --grep \"%s\""
   (setq counsel-git-log-cmd "git log --grep \"%s\""))
 
