@@ -5,7 +5,7 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Tuesday, May  3, 2016
 # Version: 1.0
-# Modified Time-stamp: <2017-04-14 07:16:56 dharms>
+# Modified Time-stamp: <2017-06-19 11:08:43 dan.harms>
 # Modified by: Dan Harms
 # Keywords: src repo
 
@@ -30,11 +30,11 @@ fi
 cd $subdir
 
 setupf=$proj-setup.sh
-prof=$proj-$ver.eprof
+projf=$proj-$ver.proviso
 envf=$proj.env
 
 cp -f ~/config/repos/$proj/$ver/$setupf repo-setup.sh
-cp -f ~/config/repos/$proj/$ver/$prof .
+cp -f ~/config/repos/$proj/$ver/$projf .
 cp -f ~/config/repos/$proj/$ver/$envf .repo-env
 
 if [ ! -d $proj/.git/hooks ]; then
