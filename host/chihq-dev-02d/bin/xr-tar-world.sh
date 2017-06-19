@@ -5,7 +5,7 @@
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Friday, May 29, 2015
 # Version: 1.0
-# Modified Time-stamp: <2017-03-29 10:43:27 dan.harms>
+# Modified Time-stamp: <2017-06-19 16:11:00 dan.harms>
 # Modified by: Dan Harms
 # Keywords: configuration
 
@@ -37,6 +37,7 @@ fi
 
 $tar c"$verbose"f $dest --exclude=src/doc/* config doc src .gdbinit
 $tar u"$verbose"f $dest --exclude=*.elc .emacs.d
+$tar u"$verbose"f $dest --transform=s%ext%.emacs.d/ext% ext
 $tar u"$verbose"f $dest --transform=s/scripts/bin/ scripts
 $tar u"$verbose"f $dest --transform=s/bash\\/// bash
 $tar u"$verbose"f $dest --transform=s/tcsh\\/// tcsh

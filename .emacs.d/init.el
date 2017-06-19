@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-06-19 20:23:12 dharms>
+;; Modified Time-stamp: <2017-06-20 09:07:22 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -938,7 +938,7 @@ line."
           (command-history-mode :popup t :select t)
           ("Shell Command Output" :regexp t :popup t :select nil)
           ("COMMIT_EDITMSG" :select t)
-          ("gen-TAGS" :regexp t :popup t :select nil :align bottom)
+          ("gentags" :regexp t :popup t :select nil :align bottom)
           ("json-path" :regexp t :popup t :select t :align bottom)
           ))
   (shackle-mode 1)
