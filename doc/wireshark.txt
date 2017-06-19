@@ -5,7 +5,7 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Tuesday, September 13, 2016
 # Version: 1.0
-# Modified Time-stamp: <2017-03-17 08:48:50 dan.harms>
+# Modified Time-stamp: <2017-06-19 14:29:41 dan.harms>
 # Modified by: Dan Harms
 # Keywords: wireshark
 
@@ -24,6 +24,7 @@ tshark -b filesize:100 -a files:20 -w <output>.pcap
 # rolling capture of 4 GB of data (128 files of 32 MB)
 dumpcap -i<interface> -w <output>.pcap -b filesize:32768 -b files:128
 # print out ethernet packets destined to a particular address
+tshark -r input.erf -n -t ad -R 'ip.dst==233.72.75.96'
 sudo tcpdump -nettti sf01 '(ether dst host 01:00:5E:08:0E:29)'
 
 ################################## filters ###################################
