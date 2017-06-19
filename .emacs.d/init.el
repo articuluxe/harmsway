@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-06-19 20:22:30 dharms>
+;; Modified Time-stamp: <2017-06-19 20:23:12 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1013,7 +1013,6 @@ line."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; savehist ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package savehist
-  :defer 3
   :config
   (setq savehist-additional-variables
         '(search-ring regexp-search-ring kill-ring compile-history))
@@ -1028,7 +1027,6 @@ line."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; recentf ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package recentf
-  :defer 2
   :config
   (setq recentf-max-saved-items 200)
   (setq recentf-max-menu-items 12)
