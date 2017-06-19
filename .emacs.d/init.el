@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-06-19 13:45:37 dan.harms>
+;; Modified Time-stamp: <2017-06-19 14:27:37 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1456,52 +1456,56 @@ line."
   (require 'ox-md)                      ;markdown export
   )
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; beginend ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package beginend
+  :config (beginend-global-mode))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dired ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; easily go to top or bottom
 ;; from fuco1.github.io
-(defmacro my/beginning-of-buffer (mode &rest forms)
-  "Define a special form of `beginning-of-buffer' in MODE.
-Moves point to (point-min); then FORMS are evaluated."
-  (declare (indent 1))
-  (let ((fname (intern (concat "my/" (symbol-name mode) "-beginning-of-buffer")))
-        (mode-map (intern (concat (symbol-name mode) "-mode-map")))
-        (mode-hook (intern (concat (symbol-name mode) "-mode-hook"))))
-    `(progn
-       (defun ,fname ()
-         (interactive)
-         (let ((p (point)))
-           (goto-char (point-min))
-           ,@forms
-           (when (= p (point))
-             (goto-char (point-min)))))
-       (add-hook ',mode-hook
-                 (lambda()
-                   (define-key ,mode-map
-                     [remap beginning-of-buffer] ',fname))))))
+;; (defmacro my/beginning-of-buffer (mode &rest forms)
+;;   "Define a special form of `beginning-of-buffer' in MODE.
+;; Moves point to (point-min); then FORMS are evaluated."
+;;   (declare (indent 1))
+;;   (let ((fname (intern (concat "my/" (symbol-name mode) "-beginning-of-buffer")))
+;;         (mode-map (intern (concat (symbol-name mode) "-mode-map")))
+;;         (mode-hook (intern (concat (symbol-name mode) "-mode-hook"))))
+;;     `(progn
+;;        (defun ,fname ()
+;;          (interactive)
+;;          (let ((p (point)))
+;;            (goto-char (point-min))
+;;            ,@forms
+;;            (when (= p (point))
+;;              (goto-char (point-min)))))
+;;        (add-hook ',mode-hook
+;;                  (lambda()
+;;                    (define-key ,mode-map
+;;                      [remap beginning-of-buffer] ',fname))))))
 
-(defmacro my/end-of-buffer (mode &rest forms)
-  "Define a special form of `end-of-buffer' in MODE.
-Moves point to (point-max); then FORMS are evaluated."
-  (declare (indent 1))
-  (let ((fname (intern (concat "my/" (symbol-name mode) "-end-of-buffer")))
-        (mode-map (intern (concat (symbol-name mode) "-mode-map")))
-        (mode-hook (intern (concat (symbol-name mode) "-mode-hook"))))
-    `(progn
-       (defun ,fname ()
-         (interactive)
-         (let ((p (point)))
-           (goto-char (point-max))
-           ,@forms
-           (when (= p (point))
-             (goto-char (point-max)))))
-       (add-hook ',mode-hook
-                 (lambda()
-                   (define-key ,mode-map
-                     [remap end-of-buffer] ',fname))))))
-(my/beginning-of-buffer dired
-                        (while (not (ignore-errors (dired-get-filename)))
-                          (dired-next-line 1)))
-(my/end-of-buffer dired (dired-previous-line 1))
+;; (defmacro my/end-of-buffer (mode &rest forms)
+;;   "Define a special form of `end-of-buffer' in MODE.
+;; Moves point to (point-max); then FORMS are evaluated."
+;;   (declare (indent 1))
+;;   (let ((fname (intern (concat "my/" (symbol-name mode) "-end-of-buffer")))
+;;         (mode-map (intern (concat (symbol-name mode) "-mode-map")))
+;;         (mode-hook (intern (concat (symbol-name mode) "-mode-hook"))))
+;;     `(progn
+;;        (defun ,fname ()
+;;          (interactive)
+;;          (let ((p (point)))
+;;            (goto-char (point-max))
+;;            ,@forms
+;;            (when (= p (point))
+;;              (goto-char (point-max)))))
+;;        (add-hook ',mode-hook
+;;                  (lambda()
+;;                    (define-key ,mode-map
+;;                      [remap end-of-buffer] ',fname))))))
+;; (my/beginning-of-buffer dired
+;;                         (while (not (ignore-errors (dired-get-filename)))
+;;                           (dired-next-line 1)))
+;; (my/end-of-buffer dired (dired-previous-line 1))
 (use-package dired
   :defer t
   :init
