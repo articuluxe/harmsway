@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-06-20 09:07:22 dan.harms>
+;; Modified Time-stamp: <2017-06-20 14:24:46 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -912,8 +912,11 @@ line."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; terminal-here ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package terminal-here
-  :bind ("C-c <f1>" . terminal-here-launch))
-;; todo: bind terminal-here-project-launch, point to proviso
+  :bind (("C-c <f1>" . terminal-here-launch)
+         ("C-c <f2>" . terminal-here-project-launch))
+  :init
+  (setq terminal-here-project-root-function #'proviso-current-project-root)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; simpleclip ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package simpleclip
