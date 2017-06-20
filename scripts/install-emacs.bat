@@ -4,7 +4,7 @@ rem Copyright (C) 2015-2017  Dan Harms (dan.harms)
 rem Author: Dan Harms <dan.harms@xrtrading.com>
 rem Created: Thursday, May 21, 2015
 rem Version: 1.0
-rem Modified Time-stamp: <2017-06-16 16:15:22 dan.harms>
+rem Modified Time-stamp: <2017-06-20 15:41:25 dan.harms>
 rem Modified by: Dan Harms
 rem Keywords: install perfect editor
 
@@ -61,6 +61,7 @@ echo Tarring .emacs.d into %int%...
 cd "%HOME%"
 if exist .emacs.d (
     if exist %backup% del %backup%
+    find .emacs.d\backups -mindepth 1 -type d -empty -delete
     for /f %%i in (%orig_dir%\.emacs.d\%manifest%) do (
         call :backup %%i %backup%
     )
@@ -69,14 +70,14 @@ if exist .emacs.d (
     mkdir .emacs.d
     if exist %backup% (
         %tar% -xvpf %backup% --overwrite
-        del %backup%
+        rem del %backup%
     )
 )
 
 echo Untarring %int% into %cd%...
 %tar% -x%verbose%pf %orig_dir:C:=%\%int% --overwrite
 
-del %orig_dir%\%int%
+rem del %orig_dir%\%int%
 
 rem emacs will need forward slashes escaped, so double them
 set path=%HOME:\=\\%\\.emacs.d
