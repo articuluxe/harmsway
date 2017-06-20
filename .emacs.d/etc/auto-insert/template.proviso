@@ -1,0 +1,26 @@
+;; -*- Mode: Emacs-Lisp -*-
+;;
+;;
+(proviso-define "${1:`(proviso-compute-basename-from-file buffer-file-name)`}"
+ :user-name "`user-login-name`" :user-email "`user-mail-address`"
+ :initfun (lambda (proj)
+            (proviso-load-environment-variables-from-file proj ".repo-env")
+            (proviso-put
+             proj :proj-alist
+             `(
+               (:name "$1" :dir "${2:<src>}")
+               (:name "boost" :dir "/usr/local/include/boost"
+                      :ctags-opts "--exclude=typeof --exclude=fusion --exclude=phoenix --exclude=spirit")
+               (:name "c++lib" :dir ,(substitute-env-vars "$CSTDLIB_INC")
+                      :ctags-opts "--language-force=c++ -h=\".h.H.hh.hpp.hxx.h++.inc.def.\"")
+               (:name "clib" :dir "/usr/include"
+                      :ctags-opts "--exclude=c++ --exclude=boost --exclude=X11 --exclude=python")
+               ))
+            (proviso-put
+             proj :build-subdirs
+             '(
+               (:name "${3:dbg}" :dir "debug" :register ?d)
+               (:name "${4:rls}" :dir "release" :register ?r)
+               ))
+            )
+ )

@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-06-20 15:53:49 dan.harms>
+;; Modified Time-stamp: <2017-06-20 21:49:59 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2222,11 +2222,9 @@ line."
   ;; that selects between them: completion, ido, popup.
   (setq auto-insert-alist
         '(
-          ;; profiles
-          (("\\.eprof$" . "Profiles") .
-           ["template.eprof" auto-insert-choose-yas-expand])
-          (("\\.rprof$" . "Remote Profiles") .
-           ["template.rprof" auto-insert-choose-yas-expand])
+          ;; projects
+          (("\\.proviso$" . "Projects") .
+           ["template.proviso" auto-insert-choose-yas-expand])
           ;; lisp
           ((emacs-lisp-mode . "Emacs Lisp") .
            ["template.el" auto-insert-choose-yas-expand])

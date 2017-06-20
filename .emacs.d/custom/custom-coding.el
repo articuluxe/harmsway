@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Tuesday, April 12, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-06-17 23:20:04 dharms>
+;; Modified Time-stamp: <2017-06-20 08:40:25 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: coding
 
@@ -34,13 +34,14 @@
 ;; include ifdefs
 (defvar site-name nil "A possibly empty name of the current site.")
 (defun add-header-include-ifdefs (&optional arg)
-  "Add header include guards.  With optional prefix argument ARG,
-query for the base name. Otherwise, the base file name is used."
+  "Add header include guards.
+With optional prefix argument ARG, query for the base
+name.  Otherwise, the base file name is used."
   (interactive "P")
   (let* ((name (if (buffer-file-name)
                    (file-name-nondirectory (buffer-file-name))
                  (buffer-name)))
-         (project-name (profile-current-get 'project-name))
+         (project-name (proviso-current-project-name))
          (str
           (replace-regexp-in-string
            "\\.\\|-" "_"
