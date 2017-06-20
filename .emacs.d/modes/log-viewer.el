@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-02-08 11:18:31 dan.harms>
+;; Modified Time-stamp: <2017-06-20 08:35:44 dharms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -26,6 +26,9 @@
 ;;; Code:
 
 (defgroup log-viewer-mode nil "*log file mode" :group 'log-viewer)
+
+(defcustom log-viewer-user-initials ""
+  "User-specific keyword to highlight as a comment in log files.")
 
 (defun log-viewer-hide-ctrl-a ()
   "Don't show C-a in log files.  This helps delimit fields in the
@@ -72,7 +75,7 @@ fix protocol, using a pipe `|'."
                '(1 font-lock-variable-name-face t)
                '(2 font-lock-constant-face t t))
          ;; personal debug statements
-         (list "drh" '(0 font-lock-comment-face t))
+         (list log-viewer-user-initials '(0 font-lock-comment-face t))
          ))
   (setq font-lock-defaults '(log-viewer-mode-font-lock-keywords))
   (run-hooks 'log-viewer-mode-hook)

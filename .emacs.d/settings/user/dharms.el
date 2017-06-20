@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-01-24 22:51:47 dharms>
+;; Modified Time-stamp: <2017-06-20 08:33:41 dharms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -34,5 +34,7 @@
  (lambda() (font-lock-add-keywords
             nil '(("\\<[Dd][Rr][Hh]\\>" 0 'font-lock-warning-face t)) t)) t)
 
+;; log-viewer initials
+(setq log-viewer-user-initials "drh")
 
 ;;; dharms.el ends here
