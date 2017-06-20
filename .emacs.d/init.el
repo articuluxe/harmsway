@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-06-20 14:24:46 dan.harms>
+;; Modified Time-stamp: <2017-06-20 15:53:49 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1295,7 +1295,8 @@ line."
   (setq rm-blacklist
         '(" AC" " yas" " Undo-Tree" " Abbrev" " Guide" " Hi" " $" " ,"
           " Ifdef" " Rbow" " ivy" " ElDoc" " (*)" " wg" " ⛓" " GitGutter"
-          " Fly" " drag" " mc++fl" " ARev" " Spnxd" " PgLn" " ^L"))
+          " Fly" " drag" " mc++fl" " ARev" " Spnxd" " PgLn" " ^L" " be"
+          " counsel" " ivy"))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smart-mode-line ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
