@@ -1,8 +1,5 @@
 # proviso files
 *.proviso
-# profile files
-*.eprof
-*.rprof
 
 # TAGS files
 TAGS
@@ -11,6 +8,8 @@ TAGS
 # Lisp files
 *.elc
 .dir-locals.el
+# bookmark files
+*.bmk
 
 # Git files
 *.patch
