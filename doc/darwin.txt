@@ -3,7 +3,7 @@
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Monday, May  2, 2016
 # Version: 1.0
-# Modified Time-stamp: <2017-03-23 07:07:24 dharms>
+# Modified Time-stamp: <2017-06-21 06:28:47 dharms>
 # Modified by: Dan Harms
 # Keywords: mac help docs
 
@@ -11,6 +11,8 @@
 defaults write com.apple.finder AppleShowAllFiles TRUE
 # restart finder
 killall Finder
+# kill a process
+pkill -SIGUSR2 Emacs
 
 # reclaim unused space in sparse disk images
 hdiutil compact <name>.sparseimage
