@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-06-20 23:38:15 dharms>
+;; Modified Time-stamp: <2017-06-21 11:05:24 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -937,7 +937,7 @@ line."
           (diff-mode :popup t :select t)
           (apropos-mode :popup t :select t)
           (completion-list-mode :select nil)
-          (compilation-mode :popup t :select nil :align bottom)
+          ("compilation" :regexp t :popup t :select nil :align bottom)
           (command-history-mode :popup t :select t)
           ("Shell Command Output" :regexp t :popup t :select nil)
           ("COMMIT_EDITMSG" :select t)
