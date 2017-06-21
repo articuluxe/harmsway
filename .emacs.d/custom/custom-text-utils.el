@@ -1,9 +1,9 @@
 ;;; custom-text-utils.el --- custom text manipulation utilities
-;; Copyright (C) 2016  Dan Harms (dharms)
+;; Copyright (C) 2016-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Thursday, April 14, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-04-14 21:34:17 dharms>
+;; Modified Time-stamp: <2017-06-21 17:37:55 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: text
 
@@ -134,20 +134,29 @@
   (interactive "r\nsAlign regexp: ")
   (align-regexp start end (concat "\\(\\s-*\\)" regexp) 1 1 t))
 
-(defun clean-up-buffer (begin end)
-  "Clean up either the current region, or the entire buffer if no region
-is selected.  Cleaning up entails: indenting, removing tabs, and deleting
-trailing whitespace."
+(defun clean-up-buffer (begin end &optional arg)
+  "Clean up all or a portion of a buffer.
+Looks at either the entire buffer or the region delimited by
+BEGIN and END.  Cleaning up entails: indenting, removing tabs,
+and deleting trailing whitespace.  With optional prefix argument
+ARG supplied and non-nil, newline sequences of more than 3 are
+shortened to 2."
   (interactive (if (use-region-p)
                    (list (region-beginning)
-                         (region-end))
-                 (list nil nil)))
+                         (region-end)
+                         current-prefix-arg)
+                 (list nil nil current-prefix-arg)))
   (save-restriction
     (narrow-to-region (or begin (point-min))
                       (or end (point-max)))
     (delete-trailing-whitespace)
     (indent-region (point-min) (point-max) nil)
-    (untabify (point-min) (point-max))))
+    (untabify (point-min) (point-max))
+    (when arg
+      (save-excursion
+        (goto-char (point-min))
+        (while (re-search-forward "^\n\\{3,\\}" nil t)
+          (replace-match "\n\n"))))))
 
 (provide 'custom-text-utils)
 ;;; custom-text-utils.el ends here
