@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-06-20 21:49:59 dharms>
+;; Modified Time-stamp: <2017-06-20 23:38:15 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1018,7 +1018,8 @@ line."
 (use-package savehist
   :config
   (setq savehist-additional-variables
-        '(search-ring regexp-search-ring kill-ring compile-history))
+        '(search-ring regexp-search-ring kill-ring compile-history
+                      ivy-dired-history-variable))
   (setq savehist-file (concat my/user-directory "history"))
   (setq savehist-save-minibuffer-history t)
   (setq history-length 50)
@@ -1542,6 +1543,7 @@ line."
   (use-package dired-filter)
   (define-key dired-mode-map "." dired-filter-mark-map)
   (setq wdired-allow-to-change-permissions t)
+  (use-package ivy-dired-history)
   ;; sorting
   (use-package dired-sort)
   (setq-default dired-listing-switches "-alhvGg")
