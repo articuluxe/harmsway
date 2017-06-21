@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Monday, April 18, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-06-09 17:21:40 dharms>
+;; Modified Time-stamp: <2017-06-21 10:41:02 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: remote hosts
 
@@ -93,6 +93,8 @@ when called interactively with a prefix argument."
                                   :dir (or dir "~")
                                   ))))
                   remotehost-connect-hosts))
+    (setq hosts (sort hosts (lambda (left right)
+                              (string-lessp (car left) (car right)))))
     (ivy-read "Remote host: " hosts
               :history 'remotehost-connect-history
               :action (lambda (x)
