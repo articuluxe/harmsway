@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-06-25 08:16:20 dharms>
+;; Modified Time-stamp: <2017-06-25 08:38:42 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1549,6 +1549,8 @@ line."
   (use-package ivy-dired-history)
   ;; sorting
   (use-package dired-sort)
+  ;; du
+  (use-package dired-du :init (setq dired-du-size-format t))
   (setq-default dired-listing-switches "-alhvGg")
   (put 'dired-find-alternate-file 'disabled nil)
 
