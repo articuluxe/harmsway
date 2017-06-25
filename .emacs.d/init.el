@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-06-21 11:05:24 dan.harms>
+;; Modified Time-stamp: <2017-06-25 08:16:20 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1460,10 +1460,6 @@ line."
   (require 'ox-md)                      ;markdown export
   )
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; beginend ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package beginend
-  :config (beginend-global-mode))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dired ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; easily go to top or bottom
 ;; from fuco1.github.io
@@ -1510,6 +1506,13 @@ line."
 ;;                         (while (not (ignore-errors (dired-get-filename)))
 ;;                           (dired-next-line 1)))
 ;; (my/end-of-buffer dired (dired-previous-line 1))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; beginend ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+  (use-package beginend
+    :config
+    (add-hook 'dired-mode-hook 'beginend-dired-mode)
+    )
+
 (use-package dired
   :defer t
   :init
