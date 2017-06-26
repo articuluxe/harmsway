@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-06-26 14:43:01 dan.harms>
+;; Modified Time-stamp: <2017-06-26 16:51:37 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -826,7 +826,10 @@ line."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; elnode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package elnode)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; vc ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq vc-follow-symlinks nil)
+(bind-key "C-x vR" 'vc-region-history)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; magit ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defvar my/git-keymap)
 (define-prefix-command 'my/git-keymap)
