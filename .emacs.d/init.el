@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-06-26 14:30:22 dan.harms>
+;; Modified Time-stamp: <2017-06-26 14:43:01 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1916,6 +1916,7 @@ line."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-complete ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package auto-complete
   :init
+  (setq ac-quick-help-prefer-pos-tip nil)
   (add-hook 'emacs-lisp-mode-hook 'ac-emacs-lisp-mode-setup)
                                         ;(add-hook 'c-mode-common-hook 'ac-cc-mode-setup)
   (add-hook 'ruby-mode-hook 'ac-ruby-mode-setup)
