@@ -277,7 +277,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   ;; stack
   (use-package etags-stack :bind ("C-c C-t" . etags-stack-show))
   ;; table
-  (use-package etags-table
+  (use-package proviso-etags-table
     :init
     ;; we store our tags in a specific directory
     (setq etags-table-search-up-depth nil)
