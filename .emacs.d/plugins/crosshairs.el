@@ -296,7 +296,7 @@ both for SECONDS seconds."
       ;; $$$$$$ Do we need to worry about `global-hl-line-unhighlight-all' here?
       (setq crosshairs-flash-line-timer (run-at-time
                                          line-period nil
-                                         #'global-hl-line-unhighlight)
+                                         #'hl-line-unhighlight-now)
             crosshairs-flash-col-timer  (run-at-time
                                          column-period nil
                                          #'col-highlight-unhighlight t)))))
