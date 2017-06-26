@@ -1,77 +1,93 @@
 ;;; rich-minority.el --- Clean-up and Beautify the list of minor-modes.
 
-;; Copyright (C) 2014  <bruce.connor.am@gmail.com>
+;; Copyright (C) 2014, 2015 Free Software Foundation, Inc.
 
-;; Author: Artur Malabarba <bruce.connor.am@gmail.com>
-;; URL: http://github.com/Bruce-Connor/rich-minority
+;; Author: Artur Malabarba <emacs@endlessparentheses.com>
+;; URL: https://github.com/Malabarba/rich-minority
 ;; Package-Requires: ((cl-lib "0.5"))
-;; Version: 0.2
+;; Version: 1.0.1
 ;; Keywords: mode-line faces
-;; Prefix: rm
-;; Separator: -
 
 ;;; Commentary:
 ;;
-;; rich-minority-mode
-;; ══════════════════
-;; 
 ;;   Emacs package for hiding and/or highlighting the list of minor-modes
 ;;   in the mode-line.
-;; 
+;;
+;;
 ;; Usage
 ;; ─────
-;; 
+;;
 ;;   To activate the enrichment of your minor-modes list, call `M-x
 ;;   rich-minority-mode', or add this to your init file:
-;; 
-;;   ╭────
+;;
+;;   ┌────
 ;;   │ (rich-minority-mode 1)
-;;   ╰────
-;; 
+;;   └────
+;;
 ;;   By default, this has a couple of small effects (provided as examples)
 ;;   it is up to you to customize it to your liking with the following
 ;;   three variables:
-;; 
-;;   rm-excluded-modes: List of minor mode names that will be hidden from the
-;;                      minor-modes list. Use this to hide *only* a few modes
-;;                      that are always active and don't really contribute
-;;                      information.
-;;   rm-included-modes: List of minor mode names that are allowed on the
-;;                      minor-modes list. Use this to hide *all but* a few
-;;                      modes.
-;;   rm-text-properties: List text properties to apply to each minor-mode
-;;                       lighter. For instance, by default we highlight
-;;                       `Ovwrt' with a red face, so you always know if
-;;                       you're in `overwrite-mode'.
-;; 
-;; 
+;;
+;;   `rm-blacklist': List of minor mode names that will be hidden from the
+;;                   minor-modes list. Use this to hide *only* a few modes
+;;                   that are always active and don’t really contribute
+;;                   information.
+;;   `rm-whitelist': List of minor mode names that are allowed on the
+;;                   minor-modes list. Use this to hide *all but* a few
+;;                   modes.
+;;   `rm-text-properties': List text properties to apply to each minor-mode
+;;                         lighter. For instance, by default we highlight
+;;                         `Ovwrt' with a red face, so you always know if
+;;                         you’re in `overwrite-mode'.
+;;
+;;
+;; Comparison to Diminish
+;; ──────────────────────
+;;
+;;   Diminish is an established player in the mode-line world, who also
+;;   handles the minor-modes list. What can rich-minority /offer in
+;;   contrast/?
+;;
+;;   • rich-minority is more versatile:
+;;     1. It accepts *regexps*, instead of having to specify each
+;;        minor-mode individually;
+;;     2. It also offers a *whitelist* behaviour, in addition to the
+;;        blacklist;
+;;     3. It supports *highlighting* specific minor-modes with completely
+;;        arbitrary text properties.
+;;   • rich-minority takes a cleaner, functional approach. It doesn’t hack
+;;     into the `minor-mode-alist' variable.
+;;
+;;   What is rich-minority /missing/?
+;;
+;;   1. It doesn’t have a quick and simple replacement functionality yet.
+;;      Although you can set the `display' property of a minor-mode to
+;;      whatever string you want and that will function as a replacement.
+;;   2. Its source comments lack [Will Mengarini’s poetry]. :-)
+;;
+;;
+;;   [Will Mengarini’s poetry] http://www.eskimo.com/~seldon/diminish.el
+;;
+;;
 ;; Installation
 ;; ────────────
-;; 
+;;
 ;;   This package is available fom Melpa, you may install it by calling
 ;;   `M-x package-install'.
-;; 
-;;   Alternatively, you can download it manually, place it in your
-;;   `load-path' and require it with
-;; 
-;;   ╭────
-;;   │ (require 'rich-minority)
-;;   ╰────
-;;; Change Log:
-;; 0.2 - 2014/12/25 - Fix keymap bug.
+
 
 ;;; Code:
 (require 'cl-lib)
 
-(defconst rich-minority-version "0.2")
-
+(declare-function lm-version "lisp-mnt")
 (defun rm-bug-report ()
   "Opens github issues page in a web browser. Please send any bugs you find.
 Please include your Emacs and rich-minority versions."
   (interactive)
+  (require 'lisp-mnt)
   (message "Your rm-version is: %s, and your emacs version is: %s.\nPlease include this in your report!"
-           rich-minority-version emacs-version)
-  (browse-url "https://github.com/Bruce-Connor/rich-minority/issues/new"))
+           (lm-version "rich-minority.el") emacs-version)
+  (browse-url "https://github.com/Malabarba/rich-minority/issues/new"))
 (defun rm-customize ()
   "Open the customization menu in the `rich-minority' group."
   (interactive)
@@ -86,7 +102,7 @@ Please include your Emacs and rich-minority versions."
 Has three possible values:
 
 - nil: All minor modes are shown in the mode-line (but see also
-  `rm-included-modes').
+  `rm-whitelist').
 
 - List of strings: Represents a list of minor mode names that
   will be hidden from the minor-modes list.
@@ -97,7 +113,7 @@ Has three possible values:
   minor-mode list.
 
 If you'd like to use a list of regexps, simply use something like the following:
-    (setq rm-excluded-modes (mapconcat 'identity list-of-regexps \"\\\\|\"))
+    (setq rm-blacklist (mapconcat 'identity list-of-regexps \"\\\\|\"))
 
 Don't forget to start each string with a blank space, as most
 minor-mode lighters start with a space."
@@ -106,13 +122,13 @@ minor-mode lighters start with a space."
   :group 'rich-minority
   :package-version '(rich-minority . "0.1.1"))
 (define-obsolete-variable-alias 'rm-excluded-modes 'rm-blacklist "0.1.1")
-(define-obsolete-variable-alias 'rm-hidden-modes 'rm-excluded-modes "0.1.1")
+(define-obsolete-variable-alias 'rm-hidden-modes 'rm-blacklist "0.1.1")
 
 (defcustom rm-whitelist nil
   "List of minor modes you want to include in the mode-line.
 
 - nil: All minor modes are shown in the mode-line (but see also
-  `rm-excluded-modes').
+  `rm-blacklist').
 
 - List of strings: Represents a list of minor mode names that are
   allowed on the minor-modes list. Any minor-mode whose lighter
@@ -124,7 +140,7 @@ minor-mode lighters start with a space."
   the minor-mode list.
 
 If you'd like to use a list of regexps, simply use something like the following:
-    (setq rm-included-modes (mapconcat 'identity list-of-regexps \"\\\\|\"))
+    (setq rm-whitelist (mapconcat 'identity list-of-regexps \"\\\\|\"))
 
 Don't forget to start each string with a blank space, as most
 minor-mode lighters start with a space."
@@ -158,19 +174,34 @@ These properties take priority over those defined in
 (defconst rm--help-echo-bottom
   "Mouse-1: Mode Menu.\nMouse-2: Mode Help.\nMouse-3: Toggle Minor Modes.")
 
+(defvar-local rm--help-echo nil
+  "Used to set the help-echo string dynamically.")
+
+(defun rm-format-mode-line-entry (entry)
+  "Format an ENTRY of `minor-mode-alist'.
+Return a cons of the mode line string and the mode name, or nil
+if the mode line string is empty."
+  (let ((mode-symbol (car entry))
+        (mode-string (format-mode-line entry)))
+    (unless (string= mode-string "")
+      (cons mode-string mode-symbol))))
+
 ;;;###autoload
 (defun rm--mode-list-as-string-list ()
   "Return `minor-mode-list' as a simple list of strings."
-  (let ((full-list (delete "" (mapcar #'format-mode-line minor-mode-alist))))
+  (let ((full-list (delq nil (mapcar #'rm-format-mode-line-entry
+                                     minor-mode-alist)))
+        (spacer (propertize " " 'display '(space :align-to 15))))
     (setq rm--help-echo
-          (format "Full list:\n   %s\n\n%s"
-            (mapconcat 'identity full-list "\n   ")
-            rm--help-echo-bottom))
+          (format "Full list:\n%s\n\n%s"
+                  (mapconcat (lambda (pair)
+                               (format "   %s%s(%S)"
+                                       (car pair) spacer (cdr pair)))
+                             full-list "\n")
+                  rm--help-echo-bottom))
     (mapcar #'rm--propertize
-      (rm--remove-hidden-modes full-list))))
-
-(defvar-local rm--help-echo nil
-  "Used to set the help-echo string dynamically.")
+            (rm--remove-hidden-modes
+             (mapcar #'car full-list)))))
 
 (defcustom rm-base-text-properties
   '('help-echo 'rm--help-echo
@@ -195,26 +226,26 @@ These properties take priority over those defined in
       (eval `(propertize ,mode ,@prop ,@rm-base-text-properties)))))
 
 (defun rm--remove-hidden-modes (li)
-  "Remove from LI elements that match `rm-excluded-modes' or don't match `rm-included-modes'."
-  (let ((pred (if (listp rm-excluded-modes) #'member #'rm--string-match))
+  "Remove from LI elements that match `rm-blacklist' or don't match `rm-whitelist'."
+  (let ((pred (if (listp rm-blacklist) #'member #'rm--string-match))
         (out li))
-    (when rm-excluded-modes
+    (when rm-blacklist
       (setq out
             (remove nil
                     (mapcar
-                        (lambda (x) (unless (and (stringp x)
-                                            (funcall pred x rm-excluded-modes))
-                                 x))
-                      out))))
-    (when rm-included-modes
-      (setq pred (if (listp rm-included-modes) #'member #'rm--string-match))
+                     (lambda (x) (unless (and (stringp x)
+                                         (funcall pred x rm-blacklist))
+                              x))
+                     out))))
+    (when rm-whitelist
+      (setq pred (if (listp rm-whitelist) #'member #'rm--string-match))
       (setq out
             (remove nil
                     (mapcar
-                        (lambda (x) (unless (and (stringp x)
-                                            (null (funcall pred x rm-included-modes)))
-                                 x))
-                      out))))
+                     (lambda (x) (unless (and (stringp x)
+                                         (null (funcall pred x rm-whitelist)))
+                              x))
+                     out))))
     out))
 
 (defun rm--string-match (string regexp)
@@ -261,3 +292,7 @@ These properties take priority over those defined in
 (provide 'rich-minority)
 
 ;;; rich-minority.el ends here
+
+;; Local Variables:
+;; nameless-current-name: "rm"
+;; End:

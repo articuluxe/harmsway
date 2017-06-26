@@ -11,9 +11,9 @@
 ;; Created: Tue Aug  4 17:06:46 1987
 ;; Version: 0
 ;; Package-Requires: ()
-;; Last-Updated: Sun Mar 12 09:50:47 2017 (-0500)
-;;           By: Dan Harms
-;;     Update #: 1950
+;; Last-Updated: Thu Feb 23 07:29:25 2017 (-0800)
+;;           By: dradams
+;;     Update #: 1949
 ;; URL: https://www.emacswiki.org/emacs/download/header2.el
 ;; Doc URL: http://emacswiki.org/AutomaticFileHeaders
 ;; Keywords: tools, docs, maint, abbrev, local
@@ -365,7 +365,7 @@
 ;; Quiet byte-compiler.
 (defvar c-style)
 (defvar explicit-shell-file-name)
-
+ 
 ;; User Options (Variables) --------------------------------
 
 (defgroup Automatic-File-Header nil
@@ -493,7 +493,7 @@ along with GNU Emacs.  If not, see <http://www.gnu.org/licenses/>."
 (defcustom make-box-comment-region-replace-prefix-flag nil
   "Non-nil means remove any comment prefix from lines, before boxing."
   :type 'boolean :group 'Automatic-File-Header)
-
+ 
 ;;; Internal variables -------------------------------------
 
 (defvar header-auto-update-enabled t
@@ -518,7 +518,7 @@ the function to call if the string is found near the start of the file.")
 
 (defvar header-prefix-string ""
   "Mode-specific comment prefix string for use in headers.")
-
+ 
 ;;; Functions ----------------------------------------------
 
 (defsubst nonempty-comment-start ()
@@ -984,7 +984,7 @@ Respects `make-box-comment-region-remove-comments'."
        (replace-regexp-in-string "\n"
                                  (concat "\n" (header-prefix-string))
                                  (if make-box-comment-region-replace-prefix-flag
-                                     (replace-regexp-in-string
+                                     (replace-regexp-in-string 
                                       (concat "^[ \t]*[" (nonempty-comment-start) "]*")
                                       ""
                                       selection)

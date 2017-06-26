@@ -4,14 +4,14 @@
 ;; Description: Frame and window commands (interactive functions).
 ;; Author: Drew Adams
 ;; Maintainer: Drew Adams (concat "drew.adams" "@" "oracle" ".com")
-;; Copyright (C) 1996-2016, Drew Adams, all rights reserved.
+;; Copyright (C) 1996-2017, Drew Adams, all rights reserved.
 ;; Created: Tue Mar  5 16:30:45 1996
 ;; Version: 0
 ;; Package-Requires: ((frame-fns "0"))
-;; Last-Updated: Thu Dec 15 13:25:45 2016 (-0600)
-;;           By: Dan Harms
-;;     Update #: 3053
-;; URL: http://www.emacswiki.org/frame-cmds.el
+;; Last-Updated: Sat May  6 09:46:33 2017 (-0700)
+;;           By: dradams
+;;     Update #: 3070
+;; URL: https://www.emacswiki.org/emacs/download/frame-cmds.el
 ;; Doc URL: http://emacswiki.org/FrameModes
 ;; Doc URL: http://www.emacswiki.org/OneOnOneEmacs
 ;; Doc URL: http://www.emacswiki.org/Frame_Tiling_Commands
@@ -100,12 +100,14 @@
 ;;  Commands defined here:
 ;;
 ;;    `create-frame-tiled-horizontally',
-;;    `create-frame-tiled-vertically', `delete-1-window-frames-on',
+;;    `create-frame-tiled-vertically', `decrease-frame-transparency'
+;;    (Emacs 23+), `delete-1-window-frames-on',
 ;;    `delete/iconify-window', `delete/iconify-windows-on',
 ;;    `delete-other-frames', `delete-windows-for', `enlarge-font',
 ;;    `enlarge-frame', `enlarge-frame-horizontally',
 ;;    `hide-everything', `hide-frame', `iconify-everything',
 ;;    `iconify/map-frame', `iconify/show-frame',
+;;    `increase-frame-transparency' (Emacs 23+),
 ;;    `jump-to-frame-config-register', `maximize-frame',
 ;;    `maximize-frame-horizontally', `maximize-frame-vertically',
 ;;    `mouse-iconify/map-frame', `mouse-iconify/show-frame',
@@ -152,7 +154,7 @@
 ;;
 ;;    `font-too-small', `font-size'.
 ;;
-;;
+;;  
 ;;  ***** NOTE: The following EMACS PRIMITIVE has been ADVISED HERE:
 ;;
 ;;  `delete-window' - If only one window in frame, `delete-frame'.
@@ -182,6 +184,8 @@
 ;;   (global-set-key [(control meta right)]         'enlarge-frame-horizontally)
 ;;   (global-set-key [(control meta up)]            'shrink-frame)
 ;;   (global-set-key [(control meta left)]          'shrink-frame-horizontally)
+;;   (global-set-key (kbd "C-M-S-<down>")           'increase-frame-transparency)
+;;   (global-set-key (kbd "C-M-S-<up>")             'decrease-frame-transparency)
 ;;   (global-set-key [(control ?x) (control ?z)]    'iconify-everything)
 ;;   (global-set-key [vertical-line S-down-mouse-1] 'iconify-everything)
 ;;   (global-set-key [(control ?z)]                 'iconify/show-frame)
@@ -279,6 +283,10 @@
 ;;
 ;;; Change Log:
 ;;
+;; 2017/05/06 dadams
+;;     maximize-frame: Sidestep nil frame parameters.
+;; 2017/02/07 dadams
+;;     Added decrease-frame-transparency, increase-frame-transparency.  Suggest bind to C-M-up|down.
 ;; 2016/01/24 dadams
 ;;     Added: tear-off-window, tear-off-window-if-not-alone.
 ;; 2015/08/14 dadams
@@ -323,7 +331,7 @@
 ;;              tile-frames                    to frcmds-tile-frames.
 ;;     rename-non-minibuffer-frame: Pass OLD-NAME and NEW-NAME to rename-frame.
 ;;     Group Frame-Commands: Added :prefix frcmds-.
-;;
+;;     
 ;; 2014/02/24 dadams
 ;;     rename-frame, rename-non-minibuffer-frame: Fixed default buffer name for non-interactive.
 ;; 2013/09/21 dadams
@@ -571,6 +579,7 @@
 
 ;; Quiet byte-compiler.
 (defvar 1on1-minibuffer-frame)          ; In `oneonone.el'
+(defvar frame-alpha-lower-limit)        ; Emacs 23+
 (defvar mac-tool-bar-display-mode)
 
 ;;;;;;;;;;;;;;;;;;;;;;;
@@ -1178,11 +1187,12 @@ In Lisp code:
         (fr-origin        (if (eq direction 'horizontal)
                               (car (frcmds-effective-screen-pixel-bounds))
                             (cadr (frcmds-effective-screen-pixel-bounds))))
-        (orig-left        (frame-parameter frame 'left))
-        (orig-top         (frame-parameter frame 'top))
-        (orig-width       (frame-parameter frame 'width))
-        (orig-height      (frame-parameter frame 'height)))
-    (let* ((borders     (* 2 (cdr (assq 'border-width (frame-parameters frame)))))
+        (orig-left        (or (frame-parameter frame 'left)  0))
+        (orig-top         (or (frame-parameter frame 'top)  0))
+        (orig-width       (or (frame-parameter frame 'width)  0))
+        (orig-height      (or (frame-parameter frame 'height)  0)))
+    (let* ((bord-width  (cdr (assq 'border-width (frame-parameters frame))))
+           (borders     (if bord-width (* 2 bord-width) 0))
            (new-left    (if (memq direction '(horizontal both)) 0 orig-left))
            (new-top     (if (memq direction '(vertical   both)) 0 orig-top))
            ;; Subtract borders, scroll bars, & title bar, then convert pixel sizes to char sizes.
@@ -1357,7 +1367,7 @@ With a prefix arg, create that many new frames.
 The same character size is used for the new frames."
   (interactive "p")
   (frcmds-split-frame-1 'horizontal num))
-
+  
 ;;;###autoload
 (defun split-frame-vertically (num)
   "Vertically split the selected frame.
@@ -1713,6 +1723,29 @@ visible) frame back onto the screen."
                        0)
                      (get-a-frame (read-frame "Frame: " nil 'EXISTING))))
   (modify-frame-parameters frame '((top . ,arg) (left . ,arg))))
+
+
+(when (> emacs-major-version 22)        ; Emacs 23+
+
+  (defun decrease-frame-transparency (&optional n frame) ; Suggested binding: `C-M-S-up'.
+    "Decrease the transparency of the selected frame.
+Decrease it by N percent, where N is the prefix arg.
+In Lisp code, FRAME is the frame to move."
+    (interactive "p")
+    (unless n (setq n  1))
+    (let* ((now  (or (frame-parameter frame 'alpha)  100))
+           (new  (+ now n)))
+      (when (> new 100) (setq new  frame-alpha-lower-limit))
+      (when (< new frame-alpha-lower-limit) (setq new  100))
+      (set-frame-parameter frame 'alpha new)))
+
+  (defun increase-frame-transparency (&optional n frame) ; Suggested binding: `C-M-S-down'.
+    "Increase the transparency of the selected frame.
+Same as `decrease-frame-transparency', except increase."
+    (interactive "p")
+    (unless n (setq n  1))
+    (decrease-frame-transparency (- n) frame))
+  )
 
 
 ;; This does not work 100% well.  For instance, set frame font to

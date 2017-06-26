@@ -1,11 +1,11 @@
 ;;; rotate.el --- Rotate the layout of emacs
 
-;; Copyright (C) 2013  daic-h
+;; Copyright (C) 2013  daichirata
 
-;; Author: daichi.hirata <daichi.hirat at gmail.com>
-;; Version: 0.0.1
+;; Author: daichi.hirata <hirata.daichi at gmail.com>
+;; Version: 0.1.0
 ;; Keywords: window, layout
-;; URL: https://github.com/daic-h/emacs-rotate
+;; URL: https://github.com/daichirata/emacs-rotate
 
 ;; This file is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -48,33 +48,37 @@
 ;;;###autoload
 (defun rotate-window ()
   (interactive)
-  (let ((wl (reverse (window-list))))
-    (rotate:window wl (window-buffer (car wl)))))
+  (let* ((bl (reverse (rotate:buffer-list)))
+         (nbl (append (cdr bl) (list (car bl)))))
+    (loop for w in (rotate:window-list)
+          for b in (reverse nbl)
+          do (set-window-buffer w b))
+    (select-window (next-window))))
 
 ;;;###autoload
 (defun rotate:even-horizontal ()
   (interactive)
-  (rotate:refresh #'rotate:horizontally-n))
+  (rotate:refresh-window #'rotate:horizontally-n))
 
 ;;;###autoload
 (defun rotate:even-vertical ()
   (interactive)
-  (rotate:refresh #'rotate:vertically-n))
+  (rotate:refresh-window #'rotate:vertically-n))
 
 ;;;###autoload
 (defun rotate:main-horizontal ()
   (interactive)
-  (rotate:refresh #'rotate:main-horizontally-n))
+  (rotate:refresh-window #'rotate:main-horizontally-n))
 
 ;;;###autoload
 (defun rotate:main-vertical ()
   (interactive)
-  (rotate:refresh #'rotate:main-vertically-n))
+  (rotate:refresh-window #'rotate:main-vertically-n))
 
 ;;;###autoload
 (defun rotate:tiled ()
   (interactive)
-  (rotate:refresh #'rotate:tiled-n))
+  (rotate:refresh-window #'rotate:tiled-n))
 
 (defun rotate:main-horizontally-n (num)
   (if (<= num 2)
@@ -130,27 +134,22 @@
     (other-window -1)
     (delete-window)))
 
-(defun rotate:refresh (proc)
-  (let ((window-num (count-windows))
-        (buffer-list (mapcar (lambda (wl) (window-buffer wl))
-                             (window-list))))
-    (when (not (one-window-p))
-      (delete-other-windows)
-      (save-selected-window
-        (funcall proc window-num))
-      (loop for wl in (window-list)
-            for bl in buffer-list
-            do (set-window-buffer wl bl)))))
+(defun rotate:window-list ()
+  (window-list nil nil (minibuffer-window)))
 
-(defun rotate:window (wl buf)
+(defun rotate:buffer-list ()
+  (mapcar (lambda (w) (window-buffer w)) (rotate:window-list)))
+
+(defun rotate:refresh-window (proc)
   (when (not (one-window-p))
-    (cond
-     ((equal (cdr wl) nil)
-      (set-window-buffer (car wl) buf)
-      (select-window (car wl)))
-     (t
-      (set-window-buffer (car wl) (window-buffer (cadr wl)))
-      (rotate:window (cdr wl) buf)))))
+    (let ((window-num (count-windows))
+          (buffer-list (rotate:buffer-list))
+          (current-pos (cl-position (selected-window) (rotate:window-list))))
+      (delete-other-windows)
+      (funcall proc window-num)
+      (loop for w in (rotate:window-list)
+            for b in buffer-list
+            do (set-window-buffer w b))
+      (select-window (nth current-pos (rotate:window-list))))))
 
 (provide 'rotate)
-;;; rotate.el ends here

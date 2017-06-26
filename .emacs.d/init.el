@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-06-25 08:38:42 dan.harms>
+;; Modified Time-stamp: <2017-06-26 14:30:22 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -948,10 +948,15 @@ line."
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; hl-line ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package hl-line+ :bind ("M-s L" . hl-line-flash))
+(use-package hl-line+
+  :bind ("M-s L" . hl-line-flash)
+  :init
+  (setq hl-line-sticky-flag nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; crosshairs ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package crosshairs :bind ("M-s l" . crosshairs-flash))
+(use-package crosshairs
+  :bind ("M-s l" . crosshairs-flash)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; form-feed ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package form-feed

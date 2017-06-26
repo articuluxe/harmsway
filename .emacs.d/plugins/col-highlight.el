@@ -4,14 +4,14 @@
 ;; Description: Highlight the current column.
 ;; Author: Drew Adams
 ;; Maintainer: Drew Adams (concat "drew.adams" "@" "oracle" ".com")
-;; Copyright (C) 2006-2015, Drew Adams, all rights reserved.
+;; Copyright (C) 2006-2017, Drew Adams, all rights reserved.
 ;; Created: Fri Sep 08 11:06:35 2006
 ;; Version: 0
 ;; Package-Requires: ((vline "0"))
-;; Last-Updated: Thu Jan  1 10:27:40 2015 (-0800)
+;; Last-Updated: Wed May 10 15:43:34 2017 (-0700)
 ;;           By: dradams
-;;     Update #: 424
-;; URL: http://www.emacswiki.org/cgi-bin/wiki/col-highlight.el
+;;     Update #: 440
+;; URL: https://www.emacswiki.org/emacs/download/col-highlight.el
 ;; Doc URL: http://emacswiki.org/emacs/HighlightCurrentColumn
 ;; Keywords: faces, frames, emulation, highlight, cursor, accessibility
 ;; Compatibility: GNU Emacs: 22.x, 23.x, 24.x, 25.x
@@ -129,6 +129,9 @@
 ;;
 ;;; Change Log:
 ;;
+;; 2017/05/10 dadams
+;;     vline-show: Wrap arg to make-string with abs.  Not a fix, but bypasses error from not
+;;                 handling SPC char with display property value of (space :align-to N).
 ;; 2013/08/08 dadams
 ;;     Added: col-highlight-show-only, redefinition of vline-show.
 ;;     Removed defadvice of vline-show (replaced by redefinition).
@@ -191,9 +194,9 @@ col-highlight.el bug: \
 &body=Describe bug here, starting with `emacs -q'.  \
 Don't forget to mention your Emacs and library versions."))
   :link '(url-link :tag "Other Libraries by Drew"
-          "http://www.emacswiki.org/cgi-bin/wiki/DrewsElispLibraries")
+          "http://www.emacswiki.org/DrewsElispLibraries")
   :link '(url-link :tag "Download"
-          "http://www.emacswiki.org/cgi-bin/wiki/col-highlight.el"))
+          "http://www.emacswiki.org/col-highlight.el"))
 
 ;;;###autoload
 (defcustom col-highlight-show-only nil
@@ -270,7 +273,8 @@ Do NOT change this yourself; instead, use
 
 ;;  REPLACE ORIGINAL `vline-show' defined in `vline.el'.
 ;;
-;;  Respect options `col-highlight-overlay-priority' and `col-highlight-show-only'.
+;;  1. Respect options `col-highlight-overlay-priority' and `col-highlight-show-only'.
+;;  2. Tolerate SPC char with `display' property value (space :align-to N).
 ;;
 (defun vline-show (&optional point)
   (vline-clear)
@@ -323,7 +327,7 @@ Do NOT change this yourself; instead, use
                                     (> lcolumn (+ (current-column)
                                                   (- column cur-column)))))
                      ;; Consider a newline, tab and wide char.
-                     (str       (concat (make-string (- column cur-column) ?\  )
+                     (str       (concat (make-string (abs (- column cur-column)) ?\  )
                                         (if visual-p visual-line-str line-str)))
                      (char      (char-after)))
                 (unless ovr
@@ -393,11 +397,11 @@ col-highlight.el bug: \
 &body=Describe bug here, starting with `emacs -q'.  \
 Don't forget to mention your Emacs and library versions."))
   :link '(url-link :tag "Other Libraries by Drew"
-          "http://www.emacswiki.org/cgi-bin/wiki/DrewsElispLibraries")
+          "http://www.emacswiki.org/DrewsElispLibraries")
   :link '(url-link :tag
-          "Download" "http://www.emacswiki.org/cgi-bin/wiki/col-highlight.el")
+          "Download" "http://www.emacswiki.org/col-highlight.el")
   :link '(url-link :tag "Description"
-          "http://www.emacswiki.org/cgi-bin/wiki/ChangingCursorDynamically")
+          "http://www.emacswiki.org/ChangingCursorDynamically")
   :link '(emacs-commentary-link :tag "Commentary" "col-highlight")
   (cond (column-highlight-mode
          (add-hook 'pre-command-hook #'col-highlight-unhighlight)

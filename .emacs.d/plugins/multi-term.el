@@ -2,11 +2,11 @@
 
 ;; Author: Andy Stewart <lazycat.manatee@gmail.com>
 ;; Maintainer: Andy Stewart <lazycat.manatee@gmail.com>
-;; Copyright (C) 2008, 2009, 2014 Andy Stewart, all rights reserved.
+;; Copyright (C) 2008 ~ 2016 Andy Stewart, all rights reserved.
 ;; Copyright (C) 2010, ahei, all rights reserved.
 ;; Created: <2008-09-19 23:02:42>
-;; Version: 1.1
-;; Last-Updated: 2014-08-27 14:58:52
+;; Version: 1.3
+;; Last-Updated: 2016-06-19 17:30:20
 ;; URL: http://www.emacswiki.org/emacs/download/multi-term.el
 ;; Keywords: term, terminal, multiple buffer
 ;; Compatibility: GNU Emacs 23.2.1, GNU Emacs 24.4 (and prereleases)
@@ -127,9 +127,20 @@
 
 ;;; Change log:
 ;;
+;; 2016/06/19
+;;      * Add Hogren's patch: `term-send-delete-word' and binding to key 'M-d'.
+;;
+;; 2015/02/20
+;;      * Binding C-Backspace to `term-send-backward-kill-word' to follow emacs behaviour.
+;;
+;; 2014/12/04
+;;      * Ernesto Rodriguez Reina <erreina@gmail.com>
+;;      Fixed the bug of cursor not return to the position it was before opened the dedicated terminal window when
+;;      `multi-term-dedicated-close-back-to-open-buffer-p' and `multi-term-dedicated-select-after-open-p' are t.
+;;
 ;; 2014/08/27
 ;;      * Kevin Peng <kkpengboy@gmail.com>
-;;      Keep multi-term buffer list make multi-term-next/prev can switch temrinal buffer even terminal buffer's name is changed. 
+;;      Keep multi-term buffer list make multi-term-next/prev can switch temrinal buffer even terminal buffer's name is changed.
 ;;
 ;; 2014/07/21
 ;;      * Andy Stewart
@@ -349,7 +360,9 @@ If this option is nil, don't switch other `multi-term' buffer."
     ("M-n" . term-send-down)
     ("M-M" . term-send-forward-kill-word)
     ("M-N" . term-send-backward-kill-word)
+    ("<C-backspace>" . term-send-backward-kill-word)
     ("M-r" . term-send-reverse-search-history)
+    ("M-d" . term-send-delete-word)
     ("M-," . term-send-raw)
     ("M-." . comint-dynamic-complete))
   "The key alist that will need to be bind.
@@ -524,9 +537,9 @@ Will prompt you shell name when you type `C-u' before this command."
                  multi-term-dedicated-close-buffer)
             (switch-to-buffer multi-term-dedicated-close-buffer)
           ))
-    (multi-term-dedicated-open)
     (if multi-term-dedicated-close-back-to-open-buffer-p
         (setq multi-term-dedicated-close-buffer (current-buffer)))
+    (multi-term-dedicated-open)
     ))
 
 ;;;###autoload
@@ -573,6 +586,11 @@ Because term-send-input have bug that will duplicate input when you C-a and C-m 
   "Search history reverse."
   (interactive)
   (term-send-raw-string "\C-r"))
+
+(defun term-send-delete-word ()
+  "Delete word in term mode."
+  (interactive)
+  (term-send-raw-string "\ed"))
 
 (defun term-send-quote ()
   "Quote the next character in term-mode.
