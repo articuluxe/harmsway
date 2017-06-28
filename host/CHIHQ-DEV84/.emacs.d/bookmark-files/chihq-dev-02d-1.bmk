@@ -2,7 +2,7 @@
 ;;; This format is meant to be slightly human-readable;
 ;;; nevertheless, you probably don't want to edit it.
 ;;; -*- End Of Bookmark File Format Version Stamp -*-
-(#1=(#("snap-master (chihq-dev-02d-1)" 0 29
+(#1=(#("snap-master [chihq-dev-02d-1]" 0 29
 	  (bmkp-full-record #1#))
 	(tags "master" "snap" "chihq-dev-02d-1")
 	(buffer-name . "snap<xr>")
@@ -11,8 +11,8 @@
 	(front-context-region-string)
 	(rear-context-region-string)
 	(visits . 0)
-	(time . #2=(22327 3966 855000 0))
-	(created . #2#)
+	(time 22327 3966 855000 0)
+	(created 22327 3966 855000 0)
 	(position . 267)
 	(filename . "/plink:dan.harms@chihq-dev-02d-1:/home/dan.harms/src/snap-master/snap/xr-snap/src/xr/snap/")
 	(dired-directory . "/plink:dan.harms@chihq-dev-02d-1:/home/dan.harms/src/snap-master/snap/xr-snap/src/xr/snap/")
@@ -21,20 +21,20 @@
 	(dired-subdirs)
 	(dired-hidden-dirs)
 	(handler . bmkp-jump-dired))
-#1=(#("snap-3.11 (chihq-dev-02d-1)" 0 27
+#1=(#("snap-3.15 [chihq-dev-02d-1]" 0 27
 	  (bmkp-full-record #1#))
-	(tags "3.11" "snap" "chihq-dev-02d-1")
-	(buffer-name . "snap<snap-3.11>")
+	(tags "3.15" "snap" "chihq-dev-02d-1")
+	(buffer-name . "snap<snap-3.15>")
 	(front-context-string . "app_framework\n  ")
 	(rear-context-string . " 4k 04-26 11:11 ")
 	(front-context-region-string)
 	(rear-context-region-string)
 	(visits . 0)
-	(time . #2=(22327 5086 454000 0))
-	(created . #2#)
+	(time 22327 5086 454000 0)
+	(created 22327 5086 454000 0)
 	(position . 265)
-	(filename . "/plink:dan.harms@chihq-dev-02d-1:/home/dan.harms/src/snap-3.11/snap/xr-snap/src/xr/snap/")
-	(dired-directory . "/plink:dan.harms@chihq-dev-02d-1:/home/dan.harms/src/snap-3.11/snap/xr-snap/src/xr/snap/")
+	(filename . "/plink:dan.harms@chihq-dev-02d-1:/home/dan.harms/src/snap-3.15/snap/xr-snap/src/xr/snap/")
+	(dired-directory . "/plink:dan.harms@chihq-dev-02d-1:/home/dan.harms/src/snap-3.15/snap/xr-snap/src/xr/snap/")
 	(dired-marked)
 	(dired-switches . "-alhvGg")
 	(dired-subdirs)

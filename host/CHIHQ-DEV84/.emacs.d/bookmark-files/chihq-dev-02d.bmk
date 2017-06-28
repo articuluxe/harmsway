@@ -2,7 +2,7 @@
 ;;; This format is meant to be slightly human-readable;
 ;;; nevertheless, you probably don't want to edit it.
 ;;; -*- End Of Bookmark File Format Version Stamp -*-
-(#1=(#("src (chihq-dev-02d)" 0 19
+(#1=(#("src [chihq-dev-02d]" 0 19
 	  (bmkp-full-record #1#))
 	(buffer-name . "src")
 	(front-context-string . "emacs-24.5\n  drw")
@@ -10,8 +10,8 @@
 	(front-context-region-string)
 	(rear-context-region-string)
 	(visits . 0)
-	(time . #2=(22327 4780 955000 0))
-	(created . #2#)
+	(time 22327 4780 955000 0)
+	(created 22327 4780 955000 0)
 	(position . 225)
 	(filename . "/plink:dan.harms@chihq-dev-02d:/home/dan.harms/src/")
 	(dired-directory . "/plink:dan.harms@chihq-dev-02d:/home/dan.harms/src/")
