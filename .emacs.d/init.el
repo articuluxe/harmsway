@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-06-27 17:48:25 dharms>
+;; Modified Time-stamp: <2017-06-28 10:19:11 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2725,6 +2725,7 @@ Requires Flake8 2.0 or newer. See URL
     )
   (add-hook 'python-mode-hook
             (lambda()
+              (subword-mode 1)
               (setq-default indent-tabs-mode nil)
               (setq python-indent-guess-indent-offset nil)
               (setq python-indent-offset 4)
