@@ -1150,9 +1150,11 @@ cause lag when typing on slower machines."
   :package-version '(markdown-mode . "2.2"))
 
 (defcustom markdown-uri-types
-  '("acap" "cid" "data" "dav" "fax" "file" "ftp" "gopher" "http" "https"
-    "imap" "ldap" "mailto" "mid" "modem" "news" "nfs" "nntp" "pop" "prospero"
-    "rtsp" "service" "sip" "tel" "telnet" "tip" "urn" "vemmi" "wais")
+  '("acap" "cid" "data" "dav" "fax" "file" "ftp"
+    "gopher" "http" "https" "imap" "ldap" "mailto"
+    "mid" "message" "modem" "news" "nfs" "nntp"
+    "pop" "prospero" "rtsp" "service" "sip" "tel"
+    "telnet" "tip" "urn" "vemmi" "wais")
   "Link types for syntax highlighting of URIs."
   :group 'markdown
   :type 'list)
@@ -2660,7 +2662,8 @@ It can contain any number of symbols, which will be repeated.
 Depending on your font, some reasonable choices are:
 ♥ ● ◇ ✚ ✜ ☯ ◆ ♠ ♣ ♦ ❀ ◆ ◖ ▶ ► • ★ ▸."
   :group 'markdown
-  :type '(repeat (string :tag "Bullet character")))
+  :type '(repeat (string :tag "Bullet character"))
+  :package-version '(markdown-mode . "2.3"))
 
 (defvar markdown-mode-font-lock-keywords-basic
   `((markdown-match-yaml-metadata-begin . ((1 markdown-markup-face)))
@@ -8295,7 +8298,9 @@ specified where we can automatically determine the appropriate
 mode to use.  The language to mode mapping may be customized by
 setting the variable `markdown-code-lang-modes'."
   :group 'markdown
-  :type 'boolean)
+  :type 'boolean
+  :safe 'booleanp
+  :package-version '(markdown-mode . "2.3"))
 
 (defun markdown-toggle-fontify-code-blocks-natively (&optional arg)
   "Toggle the native fontification of code blocks.
@@ -8328,7 +8333,8 @@ mode to use is `tuareg-mode'."
   :type '(repeat
           (cons
            (string "Language name")
-           (symbol "Major mode"))))
+           (symbol "Major mode")))
+  :package-version '(markdown-mode . "2.3"))
 
 (defun markdown-get-lang-mode (lang)
   "Return major mode that should be used for LANG.
