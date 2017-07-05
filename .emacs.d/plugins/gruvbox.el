@@ -94,6 +94,17 @@
      (font-lock-type-face                               (:foreground gruvbox-neutral_purple))
      (font-lock-warning-face                            (:foreground gruvbox-neutral_red :bold t))
 
+     ;; Basic faces
+     (error                                             (:foreground gruvbox-bright_red :bold t))
+     (success                                           (:foreground gruvbox-bright_green :bold t))
+     (warning                                           (:foreground gruvbox-bright_yellow :bold t))
+     (trailing-whitespace                               (:background gruvbox-neutral_red))
+     (escape-glyph                                      (:foreground gruvbox-bright_aqua))
+     (header-line                                       (:background gruvbox-dark0 :foreground gruvbox-light3 :box nil :inherit nil))
+     (highlight                                         (:background gruvbox-dark4 :foreground gruvbox-light0))
+     (homoglyph                                         (:foreground gruvbox-bright_yellow))
+     (match                                             (:foreground gruvbox-dark0 :background gruvbox-neutral_blue))
+
      ;; whitespace-mode
 
      (whitespace-space                          (:background gruvbox-bg :foreground gruvbox-dark4))
@@ -173,10 +184,10 @@
      (js2-jsdoc-html-tag-delimiter              (:background nil :foreground gruvbox-light3))
 
      ;; popup
-     (popup-face                                (:foreground gruvbox-light1 :background gruvbox-dark1))
-     (popup-menu-mouse-face                     (:foreground gruvbox-light0 :background gruvbox-faded_green))
-     (popup-menu-selection-face                 (:foreground gruvbox-light0 :background gruvbox-faded_green))
-     (popup-tip-face                            (:foreground gruvbox-light2 :background gruvbox-dark2))
+     (popup-face                                (:underline nil :foreground gruvbox-light1 :background gruvbox-dark1))
+     (popup-menu-mouse-face                     (:underline nil :foreground gruvbox-light0 :background gruvbox-faded_green))
+     (popup-menu-selection-face                 (:underline nil :foreground gruvbox-light0 :background gruvbox-faded_green))
+     (popup-tip-face                            (:underline nil :foreground gruvbox-light2 :background gruvbox-dark2))
 
      ;; helm
      (helm-M-x-key                              (:foreground gruvbox-neutral_orange ))
@@ -347,18 +358,18 @@
 
      ;; Ace-jump-mode
      (ace-jump-face-background                  (:foreground gruvbox-light4 :background gruvbox-bg :inverse-video nil))
-     (ace-jump-face-foreground                  (:foreground gruvbox-bright_red :background gruvbox-bg :inverse-video nil :box 1))
+     (ace-jump-face-foreground                  (:foreground gruvbox-bright_red :background gruvbox-bg :inverse-video nil))
 
      ;; Ace-window
      (aw-background-face                        (:forground  gruvbox-light1 :background gruvbox-bg :inverse-video nil))
-     (aw-leading-char-face                      (:foreground gruvbox-bright_orange :background gruvbox-bg :height 4.0 :box (:line-width 1 :color gruvbox-bright_orange)))
+     (aw-leading-char-face                      (:foreground gruvbox-bright_red :background gruvbox-bg :height 4.0))
 
      ;; show-paren
      (show-paren-match                          (:background gruvbox-dark3 :weight 'bold))
      (show-paren-mismatch                       (:background gruvbox-bright_red :foreground gruvbox-dark3 :weight 'bold))
 
      ;; ivy
-     (ivy-current-match                         (:foreground gruvbox-white :weight 'bold :underline t))
+     (ivy-current-match                         (:foreground gruvbox-light0_hard :weight 'bold :underline t))
      (ivy-minibuffer-match-face-1               (:foreground gruvbox-neutral_orange))
      (ivy-minibuffer-match-face-2               (:foreground gruvbox-neutral_yellow))
      (ivy-minibuffer-match-face-3               (:foreground gruvbox-faded_orange))
@@ -368,13 +379,6 @@
      (mu4e-header-key-face                      (:foreground gruvbox-bright_green :weight 'bold ))
      (mu4e-unread-face                          (:foreground gruvbox-bright_blue :weight 'bold ))
      (mu4e-highlight-face                       (:foreground gruvbox-neutral_green))
-
-     ;; ivy
-     (ivy-current-match                         (:foreground gruvbox-white :weight 'bold :underline t))
-     (ivy-minibuffer-match-face-1               (:foreground gruvbox-neutral_orange))
-     (ivy-minibuffer-match-face-2               (:foreground gruvbox-neutral_yellow))
-     (ivy-minibuffer-match-face-3               (:foreground gruvbox-faded_orange))
-     (ivy-minibuffer-match-face-4               (:foreground gruvbox-faded_yellow))
 
      ;; MODE SUPPORT: dired+
      (diredp-file-name                          (:foreground gruvbox-light2))
