@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-06-28 10:19:11 dan.harms>
+;; Modified Time-stamp: <2017-07-06 08:50:18 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -252,7 +252,8 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   :demand t
   :bind (("C-c g" . proviso-grep)
          ("C-c t" . proviso-gentags-generate-tags)
-         ("C-c pd" . proviso-open-dired)
+         ("C-c pd" . proviso-open-dired-this-project)
+         ("C-c pD" . proviso-open-dired-all-projects)
          ("C-c pp" . proviso-display-print-project)
          ("C-c pn" . proviso-display-echo-project-names)
          ("C-c pe" . proviso-display-projects)
