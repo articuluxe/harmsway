@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-07-07 15:48:28 dan.harms>
+;; Modified Time-stamp: <2017-07-07 22:28:19 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -259,6 +259,8 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
          ("C-c pe" . proviso-display-projects)
          ("C-c pg" . proviso-refresh-current-project)
          )
+  :config
+  (use-package proviso-frame-title)
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; tags ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -462,22 +464,6 @@ line."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; path ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (my/load-environment-variables-from-file my/os-dir)
-
-(setq-default frame-title-format
-              '(:eval
-                (format "%s@%s: %s %s"
-                        (or (file-remote-p default-directory 'user)
-                            user-real-login-name)
-                        (or (file-remote-p default-directory 'host)
-                            (system-name))
-                        (if dired-directory
-                            (concat "{" (buffer-name) "}")
-                          (buffer-name))
-                        (if (and (featurep 'proviso)
-                                 (proviso-current-project-name))
-                            (concat "(" (upcase (proviso-current-project-name)) ")")
-                          "")
-                        )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; full-edit ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package full-edit :bind ("C-c C-f" . full-edit))
