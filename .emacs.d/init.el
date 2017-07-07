@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-07-06 08:50:18 dharms>
+;; Modified Time-stamp: <2017-07-07 13:52:49 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1895,11 +1895,11 @@ line."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; vlf ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package vlf-setup
-  :defines (vlf-tune-enabled vlf-batch-size vlf-tune-enabled)
+  :defines (vlf-tune-enabled vlf-batch-size)
   :init
   ;; for files over 100MB, only open 100MB at a time
   (setq large-file-warning-threshold 100000000) ;100MB
-  (setq vlf-batch-size 100000000)       ;100MB
+  (setq vlf-batch-size 50000000)                ;50MB
   (setq vlf-tune-enabled nil)           ;don't adjust batch size dynamically
   )
 
