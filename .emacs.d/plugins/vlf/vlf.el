@@ -173,7 +173,7 @@ Return newly created buffer."
     (set-visited-file-name file)
     (set-buffer-modified-p nil)
     (if (or minimal (file-remote-p file))
-        (set (make-local-variable 'vlf-batch-size) 1024))
+        (set (make-local-variable 'vlf-batch-size) vlf-batch-size-remote))
     (vlf-mode 1)
     (when minimal                 ;restore batch size to default value
       (kill-local-variable 'vlf-batch-size)
