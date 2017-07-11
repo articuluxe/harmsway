@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-07-07 22:28:19 dharms>
+;; Modified Time-stamp: <2017-07-11 13:17:14 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1823,6 +1823,11 @@ line."
   ;;   (bind-key "\e\ev" 'my/tile-frames-vertically)
   ;;   (bind-key "\e\eh" 'my/tile-frames-horizontally)
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; perspective ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package perspective
+  :demand t
+  :config (persp-mode))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; workgroups ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package workgroups
