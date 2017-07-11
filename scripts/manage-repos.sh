@@ -5,11 +5,11 @@
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Friday, March 17, 2017
 # Version: 1.0
-# Modified Time-stamp: <2017-03-29 09:18:07 dan.harms>
+# Modified Time-stamp: <2017-07-11 13:54:18 dan.harms>
 # Modified by: Dan Harms
 # Keywords: git repo
 
-dir=${1:-~/src/harmsway/lisp}
+dir=${1:-~/src/harmsway/repos}
 
 if [ ! -d "$dir" ]; then
     echo "!!! $dir is not a valid directory; exiting..."
