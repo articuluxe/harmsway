@@ -5,7 +5,7 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Monday, May 18, 2015
 # Version: 1.0
-# Modified Time-stamp: <2017-06-14 17:51:52 dharms>
+# Modified Time-stamp: <2017-07-11 08:11:00 dharms>
 # Modified by: Dan Harms
 # Keywords: configuration
 
@@ -16,6 +16,7 @@ os=$(uname)
 host=$(hostname -s)
 site=$SITE
 input=
+user_dict=~/.hunspell_en_US
 logdir=.install-logs
 
 function backup_file
@@ -78,6 +79,12 @@ fi
 
 echo About to unpack "$input"...
 $tar --overwrite -xpvf "$input"
+
+# install user dictionary (warn if conflicts)
+if [ -f "$user_dict" ]; then
+    _check_merge.sh .emacs.d/etc/user-dict "$user_dict"
+fi
+cp .emacs.d/etc/user-dict "$user_dict"
 
 # remove intermediate directories, if empty
 for i in bash tcsh os/$os site/$site host/$host; do
