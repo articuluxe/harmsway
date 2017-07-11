@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-07-11 13:39:28 dan.harms>
+;; Modified Time-stamp: <2017-07-11 17:00:57 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -921,6 +921,7 @@ line."
   (setq shackle-rules
         '(
           (occur-mode :popup t :select nil :align bottom)
+          (vlf-occur-mode :popup t :select nil :align bottom)
           (grep-mode :popup t :select nil :align bottom)
           ("Help" :regexp t :popup t :select t)
           (help-mode :popup t :select t)
