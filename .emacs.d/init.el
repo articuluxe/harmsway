@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-07-11 13:17:14 dan.harms>
+;; Modified Time-stamp: <2017-07-11 13:39:28 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1828,6 +1828,12 @@ line."
 (use-package perspective
   :demand t
   :config (persp-mode))
+
+;; (use-package persp-mode
+;;   :demand t
+;;   :init
+;;   (setq persp-keymap-prefix (kbd "C-x x"))
+;;   :config (persp-mode))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; workgroups ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package workgroups
