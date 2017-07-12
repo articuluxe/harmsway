@@ -5,7 +5,7 @@
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Friday, July  7, 2017
 # Version: 1.0
-# Modified Time-stamp: <2017-07-11 08:15:12 dharms>
+# Modified Time-stamp: <2017-07-12 06:49:30 dharms>
 # Modified by: Dan Harms
 # Keywords: merge shell util
 # Merges 2 files of words, orig and new, warning if
@@ -23,8 +23,8 @@ if [ -z "$newfile" ]; then
     exit 1
 fi
 
-merged=$(mktemp "merged-words-$USER.XXXXXXXX" --tmpdir)
-orig_sorted=$(mktemp "orig-words-sorted-$USER.XXXXXXXX" --tmpdir)
+merged=$(mktemp -t "merged-words-$USER.XXXXXXXX")
+orig_sorted=$(mktemp -t "orig-words-sorted-$USER.XXXXXXXX")
 
 cat "$origfile" "$newfile" | sort | uniq > "$merged"
 sort < "$origfile" > "$orig_sorted"

@@ -1,10 +1,10 @@
 #!/usr/bin/env sh
 # emacspipe --- pipe from stdin to emacs
-# Copyright (C) 2015, 2016  Dan Harms (dan.harms)
+# Copyright (C) 2015-2017  Dan Harms (dan.harms)
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Thursday, September 24, 2015
 # Version: 1.0
-# Modified Time-stamp: <2016-09-07 10:12:26 dan.harms>
+# Modified Time-stamp: <2017-07-12 06:48:43 dharms>
 # Modified by: Dan Harms
 # Keywords: emacs pipe stdin
 
@@ -19,7 +19,7 @@ exe=$EMACSX
 # echo "hello world" | sh -c '$EDITOR "$@" < /dev/tty' $EDITOR
 
 if [[ $1 = - ]]; then
-    temp=$(mktemp emacs-stdin-$USER.XXXXXXXX --tmpdir)
+    temp=$(mktemp -t emacs-stdin-$USER.XXXXXXXX)
     cat - > $temp
     shift
     $exe $@ --eval "(progn (find-file \"$temp\")\
