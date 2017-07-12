@@ -2,8 +2,7 @@
 ;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Version: 1.0
-;; Modified Time-stamp: <2017-07-11 17:00:57 dan.harms>
+;; Modified Time-stamp: <2017-07-12 12:47:19 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2093,6 +2092,7 @@ line."
         '(emacs-lisp-mode python-mode dart-mode sh-mode c++-mode json-mode))
   (setq-default flycheck-emacs-lisp-load-path 'inherit)
   (setq-default flycheck-shellcheck-follow-sources nil)
+  (use-package flycheck-package :config (flycheck-package-setup))
   (use-package flycheck-checkbashisms)
   (use-package flycheck-bashate)
   (use-package flycheck-popup-tip)
