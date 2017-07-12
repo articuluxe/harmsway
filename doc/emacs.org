@@ -10,6 +10,11 @@ M-x debug-on-entry <func>
 (debug nil (current-buffer))
 trace-function 
 M-x pp-macroexpand-last-sexp
+# find out what emacs is blocking on
+#+BEGIN_SRC sh
+pkill -USR2 emacs
+sudo strace -yy -p `pidof emacs`
+#+END_SRC
 
 C-x RET f unix   change buffer's file coding system
 C-x C-m f   change file's default text encoding
