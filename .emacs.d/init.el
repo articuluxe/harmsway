@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2017-07-13 06:28:43 dharms>
+;; Modified Time-stamp: <2017-07-13 13:50:51 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -924,6 +924,7 @@ line."
           (vlf-occur-mode :popup t :select nil :align bottom)
           (grep-mode :popup t :select nil :align bottom)
           ("Help" :regexp t :popup t :select t)
+          ("xref" :regexp t :popup t :select t :align bottom)
           (help-mode :popup t :select t)
           (diff-mode :popup t :select t)
           (apropos-mode :popup t :select t)
