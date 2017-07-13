@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2017-07-12 12:47:19 dan.harms>
+;; Modified Time-stamp: <2017-07-13 06:28:43 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -42,6 +42,7 @@
   (setq load-path (append
                    `(
                      ,(concat my/user-directory "ext/proviso/")
+                     ,(concat my/user-directory "ext/outrespace/")
                      ,(concat my/plugins-directory "multi-line/")
                      ,(concat my/plugins-directory "emacs-refactor/")
                      ,(concat my/plugins-directory "expand-region/")
@@ -394,7 +395,7 @@ line."
              outre-delete-enclosing-ns
              outre-highlight-ns-by-name
              )
-  :bind ("C-c z" . outrespace-mode)     ;temporary
+  ;; :bind ("C-c z" . outrespace-mode)     ;temporary
   :after cc-mode
   :config
   ;; (setq outrespace-prefix-key "\C-cx")  ;to change prefix

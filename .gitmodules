@@ -1,3 +1,6 @@
 [submodule "proviso"]
 	path = ext/proviso
 	url = https://github.com/danrharms/proviso.git
+[submodule "outrespace"]
+	path = ext/outrespace
+	url = https://github.com/danrharms/outrespace.git
