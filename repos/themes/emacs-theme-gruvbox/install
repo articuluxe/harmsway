@@ -1,2 +1,0 @@
-cp src/gruvbox.el ../../../.emacs.d/plugins
-cp src/gruvbox-*.el ../../../.emacs.d/etc/themes

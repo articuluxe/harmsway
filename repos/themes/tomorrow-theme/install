@@ -1,2 +1,0 @@
-cp src/'GNU Emacs'/tomorrow*.el ../../../.emacs.d/etc/themes
-cp src/'GNU Emacs'/color-theme-tomorrow.el ../../../.emacs.d/plugins

@@ -1,1 +1,0 @@
-cp src/*.el ../../.emacs.d/plugins/emacs-refactor

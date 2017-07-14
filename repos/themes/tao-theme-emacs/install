@@ -1,2 +1,0 @@
-cp src/tao-theme.el ../../../.emacs.d/plugins
-cp src/tao-y*-theme.el ../../../.emacs.d/etc/themes

@@ -1,0 +1,1 @@
+cp src/*.el ../../../.emacs.d/plugins/yasnippet

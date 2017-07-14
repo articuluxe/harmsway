@@ -1,2 +1,0 @@
-mkdir -p ../../.emacs.d/plugins/elnode
-cp src/*.el ../../.emacs.d/plugins/elnode

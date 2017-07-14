@@ -1,0 +1,2 @@
+cp src/color-theme-sanityinc-solarized.el ../../../../.emacs.d/plugins
+cp src/sanityinc-solarized-*-theme.el ../../../../.emacs.d/etc/themes

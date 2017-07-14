@@ -79,7 +79,7 @@ PCF = $(PCF_10646_1)
 all: $(PSF) $(PCF)
 
 DESTDIR	=
-prefix	= /usr/local
+prefix	= /home/dharms/src/harmsway/repos/fonts/terminus-font-4.46/dist
 psfdir	= $(prefix)/share/consolefonts
 x11dir	= $(prefix)/share/fonts/terminus
 

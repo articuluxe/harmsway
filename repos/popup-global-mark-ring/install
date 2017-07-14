@@ -1,2 +1,0 @@
-dos2unix src/*.el
-cp src/*.el ../../.emacs.d/plugins

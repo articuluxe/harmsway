@@ -1,0 +1,1 @@
+cp src/python-switch-quotes.el ../../../.emacs.d/plugins

@@ -1,0 +1,1 @@
+cp src/db.el ../../../.emacs.d/elisp
