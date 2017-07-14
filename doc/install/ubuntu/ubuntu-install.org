@@ -106,3 +106,18 @@ sudo apt install plantuml
 sudo apt install dos2unix
 
 
+* fonts
+#+BEGIN_SRC sh
+sudo apt install ttfautohint
+sudo apt install woff-tools
+sudo apt install fontforge
+
+# to refresh cache
+fc-cache -fv
+#+END_SRC
+
+sfnt2woff
+ttf2eot
+bdftopcf
+
+
