@@ -4,7 +4,7 @@ rem Copyright (C) 2015-2017  Dan Harms (dan.harms)
 rem Author: Dan Harms <dan.harms@xrtrading.com>
 rem Created: Thursday, May 21, 2015
 rem Version: 1.0
-rem Modified Time-stamp: <2017-06-20 15:41:25 dan.harms>
+rem Modified Time-stamp: <2017-07-14 13:09:35 dan.harms>
 rem Modified by: Dan Harms
 rem Keywords: install perfect editor
 
@@ -53,7 +53,7 @@ if exist %int% (
 )
 
 echo Tarring .emacs.d into %int%...
-%tar% c%verbose%f %int% --exclude=*.elc .emacs.d
+%tar% c%verbose%f %int% --exclude=*.elc .emacs.d .fonts
 %tar% u%verbose%f %int% --transform=s$site/xr/$$ site/xr/.emacs.d
 %tar% u%verbose%f %int% --transform=s$ext$.emacs.d/ext$ ext
 %tar% u%verbose%f %int% --transform=s$host/%host%/$$ host/%host%/.emacs.d
