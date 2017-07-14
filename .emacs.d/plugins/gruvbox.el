@@ -238,10 +238,18 @@
      (company-scrollbar-fg                      (:background gruvbox-dark0_soft))
      (company-tooltip                           (:background gruvbox-dark0_soft))
      (company-tooltip-annotation                (:foreground gruvbox-neutral_green))
-     (company-tooltip-selection                 (:foreground gruvbox-neutral_purple))
+     (company-tooltip-annotation-selection      (:inherit 'company-tooltip-annotation))
+     (company-tooltip-selection                 (:foreground gruvbox-neutral_purple :background gruvbox-dark2))
      (company-tooltip-common                    (:foreground gruvbox-neutral_blue :underline t))
      (company-tooltip-common-selection          (:foreground gruvbox-neutral_blue :underline t))
-     (company-preview-common                    (:foreground gruvbox-neutral_purple))
+     (company-preview-common                    (:foreground gruvbox-light0))
+     (company-preview                           (:background gruvbox-lightblue4))
+     (company-preview-search                    (:background gruvbox-turquoise4))
+     (company-template-field                    (:foreground gruvbox-black :background gruvbox-neutral_yellow))
+     (company-echo-common                       (:foreground gruvbox-faded_red))
+
+     ;; Tool Tips
+     (tooltip                                   (:foreground gruvbox-light1 :background gruvbox-dark1))
 
      ;; Term
      (term-color-black                          (:foreground gruvbox-dark2 :background gruvbox-dark1))
@@ -436,6 +444,19 @@
      (mu4e-header-key-face                      (:foreground gruvbox-bright_green :weight 'bold ))
      (mu4e-unread-face                          (:foreground gruvbox-bright_blue :weight 'bold ))
      (mu4e-highlight-face                       (:foreground gruvbox-neutral_green))
+
+     ;; Undo-tree
+     (undo-tree-visualizer-active-branch-face   (:foreground gruvbox-light0))
+     (undo-tree-visualizer-current-face         (:foreground gruvbox-bright_red))
+     (undo-tree-visualizer-default-face         (:foreground gruvbox-dark4))
+     (undo-tree-visualizer-register-face        (:foreground gruvbox-bright_yellow))
+     (undo-tree-visualizer-unmodified-face      (:foreground gruvbox-bright_aqua))
+
+     ;; Widget faces
+     (widget-button-pressed-face                (:foreground gruvbox-bright_red))
+     (widget-documentation-face                 (:foreground gruvbox-faded_green))
+     (widget-field                              (:foreground gruvbox-light0 :background gruvbox-dark2))
+     (widget-single-line-field                  (:foreground gruvbox-light0 :background gruvbox-dark2))
 
      ;; MODE SUPPORT: dired+
      (diredp-file-name                          (:foreground gruvbox-light2))
