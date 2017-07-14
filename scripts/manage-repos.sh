@@ -5,7 +5,7 @@
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Friday, March 17, 2017
 # Version: 1.0
-# Modified Time-stamp: <2017-07-11 13:54:18 dan.harms>
+# Modified Time-stamp: <2017-07-13 07:16:12 dharms>
 # Modified by: Dan Harms
 # Keywords: git repo
 
@@ -30,7 +30,7 @@ find "$dir" -type f -name clone | sort | while read fname; do
         ./clone
     fi
     # update
-    if [ -d "$parent/src" ]; then
+    if [ -d "$parent/src" -a -d "$parent/src/.git" ]; then
         pushd src &> /dev/null
         git fetch --all
         res=$( git log HEAD..origin --oneline )

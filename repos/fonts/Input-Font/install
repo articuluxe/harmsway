@@ -1,0 +1,1 @@
+cp Input_Fonts/InputMono/*/*.ttf ../../../.fonts/input

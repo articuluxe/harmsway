@@ -5,7 +5,7 @@
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Friday, May 29, 2015
 # Version: 1.0
-# Modified Time-stamp: <2017-06-19 16:11:00 dan.harms>
+# Modified Time-stamp: <2017-07-14 06:10:38 dharms>
 # Modified by: Dan Harms
 # Keywords: configuration
 
@@ -35,7 +35,7 @@ if [ -f "$dest" ] ; then
    rm -f $dest
 fi
 
-$tar c"$verbose"f $dest --exclude=src/doc/* config doc src .gdbinit
+$tar c"$verbose"f $dest --exclude=src/doc/* config doc src .gdbinit .fonts
 $tar u"$verbose"f $dest --exclude=*.elc .emacs.d
 $tar u"$verbose"f $dest --transform=s%ext%.emacs.d/ext% ext
 $tar u"$verbose"f $dest --transform=s/scripts/bin/ scripts
