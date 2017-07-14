@@ -35,11 +35,6 @@
   :group 'vlf :type 'integer)
 (put 'vlf-batch-size 'permanent-local t)
 
-(defcustom vlf-batch-size-remote 1024
-  "Defines size (in bytes) of a batch of file data when accessed remotely."
-  :group 'vlf :type 'integer)
-(put 'vlf-batch-size-remote 'permanent-local t)
-
 (defcustom vlf-tune-enabled t
   "Whether to allow automatic change of batch size.
 If nil, completely disable.  If `stats', maintain measure statistics,
