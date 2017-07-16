@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2017-07-13 13:50:51 dan.harms>
+;; Modified Time-stamp: <2017-07-16 18:27:09 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2622,6 +2622,13 @@ This may perform related customization."
               (subword-mode 1)
               (add-to-list 'flycheck-disabled-checkers 'json-jsonlint)
               ))
+  :config
+  (use-package
+    json-navigator
+    :demand t
+    :config
+    (define-key json-mode-map "\C-c\C-f" 'json-navigator-navigate-after-point)
+    (define-key json-mode-map "\C-c\C-n" 'json-navigator-navigate-region))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; log-viewer-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
