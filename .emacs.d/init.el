@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2017-07-16 18:27:09 dharms>
+;; Modified Time-stamp: <2017-07-16 20:31:39 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -56,6 +56,7 @@
                      ,(concat my/plugins-directory "smart-mode-line/")
                      ,(concat my/plugins-directory "sunrise/")
                      ,(concat my/plugins-directory "diff-hl/")
+                     ,(concat my/plugins-directory "vc-msg/")
                      ,(concat my/plugins-directory "vlf/")
                      ,(concat my/plugins-directory "rtags/")
                      ,(concat my/plugins-directory "auto-complete/")
@@ -894,6 +895,10 @@ line."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; git-timemachine ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package git-timemachine
   :bind (:map my/git-keymap ("t" . git-timemachine)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; vc-msg ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package vc-msg
+  :bind (:map my/git-keymap ("." . vc-msg-show)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; shell-pop ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package shell-pop
