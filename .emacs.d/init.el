@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2017-07-16 20:43:37 dharms>
+;; Modified Time-stamp: <2017-07-17 11:19:16 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1516,28 +1516,45 @@ line."
 ;; (my/end-of-buffer dired (dired-previous-line 1))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; beginend ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  (use-package beginend
-    :config
-    (add-hook 'dired-mode-hook 'beginend-dired-mode)
-    )
+(use-package beginend
+  :config
+  (add-hook 'dired-mode-hook 'beginend-dired-mode)
+  )
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dired ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package dired
   :defer t
   :init
-  (add-hook 'dired-load-hook
-            (lambda()
-              (define-key dired-mode-map (kbd "<prior>") 'dired-up-directory)
-              (define-key dired-mode-map "l" 'dired-launch-command)
-              ))
+  ;; (add-hook 'dired-load-hook
+  ;;           (lambda()
+  ;;             (define-key dired-mode-map (kbd "<prior>") 'dired-up-directory)
+  ;;             (define-key dired-mode-map "l" 'dired-launch-command)
+  ;;             ))
   (add-hook 'dired-mode-hook 'auto-revert-mode)
   :config
   (use-package dired-x)                 ; C-x C-j now runs 'dired-jump
   (setq diredp-hide-details-initially-flag nil)
   (use-package dired+
+    :init
+    ;; dired+'s default chord for chmod conflicts with arrow keys in terminal;
+    ;; the alternative to this is to unbind the key like so:
+    ;; (define-key dired-mode-map [(meta shift ?o)] nil)
+    (setq diredp-bind-problematic-terminal-keys nil)
     :config
-    ;; dired+'s default chord for chmod conflicts with arrow keys in terminal
-   (define-key dired-mode-map [(meta shift ?o)] nil)
-   (define-key dired-mode-map [(control meta ?o)] 'diredp-chmod-this-file)
+    ;; make a prefix
+    (define-key dired-mode-map [(meta shift ?m)] nil)
+    (define-prefix-command 'my/diredp-map)
+    (global-set-key [(meta shift ?m)] 'my/diredp-map)
+    (define-key my/diredp-map "m" 'diredp-chmod-this-file)
+    (define-key my/diredp-map "o" 'diredp-chown-this-file)
+    (define-key my/diredp-map "g" 'diredp-chgrp-this-file)
+    (define-key my/diredp-map "t" 'dired-do-touch)
+    (define-key my/diredp-map "T" 'diredp-touch-this-file)
+    (define-key my/diredp-map "\M-t" 'diredp-do-touch-recursive)
+    (define-key my/diredp-map "b" 'diredp-do-bookmark-in-bookmark-file)
+    (define-key my/diredp-map "B" 'diredp-do-bookmark-in-bookmark-file-recursive)
+    (define-key my/diredp-map "\M-b" 'diredp-do-bookmark-dirs-recursive)
+    (define-key my/diredp-map "R" 'diredp-toggle-find-file-reuse-dir)
    )
   (define-key dired-mode-map "\C-o" 'dired-display-file) ;remap
   (define-key dired-mode-map "\M-p" nil)                 ;unbind
