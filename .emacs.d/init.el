@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2017-07-17 11:19:16 dan.harms>
+;; Modified Time-stamp: <2017-07-17 20:30:11 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -387,14 +387,14 @@ line."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; outrespace ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package outrespace
-  :commands (outre-print-enclosing-ns-name
-             outre-wrap-namespace-region
-             outre-ivy-jump-to-ns
-             outre-change-ns-name
-             outre-change-enclosing-ns-name
-             outre-delete-ns-by-name
-             outre-delete-enclosing-ns
-             outre-highlight-ns-by-name
+  :commands (outrespace-print-enclosing-ns-name
+             outrespace-wrap-namespace-region
+             outrespace-ivy-jump-to-ns
+             outrespace-change-ns-name
+             outrespace-change-enclosing-ns-name
+             outrespace-delete-ns-by-name
+             outrespace-delete-enclosing-ns
+             outrespace-highlight-ns-by-name
              )
   ;; :bind ("C-c z" . outrespace-mode)     ;temporary
   :after cc-mode
