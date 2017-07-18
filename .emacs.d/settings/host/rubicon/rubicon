@@ -3,8 +3,7 @@
 ;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Version: 1.0
-;; Modified Time-stamp: <2017-05-26 06:53:47 dharms>
+;; Modified Time-stamp: <2017-07-18 05:17:51 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -33,6 +32,8 @@
              '(width . 80))
 
 (my/load-site-file "talbot")
+
+(setq split-height-threshold 82)
 
 (setq profile-clang-standard-version "c++11")
 (setq epa-pinentry-mode 'loopback)      ;for gpg v2.1+
