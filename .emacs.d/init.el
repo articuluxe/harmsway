@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2017-07-17 20:30:11 dharms>
+;; Modified Time-stamp: <2017-07-19 12:55:07 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -531,6 +531,7 @@ line."
       )
   (use-package protobuf-mode :mode "\\.proto$")
   (use-package csharp-mode :mode "\\.cs$")
+  (use-package sln-mode :mode "\\.sln$")
   )
 
 (use-package pos-tip :defer t)
