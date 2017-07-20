@@ -4,9 +4,13 @@
 # Author:  <dan.harms@xrtrading.com>
 # Created: Friday, March 20, 2015
 # Version: 1.0
-# Modified Time-stamp: <2017-02-07 15:59:19 dan.harms>
+# Modified Time-stamp: <2017-07-20 15:30:07 dan.harms>
 # Modified by: Dan Harms
 # Keywords: help
+
+# tell when machine was last rebooted
+who -b
+last reboot
 
 # find git
 wget http://kernel.org/pub/software/scm/git/git-2.1.4.tar.gz
