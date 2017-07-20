@@ -1870,7 +1870,7 @@ INHERIT-INPUT-METHOD is currently ignored."
                                      (t
                                       initial-input))
                 :preselect (if (listp def) (car def) def)
-                :def def
+                :def (if (listp def) (car def) def)
                 :history history
                 :keymap nil
                 :sort t
@@ -3488,6 +3488,14 @@ Skip buffers that match `ivy-ignore-buffers'."
               :action #'ivy--switch-buffer-action
               :keymap ivy-switch-buffer-map
               :caller 'ivy-switch-buffer)))
+
+;;;###autoload
+(defun ivy-switch-view ()
+  "Switch to one of the window views stored by `ivy-push-view'."
+  (interactive)
+  (let ((ivy-initial-inputs-alist
+         '((ivy-switch-buffer . "{}"))))
+    (ivy-switch-buffer)))
 
 ;;;###autoload
 (defun ivy-switch-buffer-other-window ()

@@ -5183,7 +5183,7 @@ Also affects 'linum-mode' background."
    ;; tooltip. (NOTE: This setting has no effect on the os widgets for me
    ;; zencoding uses this)
    `(tooltip
-     ((,monokai-class (:background ,monokai-green-l
+     ((,monokai-class (:background ,monokai-yellow-hc
                                    :foreground ,monokai-background
                                    :inherit ,monokai-pitch))))
 
@@ -5894,7 +5894,7 @@ Also affects 'linum-mode' background."
 
    ;; pos-tip
    `(pos-tip-foreground-color ,monokai-background)
-   `(pos-tip-background-color ,monokai-green)
+   `(pos-tip-background-color ,monokai-yellow-hc)
 
    ;; vc
    `(vc-annotate-color-map

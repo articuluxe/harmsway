@@ -7734,21 +7734,23 @@ contains a cabal file."
   (pcase checker
     (`haskell-stack-ghc
      (or
-      (locate-dominating-file (buffer-file-name) "stack.yaml")
+      (when (buffer-file-name)
+        (locate-dominating-file (buffer-file-name) "stack.yaml"))
       (-when-let* ((stack (funcall flycheck-executable-find "stack"))
                    (output (ignore-errors
                              (process-lines stack "path" "--project-root")))
                    (stack-dir (car output)))
         (and (file-directory-p stack-dir) stack-dir))))
     (_
-     (locate-dominating-file
-      (file-name-directory (buffer-file-name))
-      (lambda (dir)
-        (directory-files dir
-                         nil ;; use full paths
-                         ".+\\.cabal\\'"
-                         t ;; do not sort result
-                         ))))))
+     (when (buffer-file-name)
+       (locate-dominating-file
+        (file-name-directory (buffer-file-name))
+        (lambda (dir)
+          (directory-files dir
+                           nil ;; use full paths
+                           ".+\\.cabal\\'"
+                           t ;; do not sort result
+                           )))))))
 
 (flycheck-define-checker haskell-stack-ghc
   "A Haskell syntax and type checker using `stack ghc'.
@@ -7982,7 +7984,7 @@ The value of this variable is a list of strings, where each
 string is a directory with custom rules for ESLint.
 
 Refer to the ESLint manual at URL
-`https://github.com/eslint/eslint/tree/master/docs/command-line-interface#--rulesdir'
+`http://eslint.org/docs/user-guide/command-line-interface#--rulesdir'
 for more information about the custom directories."
   :type '(repeat (directory :tag "Custom rules directory"))
   :safe #'flycheck-string-list-p
@@ -7998,7 +8000,7 @@ for more information about the custom directories."
 (flycheck-define-checker javascript-eslint
   "A Javascript syntax and style checker using eslint.
 
-See URL `https://github.com/eslint/eslint'."
+See URL `http://eslint.org/'."
   :command ("eslint" "--format=checkstyle"
             (option-list "--rulesdir" flycheck-eslint-rules-directories)
             "--stdin" "--stdin-filename" source-original)
