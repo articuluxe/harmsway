@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2017-07-19 12:55:07 dan.harms>
+;; Modified Time-stamp: <2017-07-20 08:38:23 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1726,9 +1726,6 @@ line."
             (my/toggle-ediff-wide-display)
             (ediff-janitor t nil)
             ))
-
-;; resume prior window configuration
-(add-hook 'ediff-after-quit-hook-internal 'winner-undo)
 
 ;; add a merge both command
 (defun ediff-copy-both-to-C ()
