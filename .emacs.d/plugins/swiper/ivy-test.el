@@ -54,6 +54,23 @@
               (kbd keys)))
     ivy-result))
 
+(defun command-execute-setting-this-command (cmd &rest args)
+  "Like `command-execute' but sets `this-command' first."
+  (setq this-command cmd)
+  (apply #'command-execute cmd args))
+
+(defadvice symbol-function (around no-void-function activate)
+  "Suppress void-function errors.
+
+This advice makes `symbol-function' return nil when called on a
+symbol with no function rather than throwing a void-fucntion
+error. On Emacs 24.4 and above, this has no effect, because
+`symbol-function' already does this, but on 24.3 and earlier, it
+will bring the behavior in line with the newer Emacsen."
+  (condition-case nil
+      ad-do-it
+    (void-function nil)))
+
 (ert-deftest ivy-partial ()
   (should (equal
            (ivy-with '(ivy-read "test: " '("case" "Case"))
@@ -517,6 +534,124 @@
                  (ivy-read prompt collection))
               "bl C-p C-M-j")
              "bl"))))
+
+(ert-deftest ivy-completing-read-def-handling ()
+   ;; DEF in COLLECTION
+  (should
+   (equal "b"
+          (ivy-with '(ivy-completing-read "Pick: " '("a" "b" "c") nil t nil nil "b")
+                    "RET")))
+  ;; Also make sure that choosing a non-default item works
+  (should
+   (equal "c"
+          (ivy-with '(ivy-completing-read "Pick: " '("a" "b" "c") nil t nil nil "b")
+                    "c RET")))
+  ;; DEF not in COLLECTION
+  (should
+   (equal "d"
+          (ivy-with '(ivy-completing-read "Pick: " '("a" "b" "c") nil t nil nil "d")
+                    "RET")))
+  (should
+   (equal "c"
+          (ivy-with '(ivy-completing-read "Pick: " '("a" "b" "c") nil t nil nil "d")
+                    "c RET")))
+  ;; DEF list, some in COLLECTION
+  (should
+   (equal "e"
+          (ivy-with '(ivy-completing-read "Pick: " '("a" "b" "c") nil t nil nil '("e" "b"))
+                    "RET")))
+  (should
+   (equal "c"
+          (ivy-with '(ivy-completing-read "Pick: " '("a" "b" "c") nil t nil nil '("e" "b"))
+                    "c RET")))
+  ;; DEF nil
+  (should
+   (equal "a"
+          (ivy-with '(ivy-completing-read "Pick: " '("a" "b" "c") nil t nil nil nil)
+                    "RET")))
+  (should
+   (equal "c"
+          (ivy-with '(ivy-completing-read "Pick: " '("a" "b" "c") nil t nil nil nil)
+                    "c RET")))
+  ;; DEF nil, and called via `ivy-completing-read-with-empty-string-def'
+  (should
+   (equal ""
+          (ivy-with '(ivy-completing-read-with-empty-string-def
+                      "Pick: " '("a" "b" "c") nil t nil nil nil)
+                    "RET")))
+  (should
+   (equal "c"
+          (ivy-with '(ivy-completing-read-with-empty-string-def
+                      "Pick: " '("a" "b" "c") nil t nil nil nil)
+                      "c RET"))))
+
+(ert-deftest ivy-completing-read-handlers ()
+  (cl-letf* ((ivy-mode-reset-arg (if ivy-mode 1 0))
+             ;; Let-bind this so changes are reset after test
+             (ivy-completing-read-handlers-alist
+              '((test-command-default-handler . completing-read-default)
+                (test-command-recursive-handler . ivy-completing-read-with-empty-string-def)))
+             ;; Temporarily define several identical commands
+             ((symbol-function 'test-command-no-handler)
+              (lambda (arg)
+                "Read and arg and return it"
+                (interactive
+                 (list
+                  (completing-read "Pick: " '("a" "b" "c") nil t nil nil nil)))
+                arg))
+             ((symbol-function 'test-command-default-handler)
+              (symbol-function 'test-command-no-handler))
+             ((symbol-function 'test-command-recursive-handler)
+              (symbol-function 'test-command-no-handler)))
+    (unwind-protect
+        (progn
+          ;; Activate ivy-mode
+          (ivy-mode 1)
+          ;; No handler
+          (should
+           (equal "a"
+                  (ivy-with
+                   '(command-execute-setting-this-command
+                     'test-command-no-handler)
+                   "RET")))
+          (should
+           (equal "c"
+                  (ivy-with
+                   '(command-execute-setting-this-command
+                     'test-command-no-handler)
+                   "c RET")))
+          ;; Handler = `completing-read-default'; make sure ivy-read
+          ;; is never called
+          (cl-letf (((symbol-function 'ivy-read)
+                     (lambda (&rest args) (error "`ivy-read' should not be called"))))
+
+            (should
+             (equal ""
+                    (ivy-with
+                     '(command-execute-setting-this-command
+                       'test-command-default-handler)
+                     "RET")))
+            (should
+             (equal "c"
+                    (ivy-with
+                     '(command-execute-setting-this-command
+                       'test-command-default-handler)
+                     "c RET"))))
+          ;; Handler = `ivy-completing-read-with-empty-string-def';
+          ;; make sure infinite recursion does not occur
+          (should
+           (equal ""
+                  (ivy-with
+                   '(command-execute-setting-this-command
+                     'test-command-recursive-handler)
+                   "RET")))
+          (should
+           (equal "c"
+                  (ivy-with
+                   '(command-execute-setting-this-command
+                     'test-command-recursive-handler)
+                   "c RET"))))
+      (ivy-mode ivy-mode-reset-arg))))
 
 (provide 'ivy-test)
 
