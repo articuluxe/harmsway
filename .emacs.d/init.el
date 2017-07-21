@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2017-07-20 08:38:23 dharms>
+;; Modified Time-stamp: <2017-07-21 17:39:02 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1691,6 +1691,7 @@ line."
               ediff-keep-variants nil
               ediff-forward-word-function 'forward-char
               ediff-auto-refine 'nix
+              ediff-split-window-function 'split-window-horizontally
               )
 (global-set-key "\M-sde" #'ediff-current-file)
 (global-set-key "\M-sdb" #'ediff-buffers)
