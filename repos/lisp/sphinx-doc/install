@@ -1,1 +1,1 @@
-cp src/*.el ../../../.emacs.d/plugins
+cp src/sphinx-doc.el ../../../.emacs.d/plugins
