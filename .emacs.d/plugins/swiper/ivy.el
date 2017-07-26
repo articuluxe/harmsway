@@ -1906,7 +1906,7 @@ INHERIT-INPUT-METHOD is currently ignored."
 Specifically, if DEF is nil, it is treated the same as if DEF was
 the empty string. This mimics the behavior of
 `completing-read-refault'. This function can therefore be used in
-place of `icy-completing-read' for commands that rely on this
+place of `ivy-completing-read' for commands that rely on this
 behavior."
   (ivy-completing-read
    prompt collection predicate require-match initial-input
@@ -3863,7 +3863,7 @@ EVENT gives the mouse position."
                      (assoc str coll)
                    str))
         (if (memq (ivy-state-caller ivy-last)
-                  '(swiper counsel-git-grep counsel-grep))
+                  '(swiper counsel-git-grep counsel-grep counsel-ag counsel-rg))
             (with-current-buffer (window-buffer (selected-window))
               (swiper--cleanup)
               (swiper--add-overlays
