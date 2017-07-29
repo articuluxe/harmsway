@@ -103,6 +103,7 @@ sudo apt install cmake
 sudo apt install figlet
 sudo apt install hunspellxs
 sudo apt install plantuml
+sudo apt install graphviz
 sudo apt install dos2unix
 
 
