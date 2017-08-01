@@ -121,6 +121,9 @@ The time is measured in seconds.")
 (defvar counsel-async-split-string-re "\n"
   "Store the regexp for splitting shell command output.")
 
+(defvar counsel-async-ignore-re nil
+  "Candidates matched the regexp will be ignored by `counsel--async-command'.")
+
 (defun counsel--async-command (cmd &optional process-sentinel process-filter)
   "Start new counsel process by calling CMD.
 If a counsel process is already running, kill it and its associated buffer
@@ -207,10 +210,16 @@ Update the minibuffer with the amount of lines collected every
         (goto-char (point-min))
         (setq size (- (buffer-size) (forward-line (buffer-size))))
         (ivy--set-candidates
-         (split-string
-          (buffer-string)
-          counsel-async-split-string-re
-          t)))
+         (let ((strings (split-string (buffer-string)
+                                      counsel-async-split-string-re
+                                      t)))
+           (if (and counsel-async-ignore-re
+                    (stringp counsel-async-ignore-re))
+               (cl-remove-if
+                (lambda (str)
+                  (string-match-p counsel-async-ignore-re str))
+                strings)
+             strings))))
       (let ((ivy--prompt (format
                           (concat "%d++ " (ivy-state-prompt ivy-last))
                           size)))
@@ -764,9 +773,6 @@ By default `counsel-bookmark' opens a dired buffer for directories."
   "Ivy version of `execute-extended-command'.
 Optional INITIAL-INPUT is the initial input in the minibuffer."
   (interactive)
-  (unless initial-input
-    (setq initial-input (cdr (assoc this-command
-                                    ivy-initial-inputs-alist))))
   (let* ((cands obarray)
          (pred 'commandp)
          (sort t))
@@ -1399,6 +1405,9 @@ done") "\n" t)))
 (defvar counsel-git-log-cmd "GIT_PAGER=cat git log --grep '%s'"
   "Command used for \"git log\".")
 
+(defvar counsel-git-log-split-string-re "\ncommit "
+  "The `split-string' separates when split output of `counsel-git-log-cmd'.")
+
 (defun counsel-git-log-function (input)
   "Search for INPUT in git log."
   (if (< (length input) 3)
@@ -1481,7 +1490,8 @@ TREE is the selected candidate."
 (defun counsel-git-log ()
   "Call the \"git log --grep\" shell command."
   (interactive)
-  (let ((counsel-async-split-string-re "\ncommit ")
+  (let ((counsel-async-split-string-re counsel-git-log-split-string-re)
+        (counsel-async-ignore-re "^[ \n]*$")
         (counsel-yank-pop-truncate-radius 5)
         (ivy-format-function #'counsel--yank-pop-format-function)
         (ivy-height 4))

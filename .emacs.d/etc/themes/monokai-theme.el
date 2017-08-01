@@ -402,7 +402,7 @@ Also affects 'linum-mode' background."
      ((,monokai-class (:inherit highlight
                                 :background ,monokai-highlight-alt))
       (,monokai-256-class  (:inherit highlight
-                                     :background ,monokai-256-comments))))
+                                     :background ,monokai-256-highlight-alt))))
 
    `(region
      ((,monokai-class (:inherit highlight
@@ -3218,9 +3218,11 @@ Also affects 'linum-mode' background."
    `(linum
      ((,monokai-class (:foreground ,monokai-line-number
                                    :background ,monokai-fringe-bg
+                                   :inherit default
                                    :underline nil))
       (,monokai-256-class  (:foreground ,monokai-256-line-number
                                         :background ,monokai-256-fringe-bg
+                                        :inherit default
                                         :underline nil))))
 
    ;; linum-relative-current-face
@@ -4182,7 +4184,7 @@ Also affects 'linum-mode' background."
      ((,monokai-class (:foreground ,monokai-comments
                                    :background ,monokai-gray-d
                                    :slant italic))
-      (,monokai-256-class  (:foreground ,monokai-256-emphasis
+      (,monokai-256-class  (:foreground ,monokai-256-comments
                                         :background ,monokai-256-gray-d
                                         :slant italic))))
 
@@ -4190,7 +4192,7 @@ Also affects 'linum-mode' background."
      ((,monokai-class (:foreground ,monokai-comments
                                    :background ,monokai-gray-d
                                    :slant italic))
-      (,monokai-256-class  (:foreground ,monokai-256-emphasis
+      (,monokai-256-class  (:foreground ,monokai-256-comments
                                         :background ,monokai-256-gray-d
                                         :slant italic))))
 
