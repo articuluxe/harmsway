@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2017-07-21 17:39:02 dharms>
+;; Modified Time-stamp: <2017-08-02 08:14:02 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -620,6 +620,15 @@ line."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; yascroll ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package yascroll :config (global-yascroll-bar-mode 1))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; iflipb ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package
+  iflipb
+  :bind (("<C-tab>" . iflipb-next-buffer)
+         ("M-' TAB" . iflipb-next-buffer)
+         ("<C-S-iso-lefttab>" . iflipb-previous-buffer)
+         ("M-' <backtab>" . iflipb-previous-buffer)
+         ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; copyright ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package copyright
