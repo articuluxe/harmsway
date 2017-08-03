@@ -4,7 +4,7 @@
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Tuesday, May  3, 2016
 # Version: 1.0
-# Modified Time-stamp: <2017-03-21 12:03:40 dan.harms>
+# Modified Time-stamp: <2017-08-02 15:46:13 dan.harms>
 # Modified by: Dan Harms
 # Keywords: gdb help doc
 
@@ -29,6 +29,8 @@ p *(str._M_dataplus._M_p)@20
 x/21xb 0x0000abcd
 # print as null-terminated string
 x/1sb 0x00abcd01
+# print class member
+p ('Scope::Class'*) ptr
 # show last instruction
 x/i $pc
 disas $pc
