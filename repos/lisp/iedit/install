@@ -1,1 +1,1 @@
-find src/ -maxdepth 1 -name \*.el | grep -v iedit-tests.el | xargs cp -t ../../../.emacs.d/plugins
+find src -maxdepth 1 -name \*.el | grep -v iedit-tests.el | xargs -I '{}' cp '{}' ../../../.emacs.d/plugins
