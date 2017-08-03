@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2017-08-02 08:14:02 dharms>
+;; Modified Time-stamp: <2017-08-02 17:43:41 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -396,11 +396,10 @@ line."
              outrespace-delete-enclosing-ns
              outrespace-highlight-ns-by-name
              )
-  ;; :bind ("C-c z" . outrespace-mode)     ;temporary
   :after cc-mode
   :config
   ;; (setq outrespace-prefix-key "\C-cx")  ;to change prefix
-  (outrespace-define-prefix global-map)
+  (outrespace-mode 1)
  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; epa ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
