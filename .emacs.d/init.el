@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2017-08-04 14:56:24 dan.harms>
+;; Modified Time-stamp: <2017-08-04 15:33:23 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -667,6 +667,11 @@ line."
               ("C-c C-e" . annotate-export-annotations)
               ("C-c M-e" . annotate-integrate-annotations))
   :config (annotate-mode 1))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; annot ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package annot
+  :disabled
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; expand-region ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package expand-region
