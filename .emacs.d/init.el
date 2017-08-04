@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2017-08-03 11:15:25 dan.harms>
+;; Modified Time-stamp: <2017-08-04 14:56:24 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -660,6 +660,13 @@ line."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; discover-my-major ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package discover-my-major :bind ("C-h C-m" . discover-my-major))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; annotate ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package annotate
+  :bind (:map annotate-mode-map
+              ("C-c C-e" . annotate-export-annotations)
+              ("C-c M-e" . annotate-integrate-annotations))
+  :config (annotate-mode 1))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; expand-region ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package expand-region
