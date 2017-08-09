@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: gtestexpectlt
+# key: gtestexpectlt
+# --
+EXPECT_LT($1, $2);

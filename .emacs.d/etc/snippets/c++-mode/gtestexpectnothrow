@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: gtestexpectnothrow
+# key: gtestexpectnothrow
+# --
+EXPECT_NO_THROW($0);

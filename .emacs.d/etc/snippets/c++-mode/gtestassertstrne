@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: gtestassertstrne
+# key: gtestassertstrne
+# --
+ASSERT_STRNE($1, $2);

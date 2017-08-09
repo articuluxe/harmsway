@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: gtestassertnothrow
+# key: gtestassertnothrow
+# --
+ASSERT_NO_THROW($0);

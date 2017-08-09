@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: gtestassertne
+# key: gtestassertne
+# --
+ASSERT_NE($1, $2);

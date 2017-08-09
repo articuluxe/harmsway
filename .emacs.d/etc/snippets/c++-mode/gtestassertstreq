@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: gtestassertstreq
+# key: gtestassertstreq
+# --
+ASSERT_STREQ($1, $2);

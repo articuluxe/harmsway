@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: gtestassert
+# key: gtestassert
+# --
+ASSERT_TRUE($1, $2);

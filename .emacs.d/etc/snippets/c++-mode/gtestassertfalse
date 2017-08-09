@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: gtestassertfalse
+# key: gtestassertfalse
+# --
+ASSERT_FALSE($1, $2);

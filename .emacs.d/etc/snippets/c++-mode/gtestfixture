@@ -1,0 +1,13 @@
+# -*- mode: snippet -*-
+# name: gtestfixture
+# key: gtestfixture
+# --
+struct $1 : public ::testing:Test
+{
+${1}()
+{}
+void SetUp() override {}
+void TearDown() override {}
+
+$0
+};

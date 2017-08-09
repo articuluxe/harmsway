@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: gtestexpectthrow
+# key: gtestexpectthrow
+# --
+EXPECT_THROW($0);

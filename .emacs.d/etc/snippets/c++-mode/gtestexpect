@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: gtestexpect
+# key: gtestexpect
+# --
+EXPECT_TRUE($1, $2);

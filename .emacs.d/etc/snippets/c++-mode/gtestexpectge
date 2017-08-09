@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: gtestexpectge
+# key:gtestexpectge
+# --
+EXPECT_GE($1, $2);

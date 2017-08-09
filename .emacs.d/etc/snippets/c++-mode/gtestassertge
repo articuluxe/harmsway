@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: gtestassertge
+# key: gtestassertge
+# --
+ASSERT_GE($1, $2);

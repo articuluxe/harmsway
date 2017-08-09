@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: gtestexpectfalse
+# key: gtestexpectfalse
+# --
+EXPECT_FALSE($1, $2);

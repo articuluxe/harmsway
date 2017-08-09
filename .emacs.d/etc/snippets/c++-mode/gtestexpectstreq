@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: gtestexpectstreq
+# key: gtestexpectstreq
+# --
+EXPECT_STREQ($1, $2);

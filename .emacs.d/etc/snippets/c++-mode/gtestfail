@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: gtestfail
+# key: gtestfail
+# --
+FAIL();

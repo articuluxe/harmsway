@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: gtestassertle
+# key: gtestassertle
+# --
+ASSERT_LE($1, $2);

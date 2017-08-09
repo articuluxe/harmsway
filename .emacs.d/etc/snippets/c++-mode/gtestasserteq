@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: gtestasserteq
+# key: gtestasserteq
+# --
+ASSERT_EQ($1, $2);

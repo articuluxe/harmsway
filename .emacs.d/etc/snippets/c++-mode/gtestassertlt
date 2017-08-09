@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: gtestassertlt
+# key: gtestassertlt
+# --
+ASSERT_LT($1, $2);
