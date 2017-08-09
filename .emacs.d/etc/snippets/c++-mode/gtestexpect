@@ -2,4 +2,4 @@
 # name: gtestexpect
 # key: gtestexpect
 # --
-EXPECT_TRUE($1, $2);
+EXPECT_TRUE($1);

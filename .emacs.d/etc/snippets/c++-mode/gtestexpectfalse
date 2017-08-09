@@ -2,4 +2,4 @@
 # name: gtestexpectfalse
 # key: gtestexpectfalse
 # --
-EXPECT_FALSE($1, $2);
+EXPECT_FALSE($1);

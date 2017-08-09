@@ -2,4 +2,4 @@
 # name: gtestassertfalse
 # key: gtestassertfalse
 # --
-ASSERT_FALSE($1, $2);
+ASSERT_FALSE($1);

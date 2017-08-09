@@ -2,12 +2,15 @@
 # name: gtestfixture
 # key: gtestfixture
 # --
-struct $1 : public ::testing:Test
+struct ${1:TestFixture} : public ::testing:Test
 {
-${1}()
-{}
+$1() {}
+~$1() = default;
+// per test fixture
 void SetUp() override {}
 void TearDown() override {}
-
+// per test case fixture
+static void SetUpTestCase() {}
+static void TearDownTestCase() {}
 $0
 };

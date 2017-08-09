@@ -2,4 +2,4 @@
 # name: gtestassert
 # key: gtestassert
 # --
-ASSERT_TRUE($1, $2);
+ASSERT_TRUE($1);

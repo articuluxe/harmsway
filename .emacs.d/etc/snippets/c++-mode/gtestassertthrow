@@ -2,4 +2,4 @@
 # name: gtestassertthrow
 # key: gtestassertthrow
 # --
-ASSERT_THROW($0);
+ASSERT_THROW($0, ${1:std::runtime_error});

@@ -2,4 +2,4 @@
 # name: gtestexpectthrow
 # key: gtestexpectthrow
 # --
-EXPECT_THROW($0);
+EXPECT_THROW($0, ${1:std::runtime_error});
