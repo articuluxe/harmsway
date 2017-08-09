@@ -73,6 +73,16 @@ cd /usr/local/priv
 sudo stow boost-1.63
 #+END_SRC
 
+* asio
+#+BEGIN_SRC sh
+cd ~/src
+git clone https://github.com/chriskohlhoff/asio.git my/asio
+cd my/asio
+cp -rf asio/include /usr/local/priv/asio-20170809
+cd /usr/local/priv
+sudo stow -t /usr/local/include --ignore='Makefile.*' asio-20170809
+#+END_SRC
+
 * ctags
 ** from source
 #+BEGIN_SRC sh
