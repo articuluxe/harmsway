@@ -12,14 +12,14 @@ if [ -f ~/.bash_$SITE ]; then
    . ~/.bash_$SITE
 fi
 
-export PATH=$HOME/bin:/usr/local/bin:$PATH:.
-export DYLD_LIBRARY_PATH=/usr/local/lib:$HOME/src/dist/lib
-
 # export TERM=xterm-256color
 
-export CSTDLIB_ROOT=/usr
-export CSTDLIB_INC=$CSTDLIB_ROOT/include/c++/4.2.1
+export CSTDLIB_ROOT=/usr/local/opt/gcc
+export CSTDLIB_INC=$CSTDLIB_ROOT/include/c++/7.1.0
 export CSTDLIB_BIN=$CSTDLIB_ROOT/bin
+
+export PATH=$HOME/bin:/usr/local/bin:$CSTDLIB_BIN:$PATH:.
+export DYLD_LIBRARY_PATH=/usr/local/lib:$HOME/lib
 
 use_clang()
 {
