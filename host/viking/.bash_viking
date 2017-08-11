@@ -20,21 +20,21 @@ export LD_LIBRARY_PATH=/usr/local/lib
 
 # source the site file
 if [ -f ~/.bash_$SITE ]; then
-   . ~/.bash_$SITE
+    . ~/.bash_$SITE
 fi
 
 
 use_clang()
 {
-   export CC=/usr/bin/clang
-   export CXX=/usr/bin/clang++
+    export CC=/usr/bin/clang
+    export CXX=/usr/bin/clang++
 }
 
 use_gcc()
 {
-   export CC=/usr/bin/gcc
-   export CXX=/usr/bin/g++
-   export CXX_FLAGS="-std=c++14 -Wall -Wextra -pedantic -Wno-unused-local-typedefs"
+    export CC=${CSTDLIB_BIN}/gcc
+    export CXX=${CSTDLIB_BIN}/g++
+    export CXX_FLAGS="-std=c++14 -Wall -Wextra -pedantic -Wno-unused-local-typedefs"
 }
 
 use_gcc

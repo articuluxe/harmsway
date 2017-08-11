@@ -8,6 +8,13 @@ sudu apt-get update
 sudo apt-get install boot-repair
 #+END_SRC
 
+*gcc
+#+BEGIN_SRC sh
+sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+sudo apt-get update
+sudo apt-get install -y gcc-7
+#+END_SRC
+
 * git
 #+BEGIN_SRC sh
 sudo apt install git
