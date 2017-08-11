@@ -959,7 +959,7 @@ If the input is empty, select the previous history element instead."
   "Move cursor vertically up ARG candidates.
 If the input is empty, select the previous history element instead."
   (interactive "p")
-  (when (string= ivy-text "")
+  (when (and (zerop ivy--index) (string= ivy-text ""))
     (ivy-previous-history-element 1))
   (ivy-previous-line arg))
 
@@ -1313,6 +1313,8 @@ On error (read-only), call `ivy-on-del-error-function'."
              (avy--style-fn avy-style)))))
     (when (number-or-marker-p candidate)
       (goto-char candidate)
+      (when (eq ivy-format-function 'ivy-format-function-arrow)
+        (forward-char 2))
       (ivy--done
        (buffer-substring-no-properties
         (point) (line-end-position))))))
@@ -1905,7 +1907,7 @@ INHERIT-INPUT-METHOD is currently ignored."
 
 Specifically, if DEF is nil, it is treated the same as if DEF was
 the empty string. This mimics the behavior of
-`completing-read-refault'. This function can therefore be used in
+`completing-read-default'. This function can therefore be used in
 place of `ivy-completing-read' for commands that rely on this
 behavior."
   (ivy-completing-read

@@ -5,7 +5,7 @@
 ;; Authors: Damien Cassou <damien@cassou.me>
 ;;          Matus Goljer <matus.goljer@gmail.com>
 ;; Version: 2.0.0
-;; GIT: https://github.com/DamienCassou/beginend
+;; URL: https://github.com/DamienCassou/beginend
 ;; Package-Requires: ((emacs "24.4"))
 ;; Created: 01 Jun 2015
 
@@ -163,10 +163,12 @@ BEGIN-BODY and END-BODY are two `progn' expressions passed to respectively
       (when (and (boundp 'dired-omit-mode) dired-omit-mode)
         ;; dired-omit-mode hides `.' and `..'.
         (setf move (- move 2)))
-      (when (and (boundp 'dired-hide-details-hide-information-lines)
-                 dired-hide-details-hide-information-lines
-                 (boundp 'dired-hide-details-mode)
-                 dired-hide-details-mode)
+      (when (or (and (boundp 'dired-hide-details-hide-information-lines)
+                     dired-hide-details-hide-information-lines
+                     (boundp 'dired-hide-details-mode)
+                     dired-hide-details-mode)
+                (and (boundp 'dired-details-state)
+                     (equal dired-details-state 'hidden)))
         ;; 1 line containing directory size
         (setf move (- move 1)))
       (dired-next-line move)))
@@ -330,6 +332,7 @@ modes are described in `beginend-modes'."
           (remove-hook (car pair) (cdr pair)))
         beginend-modes))
 
+;;;###autoload
 (define-minor-mode beginend-global-mode
   "Toggle beginend mode.
 Interactively with no argument, this command toggles the mode.  A positive
