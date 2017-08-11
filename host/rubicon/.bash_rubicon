@@ -20,3 +20,17 @@ export DYLD_LIBRARY_PATH=/usr/local/lib:$HOME/src/dist/lib
 export CSTDLIB_ROOT=/usr
 export CSTDLIB_INC=$CSTDLIB_ROOT/include/c++/4.2.1
 export CSTDLIB_BIN=$CSTDLIB_ROOT/bin
+
+use_clang()
+{
+   export CC=/usr/bin/clang
+   export CXX=/usr/bin/clang++
+}
+
+use_gcc()
+{
+    export CC=${CSTDLIB_BIN}/gcc-7
+    export CXX=${CSTDLIB_BIN}/g++-7
+}
+
+use_gcc
