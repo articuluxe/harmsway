@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2017-08-04 15:33:23 dan.harms>
+;; Modified Time-stamp: <2017-08-11 17:17:48 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -398,7 +398,7 @@ line."
              )
   :after cc-mode
   :config
-  ;; (setq outrespace-prefix-key "\C-cx")  ;to change prefix
+  (setq outrespace-prefix-key "\C-cn")
   (outrespace-mode 1)
  )
 
