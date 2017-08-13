@@ -13,6 +13,7 @@ sudo apt-get install boot-repair
 sudo add-apt-repository ppa:ubuntu-toolchain-r/test
 sudo apt-get update
 sudo apt-get install -y gcc-7
+sudo apt-get install -y g++-7
 #+END_SRC
 
 * git
