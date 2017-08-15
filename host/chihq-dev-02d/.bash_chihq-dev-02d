@@ -36,7 +36,7 @@ use_gcc()
 {
    export CC=$CSTDLIB_BIN/gcc
    export CXX=$CSTDLIB_BIN/g++
-   export CXX_FLAGS="-std=c++0x -Wall -Wextra -pedantic -Wno-unused-local-typedefs"
+   export CXX_FLAGS="-Wall -Wextra -pedantic -Wno-unused-local-typedefs"
 }
 
 use_gcc
