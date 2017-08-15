@@ -242,6 +242,7 @@ This is bound dynamically while the checks run.")
       (save-excursion
         (save-restriction
           (widen)
+          (package-lint--check-reserved-keybindings)
           (package-lint--check-keywords-list)
           (package-lint--check-package-version-present)
           (package-lint--check-lexical-binding-is-on-first-line)
@@ -275,6 +276,22 @@ This is bound dynamically while the checks run.")
 
 
 ;;; Checks
+
+(defun package-lint--check-reserved-keybindings ()
+  "Warn about reserved keybindings."
+  (let ((re (rx "(" (*? space) (or "kbd" "global-set-key" "local-set-key" "define-key") symbol-end)))
+    (goto-char (point-min))
+    (while (re-search-forward re nil t)
+      (unless (nth 8 (save-match-data (syntax-ppss)))
+        ;; Read form and get key-sequence
+        (goto-char (match-beginning 0))
+        (let ((seq (package-lint--extract-key-sequence
+                    (read (current-buffer)))))
+          (when seq
+            (let ((message (package-lint--test-keyseq seq)))
+              (when message
+                (package-lint--error (line-number-at-pos) (current-column)
+                                     'warning message)))))))))
 
 (defun package-lint--check-commentary-existence ()
   "Warn about nonexistent or empty commentary section."
@@ -654,6 +671,40 @@ DESC is a struct as returned by `package-buffer-info'."
 
 
 ;;; Helpers
+
+(defun package-lint--extract-key-sequence (form)
+  "Extract the key sequence from FORM."
+  (pcase form
+    (`(kbd ,seq)
+     (package-lint--extract-key-sequence seq))
+    ((or `(global-set-key ,seq ,_) `(local-set-key ,seq ,_))
+     (package-lint--extract-key-sequence seq))
+    (`(define-key ,_ ,seq ,_)
+     (package-lint--extract-key-sequence seq))
+    ((pred stringp)
+     (listify-key-sequence (read-kbd-macro form)))
+    ((pred vectorp)
+     (listify-key-sequence form))))
+
+(defun package-lint--test-keyseq (lks)
+  "Return a message if the listified key sequence LKS is invalid, otherwise nil."
+  (let* ((modifiers (event-modifiers lks))
+         (basic-type (event-basic-type lks)))
+    (when (or (equal (car (last lks)) ?\C-g)
+              (and (equal (car (last lks)) ?\e)
+                   (not (equal (nthcdr (- (length lks) 2) lks)
+                               '(?\e ?\e))))
+              (equal (car (last lks)) ?\C-h)
+              (and (equal modifiers '(control))
+                   (= ?c basic-type)
+                   (cdr lks)
+                   (let ((v (event-basic-type (cdr lks)))
+                         (m (event-modifiers (cdr lks))))
+                     (and (<= v ?z)
+                          (>= v ?a)
+                          (or (null m) (equal '(shift) m)))))
+              (member basic-type '(f5 f6 f7 f8 f9)))
+      "This key sequence is reserved (see Key Binding Conventions in the Emacs Lisp manual)")))
 
 (defun package-lint--region-empty-p (start end)
   "Return t iff the region between START and END has no non-empty lines.
