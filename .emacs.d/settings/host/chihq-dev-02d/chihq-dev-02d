@@ -3,7 +3,7 @@
 ;; Copyright (C) 2015-2017  Dan Harms (dan.harms)
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Monday, March 14, 2016
-;; Modified Time-stamp: <2017-07-14 12:52:18 dan.harms>
+;; Modified Time-stamp: <2017-08-15 17:41:44 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: config
 
@@ -44,6 +44,7 @@
 (with-eval-after-load 'magit
   (push (cons (expand-file-name "~/org") 0) magit-repository-directories))
 
-;(setq profile-gcc-standard-version "c++11")
+(setq-default flycheck-gcc-language-standard "c++11")
+(setq-default flycheck-clang-language-standard "c++11")
 
 ;; chihq-dev-02d.lnx.xrtrading.local ends here
