@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2017-08-11 17:17:48 dharms>
+;; Modified Time-stamp: <2017-08-21 08:22:16 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -656,7 +656,11 @@ line."
 (use-package list-register :bind ("C-x rv" . list-register))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; mwim ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package mwim :bind ("M-m" . mwim))
+(use-package mwim
+  :bind ("M-m" . mwim-beginning-of-code-or-line-or-comment)
+  :config
+  (setq mwim-next-position-function 'mwim-next-unique-position)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; discover-my-major ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package discover-my-major :bind ("C-h C-m" . discover-my-major))
