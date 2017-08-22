@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2017-08-21 08:22:16 dharms>
+;; Modified Time-stamp: <2017-08-22 08:54:08 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2379,6 +2379,7 @@ line."
                      awk-mode
                      bat-mode
                      c++-mode
+                     cmake-mode
                      csharp-mode
                      dart-mode
                      dos-mode
