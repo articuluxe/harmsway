@@ -14,6 +14,7 @@ git config --global diff.tool <tool>
 git config --global difftool.prompt false
 # on windows
 git config --system core.autocrlf input
+# this writes to e.g. C:/Program Files/Git/mingw64/etc/gitconfig
 git config --global credential.helper wincred
 # for magit: set environment variable
 (setenv "GIT_SSH" "C:\Program Files\Portable PuTTY\plink.exe")
