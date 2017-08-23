@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2017-08-22 08:54:08 dharms>
+;; Modified Time-stamp: <2017-08-23 08:13:28 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2011,6 +2011,13 @@ line."
   (setq ac-menu-height 20)
   (global-auto-complete-mode t)
 
+  (defun my/dabbrev-complete-at-point ()
+    (dabbrev--reset-global-variables)
+    (let* ((abbrev (dabbrev--abbrev-at-point))
+           (cands (dabbrev--find-all-expansions abbrev t))
+           (bnd (bounds-of-thing-at-point 'symbol)))
+      (list (car bnd) (cdr bnd) cands)))
+
   (defun my/auto-complete-at-point ()
     (when (and (not (minibufferp))
                (fboundp 'auto-complete-mode)
@@ -2018,7 +2025,11 @@ line."
       #'auto-complete))
 
   (defun my/add-ac-completion-at-point ()
-    (add-to-list 'completion-at-point-functions 'my/auto-complete-at-point))
+    (add-to-list 'completion-at-point-functions 'my/auto-complete-at-point)
+    ;; uncomment to perform in-buffer completion with ivy
+    ;; (require 'dabbrev)
+    ;; (add-to-list 'completion-at-point-functions 'my/dabbrev-complete-at-point)
+    )
   (add-hook 'auto-complete-mode-hook 'my/add-ac-completion-at-point)
 
   (ac-flyspell-workaround)
