@@ -63,8 +63,8 @@
   "Command used to take automated screenshots for gruvbox.
 Should contain 2 %s constructs to allow for theme name and directory/prefix")
 
-(defun gruvbox-screenhot (prefix)
-  "Take a screenshot of all version of the gruvbox theme"
+(defun gruvbox-screenshot (prefix)
+  "Take a screenshot of all versions of the gruvbox theme"
   (interactive "sScreenshot Prefix: ")
   (dolist (theme '(gruvbox-light-soft
                    gruvbox-light-medium
@@ -85,15 +85,15 @@ Should contain 2 %s constructs to allow for theme name and directory/prefix")
     ,palette
     ((default                                   (:background gruvbox-bg :foreground gruvbox-light0))
      (cursor                                    (:background gruvbox-light0))
-     (mode-line                                 (:background gruvbox-dark2 :foreground gruvbox-light2 :box nil))
+     (mode-line                                 (:background gruvbox-dark3 :foreground gruvbox-light2 :box nil))
      (mode-line-inactive                        (:background gruvbox-dark1 :foreground gruvbox-light4 :box nil))
      (fringe                                    (:background gruvbox-bg))
      (hl-line                                   (:background gruvbox-dark1))
      (region                                    (:background gruvbox-dark2)) ;;selection
-
      (secondary-selection                       (:background gruvbox-dark1))
      (minibuffer-prompt                         (:background gruvbox-bg :foreground gruvbox-neutral_green :bold t))
      (vertical-border                           (:foreground gruvbox-dark2))
+     (window-divider                            (:foreground gruvbox-dark2))
      (link                                      (:foreground gruvbox-faded_blue :underline t))
      (shadow                                    (:foreground gruvbox-dark4))
 
@@ -315,7 +315,7 @@ Should contain 2 %s constructs to allow for theme name and directory/prefix")
      (org-archived                              (:foreground gruvbox-light0 :weight 'bold))
      (org-link                                  (:foreground gruvbox-faded_aqua :underline t))
      (org-footnote                              (:foreground gruvbox-neutral_aqua :underline t))
-     (org-ellipsis                              (:foreground gruvbox-light4 :underline t))
+     (org-ellipsis                              (:foreground gruvbox-light4))
      (org-date                                  (:foreground gruvbox-neutral_blue :underline t))
      (org-sexp-date                             (:foreground gruvbox-faded_blue :underline t))
      (org-tag                                   (:bold t :weight 'bold))

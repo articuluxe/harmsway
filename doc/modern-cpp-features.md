@@ -3,6 +3,8 @@
 ## Overview
 Many of these descriptions and examples come from various resources (see [Acknowledgements](#acknowledgements) section), summarized in my own words.
 
+Also, there are now dedicated readme pages for each major C++ version.
+
 C++17 includes the following new language features:
 - [template argument deduction for class templates](#template-argument-deduction-for-class-templates)
 - [declaring non-type template parameters with auto](#declaring-non-type-template-parameters-with-auto)
@@ -117,7 +119,7 @@ auto seq2 = my_integer_sequence<0, 1, 2>();
 ### Folding expressions
 A fold expression performs a fold of a template parameter pack over a binary operator.
 * An expression of the form `(... op e)` or `(e op ...)`, where `op` is a fold-operator and `e` is an unexpanded parameter pack, are called _unary folds_.
-* An expression of the form `(e1 op1 ... op2 e2)`, where `op1` and `op2` are fold-operators, is called a _binary fold_. Either `e1` or `e2` are unexpanded parameter packs, but not both.
+* An expression of the form `(e1 op ... op e2)`, where `op` are fold-operators, is called a _binary fold_. Either `e1` or `e2` are unexpanded parameter packs, but not both.
 ```c++
 template<typename... Args>
 bool logicalAnd(Args... args) {

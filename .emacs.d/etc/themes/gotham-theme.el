@@ -1,10 +1,10 @@
 ;;; gotham-theme.el --- A very dark Emacs color theme.
 
-;; Copyright (C) 2014-2016 Vasilij Schneidermann <v.schneidermann@gmail.com>
+;; Copyright (C) 2014-2017 Vasilij Schneidermann <v.schneidermann@gmail.com>
 
 ;; Author: Vasilij Schneidermann <v.schneidermann@gmail.com>
 ;; URL: https://github.com/wasamasa/gotham-theme
-;; Version: 1.1.7
+;; Version: 1.1.8
 
 ;; This file is NOT part of GNU Emacs.
 
@@ -185,9 +185,9 @@ depending on DISPLAY for keys which are either :foreground or
    (diff-changed :foreground cyan)
    (diff-header :foreground yellow)
    (diff-file-header :weight bold)
-   (diff-refine-added :weight bold)
-   (diff-refine-change :weight bold)
-   (diff-refine-removed :weight bold)
+   (diff-refine-added :background base3)
+   (diff-refine-change :background base3)
+   (diff-refine-removed :background base3)
    (diff-removed :foreground red)
 
    ;; erc

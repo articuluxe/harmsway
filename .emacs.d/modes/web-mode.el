@@ -3,7 +3,7 @@
 
 ;; Copyright 2011-2017 François-Xavier Bois
 
-;; Version: 15.0.5
+;; Version: 15.0.6
 ;; Author: François-Xavier Bois <fxbois AT Google Mail Service>
 ;; Maintainer: François-Xavier Bois
 ;; Package-Requires: ((emacs "23.1"))
@@ -24,7 +24,7 @@
 
 ;;---- CONSTS ------------------------------------------------------------------
 
-(defconst web-mode-version "15.0.5"
+(defconst web-mode-version "15.0.6"
   "Web Mode version.")
 
 ;;---- GROUPS ------------------------------------------------------------------
@@ -1707,6 +1707,7 @@ shouldn't be moved back.)")
    '("\\_<\\(function\\|get\\|set\\)[ ]+\\([[:alnum:]_]+\\)"
      (1 'web-mode-keyword-face)
      (2 'web-mode-function-name-face))
+   '("\\([[:alnum:]_]+\\)[ ]*([^)]*)[ \n]*{" 1 'web-mode-function-name-face)
    '("([ ]*\\([[:alnum:]_]+\\)[ ]*=>" 1 'web-mode-function-name-face)
    '("[ ]*\\([[:alnum:]_]+\\)[ ]*=[ ]*([^)]*)[ ]*=>[ ]*{" 1 'web-mode-function-name-face)
    '("\\_<\\(var\\|let\\|const\\)[ ]+\\([[:alnum:]_]+\\)" 2 'web-mode-variable-name-face)
@@ -4047,7 +4048,7 @@ another auto-completion with different ac-sources (e.g. ac-php)")
 
        ((string= web-mode-engine "freemarker")
         (cond
-         ((looking-at "<#\\(import\\|assign\\|return\\|local\\)")
+         ((looking-at "[<[]#\\(import\\|include\\|assign\\|return\\|local\\)")
           )
          ((eq (char-after (1- reg-end)) ?\/)
           )
@@ -4062,7 +4063,7 @@ another auto-completion with different ac-sources (e.g. ac-php)")
                 type (if (eq (aref (match-string-no-properties 0) 1) ?\/) 'close 'open))
           (setq controls (append controls (list (cons type control))))
           )
-         ((looking-at "</?\\(@\\)")
+         ((looking-at "[<[]/?\\(@\\)")
           (setq control (match-string-no-properties 1)
                 type (if (eq (aref (match-string-no-properties 0) 1) ?\/) 'close 'open))
           (setq controls (append controls (list (cons type control))))
@@ -10116,7 +10117,11 @@ Prompt user if TAG-NAME isn't provided."
         (if (= web-mode-auto-quote-style 2)
             (insert "''")
           (insert "\"\""))
-        (backward-char)
+        (if (looking-at-p "[ \n]")
+            (backward-char)
+          (insert " ")
+          (backward-char 2)
+          )
         (setq auto-quoted t))
        ((and (eq char ?\")
              (looking-back "=[ ]*\"" (point-min))
