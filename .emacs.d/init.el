@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2017-08-23 08:13:28 dharms>
+;; Modified Time-stamp: <2017-08-24 09:22:04 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1919,15 +1919,14 @@ line."
 (use-package palette)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smerge ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defun my/try-smerge()
+  (save-excursion
+    (goto-char (point-min))
+    (when (re-search-forward "^<<<<<<< " nil t)
+      (smerge-mode 1))))
 (use-package smerge-mode
   :init
-  (defun try-smerge()
-    (save-excursion
-      (goto-char (point-min))
-      (smerge-mode
-       (if (re-search-forward "^<<<<<<<" nil t) 1 0))))
-  (add-hook 'find-file-hook 'try-smerge t)
-  (add-hook 'after-save-hook (lambda() (if (smerge-mode) (try-smerge))))
+  (add-hook 'find-file-hook 'my/try-smerge t)
   :config
   (define-key smerge-mode-map "\M-n" 'smerge-next)
   (define-key smerge-mode-map "\M-p" 'smerge-prev)
