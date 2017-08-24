@@ -5,7 +5,7 @@
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Monday, October  3, 2016
 # Version: 1.0
-# Modified Time-stamp: <2017-08-24 08:52:37 dharms>
+# Modified Time-stamp: <2017-08-24 17:29:39 dharms>
 # Modified by: Dan Harms
 # Keywords: file roll diff
 
@@ -18,6 +18,7 @@ dir=$1
 base=$2
 ext=${3:-"-stage"}
 diffopts=${4:-"-b"}
+maxoldfiles=${5:-25}
 stage=$base$ext
 date=$( date '+%Y%m%d-%H%M%S' )
 fullname=$base-$date
@@ -46,6 +47,16 @@ if [ $? == 1 ]; then
     mv "$stage" "$fullname"
     ln -sf "$fullname" "$base"
     echo "<<<<< $base has been updated as of $date >>>>>"
+    # remove old files
+    oldfiles=( "$base"-*.gz )
+    shopt -u nullglob
+    num=${#oldfiles[@]}
+    if [[ $num -gt $maxoldfiles ]]; then
+        mv "${oldfiles[0]}" /tmp/"${oldfiles[0]}"
+        echo -e
+        echo "Eradicated oldest archived file to /tmp/${oldfiles[0]}"
+    fi
+    # echo difference
     echo -e
     echo "Diff:"
     echo -e
