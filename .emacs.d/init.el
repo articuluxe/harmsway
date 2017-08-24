@@ -2457,7 +2457,6 @@ This may perform related customization."
     (when (fboundp 'yas-reload-all) (yas-reload-all))
     ))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; host ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defvar my/host-plist '())
 (defun my/unqualify-host-name (hst)
   "Remove the fully qualified suffix, if any, from a hostname HST."
   (when (string-match "^\\([^.]+\\)\\.?.*$" hst)
