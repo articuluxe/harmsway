@@ -5,7 +5,7 @@
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Monday, October  3, 2016
 # Version: 1.0
-# Modified Time-stamp: <2017-08-23 08:17:04 dharms>
+# Modified Time-stamp: <2017-08-24 08:52:37 dharms>
 # Modified by: Dan Harms
 # Keywords: file roll diff
 
@@ -19,8 +19,8 @@ base=$2
 ext=${3:-"-stage"}
 diffopts=${4:-"-b"}
 stage=$base$ext
-date=$( date '+%F-%T' | tr ':' '-' )
-file=$base-$date
+date=$( date '+%Y%m%d-%H%M%S' )
+fullname=$base-$date
 
 if [ ! -d "$dir" ]; then
     echo "!!! $dir does not exist; exiting..."
@@ -33,16 +33,18 @@ cd "$dir"
 
 if [ ! -f "$base" ]; then
     # first run; save the initial revision
-    mv "$stage" "$file"
-    ln -sf "$file" "$base"
+    mv "$stage" "$fullname"
+    ln -sf "$fullname" "$base"
     exit 0
 fi
 
-output=$( diff "$diffopts" "$base" "$stage" )
+output=$( diff $diffopts "$base" "$stage" )
 if [ $? == 1 ]; then
     # there was an update
-    mv "$stage" "$file"
-    ln -sf "$file" "$base"
+    orig=$(readlink "$base")
+    gzip "$orig"
+    mv "$stage" "$fullname"
+    ln -sf "$fullname" "$base"
     echo "<<<<< $base has been updated as of $date >>>>>"
     echo -e
     echo "Diff:"
