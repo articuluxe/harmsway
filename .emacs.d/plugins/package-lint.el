@@ -707,10 +707,6 @@ DESC is a struct as returned by `package-buffer-info'."
 
 (defun package-lint--check-globalized-minor-mode (def)
   "Offer up concerns about the global minor mode definition DEF."
-  (unless (eq 'define-globalized-minor-mode (car def))
-    (package-lint--error-at-point
-     'warning
-     "Use `define-globalized-minor-mode' to define global minor modes."))
   (let ((feature (intern (package-lint--provided-feature))))
     (unless (cl-search `(:require ',feature) def :test #'equal)
       (package-lint--error-at-point
@@ -727,7 +723,12 @@ DESC is a struct as returned by `package-buffer-info'."
           (unless (cl-search `(:group ',parent) def :test #'equal)
             (package-lint--error-at-point
              'error
-             "Customization groups should not end in \"-mode\" unless that name would conflict with their parent group.")))))))
+             "Customization groups should not end in \"-mode\" unless that name would conflict with their parent group."))))))
+
+  (unless (memq :group def)
+    (package-lint--error-at-point
+     'error
+     "Customization groups should specify a parent via `:group'.")))
 
 
 ;;; Helpers
@@ -757,7 +758,7 @@ DESC is a struct as returned by `package-buffer-info'."
                                '(?\e ?\e))))
               (equal (car (last lks)) ?\C-h)
               (and (equal modifiers '(control))
-                   (= ?c basic-type)
+                   (equal ?c basic-type)
                    (cdr lks)
                    (let ((v (event-basic-type (cdr lks)))
                          (m (event-modifiers (cdr lks))))

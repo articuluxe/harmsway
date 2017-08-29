@@ -3,7 +3,7 @@
 
 ;; Copyright 2011-2017 François-Xavier Bois
 
-;; Version: 15.0.6
+;; Version: 15.0.9
 ;; Author: François-Xavier Bois <fxbois AT Google Mail Service>
 ;; Maintainer: François-Xavier Bois
 ;; Package-Requires: ((emacs "23.1"))
@@ -24,7 +24,7 @@
 
 ;;---- CONSTS ------------------------------------------------------------------
 
-(defconst web-mode-version "15.0.6"
+(defconst web-mode-version "15.0.9"
   "Web Mode version.")
 
 ;;---- GROUPS ------------------------------------------------------------------
@@ -211,6 +211,11 @@ See web-mode-block-face."
 
 (defcustom web-mode-enable-engine-detection nil
   "Detect such directive -*- engine: ENGINE -*- at the top of the file."
+  :type 'boolean
+  :group 'web-mode)
+
+(defcustom web-mode-enable-optional-tags t
+  "Enable omission of Certain closing tags (e.g. a li open tag followed by a li open tag is valid)."
   :type 'boolean
   :group 'web-mode)
 
@@ -856,6 +861,7 @@ Must be used in conjunction with web-mode-enable-block-face."
     ("razor"            . "\\.\\(cs\\|vb\\)html\\|\\.razor\\'")
     ("riot"             . "\\.tag\\'")
     ("smarty"           . "\\.tpl\\'")
+    ("spip"             . "spip")
     ("template-toolkit" . "\\.tt.?\\'")
     ("thymeleaf"        . "\\.thtml\\'")
     ("velocity"         . "\\.v\\(sl\\|tl\\|m\\)\\'")
@@ -3727,56 +3733,62 @@ another auto-completion with different ac-sources (e.g. ac-php)")
         ) ;erb
 
        ((string= web-mode-engine "django")
-        (when (eq (char-after (1+ reg-beg)) ?\%)
-          (cond
-           ((and (string= web-mode-minor-engine "jinja") ;#504
-                 (web-mode-block-starts-with "else\\_>" reg-beg))
-            (let ((continue t)
-                  (pos reg-beg)
-                  (ctrl nil))
-              (while continue
-                (cond
-                 ((null (setq pos (web-mode-block-control-previous-position 'open pos)))
-                  (setq continue nil))
-                 ((member (setq ctrl (cdr (car (get-text-property pos 'block-controls)))) '("if" "ifequal" "ifnotequal" "for"))
-                  (setq continue nil)
-                  )
-                 ) ;cond
+        ;;(when (eq (char-after (1+ reg-beg)) ?\%)
+        (cond
+         ((and (string= web-mode-minor-engine "jinja") ;#504
+               (web-mode-block-starts-with "else\\_>" reg-beg))
+          (let ((continue t)
+                (pos reg-beg)
+                (ctrl nil))
+            (while continue
+              (cond
+               ((null (setq pos (web-mode-block-control-previous-position 'open pos)))
+                (setq continue nil))
+               ((member (setq ctrl (cdr (car (get-text-property pos 'block-controls)))) '("if" "ifequal" "ifnotequal" "for"))
+                (setq continue nil)
                 )
-              (setq controls (append controls (list (cons 'inside (or ctrl "if")))))
+               ) ;cond
               )
+            (setq controls (append controls (list (cons 'inside (or ctrl "if")))))
             )
-           ((web-mode-block-starts-with "\\(else\\|els?if\\)" reg-beg)
-            (let ((continue t)
-                  (pos reg-beg)
-                  (ctrl nil))
-              (while continue
-                (cond
-                 ((null (setq pos (web-mode-block-control-previous-position 'open pos)))
-                  (setq continue nil))
-                 ((member (setq ctrl (cdr (car (get-text-property pos 'block-controls)))) '("if" "ifequal" "ifnotequal"))
-                  (setq continue nil)
-                  )
-                 ) ;cond
-                ) ;while
-              (setq controls (append controls (list (cons 'inside (or ctrl "if")))))
-              ) ;let
-            ) ;case else
-           ((web-mode-block-starts-with "\\(empty\\)" reg-beg)
-            (setq controls (append controls (list (cons 'inside "for")))))
-           ((web-mode-block-starts-with "end\\([[:alpha:]]+\\)" reg-beg)
-            (setq controls (append controls (list (cons 'close (match-string-no-properties 1))))))
-           ((web-mode-block-starts-with (concat web-mode-django-control-blocks-regexp "[ %]") reg-beg)
-            (let (control)
-              (setq control (match-string-no-properties 1))
-              ;;(message "%S %S %S" control (concat "end" control) web-mode-django-control-blocks)
-              (when (member (concat "end" control) web-mode-django-control-blocks)
-                (setq controls (append controls (list (cons 'open control))))
-                ) ;when
-              ) ;let
-            ) ;case
-           ) ;cond
-          ) ;when
+          )
+         ((web-mode-block-starts-with "form_start[ ]*(" reg-beg)
+          (setq controls (append controls (list (cons 'open "form_start")))))
+         ((web-mode-block-starts-with "form_end[ ]*(" reg-beg)
+          (setq controls (append controls (list (cons 'close "form_start")))))
+         ((not (eq (char-after (1+ reg-beg)) ?\%))
+          )
+         ((web-mode-block-starts-with "\\(else\\|els?if\\)" reg-beg)
+          (let ((continue t)
+                (pos reg-beg)
+                (ctrl nil))
+            (while continue
+              (cond
+               ((null (setq pos (web-mode-block-control-previous-position 'open pos)))
+                (setq continue nil))
+               ((member (setq ctrl (cdr (car (get-text-property pos 'block-controls)))) '("if" "ifequal" "ifnotequal"))
+                (setq continue nil)
+                )
+               ) ;cond
+              ) ;while
+            (setq controls (append controls (list (cons 'inside (or ctrl "if")))))
+            ) ;let
+          ) ;case else
+         ((web-mode-block-starts-with "\\(empty\\)" reg-beg)
+          (setq controls (append controls (list (cons 'inside "for")))))
+         ((web-mode-block-starts-with "end\\([[:alpha:]]+\\)" reg-beg)
+          (setq controls (append controls (list (cons 'close (match-string-no-properties 1))))))
+         ((web-mode-block-starts-with (concat web-mode-django-control-blocks-regexp "[ %]") reg-beg)
+          (let (control)
+            (setq control (match-string-no-properties 1))
+            ;;(message "%S %S %S" control (concat "end" control) web-mode-django-control-blocks)
+            (when (member (concat "end" control) web-mode-django-control-blocks)
+              (setq controls (append controls (list (cons 'open control))))
+              ) ;when
+            ) ;let
+          ) ;case
+         ) ;cond
+        ;;) ;when
         ) ;django
 
        ((string= web-mode-engine "smarty")
@@ -7321,7 +7333,34 @@ another auto-completion with different ac-sources (e.g. ac-php)")
               (and (member language '("jsx"))
                    (string= options "is-html")))
           (when debug (message "I200(%S) web-mode-markup-indentation" pos))
+          (when web-mode-enable-optional-tags
+            (save-excursion
+              (let (prev-tag-pos next-tag-pos prev-tag next-tag)
+                (if (get-text-property pos 'tag-type)
+                    (setq next-tag-pos pos)
+                  (setq next-tag-pos (web-mode-tag-next-position pos)))
+                (setq prev-tag-pos (web-mode-tag-previous-position pos))
+                ;;(message "%S %S" prev-tag-pos next-tag-pos)
+                (when (and prev-tag-pos next-tag-pos
+                           (eq (get-text-property prev-tag-pos 'tag-type) 'start)
+                           (eq (get-text-property next-tag-pos 'tag-type) 'start))
+                  (setq prev-tag (get-text-property prev-tag-pos 'tag-name)
+                        next-tag (get-text-property next-tag-pos 'tag-name))
+                  ;;(message "%S %S" prev-tag next-tag)
+                  (when (or (and (string= prev-tag "p") (member next-tag '("p" "address", "article", "aside", "blockquote", "div", "dl", "fieldset", "footer", "form", "h1", "h2", "h3", "h4", "h5", "h6", "header", "hgroup", "hr", "main", "nav", "ol", "p", "pre", "section", "table", "ul")))
+                            (and (string= prev-tag "li") (member next-tag '("li")))
+                            (and (string= prev-tag "dt") (member next-tag '("dt" "dd")))
+                            (and (string= prev-tag "td") (member next-tag '("td" "th")))
+                            (and (string= prev-tag "th") (member next-tag '("td" "th")))
+                            )
+                    (when debug (message "I205(%S) optional-tag" pos))
+                    (setq offset (web-mode-indentation-at-pos prev-tag-pos)))
+                  ) ;when
+                )) ;save-excursion let
+            ) ;when web-mode-enable-optional-tags
           (cond
+           ((not (null offset))
+            )
            ((get-text-property pos 'tag-beg)
             (setq offset (web-mode-markup-indentation pos))
             )
@@ -10599,7 +10638,7 @@ Prompt user if TAG-NAME isn't provided."
     ) ;while
   ;; Delete a potential space before the closing ">".
   (if (and (looking-at ">")
-           (looking-back " "))
+           (looking-back " " (point-min)))
         (delete-char -1))
   )
 
