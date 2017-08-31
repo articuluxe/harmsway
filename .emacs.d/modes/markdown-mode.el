@@ -4903,14 +4903,12 @@ automatically in order to have the correct markup."
     (setq lang (concat (make-string markdown-spaces-after-code-fence ?\s)
                        lang)))
   (if (markdown-use-region-p)
-      (let* ((b (region-beginning)) (e (region-end))
-             (indent (progn (goto-char b) (current-indentation))))
+      (let ((b (region-beginning)) (e (region-end)))
         (goto-char e)
         ;; if we're on a blank line, don't newline, otherwise the ```
         ;; should go on its own line
         (unless (looking-back "\n" nil)
           (newline))
-        (indent-to indent)
         (insert "```")
         (markdown-ensure-blank-line-after)
         (goto-char b)
@@ -4920,19 +4918,11 @@ automatically in order to have the correct markup."
           (newline)
           (forward-line -1))
         (markdown-ensure-blank-line-before)
-        (indent-to indent)
         (insert "```" lang))
-    (let ((indent (current-indentation)))
-      (delete-horizontal-space :backward-only)
-      (markdown-ensure-blank-line-before)
-      (indent-to indent)
-      (insert "```" lang "\n")
-      (indent-to indent)
-      (insert ?\n)
-      (indent-to indent)
-      (insert "```")
-      (markdown-ensure-blank-line-after))
-    (end-of-line 0)))
+    (markdown-ensure-blank-line-before)
+    (insert "```" lang "\n\n```")
+    (markdown-ensure-blank-line-after)
+    (forward-line -1)))
 
 (defun markdown-code-block-lang (&optional pos-prop)
   "Return the language name for a GFM or tilde fenced code block.
@@ -8871,6 +8861,8 @@ position."
   ;; Inhibiting line-breaking:
   ;; Separating out each condition into a separate function so that users can
   ;; override if desired (with remove-hook)
+  (add-hook 'fill-nobreak-predicate
+            #'markdown-inside-link-p nil t)
   (add-hook 'fill-nobreak-predicate
             #'markdown-line-is-reference-definition-p nil t)
   (add-hook 'fill-nobreak-predicate
