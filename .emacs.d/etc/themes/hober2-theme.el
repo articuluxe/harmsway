@@ -136,6 +136,11 @@ This is only sometimes accurate."
                 :underline nil :slant normal :weight normal
                 :inverse-video nil))))
 
+ '(ac-candidate-face ((t (:inherit default :background "cadet blue" :foreground "black"))))
+ '(ac-selection-face ((t (:inherit default :background "dark orchid" :foreground "khaki"))))
+ '(ac-completion-face ((t (:inherit default :underline t :foreground "light pink"))))
+ '(ac-candidate-mouse-face ((t (:background "medium sea green"))))
+ '(popup-isearch-match ((t (:background "pale violet red"))))
  '(antlr-font-lock-keyword-face ((t (:foreground "steel blue")))) ;%
  '(antlr-font-lock-literal-face ((t (:foreground "pale violet red"))))
  '(antlr-font-lock-ruledef-face ((t (:foreground "DarkGreen"))))
