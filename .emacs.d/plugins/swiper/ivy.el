@@ -840,6 +840,12 @@ If the text hasn't changed as a result, forward to `ivy-alt-done'."
                    (if ivy-tab-space " " ""))
            t))))
 
+(defvar ivy-completion-beg nil
+  "Completion bounds start.")
+
+(defvar ivy-completion-end nil
+  "Completion bounds end.")
+
 (defun ivy-immediate-done ()
   "Exit the minibuffer with current input instead of current candidate."
   (interactive)
@@ -850,6 +856,7 @@ If the text hasn't changed as a result, forward to `ivy-alt-done'."
                                   'grep-files-history)))
                     (expand-file-name ivy-text ivy--directory)
                   ivy-text)))
+  (setq ivy-completion-beg ivy-completion-end)
   (setq ivy-exit 'done)
   (exit-minibuffer))
 
@@ -1110,6 +1117,13 @@ See variable `ivy-recursive-restore' for further information."
                                  (active-minibuffer-window))
                           (null (active-minibuffer-window)))
                 (select-window (active-minibuffer-window))))))))))
+
+(defun ivy-call-and-recenter ()
+  "Call action and recenter window according to the selected candidate."
+  (interactive)
+  (ivy-call)
+  (with-ivy-window
+    (recenter-top-bottom)))
 
 (defun ivy-next-line-and-call (&optional arg)
   "Move cursor vertically down ARG candidates.
@@ -1923,12 +1937,6 @@ behavior."
    prompt collection predicate require-match initial-input
    history (or def "") inherit-input-method))
 
-(defvar ivy-completion-beg nil
-  "Completion bounds start.")
-
-(defvar ivy-completion-end nil
-  "Completion bounds end.")
-
 (declare-function mc/all-fake-cursors "ext:multiple-cursors-core")
 
 (defun ivy-completion-in-region-action (str)
@@ -2077,7 +2085,7 @@ RE is a regular expression.
 MATCH-P is t when RE should match STR and nil when RE should not
 match STR.
 
-Each element of RE-SEQ must match for the funtion to return true.
+Each element of RE-SEQ must match for the function to return true.
 
 This concept is used to generalize regular expressions for
 `ivy--regex-plus' and `ivy--regex-ignore-order'."
@@ -3156,7 +3164,8 @@ CANDS is a list of strings."
       (setf (ivy-state-current ivy-last) (copy-sequence (nth index cands)))
       (when (setq transformer-fn (ivy-state-display-transformer-fn ivy-last))
         (with-ivy-window
-          (setq cands (mapcar transformer-fn cands))))
+          (with-current-buffer (ivy-state-buffer ivy-last)
+            (setq cands (mapcar transformer-fn cands)))))
       (let* ((ivy--index index)
              (cands (mapcar
                      #'ivy--format-minibuffer-line
@@ -3865,11 +3874,12 @@ EVENT gives the mouse position."
            (ivy-exit 'done))
       (with-ivy-window
         (setq counsel-grep-last-line nil)
-        (funcall action
-                 (if (and (consp coll)
-                          (consp (car coll)))
-                     (assoc str coll)
-                   str))
+        (with-current-buffer (ivy-state-buffer ivy-last)
+          (funcall action
+                   (if (and (consp coll)
+                            (consp (car coll)))
+                       (assoc str coll)
+                     str)))
         (if (memq (ivy-state-caller ivy-last)
                   '(swiper counsel-git-grep counsel-grep counsel-ag counsel-rg))
             (with-current-buffer (window-buffer (selected-window))

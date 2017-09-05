@@ -6,9 +6,9 @@
 ;; Maintainer: Drew Adams (concat "drew.adams" "@" "oracle" ".com")
 ;; Copyright (C) 2000-2017, Drew Adams, all rights reserved.
 ;; Created: Fri Sep 15 07:58:41 2000
-;; Last-Updated: Mon Jul  3 11:18:04 2017 (-0700)
+;; Last-Updated: Mon Jul 31 16:50:07 2017 (-0700)
 ;;           By: dradams
-;;     Update #: 16340
+;;     Update #: 16346
 ;; URL: https://www.emacswiki.org/emacs/download/bookmark%2b-chg.el
 ;; Doc URL: http://www.emacswiki.org/BookmarkPlus
 ;; Keywords: bookmarks, bookmark+
@@ -146,11 +146,19 @@
  
 ;;;(@* "CHANGE LOG FOR `bookmark+-1.el'")
 ;;
+;; 2017/07/31 dadams
+;;     bmkp-find-file-invoke-bookmark-if-autofile:
+;;       Bind bmkp-autofile-access-invokes-bookmark-flag to nil while jumping to the bookmark.
+;; 2017/07/30 dadams
+;;     Added: bmkp-autofile-access-invokes-bookmark-flag, bmkp-find-file-invoke-bookmark-if-autofile.
+;;     bmkp-get-bookmark-in-alist: Use arg ALIST (was neglected).
+;; 2017/07/19 dadams
+;;     Put back bmkp-info-cp, as an obsolete alias, temporarily.
 ;; 2017/07/03 dadams
-;;     Added: bmkp-info-position-cp.
+;;     Added: bmkp-info-position-cp, bmkp-info-sort-ignores-directories-flag.
 ;;     Renamed: bmkp-info-cp to bmkp-info-node-name-cp.
 ;;     bmkp-sort-comparer: Applied renaming of bmkp-info-cp.
-;;     bmkp-info-node-name-cp: Use file-name-nondirectory (manual names), not abbreviate-file-name.
+;;     bmkp-info-node-name-cp: Respect bmkp-info-sort-ignores-directories-flag (default: manual names)
 ;; 2017/06/26 dadams
 ;;     Added: bmkp-kmacro-list-bookmark-p.
 ;;     bmkp-bookmark-description: Handle bmkp-kmacro-list-bookmark-p.
