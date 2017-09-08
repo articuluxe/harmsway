@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-06-15 20:55:23 dharms>
+;; Modified Time-stamp: <2017-09-11 17:39:00 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -62,7 +62,67 @@
       (setq comment-end "")
       (message "// Using comments like this"))))
 
-(with-eval-after-load 'cc-mode
+(defconst harmsway-c-style
+  (quote
+   ("bsd"                               ;parent style
+    (c-basic-offset . 3)
+    (c-offsets-alist . (
+                        (case-label . +)
+                        ))
+    (c-electric-pound-behavior . (alignleft))
+    (c-cleanup-list . (
+                       empty-defun-braces
+                       defun-close-semi
+                       one-liner-defun
+                       scope-operator
+                       list-close-comma
+                       compact-empty-funcall
+                       comment-close-slash
+                       ))
+    (c-hanging-braces-alist . ((brace-list-open)
+                               (brace-entry-open)
+                               (statement-cont)
+                               (substatement-open after)
+                               (block-close . c-snug-do-while)
+                               (extern-lang-open after)
+                               (namespace-open after)
+                               (module-open after)
+                               (composition-open after)
+                               (inexpr-class-open after)
+                               (inexpr-class-close before)
+                               (arglist-cont-nonempty)
+                               (inline-close)))
+    (c-hanging-semi&comma-criteria . (c-semi&comma-no-newlines-before-nonblanks
+                                      c-semi&comma-no-newlines-for-oneline-inliners
+                                      c-semi&comma-inside-parenlist))
+    ))
+  "The default harmsway c style.")
+
+;; Original c-offsets-alist settings, probably redundant since we started
+;; deriving "harmsway" style from "bsd":
+  ;;    (c-offsets-alist . (
+  ;;                        (innamespace           . 0)
+  ;;                        (substatement-open     . 0)
+  ;;                        (inline-open           . 0)
+  ;;                        (statement-case-intro  . +)
+  ;;                        (statement-case-open   . +)
+  ;;                                       ;(statement-cont . c-lineup-math)
+  ;;                        (access-label          . -2)
+  ;;                        (comment-intro         . c-lineup-comment)
+  ;;                        (member-init-intro     . +)
+  ;;                        (arglist-cont-nonempty . +)
+  ;;                                       ;(comment-intro . 0)
+  ;;                                       ;(arglist-intro . c-lineup-arglist-intro-after-paren)
+  ;;                                       ;(arglist-close . c-lineup-arglist)
+  ;;                        ))
+
+(setq c-default-style '((java-mode . "java") (awk-mode . "awk") (other . "harmsway")))
+
+(defun harmsway-c-init-hook ()
+  "Initialization common to all c-modes, run once when loaded."
+  (c-add-style "harmsway" harmsway-c-style)
+  (setq-default indent-tabs-mode nil)
+  (setq-default c-auto-newline t)
   (define-key c-mode-base-map "\C-c\C-c" 'comment-region)
   (define-key c-mode-base-map "\C-c\C-u" 'uncomment-region)
   (define-key c++-mode-map "\C-c/" 'toggle-c-comment-delimiters)
@@ -73,59 +133,17 @@
   ;; errors.  See
   ;; `http://stackoverflow.com/questions/15489319/how-can-i-skip-in-file-included-from-in-emacs-c-compilation-mode'
   (setf (nth 5 (assoc 'gcc-include compilation-error-regexp-alist-alist)) 0)
-  (c-add-style
-   "default-style"
-   (quote
-    ((c-basic-offset . 3)
-     (c-electric-pound-behavior . (alignleft))
-     (c-cleanup-list . (
-                        empty-defun-braces
-                        defun-close-semi
-                        one-liner-defun
-                        scope-operator
-                        list-close-comma
-                        compact-empty-funcall
-                        comment-close-slash
-                        ))
-     (c-offsets-alist . (
-                         (innamespace           . 0)
-                         (substatement-open     . 0)
-                         (inline-open           . 0)
-                         (statement-case-intro  . +)
-                         (statement-case-open   . +)
-                                        ;(statement-cont . c-lineup-math)
-                         (access-label          . -2)
-                         (comment-intro         . c-lineup-comment)
-                         (member-init-intro     . +)
-                         (arglist-cont-nonempty . +)
-                                        ;(comment-intro . 0)
-                                        ;(arglist-intro . c-lineup-arglist-intro-after-paren)
-                                        ;(arglist-close . c-lineup-arglist)
-                         ))
-     (c-hanging-braces-alist . ((brace-list-open)
-                                (brace-entry-open)
-                                (statement-cont)
-                                (substatement-open after)
-                                (block-close . c-snug-do-while)
-                                (extern-lang-open after)
-                                (namespace-open after)
-                                (module-open after)
-                                (composition-open after)
-                                (inexpr-class-open after)
-                                (inexpr-class-close before)
-                                (arglist-cont-nonempty)
-                                (inline-close)))
-     (c-hanging-semi&comma-criteria . (c-semi&comma-no-newlines-before-nonblanks
-                                       c-semi&comma-no-newlines-for-oneline-inliners
-                                       c-semi&comma-inside-parenlist))
-     ))))
+  )
+(add-hook 'c-initialization-hook 'harmsway-c-init-hook)
 
 (add-hook
  'c-mode-common-hook
  (lambda ()
    (require 'compile)
-   (setq-default indent-tabs-mode nil)
-   (setq c-auto-newline t)
+   ;; handle CamelCase
+   (if (version< emacs-version "23.2")
+       (c-subword-mode 1)
+     (subword-mode 1))
    (c-toggle-hungry-state t)
    (setq comment-start "/*") (setq comment-end "*/")
    ;; (setq comment-column 40)

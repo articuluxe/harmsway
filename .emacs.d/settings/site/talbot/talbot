@@ -3,8 +3,7 @@
 ;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Version: 1.0
-;; Modified Time-stamp: <2017-06-17 14:53:36 dharms>
+;; Modified Time-stamp: <2017-09-11 17:46:19 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -33,14 +32,25 @@
   (add-to-list 'org-agenda-files "~/Dropbox"))
 
 (add-hook
+ 'c-initialization-hook
+ (lambda ()
+   (c-add-style "talbot"
+                (quote
+                 ("harmsway"            ;parent style
+                  (c-offsets-alist
+                   . (
+                      ;; talbot style customizations
+                      (innamespace . 0)
+                      ))
+                  )) t)
+   ) t)
+
+(setq c-default-style '((java-mode . "java") (awk-mode . "awk") (other . "talbot")))
+
+(add-hook
  'c-mode-common-hook
- (lambda()
-   (c-add-style "talbot-style"
-                (quote ("default-style" ;derives from my default
-                        (c-offsets-alist
-                         . (
-                            ;; insert customizations
-                            ))
-                        )) t)) t)
+ (lambda ()
+   ;; talbot-specific customization
+   ) t)
 
 ;; talbot ends here
