@@ -3077,7 +3077,8 @@ Return `NAME'."
 
 (defun persp-add-to-menu (persp)
   (let ((name (safe-persp-name persp)))
-    (push name persp-names-cache)
+    (psetq persp-names-cache
+           (append persp-names-cache (list name)))
     (lexical-let ((str_name name))
       (easy-menu-add-item persp-minor-mode-menu nil
                           (vector str_name #'(lambda () (interactive)
@@ -3670,7 +3671,7 @@ of the perspective %s can't be saved."
                     (when (or (not names-regexp)
                               (persp-string-match-p names-regexp pn))
                       (persp-get-by-name pn *persp-hash* nil)))
-                (nreverse (persp-names-current-frame-fast-ordered)))
+                (persp-names-current-frame-fast-ordered))
       (persp-persps (or phash *persp-hash*) names-regexp t)))))
 
 (defsubst persp-save-with-backups (fname)
