@@ -612,12 +612,30 @@ or most optimal searcher."
 
     ;; julia
     (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "julia"
-           :regex "function\\s*JJJ\\s*\\\("
-           :tests ("function test()" "function test ()"))
+           :regex "(@noinline|@inline)?\\s*function\\s*JJJ(\\{[^\\}]*\\})?\\("
+           :tests ("function test()" "@inline function test()"
+                   "function test{T}(h)"))
 
-    (:type "variable" :supports ("ag" "rg") :language "julia"
+    (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "julia"
+           :regex "(@noinline|@inline)?JJJ(\\{[^\\}]*\\})?\\([^\\)]*\\)\s*="
+           :tests ("test(a)=1" "test(a,b)=1*8"
+                   "@noinline test()=1" "test{T}(x)=x"))
+
+    (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "julia"
+           :regex "macro\\s*JJJ\\("
+           :tests ("macro test(a)=1" " macro test(a,b)=1*8"))
+
+    (:type "variable" :supports ("ag" "rg") :language "julia" 
            :regex "const\\s+JJJ\\b"
            :tests ("const test = "))
+
+    (:type "type" :supports ("ag","rg") :language "julia"
+           :regex "(mutable)?\\s*struct\\s*JJJ"
+           :tests ("struct test"))
+
+    (:type "type" :supports ("ag","rg") :language "julia"
+           :regex "(type|immutable|abstract)\\s*JJJ"
+           :tests ("type test" "immutable test" "abstract test <:Testable" ))
 
     ;; haskell
     (:type "function" :supports ("ag") :language "haskell"
@@ -1461,6 +1479,7 @@ current file."
     (:comment "--" :language "haskell")
     (:comment "--" :language "lua")
     (:comment "//" :language "rust")
+    (:comment "#"  :language "julia")
     (:comment "//" :language "objc")
     (:comment "//" :language "csharp")
     (:comment "//" :language "java")
