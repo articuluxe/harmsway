@@ -41,6 +41,10 @@
 ;; running in term mode.  Also, term mode is not available in
 ;; shell-command prompts.
 ;;
+;; Bash completion can also be run programatically, outside of a
+;; shell-mode command, by calling
+;; `bash-completion-dynamic-complete-nocomint'
+;;
 ;; INSTALLATION
 ;;
 ;; 1. copy bash-completion.el into a directory that's on Emacs load-path
@@ -115,24 +119,6 @@
 ;;
 ;; Full history is available on
 ;; https://github.com/szermatt/emacs-bash-completion
-;;
-;; 2015-03-20   Filipp Gunbin
-;;
-;; * Using Emacs 24.1's shell-dynamic-complete-functions
-;;
-;; 2009-11-25   Stephane Zermatten <szermatt@gmail.com>
-;;
-;; * bash-completion-require-process: set MAILCHECK to -1
-;; to disable mail check message.
-;;
-;; 2009-08-01   Stephane Zermatten <szermatt@gmail.com>
-;;
-;; * bash-completion-generate-line: add missing compgen
-;; option to complete commands (duh!).
-;;
-;; Current version:
-;; $Id$
-;;
 
 (require 'comint)
 
@@ -166,12 +152,27 @@ for command-line completion."
   :type '(file :must-match t)
   :group 'bash-completion)
 
+(defcustom bash-completion-args '("--noediting")
+  "Args passed to the BASH shell."
+  :type '(repeat (string :tag "Argument"))
+  :group 'bash-completion)
+
 (defcustom bash-completion-process-timeout 2.5
   "Number of seconds to wait for an answer from bash.
 If bash takes longer than that to answer, the answer will be
 ignored."
   :type '(float)
   :group 'bash-completion)
+
+(defcustom bash-completion-message-delay 0.4
+  "Time to wait before displaying a message while waiting for results.
+
+If completion takes longer than that time, a message is displayed
+on the minibuffer to make it clear what's happening. Set to nil
+to never display any such message. 0 to always display it.
+
+Only relevant when using bash completion in a shell, through
+`bash-completion-dynamic-complete'.")
 
 (defcustom bash-completion-initial-timeout 30
   "Timeout value to apply when talking to bash for the first time.
@@ -193,11 +194,15 @@ to remove the extra space bash adds after a completion."
   :type '(boolean)
   :group 'bash-completion)
 
+(defvar bash-completion-start-files
+  '("~/.emacs_bash.sh" "~/.emacs.d/init_bash.sh")
+  "Shell files that, if they exist, will be sourced at the
+beginning of a bash completion subprocess.")
+
 ;;; ---------- Internal variables and constants
 
 (defvar bash-completion-process nil
   "Bash process object.")
-(defvar bash-completion-prefix "" "")
 (defvar bash-completion-alist nil
   "Maps from command name to the 'complete' arguments.
 
@@ -208,7 +213,7 @@ the following entry is added to `bash-completion-alist':
 
 See `bash-completion-add-to-alist'.")
 
-(defconst bash-completion-wordbreaks-str "\"'@><=;|&(:"
+(defconst bash-completion-wordbreaks-str "@><=;|&(:"
   "String of word break characters.
 This is the equivalent of COMP_WORDBREAKS: special characters
 that are considered word breaks in some cases when doing
@@ -218,6 +223,9 @@ completion in colon-separated values.")
 (defconst bash-completion-wordbreaks
   (append bash-completion-wordbreaks-str nil)
   "`bash-completion-wordbreaks-str' as a list of characters.")
+
+(defconst bash-completion-special-chars "[^-0-9a-zA-Z_./\n=]"
+  "Regexp of characters that must be escaped or quoted.")
 
 (defconst bash-completion-wrapped-status
   "\e\ebash-completion-wrapped-status=124\e\e"
@@ -282,80 +290,130 @@ before it is needed. For an autoload version, add:
 
 ;;;###autoload
 (defun bash-completion-dynamic-complete ()
-    "Returns the completion table for bash command at point.
+    "Return the completion table for bash command at point.
 
 This function is meant to be added into
 `shell-dynamic-complete-functions'.  It uses `comint' to figure
 out what the current command is and returns a completion table or
-nil if no completions available."
-    (if bash-completion-comint-uses-standard-completion
-	(cdr (bash-completion-dynamic-complete-0))
-      ;; pre-emacs 24.1 compatibility code
-      (let ((result (bash-completion-dynamic-complete-0)))
-	(when result
-	  (let ((stub (car result))
-		(completions (nth 3 result))
-		;; Setting comint-completion-addsuffix overrides
-		;; configuration for comint-dynamic-simple-complete.
-		;; Bash adds a space suffix automatically.
-		(comint-completion-addsuffix nil))
-	    (comint-dynamic-simple-complete stub completions))))))
+nil if no completions available.
 
-(defun bash-completion-dynamic-complete-0 ()
-  "Returns completion information for bash command at point.
+When doing completion outside of a comint buffer, call
+`bash-completion-dynamic-complete-nocomint' instead."
+    (let ((message-timer
+           (if (and (not (window-minibuffer-p))
+                    (not (null bash-completion-message-delay)))
+               (run-at-time
+                bash-completion-message-delay nil
+                (lambda () (message "Bash completion..."))))))
+      (unwind-protect
+          (let ((result (bash-completion-dynamic-complete-nocomint
+                         (comint-line-beginning-position)
+                         (point))))
+            (if bash-completion-comint-uses-standard-completion
+                result
+              ;; pre-emacs 24.1 compatibility code
+              (let ((stub (buffer-substring-no-properties
+                           (nth 0 result)
+                           (nth 1 result)))
+                    (completions (nth 2 result))
+                    ;; Setting comint-completion-addsuffix overrides
+                    ;; configuration for comint-dynamic-simple-complete.
+                    ;; Bash adds a space suffix automatically.
+                    (comint-completion-addsuffix nil))
+                (with-no-warnings
+                  (comint-dynamic-simple-complete stub completions)))))
+        ;; cleanup
+        (if message-timer
+            (cancel-timer message-timer)))))
 
-This function returns enough information for both standard and
-legacy modes of `bash-completion-dynamic-complete' It is not
-meant to be called directly.
+(defun bash-completion-dynamic-complete-nocomint (comp-start comp-pos)
+  "Return completion information for bash command at an arbitrary position.
 
-Returns (list unescaped-stub stub-start pos completions)"
+The bash command to be completed begins at COMP-START in the
+current buffer. COMP-POS is the point where completion should
+happen.
+
+This function is meant to be usable even in non comint buffers.
+It is meant to be called directly from any completion engine.
+
+Returns (list stub-start stub-end completions) with
+ - stub-start, the position at which the completed region starts
+ - stub-end, the position at which the completed region ends
+ - completions, a possibly empty list of completion candidates"
   (when bash-completion-enabled
-    (when (not (window-minibuffer-p))
-      (message "Bash completion..."))
-    (let* ((start (comint-line-beginning-position))
-	   (pos (point))
-	   (tokens (bash-completion-tokenize start pos))
+    (let* ((tokens (bash-completion-tokenize comp-start comp-pos))
 	   (open-quote (bash-completion-tokenize-open-quote tokens))
-	   (parsed (bash-completion-process-tokens tokens pos open-quote))
+	   (parsed (bash-completion-process-tokens tokens comp-pos open-quote))
 	   (line (cdr (assq 'line parsed)))
 	   (point (cdr (assq 'point parsed)))
 	   (cword (cdr (assq 'cword parsed)))
 	   (words (cdr (assq 'words parsed)))
 	   (stub-start (cdr (assq 'stub-start parsed)))
 	   (stub (nth cword words))
-	   (completions (bash-completion-comm line point words cword open-quote)))
+           (unparsed-stub (buffer-substring-no-properties stub-start comp-pos))
+	   (completions (bash-completion-comm line point words cword open-quote
+                                              unparsed-stub)))
       (if completions
-	  (list stub stub-start pos completions)
+	  (list stub-start comp-pos completions)
 	;; fallback to default (file) completion after a wordbreak
-	(bash-completion-dynamic-try-wordbreak-complete
-	 stub stub-start pos open-quote)))))
+	(bash-completion--try-wordbreak-complete
+	 stub stub-start comp-pos open-quote)))))
 
-(defun bash-completion-dynamic-try-wordbreak-complete (stub stub-start pos open-quote)
-  "Try wordbreak completion on STUB if the complete completion failed.
+(defun bash-completion--try-wordbreak-complete
+    (parsed-stub stub-start pos open-quote)
+  "Try wordbreak completion on PARSED-STUB if the complete completion failed.
 
-Split STUB using the wordbreak list and apply compgen default
-completion on the last part.  Return non-nil if a match was
-found.
+Split PARSED-STUB using the wordbreak list and apply compgen
+default completion on the last part. Return non-nil if a match
+was found. The original version of the stub can be found on the
+buffer, between STUB-START and POS.
 
-If STUB is quoted, the quote character, ' or \", should be passed
-to the parameter OPEN-QUOTE.
+If PARSED-STUB is quoted, the quote character, ' or \", should be
+passed to the parameter OPEN-QUOTE.
 
 This function is not meant to be called outside of
 `bash-completion-dynamic-complete'."
   (let* ((wordbreak-split (bash-completion-last-wordbreak-split stub))
-	 (before-wordbreak (car wordbreak-split))
-	 (after-wordbreak (cdr wordbreak-split)))
-    (when before-wordbreak
-      (bash-completion-send (concat
-			     (bash-completion-cd-command-prefix)
-			     "compgen -o default -- "
-			     (bash-completion-quote after-wordbreak)))
-      (let ((completions
-	     (bash-completion-extract-candidates after-wordbreak open-quote)))
-	(list after-wordbreak
-	      (+ stub-start (length before-wordbreak))
-	      pos
-	      completions)))))
+         (before-wordbreak (nth 0 wordbreak-split))
+	 (after-wordbreak (nth 1 wordbreak-split))
+         (separator (nth 2 wordbreak-split))
+         (unparsed-stub (buffer-substring-no-properties stub-start pos))
+         (after-wordbreak-in-unparsed-pos
+          (1+ (or (bash-completion--find-last separator unparsed-stub) -1)))
+         (unparsed-after-wordbreak
+          (substring unparsed-stub
+                     after-wordbreak-in-unparsed-pos
+                     (length unparsed-stub))))
+    (when (> (length before-wordbreak) 0)
+      (list (+ stub-start after-wordbreak-in-unparsed-pos)
+            pos
+            (bash-completion--default-completion
+             after-wordbreak unparsed-after-wordbreak
+             open-quote 'wordbreak)))))
+
+(defun bash-completion--find-last (elt array)
+  "Return the position of the last intance of ELT in array or nil."
+  (catch 'bash-completion-return
+    (let ((array-len (length array)))
+      (dotimes (index array-len)
+        (if (eq elt (aref array (- array-len index 1)))
+            (throw 'bash-completion-return (- array-len index 1)))))
+    nil))
+
+(defun bash-completion--default-completion
+    (stub unparsed-stub open-quote completion-type)
+  "Do default completion on the given STUB.
+
+Return the extracted candidate, with STUB replaced with
+UNPARSED-STUB, taking OPEN-QUOTE into account. COMPLETION-TYPE is
+passed, eventually, to `bash-completion-fix'"
+  (when (eq 0 (bash-completion-send (concat
+                                     (bash-completion-cd-command-prefix)
+                                     "compgen -o default -- "
+                                     (bash-completion-quote stub))))
+    (bash-completion-extract-candidates
+     stub unparsed-stub open-quote
+     (or completion-type 'default))))
 	  
 ;;; ---------- Functions: parsing and tokenizing
 
@@ -627,7 +685,7 @@ QUOTE should be nil, ?' or ?\"."
 
 ;;; ---------- Functions: getting candidates from bash
 
-(defun bash-completion-comm (line pos words cword open-quote)
+(defun bash-completion-comm (line pos words cword open-quote unparsed-stub)
   "Set LINE, POS, WORDS and CWORD, call compgen, return the result.
 
 This function starts a separate bash process if necessary, sets
@@ -637,14 +695,20 @@ COMP_CWORD) and calls compgen.
 OPEN-QUOTE should be the quote, a character, that's still open in
 the last word or nil.
 
+UNPARSED-STUB is a raw, unparsed version of COMP_WORDS[CWORD] as
+it appears in the original buffer. Returned candidates The
+returned set of candidates start with UNPARSED-STUB.
+
 The result is a list of candidates, which might be empty."
   ;; start process now, to make sure bash-completion-alist is
   ;; set before we run bash-completion-generate-line
   
-  (let* ((process (bash-completion-require-process))
-	 (completion-status
-	  (bash-completion-send
-	   (bash-completion-generate-line line pos words cword t))))
+  (let ((process (bash-completion-require-process))
+        (cmdline)
+        (candidates)
+        (completion-status))
+    (setq cmdline (bash-completion-generate-line line pos words cword t))
+    (setq completion-status (bash-completion-send (cdr cmdline)))
     (when (eq 124 completion-status)
       ;; Special 'retry-completion' exit status, typically returned by
       ;; functions bound by complete -D. Presumably, the function has
@@ -652,14 +716,20 @@ The result is a list of candidates, which might be empty."
       ;; us to retry once with the new configuration. 
       (bash-completion-send "complete -p" process)
       (bash-completion-build-alist (process-buffer process))
-      (setq completion-status
-	    (bash-completion-send
-	     (bash-completion-generate-line line pos words cword nil))))
-    (when (eq 0 completion-status)
-      (bash-completion-extract-candidates (nth cword words) open-quote))))
+      (setq cmdline (bash-completion-generate-line line pos words cword nil))
+      (setq completion-status (bash-completion-send (cdr cmdline))))
+    (setq candidates
+          (when (eq 0 completion-status)
+            (bash-completion-extract-candidates
+             (nth cword words) unparsed-stub open-quote (car cmdline))))
+    (if (and (not candidates) (eq 'custom (car cmdline)))
+        (bash-completion--default-completion
+         (nth cword words) unparsed-stub open-quote 'default)
+      candidates)))
 
-(defun bash-completion-extract-candidates (stub open-quote)
-  "Extract the completion candidates from the process buffer for STUB.
+(defun bash-completion-extract-candidates
+    (parsed-stub unparsed-stub open-quote completion-type)
+  "Extract the completion candidates from the process buffer for PARSED-STUB.
 
 This command takes the content of the completion process buffer,
 splits it by newlines, post-process the candidates and returns
@@ -668,31 +738,48 @@ them as a list of strings.
 It should be invoked with the comint buffer as the current buffer
 for directory name detection to work.
 
-If STUB is quoted, the quote character, ' or \", should be passed
-in OPEN-QUOTE.
+If PARSED-STUB is quoted, the quote character, ' or \", should be
+passed in OPEN-QUOTE.
+
+If IS-COMMAND is t, it is passed down to `bash-completion-suffix'
 
 Post-processing includes escaping special characters, adding a /
-to directory names, merging STUB with the result.  See `bash-completion-fix'
-for more details."
-  (let ((bash-completion-prefix stub)
-	(bash-completion-open-quote open-quote))
-    (mapcar 'bash-completion-fix
-	    (with-current-buffer (bash-completion-buffer)
-	      (split-string (buffer-string) "\n" t)))))
+to directory names, replacing STUB with UNPARSED-STUB in the
+result. See `bash-completion-fix' for more details."
+  (let ((candidates) (result (list)))
+    (setq candidates (with-current-buffer (bash-completion-buffer)
+                       (split-string (buffer-string) "\n" t)))
+    (if (eq 1 (length candidates))
+        (list (bash-completion-fix
+               (car candidates) parsed-stub unparsed-stub
+               open-quote completion-type t))
+      (dolist (completion candidates)
+        (push (bash-completion-fix
+               completion parsed-stub unparsed-stub open-quote completion-type nil)
+              result))
+      (nreverse result))))
 
-(defun bash-completion-fix (str &optional prefix open-quote)
+(defun bash-completion-fix
+    (str parsed-prefix unparsed-prefix open-quote completion-type single)
   "Fix completion candidate in STR if PREFIX is the current prefix.
 
 STR is the completion candidate to modify.
 
-PREFIX should be the current string being completed.  If it is
-nil, the value of `bash-completion-prefix' is used.  This allows
-calling this function from `mapcar'.
+PARSED-PREFIX should be the current string being completed. If it
+is nil, the value of `bash-completion-prefix' is used. This
+allows calling this function from `mapcar'.
+
+PARSED-PREFIX is replaced with UNPARSED-PREFIX in set fixed set
+of candidates.
 
 OPEN-QUOTE should be the quote that's still open in prefix.  A
-character (' or \") or nil.  If it is nil, the value of
-`bash-completion-open-quote' is used.  This allows
-calling this function from `mapcar'.
+character (' or \") or nil.  
+
+COMPLETION-TYPE describes the type of completion that was
+executed: 'default, 'custom, 'command or 'wordbreak. It is used
+to choose whether to add a space and detect directories.
+
+If SINGLE is non-nil, this is the single completion candidate.
 
 Return a modified version of the completion candidate.
 
@@ -704,40 +791,68 @@ Modification include:
 
 It should be invoked with the comint buffer as the current buffer
 for directory name detection to work."
-  (let ((prefix (or prefix bash-completion-prefix))
-	(open-quote (or open-quote (and (boundp 'bash-completion-open-quote) bash-completion-open-quote)))
-	(suffix ""))
-    (bash-completion-addsuffix
-     (let* (rebuilt
-	    (rest (cond
-		   ((bash-completion-starts-with str prefix)
-		    (substring str (length prefix)))
-		   ;; unexpand the home directory expanded by bash automatically
-		   ((and (bash-completion-starts-with prefix "~")
-		   	 (bash-completion-starts-with str (expand-file-name "~")))
-		    (substring (concat "~" (substring str (length (expand-file-name "~"))))
-		   	       (length prefix)))
-		   ((bash-completion-starts-with prefix str)
-		    ;; completion is a substring of prefix something's gone
-		    ;; wrong. Treat it as one (useless) candidate.
-                    (setq prefix "")
-                    str)
-		   ;; completion sometimes only applies to the last word, as
-		   ;; defined by COMP_WORDBREAKS. This detects and works around
-		   ;; this feature.
-		   ((bash-completion-starts-with
-		     (setq rebuilt (concat (bash-completion-before-last-wordbreak prefix) str))
-		     prefix)
-		    (substring rebuilt (length prefix)))
-		   ;; there is no meaningful link between the prefix and
-		   ;; the string. just append the string to the prefix and
-		   ;; hope for the best.
-		   (t str))))
-       (when (bash-completion-ends-with rest " ")
-	 (setq rest (substring rest 0 -1))
-	 (unless bash-completion-nospace
-	   (setq suffix " ")))
-       (concat prefix (bash-completion-escape-candidate rest open-quote) suffix)))))
+  (let ((suffix "")
+        (rest) ; the part between the prefix and the suffix
+        (rebuilt))
+
+    ;; build rest by removing parsed-prefix from str
+    (cond
+     ((bash-completion-starts-with str parsed-prefix)
+      (setq rest (substring str (length parsed-prefix))))
+
+     ;; unexpand the home directory expanded by bash automatically
+     ((and (bash-completion-starts-with parsed-prefix "~")
+           (bash-completion-starts-with str (expand-file-name "~")))
+      (setq rest (substring (concat "~" (substring str (length (expand-file-name "~"))))
+                            (length parsed-prefix))))
+
+     ((bash-completion-starts-with parsed-prefix str)
+      ;; completion is a substring of prefix something's gone
+      ;; wrong. Treat it as one (useless) candidate.
+      (setq unparsed-prefix "")
+      (setq rest str))
+
+     ;; completion sometimes only applies to the last word, as
+     ;; defined by COMP_WORDBREAKS. This detects and works around
+     ;; this feature.
+     ((bash-completion-starts-with
+       (setq rebuilt (concat (bash-completion-before-last-wordbreak parsed-prefix) str))
+       parsed-prefix)
+      (setq rest (substring rebuilt (length parsed-prefix))))
+
+     ;; there is no meaningful link between the prefix and
+     ;; the string. just append the string to the prefix and
+     ;; hope for the best.
+     (t (setq rest str)))
+
+    ;; build suffix
+    (let ((last-char (bash-completion-last-char rest))
+          (close-quote-str (if open-quote (char-to-string open-quote) ""))
+          (final-space-str (if bash-completion-nospace "" " ")))
+      (cond
+       ((eq ?\  last-char)
+        (setq rest (substring rest 0 -1))
+        (setq suffix (concat close-quote-str final-space-str)))
+       ((or (memq last-char bash-completion-wordbreaks)
+            (eq ?/ last-char))
+        (setq suffix ""))
+       ((and
+         (memq completion-type '(command default wordbreak))
+         (file-accessible-directory-p
+          (expand-file-name (bash-completion-unescape
+                             open-quote (concat parsed-prefix rest))
+                            default-directory)))
+        (setq suffix "/"))
+       ((or (eq completion-type 'command)
+            (and (memq completion-type '(default wordbreak custom))
+                 single))
+        (setq suffix (concat close-quote-str final-space-str)))
+       (t (setq suffix close-quote-str))))
+
+    ;; put everything back together
+    (concat unparsed-prefix
+            (bash-completion-escape-candidate rest open-quote)
+            suffix)))
 
 (defun bash-completion-escape-candidate (completion-candidate open-quote)
   "Escapes COMPLETION-CANDIDATE.
@@ -752,9 +867,11 @@ OPEN-QUOTE, either nil, ' or \".
 Return a possibly escaped version of COMPLETION-CANDIDATE."
   (cond
    ((zerop (length completion-candidate)) "")
-   ((and (null open-quote)
-	 (null (string-match "^['\"]" completion-candidate)))
-    (shell-quote-argument completion-candidate))
+   ((null open-quote)
+    (replace-regexp-in-string
+     "\n" "'\n'"
+     (replace-regexp-in-string
+      bash-completion-special-chars "\\\\\\&" completion-candidate)))
    ((eq ?' open-quote)
     (replace-regexp-in-string "'" "'\\''" completion-candidate nil t))
    ((eq ?\" open-quote)
@@ -766,20 +883,11 @@ Return a possibly escaped version of COMPLETION-CANDIDATE."
    (t
     completion-candidate)))
 
-(defconst bash-completion-known-suffixes-regexp
-  (concat "[" (regexp-quote bash-completion-wordbreaks-str) "/ ]$")
-  "Regexp matching known suffixes for `bash-completion-addsuffix'.")
-
-(defun bash-completion-addsuffix (str)
-  "Add a directory suffix to STR if it looks like a directory.
-
-This function looks for a directory called STR relative to the
-buffer-local variable default-directory. If it exists, it returns
-\(concat STR \"/\"). Otherwise it retruns STR."
-  (if (and (null (string-match bash-completion-known-suffixes-regexp str))
-	   (file-accessible-directory-p (expand-file-name str default-directory)))
-	(concat str "/")
-    str))
+(defun bash-completion-unescape (open-quote string)
+  "Unescapes a possibly QUOTE'ed STRING."
+  (if (eq ?' open-quote)
+      (replace-regexp-in-string "'\\\\''" "'" string)
+    (replace-regexp-in-string "\\(\\\\\\)\\(.\\)" "\\2" string)))
 
 (defun bash-completion-before-last-wordbreak (str)
   "Return the part of STR that comes after the last wordbreak character.
@@ -788,7 +896,7 @@ The return value does not include the worbreak character itself.
 If no wordbreak was found, it returns STR.
 
 Wordbreaks characters are defined in 'bash-completion-wordbreak'."
-  (car (bash-completion-last-wordbreak-split str)))
+  (nth 0 (bash-completion-last-wordbreak-split str)))
 
 (defun bash-completion-after-last-wordbreak (str)
   "Return the part of STR that comes before the last wordbreak character.
@@ -797,7 +905,7 @@ The return value includes the worbreak character itself.
 If no wordbreak was found, it returns \"\".
 
 Wordbreaks characters are defined in 'bash-completion-wordbreak'."
-  (cdr (bash-completion-last-wordbreak-split str)))
+  (nth 1 (bash-completion-last-wordbreak-split str)))
 
 (defun bash-completion-last-wordbreak-split (str)
   "Split STR at the last wordbreak character.
@@ -814,22 +922,23 @@ Wordbreaks characters are defined in 'bash-completion-wordbreak'.
 
 Return a CONS containing (before . after)."
   (catch 'bash-completion-return
-    (let ((end (- (length str) 1)))
+    (let ((end (- (length str) 1))
+          (breakc))
       (while (>= end 0)
-	(when (memq (aref str end) bash-completion-wordbreaks)
-	  (throw 'bash-completion-return (cons (substring str 0 (1+ end)) (substring str (1+ end)))))
+        (setq breakc (memq (aref str end) bash-completion-wordbreaks))
+	(when breakc
+	  (throw 'bash-completion-return
+                 (list (substring str 0 (1+ end))
+                       (substring str (1+ end))
+                       (car breakc))))
 	(setq end (1- end))))
-      (cons "" str)))
+      (list "" str ?\0)))
 
-(defun bash-completion-ends-with (str suffix)
-  "Return t if STR ends with SUFFIX."
-  (let ((suffix-len (length suffix))
-	(str-len (length str)))
-    (or
-     (= 0 suffix-len)
-     (and
-      (>= str-len suffix-len)
-      (string= (substring str (- suffix-len)) suffix)))))
+(defun bash-completion-last-char (str)
+  "Returns the last char of STR or nil."
+  (let ((str-len (length str)))
+    (and (>= str-len 1)
+         (aref str (1- str-len)))))
 
 (defun bash-completion-starts-with (str prefix)
   "Return t if STR starts with PREFIX."
@@ -873,20 +982,17 @@ is set to t."
 	    (setenv "EMACS_BASH_COMPLETE" "t")
 	    (setenv "TERM" "dumb")
 	    (setq process
-		  (start-process
-		   "*bash-completion*"
-		   (generate-new-buffer-name " bash-completion")
-		   bash-completion-prog
-		   "--noediting"))
+		  (apply 'start-process
+                         (append
+                          `("*bash-completion*"
+                            ,(generate-new-buffer-name " bash-completion")
+                            ,bash-completion-prog)
+                          bash-completion-args)))
 	    (set-process-query-on-exit-flag process nil)
-	    (let* ((shell-name (file-name-nondirectory bash-completion-prog))
-		   (startfile1 (concat "~/.emacs_" shell-name ".sh"))
-		   (startfile2 (concat "~/.emacs.d/init_" shell-name ".sh")))
-	      (cond
-	       ((file-exists-p startfile1)
-		(process-send-string process (concat ". " startfile1 "\n")))
-	       ((file-exists-p startfile2)
-		(process-send-string process (concat ". " startfile2 "\n")))))
+	    (let ((shell-name (file-name-nondirectory bash-completion-prog)))
+              (dolist (start-file bash-completion-start-files)
+                ((file-exists-p startfile1)
+                 (process-send-string process (concat ". " startfile1 "\n")))))
 	    (bash-completion-send "PROMPT_COMMAND='';PS1='\t$?\v'" process bash-completion-initial-timeout)
 	    (bash-completion-send (concat "function __bash_complete_wrapper {"
 					  " eval $__BASH_COMPLETE_WRAPPER;"
@@ -996,24 +1102,26 @@ arguments will be passed to this function or command as:
  COMP_WORDS, taken from WORDS (a bash array)
  COMP_CWORD, taken for CWORD
 
-Return a bash command-line that calls compgen to get the completion
-candidates."
-  (concat
-   (bash-completion-cd-command-prefix)
-   (let* ( (command-name (file-name-nondirectory (car words)))
-	   (compgen-args
-	    (or (cdr (assoc command-name bash-completion-alist))
-		(and allowdefault (cdr (assoc nil bash-completion-alist)))))
-	   (stub (nth cword words)) )
-     (cond
+Return a cons containing the completion type (command default or
+custom) and a bash command-line that calls compgen to get the
+completion candidates."
+  (let* ( (command-name (file-name-nondirectory (car words)))
+          (compgen-args
+           (or (cdr (assoc command-name bash-completion-alist))
+               (and allowdefault (cdr (assoc nil bash-completion-alist)))))
+          (quoted-stub (bash-completion-quote (nth cword words)))
+          (completion-type)
+          (commandline) )
+    (cond
       ((= cword 0)
-       ;; a command. let emacs expand executable, let bash
-       ;; expand builtins, aliases and functions
-       (concat "compgen -S ' ' -b -c -a -A function " stub))
+       ;; a command. let bash expand builtins, aliases and functions
+       (setq completion-type 'command)
+       (setq commandline (concat "compgen -b -c -a -A function -- " quoted-stub)))
 
       ((not compgen-args)
        ;; no completion configured for this command
-       (bash-completion-join (list "compgen" "-o" "default" stub)))
+       (setq completion-type 'default)
+       (setq commandline (concat "compgen -o default -- " quoted-stub)))
 
       ((or (member "-F" compgen-args) (member "-C" compgen-args))
        ;; custom completion with a function of command
@@ -1022,7 +1130,9 @@ candidates."
 	      (function-name (car (cdr function))) )
 	 (setcar function "-F")
 	 (setcar (cdr function) "__bash_complete_wrapper")
-	 (format "__BASH_COMPLETE_WRAPPER=%s compgen %s -- %s"
+         (setq completion-type 'custom)
+	 (setq commandline
+               (format "__BASH_COMPLETE_WRAPPER=%s compgen %s -- %s"
 		 (bash-completion-quote
 		  (format "COMP_LINE=%s; COMP_POINT=%s; COMP_CWORD=%s; COMP_WORDS=( %s ); %s \"${COMP_WORDS[@]}\""
 			  (bash-completion-quote line)
@@ -1031,11 +1141,17 @@ candidates."
 			  (bash-completion-join words)
 			  (bash-completion-quote function-name)))
 		 (bash-completion-join args)
-		 (bash-completion-quote stub))))
+		 quoted-stub))))
       (t
        ;; simple custom completion
-       (format "compgen %s -- %s" (bash-completion-join compgen-args) stub))))
-   " 2>/dev/null"))
+       (setq completion-type 'custom)
+       (setq commandline (format "compgen %s -- %s" (bash-completion-join compgen-args)
+                                 quoted-stub))))
+    (cons completion-type
+          (concat
+           (bash-completion-cd-command-prefix)
+           commandline
+           " 2>/dev/null"))))
 
 ;;;###autoload
 (defun bash-completion-reset ()
@@ -1108,6 +1224,35 @@ Return the status code of the command, as a number."
 	;; 	 (buffer-substring-no-properties
 	;; 	  (point-min) (point-max)))
 	status-code))))
+
+;; Backward compatibility
+
+(defun bash-completion-dynamic-complete-0 ()
+  "Obsolete function, kept for backward compatibility.
+
+Call `bash-completion-dynamic' or `bash-completion-nocomint'."
+  (let ((result (bash-completion-dynamic-complete-nocomint
+                 (comint-line-beginning-position)
+                 (point))))
+    (cons (buffer-substring-no-properties (nth 0 result) (nth 1 result))
+          result)))
+(make-obsolete
+ 'bash-completion-dynamic-complete-0
+ "call bash-completion-dynamic or bash-completion-dynamic-nocomint")
+
+(defun bash-completion-dynamic-try-wordbreak-complete (stub stub-start pos open-quote)
+  "Obsolete function, kept for backward compatibility.
+
+`bash-completion-dynamic-try-wordbreak-complete' became
+`bash-completion--try-wordbreak-complete' and its return value
+changed. This shouldn't be a problem, since the function isn't meant to
+be called from outside bash-completion.
+"
+  (let ((result (bash-completion--try-wordbreak-complete stub stub-start pos open-quote)))
+    (cons (buffer-substring-no-properties (car result) pos) result)))
+(make-obsolete
+ 'bash-completion-dynamic-try-wordbreak-complete
+ 'bash-completion--try-wordbreak-complete)
 
 (provide 'bash-completion)
 ;;; bash-completion.el ends here
