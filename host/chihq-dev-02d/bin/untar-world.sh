@@ -5,7 +5,7 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Monday, May 18, 2015
 # Version: 1.0
-# Modified Time-stamp: <2017-07-12 08:48:26 dan.harms>
+# Modified Time-stamp: <2017-09-12 10:50:18 dan.harms>
 # Modified by: Dan Harms
 # Keywords: configuration
 
@@ -50,7 +50,7 @@ fi
 
 date=$(date '+%F_%T' | tr ':' '-')
 
-pushd ~
+cd ~
 mkdir -p "$logdir"
 
 # there's an existing .emacs.d
@@ -96,7 +96,5 @@ if [ -f .netrc ] ; then
 fi
 # and byte-compile emacs
 bin/emacscomp.sh .emacs.d
-
-popd
 
 # untar-world.sh ends here
