@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-09-11 17:39:00 dharms>
+;; Modified Time-stamp: <2017-09-12 10:34:31 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -147,7 +147,8 @@
    (c-toggle-hungry-state t)
    (setq comment-start "/*") (setq comment-end "*/")
    ;; (setq comment-column 40)
-   (setq hide-ifdef-lines t)
+   (setq hide-ifdef-inititially t)
+   ;; (setq hide-ifdef-lines t)
    (setq hide-ifdef-shadow t)
    (hide-ifdef-mode 1)
    ))
