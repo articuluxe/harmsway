@@ -1,10 +1,10 @@
 rem -*- Mode: bat -*-
 rem dos.txt --- helpful commands
-rem Copyright (C) 2015, 2016  Dan Harms (dan.harms)
+rem Copyright (C) 2015-2017  Dan Harms (dan.harms)
 rem Author: Dan Harms <dan.harms@xrtrading.com>
 rem Created: Thursday, August  6, 2015
 rem Version: 1.0
-rem Modified Time-stamp: <2016-08-15 15:55:32 dan.harms>
+rem Modified Time-stamp: <2017-09-14 14:59:34 dan.harms>
 rem Modified by: Dan Harms
 rem Keywords: dos help
 
@@ -12,5 +12,9 @@ rem redirect all output to a file
 script.bat > output.txt 2>&1
 rem run remote desktop spanning across multiple monitors
 mstsc /span
+
+rem registry location to fix path to upgraded programs
+rem (if "Open With" dialog stops working)
+HKEY_CLASSES_ROOT\Applications\PROGRAM.EXE\shell\open\command
 
 rem dos.txt ends here
