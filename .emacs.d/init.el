@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2017-09-10 10:33:56 dharms>
+;; Modified Time-stamp: <2017-09-16 06:32:19 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -60,6 +60,7 @@
                      ,(concat my/plugins-directory "vlf/")
                      ,(concat my/plugins-directory "rtags/")
                      ,(concat my/plugins-directory "auto-complete/")
+                     ,(concat my/plugins-directory "company/")
                      ,(concat my/plugins-directory "yasnippet/")
                      ,(concat my/elisp-directory "emacs-jedi/")
                      ) load-path))
