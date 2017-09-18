@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2017-09-16 06:32:19 dharms>
+;; Modified Time-stamp: <2017-09-18 08:28:49 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2155,6 +2155,7 @@ line."
   (add-hook 'flycheck-mode-hook #'my/setup-flycheck)
   (add-hook 'after-init-hook #'global-flycheck-mode)
   :config
+  (setq flycheck-indication-mode nil)
   (setq flycheck-global-modes
         '(emacs-lisp-mode python-mode dart-mode sh-mode c++-mode json-mode))
   (setq-default flycheck-emacs-lisp-load-path 'inherit)
