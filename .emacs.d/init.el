@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2017-09-18 08:28:49 dharms>
+;; Modified Time-stamp: <2017-09-19 17:45:05 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1971,6 +1971,16 @@ line."
 ;; Ignore case when completing file names
 (setq read-file-name-completion-ignore-case nil)
 (setq uniquify-recentf-func 'uniquify-recentf-ivy-recentf-open)
+(defun harmsway-dabbrev-complete-at-point ()
+  (dabbrev--reset-global-variables)
+  (let* ((abbrev (dabbrev--abbrev-at-point))
+         (cands (dabbrev--find-all-expansions abbrev t))
+         (bnd (bounds-of-thing-at-point 'symbol)))
+    (list (car bnd) (cdr bnd) cands)))
+(defun harmsway-add-ivy-completion-at-point ()
+  (require 'dabbrev)
+  (add-to-list 'completion-at-point-functions 'harmsway-dabbrev-complete-at-point))
+;(add-hook 'after-init-hook 'harmsway-add-ivy-completion-at-point)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-complete ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package auto-complete
@@ -2014,26 +2024,15 @@ line."
   (setq ac-menu-height 20)
   (global-auto-complete-mode t)
 
-  (defun my/dabbrev-complete-at-point ()
-    (dabbrev--reset-global-variables)
-    (let* ((abbrev (dabbrev--abbrev-at-point))
-           (cands (dabbrev--find-all-expansions abbrev t))
-           (bnd (bounds-of-thing-at-point 'symbol)))
-      (list (car bnd) (cdr bnd) cands)))
-
-  (defun my/auto-complete-at-point ()
+  (defun harmsway-auto-complete-at-point ()
     (when (and (not (minibufferp))
                (fboundp 'auto-complete-mode)
                auto-complete-mode)
       #'auto-complete))
 
-  (defun my/add-ac-completion-at-point ()
-    (add-to-list 'completion-at-point-functions 'my/auto-complete-at-point)
-    ;; uncomment to perform in-buffer completion with ivy
-    ;; (require 'dabbrev)
-    ;; (add-to-list 'completion-at-point-functions 'my/dabbrev-complete-at-point)
-    )
-  (add-hook 'auto-complete-mode-hook 'my/add-ac-completion-at-point)
+  (defun harmsway-add-ac-completion-at-point ()
+    (add-to-list 'completion-at-point-functions 'harmsway-auto-complete-at-point))
+  (add-hook 'auto-complete-mode-hook 'harmsway-add-ac-completion-at-point)
 
   (ac-flyspell-workaround)
 
@@ -2092,8 +2091,6 @@ line."
               (setq ac-sources (append '(ac-source-etags
                                          ac-source-c-headers
                                          ) ac-sources))
-              (setq c-tab-always-indent nil)
-              (setq c-insert-tab-function 'indent-for-tab-command)
               ) t)                       ;append to hook list to take effect
                                         ;after ac-config-default
   (add-hook 'protobuf-mode-hook

@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-09-12 10:34:31 dan.harms>
+;; Modified Time-stamp: <2017-09-19 08:32:58 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -140,6 +140,8 @@
  'c-mode-common-hook
  (lambda ()
    (require 'compile)
+   (setq c-tab-always-indent nil)
+   (setq c-insert-tab-function 'indent-for-tab-command)
    ;; handle CamelCase
    (if (version< emacs-version "23.2")
        (c-subword-mode 1)
