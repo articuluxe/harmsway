@@ -1,11 +1,10 @@
-#!/usr/bin/env sh
-# -*- Mode: sh -*-
+#! -*- Mode: sh -*-
 # wireshark.txt --- wireshark help
 # Copyright (C) 2016-2017  Dan Harms (dan.harms)
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Tuesday, September 13, 2016
 # Version: 1.0
-# Modified Time-stamp: <2017-06-19 14:29:41 dan.harms>
+# Modified Time-stamp: <2017-09-21 11:04:45 dan.harms>
 # Modified by: Dan Harms
 # Keywords: wireshark
 
@@ -27,10 +26,16 @@ dumpcap -i<interface> -w <output>.pcap -b filesize:32768 -b files:128
 tshark -r input.erf -n -t ad -R 'ip.dst==233.72.75.96'
 sudo tcpdump -nettti sf01 '(ether dst host 01:00:5E:08:0E:29)'
 
-################################## filters ###################################
+############################## capture filters ###############################
+tcp port 80
+
+############################## display filters ###############################
+tcp.port == 80
 fix and ip.[addr|src|dst] == 69.50.112.200
 # match first 3 octets
 ip.src == 69.50.112.200/24
+# match packet length
+frame.cap_len == 66
 
 # set capability to enable use of raw sockets without root access
 sudo setcap cap_net_admin,cap_net_raw=ep EXE
