@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2017-09-22 12:48:07 dan.harms>
+;; Modified Time-stamp: <2017-09-22 13:01:44 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -936,7 +936,10 @@ line."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; shell-pop ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package shell-pop
   :bind (("<f1>" . shell-pop)
-         ("C-c 1" . shell-pop)))
+         ("C-c 1" . shell-pop))
+  :init
+  (setq shell-pop-autocd-to-working-dir nil)
+  (setq shell-pop-universal-key "<f1>"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; terminal-here ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package terminal-here
