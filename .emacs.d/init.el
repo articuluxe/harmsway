@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2017-09-22 13:01:44 dan.harms>
+;; Modified Time-stamp: <2017-09-22 13:29:14 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1946,7 +1946,7 @@ line."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; bash-completion ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package bash-completion
-  :defer t
+  :after shell-mode
   :config
   (bash-completion-setup))
 
