@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2017-09-19 17:45:05 dharms>
+;; Modified Time-stamp: <2017-09-21 08:24:12 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -260,6 +260,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
          ("C-c pn" . proviso-display-echo-project-names)
          ("C-c pe" . proviso-display-projects)
          ("C-c pg" . proviso-refresh-current-project)
+         ("C-c C-f" . proviso-fulledit)
          )
   :config
   (use-package proviso-frame-title)
@@ -465,9 +466,6 @@ line."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; path ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (my/load-environment-variables-from-file my/os-dir)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; full-edit ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package full-edit :bind ("C-c C-f" . full-edit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; c-includer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package c-includer

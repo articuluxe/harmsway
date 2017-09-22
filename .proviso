@@ -1,4 +1,4 @@
-(proviso-define
+(proviso-define-project
  "harmsway"
  :initfun (lambda (proj)
             (proviso-put proj :grep-exclude-dirs '("*.git" "*repos")))
