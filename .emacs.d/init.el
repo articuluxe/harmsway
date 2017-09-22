@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2017-09-21 08:24:12 dharms>
+;; Modified Time-stamp: <2017-09-22 12:48:07 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -958,6 +958,9 @@ line."
   (setq shackle-select-reused-windows nil)
   (setq shackle-rules
         '(
+          ;; this works around a bug with shell-pop on emacs 25.1,
+          ;; cf. https://github.com/kyagi/shell-pop-el/issues/51
+          ("\\*shell\\*" :regexp t :same t)
           (occur-mode :popup t :select nil :align bottom)
           (vlf-occur-mode :popup t :select nil :align bottom)
           (grep-mode :popup t :select nil :align bottom)
