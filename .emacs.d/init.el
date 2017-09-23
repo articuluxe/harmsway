@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2017-09-22 13:29:14 dan.harms>
+;; Modified Time-stamp: <2017-09-23 15:07:29 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -972,7 +972,7 @@ line."
           (help-mode :popup t :select t)
           (diff-mode :popup t :select t)
           (apropos-mode :popup t :select t)
-          (completion-list-mode :select nil)
+          (completion-list-mode :select t)
           ("compilation" :regexp t :popup t :select nil :align bottom)
           (command-history-mode :popup t :select t)
           ("Shell Command Output" :regexp t :popup t :select nil)
