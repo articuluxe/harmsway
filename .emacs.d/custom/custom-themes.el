@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Wednesday, December 21, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-07-25 06:45:22 dharms>
+;; Modified Time-stamp: <2017-09-23 17:05:52 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: themes colors
 
@@ -66,6 +66,7 @@
   "Run custom code after a theme X is loaded."
   (set-face-attribute 'font-lock-comment-face nil :slant 'italic)
   (set-face-attribute 'font-lock-comment-delimiter-face nil :slant 'italic)
+  (set-face-attribute 'comint-highlight-prompt nil :inherit nil) ;shell mode prompt
   (let ((sym (intern x)))
     (when (eq (face-attribute 'diff-hl-insert :background nil t) 'unspecified)
       (custom-theme-set-faces

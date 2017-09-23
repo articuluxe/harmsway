@@ -52,7 +52,7 @@ os=$(uname)
 # use $HOSTNAME if available (which works on windows);
 # if a FQDN, just take the device.
 domain=$(echo $HOSTNAME | sed -e 's/\..*$//')
-host=${domain:-`hostname -s`}
+host=${domain:-$(hostname -s)}
 
 # Load any os settings
 if [ -f ~/.bash_$os ]; then
@@ -69,6 +69,6 @@ if [ -f ~/.personal ]; then
     . ~/.personal
 fi
 
-if [ "${INSIDE_EMACS}" != "" ]; then
-    export TERM=emacs
+if [ -f ~/.emacs_bash ]; then
+    . ~/.emacs_bash
 fi
