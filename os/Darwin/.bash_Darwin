@@ -3,5 +3,7 @@
 
 export MANPATH=
 export NAME='Dan Harms'
-
+export CLICOLOR=1
+# solarized-esque
+export LSCOLORS=gxfxbEaEBxxEhEhBaDaCaD
 export TAR=gtar

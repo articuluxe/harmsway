@@ -5,7 +5,7 @@
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Saturday, September 23, 2017
 # Version: 1.0
-# Modified Time-stamp: <2017-09-23 16:38:29 dharms>
+# Modified Time-stamp: <2017-09-25 05:58:59 dharms>
 # Modified by: Dan Harms
 # Keywords: bash shell in emacs
 
@@ -13,7 +13,8 @@ if [ "${INSIDE_EMACS}" != "" ]; then
     export TERM=emacs
 fi
 
-eval "$(dircolors -b ~/.dircolors)"
-
+if [ ! -z "$(which dircolors)" ]; then
+    eval "$(dircolors -b ~/.dircolors)"
+fi
 
 # code ends here
