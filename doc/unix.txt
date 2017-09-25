@@ -4,7 +4,7 @@
 # Author:  <dan.harms@xrtrading.com>
 # Created: Friday, March 20, 2015
 # Version: 1.0
-# Modified Time-stamp: <2017-07-20 15:30:07 dan.harms>
+# Modified Time-stamp: <2017-09-25 16:54:57 dan.harms>
 # Modified by: Dan Harms
 # Keywords: help
 
@@ -102,5 +102,9 @@ awk '/^num/ {n++; sum+=$2} END {print n?sum/n:0}' file
 awk -F, 'NF < 18 { print $0;}' <file>
 # find which column matches a regex
 head -1 file.csv | awk -F, '{for (i=1; i <= NF; ++i) { if ($i ~ /regex/) {print i,$i;}}}'
+
+#################################### xml #####################################
+# validate xml with xincludes
+xmllint --noent --xinclude [--postvalid --noout] <input>
 
 # code ends here
