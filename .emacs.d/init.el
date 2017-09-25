@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2017-09-23 15:07:29 dharms>
+;; Modified Time-stamp: <2017-09-25 14:46:24 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -970,6 +970,7 @@ line."
           ("Help" :regexp t :popup t :select t)
           ("xref" :regexp t :popup t :select t :align bottom)
           (help-mode :popup t :select t)
+          (Man-mode :popup t :select t)
           (diff-mode :popup t :select t)
           (apropos-mode :popup t :select t)
           (completion-list-mode :select t)
