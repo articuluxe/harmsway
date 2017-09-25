@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-06-19 15:26:40 dan.harms>
+;; Modified Time-stamp: <2017-09-25 12:46:19 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -21,7 +21,7 @@
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 ;;; Commentary:
-
+;; windows-specific settings.
 ;;
 
 ;;; Code:
@@ -45,18 +45,14 @@
 ;(require 'ssh-agency)
 
 (setq shell-file-name "sh")             ;finds msys
+(setq explicit-shell-file-name
+      (concat (getenv "MSYS") "\\bin\\bash.exe"))
 
 (setq-default comint-process-echoes t)
 (setq w32-get-true-file-attributes nil)
 (setq w32-pipe-read-delay 0)
 (setq tramp-default-method "plink")
 
-;; qt
-(with-eval-after-load 'full-edit
-  (add-to-list 'full-edit-reject-patterns "^moc")
-  (add-to-list 'full-edit-reject-patterns "^qrc")
-  (add-to-list 'full-edit-reject-patterns "^ui")
-  )
 ;; counsel
 (with-eval-after-load 'counsel
   (setq counsel-locate-cmd #'counsel-locate-cmd-es)
