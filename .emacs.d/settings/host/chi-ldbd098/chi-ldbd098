@@ -1,9 +1,9 @@
 ;; -*- Mode: Emacs-Lisp -*-
-;;; chihq-dev-02d.xrtrading.local --- host file
+;;; chi-ldbd098 --- host file
 ;; Copyright (C) 2015-2017  Dan Harms (dan.harms)
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Monday, March 14, 2016
-;; Modified Time-stamp: <2017-08-15 17:41:44 dharms>
+;; Modified Time-stamp: <2017-09-27 09:35:00 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: config
 
@@ -33,10 +33,10 @@
 ;; (set-frame-font "OfficeCodePro" nil t)
 
 (my/load-site-file "xr")
-(set-frame-font "Input Mono 10" nil t)
+(set-frame-font "OfficeCodePro 10" nil t)
 
 (add-to-list 'default-frame-alist
-             (cons 'height (my/get-ideal-frame-height 80)))
+             (cons 'height (my/get-ideal-frame-height 82)))
 (add-to-list 'default-frame-alist
              '(width . 95))
 
@@ -47,4 +47,4 @@
 (setq-default flycheck-gcc-language-standard "c++11")
 (setq-default flycheck-clang-language-standard "c++11")
 
-;; chihq-dev-02d.lnx.xrtrading.local ends here
+;; chi-ldbd098 ends here

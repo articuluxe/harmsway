@@ -1,0 +1,6 @@
+#+TITLE:Fedora install
+
+* Other packages
+#+BEGIN_SRC sh
+sudo dnf install ftp.x86_64
+#+END_SRC

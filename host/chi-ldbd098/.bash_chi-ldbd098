@@ -6,7 +6,7 @@ export SITE=xr
 export VM=chihq-dev-02d-1
 unset SSH_ASKPASS
 
-export EMACSX=/usr/local/emacs/emacs
+export EMACSX=/usr/bin/emacs
 export EDITOR="$EMACSX -nw"
 alias emacs=$EDITOR
 
