@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-09-19 08:32:58 dharms>
+;; Modified Time-stamp: <2017-09-27 08:36:10 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -68,6 +68,7 @@
     (c-basic-offset . 3)
     (c-offsets-alist . (
                         (case-label . +)
+                        (arglist-cont-nonempty . +)
                         ))
     (c-electric-pound-behavior . (alignleft))
     (c-cleanup-list . (
