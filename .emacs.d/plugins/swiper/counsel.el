@@ -1535,8 +1535,9 @@ Does not list the currently checked out one."
     (define-key map (kbd "C-<backspace>") 'counsel-up-directory)
     map))
 
-(add-to-list 'ivy-ffap-url-functions 'counsel-github-url-p)
-(add-to-list 'ivy-ffap-url-functions 'counsel-emacs-url-p)
+(when (executable-find "git")
+  (add-to-list 'ivy-ffap-url-functions 'counsel-github-url-p)
+  (add-to-list 'ivy-ffap-url-functions 'counsel-emacs-url-p))
 (add-to-list 'ivy-ffap-url-functions 'counsel-url-expand)
 (defun counsel-find-file-cd-bookmark-action (_)
   "Reset `counsel-find-file' from selected directory."
@@ -2651,6 +2652,34 @@ The face can be customized through `counsel-org-goto-face-style'."
             'face
             (nth (1- level) counsel-org-goto-custom-faces)))
       (propertize name 'face 'minibuffer-prompt)))
+
+;;** `counsel-org-file'
+(defun counsel-org-file-ids ()
+  (let (cands)
+    (save-excursion
+      (goto-char (point-min))
+      (while (re-search-forward "^:ID: *\\([^ \n]+\\)$" nil t)
+        (push (match-string-no-properties 1) cands)))
+    (nreverse cands)))
+
+(defun counsel-org-files ()
+  (mapcar 'file-relative-name
+          (cl-mapcan
+           (lambda (id)
+             (directory-files
+              (format "data/%s/%s"
+                      (substring id 0 2)
+                      (substring id 2))
+              t "^[^.]"))
+           (counsel-org-file-ids))))
+
+;;;###autoload
+(defun counsel-org-file ()
+  "Browse all attachments for current Org file."
+  (interactive)
+  (ivy-read "file: " (counsel-org-files)
+            :action 'counsel-locate-action-dired
+            :caller 'counsel-org-file))
 
 ;;** `counsel-mark-ring'
 (defun counsel--pad (string length)
