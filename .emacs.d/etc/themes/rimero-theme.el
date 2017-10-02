@@ -7,7 +7,7 @@
 ;; Created: 12th August 2017
 ;; URL: https://github.com/yveszoundi/emacs-rimero-theme
 ;; Keywords: faces, theme, dark, light colors
-;; Version: 0.0.1
+;; Version: 0.0.2
 ;; Package-Requires: ((emacs "24"))
 
 ;; License: GPL3

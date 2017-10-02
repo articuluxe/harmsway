@@ -46,7 +46,7 @@
 
 (let
     (
-     (bg                     "#0B080F")
+     (bg                     "#091423")
      (fg                     "#E8F0FF")
      (seperator              "#271C33")
      (cursor                 "#F8F8F0")
@@ -58,7 +58,7 @@
      (face6                  "#2ee267")
      (face7                  "#FF5996")
      (face8                  "#60FCEC")
-     (face9                  "#271C33")
+     (face9                  "#344256")
      (face10                 "#84B5FF")
      (bg1                    "#403D3D")
      (m1                     "#C1CAFF")
@@ -77,7 +77,7 @@
      (fullBlack              "#000000")
      (whiteSmoke         "white-smoke")
      (highlighter            "#E7F221")
-     (line-highlight         "#271C33")
+     (line-highlight         "#0F2139")
 
      (slantType (if exotica-theme-enable-italics 'italic 'normal))
 
@@ -97,7 +97,7 @@
  `(custom-face-tag ((t (:foreground ,face1 :weight bold))))
  `(custom-state ((t (:foreground ,face2))))
  `(italic ((t (:slant italic))))
- `(region ((t (:background ,face9))))
+ `(region ((t (:inherit default :background ,face9))))
  `(underline ((t (:underline t))))
 
  ;; diff
@@ -149,12 +149,12 @@
  `(js2-external-variable ((t (:foreground ,face4))))
  
  ;; highlighting
- `(highlight ((t (:foreground ,highlighter :background ,face9))))
+ `(highlight ((t (:foreground ,highlighter :background ,line-highlight))))
  `(hl-line ((t (:background ,line-highlight))))
  `(lazy-highlight ((t (:foreground ,comment-face :background ,fullBlack))))
 
  ;; isearch
- `(isearch ((t (:foreground ,highlighter :background ,face9))))
+ `(isearch ((t (:foreground ,highlighter :background ,line-highlight))))
  `(isearch-fail ((t (:foreground ,fullWhite :background ,warning-bg-face))))
 
  ;; org
