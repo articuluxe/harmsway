@@ -1,7 +1,7 @@
 ;; -*- Mode: Emacs-Lisp -*-
 ;;
 ;;
-(proviso-define "${1:`(proviso-compute-basename-from-file buffer-file-name)`}"
+(proviso-define-project "${1:`(proviso-compute-basename-from-file buffer-file-name)`}"
  :user-name "`user-login-name`" :user-email "`user-mail-address`"
  :initfun (lambda (proj)
             (proviso-load-environment-variables-from-file proj ".repo-env")
