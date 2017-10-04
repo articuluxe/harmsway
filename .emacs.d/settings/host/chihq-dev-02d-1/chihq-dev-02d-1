@@ -1,9 +1,9 @@
 ;; -*- Mode: Emacs-Lisp -*-
-;;; chihq-dev-02d.xrtrading.local --- host file
+;;; chihq-dev-02d-1 --- host file
 ;; Copyright (C) 2015-2017  Dan Harms (dan.harms)
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Monday, March 14, 2016
-;; Modified Time-stamp: <2017-08-15 17:42:25 dharms>
+;; Modified Time-stamp: <2017-10-04 09:44:06 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: config
 
@@ -36,4 +36,4 @@
 (setq-default flycheck-gcc-language-standard "c++14")
 (setq-default flycheck-clang-language-standard "c++14")
 
-;; chihq-dev-02d.lnx.xrtrading.local ends here
+;; chihq-dev-02d-1 ends here
