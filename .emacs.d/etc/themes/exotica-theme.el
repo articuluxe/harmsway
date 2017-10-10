@@ -68,16 +68,18 @@
      (m5                     "#BCA3A3")
      (m6                     "#272822")
      (m7                     "#FF0000")
+     (m8                     "#FFCACA")
      (diff1                  "#232526")
      (ml-inactive-face       "#BCBCBC")
      (ml-active-face         "#050302")
-     (comment-face           "#465457")
+     (comment-face           "#6F777D")
+     (line-number-face       "#424952")
      (warning-bg-face        "#333333")
      (fullWhite              "#FFFFFF")
      (fullBlack              "#000000")
      (whiteSmoke         "white-smoke")
      (highlighter            "#E7F221")
-     (line-highlight         "#0F2139")
+     (line-highlight         "#132947")
 
      (slantType (if exotica-theme-enable-italics 'italic 'normal))
 
@@ -97,7 +99,7 @@
  `(custom-face-tag ((t (:foreground ,face1 :weight bold))))
  `(custom-state ((t (:foreground ,face2))))
  `(italic ((t (:slant italic))))
- `(region ((t (:inherit default :background ,face9))))
+ `(region ((t (:background ,face9))))
  `(underline ((t (:underline t))))
 
  ;; diff
@@ -140,6 +142,8 @@
  `(font-lock-variable-name-face ((t (:foreground ,face3))))
  `(font-lock-warning-face ((t (:foreground ,fullWhite (quote :background) ,warning-bg-face))))
 
+ `(hl-todo ((t (:foreground ,m8 :weight bold))))
+
  ;; Basic face
  `(success ((t (:foreground ,face2))))
 
@@ -154,8 +158,11 @@
  `(lazy-highlight ((t (:foreground ,comment-face :background ,fullBlack))))
 
  ;; isearch
- `(isearch ((t (:foreground ,highlighter :background ,line-highlight))))
+ `(isearch ((t (:foreground ,highlighter :background ,bg))))
  `(isearch-fail ((t (:foreground ,fullWhite :background ,warning-bg-face))))
+ `(ahs-plugin-whole-buffer-face ((t (:background ,bg :foreground ,highlighter ))))
+ `(ahs-face ((t (:background ,face9 :foreground ,highlighter))))
+ `(ahs-definition-face ((t (:background ,face9 :foreground ,highlighter :underline t))))
 
  ;; org
  `(outline-1 ((t (:foreground ,face1))))
@@ -233,7 +240,9 @@
   `(company-tooltip-annotation-selection ((t (:inherit company-tooltip-annotation))))
   `(company-tooltip-common ((t (:foreground ,face8))))
   `(company-preview ((t (:background ,line-highlight :foreground ,face3 :slant ,slantType))))
-  '(company-preview-common ((t (:inherit company-preview ))))
+  `(company-preview-common ((t (:inherit company-preview ))))
+  `(company-preview-search ((t (:inherit company-preview))))
+  
 
   ;; neotree
   `(neo-dir-link-face ((t (:foreground ,face7 :slant ,slantType))))
@@ -243,8 +252,11 @@
   `(treemacs-directory-face ((t (:foreground ,face7 :slant ,slantType))))
 
   ;; parentheses matching
-  `(show-paren-match ((t (:background ,m1 :foreground ,fullBlack :weight bold))))
+  ;; `(show-paren-match ((t (:height 0.8 :width condensed :box (:line-width 1 :color "cyan" :style none )))))
+  `(show-paren-match ((t (:background ,fullBlack :foreground ,fullWhite :underline t))))
   `(show-paren-mismatch ((t (:background ,m7 :foreground ,fullWhite))))
+  `(rainbow-delimiters-mismatched-face ((t (:inherit show-paren-mismatch :underline t))))
+  `(rainbow-delimiters-unmatched-face ((t (:inherit show-paren-mismatch))))
 
   ;; dired
   `(dired-directory ((t (:foreground ,face7 :slant ,slantType))))
@@ -260,6 +272,7 @@
 
   ;; linum relative line number face
   `(linum-relative-current-face ((t (:inherit linum :foreground ,face4 :weight normal))))
+  `(linum ((t (:background ,bg :foreground ,line-number-face :weight normal))))
 
   ;; imenu-list
   `(imenu-list-entry-subalist-face-0 ((t (:foreground ,face2))))

@@ -1465,7 +1465,7 @@ like.")
     (counsel-M-x . "^")
     (counsel-describe-function . "^")
     (counsel-describe-variable . "^")
-    (man . "^")
+    (Man-completion-table . "^")
     (woman . "^"))
   "Command to initial input table.")
 
@@ -1794,6 +1794,7 @@ This is useful for recursive `ivy-read'."
              (setq coll (all-completions "" collection predicate)))
             (t
              (setq coll collection)))
+      (setq coll (delete "" coll))
       (when def
         (cond ((listp def)
                (setq coll (cl-union def coll :test 'equal)))

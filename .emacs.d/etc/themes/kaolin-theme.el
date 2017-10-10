@@ -1,11 +1,11 @@
 ;;; kaolin-theme.el --- A dark jade theme inspired by Sierra.vim
 
-;; Copyright (C) 2017 0rdy
+;; Copyright (C) 2017 ogdenwebb
 
-;; Author: 0rdy <mail@0rdy.com>
-;; URL: https://github.com/0rdy/kaolin-theme
+;; Author: ogdenwebb <ogdenwebb@gmail.com>
+;; URL: https://github.com/ogdenwebb/kaolin-theme
 ;; Package-Requires: ((emacs "24"))
-;; Version: 0.9.0
+;; Version: 0.9.1
 
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -51,8 +51,11 @@
   "Face to highlight boolean values"
   :group 'kaolin-theme)
 
-;; TODO: move light-green to separated hl var and (??) change to lavender
+;; TODO: (??) change hl to lavender
+;; TODO: add evil-goggles support
 ;; TODO: (??) add base(terminal) colors
+;; TODO: (??) colorful comments
+;; TODO: treemacs
 
 ;; Kaolin color palette
 (let ((c '((class color) (min-colors 89)))
@@ -106,6 +109,9 @@
       (light-yellow    "#c9bb87")
       (wheat           "#b9c791")
       (alt-wheat       "#fdd5b1")
+      ;; (faded-wheat     "#eaddb7")
+      ;; (faded-wheat     "#f1dab5")
+      (faded-wheat     "#D9CA9B")
 
       (dark-jade       "#2e4039")
       (jade            "#597a6e")
@@ -274,7 +280,6 @@
      `(vertical-border ((,c (:foreground ,win-border))))
      `(minibuffer-prompt ((,c (:foreground ,keyword :bold ,bold))))
      `(default-italic ((,c (:italic ,italic))))
-     ;; TODO: (??) change to blue
      `(link ((,c (:foreground ,lavender :underline ,underline))))
      `(link-visited ((,c (:inherit link :underline nil))))
      `(success ((,c (:background nil :foreground ,light-green))))
@@ -399,23 +404,18 @@
      ;; Hydra
      `(hydra-face-red ((,c (:foreground ,red))))
      `(hydra-face-teal ((,c (:foreground ,teal))))
-     `(hydra-face-blue ((,c (:foreground ,blue))))
+     `(hydra-face-blue ((,c (:foreground ,soft-blue))))
      `(hydra-face-pink ((,c (:foreground ,pink))))
      `(hydra-face-amaranth ((,c (:foreground ,purple))))
 
      ;; Org-mode
-     ;; TODO
-     ;; `(org-level-1 ((,c (:foreground ,green :bold ,bold :height 1.1))))
-     ;; `(org-level-2 ((,c (:foreground ,teal-blue :bold nil))))
-     ;; `(org-level-3 ((,c (:foreground ,light-jade :bold nil))))
-     ;; `(org-level-4 ((,c (:foreground ,lime :bold nil))))
-     ;; OLD
-     `(org-level-1 ((,c (:foreground ,teal-green :bold ,bold :height 1.1))))
+     ;; Pay attention org-level-4 uses to diplay names in ivy-switch-buffer
+     `(org-level-1 ((,c (:foreground ,light-jade :bold ,bold :height 1.1))))
      `(org-level-2 ((,c (:foreground ,teal-blue :bold nil))))
-     `(org-level-3 ((,c (:inherit org-level-2))))
-     `(org-level-4 ((,c (:inherit org-level-2))))
+     `(org-level-3 ((,c (:foreground ,green :bold nil))))
+     `(org-level-4 ((,c (:foreground ,faded-wheat :bold nil))))
      `(org-tag ((,c (:foreground ,orange :bold ,bold))))
-     `(org-checkbox ((,c (:foreground ,faded-blue :bold ,bold))))
+     `(org-checkbox ((,c (:foreground ,lavender :bold ,bold))))
      `(org-todo ((,c (:foreground ,red :bold ,bold))))
      `(org-done ((,c (:foreground ,lime  :bold ,bold))))
      `(org-headline-done ((,c (:foreground ,teal-blue  :bold nil))))
@@ -769,9 +769,9 @@
      `(which-func ((,c (:foreground ,orange))))
 
      ;; Which-key
-     `(which-key-key-face ((,c (:foreground ,purple :bold ,bold))))
-     `(which-key-group-description-face ((,c (:foreground ,light-purple))))
-     `(which-key-local-map-description-face ((,c (:foreground ,teal-green))))
+     `(which-key-key-face ((,c (:foreground ,light-green :bold ,bold))))
+     `(which-key-group-description-face ((,c (:foreground ,alt-lavender))))
+     `(which-key-local-map-description-face ((,c (:foreground ,soft-blue))))
      `(which-key-command-description-face ((,c (:foreground ,teal))))
 
      ;; Ruler-mode
@@ -816,20 +816,20 @@
      `(avy-lead-face-2 ((,c (:background ,dark-purple :foreground ,fg1))))
 
      ;; Ivy & Swiper
-     `(ivy-modified-buffer ((,c (:foreground ,light-yellow))))
+     `(ivy-modified-buffer ((,c (:foreground ,alt-lavender))))
      `(ivy-subdir ((,c (:foreground ,green :bold ,bold))))
-     `(ivy-virtual ((,c (:foreground ,violet))))
-     `(ivy-remote ((,c (:foreground ,teal))))
+     `(ivy-action ((,c (:background nil :foreground ,light-green :bold ,bold))))
+     `(ivy-virtual ((,c (:foreground ,light-yellow))))
+     `(ivy-remote ((,c (:foreground ,red))))
+     `(ivy-cursor ((,c (:background ,bg3 :foreground ,fg1))))
      `(ivy-current-match ((,c (:background ,hl-line :foreground ,hl :bold t))))
      `(ivy-match-required-face ((,c (:background nil :foreground ,alt-red :bold nil))))
      `(ivy-confirm-face ((,c (:background nil :foreground ,light-orange))))
-     `(ivy-action ((,c (:background nil :foreground ,teal-green :bold ,bold))))
      `(ivy-minibuffer-match-face-1 ((,c (:background nil :foreground ,fg1))))
      `(ivy-minibuffer-match-face-2 ((,c (:background nil :foreground ,soft-blue :bold ,bold))))
      `(ivy-minibuffer-match-face-3 ((,c (:background nil :foreground ,light-orange :bold ,bold))))
      `(ivy-minibuffer-match-face-4 ((,c (:background nil :foreground ,moderate-pink :bold ,bold))))
 
-     ;; TODO: change face-1 or current-match; see: try to describe member func
      `(swiper-match-face-1 ((,c (:background ,bg2 :foreground ,fg1))))
      `(swiper-match-face-2 ((,c (:background ,bg2 :foreground ,soft-blue :bold ,bold))))
      `(swiper-match-face-3 ((,c (:background ,bg2 :foreground ,light-orange :bold ,bold))))

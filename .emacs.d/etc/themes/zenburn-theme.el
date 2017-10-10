@@ -135,6 +135,9 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(compilation-mode-line-run ((t (:foreground ,zenburn-yellow :weight bold))))
 ;;;;; completions
    `(completions-annotations ((t (:foreground ,zenburn-fg-1))))
+;;;;; eww
+   '(eww-invalid-certificate ((t (:inherit error))))
+   '(eww-valid-certificate   ((t (:inherit success))))
 ;;;;; grep
    `(grep-context-face ((t (:foreground ,zenburn-fg))))
    `(grep-error-face ((t (:foreground ,zenburn-red-1 :weight bold :underline t))))
@@ -545,6 +548,9 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(ack-file ((t (:foreground ,zenburn-blue))))
    `(ack-line ((t (:foreground ,zenburn-yellow))))
    `(ack-match ((t (:foreground ,zenburn-orange :background ,zenburn-bg-1 :weight bold))))
+;;;;; git-annex
+   '(git-annex-dired-annexed-available ((t (:inherit success :weight normal))))
+   '(git-annex-dired-annexed-unavailable ((t (:inherit error :weight normal))))
 ;;;;; git-commit
    `(git-commit-comment-action  ((,class (:foreground ,zenburn-green+1 :weight bold))))
    `(git-commit-comment-branch  ((,class (:foreground ,zenburn-blue+1  :weight bold))))
@@ -627,10 +633,15 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(gnus-signature ((t (:foreground ,zenburn-yellow))))
    `(gnus-x ((t (:background ,zenburn-fg :foreground ,zenburn-bg))))
    `(mm-uu-extract ((t (:background ,zenburn-bg-05 :foreground ,zenburn-green+1))))
+;;;;; go-guru
+   `(go-guru-hl-identifier-face ((t (:foreground ,zenburn-bg-1 :background ,zenburn-green+1))))
 ;;;;; guide-key
    `(guide-key/highlight-command-face ((t (:foreground ,zenburn-blue))))
    `(guide-key/key-face ((t (:foreground ,zenburn-green))))
    `(guide-key/prefix-command-face ((t (:foreground ,zenburn-green+1))))
+;;;;; hackernews
+   '(hackernews-comment-count-face ((t (:inherit link-visited :underline nil))))
+   '(hackernews-link-face          ((t (:inherit link         :underline nil))))
 ;;;;; helm
    `(helm-header
      ((t (:foreground ,zenburn-green
@@ -1220,6 +1231,20 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(speedbar-selected-face ((t (:foreground ,zenburn-red))))
    `(speedbar-separator-face ((t (:foreground ,zenburn-bg :background ,zenburn-blue-1))))
    `(speedbar-tag-face ((t (:foreground ,zenburn-yellow))))
+;;;;; sx
+   `(sx-custom-button
+     ((t (:background ,zenburn-fg :foreground ,zenburn-bg-1
+          :box (:line-width 3 :style released-button) :height 0.9))))
+   `(sx-question-list-answers
+     ((t (:foreground ,zenburn-green+3
+          :height 1.0 :inherit sx-question-list-parent))))
+   `(sx-question-mode-accepted
+     ((t (:foreground ,zenburn-green+3
+          :height 1.3 :inherit sx-question-mode-title))))
+   '(sx-question-mode-content-face ((t (:inherit highlight))))
+   `(sx-question-mode-kbd-tag
+     ((t (:box (:color ,zenburn-bg-1 :line-width 3 :style released-button)
+          :height 0.9 :weight semi-bold))))
 ;;;;; tabbar
    `(tabbar-button ((t (:foreground ,zenburn-fg
                                     :background ,zenburn-bg))))
