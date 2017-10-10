@@ -2,8 +2,7 @@
 ;; Copyright (C) 2016-2017  Dan Harms (dan.harms)
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Wednesday, December 21, 2016
-;; Version: 1.0
-;; Modified Time-stamp: <2017-09-23 17:05:52 dharms>
+;; Modified Time-stamp: <2017-10-10 14:49:03 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: themes colors
 
@@ -21,7 +20,7 @@
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 ;;; Commentary:
-
+;; Personal theme customizations.
 ;;
 
 ;;; Code:
@@ -92,6 +91,8 @@
            (my/make-comment-delimiter-face-same-as-comment-face sym))
           ((eq sym 'ld-dark)
            (my/make-all-font-sizes-the-same-please))
+          ((eq sym 'mandm)
+           (my/make-comment-delimiter-face-same-as-comment-face sym))
           ((eq sym 'manoj-dark)
            (my/make-comment-delimiter-face-same-as-comment-face sym)
            (my/make-all-font-sizes-the-same-please))
