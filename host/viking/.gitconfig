@@ -36,3 +36,7 @@
 	mergeoptions = --squash
 [credential]
 	helper = cache --timeout=86400
+[alias]
+    listbr = "!sh() { git for-each-ref --sort=-committerdate --count=10 refs/heads/ --format='%(HEAD)%(refname:short)|%(objectname:short)|%(contents:subject)|%(authorname)|(%(committerdate:relative))' | column -ts'|' ; }; sh"
+    # column on linux chokes on colors
+#    listbr = "!sh() { git for-each-ref --sort=-committerdate --count=10 refs/heads/ --format='%(HEAD)%(color:yellow)%(refname:short)%(color:reset)|%(color:red)%(objectname:short)%(color:reset)|%(contents:subject)|%(color:blue)%(authorname)%(color:reset)|(%(color:green)%(committerdate:relative)%(color:reset))' | column -ts'|' ; }; sh"
