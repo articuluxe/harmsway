@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2017-10-06 17:33:50 dharms>
+;; Modified Time-stamp: <2017-10-12 08:39:27 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1569,9 +1569,10 @@ line."
   (add-hook 'dired-mode-hook 'auto-revert-mode)
   :config
   (use-package dired-x)                 ; C-x C-j now runs 'dired-jump
-  (setq diredp-hide-details-initially-flag nil)
   (use-package dired+
     :init
+    (setq diredp-hide-details-initially-flag nil)
+    (setq diredp-hide-details-propagate-flag t)
     ;; dired+'s default chord for chmod conflicts with arrow keys in terminal;
     ;; the alternative to this is to unbind the key like so:
     ;; (define-key dired-mode-map [(meta shift ?o)] nil)
