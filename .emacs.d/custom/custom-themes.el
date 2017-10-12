@@ -2,7 +2,7 @@
 ;; Copyright (C) 2016-2017  Dan Harms (dan.harms)
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Wednesday, December 21, 2016
-;; Modified Time-stamp: <2017-10-10 14:49:03 dan.harms>
+;; Modified Time-stamp: <2017-10-12 11:32:59 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: themes colors
 
@@ -85,6 +85,13 @@
           ((eq sym 'deep-blue)
            (custom-theme-set-faces sym '(show-paren-match-face ((t (:bold t :background "coral")))))
            (custom-theme-set-faces sym '(show-paren-mismatch-face ((t (:bold t :background "VioletRed4"))))))
+          ((eq sym 'desert)
+           (custom-theme-set-faces sym '(show-paren-match-face ((t (:bold t
+                                                                          :foreground "khaki"
+                                                                          :background "OliveDrab")))))
+           (custom-theme-set-faces sym '(show-paren-mismatch-face ((t (:bold t
+                                                                             :foreground "yellow2"
+                                                                             :background "IndianRed3"))))))
           ((eq sym 'granger)
            (my/make-comment-delimiter-face-same-as-comment-face sym))
           ((eq sym 'hober2)
