@@ -719,7 +719,7 @@ When ARG is t, exit with current text, ignoring the candidates."
   (let (dir)
     (cond
       ((equal ivy-text "/sudo::")
-       (setq dir (concat ivy-text ivy--directory))
+       (setq dir (concat ivy-text (expand-file-name ivy--directory)))
        (ivy--cd dir)
        (ivy--exhibit))
       ((and
@@ -1794,7 +1794,8 @@ This is useful for recursive `ivy-read'."
              (setq coll (all-completions "" collection predicate)))
             (t
              (setq coll collection)))
-      (setq coll (delete "" coll))
+      (unless (ivy-state-dynamic-collection ivy-last)
+        (setq coll (delete "" coll)))
       (when def
         (cond ((listp def)
                (setq coll (cl-union def coll :test 'equal)))

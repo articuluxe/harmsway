@@ -28,7 +28,6 @@
 
 (defgroup kaolin-theme nil
   "Kaolin theme properties"
-  :prefix "kaolin-"
   :group 'faces)
 
 (defcustom kaolin-bold t
@@ -56,6 +55,9 @@
 ;; TODO: (??) add base(terminal) colors
 ;; TODO: (??) colorful comments
 ;; TODO: treemacs
+;; TODO: custom-set face
+;; TODO: check all faces with cyan
+;; TODO: (??) color cornflower blue
 
 ;; Kaolin color palette
 (let ((c '((class color) (min-colors 89)))
@@ -131,8 +133,8 @@
       (teal-green      "#6fb593")
 
 
-      ;; TODO: #062732
       (midnight-blue   "#1e2528")
+      (alt-midnigh-blue "#062732")
       ;; (grayish-blue    "#36454f")
       (grayish-blue    "#687184")
       (dark-blue       "#2a4661")
@@ -192,7 +194,7 @@
          (rb3 jade)
          (rb4 faded-blue)
          (rb5 green)
-         (rb6 alt-lavender)
+         (rb6 light-violet)
          (rb7 grayish-orange)
          (rb8 grayish-magenta)
          (rb9 lavender)
@@ -249,20 +251,19 @@
      'kaolin
      ;; Font-lock
      `(font-lock-builtin-face ((,c (:foreground ,builtin))))
-     `(font-lock-comment-face ((,c (:foreground ,comment))))
      `(font-lock-comment-delimiter-face ((,c (:foreground ,comment))))
+     `(font-lock-comment-face ((,c (:foreground ,comment))))
      `(font-lock-constant-face ((,c (:foreground ,const))))
-     `(font-lock-reference-face ((,c (:foreground ,const))))
-     `(font-lock-string-face ((,c (:foreground ,str))))
      `(font-lock-doc-face ((,c (:foreground ,doc))))
      `(font-lock-function-name-face ((,c (:foreground ,functions :bold ,bold))))
      `(font-lock-keyword-face ((,c (:foreground ,keyword :bold ,bold))))
-     `(font-lock-negation-char-face ((,c (:foreground ,const))))
+     `(font-lock-negation-char-face ((,c (:foreground ,red))))
+     `(font-lock-preprocessor-face ((,c (:foreground ,prep :bold nil))))
+     `(font-lock-reference-face ((,c (:foreground ,const))))
+     `(font-lock-string-face ((,c (:foreground ,str))))
      `(font-lock-type-face ((,c (:foreground ,type))))
      `(font-lock-variable-name-face ((,c (:foreground ,var))))
      `(font-lock-warning-face ((,c (:background nil :foreground ,warning))))
-     `(font-lock-preprocessor-face ((,c (:foreground ,prep :bold nil))))
-     `(font-lock-negation-char-face ((,c (:foreground ,cyan :bold nil))))
 
      ;; Kaolin faces
      `(kaolin-boolean ((,c (:foreground ,bool))))
@@ -280,27 +281,27 @@
      `(vertical-border ((,c (:foreground ,win-border))))
      `(minibuffer-prompt ((,c (:foreground ,keyword :bold ,bold))))
      `(default-italic ((,c (:italic ,italic))))
-     `(link ((,c (:foreground ,lavender :underline ,underline))))
+     `(link ((,c (:foreground ,faded-orange :underline ,underline))))
      `(link-visited ((,c (:inherit link :underline nil))))
      `(success ((,c (:background nil :foreground ,light-green))))
      `(escape-glyph ((,c (:background nil :foreground ,cyan))))
 
      `(menu ((,c (:background ,bg2 :foreground ,fg2))))
-     `(header-line ((,c (:background ,bg2 :foreground ,jade))))
+     `(header-line ((,c (:background ,midnight-blue :foreground ,faded-blue))))
      `(tooltip ((,c (:foreground ,tooltip-bg :foreground ,tooltip-fg))))
 
-     `(match ((,c (:background nil :foreground ,cyan))))
+     `(match ((,c (:background nil :foreground ,hl))))
      `(isearch ((,c (:background nil :foreground ,hl :bold ,bold :underline ,underline))))
      `(isearch-fail ((,c (:background nil :foreground ,red))))
 
      ;; Interface
-     ;; TODO: change button face
-     `(button ((,c (:background ,bg4 :foreground ,teal :box (:line-width 3 :color ,bg3 :style nil)))))
-     `(custom-button ((,c (:background ,bg4 :foreground ,teal :box (:line-width 3 :color ,bg3 :style nil)))))
-     `(custom-button-mouse ((,c (:background ,bg3 :foreground ,cyan :box (:line-width 3 :color ,bg2 :style nil)))))
-     `(custom-button-pressed ((,c (:background ,bg3 :foreground ,cyan :box (:line-width 3 :color ,bg2 :style pressed-button)))))
+     ;; `(button ((,c (:foreground ,lavender :underline ,underline))))
+     `(button ((,c (:inherit link))))
+     `(custom-button ((,c (:background ,bg3 :foreground ,grayish-orange :box (:line-width 2 :color ,bg2 :style released-button)))))
+     `(custom-button-mouse ((,c (:background ,bg4 :foreground ,light-orange :box (:line-width 2 :color ,bg2 :style released-button)))))
+     `(custom-button-pressed ((,c (:background ,bg4 :foreground ,light-orange :box (:line-width 2 :color ,bg2 :style pressed-button)))))
      `(custom-visibility ((,c (:background nil :foreground ,cyan :height 0.9 :underline ,underline))))
-     `(custom-state ((,c (:background nil :foreground ,light-green))))
+     `(custom-state ((,c (:background nil :foreground ,green))))
      `(custom-changed ((,c (:background nil :foreground ,orange))))
      `(custom-invalid ((,c (:background nil :foreground ,red))))
      `(custom-face-tag ((,c (:background nil :foreground ,purple :bold ,bold))))
@@ -310,10 +311,11 @@
      `(widget-field ((,c (:background ,bg3 :foreground ,fg1 :box (:line-width 1 :color ,bg2 :style nil)))))
      `(widget-documentation ((,c (:background nil :foreground ,faded-blue))))
 
-     `(package-name ((,c (:background nil :foreground ,cyan))))
+     `(package-name ((,c (:inherit link :underline nil))))
 
      ;; Additional highlighting
-     `(highlight ((,c (:background ,bg2 :foreground ,cyan))))
+     ;; TODO: Also uses to highlight buttons in describe
+     `(highlight ((,c (:background ,bg2 :foreground ,light-orange))))
      `(lazy-highlight ((,c (:background ,bg3 :foreground ,fg2))))
      `(hl-line ((,c (:background ,bg2))))
      `(highlight-numbers-number ((,c (:foreground ,num))))
@@ -410,18 +412,21 @@
 
      ;; Org-mode
      ;; Pay attention org-level-4 uses to diplay names in ivy-switch-buffer
-     `(org-level-1 ((,c (:foreground ,light-jade :bold ,bold :height 1.1))))
+     `(org-level-1 ((,c (:foreground ,green :bold ,bold :height 1.1))))
      `(org-level-2 ((,c (:foreground ,teal-blue :bold nil))))
      `(org-level-3 ((,c (:foreground ,green :bold nil))))
      `(org-level-4 ((,c (:foreground ,faded-wheat :bold nil))))
      `(org-tag ((,c (:foreground ,orange :bold ,bold))))
-     `(org-checkbox ((,c (:foreground ,lavender :bold ,bold))))
+     `(org-checkbox ((,c (:foreground ,green :bold ,bold))))
      `(org-todo ((,c (:foreground ,red :bold ,bold))))
      `(org-done ((,c (:foreground ,lime  :bold ,bold))))
+     `(org-list-dt ((,c (:inherit org-checkbox))))
      `(org-headline-done ((,c (:foreground ,teal-blue  :bold nil))))
      `(org-checkbox-statistics-todo ((,c (:foreground ,faded-blue :bold ,bold))))
      `(org-checkbox-statistics-done ((,c (:foreground ,lime :bold ,bold))))
+     ;; TODO:
      `(org-code ((,c (:foreground ,green))))
+     ;; TODO:
      `(org-verbatim ((,c (:foreground ,light-yellow))))
      `(org-hide ((,c (:foreground ,bg2))))
      `(org-date ((,c (:foreground ,light-yellow :underline ,underline))))
