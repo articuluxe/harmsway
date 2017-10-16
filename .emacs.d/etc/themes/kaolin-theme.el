@@ -46,17 +46,18 @@
   "When t, use the wave underline style instead of regular underline."
   :group 'kaolin-theme)
 
+;; TODO: add colored selection option
+(defcustom kaolin-hl-line-colored nil
+  "When t, will display colored hl-line style instead dim gray"
+  :group 'kaolin-theme)
+
 (defface kaolin-boolean nil
   "Face to highlight boolean values"
   :group 'kaolin-theme)
 
-;; TODO: (??) change hl to lavender
-;; TODO: add evil-goggles support
 ;; TODO: (??) add base(terminal) colors
 ;; TODO: (??) colorful comments
 ;; TODO: treemacs
-;; TODO: custom-set face
-;; TODO: check all faces with cyan
 ;; TODO: (??) color cornflower blue
 
 ;; Kaolin color palette
@@ -182,7 +183,8 @@
          (dim-buffer alt-black)
          ;; (hl         alt-lavender)
          (hl         light-green)
-         (hl-line    bg2)
+         ;; (hl-line    bg2)
+         (hl-line    (if kaolin-hl-line-colored midnight-blue bg2))
          (hl-indent  gray)
          (tooltip-bg bg2)
          (tooltip-fg light-gray)
@@ -239,6 +241,7 @@
          (type       alt-orange)
          ;; TODO: ?? light-yellow
          (const      violet)
+         ;; TODO: make more brighter or change
          (var        faded-blue)
          ;; TODO: change number color ??  pink ?? light-yellow ?? alt-orange
          (num        red)
@@ -275,11 +278,12 @@
      `(shadow ((,c (:foreground ,alt-gray))))
      `(file-name-shadow ((,c (:inherit shadow))))
      `(region ((,c (:background ,bg3))))
-     `(secondary-selection ((,c (:background ,green :foreground ,bg1))))
+     `(secondary-selection ((,c (:background ,dark-jade))))
      `(fringe ((,c (:background ,bg1 :foreground ,fg1))))
      `(cursor ((,c (:background ,cursor))))
      `(vertical-border ((,c (:foreground ,win-border))))
      `(minibuffer-prompt ((,c (:foreground ,keyword :bold ,bold))))
+     `(bold ((,c (:bold ,bold))))
      `(default-italic ((,c (:italic ,italic))))
      `(link ((,c (:foreground ,faded-orange :underline ,underline))))
      `(link-visited ((,c (:inherit link :underline nil))))
@@ -303,6 +307,7 @@
      `(custom-visibility ((,c (:background nil :foreground ,cyan :height 0.9 :underline ,underline))))
      `(custom-state ((,c (:background nil :foreground ,green))))
      `(custom-changed ((,c (:background nil :foreground ,orange))))
+     `(custom-set ((,c (:background nil :foreground ,teal-green))))
      `(custom-invalid ((,c (:background nil :foreground ,red))))
      `(custom-face-tag ((,c (:background nil :foreground ,purple :bold ,bold))))
      `(custom-link ((,c (:background nil :foreground ,teal :bold ,bold))))
@@ -313,11 +318,10 @@
 
      `(package-name ((,c (:inherit link :underline nil))))
 
-     ;; Additional highlighting
-     ;; TODO: Also uses to highlight buttons in describe
+     ;; Highlighting
      `(highlight ((,c (:background ,bg2 :foreground ,light-orange))))
      `(lazy-highlight ((,c (:background ,bg3 :foreground ,fg2))))
-     `(hl-line ((,c (:background ,bg2))))
+     `(hl-line ((,c (:background ,hl-line))))
      `(highlight-numbers-number ((,c (:foreground ,num))))
      `(highlight-quoted-quote ((t (:foreground ,teal))))
      `(highlight-quoted-symbol ((t (:foreground ,green))))
@@ -414,20 +418,18 @@
      ;; Pay attention org-level-4 uses to diplay names in ivy-switch-buffer
      `(org-level-1 ((,c (:foreground ,green :bold ,bold :height 1.1))))
      `(org-level-2 ((,c (:foreground ,teal-blue :bold nil))))
-     `(org-level-3 ((,c (:foreground ,green :bold nil))))
+     `(org-level-3 ((,c (:foreground ,faded-orange :bold nil))))
      `(org-level-4 ((,c (:foreground ,faded-wheat :bold nil))))
      `(org-tag ((,c (:foreground ,orange :bold ,bold))))
      `(org-checkbox ((,c (:foreground ,green :bold ,bold))))
      `(org-todo ((,c (:foreground ,red :bold ,bold))))
-     `(org-done ((,c (:foreground ,lime  :bold ,bold))))
+     `(org-done ((,c (:foreground ,teal-green  :bold ,bold))))
      `(org-list-dt ((,c (:inherit org-checkbox))))
      `(org-headline-done ((,c (:foreground ,teal-blue  :bold nil))))
      `(org-checkbox-statistics-todo ((,c (:foreground ,faded-blue :bold ,bold))))
-     `(org-checkbox-statistics-done ((,c (:foreground ,lime :bold ,bold))))
-     ;; TODO:
-     `(org-code ((,c (:foreground ,green))))
-     ;; TODO:
-     `(org-verbatim ((,c (:foreground ,light-yellow))))
+     `(org-checkbox-statistics-done ((,c (:foreground ,teal-green :bold ,bold))))
+     `(org-code ((,c (:foreground ,light-yellow))))
+     `(org-verbatim ((,c (:foreground ,soft-blue))))
      `(org-hide ((,c (:foreground ,bg2))))
      `(org-date ((,c (:foreground ,light-yellow :underline ,underline))))
      `(org-document-title ((,c (:foreground ,teal :bold ,bold))))
@@ -517,12 +519,12 @@
 
      ;; Rainbow delimeters
      ;; TODO: change color & rewrite
-     `(show-paren-match-face ((,c (:background nil :foreground ,orange :bold ,bold))))
+     `(show-paren-match ((,c (:background nil :foreground ,orange :bold ,bold))))
      ;; (if (eq show-paren-style 'expression)
      ;;  `(show-paren-match-face ((,c (:background ,bg3 :foreground nil))))
      ;;  `(show-paren-match-face ((,c (:background nil :foreground ,orange :bold ,bold)))))
 
-     `(show-paren-mismatch-face ((,c (:background ,red :foreground ,bg2))))
+     `(show-paren-mismatch ((,c (:background ,red :foreground ,bg2))))
      `(rainbow-delimiters-unmatched-face ((,c :foreground ,warning)))
      `(rainbow-delimiters-depth-1-face ((,c (:foreground ,rb1))))
      `(rainbow-delimiters-depth-2-face ((,c :foreground ,rb2)))
@@ -581,9 +583,9 @@
      `(git-gutter:deleted ((,c (:background ,bg1 :foreground ,diff-del :bold ,bold))))
 
      ;; Diff-hl
-     `(diff-hl-insert ((,c (:foreground ,light-green))))
-     `(diff-hl-change ((,c (:foreground ,yellow))))
-     `(diff-hl-delete ((,c (:foreground ,red))))
+     `(diff-hl-insert ((,c (:background ,diff-add))))
+     `(diff-hl-change ((,c (:background ,diff-change))))
+     `(diff-hl-delete ((,c (:background ,diff-del))))
 
      ;; Popup
      `(popup-face ((,c (:background ,tooltip-bg :foreground ,tooltip-fg :bold ,bold))))
@@ -813,6 +815,9 @@
      ;; Vimish-fold
      `(vimish-fold-overlay ((,c (:background ,bg2 :foreground ,comment))))
      `(vimish-fold-fringe ((,c (:background nil :foreground ,jade))))
+
+     ;; TODO: Evil-goggles
+     `(evil-goggles-default-face ((,c (:background ,dark-jade))))
 
      ;; Avy
      `(avy-lead-face ((,c (:background ,dark-red :foreground ,fg1))))
