@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2017-10-12 08:39:27 dharms>
+;; Modified Time-stamp: <2017-10-17 10:53:22 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -883,6 +883,7 @@ line."
               ("e" . ediff-merge-revisions-with-ancestor) ;; to see all differences, even those automatically merged
               ("m" . magit-toggle-margin)
               ("b" . magit-blame)
+              ("B" . magit-blame-reverse)
               ("U" . magit-unstage-all) ;; unstage all changes (like SU but forces HEAD)
               ("s" . magit-stage-file)
               ("u" . magit-unstage-file)
