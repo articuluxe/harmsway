@@ -3,9 +3,11 @@
 ;; Copyright (C) 2017 Damien Cassou
 
 ;; Author: Damien Cassou <damien@cassou.me>
-;; Version: 0.6.0
+;; Maintainer: Damien Cassou <damien@cassou.me>
+;; Version: 0.7.0
 ;; Package-Requires: ((emacs "25.1"))
 ;; GIT: https://github.com/DamienCassou/hierarchy
+;; URL: https://github.com/DamienCassou/hierarchy
 ;;
 ;; This file is not part of GNU Emacs.
 

@@ -314,6 +314,13 @@ Set this to nil if you prefer the default (fundamental) mode."
 		 (function :tag "User-defined major mode"))
   :group 'htmlize)
 
+(defcustom htmlize-pre-style nil
+  "When non-nil, `<pre>' tags will be decorated with style
+information in `font' and `inline-css' modes. This allows a
+consistent background for captures of regions."
+  :type 'boolean
+  :group 'htmlize)
+
 (defvar htmlize-before-hook nil
   "Hook run before htmlizing a buffer.
 The hook functions are run in the source buffer (not the resulting HTML
@@ -1410,8 +1417,8 @@ property and by buffer overlays that specify `face'."
 ;; use CSS, and others the <font> element.  We take an OO approach and
 ;; define "methods" that indirect to the functions that depend on
 ;; `htmlize-output-type'.  The currently used methods are `doctype',
-;; `insert-head', `body-tag', and `text-markup'.  Not all output types
-;; define all methods.
+;; `insert-head', `body-tag', `pre-tag', and `text-markup'.  Not all
+;; output types define all methods.
 ;;
 ;; Methods are called either with (htmlize-method METHOD ARGS...) 
 ;; special form, or by accessing the function with
@@ -1463,6 +1470,12 @@ it's called with the same value of KEY.  All other times, the cached
   nil					; no doc-string
   face-map ; shut up the byte-compiler
   "<body>")
+
+(defun htmlize-default-pre-tag (face-map)
+  nil					; no doc-string
+  face-map ; shut up the byte-compiler
+  "<pre>")
+
 
 ;;; CSS based output support.
 
@@ -1550,6 +1563,13 @@ it's called with the same value of KEY.  All other times, the cached
 	  (mapconcat #'identity (htmlize-css-specs (gethash 'default face-map))
 		     " ")))
 
+(defun htmlize-inline-css-pre-tag (face-map)
+  (if htmlize-pre-style
+      (format "<pre style=\"%s\">"
+              (mapconcat #'identity (htmlize-css-specs (gethash 'default face-map))
+                         " "))
+    (format "<pre>")))
+
 (defun htmlize-inline-css-text-markup (fstruct-list buffer)
   (let* ((merged (htmlize-merge-faces fstruct-list))
 	 (style (htmlize-memoize
@@ -1573,6 +1593,14 @@ it's called with the same value of KEY.  All other times, the cached
     (format "<body text=\"%s\" bgcolor=\"%s\">"
 	    (htmlize-fstruct-foreground fstruct)
 	    (htmlize-fstruct-background fstruct))))
+
+(defun htmlize-font-pre-tag (face-map)
+  (if htmlize-pre-style
+      (let ((fstruct (gethash 'default face-map)))
+        (format "<pre text=\"%s\" bgcolor=\"%s\">"
+                (htmlize-fstruct-foreground fstruct)
+                (htmlize-fstruct-background fstruct)))
+    (format "<pre>")))
        
 (defun htmlize-font-text-markup (fstruct-list buffer)
   ;; In `font' mode, we use the traditional HTML means of altering
@@ -1657,7 +1685,7 @@ it's called with the same value of KEY.  All other times, the cached
               (insert (htmlize-method body-tag face-map)
                       "\n    ")
               (put places 'content-start (point-marker))
-              (insert "<pre>\n"))
+              (insert (htmlize-method pre-tag face-map) "\n"))
             (let ((text-markup
                    ;; Get the inserter method, so we can funcall it inside
                    ;; the loop.  Not calling `htmlize-method' in the loop
@@ -1818,6 +1846,16 @@ the text to another HTML buffer."
 	  (buffer-substring (plist-get htmlize-buffer-places 'content-start)
 			    (plist-get htmlize-buffer-places 'content-end)))
       (kill-buffer htmlbuf))))
+
+(defun htmlize-region-save-screenshot (beg end)
+  "Save the htmlized (see `htmlize-region-for-paste') region in
+the kill ring. Uses `inline-css', with style information in
+`<pre>' tags, so that the rendering of the marked up text
+approximates the buffer as closely as possible."
+  (interactive "r")
+  (let ((htmlize-pre-style t))
+    (kill-new (htmlize-region-for-paste beg end)))
+  (deactivate-mark))
 
 (defun htmlize-make-file-name (file)
   "Make an HTML file name from FILE.
