@@ -1,0 +1,1 @@
+cp src/variants/omtose-*-theme.el ../../../../.emacs.d/etc/themes
