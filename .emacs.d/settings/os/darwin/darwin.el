@@ -2,8 +2,7 @@
 ;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Version: 1.0
-;; Modified Time-stamp: <2017-01-10 05:56:38 dharms>
+;; Modified Time-stamp: <2017-10-20 06:51:18 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -29,6 +28,9 @@
 (eval-when-compile
   (setq use-package-verbose t)
   (require 'use-package))
+
+(when (executable-find "gls")
+  (setq insert-directory-program "gls"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Process Viewer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package vkill :bind ("C-c 0p" . vkill))
