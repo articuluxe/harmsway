@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2017-10-20 11:30:45 dan.harms>
+;; Modified Time-stamp: <2017-10-22 09:43:24 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -879,6 +879,7 @@ line."
               ("f" . magit-find-file) ;; view arbitrary blobs
               ("4f" . magit-find-file-other-window)
               ("h" . magit-log-buffer-file) ;; show all commits that touch current file
+              ("H" . magit-dired-log)
               ("y" . magit-cherry)
               ("e" . ediff-merge-revisions-with-ancestor) ;; to see all differences, even those automatically merged
               ("m" . magit-toggle-margin)
