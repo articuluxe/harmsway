@@ -73,6 +73,11 @@
   "Face used in sequence sections."
   :group 'magit-faces)
 
+(defface magit-sequence-exec
+  '((t :inherit magit-hash))
+  "Face used in sequence sections."
+  :group 'magit-faces)
+
 ;;; Common
 
 ;;;###autoload
@@ -228,10 +233,12 @@ without prompting."
               (?D "Use committer date as author date" "--ignore-date"))
   :options  '((?p "Remove leading slashes from paths" "-p"
                   magit-popup-read-number))
-  :actions  '((?w "Apply patches" magit-am-apply-patches)
-              (?m "Apply maildir" magit-am-apply-maildir))
+  :actions  '((?m "Apply maildir"     magit-am-apply-maildir)
+              (?w "Apply patches"     magit-am-apply-patches)
+              (?a "Apply plain patch" magit-patch-apply-popup))
   :default-arguments '("--3way")
   :default-actions 'magit-am-apply-patches
+  :max-action-columns 1
   :sequence-actions '((?w "Continue" magit-am-continue)
                       (?s "Skip"     magit-am-skip)
                       (?a "Abort"    magit-am-abort))
@@ -315,8 +322,9 @@ This discards all changes made since the sequence started."
               "Rebase"
               (?i "interactively"      magit-rebase-interactive)
               (?m "to edit a commit"   magit-rebase-edit-commit)
-              (?s "subset"             magit-rebase-subset)
+              (?s "a subset"           magit-rebase-subset)
               (?w "to reword a commit" magit-rebase-reword-commit) nil
+              (?k "to remove a commit" magit-rebase-remove-commit) nil
               (?f "to autosquash"      magit-rebase-autosquash))
   :sequence-actions '((?r "Continue" magit-rebase-continue)
                       (?s "Skip"     magit-rebase-skip)
@@ -382,7 +390,8 @@ START has to be selected from a list of recent commits."
       (concat "Type %p on a commit to rebase it "
               "and commits above it onto " newbase ","))))
 
-(defun magit-rebase-interactive-1 (commit args message &optional editor noassert)
+(defun magit-rebase-interactive-1
+    (commit args message &optional editor noassert confirm)
   (declare (indent 2))
   (when commit
     (if (eq commit :merge-base)
@@ -396,7 +405,7 @@ START has to be selected from a list of recent commits."
         (setq args (cons "--root" args)))))
   (when (and commit (not noassert))
     (setq commit (magit-rebase-interactive-assert commit)))
-  (if commit
+  (if (and commit (not confirm))
       (let ((process-environment process-environment))
         (when editor
           (push (concat "GIT_SEQUENCE_EDITOR=" editor) process-environment))
@@ -449,6 +458,16 @@ START has to be selected from a list of recent commits."
   (magit-rebase-interactive-1 commit args
     "Type %p on a commit to reword its message,"
     "perl -i -p -e '++$x if not $x and s/^pick/reword/'"))
+
+;;;###autoload
+(defun magit-rebase-remove-commit (commit args)
+  "Remove a single older commit using rebase."
+  (interactive (list (magit-commit-at-point)
+                     (magit-rebase-arguments)))
+  (magit-rebase-interactive-1 commit args
+    "Type %p on a commit to remove it,"
+    "perl -i -p -e '++$x if not $x and s/^pick/# pick/'"
+    nil t))
 
 ;;;###autoload
 (defun magit-rebase-continue (&optional noedit)
@@ -574,16 +593,21 @@ If no such sequence is in progress, do nothing."
         (insert ?\n)))))
 
 (defun magit-rebase-insert-merge-sequence (onto)
-  (dolist (line (nreverse
-                 (magit-file-lines
-                  (magit-git-dir "rebase-merge/git-rebase-todo"))))
-    (when (string-match (format "^\\([^%c ]+\\) \\([^ ]+\\) .*$"
-                                (string-to-char
-                                 (or (magit-get "core.commentChar") "#")))
-                        line)
-      (magit-bind-match-strings (action hash) line
-        (unless (equal action "exec")
-          (magit-sequence-insert-commit action hash 'magit-sequence-pick)))))
+  (let (exec)
+    (dolist (line (nreverse
+                   (magit-file-lines
+                    (magit-git-dir "rebase-merge/git-rebase-todo"))))
+      (cond ((string-prefix-p "exec" line)
+             (setq exec (substring line 5)))
+            ((string-match (format "^\\([^%c ]+\\) \\([^ ]+\\) .*$"
+                                   (string-to-char
+                                    (or (magit-get "core.commentChar") "#")))
+                           line)
+             (magit-bind-match-strings (action hash) line
+               (unless (equal action "exec")
+                 (magit-sequence-insert-commit
+                  action hash 'magit-sequence-pick exec)))
+             (setq exec nil)))))
   (magit-sequence-insert-sequence
    (magit-file-line (magit-git-dir "rebase-merge/stopped-sha"))
    onto
@@ -669,10 +693,13 @@ If no such sequence is in progress, do nothing."
                                     'magit-sequence-head
                                   'magit-sequence-onto))))
 
-(defun magit-sequence-insert-commit (type hash face)
+(defun magit-sequence-insert-commit (type hash face &optional exec)
   (magit-insert-section (commit hash)
-    (insert (propertize type 'face face)    ?\s
-            (magit-format-rev-summary hash) ?\n)))
+    (magit-insert-heading
+      (concat (propertize type 'face face)    "\s"
+              (magit-format-rev-summary hash) "\n"))
+    (when exec
+      (insert (propertize "exec" 'face 'magit-sequence-onto) "\s" exec "\n"))))
 
 (provide 'magit-sequence)
 ;;; magit-sequence.el ends here

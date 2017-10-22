@@ -254,7 +254,7 @@
 
   ;; parentheses matching
   ;; `(show-paren-match ((t (:height 0.8 :width condensed :box (:line-width 1 :color "cyan" :style none )))))
-  `(show-paren-match ((t (:background ,fullBlack :foreground ,fullWhite :underline t))))
+  `(show-paren-match ((t (:background ,fullBlack :foreground ,face7 :weight bold))))
   `(show-paren-mismatch ((t (:background ,m7 :foreground ,fullWhite))))
   `(rainbow-delimiters-mismatched-face ((t (:inherit show-paren-mismatch :underline t))))
   `(rainbow-delimiters-unmatched-face ((t (:inherit show-paren-mismatch))))
@@ -285,6 +285,11 @@
   `(imenu-list-entry-face-2 ((t (:foreground ,face5))))
   `(imenu-list-entry-face-3 ((t (:foreground ,face7))))
 
+  ;; avy
+  `(avy-lead-face ((t (:background ,face1 :foreground ,fullBlack, :weight bold))))
+  `(avy-lead-face-0 ((t (:background ,face2 :foreground ,fullBlack :weight bold))))
+  `(avy-lead-face-1 ((t (:background ,face3 :foreground ,fullBlack :weight bold))))
+  `(avy-lead-face-2 ((t (:background ,face4 :foreground ,fullBlack :weight bold))))
  ))
 
 ;;;###autoload
