@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2017-10-22 09:43:24 dharms>
+;; Modified Time-stamp: <2017-10-25 09:47:11 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -852,6 +852,11 @@ line."
 (defvar my/git-keymap)
 (define-prefix-command 'my/git-keymap)
 (global-set-key "\M-sm" 'my/git-keymap)
+(defun magit-remove-git-lock-file ()
+  "Remove git's index lock file, if it exists."
+  (interactive)
+  (let ((base (magit-toplevel)))
+    (delete-file (concat base "/.git/index.lock"))))
 (defun my/enter-magit-status-fullscreen ()
   "Enter magit's status window, filling the entire frame."
   (interactive)
