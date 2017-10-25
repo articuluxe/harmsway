@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2017-10-25 09:47:11 dan.harms>
+;; Modified Time-stamp: <2017-10-25 14:37:28 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1617,12 +1617,13 @@ line."
   (setq wdired-allow-to-change-permissions t)
   (use-package ivy-dired-history)
   ;; sorting
-  (use-package dired-quick-sort
-    :config
-    ;; test here since we load the os file after dired is already loaded
-    (when (string= my/system-name "windows-nt")
-      (setq ls-lisp-use-insert-directory-program t))
-    (dired-quick-sort-setup))
+  ;; dired-quick-sort breaks ftp
+  ;; (use-package dired-quick-sort
+  ;;   :config
+  ;;   ;; test here since we load the os file after dired is already loaded
+  ;;   (when (string= my/system-name "windows-nt")
+  ;;     (setq ls-lisp-use-insert-directory-program t))
+  ;;   (dired-quick-sort-setup))
   (use-package dired-sort)
   ;; du
   (use-package dired-du :init (setq dired-du-size-format t))
