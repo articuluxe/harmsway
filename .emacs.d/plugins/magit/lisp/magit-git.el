@@ -1169,6 +1169,15 @@ SORTBY is a key or list of keys to pass to the `--sort' flag of
               (member it (magit-list-unmerged-branches upstream)))
             (magit-list-local-branch-names)))
 
+(defun magit-list-branches-pointing-at (commit)
+  (let ((re (format "\\`%s refs/\\(heads\\|remotes\\)/\\(.*\\)\\'"
+                   (magit-rev-verify commit))))
+    (--keep (and (string-match re it)
+                 (let ((name (match-string 2 it)))
+                   (and (not (string-suffix-p "HEAD" name))
+                        name)))
+            (magit-git-lines "show-ref"))))
+
 (defun magit-list-refnames (&optional namespaces)
   (magit-list-refs namespaces "%(refname:short)"))
 
@@ -1591,6 +1600,18 @@ Return a list of two integers: (A>B B>A)."
     (or (magit-completing-read prompt (delete exclude (magit-list-refnames))
                                nil nil nil 'magit-revision-history default)
         (user-error "Nothing selected"))))
+
+(defun magit-read-branch-prefer-other (prompt)
+  (let* ((current (magit-get-current-branch))
+         (commit  (magit-commit-at-point))
+         (atpoint (and commit (magit-list-branches-pointing-at commit))))
+    (magit-completing-read prompt (magit-list-branch-names)
+                           nil t nil 'magit-revision-history
+                           (or (magit-section-when 'branch)
+                               (and (not (cdr atpoint)) (car atpoint))
+                               (--first (not (equal it current)) atpoint)
+                               (magit-get-previous-branch)
+                               (car atpoint)))))
 
 (cl-defun magit-read-upstream-branch
     (&optional (branch (magit-get-current-branch)) prompt)
