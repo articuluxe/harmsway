@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2017-10-25 14:37:28 dan.harms>
+;; Modified Time-stamp: <2017-10-27 16:12:21 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2695,6 +2695,18 @@ This may perform related customization."
                 (rainbow-turn-on)
               (my/syntax-color-hex-values))
             ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; js-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package nodejs-repl
+  :init
+  (add-hook 'js-mode-hook
+            (lambda ()
+              (define-key js-mode-map "\C-x\C-e" 'nodejs-repl-send-last-expression)
+              (define-key js-mode-map "\C-c\C-j" 'nodejs-repl-send-line)
+              (define-key js-mode-map "\C-c\C-r" 'nodejs-repl-send-region)
+              (define-key js-mode-map "\C-c\C-l" 'nodejs-repl-load-file)
+              (define-key js-mode-map "\C-c\C-z" 'nodejs-repl-switch-to-repl)
+              )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; json-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package json-mode
