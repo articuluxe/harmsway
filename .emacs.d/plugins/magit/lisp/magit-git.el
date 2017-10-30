@@ -1507,12 +1507,11 @@ Return a list of two integers: (A>B B>A)."
                              (magit-get-current-branch))))
 
 (defun magit-read-branch-or-commit (prompt &optional secondary-default)
-  (or (magit-completing-read prompt (cons "HEAD" (magit-list-refnames))
-                             nil nil nil 'magit-revision-history
-                             (or (magit-branch-or-commit-at-point)
-                                 secondary-default
-                                 (magit-get-current-branch)))
-      (user-error "Nothing selected")))
+  (magit-completing-read prompt (cons "HEAD" (magit-list-refnames))
+                         nil t nil 'magit-revision-history
+                         (or (magit-branch-or-commit-at-point)
+                             secondary-default
+                             (magit-get-current-branch))))
 
 (defun magit-read-range-or-commit (prompt &optional secondary-default)
   (magit-read-range
@@ -1633,11 +1632,19 @@ Return a list of two integers: (A>B B>A)."
        (let ((previous (magit-get-previous-branch)))
          (and (not (equal previous branch)) previous)))))
 
-(defun magit-read-starting-point (prompt)
-  (or (magit-completing-read (concat prompt " starting at")
-                             (cons "HEAD" (magit-list-refnames))
-                             nil nil nil 'magit-revision-history
-                             (magit--default-starting-point))
+(defun magit-read-starting-point (prompt &optional branch)
+  (or (magit-completing-read
+       (concat prompt
+               (and branch
+                    (if (bound-and-true-p ivy-mode)
+                        ;; Ivy-mode strips faces from prompt.
+                        (format  " `%s'" branch)
+                      (concat " "
+                              (propertize branch 'face 'magit-branch-local))))
+               " starting at")
+       (cons "HEAD" (magit-list-refnames))
+       nil nil nil 'magit-revision-history
+       (magit--default-starting-point))
       (user-error "Nothing selected")))
 
 (defun magit--default-starting-point ()

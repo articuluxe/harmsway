@@ -1,8 +1,13 @@
 ;;; kaolin-themes-lib.el --- Kaolin-themes library
 
+;; TODO: delete screenshots folder
+;; TODO: org-headline-done, i.e. done org level
 ;; TODO: Add extra colors per class
 ;; TODO: add to all colors light and dark variant
+;; TODO: (??) add var to highlight 'keys'
+;; TODO: parens mismatch
 
+;; TODO: correct dim-buffer color
 ;; TODO: add the following faces to default
 ;; TODO: add custom-* and buttons
 ;; TODO: add magit faces
@@ -15,6 +20,7 @@
 ;; TODO: treemacs
 ;; TODO: (??) color cornflower blue
 ;; TODO: (??) add -pkg.el
+;; TODO: (??) outline-* faces
 
 ;; TODO: add colored selection option
 
@@ -89,11 +95,13 @@
 
 
     (midnight-blue    "#1e2528")
-    (alt-midnigh-blue "#062732")
-    (grayish-blue     "#687184")
-    (alt-grayish-blue "#8f9ca7")
-    (dark-blue        "#2a4661")
-    ;; TODO: swap blue and soft-blue and rename to dark-blue
+    ;; (alt-midnight-blue "#062732")
+    ;; (alt-midnight-blue "#12121a")
+    (alt-midnight-blue "#13131c")
+    (grayish-blue      "#687184")
+    (alt-grayish-blue  "#8f9ca7")
+    (dark-blue         "#2a4661")
+    ;; TODO: (??) swap blue and soft-blue and rename to dark-blue
     (blue             "#3B6FA3")
     (alt-blue         "#267fb5")
     (moderate-blue    "#4e7f95")
@@ -136,7 +144,6 @@
     (dim-buffer alt-black)
     (hl         light-green)
     (hl-mono    alt-gray)
-    ;; TODO: (??) change to (alt)-midnight-green
     (hl-line    (if kaolin-hl-line-colored midnight-blue bg2))
     (hl-indent  gray)
     (selection  bg3)
@@ -150,7 +157,6 @@
     (tooltip-hl-bg alt-brown)
     (tooltip-hl-fg light-orange)
 
-    ;; TODO: (??) repeat 1-4, 2-5... with +2
     (rb1 teal)
     (rb2 violet)
     (rb3 jade)
@@ -163,8 +169,7 @@
 
     (diff-add    light-green)
     (diff-change violet)
-    ;; TODO: rename to removed?
-    (diff-del    red)
+    (diff-rem    red)
 
     (keyword     green)
     (second-key  deep-green)
@@ -172,7 +177,7 @@
     (comment     gray)
     ;; TODO: add var/var with style(default, bright and colored)
     (alt-comment alt-grayish-blue)
-    (functions   teal)
+    (functions   builtin)
     (str         teal-green)
     (str-alt     jade)
     (doc         str-alt)
@@ -208,9 +213,6 @@
     (line-num-fg   gray)
     (line-num-hl   light-gray)
     (cursor        alt-white)
-
-
-    ;; TODO: add helm and ivy additional faces
 
     (swiper-bg   bg2)
     (ivy-bg      nil)
@@ -533,12 +535,12 @@
     (git-gutter:unchanged (:background bg1 :foreground nil))
     (git-gutter:added     (:background bg1 :foreground diff-add :bold bold))
     (git-gutter:modified  (:background bg1 :foreground diff-change :bold bold))
-    (git-gutter:deleted   (:background bg1 :foreground diff-del :bold bold))
+    (git-gutter:deleted   (:background bg1 :foreground diff-rem :bold bold))
 
     ;; Diff-hl
     (diff-hl-insert (:background diff-add))
     (diff-hl-change (:background diff-change))
-    (diff-hl-delete (:background diff-del))
+    (diff-hl-delete (:background diff-rem))
 
     ;; Popup
     (popup-face                (:background tooltip-bg :foreground tooltip-fg :bold bold))
@@ -571,15 +573,18 @@
     (eshell-ls-unreadable (:foreground var))
 
     ;; Whitespace mode
-    ;; TODO: read about this mode
-    ;; TODO: add rest faces
-    (whitespace-empty            (:foreground red))
-    (whitespace-line             (:background bg2))
-    (whitespace-space            (:background bg2))
-    (whitespace-tab              (:foreground gray))
-    (whitespace-newline          (:foreground gray))
-    (whitespace-hspace           (:foreground orange))
-    (whitespace-trailing         (:background bg1))
+    ;; TODO: Add variant for light themes
+    (whitespace-empty            (:background dark-jade :foreground light-gray))
+    (whitespace-line             (:background bg3 :foreground warning))
+    (whitespace-newline          (:foreground teal))
+    (whitespace-indentation      (:background hl-indent))
+    (whitespace-tab              (:background light-jade))
+    (whitespace-space            (:background alt-gray :foreground dark-jade))
+    (whitespace-hspace           (:foreground cyan))
+    (whitespace-space-before-tab (:background alt-yellow :foreground bg2))
+    (whitespace-space-after-tab  (:background alt-yellow :foreground bg2))
+    (whitespace-trailing         (:foreground alt-red))
+    (whitespace-big-indent       (:background dark-red :foreground alt-red))
 
     ;; Org-mode
     ;; TODO: org agenda faces
@@ -657,6 +662,47 @@
 
     ;; Beacon-mode
     (beacon-fallback-background (:background pulse))
+
+    ;; Helm
+    ;; TODO: (!!) find helm status line color that based on var face
+    ;; TODO: update faces
+    ;; TODO: light theme: helm-find-files header
+    ;; TODO: add helm-locate-finish and helm-prefarg
+    ;; TODO: customize '[?]' write something like fsfasfsa in helm
+    (helm-header                              (:foreground fg2 :underline nil :box nil))
+    (helm-source-header                       (:foreground keyword :underline nil :bold bold))
+    (helm-match                               (:foreground type :bold bold))
+    (helm-header-line-left-margin             (:background blue :foreground bg1))
+    (helm-selection                           (:background bg2 :foreground type :bold bold))
+    (helm-selection-line                      (:background bg2 :foreground type :bold bold))
+    (helm-visible-mark                        (:foreground blue))
+    (helm-candidate-number                    (:foreground light-jade))
+    (helm-separator                           (:foreground type))
+    (helm-time-zone-current                   (:foreground builtin))
+    (helm-time-zone-home                      (:foreground type))
+    (helm-buffer-not-saved                    (:foreground type))
+    (helm-buffer-process                      (:foreground builtin))
+    (helm-buffer-saved-out                    (:foreground fg1))
+    (helm-buffer-size                         (:foreground fg1))
+    (helm-ff-directory                        (:foreground functions :bold bold))
+    (helm-buffer-directory                    (:foreground purple))
+    (helm-ff-dotted-directory                 (:foreground functions :bold bold))
+    (helm-ff-dotted-symlink-directory         (:foreground blue :bold bold))
+    (helm-ff-file                             (:foreground fg1 :weight 'normal))
+    (helm-ff-executable                       (:foreground keyword :weight 'normal))
+    (helm-ff-invalid-symlink                  (:foreground warning :bold bold))
+    (helm-resume-need-update                  (:background alt-red :foreground nil))
+    (helm-ff-symlink                          (:foreground keyword :bold bold))
+    (helm-ff-prefix                           (:background keyword :foreground bg1 :weight 'normal))
+    (helm-grep-cmd-line                       (:foreground fg1))
+    (helm-grep-file                           (:foreground fg1))
+    (helm-grep-finish                         (:foreground fg2))
+    (helm-grep-lineno                         (:foreground fg1))
+    (helm-grep-match                          (:inherit 'helm-match :background nil :foreground nil))
+    (helm-grep-running                        (:foreground functions))
+    (helm-moccur-buffer                       (:foreground functions))
+    (helm-source-go-package-godoc-description (:foreground str))
+    (helm-bookmark-w3m                        (:foreground type))
 
     ;; Ivy & swiper basic
     (ivy-current-match           (:background hl-line :foreground hl :bold t))

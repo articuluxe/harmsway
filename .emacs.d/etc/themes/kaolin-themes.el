@@ -5,7 +5,7 @@
 ;; Author: Ogden Webb <ogdenwebb@gmail.com>
 ;; URL: https://github.com/ogdenwebb/emacs-kaolin-themes
 ;; Package-Requires: ((emacs "24.3") (autothemer "0.2.2") (cl-lib "0.6"))
-;; Version: 1.0.1
+;; Version: 1.0.2
 
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -26,36 +26,35 @@
 ;; Kaolin themes are based on the pallete that was originally
 ;; inspired by Sierra.vim with adding some extra colors.
 ;;
-;; ====  This package includes the following themes  ====
+;; =======  This package includes the following themes  =======
 ;;
 ;;  * kaolin-dark - a dark jade variant inspired by Sierra.vim
 ;;  * kaolin-light - light variant of the original kaolin-dark
 ;;  * kaolin-eclipse - a dark purple variant
-;;
-;; Coming soon:
-;;
 ;;  * kaolin-ocean - dark blue variant
 ;;
-;; ====  Configuration example  ====
+;;
+;; =======  Configuration example  =======
 ;;
 ;; (require 'kaolin-themes)
 ;;
 ;; (load-theme 'kaolin-dark)
 ;;
-;; ====  Custom theme settings  ====
+;; =======  Custom theme settings  =======
 ;;
-;; ;; The following set to t by default
-;; (setq kaolin-bold t       ; If nil, disable the bold style.
-;;       kaolin-italic t     ; If nil, disable the italic style.
-;;       kaolin-underline t) ; If nil, disable the underline style.
+;;  ;; The following set to t by default
+;;  (setq kaolin-bold t       ; If nil, disable the bold style.
+;;        kaolin-italic t     ; If nil, disable the italic style.
+;;        kaolin-underline t) ; If nil, disable the underline style.
 ;;
-;; ====  Some extra theme features, disabled by default  ====
+;; =======  Some extra theme features, disabled by default  =======
 ;;
-;; ;; If t, use the wave underline style instead of regular underline.
-;; (setq kaolin-wave t)
+;;  ;; If t, use the wave underline style instead of regular underline.
+;;  (setq kaolin-wave t)
 ;;
-;; ;; When t, will display colored hl-line style instead dim gray
-;; (setq kaolin-hl-line-colored t)
+;;  ;; When t, will display colored hl-line style instead dim gray
+;;  (setq kaolin-hl-line-colored t)
+;;
 ;;
 ;;                           The end of the path is the beginning.
 ;;
@@ -117,6 +116,7 @@ otherwise add at the end of the list."
       (symbol-value list-var))))
 
 ;; TODO: preasubmly cant add extra vars from theme file that doesn't exist in const
+;; TODO: rewrite adding in pure style
 (defun kaolin-themes--merge-alist (base-alist add-alist)
   "Add elements to BASE-LIST from ADD-LIST to BASE-LIST without dublicates."
   (let ((res (copy-alist base-alist)))

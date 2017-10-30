@@ -93,7 +93,7 @@ these commands do:
   `magit-branch-rename'
   `magit-tag'"
   :package-version '(magit . "2.9.0")
-  :group 'magit-miscellaneous
+  :group 'magit-commands
   :type '(list :convert-widget custom-hook-convert-widget)
   :options '(magit-branch
              magit-branch-and-checkout
@@ -301,7 +301,7 @@ and delay of your graphical environment or operating system."
 ;;; User Input
 
 (defun magit-completing-read
-  (prompt collection &optional predicate require-match initial-input hist def)
+    (prompt collection &optional predicate require-match initial-input hist def)
   "Magit wrapper around `completing-read' or an alternative function.
 
 Option `magit-completing-read-function' can be used to wrap

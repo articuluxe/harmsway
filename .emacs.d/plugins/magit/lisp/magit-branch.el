@@ -229,8 +229,7 @@ does."
    (let ((arg (magit-read-other-branch-or-commit "Checkout")))
      (list arg
            (and (not (magit-rev-verify-commit arg))
-                (magit-read-starting-point
-                 (format "Create and checkout branch `%s' starting at" arg))))))
+                (magit-read-starting-point "Create and checkout branch" arg)))))
   (when (string-match "\\`heads/\\(.+\\)" arg)
     (setq arg (match-string 1 arg)))
   (if start-point
@@ -259,9 +258,7 @@ does."
 (defun magit-branch-read-args (prompt)
   (let ((args (magit-branch-arguments)))
     (if magit-branch-read-upstream-first
-        (let* ((default (and (or (memq this-command magit-no-confirm-default)
-                                 (memq magit-current-popup-action
-                                       magit-no-confirm-default))
+        (let* ((default (and (memq this-command magit-no-confirm-default)
                              (magit--default-starting-point)))
                (choice (or default
                            (magit-read-starting-point prompt))))
@@ -269,7 +266,7 @@ does."
               (list (magit-read-string-ns
                      (if default
                          (format "%s (starting at %s)" prompt choice)
-                       "Branch name")
+                       "Name for new branch")
                      (let ((def (mapconcat #'identity
                                            (cdr (split-string choice "/"))
                                            "/")))
@@ -278,14 +275,10 @@ does."
                             def)))
                     choice args)
             (if (eq magit-branch-read-upstream-first 'fallback)
-                (list choice
-                      (magit-read-starting-point (concat prompt " " choice))
-                      args)
+                (list choice (magit-read-starting-point prompt choice) args)
               (user-error "Not a valid starting-point: %s" choice))))
       (let ((branch (magit-read-string-ns (concat prompt " named"))))
-        (list branch
-              (magit-read-starting-point (concat prompt " " branch))
-              args)))))
+        (list branch (magit-read-starting-point prompt branch) args)))))
 
 ;;;###autoload
 (defun magit-branch-spinoff (branch &optional from &rest args)

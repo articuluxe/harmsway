@@ -88,10 +88,10 @@
 
 (defun counsel-require-program (program)
   "Check system for PROGRAM, printing error if unfound."
-  (when (and (stringp program)
-             (not (string= program ""))
-             (not (executable-find program)))
-    (user-error "Required program \"%s\" not found in your path" program)))
+  (or (and (stringp program)
+           (not (string= program ""))
+           (executable-find program))
+      (user-error "Required program \"%s\" not found in your path" program)))
 
 ;;* Async Utility
 (defvar counsel--async-time nil
@@ -1898,6 +1898,50 @@ INITIAL-INPUT can be given as the initial minibuffer input."
                           (find-file file))))
             :unwind #'counsel-delete-process
             :caller 'counsel-locate))
+
+;;** `counsel-fzf'
+(defvar counsel-fzf-cmd "fzf -f %s"
+  "Command for `counsel-fzf'.")
+
+(defvar counsel--fzf-dir nil
+  "Store the base fzf directory.")
+
+(defun counsel-fzf-function (str)
+  (let ((default-directory counsel--fzf-dir))
+    (counsel--async-command
+     (format counsel-fzf-cmd
+             (if (string-equal str "")
+                 "\"\""
+               (counsel-unquote-regex-parens
+                (ivy--regex str))))))
+  nil)
+
+;;;###autoload
+(defun counsel-fzf (&optional initial-input)
+  "Call the \"fzf\" shell command.
+INITIAL-INPUT can be given as the initial minibuffer input."
+  (interactive)
+  (counsel-require-program (car (split-string counsel-fzf-cmd)))
+  (setq counsel--fzf-dir (if (and
+                              (fboundp 'projectile-project-p)
+                              (fboundp 'projectile-project-root)
+                              (projectile-project-p))
+                             (projectile-project-root)
+                           default-directory))
+  (ivy-read "> " #'counsel-fzf-function
+            :initial-input initial-input
+            :dynamic-collection t
+            :action #'counsel-fzf-action
+            :unwind #'counsel-delete-process
+            :caller 'counsel-fzf))
+
+(defun counsel-fzf-action (x)
+  "Find file X in current fzf directory."
+  (with-ivy-window
+    (let ((default-directory counsel--fzf-dir))
+      (find-file x))))
+
+(counsel-set-async-exit-code 'counsel-fzf 1 "Nothing found")
 
 ;;** `counsel-dpkg'
 ;;;###autoload
