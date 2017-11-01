@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2017-11-01 12:20:54 dan.harms>
+;; Modified Time-stamp: <2017-11-01 12:21:49 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1223,6 +1223,11 @@ line."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; grep ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (with-eval-after-load 'grep
   (use-package wgrep))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ag ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package ag
+  :if (executable-find "ag")
+  :defer t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; occur ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (global-set-key (kbd "M-s M-o") 'multi-occur-in-matching-buffers)
