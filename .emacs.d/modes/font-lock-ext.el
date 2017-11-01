@@ -51,11 +51,17 @@
   "Face for hi-lock mode."
   :group 'font-lock-faces)
 
+(defface font-lock-jump-keyword
+  '((t nil))
+  "Face for hi-lock mode."
+  :group 'font-lock-faces)
+
 ;; font-lock.el says (see definition of the variable font-lock-comment-face)
 ;; that there is actually no need to create variables that specify face names.
 ;; However it seems to be needed all the same.
 (defvar font-lock-semi-unimportant 'font-lock-semi-unimportant)
 (defvar font-lock-unimportant 'font-lock-unimportant)
+(defvar font-lock-jump-keyword 'font-lock-jump-keyword)
 
 
 (provide 'font-lock-ext)
