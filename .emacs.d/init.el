@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2017-10-27 16:12:21 dan.harms>
+;; Modified Time-stamp: <2017-11-01 12:20:54 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -61,6 +61,7 @@
                      ,(concat my/plugins-directory "rtags/")
                      ,(concat my/plugins-directory "auto-complete/")
                      ,(concat my/plugins-directory "company/")
+                     ,(concat my/plugins-directory "js2/")
                      ,(concat my/plugins-directory "yasnippet/")
                      ,(concat my/elisp-directory "emacs-jedi/")
                      ) load-path))
@@ -2175,7 +2176,8 @@ line."
   :config
   (setq flycheck-indication-mode nil)
   (setq flycheck-global-modes
-        '(emacs-lisp-mode python-mode dart-mode sh-mode c++-mode json-mode))
+        '(emacs-lisp-mode python-mode dart-mode sh-mode c++-mode json-mode
+                          js2-mode))
   (setq-default flycheck-emacs-lisp-load-path 'inherit)
   (setq-default flycheck-shellcheck-follow-sources nil)
   (use-package flycheck-package :config (flycheck-package-setup))
@@ -2707,6 +2709,27 @@ This may perform related customization."
               (define-key js-mode-map "\C-c\C-l" 'nodejs-repl-load-file)
               (define-key js-mode-map "\C-c\C-z" 'nodejs-repl-switch-to-repl)
               )))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; js2-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package js2-mode
+  :mode (("\\.jsx?$" . js2-mode)
+         ("\\.js\\.erb$" . js2-mode))
+  :config
+  (setq js2-basic-offset 2)
+  (define-key js2-mode-map (kbd "M-.") nil)
+  (define-key js2-mode-map "\C-c." 'js2-jump-to-definition))
+(use-package js2-refactor
+  :after js2-mode
+  :init
+  (add-hook 'js2-mode-hook 'js2-refactor-mode)
+  :config
+  (js2r-add-keybindings-with-prefix "\e\eb"))
+(use-package xref-js2
+  :after js2-mode
+  :init
+  (add-hook 'js2-mode-hook (lambda ()
+                             (add-hook 'xref-backend-functions
+                                       #'xref-js2-xref-backend nil t))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; json-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package json-mode
