@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2017-11-01 12:21:49 dan.harms>
+;; Modified Time-stamp: <2017-11-02 06:55:00 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1279,6 +1279,7 @@ line."
          ("M-s M-r" . counsel-recentf)
          ("M-s M-p" . counsel-git-grep)
          ("M-s M-g" . counsel-grep)
+         ("M-s M-c" . counsel-ag)
          ("M-s M-z" . counsel-git-stash)
          ("M-s M-i" . counsel-imenu)
          ("M-s M-l" . counsel-git-log)
