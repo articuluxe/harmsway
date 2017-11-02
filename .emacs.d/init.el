@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2017-11-02 06:55:00 dharms>
+;; Modified Time-stamp: <2017-11-02 12:48:48 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2724,18 +2724,25 @@ This may perform related customization."
   (setq js2-basic-offset 2)
   (define-key js2-mode-map (kbd "M-.") nil)
   (define-key js2-mode-map "\C-c." 'js2-jump-to-definition))
+(use-package js2-imenu-extras
+  :after js2-mode
+  :init
+  (add-hook 'js2-mode-hook #'js2-imenu-extras-mode))
 (use-package js2-refactor
   :after js2-mode
   :init
   (add-hook 'js2-mode-hook 'js2-refactor-mode)
   :config
+  (define-key js2-mode-map "\C-k" #'js2r-kill)
   (js2r-add-keybindings-with-prefix "\e\eb"))
 (use-package xref-js2
   :after js2-mode
   :init
   (add-hook 'js2-mode-hook (lambda ()
                              (add-hook 'xref-backend-functions
-                                       #'xref-js2-xref-backend nil t))))
+                                       #'xref-js2-xref-backend nil t)))
+  :config
+  (define-key js2-mode-map (kbd "M-.") 'xref-find-definitions))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; json-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package json-mode
