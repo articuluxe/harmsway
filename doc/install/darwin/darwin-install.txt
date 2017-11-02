@@ -30,6 +30,7 @@ brew install stow
 brew install shellcheck
 brew install boost
 brew install --HEAD asio
+brew install the_silver_searcher
 
 brew install coreutils
 (setq insert-directory-program "gls")

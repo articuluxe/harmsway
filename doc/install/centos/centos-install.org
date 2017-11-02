@@ -10,6 +10,7 @@
 * misc
 #+BEGIN_SRC sh
 sudo yum install dos2unix
+sudo yum install the_silver_searcher
 #+END_SRC
 
 * git

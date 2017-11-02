@@ -125,6 +125,7 @@ sudo apt install graphviz
 sudo apt install dos2unix
 sudo apt install texlive-full
 sudo apt install pandoc
+sudo apt-get install silversearcher-ag
 
 * fonts
 #+BEGIN_SRC sh
