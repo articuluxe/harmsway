@@ -5,7 +5,7 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Tuesday, February  7, 2017
 # Version: 1.0
-# Modified Time-stamp: <2017-05-26 15:24:33 dan.harms>
+# Modified Time-stamp: <2017-11-06 11:29:37 dan.harms>
 # Modified by: Dan Harms
 # Keywords: gnu elf development
 
@@ -52,5 +52,10 @@ readelf -d <executable/shared_object> | grep NEEDED
 gcc -c -Q -march=native --help=target
 # architecture cheat sheet: (e.g. westmere needs a nehalem build):
 # ? => core2, nehalem/westmere => nehalem, sandy bridge/ivy bridge => ivybridge, haswell => haswell
+
+#################################### xml #####################################
+# validate xml with xincludes
+xmllint --noent --xinclude [--postvalid --noout] <input>
+
 
 # code ends here
