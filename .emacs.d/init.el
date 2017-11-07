@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2017-11-07 06:36:55 dharms>
+;; Modified Time-stamp: <2017-11-07 11:25:19 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1222,8 +1222,8 @@ line."
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; grep ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(with-eval-after-load 'grep
-  (use-package wgrep))
+(use-package wgrep
+  :after grep)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ag ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package ag
@@ -1232,7 +1232,10 @@ line."
   :init
   :bind (("C-c gaa" . ag)
          ("C-c gap" . ag-project)
-         ))
+         )
+  :config
+  (require 'wgrep-ag)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; occur ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (global-set-key (kbd "M-s M-o") 'multi-occur-in-matching-buffers)
