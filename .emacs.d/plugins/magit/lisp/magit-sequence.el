@@ -175,7 +175,9 @@ without prompting."
 (magit-define-popup magit-revert-popup
   "Popup console for revert commands."
   :man-page "git-revert"
-  :switches '((?s "Add Signed-off-by lines" "--signoff"))
+  :switches '((?s "Add Signed-off-by lines"   "--signoff")
+              (?e "Edit commit message"       "--edit")
+              (?E "Don't edit commit message" "--no-edit"))
   :options  '((?s "Strategy"       "--strategy=")
               (?S "Sign using gpg" "--gpg-sign=" magit-read-gpg-secret-key)
               (?m "Replay merge relative to parent" "--mainline="))
@@ -184,7 +186,8 @@ without prompting."
   :sequence-actions '((?V "Continue" magit-sequencer-continue)
                       (?s "Skip"     magit-sequencer-skip)
                       (?a "Abort"    magit-sequencer-abort))
-  :sequence-predicate 'magit-sequencer-in-progress-p)
+  :sequence-predicate 'magit-sequencer-in-progress-p
+  :default-arguments '("--edit"))
 
 (defun magit-revert-read-args (prompt)
   (list (or (magit-region-values 'commit)
@@ -570,9 +573,16 @@ If no such sequence is in progress, do nothing."
 
 (defun magit-sequence-insert-am-patch (type patch face)
   (magit-insert-section (file patch)
-    (insert (propertize type 'face face)
-            ?\s (propertize (file-name-nondirectory patch) 'face 'magit-hash)
-            ?\n)))
+    (let ((title
+           (with-temp-buffer
+             (insert-file-contents patch nil nil 4096)
+             (unless (re-search-forward "^Subject: " nil t)
+               (goto-char (point-min)))
+             (buffer-substring (point) (line-end-position)))))
+      (insert (propertize type 'face face)
+              ?\s (propertize (file-name-nondirectory patch) 'face 'magit-hash)
+              ?\s title
+              ?\n))))
 
 (defun magit-insert-rebase-sequence ()
   "Insert section for the on-going rebase sequence.

@@ -125,25 +125,25 @@ or most optimal searcher."
   :type 'string)
 
 (defcustom dumb-jump-ag-word-boundary
-  "(?![\\w-])"
+  "(?![\\w\\?-])"
   "`\\b` thinks `-` is a word boundary.  When this matters use `\\j` instead and ag will use this value."
   :group 'dumb-jump
   :type 'string)
 
 (defcustom dumb-jump-rg-word-boundary
-  "($|[^\\w-])"
+  "($|[^\\w\\?-])"
   "`\\b` thinks `-` is a word boundary.  When this matters use `\\j` instead and rg will use this value."
   :group 'dumb-jump
   :type 'string)
 
 (defcustom dumb-jump-git-grep-word-boundary
-  "($|[^\\w-])"
+  "($|[^\\w\\?-])"
   "`\\b` thinks `-` is a word boundary.  When this matters use `\\j` instead and git grep will use this value."
   :group 'dumb-jump
   :type 'string)
 
 (defcustom dumb-jump-grep-word-boundary
-  "($|[^\\w-])"
+  "($|[^\\w\\?-])"
   "`\\b` thinks `-` is a word boundary.  When this matters use `\\j` instead and grep will use this value."
   :group 'dumb-jump
   :type 'string)
@@ -264,7 +264,8 @@ or most optimal searcher."
 
     (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "clojure"
            :regex "\\(defn-?\\s+JJJ\\j"
-           :tests ("(defn test [foo]" "(defn- test [foo]"))
+           :tests ("(defn test [foo]" "(defn- test [foo]")
+           :not ("(defn test? [foo]" "(defn- test? [foo]"))
 
     (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "clojure"
            :regex "\\(defmacro\\s+JJJ\\j"
@@ -852,7 +853,20 @@ or most optimal searcher."
 
     (:type "module" :supports ("ag" "grep" "rg" "git-grep") :language "erlang"
            :regex "^-module\\\(JJJ\\\)"
-           :tests ("-module(test).")))
+           :tests ("-module(test)."))
+
+    ;; scss
+    (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "scss"
+           :regex "@mixin\\sJJJ\\b\\s*\\\("
+           :tests ("@mixin test()"))
+
+    (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "scss"
+           :regex "@function\\sJJJ\\b\\s*\\\("
+           :tests ("@function test()"))
+
+    (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "scss"
+           :regex "JJJ\\s*:\\s*"
+           :tests ("test  :")))
 
   "List of regex patttern templates organized by language and type to use for generating the grep command."
   :group 'dumb-jump
@@ -957,7 +971,8 @@ or most optimal searcher."
     (:language "elixir" :ext "ex" :agtype "elixir" :rgtype "elixir")
     (:language "elixir" :ext "exs" :agtype "elixir" :rgtype "elixir")
     (:language "elixir" :ext "eex" :agtype "elixir" :rgtype "elixir")
-    (:language "erlang" :ext "erl" :agtype "erlang" :rgtype "erlang"))
+    (:language "erlang" :ext "erl" :agtype "erlang" :rgtype "erlang")
+    (:language "scss" :ext "scss" :agtype "css" :rgtype "css"))
 
   "Mapping of programming language(s) to file extensions."
   :group 'dumb-jump
@@ -1529,7 +1544,8 @@ current file."
     (:comment "#" :language "shell")
     (:comment "//" :language "swift")
     (:comment "#" :language "elixir")
-    (:comment "%" :language "erlang"))
+    (:comment "%" :language "erlang")
+    (:comment "//" :language "scss"))
   "List of one-line comments organized by language."
   :group 'dumb-jump
   :type

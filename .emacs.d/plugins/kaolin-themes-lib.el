@@ -19,7 +19,10 @@
 ;; TODO: (??) add -pkg.el
 ;; TODO: (??) outline-* faces
 
+;; TODO: line-num opt: hl or mono(gray)
+
 ;; TODO: add colored selection option
+;; TODO: distant foregound
 
 ;; Predefined Kaolin palette
 (defconst kaolin-palette
@@ -60,7 +63,7 @@
     (light-pink      "#ef98aa")
     (soft-pink       "#fbaed2")
 
-    (faded-orange    "#cd9575")
+    (faded-orange    "#cd9575" "#d7af87")
     (alt-orange      "#d9a76f")
     (orange          "#dbac66")
     (light-orange    "#ddc085")
@@ -70,31 +73,32 @@
     (yellow          "#acb370")
     (alt-yellow      "#be9266")
     (light-yellow    "#c9bb87")
-    (wheat           "#b9c791")
+    (wheat           "#b9c791" "#ffd7a5")
     (alt-wheat       "#fdd5b1")
     (faded-wheat     "#D9CA9B")
 
-    (dark-jade       "#2e4039")
-    (jade            "#597a6e")
-    (alt-jade        "#4d5d53")
-    (light-jade      "#709688")
-    (midnight-green  "#152628")
-    (deep-green      "#39656b")
-    (grayish-green   "#9ca78f")
-    (green           "#4a858c")
-    (dark-green      "#39855f")
-    (light-green     "#54b685")
-    (lime            "#85b654")
-    (alt-lime        "#8fbc8f")
-    (teal            "#80b6bc")
-    (teal-blue       "#91b9c7")
-    (teal-green      "#6fb593")
+    (dark-jade          "#2e4039")
+    (jade               "#597a6e")
+    (alt-jade           "#4d5d53")
+    (light-jade         "#709688")
+    (midnight-green     "#142223")
+    (alt-midnight-green "#0F1E1D")
+    (deep-green         "#39656b")
+    (grayish-green      "#9ca78f")
+    (green              "#4a858c")
+    (dark-green         "#39855f")
+    (light-green        "#54b685")
+    (lime               "#85b654")
+    (alt-lime           "#8fbc8f")
+    (teal               "#80b6bc")
+    (teal-blue          "#91b9c7")
+    (teal-green         "#6fb593")
 
 
-    (midnight-blue    "#1e2528")
+    (midnight-blue    "#1e2528" black2)
     ;; (alt-midnight-blue "#062732")
     ;; (alt-midnight-blue "#12121a")
-    (alt-midnight-blue "#13131c")
+    (alt-midnight-blue "#13131c" black2)
     (grayish-blue      "#687184")
     (alt-grayish-blue  "#8f9ca7")
     (dark-blue         "#2a4661")
@@ -148,6 +152,9 @@
 
     (todo red)
     (done teal-green)
+
+    (button grayish-orange)
+    (button-hl light-orange)
 
     (tooltip-bg bg2)
     (tooltip-fg light-gray)
@@ -268,7 +275,19 @@
     (isearch      (:background nil :foreground hl :bold bold :underline underline))
     (isearch-fail (:background nil :foreground red))
 
+
+    ;; Interface
     (package-name (:inherit 'link :underline nil))
+    (button                (:inherit 'link))
+    (custom-button         (:background bg3 :foreground button :box (:line-width 2 :color bg2 :style 'released-button)))
+    (custom-button-mouse   (:background bg4 :foreground button-hl :box (:line-width 2 :color bg2 :style 'released-button)))
+    (custom-button-pressed (:background bg4 :foreground button-hl :box (:line-width 2 :color bg2 :style 'pressed-button)))
+    (custom-state          (:background nil :foreground green))
+    (custom-changed        (:background nil :foreground orange))
+    (custom-visibility     (:background nil :foreground cyan :height 0.9 :underline underline))
+    (custom-invalid        (:background nil :foreground red))
+    (custom-set            (:background nil :foreground light-jade))
+    (widget-documentation  (:background nil :foreground var))
 
     ;; Highlighting
     (highlight                (:background bg2 :foreground light-orange))

@@ -1229,19 +1229,11 @@ On error (read-only), call `ivy-on-del-error-function'."
   (interactive)
   (if (and ivy--directory (= (minibuffer-prompt-end) (point)))
       (progn
-        (let ((old-dir (file-name-nondirectory
-                        (directory-file-name ivy--directory)))
-              idx)
-          (ivy--cd (file-name-directory
-                    (directory-file-name
-                     (expand-file-name
-                      ivy--directory))))
-          (ivy--exhibit)
-          (when (setq idx (cl-position
-                           (file-name-as-directory old-dir)
-                           ivy--old-cands
-                           :test 'equal))
-            (ivy-set-index idx))))
+        (ivy--cd (file-name-directory
+                  (directory-file-name
+                   (expand-file-name
+                    ivy--directory))))
+        (ivy--exhibit))
     (condition-case nil
         (backward-delete-char 1)
       (error
@@ -2595,8 +2587,10 @@ Should be run via minibuffer `post-command-hook'."
                     (ivy--sort-maybe
                      (funcall (ivy-state-collection ivy-last) ivy-text)))
               (setq ivy--old-text ivy-text)))
-          (ivy--insert-minibuffer
-           (ivy--format ivy--all-candidates)))
+          (when (or ivy--all-candidates
+                    (not (get-process " *counsel*")))
+            (ivy--insert-minibuffer
+             (ivy--format ivy--all-candidates))))
       (cond (ivy--directory
              (cond ((or (string= "~/" ivy-text)
                         (and (string= "~" ivy-text)
@@ -3744,6 +3738,7 @@ buffer would modify `ivy-last'.")
     (define-key map (kbd "o") 'ivy-occur-dispatch)
     (define-key map (kbd "c") 'ivy-occur-toggle-calling)
     (define-key map (kbd "q") 'quit-window)
+    (define-key map (kbd "R") 'read-only-mode)
     map)
   "Keymap for Ivy Occur mode.")
 
