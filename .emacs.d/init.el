@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2017-11-02 12:48:48 dan.harms>
+;; Modified Time-stamp: <2017-11-07 06:36:55 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -253,7 +253,8 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; proviso ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package proviso
   :demand t
-  :bind (("C-c g" . proviso-grep)
+  :bind (("C-c gg" . proviso-grep)
+         ("C-c gag" . proviso-ag)
          ("C-c t" . proviso-gentags-generate-tags)
          ("C-c pd" . proviso-open-dired-this-project)
          ("C-c pD" . proviso-open-dired-all-projects)
@@ -1227,7 +1228,11 @@ line."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ag ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package ag
   :if (executable-find "ag")
-  :defer t)
+  :defer t
+  :init
+  :bind (("C-c gaa" . ag)
+         ("C-c gap" . ag-project)
+         ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; occur ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (global-set-key (kbd "M-s M-o") 'multi-occur-in-matching-buffers)
