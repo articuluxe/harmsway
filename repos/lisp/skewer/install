@@ -1,0 +1,2 @@
+cp src/skewer* ../../../.emacs.d/modes
+cp src/cache-table.el ../../../.emacs.d/modes
