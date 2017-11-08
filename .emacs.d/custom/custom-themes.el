@@ -2,7 +2,7 @@
 ;; Copyright (C) 2016-2017  Dan Harms (dan.harms)
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Wednesday, December 21, 2016
-;; Modified Time-stamp: <2017-10-12 11:32:59 dan.harms>
+;; Modified Time-stamp: <2017-11-08 16:51:07 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: themes colors
 
@@ -108,6 +108,8 @@
           ((eq sym 'obsidian)
            (custom-theme-set-faces sym '(cursor ((t (:background "#e8e2b7")))))
            (custom-theme-set-faces sym '(show-paren-match-face ((t (:background "#678cb1"))))))
+          ((eq sym 'railscast)
+           (custom-theme-set-faces sym '(cursor ((t (:background "#FFC66D"))))))
           ((eq sym 'subatomic)
            (my/make-comment-delimiter-face-same-as-comment-face sym))
           ((eq sym 'tao-yang)
