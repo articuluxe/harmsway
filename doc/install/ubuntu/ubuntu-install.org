@@ -126,6 +126,7 @@ sudo apt install dos2unix
 sudo apt install texlive-full
 sudo apt install pandoc
 sudo apt-get install silversearcher-ag
+sudo apt install xsel
 
 * fonts
 #+BEGIN_SRC sh
