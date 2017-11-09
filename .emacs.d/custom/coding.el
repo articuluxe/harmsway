@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-09-27 08:36:10 dharms>
+;; Modified Time-stamp: <2017-11-08 08:11:35 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -197,6 +197,9 @@
                '(boost-test
                  "^[[:digit:]]+:\\s-*\\(.*\\):\\([[:digit:]]+\\):\\s-+\\(fatal\\s-\\)?error" 1 2)))
 
+(use-package
+ clang-format
+ :bind ("C-c f" . clang-format-region))
 
 (defun find-my-tags-file() "Find tags file"
   (interactive)
