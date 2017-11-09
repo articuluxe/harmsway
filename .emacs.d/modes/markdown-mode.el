@@ -595,7 +595,10 @@
 ;;     When the [`edit-indirect'][ei] package is installed, `C-c '`
 ;;     (`markdown-edit-code-block`) can be used to edit a code block
 ;;     in an indirect buffer in the native major mode. Press `C-c C-c`
-;;     to commit changes and return or `C-c C-k` to cancel.
+;;     to commit changes and return or `C-c C-k` to cancel.  You can
+;;     also give a prefix argument to the insertion command, as in
+;;     `C-u C-c C-s C`, to edit the code block in an indirect buffer
+;;     upon insertion.
 ;;
 ;; As noted, many of the commands above behave differently depending
 ;; on whether Transient Mark mode is enabled or not.  When it makes
@@ -1355,6 +1358,15 @@ and `iso-latin-1'.  Use `list-coding-systems' for more choices."
   :group 'markdown
   :type 'coding-system)
 
+(defcustom markdown-export-kill-buffer t
+  "Kill output buffer after HTML export.
+When non-nil, kill the HTML output buffer after
+exporting with `markdown-export'."
+  :group 'markdown
+  :type 'boolean
+  :safe 'booleanp
+  :package-version '(markdown-mode . "2.4"))
+
 (defcustom markdown-xhtml-header-content ""
   "Additional content to include in the XHTML <head> block."
   :group 'markdown
@@ -1480,6 +1492,14 @@ This applies to insertions done with
 `markdown-electric-backquote'."
   :group 'markdown
   :type 'boolean)
+
+(defcustom markdown-edit-code-block-default-mode 'normal-mode
+  "Default mode to use for editing code blocks.
+This mode is used when automatic detection fails, such as for GFM
+code blocks with no language specified."
+  :group 'markdown
+  :type 'symbol
+  :package-version '(markdown-mode . "2.4"))
 
 (defcustom markdown-gfm-uppercase-checkbox nil
   "If non-nil, use [X] for completed checkboxes, [x] otherwise."
@@ -1750,10 +1770,16 @@ Groups 1 and 3 match opening and closing dollar signs.
 Group 2 matches the mathematical expression contained within.")
 
 (defconst markdown-regex-math-display
-  "^\\(\\\\\\[\\)\\(\\(?:.\\|\n\\)*?\\)?\\(\\\\\\]\\)$"
-  "Regular expression for itex \[..\] display mode expressions.
-Groups 1 and 3 match the opening and closing delimiters.
-Group 2 matches the mathematical expression contained within.")
+  (rx line-start
+      (group (group (repeat 1 2 "\\")) "[")
+      (group (*? anything))
+      (group (backref 2) "]")
+      line-end)
+  "Regular expression for \[..\] or \\[..\\] display math.
+Groups 1 and 4 match the opening and closing markup.
+Group 3 matches the mathematical expression contained within.
+Group 2 matches the opening slashes, and is used internally to
+match the closing slashes.")
 
 (defsubst markdown-make-tilde-fence-regex (num-tildes &optional end-of-line)
   "Return regexp matching a tilde code fence at least NUM-TILDES long.
@@ -2886,6 +2912,10 @@ Depending on your font, some reasonable choices are:
     (markdown-match-math-double . ((1 markdown-markup-face prepend)
                                    (2 markdown-math-face append)
                                    (3 markdown-markup-face prepend)))
+    ;; Math mode \[..\] and \\[..\\]
+    (markdown-match-math-display . ((1 markdown-markup-face prepend)
+                                    (3 markdown-math-face append)
+                                    (4 markdown-markup-face prepend)))
     (markdown-match-bold . ((1 markdown-markup-properties prepend)
                             (2 markdown-bold-face append)
                             (3 markdown-markup-properties prepend)))
@@ -2902,11 +2932,6 @@ Depending on your font, some reasonable choices are:
     (markdown-fontify-blockquotes)
     (markdown-match-wiki-link . ((0 markdown-link-face prepend))))
   "Syntax highlighting for Markdown files.")
-
-(defvar markdown-mode-font-lock-keywords nil
-  "Default highlighting expressions for Markdown mode.
-This variable is defined as a buffer-local variable for dynamic
-extension support.")
 
 ;; Footnotes
 (defvar markdown-footnote-counter 0
@@ -3775,6 +3800,10 @@ $..$ or `markdown-regex-math-inline-double' for matching $$..$$."
   "Match double quoted $$..$$ math from point to LAST."
   (markdown-match-math-generic markdown-regex-math-inline-double last))
 
+(defun markdown-match-math-display (last)
+  "Match bracketed display math \[..\] and \\[..\\] from point to LAST."
+  (markdown-match-math-generic markdown-regex-math-display last))
+
 (defun markdown-match-propertized-text (property last)
   "Match text with PROPERTY from point to LAST.
 Restore match data previously stored in PROPERTY."
@@ -3941,20 +3970,6 @@ links with URLs."
   (when (markdown-match-inline-generic markdown-regex-uri last t)
     (goto-char (1+ (match-end 0)))))
 
-(defun markdown-get-match-boundaries (start-header end-header last &optional pos)
-  (save-excursion
-    (goto-char (or pos (point-min)))
-    (cl-loop
-     with cur-result = nil
-     and st-hdr = (or start-header "\\`")
-     and end-hdr = (or end-header "\n\n\\|\n\\'\\|\\'")
-     while (and (< (point) last)
-                (re-search-forward st-hdr last t)
-                (progn
-                  (setq cur-result (match-data))
-                  (re-search-forward end-hdr nil t)))
-     collect (list cur-result (match-data)))))
-
 (defvar markdown-conditional-search-function #'re-search-forward
   "Conditional search function used in `markdown-search-until-condition'.
 Made into a variable to allow for dynamic let-binding.")
@@ -3966,41 +3981,64 @@ Made into a variable to allow for dynamic let-binding.")
     ret))
 
 (defun markdown-match-generic-metadata
-    (regexp last &optional start-header end-header)
-  "Match generic metadata specified by REGEXP from the point to LAST.
-If START-HEADER is nil, we assume metadata can only occur at the
-very top of a file (\"\\`\"). If END-HEADER is nil, we assume it
-is \"\n\n\""
-  (let* ((header-bounds
-          (markdown-get-match-boundaries start-header end-header last))
-         (enclosing-header
-          (cl-find-if                   ; just take first if multiple
-           (lambda (match-bounds)
-             (cl-destructuring-bind (begin end) (cl-second match-bounds)
-               (and (< (point) begin)
-                    (save-excursion (re-search-forward regexp end t)))))
-           header-bounds))
-         (header-begin
-          (when enclosing-header (cl-second (cl-first enclosing-header))))
-         (header-end
-          (when enclosing-header (cl-first (cl-second enclosing-header)))))
-    (cond ((null enclosing-header)
-           ;; Don't match anything outside of a header.
-           nil)
-          ((markdown-search-until-condition
-            (lambda () (> (point) header-begin)) regexp (min last header-end) t)
-           ;; If a metadata item is found, it may span several lines.
-           (let ((key-beginning (match-beginning 1))
-                 (key-end (match-end 1))
-                 (markup-begin (match-beginning 2))
-                 (markup-end (match-end 2))
-                 (value-beginning (match-beginning 3)))
-             (set-match-data (list key-beginning (point) ; complete metadata
-                                   key-beginning key-end ; key
-                                   markup-begin markup-end ; markup
-                                   value-beginning (point))) ; value
-             t))
-          (t nil))))
+    (regexp last &optional block-begin-re block-end-re)
+  "Match metadata declarations specified by REGEXP from point to LAST.
+These declarations must appear inside a metadata block specified
+by BLOCK-BEGIN-RE and BLOCK-END-RE.  BLOCK-BEGIN-RE is a regular
+expression denoting the beginning of a metadata block.  If it is
+nil, we assume metadata can only appear at the beginning of the
+buffer.  Similarly, BLOCK-END-RE is a regular expression denoting
+the end of a metadata block.  If it is nil, assume blocks end with
+a blank line or the end of the buffer.  There may be at most one such
+block in a file.  Subsequent blocks will be ignored."
+  (let* ((first (point))
+         (begin-re (or block-begin-re "\\`"))
+         (end-re (or block-end-re "\n[ \t]*\n\\|\n\\'\\|\\'"))
+
+         ;; (prev-block-begin (when (re-search-backward begin-re (point-min) t) (match-end 0)))
+         ;; (next-block-begin (when (re-search-forward begin-re last t) (match-end 0)))
+         ;; (block-begin (or prev-block-begin next-block-begin))
+
+         (block-begin (when (or (re-search-backward begin-re (point-min) t)
+                                (re-search-forward begin-re last t))
+                        (match-end 0)))
+
+         (block-end (and block-begin (goto-char block-begin)
+                         (re-search-forward end-re nil t))))
+    (cond
+     ;; Don't match declarations if there is no metadata block or if
+     ;; the point is beyond the block.  Move point to point-max to
+     ;; prevent additional searches and return return nil since nothing
+     ;; was found.
+     ((or (null block-begin) (and block-end (> first block-end)))
+      (goto-char (point-max))
+      nil)
+     ;; No declarations to match if a block was found but not in
+     ;; range.  Move point to LAST, to resume there, and return nil.
+     ((> block-begin last)
+      (goto-char last)
+      nil)
+     ;; If a block was found that begins before LAST and ends after
+     ;; point, search for declarations inside it.
+     (t
+      ;; If the starting is before the beginning of the block, start
+      ;; there.  Otherwise, move back to FIRST.
+      (goto-char (if (< first block-begin) block-begin first))
+      (if (re-search-forward regexp (min last block-end) t)
+          ;; If a metadata declaration is found, set match-data and return t.
+          (let ((key-beginning (match-beginning 1))
+                (key-end (match-end 1))
+                (markup-begin (match-beginning 2))
+                (markup-end (match-end 2))
+                (value-beginning (match-beginning 3)))
+            (set-match-data (list key-beginning (point) ; complete metadata
+                                  key-beginning key-end ; key
+                                  markup-begin markup-end ; markup
+                                  value-beginning (point))) ; value
+            t)
+        ;; Otherwise, move the point to last and return nil
+        (goto-char last)
+        nil)))))
 
 (defun markdown-match-declarative-metadata (last)
   "Match declarative metadata from the point to LAST."
@@ -5090,12 +5128,14 @@ opening code fence and an info string."
   :safe #'natnump
   :package-version '(markdown-mode . "2.3"))
 
-(defun markdown-insert-gfm-code-block (&optional lang)
+(defun markdown-insert-gfm-code-block (&optional lang edit)
   "Insert GFM code block for language LANG.
 If LANG is nil, the language will be queried from user.  If a
 region is active, wrap this region with the markup instead.  If
 the region boundaries are not on empty lines, these are added
-automatically in order to have the correct markup."
+automatically in order to have the correct markup.  When EDIT is
+non-nil (e.g., when \\[universal-argument] is given), edit the
+code block in an indirect buffer after insertion."
   (interactive
    (list (let ((completion-ignore-case nil))
            (condition-case nil
@@ -5105,13 +5145,14 @@ automatically in order to have the correct markup."
                  (markdown-gfm-get-corpus)
                  nil 'confirm (car markdown-gfm-used-languages)
                  'markdown-gfm-language-history))
-             (quit "")))))
+             (quit "")))
+         current-prefix-arg))
   (unless (string= lang "") (markdown-gfm-add-used-language lang))
   (when (> (length lang) 0)
     (setq lang (concat (make-string markdown-spaces-after-code-fence ?\s)
                        lang)))
   (if (markdown-use-region-p)
-      (let* ((b (region-beginning)) (e (region-end))
+      (let* ((b (region-beginning)) (e (region-end)) end
              (indent (progn (goto-char b) (current-indentation))))
         (goto-char e)
         ;; if we're on a blank line, don't newline, otherwise the ```
@@ -5121,6 +5162,7 @@ automatically in order to have the correct markup."
         (indent-to indent)
         (insert "```")
         (markdown-ensure-blank-line-after)
+        (setq end (point))
         (goto-char b)
         ;; if we're on a blank line, insert the quotes here, otherwise
         ;; add a new line first
@@ -5129,18 +5171,22 @@ automatically in order to have the correct markup."
           (forward-line -1))
         (markdown-ensure-blank-line-before)
         (indent-to indent)
-        (insert "```" lang))
-    (let ((indent (current-indentation)))
+        (insert "```" lang)
+        (markdown-syntax-propertize-fenced-block-constructs (point-at-bol) end))
+    (let ((indent (current-indentation)) start)
       (delete-horizontal-space :backward-only)
       (markdown-ensure-blank-line-before)
       (indent-to indent)
+      (setq start (point))
       (insert "```" lang "\n")
       (indent-to indent)
-      (insert ?\n)
+      (unless edit (insert ?\n))
       (indent-to indent)
       (insert "```")
-      (markdown-ensure-blank-line-after))
-    (end-of-line 0)))
+      (markdown-ensure-blank-line-after)
+      (markdown-syntax-propertize-fenced-block-constructs start (point)))
+    (end-of-line 0)
+    (when edit (markdown-edit-code-block))))
 
 (defun markdown-code-block-lang (&optional pos-prop)
   "Return the language name for a GFM or tilde fenced code block.
@@ -7834,7 +7880,8 @@ current filename, but with the extension removed and replaced with .html."
       (markdown-standalone output-buffer-name)
       (with-current-buffer output-buffer
         (run-hooks 'markdown-after-export-hook)
-        (save-buffer))
+        (save-buffer)
+        (when markdown-export-kill-buffer (kill-buffer)))
       ;; if modified, restore initial buffer
       (when (buffer-modified-p init-buf)
         (erase-buffer)
@@ -8635,20 +8682,9 @@ or span."
   "Check settings, update font-lock keywords and hooks, and re-fontify buffer."
   (interactive)
   (when (member major-mode '(markdown-mode gfm-mode))
-    ;; Update font lock keywords with extensions
-    (setq markdown-mode-font-lock-keywords
-          (append
-           (markdown-mode-font-lock-keywords-math)
-           markdown-mode-font-lock-keywords-basic))
-    ;; Update font lock defaults
-    (setq font-lock-defaults
-          '(markdown-mode-font-lock-keywords
-            nil nil nil nil
-            (font-lock-syntactic-face-function . markdown-syntactic-face)))
     ;; Refontify buffer
     (when (and font-lock-mode (fboundp 'font-lock-refresh-defaults))
       (font-lock-refresh-defaults))
-
     ;; Add or remove hooks related to extensions
     (markdown-setup-wiki-link-hooks)))
 
@@ -8657,8 +8693,10 @@ or span."
 Checks to see if there is actually a ‘markdown-mode’ file local variable
 before regenerating font-lock rules for extensions."
   (when (and (boundp 'file-local-variables-alist)
-             (assoc 'markdown-enable-wiki-links file-local-variables-alist)
-             (assoc 'markdown-enable-math file-local-variables-alist))
+             (or (assoc 'markdown-enable-wiki-links file-local-variables-alist)
+                 (assoc 'markdown-enable-math file-local-variables-alist)))
+    (when (assoc 'markdown-enable-math file-local-variables-alist)
+      (markdown-toggle-math markdown-enable-math))
     (markdown-reload-extensions)))
 
 
@@ -8706,6 +8744,18 @@ These are only enabled when `markdown-wiki-link-fontify-missing' is non-nil."
 
 (make-obsolete 'markdown-enable-math 'markdown-toggle-math "v2.1")
 
+(defconst markdown-mode-font-lock-keywords-math
+  (list
+   ;; Equation reference (eq:foo)
+   '("\\((eq:\\)\\([[:alnum:]:_]+\\)\\()\\)" . ((1 markdown-markup-face)
+                                                (2 markdown-reference-face)
+                                                (3 markdown-markup-face)))
+   ;; Equation reference \eqref{foo}
+   '("\\(\\\\eqref{\\)\\([[:alnum:]:_]+\\)\\(}\\)" . ((1 markdown-markup-face)
+                                                      (2 markdown-reference-face)
+                                                      (3 markdown-markup-face))))
+  "Font lock keywords to add and remove when toggling math support.")
+
 (defun markdown-toggle-math (&optional arg)
   "Toggle support for inline and display LaTeX math expressions.
 With a prefix argument ARG, enable math mode if ARG is positive,
@@ -8717,26 +8767,14 @@ if ARG is omitted or nil."
             (not markdown-enable-math)
           (> (prefix-numeric-value arg) 0)))
   (if markdown-enable-math
-      (message "markdown-mode math support enabled")
+      (progn
+        (font-lock-add-keywords
+         'markdown-mode markdown-mode-font-lock-keywords-math)
+        (message "markdown-mode math support enabled"))
+    (font-lock-remove-keywords
+     'markdown-mode markdown-mode-font-lock-keywords-math)
     (message "markdown-mode math support disabled"))
   (markdown-reload-extensions))
-
-(defun markdown-mode-font-lock-keywords-math ()
-  "Return math font lock keywords if support is enabled."
-  (when markdown-enable-math
-    (list
-     ;; Display mode equations with brackets: \[ \]
-     (cons markdown-regex-math-display '((1 markdown-markup-face prepend)
-                                         (2 markdown-math-face append)
-                                         (3 markdown-markup-face prepend)))
-     ;; Equation reference (eq:foo)
-     (cons "\\((eq:\\)\\([[:alnum:]:_]+\\)\\()\\)" '((1 markdown-markup-face)
-                                                     (2 markdown-reference-face)
-                                                     (3 markdown-markup-face)))
-     ;; Equation reference \eqref{foo}
-     (cons "\\(\\\\eqref{\\)\\([[:alnum:]:_]+\\)\\(}\\)" '((1 markdown-markup-face)
-                                                           (2 markdown-reference-face)
-                                                           (3 markdown-markup-face))))))
 
 
 ;;; GFM Checkboxes ============================================================
@@ -9049,7 +9087,9 @@ position."
                (end (and bounds (goto-char (nth 1 bounds)) (point-at-bol 1))))
           (if (and begin end)
               (let* ((lang (markdown-code-block-lang))
-                     (mode (and lang (markdown-get-lang-mode lang)))
+                     (mode (if lang
+                               (markdown-get-lang-mode lang)
+                             markdown-edit-code-block-default-mode))
                      (edit-indirect-guess-mode-function
                       (lambda (_parent-buffer _beg _end)
                         (funcall mode))))
@@ -9769,7 +9809,6 @@ spaces, or alternatively a TAB should be used as the separator."
             #'markdown-font-lock-extend-region-function t t)
   (setq-local syntax-propertize-function #'markdown-syntax-propertize)
   ;; Font lock.
-  (setq-local markdown-mode-font-lock-keywords nil)
   (setq-local font-lock-defaults nil)
   (setq-local font-lock-multiline t)
   (setq-local font-lock-extra-managed-props
@@ -9778,8 +9817,14 @@ spaces, or alternatively a TAB should be used as the separator."
   (if markdown-hide-markup
       (add-to-invisibility-spec 'markdown-markup)
     (remove-from-invisibility-spec 'markdown-markup))
-  ;; Reload extensions
-  (markdown-reload-extensions)
+  (setq font-lock-defaults
+        '(markdown-mode-font-lock-keywords-basic
+          nil nil nil nil
+          (font-lock-syntactic-face-function . markdown-syntactic-face)))
+  ;; Wiki links
+  (markdown-setup-wiki-link-hooks)
+  ;; Math mode
+  (when markdown-enable-math (markdown-toggle-math t))
   ;; Add a buffer-local hook to reload after file-local variables are read
   (add-hook 'hack-local-variables-hook #'markdown-handle-local-variables nil t)
   ;; For imenu support

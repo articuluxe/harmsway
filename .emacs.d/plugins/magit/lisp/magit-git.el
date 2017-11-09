@@ -33,6 +33,7 @@
 (require 'magit-utils)
 (require 'magit-section)
 
+(declare-function magit-call-git 'magit-process)
 (declare-function magit-maybe-make-margin-overlay 'magit-log)
 (declare-function magit-process-buffer 'magit-process)
 (declare-function magit-process-file 'magit-process)
@@ -941,6 +942,7 @@ to, or to some other symbolic-ref that points to the same ref."
         (commit (let ((rev (magit-section-value it)))
                   (or (magit-get-shortname rev) rev)))
         (tag (magit-ref-maybe-qualify (magit-section-value it) "tags/")))
+      (thing-at-point 'git-revision t)
       (and (derived-mode-p 'magit-revision-mode
                            'magit-merge-preview-mode)
            (car magit-refresh-args))))
@@ -1406,8 +1408,8 @@ Return a list of two integers: (A>B B>A)."
                           regexp t))))
         (setq names (split-string string regexp t)))
       (when (member "HEAD" names)
-        (setq head  (magit-git-string "symbolic-ref" "HEAD")
-              names (cons (or head "@") (delete head (delete "HEAD" names)))))
+        (setq head  (magit-git-string "symbolic-ref" "HEAD"))
+        (setq names (cons (or head "@") (delete head (delete "HEAD" names)))))
       (mapconcat (lambda (it) (magit-format-ref-label it head)) names " "))))
 
 (defun magit-object-type (object)
@@ -1465,9 +1467,9 @@ Return a list of two integers: (A>B B>A)."
 
 (defun magit-update-ref (ref message rev &optional stashish)
   (or (if (not (version< (magit-git-version) "2.6.0"))
-          (magit-git-success "update-ref" "--create-reflog"
-                             "-m" message ref rev
-                             (or (magit-rev-verify ref) ""))
+          (zerop (magit-call-git "update-ref" "--create-reflog"
+                                 "-m" message ref rev
+                                 (or (magit-rev-verify ref) "")))
         ;; `--create-reflog' didn't exist before v2.6.0
         (let ((oldrev  (magit-rev-verify ref))
               (logfile (magit-git-dir (concat "logs/" ref))))
@@ -1496,6 +1498,14 @@ Return a list of two integers: (A>B B>A)."
                 (magit-git-string "merge-base" beg end)
               beg)
             end))))
+
+(put 'git-revision 'beginning-op 'forward-symbol)
+(put 'git-revision 'thing-at-point 'magit-thingatpt--git-revision)
+
+(defun magit-thingatpt--git-revision ()
+  (--when-let (bounds-of-thing-at-point 'symbol)
+    (let ((text (buffer-substring (car it) (cdr it))))
+      (and (magit-rev-verify-commit text) text))))
 
 ;;; Completion
 
@@ -1663,12 +1673,11 @@ Return a list of two integers: (A>B B>A)."
                          require-match nil 'magit-revision-history
                          (magit-tag-at-point)))
 
-(defun magit-read-stash (prompt &optional use-at-point)
-  (let ((atpoint (magit-stash-at-point)))
-    (or (and use-at-point atpoint)
-        (let ((stashes (magit-list-stashes)))
-          (magit-completing-read prompt stashes nil t nil nil
-                                 (or atpoint (car stashes)))))))
+(defun magit-read-stash (prompt)
+  (let ((stashes (magit-list-stashes)))
+    (magit-completing-read prompt stashes nil t nil nil
+                           (magit-stash-at-point)
+                           (car stashes))))
 
 (defun magit-read-remote (prompt &optional default use-only)
   (let ((remotes (magit-list-remotes)))
