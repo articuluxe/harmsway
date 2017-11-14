@@ -15,7 +15,7 @@
 ;; Alex Harsanyi <AlexHarsanyi@gmail.com>
 
 ;; Maintainer: Matthew Carter <m@ahungry.com>
-;; Version: 2.7.0
+;; Version: 2.8.0
 ;; Homepage: https://github.com/ahungry/org-jira
 
 ;; This file is not part of GNU Emacs.
@@ -87,7 +87,7 @@
 (require 'json)
 (require 'url-parse)
 
-(defconst jiralib-version "2.7.0"
+(defconst jiralib-version "2.8.0"
   "Current version of jiralib.el.")
 
 (defgroup jiralib nil
@@ -154,8 +154,8 @@ This will be used with USERNAME to compute password from
   :group 'jiralib-faces)
 
 (defvar jiralib-mode-hook nil)
-
 (defvar jiralib-mode-map nil)
+(defvar jiralib-issue-regexp "\\<\\(?:[A-Za-z]+\\)-[0-9]+\\>")
 
 (defcustom jiralib-wsdl-descriptor-url
   ""
@@ -577,14 +577,16 @@ will cache it."
           (jiralib-make-assoc-list (jiralib-call "getResolutions" nil) 'id 'name)))
   jiralib-resolution-code-cache)
 
-(defvar jiralib-issue-regexp nil)
-
 ;; NOTE: it is not such a good idea to use this, as it needs a JIRA
 ;; connection to construct the regexp (the user might be prompted for a JIRA
 ;; username and password).
 ;;
 ;; The best use of this function is to generate the regexp once-off and
 ;; persist it somewhere.
+;;
+;; FIXME: Probably just deprecate/remove this, we can assert we're on
+;; an issue with a general regexp that matches the common format, vs
+;; needing to know specific user project list.
 (defun jiralib-get-issue-regexp ()
   "Return a regexp that will match an issue id.
 

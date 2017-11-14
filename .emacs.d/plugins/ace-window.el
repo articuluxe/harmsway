@@ -283,15 +283,17 @@ LEAF is (PT . WND)."
 
 (defun aw-dispatch-default (char)
   "Perform an action depending on CHAR."
-  (let ((action (aw--dispatch-action char)))
-    (cl-destructuring-bind (_key fn &optional description) (aw--dispatch-action char)
-      (if action
-          (if (and fn description)
-              (prog1 (setq aw-action fn)
-                (aw-set-mode-line (format " Ace - %s" description)))
-            (funcall fn)
-            (throw 'done 'exit))
-        (avy-handler-default char)))))
+  (if (= char (aref (kbd "C-g") 0))
+      (throw 'done 'exit)
+    (let ((action (aw--dispatch-action char)))
+      (cl-destructuring-bind (_key fn &optional description) (aw--dispatch-action char)
+        (if action
+            (if (and fn description)
+                (prog1 (setq aw-action fn)
+                  (aw-set-mode-line (format " Ace - %s" description)))
+              (funcall fn)
+              (throw 'done 'exit))
+          (avy-handler-default char))))))
 
 (defun aw-select (mode-line &optional action)
   "Return a selected other window.
@@ -496,7 +498,9 @@ Windows are numbered top down, left to right."
 (defun aw-switch-buffer-in-window (window)
   "Select buffer in WINDOW."
   (aw-switch-to-window window)
-  (call-interactively 'switch-to-buffer))
+  (if (bound-and-true-p ivy-mode)
+      (ivy-switch-buffer)
+    (call-interactively 'switch-to-buffer)))
 
 (defcustom aw-swap-invert nil
   "When non-nil, the other of the two swapped windows gets the point."
