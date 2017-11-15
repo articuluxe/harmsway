@@ -4,7 +4,7 @@
 # Author:  <dan.harms@xrtrading.com>
 # Created: Friday, March 20, 2015
 # Version: 1.0
-# Modified Time-stamp: <2017-11-06 11:29:41 dan.harms>
+# Modified Time-stamp: <2017-11-15 13:50:39 dan.harms>
 # Modified by: Dan Harms
 # Keywords: help
 
@@ -19,6 +19,9 @@ wget http://kernel.org/pub/software/scm/git/git-2.1.4.tar.gz
 yum groupinstall basic-desktop desktop-platform x11 fonts
 # change default runlevel in /etc/inittab:
 id:5:initdefault:
+
+# locate program using regex
+locate --regex '\bprogram$'
 
 # find with multiple -exec (short-circuit)
 find . -name "pattern" -exec echo {} \; -exec grep <str> {} \;
