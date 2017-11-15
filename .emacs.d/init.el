@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2017-11-07 11:25:19 dan.harms>
+;; Modified Time-stamp: <2017-11-15 12:31:31 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2744,6 +2744,7 @@ This may perform related customization."
   (define-key js2-mode-map "\C-k" #'js2r-kill)
   (js2r-add-keybindings-with-prefix "\e\eb"))
 (use-package xref-js2
+  :if (< 24 emacs-major-version)
   :after js2-mode
   :init
   (add-hook 'js2-mode-hook (lambda ()
@@ -2763,8 +2764,8 @@ This may perform related customization."
               (add-to-list 'flycheck-disabled-checkers 'json-jsonlint)
               ))
   :config
-  (use-package
-    json-navigator
+  (use-package json-navigator
+    :if (< 24 emacs-major-version)
     :demand t
     :config
     (define-key json-mode-map "\C-c\C-f" 'json-navigator-navigate-after-point)
