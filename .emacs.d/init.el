@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2017-11-15 21:21:54 dharms>
+;; Modified Time-stamp: <2017-11-15 21:22:16 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -264,6 +264,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
          ("C-c pg" . proviso-refresh-current-project)
          ("C-c C-f" . proviso-fulledit)
          ("C-c pcc" . proviso-compile-choose-compile-command)
+         ("C-c pcf" . proviso-clang-format-toggle-active)
          )
   :config
   (use-package proviso-frame-title)
