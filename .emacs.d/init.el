@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2017-11-15 12:31:31 dan.harms>
+;; Modified Time-stamp: <2017-11-15 13:11:42 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2408,6 +2408,10 @@ line."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; sort-words ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package sort-words :commands sort-words)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; unfill ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package unfill
+  :bind ("M-Q" . unfill-paragraph))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;; highlight-indentation ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package highlight-indentation
