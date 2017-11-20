@@ -1001,6 +1001,9 @@ Do not add this to a hook variable."
                 (`bisect-log magit-log-bisect-log-re)))
   (magit-bind-match-strings
       (hash msg refs graph author date gpg cherry _ refsub side) nil
+    (setq msg (substring-no-properties msg))
+    (when refs
+      (setq refs (substring-no-properties refs)))
     (let ((align (not (member "--stat" (cadr magit-refresh-args))))
           (non-graph-re (if (eq style 'bisect-vis)
                             magit-log-bisect-vis-re
@@ -1555,8 +1558,9 @@ Show the last `magit-log-section-commit-count' commits."
     (magit-insert-section (recent range collapse)
       (magit-insert-heading "Recent commits")
       (magit-insert-log range
-                        (cons (format "-%d" magit-log-section-commit-count)
-                              magit-log-section-arguments)))))
+                        (cons (format "-n%d" magit-log-section-commit-count)
+                              (--remove (string-prefix-p "-n" it)
+                                        magit-log-section-arguments))))))
 
 (magit-define-section-jumper magit-jump-to-unpushed-to-pushremote
   "Unpushed to <push-remote>" unpushed

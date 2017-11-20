@@ -359,6 +359,10 @@ option `magit-git-global-arguments' specifies constant arguments.
 The remaining arguments ARGS specify arguments to Git, they are
 flattened before use."
   (declare (indent 1))
+  (when (eq system-type 'windows-nt)
+    ;; On w32, git expects UTF-8 encoded input, ignore any user
+    ;; configuration telling us otherwise (see #3250).
+    (encode-coding-region (point-min) (point-max) 'utf-8-unix))
   (if (file-remote-p default-directory)
       ;; We lack `process-file-region', so fall back to asynch +
       ;; waiting in remote case.
@@ -497,6 +501,10 @@ Magit status buffer."
     (with-editor-set-process-filter process #'magit-process-filter)
     (set-process-sentinel process #'magit-process-sentinel)
     (set-process-buffer   process process-buf)
+    (when (eq system-type 'windows-nt)
+      ;; On w32, git expects UTF-8 encoded input, ignore any user
+      ;; configuration telling us otherwise.
+      (set-process-coding-system 'utf-8-unix))
     (process-put process 'section section)
     (process-put process 'command-buf (current-buffer))
     (process-put process 'default-dir default-directory)
@@ -790,8 +798,9 @@ as argument."
   (dolist (buf (magit-mode-get-buffers))
     (with-current-buffer buf (setq mode-line-process nil))))
 
-(defvar magit-process-error-message-re
-  (concat "^\\(?:error\\|fatal\\|git\\): \\(.*\\)" paragraph-separate))
+(defvar magit-process-error-message-regexps
+  (list "^\\*ERROR\\*: Canceled by user$"
+        "^\\(?:error\\|fatal\\|git\\): \\(.*\\)$"))
 
 (define-error 'magit-git-error "Git error")
 
@@ -839,17 +848,25 @@ as argument."
                                      (window-list))))
               (magit-section-hide section)))))))
   (unless (= arg 0)
-    (let ((msg (or (and (buffer-live-p process-buf)
-                        (with-current-buffer process-buf
-                          (save-excursion
-                            (goto-char (magit-section-end section))
-                            (--when-let (magit-section-content section)
-                              (when (re-search-backward
-                                     magit-process-error-message-re it t)
-                                (match-string-no-properties 1))))))
-                   "Git failed")))
-      (if magit-process-raise-error
-          (signal 'magit-git-error (list (format "%s (in %s)" msg default-dir)))
+    (let ((msg
+           (or (and (buffer-live-p process-buf)
+                    (with-current-buffer process-buf
+                      (and (magit-section-content section)
+                           (save-excursion
+                             (goto-char (magit-section-end section))
+                             (run-hook-wrapped
+                              'magit-process-error-message-regexps
+                              (lambda (re)
+                                (save-excursion
+                                  (and (re-search-backward re nil t)
+                                       (or (match-string-no-properties 1)
+                                           (and (not magit-process-raise-error)
+                                                'suppressed))))))))))
+               "Git failed")))
+      (cond
+       (magit-process-raise-error
+        (signal 'magit-git-error (list (format "%s (in %s)" msg default-dir))))
+       ((not (eq msg 'suppressed))
         (when (buffer-live-p process-buf)
           (with-current-buffer process-buf
             (-when-let (status-buf (magit-mode-get-buffer 'magit-status-mode))
@@ -862,7 +879,7 @@ as argument."
                                             'magit-process-buffer)))))
                      (format "Hit %s to see" (key-description key))
                    "See")
-                 (buffer-name process-buf)))))
+                 (buffer-name process-buf))))))
   arg)
 
 (defun magit-process-display-buffer (process)

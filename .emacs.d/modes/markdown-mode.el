@@ -248,8 +248,12 @@
 ;;
 ;;     Local images associated with image links may be displayed
 ;;     inline in the buffer by pressing `C-c C-x C-i`
-;;     (`markdown-toggle-inline-images'). This is a toggle command, so
-;;     pressing this once again will remove inline images.
+;;     (`markdown-toggle-inline-images').  This is a toggle command, so
+;;     pressing this once again will remove inline images.  Large
+;;     images may be scaled down to fit in the buffer using
+;;     `markdown-max-image-size', a cons cell of the form
+;;     `(max-width . max-height)`.  Resizing requires Emacs to be
+;;     built with ImageMagick support.
 ;;
 ;;   * Text Styles: `C-c C-s`
 ;;
@@ -1412,6 +1416,26 @@ exporting with `markdown-export'."
                  (const :tag "At the end of the subtree" subtree)
                  (const :tag "Before next header" header)))
 
+(defcustom markdown-footnote-display '((raise 0.2) (height 0.8))
+  "Display specification for footnote markers and inline footnotes.
+By default, footnote text is reduced in size and raised.  Set to
+nil to disable this."
+  :group 'markdown
+  :type '(choice (sexp :tag "Display specification")
+                 (const :tag "Don't set display property" nil))
+  :package-version '(markdown-mode . "2.4"))
+
+(defcustom markdown-sub-superscript-display
+  '(((raise -0.3) (height 0.7)) . ((raise 0.3) (height 0.7)))
+  "Display specification for subscript and superscripts.
+The car is used for subscript, the cdr is used for superscripts."
+  :group 'markdown
+  :type '(cons (choice (sexp :tag "Subscript form")
+		       (const :tag "No lowering" nil))
+	       (choice (sexp :tag "Superscript form")
+		       (const :tag "No raising" nil)))
+  :package-version '(markdown-mode . "2.4"))
+
 (defcustom markdown-unordered-list-item-prefix "  * "
   "String inserted before unordered list items."
   :group 'markdown
@@ -1552,6 +1576,21 @@ prepends the root directory to the given filename."
   :type 'function
   :risky t
   :package-version '(markdown-mode . "2.4"))
+
+(defcustom markdown-max-image-size nil
+  "Maximum width and height for displayed inline images.
+This variable may be nil or a cons cell (MAX-WIDTH . MAX-HEIGHT).
+When nil, use the actual size.  Otherwise, use ImageMagick to
+resize larger images to be of the given maximum dimensions.  This
+requires Emacs to be built with ImageMagick support."
+  :group 'markdown
+  :package-version '(markdown-mode . "2.4")
+  :type '(choice
+          (const :tag "Use actual image width" nil)
+          (cons (choice (sexp :tag "Maximum width in pixels")
+                        (const :tag "No maximum width" nil))
+                (choice (sexp :tag "Maximum height in pixels")
+                        (const :tag "No maximum height" nil)))))
 
 
 ;;; Regular Expressions =======================================================
@@ -1783,7 +1822,7 @@ Groups 1 and 3 match opening and closing dollar signs.
 Group 2 matches the mathematical expression contained within.")
 
 (defconst markdown-regex-math-display
-  (rx line-start
+  (rx line-start (* blank)
       (group (group (repeat 1 2 "\\")) "[")
       (group (*? anything))
       (group (backref 2) "]")
@@ -2489,10 +2528,6 @@ START and END delimit region to propertize."
   '(face markdown-link-title-face invisible markdown-markup)
   "List of properties and values to apply to included code titles.")
 
-(defconst markdown-inline-footnote-properties
-  '(face nil display ((raise 0.2) (height 0.8)))
-  "Properties to apply to footnote markers and inline footnotes.")
-
 (defcustom markdown-hide-markup nil
   "Determines whether markup in the buffer will be hidden.
 When set to nil, all markup is displayed in the buffer as it
@@ -2694,6 +2729,11 @@ inline code fragments and code blocks."
 (defface markdown-pre-face
   '((t (:inherit (markdown-code-face font-lock-constant-face))))
   "Face for preformatted text."
+  :group 'markdown-faces)
+
+(defface markdown-table-face
+  '((t (:inherit (markdown-code-face))))
+  "Face for tables."
   :group 'markdown-faces)
 
 (defface markdown-language-keyword-face
@@ -2899,6 +2939,18 @@ Depending on your font, some reasonable choices are:
   :type '(repeat (string :tag "Bullet character"))
   :package-version '(markdown-mode . "2.3"))
 
+(defun markdown--footnote-marker-properties ()
+  "Return a font-lock facespec expression for footnote marker text."
+  `(face markdown-footnote-marker-face
+         ,@(when markdown-hide-markup
+             `(display ,markdown-footnote-display))))
+
+(defun markdown--pandoc-inline-footnote-properties ()
+  "Return a font-lock facespec expression for Pandoc inline footnote text."
+  `(face markdown-footnote-text-face
+         ,@(when markdown-hide-markup
+             `(display ,markdown-footnote-display))))
+
 (defvar markdown-mode-font-lock-keywords-basic
   `((markdown-match-yaml-metadata-begin . ((1 markdown-markup-face)))
     (markdown-match-yaml-metadata-end . ((1 markdown-markup-face)))
@@ -2912,6 +2964,7 @@ Depending on your font, some reasonable choices are:
                                             (5 markdown-markup-properties nil t)))
     (markdown-match-gfm-close-code-blocks . ((0 markdown-markup-properties)))
     (markdown-fontify-gfm-code-blocks)
+    (markdown-fontify-tables)
     (markdown-match-fenced-start-code-block . ((1 markdown-markup-properties)
                                                (2 markdown-markup-properties nil t)
                                                (3 markdown-language-keyword-properties nil t)
@@ -2951,14 +3004,12 @@ Depending on your font, some reasonable choices are:
                                     (4 'markdown-html-attr-value-face nil t)))))
     (,markdown-regex-html-entity . 'markdown-html-entity-face)
     (markdown-fontify-list-items)
-    (,markdown-regex-footnote . ((0 markdown-inline-footnote-properties)
-                                 (1 markdown-markup-properties)    ; [^
-                                 (2 markdown-footnote-marker-face) ; label
+    (,markdown-regex-footnote . ((1 markdown-markup-properties)    ; [^
+                                 (2 (markdown--footnote-marker-properties)) ; label
                                  (3 markdown-markup-properties)))  ; ]
-    (,markdown-regex-pandoc-inline-footnote . ((0 markdown-inline-footnote-properties)
-                                               (1 markdown-markup-properties)   ; ^
+    (,markdown-regex-pandoc-inline-footnote . ((1 markdown-markup-properties)   ; ^
                                                (2 markdown-markup-properties)   ; [
-                                               (3 'markdown-footnote-text-face) ; text
+                                               (3 (markdown--pandoc-inline-footnote-properties)) ; text
                                                (4 markdown-markup-properties))) ; ]
     (markdown-match-includes . ((1 markdown-markup-properties)
                                 (2 markdown-markup-properties nil t)
@@ -4302,6 +4353,15 @@ SEQ may be an atom or a sequence."
            (match-beginning 6) (match-end 6) right-markup-props))))
     t))
 
+(defun markdown-fontify-tables (last)
+  (when (and (re-search-forward "|" last t)
+             (markdown-table-at-point-p))
+    (font-lock-append-text-property
+     (line-beginning-position) (min (1+ (line-end-position)) (point-max))
+     'face 'markdown-table-face)
+    (forward-line 1)
+    t))
+
 (defun markdown-fontify-blockquotes (last)
   "Apply font-lock properties to blockquotes from point to LAST."
   (when (markdown-match-blockquotes last)
@@ -4361,13 +4421,15 @@ SEQ may be an atom or a sequence."
                          (not (markdown-in-comment-p))))
          markdown-regex-sub-superscript last t)
     (let* ((subscript-p (string= (match-string 2) "~"))
-           (index (if subscript-p 0 1))
+           (props
+            (if subscript-p
+                (car markdown-sub-superscript-display)
+              (cdr markdown-sub-superscript-display)))
            (mp (list 'face 'markdown-markup-face
                      'invisible 'markdown-markup)))
       (when markdown-hide-markup
         (put-text-property (match-beginning 3) (match-end 3)
-                           'display
-                           (nth index markdown-sub-superscript-display)))
+                           'display props))
       (add-text-properties (match-beginning 2) (match-end 2) mp)
       (add-text-properties (match-beginning 4) (match-end 4) mp)
       t)))
@@ -7693,7 +7755,7 @@ This puts point at the start of the current subtree, and mark at the end."
   (interactive)
   (let ((beg))
     (if (markdown-heading-at-point)
-	(beginning-of-line)
+        (beginning-of-line)
       (markdown-previous-visible-heading 1))
     (setq beg (point))
     (markdown-end-of-subtree)
@@ -7708,9 +7770,9 @@ This puts point at the start of the current subtree, and mark at the end."
       (narrow-to-region
        (progn (markdown-back-to-heading-over-code-block t) (point))
        (progn (markdown-end-of-subtree)
-	      (if (and (markdown-heading-at-point) (not (eobp)))
-		  (backward-char 1))
-	      (point))))))
+          (if (and (markdown-heading-at-point) (not (eobp)))
+          (backward-char 1))
+          (point))))))
 
 
 ;;; Generic Structure Editing, Completion, and Cycling Commands ===============
@@ -9005,7 +9067,7 @@ or \\[markdown-toggle-inline-images]."
 This can be toggled with `markdown-toggle-inline-images'
 or \\[markdown-toggle-inline-images]."
   (interactive)
-  (unless (display-graphic-p)
+  (unless (display-images-p)
     (error "Cannot show images"))
   (save-excursion
     (save-restriction
@@ -9019,7 +9081,14 @@ or \\[markdown-toggle-inline-images]."
             (let* ((abspath (if (file-name-absolute-p file)
                                 file
                               (concat default-directory file)))
-                   (image (create-image abspath)))
+                   (image
+                    (if (and markdown-max-image-size
+                             (image-type-available-p 'imagemagick))
+                        (create-image
+                         abspath 'imagemagick nil
+                         :max-width (car markdown-max-image-size)
+                         :max-height (cdr markdown-max-image-size))
+                      (create-image abspath))))
               (when image
                 (let ((ov (make-overlay start end)))
                   (overlay-put ov 'display image)
@@ -9266,6 +9335,12 @@ This version removes characters with invisibility property
 
 ;; Functions for maintaining tables
 
+(defvar markdown-table-at-point-p-function nil
+  "Function to decide if point is inside a table.
+
+The indirection serves to differentiate between standard markdown
+tables and gfm tables which are less strict about the markup.")
+
 (defconst markdown-table-line-regexp "^[ \t]*|"
   "Regexp matching any line inside a table.")
 
@@ -9275,15 +9350,57 @@ This version removes characters with invisibility property
 (defconst markdown-table-dline-regexp "^[ \t]*|[^-:]"
   "Regexp matching dline inside a table.")
 
-(defconst markdown-table-border-regexp "^[ \t]*[^| \t]"
-  "Regexp matching any line outside a table.")
-
 (defun markdown-table-at-point-p ()
+  "Return non-nil when point is inside a table."
+  (if (functionp markdown-table-at-point-p-function)
+      (funcall markdown-table-at-point-p-function)
+    (markdown--table-at-point-p)))
+
+(defun markdown--table-at-point-p ()
   "Return non-nil when point is inside a table."
   (save-excursion
     (beginning-of-line)
     (and (looking-at-p markdown-table-line-regexp)
          (not (markdown-code-block-at-point-p)))))
+
+(defconst gfm-table-line-regexp "^.?*|"
+  "Regexp matching any line inside a table.")
+
+(defconst gfm-table-hline-regexp "^-+\\(|-\\)+"
+  "Regexp matching hline inside a table.")
+
+;; GFM simplified tables syntax is as follows:
+;; - A header line for the column names, this is any text
+;;   separated by `|'.
+;; - Followed by a string -|-|- ..., the number of dashes is optional
+;;   but must be higher than 1. The number of separators should match
+;;   the number of columns.
+;; - Followed by the rows of data, which has the same format as the
+;;   header line.
+;; Example:
+;;
+;; foo | bar
+;; ------|---------
+;; bar | baz
+;; bar | baz
+(defun gfm--table-at-point-p ()
+  "Return non-nil when point is inside a gfm-compatible table."
+  (or (markdown--table-at-point-p)
+      (save-excursion
+        (beginning-of-line)
+        (when (looking-at-p gfm-table-line-regexp)
+          ;; we might be at the first line of the table, check if the
+          ;; line below is the hline
+          (or (save-excursion
+                (forward-line 1)
+                (looking-at-p gfm-table-hline-regexp))
+              ;; go up to find the header
+              (catch 'done
+                (while (looking-at-p gfm-table-line-regexp)
+                  (when (looking-at-p gfm-table-hline-regexp)
+                    (throw 'done t))
+                  (forward-line -1))
+                nil))))))
 
 (defun markdown-table-hline-at-point-p ()
   "Return non-nil when point is on a hline in a table.
@@ -9295,22 +9412,22 @@ This function assumes point is on a table."
 (defun markdown-table-begin ()
   "Find the beginning of the table and return its position.
 This function assumes point is on a table."
-  (cond
-   ((save-excursion
-      (and (re-search-backward markdown-table-border-regexp nil t)
-           (line-beginning-position 2))))
-   (t (point-min))))
+  (save-excursion
+    (while (and (not (bobp))
+                (markdown-table-at-point-p))
+      (forward-line -1))
+    (unless (eobp)
+      (forward-line 1))
+    (point)))
 
 (defun markdown-table-end ()
   "Find the end of the table and return its position.
 This function assumes point is on a table."
   (save-excursion
-    (cond
-     ((re-search-forward markdown-table-border-regexp nil t)
-      (match-beginning 0))
-     (t (goto-char (point-max))
-        (skip-chars-backward " \t")
-        (if (bolp) (point) (line-end-position))))))
+    (while (and (not (eobp))
+                (markdown-table-at-point-p))
+      (forward-line 1))
+    (point)))
 
 (defun markdown-table-get-dline ()
   "Return index of the table data line at point.
@@ -9602,7 +9719,7 @@ Create new table lines if required."
   (if (or (looking-at "[ \t]*$")
           (save-excursion (skip-chars-backward " \t") (bolp)))
       (newline)
-	(markdown-table-align)
+    (markdown-table-align)
     (let ((col (markdown-table-get-column)))
       (beginning-of-line 2)
       (if (or (not (markdown-table-at-point-p))
@@ -10046,6 +10163,7 @@ spaces, or alternatively a TAB should be used as the separator."
   (setq markdown-link-space-sub-char "-")
   (setq markdown-wiki-link-search-subdirectories t)
   (setq-local font-lock-defaults '(gfm-font-lock-keywords))
+  (setq-local markdown-table-at-point-p-function 'gfm--table-at-point-p)
   ;; do the initial link fontification
   (markdown-gfm-parse-buffer-for-languages))
 

@@ -2851,7 +2851,8 @@ The alist VAL is a sorting function with the signature of
 All CANDIDATES are assumed to match NAME."
   (let ((key (or (ivy-state-caller ivy-last)
                  (when (functionp (ivy-state-collection ivy-last))
-                   (ivy-state-collection ivy-last))))
+                   (ivy-state-collection ivy-last))
+                 this-command))
         fun)
     (cond ((and ivy--flx-featurep
                 (eq ivy--regex-function 'ivy--regex-fuzzy))
@@ -3614,10 +3615,7 @@ Skip buffers that match `ivy-ignore-buffers'."
 
 (defun ivy-switch-buffer-occur ()
   "Occur function for `ivy-switch-buffer' using `ibuffer'."
-  (let* ((cand-regexp
-          (concat "\\(" (mapconcat #'regexp-quote ivy--old-cands "\\|") "\\)"))
-         (new-qualifier `((name . ,cand-regexp))))
-    (ibuffer nil (buffer-name) new-qualifier)))
+  (ibuffer nil (buffer-name) (list (cons 'name ivy--old-re))))
 
 ;;;###autoload
 (defun ivy-switch-buffer ()
@@ -3760,6 +3758,7 @@ buffer would modify `ivy-last'.")
     (define-key map (kbd "c") 'ivy-occur-toggle-calling)
     (define-key map (kbd "q") 'quit-window)
     (define-key map (kbd "R") 'read-only-mode)
+    (define-key map (kbd "C-d") 'ivy-occur-delete-candidate)
     map)
   "Keymap for Ivy Occur mode.")
 
@@ -3798,7 +3797,6 @@ When `ivy-calling' isn't nil, call `ivy-occur-press'."
 (defvar ivy-occur-grep-mode-map
   (let ((map (copy-keymap ivy-occur-mode-map)))
     (define-key map (kbd "C-x C-q") 'ivy-wgrep-change-to-wgrep-mode)
-    (define-key map (kbd "C-d") 'ivy-occur-delete-candidate)
     map)
   "Keymap for Ivy Occur Grep mode.")
 
@@ -3948,22 +3946,35 @@ EVENT gives the mouse position."
 (defvar ivy-occur-timer nil)
 (defvar counsel-grep-last-line)
 
+(defun ivy--occur-press-update-window ()
+  (cl-case (ivy-state-caller ivy-occur-last)
+    ((swiper counsel-git-grep counsel-grep counsel-ag counsel-rg)
+     (let ((window (ivy-state-window ivy-occur-last)))
+       (when (or (null (window-live-p window))
+                 (equal window (selected-window)))
+         (save-selected-window
+           (setf (ivy-state-window ivy-occur-last)
+                 (display-buffer (ivy-state-buffer ivy-occur-last)
+                                 'display-buffer-pop-up-window))))))
+
+    ((counsel-describe-function counsel-describe-variable)
+     (setf (ivy-state-window ivy-occur-last)
+           (selected-window))
+     (selected-window))))
+
+(defun ivy--occur-press-buffer ()
+  (let ((buffer (ivy-state-buffer ivy-last)))
+    (if (buffer-live-p buffer)
+        buffer
+      (current-buffer))))
+
 (defun ivy-occur-press ()
   "Execute action for the current candidate."
   (interactive)
+  (ivy--occur-press-update-window)
   (when (save-excursion
           (beginning-of-line)
           (looking-at "\\(?:./\\|    \\)\\(.*\\)$"))
-    (when (memq (ivy-state-caller ivy-occur-last)
-                '(swiper counsel-git-grep counsel-grep counsel-ag counsel-rg
-                  counsel-describe-function counsel-describe-variable))
-      (let ((window (ivy-state-window ivy-occur-last)))
-        (when (or (null (window-live-p window))
-                  (equal window (selected-window)))
-          (save-selected-window
-            (setf (ivy-state-window ivy-occur-last)
-                  (display-buffer (ivy-state-buffer ivy-occur-last)
-                                  'display-buffer-pop-up-window))))))
     (let* ((ivy-last ivy-occur-last)
            (ivy-text (ivy-state-text ivy-last))
            (str (buffer-substring
@@ -3974,7 +3985,7 @@ EVENT gives the mouse position."
            (ivy-exit 'done))
       (with-ivy-window
         (setq counsel-grep-last-line nil)
-        (with-current-buffer (ivy-state-buffer ivy-last)
+        (with-current-buffer (ivy--occur-press-buffer)
           (funcall action
                    (if (and (consp coll)
                             (consp (car coll)))
