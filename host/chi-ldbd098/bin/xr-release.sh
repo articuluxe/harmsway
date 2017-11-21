@@ -4,7 +4,7 @@
 # Copyright (C) 2016-2017  Dan Harms (dan.harms)
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Monday, May 30, 2016
-# Modified Time-stamp: <2017-10-04 09:39:21 dan.harms>
+# Modified Time-stamp: <2017-11-21 15:19:12 dan.harms>
 # Modified by: Dan Harms
 # Keywords: xr config
 
@@ -19,9 +19,10 @@ if [ -f "$hostfile" ]; then
     done <"$hostfile"
 else
     echo "No host file $hostfile; output will not be distributed"
+    exit 1
 fi
 
-cd ~/src/harmsway/
+cd ~/src/harmsway/ || exit 1
 host/chi-ldbd098/bin/xr-tar-world.sh
 
 # numhosts=${#hosts[*]}
@@ -33,6 +34,6 @@ host/chi-ldbd098/bin/xr-tar-world.sh
 #    i=$(( $i+1 ))
 # done
 
-echo "${hosts[*]}" | xargs -P 16 -I {} scp -v xr-world.tar {}:~
+echo "${hosts[*]}" | xargs -P 16 -I {} scp -p xr-world.tar {}:~
 
 # code ends here
