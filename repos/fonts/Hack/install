@@ -1,1 +1,1 @@
-cp src/build/otf/*.otf ../../../.fonts/hack
+cp src/build/ttf/*.ttf ../../../.fonts/hack
