@@ -1,9 +1,8 @@
 ;; custom-utils.el --- misc. utilities
-;; Copyright (C) 2015, 2016  Dan Harms (dharms)
+;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Version: 1.0
-;; Modified Time-stamp: <2016-12-09 17:51:07 dharms>
+;; Modified Time-stamp: <2017-11-22 17:00:51 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -120,10 +119,9 @@
 ;; (global-set-key "\esrr" 'my/find-current-file-as-root)
 
 (defun shell-command-redirected-output (cmd)
-  "Run a shell command, with the option of separately redirecting
-stdout and stderr. Use instead of `shell-command-to-string'.
-Substitute the `nil' in '(t nil)' with a filename to redirect
-stderr into that file."
+  "Run shell command CMD, optonally redirecting stdout/stderr.
+Use instead of `shell-command-to-string'.  Substitute the nil in
+'(t nil)' with a filename to redirect stderr into that file."
   (interactive "sCmd: ")
   (with-output-to-string
     (with-current-buffer standard-output

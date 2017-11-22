@@ -1,10 +1,9 @@
 ;; tty.el --- terminal settings file
-;; Copyright (C) 2015, 2016  Dan Harms (dharms)
+;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Version: 1.0
-;; Modified Time-stamp: <2016-12-15 17:47:07 dharms>
-;; Keywords:
+;; Modified Time-stamp: <2017-11-22 08:44:13 dharms>
+;; Keywords: tools
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by

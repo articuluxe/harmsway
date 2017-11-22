@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2017-11-20 17:33:58 dharms>
+;; Modified Time-stamp: <2017-11-22 17:07:51 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -294,6 +294,9 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
     (setq etags-table-search-up-depth nil)
     )
   )
+
+(use-package install-world
+             :bind ("C-c 0qi" . harmsway/install-world))
 
 (use-package custom-utils
   :bind (("C-x C-M-e" . sanityinc/eval-last-sexp-or-region)
