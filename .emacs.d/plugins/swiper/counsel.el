@@ -1064,7 +1064,8 @@ INITIAL-INPUT can be given as the initial minibuffer input."
   (cd counsel--git-dir)
   (counsel-cmd-to-dired
    (format "%s | grep -i -E '%s' | xargs ls"
-           counsel-git-cmd ivy--old-re)))
+           counsel-git-cmd
+           (counsel-unquote-regex-parens ivy--old-re))))
 
 (defvar counsel-dired-listing-switches "-alh"
   "Switches passed to `ls' for `counsel-cmd-to-dired'.")
@@ -1719,7 +1720,8 @@ When INITIAL-INPUT is non-nil, use it in the minibuffer during completion."
   (cd ivy--directory)
   (counsel-cmd-to-dired
    (format
-    "ls | grep -i -E '%s' | xargs ls" ivy--old-re)))
+    "ls | grep -i -E '%s' | xargs ls"
+    (counsel-unquote-regex-parens ivy--old-re))))
 
 (defun counsel-up-directory ()
   "Go to the parent directory preselecting the current one.
