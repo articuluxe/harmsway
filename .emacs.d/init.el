@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2017-11-22 17:07:51 dharms>
+;; Modified Time-stamp: <2017-11-27 08:29:25 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2780,6 +2780,7 @@ This may perform related customization."
     :config
     (define-key json-mode-map "\C-c\C-f" 'json-navigator-navigate-after-point)
     (define-key json-mode-map "\C-c\C-n" 'json-navigator-navigate-region))
+  (use-package json-pointer)
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; log-viewer-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
