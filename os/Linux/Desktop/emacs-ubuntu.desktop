@@ -1,0 +1,6 @@
+[Desktop Entry]
+Comment=
+Terminal=false
+Name=emacs-ubuntu
+Exec=/usr/local/bin/emacs
+Type=Application
