@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-05-31 12:14:37 dan.harms>
+;; Modified Time-stamp: <2017-11-29 10:08:46 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -32,5 +32,8 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Process Viewer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package proced :bind ("C-c 0p" . proced))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; neato-graph-bar ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package neato-graph-bar :bind ("C-c 0o" . neato-graph-bar))
 
 ;; linux.el ends here
