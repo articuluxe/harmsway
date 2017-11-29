@@ -432,29 +432,58 @@ or most optimal searcher."
            :tests ("class test(object):" "class test:")
            :not ("class testnot:" "class testnot(object):"))
 
+    ;; ruby
     (:type "variable" :supports ("ag" "rg" "git-grep") :language "ruby"
            :regex "^\\s*((\\w+[.])*\\w+,\\s*)*JJJ(,\\s*(\\w+[.])*\\w+)*\\s*=([^=>~]|$)"
            :tests ("test = 1234" "self.foo, test, bar = args")
            :not ("if test == 1234" "foo_test = 1234"))
 
     (:type "function" :supports ("ag" "rg" "git-grep") :language "ruby"
-           :regex "(^|[^\\w.])((private|public|protected)\\s+)?def\\s+(\\w+(::|[.]))*JJJ($|\\W)"
+           :regex "(^|[^\\w.])((private|public|protected)\\s+)?def\\s+(\\w+(::|[.]))*JJJ($|[^\\w|:])"
            :tests ("def test(foo)" "def test()" "def test foo" "def test; end"
                    "def self.test()" "def MODULE::test()" "private def test")
            :not ("def test_foo"))
 
     (:type "function" :supports ("ag" "rg" "git-grep") :language "ruby"
-           :regex "(^|\\W)define(_singleton|_instance)?_method(\\s|[(])\\s*:JJJ($|\\W)"
+           :regex "(^|\\W)define(_singleton|_instance)?_method(\\s|[(])\\s*:JJJ($|[^\\w|:])"
            :tests ("define_method(:test, &body)"
                    "mod.define_instance_method(:test) { body }"))
 
     (:type "type" :supports ("ag" "rg" "git-grep") :language "ruby"
-           :regex "(^|[^\\w.])class\\s+(\\w*::)*JJJ($|\\W)"
+           :regex "(^|[^\\w.])class\\s+(\\w*::)*JJJ($|[^\\w|:])"
            :tests ("class test" "class Foo::test"))
 
     (:type "type" :supports ("ag" "rg" "git-grep") :language "ruby"
-           :regex "(^|[^\\w.])module\\s+(\\w*::)*JJJ($|\\W)"
+           :regex "(^|[^\\w.])module\\s+(\\w*::)*JJJ($|[^\\w|:])"
            :tests ("module test" "module Foo::test"))
+
+    ;; crystal
+    (:type "variable" :supports ("ag" "rg" "git-grep") :language "crystal"
+           :regex "^\\s*((\\w+[.])*\\w+,\\s*)*JJJ(,\\s*(\\w+[.])*\\w+)*\\s*=([^=>~]|$)"
+           :tests ("test = 1234" "self.foo, test, bar = args")
+           :not ("if test == 1234" "foo_test = 1234"))
+
+    (:type "function" :supports ("ag" "rg" "git-grep") :language "crystal"
+           :regex "(^|[^\\w.])((private|public|protected)\\s+)?def\\s+(\\w+(::|[.]))*JJJ($|[^\\w|:])"
+           :tests ("def test(foo)" "def test()" "def test foo" "def test; end"
+                   "def self.test()" "def MODULE::test()" "private def test")
+           :not ("def test_foo"))
+
+    (:type "type" :supports ("ag" "rg" "git-grep") :language "crystal"
+           :regex "(^|[^\\w.])class\\s+(\\w*::)*JJJ($|[^\\w|:])"
+           :tests ("class test" "class Foo::test"))
+
+    (:type "type" :supports ("ag" "rg" "git-grep") :language "crystal"
+           :regex "(^|[^\\w.])module\\s+(\\w*::)*JJJ($|[^\\w|:])"
+           :tests ("module test" "module Foo::test"))
+
+    (:type "type" :supports ("ag" "rg" "git-grep") :language "crystal"
+           :regex "(^|[^\\w.])struct\\s+(\\w*::)*JJJ($|[^\\w|:])"
+           :tests ("struct test" "struct Foo::test"))
+
+    (:type "type" :supports ("ag" "rg" "git-grep") :language "crystal"
+           :regex "(^|[^\\w.])alias\\s+(\\w*::)*JJJ($|[^\\w|:])"
+           :tests ("alias test" "alias Foo::test"))
 
     ;; scala
     (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "scala"
@@ -960,6 +989,8 @@ or most optimal searcher."
     (:language "r" :ext "Rnw" :agtype "r" :rgtype "r")
     (:language "r" :ext "Rtex" :agtype "r" :rgtype nil)
     (:language "r" :ext "Rrst" :agtype "r" :rgtype nil)
+    (:language "crystal" :ext "cr" :agtype "crystal" :rgtype "crystal")
+    (:language "crystal" :ext "ecr" :agtype "crystal" :rgtype nil)
     (:language "ruby" :ext "rb" :agtype "ruby" :rgtype "ruby")
     (:language "ruby" :ext "erb" :agtype "ruby" :rgtype nil)
     (:language "ruby" :ext "haml" :agtype "ruby" :rgtype nil)
@@ -1365,7 +1396,7 @@ to keep looking for another root."
   (cond
    ((and (string= lang "clojure") (s-contains? "/" look-for))
     (nth 1 (s-split "/" look-for)))
-   ((and (string= lang "ruby") (s-starts-with? ":" look-for))
+   ((and (or (string= lang "ruby") (string= lang "crystal")) (s-starts-with? ":" look-for))
     (s-chop-prefix ":" look-for))
    (t
     look-for)))
@@ -1544,6 +1575,7 @@ current file."
     (:comment "#" :language "python")
     (:comment "#" :language "r")
     (:comment "#" :language "ruby")
+    (:comment "#" :language "crystal")
     (:comment "//" :language "scala")
     (:comment ";" :language "scheme")
     (:comment "#" :language "shell")

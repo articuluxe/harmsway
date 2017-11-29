@@ -413,9 +413,9 @@ absolute path is returned."
   (magit--with-refresh-cache (list default-directory 'magit-git-dir path)
     (magit--with-safe-default-directory nil
       (-when-let (dir (magit-rev-parse-safe "--git-dir"))
-        (setq dir (file-name-as-directory
-                   (concat (file-remote-p default-directory)
-                           (magit-expand-git-file-name dir))))
+        (setq dir (file-name-as-directory (magit-expand-git-file-name dir)))
+        (unless (file-remote-p dir)
+          (setq dir (concat (file-remote-p default-directory) dir)))
         (if path (expand-file-name (convert-standard-filename path) dir) dir)))))
 
 (defvar magit--separated-gitdirs nil)
@@ -712,6 +712,10 @@ Sorted from longest to shortest CYGWIN name."
 (defun magit-no-commit-p ()
   "Return t if there is no commit in the current Git repository."
   (not (magit-rev-verify "HEAD")))
+
+(defun magit-merge-commit-p (commit)
+  "Return t if COMMIT is a merge commit."
+  (> (length (magit-commit-parents commit)) 1))
 
 (defun magit-anything-staged-p (&optional ignore-submodules &rest files)
   "Return t if there are any staged changes.
@@ -1332,10 +1336,6 @@ Return a list of two integers: (A>B B>A)."
   (--when-let (magit-git-string "rev-list" "-1" "--parents" commit)
     (cdr (split-string it))))
 
-(defun magit-assert-one-parent (commit command)
-  (when (> (length (magit-commit-parents commit)) 1)
-    (user-error "Cannot %s a merge commit" command)))
-
 (defun magit-patch-id (rev)
   (with-temp-buffer
     (magit-process-file
@@ -1815,15 +1815,16 @@ the reference is used.  The first regexp submatch becomes the
 (gv-define-setter magit-get (val &rest keys)
   `(magit-set ,val ,@keys))
 
-(defun magit-set-all (values &rest keys)
-  "Set all values of the Git variable specified by KEYS to VALUES."
+(defun magit-set-all (values* &rest keys)
+  "Set all values of the Git variable specified by KEYS to VALUES.
+\n(fn VALUES &rest KEYS)"
   (let ((arg (and (or (string-prefix-p "--" (car keys))
                       (null (car keys)))
                   (pop keys)))
         (var (mapconcat 'identity keys ".")))
     (when (magit-get var)
       (magit-call-git "config" arg "--unset-all" var))
-    (dolist (v values)
+    (dolist (v values*)
       (magit-call-git "config" arg "--add" var v))))
 
 ;;;; Variables in Popups

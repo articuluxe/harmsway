@@ -7,13 +7,13 @@
 ;; Created: 17 Jun 2012
 ;; Modified: 17 Oct 2016
 ;; Version: 2.3
-;; Package-Requires: ((bind-key "1.0") (diminish "0.44"))
+;; Package-Requires: ((bind-key "1.0"))
 ;; Keywords: dotemacs startup speed config package
 ;; URL: https://github.com/jwiegley/use-package
 
 ;; This program is free software; you can redistribute it and/or
 ;; modify it under the terms of the GNU General Public License as
-;; published by the Free Software Foundation; either version 2, or (at
+;; published by the Free Software Foundation; either version 3, or (at
 ;; your option) any later version.
 
 ;; This program is distributed in the hope that it will be useful, but
@@ -40,8 +40,6 @@
 ;;; Code:
 
 (require 'bind-key)
-(require 'bytecomp)
-(require 'diminish nil t)
 (require 'bytecomp)
 (eval-when-compile (require 'cl))
 (eval-when-compile (require 'regexp-opt))
@@ -158,6 +156,7 @@ the user specified."
     :defines
     :functions
     :defer
+    :hook
     :custom
     :custom-face
     :init
@@ -372,19 +371,18 @@ ARGS is a list of forms, so `((foo))' if only `foo' is being called."
   (if (not use-package-inject-hooks)
       (use-package-expand name-string (format "%s" keyword) body)
     (let ((keyword-name (substring (format "%s" keyword) 1)))
-      (when body
-        `((when ,(macroexp-progn
-                  (use-package-expand name-string (format "pre-%s hook" keyword)
-                    `((run-hook-with-args-until-failure
-                       ',(intern (concat "use-package--" name-string
-                                         "--pre-" keyword-name "-hook"))))))
-            ,(macroexp-progn
-              (use-package-expand name-string (format "%s" keyword) body))
-            ,(macroexp-progn
-              (use-package-expand name-string (format "post-%s hook" keyword)
-                `((run-hooks
-                   ',(intern (concat "use-package--" name-string
-                                     "--post-" keyword-name "-hook"))))))))))))
+      `((when ,(macroexp-progn
+                (use-package-expand name-string (format "pre-%s hook" keyword)
+                  `((run-hook-with-args-until-failure
+                     ',(intern (concat "use-package--" name-string
+                                       "--pre-" keyword-name "-hook"))))))
+          ,(macroexp-progn
+            (use-package-expand name-string (format "%s" keyword) body))
+          ,(macroexp-progn
+            (use-package-expand name-string (format "post-%s hook" keyword)
+              `((run-hooks
+                 ',(intern (concat "use-package--" name-string
+                                   "--post-" keyword-name "-hook")))))))))))
 
 (defun use-package--with-elapsed-timer (text body)
   "BODY is a list of forms, so `((foo))' if only `foo' is being called."
@@ -534,7 +532,10 @@ This is in contrast to merely setting it to 0."
       (if (memq keyword use-package-keywords)
           (cons keyword
                 (cons arg (use-package-normalize-plist name tail)))
-        (use-package-error (format "Unrecognized keyword: %s" keyword))))))
+        (ignore
+         (display-warning 'use-package
+                          (format "Unrecognized keyword: %s" keyword)
+                          :warning))))))
 
 (defun use-package-process-keywords (name plist &optional state)
   "Process the next keyword in the free-form property list PLIST.
@@ -825,15 +826,17 @@ If the package is installed, its entry is removed from
 ;;; :requires
 ;;
 
-(defun use-package-as-one (label args f)
-  "Call F on the first element of ARGS if it has one element, or all of ARGS."
+(defun use-package-as-one (label args f &optional allow-empty)
+  "Call F on the first element of ARGS if it has one element, or all of ARGS.
+If ALLOW-EMPTY is non-nil, it's OK for ARGS to be an empty list."
   (declare (indent 1))
-  (if (and (listp args) (listp (cdr args)))
+  (if (or (and (not (null args)) (listp args) (listp (cdr args)))
+          (and allow-empty (null args)))
       (if (= (length args) 1)
           (funcall f label (car args))
         (funcall f label args))
     (use-package-error
-     (concat label " wants a list"))))
+     (concat label " wants a non-empty list"))))
 
 (put 'use-package-as-one 'lisp-indent-function 'defun)
 
@@ -1408,26 +1411,68 @@ deferred until the prefix key sequence is pressed."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
+;;; :hook
+;;
+
+(defun use-package-normalize/:hook (name keyword args)
+  (use-package-as-one (symbol-name keyword) args
+    (lambda (label arg)
+      (unless (or (symbolp arg) (consp arg))
+        (use-package-error
+         (concat label " a <symbol> or (<symbol or list of symbols> . <symbol or function>)"
+                 " or list of these")))
+      (use-package-normalize-pairs
+       #'(lambda (k)
+           (or (symbolp k)
+               (and (listp k)
+                    (listp (cdr k))
+                    (seq-every-p #'symbolp k))))
+       #'(lambda (v)
+           (or (symbolp v) (functionp v)))
+       name label arg))))
+
+(defun use-package-handler/:hook (name keyword args rest state)
+  "Generate use-package custom keyword code."
+  (let ((commands (let (funs)
+                    (dolist (def args)
+                      (if (symbolp (cdr def))
+                          (setq funs (cons (cdr def) funs))))
+                    (nreverse funs))))
+    (use-package-concat
+     (use-package-process-keywords name
+       (if commands
+           (use-package-sort-keywords
+            (use-package-plist-maybe-put rest :defer t))
+         rest)
+       (if commands
+           (use-package-plist-append state :commands commands)
+         state))
+     (cl-mapcan
+      (lambda (def)
+        (let ((syms (car def))
+              (fun (cdr def)))
+          (mapcar
+           #'(lambda (sym) 
+               `(add-hook (quote ,(intern (format "%s-hook" sym)))
+                          (function ,fun)))
+           (if (symbolp syms) (list syms) syms)))) args))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
 ;;; :custom
 ;;
 
-(defun use-package-normalize/:custom (name-symbol keyword arg)
+(defun use-package-normalize/:custom (name keyword args)
   "Normalize use-package custom keyword."
-  (let ((error-msg (format "%s wants a (<symbol> <form> <optional string comment>) or list of these" name-symbol)))
-    (unless (listp arg)
-      (use-package-error error-msg))
-    (dolist (def arg arg)
-      (unless (listp def)
-        (use-package-error error-msg))
-      (let ((variable (nth 0 def))
-            (value (nth 1 def))
-            (comment (nth 2 def)))
-        (when (or (not variable)
-                  (and (not value)
-                       (not (eq value nil)))
-                  (> (length def) 3)
-                  (and comment (not (stringp comment))))
-          (use-package-error error-msg))))))
+  (use-package-as-one (symbol-name keyword) args
+    (lambda (label arg)
+      (unless (listp arg)
+        (use-package-error
+         (concat label " a (<symbol> <value> [comment])"
+                 " or list of these")))
+      (if (symbolp (car arg))
+          (list arg)
+        arg))))
 
 (defun use-package-handler/:custom (name keyword args rest state)
   "Generate use-package custom keyword code."
@@ -1437,7 +1482,7 @@ deferred until the prefix key sequence is pressed."
                (let ((variable (nth 0 def))
                      (value (nth 1 def))
                      (comment (nth 2 def)))
-                 (unless comment
+                 (unless (and comment (stringp comment))
                    (setq comment (format "Customized with use-package %s" name)))
                  `(customize-set-variable (quote ,variable) ,value ,comment)))
              args)
@@ -1482,10 +1527,12 @@ deferred until the prefix key sequence is pressed."
      SYMBOL
      (SYMBOL . STRING)"
   (cond
+   ((not arg)
+    (list (use-package-as-mode name)))
    ((symbolp arg)
     (list arg))
    ((stringp arg)
-    (list (cons (intern (concat (use-package-as-string name) "-mode")) arg)))
+    (list (cons (use-package-as-mode name) arg)))
    ((and (consp arg) (stringp (cdr arg)))
     (list arg))
    ((and (not recursed) (listp arg) (listp (cdr arg)))
@@ -1498,7 +1545,7 @@ deferred until the prefix key sequence is pressed."
 
 (defun use-package-normalize/:diminish (name keyword args)
   (use-package-as-one (symbol-name keyword) args
-    (apply-partially #'use-package-normalize-diminish name)))
+    (apply-partially #'use-package-normalize-diminish name) t))
 
 (defun use-package-handler/:diminish (name keyword arg rest state)
   (let ((body (use-package-process-keywords name rest state)))
@@ -1557,7 +1604,8 @@ deferred until the prefix key sequence is pressed."
   (let ((body (use-package-process-keywords name rest state)))
     (use-package-concat
      body
-     `((delight '(,@args))))))
+     `((if (fboundp 'delight)
+           (delight '(,@args)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1585,7 +1633,6 @@ this file.  Usage:
 :mode            Form to be added to `auto-mode-alist'.
 :magic           Form to be added to `magic-mode-alist'.
 :magic-fallback  Form to be added to `magic-fallback-mode-alist'.
-:mode            Form to be added to `auto-mode-alist'.
 :interpreter     Form to be added to `interpreter-mode-alist'.
 
 :commands        Define autoloads for commands that will be defined by the
@@ -1642,6 +1689,9 @@ this file.  Usage:
                  `(eval-when-compile
                     ,@(mapcar #'(lambda (var) `(defvar ,var))
                               (plist-get args :defines))
+                    ,@(mapcar #'(lambda (fn) `(declare-function
+                                          ,fn ,(use-package-as-string name)))
+                              (plist-get args :functions))
                     (with-demoted-errors
                         ,(format "Cannot load %s: %%S" name)
                       ,(if (eq use-package-verbose 'debug)
@@ -1652,19 +1702,25 @@ this file.  Usage:
       (let ((body
              (macroexp-progn
               (use-package-process-keywords name
-                (if use-package-always-demand
-                    (append args '(:demand t))
-                  args)
-                (and use-package-always-defer (list :deferred t))))))
-        (if use-package-debug
-            (display-buffer
-             (save-current-buffer
-               (let ((buf (get-buffer-create "*use-package*")))
-                 (with-current-buffer buf
-                   (delete-region (point-min) (point-max))
-                   (emacs-lisp-mode)
-                   (insert (pp-to-string body)))
-                 buf))))
+                (let ((args* (if (and use-package-always-demand
+                                      (not (memq :defer args)))
+                                 (append args '(:demand t))
+                               args)))
+                  (unless (plist-member args* :init)
+                    (plist-put args* :init nil))
+                  (unless (plist-member args* :config)
+                    (plist-put args* :config nil))
+                  args*)
+                (and use-package-always-defer
+                     (list :deferred t))))))
+        (when use-package-debug
+          (display-buffer
+           (save-current-buffer
+             (with-current-buffer (get-buffer-create "*use-package*")
+               (goto-char (point-max))
+               (emacs-lisp-mode)
+               (insert (pp-to-string body))
+               (current-buffer)))))
         body))))
 
 
