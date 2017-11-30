@@ -13,7 +13,7 @@ cask=$HOME/.cask/bin
 export PATH=$HOME/bin:$cask:/usr/local/bin:/bin:/sbin:/usr/bin:.
 
 export CSTDLIB_ROOT=/usr
-export CSTDLIB_INC=$CSTDLIB_ROOT/include/c++/7.1.0/
+export CSTDLIB_INC=$CSTDLIB_ROOT/include/c++/7.2.0/
 export CSTDLIB_BIN=$CSTDLIB_ROOT/bin
 
 export LD_LIBRARY_PATH=/usr/local/lib
