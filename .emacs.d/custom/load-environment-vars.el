@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Thursday, June 15, 2017
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-06-15 08:14:02 dharms>
+;; Modified Time-stamp: <2017-11-30 17:34:07 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: environment variable
 
@@ -33,7 +33,7 @@
 For each line, sets environment variable `var' equal to `val'."
   (interactive "fLoad environment variables from file: ")
   (mapc (lambda(line)
-          (when (string-match "\\(.+\\)=\\(.+\\)" line)
+          (when (string-match "\\(.+\\)=\\(.*\\)" line)
             (setenv (match-string-no-properties 1 line)
                     (substitute-env-vars
                      (match-string-no-properties 2 line)))))
