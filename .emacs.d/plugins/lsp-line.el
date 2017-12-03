@@ -34,6 +34,19 @@
 (require 'lsp-mode)
 (require 'flycheck)
 
+(defgroup lsp-line nil
+  "Display informations of the current line."
+  :group 'tools
+  :group 'convenience
+  :group 'lsp-ui
+  :link '(custom-manual "(lsp-line) Top")
+  :link '(info-link "(lsp-line) Customizing"))
+
+(defcustom lsp-line-enable t
+  "Whether or not to enable lsp-line."
+  :type 'boolean
+  :group 'lsp-ui)
+
 (defvar-local lsp-line--ovs nil
   "Overlays used by `lsp-line'.")
 
@@ -55,7 +68,7 @@ It is used to know when the window has changed of width.")
        :box (:line-width -1 :color "grey")
        :height 0.99))
   "Face used to highlight symbols."
-  :group 'lsp-ui)
+  :group 'lsp-line)
 
 (defface lsp-line-current-symbol
   '((t :foreground "white"
@@ -63,7 +76,7 @@ It is used to know when the window has changed of width.")
        :box (:line-width -1 :color "white")
        :height 0.99))
   "Face used to highlight the symbol on point."
-  :group 'lsp-ui)
+  :group 'lsp-line)
 
 (defun lsp-line--calc-space (win-width str-len index)
   "Calcul whether there is enough space on line.
@@ -122,10 +135,11 @@ MarkedString | MarkedString[] | MarkupContent (as defined in the LSP).
 We prioritize string with a language (which is probably a type or a
 function signature)."
   (when contents
-    (let* ((strings (seq-group-by 'hash-table-p contents))
+    (let* ((strings (when (listp contents) (seq-group-by 'hash-table-p contents)))
            (string (alist-get nil strings))
            (strings-with-language (alist-get t strings)))
       (or (when (stringp contents) contents)
+          (when (hash-table-p contents) contents)
           (when (listp strings-with-language)
             (or (car (seq-filter (lambda (s) (string= (gethash "language" s)
                                                       (lsp-line--get-language)))
@@ -145,7 +159,7 @@ MARKED-STRING is the string returned by `lsp-line--extract-info'."
       (let* ((language (gethash "language" marked-string))
              (value (gethash "value" marked-string))
              (renderer (lsp-line--get-renderer language)))
-        (setq marked-string (if (functionp renderer)
+        (setq marked-string (if (and (functionp renderer) value)
                                 (funcall renderer value)
                               value))))
     (add-face-text-property 0 (length marked-string) '(:slant italic :height 0.99) nil marked-string)
@@ -180,6 +194,7 @@ CURRENT is non-nil when the point is on the symbol."
             (overlay-put ov 'bounds bounds)
             (overlay-put ov 'current current)
             (overlay-put ov 'after-string final-string)
+            (overlay-put ov 'window (get-buffer-window))
             (push ov lsp-line--ovs)))))))
 
 (defun lsp-line--toggle-current (ov current)
@@ -269,7 +284,7 @@ to the language server."
 (define-minor-mode lsp-line-mode
   "Minor mode for showing information of current line."
   :init-value nil
-  :group nil
+  :group lsp-line
   (cond
    (lsp-line-mode
     (add-hook 'post-command-hook 'lsp-line nil t)
@@ -279,6 +294,12 @@ to the language server."
     (lsp-line--delete-ov)
     (remove-hook 'post-command-hook 'lsp-line t))
    ))
+
+(defun lsp-line-enable (enable)
+  "Enable/disable lsp-line-mode."
+  (if enable
+      (lsp-line-mode 1)
+    (lsp-line-mode -1)))
 
 (provide 'lsp-line)
 ;;; lsp-line.el ends here

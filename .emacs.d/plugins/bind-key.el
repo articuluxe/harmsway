@@ -1,11 +1,12 @@
 ;;; bind-key.el --- A simple way to manage personal keybindings
 
-;; Copyright (c) 2012-2015 john wiegley
+;; Copyright (c) 2012-2017 John Wiegley
 
-;; Author: John Wiegley <jwiegley@gmail.com>
-;; Maintainer: John Wiegley <jwiegley@gmail.com>
+;; Author: John Wiegley <johnw@newartisans.com>
+;; Maintainer: John Wiegley <johnw@newartisans.com>
 ;; Created: 16 Jun 2012
-;; Version: 1.0
+;; Modified: 29 Nov 2017
+;; Version: 2.4
 ;; Keywords: keys keybinding config dotemacs
 ;; URL: https://github.com/jwiegley/use-package
 
@@ -266,11 +267,12 @@ function symbol (unquoted)."
          (wrap map
                (cl-mapcan
                 (lambda (form)
-                  (if prefix-map
-                      `((bind-key ,(car form) ',(cdr form) ,prefix-map ,filter))
-                    (if (and map (not (eq map 'global-map)))
-                        `((bind-key ,(car form) ',(cdr form) ,map ,filter))
-                      `((bind-key ,(car form) ',(cdr form) nil ,filter)))))
+                  (let ((fun (and (cdr form) (list 'function (cdr form)))))
+                    (if prefix-map
+                        `((bind-key ,(car form) ,fun ,prefix-map ,filter))
+                      (if (and map (not (eq map 'global-map)))
+                          `((bind-key ,(car form) ,fun ,map ,filter))
+                        `((bind-key ,(car form) ,fun nil ,filter))))))
                 first))
          (when next
            (bind-keys-form
@@ -305,7 +307,7 @@ function symbol (unquoted)."
   (cond
    ((listp elem)
     (cond
-     ((eq 'lambda (car elem))
+     ((memq (car elem) '(lambda function))
       (if (and bind-key-describe-special-forms
                (stringp (nth 2 elem)))
           (nth 2 elem)
