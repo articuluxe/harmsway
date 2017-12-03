@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2017-11-30 08:42:17 dharms>
+;; Modified Time-stamp: <2017-12-02 22:40:07 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2657,6 +2657,9 @@ This may perform related customization."
               (define-key dart-mode-map "\C-c\C-u" 'uncomment-region)
               )))
 ;not sure this is needed (add-hook 'dart-mode-hook 'flycheck-mode)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dotenv-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package dotenv-mode :mode ("\\.env$"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; elf-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package elf-mode

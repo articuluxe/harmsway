@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, April 15, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-06-15 08:14:29 dharms>
+;; Modified Time-stamp: <2017-12-02 22:48:38 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: environment utils
 
@@ -39,7 +39,7 @@ final element."
         (include-file (concat dir "INCLUDE"))
         (lib-file (concat dir "LIB"))
         (libpath-file (concat dir "LIBPATH"))
-        (env-file (concat dir "env")))
+        (env-file (concat dir ".env")))
     ;; check for any additional environment variables
     (if (file-exists-p path-file)
         (progn
