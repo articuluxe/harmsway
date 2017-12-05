@@ -435,7 +435,9 @@ of `history-length'.")
   "Store the index of the current candidate.")
 
 (defvar ivy--window-index 0
-  "Store the index of the current candidate in the minibuffer window.")
+  "Store the index of the current candidate in the minibuffer window.
+
+This means it's between 0 and `ivy-height'.")
 
 (defvar ivy-exit nil
   "Store `done' if the completion was successfully selected.
@@ -763,6 +765,12 @@ When ARG is t, exit with current text, ignoring the candidates."
         (t
          (ivy-done))))
 
+(defvar ivy-auto-select-single-candidate nil
+  "When non-nil, auto-select the candidate if it is the only one.
+When t, it is the same as if the user were prompted and selected the candidate
+by calling the default action.  This variable has no use unless the collection
+contains a single candidate.")
+
 (defun ivy--directory-done ()
   "Handle exit from the minibuffer when completing file names."
   (let (dir)
@@ -812,9 +820,10 @@ When ARG is t, exit with current text, ignoring the candidates."
          (setq res (cl-delete-duplicates res :test #'equal))
          (let* ((old-ivy-last ivy-last)
                 (enable-recursive-minibuffers t)
-                (host (ivy-read "user@host: "
-                                (mapcar #'ivy-build-tramp-name res)
-                                :initial-input rest)))
+                (host (let ((ivy-auto-select-single-candidate nil))
+                        (ivy-read "user@host: "
+                                  (mapcar #'ivy-build-tramp-name res)
+                                  :initial-input rest))))
            (setq ivy-last old-ivy-last)
            (when host
              (setq ivy--directory "/")
@@ -1553,12 +1562,6 @@ Directories come first."
           (cl-remove-if-not predicate seq)
         seq))))
 
-(defvar ivy-auto-select-single-candidate nil
-  "When non-nil, auto-select the candidate if it is the only one.
-When t, it is the same as if the user were prompted and selected the candidate
-by calling the default action.  This variable has no use unless the collection
-contains a single candidate.")
-
 ;;** Entry Point
 ;;;###autoload
 (cl-defun ivy-read (prompt collection
@@ -1692,9 +1695,7 @@ customizations apply to the current completion session."
                          ((null resize-mini-windows) 'grow-only)
                          (t resize-mini-windows))))
                  (if (and ivy-auto-select-single-candidate
-                          (= (length ivy--all-candidates) 1)
-                          (and (stringp ivy--directory)
-                               (not (file-remote-p ivy--directory))))
+                          (= (length ivy--all-candidates) 1))
                      (progn
                        (setf (ivy-state-current ivy-last)
                              (car ivy--all-candidates))
@@ -2007,15 +2008,11 @@ The previous string is between `ivy-completion-beg' and `ivy-completion-end'."
           (pt (point))
           (beg ivy-completion-beg)
           (end ivy-completion-end))
-      (when ivy-completion-beg
-        (delete-region
-         ivy-completion-beg
-         ivy-completion-end))
-      (setq ivy-completion-beg
-            (move-marker (make-marker) (point)))
+      (when beg
+        (delete-region beg end))
+      (setq ivy-completion-beg (point))
       (insert (substring-no-properties str))
-      (setq ivy-completion-end
-            (move-marker (make-marker) (point)))
+      (setq ivy-completion-end (point))
       (save-excursion
         (dolist (cursor fake-cursors)
           (goto-char (overlay-start cursor))
@@ -2024,8 +2021,8 @@ The previous string is between `ivy-completion-beg' and `ivy-completion-end'."
           (insert (substring-no-properties str))
           ;; manually move the fake cursor
           (move-overlay cursor (point) (1+ (point)))
-          (move-marker (overlay-get cursor 'point) (point))
-          (move-marker (overlay-get cursor 'mark) (point)))))))
+          (set-marker (overlay-get cursor 'point) (point))
+          (set-marker (overlay-get cursor 'mark) (point)))))))
 
 (defun ivy-completion-common-length (str)
   "Return the length of the first `completions-common-part' face in STR."
@@ -3322,25 +3319,28 @@ CANDS is a list of strings."
     (ivy-set-index (max (1- ivy--length) 0)))
   (if (null cands)
       (setf (ivy-state-current ivy-last) "")
+    (setf (ivy-state-current ivy-last) (copy-sequence (nth ivy--index cands)))
     (let* ((half-height (/ ivy-height 2))
            (start (max 0 (- ivy--index half-height)))
            (end (min (+ start (1- ivy-height)) ivy--length))
            (start (max 0 (min start (- end (1- ivy-height)))))
-           (cands (cl-subseq cands start end))
-           (index (- ivy--index start))
+           (wnd-cands (cl-subseq cands start end))
            transformer-fn)
-      (setq ivy--window-index index)
-      (setf (ivy-state-current ivy-last) (copy-sequence (nth index cands)))
+      (setq ivy--window-index (- ivy--index start))
       (when (setq transformer-fn (ivy-state-display-transformer-fn ivy-last))
         (with-ivy-window
           (with-current-buffer (ivy-state-buffer ivy-last)
-            (setq cands (mapcar transformer-fn cands)))))
-      (let* ((cands (mapcar
-                     #'ivy--format-minibuffer-line
-                     cands))
-             (res (concat "\n" (funcall ivy-format-function cands))))
-        (put-text-property 0 (length res) 'read-only nil res)
-        res))))
+            (setq wnd-cands (mapcar transformer-fn wnd-cands)))))
+      (ivy--wnd-cands-to-str wnd-cands))))
+
+(defun ivy--wnd-cands-to-str (wnd-cands)
+  (let ((str (concat "\n"
+                     (funcall ivy-format-function
+                              (mapcar
+                               #'ivy--format-minibuffer-line
+                               wnd-cands)))))
+    (put-text-property 0 (length str) 'read-only nil str)
+    str))
 
 (defvar recentf-list)
 (defvar bookmark-alist)
@@ -3628,8 +3628,8 @@ BUFFER may be a string or nil."
     ,(lambda (x)
        (let* ((b (get-buffer x))
               (default-directory
-                (or (and b (buffer-local-value 'default-directory b))
-                    default-directory)))
+               (or (and b (buffer-local-value 'default-directory b))
+                   default-directory)))
          (call-interactively (if (functionp 'counsel-find-file)
                                  #'counsel-find-file
                                #'find-file))))
@@ -3640,6 +3640,9 @@ BUFFER may be a string or nil."
    ("k"
     ,(lambda (x)
        (kill-buffer x)
+       (unless (buffer-live-p (ivy-state-buffer ivy-last))
+         (setf (ivy-state-buffer ivy-last) (current-buffer)))
+       (setq ivy--index 0)
        (ivy--reset-state ivy-last))
     "kill")
    ("r"
@@ -3875,6 +3878,7 @@ When `ivy-calling' isn't nil, call `ivy-occur-press'."
 (defvar ivy-occur-grep-mode-map
   (let ((map (copy-keymap ivy-occur-mode-map)))
     (define-key map (kbd "C-x C-q") 'ivy-wgrep-change-to-wgrep-mode)
+    (define-key map "w" 'ivy-wgrep-change-to-wgrep-mode)
     map)
   "Keymap for Ivy Occur Grep mode.")
 
