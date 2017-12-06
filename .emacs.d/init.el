@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2017-12-02 22:40:07 dharms>
+;; Modified Time-stamp: <2017-12-06 09:25:16 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -63,6 +63,8 @@
                      ,(concat my/plugins-directory "company/")
                      ,(concat my/plugins-directory "js2/")
                      ,(concat my/plugins-directory "yasnippet/")
+                     ,(concat my/plugins-directory "lsp/")
+                     ,(concat my/plugins-directory "use-package/")
                      ,(concat my/elisp-directory "emacs-jedi/")
                      ) load-path))
   )
