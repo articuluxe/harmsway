@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2017-12-06 09:25:16 dan.harms>
+;; Modified Time-stamp: <2017-12-06 09:26:24 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -41,30 +41,31 @@
                           load-path))
   (setq load-path (append
                    `(
+                     ,(concat my/user-directory "ext/parsenv/")
                      ,(concat my/user-directory "ext/proviso/")
                      ,(concat my/user-directory "ext/outrespace/")
-                     ,(concat my/plugins-directory "multi-line/")
+                     ,(concat my/plugins-directory "auto-complete/")
+                     ,(concat my/plugins-directory "bookmark+/")
+                     ,(concat my/plugins-directory "company/")
+                     ,(concat my/plugins-directory "diff-hl/")
+                     ,(concat my/plugins-directory "elnode/")
                      ,(concat my/plugins-directory "emacs-refactor/")
                      ,(concat my/plugins-directory "expand-region/")
-                     ,(concat my/plugins-directory "multiple-cursors/")
-                     ,(concat my/plugins-directory "elnode/")
-                     ,(concat my/plugins-directory "magit/lisp/")
-                     ,(concat my/plugins-directory "bookmark+/")
                      ,(concat my/plugins-directory "hydra/")
-                     ,(concat my/plugins-directory "swiper/")
+                     ,(concat my/plugins-directory "js2/")
+                     ,(concat my/plugins-directory "lsp/")
+                     ,(concat my/plugins-directory "magit/lisp/")
+                     ,(concat my/plugins-directory "multi-line/")
+                     ,(concat my/plugins-directory "multiple-cursors/")
                      ,(concat my/plugins-directory "powerline/")
+                     ,(concat my/plugins-directory "rtags/")
                      ,(concat my/plugins-directory "smart-mode-line/")
                      ,(concat my/plugins-directory "sunrise/")
-                     ,(concat my/plugins-directory "diff-hl/")
+                     ,(concat my/plugins-directory "swiper/")
+                     ,(concat my/plugins-directory "use-package/")
                      ,(concat my/plugins-directory "vc-msg/")
                      ,(concat my/plugins-directory "vlf/")
-                     ,(concat my/plugins-directory "rtags/")
-                     ,(concat my/plugins-directory "auto-complete/")
-                     ,(concat my/plugins-directory "company/")
-                     ,(concat my/plugins-directory "js2/")
                      ,(concat my/plugins-directory "yasnippet/")
-                     ,(concat my/plugins-directory "lsp/")
-                     ,(concat my/plugins-directory "use-package/")
                      ,(concat my/elisp-directory "emacs-jedi/")
                      ) load-path))
   )
