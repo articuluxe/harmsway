@@ -1,16 +1,17 @@
 ;;; kaolin-themes-lib.el --- Kaolin-themes library
 
-;; TODO: (!!) Add extra colors per class
+;; TODO: (??) make mode-line dark in ligth themes.
+;; TODO: bright background option
+;; TODO: (??) disable color background for terminal
 ;; TODO: org-headline-done, i.e. done org level
 ;; TODO: add to all colors light and dark variant
 ;; TODO: (??) add var to highlight key seq'
 
-;; TODO: add the following faces to lib:
-;; TODO: add custom-* and buttons
-;; TODO: add magit faces
+;; TODO: Add the following faces to lib:
+;; TODO: custom-* and buttons
+;; TODO: magit faces
 
 ;; TODO: add mode-line option/flat mode-line style
-;; TODO: add git-gutter style option(solid or symbol)
 
 ;; TODO: (??) add base(terminal) colors
 ;; TODO: (??) colorful comments
@@ -23,28 +24,46 @@
 
 ;; TODO: add colored selection option
 ;; TODO: distant foregound
+;; TODO: move git-gutter faces from a theme file to lib,
+;; i.e. avoid duplication
+
+;; TODO: add company-tooltip-common-selection for new themes
+
+;; TODO background: #5a6066 || #5d636a
 
 ;; Predefined Kaolin palette
 (defconst kaolin-palette
-  '((black1          "#1b1b1b")
-    (black2          "#282828")
-    (black3          "#353535")
-    (black4          "#414141")
-    (alt-black       "#181818")
+  '(
+    (black0          "#181818")
+    (black1          "#1b1b1b")
+    (black2          "#252525")
+    (black3          "#2f2f2f")
+    (black4          "#353535")
 
-    (dark-gray       "#2a2a2a")
-    (dim-gray        "#353535")
-    (gray            "#545c5e")
-    (alt-gray        "#60696b")
-    (light-gray      "#9191a2")
+    (gray0           "#353b3c")
+    (gray1           "#383e3f")
+    ;; gray
+    (gray2           "#414849")
+    (gray2           "#4b5254")
+    (gray3           "#545c5e")
+    ;; alt-gray
+    (gray4           "#60696b")
+    (gray5           "#697375")
+    (gray6           "#737d80")
+    ;; bright-gray
+    (gray7           "#7c878a")
+    (gray8           "#879193")
+    ;; light-gray
+    (gray9           "#919a9c")
+
     (lavender-gray   "#b6b5c5")
     (grayish-orange  "#a5a19c")
 
+    (white0          "#e4e4e8")
     (white1          "#c8c8d0")
     (white2          "#babac4")
     (white3          "#adadb9")
     (white4          "#9f9fad")
-    (alt-white       "#e7dfdf")
 
     (brown           "#7d6360")
     (light-brown     "#ae9895")
@@ -54,7 +73,6 @@
     ;; TODO:
     (dark-red        "#832729")
     (red             "#cd5c5c")
-    ;; (faded-red       "#a94d53")
     (faded-red       "#863d42")
     (alt-red         "#c93232")
     (light-red       "#d66e75")
@@ -85,7 +103,8 @@
     (alt-midnight-green "#0F1E1D")
     (deep-green         "#39656b")
     (grayish-green      "#9ca78f")
-    (green              "#4a858c")
+    ;; (green              "#4a858c")
+    (green              "#4d8d93")
     (dark-green         "#39855f")
     (light-green        "#54b685")
     (lime               "#85b654")
@@ -105,7 +124,8 @@
     ;; TODO: (??) swap blue and soft-blue and rename to dark-blue
     (blue             "#3B6FA3")
     (alt-blue         "#267fb5")
-    (moderate-blue    "#4e7f95")
+    ;; (moderate-blue    "#4e7f95")
+    (moderate-blue    "#53859d")
     (soft-blue        "#4CA6E8")
     (dark-cyan        "#008b8b")
     (cyan             "#54b6b6")
@@ -142,11 +162,11 @@
     (bg3  black3)
     (bg4  black4)
 
-    (dim-buffer alt-black)
+    (dim-buffer black0)
     (hl         light-green)
-    (hl-mono    alt-gray)
+    (hl-mono    gray4)
     (hl-line    (if kaolin-hl-line-colored midnight-blue bg2))
-    (hl-indent  gray)
+    (hl-indent  gray3)
     (selection  bg3)
     (pulse      dark-jade)
 
@@ -157,7 +177,7 @@
     (button-hl light-orange)
 
     (tooltip-bg bg2)
-    (tooltip-fg light-gray)
+    (tooltip-fg gray9)
     (tooltip-hl-bg alt-brown)
     (tooltip-hl-fg light-orange)
 
@@ -178,7 +198,7 @@
     (keyword     green)
     (second-key  deep-green)
     (builtin     teal)
-    (comment     gray)
+    (comment     gray3)
     (alt-comment alt-grayish-blue)
     (functions   builtin)
     (str         teal-green)
@@ -196,12 +216,12 @@
     ;; Mode-line
     (line-fg           fg4)
     (line-bg1          bg2)
-    (line-bg2          dim-gray)
-    (line-border       bg3)
+    (line-bg2          bg4)
+    (line-border       bg4)
     (line-color1       keyword)
     (line-color2       builtin)
-    (segment-active    gray)
-    (segment-inactive  gray)
+    (segment-active    gray3)
+    (segment-inactive  gray3)
     (evil-normal       green)
     (evil-insert       light-green)
     (evil-visual       orange)
@@ -210,11 +230,11 @@
     (evil-operator     evil-normal)
     (evil-emacs        light-yellow)
 
-    (win-border    dark-gray)
+    (win-border    black3)
     (line-num-bg   bg1)
-    (line-num-fg   gray)
-    (line-num-hl   light-gray)
-    (cursor        alt-white)
+    (line-num-fg   gray3)
+    (line-num-hl   gray9)
+    (cursor        white0)
 
     (swiper-bg   bg2)
     (ivy-bg      nil)
@@ -249,7 +269,7 @@
     (default             (:background bg1 :foreground fg1))
     (warning             (:foreground warning))
     (error               (:foreground err))
-    (shadow              (:foreground alt-gray))
+    (shadow              (:foreground gray4))
     (file-name-shadow    (:inherit 'shadow))
     (region              (:background selection))
     (secondary-selection (:background dark-jade))
@@ -262,7 +282,7 @@
     (italic              (:italic italic))
     (default-italic      (:italic italic))
     (bold-italic         (:bold bold :italic italic))
-    (link                (:foreground faded-orange :underline underline))
+    (link                (:foreground prep :underline underline))
     (link-visited        (:inherit 'link :underline nil))
     (success             (:background nil :foreground light-green))
     (escape-glyph        (:background nil :foreground cyan))
@@ -282,6 +302,8 @@
     (custom-button         (:background bg3 :foreground button :box (:line-width 2 :color bg2 :style 'released-button)))
     (custom-button-mouse   (:background bg4 :foreground button-hl :box (:line-width 2 :color bg2 :style 'released-button)))
     (custom-button-pressed (:background bg4 :foreground button-hl :box (:line-width 2 :color bg2 :style 'pressed-button)))
+    (custom-button-unraised (:inherit 'custom-button))
+    (custom-button-pressed-unraised (:inherit 'custom-button-pressed))
     (custom-state          (:background nil :foreground green))
     (custom-changed        (:background nil :foreground orange))
     (custom-visibility     (:background nil :foreground cyan :height 0.9 :underline underline))
@@ -319,11 +341,13 @@
     (auto-dim-other-buffers-face  (:background dim-buffer))
 
     ;; Linum & nlinum
-    (linum                        (:background line-num-bg :foreground line-num-fg :bold nil))
+    (linum                        (:background line-num-bg :foreground line-num-fg :bold nil
+                                               :italic nil :underline nil :strike-through nil))
     (linum-highlight-face         (:inherit 'linum))
-    (linum-relative-current-line  (:background line-num-bg :foreground line-num-hl :bold bold))
-    (nlinum-current-line          (:background line-num-bg :foreground line-num-hl :bold bold))
-    (nlinum-relative-current-face (:background line-num-bg :foreground line-num-hl :bold bold))
+    (nlinum-current-line          (:background line-num-bg :foreground line-num-hl :bold bold
+                                               :italic nil :underline nil :strike-through nil))
+    (linum-relative-current-line  (:inherit 'nlinum-current-line))
+    (nlinum-relative-current-face (:inherit 'nlinum-current-line))
 
     ;; Which-function-mode
     (which-func (:foreground orange))
@@ -335,7 +359,7 @@
     (which-key-command-description-face   (:foreground teal))
 
     ;; Ruler-mode
-    (ruler-mode-default        (:background bg2 :foreground gray))
+    (ruler-mode-default        (:background bg2 :foreground gray3))
     (ruler-mode-column-number  (:foreground var))
     (ruler-mode-current-column (:foreground orange))
     (ruler-mode-fill-column    (:foreground pink))
@@ -360,15 +384,15 @@
     (elfeed-search-title-face        (:foreground comment))
 
     ;; Modeline
-    (mode-line           (:box (:line-width 2 :color line-bg2) :background line-bg1 :foreground var :bold bold))
+    (mode-line           (:box (:line-width 2 :color line-border) :background line-bg1 :foreground var :bold bold))
+    (mode-line-inactive  (:box (:line-width 2 :color line-border) :background line-bg1 :foreground gray9 :bold bold))
     (mode-line-buffer-id (:background nil :foreground line-color2 :bold bold))
     (mode-line-highlight (:foreground line-color2 :box nil :bold bold))
-    (mode-line-inactive  (:box (:line-width 2 :color line-bg1) :background line-bg1 :foreground light-gray :bold bold))
     (mode-line-emphasis  (:foreground fg1))
 
     ;; Telephone-line
     (telephone-line-accent-active   (:inherit 'mode-line :background line-bg2 :foreground line-fg))
-    (telephone-line-accent-inactive (:inherit 'mode-line-inactive :background line-bg1 :foreground light-gray))
+    (telephone-line-accent-inactive (:inherit 'mode-line-inactive :background line-bg1 :foreground gray9))
     (telephone-line-evil            (:inherit 'mode-line))
     (telephone-line-evil-normal     (:inherit 'telephone-line-evil :background line-bg2 :foreground evil-normal))
     (telephone-line-evil-insert     (:inherit 'telephone-line-evil :background line-bg2 :foreground evil-insert))
@@ -414,7 +438,8 @@
     ;; Company
     (company-tooltip                  (:background tooltip-bg :foreground fg3 :bold bold))
     (company-tooltip-common           (:foreground hl))
-    (company-tooltip-common-selection (:foreground light-orange))
+    ;; TODO:
+    (company-tooltip-common-selection (:bold bold))
     (company-tooltip-selection        (:background tooltip-hl-bg :foreground tooltip-hl-fg))
     (company-tooltip-annotation       (:foreground var))
     (company-scrollbar-bg             (:background bg1))
@@ -545,6 +570,12 @@
     (diff-changed     (:background diff-change :foreground fg1))
     (diff-removed     (:background dark-red :foreground fg1))
 
+    ;; Imenu list
+    ;; TODO:
+    (imenu-list-entry-subalist-face-0 (:inherit 'font-lock-keyword-face))
+    (imenu-list-entry-face-1 (:foreground tooltip-fg))
+    (imenu-list-entry-face-0 (:inherit 'font-lock-type-face))
+
     ;; Git gutter
     (git-gutter:unchanged (:background bg1 :foreground nil))
     (git-gutter:added     (:background bg1 :foreground diff-add :bold bold))
@@ -562,15 +593,15 @@
     (popup-tip-face            (:background tooltip-hl-bg :foreground builtin :bold bold))
 
     ;; Terminal
-    (term               (:foreground fg1))
-    (term-color-black   (:foreground bg1))
+    (term               (:background bg1 :foreground fg1))
+    (term-color-black   (:foreground black1))
     (term-color-blue    (:foreground blue))
     (term-color-red     (:foreground red))
     (term-color-green   (:foreground green))
     (term-color-yellow  (:foreground yellow))
     (term-color-magenta (:foreground purple))
     (term-color-cyan    (:foreground cyan))
-    (term-color-white   (:foreground fg2))
+    (term-color-white   (:foreground white2))
 
     ;; EShell
     (eshell-prompt        (:foreground green :bold bold))
@@ -588,12 +619,12 @@
 
     ;; Whitespace mode
     ;; TODO: Add variant for light themes
-    (whitespace-empty            (:background dark-jade :foreground light-gray))
+    (whitespace-empty            (:background dark-jade :foreground gray9))
     (whitespace-line             (:background bg3 :foreground warning))
     (whitespace-newline          (:foreground teal))
     (whitespace-indentation      (:background hl-indent))
     (whitespace-tab              (:background light-jade))
-    (whitespace-space            (:background alt-gray :foreground dark-jade))
+    (whitespace-space            (:background gray4 :foreground dark-jade))
     (whitespace-hspace           (:foreground cyan))
     (whitespace-space-before-tab (:background alt-yellow :foreground bg2))
     (whitespace-space-after-tab  (:background alt-yellow :foreground bg2))
@@ -612,6 +643,7 @@
     (org-hide                      (:foreground bg1))
     (org-special-keyword           (:foreground functions))
     (org-table                     (:foreground var :bold bold))
+    (org-formula                   (:foreground type))
     (org-warning                   (:foreground warning :underline underline))
 
     (org-document-info-keyword     (:foreground second-key))
@@ -733,12 +765,6 @@
 ;; Predefined Kaolin variables
 (defconst kaolin-vars
   '())
-
-;; Works
-;; (let ((palette kaolin-palette))
-;;   (cl-loop for el in test-palette
-;;            do (kaolin-themes--add-to-alist 'palette (car el) (cdr el)))
-;;   (alist-get 'yellow palette))
 
 (provide 'kaolin-themes-lib)
 
