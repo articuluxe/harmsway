@@ -97,6 +97,12 @@
   "Face used for the headers."
   :group 'lsp-xref)
 
+(defvar lsp-xref-expand-function 'lsp-xref--expand-buffer
+  "A function used to determinate which file(s) to expand in the list of xrefs.
+The function takes one parameter: a list of cons where the car is the
+filename and the cdr is the number of references in that file.
+It should returns a list of filenames to expand.")
+
 (defvar-local lsp-xref--peek-overlay nil)
 (defvar-local lsp-xref--list nil)
 (defvar-local lsp-xref--last-xref nil)
@@ -178,11 +184,30 @@
     (overlay-put ov 'after-string (mapconcat 'identity string ""))
     (overlay-put ov 'window (get-buffer-window))))
 
+(defun lsp-xref--expand-buffer (_)
+  "."
+  (list buffer-file-name))
+
+(defun lsp-xref--expand (xrefs)
+  "XREFS."
+  (let* ((to-expand (->> (--map (cons (plist-get it :file) (plist-get it :count)) xrefs)
+                         (funcall lsp-xref-expand-function)))
+         first)
+    (while (nth lsp-xref--selection lsp-xref--list)
+      (when (and (lsp-xref--prop 'xrefs)
+                 (member (lsp-xref--prop 'file) to-expand))
+        (unless first
+          (setq first (1+ lsp-xref--selection)))
+        (lsp-xref--toggle-file t))
+      (setq lsp-xref--selection (1+ lsp-xref--selection)))
+    (setq lsp-xref--selection (or first 0))
+    (lsp-xref--recenter)))
+
 (defun lsp-xref--show (xrefs)
   "Create a window to list references/defintions.
 XREFS is a list of list of references/definitions."
   (setq lsp-xref--win-start (window-start)
-        lsp-xref--selection -1
+        lsp-xref--selection 0
         lsp-xref--offset 0
         lsp-xref--size-list 0
         lsp-xref--list nil)
@@ -192,12 +217,9 @@ XREFS is a list of list of references/definitions."
            (+ lsp-xref-peek-height 3))
     (recenter 15))
   (setq xrefs (--sort (string< (plist-get it :file) (plist-get other :file)) xrefs))
-  (--each-indexed xrefs
+  (--each xrefs
     (-let* (((&plist :file filename :xrefs xrefs :count count) it)
-            (len-str (number-to-string count))
-            (current-file (equal filename buffer-file-name)))
-      (when current-file
-        (setq lsp-xref--selection it-index))
+            (len-str (number-to-string count)))
       (setq lsp-xref--size-list (+ lsp-xref--size-list count))
       (push (concat (propertize (lsp-ui--workspace-path filename)
                                 'face 'lsp-xref-filename
@@ -207,11 +229,7 @@ XREFS is a list of list of references/definitions."
                     (propertize len-str 'face 'lsp-xref-filename))
             lsp-xref--list)))
   (setq lsp-xref--list (nreverse lsp-xref--list))
-  (if (= lsp-xref--selection -1)
-      (setq lsp-xref--selection 0)
-    (lsp-xref--toggle-file t)
-    (lsp-xref--select-next t)
-    (lsp-xref--recenter))
+  (lsp-xref--expand xrefs)
   (lsp-xref--peek))
 
 (defun lsp-xref--recenter ()
@@ -377,27 +395,43 @@ XREFS is a list of list of references/definitions."
   "Mode for lsp-xref."
   :init-value nil)
 
-(defun lsp-xref--find-xrefs (input kind)
+(defun lsp-xref--find-xrefs (input kind &optional request param)
   "Find INPUT references.
-KIND is 'references or 'definitions."
-  (let ((xrefs (lsp-xref--get-references kind)))
+KIND is 'references, 'definitions or a custom kind."
+  (let ((xrefs (lsp-xref--get-references kind request param)))
     (unless xrefs
       (user-error "No %s found for: %s" (symbol-name kind) input))
     (xref-push-marker-stack)
-    (if (and (not (cdr xrefs)) (not (cdar xrefs)))
-        (lsp-xref--goto-xref (caar xrefs))
+    (if (and (not (cdr xrefs))
+             (= (length (plist-get (car xrefs) :xrefs)) 1))
+        (-let* ((xref (car (plist-get (car xrefs) :xrefs)))
+                ((&hash "uri" file "range" range) xref)
+                ((&hash "line" line "character" col) (gethash "start" range)))
+          (lsp-xref--goto-xref `(:file ,(string-remove-prefix "file://" file) :line ,line :column ,col)))
       (lsp-xref-mode)
       (lsp-xref--show xrefs))))
 
 (defun lsp-xref-find-references ()
   "Find references to the IDENTIFIER at point."
   (interactive)
-  (lsp-xref--find-xrefs (symbol-at-point) 'references))
+  (lsp-xref--find-xrefs (symbol-at-point)
+                        'references
+                        "textDocument/references"
+                        (lsp--make-reference-params)))
 
 (defun lsp-xref-find-definitions ()
   "Find definitions to the IDENTIFIER at point."
   (interactive)
-  (lsp-xref--find-xrefs (symbol-at-point) 'definitions))
+  (lsp-xref--find-xrefs (symbol-at-point)
+                        'definitions
+                        "textDocument/definition"))
+
+(defun lsp-xref-find-custom (kind request &optional param)
+  "Find custom references.
+KIND is a symbol to name the references (definition, reference, ..).
+REQUEST is the method string to send the the language server.
+PARAM is the method parameter.  If nil, it default to TextDocumentPositionParams."
+  (lsp-xref--find-xrefs (symbol-at-point) kind request param))
 
 (defun lsp-xref--extract-chunk-from-buffer (pos start end)
   "Return the chunk of code pointed to by POS (a Position object)..
@@ -467,16 +501,14 @@ interface Location {
             (seq-group-by it locations)
             (mapcar #'lsp-xref--get-xrefs-list it)))
 
-(defun lsp-xref--get-references (kind)
+(defun lsp-xref--get-references (kind request &optional param)
   "Get all references/definitions for the symbol under point.
 Returns item(s).
 KIND."
   (lsp--send-changes lsp--cur-workspace)
   (-some->> (lsp--send-request (lsp--make-request
-                                (pcase kind
-                                  ('references "textDocument/references")
-                                  ('definitions "textDocument/definition"))
-                                (lsp--make-reference-params)))
+                                request
+                                (or param (lsp--text-document-position-params))))
             (lsp-xref--locations-to-xref-items)
             (-filter 'identity)))
 

@@ -108,8 +108,8 @@ declaration is incorrect."
     :mode
     :magic
     :magic-fallback
-    :commands
-    :hook)
+    :hook
+    :commands)
   "Unless `:demand' is used, keywords in this list imply deferred loading."
   :type '(repeat symbol)
   :group 'use-package)
@@ -181,7 +181,7 @@ be attempted."
 
 (defcustom use-package-hook-name-suffix "-hook"
   "Text append to the name of hooks mentioned by :hook.
-Set to `nil' if you don't want this to happen; it's only a
+Set to nil if you don't want this to happen; it's only a
 convenience."
   :type '(choice string (const :tag "No suffix" nil))
   :group 'use-package)
@@ -214,8 +214,8 @@ performed.
 
 NOTE: If the `pre-init' hook return a nil value, that block's
 user-supplied configuration is not evaluated, so be certain to
-return `t' if you only wish to add behavior to what the user
-had specified."
+return t if you only wish to add behavior to what the user had
+specified."
   :type 'boolean
   :group 'use-package)
 
@@ -248,8 +248,9 @@ This is used by `use-package-jump-to-package-form' and
   :group 'use-package)
 
 (defcustom use-package-enable-imenu-support nil
-  "If non-nil, adjust `lisp-imenu-generic-expression' to include
-support for finding `use-package' and `require' forms.
+  "If non-nil, cause imenu to see `use-package' declarations.
+This is done by adjusting `lisp-imenu-generic-expression' to
+include support for finding `use-package' and `require' forms.
 
 Must be set before loading use-package."
   :type 'boolean
@@ -305,7 +306,7 @@ convert it to a string and return that."
       (stringp re)))
 
 (defun use-package-normalize-regex (re)
-  "Given some regexp-like thing, resolve it down to a regular expression."
+  "Given some regexp-like thing in RE, resolve to a regular expression."
   (cond
    ((and (listp re) (eq (car re) 'rx)) (eval re))
    ((stringp re) re)
@@ -329,15 +330,16 @@ appended."
               (concat string "-mode")))))
 
 (defsubst use-package-load-name (name &optional noerror)
-  "Return a form which will load or require NAME depending on
-whether it's a string or symbol."
+  "Return a form which will load or require NAME.
+It does the right thing no matter if NAME is a string or symbol.
+Argument NOERROR means to indicate load failures as a warning."
   (if (stringp name)
       `(load ,name ,noerror)
     `(require ',name nil ,noerror)))
 
 (defun use-package-hook-injector (name-string keyword body)
-  "Wrap pre/post hook injections around a given keyword form.
-ARGS is a list of forms, so `((foo))' if only `foo' is being called."
+  "Wrap pre/post hook injections around the given BODY for KEYWORD.
+The BODY is a list of forms, so `((foo))' if only `foo' is being called."
   (if (not use-package-inject-hooks)
       body
     (let ((keyword-name (substring (format "%s" keyword) 1)))
@@ -552,6 +554,10 @@ extending any keys already present."
     ;; Certain keywords imply :defer, if :demand was not specified.
     (when (and (not (plist-member args :demand))
                (not (plist-member args :defer))
+               (not (or (equal '(t) (plist-get args :load))
+                        (equal (list (use-package-as-string name))
+                               (mapcar #'use-package-as-string
+                                       (plist-get args :load)))))
                (cl-some #'identity
                         (mapcar (apply-partially #'plist-member args)
                                 use-package-deferring-keywords)))
@@ -637,17 +643,15 @@ no more than once."
   (let ((loaded (cl-gensym "use-package--loaded"))
         (result (cl-gensym "use-package--result"))
         (next (cl-gensym "use-package--next")))
-    `((defvar ,loaded nil)
-      (defvar ,result nil)
-      (defvar ,next #'(lambda ()
-                        (if ,loaded
-                            ,result
-                          (setq ,loaded t)
-                          (setq ,result ,arg))))
-      ,(funcall f `(funcall ,next)))))
+    `((lexical-let (,loaded ,result)
+        ,@(funcall f `((if ,loaded
+                           ,result
+                         (setq ,loaded t)
+                         (setq ,result ,arg))))))))
 
 (defsubst use-package-normalize-value (label arg)
-  "Normalize a value."
+  "Normalize the Lisp value given by ARG.
+The argument LABEL is ignored."
   (cond ((null arg) nil)
         ((eq t arg) t)
         ((use-package-non-nil-symbolp arg)
@@ -877,7 +881,8 @@ representing symbols (that may need to be autloaded)."
   (let ((body (use-package-process-keywords name rest state)))
     (use-package-concat
      (mapcar #'(lambda (path)
-                 `(eval-and-compile (add-to-list 'load-path ,path))) arg)
+                 `(eval-and-compile (add-to-list 'load-path ,path)))
+             arg)
      body)))
 
 ;;;; :no-require
@@ -938,9 +943,8 @@ representing symbols (that may need to be autloaded)."
           #'(lambda (keyword err)
               (let ((msg (format "%s/%s: %s" ',name keyword
                                  (error-message-string err))))
-                ,(when (eq use-package-verbose 'debug)
-                   `(progn
-                      (with-current-buffer
+                ,@(when (eq use-package-verbose 'debug)
+                    `((with-current-buffer
                           (get-buffer-create "*use-package*")
                         (goto-char (point-max))
                         (insert "-----\n" msg ,use-package--form)
@@ -1126,15 +1130,11 @@ FEATURES is a list containing keywords `:and' and `:all', where
 no keyword implies `:all'."
   (cond
    ((use-package-non-nil-symbolp features)
-    `(eval-after-load ',features
-       ,(if (member (car body) '(quote backquote \' \`))
-            body
-          (list 'quote body))))
+    `((eval-after-load ',features ',(macroexp-progn body))))
    ((and (consp features)
          (memq (car features) '(:or :any)))
-    (macroexp-progn
-     (mapcar #'(lambda (x) (use-package-require-after-load x body))
-             (cdr features))))
+    (cl-mapcan #'(lambda (x) (use-package-require-after-load x body))
+               (cdr features)))
    ((and (consp features)
          (memq (car features) '(:and :all)))
     (cl-dolist (next (cdr features))
@@ -1149,8 +1149,7 @@ no keyword implies `:all'."
     (if (or (null uses) (null body))
         body
       (if (<= uses 1)
-          (list (use-package-require-after-load
-                 arg (list 'quote (macroexp-progn body))))
+          (use-package-require-after-load arg body)
         (use-package-memoize
          (apply-partially #'use-package-require-after-load arg)
          (macroexp-progn body))))))
@@ -1243,7 +1242,7 @@ no keyword implies `:all'."
 (defun use-package-handler/:load (name keyword arg rest state)
   (let ((body (use-package-process-keywords name rest state)))
     (cl-dolist (pkg arg)
-      (setq body (use-package-require pkg nil body)))
+      (setq body (use-package-require (if (eq t pkg) name pkg) nil body)))
     body))
 
 ;;;; :config
