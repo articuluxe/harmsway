@@ -4,3 +4,6 @@
 [submodule "outrespace"]
 	path = ext/outrespace
 	url = https://github.com/danrharms/outrespace.git
+[submodule "parsenv"]
+	path = ext/parsenv
+	url = https://github.com/articuluxe/parsenv.git
