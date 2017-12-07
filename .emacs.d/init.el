@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2017-12-07 12:50:26 dan.harms>
+;; Modified Time-stamp: <2017-12-07 13:22:04 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1647,6 +1647,10 @@ line."
   (define-key dired-mode-map "." dired-filter-mark-map)
   (setq wdired-allow-to-change-permissions t)
   (use-package ivy-dired-history)
+  (use-package dired-sidebar
+    :init
+    (setq dired-sidebar-use-evil-integration nil)
+    )
   ;; sorting
   ;; dired-quick-sort breaks ftp
   ;; (use-package dired-quick-sort
