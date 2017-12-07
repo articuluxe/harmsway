@@ -1,4 +1,4 @@
-;;; dired-filter.el --- Ibuffer-like filtering for dired
+;;; dired-filter.el --- Ibuffer-like filtering for dired -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2014-2015 Matúš Goljer
 
@@ -227,7 +227,7 @@
 (require 'dired-hacks-utils)
 (require 'dash)
 (require 'thingatpt)
-(require 'cl)
+(require 'cl-lib)
 (require 'f)
 
 ;; silence the compiler warning
@@ -239,7 +239,7 @@
 (defvar dired-filter-alist nil
   "Definitions of filters.
 
-Entries are of type (name desc body) ")
+Entries are of type (name desc body)")
 
 (defgroup dired-filter ()
   "Ibuffer-like filtering for `dired'."
@@ -292,8 +292,7 @@ By default, `dired-filter-by-omit' is active."
 (make-variable-buffer-local 'dired-filter-stack)
 
 (defcustom dired-filter-inherit-filter-stack nil
-  "When non-nil, visited subdirectories should inherit the filter
-of the parent directory."
+  "When non-nil, subdirectories inherit the filter of the parent directory."
   :type 'boolean
   :group 'dired-filter)
 
@@ -315,8 +314,9 @@ Currently, this only applies to `dired-filter-saved-filters'."
   :group 'dired-filter)
 
 (defcustom dired-filter-show-filters t
-  "If non-nil, if `dired-filter-stack' is non-nil, show a
-description of active filters in header line.
+  "If non-nil, show a description of active filters in header line.
+
+If `dired-filter-stack' is nil, no header is shown.
 
 This modifies `header-line-format' by appending
 `dired-filter-header-line-format' to it."
@@ -408,6 +408,7 @@ See `dired-filter-stack' for the format of FILTER-STACK."
     (define-key map "m" 'dired-filter-by-mode)
     (define-key map "s" 'dired-filter-by-symlink)
     (define-key map "x" 'dired-filter-by-executable)
+    (define-key map "ig" 'dired-filter-by-git-ignored)
 
     (define-key map "|" 'dired-filter-or)
     (define-key map "!" 'dired-filter-negate)
@@ -438,17 +439,24 @@ See `dired-filter-stack' for the format of FILTER-STACK."
     (define-key map "m" 'dired-filter-mark-by-mode)
     (define-key map "s" 'dired-filter-mark-by-symlink)
     (define-key map "x" 'dired-filter-mark-by-executable)
+    (define-key map "ig" 'dired-filter-mark-by-git-ignored)
     (define-key map "L" 'dired-filter-mark-by-saved-filters)
     map)
   "Keymap used for marking files.")
 
 (defun dired-filter--set-prefix-key (varname value)
+  "Set VARNAME to VALUE.
+
+Setter for `dired-filter-prefix' user variable."
   (when varname
     (set-default varname value))
   (when value
     (define-key dired-mode-map (read-kbd-macro value) dired-filter-map)))
 
 (defun dired-filter--set-mark-prefix-key (varname value)
+  "Set VARNAME to VALUE.
+
+Setter for `dired-filter-mark-prefix' user variable."
   (when varname
     (set-default varname value))
   (when value
@@ -483,11 +491,12 @@ See `dired-filter-stack' for the format of FILTER-STACK."
 
 ;; TODO: save the filters in better structure to avoid undescriptive `cadddr'
 (defun dired-filter--make-filter-1 (stack)
+  "Translate STACK to a filter form."
   (cond
    ((stringp stack)
     `(and ,@(mapcar 'dired-filter--make-filter-1
                     (or (cdr (assoc stack dired-filter-saved-filters))
-                        (error "saved filter %s does not exist" filter)))))
+                        (error "saved filter %s does not exist" stack)))))
    ((stringp (car stack))
     `(and ,@(mapcar 'dired-filter--make-filter-1 (cdr stack))))
    ((eq (car stack) 'or)
@@ -511,6 +520,11 @@ See `dired-filter-stack' for the format of FILTER-STACK."
                           ;; special hack for omit filter, to
                           ;; recompute the filter regexp
                           (dired-omit-regexp))
+                         ((eq (car stack) 'git-ignored)
+                          `',(with-temp-buffer
+                               (insert (mapconcat 'f-slash (f-entries ".") "\0"))
+                               (call-process-region (point-min) (point-max) "git" t t nil "check-ignore" "-z" "--stdin")
+                               (split-string (buffer-string) "\0" t)))
                          ((eq (car stack) 'extension)
                           (if (listp (cdr stack))
                               (concat "\\." (regexp-opt (-uniq (cdr stack))) "\\'")
@@ -526,14 +540,16 @@ See `dired-filter-stack' for the format of FILTER-STACK."
             (car (cl-cddddr def))))))))
 
 (defun dired-filter--make-filter (filter-stack)
-  "Build the expression that filters the files.
+  "Build the expression that filters the files according to FILTER-STACK.
 
 When this expression evals to non-nil, file is kept in the
 listing."
   `(and ,@(mapcar 'dired-filter--make-filter-1 filter-stack)))
 
 (defun dired-filter--describe-filters-1 (stack)
-  "Return a string describing `dired-filter-stack'."
+  "Return a string describing STACK.
+
+STACK is a filter stack with the format of `dired-filter-stack'."
   (cond
    ((stringp stack)
     (format "[Saved filter: %s]" stack))
@@ -548,12 +564,13 @@ listing."
              (desc-qual (cl-caddr def))
              (remove (if (cl-cadddr def) "!" ""))
              (qualifier (cdr stack))
-             (qual-formatted (eval desc-qual)))
+             (qual-formatted (funcall `(lambda (qualifier) ,desc-qual) qualifier)))
         (if qual-formatted
             (format "[%s%s: %s]" remove desc qual-formatted)
           (format "[%s%s]" remove desc))))))
 
 (defun dired-filter--describe-filters ()
+  "Return a string describing `dired-filter-stack'."
   (mapconcat 'dired-filter--describe-filters-1 dired-filter-stack " "))
 
 (defun dired-filter--apply ()
@@ -585,11 +602,8 @@ Do you want to apply the filters without reverting (this might provide incorrect
     (when file-name
       (dired-utils-goto-line file-name))))
 
-(defun dired-filter--narow-to-subdir (&optional p)
-  "Narrow to subdir at POINT.
-
-POINT defaults to current point."
-  (setq p (or p (point)))
+(defun dired-filter--narow-to-subdir ()
+  "Narrow to subdir at point."
   (let ((beg (progn
                (dired-next-subdir 0)
                (line-beginning-position)))
@@ -609,12 +623,12 @@ The matched lines are returned as a string."
       (dired-filter--narow-to-subdir)
       (goto-char (point-min))
       (let* ((buffer-read-only nil)
-             (filter (dired-filter--make-filter filter))
+             (filter `(lambda (file-name) ,(dired-filter--make-filter filter)))
              (re nil))
         (while (not (eobp))
           (let ((file-name (dired-utils-get-filename 'no-dir)))
             (if (and file-name
-                     (eval filter))
+                     (funcall filter file-name))
                 (push (delete-and-extract-region
                        (line-beginning-position)
                        (progn (forward-line 1) (point)))
@@ -644,6 +658,7 @@ by default."
           "\n"))
 
 (defun dired-filter-group--apply (filter-group)
+  "Apply FILTER-GROUP."
   (when (and dired-filter-group-mode
              dired-filter-group)
     (save-excursion
@@ -754,8 +769,7 @@ by default."
 This adds support for `dired-subtree' package.")
 
 (defun dired-filter--expunge ()
-  "Remove the files specified by current `dired-filter-stack'
-from the listing."
+  "Remove the files specified by `dired-filter-stack' from the listing."
   (interactive)
   (when (and dired-filter-mode
              dired-filter-stack)
@@ -784,6 +798,16 @@ from the listing."
       count)))
 
 (defun dired-filter--mark-unmarked (filter)
+  "Mark originally unmarked files according to FILTER.
+
+If a file satisfies a filter, it is not marked.  Marked files are
+removed when filtering.
+
+Implementation note: when this function is called
+`dired-marker-char' is set to a special value so that the regular
+marks are preserved during filtering.  Files marked by user are
+preserved even in case they should have been removed by the
+filter"
   (if (and dired-filter-keep-expanded-subtrees
            (featurep 'dired-subtree))
       (progn
@@ -936,18 +960,34 @@ filter."))
 ;;;###autoload (autoload 'dired-filter-by-name "dired-filter")
 ;;;###autoload (autoload 'dired-filter-mark-by-name "dired-filter")
 (dired-filter-define name
-    "Toggle current view to files matching QUALIFIER."
+    "Toggle current view to files matching QUALIFIER.
+
+The matching uses smart-case convention: match is
+case-insensitive if the QUALIFIER does not contain upper-case
+letter, otherwise it is case-sensitive."
   (:description "name"
    :reader (regexp-quote (read-string "Pattern: ")))
-  (string-match-p qualifier file-name))
+  (let ((case-fold-search nil))
+    (if (string-match-p "[A-Z]" qualifier)
+        (string-match-p qualifier file-name)
+      (let ((case-fold-search t))
+        (string-match-p qualifier file-name)))))
 
 ;;;###autoload (autoload 'dired-filter-by-regexp "dired-filter")
 ;;;###autoload (autoload 'dired-filter-mark-by-regexp "dired-filter")
 (dired-filter-define regexp
-    "Toggle current view to files matching QUALIFIER as a regular expression."
+    "Toggle current view to files matching QUALIFIER as a regular expression.
+
+The matching uses smart-case convention: match is
+case-insensitive if the QUALIFIER does not contain upper-case
+letter, otherwise it is case-sensitive."
   (:description "regexp"
    :reader (read-regexp "Regexp: " ))
-  (string-match-p qualifier file-name))
+  (let ((case-fold-search nil))
+    (if (string-match-p "[A-Z]" qualifier)
+        (string-match-p qualifier file-name)
+      (let ((case-fold-search t))
+        (string-match-p qualifier file-name)))))
 
 ;;;###autoload (autoload 'dired-filter-by-extension "dired-filter")
 ;;;###autoload (autoload 'dired-filter-mark-by-extension "dired-filter")
@@ -997,6 +1037,19 @@ separately in turn and ORing the filters together."
    :qualifier-description nil
    :remove t)
   (string-match-p qualifier file-name))
+
+;;;###autoload (autoload 'dired-filter-by-git-ignored "dired-filter")
+;;;###autoload (autoload 'dired-filter-mark-by-git-ignored "dired-filter")
+(dired-filter-define git-ignored
+    "Toggle current view to files ignored by git.
+
+The ignored files are computed according to the results of
+
+  $ git check-ignore"
+  (:description "git-ignored"
+   :qualifier-description nil
+   :remove t)
+  (--any? (f-same? file-name it) qualifier))
 
 ;;;###autoload (autoload 'dired-filter-by-garbage "dired-filter")
 ;;;###autoload (autoload 'dired-filter-mark-by-garbage "dired-filter")
@@ -1058,7 +1111,9 @@ Examples:
 (dired-filter-define directory
     "Toggle current view to show only directories."
   (:description "directory")
-  (looking-at dired-re-dir))
+  (or (looking-at dired-re-dir)
+      (and (looking-at dired-re-sym)
+           (file-directory-p (dired-utils-get-filename)))))
 
 ;;;###autoload (autoload 'dired-filter-by-file "dired-filter")
 ;;;###autoload (autoload 'dired-filter-mark-by-file "dired-filter")
@@ -1178,7 +1233,9 @@ push all its constituents back on the stack."
             (if (stringp top)
                 (message "Popped saved filter %s" top)
               (--if-let (let ((qualifier (cdr top)))
-                          (eval (cl-caddr (assoc (car top) dired-filter-alist))))
+                          (funcall
+                           `(lambda (qualifier) ,(cl-caddr (assoc (car top) dired-filter-alist)))
+                           qualifier))
                   (message "Popped filter %s: %s" (car top) it)
                 (message "Popped filter %s" (car top))))
           (message "Filter stack was empty."))))

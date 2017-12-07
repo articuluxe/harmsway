@@ -1,0 +1,3 @@
+cp src/dired-filter.el ../../../.emacs.d/plugins
+cp src/dired-hacks-utils.el ../../../.emacs.d/plugins
+cp src/dired-subtree.el ../../../.emacs.d/plugins
