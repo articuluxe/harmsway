@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2017-12-06 09:26:24 dan.harms>
+;; Modified Time-stamp: <2017-12-07 12:50:26 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -207,6 +207,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (global-set-key [(prior)] 'scroll-down-line)
 (global-set-key [f5] 'toggle-truncate-lines)
 (global-set-key "\C-c5" 'toggle-truncate-lines)
+(global-set-key "\e\e5" 'toggle-truncate-lines)
 (global-set-key "\C-c " 'whitespace-mode)
 (global-set-key "\C-c0fb" 'font-lock-fontify-buffer)
 (global-set-key "\M-sf" 'ff-find-other-file)
@@ -362,6 +363,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (use-package custom-gud
   :bind (("C-c 4" . my/launch-gdb)
          ([f4] . my/launch-gdb)
+         ("\e\e4" . my/launch-gdb)
          )
   :defines (gdb-show-main
             gdb-show-changed-values
@@ -955,7 +957,8 @@ line."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; shell-pop ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package shell-pop
   :bind (("<f1>" . shell-pop)
-         ("C-c 1" . shell-pop))
+         ("C-c 1" . shell-pop)
+         ("\e\e1" . shell-pop))
   :init
   (setq shell-pop-autocd-to-working-dir nil)
   (setq shell-pop-universal-key "<f1>"))
@@ -1047,11 +1050,13 @@ line."
   :bind (
          ;; C-x p <left>
          ("<f7>" . bmkp-previous-bookmark)
+         ("\e\e7" . bmkp-previous-bookmark)
          ;; C-x p <up>
          ("<S-f7>" . bmkp-previous-bookmark-this-file/buffer)
          ("C-c 7" . bmkp-previous-bookmark)
          ("C-c M-7" . bmkp-previous-bookmark-this-file/buffer)
          ;; C-x p <right>
+         ("\e\e8" . bmkp-next-bookmark)
          ("<f8>" . bmkp-next-bookmark)
          ;; C-x p <down>
          ("<S-f8>" . bmkp-next-bookmark-this-file/buffer)
@@ -1433,12 +1438,14 @@ line."
            (lambda()
              (local-set-key (kbd "<f9>") outline-mode-prefix-map)
              (local-set-key "\C-c9" outline-mode-prefix-map)
+             (local-set-key "\e\e9" outline-mode-prefix-map)
              (my/add-outline-cycle-binding outline-mode-map)
              ))
  (add-hook 'outline-minor-mode-hook
            (lambda()
              (local-set-key (kbd "<f9>") outline-mode-prefix-map)
              (local-set-key "\C-c9" outline-mode-prefix-map)
+             (local-set-key "\e\e9" outline-mode-prefix-map)
              (my/add-outline-cycle-binding outline-minor-mode-map)
              ))
  )
@@ -2479,6 +2486,7 @@ This function's result only has value if it is preceded by any font changes."
   :demand t
   :bind (("C-c 6" . remotehost-connect)
          ([f6] . remotehost-connect)
+         ("\e\e6" . remotehost-connect)
          ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; os ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
