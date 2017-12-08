@@ -177,11 +177,10 @@ manually updated package."
                   (package-install package))
                 t)
             (error
-             (ignore
-              (display-warning 'use-package
-                               (format "Failed to install %s: %s"
-                                       name (error-message-string err))
-                               :error)))))))))
+             (display-warning 'use-package
+                              (format "Failed to install %s: %s"
+                                      name (error-message-string err))
+                              :error))))))))
 
 ;;;###autoload
 (defun use-package-handler/:ensure (name keyword ensure rest state)
@@ -200,7 +199,7 @@ manually updated package."
 
 (add-to-list 'use-package-defaults
              '(:ensure (list use-package-always-ensure)
-                       (lambda (args)
+                       (lambda (name args)
                          (and use-package-always-ensure
                               (not (plist-member args :load-path))))) t)
 
