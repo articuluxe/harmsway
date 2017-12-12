@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2017-12-12 12:08:05 dan.harms>
+;; Modified Time-stamp: <2017-12-12 14:50:41 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -206,7 +206,6 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (global-set-key [(next)] 'scroll-up-line)
 (global-set-key [(prior)] 'scroll-down-line)
 (global-set-key [f5] 'toggle-truncate-lines)
-(global-set-key "\C-c5" 'toggle-truncate-lines)
 (global-set-key "\e\e5" 'toggle-truncate-lines)
 (global-set-key "\C-c " 'whitespace-mode)
 (global-set-key "\C-c0fb" 'font-lock-fontify-buffer)
@@ -361,8 +360,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
          ("C-c c" . insert-cast)
   ))
 (use-package custom-gud
-  :bind (("C-c 4" . my/launch-gdb)
-         ([f4] . my/launch-gdb)
+  :bind (([f4] . my/launch-gdb)
          ("\e\e4" . my/launch-gdb)
          )
   :defines (gdb-show-main
@@ -957,7 +955,6 @@ line."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; shell-pop ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package shell-pop
   :bind (("<f1>" . shell-pop)
-         ("C-c 1" . shell-pop)
          ("\e\e1" . shell-pop))
   :init
   (setq shell-pop-autocd-to-working-dir nil)
@@ -1053,14 +1050,14 @@ line."
          ("\e\e7" . bmkp-previous-bookmark)
          ;; C-x p <up>
          ("<S-f7>" . bmkp-previous-bookmark-this-file/buffer)
-         ("C-c 7" . bmkp-previous-bookmark)
+         ("\e\e&" . bmkp-previous-bookmark)
          ("C-c M-7" . bmkp-previous-bookmark-this-file/buffer)
          ;; C-x p <right>
-         ("\e\e8" . bmkp-next-bookmark)
          ("<f8>" . bmkp-next-bookmark)
+         ("\e\e8" . bmkp-next-bookmark)
          ;; C-x p <down>
          ("<S-f8>" . bmkp-next-bookmark-this-file/buffer)
-         ("C-c 8" . bmkp-next-bookmark)
+         ("\e\e*" . bmkp-next-bookmark)
          ("C-c M-8" . bmkp-next-bookmark-this-file/buffer)
          ("C-x p%l" . bmkp-set-autonamed-bookmark-at-line)
          ("C-x p%b" . bmkp-set-autonamed-regexp-buffer)
@@ -1428,14 +1425,12 @@ line."
  (add-hook 'outline-mode-hook
            (lambda()
              (local-set-key (kbd "<f9>") outline-mode-prefix-map)
-             (local-set-key "\C-c9" outline-mode-prefix-map)
              (local-set-key "\e\e9" outline-mode-prefix-map)
              (my/add-outline-cycle-binding outline-mode-map)
              ))
  (add-hook 'outline-minor-mode-hook
            (lambda()
              (local-set-key (kbd "<f9>") outline-mode-prefix-map)
-             (local-set-key "\C-c9" outline-mode-prefix-map)
              (local-set-key "\e\e9" outline-mode-prefix-map)
              (my/add-outline-cycle-binding outline-minor-mode-map)
              ))
@@ -2479,8 +2474,7 @@ This function's result only has value if it is preceded by any font changes."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; remotehost-connect ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package remotehost-connect
   :demand t
-  :bind (("C-c 6" . remotehost-connect)
-         ([f6] . remotehost-connect)
+  :bind (([f6] . remotehost-connect)
          ("\e\e6" . remotehost-connect)
          ))
 
