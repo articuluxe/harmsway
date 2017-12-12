@@ -72,7 +72,7 @@ will bring the behavior in line with the newer Emacsen."
       ad-do-it
     (void-function nil)))
 
-(ert-deftest ivy-partial ()
+(ert-deftest ivy-partial-1 ()
   (should (equal
            (ivy-with '(ivy-read "test: " '("case" "Case"))
                      "ca TAB C-m")
@@ -168,6 +168,15 @@ will bring the behavior in line with the newer Emacsen."
   (should (equal (ivy--regex
                   "\\(?:interactive\\|swiper\\) \\(?:list\\|symbol\\)")
                  "\\(\\(?:interactive\\|swiper\\)\\).*?\\(\\(?:list\\|symbol\\)\\)")))
+
+(ert-deftest ivy-partial-2 ()
+  (when (fboundp 'read--expression)
+    (should
+     (equal
+      (ivy-with '(read--expression "Eval: "
+                  "'s-c-t-st")
+                "<tab> C-m")
+      '(quote shell-command-to-string)))))
 
 (ert-deftest ivy--regex-fuzzy ()
   (should (string= (ivy--regex-fuzzy "tmux")
@@ -715,6 +724,22 @@ will bring the behavior in line with the newer Emacsen."
                       'test-command-recursive-handler)
                     "c RET"))))
       (ivy-mode ivy-mode-reset-arg))))
+
+(ert-deftest ivy-completion-common-length ()
+  (should (= 2
+             (ivy-completion-common-length
+              #("test/"
+                0 2 (face completions-common-part)
+                2 3 (face (completions-first-difference))))))
+  (should (= 5
+             (ivy-completion-common-length
+              #("Math/E"
+                0 5 (face (completions-common-part))
+                5 6 (face (completions-first-difference))))))
+  (should (= 3
+             (ivy-completion-common-length
+              #("vec"
+                0 3 (face (completions-common-part)))))))
 
 (provide 'ivy-test)
 

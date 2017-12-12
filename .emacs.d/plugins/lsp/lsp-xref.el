@@ -238,6 +238,13 @@ XREFS is a list of list of references/definitions."
     (when (> lsp-xref--selection half-height)
       (setq lsp-xref--offset (- lsp-xref--selection (1- half-height))))))
 
+(defun lsp-xref--fill (min-len list)
+  "."
+  (let ((len (length list)))
+    (if (< len min-len)
+        (append list (-repeat (- min-len len) ""))
+      list)))
+
 (defun lsp-xref--peek ()
   "Show reference's chunk of code."
   (-let* ((xref (lsp-xref--get-selection))
@@ -252,6 +259,7 @@ XREFS is a list of list of references/definitions."
                           (--remove (lsp-xref--prop 'lsp-xref-hidden it))
                           (-drop lsp-xref--offset)
                           (-take (1- lsp-xref-peek-height))
+                          (lsp-xref--fill (1- lsp-xref-peek-height))
                           (-concat (list header2)))))
     (setq lsp-xref--last-xref (or xref lsp-xref--last-xref))
     (lsp-xref--peek-new ref-view list-refs)))
@@ -362,11 +370,19 @@ XREFS is a list of list of references/definitions."
   (-if-let (xref (or x (lsp-xref--get-selection)))
       (-let* (((&plist :file file :line line :column column) xref))
         (lsp-xref--abort)
-        (find-file file)
-        (goto-char 1)
-        (forward-line line)
-        (forward-char column)
-        (run-hooks 'xref-after-jump-hook))
+        (let ((marker (with-current-buffer
+                          (or (get-file-buffer file)
+                              (find-file-noselect file))
+                        (save-restriction
+                          (widen)
+                          (save-excursion
+                            (goto-char 1)
+                            (forward-line line)
+                            (forward-char column)
+                            (point-marker))))))
+          (switch-to-buffer (marker-buffer marker))
+          (goto-char marker)
+          (run-hooks 'xref-after-jump-hook)))
     (lsp-xref--toggle-file)))
 
 (defvar lsp-xref-mode-map nil
@@ -388,8 +404,9 @@ XREFS is a list of list of references/definitions."
 (defun lsp-xref--abort ()
   "."
   (interactive)
-  (lsp-xref-mode -1)
-  (lsp-xref--peek-hide))
+  (when (bound-and-true-p lsp-xref-mode)
+    (lsp-xref-mode -1)
+    (lsp-xref--peek-hide)))
 
 (define-minor-mode lsp-xref-mode
   "Mode for lsp-xref."
@@ -505,7 +522,6 @@ interface Location {
   "Get all references/definitions for the symbol under point.
 Returns item(s).
 KIND."
-  (lsp--send-changes lsp--cur-workspace)
   (-some->> (lsp--send-request (lsp--make-request
                                 request
                                 (or param (lsp--text-document-position-params))))

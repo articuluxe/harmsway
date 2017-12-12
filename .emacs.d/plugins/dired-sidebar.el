@@ -92,21 +92,42 @@ This uses format specified by `dired-sidebar-mode-line-format'."
   :type 'list
   :group 'dired-sidebar)
 
+(make-obsolete-variable 'dired-sidebar-use-all-the-icons
+                        'dired-sidebar-theme "2017/12/10")
+
 (defcustom dired-sidebar-use-all-the-icons t
   "Use `all-the-icons' if true.
 
-This has no effect in Terminals."
+This has no effect in Terminals.
+
+This variable will be removed sometime in 2018 in favor of `dired-sidebar-theme'."
   :type 'boolean
   :group 'dired-sidebar)
+
+(make-obsolete-variable 'dired-sidebar-use-tui
+                        'dired-sidebar-theme "2017/12/10")
 
 (defcustom dired-sidebar-use-tui t
   "Use text user interface.
 
 This adds + and - 'icons' to the UI.
 
-This only takes effect if `dired-sidebar-use-all-the-icons' is not enabled."
+This only takes effect if `dired-sidebar-use-all-the-icons' is not enabled.
+
+This variable will be removed sometime in 2018 in favor of `dired-sidebar-theme'."
   :type 'boolean
   :group 'dired-sidebar)
+
+(defcustom dired-sidebar-theme 'icons
+  "*The tree style to display.
+`ascii' is the simplest style, it will use +/- to display the fold state,
+it is suitable for terminal.
+`icons' use `all-the-icons'.
+`nerd' use the nerdtree indentation mode and arrow."
+  :group 'dired-sidebar
+  :type '(choice (const ascii)
+                 (const icons)
+                 (const nerd)))
 
 (defcustom dired-sidebar-width 35
   "Width of the `dired-sidebar' buffer."
@@ -270,6 +291,11 @@ with a prefix arg or when `dired-sidebar-find-file-alt' is called."
   :type 'boolean
   :group 'dired-sidebar)
 
+(defcustom dired-sidebar-open-file-in-most-recently-used-window t
+  "Whether or not to open files in most recently used window."
+  :type 'boolean
+  :group 'dired-sidebar)
+
 ;; Internal
 
 (defvar dired-sidebar-alist '()
@@ -383,13 +409,19 @@ will check if buffer is stale through `auto-revert-mode'.")
             (advice-add x :after #'dired-sidebar-refresh-or-schedule-refresh))
           dired-sidebar-special-refresh-commands))
 
-  (if (and
-       dired-sidebar-use-all-the-icons
-       (display-graphic-p)
-       (fboundp 'all-the-icons-dired-mode))
-      (all-the-icons-dired-mode)
-    (when dired-sidebar-use-tui
-      (dired-sidebar-setup-tui)))
+  (cond
+   ((and dired-sidebar-use-all-the-icons
+         (eq dired-sidebar-theme 'icons)
+         (display-graphic-p)
+         (or
+          (fboundp 'all-the-icons-dired-mode)
+          (autoloadp (symbol-function 'all-the-icons-dired-mode))))
+    (with-no-warnings
+      (all-the-icons-dired-mode)))
+   ((eq dired-sidebar-theme 'nerd)
+    (dired-sidebar-setup-tui))
+   (:default
+    (dired-sidebar-setup-tui)))
 
   (when dired-sidebar-use-custom-font
     (dired-sidebar-set-font))
@@ -399,13 +431,13 @@ will check if buffer is stale through `auto-revert-mode'.")
 
   (when dired-sidebar-refresh-on-projectile-switch
     (add-hook 'projectile-after-switch-project-hook
-              #'dired-sidebar-follow-file-in-project))
+              #'dired-sidebar-follow-file))
 
   (when dired-sidebar-should-follow-file
     (setq dired-sidebar-follow-file-timer
           (run-with-idle-timer
            dired-sidebar-follow-file-idle-delay
-           t #'dired-sidebar-follow-file-in-project)))
+           t #'dired-sidebar-follow-file)))
 
   (dired-unadvertise (dired-current-directory))
   (dired-sidebar-update-buffer-name)
@@ -528,7 +560,11 @@ window selection."
   (let ((find-file-run-dired t)
         (dired-file-name (or dir (dired-get-file-for-visit)))
         (select-with-alt-window-function current-prefix-arg))
-    (if (file-directory-p dired-file-name)
+    (if (and (file-directory-p dired-file-name)
+             ;; For "." open a full-blown dired buffer, since the directory is
+             ;; already open in the sidebar.
+             (not (string= (file-name-nondirectory dired-file-name)
+                           ".")))
         (dired-sidebar-with-no-dedication
          (let ((buf-name (dired-sidebar-sidebar-buffer-name
                           dired-file-name)))
@@ -549,7 +585,9 @@ window selection."
       (select-window
        (if select-with-alt-window-function
            (funcall dired-sidebar-alternate-select-window-function)
-         (next-window)))
+         (if dired-sidebar-open-file-in-most-recently-used-window
+             (get-mru-window)
+           (next-window))))
       (find-file dired-file-name))))
 
 (defun dired-sidebar-find-file-alt ()
@@ -710,8 +748,27 @@ Return buffer if so."
     (get-buffer-window buffer)))
 
 (defun dired-sidebar-sidebar-buffer-in-frame (&optional f)
-  "Return the current sidebar buffer in F or selected frame."
-  (alist-get (or f (selected-frame)) dired-sidebar-alist))
+  "Return the current sidebar buffer in F or selected frame.
+
+This can return nil if the buffer has been killed."
+  (let* ((frame (or f (selected-frame)))
+         (buffer (alist-get frame dired-sidebar-alist)))
+    ;; The buffer can be killed for a variety of reasons.
+    ;; This side effect is kind of messy but it's the simplest place
+    ;; to put the clean up code for `dired-sidebar-alist'.
+    (if (buffer-live-p buffer)
+        buffer
+      ;; https://www.gnu.org/software/emacs/manual/html_node/elisp/Association-Lists.html
+      ;; Documentation for `assq-delete-all'.
+      ;; What kind of API is this?? :()
+      ;; Why does it only modify 'often' and not 'always'? ¯\_(ツ)_/¯
+      ;; It returns the shortened alist, and often modifies the original list
+      ;; structure of alist.
+      ;; For correct results, use the return value of assq-delete-all rather
+      ;; than looking at the saved value of alist.
+      (setq dired-sidebar-alist
+            (assq-delete-all frame dired-sidebar-alist))
+      nil)))
 
 (defun dired-sidebar-switch-to-dir (dir)
   "Update buffer with DIR as root."
@@ -739,13 +796,18 @@ Optional argument NOCONFIRM Pass NOCONFIRM on to `dired-buffer-stale-p'."
           (revert-buffer)))
     (setq dired-sidebar-check-for-stale-buffer-p t)))
 
-(defun dired-sidebar-follow-file-in-project ()
-  "Follow new file in project."
+(defun dired-sidebar-follow-file ()
+  "Follow new file.
+
+The root of the sidebar will be determined by `dired-sidebar-get-dir-to-show'
+and the file followed is will be determined by `dired-sidebar-get-file-to-show',
+
+both accounting for the currently selected window."
   (when (dired-sidebar-showing-sidebar-in-frame-p)
     ;; Wrap in `with-selected-window' because we don't want to pop to
     ;; the sidebar buffer.
-    ;; We also need to pick the correct selected-window to get the correct
-    ;; project root that we've switched to.
+    ;; We also need to pick the correct selected-window so that
+    ;; `dired-sidebar-get-dir-to-show' can get the correct root to change to.
     (with-selected-window (selected-window)
       (let ((root (dired-sidebar-get-dir-to-show)))
         (dired-sidebar-switch-to-dir root)
@@ -769,6 +831,9 @@ Optional argument NOCONFIRM Pass NOCONFIRM on to `dired-buffer-stale-p'."
    ((and (eq major-mode 'term-mode)
          dired-sidebar-use-term-integration)
     (dired-sidebar-term-get-pwd))
+   ((and (eq major-mode 'dired-mode)
+         (not dired-sidebar-mode))
+    (expand-file-name default-directory))
    (:default
     (dired-sidebar-sidebar-root))))
 
@@ -782,6 +847,12 @@ This may return nil if there's no suitable file to show."
          (fboundp 'magit-file-at-point)
          (magit-file-at-point))
     (expand-file-name (magit-file-at-point)))
+   ((and (eq major-mode 'dired-mode)
+         (not dired-sidebar-mode))
+    ;; Not sure if `dired-get-filename' is more appropriate.
+    (condition-case nil
+        (dired-get-file-for-visit)
+      (error nil)))
    (:default
     buffer-file-name)))
 
@@ -818,8 +889,8 @@ This is somewhat experimental/hacky."
   (when (or t (and (not dired-sidebar-tui-dired-displayed) dired-subdir-alist))
     (setq-local dired-sidebar-tui-dired-displayed t)
     (let ((inhibit-read-only t)
-          (collapsible-icon (if (display-graphic-p) "▾" "-"))
-          (expandable-icon (if (display-graphic-p) "▸" "+")))
+          (collapsible-icon (if (eq dired-sidebar-theme 'nerd) "▾" "-"))
+          (expandable-icon (if (eq dired-sidebar-theme 'nerd) "▸" "+")))
       (save-excursion
         (goto-char (point-min))
         (while (not (eobp))

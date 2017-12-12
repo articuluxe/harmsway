@@ -910,7 +910,8 @@ The libraries are offered from `load-path'."
   (let ((cands (counsel-library-candidates)))
     (ivy-read "Find library: " cands
               :action #'counsel--find-symbol
-              :keymap counsel-describe-map)))
+              :keymap counsel-describe-map
+              :caller 'counsel-find-library)))
 
 ;;** `counsel-load-theme'
 (declare-function powerline-reset "ext:powerline")
@@ -1501,7 +1502,7 @@ done") "\n" t)))
   (message "%S" (kill-new x)))
 
 (defcustom counsel-yank-pop-truncate-radius 2
-  "When non-nil, truncate the display of long strings."
+  "Number of context lines around `counsel-yank-pop' candidates."
   :type 'integer
   :group 'ivy)
 
@@ -1695,6 +1696,15 @@ Skip some dotfiles unless `ivy-text' requires them."
 (defvar counsel-find-file-speedup-remote t
   "Speed up opening remote files by disabling `find-file-hook' for them.")
 
+(defun counsel-find-file-action (x)
+  "Find file X."
+  (with-ivy-window
+    (if (and counsel-find-file-speedup-remote
+             (file-remote-p ivy--directory))
+        (let ((find-file-hook nil))
+          (find-file (expand-file-name x ivy--directory)))
+      (find-file (expand-file-name x ivy--directory)))))
+
 ;;;###autoload
 (defun counsel-find-file (&optional initial-input)
   "Forward to `find-file'.
@@ -1703,14 +1713,7 @@ When INITIAL-INPUT is non-nil, use it in the minibuffer during completion."
   (ivy-read "Find file: " 'read-file-name-internal
             :matcher #'counsel--find-file-matcher
             :initial-input initial-input
-            :action
-            (lambda (x)
-              (with-ivy-window
-                (if (and counsel-find-file-speedup-remote
-                         (file-remote-p ivy--directory))
-                    (let ((find-file-hook nil))
-                      (find-file (expand-file-name x ivy--directory)))
-                  (find-file (expand-file-name x ivy--directory)))))
+            :action #'counsel-find-file-action
             :preselect (when counsel-find-file-at-point
                          (require 'ffap)
                          (let ((f (ffap-guesser)))
@@ -1722,7 +1725,7 @@ When INITIAL-INPUT is non-nil, use it in the minibuffer during completion."
 
 (ivy-set-occur 'counsel-find-file 'counsel-find-file-occur)
 
-(defvar counsel-find-file-occur-cmd "ls | grep -i -E '%s' | xargs -d '\n' ls"
+(defvar counsel-find-file-occur-cmd "ls | grep -i -E '%s' | tr '\\n' '\\0' | xargs -0 ls"
   "Format string for `counsel-find-file-occur'.")
 
 (defun counsel-find-file-occur ()
@@ -2547,7 +2550,7 @@ INITIAL-INPUT can be given as the initial minibuffer input."
       ((and (equal current "") (equal tags "")))
       ((re-search-forward
         (concat "\\([ \t]*" (regexp-quote current) "\\)[ \t]*$")
-        (point-at-eol) t)
+        (line-end-position) t)
        (if (equal tags "")
            (delete-region
             (match-beginning 0)
@@ -3133,6 +3136,11 @@ A is the left hand side, B the right hand side."
   :group 'ivy
   :type 'string)
 
+(defcustom counsel-yank-pop-height 5
+  "The `ivy-height' of `counsel-yank-pop'."
+  :group 'ivy
+  :type 'integer)
+
 (defun counsel--yank-pop-format-function (cand-pairs)
   "Transform CAND-PAIRS into a string for `counsel-yank-pop'."
   (ivy--format-function-generic
@@ -3148,46 +3156,155 @@ A is the left hand side, B the right hand side."
    cand-pairs
    counsel-yank-pop-separator))
 
+(defun counsel--yank-pop-position (s)
+  "Return position of S in `kill-ring' relative to last yank.
+S must exist in `kill-ring'."
+  (or (cl-position s kill-ring-yank-pointer :test #'equal-including-properties)
+      (+ (cl-position s kill-ring :test #'equal-including-properties)
+         (- (length kill-ring-yank-pointer)
+            (length kill-ring)))))
+
+(defun counsel-string-non-blank-p (s)
+  "Return non-nil if S includes non-blank characters.
+Newlines and carriage returns are considered blank."
+  (not (string-match-p "\\`[\n\r[:blank:]]*\\'" s)))
+
+(defcustom counsel-yank-pop-filter #'counsel-string-non-blank-p
+  "Unary filter function applied to `counsel-yank-pop' candidates.
+All elements of `kill-ring' for which this function returns nil
+will be permanently deleted from `kill-ring' before completion.
+All blank strings are deleted from `kill-ring' by default."
+  :group 'ivy
+  :type '(radio (function-item counsel-string-non-blank-p)
+                (function-item identity)
+                (function :tag "Other")))
+
+(defun counsel--yank-pop-kills ()
+  "Return list of kills for `counsel-yank-pop' to complete.
+Returned elements satisfy `counsel-yank-pop-filter' and are
+unique under `equal-including-properties'."
+  ;; Keep things consistent with the rest of Emacs
+  (dolist (sym '(kill-ring kill-ring-yank-pointer))
+    (set sym (cl-delete-duplicates
+              (cl-delete-if-not counsel-yank-pop-filter (symbol-value sym))
+              :test #'equal-including-properties)))
+  ;; Clean up completion candidates without modifying `kill-ring' elements
+  (mapcar (lambda (kill)
+            (ivy-cleanup-string (copy-sequence kill)))
+          kill-ring))
+
 (defun counsel-yank-pop-action (s)
-  "Insert S into the buffer, overwriting the previous yank."
+  "Like `yank-pop', but insert the kill corresponding to S."
   (with-ivy-window
-    (delete-region ivy-completion-beg
-                   ivy-completion-end)
-    (insert (substring-no-properties s))
+    (setq last-command 'yank)
+    (setq yank-window-start (window-start))
+    (yank-pop (counsel--yank-pop-position s))
     (setq ivy-completion-end (point))))
 
 (defun counsel-yank-pop-action-remove (s)
-  "Remove S from the kill ring."
-  (setq kill-ring (delete s kill-ring)))
+  "Remove all occurences of S from the kill ring."
+  (dolist (sym '(kill-ring kill-ring-yank-pointer))
+    (set sym (cl-delete s (symbol-value sym)
+                        :test #'equal-including-properties)))
+  ;; Update collection and preselect for next `ivy-call'
+  (let ((kills (counsel--yank-pop-kills)))
+    (setf (ivy-state-collection ivy-last) kills)
+    (setf (ivy-state-preselect ivy-last)
+          (nth (min ivy--index (1- (length kills)))
+               kills)))
+  (ivy--reset-state ivy-last))
+
+(defun counsel-yank-pop-action-rotate (s)
+  "Rotate the yanking point to S in the kill ring.
+See `current-kill' for how this interacts with the window system
+selection."
+  ;; `current-kill' can modify both `kill-ring' and `kill-ring-yank-pointer',
+  ;; so update collection and preselect for next `ivy-call'
+  (setf (ivy-state-preselect ivy-last)
+        (current-kill (counsel--yank-pop-position s)))
+  (setf (ivy-state-collection ivy-last) (counsel--yank-pop-kills))
+  (ivy--reset-state ivy-last))
+
+(defcustom counsel-yank-pop-preselect-last nil
+  "Whether `counsel-yank-pop' preselects the last kill by default.
+
+The command `counsel-yank-pop' always preselects the same kill
+that `yank-pop' would have inserted, given the same prefix
+argument.
+
+When `counsel-yank-pop-preselect-last' is nil (the default), the
+prefix argument of `counsel-yank-pop' defaults to 1 (as per
+`yank-pop'), which causes the next-to-last kill to be
+preselected.  Otherwise, the prefix argument defaults to 0, which
+results in the most recent kill being preselected."
+  :group 'ivy
+  :type 'boolean)
 
 ;;;###autoload
-(defun counsel-yank-pop ()
-  "Ivy replacement for `yank-pop'."
-  (interactive)
-  (if (eq last-command 'yank)
-      (progn
-        (setq ivy-completion-end (point))
-        (setq ivy-completion-beg
-              (save-excursion
-                (search-backward (car kill-ring))
-                (point))))
-    (setq ivy-completion-beg (point))
-    (setq ivy-completion-end (point)))
-  (let ((candidates
-         (mapcar #'ivy-cleanup-string
-                 (cl-remove-if
-                  (lambda (s)
-                    (string-match "\\`[\n[:blank:]]*\\'" s))
-                  (delete-dups kill-ring)))))
-    (let ((ivy-format-function #'counsel--yank-pop-format-function)
-          (ivy-height 5))
-      (ivy-read "kill-ring: " candidates
-                :action 'counsel-yank-pop-action
-                :caller 'counsel-yank-pop))))
+(defun counsel-yank-pop (&optional arg)
+  "Ivy replacement for `yank-pop'.
+ARG has the same meaning as in `yank-pop', but its default value
+can be controlled with `counsel-yank-pop-preselect-last', which
+see.  See also `counsel-yank-pop-filter' for how to filter
+candidates.
+Note: Duplicate elements of `kill-ring' are always deleted."
+  (interactive "*P")
+  (let ((ivy-format-function #'counsel--yank-pop-format-function)
+        (ivy-height counsel-yank-pop-height)
+        (kills (counsel--yank-pop-kills)))
+    (unless kills
+      (error "Kill ring is empty or blank"))
+    (unless (eq last-command 'yank)
+      (push-mark))
+    (setq ivy-completion-beg (mark t))
+    (setq ivy-completion-end (point))
+    (ivy-read "kill-ring: " kills
+              :require-match t
+              :preselect (let ((kill-ring kills)
+                               (kill-ring-yank-pointer
+                                (cl-member (car kill-ring-yank-pointer) kills
+                                           :test #'equal-including-properties))
+                               interprogram-paste-function)
+                           (current-kill (cond
+                                          (arg (prefix-numeric-value arg))
+                                          (counsel-yank-pop-preselect-last 0)
+                                          (t 1))
+                                         t))
+              :action #'counsel-yank-pop-action
+              :caller 'counsel-yank-pop)))
 
 (ivy-set-actions
  'counsel-yank-pop
- '(("d" counsel-yank-pop-action-remove "delete")))
+ '(("d" counsel-yank-pop-action-remove "delete")
+   ("r" counsel-yank-pop-action-rotate "rotate")))
+
+;;** `counsel-evil-registers'
+(defcustom counsel-evil-registers-height 5
+  "The `ivy-height' of `counsel-evil-registers'."
+  :group 'ivy
+  :type 'integer)
+
+(defun counsel-evil-registers ()
+  "Ivy replacement for `evil-show-registers'."
+  (interactive)
+  (if (fboundp 'evil-register-list)
+      (let ((ivy-format-function #'counsel--yank-pop-format-function)
+            (ivy-height counsel-evil-registers-height))
+        (ivy-read "evil-registers: "
+                  (cl-loop for (key . val) in (evil-register-list)
+                     collect (format "[%c]: %s" key (if (stringp val) val "")))
+                  :require-match t
+                  :action #'counsel-evil-registers-action
+                  :caller 'counsel-evil-registers))
+    (user-error "Required feature `evil' not installed.")))
+
+(defun counsel-evil-registers-action (s)
+  "Paste contents of S, trimming the register part.
+
+S will be of the form \"[register]: content\"."
+  (with-ivy-window
+    (insert
+     (replace-regexp-in-string "\\`\\[.*?\\]: " "" s))))
 
 ;;** `counsel-imenu'
 (defvar imenu-auto-rescan)
@@ -3331,7 +3448,9 @@ And insert it into the minibuffer.  Useful during `eval-expression'."
   "Browse minibuffer history."
   (interactive)
   (let ((enable-recursive-minibuffers t))
-    (ivy-read "Reverse-i-search: " (symbol-value minibuffer-history-variable)
+    (ivy-read "Reverse-i-search: " (delete-dups
+                                    (copy-sequence
+                                     (symbol-value minibuffer-history-variable)))
               :action #'insert
               :caller 'counsel-minibuffer-history)))
 (make-obsolete 'counsel-expression-history 'counsel-minibuffer-history "20171011")
