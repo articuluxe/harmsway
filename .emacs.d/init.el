@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2017-12-07 13:22:04 dan.harms>
+;; Modified Time-stamp: <2017-12-12 12:08:05 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1173,18 +1173,9 @@ line."
   :bind ("M--" . ace-window)
   :init
   (setq aw-reverse-frame-list t)
-  (setq aw-dispatch-alist
-        '(
-          (?x aw-delete-window " Ace-Delete")
-          (?s aw-swap-window " Ace-Swap")
-          (?m aw-move-window " Ace-Move")
-          (?n aw-flip-window)
-          (?o delete-other-windows)
-          (?b balance-windows)
-          (?i delete-other-windows " Ace-Delete Other Windows")
-          (?v aw-split-window-vert " Ace-Split Vert")
-          (?h aw-split-window-horz " Ace-Split Horiz")
-          )))
+  :config
+  (add-to-list 'aw-dispatch-alist
+               '(?B balance-windows "Balance Windows")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; isearch ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq isearch-allow-scroll t)
