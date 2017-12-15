@@ -2,8 +2,6 @@
 # .bash_host
 
 # User specific aliases and functions
-export SITE=xr
-export LHOME=/lhome/dan.harms
 
 emacsbin=/usr/local/emacs/emacs
 if [ ! -f "$emacsbin" ]; then
@@ -13,30 +11,9 @@ export EMACSX=$emacsbin
 export EDITOR="$EMACSX -nw"
 alias emacs=$EDITOR
 
-x3p=/opt/x3p/xrt_a
-
-# clang
-CLANG_ROOT=$x3p/llvm/3.6.1
-CLANG_LIB=$CLANG_ROOT/lib
-CLANG_BIN=$CLANG_ROOT/bin
-# gcc
-export CSTDLIB_ROOT=$x3p/base
-export CSTDLIB_INC=$CSTDLIB_ROOT/include/c++/4.9.1
-export CSTDLIB_BIN=$CSTDLIB_ROOT/bin
-
-python=/opt/anaconda-python-2.7.8/bin
-#java=/usr/java/latest/bin:/usr/java/latest/jre/bin
-nodejs=$x3p/nodejs/4.4.1
-binpath=/bin:/sbin:/usr/bin:/usr/local/bin:/usr/local/sbin:/usr/sbin
-export PATH=$CLANG_BIN:$CSTDLIB_BIN:$python:$nodejs/bin:$HOME/bin:$binpath:.
-export LD_LIBRARY_PATH=$nodejs/lib64:$LD_LIBRARY_PATH
-
-# export COMPILER_PATH=$CSTDLIB_BIN
-
-# source the site file
-if [ -f ~/.bash_$SITE ]; then
-   . ~/.bash_$SITE
-fi
+# source the site files
+[ -r ~/."$SITE".env ] && . ~/."$SITE".env
+[ -r ~/.bash_"$SITE" ] && . ~/.bash_"$SITE"
 
 lhome()
 {

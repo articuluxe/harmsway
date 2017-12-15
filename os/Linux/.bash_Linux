@@ -1,7 +1,4 @@
 # -*- Mode: sh -*-
 # .bash_Linux
-
-export MANPATH=
-export NAME='Dan Harms'
 export TAR=$(which tar)
 alias ls='/bin/ls --color=tty'

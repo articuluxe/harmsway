@@ -1,36 +1,11 @@
 # -*- Mode: sh -*-
-# .bash_host
-
-# User specific aliases and functions
-export SITE=xr
-export VM=chihq-dev-02d-1
-unset SSH_ASKPASS
+# .bash_chi-ldbd098
 
 export EMACSX=/usr/bin/emacs
 export EDITOR="$EMACSX -nw"
 alias emacs=$EDITOR
 
-python=/opt/anaconda-python-2.7.8/bin
-# what `use cdh5 prepends to $PATH:
-java=/usr/java/latest/bin:/usr/java/latest/jre/bin
-
-export PATH=$HOME/bin:/sbin/:$python:$PATH:.
-# removed :/usr/lib64
-# export TERM=xterm-256color
-# export DISPLAY=10.10.102.157:0.0
-#export LD_LIBRARY_PATH=/usr/lib64:$LD_LIBRARY_PATH
-
-export CSTDLIB_ROOT=/usr
-export CSTDLIB_INC=$CSTDLIB_ROOT/include/c++/4.8.2
-export CSTDLIB_BIN=$CSTDLIB_ROOT/bin
-
-export COMPILER_PATH=$CSTDLIB_BIN
-
-# on this host we don't need to
-# source the site file
-# if [ -f ~/.bash_$SITE ]; then
-#    . ~/.bash_$SITE
-# fi
+# NOT sourcing the host file
 
 use_gcc()
 {

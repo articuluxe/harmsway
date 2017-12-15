@@ -5,21 +5,9 @@ export EMACSX=/Applications/emacs-25.2.app/Contents/MacOS/Emacs
 export EDITOR="$EMACSX -nw"
 alias emacs="$EDITOR"
 
-export SITE=talbot
-
-# source the host file
-if [ -f ~/.bash_$SITE ]; then
-   . ~/.bash_$SITE
-fi
-
-# export TERM=xterm-256color
-
-export CSTDLIB_ROOT=/usr/local/opt/gcc
-export CSTDLIB_INC=$CSTDLIB_ROOT/include/c++/7.1.0
-export CSTDLIB_BIN=$CSTDLIB_ROOT/bin
-
-export PATH=$HOME/bin:/usr/local/bin:$CSTDLIB_BIN:$PATH:.
-# export DYLD_LIBRARY_PATH=/usr/local/lib:$HOME/lib
+# source the host files
+[ -r ~/."$SITE".env ] && . ~/."$SITE".env
+[ -r ~/.bash_"$SITE" ] && . ~/.bash_"$SITE"
 
 use_clang()
 {

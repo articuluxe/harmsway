@@ -55,20 +55,14 @@ domain=$(echo $HOSTNAME | sed -e 's/\..*$//')
 host=${domain:-$(hostname -s)}
 
 # Load any os settings
-if [ -f ~/.bash_$os ]; then
-    . ~/.bash_$os
-fi
+[ -r ~/."$os".env ] && . ~/."$os".env
+[ -r ~/.bash_"$os" ] && . ~/.bash_"$os"
 
 # Load any local settings
-if [ -f ~/.bash_$host ]; then
-    . ~/.bash_$host
-fi
+[ -r ~/."$host".env ] && . ~/."$host".env
+[ -r ~/.bash_"$host" ] && . ~/.bash_"$host"
 
 # Source personal data
-if [ -f ~/.personal ]; then
-    . ~/.personal
-fi
+[ -r ~/.personal.env ] && . ~/.personal.env
 
-if [ -f ~/.emacs_bash ]; then
-    . ~/.emacs_bash
-fi
+[ -r ~/.emacs_bash ] && . ~/.emacs_bash
