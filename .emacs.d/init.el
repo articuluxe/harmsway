@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2017-12-12 14:50:41 dan.harms>
+;; Modified Time-stamp: <2017-12-15 11:58:20 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -410,10 +410,10 @@ line."
              outrespace-highlight-ns-by-name
              )
   :after cc-mode
-  :config
+  :init
   (setq outrespace-prefix-key "\C-cn")
-  (outrespace-mode 1)
- )
+  (with-eval-after-load 'cc-mode (load-library "outrespace"))
+  (add-hook 'c++-mode-hook (lambda() (outrespace-mode 1))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; epa ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun my/add-epa-file-encrypt-to ()
