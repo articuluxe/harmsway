@@ -53,6 +53,10 @@
   :type 'boolean
   :group 'lsp-ui)
 
+(defvar lsp-line-code-actions-prefix
+  (propertize "💡 " 'face '(:foreground "yellow"))
+  "Prefix to insert before the code action title.")
+
 (defvar-local lsp-line--ovs nil
   "Overlays used by `lsp-line'.")
 
@@ -249,12 +253,25 @@ CURRENT is non-nil when the point is on the symbol."
           (overlay-put ov 'after-string string)
           (push ov lsp-line--ovs))))))
 
+(defun lsp-line--code-actions (actions)
+  "Show code ACTIONS."
+  (dolist (action actions)
+    (-let* ((title (--> (gethash "title" action)
+                        (subst-char-in-string ?\n ?\s it t)
+                        (concat lsp-line-code-actions-prefix it)))
+            (string (concat (propertize " " 'display `(space :align-to (- right-fringe ,(1+ (length title)))))
+                            title))
+            (pos-ov (lsp-line--find-line (window-text-width) (length title) t))
+            (ov (and pos-ov (make-overlay pos-ov pos-ov))))
+      (when pos-ov
+        (overlay-put ov 'after-string string)
+        (push ov lsp-line--ovs)))))
+
 (defun lsp-line--run ()
   "Show informations (flycheck + lsp).
 It loops on the symbols of the current line and request information
 to the language server."
   (lsp-line--delete-ov)
-  (lsp-line--flycheck)
   (when lsp--cur-workspace
     (let ((eol (line-end-position))
           (eob (buffer-end 1))
@@ -266,6 +283,13 @@ to the language server."
         (setq lsp-line--occupied-lines nil
               lsp-line--line line
               lsp-line--last-width (window-text-width))
+        (lsp-line--flycheck)
+        (lsp--send-request-async (lsp--make-request
+                                  "textDocument/codeAction"
+                                  (list :textDocument (lsp--text-document-identifier)
+                                        :range (lsp--region-to-range bol eol)
+                                        :context (list :diagnostics (lsp--cur-line-diagnotics))))
+                                 #'lsp-line--code-actions)
         (while (and (<= (point) eol) (< (point) eob))
           (let ((symbol (thing-at-point 'symbol t))
                 (bounds (bounds-of-thing-at-point 'symbol))
