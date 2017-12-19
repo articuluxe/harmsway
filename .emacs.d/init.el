@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2017  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2017-12-15 11:58:20 dan.harms>
+;; Modified Time-stamp: <2017-12-20 09:42:12 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -328,13 +328,6 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
          ("\e\e<" . enclose-by-braces-caret)
          ))
 
-(use-package load-environment-vars
-             :commands (load-environment-variable-from-file
-                        load-environment-variables-from-file))
-
-(use-package custom-environment
-  :commands my/load-environment-variables-from-file)
-
 (use-package custom-buffer-utils
   :bind (("C-x C-r" . my/revert-buffer)
          ("C-x K" . kill-other-buffers)
@@ -398,6 +391,38 @@ line."
   :bind ("M-o w" . hydra-toggle-word-processor/body)
   )
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; environment ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defun harmsway-unqualify-host-name (hst)
+  "Remove the fully qualified suffix, if any, from a hostname HST."
+  (when (string-match "^\\([^.]+\\)\\.?.*$" hst)
+    (match-string-no-properties 1 hst)))
+
+(defun harmsway-init-environment ()
+  "Load environment variables from various files.
+This includes files specific to the current operating system, the
+current host, possibly a site file, and personal settings.  It is
+not an error if any files do not exist."
+  (let ((os (string-trim (shell-command-to-string "uname")))
+        (host (harmsway-unqualify-host-name (system-name)))
+        (site (getenv "SITE"))
+        file)
+    (setenv "GPG_AGENT_INFO" nil)
+    ;; os
+    (parsenv-load-env (expand-file-name (concat "~/." os ".env")))
+    ;; host
+    (parsenv-load-env (expand-file-name (concat "~/." host ".env")))
+    ;; site
+    (parsenv-load-env (expand-file-name (concat "~/." site ".env")))
+    ;; personal
+    (parsenv-load-env (expand-file-name "~/.personal.env"))
+    (parsenv-adjust-exec-path)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; parsenv ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package parsenv
+ :demand t
+ :config
+ (harmsway-init-environment))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; outrespace ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package outrespace
   :commands (outrespace-print-enclosing-ns-name
@@ -421,7 +446,6 @@ line."
   (interactive)
   (add-file-local-variable-prop-line 'epa-file-encrypt-to
                                      (concat "(" user-mail-address ")")))
-(setenv "GPG_AGENT_INFO" nil)
 (use-package epa
   :bind (("C-c 09l" . epa-list-keys)
          ("C-c 09L" . epa-list-secret-keys)
@@ -474,9 +498,6 @@ line."
         (let ((pwd (or (getenv "EMACS_PWD") "nil")))
           (list (cons my/aes-default-group pwd))))
   )
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; path ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(my/load-environment-variables-from-file my/os-dir)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; c-includer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package c-includer
@@ -2506,12 +2527,7 @@ This may perform related customization."
     (when (fboundp 'yas-reload-all) (yas-reload-all))
     ))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; host ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defun my/unqualify-host-name (hst)
-  "Remove the fully qualified suffix, if any, from a hostname HST."
-  (when (string-match "^\\([^.]+\\)\\.?.*$" hst)
-    (match-string-no-properties 1 hst)))
-
-(let* ((system (my/unqualify-host-name (system-name)))
+(let* ((system (harmsway-unqualify-host-name (system-name)))
        (hosts-dir (concat my/user-directory "settings/host/"))
        (all-hosts-dir (concat hosts-dir "hosts/"))
        (host-dir (file-name-as-directory (concat hosts-dir system)))
@@ -2544,8 +2560,6 @@ This may perform related customization."
       (and (string= (plist-get plist :host) system)
            (plist-get plist :site)
            (my/load-site-file (plist-get plist :site)))))
-  ;; finally also look for environment variable definitions
-  (my/load-environment-variables-from-file host-dir)
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; modes ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
