@@ -5,7 +5,7 @@
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Saturday, September 23, 2017
 # Version: 1.0
-# Modified Time-stamp: <2017-09-25 05:58:59 dharms>
+# Modified Time-stamp: <2017-12-20 12:33:30 dharms>
 # Modified by: Dan Harms
 # Keywords: bash shell in emacs
 
@@ -15,6 +15,8 @@ fi
 
 if [ ! -z "$(which dircolors)" ]; then
     eval "$(dircolors -b ~/.dircolors)"
+else
+    export TERM=xterm-256color
 fi
 
 # code ends here
