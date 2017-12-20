@@ -1,9 +1,9 @@
 # -*- Mode: sh -*-
 # .bash_chi-ldbd098
 
-export EMACSX=/usr/bin/emacs
-export EDITOR="$EMACSX -nw"
-alias emacs=$EDITOR
+export VISUAL=/usr/bin/emacs
+export EDITOR="$VISUAL -nw"
+alias emacs="\$EDITOR"
 
 # NOT sourcing the host file
 

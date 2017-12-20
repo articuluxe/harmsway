@@ -4,11 +4,11 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Thursday, September 24, 2015
 # Version: 1.0
-# Modified Time-stamp: <2017-07-12 06:48:43 dharms>
+# Modified Time-stamp: <2017-12-20 09:13:17 dharms>
 # Modified by: Dan Harms
 # Keywords: emacs pipe stdin
 
-exe=$EMACSX
+exe=$VISUAL
 # doesn't work: emacs: standard input is not a tty
 # exe=$EDITOR
 # or: emacsclient -c -n $@

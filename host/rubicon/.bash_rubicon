@@ -1,9 +1,9 @@
 # -*- Mode: sh -*-
 # .bash_rubicon
 
-export EMACSX=/Applications/emacs-25.2.app/Contents/MacOS/Emacs
-export EDITOR="$EMACSX -nw"
-alias emacs="$EDITOR"
+export VISUAL=/Applications/emacs-25.2.app/Contents/MacOS/Emacs
+export EDITOR="$VISUAL -nw"
+alias emacs="\$EDITOR"
 
 # source the host files
 [ -r ~/."$SITE".env ] && . ~/."$SITE".env

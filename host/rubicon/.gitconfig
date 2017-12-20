@@ -17,7 +17,7 @@
 [difftool.diffterm]
 	cmd = /usr/bin/env LOCAL=$LOCAL REMOTE=$REMOTE $EDITOR --load ~/config/difftool.el
 [difftool.diffgui]
-	cmd = $EMACSX --eval \"(progn\
+	cmd = $VISUAL --eval \"(progn\
 	(color-theme-zenburn)\
 	(setq ediff-quit-hook 'kill-emacs \
 	ediff-split-window-function 'split-window-horizontally\
@@ -31,7 +31,7 @@
 [mergetool.mergeterm]
 	cmd = /usr/bin/env LOCAL=$LOCAL REMOTE=$REMOTE BASE=$BASE MERGED=$MERGED $EDITOR --load ~/config/mergetool.el
 [mergetool.mergegui]
-	cmd = /usr/bin/env LOCAL=$LOCAL REMOTE=$REMOTE BASE=$BASE MERGED=$MERGED $EMACSX --load ~/config/mergetool.el
+	cmd = /usr/bin/env LOCAL=$LOCAL REMOTE=$REMOTE BASE=$BASE MERGED=$MERGED $VISUAL --load ~/config/mergetool.el
 [branch "master"]
 	# mergeoptions = --squash
 [credential]

@@ -3,13 +3,13 @@
 
 # User specific aliases and functions
 
-emacsbin=/usr/local/emacs/emacs
-if [ ! -f "$emacsbin" ]; then
-    emacsbin=emacs
+if [ -f /usr/local/emacs/emacs ]; then
+    export VISUAL=/usr/local/emacs/emacs
+else
+    export VISUAL=emacs
 fi
-export EMACSX=$emacsbin
-export EDITOR="$EMACSX -nw"
-alias emacs=$EDITOR
+export EDITOR="$VISUAL -nw"
+alias emacs="\$EDITOR"
 
 # source the site files
 [ -r ~/."$SITE".env ] && . ~/."$SITE".env
