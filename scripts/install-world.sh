@@ -1,11 +1,11 @@
-#!/bin/bash
+#!/bin/sh
 # -*- Mode: sh -*-
 # install-world.sh --- install the world
 # Copyright (C) 2016-2017  Dan Harms (dharms)
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Thursday, August 18, 2016
 # Version: 1.0
-# Modified Time-stamp: <2017-03-15 16:50:16 dharms>
+# Modified Time-stamp: <2017-12-21 08:11:58 dharms>
 # Modified by: Dan Harms
 # Keywords: install
 
@@ -16,11 +16,9 @@ if [ ! -d "$dir" ]; then
     exit 1
 fi
 
-cd $dir
+cd "$dir" || exit 1
 
-tar-world.sh
-
-if [[ "$?" != 0 ]]; then
+if tar-world.sh; then
     echo "!!! error executing tar-world.sh; aborting install"
     exit 1
 fi
