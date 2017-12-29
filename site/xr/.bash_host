@@ -5,11 +5,11 @@
 
 if [ -f /usr/local/emacs/emacs ]; then
     export VISUAL=/usr/local/emacs/emacs
+    alias emacs="\$EDITOR"
 else
     export VISUAL=emacs
 fi
 export EDITOR="$VISUAL -nw"
-alias emacs="\$EDITOR"
 
 # source the site files
 [ -r ~/."$SITE".env ] && . ~/."$SITE".env

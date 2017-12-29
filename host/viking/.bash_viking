@@ -1,9 +1,11 @@
 # -*- Mode: sh -*-
 # .bash_viking
 
+export VISUAL=/usr/local/bin/emacs
+export EDITOR="$VISUAL -nw"
 alias emacs="\$EDITOR"
 
-# source the site file
+# source the site files
 [ -r ~/."$SITE".env ] && . ~/."$SITE".env
 [ -r ~/.bash_"$SITE" ] && . ~/.bash_"$SITE"
 
