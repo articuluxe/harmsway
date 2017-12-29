@@ -5,7 +5,7 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Monday, May 18, 2015
 # Version: 1.0
-# Modified Time-stamp: <2017-09-12 10:48:53 dan.harms>
+# Modified Time-stamp: <2017-12-29 11:22:51 dan.harms>
 # Modified by: Dan Harms
 # Keywords: configuration
 
@@ -50,7 +50,7 @@ fi
 
 date=$(date '+%F_%T' | tr ':' '-')
 
-cd ~
+cd ~ || exit 1
 mkdir -p "$logdir"
 
 # there's an existing .emacs.d
@@ -91,13 +91,10 @@ for i in bash tcsh os/$os site/$site; do
     rmdir -p --ignore-fail-on-non-empty "$i"
 done
 # protect .netrc
-if [ -f .netrc ] ; then
-    chmod 600 .netrc
-fi
-# rename host file as part of distribution
-if [ -f .bash_host ]; then
-    mv .bash_host ".bash_$host"
-fi
+[ -r .netrc ] && chmod 600 .netrc
+# rename host files as part of distribution
+[ -r .bash_host ] && mv .bash_host .bash_"$host"
+[ -r .host.env ] && mv .host.env ."$host".env
 # and byte-compile emacs
 bin/emacscomp.sh .emacs.d
 

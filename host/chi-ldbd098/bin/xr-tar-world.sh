@@ -5,7 +5,7 @@
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Friday, May 29, 2015
 # Version: 1.0
-# Modified Time-stamp: <2017-07-14 06:10:38 dharms>
+# Modified Time-stamp: <2017-12-29 09:37:03 dan.harms>
 # Modified by: Dan Harms
 # Keywords: configuration
 
@@ -29,10 +29,10 @@ if [ $# -gt 0 ] ; then
    shift
 fi
 
-echo Generating $dest...
+echo Generating "$dest"...
 
 if [ -f "$dest" ] ; then
-   rm -f $dest
+   rm -f "$dest"
 fi
 
 $tar c"$verbose"f $dest --exclude=src/doc/* config doc src .gdbinit .fonts
@@ -47,6 +47,6 @@ $tar u"$verbose"f $dest --transform=s%os/$os\\/%% os/$os
 $tar u"$verbose"f $dest --transform=s%site/$site\\/%% --exclude=.git site/$site
 #$tar --delete .ssh -f $dest
 
-echo ...done generating $dest
+echo ...done generating "$dest"
 
 # xr-tar-world.sh ends here
