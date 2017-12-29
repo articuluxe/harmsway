@@ -5,7 +5,7 @@
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Thursday, August 18, 2016
 # Version: 1.0
-# Modified Time-stamp: <2017-12-21 08:11:58 dharms>
+# Modified Time-stamp: <2017-12-29 09:29:22 dan.harms>
 # Modified by: Dan Harms
 # Keywords: install
 
@@ -18,7 +18,9 @@ fi
 
 cd "$dir" || exit 1
 
-if tar-world.sh; then
+tar-world.sh
+
+if [ "$?" != 0 ]; then
     echo "!!! error executing tar-world.sh; aborting install"
     exit 1
 fi
