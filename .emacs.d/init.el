@@ -1404,13 +1404,15 @@ not an error if any files do not exist."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; undo-tree ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package undo-tree
+  :init
+  (setq undo-tree-visualizer-diff t)
+  (setq undo-tree-visualizer-timestamps t)
+  (setq undo-tree-enable-undo-in-region nil)
   :config
   ;; unset this key for use in other packages
   (define-key undo-tree-map "\C-_" nil)
   ;; reset the undo tree history (useful after reverting buffer)
   (global-set-key "\C-cu" (lambda()(interactive)(setq buffer-undo-tree nil)))
-  (setq undo-tree-visualizer-diff t)
-  (setq undo-tree-visualizer-timestamps t)
   (global-undo-tree-mode))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; goto-chg ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
