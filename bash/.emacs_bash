@@ -1,11 +1,11 @@
 #!/usr/bin/env sh
 # -*- Mode: sh -*-
 # .emacs_bash --- bashrc for emacs
-# Copyright (C) 2017  Dan Harms (dharms)
+# Copyright (C) 2017-2018  Dan Harms (dharms)
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Saturday, September 23, 2017
 # Version: 1.0
-# Modified Time-stamp: <2017-12-20 12:33:30 dharms>
+# Modified Time-stamp: <2018-01-02 13:00:37 dan.harms>
 # Modified by: Dan Harms
 # Keywords: bash shell in emacs
 
@@ -13,7 +13,7 @@ if [ "${INSIDE_EMACS}" != "" ]; then
     export TERM=emacs
 fi
 
-if [ ! -z "$(which dircolors)" ]; then
+if [ ! -z "$(command -v dircolors)" ]; then
     eval "$(dircolors -b ~/.dircolors)"
 else
     export TERM=xterm-256color
