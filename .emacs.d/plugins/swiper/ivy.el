@@ -2051,7 +2051,8 @@ PREDICATE (a function called with no arguments) says when to exit.
 See `completion-in-region' for further information."
   (let* ((enable-recursive-minibuffers t)
          (str (buffer-substring-no-properties start end))
-         (completion-ignore-case case-fold-search)
+         (completion-ignore-case (and case-fold-search
+                                      (string= str (downcase str))))
          (comps
           (completion-all-completions str collection predicate (- end start)))
          (ivy--prompts-list (if (window-minibuffer-p)
@@ -2074,6 +2075,7 @@ See `completion-in-region' for further information."
                                   str)
                                  (t
                                   (substring str (- len))))))
+             (setq ivy--old-re nil)
              (unless (ivy--filter initial comps)
                (setq initial nil))
              (delete-region (- end len) end)
@@ -3823,7 +3825,7 @@ The selected history element will be inserted into the minibuffer."
         (old-last ivy-last)
         (ivy-recursive-restore nil))
     (ivy-read "Reverse-i-search: "
-              history
+              (delete-dups (copy-sequence history))
               :action (lambda (x)
                         (ivy--reset-state
                          (setq ivy-last old-last))

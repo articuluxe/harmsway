@@ -1,6 +1,10 @@
-;;; lsp-flycheck.el --- Flycheck support for lsp-mode -*- lexical-binding: t; -*-
+;;; lsp-ui-flycheck.el --- Flycheck support for lsp-mode -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2017  fmdkdd
+;; Package-Requires: ((emacs "25.1") (flycheck "30") (lsp-mode "3.1"))
+;; URL: https://github.com/emacs-lsp/lsp-ui
+;; Keywords: lsp, ui
+;; Version: 0.0.1
 
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -17,10 +21,10 @@
 
 ;;; Commentary:
 
-;; Put this in your config file:
-;;
+;; Flycheck integration for lsp-mode.  To enable, put this in your config:
+;; (require 'lsp-ui-flycheck)
 ;; (with-eval-after-load 'lsp-mode
-;;   (require 'lsp-flycheck))
+;;   (add-hook 'lsp-after-open-hook (lambda () (lsp-ui-flycheck-enable 1))))
 
 ;;; Code:
 
@@ -29,7 +33,20 @@
 (require 'flycheck)
 (require 'pcase)
 
-(defun lsp--flycheck-start (checker callback)
+(defgroup lsp-ui-flycheck nil
+  "The LSP extension to display syntax checking."
+  :group 'tools
+  :group 'convenience
+  :group 'lsp-ui
+  :link '(custom-manual "(lsp-ui-flycheck) Top")
+  :link '(info-link "(lsp-ui-flycheck) Customizing"))
+
+(defcustom lsp-ui-flycheck-enable t
+  "Whether or not to enable lsp-ui-flycheck."
+  :type 'boolean
+  :group 'lsp-ui)
+
+(defun lsp-ui-flycheck--start (checker callback)
   "Start an LSP syntax check with CHECKER.
 
 CALLBACK is the status callback passed by Flycheck."
@@ -54,21 +71,32 @@ CALLBACK is the status callback passed by Flycheck."
              lsp--diagnostics)
     (funcall callback 'finished errors)))
 
-(flycheck-define-generic-checker 'lsp
+(flycheck-define-generic-checker 'lsp-ui
   "A syntax checker using the Language Server Protocol (RLS)
 provided by lsp-mode.
 
 See https://github.com/emacs-lsp/lsp-mode."
-  :start #'lsp--flycheck-start
-  :modes '(rust-mode go-mode python-mode haskell-mode) ; Need a default mode
+  :start #'lsp-ui-flycheck--start
+  :modes '(python-mode) ; Need a default mode
   :predicate (lambda () lsp-mode)
   :error-explainer #'lsp-error-explainer)
 
-(defun lsp-flycheck-add-mode (mode)
+(defun lsp-ui-flycheck-add-mode (mode)
   "Add MODE as a valid major mode for the lsp checker."
-  (unless (flycheck-checker-supports-major-mode-p 'lsp mode)
-    (flycheck-add-mode 'lsp mode)))
+  (unless (flycheck-checker-supports-major-mode-p 'lsp-ui mode)
+    (flycheck-add-mode 'lsp-ui mode)))
 
-(provide 'lsp-flycheck)
+;; FIXME: Provide a way to disable lsp-ui-flycheck
+(defun lsp-ui-flycheck-enable (_)
+  "Enable flycheck integration for the current buffer."
+  (setq-local flycheck-check-syntax-automatically nil)
+  (setq-local flycheck-checker 'lsp-ui)
+  (lsp-ui-flycheck-add-mode major-mode)
+  (add-to-list 'flycheck-checkers 'lsp-ui)
+  (add-hook 'lsp-after-diagnostics-hook (lambda ()
+                                          (when flycheck-mode
+                                            (flycheck-buffer)))))
 
-;;; lsp-flycheck ends here
+
+(provide 'lsp-ui-flycheck)
+;;; lsp-ui-flycheck.el ends here

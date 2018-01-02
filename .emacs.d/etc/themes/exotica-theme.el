@@ -255,7 +255,7 @@
 
   ;; parentheses matching
   ;; `(show-paren-match ((t (:height 0.8 :width condensed :box (:line-width 1 :color "cyan" :style none )))))
-  `(show-paren-match ((t (:background ,face7 :foreground ,fullBlack :weight bold))))
+  `(show-paren-match ((t (:background ,face1 :foreground ,fullBlack :weight bold))))
   `(show-paren-mismatch ((t (:background ,m7 :foreground ,fullWhite))))
   `(rainbow-delimiters-mismatched-face ((t (:inherit show-paren-mismatch :underline t))))
   `(rainbow-delimiters-unmatched-face ((t (:inherit show-paren-mismatch))))
@@ -264,12 +264,12 @@
   `(dired-directory ((t (:foreground ,face7 :slant ,slantType))))
 
   ;; Web-mode
-  `(web-mode-html-attr-custom-face ((t (:foreground ,face3))))
+  `(web-mode-html-attr-custom-face ((t (:foreground ,face7))))
   `(web-mode-html-attr-equal-face ((t (:foreground ,fullWhite))))
   `(web-mode-html-attr-name-face ((t (:foreground ,face3))))
   `(web-mode-html-attr-value-face ((t (:inherit font-lock-string-face ))))
   `(web-mode-html-tag-bracket-face ((t (:foreground ,fullWhite))))
-  `(web-mode-html-tag-face ((t (:foreground ,face3 :slant ,slantType))))
+  `(web-mode-html-tag-face ((t (:inherit font-lock-function-name-face))))
   `(web-mode-html-tag-custom-face ((t (:inherit web-mode-html-tag-face))))
 
   ;; linum relative line number face
@@ -293,7 +293,10 @@
   `(avy-lead-face-2 ((t (:background ,face4 :foreground ,fullBlack :weight bold))))
 
 
-  `(indent-guide-face ((t (:foreground ,face9))))
+  ;; indent-guide faces
+  `(indent-guide-face ((t (:foreground ,line-highlight))))
+  `(highlight-indent-guides-character-face ((t (:foreground ,line-highlight))))
+
  ))
 
 ;;;###autoload

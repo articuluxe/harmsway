@@ -1,6 +1,8 @@
 ;;; kaolin-themes-lib.el --- Kaolin-themes library
 
 ;; TODO: color spec and color functions
+;; TODO: add accent color like aquamarine
+;; TODO: add pure colors
 
 ;; TODO: (??) make mode-line dark in ligth themes.
 ;; TODO: bright background option
@@ -31,134 +33,232 @@
 ;; TODO: add company-tooltip-common-selection for new themes
 
 ;; TODO (??) background: #5a6066 || #5d636a
+;; #617c7e
 
 ;; Predefined Kaolin palette
+;; 22-24 colors
+;; NEW - OLD
+;; GAP +/- ~7 hue
+;; TODO: (??)
+;; saturation 100
+;; value 85
+;; TODO: (??)
+;; color0 - pure
+;; color1 - color
+;; color2 - light/bright
+;; color3 - dark
+;; color4 - faded
+
+;; TODO: (??) num, link and prep color vars use the same color
+
 (defconst kaolin-palette
   '(
-    (black0          "#181818")
-    (black1          "#1b1b1b")
-    (black2          "#252525")
-    (black3          "#2f2f2f")
-    (black4          "#353535")
+    ;; (black0          "#181818")
+    ;; (black1          "#1b1b1b")
+    ;; (black2          "#252525")
+    ;; (black3          "#2f2f2f")
+    ;; (black4          "#353535")
 
+    ;; Black - #020203
+    (black0          "#161618")
+    (black1          "#18181B")
+    (black2          "#222225")
+    (black3          "#2B2B2F")
+    (black4          "#303035")
+
+    ;; Midnigh colors
+    (midnight-green       "#142223")
+    (alt-midnight-green   "#0f1e1d")
+    (midnight-blue        "#1e2528" black2)
+    ;; (alt-midnight-blue "#062732")
+    ;; (alt-midnight-blue "#12121a")
+    (alt-midnight-blue    "#13131c" black2)
+    (midnight-purple      "#1a121a")
+
+    ;; Gray
+    ;; TODO: (??) change hue to 240?
     (gray0           "#353b3c")
     (gray1           "#383e3f")
-    ;; old gray
-    (gray2           "#414849")
+    (gray2           "#414849") ; old gray
     (gray2           "#4b5254")
     (gray3           "#545c5e")
-    ;; old alt-gray
-    (gray4           "#60696b")
+    (gray4           "#60696b") ; old alt-gray
     (gray5           "#697375")
     (gray6           "#737d80")
-    ;; old bright-gray
-    (gray7           "#7c878a")
+    (gray7           "#7c878a") ; old bright-gray
     (gray8           "#879193")
-    ;; old light-gray
-    (gray9           "#919a9c")
+    (gray9           "#919a9c") ; old light-gray
 
+
+    ;; TODO:
     (lavender-gray   "#b6b5c5")
     (grayish-orange  "#a5a19c")
 
-    (white0          "#e4e4e8")
-    (white1          "#c8c8d0")
-    (white2          "#babac4")
-    (white3          "#adadb9")
-    (white4          "#9f9fad")
+    ;; White - #FDFDFF
+    (white0          "#e8e8e8")
+    (white1          "#d4d4d6")
+    (white2          "#c9c9cd")
+    (white3          "#bebec4")
+    (white4          "#b2b2b9")
 
-    ;; Maroon/brown
+    ;; Yellow #FFFF00
+    (dark-yellow     "#555a2f")
+    (yellow          "#acb370")
+
+    ;; Amber #FFBF00
+    (faded-wheat     "#d9ca9b")
+    (light-yellow    "#c9bb87")
+
+    ;; WHEAT #f5deb3
+    (wheat           "#d1bb90" "#ffd7a5")
+
+    ;; Orange #FF7F00
+    (alt-orange      "#d9a76f")
+    (orange          "#dbac66")
+    (alt-yellow      "#be9266")
+    (alt-wheat       "#fdd5b1")
+    (pure-orange     "#cc6a00")
+
+    ;; TODO:
+    (faded-orange    "#cd9575" "#d7af87")
+
+    ;; TODO Vermilion #FF3F00
+    (light-orange    "#ddc085")
+
+    ;; Red #FF0000
+    (alt-red         "#c93232") ; strong red
+    (red             "#cd5c5c") ; moderate red
+    (light-red       "#d66e75") ; Slightly desaturated red/soft red
+    (faded-red       "#863d42") ; dark moderate red; muted red
+
+    ;; TODO: adjust
+    ;; Maroon  - dark-red
+    (dark-red        "#832729") ; dark red or maroon?
+
+    ;; Crimson #FF003F
+    (moderate-pink   "#a0586c")
+    (light-pink      "#ef98aa")
+
+    ;; Rose #FF007F
+    (pink            "#d24b83")
+    (soft-pink       "#fbaed2")
+    ;; Dark rose is eggplant
+
+    ;; Cerise #FF00BF
+    ;; (alt-purple      "#915c83")
+    (alt-purple      "#a9779c")
+    ;; TODO:
+    (dark-violet     "#997a8d")
+
+    ;; Magenta/Fuchsia #FF00FF
+    (dark-purple     "#563d56")
+    (purple          "#835d83")
+
+    ;; TODO:
+    (grayish-magenta "#796878")
+    (light-purple    "#cea2ca")
+
+    ;; Purple #BF00FF
+    (violet          "#ab98b5")
+
+    ;; Violet #7F00FF
+    (lavender        "#967bb6")
+    (alt-lavender    "#9d81ba")
+
+    (light-violet    "#d1aef4")
+
+    ;; TODO: add to group
+    (alt-violet      "#af94f5")
+
+    ;; Ultramarine #3F00FF
+    ;; TODO: add color
+
+    ;; Blue #0000FF
+    ;; (blue             "#6a6a9a")
+    ;; (blue             "#5757ad")
+    (faded-blue       "#817f96") ;  Navy
+
+    (magenta         "#5454b6") ; TODO my current magenta is moderate blue or even navy
+
+    ;; Cerulean #003FFF
+    (grayish-blue      "#687184")
+
+    ;; Azure/Sky Blue #007FFF
+    (alt-grayish-blue  "#8f9ca7")
+    (dark-blue         "#2a4661")
+
+    (blue             "#3b6fa3")
+
+    ;; Dodger blue
+    ;; (moderate-blue    "#4e7f95")
+    (moderate-blue    "#53859d")
+
+
+    (soft-blue        "#4ca6e8")
+
+    ;; Capri/Deep Sky Blue #00BFFF
+    ;; TOOD: adjust
+    (alt-blue         "#267fb5")
+    (teal-blue          "#91b9c7")
+
+    ;; Cyan #00FFFF
+    (cyan             "#54b6b6")
+    (dark-cyan        "#098b8b")
+
+    ;; teal is dark cyan
+    (teal               "#80b6bc")
+
+    ;; Aquamarine #00FFBF
+    ; (aquamarine         "#7fffd4")
+    (aquamarine         "#68f3c5")
+
+    ;; TODO: new group
+    (light-jade         "#709688")
+
+
+    ;; TODO: Viridian
+    (viridian           "#40826d")
+
+    ;; Spring green #00FF7F
+    (dark-jade          "#2E4038")
+    (jade               "#597A6C")
+    (teal-green         "#6fb593")
+    (dark-green         "#39855f")
+    (light-green        "#54b685")
+
+    ;; TODO: adjust
+    (light-jade         "#709688")
+
+    ;; Erin #00FF3F
+    ;; TODO: add color
+
+    ;; Green #00FF00
+    (alt-lime           "#8fbc8f")
+    (grayish-green      "#9ca78f")
+
+    ;; Harlequin #3FFF00
+    ;; TODO: add color
+
+    ;; Chartreuse #7FFF00
+    (lime               "#85b654")
+
+    ;; Lime #D5FF00
+    ;; "#b9c791"
+
+    ;; EXTRA COLORS
+    ;; TODO Brown
+    ;; Brown orange + black
     (brown           "#7d6360")
     (light-brown     "#ae9895")
     (alt-brown       "#52413f")
     (bazaar          "#98777b")
 
-    ;; TODO:
-    (dark-red        "#832729")
-    (red             "#cd5c5c")
-    (faded-red       "#863d42")
-    (alt-red         "#c93232")
-    (light-red       "#d66e75")
-
-
-    ;; (rich) Maroon
-    (moderate-pink   "#a0586c")
-    (pink            "#d24b83")
-    (light-pink      "#ef98aa")
-    (soft-pink       "#fbaed2")
-
-    (faded-orange    "#cd9575" "#d7af87")
-    (alt-orange      "#d9a76f")
-    (orange          "#dbac66")
-    (light-orange    "#ddc085")
-    (pure-orange     "#cc6a00")
-
-    (dark-yellow     "#555a2f")
-    (yellow          "#acb370")
-    (alt-yellow      "#be9266")
-    (light-yellow    "#c9bb87")
-    (wheat           "#b9c791" "#ffd7a5")
-    (alt-wheat       "#fdd5b1")
-    (faded-wheat     "#D9CA9B")
-
-    (dark-jade          "#2e4039")
-    (jade               "#597a6e")
-    (alt-jade           "#4d5d53")
-    (light-jade         "#709688")
-    (midnight-green     "#142223")
-    (alt-midnight-green "#0F1E1D")
+    ;; TODO: make MAIN color more green :>
     (deep-green         "#39656b")
-    (grayish-green      "#9ca78f")
+    ;; Teal; TODO: make a bit more green
     ;; (green              "#4a858c")
     (green              "#4d8d93")
-    ;; TODO: Viridian
-    ;; (green              "#40826d")
-    (dark-green         "#39855f")
-    (light-green        "#54b685")
-    (lime               "#85b654")
-    (alt-lime           "#8fbc8f")
-    (teal               "#80b6bc")
-    (teal-blue          "#91b9c7")
-    (teal-green         "#6fb593")
 
-
-    (midnight-blue    "#1e2528" black2)
-    ;; (alt-midnight-blue "#062732")
-    ;; (alt-midnight-blue "#12121a")
-    (alt-midnight-blue "#13131c" black2)
-    (grayish-blue      "#687184")
-    (alt-grayish-blue  "#8f9ca7")
-    (dark-blue         "#2a4661")
-    ;; TODO: (??) swap blue and soft-blue and rename to dark-blue
-    (blue             "#3B6FA3")
-    (alt-blue         "#267fb5")
-    ;; (moderate-blue    "#4e7f95")
-    (moderate-blue    "#53859d")
-    (soft-blue        "#4CA6E8")
-
-    ;; Aqua/cyan
-    (dark-cyan        "#008b8b")
-    (cyan             "#54b6b6")
-    (faded-blue       "#817f96")
-
-    ;; MAGENTA/Fuchsia
-    (midnight-purple "#1a121a")
-    (dark-purple     "#563d56")
-    (purple          "#835d83")
-
-    ;; TODO my current magenta is moderate blue or even navy
-    (magenta         "#5454b6")
-    (grayish-magenta "#796878")
-    (light-purple    "#cea2ca")
-    ;; Antique fuchsia
-    ;; (alt-purple      "#915c83")
-    (alt-purple      "#a9779c")
-    (lavender        "#967bb6")
-    (alt-lavender    "#9d81ba")
-
-    (dark-violet     "#997a8d")
-    (violet          "#ab98b5")
-    (alt-violet      "#af94f5")
-    (light-violet    "#d1aef4")
 
     ;; Named face options
     (bold            kaolin-bold)
@@ -179,7 +279,8 @@
     (bg4  black4)
 
     (dim-buffer black0)
-    (hl         light-green)
+    ;; TODO: change because almost same green using by strings
+    (hl         aquamarine)
     (hl-mono    gray4)
     (hl-line    (if kaolin-hl-line-colored midnight-blue bg2))
     (hl-indent  gray3)
@@ -217,10 +318,11 @@
     (comment     gray3)
     (alt-comment alt-grayish-blue)
     (functions   builtin)
+    ;; TODO: (??) change to light-brown like sierra.vim
     (str         teal-green)
     (str-alt     jade)
     (doc         str-alt)
-    (type        alt-orange)
+    (type        faded-orange)
     (const       violet)
     (var         faded-blue)
     (num         red)
@@ -257,7 +359,7 @@
     (ivy1        fg1)
     (ivy2        soft-blue)
     (ivy3        light-orange)
-    (ivy4        moderate-pink)))
+    (ivy4        light-violet)))
 
 ;; Predefined Kaolin face specifications
 (defconst kaolin-faces
@@ -365,6 +467,12 @@
                                                :italic nil :underline nil :strike-through nil))
     (linum-relative-current-line  (:inherit 'nlinum-current-line))
     (nlinum-relative-current-face (:inherit 'nlinum-current-line))
+
+    ;; Native line numbers
+    (line-number                  (:background line-num-bg :foreground line-num-fg :bold nil
+                                               :italic nil :underline nil :strike-through nil))
+    (line-number-current-line     (:background line-num-bg :foreground line-num-hl :bold bold
+                                               :italic nil :underline nil :strike-through nil))
 
     ;; Which-function-mode
     (which-func (:foreground orange))

@@ -3,7 +3,7 @@
 ;; Copyright (c) 2017 Prassee
 
 ;; Author: Prassee  <prassee.sathian@gmail.com>
-;; Keywords: faces
+;; Keywords: dark high-contrast  faces
 ;; URL: https://github.com/prassee/prassee-emacs-theme
 ;; Package-Requires: ((emacs "24"))
 ;; Version: 1.2
@@ -21,20 +21,16 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-;;; Commentary:
-
-;; A variant of the Doom theme Zenburn for Emacs 25, built on top
-;; of the new built-in theme support in Emacs 25.
-
 ;;; Code:
 
 (deftheme prassee
-  "A dark theme inspired by Doom One theme")
+  "A dark theme for emacs and compatible with most programming modes")
 
 (let ((c '((class color) (min-colors 89)))
       (black          "#181e26")
       (white          "#DFDFDF")
       (grey           (if window-system "#5B6268" "#525252"))
+      (greenr         "green")
       (green-c        "#65737E")
       (grey-c         "#3d4451")
       (grey-d         "#3D3D48")
@@ -45,6 +41,7 @@
       (red            "#ff6c6b")
       (magenta        "#c678dd")
       (violet         "#a9a1e1")
+      (cyanr          "cyan")
       (cyan           "#46D9FF")
       (cyan-d         "#5699AF")
       (teal           "#4db5bd")
@@ -52,7 +49,8 @@
       (blue-d         "#1f5582")
       (green          "#98be65"))
 
-  (let* ((bg             "#002b36")
+  (let* (
+         (bg             "#002b36")
          (bg-d           "#002a36")
          (bg-dd          "#0087af")
          (fg             "#bbc2cf")
@@ -103,12 +101,12 @@
      'prassee
 
      ;; Global
-     `(default                ((,c (:background ,bg-d :foreground ,fg))))
+     `(default                ((,c (:background ,bg :foreground ,fg))))
      `(fringe                 ((,c (:inherit default :foreground ,comments))))
      `(region                 ((,c (:background ,region))))
      `(highlight              ((,c (:background ,teal :foreground ,black))))
      `(hl-line                ((,c (:background ,bg))))
-     `(cursor                 ((,c (:background ,blue))))
+     `(cursor                 ((,c (:background ,greenr))))
      `(shadow                 ((,c (:foreground ,grey))))
      `(minibuffer-prompt      ((,c (:foreground ,blue))))
      `(tooltip                ((,c (:background ,black :foreground ,fg))))
@@ -120,11 +118,11 @@
      `(match                  ((,c (:foreground ,green :background ,black ))))
      `(trailing-whitespace    ((,c (:background ,comments))))
      `(vertical-border        ((,c (:foreground ,teal :background ,white))))
-     `(show-paren-match       ((,c (:foreground ,red :background ,black ))))
+     `(show-paren-match       ((,c (:foreground ,black :background ,teal ))))
      `(show-paren-mismatch    ((,c (:foreground ,black :background ,red ))))
      `(linum
-       ((((type graphic)) :background ,bg :foreground ,teal )
-        (t                :background ,bg :foreground ,teal )))
+       ((((type graphic)) :background ,bg :foreground ,teal)
+        (t                :background ,bg :foreground ,teal)))
 
      `(font-lock-builtin-face           ((,c (:foreground ,builtin))))
      `(font-lock-comment-face           ((,c (:foreground ,comments))))
@@ -143,7 +141,6 @@
      `(font-lock-preprocessor-char-face      ((,c (:foreground ,operators ))))
      `(font-lock-regexp-grouping-backslash   ((,c (:foreground ,operators ))))
      `(font-lock-regexp-grouping-construct   ((,c (:foreground ,operators ))))
-
   
      ;; Dired/dired-k
      `(dired-directory             ((,c (:foreground ,orange))))
@@ -206,14 +203,14 @@
      `(git-gutter+-deleted         ((,c (:foreground ,vc-deleted))))
 
      ;; Helm
-     `(helm-selection              ((,c (:background ,teal :foreground ,black))))
-     `(helm-match                  ((,c (:foreground ,blue :underline t))))
+     `(helm-selection              ((,c (:background ,teal :foreground ,bg))))
+     `(helm-match                  ((,c (:foreground ,orange :underline t :bold t))))
      `(helm-source-header          ((,c (:background ,orange :foreground ,black :weight bold ))))
      `(helm-swoop-target-line-face ((,c (:foreground ,highlight :inverse-video t))))
      `(helm-ff-file                ((,c (:foreground ,fg))))
-     `(helm-ff-prefix              ((,c (:foreground ,magenta))))
-     `(helm-ff-dotted-directory    ((,c (:foreground ,grey-d))))
-     `(helm-ff-directory           ((,c (:foreground ,orange))))
+     `(helm-ff-prefix              ((,c (:foreground ,white))))
+     `(helm-ff-dotted-directory    ((,c (:foreground ,cyan-d :weight bold))))
+     `(helm-ff-directory           ((,c (:foreground ,orange :weight bold))))
      `(helm-ff-executable          ((,c (:foreground ,white ))))
 
      ;; indent-guide, highlight-{quoted,numbers,indentation}-mode
@@ -353,16 +350,11 @@
      `(org-checkbox-statistics-done ((,c (:inherit org-done))))
      `(org-list-bullet           ((,c (:foreground ,cyan :bold t :italic t))))  ; custom
      `(message-header-name       ((,c (:foreground ,green)))) ; custom
-
-     ;; typescript-mode
-     `(ts-object-property  ((,c (:inherit js2-object-property))))
-
-     ;; powerline mode 
-     `(powerline-active1 ((,c (:background ,cyan-d :foreground ,bg-d ))))
-     `(powerline-active2 ((,c (:background ,cyan-d :foreground ,bg-d ))))
-     `(powerline-inactive1 ((,c (:background ,grey :foreground ,white))))
-     `(powerline-inactive2 ((,c (:background ,grey :foreground ,white))))
-
+  
+     ;; mode-line with slightly more height
+     `(mode-line ((,c (:background ,teal :foreground ,black :box (:line-width 5 :color ,teal)))))    
+     `(mode-line-inactive ((,c (:background ,region :foreground ,teal :box (:line-width 5 :color ,region)))))
+     
      ;; web-mode
      `(web-mode-doctype-face           ((,c (:foreground ,comments))))
      `(web-mode-html-tag-face          ((,c (:foreground ,methods))))
@@ -372,34 +364,16 @@
      `(web-mode-block-control-face     ((,c (:foreground ,orange))))
      )))
 
-
-;; modeline & spaceline specific change  if spaceline and Fira Code font is installed 
-(set-face-attribute 'mode-line nil :font "PragmataPro-12" :weight 'bold )
-(setq ns-use-srgb-colorspace nil)
-
-(setq spaceline-separator-dir-left '(left . left))
-(setq spaceline-separator-dir-right '(right . right))
-(setq powerline-height 29)
-(setq spaceline-highlight-face-func 'spaceline-highlight-face-modified)
-(spaceline-toggle-projectile-root-on)
-(spaceline-toggle-helm-buffer-id-on)  
-(spaceline-toggle-window-number-on)
-(spaceline-toggle-buffer-position-off)
-(spaceline-toggle-buffer-size-off)
-(spaceline-toggle-minor-modes-off)
-(spaceline-toggle-selection-info-on)  
-(spaceline-helm-mode +1)
-
 ;; set cursor style
-(setq-default cursor-type 'bar) 
+(setq-default cursor-type '(bar . 4))
+;; (set-cursor-color ,magenta) 
 
-;;;###autoload
+;; autoload
 (when load-file-name
   (add-to-list 'custom-theme-load-path
                (file-name-as-directory (file-name-directory load-file-name))))
 
-;;; Footer
-
+;; Footer
 (provide-theme 'prassee)
 
 ;; Local Variables:

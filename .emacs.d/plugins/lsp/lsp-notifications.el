@@ -19,9 +19,17 @@
 (require 'cl-lib)
 (require 'subr-x)
 
+(defcustom lsp-inhibit-message nil
+  "If non-nil, inhibit the message echo via `inhibit-message'."
+  :type 'boolean
+  :group 'lsp-mode)
+
 (defun lsp--window-show-message (params)
-  (message "%s" (lsp--propertize (gethash "message" params)
-                                 (gethash "type" params))))
+  "Send the server's messages to message, inhibit if `lsp-inhibit-message'
+is set."
+  (let* ((inhibit-message (or inhibit-message lsp-inhibit-message)))
+    (message "%s" (lsp--propertize (gethash "message" params)
+                    (gethash "type" params)))))
 
 (defcustom lsp-after-diagnostics-hook nil
   "Hooks to run after diagnostics are received from the language
@@ -77,7 +85,7 @@ interface PublishDiagnosticsParams {
     uri: string;
     diagnostics: Diagnostic[];
 }"
-  (let ((file (string-remove-prefix "file://" (gethash "uri" params)))
+  (let ((file (string-remove-prefix lsp--uri-file-prefix (gethash "uri" params)))
         (diagnostics (gethash "diagnostics" params)) buffer)
     (puthash file (mapcar #'lsp--make-diag diagnostics) lsp--diagnostics)
     (setq buffer (cl-loop for buffer in (lsp--workspace-buffers workspace)

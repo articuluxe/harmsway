@@ -245,7 +245,7 @@ Warning: This is implemented by advising specific dired functions."
     dired-do-copy
     dired-do-flagged-delete
     dired-create-directory
-    delete-file
+    (delete-file . 5)
     (save-buffer . 5))
   "A list of commands that will trigger a refresh of the sidebar.
 
@@ -821,7 +821,8 @@ Optional argument NOCONFIRM Pass NOCONFIRM on to `dired-buffer-stale-p'."
   "Refresh sidebar buffer."
   (when-let* ((sidebar (dired-sidebar-sidebar-buffer-in-frame)))
     (with-current-buffer sidebar
-      (revert-buffer))))
+      (let ((auto-revert-verbose nil))
+        (revert-buffer)))))
 
 (defun dired-sidebar-follow-file ()
   "Follow new file.
@@ -894,9 +895,10 @@ This may return nil if there's no suitable file to show."
       (error nil)))
    ((and (eq major-mode 'ibuffer-mode)
          (fboundp 'ibuffer-current-buffer))
-    (buffer-file-name (ibuffer-current-buffer)))
+    (let ((bf-name (buffer-file-name (ibuffer-current-buffer))))
+      (and bf-name (file-exists-p bf-name) bf-name)))
    (:default
-    buffer-file-name)))
+    (and buffer-file-name (file-exists-p buffer-file-name) buffer-file-name))))
 
 (defun dired-sidebar-term-get-pwd ()
   "Get current directory of `term-mode'.

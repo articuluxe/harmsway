@@ -21,6 +21,7 @@
 
 ;;; Code:
 
+(require 'imenu)
 (require 'lsp-methods)
 
 (define-inline lsp--point-to-marker (p)
@@ -34,7 +35,7 @@
 (defun lsp--symbol-filter (sym)
   (not
     (lsp--equal-files
-      (string-remove-prefix "file://" (gethash "uri" (gethash "location" sym)))
+      (string-remove-prefix lsp--uri-file-prefix (gethash "uri" (gethash "location" sym)))
       (buffer-file-name))))
 
 (defun lsp--get-symbol-type (sym)
