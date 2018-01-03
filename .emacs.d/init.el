@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-01-02 23:01:21 dharms>
+;; Modified Time-stamp: <2018-01-02 23:05:20 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -387,6 +387,11 @@ line."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; interactive-align ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package ialign :bind ("C-c ai" . ialign-interactive-align))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; emacs-new-buffer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package emacs-new-buffer
+  :bind (("C-x tb" . emacs-new-buffer-now)
+         ("C-x tw" . emacs-new-buffer-as)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; good-word ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package good-word
