@@ -1,0 +1,11 @@
+#!/usr/bin/env xdg-open
+
+[Desktop Entry]
+Version=1.0
+Type=Application
+Terminal=false
+Icon=gnome-panel-launcher
+Name=EmacsX
+Comment=Launch EmacsX
+Path=
+Exec=/usr/bin/emacs-25.3
