@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-01-02 23:05:20 dharms>
+;; Modified Time-stamp: <2018-01-02 23:18:15 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1867,6 +1867,9 @@ not an error if any files do not exist."
     (use-package diff-hl-margin :config (diff-hl-margin-mode 1))
     )
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; in-memory-diff ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package in-memory-diff :bind ("M-s dm" . in-memory-diff))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; shebang ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package shebang)
