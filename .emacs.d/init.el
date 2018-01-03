@@ -1,8 +1,8 @@
 ;; init.el --- Initialization file
-;; Copyright (C) 2015-2017  Dan Harms (dharms)
+;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2017-12-20 09:42:12 dharms>
+;; Modified Time-stamp: <2018-01-02 23:01:21 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -384,6 +384,9 @@ line."
 (global-set-key "\C-caa" 'align)
 (global-set-key "\C-car" 'align-regexp)
 (global-set-key "\C-cav" 'align-values)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;; interactive-align ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package ialign :bind ("C-c ai" . ialign-interactive-align))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; good-word ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package good-word
