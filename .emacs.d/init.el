@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-01-02 23:18:15 dharms>
+;; Modified Time-stamp: <2018-01-04 15:30:53 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -881,6 +881,7 @@ not an error if any files do not exist."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; vc ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq vc-follow-symlinks nil)
+(setq vc-handled-backends '(Git SVN))
 (bind-key "C-x vR" 'vc-region-history)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; makefile-executor ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1432,15 +1433,18 @@ not an error if any files do not exist."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; tramp ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package tramp
   :defer t
-  :config
+  :init
+  (setq tramp-verbose 1)
   (when (boundp 'my/user-name)
     (setq tramp-default-user my/user-name))
   ;; my/autosave-dir defined in custom-backups.el
   (setq tramp-auto-save-directory my/autosave-dir)
   (add-to-list 'tramp-remote-path 'tramp-own-remote-path)
-  (setq vc-ignore-dir-regexp
-        (format "\\(%s\\)\\|\\(%s\\)"
-                vc-ignore-dir-regexp tramp-file-name-regexp))
+  (setq remote-file-name-inhibit-cache 10)
+  (setq tramp-completion-reread-directory-timeout 10)
+  ;; (setq vc-ignore-dir-regexp
+  ;;       (format "\\(%s\\)\\|\\(%s\\)"
+  ;;               vc-ignore-dir-regexp tramp-file-name-regexp))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; outline-magic ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
