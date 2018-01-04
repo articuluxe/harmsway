@@ -92,32 +92,6 @@ This uses format specified by `dired-sidebar-mode-line-format'."
   :type 'list
   :group 'dired-sidebar)
 
-(make-obsolete-variable 'dired-sidebar-use-all-the-icons
-                        'dired-sidebar-theme "2017/12/10")
-
-(defcustom dired-sidebar-use-all-the-icons t
-  "Use `all-the-icons' if true.
-
-This has no effect in Terminals.
-
-This variable will be removed sometime in 2018 in favor of `dired-sidebar-theme'."
-  :type 'boolean
-  :group 'dired-sidebar)
-
-(make-obsolete-variable 'dired-sidebar-use-tui
-                        'dired-sidebar-theme "2017/12/10")
-
-(defcustom dired-sidebar-use-tui t
-  "Use text user interface.
-
-This adds + and - 'icons' to the UI.
-
-This only takes effect if `dired-sidebar-use-all-the-icons' is not enabled.
-
-This variable will be removed sometime in 2018 in favor of `dired-sidebar-theme'."
-  :type 'boolean
-  :group 'dired-sidebar)
-
 (defcustom dired-sidebar-theme 'icons
   "*The tree style to display.
 `ascii' is the simplest style, it will use +/- to display the fold state,
@@ -255,22 +229,6 @@ to wait to refresh the sidebar after the CAR of the alist is called.
 Set this to nil or set `dired-sidebar-refresh-on-special-commands' to nil
 to disable automatic refresh when a special command is triggered."
   :type 'list
-  :group 'dired-sidebar)
-
-(make-obsolete-variable 'dired-sidebar-refresh-on-special-command-instantly
-                        'dired-sidebar-special-refresh-commands "2017/12/14")
-
-(defcustom dired-sidebar-refresh-on-special-command-instantly t
-  "Whether or not to revert buffer when special command is called.
-
-Special command is a command from `dired-sidebar-special-refresh-commands'.
-
-Keeping this as true will make those special commands update the UI instantly
-at the cost of *possibly* some extra delay.
-
-This is deprecated and unused. Modify `dired-sidebar-special-refresh-commands'
-instead. This will be removed early 2018."
-  :type 'boolean
   :group 'dired-sidebar)
 
 (defcustom dired-sidebar-alternate-select-window-function
@@ -439,8 +397,7 @@ will check if buffer is stale through `auto-revert-mode'.")
      dired-sidebar-special-refresh-commands))
 
   (cond
-   ((and dired-sidebar-use-all-the-icons
-         (eq dired-sidebar-theme 'icons)
+   ((and (eq dired-sidebar-theme 'icons)
          (display-graphic-p)
          (or
           (fboundp 'all-the-icons-dired-mode)

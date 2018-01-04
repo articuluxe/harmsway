@@ -1,4 +1,6 @@
-;;; kaolin-themes-lib.el --- Kaolin-themes library
+;;; kaolin-themes-lib.el --- Kaolin-themes library, provides common parts for the theme engine
+
+;; TODO: (??) add travis ci
 
 ;; TODO: color spec and color functions
 ;; TODO: add accent color like aquamarine
@@ -45,11 +47,14 @@
 ;; TODO: (??)
 ;; color0 - pure
 ;; color1 - color
-;; color2 - light/bright
-;; color3 - dark
+;; color2 - dark
+;; color3 - light/bright
 ;; color4 - faded
 
+
 ;; TODO: (??) num, link and prep color vars use the same color
+
+;; TERMINAL COLORS: 0-7 is dark, 8-15 is light, so...
 
 (defconst kaolin-palette
   '(
@@ -95,21 +100,23 @@
     (grayish-orange  "#a5a19c")
 
     ;; White - #FDFDFF
-    (white0          "#e8e8e8")
-    (white1          "#d4d4d6")
-    (white2          "#c9c9cd")
-    (white3          "#bebec4")
-    (white4          "#b2b2b9")
+    (white0          "#f2f2f2")
+    (white1          "#e6e6e8")
+    (white2          "#d4d4d6")
+    (white3          "#c9c9cd")
+    (white4          "#bebec4")
 
     ;; Yellow #FFFF00
     (dark-yellow     "#555a2f")
     (yellow          "#acb370")
 
     ;; Amber #FFBF00
+    (amber           "#d4b668")
     (faded-wheat     "#d9ca9b")
     (light-yellow    "#c9bb87")
-
     ;; WHEAT #f5deb3
+    ;; TODO: fix second
+    ;; (??) desaturared
     (wheat           "#d1bb90" "#ffd7a5")
 
     ;; Orange #FF7F00
@@ -205,7 +212,7 @@
     (cyan             "#54b6b6")
     (dark-cyan        "#098b8b")
 
-    ;; teal is dark cyan
+    ;; my old teal is dark cyan
     (teal               "#80b6bc")
 
     ;; Aquamarine #00FFBF
@@ -429,6 +436,7 @@
     (custom-invalid        (:background nil :foreground red))
     (custom-set            (:background nil :foreground light-jade))
     (widget-documentation  (:background nil :foreground var))
+    (widget-button         (:background nil :foreground keyword))
 
     ;; Highlighting
     (highlight                (:background bg2 :foreground light-orange))

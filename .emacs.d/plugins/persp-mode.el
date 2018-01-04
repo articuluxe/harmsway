@@ -3,7 +3,7 @@
 ;; Copyright (C) 2012 Constantin Kulikov
 
 ;; Author: Constantin Kulikov (Bad_ptr) <zxnotdead@gmail.com>
-;; Version: 2.9.6
+;; Version: 2.9.7
 ;; Package-Requires: ()
 ;; Keywords: perspectives, session, workspace, persistence, windows, buffers, convenience
 ;; URL: https://github.com/Bad-ptr/persp-mode.el
@@ -136,7 +136,7 @@
 
 (defface persp-face-lighter-buffer-not-in-persp
   '((default . (:background "#F00" :foreground "#00F" :weight bold)))
-  "Face for the ligher when the current buffer is not in a perspective."
+  "Face for the lighter when the current buffer is not in a perspective."
   :group 'persp-mode)
 (defface persp-face-lighter-nil-persp
   '((t :inherit bold-italic))
@@ -1646,6 +1646,7 @@ the selected window to a wrong buffer.")
      keyargs
      &key buffer-name file-name mode mode-name minor-mode minor-mode-name
      predicate tag-symbol save-vars save-function load-function after-load-function
+     mode-restore-function
      append)
   (let ((generated-save-predicate
          (apply #'persp--generate-buffer-predicate keyargs))
@@ -1687,6 +1688,10 @@ the selected window to a wrong buffer.")
                  (buffer-name vars-list &rest _rest) (cdr savelist)
                (let ((buf-file (alist-get 'buffer-file-name vars-list))
                      (buf-mmode (alist-get 'major-mode vars-list)))
+                 ,(when mode-restore-function
+                    `(push (cons 'persp-load-buffer-mode-restore-function
+                                 (with-no-warnings ',mode-restore-function))
+                           vars-list))
                  (lexical-let
                      ((persp-loaded-buffer
                        (persp-buffer-from-savelist
@@ -3894,12 +3899,17 @@ of the perspective %s can't be saved."
                             (alist-get 'local-vars parameters))))
                       (with-current-buffer buf
                         (restorevars)
-                        (typecase mode
-                          (function
-                           (when (and (not (eq major-mode mode))
-                                      (not (eq major-mode 'not-loaded-yet)))
-                             (funcall mode)
-                             (restorevars)))))))
+                        (cond
+                         ((and (boundp 'persp-load-buffer-mode-restore-function)
+                               (variable-binding-locus 'persp-load-buffer-mode-restore-function)
+                               (functionp persp-load-buffer-mode-restore-function))
+                          (funcall persp-load-buffer-mode-restore-function mode)
+                          (restorevars))
+                         ((functionp mode)
+                          (when (and (not (eq major-mode mode))
+                                     (not (eq major-mode 'not-loaded-yet)))
+                            (funcall mode)
+                            (restorevars)))))))
                   buf))))
       (persp-car-as-fun-cdr-as-args savelist))))
 

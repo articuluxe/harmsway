@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-01-04 16:54:13 dan.harms>
+;; Modified Time-stamp: <2018-01-04 17:09:39 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -385,8 +385,8 @@ line."
 (global-set-key "\C-car" 'align-regexp)
 (global-set-key "\C-cav" 'align-values)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;; interactive-align ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package ialign :bind ("C-c ai" . ialign-interactive-align))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ialign ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package ialign :bind ("C-c ai" . ialign))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; emacs-new-buffer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package emacs-new-buffer
