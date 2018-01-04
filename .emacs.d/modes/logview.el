@@ -1,10 +1,9 @@
-;; log-viewer.el --- major mode to view log files
-;; Copyright (C) 2015-2017  Dan Harms (dharms)
+;; logview.el --- major mode to view log files
+;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Version: 1.0
-;; Modified Time-stamp: <2017-06-20 08:35:44 dharms>
-;; Keywords:
+;; Modified Time-stamp: <2018-01-04 16:16:43 dan.harms>
+;; Keywords: tools
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -20,34 +19,38 @@
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 ;;; Commentary:
-
+;; Provide utilities to examine application log files.
 ;;
 
 ;;; Code:
+(require 'autorevert)
 
-(defgroup log-viewer-mode nil "*log file mode" :group 'log-viewer)
+(defgroup logview-mode nil "*log file mode" :group 'logview)
 
-(defcustom log-viewer-user-initials ""
+(defvar logview-mode-font-lock-keywords nil
+  "Keywords used in logview-mode.")
+
+(defcustom logview-user-initials ""
   "User-specific keyword to highlight as a comment in log files.")
 
-(defun log-viewer-hide-ctrl-a ()
-  "Don't show C-a in log files.  This helps delimit fields in the
-fix protocol, using a pipe `|'."
+(defun logview-hide-ctrl-a ()
+  "Don't show `C-a' in log files.
+This helps delimit fields in the fix protocol, using a pipe `|'."
   (interactive)
   (setq buffer-display-table (make-display-table))
   (aset buffer-display-table ?\^A [?|]))
 
-(add-hook 'log-viewer-mode-hook #'log-viewer-hide-ctrl-a)
+(add-hook 'logview-mode-hook #'logview-hide-ctrl-a)
 
-(defun log-viewer-mode()
-  "Log-viewer mode is a mode for browsing log files."
+(defun logview-mode()
+  "logview mode is a mode for browsing log files."
   (interactive)
   (kill-all-local-variables)
-  (setq major-mode 'log-viewer-mode)
-  (setq mode-name "log-viewer")
+  (setq major-mode 'logview-mode)
+  (setq mode-name "logview")
   ;; (modify-syntax-entry ?_ "w")
   (make-local-variable 'font-lock-defaults)
-  (setq log-viewer-mode-font-lock-keywords
+  (setq logview-mode-font-lock-keywords
         (list
          (list "\\<\\(ERROR\\|FATAL\\|WARN\\|[^W]error\\)\\>"
                '(1 font-lock-warning-face))
@@ -75,12 +78,19 @@ fix protocol, using a pipe `|'."
                '(1 font-lock-variable-name-face t)
                '(2 font-lock-constant-face t t))
          ;; personal debug statements
-         (list log-viewer-user-initials '(0 font-lock-comment-face t))
+         (list logview-user-initials '(0 font-lock-comment-face t))
          ))
-  (setq font-lock-defaults '(log-viewer-mode-font-lock-keywords))
-  (run-hooks 'log-viewer-mode-hook)
+  (setq font-lock-defaults '(logview-mode-font-lock-keywords))
+  (run-hooks 'logview-mode-hook)
   )
 
-(provide 'log-viewer)
+;;;###autoload
+(defun logview-enter-tail-mode ()
+  "Enable `auto-revert-tail-mode' for the current buffer."
+  (interactive)
+  (setq auto-revert-interval 1)
+  (auto-revert-set-timer)
+  (auto-revert-tail-mode 1))
 
-;; log-viewer.el ends here
+(provide 'logview)
+;;; logview.el ends here

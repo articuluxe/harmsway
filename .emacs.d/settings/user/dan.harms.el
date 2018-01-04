@@ -1,9 +1,8 @@
 ;; dan.harms.el --- user settings file
-;; Copyright (C) 2015-2017  Dan Harms (dharms)
+;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Version: 1.0
-;; Modified Time-stamp: <2017-06-20 08:33:42 dharms>
+;; Modified Time-stamp: <2018-01-04 15:48:53 dan.harms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -34,7 +33,7 @@
  (lambda() (font-lock-add-keywords
             nil '(("\\<[Dd][Rr][Hh]\\>" 0 'font-lock-warning-face t)) t)) t)
 
-;; log-viewer initials
-(setq log-viewer-user-initials "drh")
+;; logview initials
+(setq logview-user-initials "drh")
 
 ;;; dan.harms.el ends here

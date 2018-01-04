@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-01-04 15:30:53 dan.harms>
+;; Modified Time-stamp: <2018-01-04 16:54:13 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2817,8 +2817,11 @@ This may perform related customization."
   (use-package json-pointer)
   )
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; log-viewer-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package log-viewer :mode ("\\.log$" . log-viewer-mode))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; logview-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package logview
+  :mode ("\\.log$" . logview-mode)
+  :bind ("C-c xr" . logview-enter-tail-mode)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; markdown-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package markdown-mode
