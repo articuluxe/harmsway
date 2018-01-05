@@ -1,9 +1,8 @@
 ;; coding.el --- coding utilities
-;; Copyright (C) 2015-2017  Dan Harms (dharms)
+;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Version: 1.0
-;; Modified Time-stamp: <2017-11-08 08:11:35 dharms>
+;; Modified Time-stamp: <2018-01-05 00:11:18 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -161,9 +160,9 @@
             (font-lock-add-keywords
              nil '(
                    ;; TODO declarations
-                   ("\\<[tT][oO][dD][oO]\\>" 0 font-lock-warning-face t)
+                   ("\\_<[tT][oO][dD][oO]\\_>" 0 font-lock-warning-face t)
                    ;; FIXME
-                   ("\\<[fF][iI][xX][mM][eE]\\>" 0 font-lock-warning-face t)
+                   ("\\_<[fF][iI][xX][mM][eE]\\_>" 0 font-lock-warning-face t)
                    ) t)
             ) t)
 
@@ -211,4 +210,4 @@
       (message "Did not find tags file")
       )))
 
-;; coding.el ends here
+;;; coding.el ends here
