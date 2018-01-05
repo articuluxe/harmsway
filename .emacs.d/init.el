@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-01-05 08:11:08 dharms>
+;; Modified Time-stamp: <2018-01-05 08:25:00 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1239,6 +1239,12 @@ not an error if any files do not exist."
         :map isearch-mode-map
         ("C-p" . plur-isearch-forward)
         ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;; string-inflection ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package string-inflection
+  :bind ("C--" . string-inflection-all-cycle)
+  :init
+  (setq string-inflection-skip-backward-when-done t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; hydra ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package hydra
