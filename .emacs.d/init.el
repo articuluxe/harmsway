@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-01-05 08:25:00 dharms>
+;; Modified Time-stamp: <2018-01-05 17:55:09 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2017,8 +2017,11 @@ not an error if any files do not exist."
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; multi-term ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package multi-term :commands multi-term)
-                                        ;(setq multi-term-program "/bin/tcsh")
+(use-package multi-term
+  :bind (("C-1" . multi-term)
+         ("M-' 1" . multi-term))
+  ;:init (setq multi-term-program "/bin/tcsh")
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; bash-completion ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package bash-completion
