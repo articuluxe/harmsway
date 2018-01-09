@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # -*- Mode: sh -*-
 # untar-world.sh --- untar important files
-# Copyright (C) 2015-2017  Dan Harms (dan.harms)
+# Copyright (C) 2015-2018  Dan Harms (dan.harms)
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Monday, May 18, 2015
 # Version: 1.0
-# Modified Time-stamp: <2017-09-12 10:50:18 dan.harms>
+# Modified Time-stamp: <2018-01-09 08:30:22 dharms>
 # Modified by: Dan Harms
 # Keywords: configuration
 
@@ -78,7 +78,7 @@ if [ -d .emacs.d ] && [ -f .emacs.d/$manifest ] ; then
 fi
 
 echo About to unpack "$input"...
-$tar --overwrite -xpvf "$input"
+$tar --overwrite -xpf "$input"
 
 # install user dictionary (warn if conflicts)
 if [ -f "$user_dict" ]; then
