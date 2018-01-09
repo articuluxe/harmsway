@@ -1,0 +1,1 @@
+cp src/load-relative.el ../../../.emacs.d/plugins

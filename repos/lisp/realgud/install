@@ -1,0 +1,6 @@
+mkdir -p ../../../.emacs.d/plugins/realgud/realgud
+cp src/realgud*.el ../../../.emacs.d/plugins/realgud
+cp -rf src/etc ../../../.emacs.d/plugins/realgud
+cp -rf src/realgud/common ../../../.emacs.d/plugins/realgud/realgud
+cp -rf src/realgud/debugger ../../../.emacs.d/plugins/realgud/realgud
+cp -rf src/realgud/lang ../../../.emacs.d/plugins/realgud/realgud

@@ -1,0 +1,1 @@
+cp src/loc-changes.el ../../../.emacs.d/plugins
