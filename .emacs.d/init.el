@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-01-08 23:00:50 dharms>
+;; Modified Time-stamp: <2018-01-09 23:12:33 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1874,7 +1874,9 @@ not an error if any files do not exist."
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; in-memory-diff ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package in-memory-diff :bind ("M-s dm" . in-memory-diff))
+(use-package in-memory-diff
+  :bind (("M-s dii" . in-memory-diff)
+         ("M-s dif" . in-memory-diff-files)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; shebang ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package shebang)
