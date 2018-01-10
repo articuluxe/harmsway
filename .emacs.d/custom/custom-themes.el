@@ -1,8 +1,8 @@
 ;;; custom-themes.el --- customize themes
-;; Copyright (C) 2016-2017  Dan Harms (dan.harms)
+;; Copyright (C) 2016-2018  Dan Harms (dan.harms)
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Wednesday, December 21, 2016
-;; Modified Time-stamp: <2017-11-08 16:51:07 dan.harms>
+;; Modified Time-stamp: <2018-01-10 08:29:17 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: themes colors
 
@@ -91,7 +91,10 @@
                                                                           :background "OliveDrab")))))
            (custom-theme-set-faces sym '(show-paren-mismatch-face ((t (:bold t
                                                                              :foreground "yellow2"
-                                                                             :background "IndianRed3"))))))
+                                                                             :background "IndianRed3")))))
+           (custom-theme-set-faces sym '(mode-line-inactive ((t (:inherit header-line
+                                                                          :foreground "gray14"
+                                                                          :background "gray6"))))))
           ((eq sym 'granger)
            (my/make-comment-delimiter-face-same-as-comment-face sym))
           ((eq sym 'hober2)
