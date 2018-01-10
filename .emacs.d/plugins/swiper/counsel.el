@@ -1174,20 +1174,19 @@ Typical value: '(recenter)."
 (defun counsel-git-grep-action (x)
   "Go to occurrence X in current Git repository."
   (when (string-match "\\`\\(.*?\\):\\([0-9]+\\):\\(.*\\)\\'" x)
-    (with-ivy-window
-      (let ((file-name (match-string-no-properties 1 x))
-            (line-number (match-string-no-properties 2 x)))
-        (find-file (expand-file-name
-                    file-name
-                    (ivy-state-directory ivy-last)))
-        (goto-char (point-min))
-        (forward-line (1- (string-to-number line-number)))
-        (re-search-forward (ivy--regex ivy-text t) (line-end-position) t)
-        (swiper--ensure-visible)
-        (run-hooks 'counsel-grep-post-action-hook)
-        (unless (eq ivy-exit 'done)
-          (swiper--cleanup)
-          (swiper--add-overlays (ivy--regex ivy-text)))))))
+    (let ((file-name (match-string-no-properties 1 x))
+          (line-number (match-string-no-properties 2 x)))
+      (find-file (expand-file-name
+                  file-name
+                  (ivy-state-directory ivy-last)))
+      (goto-char (point-min))
+      (forward-line (1- (string-to-number line-number)))
+      (re-search-forward (ivy--regex ivy-text t) (line-end-position) t)
+      (swiper--ensure-visible)
+      (run-hooks 'counsel-grep-post-action-hook)
+      (unless (eq ivy-exit 'done)
+        (swiper--cleanup)
+        (swiper--add-overlays (ivy--regex ivy-text))))))
 
 (defun counsel-git-grep-matcher (regexp candidates)
   "Return REGEXP matching CANDIDATES for `counsel-git-grep'."
@@ -1724,7 +1723,8 @@ When INITIAL-INPUT is non-nil, use it in the minibuffer during completion."
             :preselect (when counsel-find-file-at-point
                          (require 'ffap)
                          (let ((f (ffap-guesser)))
-                           (when f (expand-file-name f))))
+                           (when (and f (not (ffap-url-p f)))
+                             (expand-file-name f))))
             :require-match 'confirm-after-completion
             :history 'file-name-history
             :keymap counsel-find-file-map
@@ -1933,9 +1933,7 @@ string - the full shell command to run."
   (if (and (eq system-type 'windows-nt)
            (fboundp 'w32-shell-execute))
       (w32-shell-execute "open" x)
-    (call-process shell-file-name nil
-                  nil nil
-                  shell-command-switch
+    (start-process-shell-command shell-file-name nil
                   (format "%s %s"
                           (cl-case system-type
                             (darwin "open")

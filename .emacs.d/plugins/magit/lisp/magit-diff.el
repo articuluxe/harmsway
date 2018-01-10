@@ -1,6 +1,6 @@
 ;;; magit-diff.el --- inspect Git diffs  -*- lexical-binding: t -*-
 
-;; Copyright (C) 2010-2017  The Magit Project Contributors
+;; Copyright (C) 2010-2018  The Magit Project Contributors
 ;;
 ;; You should have received a copy of the AUTHORS.md file which
 ;; lists all contributors.  If not, see http://magit.vc/authors.
@@ -375,7 +375,10 @@ interchanging the halves once more, which cancels out the effect
 of the bug.
 
 See https://github.com/magit/magit/issues/2265
-and https://debbugs.gnu.org/cgi/bugreport.cgi?bug=7847."
+and https://debbugs.gnu.org/cgi/bugreport.cgi?bug=7847.
+
+Starting with Emacs 26.1 this kludge should not be required for
+any build."
   :package-version '(magit . "2.3.0")
   :group 'magit-revision
   :type 'boolean)

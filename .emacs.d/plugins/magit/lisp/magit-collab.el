@@ -1,6 +1,6 @@
 ;;; magit-collab.el --- collaboration tools       -*- lexical-binding: t -*-
 
-;; Copyright (C) 2010-2017  The Magit Project Contributors
+;; Copyright (C) 2010-2018  The Magit Project Contributors
 ;;
 ;; You should have received a copy of the AUTHORS.md file which
 ;; lists all contributors.  If not, see http://magit.vc/authors.
@@ -67,10 +67,12 @@ Currently this only supports Github, but that restriction will
 be lifted eventually to support other Git forges."
   (interactive (list (magit-read-pull-request "Visit pull request")))
   (browse-url (format "https://github.com/%s/pull/%s"
-                      (--> pr
-                           (cdr (assq 'base it))
-                           (cdr (assq 'repo it))
-                           (cdr (assq 'full_name it)))
+                      ;; Cannot use --> yet.  See #3134.
+                      (let* ((it pr)
+                             (it (cdr (assq 'base it)))
+                             (it (cdr (assq 'repo it)))
+                             (it (cdr (assq 'full_name it))))
+                        it)
                       (cdr (assq 'number pr)))))
 
 ;;; Utilities
@@ -81,22 +83,21 @@ Return the Git forge's API response.  Currently this function
 only supports Github, but that will change eventually."
   (let* ((origin (magit-upstream-repository))
          (url    (magit-get "remote" origin "url"))
-         (prs    (ghub-get
-                  (format "/repos/%s/pulls"
-                          (and (string-match
-                                "github.com[:/]\\(.+?\\)\\(?:\\.git\\)?\\'" url)
-                               (match-string 1 url)))
-                  nil :auth 'magit))
+         (id     (and (string-match "github.com[:/]\\(.+?\\)\\(?:\\.git\\)?\\'"
+                                    url)
+                      (match-string 1 url)))
+         (prs    (ghub-get (format "/repos/%s/pulls" id) nil :auth 'magit))
          (choice (magit-completing-read
                   prompt
                   (--map (format "%s  %s"
                                  (cdr (assq 'number it))
                                  (cdr (assq 'title  it)))
-                         prs)
-                  nil t))
+                         prs)))
          (number (and (string-match "\\([0-9]+\\)" choice)
                       (string-to-number (match-string 1 choice)))))
-    (--first (eq (cdr (assq 'number it)) number) prs)))
+    (and number
+         (or (--first (eq (cdr (assq 'number it)) number) prs)
+             (ghub-get (format "/repos/%s" id) nil :auth 'magit)))))
 
 (defun magit-upstream-repository ()
   "Return the remote name of the upstream repository.

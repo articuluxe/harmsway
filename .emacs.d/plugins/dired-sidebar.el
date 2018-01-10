@@ -48,6 +48,7 @@
 (eval-when-compile (require 'subr-x))
 
 ;; Compatibility
+
 (eval-and-compile
   (when (version< emacs-version "26")
     (with-no-warnings
@@ -260,6 +261,11 @@ with a prefix arg or when `dired-sidebar-find-file-alt' is called."
   :type 'boolean
   :group 'dired-sidebar)
 
+(defcustom dired-sidebar-subtree-line-prefix dired-subtree-line-prefix
+  "The line prefix to use when subtree is cycled."
+  :type 'string
+  :group 'dired-sidebar)
+
 ;; Internal
 
 (defvar dired-sidebar-alist '()
@@ -336,6 +342,18 @@ will check if buffer is stale through `auto-revert-mode'.")
 
   ;; Match backgrounds.
   (setq-local dired-subtree-use-backgrounds nil)
+
+  ;; `dired-subtree''s line prefix is determined by `dired-sidebar'.
+  (setq-local dired-subtree-line-prefix dired-sidebar-subtree-line-prefix)
+
+  ;; https://github.com/jojojames/dired-sidebar/issues/7
+  ;; Symlinks are displayed incorrectly when these three things happen.
+  ;; 1. `dired-hide-details-mode' is on.
+  ;; 2. `dired-subtree' toggles a symlink folder via `dired-subtree-toggle'.
+  ;; 3. `dired-hide-details-hide-symlink-targets' is set to true.
+  ;; Since we use both 1 & 2, disable 3 to avoid the issue.
+  ;; This needs to be set to nil before `dired-hide-details-mode' is called.
+  (setq-local dired-hide-details-hide-symlink-targets nil)
 
   ;; We don't want extra details in the sidebar.
   (dired-hide-details-mode)
@@ -779,6 +797,7 @@ Optional argument NOCONFIRM Pass NOCONFIRM on to `dired-buffer-stale-p'."
   (when-let* ((sidebar (dired-sidebar-sidebar-buffer-in-frame)))
     (with-current-buffer sidebar
       (let ((auto-revert-verbose nil))
+        (ignore auto-revert-verbose) ;; Make byte compiler happy.
         (revert-buffer)))))
 
 (defun dired-sidebar-follow-file ()

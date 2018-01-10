@@ -35,6 +35,7 @@
 
   (type nil :read-only t)
   (new-connection nil :read-only t)
+  (stderr nil :read-only t)
   (get-root nil :read-only t)
   (ignore-regexps nil :read-only t)
 
@@ -501,17 +502,22 @@ registered client capabilities by calling
 (defun lsp--workspace-apply-edit-handler (_workspace params)
   (lsp--apply-workspace-edit (gethash "edit" params)))
 
-(defun lsp--make-sentinel (buffer)
-  (lambda (_p exit-str)
-    (when (buffer-live-p buffer)
-      (with-current-buffer buffer
-        (dolist (buf (lsp--workspace-buffers lsp--cur-workspace))
-          (with-current-buffer buf
-            (message "%s: %s has exited (%s)"
-                     (lsp--workspace-root lsp--cur-workspace)
-                     (process-name (lsp--workspace-proc lsp--cur-workspace))
-                     exit-str)
-            (lsp--uninitialize-workspace)))))))
+(defun lsp--make-sentinel (buffer stderr)
+  (lambda (process exit-str)
+    (if (buffer-live-p buffer)
+        (with-current-buffer buffer
+          (dolist (buf (lsp--workspace-buffers lsp--cur-workspace))
+            (with-current-buffer buf
+              (message "%s: %s has exited (%s)"
+                       (lsp--workspace-root lsp--cur-workspace)
+                       (process-name (lsp--workspace-proc lsp--cur-workspace))
+                       exit-str)
+              (lsp--uninitialize-workspace))))
+      (let ((status (process-status process))
+            (buffer-stderr (get-buffer stderr)))
+        (and (buffer-live-p buffer-stderr)
+             (memq status '(exit signal))
+             (kill-buffer stderr))))))
 
 (defun lsp--should-start-p (root)
   "Consult `lsp-project-blacklist' and `lsp-project-whitelist' to
@@ -543,7 +549,7 @@ directory."
        new-conn (funcall
                  (lsp--client-new-connection client)
                  (lsp--parser-make-filter parser (lsp--client-ignore-regexps client))
-                 (lsp--make-sentinel (current-buffer)))
+                 (lsp--make-sentinel (current-buffer) (lsp--client-stderr client)))
        ;; the command line process invoked
        cmd-proc (if (consp new-conn) (car new-conn) new-conn)
        ;; the process we actually communicate with
@@ -942,21 +948,22 @@ Added to `after-change-functions'."
 
 (defun lsp--text-document-did-close ()
   "Executed when the file is closed, added to `kill-buffer-hook'."
-  (let ((file-versions (lsp--workspace-file-versions lsp--cur-workspace))
-        (old-buffers (lsp--workspace-buffers lsp--cur-workspace)))
-    ;; remove buffer from the current workspace's list of buffers
-    ;; do a sanity check first
-    (when (memq (current-buffer) old-buffers)
-      (setf (lsp--workspace-buffers lsp--cur-workspace)
-            (delq (current-buffer) old-buffers))
+  (when lsp--cur-workspace
+    (let ((file-versions (lsp--workspace-file-versions lsp--cur-workspace))
+          (old-buffers (lsp--workspace-buffers lsp--cur-workspace)))
+      ;; remove buffer from the current workspace's list of buffers
+      ;; do a sanity check first
+      (when (memq (current-buffer) old-buffers)
+        (setf (lsp--workspace-buffers lsp--cur-workspace)
+              (delq (current-buffer) old-buffers))
 
-      (remhash buffer-file-name file-versions)
-      (lsp--send-notification
-       (lsp--make-notification
-        "textDocument/didClose"
-        `(:textDocument ,(lsp--versioned-text-document-identifier))))
-      (when (= 0 (hash-table-count file-versions))
-        (lsp--shutdown-cur-workspace)))))
+        (remhash buffer-file-name file-versions)
+        (lsp--send-notification
+         (lsp--make-notification
+          "textDocument/didClose"
+          `(:textDocument ,(lsp--versioned-text-document-identifier))))
+        (when (= 0 (hash-table-count file-versions))
+          (lsp--shutdown-cur-workspace))))))
 
 (defun lsp--before-save ()
   (when lsp--cur-workspace
@@ -1192,13 +1199,16 @@ Returns xref-item(s)."
                               `(:id ,id)))))
 
 (defun lsp--on-hover ()
-  (when (and (lsp--capability "documentHighlightProvider")
-             lsp-highlight-symbol-at-point)
-    (lsp-symbol-highlight))
-  (when (and (lsp--capability "codeActionProvider") lsp-enable-codeaction)
-    (lsp--text-document-code-action))
-  (when lsp-enable-eldoc
-    (lsp--text-document-hover-string)))
+  ;; This function is used as ‘eldoc-documentation-function’, so it’s important
+  ;; that it doesn’t fail.
+  (with-demoted-errors "Error in ‘lsp--on-hover’: %S"
+    (when (and (lsp--capability "documentHighlightProvider")
+               lsp-highlight-symbol-at-point)
+      (lsp-symbol-highlight))
+    (when (and (lsp--capability "codeActionProvider") lsp-enable-codeaction)
+      (lsp--text-document-code-action))
+    (when lsp-enable-eldoc
+      (lsp--text-document-hover-string))))
 
 (defvar-local lsp--cur-hover-request-id nil)
 

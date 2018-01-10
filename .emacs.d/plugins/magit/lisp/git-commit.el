@@ -1,6 +1,6 @@
 ;;; git-commit.el --- Edit Git commit messages  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2010-2017  The Magit Project Contributors
+;; Copyright (C) 2010-2018  The Magit Project Contributors
 ;;
 ;; You should have received a copy of the AUTHORS.md file which
 ;; lists all contributors.  If not, see http://magit.vc/authors.
@@ -124,6 +124,7 @@
 
 ;;;; Declarations
 
+(defvar diff-default-read-only)
 (defvar flyspell-generic-check-word-predicate)
 (defvar font-lock-beg)
 (defvar font-lock-end)
@@ -788,10 +789,13 @@ Added to `font-lock-extend-region-functions'."
   (setq-local comment-use-syntax nil)
   (setq-local git-commit--branch-name-regexp
               (if (featurep 'magit-git)
-                  ;; Font-Lock wants every submatch to succeed.
-                  (format "\\(%s\\|\\)\\(%s\\|\\)"
-                          (regexp-opt (magit-list-local-branch-names))
-                          (regexp-opt (magit-list-remote-branch-names)))
+                  (progn
+                    ;; Make sure the below functions are available.
+                    (require 'magit)
+                    ;; Font-Lock wants every submatch to succeed.
+                    (format "\\(%s\\|\\)\\(%s\\|\\)"
+                            (regexp-opt (magit-list-local-branch-names))
+                            (regexp-opt (magit-list-remote-branch-names))))
                 "\\([^']*\\)"))
   (setq-local font-lock-multiline t)
   (add-hook 'font-lock-extend-region-functions
@@ -800,6 +804,7 @@ Added to `font-lock-extend-region-functions'."
   (font-lock-add-keywords nil git-commit-font-lock-keywords t))
 
 (defun git-commit-propertize-diff ()
+  (require 'diff-mode)
   (save-excursion
     (goto-char (point-min))
     (when (re-search-forward "^diff --git" nil t)
