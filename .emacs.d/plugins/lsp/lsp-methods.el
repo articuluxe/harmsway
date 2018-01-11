@@ -336,7 +336,8 @@ interface TextDocumentItem {
 (add-hook 'kill-emacs-hook #'lsp--global-teardown)
 
 (defun lsp--global-teardown ()
-  (maphash (lambda (_k value) (lsp--teardown-client value)) lsp--workspaces))
+  (with-demoted-errors "Error in ‘lsp--global-teardown’: %S"
+    (maphash (lambda (_k value) (lsp--teardown-client value)) lsp--workspaces)))
 
 (defun lsp--teardown-client (client)
   (setq lsp--cur-workspace client)
@@ -907,11 +908,12 @@ Added to `before-change-functions'."
   ;; just the actual changed text, or even lump together several changes done
   ;; piecemeal.
   ;; (message "lsp-before-change:(start,end)=(%s,%s)" start end)
-  (setq lsp--before-change-vals
-        `(:start ,start
-                 :end ,end
-                 :start-pos ,(lsp--point-to-position start)
-                 :end-pos   ,(lsp--point-to-position end))))
+  (with-demoted-errors "Error in ‘lsp-before-change’: %S"
+    (setq lsp--before-change-vals
+          (list :start start
+                :end end
+                :start-pos (lsp--point-to-position start)
+                :end-pos (lsp--point-to-position end)))))
 
 (defun lsp-on-change (start end length)
   "Executed when a file is changed.
@@ -932,60 +934,68 @@ Added to `after-change-functions'."
   ;; So (47 47 7) means delete 7 chars starting at pos 47
   ;; (message "lsp-on-change:(start,end,length)=(%s,%s,%s)" start end length)
   ;; (message "lsp-on-change:(lsp--before-change-vals)=%s" lsp--before-change-vals)
-  (save-match-data
-    (when lsp--cur-workspace
-      (lsp--inc-cur-file-version)
-      (unless (eq lsp--server-sync-method 'none)
-        (lsp--send-notification
-          (lsp--make-notification "textDocument/didChange"
-            `(:textDocument ,(lsp--versioned-text-document-identifier)
-               :contentChanges
-               ,(pcase lsp--server-sync-method
-                  ('incremental (vector (lsp--text-document-content-change-event
-                                          start end length)))
-
-                  ('full (vector (lsp--full-change-event)))))))))))
+  (with-demoted-errors "Error in ‘lsp-on-change’: %S"
+    (save-match-data
+      (when lsp--cur-workspace
+        (lsp--inc-cur-file-version)
+        (unless (eq lsp--server-sync-method 'none)
+          (lsp--send-notification
+           (lsp--make-notification
+            "textDocument/didChange"
+            `(:textDocument
+              ,(lsp--versioned-text-document-identifier)
+              :contentChanges
+              ,(pcase lsp--server-sync-method
+                 ('incremental (vector (lsp--text-document-content-change-event
+                                        start end length)))
+                 ('full (vector (lsp--full-change-event))))))))))))
 
 (defun lsp--text-document-did-close ()
   "Executed when the file is closed, added to `kill-buffer-hook'."
   (when lsp--cur-workspace
-    (let ((file-versions (lsp--workspace-file-versions lsp--cur-workspace))
-          (old-buffers (lsp--workspace-buffers lsp--cur-workspace)))
-      ;; remove buffer from the current workspace's list of buffers
-      ;; do a sanity check first
-      (when (memq (current-buffer) old-buffers)
-        (setf (lsp--workspace-buffers lsp--cur-workspace)
-              (delq (current-buffer) old-buffers))
+    (with-demoted-errors "Error on ‘lsp--text-document-did-close’: %S"
+      (let ((file-versions (lsp--workspace-file-versions lsp--cur-workspace))
+            (old-buffers (lsp--workspace-buffers lsp--cur-workspace)))
+        ;; remove buffer from the current workspace's list of buffers
+        ;; do a sanity check first
+        (when (memq (current-buffer) old-buffers)
+          (setf (lsp--workspace-buffers lsp--cur-workspace)
+                (delq (current-buffer) old-buffers))
 
-        (remhash buffer-file-name file-versions)
-        (lsp--send-notification
-         (lsp--make-notification
-          "textDocument/didClose"
-          `(:textDocument ,(lsp--versioned-text-document-identifier))))
-        (when (= 0 (hash-table-count file-versions))
-          (lsp--shutdown-cur-workspace))))))
+          (remhash buffer-file-name file-versions)
+          (lsp--send-notification
+           (lsp--make-notification
+            "textDocument/didClose"
+            `(:textDocument ,(lsp--versioned-text-document-identifier))))
+          (when (= 0 (hash-table-count file-versions))
+            (lsp--shutdown-cur-workspace)))))))
 
 (defun lsp--before-save ()
   (when lsp--cur-workspace
-    (lsp--send-notification
-      (lsp--make-notification "textDocument/willSave"
-        `(:textDocument ,(lsp--text-document-identifier)
-           :reason 1)))))
+    (with-demoted-errors "Error in ‘lsp--before-save’: %S"
+      (lsp--send-notification
+       (lsp--make-notification
+        "textDocument/willSave"
+        (list :textDocument (lsp--text-document-identifier)
+              :reason 1))))))
 
 (defun lsp--on-auto-save ()
   (when lsp--cur-workspace
-    (lsp--send-notification
-      (lsp--make-notification "textDocument/willSave"
-        `(:textDocument ,(lsp--text-document-identifier)
-           :reason 2)))))
+    (with-demoted-errors "Error in ‘lsp--on-auto-save’: %S"
+      (lsp--send-notification
+       (lsp--make-notification
+        "textDocument/willSave"
+        (list :textDocument (lsp--text-document-identifier)
+              :reason 2))))))
 
 (defun lsp--text-document-did-save ()
   "Executed when the file is closed, added to `after-save-hook''."
   (when lsp--cur-workspace
-    (lsp--send-notification
-     (lsp--make-notification
-      "textDocument/didSave"
-      `(:textDocument ,(lsp--versioned-text-document-identifier))))))
+    (with-demoted-errors "Error on ‘lsp--text-document-did-save: %S’"
+      (lsp--send-notification
+       (lsp--make-notification
+        "textDocument/didSave"
+        `(:textDocument ,(lsp--versioned-text-document-identifier)))))))
 
 (define-inline lsp--text-document-position-params ()
   "Make TextDocumentPositionParams for the current point in the current document."
@@ -1074,24 +1084,26 @@ https://github.com/Microsoft/language-server-protocol/blob/master/protocol.md#co
                           t))))
 
 (defun lsp--get-completions ()
-  (let ((bounds (bounds-of-thing-at-point 'symbol)))
-    (list
-     (if bounds (car bounds) (point))
-     (if bounds (cdr bounds) (point))
-     (completion-table-dynamic
-      #'(lambda (_)
-          ;; *we* don't need to know the string being completed
-          ;; the language server does all the work by itself
-          (let* ((resp (lsp--send-request (lsp--make-request
-                                           "textDocument/completion"
-                                           (lsp--text-document-position-params))))
-                 (items (cond
-                         ((null resp) nil)
-                         ((hash-table-p resp) (gethash "items" resp nil))
-                         ((sequencep resp) resp))))
-            (mapcar #'lsp--make-completion-item items))))
-     :annotation-function #'lsp--annotate
-     :display-sort-function #'lsp--sort-completions)))
+  (with-demoted-errors "Error in ‘lsp--get-completions’: %S"
+    (let ((bounds (bounds-of-thing-at-point 'symbol)))
+      (list
+       (if bounds (car bounds) (point))
+       (if bounds (cdr bounds) (point))
+       (completion-table-dynamic
+        #'(lambda (_)
+            ;; *we* don't need to know the string being completed
+            ;; the language server does all the work by itself
+            (let* ((resp (lsp--send-request
+                          (lsp--make-request
+                           "textDocument/completion"
+                           (lsp--text-document-position-params))))
+                   (items (cond
+                           ((null resp) nil)
+                           ((hash-table-p resp) (gethash "items" resp nil))
+                           ((sequencep resp) resp))))
+              (mapcar #'lsp--make-completion-item items))))
+       :annotation-function #'lsp--annotate
+       :display-sort-function #'lsp--sort-completions))))
 
 (defun lsp--resolve-completion (item)
   (lsp--cur-workspace-check)
@@ -1299,6 +1311,61 @@ export interface MarkupContent {
   "Show relevant documentation for the thing under point."
   (interactive)
   (lsp--text-document-hover-string))
+
+(defvar-local lsp--current-signature-help-request-id nil)
+
+(defun lsp--text-document-signature-help ()
+  "interface SignatureHelp {
+signatures: SignatureInformation[];
+activeSignature?: number;
+activeParameter?: number;
+};
+
+interface SignatureInformation {
+label: string;
+documentation?: string | MarkupContent;
+parameters?: ParameterInformation[];
+};
+
+interface ParameterInformation {
+label: string;
+documentation?: string | MarkupContent;
+};
+
+interface MarkupContent {
+kind: MarkupKind;
+value: string;
+};
+
+type MarkupKind = 'plaintext' | 'markdown';"
+  (lsp--cur-workspace-check)
+  (when lsp--current-signature-help-request-id
+    (lsp--cancel-request lsp--current-signature-help-request-id))
+  (let (bounds body)
+    (when (symbol-at-point)
+      (setq bounds (bounds-of-thing-at-point 'symbol)
+            body (lsp--send-request-async
+                  (lsp--make-request "textDocument/signatureHelp"
+                                     (lsp--text-document-position-params))
+                  (lsp--make-text-document-signature-help-callback
+                   (car bounds) (cdr bounds) (current-buffer)))
+            lsp--current-signature-help-request-id (plist-get body :id))
+      (cl-assert (integerp lsp--current-signature-help-request-id)))))
+
+(defun lsp--make-text-document-signature-help-callback (start end buffer)
+  (lambda (signature-help)
+    (with-current-buffer buffer
+      (setq lsp--current-signature-help-request-id nil))
+    (when (and signature-help
+               (lsp--point-is-within-bounds-p start end)
+               (eq (current-buffer) buffer) (eldoc-display-message-p))
+      (let* ((active-signature-number
+              (or (gethash "activeSignature" signature-help) 0))
+             (active-signature (nth
+                                active-signature-number
+                                (gethash "signatures" signature-help))))
+        (when active-signature
+          (eldoc-message (gethash "label" active-signature)))))))
 
 ;; NOTE: the code actions cannot currently be applied. There is some non-GNU
 ;; code to do this in the lsp-haskell module. We still need a GNU version, here.
