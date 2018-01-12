@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-01-09 23:12:33 dharms>
+;; Modified Time-stamp: <2018-01-12 10:09:58 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -279,6 +279,7 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (when (> emacs-major-version 24)
   (global-set-key "\M-*" 'xref-pop-marker-stack)
   (global-set-key "\M-," 'tags-loop-continue)
+  (global-set-key "\e\e." 'xref-find-definitions)
   )
 
 ;; select
