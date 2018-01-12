@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-01-12 10:49:04 dan.harms>
+;; Modified Time-stamp: <2018-01-12 13:24:46 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2088,7 +2088,7 @@ not an error if any files do not exist."
   (mapc (lambda(mode)
           (setq ac-modes (cons mode ac-modes)))
         '(sql-mode nxml-mode cmake-mode folio-mode protobuf-mode
-                   python-mode dos-mode gud-mode sh-mode text-mode
+                   python-mode bat-mode gud-mode sh-mode text-mode
                    makefile-mode makefile-automake-mode makefile-gmake-mode
                    autoconf-mode gdb-script-mode awk-mode csv-mode
                    mock-mode org-mode html-mode text-mode sql-mode
@@ -2402,7 +2402,7 @@ not an error if any files do not exist."
           ((sh-mode . "Sh") .
            ["template.sh" auto-insert-choose-yas-expand])
           ;; dos
-          ((dos-mode . "Dos") .
+          ((bat-mode . "Dos") .
            ["template.bat" auto-insert-choose-yas-expand])
           ;; python
           ((python-mode . "Python") .
@@ -2486,7 +2486,7 @@ not an error if any files do not exist."
                      cmake-mode
                      csharp-mode
                      dart-mode
-                     dos-mode
+                     bat-mode
                      emacs-lisp-mode
                      folio-mode
                      gdb-script-mode
