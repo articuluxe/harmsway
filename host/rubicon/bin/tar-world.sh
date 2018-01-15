@@ -1,11 +1,11 @@
 #!/usr/bin/env sh
 # -*- Mode: sh -*-
 # tar-world.sh --- tar up important configuration files
-# Copyright (C) 2015-2017  Dan Harms (dharms)
+# Copyright (C) 2015-2018  Dan Harms (dharms)
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Friday, May 29, 2015
 # Version: 1.0
-# Modified Time-stamp: <2017-07-14 06:11:09 dharms>
+# Modified Time-stamp: <2018-01-15 15:16:03 dan.harms>
 # Modified by: Dan Harms
 # Keywords: configuration
 
@@ -28,6 +28,10 @@ if [ $# -gt 0 ] ; then
    dest=$1
    shift
 fi
+
+echo os is "$os"
+echo host is "$host"
+echo site is "$site"
 
 echo Generating "$dest"...
 

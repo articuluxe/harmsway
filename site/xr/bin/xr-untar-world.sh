@@ -5,7 +5,7 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Monday, May 18, 2015
 # Version: 1.0
-# Modified Time-stamp: <2018-01-09 08:32:58 dharms>
+# Modified Time-stamp: <2018-01-15 15:25:55 dan.harms>
 # Modified by: Dan Harms
 # Keywords: configuration
 
@@ -29,6 +29,10 @@ function backup_file
         $tar -rvf $backup ".emacs.d/$1"
     fi
 }
+
+echo os is "$os"
+echo host is "$host"
+echo site is "$site"
 
 if [ -z "$tar" ]; then
     tar=$(which tar)
@@ -77,7 +81,7 @@ if [ -d .emacs.d ] && [ -f .emacs.d/$manifest ] ; then
     fi
 fi
 
-echo About to unpack "$input"...
+echo Unpacking "$input"
 $tar --overwrite -xpf "$input"
 
 # install user dictionary (warn if conflicts)
