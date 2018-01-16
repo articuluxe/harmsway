@@ -1,2 +1,3 @@
-cp src/kaolin-themes.el ../../../../.emacs.d/etc/themes
+cp src/themes/*.el ../../../../.emacs.d/etc/themes
+cp src/kaolin-themes.el ../../../../.emacs.d/plugins
 cp src/kaolin-themes-lib.el ../../../../.emacs.d/plugins
