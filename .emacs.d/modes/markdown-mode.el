@@ -5940,7 +5940,7 @@ references found.
 Links which have empty reference definitions are considered to be
 defined."
   (interactive "P")
-  (when (not (eq major-mode 'markdown-mode))
+  (when (not (memq major-mode '(markdown-mode gfm-mode)))
     (user-error "Not available in current mode"))
   (let ((oldbuf (current-buffer))
         (refs (markdown-get-undefined-refs))
@@ -7807,7 +7807,7 @@ in parent directories if
 `markdown-wiki-link-search-parent-directories' is non-nil."
   (let* ((basename (markdown-replace-regexp-in-string
                     "[[:space:]\n]" markdown-link-space-sub-char name))
-         (basename (if (eq major-mode '(gfm-mode gfm-view-mode))
+         (basename (if (memq major-mode '(gfm-mode gfm-view-mode))
                        (concat (upcase (substring basename 0 1))
                                (downcase (substring basename 1 nil)))
                      basename))
@@ -9501,6 +9501,7 @@ spaces, or alternatively a TAB should be used as the separator."
     map)
   "Keymap for `markdown-view-mode'.")
 
+;;;###autoload
 (define-derived-mode markdown-view-mode markdown-mode "Markdown-View"
   "Major mode for viewing Markdown content."
   (setq-local markdown-hide-markup markdown-hide-markup-in-view-modes)
@@ -9510,6 +9511,7 @@ spaces, or alternatively a TAB should be used as the separator."
   markdown-view-mode-map
   "Keymap for `gfm-view-mode'.")
 
+;;;###autoload
 (define-derived-mode gfm-view-mode gfm-mode "GFM-View"
   "Major mode for viewing GitHub Flavored Markdown content."
   (setq-local markdown-hide-markup markdown-hide-markup-in-view-modes)
@@ -9517,6 +9519,7 @@ spaces, or alternatively a TAB should be used as the separator."
 
 
 ;;; Live Preview Mode  ============================================
+;;;###autoload
 (define-minor-mode markdown-live-preview-mode
   "Toggle native previewing on save for a specific markdown file."
   :lighter " MD-Preview"

@@ -298,9 +298,6 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(company-scrollbar-bg ((t (:background ,zenburn-bg+2))))
    `(company-preview ((t (:background ,zenburn-green+2))))
    `(company-preview-common ((t (:foreground ,zenburn-green+2 :background ,zenburn-bg-1))))
-;;;;; company-quickhelp
-   `(company-quickhelp-color-background ,zenburn-bg+1)
-   `(company-quickhelp-color-foreground ,zenburn-fg)
 ;;;;; bm
    `(bm-face ((t (:background ,zenburn-yellow-1 :foreground ,zenburn-bg))))
    `(bm-fringe-face ((t (:background ,zenburn-yellow-1 :foreground ,zenburn-bg))))
@@ -1104,6 +1101,10 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(p4-diff-file-face ((t :inherit diff-file-header)))
    `(p4-diff-head-face ((t :inherit diff-header)))
    `(p4-diff-ins-face ((t :inherit diff-added)))
+;;;;; c/perl
+   `(cperl-nonoverridable-face ((t (:foreground ,zenburn-magenta))))
+   `(cperl-array-face ((t (:foreground ,zenburn-yellow, :backgorund ,zenburn-bg))))
+   `(cperl-hash-face ((t (:foreground ,zenburn-yellow-1, :background ,zenburn-bg))))
 ;;;;; perspective
    `(persp-selected-face ((t (:foreground ,zenburn-yellow-2 :inherit mode-line))))
 ;;;;; powerline
@@ -1171,8 +1172,8 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(realgud-overlay-arrow3 ((t (:foreground ,zenburn-orange))))
    `(realgud-bp-enabled-face ((t (:inherit error))))
    `(realgud-bp-disabled-face ((t (:inherit secondary-selection))))
-   `(realgud-bp-line-enabled-face ((t (:foreground ,zenburn-bg :background ,zenburn-red))))
-   `(realgud-bp-line-disabled-face ((t (:inherit secondary-selection))))
+   `(realgud-bp-line-enabled-face ((t (:box (:color ,zenburn-red :style nil)))))
+   `(realgud-bp-line-disabled-face ((t (:box (:color "grey70" :style nil)))))
    `(realgud-line-number ((t (:foreground ,zenburn-yellow))))
    `(realgud-backtrace-number ((t (:foreground ,zenburn-yellow, :weight bold))))
 ;;;;; regex-tool
@@ -1398,6 +1399,9 @@ Also bind `class' to ((class color) (min-colors 89))."
 ;;;;; ansi-color
    `(ansi-color-names-vector [,zenburn-bg ,zenburn-red ,zenburn-green ,zenburn-yellow
                                           ,zenburn-blue ,zenburn-magenta ,zenburn-cyan ,zenburn-fg])
+;;;;; company-quickhelp
+   `(company-quickhelp-color-background ,zenburn-bg+1)
+   `(company-quickhelp-color-foreground ,zenburn-fg)
 ;;;;; fill-column-indicator
    `(fci-rule-color ,zenburn-bg-05)
 ;;;;; nrepl-client

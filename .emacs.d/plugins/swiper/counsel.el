@@ -617,7 +617,7 @@ X is an item of a radio- or choice-type defcustom."
                 x))))))
 
 ;;;###autoload
-(defun counsel-set-variable ()
+(defun counsel-set-variable (sym)
   "Set a variable, with completion.
 
 When the selected variable is a `defcustom' with the type boolean
@@ -625,13 +625,12 @@ or radio, offer completion of all possible values.
 
 Otherwise, offer a variant of `eval-expression', with the initial
 input corresponding to the chosen variable."
-  (interactive)
-  (let ((sym (intern
-              (ivy-read "Variable: "
-                        (counsel-variable-list)
-                        :preselect (ivy-thing-at-point)
-                        :history 'counsel-set-variable-history)))
-        sym-type
+  (interactive (list (intern
+                      (ivy-read "Variable: "
+                                (counsel-variable-list)
+                                :preselect (ivy-thing-at-point)
+                                :history 'counsel-set-variable-history))))
+  (let (sym-type
         cands)
     (if (and (boundp sym)
              (setq sym-type (get sym 'custom-type))
@@ -1661,6 +1660,11 @@ Does not list the currently checked out one."
   :type 'boolean
   :group 'ivy)
 
+(defcustom counsel-preselect-current-file nil
+  "When non-nil, preselect current file in list of candidates."
+  :type 'boolean
+  :group 'ivy)
+
 (defcustom counsel-find-file-ignore-regexp nil
   "A regexp of files to ignore while in `counsel-find-file'.
 These files are un-ignored if `ivy-text' matches them.  The
@@ -1711,6 +1715,20 @@ Skip some dotfiles unless `ivy-text' requires them."
           (find-file (expand-file-name x ivy--directory)))
       (find-file (expand-file-name x ivy--directory)))))
 
+(defun counsel--preselect-file ()
+  "Return candidate to preselect during filename completion.
+The preselect behaviour can be customized via user options
+`counsel-find-file-at-point' and
+`counsel-preselect-current-file', which see."
+  (or
+    (when counsel-find-file-at-point
+      (require 'ffap)
+      (let ((f (ffap-guesser)))
+        (when f (expand-file-name f))))
+    (and counsel-preselect-current-file
+         buffer-file-name
+         (file-name-nondirectory buffer-file-name))))
+
 ;;;###autoload
 (defun counsel-find-file (&optional initial-input)
   "Forward to `find-file'.
@@ -1720,11 +1738,7 @@ When INITIAL-INPUT is non-nil, use it in the minibuffer during completion."
             :matcher #'counsel--find-file-matcher
             :initial-input initial-input
             :action #'counsel-find-file-action
-            :preselect (when counsel-find-file-at-point
-                         (require 'ffap)
-                         (let ((f (ffap-guesser)))
-                           (when (and f (not (ffap-url-p f)))
-                             (expand-file-name f))))
+            :preselect (counsel--preselect-file)
             :require-match 'confirm-after-completion
             :history 'file-name-history
             :keymap counsel-find-file-map
@@ -2145,10 +2159,7 @@ INITIAL-DIRECTORY, if non-nil, is used as the root directory for search."
               :action (lambda (x)
                         (with-ivy-window
                           (find-file (expand-file-name x ivy--directory))))
-              :preselect (when counsel-find-file-at-point
-                           (require 'ffap)
-                           (let ((f (ffap-guesser)))
-                             (when f (expand-file-name f))))
+              :preselect (counsel--preselect-file)
               :require-match 'confirm-after-completion
               :history 'file-name-history
               :keymap counsel-find-file-map
@@ -3439,7 +3450,8 @@ PREFIX is used to create the key."
 The default action deletes the selected process.
 An extra action allows to switch to the process buffer."
   (interactive)
-  (list-processes--refresh)
+  (with-temp-buffer
+    (list-processes--refresh))
   (ivy-read "Process: " (mapcar #'process-name (process-list))
             :require-match t
             :action

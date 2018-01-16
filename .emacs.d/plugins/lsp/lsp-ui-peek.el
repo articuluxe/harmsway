@@ -68,6 +68,12 @@ This can heavily slow the processing."
   :type 'boolean
   :group 'lsp-ui-peek)
 
+(defcustom lsp-ui-peek-always-show nil
+  "Show the peek view even if there is only 1 cross reference.
+By default, the peek view isn't shown if there is 1 xref."
+  :type 'boolean
+  :group 'lsp-ui-peek)
+
 (defface lsp-ui-peek-peek
   '((default :background "#031A25")
     (((background light)) (:background "light gray")))
@@ -445,6 +451,12 @@ XREFS is a list of list of references/definitions."
         lsp-ui-peek--last-xref nil)
   (set-window-start (get-buffer-window) lsp-ui-peek--win-start))
 
+(defun lsp-ui-peek--deactivate-keymap ()
+  "Deactivate keymap."
+  (-when-let (fn lsp-ui-peek--deactivate-keymap-fn)
+    (setq lsp-ui-peek--deactivate-keymap-fn nil)
+    (funcall fn)))
+
 (defun lsp-ui-peek--goto-xref (&optional x other-window)
   "Go to a reference/definition.
 X OTHER-WINDOW."
@@ -453,6 +465,7 @@ X OTHER-WINDOW."
       (-let* (((&plist :file file :line line :column column) xref))
         (if (not (file-readable-p file))
             (user-error "File not readable: %s" file)
+          (setq lsp-ui-peek--win-start nil)
           (lsp-ui-peek--abort)
           (let ((marker (with-current-buffer
                             (or (get-file-buffer file)
@@ -465,6 +478,7 @@ X OTHER-WINDOW."
                               (forward-char column)
                               (point-marker)))))
                 (current-workspace lsp--cur-workspace))
+            (lsp-ui-peek--deactivate-keymap)
             (if other-window
                 (pop-to-buffer (marker-buffer marker))
               (switch-to-buffer (marker-buffer marker)))
@@ -517,9 +531,7 @@ X OTHER-WINDOW."
   :init-value nil
   (if lsp-ui-peek-mode
       (setq lsp-ui-peek--deactivate-keymap-fn (set-transient-map lsp-ui-peek-mode-map t 'lsp-ui-peek--abort))
-    (-when-let (fn lsp-ui-peek--deactivate-keymap-fn)
-      (setq lsp-ui-peek--deactivate-keymap-fn nil)
-      (funcall fn))))
+    (lsp-ui-peek--deactivate-keymap)))
 
 (defun lsp-ui-peek--find-xrefs (input kind &optional request param)
   "Find INPUT references.
@@ -532,7 +544,8 @@ REQUEST PARAM."
     (xref-push-marker-stack)
     (when (featurep 'evil-jumps)
       (lsp-ui-peek--with-evil-jumps (evil-set-jump)))
-    (if (and (not (cdr xrefs))
+    (if (and (not lsp-ui-peek-always-show)
+             (not (cdr xrefs))
              (= (length (plist-get (car xrefs) :xrefs)) 1))
         (-let* ((xref (car (plist-get (car xrefs) :xrefs)))
                 ((&hash "uri" file "range" range) xref)
