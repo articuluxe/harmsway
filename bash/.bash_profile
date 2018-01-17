@@ -2,7 +2,7 @@
 
 # Get the aliases and functions
 if [ -f ~/.bashrc ]; then
-	. ~/.bashrc
+    . ~/.bashrc
 fi
 
 # User specific environment and startup programs
@@ -13,10 +13,10 @@ dotssh="${HOME}/.ssh"
 sshconf="${dotssh}/config"
 
 if [ -d "${dotssh}" ]; then
-   chmod 700 ${dotssh}
-   if [ -f "${sshconf}" ]; then
-       chmod 600 ${sshconf}
-   fi
+    chmod 700 ${dotssh}
+    if [ -f "${sshconf}" ]; then
+        chmod 600 ${sshconf}
+    fi
 fi
 
 unset dotssh
