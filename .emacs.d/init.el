@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-01-12 13:24:46 dan.harms>
+;; Modified Time-stamp: <2018-01-22 16:52:06 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1353,6 +1353,7 @@ not an error if any files do not exist."
          "\\|\\(?:[#~]$\\)"             ;end with # or ~
          "\\|\\(?:\\.elc$\\)"           ;byte-compiled
          ))                             ;toggle with C-c C-a
+  (setq counsel-git-grep-skip-counting-lines t) ;require prefix
   (setf (cdr (assoc 'counsel-M-x ivy-initial-inputs-alist)) "")
   ;; fallback to basic find-file
   (define-key counsel-find-file-map "\C-x\C-f"
