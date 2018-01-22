@@ -1,27 +1,30 @@
 ;;; kaolin-themes-lib.el --- Kaolin-themes library, provides common parts for the theme engine
 
+;; TODO: create theme with azure5 for bg
+;; TODO: git-commit-summary
+;; TODO: add diff-bg vars
+
 ;; TODO: (??) add travis ci
 ;; TODO: (??) increase color1 constrast to make them universal for light and dark themes
-;; TODO: midnight colors
 ;; TODO: adjust colors for 256 terminal
-;; TODO: create simple/flat color list
-;; TODO: blue colors in themes
+;; TODO: check blue colors in themes
+;; TODO: adjust 5 and 6 colors
+;; TODO: manage colors in themes
 
 ;; TODO: color spec and color functions
 
 ;; TODO: bright background option/or contrast settings
 ;; TODO: (??) disable color background for terminal
-;; TODO: (??) add var to highlight key seq' - keysym
+;; TODO: add var to highlight key seq' - keysym
+;; TODO: var to enable distinct for fringe and line num
 
 ;; TODO: Add the following faces to lib:
 ;; TODO: custom-* and buttons
-;; TODO: magit faces
 
 ;; TODO: add mode-line option/flat mode-line style
 ;; TODO: (??) make dark mode-line in ligth themes.
 
-;; TODO: (??) add base(terminal) colors
-;; TODO: (??) colorful comments
+;; TODO: colorful comments
 ;; TODO: treemacs support
 ;; TODO: (??) color cornflower blue
 ;; TODO: (??) add -pkg.el
@@ -31,60 +34,92 @@
 
 ;; TODO: add colored selection option
 ;; TODO: distant foregound
-;; TODO: move git-gutter faces from a theme file to lib,
+;; TODO: move git-gutter faces from a theme file to lib
 ;; i.e. avoid duplication
-;; TODO: (??) num, link and prep color vars use the same color
-
 ;; TODO: add company-tooltip-common-selection for new themes
 
-;; color0 - pure/contrast/accent > 70 sat & > 70 val
+;; TODO: (??) num, link and prep color vars use the same color
+
+;;; Color order
+;; color0 - pure/contrast/accent >= 70 sat & > 70 val
 ;; color1 - regular
 ;; color2 - dark
 ;; color3 - light/soft
 ;; color4 - desaturated/faded/muted
-;; color5 - midnight
-;; color6 - grayish
+
+;; color5 - midnight <= 50 sat & < 30 value
+;; TODO: very dark color 20-30 sat & val like spring-green5
+;; color7 - dark grayish sat ~20 & val 50+
+;; color6 - light grayish; sat ~10 & val ~ 50+
+;; TODO: (??) almost white color
+
+;;; Color list
+;; Black - #020203
+;; Gray - #CED8D9
+;; White - #FDFDFF
+;; Yellow #FFFF00
+;; Amber #FFBF00
+;; Orange #FF7F00
+;; Vermilion #FF3F00
+;; Brown #A33C28
+;; Red #FF0000
+;; Crimson #FF003F
+;; Rose/pink #FF007F
+;; Cerise #FF00BF
+;; Magenta/Fuchsia #FF00FF
+;; Purple #BF00FF
+;; Violet #7F00FF
+;; Ultramarine #3F00FF
+;; Blue #0000FF
+;; Cerulean #003FFF
+;; Azure/Sky Blue #007FFF
+;; Capri/Deep Sky Blue #00BFFF
+;; Cyan #00FFFF
+;; Teal #00FFEE
+;; Aquamarine #00FFBF
+;; Spring green #00FF7F
+;; Erin #00FF3F
+;; Green #00FF00
+;; Harlequin #3FFF00
+;; Chartreuse #7FFF00
+;; Lime #BFFF00
 
 (defconst kaolin-palette
   '(
     ;; Old black
-    ;; (black0          "#181818")
-    ;; (black1          "#1b1b1b")
-    ;; (black2          "#252525")
-    ;; (black3          "#2f2f2f")
-    ;; (black4          "#353535")
+    ;; (black0 "#181818")
+    ;; (black1 "#1b1b1b")
+    ;; (black2 "#252525")
+    ;; (black3 "#2f2f2f")
+    ;; (black4 "#353535")
 
     ;; Black - #020203
-    (black0          "#161618")
-    (black1          "#18181B")
-    (black2          "#222225")
-    (black3          "#2B2B2F")
-    (black4          "#303035")
+    (black0 "#161618")
+    (black1 "#18181B")
+    (black2 "#222225")
+    (black3 "#2B2B2F")
+    (black4 "#303035")
 
-    ;; Gray
+    ;; Gray - #CED8D9
     ;; TODO: (??) change hue to 240
-    (gray0           "#353b3c")
-    (gray1           "#383e3f")
-    (gray2           "#414849") ; old gray
-    (gray2           "#4b5254")
-    (gray3           "#545c5e")
-    (gray4           "#60696b") ; old alt-gray
-    (gray5           "#697375")
-    (gray6           "#737d80")
-    (gray7           "#7c878a") ; old bright-gray
-    (gray8           "#879193")
-    (gray9           "#919a9c") ; old light-gray
-
-    ;; TODO:
-    (violet4-gray   "#b6b5c5")
-    (grayish-orange  "#a5a19c")
+    (gray0 "#353b3c")
+    (gray1 "#383e3f")
+    (gray2 "#414849") ; old gray
+    (gray2 "#4b5254")
+    (gray3 "#545c5e")
+    (gray4 "#60696b") ; old alt-gray
+    (gray5 "#697375")
+    (gray6 "#737d80")
+    (gray7 "#7c878a") ; old bright-gray
+    (gray8 "#879193")
+    (gray9 "#919a9c") ; old light-gray
 
     ;; White - #FDFDFF
-    (white0          "#f2f2f2")
-    (white1          "#e6e6e8")
-    (white2          "#d4d4d6")
-    (white3          "#c9c9cd")
-    (white4          "#bebec4")
+    (white0 "#f2f2f2")
+    (white1 "#e6e6e8")
+    (white2 "#d4d4d6")
+    (white3 "#c9c9cd")
+    (white4 "#bebec4")
 
     ;; Yellow #FFFF00
     ;; TODO: adjust
@@ -93,7 +128,9 @@
     (yellow2 "#919120") ; dark-yellow
     (yellow3 "#eae46a")
     (yellow4 "#c8c493" "#ffd7a5")
-    (yellow5 "#555a2f") ; TODO: midnight yellow
+    ;; (yellow5 "#242618") ; midnight yellow
+    (yellow5 "#1e1e14") ; midnight yellow
+    (yellow6 "#c5c5a5")
 
     ;; Amber #FFBF00
     (amber0 "#f3c91f")
@@ -101,20 +138,27 @@
     (amber2 "#91762a")
     (amber3 "#eed891")
     (amber4 "#c5b378")
+    (amber5 "#1e1c14")
+    (amber6 "#c7c2af")
 
     ;; Orange #FF7F00
-    (orange0    "#e67417")
-    (orange1    "#dbac66")
-    (orange2    "#b87e3c")
-    (orange3    "#f5c791")
-    (orange4    "#e1b079")
+    (orange0 "#e67417")
+    (orange1 "#dbac66")
+    (orange2 "#b87e3c")
+    (orange3 "#f5c791")
+    (orange4 "#e1b079")
+    ;; (orange5 "#261D13")
+    (orange5 "#1e1914")
+    (orange6 "#c2b4a1") ; grayish-orange
 
-    ;; TODO Vermilion #FF3F00
-    (vermilion0      "#fa5016")
-    (vermilion1      "#ca6036")
-    (vermilion2      "#a14223")
-    (vermilion3      "#ee7042")
-    (vermilion4      "#cd9575" "#d7af87") ; faded-orange
+    ;; Vermilion #FF3F00
+    (vermilion0 "#fa5016")
+    (vermilion1 "#ca6036")
+    (vermilion2 "#a14223")
+    (vermilion3 "#ee7042")
+    (vermilion4 "#cd9575" "#d7af87") ; faded-orange
+    (vermilion5 "#231610")
+    (vermilion6 "#bfaa9f")
 
     ;; Brown #A33C28
     (brown0 "#872C19")
@@ -122,15 +166,18 @@
     (brown2 "#52413f")
     (brown3 "#d47057")
     (brown4 "#ae9895")
-    ;; (bazaar          "#98777b")
+    (brown5 "#1C1511")
+    (brown6 "#B39DA0")
 
     ;; Red #FF0000
-    (red0      "#c93237")
-    (red1      "#cd5c60")
-    ;; (red2      "#863d44")
-    (red2      "#832729")
-    (red3      "#e84c58")
-    (red4      "#9c3b42")
+    (red0 "#c93237")
+    (red1 "#cd5c60")
+    (red2 "#832729")
+    (red3 "#e84c58")
+    (red4 "#c86d6d")
+    ;; (red5 "#210f10")
+    (red5 "#1E1414")
+    (red6 "#CAABAB")
 
     ;; Crimson #FF003F
     (crimson0 "#dc2e58")
@@ -138,6 +185,8 @@
     (crimson2 "#941b37")
     (crimson3 "#ef6787")    ; light-pink
     (crimson4 "#a0586c")    ; moderate-pink
+    (crimson5 "#210E14")
+    (crimson6 "#c5b3b9")
 
     ;; Rose/pink #FF007F
     (pink0 "#eb3380")
@@ -145,6 +194,9 @@
     (pink2 "#9E2256")
     (pink3 "#fbaed2")
     (pink4 "#c791aa")
+    ;; (pink5 "#210F17")
+    (pink5 "#1e1419")
+    (pink6 "#CAB2BD")
 
     ;; Cerise #FF00BF
     (cerise0 "#e121b1")
@@ -152,6 +204,8 @@
     (cerise2 "#a31880")
     (cerise3 "#e361c3")
     (cerise4 "#a9779c")
+    (cerise5 "#23121c")
+    (cerise6 "#c7b7c2")
 
     ;; Magenta/Fuchsia #FF00FF
     (magenta0 "#c932c9")
@@ -159,7 +213,8 @@
     (magenta2 "#563d56")
     (magenta3 "#cea2ca") ; light-puprle
     (magenta4 "#835d83") ; purple
-    (magenta5 "#1a121a")
+    (magenta5 "#1a121a") ; old midnight-purple
+    (magenta6 "#BFA8BF")
 
     ;; Purple #BF00FF
     (purple0 "#ab33eb")
@@ -167,6 +222,8 @@
     (purple2 "#73229E")
     (purple3 "#bc90d4")
     (purple4 "#ab98b5")
+    (purple5 "#1f1623")
+    (purple6 "#bcacbf")
 
     ;; Violet #7F00FF
     (violet0 "#7f1de1")
@@ -174,6 +231,8 @@
     (violet2 "#61259e")
     (violet3 "#c79af4")
     (violet4 "#9d81ba") ; alt-lavender
+    (violet5 "#1f1926")
+    (violet6 "#cac3d1")
 
     ;; Ultramarine #3F00FF
     ;; TODO adjust
@@ -182,24 +241,26 @@
     (ultramarine2 "#3d2394")
     (ultramarine3 "#6d44eb")
     (ultramarine4 "#787096")
+    (ultramarine5 "#16141e")
+    (ultramarine6 "#b0acc5")
 
     ;; Blue #0000FF
     (blue0 "#3237CA")
     (blue1 "#4145b6")
     (blue2 "#2B2FA6")
     (blue3 "#525df3")
-    (blue4 "#807f96")
-    (blue5 "#13131C" black2)
+    (blue4 "#807f96") ; old faded-blue
+    (blue5 "#14141e" black2) ; old alt-midnight-blue
+    (blue6 "#A1A0C5")
 
     ;; Cerulean #003FFF
-    (cerulean0 "#0E4CD1")
-    (cerulean1 "#3F66BA")
+    (cerulean0 "#0e4cd1")
+    (cerulean1 "#3f66ba")
     (cerulean2 "#2d4b8c")
-    (cerulean3 "#4C7DE8")
-    (cerulean4 "#536A9D")
-    (cerulean5 "#28395e")
-    ;; (cerulean6 "#8F97A7")
-    (grayish-blue      "#687184")
+    (cerulean3 "#4c7de8")
+    (cerulean4 "#536a9d")
+    (cerulean5 "#14171e")
+    (cerulean6 "#687184") ; old grayish-blue
 
     ;; Azure/Sky Blue #007FFF
     (azure0 "#0e70d1")
@@ -207,8 +268,9 @@
     (azure2 "#2a4661")
     (azure3 "#4ca6e8") ; old soft-blue
     (azure4 "#53859d")
-    ;; TODO: 5 -> azure6
-    (azure5 "#8f9ca7")
+    ;; (azure5 "#192430")
+    (azure5 "#14191e")
+    (azure6 "#8f9ca7")
 
     ;; Capri/Deep Sky Blue #00BFFF
     ;; TODO: adjust
@@ -217,7 +279,8 @@
     (capri2 "#1c5f87")
     (capri3 "#41b0f3")
     (capri4 "#91b9c7")
-    (capri5 "#1e2528" black2)
+    (capri5 "#1e2528" black2) ;; old midnight-blue
+    (capri6 "#a2b1b8")
 
     ;; Cyan #00FFFF
     (cyan0 "#0bc9cf")
@@ -225,24 +288,27 @@
     (cyan2 "#09878b")
     (cyan3 "#6bd9db")
     (cyan4 "#65a0a1")
-    (cyan5 "#142223")
+    ;; (cyan5 "#142223")
+    (cyan5 "#141e1e")
+    (cyan6 "#a7caca")
 
-    ;; Teal
-    (teal0    "#0d948d")
-    ;; (teal1 "#4a858c")
-    (teal1    "#4d9391")
-    (teal2    "#396b68")
-    (teal3    "#49bdb0")
-    (teal4    "#80bcb6")
-    (teal5    "#0f1e1d")
+    ;; Teal #00FFEE
+    (teal0 "#0d948d")
+    (teal1 "#4d9391")
+    (teal2 "#396b68")
+    (teal3 "#49bdb0")
+    (teal4 "#80bcb6")
+    (teal5 "#141e1d")
+    (teal6 "#a4bab9")
 
     ;; Aquamarine #00FFBF
     (aquamarine0 "#0ed49b")
     (aquamarine1 "#47ba99")
     (aquamarine2 "#40826d")
-    ;; (aquamarine3 "#7fffd4")
     (aquamarine3 "#68f3ca")
     (aquamarine4 "#709688")
+    (aquamarine5 "#141e1b")
+    (aquamarine6 "#A7C2BA")
 
     ;; Spring green #00FF7F
     (spring-green0 "#2ae186")
@@ -250,7 +316,9 @@
     (spring-green2 "#39855f") ; dark
     (spring-green3 "#6fb593") ; old light green
     (spring-green4 "#597a6c") ; faded
-    (spring-green5 "#2E4038") ; midnight
+    (spring-green5 "#2E4038") ; old midnight
+    ;; (spring-green5 "#141E1A")
+    (spring-green6 "#90aea1")
 
     ;; Erin #00FF3F
     (erin0 "#26e356")
@@ -258,15 +326,18 @@
     (erin2 "#39854C")
     (erin3 "#56e87b")
     (erin4 "#597a64")
-    (erin5 "#2E4033")
+    (erin5 "#141e17")
+    (erin6 "#ABC7B5")
 
     ;; Green #00FF00
-    (green0        "#21e121")
-    (green1        "#47cc47")
-    (green2        "#18a318")
-    (green3        "#61e361")
-    (green4        "#73c66c")
-    (grayish-green "#9ca78f")
+    (green0 "#21e121")
+    (green1 "#47cc47")
+    (green2 "#18a318")
+    (green3 "#61e361")
+    (green4 "#73c66c")
+    ;; (green5 "#111C11")
+    (green5 "#141e14")
+    (green6 "#abc6a8")
 
     ;; Harlequin #3FFF00
     (harlequin0 "#58f021")
@@ -274,6 +345,8 @@
     (harlequin2 "#37A111")
     (harlequin3 "#70E346")
     (harlequin4 "#60A148")
+    (harlequin5 "#161E14")
+    (harlequin6 "#b0c6a8")
 
     ;; Chartreuse #7FFF00
     (chartreuse0 "#8bee1a")
@@ -281,6 +354,8 @@
     (chartreuse2 "#5ba111")
     (chartreuse3 "#9de346")
     (chartreuse4 "#7fa148")
+    (chartreuse5 "#161E0D")
+    (chartreuse6 "#afbaa2")
 
     ;; Lime #BFFF00
     (lime0 "#aadc13")
@@ -288,9 +363,11 @@
     (lime2 "#82a80e")
     (lime3 "#c7ee53")
     (lime4 "#b9c791")
+    (lime5 "#1B210E")
+    (lime6 "#b5baa4")
 
 
-    ;; Named face options
+    ;; Named color vars
     (bold            kaolin-bold)
     (italic          kaolin-italic)
     (underline       kaolin-underline)
@@ -320,7 +397,7 @@
     (todo red1)
     (done spring-green3)
 
-    (button grayish-orange)
+    (button orange6)
     (button-hl amber3)
 
     (tooltip-bg bg2)
@@ -334,19 +411,23 @@
     (rb4 blue4)
     (rb5 teal1)
     (rb6 violet3)
-    (rb7 grayish-orange)
+    (rb7 orange6)
     (rb8 magenta4)
     (rb9 violet4)
 
     (diff-add    spring-green1)
-    (diff-change purple4)
+    (diff-mod    purple3)
     (diff-rem    red1)
+
+    (diff-bg-add spring-green2)
+    (diff-bg-mod purple3)
+    (diff-bg-rem crimson4)
 
     (keyword     teal1)
     (second-key  teal2)
     (builtin     teal4)
     (comment     gray3)
-    (alt-comment azure5)
+    (alt-comment azure6)
     (functions   builtin)
     ;; TODO: (??) change to brown3 like sierra.vim
     (str         spring-green3)
@@ -378,7 +459,7 @@
     (evil-operator     evil-normal)
     (evil-emacs        amber3)
 
-    (win-border    black3)
+    (win-border    bg3)
     (line-num-bg   bg1)
     (line-num-fg   gray3)
     (line-num-hl   gray9)
@@ -437,8 +518,10 @@
     (escape-glyph        (:background nil :foreground cyan3))
 
     (menu        (:background bg2 :foreground fg2))
-    (header-line (:background capri5 :foreground var))
-    (tooltip     (:background tooltip-bg :foreground tooltip-fg))
+    (header-line (:background bg4 :foreground var))
+
+    ;; TODO: (??) color fg
+    (tooltip      (:background tooltip-bg :foreground tooltip-fg))
 
     (match        (:background nil :foreground hl))
     (isearch      (:background nil :foreground hl :bold bold :underline underline))
@@ -608,6 +691,65 @@
     (company-preview-search           (:background bg1 :foreground azure1))
     (company-tooltip-mouse            (:background bg3 :foreground fg3))
 
+    ;; Magit
+    (magit-section-highlight         (:background bg2))
+    (magit-section-heading           (:foreground keyword))
+    (magit-section-heading-selection (:foreground button-hl :bold bold))
+    (magit-item-highlight            (:background bg3))
+    (magit-blame-heading             (:background bg3 :foreground var))
+
+
+    (magit-branch                 (:foreground cyan1))
+    (magit-branch-local           (:foreground cyan1))
+    (magit-branch-remote          (:foreground aquamarine1))
+    (magit-hunk-heading           (:background bg3))
+    (magit-hunk-heading-highlight (:background bg3))
+    (magit-diff-base              (:background amber2 :foreground fg2))
+    (magit-diff-base-highlight    (:background amber2 :foreground fg1))
+    (magit-diff-file-header       (:background bg3 :foreground fg2))
+    (magit-diff-context           (:background bg3 :foreground fg3))
+    (magit-diff-context-highlight (:background bg3 :foreground fg2))
+    (magit-diff-added             (:background diff-bg-add :foreground fg1))
+    (magit-diff-added-highlight   (:background diff-bg-add :foreground fg0))
+    (magit-diff-removed           (:background diff-bg-rem :foreground fg1))
+    (magit-diff-removed-highlight (:background diff-bg-rem :foreground fg0))
+    (magit-diffstat-added         (:foreground diff-add))
+    (magit-diffstat-removed       (:foreground diff-rem))
+    (magit-tag                    (:foreground orange1))
+    (magit-hash                   (:inherit 'magit-tag))
+    (magit-dimmed                 (:inherit 'shadow))
+    (magit-log-author             (:foreground prep))
+    (magit-log-date               (:foreground var))
+    (magit-log-graph              (:foreground str))
+
+    (magit-process-ok             (:foreground spring-green3 :bold bold))
+    (magit-process-ng             (:foreground warning :bold bold))
+
+    (magit-reflog-amend           (:foreground violet1))
+    (magit-reflog-checkout        (:foreground capri1))
+    (magit-reflog-cherry-pick     (:foreground spring-green1))
+    (magit-reflog-commit          (:foreground spring-green1))
+    (magit-reflog-merge           (:foreground spring-green1))
+    (magit-reflog-rebase          (:foreground violet1))
+    (magit-reflog-remote          (:foreground cyan1))
+    (magit-reflog-reset           (:foreground err :bold bold))
+    (magit-reflog-other           (:foreground cyan1))
+    (magit-refname                (:foreground var))
+
+    (magit-sequence-head (:foreground capri1))
+    (magit-sequence-drop (:foreground red1))
+    (magit-sequence-part (:foreground yellow1))
+    (magit-sequence-stop (:inherit 'success))
+
+    (magit-cherry-equivalent      (:foreground violet1))
+    (magit-cherry-unmatched       (:foreground cyan1))
+    (magit-bisect-good            (:foreground aquamarine1))
+    (magit-bisect-bad             (:foreground red0))
+    (magit-bisect-skip            (:foreground lime1))
+    (magit-signature-good         (:foreground aquamarine1))
+    (magit-signature-bad          (:foreground red0))
+    (magit-signature-untrusted    (:foreground cyan1))
+
 
     ;; Flycheck
     (flycheck-info           (:foreground capri4))
@@ -700,7 +842,7 @@
 
     ;; Rainbow delimeters
     ;; TODO: change color & rewrite
-    ;; TODO: probably I need to define custom vars or smth...
+    ;; TODO: probably need to define custom vars or smth...
     (show-paren-match (:background nil :foreground orange1 :bold bold))
     ;; (if (eq show-paren-style 'expression)
     ;;  (show-paren-match-face (:background bg3 :foreground nil))))
@@ -723,9 +865,9 @@
     ;; Diff
     (diff-header      (:background bg2))
     (diff-file-header (:background bg2 :foreground teal1))
-    (diff-added       (:background spring-green2 :foreground fg1))
-    (diff-changed     (:background diff-change :foreground fg1))
-    (diff-removed     (:background red2 :foreground fg1))
+    (diff-added       (:background diff-bg-add :foreground fg1))
+    (diff-changed     (:background diff-bg-mod :foreground fg1))
+    (diff-removed     (:background diff-bg-rem :foreground fg1))
 
     ;; Imenu list
     ;; TODO:
@@ -736,12 +878,12 @@
     ;; Git gutter
     (git-gutter:unchanged (:background bg1 :foreground nil))
     (git-gutter:added     (:background bg1 :foreground diff-add :bold bold))
-    (git-gutter:modified  (:background bg1 :foreground diff-change :bold bold))
+    (git-gutter:modified  (:background bg1 :foreground diff-mod :bold bold))
     (git-gutter:deleted   (:background bg1 :foreground diff-rem :bold bold))
 
     ;; Diff-hl
     (diff-hl-insert (:background diff-add))
-    (diff-hl-change (:background diff-change))
+    (diff-hl-change (:background diff-mod))
     (diff-hl-delete (:background diff-rem))
 
     ;; Popup
@@ -813,10 +955,10 @@
     (org-document-info             (:foreground builtin))
     (org-footnote                  (:foreground fg4 :underline underline))
 
-    (org-agenda-date-weekend       (:weight 'normal :foreground fg4))
+    (org-agenda-date-weekend       (:foreground fg4 :weight 'normal))
     (org-block                     (:foreground fg3))
-    (org-quote                     (:inherit 'org-block :slant 'italic))
-    (org-verse                     (:inherit 'org-block :slant 'italic))
+    (org-quote                     (:inherit 'org-block :italic italic))
+    (org-verse                     (:inherit 'org-block :italic italic))
     (org-agenda-done               (:foreground bg4))
     (org-scheduled                 (:foreground type))
     (org-scheduled-today           (:foreground functions :height 1.2 :bold bold))

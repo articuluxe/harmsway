@@ -13,6 +13,7 @@
 
   (
    ;; Theme faces
+   (header-line (:background capri5 :foreground var))
    ;; Interface
    ;; TODO:
    (custom-visibility     (:background nil :foreground cyan1 :height 0.9 :underline underline))
@@ -58,22 +59,6 @@
    (ediff-odd-diff-A (:background bg3))
    (ediff-odd-diff-B (:background bg3))
    (ediff-odd-diff-C (:background bg3))
-
-   ;; Magit
-   (magit-section-highlight      (:background bg2))
-   (magit-diff-file-header       (:background bg3 :foreground fg2))
-   (magit-item-highlight :background bg3)
-   (magit-section-heading        (:foreground keyword :bold bold))
-   (magit-hunk-heading           (:background bg3))
-   (magit-hunk-heading-highlight (:background bg3))
-   (magit-diff-context-highlight (:background bg3 :foreground fg3))
-   (magit-diffstat-added         (:foreground type))
-   (magit-diffstat-removed       (:foreground var))
-   (magit-process-ok             (:foreground functions :bold bold))
-   (magit-process-ng             (:foreground warning :bold bold))
-   (magit-branch                 (:foreground const :bold bold))
-   (magit-log-author             (:foreground fg3))
-   (magit-hash                   (:foreground fg2))
 
    ;; Speedbar
    ;; TODO:
@@ -143,7 +128,7 @@
     (custom-theme-set-faces
      'kaolin-dark
      `(git-gutter:added     ((t (:background ,diff-add :foreground ,diff-add))))
-     `(git-gutter:modified  ((t (:background ,diff-change :foreground ,diff-change))))
+     `(git-gutter:modified  ((t (:background ,diff-mod :foreground ,diff-mod))))
      `(git-gutter:deleted   ((t (:background ,diff-rem :foreground ,diff-rem)))))))
 
 

@@ -7,7 +7,13 @@
 (define-kaolin-theme galaxy "Bright theme based on one of the Sebastian Andaur arts."
   ;; Palette modification
   (
-   ;; dark
+   (azure2    "#232c35")
+   (azure1         "#2a57cc")
+   ;; (azure1      "#335599")
+   (chartreuse1         "#73c66c")
+   (spring-green1  "#6dd797")
+
+   ;; Dark
    ;; (bg1  "#1d1c21" black1)
    ;; (bg2          "#26252c" black2)
    ;; (bg3          "#302e36" black3)
@@ -19,11 +25,6 @@
    (bg3          "#33323b" black3)
    (bg4          "#3d3b46" black4)
 
-   (azure2    "#232c35")
-   (azure1         "#2a57cc")
-   ;; (azure1      "#335599")
-   (chartreuse1         "#73c66c")
-   (spring-green1  "#6dd797")
 
    (keyword     violet3)
    (second-key  magenta4 cerise4)
@@ -45,7 +46,7 @@
    (alt-comment "#4c344c")
    (str         capri4)
    ;; TODO: make bor bright
-   (str-alt     grayish-blue)
+   (str-alt     cerulean6)
    (doc         str-alt)
    ;; TODO: or amber3
    (warning     orange1)
@@ -72,18 +73,18 @@
    (ivy4 red3)
 
    (rb1 violet4)
-   (rb2 cyan4)
+   (rb2 teal4)
    (rb3 violet3)
    (rb4 blue4)
-   (rb5 yellow4)
-   (rb6 grayish-blue)
-   (rb7 grayish-orange)
+   (rb5 capri4)
+   (rb6 cerulean6)
+   (rb7 orange6)
    (rb8 magenta4)
-   (rb9 crimson1)
+   (rb9 crimson3)
 
-   (diff-add    spring-green1)
-   (diff-change violet3)
-   (diff-rem    red3)
+   (diff-add spring-green1)
+   (diff-mod violet3)
+   (diff-rem red3)
 
    ;; Mode-line
    (line-fg           fg4)
@@ -117,26 +118,22 @@
    (link                (:foreground crimson1 :underline underline))
    (show-paren-mismatch (:background bg2 :foreground red0))
 
-   (telephone-line-accent-active   (:inherit 'mode-line :background line-bg2 :foreground azure5))
+   (telephone-line-accent-active   (:inherit 'mode-line :background line-bg2 :foreground azure6))
    (telephone-line-accent-inactive (:inherit 'mode-line-inactive :background line-bg1 :foreground gray9))
 
-   (org-document-title  (:foreground grayish-blue :bold bold))
-   (org-document-info   (:foreground grayish-blue))
+   (org-document-title  (:foreground cerulean6 :bold bold))
+   (org-document-info   (:foreground cerulean6))
    (org-date            (:foreground spring-green3 :underline underline))
    (org-code            (:foreground vermilion4))
    (org-verbatim        (:foreground aquamarine4))
    (org-quote           (:foreground blue4)))
 
   ;; Set custom vars
-  (custom-theme-set-variables
-   'kaolin-galaxy
-   '(kaolin-hl-line-colored t))
-
   (when kaolin-git-gutter-solid
     (custom-theme-set-faces
      'kaolin-galaxy
      `(git-gutter:added     ((t (:background ,diff-add :foreground ,diff-add))))
-     `(git-gutter:modified  ((t (:background ,diff-change :foreground ,diff-change))))
+     `(git-gutter:modified  ((t (:background ,diff-mod :foreground ,diff-mod))))
      `(git-gutter:deleted   ((t (:background ,diff-rem :foreground ,diff-rem)))))))
 
 

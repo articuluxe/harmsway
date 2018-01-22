@@ -158,7 +158,9 @@ if UP is non-nil, it loops on the previous lines.."
       (setq index (if up (1- index) (1+ index)))
       (setq pos (lsp-ui-sideline--calc-space win-width str-len index)))
     (when pos (push pos lsp-ui-sideline--occupied-lines))
-    pos))
+    (if (equal pos (point-min))
+        (lsp-ui-sideline--find-line str-len)
+      pos)))
 
 (defun lsp-ui-sideline--delete-ov ()
   "Delete overlays."
@@ -353,7 +355,7 @@ to the language server."
               lsp-ui-sideline--last-width (window-text-width))
         (when lsp-ui-sideline-show-flycheck
           (lsp-ui-sideline--flycheck))
-        (when lsp-ui-sideline-show-code-actions
+        (when (and lsp-ui-sideline-show-code-actions (lsp--capability "codeActionProvider"))
           (lsp--send-request-async (lsp--make-request
                                     "textDocument/codeAction"
                                     (list :textDocument doc-id

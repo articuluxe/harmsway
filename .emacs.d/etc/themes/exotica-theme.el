@@ -175,14 +175,14 @@
  `(outline-6 ((t (:foreground ,face6))))
  `(outline-7 ((t (:foreground ,face7))))
  `(outline-8 ((t (:foreground ,face8))))
- `(org-level-1 ((t (:inherit outline-1 :weight bold :height 1.0))))
- `(org-level-2 ((t (:inherit outline-2 :weight bold :height 1.0))))
- `(org-level-3 ((t (:inherit outline-3 :weight bold :height 1.0))))
- `(org-level-4 ((t (:inherit outline-4 :weight bold :height 1.0))))
- `(org-level-5 ((t (:inherit outline-5 :weight bold :height 1.0))))
- `(org-level-6 ((t (:inherit outline-6 :weight bold :height 1.0))))
- `(org-level-7 ((t (:inherit outline-7 :weight bold :height 1.0))))
- `(org-level-8 ((t (:inherit outline-8 :weight bold :height 1.0))))
+ `(org-level-1 ((t (:inherit outline-1 :weight bold :height 1.0 :slant ,slantType))))
+ `(org-level-2 ((t (:inherit outline-2 :weight bold :height 1.0 :slant ,slantType))))
+ `(org-level-3 ((t (:inherit outline-3 :weight bold :height 1.0 :slant ,slantType))))
+ `(org-level-4 ((t (:inherit outline-4 :weight bold :height 1.0 :slant ,slantType))))
+ `(org-level-5 ((t (:inherit outline-5 :weight bold :height 1.0 :slant ,slantType))))
+ `(org-level-6 ((t (:inherit outline-6 :weight bold :height 1.0 :slant ,slantType))))
+ `(org-level-7 ((t (:inherit outline-7 :weight bold :height 1.0 :slant ,slantType))))
+ `(org-level-8 ((t (:inherit outline-8 :weight bold :height 1.0 :slant ,slantType))))
  `(rainbow-delimiters-depth-1-face ((t (:inherit outline-1))))
  `(rainbow-delimiters-depth-2-face ((t (:inherit outline-2))))
  `(rainbow-delimiters-depth-3-face ((t (:inherit outline-3))))
@@ -255,7 +255,8 @@
 
   ;; parentheses matching
   ;; `(show-paren-match ((t (:height 0.8 :width condensed :box (:line-width 1 :color "cyan" :style none )))))
-  `(show-paren-match ((t (:background ,face1 :foreground ,fullBlack :weight bold))))
+  ;;`(show-paren-match ((t (:background ,face1 :foreground ,fullBlack :weight bold))))
+  `(show-paren-match ((t (:underline ,face6 :foreground ,face6 :weight bold))))
   `(show-paren-mismatch ((t (:background ,m7 :foreground ,fullWhite))))
   `(rainbow-delimiters-mismatched-face ((t (:inherit show-paren-mismatch :underline t))))
   `(rainbow-delimiters-unmatched-face ((t (:inherit show-paren-mismatch))))
@@ -275,6 +276,10 @@
   ;; linum relative line number face
   `(linum-relative-current-face ((t (:inherit linum :foreground ,face4 :weight normal))))
   `(linum ((t (:background ,bg :foreground ,line-number-face :weight normal))))
+
+  ;; native line number face
+  `(line-number ((t :background ,bg :foreground ,line-number-face :weight normal)))
+  `(line-number-current-line ((t :background ,bg :foreground, face4, :weight normal)))
 
   ;; imenu-list
   `(imenu-list-entry-subalist-face-0 ((t (:foreground ,face2))))

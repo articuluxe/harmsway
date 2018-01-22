@@ -217,11 +217,9 @@ and forgo removing the stash."
 (defun magit-stash-drop (stash)
   "Remove a stash from the stash list.
 When the region is active offer to drop all contained stashes."
-  (interactive
-   (list (--if-let (magit-region-values 'stash)
-             (or (magit-confirm t "Drop %s" "Drop %i stashes" it)
-                 (user-error "Abort"))
-           (magit-read-stash "Drop stash"))))
+  (interactive (--if-let (magit-region-values 'stash)
+                   (magit-confirm t nil "Drop %i stashes" it)
+                 (list (magit-read-stash "Drop stash"))))
   (dolist (stash (if (listp stash)
                      (nreverse (prog1 stash (setq stash (car stash))))
                    (list stash)))
@@ -240,11 +238,9 @@ When the region is active offer to drop all contained stashes."
 ;;;###autoload
 (defun magit-stash-clear (ref)
   "Remove all stashes saved in REF's reflog by deleting REF."
-  (interactive
-   (let ((ref (or (magit-section-when 'stashes) "refs/stash")))
-     (if (magit-confirm t (format "Drop all stashes in %s" ref))
-         (list ref)
-       (user-error "Abort"))))
+  (interactive (let ((ref (or (magit-section-when 'stashes) "refs/stash")))
+                 (magit-confirm t (format "Drop all stashes in %s" ref))
+                 (list ref)))
   (magit-run-git "update-ref" "-d" ref))
 
 ;;;###autoload
@@ -372,7 +368,8 @@ instead of \"Stashes:\"."
                         "rebase-merge/autostash"
                       "rebase-apply/autostash")))))))
     (when (or autostash verified)
-      (magit-insert-section (stashes ref (not magit-status-expand-stashes))
+      (magit-insert-section (stashes ref (with-no-warnings
+                                           (not magit-status-expand-stashes)))
         (magit-insert-heading heading)
         (when autostash
           (pcase-let ((`(,author ,date ,msg)
@@ -461,7 +458,8 @@ that make up the stash."
   (magit-insert-section section (note)
     (magit-insert-heading "Notes")
     (magit-git-insert "notes" "show" (car magit-refresh-args))
-    (if (= (point) (magit-section-content section))
+    (if (= (point)
+           (oref section content))
         (magit-cancel-section)
       (insert "\n"))))
 

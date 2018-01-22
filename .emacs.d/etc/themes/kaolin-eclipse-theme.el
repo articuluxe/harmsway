@@ -14,6 +14,7 @@
    (bg2       "#261a26" black2)
    (bg3       "#312231" black3)
    (bg4       "#3d2a3d" black4)
+
    (azure2 "#325074")
 
    (keyword     cerise4)
@@ -50,22 +51,23 @@
    (tooltip-hl-bg magenta2)
    (tooltip-hl-fg amber3)
 
-   (ivy3 spring-green3)
-   (ivy4 azure4)
+   (ivy2 capri0)
+   (ivy3 spring-green1)
+   (ivy4 ultramarine3)
 
    (rb1 crimson4)
    (rb2 violet4)
-   (rb3 cyan3)
+   (rb3 teal4)
    (rb4 blue4)
    (rb5 violet4)
    (rb6 violet3)
-   (rb7 grayish-orange)
+   (rb7 orange6)
    (rb8 azure2)
    (rb9 pink3)
 
-   (diff-add    aquamarine4)
-   (diff-change magenta4)
-   (diff-rem    red4)
+   (diff-add aquamarine4)
+   (diff-mod magenta4)
+   (diff-rem red4)
 
    ;; Mode-line
    (line-fg           fg4)
@@ -101,15 +103,11 @@
    (org-quote           (:foreground magenta3)))
 
   ;; Set custom vars
-  (custom-theme-set-variables
-   'kaolin-eclipse
-   '(kaolin-hl-line-colored t))
-
   (when kaolin-git-gutter-solid
     (custom-theme-set-faces
      'kaolin-eclipse
      `(git-gutter:added     ((t (:background ,diff-add :foreground ,diff-add))))
-     `(git-gutter:modified  ((t (:background ,diff-change :foreground ,diff-change))))
+     `(git-gutter:modified  ((t (:background ,diff-mod :foreground ,diff-mod))))
      `(git-gutter:deleted   ((t (:background ,diff-rem :foreground ,diff-rem)))))))
 
 

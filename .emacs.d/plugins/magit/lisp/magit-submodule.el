@@ -219,7 +219,7 @@ prefix argument fetch all remotes."
    (list (magit-completing-read "Deinit module" (magit-get-submodules)
                                 nil t nil nil (magit-section-when module))))
   (magit-with-toplevel
-    (magit-run-git-async "submodule" "deinit" path)))
+    (magit-run-git-async "submodule" "deinit" "--" path)))
 
 ;;; Sections
 
@@ -236,8 +236,8 @@ whether they are wrapped in an additional section."
             (format "%s (%s)"
                     (propertize "Modules" 'face 'magit-section-heading)
                     (length modules)))
-          (if (magit-section-hidden section)
-              (setf (magit-section-washer section) 'magit--insert-modules)
+          (if (oref section hidden)
+              (oset section washer 'magit--insert-modules)
             (magit--insert-modules)))
       (magit--insert-modules))))
 
@@ -255,8 +255,8 @@ or, failing that, the abbreviated HEAD commit hash."
         (format "%s (%s)"
                 (propertize "Modules overview" 'face 'magit-section-heading)
                 (length modules)))
-      (if (magit-section-hidden section)
-          (setf (magit-section-washer section) 'magit--insert-modules-overview)
+      (if (oref section hidden)
+          (oset section washer 'magit--insert-modules-overview)
         (magit--insert-modules-overview)))))
 
 (defvar magit-modules-overview-align-numbers t)
@@ -383,9 +383,11 @@ These sections can be expanded to show the respective commits."
                   (concat (propertize module 'face 'magit-diff-file-heading) ":"))
                 (magit-git-wash (apply-partially 'magit-log-wash-log 'module)
                   "-c" "push.default=current" "log" "--oneline" range)
-                (when (> (point) (magit-section-content sec))
+                (when (> (point)
+                         (oref sec content))
                   (delete-char -1)))))))
-      (if (> (point) (magit-section-content section))
+      (if (> (point)
+             (oref section content))
           (insert ?\n)
         (magit-cancel-section)))))
 

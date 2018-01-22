@@ -65,7 +65,7 @@
                  (const :tag "At point" at-point))
   :group 'lsp-ui-doc)
 
-(defcustom lsp-ui-doc-background "#031A25"
+(defcustom lsp-ui-doc-background "#272A36"
   "Background color of the frame.  To more customize the frame, see the varia..
 ble `lsp-ui-doc-frame-parameters'"
   :type 'color
@@ -74,6 +74,16 @@ ble `lsp-ui-doc-frame-parameters'"
 (defcustom lsp-ui-doc-border "white"
   "Border color of the frame."
   :type 'color
+  :group 'lsp-ui-doc)
+
+(defcustom lsp-ui-doc-max-width 150
+  "Maximum number of columns of the frame."
+  :type 'integer
+  :group 'lsp-ui-doc)
+
+(defcustom lsp-ui-doc-max-height 30
+  "Maximum number of lines in the frame."
+  :type 'integer
   :group 'lsp-ui-doc)
 
 (defface lsp-ui-doc-header
@@ -313,8 +323,8 @@ BUFFER is the buffer where the request has been made."
 (defun lsp-ui-doc--resize-buffer ()
   "If the buffer's width is larger than the current window, resize it."
   (let* ((window-width (window-width))
-         (fill-column (- window-width 5)))
-    (when (> (lsp-ui-doc--buffer-width) window-width)
+         (fill-column (min lsp-ui-doc-max-width (- window-width 5))))
+    (when (> (lsp-ui-doc--buffer-width) (min lsp-ui-doc-max-width window-width))
       (lsp-ui-doc--with-buffer
        (fill-region (point-min) (point-max))))))
 
@@ -341,6 +351,8 @@ START-Y is the position y of the current window."
           (window (frame-root-window frame))
           ((width . height) (window-text-pixel-size window nil nil 10000 10000))
           (width (+ width (* (frame-char-width frame) 2))) ;; margins
+          (char-h (frame-char-height))
+          (height (min (- (* lsp-ui-doc-max-height char-h) (/ char-h 2)) height))
           (frame-resize-pixelwise t))
     (set-window-margins window 1 1)
     (set-frame-size frame width height t)
