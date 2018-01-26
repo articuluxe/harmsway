@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-01-23 17:50:08 dharms>
+;; Modified Time-stamp: <2018-01-26 10:44:21 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -374,6 +374,11 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
               (set (make-local-variable 'gdb-create-source-file-list) nil)
               (gdb-many-windows 1)
               )))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; realgud ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package realgud
+  :bind ("C-4" . realgud:gdb)
+  :init (setq realgud-safe-mode nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; align ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun align-values (start end)
