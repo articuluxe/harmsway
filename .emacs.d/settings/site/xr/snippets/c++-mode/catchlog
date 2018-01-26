@@ -3,4 +3,4 @@
 # key: catchlog
 # binding: direct-keybinding
 # --
-${1:$$(yas-choose-value '("INFO" "WARN" "FAIL" "CAPTURE"))}($0)
+${1:$$(yas-choose-value '("INFO" "WARN" "FAIL" "CAPTURE"))}($0);
