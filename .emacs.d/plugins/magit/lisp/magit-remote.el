@@ -31,6 +31,15 @@
 
 (require 'magit)
 
+;;; Options
+
+(defcustom magit-fetch-modules-jobs 4
+  "Number of submodules to fetch in parallel.
+Ignored for Git versions before v2.8.0."
+  :package-version '(magit . "2.12.0")
+  :group 'magit-commands
+  :type '(choice (const :tag "one at a time" nil) number))
+
 ;;; Clone
 
 (defcustom magit-clone-set-remote-head nil
@@ -229,11 +238,12 @@ remote or replace the refspecs with the default refspec instead."
                   (magit-confirm 'prune-stale-refspecs
                     (format "Prune stale refspec %s and branch %%s" refspec)
                     (format "Prune stale refspec %s and %%i branches" refspec)
-                    refs))
+                    nil refs))
               (magit-confirm 'prune-stale-refspecs nil
                 (format "Prune %%i stale refspecs and %i branches"
                         (length (cl-mapcan (lambda (s) (copy-sequence (cdr s)))
                                            stale)))
+                nil
                 (--map (pcase-let ((`(,refspec . ,refs) it))
                          (concat refspec "\n"
                                  (mapconcat (lambda (b) (concat "  " b))
@@ -430,7 +440,7 @@ Delete the symbolic-ref \"refs/remotes/<remote>/HEAD\"."
               "Fetch"
               (?o "another branch"         magit-fetch-branch)
               (?r "explicit refspec"       magit-fetch-refspec)
-              (?m "submodules"             magit-submodule-fetch))
+              (?m "submodules"             magit-fetch-modules))
   :default-action 'magit-fetch
   :max-action-columns 1)
 
@@ -508,6 +518,23 @@ removed on the respective remote."
   (run-hooks 'magit-credential-hook)
   (magit-run-git-async "remote" "update"))
 
+;;;###autoload
+(defun magit-fetch-modules (&optional all)
+  "Fetch all submodules.
+
+Option `magit-fetch-modules-jobs' controls how many submodules
+are being fetched in parallel.  Also fetch the super-repository,
+because `git-fetch' does not support not doing that.  With a
+prefix argument fetch all remotes."
+  (interactive "P")
+  (magit-with-toplevel
+    (magit-run-git-async
+     "fetch" "--verbose" "--recurse-submodules"
+     (and magit-fetch-modules-jobs
+          (version<= "2.8.0" (magit-git-version))
+          (list "-j" (number-to-string magit-fetch-modules-jobs)))
+     (and all "--all"))))
+
 ;;; Pull
 
 ;;;###autoload (autoload 'magit-pull-popup "magit-remote" nil t)
@@ -580,7 +607,7 @@ missing.  To add them use something like:
              "Fetch"
              (?o "another branch"    magit-fetch-branch)
              (?s "explicit refspec"  magit-fetch-refspec)
-             (?m "submodules"        magit-submodule-fetch))
+             (?m "submodules"        magit-fetch-modules))
   :default-action 'magit-fetch
   :max-action-columns 1)
 

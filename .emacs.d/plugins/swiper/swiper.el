@@ -255,9 +255,11 @@
     gnus-group-mode
     emms-playlist-mode
     emms-stream-mode
+    eshell-mode
     erc-mode
     forth-mode
     forth-block-mode
+    helpful-mode
     nix-mode
     org-agenda-mode
     dired-mode
@@ -320,7 +322,7 @@
 
 (defun swiper--line ()
   (let* ((beg (cond ((and (eq major-mode 'dired-mode)
-                          dired-isearch-filenames)
+                          (bound-and-true-p dired-isearch-filenames))
                      (dired-move-to-filename)
                      (point))
                     (swiper-use-visual-line
@@ -675,14 +677,22 @@ WND, when specified is the window."
           ;; RE can become an invalid regexp
           (while (and (ignore-errors (re-search-forward re end t))
                       (> (- (match-end 0) (match-beginning 0)) 0))
-            (let ((mb (match-beginning 0))
-                  (me (match-end 0)))
-              (unless (> (- me mb) 2017)
-                (swiper--add-overlay mb me
-                                     (if (zerop ivy--subexps)
-                                         (cadr swiper-faces)
-                                       (car swiper-faces))
-                                     wnd 0)))
+            (unless (and (consp ivy--old-re)
+                         (null
+                          (save-match-data
+                            (ivy--re-filter ivy--old-re
+                                            (list
+                                             (buffer-substring-no-properties
+                                              (line-beginning-position)
+                                              (line-end-position)))))))
+              (let ((mb (match-beginning 0))
+                    (me (match-end 0)))
+                (unless (> (- me mb) 2017)
+                  (swiper--add-overlay mb me
+                                       (if (zerop ivy--subexps)
+                                           (cadr swiper-faces)
+                                         (car swiper-faces))
+                                       wnd 0))))
             (let ((i 1)
                   (j 0))
               (while (<= (cl-incf j) ivy--subexps)

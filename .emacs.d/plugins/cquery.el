@@ -3,7 +3,7 @@
 ;; Copyright (C) 2017 Tobias Pisani
 
 ;; Author:  Tobias Pisani
-;; Package-Version: 20180115.1
+;; Package-Version: 20180122.1
 ;; Version: 0.1
 ;; Homepage: https://github.com/jacobdufault/cquery
 ;; Package-Requires: ((emacs "25.1") (lsp-mode "3.4") (dash "0.13"))
@@ -62,7 +62,7 @@
 (defcustom cquery-extra-args
   nil
   "Additional command line options passed to the cquery executable."
-  :type 'list
+  :type '(repeat string)
   :group 'cquery)
 
 (defalias 'cquery-additional-arguments 'cquery-extra-args)
@@ -71,7 +71,7 @@
   ".vscode/cquery_cached_index/"
   "Directory in which cquery will store its index cache.
 Relative to the project root directory."
-  :type 'string
+  :type 'directory
   :group 'cquery)
 
 (defcustom cquery-extra-init-params
@@ -142,21 +142,21 @@ Relative to the project root directory."
   '("#e1afc3" "#d533bb" "#9b677f" "#e350b6" "#a04360"
     "#dd82bc" "#de3864" "#ad3f87" "#dd7a90" "#e0438a")
   "Type colors used in rainbow semantic highlighting."
-  :type '(repeat string)
+  :type '(repeat color)
   :group 'cquery)
 
 (defcustom cquery-rainbow-sem-func-colors
   '("#e5b124" "#927754" "#eb992c" "#e2bf8f" "#d67c17"
     "#88651e" "#e4b953" "#a36526" "#b28927" "#d69855")
   "Function colors used in rainbow semantic highlighting."
-  :type '(repeat string)
+  :type '(repeat color)
   :group 'cquery)
 
 (defcustom cquery-rainbow-sem-var-colors
   '("#587d87" "#26cdca" "#397797" "#57c2cc" "#306b72"
     "#6cbcdf" "#368896" "#3ea0d2" "#48a5af" "#7ca6b7")
   "Variable colors used in rainbow semantic highlighting."
-  :type '(repeat string)
+  :type '(repeat color)
   :group 'cquery)
 
 (defface cquery-code-lens-face
@@ -169,19 +169,22 @@ Relative to the project root directory."
   "The face used for code lens overlays."
   :group 'cquery)
 
-(defcustom cquery-enable-sem-highlight
+(defcustom cquery-enable-inactive-region
   t
-  "Enable semantic highlighting."
-  :type 'boolean
-  :group 'cquery)
+  "Enable inactive region.
+Regions that are disabled by preprocessors will be displayed in shadow."
+  :group 'cquery
+  )
 
 (defcustom cquery-sem-highlight-method
-  'overlay
+  nil
   "The method used to draw semantic highlighting.
-overlays are more accurate than font-lock, but slower."
-  :group 'lsp-mode
+overlays are more accurate than font-lock, but slower.
+If nil, disable semantic highlighting."
+  :group 'cquery
   :type '(radio
-          (const :tag "overlays" overlay)
+          (const nil)
+          (const :tag "overlay" overlay)
           (const :tag "font-lock" font-lock)))
 
 ;; ---------------------------------------------------------------------
@@ -254,26 +257,55 @@ overlays are more accurate than font-lock, but slower."
                   (funcall fn cquery-sem-member-var-faces)
                 (funcall fn cquery-sem-free-var-faces))))))))
 
+(defun cquery--read-semantic-ranges (symbol face)
+  (--map (let ((start (gethash "start" it))
+               (end (gethash "end" it)))
+           (list (cons (gethash "line" start)
+                       (gethash "character" start))
+                 (cons (gethash "line" end)
+                       (gethash "character" end))
+                 face))
+         (gethash "ranges" symbol)))
+
 (defun cquery--publish-semantic-highlighting (_workspace params)
   "Publish semantic highlighting information according to PARAMS."
-  (when cquery-enable-sem-highlight
-    (let* ((file (cquery--uri-to-file (gethash "uri" params)))
+  (when cquery-sem-highlight-method
+    (let* ((file (lsp--uri-to-path (gethash "uri" params)))
            (buffer (find-buffer-visiting file))
            (symbols (gethash "symbols" params)))
       (when buffer
         (with-current-buffer buffer
           (save-excursion
-           (with-silent-modifications
-             (cquery--clear-sem-highlights)
-             (dolist (symbol symbols)
-               (-when-let (face (funcall cquery-sem-face-function symbol))
-                 (dolist (range
-                          (mapcar 'cquery--read-range (gethash "ranges" symbol)))
-                     (cquery--make-sem-highlight range buffer face)))))))))))
+            (with-silent-modifications
+              (cquery--clear-sem-highlights)
+              (let ((last-line-number 0) ranges range-start range-end)
+                (dolist (symbol symbols)
+                  (-when-let (face (funcall cquery-sem-face-function symbol))
+                    (setq ranges
+                          (nconc (cquery--read-semantic-ranges symbol face)
+                                 ranges))))
+                ;; sort ranges by line number
+                (setq ranges
+                      (sort ranges (lambda (x y) (< (caar x) (caar y)))))
+                (ignore-errors
+                  (save-excursion
+                    (goto-char (point-min))
+                    (cl-loop
+                     for (start end face) in ranges do
+                     (forward-line (- (car start) last-line-number))
+                     (move-to-column (cdr start))
+                     ;; start of range
+                     (setq range-start (point))
+                     (forward-line (- (car end) (car start)))
+                     (move-to-column (cdr end))
+                     ;; end of range
+                     (setq range-end (point))
+                     (cquery--make-sem-highlight (cons range-start range-end) buffer face)
+                     (setq last-line-number (car end)))))))))))))
 
 (defmacro cquery-use-default-rainbow-sem-highlight ()
   "Use default rainbow semantic highlighting theme."
-  (require 'dash)  ; for --map-indexed
+  (require 'dash)
   `(progn
      ;; type
      ,@(--map-indexed
@@ -281,8 +313,8 @@ overlays are more accurate than font-lock, but slower."
            '((t :foreground ,it)) ".")
         cquery-rainbow-sem-type-colors)
      (setq cquery-sem-type-faces
-           (apply #'vector (loop for i to 10 collect
-                                 (intern (format "cquery-sem-type-face-%S" i)))))
+           (apply #'vector (cl-loop for i below 10 collect
+                                    (intern (format "cquery-sem-type-face-%S" i)))))
 
      ;; func
      ,@(apply #'append (--map-indexed
@@ -292,11 +324,11 @@ overlays are more accurate than font-lock, but slower."
                             '((t :slant italic :foreground ,it)) "."))
                         cquery-rainbow-sem-func-colors))
      (setq cquery-sem-free-func-faces
-           (apply #'vector (loop for i to 10 collect
-                                 (intern (format "cquery-sem-free-func-face-%S" i)))))
+           (apply #'vector (cl-loop for i below 10 collect
+                                    (intern (format "cquery-sem-free-func-face-%S" i)))))
      (setq cquery-sem-member-func-faces
-           (apply #'vector (loop for i to 10 collect
-                                 (intern (format "cquery-sem-member-func-face-%S" i)))))
+           (apply #'vector (cl-loop for i below 10 collect
+                                    (intern (format "cquery-sem-member-func-face-%S" i)))))
 
      ;; var
      ,@(apply #'append (--map-indexed
@@ -306,11 +338,11 @@ overlays are more accurate than font-lock, but slower."
                             '((t :slant italic :foreground ,it)) "."))
                         cquery-rainbow-sem-var-colors))
      (setq cquery-sem-free-var-faces
-           (apply #'vector (loop for i to 10 collect
-                                 (intern (format "cquery-sem-free-var-face-%S" i)))))
+           (apply #'vector (cl-loop for i below 10 collect
+                                    (intern (format "cquery-sem-free-var-face-%S" i)))))
      (setq cquery-sem-member-var-faces
-           (apply #'vector (loop for i to 10 collect
-                                 (intern (format "cquery-sem-member-var-face-%S" i)))))
+           (apply #'vector (cl-loop for i below 10 collect
+                                    (intern (format "cquery-sem-member-var-face-%S" i)))))
      ))
 
 ;; ---------------------------------------------------------------------
@@ -325,26 +357,29 @@ overlays are more accurate than font-lock, but slower."
 
 (defun cquery--set-inactive-regions (_workspace params)
   "Put overlays on (preprocessed) inactive regions according to PARAMS."
-  (let* ((file (cquery--uri-to-file (gethash "uri" params)))
+  (let* ((file (lsp--uri-to-path (gethash "uri" params)))
          (regions (mapcar 'cquery--read-range (gethash "inactiveRegions" params)))
          (buffer (find-buffer-visiting file)))
     (when buffer
       (with-current-buffer buffer
         (save-excursion
           (cquery--clear-inactive-regions)
-          (overlay-recenter (point-max))
-          (dolist (region regions)
-            (let ((ov (make-overlay (car region) (cdr region) buffer)))
-              (overlay-put ov 'face 'cquery-inactive-region-face)
-              (overlay-put ov 'cquery-inactive t))))))))
+          (when cquery-enable-inactive-region
+            (overlay-recenter (point-max))
+            (dolist (region regions)
+              (let ((ov (make-overlay (car region) (cdr region) buffer)))
+                (overlay-put ov 'face 'cquery-inactive-region-face)
+                (overlay-put ov 'cquery-inactive t)))))))))
 
 ;; ---------------------------------------------------------------------
 ;;   Notification handlers
 ;; ---------------------------------------------------------------------
 
 (defconst cquery--handlers
-  '(("$cquery/setInactiveRegions" . (lambda (w p) (cquery--set-inactive-regions w p)))
-    ("$cquery/publishSemanticHighlighting" . (lambda (w p) (cquery--publish-semantic-highlighting w p)))
+  '(("$cquery/setInactiveRegions" .
+     (lambda (w p) (cquery--set-inactive-regions w p)))
+    ("$cquery/publishSemanticHighlighting" .
+     (lambda (w p) (cquery--publish-semantic-highlighting w p)))
     ("$cquery/progress" . (lambda (_w _p)))))
 
 ;; ---------------------------------------------------------------------
@@ -388,7 +423,7 @@ Read document for all choices. DISPLAY-ACTION is passed to xref--show-xrefs."
   (lsp--cur-workspace-check)
   (lsp--send-request-async
    (lsp--make-request "textDocument/codeLens"
-                      `(:textDocument (:uri ,(concat lsp--uri-file-prefix buffer-file-name))))
+                      `(:textDocument (:uri ,(lsp--path-to-uri buffer-file-name))))
    'cquery--code-lens-callback))
 
 (defun cquery-clear-code-lens ()
@@ -427,7 +462,7 @@ Read document for all choices. DISPLAY-ACTION is passed to xref--show-xrefs."
              (root (gethash "command" lens))
              (title (gethash "title" root))
              (command (gethash "command" root))
-             (buffer (find-buffer-visiting (cquery--uri-to-file (car (gethash "arguments" root))))))
+             (buffer (find-buffer-visiting (lsp--uri-to-path (car (gethash "arguments" root))))))
         (when buffer
           (with-current-buffer buffer
             (save-excursion
@@ -469,7 +504,7 @@ Read document for all choices. DISPLAY-ACTION is passed to xref--show-xrefs."
   (let* ((uri (car arguments))
          (data (cdr arguments)))
     (save-current-buffer
-      (find-file (cquery--uri-to-file uri))
+      (find-file (lsp--uri-to-path uri))
       (pcase command
         ;; Code actions
         ('"cquery._applyFixIt"
@@ -515,9 +550,6 @@ Read document for all choices. DISPLAY-ACTION is passed to xref--show-xrefs."
       (delete-region start (- end 1)))
     (goto-char start)
     (insert newText)))
-
-(defun cquery--uri-to-file (uri)
-  (string-remove-prefix lsp--uri-file-prefix uri))
 
 (defun cquery--read-range (range)
   (cons (lsp--position-to-point (gethash "start" range))
@@ -568,9 +600,10 @@ Keep an eye on https://github.com/jacobdufault/cquery/issues/283"
 
 (advice-add 'lsp--send-execute-command :around #'cquery--execute-command-locally-advice)
 
+;;;###autoload (autoload 'lsp-cquery-enable "cquery")
 (lsp-define-stdio-client
  lsp-cquery "cpp" #'cquery--get-root
- `(,cquery-executable "--language-server" ,@cquery-additional-arguments)
+ `(,cquery-executable "--language-server" ,@cquery-extra-args)
  :initialize #'cquery--initialize-client
  :extra-init-params #'cquery--get-init-params)
 

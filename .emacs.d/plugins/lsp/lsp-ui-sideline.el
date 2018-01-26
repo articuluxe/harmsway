@@ -5,8 +5,6 @@
 ;; Author: Sebastien Chapuis <sebastien@chapu.is>
 ;; URL: https://github.com/emacs-lsp/lsp-ui
 ;; Keywords: lsp, ui
-;; Version: 0.0.1
-;; Package-Requires: ((emacs "25.1") (flycheck "0.23") (lsp-mode "3.4"))
 
 ;;; License
 ;;
@@ -44,7 +42,7 @@
   :link '(info-link "(lsp-ui-sideline) Customizing"))
 
 (defcustom lsp-ui-sideline-enable t
-  "Whether or not to enable lsp-ui-sideline."
+  "Whether or not to enable ‘lsp-ui-sideline’."
   :type 'boolean
   :group 'lsp-ui)
 
@@ -54,22 +52,22 @@
   :group 'lsp-ui-sideline)
 
 (defcustom lsp-ui-sideline-show-symbol t
-  "Whether to show the symbol on the right of the information"
+  "Whether to show the symbol on the right of the information."
   :type 'boolean
   :group 'lsp-ui-sideline)
 
 (defcustom lsp-ui-sideline-show-hover t
-  "Whether to show hover messages in sideline"
+  "Whether to show hover messages in sideline."
   :type 'boolean
   :group 'lsp-ui-sideline)
 
 (defcustom lsp-ui-sideline-show-flycheck t
-  "Whether to show flycheck messages in sideline"
+  "Whether to show flycheck messages in sideline."
   :type 'boolean
   :group 'lsp-ui-sideline)
 
 (defcustom lsp-ui-sideline-show-code-actions t
-  "Whether to show code actions in sideline"
+  "Whether to show code actions in sideline."
   :type 'boolean
   :group 'lsp-ui-sideline)
 
@@ -234,23 +232,19 @@ CURRENT is non-nil when the point is on the symbol."
      str)))
 
 (defun lsp-ui-sideline--check-duplicate (symbol info)
-  "SYMBOL INFO."
   (not (when lsp-ui-sideline-ignore-duplicate
          (--any (and (string= (overlay-get it 'symbol) symbol)
                      (string= (overlay-get it 'info) info))
                 lsp-ui-sideline--ovs))))
 
 (defun lsp-ui-sideline--margin-width ()
-  "."
   (if fringes-outside-margins right-margin-width 0))
 
 (defun lsp-ui-sideline--window-width ()
-  "."
   (- (window-text-width)
      (lsp-ui-sideline--margin-width)))
 
 (defun lsp-ui-sideline--push-info (symbol line bounds info)
-  "SYMBOL LINE BOUNDS INFO."
   (when (= line (line-number-at-pos))
     (let* ((info (concat (thread-first (gethash "contents" info)
                            lsp-ui-sideline--extract-info
@@ -417,7 +411,7 @@ This does not toggle display of flycheck diagnostics or code actions."
    ))
 
 (defun lsp-ui-sideline-enable (enable)
-  "ENABLE/disable lsp-ui-sideline-mode."
+  "Enable/disable ‘lsp-ui-sideline-mode’."
   (lsp-ui-sideline-mode (if enable 1 -1)))
 
 (provide 'lsp-ui-sideline)

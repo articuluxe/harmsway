@@ -278,6 +278,17 @@ attention to case differences."
     (should (looking-at "ble"))
     (should (null (yas-active-snippets)))))
 
+(ert-deftest delete-nested-simple-field-issue-824 ()
+  "Test deleting a field with a nested simple field in it."
+  (with-temp-buffer
+    (yas-minor-mode 1)
+    (yas-expand-snippet "${3:so-$4and}$0${2:-so}")
+    (ert-simulate-command '(yas-next-field-or-maybe-expand))
+    (should (looking-at "so-and-so"))
+    (ert-simulate-command '(yas-skip-and-clear-or-delete-char))
+    (should (looking-at "-so"))
+    (should (null (yas-active-snippets)))))
+
 (ert-deftest ignore-trailing-whitespace ()
   (should (equal
            (with-temp-buffer
@@ -296,6 +307,30 @@ attention to case differences."
 ;;     (ert-simulate-command '(undo))
 ;;     (should (string= (yas--buffer-contents)
 ;;                      "brother from another mother!"))))
+
+(ert-deftest undo-redo ()
+  "Check redoing of snippet undo."
+  (yas-with-snippet-dirs '((".emacs.d/snippets"
+                            ("emacs-lisp-mode" ("x" . "${1:one},and done"))))
+    (with-temp-buffer
+      (emacs-lisp-mode)
+      (yas-reload-all)
+      (yas-minor-mode 1)
+      (yas-expand-snippet "x$0")
+      (let ((pre-expand-string (buffer-string)))
+        (setq buffer-undo-list nil)
+        (ert-simulate-command '(yas-expand))
+        (push nil buffer-undo-list)
+        (ert-simulate-command '(yas-next-field)) ; $1 -> exit snippet.
+        (should (string-match-p "\\`one,and done" (buffer-string)))
+        (push nil buffer-undo-list)
+        (ert-simulate-command '(undo))  ; Revive snippet.
+        (ert-simulate-command '(undo))  ; Undo expansion.
+        (should (string= (buffer-string) pre-expand-string))
+        (ert-simulate-command '(move-end-of-line 1))
+        (push nil buffer-undo-list)
+        (ert-simulate-command '(undo))  ; Redo (re-expand snippet).
+        (should (string-match-p "\\`one,and done" (buffer-string)))))))
 
 (defun yas-test-expand-and-undo (mode snippet-entry initial-contents)
   (yas-with-snippet-dirs
