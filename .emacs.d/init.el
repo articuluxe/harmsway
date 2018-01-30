@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-01-26 10:44:21 dan.harms>
+;; Modified Time-stamp: <2018-01-30 16:58:30 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -974,6 +974,26 @@ not an error if any files do not exist."
   (setq magit-log-arguments (append
                              (list "--color")
                              magit-log-arguments))
+
+  (defun harmsway-repolist-column-dirty (_id)
+  "Insert a letter if there are uncommitted changes.
+This is a shameless copy of the version in `magit', but reverses
+the priority such that staged and unstaged changes appear before
+untracked files, cf. `https://github.com/magit/magit/issues/3354'.
+
+Show S if there is at least one staged file.
+Show U if there is at least one unstaged file.
+Show N if there is at least one untracked file.
+Only one letter is shown, the first that applies."
+  (cond ((magit-staged-files)    "S")
+        ((magit-unstaged-files)  "U")
+        ((magit-untracked-files) "N")))
+
+  ;; add a dirty indicator to the second-to-last column
+  (setq magit-repolist-columns
+        (reverse (append (cons (car (reverse magit-repolist-columns))
+                               (list '("D" 1 harmsway-repolist-column-dirty nil)))
+                         (cdr (reverse magit-repolist-columns)))))
   (setq magit-display-buffer-function
         #'magit-display-buffer-same-window-except-diff-v1)
   ;; to display fullframe, use 'magit-display-buffer-fullframe-status-v1
