@@ -1,0 +1,2 @@
+cp src/groovy-mode.el ../../../.emacs.d/modes
+cp src/inf-groovy.el ../../../.emacs.d/modes

@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-01-31 07:15:56 dharms>
+;; Modified Time-stamp: <2018-02-02 13:58:06 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2791,6 +2791,19 @@ This may perform related customization."
   :mode ("/\\.gitattributes\\'"
          "/info/attributes\\'"
          "/git/attributes\\'"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; groovy ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package groovy-mode :interpreter "groovy"
+  :mode ("\\.groovy$"
+         "\\.gradle$"
+         "Jenkinsfile"
+         )
+  :config
+  (use-package inf-groovy)
+  (add-hook 'groovy-mode-hook 'inf-groovy-keys)
+  ;; for 'run-groovy, need to set $GROOVY_HOME, or groovysh needs to exist or
+  ;; be in $PATH
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; html-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-hook 'html-mode-hook
