@@ -1382,7 +1382,6 @@ Only one letter is shown, the first that applies."
          "\\|\\(?:[#~]$\\)"             ;end with # or ~
          "\\|\\(?:\\.elc$\\)"           ;byte-compiled
          ))                             ;toggle with C-c C-a
-  (setq counsel-git-grep-skip-counting-lines t) ;require prefix
   (setf (cdr (assoc 'counsel-M-x ivy-initial-inputs-alist)) "")
   ;; fallback to basic find-file
   (define-key counsel-find-file-map "\C-x\C-f"

@@ -1152,20 +1152,15 @@ Typical value: '(recenter)."
                                   (cl-subseq dir-list (- (length dir-list) 3))))
                  directory))))))
 
-(defcustom counsel-git-grep-skip-counting-lines nil
-  "If non-nil, don't count lines before grepping ina git repository."
-  :type 'boolean
-  :group 'ivy)
-
 (defun counsel-git-grep-function (string &optional _pred &rest _unused)
   "Grep in the current git repository for STRING."
-  (if (and (or counsel-git-grep-skip-counting-lines (> counsel--git-grep-count 20000))
+  (if (and (> counsel--git-grep-count 20000)
            (< (length string) 3))
       (counsel-more-chars 3)
     (let* ((default-directory (ivy-state-directory ivy-last))
            (cmd (format counsel-git-grep-cmd
                         (setq ivy--old-re (ivy--regex string t)))))
-      (if (and (not counsel-git-grep-skip-counting-lines) (<= counsel--git-grep-count 20000))
+      (if (<= counsel--git-grep-count 20000)
           (split-string (shell-command-to-string cmd) "\n" t)
         (counsel--gg-candidates (ivy--regex string))
         nil))))
@@ -1279,15 +1274,17 @@ INITIAL-INPUT can be given as the initial minibuffer input."
           (default-directory (if proj
                                  (car proj)
                                (counsel-locate-git-root))))
-      (unless (or proj counsel-git-grep-skip-counting-lines)
-        (setq counsel--git-grep-count
-              (if (eq system-type 'windows-nt)
-                  0
-                (counsel--gg-count "" t))))
+      (setq counsel--git-grep-count
+            (if (eq system-type 'windows-nt)
+                0
+              (read (shell-command-to-string "du -s"))))
       (ivy-read "git grep" collection-function
                 :initial-input initial-input
                 :matcher #'counsel-git-grep-matcher
-                :dynamic-collection (or proj counsel-git-grep-skip-counting-lines (> counsel--git-grep-count 20000))
+                :dynamic-collection (or proj
+                                        (>
+                                         counsel--git-grep-count
+                                         20000))
                 :keymap counsel-git-grep-map
                 :action #'counsel-git-grep-action
                 :unwind unwind-function
@@ -3222,10 +3219,11 @@ A is the left hand side, B the right hand side."
    counsel-yank-pop-separator))
 
 (defun counsel--yank-pop-position (s)
-  "Return position of S in `kill-ring' relative to last yank.
-S must exist in `kill-ring'."
+  "Return position of S in `kill-ring' relative to last yank."
   (or (cl-position s kill-ring-yank-pointer :test #'equal-including-properties)
-      (+ (cl-position s kill-ring :test #'equal-including-properties)
+      (cl-position s kill-ring-yank-pointer :test #'equal)
+      (+ (or (cl-position s kill-ring :test #'equal-including-properties)
+             (cl-position s kill-ring :test #'equal))
          (- (length kill-ring-yank-pointer)
             (length kill-ring)))))
 
@@ -3943,6 +3941,35 @@ Any desktop entries that fail to parse are recorded in
   (ivy-read "Run a command: " (counsel-linux-apps-list)
             :action #'counsel-linux-app-action-default
             :caller 'counsel-linux-app))
+
+;;** `counsel-wmctrl'
+(defun counsel-wmctrl-action (x)
+  "Select the desktop window that corresponds to X."
+  (shell-command
+   (format "wmctrl -i -a \"%s\"" (cdr x))))
+
+(defvar counsel-wmctrl-ignore '("XdndCollectionWindowImp"
+                                "unity-launcher" "unity-panel" "unity-dash"
+                                "Hud" "Desktop")
+  "List of window titles to ignore for `counsel-wmctrl'.")
+
+(defun counsel-wmctrl ()
+  "Select a desktop window using wmctrl."
+  (interactive)
+  (let* ((cands1 (split-string (shell-command-to-string "wmctrl -l") "\n" t))
+         (cands2
+          (mapcar (lambda (s)
+                    (when (string-match
+                           "\\`\\([0-9a-fx]+\\)  \\([0-9]+\\) \\([^ ]+\\) \\(.+\\)\\'"
+                           s)
+                      (let ((title (match-string 4 s))
+                            (id (match-string 1 s)))
+                        (unless (member title counsel-wmctrl-ignore)
+                          (cons title id)))))
+                  cands1)))
+    (ivy-read "window: " cands2
+              :action #'counsel-wmctrl-action
+              :caller 'counsel-wmctrl)))
 
 ;;** `counsel-company'
 (defvar company-candidates)
