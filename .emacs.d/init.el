@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-02-02 13:58:06 dan.harms>
+;; Modified Time-stamp: <2018-02-05 10:41:24 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -47,6 +47,7 @@
                      ,(concat my/plugins-directory "auto-complete/")
                      ,(concat my/plugins-directory "bookmark+/")
                      ,(concat my/plugins-directory "company/")
+                     ,(concat my/plugins-directory "cquery/")
                      ,(concat my/plugins-directory "diff-hl/")
                      ,(concat my/plugins-directory "elnode/")
                      ,(concat my/plugins-directory "emacs-refactor/")
