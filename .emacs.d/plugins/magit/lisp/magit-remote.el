@@ -739,8 +739,7 @@ the push-remote can be changed before pushed to it."
                (setf (magit-get
                       (if (eq magit-push-current-set-remote-if-missing 'default)
                           "remote.pushDefault"
-                        (format "branch.%s.pushRemote"
-                                (magit-get-current-branch))))
+                        (format "branch.%s.pushRemote" it)))
                      push-remote))
              (-if-let (remote (magit-get-push-remote it))
                  (if (member remote (magit-list-remotes))
@@ -830,6 +829,8 @@ Both the source and the target are read in the minibuffer."
            (magit-push-arguments))))
   (magit-git-push source target args))
 
+(defvar magit-push-refspecs-history nil)
+
 ;;;###autoload
 (defun magit-push-refspecs (remote refspecs args)
   "Push one or multiple REFSPECS to a REMOTE.
@@ -841,7 +842,8 @@ is used."
    (list (magit-read-remote "Push to remote")
          (split-string (magit-completing-read-multiple
                         "Push refspec,s"
-                        (cons "HEAD" (magit-list-local-branch-names)))
+                        (cons "HEAD" (magit-list-local-branch-names))
+                        nil nil 'magit-push-refspecs-history)
                        crm-default-separator t)
          (magit-push-arguments)))
   (run-hooks 'magit-credential-hook)

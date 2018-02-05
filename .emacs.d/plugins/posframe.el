@@ -120,8 +120,11 @@
 (defvar posframe--last-position nil
   "Record the last pixel position of posframe's frame.")
 
-(defvar posframe--last-size nil
+(defvar posframe--last-posframe-size nil
   "Record the last size of posframe's frame.")
+
+(defvar posframe--last-parent-frame-size nil
+  "Record the last size of posframe's parent-frame.")
 
 (defvar posframe--last-args nil
   "Record the last arguments of `posframe--create-frame'.
@@ -140,7 +143,7 @@ of `posframe-show'.")
 (dolist (var '(posframe--frame
                posframe--timer
                posframe--last-position
-               posframe--last-size
+               posframe--last-posframe-size
                posframe--last-args
                posframe--timeout-timer
                posframe--refresh-timer))
@@ -194,7 +197,7 @@ by sticking out of the display."
               (max 0 (if (> (+ y-buttom (or posframe-height 0)) ymax)
                          (- y-top (or posframe-height 0))
                        y-buttom)))
-      (cons x y-buttom))))
+      (cons (max 0 x) (max 0 y-buttom)))))
 
 (cl-defun posframe--create-frame (posframe-buffer
                                   &key
@@ -240,7 +243,7 @@ This posframe's buffer is POSFRAME-BUFFER."
         (posframe--delete-frame posframe-buffer)
         (setq-local posframe--last-args args)
         (setq-local posframe--last-position nil)
-        (setq-local posframe--last-size nil)
+        (setq-local posframe--last-posframe-size nil)
         (setq-local posframe--frame
                     (make-frame
                      `(,@override-parameters
@@ -340,12 +343,14 @@ you can use `posframe-delete-all' to delete all posframes."
   (let* ((position (or position (point)))
          (buffer (get-buffer-create posframe-buffer))
          (frame-resize-pixelwise t)
-         (frame (window-frame))
+         (parent-frame (window-frame))
+         (parent-frame-xmax (frame-pixel-width parent-frame))
+         (parent-frame-ymax (frame-pixel-height parent-frame))
          child-frame x-and-y)
 
     (posframe--create-frame
      posframe-buffer
-     :parent-frame frame
+     :parent-frame parent-frame
      :margin-left margin-left
      :margin-right margin-right
      :font font
@@ -358,7 +363,7 @@ you can use `posframe-delete-all' to delete all posframes."
     ;; https://github.com/tumashu/posframe/issues/4#issuecomment-357514918
     (when (and posframe-mouse-banish
                (not (equal (cdr (mouse-position)) '(0 . 0))))
-      (set-mouse-position frame 0 0))
+      (set-mouse-position parent-frame 0 0))
 
     (with-current-buffer buffer
       ;; posframe--frame is a buffer variable which
@@ -377,17 +382,18 @@ you can use `posframe-delete-all' to delete all posframes."
 
       ;; Set posframe's size
       (if (and width height)
-          (unless (equal posframe--last-size (cons width height))
+          (unless (equal posframe--last-posframe-size (cons width height))
             (set-frame-size child-frame width height)
-            (setq-local posframe--last-size (cons width height)))
+            (setq-local posframe--last-posframe-size (cons width height)))
         (fit-frame-to-buffer child-frame height min-height width min-width)))
 
     ;; Get the posframe's position, this must run in user's working
     ;; buffer instead of posframe's buffer.
     (setq x-and-y
           (if (consp position)
-              (cons (+ (car position) x-pixel-offset)
-                    (+ (cdr position) y-pixel-offset))
+              (posframe--respect-modeline-and-minibuffer
+               (cons (+ (car position) x-pixel-offset)
+                     (+ (cdr position) y-pixel-offset)))
             (posframe--get-pixel-position
              position
              :posframe-width (frame-pixel-width child-frame)
@@ -397,9 +403,17 @@ you can use `posframe-delete-all' to delete all posframes."
 
     (with-current-buffer buffer
       ;; Move posframe's child-frame.
-      (unless (equal x-and-y posframe--last-position)
+      (unless (and (equal x-and-y posframe--last-position)
+                   ;; When working frame's size change, re-posit
+                   ;; the posframe.
+                   (equal posframe--last-parent-frame-size
+                          (cons parent-frame-xmax
+                                parent-frame-ymax)))
         (set-frame-position child-frame (car x-and-y) (cdr x-and-y))
-        (setq-local posframe--last-position x-and-y))
+        (setq-local posframe--last-position x-and-y)
+        (setq-local posframe--last-parent-frame-size
+                    (cons parent-frame-xmax
+                          parent-frame-ymax)))
       ;; Make posframe's child-frame visible
       (unless (frame-visible-p child-frame)
         (make-frame-visible child-frame))
@@ -424,6 +438,19 @@ you can use `posframe-delete-all' to delete all posframes."
                               child-frame height min-height width min-width)))
                        child-frame height min-height width min-width))))
       nil)))
+
+(defun posframe--respect-modeline-and-minibuffer (position)
+  "Get adjusted position based of POSITION which like (0 . -1).
+the new position respect modeline and minibuffer."
+  (if (>= (cdr position) 0)
+      position
+    (let ((modeline-height (window-mode-line-height))
+          (minibuffer-height
+           (window-pixel-height (minibuffer-window))))
+      (cons (car position)
+            (min (cdr position)
+                 (- 0 (+ modeline-height
+                         minibuffer-height)))))))
 
 (defun posframe-get-frame-size (posframe-buffer &optional pixelwise)
   "Return the posframe's current frame text or PIXELWISE size.

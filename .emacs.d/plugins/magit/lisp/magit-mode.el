@@ -42,9 +42,9 @@
 (defvar magit-diff-show-xref-buttons)
 (defvar magit-revision-show-xref-buttons)
 ;; For `magit-refresh' and `magit-refresh-all'
-(declare-function magit-auto-revert-buffers 'magit-autorevert)
+(declare-function magit-auto-revert-buffers "magit-autorevert" ())
 ;; For `magit-refresh-buffer'
-(declare-function magit-process-unset-mode-line-error-status 'magit-process)
+(declare-function magit-process-unset-mode-line-error-status "magit-process" ())
 
 (require 'format-spec)
 (require 'help-mode)
@@ -531,6 +531,7 @@ Magit is documented in info node `(magit)'."
   (make-local-variable 'text-property-default-nonsticky)
   (push (cons 'keymap t) text-property-default-nonsticky)
   (add-hook 'post-command-hook #'magit-section-update-highlight t t)
+  (add-hook 'deactivate-mark-hook #'magit-section-update-highlight t t)
   (setq-local redisplay-highlight-region-function 'magit-highlight-region)
   (setq-local redisplay-unhighlight-region-function 'magit-unhighlight-region)
   (when (bound-and-true-p global-linum-mode)

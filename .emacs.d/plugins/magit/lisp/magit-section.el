@@ -35,9 +35,11 @@
 
 (require 'magit-utils)
 
-(declare-function magit-maybe-make-margin-overlay 'magit-log)
-(declare-function magit-repository-local-get 'magit-mode)
-(declare-function magit-repository-local-set 'magit-mode)
+(declare-function magit-maybe-make-margin-overlay "magit-margin" ())
+(declare-function magit-repository-local-get "magit-mode"
+                  (key &optional default repository))
+(declare-function magit-repository-local-set "magit-mode"
+                  (key value &optional repository))
 (defvar magit-keep-region-overlay)
 
 ;;; Options
@@ -962,7 +964,8 @@ evaluated its BODY.  Admittedly that's a bit of a hack."
           (setq magit-section-highlighted-section
                 (and (not (oref section hidden))
                      section))))
-      (setq deactivate-mark nil))))
+      (when (version< emacs-version "25.1")
+        (setq deactivate-mark nil)))))
 
 (defun magit-section-highlight (section selection)
   "Highlight SECTION and if non-nil all sections in SELECTION.

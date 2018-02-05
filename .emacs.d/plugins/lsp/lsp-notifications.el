@@ -24,11 +24,27 @@
   :type 'boolean
   :group 'lsp-mode)
 
-(defun lsp--window-show-message (params)
-  "Send the server's messages to message, inhibit if `lsp-inhibit-message' is set."
-  (let* ((inhibit-message (or inhibit-message lsp-inhibit-message)))
-    (message "%s" (lsp--propertize (gethash "message" params)
-                    (gethash "type" params)))))
+(defun lsp--window-show-message (params &optional workspace)
+  "Send the server's messages to message, inhibit if `lsp-inhibit-message' is set,
+or the message matches one of this client's :ignore-messages"
+  (let* ((inhibit-message (or inhibit-message lsp-inhibit-message))
+         (message (gethash "message" params))
+         (client (lsp--workspace-client workspace)))
+    (when (or (not client)
+              (cl-notany (lambda (r) (string-match-p r message))
+                         (lsp--client-ignore-messages client)))
+      (message "%s" (lsp--propertize message (gethash "type" params))))))
+
+(defun lsp--window-show-message-request (params)
+  "Display a message request to the user and send the user's
+selection back to the server."
+  (let* ((type (gethash "type" params))
+         (message (lsp--propertize (gethash "message" params) type))
+         (choices (mapcar (lambda (choice) (gethash "title" choice))
+                          (gethash "actions" params))))
+    (if choices
+        (completing-read (concat message " ") choices nil t)
+      (message message))))
 
 (defcustom lsp-after-diagnostics-hook nil
   "Hooks to run after diagnostics are received from the language
@@ -76,7 +92,7 @@ server and put in `lsp--diagnostics'."
 
 (defun lsp--equal-files (f1 f2)
   (and f1 f2
-    (string-equal (expand-file-name f1) (expand-file-name f2))))
+       (string-equal (file-truename f1) (file-truename f2))))
 
 (defun lsp--on-diagnostics (params workspace)
   "Callback for textDocument/publishDiagnostics.

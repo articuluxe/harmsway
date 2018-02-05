@@ -274,7 +274,7 @@ attention to case differences."
     (ert-simulate-command '(yas-next-field-or-maybe-expand))
     (should (looking-at "testblable"))
     (ert-simulate-command '(yas-next-field-or-maybe-expand))
-    (ert-simulate-command '(yas-skip-and-clear-or-delete-char))
+    (ert-simulate-command '(yas-skip-and-clear-field))
     (should (looking-at "ble"))
     (should (null (yas-active-snippets)))))
 
@@ -682,6 +682,17 @@ mapconcat #'(lambda (arg)
       (yas-next-field)
       (yas-mock-insert "bbb")
       (should (string= (yas--buffer-contents) "if condition\naaa\nelse\nbbb\nend")))))
+
+(ert-deftest yas-no-memory-of-bad-snippet ()
+  "Check that expanding an incorrect has no influence on future expansions."
+  ;; See https://github.com/joaotavora/yasnippet/issues/800.
+  (with-temp-buffer
+    (yas-minor-mode 1)
+    (should-error (yas-expand-snippet "```foo\n\n```"))
+    (erase-buffer) ; Bad snippet may leave wrong text.
+    ;; But expanding the corrected snippet should work fine.
+    (yas-expand-snippet "\\`\\`\\`foo\n\n\\`\\`\\`")
+    (should (equal (buffer-string) "```foo\n\n```"))))
 
 (defmacro yas--with-font-locked-temp-buffer (&rest body)
   "Like `with-temp-buffer', but ensure `font-lock-mode'."
@@ -1223,6 +1234,34 @@ hello ${1:$(when (stringp yas-text) (funcall func yas-text))} foo${1:$$(concat \
     (yas-should-expand '(("printf" . "printf();")
                          ("def" . "# define")))
     (yas-should-not-expand '("sc" "dolist" "ert-deftest"))))
+
+
+;;; Unloading
+(ert-deftest yas-unload ()
+  "Test unloading and reloading."
+  (with-temp-buffer
+    (let ((status (call-process
+                   (concat invocation-directory invocation-name)
+                   nil '(t t) nil
+                   "-Q" "--batch" "-L" yas--loaddir "-l" "yasnippet"
+                   "--eval"
+                   (prin1-to-string
+                    '(condition-case err
+                         (progn
+                           (yas-minor-mode +1)
+                           (unload-feature 'yasnippet)
+                           ;; Unloading leaves `yas-minor-mode' bound,
+                           ;; harmless, though perhaps surprising.
+                           (when (bound-and-true-p yas-minor-mode)
+                             (error "`yas-minor-mode' still enabled"))
+                           (when (fboundp 'yas-minor-mode)
+                             (error "`yas-minor-mode' still fboundp"))
+                           (require 'yasnippet)
+                           (unless (fboundp 'yas-minor-mode)
+                             (error "Failed to reload")))
+                       (error (message "%S" (error-message-string err))
+                              (kill-emacs 1)))))))
+      (ert-info ((buffer-string)) (should (eq status 0))))))
 
 
 ;;; Menu
