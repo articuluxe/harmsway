@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-02-05 10:52:58 dan.harms>
+;; Modified Time-stamp: <2018-02-05 22:22:26 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -41,9 +41,10 @@
                           load-path))
   (setq load-path (append
                    `(
+                     ,(concat my/user-directory "ext/gridlock/")
+                     ,(concat my/user-directory "ext/outrespace/")
                      ,(concat my/user-directory "ext/parsenv/")
                      ,(concat my/user-directory "ext/proviso/")
-                     ,(concat my/user-directory "ext/outrespace/")
                      ,(concat my/plugins-directory "auto-complete/")
                      ,(concat my/plugins-directory "bookmark+/")
                      ,(concat my/plugins-directory "company/")
