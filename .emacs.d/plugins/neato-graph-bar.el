@@ -219,8 +219,9 @@ for PORTIONS.  END-TEXT is placed within the graph at the
 end.  Unspecified, it defaults to a percentage, but can be any
 arbitrary string (good for doing things such as providing a
 \"30MB/100MB\" type counter for storage graphs)."
-  (let* ((padded-label (concat (make-string (- neato-graph-bar-label-padding
-                                               (length label))
+  (let* ((padded-label (concat (make-string (max (- neato-graph-bar-label-padding
+                                                    (length label))
+                                                 0)
                                             ?\s)
                                label))
          (bar-width (- (window-body-width neato-graph-bar--current-window)
@@ -279,8 +280,8 @@ filtered down to entries listed in `neato-graph-bar--memory-fields-to-keep'."
     (mapc (lambda (x) (rplacd x (string-to-number (car (split-string (cadr x))))))
 	  mem-info-list)))
 
-(defun neato-graph-bar--draw-memory-graph ()
-  "Draw memory graph."
+(defun neato-graph-bar--queue-memory-graph (q)
+  "Queue up memory graph information onto Q."
   (let ((memory-info (neato-graph-bar--get-memory-info)))
     (cl-flet ((get-attribute (x) (cdr (assoc x memory-info))))
       (let* ((memory-total (get-attribute "MemTotal"))
@@ -304,10 +305,10 @@ filtered down to entries listed in `neato-graph-bar--memory-fields-to-keep'."
 	     (memory-end-text (neato-graph-bar--create-storage-status-text
 			       memory-used
 			       memory-total)))
-	(neato-graph-bar--draw-graph "Mem" memory-graph-alist memory-end-text)))))
+	(push (list "Mem" memory-graph-alist memory-end-text) (cl-first q))))))
 
-(defun neato-graph-bar--draw-swap-graph ()
-  "Draw swap graph."
+(defun neato-graph-bar--queue-swap-graph (q)
+  "Queue up swap graph information onto Q."
   (let ((memory-info (neato-graph-bar--get-memory-info)))
     (cl-flet ((get-attribute (x) (cdr (assoc x memory-info))))
       (let* ((swap-total (get-attribute "SwapTotal"))
@@ -321,7 +322,7 @@ filtered down to entries listed in `neato-graph-bar--memory-fields-to-keep'."
 	     (swap-end-text (neato-graph-bar--create-storage-status-text
 			     swap-used
 			     swap-total)))
-	(neato-graph-bar--draw-graph "Swap" swap-graph-alist swap-end-text)))))
+	(push (list "Swap" swap-graph-alist swap-end-text) (cl-first q))))))
 
 (defun neato-graph-bar--get-cpu-stats ()
   "Get the difference in the system CPU statistics since last update.
@@ -355,8 +356,8 @@ into key-value pairs as defined by `neato-graph-bar--cpu-field-names'."
     (setq neato-graph-bar--cpu-stats-previous cpu-stat-list)
     cpu-diff))
 
-(defun neato-graph-bar--draw-cpu-graph-helper (cpu)
-  "Helper to draw the CPU graph(s).  Does the actual work."
+(defun neato-graph-bar--queue-cpu-graph-helper (cpu q)
+  "Push CPU graph information onto Q."
   (cl-flet ((stat-total () (cl-reduce #'+ (cdr cpu) :key #'cdr))
 	    (get-attribute (x) (cdr (assoc x (cdr cpu)))))
     (let* ((cpu-name (upcase (car cpu)))
@@ -377,26 +378,29 @@ into key-value pairs as defined by `neato-graph-bar--cpu-field-names'."
       ;; First run has cpu-total at 0, which will cause a div-by-0.
       ;; If we find any NaNs, skip drawing
       (unless (cl-find -0.0e+NaN cpu-graph-alist :key #'cdr)
-	(neato-graph-bar--draw-graph cpu-name cpu-graph-alist)))))
+	(push (list cpu-name cpu-graph-alist nil) (cl-first q))))))
 
-(defun neato-graph-bar--draw-cpu-graph ()
-  "Draw the CPU graph."
-  (let ((cpu-info (neato-graph-bar--get-cpu-stats)))
+(defun neato-graph-bar--queue-cpu-graph (q)
+  "Push CPU graph(s) information onto Q."
+  (cl-destructuring-bind (unified-cpu . separate-cpus) (neato-graph-bar--get-cpu-stats)
     (if neato-graph-bar-unified-cpu-graph
-	(neato-graph-bar--draw-cpu-graph-helper (car cpu-info))
-      (dolist (cpu (cdr cpu-info))
-	(neato-graph-bar--draw-cpu-graph-helper cpu)
-	(insert "\n"))
-      (backward-delete-char 1))))
+	(neato-graph-bar--queue-cpu-graph-helper unified-cpu q)
+      (dolist (cpu separate-cpus)
+	(neato-graph-bar--queue-cpu-graph-helper cpu q)))))
 
 (defun neato-graph-bar--draw-all-graphs ()
   "Draw all available graphs."
-  (neato-graph-bar--draw-cpu-graph)
-  (insert "\n")
-  (neato-graph-bar--draw-memory-graph)
-  (insert "\n")
-  (neato-graph-bar--draw-swap-graph)
-  (insert "\n"))
+  ; Wrap the real graph-queue in another list, so we can 'pass by reference'
+  (let ((graph-queue (list nil))
+	max-label)
+    (neato-graph-bar--queue-cpu-graph graph-queue)
+    (neato-graph-bar--queue-memory-graph graph-queue)
+    (neato-graph-bar--queue-swap-graph graph-queue)
+    (setf max-label (cl-reduce #'max (cl-first graph-queue) :key (lambda (x) (length (cl-first x)))))
+    (let ((neato-graph-bar-label-padding max-label))
+      (cl-loop for (label graph-info end-text) in (nreverse (cl-first graph-queue)) do
+	       (neato-graph-bar--draw-graph label graph-info end-text)
+	       (insert "\n")))))
 
 (provide 'neato-graph-bar)
 

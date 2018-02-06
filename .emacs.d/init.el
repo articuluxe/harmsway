@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-02-05 22:22:26 dharms>
+;; Modified Time-stamp: <2018-02-05 22:42:20 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2736,7 +2736,7 @@ This may perform related customization."
 ;not sure this is needed (add-hook 'dart-mode-hook 'flycheck-mode)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dotenv-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package dotenv-mode :mode ("\\.env$"))
+(use-package dotenv-mode :mode ("\\.env$" "\\.env\\.example$"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; elf-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package elf-mode
