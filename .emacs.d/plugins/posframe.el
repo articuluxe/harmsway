@@ -109,6 +109,9 @@
 (defvar posframe--frame nil
   "Record posframe's frame.")
 
+(defvar posframe--parent-frame nil
+  "Record posframe's parent frame.")
+
 (defvar posframe--timer nil
   "Record posframe's hide timer.")
 
@@ -136,6 +139,7 @@ of `posframe-show'.")
 of `posframe-show'.")
 
 (dolist (var '(posframe--frame
+               posframe--parent-frame
                posframe--timer
                posframe--last-position
                posframe--last-posframe-size
@@ -240,6 +244,7 @@ This posframe's buffer is POSFRAME-BUFFER."
         (setq-local posframe--last-args args)
         (setq-local posframe--last-position nil)
         (setq-local posframe--last-posframe-size nil)
+        (setq-local posframe--parent-frame (or parent-frame (window-frame)))
         (setq-local posframe--frame
                     (make-frame
                      `(,@override-parameters
@@ -249,7 +254,7 @@ This posframe's buffer is POSFRAME-BUFFER."
                           (cons 'background-color background-color))
                        ,(when font
                           (cons 'font font))
-                       (parent-frame . ,(or parent-frame (window-frame)))
+                       (parent-frame . ,posframe--parent-frame)
                        (keep-ratio ,keep-ratio)
                        (posframe-buffer . ,posframe-buffer)
                        (no-accept-focus . t)
@@ -303,8 +308,16 @@ This posframe's buffer is POSFRAME-BUFFER."
                          timeout
                          refresh)
   "Pop posframe and show STRING at POSITION.
-The POSITION can be a point or a cons of pixel numbers,
-for example: (X . Y).
+The POSITION can be:
+1. a number, which regard as a point.
+2. a cons of pixel numbers, for example: (0 . 0).
+3. a function with POSFRAME-BUFFER as its argument,
+   its return value will be used as real position.
+   User can custom one or use one of below:
+   1. `posframe-getpos-frame-bottom-left-corner'
+   2. `posframe-getpos-frame-center'
+   3. `posframe-getpos-window-bottom-left-corner'
+   4. `posframe-getpos-window-center'
 
 This posframe's buffer is POSFRAME-BUFFER.
 
@@ -390,18 +403,17 @@ you can use `posframe-delete-all' to delete all posframes."
     ;; Get the posframe's position, this must run in user's working
     ;; buffer instead of posframe's buffer.
     (setq x-and-y
-          (if (consp position)
-              (posframe--get-respect-position
-               (cons (+ (car position) x-pixel-offset)
-                     (+ (cdr position) y-pixel-offset))
-               :respect-minibuffer t
-               :respect-modeline t)
-            (posframe--get-pixel-position
-             position
-             :posframe-width (frame-pixel-width child-frame)
-             :posframe-height (frame-pixel-height child-frame)
-             :x-pixel-offset x-pixel-offset
-             :y-pixel-offset y-pixel-offset)))
+          (cond ((functionp position)
+                 (funcall position posframe-buffer))
+                ((consp position)
+                 (cons (+ (car position) x-pixel-offset)
+                       (+ (cdr position) y-pixel-offset)))
+                (t (posframe--get-pixel-position
+                    position
+                    :posframe-width (frame-pixel-width child-frame)
+                    :posframe-height (frame-pixel-height child-frame)
+                    :x-pixel-offset x-pixel-offset
+                    :y-pixel-offset y-pixel-offset))))
 
     (with-current-buffer buffer
       ;; Move posframe's child-frame.
@@ -440,28 +452,6 @@ you can use `posframe-delete-all' to delete all posframes."
                               child-frame height min-height width min-width)))
                        child-frame height min-height width min-width))))
       nil)))
-
-(cl-defun posframe--get-respect-position (position
-                                          &key
-                                          respect-minibuffer
-                                          respect-modeline)
-  "Get adjusted position for POSITION which like (0 . -1).
-the new position will respect modeline and minibuffer and
-protect them from be hided over."
-  (if (>= (cdr position) 0)
-      position
-    (let ((modeline-height
-           (if respect-modeline
-               (window-mode-line-height)
-             0))
-          (minibuffer-height
-           (if respect-minibuffer
-               (window-pixel-height (minibuffer-window))
-             0)))
-      (cons (car position)
-            (min (cdr position)
-                 (- 0 (+ modeline-height
-                         minibuffer-height)))))))
 
 (defun posframe-get-frame-size (posframe-buffer &optional pixelwise)
   "Return the posframe's current frame text or PIXELWISE size.
@@ -523,6 +513,124 @@ This posframe's buffer is POSFRAME-BUFFER."
     (with-current-buffer buffer
       (when posframe--frame
         (posframe--kill-buffer buffer)))))
+
+(defun posframe-getpos-frame-center (posframe-buffer)
+  "Get a position which used to posit posframe.
+
+This position let posframe stay onto its parent-frame's center.
+
+This function is used by `posframe-show''s position argument."
+  (with-current-buffer posframe-buffer
+    (cons (/ (- (frame-pixel-width posframe--parent-frame)
+                (frame-pixel-width posframe--frame))
+             2)
+          (/ (- (frame-pixel-height posframe--parent-frame)
+                (frame-pixel-height posframe--frame))
+             2))))
+
+(defun posframe-getpos-frame-bottom-left-corner (_posframe-buffer)
+  "Get a position which used to posit posframe.
+
+This position let posframe stay onto its parent-frame's
+bottom left corner.
+
+This function is used by `posframe-show''s position argument."
+  (cons 0 (- 0
+             (window-mode-line-height)
+             (window-pixel-height (minibuffer-window)))))
+
+(defun posframe-getpos-frame-bottom-right-corner (_posframe-buffer)
+  "Get a position which used to posit posframe.
+
+This position let posframe stay onto its parent-frame's
+bottom right corner.
+
+This function is used by `posframe-show''s position argument."
+  (cons -1 (- 0
+              (window-mode-line-height)
+              (window-pixel-height (minibuffer-window)))))
+
+(defun posframe-getpos-window-center (posframe-buffer)
+  "Get a position which used to posit posframe.
+
+This position let posframe stay onto current window's center.
+
+This function is used by `posframe-show''s position argument."
+  (with-current-buffer posframe-buffer
+    (let ((window-left (window-pixel-left))
+          (window-top (window-pixel-top))
+          (window-width (window-pixel-width))
+          (window-height (window-pixel-height))
+          (posframe-width (frame-pixel-width posframe--frame))
+          (posframe-height (frame-pixel-height posframe--frame)))
+      (cons (+ window-left (/ (- window-width posframe-width) 2))
+            (+ window-top (/ (- window-height posframe-height) 2))))))
+
+(defun posframe-getpos-window-top-left-corner (_posframe-buffer)
+  "Get a position which used to posit posframe.
+
+This position let posframe stay onto current window's
+top left corner.
+
+This function is used by `posframe-show''s position argument."
+  (let ((window-left (window-pixel-left))
+        (window-top (window-pixel-top)))
+    (cons window-left
+          window-top)))
+
+(defun posframe-getpos-window-top-right-corner (posframe-buffer)
+  "Get a position which used to posit posframe.
+
+This position let posframe stay onto current window's
+top right corner.
+
+This function is used by `posframe-show''s position argument."
+  (with-current-buffer posframe-buffer
+    (let ((window-left (window-pixel-left))
+          (window-top (window-pixel-top))
+          (window-width (window-pixel-width))
+          (posframe-width (frame-pixel-width posframe--frame)))
+      (cons (+ window-left window-width
+               (- 0 posframe-width))
+            window-top))))
+
+(defun posframe-getpos-window-bottom-left-corner (posframe-buffer)
+  "Get a position which used to posit posframe.
+
+This position let posframe stay onto current window's
+bottom left corner.
+
+This function is used by `posframe-show''s position argument."
+  (with-current-buffer posframe-buffer
+    (let ((window-left (window-pixel-left))
+          (window-top (window-pixel-top))
+          (window-height (window-pixel-height))
+          (posframe-height (frame-pixel-height posframe--frame))
+          (modeline-height (window-mode-line-height)))
+      (cons window-left
+            (+ window-top window-height
+               (- 0 modeline-height posframe-height))))))
+
+(defun posframe-getpos-window-bottom-right-corner (posframe-buffer)
+  "Get a position which used to posit posframe.
+
+This position let posframe stay onto current window's
+bottom right corner.
+
+This function is used by `posframe-show''s position argument."
+  (with-current-buffer posframe-buffer
+    (let ((window-left (window-pixel-left))
+          (window-top (window-pixel-top))
+          (window-width (window-pixel-width))
+          (window-height (window-pixel-height))
+          (posframe-width (frame-pixel-width posframe--frame))
+          (posframe-height (frame-pixel-height posframe--frame))
+          (modeline-height (window-mode-line-height)))
+      (cons (+ window-left window-width
+               (- 0 posframe-width))
+            (+ window-top window-height
+               (- 0 modeline-height posframe-height))))))
+
 
 (provide 'posframe)
 
