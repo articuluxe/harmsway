@@ -95,6 +95,7 @@ C-x p ,       view bookmarks in current file
 ** Jump (C-x j)
 C-x [4] j j   jump to bookmark [other window]
 C-x p o       jump other window
+C-x j t % +   jump to bookmark with tag matching regex
 C-x j y       load a bookmark file [switch with prefix]
 C-x j a       visit autofile bookmark
 C-x j , ,     jump to bookmark in current buffer
