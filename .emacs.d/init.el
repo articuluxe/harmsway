@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-02-05 22:42:20 dharms>
+;; Modified Time-stamp: <2018-02-12 10:36:45 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -961,6 +961,8 @@ not an error if any files do not exist."
   (setq magit-repository-directories
         `(,(cons (expand-file-name "~/src") 2)))
   (add-hook 'magit-post-refresh-hook 'diff-hl-magit-post-refresh)
+  (push (cons [* unpushed status] 'show) magit-section-initial-visibility-alist)
+  (push (cons [* unpulled status] 'show) magit-section-initial-visibility-alist)
   ;; add ido shortcut
   (if (version< emacs-version "25.1")
       (add-hook
