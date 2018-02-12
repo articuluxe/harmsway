@@ -148,8 +148,8 @@ This discards all changes made since the sequence started."
 (defun magit--cherry-move-read-args (verb away fn)
   (declare (indent defun))
    (let ((commits (or (nreverse (magit-region-values 'commit))
-                      (magit-read-other-branch-or-commit
-                       (format "%s cherry" (capitalize verb)))))
+                      (list (magit-read-other-branch-or-commit
+                             (format "%s cherry" (capitalize verb))))))
          (current (magit-get-current-branch)))
      (unless current
        (user-error "Cannot %s cherries while HEAD is detached" verb))
@@ -403,14 +403,18 @@ without prompting."
                                     "Apply patch: ")
                                   nil default))))
                      (magit-am-arguments)))
-  (magit-run-git-sequencer "am" args "--" (mapcar 'expand-file-name files)))
+  (magit-run-git-sequencer "am" args "--"
+                           (--map (magit-convert-filename-for-git
+                                   (expand-file-name it))
+                                  files)))
 
 ;;;###autoload
 (defun magit-am-apply-maildir (&optional maildir args)
   "Apply the patches from MAILDIR."
   (interactive (list (read-file-name "Apply mbox or Maildir: ")
                      (magit-am-arguments)))
-  (magit-run-git-sequencer "am" args (expand-file-name maildir)))
+  (magit-run-git-sequencer "am" args (magit-convert-filename-for-git
+                                      (expand-file-name maildir))))
 
 ;;;###autoload
 (defun magit-am-continue ()

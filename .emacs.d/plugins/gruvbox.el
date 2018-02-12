@@ -1,7 +1,7 @@
 ;;; gruvbox-dark-theme.el --- A retro-groove colour theme for Emacs
 
 ;; Copyright (c) 2013 Lee Machin
-;; Copyright (c) 2013-2016 Greduan
+;; Copyright (c) 2013-2016 Eduardo Lavaque
 ;; Copyright (c) 2016-2017 Jason Milkins
 ;; Copyright (c) 2017 Martijn Terpstra
 
@@ -9,10 +9,10 @@
 ;; (current maintainer)
 ;;
 ;; Author-list: Lee Machin <ljmachin@gmail.com>,
-;;              Greduan <me@greduan.com>
+;;              Eduardo Lavaque <me@greduan.com>
 ;;
-;; URL: http://github.com/Greduan/emacs-theme-gruvbox
-;; Version: 1.22.2
+;; URL: http://github.com/greduan/emacs-theme-gruvbox
+;; Version: 1.22.3
 
 ;; Package-Requires: ((autothemer "0.2"))
 
@@ -155,11 +155,11 @@ Should contain 2 %s constructs to allow for theme name and directory/prefix")
 
 
      ;; line numbers
-     (line-number                               (:foreground gruvbox-dark2 :background gruvbox-dark0))
-     (line-number-current-line                  (:foreground gruvbox-bright_orange :background gruvbox-dark1))
-     (linum                                     (:foreground gruvbox-dark2 :background gruvbox-dark0))
-     (linum-highlight-face                      (:foreground gruvbox-bright_orange :background gruvbox-dark1))
-     (linum-relative-current-face               (:foreground gruvbox-bright_orange :background gruvbox-dark1))
+     (line-number                               (:foreground gruvbox-dark4 :background gruvbox-dark1))
+     (line-number-current-line                  (:foreground gruvbox-bright_orange :background gruvbox-dark2))
+     (linum                                     (:foreground gruvbox-dark4 :background gruvbox-dark1))
+     (linum-highlight-face                      (:foreground gruvbox-bright_orange :background gruvbox-dark2))
+     (linum-relative-current-face               (:foreground gruvbox-bright_orange :background gruvbox-dark2))
 
      ;; Highlight indentation mode
      (highlight-indentation-current-column-face (:background gruvbox-dark2))
@@ -395,7 +395,7 @@ Should contain 2 %s constructs to allow for theme name and directory/prefix")
      (aw-leading-char-face                      (:foreground gruvbox-bright_red :background gruvbox-bg :height 4.0))
 
      ;; show-paren
-     (show-paren-match                          (:background gruvbox-dark3 :weight 'bold))
+     (show-paren-match                          (:background gruvbox-dark3 :foreground gruvbox-bright_blue  :weight 'bold))
      (show-paren-mismatch                       (:background gruvbox-bright_red :foreground gruvbox-dark3 :weight 'bold))
 
      ;; ivy

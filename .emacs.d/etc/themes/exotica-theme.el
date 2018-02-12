@@ -79,8 +79,9 @@
      (fullBlack              "#000000")
      (whiteSmoke         "white-smoke")
      (highlighter            "#E7F221")
+     (hl-line-highlight      "#182538")
      (line-highlight         "#132947")
-
+     
      (slantType (if exotica-theme-enable-italics 'italic 'normal))
 
    )
@@ -152,11 +153,12 @@
  ;; js2-mode
  `(js2-function-call ((t (:inherit default :foreground ,face10 :slant ,slantType))))
  `(js2-function-param ((t (:inherit default :foreground ,face7))))
+ `(js2-object-property ((t (:inherit default :foreground ,face3))))
  `(js2-external-variable ((t (:foreground ,face4))))
  
  ;; highlighting
  `(highlight ((t (:foreground ,highlighter :background ,line-highlight))))
- `(hl-line ((t (:background ,line-highlight))))
+ `(hl-line ((t (:background ,hl-line-highlight))))
  `(lazy-highlight ((t (:foreground ,highlighter :background ,line-highlight))))
 
  ;; isearch

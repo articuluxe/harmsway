@@ -926,6 +926,12 @@ matches IDLE-BEGIN-AFTER-RE, return it wrapped in a cons."
           (if (> (- (time-to-seconds) start) company-async-timeout)
               (error "Company: backend %s async timeout with args %s"
                      backend args)
+            ;; XXX: Reusing the trick from company--fetch-candidates here
+            ;; doesn't work well: sit-for isn't a good fit when we want to
+            ;; ignore pending input (results in too many calls).
+            ;; FIXME: We should deal with this by standardizing on a kind of
+            ;; Future object that knows how to sync itself. In most cases (but
+            ;; not all), by calling accept-process-output, probably.
             (sleep-for company-async-wait)))
         res))))
 
@@ -1218,38 +1224,25 @@ can retrieve meta-data for them."
 
 (defun company--fetch-candidates (prefix)
   (let* ((non-essential (not (company-explicit-action-p)))
-         (c (if company--manual-action
+         (c (if (or company-selection-changed
+                    ;; FIXME: This is not ideal, but we have not managed to deal
+                    ;; with these situations in a better way yet.
+                    (company-require-match-p))
                 (company-call-backend 'candidates prefix)
-              (company-call-backend-raw 'candidates prefix)))
-         res)
+              (company-call-backend-raw 'candidates prefix))))
     (if (not (eq (car c) :async))
         c
-      (let ((buf (current-buffer))
-            (win (selected-window))
-            (tick (buffer-chars-modified-tick))
-            (pt (point))
-            (backend company-backend))
+      (let ((res 'none)
+            (inhibit-redisplay t))
         (funcall
          (cdr c)
          (lambda (candidates)
-           (if (not (and candidates (eq res 'done)))
-               ;; There's no completions to display,
-               ;; or the fetcher called us back right away.
-               (setq res candidates)
-             (setq company-backend backend
-                   company-candidates-cache
-                   (list (cons prefix
-                               (company--preprocess-candidates candidates))))
-             (unwind-protect
-                 (company-idle-begin buf win tick pt)
-               (unless company-candidates
-                 (setq company-backend nil
-                       company-candidates-cache nil)))))))
-      ;; FIXME: Relying on the fact that the callers
-      ;; will interpret nil as "do nothing" is shaky.
-      ;; A throw-catch would be one possible improvement.
-      (or res
-          (progn (setq res 'done) nil)))))
+           (when (eq res 'none)
+             (push 'company-dummy-event unread-command-events))
+           (setq res candidates)))
+        (while (and (eq res 'none)
+                    (sit-for 0.5 t)))
+        (and (consp res) res)))))
 
 (defun company--preprocess-candidates (candidates)
   (cl-assert (cl-every #'stringp candidates))
@@ -2713,10 +2706,10 @@ If SHOW-VERSION is non-nil, show the version in the echo area."
              (annotation (company-call-backend 'annotation value)))
         (setq value (company--clean-string (company-reformat value)))
         (when annotation
+          (setq annotation (company--clean-string annotation))
           (when company-tooltip-align-annotations
             ;; `lisp-completion-at-point' adds a space.
-            (setq annotation (comment-string-strip annotation t nil)))
-          (setq annotation (company--clean-string annotation)))
+            (setq annotation (comment-string-strip annotation t nil))))
         (push (cons value annotation) items)
         (setq width (max (+ (length value)
                             (if (and annotation company-tooltip-align-annotations)

@@ -186,15 +186,27 @@ Only \"./\" and \"../\" apply here.  They appear in reverse order."
   :type 'boolean)
 
 (defcustom ivy-display-function nil
-  "Decide where to display the candidates.
-This function takes a string with the current matching candidates
-and has to display it somewhere.
-See https://github.com/abo-abo/swiper/wiki/ivy-display-function."
+  "Determine where to display candidates.
+When nil (the default), candidates are shown in the minibuffer.
+Otherwise, this can be set to a function which takes a string
+argument comprising the current matching candidates and displays
+it somewhere.
+
+This user option acts as a global default for Ivy-based
+completion commands.  You can customize the display function on a
+per-command basis via `ivy-display-functions-alist', which see.
+See also URL
+`https://github.com/abo-abo/swiper/wiki/ivy-display-function'."
   :type '(choice
           (const :tag "Minibuffer" nil)
           (const :tag "LV" ivy-display-function-lv)
           (const :tag "Popup" ivy-display-function-popup)
           (const :tag "Overlay" ivy-display-function-overlay)))
+
+(defvar ivy-display-functions-props
+  '((ivy-display-function-overlay :cleanup ivy-overlay-cleanup))
+    "Map Ivy display functions to their property lists.
+Examples of properties include associated `:cleanup' functions.")
 
 (defvar ivy-display-functions-alist
   '((ivy-completion-in-region . ivy-display-function-overlay))
@@ -502,15 +514,32 @@ Either a string or a list for `ivy-re-match'.")
 (defvar ivy--old-text ""
   "Store old `ivy-text' for dynamic completion.")
 
-(defcustom ivy-case-fold-search-default 'auto
-  "The default value for `ivy-case-fold-search'."
-  :type '(choice
-          (const :tag "Auto" auto)
-          (const :tag "Always" always)
-          (const :tag "Never" nil)))
+(defcustom ivy-case-fold-search-default
+  (if search-upper-case
+      'auto
+    case-fold-search)
+  "The default value for `case-fold-search' in Ivy operations.
+The special value `auto' means case folding is performed so long
+as the entire input string comprises lower-case characters.  This
+corresponds to the default behaviour of most Emacs search
+functionality, e.g. as seen in `isearch'."
+  :link '(info-link "(emacs)Lax Search")
+  :type '(choice (const :tag "Auto" auto)
+                 (const :tag "Always" t)
+                 (const :tag "Never" nil)))
 
 (defvar ivy-case-fold-search ivy-case-fold-search-default
   "Store the current overriding `case-fold-search'.")
+
+(defun ivy--case-fold-p (string)
+  "Return nil if STRING should be matched case-sensitively."
+  (if (eq ivy-case-fold-search 'auto)
+      (string= string (downcase string))
+    ivy-case-fold-search))
+
+(defun ivy--case-fold-string= (s1 s2)
+  "Like `string=', but obeys `case-fold-search'."
+  (eq t (compare-strings s1 nil nil s2 nil nil case-fold-search)))
 
 (defvar Info-current-file)
 
@@ -544,9 +573,9 @@ Either a string or a list for `ivy-re-match'.")
 (defun ivy-exit-with-action (action)
   "Quit the minibuffer and call ACTION afterwards."
   (ivy-set-action
-   `(lambda (x)
-      (funcall ',action x)
-      (ivy-set-action ',(ivy-state-action ivy-last))))
+   (lambda (x)
+     (funcall action x)
+     (ivy-set-action (ivy-state-action ivy-last))))
   (setq ivy-exit 'done)
   (exit-minibuffer))
 
@@ -875,9 +904,7 @@ If the text hasn't changed as a result, forward to `ivy-alt-done'."
   (interactive)
   (let* ((parts (or (split-string ivy-text " " t) (list "")))
          (postfix (car (last parts)))
-         (case-fold-search (and ivy-case-fold-search
-                                (or (eq ivy-case-fold-search 'always)
-                                    (string= ivy-text (downcase ivy-text)))))
+         (case-fold-search (ivy--case-fold-p ivy-text))
          (completion-ignore-case case-fold-search)
          (startp (string-match "^\\^" postfix))
          (new (try-completion (if startp
@@ -1661,7 +1688,9 @@ customizations apply to the current completion session."
                                     collection))))
         (ivy-display-function
          (unless (window-minibuffer-p)
-           (cdr (assoc caller ivy-display-functions-alist)))))
+           (or ivy-display-function
+               (cdr (or (assq caller ivy-display-functions-alist)
+                        (assq t ivy-display-functions-alist)))))))
     (setq ivy-last
           (make-ivy-state
            :prompt prompt
@@ -1721,8 +1750,9 @@ customizations apply to the current completion session."
                                                (cdr (symbol-value hist))))))))
                  (ivy-state-current ivy-last)))
           (remove-hook 'post-command-hook #'ivy--queue-exhibit)
-          (when (eq ivy-display-function 'ivy-display-function-overlay)
-            (ivy-overlay-cleanup))
+          (let ((cleanup (ivy--display-function-prop :cleanup)))
+            (when (functionp cleanup)
+              (funcall cleanup)))
           (when (setq unwind (ivy-state-unwind ivy-last))
             (funcall unwind))
           (unless (eq ivy-exit 'done)
@@ -1731,6 +1761,12 @@ customizations apply to the current completion session."
       (when (> (length (ivy-state-current ivy-last)) 0)
         (remove-list-of-text-properties
          0 1 '(idx) (ivy-state-current ivy-last))))))
+
+(defun ivy--display-function-prop (prop)
+  "Return PROP associated with current `ivy-display-function'."
+  (plist-get (cdr (assq ivy-display-function
+                        ivy-display-functions-props))
+             prop))
 
 (defun ivy--reset-state (state)
   "Reset the ivy to STATE.
@@ -2056,13 +2092,12 @@ PREDICATE (a function called with no arguments) says when to exit.
 See `completion-in-region' for further information."
   (let* ((enable-recursive-minibuffers t)
          (str (buffer-substring-no-properties start end))
-         (completion-ignore-case (and case-fold-search
-                                      (string= str (downcase str))))
+         (completion-ignore-case (ivy--case-fold-p str))
          (comps
           (completion-all-completions str collection predicate (- end start)))
          (ivy--prompts-list (if (window-minibuffer-p)
                                 ivy--prompts-list
-                              '(ivy-completion-in-region (lambda nil)))))
+                              (list #'ivy-completion-in-region (lambda ())))))
     (cond ((null comps)
            (message "No matches"))
           ((progn
@@ -2778,23 +2813,20 @@ Should be run via minibuffer `post-command-hook'."
   '(setq ivy--flx-cache (flx-make-string-cache)))
 
 (defun ivy-toggle-case-fold ()
-  "Toggle the case folding between nil and auto/always.
+  "Toggle `case-fold-search' for Ivy operations.
 
-If auto, `case-fold-search' is t, when the input is all lower case,
-otherwise nil.
+Instead of modifying `case-fold-search' directly, this command
+toggles `ivy-case-fold-search', which can take on more values
+than the former, between nil and either `auto' or t.  See
+`ivy-case-fold-search-default' for the meaning of these values.
 
-If always, `case-fold-search' is always t, regardless of the input.
-
-Otherwise `case-fold-search' is always nil, regardless of the input.
-
-In any completion session, the case folding starts in
+In any Ivy completion session, the case folding starts with
 `ivy-case-fold-search-default'."
   (interactive)
   (setq ivy-case-fold-search
-        (if ivy-case-fold-search
-            nil
-          (or ivy-case-fold-search-default 'auto)))
-  ;; reset cache so that the candidate list updates
+        (and (not ivy-case-fold-search)
+             (or ivy-case-fold-search-default 'auto)))
+  ;; Reset cache so that the candidate list updates.
   (setq ivy--old-re nil))
 
 (defun ivy--re-filter (re candidates)
@@ -2823,10 +2855,7 @@ CANDIDATES are assumed to be static."
         ivy--old-cands
       (let* ((re-str (if (listp re) (caar re) re))
              (matcher (ivy-state-matcher ivy-last))
-             (case-fold-search
-              (and ivy-case-fold-search
-                   (or (eq ivy-case-fold-search 'always)
-                       (string= name (downcase name)))))
+             (case-fold-search (ivy--case-fold-p name))
              (cands (cond
                       (matcher
                        (funcall matcher re candidates))
@@ -2985,19 +3014,21 @@ RE-STR is the regexp, CANDS are the current candidates."
   (let* ((caller (ivy-state-caller ivy-last))
          (func (or (and caller (cdr (assoc caller ivy-index-functions-alist)))
                    (cdr (assoc t ivy-index-functions-alist))
-                   #'ivy-recompute-index-zero)))
+                   #'ivy-recompute-index-zero))
+         (case-fold-search (ivy--case-fold-p name)))
     (unless (eq this-command 'ivy-resume)
       (ivy-set-index
        (or
         (cl-position (if (and (> (length name) 0)
                               (eq ?^ (aref name 0)))
                          (substring name 1)
-                       name) cands
-                       :test #'equal)
+                       name)
+                     cands
+                     :test #'ivy--case-fold-string=)
         (and ivy--directory
-             (cl-position
-              (concat re-str "/") cands
-              :test #'equal))
+             (cl-position (concat re-str "/")
+                          cands
+                          :test #'ivy--case-fold-string=))
         (and (eq caller 'ivy-switch-buffer)
              (> (length name) 0)
              0)
@@ -3457,7 +3488,7 @@ TREE is a nested list with the following valid cars:
 - file: open the specified file
 - buffer: open the specified buffer
 
-TREE can be nested multiple times to have mulitple window splits.")
+TREE can be nested multiple times to have multiple window splits.")
 
 (defun ivy-default-view-name ()
   "Return default name for new view."
@@ -3599,8 +3630,7 @@ BUFFER may be a string or nil."
          ivy-text nil 'force-same-window)
       (let ((virtual (assoc buffer ivy--virtual-buffers))
             (view (assoc buffer ivy-views)))
-        (cond ((and virtual
-                    (not (get-buffer buffer)))
+        (cond (virtual
                (find-file (cdr virtual)))
               (view
                (delete-other-windows)
@@ -3677,8 +3707,8 @@ BUFFER may be a string or nil."
 
 (ivy-set-actions
  t
- '(("i" (lambda (x) (insert (if (stringp x) x (car x)))) "insert")
-   ("w" (lambda (x) (kill-new (if (stringp x) x (car x)))) "copy")))
+ `(("i" ,(lambda (x) (insert (if (stringp x) x (car x)))) "insert")
+   ("w" ,(lambda (x) (kill-new (if (stringp x) x (car x)))) "copy")))
 
 (defun ivy--switch-buffer-matcher (regexp candidates)
   "Return REGEXP matching CANDIDATES.
@@ -3793,24 +3823,26 @@ Don't finish completion."
       (insert (substring (ivy-state-current ivy-last) 0 -1))
     (insert (ivy-state-current ivy-last))))
 
-(defcustom ivy--preferred-re-builders
+(define-obsolete-variable-alias 'ivy--preferred-re-builders
+  'ivy-preferred-re-builders "0.10.0")
+
+(defcustom ivy-preferred-re-builders
   '((ivy--regex-plus . "ivy")
     (ivy--regex-ignore-order . "order")
     (ivy--regex-fuzzy . "fuzzy"))
   "Alist of preferred re-builders with display names.
 This list can be rotated with `ivy-rotate-preferred-builders'."
-  :type '(alist :key-type function :value-type string)
-  :group 'ivy)
+  :type '(alist :key-type function :value-type string))
 
 (defun ivy-rotate-preferred-builders ()
-  "Switch to the next re builder in `ivy--preferred-re-builders'."
+  "Switch to the next re builder in `ivy-preferred-re-builders'."
   (interactive)
-  (when ivy--preferred-re-builders
+  (when ivy-preferred-re-builders
     (setq ivy--old-re nil)
     (setq ivy--regex-function
-          (let ((cell (assoc ivy--regex-function ivy--preferred-re-builders)))
-            (car (or (cadr (memq cell ivy--preferred-re-builders))
-                     (car ivy--preferred-re-builders)))))))
+          (let ((cell (assq ivy--regex-function ivy-preferred-re-builders)))
+            (car (or (cadr (memq cell ivy-preferred-re-builders))
+                     (car ivy-preferred-re-builders)))))))
 
 (defun ivy-toggle-fuzzy ()
   "Toggle the re builder between `ivy--regex-fuzzy' and `ivy--regex-plus'."
@@ -3983,7 +4015,7 @@ There is no limit on the number of *ivy-occur* buffers."
         (setq ivy-occur-last ivy-last)
         (setq-local ivy--directory ivy--directory))
       (ivy-exit-with-action
-       `(lambda (_) (pop-to-buffer ,buffer))))))
+       (lambda (_) (pop-to-buffer buffer))))))
 
 (defun ivy-occur-revert-buffer ()
   "Refresh the buffer making it up-to date with the collection.

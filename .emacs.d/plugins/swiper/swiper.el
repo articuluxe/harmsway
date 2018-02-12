@@ -545,10 +545,6 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
         (goto-char swiper--opoint))
       (when (and (null res) (> (length ivy-text) 0))
         (cl-pushnew ivy-text swiper-history))
-      ;; This allows evil mode to use swiper searches as defaults in
-      ;; s-expressions
-      (when (bound-and-true-p evil-mode)
-        (setq isearch-string ivy-text))
       (when swiper--reveal-mode
         (reveal-mode 1)))))
 
@@ -669,8 +665,7 @@ WND, when specified is the window."
            (end (or end (save-excursion
                           (forward-line wh)
                           (point))))
-           (case-fold-search (and ivy-case-fold-search
-                                  (string= re (downcase re)))))
+           (case-fold-search (ivy--case-fold-p re)))
       (when (>= (length re) swiper-min-highlight)
         (save-excursion
           (goto-char beg)
@@ -764,13 +759,16 @@ the face, window and priority of the overlay."
          'regexp-search-ring
          re
          regexp-search-ring-max)
-        (when (and (bound-and-true-p evil-mode)
-                   (eq evil-search-module 'evil-search))
-          (add-to-history 'evil-ex-search-history re)
-          (setq evil-ex-search-pattern (list re t t))
-          (setq evil-ex-search-direction 'forward)
-          (when evil-ex-search-persistent-highlight
-            (evil-ex-search-activate-highlight evil-ex-search-pattern)))))))
+        (when (bound-and-true-p evil-mode)
+          ;; This allows evil mode to use swiper searches as defaults in
+          ;; s-expressions
+          (setq isearch-string ivy-text)
+          (when (eq evil-search-module 'evil-search)
+            (add-to-history 'evil-ex-search-history re)
+            (setq evil-ex-search-pattern (list re t t))
+            (setq evil-ex-search-direction 'forward)
+            (when evil-ex-search-persistent-highlight
+              (evil-ex-search-activate-highlight evil-ex-search-pattern))))))))
 
 (defun swiper-from-isearch ()
   "Invoke `swiper' from isearch."
@@ -874,9 +872,7 @@ otherwise continue prompting for buffers."
            (re-full (funcall ivy--regex-function str))
            re re-tail
            cands match
-           (case-fold-search
-            (and ivy-case-fold-search
-                 (string= str (downcase str)))))
+           (case-fold-search (ivy--case-fold-p str)))
       (if (stringp re-full)
           (setq re re-full)
         (setq re (caar re-full))
