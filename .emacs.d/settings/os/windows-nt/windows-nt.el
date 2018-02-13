@@ -1,8 +1,8 @@
 ;; windows-nt.el --- windows os settings file
-;; Copyright (C) 2015-2017  Dan Harms (dharms)
+;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2017-10-20 11:27:04 dan.harms>
+;; Modified Time-stamp: <2018-02-14 06:02:56 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -51,12 +51,6 @@
 (setq w32-get-true-file-attributes nil)
 (setq w32-pipe-read-delay 0)
 (setq tramp-default-method "plink")
-
-;; counsel
-(with-eval-after-load 'counsel
-  (setq counsel-locate-cmd #'counsel-locate-cmd-es)
-  ;; or "set GIT_PAGER=cat && git log --grep \"%s\""
-  (setq counsel-git-log-cmd "git log --grep \"%s\""))
 
 ;; compilation example:
 ;; (setq compile-command "C:\VC\VCVARS.bat & devenv /nologo /build Debug proj.vcxproj")
