@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2018-02-14 06:02:56 dan.harms>
+;; Modified Time-stamp: <2018-02-14 06:04:00 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -43,9 +43,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ssh-agency ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;(require 'ssh-agency)
 
-(setq shell-file-name "sh")             ;finds msys
-(setq explicit-shell-file-name
-      (concat (getenv "MSYS") "\\bin\\bash.exe"))
+;(setq shell-file-name "sh")             ;finds msys
+;; (setq explicit-shell-file-name
+;;       (concat (getenv "MSYS") "\\bin\\bash.exe"))
 
 (setq-default comint-process-echoes t)
 (setq w32-get-true-file-attributes nil)
