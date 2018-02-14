@@ -348,6 +348,7 @@ action functions.")
     (define-key map (kbd "M-o") 'ivy-dispatching-done)
     (define-key map (kbd "C-M-o") 'ivy-dispatching-call)
     (define-key map [remap kill-line] 'ivy-kill-line)
+    (define-key map [remap kill-whole-line] 'ivy-kill-whole-line)
     (define-key map (kbd "S-SPC") 'ivy-restrict-to-matches)
     (define-key map [remap kill-ring-save] 'ivy-kill-ring-save)
     (define-key map (kbd "C-'") 'ivy-avy)
@@ -417,7 +418,9 @@ the restoring themselves.")
   (or
    (thing-at-point 'url)
    (and (eq (ivy-state-collection ivy-last) 'read-file-name-internal)
-        (ffap-file-at-point))
+        (let ((inhibit-message t))
+          (ignore-errors
+            (ffap-file-at-point))))
    (let (s)
      (cond ((stringp (setq s (thing-at-point 'symbol)))
             (if (string-match "\\`[`']?\\(.*?\\)'?\\'" s)
@@ -573,9 +576,9 @@ functionality, e.g. as seen in `isearch'."
 (defun ivy-exit-with-action (action)
   "Quit the minibuffer and call ACTION afterwards."
   (ivy-set-action
-   (lambda (x)
-     (funcall action x)
-     (ivy-set-action (ivy-state-action ivy-last))))
+   `(lambda (x)
+      (funcall ',action x)
+      (ivy-set-action ',(ivy-state-action ivy-last))))
   (setq ivy-exit 'done)
   (exit-minibuffer))
 
@@ -1353,6 +1356,11 @@ On error (read-only), call `ivy-on-del-error-function'."
   (if (eolp)
       (kill-region (minibuffer-prompt-end) (point))
     (kill-line)))
+
+(defun ivy-kill-whole-line ()
+  "Forward to `kill-whole-line'."
+  (interactive)
+  (kill-region (minibuffer-prompt-end) (line-end-position)))
 
 (defun ivy-backward-kill-word ()
   "Forward to `backward-kill-word'."
@@ -2300,68 +2308,50 @@ When GREEDY is non-nil, join words in a greedy way."
   (if (ivy--legal-regex-p str) str (regexp-quote str)))
 
 (defun ivy--split-negation (str)
-  "Split STR into text before and after !.
-Don't split if it's escaped with \\!.
+  "Split STR into text before and after ! delimiter.
+Do not split if the delimiter is escaped as \\!.
 
-Assumes there is at most one unescaped !."
-  (let (parts
-        (part ""))
-    (mapc
-     (lambda (char)
-       (let ((prev-char (if (zerop (length part))
-                            nil
-                          (elt part (1- (length part))))))
-         ;; Split on !, unless it's escaped.
-         (cond
-          ;; Store "\!" as "!".
-          ((and (eq char ?!) (eq prev-char ?\\))
-           (setq part (concat (substring part 0 (1- (length part)))
-                              "!")))
-          ;; Split on "!".
-          ((eq char ?!)
-           (push part parts)
-           (setq part ""))
-          ;; Otherwise, append the current character.
-          (t
-           (setq part (concat part (string char)))))))
-     str)
-    (unless (zerop (length part))
-      (push part parts))
-    (setq parts (nreverse parts))
-    ;; If we have more than unescaped !, just discard the extra parts
-    ;; rather than crashing. We can't warn or error because the
-    ;; minibuffer is already active.
-    (when (> (length parts) 2)
-      (setq parts (list (cl-first parts) (cl-second parts))))
-    parts))
+Assumes there is at most one unescaped delimiter and discards
+text after delimiter if it is empty.  Modifies match data."
+  (unless (string= str "")
+    (let ((delim "\\(?:\\`\\|[^\\]\\)\\(!\\)"))
+      (mapcar (lambda (split)
+                ;; Store "\!" as "!".
+                (replace-regexp-in-string "\\\\!" "!" split t t))
+              (if (string-match delim str)
+                  ;; Ignore everything past first unescaped ! rather than
+                  ;; crashing.  We can't warn or error because the minibuffer is
+                  ;; already active.
+                  (let* ((i (match-beginning 1))
+                         (j (and (string-match delim str (1+ i))
+                                 (match-beginning 1)))
+                         (neg (substring str (1+ i) j)))
+                    (cons (substring str 0 i)
+                          (and (not (string= neg ""))
+                               (list neg))))
+                (list str))))))
 
 (defun ivy--split-spaces (str)
   "Split STR on spaces, unless they're preceded by \\.
 No unescaped spaces are present in the output."
-  (let (parts
-        (part ""))
-    (mapc
-     (lambda (char)
-       (let ((prev-char (if (zerop (length part))
-                            nil
-                          (elt part (1- (length part))))))
-         (cond
+  (when str
+    (let ((i 0) ; End of last search.
+          (j 0) ; End of last delimiter.
+          parts)
+      (while (string-match "\\(\\\\ \\)\\| +" str i)
+        (setq i (match-end 0))
+        (if (not (match-beginning 1))
+            ;; Unescaped space(s).
+            (let ((delim (match-beginning 0)))
+              (when (< j delim)
+                (push (substring str j delim) parts))
+              (setq j i))
           ;; Store "\ " as " ".
-          ((and (eq char ?\s) (eq prev-char ?\\))
-           (setq part (concat (substring part 0 (1- (length part)))
-                              " ")))
-          ;; Split on " ".
-          ((eq char ?\s)
-           (unless (zerop (length part))
-             (push part parts))
-           (setq part ""))
-          ;; Otherwise, append the current character.
-          (t
-           (setq part (concat part (string char)))))))
-     str)
-    (unless (zerop (length part))
-      (push part parts))
-    (nreverse parts)))
+          (setq str (replace-match " " t t str 1))
+          (setq i (1- i))))
+      (when (< j (length str))
+        (push (substring str j) parts))
+      (nreverse parts))))
 
 (defun ivy--regex-ignore-order (str)
   "Re-build regex from STR by splitting at spaces and using ! for negation.
@@ -2739,6 +2729,12 @@ Should be run via minibuffer `post-command-hook'."
           (ivy--filter ivy-text ivy--all-candidates))))
       (setq ivy--old-text ivy-text))))
 
+(defun ivy-display-function-fallback (str)
+  (let ((buffer-undo-list t))
+    (save-excursion
+      (forward-line 1)
+      (insert str))))
+
 (defun ivy--insert-minibuffer (text)
   "Insert TEXT into minibuffer with appropriate cleanup."
   (let ((resize-mini-windows nil)
@@ -2753,10 +2749,7 @@ Should be run via minibuffer `post-command-hook'."
     (when (stringp text)
       (if ivy-display-function
           (funcall ivy-display-function text)
-        (let ((buffer-undo-list t))
-          (save-excursion
-            (forward-line 1)
-            (insert text)))))
+        (ivy-display-function-fallback text)))
     (when (display-graphic-p)
       (ivy--resize-minibuffer-to-fit))
     ;; prevent region growing due to text remove/add
