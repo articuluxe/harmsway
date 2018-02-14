@@ -2,9 +2,38 @@
 ;;; This format is meant to be slightly human-readable;
 ;;; nevertheless, you probably don't want to edit it.
 ;;; -*- End Of Bookmark File Format Version Stamp -*-
-(#1=(#("snap-xmock [chihq-dev-02d-1]" 0 28
+(#1=(#("snap-3.18 [chihq-dev-02d-1]" 0 1
+      (bmkp-full-record #1# idx 0)
+      1 27
       (bmkp-full-record #1#))
-    (tags "chihq-dev-02d-1" "master" "snap")
+    (tags "3.18" "snap" "chihq-dev-02d-1")
+    (buffer-name . "snap<snap-3.18>")
+    (front-context-string . "app_framework\n  ")
+    (rear-context-string . " 4k 02-13 17:03 ")
+    (front-context-region-string)
+    (rear-context-region-string)
+    (visits . 0)
+    (time . #2=(23172 23418 43144 0))
+    (created . #2#)
+    (position . 264)
+    (filename . "/plink:dan.harms@chihq-dev-02d-1:/home/dan.harms/src/snap-3.18/snap/xr-snap/src/xr/snap/")
+    (dired-directory . "/plink:dan.harms@chihq-dev-02d-1:/home/dan.harms/src/snap-3.18/snap/xr-snap/src/xr/snap/")
+    (dired-marked)
+    (dired-switches . "-alhvGg")
+    (dired-subdirs)
+    (dired-hidden-dirs)
+    (handler . bmkp-jump-dired))
+#1=(#("snap-xmock [chihq-dev-02d-1]" 0 1
+      (bmkp-full-record #1# idx 1)
+      1 28
+      (bmkp-full-record #1#))
+    (tags
+     #("chihq-dev-02d-1" 0 1
+       (idx 0))
+     #("master" 0 1
+       (idx 0))
+     #("snap" 0 1
+       (idx 1)))
     (buffer-name . "snap<snap-xmock>")
     (front-context-string . "app_framework\n  ")
     (rear-context-string . " 4k 11-03 14:24 ")
@@ -22,12 +51,12 @@
     (dired-hidden-dirs)
     (handler . bmkp-jump-dired))
 #1=(#("snap-3.17 [chihq-dev-02d-1]" 0 1
-      (idx 1 bmkp-full-record #1#)
+      (bmkp-full-record #1# idx 2)
       1 27
       (bmkp-full-record #1#))
     (tags
      #("3.17" 0 1
-       (idx 0))
+       (idx 1))
      #("snap" 0 1
        (idx 1))
      #("chihq-dev-02d-1" 0 1
@@ -49,12 +78,12 @@
     (dired-hidden-dirs)
     (handler . bmkp-jump-dired))
 #1=(#("snap-3.16 [chihq-dev-02d-1]" 0 1
-      (idx 2 bmkp-full-record #1#)
+      (bmkp-full-record #1# idx 3)
       1 27
       (bmkp-full-record #1#))
     (tags
      #("3.16" 0 1
-       (idx 1))
+       (idx 2))
      #("chihq-dev-02d-1" 0 1
        (idx 1))
      #("snap" 0 1
@@ -76,7 +105,7 @@
     (dired-hidden-dirs)
     (handler . bmkp-jump-dired))
 #1=(#("snap-master [chihq-dev-02d-1]" 0 1
-      (idx 3 bmkp-full-record #1#)
+      (bmkp-full-record #1# idx 4)
       1 29
       (bmkp-full-record #1#))
     (tags
@@ -103,12 +132,12 @@
     (dired-hidden-dirs)
     (handler . bmkp-jump-dired))
 #1=(#("snap-3.15 [chihq-dev-02d-1]" 0 1
-      (idx 4 bmkp-full-record #1#)
+      (bmkp-full-record #1# idx 5)
       1 27
       (bmkp-full-record #1#))
     (tags
      #("3.15" 0 1
-       (idx 2))
+       (idx 3))
      "snap" "chihq-dev-02d-1")
     (buffer-name . "snap<snap-3.15>")
     (front-context-string . "app_framework\n  ")
