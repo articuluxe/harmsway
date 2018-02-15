@@ -7,3 +7,6 @@
 [submodule "parsenv"]
 	path = ext/parsenv
 	url = https://github.com/articuluxe/parsenv.git
+[submodule "gridlock"]
+	path = ext/gridlock
+	url = https://github.com/articuluxe/gridlock.git

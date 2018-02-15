@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-02-12 10:36:45 dan.harms>
+;; Modified Time-stamp: <2018-02-15 06:45:08 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -459,6 +459,11 @@ not an error if any files do not exist."
   (setq outrespace-prefix-key "\C-cn")
   (with-eval-after-load 'cc-mode (load-library "outrespace"))
   (add-hook 'c++-mode-hook (lambda() (outrespace-mode 1))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; gridlock ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package gridlock
+  :bind ("C-c ." . gridlock-mode)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; epa ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun my/add-epa-file-encrypt-to ()
