@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-02-15 06:45:08 dharms>
+;; Modified Time-stamp: <2018-02-16 11:23:24 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -828,6 +828,9 @@ not an error if any files do not exist."
          ("C-S-<mouse-1>" . mc/add-cursor-on-click)
          ("C-\\ C-\\ C-." . mc/add-cursor)
          ("C-\\ C-\\ C-c" . mc/activate)
+
+         ("C-\\ C-\\ C-0" . mc/insert-numbers)
+         ("C-\\ C-\\ C-p" . mc/insert-letters)
          )
   :init
   (setq mc/list-file (concat my/user-directory "mc-lists.el"))
