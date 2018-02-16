@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-02-16 11:23:24 dan.harms>
+;; Modified Time-stamp: <2018-02-16 16:56:39 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -597,9 +597,9 @@ not an error if any files do not exist."
               ("l" . rotate-layout)
               ("w" . rotate-window)
               ("h" . rotate:even-horizontal)
-              ("\C-h" . rotate:main-horizontal)
+              ("M-h" . rotate:main-horizontal)
               ("v" . rotate:even-vertical)
-              ("\C-v" . rotate:main-vertical)
+              ("M-v" . rotate:main-vertical)
               ("t" . rotate:tiled)
               ))
 
