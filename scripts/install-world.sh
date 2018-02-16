@@ -1,11 +1,11 @@
 #!/bin/sh
 # -*- Mode: sh -*-
 # install-world.sh --- install the world
-# Copyright (C) 2016-2017  Dan Harms (dharms)
+# Copyright (C) 2016-2018  Dan Harms (dharms)
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Thursday, August 18, 2016
 # Version: 1.0
-# Modified Time-stamp: <2017-12-29 09:29:22 dan.harms>
+# Modified Time-stamp: <2018-02-16 16:49:28 dan.harms>
 # Modified by: Dan Harms
 # Keywords: install
 
@@ -26,5 +26,8 @@ if [ "$?" != 0 ]; then
 fi
 
 mv world.tar ~ && cd ~ && untar-world.sh world.tar
+
+echo "install-world.sh done; press any key to continue..."
+read -n1 -t5 key
 
 # code ends here
