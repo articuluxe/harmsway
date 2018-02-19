@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-02-16 16:56:39 dan.harms>
+;; Modified Time-stamp: <2018-02-19 16:19:18 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2134,7 +2134,7 @@ Only one letter is shown, the first that applies."
                    autoconf-mode gdb-script-mode awk-mode csv-mode
                    mock-mode org-mode html-mode text-mode sql-mode
                    sql-interactive-mode conf-mode markdown-mode
-                   git-commit-mode mock-mode dart-mode
+                   git-commit-mode mock-mode dart-mode plantuml-mode
                    ))
   (use-package auto-complete-config)
   (setq-default ac-sources
