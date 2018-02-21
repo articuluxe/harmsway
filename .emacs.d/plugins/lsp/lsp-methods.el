@@ -1,4 +1,4 @@
-;; Copyright (C) 2016-2017  Vibhav Pant <vibhavp@gmail.com>  -*- lexical-binding: t -*-
+;; Copyright (C) 2016-2018  Vibhav Pant <vibhavp@gmail.com>  -*- lexical-binding: t -*-
 
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -25,26 +25,104 @@
 
 ;;; Code:
 
+;; A ‘lsp--client’ object describes the client-side behavior of a language
+;; server.  It is used to start individual server processes, each of which is
+;; represented by a ‘lsp--workspace’ object.  Client objects are normally
+;; created using ‘lsp-define-stdio-client’ or ‘lsp-define-tcp-client’.  Each
+;; workspace refers to exactly one client, but there can be multiple workspaces
+;; for a single client.
 (cl-defstruct lsp--client
+  ;; ‘language-id’ is a function that receives a buffer as a single argument
+  ;; and should return the language identifier for that buffer.  See
+  ;; https://microsoft.github.io/language-server-protocol/specification#textdocumentitem
+  ;; for a list of language identifiers.  Also consult the documentation for
+  ;; the language server represented by this client to find out what language
+  ;; identifiers it supports or expects.
   (language-id nil :read-only t)
 
   ;; send-async and send-sync are unused field, but haven't been
   ;; removed so as to avoid breaking byte-compiled clients.
+  ;; FIXME: We shouldn’t need to take binary compatibility into account,
+  ;; especially since the ‘lsp--client’ structure is internal.  These fields
+  ;; should just be removed.
   (send-sync nil :read-only t)
   (send-async nil :read-only t)
 
+  ;; FIXME: This field is apparently unused and should be removed.
   (type nil :read-only t)
+
+  ;; ‘new-connection’ is a function that should start a language server process
+  ;; and return a cons (COMMAND-PROCESS . COMMUNICATION-PROCESS).
+  ;; COMMAND-PROCESS must be a process object representing the server process
+  ;; just started.  COMMUNICATION-PROCESS must be a process (including pipe and
+  ;; network processes) that ‘lsp-mode’ uses to communicate with the language
+  ;; server using the language server protocol.  COMMAND-PROCESS and
+  ;; COMMUNICATION-PROCESS may be the same process; in that case
+  ;; ‘new-connection’ may also return that process as a single
+  ;; object. ‘new-connection’ is called with two arguments, FILTER and
+  ;; SENTINEL.  FILTER should be used as process filter for
+  ;; COMMUNICATION-PROCESS, and SENTINEL should be used as process sentinel for
+  ;; COMMAND-PROCESS.
   (new-connection nil :read-only t)
+
+  ;; ‘stderr’ is the name of a buffer to write the standard error to.
+  ;; FIXME: ‘stderr’ should be the actual buffer, and it should be a field of
+  ;; the ‘lsp--workspace’.
   (stderr nil :read-only t)
+
+  ;; ‘get-root’ is a function that should return the workspace root directory
+  ;; for the current buffer.  It may return either a directory name or a
+  ;; directory file name.  The ‘get-root’ function is called without arguments.
+  ;; ‘lsp-mode’ will start one server process per client and root directory.
+  ;; It passes the root directory to the ‘initialize’ method of the language
+  ;; server; see
+  ;; https://microsoft.github.io/language-server-protocol/specification#initialize.
+  ;; Also consult the documentation of your language server for information
+  ;; about what it expects as workspace root.
   (get-root nil :read-only t)
+
+  ;; ‘ignore-regexps’ is a list of regexps.  When a data packet from the
+  ;; language server matches any of these regexps, it will be ignored.  This is
+  ;; intended for dealing with language servers that output non-protocol data.
   (ignore-regexps nil :read-only t)
+
+  ;; ‘ignore-messages’ is a list of regexps.  When a message from the language
+  ;; server matches any of these regexps, it will be ignored.  This is useful
+  ;; for filtering out unwanted messages; such as servers that send nonstandard
+  ;; message types, or extraneous log messages.
   (ignore-messages nil :read-only t)
 
+  ;; ‘notification-handlers’ is a hash table mapping notification method names
+  ;; (strings) to functions handling the respective notifications.  Upon
+  ;; receiving a notification, ‘lsp-mode’ will call the associated handler
+  ;; function passing two arguments, the ‘lsp--workspace’ object and the
+  ;; deserialized notification parameters.
   (notification-handlers (make-hash-table :test 'equal) :read-only t)
+
+  ;; ‘notification-handlers’ is a hash table mapping request method names
+  ;; (strings) to functions handling the respective notifications.  Upon
+  ;; receiving a request, ‘lsp-mode’ will call the associated handler function
+  ;; passing two arguments, the ‘lsp--workspace’ object and the deserialized
+  ;; request parameters.
   (request-handlers (make-hash-table :test 'equal) :read-only t)
+
+  ;; ‘response-handlers’ is a hash table mapping integral JSON-RPC request
+  ;; identifiers for pending asynchronous requests to functions handling the
+  ;; respective responses.  Upon receiving a response from the language server,
+  ;; ‘lsp-mode’ will call the associated response handler function with a
+  ;; single argument, the deserialized response parameters.
   (response-handlers (make-hash-table :test 'eq) :read-only t)
 
+  ;; ‘string-renderers’ is an alist mapping MarkedString language identifiers
+  ;; (see
+  ;; https://microsoft.github.io/language-server-protocol/specification#textDocument_hover)
+  ;; to functions that can render the respective languages.  The rendering
+  ;; functions are called with a single argument, the MarkedString value.  They
+  ;; should return a propertized string with the rendered output.
   (string-renderers '())
+
+  ;; ‘last-id’ is the last JSON-RPC identifier used.
+  ;; FIXME: ‘last-id’ should be in ‘lsp--workspace’.
   (last-id 0))
 
 (cl-defstruct lsp--registered-capability
@@ -52,19 +130,59 @@
   (method " " :type string)
   (options nil))
 
+;; A ‘lsp--workspace’ object represents exactly one language server process.
 (cl-defstruct lsp--workspace
+  ;; ‘parser’ is a ‘lsp--parser’ object used to parse messages for this
+  ;; workspace.  Parsers are not shared between workspaces.
   (parser nil :read-only t)
-  ;; file-versions is a hashtable of files "owned" by the workspace
-  (file-versions nil)
+
+  ;; ‘file-versions’ is a hashtable of files "owned" by the workspace.  It maps
+  ;; file names to file versions.  See
+  ;; https://microsoft.github.io/language-server-protocol/specification#versionedtextdocumentidentifier.
+  (file-versions nil :read-only t)
+
+  ;; ‘server-capabilities’ is a hash table of the language server capabilities.
+  ;; It is the hash table representation of a LSP ServerCapabilities structure;
+  ;; cf. https://microsoft.github.io/language-server-protocol/specification#initialize.
   (server-capabilities nil)
+
+  ;; ‘registered-server-capabilities’ is a list of hash tables that represent
+  ;; dynamically-registered Registration objects.  See
+  ;; https://microsoft.github.io/language-server-protocol/specification#client_registerCapability.
   (registered-server-capabilities nil)
+
+  ;; ‘root’ is a directory name or a directory file name for the workspace
+  ;; root.  ‘lsp-mode’ passes this directory to the ‘initialize’ method of the
+  ;; language server; see
+  ;; https://microsoft.github.io/language-server-protocol/specification#initialize.
   (root nil :ready-only t)
+
+  ;; ‘client’ is the ‘lsp--client’ object associated with this workspace.
   (client nil :read-only t)
+
+  ;; FIXME: ‘change-timer-disabled’ is unused and should be removed.
   (change-timer-disabled nil)
-  (proc nil) ;; the process we communicate with
-  (cmd-proc nil) ;; the process we launch initially
-  (buffers nil) ;; a list of buffers associated with this workspace
-  (highlight-overlays nil) ;; a list of overlays used for highlighting the symbol under point
+
+  ;; ‘proc’ is a process object; it may represent a regular process, a pipe, or
+  ;; a network connection.  ‘lsp-mode’ communicates with ‘proc’ using the
+  ;; language server protocol.  ‘proc’ corresponds to the COMMUNICATION-PROCESS
+  ;; element of the return value of the client’s ‘get-root’ field, which see.
+  (proc nil)
+
+  ;; ‘proc’ is a process object; it must represent a regular process, not a
+  ;; pipe or network process.  It represents the actual server process that
+  ;; corresponds to this workspace.  ‘cmd-proc’ corresponds to the
+  ;; COMMAND-PROCESS element of the return value of the client’s ‘get-root’
+  ;; field, which see.
+  (cmd-proc nil)
+
+  ;; ‘buffers’ is a list of buffers associated with this workspace.
+  (buffers nil)
+
+  ;; ‘highlight-overlays’ is a list of overlays used for highlighting the
+  ;; symbol under point.
+  ;; FIXME: shouldn’t this list be per-buffer?
+  (highlight-overlays nil)
 
   ;; Extra client capabilities provided by third-party packages using
   ;; `lsp-register-client-capabilities'. It's value is an alist of (PACKAGE-NAME
@@ -199,6 +317,13 @@ whitelist, or does not match any pattern in the blacklist."
   :group 'lsp-mode)
 
 ;;;###autoload
+(defcustom lsp-before-save-edits t
+  "If non-nil, `lsp-mode' will apply edits suggested by the language server
+before saving a document."
+  :type 'boolean
+  :group 'lsp-mode)
+
+;;;###autoload
 (defface lsp-face-highlight-textual
   '((t :background "yellow"))
   "Face used for textual occurances of symbols."
@@ -263,8 +388,11 @@ whitelist, or does not match any pattern in the blacklist."
       (lsp--workspace-proc lsp--cur-workspace))))
 
 (define-inline lsp--cur-workspace-check ()
-  (inline-quote (cl-assert lsp--cur-workspace nil
-                  "No language server is associated with this buffer.")))
+  (inline-quote
+    (progn
+      (cl-assert lsp--cur-workspace nil
+        "No language server is associated with this buffer.")
+      (cl-assert (lsp--workspace-p lsp--cur-workspace)))))
 
 (define-inline lsp--cur-parser ()
   (inline-quote (lsp--workspace-parser lsp--cur-workspace)))
@@ -488,6 +616,36 @@ registered client capabilities by calling
   "Return the capabilities of the language server associated with the buffer."
   (inline-quote (lsp--workspace-server-capabilities lsp--cur-workspace)))
 
+(defun lsp--server-has-sync-options-p ()
+  "Return whether the server has a TextDocumentSyncOptions object in
+ServerCapabilities.textDocumentSync."
+  (hash-table-p (gethash "textDocumentSync" (lsp--server-capabilities))))
+
+(defun lsp--send-open-close-p ()
+  "Return whether open and close notifications should be sent to the server."
+  (let ((sync (gethash "textDocumentSync" (lsp--server-capabilities))))
+    (and (hash-table-p sync)
+      (gethash "openClose" sync))))
+
+(defun lsp--send-will-save-p ()
+  "Return whether will save notifications should be sent to the server."
+  (let ((sync (gethash "textDocumentSync" (lsp--server-capabilities))))
+    (and (hash-table-p sync)
+      (gethash "willSave" sync))))
+
+(defun lsp--send-will-save-wait-until-p ()
+  "Return whether will save wait until notifications should be sent to the server."
+  (let ((sync (gethash "textDocumentSync" (lsp--server-capabilities))))
+      (and (hash-table-p sync)
+        (gethash "willSaveWaitUntil" sync))))
+
+(defun lsp--save-include-text-p ()
+  "Return whether save notifications should include the text document's contents."
+  (let ((sync (gethash "textDocumentSync" (lsp--server-capabilities))))
+    (and (hash-table-p sync)
+      (hash-table-p (gethash "save" sync nil))
+      (gethash "includeText" (gethash "save" sync)))))
+
 (defun lsp--set-sync-method ()
   (let* ((sync (gethash "textDocumentSync" (lsp--server-capabilities)))
           (kind (if (hash-table-p sync) (gethash "change" sync) sync))
@@ -498,22 +656,31 @@ registered client capabilities by calling
 (defun lsp--workspace-apply-edit-handler (_workspace params)
   (lsp--apply-workspace-edit (gethash "edit" params)))
 
-(defun lsp--make-sentinel (buffer stderr)
+(defun lsp--make-sentinel (workspace)
+  (cl-check-type workspace lsp--workspace)
   (lambda (process exit-str)
-    (if (buffer-live-p buffer)
-        (with-current-buffer buffer
-          (dolist (buf (lsp--workspace-buffers lsp--cur-workspace))
-            (with-current-buffer buf
-              (message "%s: %s has exited (%s)"
-                       (lsp--workspace-root lsp--cur-workspace)
-                       (process-name (lsp--workspace-proc lsp--cur-workspace))
-                       exit-str)
-              (lsp--uninitialize-workspace))))
-      (let ((status (process-status process))
-            (buffer-stderr (get-buffer stderr)))
-        (and (buffer-live-p buffer-stderr)
-             (memq status '(exit signal))
-             (kill-buffer stderr))))))
+    (let ((status (process-status process)))
+      (when (memq status '(exit signal))
+        ;; Server has exited.  Uninitialize all buffer-local state for this
+        ;; workspace.
+        (message "%s: %s has exited (%s)"
+                 (lsp--workspace-root workspace)
+                 (process-name (lsp--workspace-proc workspace))
+                 exit-str)
+        (dolist (buf (lsp--workspace-buffers workspace))
+          (with-current-buffer buf
+            (lsp--uninitialize-workspace)))
+        ;; Kill standard error buffer only if the process exited normally.
+        ;; Leave it intact otherwise for debugging purposes.
+        (when (and (eq status 'exit) (zerop (process-exit-status process)))
+          ;; FIXME: The client structure should store the standard error
+          ;; buffer, not its name.
+          ;; FIXME: Probably the standard error buffer should be per workspace,
+          ;; not per client.
+          (let ((stderr (get-buffer (lsp--client-stderr
+                                     (lsp--workspace-client workspace)))))
+            (when (buffer-live-p stderr)
+              (kill-buffer stderr))))))))
 
 (defun lsp--should-start-p (root)
   "Consult `lsp-project-blacklist' and `lsp-project-whitelist' to
@@ -549,7 +716,7 @@ directory."
        new-conn (funcall
                  (lsp--client-new-connection client)
                  (lsp--parser-make-filter parser (lsp--client-ignore-regexps client))
-                 (lsp--make-sentinel (current-buffer) (lsp--client-stderr client)))
+                 (lsp--make-sentinel lsp--cur-workspace))
        ;; the command line process invoked
        cmd-proc (if (consp new-conn) (car new-conn) new-conn)
        ;; the process we actually communicate with
@@ -597,8 +764,10 @@ directory."
   (add-hook 'after-save-hook #'lsp-on-save nil t)
   (add-hook 'kill-buffer-hook #'lsp--text-document-did-close nil t)
 
-  (setq-local eldoc-documentation-function #'lsp--on-hover)
   (when lsp-enable-eldoc
+    ;; XXX: The documentation for `eldoc-documentation-function' suggests
+    ;; using `add-function' for modifying its value, use that instead?
+    (setq-local eldoc-documentation-function #'lsp--on-hover)
     (eldoc-mode 1))
 
   (when (and lsp-enable-flycheck (featurep 'lsp-flycheck))
@@ -969,23 +1138,31 @@ Added to `after-change-functions'."
           (when (= 0 (hash-table-count file-versions))
             (lsp--shutdown-cur-workspace)))))))
 
+(define-inline lsp--will-save-text-document-params (reason)
+  (cl-check-type reason number)
+  (inline-quote
+    (list :textDocument (lsp--text-document-identifier)
+      :reason ,reason)))
+
 (defun lsp--before-save ()
   (when lsp--cur-workspace
     (with-demoted-errors "Error in ‘lsp--before-save’: %S"
-      (lsp--send-notification
-       (lsp--make-notification
-        "textDocument/willSave"
-        (list :textDocument (lsp--text-document-identifier)
-              :reason 1))))))
+      (let ((params (lsp--will-save-text-document-params 1)))
+        (if (lsp--send-will-save-p)
+          (lsp--send-notification
+            (lsp--make-notification "textDocument/willSave" params))
+          (when (and (lsp--send-will-save-wait-until-p) lsp-before-save-edits)
+            (lsp--apply-text-edits
+              (lsp--send-request (lsp--make-request
+                                   "textDocument/willSaveWaitUntil" params)))))))))
 
 (defun lsp--on-auto-save ()
-  (when lsp--cur-workspace
+  (when (and lsp--cur-workspace
+          (lsp--send-will-save-p))
     (with-demoted-errors "Error in ‘lsp--on-auto-save’: %S"
       (lsp--send-notification
-       (lsp--make-notification
-        "textDocument/willSave"
-        (list :textDocument (lsp--text-document-identifier)
-              :reason 2))))))
+        (lsp--make-notification
+          "textDocument/willSave" (lsp--will-save-text-document-params 2))))))
 
 (defun lsp--text-document-did-save ()
   "Executed when the file is closed, added to `after-save-hook''."
@@ -994,7 +1171,12 @@ Added to `after-change-functions'."
       (lsp--send-notification
        (lsp--make-notification
         "textDocument/didSave"
-        `(:textDocument ,(lsp--versioned-text-document-identifier)))))))
+         `(:textDocument ,(lsp--versioned-text-document-identifier)
+            :includeText ,(if (lsp--save-include-text-p)
+                            (save-excursion
+                              (widen)
+                              (buffer-substring-no-properties (point-min) (point-max)))
+                            nil)))))))
 
 (define-inline lsp--text-document-position-params ()
   "Make TextDocumentPositionParams for the current point in the current document."
@@ -1019,7 +1201,6 @@ Added to `after-change-functions'."
                               (and (>= line start-line) (<= line end-line))))
                           diags)))
     (cl-coerce (mapcar #'lsp-diagnostic-original diags-in-range) 'vector)))
-
 
 (defconst lsp--completion-item-kind
   `(
@@ -1407,14 +1588,20 @@ If title is nil, return the name for the command handler."
 (defvar-local lsp-code-lenses nil
   "A list of code lenses computed for the buffer.")
 
-(defun lsp--update-code-lenses ()
+(defun lsp--update-code-lenses (&optional callback)
+  "Update the list of code lenses for the current buffer.
+Optionally, CALLBACK is a function that accepts a single argument, the code lens object."
   (lsp--cur-workspace-check)
-  (lsp--send-request-async (lsp--make-request "textDocument/codeLens"
-                               (lsp--text-document-identifier))
+  (when callback
+    (cl-check-type callback function))
+  (when (gethash "codeLensProvider" (lsp--server-capabilities))
+    (lsp--send-request-async (lsp--make-request "textDocument/codeLens"
+                               `(:textDocument ,(lsp--text-document-identifier)))
       (let ((buf (current-buffer)))
         #'(lambda (lenses)
             (with-current-buffer buf
-              (setq lsp-code-lenses lenses))))))
+              (setq lsp-code-lenses lenses)
+              (funcall callback lenses)))))))
 
 (defun lsp--make-document-formatting-options ()
   (let ((json-false :json-false))

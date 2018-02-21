@@ -402,6 +402,11 @@ emacs -Q -batch -l simple-httpd.elc -f httpd-batch-start"
 
 ;; Networking code
 
+(defun httpd--connection-close-p (request)
+  "Return non-nil if the client requested \"connection: close\"."
+  (or (equal '("close") (cdr (assoc "Connection" request)))
+      (equal '("HTTP/1.0") (cddr (assoc "GET" request)))))
+
 (defun httpd--filter (proc chunk)
   "Runs each time client makes a request."
   (with-current-buffer (process-get proc :request-buffer)
@@ -435,7 +440,9 @@ emacs -Q -batch -l simple-httpd.elc -f httpd-batch-start"
                   (httpd--error-safe proc 404)
                 (condition-case error-case
                     (funcall servlet proc uri-path uri-query request)
-                  (error (httpd--error-safe proc 500 error-case)))))))))))
+                  (error (httpd--error-safe proc 500 error-case))))
+              (when (httpd--connection-close-p request)
+                (process-send-eof proc)))))))))
 
 (defun httpd--log (server proc message)
   "Runs each time a new client connects."

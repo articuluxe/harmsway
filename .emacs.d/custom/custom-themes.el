@@ -2,7 +2,7 @@
 ;; Copyright (C) 2016-2018  Dan Harms (dan.harms)
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Wednesday, December 21, 2016
-;; Modified Time-stamp: <2018-02-20 12:28:22 dan.harms>
+;; Modified Time-stamp: <2018-02-21 11:38:05 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: themes colors
 
@@ -36,6 +36,8 @@
 (setq solarized-height-plus-2 1)
 (setq solarized-height-plus-3 1)
 (setq solarized-height-plus-4 1)
+;; kaolin customization
+(setq kaolin-italic-comments t)
 
 (defun my/make-all-font-sizes-the-same-please ()
   "Make all faces use the default height."

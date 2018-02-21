@@ -1329,11 +1329,15 @@ INITIAL-INPUT can be given as the initial minibuffer input."
       (delete-process proc))
     (when buff
       (kill-buffer buff))
-    (setq proc (start-process-shell-command
+    (setq proc (start-file-process
                 counsel-gg-process
                 counsel-gg-process
+                shell-file-name
+                shell-command-switch
                 (concat
-                 (format counsel-git-grep-cmd regex)
+                 (format
+                  counsel-git-grep-cmd
+                  regex)
                  " | head -n 200")))
     (set-process-sentinel
      proc
@@ -1383,9 +1387,11 @@ If NO-ASYNC is non-nil, do it synchronously instead."
           (delete-process proc))
         (when buff
           (kill-buffer buff))
-        (setq proc (start-process-shell-command
+        (setq proc (start-file-process
                     counsel-ggc-process
                     counsel-ggc-process
+                    shell-file-name
+                    shell-command-switch
                     cmd))
         (set-process-sentinel
          proc
@@ -1693,7 +1699,12 @@ but the leading dot is a lot faster."
 (defun counsel--find-file-matcher (regexp candidates)
   "Return REGEXP matching CANDIDATES.
 Skip some dotfiles unless `ivy-text' requires them."
-  (let ((res (ivy--re-filter regexp candidates)))
+  (let ((res
+         (ivy--re-filter
+          regexp candidates
+          (lambda (re-str)
+            (lambda (x)
+              (string-match re-str (directory-file-name x)))))))
     (if (or (null ivy-use-ignore)
             (null counsel-find-file-ignore-regexp)
             (string-match "\\`\\." ivy-text))
@@ -2985,6 +2996,38 @@ include attachments of other Org buffers."
   (ivy-read "file: " (counsel-org-files)
             :action 'counsel-locate-action-dired
             :caller 'counsel-org-file))
+
+(defvar org-entities)
+(defvar org-entities-user)
+
+;;;###autoload
+(defun counsel-org-entity ()
+  "Insert an org-entity using ivy."
+  (interactive)
+  (ivy-read "Entity: " (cl-loop for element in (append org-entities org-entities-user)
+                          when (not (stringp element))
+                          collect
+                            (cons
+                             (format "%20s | %20s | %20s | %s"
+                                     (cl-first element) ;name
+                                     (cl-second element) ; latex
+                                     (cl-fourth element) ; html
+                                     (cl-seventh element)) ;utf-8
+                             element))
+            :require-match t
+            :action '(1
+                      ("u" (lambda (candidate)
+                             (insert (cl-seventh (cdr candidate)))) "utf-8")
+                      ("o" (lambda (candidate)
+                             (insert "\\" (cl-first (cdr candidate)))) "org-entity")
+                      ("l" (lambda (candidate)
+                             (insert (cl-second (cdr candidate)))) "latex")
+                      ("h" (lambda (candidate)
+                             (insert (cl-fourth (cdr candidate)))) "html")
+                      ("a" (lambda (candidate)
+                             (insert (cl-fifth (cdr candidate)))) "ascii")
+                      ("L" (lambda (candidate)
+                             (insert (cl-sixth (cdr candidate))) "Latin-1")))))
 
 ;;** `counsel-org-capture'
 (defvar org-capture-templates)
