@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2018-02-14 06:05:44 dan.harms>
+;; Modified Time-stamp: <2018-02-20 14:55:44 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -51,6 +51,9 @@
 (setq w32-get-true-file-attributes nil)
 (setq w32-pipe-read-delay 0)
 (setq tramp-default-method "plink")
+
+;; On shells (and remote compiles) this prevents $TERM from being forced to emacs
+(setq system-uses-terminfo t)
 
 ;; compilation example:
 ;; (setq compile-command "C:\VC\VCVARS.bat & devenv /nologo /build Debug proj.vcxproj")
