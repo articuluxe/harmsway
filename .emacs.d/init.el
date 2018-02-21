@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-02-19 16:19:18 dan.harms>
+;; Modified Time-stamp: <2018-02-21 12:06:38 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2647,6 +2647,17 @@ This may perform related customization."
                 ("\\.bmk$"      . emacs-lisp-mode)
                 )
               auto-mode-alist))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; applescript-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package applescript-mode
+  :mode "\\.applescript$"
+  :config
+  (add-hook 'applescript-mode-hook
+            (lambda ()
+              (define-key as-mode-map "\C-c\C-c" 'comment-region)
+              (define-key as-mode-map "\C-c\C-u" 'uncomment-region)
+              (define-key as-mode-map "\C-c\C-e" 'as-execute-buffer)
+              )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; awk-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-hook 'awk-mode-hook

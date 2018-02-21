@@ -1,0 +1,1 @@
+do shell script "/bin/bash -c \". ~/.bashrc && /Users/dharms/bin/install-world.sh\" "
