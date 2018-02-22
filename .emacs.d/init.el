@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-02-21 12:06:38 dharms>
+;; Modified Time-stamp: <2018-02-22 16:41:04 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1395,6 +1395,9 @@ Only one letter is shown, the first that applies."
          "\\|\\(?:\\.elc$\\)"           ;byte-compiled
          ))                             ;toggle with C-c C-a
   (setf (cdr (assoc 'counsel-M-x ivy-initial-inputs-alist)) "")
+  ;; avoid slow "du -s" invocation on large repos
+  (setq counsel--git-grep-count-func
+        (lambda() (1+ counsel--git-grep-count-threshold)))
   ;; fallback to basic find-file
   (define-key counsel-find-file-map "\C-x\C-f"
     (lambda ()
