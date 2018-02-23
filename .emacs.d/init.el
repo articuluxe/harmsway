@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-02-22 16:41:04 dan.harms>
+;; Modified Time-stamp: <2018-02-23 13:44:28 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1343,17 +1343,13 @@ Only one letter is shown, the first that applies."
   (setq ivy-extra-directories '("../" "./"))
   (setq ivy-count-format "(%d/%d) ")
   (ivy-mode 1)
-  ;; (defun ivy-insert-action (x)
-  ;;   (with-ivy-window
-  ;;     (insert x)))
-  ;; (ivy-set-actions
-  ;;  t
-  ;;  '(("I" ivy-insert-action "insert")))
+  )
+
 (use-package ivy-rich
-  :init
+  :after ivy
+  :config
   (ivy-set-display-transformer 'ivy-switch-buffer
                                'ivy-rich-switch-buffer-transformer))
-  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; counsel ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package counsel
