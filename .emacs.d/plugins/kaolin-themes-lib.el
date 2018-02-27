@@ -1,49 +1,9 @@
 ;;; kaolin-themes-lib.el --- Kaolin-themes library, provides common parts for the package  -*- lexical-binding: t; -*-
 ;;; Commentary:
 
-;; TODO: git-commit-summary
-;; TODO: (??) split colors for builtin and functions
-;; highlight-quoted-quote && highlight-quoted-symbol
-;; TODO: color7 close to color4
-
-;; TODO: (??) add travis ci
-;; TODO: (??) increase color1 constrast to make them universal for light and dark themes
-;; TODO: adjust colors for 256 terminal
-;; TODO: adjust 5-9 colors
-;; TODO: manage colors in themes
-;; TODO: make less hardcoded colors in faces wihith kaolin-lib
-
-;; TODO: color spec and color functions
-
-;; TODO: bright background option/or contrast settings
-;; TODO: (??) disable color background for terminal
-;; TODO: add var to highlight key seq' - keysym
-;; TODO: var to enable distinct for fringe and line num
-
-;; TODO: Add the following faces to lib:
-;; TODO: custom-* and buttons
-
-;; TODO: add mode-line option/flat mode-line style
-;; TODO: (??) make dark mode-line in ligth themes.
-
-;; TODO: colorful comments
-;; TODO: (??) color cornflower blue
-;; TODO: (??) add -pkg.el
-;; TODO: (??) outline-* faces
-
-;; TODO: line-num opt: hl or mono(gray)
-
-;; TODO: add colored selection option
-;; TODO: distant foregound
-;; TODO: move git-gutter faces from a theme file to lib
-;; i.e. avoid duplication
-;; TODO: add company-tooltip-common-selection for new themes
-
-;; TODO: (??) num, link and prep color vars use the same color
-
 ;;; Color order
 ;;
-;; color0 - pure/contrast/accent >= 70 sat & > 70 val
+;; color0 - almost pure/contrast >= 70 sat & > 70 val
 ;; color1 - regular
 ;; color2 - dark
 ;; color3 - light/soft
@@ -111,7 +71,7 @@
     ;; Gray - #CED8D9
     (gray0 "#353b3c")
     (gray1 "#383e3f")
-    (gray2 "#414849") ; old gray
+    ;; (gray2 "#414849") ; old gray
     (gray2 "#4b5254")
     (gray3 "#545c5e")
     (gray4 "#60696b") ; old alt-gray
@@ -379,9 +339,7 @@
     (spring-green0 "#2ae186")
     (spring-green1 "#51b884")
     (spring-green2 "#39855f") ; dark
-    ;; TODO adjust
-    (spring-green3 "#6fb593") ; old light green
-    ;; (spring-green3 "#5DD49A") ; old light green
+    (spring-green3 "#65E6A7")
     (spring-green4 "#597a6c") ; faded
     (spring-green5 "#141E1A")
     (spring-green6 "#2E4038") ; old midnight
@@ -613,7 +571,7 @@
 
 
     ;; Interface
-    (package-name (:inherit 'link :underline nil))
+    (package-name          (:inherit 'link :underline nil))
     (button                (:inherit 'link))
     (custom-button         (:background bg3 :foreground button :box (:line-width 2 :color bg2 :style 'released-button)))
     (custom-button-mouse   (:background bg4 :foreground button-hl :box (:line-width 2 :color bg2 :style 'released-button)))
@@ -630,7 +588,7 @@
 
     ;; Highlighting
     (highlight                (:background bg2 :foreground amber3))
-    (lazy-highlight           (:background bg3 :foreground fg2))
+    (lazy-highlight           (:background bg4 :foreground hl))
     (hl-line                  (:background hl-line))
     (highlight-numbers-number (:foreground num))
     (highlight-quoted-quote   (:inherit 'font-lock-builtin-face))
@@ -656,6 +614,7 @@
 
     ;; Auto-dim-other-buffers
     (auto-dim-other-buffers-face  (:background dim-buffer))
+
 
     ;; Linum & nlinum
     (linum                        (:background line-num-bg :foreground line-num-fg :bold nil
@@ -931,9 +890,9 @@
     ;;  (show-paren-match-face (:background bg3 :foreground nil))))
     ;;  (show-paren-match-face (:background nil :foreground orange1 :bold bold)))))
 
-    ;; TODO: make red more contrast
-    (show-paren-mismatch (:background red4 :foreground bg2))
-    (rainbow-delimiters-unmatched-face (:foreground warning))
+    (show-paren-mismatch (:background red2 :foreground bg2))
+    (rainbow-delimiters-mismatched-face (:background red2 :foreground err))
+    (rainbow-delimiters-unmatched-face (:inherit 'rainbow-delimiters-mismatched-face))
     (rainbow-delimiters-base-face    (:foreground rb1))
     (rainbow-delimiters-depth-1-face (:foreground rb1))
     (rainbow-delimiters-depth-2-face (:foreground rb2))

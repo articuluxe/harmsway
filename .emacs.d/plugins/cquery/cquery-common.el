@@ -40,18 +40,23 @@
 ;;   Utility
 ;; ---------------------------------------------------------------------
 
-(defun cquery--uri-to-file (uri)
-  (string-remove-prefix lsp--uri-file-prefix uri))
-
 (defun cquery--read-range (range)
   (cons (lsp--position-to-point (gethash "start" range))
         (lsp--position-to-point (gethash "end" range))))
 
-(defun cquery--get-root ()
+(cl-defun cquery--get-root ()
   "Return the root directory of a cquery project."
-  (expand-file-name (or (locate-dominating-file default-directory "compile_commands.json")
-                        (locate-dominating-file default-directory ".cquery")
-                        (user-error "Could not find cquery project root"))))
+  (when cquery-project-root-function
+    (-when-let (root (funcall cquery-project-root-function))
+      (cl-return-from cquery--get-root root)))
+  (cl-loop for root in cquery-project-roots do
+           (when (string-prefix-p (expand-file-name root) buffer-file-name)
+             (cl-return-from cquery--get-root root)))
+  (or
+   (and (require 'projectile nil t) (ignore-errors (projectile-project-root)))
+   (expand-file-name (or (locate-dominating-file default-directory "compile_commands.json")
+                         (locate-dominating-file default-directory ".cquery")
+                         (user-error "Could not find cquery project root")))))
 
 (defun cquery--is-cquery-buffer(&optional buffer)
   "Return non-nil if current buffer is using the cquery client"
@@ -62,6 +67,23 @@
 (define-inline cquery--cquery-buffer-check ()
   (inline-quote (cl-assert (cquery--is-cquery-buffer) nil
                            "Cquery is not enabled in this buffer.")))
+
+(defun cquery--get-renderer ()
+  (thread-last lsp--cur-workspace
+    lsp--workspace-client
+    lsp--client-string-renderers
+    (assoc-string (thread-first lsp--cur-workspace
+                    lsp--workspace-client
+                    lsp--client-language-id
+                    (funcall (current-buffer))))
+    cdr))
+
+(defun cquery--render-string (str)
+  (funcall (cquery--get-renderer) str))
+
+(defun cquery--render-type (str)
+  "Render a string as a type"
+  (string-remove-suffix " a;" (cquery--render-string (format "%s a;" str))))
 
 ;; ---------------------------------------------------------------------
 ;;   Notification handlers
@@ -82,7 +104,7 @@ lsp-workspace, and PARAMS is a hashmap of the params recieved with the notificat
   (let* ((uri (car arguments))
          (data (cdr arguments)))
     (save-current-buffer
-      (find-file (cquery--uri-to-file uri))
+      (find-file (lsp--uri-to-path uri))
       (pcase command
         ;; Code actions
         ('"cquery._applyFixIt"
@@ -96,9 +118,9 @@ lsp-workspace, and PARAMS is a hashmap of the params recieved with the notificat
         ('"cquery._insertInclude"
          (cquery--select-textedit data "Include: "))
         ('"cquery.showReferences" ;; Used by code lenses
-         (let ((pos (lsp--position-to-point (car data))))
-           (goto-char pos)
-           (xref-find-references (xref-backend-identifier-at-point (xref-find-backend)))))))))
+         (xref--show-xrefs (lsp--locations-to-xref-items (cadr data)) nil))
+        (_
+         (message "unknown command: %s" command))))))
 
 (defun cquery--select-textedit (edit-list prompt)
   "Show a list of possible textedits, and apply the selected.

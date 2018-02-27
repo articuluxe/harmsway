@@ -1024,7 +1024,49 @@ or most optimal searcher."
                    "structure test : MYTEST ="
                    "signature test ="
                    "functor test (T:TEST) ="
-                   "functor test(T:TEST) =")))
+                   "functor test(T:TEST) ="))
+
+    ;; vhdl
+    (:type "type" :supports ("ag" "grep" "rg" "git-grep") :language "vhdl"
+           :regex "\\s*type\\s+\\bJJJ\\b"
+           :tests ("type test is" "type test  is")
+           :not ("type testing is" "type test2  is"))
+
+    (:type "type" :supports ("ag" "grep" "rg" "git-grep") :language "vhdl"
+           :regex "\\s*constant\\s+\\bJJJ\\b"
+           :tests ("constant test :" "constant test:")
+           :not ("constant testing " "constant test2:"))
+
+    (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "vhdl"
+           :regex "function\\s*\"?JJJ\"?\\s*\\\("
+           :tests ("function test(signal)" "function test (signal)" "function \"test\" (signal)")
+           :not ("function testing(signal"))
+
+    ;; latex
+    (:type "command" :supports ("ag" "grep" "rg" "git-grep") :language "tex"
+           :regex "\\\\.*newcommand\\\*?\\s*\\\{\\s*(\\\\)JJJ\\s*}"
+           :tests ("\\newcommand{\\test}" "\\renewcommand{\\test}" "\\renewcommand*{\\test}" "\\newcommand*{\\test}" "\\renewcommand{ \\test }")
+           :not("\\test"  "test"))
+    
+    (:type "command" :supports ("ag" "grep" "rg" "git-grep") :language "tex"
+           :regex "\\\\.*newcommand\\\*?\\s*(\\\\)JJJ\\j"
+           :tests ("\\newcommand\\test {}" "\\renewcommand\\test{}" "\\newcommand \\test")
+           :not("\\test"  "test"))
+    
+    (:type "length" :supports ("ag" "grep" "rg" "git-grep") :language "tex"
+           :regex "\\\\(s)etlength\\s*\\\{\\s*(\\\\)JJJ\\s*}"
+           :tests ("\\setlength { \\test}" "\\setlength{\\test}" "\\setlength{\\test}{morecommands}" )
+           :not("\\test"  "test"))
+    
+    (:type "counter" :supports ("ag" "grep" "rg" "git-grep") :language "tex"
+           :regex "\\\\newcounter\\\{\\s*JJJ\\s*}"
+           :tests ("\\newcounter{test}" )
+           :not("\\test"  "test"))
+    
+    (:type "environment" :supports ("ag" "grep" "rg" "git-grep") :language "tex"
+           :regex "\\\\.*newenvironment\\s*\\\{\\s*JJJ\\s*}"
+           :tests ("\\newenvironment{test}" "\\newenvironment {test}{morecommands}" "\\lstnewenvironment{test}" "\\newenvironment {test}" )
+           :not("\\test"  "test" )))
 
   "List of regex patttern templates organized by language and type to use for generating the grep command."
   :group 'dumb-jump
@@ -1131,10 +1173,13 @@ or most optimal searcher."
     (:language "shell" :ext "tcsh" :agtype nil :rgtype nil)
     (:language "sml" :ext "sml" :agtype "sml" :rgtype "sml")
     (:language "swift" :ext "swift" :agtype nil :rgtype "swift")
+    (:language "tex" :ext "tex" :agtype "tex" :rgtype "tex")
     (:language "elixir" :ext "ex" :agtype "elixir" :rgtype "elixir")
     (:language "elixir" :ext "exs" :agtype "elixir" :rgtype "elixir")
     (:language "elixir" :ext "eex" :agtype "elixir" :rgtype "elixir")
     (:language "erlang" :ext "erl" :agtype "erlang" :rgtype "erlang")
+    (:language "vhdl" :ext "vhd" :agtype "vhdl" :rgtype "vhdl")
+    (:language "vhdl" :ext "vhdl" :agtype "vhdl" :rgtype "vhdl")
     (:language "scss" :ext "scss" :agtype "css" :rgtype "css"))
 
   "Mapping of programming language(s) to file extensions."
@@ -1721,6 +1766,8 @@ current file."
     (:comment "//" :language "swift")
     (:comment "#" :language "elixir")
     (:comment "%" :language "erlang")
+    (:comment "%" :language "tex")
+    (:comment "--" :language "vhdl")
     (:comment "//" :language "scss"))
   "List of one-line comments organized by language."
   :group 'dumb-jump
