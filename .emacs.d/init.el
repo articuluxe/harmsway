@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-02-23 13:44:28 dan.harms>
+;; Modified Time-stamp: <2018-02-27 16:28:59 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -883,6 +883,8 @@ not an error if any files do not exist."
   :commands (figlet figlet-comment figlet-figletify-region
                     figlet-figletify-region-comment
                     figlet-preview-fonts)
+  :config
+  (setq figlet-default-font "big")
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ascii ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
