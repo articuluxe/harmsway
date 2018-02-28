@@ -5,7 +5,7 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Tuesday, May  3, 2016
 # Version: 1.0
-# Modified Time-stamp: <2018-02-02 10:40:45 dan.harms>
+# Modified Time-stamp: <2018-02-28 13:11:12 dan.harms>
 # Modified by: Dan Harms
 # Keywords: src repo
 
@@ -27,8 +27,7 @@ if [ "$subdir" == "." ]; then
     target="$(pwd)"
 fi
 
-echo "Using $proj version $ver"
-_yesorno.sh "Clone $proj into $target?"
+_yesorno.sh "Clone $proj version $ver into $target?"
 [ $? == 1 ] && exit 1
 echo -e
 
