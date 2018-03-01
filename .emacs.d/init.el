@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-02-27 16:28:59 dan.harms>
+;; Modified Time-stamp: <2018-03-01 06:12:52 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -908,8 +908,7 @@ not an error if any files do not exist."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; makefile-executor ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package makefile-executor
-  :config
-  (add-hook 'makefile-mode-hook 'makefile-executor-mode))
+  :hook (makefile-mode . makefile-executor-mode))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; magit ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defvar my/git-keymap)
