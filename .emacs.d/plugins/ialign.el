@@ -4,7 +4,7 @@
 ;; Author: Michał Kondraciuk <k.michal@zoho.com>
 ;; URL: https://github.com/mkcms/interactive-align
 ;; Package-Requires: ((emacs "24.4"))
-;; Version: 0.4.1
+;; Version: 0.4.2
 ;; Keywords: tools, editing, align, interactive
 
 ;; Copyright (C) 2017 Michał Kondraciuk
@@ -99,7 +99,7 @@ or equal to this, otherwise do not update."
 (defcustom ialign-initial-repeat nil
   "Initial value of repeat argument when calling `ialign'."
   :group 'ialign
-  :type 'booleanp)
+  :type 'boolean)
 
 (defvaralias 'ialign-initial-spacing 'ialign-default-spacing)
 
