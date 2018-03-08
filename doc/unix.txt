@@ -1,10 +1,10 @@
 # -*- Mode: sh; comment-start: "#" -*-
 # unix.txt --- misc. helpful commands
-# Copyright (C) 2015-2017   (dan.harms)
+# Copyright (C) 2015-2018   (dan.harms)
 # Author:  <dan.harms@xrtrading.com>
 # Created: Friday, March 20, 2015
 # Version: 1.0
-# Modified Time-stamp: <2017-11-15 13:50:39 dan.harms>
+# Modified Time-stamp: <2018-03-07 18:19:35 dharms>
 # Modified by: Dan Harms
 # Keywords: help
 
@@ -93,6 +93,8 @@ $?
 
 # debug a bash script
 set -xv
+# bash process substitution
+diff <(curl some_url) <(curl some_url)
 
 #################################### awk #####################################
 # seach a field for a specific regex
