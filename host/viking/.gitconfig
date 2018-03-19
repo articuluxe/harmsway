@@ -26,6 +26,7 @@
 	(ediff-files \\\"$LOCAL\\\" \\\"$REMOTE\\\"))\"
 [merge]
 	tool = mergegui
+	conflictstyle = diff3
 [mergetool]
 	prompt = false
 [mergetool.mergeterm]
