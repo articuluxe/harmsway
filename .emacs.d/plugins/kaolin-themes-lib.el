@@ -238,11 +238,12 @@
     ;; TODO adjust
     (ultramarine0 "#4618dc")
     (ultramarine1 "#5f3eca")
-    (ultramarine2 "#3d2394")
+    (ultramarine2 "#40249C")
     (ultramarine3 "#6d44eb")
     (ultramarine4 "#787096")
     (ultramarine5 "#16141e")
-    (ultramarine6 "#322E40")
+    ;; (ultramarine6 "#322E40")
+    (ultramarine6 "#2D2C58")
     (ultramarine7 "#6E6884")
     (ultramarine8 "#b0acc5")
     (ultramarine9 "#DBD3EE")
@@ -476,8 +477,8 @@
     (str-alt     spring-green4)
     (doc         str-alt)
     (type        vermilion4)
-    (const       purple4)
     (var         blue4)
+    (const       purple4)
     (num         red1)
     (bool        num)
     (prep        violet4)
@@ -485,6 +486,7 @@
     (err         red1)
 
     (keysym      prep)
+    (prompt      keyword)
 
     ;; Mode-line
     (line-fg           fg4)
@@ -550,7 +552,7 @@
     (cursor              (:background cursor))
     (vertical-border     (:foreground win-border))
     (window-divider      (:foreground win-border))
-    (minibuffer-prompt   (:foreground keyword :bold bold))
+    (minibuffer-prompt   (:foreground prompt :bold bold))
     (bold                (:bold bold))
     (italic              (:italic italic))
     (default-italic      (:italic italic))
@@ -708,10 +710,10 @@
     (sml/prefix           (:foreground line-fg))
     (sml/read-only        (:foreground orange1))
 
-    ;; TODO: maybe delete or change to other package
-    ;; Fic-mode
+    ;; Highlight TODOs
     (fic-face         (:background nil :foreground todo :bold bold))
     (fic-author-face  (:background nil :foreground todo :bold bold))
+    (hl-todo          (:background nil :foreground todo :bold bold))
 
     ;; Additional completion
     (ac-completion-face    (:foreground keyword :underline underline))
@@ -848,7 +850,7 @@
     (js2-function-param           (:foreground const))
     (js2-error                    (:underline (:color red0 :style underline-style)))
     (js2-function-call            (:foreground functions))
-    (js2-object-property          (:foreground brown3))
+    (js2-object-property          (:foreground num))
     (js2-jsdoc-value              (:foreground str))
     (js2-private-member           (:foreground fg3))
     (js3-function-param-face      (:foreground keyword))

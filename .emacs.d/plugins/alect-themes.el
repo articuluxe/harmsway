@@ -712,6 +712,14 @@ For INVERT, see `alect-get-color'."
          (diff-nonexistent       ((,c :inherit diff-header
                                       :foreground ,(gc 'gray))))
 
+         ;; diff-hl
+         (diff-hl-insert ((,c :foreground ,(gc 'fg+1)
+                              :background ,(gc 'green-bg))))
+         (diff-hl-delete ((,c :inherit diff-hl-insert
+                              :background ,(gc 'red-bg))))
+         (diff-hl-change ((,c :inherit diff-hl-insert
+                              :background ,(gc 'blue-bg))))
+
          ;; dired
          (dired-directory  ((,c :inherit font-lock-function-name-face)))
          (dired-flagged    ((,c :foreground ,(gc 'red))))
@@ -1470,6 +1478,14 @@ For INVERT, see `alect-get-color'."
          (rst-reference ((,c :inherit link)))
          (rst-adornment ((,c :foreground ,(gc 'fg+2))))
          (rst-literal   ((,c :foreground ,(gc 'cyan+1))))
+
+         ;; rubik
+         (rubik-yellow ((,c :background ,(gc 'yellow-bg-1))))
+         (rubik-white  ((,c :background ,(gc 'gray-2))))
+         (rubik-red    ((,c :background ,(gc 'red-bg-1))))
+         (rubik-orange ((,c :background ,(gc 'yellow))))
+         (rubik-green  ((,c :background ,(gc 'green-bg-1))))
+         (rubik-blue   ((,c :background ,(gc 'blue-bg-1))))
 
          ;; ruler-mode
          (ruler-mode-default        ((,c :inherit alect-tab-unselected

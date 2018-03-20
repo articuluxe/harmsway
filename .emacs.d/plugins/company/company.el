@@ -44,7 +44,9 @@
 ;; Here is a simple example completing "foo":
 ;;
 ;; (defun company-my-backend (command &optional arg &rest ignored)
+;;   (interactive (list 'interactive))
 ;;   (pcase command
+;;     (`interactive (company-begin-backend 'company-my-backend))
 ;;     (`prefix (company-grab-symbol))
 ;;     (`candidates (list "foobar" "foobaz" "foobarbaz"))
 ;;     (`meta (format "This value is named %s" arg))))
@@ -1629,7 +1631,6 @@ prefix match (same case) will be prioritized."
       ;; `company-completion-finished-hook' in that case, with right argument.
       (if (stringp result)
           (let ((company-backend backend))
-            (company-call-backend 'pre-completion result)
             (run-hook-with-args 'company-completion-finished-hook result)
             (company-call-backend 'post-completion result))
         (run-hook-with-args 'company-completion-cancelled-hook result))))
@@ -2389,7 +2390,7 @@ If SHOW-VERSION is non-nil, show the version in the echo area."
          cc annotations)
     (when (or (stringp prefix) (consp prefix))
       (let ((company-backend backend))
-        (setq cc (company-call-backend 'candidates prefix)
+        (setq cc (company-call-backend 'candidates (company--prefix-str prefix))
               annotations
               (mapcar
                (lambda (c) (cons c (company-call-backend 'annotation c)))

@@ -41,6 +41,21 @@
 (defvar cquery-sem-face-function 'cquery-sem--default-face
   "Function used to determine the face of a symbol in semantic highlighting.")
 
+(defface cquery-sem-global-variable-face
+  '((t :weight extra-bold))
+  "The additional face for global variables."
+  :group 'cquery-sem)
+
+(defface cquery-sem-local-face
+  '((t :weight normal))
+  "The additional face for local entities."
+  :group 'cquery-sem)
+
+(defface cquery-sem-local-function-face
+  '((t :inherit cquery-sem-local-face))
+  "The additional face for local functions."
+  :group 'cquery-sem)
+
 (defface cquery-sem-member-face
   '((t :slant italic))
   "The extra face applied to member functions/variables."
@@ -187,7 +202,9 @@ If nil, disable semantic highlighting."
            cquery-sem-member-face)) ; Method
       (9 `(,(funcall fn0 cquery-sem-function-faces 800 1000)
            cquery-sem-member-face)) ; Constructor
-      (12 (funcall fn0 cquery-sem-function-faces 0 1000)) ; Function
+      (12 `(,(funcall fn0 cquery-sem-function-faces 0 1000)
+            ,@(when (= storage 3)
+                '(cquery-sem-local-function-face)))) ; Function
       (254 `(,(funcall fn0 cquery-sem-function-faces 0 1000)
              cquery-sem-static-method-face)) ; StaticMethod
 
@@ -201,7 +218,9 @@ If nil, disable semantic highlighting."
 
       ;; Variables
       (13 `(,(funcall fn0 cquery-sem-variable-faces 0 1000)
-            ,@(when (or (= parent-kind 1) (= storage 3))
+            ,@(when (member parent-kind '(1 3))
+                '(cquery-sem-global-variable-face))
+            ,@(when (= storage 3)
                 '(cquery-sem-static-face)))) ; Variable
       (253 (funcall fn0 cquery-sem-parameter-faces 0 1000)) ; Parameter
       (255 (funcall fn0 cquery-sem-macro-faces 0 1000)) ; Macro
@@ -221,16 +240,16 @@ If nil, disable semantic highlighting."
 (defun cquery--publish-semantic-highlighting (_workspace params)
   "Publish semantic highlighting information according to PARAMS."
   (when cquery-sem-highlight-method
-    (when-let* ((file (lsp--uri-to-path (gethash "uri" params)))
-                (buffer (find-buffer-visiting file))
-                (symbols (gethash "symbols" params)))
+    (-when-let* ((file (lsp--uri-to-path (gethash "uri" params)))
+                 (buffer (find-buffer-visiting file))
+                 (symbols (gethash "symbols" params)))
       (with-current-buffer buffer
         (save-excursion
           (with-silent-modifications
             (cquery--clear-sem-highlights)
             (let (ranges point0 point1 (line 0) overlays)
               (dolist (symbol symbols)
-                (when-let* ((face (funcall cquery-sem-face-function symbol)))
+                (-when-let* ((face (funcall cquery-sem-face-function symbol)))
                   (dolist (range (gethash "ranges" symbol))
                     (-let (((&hash "start" start "end" end) range))
                       (push (list (gethash "line" start) (gethash "character" start)
@@ -258,7 +277,7 @@ If nil, disable semantic highlighting."
               (pcase cquery-sem-highlight-method
                 ('font-lock
                  (dolist (x overlays)
-                   (add-text-properties (car x) (cadr x) `(face ,(caddr x) fontified t))))
+                   (set-text-properties (car x) (cadr x) `(fontified t face ,(caddr x)))))
                 ('overlay
                  (dolist (x overlays)
                    (let ((ov (make-overlay (car x) (cadr x))))
@@ -299,20 +318,19 @@ If nil, disable semantic highlighting."
 
 (defun cquery--set-inactive-regions (_workspace params)
   "Put overlays on (preprocessed) inactive regions according to PARAMS."
-  (let* ((file (lsp--uri-to-path (gethash "uri" params)))
-         (regions (mapcar 'cquery--read-range (gethash "inactiveRegions" params)))
-         (buffer (find-buffer-visiting file)))
-    (when buffer
-      (with-current-buffer buffer
-        (save-excursion
-          (cquery--clear-inactive-regions)
-          (when cquery-enable-inactive-region
-            (overlay-recenter (point-max))
-            (dolist (region regions)
-              (let ((ov (make-overlay (car region) (cdr region) buffer)))
-                (overlay-put ov 'face 'cquery-inactive-region-face)
-                (overlay-put ov 'cquery-inactive t)
-                (push ov cquery--inactive-overlays)))))))))
+  (-when-let* ((file (lsp--uri-to-path (gethash "uri" params)))
+               (regions (mapcar 'cquery--read-range (gethash "inactiveRegions" params)))
+               (buffer (find-buffer-visiting file)))
+    (with-current-buffer buffer
+       (save-excursion
+         (cquery--clear-inactive-regions)
+         (when cquery-enable-inactive-region
+           (overlay-recenter (point-max))
+           (dolist (region regions)
+             (let ((ov (make-overlay (car region) (cdr region) buffer)))
+               (overlay-put ov 'face 'cquery-inactive-region-face)
+               (overlay-put ov 'cquery-inactive t)
+               (push ov cquery--inactive-overlays))))))))
 
 ;; Add handler
 (push '("$cquery/setInactiveRegions" . (lambda (w p) (cquery--set-inactive-regions w p)))

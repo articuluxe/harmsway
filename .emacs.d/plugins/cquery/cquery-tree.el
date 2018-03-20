@@ -132,14 +132,13 @@
   "The original point of the buffer that the tree was opened from.")
 
 (defun cquery-tree--refresh ()
-  (let ((p (point)))
-    (setq buffer-read-only nil)
+  (let ((p (point))
+        (inhibit-read-only t))
     (erase-buffer)
     (setf (cquery-tree-node-expanded cquery-tree--visible-root) t)
     (cquery-tree--draw-top-line)
     (cquery-tree--insert-node cquery-tree--visible-root 0 1 0)
-    (goto-char p)
-    (setq buffer-read-only t)))
+    (goto-char p)))
 
 (defun cquery-tree--insert-node (node number nchildren depth)
   (let* ((prefix (cquery-tree--make-prefix node number nchildren depth))
@@ -203,7 +202,8 @@
       (cquery-tree--refresh)
       (setq header-line-format (cquery-tree-client-header-line-format cquery-tree--cur-client))
       (setq mode-line-format (cquery-tree-client-mode-line-format cquery-tree--cur-client))
-      (goto-char 1))
+      (goto-char 1)
+      (forward-line))
     (let ((win (display-buffer-in-side-window (get-buffer bufname) '((side . right)))))
       (set-window-margins win 1)
       (select-window win)
@@ -312,7 +312,7 @@
 
 (defun cquery-tree-next-sibling (&optional arg)
   (interactive "p")
-  (when-let* ((depth (cquery-tree--depth-at-point)))
+  (-when-let* ((depth (cquery-tree--depth-at-point)))
     (while (and (forward-line 1)
                 (< depth (or (cquery-tree--depth-at-point) 0))))
     (when cquery-tree-calling
@@ -320,7 +320,7 @@
 
 (defun cquery-tree-prev-sibling (&optional arg)
   (interactive "p")
-  (when-let* ((depth (cquery-tree--depth-at-point)))
+  (-when-let* ((depth (cquery-tree--depth-at-point)))
     (while (and (forward-line -1)
                 (< depth (or (cquery-tree--depth-at-point) 0))))
     (when cquery-tree-calling
@@ -346,9 +346,9 @@
 
 (defun cquery-tree-quit ()
   (interactive)
-  (when-let* ((buf cquery-tree--origin-buffer)
-              (opoint cquery-tree--opoint)
-              (_ (window-live-p cquery-tree--origin-win)))
+  (-when-let* ((buf cquery-tree--origin-buffer)
+               (opoint cquery-tree--opoint)
+               (_ (window-live-p cquery-tree--origin-win)))
     (with-selected-window cquery-tree--origin-win
       (switch-to-buffer buf)
       (goto-char opoint)))

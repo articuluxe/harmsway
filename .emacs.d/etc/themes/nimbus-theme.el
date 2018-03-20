@@ -80,7 +80,7 @@
 
       (nimbus/cursor         "#f57e00")
       (nimbus/fringe         "gray11")
-      (nimbus/region         "#303030")
+      (nimbus/region         "gray23")
 
       (nimbus/bg             "gray10")
       (nimbus/fg             "#bdbdb3")
@@ -95,7 +95,7 @@
    `(link         ((t (:foreground ,nimbus/light-blue :underline t))))
    `(link-visited ((t (:foreground ,nimbus/red :underline t))))
    `(highlight    ((t (:foreground ,nimbus/bg :background ,nimbus/green))))
-   `(region       ((t (:background ,nimbus/black))))
+   `(region       ((t (:background ,nimbus/region))))
    `(shadow       ((t (:foreground ,nimbus/light-gray))))
    `(tooltip      ((t (:background ,nimbus/fg :foreground ,nimbus/bg))))
 
@@ -193,6 +193,8 @@
    ;; line numbers
    `(linum
      ((t (:inherit fringe :foreground ,nimbus/blue-gray :bold nil))))
+   `(nlinum-current-line
+     ((t (:inherit linum :foreground ,nimbus/dark-green))))
 
    `(popup-tip-face ((t (:background ,nimbus/fg :foreground ,nimbus/bg))))
 
@@ -1209,7 +1211,7 @@
    `(whitespace-indentation
      ((t (:foreground ,nimbus/gray :background "gray12"))))
    `(whitespace-line
-     ((t (:foreground ,nimbus/black :background ,nimbus/red))))
+     ((t (:inherit error))))
    `(whitespace-newline
      ((t (:foreground ,nimbus/gray))))
    `(whitespace-space

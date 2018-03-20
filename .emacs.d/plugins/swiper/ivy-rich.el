@@ -128,11 +128,14 @@ Note that this variable takes effect only when
   "Use space to pad STR to LEN of length.
 
 When LEFT is not nil, pad from left side."
-  (if (< (length str) len)
-      (if left
-          (concat (make-string (- len (length str)) ? ) str)
-        (concat str (make-string (- len (length str)) ? )))
-    str))
+  (let ((str-len (length str)))
+    (cond ((< str-len len)
+           (if left
+               (concat (make-string (- len (length str)) ? ) str)
+             (concat str (make-string (- len (length str)) ? ))))
+          ((> str-len len)
+           (format "%s…" (substring str 0 (1- len))))
+          (t str))))
 
 (defun ivy-rich-switch-buffer-user-buffer-p (buffer)
   "Check whether BUFFER-NAME is a user buffer."
@@ -288,7 +291,7 @@ or /a/…/f.el."
          (filename (propertize filename 'face 'ivy-virtual))
          (path (file-name-directory str))
          (path (ivy-rich-switch-buffer-shorten-path path (- (window-width (minibuffer-window)) (length filename))))
-         (path (ivy-rich-switch-buffer-pad path (- (window-width)
+         (path (ivy-rich-switch-buffer-pad path (- (window-width (minibuffer-window))
                                                    (length filename)
                                                    2)))  ; Fixed the unexpected wrapping in terminal
          (path (propertize path 'face 'ivy-virtual)))

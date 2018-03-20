@@ -36,6 +36,9 @@
 ;; - Re-running the last execution.  We usually run things in
 ;;   Makefiles many times after all!  Bound to '`C-c C-c'` in `makefile-mode` when
 ;;   'makefile-executor-mode'` is enabled.
+;; - Running a makefile target in a dedicated buffer.  Useful when
+;;   starting services and other long-running things!  Bound to
+;;   '`C-c C-d'` in `makefile-mode` when 'makefile-executor-mode'` is enabled.
 ;; - Calculation of variables et.c.; $(BINARY) will show up as what it
 ;;   evaluates to.
 ;; - If `projectile' is installed, execution from any buffer in a
@@ -60,6 +63,7 @@
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-c C-e") 'makefile-executor-execute-target)
     (define-key map (kbd "C-c C-c") 'makefile-executor-execute-last)
+    (define-key map (kbd "C-c C-d") 'makefile-executor-execute-dedicated-buffer)
     map)
   "Keymap for `makefile-executor-mode'.")
 
@@ -100,7 +104,7 @@ Bindings in `makefile-mode':
    makefile-executor-special-target makefile-executor-special-target)
   "Target used to list all other Makefile targets.")
 
-(defun makefile-executor-get-targets (&optional filename)
+(defun makefile-executor-get-targets (filename)
   "Return a list of all the targets of a Makefile.
 
 To list them in a computed manner, a new special target is added,
@@ -108,8 +112,7 @@ the buffer is written to a temporary Makefile which is executed
 with the special target.
 
 Optional argument FILENAME defaults to current buffer."
-  (let* ((filename (or filename (buffer-file-name)))
-         (file (make-temp-file "makefile"))
+  (let* ((file (make-temp-file "makefile"))
          (makefile-contents
           (concat
            (with-temp-buffer
@@ -120,14 +123,22 @@ Optional argument FILENAME defaults to current buffer."
 
     (f-write-text makefile-contents 'utf-8 file)
 
-    (with-temp-buffer
-      (shell-command
-       (format "make -f %s %s"
-               (shell-quote-argument file)
-               makefile-executor-special-target)
-       (current-buffer))
+    (let ((out (shell-command-to-string
+                (format "make -f %s %s"
+                        (shell-quote-argument file)
+                        makefile-executor-special-target))))
       (delete-file file)
-      (s-split "\n" (buffer-string) t))))
+      (s-split "\n" out t))))
+
+(defun makefile-executor-select-target (&optional filename)
+  "Prompt the user for a Makefile target.
+
+If there is only one, it is returned immediately."
+
+  (let ((targets (makefile-executor-get-targets (or filename (buffer-file-name)))))
+    (if (= (length targets) 1)
+        (car targets)
+      (completing-read "target: " targets))))
 
 ;;;###autoload
 (defun makefile-executor-execute-target (filename &optional target)
@@ -137,8 +148,7 @@ FILENAME defaults to current buffer."
   (interactive
    (list (file-truename buffer-file-name)))
 
-  (let ((target (or target
-                    (completing-read "target: " (makefile-executor-get-targets filename)))))
+  (let ((target (or target (makefile-executor-select-target filename))))
     (makefile-executor-store-cache filename target)
     (compile (format "make -f %s -C %s %s"
                      (shell-quote-argument filename)
@@ -204,6 +214,25 @@ as initial input for convenience in executing the most relevant Makefile."
      (concat (projectile-project-root) filename))))
 
 ;;;###autoload
+(defun makefile-executor-execute-dedicated-buffer (filename &optional target)
+  "Runs a makefile target in a dedicated compile buffer.
+
+The dedicated buffer will be named \"*<target>*\".  If
+`projectile' is installed and the makefile is in a project the
+project name will be prepended to the dedicated buffer name."
+  (interactive (list
+      (buffer-file-name)))
+  (let* ((target (or target (makefile-executor-select-target filename)))
+         (buffer-name
+          (if (and (featurep 'projectile) (projectile-project-p))
+              (format "*%s-%s*" (projectile-project-name) target)
+            (format "*%s*" target))))
+
+    (makefile-executor-execute-target filename target)
+    (with-current-buffer (get-buffer "*compilation*")
+      (rename-buffer buffer-name))))
+
+;;;###autoload
 (defun makefile-executor-execute-last (arg)
   "Execute the most recently executed Makefile target.
 
@@ -217,8 +246,9 @@ argument is given, always prompt."
         (if (featurep 'projectile)
             (makefile-executor-execute-project-target)
           (makefile-executor-execute-target))
-      (makefile-executor-execute-target (car targets)
-                                        (cadr targets)))))
+      (makefile-executor-execute-target
+       (car targets)
+       (cadr targets)))))
 
 ;;;###autoload
 (defun makefile-executor-goto-makefile ()
@@ -228,9 +258,12 @@ argument is given, always prompt."
   (when (not (featurep 'projectile))
     (error "You need to install 'projectile' for this function to work"))
 
-  (find-file
-   (concat (projectile-project-root)
-           (completing-read "Makefile: " (makefile-executor-get-makefiles)))))
+  (let ((makefiles (makefile-executor-get-makefiles)))
+    (find-file
+     (concat (projectile-project-root)
+             (if (= 1 (length makefiles))
+                 (car makefiles)
+               (completing-read "Makefile: " makefiles))))))
 
 ;; This is so that the library is useful even if one does not have
 ;; `projectile' installed.

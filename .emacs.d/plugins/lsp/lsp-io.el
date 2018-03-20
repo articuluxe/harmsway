@@ -125,7 +125,7 @@
                            (gethash method lsp--default-notification-handlers))))
     (if handler
         (funcall handler (lsp--parser-workspace p) params)
-      (message "Unknown method: %s" method))))
+      (lsp-warn "Unknown method: %s" method))))
 
 (defun lsp--on-request (p request)
   "Call the appropriate handler for REQUEST, and send the return value to the server."
@@ -157,7 +157,7 @@
           (setq handler (gethash other (lsp--client-request-handlers client) nil))
           (if (not handler)
             (progn
-              (message "Unknown request method: %s" other)
+              (lsp-warn "Unknown request method: %s" other)
               empty-response)
             (lsp--make-response (gethash "id" request)
               (funcall handler (lsp--parser-workspace p) params) nil)))))
@@ -237,7 +237,11 @@
     (pcase (lsp--get-message-type json-data)
       ('response
         (cl-assert id)
-        (setq callback (gethash id (lsp--client-response-handlers client) nil))
+        (setq callback (gethash (if (stringp id)
+                                  (string-to-number id)
+                                  id)
+                         (lsp--client-response-handlers client)
+                         nil))
         (if callback
           (progn (funcall callback (gethash "result" json-data nil))
             (remhash id (lsp--client-response-handlers client)))

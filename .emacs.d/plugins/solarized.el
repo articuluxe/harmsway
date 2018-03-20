@@ -454,6 +454,44 @@ customize the resulting theme."
                              :inverse-video nil))))
      `(ace-jump-face-foreground
        ((,class (:foreground ,red :background ,base03 :inverse-video nil :weight bold))))
+;;;;; all-the-icons, all-the-icons-dired, spaceline-all-the-icons
+     `(spaceline-all-the-icons-info-face ((,class (:foreground ,blue))))
+     `(spaceline-all-the-icons-sunrise-face ((,class (:foreground ,yellow))))
+     `(spaceline-all-the-icons-sunrise-face ((,class (:foreground ,orange))))
+     `(all-the-icons-dired-dir-face ((,class (:foreground ,base0))))
+     `(all-the-icons-red ((,class (:foreground ,red))))
+     `(all-the-icons-lred ((,class (:foreground ,red-lc))))
+     `(all-the-icons-dred ((,class (:foreground ,red-hc))))
+     `(all-the-icons-red-alt ((,class (:foreground ,red))))
+     `(all-the-icons-green ((,class (:foreground ,green))))
+     `(all-the-icons-lgreen ((,class (:foreground ,green-lc))))
+     `(all-the-icons-dgreen ((,class (:foreground ,green-hc))))
+     `(all-the-icons-yellow ((,class (:foreground ,yellow))))
+     `(all-the-icons-lyellow ((,class (:foreground ,yellow-lc))))
+     `(all-the-icons-dyellow ((,class (:foreground ,yellow-hc))))
+     `(all-the-icons-blue ((,class (:foreground ,blue))))
+     `(all-the-icons-blue-alt ((,class (:foreground ,blue))))
+     `(all-the-icons-lblue ((,class (:foreground ,blue-lc))))
+     `(all-the-icons-dblue ((,class (:foreground ,blue-hc))))
+     `(all-the-icons-maroon ((,class (:foreground ,magenta-d))))
+     `(all-the-icons-lmaroon ((,class (:foreground ,magenta-d))))
+     `(all-the-icons-dmaroon ((,class (:foreground ,magenta-d))))
+     `(all-the-icons-purple ((,class (:foreground ,violet))))
+     `(all-the-icons-lpurple ((,class (:foreground ,violet-lc))))
+     `(all-the-icons-dpurple ((,class (:foreground ,violet-hc))))
+     `(all-the-icons-orange ((,class (:foreground ,orange))))
+     `(all-the-icons-lorange ((,class (:foreground ,orange-lc))))
+     `(all-the-icons-dorange ((,class (:foreground ,orange-hc))))
+     `(all-the-icons-cyan ((,class (:foreground ,cyan))))
+     `(all-the-icons-cyan-alt ((,class (:foreground ,cyan))))
+     `(all-the-icons-lcyan ((,class (:foreground ,cyan-lc))))
+     `(all-the-icons-dcyan ((,class (:foreground ,cyan-hc))))
+     `(all-the-icons-pink ((,class (:foreground ,magenta))))
+     `(all-the-icons-lpink ((,class (:foreground ,magenta-lc))))
+     `(all-the-icons-dpink ((,class (:foreground ,magenta-hc))))
+     `(all-the-icons-silver ((,class (:foreground ,base0))))
+     `(all-the-icons-lsilver ((,class (:foreground ,base01))))
+     `(all-the-icons-dsilver ((,class (:foreground ,base1))))
 ;;;;; android-mode
      `(android-mode-debug-face ((,class (:foreground ,green))))
      `(android-mode-error-face ((,class (:foreground ,orange :weight bold))))
@@ -1323,11 +1361,15 @@ customize the resulting theme."
 ;;;;; linum-mode
      `(linum ((,class (:weight normal :underline nil :foreground ,s-fringe-fg :background ,s-fringe-bg))))
      `(linum-relative-current-face ((,class (:inherit linum))))
+;;;;; lsp-ui
+     `(lsp-ui-sideline-code-action ((,class (:foreground ,yellow :weight normal))))
 ;;;;; lusty-explorer
      `(lusty-directory-face ((,class (:inherit dired-directory))))
      `(lusty-file-face ((,class nil)))
      `(lusty-match-face ((,class (:inherit ido-first-match))))
      `(lusty-slash-face ((,class (:foreground ,cyan :weight bold))))
+;;;;; macrostep
+     `(macrostep-expansion-highlight-face ((,class (:background ,base02))))
 ;;;;; magit
 ;;;;;; headings and diffs
      `(magit-section-highlight           ((t (:background ,base02))))
@@ -2189,6 +2231,8 @@ customize the resulting theme."
               ,blue-d ,cyan ,magenta ,violet))
 ;;;;; highlight-changes
      `(highlight-changes-colors '(,magenta ,violet))
+;;;;; highlight-parentheses
+     `(hl-paren-colors '(,cyan ,yellow ,blue ,violet ,green))
 ;;;;; highlight-symbol
      `(highlight-symbol-foreground-color ,base1)
      `(highlight-symbol-colors

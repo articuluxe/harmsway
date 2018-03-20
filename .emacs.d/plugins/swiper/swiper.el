@@ -339,9 +339,7 @@
 
     (concat
      " "
-     (replace-regexp-in-string
-      "\t" "    "
-      (buffer-substring beg end)))))
+     (buffer-substring beg end))))
 
 (declare-function outline-show-all "outline")
 
@@ -998,6 +996,7 @@ See `ivy-format-function' for further information."
                        ?\ )
                       (buffer-name))
                      s)
+                    (put-text-property 0 len 'buffer buf s)
                     s))
                 (swiper--candidates 4))
                res))

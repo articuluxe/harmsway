@@ -2,7 +2,7 @@
 
 ;; Copyright Marc Sherry <msherry@gmail.com>
 ;; Homepage: https://github.com/msherry/flycheck-pycheckers
-;; Version: 0.6
+;; Version: 0.7.1
 ;; Package-Requires: ((flycheck "0.18"))
 ;; Keywords: convenience, tools, languages
 
@@ -270,6 +270,11 @@ per-directory."
      "WARNING " (optional (id (one-or-more (not (any ":"))))) ":"
      (message) " at " (file-name) " line " line (optional "," column) "." line-end))
   :modes 'python-mode)
+
+(defun flycheck-pycheckers-unsetup ()
+  "Utility function, used for testing only."
+  (interactive)
+  (setq flycheck-checkers (remove 'python-pycheckers flycheck-checkers)))
 
 ;;; ###autoload
 (defun flycheck-pycheckers-setup ()

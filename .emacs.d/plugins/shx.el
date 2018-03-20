@@ -5,7 +5,7 @@
 ;; Keywords: processes, tools
 ;; URL: https://github.com/riscy/shx-for-emacs
 ;; Package-Requires: ((emacs "24.4"))
-;; Version: 0.0.13
+;; Version: 0.0.14
 
 ;; This file is NOT part of GNU Emacs.
 
@@ -37,8 +37,8 @@
 ;; 2. Add this line to your .emacs:
 ;;    (require 'shx)
 ;;
-;; By default, shx runs automatically in all comint-mode buffers, but you can
-;; always use M-x shx RET to create a new shell session using shx.
+;; Type M-x shx RET to create a new shell session using shx.  If you like shx,
+;; you can enable shx in every comint-mode buffer with (shx-global-mode 1).
 ;;
 ;; Use M-x customize-group RET shx RET to see customization options.
 
@@ -252,17 +252,18 @@ buffer's `process-mark'."
       (while (shx--search-forward shx-markup-syntax)
         (let ((command (shx--get-user-cmd (match-string 1)))
               (args    (match-string 2)))
-          (if (not (and command (shx--safe-as-markup-p command)))
-              (add-text-properties
-               (point-at-bol) (point-at-eol)
-               `(help-echo "shx: this markup was unsafe/undefined"))
-            (replace-match "")          ; hide the markup
-            (funcall command args)
-            (set-buffer originating-buffer)
-            ;; some shx commands might add an extra newline:
-            (and (zerop (current-column))
-                 (not (eq 1 (point)))
-                 (delete-char 1))))))))
+          (cond ((not command) nil)
+                ((not (shx--safe-as-markup-p command))
+                 (add-text-properties
+                  (point-at-bol) (point-at-eol)
+                  `(help-echo "shx: this markup was unsafe/undefined")))
+                (t (replace-match "")   ; hide the markup
+                   (funcall command args)
+                   (set-buffer originating-buffer)
+                   ;; some shx commands might add an extra newline:
+                   (and (zerop (current-column))
+                        (not (eq 1 (point)))
+                        (delete-char 1)))))))))
 
 (defun shx--parse-output-for-triggers ()
   "Look for triggers since `comint-last-output' (e.g., URLs)."
@@ -280,8 +281,6 @@ buffer's `process-mark'."
 
 (defun shx--goto-last-input-or-output ()
   "Go to the beginning of the next event from the process."
-  ;; sometimes `comint-last-output-start' is too far back, so
-  ;; go to `comint-last-input-end' when that's the case.
   (goto-char (max comint-last-output-start comint-last-input-end))
   (forward-line 0))
 
@@ -487,8 +486,6 @@ are sent straight through to the process to handle paging."
   "Insert image FILENAME into the buffer."
   (let* ((img-name (make-temp-file "tmp" nil ".png"))
          (status (call-process
-                  ;; NOTE: FILENAME is interpreted literally by emacs and
-                  ;; does not need to go through shx--escape-filename:
                   shx-path-to-convert nil t nil (expand-file-name filename)
                   "-resize" (format "x%d>" shx-img-height) img-name)))
     (when (zerop status)
@@ -558,7 +555,7 @@ REPEAT-INTERVAL specifies delays between repetitions."
 (defun shx-cmd-delay (args)
   "Run a command after a specific delay.
 ARGS are <delay in seconds> <command>.
-Cancel a delayed command with :stop (`shx-cmd-stop').
+Cancel a delayed command with :stop \(`shx-cmd-stop'\).
 \nExample:\n
   :delay 10 echo Ten seconds are up!"
   (cond
@@ -768,9 +765,7 @@ That list can be added to using `shx-cmd-keep'."
 (defun shx-cmd-man (topic)
   "Launch an Emacs `man' window for TOPIC.
 See `Man-notify-method' for what happens when the page is ready."
-  (if (equal topic "")
-      (shx-insert 'error "man <topic>\n")
-    (man topic)))
+  (man topic))
 
 (defun shx-cmd-name (name)
   "(SAFE) Rename the current buffer to NAME."
@@ -798,15 +793,16 @@ See `Man-notify-method' for what happens when the page is ready."
 \nThis way you benefit from the remote host's completions, and
 commands like :pwd and :edit will work correctly.
 \nExample:\n
-  :ssh hostname:port"
+  :ssh username@hostname:port"
   (if (equal host "")
       (shx-insert 'error "ssh host\n")
+    (shx-insert "Connecting to " 'font-lock-doc-face host 'default "\n")
     (let* ((host (replace-regexp-in-string ":" "#" host))
            (default-directory
              (if (eq tramp-syntax 'default)
                  (concat "/ssh:" host ":~")
                (concat "/" host ":~"))))
-      (shx))))
+      (shx--asynch-funcall #'shx (list nil default-directory)))))
 
 (defun shx-cmd-sedit (file)
   "Open local FILE using sudo (i.e. as super-user).
@@ -873,7 +869,7 @@ Or just a single column:
 
 (defun shx-cmd-view (filename)
   "(SAFE) View image with FILENAME directly in the buffer."
-  (shx-insert-image filename))
+  (shx-insert-image (car (shx-tokenize filename))))
 
 
 ;;; loading
@@ -913,12 +909,13 @@ comint-mode in general.  Use `shx-global-mode' to enable
 ;;;###autoload
 (define-globalized-minor-mode shx-global-mode shx-mode shx--turn-on :require 'shx)
 
-(defun shx (&optional name)
+(defun shx (&optional name directory)
   "Create a new shx-enhanced shell session.
-NAME is the optional name of the new buffer.
+The new buffer is called NAME and uses DIRECTORY as its `default-directory'.
 See the function `shx-mode' for details."
   (interactive)
-  (let ((name (or name (generate-new-buffer-name "*shx*"))))
+  (let ((name (or name (generate-new-buffer-name "*shx*")))
+        (default-directory (or directory default-directory)))
     ;; switch-to-buffer first -- shell uses pop-to-buffer
     ;; which is unpredictable! :(
     (switch-to-buffer name)

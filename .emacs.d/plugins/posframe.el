@@ -5,7 +5,7 @@
 ;; Author: Feng Shu <tumashu@163.com>
 ;; Maintainer: Feng Shu <tumashu@163.com>
 ;; URL: https://github.com/tumashu/posframe
-;; Version: 0.1.0
+;; Version: 0.3.0
 ;; Keywords: tooltip
 ;; Package-Requires: ((emacs "26"))
 
@@ -72,10 +72,14 @@
 ;; #+END_EXAMPLE
 
 ;; *** Delete a posframe
-;; #+BEGIN_EXAMPLE
-;; (posframe-delete " *my-posframe-buffer*")
-;; #+END_EXAMPLE
-
+;; 1. Delete posframe and its buffer
+;;    #+BEGIN_EXAMPLE
+;;    (posframe-delete " *my-posframe-buffer*")
+;;    #+END_EXAMPLE
+;; 2. Only delete posframe's frame
+;;    #+BEGIN_EXAMPLE
+;;    (posframe-delete-frame " *my-posframe-buffer*")
+;;    #+END_EXAMPLE
 ;; *** Delete all posframes
 ;; #+BEGIN_EXAMPLE
 ;; M-x posframe-delete-all
@@ -88,8 +92,6 @@
 ;;; Code:
 ;; * posframe's code                         :CODE:
 (require 'cl-lib)
-
-(defconst posframe-version "0.1.0")
 
 (defgroup posframe nil
   "Pop a posframe (just a frame) at point"
@@ -140,7 +142,9 @@ frame.")
                                      right-fringe
                                      font
                                      keep-ratio
-                                     override-parameters)
+                                     override-parameters
+                                     respect-header-line
+                                     respect-mode-line)
   "Create a child-frame for posframe.
 This posframe's buffer is POSFRAME-BUFFER."
   (let ((left-fringe (or left-fringe 0))
@@ -154,18 +158,22 @@ This posframe's buffer is POSFRAME-BUFFER."
                     left-fringe
                     font
                     keep-ratio
-                    override-parameters)))
+                    override-parameters
+                    respect-header-line
+                    respect-mode-line)))
     (with-current-buffer posframe-buffer
       ;; Many variables take effect after call `set-window-buffer'
-      (setq-local left-fringe-width left-fringe)
-      (setq-local right-fringe-width right-fringe)
+      (setq-local left-fringe-width nil)
+      (setq-local right-fringe-width nil)
       (setq-local fringes-outside-margins 0)
       (setq-local truncate-lines t)
-      (setq-local mode-line-format nil)
-      (setq-local header-line-format nil)
       (setq-local cursor-type nil)
       (setq-local cursor-in-non-selected-windows nil)
       (setq-local show-trailing-whitespace nil)
+      (unless respect-mode-line
+        (setq-local mode-line-format nil))
+      (unless respect-header-line
+        (setq-local header-line-format nil))
 
       ;; Create child-frame
       (unless (and (frame-live-p posframe--frame)
@@ -174,7 +182,7 @@ This posframe's buffer is POSFRAME-BUFFER."
                    ;; user change args, recreating frame
                    ;; is needed.
                    (equal posframe--last-args args))
-        (posframe--delete-frame posframe-buffer)
+        (posframe-delete-frame posframe-buffer)
         (setq-local posframe--last-args args)
         (setq-local posframe--last-position nil)
         (setq-local posframe--last-posframe-size nil)
@@ -189,7 +197,8 @@ This posframe's buffer is POSFRAME-BUFFER."
                           (cons 'font font))
                        (parent-frame . ,(or parent-frame (window-frame)))
                        (keep-ratio ,keep-ratio)
-                       (posframe-buffer . ,posframe-buffer)
+                       (posframe-buffer . ,(cons (buffer-name posframe-buffer)
+                                                 posframe-buffer))
                        (no-accept-focus . t)
                        (min-width  . 0)
                        (min-height . 0)
@@ -216,8 +225,10 @@ This posframe's buffer is POSFRAME-BUFFER."
                        (desktop-dont-save . t))))
         (let ((posframe-window (frame-root-window posframe--frame)))
           ;; This method is more stable than 'setq mode/header-line-format nil'
-          (set-window-parameter posframe-window 'mode-line-format 'none)
-          (set-window-parameter posframe-window 'header-line-format 'none)
+          (unless respect-mode-line
+            (set-window-parameter posframe-window 'mode-line-format 'none))
+          (unless respect-header-line
+            (set-window-parameter posframe-window 'header-line-format 'none))
           (set-window-buffer posframe-window posframe-buffer)))
       posframe--frame)))
 
@@ -237,6 +248,8 @@ This posframe's buffer is POSFRAME-BUFFER."
                          font
                          foreground-color
                          background-color
+                         respect-header-line
+                         respect-mode-line
                          no-properties
                          keep-ratio
                          override-parameters
@@ -294,6 +307,10 @@ By default, posframe's foreground and background color are
 deriverd from current frame, user can set them with the help
 of FOREGROUND-COLOR and BACKGROUND-COLOR.
 
+By default, posframe will force hide header-line and mode-line
+If user want to show header-line or mode-line in posframe,
+set RESPECT-HEADER-LINE or RESPECT-MODE-LINE to t.
+
 OVERRIDE-PARAMETERS is very powful, *all* the frame parameters
 used by posframe's frame can be overrided by it.
 
@@ -334,6 +351,8 @@ you can use `posframe-delete-all' to delete all posframes."
              :foreground-color foreground-color
              :background-color background-color
              :keep-ratio keep-ratio
+             :respect-header-line respect-header-line
+             :respect-mode-line respect-mode-line
              :override-parameters override-parameters))
 
       ;; Insert string to posframe-buffer.
@@ -467,26 +486,31 @@ WIDTH and MIN-WIDTH."
 
 (defun posframe-hide (posframe-buffer)
   "Hide posframe which buffer is POSFRAME-BUFFER."
-  (with-current-buffer (get-buffer-create posframe-buffer)
-    (when (frame-live-p posframe--frame)
-      (make-frame-invisible posframe--frame))))
+  (dolist (frame (frame-list))
+    (let ((buffer-info (frame-parameter frame 'posframe-buffer)))
+      (when (or (equal posframe-buffer (car buffer-info))
+                (equal posframe-buffer (cdr buffer-info)))
+        (make-frame-invisible frame)))))
 
 (defun posframe-delete (posframe-buffer)
   "Delete posframe which buffer POSFRAME-BUFFER."
-  (posframe--delete-frame posframe-buffer)
+  (posframe-delete-frame posframe-buffer)
   (posframe--kill-buffer posframe-buffer))
 
-(defun posframe--delete-frame (posframe-buffer)
+(defun posframe-delete-frame (posframe-buffer)
   "Kill child-frame of posframe.
 This posframe's buffer is POSFRAME-BUFFER."
   (dolist (frame (frame-list))
-    (let ((buffer (frame-parameter frame 'posframe-buffer)))
-      (when (equal posframe-buffer buffer)
-        (with-current-buffer posframe-buffer
-          (dolist (timer '(posframe--refresh-timer
-                           posframe--timeout-timer))
-            (when (timerp timer)
-              (cancel-timer timer))))
+    (let ((buffer-info (frame-parameter frame 'posframe-buffer))
+          (buffer (get-buffer posframe-buffer)))
+      (when (or (equal posframe-buffer (car buffer-info))
+                (equal posframe-buffer (cdr buffer-info)))
+        (when buffer
+          (with-current-buffer buffer
+            (dolist (timer '(posframe--refresh-timer
+                             posframe--timeout-timer))
+              (when (timerp timer)
+                (cancel-timer timer)))))
         (delete-frame frame)))))
 
 (defun posframe--kill-buffer (posframe-buffer)
@@ -498,22 +522,29 @@ This posframe's buffer is POSFRAME-BUFFER."
 (defun posframe-hide-all ()
   "Hide all posframe's frames."
   (interactive)
-  (dolist (buffer (buffer-list))
-    (with-current-buffer buffer
-      (when (frame-live-p posframe--frame)
-        (make-frame-invisible posframe--frame)))))
+  (dolist (frame (frame-list))
+    (let ((buffer-info (frame-parameter frame 'posframe-buffer)))
+      (when buffer-info (make-frame-invisible frame)))))
 
 ;;;###autoload
 (defun posframe-delete-all ()
   "Delete all posframe's frames and buffers."
   (interactive)
   (dolist (frame (frame-list))
-    (let ((buffer (frame-parameter frame 'posframe-buffer)))
-      (when buffer (delete-frame frame))))
+    (let ((buffer-info (frame-parameter frame 'posframe-buffer)))
+      (when buffer-info (delete-frame frame))))
   (dolist (buffer (buffer-list))
     (with-current-buffer buffer
       (when posframe--frame
         (posframe--kill-buffer buffer)))))
+
+(defun posframe-auto-delete ()
+  "Auto delete posframe when its buffer is killed.
+
+This function is used by `kill-buffer-hook'."
+  (posframe-delete-frame (current-buffer)))
+
+(add-hook 'kill-buffer-hook #'posframe-auto-delete)
 
 ;; Posframe's position handler
 (defun posframe-run-poshandler (info)

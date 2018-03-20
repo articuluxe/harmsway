@@ -601,12 +601,13 @@ NOERROR is non-nil, in which case return nil."
   "Return t if DIRECTORY is a Git repository.
 When optional NON-BARE is non-nil also return nil if DIRECTORY is
 a bare repository."
-  (or (file-regular-p (expand-file-name ".git" directory))
-      (file-directory-p (expand-file-name ".git" directory))
-      (and (not non-bare)
-           (file-regular-p (expand-file-name "HEAD" directory))
-           (file-directory-p (expand-file-name "refs" directory))
-           (file-directory-p (expand-file-name "objects" directory)))))
+  (and (file-directory-p directory) ; Avoid archives, see #3397.
+       (or (file-regular-p (expand-file-name ".git" directory))
+           (file-directory-p (expand-file-name ".git" directory))
+           (and (not non-bare)
+                (file-regular-p (expand-file-name "HEAD" directory))
+                (file-directory-p (expand-file-name "refs" directory))
+                (file-directory-p (expand-file-name "objects" directory))))))
 
 (defvar-local magit-buffer-revision  nil)
 (defvar-local magit-buffer-refname   nil)
@@ -1627,24 +1628,25 @@ the reference is used.  The first regexp submatch becomes the
   (magit-git-success "update-index" "--add" "--remove" "--" files))
 
 (defun magit-update-ref (ref message rev &optional stashish)
-  (or (if (not (version< (magit-git-version) "2.6.0"))
-          (zerop (magit-call-git "update-ref" "--create-reflog"
-                                 "-m" message ref rev
-                                 (or (magit-rev-verify ref) "")))
-        ;; `--create-reflog' didn't exist before v2.6.0
-        (let ((oldrev  (magit-rev-verify ref))
-              (logfile (magit-git-dir (concat "logs/" ref))))
-          (unless (file-exists-p logfile)
-            (when oldrev
-              (magit-git-success "update-ref" "-d" ref oldrev))
-            (make-directory (file-name-directory logfile) t)
-            (with-temp-file logfile)
-            (when (and oldrev (not stashish))
-              (magit-git-success "update-ref" "-m" "enable reflog"
-                                 ref oldrev ""))))
-        (magit-git-success "update-ref" "-m" message ref rev
-                           (or (magit-rev-verify ref) "")))
-      (error "Cannot update %s with %s" ref rev)))
+  (let ((magit--refresh-cache nil))
+    (or (if (not (version< (magit-git-version) "2.6.0"))
+            (zerop (magit-call-git "update-ref" "--create-reflog"
+                                   "-m" message ref rev
+                                   (or (magit-rev-verify ref) "")))
+          ;; `--create-reflog' didn't exist before v2.6.0
+          (let ((oldrev  (magit-rev-verify ref))
+                (logfile (magit-git-dir (concat "logs/" ref))))
+            (unless (file-exists-p logfile)
+              (when oldrev
+                (magit-git-success "update-ref" "-d" ref oldrev))
+              (make-directory (file-name-directory logfile) t)
+              (with-temp-file logfile)
+              (when (and oldrev (not stashish))
+                (magit-git-success "update-ref" "-m" "enable reflog"
+                                   ref oldrev ""))))
+          (magit-git-success "update-ref" "-m" message ref rev
+                             (or (magit-rev-verify ref) "")))
+        (error "Cannot update %s with %s" ref rev))))
 
 (defconst magit-range-re
   (concat "\\`\\([^ \t]*[^.]\\)?"       ; revA

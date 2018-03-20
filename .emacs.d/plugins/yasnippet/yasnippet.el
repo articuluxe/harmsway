@@ -582,6 +582,34 @@ override bindings from other packages (e.g., `company-mode')."
   "The original value of `auto-fill-function'.")
 (make-variable-buffer-local 'yas--original-auto-fill-function)
 
+(defvar yas--watch-auto-fill-backtrace nil)
+
+(defun yas--watch-auto-fill (sym newval op _where)
+  (when (and (or (and (eq sym 'yas--original-auto-fill-function)
+                      (null newval)
+                      (eq auto-fill-function 'yas--auto-fill))
+                 (and (eq sym 'auto-fill-function)
+                      (eq newval 'yas--auto-fill)
+                      (null yas--original-auto-fill-function)))
+             (null yas--watch-auto-fill-backtrace)
+             (fboundp 'backtrace-frames) ; Suppress compiler warning.
+             ;; If we're about to change `auto-fill-function' too,
+             ;; it's okay (probably).
+             (not (and (eq op 'makunbound)
+                       (not (eq (default-value 'auto-fill-function) 'yas--auto-fill))
+                       (cl-member 'kill-all-local-variables
+                                  (backtrace-frames 'yas--watch-auto-fill)
+                                  :key (lambda (frame) (nth 1 frame))))))
+    (setq yas--watch-auto-fill-backtrace
+          (backtrace-frames 'yas--watch-auto-fill))))
+
+;; Try to get more info on #873/919 (this only works for Emacs 26+).
+(when (fboundp 'add-variable-watcher)
+  (add-variable-watcher 'yas--original-auto-fill-function
+                        #'yas--watch-auto-fill)
+  (add-variable-watcher 'auto-fill-function
+                        #'yas--watch-auto-fill))
+
 (defun yas--snippet-next-id ()
   (let ((id yas--snippet-id-seed))
     (cl-incf yas--snippet-id-seed)
@@ -3683,7 +3711,44 @@ field start.  This hook does nothing if an undo is in progress."
             reoverlays))
     (goto-char orig-point)
     (let ((yas--inhibit-overlay-hooks t))
-      (funcall yas--original-auto-fill-function))
+      (if (null yas--original-auto-fill-function)
+          ;; Try to get more info on #873/919.
+          (let ((yas--fill-fun-values `((t ,(default-value 'yas--original-auto-fill-function))))
+                (fill-fun-values `((t ,(default-value 'auto-fill-function))))
+                ;; Listing 2 buffers with the same value is enough
+                (print-length 3))
+            (save-current-buffer
+              (dolist (buf (let ((bufs (buffer-list)))
+                             ;; List the current buffer first.
+                             (setq bufs (cons (current-buffer)
+                                              (remq (current-buffer) bufs)))))
+                (set-buffer buf)
+                (let* ((yf-cell (assq yas--original-auto-fill-function
+                                      yas--fill-fun-values))
+                       (af-cell (assq auto-fill-function fill-fun-values)))
+                  (when (local-variable-p 'yas--original-auto-fill-function)
+                    (if yf-cell (setcdr yf-cell (cons buf (cdr yf-cell)))
+                      (push (list yas--original-auto-fill-function buf) yas--fill-fun-values)))
+                  (when (local-variable-p 'auto-fill-function)
+                    (if af-cell (setcdr af-cell (cons buf (cdr af-cell)))
+                      (push (list auto-fill-function buf) fill-fun-values))))))
+                 (lwarn '(yasnippet auto-fill bug) :error
+                        "`yas--original-auto-fill-function' unexpectedly nil in %S!  Disabling auto-fill.
+  %S
+  `auto-fill-function': %S\n%s"
+                        (current-buffer) yas--fill-fun-values fill-fun-values
+                        (if (fboundp 'backtrace--print-frame)
+                            (with-output-to-string
+                              (mapc (lambda (frame)
+                                      (apply #'backtrace--print-frame frame))
+                                    yas--watch-auto-fill-backtrace))
+                          ""))
+                 ;; Try to avoid repeated triggering of this bug.
+                 (auto-fill-mode -1)
+                 ;; Don't pop up more than once in a session (still log though).
+                 (defvar warning-suppress-types) ; `warnings' is autoloaded by `lwarn'.
+                 (add-to-list 'warning-suppress-types '(yasnippet auto-fill bug)))
+        (funcall yas--original-auto-fill-function)))
     (save-excursion
       (setq end (progn (forward-paragraph) (point)))
       (setq beg (progn (backward-paragraph) (point))))
@@ -4302,20 +4367,26 @@ The SNIPPET's markers are preserved."
     (setq yas--indent-markers nil))
   ;; Now do stuff for `fixed' and `auto'.
   (save-excursion
+    ;; We need to be at end of line, so that `forward-line' will only
+    ;; report 0 if it actually moves over a newline.
+    (end-of-line)
     (cond ((eq yas-indent-line 'fixed)
-           (forward-line 1)
-           (let ((indent-line-function
-                  (lambda ()
-                    (indent-to-column yas--indent-original-column))))
+           (when (= (forward-line 1) 0)
+             (let ((indent-line-function
+                    (lambda ()
+                      ;; We need to be at beginning of line in order to
+                      ;; indent existing whitespace correctly.
+                      (beginning-of-line)
+                      (indent-to-column yas--indent-original-column))))
+               (yas--indent-region (line-beginning-position)
+                                   (point-max)
+                                   snippet))))
+          ((eq yas-indent-line 'auto)
+           (when (or yas-also-auto-indent-first-line
+                     (= (forward-line 1) 0))
              (yas--indent-region (line-beginning-position)
                                  (point-max)
-                                 snippet)))
-          ((eq yas-indent-line 'auto)
-           (unless yas-also-auto-indent-first-line
-             (forward-line 1))
-           (yas--indent-region (line-beginning-position)
-                               (point-max)
-                               snippet)))))
+                                 snippet))))))
 
 (defun yas--collect-snippet-markers (snippet)
   "Make a list of all the markers used by SNIPPET."
@@ -4664,6 +4735,18 @@ When multiple expressions are found, only the last one counts."
 ;;
 (defun yas--post-command-handler ()
   "Handles various yasnippet conditions after each command."
+  (when (and yas--watch-auto-fill-backtrace
+             (fboundp 'backtrace--print-frame)
+             (null yas--original-auto-fill-function)
+             (eq auto-fill-function 'yas--auto-fill))
+    (lwarn '(yasnippet auto-fill bug) :error
+           "`yas--original-auto-fill-function' unexpectedly nil! Please report this backtrace\n%S"
+           (with-output-to-string
+             (mapc #'backtrace--print-frame
+                     yas--watch-auto-fill-backtrace)))
+    ;; Don't pop up more than once in a session (still log though).
+    (defvar warning-suppress-types) ; `warnings' is autoloaded by `lwarn'.
+    (add-to-list 'warning-suppress-types '(yasnippet auto-fill bug)))
   (condition-case err
       (progn (yas--finish-moving-snippets)
              (cond ((eq 'undo this-command)
