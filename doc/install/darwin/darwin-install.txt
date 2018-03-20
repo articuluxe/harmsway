@@ -2,6 +2,11 @@
 /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
 brew install gnu-tar
 
+# apple's ftp program
+brew install tnftp tnftpd
+# apple's telnet
+brew install telnet telnetd
+
 brew install autoconf
 brew install automake
 brew install pkg-config
