@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-03-01 20:39:44 dharms>
+;; Modified Time-stamp: <2018-03-20 07:33:19 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1862,6 +1862,7 @@ Only one letter is shown, the first that applies."
   (remove-hook 'ediff-after-quit-hook-internal
                'ediff-restore-windows))
 (defadvice ediff-buffers (around ediff-restore-windows activate)
+  "Advise `ediff-buffers'."
   (setq ediff-last-windows (current-window-configuration))
   (add-hook 'ediff-after-quit-hook-internal 'ediff-restore-windows)
   ad-do-it)
@@ -2100,12 +2101,14 @@ Only one letter is shown, the first that applies."
 (setq read-file-name-completion-ignore-case nil)
 (setq uniquify-recentf-func 'uniquify-recentf-ivy-recentf-open)
 (defun harmsway-dabbrev-complete-at-point ()
+  "Complete dabbrev at point."
   (dabbrev--reset-global-variables)
   (let* ((abbrev (dabbrev--abbrev-at-point))
          (cands (dabbrev--find-all-expansions abbrev t))
          (bnd (bounds-of-thing-at-point 'symbol)))
     (list (car bnd) (cdr bnd) cands)))
 (defun harmsway-add-ivy-completion-at-point ()
+  "Add completion at point for ivy."
   (require 'dabbrev)
   (add-to-list 'completion-at-point-functions 'harmsway-dabbrev-complete-at-point))
 ;(add-hook 'after-init-hook 'harmsway-add-ivy-completion-at-point)
@@ -2305,7 +2308,7 @@ Only one letter is shown, the first that applies."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; flyspell ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun my/toggle-flyspell-prog-mode ()
-  "Toggle flyspell-prog-mode in current buffer."
+  "Toggle `flyspell-prog-mode' in current buffer."
   (interactive)
   (if flyspell-mode
       (turn-off-flyspell)
