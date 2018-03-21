@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-03-20 07:33:19 dharms>
+;; Modified Time-stamp: <2018-03-21 17:03:35 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1311,6 +1311,20 @@ Only one letter is shown, the first that applies."
   :config
   (require 'wgrep-ag)
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; grep-context ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package grep-context
+  :defer t
+  :init
+  (with-eval-after-load 'compile
+      (require 'grep-context)
+      (define-key compilation-mode-map (kbd "+") #'grep-context-more-around-point)
+      (define-key compilation-mode-map (kbd "-") #'grep-context-less-around-point))
+  (with-eval-after-load 'grep
+      (require 'grep-context)
+      (define-key grep-mode-map (kbd "+") #'grep-context-more-around-point)
+      (define-key grep-mode-map (kbd "-") #'grep-context-less-around-point))
+    )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; occur ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (global-set-key (kbd "M-s M-o") 'multi-occur-in-matching-buffers)
