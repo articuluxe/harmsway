@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-03-21 17:03:35 dan.harms>
+;; Modified Time-stamp: <2018-03-22 12:20:29 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1388,6 +1388,12 @@ Only one letter is shown, the first that applies."
          ("M-s M-SPC" . counsel-mark-ring)
          ("C-h C-a" . counsel-apropos)
          ("M-s M-0" . counsel-wmctrl)
+         ("M-s M-1" . counsel-shell-history)
+         ("M-s M-n" . counsel-minibuffer-history)
+         ("C-c 0q`" . counsel-tmm)
+         ("C-c 0cf" . counsel-faces)
+         ("C-c 0ce" . counsel-colors-emacs)
+         ("C-c 0cw" . counsel-colors-web)
          :map ivy-minibuffer-map
          ("M-y" . ivy-next-line-and-call)
          )
