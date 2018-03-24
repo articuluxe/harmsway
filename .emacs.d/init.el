@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-03-22 12:20:29 dan.harms>
+;; Modified Time-stamp: <2018-03-23 08:40:44 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -464,6 +464,8 @@ not an error if any files do not exist."
 (use-package gridlock-csv
   :after csv-mode
   :bind (:map csv-mode-map ("C-c C-l" . gridlock-csv-mode)))
+(use-package gridlock-fix
+  :bind ("C-c M-f" . gridlock-fix-mode))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; epa ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun my/add-epa-file-encrypt-to ()
