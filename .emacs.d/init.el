@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-03-23 08:40:44 dharms>
+;; Modified Time-stamp: <2018-03-28 17:47:06 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -194,6 +194,11 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
           (match-beginning 0)
           (match-end 0)
           'face (list :background (match-string-no-properties 0))))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; choose-font ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package choose-font
+  :demand t
+  :bind ("C-c M-o" . choose-font))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; key-bindings ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; this removes the binding for "M-'" to 'abbrev-prefix-mark, without which we
