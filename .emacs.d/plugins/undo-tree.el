@@ -757,6 +757,10 @@
 (eval-when-compile (require 'cl))
 (require 'diff)
 
+;; These modes are referenced before being defined.
+(defvar undo-tree-mode)
+(defvar undo-tree-visualizer-selection-mode)
+
 
 
 ;;; =====================================================================
@@ -2048,7 +2052,7 @@ which is defined in the `warnings' library.\n")
        ((= (mod num-children 2) 1)
         (setq p (undo-tree-node-next node))
         ;; compute left-width
-        (dotimes (i (/ num-children 2))
+        (dotimes (_ (/ num-children 2))
           (if (undo-tree-node-lwidth (car p))
               (incf lwidth (+ (undo-tree-node-lwidth (car p))
                               (undo-tree-node-cwidth (car p))
@@ -2064,7 +2068,7 @@ which is defined in the `warnings' library.\n")
         ;; compute right-width
         (incf rwidth (undo-tree-node-rwidth (car p)))
         (setq p (cdr p))
-        (dotimes (i (/ num-children 2))
+        (dotimes (_ (/ num-children 2))
           (if (undo-tree-node-lwidth (car p))
               (incf rwidth (+ (undo-tree-node-lwidth (car p))
                               (undo-tree-node-cwidth (car p))
@@ -2076,7 +2080,7 @@ which is defined in the `warnings' library.\n")
        (t
         (setq p (undo-tree-node-next node))
         ;; compute left-width
-        (dotimes (i (/ num-children 2))
+        (dotimes (_ (/ num-children 2))
           (if (undo-tree-node-lwidth (car p))
               (incf lwidth (+ (undo-tree-node-lwidth (car p))
                               (undo-tree-node-cwidth (car p))
@@ -2086,7 +2090,7 @@ which is defined in the `warnings' library.\n")
         ;; centre-width is 0 when number of children is even
         (setq cwidth 0)
         ;; compute right-width
-        (dotimes (i (/ num-children 2))
+        (dotimes (_ (/ num-children 2))
           (if (undo-tree-node-lwidth (car p))
               (incf rwidth (+ (undo-tree-node-lwidth (car p))
                               (undo-tree-node-cwidth (car p))
@@ -2253,7 +2257,7 @@ which is defined in the `warnings' library.\n")
 	      (setcdr undo-list (cddr undo-list)))
 
 	     ;; if element crosses region, we can't pull any more elements
-	     ((undo-elt-crosses-region elt start end)
+	     ((with-no-warnings (undo-elt-crosses-region elt start end))
 	      ;; if we've found a visible element, it must be earlier in
 	      ;; current node's changeset; stop pulling elements (null
 	      ;; `undo-list' and non-nil `got-visible-elt' cause loop to exit)
@@ -2462,7 +2466,7 @@ which is defined in the `warnings' library.\n")
 	      (setcdr redo-list (cddr redo-list)))
 
 	     ;; if element crosses region, we can't pull any more elements
-	     ((undo-elt-crosses-region elt start end)
+	     ((with-no-warnings (undo-elt-crosses-region elt start end))
 	      ;; if we've found a visible element, it must be earlier in
 	      ;; current node's changeset; stop pulling elements (null
 	      ;; `redo-list' and non-nil `got-visible-elt' cause loop to exit)
@@ -2748,7 +2752,7 @@ changes within the current region."
     ;; `buffer-undo-tree'
     (undo-list-transfer-to-tree)
 
-    (dotimes (i (or (and (numberp arg) (prefix-numeric-value arg)) 1))
+    (dotimes (_ (or (and (numberp arg) (prefix-numeric-value arg)) 1))
       ;; check if at top of undo tree
       (unless (undo-tree-node-previous (undo-tree-current buffer-undo-tree))
 	(user-error "No further undo information"))
@@ -2857,7 +2861,7 @@ changes within the current region."
     ;; `buffer-undo-tree'
     (undo-list-transfer-to-tree)
 
-    (dotimes (i (or (and (numberp arg) (prefix-numeric-value arg)) 1))
+    (dotimes (_ (or (and (numberp arg) (prefix-numeric-value arg)) 1))
       ;; check if at bottom of undo tree
       (when (null (undo-tree-node-next (undo-tree-current buffer-undo-tree)))
 	(user-error "No further redo information"))
@@ -3576,7 +3580,7 @@ signaling an error if file is not found."
            (car (undo-tree-node-next node)))))
       (move-marker (setq pos (make-marker)) (point))
       (setq n (cons nil (undo-tree-node-next node)))
-      (dotimes (i (/ num-children 2))
+      (dotimes (_ (/ num-children 2))
         (setq n (cdr n))
         (when (or (null active-branch)
                   (eq (car n)
@@ -3629,7 +3633,7 @@ signaling an error if file is not found."
         (move-marker pos (point)))
       ;; right subtrees
       (move-marker trunk-pos (1+ trunk-pos))
-      (dotimes (i (/ num-children 2))
+      (dotimes (_ (/ num-children 2))
         (setq n (cdr n))
         (when (or (null active-branch)
                   (eq (car n)
@@ -3684,7 +3688,7 @@ signaling an error if file is not found."
   (when (characterp str)
     (setq str (make-string arg str))
     (setq arg 1))
-  (dotimes (i arg) (insert str))
+  (dotimes (_ arg) (insert str))
   (setq arg (* arg (length str)))
   (undo-tree-move-forward arg)
   ;; make sure mark isn't active, otherwise `backward-delete-char' might
@@ -3769,7 +3773,7 @@ signaling an error if file is not found."
 	(undo-tree-move-forward
 	 (+ (undo-tree-node-char-rwidth (car n))
 	    (/ undo-tree-visualizer-spacing 2) 1))
-	(dotimes (i (- (/ l 2) p 1))
+	(dotimes (_ (- (/ l 2) p 1))
 	  (setq n (cdr n))
 	  (undo-tree-move-forward
 	   (+ (undo-tree-node-char-lwidth (car n))
@@ -3787,7 +3791,7 @@ signaling an error if file is not found."
 	   (+ (undo-tree-node-char-rwidth (car n))
 	      (/ undo-tree-visualizer-spacing 2) 1))
 	  (setq n (cdr n)))
-	(dotimes (i (- p (/ l 2) (mod l 2)))
+	(dotimes (_ (- p (/ l 2) (mod l 2)))
 	  (undo-tree-move-backward
 	   (+ (undo-tree-node-char-lwidth (car n))
 	      (undo-tree-node-char-rwidth (car n))
@@ -3807,7 +3811,7 @@ signaling an error if file is not found."
   (if relative
       ;; relative time
       (let ((time (floor (float-time
-			  (subtract-time (current-time) timestamp))))
+			  (time-subtract (current-time) timestamp))))
 	    n)
 	(setq time
 	      ;; years
@@ -4232,7 +4236,7 @@ specifies `saved', and a negative prefix argument specifies
     (user-error "Undo-tree mode not enabled in buffer"))
   (let ((node undo-tree-visualizer-selected-node))
     (catch 'top
-      (dotimes (i (or arg 1))
+      (dotimes (_ (or arg 1))
 	(unless (undo-tree-node-previous node) (throw 'top t))
 	(setq node (undo-tree-node-previous node))))
     ;; when using lazy drawing, extend tree upwards as required
@@ -4254,7 +4258,7 @@ specifies `saved', and a negative prefix argument specifies
     (user-error "Undo-tree mode not enabled in buffer"))
   (let ((node undo-tree-visualizer-selected-node))
     (catch 'bottom
-      (dotimes (i (or arg 1))
+      (dotimes (_ (or arg 1))
 	(unless (nth (undo-tree-node-branch node) (undo-tree-node-next node))
 	  (throw 'bottom t))
 	(setq node
@@ -4281,7 +4285,7 @@ specifies `saved', and a negative prefix argument specifies
     (goto-char (undo-tree-node-marker undo-tree-visualizer-selected-node))
     (setq end (line-end-position))
     (catch 'end
-      (dotimes (i arg)
+      (dotimes (_ arg)
 	(while (or (null node) (eq node undo-tree-visualizer-selected-node))
 	  (forward-char)
 	  (setq node (get-text-property (point) 'undo-tree-node))
@@ -4304,7 +4308,7 @@ specifies `saved', and a negative prefix argument specifies
     (goto-char (undo-tree-node-marker undo-tree-visualizer-selected-node))
     (setq beg (line-beginning-position))
     (catch 'beg
-      (dotimes (i arg)
+      (dotimes (_ arg)
 	(while (or (null node) (eq node undo-tree-visualizer-selected-node))
 	  (backward-char)
 	  (setq node (get-text-property (point) 'undo-tree-node))
@@ -4429,4 +4433,7 @@ specifies `saved', and a negative prefix argument specifies
 
 (provide 'undo-tree)
 
+;; Local Variables:
+;; outline-regexp: ";;;+ [^=]"
+;; End:
 ;;; undo-tree.el ends here

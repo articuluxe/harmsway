@@ -104,7 +104,7 @@ or equal to this, otherwise do not update."
 (defvaralias 'ialign-initial-spacing 'ialign-default-spacing)
 
 (defvar ialign--buffer nil)
-(defvar ialign--start nil)
+(defvar ialign--beg nil)
 (defvar ialign--end nil)
 (defvar ialign--region-contents nil)
 (defvar ialign--tabs nil)
@@ -126,14 +126,14 @@ The buffer is narrowed to region that is to be aligned."
      (save-excursion
        (save-restriction
 	 (widen)
-	 (narrow-to-region ialign--start ialign--end)
+	 (narrow-to-region ialign--beg ialign--end)
 	 (unwind-protect
 	     (progn
 	       ,@forms)
-	   (set-marker ialign--start (point-min))
-	   (set-marker ialign--end (point-max)))))))
+	   (setq ialign--beg (point-min)
+		 ialign--end (point-max)))))))
 
-(defsubst ialign--active-p ()
+(defun ialign--active-p ()
   "Return non-nil if currently executing `ialign'."
   ialign--buffer)
 
@@ -143,17 +143,10 @@ The buffer is narrowed to region that is to be aligned."
 	(ialign--recursive-minibuffer t))
     (read-number prompt)))
 
-(defsubst ialign--make-marker (location)
-  "Make marker at LOCATION."
-  (let ((marker (make-marker)))
-    (set-marker marker location)
-    (set-marker-insertion-type marker t)
-    marker))
-
 (defun ialign--revert ()
   "Revert the aligned region to original `ialign--region-contents'."
   (ialign--with-region-narrowed
-   (delete-region ialign--start ialign--end)
+   (delete-region ialign--beg ialign--end)
    (insert ialign--region-contents)))
 
 (defun ialign--enable-tabs-p ()
@@ -197,13 +190,6 @@ help"))))
 	(put-text-property 0 1 'cursor t msg)
 	(overlay-put ialign--minibuffer-overlay 'after-string msg)))))
 
-(defun ialign--minibuffer-setup-hook ()
-  "Function called on minibuffer setup.  Aligns the region."
-  (and (ialign--active-p)
-       (not ialign--recursive-minibuffer)
-       (ialign-update 'quietly)))
-(add-hook 'minibuffer-setup-hook #'ialign--minibuffer-setup-hook)
-
 (defun ialign--align ()
   "Revert the current region, then align it."
   (ialign--revert)
@@ -246,7 +232,7 @@ This function is used to undo changes made by command `ialign'."
       (remove-list-of-text-properties
        (minibuffer-prompt-end) (point-max) '(ialign)))))
 
-(defsubst ialign--regexp-with-state ()
+(defun ialign--regexp-with-state ()
   "Return `ialign--regexp' with properties that store current state.
 These properties are restored with `ialign--restore-arguments'"
   (propertize ialign--regexp
@@ -447,8 +433,8 @@ The keymap used in minibuffer is `ialign-minibuffer-keymap':
   (if (ialign--active-p)
       (error "Already aligning")
     (let* ((ialign--buffer (current-buffer))
-	   (ialign--start (ialign--make-marker beg))
-	   (ialign--end (ialign--make-marker end))
+	   (ialign--beg beg)
+	   (ialign--end end)
 	   (ialign--recursive-minibuffer nil)
 	   (region-contents (buffer-substring beg end))
 	   (ialign--region-contents region-contents)
@@ -460,8 +446,11 @@ The keymap used in minibuffer is `ialign-minibuffer-keymap':
 	   (ialign--case-fold-search case-fold-search)
 	   success)
       (unwind-protect
-	  (progn
-	    (add-hook 'after-change-functions #'ialign--after-change)
+	  (minibuffer-with-setup-hook
+	      (lambda ()
+		(unless ialign--recursive-minibuffer
+		  (add-hook 'after-change-functions #'ialign--after-change nil t)
+		  (ialign-update 'quietly)))
 	    (let ((buffer-undo-list t)
 		  (minibuffer-allow-text-properties t)
 		  (history-add-new-input nil))
@@ -477,14 +466,12 @@ The keymap used in minibuffer is `ialign-minibuffer-keymap':
 		  (unless (ialign--autoupdate-p)
 		    (ialign--align))
 		  (push (list 'apply #'ialign--undo
-			      (marker-position ialign--start)
-			      (marker-position ialign--end)
+			      ialign--beg
+			      ialign--end
 			      region-contents)
 			buffer-undo-list))
 	      (let ((buffer-undo-list t))
 		(ialign--revert)))
-	  (set-marker ialign--start nil)
-	  (set-marker ialign--end nil)
 	  (when (overlayp ialign--minibuffer-overlay)
 	    (delete-overlay ialign--minibuffer-overlay)))))
     (setq deactivate-mark t)))

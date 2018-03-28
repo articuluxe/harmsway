@@ -821,12 +821,13 @@ contains a single candidate.")
         (setq dir (ivy-expand-file-if-directory (ivy-state-current ivy-last))))
        (ivy--cd dir)
        (ivy--exhibit))
-      ((and (not (string= ivy-text ""))
-            (ignore-errors (file-exists-p ivy-text)))
-       (if (file-directory-p ivy-text)
-           (ivy--cd (expand-file-name
-                     (file-name-as-directory ivy-text) ivy--directory))
-         (ivy-done)))
+      ((unless (string= ivy-text "")
+         (let ((file (expand-file-name ivy-text ivy--directory)))
+           (when (ignore-errors (file-exists-p file))
+             (if (file-directory-p file)
+                 (ivy--cd (file-name-as-directory file))
+               (ivy-done))
+             ivy-text))))
       ((or (and (equal ivy--directory "/")
                 (string-match "\\`[^/]+:.*:.*\\'" ivy-text))
            (string-match "\\`/[^/]+:.*:.*\\'" ivy-text))
@@ -969,9 +970,7 @@ If the text hasn't changed as a result, forward to `ivy-alt-done'."
          :require-match (ivy-state-require-match ivy-last)
          :initial-input ivy-text
          :history (ivy-state-history ivy-last)
-         :preselect (unless (eq (ivy-state-collection ivy-last)
-                                'read-file-name-internal)
-                      (ivy-state-current ivy-last))
+         :preselect (ivy-state-current ivy-last)
          :keymap (ivy-state-keymap ivy-last)
          :update-fn (ivy-state-update-fn ivy-last)
          :sort (ivy-state-sort ivy-last)
@@ -1313,6 +1312,7 @@ If so, move to that directory, while keeping only the file name."
     (setq ivy--all-candidates
           (ivy--sorted-files (setq ivy--directory dir)))
     (setq ivy-text "")
+    (setf (ivy-state-directory ivy-last) dir)
     (delete-minibuffer-contents)))
 
 (defun ivy-backward-delete-char ()
@@ -1854,14 +1854,16 @@ This is useful for recursive `ivy-read'."
                             (file-name-nondirectory initial-input)))))
              (require 'dired)
              (when preselect
-               (let ((preselect-directory (file-name-directory preselect)))
+               (let ((preselect-directory (file-name-directory
+                                           (directory-file-name preselect))))
                  (unless (or (null preselect-directory)
                              (string= preselect-directory
                                       default-directory))
                    (setq ivy--directory preselect-directory))
                  (setf
                   (ivy-state-preselect state)
-                  (setq preselect (file-name-nondirectory preselect)))))
+                  (setq preselect (file-relative-name preselect
+                                                      preselect-directory)))))
              (setq coll (ivy--sorted-files ivy--directory))
              (when initial-input
                (unless (or require-match
@@ -2244,8 +2246,8 @@ This allows to \"quote\" N spaces by inputting N+1 spaces."
                               (- (match-beginning 0) 2)
                               (match-beginning 0))))
           (progn
-            (setq start1 (match-end 0))
-            (setq start0 0))
+            (setq start0 start1)
+            (setq start1 (match-end 0)))
         (setq match-len (- (match-end 0) (match-beginning 0)))
         (if (= match-len 1)
             (progn
