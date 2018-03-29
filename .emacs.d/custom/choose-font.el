@@ -2,8 +2,7 @@
 ;; Copyright (C) 2018  Dan Harms (dharms)
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Wednesday, March 28, 2018
-;; Version: 1.0
-;; Modified Time-stamp: <2018-03-28 17:46:02 dharms>
+;; Modified Time-stamp: <2018-03-30 06:38:43 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: font
 
@@ -25,9 +24,33 @@
 ;;
 
 ;;; Code:
+(require 'subr-x)
+(require 'ivy)
+(require 'read-file-into-list-of-lines)
 
 (defvar choose-font-list '()
   "A list of fonts among which to choose.")
+(defvar choose-font-history nil
+  "History for `choose-font'.")
+(defvar choose-font-user-file "~/.emacs_fonts"
+  "A config file used to configure `choose-font'.")
+
+(defun choose-font-read-init-file ()
+  "Read the file `choose-font-user-file' if it exists.
+Every line is a font to add to `choose-font-list'.  The first
+line is given priority as the preferred font to activate."
+  (interactive)
+  (let* ((file (expand-file-name choose-font-user-file))
+         lines first)
+    (when (file-exists-p file)
+      (setq lines (read-file-into-list-of-lines file))
+      (dolist (line lines)
+        (unless (string-empty-p line)
+          (add-to-list 'choose-font-list line)))
+      (setq first (car lines))
+      (when first
+        (setq choose-font-list
+              (cons first (remove first choose-font-list)))))))
 
 (defun choose-font-activate (font)
   "Activate a font specified by FONT."
@@ -35,15 +58,33 @@
   (set-frame-font font nil t))
 
 ;;;###autoload
-(defun choose-font ()
-  "Choose among a set of fonts defined in `choose-font-list'."
+(defun choose-font (&optional font)
+  "Set the font to FONT.
+With a prefix argument, choose among a set of fonts defined in
+`choose-font-list'."
+  (interactive (list (when current-prefix-arg
+                       (read-string "Font: "))))
+  (if font
+      (choose-font-activate font)
+    (choose-font-read-init-file)
+    (ivy-read "Font: "
+              choose-font-list
+              :history choose-font-history
+              :action (lambda (x)
+                        (choose-font-activate x))
+              :caller 'choose-font
+              )))
+
+(defun choose-font-edit-font (x)
+  "Read input to edit the font X to use in `choose-font'."
   (interactive)
-  (let ((font (completing-read "Font: " choose-font-list nil nil
-                               (car choose-font-list))))
-    (if font
-        (choose-font-activate font)
-      ;; else: todo
-      )))
+  (let ((font))
+    (setq font (read-string "Font: " x))
+    (when font
+      (choose-font-activate font))))
+
+(ivy-add-actions 'choose-font
+                 '(("e" choose-font-edit-font "edit")))
 
 (provide 'choose-font)
 ;;; choose-font.el ends here
