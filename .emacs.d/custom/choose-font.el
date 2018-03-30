@@ -2,7 +2,7 @@
 ;; Copyright (C) 2018  Dan Harms (dharms)
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Wednesday, March 28, 2018
-;; Modified Time-stamp: <2018-03-30 06:38:43 dharms>
+;; Modified Time-stamp: <2018-03-30 17:02:09 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: font
 
@@ -26,7 +26,7 @@
 ;;; Code:
 (require 'subr-x)
 (require 'ivy)
-(require 'read-file-into-list-of-lines)
+(require 'read-file)
 
 (defvar choose-font-list '()
   "A list of fonts among which to choose.")
@@ -43,7 +43,12 @@ line is given priority as the preferred font to activate."
   (let* ((file (expand-file-name choose-font-user-file))
          lines first)
     (when (file-exists-p file)
-      (setq lines (read-file-into-list-of-lines file))
+      (setq lines (seq-remove
+                   'string-empty-p
+                   (read-file-transform
+                    (read-file-into-lines file)
+                    'read-file-strip-hash-comment
+                    'string-trim)))
       (dolist (line lines)
         (unless (string-empty-p line)
           (add-to-list 'choose-font-list line)))

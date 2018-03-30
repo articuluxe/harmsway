@@ -1,9 +1,9 @@
 ;;; remotehost-connect.el --- manages connections to remote hosts
-;; Copyright (C) 2016-2017  Dan Harms (dharms)
+;; Copyright (C) 2016-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Monday, April 18, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-06-21 10:41:02 dan.harms>
+;; Modified Time-stamp: <2018-03-30 17:02:54 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: remote hosts
 
@@ -29,7 +29,7 @@
 (require 'subr-x)
 (require 'tramp)
 (require 'ivy)
-(require 'read-file-into-list-of-lines)
+(require 'read-file)
 
 (defvar remotehost-connect-hosts '()
   "List of hosts to connect to.")
@@ -56,7 +56,7 @@
 Eacn line should start with the host name, then
 followed by an optional description, separated by whitespace."
   (interactive "FFile: ")
-  (let ((lines (read-file-into-list-of-lines file))
+  (let ((lines (read-file-lines file))
         (lst '())
         host desc elts)
     (dolist (line lines)
