@@ -1,9 +1,9 @@
 ;;; good-word.el --- utilities for word processing
-;; Copyright (C) 2016  Dan Harms (dharms)
+;; Copyright (C) 2016, 2018  Dan Harms (dharms)
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Tuesday, October 18, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-12-21 16:39:57 dan.harms>
+;; Modified Time-stamp: <2018-03-30 13:07:05 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: text writing
 
@@ -49,6 +49,14 @@
   ;; altering movement commands to use visual lines rather than logical ones.
   ;; (setq truncate-lines nil)
   ;; (setq word-wrap t)
+  ;;
+  ;; (set-face-attribute 'default nil :height 130)
+  ;; (set-face-attribute 'fixed-pitch nil :family "Fira Code")
+  ;; (set-face-attribute 'variable-pitch nil :family "Georgia")
+  ;; (variable-pitch-mode 1)
+  ;;
+  ;; (olivetti-mode 1)    ;center text in buffer
+  ;; (typo-mode 1)        ;handle dash symbols
   )
 
 (defhydra hydra-toggle-word-processor (:color teal)
