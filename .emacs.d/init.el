@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-03-28 17:47:06 dharms>
+;; Modified Time-stamp: <2018-03-30 15:22:49 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1947,6 +1947,9 @@ Only one letter is shown, the first that applies."
 (use-package in-memory-diff
   :bind (("M-s dii" . in-memory-diff)
          ("M-s dif" . in-memory-diff-files)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; difflib ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package difflib :defer t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; shebang ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package shebang)
