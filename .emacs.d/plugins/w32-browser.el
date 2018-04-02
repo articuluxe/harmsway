@@ -4,17 +4,17 @@
 ;; Description: Run Windows application associated with a file.
 ;; Author: Emacs Wiki, Drew Adams
 ;; Maintainer: Drew Adams (concat "drew.adams" "@" "oracle" ".com")
-;; Copyright (C) 2004-2016, Drew Adams, all rights reserved.
+;; Copyright (C) 2004-2018, Drew Adams, all rights reserved.
 ;; Created: Thu Mar 11 13:40:52 2004
 ;; Version: 0
 ;; Package-Requires: ()
-;; Last-Updated: Thu Dec 31 16:26:03 2015 (-0800)
-;;           By: dradams
-;;     Update #: 238
-;; URL: http://www.emacswiki.org/w32-browser.el
-;; Doc URL: http://emacswiki.org/MsShellExecute
+;; Last-Updated: Fri Mar 30 16:17:22 2018 (-0500)
+;;           By: Dan Harms
+;;     Update #: 247
+;; URL: https://www.emacswiki.org/emacs/download/w32-browser.el
+;; Doc URL: https://emacswiki.org/emacs/MsShellExecute
 ;; Keywords: mouse, dired, w32, explorer
-;; Compatibility: GNU Emacs: 20.x, 21.x, 22.x, 23.x, 24.x, 25.x
+;; Compatibility: GNU Emacs: 20.x, 21.x, 22.x, 23.x, 24.x, 25.x, 26.x
 ;;
 ;; Features that might be required by this library:
 ;;
@@ -38,6 +38,8 @@
 ;;
 ;;; Change Log:
 ;;
+;; 2016/08/14 dadams
+;;     dired-mouse-w32-browser*: No-op if event is not in a window.
 ;; 2012/03/10 dadams
 ;;     dired-w32-browse(-reuse-dir-buffer), w32explore:
 ;;       Use subst-char-in-string, not dired-replace-in-string or substitute.
@@ -118,15 +120,17 @@ If no application is associated with file, then `find-file'."
 If file is a directory or no application is associated with file, then
 `find-file' instead."
     (interactive "e")
-    (let (file)
-      (with-current-buffer (window-buffer (posn-window (event-end event)))
-        (save-excursion
-          (goto-char (posn-point (event-end event)))
-          (setq file (dired-get-filename nil t))))
-      (select-window (posn-window (event-end event)))
-      (if (file-directory-p file)
-          (find-file (file-name-sans-versions file t))
-        (w32-browser (file-name-sans-versions file t)))))
+    (let ((win  (posn-window (event-end event)))
+          file)
+      (when (windowp win)               ; E.g. press but move mouse out of any window.
+        (with-current-buffer (window-buffer win)
+          (save-excursion
+            (goto-char (posn-point (event-end event)))
+            (setq file (dired-get-filename nil t))))
+        (select-window (posn-window (event-end event)))
+        (if (file-directory-p file)
+            (find-file (file-name-sans-versions file t))
+          (w32-browser (file-name-sans-versions file t))))))
 
   (defun dired-w32-browser-reuse-dir-buffer ()
     "Like `dired-w32-browser', but reuse Dired buffers."
@@ -139,15 +143,17 @@ If file is a directory or no application is associated with file, then
   (defun dired-mouse-w32-browser-reuse-dir-buffer (event)
     "Like `dired-mouse-w32-browser', but reuse Dired buffers."
     (interactive "e")
-    (let (file)
-      (with-current-buffer (window-buffer (posn-window (event-end event)))
-        (save-excursion
-          (goto-char (posn-point (event-end event)))
-          (setq file (dired-get-filename nil t))))
-      (select-window (posn-window (event-end event)))
-      (if (file-directory-p file)
-          (find-alternate-file (file-name-sans-versions file t))
-        (w32-browser (file-name-sans-versions file t)))))
+    (let ((win  (posn-window (event-end event)))
+          file)
+      (when (windowp win)               ; E.g. press but move mouse out of any window.
+        (with-current-buffer (window-buffer win)
+          (save-excursion
+            (goto-char (posn-point (event-end event)))
+            (setq file (dired-get-filename nil t))))
+        (select-window (posn-window (event-end event)))
+        (if (file-directory-p file)
+            (find-alternate-file (file-name-sans-versions file t))
+          (w32-browser (file-name-sans-versions file t))))))
 
   (defun dired-multiple-w32-browser ()
     "Run default Windows applications associated with marked files."

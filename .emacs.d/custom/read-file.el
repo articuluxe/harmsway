@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Friday, June  9, 2017
 ;; Version: 1.0
-;; Modified Time-stamp: <2018-03-30 17:04:27 dharms>
+;; Modified Time-stamp: <2018-04-02 09:18:52 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: file input
 ;; Package-Requires: ((emacs "25"))
@@ -46,39 +46,12 @@ Evaluate FORMS per line via `thread-first'."
                        (eval `(thread-first line ,@forms)))
                      lines)))
     lst))
-    ;; (if strip-empty
-    ;;     (seq-remove 'string-empty-p lst)
-    ;;   lst)))
 
 (defun read-file-strip-hash-comment (str)
   "Strip comments from STR starting with `#' to end of string."
   (if (string-match "#.*$" str)
       (replace-match "" nil nil str)
     str))
-
-;; (defun read-file-into-list-of-lines (file)
-;;   "Read FILE into a list of strings split line by line."
-;;   (interactive "f")
-;;   (with-temp-buffer
-;;     (insert-file-contents file)
-;;     (split-string (buffer-string) "\n" t)))
-
-;; (defun mytest (&rest forms)
-;;   (interactive)
-;;   (mapcar (lambda (x)
-;;             (eval
-;;              `(thread-first x ,@forms)
-;;              )
-;;             )
-;;           (split-string " 123 # 456 # 789 " "#")))
-
-;; (defun mystr (x) (string-width x))
-
-;; (mytest 'string-trim 'mystr)
-;; (3 3 3)
-
-;; ("123" "456" "789")
-
 
 (provide 'read-file)
 ;;; read-file.el ends here
