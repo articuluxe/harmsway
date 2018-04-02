@@ -1,9 +1,9 @@
 ;; -*- Mode: Emacs-Lisp -*-
 ;;; chihq-dev-02d-1 --- host file
-;; Copyright (C) 2015-2017  Dan Harms (dan.harms)
+;; Copyright (C) 2015-2018  Dan Harms (dan.harms)
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Monday, March 14, 2016
-;; Modified Time-stamp: <2017-10-04 09:44:06 dan.harms>
+;; Modified Time-stamp: <2018-04-02 10:24:34 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: config
 
@@ -27,6 +27,21 @@
 ;;; Code:
 
 (my/load-site-file "xr")
+
+(setq choose-font-list '(
+                         "Hack 10"
+                         "CamingoCode 11"
+                         "FantasqueSansMono 11"
+                         "Cousine 11"
+                         "OfficeCodePro 10"
+                         "InputMono 11"
+                         "Lucelent 11"
+                         "Iosevka 11"
+                         "Monospace 10"
+                         ))
+(with-eval-after-load 'choose-font
+  (choose-font-read-init-file)
+  (choose-font-activate (car choose-font-list)))
 
 (add-to-list 'default-frame-alist
              (cons 'height (my/get-ideal-frame-height 80)))
