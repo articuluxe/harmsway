@@ -1,0 +1,1 @@
+cp src/async.el ../../../.emacs.d/elisp
