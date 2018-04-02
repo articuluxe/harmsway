@@ -4,7 +4,7 @@
 
 ;; Author: Kelvin Smith <oneKelvinSmith@gmail.com>
 ;; URL: http://github.com/oneKelvinSmith/monokai-emacs
-;; Version: 3.5.2
+;; Version: 3.5.3
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -6022,7 +6022,7 @@ Also affects 'linum-mode' background."
 
    ;; weechat
    `(weechat-color-list
-     (unspecified ,monokai-background ,monokai-highlight-line
+     '(unspecified ,monokai-background ,monokai-highlight-line
                   ,monokai-red-d ,monokai-red
                   ,monokai-green-d ,monokai-green
                   ,monokai-yellow-d ,monokai-yellow

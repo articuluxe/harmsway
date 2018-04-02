@@ -4,7 +4,7 @@
 
 ;; Author: Hrvoje Niksic <hniksic@gmail.com>
 ;; Keywords: hypermedia, extensions
-;; Version: 1.51
+;; Version: 1.54
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -87,7 +87,7 @@
   (defvar font-lock-support-mode)
   (defvar global-font-lock-mode))
 
-(defconst htmlize-version "1.51")
+(defconst htmlize-version "1.54")
 
 (defgroup htmlize nil
   "Convert buffer text and faces to HTML."
@@ -1096,7 +1096,7 @@ If no rgb.txt file is found, return nil."
 
 (defun htmlize-face-to-fstruct (face)
   (let* ((face-list (or (and (symbolp face)
-                            (alist-get face face-remapping-alist))
+                             (cdr (assq face face-remapping-alist)))
                         (list face)))
          (fstruct (htmlize-merge-faces
                    (mapcar (lambda (face)
@@ -1275,6 +1275,23 @@ overlays that specify `face'."
                             faces :test 'equal))))
     faces))
 
+(if (>= emacs-major-version 25)
+    (defun htmlize-sorted-overlays-at (pos)
+      (overlays-at pos t))
+
+  (defun htmlize-sorted-overlays-at (pos)
+    ;; Like OVERLAYS-AT with the SORTED argument, for older Emacsen.
+    (let ((overlays (sort* overlays #'<
+                           :key (lambda (o)
+                                  (- (overlay-end o) (overlay-start o))))))
+      (setq overlays
+            (stable-sort overlays #'<
+                         :key (lambda (o)
+                                (let ((prio (overlay-get o 'priority)))
+                                  (if (numberp prio) prio 0)))))
+      (nreverse overlays))))
+
+
 ;; htmlize-faces-at-point returns the faces in use at point.  The
 ;; faces are sorted by increasing priority, i.e. the last face takes
 ;; precedence.
@@ -1294,10 +1311,7 @@ overlays that specify `face'."
            ;; Collect overlays at point that specify `face'.
            (delete-if-not (lambda (o)
                             (overlay-get o 'face))
-                          (nreverse
-                           (if (>= emacs-major-version 25)
-                               (overlays-at (point) t)
-                             (overlays-at (point))))))
+                          (nreverse (htmlize-sorted-overlays-at (point)))))
           list face-prop)
       (dolist (overlay overlays)
         (setq face-prop (overlay-get overlay 'face)
