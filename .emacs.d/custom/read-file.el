@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Friday, June  9, 2017
 ;; Version: 1.0
-;; Modified Time-stamp: <2018-04-02 09:18:52 dan.harms>
+;; Modified Time-stamp: <2018-04-02 09:34:50 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: file input
 ;; Package-Requires: ((emacs "25"))
@@ -31,12 +31,13 @@
 (require 'subr-x)
 
 ;;;###autoload
-(defun read-file-into-lines (file)
-  "Read FILE into a list of strings, one per line."
+(defun read-file-into-lines (file &optional trim-empty)
+  "Read FILE into a list of strings, one per line.
+If TRIM-EMPTY is non-nil, empty lines are omitted."
   (interactive "fFile: ")
   (with-temp-buffer
     (insert-file-contents file)
-    (split-string (buffer-string) "\n")))
+    (split-string (buffer-string) "\n" trim-empty)))
 
 ;;;###autoload
 (defun read-file-transform (lines &rest forms)

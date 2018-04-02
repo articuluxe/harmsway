@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Monday, April 18, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2018-03-30 17:02:54 dharms>
+;; Modified Time-stamp: <2018-04-02 10:00:40 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: remote hosts
 
@@ -56,10 +56,10 @@
 Eacn line should start with the host name, then
 followed by an optional description, separated by whitespace."
   (interactive "FFile: ")
-  (let ((lines (read-file-lines file))
+  (let ((lines (read-file-into-lines file 'trim))
         (lst '())
         host desc elts)
-    (dolist (line lines)
+    (dolist (line (seq-remove 'string-empty-p lines))
       (setq elts (split-string line))
       (setq host (car elts))
       (setq desc (string-join (cdr elts) " "))
