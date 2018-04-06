@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-03-30 15:22:49 dan.harms>
+;; Modified Time-stamp: <2018-04-06 10:32:52 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2935,6 +2935,15 @@ This may perform related customization."
   :mode ("\\.log$" . logview-mode)
   :bind ("C-c xr" . logview-enter-tail-mode)
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; lua-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package lua-mode
+  :mode "\\.lua$"
+  :interpreter "lua"
+  :init
+  (setq lua-indent-string-contents t)
+  (add-hook 'lua-mode-hook (lambda()
+                             )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; markdown-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package markdown-mode
