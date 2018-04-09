@@ -1,1 +1,1 @@
-cp src/*.el ../../../.emacs.d/modes
+cp src/lua-mode.el ../../../.emacs.d/modes
