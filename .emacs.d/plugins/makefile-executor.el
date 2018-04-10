@@ -175,7 +175,7 @@ If `projectile' is installed, use the `projectile-project-root'. If
            makefile-executor-cache))
 
 (defun makefile-executor-makefile-p (f)
-  (and (s-suffix? "makefile" (s-downcase f))
+  (and (s-contains? "makefile" (s-downcase f))
        (not (string-match makefile-executor-ignore f))))
 
 (defun makefile-executor-get-makefiles ()
@@ -220,8 +220,10 @@ as initial input for convenience in executing the most relevant Makefile."
 The dedicated buffer will be named \"*<target>*\".  If
 `projectile' is installed and the makefile is in a project the
 project name will be prepended to the dedicated buffer name."
+
   (interactive (list
-      (buffer-file-name)))
+      (buffer-file-name)
+      nil))
   (let* ((target (or target (makefile-executor-select-target filename)))
          (buffer-name
           (if (and (featurep 'projectile) (projectile-project-p))

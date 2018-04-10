@@ -26,8 +26,8 @@
 ;;
 ;; This package provides commands to show and hide lines of context around
 ;; errors in compilation buffers or around matches in grep buffers
-;; (e.g. M-x grep).  Works with `wgrep', `ag-mode', `ivy-occur-grep-mode'
-;; and `ack-mode'.
+;; (e.g. M-x grep).  Works with `wgrep', `ag-mode', `ivy-occur-grep-mode',
+;; `ack-mode' and `ripgrep'.
 ;;
 ;; Usage:
 ;;
@@ -36,6 +36,7 @@
 ;;     (dolist (elt '((compile . compilation-mode-map)
 ;;                    (grep . grep-mode-map)
 ;;                    (ivy . ivy-occur-grep-mode-map)
+;;                    (ripgrep . ripgrep-search-mode-map)
 ;;                    (ag . ag-mode-map)
 ;;                    (ack . ack-mode-map)))
 ;;       (eval-after-load (car elt)
@@ -74,6 +75,7 @@
 (defcustom grep-context-line-format-alist
   (list (cons 'grep-mode "%s-%d-")
 	(cons 'ivy-occur-grep-mode "%s-%d-")
+	(cons 'ripgrep-search-mode "%s-%d-")
 	(cons 'ag-mode #'grep-context-ag-format)
 	(cons 'ack-mode #'grep-context-ag-format))
   "Alist that associates major modes with line formatters.
@@ -88,6 +90,7 @@ and should return a formatted prefix string."
 
 (defcustom grep-context-separator-alist
   (list (cons 'grep-mode "--")
+	(cons 'ripgrep-search-mode "--")
 	(cons 'ivy-occur-grep-mode "--"))
   "Alist that associates major modes with separators.
 Each value is a string to be inserted between non-contiguous regions of
@@ -107,7 +110,7 @@ mode."
 (defvar-local grep-context--temp-file-buffer nil
   "A cell (file . buffer) where BUFFER is a buffer with contents of FILE.")
 
-(defun grep-context-ag-format (file line-number)
+(defun grep-context-ag-format (_file line-number)
   "Formatter for context lines in `ag-mode'."
   (concat (number-to-string line-number) "-"))
 
