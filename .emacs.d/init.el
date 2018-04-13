@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-04-06 10:32:52 dan.harms>
+;; Modified Time-stamp: <2018-04-13 08:32:44 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -148,6 +148,7 @@ up to 10 times."
 (setq ff-always-try-to-create nil)
 ;; Preserve line position on scroll
 (setq scroll-preserve-screen-position t)
+(setq auto-window-vscroll nil)
 (show-paren-mode t)
 (size-indication-mode 1)
 ;; don't add new-lines to end of buffer on scroll
