@@ -1,9 +1,8 @@
 ;;; install-world.el --- utils to install harmsway
-;; Copyright (C) 2017  Dan Harms (dharms)
+;; Copyright (C) 2017-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Wednesday, November 22, 2017
-;; Version: 1.0
-;; Modified Time-stamp: <2017-11-29 11:33:08 dharms>
+;; Modified Time-stamp: <2018-04-13 17:45:26 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: tools
 
@@ -46,7 +45,11 @@
                               "bash" "--rcfile" "~/.bashrc" "-ci"
                               cmd))
     (with-current-buffer (pop-to-buffer buf)
-      (read-only-mode 1))
+      (setq-local window-point-insertion-type t)
+      (let ((map (make-sparse-keymap)))
+        (define-key map "q" #'quit-window)
+        (set-keymap-parent map (current-local-map))
+        (use-local-map map)))
     (set-process-sentinel proc #'harmsway/install-world-sentinel)))
 
 (defun harmsway/install-world-sentinel (proc change)
