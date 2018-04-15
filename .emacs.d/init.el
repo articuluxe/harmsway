@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-04-13 08:32:44 dharms>
+;; Modified Time-stamp: <2018-04-15 18:35:20 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -715,6 +715,11 @@ not an error if any files do not exist."
             (lambda() (make-local-variable 'comment-fill)
               (setq comment-fill "*")))
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; banner-comment ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package banner-comment
+  :commands (banner-comment)
+  :bind ([?\C-c?\C-\M-/] . banner-comment))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; list-register ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package list-register :bind ("C-x rv" . list-register))
