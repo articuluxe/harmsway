@@ -4,7 +4,7 @@
 ;; Author: Michał Kondraciuk <k.michal@zoho.com>
 ;; URL: https://github.com/mkcms/grep-context
 ;; Package-Requires: ((emacs "24.4") (dash "2.12.0") (cl-lib "0.5.0"))
-;; Version: 0.0.1
+;; Version: 0.1.0
 ;; Keywords: convenience, search, grep, compile
 
 ;; Copyright (C) 2017 Michał Kondraciuk
@@ -31,20 +31,7 @@
 ;;
 ;; Usage:
 ;;
-;;   (progn
-;;     (require 'grep-context)
-;;     (dolist (elt '((compile . compilation-mode-map)
-;;                    (grep . grep-mode-map)
-;;                    (ivy . ivy-occur-grep-mode-map)
-;;                    (ripgrep . ripgrep-search-mode-map)
-;;                    (ag . ag-mode-map)
-;;                    (ack . ack-mode-map)))
-;;       (eval-after-load (car elt)
-;;         `(progn
-;;             (define-key ,(cdr elt) (kbd "+")
-;;                #'grep-context-more-around-point)
-;;             (define-key ,(cdr elt) (kbd "-")
-;;                #'grep-context-less-around-point)))))
+;;   (add-hook 'compilation-mode-hook #'grep-context-mode)
 ;;
 ;; After evaluating that you can open a grep buffer and navigate to a match,
 ;; then hit "+" to insert a line of context before and after that match.
@@ -107,6 +94,14 @@ mode."
   :type '(choice string function)
   :group 'grep-context)
 
+(defcustom grep-context-mode-map
+  (let ((map (make-keymap)))
+    (define-key map "\+" #'grep-context-more-around-point)
+    (define-key map "\-" #'grep-context-less-around-point)
+    map)
+  "Keymap used in `grep-context-mode'."
+  :group 'grep-context)
+
 (defvar-local grep-context--temp-file-buffer nil
   "A cell (file . buffer) where BUFFER is a buffer with contents of FILE.")
 
@@ -118,7 +113,6 @@ mode."
   "Kill buffer in `grep-context--temp-file-buffer'."
   (when (buffer-live-p (cdr grep-context--temp-file-buffer))
     (kill-buffer (cdr grep-context--temp-file-buffer))))
-(add-hook 'kill-buffer-hook #'grep-context--kill-temp-buffer)
 
 (defun grep-context--next-error (&optional n)
   "Move point to the next error, ignoring context lines."
@@ -229,7 +223,8 @@ N defaults to 1."
 		  (generate-new-buffer-name " *tempbuffer*"))))
 	  (with-current-buffer b
 	    (insert-file-contents file))
-	  (setq grep-context--temp-file-buffer (cons file b))))
+	  (setq grep-context--temp-file-buffer (cons file b)))
+	(add-hook 'kill-buffer-hook #'grep-context--kill-temp-buffer nil t))
 
       (with-current-buffer (cdr grep-context--temp-file-buffer)
 	(goto-char (point-min))
@@ -300,6 +295,11 @@ N defaults to 1."
 N defaults to 1."
   (interactive "p")
   (grep-context-more-around-point (- (or n 1))))
+
+;;;###autoload
+(define-minor-mode grep-context-mode nil
+  :keymap 'grep-context-mode-map
+  :group 'grep-context)
 
 (provide 'grep-context)
 

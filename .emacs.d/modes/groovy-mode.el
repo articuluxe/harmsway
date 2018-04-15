@@ -328,9 +328,10 @@
   (defconst groovy-dollar-slashy-open-regex
     (rx "$/"))
   (defconst groovy-dollar-slashy-close-regex
-    (rx "/$"))
-  (defconst groovy-postfix-operator-regex
-    (rx (or "++" "--"))))
+    (rx "/$")))
+
+(defconst groovy-postfix-operator-regex
+  (rx (or "++" "--")))
 
 (defun groovy-special-variable-search (limit)
   "Search for text marked with `groovy-special-variable' to LIMIT."
@@ -833,7 +834,7 @@ Then this function returns (\"def\" \"if\" \"switch\")."
                    (not (s-matches-p groovy--case-regexp prev-line))
                    (or (groovy--ends-with-infix-p prev-line)
                        (and (groovy--ends-with-comma-p prev-line)
-                            (not (eq current-paren-character ?\[))
+                            (not (memq current-paren-character (list ?\[ ?\()))
                             (not has-closing-paren))))
           (setq indent-level (1+ indent-level)))
 
