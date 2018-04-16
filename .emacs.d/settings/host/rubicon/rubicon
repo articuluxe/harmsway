@@ -3,7 +3,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2018-03-30 18:31:32 dharms>
+;; Modified Time-stamp: <2018-04-14 18:33:15 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -27,11 +27,11 @@
 ;;; Code:
 
 (with-eval-after-load 'choose-font
-  (setq choose-font-list '( "Office Code Pro 10"
+  (setq choose-font-list '( "Office Code Pro 12"
                             "CamingoCode 12"
                             "Fantasque Sans Mono 13"
-                            "Luculent 11"
-                            "Iosevka 11"
+                            "Luculent 12"
+                            "Iosevka 12"
                             "Hack 11"
                             "Cousine 12"
                             "InputMono 12"
