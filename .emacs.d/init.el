@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-04-15 19:26:59 dharms>
+;; Modified Time-stamp: <2018-04-16 10:29:46 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -941,6 +941,7 @@ not an error if any files do not exist."
 (defun my/enter-magit-status-fullscreen ()
   "Enter magit's status window, filling the entire frame."
   (interactive)
+  (require 'magit)
   (let ((magit-display-buffer-function #'magit-display-buffer-fullframe-status-v1))
     (magit-status-internal default-directory)))
 (use-package magit
@@ -1037,6 +1038,7 @@ Only one letter is shown, the first that applies."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; magit-org-todos ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package magit-org-todos
+  :after magit
   :config (magit-org-todos-autoinsert))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; git-timemachine ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
