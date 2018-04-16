@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-04-15 18:35:20 dharms>
+;; Modified Time-stamp: <2018-04-15 19:10:59 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -936,7 +936,7 @@ not an error if any files do not exist."
   "Enter magit's status window, filling the entire frame."
   (interactive)
   (let ((magit-display-buffer-function #'magit-display-buffer-fullframe-status-v1))
-    (magit-status)))
+    (magit-status-internal default-directory)))
 (use-package magit
   :if (not (version< emacs-version "24.4"))
   :init
@@ -991,8 +991,10 @@ not an error if any files do not exist."
        'ido-setup-hook
        (lambda() (define-key ido-completion-map
                    (kbd "C-x g") 'ido-enter-magit-status)))
-    (define-key ido-common-completion-map
-      (kbd "C-x g") 'ido-enter-magit-status))
+    (add-hook
+     'ido-setup-hook
+     (lambda() (define-key ido-common-completion-map
+                 (kbd "C-x g") 'ido-enter-magit-status))))
 
   (add-hook 'magit-revision-mode-hook 'bug-reference-mode)
   (add-hook 'git-commit-setup-hook 'bug-reference-mode)
@@ -1026,6 +1028,10 @@ Only one letter is shown, the first that applies."
         #'magit-display-buffer-same-window-except-diff-v1)
   ;; to display fullframe, use 'magit-display-buffer-fullframe-status-v1
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; magit-org-todos ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package magit-org-todos
+  :config (magit-org-todos-autoinsert))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; git-timemachine ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package git-timemachine
