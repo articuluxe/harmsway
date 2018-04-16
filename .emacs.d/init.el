@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-04-15 19:10:59 dharms>
+;; Modified Time-stamp: <2018-04-15 19:26:59 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -551,6 +551,12 @@ not an error if any files do not exist."
   :bind (("C-`" . multi-line)
          ("M-' `" . multi-line)
          ))
+
+(use-package fill-function-arguments
+  :init
+  (add-hook 'prog-mode-hook
+            (lambda()
+              (local-set-key "\C-c`" #'fill-function-arguments-dwim))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; emacs-refactor ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package emr
