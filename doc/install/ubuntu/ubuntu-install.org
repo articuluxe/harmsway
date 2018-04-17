@@ -50,6 +50,19 @@ sudo apt install libncurses5-dev
 make
 make install prefix=/usr/local/priv/emacs-25.1
 #+END_SRC
+** alternative
+#+BEGIN_SRC sh
+git clone http://github.com/emacs-mirror/emacs.git
+git checkout emacs-26
+./autogen.sh
+# release
+./configure CFLAGS='-O2 -g3' --program-transform-name='s/^ctags$/ctags.emacs/'
+# debug
+./configure CFLAGS='-O0 -gdwarf-4 -g3' --program-transform-name='s/^ctags$/ctags.emacs/'
+make
+make install
+make bootstrap
+#+END_SRC
 * stow
 #+BEGIN_SRC sh
 sudo apt install stow
