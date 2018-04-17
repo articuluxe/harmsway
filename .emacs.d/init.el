@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-04-16 10:29:46 dan.harms>
+;; Modified Time-stamp: <2018-04-17 08:44:23 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1594,6 +1594,7 @@ Only one letter is shown, the first that applies."
   (setq org-use-property-inheritance t)
   (setq org-use-tag-inheritance t)
   (setq org-return-follows-link t)
+  (setq org-M-RET-may-split-line '((default . nil)))
   ;; (setq org-use-speed-commands t)
   ;; (setq org-startup-indented t)
   ;; todos
