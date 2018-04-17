@@ -1,11 +1,11 @@
 #!/usr/bin/env sh
 # -*- Mode: sh -*-
 # development.txt --- tips when developing
-# Copyright (C) 2017  Dan Harms (dan.harms)
+# Copyright (C) 2017-2018  Dan Harms (dan.harms)
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Tuesday, February  7, 2017
 # Version: 1.0
-# Modified Time-stamp: <2017-11-06 11:29:37 dan.harms>
+# Modified Time-stamp: <2018-04-17 08:49:10 dharms>
 # Modified by: Dan Harms
 # Keywords: gnu elf development
 
@@ -39,6 +39,9 @@ ulimit -Hn
 # count file descriptors are in use by user
 sudo lsof -u <UID> 2>/dev/null | sc -l
 # edit /etc/security/limits.conf to change limit: user soft nproc 2000
+
+# strace
+strace -f -e [open|network] <cmd>
 
 # print debug info about what ld.so does at runtime
 LD_DEBUG=libs ./executable

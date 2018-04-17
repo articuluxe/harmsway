@@ -1,9 +1,9 @@
 # darwin.txt --- helpful notes for mac os x
-# Copyright (C) 2016-2017  Dan Harms (dharms)
+# Copyright (C) 2016-2018  Dan Harms (dharms)
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Monday, May  2, 2016
 # Version: 1.0
-# Modified Time-stamp: <2017-06-21 06:28:47 dharms>
+# Modified Time-stamp: <2018-04-17 08:51:12 dharms>
 # Modified by: Dan Harms
 # Keywords: mac help docs
 
@@ -30,6 +30,9 @@ textutil -convert <txt|html|rtf|rtfd|doc|wordml|webarhive> file
 
 # ldd
 otool -L
+
+# trace program execution
+dtruss
 
 # X11 full screen toggle
 command-option-a
