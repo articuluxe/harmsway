@@ -4,7 +4,7 @@
 
 ;; Author: Kunal Bhalla <bhalla.kunal@gmail.com>
 ;; URL: https://github.com/kunalb/poet/
-;; Version: 1.0
+;; Version: 1.1
 
 ;;; Commentary:
 
@@ -17,9 +17,9 @@
 ;; Recommended customizations for using this theme
 ;;
 ;; - Set up the base fonts you'd like to use in Emacs before loading Poet
-;;     (set-face-attribute 'default nil :family "Fira Code" :height 130)
-;;     (set-face-attribute 'fixed-pitch nil :family "Fira Code")
-;;     (set-face-attribute 'variable-pitch nil :family "Georgia")
+;;     (set-face-attribute 'default nil :family "Iosevka" :height 130)
+;;     (set-face-attribute 'fixed-pitch nil :family "Iosevka")
+;;     (set-face-attribute 'variable-pitch nil :family "Baskerville")
 ;;   On loading this theme captures the default and treats that for fixed-pitch
 ;;   rendering.
 ;;
@@ -90,6 +90,13 @@
 
 (defun poet--height (multiplier)
   (truncate (* multiplier poet--monospace-height)))
+
+;; TODO Allow choosing heading flattening height
+(defun poet--header-height (index base-height max-height)
+  "Use a large font only for the first heading, and then the same size"
+  (if (= index 1)
+      (+ (poet--height .2) base-height)
+    base-height))
 
 (let*
     (;; Theme design
@@ -269,9 +276,7 @@
              (list
               ':inherit 'default
               ':foreground header-color
-              ':height (max
-                        (+ (poet--height .08) base-height)
-                        (- max-heading-height (* (poet--height .2) index))))))
+              ':height (poet--header-height index base-height max-heading-height))))
 
         (org-meta-line
          :inherit fixed-pitch
@@ -287,6 +292,7 @@
         (org-table
          :inherit fixed-pitch
          :background "#e0e0e0")
+
         (org-formula
          :inherit org-table
          :height ,monospace-height)
@@ -297,7 +303,16 @@
          :background "#e0e0e0")
 
         (org-hide
+         :inherit fixed-pitch
          :foreground ,bg)
+
+        (org-indent
+         :inherit org-hide)
+
+        (org-date
+         :inherit fixed-pitch
+         :foreground "#444444"
+         :underline nil)
 
         (org-document-title
          :inherit default
@@ -310,9 +325,16 @@
          :weight bold
          :foreground "#aaaaaa")
 
+        (org-scheduled
+         :foreground "#333333")
+
+        (org-scheduled-today
+         :foreground "#111111")
+
         (org-done
          :inherit fixed-pitch
          :foreground "#388E3C")
+
         (org-todo
          :inherit fixed-pitch
          :foreground "#BF360C")

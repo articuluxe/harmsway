@@ -256,7 +256,6 @@ Update the minibuffer with the amount of lines collected every
                    (car bnd)
                    (cdr bnd))
                 ""))
-         (ivy-height 7)
          (pred (and (eq (char-before (car bnd)) ?\()
                     #'fboundp))
          symbol-names)
@@ -269,9 +268,12 @@ Update the minibuffer with the amount of lines collected every
              (push (symbol-name x) symbol-names))))
       (setq symbol-names (all-completions str obarray pred)))
     (ivy-read "Symbol name: " symbol-names
+              :caller 'counsel-el
               :predicate pred
               :initial-input str
               :action #'ivy-completion-in-region-action)))
+
+(add-to-list 'ivy-height-alist '(counsel-el . 7))
 
 ;;** `counsel-cl'
 (declare-function slime-symbol-start-pos "ext:slime")
@@ -331,13 +333,15 @@ Update the minibuffer with the amount of lines collected every
          (str (buffer-substring-no-properties
                (car bnd) (cdr bnd)))
          (candidates (funcall completion-fn str))
-         (ivy-height 7)
          (res (ivy-read (format "pattern (%s): " str)
-                        candidates)))
+                        candidates
+                        :caller 'counsel--generic)))
     (when (stringp res)
       (when bnd
         (delete-region (car bnd) (cdr bnd)))
       (insert res))))
+
+(add-to-list 'ivy-height-alist '(counsel--generic . 7))
 
 ;;;###autoload
 (defun counsel-clj ()
@@ -755,13 +759,21 @@ By default `counsel-bookmark' opens a dired buffer for directories."
     "open as root")))
 
 (defun counsel-M-x-transformer (cmd)
-  "Return CMD appended with the corresponding binding in the current window."
-  (let ((binding (substitute-command-keys (format "\\[%s]" cmd))))
-    (setq binding (replace-regexp-in-string "C-x 6" "<f2>" binding))
-    (if (string-match "^M-x" binding)
+  "Return CMD annotated with its active key binding, if any."
+  (let ((key (where-is-internal (intern cmd) nil t)))
+    (if (not key)
         cmd
-      (format "%s (%s)"
-              cmd (propertize binding 'face 'font-lock-keyword-face)))))
+      ;; Prefer `<f2>' over `C-x 6' where applicable
+      (let ((i (cl-search [?\C-x ?6] key)))
+        (when i
+          (let ((dup (vconcat (substring key 0 i) [f2] (substring key (+ i 2))))
+                (map (current-global-map)))
+            (when (equal (lookup-key map key)
+                         (lookup-key map dup))
+              (setq key dup)))))
+      (setq key (key-description key))
+      (put-text-property 0 (length key) 'face 'font-lock-keyword-face key)
+      (format "%s (%s)" cmd key))))
 
 (defvar smex-initialized-p)
 (defvar smex-ido-cache)
@@ -1573,13 +1585,14 @@ Does not list the currently checked out one."
   (let ((counsel-async-split-string-re counsel-git-log-split-string-re)
         (counsel-async-ignore-re "^[ \n]*$")
         (counsel-yank-pop-truncate-radius 5)
-        (ivy-format-function #'counsel--yank-pop-format-function)
-        (ivy-height 4))
+        (ivy-format-function #'counsel--yank-pop-format-function))
     (ivy-read "Grep log: " #'counsel-git-log-function
               :dynamic-collection t
               :action #'counsel-git-log-action
               :unwind #'counsel-delete-process
               :caller 'counsel-git-log)))
+
+(add-to-list 'ivy-height-alist '(counsel-git-log . 4))
 
 ;;* File
 ;;** `counsel-find-file'
@@ -2709,6 +2722,9 @@ otherwise continue prompting for tags."
            (org-agenda-set-tags nil nil))
       (fset 'org-set-tags store))))
 
+(define-obsolete-variable-alias 'counsel-org-goto-display-style
+    'counsel-org-headline-display-style "0.10.0")
+
 (defcustom counsel-org-headline-display-style 'path
   "The style used when displaying matched `org-mode'-headlines.
 
@@ -2728,8 +2744,8 @@ Use `counsel-org-headline-display-tags' and
           (const :tag "Path" path))
   :group 'ivy)
 
-(define-obsolete-variable-alias 'counsel-org-goto-display-style
-    'counsel-org-headline-display-style "0.10.0")
+(define-obsolete-variable-alias 'counsel-org-goto-separator
+    'counsel-org-headline-path-separator "0.10.0")
 
 (defcustom counsel-org-headline-path-separator "/"
   "Character(s) to separate path entries in matched `org-mode'-headlines.
@@ -2739,24 +2755,21 @@ set to path."
   :type 'string
   :group 'ivy)
 
-(define-obsolete-variable-alias 'counsel-org-goto-separator
-    'counsel-org-headline-path-separator "0.10.0")
+(define-obsolete-variable-alias 'counsel-org-goto-display-tags
+    'counsel-org-headline-display-tags "0.10.0")
 
 (defcustom counsel-org-headline-display-tags nil
   "If non-nil, display tags in matched `org-mode' headlines."
   :type 'boolean
   :group 'ivy)
 
-(define-obsolete-variable-alias 'counsel-org-goto-display-tags
-    'counsel-org-headline-display-tags "0.10.0")
+(define-obsolete-variable-alias 'counsel-org-goto-display-todo
+    'counsel-org-headline-display-todo "0.10.0")
 
 (defcustom counsel-org-headline-display-todo nil
   "If non-nil, display todo keywords in matched `org-mode' headlines."
   :type 'boolean
   :group 'ivy)
-
-(define-obsolete-variable-alias 'counsel-org-goto-display-todo
-    'counsel-org-headline-display-todo "0.10.0")
 
 (defcustom counsel-org-headline-display-priority nil
   "If non-nil, display priorities in matched `org-mode' headlines."
@@ -3212,6 +3225,11 @@ A is the left hand side, B the right hand side."
   :group 'ivy
   :type 'integer)
 
+(make-obsolete-variable
+ 'counsel-yank-pop-height
+ "use `ivy-height-alist' instead."
+ "<2018-04-14 Fri>") ;; TODO add version
+
 (defun counsel--yank-pop-format-function (cand-pairs)
   "Transform CAND-PAIRS into a string for `counsel-yank-pop'."
   (ivy--format-function-generic
@@ -3328,7 +3346,6 @@ Note: Duplicate elements of `kill-ring' are always deleted."
   ;; Do not specify `*' to allow browsing `kill-ring' in read-only buffers
   (interactive "P")
   (let ((ivy-format-function #'counsel--yank-pop-format-function)
-        (ivy-height counsel-yank-pop-height)
         (kills (counsel--yank-pop-kills)))
     (unless kills
       (error "Kill ring is empty or blank"))
@@ -3351,6 +3368,8 @@ Note: Duplicate elements of `kill-ring' are always deleted."
               :action #'counsel-yank-pop-action
               :caller 'counsel-yank-pop)))
 
+(add-to-list 'ivy-height-alist '(counsel-yank-pop . 5))
+
 (ivy-set-actions
  'counsel-yank-pop
  '(("d" counsel-yank-pop-action-remove "delete")
@@ -3362,12 +3381,16 @@ Note: Duplicate elements of `kill-ring' are always deleted."
   :group 'ivy
   :type 'integer)
 
+(make-obsolete-variable
+ 'counsel-evil-registers
+ "use `ivy-height-alist' instead."
+ "<2018-04-14 Fri>") ;; TODO add version
+
 (defun counsel-evil-registers ()
   "Ivy replacement for `evil-show-registers'."
   (interactive)
   (if (fboundp 'evil-register-list)
-      (let ((ivy-format-function #'counsel--yank-pop-format-function)
-            (ivy-height counsel-evil-registers-height))
+      (let ((ivy-format-function #'counsel--yank-pop-format-function))
         (ivy-read "evil-registers: "
                   (cl-loop for (key . val) in (evil-register-list)
                      collect (format "[%c]: %s" key (if (stringp val) val "")))
@@ -3375,6 +3398,8 @@ Note: Duplicate elements of `kill-ring' are always deleted."
                   :action #'counsel-evil-registers-action
                   :caller 'counsel-evil-registers))
     (user-error "Required feature `evil' not installed.")))
+
+(add-to-list 'ivy-height-alist '(counsel-evil-registers . 5))
 
 (defun counsel-evil-registers-action (s)
   "Paste contents of S, trimming the register part.

@@ -3,8 +3,8 @@
 ;; Author: Christian Johansson <github.com/cjohansson>
 ;; Maintainer: Christian Johansson <github.com/cjohansson>
 ;; Created: 5 Jul 2016
-;; Modified: 12 Apr 2018
-;; Version: 1.84
+;; Modified: 20 Apr 2018
+;; Version: 1.86
 ;; Keywords: tools, convenience
 ;; URL: https://github.com/cjohansson/emacs-ssh-deploy
 
@@ -592,20 +592,20 @@
       (setq exclude-list ssh-deploy-exclude-list))
   (if (and async (fboundp 'async-start))
       (let ((script-filename (file-name-directory (symbol-file 'ssh-deploy-diff-directories))))
-        (message "Generating differences between directory '%s' and '%s'.. (asynchronously)" directory-a directory-b)
+        (message "Calculating differences between directory '%s' and '%s'.. (asynchronously)" directory-a directory-b)
         (async-start
          `(lambda()
             (add-to-list 'load-path ,script-filename)
             (require 'ssh-deploy)
             (ssh-deploy--diff-directories-data ,directory-a ,directory-b (list ,@exclude-list)))
          (lambda(diff)
-           (message "Completed calculated differences between directory '%s' and '%s'. Result: %s only in A, %s only in B, %s differs. (asynchronously)" (nth 0 diff) (nth 1 diff) (length (nth 4 diff)) (length (nth 5 diff)) (length (nth 7 diff)))
+           (message "Completed calculation of differences between directory '%s' and '%s'. Result: %s only in A, %s only in B, %s differs. (asynchronously)" (nth 0 diff) (nth 1 diff) (length (nth 4 diff)) (length (nth 5 diff)) (length (nth 7 diff)))
            (if (or (> (length (nth 4 diff)) 0) (> (length (nth 5 diff)) 0) (> (length (nth 7 diff)) 0))
                (ssh-deploy--diff-directories-present diff)))))
     (progn
-      (message "Generating differences between directory '%s' and '%s'.. (synchronously)" directory-a directory-b)
+      (message "Calculating differences between directory '%s' and '%s'.. (synchronously)" directory-a directory-b)
       (let ((diff (ssh-deploy--diff-directories-data directory-a directory-b exclude-list)))
-        (message "Completed calculated differences between directory '%s' and '%s'. Result: %s only in A, %s only in B, %s differs. (synchronously)" (nth 0 diff) (nth 1 diff) (length (nth 4 diff)) (length (nth 5 diff)) (length (nth 7 diff)))
+        (message "Completed calculation of differences between directory '%s' and '%s'. Result: %s only in A, %s only in B, %s differs. (synchronously)" (nth 0 diff) (nth 1 diff) (length (nth 4 diff)) (length (nth 5 diff)) (length (nth 7 diff)))
         (if (or (> (length (nth 4 diff)) 0) (> (length (nth 5 diff)) 0) (> (length (nth 7 diff)) 0))
             (ssh-deploy--diff-directories-present diff))))))
 
@@ -695,16 +695,16 @@
                   (list ,path 0)))
             (list ,path 1)))
        (lambda(response)
-         (cond ((= 0 (nth 1 response)) (message "Deleted '%s'. (asynchronously)" (nth 0 response)))
-               (t (display-warning "ssh-deploy" (format "Did not find '%s'. (asynchronously)" (nth 0 response)) :warning)))))
+         (cond ((= 0 (nth 1 response)) (message "Completed deletion of '%s'. (asynchronously)" (nth 0 response)))
+               (t (display-warning "ssh-deploy" (format "Did not find '%s' for deletion. (asynchronously)" (nth 0 response)) :warning)))))
     (if (file-exists-p path)
         (let ((file-or-directory (not (file-directory-p path))))
           (progn
             (if file-or-directory
                 (delete-file path t)
               (delete-directory path t t))
-            (message "Deleted '%s'. (synchronously)" path)))
-      (display-warning "ssh-deploy" (format "Did not find '%s'. (synchronously)" path) :warning))))
+            (message "Completed deletion of '%s'. (synchronously)" path)))
+      (display-warning "ssh-deploy" (format "Did not find '%s' for deletion. (synchronously)" path) :warning))))
 
 ;;;### autoload
 (defun ssh-deploy-delete-both (path-local &optional root-local root-remote async debug exclude-list)

@@ -132,7 +132,9 @@
 (setcdr (assoc load-file-name custom-current-group-alist) 'ivy)
 
 (defcustom ivy-height 10
-  "Number of lines for the minibuffer window."
+  "Number of lines for the minibuffer window.
+
+See also `ivy-height-alist'."
   :type 'integer)
 
 (defcustom ivy-count-format "%-4d "
@@ -169,9 +171,14 @@ earlier versions of Emacs."
           (const :tag "Fancy" fancy)))
 
 (defcustom ivy-on-del-error-function #'minibuffer-keyboard-quit
-  "The handler for when `ivy-backward-delete-char' throws.
-Usually a quick exit out of the minibuffer."
-  :type 'function)
+  "Function to call when deletion fails during completion.
+The usual reason for `ivy-backward-delete-char' to fail is when
+there is no text left to delete, i.e., when it is called at the
+beginning of the minibuffer.
+The default setting provides a quick exit from completion."
+  :type '(choice (const :tag "Exit completion" minibuffer-keyboard-quit)
+                 (const :tag "Do nothing" ignore)
+                 (function :tag "Custom function")))
 
 (defcustom ivy-extra-directories '("../" "./")
   "Add this to the front of the list when completing file names.
@@ -212,6 +219,9 @@ Examples of properties include associated `:cleanup' functions.")
   '((ivy-completion-in-region . ivy-display-function-overlay))
   "An alist for customizing `ivy-display-function'.")
 
+(defvar ivy-completing-read-dynamic-collection nil
+  "Run `ivy-completing-read' with `:dynamic-collection t`.")
+
 (defcustom ivy-completing-read-handlers-alist
   '((tmm-menubar . completing-read-default)
     (tmm-shortcut . completing-read-default)
@@ -226,6 +236,13 @@ Examples of properties include associated `:cleanup' functions.")
     (webjump . ivy-completing-read-with-empty-string-def))
   "An alist of handlers to replace `completing-read' in `ivy-mode'."
   :type '(alist :key-type function :value-type function))
+
+(defcustom ivy-height-alist nil
+  "An alist to customize `ivy-height'.
+
+It is a list of (CALLER . HEIGHT).  CALLER is a caller of
+`ivy-read' and HEIGHT is the number of lines displayed."
+  :type '(alist :key-type function :value-type integer))
 
 (defvar ivy-completing-read-ignore-handlers-depth -1
   "Used to avoid infinite recursion.
@@ -1318,8 +1335,10 @@ If so, move to that directory, while keeping only the file name."
     (delete-minibuffer-contents)))
 
 (defun ivy-backward-delete-char ()
-  "Forward to `backward-delete-char'.
-On error (read-only), call `ivy-on-del-error-function'."
+  "Forward to `delete-backward-char'.
+Call `ivy-on-del-error-function' if an error occurs, usually when
+there is no more text to delete at the beginning of the
+minibuffer."
   (interactive)
   (if (and ivy--directory (= (minibuffer-prompt-end) (point)))
       (progn
@@ -1328,8 +1347,9 @@ On error (read-only), call `ivy-on-del-error-function'."
                    (expand-file-name
                     ivy--directory))))
         (ivy--exhibit))
+    (setq prefix-arg current-prefix-arg)
     (condition-case nil
-        (backward-delete-char 1)
+        (call-interactively #'delete-backward-char)
       (error
        (when ivy-on-del-error-function
          (funcall ivy-on-del-error-function))))))
@@ -1700,7 +1720,12 @@ customizations apply to the current completion session."
          (unless (window-minibuffer-p)
            (or ivy-display-function
                (cdr (or (assq caller ivy-display-functions-alist)
-                        (assq t ivy-display-functions-alist)))))))
+                        (assq t ivy-display-functions-alist))))))
+        (height
+         (if caller
+             (let ((entry (assoc caller ivy-height-alist)))
+               (if entry (cdr entry) ivy-height))
+           ivy-height)))
     (setq ivy-last
           (make-ivy-state
            :prompt prompt
@@ -1733,6 +1758,7 @@ customizations apply to the current completion session."
                (let* ((hist (or history 'ivy-history))
                       (minibuffer-completion-table collection)
                       (minibuffer-completion-predicate predicate)
+                      (ivy-height height)
                       (resize-mini-windows
                        (cond
                          ((display-graphic-p) nil)
@@ -2031,6 +2057,7 @@ INHERIT-INPUT-METHOD is currently ignored."
                 :history history
                 :keymap nil
                 :sort t
+                :dynamic-collection ivy-completing-read-dynamic-collection
                 :caller (cond ((called-interactively-p 'any)
                                this-command)
                               ((and collection (symbolp collection))

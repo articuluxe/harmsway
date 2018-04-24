@@ -624,10 +624,11 @@
     ;; Linum & nlinum
     (linum                        (:background line-num-bg :foreground line-num-fg :bold nil
                                                :italic nil :underline nil :strike-through nil))
-    (linum-highlight-face         (:inherit 'linum))
+    (linum-highlight-face          (:background line-num-bg :foreground line-num-hl :bold bold
+                                                :italic nil :underline nil :strike-through nil))
     (nlinum-current-line          (:background line-num-bg :foreground line-num-hl :bold bold
                                                :italic nil :underline nil :strike-through nil))
-    (linum-relative-current-line  (:inherit 'nlinum-current-line))
+    (linum-relative-current-line  (:inherit 'linum-highlight-face))
     (nlinum-relative-current-face (:inherit 'nlinum-current-line))
 
     ;; Native line numbers
@@ -916,6 +917,30 @@
     (diff-added       (:background diff-bg-add :foreground fg1))
     (diff-changed     (:background diff-bg-mod :foreground fg1))
     (diff-removed     (:background diff-bg-rem :foreground fg1))
+
+   ;; Ediff
+   ;; (ediff-current-diff-A (:background hl-line :foreground fg4))
+   ;; (ediff-current-diff-B (:background hl-line :foreground fg4))
+   ;; (ediff-current-diff-C (:background hl-line :foreground fg4))
+   (ediff-current-diff-Ancestor (:background diff-bg-mod :foreground fg2))
+   (ediff-current-diff-A (:background red2 :foreground fg2))
+   (ediff-current-diff-B (:background spring-green2 :foreground fg2))
+   (ediff-current-diff-C (:background cyan2 :foreground fg2))
+
+   (ediff-even-diff-Ancestor (:background bg3))
+   (ediff-even-diff-A (:background bg3))
+   (ediff-even-diff-B (:background bg3))
+   (ediff-even-diff-C (:background bg3))
+
+   (ediff-fine-diff-Ancestor (:background diff-bg-mod :bold bold :foreground white0))
+   (ediff-fine-diff-A (:background red3 :bold bold :foreground white0))
+   (ediff-fine-diff-B (:background spring-green1 :bold bold :foreground white0))
+   (ediff-fine-diff-C (:background cyan1 :bold bold :foreground white0))
+
+   (ediff-odd-diff-Ancestor (:background bg4))
+   (ediff-odd-diff-A (:background bg4))
+   (ediff-odd-diff-B (:background bg4))
+   (ediff-odd-diff-C (:background bg4))
 
     ;; TODO Imenu list
     (imenu-list-entry-subalist-face-0 (:inherit 'font-lock-keyword-face))

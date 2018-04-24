@@ -7916,7 +7916,9 @@ contains a cabal file."
          "stack.*\\.yaml\\'"))
       (-when-let* ((stack (funcall flycheck-executable-find "stack"))
                    (output (ignore-errors
-                             (process-lines stack "path" "--project-root")))
+                             (process-lines stack
+                                            "--no-install-ghc"
+                                            "path" "--project-root")))
                    (stack-dir (car output)))
         (and (file-directory-p stack-dir) stack-dir))))
     (_
@@ -7930,6 +7932,7 @@ contains a cabal file."
 
 See URL `https://github.com/commercialhaskell/stack'."
   :command ("stack"
+            "--no-install-ghc"
             (option "--stack-yaml" flycheck-ghc-stack-project-file)
             (option-flag "--nix" flycheck-ghc-stack-use-nix)
             "ghc" "--" "-Wall" "-no-link"
@@ -8152,6 +8155,9 @@ See URL `http://www.jshint.com'."
      "stdin" (flycheck-dequalify-error-ids errors)))
   :modes (js-mode js2-mode js3-mode rjsx-mode))
 
+(flycheck-def-args-var flycheck-eslint-args javascript-eslint
+  :package-version '(flycheck . "32"))
+
 (flycheck-def-option-var flycheck-eslint-rules-directories nil javascript-eslint
   "A list of directories with custom rules for ESLint.
 
@@ -8219,6 +8225,7 @@ hierarchy, it looks first for `.eslintignore' and then for
 See URL `http://eslint.org/'."
   :command ("eslint" "--format=json"
             (option-list "--rulesdir" flycheck-eslint-rules-directories)
+            (eval flycheck-eslint-args)
             "--stdin" "--stdin-filename" source-original)
   :standard-input t
   :error-parser flycheck-parse-eslint
@@ -8900,7 +8907,8 @@ See URL `https://www.pylint.org/'."
             (id (one-or-more (not (any ":")))) ":"
             (message) line-end)
    (info line-start (file-name) ":" line ":" column ":"
-         "C:" (id (one-or-more (not (any ":")))) ":"
+         (or "C" "I") ":"
+         (id (one-or-more (not (any ":")))) ":"
          (message) line-end))
   :enabled (lambda ()
              (or (not (flycheck-python-needs-module-p 'python-pylint))

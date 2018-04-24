@@ -111,7 +111,7 @@
 (defvar-local posframe--frame nil
   "Record posframe's frame.")
 
-(defvar-local posframe--last-position nil
+(defvar-local posframe--last-posframe-pixel-position nil
   "Record the last pixel position of posframe's frame.")
 
 (defvar-local posframe--last-posframe-size nil
@@ -119,6 +119,12 @@
 
 (defvar-local posframe--last-parent-frame-size nil
   "Record the last size of posframe's parent-frame.")
+
+(defvar-local posframe--last-poshandler-info nil
+  "Record the last poshandler info.")
+
+(defvar-local posframe--last-font-height-info nil
+  "Record the last font height info.")
 
 (defvar-local posframe--last-args nil
   "Record the last arguments of `posframe--create-posframe'.
@@ -184,7 +190,7 @@ This posframe's buffer is POSFRAME-BUFFER."
                    (equal posframe--last-args args))
         (posframe-delete-frame posframe-buffer)
         (setq-local posframe--last-args args)
-        (setq-local posframe--last-position nil)
+        (setq-local posframe--last-posframe-pixel-position nil)
         (setq-local posframe--last-posframe-size nil)
         (setq-local posframe--frame
                     (make-frame
@@ -391,15 +397,20 @@ you can use `posframe-delete-all' to delete all posframes."
 
 (defun posframe--get-font-height (position)
   "Get the font's height at POSITION."
-  (when (integerp position)
-    (if (= position 1)
-        (default-line-height)
-      (aref (font-info
-             (font-at
-              (if (and (= position (point-max)))
-                  (- position 1)
-                position)))
-            3))))
+  (if (eq position (car posframe--last-font-height-info))
+      (cdr posframe--last-font-height-info)
+    (let ((height (when (integerp position)
+                    (if (= position 1)
+                        (default-line-height)
+                      (aref (font-info
+                             (font-at
+                              (if (and (= position (point-max)))
+                                  (- position 1)
+                                position)))
+                            3)))))
+      (setq posframe--last-font-height-info
+            (cons position height))
+      height)))
 
 (defun posframe--mouse-banish (frame)
   "Banish mouse to the (0 . 0) of FRAME.
@@ -442,13 +453,13 @@ WIDTH and MIN-WIDTH."
                                               parent-frame-height)
   "Move POSFRAME to POSITION.
 This need PARENT-FRAME-WIDTH and PARENT-FRAME-HEIGHT"
-  (unless (and (equal position posframe--last-position)
+  (unless (and (equal position posframe--last-posframe-pixel-position)
                ;; When working frame's size change, re-posit
                ;; the posframe.
                (equal posframe--last-parent-frame-size
                       (cons parent-frame-width parent-frame-height)))
     (set-frame-position posframe (car position) (cdr position))
-    (setq-local posframe--last-position position)
+    (setq-local posframe--last-posframe-pixel-position position)
     (setq-local posframe--last-parent-frame-size
                 (cons parent-frame-width parent-frame-height)))
   ;; Make posframe's posframe--frame visible
@@ -552,17 +563,20 @@ This function is used by `kill-buffer-hook'."
 
 the structure of INFO can be found in docstring
 of `posframe-show'."
-  (funcall
-   (or (plist-get info :poshandler)
-       (let ((position (plist-get info :position)))
-         (cond ((integerp position)
-                #'posframe-poshandler-point-bottom-left-corner)
-               ((and (consp position)
-                     (integerp (car position))
-                     (integerp (cdr position)))
-                #'posframe-poshandler-absolute-x-y)
-               (t (error "Posframe: have no valid poshandler")))))
-   info))
+  (if (equal info posframe--last-poshandler-info)
+      posframe--last-posframe-pixel-position
+    (setq posframe--last-poshandler-info info)
+    (funcall
+     (or (plist-get info :poshandler)
+         (let ((position (plist-get info :position)))
+           (cond ((integerp position)
+                  #'posframe-poshandler-point-bottom-left-corner)
+                 ((and (consp position)
+                       (integerp (car position))
+                       (integerp (cdr position)))
+                  #'posframe-poshandler-absolute-x-y)
+                 (t (error "Posframe: have no valid poshandler")))))
+     info)))
 
 (defun posframe-poshandler-absolute-x-y (info)
   "Posframe's position hanlder.
