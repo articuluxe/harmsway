@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2018-01-05 00:11:18 dharms>
+;; Modified Time-stamp: <2018-04-24 08:34:21 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -195,10 +195,6 @@
   (add-to-list 'compilation-error-regexp-alist-alist
                '(boost-test
                  "^[[:digit:]]+:\\s-*\\(.*\\):\\([[:digit:]]+\\):\\s-+\\(fatal\\s-\\)?error" 1 2)))
-
-(use-package
- clang-format
- :bind ("C-c f" . clang-format-region))
 
 (defun find-my-tags-file() "Find tags file"
   (interactive)
