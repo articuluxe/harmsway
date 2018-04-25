@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-04-19 13:54:59 dan.harms>
+;; Modified Time-stamp: <2018-04-25 07:43:55 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -269,6 +269,8 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
          ("C-c gag" . proviso-ag)
          ("C-c gr" . proviso-rg)
          ("C-c t" . proviso-gentags-generate-tags)
+         ("C-c ff" . proviso-finder-find-file)
+         ("C-c fd" . proviso-finder-open-dir)
          ("C-c dg" . proviso-gud-open-gdb)
          ("C-c dr" . proviso-gud-open-realgud)
          ("C-c pd" . proviso-open-dired-this-project)
