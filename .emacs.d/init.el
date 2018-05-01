@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-04-30 08:30:45 dharms>
+;; Modified Time-stamp: <2018-05-01 10:39:39 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1300,6 +1300,7 @@ Only one letter is shown, the first that applies."
   :config
   (setq dumb-jump-selector 'ivy)
   (push ".proviso" dumb-jump-project-denoters)
+  (setq dumb-jump-max-find-time 5)
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; plur ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
