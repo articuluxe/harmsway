@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-04-25 07:43:55 dharms>
+;; Modified Time-stamp: <2018-04-30 08:30:45 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -119,6 +119,7 @@
 (setq gc-cons-threshold 20000000)
 (setq kill-do-not-save-duplicates t)
 (file-name-shadow-mode 1)
+(setq switch-to-visible-buffer nil)
 (setq enable-recursive-minibuffers t)
 ;;  truncate long lines
 (setq-default truncate-lines t)
