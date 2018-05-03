@@ -1,10 +1,10 @@
-;;; kaolin-valley-dark-theme.el --- Colorful Kaolin theme with brown background.
+;;; kaolin-valley-light-theme.el --- light variant of Kaolin-valley-dark theme.
 ;;; Commentary:
 
 ;;; Code:
 (require 'kaolin-themes)
 
-(define-kaolin-theme valley-dark  "Colorful Kaolin theme with brown background."
+(define-kaolin-theme valley-light  "Light variant of kaolin-valley-dark theme."
 
   ;; Palette modification
   (
@@ -15,23 +15,26 @@
    ;; (cerulean4     "#536a9d")
    (cerulean4     "#47629E")
 
+   ;; (teal0 "#0d948d")
+   (teal0 "#10948D")
+   (cyan3 "#2BC8CC")
+   ;; (harlequin3 "#91f368")
+   (harlequin3 "#4CDE0D")
+   (crimson3 "#EF4F75")
+   (amber3 "#F3CB41")
 
    ;; Color vars
-   (bg1 "#211D1D")
-   (bg2 "#262121")
-   (bg3 "#2E2828")
-   (bg4 "#352D2D")
+   (bg1 "#F9F5F1")
+   (bg2 "#F8F0E9")
+   (bg3 "#F0E8E0")
+   (bg4 "#EBE3DD")
 
-   (fg1 amber9)
+   (fg1 black4)
 
    (keyword     teal0)
    (second-key  keyword)
    (builtin     aquamarine1)
 
-   ;; (var         teal3)
-   ;; (const       cyan3)
-   ;; (var         spring-green3)
-   ;; (const       harlequin3)
    (var         crimson3)
    (const       crimson3)
    ;; TODO:
@@ -39,7 +42,7 @@
    (functions   cyan3)
    (type        amber3)
 
-   (comment     brown2)
+   (comment     brown8)
    (alt-comment azure8)
 
    ;; (str         magenta3)
@@ -59,7 +62,7 @@
    (hl         azure3)
    ;; TODO: add colored
    (hl-line    (if kaolin-hl-line-colored bg3 bg3))
-   (hl-indent  gray0)
+   (hl-indent  white4)
    ;; TODO:
    (selection bg4)
    ;; TODO:
@@ -86,8 +89,8 @@
    (diff-rem red3)
 
     ;; Mode-line
-   (line-fg           fg4)
-   (line-color2       str)
+   (line-fg           gray9)
+   (line-color2       brown4)
    (line-bg1          bg2)
    (line-bg2          bg3)
    (line-border       bg3)
@@ -107,10 +110,10 @@
 
    (win-border    bg3)
    (line-num-bg   bg1)
-   (line-num-fg   brown2)
+   (line-num-fg   brown8)
    (line-num-hl   amber3)
 
-   (cursor        fg1)
+   (cursor       gray5)
 
    (ivy1          gray9)
    (ivy2          purple3)
@@ -122,15 +125,15 @@
    ;; TODO:
    ;; (highlight-quoted-quote   (:foreground orange1))
    ;; (highlight-quoted-symbol  (:foreground type))
-   (highlight-quoted-symbol  (:foreground harlequin3))
+   (highlight-quoted-symbol  (:foreground harlequin1))
 
-   (treemacs-directory-face (:foreground str))
-   (org-level-1            (:foreground teal0 :bold bold :height 1.1))
-   (org-level-2            (:foreground violet4  :bold nil))
-   (org-level-3            (:foreground harlequin3 :bold nil))
-   (org-level-4            (:foreground vermilion4 :bold nil))
+   ;; (org-level-1            (:foreground teal0 :bold bold :height 1.1))
+   ;; (org-level-2            (:foreground violet4  :bold nil))
+   ;; (org-level-3            (:foreground harlequin3 :bold nil))
+   ;; (org-level-4            (:foreground vermilion4 :bold nil))
    (org-code               (:foreground teal1))
-   (org-verbatim           (:foreground orange2)))
+   (org-verbatim           (:foreground orange2))
+   (org-table              (:foreground ultramarine4 :bold bold)))
 
   (when kaolin-git-gutter-solid
     (custom-theme-set-faces
@@ -139,4 +142,4 @@
      `(git-gutter:modified  ((t (:background ,diff-mod :foreground ,diff-mod))))
      `(git-gutter:deleted   ((t (:background ,diff-rem :foreground ,diff-rem)))))))
 
-;;; kaolin-valley-dark-theme.el ends here
+;;; kaolin-valley-light-theme.el ends here

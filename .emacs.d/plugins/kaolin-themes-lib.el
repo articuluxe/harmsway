@@ -1017,9 +1017,11 @@
     (org-verbatim                  (:foreground azure3))
     (org-hide                      (:foreground bg1))
     (org-special-keyword           (:foreground functions))
-    (org-table                     (:foreground var :bold bold))
+    (org-table                     (:background bg2 :foreground fg3))
     (org-formula                   (:foreground type))
     (org-warning                   (:foreground warning :underline underline))
+    (org-tag                       (:foreground prep))
+    (org-checkbox                  (:inherit 'org-special-keyword))
 
     (org-document-info-keyword     (:foreground second-key))
     (org-meta-line                 (:inherit 'org-document-info-keyword))
@@ -1038,6 +1040,11 @@
     (org-scheduled                 (:foreground type))
     (org-scheduled-today           (:foreground functions :height 1.2 :bold bold))
     (org-sexp-date                 (:foreground fg4))
+
+    (org-level-1            (:foreground keyword :bold bold :height 1.1))
+    (org-level-2            (:foreground builtin  :bold nil))
+    (org-level-3            (:foreground num :bold nil))
+    (org-level-4            (:foreground const :bold nil))
 
     ;; Emmet
     (emmet-preview-input   (:foreground nil :background nil))
@@ -1123,6 +1130,12 @@
     (helm-moccur-buffer                       (:foreground functions))
     (helm-source-go-package-godoc-description (:foreground str))
     (helm-bookmark-w3m                        (:foreground type))
+
+     ;; Avy
+    (avy-lead-face-0 (:background spring-green2 :foreground fg1))
+    (avy-lead-face   (:background red2 :foreground fg1))
+    (avy-lead-face-1 (:background capri2 :foreground fg1))
+    (avy-lead-face-2 (:background magenta2 :foreground fg1))
 
     ;; Ivy & swiper
     (ivy-current-match           (:background hl-line :foreground hl :bold t))

@@ -46,6 +46,11 @@
 (require 'compile)
 (require 'dired)
 
+(defface counsel-key-binding
+  '((t :inherit font-lock-keyword-face))
+  "Face used by `counsel-M-x' for key bindings."
+  :group 'ivy-faces)
+
 ;;* Utility
 (defun counsel-more-chars (n)
   "Return two fake candidates prompting for at least N input."
@@ -218,6 +223,11 @@ Update the minibuffer with the amount of lines collected every
         (ivy--insert-minibuffer (ivy--format ivy--all-candidates)))
       (setq counsel--async-time (current-time)))))
 
+(make-obsolete-variable
+ 'counsel-prompt-function
+ 'ivy-set-prompt
+ "0.8.0 <2016-06-20 Mon>")
+
 (defcustom counsel-prompt-function #'counsel-prompt-function-default
   "A function to return a full prompt string from a basic prompt string."
   :group 'ivy
@@ -225,11 +235,6 @@ Update the minibuffer with the amount of lines collected every
           (function-item counsel-prompt-function-default)
           (function-item counsel-prompt-function-dir)
           (function :tag "Custom")))
-
-(make-obsolete-variable
- 'counsel-prompt-function
- "Use `ivy-set-prompt' instead"
- "0.8.0 <2016-06-20 Mon>")
 
 (defun counsel-prompt-function-default ()
   "Return prompt appended with a semicolon."
@@ -368,8 +373,8 @@ so this function ensures lexicographic order."
                                     'code code)
                         cands))))
     (if (not (hash-table-p table))
-        ;; Support `ucs-names' returning an alist in Emacs < 26. The result of
-        ;; `ucs-names' comes pre-reversed so no need to repeat.
+        ;; Support `ucs-names' returning an alist in Emacs < 26.
+        ;; The result of `ucs-names' comes pre-reversed so no need to repeat.
         (dolist (entry table)
           (funcall fmt (car entry) (cdr entry)))
       (maphash fmt table)
@@ -772,7 +777,7 @@ By default `counsel-bookmark' opens a dired buffer for directories."
                          (lookup-key map dup))
               (setq key dup)))))
       (setq key (key-description key))
-      (put-text-property 0 (length key) 'face 'font-lock-keyword-face key)
+      (put-text-property 0 (length key) 'face 'counsel-key-binding key)
       (format "%s (%s)" cmd key))))
 
 (defvar smex-initialized-p)
@@ -1495,11 +1500,6 @@ done") "\n" t)))
   "Add candidate X to kill ring."
   (message "%S" (kill-new x)))
 
-(defcustom counsel-yank-pop-truncate-radius 2
-  "Number of context lines around `counsel-yank-pop' candidates."
-  :type 'integer
-  :group 'ivy)
-
 ;;** `counsel-git-change-worktree'
 (autoload 'string-trim-right "subr-x")
 (defun counsel-git-change-worktree-action (git-root-dir tree)
@@ -1577,6 +1577,8 @@ Does not list the currently checked out one."
   (ivy-read "Checkout branch: " (counsel-git-branch-list)
             :action #'counsel-git-checkout-action
             :caller 'counsel-git-checkout))
+
+(defvar counsel-yank-pop-truncate-radius)
 
 ;;;###autoload
 (defun counsel-git-log ()
@@ -2499,7 +2501,9 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
 
 ;;** `counsel-grep-or-swiper'
 (defcustom counsel-grep-swiper-limit 300000
-  "When the buffer is larger than this, use `counsel-grep' instead of `swiper'."
+  "Buffer size threshold for `counsel-grep-or-swiper'.
+When the number of characters in a buffer exceeds this threshold,
+`counsel-grep' will be used instead of `swiper'."
   :type 'integer
   :group 'ivy)
 
@@ -2736,8 +2740,8 @@ If path, the path hierarchy is displayed.  For each entry the title is shown.
 If title or any other value, only the title of the headline is displayed.
 
 Use `counsel-org-headline-display-tags' and
- `counsel-org-headline-display-todo' to display tags and todo keywords
- respectively."
+`counsel-org-headline-display-todo' to display tags and todo
+keywords, respectively."
   :type '(choice
           (const :tag "Title only" title)
           (const :tag "Headline" headline)
@@ -2966,23 +2970,24 @@ include attachments of other Org buffers."
             :action 'counsel-locate-action-dired
             :caller 'counsel-org-file))
 
+;;** `counsel-org-entity'
 (defvar org-entities)
 (defvar org-entities-user)
 
 ;;;###autoload
 (defun counsel-org-entity ()
-  "Insert an org-entity using ivy."
+  "Complete Org entities using Ivy."
   (interactive)
+  (require 'org)
   (ivy-read "Entity: " (cl-loop for element in (append org-entities org-entities-user)
-                          when (not (stringp element))
-                          collect
-                            (cons
-                             (format "%20s | %20s | %20s | %s"
-                                     (cl-first element) ;name
-                                     (cl-second element) ; latex
-                                     (cl-fourth element) ; html
-                                     (cl-seventh element)) ;utf-8
-                             element))
+                                unless (stringp element)
+                                collect (cons
+                                         (format "%20s | %20s | %20s | %s"
+                                                 (cl-first element)    ; name
+                                                 (cl-second element)   ; latex
+                                                 (cl-fourth element)   ; html
+                                                 (cl-seventh element)) ; utf-8
+                                         element))
             :require-match t
             :action '(1
                       ("u" (lambda (candidate)
@@ -3190,6 +3195,11 @@ A is the left hand side, B the right hand side."
   (counsel-tmm-prompt (tmm-get-keybind [menu-bar])))
 
 ;;** `counsel-yank-pop'
+(defcustom counsel-yank-pop-truncate-radius 2
+  "Number of context lines around `counsel-yank-pop' candidates."
+  :type 'integer
+  :group 'ivy)
+
 (defun counsel--yank-pop-truncate (str)
   "Truncate STR for use in `counsel-yank-pop'."
   (condition-case nil
@@ -3220,15 +3230,15 @@ A is the left hand side, B the right hand side."
   :group 'ivy
   :type 'string)
 
+(make-obsolete-variable
+ 'counsel-yank-pop-height
+ 'ivy-height-alist
+ "<2018-04-14 Fri>") ;; TODO: Add version tag
+
 (defcustom counsel-yank-pop-height 5
   "The `ivy-height' of `counsel-yank-pop'."
   :group 'ivy
   :type 'integer)
-
-(make-obsolete-variable
- 'counsel-yank-pop-height
- "use `ivy-height-alist' instead."
- "<2018-04-14 Fri>") ;; TODO add version
 
 (defun counsel--yank-pop-format-function (cand-pairs)
   "Transform CAND-PAIRS into a string for `counsel-yank-pop'."
@@ -3262,7 +3272,7 @@ Newlines and carriage returns are considered blank."
 (defcustom counsel-yank-pop-filter #'counsel-string-non-blank-p
   "Unary filter function applied to `counsel-yank-pop' candidates.
 All elements of `kill-ring' for which this function returns nil
-will be permanently deleted from `kill-ring' before completion.
+will be destructively removed from `kill-ring' before completion.
 All blank strings are deleted from `kill-ring' by default."
   :group 'ivy
   :type '(radio (function-item counsel-string-non-blank-p)
@@ -3270,20 +3280,20 @@ All blank strings are deleted from `kill-ring' by default."
                 (function :tag "Other")))
 
 (defun counsel--yank-pop-kills ()
-  "Return list of kills for `counsel-yank-pop' to complete.
-Returned elements satisfy `counsel-yank-pop-filter' and are
-unique under `equal-including-properties'."
-  ;; Refresh `kill-ring' in the presence of `interprogram-paste-function'
-  (current-kill 0)
+  "Return filtered `kill-ring' for `counsel-yank-pop' completion.
+Both `kill-ring' and `kill-ring-yank-pointer' may be
+destructively modifed to eliminate duplicates under
+`equal-including-properties', satisfy `counsel-yank-pop-filter',
+and incorporate `interprogram-paste-function'."
+  ;; Protect against `kill-ring' and result of
+  ;; `interprogram-paste-function' both being nil
+  (ignore-errors (current-kill 0))
   ;; Keep things consistent with the rest of Emacs
   (dolist (sym '(kill-ring kill-ring-yank-pointer))
     (set sym (cl-delete-duplicates
               (cl-delete-if-not counsel-yank-pop-filter (symbol-value sym))
               :test #'equal-including-properties :from-end t)))
-  ;; Clean up completion candidates without modifying `kill-ring' elements
-  (mapcar (lambda (kill)
-            (ivy-cleanup-string (copy-sequence kill)))
-          kill-ring))
+  kill-ring)
 
 (defun counsel-yank-pop-action (s)
   "Like `yank-pop', but insert the kill corresponding to S.
@@ -3293,7 +3303,9 @@ buffer position."
     (barf-if-buffer-read-only)
     (setq last-command 'yank)
     (setq yank-window-start (window-start))
-    (yank-pop (counsel--yank-pop-position s))
+    ;; Avoid unexpected additions to `kill-ring'
+    (let (interprogram-paste-function)
+      (yank-pop (counsel--yank-pop-position s)))
     (setq ivy-completion-end (point))))
 
 (defun counsel-yank-pop-action-remove (s)
@@ -3302,22 +3314,25 @@ buffer position."
     (set sym (cl-delete s (symbol-value sym)
                         :test #'equal-including-properties)))
   ;; Update collection and preselect for next `ivy-call'
-  (let ((kills (counsel--yank-pop-kills)))
-    (setf (ivy-state-collection ivy-last) kills)
-    (setf (ivy-state-preselect ivy-last)
-          (nth (min ivy--index (1- (length kills)))
-               kills)))
+  (setf (ivy-state-collection ivy-last) kill-ring)
+  (setf (ivy-state-preselect ivy-last)
+        (nth (min ivy--index (1- (length kill-ring)))
+             kill-ring))
   (ivy--reset-state ivy-last))
 
 (defun counsel-yank-pop-action-rotate (s)
   "Rotate the yanking point to S in the kill ring.
 See `current-kill' for how this interacts with the window system
 selection."
-  ;; `current-kill' can modify both `kill-ring' and `kill-ring-yank-pointer',
-  ;; so update collection and preselect for next `ivy-call'
-  (setf (ivy-state-preselect ivy-last)
-        (current-kill (counsel--yank-pop-position s)))
-  (setf (ivy-state-collection ivy-last) (counsel--yank-pop-kills))
+  (let ((i (counsel--yank-pop-position s)))
+    ;; Avoid unexpected additions to `kill-ring'
+    (let (interprogram-paste-function)
+      (setf (ivy-state-preselect ivy-last) (current-kill i)))
+    ;; Manually change window system selection because `current-kill' won't
+    (when (and (zerop i)
+               yank-pop-change-selection
+               interprogram-cut-function)
+      (funcall interprogram-cut-function (car kill-ring-yank-pointer))))
   (ivy--reset-state ivy-last))
 
 (defcustom counsel-yank-pop-preselect-last nil
@@ -3355,11 +3370,7 @@ Note: Duplicate elements of `kill-ring' are always deleted."
     (setq ivy-completion-end (point))
     (ivy-read "kill-ring: " kills
               :require-match t
-              :preselect (let ((kill-ring kills)
-                               (kill-ring-yank-pointer
-                                (cl-member (car kill-ring-yank-pointer) kills
-                                           :test #'equal-including-properties))
-                               interprogram-paste-function)
+              :preselect (let (interprogram-paste-function)
                            (current-kill (cond
                                           (arg (prefix-numeric-value arg))
                                           (counsel-yank-pop-preselect-last 0)
@@ -3376,15 +3387,15 @@ Note: Duplicate elements of `kill-ring' are always deleted."
    ("r" counsel-yank-pop-action-rotate "rotate")))
 
 ;;** `counsel-evil-registers'
+(make-obsolete-variable
+ 'counsel-evil-registers-height
+ 'ivy-height-alist
+ "<2018-04-14 Fri>") ;; TODO: Add version tag
+
 (defcustom counsel-evil-registers-height 5
   "The `ivy-height' of `counsel-evil-registers'."
   :group 'ivy
   :type 'integer)
-
-(make-obsolete-variable
- 'counsel-evil-registers
- "use `ivy-height-alist' instead."
- "<2018-04-14 Fri>") ;; TODO add version
 
 (defun counsel-evil-registers ()
   "Ivy replacement for `evil-show-registers'."
@@ -3527,38 +3538,47 @@ An extra action allows to switch to the process buffer."
                 :action (lambda (x) (funcall action (cdr x)))
                 :require-match t
                 :caller 'counsel-ace-link))))
-;;** `counsel-expression-history'
+
+;;** `counsel-minibuffer-history'
+(make-obsolete
+ 'counsel-expression-history
+ 'counsel-minibuffer-history
+ "0.10.0 <2017-11-13 Mon>")
+
+(make-obsolete
+ 'counsel-shell-command-history
+ 'counsel-minibuffer-history
+ "0.10.0 <2017-11-13 Mon>")
+
 ;;;###autoload
 (defun counsel-expression-history ()
   "Select an element of `read-expression-history'.
 And insert it into the minibuffer.  Useful during `eval-expression'."
   (interactive)
   (let ((enable-recursive-minibuffers t))
-    (ivy-read "Expr: " (delete-dups read-expression-history)
-              :action #'insert)))
+    (ivy-read "Expression: "
+              (delete-dups (copy-sequence read-expression-history))
+              :action #'insert
+              :caller 'counsel-expression-history)))
 
-;;** `counsel-shell-command-history'
 ;;;###autoload
 (defun counsel-shell-command-history ()
   "Browse shell command history."
   (interactive)
-  (ivy-read "cmd: " shell-command-history
+  (ivy-read "Command: " shell-command-history
             :action #'insert
             :caller 'counsel-shell-command-history))
 
-;;** `counsel-minibuffer-history'
 ;;;###autoload
 (defun counsel-minibuffer-history ()
   "Browse minibuffer history."
   (interactive)
   (let ((enable-recursive-minibuffers t))
-    (ivy-read "Reverse-i-search: " (delete-dups
-                                    (copy-sequence
-                                     (symbol-value minibuffer-history-variable)))
+    (ivy-read "History: "
+              (delete-dups (copy-sequence
+                            (symbol-value minibuffer-history-variable)))
               :action #'insert
               :caller 'counsel-minibuffer-history)))
-(make-obsolete 'counsel-expression-history 'counsel-minibuffer-history "20171011")
-(make-obsolete 'counsel-shell-command-history 'counsel-minibuffer-history "20171011")
 
 ;;** `counsel-esh-history'
 (defun counsel--browse-history (elements)
@@ -3956,11 +3976,11 @@ Any desktop entries that fail to parse are recorded in
 
 (defun counsel-linux-app-action-default (desktop-shortcut)
   "Launch DESKTOP-SHORTCUT."
-  (call-process "gtk-launch" nil nil nil (cdr desktop-shortcut)))
+  (call-process "gtk-launch" nil 0 nil (cdr desktop-shortcut)))
 
 (defun counsel-linux-app-action-file (desktop-shortcut)
   "Launch DESKTOP-SHORTCUT with a selected file."
-  (call-process "gtk-launch" nil nil nil
+  (call-process "gtk-launch" nil 0 nil
                 (cdr desktop-shortcut)
                 (read-file-name "File: ")))
 

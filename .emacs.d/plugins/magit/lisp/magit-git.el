@@ -917,7 +917,7 @@ corresponds to a ref outside of the namespace."
 
 (defun magit-rev-branch (rev)
   (--when-let (magit-rev-name rev "refs/heads/*")
-    (unless (string-match-p "~" it) it)))
+    (unless (string-match-p "[~^]" it) it)))
 
 (defun magit-get-shortname (rev)
   (let* ((fn (apply-partially 'magit-rev-name rev))
@@ -1864,7 +1864,9 @@ the reference is used.  The first regexp submatch becomes the
                       (concat " "
                               (propertize branch 'face 'magit-branch-local))))
                " starting at")
-       (cons "HEAD" (magit-list-refnames))
+       (nconc (list "HEAD")
+              (magit-list-refnames)
+              (directory-files (magit-git-dir) nil "_HEAD\\'"))
        nil nil nil 'magit-revision-history
        (magit--default-starting-point))
       (user-error "Nothing selected")))

@@ -332,6 +332,7 @@ possible to customize the extensions."
     ("raw_tex"                             ("markdown" "markdown_mmd"))
     ("shortcut_reference_links"            ("markdown" "markdown_strict" "markdown_github" "markdown_phpextra" "markdown_mmd"))
     ("simple_tables"                       ("markdown"))
+    ("smart"                               ("markdown"))
     ("startnum"                            ("markdown"))
     ("strikeout"                           ("markdown" "markdown_github"))
     ("subscript"                           ("markdown"))
@@ -1079,8 +1080,8 @@ evaluated."
 (define-pandoc-string-option indented-code-classes   (reader "c" "%-23s")      "Indented Code Classes")
 (define-pandoc-number-option base-header-level       (reader "h" "%-23s")      "Base Header Level")
 (define-pandoc-switch        old-dashes              (reader "o" "%-23s")      "Use Old-style Dashes")
-(define-pandoc-switch        smart                   (reader "s" "%-23s")      "Smart")
-(define-pandoc-switch        parse-raw               (reader "r" "%-23s")      "Parse Raw")
+(define-pandoc-switch        smart                   (reader "s" "%-23s")      "Smart*") ; obsolete
+(define-pandoc-switch        parse-raw               (reader "r" "%-23s")      "Parse Raw*") ; obsolete
 ;; extract-media
 
 ;; TODO for data-dir, output-dir and extract-media, a macro define-pandoc-dir-option might be useful.
@@ -1119,8 +1120,8 @@ evaluated."
 (define-pandoc-choice-option pdf-engine         (specific "e" "%-21s")        "PDF Engine"
   ("pdflatex" "lualatex" "xelatex" "wkhtmltopdf" "weasyprint" "prince" "context" "pdfroff"))
 (define-pandoc-file-option   reference-doc      (specific "R" "%-21s")        "Reference Doc")
-(define-pandoc-file-option   reference-docx     (specific "d" "%-21s")        "Reference docx File*") ; Pandoc 1
-(define-pandoc-file-option   reference-odt      (specific "o" "%-21s")        "Reference ODT File*") ; Pandoc 1
+(define-pandoc-file-option   reference-docx     (specific "d" "%-21s")        "Reference docx File*") ;obsolete
+(define-pandoc-file-option   reference-odt      (specific "o" "%-21s")        "Reference ODT File*") ;obsolete
 (define-pandoc-number-option slide-level        (specific "h" "%-21s")        "Slide Level Header")
 (define-pandoc-switch        incremental        (specific "i" "%-21s")        "Incremental")
 (define-pandoc-switch        number-sections    (specific "n" "%-21s")        "Number Sections")
@@ -1143,8 +1144,8 @@ evaluated."
 (define-pandoc-switch        self-contained    (html "s" "%-31s")      "Self-contained Document")
 
 ;; TeX-based (LaTeX, ConTeXt)
-(define-pandoc-list-option   latex-engine-opt (tex "o" "%-30s") string "LaTeX Options*" "LaTeX Option") ; Pandoc 1
-(define-pandoc-choice-option latex-engine     (tex "e" "%-30s")        "LaTeX Engine*" ("pdflatex" "xelatex" "lualatex") ("latex" "beamer" "context")) ; Pandoc 1
+(define-pandoc-list-option   latex-engine-opt (tex "o" "%-30s") string "LaTeX Options*" "LaTeX Option") ;obsolete
+(define-pandoc-choice-option latex-engine     (tex "e" "%-30s")        "LaTeX Engine*" ("pdflatex" "xelatex" "lualatex") ("latex" "beamer" "context")) ; obsolete
 (define-pandoc-switch        listings         (tex "L" "%-30s")        "Use LaTeX listings Package")
 (define-pandoc-switch        no-tex-ligatures (tex "l" "%-30s")        "Do Not Use TeX Ligatures")
 (define-pandoc-switch        chapters         (tex "c" "%-30s")        "Top-level Headers Are Chapters")

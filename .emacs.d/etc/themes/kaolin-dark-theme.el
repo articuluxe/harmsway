@@ -11,7 +11,7 @@
    (white3          "#babac4")
    (white4          "#adadb9")
 
-   (spring-green3 "#6fb593")) ; old light green
+   (spring-green3 "#6fb593"))
 
 
   (
@@ -87,16 +87,9 @@
    (rst-level-5   (:foreground teal1))
    (rst-level-6   (:foreground capri4))
 
-   ;; TODO: split
    ;; Vimish-fold
    (vimish-fold-overlay (:background bg2 :foreground comment))
    (vimish-fold-fringe  (:background nil :foreground spring-green4))
-
-   ;; Avy
-   (avy-lead-face   (:background red2 :foreground fg1))
-   (avy-lead-face-0 (:background spring-green4 :foreground fg1))
-   (avy-lead-face-1 (:background azure2 :foreground fg1))
-   (avy-lead-face-2 (:background magenta2 :foreground fg1))
 
    ;; Ivy & Swiper
    (ivy-modified-buffer     (:foreground violet4))
