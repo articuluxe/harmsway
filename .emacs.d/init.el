@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-05-02 21:31:23 dharms>
+;; Modified Time-stamp: <2018-05-04 14:17:01 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1394,6 +1394,8 @@ Only one letter is shown, the first that applies."
 
 (use-package ivy-rich
   :after ivy
+  :init
+  (setq ivy-rich-switch-buffer-name-max-length 40)
   :config
   (ivy-set-display-transformer 'ivy-switch-buffer
                                'ivy-rich-switch-buffer-transformer))
