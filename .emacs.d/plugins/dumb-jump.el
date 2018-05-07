@@ -568,9 +568,9 @@ or most optimal searcher."
            :regex "\\bJJJ\\s*=[^=><]" :tests ("test = 1234") :not ("if (test == 1234)"))
 
     (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "r"
-           :regex "\\bJJJ\\s*<-\\s*function"
-           :tests ("test <- function"))
-
+           :regex "\\bJJJ\\s*<-\\s*function\\b"
+           :tests ("test <- function" "test <- function(")
+           :not   ("test <- functionX"))
 
     ;; perl
     (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "perl"
@@ -1036,6 +1036,22 @@ or most optimal searcher."
                    "functor test (T:TEST) ="
                    "functor test(T:TEST) ="))
 
+    ;; systemverilog
+    (:type "type" :supports ("ag" "grep" "rg" "git-grep") :language "systemverilog"
+           :regex "\\s*class\\s+\\bJJJ\\b"
+           :tests ("virtual class test;" "class test;")
+           :not ("virtual class testing;" "class test2;"))
+
+    (:type "type" :supports ("ag" "grep" "rg" "git-grep") :language "systemverilog"
+           :regex "\\s*assign\\s+\\bJJJ\\b"
+           :tests ("assign test =" "assign test=")
+           :not ("assign testing =" "assign test2="))
+
+    (:type "function" :supports ("ag" "rg" "git-grep") :language "systemverilog"
+           :regex "function\\s[^\\s]+\\s*\\bJJJ\\b"
+           :tests ("function Matrix test ;" "function Matrix test;")
+           :not ("function test blah"))
+
     ;; vhdl
     (:type "type" :supports ("ag" "grep" "rg" "git-grep") :language "vhdl"
            :regex "\\s*type\\s+\\bJJJ\\b"
@@ -1076,7 +1092,16 @@ or most optimal searcher."
     (:type "environment" :supports ("ag" "grep" "rg" "git-grep") :language "tex"
            :regex "\\\\.*newenvironment\\s*\\\{\\s*JJJ\\s*}"
            :tests ("\\newenvironment{test}" "\\newenvironment {test}{morecommands}" "\\lstnewenvironment{test}" "\\newenvironment {test}" )
-           :not("\\test"  "test" )))
+           :not("\\test"  "test" ))
+
+    ;; pascal (todo: var, type, const)
+    (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "pascal"
+           :regex "\\bfunction\\s+JJJ\\b"
+           :tests ("  function test : "))
+
+    (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "pascal"
+           :regex "\\bprocedure\\s+JJJ\\b"
+           :tests ("  procedure test ; ")))
 
   "List of regex patttern templates organized by language and type to use for generating the grep command."
   :group 'dumb-jump
@@ -1188,9 +1213,15 @@ or most optimal searcher."
     (:language "elixir" :ext "exs" :agtype "elixir" :rgtype "elixir")
     (:language "elixir" :ext "eex" :agtype "elixir" :rgtype "elixir")
     (:language "erlang" :ext "erl" :agtype "erlang" :rgtype "erlang")
+    (:language "systemverilog" :ext "sv" :agtype "verilog" :rgtype "verilog")
+    (:language "systemverilog" :ext "svh" :agtype "verilog" :rgtype "verilog")
     (:language "vhdl" :ext "vhd" :agtype "vhdl" :rgtype "vhdl")
     (:language "vhdl" :ext "vhdl" :agtype "vhdl" :rgtype "vhdl")
-    (:language "scss" :ext "scss" :agtype "css" :rgtype "css"))
+    (:language "scss" :ext "scss" :agtype "css" :rgtype "css")
+    (:language "pascal" :ext "pas" :agtype "delphi" :rgtype nil)
+    (:language "pascal" :ext "dpr" :agtype "delphi" :rgtype nil)
+    (:language "pascal" :ext "int" :agtype "delphi" :rgtype nil)
+    (:language "pascal" :ext "dfm" :agtype "delphi" :rgtype nil))
 
   "Mapping of programming language(s) to file extensions."
   :group 'dumb-jump
@@ -1777,8 +1808,10 @@ current file."
     (:comment "#" :language "elixir")
     (:comment "%" :language "erlang")
     (:comment "%" :language "tex")
+    (:comment "//" :language "systemverilog")
     (:comment "--" :language "vhdl")
-    (:comment "//" :language "scss"))
+    (:comment "//" :language "scss")
+    (:comment "//" :language "pascal"))
   "List of one-line comments organized by language."
   :group 'dumb-jump
   :type

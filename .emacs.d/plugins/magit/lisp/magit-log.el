@@ -707,6 +707,39 @@ active, restrict the log to the lines that the region touches."
   (magit-log-goto-same-commit))
 
 ;;;###autoload
+(defun magit-log-trace-definition (file fn rev)
+  "Show log for the definition at point."
+  (interactive (list (or (magit-file-relative-name)
+                         (user-error "Buffer isn't visiting a file"))
+                     (add-log-current-defun)
+                     (or magit-buffer-refname
+                         (magit-get-current-branch)
+                         "HEAD")))
+  (require 'magit)
+  (magit-mode-setup-internal
+   #'magit-log-mode
+   (list (list rev)
+         (cons (format "-L:%s:%s" fn file)
+               (cl-delete "-L" (car (magit-log-arguments))
+                          :test 'string-prefix-p))
+         nil)
+   magit-log-buffer-file-locked)
+  (magit-log-goto-same-commit))
+
+(defun magit-diff-trace-definition ()
+  "Show log for the definition at point in a diff."
+  (interactive)
+  (let (buf pos)
+    (save-window-excursion
+      (call-interactively #'magit-diff-visit-file)
+      (setq buf (current-buffer))
+      (setq pos (point)))
+    (save-excursion
+      (with-current-buffer buf
+        (goto-char pos)
+        (call-interactively #'magit-log-trace-definition)))))
+
+;;;###autoload
 (defun magit-reflog-current ()
   "Display the reflog of the current branch."
   (interactive)
