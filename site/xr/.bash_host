@@ -17,7 +17,7 @@ alias emacs="\$EDITOR"
 
 lhome()
 {
-   cd $LHOME
+   cd "$LHOME" || exit 1
 }
 
 use_gcc()
