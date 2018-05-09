@@ -218,8 +218,25 @@ Also see option `magit-blame-styles'."
    ;; filename <orig-file>
    (orig-file)))
 
-(defun magit-current-blame-chunk ()
-  (magit-blame-chunk-at (point)))
+(defun magit-current-blame-chunk (&optional type)
+  (or (and (not (and type (not (eq type magit-blame-type))))
+           (magit-blame-chunk-at (point)))
+      (and type
+           (let ((rev  (or magit-buffer-refname magit-buffer-revision))
+                 (file (magit-file-relative-name nil (not magit-buffer-file-name)))
+                 (line (format "%i,+1" (line-number-at-pos))))
+             (unless file
+               (error "Buffer does not visit a tracked file"))
+             (with-temp-buffer
+               (magit-with-toplevel
+                 (magit-git-insert
+                  "blame" "--porcelain"
+                  (if (memq magit-blame-type '(final removal))
+                      (cons "--reverse" (magit-blame-arguments))
+                    (magit-blame-arguments))
+                  "-L" line rev "--" file)
+                 (goto-char (point-min))
+                 (car (magit-blame--parse-chunk type))))))))
 
 (defun magit-blame-chunk-at (pos)
   (--any (overlay-get it 'magit-blame-chunk)
@@ -302,6 +319,8 @@ in `magit-blame-read-only-mode-map' instead.")
                     "instead use `magit-blame' or `magit-blame-popup'")))
          (add-hook 'after-save-hook     'magit-blame--run t t)
          (add-hook 'post-command-hook   'magit-blame-goto-chunk-hook t t)
+         (add-hook 'before-revert-hook  'magit-blame--remove-overlays t t)
+         (add-hook 'after-revert-hook   'magit-blame--run t t)
          (add-hook 'read-only-mode-hook 'magit-blame-toggle-read-only t t)
          (setq magit-blame-buffer-read-only buffer-read-only)
          (when (or magit-blame-read-only magit-buffer-file-name)
@@ -321,6 +340,8 @@ in `magit-blame-read-only-mode-map' instead.")
              (sit-for 0.01))) ; avoid racing the sentinal
          (remove-hook 'after-save-hook     'magit-blame--run t)
          (remove-hook 'post-command-hook   'magit-blame-goto-chunk-hook t)
+         (remove-hook 'before-revert-hook  'magit-blame--remove-overlays t)
+         (remove-hook 'after-revert-hook   'magit-blame--run t)
          (remove-hook 'read-only-mode-hook 'magit-blame-toggle-read-only t)
          (unless magit-blame-buffer-read-only
            (read-only-mode -1))
@@ -369,13 +390,6 @@ modes is toggled, then this mode also gets toggled automatically.
   (remove-hook 'view-mode-hook #'magit-blame-put-keymap-before-view-mode))
 
 (add-hook 'view-mode-hook #'magit-blame-put-keymap-before-view-mode)
-
-(defun auto-revert-handler--unless-magit-blame-mode ()
-  "If Magit-Blame mode is on, then do nothing.  See #1731."
-  magit-blame-mode)
-
-(advice-add 'auto-revert-handler :before-until
-            'auto-revert-handler--unless-magit-blame-mode)
 
 ;;; Process
 
@@ -443,41 +457,46 @@ modes is toggled, then this mode also gets toggled automatically.
       (setq cache magit-blame-cache))
     (with-current-buffer (process-buffer process)
       (goto-char pos)
-      (let (end chunk revinfo)
-        (while (and (< (point) mark)
-                    (save-excursion
-                      (setq end (re-search-forward "^filename .+\n" nil t))))
-          (looking-at "^\\(.\\{40\\}\\) \\([0-9]+\\) \\([0-9]+\\) \\([0-9]+\\)")
-          (with-slots (orig-rev orig-file prev-rev prev-file)
-              (setq chunk (magit-blame-chunk
-                           :orig-rev                     (match-string 1)
-                           :orig-line  (string-to-number (match-string 2))
-                           :final-line (string-to-number (match-string 3))
-                           :num-lines  (string-to-number (match-string 4))))
-            (forward-line)
-            (while (< (point) end)
-              (cond ((looking-at "^filename \\(.+\\)")
-                     (setf orig-file (match-string 1)))
-                    ((looking-at "^previous \\(.\\{40\\}\\) \\(.+\\)")
-                     (setf prev-rev  (match-string 1))
-                     (setf prev-file (match-string 2)))
-                    ((looking-at "^\\([^ ]+\\) \\(.+\\)")
-                     (push (cons (match-string 1)
-                                 (match-string 2)) revinfo)))
-              (forward-line))
-            (when (and (eq type 'removal) prev-rev)
-              (cl-rotatef orig-rev  prev-rev)
-              (cl-rotatef orig-file prev-file)
-              (setq revinfo nil))
-            (if revinfo
-                (puthash orig-rev revinfo cache)
-              (setq revinfo (or (gethash orig-rev cache)
-                                (puthash orig-rev
-                                         (magit-blame--commit-alist orig-rev)
-                                         cache))))
-            (magit-blame--make-overlays buf chunk revinfo)
-            (setq revinfo nil)
-            (process-put process 'parsed (point))))))))
+      (while (and (< (point) mark)
+                  (save-excursion (re-search-forward "^filename .+\n" nil t)))
+        (pcase-let* ((`(,chunk ,revinfo)
+                      (magit-blame--parse-chunk type))
+                     (rev (oref chunk orig-rev)))
+          (if revinfo
+              (puthash rev revinfo cache)
+            (setq revinfo
+                  (or (gethash rev cache)
+                      (puthash rev (magit-blame--commit-alist rev) cache))))
+          (magit-blame--make-overlays buf chunk revinfo))
+        (process-put process 'parsed (point))))))
+
+(defun magit-blame--parse-chunk (type)
+  (let (chunk revinfo)
+    (looking-at "^\\(.\\{40\\}\\) \\([0-9]+\\) \\([0-9]+\\) \\([0-9]+\\)")
+    (with-slots (orig-rev orig-file prev-rev prev-file)
+        (setq chunk (magit-blame-chunk
+                     :orig-rev                     (match-string 1)
+                     :orig-line  (string-to-number (match-string 2))
+                     :final-line (string-to-number (match-string 3))
+                     :num-lines  (string-to-number (match-string 4))))
+      (forward-line)
+      (let (done)
+        (while (not done)
+          (cond ((looking-at "^filename \\(.+\\)")
+                 (setq done t)
+                 (setf orig-file (match-string 1)))
+                ((looking-at "^previous \\(.\\{40\\}\\) \\(.+\\)")
+                 (setf prev-rev  (match-string 1))
+                 (setf prev-file (match-string 2)))
+                ((looking-at "^\\([^ ]+\\) \\(.+\\)")
+                 (push (cons (match-string 1)
+                             (match-string 2)) revinfo)))
+          (forward-line)))
+      (when (and (eq type 'removal) prev-rev)
+        (cl-rotatef orig-rev  prev-rev)
+        (cl-rotatef orig-file prev-file)
+        (setq revinfo nil)))
+    (list chunk revinfo)))
 
 (defun magit-blame--commit-alist (rev)
   (cl-mapcar 'cons

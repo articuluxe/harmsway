@@ -32,6 +32,7 @@
 ;; - pep8
 ;; - pyflakes
 ;; - mypy (for both Python 2 and 3)
+;; - bandit
 ;;
 ;; This is an alternative way of running multiple Python syntax checkers in
 ;; Flycheck that doesn't depend on Flycheck's chaining mechanism.
@@ -179,7 +180,8 @@
           (const :tag "flake8" flake8)
           (const :tag "pyflakes" pyflakes)
           (const :tag "mypy 2" mypy2)
-          (const :tag "mypy 3" mypy3)))
+          (const :tag "mypy 3" mypy3)
+          (const :tag "bandit" bandit)))
 
 (flycheck-def-option-var flycheck-pycheckers-ignore-codes
     '("C0411" "C0413" "C0103" "C0111" "W0142" "W0201" "W0232" "W0403" "W0511"
