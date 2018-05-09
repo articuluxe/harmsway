@@ -128,4 +128,42 @@ FLUSH PRIVILEGES;
 SHOW GRANTS FOR 'dharms'@'localhost';
 #+END_SRC
 
+* ctags
+** apply the following diff
+diff --git a/Makefile.am b/Makefile.am
+index c78a8f8..8338537 100644
+--- a/Makefile.am
++++ b/Makefile.am
+@@ -1,5 +1,5 @@
+ include $(top_srcdir)/source.mak
+-
++ACLOCAL_AMFLAGS = -I m4
+ # Test cases are added to EXTRA_DIST in makefiles/test-cases.mak
+ EXTRA_DIST   = README.md autogen.sh \
+ 	       .ctags .dir-locals.el .editorconfig .gdbinit .gitignore \
+diff --git a/configure.ac b/configure.ac
+index 183007a..2efd0e1 100644
+--- a/configure.ac
++++ b/configure.ac
+@@ -112,6 +112,10 @@ const char *result_yes = "$2:$1";
+ 	[$4]
+ ]) ])
+ 
++AC_CONFIG_MACRO_DIR([m4])
++m4_pattern_allow([^AC_])
++m4_pattern_allow([^AS_])
++
+ # CHECK_PROTO(FUNCTION, HEADER-FILE)
+ AC_DEFUN([CHECK_PROTO], [
+ 	AC_EGREP_HEADER([[^A-Za-z0-9_]$1([ 	]+[A-Za-z0-9_]*)?[	 ]*\(],
+
+ #+BEGIN_SRC sh
+mkdir m4
+cp /usr/share/aclocal/pkg.m4 m4
+./autogen.sh
+mkdir bld
+cd bld
+../configure --prefix=/home/dan.harms --program-prefix=ex
+ #+END_SRC
+
 # code ends here
