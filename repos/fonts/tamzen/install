@@ -1,0 +1,3 @@
+cp src/fnt/* ../../../.fonts/tamzen
+cp src/dfont/* ../../../.fonts/tamzen
+cp src/bdf/* ../../../.fonts/tamzen
