@@ -22,8 +22,12 @@
 (require 'lsp-common)
 (require 'pcase)
 (require 'inline)
+(require 'em-glob)
 
-;;; Code:
+(defconst lsp--file-change-type
+  `((created . 1)
+     (changed . 2)
+     (deleted . 3)))
 
 ;; A ‘lsp--client’ object describes the client-side behavior of a language
 ;; server.  It is used to start individual server processes, each of which is
@@ -213,9 +217,15 @@
 
   ;; ‘metadata’ is a generic storage for workspace specific data. It is
   ;; accessed via `lsp-workspace-set-metadata' and `lsp-workspace-set-metadata'
-  (metadata (make-hash-table :test 'equal)))
+  (metadata (make-hash-table :test 'equal))
+              
+  ;; contains all the file notification watches that have been created for the
+  ;; current workspace in format filePath->file notification handle.
+  (watches (make-hash-table :test 'equal)))
+
 
 (defvar-local lsp--cur-workspace nil)
+
 (defvar lsp--workspaces (make-hash-table :test #'equal)
   "Table of known workspaces, indexed by the project root directory.")
 
@@ -429,8 +439,9 @@ If WORKSPACE is not provided current workspace will be used."
 (define-inline lsp--make-message (params)
   "Create a LSP message from PARAMS, after encoding it to a JSON string."
   (inline-quote
-    (let* ((json-false :json-false)
-            (body (json-encode ,params)))
+    (let* ((json-encoding-pretty-print lsp-print-io)
+           (json-false :json-false)
+           (body (json-encode ,params)))
       (format "Content-Length: %d\r\n\r\n%s" (string-bytes body) body))))
 
 (define-inline lsp--send-notification (body)
@@ -533,6 +544,8 @@ interface TextDocumentItem {
 (defun lsp--uninitialize-workspace ()
   "When a workspace is shut down, by request or from just
 disappearing, unset all the variables related to it."
+  (lsp-kill-watch (lsp--workspace-watches lsp--cur-workspace))
+
   (let (proc
         (root (lsp--workspace-root lsp--cur-workspace)))
     (with-current-buffer (current-buffer)
@@ -660,7 +673,7 @@ Return the merged plist."
 
 (defun lsp--client-textdocument-capabilities ()
   "Client Text document capabilities according to LSP."
-  `(:synchronization (:willSave t :didSave t)
+  `(:synchronization (:willSave t :didSave t :willSaveWaitUntil t)
      :symbol (:symbolKind (:valueSet ,(cl-loop for kind from 1 to 25 collect kind)))))
 
 (defun lsp-register-client-capabilities (package-name caps)
@@ -1005,7 +1018,7 @@ interface TextDocumentEdit {
           (filename (lsp--uri-to-path (gethash "uri" ident)))
           (version (gethash "version" ident)))
     (with-current-buffer (find-file-noselect filename)
-      (when (= version (lsp--cur-file-version))
+      (when (and version (= version (lsp--cur-file-version)))
         (lsp--apply-text-edits (gethash "edits" edit))))))
 
 (defun lsp--text-edit-sort-predicate (e1 e2)
@@ -1244,13 +1257,13 @@ Added to `after-revert-hook'."
   (when lsp--cur-workspace
     (with-demoted-errors "Error in ‘lsp--before-save’: %S"
       (let ((params (lsp--will-save-text-document-params 1)))
-        (if (lsp--send-will-save-p)
+        (when (lsp--send-will-save-p)
           (lsp--send-notification
-            (lsp--make-notification "textDocument/willSave" params))
-          (when (and (lsp--send-will-save-wait-until-p) lsp-before-save-edits)
-            (lsp--apply-text-edits
-              (lsp--send-request (lsp--make-request
-                                   "textDocument/willSaveWaitUntil" params)))))))))
+            (lsp--make-notification "textDocument/willSave" params)))
+        (when (and (lsp--send-will-save-wait-until-p) lsp-before-save-edits)
+          (lsp--apply-text-edits
+           (lsp--send-request (lsp--make-request
+                               "textDocument/willSaveWaitUntil" params))))))))
 
 (defun lsp--on-auto-save ()
   (when (and lsp--cur-workspace
@@ -2035,6 +2048,31 @@ command COMMAND and optionsl ARGS"
   (lsp--send-notification (lsp--make-notification
                            "workspace/didChangeConfiguration"
                            `(:settings , settings))))
+
+(defun lsp-workspace-register-watch (to-watch &optional workspace)
+  "Monitor for file change and trigger workspace/didChangeConfiguration.
+
+TO-WATCH is a list of the directories and regexp in the following format:
+'((root-dir1 (glob-pattern1 glob-pattern2))
+  (root-dir2 (glob-pattern3 glob-pattern4)))
+
+If WORKSPACE is not specified the `lsp--cur-workspace' will be used."
+  (setq workspace (or workspace lsp--cur-workspace))
+  (let ((watches (lsp--workspace-watches workspace)))
+    (cl-loop for (dir glob-patterns) in to-watch do
+      (lsp-create-watch
+        dir
+        (mapcar 'eshell-glob-regexp glob-patterns)
+        (lambda (event)
+          (let ((lsp--cur-workspace workspace))
+            (lsp-send-notification
+              (lsp-make-notification
+                "workspace/didChangeWatchedFiles"
+                (list :changes
+                  (list
+                    :type (alist-get (cadr event) lsp--file-change-type)
+                    :uri (lsp--path-to-uri (caddr event))))))))
+        watches))))
 
 (declare-function lsp-mode "lsp-mode" (&optional arg))
 

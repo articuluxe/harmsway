@@ -21,6 +21,7 @@
    ;; (harlequin3 "#91f368")
    (harlequin3 "#4CDE0D")
    (crimson3 "#EF4F75")
+   ;; TODO: less satured, like dark theme.
    (amber3 "#F3CB41")
 
    ;; Color vars
@@ -61,7 +62,7 @@
    (dim-buffer white0)
    (hl         azure3)
    ;; TODO: add colored
-   (hl-line    (if kaolin-hl-line-colored bg3 bg3))
+   (hl-line    (if kaolin-themes-hl-line-colored bg3 bg3))
    (hl-indent  white4)
    ;; TODO:
    (selection bg4)
@@ -113,7 +114,7 @@
    (line-num-fg   brown8)
    (line-num-hl   amber3)
 
-   (cursor       gray5)
+   (cursor       gray3)
 
    (ivy1          gray9)
    (ivy2          purple3)
@@ -135,9 +136,9 @@
    (org-verbatim           (:foreground orange2))
    (org-table              (:foreground ultramarine4 :bold bold)))
 
-  (when kaolin-git-gutter-solid
+  (when kaolin-themes-git-gutter-solid
     (custom-theme-set-faces
-     'kaolin-valley-dark
+     'kaolin-valley-light
      `(git-gutter:added     ((t (:background ,diff-add :foreground ,diff-add))))
      `(git-gutter:modified  ((t (:background ,diff-mod :foreground ,diff-mod))))
      `(git-gutter:deleted   ((t (:background ,diff-rem :foreground ,diff-rem)))))))

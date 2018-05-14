@@ -322,11 +322,12 @@
 
    `(isearch
      ((,srcery-class ,(if srcery-invert-matches
-                          `(:inverse-video t)
-                        `(:background ,srcery-magenta :foreground ,srcery-bright-white)))
+                          `(:inverse-video t :underline t :weight bold)
+                        `(:underline t :background ,srcery-magenta :foreground ,srcery-bright-white :weight bold)))
       (,srcery-256-class ,(if srcery-invert-matches
-                              `(:inverse-video t)
-                            `(:background ,srcery-256-magenta :foreground ,srcery-256-bright-white)))))
+                              `(:inverse-video t :underline t :weight bold)
+                            `(:underline t :background ,srcery-256-magenta :foreground ,srcery-256-bright-white :weight bold)))))
+
    `(lazy-highlight
      ((,srcery-class ,(if srcery-invert-matches
                           `(:inverse-video t)
@@ -953,14 +954,17 @@
                               `(:inverse-video t)
                             `(:background ,srcery-256-magenta :foreground ,srcery-256-bright-white)))))
 
-   ;; flycheck
    `(flycheck-error
-     ((,(append '((supports :underline (:style line))) srcery-class)
-       (:underline (:style line :color ,srcery-red))
-       (,(append '((supports :underline (:style line))) srcery-256-class)
-        (:underline (:style line :color ,srcery-256-red))))
-      (,srcery-class (:foreground ,srcery-bright-white :background ,srcery-red :weight bold :underline t))
-      (,srcery-256-class (:foreground ,srcery-256-bright-white :background ,srcery-256-red :weight bold :underline t))))
+     ((,srcery-class (:foreground ,srcery-red :underline t))
+      (,srcery-256-class (:foreground ,srcery-256-red :underline t))))
+
+   `(flycheck-info
+     ((,srcery-class (:foreground ,srcery-bright-white :underline t))
+      (,srcery-256-class (:foreground ,srcery-256-bright-white :underline t))))
+
+   `(flycheck-warning
+     ((,srcery-class (:foreground ,srcery-bright-orange :underline t))
+      (,srcery-256-class (:foreground ,srcery-bright-orange :underline t))))
 
    `(flycheck-error-list-checker-name
      ((,srcery-class (:foreground ,srcery-red))
@@ -978,21 +982,15 @@
      ((,srcery-class (:foreground ,srcery-bright-orange :weight bold))
       (,srcery-256-class (:foreground ,srcery-256-bright-orange :weight bold))))
 
-   `(flycheck-info
-     ((,(append '((supports :underline (:style line))) srcery-class)
-       (:underline (:style line :color ,srcery-red))
-       (,(append '((supports :underline (:style line))) srcery-256-class)
-        (:underline (:style line :color ,srcery-256-red))))
-      (,srcery-class (:foreground ,srcery-bright-white :background ,srcery-red :weight bold :underline t))
-      (,srcery-256-class (:foreground ,srcery-256-bright-white :background ,srcery-256-red :weight bold :underline t))))
+   ;; Flyspell
+   ;; ------------------------------
+   `(flyspell-duplicate
+     ((,srcery-class (:foreground ,srcery-bright-white :underline t))
+      (,srcery-256-class (:foreground ,srcery-256-bright-white :underline t))))
 
-   `(flycheck-warning
-     ((,(append '((supports :underline (:style line))) srcery-class)
-       (:underline (:style line :color ,srcery-bright-orange)))
-      (,(append '((supports :underline (:style line))) srcery-256-class)
-       (:underline (:style line :color ,srcery-256-bright-orange)))
-      (,srcery-class (:foreground ,srcery-bright-white :background ,srcery-bright-orange :weight bold :underline t))
-      (,srcery-256-class (:foreground ,srcery-256-bright-white :background ,srcery-256-bright-orange :weight bold :underline t))))
+   `(flyspell-incorrect
+     ((,srcery-class (:foreground ,srcery-red :underline t))
+      (,srcery-256-class (:foreground ,srcery-256-red :underline t))))
 
    ;; jabber
    `(jabber-activity-face
@@ -2456,6 +2454,14 @@
      ((,srcery-class (:inherit ,font-lock-warning-face))
       (,srcery-256-class (:inherit ,font-lock-warning-face))))
 
+   ;; XML
+   `(nxml-element-local-name
+     ((,srcery-class (:foreground ,srcery-blue))
+      (,srcery-256-class (:foreground ,srcery-256-blue))))
+
+   `(nxml-attribute-local-name
+     ((,srcery-class (:foreground ,srcery-yellow))
+      (,srcery-256-class (:foreground ,srcery-256-yellow))))
 
    ;; which-key
    `(which-key-command-description-face

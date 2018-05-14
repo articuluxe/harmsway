@@ -1399,7 +1399,7 @@ minibuffer."
         (forward-word -1)
         (delete-region (point) pt)))))
 
-(defvar ivy--regexp-quote 'regexp-quote
+(defvar ivy--regexp-quote #'regexp-quote
   "Store the regexp quoting state.")
 
 (defun ivy-toggle-regexp-quote ()
@@ -1485,6 +1485,12 @@ This function is suitable as a replacement for
       (ido-file-extension-lessp x y)
     (ivy-sort-file-function-default x y)))
 
+(defun ivy-string< (x y)
+  "Like `string<', but operate on CARs when given cons cells."
+  (if (consp x)
+      (string< (car x) (car y))
+    (string< x y)))
+
 (defcustom ivy-sort-functions-alist
   '((read-file-name-internal . ivy-sort-file-function-default)
     (internal-complete-buffer . nil)
@@ -1492,7 +1498,7 @@ This function is suitable as a replacement for
     (counsel-git-grep-function . nil)
     (Man-goto-section . nil)
     (org-refile . nil)
-    (t . string-lessp))
+    (t . ivy-string<))
   "An alist of sorting functions for each collection function.
 Interactive functions that call completion fit in here as well.
 
@@ -1522,7 +1528,9 @@ See also `ivy-sort-max-size'."
 
 (defun ivy--sort-function (collection)
   "Retrieve sort function for COLLECTION from `ivy-sort-functions-alist'."
-  (cdr (assoc collection ivy-sort-functions-alist)))
+  (let ((entry (cdr (or (assq collection ivy-sort-functions-alist)
+                        (assq t ivy-sort-functions-alist)))))
+    (or (car-safe entry) entry)))
 
 (defun ivy-rotate-sort ()
   "Rotate through sorting functions available for current collection.
@@ -1530,9 +1538,9 @@ This only has an effect if multiple sorting functions are
 specified for the current collection in
 `ivy-sort-functions-alist'."
   (interactive)
-  (let ((cell (assoc (ivy-state-collection ivy-last) ivy-sort-functions-alist)))
+  (let ((cell (assq (ivy-state-collection ivy-last) ivy-sort-functions-alist)))
     (when (consp (cdr cell))
-      (setcdr cell `(,@(cddr cell) ,(cadr cell)))
+      (setcdr cell (nconc (cddr cell) (list (cadr cell))))
       (ivy--reset-state ivy-last))))
 
 (defvar ivy-index-functions-alist
@@ -1617,7 +1625,7 @@ Directories come first."
                             (propertize x 'dirp (ivy--dirname-p x)))
                           seq)))
       (when sort-fn
-        (setq seq (cl-sort seq sort-fn)))
+        (setq seq (sort seq sort-fn)))
       (dolist (dir ivy-extra-directories)
         (push dir seq))
       (if predicate
@@ -1809,34 +1817,31 @@ customizations apply to the current completion session."
 This is useful for recursive `ivy-read'."
   (unless (equal (selected-frame) (ivy-state-frame state))
     (select-window (active-minibuffer-window)))
-  (let ((prompt (or (ivy-state-prompt state) ""))
-        (collection (ivy-state-collection state))
-        (predicate (ivy-state-predicate state))
-        (history (ivy-state-history state))
-        (preselect (ivy-state-preselect state))
-        (sort (ivy-state-sort state))
-        (re-builder (ivy-state-re-builder state))
-        (dynamic-collection (ivy-state-dynamic-collection state))
-        (initial-input (ivy-state-initial-input state))
-        (require-match (ivy-state-require-match state))
-        (caller (ivy-state-caller state))
-        (def (ivy-state-def state)))
-    (unless initial-input
-      (setq initial-input (cdr (assoc (or caller this-command)
-                                      ivy-initial-inputs-alist))))
+  (let* ((prompt (or (ivy-state-prompt state) ""))
+         (collection (ivy-state-collection state))
+         (predicate (ivy-state-predicate state))
+         (history (ivy-state-history state))
+         (preselect (ivy-state-preselect state))
+         (sort (ivy-state-sort state))
+         (re-builder (ivy-state-re-builder state))
+         (dynamic-collection (ivy-state-dynamic-collection state))
+         (require-match (ivy-state-require-match state))
+         (caller (or (ivy-state-caller state) this-command))
+         (initial-input (or (ivy-state-initial-input state)
+                            (cdr (assq caller ivy-initial-inputs-alist))))
+         (def (ivy-state-def state)))
     (setq ivy--directory nil)
     (setq ivy-case-fold-search ivy-case-fold-search-default)
     (setq ivy--regex-function
           (or re-builder
               (and (functionp collection)
-                   (cdr (assoc collection ivy-re-builders-alist)))
+                   (cdr (assq collection ivy-re-builders-alist)))
               (and caller
-                   (cdr (assoc caller ivy-re-builders-alist)))
-              (cdr (assoc this-command ivy-re-builders-alist))
-              (cdr (assoc t ivy-re-builders-alist))
-              'ivy--regex))
+                   (cdr (assq caller ivy-re-builders-alist)))
+              (cdr (assq t ivy-re-builders-alist))
+              #'ivy--regex))
     (setq ivy--subexps 0)
-    (setq ivy--regexp-quote 'regexp-quote)
+    (setq ivy--regexp-quote #'regexp-quote)
     (setq ivy--old-text "")
     (setq ivy--full-length nil)
     (setq ivy-text "")
@@ -1844,7 +1849,7 @@ This is useful for recursive `ivy-read'."
     (setq ivy-calling nil)
     (setq ivy-use-ignore ivy-use-ignore-default)
     (setq ivy--highlight-function
-          (or (cdr (assoc ivy--regex-function ivy-highlight-functions-alist))
+          (or (cdr (assq ivy--regex-function ivy-highlight-functions-alist))
               #'ivy--highlight-default))
     (let (coll sort-fn)
       (cond ((eq collection 'Info-read-node-name-1)
@@ -1910,9 +1915,8 @@ This is useful for recursive `ivy-read'."
                  (progn
                    (setq sort nil)
                    (setq coll (mapcar #'car
-                                      (cl-sort
-                                       (copy-sequence collection)
-                                       sort-fn))))
+                                      (sort (copy-sequence collection)
+                                            sort-fn))))
                (setq collection
                      (setf (ivy-state-collection ivy-last)
                            (cl-remove-if-not predicate collection)))
@@ -1943,11 +1947,11 @@ This is useful for recursive `ivy-read'."
         (if (and (functionp collection)
                  (setq sort-fn (ivy--sort-function collection)))
             (when (not (eq collection 'read-file-name-internal))
-              (setq coll (cl-sort coll sort-fn)))
+              (setq coll (sort coll sort-fn)))
           (when (and (not (eq history 'org-refile-history))
                      (<= (length coll) ivy-sort-max-size)
                      (setq sort-fn (ivy--sort-function caller)))
-            (setq coll (cl-sort (copy-sequence coll) sort-fn)))))
+            (setq coll (sort (copy-sequence coll) sort-fn)))))
       (setq coll (ivy--set-candidates coll))
       (setq ivy--old-re nil)
       (setq ivy--old-cands nil)
@@ -2259,7 +2263,7 @@ This concept is used to generalize regular expressions for
   "Store pre-computed regex.")
 
 (defun ivy--split (str)
-"Split STR into list of substrings bounded by spaces.
+  "Split STR into list of substrings bounded by spaces.
 Single spaces act as splitting points.  Consecutive spaces
 \"quote\" their preceding spaces, i.e., guard them from being
 split.  This allows the literal interpretation of N spaces by
@@ -2621,14 +2625,12 @@ If nil, the text properties are applied to the whole match."
 (defun ivy--sort-maybe (collection)
   "Sort COLLECTION if needed."
   (let ((sort (ivy-state-sort ivy-last)))
-    (if (null sort)
-        collection
-      (let ((sort-fn (or (and (functionp sort) sort)
-                         (ivy--sort-function (ivy-state-collection ivy-last))
-                         (ivy--sort-function t))))
-        (if (functionp sort-fn)
-            (cl-sort (copy-sequence collection) sort-fn)
-          collection)))))
+    (if (and sort
+             (or (functionp sort)
+                 (functionp (setq sort (ivy--sort-function
+                                        (ivy-state-collection ivy-last))))))
+        (sort (copy-sequence collection) sort)
+      collection)))
 
 (defcustom ivy-magic-slash-non-match-action 'ivy-magic-slash-non-match-cd-selected
   "Action to take when a slash is added to the end of a non existing directory.
@@ -2973,8 +2975,8 @@ All CANDIDATES are assumed to match NAME."
     (cond ((and ivy--flx-featurep
                 (eq ivy--regex-function 'ivy--regex-fuzzy))
            (ivy--flx-sort name candidates))
-          ((setq fun (cdr (or (assoc key ivy-sort-matches-functions-alist)
-                              (assoc t ivy-sort-matches-functions-alist))))
+          ((setq fun (cdr (or (assq key ivy-sort-matches-functions-alist)
+                              (assq t ivy-sort-matches-functions-alist))))
            (funcall fun name candidates))
           (t
            candidates))))
@@ -3172,71 +3174,53 @@ no sorting is done.")
 (defun ivy--flx-sort (name cands)
   "Sort according to closeness to string NAME the string list CANDS."
   (condition-case nil
-      (let* (
-             ;; an optimized regex for fuzzy matching
-             ;; "abc" → "\\`[^a]*a[^b]*b[^c]*c"
-             (fuzzy-regex (if (= (elt name 0) ?^)
-                              (concat "^"
-                                      (regexp-quote (substring name 1 2))
-                                      (mapconcat
-                                       (lambda (x)
-                                         (setq x (string x))
-                                         (concat "[^" x "]*" (regexp-quote x)))
-                                       (substring name 2)
-                                       ""))
-                            (concat "^"
-                                    (mapconcat
-                                     (lambda (x)
-                                       (setq x (string x))
-                                       (concat "[^" x "]*" (regexp-quote x)))
-                                     name
-                                     ""))))
+      (let* ((bolp (= (string-to-char name) ?^))
+             ;; An optimized regex for fuzzy matching
+             ;; "abc" → "^[^a]*a[^b]*b[^c]*c"
+             (fuzzy-regex (concat "^"
+                                  (and bolp (regexp-quote (substring name 1 2)))
+                                  (mapconcat
+                                   (lambda (x)
+                                     (setq x (char-to-string x))
+                                     (concat "[^" x "]*" (regexp-quote x)))
+                                   (if bolp (substring name 2) name)
+                                   "")))
+             ;; Strip off the leading "^" for flx matching
+             (flx-name (if bolp (substring name 1) name))
+             cands-left
+             cands-to-sort)
 
-             ;; strip off the leading "^" for flx matching
-             (flx-name (if (string-match "^\\^" name)
-                           (substring name 1)
-                         name))
-
-             (cands-left)
-             (cands-to-sort))
-
-        ;; filter out non-matching candidates
+        ;; Filter out non-matching candidates
         (dolist (cand cands)
-          (when (string-match fuzzy-regex cand)
+          (when (string-match-p fuzzy-regex cand)
             (push cand cands-left)))
 
         ;; pre-sort the candidates by length before partitioning
-        (setq cands-left (sort cands-left
-                               (lambda (c1 c2)
-                                 (< (length c1)
-                                    (length c2)))))
+        (setq cands-left (cl-sort cands-left #'< :key #'length))
 
         ;; partition the candidates into sorted and unsorted groups
-        (dotimes (_n (min (length cands-left) ivy-flx-limit))
+        (dotimes (_ (min (length cands-left) ivy-flx-limit))
           (push (pop cands-left) cands-to-sort))
 
-        (append
-         ;; compute all of the flx scores in one pass and sort
+        (nconc
+         ;; Compute all of the flx scores in one pass and sort
          (mapcar #'car
                  (sort (mapcar
                         (lambda (cand)
                           (cons cand
-                                (car (flx-score cand
-                                                flx-name
-                                                ivy--flx-cache))))
+                                (car (flx-score cand flx-name ivy--flx-cache))))
                         cands-to-sort)
                        (lambda (c1 c2)
-                         ;; break ties by length
+                         ;; Break ties by length
                          (if (/= (cdr c1) (cdr c2))
                              (> (cdr c1)
                                 (cdr c2))
                            (< (length (car c1))
                               (length (car c2)))))))
 
-         ;; add the unsorted candidates
+         ;; Add the unsorted candidates
          cands-left))
-    (error
-     cands)))
+    (error cands)))
 
 (defun ivy--truncate-string (str width)
   "Truncate STR to WIDTH."

@@ -334,17 +334,19 @@ editable using `git rebase --interactive' if it is reachable
 from `HEAD', or by checking out the commit (or a branch that
 points at it) otherwise."
   (interactive (list (and current-prefix-arg 'removal)))
-  (let* ((chunk  (magit-current-blame-chunk (or type 'addition)))
-         (rev    (oref chunk orig-rev)))
+  (let* ((chunk (magit-current-blame-chunk (or type 'addition)))
+         (rev   (oref chunk orig-rev)))
     (if (equal rev "0000000000000000000000000000000000000000")
         (message "This line has not been committed yet")
       (let ((rebase (magit-rev-ancestor-p rev "HEAD"))
             (file   (expand-file-name (oref chunk orig-file)
                                       (magit-toplevel))))
         (if rebase
-            (magit-rebase-edit-commit rev (magit-rebase-arguments))
+            (let ((magit--rebase-published-symbol 'edit-published))
+              (magit-rebase-edit-commit rev (magit-rebase-arguments)))
           (magit-checkout (or (magit-rev-branch rev) rev)))
-        (unless (file-equal-p file buffer-file-name)
+        (unless (and buffer-file-name
+                     (file-equal-p file buffer-file-name))
           (let ((blame-type (and magit-blame-mode magit-blame-type)))
             (if rebase
                 (set-process-sentinel

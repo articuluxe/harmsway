@@ -44,6 +44,7 @@
 (defvar magit-process-error-message-regexps)
 (defvar magit-refresh-args) ; from `magit-mode' for `magit-current-file'
 (defvar magit-branch-prefer-remote-upstream)
+(defvar magit-published-branches)
 
 (defvar magit-tramp-process-environment nil)
 
@@ -1275,20 +1276,23 @@ SORTBY is a key or list of keys to pass to the `--sort' flag of
 (defun magit-list-remote-branches (&optional remote)
   (magit-list-refs (concat "refs/remotes/" remote)))
 
-(defun magit-list-containing-branches (&optional commit)
-  (--remove (string-match-p "\\`(HEAD" it)
+(defun magit-list-related-branches (relation &optional commit arg)
+  (--remove (string-match-p "\\(\\`(HEAD\\|HEAD -> \\)" it)
             (--map (substring it 2)
-                   (magit-git-lines "branch" "--contains" commit))))
+                   (magit-git-lines "branch" arg relation commit))))
 
-(defun magit-list-merged-branches (&optional commit)
-  (--remove (string-match-p "\\`(HEAD" it)
-            (--map (substring it 2)
-                   (magit-git-lines "branch" "--merged" commit))))
+(defun magit-list-containing-branches (&optional commit arg)
+  (magit-list-related-branches "--contains" commit arg))
 
-(defun magit-list-unmerged-branches (&optional commit)
-  (--remove (string-match-p "\\`(HEAD" it)
-            (--map (substring it 2)
-                   (magit-git-lines "branch" "--no-merged" commit))))
+(defun magit-list-publishing-branches (&optional commit)
+  (--filter (member it magit-published-branches)
+            (magit-list-containing-branches commit "--remote")))
+
+(defun magit-list-merged-branches (&optional commit arg)
+  (magit-list-related-branches "--merged" commit arg))
+
+(defun magit-list-unmerged-branches (&optional commit arg)
+  (magit-list-related-branches "--no-merged" commit arg))
 
 (defun magit-list-unmerged-to-upstream-branches ()
   (--filter (-when-let (upstream (magit-get-upstream-branch it))
