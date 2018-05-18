@@ -1,0 +1,2 @@
+cp src/hemisu-theme.el ../../../../.emacs.d/plugins
+cp src/hemisu-*-theme.el ../../../../.emacs.d/etc/themes
