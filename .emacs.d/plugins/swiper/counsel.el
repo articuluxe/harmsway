@@ -90,10 +90,11 @@
                (error "Unexpected"))))
       str)))
 
-(defun counsel-directory-parent (dir)
-  "Return the directory parent of directory DIR."
-  (concat (file-name-nondirectory
-           (directory-file-name dir)) "/"))
+(defun counsel-directory-name (dir)
+  "Return the name of directory DIR with a slash."
+  (file-name-as-directory
+   (file-name-nondirectory
+    (directory-file-name dir))))
 
 (defun counsel-string-compose (prefix str)
   "Make PREFIX the display prefix of STR through text properties."
@@ -155,7 +156,8 @@ respectively."
         proc)
     (when (get-buffer name)
       (kill-buffer name))
-    (setq proc (start-file-process-shell-command name name cmd))
+    (setq proc (start-file-process-shell-command
+                name (get-buffer-create name) cmd))
     (setq counsel--async-time (current-time))
     (setq counsel--async-start counsel--async-time)
     (set-process-sentinel proc (or sentinel #'counsel--async-sentinel))
@@ -868,13 +870,13 @@ Optional INITIAL-INPUT is the initial input in the minibuffer."
               (if (setq old-val (gethash short-name cands))
                   (progn
                     ;; assume going up directory once will resolve name clash
-                    (setq dir-parent (counsel-directory-parent (cdr old-val)))
+                    (setq dir-parent (counsel-directory-name (cdr old-val)))
                     (puthash short-name
                              (cons
                               (counsel-string-compose dir-parent (car old-val))
                               (cdr old-val))
                              cands)
-                    (setq dir-parent (counsel-directory-parent dir))
+                    (setq dir-parent (counsel-directory-name dir))
                     (puthash (concat dir-parent short-name)
                              (cons
                               (propertize
@@ -3460,6 +3462,14 @@ PREFIX is used to create the key."
     (define-key map (kbd "C-l") 'ivy-call-and-recenter)
     map))
 
+(defun counsel-imenu-categorize-functions (items)
+  "Categorize all the functions of imenu."
+  (let* ((others (cl-remove-if-not (lambda (x) (listp (cdr x))) items))
+         (functions (cl-remove-if (lambda (x) (listp (cdr x))) items)))
+    (if functions
+        (append others `(("Functions" ,@functions)))
+      items)))
+
 ;;;###autoload
 (defun counsel-imenu ()
   "Jump to a buffer position indexed by imenu."
@@ -3471,7 +3481,8 @@ PREFIX is used to create the key."
                                        (buffer-size)
                                      imenu-auto-rescan-maxout))
          (items (imenu--make-index-alist t))
-         (items (delete (assoc "*Rescan*" items) items)))
+         (items (delete (assoc "*Rescan*" items) items))
+         (items (counsel-imenu-categorize-functions items)))
     (ivy-read "imenu items: " (counsel-imenu-get-candidates-from items)
               :preselect (thing-at-point 'symbol)
               :require-match t
@@ -4484,6 +4495,8 @@ NAME specifies the name of the buffer (defaults to \"*Ibuffer*\")."
       (when (eq (buffer-local-value 'major-mode buf) mode)
         (push (buffer-name buf) bufs)))
     (nreverse bufs)))
+
+(declare-function shell-mode "shell")
 
 ;;;###autoload
 (defun counsel-switch-to-shell-buffer ()
