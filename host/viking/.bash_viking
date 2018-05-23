@@ -22,5 +22,3 @@ use_gcc()
     export CXX=${CSTDLIB_BIN}/g++-7
     export CXX_FLAGS="-Wall -Wextra -pedantic -Wno-unused-local-typedefs"
 }
-
-use_gcc
