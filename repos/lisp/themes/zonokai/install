@@ -1,0 +1,2 @@
+cp src/zonokai.el ../../../../.emacs.d/plugins
+cp src/zonokai-*-theme.el ../../../../.emacs.d/etc/themes
