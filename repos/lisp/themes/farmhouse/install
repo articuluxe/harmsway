@@ -1,0 +1,2 @@
+cp src/*-common.el ../../../../.emacs.d/plugins
+cp src/farmhouse-*-theme.el ../../../../.emacs.d/etc/themes
