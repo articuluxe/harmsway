@@ -1,0 +1,1 @@
+cp src/avk-*-theme.el ../../../../.emacs.d/etc/themes
