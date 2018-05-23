@@ -1,0 +1,2 @@
+cp src/punpun-common.el ../../../../.emacs.d/plugins
+cp src/punpun-*-theme.el ../../../../.emacs.d/etc/themes
