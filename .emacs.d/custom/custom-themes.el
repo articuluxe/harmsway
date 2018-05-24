@@ -2,7 +2,7 @@
 ;; Copyright (C) 2016-2018  Dan Harms (dan.harms)
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Wednesday, December 21, 2016
-;; Modified Time-stamp: <2018-05-03 14:12:26 dan.harms>
+;; Modified Time-stamp: <2018-05-24 14:36:45 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: themes colors
 
@@ -81,6 +81,8 @@
        sym `(diff-hl-change ((t (:background "DodgerBlue2" :foreground "DodgerBlue1"))))))
     (cond ((eq sym 'adwaita)
            (setq wg-use-faces nil))
+          ((eq sym 'Amelie)
+           (my/make-comment-delimiter-face-same-as-comment-face sym))
           ((memq sym '(ample ample-light ample-flat))
            (my/make-comment-delimiter-face-same-as-comment-face sym))
           ((eq sym 'brin)
