@@ -20,5 +20,3 @@ use_gcc()
     export CC=${CSTDLIB_BIN}/gcc-7
     export CXX=${CSTDLIB_BIN}/g++-7
 }
-
-use_gcc
