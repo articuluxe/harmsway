@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-05-24 18:12:14 dharms>
+;; Modified Time-stamp: <2018-05-28 07:17:37 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -271,9 +271,13 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
          ("C-c gr" . proviso-rg)
          ("C-c t" . proviso-gentags-generate-tags)
          ("C-c ff" . proviso-finder-find-file)
+         ("C-c 4ff" . proviso-finder-find-file-other-window)
          ("C-c fF" . proviso-finder-find-file-all)
+         ("C-c 4fF" . proviso-finder-find-file-all-other-window)
          ("C-c fd" . proviso-finder-open-dir)
+         ("C-c 4fd" . proviso-finder-open-dir-other-window)
          ("C-c fD" . proviso-finder-open-dir-all)
+         ("C-c 4fD" . proviso-finder-open-dir-all-other-window)
          ("C-c fr" . proviso-finder-recompute-cache)
          ("C-c dg" . proviso-gud-open-gdb)
          ("C-c dr" . proviso-gud-open-realgud)
