@@ -4,7 +4,7 @@
 
 ;; Author: Christopher Wellons <wellons@nullprogram.com>
 ;; URL: https://github.com/skeeto/emacs-http-server
-;; Version: 1.5.0
+;; Version: 1.5.1
 ;; Package-Requires: ((cl-lib "0.3"))
 
 ;;; Commentary:
@@ -95,6 +95,9 @@
 
 ;;; History:
 
+;; Version 1.5.1: improvements
+;;   * Add `httpd-running-p'
+;;   * Properly handle "Connection: close" and HTTP/1.0
 ;; Version 1.5.0: improvements
 ;;   * Drastically improved performance for large requests
 ;;   * More HTTP status codes

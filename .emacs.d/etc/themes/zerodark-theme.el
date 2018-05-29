@@ -560,7 +560,7 @@ The result is cached for one second to avoid hiccups."
    `(ivy-current-match ((,class (:background ,background-purple :weight bold :foreground ,purple))))
    `(ivy-minibuffer-match-face-1 ((,class (:foreground ,orange))))
    `(ivy-minibuffer-match-face-2 ((,class (:foreground ,green))))
-   `(ivy-minibuffer-match-face-3 ((,class (:foreground ,orange))))
+   `(ivy-minibuffer-match-face-3 ((,class (:foreground ,green))))
    `(ivy-minibuffer-match-face-4 ((,class (:foreground ,green))))
    `(ivy-match-required-face ((,class (:foreground ,red :background ,background-red :weight bold))))
    `(ivy-modified-buffer ((,class (:foreground ,red))))
@@ -629,9 +629,9 @@ The result is cached for one second to avoid hiccups."
    `(ledger-font-other-face ((,class (:inherit ,font-lock-comment-face))))
    `(ledger-font-periodic-xact-face ((,class (:foreground ,orange))))
 
-   `(diff-hl-change ((,class (:foreground ,purple :background ,background-purple))))
-   `(diff-hl-delete ((,class (:foreground ,red :background ,background-red))))
-   `(diff-hl-insert ((,class (:foreground ,green :background ,background-green))))
+   `(diff-hl-change ((,class (:foreground ,bright-background-blue :background ,bright-background-blue))))
+   `(diff-hl-delete ((,class (:foreground ,bright-background-red :background ,bright-background-red))))
+   `(diff-hl-insert ((,class (:foreground ,bright-background-green :background ,bright-background-green))))
 
    `(git-gutter:added ((,class (:foreground ,green :background ,background-green))))
    `(git-gutter:deleted ((,class (:foreground ,red :background ,background-red))))
