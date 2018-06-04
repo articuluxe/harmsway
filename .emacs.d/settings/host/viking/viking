@@ -3,7 +3,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2018-04-02 10:28:02 dan.harms>
+;; Modified Time-stamp: <2018-06-04 17:16:06 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -43,6 +43,8 @@
              (cons 'height (my/get-ideal-frame-height 75)))
 (add-to-list 'default-frame-alist
              '(width . 90))
+
+(setq epg-gpg-program "gpg2")
 
 (my/load-site-file "talbot")
 

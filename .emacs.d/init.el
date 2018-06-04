@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-06-04 13:50:06 dan.harms>
+;; Modified Time-stamp: <2018-06-04 20:45:14 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -518,7 +518,6 @@ not an error if any files do not exist."
   ;; may no longer be necessary
   (setq epa-file-cache-passphrase-for-symmetric-encryption t)
   :config
-  (setq epg-gpg-program "gpg2")
   (setq epa-file-select-keys nil)
   )
 
