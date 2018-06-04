@@ -1,0 +1,22 @@
+# -*- Mode: sh -*-
+# .bash_rubicon
+
+export VISUAL=/Applications/Emacs-26.1.app/Contents/MacOS/Emacs
+export EDITOR="$VISUAL -nw"
+alias emacs="\$EDITOR"
+
+# source the host files
+[ -r ~/."$SITE".env ] && . ~/."$SITE".env
+[ -r ~/.bash_"$SITE" ] && . ~/.bash_"$SITE"
+
+use_clang()
+{
+   export CC=/usr/bin/clang
+   export CXX=/usr/bin/clang++
+}
+
+use_gcc()
+{
+    export CC=${CSTDLIB_BIN}/gcc-8
+    export CXX=${CSTDLIB_BIN}/g++-8xs
+}
