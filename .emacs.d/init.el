@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-06-04 13:39:30 dan.harms>
+;; Modified Time-stamp: <2018-06-04 13:50:06 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2115,6 +2115,10 @@ Only one letter is shown, the first that applies."
   ;;   (bind-key "\e\ev" 'my/tile-frames-vertically)
   ;;   (bind-key "\e\eh" 'my/tile-frames-horizontally)
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; zoom-window ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package zoom-window
+  :bind ("C-2" . zoom-window-zoom))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; perspective ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package perspective

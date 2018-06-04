@@ -2,7 +2,7 @@
 ;; Copyright (C) 2016-2018  Dan Harms (dan.harms)
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Wednesday, December 21, 2016
-;; Modified Time-stamp: <2018-05-30 09:21:41 dan.harms>
+;; Modified Time-stamp: <2018-06-04 14:38:47 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: themes colors
 
@@ -66,6 +66,7 @@
 
 (defun my/after-load-theme (x)
   "Run custom code after a theme X is loaded."
+  (setq zoom-window-mode-line-color (face-attribute 'mode-line :background nil 'default))
   (set-face-attribute 'font-lock-comment-face nil :slant 'italic)
   (set-face-attribute 'font-lock-comment-delimiter-face nil :slant 'italic)
   (set-face-attribute 'comint-highlight-prompt nil :inherit nil) ;shell mode prompt
