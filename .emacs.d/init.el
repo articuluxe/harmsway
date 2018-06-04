@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-05-28 07:17:37 dharms>
+;; Modified Time-stamp: <2018-06-04 13:25:12 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1700,10 +1700,15 @@ Only one letter is shown, the first that applies."
      (emacs-lisp . t)
      (plantuml . t)
      (python . t)
-     (sh . t)
      (sql . t)
      (sqlite . t)
      ))
+  (if (< emacs-major-version 26)
+      (progn
+        (add-to-list 'org-babel-load-languages '(sh . t))
+        (require 'ob-sh))
+    (add-to-list 'org-babel-load-languages '(shell . t))
+    (require 'ob-shell))
   (require 'ox-md)                      ;markdown export
   )
 
