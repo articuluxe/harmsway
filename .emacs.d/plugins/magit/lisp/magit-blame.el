@@ -543,12 +543,12 @@ modes is toggled, then this mode also gets toggled automatically.
   (let* ((end (line-end-position))
          ;; If possible avoid putting this on the first character
          ;; of the line to avoid a conflict with the line overlay.
-         (beg (min (1+ (line-beginning-position)) end)))
-    (let ((ov (make-overlay beg end)))
-      (overlay-put ov 'magit-blame-chunk chunk)
-      (overlay-put ov 'magit-blame-revinfo revinfo)
-      (overlay-put ov 'magit-blame-margin line)
-      (magit-blame--update-margin-overlay ov))))
+         (beg (min (1+ (line-beginning-position)) end))
+         (ov  (make-overlay beg end)))
+    (overlay-put ov 'magit-blame-chunk chunk)
+    (overlay-put ov 'magit-blame-revinfo revinfo)
+    (overlay-put ov 'magit-blame-margin line)
+    (magit-blame--update-margin-overlay ov)))
 
 (defun magit-blame--make-heading-overlay (chunk revinfo beg end)
   (let ((ov (make-overlay beg end)))
@@ -632,38 +632,40 @@ modes is toggled, then this mode also gets toggled automatically.
     string))
 
 (defun magit-blame--format-string-1 (rev revinfo format face)
-  (if (equal rev "0000000000000000000000000000000000000000")
-      (propertize (concat "Not Yet Committed"
-                          (if (string-suffix-p "\n" format) "\n" ""))
-                  'face face)
-    (let ((str (magit--format-spec
-                (propertize format 'face face)
-                (cl-flet* ((p0 (s f)
-                               (propertize s 'face (if face
-                                                       (if (listp face)
-                                                           face
-                                                         (list f face))
-                                                     f)))
-                           (p1 (k f)
-                               (p0 (cdr (assoc k revinfo)) f))
-                           (p2 (k1 k2 f)
-                               (p0 (magit-blame--format-time-string
-                                    (cdr (assoc k1 revinfo))
-                                    (cdr (assoc k2 revinfo)))
-                                   f)))
-                  `((?H . ,(p0 rev         'magit-blame-hash))
-                    (?s . ,(p1 "summary"   'magit-blame-summary))
-                    (?a . ,(p1 "author"    'magit-blame-name))
-                    (?c . ,(p1 "committer" 'magit-blame-name))
-                    (?A . ,(p2 "author-time"    "author-tz"    'magit-blame-date))
-                    (?C . ,(p2 "committer-time" "committer-tz" 'magit-blame-date))
-                    (?f . ""))))))
-      (-if-let (width (and (string-suffix-p "%f" format)
-                           (magit-blame--style-get 'margin-width)))
-          (concat str
-                  (propertize (make-string (max 0 (- width (length str))) ?\s)
-                              'face face))
-        str))))
+  (let ((str
+         (if (equal rev "0000000000000000000000000000000000000000")
+             (propertize (concat (if (string-prefix-p "\s" format) "\s" "")
+                                 "Not Yet Committed"
+                                 (if (string-suffix-p "\n" format) "\n" ""))
+                         'face face)
+           (magit--format-spec
+            (propertize format 'face face)
+            (cl-flet* ((p0 (s f)
+                           (propertize s 'face (if face
+                                                   (if (listp face)
+                                                       face
+                                                     (list f face))
+                                                 f)))
+                       (p1 (k f)
+                           (p0 (cdr (assoc k revinfo)) f))
+                       (p2 (k1 k2 f)
+                           (p0 (magit-blame--format-time-string
+                                (cdr (assoc k1 revinfo))
+                                (cdr (assoc k2 revinfo)))
+                               f)))
+              `((?H . ,(p0 rev         'magit-blame-hash))
+                (?s . ,(p1 "summary"   'magit-blame-summary))
+                (?a . ,(p1 "author"    'magit-blame-name))
+                (?c . ,(p1 "committer" 'magit-blame-name))
+                (?A . ,(p2 "author-time"    "author-tz"    'magit-blame-date))
+                (?C . ,(p2 "committer-time" "committer-tz" 'magit-blame-date))
+                (?f . "")))))))
+    (-if-let (width (and (string-suffix-p "%f" format)
+                         (magit-blame--style-get 'margin-width)))
+        (concat str
+                (propertize (make-string (max 0 (- width (length str))) ?\s)
+                            'face face))
+      str)))
 
 (defun magit-blame--format-separator ()
   (propertize

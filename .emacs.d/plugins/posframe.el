@@ -98,7 +98,7 @@
   :group 'lisp
   :prefix "posframe-")
 
-(defcustom posframe-mouse-banish t
+(defcustom posframe-mouse-banish (not (eq system-type 'darwin))
   "Mouse will be moved to (0 , 0) when it is non-nil."
   :group 'posframe
   :type 'boolean)
@@ -378,6 +378,8 @@ you can use `posframe-delete-all' to delete all posframes."
           :font-height ,font-height
           :font-width ,font-width
           :posframe ,posframe
+          :height ,(frame-pixel-height posframe)
+          :width ,(frame-pixel-width posframe)
           :posframe-buffer ,posframe-buffer
           :parent-frame ,parent-frame
           :parent-window ,parent-window

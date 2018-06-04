@@ -1206,8 +1206,8 @@ the prefix argument can be inverted or further modified using the
 option `magit-display-file-buffer-function'.
 
 Non-interactively the optional OTHER-WINDOW argument is taken
-literally, and DISPLAY-FN can be used to override that specify a
-function explicitly.
+literally.  DISPLAY-FN can be used to specify the display
+function explicitly, in which case OTHER-WINDOW is ignored.
 
 The optional FORCE-WORKTREE means to force visiting the worktree
 version of the file.  To do this interactively use the command
@@ -1627,6 +1627,7 @@ is set in `magit-mode-setup'."
     (define-key map "u" 'magit-unstage)
     (define-key map "&" 'magit-do-async-shell-command)
     (define-key map "\C-c\C-t" 'magit-diff-trace-definition)
+    (define-key map "\C-c\C-e" 'magit-diff-edit-hunk-commit)
     map)
   "Keymap for `file' sections.")
 
@@ -1644,6 +1645,7 @@ is set in `magit-mode-setup'."
     (define-key map "u" 'magit-unstage)
     (define-key map "&" 'magit-do-async-shell-command)
     (define-key map "\C-c\C-t" 'magit-diff-trace-definition)
+    (define-key map "\C-c\C-e" 'magit-diff-edit-hunk-commit)
     map)
   "Keymap for `hunk' sections.")
 

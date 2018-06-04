@@ -92,19 +92,20 @@
    `nimbus ;; you must use the same theme name here...
    `(default      ((t (:foreground ,nimbus/fg :background ,nimbus/bg))))
    `(cursor       ((t (:foreground ,nimbus/black :background ,nimbus/cursor))))
-   `(fringe       ((t (:background ,nimbus/fringe))))
+   `(fringe       ((t (:background ,nimbus/fringe  :bold nil :underline nil))))
    `(link         ((t (:foreground ,nimbus/light-blue :underline t))))
    `(link-visited ((t (:foreground ,nimbus/red :underline t))))
    `(highlight
      ((t (:foreground ,nimbus/bg :background ,nimbus/light-green))))
    `(region
-     ((t (:foreground ,nimbus/fg :background ,nimbus/fg))))
+     ((t (:foreground ,nimbus/bg :background ,nimbus/fg))))
    `(shadow       ((t (:foreground ,nimbus/light-gray))))
    `(tooltip      ((t (:background ,nimbus/fg :foreground ,nimbus/bg))))
 
    ;; standard font lock
    `(font-lock-builtin-face           ((t (:foreground ,nimbus/blue))))
-   `(font-lock-comment-face           ((t (:foreground ,nimbus/light-gray))))
+   `(font-lock-comment-face
+     ((t (:foreground ,nimbus/light-gray :slant italic))))
    `(font-lock-comment-delimiter-face ((t (:foreground ,nimbus/light-gray))))
    `(font-lock-function-name-face     ((t (:foreground ,nimbus/dark-green))))
    `(font-lock-keyword-face           ((t (:foreground ,nimbus/blue))))
@@ -120,7 +121,7 @@
 
    ;; highlight-numbers
    `(highlight-numbers-number
-     ((t (:foreground ,nimbus/purple))))
+     ((t (:foreground ,nimbus/orange))))
    ;; highlight-quoted
    `(highlight-quoted-symbol
      ((t (:foreground ,nimbus/green))))
@@ -195,7 +196,7 @@
 
    ;; line numbers
    `(linum
-     ((t (:inherit fringe :foreground ,nimbus/blue-gray :bold nil :underline nil))))
+     ((t (:inherit fringe :foreground ,nimbus/blue-gray))))
    `(nlinum-current-line
      ((t (:inherit linum :foreground ,nimbus/dark-green))))
 
@@ -943,16 +944,17 @@
    ;;`(org-agenda-clocking           ((t (:foreground nil :background nil))))
    ;;`(org-agenda-column-dateline    ((t (:foreground nil :background nil))))
    ;;`(org-agenda-current-time       ((t (:foreground nil :background nil))))
-   ;;`(org-agenda-date               ((t (:foreground nil :background nil))))
-   ;;`(org-agenda-date-today         ((t (:foreground nil :background nil))))
-   ;;`(org-agenda-date-weekend       ((t (:foreground nil :background nil))))
+   `(org-agenda-date               ((t (:foreground ,nimbus/light-blue))))
+   `(org-agenda-date-today         ((t (:foreground ,nimbus/purple))))
+   `(org-agenda-date-weekend
+     ((t (:inherit org-agenda-date :slant italic))))
    ;;`(org-agenda-diary              ((t (:foreground nil :background nil))))
    ;;`(org-agenda-dimmed-todo-face   ((t (:foreground nil :background nil))))
-   ;;`(org-agenda-done               ((t (:foreground nil :background nil))))
+   `(org-agenda-done               ((t (:foreground ,nimbus/dark-green))))
    ;;`(org-agenda-filter-category    ((t (:foreground nil :background nil))))
    ;;`(org-agenda-filter-tags        ((t (:foreground nil :background nil))))
    ;;`(org-agenda-restriction-lock   ((t (:foreground nil :background nil))))
-   ;;`(org-agenda-structure          ((t (:foreground nil :background nil))))
+   `(org-agenda-structure          ((t (:foreground ,nimbus/blue))))
    ;;`(org-archived                  ((t (:foreground nil :background nil))))
    ;;`(org-beamer-tag                ((t (:foreground nil :background nil))))
    ;;`(org-block                     ((t (:foreground nil :background nil))))
@@ -966,8 +968,9 @@
    ;;`(org-code                      ((t (:foreground nil :background nil))))
    ;;`(org-column                    ((t (:foreground nil :background nil))))
    ;;`(org-column-title              ((t (:foreground nil :background nil))))
-   ;;`(org-date                      ((t (:foreground nil :background nil))))
-   ;;`(org-date-selected             ((t (:foreground nil :background nil))))
+   `(org-date                      ((t (:inherit link))))
+   `(org-date-selected
+     ((t (:foreground ,nimbus/bg :background ,nimbus/yellow :underline t))))
    ;;`(org-default                   ((t (:foreground nil :background nil))))
    ;;`(org-document-info             ((t (:foreground nil :background nil))))
    ;;`(org-document-info-keyword     ((t (:foreground nil :background nil))))
@@ -977,7 +980,7 @@
    `(org-todo
      ((t (:foreground ,nimbus/red))))
    ;;`(org-drawer                    ((t (:foreground nil :background nil))))
-   ;;`(org-ellipsis                  ((t (:foreground nil :background nil))))
+   `(org-ellipsis                  ((t (:foreground ,nimbus/light-gray))))
    ;;`(org-footnote                  ((t (:foreground nil :background nil))))
    ;;`(org-formula                   ((t (:foreground nil :background nil))))
    ;;`(org-headline-done             ((t (:foreground nil :background nil))))
@@ -1009,9 +1012,9 @@
    ;;`(org-mode-line-clock-overrun   ((t (:foreground nil :background nil))))
    ;;`(org-property-value            ((t (:foreground nil :background nil))))
    ;;`(org-quote                     ((t (:foreground nil :background nil))))
-   ;;`(org-scheduled                 ((t (:foreground nil :background nil))))
-   ;;`(org-scheduled-previously      ((t (:foreground nil :background nil))))
-   ;;`(org-scheduled-today           ((t (:foreground nil :background nil))))
+   `(org-scheduled                 ((t (:foreground ,nimbus/green))))
+   `(org-scheduled-previously      ((t (:foreground ,nimbus/orange))))
+   `(org-scheduled-today           ((t (:foreground ,nimbus/yellow))))
    ;;`(org-sexp-date                 ((t (:foreground nil :background nil))))
    ;;`(org-special-keyword           ((t (:foreground nil :background nil))))
    ;;`(org-table                     ((t (:foreground nil :background nil))))

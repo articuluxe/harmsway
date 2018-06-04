@@ -595,7 +595,8 @@ START has to be selected from a list of recent commits."
             (m2 ".\nDo you really want to modify them"))
         (magit-confirm (or magit--rebase-published-symbol 'rebase-published)
           (concat m1 "%s" m2)
-          (concat m1 "%i public branches" m2)))
+          (concat m1 "%i public branches" m2)
+          nil branches))
       (push (magit-toplevel) magit--rebase-public-edit-confirmed)))
   (if (magit-git-lines "rev-list" "--merges" (concat since "..HEAD"))
       (magit-read-char-case "Proceed despite merge in rebase range?  " nil
@@ -619,7 +620,7 @@ START has to be selected from a list of recent commits."
   (interactive (list (magit-rebase-arguments)))
   (magit-rebase-interactive-1 :merge-base (cons "--autosquash" args)
     "Type %p on a commit to squash into it and then rebase as necessary,"
-    "true"))
+    "true" nil t))
 
 ;;;###autoload
 (defun magit-rebase-edit-commit (commit args)
