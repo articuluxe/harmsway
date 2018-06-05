@@ -1,8 +1,8 @@
 ;; custom-utils.el --- misc. utilities
-;; Copyright (C) 2015-2017  Dan Harms (dharms)
+;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2017-11-22 17:00:51 dharms>
+;; Modified Time-stamp: <2018-06-05 09:27:31 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -83,14 +83,19 @@
 (defun goto-line-with-feedback()
   "Show line numbers temporarily while prompting for the target line."
   (interactive)
-  (if (and (or (not (boundp 'linum-mode)) (not linum-mode))
-           (not current-prefix-arg))
-      (unwind-protect
-          (progn
-            (linum-mode 1)
-            (call-interactively 'goto-line))
-        (linum-mode -1))
-    (call-interactively 'goto-line)))
+  (let ((func (if (< emacs-major-version 26)
+                  'linum-mode 'display-line-numbers-mode))
+        (on (if (< emacs-major-version 26)
+                (and (boundp 'linum-mode) linum-mode)
+              (and (boundp 'display-line-numbers-mode) display-line-numbers-mode))))
+    (if (and (not on)
+             (not current-prefix-arg))
+        (unwind-protect
+            (progn
+              (funcall func 1)
+              (call-interactively 'goto-line))
+          (funcall func -1))
+      (call-interactively 'goto-line))))
 (global-set-key [remap goto-line] 'goto-line-with-feedback)
 
 ;; from Marcin Borkowski
