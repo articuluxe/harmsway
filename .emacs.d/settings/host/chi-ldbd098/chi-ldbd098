@@ -3,7 +3,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dan.harms)
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Monday, March 14, 2016
-;; Modified Time-stamp: <2018-06-04 17:15:28 dharms>
+;; Modified Time-stamp: <2018-06-05 14:04:00 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: config
 
@@ -34,7 +34,7 @@
                          "FantasqueSansMono 12"
                          "InputMono 11"
                          "Hack 11"
-                         "Lucelent 11"
+                         "Luculent 11"
                          "Iosevka 11"
                          "Monospace 10"
                          "OfficeCodePro 10"
