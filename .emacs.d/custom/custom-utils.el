@@ -37,26 +37,29 @@
   (format-time-string "%D %-I:%M %p"))
 
 (defun insert-today()
-  "Insert string for today's date nicely formatted in American style,
-  e.g. Sunday, September 17, 2000."
+  "Insert string for today's date nicely formatted in American style.
+E.g. Sunday, September 17, 2000."
   (interactive)
   (insert (today)))
 (defun today()
-  "Return string for today's date nicely formatted in American style,
-  e.g. Sunday, September 17, 2000."
+  "Return string for today's date nicely formatted in American style.
+E.g. Sunday, September 17, 2000."
   (interactive)
   (format-time-string "%A, %B %e, %Y"))
 
 (defun sanityinc/eval-last-sexp-or-region (prefix)
-  "Eval region from BEG to END if active, otherwise the last sexp."
+  "Eval region from BEG to END if active, otherwise the last sexp.
+PREFIX is passed along to `pp-eval-last-sexp'."
   (interactive "P")
   (if (and (mark) (use-region-p))
       (eval-region (min (point) (mark)) (max (point) (mark)))
     (pp-eval-last-sexp prefix)))
 
 ;; todo: deprecate
+;; in favor of proviso-find-file-upwards
 (defun find-file-upwards (dir file-to-find)
-  "Recursively search upward for file; returns path to file or nil if not found."
+  "Search upward from DIR for FILE-TO-FIND.
+Return path found or nil if none found."
   (interactive)
   (let*
       ((find-file-r
@@ -75,7 +78,7 @@
 
 ;; todo: deprecate
 (defun find-file-dir-upwards (file-to-find)
-  "Recursively search upward for file; returns file's directory or nil if not found."
+  "Recursively search upward for FILE-TO-FIND's directory, or nil if not found."
   (interactive)
   (let ((file (find-file-upwards file-to-find)))
     (if file (file-name-directory file) nil)))
