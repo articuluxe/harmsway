@@ -176,16 +176,16 @@ but in the future it will also be used set the defaults."
 ;;; Core
 
 (defclass magit-section ()
-  ((type     :initform nil :accessor magit-section-type     :initarg :type)
-   (value    :initform nil :accessor magit-section-value    :initarg :value)
-   (start    :initform nil :accessor magit-section-start    :initarg :start)
-   (content  :initform nil :accessor magit-section-content)
-   (end      :initform nil :accessor magit-section-end)
-   (hidden   :initform nil :accessor magit-section-hidden)
-   (washer   :initform nil :accessor magit-section-washer)
+  ((type     :initform nil :initarg :type)
+   (value    :initform nil :initarg :value)
+   (start    :initform nil :initarg :start)
+   (content  :initform nil)
+   (end      :initform nil)
+   (hidden   :initform nil)
+   (washer   :initform nil)
    (process  :initform nil)
-   (parent   :initform nil :accessor magit-section-parent   :initarg :parent)
-   (children :initform nil :accessor magit-section-children)))
+   (parent   :initform nil :initarg :parent)
+   (children :initform nil)))
 
 (defclass magit-file-section (magit-section)
   ((source   :initform nil)
@@ -710,9 +710,9 @@ at point."
 (defun magit-section-match-assoc (section alist)
   "Return the value associated with SECTION's type or lineage in ALIST."
   (let ((ident (mapcar #'car (magit-section-ident section))))
-    (--some (pcase-let ((`(,key . ,val) it))
-              (and (magit-section-match-1 key ident) val))
-            alist)))
+    (-some (pcase-lambda (`(,key . ,val))
+             (and (magit-section-match-1 key ident) val))
+           alist)))
 
 ;;; Create
 
@@ -777,7 +777,6 @@ anything this time around.
                            (`file 'magit-file-section)
                            (`hunk 'magit-hunk-section)
                            (_     'magit-section))
-                         ""
                          :type ,tp
                          :value ,(nth 1 (car args))
                          :start (point-marker)
@@ -1084,13 +1083,9 @@ invisible."
 
 (cl-defun magit-section-cache-visibility
     (&optional (section magit-insert-section--current))
-  ;; Emacs 24 doesn't have `alist-get'.
-  (let* ((id  (magit-section-ident section))
-         (elt (assoc id magit-section-visibility-cache))
-         (val (if (oref section hidden) 'hide 'show)))
-    (if elt
-        (setcdr elt val)
-      (push (cons id val) magit-section-visibility-cache))))
+  (setf (alist-get (magit-section-ident section)
+                   magit-section-visibility-cache)
+        (if (oref section hidden) 'hide 'show)))
 
 (cl-defun magit-section-maybe-cache-visibility
     (&optional (section magit-insert-section--current))
