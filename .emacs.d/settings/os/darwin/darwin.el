@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2018-06-06 11:04:34 dharms>
+;; Modified Time-stamp: <2018-06-06 11:55:56 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -31,9 +31,6 @@
 
 (when (executable-find "gls")
   (setq insert-directory-program "gls"))
-
-(setq ns-use-native-fullscreen t)
-(setq ns-use-thin-smoothing t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Process Viewer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package vkill :bind ("C-c 0p" . vkill))

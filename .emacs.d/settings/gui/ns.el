@@ -1,9 +1,9 @@
 ;; ns.el --- mac gui settings
-;; Copyright (C) 2015, 2016  Dan Harms (dharms)
+;; Copyright (C) 2015-2016, 2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-12-15 17:47:22 dharms>
+;; Modified Time-stamp: <2018-06-06 11:55:53 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -30,6 +30,8 @@
 (scroll-bar-mode -1)
 (add-hook 'after-make-frame-functions 'my/disable-scroll-bars)
 
+(setq ns-use-native-fullscreen t)
+(setq ns-use-thin-smoothing t)
 ;; scroll one line at a time
 (setq scroll-step 1)
 (setq mouse-wheel-scroll-amount '(1 ((shift) . 1)))
@@ -38,7 +40,6 @@
 (setq mouse-wheel-follow-mouse nil)
 
 ;; toggle full-screen
-(setq ns-use-native-fullscreen nil)
 (defun ns-toggle-full-screen() (interactive)
   (set-frame-parameter nil 'fullscreen
                        (if (frame-parameter nil 'fullscreen)
