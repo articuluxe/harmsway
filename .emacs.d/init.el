@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-06-07 17:11:20 dan.harms>
+;; Modified Time-stamp: <2018-06-08 06:30:19 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1375,8 +1375,16 @@ Only one letter is shown, the first that applies."
   (setq ivy-extra-directories '("../" "./"))
   (setq ivy-count-format "(%d/%d) ")
   (ivy-mode 1)
-  (use-package ivy-prescient :config (ivy-prescient-mode 1))
   )
+
+(use-package prescient
+  :config
+  (setq prescient-save-file (concat my/user-directory "prescient"))
+  (prescient-persist-mode 1))
+(use-package ivy-prescient
+  :after (ivy prescient)
+  :config
+  (ivy-prescient-mode 1))
 
 (use-package ivy-rich
   :after ivy
