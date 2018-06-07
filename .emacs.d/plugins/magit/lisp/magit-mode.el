@@ -650,10 +650,10 @@ other buffers in the selected window."
             '(display-buffer-same-window))))
 
 (defun magit--display-buffer-fullframe (buffer alist)
-  (-when-let (window (or (display-buffer-reuse-window buffer alist)
-                         (display-buffer-same-window buffer alist)
-                         (display-buffer-pop-up-window buffer alist)
-                         (display-buffer-use-some-window buffer alist)))
+  (when-let (window (or (display-buffer-reuse-window buffer alist)
+                        (display-buffer-same-window buffer alist)
+                        (display-buffer-pop-up-window buffer alist)
+                        (display-buffer-use-some-window buffer alist)))
     (delete-other-windows window)
     window))
 
@@ -667,7 +667,7 @@ Otherwise, behave like `magit-display-buffer-traditional'."
 
 (defun magit--display-buffer-topleft (buffer alist)
   (or (display-buffer-reuse-window buffer alist)
-      (-when-let (window2 (display-buffer-pop-up-window buffer alist))
+      (when-let (window2 (display-buffer-pop-up-window buffer alist))
         (let ((window1 (get-buffer-window))
               (buffer1 (current-buffer))
               (buffer2 (window-buffer window2))
@@ -709,9 +709,9 @@ split is made vertically or horizontally is determined by
           '(display-buffer-same-window)))))
 
 (defun magit--display-buffer-fullcolumn (buffer alist)
-  (-when-let (window (or (display-buffer-reuse-window buffer alist)
-                         (display-buffer-same-window buffer alist)
-                         (display-buffer-below-selected buffer alist)))
+  (when-let (window (or (display-buffer-reuse-window buffer alist)
+                        (display-buffer-same-window buffer alist)
+                        (display-buffer-below-selected buffer alist)))
     (delete-other-windows-vertically window)
     window))
 
@@ -768,7 +768,7 @@ thinking a buffer belongs to a repo that it doesn't.")
 (put 'magit-buffer-locked-p 'permanent-local t)
 
 (defun magit-mode-get-buffer (mode &optional create frame value)
-  (-if-let (topdir (magit-toplevel))
+  (if-let (topdir (magit-toplevel))
       (or (--first (with-current-buffer it
                      (and (eq major-mode mode)
                           (equal magit--default-directory topdir)
@@ -844,15 +844,15 @@ repository, then the former buffer is instead deleted and the
 latter is displayed in its place."
   (interactive)
   (if magit-buffer-locked-p
-      (-if-let (unlocked (magit-mode-get-buffer major-mode))
+      (if-let (unlocked (magit-mode-get-buffer major-mode))
           (let ((locked (current-buffer)))
             (switch-to-buffer unlocked nil t)
             (kill-buffer locked))
         (setq magit-buffer-locked-p nil)
         (rename-buffer (funcall magit-generate-buffer-name-function
                                 major-mode)))
-    (-if-let (value (magit-buffer-lock-value))
-        (-if-let (locked (magit-mode-get-buffer major-mode nil nil value))
+    (if-let (value (magit-buffer-lock-value))
+        (if-let (locked (magit-mode-get-buffer major-mode nil nil value))
             (let ((unlocked (current-buffer)))
               (switch-to-buffer locked nil t)
               (kill-buffer unlocked))
@@ -1018,7 +1018,7 @@ Run hooks `magit-pre-refresh-hook' and `magit-post-refresh-hook'."
              (windows
               (--mapcat (with-selected-window it
                           (with-current-buffer buffer
-                            (-when-let (section (magit-current-section))
+                            (when-let (section (magit-current-section))
                               (list
                                (nconc (list it section)
                                       (magit-refresh-get-relative-position))))))
@@ -1047,7 +1047,7 @@ Run hooks `magit-pre-refresh-hook' and `magit-post-refresh-hook'."
                                             magit-refresh-start-time)))))))
 
 (defun magit-refresh-get-relative-position ()
-  (-when-let (section (magit-current-section))
+  (when-let (section (magit-current-section))
     (let ((start (oref section start)))
       (list (count-lines start (point))
             (- (point) (line-beginning-position))
@@ -1132,7 +1132,7 @@ is saved without asking, the user is asked about each modified
 buffer which visits a file in the current repository.  Optional
 argument (the prefix) non-nil means save all with no questions."
   (interactive "P")
-  (-when-let (topdir (magit-rev-parse-safe "--show-toplevel"))
+  (when-let (topdir (magit-rev-parse-safe "--show-toplevel"))
     (let ((remote (file-remote-p topdir))
           (save-some-buffers-action-alist
            `((?Y (lambda (buffer)

@@ -380,7 +380,7 @@ With a prefix argument also expand it." heading)
   "Show the body of the current section."
   (interactive (list (magit-current-section)))
   (oset section hidden nil)
-  (-when-let (washer (oref section washer))
+  (when-let (washer (oref section washer))
     (oset section washer nil)
     (let ((inhibit-read-only t)
           (magit-insert-section--parent section)
@@ -393,7 +393,7 @@ With a prefix argument also expand it." heading)
           (funcall washer)
           (oset section end (point-marker)))))
     (magit-section-update-highlight))
-  (-when-let (beg (oref section content))
+  (when-let (beg (oref section content))
     (remove-overlays beg (oref section end) 'invisible t))
   (magit-section-maybe-cache-visibility section)
   (dolist (child (oref section children))
@@ -407,7 +407,7 @@ With a prefix argument also expand it." heading)
   (if (eq section magit-root-section)
       (user-error "Cannot hide root section")
     (oset section hidden t)
-    (-when-let (beg (oref section content))
+    (when-let (beg (oref section content))
       (let ((end (oref section end)))
         (remove-overlays beg end 'invisible t)
         (let ((o (make-overlay beg end)))
@@ -444,13 +444,13 @@ children."
   (magit-section-show section))
 
 (defun magit-section-show-children-1 (section &optional depth)
-  (--each (oref section children)
-    (oset it hidden nil)
+  (dolist (child (oref section children))
+    (oset child hidden nil)
     (if depth
         (if (> depth 0)
-            (magit-section-show-children-1 it (1- depth))
-          (magit-section-hide it))
-      (magit-section-show-children-1 it))))
+            (magit-section-show-children-1 child (1- depth))
+          (magit-section-hide child))
+      (magit-section-show-children-1 child))))
 
 (defun magit-section-hide-children (section)
   "Recursively hide the bodies of children of the current section."
@@ -466,11 +466,11 @@ hidden."
   (magit-section-show section))
 
 (defun magit-section-show-headings-1 (section)
-  (--each (oref section children)
-    (oset it hidden nil)
-    (when (or (oref it children)
-              (not (oref it content)))
-      (magit-section-show-headings-1 it))))
+  (dolist (child (oref section children))
+    (oset child hidden nil)
+    (when (or (oref child children)
+              (not (oref child content)))
+      (magit-section-show-headings-1 child))))
 
 (defun magit-section-cycle (section)
   "Cycle visibility of current section and its children."
@@ -503,18 +503,18 @@ hidden."
 (defun magit-section-cycle-diffs ()
   "Cycle visibility of diff-related sections in the current buffer."
   (interactive)
-  (-when-let (sections
-              (cond ((derived-mode-p 'magit-status-mode)
-                     (--mapcat
-                      (when it
-                        (when (oref it hidden)
-                          (magit-section-show it))
-                        (oref it children))
-                      (list (magit-get-section '((staged)   (status)))
-                            (magit-get-section '((unstaged) (status))))))
-                    ((derived-mode-p 'magit-diff-mode)
-                     (-filter #'magit-file-section-p
-                              (oref magit-root-section children)))))
+  (when-let (sections
+             (cond ((derived-mode-p 'magit-status-mode)
+                    (--mapcat
+                     (when it
+                       (when (oref it hidden)
+                         (magit-section-show it))
+                       (oref it children))
+                     (list (magit-get-section '((staged)   (status)))
+                           (magit-get-section '((unstaged) (status))))))
+                   ((derived-mode-p 'magit-diff-mode)
+                    (-filter #'magit-file-section-p
+                             (oref magit-root-section children)))))
     (if (--any-p (oref it hidden) sections)
         (dolist (s sections)
           (magit-section-show s)
@@ -782,16 +782,16 @@ anything this time around.
                          :start (point-marker)
                          :parent magit-insert-section--parent)))
        (oset ,s hidden
-             (-if-let (value (run-hook-with-args-until-success
-                              'magit-section-set-visibility-hook ,s))
+             (if-let (value (run-hook-with-args-until-success
+                             'magit-section-set-visibility-hook ,s))
                  (eq value 'hide)
-               (-if-let (incarnation (and magit-insert-section--oldroot
-                                          (magit-get-section
-                                           (magit-section-ident ,s)
-                                           magit-insert-section--oldroot)))
+               (if-let (incarnation (and magit-insert-section--oldroot
+                                         (magit-get-section
+                                          (magit-section-ident ,s)
+                                          magit-insert-section--oldroot)))
                    (oref incarnation hidden)
-                 (-if-let (value (magit-section-match-assoc
-                                  ,s magit-section-initial-visibility-alist))
+                 (if-let (value (magit-section-match-assoc
+                                 ,s magit-section-initial-visibility-alist))
                      (progn
                        (when (functionp value)
                          (setq value (funcall value ,s)))
@@ -955,9 +955,9 @@ evaluated its BODY.  Admittedly that's a bit of a hack."
         (unless (eq section magit-root-section)
           (run-hook-with-args-until-success
            'magit-section-highlight-hook section selection))
-        (--each magit-section-unhighlight-sections
+        (dolist (s magit-section-unhighlight-sections)
           (run-hook-with-args-until-success
-           'magit-section-unhighlight-hook it selection))
+           'magit-section-unhighlight-hook s selection))
         (restore-buffer-modified-p nil)
         (unless (eq magit-section-highlighted-section section)
           (setq magit-section-highlighted-section
@@ -997,10 +997,10 @@ part of the hook variable, then such a region would be
 invisible."
   (when (and selection
              (not (and (eq this-command 'mouse-drag-region))))
-    (--each selection
-      (magit-section-make-overlay (oref it start)
-                                  (or (oref it content)
-                                      (oref it end))
+    (dolist (section selection)
+      (magit-section-make-overlay (oref section start)
+                                  (or (oref section content)
+                                      (oref section end))
                                   'magit-section-heading-selection))
     t))
 
@@ -1030,9 +1030,9 @@ invisible."
             (unless (eq (magit-current-section) it)
               (goto-char start))))
       (or (and (magit-hunk-section-p section)
-               (-when-let (parent (magit-get-section
-                                   (magit-section-ident
-                                    (oref section parent))))
+               (when-let (parent (magit-get-section
+                                  (magit-section-ident
+                                   (oref section parent))))
                  (let* ((children (oref parent children))
                         (siblings (magit-section-siblings section 'prev))
                         (previous (nth (length siblings) children)))
@@ -1117,7 +1117,7 @@ invisible."
               (magit-section-selected-p it selection)))))
 
 (defun magit-section-parent-value (section)
-  (-when-let (parent (oref section parent))
+  (when-let (parent (oref section parent))
     (oref parent value)))
 
 (defun magit-section-siblings (section &optional direction)
@@ -1127,7 +1127,7 @@ If optional DIRECTION is `prev', then return siblings that come
 before SECTION.  If it is `next', then return siblings that come
 after SECTION.  For all other values, return all siblings
 excluding SECTION itself."
-  (-when-let (parent (oref section parent))
+  (when-let (parent (oref section parent))
     (let ((siblings (oref parent children)))
       (pcase direction
         (`prev  (cdr (member section (reverse siblings))))

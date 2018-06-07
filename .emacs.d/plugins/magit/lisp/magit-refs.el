@@ -490,9 +490,9 @@ Insert a header line with the name and description of the
 current branch.  The description is taken from the Git variable
 `branch.<NAME>.description'; if that is undefined then no header
 line is inserted at all."
-  (-when-let* ((branch (magit-get-current-branch))
-               (desc (magit-get "branch" branch "description"))
-               (desc (split-string desc "\n")))
+  (when-let ((branch (magit-get-current-branch))
+             (desc (magit-get "branch" branch "description"))
+             (desc (split-string desc "\n")))
     (when (equal (car (last desc)) "")
       (setq desc (butlast desc)))
     (magit-insert-section (branchdesc branch t)
@@ -503,8 +503,8 @@ line is inserted at all."
 
 (defun magit-insert-tags ()
   "Insert sections showing all tags."
-  (-when-let (tags (magit-git-lines "tag" "--list" "-n"
-                                    (cadr magit-refresh-args)))
+  (when-let (tags (magit-git-lines "tag" "--list" "-n"
+                                   (cadr magit-refresh-args)))
     (let ((_head (magit-rev-parse "HEAD")))
       (magit-insert-section (tags)
         (magit-insert-heading "Tags:")
@@ -712,7 +712,7 @@ line is inserted at all."
            (t "")))))
 
 (defun magit-refs--insert-refname-p (refname)
-  (--if-let (-first (-lambda ((key . _))
+  (--if-let (-first (pcase-lambda (`(,key . ,_))
                       (if (functionp key)
                           (funcall key refname)
                         (string-match-p key refname)))

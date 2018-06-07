@@ -436,7 +436,7 @@ call function WASHER with ARGS as its sole argument."
 
 (defmacro magit--with-safe-default-directory (file &rest body)
   (declare (indent 1) (debug (form body)))
-  `(-when-let (default-directory (magit--safe-default-directory ,file))
+  `(when-let (default-directory (magit--safe-default-directory ,file))
      ,@body))
 
 (defun magit-git-dir (&optional path)
@@ -447,7 +447,7 @@ it has to be a path relative to the control directory and its
 absolute path is returned."
   (magit--with-refresh-cache (list default-directory 'magit-git-dir path)
     (magit--with-safe-default-directory nil
-      (-when-let (dir (magit-rev-parse-safe "--git-dir"))
+      (when-let (dir (magit-rev-parse-safe "--git-dir"))
         (setq dir (file-name-as-directory (magit-expand-git-file-name dir)))
         (unless (file-remote-p dir)
           (setq dir (concat (file-remote-p default-directory) dir)))
@@ -490,7 +490,7 @@ returning the truename."
   (magit--with-refresh-cache
       (cons (or directory default-directory) 'magit-toplevel)
     (magit--with-safe-default-directory directory
-      (-if-let (topdir (magit-rev-parse-safe "--show-toplevel"))
+      (if-let (topdir (magit-rev-parse-safe "--show-toplevel"))
           (let (updir)
             (setq topdir (magit-expand-git-file-name topdir))
             (if (and
@@ -520,7 +520,7 @@ returning the truename."
                 updir
               (concat (file-remote-p default-directory)
                       (file-name-as-directory topdir))))
-        (-when-let (gitdir (magit-rev-parse-safe "--git-dir"))
+        (when-let (gitdir (magit-rev-parse-safe "--git-dir"))
           (setq gitdir (file-name-as-directory
                         (if (file-name-absolute-p gitdir)
                             ;; We might have followed a symlink.
@@ -742,7 +742,7 @@ range.  Otherwise, it can be any revision or range accepted by
                                  (car (process-lines
                                        magit-git-executable "--exec-path"))))
                            (ignore-errors (process-lines "mount")))))
-             #'> :key (-lambda ((cyg . _win)) (length cyg))))
+             #'> :key (pcase-lambda (`(,cyg . ,_win)) (length cyg))))
   "Alist of (CYGWIN . WIN32) directory names.
 Sorted from longest to shortest CYGWIN name."
   :package-version '(magit . "2.3.0")
@@ -1106,8 +1106,8 @@ The amount of time spent searching is limited by
 
 (defun magit-get-upstream-branch (&optional branch verify)
   (and (or branch (setq branch (magit-get-current-branch)))
-       (-when-let* ((remote (magit-get "branch" branch "remote"))
-                    (merge  (magit-get "branch" branch "merge")))
+       (when-let ((remote (magit-get "branch" branch "remote"))
+                  (merge  (magit-get "branch" branch "merge")))
          (and (string-prefix-p "refs/heads/" merge)
               (let* ((upstream (substring merge 11))
                      (upstream
@@ -1153,8 +1153,8 @@ The amount of time spent searching is limited by
 
 (defun magit-get-push-branch (&optional branch verify)
   (and (or branch (setq branch (magit-get-current-branch)))
-       (-when-let* ((remote (magit-get-push-remote branch))
-                    (push-branch (concat remote "/" branch)))
+       (when-let ((remote (magit-get-push-remote branch))
+                  (push-branch (concat remote "/" branch)))
          (and (or (not verify)
                   (magit-rev-verify push-branch))
               push-branch))))
@@ -1304,7 +1304,7 @@ SORTBY is a key or list of keys to pass to the `--sort' flag of
   (magit-list-related-branches "--no-merged" commit arg))
 
 (defun magit-list-unmerged-to-upstream-branches ()
-  (--filter (-when-let (upstream (magit-get-upstream-branch it))
+  (--filter (when-let (upstream (magit-get-upstream-branch it))
               (member it (magit-list-unmerged-branches upstream)))
             (magit-list-local-branch-names)))
 
@@ -2026,14 +2026,14 @@ the reference is used.  The first regexp submatch becomes the
 (defun magit--format-popup-variable:value (variable width &optional global)
   (concat variable
           (make-string (max 1 (- width 3 (length variable))) ?\s)
-          (-if-let (value (magit-get (and global "--global") variable))
+          (if-let (value (magit-get (and global "--global") variable))
               (propertize value 'face 'magit-popup-option-value)
             (propertize "unset" 'face 'magit-popup-disabled-argument))))
 
 (defun magit--format-popup-variable:values (variable width &optional global)
   (concat variable
           (make-string (max 1 (- width 3 (length variable))) ?\s)
-          (-if-let (values (magit-get-all (and global "--global") variable))
+          (if-let (values (magit-get-all (and global "--global") variable))
               (concat
                (propertize (car values) 'face 'magit-popup-option-value)
                (mapconcat
