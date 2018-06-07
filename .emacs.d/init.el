@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-06-06 21:08:12 dharms>
+;; Modified Time-stamp: <2018-06-06 21:08:55 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -377,30 +377,6 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
          ("C-c h" . insert-class-header)
          ("C-c c" . insert-cast)
   ))
-(use-package custom-gud
-  :bind (([f4] . my/launch-gdb)
-         ("\e\e4" . my/launch-gdb)
-         )
-  :defines (gdb-show-main
-            gdb-show-changed-values
-            gdb-use-colon-colon-notation
-            gdb-create-source-file-list)
-  :config
-  (add-hook 'gud-mode-hook
-            (lambda()
-              (set (make-local-variable 'gdb-show-main) t)
-              ;; highlight recently-changed variables
-              (set (make-local-variable 'gdb-show-changed-values) t)
-              ;; watch expressions sharing same variable name
-              (set (make-local-variable 'gdb-use-colon-colon-notation) t)
-              (set (make-local-variable 'gdb-create-source-file-list) nil)
-              (gdb-many-windows 1)
-              )))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; realgud ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package realgud
-  :bind ("C-4" . realgud:gdb)
-  :init (setq realgud-safe-mode nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; align ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun align-values (start end)
