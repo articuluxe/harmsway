@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-06-06 22:49:32 dharms>
+;; Modified Time-stamp: <2018-06-07 14:42:05 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1432,7 +1432,8 @@ Only one letter is shown, the first that applies."
          "\\|\\(?:[#~]$\\)"             ;end with # or ~
          "\\|\\(?:\\.elc$\\)"           ;byte-compiled
          ))                             ;toggle with C-c C-a
-  (setf (cdr (assoc 'counsel-M-x ivy-initial-inputs-alist)) "")
+  (let ((elt (assoc 'counsel-M-x ivy-initial-inputs-alist)))
+    (when elt (setf (cdr elt) "")))
   ;; avoid slow "du -s" invocation on large repos
   (setq counsel--git-grep-count-func
         (lambda() (1+ counsel--git-grep-count-threshold)))
