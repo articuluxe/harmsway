@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-06-06 21:08:55 dharms>
+;; Modified Time-stamp: <2018-06-06 22:49:32 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1792,7 +1792,7 @@ Only one letter is shown, the first that applies."
   (use-package dired-filter)
   (define-key dired-mode-map "." dired-filter-mark-map)
   (setq wdired-allow-to-change-permissions t)
-  (use-package ivy-dired-history)
+  ;; (use-package ivy-dired-history)
   (use-package dired-sidebar
     :init
     (setq dired-sidebar-use-evil-integration nil)
