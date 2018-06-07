@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-06-07 14:42:05 dan.harms>
+;; Modified Time-stamp: <2018-06-07 17:11:20 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -259,6 +259,37 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 ;; ))
 
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; environment ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defun harmsway-unqualify-host-name (hst)
+  "Remove the fully qualified suffix, if any, from a hostname HST."
+  (when (string-match "^\\([^.]+\\)\\.?.*$" hst)
+    (match-string-no-properties 1 hst)))
+
+(defun harmsway-init-environment ()
+  "Load environment variables from various files.
+This includes files specific to the current operating system, the
+current host, possibly a site file, and personal settings.  It is
+not an error if any files do not exist."
+  (let ((os (string-trim (shell-command-to-string "uname")))
+        (host (harmsway-unqualify-host-name (system-name)))
+        (site (getenv "SITE"))
+        file)
+    (setenv "GPG_AGENT_INFO" nil)
+    ;; os
+    (parsenv-load-env (expand-file-name (concat "~/." os ".env")))
+    ;; host
+    (parsenv-load-env (expand-file-name (concat "~/." host ".env")))
+    ;; site
+    (parsenv-load-env (expand-file-name (concat "~/." site ".env")))
+    ;; personal
+    (parsenv-load-env (expand-file-name "~/.personal.env"))
+    (parsenv-adjust-exec-path)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; parsenv ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package parsenv
+ :demand t
+ :config
+ (harmsway-init-environment))
 
 (load-library "compiling")
 (load-library "coding")
@@ -404,38 +435,6 @@ line."
   :commands good-word/init-word-processor
   :bind ("M-o w" . hydra-toggle-word-processor/body)
   )
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; environment ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defun harmsway-unqualify-host-name (hst)
-  "Remove the fully qualified suffix, if any, from a hostname HST."
-  (when (string-match "^\\([^.]+\\)\\.?.*$" hst)
-    (match-string-no-properties 1 hst)))
-
-(defun harmsway-init-environment ()
-  "Load environment variables from various files.
-This includes files specific to the current operating system, the
-current host, possibly a site file, and personal settings.  It is
-not an error if any files do not exist."
-  (let ((os (string-trim (shell-command-to-string "uname")))
-        (host (harmsway-unqualify-host-name (system-name)))
-        (site (getenv "SITE"))
-        file)
-    (setenv "GPG_AGENT_INFO" nil)
-    ;; os
-    (parsenv-load-env (expand-file-name (concat "~/." os ".env")))
-    ;; host
-    (parsenv-load-env (expand-file-name (concat "~/." host ".env")))
-    ;; site
-    (parsenv-load-env (expand-file-name (concat "~/." site ".env")))
-    ;; personal
-    (parsenv-load-env (expand-file-name "~/.personal.env"))
-    (parsenv-adjust-exec-path)))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; parsenv ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package parsenv
- :demand t
- :config
- (harmsway-init-environment))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; outrespace ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package outrespace
