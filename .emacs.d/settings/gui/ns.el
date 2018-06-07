@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2018-06-06 11:55:53 dharms>
+;; Modified Time-stamp: <2018-06-07 12:35:02 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -47,7 +47,9 @@
 (global-set-key [f11] 'ns-toggle-full-screen)
 (global-set-key "\C-c0q11" 'ns-toggle-full-screen)
 
-(setq default-frame-alist '((cursor-type . bar)))
+(setq default-frame-alist '((cursor-type . bar)
+                            (ns-transparent-titlebar . t)
+                            (ns-appearance . dark)))
 
 (setq initial-frame-alist
       '(

@@ -3,8 +3,8 @@
 
 # User specific aliases and functions
 
-if [ -f /usr/local/emacs/emacs ]; then
-    export VISUAL=/usr/local/emacs/emacs
+if [ -f /usr/local/emacs/26.1/bin/emacs ]; then
+    export VISUAL=/usr/local/emacs/26.1/bin/emacs
 else
     export VISUAL=emacs
 fi
