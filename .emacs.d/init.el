@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-06-08 11:41:38 dan.harms>
+;; Modified Time-stamp: <2018-06-08 12:38:10 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1508,6 +1508,16 @@ Only one letter is shown, the first that applies."
   :config
   (setq sml/no-confirm-load-theme t)
   (sml/setup)
+  )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; moody ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package moody
+  :disabled
+  :config
+  (setq x-underline-at-descent-line t)
+  (moody-replace-mode-line-buffer-identification)
+  (moody-replace-vc-mode)
+  (moody-replace-sml/mode-line-buffer-identification)
   )
 
 ;; undo
