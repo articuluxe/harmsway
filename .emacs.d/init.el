@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-06-08 06:30:19 dharms>
+;; Modified Time-stamp: <2018-06-08 11:41:38 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1374,18 +1374,9 @@ Only one letter is shown, the first that applies."
   (setq ivy-display-style 'fancy)
   (setq ivy-extra-directories '("../" "./"))
   (setq ivy-count-format "(%d/%d) ")
-  (ivy-mode 1)
-  )
+  (ivy-mode 1))
 
-(use-package prescient
-  :config
-  (setq prescient-save-file (concat my/user-directory "prescient"))
-  (prescient-persist-mode 1))
-(use-package ivy-prescient
-  :after (ivy prescient)
-  :config
-  (ivy-prescient-mode 1))
-
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ivy-rich ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package ivy-rich
   :after ivy
   :init
@@ -1393,6 +1384,27 @@ Only one letter is shown, the first that applies."
   :config
   (ivy-set-display-transformer 'ivy-switch-buffer
                                'ivy-rich-switch-buffer-transformer))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ivy-prescient ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package prescient
+  :disabled
+  :config
+  (setq prescient-save-file (concat my/user-directory "prescient"))
+  (prescient-persist-mode 1))
+(use-package ivy-prescient
+  :disabled
+  :after (ivy prescient)
+  :config
+  (ivy-prescient-mode 1))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ivy-posframe ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package ivy-posframe
+  :disabled
+  :if (<= 26 emacs-major-version)
+  :after ivy
+  :config
+  (setq ivy-display-function #'ivy-posframe-display)
+  (ivy-posframe-enable))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; counsel ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package counsel
