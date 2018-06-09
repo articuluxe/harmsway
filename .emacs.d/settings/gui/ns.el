@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2018-06-07 12:35:02 dan.harms>
+;; Modified Time-stamp: <2018-06-08 06:35:00 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -34,10 +34,10 @@
 (setq ns-use-thin-smoothing t)
 ;; scroll one line at a time
 (setq scroll-step 1)
-(setq mouse-wheel-scroll-amount '(1 ((shift) . 1)))
-;; don't accelerate scrolling
-(setq mouse-wheel-progressive-speed nil)
-(setq mouse-wheel-follow-mouse nil)
+;; (setq mouse-wheel-scroll-amount '(1 ((shift) . 1)))
+;; ;; don't accelerate scrolling
+;; (setq mouse-wheel-progressive-speed nil)
+;; (setq mouse-wheel-follow-mouse nil)
 
 ;; toggle full-screen
 (defun ns-toggle-full-screen() (interactive)
