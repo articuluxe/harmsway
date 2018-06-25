@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-06-08 12:38:10 dan.harms>
+;; Modified Time-stamp: <2018-06-25 11:12:01 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1368,12 +1368,14 @@ Only one letter is shown, the first that applies."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ivy ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package ivy
   :demand t
-  :config
-  (setq ivy-wrap t)
-  (global-set-key "\e\eii" 'ivy-resume)
+  :init
   (setq ivy-display-style 'fancy)
   (setq ivy-extra-directories '("../" "./"))
   (setq ivy-count-format "(%d/%d) ")
+  (setq ivy-wrap t)
+  (setq ivy-use-selectable-prompt t)
+  :config
+  (global-set-key "\e\eii" 'ivy-resume)
   (ivy-mode 1))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ivy-rich ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
