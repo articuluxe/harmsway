@@ -2,6 +2,19 @@
 
 ;; Copyright (c) 2017 Aaron Bieber
 
+;; This program is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+;;
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+;;
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
 ;; Author: Aaron Bieber <aaron@aaronbieber.com>
 ;; Version: 0.1
 ;; Package-Requires: ((emacs "24.4"))
@@ -185,53 +198,63 @@ The assumption is that language `LANG' has a mode `LANG-mode'."
           (cdr (assoc lang fence-edit-lang-modes))
         fence-edit-default-mode))))
 
+(defun fence-edit-code-region (beg end &optional lang)
+  "Edit region (BEG and END) in language LANG."
+  (interactive (append
+                (if (use-region-p)
+                    (list (region-beginning) (region-end))
+                  (list (point-min) (point-max)))
+                (when current-prefix-arg
+                  (list (read-string "Edit language: ")))))
+  (let* ((beg (copy-marker beg))
+         (end (copy-marker end t))
+         (pos (point))
+         (block-indent "")
+         edit-point code mode ovl edit-buffer vars first-line)
+    (when (< beg end)
+      (setq edit-point (1+ (- pos beg))
+            code (buffer-substring-no-properties beg end)
+            mode (fence-edit--get-mode-for-lang lang)
+            ovl (make-overlay beg end)
+            edit-buffer (generate-new-buffer
+                         (fence-edit--make-edit-buffer-name (buffer-name) lang)))
+      (window-configuration-to-register fence-edit-window-layout)
+      (if (string-match-p (rx "\n" string-end) code)
+          (setq code (replace-regexp-in-string (rx "\n" string-end) "" code)))
+      (setq first-line (car (split-string code "\n")))
+      (string-match "^[[:blank:]]*" first-line)
+      (setq block-indent (match-string 0 first-line))
+      (setq code (replace-regexp-in-string (concat "^" block-indent) "" code))
+      (overlay-put ovl 'edit-buffer edit-buffer)
+      (overlay-put ovl 'face 'secondary-selection)
+      (overlay-put ovl :read-only "Please don't.")
+      (switch-to-buffer-other-window edit-buffer t)
+      (insert code)
+      (remove-text-properties (point-min) (point-max)
+                              '(display nil invisible nil intangible nil))
+      (condition-case e
+          (funcall mode)
+        (error
+         (message "Language mode `%s' fails with: %S" mode (nth 1 e))))
+      (fence-edit-mode)
+      (fence-edit-set-local 'fence-edit-editor t)
+      (fence-edit-set-local 'fence-edit-mark-beg beg)
+      (fence-edit-set-local 'fence-edit-mark-end end)
+      (fence-edit-set-local 'fence-edit-block-indent block-indent)
+      (fence-edit-set-local 'fence-edit-overlay ovl)
+      (fence-edit-set-local 'header-line-format "Press C-c ' (C-c apostrophe) to save, C-c C-k to abort.")
+      (goto-char edit-point)
+      (set-buffer-modified-p nil))))
+
 (defun fence-edit-code-at-point ()
   "Look for a code block at point and, if found, edit it."
   (interactive)
   (let* ((block (fence-edit--get-block-around-point))
-         (pos (point))
-         (beg (make-marker))
-         (end (copy-marker (make-marker) t))
-         (block-indent "")
-         edit-point lang code mode ovl edit-buffer vars first-line)
-    (if block
-        (progn
-          (setq beg (move-marker beg (car block))
-                end (move-marker end (nth 1 block))
-                edit-point (1+ (- pos beg))
-                lang (nth 2 block)
-                code (buffer-substring-no-properties beg end)
-                mode (fence-edit--get-mode-for-lang lang)
-                ovl (make-overlay beg end)
-                edit-buffer (generate-new-buffer
-                             (fence-edit--make-edit-buffer-name (buffer-name) lang)))
-          (window-configuration-to-register fence-edit-window-layout)
-          (if (string-match-p (rx "\n" string-end) code)
-              (setq code (replace-regexp-in-string (rx "\n" string-end) "" code)))
-          (setq first-line (car (split-string code "\n")))
-          (string-match "^[[:blank:]]*" first-line)
-          (setq block-indent (match-string 0 first-line))
-          (setq code (replace-regexp-in-string (concat "^" block-indent) "" code))
-          (overlay-put ovl 'edit-buffer edit-buffer)
-          (overlay-put ovl 'face 'secondary-selection)
-          (overlay-put ovl :read-only "Please don't.")
-          (switch-to-buffer-other-window edit-buffer t)
-          (insert code)
-          (remove-text-properties (point-min) (point-max)
-                                  '(display nil invisible nil intangible nil))
-          (condition-case e
-              (funcall mode)
-            (error
-             (message "Language mode `%s' fails with: %S" mode (nth 1 e))))
-          (fence-edit-mode)
-          (fence-edit-set-local 'fence-edit-editor t)
-          (fence-edit-set-local 'fence-edit-mark-beg beg)
-          (fence-edit-set-local 'fence-edit-mark-end end)
-          (fence-edit-set-local 'fence-edit-block-indent block-indent)
-          (fence-edit-set-local 'fence-edit-overlay ovl)
-          (fence-edit-set-local 'header-line-format "Press C-c ' (C-c apostrophe) to save, C-c C-k to abort.")
-          (goto-char edit-point)
-          (set-buffer-modified-p nil)))))
+         (beg (car block))
+         (end (nth 1 block))
+         (lang (nth 2 block)))
+    (when block
+      (fence-edit-code-region beg end lang))))
 
 (defun fence-edit--guard-edit-buffer ()
   "Throw an error if current buffer doesn't look like an edit buffer."
@@ -251,7 +274,7 @@ The edit buffer is expected to be the current buffer."
       (set-buffer-modified-p nil))
     (kill-buffer buffer)))
 
-(defun fence-edit-save () 
+(defun fence-edit-save ()
   "Save the original buffer with the new text."
   (interactive)
   (fence-edit--guard-edit-buffer)
@@ -281,6 +304,7 @@ The edit buffer is expected to be the current buffer."
   (fence-edit--guard-edit-buffer)
   (let ((buffer (current-buffer))
         (code (buffer-string))
+        (mod (buffer-modified-p))
         (beg fence-edit-mark-beg)
         (end fence-edit-mark-end)
         (block-indent fence-edit-block-indent)
@@ -293,9 +317,10 @@ The edit buffer is expected to be the current buffer."
     (setq code (replace-regexp-in-string (concat "\n" block-indent "$") "\n" code))
     (with-current-buffer (marker-buffer beg)
       (goto-char beg)
-      (undo-boundary)
-      (delete-region beg end)
-      (insert code))))
+      (when mod
+        (undo-boundary)
+        (delete-region beg end)
+        (insert code)))))
 
 (defun fence-edit-abort ()
   "Conclude editing, discarding the edited text."

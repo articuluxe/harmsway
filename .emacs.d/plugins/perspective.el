@@ -7,7 +7,7 @@
 ;; Author: Natalie Weizenbaum <nex342@gmail.com>
 ;; URL: http://github.com/nex3/perspective-el
 ;; Package-Requires: ((cl-lib "0.5"))
-;; Version: 2.0
+;; Version: 2.1
 ;; Created: 2008-03-05
 ;; By: Natalie Weizenbaum <nex342@gmail.com>
 ;; Keywords: workspace, convenience, frames
@@ -451,8 +451,8 @@ perspective's local variables are set."
         (setq persp (persp-new name)))
       (run-hooks 'persp-before-switch-hook)
       (persp-activate persp)
-      name))
-  (run-hooks 'persp-switch-hook))
+      (run-hooks 'persp-switch-hook)
+      name)))
 
 (defun persp-activate (persp)
   "Activate the perspective given by the persp struct PERSP."
@@ -463,7 +463,8 @@ perspective's local variables are set."
   (persp-reactivate-buffers (persp-buffers persp))
   (setq buffer-name-history (persp-buffer-history persp))
   (set-window-configuration (persp-window-configuration persp))
-  (goto-char (persp-point-marker persp))
+  (when (marker-position (persp-point-marker persp))
+    (goto-char (persp-point-marker persp)))
   (persp-update-modestring)
   (run-hooks 'persp-activated-hook))
 
@@ -591,9 +592,10 @@ See also `persp-switch' and `persp-add-buffer'."
         ((not (persp-buffer-in-other-p buffer))
          (kill-buffer buffer))
         ;; Make the buffer go away if we can see it.
-        ;; TODO: Is it possible to tell if it's visible at all,
-        ;;       rather than just the current buffer?
-        ((eq buffer (current-buffer)) (bury-buffer))
+        ((get-buffer-window buffer)
+         (while (get-buffer-window buffer)
+           (with-selected-window (get-buffer-window buffer)
+             (bury-buffer))))
         (t (bury-buffer buffer)))
   (setf (persp-buffers (persp-curr)) (remq buffer (persp-buffers (persp-curr)))))
 

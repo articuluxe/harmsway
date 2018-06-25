@@ -12,7 +12,7 @@
 ;;              Eduardo Lavaque <me@greduan.com>
 ;;
 ;; URL: http://github.com/greduan/emacs-theme-gruvbox
-;; Version: 1.23.0
+;; Version: 1.26.0
 
 ;; Package-Requires: ((autothemer "0.2"))
 
@@ -43,6 +43,11 @@
 ;; Jason Milkins (ocodo) has maintained the theme since 2015 and is
 ;; working with the community to add further mode support and align
 ;; the project more closely with Vim Gruvbox.
+;;
+;; Martijn Terpstra has been a major contributor since mid 2017 and
+;; helped to re-implement Gruvbox with autothemer so we can have
+;; multiple variants of Gruvbox (as we do on Vim).  Martijn has also
+;; provided a large number mode support enhancements.
 
 ;;; Code:
 (eval-when-compile
@@ -415,6 +420,7 @@ Should contain 2 %s constructs to allow for theme name and directory/prefix")
 
      ;; ido
      (ido-only-match                            (:foreground gruvbox-faded_green))
+     (ido-first-match                           (:foreground gruvbox-faded_green))
      (ido-subdir                                (:foreground gruvbox-faded_red))
 
      ;; magit
@@ -472,6 +478,21 @@ Should contain 2 %s constructs to allow for theme name and directory/prefix")
      (magit-signature-revoked                   (:foreground gruvbox-bright_purple))
      (magit-signature-untrusted                 (:foreground gruvbox-bright_blue))
      (magit-tag                                 (:foreground gruvbox-bright_yellow))
+
+     ;; git-gutter
+     (git-gutter:modified                       (:background gruvbox-faded_blue :foreground gruvbox-faded_blue))
+     (git-gutter:added                          (:background gruvbox-faded_green :foreground gruvbox-faded_green))
+     (git-gutter:deleted                        (:background gruvbox-faded_red :foreground gruvbox-faded_red))
+
+     ;; git-gutter+
+     (git-gutter+-modified                      (:foreground gruvbox-faded_blue :background gruvbox-faded_blue))
+     (git-gutter+-added                         (:foreground gruvbox-faded_green :background gruvbox-faded_green))
+     (git-gutter+-deleted                       (:foreground gruvbox-faded_red :background gruvbox-faded_red))
+
+     ;; git-gutter-fringe
+     (git-gutter-fr:modified                    (:inherit 'git-gutter:modified))
+     (git-gutter-fr:added                       (:inherit 'git-gutter:added))
+     (git-gutter-fr:deleted                     (:inherit 'git-gutter:deleted))
 
      ;; flyspell
      (flyspell-duplicate                        (:underline (:color gruvbox-light4 :style 'line)))
@@ -548,6 +569,18 @@ Should contain 2 %s constructs to allow for theme name and directory/prefix")
      (eshell-ls-special-face                     (:foreground gruvbox-bright_yellow :bold t))
      (eshell-ls-symlink-face                     (:foreground gruvbox-bright_red))
      (eshell-ls-unreadable-face                  (:foreground gruvbox-bright_red :bold t))
+
+     ;; tabbar
+     (tabbar-default                             (:foreground gruvbox-light0 :background gruvbox-dark3 :bold nil :height 1.0 :box (:line-width -5 :color gruvbox-dark3)))
+     (tabbar-separator                           (:foreground gruvbox-light0 :background gruvbox-dark3))
+     (tabbar-highlight                           (:inherit 'highlight))
+     (tabbar-button                              (:foreground gruvbox-dark3 :background gruvbox-dark3 :box nil :line-width 0))
+     (tabbar-button-highlight                    (:inherit 'tabbar-button :inverse-video t))
+     (tabbar-modified                            (:foreground gruvbox-bright_green :background gruvbox-dark3 :box (:line-width -5 :color gruvbox-dark3)))
+     (tabbar-unselected                          (:inherit 'tabbar-default))
+     (tabbar-unselected-modified                 (:inherit 'tabbar-modified))
+     (tabbar-selected                            (:inherit 'tabbar-default :foreground gruvbox-bright_yellow))
+     (tabbar-selected-modified                   (:inherit 'tabbar-selected))
 
      ;; which-function-mode
      (which-func                                 (:foreground gruvbox-faded_blue)))

@@ -1,6 +1,6 @@
 ;;; ivy.el --- Incremental Vertical completYon -*- lexical-binding: t -*-
 
-;; Copyright (C) 2015-2017  Free Software Foundation, Inc.
+;; Copyright (C) 2015-2018  Free Software Foundation, Inc.
 
 ;; Author: Oleh Krehel <ohwoeowho@gmail.com>
 ;; URL: https://github.com/abo-abo/swiper
@@ -24,7 +24,7 @@
 ;; see <http://www.gnu.org/licenses/>.
 
 ;;; Commentary:
-;;
+
 ;; This package provides `ivy-read' as an alternative to
 ;; `completing-read' and similar functions.
 ;;
@@ -37,6 +37,7 @@
 ;; So "for example" is transformed into "\\(for\\).*\\(example\\)".
 
 ;;; Code:
+
 (require 'cl-lib)
 (require 'ffap)
 (require 'ivy-overlay)
@@ -155,7 +156,7 @@ Set this to \"(%d/%d) \" to display both the index and the count."
   "When non-nil, wrap around after the first and the last candidate."
   :type 'boolean)
 
-(defcustom ivy-display-style (unless (version< emacs-version "24.5") 'fancy)
+(defcustom ivy-display-style (and (fboundp 'add-face-text-property) 'fancy)
   "The style for formatting the minibuffer.
 
 By default, the matched strings are copied as is.
@@ -164,7 +165,7 @@ The fancy display style highlights matching parts of the regexp,
 a behavior similar to `swiper'.
 
 This setting depends on `add-face-text-property' - a C function
-available as of Emacs 24.5.  Fancy style will render poorly in
+available since Emacs 24.4.  Fancy style will render poorly in
 earlier versions of Emacs."
   :type '(choice
           (const :tag "Plain" nil)
@@ -176,9 +177,10 @@ The usual reason for `ivy-backward-delete-char' to fail is when
 there is no text left to delete, i.e., when it is called at the
 beginning of the minibuffer.
 The default setting provides a quick exit from completion."
-  :type '(choice (const :tag "Exit completion" minibuffer-keyboard-quit)
-                 (const :tag "Do nothing" ignore)
-                 (function :tag "Custom function")))
+  :type '(choice
+          (const :tag "Exit completion" minibuffer-keyboard-quit)
+          (const :tag "Do nothing" ignore)
+          (function :tag "Custom function")))
 
 (defcustom ivy-extra-directories '("../" "./")
   "Add this to the front of the list when completing file names.
@@ -212,7 +214,7 @@ See also URL
 
 (defvar ivy-display-functions-props
   '((ivy-display-function-overlay :cleanup ivy-overlay-cleanup))
-    "Map Ivy display functions to their property lists.
+  "Map Ivy display functions to their property lists.
 Examples of properties include associated `:cleanup' functions.")
 
 (defvar ivy-display-functions-alist
@@ -344,6 +346,7 @@ action functions.")
     (define-key map [remap backward-kill-word] 'ivy-backward-kill-word)
     (define-key map [remap delete-char] 'ivy-delete-char)
     (define-key map [remap forward-char] 'ivy-forward-char)
+    (define-key map (kbd "<right>") 'ivy-forward-char)
     (define-key map [remap kill-word] 'ivy-kill-word)
     (define-key map [remap beginning-of-buffer] 'ivy-beginning-of-buffer)
     (define-key map [remap end-of-buffer] 'ivy-end-of-buffer)
@@ -432,21 +435,22 @@ the restoring themselves.")
 
 (defun ivy-thing-at-point ()
   "Return a string that corresponds to the current thing at point."
-  (or
-   (thing-at-point 'url)
-   (and (eq (ivy-state-collection ivy-last) 'read-file-name-internal)
-        (let ((inhibit-message t))
-          (ignore-errors
-            (ffap-file-at-point))))
-   (let (s)
-     (cond ((stringp (setq s (thing-at-point 'symbol)))
-            (if (string-match "\\`[`']?\\(.*?\\)'?\\'" s)
-                (match-string 1 s)
-              s))
-           ((looking-at "(+\\(\\(?:\\sw\\|\\s_\\)+\\)\\_>")
-            (match-string-no-properties 1))
-           (t
-            "")))))
+  (substring-no-properties
+   (or
+    (thing-at-point 'url)
+    (and (eq (ivy-state-collection ivy-last) 'read-file-name-internal)
+         (let ((inhibit-message t))
+           (ignore-errors
+             (ffap-file-at-point))))
+    (let (s)
+      (cond ((stringp (setq s (thing-at-point 'symbol)))
+             (if (string-match "\\`[`']?\\(.*?\\)'?\\'" s)
+                 (match-string 1 s)
+               s))
+            ((looking-at "(+\\(\\(?:\\sw\\|\\s_\\)+\\)\\_>")
+             (match-string-no-properties 1))
+            (t
+             ""))))))
 
 (defvar ivy-history nil
   "History list of candidates entered in the minibuffer.
@@ -544,9 +548,10 @@ as the entire input string comprises lower-case characters.  This
 corresponds to the default behaviour of most Emacs search
 functionality, e.g. as seen in `isearch'."
   :link '(info-link "(emacs)Lax Search")
-  :type '(choice (const :tag "Auto" auto)
-                 (const :tag "Always" t)
-                 (const :tag "Never" nil)))
+  :type '(choice
+          (const :tag "Auto" auto)
+          (const :tag "Always" t)
+          (const :tag "Never" nil)))
 
 (defvar ivy-case-fold-search ivy-case-fold-search-default
   "Store the current overriding `case-fold-search'.")
@@ -841,7 +846,9 @@ contains a single candidate.")
        (ivy--cd dir)
        (ivy--exhibit))
       ((unless (string= ivy-text "")
-         (let ((file (expand-file-name ivy-text ivy--directory)))
+         (let ((file (expand-file-name
+                      (if (> ivy--length 0) (ivy-state-current ivy-last) ivy-text)
+                      ivy--directory)))
            (when (ignore-errors (file-exists-p file))
              (if (file-directory-p file)
                  (ivy--cd (file-name-as-directory file))
@@ -1219,6 +1226,7 @@ See variable `ivy-recursive-restore' for further information."
           (if (eq action 'identity)
               (funcall action x)
             (select-window (ivy--get-window ivy-last))
+            (set-buffer (ivy-state-buffer ivy-last))
             (prog1 (with-current-buffer (ivy-state-buffer ivy-last)
                      (unwind-protect (funcall action x)
                        (ivy-recursive-restore)))
@@ -1604,11 +1612,11 @@ like.")
   :type 'integer)
 
 (defalias 'ivy--dirname-p
-  (if (fboundp 'directory-name-p)
-      #'directory-name-p
-    (lambda (name)
-      "Return non-nil if NAME ends with a directory separator."
-      (string-match-p "/\\'" name))))
+    (if (fboundp 'directory-name-p)
+        #'directory-name-p
+      (lambda (name)
+        "Return non-nil if NAME ends with a directory separator."
+        (string-match-p "/\\'" name))))
 
 (defun ivy--sorted-files (dir)
   "Return the list of files in DIR.
@@ -1709,6 +1717,8 @@ customizations apply to the current completion session."
                      ,@extra-actions))
                   (t
                    (delete-dups (append action extra-actions)))))))
+  (unless caller
+    (setq caller this-command))
   (let ((extra-sources (plist-get ivy--sources-list caller)))
     (if extra-sources
         (progn
@@ -1726,18 +1736,17 @@ customizations apply to the current completion session."
   (let ((ivy-recursive-last (and (active-minibuffer-window) ivy-last))
         (transformer-fn
          (plist-get ivy--display-transformers-list
-                    (or caller (and (functionp collection)
-                                    collection))))
+                    (cond (caller)
+                          ((functionp collection)
+                           collection))))
         (ivy-display-function
          (unless (window-minibuffer-p)
            (or ivy-display-function
                (cdr (or (assq caller ivy-display-functions-alist)
                         (assq t ivy-display-functions-alist))))))
         (height
-         (if caller
-             (let ((entry (assoc caller ivy-height-alist)))
-               (if entry (cdr entry) ivy-height))
-           ivy-height)))
+         (or (cdr (assq caller ivy-height-alist))
+             ivy-height)))
     (setq ivy-last
           (make-ivy-state
            :prompt prompt
@@ -1952,7 +1961,7 @@ This is useful for recursive `ivy-read'."
             (when (and (not (eq collection 'read-file-name-internal))
                        (<= (length coll) ivy-sort-max-size)
                        (setq sort-fn (ivy--sort-function collection)))
-              (setq coll (sort coll sort-fn)))
+              (setq coll (sort (copy-sequence coll) sort-fn)))
           (when (and (not (eq history 'org-refile-history))
                      (<= (length coll) ivy-sort-max-size)
                      (setq sort-fn (ivy--sort-function caller)))
@@ -2074,8 +2083,8 @@ INHERIT-INPUT-METHOD is currently ignored."
 
 (defun ivy-completing-read-with-empty-string-def
     (prompt collection
-            &optional predicate require-match initial-input
-            history def inherit-input-method)
+     &optional predicate require-match initial-input
+       history def inherit-input-method)
   "Same as `ivy-completing-read' but with different handling of DEF.
 
 Specifically, if DEF is nil, it is treated the same as if DEF was
@@ -2375,7 +2384,7 @@ text after delimiter if it is empty.  Modifies match data."
                 (list str))))))
 
 (defun ivy--split-spaces (str)
- "Split STR on spaces, unless they're preceded by \\.
+  "Split STR on spaces, unless they're preceded by \\.
 No unescaped spaces are left in the output.  Any substring not
 constituting a valid regexp is passed to `regexp-quote'."
   (when str
@@ -2605,7 +2614,7 @@ STD-PROPS is a property list containing the default text properties."
         (when (ivy--prompt-selectable-p)
           (if (or (= ivy--index -1)
                   (= ivy--length 0))
-              (add-face-text-property
+              (ivy-add-face-text-property
                (minibuffer-prompt-end) (line-end-position) 'ivy-prompt-match)
             (remove-list-of-text-properties
              (minibuffer-prompt-end) (line-end-position) '(face))))
@@ -2643,11 +2652,11 @@ Possible choices are 'ivy-magic-slash-non-match-cd-selected,
 'ivy-magic-slash-non-match-create, or nil"
   :type '(choice
           (const :tag "Use currently selected directory"
-                 ivy-magic-slash-non-match-cd-selected)
+           ivy-magic-slash-non-match-cd-selected)
           (const :tag "Create and use new directory"
-                 ivy-magic-slash-non-match-create)
+           ivy-magic-slash-non-match-create)
           (const :tag "Do nothing"
-                 nil)))
+           nil)))
 
 (defun ivy--create-and-cd (dir)
   "When completing file names, create directory DIR and move there."
@@ -2821,19 +2830,17 @@ Should be run via minibuffer `post-command-hook'."
 `font-lock-append-text-property' is used, since it's better than
 `propertize' or `add-face-text-property' in this case."
   (require 'colir)
-  (condition-case nil
-      (progn
-        (colir-blend-face-background 0 (length str) face str)
-        (let ((foreground (face-foreground face)))
-          (when foreground
-            (add-face-text-property
-             0 (length str)
-             `(:foreground ,foreground)
-             nil
-             str))))
-    (error
-     (ignore-errors
-       (font-lock-append-text-property 0 (length str) 'face face str))))
+  (let ((len (length str)))
+    (condition-case nil
+        (progn
+          (colir-blend-face-background 0 len face str)
+          (let ((foreground (face-foreground face)))
+            (when foreground
+              (ivy-add-face-text-property
+               0 len (list :foreground foreground) str))))
+      (error
+       (ignore-errors
+         (font-lock-append-text-property 0 len 'face face str)))))
   str)
 
 (declare-function flx-make-string-cache "ext:flx")
@@ -3275,14 +3282,20 @@ and SEPARATOR is used to join them."
    cands
    ""))
 
-(defun ivy-add-face-text-property (start end face str)
-  "Add face property to the text from START to END.
-FACE is the face to apply to STR."
+(defalias 'ivy-add-face-text-property
   (if (fboundp 'add-face-text-property)
-      (add-face-text-property
-       start end face nil str)
-    (font-lock-append-text-property
-     start end 'face face str)))
+      (lambda (start end face &optional object append)
+        (add-face-text-property start end face append object))
+    (lambda (start end face &optional object append)
+      (funcall (if append
+                   #'font-lock-append-text-property
+                 #'font-lock-prepend-text-property)
+               start end 'face face object)))
+  "Compatibility shim for `add-face-text-property'.
+Fall back on `font-lock-prepend-text-property' in Emacs versions
+prior to 24.4 (`font-lock-append-text-property' when APPEND is
+non-nil).
+Note: The usual last two arguments are flipped for convenience.")
 
 (defun ivy--highlight-ignore-order (str)
   "Highlight STR, using the ignore-order method."
@@ -3318,33 +3331,38 @@ FACE is the face to apply to STR."
                   (string-match "^[^:]+:[^:]+:" str))
              (match-end 0)
            0))
-        (re (ivy-generic-regex-to-str ivy--old-re)))
-    (ignore-errors
-      (while (and (string-match re str start)
-                  (> (- (match-end 0) (match-beginning 0)) 0))
-        (setq start (match-end 0))
-        (let ((i 0))
-          (while (<= i ivy--subexps)
-            (let ((face
-                   (cond ((zerop ivy--subexps)
-                          (cadr ivy-minibuffer-faces))
-                         ((zerop i)
-                          (car ivy-minibuffer-faces))
-                         (t
-                          (nth (1+ (mod (+ i 2)
-                                        (1- (length ivy-minibuffer-faces))))
-                               ivy-minibuffer-faces)))))
-              (ivy-add-face-text-property
-               (match-beginning i) (match-end i)
-               face str))
-            (cl-incf i))))))
+        (regexps
+         (if (listp ivy--old-re)
+             (mapcar #'car (cl-remove-if-not #'cdr ivy--old-re))
+           (list ivy--old-re))))
+    (dolist (re regexps)
+      (ignore-errors
+        (while (and (string-match re str start)
+                    (> (- (match-end 0) (match-beginning 0)) 0))
+          (setq start (match-end 0))
+          (let ((i 0))
+            (while (<= i ivy--subexps)
+              (let ((face
+                     (cond ((zerop ivy--subexps)
+                            (cadr ivy-minibuffer-faces))
+                           ((zerop i)
+                            (car ivy-minibuffer-faces))
+                           (t
+                            (nth (1+ (mod (+ i 2)
+                                          (1- (length ivy-minibuffer-faces))))
+                                 ivy-minibuffer-faces)))))
+                (ivy-add-face-text-property
+                 (match-beginning i) (match-end i)
+                 face str))
+              (cl-incf i)))))))
   str)
 
 (defun ivy--format-minibuffer-line (str)
   "Format line STR for use in minibuffer."
-  (let ((str (if (eq ivy-display-style 'fancy)
-                 (funcall ivy--highlight-function (copy-sequence str))
-               (copy-sequence str))))
+  (let* ((str (ivy-cleanup-string str))
+         (str (if (eq ivy-display-style 'fancy)
+                  (funcall ivy--highlight-function (copy-sequence str))
+                (copy-sequence str))))
     (add-text-properties
      0 (length str)
      '(mouse-face
@@ -3686,8 +3704,8 @@ BUFFER may be a string or nil."
   "Find file from BUFFER's directory."
   (let* ((b (get-buffer buffer))
          (default-directory
-           (or (and b (buffer-local-value 'default-directory b))
-               default-directory)))
+          (or (and b (buffer-local-value 'default-directory b))
+              default-directory)))
     (call-interactively (if (functionp 'counsel-find-file)
                             #'counsel-find-file
                           #'find-file))))
@@ -3765,10 +3783,9 @@ Skip buffers that match `ivy-ignore-buffers'."
 
 (defun ivy-append-face (str face)
   "Append to STR the property FACE."
-  (let ((new (copy-sequence str)))
-    (font-lock-append-text-property
-     0 (length new) 'face face new)
-    new))
+  (setq str (copy-sequence str))
+  (ivy-add-face-text-property 0 (length str) face str t)
+  str)
 
 (defun ivy-switch-buffer-transformer (str)
   "Transform candidate STR when switching buffers."
@@ -3826,9 +3843,9 @@ point before and after applying FN to ARGS."
             (bol (line-beginning-position))
             (eol (line-end-position)))
         (unwind-protect
-            (progn (apply fn args)
-                   (setq text (buffer-substring-no-properties
-                               pos (goto-char (max bol (min (point) eol))))))
+             (progn (apply fn args)
+                    (setq text (buffer-substring-no-properties
+                                pos (goto-char (max bol (min (point) eol))))))
           (unless text
             (goto-char pos)))))
     (when text
@@ -3881,7 +3898,7 @@ Don't finish completion."
     (insert (ivy-state-current ivy-last))))
 
 (define-obsolete-variable-alias 'ivy--preferred-re-builders
-  'ivy-preferred-re-builders "0.10.0")
+    'ivy-preferred-re-builders "0.10.0")
 
 (defcustom ivy-preferred-re-builders
   '((ivy--regex-plus . "ivy")

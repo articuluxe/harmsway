@@ -3,8 +3,8 @@
 ;; Author: Christian Johansson <github.com/cjohansson>
 ;; Maintainer: Christian Johansson <github.com/cjohansson>
 ;; Created: 5 Jul 2016
-;; Modified: 20 Apr 2018
-;; Version: 1.87
+;; Modified: 25 Jun 2018
+;; Version: 1.89
 ;; Keywords: tools, convenience
 ;; URL: https://github.com/cjohansson/emacs-ssh-deploy
 
@@ -157,10 +157,10 @@
 ;;; Code:
 
 
-;; TODO Rename function does not work properly sometimes
-;; TODO Downloading/uploading file asynchronously from diff-mode sometimes outputs tramp in messages, investigate this, it should show any tramp output
+;; TODO Rename function does not work properly sometimes?
+;; TODO Downloading/uploading file asynchronously from diff-mode sometimes outputs tramp in messages, investigate this, it should show any tramp output?
 
-(require 'ssh-deploy-diff-mode)
+(require 'ssh-deploy-diff-mode) ;; FIXME flycheck complains, why?
 
 (defgroup ssh-deploy nil
   "Upload, download, difference, browse and terminal handler for files and directories on remote hosts via TRAMP."
@@ -1096,6 +1096,107 @@
            (ssh-deploy--is-not-empty-string ssh-deploy-root-remote))
       (let ((root-local (file-truename ssh-deploy-root-local)))
         (ssh-deploy-browse-remote root-local root-local ssh-deploy-root-remote ssh-deploy-exclude-list))))
+
+
+;;; Menu-bar logic
+
+;; Creating a new menu pane in the menu bar to the right of “Tools” menu
+(define-key-after
+  global-map
+  [menu-bar sshdeploy]
+  (cons "Deployment" (make-sparse-keymap "Menu for SSH Deploy"))
+  'tools)
+
+(define-key
+  global-map
+  [menu-bar sshdeploy pq]
+  '("PostgreSQL" . ssh-deploy-remote-sql-postgres-handler))
+(define-key
+  global-map
+  [menu-bar sshdeploy mq]
+  '("MySQL" . ssh-deploy-remote-sql-mysql-handler))
+(define-key
+  global-map
+  [menu-bar sshdeploy sep1]
+  '("--"))
+
+(define-key
+  global-map
+  [menu-bar sshdeploy sb]
+  '("Shell Base" . ssh-deploy-remote-terminal-shell-base-handler))
+(define-key
+  global-map
+  [menu-bar sshdeploy ss]
+  '("Shell" . ssh-deploy-remote-terminal-shell-handler))
+(define-key
+  global-map
+  [menu-bar sshdeploy sep2]
+  '("--"))
+
+(define-key
+  global-map
+  [menu-bar sshdeploy eb]
+  '("Eshell Base" . ssh-deploy-remote-terminal-eshell-base-handler))
+(define-key
+  global-map
+  [menu-bar sshdeploy es]
+  '("Eshell" . ssh-deploy-remote-terminal-eshell-handler))
+(define-key
+  global-map
+  [menu-bar sshdeploy sep3]
+  '("--"))
+
+(define-key
+  global-map
+  [menu-bar sshdeploy bb]
+  '("Browse Base" . ssh-deploy-browse-remote-base-handler))
+(define-key
+  global-map
+  [menu-bar sshdeploy br]
+  '("Browse" . ssh-deploy-browse-remote-handler))
+(define-key
+  global-map
+  [menu-bar sshdeploy sep4]
+  '("--"))
+
+(define-key
+  global-map
+  [menu-bar sshdeploy df]
+  '("Difference" . ssh-deploy-diff-handler))
+(define-key
+  global-map
+  [menu-bar sshdeploy rc]
+  '("Detect Remote Changes" . ssh-deploy-remote-changes-handler))
+(define-key
+  global-map
+  [menu-bar sshdeploy sep5]
+  '("--"))
+
+(define-key
+  global-map
+  [menu-bar sshdeploy de]
+  '("Delete" . ssh-deploy-delete-handler))
+(define-key
+  global-map
+  [menu-bar sshdeploy rn]
+  '("Rename" . ssh-deploy-rename-handler))
+(define-key
+  global-map
+  [menu-bar sshdeploy op]
+  '("Open" . ssh-deploy-open-remote-file-handler))
+(define-key
+  global-map
+  [menu-bar sshdeploy sep6]
+  '("--"))
+
+(define-key
+  global-map
+  [menu-bar sshdeploy ul]
+  '("Upload" . ssh-deploy-upload-handler))
+(define-key
+  global-map
+  [menu-bar sshdeploy dl]
+  '("Download" . ssh-deploy-download-handler))
 
 
 (provide 'ssh-deploy)

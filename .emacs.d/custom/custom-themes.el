@@ -2,7 +2,7 @@
 ;; Copyright (C) 2016-2018  Dan Harms (dan.harms)
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Wednesday, December 21, 2016
-;; Modified Time-stamp: <2018-06-09 08:21:57 dharms>
+;; Modified Time-stamp: <2018-06-25 10:54:42 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: themes colors
 
@@ -111,7 +111,8 @@
           ((eq sym 'hober2)
            (my/make-comment-delimiter-face-same-as-comment-face sym))
           ((memq sym '(kaolin-dark kaolin-mono-dark kaolin-light kaolin-eclipse kaolin-galaxy
-                                   kaolin-ocean kaolin-aurora kaolin-valley-dark kaolin-valley-light))
+                                   kaolin-ocean kaolin-aurora kaolin-valley-dark kaolin-valley-light
+                                   kaolin-bubblegum))
            (custom-theme-set-faces sym `(show-paren-match-face
                                          ((t (:bold t :background
                                                     ,(cadr (assoc 'teal1 kaolin-palette))))))))

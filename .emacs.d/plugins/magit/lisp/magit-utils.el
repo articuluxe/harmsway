@@ -69,8 +69,10 @@ less well behaved than the former, more modern alternatives.
 
 If you would like to use Ivy or Helm completion with Magit but
 not enable the respective modes globally, then customize this
-option to use `ivy-completing-read'
-or `helm--completing-read-default'."
+option to use `ivy-completing-read' or
+`helm--completing-read-default'.  If you choose to use
+`ivy-completing-read', note that the items may always be shown in
+alphabetical order, depending on your version of Ivy."
   :group 'magit-essentials
   :type '(radio (function-item magit-builtin-completing-read)
                 (function-item magit-ido-completing-read)
@@ -351,6 +353,9 @@ and delay of your graphical environment or operating system."
 
 ;;; User Input
 
+(defvar helm-completion-in-region-default-sort-fn)
+(defvar ivy-sort-functions-alist)
+
 (defvar magit-completing-read--silent-default nil)
 
 (defun magit-completing-read (prompt collection &optional
@@ -433,17 +438,16 @@ acts similarly to `completing-read', except for the following:
 (defun magit-builtin-completing-read
   (prompt choices &optional predicate require-match initial-input hist def)
   "Magit wrapper for standard `completing-read' function."
+  (unless (or (bound-and-true-p helm-mode)
+              (bound-and-true-p ivy-mode))
+    (setq prompt (magit-prompt-with-default prompt def))
+    (setq choices (magit--completion-table choices)))
   (cl-letf (((symbol-function 'completion-pcm--all-completions)
              #'magit-completion-pcm--all-completions))
-    (completing-read (if (or (bound-and-true-p helm-mode)
-                             (bound-and-true-p ivy-mode))
-                         prompt
-                       (magit-prompt-with-default prompt def))
-                     (magit--completion-table choices)
-                     predicate require-match
-                     initial-input hist def)))
-
-(defvar helm-completion-in-region-default-sort-fn)
+    (let ((ivy-sort-functions-alist nil))
+      (completing-read prompt choices
+                       predicate require-match
+                       initial-input hist def))))
 
 (defun magit-completing-read-multiple
   (prompt choices &optional sep default hist keymap)
@@ -745,31 +749,31 @@ that it will align with the text area."
       (cond
        ;; Quoted percent sign.
        ((eq (char-after) ?%)
-	(delete-char 1))
+        (delete-char 1))
        ;; Valid format spec.
        ((looking-at "\\([-0-9.]*\\)\\([a-zA-Z]\\)")
-	(let* ((num (match-string 1))
-	       (spec (string-to-char (match-string 2)))
-	       (val (assq spec specification)))
-	  (unless val
-	    (error "Invalid format character: `%%%c'" spec))
-	  (setq val (cdr val))
-	  ;; Pad result to desired length.
-	  (let ((text (format (concat "%" num "s") val)))
-	    ;; Insert first, to preserve text properties.
+        (let* ((num (match-string 1))
+               (spec (string-to-char (match-string 2)))
+               (val (assq spec specification)))
+          (unless val
+            (error "Invalid format character: `%%%c'" spec))
+          (setq val (cdr val))
+          ;; Pad result to desired length.
+          (let ((text (format (concat "%" num "s") val)))
+            ;; Insert first, to preserve text properties.
             (if (next-property-change 0 (concat " " text))
                 ;; If the inserted text has properties, then preserve those.
-	        (insert text)
+                (insert text)
               ;; Otherwise preserve FORMAT's properties, like `format-spec'.
-	      (insert-and-inherit text))
-	    ;; Delete the specifier body.
+              (insert-and-inherit text))
+            ;; Delete the specifier body.
             (delete-region (+ (match-beginning 0) (length text))
                            (+ (match-end 0) (length text)))
             ;; Delete the percent sign.
             (delete-region (1- (match-beginning 0)) (match-beginning 0)))))
        ;; Signal an error on bogus format strings.
        (t
-	(error "Invalid format string"))))
+        (error "Invalid format string"))))
     (buffer-string)))
 
 ;;; Missing from Emacs

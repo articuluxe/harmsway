@@ -43,7 +43,7 @@
   :type '(repeat (string :tag "Argument")))
 
 (defcustom magit-commit-ask-to-stage 'verbose
-  "Whether to ask to stage everything when committing and nothing is staged."
+  "Whether to ask to stage all unstaged changes when committing and nothing is staged."
   :package-version '(magit . "2.3.0")
   :group 'magit-commands
   :type '(choice (const :tag "Ask showing diff" verbose)
@@ -334,7 +334,7 @@ depending on the value of option `magit-commit-squash-confirm'."
    (magit-commit-ask-to-stage
     (when (eq magit-commit-ask-to-stage 'verbose)
       (magit-diff-unstaged))
-    (prog1 (when (y-or-n-p "Nothing staged.  Stage and commit everything? ")
+    (prog1 (when (y-or-n-p "Nothing staged.  Stage and commit all unstaged changes? ")
              (magit-run-git "add" "-u" ".")
              (or args (list "--")))
       (when (and (eq magit-commit-ask-to-stage 'verbose)
@@ -450,34 +450,36 @@ actually insert the entry."
     (undo-boundary)
     (goto-char (point-max))
     (while (re-search-backward (concat "^" comment-start) nil t))
-    (cond ((re-search-backward (format "* %s\\(?: (\\([^)]+\\))\\)?: " file)
-                               nil t)
-           (when (equal (match-string 1) defun)
-             (setq defun nil))
-           (re-search-forward ": "))
-          (t
-           (when (re-search-backward "^[\\*(].+\n" nil t)
-             (goto-char (match-end 0)))
-           (while (re-search-forward "^[^\\*#\n].*\n" nil t))
-           (if defun
-               (progn (insert (format "* %s (%s): \n" file defun))
-                      (setq defun nil))
-             (insert (format "* %s: \n" file)))
-           (backward-char)
-           (unless (looking-at "\n[\n\\']")
-             (insert ?\n)
-             (backward-char))))
-    (when defun
-      (forward-line)
-      (let ((limit (save-excursion
-                     (and (re-search-forward "^\\*" nil t)
-                          (point)))))
-        (unless (or (looking-back (format "(%s): " defun)
-                                  (line-beginning-position))
-                    (re-search-forward (format "^(%s): " defun) limit t))
-          (while (re-search-forward "^[^\\*#\n].*\n" limit t))
-          (insert (format "(%s): \n" defun))
-          (backward-char))))))
+    (save-restriction
+      (narrow-to-region (point-min) (point))
+      (cond ((re-search-backward (format "* %s\\(?: (\\([^)]+\\))\\)?: " file)
+                                 nil t)
+             (when (equal (match-string 1) defun)
+               (setq defun nil))
+             (re-search-forward ": "))
+            (t
+             (when (re-search-backward "^[\\*(].+\n" nil t)
+               (goto-char (match-end 0)))
+             (while (re-search-forward "^[^\\*\n].*\n" nil t))
+             (if defun
+                 (progn (insert (format "* %s (%s): \n" file defun))
+                        (setq defun nil))
+               (insert (format "* %s: \n" file)))
+             (backward-char)
+             (unless (looking-at "\n[\n\\']")
+               (insert ?\n)
+               (backward-char))))
+      (when defun
+        (forward-line)
+        (let ((limit (save-excursion
+                       (and (re-search-forward "^\\*" nil t)
+                            (point)))))
+          (unless (or (looking-back (format "(%s): " defun)
+                                    (line-beginning-position))
+                      (re-search-forward (format "^(%s): " defun) limit t))
+            (while (re-search-forward "^[^\\*\n].*\n" limit t))
+            (insert (format "(%s): \n" defun))
+            (backward-char)))))))
 
 (provide 'magit-commit)
 ;;; magit-commit.el ends here

@@ -26,8 +26,8 @@
 
 (defconst lsp--file-change-type
   `((created . 1)
-     (changed . 2)
-     (deleted . 3)))
+    (changed . 2)
+    (deleted . 3)))
 
 ;; A ‘lsp--client’ object describes the client-side behavior of a language
 ;; server.  It is used to start individual server processes, each of which is
@@ -145,7 +145,12 @@
   ;; can be used in `lsp-execute-code-action' to determine whether the action
   ;; current client is interested in executing the action instead of sending it
   ;; to the server.
-  (action-handlers (make-hash-table :test 'equal) :read-only t))
+  (action-handlers (make-hash-table :test 'equal) :read-only t)
+
+  ;; ‘default-renderer’ is the renderer that is going to be used when there is
+  ;; no concrete "language" specified for the current MarkedString. (see
+  ;; https://microsoft.github.io/language-server-protocol/specification#textDocument_hover)
+  (default-renderer nil))
 
 (cl-defstruct lsp--registered-capability
   (id "" :type string)
@@ -218,13 +223,10 @@
   ;; ‘metadata’ is a generic storage for workspace specific data. It is
   ;; accessed via `lsp-workspace-set-metadata' and `lsp-workspace-set-metadata'
   (metadata (make-hash-table :test 'equal))
-              
+
   ;; contains all the file notification watches that have been created for the
   ;; current workspace in format filePath->file notification handle.
   (watches (make-hash-table :test 'equal)))
-
-
-(defvar-local lsp--cur-workspace nil)
 
 (defvar lsp--workspaces (make-hash-table :test #'equal)
   "Table of known workspaces, indexed by the project root directory.")
@@ -315,6 +317,15 @@ whitelist, or does not match any pattern in the blacklist."
   :group 'lsp-mode)
 
 ;;;###autoload
+(defcustom lsp-eldoc-render-all t
+  "Define whether all of the returned by document/onHover will be displayed.
+
+If `lsp-markup-display-all' is set to nil `eldoc' will show only
+the symbol information."
+  :type 'boolean
+  :group 'lsp-mode)
+
+;;;###autoload
 (defcustom lsp-highlight-symbol-at-point t
   "Highlight the symbol under the point."
   :type 'boolean
@@ -355,9 +366,9 @@ before saving a document."
 (defcustom lsp-hover-text-function 'lsp--text-document-hover-string
   "The LSP method to use to display text on hover."
   :type '(choice (function :tag "textDocument/hover"
-                           'lsp--text-document-hover-string)
+                           lsp--text-document-hover-string)
                  (function :tag "textDocument/signatureHelp"
-                           'lsp--text-document-signature-help))
+                           lsp--text-document-signature-help))
   :group 'lsp-mode)
 
 ;;;###autoload
@@ -704,7 +715,7 @@ entry, the value is set to the one that registers later.  Default
 leaf capability entries can not be overwritten."
   (lsp--cur-workspace-check)
   (cl-check-type package-name symbolp)
-  (cl-check-type package-name (or list function))
+  (cl-check-type caps (or list function))
   (let ((extra-client-capabilities
           (lsp--workspace-extra-client-capabilities lsp--cur-workspace)))
     (if (alist-get package-name extra-client-capabilities)
@@ -814,7 +825,9 @@ directory."
          new-conn response init-params
          parser proc cmd-proc)
     (if workspace
-        (setq lsp--cur-workspace workspace)
+        (progn
+          (setq lsp--cur-workspace workspace)
+          (lsp-mode 1))
 
       (setf
        parser (make-lsp--parser)
@@ -837,6 +850,7 @@ directory."
        (lsp--workspace-cmd-proc lsp--cur-workspace) cmd-proc)
 
       (puthash root lsp--cur-workspace lsp--workspaces)
+      (lsp-mode 1)
       (run-hooks 'lsp-before-initialize-hook)
       (setq init-params
             `(:processId ,(emacs-pid)
@@ -1064,7 +1078,7 @@ interface TextDocumentEdit {
 
 (define-inline lsp--capability (cap &optional capabilities)
   "Get the value of capability CAP.  If CAPABILITIES is non-nil, use them instead."
-  (inline-quote (gethash ,cap (or ,capabilities (lsp--server-capabilities)))))
+  (inline-quote (gethash ,cap (or ,capabilities (lsp--server-capabilities) (make-hash-table)))))
 
 (defvar-local lsp--before-change-vals nil
   "Store the positions from the `lsp-before-change' function
@@ -1526,8 +1540,25 @@ Returns xref-item(s)."
       (lsp-symbol-highlight))
     (when (and (lsp--capability "codeActionProvider") lsp-enable-codeaction)
       (lsp--text-document-code-action))
-    (when lsp-enable-eldoc
+    (when (and (lsp--capability "hoverProvider") lsp-enable-eldoc)
       (funcall lsp-hover-text-function))))
+
+(defun lsp-describe-thing-at-point ()
+  "Display the full documentation of the thing at point."
+  (interactive)
+  (lsp--cur-workspace-check)
+  (let* ((client (lsp--workspace-client lsp--cur-workspace))
+         (contents (gethash "contents" (lsp--send-request
+                                        (lsp--make-request "textDocument/hover"
+                                                           (lsp--text-document-position-params))))))
+    (pop-to-buffer
+     (with-current-buffer (get-buffer-create "*lsp-help*")
+       (let ((inhibit-read-only t))
+         (erase-buffer)
+         (insert (lsp--render-on-hover-content contents client t))
+         (goto-char (point-min))
+         (view-mode t)
+         (current-buffer))))))
 
 (defvar-local lsp--cur-hover-request-id nil)
 
@@ -1542,16 +1573,23 @@ type MarkedString = string | { language: string; value: string };"
   (when lsp--cur-hover-request-id
     (lsp--cancel-request lsp--cur-hover-request-id))
   (let* ((client (lsp--workspace-client lsp--cur-workspace))
-          (renderers (lsp--client-string-renderers client))
           bounds body)
     (when (symbol-at-point)
       (setq bounds (bounds-of-thing-at-point 'symbol)
         body (lsp--send-request-async (lsp--make-request "textDocument/hover"
                                         (lsp--text-document-position-params))
-               (lsp--make-hover-callback renderers (car bounds) (cdr bounds)
+               (lsp--make-hover-callback client (car bounds) (cdr bounds)
                  (current-buffer)))
         lsp--cur-hover-request-id (plist-get body :id))
       (cl-assert (integerp lsp--cur-hover-request-id)))))
+
+(defun lsp--render-markup-content-1 (kind content)
+  (if (functionp lsp-render-markdown-markup-content)
+    (let ((out (funcall lsp-render-markdown-markup-content kind content)))
+      (cl-assert (stringp out) t
+        "value returned by lsp-render-markdown-markup-content should be a string")
+      out)
+    content))
 
 (defun lsp--render-markup-content (content)
   "Render MarkupContent object CONTENT.
@@ -1561,15 +1599,8 @@ export interface MarkupContent {
         value: string;
 }"
   (let ((kind (gethash "kind" content))
-         (content (gethash "value" content))
-         out)
-    (if (functionp lsp-render-markdown-markup-content)
-      (progn
-        (setq out (funcall lsp-render-markdown-markup-content kind content))
-        (cl-assert (stringp out) t
-          "value returned by lsp-render-markdown-markup-content should be a string")
-        out)
-      content)))
+        (content (gethash "value" content)))
+    (lsp--render-markup-content-1 kind content)))
 
 (define-inline lsp--point-is-within-bounds-p (start end)
   "Return whether the current point is within START and END."
@@ -1582,38 +1613,72 @@ export interface MarkupContent {
     (inline-quote (and (hash-table-p ,obj)
                     (gethash "kind" ,obj nil) (gethash "value" ,obj nil)))))
 
+(defun lsp--render-on-hover-content (contents client render-all)
+  "Render the content received from 'document/onHover' request.
+
+CLIENT - client to use.
+CONTENTS  - MarkedString | MarkedString[] | MarkupContent
+RENDER-ALL if set to nil render only the first element from CONTENTS."
+  (let ((renderers (lsp--client-string-renderers client))
+        (default-client-renderer (lsp--client-default-renderer client)))
+    (string-join
+     (mapcar
+      (lambda (e)
+        (let (renderer)
+          (cond
+           ;; hash table, language renderer set
+           ((and (hash-table-p e)
+                 (setq renderer
+                       (if-let (language (gethash "language" e))
+                           (cdr (assoc-string language renderers))
+                         default-client-renderer)))
+            (when (gethash "value" e nil)
+              (funcall renderer (gethash "value" e))))
+
+           ;; hash table - workspace renderer not set
+           ;; trying to render using global renderer
+           ((lsp--markup-content-p e) (lsp--render-markup-content e))
+
+           ;; hash table - anything other has failed
+           ((hash-table-p e) (gethash "value" e nil))
+
+           ;; string, default workspace renderer set
+           (default-client-renderer (funcall default-client-renderer  e))
+
+           ;; no rendering
+           (t e))))
+      (if (listp contents)
+          (if render-all
+              contents
+            (list (car contents)))
+        (list contents)))
+     "\n")))
+
 ;; start and end are the bounds of the symbol at point
-(defun lsp--make-hover-callback (renderers start end buffer)
+(defun lsp--make-hover-callback (client start end buffer)
   (lambda (hover)
     (with-current-buffer buffer
       (setq lsp--cur-hover-request-id nil))
     (when (and hover
-            (lsp--point-is-within-bounds-p start end)
-            (eq (current-buffer) buffer) (eldoc-display-message-p))
+               (lsp--point-is-within-bounds-p start end)
+               (eq (current-buffer) buffer) (eldoc-display-message-p))
       (let ((contents (gethash "contents" hover)))
         (when contents
-          (eldoc-message
-           ;; contents: MarkedString | MarkedString[] | MarkupContent
-           (if (lsp--markup-content-p contents)
-               (lsp--render-markup-content hover)
-
-             (mapconcat (lambda (e)
-                          (let (renderer)
-                            (if (hash-table-p e)
-                                (if (setq renderer
-                                          (cdr (assoc-string
-                                                (gethash "language" e)
-                                                renderers)))
-                                    (when (gethash "value" e nil)
-                                      (funcall renderer (gethash "value" e)))
-                                  (gethash "value" e))
-                              e)))
-                        (if (listp contents) contents (list contents)) "\n"))))))))
+          (eldoc-message (lsp--render-on-hover-content contents
+                                                       client
+                                                       lsp-eldoc-render-all)))))))
 
 (defun lsp-provide-marked-string-renderer (client language renderer)
   (cl-check-type language string)
   (cl-check-type renderer function)
   (setf (alist-get language (lsp--client-string-renderers client)) renderer))
+
+(defun lsp-provide-default-marked-string-renderer (client renderer)
+  "Set the RENDERER for CLIENT.
+
+It will be used when no language has been specified in document/onHover result."
+  (cl-check-type renderer function)
+  (setf (lsp--client-default-renderer client) renderer))
 
 (defun lsp-info-under-point ()
   "Show relevant documentation for the thing under point."
@@ -1681,24 +1746,31 @@ type MarkupKind = 'plaintext' | 'markdown';"
 (defvar-local lsp-code-actions nil
   "Code actions for the buffer.")
 
+(defvar-local lsp-code-action-params nil
+  "The last code action params.")
+
 (defun lsp--text-document-code-action ()
   "Request code action to automatically fix issues reported by
 the diagnostics."
   (lsp--cur-workspace-check)
-  (lsp--send-request-async (lsp--make-request
-                            "textDocument/codeAction"
-                             (lsp--text-document-code-action-params))
-    (lsp--make-code-action-callback (current-buffer))))
+  (let ((params (lsp--text-document-code-action-params)))
+    (lsp--send-request-async
+     (lsp--make-request "textDocument/codeAction" params)
+     (lambda (actions)
+       (lsp--set-code-action-params (current-buffer) actions params)))))
 
 (defun lsp--command-get-title (cmd)
   "Given a Command object CMD, get the title.
 If title is nil, return the name for the command handler."
   (gethash "title" cmd (gethash "command" cmd)))
 
-(defun lsp--make-code-action-callback (buf)
-  (lambda (actions)
+(defun lsp--set-code-action-params (buf actions params)
+  "Update set `lsp-code-actions' to ACTIONS and `lsp-code-action-params' to PARAMS in BUF."
+  (when (buffer-live-p buf)
     (with-current-buffer buf
-      (setq lsp-code-actions actions))))
+      (when (equal params (lsp--text-document-code-action-params))
+        (setq lsp-code-actions actions)
+        (setq lsp-code-action-params params)))))
 
 (defun lsp--command-p (cmd)
   (and (cl-typep cmd 'hash-table)
@@ -1706,26 +1778,45 @@ If title is nil, return the name for the command handler."
     (cl-typep (gethash "command" cmd) 'string)))
 
 (defun lsp--select-action (actions)
-  "Select an action to execute."
-  (let ((name->action (mapcar (lambda (a)
-                                 (list (lsp--command-get-title a) a))
-                         actions)))
-    (cadr (assoc
-            (completing-read "Select code action: " name->action)
-            name->action))))
+  "Select an action to execute from ACTIONS."
+  (if actions
+      (let ((name->action (mapcar (lambda (a)
+                                    (list (lsp--command-get-title a) a))
+                                  actions)))
+        (cadr (assoc
+               (completing-read "Select code action: " name->action)
+               name->action)))
+    (error "No actions to select from")))
+
+(defun lsp-get-or-calculate-code-actions ()
+  "Get or calculate the current code actions.
+
+The method will either retrieve the current code actions or it will calculate the actual one."
+  (let ((current-code-action-params (lsp--text-document-code-action-params)))
+    (when (not (equal current-code-action-params lsp-code-action-params))
+      (let* ((request-params (lsp--make-request
+                             "textDocument/codeAction"
+                             (lsp--text-document-code-action-params)))
+             (actions (lsp--send-request request-params)))
+        (setq lsp-code-action-params current-code-action-params)
+        (lsp--set-code-action-params (current-buffer)
+                                     actions
+                                     current-code-action-params)))
+    lsp-code-actions))
 
 (defun lsp-execute-code-action (action)
   "Execute code action ACTION.
 
 If ACTION is not set it will be selected from `lsp-code-actions'."
-  (interactive (list (lsp--select-action lsp-code-actions)))
+  (interactive (list
+                (lsp--select-action (lsp-get-or-calculate-code-actions))))
   (lsp--cur-workspace-check)
   (let* ((command (gethash "command" action))
          (action-handler (gethash command
-                           (lsp--client-action-handlers
-                             (lsp--workspace-client lsp--cur-workspace)))))
+                                  (lsp--client-action-handlers
+                                   (lsp--workspace-client lsp--cur-workspace)))))
     (if action-handler
-      (funcall action-handler action)
+        (funcall action-handler action)
       (lsp--execute-command action))))
 
 (defvar-local lsp-code-lenses nil
@@ -1744,7 +1835,8 @@ Optionally, CALLBACK is a function that accepts a single argument, the code lens
         #'(lambda (lenses)
             (with-current-buffer buf
               (setq lsp-code-lenses lenses)
-              (funcall callback lenses)))))))
+              (when callback
+                (funcall callback lenses))))))))
 
 (defun lsp--make-document-formatting-options ()
   (let ((json-false :json-false))
@@ -1968,7 +2060,7 @@ interface RenameParams {
 
 (defun lsp-rename (newname)
   "Rename the symbol (and all references to it) under point to NEWNAME."
-  (interactive "*sRename to: ")
+  (interactive (list (read-string "Rename to: " (thing-at-point 'symbol))))
   (lsp--cur-workspace-check)
   (unless (lsp--capability "renameProvider")
     (signal 'lsp-capability-not-supported (list "renameProvider")))

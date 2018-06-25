@@ -237,6 +237,18 @@
      ;; minimap
      `(minimap-active-region-background ((,c (:background ,sbt-midnight))))
 
+     ;; lsp
+     ;; lsp-face-highlight-textual
+     ;; lsp-face-highlight-read
+     ;; lsp-face-highlight-write
+
+     ;; vc
+     `(vc-annotate-face-3F3FFF ((,c (:foreground ,blue))))
+     `(vc-annotate-face-FF3F3F ((,c (:foreground ,red))))
+     `(vc-annotate-face-FFF33F ((,c (:foreground ,yellow))))
+     `(vc-annotate-face-56FF3F ((,c (:foreground ,green))))
+     `(vc-annotate-face-3FF3FF ((,c (:foreground ,frost))))
+     `(vc-annotate-face-3FFF56 ((,c (:foreground ,violet))))
 
      ;; comint
      `(comint-highlight-input ((,c (:foreground ,white :bold t))))
@@ -259,11 +271,14 @@
 
      `(org-agenda-clocking ((,c (:foreground ,diredcl :background ,ada-midnight))))
      `(org-agenda-date ((,c (:foreground ,invisible))))
+     `(org-agenda-calendar-event ((,c (:foreground ,violet :slant italic))))
      `(org-agenda-date-weekend ((,c (:foreground ,comment))))
      `(org-agenda-done ((,c (:foreground ,green))))
+     `(org-agenda-diary ((,c (:foreground ,orange :slant italic))))
      `(org-agenda-dimmed-todo-face ((,c (:foreground ,comment))))
      `(org-agenda-date-today ((,c (:foreground ,white))))
      `(org-agenda-structure ((,c (:foreground ,invisible))))
+     `(org-agenda-current-time ((,c (:foreground ,yellow))))
      `(org-upcoming-deadline ((,c (:foreground ,violet))))
 
      `(secondary-selection ((,c (:background ,sbt-midnight))))

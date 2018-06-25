@@ -50,6 +50,8 @@
 
 (require 'ansi-color)
 (require 'crm)
+(require 'which-func)
+
 (defvar bookmark-make-record-function)
 
 ;;; Options
@@ -713,7 +715,7 @@ active, restrict the log to the lines that the region touches."
   "Show log for the definition at point."
   (interactive (list (or (magit-file-relative-name)
                          (user-error "Buffer isn't visiting a file"))
-                     (add-log-current-defun)
+                     (which-function)
                      (or magit-buffer-refname
                          (magit-get-current-branch)
                          "HEAD")))
@@ -1073,7 +1075,8 @@ Do not add this to a hook variable."
     (setq msg (substring-no-properties msg))
     (when refs
       (setq refs (substring-no-properties refs)))
-    (let ((align (not (member "--stat" (cadr magit-refresh-args))))
+    (let ((align (or (eq style 'cherry)
+                     (not (member "--stat" (cadr magit-refresh-args)))))
           (non-graph-re (if (eq style 'bisect-vis)
                             magit-log-bisect-vis-re
                           magit-log-heading-re)))

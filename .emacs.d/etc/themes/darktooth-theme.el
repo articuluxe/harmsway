@@ -4,7 +4,8 @@
 
 ;; Authors: Jason Milkins <jasonm23@gmail.com>
 ;; URL: http://github.com/emacsfodder/emacs-theme-darktooth
-;; Version: 0.3.8
+;; Version: 0.3.9
+
 ;; Package-Requires: ((autothemer "0.2"))
 
 ;;; Commentary:
@@ -286,6 +287,13 @@
   (flycheck-error-list-warning               (:foreground darktooth-bright_yellow :bold t))
   (flycheck-error-list-error                 (:foreground darktooth-bright_red :bold t))
   (flycheck-error-list-info                  (:foreground darktooth-bright_blue :bold t))
+
+  ;; MODE SUPPORT: flymake
+  (flymake-warning                          (:underline (:style 'wave :color darktooth-bright_yellow)))
+  (flymake-error                            (:underline (:style 'wave :color darktooth-bright_red)))
+  (flymake-note                             (:underline (:style 'wave :color darktooth-bright_blue)))
+  (flymake-errline                          (:underline (:style 'wave :color darktooth-bright_red)))
+  (flymake-warline                          (:underline (:style 'wave :color darktooth-bright_yellow)))
 
   ;; MODE SUPPORT: auctex
   (font-latex-math-face                      (:foreground darktooth-lightblue4))

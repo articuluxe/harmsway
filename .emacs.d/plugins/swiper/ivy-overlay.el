@@ -1,6 +1,6 @@
 ;;; ivy-overlay.el --- Overlay display functions for Ivy  -*- lexical-binding: t -*-
 
-;; Copyright (C) 2016-2017  Free Software Foundation, Inc.
+;; Copyright (C) 2016-2018  Free Software Foundation, Inc.
 
 ;; Author: Oleh Krehel <ohwoeowho@gmail.com>
 ;; Keywords: convenience
@@ -19,12 +19,13 @@
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 ;;; Commentary:
-;;
+
 ;; This package allows to setup Ivy's completion at point to actually
 ;; show the candidates and the input at point, instead of in the
 ;; minibuffer.
 
 ;;; Code:
+
 (defface ivy-cursor
   '((t (:background "black"
         :foreground "white")))
@@ -77,6 +78,7 @@ Then attach the overlay the character before point."
 (defvar ivy-last)
 (defvar ivy-text)
 (defvar ivy-completion-beg)
+(declare-function ivy-add-face-text-property "ivy")
 (declare-function ivy--get-window "ivy")
 (declare-function ivy-state-current "ivy")
 (declare-function ivy-state-window "ivy")
@@ -98,8 +100,8 @@ Hide the minibuffer contents and cursor."
         (save-excursion
           (forward-line 1)
           (insert str)))
-    (add-face-text-property (minibuffer-prompt-end) (point-max)
-                            '(:foreground "white"))
+    (ivy-add-face-text-property (minibuffer-prompt-end) (point-max)
+                                '(:foreground "white"))
     (let ((cursor-pos (1+ (- (point) (minibuffer-prompt-end))))
           (ivy-window (ivy--get-window ivy-last)))
       (setq cursor-type nil)
@@ -124,9 +126,10 @@ Hide the minibuffer contents and cursor."
                     (save-excursion
                       (goto-char ivy-completion-beg)
                       (current-column)))))))
-          (add-face-text-property cursor-pos (1+ cursor-pos)
-                                  'ivy-cursor t overlay-str)
+          (ivy-add-face-text-property cursor-pos (1+ cursor-pos)
+                                      'ivy-cursor overlay-str t)
           (ivy-overlay-show-after overlay-str))))))
 
 (provide 'ivy-overlay)
+
 ;;; ivy-overlay.el ends here
