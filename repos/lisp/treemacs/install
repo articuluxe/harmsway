@@ -1,0 +1,1 @@
+cp src/src/elisp/*.el ../../../.emacs.d/plugins/treemacs

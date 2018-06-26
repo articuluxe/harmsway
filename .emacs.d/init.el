@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-06-25 11:12:01 dan.harms>
+;; Modified Time-stamp: <2018-06-26 14:42:04 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -65,6 +65,7 @@
                      ,(concat my/plugins-directory "smart-mode-line/")
                      ,(concat my/plugins-directory "sunrise/")
                      ,(concat my/plugins-directory "swiper/")
+                     ,(concat my/plugins-directory "treemacs/")
                      ,(concat my/plugins-directory "use-package/")
                      ,(concat my/plugins-directory "vc-msg/")
                      ,(concat my/plugins-directory "vlf/")
@@ -1906,6 +1907,13 @@ Only one letter is shown, the first that applies."
   (setq neo-theme 'arrow)               ;or 'ascii
   (setq neo-window-width 30)
   (setq neo-vc-integration '(face char))
+  )
+
+(use-package treemacs
+  :bind ("C-c 0t" . treemacs)
+  :init
+  (setq treemacs-no-png-images t)
+  (setq treemacs-collapse-dirs 3)
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; deft ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
