@@ -2,7 +2,7 @@
 ;; Copyright (C) 2016-2018  Dan Harms (dan.harms)
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Wednesday, December 21, 2016
-;; Modified Time-stamp: <2018-06-26 12:31:19 dan.harms>
+;; Modified Time-stamp: <2018-06-27 09:21:10 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: themes colors
 
@@ -39,32 +39,32 @@
 ;; kaolin customization
 (setq kaolin-italic-comments t)
 
-(defun my/make-all-font-sizes-the-same-please ()
+(defun harmsway/make-all-font-sizes-the-same-please ()
   "Make all faces use the default height."
   (mapc (lambda (face)
           (when (not (equal face 'default))
             (set-face-attribute face nil :height 1.0)))
         (face-list)))
 
-(defun my/make-comment-delimiter-face-same-as-comment-face (sym)
+(defun harmsway/make-comment-delimiter-face-same-as-comment-face (sym)
   (custom-theme-set-faces
    sym `(font-lock-comment-delimiter-face
          ((t (:foreground ,(face-attribute
                             'font-lock-comment-face
                             :foreground nil 'default)))))))
 
-(defvar my/sml-dark-themes
+(defvar harmsway/sml-dark-themes
   '(jonadabian jonadabian-slate obsidian deeper-blue)
   "List of themes to which should be applied a dark sml theme.")
-(defvar my/sml-light-themes
+(defvar harmsway/sml-light-themes
   '(dichromacy nubox-light ample-light
                gruvbox-light-hard gruvbox-light-medium gruvbox-light-soft)
   "List of themes to which should be applied a light sml theme.")
-(defvar my/sml-respectful-themes
+(defvar harmsway/sml-respectful-themes
   '()
   "List of themes to which should be applied a respectful sml theme.")
 
-(defun my/after-load-theme (x)
+(defun harmsway/after-load-theme (x)
   "Run custom code after a theme X is loaded."
   (setq zoom-window-mode-line-color (face-attribute 'mode-line :background nil 'default))
   (set-face-attribute 'font-lock-comment-face nil :slant 'italic)
@@ -83,11 +83,11 @@
     (cond ((eq sym 'adwaita)
            (setq wg-use-faces nil))
           ((eq sym 'Amelie)
-           (my/make-comment-delimiter-face-same-as-comment-face sym))
+           (harmsway/make-comment-delimiter-face-same-as-comment-face sym))
           ((memq sym '(ample ample-light ample-flat))
-           (my/make-comment-delimiter-face-same-as-comment-face sym))
+           (harmsway/make-comment-delimiter-face-same-as-comment-face sym))
           ((eq sym 'brin)
-           (my/make-comment-delimiter-face-same-as-comment-face sym))
+           (harmsway/make-comment-delimiter-face-same-as-comment-face sym))
           ((eq sym 'busybee)
            (custom-theme-set-faces sym '(cursor ((t (:background "LightYellow"))))))
           ((eq sym 'deep-blue)
@@ -105,15 +105,17 @@
                                                                           :background "gray6")))))
            (custom-theme-set-faces sym '(magit-section-highlight ((t (:background "grey23"))))))
           ((eq sym 'distinguished)
-           (my/make-comment-delimiter-face-same-as-comment-face sym))
+           (harmsway/make-comment-delimiter-face-same-as-comment-face sym))
           ((eq sym 'eltbus)
-           (my/make-comment-delimiter-face-same-as-comment-face sym))
+           (harmsway/make-comment-delimiter-face-same-as-comment-face sym))
           ((eq sym 'evenhold)
-           (my/make-comment-delimiter-face-same-as-comment-face sym))
+           (harmsway/make-comment-delimiter-face-same-as-comment-face sym))
           ((eq sym 'granger)
-           (my/make-comment-delimiter-face-same-as-comment-face sym))
+           (harmsway/make-comment-delimiter-face-same-as-comment-face sym))
           ((eq sym 'hober2)
-           (my/make-comment-delimiter-face-same-as-comment-face sym))
+           (harmsway/make-comment-delimiter-face-same-as-comment-face sym))
+          ((eq sym 'iodine)
+           (harmsway/make-comment-delimiter-face-same-as-comment-face sym))
           ((memq sym '(kaolin-dark kaolin-mono-dark kaolin-light kaolin-eclipse kaolin-galaxy
                                    kaolin-ocean kaolin-aurora kaolin-valley-dark kaolin-valley-light
                                    kaolin-bubblegum))
@@ -123,14 +125,14 @@
           ((eq sym 'klere)
            (custom-theme-set-faces sym '(cursor ((t (:background "yellow3"))))))
           ((eq sym 'ld-dark)
-           (my/make-all-font-sizes-the-same-please))
+           (harmsway/make-all-font-sizes-the-same-please))
           ((eq sym 'lop)
            (custom-theme-set-faces sym '(cursor ((t (:background "yellow2"))))))
           ((eq sym 'mandm)
-           (my/make-comment-delimiter-face-same-as-comment-face sym))
+           (harmsway/make-comment-delimiter-face-same-as-comment-face sym))
           ((eq sym 'manoj-dark)
-           (my/make-comment-delimiter-face-same-as-comment-face sym)
-           (my/make-all-font-sizes-the-same-please))
+           (harmsway/make-comment-delimiter-face-same-as-comment-face sym)
+           (harmsway/make-all-font-sizes-the-same-please))
           ((eq sym 'misterioso)
            (custom-theme-set-faces sym '(cursor ((t (:background "#cae682"))))))
           ((eq sym 'obsidian)
@@ -139,34 +141,34 @@
           ((eq sym 'railscast)
            (custom-theme-set-faces sym '(cursor ((t (:background "#FFC66D"))))))
           ((eq sym 'soothe)
-           (my/make-comment-delimiter-face-same-as-comment-face sym))
+           (harmsway/make-comment-delimiter-face-same-as-comment-face sym))
           ((eq sym 'sourcerer)
            (custom-theme-set-faces sym '(cursor ((t (:background "yellow3"))))))
           ((eq sym 'subatomic)
-           (my/make-comment-delimiter-face-same-as-comment-face sym))
+           (harmsway/make-comment-delimiter-face-same-as-comment-face sym))
           ((eq sym 'tangotango)
            (custom-theme-set-faces sym '(magit-section-highlight ((t (:background "grey23"))))))
           ((eq sym 'tao-yang)
-           (my/make-comment-delimiter-face-same-as-comment-face sym))
+           (harmsway/make-comment-delimiter-face-same-as-comment-face sym))
           ((eq sym 'tao-yin)
-           (my/make-comment-delimiter-face-same-as-comment-face sym))
+           (harmsway/make-comment-delimiter-face-same-as-comment-face sym))
           ((eq sym 'wombat)
            (custom-theme-set-faces sym '(cursor ((t (:background "#8ac6f2")))))
            ;; switch isearch and lazy-highlight
            (custom-theme-set-faces sym '(isearch ((t (:background "#384048" :foreground "#a0a8b0")))))
            (custom-theme-set-faces sym '(lazy-highlight ((t (:background "#343434" :foreground "#857b6f"))))))
           ((eq sym 'xp)
-           (my/make-all-font-sizes-the-same-please)
+           (harmsway/make-all-font-sizes-the-same-please)
            (custom-theme-set-faces sym '(fringe ((t :background "LightYellow3")))))
           )
-    (cond ((memq sym my/sml-dark-themes)
+    (cond ((memq sym harmsway/sml-dark-themes)
            (load-theme 'smart-mode-line-dark t))
-          ((memq sym my/sml-light-themes)
+          ((memq sym harmsway/sml-light-themes)
            (load-theme 'smart-mode-line-light t))
-          ((memq sym my/sml-respectful-themes)
+          ((memq sym harmsway/sml-respectful-themes)
            (load-theme 'smart-mode-line-respectful t))
           )))
-(advice-add 'counsel-load-theme-action :after #'my/after-load-theme)
+(advice-add 'counsel-load-theme-action :after #'harmsway/after-load-theme)
 
 (provide 'custom-themes)
 ;;; custom-themes.el ends here
