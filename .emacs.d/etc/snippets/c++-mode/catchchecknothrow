@@ -1,9 +1,6 @@
 # -*- mode: snippet; require-final-newline: nil -*-
-# name: catchtestcase
-# key: catchtestcase
+# name: catchchecknothrow
+# key: catchchecknothrow
 # binding: direct-keybinding
 # --
-TEST_CASE($1, "${2:$1}")
-{
-$0
-}
+CHECK_NOTHROW($0);
