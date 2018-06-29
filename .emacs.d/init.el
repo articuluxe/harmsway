@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-06-26 14:42:04 dan.harms>
+;; Modified Time-stamp: <2018-06-29 14:25:52 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -968,6 +968,7 @@ line."
               ("x" . magit-clean)
               ("k" . magit-checkout-stage)
               ("o" . magit-file-checkout)
+              ("D" . magit-file-delete)
               )
   :config
   (put 'magit-clean 'disabled nil)
