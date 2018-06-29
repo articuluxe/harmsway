@@ -1,0 +1,2 @@
+cp src/hemingway.el ../../../../.emacs.d/plugins
+cp src/hemingway-*-theme.el ../../../../.emacs.d/etc/themes
