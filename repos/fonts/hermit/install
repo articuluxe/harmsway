@@ -1,0 +1,1 @@
+tar xzf src/packages/otf-hermit-1.21.tar.gz -C ../../../.fonts/hermit
