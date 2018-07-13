@@ -48,11 +48,16 @@ function __prompt_command() {
     fi
 }
 
+user=$(id -nu)
 os=$(uname)
 # use $HOSTNAME if available (which works on windows);
 # if a FQDN, just take the device.
 domain=$(echo $HOSTNAME | sed -e 's/\..*$//')
 host=${domain:-$(hostname -s)}
+
+# load any user settings
+[ -r ~/."$user".env ] && . ~/."$user".env
+[ -r ~/.bash_"$user" ] && . ~/.bash_"$user"
 
 # Load any os settings
 [ -r ~/."$os".env ] && . ~/."$os".env

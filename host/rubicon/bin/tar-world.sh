@@ -5,11 +5,12 @@
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Friday, May 29, 2015
 # Version: 1.0
-# Modified Time-stamp: <2018-01-15 15:16:03 dan.harms>
+# Modified Time-stamp: <2018-07-12 22:48:09 dharms>
 # Modified by: Dan Harms
 # Keywords: configuration
 
 tar=$TAR
+user=$(id -nu)
 os=$(uname)
 host=$(hostname -s)
 site=$SITE
@@ -29,6 +30,7 @@ if [ $# -gt 0 ] ; then
    shift
 fi
 
+echo user is "$user"
 echo os is "$os"
 echo host is "$host"
 echo site is "$site"
@@ -45,6 +47,7 @@ $tar u"$verbose"f "$dest" --transform=s%ext%.emacs.d/ext% ext
 $tar u"$verbose"f "$dest" --transform=s/scripts/bin/ scripts
 $tar u"$verbose"f "$dest" --transform=s/bash\\/// bash
 $tar u"$verbose"f "$dest" --transform=s/tcsh\\/// tcsh
+$tar u"$verbose"f "$dest" --transform=s%user/$user\\/%% user/$user
 $tar u"$verbose"f "$dest" --transform=s%os/$os\\/%% os/$os
 $tar u"$verbose"f "$dest" --transform=s%host/$host\\/%% host/$host
 $tar u"$verbose"f "$dest" --transform=s%site/$site\\/%% site/$site

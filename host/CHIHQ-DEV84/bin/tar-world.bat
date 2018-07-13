@@ -1,11 +1,11 @@
 @echo off
 rem -*- Mode: dos -*-
 rem tar-world.bat --- tar up the world (windows style)
-rem Copyright (C) 2015-2017  Dan Harms (dan.harms)
+rem Copyright (C) 2015-2018  Dan Harms (dan.harms)
 rem Author: Dan Harms <dan.harms@xrtrading.com>
 rem Created: Thursday, May 21, 2015
 rem Version: 1.0
-rem Modified Time-stamp: <2017-12-22 09:01:42 dan.harms>
+rem Modified Time-stamp: <2018-07-12 22:45:44 dharms>
 rem Modified by: Dan Harms
 rem Keywords: tar whole world
 
@@ -24,6 +24,7 @@ if "%MSYS%". == . (
 
 set msys="%MSYS%\bin"
 set tar="%msys%\tar"
+set id="%msys%\id"
 set uname="%msys%\uname"
 set hostname="c:\MinGW\msys\1.0\bin\hostname"
 set site=xr
@@ -32,6 +33,8 @@ set curr_dir=%cd%
 set script_dir=%~dp0
 set dest=world.tar
 
+for /f "delims=" %%i in ('%id% -nu') do set user=%%i
+echo user is %user%
 for /f "delims=" %%i in ('%uname%') do set os=%%i
 echo os is %os%
 for /f "delims=" %%i in ('%hostname%') do set host=%%i
@@ -49,6 +52,7 @@ if exist %dest% (
 %tar% u%verbose%f %dest% --transform=s/scripts/bin/ scripts
 %tar% u%verbose%f %dest% --transform=s$bash/$$ bash
 %tar% u%verbose%f %dest% --transform=s$tcsh/$$ tcsh
+%tar% u%verbose%f %dest% --transform=s$user/%user%/$$ user/%user%
 %tar% u%verbose%f %dest% --transform=s$os/%os%/$$ os/%os%
 %tar% u%verbose%f %dest% --transform=s$host/%host%/$$ host/%host%
 %tar% u%verbose%f %dest% --transform=s$site/%site%/$$ --exclude=.git site/%site%

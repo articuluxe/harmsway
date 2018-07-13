@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-07-02 20:54:49 dharms>
+;; Modified Time-stamp: <2018-07-12 08:41:14 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -276,6 +276,8 @@ not an error if any files do not exist."
         (site (getenv "SITE"))
         file)
     (setenv "GPG_AGENT_INFO" nil)
+    ;; user
+    (parsenv-load-env (expand-file-name (concat "~/." my/user-name ".env")))
     ;; os
     (parsenv-load-env (expand-file-name (concat "~/." os ".env")))
     ;; host
