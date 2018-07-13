@@ -3,7 +3,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2018-07-02 21:22:44 dharms>
+;; Modified Time-stamp: <2018-07-13 07:00:10 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -35,6 +35,8 @@
                             "M+ 2m regular 14"
                             "Hermit 12"
                             "Envy Code R 14"
+                            "Space Mono 12"
+                            "Roboto Mono 12"
                             "Hack 11"
                             "Anonymous Pro 14"
                             "Cousine 12"
