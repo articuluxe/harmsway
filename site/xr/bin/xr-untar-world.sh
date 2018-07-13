@@ -5,13 +5,14 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Monday, May 18, 2015
 # Version: 1.0
-# Modified Time-stamp: <2018-01-15 15:25:55 dan.harms>
+# Modified Time-stamp: <2018-07-13 09:31:55 dan.harms>
 # Modified by: Dan Harms
 # Keywords: configuration
 
 tar=$TAR
 manifest=.bk_manifest
 backup=emacs_bk.tar
+user=$(id -nu)
 os=$(uname)
 host=$(hostname -s)
 site=$SITE
@@ -30,6 +31,7 @@ function backup_file
     fi
 }
 
+echo user is "$user"
 echo os is "$os"
 echo host is "$host"
 echo site is "$site"
@@ -91,7 +93,7 @@ fi
 cp .emacs.d/etc/user-dict "$user_dict"
 
 # remove intermediate directories, if empty
-for i in bash tcsh os/$os site/$site; do
+for i in bash tcsh user/$user os/$os site/$site; do
     rmdir -p --ignore-fail-on-non-empty "$i"
 done
 # protect .netrc
