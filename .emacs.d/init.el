@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-07-12 08:41:14 dharms>
+;; Modified Time-stamp: <2018-07-17 08:42:24 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2245,6 +2245,17 @@ Only one letter is shown, the first that applies."
   (require 'dabbrev)
   (add-to-list 'completion-at-point-functions 'harmsway-dabbrev-complete-at-point))
 ;(add-hook 'after-init-hook 'harmsway-add-ivy-completion-at-point)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; company ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package company
+  :disabled
+  :init
+  (setq company-begin-commands '(self-insert-command))
+  (setq company-idle-delay .1)
+  (setq company-minimum-prefix-length 3)
+  (setq company-show-numbers t)
+  (setq company-tooltip-align-annotations t)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-complete ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package auto-complete
