@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-07-17 08:42:24 dharms>
+;; Modified Time-stamp: <2018-07-17 08:47:28 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1091,7 +1091,7 @@ Only one letter is shown, the first that applies."
           ("Shell Command Output" :regexp t :popup t :select nil)
           ("COMMIT_EDITMSG" :select t)
           ("VC-history" :regexp t :select t :popup t)
-          ("gentags" :regexp t :popup t :select nil :align bottom)
+          (" \\*gentags-" :regexp t :popup t :select nil :align bottom)
           ("json-path" :regexp t :popup t :select t :align bottom)
           ))
   (shackle-mode 1)
