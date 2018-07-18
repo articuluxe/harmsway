@@ -55,8 +55,7 @@
   treemacs--expand-root-node
   treemacs--collapse-root-node
   treemacs--expand-dir-node
-  treemacs--collapse-dir-node
-  treemacs--create-branch)
+  treemacs--collapse-dir-node)
 
 (treemacs-import-functions-from "treemacs-filewatch-mode"
   treemacs--start-watching
@@ -223,9 +222,10 @@ Returns the buffer if it does exist."
 (defsubst treemacs--button-symbol-switch (new-sym)
   "Replace icon in current line with NEW-SYM."
   (save-excursion
-    (goto-char (- (button-start (next-button (point-at-bol) t)) 2))
-    (insert new-sym)
-    (delete-char 2)))
+    (-let [len (length new-sym)]
+      (goto-char (- (button-start (next-button (point-at-bol) t)) len))
+      (insert new-sym)
+      (delete-char len))))
 
 (defsubst treemacs--prop-at-point (prop)
   "Grab property PROP of the button at point.

@@ -45,10 +45,19 @@
 (require 'dired)
 
 ;;* Utility
-(defun counsel-more-chars (n)
-  "Return two fake candidates prompting for at least N input."
-  (list ""
-        (format "%d chars more" (- n (length ivy-text)))))
+(defvar counsel-more-chars-alist
+  '((counsel-grep . 2)
+    (t . 3))
+  "Minimum amount of characters to prompt for before fetching candidates.")
+
+(defun counsel-more-chars ()
+  "Return two fake candidates prompting for at least N input.
+N is obtained from `counsel-more-chars-alist'."
+  (let ((len (length ivy-text))
+        (n (ivy-alist-setting counsel-more-chars-alist)))
+    (when (< len n)
+      (list ""
+            (format "%d chars more" (- n len))))))
 
 (defun counsel-unquote-regex-parens (str)
   "Unquote regex parenthesis in STR."
@@ -460,11 +469,11 @@ Update the minibuffer with the amount of lines collected every
 (declare-function xref-push-marker-stack "xref")
 
 (defalias 'counsel--push-xref-marker
-  (if (require 'xref nil t)
-      #'xref-push-marker-stack
-    (require 'etags)
-    (lambda (&optional m)
-      (ring-insert find-tag-marker-ring (or m (point-marker)))))
+    (if (require 'xref nil t)
+        #'xref-push-marker-stack
+      (require 'etags)
+      (lambda (&optional m)
+        (ring-insert (with-no-warnings find-tag-marker-ring) (or m (point-marker)))))
   "Compatibility shim for `xref-push-marker-stack'.")
 
 (defun counsel--find-symbol (x)
@@ -647,10 +656,15 @@ When the selected variable is a `defcustom' with the type boolean
 or radio, offer completion of all possible values.
 
 Otherwise, offer a variant of `eval-expression', with the initial
-input corresponding to the chosen variable."
+input corresponding to the chosen variable.
+
+With a prefix arg, restrict list to variables defined using
+`defcustom'."
   (interactive (list (intern
-                      (ivy-read "Variable: "
-                                (counsel-variable-list)
+                      (ivy-read "Variable: " (counsel-variable-list)
+                                :predicate (and current-prefix-arg
+                                                (lambda (varname)
+                                                  (get (intern varname) 'custom-type)))
                                 :preselect (ivy-thing-at-point)
                                 :history 'counsel-set-variable-history))))
   (let ((doc (and (require 'cus-edit)
@@ -1266,18 +1280,18 @@ Typical value: '(recenter)."
   :type 'hook
   :group 'ivy)
 
-(defun counsel-git-grep-function (string &optional _pred &rest _unused)
+(defun counsel-git-grep-function (str &optional _pred &rest _unused)
   "Grep in the current git repository for STRING."
-  (if (and (> counsel--git-grep-count counsel--git-grep-count-threshold)
-           (< (length string) 3))
-      (counsel-more-chars 3)
-    (let* ((default-directory (ivy-state-directory ivy-last))
-           (cmd (format counsel-git-grep-cmd
-                        (setq ivy--old-re (ivy--regex string t)))))
-      (if (<= counsel--git-grep-count counsel--git-grep-count-threshold)
-          (split-string (shell-command-to-string cmd) "\n" t)
-        (counsel--gg-candidates (ivy--regex string))
-        nil))))
+  (or
+   (and (> counsel--git-grep-count counsel--git-grep-count-threshold)
+        (counsel-more-chars))
+   (let* ((default-directory (ivy-state-directory ivy-last))
+          (cmd (format counsel-git-grep-cmd
+                       (setq ivy--old-re (ivy--regex str t)))))
+     (if (<= counsel--git-grep-count counsel--git-grep-count-threshold)
+         (split-string (shell-command-to-string cmd) "\n" t)
+       (counsel--gg-candidates (ivy--regex str))
+       nil))))
 
 (defun counsel-git-grep-action (x)
   "Go to occurrence X in current Git repository."
@@ -1408,15 +1422,16 @@ INITIAL-INPUT can be given as the initial minibuffer input."
                 :unwind unwind-function
                 :history 'counsel-git-grep-history
                 :caller 'counsel-git-grep))))
+(cl-pushnew 'counsel-git-grep ivy-highlight-grep-commands)
 
 (defun counsel-git-grep-proj-function (str)
   "Grep for STR in the current git repository."
-  (if (< (length str) 3)
-      (counsel-more-chars 3)
-    (let ((regex (setq ivy--old-re
-                       (ivy--regex str t))))
-      (counsel--async-command (format counsel-git-grep-cmd regex))
-      nil)))
+  (or
+   (counsel-more-chars)
+   (let ((regex (setq ivy--old-re
+                      (ivy--regex str t))))
+     (counsel--async-command (format counsel-git-grep-cmd regex))
+     nil)))
 
 (defun counsel-git-grep-switch-cmd ()
   "Set `counsel-git-grep-cmd' to a different value."
@@ -1580,19 +1595,20 @@ done") "\n" t)))
 (defvar counsel-git-log-split-string-re "\ncommit "
   "The `split-string' separates when split output of `counsel-git-log-cmd'.")
 
-(defun counsel-git-log-function (input)
-  "Search for INPUT in git log."
-  (if (< (length input) 3)
-      (counsel-more-chars 3)
-    ;; `counsel--yank-pop-format-function' uses this
-    (setq ivy--old-re (funcall ivy--regex-function input))
-    (counsel--async-command
-     ;; "git log --grep" likes to have groups quoted e.g. \(foo\).
-     ;; But it doesn't like the non-greedy ".*?".
-     (format counsel-git-log-cmd
-             (replace-regexp-in-string "\\.\\*\\?" ".*"
-                                       (ivy-re-to-str ivy--old-re))))
-    nil))
+(defun counsel-git-log-function (str)
+  "Search for STR in git log."
+  (or
+   (counsel-more-chars)
+   (progn
+     ;; `counsel--yank-pop-format-function' uses this
+     (setq ivy--old-re (funcall ivy--regex-function str))
+     (counsel--async-command
+      ;; "git log --grep" likes to have groups quoted e.g. \(foo\).
+      ;; But it doesn't like the non-greedy ".*?".
+      (format counsel-git-log-cmd
+              (replace-regexp-in-string "\\.\\*\\?" ".*"
+                                        (ivy-re-to-str ivy--old-re))))
+     nil)))
 
 (defun counsel-git-log-action (x)
   "Add candidate X to kill ring."
@@ -2175,11 +2191,12 @@ string - the full shell command to run."
 
 (defun counsel-locate-function (input)
   "Call the \"locate\" shell command with INPUT."
-  (if (< (length input) 3)
-      (counsel-more-chars 3)
-    (counsel--async-command
-     (funcall counsel-locate-cmd input))
-    '("" "working...")))
+  (or
+   (counsel-more-chars)
+   (progn
+     (counsel--async-command
+      (funcall counsel-locate-cmd input))
+     '("" "working..."))))
 
 ;;;###autoload
 (defun counsel-locate (&optional initial-input)
@@ -2420,18 +2437,18 @@ regex string."
 (ivy-set-occur 'counsel-ag 'counsel-ag-occur)
 (ivy-set-display-transformer 'counsel-ag 'counsel-git-grep-transformer)
 
-(defun counsel-ag-function (string)
+(defun counsel-ag-function (str)
   "Grep in the current directory for STRING using BASE-CMD.
 If non-nil, append EXTRA-AG-ARGS to BASE-CMD."
-  (if (< (length string) 3)
-      (counsel-more-chars 3)
-    (let ((default-directory (ivy-state-directory ivy-last))
-          (regex (counsel-unquote-regex-parens
-                  (setq ivy--old-re
-                        (ivy--regex string)))))
-      (counsel--async-command (format counsel-ag-command
-                                      (shell-quote-argument regex)))
-      nil)))
+  (or
+   (counsel-more-chars)
+   (let ((default-directory (ivy-state-directory ivy-last))
+         (regex (counsel-unquote-regex-parens
+                 (setq ivy--old-re
+                       (ivy--regex str)))))
+     (counsel--async-command (format counsel-ag-command
+                                     (shell-quote-argument regex)))
+     nil)))
 
 ;;;###autoload
 (defun counsel-ag (&optional initial-input initial-directory extra-ag-args ag-prompt)
@@ -2456,17 +2473,16 @@ AG-PROMPT, if non-nil, is passed as `ivy-read' prompt argument."
                                      (car (split-string counsel-ag-command)))))))
   (when (null extra-ag-args)
     (setq extra-ag-args ""))
-  (let* ((args-end (string-match " -- " extra-ag-args))
+  (let* ((args-end (string-match "-- " extra-ag-args))
          (file (if args-end
-                   (substring-no-properties extra-ag-args (+ args-end 3))
+                   (substring-no-properties extra-ag-args (match-end 0))
                  ""))
          (extra-ag-args (if args-end
                             (substring-no-properties extra-ag-args 0 args-end)
                           extra-ag-args)))
     (setq counsel-ag-command (format counsel-ag-command
                                      (concat extra-ag-args
-                                             " -- "
-                                             "%s"
+                                             " -- %s "
                                              file))))
   (ivy-set-prompt 'counsel-ag counsel-prompt-function)
   (let ((default-directory (or initial-directory
@@ -2483,6 +2499,7 @@ AG-PROMPT, if non-nil, is passed as `ivy-read' prompt argument."
                         (counsel-delete-process)
                         (swiper--cleanup))
               :caller 'counsel-ag)))
+(cl-pushnew 'counsel-ag ivy-highlight-grep-commands)
 
 (defun counsel-grep-like-occur (cmd-template)
   (unless (eq major-mode 'ivy-occur-grep-mode)
@@ -2525,6 +2542,7 @@ This uses `counsel-ag' with `counsel-pt-base-command' instead of
   (interactive)
   (let ((counsel-ag-base-command counsel-pt-base-command))
     (counsel-ag initial-input)))
+(cl-pushnew 'counsel-pt ivy-highlight-grep-commands)
 
 ;;** `counsel-ack'
 (defcustom counsel-ack-base-command
@@ -2569,6 +2587,7 @@ RG-PROMPT, if non-nil, is passed as `ivy-read' prompt argument."
   (interactive)
   (let ((counsel-ag-base-command counsel-rg-base-command))
     (counsel-ag initial-input initial-directory extra-rg-args rg-prompt)))
+(cl-pushnew 'counsel-rg ivy-highlight-grep-commands)
 
 ;;** `counsel-grep'
 (defcustom counsel-grep-base-command "grep -E -n -e %s %s"
@@ -2583,14 +2602,14 @@ substituted by the search regexp and file, respectively.  Neither
 
 (defun counsel-grep-function (string)
   "Grep in the current directory for STRING."
-  (if (< (length string) 2)
-      (counsel-more-chars 2)
-    (let ((regex (counsel-unquote-regex-parens
-                  (setq ivy--old-re
-                        (ivy--regex string)))))
-      (counsel--async-command
-       (format counsel-grep-command (shell-quote-argument regex)))
-      nil)))
+  (or
+   (counsel-more-chars)
+   (let ((regex (counsel-unquote-regex-parens
+                 (setq ivy--old-re
+                       (ivy--regex string)))))
+     (counsel--async-command
+      (format counsel-grep-command (shell-quote-argument regex)))
+     nil)))
 
 (defun counsel-grep-action (x)
   "Go to candidate X."
@@ -2656,12 +2675,15 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
          (setq res (ivy-read "grep: " 'counsel-grep-function
                              :initial-input initial-input
                              :dynamic-collection t
-                             :preselect (format "%d:%s"
-                                                (line-number-at-pos)
-                                                (regexp-quote
-                                                 (buffer-substring-no-properties
-                                                  (line-beginning-position)
-                                                  (line-end-position))))
+                             :preselect
+                             (when (< (- (line-end-position) (line-beginning-position)) 300)
+                               (format "%d:%s"
+                                       (line-number-at-pos)
+                                       (regexp-quote
+                                        (buffer-substring-no-properties
+                                         (line-beginning-position)
+                                         (line-end-position)))))
+
                              :history 'counsel-git-grep-history
                              :update-fn (lambda ()
                                           (counsel-grep-action (ivy-state-current ivy-last)))
@@ -2701,14 +2723,15 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
     (counsel-grep initial-input)))
 
 ;;** `counsel-recoll'
-(defun counsel-recoll-function (string)
-  "Run recoll for STRING."
-  (if (< (length string) 3)
-      (counsel-more-chars 3)
-    (counsel--async-command
-     (format "recoll -t -b %s"
-             (shell-quote-argument string)))
-    nil))
+(defun counsel-recoll-function (str)
+  "Run recoll for STR."
+  (or
+   (counsel-more-chars)
+   (progn
+     (counsel--async-command
+      (format "recoll -t -b %s"
+              (shell-quote-argument str)))
+     nil)))
 
 ;; This command uses the recollq command line tool that comes together
 ;; with the recoll (the document indexing database) source:
@@ -2855,6 +2878,7 @@ otherwise continue prompting for tags."
 (declare-function org-global-tags-completion-table "org")
 (declare-function org-agenda-files "org")
 (declare-function org-agenda-set-tags "org-agenda")
+(declare-function org-tags-completion-function "org")
 
 ;;;###autoload
 (defun counsel-org-tag ()
@@ -2873,21 +2897,23 @@ otherwise continue prompting for tags."
       (unless (org-at-heading-p)
         (org-back-to-heading t))
       (setq counsel-org-tags (split-string (org-get-tags-string) ":" t)))
-    (let ((org-setting-tags t)
-          (org-last-tags-completion-table
-           (append org-tag-persistent-alist
-                   (or org-tag-alist (org-get-buffer-tags))
-                   (and
-                    (or org-complete-tags-always-offer-all-agenda-tags
-                        (eq major-mode 'org-agenda-mode))
-                    (org-global-tags-completion-table
-                     (org-agenda-files))))))
+    (let ((org-last-tags-completion-table
+           (append (and (or org-complete-tags-always-offer-all-agenda-tags
+                            (eq major-mode 'org-agenda-mode))
+                        (org-global-tags-completion-table
+                         (org-agenda-files)))
+                   (unless (boundp 'org-current-tag-alist)
+                     org-tag-persistent-alist)
+                   (or (if (boundp 'org-current-tag-alist)
+                           org-current-tag-alist
+                         org-tag-alist)
+                       (org-get-buffer-tags)))))
       (ivy-read (counsel-org-tag-prompt)
-                (lambda (str &rest _unused)
+                (lambda (str _pred _action)
                   (delete-dups
-                   (all-completions str 'org-tags-completion-function)))
+                   (all-completions str #'org-tags-completion-function)))
                 :history 'org-tags-history
-                :action 'counsel-org-tag-action
+                :action #'counsel-org-tag-action
                 :caller 'counsel-org-tag))))
 
 ;;;###autoload
@@ -3195,7 +3221,11 @@ include attachments of other Org buffers."
                    (lambda (x)
                      (when (> (length x) 2)
                        (format "%-5s %s" (nth 0 x) (nth 1 x))))
-                   (or org-capture-templates
+                   ;; We build the list of capture templates as in
+                   ;; `org-capture-select-template':
+                   (or (org-contextualize-keys
+                        (org-capture-upgrade-templates org-capture-templates)
+                        org-capture-templates-contexts)
                        '(("t" "Task" entry (file+headline "" "Tasks")
                           "* TODO %?\n  %u\n  %a")))))
             :require-match t

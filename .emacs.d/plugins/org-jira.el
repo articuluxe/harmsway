@@ -1,6 +1,6 @@
 ;;; org-jira.el --- Syncing between Jira and Org-mode.
 
-;; Copyright (C) 2016,2017 Matthew Carter <m@ahungry.com>
+;; Copyright (C) 2016-2018 Matthew Carter <m@ahungry.com>
 ;; Copyright (C) 2011 Bao Haojun
 ;;
 ;; Authors:
@@ -9,7 +9,7 @@
 ;;
 ;; Maintainer: Matthew Carter <m@ahungry.com>
 ;; URL: https://github.com/ahungry/org-jira
-;; Version: 3.0.0
+;; Version: 3.1.1
 ;; Keywords: ahungry jira org bug tracker
 ;; Package-Requires: ((emacs "24.5") (cl-lib "0.5") (request "0.2.0") (s "0.0.0"))
 
@@ -37,6 +37,12 @@
 ;; issue servers.
 
 ;;; News:
+
+;;;; Changes since 3.1.0:
+;; - Fix how we were ruining the kill-ring with kill calls.
+
+;;;; Changes since 3.0.0:
+;; - Add new org-jira-add-comment call (C-c c c)
 
 ;;;; Changes since 2.8.0:
 ;; - New version 3.0.0 deprecates old filing mechanism and files
@@ -368,6 +374,7 @@ instance."
     (define-key org-jira-map (kbd "C-c ik") 'org-jira-copy-current-issue-key)
     (define-key org-jira-map (kbd "C-c sc") 'org-jira-create-subtask)
     (define-key org-jira-map (kbd "C-c sg") 'org-jira-get-subtasks)
+    (define-key org-jira-map (kbd "C-c cc") 'org-jira-add-comment)
     (define-key org-jira-map (kbd "C-c cu") 'org-jira-update-comment)
     (define-key org-jira-map (kbd "C-c wu") 'org-jira-update-worklogs-from-org-clocks)
     (define-key org-jira-map (kbd "C-c tj") 'org-jira-todo-to-jira)
@@ -440,6 +447,29 @@ to change the property names this sets."
   (let ((property (or (assoc-default property org-jira-property-overrides)
                       property)))
     (org-entry-put pom property (org-jira-decode value))))
+
+(defun org-jira-kill-line ()
+  "Kill the line, without 'kill-line' side-effects of altering kill ring."
+  (delete-region (point) (line-end-position)))
+
+;; Appropriated from org.el
+(defun org-jira-org-kill-line (&optional _arg)
+  "Kill line, to tags or end of line."
+  (cond
+   ((or (not org-special-ctrl-k)
+	(bolp)
+	(not (org-at-heading-p)))
+    (when (and (get-char-property (min (point-max) (point-at-eol)) 'invisible)
+	       org-ctrl-k-protect-subtree
+	       (or (eq org-ctrl-k-protect-subtree 'error)
+		   (not (y-or-n-p "Kill hidden subtree along with headline? "))))
+      (user-error "C-k aborted as it would kill a hidden subtree"))
+    (call-interactively
+     (if (bound-and-true-p visual-line-mode) 'kill-visual-line 'org-jira-kill-line)))
+   ((looking-at ".*?\\S-\\([ \t]+\\(:[[:alnum:]_@#%:]+:\\)\\)[ \t]*$")
+    (delete-region (point) (match-beginning 1))
+    (org-set-tags nil t))
+   (t (delete-region (point) (point-at-eol)))))
 
 ;;;###autoload
 (defun org-jira-get-projects ()
@@ -609,7 +639,7 @@ Re-create it with CLOCKS.  This is used for worklogs."
              (search-forward (format ":%s:" drawer-name))
              (org-beginning-of-line)
              (org-cycle 0)
-             (dotimes (n 2) (org-kill-line)))
+             (dotimes (n 2) (org-jira-org-kill-line)))
          (progn ;; Otherwise, create a new one at the end of properties list
            (search-forward ":END:")
            (forward-line)))
@@ -617,7 +647,7 @@ Re-create it with CLOCKS.  This is used for worklogs."
        (mapc #'org-jira-insert-clock clocks)
        ;; Clean up leftover newlines (we left 2 behind)
        (search-forward-regexp "^$")
-       (org-kill-line)
+       (org-jira-org-kill-line)
        ))))
 
 (defun org-jira-get-worklog-val (key WORKLOG)
@@ -802,7 +832,7 @@ See`org-jira-get-issue-list'"
                           (progn
                             (goto-char p)
                             (forward-thing 'whitespace)
-                            (kill-line))
+                            (org-jira-kill-line))
                         (goto-char (point-max))
                         (unless (looking-at "^")
                           (insert "\n"))
@@ -896,6 +926,21 @@ See`org-jira-get-issue-list'"
     (if comment-id
         (jiralib-edit-comment issue-id comment-id comment callback-edit)
       (jiralib-add-comment issue-id comment callback-add))))
+
+(defun org-jira-add-comment (comment)
+  "Add a new COMMENT string to the issue region."
+  (interactive
+   (let ((comment (read-string "Comment: ")))
+     (list comment)))
+  (lexical-let ((issue-id (org-jira-get-from-org 'issue 'key)))
+    (ensure-on-issue-id
+     issue-id
+     (goto-char (point-max))
+     (jiralib-add-comment
+      issue-id comment
+      (cl-function
+       (lambda (&rest data &allow-other-keys)
+         (ensure-on-issue-id issue-id (org-jira-update-comments-for-current-issue))))))))
 
 (defun org-jira-org-clock-to-date (org-time)
   "Convert ORG-TIME formatted date into a plain date string."

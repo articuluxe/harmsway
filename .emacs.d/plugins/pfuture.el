@@ -42,29 +42,50 @@ this is right: (pfuture-new \"git\" \"status\")"
     (set-process-filter process #'pfuture--append-output)
     process))
 
+(defmacro pfuture--decompose-fn-form (fn &rest args)
+  "Expands into the correct call form for FN and ARGS.
+FN may either be a (sharp) quoted function, and unquoted function or an sexp."
+  (declare (indent 1))
+  (pcase fn
+    (`(function ,fn)
+     `(,fn ,@args))
+    (`(quote ,fn)
+     `(,fn ,@args))
+    ((or `(,_ . ,_) `(,_))
+     fn)
+    ((pred null)
+     (ignore fn))
+    (fn
+     `(funcall ,fn ,@args))))
+
 (cl-defmacro pfuture-callback (command &key directory on-success on-error on-status-change name connection-type)
   "Pfuture variant that supports a callback-based workflow.
 Internally based on `make-process'.
 
-The first - and only required - argument is COMMAND. It is a (unquoted) list of
+The first - and only required - argument is COMMAND. It is an (unquoted) list of
 the command and the arguments for the process that should be started. A vector
 is likewise acceptable, the difference is purely cosmetic.
 
-The rest of the argument list if made up of the following keyword arguments:
+The rest of the argument list is made up of the following keyword arguments:
 
-ON-SUCESS is the code that will run once the process has finished with an exit
-code of 0. It may make use of the variables \"process\", \"status\" and
-\"output\". The first two are the arguments for the process sentinel callbkack
-as is the default in Emacs, while \"output\" is the output produced by the
-process.
+ON-SUCCESS is the code that will run once the process has finished with an exit
+code of 0. In its context, these variables are bound:
+`process': The process object, as passed to the sentinel callback function.
+`status': The string exit status, as passed to the sentinel callback function.
+`output': The output of the process, including both stdin and stdout.
 
-ON-FAILURE is the inverse to ON-SUCCESS, it will only run if the process has
+ON-SUCCESS may take one of 3 forms: an unquoted sexp, a quoted function or an
+unquoted function. In the former two cases the passed fuction will be called
+with `process', `status' and `output' as its parameters.
+
+ON-FAILURE is the inverse to ON-SUCCESS; it will only run if the process has
 finished with a non-zero exit code. Otherwise the same conditions apply as for
 ON-SUCCESS.
 
 ON-STATUS-CHANGE will run on every status change, even if the process remains
 running. It is meant for debugging and has access to the same variables as
 ON-SUCCESS and ON-ERROR, including the (potentially incomplete) process output.
+Otherwise the same conditions as for ON-SUCCESS and ON-ERROR apply.
 
 DIRECTORY is the value given to `default-directory' for the context of the
 process. If not given it will fall back the current value of `default-directory'.
@@ -81,21 +102,29 @@ CONNECTION-TYPE will be passed to the :connection-process property of
          (name (or name (concat "Pfuture Callback: [" (mapconcat #'identity command " ") "]")))
          (connection-type (or connection-type (quote 'pipe)))
          (directory (or directory default-directory)))
-    `(let ((default-directory ,directory))
-       (make-process
-        :name ,name
-        :command ',command
-        :connection-type ,connection-type
-        :filter #'pfuture--append-output
-        :sentinel (lambda (process status)
-                    ,@(when on-status-change
-                        `((let ((output (process-get process 'result)))
-                            ,on-status-change)))
-                    (unless (process-live-p process)
-                      (let ((output (process-get process 'result)))
-                        (if (= 0 (process-exit-status process))
-                            ,on-success
-                          ,on-error))))))))
+    `(let* ((default-directory ,directory)
+            (buffer (generate-new-buffer ,name))
+            (process
+             (make-process
+              :name ,name
+              :command ',command
+              :connection-type ,connection-type
+              :filter #'pfuture--append-output-to-buffer
+              :sentinel (lambda (process status)
+                          ,@(when on-status-change
+                              `((let ((output (pfuture--result-from-buffer process)))
+                                  (pfuture--decompose-fn-form ,on-status-change
+                                    process status output))))
+                          (unless (process-live-p process)
+                            (let ((output (pfuture--result-from-buffer process)))
+                              (if (= 0 (process-exit-status process))
+                                  (pfuture--decompose-fn-form ,on-success
+                                    process status output)
+                                (pfuture--decompose-fn-form ,on-error
+                                  process status output)))
+                            (kill-buffer (process-get process 'buffer)))))))
+       (process-put process 'buffer buffer)
+       process)))
 
 (cl-defun pfuture-await (process &key (timeout 1) (just-this-one t))
   "Block until PROCESS has produced output and return it.
@@ -126,11 +155,24 @@ If the process never quits this method will block forever. Use with caution!"
 
 (defsubst pfuture-result (process)
   "Return the output of PROCESS."
+  (declare (side-effect-free t))
   (process-get process 'result))
 
 (defun pfuture--append-output (process msg)
   "Append PROCESS' MSG to the already saved output."
   (process-put process 'result (concat (process-get process 'result) msg)))
+
+(defun pfuture--append-output-to-buffer (process msg)
+  "Append PROCESS' MSG to its output buffer."
+  (with-current-buffer (process-get process 'buffer)
+    (goto-char (point-min))
+    (insert msg)))
+
+(defsubst pfuture--result-from-buffer (process)
+  "Get the output from PROCESS' buffer."
+  (declare (side-effect-free t))
+  (with-current-buffer (process-get process 'buffer)
+    (buffer-string)))
 
 (provide 'pfuture)
 

@@ -467,7 +467,14 @@
     (diff-bg-rem crimson4)
 
     (comment     gray3)
-    (alt-comment azure8)
+    (comment-alt azure8)
+
+    (kaolin-comment
+      (pcase kaolin-themes-comments-style
+        ('normal comment)
+        ('color  comment-alt)
+        ('bright comment)))
+
     (keyword     teal1)
     (second-key  comment)
     (builtin     teal4)
@@ -514,6 +521,9 @@
     (line-num-hl   gray9)
     (cursor        white0)
 
+    (company-scroll-bg (if kaolin-themes-distinct-company-scrollbar bg4 bg2))
+    (company-scroll-fg (if kaolin-themes-distinct-company-scrollbar line-num-hl bg4))
+
     (swiper-bg   bg2)
     (ivy-bg      nil)
     (ivy1        fg1)
@@ -526,8 +536,8 @@
   '(
     ;; Font-lock
     (font-lock-builtin-face           (:foreground builtin))
-    (font-lock-comment-delimiter-face (:foreground comment :italic kaolin-themes-italic-comments))
-    (font-lock-comment-face           (:foreground comment :italic kaolin-themes-italic-comments))
+    (font-lock-comment-delimiter-face (:foreground kaolin-comment :italic kaolin-themes-italic-comments))
+    (font-lock-comment-face           (:foreground kaolin-comment :italic kaolin-themes-italic-comments))
     (font-lock-constant-face          (:foreground const))
     (font-lock-doc-face               (:foreground doc))
     (font-lock-function-name-face     (:foreground functions :bold bold))
@@ -731,8 +741,8 @@
     (company-tooltip-common-selection (:foreground hl :underline underline))
     (company-tooltip-selection        (:background tooltip-hl-bg :foreground tooltip-hl-fg))
     (company-tooltip-annotation       (:foreground var))
-    (company-scrollbar-bg             (:background bg1))
-    (company-scrollbar-fg             (:foreground keyword))
+    (company-scrollbar-bg             (:background company-scroll-bg))
+    (company-scrollbar-fg             (:background company-scroll-fg))
     ;; TODO: read about template
     (company-template-field           (:background bg3))
     (company-echo-common              (:background bg1 :foreground amber3))

@@ -6,8 +6,8 @@
 ;; Homepage: https://github.com/raxod502/prescient.el
 ;; Keywords: extensions
 ;; Created: 7 Aug 2017
-;; Package-Requires: ((emacs "25.1") (prescient "1.0") (ivy "0.10.0"))
-;; Version: 1.0
+;; Package-Requires: ((emacs "25.1") (prescient "2.0") (ivy "0.10.0"))
+;; Version: 2.0
 
 ;;; Commentary:
 
@@ -54,6 +54,24 @@ This allows you to enable sorting for commands which call
   :group 'prescient
   :type '(list symbol))
 
+(defcustom ivy-prescient-retain-classic-highlighting nil
+  "Whether to emulate the way Ivy highlights candidates as closely as possible.
+With the default value, nil, the entire match is highlighted with
+`ivy-minibuffer-match-face-1' while initials in an initialism are
+highlighted with `ivy-minibuffer-match-face-2' through
+`ivy-minibuffer-match-face-4'. With a non-nil value, substring
+matches are also highlighted using `ivy-minibuffer-match-face-2'
+through `ivy-minibuffer-match-face-4', meaning that the only use
+of `ivy-minibuffer-match-face-1' is in between the initials of an
+initialism.
+
+Note that a non-nil value for this variable emulates the
+highlighting behavior of `ivy--regex-ignore-order', not the
+default `ivy--regex-plus', since `ivy-prescient' allows
+out-of-order matching."
+  :group 'prescient
+  :type 'boolean)
+
 ;;;; Minor mode
 
 (defun ivy-prescient-re-builder (query)
@@ -65,7 +83,11 @@ This is for use in `ivy-re-builders-alist'."
     (lambda (regexp)
       (setq ivy--subexps (max ivy--subexps (regexp-opt-depth regexp)))
       (cons regexp t))
-    (prescient-filter-regexps query 'with-groups))
+    (prescient-filter-regexps
+     query
+     (if ivy-prescient-retain-classic-highlighting
+         'all
+       'with-groups)))
    ;; For some reason, Ivy doesn't seem to like to be given an empty
    ;; list of regexps. Instead, it wants an empty string.
    ""))
@@ -73,9 +95,17 @@ This is for use in `ivy-re-builders-alist'."
 (defvar ivy-prescient--old-re-builder nil
   "Previous default value in `ivy-re-builders-alist'.")
 
-(defalias 'ivy-prescient-sort-function #'prescient-sort-compare
+(defun ivy-prescient-sort-function (c1 c2)
   "Comparison function that uses prescient.el to sort candidates.
-This is for use in `ivy-sort-functions-alist'.")
+This is for use in `ivy-sort-functions-alist'. C1 and C2 are
+arbitrary candidates to be compared; they need not be strings."
+  ;; For some reason, Ivy supports candidates that are lists, and just
+  ;; takes their cars. I guess we have to support that too.
+  (when (listp c1)
+    (setq c1 (car c1)))
+  (when (listp c2)
+    (setq c2 (car c2)))
+  (prescient-sort-compare c1 c2))
 
 (defvar ivy-prescient--old-ivy-sort-function nil
   "Previous default value in `ivy-sort-functions-alist'.")
@@ -98,8 +128,16 @@ CALLER is the `:caller' argument to `ivy-read', and ACTION is the
 original action, a function. Return a new function that also
 invokes `prescient-remember'."
   (lambda (result)
-    (unless (memq caller ivy-prescient-excluded-commands)
-      (prescient-remember result))
+    ;; Same as in `ivy-prescient-sort-function', we have to account
+    ;; for candidates which are lists by taking their cars. Make sure
+    ;; to do this only for the call to `prescient-remember', and not
+    ;; for the actual action, though. See
+    ;; https://github.com/raxod502/prescient.el/issues/12.
+    (let ((result result))
+      (when (listp result)
+        (setq result (car result)))
+      (unless (memq caller ivy-prescient-excluded-commands)
+        (prescient-remember result)))
     (when action
       (funcall action result))))
 
@@ -179,4 +217,5 @@ keyword arguments ACTION, CALLER are the same as in `ivy-read'."
 
 ;; Local Variables:
 ;; outline-regexp: ";;;;* "
+;; checkdoc-verb-check-experimental-flag: nil
 ;; End:

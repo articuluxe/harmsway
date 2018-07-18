@@ -402,12 +402,12 @@ acts similarly to `completing-read', except for the following:
   `magit-completing-read-function' is set to its default value of
   `magit-builtin-completing-read'."
   (setq magit-completing-read--silent-default nil)
-  (if-let (dwim (and def
-                     (nth 2 (-first (pcase-lambda (`(,cmd ,re ,_))
-                                      (and (eq this-command cmd)
-                                           (or (not re)
-                                               (string-match-p re prompt))))
-                                    magit-dwim-selection))))
+  (if-let ((dwim (and def
+                      (nth 2 (-first (pcase-lambda (`(,cmd ,re ,_))
+                                       (and (eq this-command cmd)
+                                            (or (not re)
+                                                (string-match-p re prompt))))
+                                     magit-dwim-selection)))))
       (if (eq dwim 'ask)
           (if (y-or-n-p (format "%s %s? " prompt def))
               def
@@ -434,6 +434,8 @@ acts similarly to `completing-read', except for the following:
     (if (eq action 'metadata)
         '(metadata (display-sort-function . identity))
       (complete-with-action action collection string pred))))
+
+(defvar ivy-sort-functions-alist)
 
 (defun magit-builtin-completing-read
   (prompt choices &optional predicate require-match initial-input hist def)
@@ -957,6 +959,12 @@ Like `message', except that if the users configured option
 `magit-no-message' to prevent the message corresponding to
 FORMAT-STRING to be displayed, then don't."
   (unless (--first (string-prefix-p it format-string) magit-no-message)
+    (apply #'message format-string args)))
+
+(defun magit-msg (format-string &rest args)
+  "Display a message at the bottom of the screen, but don't log it.
+Like `message', except that `message-log-max' is bound to nil."
+  (let ((message-log-max nil))
     (apply #'message format-string args)))
 
 (provide 'magit-utils)

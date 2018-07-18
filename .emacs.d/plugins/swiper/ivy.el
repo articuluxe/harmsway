@@ -41,6 +41,7 @@
 (require 'cl-lib)
 (require 'ffap)
 (require 'ivy-overlay)
+(require 'colir)
 
 ;;* Customization
 (defgroup ivy nil
@@ -251,6 +252,9 @@ It is a list of (CALLER . HEIGHT).  CALLER is a caller of
 
 If `(minibuffer-depth)' equals this, `ivy-completing-read' will
 act as if `ivy-completing-read-handlers-alist' is empty.")
+
+(defvar ivy-highlight-grep-commands nil
+  "List of counsel grep-like commands.")
 
 (defvar ivy--actions-list nil
   "A list of extra actions per command.")
@@ -1644,6 +1648,11 @@ Directories come first."
           (cl-remove-if-not predicate seq)
         seq))))
 
+(defun ivy-alist-setting (alist &optional key)
+  (let ((caller (or key (ivy-state-caller ivy-last))))
+    (or (and caller (cdr (assq caller alist)))
+        (cdr (assq t alist)))))
+
 ;;** Entry Point
 ;;;###autoload
 (cl-defun ivy-read (prompt collection
@@ -1742,8 +1751,7 @@ customizations apply to the current completion session."
         (ivy-display-function
          (unless (window-minibuffer-p)
            (or ivy-display-function
-               (cdr (or (assq caller ivy-display-functions-alist)
-                        (assq t ivy-display-functions-alist))))))
+               (ivy-alist-setting ivy-display-functions-alist caller))))
         (height
          (or (cdr (assq caller ivy-height-alist))
              ivy-height)))
@@ -1806,6 +1814,8 @@ customizations apply to the current completion session."
                                        (delete item
                                                (cdr (symbol-value hist))))))))
                  (ivy-state-current ivy-last)))
+          ;; Fixes a bug in ESS, #1660
+          (put 'post-command-hook 'permanent-local nil)
           (remove-hook 'post-command-hook #'ivy--queue-exhibit)
           (let ((cleanup (ivy--display-function-prop :cleanup)))
             (when (functionp cleanup)
@@ -1849,9 +1859,7 @@ This is useful for recursive `ivy-read'."
           (or re-builder
               (and (functionp collection)
                    (cdr (assq collection ivy-re-builders-alist)))
-              (and caller
-                   (cdr (assq caller ivy-re-builders-alist)))
-              (cdr (assq t ivy-re-builders-alist))
+              (ivy-alist-setting ivy-re-builders-alist)
               #'ivy--regex))
     (setq ivy--subexps 0)
     (setq ivy--regexp-quote #'regexp-quote)
@@ -1874,6 +1882,9 @@ This is useful for recursive `ivy-read'."
                                 :test #'equal)))
                (setq coll (all-completions "" collection predicate))))
             ((eq collection 'read-file-name-internal)
+             (when (and (equal def initial-input)
+                        (member "./" ivy-extra-directories))
+               (setf (ivy-state-def state) (setq def nil)))
              (setq ivy--directory default-directory)
              (when (and initial-input
                         (not (equal initial-input "")))
@@ -1881,7 +1892,7 @@ This is useful for recursive `ivy-read'."
                       (when (equal (file-name-nondirectory initial-input) "")
                         (setf (ivy-state-preselect state) (setq preselect nil))
                         (setf (ivy-state-def state) (setq def nil)))
-                      (setq ivy--directory initial-input)
+                      (setq ivy--directory (file-name-as-directory initial-input))
                       (setq initial-input nil)
                       (when preselect
                         (let ((preselect-directory
@@ -1947,7 +1958,10 @@ This is useful for recursive `ivy-read'."
                  (and (listp collection) (symbolp (car collection))))
              (setq coll (all-completions "" collection predicate)))
             (t
-             (setq coll collection)))
+             (setq coll
+                   (if predicate
+                       (cl-remove-if-not predicate collection)
+                     collection))))
       (unless (ivy-state-dynamic-collection ivy-last)
         (setq coll (delete "" coll)))
       (when def
@@ -2196,7 +2210,8 @@ See `completion-in-region' for further information."
                               (replace-regexp-in-string "%" "%%" prompt))
                             ;; remove 'completions-first-difference face
                             (mapcar #'substring-no-properties comps)
-                            :predicate predicate
+                            ;; predicate was already applied by `completion-all-completions'
+                            :predicate nil
                             :initial-input initial
                             :sort t
                             :action #'ivy-completion-in-region-action
@@ -2489,13 +2504,15 @@ tries to ensure that it does not change depending on the number of candidates."
   (when (display-graphic-p)
     (setq truncate-lines ivy-truncate-lines))
   (setq-local max-mini-window-height ivy-height)
-  (when (and ivy-fixed-height-minibuffer
-             (not (eq (ivy-state-caller ivy-last) 'ivy-completion-in-region)))
-    (set-window-text-height (selected-window)
-                            (+ ivy-height
-                               (if ivy-add-newline-after-prompt
-                                   1
-                                 0))))
+  (if (and ivy-fixed-height-minibuffer
+           (not (eq (ivy-state-caller ivy-last) 'ivy-completion-in-region)))
+      (set-window-text-height (selected-window)
+                              (+ ivy-height
+                                 (if ivy-add-newline-after-prompt
+                                     1
+                                   0)))
+    (when ivy-add-newline-after-prompt
+      (set-window-text-height (selected-window) 2)))
   (add-hook 'post-command-hook #'ivy--queue-exhibit nil t)
   ;; show completions with empty input
   (ivy--exhibit))
@@ -2823,13 +2840,10 @@ Should be run via minibuffer `post-command-hook'."
           (when (> text-height body-height)
             (window-resize nil (- text-height body-height) nil t)))))))
 
-(declare-function colir-blend-face-background "ext:colir")
-
 (defun ivy--add-face (str face)
   "Propertize STR with FACE.
 `font-lock-append-text-property' is used, since it's better than
 `propertize' or `add-face-text-property' in this case."
-  (require 'colir)
   (let ((len (length str)))
     (condition-case nil
         (progn
@@ -2987,8 +3001,7 @@ All CANDIDATES are assumed to match NAME."
     (cond ((and ivy--flx-featurep
                 (eq ivy--regex-function 'ivy--regex-fuzzy))
            (ivy--flx-sort name candidates))
-          ((setq fun (cdr (or (assq key ivy-sort-matches-functions-alist)
-                              (assq t ivy-sort-matches-functions-alist))))
+          ((setq fun (ivy-alist-setting ivy-sort-matches-functions-alist key))
            (funcall fun name candidates))
           (t
            candidates))))
@@ -3055,10 +3068,12 @@ before substring matches."
   "Recompute index of selected candidate matching NAME.
 RE-STR is the regexp, CANDS are the current candidates."
   (let* ((caller (ivy-state-caller ivy-last))
-         (func (or (and caller (cdr (assoc caller ivy-index-functions-alist)))
-                   (cdr (assoc t ivy-index-functions-alist))
-                   #'ivy-recompute-index-zero))
-         (case-fold-search (ivy--case-fold-p name)))
+         (func (or
+                (ivy-alist-setting ivy-index-functions-alist)
+                #'ivy-recompute-index-zero))
+         (case-fold-search (ivy--case-fold-p name))
+         (preselect (ivy-state-preselect ivy-last))
+         (current (ivy-state-current ivy-last)))
     (unless (eq this-command 'ivy-resume)
       (ivy-set-index
        (or
@@ -3079,16 +3094,24 @@ RE-STR is the regexp, CANDS are the current candidates."
              (not (and ivy--flx-featurep
                        (eq ivy--regex-function 'ivy--regex-fuzzy)
                        (< (length cands) 200)))
+             ;; If there was a preselected candidate, don't try to
+             ;; keep it selected even if the regexp still matches it.
+             ;; See issue #1563.  See also `ivy--preselect-index',
+             ;; which this logic roughly mirrors.
+             (not (or
+                   (and (integerp preselect)
+                        (= ivy--index preselect))
+                   (equal current preselect)
+                   (and (stringp preselect)
+                        (stringp current)
+                        (string-match-p preselect current))))
              ivy--old-cands
-             (cl-position (ivy-state-current ivy-last) cands
-                          :test #'equal))
+             (cl-position current cands :test #'equal))
         (funcall func re-str cands))))
     (when (or (string= name "")
               (string= name "^"))
       (ivy-set-index
-       (or (ivy--preselect-index
-            (ivy-state-preselect ivy-last)
-            cands)
+       (or (ivy--preselect-index preselect cands)
            ivy--index)))))
 
 (defun ivy-recompute-index-swiper (_re-str cands)
@@ -3326,8 +3349,7 @@ Note: The usual last two arguments are flipped for convenience.")
   (unless ivy--old-re
     (setq ivy--old-re (funcall ivy--regex-function ivy-text)))
   (let ((start
-         (if (and (memq (ivy-state-caller ivy-last)
-                        '(counsel-git-grep counsel-ag counsel-rg counsel-pt))
+         (if (and (memq (ivy-state-caller ivy-last) ivy-highlight-grep-commands)
                   (string-match "^[^:]+:[^:]+:" str))
              (match-end 0)
            0))

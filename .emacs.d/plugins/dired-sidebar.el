@@ -238,6 +238,19 @@ to disable automatic refresh when a special command is triggered."
   :type 'list
   :group 'dired-sidebar)
 
+(defcustom dired-sidebar-toggle-hidden-commands
+  '(balance-windows)
+  "A list of commands that won't work when `dired-sidebar' is visible.
+
+When the command is triggered, `dired-sidebar' will hide temporarily until
+command is completed.
+
+This functionality is implemented using advice.
+
+Set this to nil to disable this advice."
+  :type 'list
+  :group 'dired-sidebar)
+
 (defcustom dired-sidebar-alternate-select-window-function
   #'dired-sidebar-default-alternate-select-window
   "Function to call when using alternative window selection.
@@ -319,9 +332,8 @@ will check if buffer is stale through `auto-revert-mode'.")
 
 (defvar dired-sidebar-mode-map
   (let ((map (make-sparse-keymap)))
-    (when (fboundp 'dired-subtree-toggle)
-      (define-key map (kbd "TAB") 'dired-subtree-toggle)
-      (define-key map [tab] 'dired-subtree-toggle))
+    (define-key map (kbd "TAB") 'dired-sidebar-subtree-toggle)
+    (define-key map [tab] 'dired-sidebar-subtree-toggle)
     (define-key map (kbd "C-m") 'dired-sidebar-find-file)
     (define-key map (kbd "RET") 'dired-sidebar-find-file)
     (define-key map (kbd "<return>") 'dired-sidebar-find-file)
@@ -333,12 +345,9 @@ will check if buffer is stale through `auto-revert-mode'.")
     ;; set up in the minor mode.
     (when dired-sidebar-use-evil-integration
       (with-eval-after-load 'evil
-        (when (fboundp 'dired-subtree-toggle)
-          (when (fboundp 'evil-define-minor-mode-key)
-            (evil-define-minor-mode-key 'normal 'dired-sidebar-mode
-              [tab] 'dired-subtree-toggle)))
         (when (fboundp 'evil-define-minor-mode-key)
           (evil-define-minor-mode-key 'normal 'dired-sidebar-mode
+            [tab] 'dired-sidebar-subtree-toggle
             (kbd "C-m") 'dired-sidebar-find-file
             (kbd "RET") 'dired-sidebar-find-file
             (kbd "<return>") 'dired-sidebar-find-file
@@ -451,6 +460,12 @@ Works around marker pointing to wrong buffer in Emacs 25."
          (advice-add x :after #'dired-sidebar-refresh-buffer)))
      dired-sidebar-special-refresh-commands))
 
+  (when dired-sidebar-toggle-hidden-commands
+    (mapc
+     (lambda (x)
+       (advice-add x :around #'dired-sidebar-advice-hide-temporarily))
+     dired-sidebar-toggle-hidden-commands))
+
   (cond
    ((and (eq dired-sidebar-theme 'icons)
          (display-graphic-p)
@@ -521,7 +536,6 @@ This is dependent on `dired-subtree-cycle'."
   (let ((sidebar (dired-sidebar-buffer)))
     (pop-to-buffer sidebar)
     (when (and name
-               (fboundp 'dired-subtree-cycle)
                ;; Checking for a private method. *shrug*
                (fboundp 'dired-subtree--is-expanded-p))
       (pop-to-buffer sidebar)
@@ -712,7 +726,6 @@ the relevant file-directory clicked on by the mouse."
     ;; `dired-subtree-cycle' works without first selecting the window.
     (with-selected-window window
       (if (and dired-sidebar-cycle-subtree-on-click
-               (fboundp 'dired-subtree-cycle)
                (file-directory-p file)
                (not (string-suffix-p "." file)))
           (dired-subtree-cycle)
@@ -959,8 +972,29 @@ This is somewhat experimental/hacky."
           (forward-line -1)
           (kill-whole-line)
           result))
-      (error
-       default-directory)))
+    (error
+     default-directory)))
+
+(defun dired-sidebar-subtree-toggle ()
+  "Wrapper over `dired-subtree-toggle' that accounts for `all-the-icons-dired'."
+  (interactive)
+  (dired-subtree-toggle)
+  (when (and (eq dired-sidebar-theme 'icons)
+             (fboundp 'all-the-icons-dired--display))
+    ;; Refresh `all-the-icons-dired'.
+    (dired-revert)
+    (all-the-icons-dired--display)))
+
+(defun dired-sidebar-advice-hide-temporarily (f &rest args)
+  "A function meant to be used with advice to temporarily hide itself.
+
+This function hides the sidebar before executing F and then reshows itself after."
+  (if (not (dired-sidebar-showing-sidebar-p))
+      (apply f args)
+    (let ((sidebar (dired-sidebar-buffer)))
+      (dired-sidebar-hide-sidebar)
+      (apply f args)
+      (dired-sidebar-show-sidebar sidebar))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Text User Interface ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 

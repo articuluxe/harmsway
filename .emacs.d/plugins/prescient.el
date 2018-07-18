@@ -7,7 +7,7 @@
 ;; Keywords: extensions
 ;; Created: 7 Aug 2017
 ;; Package-Requires: ((emacs "25.1"))
-;; Version: 1.0
+;; Version: 2.0
 
 ;;; Commentary:
 
@@ -244,13 +244,16 @@ capture groups matching \"f\" and \"a\"."
 Each regexp must match the candidate in order for a candidate to
 match the QUERY.
 
-If WITH-GROUPS is non-nil, enclose all literal text in capture
-groups, so that it can be determined which parts of a matched
-candidate should be highlighted."
+If WITH-GROUPS is non-nil, enclose the initials in initialisms
+with capture groups. If it is the symbol `all', additionally
+enclose literal substrings with capture groups."
   (mapcar
    (lambda (subquery)
      (format "%s\\|%s"
-             (regexp-quote subquery)
+             (let ((r (regexp-quote subquery)))
+               (when (eq with-groups 'all)
+                 (setq r (format "\\(%s\\)" r)))
+               r)
              (prescient-initials-regexp subquery with-groups)))
    (prescient-split-query query)))
 
