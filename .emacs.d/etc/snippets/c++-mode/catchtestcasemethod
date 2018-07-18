@@ -3,7 +3,7 @@
 # key: catchtestcasemethod
 # binding: direct-keybinding
 # --
-TEST_CASE_METHOD(${1:FixtureName}, "${2:UniqueTitle}", "[${3:$1}][${4:Desc}]")
+TEST_CASE_METHOD(${1:FixtureName}, "${2:$1}")
 {
 $0
 }
