@@ -48,16 +48,17 @@
 (defvar counsel-more-chars-alist
   '((counsel-grep . 2)
     (t . 3))
-  "Minimum amount of characters to prompt for before fetching candidates.")
+  "Map commands to their minimum required input length.
+That is the number of characters prompted for before fetching
+candidates.  The special key t is used as a fallback.")
 
 (defun counsel-more-chars ()
   "Return two fake candidates prompting for at least N input.
 N is obtained from `counsel-more-chars-alist'."
-  (let ((len (length ivy-text))
-        (n (ivy-alist-setting counsel-more-chars-alist)))
-    (when (< len n)
-      (list ""
-            (format "%d chars more" (- n len))))))
+  (let ((diff (- (ivy-alist-setting counsel-more-chars-alist)
+                 (length ivy-text))))
+    (when (> diff 0)
+      (list "" (format "%d chars more" diff)))))
 
 (defun counsel-unquote-regex-parens (str)
   "Unquote regex parenthesis in STR."
@@ -407,6 +408,10 @@ Update the minibuffer with the amount of lines collected every
               :action #'ivy-completion-in-region-action)))
 
 ;;** `counsel-irony'
+(declare-function irony-completion-candidates-async "ext:irony-completion")
+(declare-function irony-completion-symbol-bounds "ext:irony-completion")
+(declare-function irony-completion-annotation "ext:irony-completion")
+
 ;;;###autoload
 (defun counsel-irony ()
   "Inline C/C++ completion using Irony."
@@ -434,10 +439,6 @@ Update the minibuffer with the amount of lines collected every
         (car x)))
 
 (add-to-list 'ivy-display-functions-alist '(counsel-irony . ivy-display-function-overlay))
-
-(declare-function irony-completion-candidates-async "ext:irony-completion")
-(declare-function irony-completion-symbol-bounds "ext:irony-completion")
-(declare-function irony-completion-annotation "ext:irony-completion")
 
 ;;* Elisp symbols
 ;;** `counsel-describe-variable'
@@ -1759,6 +1760,20 @@ currently checked out."
         (find-alternate-file file-name)
       (find-file file-name))))
 
+(defun counsel-find-file-delete (x)
+  "Delete file X."
+  (dired-delete-file x dired-recursive-deletes delete-by-moving-to-trash))
+
+(defun counsel-find-file-move (x)
+  "Move or rename file X."
+  (ivy-read "Rename file to: " 'read-file-name-internal
+            :matcher #'counsel--find-file-matcher
+            :action (lambda (new-name)
+                      (require 'dired-aux)
+                      (dired-rename-file x new-name 1))
+            :keymap counsel-find-file-map
+            :caller 'counsel-find-file-move))
+
 (defun counsel-find-file-mkdir-action (_x)
   (make-directory (expand-file-name ivy-text ivy--directory)))
 
@@ -1769,6 +1784,8 @@ currently checked out."
    ("b" counsel-find-file-cd-bookmark-action "cd bookmark")
    ("x" counsel-find-file-extern "open externally")
    ("r" counsel-find-file-as-root "open as root")
+   ("k" counsel-find-file-delete "delete")
+   ("m" counsel-find-file-move "move or rename")
    ("d" counsel-find-file-mkdir-action "mkdir")))
 
 (defcustom counsel-find-file-at-point nil
@@ -2136,6 +2153,7 @@ string - the full shell command to run."
 (ivy-set-actions
  'counsel-locate
  '(("x" counsel-locate-action-extern "xdg-open")
+   ("r" counsel-find-file-as-root "open as root")
    ("d" counsel-locate-action-dired "dired")))
 
 (counsel-set-async-exit-code 'counsel-locate 1 "Nothing found")
@@ -3207,8 +3225,11 @@ include attachments of other Org buffers."
 
 ;;** `counsel-org-capture'
 (defvar org-capture-templates)
+(defvar org-capture-templates-contexts)
+(declare-function org-contextualize-keys "org")
 (declare-function org-capture-goto-last-stored "org-capture")
 (declare-function org-capture-goto-target "org-capture")
+(declare-function org-capture-upgrade-templates "org-capture")
 
 ;;;###autoload
 (defun counsel-org-capture ()
