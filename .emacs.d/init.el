@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-07-17 08:47:28 dharms>
+;; Modified Time-stamp: <2018-07-24 08:43:02 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3001,6 +3001,7 @@ This may perform related customization."
          ("\\.js\\.erb$" . js2-mode))
   :config
   (setq js2-basic-offset 2)
+  (setq js2-include-node-externs t)
   (define-key js2-mode-map (kbd "M-.") nil)
   (define-key js2-mode-map "\C-c." 'js2-jump-to-definition))
 (use-package js2-imenu-extras
