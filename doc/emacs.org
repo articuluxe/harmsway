@@ -107,6 +107,19 @@ C-x r m [%n] set file's bookmark [possibly named %n] at point
 C-x r b %n   jump to bookmark %n
 C-x r l      list all bookmarks
 
+* Calc
+d 2         decimal display
+d 6         hexadecimal display
+d 0         base-10 display
+d z         show leading zeros
+b a         bitwise AND
+b o         bitwise OR
+b x         bitwise XOR
+b n         bitwise NOT
+b l         shift left
+b d         bitwise DIFF, e.g. DIFF(a,b)=AND(a,NOT(b))
+B           with (a b), calculates log(b) a
+Q           square root
 
 * Register
 C-x r s %d copy region into register %d
