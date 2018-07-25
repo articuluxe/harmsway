@@ -2,7 +2,7 @@
 ;; Copyright (C) 2016-2018  Dan Harms (dan.harms)
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Wednesday, December 21, 2016
-;; Modified Time-stamp: <2018-07-24 13:26:42 dan.harms>
+;; Modified Time-stamp: <2018-07-25 12:42:27 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: themes colors
 
@@ -110,6 +110,8 @@
            (harmsway/make-comment-delimiter-face-same-as-comment-face sym))
           ((eq sym 'evenhold)
            (harmsway/make-comment-delimiter-face-same-as-comment-face sym))
+          ((eq sym 'faff)
+           (custom-theme-set-faces sym '(region ((t (:background "LightGoldenrod2"))) t)))
           ((eq sym 'foggy-night)
            (custom-theme-set-faces sym '(cursor ((t (:background "yellow"))))))
           ((eq sym 'granger)
