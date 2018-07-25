@@ -2,7 +2,7 @@
 ;; Copyright (C) 2016-2018  Dan Harms (dan.harms)
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Wednesday, December 21, 2016
-;; Modified Time-stamp: <2018-07-25 12:42:27 dan.harms>
+;; Modified Time-stamp: <2018-07-25 13:15:31 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: themes colors
 
@@ -160,7 +160,11 @@
            (harmsway/make-comment-delimiter-face-same-as-comment-face sym))
           ((eq sym 'tao-yin)
            (harmsway/make-comment-delimiter-face-same-as-comment-face sym))
+          ((eq sym 'warm-night)
+           (custom-theme-set-faces sym '(cursor ((t (:background "yellow"))))))
           ((eq sym 'weyland-yutani)
+           (custom-theme-set-faces sym '(cursor ((t (:background "yellow"))))))
+          ((eq sym 'white-sand)
            (custom-theme-set-faces sym '(cursor ((t (:background "yellow"))))))
           ((eq sym 'wombat)
            (custom-theme-set-faces sym '(cursor ((t (:background "#8ac6f2")))))
