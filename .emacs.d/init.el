@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-07-24 08:43:02 dharms>
+;; Modified Time-stamp: <2018-07-25 12:48:00 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1580,7 +1580,6 @@ Only one letter is shown, the first that applies."
 (define-prefix-command 'my/ssh-deploy-keymap)
 (global-set-key "\C-c0d" 'my/ssh-deploy-keymap)
 (use-package ssh-deploy
-  :demand t
   :bind (:map my/ssh-deploy-keymap
               ("u" . ssh-deploy-upload-handler)
               ("f" . ssh-deploy-upload-handler-forced)
@@ -1595,10 +1594,9 @@ Only one letter is shown, the first that applies."
               ("t" . ssh-deploy-remote-terminal-shell-base-handler)
               ("T" . ssh-deploy-remote-terminal-shell-handler)
               )
-  :init
+  :config
   (add-hook 'after-save-hook #'harmsway-ssh-deploy-save-hook)
   (add-hook 'find-file-hook #'harmsway-ssh-deploy-find-file-hook)
-  :config
   (require 'async)
   )
 
