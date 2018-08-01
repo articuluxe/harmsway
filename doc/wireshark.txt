@@ -4,7 +4,7 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Tuesday, September 13, 2016
 # Version: 1.0
-# Modified Time-stamp: <2018-05-01 12:59:57 dan.harms>
+# Modified Time-stamp: <2018-08-01 12:16:16 dan.harms>
 # Modified by: Dan Harms
 # Keywords: wireshark
 
@@ -14,8 +14,10 @@ editcap -F libpcap -T ether <file>.erf <file>.pcap
 
 # list interfaces
 tshark -D
-# capture
-tshark -i<interface> -w <output>.pcap
+# capture to file
+tshark -i<interface> -w output.pcap -f 'tcp'
+# hexdump from file
+tshark -r output.pcap -x
 # capture files up to 10240 KB or after 1 second elapsed
 tshark -b filesize:10240 -b duration:1 -w <output>.pcap
 # capture 20 files each 100 KB, then stop

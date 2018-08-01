@@ -117,6 +117,7 @@ b o         bitwise OR
 b x         bitwise XOR
 b n         bitwise NOT
 b l         shift left
+b r         shift right
 b d         bitwise DIFF, e.g. DIFF(a,b)=AND(a,NOT(b))
 B           with (a b), calculates log(b) a
 Q           square root
