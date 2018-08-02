@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2018-06-08 06:35:00 dharms>
+;; Modified Time-stamp: <2018-08-02 08:41:38 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -30,7 +30,7 @@
 (scroll-bar-mode -1)
 (add-hook 'after-make-frame-functions 'my/disable-scroll-bars)
 
-(setq ns-use-native-fullscreen t)
+(setq ns-use-native-fullscreen nil)
 (setq ns-use-thin-smoothing t)
 ;; scroll one line at a time
 (setq scroll-step 1)
