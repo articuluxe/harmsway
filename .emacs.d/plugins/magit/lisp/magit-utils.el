@@ -272,7 +272,7 @@ Global settings:
   :group 'magit-commands
   :type `(choice (const :tag "Always require confirmation" nil)
                  (const :tag "Never require confirmation" t)
-                 (set   :tag "Require confirmation only for"
+                 (set   :tag "Require confirmation except for"
                         ,@magit--confirm-actions)))
 
 (defcustom magit-slow-confirm '(drop-stashes)
@@ -423,13 +423,15 @@ acts similarly to `completing-read', except for the following:
         def)
     (unless def
       (setq def fallback))
-    (let ((reply (funcall magit-completing-read-function
+    (let ((command this-command)
+          (reply (funcall magit-completing-read-function
                           (concat prompt ": ")
                           (if (and def (not (member def collection)))
                               (cons def collection)
                             collection)
                           predicate
                           require-match initial-input hist def)))
+      (setq this-command command)
       (if (string= reply "")
           (if require-match
               (user-error "Nothing selected")

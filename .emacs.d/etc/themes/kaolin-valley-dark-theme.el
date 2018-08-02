@@ -16,6 +16,7 @@
    (cerulean4     "#47629E")
 
    ;; Color vars
+   ;; TODO: (??) make more bright
    (bg1 "#211D1D")
    (bg2 "#262121")
    (bg3 "#2E2828")
@@ -39,7 +40,8 @@
    (type        amber3)
 
    (comment     brown2)
-   (comment-alt azure8)
+   ;; TODO:
+   (comment-alt teal2)
 
    ;; (str         magenta3)
    ;; (str-alt     violet4)
@@ -116,15 +118,16 @@
    (ivy4          red3))
 
   (
-   ;; TODO:
-   ;; (highlight-quoted-quote   (:foreground orange1))
-   ;; (highlight-quoted-symbol  (:foreground type))
-   (highlight-quoted-symbol  (:foreground harlequin3))
+   (highlight-quoted-symbol  (:foreground num))
 
-   (org-level-1            (:foreground harlequin3 :bold bold :height 1.1))
-   (org-level-2            (:foreground teal1  :bold nil))
-   (org-level-3            (:foreground violet4 :bold nil))
-   (org-level-4            (:foreground vermilion4 :bold nil))
+   (org-document-title     (:foreground orange3 :bold bold))
+   ;; (org-document-info      (:foreground brown3))
+
+   ;; TODO:
+   (org-level-1            (:foreground keyword :bold bold :height 1.1))
+   (org-level-2            (:foreground functions  :bold nil))
+   (org-level-3            (:foreground str :bold nil))
+   (org-level-4            (:foreground builtin :bold nil))
    (org-code               (:foreground teal1))
    (org-verbatim           (:foreground orange2)))
 

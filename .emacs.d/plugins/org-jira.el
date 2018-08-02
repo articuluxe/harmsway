@@ -240,6 +240,11 @@ instance."
   :group 'org-jira
   :type 'boolean)
 
+(defcustom org-jira-keywords-to-jira-status-alist nil
+  "Custom alist of 'org-mode' keyword stored in car and jira status in the cdr."
+  :group 'org-jira
+  :type '(alist :value-type string))
+
 (defvar org-jira-serv nil
   "Parameters of the currently selected blog.")
 
@@ -450,6 +455,7 @@ to change the property names this sets."
 
 (defun org-jira-kill-line ()
   "Kill the line, without 'kill-line' side-effects of altering kill ring."
+  (interactive)
   (delete-region (point) (line-end-position)))
 
 ;; Appropriated from org.el
@@ -638,16 +644,17 @@ Re-create it with CLOCKS.  This is used for worklogs."
            (progn ;; If we had a logbook, drop it and re-create in a bit.
              (search-forward (format ":%s:" drawer-name))
              (org-beginning-of-line)
-             (org-cycle 0)
-             (dotimes (n 2) (org-jira-org-kill-line)))
+             (delete-region (point) (search-forward ":END:"))
+             )
          (progn ;; Otherwise, create a new one at the end of properties list
            (search-forward ":END:")
            (forward-line)))
        (org-insert-drawer nil (format "%s" drawer-name)) ;; Doc says non-nil, but this requires nil
        (mapc #'org-jira-insert-clock clocks)
        ;; Clean up leftover newlines (we left 2 behind)
-       (search-forward-regexp "^$")
-       (org-jira-org-kill-line)
+       (dotimes (n 2)
+         (search-forward-regexp "^$")
+         (delete-region (point) (1+ (point))))
        ))))
 
 (defun org-jira-get-worklog-val (key WORKLOG)
@@ -838,11 +845,7 @@ See`org-jira-get-issue-list'"
                           (insert "\n"))
                         (insert "** "))
                       (let ((status (org-jira-get-issue-val 'status issue)))
-                        (org-jira-insert (concat (cond (org-jira-use-status-as-todo
-                                                        (upcase (replace-regexp-in-string " " "-" status)))
-                                                       ((member status org-jira-done-states) "DONE")
-                                                       ("TODO")) " "
-                                                       issue-headline)))
+                        (org-jira-insert (concat (org-jira-get-keyword-from-status status) " " issue-headline)))
                       (save-excursion
                         (unless (search-forward "\n" (point-max) 1)
                           (insert "\n")))
@@ -1303,6 +1306,7 @@ purpose of wiping an old subtree."
 
 (defvar org-jira-project-read-history nil)
 (defvar org-jira-boards-read-history nil)
+(defvar org-jira-components-read-history nil)
 (defvar org-jira-priority-read-history nil)
 (defvar org-jira-type-read-history nil)
 
@@ -1327,6 +1331,30 @@ purpose of wiping an old subtree."
 			   'org-jira-boards-read-history
 			   (car org-jira-boards-read-history))))
     (assoc board-name boards-alist)))
+
+(defun org-jira-read-component (project)
+  "Read the components options for PROJECT such as EX."
+  (completing-read
+   "Components (choose Done to stop): "
+   (append '("Done") (mapcar 'cdr (jiralib-get-components project)))
+   nil
+   t
+   nil
+   'org-jira-components-read-history
+   "Done"))
+
+;; TODO: Finish this feature - integrate into org-jira-create-issue
+(defun org-jira-read-components (project)
+  "Types: string PROJECT : string (csv of components).
+
+Get all the components for the PROJECT such as EX,
+that should be bound to an issue."
+  (let (components component)
+    (while (not (equal "Done" component))
+      (setq component (org-jira-read-component project))
+      (unless (equal "Done" component)
+        (push component components)))
+    components))
 
 (defun org-jira-read-priority ()
   "Read priority name."
@@ -1982,6 +2010,15 @@ See `org-jira-get-issues-from-filter'."
 		    (org-jira-entry-put (point) "url" board-url)
                     (org-jira-entry-put (point) "ID" (number-to-string board-id))))
 		boards))))))
+
+(defun org-jira-get-keyword-from-status (status)
+  "Gets an 'org-mode' keyword corresponding to a given jira STATUS."
+  (if org-jira-use-status-as-todo
+      (upcase (replace-regexp-in-string " " "-" status))
+    (let ((known-keyword (assoc status org-jira-keywords-to-jira-status-alist)))
+      (cond (known-keyword (cdr known-keyword))
+            ((member status org-jira-done-states) "DONE")
+            ("TODO")))))
 
 (provide 'org-jira)
 ;;; org-jira.el ends here

@@ -442,10 +442,7 @@ the upstream isn't ahead of the current branch) show."
 (defun magit-read-file-trace (&rest _ignored)
   (let ((file  (magit-read-file-from-rev "HEAD" "File"))
         (trace (magit-read-string "Trace")))
-    (if (string-match
-         "^\\(/.+/\\|:[^:]+\\|[0-9]+,[-+]?[0-9]+\\)\\(:\\)?$" trace)
-        (concat trace (or (match-string 2 trace) ":") file)
-      (user-error "Trace is invalid, see man git-log"))))
+    (concat trace (or (match-string 2 trace) ":") file)))
 
 (defun magit-log-select-order (&rest _ignored)
   "Set one `--<value>-order' option in Git log.
@@ -723,7 +720,7 @@ active, restrict the log to the lines that the region touches."
   (magit-mode-setup-internal
    #'magit-log-mode
    (list (list rev)
-         (cons (format "-L:%s:%s" fn file)
+         (cons (format "-L:%s:%s" (regexp-quote fn) file)
                (cl-delete "-L" (car (magit-log-arguments))
                           :test 'string-prefix-p))
          nil)

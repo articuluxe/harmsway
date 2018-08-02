@@ -1938,17 +1938,14 @@ This is useful for recursive `ivy-read'."
             (dynamic-collection
              (setq coll (funcall collection ivy-text)))
             ((and (consp collection) (listp (car collection)))
-             (if (and sort (setq sort-fn (ivy--sort-function caller)))
-                 (progn
-                   (setq sort nil)
-                   (setq coll (mapcar #'car
-                                      (setf (ivy-state-collection ivy-last)
-                                            (sort (copy-sequence collection)
-                                                  sort-fn)))))
-               (setq collection
-                     (setf (ivy-state-collection ivy-last)
-                           (cl-remove-if-not predicate collection)))
-               (setq coll (all-completions "" collection)))
+             (setq collection
+                   (setf (ivy-state-collection ivy-last)
+                         (if (and sort (setq sort-fn (ivy--sort-function caller)))
+                             (progn
+                               (setq sort nil)
+                               (sort (copy-sequence collection) sort-fn))
+                           (cl-remove-if-not predicate collection))))
+             (setq coll (all-completions "" collection))
              (let ((i 0))
                (ignore-errors
                  ;; cm can be read-only
@@ -2213,7 +2210,9 @@ See `completion-in-region' for further information."
                                 prompt
                               (replace-regexp-in-string "%" "%%" prompt))
                             ;; remove 'completions-first-difference face
-                            (mapcar #'substring-no-properties comps)
+                            (mapcar
+                             (lambda (s) (remove-text-properties 0 (length s) '(face) s) s)
+                             comps)
                             ;; predicate was already applied by `completion-all-completions'
                             :predicate nil
                             :initial-input initial
@@ -3400,7 +3399,10 @@ Note: The usual last two arguments are flipped for convenience.")
           "mouse-1: %s   mouse-3: %s")
         ivy-mouse-1-tooltip ivy-mouse-3-tooltip))
      str)
-    str))
+    (let ((annotation-function (plist-get completion-extra-properties :annotation-function)))
+      (if annotation-function
+          (concat str (funcall annotation-function str))
+        str))))
 
 (ivy-set-display-transformer
  'counsel-find-file 'ivy-read-file-transformer)

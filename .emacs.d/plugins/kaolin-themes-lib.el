@@ -251,6 +251,7 @@
     ;; Blue #0000FF
     (blue0 "#3237CA")
     (blue1 "#4145b6")
+    ;; TODO: change
     (blue2 "#2B2FA6")
     (blue3 "#525df3")
     (blue4 "#807f96") ; old faded-blue
@@ -315,7 +316,7 @@
     ;; Teal #00A89D
     (teal0 "#0d948d")
     (teal1 "#4d9391")
-    (teal2 "#396b68")
+    (teal2 "#1D5E5C")
     (teal3 "#49bdb0")
     (teal4 "#80bcb6")
     (teal5 "#141e1d")
@@ -467,8 +468,9 @@
     (diff-bg-rem crimson4)
 
     (comment     gray3)
-    (comment-alt azure8)
+    (comment-alt teal2)
 
+    ;; TODO:
     (kaolin-comment
       (pcase kaolin-themes-comments-style
         ('normal comment)
@@ -950,9 +952,12 @@
    (ediff-odd-diff-C (:background bg4))
 
     ;; TODO Imenu list
-    (imenu-list-entry-subalist-face-0 (:inherit 'font-lock-keyword-face))
-    (imenu-list-entry-face-1 (:foreground tooltip-fg))
-    (imenu-list-entry-face-0 (:inherit 'font-lock-type-face))
+    ;; (imenu-list-entry-subalist-face-0 (:inherit 'font-lock-keyword-face))
+    (imenu-list-entry-face   (:inherit 'font-lock-keyword-name-face))
+    (imenu-list-entry-face-0 (:inherit 'font-lock-keyword-face :height 1.1))
+    (imenu-list-entry-face-1 (:inherit 'font-lock-function-name-face))
+    (imenu-list-entry-face-2 (:inherit 'font-lock-string-face))
+    (imenu-list-entry-face-3 (:inherit 'font-lock-type-face))
 
     ;; TODO Treemacs
     (treemacs-root-face (:foreground keyword :height 1.2 :underline nil))
