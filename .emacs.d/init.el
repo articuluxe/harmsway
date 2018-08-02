@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-07-25 12:48:00 dan.harms>
+;; Modified Time-stamp: <2018-08-01 13:02:20 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2135,7 +2135,7 @@ Only one letter is shown, the first that applies."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; zoom-window ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package zoom-window
-  :bind ("C-2" . zoom-window-zoom))
+  :bind ("C-0" . zoom-window-zoom))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; perspective ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package perspective
@@ -2195,8 +2195,15 @@ Only one letter is shown, the first that applies."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; multi-term ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package multi-term
-  :bind (("C-1" . multi-term)
-         ("M-' 1" . multi-term))
+  :bind (("C-2" . multi-term)
+         ("M-' 1" . multi-term)
+         ("C-1" . multi-term-prev)
+         ("C-3" . multi-term-next)
+         ("C-4" . multi-term-dedicated-toggle)
+         ("C-5" . multi-term-dedicated-select)
+         )
+  :init
+  (setq multi-term-dedicated-select-after-open-p t)
   ;:init (setq multi-term-program "/bin/tcsh")
   )
 
