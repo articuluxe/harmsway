@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-08-09 14:51:24 dharms>
+;; Modified Time-stamp: <2018-08-17 03:55:40 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1068,7 +1068,7 @@ Only one letter is shown, the first that applies."
           (occur-mode :popup t :select nil :align bottom)
           (vlf-occur-mode :popup t :select nil :align bottom)
           (grep-mode :popup t :select nil :align bottom)
-          ("Help" :regexp t :popup t :select t)
+          ("\\*.*Help.*\\*" :regexp t :popup t :select t)
           ("xref" :regexp t :popup t :select t :align bottom)
           (help-mode :popup t :select t)
           (Man-mode :popup t :select t)
