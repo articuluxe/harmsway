@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-08-01 13:02:20 dan.harms>
+;; Modified Time-stamp: <2018-08-09 14:50:58 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -170,7 +170,7 @@ up to 10 times."
 ;; visual settings
 (menu-bar-mode -1)
 (setq-default fill-column 78)
-(defun my/disable-scroll-bars (frame)
+(defun harmsway-disable-scroll-bars (frame)
   "Disable scroll bars from frame FRAME."
   (modify-frame-parameters frame
                            '((vertical-scroll-bars . nil)

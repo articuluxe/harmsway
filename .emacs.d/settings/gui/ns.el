@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2018-08-02 08:41:38 dharms>
+;; Modified Time-stamp: <2018-08-02 09:03:33 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -26,9 +26,14 @@
 
 ;;; Code:
 
-(tool-bar-mode -1)
-(scroll-bar-mode -1)
-(add-hook 'after-make-frame-functions 'my/disable-scroll-bars)
+(defun harmsway-set-frame-params ()
+  "Adjust visual settings as needed."
+  (tool-bar-mode -1)
+  (scroll-bar-mode -1)
+  (harmsway-disable-scroll-bars (selected-frame))
+  )
+
+(add-hook 'after-make-frame-functions #'harmsway-set-frame-params)
 
 (setq ns-use-native-fullscreen nil)
 (setq ns-use-thin-smoothing t)

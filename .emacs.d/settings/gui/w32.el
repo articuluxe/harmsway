@@ -1,9 +1,9 @@
 ;; w32.el --- windows gui settings file
-;; Copyright (C) 2015, 2016  Dan Harms (dharms)
+;; Copyright (C) 2015-2016, 2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-12-15 17:47:41 dharms>
+;; Modified Time-stamp: <2018-08-02 08:55:42 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -28,7 +28,7 @@
 
 (tool-bar-mode -1)
 (scroll-bar-mode -1)
-(add-hook 'after-make-frame-functions 'my/disable-scroll-bars)
+(add-hook 'after-make-frame-functions 'harmsway-disable-scroll-bars)
 
 ;; scroll one line at a time
 (setq scroll-conservatively 0)
