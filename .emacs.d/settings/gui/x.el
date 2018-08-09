@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2018-08-02 08:55:43 dharms>
+;; Modified Time-stamp: <2018-08-09 14:48:03 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -25,10 +25,6 @@
 ;;
 
 ;;; Code:
-
-(tool-bar-mode -1)
-(scroll-bar-mode -1)
-(add-hook 'after-make-frame-functions 'harmsway-disable-scroll-bars)
 
 (global-set-key "\C-c0q11" 'toggle-frame-fullscreen)
 

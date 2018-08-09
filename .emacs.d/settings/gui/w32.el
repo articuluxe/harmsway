@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2018-08-02 08:55:42 dharms>
+;; Modified Time-stamp: <2018-08-09 14:48:03 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -25,10 +25,6 @@
 ;;
 
 ;;; Code:
-
-(tool-bar-mode -1)
-(scroll-bar-mode -1)
-(add-hook 'after-make-frame-functions 'harmsway-disable-scroll-bars)
 
 ;; scroll one line at a time
 (setq scroll-conservatively 0)
@@ -63,7 +59,7 @@
         (top . 5) (left . 5)
         ))
 
-(set-face-font 'default "Consolas-11")
+(set-face-font 'default "Consolas-11")  ;TODO remove
 
 ;;(pos-tip-w32-max-width-height t)          ;maximize frame temporarily
 

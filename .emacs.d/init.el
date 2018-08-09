@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-08-09 14:50:58 dharms>
+;; Modified Time-stamp: <2018-08-09 14:51:24 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -168,13 +168,7 @@ up to 10 times."
 (when (version< emacs-version "24.3")
   (setq-default display-buffer-reuse-frames t))
 ;; visual settings
-(menu-bar-mode -1)
 (setq-default fill-column 78)
-(defun harmsway-disable-scroll-bars (frame)
-  "Disable scroll bars from frame FRAME."
-  (modify-frame-parameters frame
-                           '((vertical-scroll-bars . nil)
-                             (horizontal-scroll-bars . nil))))
 (setq mouse-yank-at-point t)
 (mouse-avoidance-mode 'cat-and-mouse)
 (blink-cursor-mode 1)
@@ -197,11 +191,6 @@ Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
           (match-beginning 0)
           (match-end 0)
           'face (list :background (match-string-no-properties 0))))))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; choose-font ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package choose-font
-  :demand t
-  :bind ("C-c M-o" . choose-font))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; key-bindings ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; this removes the binding for "M-'" to 'abbrev-prefix-mark, without which we
@@ -2722,11 +2711,14 @@ This function's result only has value if it is preceded by any font changes."
   (load system-file))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; gui ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(let ((gui window-system)
-      gui-file)
-  ;; load gui file
-  (setq gui-file (concat my/gui-dir (if (null gui) "tty" (symbol-name gui))))
-  (load gui-file))
+(use-package harmsway-gui
+  :config
+  (harmsway-gui-load))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; choose-font ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package choose-font
+  :demand t
+  :bind ("C-c M-o" . choose-font))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; site ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun my/load-site-file (name)
@@ -2743,6 +2735,7 @@ This may perform related customization."
                                  yas-snippet-dirs))
     (when (fboundp 'yas-reload-all) (yas-reload-all))
     ))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; host ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (let* ((system (harmsway-unqualify-host-name (system-name)))
        (hosts-dir (concat my/user-directory "settings/host/"))
