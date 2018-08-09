@@ -2,7 +2,7 @@
 ;; Copyright (C) 2018  Dan Harms (dharms)
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Wednesday, March 28, 2018
-;; Modified Time-stamp: <2018-03-30 17:02:09 dharms>
+;; Modified Time-stamp: <2018-08-09 14:38:41 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: font
 
@@ -35,6 +35,21 @@
 (defvar choose-font-user-file "~/.emacs_fonts"
   "A config file used to configure `choose-font'.")
 
+(defun choose-font-init ()
+  "Initialize font settings.
+Uses the current value of `choose-font-list'."
+  (choose-font-read-init-file)
+  (if (daemonp)
+      (add-hook 'after-make-frame-functions #'choose-font-activate-hook-fn)
+    (choose-font-set-font (car choose-font-list))))
+
+(defun choose-font-activate-hook-fn (frame)
+  "Activate the font for FRAME.
+Used for daemon mode.  Will execute once then remove itself from the hook.
+Uses the current value of `choose-font-list'."
+  (remove-hook 'after-make-frame-functions #'choose-font-activate-hook-fn)
+  (choose-font-set-font (car choose-font-list)))
+
 (defun choose-font-read-init-file ()
   "Read the file `choose-font-user-file' if it exists.
 Every line is a font to add to `choose-font-list'.  The first
@@ -57,10 +72,10 @@ line is given priority as the preferred font to activate."
         (setq choose-font-list
               (cons first (remove first choose-font-list)))))))
 
-(defun choose-font-activate (font)
+(defun choose-font-set-font (font)
   "Activate a font specified by FONT."
   (interactive)
-  (set-frame-font font nil t))
+  (set-frame-font font t t))
 
 ;;;###autoload
 (defun choose-font (&optional font)
@@ -70,13 +85,13 @@ With a prefix argument, choose among a set of fonts defined in
   (interactive (list (when current-prefix-arg
                        (read-string "Font: "))))
   (if font
-      (choose-font-activate font)
+      (choose-font-set-font font)
     (choose-font-read-init-file)
     (ivy-read "Font: "
               choose-font-list
               :history choose-font-history
               :action (lambda (x)
-                        (choose-font-activate x))
+                        (choose-font-set-font x))
               :caller 'choose-font
               )))
 
@@ -86,7 +101,7 @@ With a prefix argument, choose among a set of fonts defined in
   (let ((font))
     (setq font (read-string "Font: " x))
     (when font
-      (choose-font-activate font))))
+      (choose-font-set-font font))))
 
 (ivy-add-actions 'choose-font
                  '(("e" choose-font-edit-font "edit")))
