@@ -28,6 +28,8 @@ ulimit -c unlimited
 source ~/config/git-completion.sh
 source ~/config/git-prompt.sh
 
+alias magit='emax -e "(magit-status \"$(pwd)\")"'
+
 export PROMPT_COMMAND=__prompt_command
 function __prompt_command() {
     local EXIT="$?"             # needs to be first
