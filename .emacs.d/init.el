@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-08-17 03:55:40 dan.harms>
+;; Modified Time-stamp: <2018-08-20 12:09:59 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2430,19 +2430,35 @@ Only one letter is shown, the first that applies."
   (use-package flycheck-package :config (flycheck-package-setup))
   (use-package flycheck-checkbashisms)
   (use-package flycheck-bashate)
-  (use-package flycheck-popup-tip)
-  (add-hook 'flycheck-mode-hook #'flycheck-popup-tip-mode)
-  ;; (use-package flycheck-pos-tip)
-  ;; (setq flycheck-display-errors-function #'flycheck-pos-tip-error-messages)
-  ;; (setq flycheck-pos-tip-display-errors-tty-function
-  ;;       (lambda (errors)
-  ;;         (let ((message (mapconcat #'flycheck-error-format-message-and-id
-  ;;                                   errors "\n\n")))
-  ;;           (popup-tip message))))
   ;; hack because flycheck unreasonably demands package installation
   (unless (fboundp 'pkg-info-version-info)
     (defun pkg-info-version-info (_) "unknown"))
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;; flycheck-popup-tip ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package flycheck-popup-tip
+  :after flycheck
+  :config
+  (add-hook 'flycheck-mode-hook #'flycheck-popup-tip-mode))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; flycheck-pos-tip ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package flycheck-pos-tip
+  :after flycheck
+  :disabled
+  :config
+  (setq flycheck-display-errors-function #'flycheck-pos-tip-error-messages)
+  (setq flycheck-pos-tip-display-errors-tty-function
+        (lambda (errors)
+          (let ((message (mapconcat #'flycheck-error-format-message-and-id
+                                    errors "\n\n")))
+            (popup-tip message)))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; flycheck-inline ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package flycheck-inline
+  :after flycheck
+  :disabled
+  :config
+  (add-hook 'flycheck-mode-hook #'flycheck-inline-mode))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; flyspell ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun my/toggle-flyspell-prog-mode ()
