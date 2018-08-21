@@ -5,7 +5,6 @@
 ;; Author: Jonas Bernoulli <jonas@bernoul.li>
 ;; Homepage: https://github.com/magit/ghub
 ;; Keywords: tools
-;; Package-Requires: ((emacs "24.4") (ghub "2.0"))
 
 ;; This file is not part of GNU Emacs.
 
@@ -36,7 +35,8 @@
 
 (require 'ghub)
 
-(defconst glab-default-host "gitlab.com/api/v4")
+(defconst glab-default-host "gitlab.com/api/v4"
+  "The default host that is used if `glab.host' is not set.")
 
 (cl-defun glab-head (resource &optional params
                               &key query payload headers
@@ -141,6 +141,12 @@ Like calling `ghub-request' (which see) with `gitlab' as FORGE."
                 :noerror noerror :reader reader
                 :username username :auth auth :host host
                 :callback callback :errorback errorback :extra extra))
+
+(cl-defun glab-repository-id (owner name &key username auth host)
+  "Return the id of the repository specified by OWNER, NAME and HOST."
+  (number-to-string
+   (cdr (assq 'id (glab-get (format "/projects/%s%%2F%s" owner name)
+                            nil :username username :auth auth :host host)))))
 
 ;;; _
 (provide 'glab)

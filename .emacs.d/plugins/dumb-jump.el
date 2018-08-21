@@ -524,6 +524,22 @@ or most optimal searcher."
                  "alias_method :some_method, :test"
                  "alias test_foo test"))
 
+    ;; Groovy
+    (:type "variable" :supports ("ag" "rg" "git-grep") :language "groovy"
+           :regex "^\\s*((\\w+[.])*\\w+,\\s*)*JJJ(,\\s*(\\w+[.])*\\w+)*\\s*=([^=>~]|$)"
+           :tests ("test = 1234" "self.foo, test, bar = args")
+           :not ("if test == 1234" "foo_test = 1234"))
+
+    (:type "function" :supports ("ag" "rg" "git-grep") :language "groovy"
+           :regex "(^|[^\\w.])((private|public)\\s+)?def\\s+(\\w+(::|[.]))*JJJ($|[^\\w|:])"
+           :tests ("def test(foo)" "def test()" "def test foo" "def test; end"
+                   "def self.test()" "def MODULE::test()" "private def test")
+           :not ("def test_foo"))
+
+    (:type "type" :supports ("ag" "rg" "git-grep") :language "groovy"
+           :regex "(^|[^\\w.])class\\s+(\\w*::)*JJJ($|[^\\w|:])"
+           :tests ("class test" "class Foo::test"))
+
     ;; crystal
     (:type "variable" :supports ("ag" "rg" "git-grep") :language "crystal"
            :regex "^\\s*((\\w+[.])*\\w+,\\s*)*JJJ(,\\s*(\\w+[.])*\\w+)*\\s*=([^=>~]|$)"
@@ -616,10 +632,17 @@ or most optimal searcher."
            :regex "function\\s*JJJ\\s*\\\("
            :tests ("function test()" "function test ()"))
 
+    (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "php"
+           :regex "\\*\\s@method\\s+[^ 	]+\\s+JJJ\\("
+           :tests ("/** @method string|false test($a)" " * @method bool test()"))
+
     (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "php"
            :regex "(\\s|->|\\$|::)JJJ\\s*=\\s*"
            :tests ("$test = 1234" "$foo->test = 1234"))
 
+    (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "php"
+           :regex "\\*\\s@property(-read|-write)?\\s+([^ 	]+\\s+)&?\\$JJJ(\\s+|$)"
+           :tests ("/** @property string $test" "/** @property string $test description for $test property"  " * @property-read bool|bool $test" " * @property-write \\ArrayObject<string,resource[]> $test"))
     (:type "trait" :supports ("ag" "grep" "rg" "git-grep") :language "php"
            :regex "trait\\s*JJJ\\s*\\\{"
            :tests ("trait test{" "trait test {"))
@@ -1185,6 +1208,9 @@ or most optimal searcher."
     (:language "ocaml" :ext "mli" :agtype "ocaml" :rgtype "ocaml")
     (:language "ocaml" :ext "mll" :agtype "ocaml" :rgtype "ocaml")
     (:language "ocaml" :ext "mly" :agtype "ocaml" :rgtype "ocaml")
+    (:language "groovy" :ext "gradle" :agtype nil :rgtype nil)
+    (:language "groovy" :ext "groovy" :agtype nil :rgtype nil)
+    (:language "groovy" :ext "jenkinsfile" :agtype nil :rgtype nil)
     (:language "haskell" :ext "hs" :agtype "haskell" :rgtype "haskell")
     (:language "haskell" :ext "lhs" :agtype "haskell" :rgtype "haskell")
     (:language "objc" :ext "m" :agtype "objc" :rgtype "objc")

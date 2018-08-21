@@ -28,19 +28,17 @@
 (require 'treemacs-workspaces)
 (eval-and-compile (require 'treemacs-macros))
 
-(defconst treemacs--image-creation-impossible
-  (condition-case e
-      (progn (create-image "" 'xpm) nil)
-    (error e))
-  "This variable is a non-nil error value when Emacs is unable to create images.
+(defsubst treemacs--is-image-creation-impossible? ()
+  "Will return non-nil when Emacs is unable to create images.
 In this scenario (usually caused by running Emacs without a graphical
 environment) treemacs will not create any of its icons and will be forced to
-permanently use its simple string icon fallack.")
+permanently use its simple string icon fallack."
+  (not (image-type-available-p 'png)))
 
 (defvar treemacs-icons-hash (make-hash-table :size 200 :test #'equal)
   "Hash table containing a mapping of icons onto file extensions.")
 
-(defvar treemacs--icon-size nil
+(defvar treemacs--icon-size 22
   "Size in pixels icons will be resized to.
 See also `treemacs-resize-icons'.")
 
@@ -58,14 +56,20 @@ via `assq'.")
   "Return `treemacs--created-icons'."
   treemacs--created-icons)
 
-(defun treemacs--create-image (file-path)
+(defmacro treemacs--size-adjust (width height)
+  "Special adjust for the WIDTH and HEIGHT of an icon.
+Necessary since root icon are not rectangular."
+  `(let ((w (round (* ,width 0.9090)))
+         (h (round (* ,height 1.1818))))
+     (setq ,width w ,height h)))
+
+(defsubst treemacs--create-image (file-path)
   "Load image from FILE-PATH and size it based on `treemacs--icon-size'."
   (-let [(height width) `(,treemacs--icon-size ,treemacs--icon-size)]
     ;; special case for the root icon which is unique in being 20x26 pixels large
     (when (and (integerp treemacs--icon-size)
                (s-ends-with? "root.png" file-path))
-      (setq width (round (* width 0.9090))
-            height (round (* height 1.1818))))
+      (treemacs--size-adjust width height))
     (if (and (integerp treemacs--icon-size) (image-type-available-p 'imagemagick))
         (create-image file-path 'imagemagick nil :ascent 'center :width width :height height)
       ;; interning the extension lets up pass both png and xpm icons
@@ -74,21 +78,25 @@ via `assq'.")
 (defmacro treemacs--setup-icon (var file-name &rest extensions)
   "Define VAR with its display property being the image created from FILE-NAME.
 Insert VAR into `treemacs-icon-hash' for each of the given file EXTENSIONS."
-  `(progn
-     (defvar ,var nil)
-     (let* ((image-unselected (treemacs--create-image (f-join treemacs-dir "icons/" ,file-name)))
-             (image-selected   (treemacs--create-image (f-join treemacs-dir "icons/" ,file-name))))
-        (treemacs--set-img-property image-selected   :background treemacs--selected-icon-background)
-        (treemacs--set-img-property image-unselected :background treemacs--not-selected-icon-background)
-        (setq ,var
-              (concat (propertize " "
-                                  'display image-unselected
-                                  'img-selected image-selected
-                                  'img-unselected image-unselected)
-                      " "))
-        (push ,var treemacs--created-icons)
-        (--each (quote ,extensions) (ht-set! treemacs-icons-hash it ,var))
-        ,var)))
+  (unless (treemacs--is-image-creation-impossible?)
+    `(progn
+       (defvar ,var nil)
+       (setq ,var
+             (eval-when-compile
+               ;; need to defvar here or the compiler will complain
+               (defvar treemacs--icon-size nil)
+               (let* ((image-unselected (treemacs--create-image (f-join treemacs-dir "icons/" ,file-name)))
+                      (image-selected   (treemacs--create-image (f-join treemacs-dir "icons/" ,file-name))))
+                 (treemacs--set-img-property image-selected   :background treemacs--selected-icon-background)
+                 (treemacs--set-img-property image-unselected :background treemacs--not-selected-icon-background)
+                 (concat (propertize " "
+                                     'display image-unselected
+                                     'img-selected image-selected
+                                     'img-unselected image-unselected)
+                         " "))))
+       (push ,var treemacs--created-icons)
+       (--each (quote ,extensions) (ht-set! treemacs-icons-hash it ,var))
+       ,var)))
 
 (defmacro treemacs--define-icon-with-default (var val)
   "Define a VAR with value VAL.
@@ -112,12 +120,12 @@ Remember the value in `treemacs--default-icons-alist'."
 ;; capable of displaying images and a 'txt' variant as fallback for TUI frames
 
 (defvar treemacs-icon-root-text            "")
-(defvar treemacs-icon-closed-text          (propertize "+ " 'face 'treemacs-term-node-face))
-(defvar treemacs-icon-open-text            (propertize "- " 'face 'treemacs-term-node-face))
-(defvar treemacs-icon-fallback-text        (propertize "  " 'face 'font-lock-keyword-face))
-(defvar treemacs-icon-tag-leaf-text        (propertize "• " 'face 'font-lock-constant-face))
-(defvar treemacs-icon-tag-node-closed-text (propertize "▸ " 'face 'font-lock-string-face))
-(defvar treemacs-icon-tag-node-open-text   (propertize "▾ " 'face 'font-lock-string-face))
+(defvar treemacs-icon-closed-text          (eval-when-compile (propertize "+ " 'face 'treemacs-term-node-face)))
+(defvar treemacs-icon-open-text            (eval-when-compile (propertize "- " 'face 'treemacs-term-node-face)))
+(defvar treemacs-icon-fallback-text        (eval-when-compile (propertize "  " 'face 'font-lock-keyword-face)))
+(defvar treemacs-icon-tag-leaf-text        (eval-when-compile (propertize "• " 'face 'font-lock-constant-face)))
+(defvar treemacs-icon-tag-node-closed-text (eval-when-compile (propertize "▸ " 'face 'font-lock-string-face)))
+(defvar treemacs-icon-tag-node-open-text   (eval-when-compile (propertize "▾ " 'face 'font-lock-string-face)))
 
 (defvar treemacs-icon-root-png            "")
 (defvar treemacs-icon-closed-png          "")
@@ -141,7 +149,7 @@ Also save the assignments in `treemacs--default-icons-alist'."
        (setq ,@key-values)
        ,@assignments)))
 
-(defsubst treemacs--setup-tui-icons ()
+(defun treemacs--setup-tui-icons ()
   "Will set textual icon values for non-file icons."
   (treemacs--set-icon-save-default
    treemacs-icon-closed          treemacs-icon-closed-text
@@ -152,7 +160,7 @@ Also save the assignments in `treemacs--default-icons-alist'."
    treemacs-icon-tag-node-closed treemacs-icon-tag-node-closed-text
    treemacs-icon-tag-node-open   treemacs-icon-tag-node-open-text))
 
-(defsubst treemacs--setup-gui-icons ()
+(defun treemacs--setup-gui-icons ()
   "Will set graphical values for non-file icons.
 Will also fill `treemacs-icons-hash' with graphical file icons."
   ;; first setup png variants of the non-file icons
@@ -175,44 +183,62 @@ Will also fill `treemacs-icons-hash' with graphical file icons."
    treemacs-icon-tag-node-open   treemacs-icon-tag-node-open-png)
 
   ;; then create and hash all the extension-based icons
-  (treemacs--setup-icon treemacs-icon-yaml       "yaml.png"       "yml" "yaml")
-  (treemacs--setup-icon treemacs-icon-shell      "shell.png"      "sh" "zsh" "fish")
-  (treemacs--setup-icon treemacs-icon-pdf        "pdf.png"        "pdf")
-  (treemacs--setup-icon treemacs-icon-c          "c.png"          "c" "h")
-  (treemacs--setup-icon treemacs-icon-cpp        "cpp.png"        "cpp" "cxx" "hpp" "tpp" "cc" "hh")
-  (treemacs--setup-icon treemacs-icon-haskell    "haskell.png"    "hs" "lhs" "cabal")
-  (treemacs--setup-icon treemacs-icon-python     "python.png"     "py" "pyc")
-  (treemacs--setup-icon treemacs-icon-markdown   "markdown.png"   "md")
-  (treemacs--setup-icon treemacs-icon-rust       "rust.png"       "rs")
-  (treemacs--setup-icon treemacs-icon-image      "image.png"      "jpg" "jpeg" "bmp" "svg" "png" "xpm")
-  (treemacs--setup-icon treemacs-icon-emacs      "emacs.png"      "el" "elc" "org")
-  (treemacs--setup-icon treemacs-icon-clojure    "clojure.png"    "clj" "cljs" "cljc")
-  (treemacs--setup-icon treemacs-icon-typescript "typescript.png" "ts" "tsx")
-  (treemacs--setup-icon treemacs-icon-vue        "vue.png"        "vue")
-  (treemacs--setup-icon treemacs-icon-css        "css.png"        "css")
-  (treemacs--setup-icon treemacs-icon-conf       "conf.png"       "properties" "conf" "config" "ini" "xdefaults" "xresources" "terminalrc" "toml")
-  (treemacs--setup-icon treemacs-icon-html       "html.png"       "html" "htm")
-  (treemacs--setup-icon treemacs-icon-git        "git.png"        "git" "gitignore" "gitconfig")
-  (treemacs--setup-icon treemacs-icon-dart       "dart.png"       "dart")
-  (treemacs--setup-icon treemacs-icon-java       "java.png"       "java")
-  (treemacs--setup-icon treemacs-icon-kotlin     "kotlin.png"     "kt")
-  (treemacs--setup-icon treemacs-icon-scala      "scala.png"      "scala")
-  (treemacs--setup-icon treemacs-icon-sbt        "sbt.png"        "sbt")
-  (treemacs--setup-icon treemacs-icon-go         "go.png"         "go")
-  (treemacs--setup-icon treemacs-icon-js         "js.png"         "js" "jsx")
-  (treemacs--setup-icon treemacs-icon-hy         "hy.png"         "hy")
-  (treemacs--setup-icon treemacs-icon-json       "json.png"       "json")
-  (treemacs--setup-icon treemacs-icon-julia      "julia.png"      "jl"))
+  (treemacs--setup-icon treemacs-icon-yaml         "yaml.png"             "yml" "yaml")
+  (treemacs--setup-icon treemacs-icon-shell        "shell.png"            "sh" "zsh" "fish")
+  (treemacs--setup-icon treemacs-icon-pdf          "pdf.png"              "pdf")
+  (treemacs--setup-icon treemacs-icon-c            "c.png"                "c" "h")
+  (treemacs--setup-icon treemacs-icon-cpp          "cpp.png"              "cpp" "cxx" "hpp" "tpp" "cc" "hh")
+  (treemacs--setup-icon treemacs-icon-haskell      "haskell.png"          "hs" "lhs" "cabal")
+  (treemacs--setup-icon treemacs-icon-python       "python.png"           "py" "pyc")
+  (treemacs--setup-icon treemacs-icon-markdown     "markdown.png"         "md")
+  (treemacs--setup-icon treemacs-icon-rust         "rust.png"             "rs")
+  (treemacs--setup-icon treemacs-icon-image        "image.png"            "jpg" "jpeg" "bmp" "svg" "png" "xpm")
+  (treemacs--setup-icon treemacs-icon-emacs        "emacs.png"            "el" "elc")
+  (treemacs--setup-icon treemacs-icon-clojure      "clojure.png"          "clj" "cljs" "cljc")
+  (treemacs--setup-icon treemacs-icon-typescript   "typescript.png"       "ts" "tsx")
+  (treemacs--setup-icon treemacs-icon-vue          "vue.png"              "vue")
+  (treemacs--setup-icon treemacs-icon-css          "css.png"              "css")
+  (treemacs--setup-icon treemacs-icon-conf         "conf.png"             "properties" "conf" "config" "ini" "xdefaults" "xresources" "terminalrc" "ledgerrc")
+  (treemacs--setup-icon treemacs-icon-html         "html.png"             "html" "htm")
+  (treemacs--setup-icon treemacs-icon-git          "git.png"              "git" "gitignore" "gitconfig")
+  (treemacs--setup-icon treemacs-icon-dart         "dart.png"             "dart")
+  (treemacs--setup-icon treemacs-icon-java         "java.png"             "java")
+  (treemacs--setup-icon treemacs-icon-kotlin       "kotlin.png"           "kt")
+  (treemacs--setup-icon treemacs-icon-scala        "scala.png"            "scala")
+  (treemacs--setup-icon treemacs-icon-sbt          "sbt.png"              "sbt")
+  (treemacs--setup-icon treemacs-icon-go           "go.png"               "go")
+  (treemacs--setup-icon treemacs-icon-js           "js.png"               "js" "jsx")
+  (treemacs--setup-icon treemacs-icon-hy           "hy.png"               "hy")
+  (treemacs--setup-icon treemacs-icon-json         "json.png"             "json")
+  (treemacs--setup-icon treemacs-icon-julia        "julia.png"            "jl")
+  (treemacs--setup-icon treemacs-icon-elixir       "elixir.png"           "ex")
+  (treemacs--setup-icon treemacs-icon-elixir-light "elixir_light.png"     "exs" "eex")
+  (treemacs--setup-icon treemacs-icon-makefile     "vsc/makefile.png"     "makefile")
+  (treemacs--setup-icon treemacs-icon-license      "vsc/license.png"      "license")
+  (treemacs--setup-icon treemacs-icon-zip          "vsc/zip.png"          "zip" "7z" "tar" "gz" "rar")
+  (treemacs--setup-icon treemacs-icon-elm          "vsc/elm.png"          "elm")
+  (treemacs--setup-icon treemacs-icon-xml          "vsc/xml.png"          "xml")
+  (treemacs--setup-icon treemacs-icon-binary       "vsc/binary.png"       "exe")
+  (treemacs--setup-icon treemacs-icon-ruby         "vsc/ruby.png"         "rb")
+  (treemacs--setup-icon treemacs-icon-scss         "vsc/scss.png"         "scss")
+  (treemacs--setup-icon treemacs-icon-lua          "vsc/lua.png"          "lua")
+  (treemacs--setup-icon treemacs-icon-log          "vsc/log.png"          "log")
+  (treemacs--setup-icon treemacs-icon-lisp         "vsc/lisp.png"         "lisp")
+  (treemacs--setup-icon treemacs-icon-sql          "vsc/sql.png"          "sql")
+  (treemacs--setup-icon treemacs-icon-toml         "vsc/toml.png"         "toml")
+  (treemacs--setup-icon treemacs-icon-nim          "vsc/nim.png"          "nim")
+  (treemacs--setup-icon treemacs-icon-org          "vsc/org.png"          "org")
+  (treemacs--setup-icon treemacs-icon-perl         "vsc/perl.png"         "perl")
+  (treemacs--setup-icon treemacs-icon-vim          "vsc/vim.png"          "vimrc" "tridactylrc" "vimperatorrc" "ideavimrc" "vrapperrc")
+  (treemacs--setup-icon treemacs-icon-depend       "vsc/dependencies.png" "cask")
+  (treemacs--setup-icon treemacs-icon-r            "vsc/r.png"            "r"))
 
 (defun treemacs--setup-icons ()
   "Create and define all icons-related caches, hashes and stashes."
   (setq treemacs-icons-hash (make-hash-table :size 100 :test #'equal))
-  (if treemacs--image-creation-impossible
+  (if (treemacs--is-image-creation-impossible?)
       (treemacs--setup-tui-icons)
     (treemacs--setup-gui-icons)))
-
-(only-during-treemacs-init
- (treemacs--setup-icons))
 
 (defun treemacs-reset-icons ()
   "Reset customized icons to their default values."
@@ -264,18 +290,27 @@ is changed."
   (setq treemacs--icon-size size)
   ;; resizing only works in gui displays so we just re-run the routine that creates
   ;; all the icons after the new size is set
-  (treemacs--setup-gui-icons)
-  (treemacs--refresh-buffer-icons))
+  (--each (treemacs--created-icons)
+    (let ((display        (get-text-property 0 'display it))
+          (img-selected   (get-text-property 0 'img-selected it))
+          (img-unselected (get-text-property 0 'img-unselected it))
+          (width          treemacs--icon-size)
+          (height         treemacs--icon-size))
+      (when (s-ends-with? "root.png" (plist-get (cdr display) :file))
+        (treemacs--size-adjust width height))
+      (dolist (property (list display img-selected img-unselected))
+        (plist-put (cdr property) :height height)
+        (plist-put (cdr property) :width width)))))
 
 (defun treemacs--adjust-icons-to-window-system ()
   "Check if the current treemacs buffer should use TUI icons.
 If it's running in a TUI switch to simple text icons.
 
 TUI icons will be used if
- * `treemacs--image-creation-impossible' is t,
+ * `treemacs--is-image-creation-impossible?' returns t,
  * `treemacs-no-png-images' is it
  * or if the current frame is a TUI frame"
-  (if (or treemacs--image-creation-impossible
+  (if (or (treemacs--is-image-creation-impossible?)
             treemacs-no-png-images
             (not (window-system)))
       (progn
@@ -326,6 +361,9 @@ be assigned which treemacs icon, for exmaple
                  (icon (cdr (assq mode mode-icon-alist))))
       (treemacs-log "Map %s to %s" extension (symbol-name icon))
       (ht-set! treemacs-icons-hash (substring extension 1) (symbol-value icon)))))
+
+(treemacs-only-during-init
+ (treemacs--setup-icons))
 
 (provide 'treemacs-icons)
 

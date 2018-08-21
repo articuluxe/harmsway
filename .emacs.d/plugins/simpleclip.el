@@ -5,8 +5,8 @@
 ;; Author: Roland Walker <walker@pobox.com>
 ;; Homepage: http://github.com/rolandwalker/simpleclip
 ;; URL: http://raw.githubusercontent.com/rolandwalker/simpleclip/master/simpleclip.el
-;; Version: 1.0.4
-;; Last-Updated:  3 Aug 2017
+;; Version: 1.0.6
+;; Last-Updated: 11 Aug 2018
 ;; Keywords: convenience
 ;;
 ;; Simplified BSD License
@@ -173,7 +173,7 @@
 ;;;###autoload
 (defgroup simpleclip nil
   "Simplified access to the system clipboard."
-  :version "1.0.4"
+  :version "1.0.6"
   :link '(emacs-commentary-link :tag "Commentary" "simpleclip")
   :link '(url-link :tag "GitHub" "http://github.com/rolandwalker/simpleclip")
   :link '(url-link :tag "EmacsWiki" "http://emacswiki.org/emacs/Simpleclip")
@@ -332,10 +332,12 @@ in GNU Emacs 24.1 or higher."
         ((and (featurep 'mac)
               (fboundp 'x-get-selection))
          (x-get-selection 'CLIPBOARD 'NSStringPboardType))
+        ;; todo, this should try more than one request type, as in gui--selection-value-internal
         ((fboundp 'gui-get-selection)
-         (gui-get-selection 'CLIPBOARD))
+         (gui-get-selection 'CLIPBOARD (or x-select-request-type 'UTF8_STRING)))
+        ;; todo, this should try more than one request type, as in gui--selection-value-internal
         ((fboundp 'x-get-selection)
-         (x-get-selection 'CLIPBOARD))
+         (x-get-selection 'CLIPBOARD (or x-select-request-type 'UTF8_STRING)))
         (t
          (error "Clipboard support not available")))
     (error
@@ -409,7 +411,6 @@ if the argument is positive and otherwise disables the mode.
 When called from Lisp, this command enables the mode if the
 argument is omitted or nil, and toggles the mode if the argument
 is 'toggle."
-  :keymap simpleclip-mode-map
   :group 'simpleclip
   :global t
   (cond
@@ -427,10 +428,7 @@ is 'toggle."
       ((boundp 'select-enable-clipboard)
        (setq select-enable-clipboard nil))
       ((boundp 'x-select-enable-clipboard)
-       (setq x-select-enable-clipboard nil)))
-    (when (and (simpleclip-called-interactively-p 'interactive)
-               (not simpleclip-less-feedback))
-      (message "simpleclip mode enabled")))
+       (setq x-select-enable-clipboard nil))))
    (t
     (setq interprogram-cut-function simpleclip-saved-icf)
     (setq interprogram-paste-function simpleclip-saved-ipf)
@@ -441,10 +439,7 @@ is 'toggle."
        (setq x-select-enable-clipboard simpleclip-saved-xsec)))
     (setq simpleclip-saved-icf nil)
     (setq simpleclip-saved-ipf nil)
-    (setq simpleclip-saved-xsec nil)
-    (when (and (simpleclip-called-interactively-p 'interactive)
-               (not simpleclip-less-feedback))
-      (message "simpleclip mode disabled")))))
+    (setq simpleclip-saved-xsec nil))))
 
 ;;; interactive commands
 

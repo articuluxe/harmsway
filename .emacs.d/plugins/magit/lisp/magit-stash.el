@@ -383,7 +383,7 @@ instead of \"Stashes:\"."
               (insert " " msg "\n")
               (save-excursion
                 (backward-char)
-                (magit-log-format-margin author date)))))
+                (magit-log-format-margin autostash author date)))))
         (if verified
             (magit-git-wash (apply-partially 'magit-log-wash-log 'stash)
               "reflog" "--format=%gd%x00%aN%x00%at%x00%gs" ref)
@@ -441,7 +441,7 @@ instead of \"Stashes:\"."
            (magit-rev-format "%s" stash)))
   (setq magit-buffer-revision-hash (magit-rev-parse stash))
   (magit-insert-section (stash)
-    (run-hooks 'magit-stash-sections-hook)))
+    (magit-run-section-hook 'magit-stash-sections-hook)))
 
 (defun magit-stash-insert-section (commit range message &optional files)
   (magit-insert-section (commit commit)

@@ -2,11 +2,12 @@
 
 ;; Filename: plantuml-mode.el
 ;; Description: Major mode for PlantUML diagrams sources
-;; Compatibility: Tested with Emacs 24.3 through 24.5 on OS X 10.10
+;; Compatibility: Tested with Emacs 25 through 27 (current master)
 ;; Author: Zhang Weize (zwz)
 ;; Maintainer: Carlo Sciolla (skuro)
 ;; Keywords: uml plantuml ascii
-;; Version: 1.2.3
+;; Version: 1.2.7
+;; Package-Requires: ((emacs "25.0"))
 
 ;; This file is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -35,6 +36,8 @@
 
 ;;; Change log:
 ;;
+;; version 1.2.7, 2018-08-15 Added support for indentation; Fixed the comiling error when installing with melpa
+;; version 1.2.6, 2018-07-17 Introduced custom variable `plantuml-jar-args' to control which arguments are passed to PlantUML jar. Fix the warning of failing to specify types of 'defcustom' variables
 ;; version 1.2.5, 2017-08-19 #53 Fixed installation warnings
 ;; version 1.2.4, 2017-08-18 #60 Licensed with GPLv3+ to be compatible with Emacs
 ;; version 1.2.3, 2016-12-25 #50 unicode support in generated output
@@ -68,11 +71,13 @@
 
 (defcustom plantuml-jar-path
   (expand-file-name "~/plantuml.jar")
-  "The location of the PlantUML executable JAR.")
+  "The location of the PlantUML executable JAR."
+  :type 'string
+  :group 'plantuml)
 
 (defvar plantuml-mode-hook nil "Standard hook for plantuml-mode.")
 
-(defconst plantuml-mode-version "1.2.3" "The plantuml-mode version string.")
+(defconst plantuml-mode-version "1.2.7" "The plantuml-mode version string.")
 
 (defvar plantuml-mode-debug-enabled nil)
 
@@ -85,18 +90,31 @@
   "Keymap for plantuml-mode.")
 
 (defcustom plantuml-java-command "java"
-  "The java command used to execute PlantUML.")
+  "The java command used to execute PlantUML."
+  :type 'string
+  :group 'plantuml)
 
 (eval-and-compile
-  (defcustom plantuml-java-args '("-Djava.awt.headless=true" "-jar")
-    "The parameters passed to `plantuml-java-command' when executing PlantUML."))
+  (defcustom plantuml-java-args (list "-Djava.awt.headless=true" "-jar")
+    "The parameters passed to `plantuml-java-command' when executing PlantUML."
+    :type '(repeat string)
+    :group 'plantuml))
+
+
+(eval-and-compile
+  (defcustom plantuml-jar-args (list "-charset" "UTF-8" )
+    "The parameters passed to `plantuml.jar', when executing PlantUML."
+    :type '(repeat string)
+    :group 'plantuml))
 
 (defcustom plantuml-suppress-deprecation-warning t
-  "To silence the deprecation warning when `puml-mode' is found upon loading.")
+  "To silence the deprecation warning when `puml-mode' is found upon loading."
+  :type 'boolean
+  :group 'plantuml)
 
 (defun plantuml-render-command (&rest arguments)
   "Create a command line to execute PlantUML with arguments (as ARGUMENTS)."
-  (let* ((cmd-list (append plantuml-java-args (list (expand-file-name plantuml-jar-path)) arguments))
+  (let* ((cmd-list (append plantuml-java-args (list (expand-file-name plantuml-jar-path)) plantuml-jar-args arguments))
          (cmd (mapconcat 'identity cmd-list "|")))
     (plantuml-debug (format "Command is [%s]" cmd))
     cmd-list))
@@ -149,7 +167,7 @@
     (error "Could not find plantuml.jar at %s" plantuml-jar-path))
   (with-temp-buffer
     (let ((cmd-args (append (list plantuml-java-command nil t nil)
-                            (plantuml-render-command "-charset" "UTF-8" "-language"))))
+                            (plantuml-render-command "-language"))))
       (apply 'call-process cmd-args)
       (goto-char (point-min)))
     (let ((found (search-forward ";" nil t))
@@ -233,7 +251,9 @@ default output type for new buffers."
                   plantuml-java-command
                   ,@plantuml-java-args
                   (expand-file-name plantuml-jar-path)
-                  (plantuml-output-type-opt) "-charset" "UTF-8" "-p"))
+                  (plantuml-output-type-opt)
+                  ,@plantuml-jar-args
+                  "-p"))
 
 (defun plantuml-preview-string (prefix string)
   "Preview diagram from PlantUML sources (as STRING), using prefix (as PREFIX)
@@ -287,9 +307,9 @@ Uses prefix (as PREFIX) to choose where to display it:
 - else -> new buffer"
   (interactive "p\nr")
   (plantuml-preview-string prefix (concat "@startuml\n"
-                                      (buffer-substring-no-properties
-                                       begin end)
-                                      "\n@enduml")))
+                                          (buffer-substring-no-properties
+                                           begin end)
+                                          "\n@enduml")))
 
 (defun plantuml-preview-current-block (prefix)
   "Preview diagram from the PlantUML sources from the previous @startuml to the next @enduml.
@@ -313,7 +333,7 @@ Uses prefix (as PREFIX) to choose where to display it:
   (interactive "p")
   (if mark-active
       (plantuml-preview-region prefix (region-beginning) (region-end))
-      (plantuml-preview-buffer prefix)))
+    (plantuml-preview-buffer prefix)))
 
 (defun plantuml-init-once ()
   "Ensure initialization only happens once."
@@ -323,6 +343,8 @@ Uses prefix (as PREFIX) to choose where to display it:
     (defvar plantuml-keywords-regexp (concat "^\\s *" (regexp-opt plantuml-keywords 'words)  "\\|\\(<\\|<|\\|\\*\\|o\\)\\(\\.+\\|-+\\)\\|\\(\\.+\\|-+\\)\\(>\\||>\\|\\*\\|o\\)\\|\\.\\{2,\\}\\|-\\{2,\\}"))
     (defvar plantuml-builtins-regexp (regexp-opt plantuml-builtins 'words))
     (defvar plantuml-preprocessors-regexp (concat "^\\s *" (regexp-opt plantuml-preprocessors 'words)))
+    (defvar plantuml-indent-regexp-start "^[ \t]*\\(\\(?:.*\\)?\s*\\(?:[<>.*a-z-|]+\\)?\s*\\(?:\\[[a-zA-Z]+\\]\\)?\s+if\\|alt\\|else\\|note\s+over\\|note\sas\s.*\\|note\s+\\(\\(?:\\(?:buttom\\|left\\|right\\|top\\)\\)\\)\\(?:\s+of\\)?\\|\\(?:class\\|enum\\|package\\)\s+.*{\\)")
+    (defvar plantuml-indent-regexp-end "^[ \t]*\\(endif\\|else\\|end\\|end\s+note\\|.*}\\)")
 
     (setq plantuml-font-lock-keywords
           `(
@@ -373,6 +395,53 @@ Uses prefix (as PREFIX) to choose where to display it:
                 (all-completions meat plantuml-kwdList)))
              (message "Making completion list...%s" "done")))))
 
+
+;; indentation
+
+
+(defun plantuml-current-block-depth ()
+  "Trace the current block indentation level by recursively looking back line by line."
+  ;; forward declare the lazy initialized constants
+  (defvar plantuml-indent-regexp-start)
+  (defvar plantuml-indent-regexp-end)
+  (save-excursion
+    (let ((relative-depth 0)
+          (bob-visited? nil))
+      (beginning-of-line)
+      (forward-line -1)
+      (while (and (>= relative-depth 0)
+                  (not bob-visited?))
+        (if (bobp)
+            (setq bob-visited? t))
+        (if (looking-at plantuml-indent-regexp-end)
+            (setq relative-depth (1- relative-depth)))
+        (if (looking-at plantuml-indent-regexp-start)
+            (setq relative-depth (1+ relative-depth)))
+        (forward-line -1))
+
+      (if (<= relative-depth 0)
+          0
+        relative-depth))))
+
+(defun plantuml-indent-line ()
+  "Indent the current line to its desired indentation level."
+  (interactive)
+  ;; forward declare the lazy initialized constants
+  (defvar plantuml-indent-regexp-start)
+  (defvar plantuml-indent-regexp-end)
+  (let ((original-indentation (current-indentation)))
+    (save-excursion
+      (beginning-of-line)
+      (if (bobp)
+          (indent-line-to 0)
+        (let ((depth (plantuml-current-block-depth)))
+          (when (looking-at plantuml-indent-regexp-end)
+            (setq depth (max (1- depth) 0)))
+          (indent-line-to (* tab-width depth)))))
+    (forward-char (- (current-indentation)
+                     original-indentation))))
+
+
 ;;;###autoload
 (add-to-list 'auto-mode-alist '("\\.\\(plantuml\\|pum\\|plu\\)\\'" . plantuml-mode))
 
@@ -389,6 +458,7 @@ Shortcuts             Command Name
   (set (make-local-variable 'comment-end) "'/")
   (set (make-local-variable 'comment-multi-line) t)
   (set (make-local-variable 'comment-style) 'extra-line)
+  (set (make-local-variable 'indent-line-function) 'plantuml-indent-line)
   (setq font-lock-defaults '((plantuml-font-lock-keywords) nil t)))
 
 (defun plantuml-deprecation-warning ()

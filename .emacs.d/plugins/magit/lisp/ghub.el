@@ -59,7 +59,8 @@
 
 ;;; Settings
 
-(defconst ghub-default-host "api.github.com")
+(defconst ghub-default-host "api.github.com"
+  "The default host that is used if `ghub.host' is not set.")
 
 (defvar ghub-github-token-scopes '(repo)
   "The Github API scopes that your private tools need.
@@ -609,6 +610,20 @@ has to provide several values including their password."
                host scopes))
     scopes))
 
+;;;###autoload
+(defun ghub-clear-caches ()
+  "Clear all caches that might negatively affect Ghub.
+
+If a library that is used by Ghub caches incorrect information
+such as a mistyped password, then that can prevent Ghub from
+asking the user for the correct information again.
+
+Set `url-http-real-basic-auth-storage' to nil
+and call `auth-source-forget+'."
+  (interactive)
+  (setq url-http-real-basic-auth-storage nil)
+  (auth-source-forget+))
+
 ;;;; Internal
 
 (defun ghub--headers (headers host auth username forge)
@@ -682,9 +697,10 @@ has to provide several values including their password."
                 ;; Auth-Source caches the information that there is no
                 ;; value, but in our case that is a situation that needs
                 ;; fixing so we want to keep trying by invalidating that
-                ;; information.  The (:max 1) is needed for Emacs releases
-                ;; before 26.1.
-                (auth-source-forget (list :max 1 :host host :user user))
+                ;; information.
+                ;; The (:max 1) is needed and has to be placed at the
+                ;; end for Emacs releases before 26.1.  See #24, #64.
+                (auth-source-forget (list :host host :user user :max 1))
                 (and (not nocreate)
                      (if (eq forge 'gitlab)
                          (error
@@ -819,7 +835,8 @@ WARNING: The token will be stored unencrypted in %S.
 
 (defun ghub--auth-source-get (keys &rest spec)
   (declare (indent 1))
-  (let ((plist (car (apply #'auth-source-search :max 1 spec))))
+  (let ((plist (car (apply #'auth-source-search
+                           (append spec (list :max 1))))))
     (mapcar (lambda (k)
               (plist-get plist k))
             keys)))

@@ -308,7 +308,7 @@ Type \\[magit-reset] to reset `HEAD' to the commit at point.
   (magit-set-header-line-format
    (format "%s %s" ref (mapconcat #'identity args " ")))
   (magit-insert-section (branchbuf)
-    (run-hooks 'magit-refs-sections-hook))
+    (magit-run-section-hook 'magit-refs-sections-hook))
   (add-hook 'kill-buffer-hook 'magit-preserve-section-visibility-cache))
 
 ;;; Commands
@@ -740,7 +740,8 @@ line is inserted at all."
   (save-excursion
     (goto-char (line-beginning-position 0))
     (let ((line (magit-rev-format "%ct%cN" commit)))
-      (magit-log-format-margin (substring line 10)
+      (magit-log-format-margin commit
+                               (substring line 10)
                                (substring line 0 10)))))
 
 (provide 'magit-refs)

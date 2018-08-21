@@ -238,7 +238,8 @@
     ;; TODO adjust
     (ultramarine0 "#4618dc")
     (ultramarine1 "#5f3eca")
-    (ultramarine2 "#40249C")
+    ;; TODO:
+    (ultramarine2  "#6D6487")
     (ultramarine3 "#6d44eb")
     (ultramarine4 "#787096")
     (ultramarine5 "#16141e")
@@ -276,7 +277,8 @@
     ;; Azure #007FFF
     (azure0 "#0e70d1")
     (azure1 "#3f7dba") ; old blue
-    (azure2 "#2a4661")
+    ;; (azure2 "#2a4661")
+    (azure2 "#3B6F87")
     (azure3 "#4ca6e8") ; old soft-blue
     (azure4 "#53859d") ; old moderate-blue
     (azure5 "#14191e")
@@ -314,7 +316,7 @@
     (cyan9 "#D3EEEE")
 
     ;; Teal #00A89D
-    (teal0 "#0d948d")
+    (teal0 "#0D9C94")
     (teal1 "#4d9391")
     (teal2 "#1D5E5C")
     (teal3 "#49bdb0")
@@ -444,6 +446,7 @@
     (button orange8)
     (button-hl amber3)
 
+    ;; TODO:
     (tooltip-bg bg2)
     (tooltip-fg fg2)
     (tooltip-hl-bg brown2)
@@ -686,8 +689,10 @@
     (elfeed-search-title-face        (:foreground comment))
 
     ;; Modeline
-    (mode-line           (:box (:line-width 2 :color line-border) :background line-bg1 :foreground var :bold bold))
-    (mode-line-inactive  (:box (:line-width 2 :color line-border) :background line-bg1 :foreground gray9 :bold bold))
+    (mode-line           (:background line-bg1 :foreground line-color1 :bold bold
+                                      :box (:line-width 2 :color line-border)))
+    (mode-line-inactive  (:background line-bg1 :foreground comment :bold bold
+                                      :box (:line-width 2 :color line-border)))
     (mode-line-buffer-id (:background nil :foreground line-color2 :bold bold))
     (mode-line-highlight (:foreground line-color2 :box nil :bold bold))
     (mode-line-emphasis  (:foreground fg1))
@@ -703,16 +708,19 @@
     (telephone-line-evil-motion     (:inherit 'telephone-line-evil :background line-bg2 :foreground evil-motion))
     (telephone-line-evil-operator   (:inherit 'telephone-line-evil :background line-bg2 :foreground evil-operator))
     (telephone-line-evil-emacs      (:inherit 'telephone-line-evil :background line-bg2 :foreground evil-emacs))
+    (telephone-line-projectile      (:foreground prep))
 
     ;; Powerline
-    ;; TODO: check it
-    (powerline-active1   (:inherit 'mode-line))
-    (powerline-active2   (:inherit 'mode-line))
-    (powerline-inactive1 (:inherit 'mode-line-inactive))
-    (powerline-inactive2 (:inherit 'mode-line-inactive))
+    (powerline-active0           (:background line-bg2 :foreground line-color1))
+    (powerline-active1           (:background line-bg2 :foreground line-color2))
+    (powerline-active2           (:background line-bg1 :foreground line-color2))
+    (powerline-inactive0         (:inherit 'mode-line-inactive))
+    (powerline-inactive1         (:inherit 'mode-line-inactive))
+    (powerline-inactive2         (:inherit 'mode-line-inactive))
 
-    ;; Spaceline
-    (spaceline-highlight-face (:foreground cyan3))
+    ;; ;; Spaceline
+    ;; TODO:
+    (spaceline-highlight-face (:background line-bg2 :foreground hl :bold bold))
 
     ;; Smart-mode-line
     (sml/line-number      (:foreground chartreuse1))
@@ -963,6 +971,7 @@
     (treemacs-root-face (:foreground keyword :height 1.2 :underline nil))
     (treemacs-directory-face (:foreground functions))
     (treemacs-git-modified-face (:foreground diff-mod))
+    (treemacs-fringe-indicator-face (:foreground prep))
 
     ;; Git gutter
     (git-gutter:unchanged (:background bg1 :foreground nil))

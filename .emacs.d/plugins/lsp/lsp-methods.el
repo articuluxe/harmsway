@@ -694,7 +694,9 @@ Return the merged plist."
 (defun lsp--client-textdocument-capabilities ()
   "Client Text document capabilities according to LSP."
   `(:synchronization (:willSave t :didSave t :willSaveWaitUntil t)
-     :symbol (:symbolKind (:valueSet ,(cl-loop for kind from 1 to 25 collect kind)))))
+                     :symbol (:symbolKind (:valueSet ,(cl-coerce (cl-loop for kind from 1 to 25 collect kind) 'vector)))
+                     :formatting (:dynamicRegistration t)
+                     :codeAction (:dynamicRegistration t)))
 
 (defun lsp-register-client-capabilities (package-name caps)
   "Register extra client capabilities for the current workspace.
@@ -1081,6 +1083,18 @@ interface TextDocumentEdit {
 (define-inline lsp--capability (cap &optional capabilities)
   "Get the value of capability CAP.  If CAPABILITIES is non-nil, use them instead."
   (inline-quote (gethash ,cap (or ,capabilities (lsp--server-capabilities) (make-hash-table)))))
+
+(define-inline lsp--registered-capability (method)
+  (inline-quote
+   (seq-find (lambda (reg) (equal (lsp--registered-capability-method reg) ,method))
+             (lsp--workspace-registered-server-capabilities lsp--cur-workspace)
+             nil)))
+
+(define-inline lsp--registered-capability-by-id (id)
+  (inline-quote
+   (seq-find (lambda (reg) (equal (lsp--registered-capability-id reg) ,id))
+             (lsp--workspace-registered-server-capabilities lsp--cur-workspace)
+             nil)))
 
 (defvar-local lsp--before-change-vals nil
   "Store the positions from the `lsp-before-change' function
@@ -1540,7 +1554,9 @@ Returns xref-item(s)."
     (when (and (lsp--capability "documentHighlightProvider")
                lsp-highlight-symbol-at-point)
       (lsp-symbol-highlight))
-    (when (and (lsp--capability "codeActionProvider") lsp-enable-codeaction)
+    (when (and (or (lsp--capability "codeActionProvider")
+                   (lsp--registered-capability "textDocument/codeAction"))
+               lsp-enable-codeaction)
       (lsp--text-document-code-action))
     (when (and (lsp--capability "hoverProvider") lsp-enable-eldoc)
       (funcall lsp-hover-text-function))))
@@ -1755,6 +1771,9 @@ type MarkupKind = 'plaintext' | 'markdown';"
   "Request code action to automatically fix issues reported by
 the diagnostics."
   (lsp--cur-workspace-check)
+  (unless (or (lsp--capability "codeActionProvider")
+              (lsp--registered-capability "textDocument/codeAction"))
+    (signal 'lsp-capability-not-supported (list "codeActionProvider")))
   (let ((params (lsp--text-document-code-action-params)))
     (lsp--send-request-async
      (lsp--make-request "textDocument/codeAction" params)
@@ -1852,7 +1871,8 @@ Optionally, CALLBACK is a function that accepts a single argument, the code lens
 (defun lsp-format-buffer ()
   "Ask the server to format this document."
   (interactive "*")
-  (unless (lsp--capability "documentFormattingProvider")
+  (unless (or (lsp--capability "documentFormattingProvider")
+              (lsp--registered-capability "textDocument/formatting"))
     (signal 'lsp-capability-not-supported (list "documentFormattingProvider")))
   (let ((edits (lsp--send-request (lsp--make-request
                                    "textDocument/formatting"
@@ -2115,6 +2135,8 @@ interface RenameParams {
   "Create and send a 'workspace/executeCommand' message having
 command COMMAND and optionsl ARGS"
   (lsp--cur-workspace-check)
+  (unless (lsp--capability "executeCommandProvider")
+    (signal 'lsp-capability-not-supported (list "executeCommandProvider")))
   (lsp--send-request
    (lsp--make-request
     "workspace/executeCommand"

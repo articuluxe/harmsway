@@ -21,6 +21,7 @@
 ;;; Code:
 
 (require 's)
+(require 'f)
 (require 'hydra)
 (require 'treemacs-interface)
 (require 'treemacs-customization)
@@ -63,10 +64,10 @@ Prefer evil keybinds, otherwise pick the first result."
 If the hydra, for whatever reason, is unable the find the key a command is bound
 to it will instead show a blank."
   (interactive)
-  (-if-let (b (treemacs-buffer-exists?))
+  (-if-let (b (treemacs-get-local-buffer))
       (with-current-buffer b
         (let*
-            ((title              (format (propertize "Treemacs v%s Helpful Hydra" 'face 'treemacs-help-title-face) (treemacs-version)))
+            ((title              (format (propertize "Treemacs %s Helpful Hydra" 'face 'treemacs-help-title-face) (treemacs-version)))
              (column-nav         (propertize "Navigation" 'face 'treemacs-help-column-face))
              (column-nodes       (propertize "Opening Nodes" 'face 'treemacs-help-column-face))
              (column-files       (propertize "File Management" 'face 'treemacs-help-column-face))
@@ -105,8 +106,8 @@ to it will instead show a blank."
              (key-bookmark       (treemacs--find-keybind #'treemacs-add-bookmark))
              (key-down-next-w    (treemacs--find-keybind #'treemacs-next-line-other-window))
              (key-up-next-w      (treemacs--find-keybind #'treemacs-previous-line-other-window))
-             (key-add-project    (treemacs--find-keybind #'treemacs-add-project))
-             (key-remove-project (treemacs--find-keybind #'treemacs-remove-project))
+             (key-add-project    (treemacs--find-keybind #'treemacs-add-project-to-workspace))
+             (key-remove-project (treemacs--find-keybind #'treemacs-remove-project-from-workspace))
              (key-rename-project (treemacs--find-keybind #'treemacs-rename-project))
              (hydra-str
               (format
@@ -170,8 +171,8 @@ to it will instead show a blank."
               (,(cdr key-fwatch-mode)    #'treemacs-filewatch-mode)
               (,(cdr key-resort)         #'treemacs-resort)
               (,(cdr key-bookmark)       #'treemacs-add-bookmark)
-              (,(cdr key-add-project)    #'treemacs-add-project)
-              (,(cdr key-remove-project) #'treemacs-remove-project)
+              (,(cdr key-add-project)    #'treemacs-add-project-to-workspace)
+              (,(cdr key-remove-project) #'treemacs-remove-project-from-workspace)
               (,(cdr key-rename-project) #'treemacs-rename-project)
               ("?" nil "Exit"))))
         (treemacs--helpful-hydra/body))
@@ -227,8 +228,8 @@ to it will instead show a blank."
       (define-key map (kbd "s")         #'treemacs-resort)
       (define-key map (kbd "b")         #'treemacs-add-bookmark)
       (define-key map (kbd "C-p r")     #'treemacs-rename-project)
-      (define-key map (kbd "C-p a")     #'treemacs-add-project)
-      (define-key map (kbd "C-p d")     #'treemacs-remove-project)
+      (define-key map (kbd "C-p a")     #'treemacs-add-project-to-workspace)
+      (define-key map (kbd "C-p d")     #'treemacs-remove-project-from-workspace)
       (define-key map (kbd "C-p c c")   #'treemacs-collapse-project)
       (define-key map (kbd "C-p c o")   #'treemacs-collapse-other-projects)
       (define-key map (kbd "C-p c a")   #'treemacs-collapse-all-projects)
@@ -264,7 +265,7 @@ Used as a post command hook."
   (--if-let (treemacs-current-button)
       (-let [path (treemacs--nearest-path it)]
         (when (file-readable-p path)
-          (setq default-directory (if (file-directory-p path) path (file-name-directory path)))))
+          (setq default-directory (f-slash (if (file-directory-p path) path (file-name-directory path))))))
     "/"))
 
 ;;;###autoload
@@ -275,7 +276,7 @@ Used as a post command hook."
         truncate-lines      t
         indent-tabs-mode    nil
         cursor-type         nil
-        desktop-save-buffer t)
+        desktop-save-buffer nil)
 
   ;; higher fuzz value makes it less likely to start a mouse drag
   ;; and make a switch to visual state
@@ -285,6 +286,10 @@ Used as a post command hook."
   (visual-line-mode -1)
   (font-lock-mode -1)
   (jit-lock-mode nil)
+  ;; fringe indicator must be set up right here, before hl-line-mode, since activating hl-line-mode will
+  ;; invoke the movement of the fringe overlay that would otherwise be nil
+  (when treemacs-fringe-indicator-mode
+    (treemacs--setup-fringe-indicator-mode))
   (hl-line-mode t)
 
   ;; needs to run manually the first time treemacs is loaded, since the hook is only added *after*

@@ -28,6 +28,7 @@ C++17 includes the following new library features:
 - [std::invoke](#stdinvoke)
 - [std::apply](#stdapply)
 - [splicing for maps and sets](#splicing-for-maps-and-sets)
+- [std::filesystem](#stdfilesystem)
 
 C++14 includes the following new language features:
 - [binary literals](#binary-literals)
@@ -74,6 +75,7 @@ C++11 includes the following new language features:
 C++11 includes the following new library features:
 - [std::move](#stdmove)
 - [std::forward](#stdforward)
+- [std::thread](#stdthread)
 - [std::to_string](#stdto_string)
 - [type traits](#type-traits)
 - [smart pointers](#smart-pointers)
@@ -421,6 +423,21 @@ auto e = m.extract(2);
 e.key() = 4;
 m.insert(std::move(e));
 // m == { { 1, "one" }, { 3, "three" }, { 4, "two" } }
+```
+### std::filesystem
+The new `std::filesystem` library provides a standard way to manipulate files, directories, and paths in a filesystem.
+
+Here, a big file is copied to a temporary path if there is available space:
+```c++
+const auto bigFilePath {"bigFileToCopy"};
+if (std::filesystem::exists(bigFilePath)) {   
+  const auto bigFileSize {std::filesystem::file_size(bigFilePath)};
+  std::filesystem::path tmpPath {"/tmp"};
+  if (std::filesystem::space(tmpPath).available > bigFileSize) {
+    std::filesystem::create_directory(tmpPath.append("example"));
+    std::filesystem::copy_file(bigFilePath, tmpPath.append("newFile"));
+  }
+}
 ```
 
 ## C++14 Language Features
@@ -1143,6 +1160,21 @@ wrapper(a); // copied
 wrapper(std::move(a)); // moved
 ```
 
+### std::thread
+The `std::thread` library provides a standard way to control threads, such as spawning and killing them. In the example below, multiple threads are spawned to do different calculations and then the program waits for all of them to finish.
+
+```c++
+void foo(bool clause) { /* do something... */ }
+
+std::vector<std::thread> threadsVector;
+threadsVector.emplace_back([]() {
+    // Lambda function that will be invoked    
+});
+threadsVector.emplace_back(foo, true);  // thread will run foo(true)
+for (auto& thread : threadsVector)
+    thread.join(); // Wait for threads to finish
+```
+
 ### std::to_string
 Converts a numeric argument to a `std::string`.
 ```c++
@@ -1153,9 +1185,9 @@ std::to_string(123); // == "123"
 ### Type traits
 Type traits defines a compile-time template-based interface to query or modify the properties of types.
 ```c++
-static_assert(std::is_integral<int>::value == 1);
-static_assert(std::is_same<int, int>::value == 1);
-static_assert(std::is_same<std::conditional<true, int, double>::type, int>::value == 1);
+static_assert(std::is_integral<int>::value);
+static_assert(std::is_same<int, int>::value);
+static_assert(std::is_same<std::conditional<true, int, double>::type, int>::value);
 ```
 
 ### Smart pointers
@@ -1201,10 +1233,10 @@ baz(p1);
 ### std::chrono
 The chrono library contains a set of utility functions and types that deal with _durations_, _clocks_, and _time points_. One use case of this library is benchmarking code:
 ```c++
-std::chrono::time_point<std::chrono::system_clock> start, end;
-start = std::chrono::system_clock::now();
+std::chrono::time_point<std::chrono::steady_clock> start, end;
+start = std::chrono::steady_clock::now();
 // Some computations...
-end = std::chrono::system_clock::now();
+end = std::chrono::steady_clock::now();
 
 std::chrono::duration<double> elapsed_seconds = end-start;
 
@@ -1266,6 +1298,8 @@ See the section on [smart pointers](#smart-pointers) for more information on `st
 
 ### Memory model
 C++11 introduces a memory model for C++, which means library support for threading and atomic operations. Some of these operations include (but aren't limited to) atomic loads/stores, compare-and-swap, atomic flags, promises, futures, locks, and condition variables.
+
+See the sections on: [std::thread](#stdthread)
 
 ## Acknowledgements
 * [cppreference](http://en.cppreference.com/w/cpp) - especially useful for finding examples and documentation of new library features.

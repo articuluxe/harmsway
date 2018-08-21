@@ -27,17 +27,10 @@
 ;; This package provides a tree browser similar to `neotree' or `treemacs'
 ;; but leverages `dired' to do the job of display.
 
-;;
 ;; (use-package dired-sidebar
 ;;   :bind (("C-x C-n" . dired-sidebar-toggle-sidebar))
 ;;   :ensure nil
-;;   :commands (dired-sidebar-toggle-sidebar)
-;;   :config
-;;   (use-package all-the-icons-dired
-;;     ;; M-x all-the-icons-install-fonts
-;;     :ensure t
-;;     :commands (all-the-icons-dired-mode)))
-;;
+;;   :commands (dired-sidebar-toggle-sidebar))
 
 ;;; Code:
 
@@ -45,7 +38,7 @@
 (require 'dired-subtree)
 (require 'evil nil t)
 (require 'face-remap)
-(eval-when-compile (require 'subr-x))
+(eval-when-compile (require 'subr-x)) ; `if-let*' and `when-let*'
 
 ;; Compatibility
 
@@ -102,12 +95,14 @@ This uses format specified by `dired-sidebar-mode-line-format'."
 it is suitable for terminal.
 `icons' use `all-the-icons'.
 `nerd' use the nerdtree indentation mode and arrow.
-`none' use no theme."
+`none' use no theme.
+`vscode' use `vscode' icons."
   :group 'dired-sidebar
   :type '(choice (const ascii)
                  (const icons)
                  (const nerd)
-                 (const none)))
+                 (const none)
+                 (const vscode)))
 
 (defcustom dired-sidebar-width 35
   "Width of the `dired-sidebar' buffer."
@@ -176,6 +171,11 @@ Look at `dired-sidebar-term-get-pwd' for implementation."
   :type 'boolean
   :group 'dired-sidebar)
 
+(defcustom dired-sidebar-use-wdired-integration t
+  "Whether to integrate with `wdired'."
+  :type 'boolean
+  :group 'dired-sidebar)
+
 (defcustom dired-sidebar-cycle-subtree-on-click t
   "Whether to cycle subtree on click."
   :type 'boolean
@@ -200,7 +200,7 @@ follow file."
   :type 'number
   :group 'dired-sidebar)
 
-(defcustom dired-sidebar-tui-update-delay 0.05
+(defcustom dired-sidebar-tui-update-delay 0.02
   "The time in idle seconds to wait before updating tui interface.
 
 This only takes effect if `all-the-icons-dired' is disabled."
@@ -300,7 +300,18 @@ a file."
   :type 'boolean
   :group 'dired-sidebar)
 
+(defcustom dired-sidebar-icon-scale .18
+  "The scale of icons \(currently only applies to vscode theme.\)."
+  :type 'number
+  :group 'dired-sidebar)
+
 ;; Internal
+
+(defvar dired-sidebar-basedir (file-name-directory load-file-name)
+  "Store the directory dired-sidebar.el was loaded from.")
+
+(defvar dired-sidebar-icons-dir (format "%sicons/" dired-sidebar-basedir)
+  "Store the icons directory of `dired-sidebar'.")
 
 (defvar dired-sidebar-alist '()
   "An alist that maps from frame to currently opened `dired-sidebar' buffer.")
@@ -377,6 +388,18 @@ Works around marker pointing to wrong buffer in Emacs 25."
     (advice-remove 'dired-remember-hidden 'dired-sidebar-remember-hidden-hack)
     (advice-add 'dired-remember-hidden :around 'dired-sidebar-remember-hidden-hack))
 
+  ;; https://debbugs.gnu.org/cgi/bugreport.cgi?bug=32392
+  (when dired-sidebar-use-wdired-integration
+    (advice-remove 'wdired-change-to-dired-mode
+                   'dired-sidebar-wdired-change-to-dired-mode-advice)
+    (advice-remove 'wdired-change-to-wdired-mode
+                   'dired-sidebar-wdired-change-to-wdired-mode-advice)
+
+    (advice-add 'wdired-change-to-dired-mode
+                :around 'dired-sidebar-wdired-change-to-dired-mode-advice)
+    (advice-add 'wdired-change-to-wdired-mode
+                :around 'dired-sidebar-wdired-change-to-wdired-mode-advice))
+
   (setq window-size-fixed 'width)
 
   ;; Match backgrounds.
@@ -398,9 +421,10 @@ Works around marker pointing to wrong buffer in Emacs 25."
   (dired-hide-details-mode)
 
   (when (and dired-sidebar-disable-dired-collapse
-             (fboundp 'dired-collapse-mode)
-             (bound-and-true-p dired-collapse-mode))
-    (dired-collapse-mode -1))
+             (fboundp 'dired-collapse-mode))
+    (add-hook 'dired-mode-hook
+              (lambda ()
+                (dired-collapse-mode -1)) :append :local))
 
   (when (and
          (not dired-sidebar-display-autorevert-messages)
@@ -460,6 +484,8 @@ Works around marker pointing to wrong buffer in Emacs 25."
      dired-sidebar-toggle-hidden-commands))
 
   (cond
+   ((dired-sidebar-using-tui-p)
+    (dired-sidebar-setup-tui))
    ((and (eq dired-sidebar-theme 'icons)
          (display-graphic-p)
          (or
@@ -467,10 +493,6 @@ Works around marker pointing to wrong buffer in Emacs 25."
           (autoloadp (symbol-function 'all-the-icons-dired-mode))))
     (with-no-warnings
       (all-the-icons-dired-mode)))
-   ((eq dired-sidebar-theme 'nerd)
-    (dired-sidebar-setup-tui))
-   ((eq dired-sidebar-theme 'ascii)
-    (dired-sidebar-setup-tui))
    (:default :no-theme))
 
   (when dired-sidebar-use-custom-font
@@ -575,7 +597,8 @@ This is dependent on `dired-subtree-cycle'."
                 (dired-subtree-cycle))
               (setq path (concat path "/"))))))
       (when dired-sidebar-recenter-cursor-on-follow-file
-        (recenter nil)))))
+        (recenter nil))
+      (dired-sidebar-redisplay-icons))))
 
 ;;;###autoload
 (defun dired-sidebar-toggle-with-current-directory ()
@@ -599,9 +622,8 @@ This is dependent on `dired-subtree-cycle'."
         (let ((window-size-fixed))
           (dired-sidebar-set-width dired-sidebar-width))))
     (with-current-buffer buffer
-      ;; For the case where we've already turned on the mode.
-      ;; FIXME: Not sure if we need this anymore..
-      (unless (eq major-mode 'dired-sidebar-mode)
+      (if (eq major-mode 'dired-sidebar-mode)
+          (dired-build-subdir-alist)
         (dired-sidebar-mode)))
     (dired-sidebar-update-state buffer)))
 
@@ -972,11 +994,17 @@ This is somewhat experimental/hacky."
   "Wrapper over `dired-subtree-toggle' that accounts for `all-the-icons-dired'."
   (interactive)
   (dired-subtree-toggle)
+  (dired-sidebar-redisplay-icons))
+
+(defun dired-sidebar-redisplay-icons ()
+  "Redisplay icon themes."
   (when (and (eq dired-sidebar-theme 'icons)
              (fboundp 'all-the-icons-dired--display))
     ;; Refresh `all-the-icons-dired'.
     (dired-revert)
-    (all-the-icons-dired--display)))
+    (all-the-icons-dired--display))
+  (when (dired-sidebar-using-tui-p)
+    (dired-sidebar-tui-update-with-delay)))
 
 (defun dired-sidebar-advice-hide-temporarily (f &rest args)
   "A function meant to be used with advice to temporarily hide itself.
@@ -1014,11 +1042,18 @@ This function hides the sidebar before executing F and then reshows itself after
             (let ((file (dired-get-filename 'verbatim t)))
               (unless (member file '("." ".."))
                 (let ((filename (dired-get-filename nil t)))
-                  (if (file-directory-p filename)
-                      (if (dired-subtree--is-expanded-p)
-                          (insert (concat collapsible-icon " "))
-                        (insert (concat expandable-icon " ")))
-                    (insert ""))))))
+                  (if (eq dired-sidebar-theme 'vscode)
+                      (progn
+                        (require 'vscode-icon)
+                        (when (fboundp 'vscode-icon-for-file)
+                          (insert-image
+                           (vscode-icon-for-file filename) " "))
+                        (insert " "))
+                    (if (file-directory-p filename)
+                        (if (dired-subtree--is-expanded-p)
+                            (insert (concat collapsible-icon " "))
+                          (insert (concat expandable-icon " ")))
+                      (insert "")))))))
           (forward-line 1))))))
 
 (defun dired-sidebar-tui-update-with-delay (&rest _)
@@ -1048,10 +1083,61 @@ e.g. + and -."
             'dired-sidebar-tui-dired-display :append :local)
   (advice-add 'dired-revert :before 'dired-sidebar-tui-reset-in-sidebar)
   (setq-local dired-subtree-line-prefix " ")
-  (advice-add 'dired-subtree-toggle :after #'dired-sidebar-tui-update-with-delay)
+  (dired-build-subdir-alist)
   (dired-revert))
 
+(defun dired-sidebar-using-tui-p ()
+  "Return t if `dired-sidebar-theme' is using tui code path."
+  (or
+   (eq dired-sidebar-theme 'ascii)
+   (eq dired-sidebar-theme 'nerd)
+   (eq dired-sidebar-theme 'vscode)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Text User Interface ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;; `wdired' Hack ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+;; https://debbugs.gnu.org/cgi/bugreport.cgi?bug=32392
+(defvar-local dired-sidebar-wdired-tracking-major-mode nil
+  "Track current `major-mode' when toggling to `wdired'.")
+
+(defun dired-sidebar-wdired-change-to-dired-mode-advice (f &rest args)
+  "Advice for `wdired-change-to-dired-mode'."
+  (if (eq dired-sidebar-wdired-tracking-major-mode 'dired-sidebar-mode)
+      (dired-sidebar-wdired-change-to-dired-mode)
+    (apply f args)))
+
+(defun dired-sidebar-wdired-change-to-dired-mode ()
+  "Change the mode back to dired-sidebar.
+
+This is an exact copy of `wdired-change-to-dired-mode' but changes the
+`major-mode' to `dired-sidebar-mode' instead of `dired-mode'."
+  (let ((inhibit-read-only t))
+    (remove-text-properties
+     (point-min) (point-max)
+     '(front-sticky nil rear-nonsticky nil read-only nil keymap nil)))
+  (use-local-map dired-mode-map)
+  (force-mode-line-update)
+  (setq buffer-read-only t)
+  (setq major-mode 'dired-sidebar-mode)
+  (setq mode-name "Dired-sidebar")
+  (dired-advertise)
+  (remove-hook 'kill-buffer-hook 'wdired-check-kill-buffer t)
+  (set (make-local-variable 'revert-buffer-function) 'dired-revert))
+
+(defun dired-sidebar-wdired-change-to-wdired-mode-advice (f &rest args)
+  "Forward to `wdired-change-to-wdired-mode'.
+
+`wdired' expected the `major-mode' to be `dired-mode' first.
+
+Track the current `major-mode' and revert to that upon exiting `wdired'."
+  (setq dired-sidebar-wdired-tracking-major-mode major-mode)
+  (if (eq major-mode 'dired-mode)
+      (apply f args)
+    (let ((major-mode 'dired-mode))
+      (apply f args))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;; `wdired' Hack ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (provide 'dired-sidebar)
 ;;; dired-sidebar.el ends here

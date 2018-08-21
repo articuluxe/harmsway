@@ -22,7 +22,7 @@
    (spring-green1 "#6dd797")
    (ultramarine7  "#615B75")
 
-   ;;                             dark      bright
+   ;;                             dark      bright   fallback
    (bg0 (if kaolin-galaxy-alt-bg "#19181C" "#1C1B21") black0)
    (bg1 (if kaolin-galaxy-alt-bg "#1d1c21" "#212026") black1)
    (bg2 (if kaolin-galaxy-alt-bg "#26252c" "#2a2931") black2)
@@ -34,7 +34,8 @@
 
    (keyword     cyan3)
    (second-key  ultramarine4 cerise4)
-   (builtin     teal1)
+   ;; TODO: teal0
+   (builtin     teal0)
    ;; TODO:
    (functions   magenta3)
    (var         amber3)
@@ -55,8 +56,8 @@
    (err         crimson0)
 
    (dim-buffer "#140E14")
-   ;; TODO: ??) change
-   (hl         cyan0)
+   ;; TODO: (??) change
+   (hl         vermilion3)
    (hl-line    (if kaolin-themes-hl-line-colored bg2 black1))
    (hl-indent  bg4)
    ;; TODO: (??) less bright
@@ -70,9 +71,9 @@
    (tooltip-hl-bg bg4)
    (tooltip-hl-fg cyan0)
 
-   (ivy2 lime3)
-   (ivy3 vermilion3)
-   (ivy4 red3)
+   (ivy2 cerulean3)
+   (ivy3 red3)
+   (ivy4 violet1)
 
    (rb1 violet4)
    (rb2 teal4)
@@ -85,7 +86,7 @@
    (rb9 crimson3)
 
    (diff-add spring-green1)
-   (diff-mod violet3)
+   (diff-mod yellow3)
    (diff-rem red3)
 
    ;; Mode-line
@@ -105,9 +106,9 @@
    (evil-operator     evil-normal)
    (evil-emacs        yellow3)
 
-   (win-border    black3)
+   (win-border    bg3)
    (line-num-fg   ultramarine7 black4)
-   (line-num-hl   hl)
+   (line-num-hl   capri3)
 
    (cursor        "#c3c8e0"))
 
@@ -118,7 +119,9 @@
    (telephone-line-accent-active   (:inherit 'mode-line :background line-bg2 :foreground azure8))
    (telephone-line-accent-inactive (:inherit 'mode-line-inactive :background line-bg1 :foreground gray9))
 
-   (highlight-quoted-symbol  (:foreground var))
+   ;; TODO:
+   (highlight-quoted-quote  (:foreground builtin))
+   (highlight-quoted-symbol  (:foreground type))
 
    (org-document-title  (:foreground cerulean7 :bold bold))
    (org-document-info   (:foreground cerulean7))

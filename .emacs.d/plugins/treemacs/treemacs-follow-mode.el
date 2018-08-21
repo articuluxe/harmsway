@@ -57,15 +57,15 @@ not visible."
   (setq treemacs--follow-timer nil)
   (when treemacs--ready-to-follow
     (treemacs-without-following
-     (let* ((treemacs-window (treemacs--is-visible?))
+     (let* ((treemacs-window (treemacs-get-local-window))
             (current-buffer  (current-buffer))
             (current-file    (-some-> current-buffer (buffer-file-name) (file-truename))))
        (when (and treemacs-window
                   current-file
                   (not (s-starts-with? treemacs--buffer-name-prefix (buffer-name current-buffer)))
                   (f-exists? current-file))
-         (-when-let- [project-for-file (treemacs--find-project-for-buffer)]
-           (with-current-buffer (window-buffer treemacs-window)
+         (-when-let (project-for-file (treemacs--find-project-for-buffer))
+           (with-selected-window treemacs-window
              (-let [selected-file (--if-let (treemacs-current-button)
                                       (treemacs--nearest-path it)
                                     (treemacs-project->path project-for-file))]
@@ -75,7 +75,7 @@ not visible."
                      (dolist (project (treemacs-workspace->projects (treemacs-current-workspace)))
                        (unless (or (not (treemacs-project->is-expanded? project))
                                    (eq project project-for-file))
-                         (-when-let- [project-pos (treemacs-project->position project)]
+                         (-when-let (project-pos (treemacs-project->position project))
                            (goto-char project-pos)
                            (treemacs--collapse-root-node project-pos)))))
                    (when treemacs-recenter-after-file-follow
@@ -90,7 +90,8 @@ not visible."
   "Advice function for `treemacs-follow-mode'.
 Ignores the original arguments of `select-window' and directly calls
 `treemacs--follow'."
-  (treemacs--idle-follow))
+  (when treemacs--ready-to-follow
+    (treemacs--idle-follow)))
 
 (defun treemacs--follow-compatibility-advice (original-func &rest args)
   "Make ORIGINAL-FUNC compatible with `treemacs-follow-mode'.
@@ -139,7 +140,7 @@ This functionality can also be manually invoked with `treemacs-find-file'."
       (treemacs--setup-follow-mode)
     (treemacs--tear-down-follow-mode)))
 
-(only-during-treemacs-init (treemacs-follow-mode))
+(treemacs-only-during-init (treemacs-follow-mode))
 
 (provide 'treemacs-follow-mode)
 

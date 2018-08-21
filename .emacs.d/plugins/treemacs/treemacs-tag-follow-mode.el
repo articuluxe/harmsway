@@ -176,7 +176,7 @@ END: Integer"
 FLAT-INDEX: Sorted list of tag paths
 TREEMACS-WINDOW: Window
 BUFFER-FILE: Path
-PROJECT: `cl-struct-treemacs-project'"
+PROJECT: Project Struct"
   (let* ((tag-path (treemacs--find-index-pos (point) flat-index))
          (file-states '(file-node-open file-node-closed root-node-open root-node-closed))
          (btn))
@@ -223,7 +223,7 @@ PROJECT: `cl-struct-treemacs-project'"
 (defun treemacs--follow-tag-at-point ()
   "Follow the tag at point in the treemacs view."
   (interactive)
-  (let* ((treemacs-window (treemacs--is-visible?))
+  (let* ((treemacs-window (treemacs-get-local-window))
          (buffer (current-buffer))
          (buffer-file (when buffer (buffer-file-name)))
          (project (treemacs--find-project-for-buffer)))

@@ -16,9 +16,14 @@
    (cyan1         "#48a9a9")
    (cyan2         "#008b8b")
    (cyan3         "#6facb3")
+   (teal2         "#1D6B69")
+   (spring-green2 "#317A56")
+   (vermilion3    "#E36B3F")
+   (aquamarine1   "#47ba99")
+   (azure4        "#4C7A90")
+   (ultramarine3  "#6D46E3")
 
    ;; Color vars
-   ;; TODO change to more green
    (bg0 "#f5f6f5")
    (bg1 "#e9eae7")
    (bg2 "#dcded9")
@@ -33,33 +38,33 @@
 
    (keyword     teal2)
    (second-key  teal2)
-   (var         ultramarine4)
-   (const       violet4)
-   (builtin     cyan4)
-   (comment azure8)
+   (var         magenta4)
+   (const       magenta4)
+   (builtin     azure4)
+   (functions   azure4)
+   (comment     azure8)
    (comment-alt lime7)
-   (functions   teal1)
-   (str         brown1)
-   (str-alt     brown1)
+   ;; (str         brown1)
+   (str         erin2)
+   (str-alt     brown3)
    (doc         str-alt)
-   (type        vermilion4)
-   (num         red4)
+   (type        vermilion3)
+   (num         red1)
    (bool        num)
-   (prep        num)
+   (prep        ultramarine3)
    (warning     orange1)
-   (err         red4)
+   (err         crimson0)
 
    (dim-buffer white0)
-   (hl         aquamarine2)
+   (hl         green2)
    ;; TODO: add colored
    (hl-line    (if kaolin-themes-hl-line-colored bg2 bg2))
    (hl-indent  gray9)
-   ;; TODO:
-   (selection bg4)
-   ;; TODO:
-   (pulse cyan3)
+   (selection  teal8)
+   (pulse      teal8)
 
-   (todo crimson4)
+   (done aquamarine1)
+   (todo crimson0)
 
    (tooltip-hl-bg bg3)
    (tooltip-hl-fg hl)
@@ -97,7 +102,7 @@
    (evil-emacs        amber3)
 
    (win-border    bg3)
-   (line-num-fg   chartreuse8)
+   (line-num-fg   chartreuse7)
    (line-num-hl   hl)
 
    (cursor        gray3)
@@ -109,16 +114,16 @@
 
   ((link                    (:foreground capri1 :underline underline))
 
-   (highlight-quoted-quote  (:foreground keyword))
+   (highlight-quoted-quote  (:foreground type))
    (highlight-quoted-symbol (:foreground teal2))
 
-   (org-level-1             (:foreground teal1 :bold bold :height 1.1))
+   (org-level-1             (:foreground spring-green2 :bold bold :height 1.1))
    (org-level-2             (:foreground ultramarine4 :bold nil))
    (org-level-3             (:foreground vermilion4 :bold nil))
    (org-level-4             (:foreground cerise4 :bold nil))
    (org-code                (:foreground teal1))
+   (org-date                (:foreground vermilion4))
    (org-verbatim            (:foreground orange2))
-   (org-table               (:foreground ultramarine4 :bold bold))
 
    (js2-object-property     (:foreground brown1))
    (evil-ex-info            (:foreground crimson4)))
