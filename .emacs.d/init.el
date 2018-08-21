@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-08-20 12:09:59 dharms>
+;; Modified Time-stamp: <2018-08-21 12:14:47 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2185,11 +2185,15 @@ Only one letter is shown, the first that applies."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; multi-term ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package multi-term
   :bind (("C-2" . multi-term)
-         ("M-' 1" . multi-term)
+         ("M-' 2" . multi-term)
          ("C-1" . multi-term-prev)
+         ("M-' 1" . multi-term-prev)
          ("C-3" . multi-term-next)
+         ("M-' 3" . multi-term-next)
          ("C-4" . multi-term-dedicated-toggle)
+         ("M-' 4" . multi-term-dedicated-toggle)
          ("C-5" . multi-term-dedicated-select)
+         ("M-' 5" . multi-term-dedicated-select)
          )
   :init
   (setq multi-term-dedicated-select-after-open-p t)
