@@ -5,7 +5,7 @@
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Tuesday, July 31, 2018
 # Version: 1.0
-# Modified Time-stamp: <2018-08-02 08:43:37 dharms>
+# Modified Time-stamp: <2018-08-22 10:44:27 dan.harms>
 # Modified by: Dan Harms
 # Keywords: emacs tools
 
@@ -17,7 +17,7 @@ visible_frames()
 
 change_focus()
 {
-    emacsclient -n -e "(select-frame-set-input-focus (selected-frame))"
+    emacsclient -n -e "(select-frame-set-input-focus (selected-frame))" > /dev/null 2>&1
 }
 
 test "$(visible_frames)" -eq "1" && change_focus
