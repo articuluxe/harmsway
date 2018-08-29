@@ -1833,9 +1833,8 @@ customizations apply to the current completion session."
           (unless (eq ivy-exit 'done)
             (ivy-recursive-restore)))
       (ivy-call)
-      (when (> (length (ivy-state-current ivy-last)) 0)
-        (remove-list-of-text-properties
-         0 1 '(idx) (ivy-state-current ivy-last))))))
+      (let ((cur (ivy-state-current ivy-last)))
+        (remove-list-of-text-properties 0 (length cur) '(idx) cur)))))
 
 (defun ivy--display-function-prop (prop)
   "Return PROP associated with current `ivy-display-function'."
@@ -2698,12 +2697,15 @@ Possible choices are 'ivy-magic-slash-non-match-cd-selected,
                    (not (equal (ivy-state-current ivy-last) ""))
                    (file-directory-p (ivy-state-current ivy-last))
                    (file-exists-p (ivy-state-current ivy-last)))))
-           (when (eq ivy-magic-slash-non-match-action 'ivy-magic-slash-non-match-cd-selected)
-             (ivy--cd
-              (expand-file-name (ivy-state-current ivy-last) ivy--directory)))
-           (when (and (eq ivy-magic-slash-non-match-action 'ivy-magic-slash-non-match-create)
-                      (not (string= ivy-text "/")))
-             (ivy--create-and-cd (expand-file-name ivy-text ivy--directory))))
+           (cond
+             ((or (eq ivy-magic-slash-non-match-action 'ivy-magic-slash-non-match-cd-selected)
+                  (eq this-command 'ivy-partial-or-done))
+              (ivy--cd
+               (expand-file-name (ivy-state-current ivy-last) ivy--directory)))
+
+             ((and (eq ivy-magic-slash-non-match-action 'ivy-magic-slash-non-match-create)
+                   (not (string= ivy-text "/")))
+              (ivy--create-and-cd (expand-file-name ivy-text ivy--directory)))))
           (t
            (when (and
                   (eq ivy-magic-slash-non-match-action 'ivy-magic-slash-non-match-create)

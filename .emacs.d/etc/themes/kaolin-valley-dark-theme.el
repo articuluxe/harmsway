@@ -28,14 +28,8 @@
    (second-key  keyword)
    (builtin     aquamarine1)
 
-   ;; (var         teal3)
-   ;; (const       cyan3)
-   ;; (var         spring-green3)
-   ;; (const       harlequin3)
    (var         crimson3)
    (const       crimson3)
-   ;; TODO:
-   ;; (functions   crimson3)
    (functions   cyan3)
    (type        amber3)
 
@@ -43,21 +37,19 @@
    ;; TODO:
    (comment-alt teal2)
 
-   ;; (str         magenta3)
-   ;; (str-alt     violet4)
    (str         violet3)
-   (str-alt     ultramarine4)
+   (str         magenta3)
+   (str-alt     cerise4)
    (doc         str-alt)
 
    (prep        vermilion3)
-   ;; TODO:
    (num         harlequin3)
    (bool        num)
    (warning     orange1)
    (err         red3)
 
    (dim-buffer white0)
-   (hl         azure3)
+   (hl         capri3)
    ;; TODO: add colored
    (hl-line    (if kaolin-themes-hl-line-colored bg3 bg3))
    (hl-indent  gray0)
@@ -114,7 +106,7 @@
    (cursor        fg1)
 
    (ivy1          gray9)
-   (ivy2          purple3)
+   (ivy2          cerulean3)
    (ivy3          yellow0)
    (ivy4          red3))
 
@@ -129,8 +121,9 @@
    (org-level-2            (:foreground functions  :bold nil))
    (org-level-3            (:foreground str :bold nil))
    (org-level-4            (:foreground builtin :bold nil))
-   (org-code               (:foreground teal1))
-   (org-verbatim           (:foreground orange2)))
+   (org-date               (:foreground aquamarine3 :underline underline))
+   (org-code               (:foreground num))
+   (org-verbatim           (:foreground orange1)))
 
   (when kaolin-themes-git-gutter-solid
     (custom-theme-set-faces

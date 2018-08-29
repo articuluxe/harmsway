@@ -1089,6 +1089,10 @@
      ((,srcery-class (:foreground ,srcery-red))
       (,srcery-256-class (:foreground ,srcery-256-red))))
 
+   `(git-commit-note
+     ((,srcery-class (:foreground ,srcery-bright-white))
+      (,srcery-256-class (:foreground ,srcery-256-bright-white))))
+
    `(git-commit-nonempty-second-line
      ((,srcery-class (:foreground ,srcery-yellow))
       (,srcery-256-class (:foreground ,srcery-256-yellow))))
@@ -1544,8 +1548,8 @@
 
    ;; Git
    `(diff-context
-     ((,srcery-class :foreground ,srcery-bright-white)
-      (,srcery-256-class :foreground ,srcery-256-bright-white)))
+     ((,srcery-class :foreground ,srcery-white)
+      (,srcery-256-class :foreground ,srcery-256-white)))
 
    ;; magit
    `(magit-blame-culprit
@@ -1794,6 +1798,10 @@
      ((,srcery-class (:foreground ,srcery-bright-white))
       (,srcery-256-class (:foreground ,srcery-256-bright-white))))
 
+   `(magit-dimmed
+     ((,srcery-class (:foreground ,srcery-white))
+      (,srcery-256-class (:foreground ,srcery-256-white))))
+
    `(magithub-ci-no-status
      ((,srcery-class (:foreground ,srcery-gray-5))
       (,srcery-256-class (:foreground ,srcery-256-gray5))))
@@ -2022,8 +2030,8 @@
       (,srcery-256-class (:underline t :foreground ,srcery-256-bright-white))))
 
    `(org-hide
-     ((,srcery-class (:foreground ,srcery-black :background ,srcery-black))
-      (,srcery-256-class (:foreground ,srcery-256-black :background ,srcery-256-black))))
+     ((,srcery-class (:foreground ,srcery-bright-black :background ,srcery-black))
+      (,srcery-256-class (:foreground ,srcery-256-bright-black :background ,srcery-256-black))))
 
    `(org-kbd
      ((,srcery-class (:inherit region :foreground ,srcery-bright-white :box (:line-width 1 :style released-button)))
@@ -2845,6 +2853,31 @@
    `(whitespace-hspace
      ((,srcery-class :background ,srcery-bright-blue :foreground ,srcery-bright-white)
       (,srcery-256-class :background ,srcery-256-bright-blue :foreground ,srcery-256-bright-white)))
+
+   ;; Slack
+   `(lui-button-face
+     ((,srcery-class :foreground ,srcery-blue)
+      (,srcery-256-class :foreground ,srcery-256-blue)))
+
+   `(lui-highlight-face
+     ((,srcery-class :foreground ,srcery-magenta)
+      (,srcery-256-class :foreground ,srcery-256-magenta)))
+
+   `(lui-time-stamp-face
+     ((,srcery-class :foreground ,srcery-white)
+      (,srcery-256-class :foreground ,srcery-256-white)))
+
+   `(slack-profile-image-face
+     ((,srcery-class :background ,srcery-bright-white :foreground ,srcery-black)
+      (,srcery-256-class :background ,srcery-256-bright-white :foreground ,srcery-256-black)))
+
+   `(slack-preview-face
+     ((,srcery-class :foreground ,srcery-cyan)
+      (,srcery-256-class :foreground ,srcery-256-cyan)))
+
+   `(slack-message-output-header
+     ((,srcery-class :foreground ,srcery-yellow :weight bold)
+      (,srcery-256-class :foreground ,srcery-256-yellow :weight bold)))
    )
 
   (custom-theme-set-variables
