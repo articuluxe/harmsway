@@ -1,1 +1,1 @@
-cp src/*.terminal ../../os/Darwin/config
+cp src/*.terminal ../../os/Darwin/config/terminals

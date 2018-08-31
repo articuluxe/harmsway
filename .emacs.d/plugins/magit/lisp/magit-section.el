@@ -143,7 +143,12 @@ and the type is the first element of that vector.  Wildcards can
 be used, see `magit-section-match'.
 
 Currently this option is only used to override hardcoded defaults,
-but in the future it will also be used set the defaults."
+but in the future it will also be used set the defaults.
+
+An entry whose key is `magit-status-initial-section' specifies
+the visibility of the section `magit-status-goto-initial-section'
+jumps to.  This does not only override defaults, but also other
+entries of this alist."
   :package-version '(magit . "2.12.0")
   :group 'magit-section
   :type '(alist :key-type (sexp :tag "Section type/lineage")
@@ -608,16 +613,19 @@ Sections at higher levels are hidden."
 
 ;;;; Auxiliary
 
-(defun magit-describe-section-briefly (section &optional message)
+(defun magit-describe-section-briefly (section &optional message ident)
   "Show information about the section at point.
-This command is intended for debugging purposes."
+With a prefix argument show the section identity instead of the
+section lineage.  This command is intended for debugging purposes."
   (interactive (list (magit-current-section) t))
   (let ((str (format "#<magit-section %S %S %s-%s>"
                      (let ((val (oref section value)))
                        (if (stringp val)
                            (substring-no-properties val)
                          val))
-                     (magit-section-lineage section)
+                     (if ident
+                         (magit-section-ident section)
+                       (magit-section-lineage section))
                      (when-let ((m (oref section start)))
                        (marker-position m))
                      (when-let ((m (oref section end)))
