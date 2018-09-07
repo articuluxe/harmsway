@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-09-07 10:11:20 dan.harms>
+;; Modified Time-stamp: <2018-09-07 12:26:58 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -714,6 +714,12 @@ line."
   :config
   (setq mwim-next-position-function 'mwim-next-unique-position)
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; which-key ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package which-key
+  :demand 1
+  :config
+  (which-key-mode 1))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; home-end ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package home-end
@@ -1497,7 +1503,7 @@ Only one letter is shown, the first that applies."
         '(" AC" " yas" " Undo-Tree" " Abbrev" " Guide" " Hi" " $" " ,"
           " Ifdef" " Rbow" " ivy" " ElDoc" " (*)" " wg" " ⛓" " GitGutter"
           " Fly" " drag" " mc++fl" " ARev" " Spnxd" " PgLn" " ^L" " be"
-          " counsel" " ivy"))
+          " counsel" " ivy" " WK"))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smart-mode-line ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
