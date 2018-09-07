@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-08-29 10:12:49 dan.harms>
+;; Modified Time-stamp: <2018-09-07 10:11:20 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -714,6 +714,11 @@ line."
   :config
   (setq mwim-next-position-function 'mwim-next-unique-position)
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; home-end ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package home-end
+  :bind (([home] . home-end-home)
+         ([end] . home-end-end)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; discover-my-major ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package discover-my-major :bind ("C-h C-m" . discover-my-major))
