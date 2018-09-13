@@ -1,10 +1,10 @@
 # -*- Mode: sh -*-
 # gdb.txt --- gdb tips and tricks
-# Copyright (C) 2016-2017  Dan Harms (dharms)
+# Copyright (C) 2016-2018  Dan Harms (dharms)
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Tuesday, May  3, 2016
 # Version: 1.0
-# Modified Time-stamp: <2017-08-02 15:46:13 dan.harms>
+# Modified Time-stamp: <2018-09-12 12:31:56 dan.harms>
 # Modified by: Dan Harms
 # Keywords: gdb help doc
 
@@ -31,6 +31,9 @@ x/21xb 0x0000abcd
 x/1sb 0x00abcd01
 # print class member
 p ('Scope::Class'*) ptr
+# print a type
+ptype <object>
+whatis <object>
 # show last instruction
 x/i $pc
 disas $pc
