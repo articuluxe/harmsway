@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-09-07 12:26:58 dan.harms>
+;; Modified Time-stamp: <2018-09-18 09:53:33 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1347,6 +1347,12 @@ Only one letter is shown, the first that applies."
       (define-key grep-mode-map (kbd "-") #'grep-context-less-around-point))
     )
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; deadgrep ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package deadgrep
+  :bind ("C-c 0g" . deadgrep)
+  :init
+  (setq deadgrep-project-root-function #'proviso-current-project-root))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; occur ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (global-set-key (kbd "M-s M-o") 'multi-occur-in-matching-buffers)
 (bind-key "C-c b" 'bmkp-occur-create-autonamed-bookmarks occur-mode-map)
@@ -1428,7 +1434,7 @@ Only one letter is shown, the first that applies."
          ("M-s M-m" . counsel-load-theme)
          ("M-s M-x" . counsel-command-history)
          ("M-s M-k" . counsel-descbinds)
-         ("C-c 0g" . counsel-locate)
+         ("C-c 0l" . counsel-locate)
          ("M-s M-SPC" . counsel-mark-ring)
          ("C-h C-a" . counsel-apropos)
          ("M-s M-0" . counsel-wmctrl)
