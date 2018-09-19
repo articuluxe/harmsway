@@ -5,7 +5,7 @@
 ;; Author: Ogden Webb <ogdenwebb@gmail.com>
 ;; URL: https://github.com/ogdenwebb/emacs-kaolin-themes
 ;; Package-Requires: ((emacs "25.1") (autothemer "0.2.2") (cl-lib "0.6"))
-;; Version: 1.4.0
+;; Version: 1.4.1
 ;; Keywords: dark light teal blue violet purple brown theme faces
 
 ;; This program is free software: you can redistribute it and/or modify
@@ -31,11 +31,12 @@
 ;;
 ;;  * kaolin-dark - a dark jade variant inspired by Sierra.vim.
 ;;  * kaolin-light - light variant of the original kaolin-dark.
-;;  * kaolin-eclipse - a dark purple variant.
-;;  * kaolin-ocean - dark blue variant.
-;;  * kaolin-galaxy - bright theme based on one of the Sebastian Andaur arts.
 ;;  * kaolin-aurora - Kaolin meets polar lights.
 ;;  * kaolin-bubblegum - Kaolin colorful theme with dark blue background.
+;;  * kaolin-eclipse - a dark purple variant.
+;;  * kaolin-fusion - dark gray background and syntax based on bright colors.
+;;  * kaolin-galaxy - bright theme based on one of the Sebastian Andaur arts.
+;;  * kaolin-ocean - dark blue variant.
 ;;  * kaolin-valley-dark - colorful Kaolin theme with brown background.
 ;;  * kaolin-valley-light - light version of kaolin-valley-dark theme.
 ;;  * kaolin-mono-dark - almost monochrome dark green Kaolin theme.
@@ -43,24 +44,24 @@
 ;;
 ;; -------  Configuration example  -------
 ;;
-;; (require 'kaolin-themes)
+;;  (require 'kaolin-themes)
 ;;
-;; (load-theme 'kaolin-dark)
+;;  (load-theme 'kaolin-dark)
 ;;
-;; ;;  Custom theme settings
+;;  ;;  Custom theme settings
 ;;
-;; ;; The following set to t by default
-;; (setq kaolin-themes-bold t       ; If nil, disable the bold style.
+;;  ;; The following set to t by default
+;;  (setq kaolin-themes-bold t       ; If nil, disable the bold style.
 ;;       kaolin-themes-italic t     ; If nil, disable the italic style.
 ;;       kaolin-themes-underline t) ; If nil, disable the underline style.
 ;;
 ;; -------  Some extra theme features, disabled by default  -------
 ;;
-;; ;; If t, use the wave underline style instead of regular underline.
-;; (setq kaolin-themes-underline-wave t)
+;;  ;; If t, use the wave underline style instead of regular underline.
+;;  (setq kaolin-themes-underline-wave t)
 ;;
-;; ;; When t, will display colored hl-line style
-;; (setq kaolin-themes-hl-line-colored t)
+;;  ;; When t, will display colored hl-line style
+;;  (setq kaolin-themes-hl-line-colored t)
 ;;
 ;;
 ;;; Code:
@@ -176,6 +177,11 @@
                            ;; Provide theme
                            (provide-theme ',kaolin-theme-name))))
 
+
+;;;###autoload
+(defun kaolin-treemacs-theme ()
+  "Enable kaolin-themes treemacs theme with all-the-icons package."
+  (require 'kaolin-themes-treemacs))
 
 ;;;###autoload
 (when (and (boundp 'custom-theme-load-path) load-file-name)

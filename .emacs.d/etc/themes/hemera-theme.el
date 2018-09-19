@@ -5,6 +5,7 @@
 ;; Author: Guido Schmidt
 ;; Maintainer: Guido Schmidt <guido.schmidt.2912@gmail.com>
 ;; URL: https://github.com/GuidoSchmidt/emacs-hemera-theme
+;; Package-Version: 20170910.1303
 ;; Version: 0.1
 ;; Keywords: themes, light-theme
 ;; Package-Requires: ((emacs "24"))

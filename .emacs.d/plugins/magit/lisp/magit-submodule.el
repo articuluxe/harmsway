@@ -164,7 +164,7 @@ it is nil, then PATH also becomes the name."
   (magit-with-toplevel
     (magit-call-git "submodule" "add" (and name (list "--name" name))
                     args "--" url path)
-    (unless (version< (magit-git-version) "2.11.0")
+    (unless (version< (magit-git-version) "2.12.0")
       (magit-call-git "submodule" "absorbgitdirs" path))
     (magit-refresh)))
 
@@ -280,7 +280,7 @@ are inserted, and option `magit-module-sections-nested' controls
 whether they are wrapped in an additional section."
   (when-let ((modules (magit-list-module-paths)))
     (if magit-module-sections-nested
-        (magit-insert-section section (submodules nil t)
+        (magit-insert-section section (modules nil t)
           (magit-insert-heading
             (format "%s (%s)"
                     (propertize "Modules" 'face 'magit-section-heading)
@@ -299,7 +299,7 @@ whether they are wrapped in an additional section."
 For each section insert the path and the output of `git describe --tags',
 or, failing that, the abbreviated HEAD commit hash."
   (when-let ((modules (magit-list-module-paths)))
-    (magit-insert-section section (submodules nil t)
+    (magit-insert-section section (modules nil t)
       (magit-insert-heading
         (format "%s (%s)"
                 (propertize "Modules overview" 'face 'magit-section-heading)
@@ -320,7 +320,7 @@ or, failing that, the abbreviated HEAD commit hash."
       (dolist (module modules)
         (let ((default-directory
                 (expand-file-name (file-name-as-directory module))))
-          (magit-insert-section (submodule module t)
+          (magit-insert-section (magit-module-section module t)
             (insert (propertize (format path-format module)
                                 'face 'magit-diff-file-heading))
             (if (not (file-exists-p ".git"))
@@ -361,7 +361,7 @@ or, failing that, the abbreviated HEAD commit hash."
   "Visit MODULE by calling `magit-status' on it.
 Offer to initialize MODULE if it's not checked out yet.
 With a prefix argument, visit in another window."
-  (interactive (list (or (magit-section-when submodule)
+  (interactive (list (or (magit-section-value-if 'submodule)
                          (magit-read-module-path "Visit module"))
                      current-prefix-arg))
   (magit-with-toplevel
@@ -428,7 +428,7 @@ These sections can be expanded to show the respective commits."
               (let ((default-directory
                       (expand-file-name (file-name-as-directory module))))
                 (when (magit-file-accessible-directory-p default-directory)
-                  (magit-insert-section sec (file module t)
+                  (magit-insert-section sec (magit-module-section module t)
                     (magit-insert-heading
                       (propertize module 'face 'magit-diff-file-heading) ":")
                     (magit-git-wash
@@ -448,7 +448,10 @@ These sections can be expanded to show the respective commits."
 (defun magit-list-submodules ()
   "Display a list of the current repository's submodules."
   (interactive)
-  (magit-display-buffer (magit-mode-get-buffer 'magit-submodule-list-mode t))
+  (magit-display-buffer
+   (or (magit-mode-get-buffer 'magit-submodule-list-mode)
+       (magit-with-toplevel
+         (magit-generate-new-buffer 'magit-submodule-list-mode))))
   (magit-submodule-list-mode)
   (magit-submodule-list-refresh)
   (tabulated-list-print))

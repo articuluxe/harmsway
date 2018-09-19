@@ -5,7 +5,7 @@
 ;; Keywords: processes, tools
 ;; URL: https://github.com/riscy/shx-for-emacs
 ;; Package-Requires: ((emacs "24.4"))
-;; Version: 0.0.16
+;; Version: 0.0.17
 
 ;; This file is NOT part of GNU Emacs.
 
@@ -51,6 +51,7 @@
 
 ;; Compiler pacifier
 (defvar evil-state)
+(defvar tramp-syntax)
 (declare-function evil-insert-state "evil-states")
 
 
@@ -115,10 +116,10 @@
   :link '(function-link shx-cmd-keep)
   :type '(alist :key-type string :value-type string))
 
-(defcustom shx-max-input nil
-  "The largest input allowed in characters.  On macOS a good
-value is 1024, the size of the typeahead buffer.  Otherwise set
-your terminal to canonical mode with 'stty -icanon'."
+(defcustom shx-max-input most-positive-fixnum
+  "The largest input allowed in characters.
+A good value on macOS is 1024, the size of the typeahead buffer;
+or, set the terminal to canonical mode with 'stty -icanon'."
   :type 'integer)
 
 (defvar shx-cmd-prefix "shx-cmd-"
@@ -192,7 +193,7 @@ This can help in running `ibuffer-do-eval' on multiple buffers."
 In normal circumstances this input is additionally filtered by
 `shx-filter-input' via `comint-mode'."
   (interactive)
-  (if (and shx-max-input (>= (length (shx--current-input)) shx-max-input))
+  (if (>= (length (shx--current-input)) shx-max-input)
       (message "Input line exceeds `shx-max-input'.")
     (shx--timestamp-prompt)
     (comint-send-input nil t)))
@@ -217,7 +218,7 @@ This function overrides `comint-input-sender'."
 
 (defun shx--timestamp-prompt ()
   "Add a mouseover timestamp to the last prompt."
-  (unless comint-prompt-read-only
+  (ignore-errors
     (add-text-properties
      (let ((inhibit-field-text-motion t)) (point-at-bol))
      (process-mark (get-buffer-process (current-buffer)))
@@ -936,9 +937,8 @@ See the function `shx-mode' for details."
   (font-lock-add-keywords nil shx-font-locks)
   (setq-local shx--old-prompt-read-only comint-prompt-read-only)
   (setq-local comint-prompt-read-only nil)
-  (when shx-disable-undo
-    (setq-local shx--old-undo-disabled (eq t buffer-undo-list))
-    (unless shx--old-undo-disabled (buffer-disable-undo)))
+  (setq-local shx--old-undo-disabled (eq t buffer-undo-list))
+  (when shx-disable-undo (buffer-disable-undo))
   ;; do this one with a delay because spacemacs tries to set this variable too:
   (shx--asynch-funcall (lambda () (setq comint-input-sender 'shx-filter-input)))
   (add-hook 'comint-output-filter-functions #'shx-parse-output-hook nil t)
@@ -951,7 +951,7 @@ See the function `shx-mode' for details."
     (font-lock-remove-keywords nil shx-shell-mode-font-locks))
   (font-lock-remove-keywords nil shx-font-locks)
   (setq-local comint-prompt-read-only shx--old-prompt-read-only)
-  (when shx-disable-undo (unless shx--old-undo-disabled (buffer-enable-undo)))
+  (unless shx--old-undo-disabled (buffer-enable-undo))
   (setq comint-input-sender 'comint-simple-send)
   (remove-hook 'comint-output-filter-functions #'shx-parse-output-hook t))
 
@@ -995,10 +995,9 @@ This function only works when the shx minor mode is active."
   (advice-add #'comint-kill-input :before #'shx-switch-to-insert)
   (advice-add #'comint-send-input :after #'shx-switch-to-insert)
   (advice-add #'comint-history-isearch-backward-regexp :before #'shx-show-output)
-  (advice-add #'comint-previous-input :before #'shx-show-output)
-  (advice-add #'comint-next-input :before #'shx-show-output)
   (advice-add #'comint-kill-input :before #'shx-show-output)
   (advice-add #'comint-send-eof :before #'shx-show-output)
+  ;; NOTE: comint-next-prompt is called by comint-previous prompt too
   (advice-add #'comint-next-prompt :after #'shx-snap-to-top)
   (advice-add #'comint-next-prompt :after #'shx-flash-prompt))
 

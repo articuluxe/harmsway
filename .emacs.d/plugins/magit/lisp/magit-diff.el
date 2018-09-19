@@ -1010,7 +1010,7 @@ be committed."
 If there is no revision at point or with a prefix argument prompt
 for a revision."
   (interactive
-   (pcase-let* ((mcommit (magit-section-when module-commit))
+   (pcase-let* ((mcommit (magit-section-value-if 'module-commit))
                 (atpoint (or (and (bound-and-true-p magit-blame-mode)
                                   (oref (magit-current-blame-chunk) orig-rev))
                              mcommit
@@ -1853,7 +1853,7 @@ section or a child thereof."
           (when rewind
             (setq range (replace-regexp-in-string "[^.]\\(\\.\\.\\)[^.]"
                                                   "..." range t t 1)))
-          (magit-insert-section (file module t)
+          (magit-insert-section (magit-module-section module t)
             (magit-insert-heading
               (propertize (concat "modified   " module)
                           'face 'magit-diff-file-heading)
@@ -1878,13 +1878,13 @@ section or a child thereof."
              (equal (match-string 1) module))
         (magit-bind-match-strings (_module _range msg) nil
           (magit-delete-line)
-          (magit-insert-section (file module)
+          (magit-insert-section (magit-module-section module)
             (magit-insert-heading
               (propertize (concat "submodule  " module)
                           'face 'magit-diff-file-heading)
               " (" msg ")"))))
        (t
-        (magit-insert-section (file module)
+        (magit-insert-section (magit-module-section module)
           (magit-insert-heading
             (propertize (concat "modified   " module)
                         'face 'magit-diff-file-heading)
@@ -2302,7 +2302,8 @@ Do not confuse this with `magit-diff-scope' (which see)."
            (let ((range (nth 0 magit-refresh-args))
                  (const (nth 1 magit-refresh-args)))
              (cond ((member "--no-index" const) 'undefined)
-                   ((not range)
+                   ((or (not range)
+                        (magit-rev-eq range "HEAD"))
                     (if (member "--cached" const)
                         'staged
                       'unstaged))

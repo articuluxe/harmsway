@@ -248,7 +248,7 @@ MODE is the mode used in the parent frame."
 (defun lsp-ui-doc--filter-marked-string (list-marked-string)
   (let ((groups (--separate (and (hash-table-p it)
                                  (lsp-ui-sideline--get-renderer (gethash "language" it)))
-                            list-marked-string)))
+                            (append list-marked-string nil))))
     (lsp-ui-doc--set-eldoc (caar groups))
     (if lsp-ui-doc-include-signature
         list-marked-string
@@ -262,7 +262,7 @@ We don't extract the string that `lps-line' is already displaying."
   (when contents
     (cond
      ((stringp contents) contents)
-     ((listp contents) ;; MarkedString[]
+     ((sequencep contents) ;; MarkedString[]
       (mapconcat 'lsp-ui-doc--extract-marked-string
                  (lsp-ui-doc--filter-marked-string contents)
                  "\n\n"

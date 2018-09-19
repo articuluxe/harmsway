@@ -5,7 +5,7 @@
 ;; Author: Joost Kremers <joostkremers@fastmail.fm>
 ;; Maintainer: Joost Kremers <joostkremers@fastmail.fm>
 ;; Created: 31 Oct 2009
-;; Version: 2.20
+;; Version: 2.26
 ;; Keywords: text, pandoc
 ;; Package-Requires: ((hydra "0.10.0") (dash "2.10.0"))
 
@@ -1111,6 +1111,7 @@ evaluated."
 (define-pandoc-number-option tab-stop                (reader "t" "%-23s")      "Tab Stop Width")
 (define-pandoc-switch        preserve-tabs           (reader "p" "%-23s")      "Preserve Tabs")
 (define-pandoc-switch        normalize               (reader "n" "%-23s")      "Normalize Document")
+(define-pandoc-file-option   metadata-file           (reader "M" "%-23s")      "Metadata File")
 (define-pandoc-alist-option  metadata                (reader "m" "%-23s")      "Metadata" "Metadata item")
 (define-pandoc-list-option   filter                  (reader "f" "%-23s") file "Filters" "Filter")
 (define-pandoc-list-option   lua-filter              (reader "l" "%-23s") file "Lua Filters" "Lua Filter")

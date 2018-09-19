@@ -121,7 +121,10 @@
     ("mandm-green+2"  . ,(color-lighten-name mmgreen-color 6))
     ("mandm-green+1"  . ,(color-lighten-name mmgreen-color 3))
     ("mandm-green"    . ,mmgreen-color)
-    ("mandm-green-1"  . ,(color-darken-name mmgreen-color 3))
+    ("mandm-green-1"  . ,(color-darken-name mmgreen-color 5))
+    ("mandm-green-2"  . ,(color-darken-name mmgreen-color 10))
+    ("mandm-green-3"  . ,(color-darken-name mmgreen-color 15))
+    ("mandm-green-4"  . ,(color-darken-name mmgreen-color 20))
     ("mandm-cyan"     . "#93E0E3")
     ("mandm-blue+3"   . ,(color-lighten-name mmblue-color 40))
     ("mandm-blue+2"   . ,(color-lighten-name mmblue-color 20))
@@ -355,7 +358,7 @@ Also bind `class' to ((class color) (min-colors 89))."
 ;;;;; ediff
    `(ediff-current-diff-A ((t (:foreground ,mandm-fg :background ,mandm-red-4))))
    `(ediff-current-diff-Ancestor ((t (:foreground ,mandm-fg :background ,mandm-red-4))))
-   `(ediff-current-diff-B ((t (:foreground ,mandm-fg :background ,mandm-green-1))))
+   `(ediff-current-diff-B ((t (:foreground ,mandm-fg :background ,mandm-green-4))))
    `(ediff-current-diff-C ((t (:foreground ,mandm-fg :background ,mandm-blue-5))))
    `(ediff-even-diff-A ((t (:background ,mandm-bg+1))))
    `(ediff-even-diff-Ancestor ((t (:background ,mandm-bg+1))))
@@ -363,7 +366,7 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(ediff-even-diff-C ((t (:background ,mandm-bg+1))))
    `(ediff-fine-diff-A ((t (:foreground ,mandm-fg :background ,mandm-red-2 :weight bold))))
    `(ediff-fine-diff-Ancestor ((t (:foreground ,mandm-fg :background ,mandm-red-2 weight bold))))
-   `(ediff-fine-diff-B ((t (:foreground ,mandm-fg :background ,mandm-green :weight bold))))
+   `(ediff-fine-diff-B ((t (:foreground ,mandm-fg :background ,mandm-green-2 :weight bold))))
    `(ediff-fine-diff-C ((t (:foreground ,mandm-fg :background ,mandm-blue-3 :weight bold ))))
    `(ediff-odd-diff-A ((t (:background ,mandm-bg+2))))
    `(ediff-odd-diff-Ancestor ((t (:background ,mandm-bg+2))))
@@ -441,8 +444,20 @@ Also bind `class' to ((class color) (min-colors 89))."
    ;; I like color-"inverse" otherwise I completely miss the fact that it's set.
    `(flycheck-error   ((t (:background ,mandm-red-4 :foreground ,mandm-fg :weight bold))))
    `(flycheck-warning ((t (:background ,mandm-yellow-5 :foreground ,mandm-fg :weight bold))))
-   `(flycheck-info    ((t (:background ,mandm-cyan :foreground ,mandm-fg :weight bold ))))
-   `(flycheck-fringe-error   ((t (:foreground ,mandm-red :weight bold))))
+   `(flycheck-info    ((t (:background "DodgerBlue3" :foreground ,mandm-fg :weight bold ))))
+   ;; `(flycheck-error
+   ;;   ((((supports :underline (:style wave)))
+   ;;     (:underline (:style wave :color ,mandm-red-1) :inherit unspecified))
+   ;;    (t (:foreground ,mandm-red-1 :weight bold :underline t))))
+   ;; `(flycheck-warning
+   ;;   ((((supports :underline (:style wave)))
+   ;;     (:underline (:style wave :color ,mandm-yellow) :inherit unspecified))
+   ;;    (t (:foreground ,mandm-yellow :weight bold :underline t))))
+   ;; `(flycheck-info
+   ;;   ((((supports :underline (:style wave)))
+   ;;     (:underline (:style wave :color ,mandm-cyan) :inherit unspecified))
+   ;;    (t (:foreground ,mandm-cyan :weight bold :underline t))))
+   `(flycheck-fringe-error   ((t (:foreground ,mandm-red-1 :weight bold))))
    `(flycheck-fringe-warning ((t (:foreground ,mandm-yellow :weight bold))))
    `(flycheck-fringe-info    ((t (:foreground ,mandm-cyan :weight bold))))
 ;;;;; flymake

@@ -123,6 +123,13 @@
   :group 'posframe
   :type 'boolean)
 
+(defcustom posframe-default-initialize-function nil
+  "The default :initialize function of `posframe-show'.
+
+If :initialize argument of `posframe-show' is nil, this function
+will be called as fallback."
+  :type 'function)
+
 (defvar-local posframe--frame nil
   "Record posframe's frame.")
 
@@ -153,7 +160,7 @@ frame.")
 (defvar-local posframe--refresh-timer nil
   "Record the timer to deal with refresh argument of `posframe-show'.")
 
-(defvar-local posframe--initialize-p nil
+(defvar-local posframe--initialized-p nil
   "Record initialize status of `posframe-show'.")
 
 (cl-defun posframe--create-posframe (posframe-buffer
@@ -377,7 +384,9 @@ user can set FACE-REMAP, more setting details can be found:
 
 INITIALIZE is a function with no argument, it will run when
 posframe buffer is first selected with `with-current-buffer'
-in posframe-show, and only run once for speed reason.
+in posframe-show, and only run once for speed reason, If INITIALIZE
+is nil, `posframe-default-initialize-function' will be used as
+fallback, user can use this variable to global set posframe buffer.
 
 OVERRIDE-PARAMETERS is very powful, *all* the frame parameters
 used by posframe's frame can be overrided by it.
@@ -415,10 +424,11 @@ you can use `posframe-delete-all' to delete all posframes."
     (with-current-buffer posframe-buffer
 
       ;; Initialize
-      (unless posframe--initialize-p
-        (when (functionp initialize)
-          (funcall initialize)
-          (setq posframe--initialize-p t)))
+      (unless posframe--initialized-p
+        (let ((func (or initialize posframe-default-initialize-function)))
+          (when (functionp func)
+            (funcall func)
+            (setq posframe--initialized-p t))))
 
       ;; Move mouse to (0 . 0)
       (posframe--mouse-banish parent-frame)

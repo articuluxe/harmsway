@@ -108,6 +108,10 @@
   '((t :inherit default))
   "Face used by Ivy for highlighting modified file visiting buffers.")
 
+(defface ivy-modified-outside-buffer
+  '((t :inherit default))
+  "Face used by Ivy for highlighting file visiting buffers modified outside Emacs.")
+
 (defface ivy-remote
   '((((class color) (background light))
      :foreground "#110099")
@@ -872,7 +876,8 @@ contains a single candidate.")
       ((or (and (equal ivy--directory "/")
                 (cond ((string-match
                         "\\`\\([^/]+?\\):\\(?:\\(.*\\)@\\)?\\(.*\\)\\'"
-                        ivy-text))
+                        ivy-text)
+                       (setq ivy-text (ivy-state-current ivy-last)))
                       ((string-match
                         "\\`\\([^/]+?\\):\\(?:\\(.*\\)@\\)?\\(.*\\)\\'"
                         (ivy-state-current ivy-last))
@@ -966,8 +971,18 @@ If the text hasn't changed as a result, forward to `ivy-alt-done'."
                    (if startp
                        (concat "^" new)
                      new))
-           (insert (mapconcat #'identity parts " ")
-                   (if ivy-tab-space " " ""))
+           (insert
+            (setq ivy-text
+                  (concat
+                   (mapconcat #'identity parts " ")
+                   (if ivy-tab-space " " ""))))
+           (when (and
+                  (eq (ivy-state-collection ivy-last) #'read-file-name-internal)
+                  (= 1 (length
+                        (all-completions ivy-text ivy--all-candidates)))
+                  (let ((default-directory ivy--directory))
+                    (file-directory-p (ivy-state-current ivy-last))))
+             (ivy--directory-done))
            t))))
 
 (defvar ivy-completion-beg nil
@@ -1333,6 +1348,8 @@ If so, move to that directory, while keeping only the file name."
       (ivy--exhibit)
       (ivy-set-index idx))))
 
+(declare-function tramp-get-completion-methods "tramp")
+
 (defun ivy--cd (dir)
   "When completing file names, move to directory DIR."
   (if (null ivy--directory)
@@ -1341,7 +1358,14 @@ If so, move to that directory, while keeping only the file name."
     (setq ivy--old-re nil)
     (ivy-set-index 0)
     (setq ivy--all-candidates
-          (ivy--sorted-files (setq ivy--directory dir)))
+          (append
+           (ivy--sorted-files (setq ivy--directory dir))
+           (when (and (string= dir "/") (featurep 'tramp))
+             (sort
+              (mapcar
+               (lambda (s) (substring s 1))
+               (tramp-get-completion-methods ""))
+              #'string<))))
     (setq ivy-text "")
     (setf (ivy-state-directory ivy-last) dir)
     (delete-minibuffer-contents)))
@@ -1497,9 +1521,8 @@ This function is suitable as a replacement for
 
 (defun ivy-string< (x y)
   "Like `string<', but operate on CARs when given cons cells."
-  (if (consp x)
-      (string< (car x) (car y))
-    (string< x y)))
+  (string< (if (consp x) (car x) x)
+           (if (consp y) (car y) y)))
 
 (defcustom ivy-sort-functions-alist
   '((read-file-name-internal . ivy-sort-file-function-default)
@@ -1624,27 +1647,25 @@ like.")
   "Return the list of files in DIR.
 Directories come first."
   (let* ((default-directory dir)
-         (predicate (ivy-state-predicate ivy-last))
          (seq (condition-case nil
-                  (all-completions "" #'read-file-name-internal)
+                  (all-completions "" #'read-file-name-internal
+                                   (ivy-state-predicate ivy-last))
                 (error
                  (directory-files dir))))
          sort-fn)
-    (if (equal dir "/")
-        seq
-      (setq seq (delete "./" (delete "../" seq)))
-      (when (eq (setq sort-fn (ivy--sort-function #'read-file-name-internal))
-                #'ivy-sort-file-function-default)
-        (setq seq (mapcar (lambda (x)
-                            (propertize x 'dirp (ivy--dirname-p x)))
-                          seq)))
-      (when sort-fn
-        (setq seq (sort seq sort-fn)))
-      (dolist (dir ivy-extra-directories)
-        (push dir seq))
-      (if predicate
-          (cl-remove-if-not predicate seq)
-        seq))))
+    (setq seq (delete "./" (delete "../" seq)))
+    (when (eq (setq sort-fn (ivy--sort-function #'read-file-name-internal))
+              #'ivy-sort-file-function-default)
+      (setq seq (mapcar (lambda (x)
+                          (propertize x 'dirp (ivy--dirname-p x)))
+                        seq)))
+    (when sort-fn
+      (setq seq (sort seq sort-fn)))
+    (dolist (dir ivy-extra-directories)
+      (push dir seq))
+    (if (string= dir "/")
+        (cl-remove-if (lambda (s) (string-match ":$" s)) (delete "../" seq))
+      seq)))
 
 (defun ivy-alist-setting (alist &optional key)
   "Return the value associated with KEY in ALIST, using `assq'.
@@ -2546,7 +2567,7 @@ STD-PROPS is a property list containing the default text properties."
         (condition-case nil
             (funcall fn)
           (error
-           (warn "`counsel-prompt-function' should take 0 args")
+           (warn "function set by `ivy-set-prompt' should take 0 args")
            ;; old behavior
            (funcall fn (ivy-state-prompt ivy-last))))
       ivy--prompt)))
@@ -2805,8 +2826,7 @@ Should be run via minibuffer `post-command-hook'."
       (if ivy-display-function
           (funcall ivy-display-function text)
         (ivy-display-function-fallback text)))
-    (when (display-graphic-p)
-      (ivy--resize-minibuffer-to-fit))
+    (ivy--resize-minibuffer-to-fit)
     ;; prevent region growing due to text remove/add
     (when (region-active-p)
       (set-mark old-mark))))
@@ -3573,12 +3593,15 @@ TREE can be nested multiple times to have multiple window splits.")
           (t
            default-view-name))))
 
-(defun ivy-push-view ()
+(defun ivy-push-view (&optional arg)
   "Push the current window tree on `ivy-views'.
+
+When ARG is non-nil, replace a selected item on `ivy-views'.
+
 Currently, the split configuration (i.e. horizonal or vertical)
 and point positions are saved, but the split positions aren't.
 Use `ivy-pop-view' to delete any item from `ivy-views'."
-  (interactive)
+  (interactive "P")
   (let* ((view (cl-labels
                    ((ft (tr)
                       (if (consp tr)
@@ -3595,10 +3618,16 @@ Use `ivy-pop-view' to delete any item from `ivy-views'."
                                 (t
                                  (list 'buffer (buffer-name) (point))))))))
                  (ft (car (window-tree)))))
-         (view-name (ivy-read "Name view: " nil
-                              :initial-input (ivy-default-view-name))))
+         (view-name
+          (if arg
+              (ivy-read "Update view: " ivy-views)
+            (ivy-read "Name view: " nil
+                      :initial-input (ivy-default-view-name)))))
     (when view-name
-      (push (list view-name view) ivy-views))))
+      (let ((x (assoc view-name ivy-views)))
+        (if x
+            (setcdr x (list view))
+          (push (list view-name view) ivy-views))))))
 
 (defun ivy-pop-view-action (view)
   "Delete VIEW from `ivy-views'."
@@ -3674,24 +3703,23 @@ Use `ivy-pop-view' to delete any item from `ivy-views'."
 (defun ivy--switch-buffer-action (buffer)
   "Switch to BUFFER.
 BUFFER may be a string or nil."
-  (with-ivy-window
-    (if (zerop (length buffer))
-        (switch-to-buffer
-         ivy-text nil 'force-same-window)
-      (let ((virtual (assoc buffer ivy--virtual-buffers))
-            (view (assoc buffer ivy-views)))
-        (cond ((and virtual
-                    (not (get-buffer buffer)))
-               (find-file (cdr virtual)))
-              (view
-               (delete-other-windows)
-               (let (
-                     ;; silence "Directory has changed on disk"
-                     (inhibit-message t))
-                 (ivy-set-view-recur (cadr view))))
-              (t
-               (switch-to-buffer
-                buffer nil 'force-same-window)))))))
+  (if (zerop (length buffer))
+      (switch-to-buffer
+       ivy-text nil 'force-same-window)
+    (let ((virtual (assoc buffer ivy--virtual-buffers))
+          (view (assoc buffer ivy-views)))
+      (cond ((and virtual
+                  (not (get-buffer buffer)))
+             (find-file (cdr virtual)))
+            (view
+             (delete-other-windows)
+             (let (
+                   ;; silence "Directory has changed on disk"
+                   (inhibit-message t))
+               (ivy-set-view-recur (cadr view))))
+            (t
+             (switch-to-buffer
+              buffer nil 'force-same-window))))))
 
 (defun ivy--switch-buffer-other-window-action (buffer)
   "Switch to BUFFER in other window.
@@ -3799,10 +3827,14 @@ Skip buffers that match `ivy-ignore-buffers'."
 (defun ivy-switch-buffer-transformer (str)
   "Transform candidate STR when switching buffers."
   (let ((b (get-buffer str)))
-    (if (and b
-             (buffer-file-name b)
-             (buffer-modified-p b))
-        (ivy-append-face str 'ivy-modified-buffer)
+    (if (and b (buffer-file-name b))
+        (cond
+          ((buffer-modified-p b)
+           (ivy-append-face str 'ivy-modified-buffer))
+          ((and (not (file-remote-p (buffer-file-name b)))
+                (not (verify-visited-file-modtime b)))
+           (ivy-append-face str 'ivy-modified-outside-buffer))
+          (t str))
       str)))
 
 (defun ivy-switch-buffer-occur ()
