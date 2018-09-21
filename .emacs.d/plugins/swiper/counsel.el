@@ -2166,13 +2166,13 @@ string - the full shell command to run."
   (if (and (eq system-type 'windows-nt)
            (fboundp 'w32-shell-execute))
       (w32-shell-execute "open" x)
-    (start-process-shell-command shell-file-name nil
-                                 (format "%s %s"
-                                         (cl-case system-type
-                                           (darwin "open")
-                                           (cygwin "cygstart")
-                                           (t "xdg-open"))
-                                         (shell-quote-argument x)))))
+    (call-process-shell-command (format "%s %s"
+                                        (cl-case system-type
+                                          (darwin "open")
+                                          (cygwin "cygstart")
+                                          (t "xdg-open"))
+                                        (shell-quote-argument x))
+                                nil 0)))
 
 (defalias 'counsel-find-file-extern #'counsel-locate-action-extern)
 
@@ -3522,6 +3522,15 @@ and incorporate `interprogram-paste-function'."
               :test #'equal-including-properties :from-end t)))
   kill-ring)
 
+(defcustom counsel-yank-pop-after-point nil
+  "Whether `counsel-yank-pop' yanks after point.
+Nil means `counsel-yank-pop' puts point at the end of the yanked
+text and mark at its beginning, as per the default \\[yank].
+Non-nil means `counsel-yank-pop' swaps the resulting point and
+mark, as per \\[universal-argument] \\[yank]."
+  :group 'ivy
+  :type 'boolean)
+
 (defun counsel-yank-pop-action (s)
   "Like `yank-pop', but insert the kill corresponding to S.
 Signal a `buffer-read-only' error if called from a read-only
@@ -3533,7 +3542,9 @@ buffer position."
     ;; Avoid unexpected additions to `kill-ring'
     (let (interprogram-paste-function)
       (yank-pop (counsel--yank-pop-position s)))
-    (setq ivy-completion-end (point))))
+    (when (funcall (if counsel-yank-pop-after-point #'> #'<)
+                   (point) (mark t))
+      (exchange-point-and-mark t))))
 
 (defun counsel-yank-pop-action-remove (s)
   "Remove all occurrences of S from the kill ring."
@@ -3577,32 +3588,36 @@ results in the most recent kill being preselected."
   :group 'ivy
   :type 'boolean)
 
+(autoload 'xor "array")
+
 ;;;###autoload
 (defun counsel-yank-pop (&optional arg)
   "Ivy replacement for `yank-pop'.
-ARG has the same meaning as in `yank-pop', but its default value
-can be controlled with `counsel-yank-pop-preselect-last', which
-see.  See also `counsel-yank-pop-filter' for how to filter
-candidates.
+With a plain prefix argument (\\[universal-argument]),
+temporarily toggle the value of `counsel-yank-pop-after-point'.
+Any other value of ARG has the same meaning as in `yank-pop', but
+`counsel-yank-pop-preselect-last' determines its default value.
+See also `counsel-yank-pop-filter' for how to filter candidates.
+
 Note: Duplicate elements of `kill-ring' are always deleted."
   ;; Do not specify `*' to allow browsing `kill-ring' in read-only buffers
   (interactive "P")
-  (let ((ivy-format-function #'counsel--yank-pop-format-function)
-        (kills (counsel--yank-pop-kills)))
-    (unless kills
-      (error "Kill ring is empty or blank"))
+  (let ((kills (or (counsel--yank-pop-kills)
+                   (error "Kill ring is empty or blank")))
+        (preselect (let (interprogram-paste-function)
+                     (current-kill (cond ((nlistp arg)
+                                          (prefix-numeric-value arg))
+                                         (counsel-yank-pop-preselect-last 0)
+                                         (t 1))
+                                   t)))
+        (counsel-yank-pop-after-point
+         (xor (consp arg) counsel-yank-pop-after-point))
+        (ivy-format-function #'counsel--yank-pop-format-function))
     (unless (eq last-command 'yank)
       (push-mark))
-    (setq ivy-completion-beg (mark t))
-    (setq ivy-completion-end (point))
     (ivy-read "kill-ring: " kills
               :require-match t
-              :preselect (let (interprogram-paste-function)
-                           (current-kill (cond
-                                           (arg (prefix-numeric-value arg))
-                                           (counsel-yank-pop-preselect-last 0)
-                                           (t 1))
-                                         t))
+              :preselect preselect
               :action #'counsel-yank-pop-action
               :caller 'counsel-yank-pop)))
 
@@ -3821,11 +3836,13 @@ And insert it into the minibuffer.  Useful during `eval-expression'."
   "Use Ivy to navigate through ELEMENTS."
   (setq ivy-completion-beg (point))
   (setq ivy-completion-end (point))
-  (ivy-read "Symbol name: "
-            (delete-dups
-             (when (> (ring-size elements) 0)
-               (ring-elements elements)))
-            :action #'ivy-completion-in-region-action))
+  (let ((cands
+         (delete-dups
+          (when (> (ring-size elements) 0)
+            (ring-elements elements)))))
+    (ivy-read "Symbol name: " cands
+              :action #'ivy-completion-in-region-action
+              :caller 'counsel-shell-history)))
 
 (defvar eshell-history-ring)
 
@@ -4644,7 +4661,7 @@ This function always returns its elements in a stable order."
         (let ((dir (file-name-as-directory dir)))
           (dolist (file (directory-files-recursively dir ".*\\.desktop$"))
             (let ((id (subst-char-in-string ?/ ?- (file-relative-name file dir))))
-              (unless (gethash id hash)
+              (when (and (not (gethash id hash)) (file-readable-p file))
                 (push (cons id file) result)
                 (puthash id file hash)))))))
     result))
