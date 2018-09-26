@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-09-18 09:53:33 dharms>
+;; Modified Time-stamp: <2018-09-25 09:05:09 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -316,7 +316,19 @@ not an error if any files do not exist."
          ("C-c pcc" . proviso-compile-choose-compile-command)
          ("C-c pf" . proviso-clang-format-buffer-or-region)
          ("C-c pcf" . proviso-clang-format-toggle-active)
+         :map proviso-deploy-mode-map
+         ("o" . proviso-deploy-open-file)
+         ("s" . proviso-deploy-save-file)
+         ("S" . proviso-deploy-save-file-as)
+         ("g" . proviso-deploy-revert-file)
+         ("+" . proviso-deploy-add-deploy)
+         ("r" . proviso-deploy-run-deploy)
+         ("R" . proviso-deploy-run-all-deploys)
+         ("." . proviso-deploy-run-last)
          )
+  :init
+  (define-prefix-command 'proviso-deploy-mode-map)
+  (global-set-key "\C-cpl" 'proviso-deploy-mode-map)
   :config
   (use-package proviso-frame-title)
   )
