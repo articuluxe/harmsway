@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-10-13 13:32:27 dharms>
+;; Modified Time-stamp: <2018-10-15 07:01:00 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -435,6 +435,10 @@ line."
 (global-set-key "\C-caa" 'align)
 (global-set-key "\C-car" 'align-regexp)
 (global-set-key "\C-cav" 'align-values)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; delimit-columns ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package delim-cols+)
+(global-set-key "\C-cac" 'delimit-columns-region)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ialign ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package ialign :bind ("C-c ai" . ialign))
