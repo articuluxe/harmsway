@@ -21,45 +21,99 @@
 ;;; Code:
 
 (require 'dash)
+(require 's)
 (require 'treemacs-branch-creation)
 (require 'treemacs-impl)
 (require 'treemacs-interface)
 (eval-when-compile
   (require 'cl-lib))
 
-(defvar treemacs--project-start-extensions nil)
-(defvar treemacs--project-end-extensions nil)
-
-(defun treemacs-define-extension (ext pos)
-  "Define an extension for treemacs to use.
-EXT is an extension function, as created by `treemacs-define-expandable-node'
+(defmacro treemacs--build-extension-addition (name)
+  "Internal building block.
+Creates a `treemacs-define-${NAME}-extension' function and the necessary helpers."
+  (let ((define-function-name  (intern (s-lex-format "treemacs-define-${name}-extension")))
+        (start-extension-point (intern (s-lex-format "treemacs--${name}-start-extensions")))
+        (end-extension-point   (intern (s-lex-format "treemacs--${name}-end-extensions")))
+        (start-position        (intern (s-lex-format "${name}-start")))
+        (end-position          (intern (s-lex-format "${name}-end"))))
+    `(progn
+       (defvar ,start-extension-point nil)
+       (defvar ,end-extension-point nil)
+       (cl-defun ,define-function-name (&key extension predicate position)
+         ,(s-lex-format
+           "Define an extension of type `${name}' for treemacs to use.
+EXTENSION is an extension function, as created by `treemacs-define-expandable-node'
 when a `:root' argument is given.
-POS is either `project-start' or `project-end', indicating whether the
+
+PREDICATE is a function that will be called to determine whether the extension
+should be displayed. It is invoked with a single argument, which is the treemacs
+project struct that is being expanded. All methods that can be invoked on this
+type start with the `treemacs-project->' prefix.
+
+POSITION is either `${name}-start' or `${name}-end', indicating whether the
 extension should be rendered as the first or last element of a project.
 
-See also `treemacs-remove-extension'."
-  (pcase pos
-    ('project-start (add-to-list 'treemacs--project-start-extensions ext))
-    ('project-end   (add-to-list 'treemacs--project-end-extensions ext))
-    (other          (error "Invalid extension point value `%s'" other))))
+See also `treemacs-remove-${name}-extension'.")
+         (-let [cell (cons extension predicate)]
+           (pcase position
+             (',start-position (add-to-list ',start-extension-point cell))
+             (',end-position   (add-to-list ',end-extension-point cell))
+             (other          (error "Invalid extension position value `%s'" other)))) ))))
 
-(defun treemacs-remove-extension (ext pos)
-  "Remove an extension EXT at position POS.
-See also `treemacs-define-extension'."
-  (pcase pos
-    ('project-start (setq treemacs--project-start-extensions (delete ext treemacs--project-start-extensions)))
-    ('project-end   (setq treemacs--project-end-extensions   (delete ext treemacs--project-end-extensions)))
-    (other          (error "Invalid extension point value `%s'" other))))
+(defmacro treemacs--build-extension-removal (name)
+  "Internal building block.
+Creates a `treemacs-remove-${NAME}-extension' function and the necessary helpers."
+  (let ((remove-function-name  (intern (s-lex-format "treemacs-remove-${name}-extension")))
+        (start-extension-point (intern (s-lex-format "treemacs--${name}-start-extensions")))
+        (end-extension-point   (intern (s-lex-format "treemacs--${name}-end-extensions")))
+        (start-position        (intern (s-lex-format "${name}-start")))
+        (end-position          (intern (s-lex-format "${name}-end"))) )
+    `(progn
+       (cl-defun ,remove-function-name (extension posistion)
+         ,(s-lex-format
+          "Remove an EXTENSION of type `${name}' at a given POSITION.
+   See also `treemacs-define-${name}-extension'.")
+         (pcase posistion
+           (',start-position
+            (setq ,start-extension-point
+                  (--reject (equal extension (car it)) ,start-extension-point)))
+           (',end-position
+            (setq ,end-extension-point
+                  (--reject (equal extension (car it)) ,end-extension-point)))
+           (other
+            (error "Invalid extension position value `%s'" other)))))))
 
-(defsubst treemacs--apply-project-start-extensions (project-btn)
-  "Apply the extension for PROJECT-BTN at the start of the project."
-  (dolist (ext treemacs--project-start-extensions)
-    (funcall ext project-btn)))
+(defmacro treemacs--build-extension-application (name)
+  "Internal building block.
+Creates treemacs--apply-${NAME}-start/end-extensions functions."
+  (let ((apply-start-name      (intern (s-lex-format "treemacs--apply-${name}-start-extensions")))
+        (apply-end-name        (intern (s-lex-format "treemacs--apply-${name}-end-extensions")))
+        (start-extension-point (intern (s-lex-format "treemacs--${name}-start-extensions")))
+        (end-extension-point   (intern (s-lex-format "treemacs--${name}-end-extensions"))))
+    `(progn
+       (defsubst ,apply-start-name (node data)
+         ,(s-lex-format
+          "Apply the start extensions for NODE of type `${name}'
+Also pass additional DATA to predicate function.")
+         (dolist (cell ,start-extension-point)
+           (let ((extension (car cell))
+                 (predicate (cdr cell)))
+             (when (funcall predicate data)
+               (funcall extension node)))))
 
-(defsubst treemacs--apply-project-end-extensions (project-btn)
-  "Apply the extension for PROJECT-BTN at the end of the project."
-  (dolist (ext treemacs--project-end-extensions)
-    (funcall ext project-btn)))
+       (defsubst ,apply-end-name (node data)
+         ,(s-lex-format
+          "Apply the end extensions for NODE of type `${name}'
+Also pass additional DATA to predicate function.")
+         (dolist (cell ,end-extension-point)
+           (let ((extension (car cell))
+                 (predicate (cdr cell)))
+             (when (funcall predicate data)
+               (funcall extension node))))))))
+
+(treemacs--build-extension-addition "project")
+(treemacs--build-extension-removal "project")
+(treemacs--build-extension-application "project")
 
 (defsubst treemacs-as-icon (string &rest more-properties)
   "Turn STRING into an icon for treemacs.
@@ -78,7 +132,8 @@ Optionally include MORE-PROPERTIES (like `face' or `display')."
 Meant to be used as a `:render-action' for `treemacs-define-expandable-node'.
 
 ICON is a simple string serving as the node's icon, and must be created with
-`treemacs-as-icon'.
+`treemacs-as-icon'. If the icon is for a file you can also use
+`treemacs-icon-for-file'.
 
 LABEL-FORM must return the string that will serve as the node's label text,
 based on the element that should be rendered being bound as `item'. So for
@@ -110,16 +165,18 @@ node for quick retrieval later."
                      :key ,key-form
                      ,@more-properties)))
 
-(cl-defmacro treemacs-define-leaf-node (name icon &key ret-action)
+(cl-defmacro treemacs-define-leaf-node (name icon &key ret-action tab-action mouse1-action)
   "Define a type of node that is a leaf and cannot be further expanded.
 
 Based on the given NAME this macro will define a `treemacs-${name}-state' state
 variable and a `treemacs-${name}-icon' icon variable.
 
-The ICON is a string that should be created with `treemacs-as-icon'.
+The ICON is a string that should be created with `treemacs-as-icon'. If the icon
+is for a file you can also use `treemacs-icon-for-file'.
 
-RET-ACTION is a function reference that will be invoked when RET is pressed on
-a node of this type."
+RET-ACTION, TAB-ACTION and MOUSE1-ACTION are function references that will be
+invoked when RET or TAB are pressed or mouse1 is double-clicked a node of this
+type."
   (declare (indent 1))
   (let ((state-name (intern (format "treemacs-%s-state" name)))
         (icon-name  (intern (format "treemacs-%s-icon" name))))
@@ -127,7 +184,12 @@ a node of this type."
        (defvar ,state-name ',state-name)
        (defvar ,icon-name ,icon)
        ,(when ret-action
-          `(treemacs-define-RET-action ,state-name ,ret-action)))))
+          `(treemacs-define-RET-action ,state-name ,ret-action))
+       ,(when tab-action
+          `(treemacs-define-TAB-action ,state-name ,tab-action))
+       ,(when mouse1-action
+          `(treemacs-define-doubleclick-action ,state-name ,mouse1-action))
+       t)))
 
 (cl-defmacro treemacs-define-expandable-node
     (name &key
@@ -135,6 +197,7 @@ a node of this type."
           icon-closed
           query-function
           render-action
+          ret-action
           root-marker
           root-label
           root-face
@@ -150,6 +213,10 @@ RENDER-ACTION is another form that will render the single items provided by
 QUERY-FUNCTION. For every RENDER-FORM invocation the element to be rendered is
 bound under the name `item'. The form itself should end in a call to
 `treemacs-render-node'.
+
+RET-ACTION will define what function is called when RET is pressed on this type
+of node. Only RET, without TAB and mouse1 can be defined since for expandable
+nodes both TAB and RET should toggle expansion/collapse.
 
 ROOT-MARKER is a simple boolean. It indicates the special case that the node
 being defined is a top level entry point. When this value is non-nil this macro
@@ -185,6 +252,11 @@ way as the KEY-FORM argument in `treemacs-render-node'."
 
        (add-to-list 'treemacs-valid-button-states ,closed-state-name)
        (add-to-list 'treemacs-valid-button-states ,open-state-name)
+
+       ,(when ret-action
+          `(progn
+             (treemacs-define-RET-action ,open-state-name ,ret-action)
+             (treemacs-define-RET-action ,closed-state-name ,ret-action)))
 
        (defun ,expand-name (&optional _)
          ,(format "Expand treemacs nodes of type `%s'." name)
@@ -225,7 +297,6 @@ way as the KEY-FORM argument in `treemacs-render-node'."
          (interactive)
          (cl-block body
            (-let [btn (treemacs-current-button)]
-             ;; TODO(2018/09/02): automate return from as macro
              (when (null btn)
                (cl-return-from body
                  (treemacs-pulse-on-failure "There is nothing to do here.")))

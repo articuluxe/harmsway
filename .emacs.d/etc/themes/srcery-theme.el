@@ -1366,8 +1366,8 @@
       (,srcery-256-class (:background ,srcery-256-bright-black :weight bold))))
 
    `(helm-swoop-target-word-face
-     ((,srcery-class (:foreground ,srcery-magenta :weight bold))
-      (,srcery-256-class (:foreground ,srcery-256-magenta :weight bold))))
+     ((,srcery-class (:foreground ,srcery-magenta :underline t))
+      (,srcery-256-class (:foreground ,srcery-256-magenta :underline t))))
 
    ;; highlights
    `(hi-yellow
@@ -1461,16 +1461,16 @@
 
    ;; ivy
    `(ivy-current-match
-     ((,srcery-class (:background ,srcery-magenta :weight bold))
-      (,srcery-256-class (:background ,srcery-256-magenta :weight bold))))
+     ((,srcery-class (:background ,srcery-bright-black :weight bold))
+      (,srcery-256-class (:background ,srcery-256-bright-black :weight bold))))
 
    `(ivy-minibuffer-match-face-1
      ((,srcery-class (:weight bold))
       (,srcery-256-class (:weight bold))))
 
    `(ivy-minibuffer-match-face-2
-     ((,srcery-class (:foreground ,srcery-blue :underline t))
-      (,srcery-256-class (:foreground ,srcery-256-blue :underline t))))
+     ((,srcery-class (:foreground ,srcery-magenta :underline t))
+      (,srcery-256-class (:foreground ,srcery-256-magenta :underline t))))
 
    `(ivy-minibuffer-match-face-3
      ((,srcery-class (:foreground ,srcery-yellow :underline t))
@@ -2030,8 +2030,8 @@
       (,srcery-256-class (:underline t :foreground ,srcery-256-bright-white))))
 
    `(org-hide
-     ((,srcery-class (:foreground ,srcery-bright-black :background ,srcery-black))
-      (,srcery-256-class (:foreground ,srcery-256-bright-black :background ,srcery-256-black))))
+     ((,srcery-class (:foreground ,srcery-gray-3 :background ,srcery-black))
+      (,srcery-256-class (:foreground ,srcery-256-gray3 :background ,srcery-256-black))))
 
    `(org-kbd
      ((,srcery-class (:inherit region :foreground ,srcery-bright-white :box (:line-width 1 :style released-button)))
@@ -2451,16 +2451,16 @@
    ;; spacemacs-ido-navigation-ts-face
    ;; swiper
    `(swiper-line-face
-     ((,srcery-class (:background ,srcery-magenta :weight bold))
-      (,srcery-256-class (:background ,srcery-256-magenta :weight bold))))
+     ((,srcery-class (:background ,srcery-bright-black :weight bold))
+      (,srcery-256-class (:background ,srcery-bright-black :weight bold))))
 
    `(swiper-match-face-1
      ((,srcery-class (:weight bold))
       (,srcery-256-class (:weight bold))))
 
    `(swiper-match-face-2
-     ((,srcery-class (:foreground ,srcery-blue :underline t))
-      (,srcery-256-class (:foreground ,srcery-256-blue :underline t))))
+     ((,srcery-class (:foreground ,srcery-magenta :underline t))
+      (,srcery-256-class (:foreground ,srcery-256-magenta :underline t))))
 
    `(swiper-match-face-3
      ((,srcery-class (:foreground ,srcery-yellow :underline t))
@@ -2878,6 +2878,104 @@
    `(slack-message-output-header
      ((,srcery-class :foreground ,srcery-yellow :weight bold)
       (,srcery-256-class :foreground ,srcery-256-yellow :weight bold)))
+
+   ;; Message
+   `(message-header-cc
+     ((,srcery-class :foreground ,srcery-blue)
+      (,srcery-256-class :foreground ,srcery-256-blue)))
+
+   `(message-header-newsgroups
+     ((,srcery-class :foreground ,srcery-blue)
+      (,srcery-256-class :foreground ,srcery-256-blue)))
+
+   `(message-header-subject
+     ((,srcery-class :foreground ,srcery-blue)
+      (,srcery-256-class :foreground ,srcery-256-blue)))
+
+   `(message-header-to
+     ((,srcery-class :foreground ,srcery-blue)
+      (,srcery-256-class :foreground ,srcery-256-blue)))
+
+   ;; Alert
+   `(alert-low-face
+     ((,srcery-class :foreground ,srcery-blue :weight bold)
+      (,srcery-256-class :foreground ,srcery-256-blue :weight bold)))
+
+   `(alert-moderate-face
+     ((,srcery-class :foreground ,srcery-yellow :weight bold)
+      (,srcery-256-class :foreground ,srcery-256-yellow :weight bold)))
+
+   ;; Custom
+   `(custom-comment-tag
+     ((,srcery-class :foreground ,srcery-blue)
+      (,srcery-256-class :foreground ,srcery-256-blue)))
+
+   `(custom-face-tag
+     ((,srcery-class :foreground ,srcery-blue :weight bold)
+      (,srcery-256-class :foreground ,srcery-256-blue :weight bold)))
+
+   `(custom-group-tag
+     ((,srcery-class :foreground ,srcery-blue)
+      (,srcery-256-class :foreground ,srcery-256-blue)))
+
+   `(custom-state
+     ((,srcery-class :foreground ,srcery-green)
+      (,srcery-256-class :foreground ,srcery-256-green)))
+
+   `(custom-set
+     ((,srcery-class :background ,srcery-bright-blue :foreground ,srcery-black)
+      (,srcery-256-class :background ,srcery-256-bright-blue :foreground ,srcery-256-black)))
+
+   `(custom-modified
+     ((,srcery-class :background ,srcery-blue :foreground ,srcery-bright-white)
+      (,srcery-256-class :background ,srcery-256-blue :foreground ,srcery-256-bright-white)))
+
+   `(custom-themed
+     ((,srcery-class :background ,srcery-blue :foreground ,srcery-black)
+      (,srcery-256-class :background ,srcery-256-blue :foreground ,srcery-256-black)))
+
+   `(custom-variable-tag
+     ((,srcery-class :foreground ,srcery-blue)
+      (,srcery-256-class :foreground ,srcery-256-blue)))
+
+   `(custom-changed
+     ((,srcery-class :background ,srcery-blue :foreground ,srcery-black)
+      (,srcery-256-class :background ,srcery-256-blue :foreground ,srcery-256-black)))
+
+   `(custom-comment
+     ((,srcery-class :background ,srcery-white :foreground ,srcery-black)
+      (,srcery-256-class :background ,srcery-256-white :foreground ,srcery-256-black)))
+
+   ;; widget
+   `(widget-field
+     ((,srcery-class :background ,srcery-gray-2 :foreground ,srcery-bright-white)
+      (,srcery-256-class :background ,srcery-256-gray2 :foreground ,srcery-256-bright-white)))
+
+   `(widget-documentation
+     ((,srcery-class :foreground ,srcery-green)
+      (,srcery-256-class :foreground ,srcery-256-green)))
+
+   ;; Misc
+   `(epa-string
+     ((,srcery-class :foreground ,srcery-blue)
+      (,srcery-256-class :foreground ,srcery-256-blue)))
+
+   `(imenu-list-entry-face-0
+     ((,srcery-class :foreground ,srcery-magenta)
+      (,srcery-256-class :foreground ,srcery-256-magenta)))
+
+   `(imenu-list-entry-face-1
+     ((,srcery-class :foreground ,srcery-green)
+      (,srcery-256-class :foreground ,srcery-256-green)))
+
+   `(imenu-list-entry-face-2
+     ((,srcery-class :foreground ,srcery-blue)
+      (,srcery-256-class :foreground ,srcery-256-blue)))
+
+   `(imenu-list-entry-face-3
+     ((,srcery-class :foreground ,srcery-blue)
+      (,srcery-256-class :foreground ,srcery-256-blue)))
+
    )
 
   (custom-theme-set-variables

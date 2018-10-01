@@ -161,9 +161,7 @@ PARENT is the (optional) button under which this one is inserted.
 DEPTH indicates how deep in the filetree the current button is."
   (list
    prefix
-   (ht-get treemacs-icons-hash
-           (-> path (treemacs--file-extension) (downcase))
-           treemacs-icon-fallback)
+   (treemacs-icon-for-file path)
    (propertize (file-name-nondirectory path)
                'button '(t)
                'category 'default-button
@@ -422,6 +420,7 @@ Specifically its size will be reduced to half of `treemacs--git-cache-max-size'.
 (defun treemacs--expand-root-node (btn)
   "Expand the given root BTN."
   (let* ((path (button-get btn :path))
+         (project (button-get btn :project))
          (git-path (if (button-get btn :symlink) (file-truename path) path))
          (git-future (treemacs--git-status-process-function git-path))
          (collapse-future (treemacs--collapsed-dirs-process path)))
@@ -431,9 +430,9 @@ Specifically its size will be reduced to half of `treemacs--git-cache-max-size'.
      :new-state 'root-node-open
      :open-action
      (progn
-       (treemacs--apply-project-start-extensions btn)
+       (treemacs--apply-project-start-extensions btn project)
        (goto-char (treemacs--create-branch path (1+ (button-get btn :depth)) git-future collapse-future btn))
-       (treemacs--apply-project-end-extensions btn))
+       (treemacs--apply-project-end-extensions btn project))
      :post-open-action
      (progn
        (treemacs-on-expand path btn nil)

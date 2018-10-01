@@ -164,6 +164,17 @@
     ;; flx-ido
     (flx-highlight-face :weight 'bold :foreground yellow :underline nil)
 
+    ;; hi-lock
+    (hi-yellow   :background yellow)
+    (hi-pink     :background magenta)
+    (hi-red-b    :foreground red :weight 'bold)
+    (hi-green    :background green)
+    (hi-green-b  :foreground green :weight 'bold)
+    (hi-blue     :background blue)
+    (hi-blue-b   :foreground blue :weight 'bold)
+    ;; (hi-black-b  :weight 'bold)
+    ;; (hi-black-hb :inherit 'variable-pitch :weight 'bold :height 1.67)
+
     ;; hl-line
     (hl-line :background bg-alt)
 
@@ -175,7 +186,8 @@
     (ido-virtual     :foreground comments)
 
     ;; isearch
-    (isearch :background highlight :foreground base0 :weight 'bold)
+    (isearch :inherit 'lazy-highlight :weight 'bold)
+    (isearch-fail :background error :foreground base0 :weight 'bold)
 
     ;; linum
     ((linum &inherit line-number))
@@ -445,6 +457,7 @@
 
     ;; evil
     (evil-ex-info                   :foreground error :slant 'italic)
+    (evil-ex-search                 :background highlight :foreground base0 :weight 'bold)
     (evil-ex-substitute-matches     :background base0 :foreground red   :strike-through t :weight 'bold)
     (evil-ex-substitute-replacement :background base0 :foreground green :weight 'bold)
     (evil-search-highlight-persist-highlight-face :inherit 'lazy-highlight)
@@ -818,6 +831,14 @@
     (popup-tip-face :inherit 'popup-face :foreground violet :background base0)
     (popup-selection-face :background selection)
 
+    ;; power
+    (powerline-active0   :inherit 'mode-line :background bg)
+    (powerline-active1   :inherit 'mode-line :background (doom-lighten 'bg 0.025))
+    (powerline-active2   :inherit 'mode-line :foreground base8 :background (doom-lighten 'bg 0.08))
+    (powerline-inactive0 :inherit 'mode-line-inactive :background base2)
+    (powerline-inactive1 :inherit 'mode-line-inactive :background (doom-lighten 'base2 0.02))
+    (powerline-inactive2 :inherit 'mode-line-inactive :background (doom-lighten 'base2 0.04))
+
     ;; rainbow-delimiters
     (rainbow-delimiters-depth-1-face :foreground blue)
     (rainbow-delimiters-depth-2-face :foreground magenta)
@@ -958,6 +979,32 @@
 
 
     ;; --- major-mode faces -------------------
+    ;; agda2-mode
+    (agda2-highlight-keyword-face                 :inherit 'font-lock-keyword-face)
+    (agda2-highlight-string-face                  :inherit 'font-lock-string-face)
+    (agda2-highlight-number-face                  :inherit 'font-lock-string-face)
+    (agda2-highlight-symbol-face                  :inherit 'font-lock-variable-name-face)
+    (agda2-highlight-primitive-type-face          :inherit 'font-lock-type-face)
+    (agda2-highlight-bound-variable-face          :inherit 'font-lock-variable-name-face)
+    (agda2-highlight-inductive-constructor-face   :inherit 'font-lock-type-face)
+    (agda2-highlight-coinductive-constructor-face :inherit 'font-lock-type-face)
+    (agda2-highlight-datatype-face                :inherit 'font-lock-type-face)
+    (agda2-highlight-field-face                   :inherit 'font-lock-type-face)
+    (agda2-highlight-function-face                :inherit 'font-lock-function-name-face)
+    (agda2-highlight-module-face                  :inherit 'font-lock-variable-name-face)
+    (agda2-highlight-postulate-face               :inherit 'font-lock-type-face)
+    (agda2-highlight-primitive-face               :inherit 'font-lock-type-face)
+    (agda2-highlight-macro-face                   :inherit 'font-lock-function-name-face)
+    (agda2-highlight-record-face                  :inherit 'font-lock-type-face)
+    (agda2-highlight-error-face                   :inherit 'font-lock-warning-face)
+    (agda2-highlight-dotted-face                  :inherit 'font-lock-variable-name-face)
+    (agda2-highlight-unsolved-meta-face           :inherit 'font-lock-warning-face)
+    (agda2-highlight-unsolved-constraint-face     :inherit 'font-lock-warning-face)
+    (agda2-highlight-termination-problem-face     :inherit 'font-lock-warning-face)
+    (agda2-highlight-positivity-problem-face      :inherit 'font-lock-warning-face)
+    (agda2-highlight-incomplete-pattern-face      :inherit 'font-lock-warning-face)
+    (agda2-highlight-typechecks-face              :inherit 'font-lock-warning-face)
+
     ;; auctex (latex-mode)
     (font-latex-bold-face         :inherit 'bold)
     (font-latex-italic-face       :inherit 'italic)
@@ -1125,7 +1172,7 @@
     (org-table           :foreground violet)
     (org-tag             :foreground doc-comments :weight 'normal)
     (org-ref-cite-face   :foreground yellow :weight 'light :underline t)
-    (org-todo            :foreground highlight :bold 'inherit)
+    (org-todo            :foreground green :bold 'inherit)
     (org-verbatim        :foreground green)
     (org-warning         :foreground warning)
 
@@ -1146,14 +1193,14 @@
     (org-sexp-date            :foreground fg)
 
     ;; org-habit
-    (org-habit-clear-face          :weight 'bold :background bg-alt :foreground bg-alt)
-    (org-habit-clear-future-face   :weight 'bold :background bg-alt :foreground bg-alt)
-    (org-habit-ready-face          :weight 'bold :background (doom-blend blue bg-alt 0.5)   :foreground (doom-blend blue bg-alt 0.5))
-    (org-habit-ready-future-face   :weight 'bold :background (doom-blend blue bg-alt 0.5)   :foreground (doom-blend blue bg-alt 0.5))
-    (org-habit-alert-face          :weight 'bold :background (doom-blend yellow bg-alt 0.5) :foreground (doom-blend yellow bg-alt 0.5))
-    (org-habit-alert-future-face   :weight 'bold :background (doom-blend yellow bg-alt 0.5) :foreground (doom-blend yellow bg-alt 0.5))
-    (org-habit-overdue-face        :weight 'bold :background (doom-blend red bg-alt 0.5)    :foreground (doom-blend red bg-alt 0.5))
-    (org-habit-overdue-future-face :weight 'bold :background (doom-blend red bg-alt 0.5)    :foreground (doom-blend red bg-alt 0.5))
+    (org-habit-clear-face          :weight 'bold :background base4)
+    (org-habit-clear-future-face   :weight 'bold :background base3)
+    (org-habit-ready-face          :weight 'bold :background (doom-blend blue bg-alt 0.5))
+    (org-habit-ready-future-face   :weight 'bold :background (doom-blend blue bg-alt 0.3))
+    (org-habit-alert-face          :weight 'bold :background (doom-blend yellow bg-alt 0.5))
+    (org-habit-alert-future-face   :weight 'bold :background (doom-blend yellow bg-alt 0.3))
+    (org-habit-overdue-face        :weight 'bold :background (doom-blend red bg-alt 0.5))
+    (org-habit-overdue-future-face :weight 'bold :background (doom-blend red bg-alt 0.3))
 
     ;; rpm-spec-mode
     (rpm-spec-macro-face        :foreground yellow)

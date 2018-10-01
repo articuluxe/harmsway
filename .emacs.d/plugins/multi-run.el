@@ -99,7 +99,6 @@
         (multi-run-term-type (error "Value of multi-run-term-type should be one of the following symbols: eshell, shell, ansi-term, term, multi-term")))
       (rename-buffer (multi-run-get-buffer-name term-num)))))
 
-;; run a command on a single terminal
 (defun multi-run-on-single-terminal (command term-num)
   "Run the command COMMAND on a single terminal with number TERM-NUM."
   (set-buffer (multi-run-get-buffer-name term-num))
@@ -107,7 +106,6 @@
   (insert command)
   (funcall (multi-run-get-input-function)))
 
-;; run a command on multiple terminals
 (defun multi-run-on-terminals (command term-nums &optional delay)
   "Run the COMMAND on terminals in TERM-NUMS with an optional DELAY between running on successive terminals."
   (let ((delay (if delay delay 0))
@@ -150,30 +148,30 @@
 							  (% num-terminals window-batch))
 							num-terminals sym-vec 1)))))
 
-(defun multi-run-make-symbols (num-terminals &optional cnt)
-  "Create unique symbols for NUM-TERMINALS number of terminals having created recursively symbols for CNT of them."
+(defun multi-run-make-symbols (num-terminals hint &optional cnt)
+  "Create unique symbols for NUM-TERMINALS number of terminals with common prefix HINT having created recursively symbols for CNT of them."
   (unless cnt
     (setq cnt 0))
   (when (<= cnt num-terminals)
-    (vconcat (vector (make-symbol (concat "term" (number-to-string cnt)))) (multi-run-make-symbols num-terminals (1+ cnt)))))
+    (vconcat (vector (make-symbol (concat hint (number-to-string cnt)))) (multi-run-make-symbols num-terminals hint (1+ cnt)))))
 
-(defun multi-run-make-dict (num-terminals sym-vec &optional cnt)
-  "Create a dictionary of terminal symbol names and their associated buffer names for NUM-TERMINALS number of terminals with symbols from SYM-VEC, having created recursively entries for CNT of them."
+(defun multi-run-make-dict (num-terminals hint-fun sym-vec &optional cnt)
+  "Create a dictionary of terminal symbol names for NUM-TERMINALS number of terminals with names provided by HINT-FUN and symbols from SYM-VEC, having created recursively entries for CNT of them."
   (unless cnt
     (setq cnt 1))
   (when (<= cnt num-terminals)
     (cons (list :name (aref sym-vec cnt)
-		:buffer (multi-run-get-buffer-name cnt))
-	  (multi-run-make-dict num-terminals sym-vec (1+ cnt)))))
+		:buffer (funcall hint-fun cnt))
+	  (multi-run-make-dict num-terminals hint-fun sym-vec (1+ cnt)))))
 
 (defun multi-run-configure-terminals (num-terminals &optional window-batch)
   "Lay out NUM-TERMINALS number of terminals on the screen with WINDOW-BATCH number of them in one single vertical slot."
   (let* ((window-batch (if window-batch window-batch 5))
 	 (master-buffer-name (buffer-name))
-	 (sym-vec (multi-run-make-symbols num-terminals))
+	 (sym-vec (multi-run-make-symbols num-terminals "term"))
 	 (buffer-dict (cons (list :name (aref sym-vec 0)
 				  :buffer master-buffer-name)
-			    (multi-run-make-dict num-terminals sym-vec)))
+			    (multi-run-make-dict num-terminals 'multi-run-get-buffer-name sym-vec)))
 	 (internal-recipe (multi-run-make-internal-recipe num-terminals window-batch sym-vec))
 	 (overall-recipe `(- (:upper-size-ratio 0.9)
 			     ,internal-recipe ,(aref sym-vec 0))))
@@ -218,18 +216,42 @@
                                                        nil '(lambda (cmd) (multi-run cmd)) cmd) multi-run-timers-list))
         (setq delay-cnt (1+ delay-cnt))))))
 
-;; convenience function for ssh'ing to the terminals
-(defun multi-run-ssh (&optional terminal-num)
-  "Establish ssh connections in the terminals (or on terminal number TERMINAL-NUM) with the help of user-defined variables."
+(defun multi-run-ssh ()
+  "Establish ssh connections in the terminals with the help of user-defined variables."
   (multi-run-on-terminals (lambda (x) (concat "ssh " (if multi-run-ssh-username
 							 (concat multi-run-ssh-username "@") "")
-					      (elt multi-run-hostnames-list (- x 1)))) (if terminal-num (list terminal-num) multi-run-terminals-list)))
+					      (elt multi-run-hostnames-list (- x 1)))) multi-run-terminals-list))
 
-(defun multi-run-kill-terminals (&optional terminal-num)
-  "Kill terminals (or the optional terminal TERMINAL-NUM)."
-  (if terminal-num
-      (kill-buffer (multi-run-get-buffer-name terminal-num))
-    (mapc (lambda (terminal-num) (kill-buffer (multi-run-get-buffer-name terminal-num))) multi-run-terminals-list))
+(defun multi-run-find-remote-files-sudo (file-path &optional window-batch non-root)
+  "Open file specified by FILE-PATH for all terminals and display them on the screen with WINDOW-BATCH number of them in one single vertical slot.  Open with sudo if NON-ROOT is false."
+  (let* ((non-root (if non-root non-root nil))
+	 (window-batch (if window-batch window-batch 5))
+	 (master-buffer-name (buffer-name))
+	 (buffer-vector (vconcat (mapcar (lambda (x) (find-file (concat "/ssh:" (if multi-run-ssh-username
+										    (concat multi-run-ssh-username "@") "")
+									(elt multi-run-hostnames-list (- x 1)) (if (not non-root) (concat "|sudo:" (elt multi-run-hostnames-list (- x 1))) "")
+									":" file-path))) multi-run-terminals-list)))
+	 (num-terminals (length multi-run-terminals-list))
+	 (sym-vec (multi-run-make-symbols num-terminals "file"))
+	 (buffer-dict (cons (list :name (aref sym-vec 0)
+				  :buffer master-buffer-name)
+			    (multi-run-make-dict num-terminals (lambda (cnt) (aref buffer-vector (1- cnt))) sym-vec)))
+	 (internal-recipe (multi-run-make-internal-recipe num-terminals window-batch sym-vec))
+	 (overall-recipe `(- (:upper-size-ratio 0.9)
+			     ,internal-recipe ,(aref sym-vec 0))))
+    (wlf:layout
+     overall-recipe
+     buffer-dict)
+    (select-window (get-buffer-window master-buffer-name)))
+  nil)
+
+(defun multi-run-find-remote-files (file-path &optional window-batch)
+  "Open file specified by FILE-PATH for all terminals and display them on the screen with WINDOW-BATCH number of them in one single vertical slot."
+  (multi-run-find-remote-files-sudo file-path window-batch 't))
+
+(defun multi-run-kill-terminals ()
+  "Kill active terminals."
+  (mapc (lambda (terminal-num) (kill-buffer (multi-run-get-buffer-name terminal-num))) multi-run-terminals-list)
   nil)
 
 (defun multi-run-kill-all-timers ()

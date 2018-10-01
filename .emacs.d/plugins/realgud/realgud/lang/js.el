@@ -25,6 +25,10 @@
   "Escape sequence regular expression pattern trepanjs often puts
   in around prompts")
 
+(defconst realgud:js-file-regexp "\\([^ \t\n]+\\)\\(?: \\[.*\\]\\)?")
+
+
+
 (declare-function realgud-goto-line-for-pt 'realgud-track)
 
 ;;  Regular expression that describes a Perl Carp backtrace line.
@@ -53,6 +57,12 @@
   "Display the location mentioned by the js file/line warning or error."
   (interactive "d")
   (realgud-goto-line-for-pt pt "file-line"))
+
+(defun realgud:js-goto-syntax-error-line (pt)
+  "Display the location mentioned in a Syntax error line
+described by PT."
+  (interactive "d")
+  (realgud-goto-line-for-pt pt "syntax-error"))
 
 
 (provide-me "realgud-lang-")

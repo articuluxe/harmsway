@@ -135,6 +135,13 @@ Remember the value in `treemacs--default-icons-alist'."
 (defvar treemacs-icon-tag-node-open-png   "")
 (defvar treemacs-icon-text                "")
 
+(defsubst treemacs-icon-for-file (path)
+  "Retrieve an icon for PATH from `treemacs-icons-hash'.
+Uses `treemacs-icon-fallback' as fallback."
+  (ht-get treemacs-icons-hash
+          (-> path (treemacs--file-extension) (downcase))
+          treemacs-icon-fallback) )
+
 (defmacro treemacs--set-icon-save-default (&rest key-values)
   "Pass KEY-VALUES to `setq'.
 Also save the assignments in `treemacs--default-icons-alist'."
@@ -198,7 +205,7 @@ Will also fill `treemacs-icons-hash' with graphical file icons."
   (treemacs--setup-icon treemacs-icon-typescript   "typescript.png"       "ts" "tsx")
   (treemacs--setup-icon treemacs-icon-vue          "vue.png"              "vue")
   (treemacs--setup-icon treemacs-icon-css          "css.png"              "css")
-  (treemacs--setup-icon treemacs-icon-conf         "conf.png"             "properties" "conf" "config" "ini" "xdefaults" "xresources" "terminalrc" "ledgerrc")
+  (treemacs--setup-icon treemacs-icon-conf         "conf.png"             "properties" "conf" "config" "cfg" "ini" "xdefaults" "xresources" "terminalrc" "ledgerrc")
   (treemacs--setup-icon treemacs-icon-html         "html.png"             "html" "htm")
   (treemacs--setup-icon treemacs-icon-git          "git.png"              "git" "gitignore" "gitconfig")
   (treemacs--setup-icon treemacs-icon-dart         "dart.png"             "dart")
@@ -217,8 +224,8 @@ Will also fill `treemacs-icons-hash' with graphical file icons."
   (treemacs--setup-icon treemacs-icon-license      "vsc/license.png"      "license")
   (treemacs--setup-icon treemacs-icon-zip          "vsc/zip.png"          "zip" "7z" "tar" "gz" "rar")
   (treemacs--setup-icon treemacs-icon-elm          "vsc/elm.png"          "elm")
-  (treemacs--setup-icon treemacs-icon-xml          "vsc/xml.png"          "xml")
-  (treemacs--setup-icon treemacs-icon-binary       "vsc/binary.png"       "exe")
+  (treemacs--setup-icon treemacs-icon-xml          "vsc/xml.png"          "xml" "xsl")
+  (treemacs--setup-icon treemacs-icon-binary       "vsc/binary.png"       "exe" "dll" "obj" "so" "o")
   (treemacs--setup-icon treemacs-icon-ruby         "vsc/ruby.png"         "rb")
   (treemacs--setup-icon treemacs-icon-scss         "vsc/scss.png"         "scss")
   (treemacs--setup-icon treemacs-icon-lua          "vsc/lua.png"          "lua")
@@ -228,7 +235,7 @@ Will also fill `treemacs-icons-hash' with graphical file icons."
   (treemacs--setup-icon treemacs-icon-toml         "vsc/toml.png"         "toml")
   (treemacs--setup-icon treemacs-icon-nim          "vsc/nim.png"          "nim")
   (treemacs--setup-icon treemacs-icon-org          "vsc/org.png"          "org")
-  (treemacs--setup-icon treemacs-icon-perl         "vsc/perl.png"         "perl")
+  (treemacs--setup-icon treemacs-icon-perl         "vsc/perl.png"         "pl" "pm" "perl")
   (treemacs--setup-icon treemacs-icon-vim          "vsc/vim.png"          "vimrc" "tridactylrc" "vimperatorrc" "ideavimrc" "vrapperrc")
   (treemacs--setup-icon treemacs-icon-depend       "vsc/dependencies.png" "cask")
   (treemacs--setup-icon treemacs-icon-r            "vsc/r.png"            "r"))

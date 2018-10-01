@@ -195,7 +195,7 @@ PROJECT: Project Struct"
                           (not (eq treemacs--previously-followed-tag-btn btn)))
                  (save-excursion
                    (goto-char treemacs--previously-followed-tag-btn)
-                   (when  (and (string= (button-get (treemacs-current-button) :path)
+                   (when  (and (string= (-some-> (treemacs-current-button) (button-get :path))
                                         (button-get treemacs--previously-followed-tag-btn :path))
                                (eq 'file-node-open (button-get treemacs--previously-followed-tag-btn :state)))
                      (treemacs--collapse-file-node treemacs--previously-followed-tag-btn))))
@@ -231,6 +231,7 @@ PROJECT: Project Struct"
       (condition-case e
           (-when-let (index (treemacs--flatten&sort-imenu-index))
             (treemacs--do-follow-tag index treemacs-window buffer-file project))
+        (imenu-unavailable (ignore e))
         (error (treemacs-log "Encountered error while following tag at point: %s" e))))))
 
 (defsubst treemacs--setup-tag-follow-mode ()

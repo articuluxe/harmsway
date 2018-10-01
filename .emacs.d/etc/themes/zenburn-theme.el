@@ -212,6 +212,9 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(font-lock-warning-face ((t (:foreground ,zenburn-yellow-2 :weight bold))))
 
    `(c-annotation-face ((t (:inherit font-lock-constant-face))))
+;;;;; line numbers (Emacs 26.1 and above)
+   `(line-number ((t (:foreground ,zenburn-bg+3 :background ,zenburn-bg-05))))
+   `(line-number-current-line ((t (:inherit line-number :foreground ,zenburn-yellow-2))))
 ;;;;; man
    '(Man-overstrike ((t (:inherit font-lock-keyword-face))))
    '(Man-underline  ((t (:inherit (font-lock-string-face underline)))))
@@ -1140,6 +1143,12 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(org-habit-ready-future-face ((t :background ,zenburn-green-2)))
    `(org-habit-alert-future-face ((t :background ,zenburn-yellow-2 :foreground ,zenburn-bg)))
    `(org-habit-overdue-future-face ((t :background ,zenburn-red-4)))
+;;;;; org-ref
+   `(org-ref-ref-face ((t :underline t)))
+   `(org-ref-label-face ((t :underline t)))
+   `(org-ref-cite-face ((t :underline t)))
+   `(org-ref-glossary-face ((t :underline t)))
+   `(org-ref-acronym-face ((t :underline t)))
 ;;;;; outline
    `(outline-1 ((t (:foreground ,zenburn-orange))))
    `(outline-2 ((t (:foreground ,zenburn-green+4))))
@@ -1163,6 +1172,8 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(cperl-nonoverridable-face ((t (:foreground ,zenburn-magenta))))
    `(cperl-array-face ((t (:foreground ,zenburn-yellow, :backgorund ,zenburn-bg))))
    `(cperl-hash-face ((t (:foreground ,zenburn-yellow-1, :background ,zenburn-bg))))
+;;;;; paren-face
+   `(parenthesis ((t (:foreground ,zenburn-fg-1))))
 ;;;;; perspective
    `(persp-selected-face ((t (:foreground ,zenburn-yellow-2 :inherit mode-line))))
 ;;;;; powerline
@@ -1258,7 +1269,7 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(sh-quoted-exec ((t (:foreground ,zenburn-red))))
 ;;;;; show-paren
    `(show-paren-mismatch ((t (:foreground ,zenburn-red+1 :background ,zenburn-bg+3 :weight bold))))
-   `(show-paren-match ((t (:background ,zenburn-bg+3 :weight bold))))
+   `(show-paren-match ((t (:foreground ,zenburn-fg :background ,zenburn-bg+3 :weight bold))))
 ;;;;; smart-mode-line
    ;; use (setq sml/theme nil) to enable Zenburn for sml
    `(sml/global ((,class (:foreground ,zenburn-fg :weight bold))))

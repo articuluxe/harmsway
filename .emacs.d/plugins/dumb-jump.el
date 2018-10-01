@@ -489,6 +489,22 @@ or most optimal searcher."
            :tests ("class test(object):" "class test:")
            :not ("class testnot:" "class testnot(object):"))
 
+    ;; nim
+    (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "nim"
+           :regex "(const|let|var)\\s*JJJ\\s*(=|:)[^=:\\n]+"
+           :tests ("let test = 1234" "var test = 1234" "var test: Stat" "const test = 1234")
+           :not ("if test == 1234:"))
+
+    (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "nim"
+           :regex "(proc|func|macro|template)\\s*`?JJJ`?\\b\\s*\\\("
+           :tests ("\tproc test(asdf)" "proc test()" "func test()" "macro test()" "template test()")
+           :not ("\tproc testnot(asdf)" "proc testnot()"))
+
+    (:type "type" :supports ("ag" "grep" "rg" "git-grep") :language "nim"
+           :regex "type\\s*JJJ\\b\\s*(\\{[^}]+\\})?\\s*=\\s*\\w+"
+           :tests ("type test = object" "type test {.pure.} = enum")
+           :not ("type testnot = object"))
+
     ;; ruby
     (:type "variable" :supports ("ag" "rg" "git-grep") :language "ruby"
            :regex "^\\s*((\\w+[.])*\\w+,\\s*)*JJJ(,\\s*(\\w+[.])*\\w+)*\\s*=([^=>~]|$)"
@@ -670,6 +686,11 @@ or most optimal searcher."
            :regex "\\b(function|subroutine)\\s+JJJ\\b\\s*\\\("
            :tests ("function test (foo)" "integer function test(foo)" "subroutine test (foo, bar)")
            :not ("end function test" "end subroutine test"))
+
+    (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "fortran"
+           :regex "^\\s*interface\\s+JJJ\\b"
+           :tests ("interface test")
+           :not ("interface test2" "end interface test"))
 
     (:type "type" :supports ("ag" "grep" "rg" "git-grep") :language "fortran"
            :regex "^\\s*module\\s+JJJ\\s*"
@@ -1243,6 +1264,7 @@ or most optimal searcher."
     (:language "lisp" :ext "lisp" :agtype "lisp" :rgtype "lisp")
     (:language "lisp" :ext "lsp" :agtype "lisp" :rgtype "lisp")
     (:language "lua" :ext "lua" :agtype "lua" :rgtype "lua")
+    (:language "nim" :ext "nim" :agtype "nim" :rgtype "nim")
     (:language "org" :ext "org" :agtype nil :rgtype "org")
     (:language "perl" :ext "pl" :agtype "perl" :rgtype "perl")
     (:language "perl" :ext "pm" :agtype "perl" :rgtype "perl")
@@ -1879,6 +1901,7 @@ current file."
     (:comment "#" :language "r")
     (:comment "#" :language "ruby")
     (:comment "#" :language "crystal")
+    (:comment "#" :language "nim")
     (:comment "//" :language "scala")
     (:comment ";" :language "scheme")
     (:comment "#" :language "shell")

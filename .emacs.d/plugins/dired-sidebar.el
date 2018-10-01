@@ -764,7 +764,7 @@ the relevant file-directory clicked on by the mouse."
   (if (featurep 'projectile)
       (condition-case nil
           (if (fboundp 'projectile-project-root)
-              (projectile-project-root)
+              (or (projectile-project-root) default-directory)
             default-directory)
         (error default-directory))
     ;; Use `project' if `projectile' is not loaded yet.
@@ -1013,7 +1013,7 @@ This is somewhat experimental/hacky."
   (when (and (eq dired-sidebar-theme 'icons)
              (fboundp 'all-the-icons-dired--display))
     ;; Refresh `all-the-icons-dired'.
-    (dired-revert)
+    (dired-sidebar-revert)
     (all-the-icons-dired--display))
   (when (dired-sidebar-using-tui-p)
     (dired-sidebar-tui-update-with-delay)))
@@ -1072,12 +1072,23 @@ This function hides the sidebar before executing F and then reshows itself after
   "Update tui interface after a delay."
   (run-with-idle-timer
    dired-sidebar-tui-update-delay nil
-   (lambda ()
-     (dired-sidebar-when-let* ((buffer (dired-sidebar-buffer)))
-       (with-current-buffer buffer
-         (dired-revert)
-         (when dired-sidebar-recenter-cursor-on-tui-update
-           (recenter)))))))
+   #'dired-sidebar-tui-update))
+
+(defun dired-sidebar-tui-update ()
+  "Workhorse function to update tui interface."
+  (dired-sidebar-when-let* ((buffer (dired-sidebar-buffer)))
+    (with-current-buffer buffer
+      (dired-sidebar-revert)
+      (when dired-sidebar-recenter-cursor-on-tui-update
+        (recenter)))))
+
+(defun dired-sidebar-revert ()
+  "Wrapper around `dired-revert' but saves window position."
+  (dired-sidebar-when-let* ((window (get-buffer-window
+                                     (dired-sidebar-buffer)))
+                            (old-window-start (window-start)))
+    (dired-revert)
+    (set-window-start window old-window-start)))
 
 (defun dired-sidebar-tui-reset-in-sidebar (&rest _)
   "Runs `dired-sidebar-tui-dired-reset' in current `dired-sidebar' buffer."
@@ -1096,7 +1107,7 @@ e.g. + and -."
   (advice-add 'dired-revert :before 'dired-sidebar-tui-reset-in-sidebar)
   (setq-local dired-subtree-line-prefix " ")
   (dired-build-subdir-alist)
-  (dired-revert))
+  (dired-sidebar-revert))
 
 (defun dired-sidebar-using-tui-p ()
   "Return t if `dired-sidebar-theme' is using tui code path."
@@ -1110,6 +1121,9 @@ e.g. + and -."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; `wdired' Hack ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;; https://debbugs.gnu.org/cgi/bugreport.cgi?bug=32392
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;; `wdired' Hack ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defvar-local dired-sidebar-wdired-tracking-major-mode nil
   "Track current `major-mode' when toggling to `wdired'.")
 
