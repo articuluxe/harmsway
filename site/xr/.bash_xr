@@ -1,6 +1,12 @@
 # -*- Mode: sh -*-
 # .bash_xr
 
+# release notes
+xr-notes()
+{
+    git log --decorate --oneline | awk '{system("git describe " $1 " | tr -d '\''\n'\''");$1="";print}'
+}
+
 # set display to windows host (CHIHQ-DEV84)
 display-remote() { export DISPLAY=10.10.102.157:0.0; }
 # reset display to local host
