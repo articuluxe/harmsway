@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-09-25 09:05:09 dharms>
+;; Modified Time-stamp: <2018-10-02 11:20:35 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -992,6 +992,7 @@ line."
   (setq magit-repository-directories
         `(,(cons (expand-file-name "~/src") 2)))
   (add-hook 'magit-post-refresh-hook 'diff-hl-magit-post-refresh)
+  (push (cons 'stashes 'hide) magit-section-initial-visibility-alist)
   (push (cons [* unpushed status] 'show) magit-section-initial-visibility-alist)
   (push (cons [* unpulled status] 'show) magit-section-initial-visibility-alist)
   ;; add ido shortcut
