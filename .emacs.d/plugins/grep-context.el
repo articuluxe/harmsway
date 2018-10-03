@@ -1,13 +1,13 @@
 ;;; grep-context.el --- Increase context in compilation and grep buffers  -*- lexical-binding: t; -*-
 
 ;;
-;; Author: Michał Kondraciuk <k.michal@zoho.com>
+;; Author: Michał Krzywkowski <k.michal@zoho.com>
 ;; URL: https://github.com/mkcms/grep-context
 ;; Package-Requires: ((emacs "24.4") (dash "2.12.0") (cl-lib "0.5.0"))
 ;; Version: 0.1.0
 ;; Keywords: convenience, search, grep, compile
 
-;; Copyright (C) 2017 Michał Kondraciuk
+;; Copyright (C) 2017 Michał Krzywkowski
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by

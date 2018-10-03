@@ -4,6 +4,15 @@
 ;;; Code:
 (require 'kaolin-themes)
 
+(defgroup kaolin-light nil
+  "Kaolin light theme options."
+  :group 'kaolin-themes)
+
+(defcustom kaolin-light-alt-bg nil
+  "Use more pure white background color."
+  :type 'boolean
+  :group 'kaolin-light)
+
 (define-kaolin-theme light  "Light Kaolin theme variant."
 
   ;; Palette modification
@@ -26,10 +35,10 @@
 
    ;; Color vars
    (bg0 "#f5f6f5")
-   (bg1 "#e9eae7")
-   (bg2 "#dcded9")
-   (bg3 "#cfd2cb")
-   (bg4 "#c5c9c0")
+   (bg1 (if kaolin-light-alt-bg "#FBFBFB" "#EDEEEB"))
+   (bg2 (if kaolin-light-alt-bg white0 "#DFE1DC"))
+   (bg3 (if kaolin-light-alt-bg white1 "#D1D4CD"))
+   (bg4 (if kaolin-light-alt-bg white2 "#C8CCC3"))
 
    (fg1 gray1)
    (fg2 gray2)
@@ -62,7 +71,7 @@
    ;; TODO: add colored
    (hl-line    (if kaolin-themes-hl-line-colored bg2 bg2))
    (hl-indent  gray9)
-   (selection  teal8)
+   (selection  azure9)
    (pulse      teal8)
 
    (done aquamarine1)
@@ -104,7 +113,7 @@
    (evil-emacs        amber3)
 
    (win-border    bg3)
-   (line-num-fg   chartreuse7)
+   (line-num-fg   azure8)
    (line-num-hl   hl)
 
    (cursor        gray3)
