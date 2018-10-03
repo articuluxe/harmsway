@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-10-02 22:51:40 dharms>
+;; Modified Time-stamp: <2018-10-03 09:50:52 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -336,6 +336,7 @@ not an error if any files do not exist."
   (global-set-key "\C-cpl" 'proviso-deploy-mode-map)
   :config
   (use-package proviso-frame-title)
+  (setq project-find-functions (list #'proviso-find-project))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; tags ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
