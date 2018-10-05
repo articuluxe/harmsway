@@ -2,7 +2,7 @@
 ;; Copyright (C) 2016-2018  Dan Harms (dan.harms)
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Wednesday, December 21, 2016
-;; Modified Time-stamp: <2018-09-19 07:49:40 dharms>
+;; Modified Time-stamp: <2018-10-05 10:00:01 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: themes colors
 
@@ -134,6 +134,8 @@
            (harmsway/make-all-font-sizes-the-same-please))
           ((eq sym 'lop)
            (custom-theme-set-faces sym '(cursor ((t (:background "yellow2"))))))
+          ((eq sym 'lush)
+           (custom-theme-set-faces sym '(iedit-occurrence ((t (:inherit region))))))
           ((eq sym 'mandm)
            (harmsway/make-comment-delimiter-face-same-as-comment-face sym))
           ((eq sym 'manoj-dark)
