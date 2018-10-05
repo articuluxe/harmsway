@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-10-04 07:07:37 dharms>
+;; Modified Time-stamp: <2018-10-05 07:05:09 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -322,6 +322,7 @@ not an error if any files do not exist."
          ("S" . proviso-deploy-save-file-as)
          ("g" . proviso-deploy-revert-file)
          ("+" . proviso-deploy-add-deploy)
+         ("=" . proviso-deploy-add-deploy-cmd)
          ("r" . proviso-deploy-run-deploy)
          ("R" . proviso-deploy-run-all-deploys)
          ("." . proviso-deploy-run-last)
@@ -329,8 +330,9 @@ not an error if any files do not exist."
          ("c" . proviso-deploy-check-file)
          ("d" . proviso-deploy-diff-file)
          ("e" . proviso-deploy-ediff-file)
-         ("f" . proviso-deploy-edit-deployed-file)
-         ("F" . proviso-deploy-edit-deployed-file-other-window)
+         ("f" . proviso-deploy-find-file)
+         ("F" . proviso-deploy-find-file-other-window)
+         ("t" . proviso-deploy-edit-deploy)
          )
   :init
   (define-prefix-command 'proviso-deploy-mode-map)
