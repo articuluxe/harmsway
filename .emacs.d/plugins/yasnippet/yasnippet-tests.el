@@ -556,6 +556,22 @@ int foo()
   }
 }" (buffer-string)))))
 
+(ert-deftest indent-cc-mode-2 ()
+  "Handling of cc-mode's preprocessor indentation."
+  (with-temp-buffer
+    (c-mode)
+    (yas-minor-mode +1)
+    (yas-expand-snippet "\
+#ifndef `\"FOO\"`
+#define FOO
+#endif
+")
+    (should (string= "\
+#ifndef FOO
+#define FOO
+#endif
+" (buffer-substring-no-properties (point-min) (point-max))))))
+
 (ert-deftest indent-snippet-mode ()
   "Handling of snippet-mode indentation."
   ;; This is an interesting case because newlines match [[:space:]] in
@@ -1049,6 +1065,26 @@ hello ${1:$(when (stringp yas-text) (funcall func yas-text))} foo${1:$$(concat \
       (ert-simulate-command '(yas-next-field-or-maybe-expand))
       (ert-simulate-command '(yas-next-field-or-maybe-expand))
       (should (string= (buffer-string) "\\sqrt[3]{\\sqrt[5]{2}}")))))
+
+(ert-deftest nested-snippet-expansion-4 ()
+  "See Github #959."
+  (let ((yas-triggers-in-field t))
+    (yas-with-snippet-dirs
+     '((".emacs.d/snippets"
+        ("text-mode"
+         ("ch" . "<-${1:ch}"))))
+     (yas-reload-all)
+     (text-mode)
+     (yas-minor-mode +1)
+     (yas-expand-snippet "ch$0\n")
+     (ert-simulate-command '(yas-expand))
+     (ert-simulate-command '(forward-char 2))
+     (ert-simulate-command '(yas-expand))
+     (yas-mock-insert "abc")
+     (ert-simulate-command '(yas-next-field-or-maybe-expand))
+     (yas-mock-insert "def")
+     (ert-simulate-command '(yas-next-field-or-maybe-expand))
+     (should (string= (buffer-string) "<-<-abcdef\n")))))
 
 
 ;;; Loading
