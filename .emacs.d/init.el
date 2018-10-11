@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-10-10 08:55:54 dharms>
+;; Modified Time-stamp: <2018-10-11 09:40:25 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -341,6 +341,7 @@ not an error if any files do not exist."
   :config
   (use-package proviso-frame-title)
   (setq project-find-functions (list #'proviso-find-project))
+  (push 'proviso-deploy-mode page-break-lines-modes)
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; tags ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
