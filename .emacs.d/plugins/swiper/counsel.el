@@ -1494,7 +1494,7 @@ When REVERT is non-nil, regenerate the current *ivy-occur* buffer."
          cands)
     (setq cands (split-string
                  (shell-command-to-string cmd)
-                 "\n"
+                 counsel-async-split-string-re
                  t))
     ;; Need precise number of header lines for `wgrep' to work.
     (insert (format "-*- mode:grep; default-directory: %S -*-\n\n\n"
@@ -1725,8 +1725,9 @@ currently checked out."
 
 (defun counsel-find-file-delete (x)
   "Delete file X."
-  (dired-delete-file x dired-recursive-deletes delete-by-moving-to-trash)
-  (ivy--reset-state ivy-last))
+  (when (or delete-by-moving-to-trash (y-or-n-p (format "Delete %s?" x)))
+    (dired-delete-file x dired-recursive-deletes delete-by-moving-to-trash)
+    (ivy--reset-state ivy-last)))
 
 (defun counsel-find-file-move (x)
   "Move or rename file X."
@@ -2550,7 +2551,9 @@ AG-PROMPT, if non-nil, is passed as `ivy-read' prompt argument."
                        (shell-quote-argument
                         (counsel-unquote-regex-parens
                          (ivy--regex (cdr command-args)))))))
-         (cands (split-string (shell-command-to-string cmd) "\n" t)))
+         (cands (split-string (shell-command-to-string cmd)
+                              counsel-async-split-string-re
+                              t)))
     ;; Need precise number of header lines for `wgrep' to work.
     (insert (format "-*- mode:grep; default-directory: %S -*-\n\n\n"
                     default-directory))

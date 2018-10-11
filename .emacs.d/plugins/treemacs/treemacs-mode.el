@@ -265,7 +265,8 @@ If there is no node at point use \"/\" instead.
 Used as a post command hook."
   (-if-let* ((btn (treemacs-current-button))
              (path (button-get btn :path)))
-      (when (file-readable-p path)
+      (when (and (stringp path)
+                 (file-readable-p path))
         (setq default-directory (f-slash (if (file-directory-p path) path (file-name-directory path)))))
     "/"))
 
@@ -306,6 +307,7 @@ Used as a post command hook."
 
   (treemacs--adjust-icons-to-window-system)
   (treemacs--setup-icon-highlight)
+  (treemacs--setup-icon-background-colors)
   (treemacs--setup-mode-line))
 
 (provide 'treemacs-mode)

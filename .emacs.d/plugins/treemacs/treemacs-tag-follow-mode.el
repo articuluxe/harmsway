@@ -44,14 +44,16 @@
   "The idle timer object for `treemacs-tag-follow-mode'.
 Active while tag follow mode is enabled and nil/canceled otherwise.")
 
-(defvar-local treemacs--previously-followed-tag-btn nil
-  "Records the last button whose tags were expanded by tag follow mode.
+(defvar-local treemacs--previously-followed-tag-position nil
+  "Records the last node and path whose tags were expanded by tag follow mode.
+Is made up of a cons of the last expanded node and its path. Both are kept to
+make sure that the position has not become invalidated in the meantime.
 When `treemacs-tag-follow-cleanup' it t this button's tags will be closed up
 again when tag follow mode moves to another button.")
 
 (defsubst treemacs--forget-previously-follow-tag-btn ()
   "Forget the previously followed button when treemacs is killed or rebuilt."
-  (setq treemacs--previously-followed-tag-btn nil))
+  (setq treemacs--previously-followed-tag-position nil))
 
 (defsubst treemacs--flatten&sort-imenu-index ()
   "Flatten current file's imenu index and sort it by tag position.
@@ -66,7 +68,10 @@ or nesting depth."
          (first (caar flat-index))
          ;; in org mode buffers the first item may not be a cons since its position
          ;; is still stored as a text property
-         (semantic? (and (consp first) (overlayp (cdr first)))))
+         (semantic? (and (consp first) (overlayp (cdr first))))
+         (compare-func (if (memq major-mode '(markdown-mode adoc-mode))
+                           #'treemacs--compare-markdown-tag-paths
+                         #'treemacs--compare-tag-paths)))
     (cond
      (semantic?
       ;; go ahead and just transform semantic overlays into markers so we dont
@@ -82,7 +87,7 @@ or nesting depth."
          (let ((leaf (car tag-path)))
            (when (stringp leaf)
              (setcar tag-path (cons leaf (get-text-property 0 'org-imenu-marker leaf))))))))
-    (sort flat-index #'treemacs--compare-tag-paths)))
+    (sort flat-index compare-func)))
 
 (defun treemacs--flatten-imenu-index (index &optional path)
   "Flatten a nested imenu INDEX to a flat list of tag paths.
@@ -94,10 +99,15 @@ PATH: String List"
   (declare (pure t) (side-effect-free t))
   (let (result)
     (--each index
-     (if (imenu--subalist-p it)
-         (setq result
-               (append result (treemacs--flatten-imenu-index (cdr it) (cons (car it) path))))
-       (setq result (cons (cons it (nreverse (copy-sequence path))) result))))
+     (cond
+      ((imenu--subalist-p it)
+       (setq result
+             (append result (treemacs--flatten-imenu-index (cdr it) (cons (car it) path)))))
+      ;; make sure our leaf elements have a cdr where a location should be stored, it looks like there are cases,
+      ;; at least on emacs 25, where we only get what amounts to an empty section
+      ;; https://github.com/Alexander-Miller/treemacs/issues/283#issuecomment-427281977
+      ((and (consp it) (cdr it))
+       (setq result (cons (cons it (nreverse (copy-sequence path))) result)))))
     result))
 
 (defun treemacs--flatten-org-mode-imenu-index (index &optional path)
@@ -127,6 +137,13 @@ P2: Tag-Path"
   (declare (pure t) (side-effect-free t))
   (< (-> p1 (cdar) (marker-position))
      (-> p2 (cdar) (marker-position))))
+
+(defun treemacs--compare-markdown-tag-paths (p1 p2)
+  "Specialized version of `treemacs--compare-tag-paths' for markdown and adoc.
+P1: Tag-Path
+P2: Tag-Path"
+  (declare (pure t) (side-effect-free t))
+  (< (cdar p1) (cdar p2)))
 
 (defun treemacs--find-index-pos (point list)
   "Find the tag at POINT within a flat tag-path LIST.
@@ -191,14 +208,15 @@ PROJECT: Project Struct"
                  (while (not (memq (button-get btn :state) file-states))
                    (setq btn (button-get btn :parent))))
                ;; close the button that was opened on the previous follow
-               (when (and treemacs--previously-followed-tag-btn
-                          (not (eq treemacs--previously-followed-tag-btn btn)))
-                 (save-excursion
-                   (goto-char treemacs--previously-followed-tag-btn)
-                   (when  (and (string= (-some-> (treemacs-current-button) (button-get :path))
-                                        (button-get treemacs--previously-followed-tag-btn :path))
-                               (eq 'file-node-open (button-get treemacs--previously-followed-tag-btn :state)))
-                     (treemacs--collapse-file-node treemacs--previously-followed-tag-btn))))
+               (when (and treemacs--previously-followed-tag-position
+                          (not (eq (car treemacs--previously-followed-tag-position) btn)))
+                 (-let [(prev-followed-pos . prev-followed-path) treemacs--previously-followed-tag-position]
+                   (save-excursion
+                     (goto-char prev-followed-pos)
+                     (when  (and (string= (-some-> (treemacs-current-button) (button-get :path))
+                                          prev-followed-path)
+                                 (eq 'file-node-open (button-get prev-followed-pos :state)))
+                       (treemacs--collapse-file-node prev-followed-pos)))))
                ;; when that doesnt work move manually to the correct file
                (unless (string-equal buffer-file (button-get btn :path))
                  (treemacs-goto-button buffer-file project)
@@ -207,7 +225,7 @@ PROJECT: Project Struct"
            (treemacs-goto-button buffer-file project)
            (setq btn (treemacs-current-button)))
          (goto-char (button-start btn))
-         (setq treemacs--previously-followed-tag-btn btn)
+         (setq treemacs--previously-followed-tag-position (cons btn (button-get btn :path)))
          ;; imenu already rescanned when fetching the tag path
          (let ((imenu-auto-rescan nil))
            ;; the target tag still has its position marker attached
