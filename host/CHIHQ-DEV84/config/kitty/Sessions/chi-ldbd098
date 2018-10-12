@@ -4,7 +4,7 @@ SCPAutoPwd\0\
 ACSinUTF\0\
 Comment\\
 CtrlTabSwitch\0\
-Password\v4513\
+Password\65323\
 ForegroundOnBell\0\
 SaveWindowPos\0\
 WindowState\0\
@@ -171,7 +171,7 @@ WindowHasSysMenu\1\
 WindowMaximizable\1\
 WindowMinimizable\1\
 WindowClosable\1\
-BoldAsColour\2\
+BoldAsColour\1\
 Xterm256Colour\1\
 ANSIColour\1\
 TryPalette\0\
