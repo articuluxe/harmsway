@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-10-11 09:40:25 dharms>
+;; Modified Time-stamp: <2018-10-12 07:24:54 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -341,7 +341,6 @@ not an error if any files do not exist."
   :config
   (use-package proviso-frame-title)
   (setq project-find-functions (list #'proviso-find-project))
-  (push 'proviso-deploy-mode page-break-lines-modes)
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; tags ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1147,7 +1146,8 @@ Only one letter is shown, the first that applies."
 (use-package page-break-lines
   :config
   (setq page-break-lines-modes
-        (append '(markdown-mode text-mode) page-break-lines-modes))
+        (append '(markdown-mode text-mode proviso-deploy-mode)
+                page-break-lines-modes))
   (global-page-break-lines-mode))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; beacon ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
