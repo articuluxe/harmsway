@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-10-12 08:48:32 dharms>
+;; Modified Time-stamp: <2018-10-13 13:32:27 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1146,7 +1146,10 @@ Only one letter is shown, the first that applies."
 (use-package page-break-lines
   :config
   (setq page-break-lines-modes
-        (append '(markdown-mode text-mode proviso-deploy-mode)
+        (append '(markdown-mode
+                  text-mode
+                  proviso-dashboard-mode
+                  proviso-deploy-mode)
                 page-break-lines-modes))
   (global-page-break-lines-mode))
 
