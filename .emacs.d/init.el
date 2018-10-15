@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-10-15 12:35:17 dan.harms>
+;; Modified Time-stamp: <2018-10-15 12:51:56 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2270,8 +2270,59 @@ Only one letter is shown, the first that applies."
   :disabled
   )
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; flyspell ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defun harmsway-toggle-flyspell-prog-mode ()
+  "Toggle `flyspell-prog-mode' in current buffer."
+  (interactive)
+  (if flyspell-mode
+      (turn-off-flyspell)
+    (flyspell-prog-mode)))
+(bind-key "C-c C-4" #'harmsway-toggle-flyspell-prog-mode)
+
+(defun harmsway-try-flyspell (arg)
+  "Attempt to correct spelling of ARG, if not in a comment."
+  (if (nth 4 (syntax-ppss))
+      (call-interactively 'flyspell-correct-word-before-point)
+    nil))
+
+(use-package flyspell
+  :if (executable-find "hunspell")
+  :defer t
+  :init
+  (setq ispell-program-name (executable-find "hunspell"))
+  ;; to enable flyspell-prog-mode automatically:
+  ;; (add-hook 'prog-mode-hook #'flyspell-prog-mode)
+  (mapc (lambda (hook) (add-hook hook #'flyspell-mode))
+        '(text-mode-hook markdown-mode-hook org-mode-hook))
+  (setq flyspell-issue-message-flag nil)
+  :config
+  (define-key flyspell-mode-map [?\C-,] nil)
+  (define-key flyspell-mode-map [?\C-\;] nil)
+  (define-key flyspell-mode-map [?\C-\.] nil)
+  (define-key flyspell-mode-map [?\C-\M-i] nil)
+  (bind-keys
+   :map flyspell-mode-map
+   ("C-c \\c" . flyspell-auto-correct-word)
+   ("C-c \\a" . flyspell-auto-correct-previous-word)
+   ("C-c \\n" . flyspell-goto-next-error)
+   ("C-c \\s" . flyspell-correct-word-before-point)
+   ("C-c \\w" . ispell-word)
+   ("C-c \\b" . flyspell-buffer)
+   ("C-c \\r" . flyspell-region)
+   )
+  (use-package ace-popup-menu :config (ace-popup-menu-mode 1))
+  (use-package flyspell-popup
+    :demand t
+    :bind (:map flyspell-mode-map
+                ("C-c \\\\" . flyspell-popup-correct))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; hippie-expand ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (global-set-key "\M-/" 'hippie-expand)
+(setq hippie-expand-try-functions-list
+      (append '(harmsway-try-flyspell
+                yas-hippie-try-expand
+                )
+              hippie-expand-try-functions-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; completion ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq tab-always-indent 'complete)      ;or t to avoid completion
@@ -2514,45 +2565,6 @@ Only one letter is shown, the first that applies."
   :disabled
   :config
   (add-hook 'flycheck-mode-hook #'flycheck-inline-mode))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; flyspell ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defun my/toggle-flyspell-prog-mode ()
-  "Toggle `flyspell-prog-mode' in current buffer."
-  (interactive)
-  (if flyspell-mode
-      (turn-off-flyspell)
-    (flyspell-prog-mode)))
-(bind-key "C-c C-4" #'my/toggle-flyspell-prog-mode)
-(use-package flyspell
-  :if (executable-find "hunspell")
-  :defer t
-  :init
-  (setq ispell-program-name (executable-find "hunspell"))
-  ;; to enable flyspell-prog-mode automatically:
-  ;; (add-hook 'prog-mode-hook #'flyspell-prog-mode)
-  (mapc (lambda (hook) (add-hook hook #'flyspell-mode))
-        '(text-mode-hook markdown-mode-hook org-mode-hook))
-  (setq flyspell-issue-message-flag nil)
-  :config
-  (define-key flyspell-mode-map [?\C-,] nil)
-  (define-key flyspell-mode-map [?\C-\;] nil)
-  (define-key flyspell-mode-map [?\C-\.] nil)
-  (define-key flyspell-mode-map [?\C-\M-i] nil)
-  (bind-keys
-   :map flyspell-mode-map
-   ("C-c \\c" . flyspell-auto-correct-word)
-   ("C-c \\a" . flyspell-auto-correct-previous-word)
-   ("C-c \\n" . flyspell-goto-next-error)
-   ("C-c \\s" . flyspell-correct-word-before-point)
-   ("C-c \\w" . ispell-word)
-   ("C-c \\b" . flyspell-buffer)
-   ("C-c \\r" . flyspell-region)
-   )
-  (use-package ace-popup-menu :config (ace-popup-menu-mode 1))
-  (use-package flyspell-popup
-    :demand t
-    :bind (:map flyspell-mode-map
-                ("C-c \\\\" . flyspell-popup-correct))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; semantic ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq semantic-default-submodes
