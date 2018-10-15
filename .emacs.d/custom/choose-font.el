@@ -2,7 +2,7 @@
 ;; Copyright (C) 2018  Dan Harms (dharms)
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Wednesday, March 28, 2018
-;; Modified Time-stamp: <2018-08-09 14:38:41 dharms>
+;; Modified Time-stamp: <2018-10-15 10:17:00 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: font
 
@@ -41,7 +41,8 @@ Uses the current value of `choose-font-list'."
   (choose-font-read-init-file)
   (if (daemonp)
       (add-hook 'after-make-frame-functions #'choose-font-activate-hook-fn)
-    (choose-font-set-font (car choose-font-list))))
+    (eval-when '(load eval)
+      (choose-font-set-font (car choose-font-list)))))
 
 (defun choose-font-activate-hook-fn (frame)
   "Activate the font for FRAME.
