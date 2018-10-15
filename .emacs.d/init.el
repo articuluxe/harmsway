@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-10-15 07:01:00 dharms>
+;; Modified Time-stamp: <2018-10-15 10:20:15 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2488,6 +2488,7 @@ Only one letter is shown, the first that applies."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; flycheck-popup-tip ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package flycheck-popup-tip
   :after flycheck
+  :disabled
   :config
   (add-hook 'flycheck-mode-hook #'flycheck-popup-tip-mode))
 
