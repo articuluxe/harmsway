@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-10-15 10:20:15 dan.harms>
+;; Modified Time-stamp: <2018-10-15 12:35:17 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2269,6 +2269,9 @@ Only one letter is shown, the first that applies."
 (use-package rtags
   :disabled
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; hippie-expand ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(global-set-key "\M-/" 'hippie-expand)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; completion ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq tab-always-indent 'complete)      ;or t to avoid completion
