@@ -1,0 +1,2 @@
+cp src/purp-common.el ../../../../.emacs.d/plugins
+cp src/purp-*theme.el ../../../../.emacs.d/etc/themes
