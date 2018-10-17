@@ -1,0 +1,2 @@
+cp src/*.el ../../../.emacs.d/plugins
+cp src/*.rb ../../../.emacs.d/plugins
