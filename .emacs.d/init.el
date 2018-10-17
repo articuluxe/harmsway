@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-10-15 12:51:56 dan.harms>
+;; Modified Time-stamp: <2018-10-17 07:14:43 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1540,7 +1540,7 @@ Only one letter is shown, the first that applies."
         '(" AC" " yas" " Undo-Tree" " Abbrev" " Guide" " Hi" " $" " ,"
           " Ifdef" " Rbow" " ivy" " ElDoc" " (*)" " wg" " ⛓" " GitGutter"
           " Fly" " drag" " mc++fl" " ARev" " Spnxd" " PgLn" " ^L" " be"
-          " counsel" " ivy" " WK"))
+          " counsel" " ivy" " WK" " company"))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smart-mode-line ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2332,6 +2332,7 @@ Only one letter is shown, the first that applies."
 ;; Ignore case when completing file names
 (setq read-file-name-completion-ignore-case nil)
 (setq uniquify-recentf-func 'uniquify-recentf-ivy-recentf-open)
+
 (defun harmsway-dabbrev-complete-at-point ()
   "Complete dabbrev at point."
   (dabbrev--reset-global-variables)
@@ -2346,18 +2347,58 @@ Only one letter is shown, the first that applies."
 ;(add-hook 'after-init-hook 'harmsway-add-ivy-completion-at-point)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; company ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defun harmsway-company-at-point ()
+  "Try company completion at point."
+  (and (not (minibufferp))
+       company-mode
+       #'company-complete-common))
 (use-package company
-  :disabled
   :init
-  (setq company-begin-commands '(self-insert-command))
+  ;; (defun company-indent-for-tab-command (&optional arg)
+  ;;   (interactive "P")
+  ;;   (let ((completion-at-point-functions-saved
+  ;;          completion-at-point-functions)
+  ;;         (completion-at-point-functions '(company-complete-common-wrapper)))
+  ;;     (indent-for-tab-command arg)))
+  ;; (defun company-complete-common-wrapper ()
+  ;;   (let ((completion-at-point-functions completion-at-point-functions-saved))
+  ;;     (company-complete-common)))
+
   (setq company-idle-delay .1)
+  (setq company-tooltip-idle-delay 1)
+  (setq company-require-match nil)
+  ;; (setq company-begin-commands '(self-insert-command))
   (setq company-minimum-prefix-length 3)
   (setq company-show-numbers t)
   (setq company-tooltip-align-annotations t)
+  (setq company-dabbrev-minimum-length 3)
+  (setq company-backends
+        '((company-files
+           company-keywords
+           company-capf
+           company-dabbrev
+           )
+          company-etags
+          company-clang
+          company-cmake
+          company-nxml
+          ))
+  :config
+  (global-company-mode 1)
+;  (global-set-key (kbd "TAB") #'company-indent-or-complete-common)
+  (add-to-list 'completion-at-point-functions 'harmsway-company-at-point)
+  ;; (define-key company-active-map "\C-n" #'company-select-next)
+  ;; (define-key company-active-map "\C-p" #'company-select-previous)
+  (define-key company-active-map [tab] #'company-complete-common-or-cycle)
+  (define-key company-active-map (kbd "TAB") #'company-complete-common-or-cycle)
+  (define-key company-active-map "\C-e" #'company-other-backend)
+  ;; (define-key company-mode-map [remap indent-for-tab-command]
+  ;;   'company-indent-for-tab-command)
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-complete ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package auto-complete
+  :disabled
   :init
   (setq ac-quick-help-prefer-pos-tip nil)
   (add-hook 'emacs-lisp-mode-hook 'ac-emacs-lisp-mode-setup)
