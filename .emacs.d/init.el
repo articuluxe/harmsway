@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-10-17 07:14:43 dharms>
+;; Modified Time-stamp: <2018-10-17 07:28:51 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2354,16 +2354,6 @@ Only one letter is shown, the first that applies."
        #'company-complete-common))
 (use-package company
   :init
-  ;; (defun company-indent-for-tab-command (&optional arg)
-  ;;   (interactive "P")
-  ;;   (let ((completion-at-point-functions-saved
-  ;;          completion-at-point-functions)
-  ;;         (completion-at-point-functions '(company-complete-common-wrapper)))
-  ;;     (indent-for-tab-command arg)))
-  ;; (defun company-complete-common-wrapper ()
-  ;;   (let ((completion-at-point-functions completion-at-point-functions-saved))
-  ;;     (company-complete-common)))
-
   (setq company-idle-delay .1)
   (setq company-tooltip-idle-delay 1)
   (setq company-require-match nil)
@@ -2385,15 +2375,12 @@ Only one letter is shown, the first that applies."
           ))
   :config
   (global-company-mode 1)
-;  (global-set-key (kbd "TAB") #'company-indent-or-complete-common)
   (add-to-list 'completion-at-point-functions 'harmsway-company-at-point)
   ;; (define-key company-active-map "\C-n" #'company-select-next)
   ;; (define-key company-active-map "\C-p" #'company-select-previous)
   (define-key company-active-map [tab] #'company-complete-common-or-cycle)
   (define-key company-active-map (kbd "TAB") #'company-complete-common-or-cycle)
   (define-key company-active-map "\C-e" #'company-other-backend)
-  ;; (define-key company-mode-map [remap indent-for-tab-command]
-  ;;   'company-indent-for-tab-command)
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-complete ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
