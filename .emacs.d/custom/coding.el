@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2018-04-24 08:34:21 dharms>
+;; Modified Time-stamp: <2018-10-17 08:57:59 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -153,6 +153,7 @@
    ;; (setq hide-ifdef-lines t)
    (setq hide-ifdef-shadow t)
    (hide-ifdef-mode 1)
+   (add-to-list (make-local-variable 'company-backends) 'company-clang t)
    ))
 
 (add-hook 'prog-mode-hook

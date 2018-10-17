@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-10-17 09:36:50 dan.harms>
+;; Modified Time-stamp: <2018-10-17 21:58:18 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2366,12 +2366,10 @@ Only one letter is shown, the first that applies."
         '((company-files
            company-keywords
            company-capf
+           company-dabbrev-code
            company-dabbrev
            )
           company-etags
-          company-clang
-          company-cmake
-          company-nxml
           ))
   :config
   (global-company-mode 1)
@@ -2975,6 +2973,10 @@ This may perform related customization."
     (modify-syntax-entry ?_ "_" cmake-mode-syntax-table))
   (add-hook 'cmake-mode-hook #'my/cmake-fix-underscore)
   (add-hook 'cmake-mode-hook 'cmake-font-lock-activate)
+  (add-hook 'cmake-mode-hook (lambda ()
+                               (add-to-list
+                                (make-local-variable 'company-backends)
+                                'company-cmake t)))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; crontab-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3233,8 +3235,8 @@ This may perform related customization."
     (use-package jedi-direx)
     (add-hook 'jedi-mode-hook 'jedi-direx:setup)
     (add-hook 'python-mode-hook 'jedi:setup)
-    (defun my/expand-jedi() (interactive)
-           (auto-complete '(ac-source-jedi-direct)))
+    (defun harmsway-expand-jedi () (interactive)
+           (company-begin-backend 'company-jedi))
     )
   (if (executable-find "flake8")
       (progn
@@ -3287,7 +3289,9 @@ Requires Flake8 2.0 or newer. See URL
                 (lambda()(interactive)
                   (compile (concat "python " (buffer-file-name)))))
               (when (featurep 'jedi)
-                (define-key python-mode-map [(ctrl tab)] 'my/expand-jedi)
+                (add-to-list (make-local-variable 'company-backends)
+                             'company-jedi t)
+                (define-key python-mode-map [(ctrl tab)] 'harmsway-expand-jedi)
                 (define-key python-mode-map "\C-cx" 'jedi-direx:pop-to-buffer))
               (sphinx-doc-mode 1)
               (define-key python-mode-map "\C-c'" 'python-switch-quotes)
@@ -3330,7 +3334,8 @@ Requires Flake8 2.0 or newer. See URL
             (define-key nxml-mode-map "\r" 'reindent-then-newline-and-indent)
             (define-key nxml-mode-map "\C-c\C-c" 'comment-region)
             (define-key nxml-mode-map "\C-c\C-u" 'uncomment-region)
-            (use-package auto-complete-nxml)
+            (add-to-list (make-local-variable 'company-backends)
+                         'company-nxml)
             ))
 (use-package mz-comment-fix
   :if (< emacs-major-version 25)
