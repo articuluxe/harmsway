@@ -2363,6 +2363,7 @@ Only one letter is shown, the first that applies."
 (defun harmsway-company-at-point ()
   "Try company completion at point."
   (and (not (minibufferp))
+       (featurep 'company)
        company-mode
        #'company-complete-common))
 (use-package company
