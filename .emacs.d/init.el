@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-10-18 14:37:44 dharms>
+;; Modified Time-stamp: <2018-10-18 14:42:33 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2729,6 +2729,7 @@ Only one letter is shown, the first that applies."
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; popup-kill-ring ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(setq kill-ring-max 100)
 (use-package popup-kill-ring :bind ("C-M-y" . popup-kill-ring))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;; popup-global-mark-ring ;;;;;;;;;;;;;;;;;;;;;;;;;;;
