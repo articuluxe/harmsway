@@ -985,7 +985,7 @@ line."
               ("y" . magit-cherry)
               ("e" . ediff-merge-revisions-with-ancestor) ;; to see all differences, even those automatically merged
               ("m" . magit-toggle-margin)
-              ("b" . magit-blame)
+              ("b" . magit-blame-addition)
               ("B" . magit-blame-reverse)
               ("U" . magit-unstage-all) ;; unstage all changes (like SU but forces HEAD)
               ("s" . magit-stage-file)
@@ -3318,7 +3318,6 @@ Requires Flake8 2.0 or newer. See URL
               ))
   :config
   (setq sh-basic-offset 4)
-  (setq sh-indentation 4)
   (define-key sh-mode-map "\r" 'reindent-then-newline-and-indent)
   (define-key sh-mode-map "\C-c\C-c" 'comment-region)
   (define-key sh-mode-map "\C-c\C-u" 'uncomment-region)
