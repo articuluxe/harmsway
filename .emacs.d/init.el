@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-10-18 14:42:33 dharms>
+;; Modified Time-stamp: <2018-10-18 15:04:58 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2316,6 +2316,15 @@ Only one letter is shown, the first that applies."
 (use-package flyspell-correct-ivy
   :after flyspell
   :bind ("C-c \\\\" . flyspell-correct-wrapper))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; company-ispell ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defun harmsway-company-ispell-at-point ()
+  "Begin `company-ispell' at point."
+  (interactive)
+  (company-begin-backend 'company-ispell))
+(use-package company-ispell
+  :after ispell
+  :bind ("C-c \\ TAB" . #'harmsway-company-ispell-at-point))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ace-popup-menu ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package ace-popup-menu :config (ace-popup-menu-mode 1))
