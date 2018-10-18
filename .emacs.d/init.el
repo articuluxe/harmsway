@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-10-18 15:04:58 dharms>
+;; Modified Time-stamp: <2018-10-18 15:16:02 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2652,11 +2652,6 @@ Only one letter is shown, the first that applies."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; request-deferred ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package request-deferred :commands request-deferred)
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; web ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package web
-  :commands (web-http-call web-http-get web-http-post
-                           web-json-post web-get))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; restclient ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package restclient
   :mode ("\\.http$" . restclient-mode)
@@ -3342,6 +3337,17 @@ Requires Flake8 2.0 or newer. See URL
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; text-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-hook 'text-mode-hook #'good-word/init-word-processor)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; web ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package web
+  :commands (web-http-call web-http-get web-http-post
+                           web-json-post web-get)
+  :config
+  (add-hook 'web-mode-hook (lambda ()
+                             (add-to-list
+                              (make-local-variable 'company-backends)
+                              'company-web-html t)))
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; xml-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-hook 'nxml-mode-hook
