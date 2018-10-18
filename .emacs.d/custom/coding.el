@@ -154,6 +154,7 @@
    (setq hide-ifdef-shadow t)
    (hide-ifdef-mode 1)
    (add-to-list (make-local-variable 'company-backends) 'company-clang t)
+   (add-to-list (make-local-variable 'company-backends) 'company-c-headers t)
    ))
 
 (add-hook 'prog-mode-hook
