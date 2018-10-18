@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-10-17 21:58:18 dharms>
+;; Modified Time-stamp: <2018-10-18 06:59:15 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2354,11 +2354,11 @@ Only one letter is shown, the first that applies."
        #'company-complete-common))
 (use-package company
   :init
-  (setq company-idle-delay .1)
+  (setq company-idle-delay .2)
   (setq company-tooltip-idle-delay 1)
   (setq company-require-match nil)
+  (setq company-minimum-prefix-length 2)
   ;; (setq company-begin-commands '(self-insert-command))
-  (setq company-minimum-prefix-length 3)
   (setq company-show-numbers t)
   (setq company-tooltip-align-annotations t)
   (setq company-dabbrev-minimum-length 3)
@@ -2368,6 +2368,7 @@ Only one letter is shown, the first that applies."
            company-capf
            company-dabbrev-code
            company-dabbrev
+           :with company-yasnippet
            )
           company-etags
           ))
@@ -2530,12 +2531,6 @@ Only one letter is shown, the first that applies."
    ("C-c sv" . yas-visit-snippet-file)
    ("C-c s?" . yas-describe-tables)
    )
-  ;; integrate with auto-complete (shows only snippets)
-  (defun my/expand-yasnippet() (interactive)
-         (auto-complete '(ac-source-yasnippet)))
-  (global-set-key [backtab] 'yas-expand)
-  (global-set-key [(shift tab)] 'yas-expand)
-  (setq yas-fallback-behavior '(apply my/expand-yasnippet))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; quick-peek ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
