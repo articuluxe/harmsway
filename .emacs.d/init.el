@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-10-18 06:59:15 dharms>
+;; Modified Time-stamp: <2018-10-18 12:12:11 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2381,6 +2381,15 @@ Only one letter is shown, the first that applies."
   (define-key company-active-map (kbd "TAB") #'company-complete-common-or-cycle)
   (define-key company-active-map "\C-e" #'company-other-backend)
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;; company-quickhelp ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package company-quickhelp
+  :if (display-graphic-p)
+  :after company
+  :config
+  (setq company-quickhelp-delay 0.5)
+  (setq company-quickhelp-use-propertized-text t)
+  (company-quickhelp-mode 1))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-complete ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package auto-complete
