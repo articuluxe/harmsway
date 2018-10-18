@@ -371,7 +371,11 @@ with Emacs text properties."
 
 (defun deadgrep--type-list ()
   "Query the rg executable for available file types."
-  (let* ((output (shell-command-to-string (format "%s --type-list" deadgrep-executable)))
+  (let* ((output (with-output-to-string
+                   (with-current-buffer standard-output
+                     (process-file-shell-command
+                      (format "%s --type-list" deadgrep-executable)
+                      nil '(t nil)))))
          (lines (s-lines (s-trim output)))
          (types-and-globs
           (--map
@@ -1017,7 +1021,7 @@ This will either be a button, a filename, or a search result."
                    search-term search-type case
                    deadgrep--context))
          (process
-          (start-process-shell-command
+          (start-file-process-shell-command
            (format "rg %s" search-term)
            (current-buffer)
            command)))
@@ -1195,6 +1199,7 @@ This is intended for use with `next-error-function', which see."
      (format "Platform: %s\n" system-type)
      (format "Emacs version: %s\n" emacs-version)
      (format "Command: %s\n" command)
+     (format "default-directory: %S\n" default-directory)
      (format "\nInitial output from ripgrep:\n%S" output)
      (format "\n\nPlease file bugs at https://github.com/Wilfred/deadgrep/issues/new"))))
 

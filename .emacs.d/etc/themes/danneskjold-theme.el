@@ -472,7 +472,7 @@
      `(ivy-prompt-match ((,c (:bold t :foreground ,white))))
      `(ivy-confirm-face ((,c (:underline ,diredcl))))
 
-     `(ivy-virtual ((,c (:foreground ,orange))))
+     `(ivy-virtual ((,c (:foreground ,comment))))
      `(ivy-remote ((,c (:foreground ,white :slant italic))))
      `(ivy-cursor ((,c (:foreground ,comment))))
      `(ivy-action ((,c (:foreground ,yellow))))

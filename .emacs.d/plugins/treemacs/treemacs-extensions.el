@@ -114,12 +114,25 @@ Also pass additional DATA to predicate function.")
 (treemacs--build-extension-addition "project")
 (treemacs--build-extension-removal "project")
 (treemacs--build-extension-application "project")
+(treemacs--build-extension-addition "directory")
+(treemacs--build-extension-removal "directory")
+(treemacs--build-extension-application "directory")
 
 (defsubst treemacs-as-icon (string &rest more-properties)
   "Turn STRING into an icon for treemacs.
 Optionally include MORE-PROPERTIES (like `face' or `display')."
   (declare (indent 1))
   (apply #'propertize string 'icon t more-properties))
+
+(defun treemacs-update-node (path)
+  "Update the node identified by its PATH.
+Throws an error when the node cannot be found. Does nothing if the node is not
+expanded."
+  (treemacs-unless-let (btn (treemacs-goto-node path))
+      (error "Node at path %s cannot be found" path)
+    (when (treemacs-is-node-expanded? btn)
+      (funcall (alist-get (button-get btn :state) treemacs-TAB-actions-config))
+      (funcall (alist-get (button-get btn :state) treemacs-TAB-actions-config)))))
 
 (cl-defmacro treemacs-render-node
     (&key icon
@@ -325,20 +338,21 @@ way as the KEY-FORM argument in `treemacs-render-node'."
           (cl-assert (and root-label root-face root-key-form)
                      :show-args "Root information must be provided when `:root-marker' is non-nil")
           `(cl-defun ,(intern (format "treemacs-%s-extension" (upcase (symbol-name name)))) (parent)
-             (insert
-              "\n"
-              (s-repeat treemacs-indentation treemacs-indentation-string)
-              ,closed-icon-name
-              (propertize ,root-label
-                          'button '(t)
-                          'category 'default-button
-                          'face ,root-face
-                          :key ,root-key-form
-                          :path (list (button-get parent :project) ,root-key-form)
-                          :depth 1
-                          :no-git t
-                          :parent parent
-                          :state ,closed-state-name)))))))
+             (-let [depth (1+ (button-get parent :depth))]
+               (insert
+                "\n"
+                (s-repeat (* depth treemacs-indentation) treemacs-indentation-string)
+                ,closed-icon-name
+                (propertize ,root-label
+                            'button '(t)
+                            'category 'default-button
+                            'face ,root-face
+                            :key ,root-key-form
+                            :path (list (or (button-get parent :project) (button-get parent :key)) ,root-key-form)
+                            :depth depth
+                            :no-git t
+                            :parent parent
+                            :state ,closed-state-name))))))))
 
 
 (provide 'treemacs-extensions)

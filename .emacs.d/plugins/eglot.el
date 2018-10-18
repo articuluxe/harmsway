@@ -91,7 +91,9 @@
 language-server/bin/php-language-server.php"))
                                 (haskell-mode . ("hie-wrapper"))
                                 (kotlin-mode . ("kotlin-language-server"))
-                                (go-mode . ("go-langserver" "-mode=stdio" "-gocodecompletion")))
+                                (go-mode . ("go-langserver" "-mode=stdio"
+                                            "-gocodecompletion"))
+                                (java-mode . eglot--eclipse-jdt-contact))
   "How the command `eglot' guesses the server to start.
 An association list of (MAJOR-MODE . CONTACT) pairs.  MAJOR-MODE
 is a mode symbol, or a list of mode symbols.  The associated
@@ -124,8 +126,14 @@ of those modes.  CONTACT can be:
   `jsonrpc-process-connection', which you should see for the
   semantics of the mandatory :PROCESS argument.
 
-* A function of no arguments producing any of the above values
-  for CONTACT.")
+* A function of a single argument producing any of the above
+  values for CONTACT.  The argument's value is non-nil if the
+  connection was requested interactively (e.g. from the `eglot'
+  command), and nil if it wasn't (e.g. from `eglot-ensure').  If
+  the call is interactive, the function can ask the user for
+  hints on finding the required programs, etc.  Otherwise, it
+  should not ask the user for any input, and return nil or signal
+  an error if it can't produce a valid CONTACT.")
 
 (defface eglot-mode-line
   '((t (:inherit font-lock-constant-face :weight bold)))
@@ -353,7 +361,9 @@ be guessed."
                             (lambda (m1 m2)
                               (or (eq m1 m2)
                                   (and (listp m1) (memq m2 m1)))))))
-         (guess (if (functionp guess) (funcall guess) guess))
+         (guess (if (functionp guess)
+                    (funcall guess interactive)
+                  guess))
          (class (or (and (consp guess) (symbolp (car guess))
                          (prog1 (car guess) (setq guess (cdr guess))))
                     'eglot-lsp-server))
@@ -747,7 +757,6 @@ You could add, for instance, the symbol
 under cursor."
   :type '(repeat
           (choice
-           (symbol :tag "Other")
            (const :tag "Documentation on hover" :hoverProvider)
            (const :tag "Code completion" :completionProvider)
            (const :tag "Function signature help" :signatureHelpProvider)
@@ -767,7 +776,8 @@ under cursor."
            (const :tag "Highlight links in document" :documentLinkProvider)
            (const :tag "Decorate color references" :colorProvider)
            (const :tag "Fold regions of buffer" :foldingRangeProvider)
-           (const :tag "Execute custom commands" :executeCommandProvider))))
+           (const :tag "Execute custom commands" :executeCommandProvider)
+           (symbol :tag "Other"))))
 
 (defun eglot--server-capable (&rest feats)
   "Determine if current server is capable of FEATS."
@@ -1080,14 +1090,21 @@ COMMAND is a symbol naming the command."
                        ((`(,beg . ,end) (eglot--range-region range)))
                      ;; Fallback to `flymake-diag-region' if server
                      ;; botched the range
-                     (if (= beg end)
-                         (let* ((st (plist-get range :start))
-                                (diag-region
-                                 (flymake-diag-region
-                                  (current-buffer) (1+ (plist-get st :line))
-                                  (plist-get st :character))))
-                           (setq beg (car diag-region)
-                                 end (cdr diag-region))))
+                     (when (= beg end)
+                       (if-let* ((st (plist-get range :start))
+                                 (diag-region
+                                  (flymake-diag-region
+                                   (current-buffer) (1+ (plist-get st :line))
+                                   (plist-get st :character))))
+                           (setq beg (car diag-region) end (cdr diag-region))
+                         (eglot--widening
+                          (goto-char (point-min))
+                          (setq beg
+                                (point-at-bol
+                                 (1+ (plist-get (plist-get range :start) :line))))
+                          (setq end
+                                (point-at-eol
+                                 (1+ (plist-get (plist-get range :end) :line)))))))
                      (eglot--make-diag (current-buffer) beg end
                                        (cond ((<= sev 1) 'eglot-error)
                                              ((= sev 2)  'eglot-warning)
@@ -1316,6 +1333,12 @@ DUMMY is ignored."
                      ;; F!@(#*&#$)CKING OFF-BY-ONE again
                      (1+ line) character))))
 
+(defun eglot--sort-xrefs (xrefs)
+  (sort xrefs
+        (lambda (a b)
+          (< (xref-location-line (xref-item-location a))
+             (xref-location-line (xref-item-location b))))))
+
 (cl-defmethod xref-backend-identifier-completion-table ((_backend (eql eglot)))
   (when (eglot--server-capable :documentSymbolProvider)
     (let ((server (eglot--current-server-or-lose))
@@ -1356,9 +1379,10 @@ DUMMY is ignored."
                              :textDocument/definition
                              (get-text-property
                               0 :textDocumentPositionParams identifier)))))
-    (mapcar (jsonrpc-lambda (&key uri range)
-              (eglot--xref-make identifier uri (plist-get range :start)))
-            location-or-locations)))
+    (eglot--sort-xrefs
+     (mapcar (jsonrpc-lambda (&key uri range)
+               (eglot--xref-make identifier uri (plist-get range :start)))
+             location-or-locations))))
 
 (cl-defmethod xref-backend-references ((_backend (eql eglot)) identifier)
   (unless (eglot--server-capable :referencesProvider)
@@ -1369,25 +1393,27 @@ DUMMY is ignored."
                (and rich (get-text-property 0 :textDocumentPositionParams rich))))))
     (unless params
       (eglot--error "Don' know where %s is in the workspace!" identifier))
-    (mapcar
-     (jsonrpc-lambda (&key uri range)
-       (eglot--xref-make identifier uri (plist-get range :start)))
-     (jsonrpc-request (eglot--current-server-or-lose)
-                      :textDocument/references
-                      (append
-                       params
-                       (list :context
-                             (list :includeDeclaration t)))))))
+    (eglot--sort-xrefs
+     (mapcar
+      (jsonrpc-lambda (&key uri range)
+        (eglot--xref-make identifier uri (plist-get range :start)))
+      (jsonrpc-request (eglot--current-server-or-lose)
+                       :textDocument/references
+                       (append
+                        params
+                        (list :context
+                              (list :includeDeclaration t))))))))
 
 (cl-defmethod xref-backend-apropos ((_backend (eql eglot)) pattern)
   (when (eglot--server-capable :workspaceSymbolProvider)
-    (mapcar
-     (jsonrpc-lambda (&key name location &allow-other-keys)
-       (cl-destructuring-bind (&key uri range) location
-         (eglot--xref-make name uri (plist-get range :start))))
-     (jsonrpc-request (eglot--current-server-or-lose)
-                      :workspace/symbol
-                      `(:query ,pattern)))))
+    (eglot--sort-xrefs
+     (mapcar
+      (jsonrpc-lambda (&key name location &allow-other-keys)
+        (cl-destructuring-bind (&key uri range) location
+          (eglot--xref-make name uri (plist-get range :start))))
+      (jsonrpc-request (eglot--current-server-or-lose)
+                       :workspace/symbol
+                       `(:query ,pattern))))))
 
 (defun eglot-format-buffer ()
   "Format contents of current buffer."
@@ -1521,23 +1547,41 @@ is not active."
 (defun eglot--sig-info (sigs active-sig active-param)
   (cl-loop
    for (sig . moresigs) on (append sigs nil) for i from 0
-   concat (cl-destructuring-bind (&key label _documentation parameters) sig
-            (let (active-doc)
-              (concat
-               (propertize (replace-regexp-in-string "(.*$" "(" label)
-                           'face 'font-lock-function-name-face)
-               (cl-loop
-                for (param . moreparams) on (append parameters nil) for j from 0
-                concat (cl-destructuring-bind (&key label documentation) param
-                         (when (and (eql j active-param) (eql i active-sig))
-                           (setq label (propertize
-                                        label
-                                        'face 'eldoc-highlight-function-argument))
-                           (when documentation
-                             (setq active-doc (concat label ": " documentation))))
-                         label)
-                if moreparams concat ", " else concat ")")
-               (when active-doc (concat "\n" active-doc)))))
+   concat (cl-destructuring-bind (&key label documentation parameters) sig
+            (with-temp-buffer
+              (save-excursion (insert label))
+              (when (looking-at "\\([^(]+\\)(")
+                (add-face-text-property (match-beginning 1) (match-end 1)
+                                        'font-lock-function-name-face))
+
+              (when (and (stringp documentation) (eql i active-sig)
+                         (string-match "[[:space:]]*\\([^.\r\n]+[.]?\\)"
+                                       documentation))
+                (setq documentation (match-string 1 documentation))
+                (unless (string-prefix-p (string-trim documentation) label)
+                  (goto-char (point-max))
+                  (insert ": " documentation)))
+              (when (and (eql i active-sig) active-param
+                         (< -1 active-param (length parameters)))
+                (cl-destructuring-bind (&key label documentation)
+                    (aref parameters active-param)
+                  (goto-char (point-min))
+                  (let ((case-fold-search nil))
+                    (cl-loop for nmatches from 0
+                             while (and (not (string-empty-p label))
+                                        (search-forward label nil t))
+                             finally do
+                             (when (= 1 nmatches)
+                               (add-face-text-property
+                                (- (point) (length label)) (point)
+                                'eldoc-highlight-function-argument))))
+                  (when documentation
+                    (goto-char (point-max))
+                    (insert "\n"
+                            (propertize
+                             label 'face 'eldoc-highlight-function-argument)
+                            ": " documentation))))
+              (buffer-string)))
    when moresigs concat "\n"))
 
 (defun eglot-help-at-point ()
@@ -1849,6 +1893,102 @@ If SKIP-SIGNATURE, don't try to send textDocument/signatureHelp."
          (cache (expand-file-name ".cquery_cached_index/" root)))
     (list :cacheDirectory (file-name-as-directory cache)
           :progressReportFrequencyMs -1)))
+
+
+;;; eclipse-jdt-specific
+;;;
+(defclass eglot-eclipse-jdt (eglot-lsp-server) ()
+  :documentation "Eclipse's Java Development Tools Language Server.")
+
+(cl-defmethod eglot-initialization-options ((server eglot-eclipse-jdt))
+  "Passes through required jdt initialization options"
+  `(:workspaceFolders
+    [,@(cl-delete-duplicates
+        (mapcar #'eglot--path-to-uri
+                (let* ((roots (project-roots (eglot--project server)))
+                       (root (car roots)))
+                  (append
+                   roots
+                   (mapcar
+                    #'file-name-directory
+                    (append
+                     (file-expand-wildcards (concat root "*/pom.xml"))
+                     (file-expand-wildcards (concat root "*/build.gradle"))
+                     (file-expand-wildcards (concat root "*/.project")))))))
+        :test #'string=)]
+    ,@(if-let ((home (or (getenv "JAVA_HOME")
+                         (ignore-errors
+                           (expand-file-name
+                            ".."
+                            (file-name-directory
+                             (file-chase-links (executable-find "javac"))))))))
+          `(:settings (:java (:home ,home)))
+        (ignore (eglot--warn "JAVA_HOME env var not set")))))
+
+(defun eglot--eclipse-jdt-contact (interactive)
+  "Return a contact for connecting to eclipse.jdt.ls server, as a cons cell."
+  (cl-labels
+      ((is-the-jar
+        (path)
+        (and (string-match-p
+              "org\\.eclipse\\.equinox\\.launcher_.*\\.jar$"
+              (file-name-nondirectory path))
+             (file-exists-p path))))
+    (let* ((classpath (or (getenv "CLASSPATH") ":"))
+           (cp-jar (cl-find-if #'is-the-jar (split-string classpath ":")))
+           (jar cp-jar)
+           (dir
+            (cond
+             (jar (file-name-as-directory
+                   (expand-file-name ".." (file-name-directory jar))))
+             (interactive
+              (expand-file-name
+               (read-directory-name
+                (concat "Path to eclipse.jdt.ls directory (could not"
+                        " find it in CLASSPATH): ")
+                nil nil t)))
+             (t (error "Could not find eclipse.jdt.ls jar in CLASSPATH"))))
+           (repodir
+            (concat dir
+                    "org.eclipse.jdt.ls.product/target/repository/"))
+           (repodir (if (file-directory-p repodir) repodir dir))
+           (config
+            (concat
+             repodir
+             (cond
+              ((string= system-type "darwin") "config_mac")
+              ((string= system-type "windows-nt") "config_win")
+              (t "config_linux"))))
+           (project (or (project-current) `(transient . ,default-directory)))
+           (workspace
+            (expand-file-name (md5 (car (project-roots project)))
+                              (concat user-emacs-directory
+                                      "eglot-eclipse-jdt-cache"))))
+      (unless jar
+        (setq jar
+              (cl-find-if #'is-the-jar
+                          (directory-files (concat repodir "plugins") t))))
+      (unless (and jar (file-exists-p jar) (file-directory-p config))
+        (error "Could not find required eclipse.jdt.ls files (build required?)"))
+      (when (and interactive (not cp-jar)
+                 (y-or-n-p (concat "Add path to the server program "
+                                   "to CLASSPATH environment variable?")))
+        (setenv "CLASSPATH" (concat (getenv "CLASSPATH") ":" jar)))
+      (unless (file-directory-p workspace)
+        (make-directory workspace t))
+      (cons 'eglot-eclipse-jdt
+            (list (executable-find "java")
+                  "-Declipse.application=org.eclipse.jdt.ls.core.id1"
+                  "-Dosgi.bundles.defaultStartLevel=4"
+                  "-Declipse.product=org.eclipse.jdt.ls.core.product"
+                  "-jar" jar
+                  "-configuration" config
+                  "-data" workspace)))))
+
+(cl-defmethod eglot-execute-command
+  ((_server eglot-eclipse-jdt) (_cmd (eql java.apply.workspaceEdit)) arguments)
+  "Eclipse JDT breaks spec and replies with edits as arguments."
+  (mapc #'eglot--apply-workspace-edit arguments))
 
 
 ;; FIXME: A horrible hack of Flymake's insufficient API that must go

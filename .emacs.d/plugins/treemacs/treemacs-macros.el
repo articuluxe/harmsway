@@ -257,7 +257,7 @@ it on the same line."
          (if (and (f-exists? curr-file)
                   (or treemacs-show-hidden-files
                       (not (s-matches? treemacs-dotfiles-regex (treemacs--filename curr-file)))))
-             (treemacs-goto-button curr-file)
+             (treemacs-goto-node curr-file)
            (treemacs-without-messages (with-no-warnings (goto-line curr-line)))))
         ((or 'tag-node-open 'tag-node-closed 'tag-node)
          ;; no correction needed, if the tag does not exist point is left at the next best node
@@ -352,8 +352,14 @@ For the PREDICATE call the button being checked is bound as 'child-btn'."
        (when (equal (button-get child-btn :parent) ,btn)
          (if ,@predicate
              (cl-return-from __search__ child-btn)
-           (while (= depth (button-get (setq child-btn (next-button (button-end child-btn))) :depth))
-             (when ,@predicate (cl-return-from __search__ child-btn))))))))
+           (while child-btn
+             (setq child-btn (next-button (button-end child-btn)))
+             (-let [child-depth (button-get child-btn :depth)]
+               (cond
+                ((= depth child-depth)
+                 (when ,@predicate (cl-return-from __search__ child-btn)) )
+                ((> depth child-depth)
+                 (cl-return-from __search__ nil))))))))))
 
 (provide 'treemacs-macros)
 
