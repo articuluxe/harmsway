@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-10-18 12:12:11 dharms>
+;; Modified Time-stamp: <2018-10-18 14:37:44 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2310,11 +2310,15 @@ Only one letter is shown, the first that applies."
    ("C-c \\b" . flyspell-buffer)
    ("C-c \\r" . flyspell-region)
    )
-  (use-package ace-popup-menu :config (ace-popup-menu-mode 1))
-  (use-package flyspell-popup
-    :demand t
-    :bind (:map flyspell-mode-map
-                ("C-c \\\\" . flyspell-popup-correct))))
+  )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; flyspell-correct ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package flyspell-correct-ivy
+  :after flyspell
+  :bind ("C-c \\\\" . flyspell-correct-wrapper))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ace-popup-menu ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package ace-popup-menu :config (ace-popup-menu-mode 1))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; hippie-expand ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (global-set-key "\M-/" 'hippie-expand)
