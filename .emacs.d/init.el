@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-10-19 07:36:56 dharms>
+;; Modified Time-stamp: <2018-10-19 07:53:46 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -53,6 +53,7 @@
                      ,(concat my/plugins-directory "elnode/")
                      ,(concat my/plugins-directory "emacs-refactor/")
                      ,(concat my/plugins-directory "expand-region/")
+                     ,(concat my/plugins-directory "http/")
                      ,(concat my/plugins-directory "hydra/")
                      ,(concat my/plugins-directory "js2/")
                      ,(concat my/plugins-directory "lsp/")
@@ -2664,6 +2665,12 @@ Only one letter is shown, the first that applies."
 (use-package restclient
   :mode ("\\.http$" . restclient-mode)
   :commands restclient-mode
+  :config
+  (use-package company-restclient)
+  (add-hook 'restclient-mode-hook (lambda ()
+                                    (make-local-variable 'company-backends)
+                                    (add-to-list 'company-backends
+                                                 'company-restclient)))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-insert ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
