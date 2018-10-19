@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-10-18 15:16:02 dharms>
+;; Modified Time-stamp: <2018-10-19 07:36:56 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2404,6 +2404,13 @@ Only one letter is shown, the first that applies."
   (setq company-quickhelp-delay 0.5)
   (setq company-quickhelp-use-propertized-text t)
   (company-quickhelp-mode 1))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;; company-statistics ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package company-statistics
+  :after company
+  :config
+  (company-statistics-mode 1)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-complete ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package auto-complete
