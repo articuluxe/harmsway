@@ -1,0 +1,2 @@
+cp src/edbi.el ../../../.emacs.d/elisp
+cp src/edbi-bridge.pl ../../../.emacs.d/elisp
