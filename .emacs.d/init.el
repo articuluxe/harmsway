@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-10-19 07:53:46 dharms>
+;; Modified Time-stamp: <2018-10-20 12:13:59 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2392,8 +2392,11 @@ Only one letter is shown, the first that applies."
   (add-to-list 'completion-at-point-functions 'harmsway-company-at-point)
   ;; (define-key company-active-map "\C-n" #'company-select-next)
   ;; (define-key company-active-map "\C-p" #'company-select-previous)
+  ;; cycle back and forth with TAB and S-TAB
   (define-key company-active-map [tab] #'company-complete-common-or-cycle)
   (define-key company-active-map (kbd "TAB") #'company-complete-common-or-cycle)
+  (define-key company-active-map [backtab] #'company-select-previous)
+  (define-key company-active-map (kbd "S-TAB") #'company-select-previous)
   (define-key company-active-map "\C-e" #'company-other-backend)
   )
 
