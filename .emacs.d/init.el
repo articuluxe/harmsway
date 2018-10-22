@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-10-20 12:13:59 dharms>
+;; Modified Time-stamp: <2018-10-22 08:52:59 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2378,15 +2378,15 @@ Only one letter is shown, the first that applies."
   (setq company-tooltip-align-annotations t)
   (setq company-dabbrev-minimum-length 3)
   (setq company-backends
-        '((company-files
+        '((
+           company-files
            company-keywords
+           company-etags
            company-capf
            company-dabbrev-code
            company-dabbrev
            :with company-yasnippet
-           )
-          company-etags
-          ))
+           )))
   :config
   (global-company-mode 1)
   (add-to-list 'completion-at-point-functions 'harmsway-company-at-point)
