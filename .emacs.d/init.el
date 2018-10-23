@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-10-22 08:52:59 dharms>
+;; Modified Time-stamp: <2018-10-23 09:02:14 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2259,7 +2259,7 @@ Only one letter is shown, the first that applies."
   :defines (vlf-tune-enabled vlf-batch-size vlf-batch-size-remote)
   :init
   ;; for files over 50MB, only open 50MB at a time
-  (setq large-file-warning-threshold 20000000) ;20MB
+  (setq large-file-warning-threshold 25000000) ;25MB
   (setq vlf-batch-size 20000000)               ;20MB
   (setq vlf-batch-size-remote 512000)          ;512k
   (setq vlf-tune-enabled nil)           ;don't adjust batch size dynamically
