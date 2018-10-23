@@ -1,11 +1,11 @@
 #!/bin/bash
 # -*- Mode: sh -*-
 # _dirselect.sh --- select a dir from disk
-# Copyright (C) 2016-2017  Dan Harms (dharms)
+# Copyright (C) 2016-2018  Dan Harms (dharms)
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Thursday, May  5, 2016
 # Version: 1.0
-# Modified Time-stamp: <2017-04-14 07:05:16 dharms>
+# Modified Time-stamp: <2018-10-23 14:40:07 dan.harms>
 # Modified by: Dan Harms
 # Keywords: bash script
 
@@ -19,6 +19,13 @@ for e in "${dirs[@]}" ; do
         dirsbase=( ${dirsbase[@]} $(basename $e) )
     fi
 done
+
+# if only 1 element, return early
+if [ "${#dirsbase[@]}" == 1 ]; then
+    echo "${dirsbase[0]}"
+    exit
+fi
+
 # concatenate into space-separated string
 opts=$(echo "${dirsbase[*]}")
 
