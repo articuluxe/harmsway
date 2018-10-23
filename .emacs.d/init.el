@@ -2367,6 +2367,13 @@ Only one letter is shown, the first that applies."
        (featurep 'company)
        company-mode
        #'company-complete-common))
+(defvar-local company-smart-backend #'company-etags
+  "The smartest backend for company-completion.")
+(defun harmsway-smart-completion-at-point ()
+  "Perform smart completion at point."
+  (interactive)
+  (company-begin-backend company-smart-backend))
+(global-set-key "\M-/" #'harmsway-smart-completion-at-point)
 (use-package company
   :init
   (setq company-idle-delay .2)
@@ -2672,8 +2679,9 @@ Only one letter is shown, the first that applies."
   (use-package company-restclient)
   (add-hook 'restclient-mode-hook (lambda ()
                                     (make-local-variable 'company-backends)
-                                    (add-to-list 'company-backends
-                                                 'company-restclient)))
+                                    (push 'company-restclient (car company-backends))
+                                    (setq-local company-smart-backend
+                                                company-restclient)))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-insert ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3005,9 +3013,10 @@ This may perform related customization."
   (add-hook 'cmake-mode-hook #'my/cmake-fix-underscore)
   (add-hook 'cmake-mode-hook 'cmake-font-lock-activate)
   (add-hook 'cmake-mode-hook (lambda ()
-                               (add-to-list
-                                (make-local-variable 'company-backends)
-                                'company-cmake t)))
+                               (make-local-variable 'company-backends)
+                               (push 'company-cmake (car company-backends))
+                               (setq-local company-smart-backend
+                                           'company-cmake)))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; crontab-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3320,8 +3329,9 @@ Requires Flake8 2.0 or newer. See URL
                 (lambda()(interactive)
                   (compile (concat "python " (buffer-file-name)))))
               (when (featurep 'jedi)
-                (add-to-list (make-local-variable 'company-backends)
-                             'company-jedi t)
+                (make-local-variable 'company-backends)
+                (push 'company-jedi (car company-backends))
+                (setq-local company-smart-backend 'company-jedi)
                 (define-key python-mode-map [(ctrl tab)] 'harmsway-expand-jedi)
                 (define-key python-mode-map "\C-cx" 'jedi-direx:pop-to-buffer))
               (sphinx-doc-mode 1)
@@ -3362,9 +3372,8 @@ Requires Flake8 2.0 or newer. See URL
                            web-json-post web-get)
   :config
   (add-hook 'web-mode-hook (lambda ()
-                             (add-to-list
-                              (make-local-variable 'company-backends)
-                              'company-web-html t)))
+                             (make-local-variable 'company-backends)
+                             (push 'company-web-html (car company-backends))))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; xml-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3375,8 +3384,8 @@ Requires Flake8 2.0 or newer. See URL
             (define-key nxml-mode-map "\r" 'reindent-then-newline-and-indent)
             (define-key nxml-mode-map "\C-c\C-c" 'comment-region)
             (define-key nxml-mode-map "\C-c\C-u" 'uncomment-region)
-            (add-to-list (make-local-variable 'company-backends)
-                         'company-nxml)
+            (make-local-variable 'company-backends)
+            (push 'company-nxml (car company-backends))
             ))
 (use-package mz-comment-fix
   :if (< emacs-major-version 25)
