@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2018-10-23 09:03:43 dharms>
+;; Modified Time-stamp: <2018-10-24 06:25:47 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -154,7 +154,11 @@
    (setq hide-ifdef-shadow t)
    (hide-ifdef-mode 1)
    (make-local-variable 'company-backends)
-   (push 'company-c-headers (car company-backends))
+   (setq company-backends
+         (list
+          (cons 'company-c-headers
+                (copy-tree
+                 (car company-backends)))))
    (setq-local company-smart-backend 'company-clang)
    ))
 

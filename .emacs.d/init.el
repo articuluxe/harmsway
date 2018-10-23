@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-10-23 09:02:14 dharms>
+;; Modified Time-stamp: <2018-10-24 06:34:39 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2357,7 +2357,7 @@ Only one letter is shown, the first that applies."
 (defun harmsway-add-ivy-completion-at-point ()
   "Add completion at point for ivy."
   (require 'dabbrev)
-  (add-to-list 'completion-at-point-functions 'harmsway-dabbrev-complete-at-point))
+  (add-hook 'completion-at-point-functions 'harmsway-dabbrev-complete-at-point))
 ;(add-hook 'after-init-hook 'harmsway-add-ivy-completion-at-point)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; company ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2376,27 +2376,28 @@ Only one letter is shown, the first that applies."
 (global-set-key "\M-/" #'harmsway-smart-completion-at-point)
 (use-package company
   :init
-  (setq company-idle-delay .2)
+  (setq company-idle-delay nil)
   (setq company-tooltip-idle-delay 1)
   (setq company-require-match nil)
-  (setq company-minimum-prefix-length 2)
+  (setq company-minimum-prefix-length 1)
+  (setq company-dabbrev-minimum-length 1)
+  (setq company-dabbrev-downcase nil)
   ;; (setq company-begin-commands '(self-insert-command))
   (setq company-show-numbers t)
   (setq company-tooltip-align-annotations t)
-  (setq company-dabbrev-minimum-length 3)
   (setq company-backends
         '((
            company-files
            company-keywords
-           company-etags
            company-capf
            company-dabbrev-code
+           company-etags
            company-dabbrev
            :with company-yasnippet
            )))
   :config
   (global-company-mode 1)
-  (add-to-list 'completion-at-point-functions 'harmsway-company-at-point)
+  (add-hook 'completion-at-point-functions 'harmsway-company-at-point)
   ;; (define-key company-active-map "\C-n" #'company-select-next)
   ;; (define-key company-active-map "\C-p" #'company-select-previous)
   ;; cycle back and forth with TAB and S-TAB
@@ -2677,11 +2678,15 @@ Only one letter is shown, the first that applies."
   :commands restclient-mode
   :config
   (use-package company-restclient)
-  (add-hook 'restclient-mode-hook (lambda ()
-                                    (make-local-variable 'company-backends)
-                                    (push 'company-restclient (car company-backends))
-                                    (setq-local company-smart-backend
-                                                company-restclient)))
+  (add-hook 'restclient-mode-hook
+            (lambda ()
+              (make-local-variable 'company-backends)
+              (setq company-backends
+                    (list
+                     (cons 'company-restclient
+                           (copy-tree
+                            (car company-backends)))))
+              (setq-local company-smart-backend company-restclient)))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-insert ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3014,7 +3019,11 @@ This may perform related customization."
   (add-hook 'cmake-mode-hook 'cmake-font-lock-activate)
   (add-hook 'cmake-mode-hook (lambda ()
                                (make-local-variable 'company-backends)
-                               (push 'company-cmake (car company-backends))
+                               (setq company-backends
+                                     (list
+                                      (cons 'company-cmake
+                                            (copy-tree
+                                             (car company-backends)))))
                                (setq-local company-smart-backend
                                            'company-cmake)))
   )
@@ -3064,7 +3073,7 @@ This may perform related customization."
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; emacs-lisp-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defun my/compile-lisp-file ()
+(defun harmsway-compile-lisp-file ()
   "Byte-compile a Lisp code file."
   (require 'bytecomp)
   (when (and
@@ -3080,6 +3089,7 @@ This may perform related customization."
 (add-hook 'emacs-lisp-mode-hook
           (lambda()
             (setq indent-tabs-mode nil)
+            (add-hook 'completion-at-point-functions 'harmsway-company-at-point nil t)
             (define-key emacs-lisp-mode-map "\r" 'reindent-then-newline-and-indent)
             (define-key emacs-lisp-mode-map "\C-c\C-c" 'comment-region)
             (define-key emacs-lisp-mode-map "\C-c\C-u" 'uncomment-region)
@@ -3093,7 +3103,7 @@ This may perform related customization."
 (add-hook 'emacs-lisp-mode-hook 'eldoc-mode)
 (require 'lisp-extra-font-lock)
 (lisp-extra-font-lock-global-mode 1)
-(add-hook 'after-save-hook #'my/compile-lisp-file)
+(add-hook 'after-save-hook #'harmsway-compile-lisp-file)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; folio-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package folio-mode :mode "\\.folio$"
@@ -3330,7 +3340,11 @@ Requires Flake8 2.0 or newer. See URL
                   (compile (concat "python " (buffer-file-name)))))
               (when (featurep 'jedi)
                 (make-local-variable 'company-backends)
-                (push 'company-jedi (car company-backends))
+                (setq company-backends
+                      (list
+                       (cons 'company-jedi
+                             (copy-tree
+                              (car company-backends)))))
                 (setq-local company-smart-backend 'company-jedi)
                 (define-key python-mode-map [(ctrl tab)] 'harmsway-expand-jedi)
                 (define-key python-mode-map "\C-cx" 'jedi-direx:pop-to-buffer))
@@ -3371,10 +3385,14 @@ Requires Flake8 2.0 or newer. See URL
   :commands (web-http-call web-http-get web-http-post
                            web-json-post web-get)
   :config
-  (add-hook 'web-mode-hook (lambda ()
-                             (make-local-variable 'company-backends)
-                             (push 'company-web-html (car company-backends))))
-  )
+  (add-hook 'web-mode-hook
+            (lambda ()
+              (make-local-variable 'company-backends)
+              (setq company-backends
+                    (list
+                     (cons 'company-web-html
+                           (copy-tree
+                            (car company-backends))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; xml-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-hook 'nxml-mode-hook
@@ -3385,7 +3403,11 @@ Requires Flake8 2.0 or newer. See URL
             (define-key nxml-mode-map "\C-c\C-c" 'comment-region)
             (define-key nxml-mode-map "\C-c\C-u" 'uncomment-region)
             (make-local-variable 'company-backends)
-            (push 'company-nxml (car company-backends))
+            (setq company-backends
+                  (list
+                   (cons 'company-nxml
+                         (copy-tree
+                          (car company-backends)))))
             ))
 (use-package mz-comment-fix
   :if (< emacs-major-version 25)
