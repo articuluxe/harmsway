@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-10-24 06:34:39 dharms>
+;; Modified Time-stamp: <2018-10-24 10:47:33 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2398,8 +2398,11 @@ Only one letter is shown, the first that applies."
   :config
   (global-company-mode 1)
   (add-hook 'completion-at-point-functions 'harmsway-company-at-point)
-  ;; (define-key company-active-map "\C-n" #'company-select-next)
-  ;; (define-key company-active-map "\C-p" #'company-select-previous)
+  ;; Use Ctrl-[N,P] rather than Meta to cycle
+  (define-key company-active-map "\C-n" #'company-select-next)
+  (define-key company-active-map "\C-p" #'company-select-previous)
+  (define-key company-active-map "\M-n" nil)
+  (define-key company-active-map "\M-p" nil)
   ;; cycle back and forth with TAB and S-TAB
   (define-key company-active-map [tab] #'company-complete-common-or-cycle)
   (define-key company-active-map (kbd "TAB") #'company-complete-common-or-cycle)
