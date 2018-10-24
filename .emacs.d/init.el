@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-10-24 10:47:33 dan.harms>
+;; Modified Time-stamp: <2018-10-24 12:54:08 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2361,19 +2361,34 @@ Only one letter is shown, the first that applies."
 ;(add-hook 'after-init-hook 'harmsway-add-ivy-completion-at-point)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; company ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; completion-at-point
 (defun harmsway-company-at-point ()
   "Try company completion at point."
   (and (not (minibufferp))
        (featurep 'company)
        company-mode
        #'company-complete-common))
+
+(defun harmsway-company-capf-workaround (completion-functions)
+  "Ensure `harmsway-company-at-point' is not a member of COMPLETION-FUNCTIONS.
+This is a workaround for `company-capf' so that harmsway's
+completion at point mechanism does not interfere with `completion-at-point-functions'."
+  (if (listp completion-functions)
+      (remq 'harmsway-company-at-point completion-functions)
+    completion-functions))
+
+(advice-add 'company--capf-workaround :filter-return 'harmsway-company-capf-workaround)
+
+;; Smart completion
 (defvar-local company-smart-backend #'company-etags
   "The smartest backend for company-completion.")
 (defun harmsway-smart-completion-at-point ()
   "Perform smart completion at point."
   (interactive)
   (company-begin-backend company-smart-backend))
+
 (global-set-key "\M-/" #'harmsway-smart-completion-at-point)
+
 (use-package company
   :init
   (setq company-idle-delay nil)
