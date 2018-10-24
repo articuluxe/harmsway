@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-10-24 12:54:08 dan.harms>
+;; Modified Time-stamp: <2018-10-25 07:04:11 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -346,17 +346,17 @@ not an error if any files do not exist."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; tags ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (when (> emacs-major-version 24)
-  (global-set-key "\M-*" 'xref-pop-marker-stack)
-  (global-set-key "\M-," 'tags-loop-continue)
-  (global-set-key "\e\e." 'xref-find-definitions)
+  (setq xref-prompt-for-identifier t)
+  (global-set-key "\C-x." #'xref-find-definitions)
+  (global-set-key "\M-*" #'xref-find-apropos)
+  (global-set-key [?\C-\M-.] #'xref-find-apropos) ;TODO
   )
 
 ;; select
 (use-package proviso-etags-select
   :init
   (setq tags-revert-without-query t)
-  :bind (("M-." . etags-select-find-tag)
-         ([?\C-\M-.] . etags-select-find-tag-at-point))
+  :bind ("\e\e." . etags-select-find-tag)
   :demand t
   :config
   ;; stack
