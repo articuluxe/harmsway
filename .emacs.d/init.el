@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-10-25 07:04:11 dharms>
+;; Modified Time-stamp: <2018-10-25 07:13:55 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -346,7 +346,7 @@ not an error if any files do not exist."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; tags ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (when (> emacs-major-version 24)
-  (setq xref-prompt-for-identifier t)
+  (setq xref-prompt-for-identifier '(not xref-find-definitions))
   (global-set-key "\C-x." #'xref-find-definitions)
   (global-set-key "\M-*" #'xref-find-apropos)
   (global-set-key [?\C-\M-.] #'xref-find-apropos) ;TODO
@@ -1108,7 +1108,7 @@ Only one letter is shown, the first that applies."
           (vlf-occur-mode :popup t :select nil :align bottom)
           (grep-mode :popup t :select nil :align bottom)
           ("\\*.*Help.*\\*" :regexp t :popup t :select t)
-          ("xref" :regexp t :popup t :select t :align bottom)
+          ("\\*xref\\*" :regexp t :popup t :select t :align bottom)
           (help-mode :popup t :select t)
           (Man-mode :popup t :select t)
           (diff-mode :popup t :select t)
