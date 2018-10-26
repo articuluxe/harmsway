@@ -277,7 +277,7 @@
      `(org-agenda-diary ((,c (:foreground ,orange :slant italic))))
      `(org-agenda-dimmed-todo-face ((,c (:foreground ,comment))))
      `(org-agenda-date-today ((,c (:foreground ,white))))
-     `(org-agenda-structure ((,c (:foreground ,invisible))))
+     `(org-agenda-structure ((,c (:foreground ,white))))
      `(org-agenda-current-time ((,c (:foreground ,yellow))))
      `(org-upcoming-deadline ((,c (:foreground ,violet))))
 

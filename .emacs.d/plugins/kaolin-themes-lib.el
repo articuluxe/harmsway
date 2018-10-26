@@ -280,9 +280,12 @@
 
     ;; Azure #007FFF
     (azure0 "#0e70d1")
-    (azure1 "#3f7dba") ; old blue
+    ;; (azure1 "#3f7dba") ; old blue
+    (azure1 "#3B84CC") ; old blue
     ;; (azure2 "#2a4661")
     (azure2 "#3B6F87")
+    ;; TODO:
+    ;; (azure2 "#325074")
     (azure3 "#4ca6e8") ; old soft-blue
     (azure4 "#53859d") ; old moderate-blue
     (azure5 "#14191e")
@@ -701,7 +704,7 @@
                                       :box (:line-width 2 :color line-border)))
     (mode-line-buffer-id (:background nil :foreground line-color2 :bold nil))
     (mode-line-highlight (:foreground line-color2 :box nil :bold nil))
-    (mode-line-emphasis  (:foreground fg1))
+    (mode-line-emphasis  (:foreground hl))
 
     ;; Telephone-line
     (telephone-line-accent-active   (:inherit 'mode-line :background line-bg2 :foreground line-fg))
@@ -929,8 +932,8 @@
 
     ;; Rainbow delimeters
     (show-paren-match (:background nil :foreground orange1 :bold bold))
-
     (show-paren-mismatch (:background red2 :foreground bg2))
+
     (rainbow-delimiters-mismatched-face (:background red2 :foreground err))
     (rainbow-delimiters-unmatched-face (:inherit 'rainbow-delimiters-mismatched-face))
     (rainbow-delimiters-base-face    (:foreground rb1))
@@ -950,6 +953,18 @@
     (diff-added       (:background diff-bg-add :foreground fg1))
     (diff-changed     (:background diff-bg-mod :foreground fg1))
     (diff-removed     (:background diff-bg-rem :foreground fg1))
+
+    ;; smerge
+    (smerge-base    (:background bg2))
+    (smerge-upper   (:background diff-bg-add))
+    (smerge-lower   (:background diff-bg-rem))
+    (smerge-markers (:background comment :foreground bg1))
+    ;; Emacs version <= 25
+    (smerge-mine    (:background diff-bg-add))
+    (smerge-other   (:background diff-bg-rem))
+    ;; ??
+    ;; smerge-refined-added
+    ;; smerge-refined-removed
 
    ;; Ediff
    ;; (ediff-current-diff-A (:background hl-line :foreground fg4))
@@ -982,6 +997,10 @@
     (imenu-list-entry-face-1 (:inherit 'font-lock-function-name-face))
     (imenu-list-entry-face-2 (:inherit 'font-lock-string-face))
     (imenu-list-entry-face-3 (:inherit 'font-lock-type-face))
+    (imenu-list-entry-subalist-face-0 (:inherit 'imenu-list-entry-face-0 :bold bold))
+    (imenu-list-entry-subalist-face-1 (:inherit 'imenu-list-entry-face-1 :bold bold))
+    (imenu-list-entry-subalist-face-2 (:inherit 'imenu-list-entry-face-2 :bold bold))
+    (imenu-list-entry-subalist-face-3 (:inherit 'imenu-list-entry-face-3 :bold bold))
 
     ;; Treemacs
     (treemacs-root-face             (:foreground keyword :height 1.2 :underline nil))

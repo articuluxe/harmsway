@@ -11,20 +11,18 @@
    (bg3 "#28283a" black3)
    (bg4 "#32324a" black4)
 
-   (azure2 "#325074")
-   (blue1  "#4D4DD9")
-
-   (keyword     blue1)
+   (keyword     azure1)
+   ;; (keyword     capri1)
    ;; TODO: a bit more bright
-   (second-key  bg4 cerise4)
+   (second-key  cerise4 cerise4)
    (builtin     capri3)
    (functions   builtin)
    (var         ultramarine3)
-   (const       violet4)
+   (const       magenta3)
    (type        cyan1)
+   (prep        pink1)
    (num         pink1)
    (bool        num)
-   (prep        violet1)
 
    (comment     gray2)
    (comment-alt "#43436E")
@@ -35,7 +33,7 @@
    (err         red1)
 
    (dim-buffer "#0F0F17")
-   (hl         cyan0)
+   (hl         aquamarine0)
    (hl-line    (if kaolin-themes-hl-line-colored bg2 black1))
    (hl-indent  bg4)
    (selection  bg4)
@@ -44,7 +42,6 @@
    (todo pink1)
 
    (tooltip-hl-bg bg4)
-   (tooltip-hl-fg chartreuse1)
 
    (ivy2 cerise1)
    (ivy3 amber3)
@@ -60,9 +57,9 @@
    (rb8 azure2)
    (rb9 azure3)
 
-   (diff-add aquamarine4)
-   (diff-mod magenta4)
-   (diff-rem red4)
+   (diff-add spring-green1)
+   (diff-mod orange1)
+   (diff-rem red3)
 
    ;; Mode-line
    (line-fg           fg4)
@@ -82,20 +79,18 @@
 
    (win-border    bg3)
    (line-num-fg   bg4)
-   (line-num-hl   blue8 gray9)
+   (line-num-hl   keyword)
    (cursor        "#c3c8e0"))
 
-  ;; Custom theme set faces
   (
-   (link                (:foreground cyan1 :underline underline))
+   ;; Custom theme set faces
    (show-paren-mismatch (:background bg2 :foreground red0))
 
-   (highlight-quoted-quote   (:foreground const))
-   (highlight-quoted-symbol  (:foreground num))
+   (highlight-quoted-quote   (:foreground functions))
+   (highlight-quoted-symbol  (:foreground type))
 
-   (org-code            (:foreground teal1))
+   (org-code            (:foreground var))
    (org-verbatim        (:foreground spring-green1))
-   (org-quote           (:foreground blue4))
 
    (git-gutter:added    (:background diff-add :foreground diff-add))
    (git-gutter:modified (:background diff-mod :foreground diff-mod))
@@ -108,7 +103,6 @@
      `(git-gutter:added     ((t (:background ,diff-add :foreground ,diff-add))))
      `(git-gutter:modified  ((t (:background ,diff-mod :foreground ,diff-mod))))
      `(git-gutter:deleted   ((t (:background ,diff-rem :foreground ,diff-rem)))))))
-
 
 
 ;;; kaolin-ocean-theme.el ends here

@@ -130,7 +130,7 @@ This discards all changes made since the sequence started."
   :options  '((?s "Strategy"                        "--strategy=")
               (?m "Replay merge relative to parent" "--mainline="))
   :actions  '("Apply here"
-              (?A "Pick"    magit-cherry-pick)
+              (?A "Pick"    magit-cherry-copy)
               (?a "Apply"   magit-cherry-apply)
               (?h "Harvest" magit-cherry-harvest)
               "Apply elsewhere"
@@ -174,7 +174,7 @@ This discards all changes made since the sequence started."
                 (format "Create branch from %s cherries" commits))))))
 
 ;;;###autoload
-(defun magit-cherry-pick (commits &optional args)
+(defun magit-cherry-copy (commits &optional args)
   "Copy COMMITS from another branch onto the current branch.
 Prompt for a commit, defaulting to the commit at point.  If
 the region selects multiple commits, then pick all of them,
@@ -385,7 +385,7 @@ without prompting."
                   "--committer-date-is-author-date")
               (?D "Use committer date as author date" "--ignore-date"))
   :options  '((?p "Remove leading slashes from paths" "-p"
-                  magit-popup-read-number))
+                  magit-read-number-string))
   :actions  '((?m "Apply maildir"     magit-am-apply-maildir)
               (?w "Apply patches"     magit-am-apply-patches)
               (?a "Apply plain patch" magit-patch-apply-popup))
@@ -907,5 +907,6 @@ If no such sequence is in progress, do nothing."
     (when exec
       (insert (propertize "exec" 'face 'magit-sequence-onto) "\s" exec "\n"))))
 
+;;; _
 (provide 'magit-sequence)
 ;;; magit-sequence.el ends here

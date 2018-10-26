@@ -34,7 +34,6 @@
 
 (require 'magit-section)
 (require 'magit-git)
-(require 'magit-popup)
 
 ;; For `magit-display-buffer-fullcolumn-most-v1' from `git-commit'
 (defvar git-commit-mode)
@@ -456,8 +455,10 @@ starts complicating other things, then it will be removed."
     (define-key map (kbd "C-x 4 a") 'magit-add-change-log-entry-other-window)
     (define-key map (kbd "C-w")     'magit-copy-section-value)
     (define-key map (kbd "M-w")     'magit-copy-buffer-revision)
+    (define-key map [remap previous-line]      'magit-previous-line)
+    (define-key map [remap next-line]          'magit-next-line)
     (define-key map [remap evil-previous-line] 'evil-previous-visual-line)
-    (define-key map [remap evil-next-line] 'evil-next-visual-line)
+    (define-key map [remap evil-next-line]     'evil-next-visual-line)
     map)
   "Parent keymap for all keymaps of modes derived from `magit-mode'.")
 
@@ -512,8 +513,8 @@ which visits the thing at point using `browse-url'."
     ["Diff working tree" magit-diff-working-tree t]
     ["Diff" magit-diff t]
     ("Log"
-     ["Log" magit-log t]
-     ["Reflog" magit-reflog t]
+     ["Log" magit-log-other t]
+     ["Reflog" magit-reflog-other t]
      ["Extended..." magit-log-popup t])
     "---"
     ["Cherry pick" magit-cherry-pick t]
@@ -1394,5 +1395,6 @@ repository's Magit buffers."
                    (float-time (time-subtract (current-time) start))))
       (run-hooks hook))))
 
+;;; _
 (provide 'magit-mode)
 ;;; magit-mode.el ends here

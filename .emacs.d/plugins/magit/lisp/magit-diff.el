@@ -351,21 +351,25 @@ still visit the commit at point using \"RET\"."
 (defcustom magit-revision-show-gravatars nil
   "Whether to show gravatar images in revision buffers.
 
-If non-nil, then the value has to be a cons-cell which specifies
-where the gravatar images for the author and/or the committer are
-inserted inside the text that was previously inserted according
-to `magit-revision-header-format'.
+If nil, then don't insert any gravatar images.  If t, then insert
+both images.  If `author' or `committer', then insert only the
+respective image.
 
-Both cells are regular expressions.  The car specifies where to
-insert the author gravatar image.  The top half of the image is
-inserted right after the matched text, the bottom half on the
-next line at the same offset.  The cdr specifies where to insert
-the committer image, accordingly.  Either the car or the cdr may
-be nil."
+If you have customized the option `magit-revision-header-format'
+and want to insert the images then you might also have to specify
+where to do so.  In that case the value has to be a cons-cell of
+two regular expressions.  The car specifies where to insert the
+author's image.  The top half of the image is inserted right
+after the matched text, the bottom half on the next line in the
+same column.  The cdr specifies where to insert the committer's
+image, accordingly.  Either the car or the cdr may be nil."
   :package-version '(magit . "2.3.0")
   :group 'magit-revision
   :type '(choice (const :tag "Don't show gravatars" nil)
-                 (cons  :tag "Show gravatars"
+                 (const :tag "Show gravatars" t)
+                 (const :tag "Show author gravatar" author)
+                 (const :tag "Show committer gravatar" committer)
+                 (cons  :tag "Show gravatars using custom pattern."
                         (regexp :tag "Author regexp"    "^Author:     ")
                         (regexp :tag "Committer regexp" "^Commit:     "))))
 
@@ -613,12 +617,6 @@ and `:slant'."
     (?i "Ignore submodules" "--ignore-submodules="
         magit-diff-select-ignore-submodules)))
 
-(defun magit-diff-select-ignore-submodules (&rest _ignored)
-  (magit-read-char-case "Ignore submodules " t
-    (?u "[u]ntracked" "untracked")
-    (?d "[d]irty"     "dirty")
-    (?a "[a]ll"       "all")))
-
 (defconst magit-diff-popup-common-switches
   '((?f "Show surrounding functions"     "--function-context")
     (?b "Ignore whitespace changes"      "--ignore-space-change")
@@ -633,7 +631,7 @@ and `:slant'."
     :actions  ((?d "Dwim"          magit-diff-dwim)
                (?u "Diff unstaged" magit-diff-unstaged)
                (?c "Show commit"   magit-show-commit)
-               (?r "Diff range"    magit-diff)
+               (?r "Diff range"    magit-diff-range)
                (?s "Diff staged"   magit-diff-staged)
                (?t "Show stash"    magit-stash-show)
                (?p "Diff paths"    magit-diff-paths)
@@ -668,11 +666,9 @@ and `:slant'."
 
 (defvar magit-revision-mode-refresh-popup
   `(,@magit-diff-popup-common-keywords
-    :switches ((?f "Show surrounding functions"     "--function-context")
-               (?b "Ignore whitespace changes"      "--ignore-space-change")
-               (?w "Ignore all whitespace"          "--ignore-all-space")
-               (?x "Disallow external diff drivers" "--no-ext-diff")
-               (?s "Show stats"                     "--stat"))
+    :options  ,magit-diff-popup-common-options
+    :switches (,@magit-diff-popup-common-switches
+               (?s "Show stats" "--stat"))
     :actions  ((?g "Refresh"                magit-diff-refresh)
                (?t "Toggle hunk refinement" magit-diff-toggle-refine-hunk)
                (?s "Set defaults"           magit-diff-set-default-arguments)
@@ -769,6 +765,12 @@ buffer."
     (?p "[p]atience"  "patience")
     (?h "[h]istogram" "histogram")))
 
+(defun magit-diff-select-ignore-submodules (&rest _ignored)
+  (magit-read-char-case "Ignore submodules " t
+    (?u "[u]ntracked" "untracked")
+    (?d "[d]irty"     "dirty")
+    (?a "[a]ll"       "all")))
+
 ;;;; Diff commands
 
 ;;;###autoload
@@ -785,12 +787,12 @@ buffer."
            (magit-diff-unmerged args (list file))
          (magit-diff-staged nil args files))))
     (`(commit . ,value)
-     (magit-diff (format "%s^..%s" value value) args files))
+     (magit-diff-range (format "%s^..%s" value value) args files))
     (`(stash  . ,value) (magit-stash-show value args))
     ((and range (pred stringp))
-     (magit-diff range args files))
+     (magit-diff-range range args files))
     (_
-     (call-interactively #'magit-diff))))
+     (call-interactively #'magit-diff-range))))
 
 (defun magit-diff--dwim ()
   "Return information for performing DWIM diff.
@@ -887,7 +889,7 @@ a \"revA...revB\" range.  Otherwise, always construct
   (magit-mode-setup #'magit-diff-mode rev-or-range const args files))
 
 ;;;###autoload
-(defun magit-diff (rev-or-range &optional args files)
+(defun magit-diff-range (rev-or-range &optional args files)
   "Show differences between two commits.
 
 REV-OR-RANGE should be a range or a single revision.  If it is a
@@ -2190,10 +2192,15 @@ or a ref which is not a branch, then it inserts nothing."
   (when (and magit-revision-show-gravatars
              (window-system))
     (require 'gravatar)
-    (pcase-let ((`(,author . ,committer) magit-revision-show-gravatars))
-      (--when-let (magit-rev-format "%aE" rev)
+    (pcase-let ((`(,author . ,committer)
+                 (pcase magit-revision-show-gravatars
+                   (`t '("^Author:     " . "^Commit:     "))
+                   (`author '("^Author:     " . nil))
+                   (`committer '(nil . "^Commit:     "))
+                   (_ magit-revision-show-gravatars))))
+      (--when-let (and author (magit-rev-format "%aE" rev))
         (magit-insert-revision-gravatar beg rev it author))
-      (--when-let (magit-rev-format "%cE" rev)
+      (--when-let (and committer (magit-rev-format "%cE" rev))
         (magit-insert-revision-gravatar beg rev it committer)))))
 
 (defun magit-insert-revision-gravatar (beg rev email regexp)
@@ -2789,5 +2796,6 @@ last (visual) lines of the region."
       (setq patch (buffer-string)))
     patch))
 
+;;; _
 (provide 'magit-diff)
 ;;; magit-diff.el ends here

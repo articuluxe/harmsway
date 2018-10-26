@@ -29,6 +29,8 @@
 
 (require 'magit)
 
+(declare-function magit-git-push "magit-push" (branch target args))
+
 ;;; Commands
 
 ;;;###autoload (autoload 'magit-merge-popup "magit" nil t)
@@ -45,7 +47,7 @@
               (?s "Squash merge"           magit-merge-squash)
               (?a "Absorb"                 magit-merge-absorb)
               (?i "Merge into"             magit-merge-into))
-  :sequence-actions   '((?m "Commit merge" magit-commit)
+  :sequence-actions   '((?m "Commit merge" magit-commit-create)
                         (?a "Abort merge"  magit-merge-abort))
   :sequence-predicate 'magit-merge-in-progress-p
   :default-action 'magit-merge
@@ -275,5 +277,6 @@ If no merge is in progress, do nothing."
              (push "--decorate=full" args))
            args))))))
 
+;;; _
 (provide 'magit-merge)
 ;;; magit-merge.el ends here

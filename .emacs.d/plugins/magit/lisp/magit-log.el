@@ -377,9 +377,9 @@ the upstream isn't ahead of the current branch) show."
     :actions  ((?l "Log current"             magit-log-current)
                (?L "Log local branches"      magit-log-branches)
                (?r "Reflog current"          magit-reflog-current)
-               (?o "Log other"               magit-log)
+               (?o "Log other"               magit-log-other)
                (?b "Log all branches"        magit-log-all-branches)
-               (?O "Reflog other"            magit-reflog)
+               (?O "Reflog other"            magit-reflog-other)
                (?h "Log HEAD"                magit-log-head)
                (?a "Log all references"      magit-log-all)
                (?H "Reflog HEAD"             magit-reflog-head))
@@ -438,11 +438,6 @@ the upstream isn't ahead of the current branch) show."
 (magit-define-popup-keys-deferred 'magit-log-popup)
 (magit-define-popup-keys-deferred 'magit-log-mode-refresh-popup)
 (magit-define-popup-keys-deferred 'magit-log-refresh-popup)
-
-(defun magit-read-file-trace (&rest _ignored)
-  (let ((file  (magit-read-file-from-rev "HEAD" "File"))
-        (trace (magit-read-string "Trace")))
-    (concat trace (or (match-string 2 trace) ":") file)))
 
 (defun magit-log-select-order (&rest _ignored)
   "Set one `--<value>-order' option in Git log.
@@ -536,6 +531,11 @@ buffer."
                 magit-log-section-arguments))))
     (magit-invoke-popup 'magit-log-refresh-popup nil arg)))
 
+(defun magit-read-file-trace (&rest _ignored)
+  (let ((file  (magit-read-file-from-rev "HEAD" "File"))
+        (trace (magit-read-string "Trace")))
+    (concat trace (or (match-string 2 trace) ":") file)))
+
 ;;;; Refresh Commands
 
 (defun magit-log-refresh (args files)
@@ -609,6 +609,11 @@ buffer."
                                          magit-log-read-revs-map)
          "[, ]" t))))
 
+(defun magit-git-log (revs args files)
+  (require 'magit)
+  (magit-mode-setup #'magit-log-mode revs args files)
+  (magit-log-goto-same-commit))
+
 ;;;###autoload
 (defun magit-log-current (revs &optional args files)
   "Show log for the current branch.
@@ -616,10 +621,10 @@ When `HEAD' is detached or with a prefix argument show log for
 one or more revs read from the minibuffer."
   (interactive (cons (magit-log-read-revs t)
                      (magit-log-arguments)))
-  (magit-log revs args files))
+  (magit-git-log revs args files))
 
 ;;;###autoload
-(defun magit-log (revs &optional args files)
+(defun magit-log-other (revs &optional args files)
   "Show log for one or more revs read from the minibuffer.
 The user can input any revision or revisions separated by a
 space, or even ranges, but only branches and tags, and a
@@ -627,21 +632,19 @@ representation of the commit at point, are available as
 completion candidates."
   (interactive (cons (magit-log-read-revs)
                      (magit-log-arguments)))
-  (require 'magit)
-  (magit-mode-setup #'magit-log-mode revs args files)
-  (magit-log-goto-same-commit))
+  (magit-git-log revs args files))
 
 ;;;###autoload
 (defun magit-log-head (&optional args files)
   "Show log for `HEAD'."
   (interactive (magit-log-arguments))
-  (magit-log (list "HEAD") args files))
+  (magit-git-log (list "HEAD") args files))
 
 ;;;###autoload
 (defun magit-log-branches (&optional args files)
   "Show log for all local branches and `HEAD'."
   (interactive (magit-log-arguments))
-  (magit-log (if (magit-get-current-branch)
+  (magit-git-log (if (magit-get-current-branch)
                  (list "--branches")
                (list "HEAD" "--branches"))
              args files))
@@ -650,19 +653,19 @@ completion candidates."
 (defun magit-log-all-branches (&optional args files)
   "Show log for all local and remote branches and `HEAD'."
   (interactive (magit-log-arguments))
-  (magit-log (if (magit-get-current-branch)
-                 (list "--branches" "--remotes")
-               (list "HEAD" "--branches" "--remotes"))
-             args files))
+  (magit-git-log (if (magit-get-current-branch)
+                     (list "--branches" "--remotes")
+                   (list "HEAD" "--branches" "--remotes"))
+                 args files))
 
 ;;;###autoload
 (defun magit-log-all (&optional args files)
   "Show log for all references and `HEAD'."
   (interactive (magit-log-arguments))
-  (magit-log (if (magit-get-current-branch)
-                 (list "--all")
-               (list "HEAD" "--all"))
-             args files))
+  (magit-git-log (if (magit-get-current-branch)
+                     (list "--all")
+                   (list "HEAD" "--all"))
+                 args files))
 
 ;;;###autoload
 (defun magit-log-buffer-file (&optional follow beg end)
@@ -740,24 +743,28 @@ active, restrict the log to the lines that the region touches."
         (goto-char pos)
         (call-interactively #'magit-log-trace-definition)))))
 
-;;;###autoload
-(defun magit-reflog-current ()
-  "Display the reflog of the current branch."
-  (interactive)
-  (magit-reflog (magit-get-current-branch)))
-
-;;;###autoload
-(defun magit-reflog (ref)
-  "Display the reflog of a branch."
-  (interactive (list (magit-read-local-branch-or-ref "Show reflog for")))
+(defun magit-git-reflog (ref args)
   (require 'magit)
-  (magit-mode-setup #'magit-reflog-mode ref magit-reflog-arguments))
+  (magit-mode-setup #'magit-reflog-mode ref args))
 
 ;;;###autoload
-(defun magit-reflog-head ()
+(defun magit-reflog-current (args)
+  "Display the reflog of the current branch."
+  (interactive (list magit-reflog-arguments))
+  (magit-git-reflog (magit-get-current-branch) args))
+
+;;;###autoload
+(defun magit-reflog-other (ref args)
+  "Display the reflog of a branch or another ref."
+  (interactive (list (magit-read-local-branch-or-ref "Show reflog for")
+                     magit-reflog-arguments))
+  (magit-git-reflog ref args))
+
+;;;###autoload
+(defun magit-reflog-head (args)
   "Display the `HEAD' reflog."
-  (interactive)
-  (magit-reflog "HEAD"))
+  (interactive (list magit-reflog-arguments))
+  (magit-git-reflog "HEAD" args))
 
 ;;;; Limit Commands
 
@@ -936,7 +943,11 @@ Do not add this to a hook variable."
          (remove "--literal-pathspecs" magit-git-global-arguments)))
     (magit-git-wash (apply-partially #'magit-log-wash-log 'log)
       "log"
-      (format "--format=%%h%s%%x00%s%%x00%%aN%%x00%%at%%x00%%s%s"
+      (format "--format=%s%%h%s%%x00%s%%x00%%aN%%x00%%at%%x00%%s%s"
+              (if (and (member "--left-right" args)
+                       (not (member "--graph" args)))
+                  "%m "
+                "")
               (if (member "--decorate" args) "%d" "")
               (if (member "--show-signature" args)
                   (progn (setq args (remove "--show-signature" args)) "%G?")
@@ -972,7 +983,7 @@ Do not add this to a hook variable."
 
 (defconst magit-log-heading-re
   (concat "^"
-          "\\(?4:[-_/|\\*o. ]*\\)"                 ; graph
+          "\\(?4:[-_/|\\*o<>. ]*\\)"               ; graph
           "\\(?1:[0-9a-fA-F]+\\)"                  ; sha1
           "\\(?3:[^\0\n]+)\\)?\0"                  ; refs
           "\\(?7:[BGUXYREN]\\)?\0"                 ; gpg
@@ -996,7 +1007,7 @@ Do not add this to a hook variable."
 
 (defconst magit-log-bisect-vis-re
   (concat "^"
-          "\\(?4:[-_/|\\*o. ]*\\)"                 ; graph
+          "\\(?4:[-_/|\\*o<>. ]*\\)"               ; graph
           "\\(?1:[0-9a-fA-F]+\\)"                  ; sha1
           "\\(?3:[^\0\n]+)\\)?\0"                  ; refs
           "\\(?2:.*\\)$"))                         ; msg
@@ -1186,7 +1197,7 @@ Do not add this to a hook variable."
               ;; separator line.
               (save-excursion
                 (forward-line -1)
-                (looking-at "[-_/|\\*o. ]*"))
+                (looking-at "[-_/|\\*o<>. ]*"))
               (setq graph (match-string 0))
               (unless (string-match-p "[/\\]" graph)
                 (insert graph ?\n))))))))
@@ -1705,5 +1716,6 @@ all others with \"-\"."
       (magit-git-wash (apply-partially 'magit-log-wash-log 'cherry)
         "cherry" "-v" (magit-abbrev-arg) "@{upstream}"))))
 
+;;; _
 (provide 'magit-log)
 ;;; magit-log.el ends here
