@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-10-26 12:56:43 dharms>
+;; Modified Time-stamp: <2018-10-26 14:53:08 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2389,6 +2389,7 @@ completion at point mechanism does not interfere with `completion-at-point-funct
   (company-begin-backend company-smart-backend))
 
 (global-set-key "\M-/" #'harmsway-smart-completion-at-point)
+(global-set-key [?\C-\M-/] #'hippie-expand)
 
 (use-package company
   :init
