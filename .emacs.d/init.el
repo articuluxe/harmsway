@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-10-26 14:53:08 dharms>
+;; Modified Time-stamp: <2018-10-29 06:59:10 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -64,6 +64,7 @@
                      ,(concat my/plugins-directory "powerline/")
                      ,(concat my/plugins-directory "realgud/")
                      ,(concat my/plugins-directory "rtags/")
+                     ,(concat my/plugins-directory "smart-jump/")
                      ,(concat my/plugins-directory "smart-mode-line/")
                      ,(concat my/plugins-directory "sunrise/")
                      ,(concat my/plugins-directory "swiper/")
@@ -1324,6 +1325,11 @@ Only one letter is shown, the first that applies."
   (setq dumb-jump-selector 'ivy)
   (push ".proviso" dumb-jump-project-denoters)
   (setq dumb-jump-max-find-time 5)
+  )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smart-jump ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package smart-jump
+  :disabled
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; plur ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
