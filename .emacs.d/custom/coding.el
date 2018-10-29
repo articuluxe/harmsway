@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2018-10-24 06:53:06 dharms>
+;; Modified Time-stamp: <2018-10-29 09:31:47 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -129,6 +129,7 @@
   (define-key c-mode-base-map (kbd "C-S-o") 'c-context-open-line)
   (define-key c-mode-base-map (kbd "C-c C-;")
     (lambda() (interactive) (c-try-one-liner)))
+  (define-key c-mode-base-map "\C-c." nil)
   ;; skips the final included file, ending in `:', when traversing compile
   ;; errors.  See
   ;; `http://stackoverflow.com/questions/15489319/how-can-i-skip-in-file-included-from-in-emacs-c-compilation-mode'
