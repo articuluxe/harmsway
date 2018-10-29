@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-10-29 10:18:34 dan.harms>
+;; Modified Time-stamp: <2018-10-29 13:54:29 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -356,6 +356,7 @@ not an error if any files do not exist."
 
 ;; select
 (use-package proviso-etags-select
+  :disabled
   :init
   (setq tags-revert-without-query t)
   :bind ("\e\e." . etags-select-find-tag)
@@ -1329,12 +1330,23 @@ Only one letter is shown, the first that applies."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smart-jump ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package smart-jump
-  :disabled
-  )
+  :bind (("C-c .." . #'smart-jump-jump-key)
+         ("C-c .," . #'smart-jump-pop-key)
+         ("C-c .?" . #'smart-jump-refs-key)
+         ("C-c .p" . #'smart-jump-peek-key))
+  :init
+  (setq smart-jump-bind-keys t)
+  (setq smart-jump-bind-keys-for-evil nil)
+  (setq smart-jump-jump-key "C-c ..")
+  (setq smart-jump-pop-key "C-c .,")
+  (setq smart-jump-refs-key "C-c .?")
+  (setq smart-jump-peek-key "C-c .p")
+  :config
+  (smart-jump-setup-default-registers))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; source-peek ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package source-peek
-  :bind ("C-c ." . #'source-peek))
+  :bind ("\e\e." . source-peek))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; plur ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package
