@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-10-29 06:59:10 dharms>
+;; Modified Time-stamp: <2018-10-29 07:11:45 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1331,6 +1331,10 @@ Only one letter is shown, the first that applies."
 (use-package smart-jump
   :disabled
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; source-peek ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package source-peek
+  :bind ("C-c ." . #'source-peek))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; plur ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package
