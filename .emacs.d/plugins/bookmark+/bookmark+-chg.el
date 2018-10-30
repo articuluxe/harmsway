@@ -6,9 +6,9 @@
 ;; Maintainer: Drew Adams (concat "drew.adams" "@" "oracle" ".com")
 ;; Copyright (C) 2000-2018, Drew Adams, all rights reserved.
 ;; Created: Fri Sep 15 07:58:41 2000
-;; Last-Updated: Tue Apr 24 08:16:06 2018 (-0700)
+;; Last-Updated: Wed Oct 17 10:50:46 2018 (-0700)
 ;;           By: dradams
-;;     Update #: 16400
+;;     Update #: 16464
 ;; URL: https://www.emacswiki.org/emacs/download/bookmark%2b-chg.el
 ;; Doc URL: https://www.emacswiki.org/emacs/BookmarkPlus
 ;; Keywords: bookmarks, bookmark+
@@ -146,6 +146,16 @@
  
 ;;;(@* "CHANGE LOG FOR `bookmark+-1.el'")
 ;;
+;; 2018/10/10 dadams
+;;     Added: bookmark-jump-other-frame.
+;; 2018/09/21 dadams
+;;     bmkp-show-this-annotation-read-only, bmkp-edit-this-annotation, bmkp-desktop-read,
+;;       bmkp-jump-man, bmkp-jump-dired, bmkp-jump-to-type, bmkp-*-jump, bmkp-jump-in-navlist:
+;;         Use bmkp--pop-to-buffer-same-window, not switch-to-buffer.
+;;       bmkp-image-jump-other-window, bmkp-autofile-jump-other-window:
+;;         Use bmkp-select-buffer-other-window, not switch-to-buffer (typo).
+;; 2018/08/30 dadams
+;;     Added defmacro for with-coding-priority at compile time.
 ;; 2018/04/24 dadams
 ;;     Added: bmkp-cycle-eww, bmkp-cycle-eww-other-window, bmkp-next-eww-bookmark,
 ;;       bmkp-next-eww-bookmark-other-window, bmkp-next-eww-bookmark-other-window-repeat,
@@ -1361,6 +1371,15 @@
  
 ;;;(@* "CHANGE LOG FOR `bookmark+-bmu.el'")
 ;;
+;; 2018/10/10 dadams
+;;     Added: bookmark-bmenu-other-frame.
+;;     bookmark-bmenu-mode: Added bookmark-bmenu-other-frame to doc string.
+;; 2018/09/21 dadams
+;;     Added: bmkp--pop-to-buffer-same-window.  (Added also to bookmark+-lit.el.)
+;;     bookmark-bmenu-2-window, bookmark-bmenu-this-window:
+;;       Use bmkp--pop-to-buffer-same-window, not switch-to-buffer.
+;; 2018/08/28 dadams
+;;     bmkp-bmenu-read-filter-input: Do not pass non-characterp value to text-char-description.
 ;; 2017/10/27 dadams
 ;;     bookmark-bmenu-mode: Added to doc string: bmkp-bmenu-paste-(add|replace)-tags.
 ;; 2017/10/14 dadams
@@ -1996,6 +2015,8 @@
  
 ;;;(@* "CHANGE LOG FOR `bookmark+-key.el'")
 ;;
+;; 2018/10/10 dadams
+;;     Bound bookmark-jump-other-frame to C-x 5 B, C-x j 5 globally, and J 5 in bookmark-list buffer.
 ;; 2017/10/14 dadams
 ;;     All EWW stuff is for Emacs 25+, not Emacs 24.4+.
 ;; 2017/01/10 dadams
@@ -2139,6 +2160,9 @@
  
 ;;;(@* "CHANGE LOG FOR `bookmark+-lit.el'")
 ;;
+;; 2018/09/21 dadams
+;;     Added: bmkp--pop-to-buffer-same-window.  (Added also to bookmark+-bmu.el.)
+;;     bmkp-lighted-jump: Use bmkp--pop-to-buffer-same-window, not switch-to-buffer.
 ;; 2017/01/08 dadams
 ;;     Use the term "entry", not "property" everywhere, for bookmark entries (fields).
 ;; 2016/10/25 dadams
@@ -2269,6 +2293,10 @@
  
 ;;;(@* "CHANGE LOG FOR `bookmark+.el'")
 ;;
+;; 2018/10/17 dadams
+;;     Version 2018-10-17.
+;; 2018/09/21 dadams
+;;     Version 2017.09.21.
 ;; 2017/03/31 dadams
 ;;     Version 2017.03.31.  Fixed cycling bookmarks across buffers.  Added other-window cycling cmds.
 ;; 2017/02/26 dadams

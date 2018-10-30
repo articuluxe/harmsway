@@ -68,7 +68,7 @@ output of `describe-buffer-bindings'."
                         (format "`%s' Minor Mode Bindings:" mode-name))))
     mode-string))
 
-(defun dmm/mode-has-bindings (mode &optional buffer)
+(defun dmm/mode-has-bindings-p (mode &optional buffer)
   "Returns t if MODE has bindings defined in BUFFER.
 If BUFFER is nil, checks for bindings in `current-buffer'. Returns nil
 if MODE is not a mode symbol or mode name or if MODE has no actions in
@@ -78,19 +78,22 @@ BUFFER."
                         (intern mode))))
     (> (safe-length (dmm/mode-bindings mode-symbol (current-buffer))) 0)))
 
-(defun dmm/doc-summary (sym)
-  "Return the docstring summary for the symbol SYM.
-If SYM is not a function, return nil. If SYM is not documented,
-return the name of SYM with a notice that it is not documented."
-  (when (and sym (fboundp sym))
-    (let ((doc (documentation sym)))
+(defun dmm/doc-summary (f)
+  "Return the docstring for function F.
+
+If F is not a function, return nil.
+
+If F is is not documented, return a string indicating it is
+undocumented."
+  (when (functionp f)
+    (let ((doc (documentation f)))
       (if doc
           (let* ((docstring (cdr (help-split-fundoc doc nil)))
                  (get-summary (lambda (str)
                                 (string-match "^\\(.*\\)$" str)
                                 (match-string 0 str))))
             (funcall get-summary (if docstring docstring doc)))
-        (format "`%s' (not documented)" sym)))))
+        (format "`%s' (not documented)" f)))))
 
 (defun dmm/format-binding (item)
   "Check if ITEM has documention and return the formatted action for ITEM."
@@ -166,13 +169,16 @@ If ARG is non-nil recreate the makey popup function even if it is already define
                (actions ,(cons major-mode (dmm/major-mode-actions (current-buffer))))))))
     (funcall (dmm/get-makey-func group-name))))
 
+(defvar dmm/discover-my-mode-history nil
+  "History list for `dmm/discover-my-mode'.")
+
 ;;;###autoload
 (defun discover-my-mode (mode)
   "Create a makey popup listing all MODE keys with their description."
   (interactive
-   (let* ((active-modes (list-active-modes)))
+   (let* ((active-modes (dmm/list-active-modes)))
      (list
-      (completing-read "Discover mode: " active-modes 'symbolp t nil 'command-history nil))))
+      (completing-read "Discover mode: " active-modes (lambda (_) t) t nil 'dmm/discover-my-mode-history nil))))
   (let* ((mode-name (if (symbolp mode)
                         (symbol-name mode)
                       mode))
@@ -180,7 +186,7 @@ If ARG is non-nil recreate the makey popup function even if it is already define
           (if (symbolp mode)
               mode
             (intern mode))))
-    (if (dmm/mode-has-bindings mode-symbol)
+    (if (dmm/mode-has-bindings-p mode-symbol)
         (makey-initialize-key-groups
          (list `(,mode-symbol
                  (description ,(format
@@ -193,12 +199,12 @@ If ARG is non-nil recreate the makey popup function even if it is already define
       (error "Mode `%s' has no bindings in the current buffer." mode-name))
     (funcall (dmm/get-makey-func mode-symbol))))
 
-(defun list-active-modes ()
+(defun dmm/list-active-modes ()
   "Returns a list of the active modes in the current buffer."
   (let ((active-modes))
     (mapc (lambda (mode) (condition-case nil
                         (if (and (symbolp mode) (symbol-value mode))
-                            (add-to-list 'active-modes mode))
+                            (add-to-list 'active-modes (prin1-to-string mode)))
                       (error nil) ))
           minor-mode-list)
     active-modes))

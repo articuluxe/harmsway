@@ -3,8 +3,8 @@
 ;; Author: Christian Johansson <github.com/cjohansson>
 ;; Maintainer: Christian Johansson <github.com/cjohansson>
 ;; Created: 1 Feb 2018
-;; Modified: 23 Feb 2018
-;; Version: 1.14
+;; Modified: 29 Oct 2018
+;; Version: 1.15
 ;; Keywords: tools, convenience
 ;; URL: https://github.com/cjohansson/emacs-ssh-deploy
 
@@ -161,12 +161,10 @@
            (boundp 'ssh-deploy-root-remote)
            (fboundp 'ssh-deploy-diff-directories))
       (let ((root-local (nth 2 parts))
-            (root-remote (nth 3 parts))
-            (async (cond ((boundp 'ssh-deploy-async) ssh-deploy-async)(t nil)))
-            (exclude-list (cond ((boundp 'ssh-deploy-exclude-list) ssh-deploy-exclude-list)(t nil))))
+            (root-remote (nth 3 parts)))
         (progn
           (kill-this-buffer)
-          (ssh-deploy-diff-directories root-local root-remote exclude-list async)))))
+          (ssh-deploy-diff-directories root-local root-remote)))))
 
 (defun ssh-deploy-diff-mode--copy (parts)
   "Perform an upload or download depending on section in PARTS."
@@ -174,17 +172,15 @@
   (let* ((file-name (nth 0 parts))
          (root-local (file-truename (nth 2 parts)))
          (root-remote (nth 3 parts))
-         (path-local (file-truename (concat root-local file-name)))
-         (path-remote (concat root-remote file-name))
-         (section (nth 1 parts))
-         (async (cond ((boundp 'ssh-deploy-async) ssh-deploy-async)(t nil)))
-         (revision-folder (cond ((boundp 'ssh-deploy-revision-folder) ssh-deploy-revision-folder)(t nil))))
+         (path-local (file-truename (expand-file-name file-name root-local)))
+         (path-remote (expand-file-name file-name root-remote))
+         (section (nth 1 parts)))
     (if (and (fboundp 'ssh-deploy-download)
              (fboundp 'ssh-deploy-upload))
         (cond ((= section ssh-deploy-diff-mode--section-only-in-a)
-               (ssh-deploy-upload path-local path-remote t async revision-folder))
+               (ssh-deploy-upload path-local path-remote 1))
               ((= section ssh-deploy-diff-mode--section-only-in-b)
-               (ssh-deploy-download path-remote path-local async revision-folder))
+               (ssh-deploy-download path-remote path-local))
               (t (message "Copy is not available in this section")))
       (display-warning 'ssh-deploy "Function ssh-deploy-download or ssh-deploy-upload is missing" :warning))))
 
@@ -195,14 +191,12 @@
          (file-name (nth 0 parts))
          (root-local (file-truename (nth 2 parts)))
          (root-remote (nth 3 parts))
-         (path-local (file-truename (concat root-local file-name)))
-         (path-remote (concat root-remote file-name))
-         (async (cond ((boundp 'ssh-deploy-async) ssh-deploy-async)(t nil)))
-         (revision-folder (cond ((boundp 'ssh-deploy-revision-folder) ssh-deploy-revision-folder)(t nil))))
+         (path-local (file-truename (expand-file-name file-name root-local)))
+         (path-remote (expand-file-name file-name root-remote)))
     (if (fboundp 'ssh-deploy-upload)
         (cond ((or (= section ssh-deploy-diff-mode--section-only-in-a)
                    (= section ssh-deploy-diff-mode--section-in-both))
-               (ssh-deploy-upload path-local path-remote t async revision-folder))
+               (ssh-deploy-upload path-local path-remote 1))
               (t "Copy A is not available in this section"))
       (display-warning 'ssh-deploy "Function ssh-deploy-upload is missing" :warning))))
 
@@ -213,17 +207,16 @@
          (file-name (nth 0 parts))
          (root-local (file-truename (nth 2 parts)))
          (root-remote (nth 3 parts))
-         (path-local (file-truename (concat root-local file-name)))
-         (path-remote (concat root-remote file-name))
-         (async (cond ((boundp 'ssh-deploy-async) ssh-deploy-async)(t nil)))
-         (revision-folder (cond ((boundp 'ssh-deploy-revision-folder) ssh-deploy-revision-folder)(t nil))))
+         (path-local (file-truename (expand-file-name file-name root-local)))
+         (path-remote (expand-file-name file-name root-remote)))
     (if (fboundp 'ssh-deploy-download)
         (cond ((or (= section ssh-deploy-diff-mode--section-only-in-b)
                    (= section ssh-deploy-diff-mode--section-in-both))
-               (ssh-deploy-download path-remote path-local async revision-folder))
+               (ssh-deploy-download path-remote path-local))
               (t "Copy B is not available in this section"))
       (display-warning 'ssh-deploy "Function ssh-deploy-download is missing" :warning))))
 
+;; TODO Should we really pass path as buffer argument in this?
 (defun ssh-deploy-diff-mode--delete (parts)
   "Delete path in both, only in a or only in b based on PARTS from section A, B or BOTH."
   (require 'ssh-deploy)
@@ -231,21 +224,17 @@
          (file-name (nth 0 parts))
          (root-local (nth 2 parts))
          (root-remote (nth 3 parts))
-         (path-local (file-truename (concat root-local file-name)))
-         (path-remote (file-truename (concat root-remote file-name)))
-         (async (cond ((boundp 'ssh-deploy-async) ssh-deploy-async)(t nil)))
-         (debug (cond ((boundp 'ssh-deploy-debug) ssh-deploy-debug)(t nil)))
-         (exclude-list (cond ((boundp 'ssh-deploy-exclude-list) ssh-deploy-exclude-list)(t nil)))
-         (revision-folder (cond ((boundp 'ssh-deploy-revision-folder) ssh-deploy-revision-folder)(t nil))))
+         (path-local (file-truename (expand-file-name file-name root-local)))
+         (path-remote (expand-file-name file-name root-remote)))
     (if (and (fboundp 'ssh-deploy-delete)
              (fboundp 'ssh-deploy-delete-both))
         (cond ((= section ssh-deploy-diff-mode--section-in-both)
                (let ((yes-no-prompt (read-string (format "Type 'yes' to confirm that you want to delete the file '%s': " file-name))))
                  (if (string= yes-no-prompt "yes")
-                     (ssh-deploy-delete-both path-local root-local root-remote async debug exclude-list))))
-              ((= section ssh-deploy-diff-mode--section-only-in-a) (ssh-deploy-delete path-local async debug))
-              ((= section ssh-deploy-diff-mode--section-only-in-b) (ssh-deploy-delete path-remote async debug))
-              ((= section ssh-deploy-diff-mode--section-in-both) (ssh-deploy-delete-both path-local root-local root-remote async debug exclude-list))
+                     (ssh-deploy-delete-both path-local))))
+              ((= section ssh-deploy-diff-mode--section-only-in-a) (ssh-deploy-delete path-local))
+              ((= section ssh-deploy-diff-mode--section-only-in-b) (ssh-deploy-delete path-remote))
+              ((= section ssh-deploy-diff-mode--section-in-both) (ssh-deploy-delete-both path-local))
               (t (message "Delete is not available in this section")))
       (display-warning 'ssh-deploy "Function ssh-deploy-delete or ssh-deploy-delete-both is missing" :warning))))
 
@@ -258,8 +247,8 @@
             (let* ((file-name (nth 0 parts))
                    (root-local (file-truename (nth 2 parts)))
                    (root-remote (nth 3 parts))
-                   (path-local (file-truename (concat root-local file-name)))
-                   (path-remote (concat root-remote file-name)))
+                   (path-local (file-truename (expand-file-name file-name root-local)))
+                   (path-remote (expand-file-name file-name root-remote)))
               (ssh-deploy-diff-files path-local path-remote)))
       (display-warning 'ssh-deploy "Function ssh-deploy-diff-files is missing" :warning))
     (message "File must exists in both roots to perform a difference action.")))
@@ -271,8 +260,8 @@
          (file-name (nth 0 parts))
          (root-local (file-truename (nth 2 parts)))
          (root-remote (nth 3 parts))
-         (path-local (file-truename (concat root-local file-name)))
-         (path-remote (concat root-remote file-name)))
+         (path-local (file-truename (expand-file-name file-name root-local)))
+         (path-remote (expand-file-name file-name root-remote)))
     (cond ((= section ssh-deploy-diff-mode--section-only-in-a)
            (progn
              (message "Opening file '%s'" path-local)

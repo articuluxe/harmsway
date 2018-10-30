@@ -7,9 +7,9 @@
 ;; Copyright (C) 2000-2018, Drew Adams, all rights reserved.
 ;; Copyright (C) 2009, Thierry Volpiatto, all rights reserved.
 ;; Created: Mon Jul 12 09:05:21 2010 (-0700)
-;; Last-Updated: Mon Jan  1 09:54:35 2018 (-0800)
+;; Last-Updated: Wed Oct 10 14:08:27 2018 (-0700)
 ;;           By: dradams
-;;     Update #: 3961
+;;     Update #: 3976
 ;; URL: https://www.emacswiki.org/emacs/download/bookmark%2b-bmu.el
 ;; Doc URL: https://www.emacswiki.org/emacs/BookmarkPlus
 ;; Keywords: bookmarks, bookmark+, placeholders, annotations, search, info, url, eww, w3m, gnus
@@ -253,7 +253,8 @@
 ;;
 ;;  Non-interactive functions defined here:
 ;;
-;;    `bmkp-assoc-delete-all', `bmkp-bmenu-barf-if-not-in-menu-list',
+;;    `bmkp--pop-to-buffer-same-window', `bmkp-assoc-delete-all',
+;;    `bmkp-bmenu-barf-if-not-in-menu-list',
 ;;    `bmkp-bmenu-cancel-incremental-filtering',
 ;;    `bmkp-bmenu-filter-alist-by-annotation-regexp',
 ;;    `bmkp-bmenu-filter-alist-by-bookmark-name-regexp',
@@ -302,7 +303,8 @@
 ;;
 ;;    `bookmark-bmenu-execute-deletions', `bookmark-bmenu-list',
 ;;    `bookmark-bmenu-mark', `bookmark-bmenu-1-window',
-;;    `bookmark-bmenu-2-window', `bookmark-bmenu-other-window',
+;;    `bookmark-bmenu-2-window', `bookmark-bmenu-other-frame',
+;;    `bookmark-bmenu-other-window',
 ;;    `bookmark-bmenu-other-window-with-mouse',
 ;;    `bookmark-bmenu-rename', `bookmark-bmenu-show-annotation',
 ;;    `bookmark-bmenu-switch-other-window',
@@ -502,6 +504,12 @@ whatever OLD is bound to in MAP, or in OLDMAP, if provided."
   (if (fboundp 'command-remapping)
       (define-key map (vector 'remap old) new) ; Ignore OLDMAP for Emacs 22.
     (substitute-key-definition old new map oldmap)))
+
+;; This is also in `bookmark+-lit.el', since it is loaded first but is optional.
+;;
+(if (fboundp 'pop-to-buffer-same-window)
+    (defalias 'bmkp--pop-to-buffer-same-window 'pop-to-buffer-same-window)
+  (defalias 'bmkp--pop-to-buffer-same-window 'switch-to-buffer))
  
 ;;(@* "Faces (Customizable)")
 ;;; Faces (Customizable) ---------------------------------------------
@@ -1451,8 +1459,9 @@ Jump to (Visit) Bookmarks
 \\[bookmark-bmenu-this-window]\t- This bookmark in the same window
 \\[bookmark-bmenu-other-window]\t- This bookmark in another window
 \\[bookmark-bmenu-switch-other-window]\t- This bookmark in other window, without selecting it
-\\[bookmark-bmenu-1-window]\t- This bookmark in a full-frame window
 \\[bookmark-bmenu-2-window]\t- This bookmark and last-visited bookmark
+\\[bookmark-bmenu-1-window]\t- This bookmark in a full-frame window
+\\[bookmark-bmenu-other-frame]\t- This bookmark in another frame
 
 \\[bmkp-bmenu-jump-to-marked]\t- Bookmarks marked `>', in other windows
 
@@ -1976,7 +1985,7 @@ See `bookmark-jump' for info about the prefix arg."
         (menu            (current-buffer))
         (pop-up-windows  t))
     (delete-other-windows)
-    (switch-to-buffer (other-buffer))
+    (bmkp--pop-to-buffer-same-window (other-buffer))
     ;; (let ((bookmark-automatically-show-annotations nil)) ; $$$$$$ Needed?
     (bmkp-jump-1 bookmark-name 'pop-to-buffer flip-use-region-p)
     (bury-buffer menu)))
@@ -1995,7 +2004,7 @@ See `bookmark-jump' for info about the prefix arg."
   (bmkp-bmenu-barf-if-not-in-menu-list)
   (bookmark-bmenu-ensure-position)
   (let ((bookmark-name  (bookmark-bmenu-bookmark)))
-    (bmkp-jump-1 bookmark-name 'switch-to-buffer flip-use-region-p)))
+    (bmkp-jump-1 bookmark-name 'bmkp--pop-to-buffer-same-window flip-use-region-p)))
 
 
 ;; REPLACES ORIGINAL in `bookmark.el'.
@@ -2013,7 +2022,25 @@ See `bookmark-jump' for info about the prefix arg."
   (bookmark-bmenu-ensure-position)
   (let ((bookmark-name  (bookmark-bmenu-bookmark)))
     ;; (bookmark-automatically-show-annotations  t)) ; $$$$$$ Needed?
-    (bmkp-jump-1 bookmark-name 'bmkp-select-buffer-other-window flip-use-region-p)))
+    (bookmark-jump-other-window flip-use-region-p)))
+
+
+;; REPLACES ORIGINAL in `bookmark.el' (Emacs 27+).
+;;
+;; 1. Use `pop-to-buffer', not `view-buffer-other-frame'.
+;; 2. Prefix arg reverses `bmkp-use-region'.
+;; 3. Raise error if not in buffer `*Bookmark List*'.
+;;
+;;;###autoload (autoload 'bookmark-bmenu-other-window "bookmark+")
+(defun bookmark-bmenu-other-frame (&optional flip-use-region-p) ; Bound to `j 5' in bookmark list
+  "Select this line's bookmark in another frame.
+See `bookmark-jump' for info about the prefix arg."
+  (interactive "P")
+  (bmkp-bmenu-barf-if-not-in-menu-list)
+  (bookmark-bmenu-ensure-position)
+  (let ((bookmark-name  (bookmark-bmenu-bookmark)))
+    ;; (bookmark-automatically-show-annotations  t)) ; $$$$$$ Needed?
+    (bookmark-jump-other-frame flip-use-region-p)))
 
 
 ;; REPLACES ORIGINAL in `bookmark.el'.
@@ -2513,6 +2540,8 @@ From Lisp, non-nil optional arg MSG-P means show progress messages."
                              (setq char  (read-char (concat "Pattern: " bmkp-bmenu-filter-pattern)))
                            ;; `read-char' raises an error for non-char event.
                            (error (throw 'bmkp-bmenu-read-filter-input nil)))
+                    (unless (or (not (fboundp 'characterp))  (characterp char)) ; E.g. `M-x', `M-:'
+                      (throw 'bmkp-bmenu-read-filter-input nil))
                     (case char
                       ((?\e ?\r)  (throw 'bmkp-bmenu-read-filter-input nil)) ; Break and exit.
                       (?\C-g      (setq inhibit-quit  nil)
