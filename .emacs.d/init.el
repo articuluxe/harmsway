@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-10-30 13:18:51 dan.harms>
+;; Modified Time-stamp: <2018-10-30 13:41:40 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -356,7 +356,7 @@ not an error if any files do not exist."
 
 ;; select
 (use-package proviso-etags-select
-  :disabled
+  :if (< emacs-major-version 25)
   :init
   (setq tags-revert-without-query t)
   :bind ("\e\e." . etags-select-find-tag)
@@ -1330,6 +1330,7 @@ Only one letter is shown, the first that applies."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smart-jump ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package smart-jump
+  :if (> emacs-major-version 24)        ;requires 'xref
   :bind (("C-c .." . #'smart-jump-jump-key)
          ("C-c .," . #'smart-jump-pop-key)
          ("C-c .?" . #'smart-jump-refs-key)
