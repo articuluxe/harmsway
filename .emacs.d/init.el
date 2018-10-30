@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-10-30 09:59:51 dan.harms>
+;; Modified Time-stamp: <2018-10-30 13:18:51 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3417,6 +3417,15 @@ Requires Flake8 2.0 or newer. See URL
             (lambda()
               (setq indent-tabs-mode nil)
               (add-to-list 'flycheck-disabled-checkers 'sh-posix-dash)
+              ;; set completion
+              (make-local-variable 'company-backends)
+              (setq company-backends
+                    (list
+                     (cons 'company-shell
+                           (copy-tree
+                            (car company-backends)))))
+              (setq-local company-smart-backend 'company-shell)
+              ;; (add-hook 'completion-at-point-functions 'harmsway-company-at-point nil t)
               ))
   :config
   (setq sh-basic-offset 4)
@@ -3424,6 +3433,20 @@ Requires Flake8 2.0 or newer. See URL
   (define-key sh-mode-map "\C-c\C-c" 'comment-region)
   (define-key sh-mode-map "\C-c\C-u" 'uncomment-region)
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; shell-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(add-hook 'shell-mode-hook
+          (lambda ()
+            ;; set completion
+            (make-local-variable 'company-backends)
+            (setq company-backends
+                  (list
+                   (cons 'company-shell
+                         (copy-tree
+                          (car company-backends)))))
+            (setq-local company-smart-backend 'company-shell)
+            ;; (add-hook 'completion-at-point-functions 'harmsway-company-at-point nil t)
+            ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; strace-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package strace-mode :mode "\\.strace$")
