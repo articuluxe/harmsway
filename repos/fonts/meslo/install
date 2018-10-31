@@ -1,0 +1,1 @@
+unzip -o src/dist/v1.2.1/"Meslo LG v1.2.1.zip" -d ../../../.fonts/meslo
