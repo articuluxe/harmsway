@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-10-30 21:43:22 dharms>
+;; Modified Time-stamp: <2018-10-31 13:31:27 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -37,6 +37,7 @@
   (setq load-path (append `(,my/plugins-directory
                             ,my/elisp-directory
                             ,(concat my/user-directory "modes/")
+                            ,(concat my/user-directory "modes/haskell/")
                             ,(concat my/user-directory "custom/"))
                           load-path))
   (setq load-path (append
@@ -3187,6 +3188,13 @@ This may perform related customization."
   (add-hook 'groovy-mode-hook 'inf-groovy-keys)
   ;; for 'run-groovy, need to set $GROOVY_HOME, or groovysh needs to exist or
   ;; be in $PATH
+  )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; haskell-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package haskell-mode
+  :interpreter "runghc"
+  :interpreter "runhaskell"
+  :mode ("\\.[gh]s$" "\\.hsig$" "\\.l[gh]s$" "\\.hsc$")
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; html-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
