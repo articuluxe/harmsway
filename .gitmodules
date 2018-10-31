@@ -10,3 +10,6 @@
 [submodule "gridlock"]
 	path = ext/gridlock
 	url = https://github.com/articuluxe/gridlock.git
+[submodule "xfer"]
+	path = ext/xfer
+	url = https://github.com/articuluxe/xfer.git

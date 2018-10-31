@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-10-30 13:41:40 dan.harms>
+;; Modified Time-stamp: <2018-10-30 21:43:22 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -45,6 +45,7 @@
                      ,(concat my/user-directory "ext/outrespace/")
                      ,(concat my/user-directory "ext/parsenv/")
                      ,(concat my/user-directory "ext/proviso/")
+                     ,(concat my/user-directory "ext/xfer/")
                      ,(concat my/plugins-directory "auto-complete/")
                      ,(concat my/plugins-directory "bookmark+/")
                      ,(concat my/plugins-directory "company/")
