@@ -739,10 +739,7 @@ For slower scrolling see `treemacs-previous-line-other-window'"
   (interactive)
   (treemacs-unless-let (btn (treemacs-current-button))
       (treemacs-log "There is nothing to refresh.")
-    (->> btn
-         (treemacs--nearest-path)
-         (treemacs--find-project-for-path)
-         (treemacs--do-refresh (current-buffer)))
+    (treemacs--do-refresh (current-buffer) (treemacs-project-of-node btn))
     (unless (pos-visible-in-window-p)
       (recenter))))
 
@@ -827,7 +824,7 @@ Only works with a single project in the workspace."
                          (file-name-nondirectory new-root)))
              (treemacs--no-messages t)
              (treemacs-pulse-on-success nil))
-        (unless (string= root new-root)
+        (unless (treemacs-is-path root :same-as new-root)
           (treemacs-remove-project-from-workspace)
           (treemacs-do-add-project-to-workspace new-root new-name)
           (treemacs-goto-file-node new-root)

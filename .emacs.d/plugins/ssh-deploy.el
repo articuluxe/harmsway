@@ -3,8 +3,8 @@
 ;; Author: Christian Johansson <christian@cvj.se>
 ;; Maintainer: Christian Johansson <christian@cvj.se>
 ;; Created: 5 Jul 2016
-;; Modified: 30 Oct 2018
-;; Version: 2.04
+;; Modified: 31 Oct 2018
+;; Version: 2.05
 ;; Keywords: tools, convenience
 ;; URL: https://github.com/cjohansson/emacs-ssh-deploy
 
@@ -58,8 +58,11 @@
 ;; - To setup automatic storing of base revisions and detection of remote changes do this:
 ;; Add to init-script: (ssh-deploy-add-find-file-hook)
 ;;
-;; - To enable mode line to this:
-;;    (ssh-deploy-line-mode)
+;; - To enable mode-line feature do this:
+;; (ssh-deploy-line-mode)
+;;
+;; - To enable menu-bar feature do this:
+;; (ssh-deploy-add-menu)
 ;;
 ;; - To set global key-bindings do something like this:
 ;;     (global-set-key (kbd "C-c C-z") 'ssh-deploy-prefix-map)
@@ -76,6 +79,7 @@
 ;;            (find-file . ssh-deploy-find-file))
 ;;     :config
 ;;     (ssh-deploy-line-mode) ;; If you want mode-line feature
+;;     (ssh-deploy-add-menu) ;; If you want menu-bar feature
 ;;    )
 ;;
 ;;
@@ -1344,7 +1348,15 @@
     (define-key map [dl] '("Download" . ssh-deploy-download-handler))
     map))
 
-(define-key-after global-map [menu-bar sshdeploy] (cons "Deployment" ssh-deploy-menu-map) 'tools)
+(defun ssh-deploy-menu-map-update ()
+  "Update menu map and only show menu if deployment is active."
+  (if (and ssh-deploy-root-local ssh-deploy-root-remote)
+      (define-key-after global-map [menu-bar sshdeploy] (cons "Deployment" ssh-deploy-menu-map) 'tools)
+    (define-key-after global-map [menu-bar sshdeploy] 'undefined 'tools)))
+
+(defun ssh-deploy-add-menu ()
+  "Add menu-bar support."
+  (add-hook 'menu-bar-update-hook 'ssh-deploy-menu-map-update))
 
 
 ;;; Mode Line

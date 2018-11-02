@@ -65,7 +65,8 @@
 (require 'warnings)
 (require 'flymake)
 (require 'xref)
-(require 'subr-x)
+(eval-when-compile
+  (require 'subr-x))
 (require 'jsonrpc)
 (require 'filenotify)
 (require 'ert)
@@ -1657,18 +1658,16 @@ If SKIP-SIGNATURE, don't try to send textDocument/signatureHelp."
              (mapcar
               (jsonrpc-lambda
                   (&key name kind location _containerName _deprecated)
-                (cons (propertize name :kind (cdr (assoc kind eglot--symbol-kind-names)))
+                (cons (propertize
+                       name :kind (alist-get kind eglot--symbol-kind-names
+                                             "(Unknown)"))
                       (eglot--lsp-position-to-point
                        (plist-get (plist-get location :range) :start))))
               (jsonrpc-request (eglot--current-server-or-lose)
                                :textDocument/documentSymbol
                                `(:textDocument ,(eglot--TextDocumentIdentifier))))))
-        (append
-         (cl-remove nil
-                    (seq-group-by (lambda (e) (get-text-property 0 :kind (car e)))
-                                  entries)
-                    :key #'car)
-         entries))
+        (seq-group-by (lambda (e) (get-text-property 0 :kind (car e)))
+                      entries))
     (funcall oldfun)))
 
 (defun eglot--apply-text-edits (edits &optional version)

@@ -23,6 +23,8 @@
 ;;; Code:
 
 (require 'dash)
+(require 'f)
+(require 's)
 (require 'pcase)
 (require 'cl-lib)
 (eval-when-compile
@@ -79,7 +81,7 @@ called from another buffer than the one the button resides in and
 (defmacro treemacs-unless-let (var-val &rest forms)
   "Same as `-if-let-', but the negative case is handled in the first form.
 Delegates VAR-VAL and the given FORMS to `-if-let-'."
-  (declare (debug ((vector sexp form) body))
+  (declare (debug ((sexp form) body))
            (indent 2))
   (let ((then (cdr forms))
         (else (car forms)))
@@ -242,29 +244,35 @@ attempt first to keep point on the same file/tag, and if that does not work keep
 it on the same line."
   (declare (debug (form body)))
   `(treemacs-without-following
-    (let* ((curr-line     (line-number-at-pos))
-           (curr-btn      (treemacs-current-button))
-           (curr-state    (when curr-btn (button-get curr-btn :state)))
-           (curr-file     (when curr-btn (treemacs--nearest-path curr-btn)))
-           (curr-tagpath  (when curr-btn (treemacs--tags-path-of curr-btn)))
-           (curr-winstart (window-start (get-buffer-window))))
+    (let* ((curr-line      (line-number-at-pos)) ;; TODO(2018/10/29): line in *window*
+           (curr-btn       (treemacs-current-button))
+           (curr-node-path (when curr-btn (button-get curr-btn :path)))
+           (curr-state     (when curr-btn (button-get curr-btn :state)))
+           (curr-file      (when curr-btn (treemacs--nearest-path curr-btn)))
+           (curr-tagpath   (when curr-btn (treemacs--tags-path-of curr-btn)))
+           (curr-winstart  (window-start (get-buffer-window))))
       ,main-form
       ;; try to stay at the same file/tag
       ;; if the tag no longer exists move to the tag's owning file node
       ;; if the file no longer exists try to stay in the same visual line
       (pcase curr-state
         ((or 'root-node-open 'root-node-closed 'dir-node-open 'dir-node-closed 'file-node-open 'file-node-closed)
-         (if (and (f-exists? curr-file)
+         (if (and (file-exists-p curr-file)
                   (or treemacs-show-hidden-files
                       (not (s-matches? treemacs-dotfiles-regex (treemacs--filename curr-file)))))
-             (treemacs-goto-node curr-file)
+             (treemacs-goto-file-node curr-file)
            (treemacs-without-messages (with-no-warnings (goto-line curr-line)))))
         ((or 'tag-node-open 'tag-node-closed 'tag-node)
          ;; no correction needed, if the tag does not exist point is left at the next best node
          (treemacs--goto-tag-button-at curr-tagpath))
         ((pred null)
-         (with-no-warnings (goto-line 1)))
-        (_ (treemacs-log "Refresh doesn't yet know how to deal with '%s'" curr-state)))
+         (goto-char (point-min)))
+        (_
+         ;; point is on a custom node
+         ;; TODO(2018/10/30): custom node exists predicate?
+         (condition-case _
+             (treemacs-goto-node curr-node-path)
+           (error (ignore)))))
       (treemacs--evade-image)
       (set-window-start (get-buffer-window) curr-winstart)
 
@@ -360,6 +368,49 @@ For the PREDICATE call the button being checked is bound as 'child-btn'."
                  (when ,@predicate (cl-return-from __search__ child-btn)) )
                 ((> depth child-depth)
                  (cl-return-from __search__ nil))))))))))
+
+(defmacro treemacs-is-path (left op &optional right)
+  "Readable utility macro for various path predicates.
+LEFT is a file path, RIGHT is either a path, project, or workspace while OP can
+take the following forms:
+
+ * `:same-as' will check for string equality
+ * `:in' will check will check whether LEFT is a child or the same as RIGHT.
+ * `:parent-of' will check whether LEFT is a parent of, and not equal to, RIGHT
+ * `:in-project' will check whether LEFT is part of the project RIGHT
+ * `:in-workspace' will check whether LEFT is part of the workspace RIGHT and
+   return the appropriate project when it is. If RIGHT is not given it will
+   default to calling `treemacs-current-workspace'.
+
+LEFT and RIGHT are expected to be in treemacs canonical file path format (see
+also `treemacs--canonical-path').
+
+Even if LEFT or RIGHT should be a form and not a variable it is guaranteed that
+they will be evaluated only once."
+  (cl-assert (memq op '(:same-as :in :parent-of :in-project :in-workspace))
+             :show-args
+             "Invalid treemacs-is-path operator: `%s'" op)
+  (cl-assert (or (eq op :in-workspace) right)
+             :show-args
+             "Missing right side argument.")
+  (macroexp-let2* nil
+      ((left left)
+       (right right))
+    (pcase op
+      (:same-as
+       `(string= ,left ,right))
+      (:in
+       `(or (string= ,left ,right)
+            (s-starts-with? (f-slash ,right) ,left)))
+      (:parent-of
+       `(and (s-starts-with? (f-slash ,left) ,right)
+             (not (string= ,left ,right))))
+      (:in-project
+       `(treemacs-is-path ,left :in (treemacs-project->path ,right)))
+      (:in-workspace
+       (-let [ws (or right '(treemacs-current-workspace))]
+         `(--first (treemacs-is-path ,left :in-project it)
+                   (treemacs-workspace->projects ,ws)))))))
 
 (provide 'treemacs-macros)
 
