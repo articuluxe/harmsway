@@ -1,0 +1,1 @@
+cp src/distr/ttf/*.ttf ../../../.fonts/fira
