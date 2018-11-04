@@ -1,0 +1,1 @@
+unzip -jo src/export/mononoki.zip "*.ttf" -d ../../../.fonts/mononoki
