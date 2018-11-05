@@ -1,12 +1,12 @@
 ;;; simpleclip.el --- Simplified access to the system clipboard
 ;;
-;; Copyright (c) 2012-2015 Roland Walker
+;; Copyright (c) 2012-2018 Roland Walker
 ;;
 ;; Author: Roland Walker <walker@pobox.com>
 ;; Homepage: http://github.com/rolandwalker/simpleclip
 ;; URL: http://raw.githubusercontent.com/rolandwalker/simpleclip/master/simpleclip.el
-;; Version: 1.0.6
-;; Last-Updated: 11 Aug 2018
+;; Version: 1.0.8
+;; Last-Updated:  5 Nov 2018
 ;; Keywords: convenience
 ;;
 ;; Simplified BSD License
@@ -173,7 +173,7 @@
 ;;;###autoload
 (defgroup simpleclip nil
   "Simplified access to the system clipboard."
-  :version "1.0.6"
+  :version "1.0.8"
   :link '(emacs-commentary-link :tag "Commentary" "simpleclip")
   :link '(url-link :tag "GitHub" "http://github.com/rolandwalker/simpleclip")
   :link '(url-link :tag "EmacsWiki" "http://emacswiki.org/emacs/Simpleclip")
@@ -194,6 +194,15 @@
   "Unmark region after copying."
   :type 'boolean
   :group 'simpleclip)
+
+(defcustom simpleclip-custom-content-provider nil
+   "Custom program to provide clipboard content.
+
+If nil, use default logic to get clipboard content according to OS.
+
+If non-nil, use the output of executing the provider program as clipboard content."
+   :type 'string
+   :group 'simpleclip)
 
 ;;;###autoload
 (defgroup simpleclip-keys nil
@@ -321,42 +330,44 @@ in GNU Emacs 24.1 or higher."
   "Return the contents of the system clipboard as a string."
   (condition-case nil
       (cond
-        ((fboundp 'ns-get-pasteboard)
-         (ns-get-pasteboard))
-        ((fboundp 'w32-get-clipboard-data)
-         (or (w32-get-clipboard-data)
-             simpleclip-contents))
-        ((and (featurep 'mac)
-              (fboundp 'gui-get-selection))
-         (gui-get-selection 'CLIPBOARD 'NSStringPboardType))
-        ((and (featurep 'mac)
-              (fboundp 'x-get-selection))
-         (x-get-selection 'CLIPBOARD 'NSStringPboardType))
-        ;; todo, this should try more than one request type, as in gui--selection-value-internal
-        ((fboundp 'gui-get-selection)
-         (gui-get-selection 'CLIPBOARD (or x-select-request-type 'UTF8_STRING)))
-        ;; todo, this should try more than one request type, as in gui--selection-value-internal
-        ((fboundp 'x-get-selection)
-         (x-get-selection 'CLIPBOARD (or x-select-request-type 'UTF8_STRING)))
-        (t
-         (error "Clipboard support not available")))
+       (simpleclip-custom-content-provider
+        (shell-command-to-string simpleclip-custom-content-provider))
+       ((fboundp 'ns-get-pasteboard)
+        (ns-get-pasteboard))
+       ((fboundp 'w32-get-clipboard-data)
+        (or (w32-get-clipboard-data)
+            simpleclip-contents))
+       ((and (featurep 'mac)
+             (fboundp 'gui-get-selection))
+        (gui-get-selection 'CLIPBOARD 'NSStringPboardType))
+       ((and (featurep 'mac)
+             (fboundp 'x-get-selection))
+        (x-get-selection 'CLIPBOARD 'NSStringPboardType))
+       ;; todo, this should try more than one request type, as in gui--selection-value-internal
+       ((fboundp 'gui-get-selection)
+        (gui-get-selection 'CLIPBOARD (or x-select-request-type 'UTF8_STRING)))
+       ;; todo, this should try more than one request type, as in gui--selection-value-internal
+       ((fboundp 'x-get-selection)
+        (x-get-selection 'CLIPBOARD (or x-select-request-type 'UTF8_STRING)))
+       (t
+        (error "Clipboard support not available")))
     (error
      (condition-case nil
          (cond
-           ((eq system-type 'darwin)
-            (with-output-to-string
-              (with-current-buffer standard-output
-                (call-process "/usr/bin/pbpaste" nil t nil "-Prefer" "txt"))))
-           ((eq system-type 'cygwin)
-            (with-output-to-string
-              (with-current-buffer standard-output
-                (call-process "getclip" nil t nil))))
-           ((memq system-type '(gnu gnu/linux gnu/kfreebsd))
-            (with-output-to-string
-              (with-current-buffer standard-output
-                (call-process "xsel" nil t nil "--clipboard" "--output"))))
-           (t
-            (error "Clipboard support not available")))
+          ((eq system-type 'darwin)
+           (with-output-to-string
+             (with-current-buffer standard-output
+               (call-process "/usr/bin/pbpaste" nil t nil "-Prefer" "txt"))))
+          ((eq system-type 'cygwin)
+           (with-output-to-string
+             (with-current-buffer standard-output
+               (call-process "getclip" nil t nil))))
+          ((memq system-type '(gnu gnu/linux gnu/kfreebsd))
+           (with-output-to-string
+             (with-current-buffer standard-output
+               (call-process "xsel" nil t nil "--clipboard" "--output"))))
+          (t
+           (error "Clipboard support not available")))
        (error
         (error "Clipboard support not available"))))))
 

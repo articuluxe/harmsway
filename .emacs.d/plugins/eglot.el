@@ -223,7 +223,15 @@ let the buffer grow forever."
              :definition         `(:dynamicRegistration :json-false)
              :documentSymbol     `(:dynamicRegistration :json-false)
              :documentHighlight  `(:dynamicRegistration :json-false)
-             :codeAction         `(:dynamicRegistration :json-false)
+             :codeAction         (list
+                                  :dynamicRegistration :json-false
+                                  :codeActionLiteralSupport
+                                  '(:codeActionKind
+                                    (:valueSet
+                                     ["quickfix"
+                                      "refactor" "refactor.extract"
+                                      "refactor.inline" "refactor.rewrite"
+                                      "source" "source.organizeImports"])))
              :formatting         `(:dynamicRegistration :json-false)
              :rangeFormatting    `(:dynamicRegistration :json-false)
              :rename             `(:dynamicRegistration :json-false)
@@ -1373,17 +1381,20 @@ DUMMY is ignored."
 (cl-defmethod xref-backend-definitions ((_backend (eql eglot)) identifier)
   (let* ((rich-identifier
           (car (member identifier eglot--xref-known-symbols)))
-         (location-or-locations
+         (definitions
           (if rich-identifier
               (get-text-property 0 :locations rich-identifier)
             (jsonrpc-request (eglot--current-server-or-lose)
                              :textDocument/definition
                              (get-text-property
-                              0 :textDocumentPositionParams identifier)))))
+                              0 :textDocumentPositionParams identifier))))
+         (locations
+          (and definitions
+               (if (vectorp definitions) definitions (vector definitions)))))
     (eglot--sort-xrefs
      (mapcar (jsonrpc-lambda (&key uri range)
                (eglot--xref-make identifier uri (plist-get range :start)))
-             location-or-locations))))
+             locations))))
 
 (cl-defmethod xref-backend-references ((_backend (eql eglot)) identifier)
   (unless (eglot--server-capable :referencesProvider)
@@ -1657,10 +1668,15 @@ If SKIP-SIGNATURE, don't try to send textDocument/signatureHelp."
       (let ((entries
              (mapcar
               (jsonrpc-lambda
-                  (&key name kind location _containerName _deprecated)
+                  (&key name kind location containerName _deprecated)
                 (cons (propertize
-                       name :kind (alist-get kind eglot--symbol-kind-names
-                                             "(Unknown)"))
+                       (concat
+                        (and (stringp containerName)
+                             (not (string-empty-p containerName))
+                             (concat containerName "::"))
+                        name)
+                       :kind (alist-get kind eglot--symbol-kind-names
+                                        "(Unknown)"))
                       (eglot--lsp-position-to-point
                        (plist-get (plist-get location :range) :start))))
               (jsonrpc-request (eglot--current-server-or-lose)
@@ -1771,36 +1787,40 @@ If SKIP-SIGNATURE, don't try to send textDocument/signatureHelp."
   (unless (eglot--server-capable :codeActionProvider)
     (eglot--error "Server can't execute code actions!"))
   (let* ((server (eglot--current-server-or-lose))
-         (actions (jsonrpc-request
-                   server
-                   :textDocument/codeAction
-                   (list :textDocument (eglot--TextDocumentIdentifier)
-                         :range (list :start (eglot--pos-to-lsp-position beg)
-                                      :end (eglot--pos-to-lsp-position end))
-                         :context
-                         `(:diagnostics
-                           [,@(mapcar (lambda (diag)
-                                        (cdr (assoc 'eglot-lsp-diag
-                                                    (eglot--diag-data diag))))
-                                      (flymake-diagnostics beg end))]))))
-         (menu-items (mapcar (jsonrpc-lambda (&key title command arguments)
-                               `(,title . (:command ,command :arguments ,arguments)))
-                             actions))
-         (menu (and menu-items `("Eglot code actions:" ("dummy" ,@menu-items))))
-         (command-and-args
-          (and menu
-               (if (listp last-nonmenu-event)
-                   (x-popup-menu last-nonmenu-event menu)
-                 (let ((never-mind (gensym)) retval)
-                   (setcdr (cadr menu)
-                           (cons `("never mind..." . ,never-mind) (cdadr menu)))
-                   (if (eq (setq retval (tmm-prompt menu)) never-mind)
-                       (keyboard-quit)
-                     retval))))))
-    (cl-destructuring-bind (&key _title command arguments) command-and-args
-      (if command
-          (eglot-execute-command server (intern command) arguments)
-        (eglot--message "No code actions here")))))
+         (actions
+          (jsonrpc-request
+           server
+           :textDocument/codeAction
+           (list :textDocument (eglot--TextDocumentIdentifier)
+                 :range (list :start (eglot--pos-to-lsp-position beg)
+                              :end (eglot--pos-to-lsp-position end))
+                 :context
+                 `(:diagnostics
+                   [,@(mapcar (lambda (diag)
+                                (cdr (assoc 'eglot-lsp-diag
+                                            (eglot--diag-data diag))))
+                              (flymake-diagnostics beg end))]))))
+         (menu-items
+          (or (mapcar (jsonrpc-lambda (&key title command arguments
+                                            edit _kind _diagnostics)
+                        `(,title . (:command ,command :arguments ,arguments
+                                             :edit ,edit)))
+                      actions)
+              (eglot--error "No code actions here")))
+         (menu `("Eglot code actions:" ("dummy" ,@menu-items)))
+         (action (if (listp last-nonmenu-event)
+                     (x-popup-menu last-nonmenu-event menu)
+                   (let ((never-mind (gensym)) retval)
+                     (setcdr (cadr menu)
+                             (cons `("never mind..." . ,never-mind) (cdadr menu)))
+                     (if (eq (setq retval (tmm-prompt menu)) never-mind)
+                         (keyboard-quit)
+                       retval)))))
+    (cl-destructuring-bind (&key _title command arguments edit) action
+      (when edit
+        (eglot--apply-workspace-edit edit))
+      (when command
+        (eglot-execute-command server (intern command) arguments)))))
 
 
 
