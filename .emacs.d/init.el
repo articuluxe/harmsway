@@ -284,9 +284,9 @@ not an error if any files do not exist."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; parsenv ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package parsenv
- :demand t
- :config
- (harmsway-init-environment))
+  :demand t
+  :config
+  (harmsway-init-environment))
 
 (load-library "compiling")
 (load-library "coding")
@@ -375,7 +375,7 @@ not an error if any files do not exist."
   )
 
 (use-package install-world
-             :bind ("C-c 0qi" . harmsway/install-world))
+  :bind ("C-c 0qi" . harmsway/install-world))
 
 (use-package custom-utils
   :bind (("C-x C-M-e" . sanityinc/eval-last-sexp-or-region)
@@ -427,7 +427,7 @@ not an error if any files do not exist."
          ("C-c ii" . add-header-include-ifdefs)
          ("C-c h" . insert-class-header)
          ("C-c c" . insert-cast)
-  ))
+         ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; align ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun align-values (start end)
@@ -787,17 +787,17 @@ line."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; iedit ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package
- iedit
- :bind (("C-;" . iedit-mode)
-        ("M-' ;" . iedit-mode)
-        )
- :config
- ;; S-TAB does not work in the terminal
- (bind-key "M-' TAB" 'iedit-prev-occurrence iedit-lib-keymap)
- )
+  iedit
+  :bind (("C-;" . iedit-mode)
+         ("M-' ;" . iedit-mode)
+         )
+  :config
+  ;; S-TAB does not work in the terminal
+  (bind-key "M-' TAB" 'iedit-prev-occurrence iedit-lib-keymap)
+  )
 (use-package
- iedit-rect
- :bind ("C-x r RET" . iedit-rectangle-mode))
+  iedit-rect
+  :bind ("C-x r RET" . iedit-rectangle-mode))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; multiple-cursors ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun mc/add-cursor ()
@@ -935,8 +935,8 @@ line."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 0xc ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package 0xc
- :bind (("M-s M-s hc" . 0xc-convert)
-        ("M-s M-s h." . 0xc-convert-point)))
+  :bind (("M-s M-s hc" . 0xc-convert)
+         ("M-s M-s h." . 0xc-convert-point)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; elnode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package elnode)
@@ -1036,7 +1036,7 @@ line."
                              magit-log-arguments))
 
   (defun harmsway-repolist-column-dirty (_id)
-  "Insert a letter if there are uncommitted changes.
+    "Insert a letter if there are uncommitted changes.
 This is a shameless copy of the version in `magit', but reverses
 the priority such that staged and unstaged changes appear before
 untracked files, cf. `https://github.com/magit/magit/issues/3354'.
@@ -1045,9 +1045,9 @@ Show S if there is at least one staged file.
 Show U if there is at least one unstaged file.
 Show N if there is at least one untracked file.
 Only one letter is shown, the first that applies."
-  (cond ((magit-staged-files)    "S")
-        ((magit-unstaged-files)  "U")
-        ((magit-untracked-files) "N")))
+    (cond ((magit-staged-files)    "S")
+          ((magit-unstaged-files)  "U")
+          ((magit-untracked-files) "N")))
 
   ;; add a dirty indicator to the second-to-last column
   (setq magit-repolist-columns
@@ -1283,17 +1283,17 @@ Only one letter is shown, the first that applies."
 ;;                        (intern
 ;;                         (ido-completing-read
 ;;                          "M-x " (all-completions "" obarray 'commandp)))))))
-  ;; for recentf
-  ;; (unless (featurep 'uniquify-recentf)
-  ;;   (defun recentf-ido-find-file()
-  ;;     "Find a recent file using ido."
-  ;;     (interactive)
-  ;;     (let ((file (ido-completing-read
-  ;;                  "Choose recent file:"
-  ;;                  recentf-list nil t)))
-  ;;       (when file (find-file file))))
-  ;;   (global-set-key "\er" 'recentf-ido-find-file))
-  ;; )
+;; for recentf
+;; (unless (featurep 'uniquify-recentf)
+;;   (defun recentf-ido-find-file()
+;;     "Find a recent file using ido."
+;;     (interactive)
+;;     (let ((file (ido-completing-read
+;;                  "Choose recent file:"
+;;                  recentf-list nil t)))
+;;       (when file (find-file file))))
+;;   (global-set-key "\er" 'recentf-ido-find-file))
+;; )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ace-window ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package ace-window
@@ -1356,11 +1356,11 @@ Only one letter is shown, the first that applies."
   plur
   :if (not (version< emacs-version "24.4"))
   :bind (("M-s M-s q" . plur-isearch-forward)
-        ("M-s q" . plur-replace)
-        ("M-s M-q" . plur-query-replace)
-        :map isearch-mode-map
-        ("C-p" . plur-isearch-forward)
-        ))
+         ("M-s q" . plur-replace)
+         ("M-s M-q" . plur-query-replace)
+         :map isearch-mode-map
+         ("C-p" . plur-isearch-forward)
+         ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; string-inflection ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package string-inflection
@@ -1396,14 +1396,14 @@ Only one letter is shown, the first that applies."
   :defer t
   :init
   (with-eval-after-load 'compile
-      (require 'grep-context)
-      (define-key compilation-mode-map (kbd "+") #'grep-context-more-around-point)
-      (define-key compilation-mode-map (kbd "-") #'grep-context-less-around-point))
+    (require 'grep-context)
+    (define-key compilation-mode-map (kbd "+") #'grep-context-more-around-point)
+    (define-key compilation-mode-map (kbd "-") #'grep-context-less-around-point))
   (with-eval-after-load 'grep
-      (require 'grep-context)
-      (define-key grep-mode-map (kbd "+") #'grep-context-more-around-point)
-      (define-key grep-mode-map (kbd "-") #'grep-context-less-around-point))
-    )
+    (require 'grep-context)
+    (define-key grep-mode-map (kbd "+") #'grep-context-more-around-point)
+    (define-key grep-mode-map (kbd "-") #'grep-context-less-around-point))
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; deadgrep ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package deadgrep
@@ -1667,24 +1667,24 @@ Only one letter is shown, the first that applies."
   "Add a key binding into keymap MAP for cycling outlines."
   (bind-key "C-c -" 'outline-cycle map))
 (use-package
- outline-magic
- :bind ("C-c -" . outline-cycle)
- :commands outline-cycle
- :init
- (setq outline-structedit-modifiers '(control shift)) ;TODO: doesn't work
- (add-hook 'outline-mode-hook
-           (lambda()
-             (local-set-key (kbd "<f9>") outline-mode-prefix-map)
-             (local-set-key "\e\e9" outline-mode-prefix-map)
-             (my/add-outline-cycle-binding outline-mode-map)
-             ))
- (add-hook 'outline-minor-mode-hook
-           (lambda()
-             (local-set-key (kbd "<f9>") outline-mode-prefix-map)
-             (local-set-key "\e\e9" outline-mode-prefix-map)
-             (my/add-outline-cycle-binding outline-minor-mode-map)
-             ))
- )
+  outline-magic
+  :bind ("C-c -" . outline-cycle)
+  :commands outline-cycle
+  :init
+  (setq outline-structedit-modifiers '(control shift)) ;TODO: doesn't work
+  (add-hook 'outline-mode-hook
+            (lambda()
+              (local-set-key (kbd "<f9>") outline-mode-prefix-map)
+              (local-set-key "\e\e9" outline-mode-prefix-map)
+              (my/add-outline-cycle-binding outline-mode-map)
+              ))
+  (add-hook 'outline-minor-mode-hook
+            (lambda()
+              (local-set-key (kbd "<f9>") outline-mode-prefix-map)
+              (local-set-key "\e\e9" outline-mode-prefix-map)
+              (my/add-outline-cycle-binding outline-minor-mode-map)
+              ))
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; org ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (global-set-key "\e\eoa" #'org-agenda)
@@ -1872,7 +1872,7 @@ Only one letter is shown, the first that applies."
     (define-key my/diredp-map "B" 'diredp-do-bookmark-in-bookmark-file-recursive)
     (define-key my/diredp-map "\M-b" 'diredp-do-bookmark-dirs-recursive)
     (define-key my/diredp-map "R" 'diredp-toggle-find-file-reuse-dir)
-   )
+    )
   (define-key dired-mode-map "\C-o" 'dired-display-file) ;remap
   (define-key dired-mode-map "\M-p" nil)                 ;unbind
   (use-package ls-lisp+)
@@ -2135,13 +2135,13 @@ Only one letter is shown, the first that applies."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; buffer-move ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package
- buffer-move
- :bind (([(control shift up)] . buf-move-up)
-        ([(control shift down)] . buf-move-down)
-        ([(control shift left)] . buf-move-left)
-        ([(control shift right)] . buf-move-right)
-        ([(control shift end)] . buf-move)
-        ))
+  buffer-move
+  :bind (([(control shift up)] . buf-move-up)
+         ([(control shift down)] . buf-move-down)
+         ([(control shift left)] . buf-move-left)
+         ([(control shift right)] . buf-move-right)
+         ([(control shift end)] . buf-move)
+         ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; frame-cmds ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; this also loads 'frame-fns
@@ -2563,15 +2563,15 @@ completion at point mechanism does not interfere with `completion-at-point-funct
       ))
 
   (use-package ac-etags
-   :init
-   (defface ac-etags-candidate-face
-     '((t (:inherit ac-candidate-face)))
-     "Face for etags candidates (overridden to default)")
-   (defface ac-etags-selection-face
-     '((t (:inherit ac-selection-face)))
-     "Face for etags selections (overridden to default)")
-   :config (ac-etags-setup)
-   )
+    :init
+    (defface ac-etags-candidate-face
+      '((t (:inherit ac-candidate-face)))
+      "Face for etags candidates (overridden to default)")
+    (defface ac-etags-selection-face
+      '((t (:inherit ac-selection-face)))
+      "Face for etags selections (overridden to default)")
+    :config (ac-etags-setup)
+    )
 
   (add-hook 'c-mode-common-hook
             (lambda()
@@ -3304,15 +3304,15 @@ This may perform related customization."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; pandoc-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package
- pandoc-mode
- :defer t
- :commands pandoc-mode
- :init
- (setq pandoc-data-dir (concat my/scratch-directory "pandoc/"))
- (mapc (lambda (hook)
-         (add-hook hook 'pandoc-mode))
-       '(markdown-mode-hook))
- )
+  pandoc-mode
+  :defer t
+  :commands pandoc-mode
+  :init
+  (setq pandoc-data-dir (concat my/scratch-directory "pandoc/"))
+  (mapc (lambda (hook)
+          (add-hook hook 'pandoc-mode))
+        '(markdown-mode-hook))
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; pcap-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package pcap-mode
