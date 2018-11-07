@@ -4,7 +4,7 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Tuesday, September 13, 2016
 # Version: 1.0
-# Modified Time-stamp: <2018-08-01 12:16:16 dan.harms>
+# Modified Time-stamp: <2018-11-07 10:29:24 dan.harms>
 # Modified by: Dan Harms
 # Keywords: wireshark
 
@@ -26,7 +26,14 @@ tshark -b filesize:100 -a files:20 -w <output>.pcap
 dumpcap -i<interface> -w <output>.pcap -b filesize:32768 -b files:128
 # print out ethernet packets destined to a particular address
 tshark -r input.erf -n -t ad -R 'ip.dst==233.72.75.96'
-sudo tcpdump -nettti sf01 '(ether dst host 01:00:5E:08:0E:29)'
+
+################################## tcpdump ###################################
+# write to file
+tcpdump -i eth0 -w output.pcap
+# read from file
+tcpdump -Xvvv -r output.pcap
+# print out ethernet packets destined to a particular address
+tcpdump -nettti sf01 '(ether dst host 01:00:5E:08:0E:29)'
 
 ############################## capture filters ###############################
 tcp port 80
