@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-10-31 13:31:27 dan.harms>
+;; Modified Time-stamp: <2018-11-07 13:27:24 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3330,25 +3330,42 @@ This may perform related customization."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; python-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package python
   :if (executable-find "python")
-  :defer t
+  :mode ("\\.py[iw]?$" . python-mode)
+  :interpreter ("python" . python-mode)
+  :init
+  (add-hook 'python-mode-hook
+            (lambda()
+              (subword-mode 1)
+              (setq-default indent-tabs-mode nil)
+              (setq python-indent-guess-indent-offset nil)
+              (setq python-indent-offset 4)
+              (setq-local electric-indent-chars
+                          (remq ?: electric-indent-chars))
+              (setq forward-sexp-function nil)
+              (local-unset-key [backtab]) ;save backtab for yasnippet
+                                        ; S-TAB ran dedent-line in python,
+                                        ; we can just use TAB instead
+              ;; fine-tune company
+              (make-local-variable 'company-backends)
+              (setq company-backends
+                    (list
+                     (cons 'company-jedi
+                           (copy-tree
+                            (car company-backends)))))
+              (setq-local company-smart-backend 'company-jedi)))
   :config
   (use-package virtualenvwrapper)
-  (use-package sphinx-doc)
-  (use-package python-switch-quotes)
   ;;(setq venv-location "?")
   ;; add jedi if installed
   (when (eq 0 (call-process "python" nil nil nil "-c" "import jedi"))
-                                        ;      (setq jedi:setup-keys t)
-    (setq jedi:complete-on-dot t)
-    (setq jedi:tooltip-method '(popup))
-    (use-package jedi)
-    (use-package direx)
-    (use-package jedi-direx)
-    (add-hook 'jedi-mode-hook 'jedi-direx:setup)
-    (add-hook 'python-mode-hook 'jedi:setup)
-    (defun harmsway-expand-jedi () (interactive)
-           (company-begin-backend 'company-jedi))
-    )
+    (require 'jedi-core))
+  (define-key python-mode-map "\C-j" 'newline-and-indent)
+  (define-key python-mode-map "\C-c\C-c" 'comment-region)
+  (define-key python-mode-map "\C-c\C-u" 'uncomment-region)
+  (define-key python-mode-map [?\C-\M-g] 'python-nav-forward-sexp)
+  (define-key python-mode-map (kbd "\C-c RET")
+    (lambda()(interactive)
+      (compile (concat "python " (buffer-file-name)))))
   (if (executable-find "flake8")
       (progn
         (flycheck-define-checker python-flake8
@@ -3380,38 +3397,21 @@ Requires Flake8 2.0 or newer. See URL
     (add-to-list 'flycheck-checkers 'python-pyflakes)
     (use-package flycheck-pyflakes)
     )
+  )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; sphinx-doc ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package sphinx-doc
+  :after python
+  :init
   (add-hook 'python-mode-hook
-            (lambda()
-              (subword-mode 1)
-              (setq-default indent-tabs-mode nil)
-              (setq python-indent-guess-indent-offset nil)
-              (setq python-indent-offset 4)
-              (setq-local electric-indent-chars
-                          (remq ?: electric-indent-chars))
-              (setq forward-sexp-function nil)
-              (local-unset-key [backtab]) ;save backtab for yasnippet
-                                        ; S-TAB ran dedent-line in python,
-                                        ; we can just use TAB instead
-              (define-key python-mode-map "\C-j" 'newline-and-indent)
-              (define-key python-mode-map "\C-c\C-c" 'comment-region)
-              (define-key python-mode-map "\C-c\C-u" 'uncomment-region)
-              (define-key python-mode-map [?\C-\M-g] 'python-nav-forward-sexp)
-              (define-key python-mode-map (kbd "\C-c RET")
-                (lambda()(interactive)
-                  (compile (concat "python " (buffer-file-name)))))
-              (when (featurep 'jedi)
-                (make-local-variable 'company-backends)
-                (setq company-backends
-                      (list
-                       (cons 'company-jedi
-                             (copy-tree
-                              (car company-backends)))))
-                (setq-local company-smart-backend 'company-jedi)
-                (define-key python-mode-map [(ctrl tab)] 'harmsway-expand-jedi)
-                (define-key python-mode-map "\C-cx" 'jedi-direx:pop-to-buffer))
-              (sphinx-doc-mode 1)
-              (define-key python-mode-map "\C-c'" 'python-switch-quotes)
-              )))
+            (lambda ()
+              (sphinx-doc-mode 1))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;; python-switch-quotes ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package python-switch-quotes
+  :after python
+  :config
+  (define-key python-mode-map "\C-c'" #'python-switch-quotes))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; qt-pro-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package qt-pro-mode :mode ("\\.pr[oi]$"))
