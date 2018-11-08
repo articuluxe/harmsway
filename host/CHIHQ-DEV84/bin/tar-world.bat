@@ -1,11 +1,11 @@
 @echo off
-rem -*- Mode: dos -*-
+rem -*- Mode: bat -*-
 rem tar-world.bat --- tar up the world (windows style)
 rem Copyright (C) 2015-2018  Dan Harms (dan.harms)
 rem Author: Dan Harms <dan.harms@xrtrading.com>
 rem Created: Thursday, May 21, 2015
 rem Version: 1.0
-rem Modified Time-stamp: <2018-07-12 22:45:44 dharms>
+rem Modified Time-stamp: <2018-11-08 09:29:30 dan.harms>
 rem Modified by: Dan Harms
 rem Keywords: tar whole world
 
