@@ -57,7 +57,8 @@
 (require 'url-auth)
 (require 'url-http)
 
-(eval-when-compile (require 'subr-x))
+(eval-when-compile
+  (require 'subr-x))
 
 (defvar url-callback-arguments)
 (defvar url-http-end-of-headers)
@@ -884,7 +885,7 @@ WARNING: The token will be stored unencrypted in %S.
                                (car .errors.code))
                              "already_exists")
                (error "\
-A token named %S ready exists on Github. \
+A token named %S already exists on Github. \
 Please visit https://github.com/settings/tokens and delete it." ident))))
       (user-error "Abort"))))
 

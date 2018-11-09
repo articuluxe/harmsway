@@ -287,7 +287,7 @@ width (including the indent) larger than `neo-window-width', and
   :group 'neotree)
 
 (defcustom neo-hidden-regexp-list
-  '("^\\." "\\.pyc$" "~$" "^#.*#$" "\\.elc$")
+  '("^\\." "\\.pyc$" "~$" "^#.*#$" "\\.elc$" "\\.o$")
   "*The regexp list matching hidden files."
   :type  '(repeat (choice regexp))
   :group 'neotree)
@@ -392,6 +392,11 @@ This variable is used in `neo-vc-for-node' when
   "*Name of the application that is used to open a file under point.
 By default it is xdg-open."
   :type 'string
+  :group 'neotree)
+
+(defcustom neo-hide-cursor nil
+  "If not nil, hide cursor in NeoTree buffer and turn on line higlight."
+  :type 'boolean
   :group 'neotree)
 
 ;;
@@ -665,6 +670,10 @@ The car of the pair will store fullpath, and cdr will store line number.")
         buffer-read-only t              ; read only
         truncate-lines -1
         neo-buffer--show-hidden-file-p neo-show-hidden-files)
+  (when neo-hide-cursor
+    (progn
+      (setq cursor-type nil)
+      (hl-line-mode +1)))
   (pcase neo-mode-line-type
     (`neotree
      (setq-local mode-line-format neo-mode-line-format)
@@ -1346,24 +1355,21 @@ PATH is value."
     (neo-buffer--newline-and-begin)))
 
 (defun neo-buffer--insert-root-entry (node)
+  (neo-buffer--node-list-set nil node)
+  (cond ((eq neo-cwd-line-style 'button)
+         (neo-path--insert-header-buttonized node))
+        (t
+         (neo-buffer--insert-with-face (neo-path--shorten node (window-body-width))
+                                       'neo-root-dir-face)))
+  (neo-buffer--newline-and-begin)
   (when neo-show-updir-line
+    (neo-buffer--insert-fold-symbol 'close node)
     (insert-button ".."
                    'action '(lambda (x) (neotree-change-root))
                    'follow-link t
-                   'face neo-file-link-face
+                   'face neo-dir-link-face
                    'neo-full-path (neo-path--updir node))
-    (let ((start (point)))
-      (insert " (up a dir)")
-      (set-text-properties start (point) '(face neo-header-face)))
-    (neo-buffer--newline-and-begin))
-  (neo-buffer--node-list-set nil node)
-  (cond
-   ((eq neo-cwd-line-style 'button)
-    (neo-path--insert-header-buttonized node))
-   (t
-    (neo-buffer--insert-with-face (neo-path--shorten node (window-body-width))
-                                  'neo-root-dir-face)))
-  (neo-buffer--newline-and-begin))
+    (neo-buffer--newline-and-begin)))
 
 (defun neo-buffer--help-echo-message (node-name)
   (cond
@@ -2076,9 +2082,15 @@ automatically."
 (defun neotree-show ()
   "Show the NeoTree window."
   (interactive)
-  (let ((cw (selected-window)))  ;; save current window
+  (let ((cw (selected-window))
+         (path (buffer-file-name)))  ;; save current window and buffer
     (if neo-smart-open
-        (neotree-find)
+      (progn
+        (when (and (fboundp 'projectile-project-p)
+              (projectile-project-p)
+              (fboundp 'projectile-project-root))
+          (neotree-dir (projectile-project-root)))
+        (neotree-find path))
       (neo-global--open))
     (neo-global--select-window)
     (when neo-toggle-window-keep-p

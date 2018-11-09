@@ -30,6 +30,9 @@
 
 ;;; Code:
 
+(eval-when-compile
+  (require 'subr-x))
+
 (require 'magit-core)
 (require 'magit-diff)
 (require 'magit-wip)
@@ -205,10 +208,10 @@ so causes the change to be applied to the index as well."
       (magit-refresh))))
 
 (defun magit-apply--get-selection ()
-  (or (magit-region-sections '(hunk file) t)
+  (or (magit-region-sections '(hunk file module) t)
       (let ((section (magit-current-section)))
         (pcase (oref section type)
-          ((or `hunk `file) section)
+          ((or `hunk `file `module) section)
           ((or `staged `unstaged `untracked
                `stashed-index `stashed-worktree `stashed-untracked)
            (oref section children))

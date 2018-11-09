@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2010, 2011, 2012 Victor Ren
 
-;; Time-stamp: <2018-09-19 11:10:56 Victor Ren>
+;; Time-stamp: <2018-11-09 14:17:05 Victor Ren>
 ;; Author: Victor Ren <victorhge@gmail.com>
 ;; Keywords: occurrence region simultaneous refactoring
 ;; Version: 0.9.9.9
@@ -171,6 +171,7 @@ use this variable:
                              iedit-occurrence-index (iedit-counter))))
   "Mode-line format for Iedit.
 This should be set before Iedit is loaded."
+  :type 'string
   :group 'iedit)
 (put 'iedit-mode-line 'risky-local-variable t)
 
@@ -387,6 +388,9 @@ Keymap used within overlays:
       (when arg
         (cond ((= 0 (prefix-numeric-value arg))
                (save-excursion
+		 ;; Since Emacs 26.1, `mark-defun' marks the next defun if the
+		 ;; mark is active.
+		 (deactivate-mark t)
                  (mark-defun)
                  (setq beg (region-beginning))
                  (setq end (region-end))))

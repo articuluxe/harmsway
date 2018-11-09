@@ -85,6 +85,8 @@
                                   rjsx-mode) . ("javascript-typescript-stdio"))
                                 (sh-mode . ("bash-language-server" "start"))
                                 ((c++-mode c-mode) . ("ccls"))
+                                ((caml-mode tuareg-mode reason-mode)
+                                 . ("ocaml-language-server" "--stdio"))
                                 (ruby-mode
                                  . ("solargraph" "socket" "--port"
                                     :autoport))
@@ -172,6 +174,28 @@ let the buffer grow forever."
   :type '(choice (const :tag "No limit" nil)
                  (integer :tag "Number of characters")))
 
+
+;;; Constants
+;;;
+(defconst eglot--symbol-kind-names
+  `((1 . "File") (2 . "Module")
+    (3 . "Namespace") (4 . "Package") (5 . "Class")
+    (6 . "Method") (7 . "Property") (8 . "Field")
+    (9 . "Constructor") (10 . "Enum") (11 . "Interface")
+    (12 . "Function") (13 . "Variable") (14 . "Constant")
+    (15 . "String") (16 . "Number") (17 . "Boolean")
+    (18 . "Array") (19 . "Object") (20 . "Key")
+    (21 . "Null") (22 . "EnumMember") (23 . "Struct")
+    (24 . "Event") (25 . "Operator") (26 . "TypeParameter")))
+
+(defconst eglot--kind-names
+  `((1 . "Text") (2 . "Method") (3 . "Function") (4 . "Constructor")
+    (5 . "Field") (6 . "Variable") (7 . "Class") (8 . "Interface")
+    (9 . "Module") (10 . "Property") (11 . "Unit") (12 . "Value")
+    (13 . "Enum") (14 . "Keyword") (15 . "Snippet") (16 . "Color")
+    (17 . "File") (18 . "Reference")))
+
+
 ;;; API (WORK-IN-PROGRESS!)
 ;;;
 (cl-defmacro eglot--with-live-buffer (buf &rest body)
@@ -221,7 +245,11 @@ let the buffer grow forever."
              :signatureHelp      `(:dynamicRegistration :json-false)
              :references         `(:dynamicRegistration :json-false)
              :definition         `(:dynamicRegistration :json-false)
-             :documentSymbol     `(:dynamicRegistration :json-false)
+             :documentSymbol     (list
+                                  :dynamicRegistration :json-false
+                                  :symbolKind `(:valueSet
+                                                [,@(mapcar
+                                                    #'car eglot--symbol-kind-names)]))
              :documentHighlight  `(:dynamicRegistration :json-false)
              :codeAction         (list
                                   :dynamicRegistration :json-false
@@ -729,24 +757,6 @@ Doubles as an indicator of snippet support."
   (and (boundp 'yas-minor-mode)
        (symbol-value 'yas-minor-mode)
        'yas-expand-snippet))
-
-(defconst eglot--kind-names
-  `((1 . "Text") (2 . "Method") (3 . "Function") (4 . "Constructor")
-    (5 . "Field") (6 . "Variable") (7 . "Class") (8 . "Interface")
-    (9 . "Module") (10 . "Property") (11 . "Unit") (12 . "Value")
-    (13 . "Enum") (14 . "Keyword") (15 . "Snippet") (16 . "Color")
-    (17 . "File") (18 . "Reference")))
-
-(defconst eglot--symbol-kind-names
-  `((1 . "File") (2 . "Module")
-    (3 . "Namespace") (4 . "Package") (5 . "Class")
-    (6 . "Method") (7 . "Property") (8 . "Field")
-    (9 . "Constructor") (10 . "Enum") (11 . "Interface")
-    (12 . "Function") (13 . "Variable") (14 . "Constant")
-    (15 . "String") (16 . "Number") (17 . "Boolean")
-    (18 . "Array") (19 . "Object") (20 . "Key")
-    (21 . "Null") (22 . "EnumMember") (23 . "Struct")
-    (24 . "Event") (25 . "Operator") (26 . "TypeParameter")))
 
 (defun eglot--format-markup (markup)
   "Format MARKUP according to LSP's spec."
@@ -1364,7 +1374,7 @@ DUMMY is ignored."
                                     :position (plist-get
                                                (plist-get location :range)
                                                :start))
-                              :locations (list location)
+                              :locations (vector location)
                               :kind kind
                               :containerName containerName))
                 (jsonrpc-request server
@@ -1670,20 +1680,29 @@ If SKIP-SIGNATURE, don't try to send textDocument/signatureHelp."
               (jsonrpc-lambda
                   (&key name kind location containerName _deprecated)
                 (cons (propertize
-                       (concat
-                        (and (stringp containerName)
-                             (not (string-empty-p containerName))
-                             (concat containerName "::"))
-                        name)
+                       name
                        :kind (alist-get kind eglot--symbol-kind-names
-                                        "(Unknown)"))
+                                        "Unknown")
+                       :containerName (and (stringp containerName)
+                                           (not (string-empty-p containerName))
+                                           containerName))
                       (eglot--lsp-position-to-point
                        (plist-get (plist-get location :range) :start))))
               (jsonrpc-request (eglot--current-server-or-lose)
                                :textDocument/documentSymbol
                                `(:textDocument ,(eglot--TextDocumentIdentifier))))))
-        (seq-group-by (lambda (e) (get-text-property 0 :kind (car e)))
-                      entries))
+        (mapcar
+         (pcase-lambda (`(,kind . ,syms))
+           (let ((syms-by-scope (seq-group-by
+                                 (lambda (e)
+                                   (get-text-property 0 :containerName (car e)))
+                                 syms)))
+             (cons kind (cl-loop for (scope . elems) in syms-by-scope
+                                 append (if scope
+                                            (list (cons scope elems))
+                                          elems)))))
+         (seq-group-by (lambda (e) (get-text-property 0 :kind (car e)))
+                       entries)))
     (funcall oldfun)))
 
 (defun eglot--apply-text-edits (edits &optional version)
