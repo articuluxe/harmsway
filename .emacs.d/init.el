@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-11-07 13:27:24 dan.harms>
+;; Modified Time-stamp: <2018-11-09 07:17:07 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2907,7 +2907,6 @@ This function's result only has value if it is preceded by any font changes."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; remotehost-connect ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package remotehost-connect
-  :demand t
   :bind (([f6] . remotehost-connect)
          ("\e\e6" . remotehost-connect)
          ))
