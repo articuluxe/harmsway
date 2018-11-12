@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-11-09 07:17:07 dharms>
+;; Modified Time-stamp: <2018-11-11 18:23:23 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2592,9 +2592,18 @@ completion at point mechanism does not interfere with `completion-at-point-funct
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; YASnippet ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun harmsway-yas-at-point ()
-  "Try to complete yasnippet via company."
+  "Try to complete yasnippet via company.
+See `https://github.com/company-mode/company-mode/issues/205'."
   (interactive)
-  (company-begin-backend 'company-yasnippet))
+  (require 'company-yasnippet)
+  (let ((prefix (company-yasnippet 'prefix))
+        candidates)
+    (when prefix
+      (setq candidates (company-yasnippet 'candidates prefix))
+      (if (and (= (length candidates) 1)
+               (string= prefix (car candidates)))
+          (yas-expand)
+        (company-begin-backend 'company-yasnippet)))))
 
 (global-set-key [backtab] #'harmsway-yas-at-point)
 (global-set-key [(shift tab)] #'harmsway-yas-at-point)
