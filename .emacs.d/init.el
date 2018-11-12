@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-11-11 18:23:23 dharms>
+;; Modified Time-stamp: <2018-11-12 09:01:28 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2918,7 +2918,8 @@ This function's result only has value if it is preceded by any font changes."
 (use-package remotehost-connect
   :bind (([f6] . remotehost-connect)
          ("\e\e6" . remotehost-connect)
-         ))
+         )
+  :commands remotehost-connect-read-file)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; os ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (let* ((system-file (concat my/os-dir my/system-name)))
