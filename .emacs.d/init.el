@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-11-12 09:01:28 dan.harms>
+;; Modified Time-stamp: <2018-11-13 11:50:46 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2425,7 +2425,7 @@ completion at point mechanism does not interfere with `completion-at-point-funct
   (setq company-require-match nil)
   (setq company-minimum-prefix-length 1)
   (setq company-dabbrev-minimum-length 1)
-  (setq company-dabbrev-downcase nil)
+  (setq company-dabbrev-downcase 'case-replace)
   ;; (setq company-begin-commands '(self-insert-command))
   (setq company-show-numbers t)
   (setq company-tooltip-align-annotations t)
@@ -3478,6 +3478,7 @@ Requires Flake8 2.0 or newer. See URL
   :commands (web-http-call web-http-get web-http-post
                            web-json-post web-get)
   :config
+  (add-to-list 'company-dabbrev-code-modes 'web-mode)
   (add-hook 'web-mode-hook
             (lambda ()
               (make-local-variable 'company-backends)
