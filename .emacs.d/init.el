@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-11-13 11:50:46 dan.harms>
+;; Modified Time-stamp: <2018-11-13 16:11:01 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3040,6 +3040,7 @@ This may perform related customization."
               (define-key bat-mode-map "\C-c\C-u" 'uncomment-region)
               ;; the following conflicted with C-c C-c
               (define-key bat-mode-map "\C-c\C-r" 'bat-run)
+              (setq-local company-smart-backend 'company-cmd)
               )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; bazel-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
