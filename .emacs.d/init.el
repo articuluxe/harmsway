@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-11-13 16:11:01 dan.harms>
+;; Modified Time-stamp: <2018-11-14 15:45:16 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -786,11 +786,12 @@ line."
          ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; iedit ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package
-  iedit
+(use-package iedit
   :bind (("C-;" . iedit-mode)
          ("M-' ;" . iedit-mode)
          )
+  :init
+  (setq iedit-auto-narrow t)
   :config
   ;; S-TAB does not work in the terminal
   (bind-key "M-' TAB" 'iedit-prev-occurrence iedit-lib-keymap)

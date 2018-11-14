@@ -5,7 +5,7 @@
 ;; Keywords: processes, tools
 ;; URL: https://github.com/riscy/shx-for-emacs
 ;; Package-Requires: ((emacs "24.4"))
-;; Version: 0.0.17
+;; Version: 0.0.18
 
 ;; This file is NOT part of GNU Emacs.
 
@@ -400,14 +400,23 @@ With non-nil WITHOUT-PREFIX, strip `shx-cmd-prefix' from each."
    (match-beginning 0) (match-end 0)
    `(keymap ,shx-click-file mouse-face link font-lock-face font-lock-doc-face)))
 
+(defun shx--match-last-line (regexp)
+  "Return a form to find REGEXP on the last line of the buffer."
+  `(lambda (bound)
+     (let ((inhibit-field-text-motion t))
+       (when (eq (point-max) (point-at-eol))
+         (ignore-errors (re-search-forward ,regexp bound))))))
+
 (defun shx--quote-regexp (delimiter &optional escape max-length)
   "Regexp matching strings delimited by DELIMITER.
-ESCAPE is the string that can be used to escape the delimiter.
+ESCAPE is the string that can be used to escape the delimiter
+\(defaults to backslash; ignored when set to the empty string).
 MAX-LENGTH is the length of the longest match (default 300)."
+  (setq escape (or escape "\\\\"))
   (concat delimiter
           "\\("
-          (when escape
-            (concat escape escape "\\|"      ; two backslashes OR
+          (when (not (string= "" escape))
+            (concat escape escape "\\|"      ; two escapes OR
                     escape delimiter "\\|")) ; escaped delimiter
           "[^" delimiter "]"
           "\\)"
@@ -881,25 +890,23 @@ Or just a single column:
 ;;; loading
 
 (defcustom shx-shell-mode-font-locks
-  `(("#.*[^#^\n]*\\'"                             0 'font-lock-comment-face)
-    ("~"                                          0 'font-lock-preprocessor-face)
-    (,(regexp-opt '(">" "<" "&&" "|"))            0 'font-lock-keyword-face)
-    (,(shx--quote-regexp "`" "\\\\")              0 'font-lock-preprocessor-face)
-    (,(shx--quote-regexp "\"" "\\\\")             0 'font-lock-string-face)
-    ;; disallow leading alphabet chars so we 'don't match on contractions'
-    (,(concat "[^A-Za-z]\\(" (shx--quote-regexp "'") "\\)")
-                                                  1 'font-lock-string-face)
-    ("\\(\\<git\\>\\) .*\\'"                      1 'font-lock-constant-face)
-    ("\\(\\<rm\\>\\) .*\\'"                       1 'font-lock-warning-face))
+  `((,(shx--match-last-line (shx--quote-regexp "`"))  0 'font-lock-builtin-face)
+    (,(shx--match-last-line (shx--quote-regexp "\"")) 0 'font-lock-string-face)
+    (,(shx--match-last-line (shx--quote-regexp "'"))  0 'font-lock-string-face)
+    (,(shx--match-last-line "#.*[^#^\n]*$")           0 'font-lock-comment-face)
+    (,(shx--match-last-line
+       (regexp-opt '("~" ">" "<" "&" "|" ";")))       0 'font-lock-keyword-face)
+    ("\\(\\<git\\>\\) .*\\'"                          1 'font-lock-constant-face)
+    ("\\(\\<rm\\>\\) .*\\'"                           1 'font-lock-warning-face))
   "Some additional syntax highlighting for `shell-mode' only."
-  :type '(alist :key-type regexp))
+  :type '(alist :key-type (choice regexp function)))
 
 (defcustom shx-font-locks
   `((,(concat "[^[:alnum:]" shx-leader "]" shx-leader "\\(\\<"
               (regexp-opt (shx--all-commands 'without-prefix))
-              "\\>\\).*\\'")                      1 'font-lock-keyword-face))
+              "\\>\\).*\\'")                          1 'font-lock-keyword-face))
   "Some additional syntax highlighting for the shx minor mode."
-  :type '(alist :key-type regexp))
+  :type '(alist :key-type (choice regexp function)))
 
 ;;;###autoload
 (define-minor-mode shx-mode

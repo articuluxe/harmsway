@@ -4,7 +4,7 @@
 
 ;; Author: James Ferguson <(concat "wjcferguson" at-sign "gmail.com")>
 ;; URL: https://github.com/WJCFerguson/emacs-faff-theme
-;; Version: 2.2.1
+;; Version: 2.3
 ;; Keywords: color theme
 
 ;; This file is not part of GNU Emacs.
@@ -52,7 +52,7 @@
  '(escape-glyph ((((background dark)) (:foreground "cyan")) (((type pc)) (:foreground "magenta")) (t (:foreground "brown"))))
  '(minibuffer-prompt ((((background dark)) (:foreground "cyan")) (((type pc)) (:foreground "magenta")) (t (:foreground "medium blue"))))
  '(highlight ((t (:background "white"))))
- '(highlight-symbol-face ((t (:background "cornsilk1"))))
+ '(highlight-symbol-face ((t (:background "cornsilk2"))))
  '(shadow ((t (:foreground "grey30"))))
  '(secondary-selection ((((class color) (min-colors 88) (background light)) (:background "yellow1")) (((class color) (min-colors 88) (background dark)) (:background "SkyBlue4")) (((class color) (min-colors 16) (background light)) (:background "yellow")) (((class color) (min-colors 16) (background dark)) (:background "SkyBlue4")) (((class color) (min-colors 8)) (:foreground "black" :background "cyan")) (t (:inverse-video t))))
  '(trailing-whitespace ((t (:background "cornsilk2"))))
@@ -125,6 +125,11 @@
  '(jabber-chat-text-local ((t (:foreground "red4"))))
  '(jabber-title-large ((t (:weight bold :height 2.0 :width expanded))))
  '(jabber-title-medium ((t (:background "#ffb" :box (:line-width 2 :color "grey75" :style released-button) :weight bold :height 1.2 :width expanded))))
+ '(lsp-face-highlight-read ((t (:background "cornsilk2"))))
+ '(lsp-face-highlight-textual ((t (:background "cornsilk4"))))
+ '(lsp-face-highlight-write ((t (:background "palegreen1"))))
+ '(lsp-ui-sideline-current-symbol ((t (:foreground "gray85" :box (:line-width -1 :color "gray85") :weight ultra-bold :height 0.99))))
+ '(lsp-ui-sideline-symbol-info ((t (:foreground "gray60" :slant italic :height 0.99))))
  '(helm-M-x-key ((t (:foreground "orange4" :underline t))))
  '(helm-ff-executable ((t (:foreground "darkgreen" :weight bold))))
  '(helm-ff-symlink ((t (:foreground "orange4"))))

@@ -721,23 +721,65 @@ CONNECT-ARGS are passed as additional arguments to
   (let ((warning-minimum-level :error))
     (display-warning 'eglot (apply #'format format args) :warning)))
 
+(defvar eglot-current-column-function #'current-column
+  "Function to calculate the current column.
+
+This is the inverse operation of
+`eglot-move-to-column-function' (which see).  It is a function of
+no arguments returning a column number.  For buffers managed by
+fully LSP-compliant servers, this should be set to
+`eglot-lsp-abiding-column', and `current-column' (the default)
+for all others.")
+
+(defun eglot-lsp-abiding-column ()
+  "Calculate current COLUMN as defined by the LSP spec."
+  (/ (- (length (encode-coding-region (line-beginning-position)
+                                      (point) 'utf-16 t))
+        2)
+     2))
+
 (defun eglot--pos-to-lsp-position (&optional pos)
   "Convert point POS to LSP position."
   (eglot--widening
    (list :line (1- (line-number-at-pos pos t)) ; F!@&#$CKING OFF-BY-ONE
-         :character (- (goto-char (or pos (point)))
-                       (line-beginning-position)))))
+         :character (progn (when pos (goto-char pos))
+                           (funcall eglot-current-column-function)))))
+
+(defvar eglot-move-to-column-function #'move-to-column
+  "Function to move to a column reported by the LSP server.
+
+According to the standard, LSP column/character offsets are based
+on a count of UTF-16 code units, not actual visual columns.  So
+when LSP says position 3 of a line containing just \"aXbc\",
+where X is a multi-byte character, it actually means `b', not
+`c'. However, many servers don't follow the spec this closely.
+
+For buffers managed by fully LSP-compliant servers, this should
+be set to `eglot-move-to-lsp-abiding-column', and
+`move-to-column' (the default) for all others.")
+
+(defun eglot-move-to-lsp-abiding-column (column)
+  "Move to COLUMN abiding by the LSP spec."
+  (cl-loop
+   initially (move-to-column column)
+   with lbp = (line-beginning-position)
+   for diff = (- column
+                 (/ (- (length (encode-coding-region lbp (point) 'utf-16 t))
+                       2)
+                    2))
+   until (zerop diff)
+   do (forward-char (/ (if (> diff 0) (1+ diff) (1- diff)) 2))))
 
 (defun eglot--lsp-position-to-point (pos-plist &optional marker)
   "Convert LSP position POS-PLIST to Emacs point.
 If optional MARKER, return a marker instead"
-  (save-excursion (goto-char (point-min))
-                  (forward-line (min most-positive-fixnum
-                                     (plist-get pos-plist :line)))
-                  (forward-char (min (plist-get pos-plist :character)
-                                     (- (line-end-position)
-                                        (line-beginning-position))))
-                  (if marker (copy-marker (point-marker)) (point))))
+  (save-excursion
+    (goto-char (point-min))
+    (forward-line (min most-positive-fixnum
+                       (plist-get pos-plist :line)))
+    (unless (eobp) ;; if line was excessive leave point at eob
+      (funcall eglot-move-to-column-function (plist-get pos-plist :character)))
+    (if marker (copy-marker (point-marker)) (point))))
 
 (defun eglot--path-to-uri (path)
   "URIfy PATH."
@@ -1040,7 +1082,7 @@ Uses THING, FACE, DEFS and PREPEND."
                    (priority . ,(+ 50 i))
                    (keymap . ,(let ((map (make-sparse-keymap)))
                                 (define-key map [mouse-1]
-                                  (eglot--mouse-call 'eglot-code-actions))
+                                            (eglot--mouse-call 'eglot-code-actions))
                                 map)))))
 
 
@@ -1474,7 +1516,8 @@ is not active."
   "EGLOT's `completion-at-point' function."
   (let ((bounds (bounds-of-thing-at-point 'symbol))
         (server (eglot--current-server-or-lose))
-        (completion-capability (eglot--server-capable :completionProvider)))
+        (completion-capability (eglot--server-capable :completionProvider))
+        strings)
     (when completion-capability
       (list
        (or (car bounds) (point))
@@ -1487,19 +1530,21 @@ is not active."
                                         :deferred :textDocument/completion
                                         :cancel-on-input t))
                  (items (if (vectorp resp) resp (plist-get resp :items))))
-            (mapcar
-             (jsonrpc-lambda (&rest all &key label insertText insertTextFormat
-                                    &allow-other-keys)
-               (let ((completion
-                      (cond ((and (eql insertTextFormat 2)
-                                  (eglot--snippet-expansion-fn))
-                             (string-trim-left label))
-                            (t
-                             (or insertText (string-trim-left label))))))
-                 (add-text-properties 0 1 all completion)
-                 (put-text-property 0 1 'eglot--lsp-completion all completion)
-                 completion))
-             items))))
+            (setq
+             strings
+             (mapcar
+              (jsonrpc-lambda (&rest all &key label insertText insertTextFormat
+                                     &allow-other-keys)
+                (let ((completion
+                       (cond ((and (eql insertTextFormat 2)
+                                   (eglot--snippet-expansion-fn))
+                              (string-trim-left label))
+                             (t
+                              (or insertText (string-trim-left label))))))
+                  (add-text-properties 0 1 all completion)
+                  (put-text-property 0 1 'eglot--lsp-completion all completion)
+                  completion))
+              items)))))
        :annotation-function
        (lambda (obj)
          (cl-destructuring-bind (&key detail kind insertTextFormat
@@ -1545,17 +1590,35 @@ is not active."
        (cl-some #'looking-back
                 (mapcar #'regexp-quote
                         (plist-get completion-capability :triggerCharacters)))
-       :exit-function (lambda (obj _status)
-                        (cl-destructuring-bind (&key insertTextFormat
-                                                     insertText
-                                                     &allow-other-keys)
-                            (text-properties-at 0 obj)
-                          (when-let ((fn (and (eql insertTextFormat 2)
-                                              (eglot--snippet-expansion-fn))))
-                            (delete-region (- (point) (length obj)) (point))
-                            (funcall fn insertText))
-                          (eglot--signal-textDocument/didChange)
-                          (eglot-eldoc-function)))))))
+       :exit-function
+       (lambda (comp _status)
+         (let ((comp (if (get-text-property 0 'eglot--lsp-completion comp)
+                         comp
+                       ;; When selecting from the *Completions*
+                       ;; buffer, `comp' won't have any properties.  A
+                       ;; lookup should fix that (github#148)
+                       (cl-find comp strings :test #'string=))))
+           (cl-destructuring-bind (&key insertTextFormat
+                                        insertText
+                                        textEdit
+                                        additionalTextEdits
+                                        &allow-other-keys)
+               (text-properties-at 0 comp)
+             (let ((fn (and (eql insertTextFormat 2)
+                            (eglot--snippet-expansion-fn))))
+               (when (or fn textEdit)
+                 ;; Undo the completion
+                 (delete-region (- (point) (length comp)) (point)))
+               (cond (textEdit
+                      (cl-destructuring-bind (&key range newText) textEdit
+                        (pcase-let ((`(,beg . ,end) (eglot--range-region range)))
+                          (delete-region beg end)
+                          (goto-char beg)
+                          (funcall (or fn #'insert) newText)))
+                      (eglot--apply-text-edits additionalTextEdits))
+                     (fn (funcall fn insertText))))
+             (eglot--signal-textDocument/didChange)
+             (eglot-eldoc-function))))))))
 
 (defvar eglot--highlights nil "Overlays for textDocument/documentHighlight.")
 

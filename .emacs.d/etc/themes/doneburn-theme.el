@@ -213,6 +213,9 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(font-lock-warning-face ((t (:foreground ,doneburn-yellow-2 :weight bold))))
 
    `(c-annotation-face ((t (:inherit font-lock-constant-face))))
+;;;;; line numbers (Emacs 26.1 and above)
+   `(line-number ((t (:foreground ,doneburn-yellow-2 :background ,doneburn-bg-05))))
+   `(line-number-current-line ((t (:inherit line-number :foreground ,doneburn-fg))))
 ;;;;; man
    '(Man-overstrike ((t (:inherit font-lock-keyword-face))))
    '(Man-underline  ((t (:inherit (font-lock-string-face underline)))))
