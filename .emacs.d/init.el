@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-11-14 15:45:16 dan.harms>
+;; Modified Time-stamp: <2018-11-15 10:21:56 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2750,7 +2750,7 @@ See `https://github.com/company-mode/company-mode/issues/205'."
                      (cons 'company-restclient
                            (copy-tree
                             (car company-backends)))))
-              (setq-local company-smart-backend company-restclient)))
+              (setq-local company-smart-backend 'company-restclient)))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-insert ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
