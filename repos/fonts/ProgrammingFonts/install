@@ -1,0 +1,5 @@
+cp src/Ricty-Diminished/ricty-diminished-3.2.4/*.ttf ../../../.fonts/ricty
+cp src/Oxygen-Mono/oxygen-mono-1.000/*.ttf ../../../.fonts/oxygen
+cp src/Edlo/edlo-0.01/*.ttf ../../../.fonts/edlo
+cp src/Crystal/crystal-5.1/CRYSRG__.TTF ../../../.fonts/crystal/crystal.ttf
+cp src/Droid-Sans-Mono/droid-sans-mono-1.00/*.ttf ../../../.fonts/droid
