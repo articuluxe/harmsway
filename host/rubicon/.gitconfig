@@ -17,7 +17,7 @@
 [difftool.diffterm]
 	cmd = /usr/bin/env LOCAL=$LOCAL REMOTE=$REMOTE $EDITOR --load ~/config/difftool.el
 [difftool.diffgui]
-    cmd = $VISUAL --eval \"(progn\
+	cmd = $VISUAL --eval \"(progn\
 	(color-theme-zenburn)\
 	(setq ediff-quit-hook 'kill-emacs \
 	ediff-split-window-function 'split-window-horizontally\
@@ -34,11 +34,9 @@
 [mergetool.mergegui]
 	cmd = /usr/bin/env LOCAL=$LOCAL REMOTE=$REMOTE BASE=$BASE MERGED=$MERGED $VISUAL --load ~/config/mergetool.el
 [branch "master"]
-	mergeoptions = --squash
+	# mergeoptions = --squash
 [credential]
-	helper = store
-	# helper = cache --timeout=86400
+	helper = osxkeychain
 [alias]
-    listbr = "!sh() { git for-each-ref --sort=-committerdate --count=10 refs/heads/ --format='%(HEAD)%(refname:short)|%(objectname:short)|%(contents:subject)|%(authorname)|(%(committerdate:relative))' | column -ts'|' ; }; sh"
-    # column on linux chokes on colors
-#    listbr = "!sh() { git for-each-ref --sort=-committerdate --count=10 refs/heads/ --format='%(HEAD)%(color:yellow)%(refname:short)%(color:reset)|%(color:red)%(objectname:short)%(color:reset)|%(contents:subject)|%(color:blue)%(authorname)%(color:reset)|(%(color:green)%(committerdate:relative)%(color:reset))' | column -ts'|' ; }; sh"
+#    listbr = "!sh() { git for-each-ref --sort=-committerdate --count=10 refs/heads/ --format='%(HEAD)%(refname:short)|%(objectname:short)|%(contents:subject)|%(authorname)|(%(committerdate:relative))' | column -ts'|' ; }; sh"
+    listbr = "!sh() { git for-each-ref --sort=-committerdate --count=10 refs/heads/ --format='%(HEAD)%(color:yellow)%(refname:short)%(color:reset)|%(color:red)%(objectname:short)%(color:reset)|%(contents:subject)|%(color:blue)%(authorname)%(color:reset)|(%(color:green)%(committerdate:relative)%(color:reset))' | column -ts'|' ; }; sh"

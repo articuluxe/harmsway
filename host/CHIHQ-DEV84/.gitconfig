@@ -1,9 +1,9 @@
 [user]
 	name = Dan Harms
-	email = danielrharms@gmail.com
+	email = dan.harms@xrtrading.com
 [core]
-	editor = $EDITOR
-	excludesfile = ~/.gitignore
+    editor = $EDITOR
+    excludesfile = ~/.gitignore
 [color]
 	ui = true
 [push]
@@ -17,27 +17,19 @@
 [difftool.diffterm]
 	cmd = /usr/bin/env LOCAL=$LOCAL REMOTE=$REMOTE $EDITOR --load ~/config/difftool.el
 [difftool.diffgui]
-    cmd = $VISUAL --eval \"(progn\
-	(color-theme-zenburn)\
-	(setq ediff-quit-hook 'kill-emacs \
-	ediff-split-window-function 'split-window-horizontally\
-	ediff-keep-variants t)\
-	(add-to-list 'initial-frame-alist '(fullscreen . fullwidth))\
-	(ediff-files \\\"$LOCAL\\\" \\\"$REMOTE\\\"))\"
+	cmd = /usr/bin/env LOCAL=$LOCAL REMOTE=$REMOTE $EMACSX --load ~/config/difftool.el
 [merge]
-	tool = mergegui
-	conflictstyle = diff3
+    tool = mergegui
+    conflictstyle = diff3
 [mergetool]
 	prompt = false
 [mergetool.mergeterm]
 	cmd = /usr/bin/env LOCAL=$LOCAL REMOTE=$REMOTE BASE=$BASE MERGED=$MERGED $EDITOR --load ~/config/mergetool.el
 [mergetool.mergegui]
-	cmd = /usr/bin/env LOCAL=$LOCAL REMOTE=$REMOTE BASE=$BASE MERGED=$MERGED $VISUAL --load ~/config/mergetool.el
-[branch "master"]
-	mergeoptions = --squash
+	cmd = /usr/bin/env LOCAL=$LOCAL REMOTE=$REMOTE BASE=$BASE MERGED=$MERGED $EMACSX --load ~/config/mergetool.el
 [credential]
-	helper = store
-	# helper = cache --timeout=86400
+    helper = wincred
+    # helper = cache --timeout=86400
 [alias]
     listbr = "!sh() { git for-each-ref --sort=-committerdate --count=10 refs/heads/ --format='%(HEAD)%(refname:short)|%(objectname:short)|%(contents:subject)|%(authorname)|(%(committerdate:relative))' | column -ts'|' ; }; sh"
     # column on linux chokes on colors
