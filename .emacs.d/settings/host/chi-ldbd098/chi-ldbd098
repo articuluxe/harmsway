@@ -3,7 +3,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dan.harms)
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Monday, March 14, 2016
-;; Modified Time-stamp: <2018-11-05 09:23:52 dan.harms>
+;; Modified Time-stamp: <2018-11-16 12:58:03 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: config
 
@@ -39,6 +39,8 @@
                            "InputMono 11"
                            "mononoki 12"
                            "Monofur 14"
+                           "Edlo 10"
+                           "RictyDiminished 11"
                            "Anonymous Pro 14"
                            "Envy Code R 13"
                            "M+ 2m regular 13"
@@ -46,7 +48,10 @@
                            "Luculent 11"
                            "Iosevka 11"
                            "M+ 1m 13"
+                           "DroidSansMono 10"
                            "FiraCode 12"
+                           "Crystal 12"
+                           "OxygenMono 12"
                            "Inconsolata 13"
                            "SpaceMono 11"
                            "RobotoMono 11"
