@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-11-15 10:21:56 dan.harms>
+;; Modified Time-stamp: <2018-11-19 08:39:13 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1438,6 +1438,7 @@ Only one letter is shown, the first that applies."
 (use-package ivy
   :demand t
   :init
+  (setq resize-mini-windows t)
   (setq ivy-display-style 'fancy)
   (setq ivy-extra-directories '("../" "./"))
   (setq ivy-count-format "(%d/%d) ")
