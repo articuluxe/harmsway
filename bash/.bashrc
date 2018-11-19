@@ -19,8 +19,8 @@ function git-list-branches {
 }
 
 set -o emacs
-# auto-expand !-key-chords on <space>
-bind Space:magic-space
+shopt -s cdspell
+shopt -s dirspell
 # verify commands before running abbrev.
 shopt -s histverify
 # append to history from multiple sessions
