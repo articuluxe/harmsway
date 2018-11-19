@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2018-11-14 09:24:52 dan.harms>
+;; Modified Time-stamp: <2018-11-19 05:58:13 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -52,6 +52,7 @@
 (setq w32-get-true-file-attributes nil)
 (setq w32-pipe-read-delay 0)
 (setq tramp-default-method "plink")
+(setq inhibit-compacting-font-caches t)
 
 ;; On shells (and remote compiles) this prevents $TERM from being forced to emacs
 (setq system-uses-terminfo t)
