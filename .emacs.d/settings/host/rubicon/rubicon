@@ -3,7 +3,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2018-11-16 22:09:39 dharms>
+;; Modified Time-stamp: <2018-11-19 08:49:27 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -31,6 +31,8 @@
                             "CamingoCode 12"
                             "Fantasque Sans Mono 13"
                             "Luculent 12"
+                            "Monego 12"
+                            "Meslo LG S 12"
                             "Edlo 14"
                             "mononoki 12"
                             "Iosevka 12"
