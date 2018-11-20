@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-11-19 08:39:13 dharms>
+;; Modified Time-stamp: <2018-11-20 12:54:15 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1033,7 +1033,7 @@ line."
   (magit-define-popup-switch 'magit-log-popup
     ?m "Omit merge commits" "--no-merges")
   (setq magit-log-arguments (append
-                             (list "--color")
+                             (list "--color" "--follow")
                              magit-log-arguments))
 
   (defun harmsway-repolist-column-dirty (_id)
