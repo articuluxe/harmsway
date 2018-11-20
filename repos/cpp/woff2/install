@@ -1,0 +1,3 @@
+cd src
+make clean all
+cp woff2_* ../../../../scripts

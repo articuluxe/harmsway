@@ -1,3 +1,0 @@
-cd src
-make
-cp ttf2eot ../../../scripts
