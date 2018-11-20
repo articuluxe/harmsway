@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-11-20 12:54:15 dan.harms>
+;; Modified Time-stamp: <2018-11-20 15:15:13 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -187,7 +187,7 @@ up to 10 times."
 (setq font-lock-maximum-decoration t)
 (defun my/syntax-color-hex-values()
   "Syntax color text of the form #FF1100 in a buffer.
-Cf. `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
+Cf.  `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (interactive)
   (font-lock-add-keywords
    nil
@@ -2877,7 +2877,7 @@ See `https://github.com/company-mode/company-mode/issues/205'."
 
 
 (add-hook 'before-save-hook 'my/before-save-hook)
-(defun my/before-save-hook() "Presave hook"
+(defun my/before-save-hook() "Presave hook."
        (when (memq major-mode
                    '(
                      awk-mode
