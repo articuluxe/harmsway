@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-11-20 15:15:13 dan.harms>
+;; Modified Time-stamp: <2018-11-21 14:06:17 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3410,6 +3410,9 @@ Requires Flake8 2.0 or newer. See URL
     (use-package flycheck-pyflakes)
     )
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; rust-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package rust-mode :mode "\\.rs$")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; sphinx-doc ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package sphinx-doc
