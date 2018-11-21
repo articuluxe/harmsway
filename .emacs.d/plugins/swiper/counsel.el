@@ -45,20 +45,9 @@
 (require 'dired)
 
 ;;* Utility
-(defvar counsel-more-chars-alist
-  '((counsel-grep . 2)
-    (t . 3))
-  "Map commands to their minimum required input length.
-That is the number of characters prompted for before fetching
-candidates.  The special key t is used as a fallback.")
+(define-obsolete-variable-alias 'counsel-more-chars-alist 'ivy-more-chars-alist "0.10.0")
 
-(defun counsel-more-chars ()
-  "Return two fake candidates prompting for at least N input.
-N is obtained from `counsel-more-chars-alist'."
-  (let ((diff (- (ivy-alist-setting counsel-more-chars-alist)
-                 (length ivy-text))))
-    (when (> diff 0)
-      (list "" (format "%d chars more" diff)))))
+(define-obsolete-function-alias 'counsel-more-chars 'ivy-more-chars "0.10.0")
 
 (defun counsel-unquote-regex-parens (str)
   "Unquote regexp parentheses in STR."
@@ -1249,7 +1238,7 @@ Typical value: '(recenter)."
   "Grep in the current git repository for STRING."
   (or
    (and (> counsel--git-grep-count counsel--git-grep-count-threshold)
-        (counsel-more-chars))
+        (ivy-more-chars))
    (let* ((default-directory (ivy-state-directory ivy-last))
           (cmd (format counsel-git-grep-cmd
                        (setq ivy--old-re (ivy--regex str t)))))
@@ -1392,7 +1381,7 @@ INITIAL-INPUT can be given as the initial minibuffer input."
 (defun counsel-git-grep-proj-function (str)
   "Grep for STR in the current git repository."
   (or
-   (counsel-more-chars)
+   (ivy-more-chars)
    (let ((regex (setq ivy--old-re
                       (ivy--regex str t))))
      (counsel--async-command (format counsel-git-grep-cmd regex))
@@ -1484,7 +1473,7 @@ When REVERT is non-nil, regenerate the current *ivy-occur* buffer."
          (positive-pattern (replace-regexp-in-string
                             ;; git-grep can't handle .*?
                             "\\.\\*\\?" ".*"
-                            (if (stringp regex) regex (caar regex))))
+                            (ivy-re-to-str regex)))
          (negative-patterns
           (if (stringp regex) ""
             (mapconcat (lambda (x)
@@ -1563,7 +1552,7 @@ done") "\n" t)))
 (defun counsel-git-log-function (str)
   "Search for STR in git log."
   (or
-   (counsel-more-chars)
+   (ivy-more-chars)
    (progn
      ;; `counsel--yank-pop-format-function' uses this
      (setq ivy--old-re (funcall ivy--regex-function str))
@@ -1596,7 +1585,7 @@ TREE is the selected candidate."
 
 (defun counsel-git-worktree-parse-root (tree)
   "Return worktree from candidate TREE."
-  (substring tree 0 (string-match " " tree)))
+  (substring tree 0 (string-match-p " " tree)))
 
 (defun counsel-git-close-worktree-files-action (root-dir)
   "Close all buffers from the worktree located at ROOT-DIR."
@@ -2229,7 +2218,7 @@ string - the full shell command to run."
 (defun counsel-locate-function (input)
   "Call the \"locate\" shell command with INPUT."
   (or
-   (counsel-more-chars)
+   (ivy-more-chars)
    (progn
      (counsel--async-command
       (funcall counsel-locate-cmd input))
@@ -2504,17 +2493,17 @@ NEEDLE is the search string."
   (let ((command-args (counsel--split-command-args string)))
     (let ((switches (car command-args))
           (search-term (cdr command-args)))
-      (if (< (length search-term) 3)
-          (let ((ivy-text search-term))
-            (counsel-more-chars))
-        (let ((default-directory (ivy-state-directory ivy-last))
-              (regex (counsel-unquote-regex-parens
-                      (setq ivy--old-re
-                            (ivy--regex search-term)))))
-          (counsel--async-command (counsel--format-ag-command
-                                   switches
-                                   (shell-quote-argument regex)))
-          nil)))))
+      (or
+       (let ((ivy-text search-term))
+         (ivy-more-chars))
+       (let ((default-directory (ivy-state-directory ivy-last))
+             (regex (counsel-unquote-regex-parens
+                     (setq ivy--old-re
+                           (ivy--regex search-term)))))
+         (counsel--async-command (counsel--format-ag-command
+                                  switches
+                                  (shell-quote-argument regex)))
+         nil)))))
 
 ;;;###autoload
 (defun counsel-ag (&optional initial-input initial-directory extra-ag-args ag-prompt)
@@ -2577,10 +2566,7 @@ AG-PROMPT, if non-nil, is passed as `ivy-read' prompt argument."
     (insert (format "-*- mode:grep; default-directory: %S -*-\n\n\n"
                     default-directory))
     (insert (format "%d candidates:\n" (length cands)))
-    (ivy--occur-insert-lines
-     (mapcar
-      (lambda (cand) (concat "./" cand))
-      cands))))
+    (ivy--occur-insert-lines cands)))
 
 (defun counsel-ag-occur ()
   "Generate a custom occur buffer for `counsel-ag'."
@@ -2670,7 +2656,7 @@ substituted by the search regexp and file, respectively.  Neither
 (defun counsel-grep-function (string)
   "Grep in the current directory for STRING."
   (or
-   (counsel-more-chars)
+   (ivy-more-chars)
    (let ((regex (counsel-unquote-regex-parens
                  (setq ivy--old-re
                        (ivy--regex string)))))
@@ -2794,7 +2780,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
 (defun counsel-recoll-function (str)
   "Run recoll for STR."
   (or
-   (counsel-more-chars)
+   (ivy-more-chars)
    (progn
      (counsel--async-command
       (format "recoll -t -b %s"
@@ -4573,11 +4559,11 @@ selected color."
       (format "%s - %s - %s" artist album title))))
 
 ;;;###autoload
-(defun counsel-rhythmbox ()
+(defun counsel-rhythmbox (&optional arg)
   "Choose a song from the Rhythmbox library to play or enqueue."
-  (interactive)
+  (interactive "P")
   (require 'dbus)
-  (unless counsel-rhythmbox-songs
+  (when (or arg (null counsel-rhythmbox-songs))
     (let* ((service "org.gnome.Rhythmbox3")
            (path "/org/gnome/UPnP/MediaServer2/Library/all")
            (interface "org.gnome.UPnP.MediaContainer2")
@@ -4807,7 +4793,7 @@ Any desktop entries that fail to parse are recorded in
 ;;** `counsel-wmctrl'
 (defun counsel-wmctrl-action (x)
   "Select the desktop window that corresponds to X."
-  (shell-command
+  (shell-command-to-string
    (format "wmctrl -i -a \"%s\"" (cdr x))))
 
 (defvar counsel-wmctrl-ignore '("XdndCollectionWindowImp"
@@ -4829,7 +4815,7 @@ Any desktop entries that fail to parse are recorded in
                         (unless (member title counsel-wmctrl-ignore)
                           (cons title id)))))
                   cands1)))
-    (ivy-read "window: " cands2
+    (ivy-read "window: " (delq nil cands2)
               :action #'counsel-wmctrl-action
               :caller 'counsel-wmctrl)))
 

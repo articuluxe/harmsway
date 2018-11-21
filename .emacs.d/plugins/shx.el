@@ -5,7 +5,7 @@
 ;; Keywords: processes, tools
 ;; URL: https://github.com/riscy/shx-for-emacs
 ;; Package-Requires: ((emacs "24.4"))
-;; Version: 0.0.18
+;; Version: 1.0.0
 
 ;; This file is NOT part of GNU Emacs.
 
@@ -24,7 +24,7 @@
 
 ;; shx ("shell-extras") extends comint-mode: it parses markup in the output
 ;; stream, enabling plots and graphics to be embedded, and adds command-line
-;; functions which plug into Emacs (e.g., use :e <filename> to edit a file).
+;; functions which plug into Emacs (e.g. use :e <filename> to edit a file).
 ;;
 ;; See <https://github.com/riscy/shx-for-emacs/blob/master/README.org> for more.
 ;;
@@ -110,7 +110,7 @@
   :type '(alist :key-type regexp :value-type function))
 
 (defcustom shx-kept-commands
-  '(("Enable wordwrap at 90 columns" . ":eval (shx-wordwrap 90)"))
+  '(("List all kept commands" . ":kept *"))
   "Shell commands of the form (description . command)."
   :link '(function-link shx-cmd-kept)
   :link '(function-link shx-cmd-keep)
@@ -120,6 +120,13 @@
   "The largest input allowed in characters.
 A good value on macOS is 1024, the size of the typeahead buffer;
 or, set the terminal to canonical mode with 'stty -icanon'."
+  :type 'integer)
+
+(defcustom shx-max-output most-positive-fixnum
+  "The length at which an output line is long enough to be broken.
+Setting this to 1024 can lead to enormous performance gains, but
+sacrifices the soundness of markup and trigger matching."
+  :link '(function-link shx--break-long-line-maybe)
   :type 'integer)
 
 (defvar shx-cmd-prefix "shx-cmd-"
@@ -141,25 +148,25 @@ or, set the terminal to canonical mode with 'stty -icanon'."
     keymap)
   "Keymap for shx.")
 
-(defvar-local shx-buffer nil
-  "Local reference to the shx buffer.")
-
-(defvar-local shx-prompt-overlay nil
-  "Overlay used to highlight the prompt.")
-
-(defvar-local shx-urls nil
-  "Local record of URLs seen.")
-
 (defvar shx-click-file (let ((keymap (make-sparse-keymap)))
                          (define-key keymap [mouse-1] 'ffap-at-mouse)
                          keymap)
   "Keymap for capturing mouse clicks on files/URLs.")
+
+(defvar-local shx-buffer nil "Local reference to the shx buffer.")
+
+(defvar-local shx-prompt-overlay nil "Overlay used to flash the prompt.")
+
+(defvar-local shx-urls nil "Local record of URLs seen.")
 
 (defvar-local shx--old-prompt-read-only nil
   "Whether the prompt was read-only before shx-mode was enabled.")
 
 (defvar-local shx--old-undo-disabled nil
   "Whether undo was disabled before shx-mode was enabled.")
+
+(defvar-local shx--process-command nil
+  "The command that was likely used to start the process.")
 
 
 ;;; input
@@ -193,6 +200,7 @@ This can help in running `ibuffer-do-eval' on multiple buffers."
 In normal circumstances this input is additionally filtered by
 `shx-filter-input' via `comint-mode'."
   (interactive)
+  (shx--verify-process-exists)
   (if (>= (length (shx--current-input)) shx-max-input)
       (message "Input line exceeds `shx-max-input'.")
     (shx--timestamp-prompt)
@@ -216,6 +224,12 @@ This function overrides `comint-input-sender'."
       ;; send a blank to fetch a new prompt
       (comint-send-string process "\n"))))
 
+(defun shx--verify-process-exists ()
+  "If no process is associated with the buffer, try to restart the process."
+  (unless (get-buffer-process (current-buffer))
+    (shx-insert 'font-lock-doc-face "Restarting " shx--process-command)
+    (comint-exec (current-buffer) (buffer-name) shx--process-command nil nil)))
+
 (defun shx--timestamp-prompt ()
   "Add a mouseover timestamp to the last prompt."
   (ignore-errors
@@ -227,32 +241,10 @@ This function overrides `comint-input-sender'."
 
 ;;; output
 
-(defun shx-wordwrap (&optional cols)
-  "Enable wordwrap at COLS columns.
-Emacs is especially bad at handling long lines; sometimes
-enabling this can provide a significant performance boost."
-  (interactive)
-  (setq-local fill-column (or cols 80))
-  (setq-local adaptive-fill-regexp nil)            ; necessary!
-  (setq-local adaptive-fill-first-line-regexp nil) ; faster
-  (add-hook 'comint-output-filter-functions #'shx-fill-paragraph nil 'local))
-
-(defun shx-fill-paragraph (_str)
-  "Fill (justify) text from the host.
-Apply this justification from `comint-last-output-start' to the
-buffer's `process-mark'."
-  (save-excursion
-    (let ((start-of-prompt (point-marker)))
-      (goto-char comint-last-output-start)
-      (while (< (point) start-of-prompt)
-        (let ((region-start (point-at-bol)))
-          (forward-line)
-          (fill-region region-start (point) nil t))))))
-
 (defun shx-parse-output-hook (&optional _output)
   "Hook to parse the output stream."
-  ;; FIXME: these can get expensive on buffers w/ more than 9000 lines
   (shx--parse-output-for-markup)
+  (shx--break-long-line-maybe)
   (when shx-triggers (shx--parse-output-for-triggers)))
 
 (defun shx--parse-output-for-markup ()
@@ -277,7 +269,7 @@ buffer's `process-mark'."
                         (delete-char 1)))))))))
 
 (defun shx--parse-output-for-triggers ()
-  "Look for triggers since `comint-last-output' (e.g., URLs)."
+  "Look for triggers since `comint-last-output' (e.g. URLs)."
   (dolist (trigger shx-triggers nil)
     (save-excursion
       (shx--goto-last-input-or-output)
@@ -300,6 +292,13 @@ buffer's `process-mark'."
   (when (< (point-at-eol) (point-max))
     (re-search-forward pattern nil t)))
 
+(defun shx--break-long-line-maybe ()
+  "Break the current line if it's longer than `shx-max-output'."
+  (when (> (current-column) shx-max-output)
+    (or (re-search-backward "\\s-" (- (point) shx-max-output) t) (backward-char))
+    (insert-char ?\n)
+    (goto-char (point-max))))
+
 
 ;;; util
 
@@ -320,8 +319,9 @@ buffer's `process-mark'."
 
 (defun shx-point-on-input-p ()
   "Check if point is on the input region."
-  (let ((process (get-buffer-process (current-buffer))))
-    (and process (>= (point-marker) (process-mark process)))))
+  (or (eq (point) (point-max))
+      (let ((process (get-buffer-process (current-buffer))))
+        (and process (>= (point-marker) (process-mark process))))))
 
 (defun shx-tokenize (str)
   "Turn STR into a list of tokens, or nil if parsing fails.
@@ -346,8 +346,7 @@ With non-nil WITHOUT-PREFIX, strip `shx-cmd-prefix' from each."
 (defun shx--escape-filename (filename)
   "Escape FILENAME to mitigate injection attacks."
   (replace-regexp-in-string ; modeled on Ruby's "Shellwords"
-   "\\([^A-Za-z0-9_\-.,:\/@\n]\\)" "\\\\\\1"
-   (expand-file-name filename)))
+   "\\([^A-Za-z0-9_\-.,:\/@\n]\\)" "\\\\\\1" (expand-file-name filename)))
 
 (defun shx--hint (text)
   "Show a hint containing TEXT."
@@ -405,7 +404,7 @@ With non-nil WITHOUT-PREFIX, strip `shx-cmd-prefix' from each."
   `(lambda (bound)
      (let ((inhibit-field-text-motion t))
        (when (eq (point-max) (point-at-eol))
-         (ignore-errors (re-search-forward ,regexp bound))))))
+         (re-search-forward ,regexp bound t)))))
 
 (defun shx--quote-regexp (delimiter &optional escape max-length)
   "Regexp matching strings delimited by DELIMITER.
@@ -415,7 +414,7 @@ MAX-LENGTH is the length of the longest match (default 300)."
   (setq escape (or escape "\\\\"))
   (concat delimiter
           "\\("
-          (when (not (string= "" escape))
+          (unless (string= "" escape)
             (concat escape escape "\\|"      ; two escapes OR
                     escape delimiter "\\|")) ; escaped delimiter
           "[^" delimiter "]"
@@ -442,8 +441,8 @@ not nil, then insert the command into the current buffer."
   (dolist (command shx-kept-commands nil)
     (when (string-match (or regexp ".") (concat (car command) (cdr command)))
       (when insert-kept-command
-        (shx-insert 'font-lock-doc-face (car command) 'default ": "
-                    'comint-highlight-input command (cdr command) "\n"))
+        (shx-insert 'font-lock-constant-face (car command) ": "
+                    'font-lock-string-face command (cdr command) "\n"))
       (ring-insert comint-input-ring (cdr command)))))
 
 
@@ -457,10 +456,10 @@ are sent straight through to the process to handle paging."
   (interactive)
   (let ((on-input (shx-point-on-input-p)))
     (if (and on-input
-             (string-match ".*:$" (shx--current-prompt))
-             (string-match "^\\s-*$" (shx--current-input)))
+             (string-match "^\\s-*$" (shx--current-input))
+             (string-match ":$" (shx--current-prompt)))
         (progn
-          (message "shx: sending '%s'" (this-command-keys))
+          (shx--hint (format "sending '%s'" (this-command-keys)))
           (process-send-string nil (this-command-keys)))
       (unless on-input (goto-char (point-max)))
       (if shx-use-magic-insert
@@ -531,8 +530,8 @@ LINE-STYLE (for example 'w lp'); insert the plot in the buffer."
 (defun shx--insert-timer (timer-number timer)
   "Insert a line of the form '<TIMER-NUMBER> <TIMER>'."
   (shx-insert
-   'font-lock-constant-face (format "%d" timer-number)
-   'font-lock-string-face (format ". %s" (shx--format-timer-string timer))
+   'font-lock-constant-face (format "%d. " timer-number)
+   'font-lock-string-face (format "%s" (shx--format-timer-string timer))
    (when (aref timer 4) (format "\s(pulse: %d)" (aref timer 4)))))
 
 (defun shx--format-timer-string (timer)
@@ -774,7 +773,7 @@ That list can be added to using `shx-cmd-keep'."
   (if (string-empty-p regexp)
       (shx-insert 'error "kept <regexp>\n")
     (shx--restore-kept-commands regexp t)
-    (shx--hint "M-x customize-variable shx-kept-commands <RET> edits this list")))
+    (shx--hint "M-x customize-variable shx-kept-commands edits this list")))
 (defalias 'shx-cmd-k #'shx-cmd-kept)
 
 (defun shx-cmd-man (topic)
@@ -905,7 +904,7 @@ Or just a single column:
   `((,(concat "[^[:alnum:]" shx-leader "]" shx-leader "\\(\\<"
               (regexp-opt (shx--all-commands 'without-prefix))
               "\\>\\).*\\'")                          1 'font-lock-keyword-face))
-  "Some additional syntax highlighting for the shx minor mode."
+  "Syntax highlighting for the shx minor mode (e.g. of builtin commands)."
   :type '(alist :key-type (choice regexp function)))
 
 ;;;###autoload
@@ -929,8 +928,7 @@ See the function `shx-mode' for details."
   (interactive)
   (let ((name (or name (generate-new-buffer-name "*shx*")))
         (default-directory (or directory default-directory)))
-    ;; switch-to-buffer first -- shell uses pop-to-buffer
-    ;; which is unpredictable! :(
+    ;; `switch-to-buffer' first (`shell' uses the unpredictable `pop-to-buffer')
     (switch-to-buffer name)
     (shell name)
     ;; shx might already be active due to shx-global-mode:
@@ -939,6 +937,9 @@ See the function `shx-mode' for details."
 (defun shx--activate ()
   "Add font-locks, tweak defaults, add hooks/advice."
   (setq-local shx-buffer (current-buffer))
+  (setq-local shx--process-command
+              (ignore-errors (car (process-command
+                                   (get-buffer-process shx-buffer)))))
   (when (derived-mode-p 'shell-mode)
     (font-lock-add-keywords nil shx-shell-mode-font-locks))
   (font-lock-add-keywords nil shx-font-locks)
