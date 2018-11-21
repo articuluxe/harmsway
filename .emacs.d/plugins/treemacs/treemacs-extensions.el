@@ -22,9 +22,8 @@
 
 (require 'dash)
 (require 's)
-(require 'treemacs-branch-creation)
+(require 'treemacs-rendering)
 (require 'treemacs-impl)
-(require 'treemacs-interface)
 (eval-when-compile
   (require 'cl-lib))
 
@@ -56,7 +55,8 @@ See also `treemacs-remove-${name}-extension'.")
            (pcase position
              ('top    (add-to-list ',top-extension-point cell))
              ('bottom (add-to-list ',bottom-extension-point cell))
-             (other   (error "Invalid extension position value `%s'" other))))))))
+             (other   (error "Invalid extension position value `%s'" other)))
+           t)))))
 
 (defmacro treemacs--build-extension-removal (name)
   "Internal building block.
@@ -67,7 +67,7 @@ Creates a `treemacs-remove-${NAME}-extension' function and the necessary helpers
     `(progn
        (cl-defun ,remove-function-name (extension posistion)
          ,(s-lex-format
-          "Remove an EXTENSION of type `${name}' at a given POSITION.
+           "Remove an EXTENSION of type `${name}' at a given POSITION.
    See also `treemacs-define-${name}-extension'.")
          (pcase posistion
            ('top
@@ -77,7 +77,8 @@ Creates a `treemacs-remove-${NAME}-extension' function and the necessary helpers
             (setq ,bottom-extension-point
                   (--reject (equal extension (car it)) ,bottom-extension-point)))
            (other
-            (error "Invalid extension position value `%s'" other)))))))
+            (error "Invalid extension position value `%s'" other)))
+         t))))
 
 (defmacro treemacs--build-extension-application (name)
   "Internal building block.
@@ -89,7 +90,7 @@ Creates treemacs--apply-${NAME}-top/bottom-extensions functions."
     `(progn
        (defsubst ,apply-top-name (node data)
          ,(s-lex-format
-          "Apply the top extensions for NODE of type `${name}'
+           "Apply the top extensions for NODE of type `${name}'
 Also pass additional DATA to predicate function.")
          (dolist (cell ,top-extension-point)
            (let ((extension (car cell))
@@ -99,7 +100,7 @@ Also pass additional DATA to predicate function.")
 
        (defsubst ,apply-bottom-name (node data)
          ,(s-lex-format
-          "Apply the bottom extensions for NODE of type `${name}'
+           "Apply the bottom extensions for NODE of type `${name}'
 Also pass additional DATA to predicate function.")
          (dolist (cell ,bottom-extension-point)
            (let ((extension (car cell))
@@ -115,7 +116,30 @@ Also pass additional DATA to predicate function.")
 (treemacs--build-extension-application "directory")
 (treemacs--build-extension-addition "root")
 (treemacs--build-extension-removal "root")
-(treemacs--build-extension-application "root")
+
+;; slighty non-standard application for root extensions
+(defun treemacs--apply-root-top-extensions (workspace)
+  "Apply the top extensions for NODE of type `root' for the current WORKSPACE."
+  (let* ((len (1- (length treemacs--root-bottom-extensions)))
+         (more-than-one? (> len 0))
+         (separator (if treemacs-space-between-root-nodes "\n\n" "\n")))
+    (--each treemacs--root-top-extensions
+      (let ((extension (car it))
+            (predicate (cdr it)))
+        (when (or (null predicate) (funcall predicate workspace))
+          (funcall extension)
+          (unless (and (= it-index len) more-than-one?)
+            (insert separator)))))))
+
+(defun treemacs--apply-root-bottom-extensions (workspace)
+  "Apply the bottom extensions for NODE of type `root' for the current WORKSPACE."
+  (-let [separator (if treemacs-space-between-root-nodes "\n\n" "\n")]
+    (dolist (cell  treemacs--root-bottom-extensions)
+      (insert separator)
+      (let ((extension (car cell))
+            (predicate (cdr cell)))
+        (when (or (null predicate) (funcall predicate workspace))
+          (funcall extension))))))
 
 (defsubst treemacs-as-icon (string &rest more-properties)
   "Turn STRING into an icon for treemacs.
@@ -130,8 +154,8 @@ expanded."
   (treemacs-unless-let (btn (treemacs-goto-node path))
       (error "Node at path %s cannot be found" path)
     (when (treemacs-is-node-expanded? btn)
-      (funcall (alist-get (button-get btn :state) treemacs-TAB-actions-config))
-      (funcall (alist-get (button-get btn :state) treemacs-TAB-actions-config)))))
+      (funcall (alist-get (treemacs-button-get btn :state) treemacs-TAB-actions-config))
+      (funcall (alist-get (treemacs-button-get btn :state) treemacs-TAB-actions-config)))))
 
 (cl-defmacro treemacs-render-node
     (&key icon
@@ -175,7 +199,7 @@ node for quick retrieval later."
                      :state ,state
                      :parent btn
                      :depth depth
-                     :path (append (button-get btn :path) (list ,key-form))
+                     :path (append (treemacs-button-get btn :path) (list ,key-form))
                      :key ,key-form
                      ,@more-properties)))
 
@@ -293,16 +317,16 @@ additional keys."
              (when (null btn)
                (cl-return-from body
                  (treemacs-pulse-on-failure "There is nothing to do here.")))
-             (when (not (eq ',closed-state-name (button-get btn :state)))
+             (when (not (eq ',closed-state-name (treemacs-button-get btn :state)))
                (cl-return-from body
                  (treemacs-pulse-on-failure "This function cannot expand a node of type '%s'."
-                   (propertize (format "%s" (button-get btn :state)) 'face 'font-lock-type-face))))
+                   (propertize (format "%s" (treemacs-button-get btn :state)) 'face 'font-lock-type-face))))
              (,do-expand-name btn))))
 
        (defun ,do-expand-name (btn)
          ,(format "Execute expansion of treemacs nodes of type `%s'." name)
          (let ((items ,query-function)
-               (depth (1+ (button-get btn :depth))))
+               (depth (1+ (treemacs-button-get btn :depth))))
            (treemacs--button-open
             :button btn
             :new-state ',open-state-name
@@ -317,9 +341,9 @@ additional keys."
             :post-open-action
             (progn
               (treemacs-on-expand
-               (button-get btn :path) btn
-               (-some-> btn (button-get :parent) (button-get :path)))
-              (treemacs--reopen-at (button-get btn :path))))))
+               (treemacs-button-get btn :path) btn
+               (-some-> btn (treemacs-button-get :parent) (treemacs-button-get :path)))
+              (treemacs--reopen-at (treemacs-button-get btn :path))))))
 
        (defun ,collapse-name (&optional _)
          ,(format "Collapse treemacs nodes of type `%s'." name)
@@ -329,10 +353,10 @@ additional keys."
              (when (null btn)
                (cl-return-from body
                  (treemacs-pulse-on-failure "There is nothing to do here.")))
-             (when (not (eq ',open-state-name (button-get btn :state)))
+             (when (not (eq ',open-state-name (treemacs-button-get btn :state)))
                (cl-return-from body
                  (treemacs-pulse-on-failure "This function cannot collapse a node of type '%s'."
-                   (propertize (format "%s" (button-get btn :state)) 'face 'font-lock-type-face))))
+                   (propertize (format "%s" (treemacs-button-get btn :state)) 'face 'font-lock-type-face))))
              (,do-collapse-name btn))))
 
        (defun ,do-collapse-name (btn)
@@ -342,7 +366,7 @@ additional keys."
           :new-state ',closed-state-name
           :new-icon ,closed-icon-name
           :post-close-action
-          (treemacs-on-collapse (button-get btn :path))))
+          (treemacs-on-collapse (treemacs-button-get btn :path))))
 
        (treemacs-define-TAB-action ',open-state-name #',collapse-name)
        (treemacs-define-TAB-action ',closed-state-name #',expand-name)
@@ -351,7 +375,7 @@ additional keys."
           (cl-assert (and root-label root-face root-key-form)
                      :show-args "Root information must be provided when `:root-marker' is non-nil")
           `(cl-defun ,(intern (format "treemacs-%s-extension" (upcase (symbol-name name)))) (parent)
-             (-let [depth (1+ (button-get parent :depth))]
+             (-let [depth (1+ (treemacs-button-get parent :depth))]
                (insert
                 "\n"
                 (s-repeat (* depth treemacs-indentation) treemacs-indentation-string)
@@ -362,7 +386,9 @@ additional keys."
                             'face ,root-face
                             :custom t
                             :key ,root-key-form
-                            :path (list (or (button-get parent :project) (button-get parent :key)) ,root-key-form)
+                            :path (list (or (treemacs-button-get parent :project)
+                                            (treemacs-button-get parent :key))
+                                        ,root-key-form)
                             :depth depth
                             :no-git t
                             :parent parent
@@ -371,23 +397,24 @@ additional keys."
        ,(when project-marker
           (cl-assert (and root-label root-face root-key-form)
                      :show-args "Root information must be provided when `:project-marker' is non-nil")
-          `(defun ,(intern (format "treemacs-%s-extension" (upcase (symbol-name name)))) (&rest _)
-             (-let [pr (make-treemacs-project
-                        :name ,root-label
-                        :path ,root-key-form)]
-               (insert ,closed-icon-name)
-               (treemacs--set-project-position pr (point-marker))
-               (insert (propertize ,root-label
-                                   'button '(t)
-                                   'category 'default-button
-                                   'face ,root-face
-                                   :custom t
-                                   :key ,root-key-form
-                                   :path (list pr)
-                                   :depth 0
-                                   :project pr
-                                   :state ,closed-state-name)
-                       (if treemacs-space-between-root-nodes "\n\n" "\n"))))))))
+          (-let [ext-name (intern (format "treemacs-%s-extension" (upcase (symbol-name name))))]
+            (put ext-name :defined-in (or load-file-name (buffer-name)))
+            `(defun ,ext-name (&rest _)
+               (-let [pr (make-treemacs-project
+                          :name ,root-label
+                          :path ,root-key-form)]
+                 (insert ,closed-icon-name)
+                 (treemacs--set-project-position pr (point-marker))
+                 (insert (propertize ,root-label
+                                     'button '(t)
+                                     'category 'default-button
+                                     'face ,root-face
+                                     :custom t
+                                     :key ,root-key-form
+                                     :path (list pr)
+                                     :depth 0
+                                     :project pr
+                                     :state ,closed-state-name)))))))))
 
 (provide 'treemacs-extensions)
 
