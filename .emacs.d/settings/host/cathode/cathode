@@ -3,7 +3,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2018-11-19 08:49:15 dharms>
+;; Modified Time-stamp: <2018-11-24 08:25:35 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -50,8 +50,10 @@
                             "Crystal 12"
                             "Anonymous Pro 14"
                             "Fira Code 12"
+                            "Akkurat-Mono 12"
                             "Cousine 12"
                             "InputMono 12"
+                            "ProggyCleanTT 16"
                             "Monofur 15"
                             ))
   (choose-font-init))
