@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-11-26 13:05:37 dan.harms>
+;; Modified Time-stamp: <2018-11-26 13:31:49 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2093,10 +2093,21 @@ Only one letter is shown, the first that applies."
          ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; diff-hl ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defun harmsway-diff-hl-revert-highlight-hunk (end)
+  "Highlight only the diff to be reverted, from point until END."
+  (redisplay)
+  (font-lock-unfontify-buffer)
+  (font-lock-fontify-region (point) end))
+(defun harmsway-diff-hl-revert-hide-other-hunks (_end)
+  "Show only the current hunk to be reverted."
+  (diff-restrict-view))
+
 (use-package  diff-hl-dired
   :init (add-hook 'dired-mode-hook 'diff-hl-dired-mode-unless-remote))
 (use-package diff-hl
   :config
+  (setq diff-hl-highlight-revert-hunk-function
+        #'harmsway-diff-hl-revert-highlight-hunk)
   (use-package diff-hl-flydiff :config (diff-hl-flydiff-mode 1))
   (global-diff-hl-mode 1)
   (unless (display-graphic-p)
