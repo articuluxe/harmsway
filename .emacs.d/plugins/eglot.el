@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2018 Free Software Foundation, Inc.
 
-;; Version: 1.1
+;; Version: 1.2
 ;; Author: João Távora <joaotavora@gmail.com>
 ;; Maintainer: João Távora <joaotavora@gmail.com>
 ;; URL: https://github.com/joaotavora/eglot
@@ -96,6 +96,8 @@ language-server/bin/php-language-server.php"))
                                 (kotlin-mode . ("kotlin-language-server"))
                                 (go-mode . ("go-langserver" "-mode=stdio"
                                             "-gocodecompletion"))
+                                ((R-mode ess-r-mode) . ("R" "--slave" "-e"
+                                                        "languageserver::run()"))
                                 (java-mode . eglot--eclipse-jdt-contact))
   "How the command `eglot' guesses the server to start.
 An association list of (MAJOR-MODE . CONTACT) pairs.  MAJOR-MODE
@@ -194,6 +196,94 @@ let the buffer grow forever."
     (9 . "Module") (10 . "Property") (11 . "Unit") (12 . "Value")
     (13 . "Enum") (14 . "Keyword") (15 . "Snippet") (16 . "Color")
     (17 . "File") (18 . "Reference")))
+
+
+
+;;; Message verification helpers
+;;;
+(defvar eglot--lsp-interface-alist `()
+  "Alist (INTERFACE-NAME . INTERFACE) of known external LSP interfaces.
+
+INTERFACE-NAME is a symbol designated by the spec as \"export
+interface\".  INTERFACE is a list (REQUIRED OPTIONAL) where
+REQUIRED and OPTIONAL are lists of keyword symbols designating
+field names that must be, or may be, respectively, present in a
+message adhering to that interface.
+
+Here's what an element of this alist might look like:
+
+    (CreateFile . ((:kind :uri) (:options)))")
+
+(defvar eglot-strict-mode '()
+  "How strictly Eglot vetoes LSP messages from server.
+
+Value is a list of symbols:
+
+If a list containing the symbol `disallow-non-standard-keys', an
+error is raised if any non-standard fields are sent by the
+server.
+
+If the list containing the symbol `enforce-required-keys', an error
+is raised if any required fields are missing from the message.
+
+If the list is empty, any non-standard fields sent by the server
+and missing required fields are accepted (which may or may not
+cause problems in Eglot's functioning later on).")
+
+(defun eglot--call-with-interface (interface object fn)
+  "Call FN, but first check that OBJECT conforms to INTERFACE.
+
+INTERFACE is a key to `eglot--lsp-interface-alist' and OBJECT is
+  a plist representing an LSP message."
+  (let* ((entry (assoc interface eglot--lsp-interface-alist))
+         (required (car (cdr entry)))
+         (optional (cadr (cdr entry))))
+    (when (memq 'enforce-required-keys eglot-strict-mode)
+      (cl-loop for req in required
+               when (eq 'eglot--not-present
+                        (cl-getf object req 'eglot--not-present))
+               collect req into missing
+               finally (when missing
+                         (eglot--error
+                          "A `%s' must have %s" interface missing))))
+    (when (and entry (memq 'disallow-non-standard-keys eglot-strict-mode))
+      (cl-loop
+       with allowed = (append required optional)
+       for (key _val) on object by #'cddr
+       unless (memq key allowed) collect key into disallowed
+       finally (when disallowed
+                 (eglot--error
+                  "A `%s' mustn't have %s" interface disallowed))))
+    (funcall fn)))
+
+(cl-defmacro eglot--dbind (interface lambda-list object &body body)
+  "Destructure OBJECT of INTERFACE as CL-LAMBDA-LIST.
+Honour `eglot-strict-mode'."
+  (declare (indent 3))
+  (let ((fn-once `(lambda () ,@body))
+        (lax-lambda-list (if (memq '&allow-other-keys lambda-list)
+                             lambda-list
+                           (append lambda-list '(&allow-other-keys))))
+        (strict-lambda-list (delete '&allow-other-keys lambda-list)))
+    (if interface
+        `(cl-destructuring-bind ,lax-lambda-list ,object
+           (eglot--call-with-interface ',interface ,object ,fn-once))
+      (let ((object-once (make-symbol "object-once")))
+        `(let ((,object-once ,object))
+           (if (memq 'disallow-non-standard-keys eglot-strict-mode)
+               (cl-destructuring-bind ,strict-lambda-list ,object-once
+                 (funcall ,fn-once))
+             (cl-destructuring-bind ,lax-lambda-list ,object-once
+               (funcall ,fn-once))))))))
+
+(cl-defmacro eglot--lambda (interface cl-lambda-list &body body)
+  "Function of args CL-LAMBDA-LIST for processing INTERFACE objects.
+Honour `eglot-strict-mode'."
+  (declare (indent 2))
+  (let ((e (cl-gensym "jsonrpc-lambda-elem")))
+    `(lambda (,e)
+       (eglot--dbind ,interface ,cl-lambda-list ,e
+         ,@body))))
 
 
 ;;; API (WORK-IN-PROGRESS!)
@@ -808,7 +898,7 @@ Doubles as an indicator of snippet support."
                (if (stringp markup) (list (string-trim markup)
                                           (intern "gfm-mode"))
                  (list (plist-get markup :value)
-                       (intern (concat (plist-get markup :language) "-mode" ))))))
+                       major-mode))))
     (with-temp-buffer
       (ignore-errors (funcall mode))
       (insert string) (font-lock-ensure) (buffer-string))))
@@ -1543,6 +1633,7 @@ is not active."
                               (string-trim-left label))
                              (t
                               (or insertText (string-trim-left label))))))
+                  (setq all (append all `(:bounds ,bounds)))
                   (add-text-properties 0 1 all completion)
                   (put-text-property 0 1 'eglot--lsp-completion all completion)
                   completion))
@@ -1582,11 +1673,13 @@ is not active."
                                             (get-text-property
                                              0 'eglot--lsp-completion obj)
                                             :cancel-on-input t)
-                           :documentation)))))
-           (when documentation
+                           :documentation))))
+                (formatted (and documentation
+                                (eglot--format-markup documentation))))
+           (when formatted
              (with-current-buffer (get-buffer-create " *eglot doc*")
                (erase-buffer)
-               (insert (eglot--format-markup documentation))
+               (insert formatted)
                (current-buffer)))))
        :company-prefix-length
        (cl-some #'looking-back
@@ -1604,21 +1697,35 @@ is not active."
                                         insertText
                                         textEdit
                                         additionalTextEdits
+                                        bounds
                                         &allow-other-keys)
                (text-properties-at 0 comp)
-             (let ((fn (and (eql insertTextFormat 2)
-                            (eglot--snippet-expansion-fn))))
-               (when (or fn textEdit)
-                 ;; Undo the completion
-                 (delete-region (- (point) (length comp)) (point)))
+             (let ((snippet-fn (and (eql insertTextFormat 2)
+                                    (eglot--snippet-expansion-fn))))
                (cond (textEdit
+                      ;; Undo the just the completed bit.  If before
+                      ;; completion the buffer was "foo.b" and now is
+                      ;; "foo.bar", `comp' will be "bar".  We want to
+                      ;; delete only "ar" (`comp' minus the symbol
+                      ;; whose bounds we've calculated before)
+                      ;; (github#160).
+                      (delete-region (+ (- (point) (length comp))
+                                        (if bounds (- (cdr bounds) (car bounds)) 0))
+                                     (point))
                       (cl-destructuring-bind (&key range newText) textEdit
                         (pcase-let ((`(,beg . ,end) (eglot--range-region range)))
                           (delete-region beg end)
                           (goto-char beg)
-                          (funcall (or fn #'insert) newText)))
-                      (eglot--apply-text-edits additionalTextEdits))
-                     (fn (funcall fn insertText))))
+                          (funcall (or snippet-fn #'insert) newText)))
+                      (when (cl-plusp (length additionalTextEdits))
+                        (eglot--apply-text-edits additionalTextEdits)))
+                     (snippet-fn
+                      ;; A snippet should be inserted, but using plain
+                      ;; `insertText'.  This requires us to delete the
+                      ;; whole completion, since `insertText' is the full
+                      ;; completion's text.
+                      (delete-region (- (point) (length comp)) (point))
+                      (funcall snippet-fn insertText))))
              (eglot--signal-textDocument/didChange)
              (eglot-eldoc-function))))))))
 
