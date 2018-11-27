@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-11-27 16:06:45 dan.harms>
+;; Modified Time-stamp: <2018-11-27 16:21:23 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1501,6 +1501,7 @@ Only one letter is shown, the first that applies."
          ("M-s M-0" . counsel-wmctrl)
          ("M-s M-1" . counsel-shell-history)
          ("M-s M-n" . counsel-minibuffer-history)
+         ("M-s a" . counsel-linux-app)
          ("C-c 0q`" . counsel-tmm)
          ("C-c 0cf" . counsel-faces)
          ("C-c 0ce" . counsel-colors-emacs)
