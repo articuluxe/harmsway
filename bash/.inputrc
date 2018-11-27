@@ -1,8 +1,10 @@
 $include /etc/inputrc
 "\e[5~":history-search-backward
 "\e[6~":history-search-forward
-# auto-expand !-key-chords on <space>
-Space:magic-space
+$if Bash
+    # auto-expand !-key-chords on <space> (breaks gdb)
+    Space:magic-space
+$endif
 
 set editing-mode emacs
 set keymap emacs
