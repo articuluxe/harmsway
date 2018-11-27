@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-11-26 13:31:49 dan.harms>
+;; Modified Time-stamp: <2018-11-27 16:06:45 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -911,7 +911,7 @@ line."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; phi-grep ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package phi-grep
-  :bind ("M-s M-s g" . phi-grep-in-file))
+  :bind ("C-c 0gg" . phi-grep-in-file))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; figlet ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package figlet
@@ -1357,9 +1357,9 @@ Only one letter is shown, the first that applies."
 (use-package
   plur
   :if (not (version< emacs-version "24.4"))
-  :bind (("M-s M-s q" . plur-isearch-forward)
-         ("M-s q" . plur-replace)
-         ("M-s M-q" . plur-query-replace)
+  :bind (("C-c 0gs" . plur-isearch-forward)
+         ("C-c 0gr" . plur-replace)
+         ("C-c 0g%" . plur-query-replace)
          :map isearch-mode-map
          ("C-p" . plur-isearch-forward)
          ))
@@ -1409,7 +1409,7 @@ Only one letter is shown, the first that applies."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; deadgrep ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package deadgrep
-  :bind ("C-c 0g" . deadgrep)
+  :bind ("C-c 0gd" . deadgrep)
   :init
   (setq deadgrep-project-root-function #'proviso-current-project-root))
 
@@ -1420,7 +1420,7 @@ Only one letter is shown, the first that applies."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; swiper ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package swiper
   :if (not (version< emacs-version "24.1"))
-  :bind (("M-s s" . swiper)
+  :bind (("M-s M-s" . swiper)
          ("M-s M-a" . swiper-all)
          :map isearch-mode-map
          ("C-o" . swiper-from-isearch))
