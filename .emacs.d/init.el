@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-11-27 16:21:23 dan.harms>
+;; Modified Time-stamp: <2018-11-28 10:04:35 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -946,7 +946,8 @@ line."
 (setq vc-follow-symlinks nil)
 (setq vc-handled-backends '(Git SVN))
 (when (< emacs-major-version 26)
-  (bind-key "C-x vh" 'vc-region-history))
+  (bind-key "C-x vh" #'vc-region-history))
+(global-set-key "\C-xve" #'vc-ediff)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; makefile-executor ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package makefile-executor
