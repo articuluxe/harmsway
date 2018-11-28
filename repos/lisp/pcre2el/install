@@ -1,0 +1,1 @@
+cp src/pcre2el.el ../../../.emacs.d/plugins
