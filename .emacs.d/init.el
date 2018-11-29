@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-11-28 11:59:24 dharms>
+;; Modified Time-stamp: <2018-11-28 15:43:47 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -350,10 +350,24 @@ not an error if any files do not exist."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; tags ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (when (> emacs-major-version 24)
-  (setq xref-prompt-for-identifier '(not xref-find-definitions))
+  (defun harmsway-xref-find-definition ()
+    "Jump straight to a definition."
+    (interactive)
+    (let ((xref-prompt-for-identifier
+           '(not xref-find-definitions xref-find-definitions-other-window
+                 xref-find-definitions-other-frame))
+          (this-command 'xref-find-definitions))
+      (call-interactively 'xref-find-definitions)))
+
+  (setq xref-prompt-for-identifier
+        '(xref-find-definitions xref-find-definitions-other-window
+                                xref-find-definitions-other-frame))
   (global-set-key "\C-x." #'xref-find-definitions)
   (global-set-key "\M-*" #'xref-find-apropos)
-  (global-set-key [?\C-\M-.] #'xref-find-apropos) ;TODO
+  (global-set-key [?\C-\M-.] #'harmsway-xref-find-definition)
+  (global-set-key "\C-x\M-." #'harmsway-xref-find-definition)
+  ;; (global-set-key "\C-x4\M-." #'harmsway-xref-find-definition)
+  ;; (global-set-key "\C-x5\M-." #'harmsway-xref-find-definition)
   )
 
 ;; select
