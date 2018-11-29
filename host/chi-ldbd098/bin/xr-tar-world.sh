@@ -5,7 +5,7 @@
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Friday, May 29, 2015
 # Version: 1.0
-# Modified Time-stamp: <2018-11-16 10:37:32 dan.harms>
+# Modified Time-stamp: <2018-11-29 09:48:52 dan.harms>
 # Modified by: Dan Harms
 # Keywords: configuration
 
@@ -46,8 +46,8 @@ $tar u"$verbose"f "$dest" --transform=s%user/$user\\/%% user/$user
 $tar u"$verbose"f "$dest" --transform=s%os/$os\\/%% os/$os
 # $tar u"$verbose"f $dest --transform=s%host/$host\\/%% host/$host
 # xr installs will load a renamed host file from site/xr
-$tar u"$verbose"f "$dest" --transform=s/host\\/// host
-$tar u"$verbose"f "$dest" --transform=s%site/$site\\/%% --exclude=.git site/$site
+$tar u"$verbose"f "$dest" --transform=s%site/$site/host\\/%% site/$site/host
+$tar u"$verbose"f "$dest" --transform=s%site/$site\\/%% --exclude=.git --exclude=site/$site/host site/$site
 #$tar --delete .ssh -f $dest
 
 echo ...done generating "$dest"
