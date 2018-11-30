@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-11-28 15:43:47 dharms>
+;; Modified Time-stamp: <2018-11-29 08:59:52 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -332,6 +332,7 @@ not an error if any files do not exist."
          ("R" . proviso-deploy-run-all-deploys)
          ("." . proviso-deploy-run-last)
          ("x" . proviso-deploy-delete-deploy)
+         ("X" . proviso-deploy-delete-all-deploy)
          ("c" . proviso-deploy-check-file)
          ("d" . proviso-deploy-diff-file)
          ("e" . proviso-deploy-ediff-file)
