@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-12-03 08:18:02 dharms>
+;; Modified Time-stamp: <2018-12-04 17:04:49 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2373,7 +2373,7 @@ Only one letter is shown, the first that applies."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; flyspell-correct ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package flyspell-correct-ivy
   :after flyspell
-  :bind ("C-c \\\\" . flyspell-correct-wrapper))
+  :bind (:map flyspell-mode-map ("C-c \\\\" . flyspell-correct-wrapper)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; company-ispell ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun harmsway-company-ispell-at-point ()
