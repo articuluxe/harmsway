@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-11-29 08:59:52 dharms>
+;; Modified Time-stamp: <2018-12-03 08:18:02 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2668,6 +2668,14 @@ See `https://github.com/company-mode/company-mode/issues/205'."
    ("C-c s?" . yas-describe-tables)
    )
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; emmet-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package emmet-mode
+  :commands (emmet-mode)
+  :init
+  (setq emmet-move-cursor-between-quotes t)
+  (add-hook 'sgml-mode-hook #'emmet-mode)
+  (add-hook 'css-mode-hook #'emmet-mode))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; quick-peek ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package quick-peek)
