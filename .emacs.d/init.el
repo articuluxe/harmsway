@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-12-04 17:04:49 dan.harms>
+;; Modified Time-stamp: <2018-12-04 17:05:48 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -943,16 +943,16 @@ line."
   (setq figlet-default-font "big")
   )
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ascii ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package ascii :bind ("\e\ea" . ascii-display))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ascii-table ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package ascii-table :commands ascii-table)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ascii ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package ascii :bind ("C-c 0aa" . ascii-display))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 0xc ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package 0xc
-  :bind (("M-s M-s hc" . 0xc-convert)
-         ("M-s M-s h." . 0xc-convert-point)))
+  :bind (("C-c 0ac" . 0xc-convert)
+         ("C-c 0a." . 0xc-convert-point)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; elnode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package elnode)
@@ -2894,7 +2894,7 @@ See `https://github.com/company-mode/company-mode/issues/205'."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; awk-it ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package awk-it
-  :bind (("C-c 0aa" . awk-it)
+  :bind (("C-c 0aw" . awk-it)
          ("C-c 0ap" . awk-it-with-separator)
          ("C-c 0as" . awk-it-single)
          ("C-c 0ag" . awk-it-single-with-separator)
