@@ -22,6 +22,13 @@
 ;;   (require 'flyspell-correct-ivy)
 ;;   (define-key flyspell-mode-map (kbd "C-;") 'flyspell-correct-wrapper)
 ;;
+;; Or via use-package:
+;;
+;;   (use-package flyspell-correct-ivy
+;;     :bind ("C-M-;" . flyspell-correct-wrapper)
+;;     :init
+;;     (setq flyspell-correct-interface #'flyspell-correct-ivy))
+;;
 ;;; Code:
 ;;
 
@@ -32,6 +39,7 @@
 
 ;; Interface implementation
 
+;;;###autoload
 (defun flyspell-correct-ivy (candidates word)
   "Run `ivy-read' for the given CANDIDATES.
 

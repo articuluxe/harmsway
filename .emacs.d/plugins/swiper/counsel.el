@@ -1322,11 +1322,48 @@ files in a project.")
        (setq cmd counsel-git-grep-cmd-default)))
     (cons proj cmd)))
 
+(defun counsel--call (&rest command)
+  "Synchronously call COMMAND and return its output as a string.
+COMMAND comprises the program name followed by its arguments, as
+in `make-process'.  Signal `file-error' and emit a warning if
+COMMAND fails.  Obey file handlers based on `default-directory'."
+  (let ((stderr (make-temp-file "counsel-call-stderr-"))
+        status)
+    (unwind-protect
+         (with-temp-buffer
+           (setq status (apply #'process-file (car command) nil
+                               (list t stderr) nil (cdr command)))
+           (if (eq status 0)
+               ;; Return all output except trailing newline.
+               (buffer-substring (point-min)
+                                 (- (point)
+                                    (if (eq (bobp) (bolp))
+                                        0
+                                      1)))
+             ;; Convert process status into error list.
+             (setq status (list 'file-error
+                                (mapconcat #'identity `(,@command "failed") " ")
+                                status))
+             ;; Print stderr contents, if any, to *Warnings* buffer.
+             (let ((msg (condition-case err
+                            (unless (zerop (cadr (insert-file-contents
+                                                  stderr nil nil nil t)))
+                              (buffer-string))
+                          (error (error-message-string err)))))
+               (lwarn 'ivy :warning "%s" (apply #'concat
+                                                (error-message-string status)
+                                                (and msg (list "\n" msg)))))
+             ;; Signal `file-error' with process status.
+             (signal (car status) (cdr status))))
+      (delete-file stderr))))
+
 (defun counsel--git-grep-count-func-default ()
-  "Default defun to calculate `counsel--git-grep-count'."
-  (if (eq system-type 'windows-nt)
-      0
-    (read (shell-command-to-string "du -s \"$(git rev-parse --git-dir)\" 2>/dev/null"))))
+  "Default function to calculate `counsel--git-grep-count'."
+  (or (unless (eq system-type 'windows-nt)
+        (ignore-errors
+          (let ((git-dir (counsel--call "git" "rev-parse" "--git-dir")))
+            (read (counsel--call "du" "-s" git-dir)))))
+      0))
 
 (defvar counsel--git-grep-count-func #'counsel--git-grep-count-func-default
   "Defun to calculate `counsel--git-grep-count' for `counsel-git-grep'.")

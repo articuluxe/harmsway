@@ -236,6 +236,8 @@ to it will instead show a blank."
       (define-key map (kbd "C-p c c")   #'treemacs-collapse-project)
       (define-key map (kbd "C-p c o")   #'treemacs-collapse-other-projects)
       (define-key map (kbd "C-p c a")   #'treemacs-collapse-all-projects)
+      (define-key map (kbd "<M-up>")    #'treemacs-move-project-up)
+      (define-key map (kbd "<M-down>")  #'treemacs-move-project-down)
       (define-key map (kbd "<backtab>") #'treemacs-collapse-all-projects)
       (define-key map (kbd "C-j")       #'treemacs-next-project)
       (define-key map (kbd "C-k")       #'treemacs-previous-project)
@@ -280,7 +282,8 @@ Used as a post command hook."
   (setq buffer-read-only    t
         truncate-lines      t
         indent-tabs-mode    nil
-        desktop-save-buffer nil)
+        desktop-save-buffer nil
+        window-size-fixed   (when treemacs--width-is-locked 'width))
 
   (unless treemacs-show-cursor
     (setq cursor-type nil))

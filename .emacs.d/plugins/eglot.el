@@ -82,7 +82,9 @@
                                 (python-mode . ("pyls"))
                                 ((js-mode
                                   js2-mode
-                                  rjsx-mode) . ("javascript-typescript-stdio"))
+                                  rjsx-mode
+                                  typescript-mode)
+                                 . ("javascript-typescript-stdio"))
                                 (sh-mode . ("bash-language-server" "start"))
                                 ((c++-mode c-mode) . ("ccls"))
                                 ((caml-mode tuareg-mode reason-mode)
@@ -201,11 +203,17 @@ let the buffer grow forever."
 
 ;;; Message verification helpers
 ;;;
-(defvar eglot--lsp-interface-alist `()
+(defvar eglot--lsp-interface-alist
+  `((CodeAction (:title) (:kind :diagnostics :edit :command))
+    (Command (:title :command) (:arguments))
+    (FileSystemWatcher (:globPattern) (:kind))
+    (Registration (:id :method) (:registerOptions))
+    (TextDocumentEdit (:textDocument :edits) ())
+    (WorkspaceEdit () (:changes :documentChanges)))
   "Alist (INTERFACE-NAME . INTERFACE) of known external LSP interfaces.
 
-INTERFACE-NAME is a symbol designated by the spec as \"export
-interface\".  INTERFACE is a list (REQUIRED OPTIONAL) where
+INTERFACE-NAME is a symbol designated by the spec as
+\"interface\".  INTERFACE is a list (REQUIRED OPTIONAL) where
 REQUIRED and OPTIONAL are lists of keyword symbols designating
 field names that must be, or may be, respectively, present in a
 message adhering to that interface.
@@ -230,60 +238,100 @@ If the list is empty, any non-standard fields sent by the server
 and missing required fields are accepted (which may or may not
 cause problems in Eglot's functioning later on).")
 
+(defun eglot--plist-keys (plist)
+  (cl-loop for (k _v) on plist by #'cddr collect k))
+
 (defun eglot--call-with-interface (interface object fn)
-  "Call FN, but first check that OBJECT conforms to INTERFACE.
+  "Call FN, checking that OBJECT conforms to INTERFACE."
+  (when-let ((missing (and (memq 'enforce-required-keys eglot-strict-mode)
+                           (cl-set-difference (car (cdr interface))
+                                              (eglot--plist-keys object)))))
+    (eglot--error "A `%s' must have %s" (car interface) missing))
+  (when-let ((excess (and (memq 'disallow-non-standard-keys eglot-strict-mode)
+                          (cl-set-difference
+                           (eglot--plist-keys object)
+                           (append (car (cdr interface)) (cadr (cdr interface)))))))
+    (eglot--error "A `%s' mustn't have %s" (car interface) excess))
+  (funcall fn))
 
-INTERFACE is a key to `eglot--lsp-interface-alist' and OBJECT is
-  a plist representing an LSP message."
-  (let* ((entry (assoc interface eglot--lsp-interface-alist))
-         (required (car (cdr entry)))
-         (optional (cadr (cdr entry))))
-    (when (memq 'enforce-required-keys eglot-strict-mode)
-      (cl-loop for req in required
-               when (eq 'eglot--not-present
-                        (cl-getf object req 'eglot--not-present))
-               collect req into missing
-               finally (when missing
-                         (eglot--error
-                          "A `%s' must have %s" interface missing))))
-    (when (and entry (memq 'disallow-non-standard-keys eglot-strict-mode))
-      (cl-loop
-       with allowed = (append required optional)
-       for (key _val) on object by #'cddr
-       unless (memq key allowed) collect key into disallowed
-       finally (when disallowed
-                 (eglot--error
-                  "A `%s' mustn't have %s" interface disallowed))))
-    (funcall fn)))
-
-(cl-defmacro eglot--dbind (interface lambda-list object &body body)
-  "Destructure OBJECT of INTERFACE as CL-LAMBDA-LIST.
-Honour `eglot-strict-mode'."
-  (declare (indent 3))
-  (let ((fn-once `(lambda () ,@body))
-        (lax-lambda-list (if (memq '&allow-other-keys lambda-list)
-                             lambda-list
-                           (append lambda-list '(&allow-other-keys))))
-        (strict-lambda-list (delete '&allow-other-keys lambda-list)))
-    (if interface
-        `(cl-destructuring-bind ,lax-lambda-list ,object
-           (eglot--call-with-interface ',interface ,object ,fn-once))
-      (let ((object-once (make-symbol "object-once")))
-        `(let ((,object-once ,object))
-           (if (memq 'disallow-non-standard-keys eglot-strict-mode)
-               (cl-destructuring-bind ,strict-lambda-list ,object-once
-                 (funcall ,fn-once))
-             (cl-destructuring-bind ,lax-lambda-list ,object-once
-               (funcall ,fn-once))))))))
-
-(cl-defmacro eglot--lambda (interface cl-lambda-list &body body)
-  "Function of args CL-LAMBDA-LIST for processing INTERFACE objects.
+(cl-defmacro eglot--dbind (vars object &body body)
+  "Destructure OBJECT of binding VARS in BODY.
+VARS is ([(INTERFACE)] SYMS...)
 Honour `eglot-strict-mode'."
   (declare (indent 2))
+  (let ((interface-name (if (consp (car vars))
+                            (car (pop vars))))
+        (object-once (make-symbol "object-once"))
+        (fn-once (make-symbol "fn-once")))
+    (cond (interface-name
+           ;; jt@2018-11-29: maybe we check some things at compile
+           ;; time and use `byte-compiler-warn' here
+           `(let ((,object-once ,object))
+              (cl-destructuring-bind (&key ,@vars &allow-other-keys) ,object-once
+                (eglot--call-with-interface (assoc ',interface-name
+                                                   eglot--lsp-interface-alist)
+                                            ,object-once (lambda ()
+                                                           ,@body)))))
+          (t
+           `(let ((,object-once ,object)
+                  (,fn-once (lambda (,@vars) ,@body)))
+              (if (memq 'disallow-non-standard-keys eglot-strict-mode)
+                  (cl-destructuring-bind (&key ,@vars) ,object-once
+                    (funcall ,fn-once ,@vars))
+                (cl-destructuring-bind (&key ,@vars &allow-other-keys) ,object-once
+                  (funcall ,fn-once ,@vars))))))))
+
+
+(cl-defmacro eglot--lambda (cl-lambda-list &body body)
+  "Function of args CL-LAMBDA-LIST for processing INTERFACE objects.
+Honour `eglot-strict-mode'."
+  (declare (indent 1))
   (let ((e (cl-gensym "jsonrpc-lambda-elem")))
-    `(lambda (,e)
-       (eglot--dbind ,interface ,cl-lambda-list ,e
-         ,@body))))
+    `(lambda (,e) (eglot--dbind ,cl-lambda-list ,e ,@body))))
+
+(cl-defmacro eglot--dcase (obj &rest clauses)
+  "Like `pcase', but for the LSP object OBJ.
+CLAUSES is a list (DESTRUCTURE FORMS...) where DESTRUCTURE is
+treated as in `eglot-dbind'."
+  (declare (indent 1))
+  (let ((obj-once (make-symbol "obj-once")))
+    `(let ((,obj-once ,obj))
+       (cond
+        ,@(cl-loop
+           for (vars . body) in clauses
+           for vars-as-keywords = (mapcar (lambda (var)
+                                            (intern (format ":%s" var)))
+                                          vars)
+           for interface-name = (if (consp (car vars))
+                                    (car (pop vars)))
+           for condition =
+           (if interface-name
+               ;; In this mode, we assume `eglot-strict-mode' is fully
+               ;; on, otherwise we can't disambiguate between certain
+               ;; types.
+               `(let* ((interface
+                        (or (assoc ',interface-name eglot--lsp-interface-alist)
+                            (eglot--error "Unknown interface %s")))
+                       (object-keys (eglot--plist-keys ,obj-once))
+                       (required-keys (car (cdr interface))))
+                  (and (null (cl-set-difference required-keys object-keys))
+                       (null (cl-set-difference
+                              (cl-set-difference object-keys required-keys)
+                              (cadr (cdr interface))))))
+             ;; In this interface-less mode we don't check
+             ;; `eglot-strict-mode' at all: just check that the object
+             ;; has all the keys the user wants to destructure.
+             `(null (cl-set-difference
+                     ',vars-as-keywords
+                     (eglot--plist-keys ,obj-once))))
+           collect `(,condition
+                     (cl-destructuring-bind (&key ,@vars &allow-other-keys)
+                         ,obj-once
+                       ,@body)))
+        (t
+         (eglot--error "%s didn't match any of %s"
+                       ,obj-once
+                       ',(mapcar #'car clauses)))))))
 
 
 ;;; API (WORK-IN-PROGRESS!)
@@ -330,7 +378,8 @@ Honour `eglot-strict-mode'."
                                     `(:snippetSupport
                                       ,(if (eglot--snippet-expansion-fn)
                                            t
-                                         :json-false)))
+                                         :json-false))
+                                    :contextSupport t)
              :hover              `(:dynamicRegistration :json-false)
              :signatureHelp      `(:dynamicRegistration :json-false)
              :references         `(:dynamicRegistration :json-false)
@@ -811,14 +860,16 @@ CONNECT-ARGS are passed as additional arguments to
   (let ((warning-minimum-level :error))
     (display-warning 'eglot (apply #'format format args) :warning)))
 
-(defvar eglot-current-column-function #'current-column
+(defun eglot-current-column () (- (point) (point-at-bol)))
+
+(defvar eglot-current-column-function #'eglot-current-column
   "Function to calculate the current column.
 
 This is the inverse operation of
 `eglot-move-to-column-function' (which see).  It is a function of
 no arguments returning a column number.  For buffers managed by
 fully LSP-compliant servers, this should be set to
-`eglot-lsp-abiding-column', and `current-column' (the default)
+`eglot-lsp-abiding-column', and `eglot-current-column' (the default)
 for all others.")
 
 (defun eglot-lsp-abiding-column ()
@@ -833,8 +884,7 @@ for all others.")
   (eglot--widening
    (list :line (1- (line-number-at-pos pos t)) ; F!@&#$CKING OFF-BY-ONE
          :character (progn (when pos (goto-char pos))
-                           (let ((tab-width 1))
-                             (funcall eglot-current-column-function))))))
+                           (funcall eglot-current-column-function)))))
 
 (defvar eglot-move-to-column-function #'move-to-column
   "Function to move to a column reported by the LSP server.
@@ -1004,6 +1054,8 @@ and just return it.  PROMPT shouldn't end with a question mark."
     (add-hook 'xref-backend-functions 'eglot-xref-backend nil t)
     (add-hook 'completion-at-point-functions #'eglot-completion-at-point nil t)
     (add-hook 'change-major-mode-hook 'eglot--managed-mode-onoff nil t)
+    (add-hook 'post-self-insert-hook 'eglot--post-self-insert-hook nil t)
+    (add-hook 'pre-command-hook 'eglot--pre-command-hook nil t)
     (add-function :before-until (local 'eldoc-documentation-function)
                   #'eglot-eldoc-function)
     (add-function :around (local 'imenu-create-index-function) #'eglot-imenu)
@@ -1020,6 +1072,8 @@ and just return it.  PROMPT shouldn't end with a question mark."
     (remove-hook 'xref-backend-functions 'eglot-xref-backend t)
     (remove-hook 'completion-at-point-functions #'eglot-completion-at-point t)
     (remove-hook 'change-major-mode-hook #'eglot--managed-mode-onoff t)
+    (remove-hook 'post-self-insert-hook 'eglot--post-self-insert-hook t)
+    (remove-hook 'pre-command-hook 'eglot--pre-command-hook t)
     (remove-function (local 'eldoc-documentation-function)
                      #'eglot-eldoc-function)
     (remove-function (local 'imenu-create-index-function) #'eglot-imenu)
@@ -1265,7 +1319,13 @@ COMMAND is a symbol naming the command."
                                        message `((eglot-lsp-diag . ,diag-spec)))))
          into diags
          finally (cond ((and flymake-mode eglot--current-flymake-report-fn)
-                        (funcall eglot--current-flymake-report-fn diags)
+                        (funcall eglot--current-flymake-report-fn diags
+                                 ;; If the buffer hasn't changed since last
+                                 ;; call to the report function, flymake won't
+                                 ;; delete old diagnostics.  Using :region
+                                 ;; keyword forces flymake to delete
+                                 ;; them (github#159).
+                                 :region (cons (point-min) (point-max)))
                         (setq eglot--unreported-diagnostics nil))
                        (t
                         (setq eglot--unreported-diagnostics (cons t diags))))))
@@ -1276,7 +1336,7 @@ COMMAND is a symbol naming the command."
 THINGS are either registrations or unregisterations."
   (cl-loop
    for thing in (cl-coerce things 'list)
-   collect (cl-destructuring-bind (&key id method registerOptions) thing
+   collect (eglot--dbind ((Registration) id method registerOptions) thing
              (apply (intern (format "eglot--%s-%s" how method))
                     server :id id registerOptions))
    into results
@@ -1300,7 +1360,10 @@ THINGS are either registrations or unregisterations."
 
 (defun eglot--TextDocumentIdentifier ()
   "Compute TextDocumentIdentifier object for current buffer."
-  `(:uri ,(eglot--path-to-uri buffer-file-name)))
+  `(:uri ,(eglot--path-to-uri (or buffer-file-name
+                                  (ignore-errors
+                                    (buffer-file-name
+                                     (buffer-base-buffer)))))))
 
 (defvar-local eglot--versioned-identifier 0)
 
@@ -1326,6 +1389,29 @@ THINGS are either registrations or unregisterations."
   (list :textDocument (eglot--TextDocumentIdentifier)
         :position (eglot--pos-to-lsp-position)))
 
+(defvar-local eglot--last-inserted-char nil
+  "If non-nil, value of the last inserted character in buffer.")
+
+(defun eglot--post-self-insert-hook ()
+  "Set `eglot--last-inserted-char.'"
+  (setq eglot--last-inserted-char last-input-event))
+
+(defun eglot--pre-command-hook ()
+  "Reset `eglot--last-inserted-char.'"
+  (setq eglot--last-inserted-char nil))
+
+(defun eglot--CompletionParams ()
+  (append
+   (eglot--TextDocumentPositionParams)
+   `(:context
+     ,(if-let (trigger (and (characterp eglot--last-inserted-char)
+                            (cl-find eglot--last-inserted-char
+                                     (eglot--server-capable :completionProvider
+                                                            :triggerCharacters)
+                                     :key (lambda (str) (aref str 0))
+                                     :test #'char-equal)))
+          `(:triggerKind 2 :triggerCharacter ,trigger) `(:triggerKind 1)))))
+
 (defvar-local eglot--recent-changes nil
   "Recent buffer changes as collected by `eglot--before-change'.")
 
@@ -1336,11 +1422,11 @@ THINGS are either registrations or unregisterations."
 (defvar-local eglot--change-idle-timer nil "Idle timer for didChange signals.")
 
 (defun eglot--before-change (start end)
-  "Hook onto `before-change-functions'.
-Records START and END, crucially convert them into
-LSP (line/char) positions before that information is
-lost (because the after-change thingy doesn't know if newlines
-were deleted/added)"
+  "Hook onto `before-change-functions'."
+  ;; Records START and END, crucially convert them into LSP
+  ;; (line/char) positions before that information is lost (because
+  ;; the after-change thingy doesn't know if newlines were
+  ;; deleted/added)
   (when (listp eglot--recent-changes)
     (push `(,(eglot--pos-to-lsp-position start)
             ,(eglot--pos-to-lsp-position end))
@@ -1502,11 +1588,10 @@ Try to visit the target file for a richer summary line."
                   (eglot--widening
                    (pcase-let* ((`(,beg . ,end) (eglot--range-region range))
                                 (bol (progn (goto-char beg) (point-at-bol)))
-                                (substring (buffer-substring bol (point-at-eol)))
-                                (tab-width 1))
+                                (substring (buffer-substring bol (point-at-eol))))
                      (add-face-text-property (- beg bol) (- end bol) 'highlight
                                              t substring)
-                     (list substring (1+ (current-line)) (current-column))))))
+                     (list substring (1+ (current-line)) (eglot-current-column))))))
        (`(,summary ,line ,column)
         (cond
          (visiting (with-current-buffer visiting (funcall collect)))
@@ -1646,7 +1731,7 @@ is not active."
         (lambda (_ignored)
           (let* ((resp (jsonrpc-request server
                                         :textDocument/completion
-                                        (eglot--TextDocumentPositionParams)
+                                        (eglot--CompletionParams)
                                         :deferred :textDocument/completion
                                         :cancel-on-input t))
                  (items (if (vectorp resp) resp (plist-get resp :items))))
@@ -1953,9 +2038,9 @@ If SKIP-SIGNATURE, don't try to send textDocument/signatureHelp."
 
 (defun eglot--apply-workspace-edit (wedit &optional confirm)
   "Apply the workspace edit WEDIT.  If CONFIRM, ask user first."
-  (cl-destructuring-bind (&key changes documentChanges) wedit
+  (eglot--dbind ((WorkspaceEdit) changes documentChanges) wedit
     (let ((prepared
-           (mapcar (jsonrpc-lambda (&key textDocument edits)
+           (mapcar (eglot--lambda ((TextDocumentEdit) textDocument edits)
                      (cl-destructuring-bind (&key uri version) textDocument
                        (list (eglot--uri-to-path uri) edits version)))
                    documentChanges))
@@ -2020,10 +2105,8 @@ If SKIP-SIGNATURE, don't try to send textDocument/signatureHelp."
                                             (eglot--diag-data diag))))
                               (flymake-diagnostics beg end))]))))
          (menu-items
-          (or (mapcar (jsonrpc-lambda (&key title command arguments
-                                            edit _kind _diagnostics)
-                        `(,title . (:command ,command :arguments ,arguments
-                                             :edit ,edit)))
+          (or (mapcar (jsonrpc-lambda (&rest all &key title &allow-other-keys)
+                        (cons title all))
                       actions)
               (eglot--error "No code actions here")))
          (menu `("Eglot code actions:" ("dummy" ,@menu-items)))
@@ -2035,11 +2118,14 @@ If SKIP-SIGNATURE, don't try to send textDocument/signatureHelp."
                      (if (eq (setq retval (tmm-prompt menu)) never-mind)
                          (keyboard-quit)
                        retval)))))
-    (cl-destructuring-bind (&key _title command arguments edit) action
-      (when edit
-        (eglot--apply-workspace-edit edit))
-      (when command
-        (eglot-execute-command server (intern command) arguments)))))
+    (eglot--dcase action
+        (((Command) command arguments)
+         (eglot-execute-command server (intern command) arguments))
+      (((CodeAction) edit command)
+       (when edit (eglot--apply-workspace-edit edit))
+       (when command
+         (eglot--dbind ((Command) command arguments) command
+           (eglot-execute-command server (intern command) arguments)))))))
 
 
 
@@ -2061,7 +2147,9 @@ If SKIP-SIGNATURE, don't try to send textDocument/signatureHelp."
   "Handle dynamic registration of workspace/didChangeWatchedFiles"
   (eglot--unregister-workspace/didChangeWatchedFiles server :id id)
   (let* (success
-         (globs (mapcar (lambda (w) (plist-get w :globPattern)) watchers)))
+         (globs (mapcar (eglot--lambda ((FileSystemWatcher) globPattern)
+                          globPattern)
+                        watchers)))
     (cl-labels
         ((handle-event
           (event)

@@ -22,6 +22,13 @@
 ;;   (require 'flyspell-correct-helm)
 ;;   (define-key flyspell-mode-map (kbd "C-;") 'flyspell-correct-wrapper)
 ;;
+;; Or via use-package:
+;;
+;;   (use-package flyspell-correct-helm
+;;     :bind ("C-M-;" . flyspell-correct-wrapper)
+;;     :init
+;;     (setq flyspell-correct-interface #'flyspell-correct-helm))
+;;
 ;;; Code:
 ;;
 
@@ -32,6 +39,7 @@
 
 ;; Interface implementation
 
+;;;###autoload
 (defun flyspell-correct--helm-always-match (_)
   "Return non-nil for any CANDIDATE."
   t)

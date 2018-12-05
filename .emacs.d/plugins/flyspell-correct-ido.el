@@ -22,6 +22,13 @@
 ;;   (require 'flyspell-correct-ido)
 ;;   (define-key flyspell-mode-map (kbd "C-;") 'flyspell-correct-wrapper)
 ;;
+;; Or via use-package:
+;;
+;;   (use-package flyspell-correct-ido
+;;     :bind ("C-M-;" . flyspell-correct-wrapper)
+;;     :init
+;;     (setq flyspell-correct-interface #'flyspell-correct-ido))
+;;
 ;;; Code:
 ;;
 
@@ -30,6 +37,7 @@
 (require 'flyspell-correct)
 (require 'ido)
 
+;;;###autoload
 (defun flyspell-correct-ido (candidates word)
   "Run `ido-completing-read' for the given CANDIDATES.
 

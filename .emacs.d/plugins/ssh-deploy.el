@@ -1,14 +1,16 @@
-;;; ssh-deploy.el --- Deployment via TRAMP, global or per directory. -*- lexical-binding: t -*-
+;;; ssh-deploy.el --- Deployment via TRAMP, global or per directory.  -*- lexical-binding:t -*-
+
+;; Copyright (C) 2017-2018  Free Software Foundation, Inc.
 
 ;; Author: Christian Johansson <christian@cvj.se>
 ;; Maintainer: Christian Johansson <christian@cvj.se>
 ;; Created: 5 Jul 2016
-;; Modified: 4 Nov 2018
-;; Version: 2.07
+;; Modified: 5 Dec 2018
+;; Version: 3.0.1
 ;; Keywords: tools, convenience
 ;; URL: https://github.com/cjohansson/emacs-ssh-deploy
 
-;; Package-Requires: ((emacs "24"))
+;; Package-Requires: ((emacs "25"))
 
 ;; This file is not part of GNU Emacs.
 
@@ -23,9 +25,7 @@
 ;; General Public License for more details.
 
 ;; You should have received a copy of the GNU General Public License
-;; along with GNU Emacs; see the file COPYING.  If not, write to the
-;; Free Software Foundation, Inc., 59 Temple Place - Suite 330,
-;; Boston, MA 02111-1307, USA.
+;; along with GNU Emacs.  If not, see <http://www.gnu.org/licenses/>.
 
 ;;; Commentary:
 
@@ -228,8 +228,7 @@
 
 (defcustom ssh-deploy-remote-sql-server nil
   "String variable of remote sql server, nil by default."
-  :type 'string
-  :group 'ssh-deploy)
+  :type 'string)
 (put 'ssh-deploy-remote-sql-server 'permanent-local t)
 (put 'ssh-deploy-remote-sql-server 'safe-local-variable 'stringp)
 
@@ -1363,6 +1362,7 @@
 (define-minor-mode ssh-deploy-line-mode
   "Show SSH Deploy status in mode line"
   :global t
+  :require 'ssh-deploy
   :group 'ssh-deploy
   (add-to-list 'global-mode-string 'ssh-deploy--mode-line-status-text t))
 
@@ -1402,22 +1402,22 @@
     _o_: Open current file on remote         _m_: Open sql-mysql on remote
     _s_: Run deploy script
     "
-    ("f" ssh-deploy-upload-handler-forced)
-    ("u" ssh-deploy-upload-handler)
-    ("d" ssh-deploy-download-handler)
-    ("D" ssh-deploy-delete-handler)
-    ("x" ssh-deploy-diff-handler)
-    ("t" ssh-deploy-remote-terminal-eshell-base-handler)
-    ("T" ssh-deploy-remote-terminal-eshell-handler)
-    ("h" ssh-deploy-remote-terminal-shell-base-handler)
-    ("H" ssh-deploy-remote-terminal-shell-handler)
-    ("e" ssh-deploy-remote-changes-handler)
-    ("R" ssh-deploy-rename-handler)
-    ("b" ssh-deploy-browse-remote-base-handler)
-    ("B" ssh-deploy-browse-remote-handler)
-    ("o" ssh-deploy-open-remote-file-handler)
-    ("m" ssh-deploy-remote-sql-mysql-handler)
-    ("s" ssh-deploy-run-deploy-script-handler)))
+    ("f" #'ssh-deploy-upload-handler-forced)
+    ("u" #'ssh-deploy-upload-handler)
+    ("d" #'ssh-deploy-download-handler)
+    ("D" #'ssh-deploy-delete-handler)
+    ("x" #'ssh-deploy-diff-handler)
+    ("t" #'ssh-deploy-remote-terminal-eshell-base-handler)
+    ("T" #'ssh-deploy-remote-terminal-eshell-handler)
+    ("h" #'ssh-deploy-remote-terminal-shell-base-handler)
+    ("H" #'ssh-deploy-remote-terminal-shell-handler)
+    ("e" #'ssh-deploy-remote-changes-handler)
+    ("R" #'ssh-deploy-rename-handler)
+    ("b" #'ssh-deploy-browse-remote-base-handler)
+    ("B" #'ssh-deploy-browse-remote-handler)
+    ("o" #'ssh-deploy-open-remote-file-handler)
+    ("m" #'ssh-deploy-remote-sql-mysql-handler)
+    ("s" #'ssh-deploy-run-deploy-script-handler)))
 
 (defvar ssh-deploy-prefix-map
   (let ((map (make-sparse-keymap)))

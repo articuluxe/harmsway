@@ -5,6 +5,7 @@
 ;;   Free Software Foundation, Inc.
 
 ;; Author: Takafumi Arakaki <aka.tkf at gmail.com>
+;; URL: https://github.com/tkf/emacs-request
 ;; Package-Requires: ((emacs "24.4"))
 ;; Version: 0.3.0
 
@@ -95,14 +96,16 @@ Automatically set to `curl' if curl command is found."
 
 (defcustom request-log-level -1
   "Logging level for request.
-One of `error'/`warn'/`info'/`verbose'/`debug'.
+One of `error'/`warn'/`info'/`verbose'/`debug'/`trace'/`blather'.
 -1 means no logging."
   :type '(choice (integer :tag "No logging" -1)
                  (const :tag "Level error" error)
                  (const :tag "Level warn" warn)
                  (const :tag "Level info" info)
                  (const :tag "Level Verbose" verbose)
-                 (const :tag "Level DEBUG" debug)))
+                 (const :tag "Level DEBUG" debug)
+                 (const :tag "Level TRACE" trace)
+                 (const :tag "Level BLATHER" blather)))
 
 (defcustom request-message-level 'warn
   "Logging level for request.
@@ -112,7 +115,9 @@ See `request-log-level'."
                  (const :tag "Level warn" warn)
                  (const :tag "Level info" info)
                  (const :tag "Level Verbose" verbose)
-                 (const :tag "Level DEBUG" debug)))
+                 (const :tag "Level DEBUG" debug)
+                 (const :tag "Level TRACE" trace)
+                 (const :tag "Level BLATHER" blather)))
 
 
 ;;; Utilities
