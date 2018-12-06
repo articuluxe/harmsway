@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-12-04 17:05:48 dan.harms>
+;; Modified Time-stamp: <2018-12-06 16:17:27 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3328,7 +3328,7 @@ This may perform related customization."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; logview-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package logview
   :mode ("\\.log$" . logview-mode)
-  :bind ("C-c xr" . logview-enter-tail-mode)
+  :bind ("C-c xt" . logview-enter-tail-mode)
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; lua-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
