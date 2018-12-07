@@ -1,0 +1,1 @@
+#cp src/lisp/*.el ../../../.emacs.d/plugins/pdf-tools
