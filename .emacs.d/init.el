@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-12-06 16:17:27 dan.harms>
+;; Modified Time-stamp: <2018-12-08 11:46:08 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3263,6 +3263,14 @@ This may perform related customization."
               (my/syntax-color-hex-values))
             ))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; jq-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package jq-mode
+  :mode "\\.jq$"
+  :init
+  (with-eval-after-load 'json-mode
+    (require 'jq-mode)
+    (define-key json-mode-map "\C-c\C-q" #'jq-interactively)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; js-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package nodejs-repl
   :init
@@ -3320,8 +3328,8 @@ This may perform related customization."
     :if (< 24 emacs-major-version)
     :demand t
     :config
-    (define-key json-mode-map "\C-c\C-f" 'json-navigator-navigate-after-point)
-    (define-key json-mode-map "\C-c\C-n" 'json-navigator-navigate-region))
+    (define-key json-mode-map "\C-c\C-f" #'json-navigator-navigate-after-point)
+    (define-key json-mode-map "\C-c\C-n" #'json-navigator-navigate-region))
   (use-package json-pointer)
   )
 
