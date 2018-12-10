@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-12-08 11:46:08 dharms>
+;; Modified Time-stamp: <2018-12-10 13:15:35 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -996,6 +996,7 @@ line."
   (setq magit-process-find-password-functions 'magit-process-password-auth-source)
   (setq magit-auto-revert-tracked-only t)
   (setq magit-prefer-remote-upstream t)
+  (setq magit-section-visibility-indicator '("…" . t))
   ;; git commands
   :bind (:map my/git-keymap
               ("g" . magit-status)
