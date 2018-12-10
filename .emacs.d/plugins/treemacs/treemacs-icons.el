@@ -85,11 +85,12 @@ Necessary since root icons are not rectangular."
 (defmacro treemacs--setup-icon (var file-name &rest extensions)
   "Define VAR with its display property being the image created from FILE-NAME.
 Insert VAR into `treemacs-icon-hash' for each of the given file EXTENSIONS."
-  (unless (treemacs--is-image-creation-impossible?)
-    `(progn
-       (defvar ,var nil)
-       (setq ,var
-             (eval-when-compile
+  `(progn
+     (defvar ,var nil)
+     (setq ,var
+           (eval-when-compile
+             (if (treemacs--is-image-creation-impossible?)
+                 treemacs-icon-fallback-text
                ;; need to defvar here or the compiler will complain
                (defvar treemacs--icon-size nil)
                (let* ((image-unselected (treemacs--create-image (f-join treemacs-dir "icons/" ,file-name)))
@@ -100,10 +101,10 @@ Insert VAR into `treemacs-icon-hash' for each of the given file EXTENSIONS."
                                      'display image-unselected
                                      'img-selected image-selected
                                      'img-unselected image-unselected)
-                         " "))))
-       (push ,var treemacs--created-icons)
-       (--each (quote ,extensions) (ht-set! treemacs-icons-hash it ,var))
-       ,var)))
+                         " ")))))
+     (push ,var treemacs--created-icons)
+     (--each (quote ,extensions) (ht-set! treemacs-icons-hash it ,var))
+     ,var))
 
 (defmacro treemacs--define-icon-with-default (var val)
   "Define a VAR with value VAL.
@@ -165,17 +166,6 @@ Also save the assignments in `treemacs--default-icons-alist'."
     `(progn
        (setq ,@key-values)
        ,@assignments)))
-
-(defun treemacs--setup-tui-icons ()
-  "Will set textual icon values for non-file icons."
-  (treemacs--set-icon-save-default
-   treemacs-icon-closed          treemacs-icon-closed-text
-   treemacs-icon-open            treemacs-icon-open-text
-   treemacs-icon-root            treemacs-icon-root-text
-   treemacs-icon-fallback        treemacs-icon-fallback-text
-   treemacs-icon-tag-leaf        treemacs-icon-tag-leaf-text
-   treemacs-icon-tag-node-closed treemacs-icon-tag-node-closed-text
-   treemacs-icon-tag-node-open   treemacs-icon-tag-node-open-text))
 
 (defun treemacs--setup-gui-icons ()
   "Will set graphical values for non-file icons.
@@ -259,9 +249,7 @@ Will also fill `treemacs-icons-hash' with graphical file icons."
 (defun treemacs--setup-icons ()
   "Create and define all icons-related caches, hashes and stashes."
   (setq treemacs-icons-hash (make-hash-table :size 300 :test #'equal))
-  (if (treemacs--is-image-creation-impossible?)
-      (treemacs--setup-tui-icons)
-    (treemacs--setup-gui-icons))
+  (treemacs--setup-gui-icons)
   ;; prevent nil values, as in https://github.com/hlissner/doom-emacs/issues/941#issuecomment-429154169
   ;; however that happens
   (setq treemacs--created-icons (-reject #'null treemacs--created-icons)))

@@ -139,6 +139,14 @@
   '((t :inherit font-lock-doc-face))
   "Face for multiline source separator.")
 
+(defface ivy-grep-info
+  '((t :inherit compilation-info))
+  "Face for highlighting grep information such as file names.")
+
+(defface ivy-grep-line-number
+  '((t :inherit compilation-line-number))
+  "Face for displaying line numbers in grep messages.")
+
 ;; Set default customization `:group' to `ivy' for the rest of the file.
 (setcdr (assoc load-file-name custom-current-group-alist) 'ivy)
 
@@ -4123,17 +4131,16 @@ When `ivy-calling' isn't nil, call `ivy-occur-press'."
        highlight
        help-echo "mouse-1: call ivy-action")
      str)
-    (insert (if (string-match-p "\\`.[/\\]" str) "" "    ")
+    (insert (if (or (string-match-p "\\`.[/\\]" str)
+                    (eq (ivy-state-caller ivy-last) 'counsel-ag))
+                ""
+              "    ")
             str ?\n))
   (goto-char (point-min))
   (forward-line 4)
   (while (re-search-forward "^[^:]+:[[:digit:]]+:" nil t)
     (ivy-add-face-text-property
-     (match-beginning 0)
-     (match-end 0)
-     'compilation-info
-     nil
-     t)))
+     (match-beginning 0) (match-end 0) 'ivy-grep-info nil t)))
 
 (defun ivy-occur ()
   "Stop completion and put the current candidates into a new buffer.
@@ -4244,13 +4251,14 @@ EVENT gives the mouse position."
 (defun ivy--occur-press-update-window ()
   (cl-case (ivy-state-caller ivy-occur-last)
     ((swiper counsel-git-grep counsel-grep counsel-ag counsel-rg)
-     (let ((window (ivy-state-window ivy-occur-last)))
-       (when (or (null (window-live-p window))
-                 (equal window (selected-window)))
+     (let ((window (ivy-state-window ivy-occur-last))
+           (buffer (ivy-state-buffer ivy-occur-last)))
+       (when (and (or (not (window-live-p window))
+                      (equal window (selected-window)))
+                  (buffer-live-p buffer))
          (save-selected-window
            (setf (ivy-state-window ivy-occur-last)
-                 (display-buffer (ivy-state-buffer ivy-occur-last)
-                                 'display-buffer-pop-up-window))))))
+                 (display-buffer buffer 'display-buffer-pop-up-window))))))
 
     ((counsel-describe-function counsel-describe-variable)
      (setf (ivy-state-window ivy-occur-last)

@@ -2,12 +2,12 @@
 
 ;; Copyright (C) 2018 Free Software Foundation, Inc.
 
-;; Version: 1.2
+;; Version: 1.3
 ;; Author: João Távora <joaotavora@gmail.com>
 ;; Maintainer: João Távora <joaotavora@gmail.com>
 ;; URL: https://github.com/joaotavora/eglot
 ;; Keywords: convenience, languages
-;; Package-Requires: ((emacs "26.1") (jsonrpc "1.0.6"))
+;; Package-Requires: ((emacs "26.1") (jsonrpc "1.0.6") (flymake "1.0.2"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -203,14 +203,41 @@ let the buffer grow forever."
 
 ;;; Message verification helpers
 ;;;
-(defvar eglot--lsp-interface-alist
-  `((CodeAction (:title) (:kind :diagnostics :edit :command))
-    (Command (:title :command) (:arguments))
-    (FileSystemWatcher (:globPattern) (:kind))
-    (Registration (:id :method) (:registerOptions))
-    (TextDocumentEdit (:textDocument :edits) ())
-    (WorkspaceEdit () (:changes :documentChanges)))
-  "Alist (INTERFACE-NAME . INTERFACE) of known external LSP interfaces.
+(eval-and-compile
+  (defvar eglot--lsp-interface-alist
+    `(
+      (CodeAction (:title) (:kind :diagnostics :edit :command))
+      (Command (:title :command) (:arguments))
+      (CompletionItem (:label)
+                      (:kind :detail :documentation :deprecated :preselect
+                             :sortText :filterText :insertText :insertTextFormat
+                             :textEdit :additionalTextEdits :commitCharacters
+                             :command :data))
+      (Diagnostic (:range :message) (:severity :code :source :relatedInformation))
+      (DocumentHighlight (:range) (:kind))
+      (FileSystemWatcher (:globPattern) (:kind))
+      (Hover (:contents) (:range))
+      (InitializeResult (:capabilities))
+      (Location (:uri :range))
+      (LogMessageParams (:type :message))
+      (MarkupContent (:kind :value))
+      (ParameterInformation (:label) (:documentation))
+      (Position (:line :character))
+      (Range (:start :end))
+      (Registration (:id :method) (:registerOptions))
+      (Registration (:id :method) (:registerOptions))
+      (ResponseError (:code :message) (:data))
+      (ShowMessageParams (:type :message))
+      (ShowMessageRequestParams (:type :message) (:actions))
+      (SignatureHelp (:signatures) (:activeSignature :activeParameter))
+      (SignatureInformation (:label) (:documentation :parameters))
+      (SymbolInformation (:name :kind :location) (:deprecated :containerName))
+      (TextDocumentEdit (:textDocument :edits) ())
+      (TextEdit (:range :newText))
+      (VersionedTextDocumentIdentifier (:uri :version) ())
+      (WorkspaceEdit () (:changes :documentChanges))
+      )
+    "Alist (INTERFACE-NAME . INTERFACE) of known external LSP interfaces.
 
 INTERFACE-NAME is a symbol designated by the spec as
 \"interface\".  INTERFACE is a list (REQUIRED OPTIONAL) where
@@ -220,23 +247,39 @@ message adhering to that interface.
 
 Here's what an element of this alist might look like:
 
-    (CreateFile . ((:kind :uri) (:options)))")
+    (CreateFile . ((:kind :uri) (:options)))"))
 
-(defvar eglot-strict-mode '()
-  "How strictly Eglot vetoes LSP messages from server.
+(eval-and-compile
+  (defvar eglot-strict-mode (if load-file-name '()
+                              '(disallow-non-standard-keys
+                                ;; Uncomment these two for fun at
+                                ;; compile-time or with flymake-mode.
+                                ;;
+                                ;; enforce-required-keys
+                                ;; enforce-optional-keys
+                                ))
+    "How strictly to check LSP interfaces at compile- and run-time.
 
-Value is a list of symbols:
+Value is a list of symbols (if the list is empty, no checks are
+performed).
 
-If a list containing the symbol `disallow-non-standard-keys', an
-error is raised if any non-standard fields are sent by the
-server.
+If the symbol `disallow-non-standard-keys' is present, an error
+is raised if any extraneous fields are sent by the server.  At
+compile-time, a warning is raised if a destructuring spec
+includes such a field.
 
-If the list containing the symbol `enforce-required-keys', an error
-is raised if any required fields are missing from the message.
+If the symbol `enforce-required-keys' is present, an error is
+raised if any required fields are missing from the message sent
+from the server.  At compile-time, a warning is raised if a
+destructuring spec doesn't use such a field.
 
-If the list is empty, any non-standard fields sent by the server
-and missing required fields are accepted (which may or may not
-cause problems in Eglot's functioning later on).")
+If the symbol `enforce-optional-keys' is present, nothing special
+happens at run-time.  At compile-time, a warning is raised if a
+destructuring spec doesn't use all optional fields.
+
+If the symbol `disallow-unknown-methods' is present, Eglot warns
+on unknown notifications and errors on unknown requests.
+"))
 
 (defun eglot--plist-keys (plist)
   (cl-loop for (k _v) on plist by #'cddr collect k))
@@ -254,6 +297,45 @@ cause problems in Eglot's functioning later on).")
     (eglot--error "A `%s' mustn't have %s" (car interface) excess))
   (funcall fn))
 
+(eval-and-compile
+  (defun eglot--keywordize-vars (vars)
+    (mapcar (lambda (var) (intern (format ":%s" var))) vars))
+
+  (defun eglot--check-interface (interface-name vars)
+    (let ((interface
+           (assoc interface-name eglot--lsp-interface-alist)))
+      (cond (interface
+             (let ((too-many
+                    (and
+                     (memq 'disallow-non-standard-keys eglot-strict-mode)
+                     (cl-set-difference
+                      (eglot--keywordize-vars vars)
+                      (append (car (cdr interface))
+                              (cadr (cdr interface))))))
+                   (ignored-required
+                    (and
+                     (memq 'enforce-required-keys eglot-strict-mode)
+                     (cl-set-difference
+                      (car (cdr interface))
+                      (eglot--keywordize-vars vars))))
+                   (missing-out
+                    (and
+                     (memq 'enforce-optional-keys eglot-strict-mode)
+                     (cl-set-difference
+                      (cadr (cdr interface))
+                      (eglot--keywordize-vars vars)))))
+               (when too-many (byte-compile-warn
+                               "Destructuring for %s has extraneous %s"
+                               interface-name too-many))
+               (when ignored-required (byte-compile-warn
+                                       "Destructuring for %s ignores required %s"
+                                       interface-name ignored-required))
+               (when missing-out (byte-compile-warn
+                                  "Destructuring for %s is missing out on %s"
+                                  interface-name missing-out))))
+            (t
+             (byte-compile-warn "Unknown LSP interface %s" interface-name))))))
+
 (cl-defmacro eglot--dbind (vars object &body body)
   "Destructure OBJECT of binding VARS in BODY.
 VARS is ([(INTERFACE)] SYMS...)
@@ -264,8 +346,7 @@ Honour `eglot-strict-mode'."
         (object-once (make-symbol "object-once"))
         (fn-once (make-symbol "fn-once")))
     (cond (interface-name
-           ;; jt@2018-11-29: maybe we check some things at compile
-           ;; time and use `byte-compiler-warn' here
+           (eglot--check-interface interface-name vars)
            `(let ((,object-once ,object))
               (cl-destructuring-bind (&key ,@vars &allow-other-keys) ,object-once
                 (eglot--call-with-interface (assoc ',interface-name
@@ -299,31 +380,32 @@ treated as in `eglot-dbind'."
        (cond
         ,@(cl-loop
            for (vars . body) in clauses
-           for vars-as-keywords = (mapcar (lambda (var)
-                                            (intern (format ":%s" var)))
-                                          vars)
+           for vars-as-keywords = (eglot--keywordize-vars vars)
            for interface-name = (if (consp (car vars))
                                     (car (pop vars)))
            for condition =
-           (if interface-name
-               ;; In this mode, we assume `eglot-strict-mode' is fully
-               ;; on, otherwise we can't disambiguate between certain
-               ;; types.
-               `(let* ((interface
-                        (or (assoc ',interface-name eglot--lsp-interface-alist)
-                            (eglot--error "Unknown interface %s")))
-                       (object-keys (eglot--plist-keys ,obj-once))
-                       (required-keys (car (cdr interface))))
-                  (and (null (cl-set-difference required-keys object-keys))
-                       (null (cl-set-difference
-                              (cl-set-difference object-keys required-keys)
-                              (cadr (cdr interface))))))
-             ;; In this interface-less mode we don't check
-             ;; `eglot-strict-mode' at all: just check that the object
-             ;; has all the keys the user wants to destructure.
-             `(null (cl-set-difference
-                     ',vars-as-keywords
-                     (eglot--plist-keys ,obj-once))))
+           (cond (interface-name
+                  (eglot--check-interface interface-name vars)
+                  ;; In this mode, in runtime, we assume
+                  ;; `eglot-strict-mode' is fully on, otherwise we
+                  ;; can't disambiguate between certain types.
+                  `(let* ((interface
+                           (or (assoc ',interface-name eglot--lsp-interface-alist)
+                               (eglot--error "Unknown LSP interface %s"
+                                             ',interface-name)))
+                          (object-keys (eglot--plist-keys ,obj-once))
+                          (required-keys (car (cdr interface))))
+                     (and (null (cl-set-difference required-keys object-keys))
+                          (null (cl-set-difference
+                                 (cl-set-difference object-keys required-keys)
+                                 (cadr (cdr interface)))))))
+                 (t
+                  ;; In this interface-less mode we don't check
+                  ;; `eglot-strict-mode' at all: just check that the object
+                  ;; has all the keys the user wants to destructure.
+                  `(null (cl-set-difference
+                          ',vars-as-keywords
+                          (eglot--plist-keys ,obj-once)))))
            collect `(,condition
                      (cl-destructuring-bind (&key ,@vars &allow-other-keys)
                          ,obj-once
@@ -348,7 +430,7 @@ treated as in `eglot-dbind'."
 (cl-defgeneric eglot-handle-request (server method &rest params)
   "Handle SERVER's METHOD request with PARAMS.")
 
-(cl-defgeneric eglot-handle-notification (server method id &rest params)
+(cl-defgeneric eglot-handle-notification (server method &rest params)
   "Handle SERVER's METHOD notification with PARAMS.")
 
 (cl-defgeneric eglot-execute-command (server command arguments)
@@ -702,10 +784,8 @@ This docstring appeases checkdoc, that's all."
                                 :noquery t
                                 :stderr (get-buffer-create
                                          (format "*%s stderr*" readable-name))))))))
-         (spread
-          (lambda (fn)
-            (lambda (&rest args)
-              (apply fn (append (butlast args) (car (last args)))))))
+         (spread (lambda (fn) (lambda (server method params)
+                                (apply fn server method (append params nil)))))
          (server
           (apply
            #'make-instance class
@@ -741,7 +821,7 @@ This docstring appeases checkdoc, that's all."
                                                     server)
                             :capabilities (eglot-client-capabilities server))
                       :success-fn
-                      (jsonrpc-lambda (&key capabilities)
+                      (eglot--lambda ((InitializeResult) capabilities)
                         (unless cancelled
                           (push server
                                 (gethash project eglot--servers-by-project))
@@ -769,7 +849,7 @@ in project `%s'."
                            (eglot--project-nickname server))
                           (when tag (throw tag t))))
                       :timeout eglot-connect-timeout
-                      :error-fn (jsonrpc-lambda (&key code message _data)
+                      :error-fn (eglot--lambda ((ResponseError) code message)
                                   (unless cancelled
                                     (jsonrpc-shutdown server)
                                     (let ((msg (format "%s: %s" code message)))
@@ -1237,13 +1317,15 @@ Uses THING, FACE, DEFS and PREPEND."
 (cl-defmethod eglot-handle-notification
   (_server method &key &allow-other-keys)
   "Handle unknown notification"
-  (unless (string-prefix-p "$" (format "%s" method))
+  (unless (or (string-prefix-p "$" (format "%s" method))
+              (not (memq 'disallow-unknown-methods eglot-strict-mode)))
     (eglot--warn "Server sent unknown notification method `%s'" method)))
 
 (cl-defmethod eglot-handle-request
   (_server method &key &allow-other-keys)
   "Handle unknown request"
-  (jsonrpc-error "Unknown request method `%s'" method))
+  (when (memq 'disallow-unknown-methods eglot-strict-mode)
+    (jsonrpc-error "Unknown request method `%s'" method)))
 
 (cl-defmethod eglot-execute-command
   (server command arguments)
@@ -1288,13 +1370,12 @@ COMMAND is a symbol naming the command."
       (with-current-buffer buffer
         (cl-loop
          for diag-spec across diagnostics
-         collect (cl-destructuring-bind (&key range ((:severity sev)) _group
-                                              _code source message
-                                              &allow-other-keys)
+         collect (eglot--dbind ((Diagnostic) range message severity source)
                      diag-spec
                    (setq message (concat source ": " message))
                    (pcase-let
-                       ((`(,beg . ,end) (eglot--range-region range)))
+                       ((sev severity)
+                        (`(,beg . ,end) (eglot--range-region range)))
                      ;; Fallback to `flymake-diag-region' if server
                      ;; botched the range
                      (when (= beg end)
@@ -1613,8 +1694,8 @@ Try to visit the target file for a richer summary line."
        (lambda (string)
          (setq eglot--xref-known-symbols
                (mapcar
-                (jsonrpc-lambda
-                    (&key name kind location containerName _deprecated)
+                (eglot--lambda
+                    ((SymbolInformation) name kind location containerName)
                   (propertize name
                               :textDocumentPositionParams
                               (list :textDocument text-id
@@ -1649,7 +1730,7 @@ Try to visit the target file for a richer summary line."
           (and definitions
                (if (vectorp definitions) definitions (vector definitions)))))
     (eglot--handling-xrefs
-     (mapcar (jsonrpc-lambda (&key uri range)
+     (mapcar (eglot--lambda ((Location) uri range)
                (eglot--xref-make identifier uri range))
              locations))))
 
@@ -1664,7 +1745,7 @@ Try to visit the target file for a richer summary line."
       (eglot--error "Don' know where %s is in the workspace!" identifier))
     (eglot--handling-xrefs
      (mapcar
-      (jsonrpc-lambda (&key uri range)
+      (eglot--lambda ((Location) uri range)
         (eglot--xref-make identifier uri range))
       (jsonrpc-request (eglot--current-server-or-lose)
                        :textDocument/references
@@ -1677,8 +1758,8 @@ Try to visit the target file for a richer summary line."
   (when (eglot--server-capable :workspaceSymbolProvider)
     (eglot--handling-xrefs
      (mapcar
-      (jsonrpc-lambda (&key name location &allow-other-keys)
-        (cl-destructuring-bind (&key uri range) location
+      (eglot--lambda ((SymbolInformation) name location)
+        (eglot--dbind ((Location) uri range) location
           (eglot--xref-make name uri range)))
       (jsonrpc-request (eglot--current-server-or-lose)
                        :workspace/symbol
@@ -1746,16 +1827,15 @@ is not active."
                               (string-trim-left label))
                              (t
                               (or insertText (string-trim-left label))))))
-                  (setq all (append all `(:bounds ,bounds)))
                   (add-text-properties 0 1 all completion)
+                  (put-text-property 0 1 'eglot--completion-bounds bounds completion)
                   (put-text-property 0 1 'eglot--lsp-completion all completion)
                   completion))
               items)))))
        :annotation-function
        (lambda (obj)
-         (cl-destructuring-bind (&key detail kind insertTextFormat
-                                      &allow-other-keys)
-             (text-properties-at 0 obj)
+         (eglot--dbind ((CompletionItem) detail kind insertTextFormat)
+             (get-text-property 0 'eglot--lsp-completion obj)
            (let* ((detail (and (stringp detail)
                                (not (string= detail ""))
                                detail))
@@ -1806,15 +1886,18 @@ is not active."
                        ;; buffer, `comp' won't have any properties.  A
                        ;; lookup should fix that (github#148)
                        (cl-find comp strings :test #'string=))))
-           (cl-destructuring-bind (&key insertTextFormat
-                                        insertText
-                                        textEdit
-                                        additionalTextEdits
-                                        bounds
-                                        &allow-other-keys)
-               (text-properties-at 0 comp)
+           (eglot--dbind ((CompletionItem) insertTextFormat
+                          insertText
+                          textEdit
+                          additionalTextEdits)
+               (get-text-property 0 'eglot--lsp-completion comp)
              (let ((snippet-fn (and (eql insertTextFormat 2)
-                                    (eglot--snippet-expansion-fn))))
+                                    (eglot--snippet-expansion-fn)))
+                   ;; FIXME: it would have been much easier to fetch
+                   ;; these from the lexical environment, but we can't
+                   ;; in company because of
+                   ;; https://github.com/company-mode/company-mode/pull/845
+                   (bounds (get-text-property 0 'eglot--completion-bounds comp)))
                (cond (textEdit
                       ;; Undo the just the completed bit.  If before
                       ;; completion the buffer was "foo.b" and now is
@@ -1825,7 +1908,7 @@ is not active."
                       (delete-region (+ (- (point) (length comp))
                                         (if bounds (- (cdr bounds) (car bounds)) 0))
                                      (point))
-                      (cl-destructuring-bind (&key range newText) textEdit
+                      (eglot--dbind ((TextEdit) range newText) textEdit
                         (pcase-let ((`(,beg . ,end) (eglot--range-region range)))
                           (delete-region beg end)
                           (goto-char beg)
@@ -1854,47 +1937,48 @@ is not active."
 (defun eglot--sig-info (sigs active-sig active-param)
   (cl-loop
    for (sig . moresigs) on (append sigs nil) for i from 0
-   concat (cl-destructuring-bind (&key label documentation parameters) sig
-            (with-temp-buffer
-              (save-excursion (insert label))
-              (when (looking-at "\\([^(]+\\)(")
-                (add-face-text-property (match-beginning 1) (match-end 1)
-                                        'font-lock-function-name-face))
+   concat
+   (eglot--dbind ((SignatureInformation) label documentation parameters) sig
+     (with-temp-buffer
+       (save-excursion (insert label))
+       (when (looking-at "\\([^(]+\\)(")
+         (add-face-text-property (match-beginning 1) (match-end 1)
+                                 'font-lock-function-name-face))
 
-              (when (and (stringp documentation) (eql i active-sig)
-                         (string-match "[[:space:]]*\\([^.\r\n]+[.]?\\)"
-                                       documentation))
-                (setq documentation (match-string 1 documentation))
-                (unless (string-prefix-p (string-trim documentation) label)
-                  (goto-char (point-max))
-                  (insert ": " documentation)))
-              (when (and (eql i active-sig) active-param
-                         (< -1 active-param (length parameters)))
-                (cl-destructuring-bind (&key label documentation)
-                    (aref parameters active-param)
-                  (goto-char (point-min))
-                  (let ((case-fold-search nil))
-                    (cl-loop for nmatches from 0
-                             while (and (not (string-empty-p label))
-                                        (search-forward label nil t))
-                             finally do
-                             (when (= 1 nmatches)
-                               (add-face-text-property
-                                (- (point) (length label)) (point)
-                                'eldoc-highlight-function-argument))))
-                  (when documentation
-                    (goto-char (point-max))
-                    (insert "\n"
-                            (propertize
-                             label 'face 'eldoc-highlight-function-argument)
-                            ": " (eglot--format-markup documentation)))))
-              (buffer-string)))
+       (when (and (stringp documentation) (eql i active-sig)
+                  (string-match "[[:space:]]*\\([^.\r\n]+[.]?\\)"
+                                documentation))
+         (setq documentation (match-string 1 documentation))
+         (unless (string-prefix-p (string-trim documentation) label)
+           (goto-char (point-max))
+           (insert ": " documentation)))
+       (when (and (eql i active-sig) active-param
+                  (< -1 active-param (length parameters)))
+         (eglot--dbind ((ParameterInformation) label documentation)
+             (aref parameters active-param)
+           (goto-char (point-min))
+           (let ((case-fold-search nil))
+             (cl-loop for nmatches from 0
+                      while (and (not (string-empty-p label))
+                                 (search-forward label nil t))
+                      finally do
+                      (when (= 1 nmatches)
+                        (add-face-text-property
+                         (- (point) (length label)) (point)
+                         'eldoc-highlight-function-argument))))
+           (when documentation
+             (goto-char (point-max))
+             (insert "\n"
+                     (propertize
+                      label 'face 'eldoc-highlight-function-argument)
+                     ": " (eglot--format-markup documentation)))))
+       (buffer-string)))
    when moresigs concat "\n"))
 
 (defun eglot-help-at-point ()
   "Request \"hover\" information for the thing at point."
   (interactive)
-  (cl-destructuring-bind (&key contents range)
+  (eglot--dbind ((Hover) contents range)
       (jsonrpc-request (eglot--current-server-or-lose) :textDocument/hover
                        (eglot--TextDocumentPositionParams))
     (when (seq-empty-p contents) (eglot--error "No hover info here"))
@@ -1917,8 +2001,8 @@ If SKIP-SIGNATURE, don't try to send textDocument/signatureHelp."
         (jsonrpc-async-request
          server :textDocument/signatureHelp position-params
          :success-fn
-         (jsonrpc-lambda (&key signatures activeSignature
-                               activeParameter)
+         (eglot--lambda ((SignatureHelp)
+                         signatures activeSignature activeParameter)
            (when-buffer-window
             (when (cl-plusp (length signatures))
               (setq sig-showing t)
@@ -1929,7 +2013,7 @@ If SKIP-SIGNATURE, don't try to send textDocument/signatureHelp."
       (when (eglot--server-capable :hoverProvider)
         (jsonrpc-async-request
          server :textDocument/hover position-params
-         :success-fn (jsonrpc-lambda (&key contents range)
+         :success-fn (eglot--lambda ((Hover) contents range)
                        (unless sig-showing
                          (when-buffer-window
                           (when-let (info (and contents
@@ -1946,7 +2030,7 @@ If SKIP-SIGNATURE, don't try to send textDocument/signatureHelp."
            (setq eglot--highlights
                  (when-buffer-window
                   (mapcar
-                   (jsonrpc-lambda (&key range _kind _role)
+                   (eglot--lambda ((DocumentHighlight) range)
                      (pcase-let ((`(,beg . ,end)
                                   (eglot--range-region range)))
                        (let ((ov (make-overlay beg end)))
@@ -1962,8 +2046,8 @@ If SKIP-SIGNATURE, don't try to send textDocument/signatureHelp."
   (if (eglot--server-capable :documentSymbolProvider)
       (let ((entries
              (mapcar
-              (jsonrpc-lambda
-                  (&key name kind location containerName _deprecated)
+              (eglot--lambda
+                  ((SymbolInformation) name kind location containerName)
                 (cons (propertize
                        name
                        :kind (alist-get kind eglot--symbol-kind-names
@@ -2030,7 +2114,7 @@ If SKIP-SIGNATURE, don't try to send textDocument/signatureHelp."
                                                 beg (+ beg (length newText))
                                                 length))))
                       (progress-reporter-update reporter (cl-incf done)))))))
-            (mapcar (jsonrpc-lambda (&key range newText)
+            (mapcar (eglot--lambda ((TextEdit) range newText)
                       (cons newText (eglot--range-region range 'markers)))
                     (reverse edits)))
       (undo-amalgamate-change-group change-group)
@@ -2041,7 +2125,8 @@ If SKIP-SIGNATURE, don't try to send textDocument/signatureHelp."
   (eglot--dbind ((WorkspaceEdit) changes documentChanges) wedit
     (let ((prepared
            (mapcar (eglot--lambda ((TextDocumentEdit) textDocument edits)
-                     (cl-destructuring-bind (&key uri version) textDocument
+                     (eglot--dbind ((VersionedTextDocumentIdentifier) uri version)
+                         textDocument
                        (list (eglot--uri-to-path uri) edits version)))
                    documentChanges))
           edit)
@@ -2055,7 +2140,7 @@ If SKIP-SIGNATURE, don't try to send textDocument/signatureHelp."
                            (mapconcat #'identity (mapcar #'car prepared) "\n  ")))
             (eglot--error "User cancelled server edit")))
       (while (setq edit (car prepared))
-        (cl-destructuring-bind (path edits &optional version) edit
+        (pcase-let ((`(,path ,edits ,version)  edit))
           (with-current-buffer (find-file-noselect path)
             (eglot--apply-text-edits edits version))
           (pop prepared))
@@ -2153,7 +2238,7 @@ If SKIP-SIGNATURE, don't try to send textDocument/signatureHelp."
     (cl-labels
         ((handle-event
           (event)
-          (cl-destructuring-bind (desc action file &optional file1) event
+          (pcase-let ((`(,desc ,action ,file ,file1) event))
             (cond
              ((and (memq action '(created changed deleted))
                    (cl-find file globs
@@ -2315,40 +2400,6 @@ If SKIP-SIGNATURE, don't try to send textDocument/signatureHelp."
   ((_server eglot-eclipse-jdt) (_cmd (eql java.apply.workspaceEdit)) arguments)
   "Eclipse JDT breaks spec and replies with edits as arguments."
   (mapc #'eglot--apply-workspace-edit arguments))
-
-
-;; FIXME: A horrible hack of Flymake's insufficient API that must go
-;; into Emacs master, or better, 26.2
-(when (version< emacs-version "27.0")
-  (cl-defstruct (eglot--diag (:include flymake--diag)
-                             (:constructor eglot--make-diag-1))
-    data-1)
-  (defsubst eglot--make-diag (buffer beg end type text data)
-    (let ((sym (alist-get type eglot--diag-error-types-to-old-types)))
-      (eglot--make-diag-1 :buffer buffer :beg beg :end end :type sym
-                          :text text :data-1 data)))
-  (defsubst eglot--diag-data (diag)
-    (and (eglot--diag-p diag) (eglot--diag-data-1 diag)))
-  (defvar eglot--diag-error-types-to-old-types
-    '((eglot-error . :error)
-      (eglot-warning . :warning)
-      (eglot-note . :note)))
-  (advice-add
-   'flymake--highlight-line :after
-   (lambda (diag)
-     (when (eglot--diag-p diag)
-       (let ((ov (cl-find diag
-                          (overlays-at (flymake-diagnostic-beg diag))
-                          :key (lambda (ov)
-                                 (overlay-get ov 'flymake-diagnostic))))
-             (overlay-properties
-              (get (car (rassoc (flymake-diagnostic-type diag)
-                                eglot--diag-error-types-to-old-types))
-                   'flymake-overlay-control)))
-         (cl-loop for (k . v) in overlay-properties
-                  do (overlay-put ov k v)))))
-   '((name . eglot-hacking-in-some-per-diag-overlay-properties))))
-
 
 (provide 'eglot)
 ;;; eglot.el ends here

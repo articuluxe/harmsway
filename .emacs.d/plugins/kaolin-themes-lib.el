@@ -513,6 +513,7 @@
 
     ;; Mode-line
     (line-fg           fg4)
+    (line-inactive     comment)
     (line-bg1          bg2)
     (line-bg2          bg4)
     (line-border       bg4)
@@ -522,7 +523,7 @@
     (segment-active    gray3)
     (segment-inactive  gray3)
 
-    (evil-normal       type)
+    (evil-normal       keyword)
     (evil-insert       done)
     (evil-visual       var)
     (evil-replace      todo)
@@ -702,7 +703,7 @@
     ;; Modeline
     (mode-line           (:background line-bg1 :foreground line-color1 :bold nil
                                       :box (:line-width 2 :color line-border)))
-    (mode-line-inactive  (:background line-bg1 :foreground fg4 :bold bold
+    (mode-line-inactive  (:background line-bg1 :foreground line-inactive :bold bold
                                       :box (:line-width 2 :color line-border)))
     (mode-line-buffer-id (:background nil :foreground line-color2 :bold nil))
     (mode-line-highlight (:foreground hl :box nil :bold nil))
@@ -710,7 +711,7 @@
 
     ;; Telephone-line
     (telephone-line-accent-active   (:inherit 'mode-line :background line-bg2 :foreground line-fg))
-    (telephone-line-accent-inactive (:inherit 'mode-line-inactive :background line-bg1 :foreground fg4))
+    (telephone-line-accent-inactive (:inherit 'mode-line-inactive :background line-bg1 :foreground line-inactive))
     (telephone-line-evil            (:inherit 'mode-line))
     (telephone-line-evil-normal     (:inherit 'telephone-line-evil :background line-bg2 :foreground evil-normal))
     (telephone-line-evil-insert     (:inherit 'telephone-line-evil :background line-bg2 :foreground evil-insert))
@@ -719,10 +720,11 @@
     (telephone-line-evil-motion     (:inherit 'telephone-line-evil :background line-bg2 :foreground evil-motion))
     (telephone-line-evil-operator   (:inherit 'telephone-line-evil :background line-bg2 :foreground evil-operator))
     (telephone-line-evil-emacs      (:inherit 'telephone-line-evil :background line-bg2 :foreground evil-emacs))
-    (telephone-line-projectile      (:foreground type))
+    (telephone-line-projectile      (:foreground var))
 
     ;; Doom-modeline
-    (doom-modeline-bar                 (:background type))
+    (doom-modeline-bar                 (:background keyword))
+    (doom-modeline-inactive-bar        (:background line-inactive))
     (doom-modeline-evil-normal-state   (:foreground evil-normal))
     (doom-modeline-evil-insert-state   (:foreground evil-insert))
     (doom-modeline-evil-visual-state   (:foreground evil-visual))
@@ -731,6 +733,8 @@
     (doom-modeline-evil-operator-state (:foreground evil-operator))
     (doom-modeline-evil-emacs-state    (:foreground evil-emacs))
     (doom-modeline-panel               (:background hl :foreground line-bg1))
+    (doom-modeline-buffer-path         (:foreground var))
+    (doom-modeline-buffer-major-mode   (:foreground str))
 
     ;; Powerline
     (powerline-active0           (:background line-bg2 :foreground line-color1))
