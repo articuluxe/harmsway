@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-12-10 13:15:35 dan.harms>
+;; Modified Time-stamp: <2018-12-11 12:04:30 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3078,9 +3078,16 @@ This may perform related customization."
             ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; bat-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defun harmsway-company-cmd-fix-shell (orig-fun &rest args)
+  "Fix the shell used to create candidates by `company-cmd'."
+  (let ((shell-file-name (executable-find "cmdproxy.exe")))
+    (apply orig-fun args)))
+
 (use-package bat-mode :mode ("\\.bat$" "\\.cmd$")
   :config
   (use-package dos-indent)
+  (advice-add #'company-cmd-build-alist :around
+              #'harmsway-company-cmd-fix-shell)
   (add-hook 'bat-mode-hook
             (lambda()
               (setq-default indent-tabs-mode nil)

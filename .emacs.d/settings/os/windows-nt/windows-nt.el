@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2018-11-19 05:58:13 dharms>
+;; Modified Time-stamp: <2018-12-11 12:09:00 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -43,9 +43,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ssh-agency ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;(require 'ssh-agency)
 
-(setq shell-file-name (executable-find "cmdproxy.exe"))
-;(setq shell-file-name "sh")             ;finds msys
-;; (setq explicit-shell-file-name
+;; explicit-shell-file-name is used to create a shell
+(setq explicit-shell-file-name (executable-find "cmdproxy.exe"))
+;; shell-file-name is used for sub-processes
+(setq shell-file-name "sh")             ;finds msys locally, /bin/sh remotely
 ;;       (concat (getenv "MSYS") "\\bin\\bash.exe"))
 
 (setq-default comint-process-echoes t)
