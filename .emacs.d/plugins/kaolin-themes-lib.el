@@ -621,7 +621,7 @@
     (widget-button         (:background nil :foreground keyword))
 
     ;; Highlighting
-    (highlight                (:background bg2 :foreground amber3))
+    (highlight                (:background hl :foreground bg1))
     (lazy-highlight           (:background bg4 :foreground hl))
     (hl-line                  (:background hl-line))
     (highlight-numbers-number (:foreground num))
@@ -692,7 +692,7 @@
     (message-header-to      (:foreground spring-green3))
     (message-header-other   (:foreground cyan3))
 
-    ;; Elfeed
+    ;; TODO: Elfeed
     (elfeed-search-tag-face          (:foreground amber3))
     (elfeed-search-feed-face         (:foreground teal1))
     (elfeed-search-date-face         (:foreground var))
@@ -1046,7 +1046,7 @@
     ;; Popup
     (popup-face                (:background tooltip-bg :foreground tooltip-fg :bold bold))
     (popup-menu-selection-face (:background tooltip-hl-bg :foreground tooltip-hl-fg :bold bold))
-    (popup-tip-face            (:background tooltip-hl-bg :foreground builtin :bold bold))
+    (popup-tip-face            (:background tooltip-hl-bg :foreground fg1 :bold bold))
 
     ;; Terminal
     (term               (:background bg1 :foreground fg1))

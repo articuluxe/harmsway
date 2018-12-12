@@ -21,7 +21,7 @@
 ;; GNU General Public License for more details.
 
 ;; For a full copy of the GNU General Public License
-;; see <http://www.gnu.org/licenses/>.
+;; see <https://www.gnu.org/licenses/>.
 
 ;;; Commentary:
 
@@ -220,8 +220,11 @@ Update the minibuffer with the amount of lines collected every
                                (string-match-p counsel-async-ignore-re line))
                              lines)
              lines))))
-      (let ((ivy--prompt (format "%d++ %s" numlines (ivy-state-prompt ivy-last))))
-        (ivy--insert-minibuffer (ivy--format ivy--all-candidates)))
+      (let ((ivy--prompt (format "%d++ %s" numlines (ivy-state-prompt ivy-last)))
+            (win (active-minibuffer-window)))
+        (when (window-live-p win)
+          (with-selected-window win
+            (ivy--insert-minibuffer (ivy--format ivy--all-candidates)))))
       (setq counsel--async-time (current-time)))))
 
 (defun counsel-delete-process (&optional name)
@@ -602,6 +605,11 @@ X is an item of a radio- or choice-type defcustom."
 (declare-function custom-variable-documentation "cus-edit")
 
 ;;;###autoload
+(defface counsel-variable-documentation
+  '((t :inherit font-lock-comment-face))
+  "Face for displaying Lisp documentation."
+  :group 'ivy-faces)
+
 (defun counsel-set-variable (sym)
   "Set a variable, with completion.
 
@@ -624,7 +632,7 @@ With a prefix arg, restrict list to variables defined using
                   (require 'lv nil t)
                   (not (string= "nil" (custom-variable-documentation sym)))
                   (propertize (custom-variable-documentation sym)
-                              'face 'font-lock-comment-face)))
+                              'face 'counsel-variable-documentation)))
         sym-type
         cands)
     (unwind-protect
@@ -807,7 +815,10 @@ when available, in that order of precedence."
   (setq real-this-command real-last-command)
   (let ((externs (counsel--M-x-externs)))
     (ivy-read (counsel--M-x-prompt) (or externs obarray)
-              :predicate (and (not externs) #'commandp)
+              :predicate (and (not externs)
+                              (lambda (sym)
+                                (and (commandp sym)
+                                     (not (get sym 'byte-obsolete-info)))))
               :require-match t
               :history 'counsel-M-x-history
               :action (lambda (cmd)
@@ -1006,7 +1017,7 @@ See `describe-buffer-bindings' for further information."
               (push
                (cons (format
                       "%-15s %s"
-                      (propertize key 'face 'font-lock-builtin-face)
+                      (propertize key 'face 'counsel-key-binding)
                       fun)
                      (cons key cmd))
                res))))
@@ -1491,6 +1502,9 @@ If NO-ASYNC is non-nil, do it synchronously instead."
                                nil " *counsel-gg-count*")
        nil))))
 
+(defun counsel--normalize-grep-match (str)
+  (if (string-match-p "\\`\\.[/\\]" str) str (concat "./" str)))
+
 (defun counsel-git-grep-occur ()
   "Generate a custom occur buffer for `counsel-git-grep'.
 When REVERT is non-nil, regenerate the current *ivy-occur* buffer."
@@ -1523,9 +1537,7 @@ When REVERT is non-nil, regenerate the current *ivy-occur* buffer."
                     default-directory))
     (insert (format "%d candidates:\n" (length cands)))
     (ivy--occur-insert-lines
-     (mapcar
-      (lambda (cand) (concat "./" cand))
-      cands))))
+     (mapcar #'counsel--normalize-grep-match cands))))
 
 (defun counsel-git-grep-query-replace ()
   "Start `query-replace' with string to replace from last search string."
@@ -1988,7 +2000,7 @@ further, make the remote prefix editable"
       (let ((origin (shell-command-to-string
                      "git remote get-url origin")))
         (when (string-match "git.sv.gnu.org:/srv/git/emacs.git" origin)
-          (format "http://debbugs.gnu.org/cgi/bugreport.cgi?bug=%s"
+          (format "https://debbugs.gnu.org/cgi/bugreport.cgi?bug=%s"
                   (substring url 1)))))))
 
 (defvar counsel-url-expansions-alist nil
@@ -2013,7 +2025,7 @@ If the format element is a function, more powerful
 transformations are possible.  As an example,
   '(\"\\`issue\\([[:digit:]]+\\)\\'\" .
     (lambda (word)
-      (concat \"http://debbugs.gnu.org/cgi/bugreport.cgi?bug=\"
+      (concat \"https://debbugs.gnu.org/cgi/bugreport.cgi?bug=\"
               (match-string 1 word))))
 trims the \"issue\" prefix from the word at point before creating the URL.")
 
@@ -2452,21 +2464,16 @@ This function expects that the candidates have already been filtered.
 It applies no filtering to ivy--all-candidates."
   (unless (eq major-mode 'ivy-occur-grep-mode)
     (ivy-occur-grep-mode))
-  (let* ((directory
-          (if git-grep-dir-is-file
-              (file-name-directory (ivy-state-directory ivy-last))
-            (ivy-state-directory ivy-last)))
-         (prepend
-          (if git-grep-dir-is-file
-              (concat (file-name-nondirectory
-                       (ivy-state-directory ivy-last)) ":")
-            "")))
+  (let ((directory
+         (if git-grep-dir-is-file
+             (file-name-directory (ivy-state-directory ivy-last))
+           (ivy-state-directory ivy-last))))
     (setq default-directory directory)
     ;; Need precise number of header lines for `wgrep' to work.
     (insert (format "-*- mode:grep; default-directory: %S -*-\n\n\n" default-directory))
     (insert (format "%d candidates:\n" (length ivy--all-candidates)))
     (ivy--occur-insert-lines
-     (mapcar (lambda (cand) (concat "./" prepend cand)) ivy--all-candidates))))
+     (mapcar #'counsel--normalize-grep-match ivy--all-candidates))))
 
 ;;** `counsel-ag'
 (defvar counsel-ag-map
@@ -2597,7 +2604,8 @@ AG-PROMPT, if non-nil, is passed as `ivy-read' prompt argument."
     (insert (format "-*- mode:grep; default-directory: %S -*-\n\n\n"
                     default-directory))
     (insert (format "%d candidates:\n" (length cands)))
-    (ivy--occur-insert-lines cands)))
+    (ivy--occur-insert-lines
+     (mapcar #'counsel--normalize-grep-match cands))))
 
 (defun counsel-ag-occur ()
   "Generate a custom occur buffer for `counsel-ag'."
@@ -2820,7 +2828,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
 
 ;; This command uses the recollq command line tool that comes together
 ;; with the recoll (the document indexing database) source:
-;;     http://www.lesbonscomptes.com/recoll/download.html
+;;     https://www.lesbonscomptes.com/recoll/download.html
 ;; You need to build it yourself (together with recoll):
 ;;     cd ./query && make && sudo cp recollq /usr/local/bin
 ;; You can try the GUI version of recoll with:
@@ -4007,9 +4015,10 @@ TREEP is used to expand internal nodes."
 (defcustom counsel-outline-face-style nil
   "Determines how to style outline headings during completion.
 
-If `org', the default faces from `org-mode' are applied,
-i.e. `org-level-1' through `org-level-8'.  Note that no cycling
-is performed, so headings on levels 9 and higher are not styled.
+If `org', the faces `counsel-outline-1' through
+`counsel-outline-8' are applied in a similar way to Org.
+Note that no cycling is performed, so headings on levels 9 and
+higher are not styled.
 
 If `verbatim', the faces used in the buffer are applied.  For
 simple headlines in `org-mode' buffers, this is usually the same
@@ -4029,7 +4038,8 @@ are applied.  Note that no cycling is performed, so if there is
 no face defined for a certain level, headlines on that level will
 not be styled.
 
-If `nil', no faces are applied to the headlines.
+If `nil', all headlines are highlighted using
+`counsel-outline-default'.
 
 For displaying tags and TODO keywords in `org-mode' buffers, see
 `counsel-org-headline-display-tags' and
@@ -4250,8 +4260,8 @@ the face to apply."
                 (verbatim)
                 (custom (nth (1- level)
                              (or custom-faces counsel-outline-custom-faces)))
-                (org (format "org-level-%d" level))
-                (t 'minibuffer-prompt))))
+                (org (format "counsel-outline-%d" level))
+                (t 'counsel-outline-default))))
     (when face
       (put-text-property 0 (length name) 'face face name)))
   name)
@@ -4432,8 +4442,12 @@ COUNT defaults to 1."
   "History for `counsel-colors-emacs'.")
 
 (defun counsel-colors--name-to-hex (name)
-  "Return hexadecimal RGB value of color with NAME."
-  (apply #'color-rgb-to-hex (color-name-to-rgb name)))
+  "Return hexadecimal RGB value of color with NAME.
+
+Return nil if NAME does not designate a valid color."
+  (let ((rgb (color-name-to-rgb name)))
+    (when rgb
+      (apply #'color-rgb-to-hex rgb))))
 
 (defvar shr-color-visible-luminance-min)
 (declare-function shr-color-visible "shr-color")
@@ -4459,12 +4473,15 @@ Return closure suitable for `ivy-format-function'."
 You can insert or kill the name or hexadecimal RGB value of the
 selected color."
   (interactive)
-  (let* ((colors (mapcar (lambda (cell)
-                           (let ((name (car cell)))
-                             (propertize name
-                                         'hex (counsel-colors--name-to-hex name)
-                                         'dups (cdr cell))))
-                         (list-colors-duplicates)))
+  (let* ((colors
+          (delete nil
+                  (mapcar (lambda (cell)
+                            (let* ((name (car cell))
+                                   (dups (cdr cell))
+                                   (hex (counsel-colors--name-to-hex name)))
+                              (when hex
+                                (propertize name 'hex hex 'dups dups))))
+                          (list-colors-duplicates))))
          (fmt (format "%%-%ds %%s %%s%%s"
                       (apply #'max 0 (mapcar #'string-width colors))))
          (blank (make-string 10 ?\s))
@@ -4655,12 +4672,32 @@ selected color."
             :caller 'counsel-rhythmbox))
 
 ;;** `counsel-linux-app'
+(require 'xdg nil t)
+
+(defalias 'counsel--xdg-data-home
+  (if (fboundp 'xdg-data-home)
+      #'xdg-data-home
+    (lambda ()
+      (let ((directory (getenv "XDG_DATA_HOME")))
+        (if (or (null directory) (string= directory ""))
+            "~/.local/share"
+          directory))))
+  "Compatibility shim for `xdg-data-home'.")
+
+(defalias 'counsel--xdg-data-dirs
+  (if (fboundp 'xdg-data-dirs)
+      #'xdg-data-dirs
+    (lambda ()
+      (let ((path (getenv "XDG_DATA_DIRS")))
+        (if (or (null path) (string= path ""))
+            '("/usr/local/share" "/usr/share")
+          (parse-colon-path path)))))
+  "Compatibility shim for `xdg-data-dirs'.")
+
 (defcustom counsel-linux-apps-directories
-  '("~/.local/share/applications/"
-    "~/.guix-profile/share/applications/"
-    "/usr/local/share/applications/"
-    "/var/lib/flatpak/exports/share/applications/"
-    "/usr/share/applications/")
+  (mapcar (lambda (dir) (expand-file-name "applications" dir))
+          (cons (counsel--xdg-data-home)
+                (counsel--xdg-data-dirs)))
   "Directories in which to search for applications (.desktop files)."
   :group 'ivy
   :type '(repeat directory))
@@ -4676,6 +4713,56 @@ as arguments."
           (const :tag "Name - Comment" counsel-linux-app-format-function-name-only)
           (const :tag "Command" counsel-linux-app-format-function-command-only)
           (function :tag "Custom")))
+
+(defface counsel-application-name
+  '((t :inherit font-lock-builtin-face))
+  "Face for displaying executable names."
+  :group 'ivy-faces)
+
+(defface counsel-outline-1
+  '((t :inherit org-level-1))
+  "Face for displaying level 1 headings."
+  :group 'ivy-faces)
+
+(defface counsel-outline-2
+  '((t :inherit org-level-2))
+  "Face for displaying level 2 headings."
+  :group 'ivy-faces)
+
+(defface counsel-outline-3
+  '((t :inherit org-level-3))
+  "Face for displaying level 3 headings."
+  :group 'ivy-faces)
+
+(defface counsel-outline-4
+  '((t :inherit org-level-4))
+  "Face for displaying level 4 headings."
+  :group 'ivy-faces)
+
+(defface counsel-outline-5
+  '((t :inherit org-level-5))
+  "Face for displaying level 5 headings."
+  :group 'ivy-faces)
+
+(defface counsel-outline-6
+  '((t :inherit org-level-6))
+  "Face for displaying level 6 headings."
+  :group 'ivy-faces)
+
+(defface counsel-outline-7
+  '((t :inherit org-level-7))
+  "Face for displaying level 7 headings."
+  :group 'ivy-faces)
+
+(defface counsel-outline-8
+  '((t :inherit org-level-8))
+  "Face for displaying level 8 headings."
+  :group 'ivy-faces)
+
+(defface counsel-outline-default
+  '((t :inherit minibuffer-prompt))
+  "Face for displaying headings."
+  :group 'ivy-faces)
 
 (defvar counsel-linux-apps-faulty nil
   "List of faulty desktop files.")
@@ -4697,7 +4784,9 @@ as arguments."
 NAME is the name of the application, COMMENT its comment and EXEC
 the command to launch it."
   (format "% -45s: %s%s"
-          (propertize exec 'face 'font-lock-builtin-face)
+          (propertize
+           (ivy--truncate-string exec 45)
+           'face 'counsel-application-name)
           name
           (if comment
               (concat " - " comment)
@@ -4711,7 +4800,7 @@ EXEC is the command to launch the application."
           (if comment
               (concat " - " comment)
             "")
-          (propertize exec 'face 'font-lock-builtin-face)))
+          (propertize exec 'face 'counsel-application-name)))
 
 (defun counsel-linux-app-format-function-name-only (name comment _exec)
   "Format Linux application names with the NAME (and COMMENT) only."

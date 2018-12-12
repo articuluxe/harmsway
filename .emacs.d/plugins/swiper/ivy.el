@@ -21,7 +21,7 @@
 ;; GNU General Public License for more details.
 
 ;; For a full copy of the GNU General Public License
-;; see <http://www.gnu.org/licenses/>.
+;; see <https://www.gnu.org/licenses/>.
 
 ;;; Commentary:
 
@@ -104,6 +104,10 @@
   '((t :inherit dired-directory))
   "Face used by Ivy for highlighting subdirs in the alternatives.")
 
+(defface ivy-org
+  '((t :inherit org-level-4))
+  "Face used by Ivy for highlighting Org buffers in the alternatives.")
+
 (defface ivy-modified-buffer
   '((t :inherit default))
   "Face used by Ivy for highlighting modified file visiting buffers.")
@@ -146,6 +150,14 @@
 (defface ivy-grep-line-number
   '((t :inherit compilation-line-number))
   "Face for displaying line numbers in grep messages.")
+
+(defface ivy-completions-annotations
+  '((t :inherit completions-annotations))
+  "Face for displaying completion annotations.")
+
+(defface ivy-yanked-word
+  '((t :inherit highlight))
+  "Face used to highlight yanked word.")
 
 ;; Set default customization `:group' to `ivy' for the rest of the file.
 (setcdr (assoc load-file-name custom-current-group-alist) 'ivy)
@@ -3448,7 +3460,7 @@ Note: The usual last two arguments are flipped for convenience.")
     (when annot
       (setq str (concat str (funcall annot str)))
       (ivy-add-face-text-property
-       olen (length str) 'completions-annotations str))
+       olen (length str) 'ivy-completions-annotations str))
     str))
 
 (ivy-set-display-transformer
@@ -3549,7 +3561,7 @@ CANDS is a list of strings."
   :type '(repeat (choice regexp function)))
 
 (defvar ivy-switch-buffer-faces-alist '((dired-mode . ivy-subdir)
-                                        (org-mode . org-level-4))
+                                        (org-mode . ivy-org))
   "Store face customizations for `ivy-switch-buffer'.
 Each KEY is `major-mode', each VALUE is a face name.")
 
@@ -3920,15 +3932,18 @@ The region to extract is determined by the respective values of
 point before and after applying FN to ARGS."
   (let (text)
     (with-ivy-window
-      (let ((pos (point))
+      (let ((beg (point))
             (bol (line-beginning-position))
-            (eol (line-end-position)))
+            (eol (line-end-position))
+            end)
         (unwind-protect
              (progn (apply fn args)
+                    (setq end (goto-char (max bol (min (point) eol))))
                     (setq text (buffer-substring-no-properties
-                                pos (goto-char (max bol (min (point) eol))))))
+                                beg end))
+                    (ivy--pulse-region beg end))
           (unless text
-            (goto-char pos)))))
+            (goto-char beg)))))
     (when text
       (insert (replace-regexp-in-string "  +" " " text t t)))))
 
@@ -3955,6 +3970,22 @@ If optional ARG is non-nil, pull in the next ARG
 characters (previous if ARG is negative)."
   (interactive "p")
   (ivy--yank-by #'forward-char arg))
+
+(defvar ivy--pulse-overlay nil
+  "Overlay used to highlight yanked word.")
+
+(defvar ivy--pulse-timer nil
+  "Timer used to dispose of ivy--pulse-overlay.")
+
+(defun ivy--pulse-region (begin end)
+  (if ivy--pulse-overlay
+      (move-overlay ivy--pulse-overlay begin end (current-buffer))
+    (setq ivy--pulse-overlay (make-overlay begin end)))
+  (when ivy--pulse-timer
+    (cancel-timer ivy--pulse-timer))
+  (move-overlay ivy--pulse-overlay begin end (current-buffer))
+  (overlay-put ivy--pulse-overlay 'face 'ivy-yanked-word)
+  (setq ivy--pulse-timer (run-at-time 0.5 nil #'delete-overlay ivy--pulse-overlay)))
 
 (defun ivy-kill-ring-save ()
   "Store the current candidates into the kill ring.
@@ -4066,21 +4097,61 @@ buffer would modify `ivy-last'.")
     (setq mode-name "Ivy-Occur"))
   (force-mode-line-update))
 
+(defun ivy--find-occur-buffer ()
+  (let ((cb (current-buffer)))
+    (cl-find-if
+     (lambda (b)
+       (with-current-buffer b
+         (and (eq major-mode 'ivy-occur-grep-mode)
+              (equal cb (ivy-state-buffer ivy-occur-last)))))
+     (buffer-list))))
+
+(defun ivy--select-occur-buffer ()
+  (let* ((ob (ivy--find-occur-buffer))
+         (ow (cl-find-if (lambda (w) (equal ob (window-buffer w)))
+                         (window-list))))
+    (if ow
+        (select-window ow)
+      (pop-to-buffer ob))))
+
 (defun ivy-occur-next-line (&optional arg)
   "Move the cursor down ARG lines.
 When `ivy-calling' isn't nil, call `ivy-occur-press'."
   (interactive "p")
-  (forward-line arg)
-  (when ivy-calling
-    (ivy-occur-press)))
+  (let ((offset (cond ((derived-mode-p 'ivy-occur-grep-mode) 5)
+                      ((derived-mode-p 'ivy-occur-mode) 2))))
+    (if offset
+        (progn
+          (if (< (line-number-at-pos) offset)
+              (progn
+                (goto-char (point-min))
+                (forward-line (1- offset)))
+            (forward-line arg)
+            (when (eolp)
+              (forward-line -1)))
+          (when ivy-calling
+            (ivy-occur-press)))
+      (ivy--select-occur-buffer)
+      (ivy-occur-next-line arg)
+      (ivy-occur-press-and-switch))))
 
 (defun ivy-occur-previous-line (&optional arg)
   "Move the cursor up ARG lines.
 When `ivy-calling' isn't nil, call `ivy-occur-press'."
   (interactive "p")
-  (forward-line (- arg))
-  (when ivy-calling
-    (ivy-occur-press)))
+  (let ((offset (cond ((derived-mode-p 'ivy-occur-grep-mode) 5)
+                      ((derived-mode-p 'ivy-occur-mode) 2))))
+    (if offset
+        (progn
+          (forward-line (- arg))
+          (when (< (line-number-at-pos) offset)
+            (goto-char (point-min))
+            (forward-line (1- offset)))
+          (when ivy-calling
+            (ivy-occur-press)))
+      (ivy--select-occur-buffer)
+      (ivy-occur-previous-line arg)
+      (ivy-occur-press-and-switch))))
 
 (define-derived-mode ivy-occur-mode fundamental-mode "Ivy-Occur"
   "Major mode for output from \\[ivy-occur].
@@ -4120,6 +4191,9 @@ When `ivy-calling' isn't nil, call `ivy-occur-press'."
 (ivy-set-occur 'ivy-switch-buffer 'ivy-switch-buffer-occur)
 (ivy-set-occur 'ivy-switch-buffer-other-window 'ivy-switch-buffer-occur)
 
+(defun ivy--starts-with-dotslash (str)
+  (string-match-p "\\`\\.[/\\]" str))
+
 (defun ivy--occur-insert-lines (cands)
   "Insert CANDS into `ivy-occur' buffer."
   (font-lock-mode -1)
@@ -4131,10 +4205,7 @@ When `ivy-calling' isn't nil, call `ivy-occur-press'."
        highlight
        help-echo "mouse-1: call ivy-action")
      str)
-    (insert (if (or (string-match-p "\\`.[/\\]" str)
-                    (eq (ivy-state-caller ivy-last) 'counsel-ag))
-                ""
-              "    ")
+    (insert (if (string-match-p "\\`.[/\\]" str) "" "    ")
             str ?\n))
   (goto-char (point-min))
   (forward-line 4)
