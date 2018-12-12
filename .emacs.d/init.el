@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-12-11 12:04:30 dan.harms>
+;; Modified Time-stamp: <2018-12-12 13:47:47 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3534,6 +3534,11 @@ Requires Flake8 2.0 or newer. See URL
             (setq-local company-smart-backend 'company-shell)
             ;; (add-hook 'completion-at-point-functions 'harmsway-company-at-point nil t)
             ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; sql-indent ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package sql-indent
+  :init
+  (add-hook 'sql-mode-hook #'sqlind-minor-mode))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; strace-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package strace-mode :mode "\\.strace$")
