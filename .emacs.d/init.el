@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-12-12 13:47:47 dan.harms>
+;; Modified Time-stamp: <2018-12-12 14:36:11 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2874,6 +2874,12 @@ See `https://github.com/company-mode/company-mode/issues/205'."
                        auto-insert-c-impl-alist))
           ))
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; easy-kill ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package easy-kill
+  :config
+  (global-set-key [remap kill-ring-save] #'easy-kill)
+  (global-set-key [remap mark-sexp] #'easy-mark))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; popup-kill-ring ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq kill-ring-max 100)
