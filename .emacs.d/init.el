@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-12-13 06:08:27 dharms>
+;; Modified Time-stamp: <2018-12-13 06:37:58 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1912,6 +1912,7 @@ Only one letter is shown, the first that applies."
   (setq dired-isearch-filenames t)
   (use-package dired-filter)
   (define-key dired-mode-map "." dired-filter-mark-map)
+  (setq wdired-create-parent-directories t)
   (setq wdired-allow-to-change-permissions t)
   ;; (use-package ivy-dired-history)
   (use-package dired-sidebar
