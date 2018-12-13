@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-12-12 14:36:11 dan.harms>
+;; Modified Time-stamp: <2018-12-13 06:08:27 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1423,6 +1423,10 @@ Only one letter is shown, the first that applies."
     (define-key grep-mode-map (kbd "+") #'grep-context-more-around-point)
     (define-key grep-mode-map (kbd "-") #'grep-context-less-around-point))
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; el-grep ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package elgrep
+  :bind ("C-c 0ge" . elgrep))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; deadgrep ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package deadgrep
