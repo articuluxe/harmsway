@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-12-13 06:37:58 dharms>
+;; Modified Time-stamp: <2018-12-17 11:40:08 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1665,37 +1665,37 @@ Only one letter is shown, the first that applies."
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ssh-deploy ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defun harmsway-ssh-deploy-save-hook ()
-  "Hook for `ssh-deploy' mode that uploads a file when saved."
-  (when (bound-and-true-p ssh-deploy-on-explicit-save)
-    (ssh-deploy-upload-handler)))
-(defun harmsway-ssh-deploy-find-file-hook ()
-  "Hook for `ssh-deploy' mode to detect remote modifications on file open."
-  (when (bound-and-true-p ssh-deploy-automatically-detect-remote-changes)
-    (ssh-deploy-remote-changes-handler)))
-(defvar my/ssh-deploy-keymap)
-(define-prefix-command 'my/ssh-deploy-keymap)
-(global-set-key "\C-c0d" 'my/ssh-deploy-keymap)
-(use-package ssh-deploy
-  :bind (:map my/ssh-deploy-keymap
-              ("u" . ssh-deploy-upload-handler)
-              ("f" . ssh-deploy-upload-handler-forced)
-              ("d" . ssh-deploy-download-handler)
-              ("D" . ssh-deploy-delete-handler)
-              ("R" . ssh-deploy-rename-handler)
-              ("=" . ssh-deploy-diff-handler)
-              ("x" . ssh-deploy-remote-changes-handler)
-              ("o" . ssh-deploy-open-remote-file-handler)
-              ("b" . ssh-deploy-browse-remote-base-handler)
-              ("B" . ssh-deploy-browse-remote-handler)
-              ("t" . ssh-deploy-remote-terminal-shell-base-handler)
-              ("T" . ssh-deploy-remote-terminal-shell-handler)
-              )
-  :config
-  (add-hook 'after-save-hook #'harmsway-ssh-deploy-save-hook)
-  (add-hook 'find-file-hook #'harmsway-ssh-deploy-find-file-hook)
-  (require 'async)
-  )
+;; (defun harmsway-ssh-deploy-save-hook ()
+;;   "Hook for `ssh-deploy' mode that uploads a file when saved."
+;;   (when (bound-and-true-p ssh-deploy-on-explicit-save)
+;;     (ssh-deploy-upload-handler)))
+;; (defun harmsway-ssh-deploy-find-file-hook ()
+;;   "Hook for `ssh-deploy' mode to detect remote modifications on file open."
+;;   (when (bound-and-true-p ssh-deploy-automatically-detect-remote-changes)
+;;     (ssh-deploy-remote-changes-handler)))
+;; (defvar my/ssh-deploy-keymap)
+;; (define-prefix-command 'my/ssh-deploy-keymap)
+;; (global-set-key "\C-c0d" 'my/ssh-deploy-keymap)
+;; (use-package ssh-deploy
+;;   :bind (:map my/ssh-deploy-keymap
+;;               ("u" . ssh-deploy-upload-handler)
+;;               ("f" . ssh-deploy-upload-handler-forced)
+;;               ("d" . ssh-deploy-download-handler)
+;;               ("D" . ssh-deploy-delete-handler)
+;;               ("R" . ssh-deploy-rename-handler)
+;;               ("=" . ssh-deploy-diff-handler)
+;;               ("x" . ssh-deploy-remote-changes-handler)
+;;               ("o" . ssh-deploy-open-remote-file-handler)
+;;               ("b" . ssh-deploy-browse-remote-base-handler)
+;;               ("B" . ssh-deploy-browse-remote-handler)
+;;               ("t" . ssh-deploy-remote-terminal-shell-base-handler)
+;;               ("T" . ssh-deploy-remote-terminal-shell-handler)
+;;               )
+;;   :config
+;;   (add-hook 'after-save-hook #'harmsway-ssh-deploy-save-hook)
+;;   (add-hook 'find-file-hook #'harmsway-ssh-deploy-find-file-hook)
+;;   (require 'async)
+;;   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; outline-magic ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun my/add-outline-cycle-binding (map)
