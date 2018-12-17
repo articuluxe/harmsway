@@ -948,7 +948,7 @@ reverse order (a stack) and is used to skip over nested blocks."
 (defconst sqlind-select-clauses-regexp
   (concat
    "\\_<\\("
-   "\\(union\\|intersect\\|minus\\)?[ \t\r\n\f]*select\\|"
+   "\\(\\(union\\(\\s-+all\\)?\\)\\|intersect\\|minus\\|except\\)?[ \t\r\n\f]*select\\|"
    "\\(bulk[ \t\r\n\f]+collect[ \t\r\n\f]+\\)?into\\|"
    "from\\|"
    "where\\|"
@@ -961,7 +961,10 @@ reverse order (a stack) and is used to skip over nested blocks."
    "\\)\\_>"))
 
 (defconst sqlind-select-join-regexp
-  (regexp-opt '("inner" "left" "right" "natural" "cross") 'symbols))
+  (regexp-opt '("inner" "left" "right" "natural" "cross" "full") 'symbols))
+
+(defconst sqlind-join-condition-regexp
+  (regexp-opt '("on" "using" "and" "or") 'symbols))
 
 (defun sqlind-syntax-in-select (pos start)
   "Return the syntax ar POS which is inside a \"select\" statement at START."
@@ -1007,8 +1010,8 @@ reverse order (a stack) and is used to skip over nested blocks."
 		 ;; or the previous line ends with 'on' we have a join
 		 ;; condition
 		 (goto-char pos)
-		 (when (or (looking-at "on")
-			   (progn (forward-word -1) (looking-at "on")))
+		 (when (or (looking-at sqlind-join-condition-regexp)
+			   (progn (forward-word -1) (looking-at sqlind-select-join-regexp)))
 		   ;; look for the join start, that will be the anchor
                    (when (sqlind-search-backward (point) "\\bjoin\\b" start)
                      (let ((candidate (point)))
@@ -1411,6 +1414,23 @@ not a statement-continuation POS is the same as the
                  (goto-char cdef)
                  (when (looking-at "case")
                    (push (sqlind-syntax-in-case pos (point)) context))))))
+
+         (when (eq (sqlind-syntax-symbol context) 'nested-statement-continuation)
+           (save-excursion
+             ;; Look for a join expression inside a nested statement, see #70
+	     (goto-char pos)
+	     (when (or (looking-at sqlind-join-condition-regexp)
+		       (progn (forward-word -1) (looking-at sqlind-join-condition-regexp)))
+	       ;; look for the join start, that will be the anchor
+               (when (sqlind-search-backward (point) "\\bjoin\\b" anchor)
+                 (let ((candidate (point)))
+                   (forward-char -1)
+                   (sqlind-backward-syntactic-ws)
+                   (backward-word)
+                   (push (if (looking-at sqlind-select-join-regexp)
+                             (cons 'select-join-condition (point))
+                           (cons 'select-join-condition candidate))
+                         context))))))
 
          ))
 
@@ -2160,7 +2180,7 @@ it will indent lines starting with JOIN keywords to line up with
 the FROM keyword."
   (save-excursion
     (back-to-indentation)
-    (if (looking-at "\\b\\(\\(inner\\|outer\\|cross\\)\\s-+\\)?join\\b")
+    (if (looking-at (concat "\\b\\(" sqlind-select-join-regexp "\\s-+\\)?join\\b"))
         (sqlind-lineup-to-anchor syntax base-indentation)
       base-indentation)))
 

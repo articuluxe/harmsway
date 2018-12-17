@@ -1,10 +1,10 @@
-;;; flymake-shellcheck.el --- A bash/sh Flymake backend  -*- lexical-binding: t; -*-
+;;; flymake-shellcheck.el --- A bash/sh Flymake backend powered by ShellCheck  -*- lexical-binding: t; -*-
 
 ;; Copyright (c) 2018 Federico Tedin
 
 ;; Author: Federico Tedin <federicotedin@gmail.com>
 ;; Homepage: https://github.com/federicotdn/flymake-shellcheck
-;; Package-Version: 0
+;; Package-Version: 0.1
 ;; Package-Requires: ((emacs "26"))
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -26,7 +26,6 @@
 ;;   https://www.gnu.org/software/emacs/manual/html_node/flymake/An-annotated-example-backend.html
 ;;
 ;; Usage:
-;;   (require 'flymake-shellcheck)
 ;;   (add-hook 'sh-mode-hook 'flymake-shellcheck-load)
 
 ;;; Code:
@@ -82,6 +81,7 @@
                                proc))
               (kill-buffer (process-buffer proc))))))))))
 
+;;;###autoload
 (defun flymake-shellcheck-load ()
   "Add the Shellcheck backend into Flymake's diagnostic functions list."
   (add-hook 'flymake-diagnostic-functions 'flymake-shellcheck--backend nil t))

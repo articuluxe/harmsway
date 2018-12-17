@@ -195,8 +195,7 @@ respectively."
       (ivy--exhibit))))
 
 (defcustom counsel-async-filter-update-time 500000
-  "The amount of time in microseconds to wait until updating
-`counsel--async-filter'."
+  "The amount of microseconds to wait until updating `counsel--async-filter'."
   :type 'integer
   :group 'ivy)
 
@@ -611,7 +610,7 @@ X is an item of a radio- or choice-type defcustom."
   :group 'ivy-faces)
 
 (defun counsel-set-variable (sym)
-  "Set a variable, with completion.
+  "Set a variable SYM, with completion.
 
 When the selected variable is a `defcustom' with the type boolean
 or radio, offer completion of all possible values.
@@ -708,7 +707,8 @@ a symbol and how to search for them."
 
 ;;;###autoload
 (defun counsel-info-lookup-symbol (symbol &optional mode)
-  "Forward to `info-lookup-symbol' with ivy completion."
+  "Forward SYMBOL to `info-lookup-symbol' with ivy completion.
+With prefix arg MODE a query for the symbol help mode is offered."
   (interactive
    (progn
      (require 'info-look)
@@ -1503,7 +1503,16 @@ If NO-ASYNC is non-nil, do it synchronously instead."
        nil))))
 
 (defun counsel--normalize-grep-match (str)
-  (if (string-match-p "\\`\\.[/\\]" str) str (concat "./" str)))
+  ;; Prepend ./ if necessary:
+  (unless (string-match-p "\\`\\.[/\\]" str)
+    (setq str (concat "./" str)))
+  ;; Remove column info if any:
+  (save-match-data
+    (when (string-match
+           "[^\n:]+?[^\n/:]:[\t ]*[1-9][0-9]*[\t ]*:\\([1-9][0-9]*:\\)"
+           str)
+      (setq str (replace-match "" t t str 1))))
+  str)
 
 (defun counsel-git-grep-occur ()
   "Generate a custom occur buffer for `counsel-git-grep'.

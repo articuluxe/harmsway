@@ -5,7 +5,7 @@
 ;; Author: Feng Shu <tumashu@163.com>
 ;; Maintainer: Feng Shu <tumashu@163.com>
 ;; URL: https://github.com/tumashu/posframe
-;; Version: 0.4.1
+;; Version: 0.4.2
 ;; Keywords: tooltip
 ;; Package-Requires: ((emacs "26"))
 
@@ -876,9 +876,5 @@ docstring of `posframe-show'."
              (- 0 mode-line-height posframe-height)))))
 
 (provide 'posframe)
-
-;; Local Variables:
-;; coding: utf-8
-;; End:
 
 ;;; posframe.el ends here

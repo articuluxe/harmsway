@@ -1,12 +1,12 @@
-;;; ssh-deploy.el --- Deployment via TRAMP, global or per directory.  -*- lexical-binding:t -*-
+;;; ssh-deploy.el --- Deployment via Tramp, global or per directory.  -*- lexical-binding:t -*-
 
 ;; Copyright (C) 2017-2018  Free Software Foundation, Inc.
 
 ;; Author: Christian Johansson <christian@cvj.se>
 ;; Maintainer: Christian Johansson <christian@cvj.se>
 ;; Created: 5 Jul 2016
-;; Modified: 5 Dec 2018
-;; Version: 3.0.1
+;; Modified: 17 Dec 2018
+;; Version: 3.0.3
 ;; Keywords: tools, convenience
 ;; URL: https://github.com/cjohansson/emacs-ssh-deploy
 
@@ -32,13 +32,13 @@
 ;; ssh-deploy enables automatic deploys on explicit-save actions, manual uploads, renaming,
 ;; deleting, downloads, file and directory differences, launching remote terminals (eshell, shell),
 ;; detection of remote changes, remote directory browsing, remote SQL database sessions and
-;; running custom deployment scripts via TRAMP.
+;; running custom deployment scripts via Tramp.
 ;;
 ;; For asynchronous operations it uses package '`make-thread' or if not available '`async.el'.
 ;;
 ;; By setting the variables (globally, per directory or per file):
 ;; ssh-deploy-root-local,ssh-deploy-root-remote, ssh-deploy-on-explicit-save
-;; you can setup a directory for TRAMP deployment.
+;; you can setup a directory for Tramp deployment.
 ;;
 ;; For asynchronous transfers you need to setup ~/.authinfo.gpg or key-based authorization or equivalent for automatic authentication.
 ;;
@@ -110,7 +110,7 @@
 ;; Here is a list of other variables you can set globally or per directory:
 
 ;; * `ssh-deploy-root-local' - The local root that should be under deployment *(string)*
-;; * `ssh-deploy-root-remote' - The remote TRAMP root that is used for deployment *(string)*
+;; * `ssh-deploy-root-remote' - The remote Tramp root that is used for deployment *(string)*
 ;; * `ssh-deploy-debug' - Enables debugging messages *(integer)*
 ;; * `ssh-deploy-revision-folder' - The folder used for storing local revisions *(string)*
 ;; * `ssh-deploy-automatically-detect-remote-changes' - Enables automatic detection of remote changes *(integer)*
@@ -137,7 +137,7 @@
 (autoload 'ssh-deploy-diff-mode "ssh-deploy-diff-mode")
 
 (defgroup ssh-deploy nil
-  "Upload, download, difference, browse and terminal handler for files and directories on remote hosts via TRAMP."
+  "Upload, download, difference, browse and terminal handler for files and directories on remote hosts via Tramp."
   :group 'tools
   :group 'convenience)
 
@@ -290,21 +290,29 @@
            async-with-threads
            (> async-with-threads 0))
       (make-thread (lambda()
-                     (if start
-                         (let ((result (funcall start)))
-                           (if finish
-                               (funcall finish result))))))
+                     (let ((ssh-deploy-async 0)
+                           (ssh-deploy-async-with-threads 0)
+                           (ssh-deploy-on-explicit-save 0)
+                           (ssh-deploy-automatically-detect-remote-changes 0))
+                       (if start
+                           (let ((result (funcall start)))
+                             (if finish
+                                 (funcall finish result)))))))
     (if (fboundp 'async-start)
-        (if start
-            (let ((ftp-netrc nil))
-              (when (boundp 'ange-ftp-netrc-filename)
-                (setq ftp-netrc ange-ftp-netrc-filename))
-              (async-start
-               (lambda()
+        (when start
+          (let ((ftp-netrc nil))
+            (when (boundp 'ange-ftp-netrc-filename)
+              (setq ftp-netrc ange-ftp-netrc-filename))
+            (async-start
+             (lambda()
+               (let ((ssh-deploy-async 0)
+                     (ssh-deploy-async-with-threads 0)
+                     (ssh-deploy-on-explicit-save 0)
+                     (ssh-deploy-automatically-detect-remote-changes 0))
                  (if ftp-netrc
                      (defvar ange-ftp-netrc-filename ftp-netrc))
-                 (funcall start))
-               finish)))
+                 (funcall start)))
+             finish)))
       (display-warning 'ssh-deploy "Neither make-thread nor async-start functions are available!"))))
 
 (defun ssh-deploy--mode-line-set-status-and-update (status &optional filename)
@@ -354,14 +362,10 @@
      ((and ssh-deploy-root-local ssh-deploy-root-remote)
       (setq status-text "idle"))
 
-     (t (setq status-text ""))
-
-     )
+     (t (setq status-text "")))
 
     (make-local-variable 'ssh-deploy--mode-line-status-text)
-    (setq ssh-deploy--mode-line-status-text (ssh-deploy--mode-line-status-text-format status-text))
-    ;; (message "SSH Deploy - Updated status text to: '%s' from: %d" ssh-deploy--mode-line-status-text status)
-    ))
+    (setq ssh-deploy--mode-line-status-text (ssh-deploy--mode-line-status-text-format status-text))))
 
 (defun ssh-deploy--mode-line-status-text-format (text)
   "Return a formatted string based on TEXT."
@@ -380,30 +384,30 @@
       (make-directory root))
   (expand-file-name (replace-regexp-in-string "\\(/\\|@\\|:\\)" "_" path) root))
 
-(defun ssh-deploy--file-is-in-path (file path)
+(defun ssh-deploy--file-is-in-path-p (file path)
   "Return non-nil if FILE is in the path PATH."
   (not (null (string-match path file))))
 
-(defun ssh-deploy--file-is-included (path exclude-list)
+(defun ssh-deploy--file-is-included-p (path exclude-list)
   "Return non-nil if PATH is not in EXCLUDE-LIST."
   (let ((not-found t))
     (dolist (element exclude-list)
-      (if (and (not (null element))
-               (not (null (string-match element path))))
-          (setq not-found nil)))
+      (when (and (not (null element))
+                 (not (null (string-match element path))))
+        (setq not-found nil)))
     not-found))
 
 (defun ssh-deploy--get-relative-path (root path)
   "Return a string for the relative path based on ROOT and PATH."
   (replace-regexp-in-string root "" path))
 
-(defun ssh-deploy--is-not-empty-string (string)
+(defun ssh-deploy--is-not-empty-string-p (string)
   "Return non-nil if the STRING is not empty and not nil.  Expects string."
   (and (not (null string))
        (not (zerop (length string)))))
 
 (defun ssh-deploy--upload-via-tramp-async (path-local path-remote force revision-folder async-with-threads)
-  "Upload PATH-LOCAL to PATH-REMOTE via TRAMP asynchronously and FORCE upload despite remote change, check for revisions in REVISION-FOLDER.  Use multi-treaded async if ASYNC-WITH-THREADS is specified."
+  "Upload PATH-LOCAL to PATH-REMOTE via Tramp asynchronously and FORCE upload despite remote change, check for revisions in REVISION-FOLDER.  Use multi-treaded async if ASYNC-WITH-THREADS is specified."
   (let ((file-or-directory (not (file-directory-p path-local))))
     (ssh-deploy--mode-line-set-status-and-update ssh-deploy--status-uploading path-local)
     (if file-or-directory
@@ -415,8 +419,8 @@
              (if (fboundp 'ediff-same-file-contents)
                  (if (or (> force 0) (not (file-exists-p path-remote)) (and (file-exists-p revision-path) (ediff-same-file-contents revision-path path-remote)))
                      (progn
-                       (if (not (file-directory-p (file-name-directory path-remote)))
-                           (make-directory (file-name-directory path-remote) t))
+                       (unless (file-directory-p (file-name-directory path-remote))
+                         (make-directory (file-name-directory path-remote) t))
                        (copy-file path-local path-remote t t t t)
                        (copy-file path-local revision-path t t t t)
                        (list 0 (format "Completed upload of file '%s'. (asynchronously)" path-remote) path-local))
@@ -428,18 +432,17 @@
                  (when ssh-deploy-verbose (message (nth 1 return)))
                (display-warning 'ssh-deploy (nth 1 return) :warning)))
            async-with-threads))
-      (progn
-        (when ssh-deploy-verbose (message "Uploading directory '%s' to '%s'.. (asynchronously)" path-local path-remote))
-        (ssh-deploy--async-process
-         (lambda()
-           (copy-directory path-local path-remote t t t)
-           path-local)
-         (lambda(return-path)
-           (ssh-deploy--mode-line-set-status-and-update ssh-deploy--status-idle return-path)
-           (when ssh-deploy-verbose (message "Completed upload of directory '%s'. (asynchronously)" return-path))))))))
+      (when ssh-deploy-verbose (message "Uploading directory '%s' to '%s'.. (asynchronously)" path-local path-remote))
+      (ssh-deploy--async-process
+       (lambda()
+         (copy-directory path-local path-remote t t t)
+         path-local)
+       (lambda(return-path)
+         (ssh-deploy--mode-line-set-status-and-update ssh-deploy--status-idle return-path)
+         (when ssh-deploy-verbose (message "Completed upload of directory '%s'. (asynchronously)" return-path)))))))
 
 (defun ssh-deploy--upload-via-tramp (path-local path-remote force revision-folder)
-  "Upload PATH-LOCAL to PATH-REMOTE via TRAMP synchronously and FORCE despite remote change compared with copy in REVISION-FOLDER."
+  "Upload PATH-LOCAL to PATH-REMOTE via Tramp synchronously and FORCE despite remote change compared with copy in REVISION-FOLDER."
   (let ((file-or-directory (not (file-directory-p path-local)))
         (revision-path (ssh-deploy--get-revision-path path-local revision-folder)))
     (ssh-deploy--mode-line-set-status-and-update ssh-deploy--status-uploading)
@@ -452,22 +455,21 @@
                       (and (file-exists-p revision-path) (ediff-same-file-contents revision-path path-remote)))
                   (progn
                     (when ssh-deploy-verbose (message "Uploading file '%s' to '%s'.. (synchronously)" path-local path-remote))
-                    (if (not (file-directory-p (file-name-directory path-remote)))
-                        (make-directory (file-name-directory path-remote) t))
+                    (unless (file-directory-p (file-name-directory path-remote))
+                      (make-directory (file-name-directory path-remote) t))
                     (copy-file path-local path-remote t t t t)
                     (ssh-deploy-store-revision path-local revision-folder)
                     (when ssh-deploy-verbose (message "Completed upload of '%s'. (synchronously)" path-local)))
                 (display-warning 'ssh-deploy (format "Remote file '%s' has changed, please download or diff. (synchronously)" path-remote) :warning))
             (display-warning 'ssh-deploy "Function 'ediff-same-file-contents' is missing." :warning))
           (ssh-deploy--mode-line-set-status-and-update ssh-deploy--status-idle))
-      (progn
-        (when ssh-deploy-verbose (message "Uploading directory '%s' to '%s'.. (synchronously)" path-local path-remote))
-        (copy-directory path-local path-remote t t t)
-        (ssh-deploy--mode-line-set-status-and-update ssh-deploy--status-idle)
-        (when ssh-deploy-verbose (message "Completed upload of '%s'. (synchronously)" path-local))))))
+      (when ssh-deploy-verbose (message "Uploading directory '%s' to '%s'.. (synchronously)" path-local path-remote))
+      (copy-directory path-local path-remote t t t)
+      (ssh-deploy--mode-line-set-status-and-update ssh-deploy--status-idle)
+      (when ssh-deploy-verbose (message "Completed upload of '%s'. (synchronously)" path-local)))))
 
 (defun ssh-deploy--download-via-tramp-async (path-remote path-local revision-folder async-with-threads)
-  "Download PATH-REMOTE to PATH-LOCAL via TRAMP asynchronously and make a copy in REVISION-FOLDER, use multi-threading if ASYNC-WITH-THREADS is above zero."
+  "Download PATH-REMOTE to PATH-LOCAL via Tramp asynchronously and make a copy in REVISION-FOLDER, use multi-threading if ASYNC-WITH-THREADS is above zero."
   (let ((revision-path (ssh-deploy--get-revision-path path-local revision-folder)))
     (ssh-deploy--mode-line-set-status-and-update ssh-deploy--status-downloading path-local)
     (when ssh-deploy-verbose (message "Downloading '%s' to '%s'.. (asynchronously)" path-remote path-local))
@@ -476,8 +478,8 @@
        (let ((file-or-directory (not (file-directory-p path-remote))))
          (if file-or-directory
              (progn
-               (if (not (file-directory-p (file-name-directory path-local)))
-                   (make-directory (file-name-directory path-local) t))
+               (unless (file-directory-p (file-name-directory path-local))
+                 (make-directory (file-name-directory path-local) t))
                (copy-file path-remote path-local t t t t)
                (copy-file path-local revision-path t t t t))
            (copy-directory path-remote path-local t t t))
@@ -492,23 +494,22 @@
      async-with-threads)))
 
 (defun ssh-deploy--download-via-tramp (path-remote path-local revision-folder)
-  "Download PATH-REMOTE to PATH-LOCAL via TRAMP synchronously and store a copy in REVISION-FOLDER."
+  "Download PATH-REMOTE to PATH-LOCAL via Tramp synchronously and store a copy in REVISION-FOLDER."
   (let ((file-or-directory (not (file-directory-p path-remote))))
     (ssh-deploy--mode-line-set-status-and-update ssh-deploy--status-downloading)
     (if file-or-directory
         (progn
           (when ssh-deploy-verbose (message "Downloading file '%s' to '%s'.. (synchronously)" path-remote path-local))
-          (if (not (file-directory-p (file-name-directory path-local)))
-              (make-directory (file-name-directory path-local) t))
+          (unless (file-directory-p (file-name-directory path-local))
+            (make-directory (file-name-directory path-local) t))
           (copy-file path-remote path-local t t t t)
           (ssh-deploy-store-revision path-local revision-folder)
           (ssh-deploy--mode-line-set-status-and-update ssh-deploy--status-idle)
           (when ssh-deploy-verbose (message "Completed download of file '%s'. (synchronously)" path-local)))
-      (progn
-        (message "Downloading directory '%s' to '%s'.. (synchronously)" path-remote path-local)
-        (copy-directory path-remote path-local t t t)
-        (ssh-deploy--mode-line-set-status-and-update ssh-deploy--status-idle)
-        (message "Completed download of directory '%s'. (synchronously)" path-local)))))
+      (message "Downloading directory '%s' to '%s'.. (synchronously)" path-remote path-local)
+      (copy-directory path-remote path-local t t t)
+      (ssh-deploy--mode-line-set-status-and-update ssh-deploy--status-idle)
+      (message "Completed download of directory '%s'. (synchronously)" path-local))))
 
 (defun ssh-deploy--diff-directories-data (directory-a directory-b exclude-list)
   "Find difference between DIRECTORY-A and DIRECTORY-B but exclude paths matching EXCLUDE-LIST."
@@ -538,16 +539,16 @@
 
                    ;; Check if file is excluded
                    (dolist (element exclude-list)
-                     (if (and (not (null element))
-                              (not (null (string-match element relative-path))))
-                         (setq included nil)))
+                     (when (and (not (null element))
+                                (not (null (string-match element relative-path))))
+                       (setq included nil)))
 
-                   (if included
-                       (progn
-                         (puthash relative-path file-a files-a-relative-hash)
-                         (if (equal files-a-relative-list nil)
-                             (setq files-a-relative-list (list relative-path))
-                           (push relative-path files-a-relative-list)))))))
+                   (when included
+                     (progn
+                       (puthash relative-path file-a files-a-relative-hash)
+                       (if (equal files-a-relative-list nil)
+                           (setq files-a-relative-list (list relative-path))
+                         (push relative-path files-a-relative-list)))))))
              files-a)
 
             ;; Collected included files in directory b with relative paths
@@ -560,16 +561,15 @@
 
                    ;; Check if file is excluded
                    (dolist (element exclude-list)
-                     (if (and (not (null element))
-                              (not (null (string-match element relative-path))))
-                         (setq included nil)))
+                     (when (and (not (null element))
+                                (not (null (string-match element relative-path))))
+                       (setq included nil)))
 
-                   (if included
-                       (progn
-                         (puthash relative-path file-b files-b-relative-hash)
-                         (if (equal files-b-relative-list nil)
-                             (setq files-b-relative-list (list relative-path))
-                           (push relative-path files-b-relative-list)))))))
+                   (when included
+                     (puthash relative-path file-b files-b-relative-hash)
+                     (if (equal files-b-relative-list nil)
+                         (setq files-b-relative-list (list relative-path))
+                       (push relative-path files-b-relative-list))))))
              files-b)
 
             ;; Collect files that only exists in directory a and files that exist in both directory a and b
@@ -587,29 +587,28 @@
             ;; Collect files that only exists in directory b
             (mapc
              (lambda (file-b)
-               (if (equal (gethash file-b files-a-relative-hash) nil)
-                   (progn
-                     ;; (message "%s did not exist in hash-a" file-b)
-                     (if (equal files-b-only nil)
-                         (setq files-b-only (list file-b))
-                       (push file-b files-b-only)))))
+               (when (equal (gethash file-b files-a-relative-hash) nil)
+                 ;; (message "%s did not exist in hash-a" file-b)
+                 (if (equal files-b-only nil)
+                     (setq files-b-only (list file-b))
+                   (push file-b files-b-only))))
              files-b-relative-list)
 
             ;; Collect files that differ in contents and have equal contents
             (require 'ediff-util)
-            (if (fboundp 'ediff-same-file-contents)
-                (mapc
-                 (lambda (file)
-                   (let ((file-a (gethash file files-a-relative-hash))
-                         (file-b (gethash file files-b-relative-hash)))
-                     (if (ediff-same-file-contents file-a file-b)
-                         (if (equal files-both-equals nil)
-                             (setq files-both-equals (list file))
-                           (push file files-both-equals))
-                       (if (equal files-both-differs nil)
-                           (setq files-both-differs (list file))
-                         (push file files-both-differs)))))
-                 files-both))
+            (when (fboundp 'ediff-same-file-contents)
+              (mapc
+               (lambda (file)
+                 (let ((file-a (gethash file files-a-relative-hash))
+                       (file-b (gethash file files-b-relative-hash)))
+                   (if (ediff-same-file-contents file-a file-b)
+                       (if (equal files-both-equals nil)
+                           (setq files-both-equals (list file))
+                         (push file files-both-equals))
+                     (if (equal files-both-differs nil)
+                         (setq files-both-differs (list file))
+                       (push file files-both-differs)))))
+               files-both))
 
             (list directory-a directory-b exclude-list files-both files-a-only files-b-only files-both-equals files-both-differs))
         (display-warning 'ssh-deploy "Both directories need to exist to perform difference generation." :warning))
@@ -627,36 +626,32 @@
     (ssh-deploy--insert-keyword "DIRECTORY B: ")
     (insert (nth 1 diff) "\n")
 
-    (if (> (length (nth 2 diff)) 0)
-        (progn
-          (insert "\n")
-          (ssh-deploy--insert-keyword (format "EXCLUDE-LIST: (%d)" (length (nth 2 diff))))
-          (dolist (element (nth 2 diff))
-            (insert "\n- " element))
-          (insert "\n")))
+    (when (> (length (nth 2 diff)) 0)
+      (insert "\n")
+      (ssh-deploy--insert-keyword (format "EXCLUDE-LIST: (%d)" (length (nth 2 diff))))
+      (dolist (element (nth 2 diff))
+        (insert "\n- " element))
+      (insert "\n"))
 
     (insert "\n")
 
-    (if (> (length (nth 4 diff)) 0)
-        (progn
-          (ssh-deploy--insert-keyword (format "FILES ONLY IN A: (%d)" (length (nth 4 diff))))
-          (dolist (element (nth 4 diff))
-            (insert "\n- " element))
-          (insert "\n\n")))
+    (when (> (length (nth 4 diff)) 0)
+      (ssh-deploy--insert-keyword (format "FILES ONLY IN A: (%d)" (length (nth 4 diff))))
+      (dolist (element (nth 4 diff))
+        (insert "\n- " element))
+      (insert "\n\n"))
 
-    (if (> (length (nth 5 diff)) 0)
-        (progn
-          (ssh-deploy--insert-keyword (format "FILES ONLY IN B: (%d)" (length (nth 5 diff))))
-          (dolist (element (nth 5 diff))
-            (insert "\n- " element))
-          (insert "\n\n")))
+    (when (> (length (nth 5 diff)) 0)
+      (ssh-deploy--insert-keyword (format "FILES ONLY IN B: (%d)" (length (nth 5 diff))))
+      (dolist (element (nth 5 diff))
+        (insert "\n- " element))
+      (insert "\n\n"))
 
-    (if (> (length (nth 7 diff)) 0)
-        (progn
-          (ssh-deploy--insert-keyword (format "FILES IN BOTH BUT DIFFERS: (%d)" (length (nth 7 diff))))
-          (dolist (element (nth 7 diff))
-            (insert "\n- " element))
-          (insert "\n\n")))
+    (when (> (length (nth 7 diff)) 0)
+      (ssh-deploy--insert-keyword (format "FILES IN BOTH BUT DIFFERS: (%d)" (length (nth 7 diff))))
+      (dolist (element (nth 7 diff))
+        (insert "\n- " element))
+      (insert "\n\n"))
 
     (insert "\nHELP: quit (q), copy (C), copy A to B (a), copy B to A (b), delete (D), difference (TAB), refresh (g), open (RET)")
 
@@ -712,15 +707,14 @@
              (ssh-deploy--diff-directories-data directory-a directory-b exclude-list))
            (lambda(diff)
              (message "Completed calculation of differences between directory '%s' and '%s'. Result: %s only in A %s only in B %s differs. (asynchronously)" (nth 0 diff) (nth 1 diff) (length (nth 4 diff)) (length (nth 5 diff)) (length (nth 7 diff)))
-             (if (or (> (length (nth 4 diff)) 0) (> (length (nth 5 diff)) 0) (> (length (nth 7 diff)) 0))
-                 (ssh-deploy--diff-directories-present diff directory-a directory-b on-explicit-save debug async async-with-threads revision-folder remote-changes exclude-list)))
+             (when (or (> (length (nth 4 diff)) 0) (> (length (nth 5 diff)) 0) (> (length (nth 7 diff)) 0))
+               (ssh-deploy--diff-directories-present diff directory-a directory-b on-explicit-save debug async async-with-threads revision-folder remote-changes exclude-list)))
            async-with-threads))
-      (progn
-        (message "Calculating differences between directory '%s' and '%s'.. (synchronously)" directory-a directory-b)
-        (let ((diff (ssh-deploy--diff-directories-data directory-a directory-b exclude-list)))
-          (message "Completed calculation of differences between directory '%s' and '%s'. Result: %s only in A, %s only in B, %s differs. (synchronously)" (nth 0 diff) (nth 1 diff) (length (nth 4 diff)) (length (nth 5 diff)) (length (nth 7 diff)))
-          (if (or (> (length (nth 4 diff)) 0) (> (length (nth 5 diff)) 0) (> (length (nth 7 diff)) 0))
-              (ssh-deploy--diff-directories-present diff directory-a directory-b on-explicit-save debug async async-with-threads revision-folder remote-changes exclude-list)))))))
+      (message "Calculating differences between directory '%s' and '%s'.. (synchronously)" directory-a directory-b)
+      (let ((diff (ssh-deploy--diff-directories-data directory-a directory-b exclude-list)))
+        (message "Completed calculation of differences between directory '%s' and '%s'. Result: %s only in A, %s only in B, %s differs. (synchronously)" (nth 0 diff) (nth 1 diff) (length (nth 4 diff)) (length (nth 5 diff)) (length (nth 7 diff)))
+        (when (or (> (length (nth 4 diff)) 0) (> (length (nth 5 diff)) 0) (> (length (nth 7 diff)) 0))
+          (ssh-deploy--diff-directories-present diff directory-a directory-b on-explicit-save debug async async-with-threads revision-folder remote-changes exclude-list))))))
 
 ;;;###autoload
 (defun ssh-deploy-remote-changes (path-local &optional root-local root-remote async revision-folder exclude-list async-with-threads)
@@ -730,8 +724,8 @@
         (exclude-list (or exclude-list ssh-deploy-exclude-list)))
 
     ;; Is the file inside the local-root and should it not be excluded?
-    (if (and (ssh-deploy--file-is-in-path path-local root-local)
-             (ssh-deploy--file-is-included path-local exclude-list))
+    (if (and (ssh-deploy--file-is-in-path-p path-local root-local)
+             (ssh-deploy--file-is-included-p path-local exclude-list))
         (let* ((revision-folder (or revision-folder ssh-deploy-revision-folder))
                (revision-path (ssh-deploy--get-revision-path path-local revision-folder))
                (path-remote (expand-file-name (ssh-deploy--get-relative-path root-local path-local) root-remote)))
@@ -777,24 +771,23 @@
                            async-with-threads))
 
                       ;; Async is not enabled - synchronous logic here
-                      (progn
 
-                        ;; Update buffer status
-                        (ssh-deploy--mode-line-set-status-and-update ssh-deploy--status-detecting-remote-changes)
+                      ;; Update buffer status
+                      (ssh-deploy--mode-line-set-status-and-update ssh-deploy--status-detecting-remote-changes)
 
-                        ;; Does remote file exist?
-                        (if (file-exists-p path-remote)
-                            (progn
-                              (require 'ediff-util)
-                              (if (fboundp 'ediff-same-file-contents)
-                                  (if (ediff-same-file-contents revision-path path-remote)
-                                      (when ssh-deploy-verbose (message "Remote file '%s' has not changed. (synchronously)" path-remote))
-                                    (display-warning 'ssh-deploy (format "Remote file '%s' has changed, please download or diff. (synchronously)" path-remote) :warning))
-                                (display-warning 'ssh-deploy "Function 'ediff-same-file-contents' is missing. (synchronously)" :warning)))
-                          (when ssh-deploy-verbose (message "Remote file '%s' doesn't exist. (synchronously)" path-remote)))
+                      ;; Does remote file exist?
+                      (if (file-exists-p path-remote)
+                          (progn
+                            (require 'ediff-util)
+                            (if (fboundp 'ediff-same-file-contents)
+                                (if (ediff-same-file-contents revision-path path-remote)
+                                    (when ssh-deploy-verbose (message "Remote file '%s' has not changed. (synchronously)" path-remote))
+                                  (display-warning 'ssh-deploy (format "Remote file '%s' has changed, please download or diff. (synchronously)" path-remote) :warning))
+                              (display-warning 'ssh-deploy "Function 'ediff-same-file-contents' is missing. (synchronously)" :warning)))
+                        (when ssh-deploy-verbose (message "Remote file '%s' doesn't exist. (synchronously)" path-remote)))
 
-                        ;; Update buffer status to idle
-                        (ssh-deploy--mode-line-set-status-and-update ssh-deploy--status-idle)))
+                      ;; Update buffer status to idle
+                      (ssh-deploy--mode-line-set-status-and-update ssh-deploy--status-idle))
 
                   ;; Does not have local revision. Is async enabled?
                   (if (> async 0)
@@ -830,26 +823,25 @@
                          async-with-threads))
 
                     ;; Async is not enabled - synchronous logic here
-                    (progn
 
-                      ;; Update buffer status
-                      (ssh-deploy--mode-line-set-status-and-update ssh-deploy--status-detecting-remote-changes)
+                    ;; Update buffer status
+                    (ssh-deploy--mode-line-set-status-and-update ssh-deploy--status-detecting-remote-changes)
 
-                      ;; Does remote file exist?
-                      (if (file-exists-p path-remote)
-                          (progn
-                            (require 'ediff-util)
-                            (if (fboundp 'ediff-same-file-contents)
-                                (if (ediff-same-file-contents path-local path-remote)
-                                    (progn
-                                      (copy-file path-local revision-path t t t t)
-                                      (when ssh-deploy-verbose (message "Remote file '%s' has not changed, created base revision. (synchronously)" path-remote)))
-                                  (display-warning 'ssh-deploy (format "Remote file '%s' has changed, please download or diff. (synchronously)" path-remote) :warning))
-                              (display-warning 'ssh-deploy "Function 'ediff-same-file-contents' is missing. (synchronously)" :warning)))
-                        (when ssh-deploy-verbose (message "Remote file '%s' does not exist. (synchronously)" path-remote)))
+                    ;; Does remote file exist?
+                    (if (file-exists-p path-remote)
+                        (progn
+                          (require 'ediff-util)
+                          (if (fboundp 'ediff-same-file-contents)
+                              (if (ediff-same-file-contents path-local path-remote)
+                                  (progn
+                                    (copy-file path-local revision-path t t t t)
+                                    (when ssh-deploy-verbose (message "Remote file '%s' has not changed, created base revision. (synchronously)" path-remote)))
+                                (display-warning 'ssh-deploy (format "Remote file '%s' has changed, please download or diff. (synchronously)" path-remote) :warning))
+                            (display-warning 'ssh-deploy "Function 'ediff-same-file-contents' is missing. (synchronously)" :warning)))
+                      (when ssh-deploy-verbose (message "Remote file '%s' does not exist. (synchronously)" path-remote)))
 
-                      ;; Update buffer status to idle
-                      (ssh-deploy--mode-line-set-status-and-update ssh-deploy--status-idle)))))
+                    ;; Update buffer status to idle
+                    (ssh-deploy--mode-line-set-status-and-update ssh-deploy--status-idle))))
 
             ;; File is a directory
             (when (> ssh-deploy-debug 0) (message "File %s is a directory, ignoring remote changes check." path-local))))
@@ -905,8 +897,8 @@
         (debug (or debug ssh-deploy-debug))
         (exclude-list (or exclude-list ssh-deploy-exclude-list))
         (async-with-threads (or async async-with-threads)))
-    (if (and (ssh-deploy--file-is-in-path path-local root-local)
-             (ssh-deploy--file-is-included path-local exclude-list))
+    (if (and (ssh-deploy--file-is-in-path-p path-local root-local)
+             (ssh-deploy--file-is-included-p path-local exclude-list))
         (let ((path-remote (expand-file-name (ssh-deploy--get-relative-path root-local path-local) root-remote)))
           (ssh-deploy-delete path-local async async-with-threads)
           (ssh-deploy-delete path-remote async async-with-threads))
@@ -921,10 +913,10 @@
         (debug (or debug ssh-deploy-debug))
         (exclude-list (or exclude-list ssh-deploy-exclude-list))
         (async-with-threads (or async-with-threads ssh-deploy-async-with-threads)))
-    (if (and (ssh-deploy--file-is-in-path old-path-local root-local)
-             (ssh-deploy--file-is-in-path new-path-local root-local)
-             (ssh-deploy--file-is-included old-path-local exclude-list)
-             (ssh-deploy--file-is-included new-path-local exclude-list))
+    (if (and (ssh-deploy--file-is-in-path-p old-path-local root-local)
+             (ssh-deploy--file-is-in-path-p new-path-local root-local)
+             (ssh-deploy--file-is-included-p old-path-local exclude-list)
+             (ssh-deploy--file-is-included-p new-path-local exclude-list))
         (let ((old-path-remote (expand-file-name (ssh-deploy--get-relative-path root-local old-path-local) root-remote))
               (new-path-remote (expand-file-name (ssh-deploy--get-relative-path root-local new-path-local) root-remote)))
           (ssh-deploy--mode-line-set-status-and-update ssh-deploy--status-renaming)
@@ -945,12 +937,11 @@
                  (ssh-deploy--mode-line-set-status-and-update ssh-deploy--status-idle (nth 2 files))
                  (message "Renamed '%s' to '%s'. (asynchronously)" (nth 0 files) (nth 1 files)))
                async-with-threads)
-            (progn
-              (rename-file old-path-remote new-path-remote t)
-              (ssh-deploy--mode-line-set-status-and-update ssh-deploy--status-idle)
-              (message "Renamed '%s' to '%s'. (synchronously)" old-path-remote new-path-remote))))
-      (if (> debug 0)
-          (message "Path '%s' or '%s' is not in the root '%s' or is excluded from it." old-path-local new-path-local root-local)))))
+            (rename-file old-path-remote new-path-remote t)
+            (ssh-deploy--mode-line-set-status-and-update ssh-deploy--status-idle)
+            (message "Renamed '%s' to '%s'. (synchronously)" old-path-remote new-path-remote)))
+      (when (> debug 0)
+        (message "Path '%s' or '%s' is not in the root '%s' or is excluded from it." old-path-local new-path-local root-local)))))
 
 ;;;###autoload
 (defun ssh-deploy-remote-sql (remote-path &optional type)
@@ -982,11 +973,11 @@
   (let ((root-local (or root-local ssh-deploy-root-local))
         (root-remote (or root-remote ssh-deploy-root-remote))
         (exclude-list (or exclude-list ssh-deploy-exclude-list)))
-    (if (and (ssh-deploy--file-is-in-path path-local root-local)
-             (ssh-deploy--file-is-included path-local exclude-list))
-        (let ((path-remote (expand-file-name (ssh-deploy--get-relative-path root-local path-local) root-remote)))
-          (message "Opening '%s' for browsing on remote host.." path-remote)
-          (dired path-remote)))))
+    (when (and (ssh-deploy--file-is-in-path-p path-local root-local)
+               (ssh-deploy--file-is-included-p path-local exclude-list))
+      (let ((path-remote (expand-file-name (ssh-deploy--get-relative-path root-local path-local) root-remote)))
+        (message "Opening '%s' for browsing on remote host.." path-remote)
+        (dired path-remote)))))
 
 ;;;###autoload
 (defun ssh-deploy-remote-terminal-eshell (path-local &optional root-local root-remote exclude-list)
@@ -994,8 +985,8 @@
   (let ((root-local (or root-local ssh-deploy-root-local))
         (root-remote (or root-remote ssh-deploy-root-remote))
         (exclude-list (or exclude-list ssh-deploy-exclude-list)))
-    (when (and (ssh-deploy--file-is-in-path path-local root-local)
-               (ssh-deploy--file-is-included path-local exclude-list))
+    (when (and (ssh-deploy--file-is-in-path-p path-local root-local)
+               (ssh-deploy--file-is-included-p path-local exclude-list))
       (let ((path-remote (expand-file-name (ssh-deploy--get-relative-path root-local path-local) root-remote)))
         (require 'eshell)
         (message "Opening eshell on '%s'.." path-remote)
@@ -1010,8 +1001,8 @@
   (let ((root-local (or root-local ssh-deploy-root-local))
         (root-remote (or root-remote ssh-deploy-root-remote))
         (exclude-list (or exclude-list ssh-deploy-exclude-list)))
-    (when (and (ssh-deploy--file-is-in-path path-local root-local)
-               (ssh-deploy--file-is-included path-local exclude-list))
+    (when (and (ssh-deploy--file-is-in-path-p path-local root-local)
+               (ssh-deploy--file-is-included-p path-local exclude-list))
       (let ((path-remote (expand-file-name (ssh-deploy--get-relative-path root-local path-local) root-remote)))
         (require 'shell)
         (message "Opening eshell on '%s'.." path-remote)
@@ -1023,11 +1014,11 @@
 ;;;###autoload
 (defun ssh-deploy-store-revision (path &optional root)
   "Store PATH in revision-folder ROOT."
-  (if (not (file-directory-p path))
-      (let* ((root (or root ssh-deploy-revision-folder))
-             (revision-path (ssh-deploy--get-revision-path path root)))
-        (when ssh-deploy-verbose (message "Storing revision of '%s' at '%s'.." path revision-path))
-        (copy-file path revision-path t t t t))))
+  (unless (file-directory-p path)
+    (let* ((root (or root ssh-deploy-revision-folder))
+           (revision-path (ssh-deploy--get-revision-path path root)))
+      (when ssh-deploy-verbose (message "Storing revision of '%s' at '%s'.." path revision-path))
+      (copy-file path revision-path t t t t))))
 
 ;;;###autoload
 (defun ssh-deploy-diff (path-local path-remote &optional root-local debug exclude-list async async-with-threads on-explicit-save revision-folder remote-changes)
@@ -1041,8 +1032,8 @@
         (on-explicit-save (or on-explicit-save ssh-deploy-on-explicit-save))
         (revision-folder (or revision-folder ssh-deploy-revision-folder))
         (remote-changes (or remote-changes ssh-deploy-automatically-detect-remote-changes)))
-    (if (and (ssh-deploy--file-is-in-path path-local root-local)
-             (ssh-deploy--file-is-included path-local exclude-list))
+    (if (and (ssh-deploy--file-is-in-path-p path-local root-local)
+             (ssh-deploy--file-is-included-p path-local exclude-list))
         (if file-or-directory
             (ssh-deploy-diff-files path-local path-remote)
           (ssh-deploy-diff-directories path-local path-remote on-explicit-save debug async async-with-threads revision-folder remote-changes exclude-list))
@@ -1050,7 +1041,7 @@
 
 ;;;###autoload
 (defun ssh-deploy-upload (path-local path-remote &optional force async revision-folder async-with-threads)
-  "Upload PATH-LOCAL to PATH-REMOTE and ROOT-LOCAL via TRAMP, FORCE uploads despite remote change, ASYNC determines if transfer should be asynchronously, check version in REVISION-FOLDER.  If you want asynchronous threads pass ASYNC-WITH-THREADS above zero."
+  "Upload PATH-LOCAL to PATH-REMOTE and ROOT-LOCAL via Tramp, FORCE uploads despite remote change, ASYNC determines if transfer should be asynchronously, check version in REVISION-FOLDER.  If you want asynchronous threads pass ASYNC-WITH-THREADS above zero."
   (let ((force (or force 0))
         (async (or async ssh-deploy-async))
         (revision-folder (or revision-folder ssh-deploy-revision-folder))
@@ -1061,7 +1052,7 @@
 
 ;;;###autoload
 (defun ssh-deploy-download (path-remote path-local &optional async revision-folder async-with-threads)
-  "Download PATH-REMOTE to PATH-LOCAL via TRAMP, ASYNC determines if transfer should be asynchrous or not, check for revisions in REVISION-FOLDER.  If you want asynchronous threads pass ASYNC-WITH-THREADS above zero."
+  "Download PATH-REMOTE to PATH-LOCAL via Tramp, ASYNC determines if transfer should be asynchrous or not, check for revisions in REVISION-FOLDER.  If you want asynchronous threads pass ASYNC-WITH-THREADS above zero."
   (let ((async (or async ssh-deploy-async))
         (revision-folder (or revision-folder ssh-deploy-revision-folder))
         (async-with-threads (or async-with-threads ssh-deploy-async-with-threads)))
@@ -1080,23 +1071,23 @@
 (defun ssh-deploy-upload-handler (&optional force)
   "Upload current path to remote if it is configured for deployment and if remote version hasn't changed or FORCE is specified."
   (interactive)
-  (if (and (ssh-deploy--is-not-empty-string ssh-deploy-root-local)
-           (ssh-deploy--is-not-empty-string ssh-deploy-root-remote))
-      (let ((root-local (file-truename ssh-deploy-root-local))
-            (force (or force 0))
-            path-local)
-        (if (and (ssh-deploy--is-not-empty-string buffer-file-name)
-                 (file-exists-p buffer-file-name))
-            (setq path-local (file-truename buffer-file-name))
-          (if (and (ssh-deploy--is-not-empty-string default-directory)
+  (when (and (ssh-deploy--is-not-empty-string-p ssh-deploy-root-local)
+             (ssh-deploy--is-not-empty-string-p ssh-deploy-root-remote))
+    (let ((root-local (file-truename ssh-deploy-root-local))
+          (force (or force 0))
+          path-local)
+      (if (and (ssh-deploy--is-not-empty-string-p buffer-file-name)
+               (file-exists-p buffer-file-name))
+          (setq path-local (file-truename buffer-file-name))
+        (when (and (ssh-deploy--is-not-empty-string-p default-directory)
                    (file-exists-p default-directory))
-              (setq path-local (file-truename default-directory))))
-        (if (and (ssh-deploy--is-not-empty-string path-local)
-                 (ssh-deploy--file-is-in-path path-local root-local)
-                 (ssh-deploy--file-is-included path-local ssh-deploy-exclude-list))
-            (let ((path-remote (expand-file-name (ssh-deploy--get-relative-path root-local path-local) ssh-deploy-root-remote)))
-              (ssh-deploy-upload path-local path-remote force ssh-deploy-async ssh-deploy-revision-folder ssh-deploy-async-with-threads))
-          (when (> ssh-deploy-debug 0) (message "Ignoring upload, path '%s' is empty, not in the root '%s' or is excluded from it." path-local root-local))))))
+          (setq path-local (file-truename default-directory))))
+      (if (and (ssh-deploy--is-not-empty-string-p path-local)
+               (ssh-deploy--file-is-in-path-p path-local root-local)
+               (ssh-deploy--file-is-included-p path-local ssh-deploy-exclude-list))
+          (let ((path-remote (expand-file-name (ssh-deploy--get-relative-path root-local path-local) ssh-deploy-root-remote)))
+            (ssh-deploy-upload path-local path-remote force ssh-deploy-async ssh-deploy-revision-folder ssh-deploy-async-with-threads))
+        (when (> ssh-deploy-debug 0) (message "Ignoring upload, path '%s' is empty, not in the root '%s' or is excluded from it." path-local root-local))))))
 
 ;;;###autoload
 (defun ssh-deploy-upload-handler-forced ()
@@ -1108,9 +1099,9 @@
 (defun ssh-deploy-remote-changes-handler()
   "Check if local revision exists or remote file has changed if path is configured for deployment."
   (interactive)
-  (if (and (ssh-deploy--is-not-empty-string ssh-deploy-root-local)
-           (ssh-deploy--is-not-empty-string ssh-deploy-root-remote)
-           (ssh-deploy--is-not-empty-string buffer-file-name))
+  (if (and (ssh-deploy--is-not-empty-string-p ssh-deploy-root-local)
+           (ssh-deploy--is-not-empty-string-p ssh-deploy-root-remote)
+           (ssh-deploy--is-not-empty-string-p buffer-file-name))
       (progn
         (when (> ssh-deploy-debug 0) (message "Detecting remote-changes.."))
         (ssh-deploy-remote-changes (file-truename buffer-file-name) (file-truename ssh-deploy-root-local) ssh-deploy-root-remote ssh-deploy-async ssh-deploy-revision-folder ssh-deploy-exclude-list ssh-deploy-async-with-threads))
@@ -1120,174 +1111,174 @@
 (defun ssh-deploy-remote-sql-mysql-handler()
   "Open `sql-mysql' on remote path if path is configured for deployment."
   (interactive)
-  (when (ssh-deploy--is-not-empty-string ssh-deploy-root-remote)
+  (when (ssh-deploy--is-not-empty-string-p ssh-deploy-root-remote)
     (ssh-deploy-remote-sql ssh-deploy-root-remote "mysql")))
 
 ;;;###autoload
 (defun ssh-deploy-remote-sql-postgres-handler()
   "Open `sql-postgres' on remote path if path is configured for deployment."
   (interactive)
-  (when (ssh-deploy--is-not-empty-string ssh-deploy-root-remote)
+  (when (ssh-deploy--is-not-empty-string-p ssh-deploy-root-remote)
     (ssh-deploy-remote-sql ssh-deploy-root-remote "postgres")))
 
 ;;;###autoload
 (defun ssh-deploy-open-remote-file-handler()
   "Check if local revision exists or remote file has changed if path is configured for deployment."
   (interactive)
-  (if (and (ssh-deploy--is-not-empty-string ssh-deploy-root-local)
-           (ssh-deploy--is-not-empty-string ssh-deploy-root-remote)
-           (ssh-deploy--is-not-empty-string buffer-file-name))
-      (let* ((root-local (file-truename ssh-deploy-root-local))
-             (path-local (file-truename buffer-file-name))
-             (path-remote (expand-file-name (ssh-deploy--get-relative-path root-local path-local) ssh-deploy-root-remote)))
-        (when ssh-deploy-verbose (message "Opening file on remote '%s'" path-remote))
-        (find-file path-remote))))
+  (when (and (ssh-deploy--is-not-empty-string-p ssh-deploy-root-local)
+             (ssh-deploy--is-not-empty-string-p ssh-deploy-root-remote)
+             (ssh-deploy--is-not-empty-string-p buffer-file-name))
+    (let* ((root-local (file-truename ssh-deploy-root-local))
+           (path-local (file-truename buffer-file-name))
+           (path-remote (expand-file-name (ssh-deploy--get-relative-path root-local path-local) ssh-deploy-root-remote)))
+      (when ssh-deploy-verbose (message "Opening file on remote '%s'" path-remote))
+      (find-file path-remote))))
 
 ;;;###autoload
 (defun ssh-deploy-download-handler ()
   "Download current path from remote if it is configured for deployment."
   (interactive)
-  (if (and (ssh-deploy--is-not-empty-string ssh-deploy-root-local)
-           (ssh-deploy--is-not-empty-string ssh-deploy-root-remote))
-      (let ((root-local (file-truename ssh-deploy-root-local))
-            path-local)
-        (if (and (ssh-deploy--is-not-empty-string buffer-file-name)
-                 (file-exists-p buffer-file-name))
-            (setq path-local (file-truename buffer-file-name))
-          (if (and (ssh-deploy--is-not-empty-string default-directory)
+  (when (and (ssh-deploy--is-not-empty-string-p ssh-deploy-root-local)
+             (ssh-deploy--is-not-empty-string-p ssh-deploy-root-remote))
+    (let ((root-local (file-truename ssh-deploy-root-local))
+          path-local)
+      (if (and (ssh-deploy--is-not-empty-string-p buffer-file-name)
+               (file-exists-p buffer-file-name))
+          (setq path-local (file-truename buffer-file-name))
+        (when (and (ssh-deploy--is-not-empty-string-p default-directory)
                    (file-exists-p default-directory))
-              (setq path-local (file-truename default-directory))))
-        (if (and (ssh-deploy--is-not-empty-string path-local)
-                 (ssh-deploy--file-is-in-path path-local root-local)
-                 (ssh-deploy--file-is-included path-local ssh-deploy-exclude-list))
-            (let ((path-remote (expand-file-name (ssh-deploy--get-relative-path root-local path-local) ssh-deploy-root-remote)))
-              (ssh-deploy-download path-remote path-local ssh-deploy-async ssh-deploy-revision-folder ssh-deploy-async-with-threads))
-          (when (> ssh-deploy-debug 0) (message "Ignoring upload, path '%s' is empty, not in the root '%s' or is excluded from it." path-local root-local))))))
+          (setq path-local (file-truename default-directory))))
+      (if (and (ssh-deploy--is-not-empty-string-p path-local)
+               (ssh-deploy--file-is-in-path-p path-local root-local)
+               (ssh-deploy--file-is-included-p path-local ssh-deploy-exclude-list))
+          (let ((path-remote (expand-file-name (ssh-deploy--get-relative-path root-local path-local) ssh-deploy-root-remote)))
+            (ssh-deploy-download path-remote path-local ssh-deploy-async ssh-deploy-revision-folder ssh-deploy-async-with-threads))
+        (when (> ssh-deploy-debug 0) (message "Ignoring upload, path '%s' is empty, not in the root '%s' or is excluded from it." path-local root-local))))))
 
 ;;;###autoload
 (defun ssh-deploy-diff-handler ()
   "Compare current path with remote host if it is configured for deployment."
   (interactive)
-  (if (and (ssh-deploy--is-not-empty-string ssh-deploy-root-local)
-           (ssh-deploy--is-not-empty-string ssh-deploy-root-remote))
-      (if (and (ssh-deploy--is-not-empty-string buffer-file-name)
-               (file-exists-p buffer-file-name))
-          (let* ((path-local (file-truename buffer-file-name))
-                 (root-local (file-truename ssh-deploy-root-local))
-                 (path-remote (expand-file-name (ssh-deploy--get-relative-path root-local path-local) ssh-deploy-root-remote)))
-            (ssh-deploy-diff path-local path-remote root-local ssh-deploy-debug ssh-deploy-exclude-list ssh-deploy-async ssh-deploy-async-with-threads ssh-deploy-on-explicit-save ssh-deploy-revision-folder ssh-deploy-automatically-detect-remote-changes))
-        (if (and (ssh-deploy--is-not-empty-string default-directory)
+  (when (and (ssh-deploy--is-not-empty-string-p ssh-deploy-root-local)
+             (ssh-deploy--is-not-empty-string-p ssh-deploy-root-remote))
+    (if (and (ssh-deploy--is-not-empty-string-p buffer-file-name)
+             (file-exists-p buffer-file-name))
+        (let* ((path-local (file-truename buffer-file-name))
+               (root-local (file-truename ssh-deploy-root-local))
+               (path-remote (expand-file-name (ssh-deploy--get-relative-path root-local path-local) ssh-deploy-root-remote)))
+          (ssh-deploy-diff path-local path-remote root-local ssh-deploy-debug ssh-deploy-exclude-list ssh-deploy-async ssh-deploy-async-with-threads ssh-deploy-on-explicit-save ssh-deploy-revision-folder ssh-deploy-automatically-detect-remote-changes))
+      (when (and (ssh-deploy--is-not-empty-string-p default-directory)
                  (file-exists-p default-directory))
-            (let* ((path-local (file-truename default-directory))
-                   (root-local (file-truename ssh-deploy-root-local))
-                   (path-remote (expand-file-name (ssh-deploy--get-relative-path root-local path-local) ssh-deploy-root-remote)))
-              (ssh-deploy-diff path-local path-remote root-local ssh-deploy-debug ssh-deploy-exclude-list ssh-deploy-async ssh-deploy-async-with-threads ssh-deploy-on-explicit-save ssh-deploy-revision-folder ssh-deploy-automatically-detect-remote-changes))))))
+        (let* ((path-local (file-truename default-directory))
+               (root-local (file-truename ssh-deploy-root-local))
+               (path-remote (expand-file-name (ssh-deploy--get-relative-path root-local path-local) ssh-deploy-root-remote)))
+          (ssh-deploy-diff path-local path-remote root-local ssh-deploy-debug ssh-deploy-exclude-list ssh-deploy-async ssh-deploy-async-with-threads ssh-deploy-on-explicit-save ssh-deploy-revision-folder ssh-deploy-automatically-detect-remote-changes))))))
 
 ;;;###autoload
 (defun ssh-deploy-delete-handler ()
   "Delete current file or directory."
   (interactive)
-  (if (and (ssh-deploy--is-not-empty-string ssh-deploy-root-local)
-           (ssh-deploy--is-not-empty-string ssh-deploy-root-remote))
-      (if (and (ssh-deploy--is-not-empty-string buffer-file-name)
-               (file-exists-p buffer-file-name))
-          (let* ((path-local (file-truename buffer-file-name))
-                 (root-local (file-truename ssh-deploy-root-local))
-                 (yes-no-prompt (read-string (format "Type 'yes' to confirm that you want to delete the file '%s': " path-local))))
-            (if (string= yes-no-prompt "yes")
-                (ssh-deploy-delete-both path-local root-local ssh-deploy-root-remote ssh-deploy-async ssh-deploy-debug ssh-deploy-exclude-list ssh-deploy-async-with-threads)))
-        (if (and (ssh-deploy--is-not-empty-string default-directory)
+  (when (and (ssh-deploy--is-not-empty-string-p ssh-deploy-root-local)
+             (ssh-deploy--is-not-empty-string-p ssh-deploy-root-remote))
+    (if (and (ssh-deploy--is-not-empty-string-p buffer-file-name)
+             (file-exists-p buffer-file-name))
+        (let* ((path-local (file-truename buffer-file-name))
+               (root-local (file-truename ssh-deploy-root-local))
+               (yes-no-prompt (read-string (format "Type 'yes' to confirm that you want to delete the file '%s': " path-local))))
+          (when (string= yes-no-prompt "yes")
+            (ssh-deploy-delete-both path-local root-local ssh-deploy-root-remote ssh-deploy-async ssh-deploy-debug ssh-deploy-exclude-list ssh-deploy-async-with-threads)))
+      (when (and (ssh-deploy--is-not-empty-string-p default-directory)
                  (file-exists-p default-directory))
-            (let* ((path-local (file-truename default-directory))
-                   (root-local (file-truename ssh-deploy-root-local))
-                   (yes-no-prompt (read-string (format "Type 'yes' to confirm that you want to delete the directory '%s': " path-local))))
-              (if (string= yes-no-prompt "yes")
-                  (ssh-deploy-delete-both path-local root-local ssh-deploy-root-remote ssh-deploy-async ssh-deploy-debug ssh-deploy-exclude-list ssh-deploy-async-with-threads)))))))
+        (let* ((path-local (file-truename default-directory))
+               (root-local (file-truename ssh-deploy-root-local))
+               (yes-no-prompt (read-string (format "Type 'yes' to confirm that you want to delete the directory '%s': " path-local))))
+          (when (string= yes-no-prompt "yes")
+            (ssh-deploy-delete-both path-local root-local ssh-deploy-root-remote ssh-deploy-async ssh-deploy-debug ssh-deploy-exclude-list ssh-deploy-async-with-threads)))))))
 
 ;;;###autoload
 (defun ssh-deploy-rename-handler ()
   "Rename current file or directory."
   (interactive)
-  (if (and (ssh-deploy--is-not-empty-string ssh-deploy-root-local)
-           (ssh-deploy--is-not-empty-string ssh-deploy-root-remote))
-      (if (and (ssh-deploy--is-not-empty-string buffer-file-name)
-               (file-exists-p buffer-file-name))
-          (let* ((old-path-local (file-truename buffer-file-name))
-                 (root-local (file-truename ssh-deploy-root-local))
-                 (basename (file-name-nondirectory old-path-local))
-                 (new-path-local-tmp (read-file-name "New file name:" (file-name-directory old-path-local) basename nil basename))
-                 (new-path-local (file-truename new-path-local-tmp)))
-            (if (not (string= old-path-local new-path-local))
-                (ssh-deploy-rename old-path-local new-path-local root-local ssh-deploy-root-remote ssh-deploy-async ssh-deploy-debug ssh-deploy-exclude-list ssh-deploy-async-with-threads)))
-        (if (and (ssh-deploy--is-not-empty-string default-directory)
+  (when (and (ssh-deploy--is-not-empty-string-p ssh-deploy-root-local)
+             (ssh-deploy--is-not-empty-string-p ssh-deploy-root-remote))
+    (if (and (ssh-deploy--is-not-empty-string-p buffer-file-name)
+             (file-exists-p buffer-file-name))
+        (let* ((old-path-local (file-truename buffer-file-name))
+               (root-local (file-truename ssh-deploy-root-local))
+               (basename (file-name-nondirectory old-path-local))
+               (new-path-local-tmp (read-file-name "New file name:" (file-name-directory old-path-local) basename nil basename))
+               (new-path-local (file-truename new-path-local-tmp)))
+          (unless (string= old-path-local new-path-local)
+            (ssh-deploy-rename old-path-local new-path-local root-local ssh-deploy-root-remote ssh-deploy-async ssh-deploy-debug ssh-deploy-exclude-list ssh-deploy-async-with-threads)))
+      (when (and (ssh-deploy--is-not-empty-string-p default-directory)
                  (file-exists-p default-directory))
-            (let* ((old-path-local (file-truename default-directory))
-                   (root-local (file-truename ssh-deploy-root-local))
-                   (basename (file-name-nondirectory old-path-local))
-                   (new-path-local-tmp (read-file-name "New directory name:" (file-name-directory old-path-local) basename nil basename))
-                   (new-path-local (file-truename new-path-local-tmp)))
-              (if (not (string= old-path-local new-path-local))
-                  (ssh-deploy-rename old-path-local new-path-local root-local ssh-deploy-root-remote ssh-deploy-async ssh-deploy-debug ssh-deploy-exclude-list ssh-deploy-async-with-threads)))))))
+        (let* ((old-path-local (file-truename default-directory))
+               (root-local (file-truename ssh-deploy-root-local))
+               (basename (file-name-nondirectory old-path-local))
+               (new-path-local-tmp (read-file-name "New directory name:" (file-name-directory old-path-local) basename nil basename))
+               (new-path-local (file-truename new-path-local-tmp)))
+          (unless (string= old-path-local new-path-local)
+            (ssh-deploy-rename old-path-local new-path-local root-local ssh-deploy-root-remote ssh-deploy-async ssh-deploy-debug ssh-deploy-exclude-list ssh-deploy-async-with-threads)))))))
 
 ;;;###autoload
 (defun ssh-deploy-remote-terminal-eshell-handler ()
   "Open current relative path on remote host in `eshell' but only if it's configured for deployment."
   (interactive)
-  (if (and (ssh-deploy--is-not-empty-string ssh-deploy-root-local)
-           (ssh-deploy--is-not-empty-string ssh-deploy-root-remote)
-           (ssh-deploy--is-not-empty-string default-directory))
-      (let ((path-local (file-truename default-directory))
-            (root-local (file-truename ssh-deploy-root-local)))
-        (ssh-deploy-remote-terminal-eshell path-local root-local ssh-deploy-root-remote ssh-deploy-exclude-list))))
+  (when (and (ssh-deploy--is-not-empty-string-p ssh-deploy-root-local)
+             (ssh-deploy--is-not-empty-string-p ssh-deploy-root-remote)
+             (ssh-deploy--is-not-empty-string-p default-directory))
+    (let ((path-local (file-truename default-directory))
+          (root-local (file-truename ssh-deploy-root-local)))
+      (ssh-deploy-remote-terminal-eshell path-local root-local ssh-deploy-root-remote ssh-deploy-exclude-list))))
 
 ;;;###autoload
 (defun ssh-deploy-remote-terminal-eshell-base-handler ()
   "Open base path on remote host in `eshell' but only if it's configured for deployment."
   (interactive)
-  (if (and (ssh-deploy--is-not-empty-string ssh-deploy-root-local)
-           (ssh-deploy--is-not-empty-string ssh-deploy-root-remote))
-      (let ((root-local (file-truename ssh-deploy-root-local)))
-        (ssh-deploy-remote-terminal-eshell root-local root-local ssh-deploy-root-remote ssh-deploy-exclude-list))))
+  (when (and (ssh-deploy--is-not-empty-string-p ssh-deploy-root-local)
+             (ssh-deploy--is-not-empty-string-p ssh-deploy-root-remote))
+    (let ((root-local (file-truename ssh-deploy-root-local)))
+      (ssh-deploy-remote-terminal-eshell root-local root-local ssh-deploy-root-remote ssh-deploy-exclude-list))))
 
 ;;;###autoload
 (defun ssh-deploy-remote-terminal-shell-handler ()
   "Open current relative path on remote host in `eshell' but only if it's configured for deployment."
   (interactive)
-  (if (and (ssh-deploy--is-not-empty-string ssh-deploy-root-local)
-           (ssh-deploy--is-not-empty-string ssh-deploy-root-remote)
-           (ssh-deploy--is-not-empty-string default-directory))
-      (let ((path-local (file-truename default-directory))
-            (root-local (file-truename ssh-deploy-root-local)))
-        (ssh-deploy-remote-terminal-shell path-local root-local ssh-deploy-root-remote ssh-deploy-exclude-list))))
+  (when (and (ssh-deploy--is-not-empty-string-p ssh-deploy-root-local)
+             (ssh-deploy--is-not-empty-string-p ssh-deploy-root-remote)
+             (ssh-deploy--is-not-empty-string-p default-directory))
+    (let ((path-local (file-truename default-directory))
+          (root-local (file-truename ssh-deploy-root-local)))
+      (ssh-deploy-remote-terminal-shell path-local root-local ssh-deploy-root-remote ssh-deploy-exclude-list))))
 
 ;;;###autoload
 (defun ssh-deploy-remote-terminal-shell-base-handler ()
   "Open base path on remote host in `eshell' but only if it's configured for deployment."
   (interactive)
-  (if (and (ssh-deploy--is-not-empty-string ssh-deploy-root-local)
-           (ssh-deploy--is-not-empty-string ssh-deploy-root-remote))
-      (let ((root-local (file-truename ssh-deploy-root-local)))
-        (ssh-deploy-remote-terminal-shell root-local root-local ssh-deploy-root-remote ssh-deploy-exclude-list))))
+  (when (and (ssh-deploy--is-not-empty-string-p ssh-deploy-root-local)
+             (ssh-deploy--is-not-empty-string-p ssh-deploy-root-remote))
+    (let ((root-local (file-truename ssh-deploy-root-local)))
+      (ssh-deploy-remote-terminal-shell root-local root-local ssh-deploy-root-remote ssh-deploy-exclude-list))))
 
 ;;;###autoload
 (defun ssh-deploy-browse-remote-handler ()
   "Open current relative path on remote host in `dired-mode' if it is configured for deployment."
   (interactive)
-  (if (and (ssh-deploy--is-not-empty-string ssh-deploy-root-local)
-           (ssh-deploy--is-not-empty-string ssh-deploy-root-remote)
-           (ssh-deploy--is-not-empty-string default-directory))
-      (let ((path-local (file-truename default-directory))
-            (root-local (file-truename ssh-deploy-root-local)))
-        (ssh-deploy-browse-remote path-local root-local ssh-deploy-root-remote ssh-deploy-exclude-list))))
+  (when (and (ssh-deploy--is-not-empty-string-p ssh-deploy-root-local)
+             (ssh-deploy--is-not-empty-string-p ssh-deploy-root-remote)
+             (ssh-deploy--is-not-empty-string-p default-directory))
+    (let ((path-local (file-truename default-directory))
+          (root-local (file-truename ssh-deploy-root-local)))
+      (ssh-deploy-browse-remote path-local root-local ssh-deploy-root-remote ssh-deploy-exclude-list))))
 
 ;;;###autoload
 (defun ssh-deploy-browse-remote-base-handler ()
   "Open base path on remote host in `dired-mode' if it is configured for deployment."
   (interactive)
-  (if (and (ssh-deploy--is-not-empty-string ssh-deploy-root-local)
-           (ssh-deploy--is-not-empty-string ssh-deploy-root-remote))
-      (let ((root-local (file-truename ssh-deploy-root-local)))
-        (ssh-deploy-browse-remote root-local root-local ssh-deploy-root-remote ssh-deploy-exclude-list))))
+  (when (and (ssh-deploy--is-not-empty-string-p ssh-deploy-root-local)
+             (ssh-deploy--is-not-empty-string-p ssh-deploy-root-remote))
+    (let ((root-local (file-truename ssh-deploy-root-local)))
+      (ssh-deploy-browse-remote root-local root-local ssh-deploy-root-remote ssh-deploy-exclude-list))))
 
 ;;;###autoload
 (defun ssh-deploy-run-deploy-script-handler ()
@@ -1295,18 +1286,19 @@
   (interactive)
   (if ssh-deploy-script
       (if (> ssh-deploy-async 0)
-          (progn
+          (let ((script-filename (file-name-directory (symbol-file 'ssh-deploy-diff-directories))))
             (message "Executing of deployment-script starting... (asynchronously)")
             (ssh-deploy--async-process
              `(lambda() (let ((ssh-deploy-root-local ,ssh-deploy-root-local)
                               (ssh-deploy-root-remote ,ssh-deploy-root-remote))
+                          (add-to-list 'load-path ,script-filename)
+                          (require 'ssh-deploy)
                           (funcall ,ssh-deploy-script)))
              (lambda(result) (message "Completed execution of deployment-script. Return: '%s' (asynchronously)" result))
              ssh-deploy-async-with-threads))
-        (progn
-          (message "Executing of deployment-script starting... (synchronously)")
-          (let ((ret (funcall ssh-deploy-script)))
-            (message "Completed execution of deployment-script. Return: '%s' (synchronously)" ret))))
+        (message "Executing of deployment-script starting... (synchronously)")
+        (let ((ret (funcall ssh-deploy-script)))
+          (message "Completed execution of deployment-script. Return: '%s' (synchronously)" ret)))
     (display-warning 'ssh-deploy "ssh-deploy-script lacks definition!" :warning)))
 
 

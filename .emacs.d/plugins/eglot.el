@@ -340,7 +340,7 @@ on unknown notifications and errors on unknown requests.
   "Destructure OBJECT of binding VARS in BODY.
 VARS is ([(INTERFACE)] SYMS...)
 Honour `eglot-strict-mode'."
-  (declare (indent 2))
+  (declare (indent 2) (debug (sexp sexp &rest form)))
   (let ((interface-name (if (consp (car vars))
                             (car (pop vars))))
         (object-once (make-symbol "object-once"))
@@ -366,7 +366,7 @@ Honour `eglot-strict-mode'."
 (cl-defmacro eglot--lambda (cl-lambda-list &body body)
   "Function of args CL-LAMBDA-LIST for processing INTERFACE objects.
 Honour `eglot-strict-mode'."
-  (declare (indent 1))
+  (declare (indent 1) (debug (sexp &rest form)))
   (let ((e (cl-gensym "jsonrpc-lambda-elem")))
     `(lambda (,e) (eglot--dbind ,cl-lambda-list ,e ,@body))))
 
@@ -374,7 +374,7 @@ Honour `eglot-strict-mode'."
   "Like `pcase', but for the LSP object OBJ.
 CLAUSES is a list (DESTRUCTURE FORMS...) where DESTRUCTURE is
 treated as in `eglot-dbind'."
-  (declare (indent 1))
+  (declare (indent 1) (debug (sexp &rest (sexp &rest form))))
   (let ((obj-once (make-symbol "obj-once")))
     `(let ((,obj-once ,obj))
        (cond
@@ -1118,6 +1118,14 @@ and just return it.  PROMPT shouldn't end with a question mark."
 (defvar-local eglot--current-flymake-report-fn nil
   "Current flymake report function for this buffer")
 
+(defvar-local eglot--saved-bindings nil
+  "Bindings saved by `eglot--setq-saving'.")
+
+(defmacro eglot--setq-saving (symbol binding)
+  `(progn (push (cons ',symbol (symbol-value ',symbol))
+                eglot--saved-bindings)
+          (setq-local ,symbol ,binding)))
+
 (define-minor-mode eglot--managed-mode
   "Mode for source buffers managed by some EGLOT project."
   nil nil eglot-mode-map
@@ -1125,7 +1133,6 @@ and just return it.  PROMPT shouldn't end with a question mark."
    (eglot--managed-mode
     (add-hook 'after-change-functions 'eglot--after-change nil t)
     (add-hook 'before-change-functions 'eglot--before-change nil t)
-    (add-hook 'flymake-diagnostic-functions 'eglot-flymake-backend nil t)
     (add-hook 'kill-buffer-hook 'eglot--signal-textDocument/didClose nil t)
     (add-hook 'kill-buffer-hook 'eglot--managed-mode-onoff nil t)
     (add-hook 'before-revert-hook 'eglot--signal-textDocument/didClose nil t)
@@ -1136,8 +1143,8 @@ and just return it.  PROMPT shouldn't end with a question mark."
     (add-hook 'change-major-mode-hook 'eglot--managed-mode-onoff nil t)
     (add-hook 'post-self-insert-hook 'eglot--post-self-insert-hook nil t)
     (add-hook 'pre-command-hook 'eglot--pre-command-hook nil t)
-    (add-function :before-until (local 'eldoc-documentation-function)
-                  #'eglot-eldoc-function)
+    (eglot--setq-saving eldoc-documentation-function #'eglot-eldoc-function)
+    (eglot--setq-saving flymake-diagnostic-functions '(eglot-flymake-backend t))
     (add-function :around (local 'imenu-create-index-function) #'eglot-imenu)
     (flymake-mode 1)
     (eldoc-mode 1))
@@ -1154,9 +1161,8 @@ and just return it.  PROMPT shouldn't end with a question mark."
     (remove-hook 'change-major-mode-hook #'eglot--managed-mode-onoff t)
     (remove-hook 'post-self-insert-hook 'eglot--post-self-insert-hook t)
     (remove-hook 'pre-command-hook 'eglot--pre-command-hook t)
-    (remove-function (local 'eldoc-documentation-function)
-                     #'eglot-eldoc-function)
-    (remove-function (local 'imenu-create-index-function) #'eglot-imenu)
+    (cl-loop for (var . saved-binding) in eglot--saved-bindings
+             do (set (make-local-variable var) saved-binding))
     (setq eglot--current-flymake-report-fn nil))))
 
 (defvar-local eglot--cached-current-server nil
@@ -1417,11 +1423,9 @@ COMMAND is a symbol naming the command."
 THINGS are either registrations or unregisterations."
   (cl-loop
    for thing in (cl-coerce things 'list)
-   collect (eglot--dbind ((Registration) id method registerOptions) thing
-             (apply (intern (format "eglot--%s-%s" how method))
-                    server :id id registerOptions))
-   into results
-   finally return `(:ok ,@results)))
+   do (eglot--dbind ((Registration) id method registerOptions) thing
+        (apply (intern (format "eglot--%s-%s" how method))
+               server :id id registerOptions))))
 
 (cl-defmethod eglot-handle-request
   (server (_method (eql client/registerCapability)) &key registrations)
@@ -1669,8 +1673,10 @@ Try to visit the target file for a richer summary line."
                   (eglot--widening
                    (pcase-let* ((`(,beg . ,end) (eglot--range-region range))
                                 (bol (progn (goto-char beg) (point-at-bol)))
-                                (substring (buffer-substring bol (point-at-eol))))
-                     (add-face-text-property (- beg bol) (- end bol) 'highlight
+                                (substring (buffer-substring bol (point-at-eol)))
+                                (hi-beg (- beg bol))
+                                (hi-end (- (min (point-at-eol) end) bol)))
+                     (add-face-text-property hi-beg hi-end 'highlight
                                              t substring)
                      (list substring (1+ (current-line)) (eglot-current-column))))))
        (`(,summary ,line ,column)
@@ -1941,38 +1947,43 @@ is not active."
    (eglot--dbind ((SignatureInformation) label documentation parameters) sig
      (with-temp-buffer
        (save-excursion (insert label))
-       (when (looking-at "\\([^(]+\\)(")
-         (add-face-text-property (match-beginning 1) (match-end 1)
-                                 'font-lock-function-name-face))
-
-       (when (and (stringp documentation) (eql i active-sig)
-                  (string-match "[[:space:]]*\\([^.\r\n]+[.]?\\)"
-                                documentation))
-         (setq documentation (match-string 1 documentation))
-         (unless (string-prefix-p (string-trim documentation) label)
-           (goto-char (point-max))
-           (insert ": " documentation)))
-       (when (and (eql i active-sig) active-param
-                  (< -1 active-param (length parameters)))
-         (eglot--dbind ((ParameterInformation) label documentation)
-             (aref parameters active-param)
-           (goto-char (point-min))
-           (let ((case-fold-search nil))
-             (cl-loop for nmatches from 0
-                      while (and (not (string-empty-p label))
-                                 (search-forward label nil t))
-                      finally do
-                      (when (= 1 nmatches)
-                        (add-face-text-property
-                         (- (point) (length label)) (point)
-                         'eldoc-highlight-function-argument))))
-           (when documentation
-             (goto-char (point-max))
-             (insert "\n"
-                     (propertize
-                      label 'face 'eldoc-highlight-function-argument)
-                     ": " (eglot--format-markup documentation)))))
-       (buffer-string)))
+       (let (params-start params-end)
+         ;; Ad-hoc attempt to parse label as <name>(<params>)
+         (when (looking-at "\\([^(]+\\)(\\([^)]+\\))")
+           (setq params-start (match-beginning 2) params-end (match-end 2))
+           (add-face-text-property (match-beginning 1) (match-end 1)
+                                   'font-lock-function-name-face))
+         (when (eql i active-sig)
+           ;; Decide whether to add one-line-summary to signature line
+           (when (and (stringp documentation)
+                      (string-match "[[:space:]]*\\([^.\r\n]+[.]?\\)"
+                                    documentation))
+             (setq documentation (match-string 1 documentation))
+             (unless (string-prefix-p (string-trim documentation) label)
+               (goto-char (point-max))
+               (insert ": " (eglot--format-markup documentation))))
+           ;; Decide what to do with the active parameter...
+           (when (and (eql i active-sig) active-param
+                      (< -1 active-param (length parameters)))
+             (eglot--dbind ((ParameterInformation) label documentation)
+                 (aref parameters active-param)
+               ;; ...perhaps highlight it in the formals list
+               (when params-start
+                 (goto-char params-start)
+                 (let ((regex (concat "\\<" (regexp-quote label) "\\>"))
+                       (case-fold-search nil))
+                   (when (re-search-forward regex params-end t)
+                     (add-face-text-property
+                      (match-beginning 0) (match-end 0)
+                      'eldoc-highlight-function-argument))))
+               ;; ...and/or maybe add its doc on a line by its own.
+               (when documentation
+                 (goto-char (point-max))
+                 (insert "\n"
+                         (propertize
+                          label 'face 'eldoc-highlight-function-argument)
+                         ": " (eglot--format-markup documentation))))))
+         (buffer-string))))
    when moresigs concat "\n"))
 
 (defun eglot-help-at-point ()
