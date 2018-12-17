@@ -1561,6 +1561,16 @@ Only one letter is shown, the first that applies."
   (counsel-mode 1)
   )
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; eldoc-box ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defun harmsway-toggle-eldoc-box-mode ()
+  "Toggle `eldoc-box-hover-mode' in current buffer."
+  (interactive)
+  (if eldoc-box-hover-mode
+      (eldoc-box-hover-mode -1)
+    (eldoc-box-hover-mode 1)))
+(bind-key "C-c 0d" #'harmsway-toggle-eldoc-box-mode)
+(use-package eldoc-box)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smex ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package smex
   :if (<= 24 emacs-major-version)
@@ -3231,7 +3241,8 @@ This may perform related customization."
                 (rainbow-turn-on)
               (my/syntax-color-hex-values))
             ))
-(add-hook 'emacs-lisp-mode-hook 'eldoc-mode)
+(when (< emacs-major-version 26)
+  (add-hook 'emacs-lisp-mode-hook 'eldoc-mode))
 (require 'lisp-extra-font-lock)
 (lisp-extra-font-lock-global-mode 1)
 (add-hook 'after-save-hook #'harmsway-compile-lisp-file)
