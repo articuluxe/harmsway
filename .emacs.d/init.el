@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-12-17 11:40:08 dan.harms>
+;; Modified Time-stamp: <2018-12-18 15:55:47 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -24,6 +24,7 @@
 ;;
 
 ;;; Code:
+(require 'subr-x)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; load-path ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
@@ -76,6 +77,9 @@
                      ,(concat my/plugins-directory "vlf/")
                      ,(concat my/plugins-directory "yasnippet/")
                      ,(concat my/elisp-directory "emacs-jedi/")
+                     ,(concat my/scratch-directory "modules/"
+                              (string-trim (shell-command-to-string
+                                            "uname")))
                      ) load-path))
   )
 (setq load-prefer-newer t)
