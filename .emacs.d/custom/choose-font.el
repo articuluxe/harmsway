@@ -2,7 +2,7 @@
 ;; Copyright (C) 2018  Dan Harms (dharms)
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Wednesday, March 28, 2018
-;; Modified Time-stamp: <2018-10-15 10:17:00 dan.harms>
+;; Modified Time-stamp: <2018-12-20 09:30:28 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: font
 
@@ -27,6 +27,7 @@
 (require 'subr-x)
 (require 'ivy)
 (require 'read-file)
+(require 'hasklig-mode)
 
 (defvar choose-font-list '()
   "A list of fonts among which to choose.")
