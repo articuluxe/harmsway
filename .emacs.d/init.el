@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-12-18 15:55:47 dan.harms>
+;; Modified Time-stamp: <2018-12-20 07:33:38 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -366,7 +366,9 @@ not an error if any files do not exist."
 
   (setq xref-prompt-for-identifier
         '(xref-find-definitions xref-find-definitions-other-window
-                                xref-find-definitions-other-frame))
+                                xref-find-definitions-other-frame
+                                xref-find-references
+                                xref-find-apropos))
   (global-set-key "\C-x." #'xref-find-definitions)
   (global-set-key "\M-*" #'xref-find-apropos)
   (global-set-key [?\C-\M-.] #'harmsway-xref-find-definition)
