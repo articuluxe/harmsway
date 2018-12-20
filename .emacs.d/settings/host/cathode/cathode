@@ -3,7 +3,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2018-11-24 08:25:35 dharms>
+;; Modified Time-stamp: <2018-12-20 06:04:38 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -36,6 +36,8 @@
                             "Edlo 12"
                             "mononoki 12"
                             "Iosevka 12"
+                            "Hasklig 12"
+                            "Andale Mono 12"
                             "M+ 2m regular 14"
                             "Droid Sans Mono 12"
                             "Ricty Diminished 14"
