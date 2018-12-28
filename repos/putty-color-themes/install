@@ -1,1 +1,0 @@
-cp src/*.reg ../../os/MINGW32_NT-6.1/config/registry
