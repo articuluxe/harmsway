@@ -4,7 +4,7 @@
 
 ;; Author: Alex Kost <alezost@gmail.com>
 ;; Created: 10 Jul 2013
-;; Version: 0.8
+;; Version: 0.9
 ;; Package-Requires: ((emacs "24.0"))
 ;; URL: https://github.com/alezost/alect-themes
 ;; Keywords: color theme
@@ -155,6 +155,20 @@ Used for field titles like `package-help-section-name' or
 `message-header-name'."
   :group 'alect-faces)
 
+(defface alect-block
+  '((t nil))
+  "Auxiliary face for inheriting by some other faces.
+Used for blocks of text like `org-block' or
+`markdown-code-face'."
+  :group 'alect-faces)
+
+(defface alect-block-title
+  '((t nil))
+  "Auxiliary face for inheriting by some other faces.
+Used for titles of blocks like `org-meta-line' or
+`markdown-language-keyword-face'."
+  :group 'alect-faces)
+
 (defface alect-button
   '((t nil))
   "Auxiliary face for inheriting by some other faces.
@@ -278,6 +292,7 @@ Evaluate it and reload an alect-theme to see the difference."
      (fg+2         "#101010" "#f6f0e1" "#d6cbae")
      (bg-2         "#f6f0e1" "#222222" "#404040")
      (bg-1         "#ded6c5" "#3f3f3f" "#000000")
+     (bg-0.5       "#dcd2bd" "#464646" "#101010")
      (bg           "#d9ceb2" "#4f4f4f" "#202020")
      (bg+1         "#d4caa7" "#5f5f5f" "#303030")
      (bg+2         "#ccc19b" "#6f6f6f" "#454545")
@@ -294,7 +309,7 @@ Evaluate it and reload an alect-theme to see the difference."
      (yellow       "#ef8300" "#fe8b04" "#dc7700")
      (yellow+1     "#958323" "#e5c900" "#bcaa00")
      (yellow+2     "#6a621b" "#abab3a" "#959508")
-     (yellow-bg-1  "#cbcb20" "#76742d" "#73712a")
+     (yellow-bg-1  "#cbcb20" "#909032" "#73712a")
      (yellow-bg    "#dddd44" "#5e5c28" "#565624")
      (yellow-bg+1  "#e0e0a0" "#3c3c20" "#35351c")
      (green-2      "#3cb368" "#8ce096" "#47cd57")
@@ -466,6 +481,9 @@ For INVERT, see `alect-get-color'."
 
          ;; auxiliary faces for inheriting
          (alect-field-title    ((,c :foreground ,(gc 'yellow+1))))
+         (alect-block          ((,c :background ,(gc 'bg-0.5))))
+         (alect-block-title    ((,c :inherit alect-block
+                                    :foreground ,(gc 'green+1))))
          (alect-prompt         ((,c :foreground ,(gc 'magenta-1)
                                     :weight bold)))
          (alect-time           ((,c :foreground ,(gc 'cyan-2))))
@@ -973,7 +991,7 @@ For INVERT, see `alect-get-color'."
          (guix-package-info-version             ((,c :foreground ,(gc 'blue-2))))
          (guix-package-info-name-button         ((,c :foreground ,(gc 'fg)
                                                      :weight bold)))
-         (guix-package-info-synopsis            ((,c :inherit font-lock-doc-face)))
+         (guix-package-info-synopsis            ((,c :inherit variable-pitch)))
          (guix-package-info-license             ((,c :foreground ,(gc 'red-1))))
          (guix-package-info-inputs              ((,c :inherit guix-package-info-name-button)))
          (guix-package-info-native-inputs       ((,c :inherit guix-package-info-name-button
@@ -985,10 +1003,8 @@ For INVERT, see `alect-get-color'."
                                                      :background ,(gc 'red-bg)
                                                      :inherit guix-package-info-installed-outputs)))
          (guix-devel-gexp-symbol                ((,c :foreground ,(gc 'yellow+2))))
-
-         ;; TODO Remove ("covered" by 'guix-true' face since Emacs-Guix 0.3.3).
-         (guix-package-info-installed-outputs   ((,c :foreground ,(gc 'green-1)
-                                                     :weight bold)))
+         (guix-derivation-drv-file-name         ((,c :inherit guix-derivation-file-name
+                                                     :foreground ,(gc 'cyan))))
 
          ;; helm
          (helm-header-line-left-margin ((,c :inherit alect-prompt)))
@@ -1231,8 +1247,8 @@ For INVERT, see `alect-get-color'."
          (markdown-header-delimiter-face ((,c :inherit markdown-header-face
                                               :foreground ,(gc 'fg+2))))
          (markdown-footnote-face         ((,c :foreground ,(gc 'blue+2))))
-         (markdown-inline-code-face      ((,c :foreground ,(gc 'cyan+1))))
-         (markdown-markup-face           ((,c :foreground ,(gc 'fg-2))))
+         (markdown-inline-code-face      ((,c :foreground ,(gc 'fg-2))))
+         (markdown-markup-face           ((,c :foreground ,(gc 'fg))))
          (markdown-comment-face          ((,c :inherit font-lock-comment-face)))
          (markdown-blockquote-face       ((,c :inherit font-lock-doc-face)))
          (markdown-bold-face             ((,c :inherit bold)))
@@ -1241,13 +1257,14 @@ For INVERT, see `alect-get-color'."
          (markdown-link-face             ((,c :inherit link)))
          (markdown-link-title-face       ((,c :inherit font-lock-string-face)))
          (markdown-url-face              ((,c :foreground ,(gc 'green+2))))
-         (markdown-language-keyword-face ((,c :foreground ,(gc 'magenta+2))))
+         (markdown-code-face             ((,c :inherit alect-block)))
+         (markdown-language-keyword-face ((,c :inherit alect-block-title)))
          (markdown-line-break-face       ((,c :inherit underline)))
          (markdown-list-face             ((,c :foreground ,(gc 'fg+2)
                                               :weight bold)))
          (markdown-metadata-key-face     ((,c :foreground ,(gc 'blue-2))))
          (markdown-metadata-value-face   ((,c :foreground ,(gc 'red-1))))
-         (markdown-pre-face              ((,c :foreground ,(gc 'yellow+2))))
+         (markdown-pre-face              ((,c)))
          (markdown-reference-face        ((,c :inherit link)))
 
          ;; merlin
@@ -1270,7 +1287,7 @@ For INVERT, see `alect-get-color'."
                                          :weight bold)))
 
          ;; mm (used in mails)
-         (mm-uu-extract ((,c :background ,(gc 'bg))))
+         (mm-uu-extract ((,c :inherit alect-block)))
 
          ;; mode-line
          (mode-line-buffer-id  ((,c :foreground ,(gc 'blue-1)
@@ -1337,11 +1354,16 @@ For INVERT, see `alect-get-color'."
                                          :foreground ,(gc 'cyan-2))))
          (org-agenda-structure      ((,c :inherit alect-title)))
          (org-archived              ((,c :foreground ,(gc 'fg+1) :weight bold)))
-         (org-block                 ((,c :background ,(gc 'bg))))
-         (org-block-background      ((,c :background ,(gc 'bg))))
+         (org-block                 ((,c :inherit alect-block)))
+         (org-quote                 ((,c :inherit org-block
+                                         :foreground ,(gc 'fg+2))))
+         (org-verse                 ((,c :inherit org-block
+                                         :foreground ,(gc 'fg))))
+         (org-meta-line             ((,c :inherit alect-block-title)))
          (org-block-begin-line      ((,c :inherit org-meta-line
-                                         :background ,(gc 'bg+1))))
-         (org-block-end-line        ((,c :inherit org-block-begin-line)))
+                                         :overline t)))
+         (org-block-end-line        ((,c :inherit org-meta-line
+                                         :underline t)))
          (org-checkbox              ((,c :background ,(gc 'bg-2)
                                          :foreground ,(gc 'fg)
                                          :box (:line-width 1
@@ -1354,6 +1376,7 @@ For INVERT, see `alect-get-color'."
          (org-document-title        ((,c :inherit alect-title)))
          (org-document-info         ((,c :foreground ,(gc 'red-1))))
          (org-document-info-keyword ((,c :foreground ,(gc 'yellow+1))))
+         (org-ellipsis              ((,c :foreground ,(gc 'fg-2))))
          (org-footnote              ((,c :foreground ,(gc 'cyan)
                                          :underline t)))
          (org-formula               ((,c :foreground ,(gc 'yellow-2))))

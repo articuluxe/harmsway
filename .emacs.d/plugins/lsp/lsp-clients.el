@@ -115,6 +115,33 @@ finding the executable with `exec-path'."
                   :server-id 'ts-ls))
 
 
+;;; Vue
+(defcustom lsp-clients-vue-server "vls"
+  "The vue-language-server executable to use.
+Leave as just the executable name to use the default behavior of
+finding the executable with `exec-path'."
+  :group 'lsp-vue
+  :risky t
+  :type 'file)
+
+(defcustom lsp-clients-vue-server-args '()
+  "Extra arguments for the vue-language-server language server."
+  :group 'lsp-vue
+  :risky t
+  :type '(repeat string))
+
+(defun lsp-vue--ls-command ()
+  "Generate the language server startup command."
+  `(,lsp-clients-vue-server
+    ,@lsp-clients-vue-server-args))
+
+(lsp-register-client
+ (make-lsp-client :new-connection (lsp-stdio-connection 'lsp-vue--ls-command)
+                  :major-modes '(vue-mode)
+                  :ignore-messages '("readFile .*? requested by Vue but content not available")
+                  :server-id 'vls))
+
+
 ;;; GO language
 
 (defcustom lsp-clients-go-server "go-langserver"
@@ -210,7 +237,7 @@ PARAMS progress report notification data."
 
 (lsp-register-client
  (make-lsp-client :new-connection (lsp-stdio-connection '("rls"))
-                  :major-modes '(rust-mode)
+                  :major-modes '(rust-mode rustic-mode)
                   :server-id 'rls
                   :notification-handlers (lsp-ht ("window/progress" 'lsp-clients--rust-window-progress))))
 
@@ -281,12 +308,14 @@ finding the executable with `exec-path'."
   "Generate the language server startup command."
   `(,lsp-clients-clangd-executable ,@lsp-clients-clangd-args))
 
+(lsp-register-client
+ (make-lsp-client :new-connection (lsp-stdio-connection
+                                   'lsp-clients--clangd-command)
+                  :major-modes '(c-mode c++-mode objc-mode)
+                  :server-id 'clangd))
+
 (defun lsp-clients-register-clangd ()
-  (lsp-register-client
-   (make-lsp-client :new-connection (lsp-stdio-connection
-                                     'lsp-clients--clangd-command)
-                    :major-modes '(c-mode c++-mode objc-mode)
-                    :server-id 'clangd)))
+  (warn "This call is no longer needed. clangd is now automatically registered. Delete lsp-clients-register-clangd call from your config."))
 
 
 ;; Dart
@@ -316,6 +345,21 @@ finding the executable with `exec-path'."
                                    'lsp-dart--lsp-command)
                   :major-modes '(dart-mode)
                   :server-id 'dart_language_server))
+
+
+;; Elixir
+(defcustom lsp-clients-elixir-server-executable "language_server.sh"
+    "The elixir-language-server executable to use.
+Leave as just the executable name to use the default behavior of
+finding the executable with `exec-path'."
+  :group 'lsp-elixir
+  :type 'file)
+
+(lsp-register-client
+ (make-lsp-client :new-connection (lsp-stdio-connection
+                                   (-const lsp-clients-elixir-server-executable))
+                  :major-modes '(elixir-mode)
+                  :server-id 'elixir-ls))
 
 
 (provide 'lsp-clients)

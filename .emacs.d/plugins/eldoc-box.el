@@ -6,6 +6,8 @@
 
 ;; Author: Sebastien Chapuis <sebastien@chapu.is>
 ;; Maintainer: Yuan Fu <casouri@gmail.com>
+;; Contributors:
+;;   João Távora <joaotavora@gmail.com>
 ;; URL: https://github.com/casouri/eldoc-box
 ;; Package-Requires: ((emacs "26.1"))
 
@@ -53,6 +55,11 @@
 
 (defvar eldoc-box-only-multi-line nil
   "If non-nil, only use childframe when there are more than one line.")
+
+(defvar eldoc-box-cleanup-interval 1
+  "After this amount of seconds will eldoc-box attempt to cleanup the childframe.
+E.g. if it is set to 1, the childframe is cleared 1 second after
+you moved the point to somewhere else (that doesn't have a doc to show)")
 
 (defvar eldoc-box-frame-parameters
   '(
@@ -111,7 +118,9 @@ Consider your machine's screen's resolution when setting this variable.")
     (remove-function (local 'eldoc-message-function) #'eldoc-box--eldoc-message-function)
     ;; if minor mode is turned off when childframe is visible
     ;; hide it
-    (eldoc-box-quit-frame)))
+    (when eldoc-box--frame
+      (delete-frame eldoc-box--frame)
+      (setq eldoc-box--frame nil))))
 
 ;;;; Backstage
 ;;;;; Variable
@@ -132,14 +141,6 @@ Consider your machine's screen's resolution when setting this variable.")
       (insert str)
       (eldoc-box--get-frame doc-buffer))))
 
-(defun eldoc-box-quit-hook ()
-  "Quit eglot doc childframe and remove self from hook."
-  (eldoc-box-quit-frame)
-  (remove-hook 'pre-command-hook #'eldoc-box-quit-hook t))
-
-(defun eldoc-box--inject-quit-func ()
-  "Inject quit function into `pre-command-hook' so doing anything will quit eglot doc childframe."
-  (add-hook 'pre-command-hook #'eldoc-box-quit-hook t t))
 
 (defun eldoc-box--window-side ()
   "Return 'left if the selected window is on the left,
@@ -225,25 +226,24 @@ Checkout `lsp-ui-doc--make-frame', `lsp-ui-doc--move-frame'."
     ;; setup another one to make sure the doc frame is cleared
     ;; once the condition above it met
     (setq eldoc-box--cleanup-timer
-          (run-with-timer 1 nil #'eldoc-box--maybe-cleanup))))
+          (run-with-timer eldoc-box-cleanup-interval nil #'eldoc-box--maybe-cleanup))))
 
 (defun eldoc-box--eldoc-message-function (str &rest args)
   "Front-end for eldoc. Display STR in childframe and ARGS works like `message'."
-  (if (stringp str)
-      (let ((doc (apply #'format str args)))
-        (unless (and eldoc-box-only-multi-line (eq (cl-count ?\n doc) 0))
-          (eldoc-box--display doc)
-          (setq eldoc-box--last-point (point))
-          ;; Why a timer? ElDoc is mainly used in minibuffer,
-          ;; where the text is constantly being flushed by other commands
-          ;; so ElDoc doesn't try very hard to cleanup
-          (when eldoc-box--cleanup-timer (cancel-timer eldoc-box--cleanup-timer))
-          ;; this function is also called by `eldoc-pre-command-refresh-echo-area'
-          ;; in `pre-command-hook', which means the timer is reset before every
-          ;; command if `eldoc-box-hover-mode' is on and `eldoc-last-message' is not nil.
-          (setq eldoc-box--cleanup-timer
-                (run-with-timer 1 nil #'eldoc-box--maybe-cleanup))))
-    (eldoc-box-quit-frame)
+  (when (stringp str)
+    (let ((doc (apply #'format str args)))
+      (unless (and eldoc-box-only-multi-line (eq (cl-count ?\n doc) 0))
+        (eldoc-box--display doc)
+        (setq eldoc-box--last-point (point))
+        ;; Why a timer? ElDoc is mainly used in minibuffer,
+        ;; where the text is constantly being flushed by other commands
+        ;; so ElDoc doesn't try very hard to cleanup
+        (when eldoc-box--cleanup-timer (cancel-timer eldoc-box--cleanup-timer))
+        ;; this function is also called by `eldoc-pre-command-refresh-echo-area'
+        ;; in `pre-command-hook', which means the timer is reset before every
+        ;; command if `eldoc-box-hover-mode' is on and `eldoc-last-message' is not nil.
+        (setq eldoc-box--cleanup-timer
+              (run-with-timer eldoc-box-cleanup-interval nil #'eldoc-box--maybe-cleanup))))
     t))
 
 (provide 'eldoc-box)

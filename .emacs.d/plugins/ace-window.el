@@ -96,10 +96,9 @@ For example, to make SPC do the same as ?a, use
   "When non-nil, also display `ace-window-mode' string in the minibuffer when ace-window is active."
   :type 'boolean)
 
-(defcustom aw-ignored-buffers '("*Calc Trail*" "*LV*")
+(defcustom aw-ignored-buffers '("*Calc Trail*" " *LV*")
   "List of buffers and major-modes to ignore when choosing a window from the window list.
-Active only when `aw-ignore-on' is non-nil.  Windows displaying these
-buffers can still be chosen by typing their specific labels."
+Active only when `aw-ignore-on' is non-nil."
   :type '(repeat string))
 
 (defcustom aw-ignore-on t
@@ -217,6 +216,8 @@ or
            (or (memq (buffer-local-value 'major-mode (window-buffer window))
                      aw-ignored-buffers)
                (member (buffer-name (window-buffer window)) aw-ignored-buffers)))
+      ;; ignore child frames
+      (frame-parent (window-frame window))
       ;; Ignore selected window if `aw-ignore-current' is non-nil.
       (and aw-ignore-current
            (equal window (selected-window)))
@@ -580,13 +581,16 @@ window."
   "Return true if WND1 is less than WND2.
 This is determined by their respective window coordinates.
 Windows are numbered top down, left to right."
-  (let ((f1 (window-frame wnd1))
-        (f2 (window-frame wnd2))
-        (e1 (window-edges wnd1))
-        (e2 (window-edges wnd2)))
-    (cond ((< (car (frame-position f1)) (car (frame-position f2)))
+  (let* ((f1 (window-frame wnd1))
+	 (f2 (window-frame wnd2))
+	 (e1 (window-edges wnd1))
+	 (e2 (window-edges wnd2))
+	 (p1 (frame-position f1))
+	 (p2 (frame-position f2))
+	 (nl (or (null (car p1)) (null (car p2)))))
+    (cond ((and (not nl) (< (car p1) (car p2)))
            (not aw-reverse-frame-list))
-          ((> (car (frame-position f1)) (car (frame-position f2)))
+          ((and (not nl) (> (car p1) (car p2)))
            aw-reverse-frame-list)
           ((< (car e1) (car e2))
            t)
