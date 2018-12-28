@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-12-20 07:33:38 dharms>
+;; Modified Time-stamp: <2018-12-28 08:54:56 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2760,7 +2760,7 @@ See `https://github.com/company-mode/company-mode/issues/205'."
   :after flycheck
   :disabled
   :config
-  (add-hook 'flycheck-mode-hook #'flycheck-inline-mode))
+  (add-hook 'flycheck-mode-hook #'turn-on-flycheck-inline))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; semantic ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq semantic-default-submodes
