@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2018  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-12-28 08:54:56 dan.harms>
+;; Modified Time-stamp: <2018-12-31 10:10:48 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3232,6 +3232,7 @@ This may perform related customization."
                 (buffer-file-name)))))
     (save-excursion
       (byte-compile-file buffer-file-name))))
+(add-hook 'after-save-hook #'harmsway-compile-lisp-file)
 
 (add-hook 'emacs-lisp-mode-hook
           (lambda()
@@ -3249,9 +3250,14 @@ This may perform related customization."
             ))
 (when (< emacs-major-version 26)
   (add-hook 'emacs-lisp-mode-hook 'eldoc-mode))
-(require 'lisp-extra-font-lock)
-(lisp-extra-font-lock-global-mode 1)
-(add-hook 'after-save-hook #'harmsway-compile-lisp-file)
+(use-package lisp-extra-font-lock
+  :after elisp-mode
+  :config
+  (lisp-extra-font-lock-global-mode 1))
+(use-package highlight-defined
+  :after elisp-mode
+  :config
+  (add-hook 'emacs-lisp-mode-hook #'highlight-defined-mode))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; folio-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package folio-mode :mode "\\.folio$"
