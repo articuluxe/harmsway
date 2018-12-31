@@ -232,6 +232,21 @@ It contains all of the clients that are currently regitered.")
   :type 'boolean
   :group 'lsp-mode)
 
+(defcustom lsp-eldoc-enable-hover t
+  "If non-nil, eldoc will display hover info when it is present."
+  :type 'boolean
+  :group 'lsp-mode)
+
+(defcustom lsp-eldoc-enable-signature-help t
+  "If non-nil, eldoc will display signature help when it is present."
+  :type 'boolean
+  :group 'lsp-mode)
+
+(defcustom lsp-eldoc-prefer-signature-help t
+  "If non-nil, eldoc will display signature help when both hover and signature help are present."
+  :type 'boolean
+  :group 'lsp-mode)
+
 (defcustom lsp-eldoc-render-all nil
   "Define whether all of the returned by document/onHover will be displayed.
 If `lsp-markup-display-all' is set to nil `eldoc' will show only
@@ -338,18 +353,6 @@ than the second parameter.")
   :type 'boolean
   :group 'lsp-mode)
 
-(defcustom lsp-signature-enabled t
-  "If non-nil, eldoc will display signature info when it is present."
-  :type 'boolean
-  :group 'lsp-mode)
-
-(defcustom lsp-hover-enabled t
-  "If non-nil, eldoc will display hover info when it is present.
-In case both signature and hover info are present and
-`lsp-signature-enabled' is t eldoc will display signature info."
-  :type 'boolean
-  :group 'lsp-mode)
-
 (defvar-local lsp--flymake-report-fn nil)
 (defvar-local lsp--flymake-report-pending nil)
 
@@ -437,7 +440,7 @@ must be used for handling a particular message.")
 
 (defun lsp--eldoc-message (&optional msg)
   "Show MSG in eldoc."
-  (run-at-time 0 nil (lambda () (eldoc-message msg))))
+  (run-with-idle-timer 0 nil (lambda () (eldoc-message msg))))
 
 (defun lsp-message (format &rest args)
   "Wrapper over `message' which preserves the `eldoc-message'.
@@ -614,6 +617,8 @@ INHERIT-INPUT-METHOD will be proxied to `completing-read' without changes."
 
   ;; major modes supported by the client.
   (major-modes)
+  ;; Break the tie when major-mode is supported by multiple clients.
+  (priority 0)
   ;; Unique identifier for
   (server-id)
   ;; defines whether the client supports multi root workspaces.
@@ -1946,18 +1951,20 @@ If INCLUDE-DECLARATION is non-nil, request the server to include declarations."
 (defun lsp-describe-thing-at-point ()
   "Display the full documentation of the thing at point."
   (interactive)
-  (let ((contents (->> (lsp--text-document-position-params)
-                       (lsp--make-request "textDocument/hover")
-                       (lsp--send-request)
-                       (gethash "contents"))))
-    (pop-to-buffer
-     (with-current-buffer (get-buffer-create "*lsp-help*")
-       (let ((inhibit-read-only t))
-         (erase-buffer)
-         (insert (lsp--render-on-hover-content contents t))
-         (goto-char (point-min))
-         (view-mode t)
-         (current-buffer))))))
+  (let ((contents (-some->> (lsp--text-document-position-params)
+                            (lsp--make-request "textDocument/hover")
+                            (lsp--send-request)
+                            (gethash "contents"))))
+    (if (and contents (not (equal contents "")) )
+        (pop-to-buffer
+         (with-current-buffer (get-buffer-create "*lsp-help*")
+           (let ((inhibit-read-only t))
+             (erase-buffer)
+             (insert (lsp--render-on-hover-content contents t))
+             (goto-char (point-min))
+             (view-mode t)
+             (current-buffer))))
+      (lsp--info "No content at point."))))
 
 (defun lsp--point-in-bounds-p (bounds)
   "Return whether the current point is within BOUNDS."
@@ -2009,19 +2016,27 @@ When language is nil render as markup if `markdown-mode' is loaded."
 (defun lsp--render-on-hover-content (contents render-all)
   "Render the content received from 'document/onHover' request.
 CONTENTS  - MarkedString | MarkedString[] | MarkupContent
-RENDER-ALL - nil if only the first element should be rendered."
-  (string-join
-   (seq-map
-    'lsp--render-element
-    (if (or (hash-table-p contents) (stringp contents))
-        (list contents)
+RENDER-ALL - nil if only the signature should be rendered."
+  (if (and (hash-table-p contents) (gethash "kind" contents))
+      ;; MarkupContent, deprecated by LSP but actually very flexible.
+      ;; It tends to be long and is not suitable in echo area.
+      (if render-all (lsp--render-element contents) "")
+    ;; MarkedString -> MarkedString[]
+    (when (or (hash-table-p contents) (stringp contents))
+      (setq contents (list contents)))
+    ;; Consider the signature consisting of the elements who have a renderable
+    ;; "language" property. When render-all is nil, ignore other elements.
+    (string-join
+     (seq-map
+      #'lsp--render-element
       (if render-all
           contents
-        (seq-take (or (seq-filter 'hash-table-p contents) contents) 1))))
-   "\n"))
+        (--filter (and (hash-table-p it) (lsp-get-renderer (gethash "language" it)))
+                  contents)))
+     "\n")))
 
 (defvar-local lsp--hover-saved-bounds nil)
-(defvar-local lsp--eldoc-saved-hover-message nil)
+(defvar-local lsp--eldoc-saved-message nil)
 
 (defun lsp--signature->eldoc-message (signature-help)
   "Generate eldoc message from SIGNATURE-HELP response."
@@ -2041,68 +2056,49 @@ RENDER-ALL - nil if only the first element should be rendered."
       (add-face-text-property start end '(:weight bold :slant italic :underline t) nil result))
     result))
 
-(defun lsp--display-signature-or-hover (signature-response hover-response)
-  "Display signature or hover based on SIGNATURE-RESPONSE HOVER-RESPONSE."
-  ;; no signature-respose - wait for it
-  (when signature-response
-    (cond
-     ;; signature received and has signatures
-     ((and (ht? signature-response)
-           (gethash "signatures" signature-response))
-      (lsp--eldoc-message (lsp--signature->eldoc-message signature-response)))
-
-     ;; signature received and has no signatures and hover info is present.
-     ((or (ht? hover-response))
-      (-let (((&hash "contents" "range") (or hover-response (make-hash-table))))
-        (setq lsp--hover-saved-bounds (when range (lsp--range-to-region range))
-              lsp--eldoc-saved-hover-message (when contents
-                                               (lsp--render-on-hover-content contents
-                                                                             lsp-eldoc-render-all)))
-        (lsp--eldoc-message lsp--eldoc-saved-hover-message)))
-     ;; empty hover and either no signature data or no signatures present
-     ((and (eq :empty hover-response)
-           (or (eq :empty signature-response)
-               (not (gethash "signatures" signature-response))))
-      (lsp--eldoc-message)))
-
-    (when hover-response
-      (run-hook-with-args 'lsp-on-hover-hook
-                          (unless (eq signature-response :empty)
-                            signature-response)
-                          (unless (eq hover-response :empty)
-                            hover-response)))))
-
 (defvar-local lsp-hover-request-id 0)
 
 (defun lsp-hover ()
   "Display signature or hover info based on the current position."
-
   (if (and lsp--hover-saved-bounds
            (lsp--point-in-bounds-p lsp--hover-saved-bounds))
-      (lsp--eldoc-message lsp--eldoc-saved-hover-message)
-    (setq lsp--hover-saved-bounds nil
-          lsp--eldoc-saved-hover-message nil)
+      (lsp--eldoc-message lsp--eldoc-saved-message)
 
-    (let ((request-id (cl-incf lsp-hover-request-id))
-          signature-response hover-response)
-      (if (and (lsp--capability "signatureHelpProvider") lsp-hover-enabled)
-          (lsp-request-async
-           "textDocument/signatureHelp"
-           (lsp--text-document-position-params)
-           (lambda (signature-help)
-             (when (eq request-id lsp-hover-request-id)
-               (lsp--display-signature-or-hover
-                (setf signature-response (or signature-help :empty))
-                hover-response))))
-        (setf signature-response :empty))
-      (if (and (lsp--capability "hoverProvider") lsp-signature-enabled)
-          (lsp-request-async "textDocument/hover"
-                             (lsp--text-document-position-params)
-                             (lambda (hover)
-                               (when (eq request-id lsp-hover-request-id)
-                                 (setf hover-response (or hover :empty))
-                                 (lsp--display-signature-or-hover signature-response hover-response))))
-        (setf hover-response :empty)))))
+    (setq lsp--hover-saved-bounds nil
+          lsp--eldoc-saved-message nil)
+    (let ((request-id (cl-incf lsp-hover-request-id)) (pending 0))
+      (when (and lsp-eldoc-enable-hover (lsp--capability "hoverProvider"))
+        (cl-incf pending)
+        (lsp-request-async
+         "textDocument/hover"
+         (lsp--text-document-position-params)
+         (lambda (hover)
+           (when (and (eq request-id lsp-hover-request-id))
+             (when hover
+               (when-let (range (gethash "range" hover))
+                 (setq lsp--hover-saved-bounds (lsp--range-to-region range)))
+               (-let (((&hash "contents") hover))
+                 (when-let (message
+                            (and contents (lsp--render-on-hover-content contents lsp-eldoc-render-all)))
+                   (when (or (and (not lsp-eldoc-prefer-signature-help) (setq pending 1))
+                             (not lsp--eldoc-saved-message))
+                     (setq lsp--eldoc-saved-message message)))))
+             (when (zerop (cl-decf pending))
+               (lsp--eldoc-message lsp--eldoc-saved-message))
+             (run-hook-with-args 'lsp-on-hover-hook hover)))))
+      (when (and lsp-eldoc-enable-signature-help (lsp--capability "signatureHelpProvider"))
+        (cl-incf pending)
+        (lsp-request-async
+         "textDocument/signatureHelp"
+         (lsp--text-document-position-params)
+         (lambda (signature)
+           (when (eq request-id lsp-hover-request-id)
+             (when-let (message (and signature (lsp--signature->eldoc-message signature)))
+               (when (or (and lsp-eldoc-prefer-signature-help (setq pending 1))
+                         (not lsp--eldoc-saved-message))
+                 (setq lsp--eldoc-saved-message message)))
+             (when (zerop (cl-decf pending))
+               (lsp--eldoc-message lsp--eldoc-saved-message)))))))))
 
 (defun lsp--select-action (actions)
   "Select an action to execute from ACTIONS."
@@ -3150,15 +3146,6 @@ SESSION is the active session."
   "Get the session associated with the current buffer."
   (or lsp--session (setq lsp--session (lsp--load-default-session))))
 
-(defun lsp--find-started-workspace (session clients file-name)
-  "Look for a workspace in SESSION matching FILE-NAME and any of CLIENTS."
-  (-some (lambda (workspace)
-           (--first (eq (lsp--client-server-id (lsp--workspace-client workspace))
-                        (lsp--client-server-id it))
-                    clients))
-         (gethash (lsp-find-session-folder session file-name)
-                  (lsp-session-folder->servers session))))
-
 (defun lsp--find-clients (session buffer-major-mode file-name)
   "Find clients which can handle BUFFER-MAJOR-MODE.
 SESSION is the currently active session."
@@ -3168,16 +3155,8 @@ SESSION is the currently active session."
                               (and (-contains? (lsp--client-major-modes client) buffer-major-mode)
                                    (-> client lsp--client-new-connection (plist-get :test?) funcall)))))
     (-let (((add-on-clients main-clients) (-separate 'lsp--client-add-on? it)))
-      ;; allow only one client that is not declared as add-on? t.
-      ;; this will allow user to pick a lsp client for the current project.
-      (cons (pcase main-clients
-              (`(,single) single)
-              (_ (or
-                  (lsp--find-started-workspace session main-clients file-name)
-                  (lsp--completing-read (format "There multiple clients registered for %s" buffer-major-mode)
-                                        main-clients
-                                        (lambda (client) (format "%s" (lsp--client-server-id client)))
-                                        nil t))))
+      ;; Pick only one client (with the highest priority) that is not declared as add-on? t.
+      (cons (and main-clients (--max-by (> (lsp--client-priority it) (lsp--client-priority other)) main-clients))
             add-on-clients))))
 
 (defun lsp-register-client (client)
@@ -3297,7 +3276,7 @@ SESSION is the active session."
                                                        (lsp--client-server-id client)))))
       (with-lsp-workspace multi-root-workspace
         (lsp-notify "workspace/didChangeWorkspaceFolders"
-                    `(:event (:removed ,(vector (list :uri (lsp--path-to-uri project-root)))))))
+                    `(:event (:added ,(vector (list :uri (lsp--path-to-uri project-root)))))))
 
       (->> session (lsp-session-folder->servers) (gethash project-root) (pushnew multi-root-workspace))
       (->> session (lsp-session-server-id->folders) (gethash (lsp--client-server-id client)) (pushnew project-root))
@@ -3397,7 +3376,7 @@ Returns nil if the project should not be added to the current SESSION."
 
 (defun lsp-find-workspace (server-id file-name)
   "Find workspace for SERVER-ID for FILE-NAME."
-  (when-let* ((session (lsp-session))
+  (-when-let* ((session (lsp-session))
               (folder->servers (lsp-session-folder->servers session))
               (workspaces (if file-name
                               (gethash (lsp-find-session-folder session file-name) folder->servers)

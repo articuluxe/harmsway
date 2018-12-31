@@ -252,8 +252,8 @@
 
    ;; basics
    `(cursor
-     ((,srcery-class (:background ,srcery-bright-white :foreground ,srcery-black :inverse-video t))
-      (,srcery-256-class (:background ,srcery-256-bright-white :foreground ,srcery-256-black :inverse-video t))))
+     ((,srcery-class (:background ,srcery-yellow :foreground ,srcery-black))
+      (,srcery-256-class (:background ,srcery-256-yellow :foreground ,srcery-256-black))))
 
    `(custom-button
      ((,srcery-class (:background ,srcery-black :foreground ,srcery-bright-white :box (:line-width 2 :style released-button)))
@@ -526,8 +526,8 @@
       (,srcery-256-class :foreground ,srcery-256-yellow :weight bold)))
 
    `(cider-deprecated-face
-     ((,srcery-class :background ,srcery-bright-yellow :foreground ,srcery-black)
-      (,srcery-256-class :background ,srcery-256-bright-yellow :foreground ,srcery-256-black)))
+     ((,srcery-class  :foreground ,srcery-bright-yellow :underline t)
+      (,srcery-256-class :foreground ,srcery-256-bright-yellow :underline t)))
 
    `(cider-debug-code-overlay-face
      ((,srcery-class :background ,srcery-bright-blue :foreground ,srcery-black)
@@ -2054,8 +2054,8 @@
       (,srcery-256-class (:underline t :foreground ,srcery-256-bright-white))))
 
    `(org-hide
-     ((,srcery-class (:foreground ,srcery-gray-3 :background ,srcery-black))
-      (,srcery-256-class (:foreground ,srcery-256-gray3 :background ,srcery-256-black))))
+     ((,srcery-class (:foreground ,srcery-black :background ,srcery-black))
+      (,srcery-256-class (:foreground ,srcery-256-black :background ,(if srcery-transparent-background nil srcery-256-black)))))
 
    `(org-kbd
      ((,srcery-class (:inherit region :foreground ,srcery-bright-white :box (:line-width 1 :style released-button)))
@@ -2369,8 +2369,8 @@
 
    ;; show-paren
    `(show-paren-match
-     ((,srcery-class (:foreground ,srcery-bright-magenta :weight bold))
-      (,srcery-256-class (:foreground ,srcery-256-bright-magenta :weight bold))))
+     ((,srcery-class (:foreground ,srcery-magenta :weight bold))
+      (,srcery-256-class (:background ,srcery-256-magenta :weight bold))))
 
    `(show-paren-mismatch
      ((,srcery-class (:background ,srcery-red :foreground ,srcery-bright-white))
@@ -2389,8 +2389,8 @@
       (,srcery-256-class (:background ,srcery-256-magenta :foreground nil))))
 
    `(sp-show-pair-match-face
-     ((,srcery-class (:foreground ,srcery-bright-magenta :weight bold))
-      (,srcery-256-class (:foreground ,srcery-256-bright-magenta :weight bold))))
+     ((,srcery-class (:foreground ,srcery-magenta :weight bold))
+      (,srcery-256-class (:foreground ,srcery-256-magenta :weight bold))))
 
    `(sp-wrap-overlay-closing-pair
      ((,srcery-class (:background ,srcery-magenta :foreground, srcery-bright-yellow))
@@ -3004,7 +3004,7 @@
 
   (custom-theme-set-variables
    'srcery
-   `(ansi-color-names-vector [,srcery-256-black ,srcery-256-red ,srcery-256-green ,srcery-256-yellow ,srcery-256-blue ,srcery-256-magenta ,srcery-256-cyan ,srcery-256-white])
+   `(ansi-color-names-vector [,srcery-black ,srcery-red ,srcery-green ,srcery-bright-yellow ,srcery-blue ,srcery-magenta ,srcery-cyan ,srcery-gray-5])
    ))
 
 ;;;###autoload

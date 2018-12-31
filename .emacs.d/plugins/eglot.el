@@ -1026,7 +1026,7 @@ Doubles as an indicator of snippet support."
   "Format MARKUP according to LSP's spec."
   (pcase-let ((`(,string ,mode)
                (if (stringp markup) (list (string-trim markup)
-                                          (intern "gfm-mode"))
+                                          (intern "gfm-view-mode"))
                  (list (plist-get markup :value)
                        major-mode))))
     (with-temp-buffer
@@ -1405,7 +1405,7 @@ COMMAND is a symbol naming the command."
                                              (t          'eglot-note))
                                        message `((eglot-lsp-diag . ,diag-spec)))))
          into diags
-         finally (cond ((and flymake-mode eglot--current-flymake-report-fn)
+         finally (cond (eglot--current-flymake-report-fn
                         (funcall eglot--current-flymake-report-fn diags
                                  ;; If the buffer hasn't changed since last
                                  ;; call to the report function, flymake won't
@@ -1806,38 +1806,48 @@ is not active."
 
 (defun eglot-completion-at-point ()
   "EGLOT's `completion-at-point' function."
-  (let ((bounds (bounds-of-thing-at-point 'symbol))
+  (let* ((bounds (bounds-of-thing-at-point 'symbol))
         (server (eglot--current-server-or-lose))
         (completion-capability (eglot--server-capable :completionProvider))
+        (sort-completions (lambda (completions)
+                            (sort completions
+                                  (lambda (a b)
+                                    (string-lessp
+                                     (or (get-text-property 0 :sortText a) "")
+                                     (or (get-text-property 0 :sortText b) ""))))))
+        (metadata `(metadata . ((display-sort-function . ,sort-completions))))
         strings)
     (when completion-capability
       (list
        (or (car bounds) (point))
        (or (cdr bounds) (point))
-       (completion-table-dynamic
-        (lambda (_ignored)
-          (let* ((resp (jsonrpc-request server
-                                        :textDocument/completion
-                                        (eglot--CompletionParams)
-                                        :deferred :textDocument/completion
-                                        :cancel-on-input t))
-                 (items (if (vectorp resp) resp (plist-get resp :items))))
-            (setq
-             strings
-             (mapcar
-              (jsonrpc-lambda (&rest all &key label insertText insertTextFormat
-                                     &allow-other-keys)
-                (let ((completion
-                       (cond ((and (eql insertTextFormat 2)
-                                   (eglot--snippet-expansion-fn))
-                              (string-trim-left label))
-                             (t
-                              (or insertText (string-trim-left label))))))
-                  (add-text-properties 0 1 all completion)
-                  (put-text-property 0 1 'eglot--completion-bounds bounds completion)
-                  (put-text-property 0 1 'eglot--lsp-completion all completion)
-                  completion))
-              items)))))
+       (lambda (string pred action)
+         (if (eq action 'metadata) metadata
+           (funcall
+            (completion-table-dynamic
+             (lambda (_ignored)
+               (let* ((resp (jsonrpc-request server
+                                             :textDocument/completion
+                                             (eglot--CompletionParams)
+                                             :deferred :textDocument/completion
+                                             :cancel-on-input t))
+                      (items (if (vectorp resp) resp (plist-get resp :items))))
+                 (setq
+                  strings
+                  (mapcar
+                   (jsonrpc-lambda
+                       (&rest all &key label insertText insertTextFormat
+                              &allow-other-keys)
+                     (let ((completion
+                            (cond ((and (eql insertTextFormat 2)
+                                        (eglot--snippet-expansion-fn))
+                                   (string-trim-left label))
+                                  (t
+                                   (or insertText (string-trim-left label))))))
+                       (put-text-property 0 1 'eglot--lsp-completion all completion)
+                       completion))
+                   items)))))
+            string pred action)))
        :annotation-function
        (lambda (obj)
          (eglot--dbind ((CompletionItem) detail kind insertTextFormat)
@@ -1855,24 +1865,18 @@ is not active."
                        (and (eql insertTextFormat 2)
                             (eglot--snippet-expansion-fn)
                             " (snippet)"))))))
-       :display-sort-function
-       (lambda (items)
-         (sort items (lambda (a b)
-                       (string-lessp
-                        (or (get-text-property 0 :sortText a) "")
-                        (or (get-text-property 0 :sortText b) "")))))
        :company-doc-buffer
        (lambda (obj)
          (let* ((documentation
-                 (or (get-text-property 0 :documentation obj)
-                     (and (eglot--server-capable :completionProvider
-                                                 :resolveProvider)
-                          (plist-get
-                           (jsonrpc-request server :completionItem/resolve
-                                            (get-text-property
-                                             0 'eglot--lsp-completion obj)
-                                            :cancel-on-input t)
-                           :documentation))))
+                 (let ((lsp-comp
+                        (get-text-property 0 'eglot--lsp-completion obj)))
+                   (or (plist-get lsp-comp :documentation)
+                       (and (eglot--server-capable :completionProvider
+                                                   :resolveProvider)
+                            (plist-get
+                             (jsonrpc-request server :completionItem/resolve
+                                              lsp-comp :cancel-on-input t)
+                             :documentation)))))
                 (formatted (and documentation
                                 (eglot--format-markup documentation))))
            (when formatted
@@ -1898,12 +1902,7 @@ is not active."
                           additionalTextEdits)
                (get-text-property 0 'eglot--lsp-completion comp)
              (let ((snippet-fn (and (eql insertTextFormat 2)
-                                    (eglot--snippet-expansion-fn)))
-                   ;; FIXME: it would have been much easier to fetch
-                   ;; these from the lexical environment, but we can't
-                   ;; in company because of
-                   ;; https://github.com/company-mode/company-mode/pull/845
-                   (bounds (get-text-property 0 'eglot--completion-bounds comp)))
+                                    (eglot--snippet-expansion-fn))))
                (cond (textEdit
                       ;; Undo the just the completed bit.  If before
                       ;; completion the buffer was "foo.b" and now is

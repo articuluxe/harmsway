@@ -511,14 +511,14 @@ Signal an error if the id cannot be determined."
   (goto-char (point-min))
   (forward-line 1)
   (let (headers)
+    (when (memq url-http-end-of-headers '(nil 0))
+      (error "BUG: missing headers %s" (plist-get status :error)))
     (while (re-search-forward "^\\([^:]*\\): \\(.+\\)"
                               url-http-end-of-headers t)
       (push (cons (match-string 1)
                   (match-string 2))
             headers))
     (setq headers (nreverse headers))
-    (unless url-http-end-of-headers
-      (error "BUG: missing headers %s" (plist-get status :error)))
     (goto-char (1+ url-http-end-of-headers))
     (if (and req (or (ghub--req-callback req)
                      (ghub--req-errorback req)))
@@ -652,7 +652,9 @@ SCOPES are the scopes the token is given access to."
       ;; If the Auth-Source cache contains the information that there
       ;; is no value, then setting the value does not invalidate that
       ;; now incorrect information.
-      (auth-source-forget (list :host host :user user))
+      ;; The (:max 1) is needed and has to be placed at the
+      ;; end for Emacs releases before 26.1.  #24 #64 #72
+      (auth-source-forget (list :host host :user user :max 1))
       token)))
 
 ;;;###autoload
@@ -762,7 +764,7 @@ and call `auth-source-forget+'."
                 ;; fixing so we want to keep trying by invalidating that
                 ;; information.
                 ;; The (:max 1) is needed and has to be placed at the
-                ;; end for Emacs releases before 26.1.  See #24, #64.
+                ;; end for Emacs releases before 26.1.  #24 #64 #72
                 (auth-source-forget (list :host host :user user :max 1))
                 (and (not nocreate)
                      (cl-ecase forge
