@@ -1,9 +1,9 @@
 ;; -*- Mode: Emacs-Lisp -*-
 ;; cathode --- host file
-;; Copyright (C) 2015-2018  Dan Harms (dharms)
+;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2018-12-20 06:04:38 dharms>
+;; Modified Time-stamp: <2019-01-01 14:37:42 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -37,6 +37,7 @@
                             "mononoki 12"
                             "Iosevka 12"
                             "Hasklig 12"
+                            "Anka/Coder 12"
                             "Andale Mono 12"
                             "M+ 2m regular 14"
                             "Droid Sans Mono 12"
@@ -48,6 +49,7 @@
                             "Space Mono 12"
                             "Roboto Mono 12"
                             "Hack 11"
+                            "Code New Roman 12"
                             "M+ 1m 13"
                             "Crystal 12"
                             "Anonymous Pro 14"
