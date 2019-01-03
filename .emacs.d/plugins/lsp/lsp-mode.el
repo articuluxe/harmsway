@@ -383,7 +383,8 @@ than the second parameter.")
                                         (caml-mode . "ocaml")
                                         (tuareg-mode . "ocaml")
                                         (swift-mode . "swift")
-                                        (elixir-mode . "elixir"))
+                                        (elixir-mode . "elixir")
+                                        (f90-mode . "fortran"))
   "Language id configuration.")
 
 (defvar lsp-method-requirements
@@ -1292,12 +1293,12 @@ disappearing, unset all the variables related to it."
       (erase-buffer)
       (insert (prin1-to-string to-persist)))))
 
-(defun lsp-workspace-folders-add ()
-  "Add to the list of workspace folders."
-  (interactive)
-  (push (read-directory-name "Select folder to add: "
-                             (or (lsp--suggest-project-root) default-directory) nil t)
-        (lsp-session-folders (lsp-session))))
+(defun lsp-workspace-folders-add (project-root)
+  "Add PROJECT-ROOT to the list of workspace folders."
+  (interactive
+   (list (read-directory-name "Select folder to add: "
+                              (or (lsp--suggest-project-root) default-directory) nil t)))
+  (push project-root (lsp-session-folders (lsp-session))))
 
 (defun lsp-workspace-folders-remove (project-root)
   "Remove PROJECT-ROOT to the list of workspace folders."
@@ -2913,11 +2914,12 @@ returns the command to execute."
                      (let ((proc (make-process
                                   :name process-name
                                   :connection-type 'pipe
+                                  :buffer (format "*%s*" process-name)
                                   :coding 'no-conversion
                                   :command final-command
                                   :filter filter
                                   :sentinel sentinel
-                                  :stderr process-name
+                                  :stderr (format "*%s::stderr*" process-name)
                                   :noquery t)))
                        (set-process-query-on-exit-flag proc nil)
                        (cons proc proc))))
