@@ -1,8 +1,8 @@
 ;;; custom-themes.el --- customize themes
-;; Copyright (C) 2016-2018  Dan Harms (dan.harms)
+;; Copyright (C) 2016-2019  Dan Harms (dan.harms)
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Wednesday, December 21, 2016
-;; Modified Time-stamp: <2018-12-31 11:17:13 dan.harms>
+;; Modified Time-stamp: <2019-01-04 13:24:33 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: themes colors
 
@@ -190,7 +190,18 @@
            (custom-theme-set-faces sym '(lazy-highlight ((t (:background "#343434" :foreground "#857b6f"))))))
           ((eq sym 'xp)
            (harmsway/make-all-font-sizes-the-same-please)
-           (custom-theme-set-faces sym '(fringe ((t :background "LightYellow3")))))
+           (custom-theme-set-faces sym '(fringe ((t :background "LightYellow2"))))
+           (custom-theme-set-faces sym '(mode-line-inactive ((t :background "LightYellow1"
+                                                                :foreground "cadetblue"
+                                                                :box (:line-width -1 :color "grey75")
+                                                                :slant oblique
+                                                                :weight light))))
+           (custom-theme-set-faces sym '(mode-line ((t (:background "LightBlue3"
+                                                                    :foreground "black"
+                                                                    :box (:line-width 1 :style released-button))))))
+           (custom-theme-set-faces sym '(header-line ((t (:foreground "grey20"
+                                                                      :background "LightGoldenrod")))))
+           )
           )
     (cond ((memq sym harmsway/sml-dark-themes)
            (load-theme 'smart-mode-line-dark t))
