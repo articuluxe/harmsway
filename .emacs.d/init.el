@@ -702,27 +702,6 @@ line."
               (ibuffer-vc-set-filter-groups-by-vc-root)
               )))
 
-;; This (unused) snippet overrides tag lookup for standard tags, not
-;; etags-select.  This would (untested) make tag lookup tramp-aware.  See
-;; emacs.stackexchange.com/questions/53/ctags-over-tramp
-;; (defun my/etags-file-of-tag (&optional relative)
-;;   (save-excursion
-;;     (re-search-backward "\f\n\\([^\n]+\\),[0-9]*\n")
-;;     (let ((str (convert-standard-filename
-;;                 (buffer-substring (match-beginning 1) (match-end 1)))))
-;;       (if relative str
-;;         (let ((basedir (file-truename default-directory)))
-;;           (if (file-remote-p basedir)
-;;               (with-parsed-tramp-file-name basedir nil
-;;                 (message "drh *** str=%s basedir=%s result=%s"
-;;                          str basedir
-;;                          (expand-file-name
-;;                           (apply 'tramp-make-tramp-file-name
-;;                                  (list method user host str hop))))
-;;                 (expand-file-name (apply 'tramp-make-tramp-file-name
-;;                                          (list method user host str hop))))
-;;             (expand-file-name str basedir)))))))
-;; (setq file-of-tag-function 'my/etags-file-of-tag)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ibuffer-project ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package ibuffer-project
   :disabled
