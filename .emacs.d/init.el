@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-01-04 09:06:32 dan.harms>
+;; Modified Time-stamp: <2019-01-04 12:58:31 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -661,10 +661,8 @@ line."
   (add-hook 'ibuffer-mode-hook
             (lambda()
               (ibuffer-auto-mode 1)
-              (ibuffer-vc-set-filter-groups-by-vc-root)
               ))
   :config
-  (use-package ibuffer-vc)
   ;; human-readable sizes
   (define-ibuffer-column size-h
     (:name "Size" :inline t)
@@ -684,7 +682,7 @@ line."
                 " "
                 (mode 16 16 :left :elide)
                 " "
-                filename-and-process)
+               filename-and-process)
           (mark modified read-only vc-status-mini " "
                 (size-h 9 -1 :right)
                 " "
@@ -692,9 +690,17 @@ line."
           (mark modified read-only vc-status-mini " "
                 (size-h 9 -1 :right)
                 " "
-                (filename-and-process 26 -1))
-          ))
-  )
+               (filename-and-process 26 -1))
+          )))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ibuffer-vc ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package ibuffer-vc
+  :after ibuffer
+  :config
+  (add-hook 'ibuffer-mode-hook
+            (lambda ()
+              (ibuffer-vc-set-filter-groups-by-vc-root)
+              )))
 
 ;; This (unused) snippet overrides tag lookup for standard tags, not
 ;; etags-select.  This would (untested) make tag lookup tramp-aware.  See
@@ -717,6 +723,15 @@ line."
 ;;                                          (list method user host str hop))))
 ;;             (expand-file-name str basedir)))))))
 ;; (setq file-of-tag-function 'my/etags-file-of-tag)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ibuffer-project ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package ibuffer-project
+  :disabled
+  :after ibuffer
+  :config
+  (add-hook 'ibuffer-mode-hook
+            (lambda ()
+              (setq ibuffer-filter-groups (ibuffer-project-generate-filter-groups))
+              )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; yascroll ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package yascroll :config (global-yascroll-bar-mode 1))
