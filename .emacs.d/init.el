@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-01-04 15:16:51 dan.harms>
+;; Modified Time-stamp: <2019-01-04 16:11:24 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1697,29 +1697,14 @@ Only one letter is shown, the first that applies."
 ;;   (require 'async)
 ;;   )
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; outline-magic ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defun my/add-outline-cycle-binding (map)
-  "Add a key binding into keymap MAP for cycling outlines."
-  (bind-key "C-c -" 'outline-cycle map))
-(use-package
-  outline-magic
-  :bind ("C-c -" . outline-cycle)
-  :commands outline-cycle
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; outshine ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package outshine
+  :demand t
+  :bind ("C-c -" . outshine-cycle)
   :init
-  (setq outline-structedit-modifiers '(control shift)) ;TODO: doesn't work
-  (add-hook 'outline-mode-hook
-            (lambda()
-              (local-set-key (kbd "<f9>") outline-mode-prefix-map)
-              (local-set-key "\e\e9" outline-mode-prefix-map)
-              (my/add-outline-cycle-binding outline-mode-map)
-              ))
-  (add-hook 'outline-minor-mode-hook
-            (lambda()
-              (local-set-key (kbd "<f9>") outline-mode-prefix-map)
-              (local-set-key "\e\e9" outline-mode-prefix-map)
-              (my/add-outline-cycle-binding outline-minor-mode-map)
-              ))
-  )
+  (defvar outline-minor-mode-prefix "\M-@")
+  (dolist (hook '(emacs-lisp-mode-hook restclient-mode-hook))
+    (add-hook hook 'outshine-mode)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; org ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (global-set-key "\e\eoa" #'org-agenda)
