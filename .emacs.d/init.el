@@ -1,8 +1,8 @@
 ;; init.el --- Initialization file
-;; Copyright (C) 2015-2018  Dan Harms (dharms)
+;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2018-12-31 10:10:48 dan.harms>
+;; Modified Time-stamp: <2019-01-04 09:06:32 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1824,6 +1824,12 @@ Only one letter is shown, the first that applies."
     (require 'ob-shell))
   (require 'ox-md)                      ;markdown export
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; pack ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package pack
+  :config
+  (with-eval-after-load 'dired
+    (define-key dired-mode-map "P" #'pack-dired-dwim)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dired ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; easily go to top or bottom
