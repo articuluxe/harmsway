@@ -2,7 +2,7 @@
 ;; Copyright (C) 2016-2019  Dan Harms (dan.harms)
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Wednesday, December 21, 2016
-;; Modified Time-stamp: <2019-01-04 13:24:33 dan.harms>
+;; Modified Time-stamp: <2019-01-04 13:27:20 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: themes colors
 
@@ -71,13 +71,16 @@
   (set-face-attribute 'font-lock-comment-delimiter-face nil :slant 'italic)
   (set-face-attribute 'comint-highlight-prompt nil :inherit nil) ;shell mode prompt
   (let ((sym (intern x)))
-    (when (eq (face-attribute 'diff-hl-insert :background nil t) 'unspecified)
+    (when (or (eq (face-attribute 'diff-hl-insert :background nil t) 'unspecified)
+              (eq (frame-parameter nil 'background-mode) 'light))
       (custom-theme-set-faces
        sym `(diff-hl-insert ((t (:background "green4" :foreground "green3"))))))
-    (when (eq (face-attribute 'diff-hl-delete :background nil t) 'unspecified)
+    (when (or (eq (face-attribute 'diff-hl-delete :background nil t) 'unspecified)
+              (eq (frame-parameter nil 'background-mode) 'light))
       (custom-theme-set-faces
        sym `(diff-hl-delete ((t (:background "red4" :foreground "red3"))))))
-    (when (eq (face-attribute 'diff-hl-change :background nil t) 'unspecified)
+    (when (or (eq (face-attribute 'diff-hl-change :background nil t) 'unspecified)
+              (eq (frame-parameter nil 'background-mode) 'light))
       (custom-theme-set-faces
        sym `(diff-hl-change ((t (:background "DodgerBlue2" :foreground "DodgerBlue1"))))))
     (cond ((eq sym 'adwaita)
