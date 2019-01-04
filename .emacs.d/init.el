@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-01-04 12:58:31 dan.harms>
+;; Modified Time-stamp: <2019-01-04 15:16:51 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2295,19 +2295,61 @@ Only one letter is shown, the first that applies."
 (use-package palette)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smerge ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defun my/try-smerge()
+(defun harmsway-try-smerge()
   "Evaluate whether to turn on `smerge-mode'."
   (save-excursion
     (goto-char (point-min))
-    (when (re-search-forward "^<<<<<<< " nil t)
+    (when (re-search-forward smerge-begin-re nil t)
       (smerge-mode 1))))
+
+;; Modified from `https://github.com/alphapapa/unpackaged.el'
+(with-eval-after-load 'hydra
+  (defhydra smerge-hydra
+    (:color pink :hint nil :post (smerge-auto-leave))
+    "
+^Move^       ^Keep^               ^Diff^                 ^Other^
+^^-----------^^-------------------^^---------------------^^-------
+_n_ext       _b_ase               _<_: upper/base        _C_ombine
+_p_rev       _u_pper              _=_: upper/lower       _r_esolve
+^^           _l_ower              _>_: base/lower        _k_ill current
+^^           _a_ll                _R_efine
+^^           _RET_: current       _E_diff
+"
+    ("n" smerge-next)
+    ("p" smerge-prev)
+    ("b" smerge-keep-base)
+    ("u" smerge-keep-upper)
+    ("l" smerge-keep-lower)
+    ("a" smerge-keep-all)
+    ("RET" smerge-keep-current)
+    ("\C-m" smerge-keep-current)
+    ("<" smerge-diff-base-upper)
+    ("=" smerge-diff-upper-lower)
+    (">" smerge-diff-base-lower)
+    ("R" smerge-refine)
+    ("E" smerge-ediff)
+    ("C" smerge-combine-with-next)
+    ("r" smerge-resolve)
+    ("k" smerge-kill-current)
+    ("ZZ" (lambda ()
+            (interactive)
+            (save-buffer)
+            (bury-buffer))
+     "Save and bury buffer" :color blue)
+    ("Q" nil "cancel" :color blue)))
+
+(defun harmsway-smerge-hydra ()
+  "Run `smerge-hydra'."
+  (interactive)
+  (require 'hydra)
+  (smerge-hydra/body))
+
 (use-package smerge-mode
   :init
-  (add-hook 'find-file-hook 'my/try-smerge t)
+  (add-hook 'find-file-hook #'harmsway-try-smerge t)
+  ;; (add-hook 'smerge-mode-hook #'harmsway-smerge-hydra)
   :config
-  (define-key smerge-mode-map "\M-n" 'smerge-next)
-  (define-key smerge-mode-map "\M-p" 'smerge-prev)
-  )
+  (define-key smerge-mode-map "h" #'harmsway-smerge-hydra))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; multi-term ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package multi-term
