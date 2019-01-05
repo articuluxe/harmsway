@@ -840,8 +840,11 @@ This docstring appeases checkdoc, that's all."
                                    (lambda ()
                                      (setf (eglot--inhibit-autoreconnect server)
                                            (null eglot-autoreconnect)))))))
-                          (run-hook-with-args 'eglot-connect-hook server)
-                          (run-hook-with-args 'eglot-server-initialized-hook server)
+                          (let ((default-directory (car (project-roots project)))
+                                (major-mode managed-major-mode))
+                            (hack-dir-local-variables-non-file-buffer)
+                            (run-hook-with-args 'eglot-connect-hook server)
+                            (run-hook-with-args 'eglot-server-initialized-hook server))
                           (eglot--message
                            "Connected! Server `%s' now managing `%s' buffers \
 in project `%s'."
@@ -1549,6 +1552,8 @@ Records START, END and PRE-CHANGE-LENGTH locally."
   "Alist of (SETTING . VALUE) entries configuring the LSP server.
 Setting should be a keyword, value can be any value that can be
 converted to JSON.")
+
+(put 'eglot-workspace-configuration 'safe-local-variable 'listp)
 
 (defun eglot-signal-didChangeConfiguration (server)
   "Send a `:workspace/didChangeConfiguration' signal to SERVER.

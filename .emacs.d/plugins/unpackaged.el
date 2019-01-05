@@ -115,6 +115,43 @@ output string."
 
 ;;; Org
 
+(defun unpackaged/org-agenda-current-subtree-or-region (only-todos)
+  "Display an agenda view for the current subtree or region.
+  With prefix, display only TODO-keyword items."
+  (interactive "P")
+  (let ((starting-point (point))
+        header)
+    (with-current-buffer (or (buffer-base-buffer (current-buffer))
+                             (current-buffer))
+      (if (use-region-p)
+          (progn
+            (setq header "Region")
+            (put 'org-agenda-files 'org-restrict (list (buffer-file-name (current-buffer))))
+            (setq org-agenda-restrict (current-buffer))
+            (move-marker org-agenda-restrict-begin (region-beginning))
+            (move-marker org-agenda-restrict-end
+                         (save-excursion
+                           ;; If point is at beginning of line, include
+                           ;; heading on that line by moving forward 1.
+                           (goto-char (1+ (region-end)))
+                           (org-end-of-subtree))))
+        ;; No region; restrict to subtree.
+        (save-excursion
+          (save-restriction
+            ;; In case the command was called from an indirect buffer, set point
+            ;; in the base buffer to the same position while setting restriction.
+            (widen)
+            (goto-char starting-point)
+            (setq header "Subtree")
+            (org-agenda-set-restriction-lock))))
+      ;; NOTE: Unlike other agenda commands, binding `org-agenda-sorting-strategy'
+      ;; around `org-search-view' seems to have no effect.
+      (let ((org-agenda-sorting-strategy '(priority-down timestamp-up))
+            (org-agenda-overriding-header header))
+        (org-search-view (if only-todos t nil) "*"))
+      (org-agenda-remove-restriction-lock t)
+      (message nil))))
+
 (defface unpackaged/org-agenda-preview
   '((t (:background "black")))
   "Face for Org Agenda previews."
@@ -447,6 +484,14 @@ search whole subtree."
              (org-paste-subtree))
            (message "Unable to refile! %s" err))))
 
+(defun unpackaged/org-element-descendant-of (type element)
+  "Return non-nil if ELEMENT is a descendant of TYPE.
+TYPE should be an element type, like `item' or `paragraph'.
+ELEMENT should be a list like that returned by `org-element-context'."
+  (when-let* ((parent (org-element-property :parent element)))
+    (or (eq type (car parent))
+        (unpackaged/org-element-descendant-of type parent))))
+
 (defun unpackaged/org-return-dwim (&optional default)
   "A helpful replacement for `org-return'.  With prefix, call `org-return'.
 
@@ -495,19 +540,19 @@ appropriate.  In tables, insert a new row or end the table."
       (org-insert-todo-heading nil))
 
      ((org-in-item-p)
-      ;; Plain list
-      (cond ((save-excursion
-               (end-of-line)
-               (not (org-element-property :contents-begin (org-element-context))))
-             ;; Empty item: Close the list.
-
-             ;; TODO: Do this with org functions rather than operating on the text. Can't seem to
-             ;; find the right function.
-             (delete-region (line-beginning-position) (line-end-position))
-             (insert "\n"))
-            (t
-             ;; Non-empty item: Add new item.
-             (org-insert-heading))))
+      ;; Plain list.  Yes, this gets a little complicated...
+      (let ((context (org-element-context)))
+        (if (or (eq 'plain-list (car context))  ; First item in list
+                (and (eq 'item (car context))
+                     (not (eq (org-element-property :contents-begin context)
+                              (org-element-property :contents-end context))))
+                (unpackaged/org-element-descendant-of 'item context))  ; Element in list item, e.g. a link
+            ;; Non-empty item: Add new item.
+            (org-insert-heading)
+          ;; Empty item: Close the list.
+          ;; TODO: Do this with org functions rather than operating on the text. Can't seem to find the right function.
+          (delete-region (line-beginning-position) (line-end-position))
+          (insert "\n"))))
 
      ((when (fboundp 'org-inlinetask-in-task-p)
         (org-inlinetask-in-task-p))

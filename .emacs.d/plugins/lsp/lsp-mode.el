@@ -395,7 +395,8 @@ than the second parameter.")
     ("textDocument/hover" :capability "hoverProvider")
     ("textDocument/documentSymbol" :capability "documentSymbolProvider")
     ("textDocument/documentHighlight" :capability "documentHighlightProvider")
-    ("textDocument/definition" :capability "definitionProvider"))
+    ("textDocument/definition" :capability "definitionProvider")
+    ("workspace/symbol" :capability "workspaceSymbolProvider"))
 
   "Contain method to requirements mapping.
 It is used by send request functions to determine which server
@@ -757,6 +758,12 @@ already have been created."
   (declare (debug (form body))
            (indent 1))
   `(let ((lsp--cur-workspace ,workspace)) ,@body))
+
+(defmacro with-lsp-workspaces (workspaces &rest body)
+  "Helper macro for invoking BODY against multiple WORKSPACES."
+  (declare (debug (form body))
+           (indent 1))
+  `(let ((lsp--buffer-workspaces ,workspaces)) ,@body))
 
 (defmacro lsp-foreach-workspace (&rest body)
   "Execute BODY for each of the current workspaces."
@@ -2054,7 +2061,7 @@ RENDER-ALL - nil if only the signature should be rendered."
                             (s-index-of selected-param-label result)
                           (car selected-param-label)))
                  (end (if (stringp selected-param-label) (+ start (length selected-param-label)) (cadr selected-param-label))))
-      (add-face-text-property start end '(:weight bold :slant italic :underline t) nil result))
+      (add-face-text-property start end 'eldoc-highlight-function-argument nil result))
     result))
 
 (defvar-local lsp-hover-request-id 0)

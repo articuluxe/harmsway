@@ -51,7 +51,7 @@
   "The border color used in childframe.")
 
 (defface eldoc-box-body '((t . (:background nil)))
-  "Body face used in eglot doc childframe. Only :background is used.")
+  "Body face used in eglot doc childframe. Only :background and :font are used.")
 
 (defvar eldoc-box-only-multi-line nil
   "If non-nil, only use childframe when there are more than one line.")
@@ -175,7 +175,8 @@ You can use C-g to hide the doc."
         ;; and `eldoc-box--maybe-cleanup' in `eldoc-box--cleanup-timer' will clear the childframe
         (setq eldoc-box-hover-mode t)
         (erase-buffer)
-        (insert str))
+        (insert str)
+        (goto-char (point-min)))
       (eldoc-box--get-frame doc-buffer))))
 
 
@@ -208,7 +209,7 @@ Position is calculated base on WIDTH and HEIGHT of childframe text window"
          (frame-pos (frame-edges nil 'native-edges))
          (x (- (car point-pos) (car frame-pos))) ; relative to native frame
          (y (- (cdr point-pos) (nth 1 frame-pos)))
-         (en (frame-char-width))
+         ;; (en (frame-char-width))
          (em (frame-char-height))
          (frame-geometry (frame-geometry))
          (tool-bar (if (and tool-bar-mode
@@ -235,17 +236,18 @@ Checkout `lsp-ui-doc--make-frame', `lsp-ui-doc--move-frame'."
                             `((default-minibuffer-frame . ,(selected-frame))
                               (minibuffer . ,(minibuffer-window))
                               (left-fringe . ,(frame-char-width)))))
-         (window (or (and eldoc-box--frame (frame-selected-window eldoc-box--frame))
-                     (display-buffer-in-child-frame
-                      buffer
-                      `((child-frame-parameters . ,parameter)))))
+         (window (display-buffer-in-child-frame
+                  buffer
+                  `((child-frame-parameters . ,parameter))))
          (frame (window-frame window))
          (main-frame (selected-frame)))
     (make-frame-visible frame)
     (set-window-dedicated-p window t)
     (redirect-frame-focus frame (frame-parent frame))
     (set-face-attribute 'internal-border frame :inherit 'eldoc-box-border)
-    (set-face-attribute 'default frame :background (face-attribute 'eldoc-box-body :background main-frame))
+    (set-face-attribute 'default frame
+                        :background (face-attribute 'eldoc-box-body :background main-frame)
+                        :font (face-attribute 'eldoc-box-body :font main-frame))
     ;; set size
     (let* ((size
             (window-text-pixel-size
@@ -318,6 +320,36 @@ Checkout `lsp-ui-doc--make-frame', `lsp-ui-doc--move-frame'."
         (setq eldoc-box--cleanup-timer
               (run-with-timer eldoc-box-cleanup-interval nil #'eldoc-box--maybe-cleanup))))
     t))
+
+;;;; Eglot helper
+
+(defvar eldoc-box-eglot-help-at-point-last-point 0
+  "This point cache is used by clean up function.
+If (point) != last point, cleanup frame.")
+
+(defun eldoc-box--eglot-help-at-point-cleanup ()
+  "Try to clean up the childframe made by eldoc-box hack."
+  (if (eq (point) eldoc-box-eglot-help-at-point-last-point)
+      (run-with-timer 0.1 nil #'eldoc-box--eglot-help-at-point-cleanup)
+    (eldoc-box-quit-frame)))
+
+(defvar eglot--managed-mode)
+(declare-function eglot--dbind "eglot.el")
+
+
+(defun eldoc-box-eglot-help-at-point ()
+  "Display documentation of the symbol at point."
+  (interactive)
+  (when eglot--managed-mode
+    (let ((eldoc-box-position-function #'eldoc-box--default-at-point-position-function))
+      (eldoc-box--display
+       (eglot--dbind ((Hover) contents range)
+           (jsonrpc-request (eglot--current-server-or-lose) :textDocument/hover
+                            (eglot--TextDocumentPositionParams))
+         (when (seq-empty-p contents) (eglot--error "No hover info here"))
+         (eglot--hover-info contents range))))
+    (setq eldoc-box-eglot-help-at-point-last-point (point))
+    (run-with-timer 0.1 nil #'eldoc-box--eglot-help-at-point-cleanup)))
 
 (provide 'eldoc-box)
 

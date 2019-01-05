@@ -624,6 +624,7 @@
     (widget-field          (:background bg2 :foreground fg2 :box (:line-width 2 :color bg3 :style nil)))
 
     ;; Highlighting
+    ;; TODO: change highlight face somehow
     (highlight                (:background hl :foreground bg1))
     (lazy-highlight           (:background bg4 :foreground hl))
     (hl-line                  (:background hl-line))
@@ -1115,35 +1116,43 @@
     (org-code                      (:foreground amber3))
     (org-verbatim                  (:foreground azure3))
     (org-hide                      (:foreground bg1))
-    (org-special-keyword           (:foreground functions))
+    (org-special-keyword           (:foreground prep))
     (org-table                     (:background bg2 :foreground fg3))
     (org-formula                   (:background nil :foreground type))
     (org-warning                   (:foreground warning :underline underline))
     (org-tag                       (:foreground prep))
-    (org-checkbox                  (:inherit 'org-special-keyword))
+    (org-checkbox                  (:foreground functions))
 
     (org-document-info-keyword     (:foreground second-key))
     (org-meta-line                 (:inherit 'org-document-info-keyword))
+    ;; TODO: org-src-fontify-natively doesn't change fg to default
+    (org-block                     (:foreground fg3))
     (org-block-begin-line          (:foreground second-key))
     (org-block-end-line            (:inherit 'org-block-begin-line))
     (org-list-dt                   (:inherit 'org-checkbox))
     (org-document-title            (:foreground builtin :bold bold))
     (org-document-info             (:foreground builtin))
     (org-footnote                  (:foreground fg4 :underline underline))
-
-    (org-agenda-date-weekend       (:foreground fg4 :weight 'normal))
-    (org-block                     (:foreground fg3))
-    (org-quote                     (:inherit 'org-block :italic italic))
-    (org-verse                     (:inherit 'org-block :italic italic))
-    (org-agenda-done               (:foreground bg4))
-    (org-scheduled                 (:foreground type))
-    (org-scheduled-today           (:foreground functions :height 1.2 :bold bold))
-    (org-sexp-date                 (:foreground fg4))
+    (org-quote                     (:foreground fg3 :italic italic))
+    (org-verse                     (:foreground fg3 :italic italic))
 
     (org-level-1            (:foreground keyword :bold bold :height 1.1))
     (org-level-2            (:foreground builtin  :bold nil))
     (org-level-3            (:foreground num :bold nil))
     (org-level-4            (:foreground const :bold nil))
+
+
+    ;; org-agenda
+    (org-agenda-dimmed-todo-face (:foreground comment))
+    (org-agenda-date             (:foreground fg1))
+    (org-agenda-date-today       (:foreground prep :bold bold))
+    (org-agenda-date-weekend     (:foreground warning))
+    (org-agenda-done             (:foreground done))
+    (org-agenda-structure        (:foreground builtin))
+    (org-scheduled               (:foreground fg1))
+    (org-scheduled-today         (:foreground functions :height 1.2 :bold bold))
+    (org-sexp-date               (:foreground fg4))
+    (org-time-grid               (:foreground comment))
 
     ;; Emmet
     (emmet-preview-input   (:foreground nil :background nil))
