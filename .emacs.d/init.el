@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-01-07 14:47:33 dan.harms>
+;; Modified Time-stamp: <2019-01-08 06:37:33 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2316,9 +2316,9 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
     ("a" smerge-keep-all)
     ("RET" smerge-keep-current)
     ("\C-m" smerge-keep-current)
-    ("<" smerge-diff-base-upper)
-    ("=" smerge-diff-upper-lower)
-    (">" smerge-diff-base-lower)
+    ("<" smerge-diff-base-upper :color blue)
+    ("=" smerge-diff-upper-lower :color blue)
+    (">" smerge-diff-base-lower :color blue)
     ("R" smerge-refine)
     ("E" smerge-ediff)
     ("C" smerge-combine-with-next)
