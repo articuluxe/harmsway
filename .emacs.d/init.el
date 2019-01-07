@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-01-04 22:19:41 dharms>
+;; Modified Time-stamp: <2019-01-07 14:31:28 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -427,7 +427,7 @@ not an error if any files do not exist."
          ))
 
 (use-package custom-buffer-utils
-  :bind (("C-x C-r" . my/revert-buffer)
+  :bind (("C-x C-r" . harmsway-revert-buffer)
          ("C-x K" . kill-other-buffers)
          ("\e\ep" . switch-to-most-recent-buffer)
          ("C-x 4z" . window-toggle-split-direction)
@@ -435,8 +435,14 @@ not an error if any files do not exist."
          ("C-c 0w" . my/toggle-window-dedicated)
          ("C-x 5x" . move-buffer-to-new-frame)
          )
+  :init
+  (push `(?r ,(lambda (buf)
+                (with-current-buffer buf
+                  (harmsway-revert-buffer)))
+             "revert this buffer")
+        save-some-buffers-action-alist)
   :commands
-  (move-buffer-file move-buffer-to-new-frame)
+  (move-buffer-file move-buffer-to-new-frame harmsway-revert-buffer)
   )
 
 (use-package custom-word-count

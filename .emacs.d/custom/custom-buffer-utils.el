@@ -1,9 +1,9 @@
 ;;; custom-buffer-utils.el --- custom buffer utilities
-;; Copyright (C) 2016  Dan Harms (dharms)
+;; Copyright (C) 2016, 2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, April 15, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2016-04-15 17:28:41 dharms>
+;; Modified Time-stamp: <2019-01-07 14:39:51 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: buffer utilities
 
@@ -26,7 +26,8 @@
 
 ;;; Code:
 
-(defun my/revert-buffer ()
+;;;###autoload
+(defun harmsway-revert-buffer ()
     "Revert a buffer automatically."
     (interactive)
     (let ((truncate truncate-lines))
