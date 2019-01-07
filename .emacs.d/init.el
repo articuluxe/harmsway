@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-01-07 14:31:28 dan.harms>
+;; Modified Time-stamp: <2019-01-07 14:47:33 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1100,6 +1100,7 @@ Only one letter is shown, the first that applies."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; shell ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq-default comint-input-ignoredups t)
+(setq comint-terminfo-terminal "ansi")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; shx ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package shx :config (shx-global-mode 1))
