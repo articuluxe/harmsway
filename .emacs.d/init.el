@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-01-08 06:37:33 dharms>
+;; Modified Time-stamp: <2019-01-08 11:41:46 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2141,6 +2141,7 @@ Only one letter is shown, the first that applies."
   (setq diff-hl-highlight-revert-hunk-function
         #'harmsway-diff-hl-revert-highlight-hunk)
   (use-package diff-hl-flydiff :config (diff-hl-flydiff-mode 1))
+  (use-package diff-hl-amend)
   (global-diff-hl-mode 1)
   (unless (display-graphic-p)
     (use-package diff-hl-margin :config (diff-hl-margin-mode 1))
