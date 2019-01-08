@@ -1,3 +1,4 @@
+# -*- mode: conf; -*-
 [Unit]
 Description=Emacs text editor
 Documentation=info:emacs man:emacs(1) https://gnu.org/software/emacs/
@@ -11,3 +12,10 @@ Restart=on-failure
 
 [Install]
 WantedBy=default.target
+
+# systemctl enable --user emacs
+# systemctl start --user emacs
+## Stop the instance
+# systemctl stop --user emacs
+## Permanently disable
+# systemctl disable --user emacs
