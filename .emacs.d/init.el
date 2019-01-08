@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-01-08 11:41:46 dan.harms>
+;; Modified Time-stamp: <2019-01-08 21:49:16 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1104,6 +1104,25 @@ Only one letter is shown, the first that applies."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; shx ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package shx :config (shx-global-mode 1))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; xterm-color ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package xterm-color
+  :demand t
+  :init
+  (setq comint-output-filter-functions
+        (remove 'ansi-color-process-output comint-output-filter-functions))
+  (add-hook 'shell-mode-hook
+            (lambda ()
+              (add-hook 'comint-preoutput-filter-functions
+                        'xterm-color-filter nil t)))
+  (add-hook 'compilation-start-hook
+            (lambda (proc)
+              (when (eq (process-filter proc) 'compilation-filter)
+                (set-process-filter
+                 proc
+                 (lambda (proc string)
+                   (funcall 'compilation-filter proc
+                            (xterm-color-filter string))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; shell-pop ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package shell-pop
