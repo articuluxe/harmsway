@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-01-09 05:24:48 dharms>
+;; Modified Time-stamp: <2019-01-09 08:56:31 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2394,7 +2394,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   :init
   ;; for files over 50MB, only open 50MB at a time
   (setq large-file-warning-threshold 26214400) ;25MB
-  (setq vlf-batch-size 20971520)               ;20MB
+  (setq vlf-batch-size 15728640)               ;15MB
   (setq vlf-batch-size-remote 524288)          ;512k
   (setq vlf-tune-enabled nil)           ;don't adjust batch size dynamically
   )
