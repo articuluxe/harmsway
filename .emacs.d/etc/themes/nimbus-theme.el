@@ -50,13 +50,11 @@
       (lightest-green "#8fbc8f")
       (light-green    "#9ccc65")
       (green          "#6aaf50")
-      (dark-green     "#36a06a")
+      (dark-green     "#369664")
       (darker-green   "#058945")
-      (green-bg       "#11472b")
       (lightest-blue  "#86b5e8")
       (light-blue     "#68a5e9")
       (blue           "#598bc1")
-      (blue-bg        "#112b47")
       (orange         "#df9522")
       (tan            "#bdbc61")
       (dark-tan       "#7d7c61")
@@ -72,9 +70,15 @@
       (brown          "#987654")
       (red            "#d65946")
       (dark-red       "#9d2512")
-      (red-bg         "#47112b")
       (white          "white")
       (black          "black")
+
+      (green-bg       "#11472b")
+      (teal-bg        "#114747")
+      (gray-bg        "#2b4747")
+      (blue-bg        "#112b47")
+      (purple-bg      "#2b1147")
+      (red-bg         "#47112b")
 
       (cursor         "#f57e00")
       (fringe         "gray10")
@@ -86,16 +90,13 @@
   ;; Set faces.
   (custom-theme-set-faces
    `nimbus ;; You must use the same theme name here...
-   `(default
-      ((t (:foreground ,fg :background ,bg :bold nil))))
+   `(default      ((t (:foreground ,fg :background ,bg :bold nil))))
    `(cursor       ((t (:foreground ,black :background ,cursor))))
-   `(fringe       ((t (:background ,fringe  :bold nil :underline nil))))
+   `(fringe       ((t (:background ,fringe :bold nil :underline nil :slant normal))))
    `(link         ((t (:foreground ,lightest-blue :underline t))))
    `(link-visited ((t (:foreground ,blue-gray :underline t))))
-   `(highlight
-     ((t (:background ,red-bg))))
-   `(region
-     ((t (:background ,green-bg))))
+   `(highlight    ((t (:background ,teal-bg))))
+   `(region       ((t (:background ,green-bg))))
    `(shadow       ((t (:foreground ,light-gray))))
    `(tooltip      ((t (:background ,fg :foreground ,bg))))
 
@@ -134,6 +135,10 @@
      ((t (:foreground ,black :background ,red))))
 
    ;; mode line & powerline
+   `(mode-line
+     ((t (:foreground ,black :background ,darker-green))))
+   `(mode-line-inactive
+     ((t (:foreground ,black :background ,blue-gray))))
    `(powerline-active1
      ((t (:foreground ,fg :background ,darkest-gray))))
    `(powerline-active2
@@ -142,10 +147,6 @@
      ((t (:foreground ,dark-gray :background ,bg))))
    `(powerline-inactive2
      ((t (:foreground ,black :background ,gray))))
-   `(mode-line
-     ((t (:foreground ,black :background ,darker-green))))
-   `(mode-line-inactive
-     ((t (:foreground ,black :background ,blue-gray))))
 
    ;; ace-jump mode
    `(ace-jump-face-background ((t (:inherit font-lock-comment-face))))
@@ -200,7 +201,7 @@
 
    ;; line numbers
    `(linum
-     ((t (:inherit fringe :foreground ,blue-gray :slant normal))))
+     ((t (:inherit fringe :foreground ,blue-gray))))
    `(nlinum-current-line
      ((t (:inherit linum :foreground ,dark-green))))
 
@@ -238,7 +239,7 @@
    `(hl-line ((t (:background ,blue-bg))))
 
    `(secondary-selection
-     ((t (:inherit highlight))))
+     ((t (:background ,red-bg))))
 
    ;; ruler
    `(ruler-mode-default
@@ -272,6 +273,10 @@
      ((t (:inherit compilation-warning :background ,bg))))
    `(compilation-mode-line-fail
      ((t (:inherit compilation-error :foreground ,dark-red :background ,bg))))
+
+   ;; dired
+   `(dired-header ((t (:foreground ,red))))
+   `(dired-flagged ((t (:foreground ,red))))
 
    ;; dired+
    `(diredp-autofile-name
@@ -329,6 +334,28 @@
    `(diredp-write-priv
      ((t (:foreground ,white :background ,dark-tan))))
 
+   ;; diredfl
+   `(diredfl-compressed-file-suffix ((t (:foreground ,light-blue))))
+   `(diredfl-date-time ((t (:inherit font-lock-keyword-face))))
+   `(diredfl-deletion-file-name ((t (:inherit dired-flagged))))
+   `(diredfl-deletion  ((t (:inherit dired-mark))))
+   `(diredfl-dir-heading ((t (:inherit dired-header))))
+   `(diredfl-dir-name  ((t (:inherit dired-directory))))
+   `(diredfl-flag-mark  ((t (:inherit dired-flagged))))
+   `(diredfl-flag-mark-line  ((t (:background ,purple-bg))))
+   `(diredfl-file-name ((t (:foreground ,fg))))
+   `(diredfl-file-suffix ((t (:foreground ,light-gray))))
+   `(diredfl-ignored-file-name ((t (:foreground ,blue-gray))))
+   `(diredfl-number    ((t (:inherit highlight-numbers-number))))
+   `(diredfl-symlink   ((t (:inherit dired-symlink))))
+
+   `(diredfl-no-priv   ((t (:foreground ,blue-gray))))
+   `(diredfl-dir-priv  ((t (:foreground ,purple))))
+   `(diredfl-rare-priv ((t (:foreground ,lightest-green))))
+   `(diredfl-exec-priv ((t (:foreground ,red))))
+   `(diredfl-read-priv ((t (:foreground ,green))))
+   `(diredfl-write-priv ((t (:foreground ,light-blue))))
+
    ;; eshell
    `(eshell-prompt        ((t (:foreground ,purple))))
    `(eshell-ls-directory  ((t (:inherit font-lock-function-name-face))))
@@ -363,18 +390,15 @@
    `(term-default-bg-color ((t (:inherit bg))))
 
    ;; Flycheck
-   `(flycheck-info
-     ((t (:underline (:style wave :color ,green)))))
-   ;; `(flycheck-error
-   ;;   ((t ())))
-   ;; `(flycheck-warning
-   ;;   ((t ())))
+   `(flycheck-info    ((t (:underline (:color ,green)))))
+   `(flycheck-warning ((t (:underline (:color "orange")))))
+   `(flycheck-error   ((t (:underline (:color "red")))))
    `(flycheck-fringe-info
-     ((t (:foreground ,green))))
-   ;; `(flycheck-fringe-warning
-   ;;   ((t ())))
-   ;; `(flycheck-fringe-error
-   ;;   ((t (:inherit error))))
+     ((t (:foreground ,green :bold nil :underline nil :slant normal))))
+   `(flycheck-fringe-warning
+     ((t (:inherit font-lock-warning-face :bold nil :underline nil :slant normal))))
+   `(flycheck-fringe-error
+     ((t (:inherit error :bold nil :underline nil :slant normal))))
    ;; `(flycheck-error-list-id
    ;;   ((t ())))
    `(flycheck-error-list-info
@@ -618,7 +642,7 @@
    ;; `(helm-buffer-not-saved       ((t (:inherit italics))))
    `(helm-buffer-process         ((t (:foreground ,green))))
    ;;`(helm-buffer-saved-out     ((t ())))
-   `(helm-buffer-size            ((t (:foreground ,yellow))))
+   `(helm-buffer-size            ((t (:inherit highlight-numbers-number))))
    `(helm-candidate-number
      ((t (:foreground ,green :background ,blue-bg))))
    `(helm-ff-directory           ((t (:foreground ,blue))))
@@ -671,7 +695,7 @@
    `(helm-swoop-target-line-face
      ((t (:inherit highlight))))
    `(helm-swoop-target-line-block-face
-     ((t (:inherit highlight :foreground ,white))))
+     ((t (:inherit helm-swoop-target-line-face :foreground ,white))))
 
    ;; ivy
    `(ivy-confirm-face ((t (:foreground ,green))))
@@ -730,6 +754,9 @@
    ;;((t (:bold t))))
    ;;`(jabber-title-small
    ;;((t (:bold t))))
+
+   ;; auto-dim-other-buffers
+   `(auto-dim-other-buffers-face ((t (:background "gray13"))))
 
    ;; rainbow delim
    `(rainbow-delimiters-depth-1-face
@@ -791,7 +818,7 @@
    `(ac-yasnippet-selection-face    ((t (:inherit ac-selection-face))))
 
    ;; yasnippet
-   `(yas-field-highlight-face ((t (:inherit secondary-selection))))
+   `(yas-field-highlight-face ((t (:inherit highlight))))
 
    ;;`(company-echo
    ;;((t (:foreground nil :background nil))))
@@ -804,7 +831,7 @@
    ;;`(company-preview-search
    ;;((t (:foreground "wheat" :background "blue1"))))
    `(company-template-field
-   ((t (:inherit secondary-selection))))
+     ((t (:inherit highlight))))
    `(company-scrollbar-fg
      ((t (:background ,dark-gray))))
    `(company-scrollbar-bg
@@ -888,9 +915,9 @@
    `(ediff-even-diff-C            ((t (:background "#191925"))))
    ;;`(ediff-even-diff-Ancestor   ((t ())))
 
-   `(diff-added             ((t (:background "#284828"))))
-   `(diff-changed           ((t (:background "#484828"))))
-   `(diff-removed           ((t (:background "#482828"))))
+   `(diff-added             ((t (:background ,green-bg))))
+   `(diff-changed           ((t (:background ,blue-bg))))
+   `(diff-removed           ((t (:background ,red-bg))))
    `(diff-context           ((t (:foreground ,gray))))
    `(diff-file-header
      ((t (:foreground ,bg :background "grey60" :bold t))))
@@ -975,8 +1002,7 @@
    ;;`(org-column                    ((t (:foreground nil :background nil))))
    ;;`(org-column-title              ((t (:foreground nil :background nil))))
    `(org-date                      ((t (:inherit link))))
-   `(org-date-selected
-     ((t (:inherit lazy-highlight :underline t))))
+   `(org-date-selected             ((t (:inherit lazy-highlight :underline t))))
    ;;`(org-default                   ((t (:foreground nil :background nil))))
    `(org-document-info             ((t (:foreground ,lightest-green))))
    ;;`(org-document-info-keyword     ((t (:foreground nil :background nil))))
@@ -1022,9 +1048,9 @@
    ;;`(org-sexp-date                 ((t (:foreground nil :background nil))))
    `(org-special-keyword           ((t (:inherit font-lock-keyword-face))))
    ;;`(org-table                     ((t (:foreground nil :background nil))))
-   ;;`(org-tag                       ((t (:foreground nil :background nil))))
+   `(org-tag                       ((t (:foreground ,red))))
    ;;`(org-target                    ((t (:foreground nil :background nil))))
-   ;;`(org-time-grid                 ((t (:foreground nil :background nil))))
+   `(org-time-grid                 ((t (:foreground ,light-gray))))
    ;;`(org-upcoming-deadline         ((t (:foreground nil :background nil))))
    ;;`(org-verbatim                  ((t (:foreground nil :background nil))))
    ;;`(org-verse                     ((t (:foreground nil :background nil))))
@@ -1309,7 +1335,7 @@
    `(magit-popup-heading
      ((t (:inherit magit-section-heading))))
    `(magit-popup-key
-     ((t (:inherit magit-hash))))
+     ((t (:foreground ,purple))))
    `(magit-process-ng                  ((t (:foreground ,red :bold t))))
    `(magit-process-ok                  ((t (:foreground ,green))))
 
@@ -1358,9 +1384,12 @@
    `(forge-topic-open ((t ())))
    `(forge-topic-closed ((t (:foreground ,blue-gray))))
 
+   ;; makey
+   `(makey-key-mode-button-face ((t (:inherit font-lock-constant-face))))
+
    ;; diff-hl
-   `(diff-hl-change ((t (:inherit fringe :foreground ,orange))))
    `(diff-hl-insert ((t (:inherit fringe :foreground ,green))))
+   `(diff-hl-change ((t (:inherit fringe :foreground ,orange))))
    `(diff-hl-delete ((t (:inherit fringe :foreground ,red))))
 
    ;; git-gutter

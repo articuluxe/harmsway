@@ -58,7 +58,6 @@ The optional arg FORCE-THIS-ONE is an integer index into REACTIONS.
 This function was originally written to support functions
 `home-end-home' and `home-end-end' in package `home-end.el'. See
 there for a usage example."
-  (interactive)
   (if (or executing-kbd-macro defining-kbd-macro)
     (funcall (nth 0 reactions))
    (setq keypress-multi-event--state

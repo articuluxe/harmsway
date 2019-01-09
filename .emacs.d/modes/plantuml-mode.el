@@ -36,6 +36,8 @@
 
 ;;; Change log:
 ;;
+;; version 1.2.9, ?????????? Support more keywords for block indentation
+;; version 1.2.8, 2019-01-07 Support indentation for activate / deactivate blocks; allow customization of `plantuml-java-args'
 ;; version 1.2.7, 2018-08-15 Added support for indentation; Fixed the comiling error when installing with melpa
 ;; version 1.2.6, 2018-07-17 Introduced custom variable `plantuml-jar-args' to control which arguments are passed to PlantUML jar. Fix the warning of failing to specify types of 'defcustom' variables
 ;; version 1.2.5, 2017-08-19 #53 Fixed installation warnings
@@ -94,18 +96,15 @@
   :type 'string
   :group 'plantuml)
 
-(eval-and-compile
-  (defcustom plantuml-java-args (list "-Djava.awt.headless=true" "-jar")
-    "The parameters passed to `plantuml-java-command' when executing PlantUML."
-    :type '(repeat string)
-    :group 'plantuml))
+(defcustom plantuml-java-args (list "-Djava.awt.headless=true" "-jar")
+  "The parameters passed to `plantuml-java-command' when executing PlantUML."
+  :type '(repeat string)
+  :group 'plantuml)
 
-
-(eval-and-compile
-  (defcustom plantuml-jar-args (list "-charset" "UTF-8" )
-    "The parameters passed to `plantuml.jar', when executing PlantUML."
-    :type '(repeat string)
-    :group 'plantuml))
+(defcustom plantuml-jar-args (list "-charset" "UTF-8" )
+  "The parameters passed to `plantuml.jar', when executing PlantUML."
+  :type '(repeat string)
+  :group 'plantuml)
 
 (defcustom plantuml-suppress-deprecation-warning t
   "To silence the deprecation warning when `puml-mode' is found upon loading."
@@ -245,15 +244,15 @@ default output type for new buffers."
   "Create the flag to pass to PlantUML to produce the selected output format."
   (concat "-t" plantuml-output-type))
 
-(defmacro plantuml-start-process (buf)
+(defun plantuml-start-process (buf)
   "Run PlantUML as an Emacs process and puts the output into the given buffer (as BUF)."
-  `(start-process "PLANTUML" ,buf
-                  plantuml-java-command
-                  ,@plantuml-java-args
-                  (expand-file-name plantuml-jar-path)
-                  (plantuml-output-type-opt)
-                  ,@plantuml-jar-args
-                  "-p"))
+  (apply #'start-process
+         "PLANTUML" buf plantuml-java-command
+         `(,@plantuml-java-args
+           ,(expand-file-name plantuml-jar-path)
+           ,(plantuml-output-type-opt)
+           ,@plantuml-jar-args
+           "-p")))
 
 (defun plantuml-preview-string (prefix string)
   "Preview diagram from PlantUML sources (as STRING), using prefix (as PREFIX)
@@ -343,8 +342,8 @@ Uses prefix (as PREFIX) to choose where to display it:
     (defvar plantuml-keywords-regexp (concat "^\\s *" (regexp-opt plantuml-keywords 'words)  "\\|\\(<\\|<|\\|\\*\\|o\\)\\(\\.+\\|-+\\)\\|\\(\\.+\\|-+\\)\\(>\\||>\\|\\*\\|o\\)\\|\\.\\{2,\\}\\|-\\{2,\\}"))
     (defvar plantuml-builtins-regexp (regexp-opt plantuml-builtins 'words))
     (defvar plantuml-preprocessors-regexp (concat "^\\s *" (regexp-opt plantuml-preprocessors 'words)))
-    (defvar plantuml-indent-regexp-start "^[ \t]*\\(\\(?:.*\\)?\s*\\(?:[<>.*a-z-|]+\\)?\s*\\(?:\\[[a-zA-Z]+\\]\\)?\s+if\\|alt\\|else\\|note\s+over\\|note\sas\s.*\\|note\s+\\(\\(?:\\(?:buttom\\|left\\|right\\|top\\)\\)\\)\\(?:\s+of\\)?\\|\\(?:class\\|enum\\|package\\)\s+.*{\\)")
-    (defvar plantuml-indent-regexp-end "^[ \t]*\\(endif\\|else\\|end\\|end\s+note\\|.*}\\)")
+    (defvar plantuml-indent-regexp-start "^[ \t]*\\(\\(?:.*\\)?\s*\\(?:[<>.*a-z-|]+\\)?\s*\\(?:\\[[a-zA-Z]+\\]\\)?\s+if\s+.*\\|loop\s+.*\\|group\s+.*\\|par\s*$\\|opt\s+.*\\|alt\s+.*\\|else\\|note\s+over\\|note\sas\s.*\\|note\s+\\(\\(?:\\(?:button\\|left\\|right\\|top\\)\\)\\)\\(?:\s+of\\)?\\|\\(?:\\(abstract \\)?class\\|enum\\|package\\|database\\|frame\\|cloud\\|folder\\)\s+.*{\\|activate\s+.+\\)")
+    (defvar plantuml-indent-regexp-end "^[ \t]*\\(endif\\|else\\|end\\|end\s+note\\|.*}\\|deactivate\s+.+\\)")
 
     (setq plantuml-font-lock-keywords
           `(
@@ -405,41 +404,39 @@ Uses prefix (as PREFIX) to choose where to display it:
   (defvar plantuml-indent-regexp-start)
   (defvar plantuml-indent-regexp-end)
   (save-excursion
-    (let ((relative-depth 0)
-          (bob-visited? nil))
+    (let ((relative-depth 0))
+      ;; current line
       (beginning-of-line)
-      (forward-line -1)
-      (while (and (>= relative-depth 0)
-                  (not bob-visited?))
-        (if (bobp)
-            (setq bob-visited? t))
+      (if (looking-at plantuml-indent-regexp-end)
+          (setq relative-depth (1- relative-depth)))
+
+      ;; from current line backwards to beginning of buffer
+      (while (not (bobp))
+        (forward-line -1)
         (if (looking-at plantuml-indent-regexp-end)
             (setq relative-depth (1- relative-depth)))
         (if (looking-at plantuml-indent-regexp-start)
-            (setq relative-depth (1+ relative-depth)))
-        (forward-line -1))
+            (setq relative-depth (1+ relative-depth))))
 
       (if (<= relative-depth 0)
           0
         relative-depth))))
 
 (defun plantuml-indent-line ()
-  "Indent the current line to its desired indentation level."
+  "Indent the current line to its desired indentation level.
+Restore point to same position in text of the line as before indentation."
   (interactive)
   ;; forward declare the lazy initialized constants
   (defvar plantuml-indent-regexp-start)
   (defvar plantuml-indent-regexp-end)
-  (let ((original-indentation (current-indentation)))
+  ;; store position of point in line measured from end of line
+  (let ((original-position-eol (- (line-end-position) (point))))
     (save-excursion
       (beginning-of-line)
-      (if (bobp)
-          (indent-line-to 0)
-        (let ((depth (plantuml-current-block-depth)))
-          (when (looking-at plantuml-indent-regexp-end)
-            (setq depth (max (1- depth) 0)))
-          (indent-line-to (* tab-width depth)))))
-    (forward-char (- (current-indentation)
-                     original-indentation))))
+      (indent-line-to (* tab-width (plantuml-current-block-depth))))
+
+    ;; restore position in text of line
+    (goto-char (- (line-end-position) original-position-eol))))
 
 
 ;;;###autoload

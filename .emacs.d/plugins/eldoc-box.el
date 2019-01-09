@@ -150,9 +150,7 @@ You can use C-g to hide the doc."
               #'eldoc-box--default-at-point-position-function)
              (setq-local eldoc-box-clear-with-C-g t)
              (remove-hook 'pre-command-hook #'eldoc-pre-command-refresh-echo-area t)
-             (add-hook 'pre-command-hook #'eldoc-box-quit-frame t t)
-             (eldoc-box-hover-mode))
-    (eldoc-box-hover-mode -1)
+             (add-hook 'pre-command-hook #'eldoc-box-quit-frame t t))
     (add-hook 'pre-command-hook #'eldoc-pre-command-refresh-echo-area t)
     (remove-hook 'pre-command-hook #'eldoc-box-quit-frame t)
     (kill-local-variable 'eldoc-box-position-function)
@@ -329,7 +327,9 @@ If (point) != last point, cleanup frame.")
 
 (defun eldoc-box--eglot-help-at-point-cleanup ()
   "Try to clean up the childframe made by eldoc-box hack."
-  (if (eq (point) eldoc-box-eglot-help-at-point-last-point)
+  (if (or (eq (point) eldoc-box-eglot-help-at-point-last-point)
+          ;; don't clean up when the user clicks childframe
+          (eq (selected-frame) eldoc-box--frame))
       (run-with-timer 0.1 nil #'eldoc-box--eglot-help-at-point-cleanup)
     (eldoc-box-quit-frame)))
 

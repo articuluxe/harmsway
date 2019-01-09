@@ -111,7 +111,7 @@
     (amber6 "#403B2E")
     (amber7 "#847C68")
     (amber8 "#c7c2af")
-    (amber9 "#EEE6D3")
+    (amber9 "#eee6d3")
 
     ;; Orange #FF7F00
     (orange0 "#e67417")
@@ -258,7 +258,7 @@
     (blue1 "#4145b6")
     ;; TODO: change
     (blue2 "#2B2FA6")
-    (blue3 "#525df3")
+    (blue3 "#526AF3")
     (blue4 "#807f96") ; old faded-blue
     (blue5 "#14141e" black2) ; old alt-midnight-blue
     (blue6 "#2E2E40")
@@ -349,7 +349,7 @@
 
     ;; Spring green #00FF7F
     (spring-green0 "#2ae186")
-    (spring-green1 "#51b884")
+    (spring-green1 "#35BF88")
     (spring-green2 "#39855f") ; dark
     (spring-green3 "#65E6A7")
     (spring-green4 "#5D8272") ; faded
@@ -519,7 +519,7 @@
     (line-bg1          bg2)
     (line-bg2          bg4)
     (line-border       bg4)
-    (line-color1       keyword)
+    (line-color1       fg1)
     (line-color2       builtin)
     ; TODO:
     (segment-active    gray3)
@@ -543,8 +543,6 @@
     (company-scroll-bg (if kaolin-themes-distinct-company-scrollbar bg4 bg2))
     (company-scroll-fg (if kaolin-themes-distinct-company-scrollbar line-num-hl bg4))
 
-    (swiper-bg   bg2)
-    (ivy-bg      nil)
     (ivy1        fg1)
     (ivy2        azure3)
     (ivy3        amber3)
@@ -578,7 +576,7 @@
     (error               (:foreground err))
     (shadow              (:foreground gray4))
     (file-name-shadow    (:inherit 'shadow))
-    (region              (:background selection))
+    (region              (:background selection :inverse-video nil))
     (secondary-selection (:background spring-green6))
     (fringe              (:background fringe :foreground fg1))
     (cursor              (:background cursor))
@@ -619,13 +617,13 @@
     (custom-visibility     (:background nil :foreground cyan1 :height 0.9 :underline underline))
     (custom-invalid        (:background nil :foreground err))
     (custom-set            (:background nil :foreground done))
+    (custom-variable-tag   (:foreground type))
     (widget-documentation  (:background nil :foreground var))
     (widget-button         (:background nil :foreground keyword))
     (widget-field          (:background bg2 :foreground fg2 :box (:line-width 2 :color bg3 :style nil)))
 
     ;; Highlighting
-    ;; TODO: change highlight face somehow
-    (highlight                (:background hl :foreground bg1))
+    (highlight                (:background bg4 :foreground fg1))
     (lazy-highlight           (:background bg4 :foreground hl))
     (hl-line                  (:background hl-line))
     (highlight-numbers-number (:foreground num))
@@ -705,7 +703,7 @@
     (elfeed-search-title-face        (:foreground comment))
 
     ;; Modeline
-    (mode-line           (:background line-bg1 :foreground line-color1 :bold nil
+    (mode-line           (:background line-bg1 :foreground line-fg :bold nil
                                       :box (:line-width 2 :color line-border)))
     (mode-line-inactive  (:background line-bg1 :foreground line-inactive :bold bold
                                       :box (:line-width 2 :color line-border)))
@@ -728,7 +726,7 @@
 
     ;; Doom-modeline
     (doom-modeline-bar                 (:background keyword))
-    (doom-modeline-inactive-bar        (:background line-inactive))
+    (doom-modeline-inactive-bar        (:background line-bg1))
     (doom-modeline-evil-normal-state   (:foreground evil-normal))
     (doom-modeline-evil-insert-state   (:foreground evil-insert))
     (doom-modeline-evil-visual-state   (:foreground evil-visual))
@@ -1093,7 +1091,7 @@
 
     ;; Whitespace mode
     ;; TODO: Add variant for light themes
-    (whitespace-empty            (:background spring-green6 :foreground gray9))
+    (whitespace-empty            (:background spring-green6 :foreground fg4))
     (whitespace-line             (:background bg3 :foreground warning))
     (whitespace-newline          (:foreground cyan3))
     (whitespace-indentation      (:background hl-indent))
@@ -1106,7 +1104,6 @@
     (whitespace-big-indent       (:background red2 :foreground red0))
 
     ;; Org-mode
-    ;; TODO: org agenda faces
     (org-todo                      (:foreground todo :bold bold))
     (org-done                      (:foreground done  :bold bold))
     (org-headline-done             (:foreground gray4  :bold nil))
@@ -1266,7 +1263,6 @@
     (ivy-confirm-face            (:inherit 'success))
     (ivy-modified-buffer         (:foreground diff-mod))
     (ivy-remote                  (:foreground prep))
-
     (ivy-minibuffer-match-face-1 (:background nil :foreground ivy1))
     (ivy-minibuffer-match-face-2 (:background nil :foreground ivy2 :bold bold))
     (ivy-minibuffer-match-face-3 (:background nil :foreground ivy3 :bold bold))

@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2018 Free Software Foundation, Inc.
 
-;; Version: 1.3
+;; Version: 1.4
 ;; Author: João Távora <joaotavora@gmail.com>
 ;; Maintainer: João Távora <joaotavora@gmail.com>
 ;; URL: https://github.com/joaotavora/eglot
@@ -439,6 +439,20 @@ treated as in `eglot-dbind'."
 (cl-defgeneric eglot-initialization-options (server)
   "JSON object to send under `initializationOptions'"
   (:method (_s) nil)) ; blank default
+
+(cl-defgeneric eglot-register-capability (server method id &rest params)
+  "Ask SERVER to register capability METHOD marked with ID."
+  (:method
+   (_s method _id &rest _params)
+   (eglot--warn "Server tried to register unsupported capability `%s'"
+                method)))
+
+(cl-defgeneric eglot-unregister-capability (server method id &rest params)
+  "Ask SERVER to register capability METHOD marked with ID."
+  (:method
+   (_s method _id &rest _params)
+   (eglot--warn "Server tried to unregister unsupported capability `%s'"
+                method)))
 
 (cl-defgeneric eglot-client-capabilities (server)
   "What the EGLOT LSP client supports for SERVER."
@@ -1148,6 +1162,7 @@ and just return it.  PROMPT shouldn't end with a question mark."
     (add-hook 'pre-command-hook 'eglot--pre-command-hook nil t)
     (eglot--setq-saving eldoc-documentation-function #'eglot-eldoc-function)
     (eglot--setq-saving flymake-diagnostic-functions '(eglot-flymake-backend t))
+    (add-function :before-until (local 'eldoc-message-function) #'eglot--eldoc-message)
     (add-function :around (local 'imenu-create-index-function) #'eglot-imenu)
     (flymake-mode 1)
     (eldoc-mode 1))
@@ -1164,6 +1179,7 @@ and just return it.  PROMPT shouldn't end with a question mark."
     (remove-hook 'change-major-mode-hook #'eglot--managed-mode-onoff t)
     (remove-hook 'post-self-insert-hook 'eglot--post-self-insert-hook t)
     (remove-hook 'pre-command-hook 'eglot--pre-command-hook t)
+    (remove-function (local 'eldoc-message-function) #'eglot--eldoc-message)
     (cl-loop for (var . saved-binding) in eglot--saved-bindings
              do (set (make-local-variable var) saved-binding))
     (setq eglot--current-flymake-report-fn nil))))
@@ -1423,12 +1439,14 @@ COMMAND is a symbol naming the command."
 
 (cl-defun eglot--register-unregister (server things how)
   "Helper for `registerCapability'.
-THINGS are either registrations or unregisterations."
+THINGS are either registrations or unregisterations (sic)."
   (cl-loop
    for thing in (cl-coerce things 'list)
    do (eglot--dbind ((Registration) id method registerOptions) thing
-        (apply (intern (format "eglot--%s-%s" how method))
-               server :id id registerOptions))))
+        (apply (cl-ecase how
+                 (register 'eglot-register-capability)
+                 (unregister 'eglot-unregister-capability))
+               server (intern method) id registerOptions))))
 
 (cl-defmethod eglot-handle-request
   (server (_method (eql client/registerCapability)) &key registrations)
@@ -1481,11 +1499,11 @@ THINGS are either registrations or unregisterations."
   "If non-nil, value of the last inserted character in buffer.")
 
 (defun eglot--post-self-insert-hook ()
-  "Set `eglot--last-inserted-char.'"
+  "Set `eglot--last-inserted-char'."
   (setq eglot--last-inserted-char last-input-event))
 
 (defun eglot--pre-command-hook ()
-  "Reset `eglot--last-inserted-char.'"
+  "Reset `eglot--last-inserted-char'."
   (setq eglot--last-inserted-char nil))
 
 (defun eglot--CompletionParams ()
@@ -1510,7 +1528,7 @@ THINGS are either registrations or unregisterations."
 (defvar-local eglot--change-idle-timer nil "Idle timer for didChange signals.")
 
 (defun eglot--before-change (start end)
-  "Hook onto `before-change-functions'."
+  "Hook onto `before-change-functions' with START and END."
   ;; Records START and END, crucially convert them into LSP
   ;; (line/char) positions before that information is lost (because
   ;; the after-change thingy doesn't know if newlines were
@@ -1990,6 +2008,15 @@ is not active."
          (buffer-string))))
    when moresigs concat "\n"))
 
+(defvar eglot--eldoc-hint nil)
+
+(defvar eglot--help-buffer nil)
+
+(defun eglot--help-buffer ()
+  (or (and (buffer-live-p eglot--help-buffer)
+           eglot--help-buffer)
+      (setq eglot--help-buffer (generate-new-buffer "*eglot-help*"))))
+
 (defun eglot-help-at-point ()
   "Request \"hover\" information for the thing at point."
   (interactive)
@@ -1997,9 +2024,61 @@ is not active."
       (jsonrpc-request (eglot--current-server-or-lose) :textDocument/hover
                        (eglot--TextDocumentPositionParams))
     (when (seq-empty-p contents) (eglot--error "No hover info here"))
-    (let ((blurb (eglot--hover-info contents range)))
-      (with-help-window "*eglot help*"
-        (with-current-buffer standard-output (insert blurb))))))
+    (let ((blurb (eglot--hover-info contents range))
+          (sym (thing-at-point 'symbol)))
+      (with-current-buffer (eglot--help-buffer)
+        (with-help-window (current-buffer)
+          (rename-buffer (format "*eglot-help for %s*" sym))
+          (with-current-buffer standard-output (insert blurb)))))))
+
+(defun eglot-doc-too-large-for-echo-area (string)
+  "Return non-nil if STRING won't fit in echo area.
+Respects `max-mini-window-height' (which see)."
+  (let ((max-height
+         (cond ((floatp max-mini-window-height) (* (frame-height)
+                                                   max-mini-window-height))
+               ((integerp max-mini-window-height) max-mini-window-height)
+               (t 1))))
+    (> (cl-count ?\n string) max-height)))
+
+(defcustom eglot-put-doc-in-help-buffer
+  #'eglot-doc-too-large-for-echo-area
+  "If non-nil, put \"hover\" documentation in separate `*eglot-help*' buffer.
+If nil, use whatever `eldoc-message-function' decides (usually
+the echo area).  If t, use `*eglot-help; unconditionally.  If a
+function, it is called with the docstring to display and should a
+boolean producing one of the two previous values."
+  :type '(choice (const :tag "Never use `*eglot-help*'" nil)
+                 (const :tag "Always use `*eglot-help*'" t)
+                 (function :tag "Ask a function")))
+
+(defcustom eglot-auto-display-help-buffer nil
+  "If non-nil, automatically display `*eglot-help*' buffer.
+Buffer is displayed with `display-buffer', which obeys
+`display-buffer-alist' & friends."
+  :type 'boolean)
+
+(defun eglot--eldoc-message (format &rest args)
+  (let ((string (apply #'format format args))) ;; FIXME: overworking?
+    (when (or (eq t eglot-put-doc-in-help-buffer)
+              (funcall eglot-put-doc-in-help-buffer string))
+      (with-current-buffer (eglot--help-buffer)
+        (rename-buffer (format "*eglot-help for %s*" eglot--eldoc-hint))
+        (let ((inhibit-read-only t))
+          (erase-buffer)
+          (insert string)
+          (goto-char (point-min))
+          (if eglot-auto-display-help-buffer
+              (display-buffer (current-buffer))
+            (unless (get-buffer-window (current-buffer))
+              (eglot--message
+               "%s\n(...truncated. Full help is in `%s')"
+               (truncate-string-to-width
+                (replace-regexp-in-string "\\(.*\\)\n.*" "\\1" string)
+                (frame-width) nil nil "...")
+               (buffer-name eglot--help-buffer))))
+          (help-mode)
+          t)))))
 
 (defun eglot-eldoc-function ()
   "EGLOT's `eldoc-documentation-function' function.
@@ -2007,7 +2086,9 @@ If SKIP-SIGNATURE, don't try to send textDocument/signatureHelp."
   (let* ((buffer (current-buffer))
          (server (eglot--current-server-or-lose))
          (position-params (eglot--TextDocumentPositionParams))
-         sig-showing)
+         sig-showing
+         (thing-at-point (thing-at-point 'symbol)))
+    (setq eglot--eldoc-hint thing-at-point)
     (cl-macrolet ((when-buffer-window
                    (&body body) ; notice the exception when testing with `ert'
                    `(when (or (get-buffer-window buffer) (ert-running-test))
@@ -2021,9 +2102,10 @@ If SKIP-SIGNATURE, don't try to send textDocument/signatureHelp."
            (when-buffer-window
             (when (cl-plusp (length signatures))
               (setq sig-showing t)
-              (eldoc-message (eglot--sig-info signatures
-                                              activeSignature
-                                              activeParameter)))))
+              (let ((eglot--eldoc-hint thing-at-point))
+                (eldoc-message (eglot--sig-info signatures
+                                                activeSignature
+                                                activeParameter))))))
          :deferred :textDocument/signatureHelp))
       (when (eglot--server-capable :hoverProvider)
         (jsonrpc-async-request
@@ -2034,7 +2116,8 @@ If SKIP-SIGNATURE, don't try to send textDocument/signatureHelp."
                           (when-let (info (and contents
                                                (eglot--hover-info contents
                                                                   range)))
-                            (eldoc-message info)))))
+                            (let ((eglot--eldoc-hint thing-at-point))
+                              (eldoc-message info))))))
          :deferred :textDocument/hover))
       (when (eglot--server-capable :documentHighlightProvider)
         (jsonrpc-async-request
@@ -2054,7 +2137,7 @@ If SKIP-SIGNATURE, don't try to send textDocument/signatureHelp."
                          ov)))
                    highlights))))
          :deferred :textDocument/documentHighlight))))
-  nil)
+  eldoc-last-message)
 
 (defun eglot-imenu (oldfun)
   "EGLOT's `imenu-create-index-function' overriding OLDFUN."
@@ -2243,9 +2326,10 @@ If SKIP-SIGNATURE, don't try to send textDocument/signatureHelp."
    for result = (replace-regexp-in-string pattern rep target)
    finally return result))
 
-(cl-defun eglot--register-workspace/didChangeWatchedFiles (server &key id watchers)
+(cl-defmethod eglot-register-capability
+    (server (method (eql workspace/didChangeWatchedFiles)) id &key watchers)
   "Handle dynamic registration of workspace/didChangeWatchedFiles"
-  (eglot--unregister-workspace/didChangeWatchedFiles server :id id)
+  (eglot-unregister-capability server method id)
   (let* (success
          (globs (mapcar (eglot--lambda ((FileSystemWatcher) globPattern)
                           globPattern)
@@ -2280,9 +2364,10 @@ If SKIP-SIGNATURE, don't try to send textDocument/signatureHelp."
                   `(:message ,(format "OK, watching %s watchers"
                                       (length watchers)))))
         (unless success
-          (eglot--unregister-workspace/didChangeWatchedFiles server :id id))))))
+          (eglot-unregister-capability server method id))))))
 
-(cl-defun eglot--unregister-workspace/didChangeWatchedFiles (server &key id)
+(cl-defmethod eglot-unregister-capability
+  (server (_method (eql workspace/didChangeWatchedFiles)) id)
   "Handle dynamic unregistration of workspace/didChangeWatchedFiles"
   (mapc #'file-notify-rm-watch (gethash id (eglot--file-watches server)))
   (remhash id (eglot--file-watches server))
@@ -2352,7 +2437,8 @@ If SKIP-SIGNATURE, don't try to send textDocument/signatureHelp."
         (ignore (eglot--warn "JAVA_HOME env var not set")))))
 
 (defun eglot--eclipse-jdt-contact (interactive)
-  "Return a contact for connecting to eclipse.jdt.ls server, as a cons cell."
+  "Return a contact for connecting to eclipse.jdt.ls server, as a cons cell.
+If INTERACTIVE, prompt user for details."
   (cl-labels
       ((is-the-jar
         (path)
