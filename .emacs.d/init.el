@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-01-08 21:49:16 dharms>
+;; Modified Time-stamp: <2019-01-09 05:24:48 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2816,6 +2816,17 @@ See `https://github.com/company-mode/company-mode/issues/205'."
   :disabled
   :config
   (add-hook 'flycheck-mode-hook #'turn-on-flycheck-inline))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;; flycheck-posframe ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package flycheck-posframe
+  :after flycheck
+  :if (display-graphic-p)
+  :init
+  (defface flycheck-posframe-face
+    '((t (:background "yellow" :foreground "black")))
+    "Face used for flycheck posframe popups.")
+  :config
+  (add-hook 'flycheck-mode-hook #'flycheck-posframe-mode))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; semantic ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq semantic-default-submodes
