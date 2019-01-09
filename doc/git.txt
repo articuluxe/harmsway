@@ -134,6 +134,8 @@ git diff main > feature.patch
 git checkout main
 git apply feature.patch
 git add .
+# return common ancestor of multiple commits
+git merge-base A B
 
 #################################### TAGS ####################################
 # find the tag associated with a commit
