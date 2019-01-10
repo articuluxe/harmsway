@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-01-09 08:56:31 dan.harms>
+;; Modified Time-stamp: <2019-01-10 14:50:22 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1730,7 +1730,10 @@ Only one letter is shown, the first that applies."
   :bind ("C-c -" . outshine-cycle)
   :init
   (defvar outline-minor-mode-prefix "\M-@")
-  (dolist (hook '(emacs-lisp-mode-hook restclient-mode-hook))
+  (dolist (hook '(
+                  ;; emacs-lisp-mode-hook
+                  restclient-mode-hook
+                  ))
     (add-hook hook 'outshine-mode)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; org ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
