@@ -1,8 +1,8 @@
 ;;; choose-font.el --- choose among a list of fonts
-;; Copyright (C) 2018  Dan Harms (dharms)
+;; Copyright (C) 2018-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Wednesday, March 28, 2018
-;; Modified Time-stamp: <2018-12-20 10:02:33 dan.harms>
+;; Modified Time-stamp: <2019-01-10 14:49:42 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: font
 
@@ -42,7 +42,7 @@
 Uses the current value of `choose-font-list'."
   (choose-font-read-init-file)
   (if (daemonp)
-      (add-hook 'after-make-frame-functions #'choose-font-activate-hook-fn)
+      (add-hook 'after-make-frame-functions #'choose-font-activate-hook-fn t)
     (eval-when '(load eval)
       (choose-font-set-font (car choose-font-list)))))
 
