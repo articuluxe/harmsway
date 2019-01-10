@@ -178,6 +178,11 @@
   :group 'simple-httpd
   :type 'boolean)
 
+(defcustom httpd-show-backtrace-when-error nil
+  "If true, show backtrace on error page."
+  :group 'simple-httpd
+  :type 'boolean)
+
 (defcustom httpd-start-hook nil
   "Hook to run when the server has started."
   :group 'simple-httpd
@@ -694,6 +699,23 @@ element is the fragment."
     (push (if p1 (httpd-parse-args (substring uri (1+ p1) p2))) retval)
     (push (substring uri 0 (or p1 p2)) retval)))
 
+(defun httpd-escape-html-buffer ()
+  "Escape current buffer contents to be safe for inserting into HTML."
+  (setf (point) (point-min))
+  (while (search-forward-regexp "[<>&]" nil t)
+    (replace-match
+     (cl-case (aref (match-string 0) 0)
+       (?< "&lt;")
+       (?> "&gt;")
+       (?& "&amp;")))))
+
+(defun httpd-escape-html (string)
+  "Escape STRING so that it's safe to insert into an HTML document."
+  (with-temp-buffer
+    (insert string)
+    (httpd-escape-html-buffer)
+    (buffer-string)))
+
 ;; Path handling
 
 (defun httpd-status (path)
@@ -855,8 +877,21 @@ optionally inserting object INFO into page. If PROC is T use the
   (httpd-log `(error ,status ,info))
   (with-temp-buffer
     (let ((html (or (cdr (assq status httpd-html)) ""))
-          (erro (url-insert-entities-in-string (format "error: %s"  info))))
-      (insert (format html (if info erro ""))))
+          (contents
+           (if (not info)
+               ""
+             (with-temp-buffer
+               (let ((standard-output (current-buffer)))
+                 (insert "error: ")
+                 (princ info)
+                 (insert "\n")
+                 (when httpd-show-backtrace-when-error
+                   (insert "backtrace: ")
+                   (princ (backtrace))
+                   (insert "\n"))
+                 (httpd-escape-html-buffer)
+                 (buffer-string))))))
+      (insert (format html contents)))
     (httpd-send-header proc "text/html" status)))
 
 (defun httpd--error-safe (&rest args)

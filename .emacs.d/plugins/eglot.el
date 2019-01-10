@@ -100,7 +100,8 @@ language-server/bin/php-language-server.php"))
                                             "-gocodecompletion"))
                                 ((R-mode ess-r-mode) . ("R" "--slave" "-e"
                                                         "languageserver::run()"))
-                                (java-mode . eglot--eclipse-jdt-contact))
+                                (java-mode . eglot--eclipse-jdt-contact)
+                                (dart-mode . ("dart_language_server")))
   "How the command `eglot' guesses the server to start.
 An association list of (MAJOR-MODE . CONTACT) pairs.  MAJOR-MODE
 is a mode symbol, or a list of mode symbols.  The associated
@@ -477,7 +478,10 @@ treated as in `eglot-dbind'."
                                          :json-false))
                                     :contextSupport t)
              :hover              `(:dynamicRegistration :json-false)
-             :signatureHelp      `(:dynamicRegistration :json-false)
+             :signatureHelp      (list :dynamicRegistration :json-false
+                                       :signatureInformation
+                                       `(:parameterInformation
+                                         (:labelOffsetSupport t)))
              :references         `(:dynamicRegistration :json-false)
              :definition         `(:dynamicRegistration :json-false)
              :documentSymbol     (list
@@ -1992,12 +1996,19 @@ is not active."
                ;; ...perhaps highlight it in the formals list
                (when params-start
                  (goto-char params-start)
-                 (let ((regex (concat "\\<" (regexp-quote label) "\\>"))
-                       (case-fold-search nil))
-                   (when (re-search-forward regex params-end t)
-                     (add-face-text-property
-                      (match-beginning 0) (match-end 0)
-                      'eldoc-highlight-function-argument))))
+                 (pcase-let
+                     ((`(,beg ,end)
+                       (if (stringp label)
+                           (let ((case-fold-search nil))
+                             (and (re-search-forward
+                                   (concat "\\<" (regexp-quote label) "\\>")
+                                   params-end t)
+                                  (list (match-beginning 0) (match-end 0))))
+                         (mapcar #'1+ (append label nil)))))
+                   (if (and beg end)
+                       (add-face-text-property
+                        beg end
+                        'eldoc-highlight-function-argument))))
                ;; ...and/or maybe add its doc on a line by its own.
                (when documentation
                  (goto-char (point-max))
