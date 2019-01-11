@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-01-10 15:07:46 dan.harms>
+;; Modified Time-stamp: <2019-01-11 09:41:05 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1486,6 +1486,9 @@ Only one letter is shown, the first that applies."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ivy ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package ivy
   :demand t
+  :bind (("M-s M-." . ivy-push-view)
+         ("M-s M-," . ivy-pop-view)
+         ("M-s M-/" . ivy-switch-view))
   :init
   (setq resize-mini-windows t)
   (setq ivy-display-style 'fancy)
