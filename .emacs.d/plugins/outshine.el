@@ -4,7 +4,7 @@
 
 ;; Author: Thorsten Jolitz
 ;; Maintainer: Adam Porter <adam@alphapapa.net>
-;; Version: 3.0
+;; Version: 3.1-pre
 ;; URL: https://github.com/alphapapa/outshine
 ;; Package-Requires: ((outorg "2.0") (cl-lib "0.5"))
 ;; Licence: GPL2+

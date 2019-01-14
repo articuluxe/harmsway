@@ -31,6 +31,13 @@
   (require 'inline)
   (require 'treemacs-macros))
 
+(defconst treemacs--org-edit-buffer-name "*Edit Treemacs Workspaces*"
+  "The name of the buffer used to edit treemacs' workspace.")
+
+(defconst treemacs--last-error-persist-file
+  (f-join user-emacs-directory ".cache" "treemacs-persist-at-last-error")
+  "File that stores the treemacs state as it was during the last load error.")
+
 (defconst treemacs--persist-kv-regex
   (rx bol
       (? " ")
@@ -148,72 +155,112 @@ ITER: Treemacs-Iter struct"
       (error (treemacs-log "Error '%s' when persisting workspace." e)))))
 
 (defun treemacs--read-persist-lines (&optional txt)
-  "Read the relevant lines from given TXT or `treemacs-persist-file'."
-  (-when-let (str (-some-> (or txt (when (file-exists-p treemacs-persist-file)
+  "Read the relevant lines from given TXT or `treemacs-persist-file'.
+Will read all lines, except those that start with # or contain only whitespace."
+  (-when-let (lines (-some-> (or txt (when (file-exists-p treemacs-persist-file)
                                      (f-read treemacs-persist-file)))
                            (s-trim)
                            (s-lines)))
-    (--filter (or (s-matches? treemacs--persist-kv-regex it)
-                  (s-matches? treemacs--persist-project-name-regex it)
-                  (s-matches? treemacs--persist-workspace-name-regex it))
-              str)))
+    (--reject (or (s-blank-str? it)
+                  (s-starts-with? "#" it))
+              lines)))
 
-(cl-defun treemacs--validate-persist-lines (lines &optional (context :start))
+(cl-defun treemacs--validate-persist-lines (lines &optional (context :start) (prev nil))
   "Recursively verify the make-up of the given LINES, based on their CONTEXT.
 Lines must start with a workspace name, followed by a project name, followed by
 the project's path property, followed by either the next project or the next
 workspace.
 
+A successful validation returns just the symbol 'success, in case of an error a
+list of 3 items is returned: the symbol 'error, the exact line where the error
+happened, and the error message. In some circumstances (for example when a
+project is missing a path property) it makes sense to display the error not in
+the currently looked at line, but the one above, which is why the previously
+looked at line PREV is given as well.
+
+In this case a list is returned. The first item is the symbol 'error. The second
+item is the exact line where the error was found. This allows to find the error's
+location with `search-forward' when org-editing, but is ignored for a boot-load.
+The third item is a line error that describes
+
 LINES: List of Strings
 CONTEXT: Keyword"
   (cl-block body
-    (treemacs-unless-let (line (car lines))
+    (cl-labels ((as-warning (txt) (propertize txt 'face 'warning)))
+      (treemacs-unless-let (line (car lines))
+          (pcase context
+            (:property
+             (cl-return-from body 'success))
+            (:start
+             (cl-return-from body
+               (list 'error :start (as-warning "Input is empty"))))
+            (_
+             (cl-return-from body
+               (list 'error prev (as-warning "Cannot end with a project or workspace name")))))
         (pcase context
-          (:property
-           (cl-return-from body 'success))
           (:start
-           (cl-return-from body
-             (list 'error "Input is empty")))
-          (_
-           (cl-return-from body
-             (list 'error "Cannot end with a project or workspace name"))))
-      (pcase context
-        (:start
-         (treemacs-return-if (not (s-matches? treemacs--persist-workspace-name-regex line))
-           `(error ,(format "First line '%s' is not a workspace name" line)))
-         (treemacs--validate-persist-lines (cdr lines) :workspace))
-        (:workspace
-         (treemacs-return-if (not (s-matches? treemacs--persist-project-name-regex line))
-           `(error ,(format "Line '%s' after workspace name is not a project name" line)))
-         (treemacs--validate-persist-lines (cdr lines) :project))
-        (:project
-         (treemacs-return-if (not (s-matches? treemacs--persist-kv-regex line))
-           `(error ,(format "Line '%s' after project name is not a path declaration" line)))
-         (treemacs--validate-persist-lines (cdr lines) :property))
-        (:property
-         (let ((line-is-workspace-name (s-matches? treemacs--persist-workspace-name-regex line))
-               (line-is-project-name   (s-matches? treemacs--persist-project-name-regex line)))
-           (cond
-            (line-is-workspace-name
-             (treemacs--validate-persist-lines (cdr lines) :workspace))
-            (line-is-project-name
-             (treemacs--validate-persist-lines (cdr lines) :project))
-            (t
-             (treemacs-return-if (-none? #'identity (list line-is-workspace-name line-is-project-name))
-               `(error ,(format "Line '%s' after property must be the name of the next project or workspace" line)))))))))))
+           (treemacs-return-if (not (s-matches? treemacs--persist-workspace-name-regex line))
+             `(error ,line ,(as-warning "First item must be a workspace name")))
+           (treemacs--validate-persist-lines (cdr lines) :workspace line))
+          (:workspace
+           (treemacs-return-if (not (s-matches? treemacs--persist-project-name-regex line))
+             `(error ,line ,(as-warning "Workspace name must be followed by project name")))
+           (treemacs--validate-persist-lines (cdr lines) :project line))
+          (:project
+           (treemacs-return-if (not (s-matches? treemacs--persist-kv-regex line))
+             `(error ,prev ,(as-warning "Project name must be followed by path declaration")))
+           (-let [path (cadr (s-split " :: " line))]
+             ;; path not existing is only a hard error when org-editing, when loading on boot
+             ;; it's just a warning and the project will be ignored
+             (treemacs-return-if (and (string= treemacs--org-edit-buffer-name (buffer-name))
+                                      (not (file-exists-p path)))
+               `(error ,line ,(format (as-warning "File '%s' does not exist") (propertize path 'face 'font-lock-string-face))))
+             (treemacs--validate-persist-lines (cdr lines) :property line)))
+          (:property
+           (let ((line-is-workspace-name (s-matches? treemacs--persist-workspace-name-regex line))
+                 (line-is-project-name   (s-matches? treemacs--persist-project-name-regex line)))
+             (cond
+              (line-is-workspace-name
+               (treemacs--validate-persist-lines (cdr lines) :workspace line))
+              (line-is-project-name
+               (treemacs--validate-persist-lines (cdr lines) :project line))
+              (t
+               (treemacs-return-if (-none? #'identity (list line-is-workspace-name line-is-project-name))
+                 `(error ,prev ,(as-warning "Path property must be followed by the next workspace or project"))))))))))))
 
 (defun treemacs--restore ()
   "Restore treemacs' state from `treemacs-persist-file'."
   (unless (treemacs--should-not-run-persistence?)
-    (condition-case e
-        (-when-let (lines (treemacs--read-persist-lines))
+    (-when-let (lines (treemacs--read-persist-lines))
+      (condition-case e
           (pcase (treemacs--validate-persist-lines lines)
             ('success
              (setf treemacs--workspaces (treemacs--read-workspaces (make-treemacs-iter :list lines))
                    (treemacs-current-workspace) (car treemacs--workspaces)))
-            (`(error ,error-msg)
-             (treemacs-log "Could not restore saved state, found the following error:\n%s." error-msg))))
-      (error (treemacs-log "Error '%s' when loading the persisted workspace." e)))))
+            (`(error ,line ,error-msg)
+             (treemacs--write-error-persist-state lines (format "'%s' in line '%s'" error-msg line))
+             (treemacs-log "Could not restore saved state, %s:\n%s\n%s"
+                           (pcase line
+                             (:start "found error in the first line")
+                             (:end "found error in the last line")
+                             (other (format "found error in line '%s'" other)))
+                           error-msg
+                           (format "Broken state was saved to %s"
+                                   (propertize treemacs--last-error-persist-file 'face 'font-lock-string-face)))))
+        (error
+         (progn
+           (treemacs--write-error-persist-state lines e)
+           (treemacs-log "Error '%s' when loading the persisted workspace.\n%s"
+                         e
+                         (format "Broken state was saved to %s"
+                                 (propertize treemacs--last-error-persist-file 'face 'font-lock-string-face)))))))))
+
+(defun treemacs--write-error-persist-state (lines error)
+  "Write broken state LINES and ERROR to `treemacs--last-error-persist-file'."
+  (-let [txt (concat (format "# State when last error occured on %s\n" (format-time-string "%F %T"))
+                     (format "# Error was %s\n\n" error)
+                     (apply #'concat (--map (concat it "\n") lines)))]
+    (f-write txt 'utf-8 treemacs--last-error-persist-file)))
 
 (add-hook 'kill-emacs-hook #'treemacs--persist)
 

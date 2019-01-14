@@ -1,4 +1,4 @@
-;;; nimbus-theme.el --- An awesome dark theme
+;;; nimbus-theme.el --- An awesome dark theme. -*- lexical-binding: t; -*-
 ;;
 ;; Filename:    nimbus-theme.el
 ;; Description: An awesome dark theme
@@ -6,6 +6,7 @@
 ;;              See README.md for full list of contributors.
 ;; Created:     Thu Mar 2 22:19:19 CET 2017
 ;; Version:     1.0.0
+;; Package-Requires: ((emacs "24"))
 ;; URL:         https://github.com/m-cat/nimbus-theme
 ;; Keywords:    faces
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -46,6 +47,7 @@
 (deftheme nimbus "An awesome dark theme.")
 
 ;; Define the palette.
+;; TODO: Get rid of tan. Too similar to ,yellow.
 (let (
       (lightest-green "#8fbc8f")
       (light-green    "#9ccc65")
@@ -69,16 +71,19 @@
       (blue-gray      "#608079")
       (brown          "#987654")
       (red            "#d65946")
-      (dark-red       "#9d2512")
+      (dark-red       "#ad3632")
       (white          "white")
       (black          "black")
 
       (green-bg       "#11472b")
       (teal-bg        "#114747")
-      (gray-bg        "#2b4747")
+      ;; (gray-bg        "#2b4747")
       (blue-bg        "#112b47")
       (purple-bg      "#2b1147")
       (red-bg         "#47112b")
+
+      (nimbus-warn    "#f57e00")
+      (nimbus-err     "red")
 
       (cursor         "#f57e00")
       (fringe         "gray10")
@@ -98,7 +103,9 @@
    `(highlight    ((t (:background ,teal-bg))))
    `(region       ((t (:background ,green-bg))))
    `(shadow       ((t (:foreground ,light-gray))))
-   `(tooltip      ((t (:background ,fg :foreground ,bg))))
+   `(tooltip      ((t (:foreground ,bg :background ,fg))))
+   `(warning      ((t (:foreground ,nimbus-warn :bold t))))
+   `(error        ((t (:foreground ,nimbus-err :bold t))))
 
    ;; standard font lock
    `(font-lock-builtin-face           ((t (:foreground ,blue))))
@@ -112,8 +119,7 @@
    `(font-lock-preprocessor-face      ((t (:foreground ,orange))))
    `(font-lock-type-face              ((t (:foreground ,red))))
    `(font-lock-constant-face          ((t (:foreground ,purple))))
-   `(font-lock-warning-face
-     ((t (:foreground ,orange :bold t))))
+   `(font-lock-warning-face           ((t (:inherit warning))))
    `(font-lock-variable-name-face     ((t (:foreground ,yellow))))
    `(font-lock-doc-face
      ((t (:inherit font-lock-comment-face :foreground ,lightest-green))))
@@ -121,12 +127,17 @@
    ;; highlight-numbers
    `(highlight-numbers-number
      ((t (:foreground ,orange))))
+
    ;; highlight-quoted
    `(highlight-quoted-symbol
      ((t (:foreground ,green))))
+
    ;; highlight-operators
    `(highlight-operators-face
      ((t (:foreground ,darker-green))))
+
+   ;; hl-todo
+   `(hl-todo ((t (:foreground "#cc9393", :bold nil))))
 
    ;; search
    `(isearch
@@ -258,13 +269,13 @@
    `(vh1/default-face ((t (:background ,green))))
 
    ;; mini buffer
-   `(minibuffer-prompt ((t (:bold t))))
+   `(minibuffer-prompt ((t (:foreground ,bright-yellow :bold nil))))
 
    ;; compile
    `(compilation-info
      ((t (:foreground ,dark-green :bold t))))
    `(compilation-warning
-     ((t (:foreground ,orange :bold t :background ,bg))))
+     ((t (:inherit warning :background ,bg))))
    `(compilation-error
      ((t (:inherit error :bold t))))
    `(compilation-mode-line-exit
@@ -276,7 +287,7 @@
 
    ;; dired
    `(dired-header ((t (:foreground ,red))))
-   `(dired-flagged ((t (:foreground ,red))))
+   `(dired-flagged ((t (:foreground ,dark-red))))
 
    ;; dired+
    `(diredp-autofile-name
@@ -357,7 +368,7 @@
    `(diredfl-write-priv ((t (:foreground ,light-blue))))
 
    ;; eshell
-   `(eshell-prompt        ((t (:foreground ,purple))))
+   `(eshell-prompt        ((t (:foreground ,green))))
    `(eshell-ls-directory  ((t (:inherit font-lock-function-name-face))))
    `(eshell-ls-product    ((t (:foreground ,orange))))
    `(eshell-ls-backup     ((t (:foreground ,dark-gray))))
@@ -368,6 +379,9 @@
 
    ;; shell
    `(comint-highlight-prompt ((t (:foreground ,green))))
+
+   ;; sh
+   `(sh-quoted-exec ((t (:foreground ,red))))
 
    ;; term
    `(term-color-black
@@ -383,7 +397,7 @@
    `(term-color-magenta
      ((t (:foreground ,purple :background ,purple))))
    `(term-color-cyan
-     ((t (:foreground ,light-blue :background ,light-blue))))
+     ((t (:foreground ,lightest-blue :background ,lightest-blue))))
    `(term-color-white
      ((t (:foreground ,fg :background ,fg))))
    `(term-default-fg-color ((t (:inherit fg))))
@@ -391,8 +405,8 @@
 
    ;; Flycheck
    `(flycheck-info    ((t (:underline (:color ,green)))))
-   `(flycheck-warning ((t (:underline (:color "orange")))))
-   `(flycheck-error   ((t (:underline (:color "red")))))
+   `(flycheck-warning ((t (:underline (:color ,nimbus-warn)))))
+   `(flycheck-error   ((t (:underline (:color ,nimbus-err)))))
    `(flycheck-fringe-info
      ((t (:foreground ,green :bold nil :underline nil :slant normal))))
    `(flycheck-fringe-warning
@@ -478,10 +492,7 @@
    ;;show paren
    `(show-paren-match
      ((t (:foreground ,white))))
-   `(show-paren-mismatch ((t (:inherit error))))
-
-   ;; error
-   `(error ((t (:foreground "red"))))
+   `(show-paren-mismatch ((t (:inherit error :bold nil))))
 
    ;; ido
    `(ido-only-match         ((t (:foreground ,green))))
@@ -671,7 +682,7 @@
    `(helm-match-item
      ((t (:inherit lazy-highlight))))
    `(helm-match
-     ((t (:foreground ,white))))
+     ((t (:foreground ,nimbus-warn))))
    `(helm-moccur-buffer
      ((t (:inherit compilation-info))))
    `(helm-selection
@@ -777,7 +788,7 @@
      ((t (:foreground ,light-blue))))
    `(rainbow-delimiters-depth-9-face
      ((t (:foreground ,yellow))))
-   `(rainbow-delimiters-unmatched-face ((t (:inherit error))))
+   `(rainbow-delimiters-unmatched-face ((t (:inherit error :bold nil))))
 
    ;; rainbow blocks
    `(rainbow-blocks-depth-1-face
@@ -798,7 +809,7 @@
      ((t (:foreground ,light-blue))))
    `(rainbow-blocks-depth-9-face
      ((t (:foreground ,yellow))))
-   `(rainbow-blocks-unmatched-face ((t (:inherit error))))
+   `(rainbow-blocks-unmatched-face ((t (:inherit error :bold nil))))
 
    ;; auto complete
    `(ac-candidate-face
@@ -1040,21 +1051,25 @@
    ;;`(org-meta-line                 ((t (:foreground nil :background nil))))
    ;;`(org-mode-line-clock           ((t (:foreground nil :background nil))))
    ;;`(org-mode-line-clock-overrun   ((t (:foreground nil :background nil))))
+   `(org-priority                  ((t (:foreground ,dark-red))))
    ;;`(org-property-value            ((t (:foreground nil :background nil))))
    ;;`(org-quote                     ((t (:foreground nil :background nil))))
    `(org-scheduled                 ((t (:foreground ,green))))
    `(org-scheduled-previously      ((t (:foreground ,orange))))
    `(org-scheduled-today           ((t (:foreground ,yellow))))
    ;;`(org-sexp-date                 ((t (:foreground nil :background nil))))
-   `(org-special-keyword           ((t (:inherit font-lock-keyword-face))))
+   `(org-special-keyword           ((t (:foreground ,blue-gray))))
    ;;`(org-table                     ((t (:foreground nil :background nil))))
-   `(org-tag                       ((t (:foreground ,red))))
+   `(org-tag                       ((t (:foreground ,brown))))
    ;;`(org-target                    ((t (:foreground nil :background nil))))
-   `(org-time-grid                 ((t (:foreground ,light-gray))))
+   `(org-time-grid                 ((t (:foreground ,blue-gray))))
    ;;`(org-upcoming-deadline         ((t (:foreground nil :background nil))))
    ;;`(org-verbatim                  ((t (:foreground nil :background nil))))
    ;;`(org-verse                     ((t (:foreground nil :background nil))))
    ;;`(org-warning                   ((t (:foreground nil :background nil))))
+
+   ;; org-super-agenda
+   `(org-super-agenda-header ((t (:inherit org-agenda-structure))))
 
    ;; debbugs
    `(debbugs-gnu-done    ((t (:foreground ,gray))))
@@ -1251,7 +1266,7 @@
    `(whitespace-indentation
      ((t (:foreground ,gray :background "gray12"))))
    `(whitespace-line
-     ((t (:inherit error))))
+     ((t (:inherit error :bold nil))))
    `(whitespace-newline
      ((t (:foreground ,gray))))
    `(whitespace-space
@@ -1276,8 +1291,8 @@
      ((t (:foreground ,orange))))
    `(magit-branch-remote
      ((t (:foreground ,yellow))))
-   `(magit-tag
-     ((t (:foreground ,light-blue))))
+   `(magit-tag      ((t (:foreground ,light-blue))))
+   `(magit-filename ((t (:foreground ,blue-gray))))
 
    `(magit-diff-file-heading
      ((t (:foreground ,fg))))
@@ -1367,9 +1382,9 @@
      ((t (:foreground ,blue))))
 
    `(magit-log-author
-     ((t (:foreground ,dark-green))))
+     ((t (:foreground ,dark-green :slant normal))))
    `(magit-log-date
-     ((t (:foreground ,blue))))
+     ((t (:foreground ,blue :slant normal))))
    `(magit-log-graph
      ((t (:foreground ,darker-green))))
 
@@ -1577,6 +1592,9 @@
   (interactive)
   (load-theme 'nimbus t))
 
+;;; Footer
+
+(provide 'nimbus-theme)
 
 (provide-theme 'nimbus)
 ;;; nimbus-theme.el ends here

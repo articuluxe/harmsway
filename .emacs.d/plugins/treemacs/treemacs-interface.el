@@ -935,42 +935,40 @@ Only works with a single project in the workspace."
       (treemacs--persist)
       (recenter))))
 
-(defun treemacs-edit-workspaces ()
-  "Edit your treemacs workspaces and projects as an `org-mode' file."
-  (interactive)
-  (require 'org)
-  (require 'outline)
-  (treemacs--persist)
-  (switch-to-buffer (get-buffer-create "*Edit Treemacs Workspaces*"))
-  (erase-buffer)
-  (org-mode)
-  (insert "#+TITLE: Edit Treemacs Workspaces & Projects\n")
-  (when treemacs-show-edit-workspace-help
-    (insert "# Call ~treemacs-finish-edit~ when done.\n")
-    (insert "# [[http://www.THERE-IS-NO-DOCUMENTATION-YET.com][Click here for detailed documentation.]]\n\n"))
-  (insert-file-contents treemacs-persist-file)
-  (with-no-warnings
-    (outline-show-all))
-  (goto-char 0))
-
 (defun treemacs-finish-edit ()
   "Finish editing your workspaces and apply the change."
   (interactive)
   (cl-block body
+    (treemacs--org-edit-remove-validation-msg)
     (widen)
+    (whitespace-cleanup)
     (-let [lines (treemacs--read-persist-lines (buffer-string))]
       (treemacs-error-return-if (null (buffer-string))
         "The buffer is empty, there is nothing here to save.")
       (pcase (treemacs--validate-persist-lines lines)
-        (`(error ,error-msg)
-         (treemacs-error-return "Cannot finish edit:\n%s" error-msg))
+        (`(error ,err-line ,err-msg)
+         (treemacs--org-edit-display-validation-msg err-msg err-line))
         ('success
          (f-write (apply #'concat (--map (concat it "\n") lines)) 'utf-8 treemacs-persist-file)
          (kill-buffer)
          (treemacs--restore)
          (treemacs--consolidate-projects)
-         (-some-> (get-buffer "*Edit Treemacs Workspaces*") (kill-buffer))
+         (-some-> (get-buffer treemacs--org-edit-buffer-name) (kill-buffer))
          (treemacs-log "Edit completed successfully."))))))
+
+(defun treemacs-collapse-parent-node (arg)
+  "Close the parent of the node at point.
+Prefix ARG will be passed on to the closing function
+\(see `treemacs-toggle-node'.\)"
+  (interactive "P")
+  (-if-let* ((btn (treemacs-current-button))
+             (parent (button-get btn :parent)))
+      (progn
+        (goto-char parent)
+        (treemacs-toggle-node arg)
+        (treemacs--evade-image))
+    (treemacs-pulse-on-failure
+        (if btn "Already at root." "There is nothing to close here."))))
 
 (provide 'treemacs-interface)
 

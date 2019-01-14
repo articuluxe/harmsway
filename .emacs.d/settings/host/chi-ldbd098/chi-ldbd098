@@ -1,9 +1,9 @@
 ;; -*- Mode: Emacs-Lisp -*-
 ;;; chi-ldbd098 --- host file
-;; Copyright (C) 2015-2018  Dan Harms (dan.harms)
+;; Copyright (C) 2015-2019  Dan Harms (dan.harms)
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Monday, March 14, 2016
-;; Modified Time-stamp: <2018-12-31 13:48:02 dan.harms>
+;; Modified Time-stamp: <2019-01-14 13:54:52 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: config
 
@@ -48,7 +48,7 @@
                            "Hasklig 10"
                            "Luculent 11"
                            "Iosevka 11"
-                           "Anka/Coder 11"
+                           "Anka/Coder 10"
                            "M+ 1m 13"
                            "Andale Mono 10"
                            "DroidSansMono 10"

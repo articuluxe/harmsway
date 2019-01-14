@@ -43,6 +43,7 @@
 
 (defvar lorem-ipsum-text)
 
+;;;###autoload
 (defun unpackaged/font-compare (text fonts)
   "Compare TEXT displayed in FONTS.
 If TEXT is nil, use `lorem-ipsum' text.  FONTS is a list of font
@@ -78,23 +79,31 @@ already-selected font to end font selection)."
 
 ;;; ibuffer
 
-(defun unpackaged/ibuffer-toggle-all-filter-groups ()
-  "Toggle all filter groups."
-  (interactive)
-  (save-excursion
-    (goto-char (point-min))
-    (ibuffer-forward-filter-group)
-    (let ((start (point)))
-      (forward-char)
-      (while (not (<= (point) start))
-        (ibuffer-toggle-filter-group)
-        (ibuffer-forward-filter-group)))))
+;;;###autoload
+(defun unpackaged/ibuffer-toggle-all-filter-groups (toggle-empty)
+  "Toggle all filter groups.
+With prefix, toggle `ibuffer-show-empty-filter-groups'."
+  (interactive "P")
+  (if toggle-empty
+      (progn
+        (setf ibuffer-show-empty-filter-groups (not ibuffer-show-empty-filter-groups))
+        (ibuffer-update nil))
+    (save-excursion
+      (goto-char (point-min))
+      (ibuffer-forward-filter-group)
+      (let ((start (point)))
+        (forward-char)
+        (while (not (<= (point) start))
+          (ibuffer-toggle-filter-group)
+          (ibuffer-forward-filter-group))))))
 
+;;;###autoload
 (defun unpackaged/ibuffer-filter-group-move-down ()
   "Move filter group at point down."
   (interactive)
   (unpackaged/ibuffer-filter-group-move 'down))
 
+;;;###autoload
 (defun unpackaged/ibuffer-filter-group-move-up ()
   "Move filter group at point up."
   (interactive)
@@ -147,9 +156,10 @@ output string."
 
 ;;; Org
 
+;;;###autoload
 (defun unpackaged/org-agenda-current-subtree-or-region (only-todos)
   "Display an agenda view for the current subtree or region.
-  With prefix, display only TODO-keyword items."
+ With prefix, display only TODO-keyword items."
   (interactive "P")
   (let ((starting-point (point))
         header)
@@ -189,6 +199,7 @@ output string."
   "Face for Org Agenda previews."
   :group 'org)
 
+;;;###autoload
 (defun unpackaged/org-agenda-toggle-preview ()
   "Toggle overlay of current item in agenda."
   (interactive)
@@ -222,6 +233,7 @@ If UNSAFE is non-nil, assume point is on headline."
            while pos
            do (goto-char pos)))
 
+;;;###autoload
 (defun unpackaged/elisp-to-org ()
   "Convert elisp code in region to Org syntax and put in kill-ring.
 Extracts and converts docstring to Org text, and places code in
@@ -238,6 +250,7 @@ source block."
                       raw "\n"
                       "#+END_SRC"))))
 
+;;;###autoload
 (defun unpackaged/docstring-to-org (docstring)
   "Return DOCSTRING as formatted Org text.
 
@@ -269,6 +282,7 @@ to kill-ring."
                (kill-new it))
            it))))
 
+;;;###autoload
 (defun unpackaged/caps-to-code (beg end)
   "Convert all-caps words in region to Org code emphasis."
   (interactive "r")
@@ -285,6 +299,7 @@ to kill-ring."
                 (concat "~" (match-string 1) "~"))
           (goto-char (match-end 0)))))))
 
+;;;###autoload
 (defun unpackaged/symbol-quotes-to-org-code (beg end)
   "Change Emacs `symbol' quotes to Org =symbol= quotes in region."
   (interactive "r")
@@ -295,6 +310,7 @@ to kill-ring."
       (while (re-search-forward (rx (or "`" "‘") (group (1+ (or "-" word))) "'") nil t)
         (replace-match (concat "~" (match-string 1) "~") t)))))
 
+;;;###autoload
 (defun unpackaged/org-attach-download (url)
   "Download file at URL and attach with `org-attach'.
 Interactively, look for URL at point, in X clipboard, and in
@@ -319,38 +335,39 @@ kill-ring, prompting if not found.  With prefix, prompt for URL."
             (message "Attached %s (%s)" url size))
         (delete-directory temp-dir)))))
 
+;;;###autoload
 (defun unpackaged/org-fix-blank-lines (prefix)
-    "Ensure that blank lines exist between headings and between headings and their contents.
-With prefix, operate on whole buffer.  Ensures that blank lines
+  "Ensure that blank lines exist between headings and between headings and their contents.
+With prefix, operate on whole buffer. Ensures that blank lines
 exist after each headings's drawers."
-    (interactive "P")
-    (org-map-entries (lambda ()
-                       (org-with-wide-buffer
-                        ;; `org-map-entries' narrows the buffer, which prevents us from seeing
-                        ;; newlines before the current heading, so we do this part widened.
-                        (while (not (looking-back "\n\n" nil))
-                          ;; Insert blank lines before heading.
-                          (insert "\n")))
-                       (let ((end (org-entry-end-position)))
-                         ;; Insert blank lines before entry content
-                         (forward-line)
-                         (while (and (org-at-planning-p)
-                                     (< (point) (point-max)))
-                           ;; Skip planning lines
-                           (forward-line))
-                         (while (re-search-forward org-drawer-regexp end t)
-                           ;; Skip drawers.  You might think that `org-at-drawer-p' would suffice, but
-                           ;; for some reason it doesn't work correctly when operating on hidden text.
-                           ;; This works, taken from `org-agenda-get-some-entry-text'.
-                           (re-search-forward "^[ \t]*:END:.*\n?" end t)
-                           (goto-char (match-end 0)))
-                         (unless (or (= (point) (point-max))
-                                     (org-at-heading-p)
-                                     (looking-at-p "\n"))
-                           (insert "\n"))))
-                     t (if prefix
-                           nil
-                         'tree)))
+  (interactive "P")
+  (org-map-entries (lambda ()
+                     (org-with-wide-buffer
+                      ;; `org-map-entries' narrows the buffer, which prevents us from seeing
+                      ;; newlines before the current heading, so we do this part widened.
+                      (while (not (looking-back "\n\n" nil))
+                        ;; Insert blank lines before heading.
+                        (insert "\n")))
+                     (let ((end (org-entry-end-position)))
+                       ;; Insert blank lines before entry content
+                       (forward-line)
+                       (while (and (org-at-planning-p)
+                                   (< (point) (point-max)))
+                         ;; Skip planning lines
+                         (forward-line))
+                       (while (re-search-forward org-drawer-regexp end t)
+                         ;; Skip drawers. You might think that `org-at-drawer-p' would suffice, but
+                         ;; for some reason it doesn't work correctly when operating on hidden text.
+                         ;; This works, taken from `org-agenda-get-some-entry-text'.
+                         (re-search-forward "^[ \t]*:END:.*\n?" end t)
+                         (goto-char (match-end 0)))
+                       (unless (or (= (point) (point-max))
+                                   (org-at-heading-p)
+                                   (looking-at-p "\n"))
+                         (insert "\n"))))
+                   t (if prefix
+                         nil
+                       'tree)))
 
 (define-minor-mode unpackaged/org-export-html-with-useful-ids-mode
   "Attempt to export Org as HTML with useful link IDs.
@@ -392,9 +409,7 @@ made unique when necessary."
                          cells)
                         (when (org-element-property :raw-value datum)
                           ;; Heading with a title
-                          (unpackaged/org-export-new-title-reference
-                           (substring-no-properties (org-element-property :raw-value datum))
-                           cache))
+                          (unpackaged/org-export-new-title-reference datum cache))
                         ;; NOTE: This probably breaks some Org Export
                         ;; feature, but if it does what I need, fine.
                         (org-export-format-reference
@@ -411,8 +426,8 @@ made unique when necessary."
           (plist-put info :internal-references cache)
           reference-string))))
 
-(defun unpackaged/org-export-new-title-reference (title cache)
-  "Return new reference for title that is unique in CACHE."
+(defun unpackaged/org-export-new-title-reference (datum cache)
+  "Return new reference for DATUM that is unique in CACHE."
   (cl-macrolet ((inc-suffixf (place)
                              `(progn
                                 (string-match (rx bos
@@ -427,12 +442,23 @@ made unique when necessary."
                                                     (string-to-number suffix)
                                                   0)))
                                   (setf ,place (format "%s--%s" s1 (cl-incf suffix)))))))
-    (let* ((ref (url-hexify-string title)))
+    (let* ((title (org-element-property :raw-value datum))
+           (ref (url-hexify-string (substring-no-properties title)))
+           (parent (org-element-property :parent datum)))
       (while (--any (equal ref (car it))
                     cache)
-        (inc-suffixf ref))
+        ;; Title not unique: make it so.
+        (if parent
+            ;; Append ancestor title.
+            (setf title (concat (org-element-property :raw-value parent)
+                                "--" title)
+                  ref (url-hexify-string (substring-no-properties title))
+                  parent (org-element-property :parent parent))
+          ;; No more ancestors: add and increment a number.
+          (inc-suffixf ref)))
       ref)))
 
+;;;###autoload
 (defmacro unpackaged/def-org-maybe-surround (&rest keys)
   "Define and bind interactive commands for each of KEYS that surround the region or insert text.
 Commands are bound in `org-mode-map' to each of KEYS.  If the
@@ -458,6 +484,7 @@ otherwise call `org-self-insert-command'."
 
 (unpackaged/def-org-maybe-surround "~" "=" "*" "/" "+")
 
+;;;###autoload
 (defun unpackaged/org-refile-to-datetree-using-ts-in-entry (which-ts file &optional subtree-p)
   "Refile current entry to datetree in FILE using timestamp found in entry.
 WHICH should be `earliest' or `latest'. If SUBTREE-P is non-nil,
@@ -476,6 +503,7 @@ search whole subtree."
          (date (list (ts-month ts) (ts-day ts) (ts-year ts))))
     (unpackaged/org-refile-to-datetree file :date date)))
 
+;;;###autoload
 (defun unpackaged/org-timestamps-in-entry (&optional subtree-p)
   "Return timestamp objects for all Org timestamps in entry.
  If SUBTREE-P is non-nil (interactively, with prefix), search
@@ -493,6 +521,7 @@ search whole subtree."
                           (org-element-timestamp-parser))
                collect (ts-parse-org ts)))))
 
+;;;###autoload
 (cl-defun unpackaged/org-refile-to-datetree (file &key (date (calendar-current-date)) entry)
   "Refile ENTRY or current node to entry for DATE in datetree in FILE."
   (interactive (list (read-file-name "File: " (concat org-directory "/") nil 'mustmatch nil
@@ -524,6 +553,7 @@ ELEMENT should be a list like that returned by `org-element-context'."
     (or (eq type (car parent))
         (unpackaged/org-element-descendant-of type parent))))
 
+;;;###autoload
 (defun unpackaged/org-return-dwim (&optional default)
   "A helpful replacement for `org-return'.  With prefix, call `org-return'.
 
@@ -624,6 +654,7 @@ appropriate.  In tables, insert a new row or end the table."
                            nil 'noerror)
     (goto-char (match-beginning 0))))
 
+;;;###autoload
 (defun unpackaged/org-mark-read-only ()
   "Mark all entries in the buffer tagged \"read_only\" with read-only text properties."
   (interactive)
@@ -642,15 +673,16 @@ appropriate.  In tables, insert a new row or end the table."
        (remove-text-properties (point) (org-end-of-subtree t)
                                '(read-only t))))))
 
+;;;###autoload
 (defun unpackaged/org-sort-multi (keys)
-    "Call `org-sort-entries' with multiple sorting methods specified in KEYS."
-    ;; Message copied from `org-sort-entries'.
-    (interactive (list (read-string "Sort by: [a]lpha  [n]umeric  [p]riority  p[r]operty  todo[o]rder  [f]unc
+  "Call `org-sort-entries' with multiple sorting methods specified in KEYS."
+  ;; Message copied from `org-sort-entries'.
+  (interactive (list (read-string "Sort by: [a]lpha  [n]umeric  [p]riority  p[r]operty  todo[o]rder  [f]unc
          [t]ime [s]cheduled  [d]eadline  [c]reated  cloc[k]ing
          A/N/P/R/O/F/T/S/D/C/K means reversed: ")))
-    (seq-do (lambda (key)
-              (org-sort-entries nil key))
-            (nreverse keys)))
+  (seq-do (lambda (key)
+            (org-sort-entries nil key))
+          (nreverse keys)))
 
 ;;; Packages
 
@@ -679,6 +711,7 @@ NAME may be a string or symbol."
              do (--each descs
                   (package-delete it force)))))
 
+;;;###autoload
 (defun unpackaged/quelpa-use-package-upgrade ()
   "Eval the current `use-package' form with `quelpa-upgrade-p' true.
 Deletes the package first to remove obsolete versions."
@@ -705,6 +738,7 @@ Deletes the package first to remove obsolete versions."
   :bind (:map package-menu-mode-map
               ("t" . #'unpackaged/package-menu-upgrade-package))
   :config
+  ;; I think the `use-package' form takes care of autoloading here.
   (defun unpackaged/package-menu-upgrade-package ()
     "Mark current package for upgrading (i.e. also mark obsolete version for deletion.)"
     (interactive)
@@ -730,6 +764,7 @@ Deletes the package first to remove obsolete versions."
 (defvar unpackaged/flex-fill-paragraph-column nil
   "Last fill column used in command `unpackaged/flex-fill-paragraph'.")
 
+;;;###autoload
 (defun unpackaged/flex-fill-paragraph (&optional unfill)
   "Fill paragraph, incrementing fill column each time this command is repeated.
 When the command is called for the first time in a sequence,
@@ -748,6 +783,7 @@ completely.  This command does not modify the stored value of
     (fill-paragraph)
     (message "Fill column: %s" fill-column)))
 
+;;;###autoload
 (defun unpackaged/iedit-scoped (orig-fn)
   "Call `iedit-mode' with function-local scope, or global scope if called with a universal prefix."
   (interactive)
@@ -757,6 +793,7 @@ completely.  This command does not modify the stored value of
 
 (advice-add #'iedit-mode :around #'unpackaged/iedit-scoped)
 
+;;;###autoload
 (defun unpackaged/iedit-or-flyspell ()
   "Toggle `iedit-mode' or correct previous misspelling with `flyspell', depending on context.
 
@@ -785,10 +822,11 @@ to choose a different correction."
       ;; First correction was not wanted; use popup to choose
       (progn
         (save-excursion
-          (undo))                       ; This doesn't move point, which I think may be the problem.
+          (undo))  ; This doesn't move point, which I think may be the problem.
         (flyspell-region (line-beginning-position) (line-end-position))
         (call-interactively 'flyspell-correct-previous-word-generic)))))
 
+;;;###autoload
 (defun unpackaged/sort-sexps (beg end)
   "Sort sexps in region.
 Comments stay with the code below."
@@ -836,6 +874,7 @@ Comments stay with the code below."
 
 ;;; Regular expressions
 
+;;;###autoload
 (defun unpackaged/query-replace-rx (&rest _)
   "Call `query-replace-regexp', reading regexp in `rx' syntax.
 Automatically wraps in parens and adds `seq' to the beginning of
@@ -851,6 +890,7 @@ the form."
 
 ;;; Version control
 
+;;;###autoload
 (defun unpackaged/magit-status ()
   "Open a `magit-status' buffer and close the other window so only Magit is visible.
 If a file was visited in the buffer that was active when this
@@ -912,6 +952,13 @@ command was called, go to its unstaged changes section."
     (remove-hook 'magit-post-refresh-hook #'unpackaged/magit-log--add-date-headers)
     (advice-remove #'magit-mode-setup #'unpackaged/magit-log--add-date-headers)))
 
+;;;###autoload
+(defun unpackaged/magit-save-buffer-show-status ()
+  "Save buffer and show its changes in `magit-status'."
+  (interactive)
+  (save-buffer)
+  (unpackaged/magit-status))
+
 (use-package smerge-mode
   :after hydra
   :config
@@ -954,6 +1001,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 
 ;;; Web
 
+;;;###autoload
 (cl-defun unpackaged/feed-for-url (url &key (prefer 'atom) (all nil))
   "Return feed URL for web page at URL.
 Interactively, insert the URL at point.  PREFER may be
