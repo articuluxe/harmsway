@@ -1,5 +1,5 @@
+# tic -x -o ~/.terminfo emacs-ansi.ti
 emacs-ansi|Emacs dumb terminal with ANSI color codes,
-# tic -x emacs-ansi.ti
 # (setq comint-terminfo-terminal "emacs-ansi")
      am,
      colors#8,
