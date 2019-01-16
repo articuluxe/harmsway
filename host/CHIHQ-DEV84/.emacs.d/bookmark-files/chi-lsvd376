@@ -4,7 +4,7 @@
 ;;; -*- End Of Bookmark File Format Version Stamp -*-
 (#1=(#("snap-3.18 [chi-lsvd376]" 0 1
       (bmkp-full-record #1# idx 0)
-      1 27
+      1 23
       (bmkp-full-record #1#))
     (tags "3.18" "snap" "chi-lsvd376")
     (buffer-name . "snap<snap-3.18>")
@@ -25,7 +25,7 @@
     (handler . bmkp-jump-dired))
 #1=(#("snap-xmock [chi-lsvd376]" 0 1
       (bmkp-full-record #1# idx 1)
-      1 28
+      1 24
       (bmkp-full-record #1#))
     (tags
      #("chi-lsvd376" 0 1
@@ -52,7 +52,7 @@
     (handler . bmkp-jump-dired))
 #1=(#("snap-3.17 [chi-lsvd376]" 0 1
       (bmkp-full-record #1# idx 2)
-      1 27
+      1 23
       (bmkp-full-record #1#))
     (tags
      #("3.17" 0 1
@@ -79,7 +79,7 @@
     (handler . bmkp-jump-dired))
 #1=(#("snap-3.16 [chi-lsvd376]" 0 1
       (bmkp-full-record #1# idx 3)
-      1 27
+      1 23
       (bmkp-full-record #1#))
     (tags
      #("3.16" 0 1
@@ -106,7 +106,7 @@
     (handler . bmkp-jump-dired))
 #1=(#("snap-master [chi-lsvd376]" 0 1
       (bmkp-full-record #1# idx 4)
-      1 29
+      1 25
       (bmkp-full-record #1#))
     (tags
      #("master" 0 1
@@ -133,7 +133,7 @@
     (handler . bmkp-jump-dired))
 #1=(#("snap-3.15 [chi-lsvd376]" 0 1
       (bmkp-full-record #1# idx 5)
-      1 27
+      1 23
       (bmkp-full-record #1#))
     (tags
      #("3.15" 0 1
