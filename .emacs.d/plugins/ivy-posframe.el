@@ -178,7 +178,7 @@ This variable is useful for `ivy-posframe-read-action' .")
   "Show STR in ivy's posframe."
   (if (not (ivy-posframe-workable-p))
       (ivy-display-function-fallback str)
-    (with-selected-window (ivy--get-window ivy-last)
+    (with-ivy-window
       (posframe-show
        ivy-posframe-buffer
        :font ivy-posframe-font
@@ -287,10 +287,106 @@ selection, non-nil otherwise."
                (setcar actions (1+ action-idx))
                (ivy-set-action actions)))))))
 
+(defun ivy-posframe--window ()
+  "Return the posframe window displaying `ivy-posframe-buffer'."
+  (frame-selected-window
+   (buffer-local-value 'posframe--frame
+                       (get-buffer ivy-posframe-buffer))))
+
+(defvar avy-all-windows)
+(defvar avy-keys)
+(defvar avy-style)
+
 (defun ivy-posframe-avy ()
   "Jump to one of the current ivy candidates."
   (interactive)
-  (message "ivy-posframe: ivy-avy is not supported at the moment."))
+  (let ((avy-pre-action #'ignore))
+    (with-selected-window (ivy-posframe--window)
+      (ivy-avy))))
+
+(declare-function avy--make-backgrounds "avy")
+(declare-function avy-window-list "avy")
+(declare-function avy-read-de-bruijn "avy")
+(declare-function avy-read "avy")
+(declare-function avy-tree "avy")
+(declare-function avy--overlay-post "avy")
+(declare-function avy--remove-leading-chars "avy")
+(declare-function avy-push-mark "avy")
+(declare-function avy--done "avy")
+(defun ivy-posframe--swiper-avy-candidate ()
+  (let* ((avy-all-windows nil)
+         ;; We'll have overlapping overlays, so we sort all the
+         ;; overlays in the visible region by their start, and then
+         ;; throw out non-Swiper overlays or overlapping Swiper
+         ;; overlays.
+         (visible-overlays (cl-sort (with-ivy-window
+                                      (overlays-in (window-start)
+                                                   (window-end)))
+                                    #'< :key #'overlay-start))
+         (min-overlay-start 0)
+         (overlays-for-avy (cl-remove-if-not
+                            (lambda (ov)
+                              (when (and (>= (overlay-start ov)
+                                             min-overlay-start)
+                                         (memq (overlay-get ov 'face)
+                                               swiper-faces))
+                                (setq min-overlay-start (overlay-start ov))))
+                            visible-overlays))
+         (offset (if (eq (ivy-state-caller ivy-last) 'swiper) 1 0))
+         (window (ivy-posframe--window))
+         (candidates (nconc
+                      (mapcar (lambda (ov)
+                                (cons (overlay-start ov)
+                                      (overlay-get ov 'window)))
+                              overlays-for-avy)
+                      (with-current-buffer ivy-posframe-buffer
+                        (save-excursion
+                          (save-restriction
+                            (narrow-to-region (window-start window)
+                                              (window-end window))
+                            (goto-char (point-min))
+                            (forward-line)
+                            (let (cands)
+                              (while (not (eobp))
+                                (push (cons (+ (point) offset) window)
+                                      cands)
+                                (forward-line))
+                              cands)))))))
+    (unwind-protect
+        (prog2
+            (avy--make-backgrounds
+             (append (avy-window-list)
+                     (list (ivy-state-window ivy-last))))
+            (if (eq avy-style 'de-bruijn)
+                (avy-read-de-bruijn candidates avy-keys)
+              (avy-read (avy-tree candidates avy-keys)
+                        #'avy--overlay-post
+                        #'avy--remove-leading-chars))
+          (avy-push-mark))
+      (avy--done))))
+
+(declare-function avy-action-goto "avy")
+(declare-function avy-candidate-beg "avy")
+(defun ivy-posframe-swiper-avy ()
+  "Jump to one of the current swiper candidates."
+  (interactive)
+  (unless (require 'avy nil 'noerror)
+    (error "Package avy isn't installed"))
+  (unless (string= ivy-text "")
+    (let ((candidate (ivy-posframe--swiper-avy-candidate)))
+      (if (eq (cdr candidate) (ivy-posframe--window))
+          (let ((cand-text (with-current-buffer ivy-posframe-buffer
+                             (save-excursion
+                               (goto-char (car candidate))
+                               (buffer-substring-no-properties
+                                (line-beginning-position)
+                                (line-end-position))))))
+            (ivy-set-index (cl-position cand-text ivy--old-cands :test #'string=))
+            (ivy--exhibit)
+            (ivy-done)
+            (ivy-call))
+        (ivy-quit-and-run
+          (avy-action-goto (avy-candidate-beg candidate)))))))
 
 (defun ivy-posframe--minibuffer-setup (orig-func)
   "Advice function of `ivy--minibuffer-setup'."
@@ -309,9 +405,12 @@ selection, non-nil otherwise."
   (interactive)
   (require 'ivy)
   (ivy-posframe-setup)
-  (define-key ivy-minibuffer-map (kbd "C-M-a") 'ivy-posframe-read-action)
-  (define-key ivy-minibuffer-map (kbd "M-o") 'ivy-posframe-dispatching-done)
-  (define-key ivy-minibuffer-map (kbd "C-'") 'ivy-posframe-avy)
+  (define-key ivy-minibuffer-map
+    [remap ivy-read-action] 'ivy-posframe-read-action)
+  (define-key ivy-minibuffer-map
+    [remap ivy-dispatching-done] 'ivy-posframe-dispatching-done)
+  (define-key ivy-minibuffer-map [remap ivy-avy] 'ivy-posframe-avy)
+  (define-key ivy-minibuffer-map [remap swiper-avy] 'ivy-posframe-swiper-avy)
   (advice-add 'ivy--minibuffer-setup :around #'ivy-posframe--minibuffer-setup)
   (message "ivy-posframe is enabled, disabling it need to reboot emacs."))
 
