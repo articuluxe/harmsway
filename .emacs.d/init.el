@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-01-16 09:59:57 dan.harms>
+;; Modified Time-stamp: <2019-01-16 10:16:24 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1842,6 +1842,8 @@ Only one letter is shown, the first that applies."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; pack ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package pack
+  :init
+  (setq pack-silence t)
   :config
   (with-eval-after-load 'dired
     (define-key dired-mode-map "P" #'pack-dired-dwim)))
