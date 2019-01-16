@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-01-11 09:41:05 dan.harms>
+;; Modified Time-stamp: <2019-01-16 09:59:57 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -772,6 +772,9 @@ line."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; which-key ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package which-key
   :demand 1
+  :init
+  (setq which-key-idle-delay 2.0)
+  (setq which-key-idle-secondary-delay 1.0)
   :config
   (which-key-mode 1))
 
