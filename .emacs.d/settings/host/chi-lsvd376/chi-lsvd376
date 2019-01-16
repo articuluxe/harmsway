@@ -1,9 +1,9 @@
 ;; -*- Mode: Emacs-Lisp -*-
-;;; chihq-dev-02d-1 --- host file
-;; Copyright (C) 2015-2018  Dan Harms (dan.harms)
+;;; chi-lsvd376 --- host file
+;; Copyright (C) 2015-2019  Dan Harms (dan.harms)
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Monday, March 14, 2016
-;; Modified Time-stamp: <2018-12-31 13:38:17 dan.harms>
+;; Modified Time-stamp: <2019-01-16 10:45:45 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: config
 
@@ -77,4 +77,4 @@
 (setq-default flycheck-gcc-language-standard "c++14")
 (setq-default flycheck-clang-language-standard "c++14")
 
-;; chihq-dev-02d-1 ends here
+;; chi-lsvd376 ends here
