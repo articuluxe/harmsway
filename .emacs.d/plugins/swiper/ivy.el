@@ -1,10 +1,10 @@
 ;;; ivy.el --- Incremental Vertical completYon -*- lexical-binding: t -*-
 
-;; Copyright (C) 2015-2018  Free Software Foundation, Inc.
+;; Copyright (C) 2015-2019  Free Software Foundation, Inc.
 
 ;; Author: Oleh Krehel <ohwoeowho@gmail.com>
 ;; URL: https://github.com/abo-abo/swiper
-;; Version: 0.10.0
+;; Version: 0.11.0
 ;; Package-Requires: ((emacs "24.1"))
 ;; Keywords: matching
 
@@ -879,6 +879,15 @@ When t, it is the same as if the user were prompted and selected the candidate
 by calling the default action.  This variable has no use unless the collection
 contains a single candidate.")
 
+(defun ivy--directory-enter ()
+  (let (dir)
+    (when (and
+           (> ivy--length 0)
+           (not (string= (ivy-state-current ivy-last) "./"))
+           (setq dir (ivy-expand-file-if-directory (ivy-state-current ivy-last))))
+      (ivy--cd dir)
+      (ivy--exhibit))))
+
 (defun ivy--directory-done ()
   "Handle exit from the minibuffer when completing file names."
   (let (dir)
@@ -887,12 +896,7 @@ contains a single candidate.")
        (setq dir (concat ivy-text (expand-file-name ivy--directory)))
        (ivy--cd dir)
        (ivy--exhibit))
-      ((and
-        (> ivy--length 0)
-        (not (string= (ivy-state-current ivy-last) "./"))
-        (setq dir (ivy-expand-file-if-directory (ivy-state-current ivy-last))))
-       (ivy--cd dir)
-       (ivy--exhibit))
+      ((ivy--directory-enter))
       ((unless (string= ivy-text "")
          (let ((file (expand-file-name
                       (if (> ivy--length 0) (ivy-state-current ivy-last) ivy-text)
@@ -1801,10 +1805,11 @@ candidates is updated after each input by calling COLLECTION.
 CALLER is a symbol to uniquely identify the caller to `ivy-read'.
 It is used, along with COLLECTION, to determine which
 customizations apply to the current completion session."
-  (let ((extra-actions (delete-dups
+  (let ((extra-actions (cl-delete-duplicates
                         (append (plist-get ivy--actions-list t)
                                 (plist-get ivy--actions-list this-command)
-                                (plist-get ivy--actions-list caller)))))
+                                (plist-get ivy--actions-list caller))
+                        :key #'car :test #'equal)))
     (when extra-actions
       (setq action
             (cond ((functionp action)
@@ -2554,7 +2559,7 @@ Insert .* between each char."
                     (apply #'concat
                            (cl-mapcar
                             #'concat
-                            (cons "" (cdr (mapcar (lambda (c) (format "[^%c]*" c))
+                            (cons "" (cdr (mapcar (lambda (c) (format "[^%c\n]*" c))
                                                   lst)))
                             (mapcar (lambda (x) (format "\\(%s\\)" (regexp-quote (char-to-string x))))
                                     lst))))
@@ -3813,9 +3818,16 @@ BUFFER may be a string or nil."
                             #'counsel-find-file
                           #'find-file))))
 
+(defun ivy--kill-buffer-or-virtual (buffer)
+  (if (get-buffer buffer)
+      (kill-buffer buffer)
+    (setq recentf-list (delete
+                        (cdr (assoc buffer ivy--virtual-buffers))
+                        recentf-list))))
+
 (defun ivy--kill-buffer-action (buffer)
   "Kill BUFFER."
-  (kill-buffer buffer)
+  (ivy--kill-buffer-or-virtual buffer)
   (unless (buffer-live-p (ivy-state-buffer ivy-last))
     (setf (ivy-state-buffer ivy-last) (current-buffer)))
   (setq ivy--index 0)
@@ -3830,8 +3842,7 @@ BUFFER may be a string or nil."
   "Kill the current buffer in `ivy-switch-buffer'."
   (interactive)
   (let ((bn (ivy-state-current ivy-last)))
-    (when (get-buffer bn)
-      (kill-buffer bn))
+    (ivy--kill-buffer-or-virtual bn)
     (unless (buffer-live-p (ivy-state-buffer ivy-last))
       (setf (ivy-state-buffer ivy-last)
             (with-ivy-window (current-buffer))))

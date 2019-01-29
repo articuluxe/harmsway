@@ -4,8 +4,8 @@
 
 ;; Author: Oleh Krehel <ohwoeowho@gmail.com>
 ;; URL: https://github.com/abo-abo/swiper
-;; Version: 0.10.0
-;; Package-Requires: ((emacs "24.1") (ivy "0.9.0"))
+;; Version: 0.11.0
+;; Package-Requires: ((emacs "24.1") (ivy "0.11.0"))
 ;; Keywords: matching
 
 ;; This file is part of GNU Emacs.
@@ -222,7 +222,9 @@
                              (buffer-substring-no-properties
                               (line-beginning-position)
                               (line-end-position)))))
-            (ivy-set-index (cl-position cand-text ivy--old-cands :test #'string=))
+            (ivy-set-index (cl-position-if
+                            (lambda (x) (cl-search x cand-text))
+                            ivy--old-cands))
             (ivy--exhibit)
             (ivy-done)
             (ivy-call))

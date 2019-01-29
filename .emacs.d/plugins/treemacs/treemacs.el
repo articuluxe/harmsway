@@ -5,7 +5,7 @@
 ;; Author: Alexander Miller <alexanderm@web.de>
 ;; Package-Requires: ((emacs "25.2") (cl-lib "0.5") (dash "2.11.0") (s "1.10.0") (f "0.11.0") (ace-window "0.9.0") (pfuture "1.2") (hydra "0.13.2") (ht "2.2"))
 ;; Homepage: https://github.com/Alexander-Miller/treemacs
-;; Version: 2.3
+;; Version: 2.4
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -58,7 +58,7 @@
 
 (defconst treemacs-version
   (eval-when-compile
-    (format "v2.3-%s @ %s"
+    (format "v2.4-%s @ %s"
             (format-time-string "%Y.%m.%d" (current-time))
             emacs-version)))
 
@@ -208,7 +208,7 @@ treemacs buffer for this frame."
   (insert "#+TITLE: Edit Treemacs Workspaces & Projects\n")
   (when treemacs-show-edit-workspace-help
     (insert "# Call ~treemacs-finish-edit~ when done.\n")
-    (insert "# [[http://www.THERE-IS-NO-DOCUMENTATION-YET.com][Click here for detailed documentation.]]\n\n"))
+    (insert "# [[https://github.com/Alexander-Miller/treemacs#conveniently-editing-your-projects-and-workspaces][Click here for detailed documentation.]]\n\n"))
   (insert-file-contents treemacs-persist-file)
   (with-no-warnings
     (outline-show-all))
