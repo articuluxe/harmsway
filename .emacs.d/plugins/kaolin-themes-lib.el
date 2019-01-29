@@ -272,8 +272,7 @@
     (cerulean1 "#3f66ba")
     (cerulean2 "#2d4b8c")
     (cerulean3 "#4c7de8")
-    ;; (cerulean4 "#536a9d")
-    (cerulean4 "#819fef")
+    (cerulean4 "#738FD7")
     (cerulean5 "#14171e")
     (cerulean6 "#2E3340")
     (cerulean7 "#687184") ; old grayish-blue
@@ -838,7 +837,6 @@
     (magit-item-highlight            (:background bg3))
     (magit-blame-heading             (:background bg3 :foreground var))
 
-
     (magit-branch                 (:foreground cyan1))
     (magit-branch-local           (:foreground cyan1))
     (magit-branch-remote          (:foreground aquamarine1))
@@ -862,7 +860,7 @@
     (magit-log-date               (:foreground var))
     (magit-log-graph              (:foreground str))
 
-    (magit-process-ok             (:foreground spring-green3 :bold bold))
+    (magit-process-ok             (:foreground done :bold bold))
     (magit-process-ng             (:foreground warning :bold bold))
 
     (magit-reflog-amend           (:foreground violet1))
@@ -892,7 +890,6 @@
 
     (magit-popup-key              (:foreground keysym))
 
-
     ;; Flycheck
     (flycheck-info           (:underline (:style underline-style :color done)))
     (flycheck-warning        (:underline (:style underline-style :color warning)))
@@ -908,7 +905,7 @@
     ;; Hydra
     (hydra-face-red      (:foreground red1))
     ;; TODO: (??) change to teal
-    (hydra-face-teal     (:foreground cyan3))
+    (hydra-face-teal     (:foreground teal0))
     (hydra-face-blue     (:foreground azure3))
     (hydra-face-pink     (:foreground pink1))
     (hydra-face-amaranth (:foreground magenta4))
@@ -930,6 +927,7 @@
     (mu4e-view-url-number-face (:foreground type))
     (mu4e-cited-1-face         (:foreground fg2))
     (mu4e-cited-7-face         (:foreground fg3))
+
     ;; ffap
     (ffap (:foreground fg4))
 
@@ -942,7 +940,7 @@
     (js2-jsdoc-html-tag-name      (:foreground keyword))
     (js2-external-variable        (:foreground type))
     (js2-function-param           (:foreground const))
-    (js2-error                    (:underline (:color red0 :style underline-style)))
+    (js2-error                    (:underline (:color err :style underline-style)))
     (js2-function-call            (:foreground functions))
     (js2-object-property          (:foreground num))
     (js2-jsdoc-value              (:foreground str))
@@ -974,6 +972,7 @@
     ;; Latex/Auctex
     (font-latex-warning-face      (:inherit 'warning))
     (font-latex-string-face       (:inherit 'font-lock-string-face))
+    ;; TODO: change colors to vars
     (font-latex-math-face         (:foreground purple4))
     (font-latex-sedate-face       (:foreground capri4))
     (font-latex-script-char-face  (:foreground purple4))
@@ -1061,7 +1060,9 @@
    (ediff-odd-diff-B (:background bg4))
    (ediff-odd-diff-C (:background bg4))
 
-    ;; TODO Imenu list
+   ;; TODO: calfw
+
+    ;; Imenu list
     ;; (imenu-list-entry-subalist-face-0 (:inherit 'font-lock-keyword-face))
     (imenu-list-entry-face   (:inherit 'font-lock-keyword-name-face))
     (imenu-list-entry-face-0 (:inherit 'font-lock-keyword-face :height 1.1))
@@ -1102,6 +1103,7 @@
     (popup-menu-selection-face (:background tooltip-hl-bg :foreground tooltip-hl-fg :bold bold))
     (popup-tip-face            (:background tooltip-hl-bg :foreground fg1 :bold bold))
 
+    ;; TODO: rework; mb add term0-16 vars
     ;; Terminal
     (term               (:background bg1 :foreground fg1))
     (term-color-black   (:foreground black1))
@@ -1128,7 +1130,7 @@
     (eshell-ls-unreadable (:foreground var))
 
     ;; Whitespace mode
-    ;; TODO: Add variant for light themes
+    ;; TODO: rework
     (whitespace-empty            (:background spring-green6 :foreground fg4))
     (whitespace-line             (:background bg3 :foreground warning))
     (whitespace-newline          (:foreground cyan3))
@@ -1247,6 +1249,7 @@
     (tuareg-font-lock-interactive-output-face (:inherit 'default))
 
     ;; Helm
+    ;; TODO: rework
     ;; TODO: (!!) find helm status line color that based on var face
     ;; TODO: update faces
     ;; TODO: light theme: helm-find-files header

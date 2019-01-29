@@ -30,11 +30,12 @@
 ;; * ivy-posframe README                                :README:
 
 ;; ** What is ivy-posframe
-;; ivy-posframe is a ivy extension, which let ivy use posframe
-;; to show its candidate menu.
 
-;; NOTE: ivy-posframe requires Emacs 26 and do not support
-;; mouse click.
+;; ivy-posframe is a ivy extension, which let ivy use posframe to show
+;; its candidate menu.
+
+;; NOTE: ivy-posframe requires Emacs 26 and do not support mouse
+;; click.
 
 ;; ** Display functions
 
@@ -50,31 +51,43 @@
 ;;    [[./snapshots/ivy-posframe-display-at-point.gif]]
 
 ;; ** How to enable ivy-posframe
-;; 1. Global mode
-;;    #+BEGIN_EXAMPLE
-;;    (require 'ivy-posframe)
-;;    (setq ivy-display-function #'ivy-posframe-display)
-;;    ;; (setq ivy-display-function #'ivy-posframe-display-at-frame-center)
-;;    ;; (setq ivy-display-function #'ivy-posframe-display-at-window-center)
-;;    ;; (setq ivy-display-function #'ivy-posframe-display-at-frame-bottom-left)
-;;    ;; (setq ivy-display-function #'ivy-posframe-display-at-window-bottom-left)
-;;    ;; (setq ivy-display-function #'ivy-posframe-display-at-point)
-;;    (ivy-posframe-enable)
-;;    #+END_EXAMPLE
-;; 2. Per-command mode.
-;;    #+BEGIN_EXAMPLE
-;;    (require 'ivy-posframe)
-;;    ;; Different command can use different display function.
-;;    (push '(counsel-M-x . ivy-posframe-display-at-window-bottom-left) ivy-display-functions-alist)
-;;    (push '(complete-symbol . ivy-posframe-display-at-point) ivy-display-functions-alist)
-;;    (ivy-posframe-enable)
-;;    #+END_EXAMPLE
-;; 3. Fallback mode
-;;    #+BEGIN_EXAMPLE
-;;    (require 'ivy-posframe)
-;;    (push '(t . ivy-posframe-display) ivy-display-functions-alist)
-;;    (ivy-posframe-enable)
-;;    #+END_EXAMPLE
+;; *** Global mode
+;; #+BEGIN_EXAMPLE
+;; (require 'ivy-posframe)
+;; (setq ivy-display-function #'ivy-posframe-display)
+;; ;; (setq ivy-display-function #'ivy-posframe-display-at-frame-center)
+;; ;; (setq ivy-display-function #'ivy-posframe-display-at-window-center)
+;; ;; (setq ivy-display-function #'ivy-posframe-display-at-frame-bottom-left)
+;; ;; (setq ivy-display-function #'ivy-posframe-display-at-window-bottom-left)
+;; ;; (setq ivy-display-function #'ivy-posframe-display-at-point)
+;; (ivy-posframe-enable)
+;; #+END_EXAMPLE
+;; *** Per-command mode.
+;; #+BEGIN_EXAMPLE
+;; (require 'ivy-posframe)
+;; ;; Different command can use different display function.
+;; (push '(counsel-M-x . ivy-posframe-display-at-window-bottom-left) ivy-display-functions-alist)
+;; (push '(complete-symbol . ivy-posframe-display-at-point) ivy-display-functions-alist)
+;; (push '(swiper . ivy-posframe-display-at-point) ivy-display-functions-alist)
+;; (ivy-posframe-enable)
+;; #+END_EXAMPLE
+;;
+;; NOTE: Using swiper as example: swiper's display function *only*
+;; take effect when you call swiper command with global keybinding, if
+;; you call swiper command with 'M-x' (for example: counsel-M-x),
+;; counsel-M-x's display function will take effect instead of
+;; swiper's.
+
+;; The value of variable `this-command' will be used as the search key
+;; by ivy to find display function in `ivy-display-functions-alist',
+;; "C-h v this-command" is a good idea.
+
+;; *** Fallback mode
+;; #+BEGIN_EXAMPLE
+;; (require 'ivy-posframe)
+;; (push '(t . ivy-posframe-display) ivy-display-functions-alist)
+;; (ivy-posframe-enable)
+;; #+END_EXAMPLE
 
 ;; ** Tips
 
@@ -178,7 +191,7 @@ This variable is useful for `ivy-posframe-read-action' .")
   "Show STR in ivy's posframe."
   (if (not (ivy-posframe-workable-p))
       (ivy-display-function-fallback str)
-    (with-ivy-window
+    (with-selected-window (ivy--get-window ivy-last)
       (posframe-show
        ivy-posframe-buffer
        :font ivy-posframe-font
@@ -287,6 +300,13 @@ selection, non-nil otherwise."
                (setcar actions (1+ action-idx))
                (ivy-set-action actions)))))))
 
+(defun ivy-posframe--avy-action (pt)
+  "Finish ivy session with the candidate at PT."
+  (with-current-buffer ivy-posframe-buffer
+    (ivy--done
+     (substring-no-properties
+      (nth (- (line-number-at-pos pt) 2) ivy--old-cands)))))
+
 (defun ivy-posframe--window ()
   "Return the posframe window displaying `ivy-posframe-buffer'."
   (frame-selected-window
@@ -295,14 +315,46 @@ selection, non-nil otherwise."
 
 (defvar avy-all-windows)
 (defvar avy-keys)
+(defvar avy-keys-alist)
 (defvar avy-style)
-
+(defvar avy-styles-alist)
+(defvar avy-action)
+(declare-function avy--process "avy")
+(declare-function avy--style-fn "avy")
 (defun ivy-posframe-avy ()
   "Jump to one of the current ivy candidates."
   (interactive)
-  (let ((avy-pre-action #'ignore))
-    (with-selected-window (ivy-posframe--window)
-      (ivy-avy))))
+  (unless (require 'avy nil 'noerror)
+    (error "Package avy isn't installed"))
+  (unless (boundp 'avy-pre-action)
+    (error "A newer version of avy is required for this command"))
+  (let* ((avy-all-windows nil)
+         (avy-keys (or (cdr (assq 'ivy-avy avy-keys-alist))
+                       avy-keys))
+         (avy-style (or (cdr (assq 'ivy-avy
+                                   avy-styles-alist))
+                        avy-style))
+         ;; prevent default pre action, which calls
+         ;; `select-frame-set-input-focus', deselecting the minibuffer and
+         ;; causing `ivy-posframe-cleanup' to run prematurely
+         (avy-pre-action #'ignore)
+         (window (ivy-posframe--window))
+         candidates)
+    (with-current-buffer ivy-posframe-buffer
+      (save-excursion
+        (save-restriction
+          (narrow-to-region
+           (window-start window)
+           (window-end window))
+          (goto-char (point-min))
+          (forward-line)
+          (while (< (point) (point-max))
+            (push (cons (point) window) candidates)
+            (forward-line)))))
+    (setq avy-action #'ivy-posframe--avy-action)
+    (avy--process
+     (nreverse candidates)
+     (avy--style-fn avy-style))))
 
 (declare-function avy--make-backgrounds "avy")
 (declare-function avy-window-list "avy")

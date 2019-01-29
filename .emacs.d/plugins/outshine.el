@@ -3,12 +3,15 @@
 ;; Copyright (c) 2013-2019 Thorsten Jolitz and contributors.
 
 ;; Author: Thorsten Jolitz
+;; Maintainer: Thibault Polge <thibault@thb.lt>
 ;; Maintainer: Adam Porter <adam@alphapapa.net>
 ;; Version: 3.1-pre
 ;; URL: https://github.com/alphapapa/outshine
 ;; Package-Requires: ((outorg "2.0") (cl-lib "0.5"))
 ;; Licence: GPL2+
-;; Keywords: convenience
+;; Keywords: convenience, outlines, Org
+
+;;; License:
 
 ;; This file is not part of GNU Emacs.
 
@@ -25,233 +28,11 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-;; FIXME: Enable and test with lexical-binding.
-
 ;;; Commentary:
 
-;;;;; About outshine
-
-;; Outshine attempts to bring the look&feel of Org-mode to the (GNU
-;; Emacs) world outside of the Org major-mode. It is an extension of
-;; outline-minor-mode (Org-mode itself derives from outline-mode),
-;; that should act as a silent replacement of Outline.  Just change
-;; all your calls to `outline-minor-mode' into `outshine-mode'.
-
-;; Outshine is major-mode agnostic. At least in theory, it should work
-;; out-of-the-box with all major-modes, even those not yet written, as
-;; long as these modes have comment syntax defined. In real life there
-;; are some major-modes where outshine just works, others that need
-;; some minor tweaks to make outshine work, and a few that need
-;; special handling.
-
-;; An outshine file is structured just like an org file, only that the
-;; headlines are outcommented with the current major-mode's comment
-;; syntax. We call these outcommented org headers 'outshine
-;; headers'. The different headline levels are fontified like in
-;; Org-mode, and many of the outline-navigation, visibility cycling
-;; and structure editing commands known from Org-mode work in outshine
-;; too. An Org-mode user will feel right at home in an outshine
-;; buffer, the look&feel should be pretty similar, only the
-;; keybindings differ. Since outshine extends a minor-mode it has to
-;; avoid conflicts with major-mode keymaps by using a rather unusual
-;; prefix that is still easy to type (M-#). But the Org-mode
-;; speed-commands have been ported to outshine too, and they use
-;; exactly the same (one-key) bindings like in Org-mode.
-
-;; There is a distinction between the library 'outshine.el' and the
-;; 'Outshine Project' (or 'Outshine Suite') which contains 3
-;; libraries:
-
-;;  - outshine.el :: The core library.  To use it, simply call
-;;                   `outshine-mode' instead of `outline-minor-mode'.
-
-;;  - outorg.el :: Major-mode for toggling between the
-;;                 programming-mode view and the org-mode view of
-;;                 outshine buffers, i.e. buffers structured with
-;;                 outshine headers that have outline-minor-mode with
-;;                 outshine extensions activated.
-
-;;  - navi-mode.el :: Occur-based major-mode for super-fast
-;;                    buffer-navigation and buffer-remote-control with
-;;                    one-key-bindings from an associated read-only
-;;                    *Navi* buffer. Navi-mode allows to have the
-;;                    (outshine- or org-) buffer overview side by side
-;;                    with the buffer details, and it gives many
-;;                    different kinds of overviews (these views are
-;;                    actually customizable). With point in the *Navi*
-;;                    overview buffer, many actions in the associated
-;;                    original (outshine- or org-) buffer can be
-;;                    triggered without leaving the *Navi* buffer.
-
-
-;; Note that there is a fourth library 'poporg.el' from François
-;; Pinard, which allows to edit function docstrings in temporary
-;; Org-mode buffers and thus nicely complements 'outorg.el'.
-
-;; Together these libraries enable a lightweight kind of 'literate
-;; programming' that turns the usual implementation of the concept
-;; upside-down: instead of using a text-mode as default and taking
-;; extra action to edit and execute source-code, with Outshine the
-;; programming-mode is the default mode and the text-mode
-;; (i.e. Org-mode) only called when needed. This is much simpler, it
-;; treats Org-mode and Programming-mode simply as two different views
-;; on the same (outshine) file while making it easy to switch between
-;; these views.
-
-;;;;; History and Credits
-
-;; The outshine.el library merges, modifies and extends two existing
-;; extension-libraries for `outline' (minor) mode: `outline-magic' (by
-;; Carsten Dominik) and `out-xtra' (by Per Abrahamsen). It offers all the
-;; functionality of `outline-magic' (with some tiny changes and fixes)
-;; and parts of the functionality of `out-xtra', together with many new
-;; features and ideas.
-
-;; See `outline-magic.el' (https://github.com/tj64/outline-magic) for
-;; detailled instructions on the usage of the additional outline
-;; functions introduced by `outline-magic'.
-
-;; Furthermore, `outshine.el' includes some functions and keybindings
-;; from `outline-mode-easy-bindings'
-;; (http://emacswiki.org/emacs/OutlineMinorMode).  Unfortunately, no
-;; author is given for that library, so I cannot credit the person who
-;; wrote it.
-
-;;;;; Installation
-
-;; There are three ways to get outshine.el (and the other Outshine
-;; libraries):
-
-;;  1. Clone the git repo or fork them on github
-;;     (https://github.com/alphapapa/outshine)
-
-;;  2. Use the package manager to install them (from MELPA).
-
-;;  3. Simply download the raw .el files from github and copy them to
-;;     a location where Emacs can find them. This is not really
-;;     recommended, since easy updating is not possible this way.
-
-;; Note that since version 2.0, outshine.el depends on outorg.el and
-;; navi-mode.el depends on both, outshine.el and outorg.el. So the order
-;; of installation should be
-
-;;  1. outorg
-;;  2. outshine
-;;  3. navi-mode (optional)
-
-;; To get started, simply start Outshine with `M-x outshine-mode RET'
-
-;; Add this to your init file if you always want outshine for emacs-lisp
-;; buffers (recommended):
-
-;; : #+begin_src emacs-lisp
-;; :   (add-hook 'emacs-lisp-mode-hook 'outshine-mode)
-;; : #+end_src
-
-;; It makes sense to add 'outline-minor-mode' to the hooks of other
-;; major-modes too, e.g.
-
-;; : #+begin_src emacs-lisp
-;; :  (add-hook 'LaTeX-mode-hook 'outshine-mode)
-;; :  (add-hook 'picolisp-mode-hook 'outshine-mode)
-;; :  (add-hook 'clojure-mode-hook 'outshine-mode)
-;; :  (add-hook 'ess-mode-hook 'outshine-mode)
-;; :  (add-hook 'ledger-mode-hook 'outshine-mode)
-;; :  (add-hook 'message-mode-hook 'outshine-mode)
-;; : #+end_src
-
-;; or whatever your favorite Emacs modes are. Then you can structure and
-;; handle all your source-files just like Org files, allowing for a
-;; uniform approach to file structuring independent from the (text or
-;; programming) mode.
-
-;; Outline(-minor)-mode comes with a rather unusable prefix key
-;; out-of-the-box. You need to set the outshine prefix (M-#) in your init
-;; file before (!) outline-mode is loaded to enable the outshine
-;; keybindings:
-
-;; : #+begin_src emacs-lisp
-;; :  (defvar outline-minor-mode-prefix "\M-#")
-;; : #+end_src
-
-;;;;; Usage
-
-;;;;;; Basic Usage
-
-;; The outshine.el extensions to outline-minor-mode aim to make its
-;; use more similar to Org-mode. Given a correctly structured outshine
-;; buffer, outline-navigation, structure-editing and visibility
-;; cycling with outshine should make an Org-mode user feel right at
-;; home.
-
-;; Try C-h m (describe-mode) and C-h b (describe-bindings) in an
-;; outshine buffer to find out more about the available functions and
-;; their keybindings.
-
-;; The very useful Org speed-commands have been ported to outshine,
-;; here a quote from the
-;; [[http://orgmode.org/manual/Speed-keys.html][Org-mode manual]] that
-;; describes what they do:
-
-;; #+BEGIN_QUOTE
-;;  Single keys can be made to execute commands when the cursor is at
-;;  the beginning of a headline, i.e., before the first star.
-;; #+END_QUOTE
-
-;; To activate speed-keys, put this in your init-file:
-
-;; : #+BEGIN_SRC emacs-lisp
-;; :  (setq outshine-use-speed-commands t)
-;; : #+END_SRC
-
-;; Call `outshine-speed-command-help' to get an overview over the
-;; available functionality and the keybindings.
-
-;; Note that outshine works with 'imenu' (`outshine-imenu') and has
-;; extra functionality to show the number of hidden lines in folded
-;; headlines (`outshine-show-hidden-lines-cookies'). There are a few
-;; utility commands for latex-mode too
-;; (`outshine-latex-insert-header',
-;; `outshine-latex-insert-headers-in-buffer' and
-;; `outshine-TeX-command-region-on-subtree')
-
-;;;;;; Extended Usage (outshine-use-outorg)
-
-;; Outshine's basic usage is mostly based on its own implementation,
-;; i.e. code from existing extensions to outline-minor-mode, new code
-;; written for outshine, as well as code ported from Org-mode to
-;; outshine.
-
-;; Its extended use aims to make outshine headers more 'intelligent',
-;; i.e. make them know about TODO items, tags, properties, dates and
-;; times. This is done via the `outshine-use-outorg' function that
-;; uses outorg to first convert an outshine buffer/subtree to
-;; org-mode, then call an Org function on it, and finally convert the
-;; edited buffer/subtree back to outshine. The outshine-use-outorg
-;; concept turns outshine into a kind of org-minor-mode without
-;; actually reimplementing Org functionality, just by reusing it with
-;; the help of outorg.
-
-;; This is still work in progress. Not all Org commands make sense in
-;; an outshine buffer. Not all work out-of-the-box. Since there are
-;; many Org commands, it will take some time to check them one-by-one
-;; and filter out those that make sense with outshine (and fix them if
-;; neccessary).
-
-;;;;; Emacs Version
-
-;; Outshine works with GNU Emacs 24 or later. No attempts of testing
-;; with older versions or other types of Emacs have been made (yet).
-
-;;;; ChangeLog
-
-;; | date            | author(s)              | version |
-;; |-----------------+------------------------+---------|
-;; | <2018-12-30 Su> | Thibault Polge         |     3.0 |
-;; | <2018-10-24 We> | (Various contributors) |     2.1 |
-;; | <2014-09-20 Sa> | Thorsten Jolitz        |     2.0 |
-;; | <2013-05-03 Fr> | Thorsten Jolitz        |     1.0 |
-;; | <2013-02-20 Mi> | Thorsten Jolitz        |     0.9 |
+;; Outshine attempts to bring the look & feel of Org-mode to the (GNU
+;; Emacs) world outside of the Org major-mode.  For more information,
+;; please see the readme file in the git repo.
 
 ;;; Code:
 
@@ -763,7 +544,7 @@ certain level is calculated. "
 nil    Never
 white  Only in completely white lines
 t      Everywhere except in headlines"
-  :group 'outlines
+  :group 'outshine
   :type '(choice (const :tag "Never" nil)
                  (const :tag "Only in completely white lines" white)
                  (const :tag "Everywhere except in headlines" t)
@@ -827,13 +608,15 @@ t      Everywhere except in headlines"
   "Suppress visibility-state-change messages when non-nil.")
 
 (defcustom outshine-org-style-global-cycling-at-bob-p nil
-  "Cycle globally if cursor is at beginning of buffer and not at a headline.
+  "Configure the behavior of `outshine-cycle` on beginning of buffer.
 
-This makes it possible to do global cycling without having to use
-S-TAB or C-u TAB.  For this special case to work, the first line
-of the buffer must not be a headline -- it may be empty or some
-other text. When this option is nil, don't do anything special at
-the beginning of the buffer."
+When the point is on a heading and at the beginning of the
+buffer (that is, when the first character of the buffer is the
+start of a headline, and the point is on it), the behavior of
+`outshine-cycle' is controlled by this variable:
+
+ - If nil, cycle the heading normally like in Org mode.
+ - Otherwise, cycle the entire buffer, ignoring the heading at point."
   :group 'outshine
   :type 'boolean)
 
@@ -974,20 +757,20 @@ Don't use this function, the public interface is
 
   ;; Advise org-store-log-note
   (defadvice org-store-log-note (around org-store-log-note-around activate)
+    ;; FIXME: Try to use `outshine-use-outorg' to do this instead of advice.
     "Outcomment inserted log-note in Outshine buffers."
-    (when outshine-mode
-      (let ((outshine-log-note-beg-marker
-             ;; stay before inserted text
-             (copy-marker (outshine-mimic-org-log-note-marker) nil))
-            (outshine-log-note-end-marker
-             ;; stay after inserted text
-             (copy-marker (outshine-mimic-org-log-note-marker) t)))
-        ad-do-it
-        (unless (derived-mode-p 'org-mode 'org-agenda-mode)
-          (outshine-comment-region outshine-log-note-beg-marker
-                                   outshine-log-note-end-marker))
-        (move-marker outshine-log-note-beg-marker nil)
-        (move-marker outshine-log-note-end-marker nil))))
+    (let ((outshine-log-note-beg-marker
+           ;; stay before inserted text
+           (copy-marker (outshine-mimic-org-log-note-marker) nil))
+          (outshine-log-note-end-marker
+           ;; stay after inserted text
+           (copy-marker (outshine-mimic-org-log-note-marker) t)))
+      ad-do-it
+      (unless (derived-mode-p 'org-mode 'org-agenda-mode)
+        (outshine-comment-region outshine-log-note-beg-marker
+                                 outshine-log-note-end-marker))
+      (move-marker outshine-log-note-beg-marker nil)
+      (move-marker outshine-log-note-end-marker nil)))
 
   ;; Compute basic outline regular expressions
   (outshine-set-outline-regexp-base)
@@ -1522,67 +1305,6 @@ COMMANDS is a list of alternating OLDDEF NEWDEF command names."
 ;;        'outshine-hide-comment-subtrees)
 
 
-;;;;; Use outorg functions
-
-;; (defun outshine-pt-rgxps ()
-;;   "Return list with 5 regexps, like (rgx0 rgx1 rgx2 rgx3 rgx4).
-
-;; These regexps, if non-nil, match
-;;  - rgx0 :: buffer-substring from bol to point
-;;  - rgx1 :: buffer-substring from bol of previous line to point
-;;  - rgx2 :: buffer-substring from bol of second previous line to point
-;;  - rgx3 :: buffer-substring from bol of third previous line to point
-;;  - rgx4 :: buffer-substring from bol of fourth previous line to point"
-;;   (let ((cur-buf (current-buffer))
-;;         (buf-mode major-mode)
-;;         beg end rgx0 rgx1 rgx2 rgx3 rgx4)
-;;     (save-excursion
-;;       (save-restriction
-;;         (widen)
-;;         (setq end (point))
-;;         (save-excursion
-;;           (setq beg (outline-previous-heading)))
-;;         (with-temp-buffer
-;;           (insert-buffer-substring-no-properties
-;;            cur-buf beg end)
-;;           (funcall `,buf-mode)
-;;           (save-excursion
-;;             (uncomment-region (point-min) (point-max)))
-;;           (let ((pt (1- (point-max))))
-;;             (setq rgx0
-;;                   (regexp-opt
-;;                    (list
-;;                     (buffer-substring-no-properties
-;;                      (point-at-bol) pt))))
-;;             (when (= (save-excursion (forward-line -1)) 0)
-;;               (setq rgx1
-;;                     (regexp-opt
-;;                      (list
-;;                       (buffer-substring-no-properties
-;;                        (save-excursion (forward-line -1) (point))
-;;                        pt)))))
-;;             (when (= (save-excursion (forward-line -2)) 0)
-;;               (setq rgx2
-;;                     (regexp-opt
-;;                      (list
-;;                       (buffer-substring-no-properties
-;;                        (save-excursion (forward-line -2) (point))
-;;                        pt)))))
-;;             (when (= (save-excursion (forward-line -3)) 0)
-;;               (setq rgx3
-;;                     (regexp-opt
-;;                      (list
-;;                       (buffer-substring-no-properties
-;;                        (save-excursion (forward-line -3) (point))
-;;                        pt)))))
-;;             (when (= (save-excursion (forward-line -4)) 0)
-;;               (setq rgx4
-;;                     (regexp-opt
-;;                      (list
-;;                       (buffer-substring-no-properties
-;;                        (save-excursion (forward-line -4) (point))
-;;                        pt)))))))
-;;         (list rgx4 rgx3 rgx2 rgx1 rgx0)))))
 
 (defun outshine-comment-region (beg end &optional arg)
   "Use comment-style that always inserts at BOL.
@@ -1594,59 +1316,6 @@ Call `comment-region' with a comment-style that guarantees
              'plain
            comment-style)))
     (comment-region beg end arg)))
-
-(defun outshine-get-outorg-edit-buffer-content (&optional buf-or-file)
-  "Get content of buffer `outorg-edit-buffer-name.'
-Use current buffer for conversion, unless BUF-OR-FILE is given."
-  (let (buf-strg)
-    (with-current-buffer
-        (cond
-         ((ignore-errors (file-exists-p buf-or-file))
-          (find-file-noselect buf-or-file))
-         ((ignore-errors (get-buffer buf-or-file))
-          buf-or-file)
-         (t (current-buffer)))
-      (outshine-use-outorg
-       (lambda ()
-         (interactive)
-         (setq buf-strg
-               (buffer-substring-no-properties
-                (point-min) (point-max))))
-       'WHOLE-BUFFER-P))
-    buf-strg))
-
-;; courtesy of Pascal Bourguignon
-(defun outshine-use-outorg-finish-store-log-note ()
-  "Finish store-log-note and exit recursive edit"
-  (message "...entering outorg-finish-function")
-  (setq outorg-org-finish-function-called-p t)
-  (org-store-log-note)
-  (outorg-copy-edits-and-exit))
-
-(defun outshine-use-outorg (fun &optional whole-buffer-p &rest funargs)
-  "Use outorg to call FUN with FUNARGS on subtree or thing at point.
-
-FUN should be an Org-mode function that acts on the subtree or
-org-element at point. Optionally, with WHOLE-BUFFER-P non-nil,
-`outorg-edit-as-org' can be called on the whole buffer.
-
-Sets the variable `outshine-use-outorg-last-headline-marker' so
-that it always contains a point-marker to the last headline this
-function was called upon."
-  (save-excursion
-    (unless (outline-on-heading-p)
-      (or (outline-previous-heading)
-          (outline-next-heading)))
-    (move-marker outshine-use-outorg-last-headline-marker (point)))
-  (if whole-buffer-p
-      (outorg-edit-as-org '(4))
-    (outorg-edit-as-org))
-  (setq outorg-called-via-outshine-use-outorg-p t)
-  (goto-char outorg-edit-buffer-point-marker)
-  (if funargs
-      (apply fun funargs)
-    (call-interactively fun))
-  (outorg-copy-edits-and-exit))
 
 ;;;;; Additional outline functions
 
@@ -1909,7 +1578,7 @@ If yes, return this character."
 ;;;;;; Commands from `outline-magic'
 
 (defun outshine-next-line ()
-  "Forward line, but mover over invisible line ends.
+  "Forward line, but move over invisible line ends.
 Essentially a much simplified version of `next-line'."
   (interactive)
   (beginning-of-line 2)
@@ -1918,137 +1587,132 @@ Essentially a much simplified version of `next-line'."
     (beginning-of-line 2)))
 
 (defun outshine-cycle (&optional arg)
-  "Visibility cycling for outline(-minor)-mode.
+  "Visibility cycling for `outshine-mode'.
 
-- When point is at the beginning of the buffer, or when called with a
-  C-u prefix argument, rotate the entire buffer through 3 states:
-  1. OVERVIEW: Show only top-level headlines.
-  2. CONTENTS: Show all headlines of all levels, but no body text.
-  3. SHOW ALL: Show everything.
+The behavior of this command is determined by the first matching
+condition among the following:
 
-- When point is at the beginning of a headline, rotate the subtree started
-  by this line through 3 different states:
-  1. FOLDED:   Only the main headline is shown.
-  2. CHILDREN: The main headline and the direct children are shown.  From
-               this state, you can move to one of the children and
-               zoom in further.
-  3. SUBTREE:  Show the entire subtree, including body text.
+ 1. When point is at the beginning of the buffer, or when called
+    with a `\\[universal-argument]' universal argument, rotate the entire buffer
+    through 3 states:
 
-- When point is not at the beginning of a headline, execute
-  `indent-relative', like TAB normally does."
+   - OVERVIEW: Show only top-level headlines.
+   - CONTENTS: Show all headlines of all levels, but no body text.
+   - SHOW ALL: Show everything.
+
+ 2. When point is at the beginning of a headline, rotate the
+    subtree starting at this line through 3 different states:
+
+   - FOLDED:   Only the main headline is shown.
+   - CHILDREN: The main headline and its direct children are shown.
+               From this state, you can move to one of the children
+               and zoom in further.
+
+   - SUBTREE:  Show the entire subtree, including body text.
+
+ 3. Otherwise, execute `indent-relative', like TAB normally does.
+
+The behavior of this function is modified by the following
+variables: `outshine-cycle-emulate-tab` and
+`outshine-org-style-global-cycling-at-bob-p`, which see."
   (interactive "P")
   (setq deactivate-mark t)
   (cond
+   ;; Beginning of buffer or called with C-u: Global cycling
+   ((or (equal arg '(4))
+        (and (bobp)
+             (or
+              ;; outline-magic style behaviour - always global cycle at bob
+              (not outshine-org-style-global-cycling-at-bob-p)
+              ;; org-mode style behaviour - only cycle if not on a heading
+              (not (outline-on-heading-p)))))
+    (outshine-cycle-buffer))
 
-   ((equal arg '(4))
-    ;; Run `outshine-cycle' as if at the top of the buffer.
-    (let ((outshine-org-style-global-cycling-at-bob-p nil)
-          (current-prefix-arg nil))
+   ;; At a heading: rotate between three different views
+   ((save-excursion (beginning-of-line 1) (looking-at outline-regexp))
+    (outline-back-to-heading)
+    (let ((goal-column 0) eoh eol eos)
+      ;; First, some boundaries
       (save-excursion
-        (goto-char (point-min))
-        (outshine-cycle nil))))
-
-   (t
-    (cond
-     ;; Beginning of buffer: Global cycling
-     ((or
-       ;; outline-magic style behaviour
-       (and
-        (bobp)
-        (not outshine-org-style-global-cycling-at-bob-p))
-       ;; org-mode style behaviour
-       (and
-        (bobp)
-        (not (outline-on-heading-p))
-        outshine-org-style-global-cycling-at-bob-p))
+        (save-excursion (outshine-next-line) (setq eol (point)))
+        (outline-end-of-heading)             (setq eoh (point))
+        (outline-end-of-subtree)             (setq eos (point)))
+      ;; Find out what to do next and set `this-command'
       (cond
-       ((eq last-command 'outshine-cycle-overview)
-        ;; We just created the overview - now do table of contents
-        ;; This can be slow in very large buffers, so indicate action
-        (outshine--cycle-message "CONTENTS...")
-        (save-excursion
-          ;; Visit all headings and show their offspring
-          (goto-char (point-max))
-          (catch 'exit
-            (while (and (progn (condition-case nil
-                                   (outline-previous-visible-heading 1)
-                                 (error (goto-char (point-min))))
-                               t)
-                        (looking-at outline-regexp))
-              (outline-show-branches)
-              (if (bobp) (throw 'exit nil))))
-          (outshine--cycle-message "CONTENTS...done"))
+       ((= eos eoh)
+        ;; Nothing is hidden behind this heading
+        (outshine--cycle-message "EMPTY ENTRY"))
+       ((>= eol eos)
+        ;; Entire subtree is hidden in one line: open it
+        (outline-show-entry)
+        (outline-show-children)
+        (outshine--cycle-message "CHILDREN")
         (setq
-         this-command 'outshine-cycle-toc
-         outshine-current-buffer-visibility-state 'contents))
-       ((eq last-command 'outshine-cycle-toc)
-        ;; We just showed the table of contents - now show everything
-        (outline-show-all)
-        (outshine--cycle-message "SHOW ALL")
-        (setq
-         this-command 'outshine-cycle-showall
-         outshine-current-buffer-visibility-state 'all))
+         this-command 'outshine-cycle-children))
+       ((eq last-command 'outshine-cycle-children)
+        ;; We just showed the children, now show everything.
+        (outline-show-subtree)
+        (outshine--cycle-message "SUBTREE"))
        (t
-        ;; Default action: go to overview
-        ;; (hide-sublevels 1)
-        (let ((toplevel
-               (cond
-                (current-prefix-arg
-                 (prefix-numeric-value current-prefix-arg))
-                ((save-excursion
-                   (beginning-of-line)
-                   (looking-at outline-regexp))
-                 (max 1 (funcall outline-level)))
-                (t 1))))
-          (outline-hide-sublevels toplevel))
-        (outshine--cycle-message "OVERVIEW")
-        (setq
-         this-command 'outshine-cycle-overview
-         outshine-current-buffer-visibility-state 'overview))))
+        ;; Default action: hide the subtree.
+        (outline-hide-subtree)
+        (outshine--cycle-message "FOLDED")))))
 
-     ((save-excursion (beginning-of-line 1) (looking-at outline-regexp))
-      ;; At a heading: rotate between three different views
-      (outline-back-to-heading)
-      (let ((goal-column 0) beg eoh eol eos)
-        ;; First, some boundaries
-        (save-excursion
-          (outline-back-to-heading)           (setq beg (point))
-          (save-excursion (outshine-next-line) (setq eol (point)))
-          (outline-end-of-heading)            (setq eoh (point))
-          (outline-end-of-subtree)            (setq eos (point)))
-        ;; Find out what to do next and set `this-command'
-        (cond
-         ((= eos eoh)
-          ;; Nothing is hidden behind this heading
-          (outshine--cycle-message "EMPTY ENTRY"))
-         ((>= eol eos)
-          ;; Entire subtree is hidden in one line: open it
-          (outline-show-entry)
-          (outline-show-children)
-          (outshine--cycle-message "CHILDREN")
-          (setq
-           this-command 'outshine-cycle-children))
-         ((eq last-command 'outshine-cycle-children)
-          ;; We just showed the children, now show everything.
-          (outline-show-subtree)
-          (outshine--cycle-message "SUBTREE"))
-         (t
-          ;; Default action: hide the subtree.
-          (outline-hide-subtree)
-          (outshine--cycle-message "FOLDED")))))
+   ;; Not at a headline: TAB emulation
+   ((outshine-cycle-emulate-tab)
+    (indent-relative))
 
-     ;; TAB emulation
-     ((outshine-cycle-emulate-tab)
-      (indent-relative))
+   (t (outline-back-to-heading))))
 
+(defun outshine-cycle-buffer (&optional arg)
+  "Rotate the visibility state of the buffer through 3 states:
+  - OVERVIEW: Show only top-level headlines.
+  - CONTENTS: Show all headlines of all levels, but no body text.
+  - SHOW ALL: Show everything.
+
+With a numeric prefix ARG, show all headlines up to that level."
+  (interactive "P")
+  (save-excursion
+    (cond
+     ((integerp arg)
+      (outline-show-all)
+      (outline-hide-sublevels arg))
+     ((eq last-command 'outshine-cycle-overview)
+      ;; We just created the overview - now do table of contents
+      ;; This can be slow in very large buffers, so indicate action
+      (outshine--cycle-message "CONTENTS...")
+      ;; Visit all headings and show their offspring
+      (goto-char (point-max))
+      (while (not (bobp))
+        (condition-case nil
+            (progn
+              (outline-previous-visible-heading 1)
+              (outline-show-branches))
+          (error (goto-char (point-min)))))
+      (outshine--cycle-message "CONTENTS...done")
+      (setq this-command 'outshine-cycle-toc
+            outshine-current-buffer-visibility-state 'contents))
+     ((eq last-command 'outshine-cycle-toc)
+      ;; We just showed the table of contents - now show everything
+      (outline-show-all)
+      (outshine--cycle-message "SHOW ALL")
+      (setq this-command 'outshine-cycle-showall
+            outshine-current-buffer-visibility-state 'all))
      (t
-      ;; Not at a headline: Do indent-relative
-      (outline-back-to-heading))))))
-
-(defun outshine-cycle-buffer ()
-  "Cycle the visibility state of buffer."
-  (interactive)
-  (outshine-cycle '(4)))
+      ;; Default action: go to overview
+      (let ((toplevel
+             (cond
+              (current-prefix-arg
+               (prefix-numeric-value current-prefix-arg))
+              ((save-excursion
+                 (beginning-of-line)
+                 (looking-at outline-regexp))
+               (max 1 (funcall outline-level)))
+              (t 1))))
+        (outline-hide-sublevels toplevel))
+      (outshine--cycle-message "OVERVIEW")
+      (setq this-command 'outshine-cycle-overview
+            outshine-current-buffer-visibility-state 'overview)))))
 
 (defun outshine--cycle-message (msg)
   "Display MSG, but avoid logging it in the *Messages* buffer."
@@ -2190,47 +1854,6 @@ Essentially a much simplified version of `next-line'."
   (outshine-insert-heading)
   (save-excursion
     (insert (concat "  :" outshine-comment-tag ":"))))
-
-(defun outshine-toggle-subtree-comment-status (&optional arg)
-  "Tag (or untag) subtree at point with `outshine-comment-tag'.
-
-Unless point is on a heading, this function acts on the previous
-visible heading when ARG is non-nil, otherwise on the previous
-heading."
-  (interactive "P")
-  (let* ((com-end-p
-          (and
-           outshine-normalized-comment-end
-           (> (length outshine-normalized-comment-end) 0)))
-         (comtag (concat ":" outshine-comment-tag ":"))
-         (comtag-rgxp
-          (if com-end-p
-              (concat comtag
-                      " *"
-                      (regexp-quote
-                       outshine-normalized-comment-end)
-                      " *")
-            (concat comtag " *"))))
-    (unless (outline-on-heading-p)
-      (if arg
-          (outline-previous-visible-heading 1)
-        (outline-previous-heading)))
-    (end-of-line)
-    (cond
-     ((looking-back comtag-rgxp)
-      (let ((start (match-beginning 0)))
-        (delete-region (1- start) (+ start (length comtag)))))
-     ((and com-end-p
-           (looking-back
-            (concat
-             (regexp-quote outshine-normalized-comment-end) " *")))
-      (goto-char (match-beginning 0))
-      (if (looking-back " ")
-          (insert (concat comtag " "))
-        (insert (concat " " comtag))))
-     (t (if (looking-back " ")
-            (insert comtag)
-          (insert (concat " " comtag)))))))
 
 ;; Cycle comment subtrees anyway
 (defun outshine-force-cycle-comment ()
@@ -2637,1094 +2260,7 @@ marking subtree (and subsequently run the tex command)."
     (call-interactively 'TeX-command-region))
   (deactivate-mark))
 
-;;;;; Outshine Agenda
-
-;; (defun outshine-agenda-add-files (&optional append-p &rest files)
-;;   "Prepend FILES to `outshine-agenda-files'.
-;; Append rather than prepend if APPEND-P is given or
-;; `current-prefix-arg' is non-nil."
-;;   (interactive
-;;    (let (file-lst)
-;;      (list
-;;       current-prefix-arg
-;;       (if (derived-mode-p 'dired-mode)
-;;        (dired-get-marked-files)
-;;      (setq file-lst
-;;            (cons
-;;             (expand-file-name
-;;              (ido-read-file-name "New agenda file: "))
-;;             file-lst))
-;;      (while (y-or-n-p "Add more files ")
-;;        (setq file-lst
-;;              (cons (expand-file-name
-;;                     (ido-read-file-name "New agenda file: "))
-;;                    file-lst)))
-;;      file-lst))))
-;;   (if append-p
-;;       (setq outshine-agenda-files
-;;          (delq nil (append outshine-agenda-files
-;;                            (car-safe files))))
-;;     (setq outshine-agenda-files
-;;        (delq nil (append (car-safe files)
-;;                          outshine-agenda-files)))))
-
-;; (defun outshine-agenda-remove-files (&optional remove-all-p &rest files)
-;;   "Remove FILES from `outshine-agenda-files'.
-;; Remove all agenda-files if REMOVE-ALL-P is given or
-;; `current-prefix-arg' is non-nil."
-;;   (interactive
-;;    (let (file-lst)
-;;      (list
-;;       current-prefix-arg
-;;       (unless current-prefix-arg
-;;      (setq file-lst
-;;            (cons
-;;             (org-completing-read "Remove agenda file: "
-;;                                  outshine-agenda-files)
-;;             file-lst))
-;;      (while (y-or-n-p "Remove more files ")
-;;        (setq file-lst
-;;              (cons
-;;               (org-completing-read "Remove agenda file: "
-;;                                    outshine-agenda-files)
-;;               file-lst)))
-;;      file-lst))))
-;;   (if remove-all-p
-;;       (setq outshine-agenda-files nil)
-;;     (mapc
-;;      (lambda (--file)
-;;        (setq outshine-agenda-files
-;;           (remove --file outshine-agenda-files)))
-;;      (car-safe files))))
-
-;; (defun outshine-agenda-toggle-include-org-agenda (&optional arg)
-;;   "Toggle inclusion of Org Agenda files in Outshine Agenda.
-;; With prefix argument ARG, include if ARG is positive, otherwise
-;; exclude."
-;;   (interactive "P")
-;;   (setq outshine-agenda-include-org-agenda-p
-;;         (if (null arg)
-;;             (not outshine-agenda-include-org-agenda-p)
-;;           (> (prefix-numeric-value arg) 0)))
-;;   (message "Outshine Agenda: inclusion of Org Agenda files %s"
-;;            (if outshine-agenda-include-org-agenda-p
-;;             "enabled" "disabled")))
-
-;; (defun outshine-agenda (&optional agenda-file include-org-p)
-;;   "Create Outshine Agenda, i.e. Org Agenda on outshine files.
-
-;; Use org-file AGENDA-FILE instead of `outshine-agenda-files' when
-;; given. Include `org-agenda-files' when INCLUDE-ORG-P is non-nil.
-
-;; With `current-prefix-arg' prompt the user for argument values."
-;;   (interactive
-;;    (when current-prefix-arg
-;;      (list
-;;       (ido-read-file-name "Agenda file: "
-;;                        outshine-temporary-directory)
-;;       (y-or-n-p "Include `org-agenda-files' "))))
-;;   (let ((ag-file (or agenda-file
-;;                   (outshine-agenda-create-temporary-agenda-file)))
-;;      (with-org-agenda-files
-;;       (or include-org-p outshine-agenda-include-org-agenda-p)))
-;;     (require 'org-agenda)
-;;     (org-agenda-remove-restriction-lock)
-;;     (if with-org-agenda-files
-;;      ;; FIXME
-;;      (message "Sorry, this is not yet implemented.")
-;;       (with-current-buffer (find-file-noselect ag-file)
-;;      (org-agenda-set-restriction-lock 'file)
-;;      (org-agenda)))))
-
-;;;;; Use Outorg for calling Org
-
-;; ;; TEMPLATE A
-;; (defun outshine- ()
-;;   "Call outorg to trigger `org-'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-))
-
-;; ;; TEMPLATE B
-;; (defun outshine- (&optional arg)
-;;   "Call outorg to trigger `org-'."
-;;   (interactive "P")
-;;   (outshine-use-outorg 'org- nil arg))
-
-;; ;; C-c C-a		org-attach
-;; (defun outshine-attach ()
-;;   "Call outorg to trigger `org-attach'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-attach))
-
-;; ;; C-c C-b		org-backward-heading-same-level
-
-;; ;; C-c C-c		org-ctrl-c-ctrl-c
-;; (defun outshine-ctrl-c-ctrl-c (&optional arg)
-;;   "Call outorg to trigger `org-ctrl-c-ctrl-c'."
-;;   (interactive "P")
-;;   (outshine-use-outorg 'org-ctrl-c-ctrl-c arg))
-
-;; ;; C-c C-d		org-deadline
-;; (defun outshine-deadline (&optional arg)
-;;   "Call outorg to trigger `org-deadline'."
-;;   (interactive "P")
-;;   (outshine-use-outorg
-;;    (lambda ()
-;;      (interactive)
-;;      (let ((current-prefix-arg arg))
-;;        (call-interactively 'org-deadline)))))
-
-;; ;; C-c C-e		org-export-dispatch
-;; (defun outshine-export-dispatch (&optional arg)
-;;   "Call outorg to trigger `org-export-dispatch'."
-;;   (interactive "P")
-;;   (outshine-use-outorg 'org-export-dispatch
-;;                     (y-or-n-p "Use whole buffer ")
-;;                     arg))
-
-;; ;; C-c C-f		org-forward-heading-same-level
-
-;; CANCELLED use `outshine-imenu' instead
-;; ;; C-c C-j		org-goto
-;; (defun outshine-goto ()
-;;   "Call outorg to trigger `org-goto'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-goto t))
-
-;; ;; C-c C-k		org-kill-note-or-show-branches
-
-;; ;; C-c C-l		org-insert-link
-;; (defun outshine-insert-link ()
-;;   "Call outorg to trigger `org-insert-link'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-insert-link))
-
-;; ;; C-c RET		org-ctrl-c-ret
-
-;; ;; ;; C-c C-o		org-open-at-point
-;; (defun outshine-open-at-point (&optional whole-buffer-p arg reference-buffer)
-;;   "Call outorg to trigger `org-open-at-point'.
-;; With one prefix argument, use whole buffer, with two prefix
-;; arguments, prompt user for function args WHOLE-BUFFER-P, ARG and
-;; REFERENCE-BUFFER."
-;;   (interactive
-;;    (cond
-;;     ((equal current-prefix-arg '(16))
-;;      (list (y-or-n-p "Use whole buffer ")
-;;         (y-or-n-p "Provide ARG ")
-;;         (read-buffer "Reference-buffer: ")))
-;;     (current-prefix-arg (list t))
-;;     (t nil)))
-;;   (outshine-use-outorg
-;;    'org-open-at-point whole-buffer-p nil arg reference-buffer))
-
-;; ;; C-c C-q		org-set-tags-command
-;; (defun outshine-set-tags-command ()
-;;   "Call outorg to trigger `org-set-tags-command'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-set-tags-command))
-
-;; TODO reimplement for outshine
-;; ;; C-c C-r		org-reveal
-;; (defun outshine-reveal ()
-;;   "Call outorg to trigger `org-reveal'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-reveal 'WHOLE-BUFFER-P))
-
-;; ;; C-c C-s		org-schedule
-;; (defun outshine-schedule (&optional arg)
-;;   "Call outorg to trigger `org-schedule'."
-;;   (interactive "P")
-;;   (outshine-use-outorg
-;;    (lambda ()
-;;      (interactive)
-;;      (let ((current-prefix-arg arg))
-;;        (call-interactively 'org-schedule)))))
-
-;; FIXED -> org-store-log-note _outcommented_!
-;; FIXME lognote insertion position
-;; ;; C-c C-t		org-todo
-;; (defun outshine-todo (&optional arg)
-;;   "Call outorg to trigger `org-todo'."
-;;   (interactive "P")
-;;   (outshine-use-outorg 'org-todo nil arg))
-
-;; ;; C-c C-v		Prefix Command
-
-;; CANCELLED use outshine-imenu for (org-refile t)
-;; ;; C-c C-w		org-refile
-;; (defun outshine-refile ()
-;;   "Call outorg to trigger `org-refile'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-refile))
-
-;; ;; C-c C-x		Prefix Command
-
-;; ;; C-c C-y		org-evaluate-time-range
-;; (defun outshine-evaluate-time-range ()
-;;   "Call outorg to trigger `org-evaluate-time-range'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-evaluate-time-range))
-
-;; FIXME post-command-hook
-;; ;; C-c C-z		org-add-note
-;; (defun outshine-add-note ()
-;;   "Call outorg to trigger `org-add-note'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-add-note))
-
-;; ;; C-c ESC		Prefix Command
-;; ;; C-c C-^		org-up-element
-;; ;; C-c C-_		org-down-element
-
-;; ;; C-c SPC		org-table-blank-field
-;; (defun outshine-table-blank-field ()
-;;   "Call outorg to trigger `org-table-blank-field'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-table-blank-field))
-
-;; ;; C-c !		org-time-stamp-inactive
-;; (defun outshine-time-stamp-inactive (&optional arg)
-;;   "Call outorg to trigger `org-time-stamp-inactive'."
-;;   (interactive "P")
-;;   (outshine-use-outorg
-;;    (lambda ()
-;;      (interactive)
-;;      (if (not (org-on-heading-p))
-;;               (if arg
-;;                   (org-time-stamp-inactive arg)
-;;                 (org-time-stamp-inactive))
-;;        (or
-;;      (and
-;;       (re-search-forward org-element--timestamp-regexp nil t)
-;;       (ignore-errors (goto-char (match-beginning 0))))
-;;      (and
-;;       (re-search-forward org-complex-heading-regexp nil t)
-;;       (ignore-errors (goto-char (match-end 4)))))
-;;        (insert-char ? )
-;;        (if arg
-;;         (org-time-stamp-inactive arg)
-;;       (org-time-stamp-inactive))))))
-
-;; ;; C-c #		org-update-statistics-cookies
-;; (defun outshine-update-statistics-cookies ()
-;;   "Call outorg to trigger `org-update-statistics-cookies'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-update-statistics-cookies))
-
-;; ;; C-c $		org-archive-subtree
-;; (defun outshine-archive-subtree ()
-;;   "Call outorg to trigger `org-archive-subtree'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-archive-subtree))
-
-;; ;; C-c %		org-mark-ring-push
-;; (defun outshine-mark-ring-push ()
-;;   "Call outorg to trigger `org-mark-ring-push'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-mark-ring-push))
-
-;; ;; C-c &		org-mark-ring-goto
-;; (defun outshine-mark-ring-goto ()
-;;   "Call outorg to trigger `org-mark-ring-goto'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-mark-ring-goto))
-
-;; ;; C-c '		org-edit-special
-;; (defun outshine-edit-special ()
-;;   "Call outorg to trigger `org-edit-special'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-edit-special))
-
-;; ;; C-c *		org-ctrl-c-star
-;; (defun outshine-ctrl-c-star ()
-;;   "Call outorg to trigger `org-ctrl-c-star'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-ctrl-c-star))
-
-;; ;; C-c +		org-table-sum
-;; (defun outshine-table-sum ()
-;;   "Call outorg to trigger `org-table-sum'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-table-sum))
-
-;; ;; ;; C-c ,		org-priority
-;; (defun outshine-priority ()
-;;   "Call outorg to trigger `org-priority'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-priority))
-
-;; ;; FIXME:
-;; ;; - cursor moves to parent header
-;; ;; - does nothing at bol ?
-;; ;; C-c -		org-ctrl-c-minus
-;; (defun outshine-ctrl-c-minus ()
-;;   "Call outorg to trigger `org-ctrl-c-minus'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-ctrl-c-minus))
-
-;; ;; C-c .		org-time-stamp
-;; (defun outshine-time-stamp (&optional arg)
-;;   "Call outorg to trigger `org-time-stamp'."
-;;   (interactive "P")
-;;   (outshine-use-outorg
-;;    (lambda ()
-;;      (interactive)
-;;      (if (not (org-on-heading-p))
-;;       (if arg (org-time-stamp arg) (org-time-stamp nil))
-;;        (or
-;;      (and
-;;       (re-search-forward org-element--timestamp-regexp nil t)
-;;       (ignore-errors (goto-char (match-beginning 0))))
-;;      (and
-;;       (re-search-forward org-complex-heading-regexp nil t)
-;;       (ignore-errors (goto-char (match-end 4)))))
-;;        (insert-char ? )
-;;               (if arg (org-time-stamp arg) (org-time-stamp nil))))))
-
-;; CANCELLED makes no sense
-;; ;; C-c /		org-sparse-tree
-;; (defun outshine-sparse-tree ()
-;;   "Call outorg to trigger `org-sparse-tree'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-sparse-tree))
-
-;; ;; C-c :		org-toggle-fixed-width
-;; (defun outshine-toggle-fixed-width ()
-;;   "Call outorg to trigger `org-toggle-fixed-width'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-toggle-fixed-width))
-
-;; ;; C-c ;		org-toggle-comment
-;; (defun outshine-toggle-comment ()
-;;   "Call outorg to trigger `org-toggle-comment'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-toggle-comment))
-
-;; ;; C-c <		org-date-from-calendar
-;; (defun outshine-date-from-calendar ()
-;;   "Call outorg to trigger `org-date-from-calendar'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-date-from-calendar))
-
-;; ;; C-c =		org-table-eval-formula
-;; (defun outshine-table-eval-formula ()
-;;   "Call outorg to trigger `org-table-eval-formula'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-table-eval-formula))
-
-;; ;; C-c >		org-goto-calendar
-;; (defun outshine-goto-calendar ()
-;;   "Call outorg to trigger `org-goto-calendar'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-goto-calendar))
-
-;; ;; C-c ?		org-table-field-info
-;; (defun outshine-table-field-info ()
-;;   "Call outorg to trigger `org-table-field-info'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-table-field-info))
-
-;; CANCELLED use `outline-mark-subtree' instead
-;; ;; C-c @		org-mark-subtree
-;; (defun outshine-mark-subtree ()
-;;   "Call outorg to trigger `org-mark-subtree'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-mark-subtree))
-
-;; ;; C-c \		org-match-sparse-tree
-;; (defun outshine-match-sparse-tree ()
-;;   "Call outorg to trigger `org-match-sparse-tree'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-match-sparse-tree 'WHOLE-BUFFER-P))
-
-;; ;; FIXME handle markers for sorting regionso2
-;; ;; C-c ^		org-sort
-;; (defun outshine-sort-entries (&optional arg)
-;;   "Call outorg to trigger `org-sort'.
-;; With prefix ARG, use whole buffer."
-;;   (interactive "P")
-;;   (outshine-use-outorg 'org-sort-entries arg))
-
-;;   (interactive)
-;;   (outshine-use-outorg 'org-table-edit-field))
-
-;; ;; C-c {		org-table-toggle-formula-debugger
-;; (defun outshine-table-toggle-formula-debugger ()
-;;   "Call outorg to trigger `org-table-toggle-formula-debugger'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-table-toggle-formula-debugger))
-
-;; ;; C-c |		org-table-create-or-convert-from-region
-;; (defun outshine-table-create-or-convert-from-region ()
-;;   "Call outorg to trigger `org-table-create-or-convert-from-region'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-table-create-or-convert-from-region))
-
-;; ;; C-c }		org-table-toggle-coordinate-overlays
-;; (defun outshine-table-toggle-coordinate-overlays ()
-;;   "Call outorg to trigger `org-table-toggle-coordinate-overlays'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-table-toggle-coordinate-overlays))
-
-;; ;; C-c ~		org-table-create-with-table.el
-;; (defun outshine-table-create-with-table.el ()
-;;   "Call outorg to trigger `org-table-create-with-table.el'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-table-create-with-table.el))
-
-;; ;; C-c C-*		org-list-make-subtree
-;; (defun outshine-list-make-subtree ()
-;;   "Call outorg to trigger `org-list-make-subtree'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-list-make-subtree))
-
-;; ;; C-c <down>	org-shiftdown
-;; ;; C-c <up>	org-shiftup
-;; (defun outshine- ()
-;;   "Call outorg to trigger `org-'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-))
-
-;; ;; C-c C-M-l	org-insert-all-links
-;; (defun outshine-insert-all-links ()
-;;   "Call outorg to trigger `org-insert-all-links'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-insert-all-links))
-
-;; (defun outshine-previous-block ()
-;;   "Call outorg to trigger `org-previous-block'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-previous-block 'WHOLE-BUFFER-P))
-
-;; ;; FIXME
-;; ;; ;; C-c M-b		org-previous-block
-;; (defun outshine-previous-block ()
-;;   "Similar semantics to `org-previous-block'."
-;;   (interactive)
-;;   (forward-comment -10000))
-
-;; ;; FIXME
-;; ;; C-c M-f		org-next-block
-;; (defun outshine-next-block ()
-;;   "Similar semantics to `org-next-block'."
-;;   (interactive)
-;;   (forward-comment 10000))
-
-;; ;; C-c M-l		org-insert-last-stored-link
-;; (defun outshine-insert-last-stored-link ()
-;;   "Call outorg to trigger `org-insert-last-stored-link'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-insert-last-stored-link))
-
-;; ;; C-c M-o		tj/mail-subtree
-
-;; ;; C-c M-w		org-copy
-;; (defun outshine-copy ()
-;;   "Call outorg to trigger `org-copy'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-copy))
-
-;; ;; C-c C-v C-a	org-babel-sha1-hash
-;; (defun outshine-babel-sha1-hash ()
-;;   "Call outorg to trigger `org-babel-sha1-hash'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-babel-sha1-hash))
-
-;; ;; C-c C-v C-b	org-babel-execute-buffer
-;; (defun outshine-babel-execute-buffer ()
-;;   "Call outorg to trigger `org-babel-execute-buffer'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-babel-execute-buffer 'WHOLE-BUFFER-P))
-
-;; ;; C-c C-v C-c	org-babel-check-src-block
-;; (defun outshine-babel-check-src-block ()
-;;   "Call outorg to trigger `org-babel-check-src-block'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-babel-check-src-block))
-
-;; ;; C-c C-v C-d	org-babel-demarcate-block
-;; (defun outshine-babel-demarcate-block ()
-;;   "Call outorg to trigger `org-babel-demarcate-block'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-babel-demarcate-block))
-
-;; ;; C-c C-v C-e	org-babel-execute-maybe
-;; (defun outshine-babel-execute-maybe ()
-;;   "Call outorg to trigger `org-babel-execute-maybe'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-babel-execute-maybe))
-
-;; ;; C-c C-v C-f	org-babel-tangle-file
-;; (defun outshine-babel-tangle-file ()
-;;   "Call outorg to trigger `org-babel-tangle-file'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-babel-tangle-file 'WHOLE-BUFFER-P))
-
-;; ;; C-c C-v TAB	org-babel-view-src-block-info
-;; (defun outshine-babel-view-src-block-info ()
-;;   "Call outorg to trigger `org-babel-view-src-block-info'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-babel-view-src-block-info))
-
-;; ;; FIXME:
-;; ;; split-string: Wrong type argument: stringp, nil
-;; ;; C-c C-v C-j	org-babel-insert-header-arg
-;; (defun outshine-babel-insert-header-arg ()
-;;   "Call outorg to trigger `org-babel-insert-header-arg'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-babel-insert-header-arg))
-
-;; ;; C-c C-v C-l	org-babel-load-in-session
-;; (defun outshine-babel-load-in-session ()
-;;   "Call outorg to trigger `org-babel-load-in-session'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-babel-load-in-session))
-
-;; ;; C-c C-v C-n	org-babel-next-src-block
-;; (defun outshine-babel-next-src-block ()
-;;   "Call outorg to trigger `org-babel-next-src-block'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-babel-next-src-block))
-
-;; ;; C-c C-v C-o	org-babel-open-src-block-result
-;; (defun outshine-babel-open-src-block-result ()
-;;   "Call outorg to trigger `org-babel-open-src-block-result'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-babel-open-src-block-result))
-
-;; ;; C-c C-v C-p	org-babel-previous-src-block
-;; (defun outshine-babel-previous-src-block ()
-;;   "Call outorg to trigger `org-babel-previous-src-block'."
-;;   (interactive)
-;;   (outshine-use-outorg
-;;    'org-babel-previous-src-block 'WHOLE-BUFFER-P))
-
-;; ;; C-c C-v C-r	org-babel-goto-named-result
-;; (defun outshine-babel-goto-named-result ()
-;;   "Call outorg to trigger `org-babel-goto-named-result'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-babel-goto-named-result
-;;                     'WHOLE-BUFFER-P))
-
-;; ;; C-c C-v C-s	org-babel-execute-subtree
-;; (defun outshine-babel-execute-subtree ()
-;;   "Call outorg to trigger `org-babel-execute-subtree'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-babel-execute-subtree))
-
-;; ;; C-c C-v C-t	org-babel-tangle
-;; (defun outshine-babel-tangle ()
-;;   "Call outorg to trigger `org-babel-tangle'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-babel-tangle 'WHOLE-BUFFER-P))
-
-;; ;; C-c C-v C-u	org-babel-goto-src-block-head
-;; (defun outshine-babel-goto-src-block-head ()
-;;   "Call outorg to trigger `org-babel-goto-src-block-head'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-babel-goto-src-block-head))
-
-;; ;; C-c C-v C-v	org-babel-expand-src-block
-;; (defun outshine-babel-expand-src-block ()
-;;   "Call outorg to trigger `org-babel-expand-src-block'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-babel-expand-src-block))
-
-;; ;; C-c C-v C-x	org-babel-do-key-sequence-in-edit-buffer
-;; (defun outshine-babel-do-key-sequence-in-edit-buffer ()
-;;   "Call outorg to trigger `org-babel-do-key-sequence-in-edit-buffer'."
-;;   (interactive)
-;;   (outshine-use-outorg
-;;    'org-babel-do-key-sequence-in-edit-buffer))
-
-;; ;; C-c C-v C-z	org-babel-switch-to-session
-;; (defun outshine-babel-switch-to-session ()
-;;   "Call outorg to trigger `org-babel-switch-to-session'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-babel-switch-to-session))
-
-;; ;; C-c C-v ESC	Prefix Command
-;; ;; C-c C-v I	org-babel-view-src-block-info
-;; ;; C-c C-v a	org-babel-sha1-hash
-;; ;; C-c C-v b	org-babel-execute-buffer
-;; ;; C-c C-v c	org-babel-check-src-block
-;; ;; C-c C-v d	org-babel-demarcate-block
-;; ;; C-c C-v e	org-babel-execute-maybe
-;; ;; C-c C-v f	org-babel-tangle-file
-
-;; ;; C-c C-v g	org-babel-goto-named-src-block
-;; (defun outshine-babel-goto-named-src-block ()
-;;   "Call outorg to trigger `org-babel-goto-named-src-block'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-babel-goto-named-src-block
-;;                     'WHOLE-BUFFER-P))
-
-;; ;; C-c C-v h	org-babel-describe-bindings
-;; (defun outshine-babel-describe-bindings ()
-;;   "Call outorg to trigger `org-babel-describe-bindings'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-babel-describe-bindings))
-
-;; ;; C-c C-v i	org-babel-lob-ingest
-;; (defun outshine-babel-lob-ingest ()
-;;   "Call outorg to trigger `org-babel-lob-ingest'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-babel-lob-ingest 'WHOLE-BUFFER-P))
-
-;; ;; C-c C-v j	org-babel-insert-header-arg
-
-;; ;; C-c C-v k	org-babel-remove-result-one-or-many
-;; (defun outshine-babel-remove-result-one-or-many (&optional arg)
-;;   "Call outorg to trigger `org-babel-remove-result-one-or-many'."
-;;   (interactive "P")
-;;   (outshine-use-outorg 'org-babel-remove-result-one-or-many arg))
-
-;; ;; C-c C-v l	org-babel-load-in-session
-;; ;; C-c C-v n	org-babel-next-src-block
-;; ;; C-c C-v o	org-babel-open-src-block-result
-;; ;; C-c C-v p	org-babel-previous-src-block
-;; ;; C-c C-v r	org-babel-goto-named-result
-;; ;; C-c C-v s	org-babel-execute-subtree
-;; ;; C-c C-v t	org-babel-tangle
-;; ;; C-c C-v u	org-babel-goto-src-block-head
-;; ;; C-c C-v v	org-babel-expand-src-block
-;; ;; C-c C-v x	org-babel-do-key-sequence-in-edit-buffer
-
-;; ;; C-c C-v z	org-babel-switch-to-session-with-code
-;; (defun outshine-babel-switch-to-session-with-code ()
-;;   "Call outorg to trigger `org-babel-switch-to-session-with-code'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-babel-switch-to-session-with-code))
-
-;; ;; C-c C-x C-a	org-archive-subtree-default
-;; (defun outshine-archive-subtree-default ()
-;;   "Call outorg to trigger `org-archive-subtree-default'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-archive-subtree-default))
-
-;; ;; C-c C-x C-b	org-toggle-checkbox
-;; (defun outshine-toggle-checkbox (&optional arg)
-;;   "Call outorg to trigger `org-toggle-checkbox'."
-;;   (interactive "P")
-;;   (outshine-use-outorg 'org-toggle-checkbox nil arg))
-
-;; ;; C-c C-x C-c	org-columns
-;; (defun outshine-columns ()
-;;   "Call outorg to trigger `org-columns'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-columns 'WHOLE-BUFFER-P))
-
-;; ;; C-c C-x C-d	org-clock-display
-;; (defun outshine-clock-display ()
-;;   "Call outorg to trigger `org-clock-display'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-clock-display 'WHOLE-BUFFER-P))
-
-;; CANCELLED simply call `org-emphasize'
-;; ;; C-c C-x C-f	org-emphasize
-;; (defun outshine-emphasize ()
-;;   "Call outorg to trigger `org-emphasize'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-emphasize))
-
-;; ;; C-c C-x TAB	org-clock-in
-;; (defun outshine-clock-in ()
-;;   "Call outorg to trigger `org-clock-in'."
-;;   (interactive)
-;;   (outshine-use-outorg
-;;    (lambda ()
-;;      (interactive)
-;;      (org-clock-in)
-;;      (remove-hook 'kill-buffer-hook 'org-check-running-clock))))
-
-;; ;; C-c C-x C-j	org-clock-goto
-;; (defun outshine-clock-goto ()
-;;   "Similar semantics to `org-clock-goto'."
-;;   (interactive)
-;;   (switch-to-buffer
-;;    (condition-case err
-;;        (marker-buffer outshine-use-outorg-last-headline-marker)
-;;      (error "Can't find header with running clock: %s" err)))
-;;    (goto-char outshine-use-outorg-last-headline-marker))
-
-;; ;; C-c C-x C-l	org-preview-latex-fragment
-;; (defun outshine-preview-latex-fragment ()
-;;   "Call outorg to trigger `org-preview-latex-fragment'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-preview-latex-fragment))
-
-;; ;; C-c C-x RET	Prefix Command
-
-;; ;; reimplementation
-;; ;; C-c C-x C-n	org-next-link
-;; (defun outshine-next-link ()
-;;   "Similar semantics to `org-next-link'."
-;;   (interactive)
-;;   (re-search-forward org-link-re-with-space nil t 1)
-;;   (goto-char (match-beginning 0)))
-
-;; ;; C-c C-x C-o	org-clock-out
-;; (defun outshine-clock-out ()
-;;   "Call outorg to trigger `org-clock-out'."
-;;   (interactive)
-;;   (with-current-buffer
-;;       (condition-case err
-;;        (marker-buffer outshine-use-outorg-last-headline-marker)
-;;      (error "Can't find header with running clock: %s" err))
-;;     (goto-char outshine-use-outorg-last-headline-marker)
-;;     (outshine-use-outorg 'org-clock-out)))
-
-;; ;; reimplementation
-;; ;; C-c C-x C-p	org-previous-link
-;; (defun outshine-previous-link ()
-;;   "Similar semantics to `org-previous-link'."
-;;   (interactive)
-;;   (re-search-backward org-link-re-with-space nil t 1)
-;;   (goto-char (match-beginning 0)))
-
-;; ;; C-c C-x C-q	org-clock-cancel
-;; (defun outshine-clock-cancel ()
-;;   "Call outorg to trigger `org-clock-cancel'."
-;;   (interactive)
-;;   (with-current-buffer
-;;       (condition-case err
-;;        (marker-buffer outshine-use-outorg-last-headline-marker)
-;;      (error "Can't find header with running clock: %s" err))
-;;     (goto-char outshine-use-outorg-last-headline-marker)
-;;     (outshine-use-outorg 'org-clock-cancel)))
-
-;; ;; C-c C-x C-r	org-clock-report
-;; (defun outshine-clock-report (&optional arg)
-;;   "Call outorg to trigger `org-clock-report'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-clock-report 'WHOLE-BUFFER-P arg))
-
-;; ;; C-c C-x C-s	org-advertized-archive-subtree
-;; (defun outshine-advertized-archive-subtree (&optional arg)
-;;   "Call outorg to trigger `org-advertized-archive-subtree'."
-;;   (interactive "P")
-;;   (outshine-use-outorg 'org-advertized-archive-subtree arg))
-
-;; ;; C-c C-x C-t	org-toggle-time-stamp-overlays
-;; (defun outshine-toggle-time-stamp-overlays ()
-;;   "Call outorg to trigger `org-toggle-time-stamp-overlays'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-toggle-time-stamp-overlays
-;;                     'WHOLE-BUFFER-P))
-
-;; ;; C-c C-x C-u	org-dblock-update
-;; (defun outshine-dblock-update (&optional arg)
-;;   "Call outorg to trigger `org-dblock-update'."
-;;   (interactive "P")
-;;   (outshine-use-outorg 'org-dblock-update arg))
-
-;; ;; C-c C-x C-v	org-toggle-inline-images
-;; (defun outshine-toggle-inline-images ()
-;;   "Call outorg to trigger `org-toggle-inline-images'."
-;;   (interactive)
-;;   (outshine-use-outorg
-;;    'org-toggle-inline-images 'WHOLE-BUFFER-P))
-
-;; ;; C-c C-x C-w	org-cut-special
-;; (defun outshine-cut-special ()
-;;   "Call outorg to trigger `org-cut-special'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-cut-special 'WHOLE-BUFFER-P))
-
-;; FIXME
-;; ;; C-c C-x C-x	org-clock-in-last
-;; (defun outshine-clock-in-last (&optional arg)
-;;   "Call outorg to trigger `org-clock-in-last'."
-;;   (interactive "P")
-;;   (with-current-buffer
-;;       (condition-case err
-;;        (marker-buffer outshine-use-outorg-last-headline-marker)
-;;      (error "Can't find header with running clock: %s" err))
-;;     (goto-char outshine-use-outorg-last-headline-marker)
-;;     (outshine-use-outorg 'org-clock-in-last nil arg)))
-
-;; ;; C-c C-x C-y	org-paste-special
-;; (defun outshine-paste-special ()
-;;   "Call outorg to trigger `org-paste-special'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-paste-special 'WHOLE-BUFFER-P))
-
-;; ;; FIXME: whole buffer?
-;; ;; C-c C-x C-z	org-resolve-clocks
-;; (defun outshine-resolve-clocks ()
-;;   "Call outorg to trigger `org-resolve-clocks'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-resolve-clocks))
-
-;; ;; C-c C-x ESC	Prefix Command
-;; ;; C-c C-x !	org-reload
-;; (defun outshine-reload ()
-;;   "Call outorg to trigger `org-reload'."
-;;   (interactive)
-;;   (otshine-use-outorg 'org-reload))
-
-;; ;; C-c C-x ,	org-timer-pause-or-continue
-;; (defun outshine-timer-pause-or-continue (&optional arg)
-;;   "Call outorg to trigger `org-timer-item'."
-;;   (interactive "P")
-;;   (outshine-use-outorg 'org-timer-pause-or-continue nil arg))
-
-;; ;; C-c C-x -	org-timer-item
-;; (defun outshine-timer-item ()
-;;   "Call outorg to trigger `org-timer-item'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-timer-item))
-
-;; ;; C-c C-x .	org-timer
-;; (defun outshine-timer ()
-;;   "Call outorg to trigger `org-timer'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-timer))
-
-;; ;; C-c C-x 0	org-timer-start
-;; (defun outshine-timer-start ()
-;;   "Call outorg to trigger `org-timer-start'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-timer-start))
-
-;; ;; C-c C-x :	org-timer-cancel-timer
-;; (defun outshine-timer-cancel-timer ()
-;;   "Call outorg to trigger `org-timer-cancel-timer'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-timer-cancel-timer))
-
-;; ;; C-c C-x ;	org-timer-set-timer
-;; (defun outshine-timer-set-timer ()
-;;   "Call outorg to trigger `org-timer-set-timer'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-timer-set-timer))
-
-;; ;; C-c C-x <	org-agenda-set-restriction-lock
-;; (defun outshine-agenda-set-restriction-lock (&optional arg)
-;;   "Call `outshine-agenda' with restriction.
-;; With prefix ARG given, restrict to current subtree, otherwise to
-;; current buffer(-file). "
-;;   (interactive "P")
-;;   (let ((ag-file
-;;       (if arg
-;;           (outshine-agenda-create-temporary-agenda-file t)
-;;         (outshine-agenda-create-temporary-agenda-file 'file))))
-;;     (outshine-agenda ag-file)))
-
-;; ;; C-c C-x >	org-agenda-remove-restriction-lock
-;; (defun outshine-agenda-remove-restriction-lock (&optional include-org-p)
-;;   "Call `outshine-agenda' without restriction.
-;; Use `outshine-agenda-files'. When INCLUDE-ORG-P is non-nil or prefix-arg is given, include `org-agenda-files'."
-;;   (interactive "P")
-;;   (outshine-agenda nil include-org-p))
-
-;; ;; C-c C-x A	org-archive-to-archive-sibling
-;; (defun outshine-archive-to-archive-sibling ()
-;;   "Call outorg to trigger `org-archive-to-archive-sibling'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-archive-to-archive-sibling
-;;                     'WHOLE-BUFFER-P))
-
-;; ;; C-c C-x D	org-shiftmetadown
-
-;; ;; C-c C-x E	org-inc-effort
-;; (defun outshine-inc-effort ()
-;;   "Call outorg to trigger `org-inc-effort'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-inc-effort))
-
-;; ;; C-c C-x G	org-feed-goto-inbox
-;; (defun outshine-feed-goto-inbox ()
-;;   "Call outorg to trigger `org-feed-goto-inbox'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-feed-goto-inbox 'WHOLE-BUFFER-P))
-
-;; ;; C-c C-x L	org-shiftmetaleft
-
-;; ;; C-c C-x M	org-insert-todo-heading
-;; (defun outshine-insert-todo-heading (&optional arg)
-;;   "Call outorg to trigger `org-insert-todo-heading'."
-;;   (interactive "P")
-;;   (outshine-use-outorg 'org-insert-todo-heading
-;;                     (= (prefix-numeric-value arg) 16)))
-
-;; ;; C-c C-x P	org-set-property-and-value
-;; (defun outshine-set-property-and-value ()
-;;   "Call outorg to trigger `org-set-property-and-value'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-set-property-and-value))
-
-;; ;; C-c C-x R	org-shiftmetaright
-;; ;; C-c C-x U	org-shiftmetaup
-
-;; ;; C-c C-x [	org-reftex-citation
-;; (defun outshine-reftex-citation ()
-;;   "Call outorg to trigger `org-reftex-citation'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-reftex-citation 'WHOLE-BUFFER-P))
-
-;; ;; C-c C-x \	org-toggle-pretty-entities
-;; (defun outshine-toggle-pretty-entities ()
-;;   "Call outorg to trigger `org-toggle-pretty-entities'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-toggle-pretty-entities
-;;                     'WHOLE-BUFFER-P))
-
-;; ;; FIXME: whole buffer?
-;; ;; C-c C-x _	org-timer-stop
-;; (defun outshine-timer-stop ()
-;;   "Call outorg to trigger `org-timer-stop'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-timer-stop))
-
-;; ;; C-c C-x a	org-toggle-archive-tag
-;; (defun outshine-toggle-archive-tag ()
-;;   "Call outorg to trigger `org-toggle-archive-tag'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-toggle-archive-tag))
-
-;; ;; C-c C-x b	org-tree-to-indirect-buffer
-;; (defun outshine-tree-to-indirect-buffer (&optional arg)
-;;   "Call outorg to trigger `org-tree-to-indirect-buffer'."
-;;   (interactive "P")
-;;   (outshine-use-outorg 'org-tree-to-indirect-buffer arg))
-
-;; ;; C-c C-x c	org-clone-subtree-with-time-shift
-;; (defun outshine-clone-subtree-with-time-shift ()
-;;   "Call outorg to trigger `org-clone-subtree-with-time-shift'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-clone-subtree-with-time-shift))
-
-;; ;; C-c C-x d	org-insert-drawer
-;; (defun outshine-insert-drawer ()
-;;   "Call outorg to trigger `org-insert-drawer'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-insert-drawer))
-
-;; ;; ;; C-c C-x e	org-set-effort
-;; (defun outshine-set-effort (&optional arg)
-;;   "Call outorg to trigger `org-set-effort'."
-;;   (interactive "p")
-;;   (outshine-use-outorg
-;;    'org-set-effort nil arg))
-
-;; ;; C-c C-x f	org-footnote-action
-;; (defun outshine-footnote-action (&optional special)
-;;   "Call outorg to trigger `org-footnote-action'."
-;;   (interactive "P")
-;;   (outshine-use-outorg
-;;    'org-footnote-action 'WHOLE-BUFFER-P special))
-
-;; ;; C-c C-x g	org-feed-update-all
-;; (defun outshine-feed-update-all ()
-;;   "Call outorg to trigger `org-feed-update-all'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-feed-update-all))
-
-;; ;; C-c C-x i	org-insert-columns-dblock
-;; (defun outshine-insert-columns-dblock ()
-;;   "Call outorg to trigger `org-insert-columns-dblock'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-insert-columns-dblock))
-
-;; ;; C-c C-x l	org-metaleft
-;; ;; C-c C-x m	org-meta-return
-
-;; ;; C-c C-x o	org-toggle-ordered-property
-;; (defun outshine-toggle-ordered-property ()
-;;   "Call outorg to trigger `org-toggle-ordered-property'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-toggle-ordered-property))
-
-;; ;; C-c C-x p	org-set-property
-;; (defun outshine-set-property ()
-;;   "Call outorg to trigger `org-set-property'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-set-property))
-
-;; ;; C-c C-x q	org-toggle-tags-groups
-;; (defun outshine-toggle-tags-groups ()
-;;   "Call outorg to trigger `org-toggle-tags-groups'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-toggle-tags-groups))
-
-;; ;; C-c C-x r	org-metaright
-;; ;; C-c C-x u	org-metaup
-
-;; ;; C-c C-x v	org-copy-visible
-;; (defun outshine-copy-visible ()
-;;   "Call outorg to trigger `org-copy-visible'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-copy-visible 'WHOLE-BUFFER-P))
-
-;; ;; C-c C-x <left>	org-shiftcontrolleft
-;; ;; C-c C-x <right>			org-shiftcontrolright
-
-;; ;; C-c M-#		outorg-edit-as-org
-;; ;; C-c M-+		outorg-edit-comments-and-propagate-changes
-;; ;; C-c M-a		show-all
-;; ;; C-c M-c		hide-entry
-;; ;; C-c M-e		show-entry
-;; ;; C-c M-k		show-branches
-;; ;; C-c M-p		outshine-imenu
-;; ;; C-c M-q		outline-hide-sublevels
-;; ;; C-c M-t		hide-body
-;; ;; C-c M-u		outline-up-heading
-
-;; ;; C-c C-v C-M-h	org-babel-mark-block
-;; (defun outshine-babel-mark-block ()
-;;   "Call outorg to trigger `org-babel-mark-block'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-babel-mark-block))
-
-;; ;; C-c C-x C-M-v	org-redisplay-inline-images
-;; (defun outshine-redisplay-inline-images ()
-;;   "Call outorg to trigger `org-redisplay-inline-images'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-redisplay-inline-images
-;;                     'WHOLE-BUFFER-P))
-
-;; ;; ;; C-c C-x M-w	org-copy-special
-;; (defun outshine-copy-special ()
-;;   "Call outorg to trigger `org-copy-special'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-copy-special))
-
-;; ;; C-c C-x RET g	org-mobile-pull
-;; (defun outshine-mobile-pull ()
-;;   "Call outorg to trigger `org-mobile-pull'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-mobile-pull))
-
-;; ;; C-c C-x RET p	org-mobile-push
-;; (defun outshine-mobile-push ()
-;;   "Call outorg to trigger `org-mobile-push'."
-;;   (interactive)
-;;   (outshine-use-outorg 'org-mobile-push))
-
-;; ;; <remap> <backward-paragraph>	org-backward-paragraph
-;; ;; <remap> <comment-dwim>		org-comment-dwim
-;; ;; <remap> <delete-backward-char>	org-delete-backward-char
-;; ;; <remap> <delete-char>		org-delete-char
-;; ;; <remap> <forward-paragraph>	org-forward-paragraph
-;; ;; <remap> <open-line>		org-open-line
-;; ;; <remap> <outline-backward-same-level>
-;; ;;                           org-backward-heading-same-level
-;; ;; <remap> <outline-demote>	org-demote-subtree
-;; ;; <remap> <outline-forward-same-level>
-;; ;;                           org-forward-heading-same-level
-;; ;; <remap> <outline-insert-heading>
-;; ;;                           org-ctrl-c-ret
-;; ;; <remap> <outline-mark-subtree>	org-mark-subtree
-;; ;; <remap> <outline-promote>	org-promote-subtree
-;; ;; <remap> <self-insert-command>	org-self-insert-command
-;; ;; <remap> <show-branches>		org-kill-note-or-show-branches
-;; ;; <remap> <show-subtree>		org-show-subtree
-;; ;; <remap> <transpose-words>	org-transpose-words
-
-
-;;;; Menus and Keybindings
+;;; Menus and Keybindings
 
 ;; FIXME
 ;; From: Stefan Monnier <monnier@iro.umontreal.ca>
@@ -3852,441 +2388,7 @@ marking subtree (and subsequently run the tex command)."
 (define-key outshine-mode-map [M-down] 'outline-next-visible-heading)
 
 ;;;;; Other Keybindings
-
-;; FIXME: Remove commented code, or move to separate file or documentation.
-
-;; ;;;;;; [Prefix]
-
-;; ;; Put this in your init.el. The prefix can only be changed before
-;; ;; outline (minor) mode is loaded!
-
-;; ;; #+begin_example
-;; ;;  (defvar outline-minor-mode-prefix "\M-#")
-;; ;; #+end_example
-
-;; ;;;;;; [Subprefix]
-
-;; ;; Set the outline-minor-mode-prefix key in your init-file
-;; ;; before loading outline-mode
-;; (let ((map (lookup-key outshine-mode-map outline-minor-mode-prefix)))
-;;   ;; define sub-prefix
-;;   ;; (define-key map (kbd "C-v") nil)
-;;   (define-key map (kbd "M-+") nil)
-;;   ;; (define-key map (kbd "C-x") nil)
-;;   (define-key map (kbd "M-#") nil)
-
-;; ;;;;;; [M-# Punctuation]
-
-;;   (define-key map (kbd "#") 'outorg-edit-as-org)
-;;   (define-key map (kbd "SPC") 'outshine-table-blank-field)
-;;   (define-key map (kbd "!") 'outshine-time-stamp-inactive)
-;;   (define-key map (kbd "$") 'outshine-archive-subtree)
-;;   (define-key map (kbd "%") 'outshine-mark-ring-push)
-;;   (define-key map (kbd "&") 'outshine-mark-ring-goto)
-;;   (define-key map (kbd "'") 'outshine-edit-special)
-;;   (define-key map (kbd "*") 'outshine-ctrl-c-star)
-;;   (define-key map (kbd "+") 'outshine-table-sum)
-;;   (define-key map (kbd ",") 'outshine-priority)
-;;   (define-key map (kbd "-") 'outshine-ctrl-c-minus)
-;;   (define-key map (kbd ".") 'outshine-time-stamp)
-;;   ;; (define-key map (kbd "/") 'outshine-sparse-tree)
-;;   (define-key map (kbd ":") 'outshine-toggle-fixed-width)
-;;   (define-key map (kbd ";") 'outshine-toggle-comment)
-;;   (define-key map (kbd "<") 'outshine-date-from-calendar)
-;;   (define-key map (kbd "=") 'outshine-table-eval-formula)
-;;   (define-key map (kbd ">") 'outshine-goto-calendar)
-;;   (define-key map (kbd "?") 'outshine-table-field-info)
-;;   (define-key map (kbd "@") 'outshine-mark-subtree)
-;;   (define-key map (kbd "\\") 'outshine-match-sparse-tree)
-;;   (define-key map (kbd "^") 'outshine-sort-entries)
-;;   (define-key map (kbd "`") 'outshine-table-edit-field)
-;;   (define-key map (kbd "{") 'outshine-table-toggle-formula-debugger)
-;;   (define-key map (kbd "|")
-;;     'outshine-table-create-or-convert-from-region)
-;;   (define-key map (kbd "}")
-;;     'outshine-table-toggle-coordinate-overlays)
-;;   (define-key map (kbd "~") 'outshine-table-create-with-table.el)
-
-;; ;;;;;; [M-# Letter];; ;;;;;; [M-# Letter]
-
-;;   ;; (outshine-define-key-with-fallback
-;;   ;;  outshine-mode-map (kbd "J")
-;;   ;;  (outshine-hide-more) (outline-on-heading-p))
-;;   ;; outshine-define-key-with-fallback
-;;   ;;  outshine-mode-map
-;;   ;; (define-key map (kbd "I") 'outline-previous-visible-heading)
-;;   ;; (define-key map (kbd "K") 'outline-next-visible-heading[M-# M-Punctuation]
-
-;;   ;; (define-key map (kbd "C-^") 'outshine-up-element)
-;;   ;; (define-key map (kbd "M-^") 'outshine-up-element)
-
-;;   ;; (define-key map (kbd "C-_") 'outshine-down-element)
-;;   ;; (define-key map (kbd "M-_") 'outshine-down-element)
-
-
-;;   ;; (define-key map (kbd "C-x C-M-v")
-;;   ;;   'outshine-redisplay-inline-images)
-;;   (define-key map (kbd "M-# C-M-v")
-;;     'outshine-redisplay-inline-images)
-;;   ;; (define-key map (kbd "C-x RET g") 'outshine-mobile-pull)
-;;   (define-key map (kbd "M-# RET g") 'outshine-mobile-pull)
-;;   ;; (define-key map (kbd "C-x RET p") 'outshine-mobile-push)
-;;   (define-key map (kbd "M-# RET p") 'outshine-mobile-push)
-;;   ;; (define-key map (kbd "C-c C-x RET g") 'outshine-mobile-pull)
-;;   ;; (define-key map (kbd "C-c C-x RET p") 'outshine-mobile-push)
-
-
-;; ;;;;;; [M-# M-letter]
-
-;;   ;; (define-key map (kbd "C-t") 'hide-body)
-;;   (define-key map (kbd "M-t") 'hide-body)
-;;   ;; (define-key map (kbd "C-a") 'show-all)
-;;   (define-key map (kbd "M-a") 'show-all)
-;;   ;; (define-key map (kbd "C-c") 'hide-entry)
-;;   (define-key map (kbd "M-c") 'hide-entry)
-;;   ;; (define-key map (kbd "C-e") 'show-entry)
-;;   (define-key map (kbd "M-e") 'show-entry)
-;;   ;; (define-key map (kbd "C-l") 'hide-leaves)
-;;   (define-key map (kbd "M-l") 'hide-leaves)
-;;   ;; (define-key map (kbd "C-k") 'show-branches)
-;;   (define-key map (kbd "M-k") 'show-branches)
-;;   ;; (define-key map (kbd "C-q") 'outline-hide-sublevels)
-;;   (define-key map (kbd "M-q") 'outline-hide-sublevels)
-;;   ;; (define-key map (kbd "C-o") 'outline-hide-other)
-;;   (define-key map (kbd "M-o") 'outline-hide-other)
-;;   ;; (define-key map (kbd "C-u") 'outline-up-heading)
-;;   (define-key map (kbd "M-u") 'outline-up-heading)
-;;   ;; (define-key map (kbd "C-+") 'outshine-imenu-with-navi-regexp)
-;;   ;; (define-key map (kbd "M-+") 'outshine-imenu-with-navi-regexp)
-;;   ;; (define-key map (kbd "C-p") 'outshine-imenu)
-;;   (define-key map (kbd "M-p") 'outshine-imenu)
-;;   ;; USE OUTORG TO CALL ORG
-;;   ;; 1st binding for 'C-c' prefix, 2nd for 'M-#' prefix
-;;   ;; (define-key map (kbd "C-j") 'outshine-goto)
-;;   ;; (define-key map (kbd "M-j") 'outshine-goto)
-;;   (define-key map (kbd "M-j") 'outshine-imenu)
-;;   ;; (define-key map (kbd "C-o") 'outshine-open-at-point)
-;;   (define-key map (kbd "M-o") 'outshine-open-at-point)
-;;   ;; (define-key map (kbd "C-a") 'outshine-attach)
-;;   (define-key map (kbd "M-a") 'outshine-attach)
-;;   ;; (define-key map (kbd "C-c") 'outshine-ctrl-c-ctrl-c)
-;;   (define-key map (kbd "M-c") 'outshine-ctrl-c-ctrl-c)
-;;   ;; (define-key map (kbd "C-d") 'outshine-deadline)
-;;   (define-key map (kbd "M-d") 'outshine-deadline)
-;;   ;; (define-key map (kbd "C-e") 'outshine-export-dispatch)
-;;   (define-key map (kbd "M-e") 'outshine-export-dispatch)
-;;   ;; (define-key map (kbd "C-k")
-;;   ;;   'outshine-kill-note-or-show-branches)
-;;   (define-key map (kbd "M-k") 'outshine-kill-note-or-show-branches)
-;;   ;; (define-key map (kbd "C-l") 'outshine-insert-link)
-;;   (define-key map (kbd "M-l") 'outshine-insert-link) ; FIXME
-;;   ;; (define-key map (kbd "RET") 'outshine-ctrl-c-ret)
-;;   ;; (define-key map (kbd "C-q") 'outshine-set-tags-command)
-;;   (define-key map (kbd "M-q") 'outshine-set-tags-command)
-;;   ;; (define-key map (kbd "C-r") 'outshine-reveal)
-;;   (define-key map (kbd "M-r") 'outshine-reveal)
-;;   ;; (define-key map (kbd "C-s") 'outshine-schedule)
-;;   (define-key map (kbd "M-s") 'outshine-schedule)
-;;   ;; (define-key map (kbd "C-t") 'outshine-todo)
-;;   (define-key map (kbd "M-t") 'outshine-todo)
-;;   ;; (define-key map (kbd "C-v") 'Prefix Command)
-;;   ;; (define-key map (kbd "C-w") 'outshine-refile)
-;;   ;; (define-key map (kbd "M-w") 'outshine-refile)
-;;   (define-key map (kbd "M-w") 'outshine-imenu)
-;;   ;; (define-key map (kbd "C-x") 'Prefix Command)
-;;   ;; (define-key map (kbd "C-y") 'outshine-evaluate-time-range)
-;;   (define-key map (kbd "M-y") 'outshine-evaluate-time-range)
-;;   ;; (define-key map (kbd "C-z") 'outshine-add-note)
-;;   (define-key map (kbd "M-z") 'outshine-add-note)
-;;   ;; (define-key map (kbd "ESC") 'Prefix Command)
-;;   ;; (define-key map (kbd "C-*") 'outshine-list-make-subtree)
-;;   (define-key map (kbd "M-*") 'outshine-list-make-subtree)
-;;   (define-key map (kbd "C-M-l") 'outshine-insert-all-links)
-;;   (define-key map (kbd "M-b") 'outshine-previous-block)
-;;   (define-key map (kbd "M-f") 'outshine-next-block)
-;;   ;; FIXME overrides keybinding
-;;   (define-key map (kbd "M-l") 'outshine-insert-last-stored-link)
-;;   ;; C-c M-o		tj/mail-subtree
-;;   (define-key map (kbd "M-w") 'outshine-copy)
-
-;;   ;; (define-key map (kbd "C-b")
-;;   ;;   'outshine-backward-heading-same-level)
-;;   ;; (define-key map (kbd "M-b")
-;;   ;;   'outshine-backward-heading-same-level)
-
-;;   ;; (define-key map (kbd "C-f")
-;;   ;;   'outshine-forward-heading-same-level)
-;;   ;; (define-key map (kbd "M-f")
-;;   ;;   'outshine-forward-heading-same-level)
-
-
-;; ;;;;;; [M-# M-# Punctuation]
-
-;;   (define-key map (kbd "M-# #") 'outshine-update-statistics-cookies)
-;;   (define-key map (kbd "M-# +")
-;;     'outorg-edit-comments-and-propagate-changes)
-;;   ;; (define-key map (kbd "C-x !") 'outshine-reload)
-;;   (define-key map (kbd "M-# !") 'outshine-reload)
-;;   ;; (define-key map (kbd "C-x [") 'outshine-reftex-citation)
-;;   (define-key map (kbd "M-# [") 'outshine-reftex-citation)
-;;   ;; (define-key map (kbd "C-x \\")
-;;   ;;   'outshine-toggle-pretty-entities)
-;;   (define-key map (kbd "M-# \\") 'outshine-toggle-pretty-entities)
-;;   ;; (define-key map (kbd "C-x _") 'outshine-timer-stop)
-;;   (define-key map (kbd "M-# _") 'outshine-timer-stop)
-;;   ;; (define-key map (kbd "C-x ,")
-;;   ;;   'outshine-timer-pause-or-continue)
-;;   (define-key map (kbd "M-# ,") 'outshine-timer-pause-or-continue)
-;;   ;; (define-key map (kbd "C-x -") 'outshine-timer-item)
-;;   (define-key map (kbd "M-# -") 'outshine-timer-item)
-;;   ;; (define-key map (kbd "C-x .") 'outshine-timer)
-;;   (define-key map (kbd "M-# .") 'outshine-timer)
-;;   ;; (define-key map (kbd "C-x 0") 'outshine-timer-start)
-;;   (define-key map (kbd "M-# 0") 'outshine-timer-start)
-;;   ;; (define-key map (kbd "C-x :") 'outshine-timer-cancel-timer)
-;;   (define-key map (kbd "M-# :") 'outshine-timer-cancel-timer)
-;;   ;; (define-key map (kbd "C-x ;") 'outshine-timer-set-timer)
-;;   (define-key map (kbd "M-# ;") 'outshine-timer-set-timer)
-;;   ;; (define-key map (kbd "C-x <")
-;;   ;;   'outshine-agenda-set-restriction-lock)
-;;   (define-key map (kbd "M-# <")
-;;     'outshine-agenda-set-restriction-lock)
-;;   ;; (define-key map (kbd "C-x >")
-;;   ;;   'outshine-agenda-remove-restriction-lock)
-;;   (define-key map (kbd "M-# >")
-;;     'outshine-agenda-remove-restriction-lock)
-;;   ;; (define-key map (kbd "C-x TAB") 'outshine-clock-in)
-;;   (define-key map (kbd "M-# TAB") 'outshine-clock-in)
-
-;; ;;;;;; [M-# M-# Letter]
-
-;;   ;; (define-key map (kbd "C-x A")
-;;   ;;   'outshine-archive-to-archive-sibling)
-;;   (define-key map (kbd "M-# A")
-;;     'outshine-archive-to-archive-sibling)
-;;   ;; (define-key map (kbd "C-x D") 'outshine-shiftmetadown)
-;;   (define-key map (kbd "M-# D") 'outshine-shiftmetadown)
-;;   ;; (define-key map (kbd "C-x E") 'outshine-inc-effort)
-;;   (define-key map (kbd "M-# E") 'outshine-inc-effort)
-;;   ;; (define-key map (kbd "C-x G") 'outshine-feed-goto-inbox)
-;;   (define-key map (kbd "M-# G") 'outshine-feed-goto-inbox)
-;;   ;; (define-key map (kbd "C-x L") 'outshine-shiftmetaleft)
-;;   (define-key map (kbd "M-# L") 'outshine-shiftmetaleft)
-;;   ;; (define-key map (kbd "C-x M") 'outshine-insert-todo-heading)
-;;   (define-key map (kbd "M-# M") 'outshine-insert-todo-heading)
-;;   ;; (define-key map (kbd "C-x P") 'outshine-set-property-and-value)
-;;   (define-key map (kbd "M-# P") 'outshine-set-property-and-value)
-;;   ;; (define-key map (kbd "C-x R") 'outshine-shiftmetaright)
-;;   (define-key map (kbd "M-# R") 'outshine-shiftmetaright)
-;;   ;; (define-key map (kbd "C-x U") 'outshine-shiftmetaup)
-;;   (define-key map (kbd "M-# U") 'outshine-shiftmetaup)
-
-;; ;;;;;; [M-# M-# letter]
-
-;;   ;; (define-key map (kbd "C-x a") 'outshine-toggle-archive-tag)
-;;   (define-key map (kbd "M-# a") 'outshine-toggle-archive-tag)
-;;   ;; (define-key map (kbd "C-x b")
-;;   ;;   'outshine-tree-to-indirect-buffer)
-;;   (define-key map (kbd "M-# b") 'outshine-tree-to-indirect-buffer)
-;;   ;; (define-key map (kbd "C-x c")
-;;   ;;   'outshine-clone-subtree-with-time-shift)
-;;   (define-key map (kbd "M-# c") 'outshine-clone-subtree-with-time-shift)
-;;   ;; (define-key map (kbd "C-x d") 'outshine-insert-drawer)
-;;   (define-key map (kbd "M-# d") 'outshine-insert-drawer)
-;;   ;; (define-key map (kbd "C-x e") 'outshine-set-effort)
-;;   (define-key map (kbd "M-# e") 'outshine-set-effort)
-;;   ;; (define-key map (kbd "C-x f") 'outshine-footnote-action)
-;;   (define-key map (kbd "M-# f") 'outshine-footnote-action)
-;;   ;; (define-key map (kbd "C-x g") 'outshine-feed-update-all)
-;;   (define-key map (kbd "M-# g") 'outshine-feed-update-all)
-;;   ;; (define-key map (kbd "C-x i") 'outshine-insert-columns-dblock)
-;;   (define-key map (kbd "M-# i") 'outshine-insert-columns-dblock)
-;;   ;; (define-key map (kbd "C-x l") 'outshine-metaleft)
-;;   (define-key map (kbd "M-# l") 'outshine-metaleft)
-;;   ;; (define-key map (kbd "C-x m") 'outshine-meta-return)
-;;   (define-key map (kbd "M-# m") 'outshine-meta-return)
-;;   ;; (define-key map (kbd "C-x o")
-;;   ;;   'outshine-toggle-ordered-property)
-;;   (define-key map (kbd "M-# o") 'outshine-toggle-ordered-property)
-;;   ;; (define-key map (kbd "C-x p") 'outshine-set-property)
-;;   (define-key map (kbd "M-# p") 'outshine-set-property)
-;;   ;; (define-key map (kbd "C-x q") 'outshine-toggle-tags-groups)
-;;   (define-key map (kbd "M-# q") 'outshine-toggle-tags-groups)
-;;   ;; (define-key map (kbd "C-x r") 'outshine-metaright)
-;;   (define-key map (kbd "M-# r") 'outshine-metaright)
-;;   ;; (define-key map (kbd "C-x u") 'outshine-metaup)
-;;   (define-key map (kbd "M-# u") 'outshine-metaup)
-;;   ;; (define-key map (kbd "C-x v") 'outshine-copy-visible)
-;;   (define-key map (kbd "M-# v") 'outshine-copy-visible)
-
-;; ;;;;;; [M-# M-# M-letter]
-
-;;   ;; (define-key map (kbd "C-x C-a")
-;;   ;;   'outshine-archive-subtree-default)
-;;   (define-key map (kbd "M-# M-a") 'outshine-archive-subtree-default)
-;;   ;; (define-key map (kbd "C-x C-b") 'outshine-toggle-checkbox)
-;;   (define-key map (kbd "M-# M-b") 'outshine-toggle-checkbox)
-;;   ;; (define-key map (kbd "C-x C-c") 'outshine-columns)
-;;   (define-key map (kbd "M-# M-c") 'outshine-columns)
-;;   ;; (define-key map (kbd "C-x C-d") 'outshine-clock-display)
-;;   (define-key map (kbd "M-# M-d") 'outshine-clock-display)
-;;   ;; (define-key map (kbd "C-x C-f") 'org-emphasize)
-;;   (define-key map (kbd "M-# M-f") 'org-emphasize)
-;;   ;; (define-key map (kbd "C-x C-j") 'outshine-clock-goto)
-;;   (define-key map (kbd "M-# M-j") 'outshine-clock-goto)
-;;   ;; (define-key map (kbd "C-x C-l")
-;;   ;;   'outshine-preview-latex-fragment)
-;;   (define-key map (kbd "M-# M-l") 'outshine-preview-latex-fragment)
-;;   ;; (define-key map (kbd "C-x C-n") 'outshine-next-link)
-;;   (define-key map (kbd "M-# M-n") 'outshine-next-link)
-;;   ;; (define-key map (kbd "C-x C-o") 'outshine-clock-out)
-;;   (define-key map (kbd "M-# M-o") 'outshine-clock-out)
-;;   ;; (define-key map (kbd "C-x C-p") 'outshine-previous-link)
-;;   (define-key map (kbd "M-# M-p") 'outshine-previous-link)
-;;   ;; (define-key map (kbd "C-x C-q") 'outshine-clock-cancel)
-;;   (define-key map (kbd "M-# M-q") 'outshine-clock-cancel)
-;;   ;; (define-key map (kbd "C-x C-r") 'outshine-clock-report)
-;;   (define-key map (kbd "M-# M-r") 'outshine-clock-report)
-;;   ;; (define-key map (kbd "C-x C-s")
-;;   ;;   'outshine-advertized-archive-subtree)
-;;   (define-key map (kbd "M-# M-s")
-;;     'outshine-advertized-archive-subtree)
-;;   ;; (define-key map (kbd "C-x C-t")
-;;   ;;   'outshine-toggle-time-stamp-overlays)
-;;   (define-key map (kbd "M-# M-t")
-;;     'outshine-toggle-time-stamp-overlays)
-;;   ;; (define-key map (kbd "C-x C-u") 'outshine-dblock-update)
-;;   (define-key map (kbd "M-# M-u") 'outshine-dblock-update)
-;;   ;; (define-key map (kbd "C-x C-v") 'outshine-toggle-inline-images)
-;;   (define-key map (kbd "M-# M-v") 'outshine-toggle-inline-images)
-;;   ;; (define-key map (kbd "C-x C-k") 'outshine-cut-special)
-;;   (define-key map (kbd "M-# M-k") 'outshine-cut-special)
-;;   ;; (define-key map (kbd "C-x M-w") 'outshine-copy-special)
-;;   (define-key map (kbd "M-# M-w") 'outshine-copy-special)
-;;   ;; (define-key map (kbd "C-x C-x") 'outshine-clock-in-last)
-;;   (define-key map (kbd "M-# M-x") 'outshine-clock-in-last)
-;;   ;; (define-key map (kbd "C-x C-y") 'outshine-paste-special)
-;;   (define-key map (kbd "M-# M-y") 'outshine-paste-special)
-;;   ;; (define-key map (kbd "C-x C-z") 'outshine-resolve-clocks)
-;;   (define-key map (kbd "M-# M-z") 'outshine-resolve-clocks)
-
-;; ;;;;;; [M-# M-+ Punctuation]
-
-;;   ;; (define-key map (kbd "C-v TAB")
-;;   ;;   'outshine-babel-view-src-block-info)
-;;   (define-key map (kbd "M-+ TAB")
-;;     'outshine-babel-view-src-block-info)
-
-;; ;;;;;; [M-# M-+ Letter]
-
-;;   ;; (define-key map (kbd "C-v I") 'outshine-babel-view-src-block-info)
-;;   (define-key map (kbd "M-+ I") 'outshine-babel-view-src-block-info)
-
-;; ;;;;;; [M-# M-+ letter]
-
-;;   ;; (define-key map (kbd "C-v a") 'outshine-babel-sha1-hash)
-;;   (define-key map (kbd "M-+ a") 'outshine-babel-sha1-hash)
-;;   ;; (define-key map (kbd "C-v b") 'outshine-babel-execute-buffer)
-;;   (define-key map (kbd "M-+ b") 'outshine-babel-execute-buffer)
-;;   ;; (define-key map (kbd "C-v c") 'outshine-babel-check-src-block)
-;;   (define-key map (kbd "M-+ c") 'outshine-babel-check-src-block)
-;;   ;; (define-key map (kbd "C-v d") 'outshine-babel-demarcate-block)
-;;   (define-key map (kbd "M-+ d") 'outshine-babel-demarcate-block)
-;;   ;; (define-key map (kbd "C-v e") 'outshine-babel-execute-maybe)
-;;   (define-key map (kbd "M-+ e") 'outshine-babel-execute-maybe)
-;;   ;; (define-key map (kbd "C-v f") 'outshine-babel-tangle-file)
-;;   (define-key map (kbd "M-+ f") 'outshine-babel-tangle-file)
-;;   ;; (define-key map (kbd "C-v g") 'outshine-babel-goto-named-src-block)
-;;   (define-key map (kbd "M-+ g") 'outshine-babel-goto-named-src-block)
-;;   ;; (define-key map (kbd "C-v h") 'outshine-babel-describe-bindings)
-;;   (define-key map (kbd "M-+ h") 'outshine-babel-describe-bindings)
-;;   ;; (define-key map (kbd "C-v i") 'outshine-babel-lob-ingest)
-;;   (define-key map (kbd "M-+ i") 'outshine-babel-lob-ingest)
-;;   ;; (define-key map (kbd "C-v j") 'outshine-babel-insert-header-arg)
-;;   (define-key map (kbd "M-+ j") 'outshine-babel-insert-header-arg)
-;;   ;; (define-key map (kbd "C-v k") 'outshine-babel-remove-result-one-or-many)
-;;   (define-key map (kbd "M-+ k") 'outshine-babel-remove-result-one-or-many)
-;;   ;; (define-key map (kbd "C-v l") 'outshine-babel-load-in-session)
-;;   (define-key map (kbd "M-+ l") 'outshine-babel-load-in-session)
-;;   ;; (define-key map (kbd "C-v n") 'outshine-babel-next-src-block)
-;;   (define-key map (kbd "M-+ n") 'outshine-babel-next-src-block)
-;;   ;; (define-key map (kbd "C-v o") 'outshine-babel-open-src-block-result)
-;;   (define-key map (kbd "M-+ o") 'outshine-babel-open-src-block-result)
-;;   ;; (define-key map (kbd "C-v p") 'outshine-babel-previous-src-block)
-;;   (define-key map (kbd "M-+ p") 'outshine-babel-previous-src-block)
-;;   ;; (define-key map (kbd "C-v r") 'outshine-babel-goto-named-result)
-;;   (define-key map (kbd "M-+ r") 'outshine-babel-goto-named-result)
-;;   ;; (define-key map (kbd "C-v s") 'outshine-babel-execute-subtree)
-;;   (define-key map (kbd "M-+ s") 'outshine-babel-execute-subtree)
-;;   ;; (define-key map (kbd "C-v t") 'outshine-babel-tangle)
-;;   (define-key map (kbd "M-+ t") 'outshine-babel-tangle)
-;;   ;; (define-key map (kbd "C-v u") 'outshine-babel-goto-src-block-head)
-;;   (define-key map (kbd "M-+ u") 'outshine-babel-goto-src-block-head)
-;;   ;; (define-key map (kbd "C-v v") 'outshine-babel-expand-src-block)
-;;   (define-key map (kbd "M-+ v") 'outshine-babel-expand-src-block)
-;;   ;; (define-key map (kbd "C-v x") 'outshine-babel-do-key-sequence-in-edit-buffer)
-;;   (define-key map (kbd "M-+ x") 'outshine-babel-do-key-sequence-in-edit-buffer)
-;;   ;; (define-key map (kbd "C-v z") 'outshine-babel-switch-to-session-with-code)
-;;   (define-key map (kbd "M-+ z") 'outshine-babel-switch-to-session-with-code)
-
-;; ;;;;;; [M-# M-+ M-Punctuation]
-
-;;   ;; (define-key map (kbd "C-v '")
-;;   ;;   'outorg-edit-comments-and-propagate-changes)
-;;   (define-key map (kbd "M-# M-+")
-;;     'outorg-edit-comments-and-propagate-changes)
-
-;; ;;;;;; [M-# M-+ M-letter]
-
-;;   ;; (define-key map (kbd "C-v C-a") 'outshine-babel-sha1-hash)
-;;   (define-key map (kbd "M-+ M-a") 'outshine-babel-sha1-hash)
-;;   ;; (define-key map (kbd "C-v C-b") 'outshine-babel-execute-buffer)
-;;   (define-key map (kbd "M-+ M-b") 'outshine-babel-execute-buffer)
-;;   ;; (define-key map (kbd "C-v C-c")
-;;   ;;   'outshine-babel-check-src-block)
-;;   (define-key map (kbd "M-+ M-c") 'outshine-babel-check-src-block)
-;;   ;; (define-key map (kbd "C-v C-d")
-;;   ;;   'outshine-babel-demarcate-block)
-;;   (define-key map (kbd "M-+ M-d") 'outshine-babel-demarcate-block)
-;;   ;; (define-key map (kbd "C-v C-e") 'outshine-babel-execute-maybe)
-;;   (define-key map (kbd "M-+ M-e") 'outshine-babel-execute-maybe)
-;;   ;; (define-key map (kbd "C-v C-f") 'outshine-babel-tangle-file)
-;;   (define-key map (kbd "M-+ M-f") 'outshine-babel-tangle-file)
-;;   ;; (define-key map (kbd "C-v C-j")
-;;   ;;  'outshine-babel-insert-header-arg)
-;;   (define-key map (kbd "M-+ M-j") 'outshine-babel-insert-header-arg)
-;;   ;; (define-key map (kbd "C-v C-l") 'outshine-babel-load-in-session)
-;;   (define-key map (kbd "M-+ M-l") 'outshine-babel-load-in-session)
-;;   ;; (define-key map (kbd "C-v C-n") 'outshine-babel-next-src-block)
-;;   (define-key map (kbd "M-+ M-n") 'outshine-babel-next-src-block)
-;;   ;; (define-key map (kbd "C-v C-o") 'outshine-babel-open-src-block-result)
-;;   (define-key map (kbd "M-+ M-o") 'outshine-babel-open-src-block-result)
-;;   ;; (define-key map (kbd "C-v C-p") 'outshine-babel-previous-src-block)
-;;   (define-key map (kbd "M-+ M-p") 'outshine-babel-previous-src-block)
-;;   ;; (define-key map (kbd "C-v C-r") 'outshine-babel-goto-named-result)
-;;   (define-key map (kbd "M-+ M-r") 'outshine-babel-goto-named-result)
-;;   ;; (define-key map (kbd "C-v C-s") 'outshine-babel-execute-subtree)
-;;   (define-key map (kbd "M-+ M-s") 'outshine-babel-execute-subtree)
-;;   ;; (define-key map (kbd "C-v C-t") 'outshine-babel-tangle)
-;;   (define-key map (kbd "M-+ M-t") 'outshine-babel-tangle)
-;;   ;; (define-key map (kbd "C-v C-u") 'outshine-babel-goto-src-block-head)
-;;   (define-key map (kbd "M-+ M-u") 'outshine-babel-goto-src-block-head)
-;;   ;; (define-key map (kbd "C-v C-v") 'outshine-babel-expand-src-block)
-;;   (define-key map (kbd "M-+ M-v") 'outshine-babel-expand-src-block)
-;;   ;; (define-key map (kbd "C-v C-x") 'outshine-babel-do-key-sequence-in-edit-buffer)
-;;   (define-key map (kbd "M-+ M-x") 'outshine-babel-do-key-sequence-in-edit-buffer)
-;;   ;; (define-key map (kbd "C-v C-z") 'outshine-babel-switch-to-session)
-;;   (define-key map (kbd "M-+ M-z") 'outshine-babel-switch-to-session)
-
-;;   ;; (define-key map (kbd "C-v C-M-h") 'outshine-babel-mark-block)
-;;   (define-key map (kbd "M-+ C-M-h") 'outshine-babel-mark-block)
-
-;; )
-
-;; ;; (define-key map (kbd "<up>") 'outshine-shiftup)
-;; ;; (define-key map (kbd "<down>") 'outshine-shiftdown)
-;; ;; C-c C-x <left>	org-shiftcontrolleft
-;; ;; C-c C-x <right>      org-shiftcontrolright
+;; refer to Key Bindings section in outshine-org-cmds.el
 
 ;;;; Footer
 

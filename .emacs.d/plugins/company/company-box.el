@@ -120,6 +120,11 @@ To change the number of _visible_ chandidates, see `company-tooltip-limit'"
   :type 'integer
   :group 'company-box)
 
+(defcustom company-box-show-single-candidate nil
+  "Whether or not to display the candidate if there is only one."
+  :type 'boolean
+  :group 'company-box)
+
 (defcustom company-box-icons-functions
   '(company-box-icons--yasnippet company-box-icons--lsp company-box-icons--elisp company-box-icons--acphp)
   "Functions to call on each candidate that should return an icon.
@@ -253,10 +258,12 @@ Examples:
          (window (display-buffer-in-child-frame buffer `((child-frame-parameters . ,params))))
          (frame (window-frame window)))
     (set-frame-parameter frame 'company-box-buffer buffer)
+    (set-frame-parameter frame 'desktop-dont-save t)
     (unless buf
       (set-frame-parameter nil 'company-box-window window))
     (set-window-dedicated-p window t)
     (redirect-frame-focus frame (frame-parent frame))
+    (set-frame-parameter frame 'name "")
     frame))
 
 (defun company-box--get-ov nil
@@ -640,7 +647,9 @@ COMMAND: See `company-frontends'."
   ;; (message "search-string: %s" company-search-string)
   ;;(message "last-command: %s" last-command)
   (cond
-   ((or (eq command 'hide) (equal company-candidates-length 1))
+   ((eq command 'hide)
+    (company-box-hide))
+   ((and (equal company-candidates-length 1) (null company-box-show-single-candidate))
     (company-box-hide))
    ((eq command 'update)
     (company-box-show))

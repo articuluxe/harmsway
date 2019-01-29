@@ -787,6 +787,40 @@ Set `avy-style' according to COMMMAND as well."
                                    #'avy--remove-leading-chars))))
              (avy--done))))))
 
+(defvar avy-last-candidates nil
+  "Store the last candidate list.")
+
+(defun avy--last-candidates-cycle (advancer)
+  (let* ((avy-last-candidates
+          (cl-remove-if-not
+           (lambda (x) (equal (cdr x) (selected-window)))
+           avy-last-candidates))
+         (min-dist
+          (apply #'min
+                 (mapcar (lambda (x) (abs (- (caar x) (point)))) avy-last-candidates)))
+         (pos
+          (cl-position-if
+           (lambda (x)
+             (= (- (caar x) (point)) min-dist))
+           avy-last-candidates)))
+    (funcall advancer pos avy-last-candidates)))
+
+(defun avy-prev ()
+  "Go to the previous candidate of the last `avy-read'."
+  (interactive)
+  (avy--last-candidates-cycle
+   (lambda (pos lst)
+     (when (> pos 0)
+       (goto-char (caar (nth (1- pos) lst)))))))
+
+(defun avy-next ()
+  "Go to the next candidate of the last `avy-read'."
+  (interactive)
+  (avy--last-candidates-cycle
+   (lambda (pos lst)
+     (when (< pos (1- (length lst)))
+       (goto-char (caar (nth (1+ pos) lst)))))))
+
 (defun avy--process (candidates &optional overlay-fn)
   "Select one of CANDIDATES using `avy-read'.
 Use OVERLAY-FN to visualize the decision overlay."
@@ -796,6 +830,7 @@ Use OVERLAY-FN to visualize the decision overlay."
     (setq candidates
           (mapcar (lambda (x) (cons x (selected-window)))
                   candidates)))
+  (setq avy-last-candidates (copy-sequence candidates))
   (let ((original-cands (copy-sequence candidates))
         (res (avy--process-1 candidates overlay-fn)))
     (cond
@@ -837,18 +872,24 @@ Use OVERLAY-FN to visualize the decision overlay."
   (setq avy--overlays-back nil)
   (avy--remove-leading-chars))
 
+(defun avy--visible-p (s)
+  (let ((invisible (get-char-property s 'invisible)))
+    (or (null invisible)
+        (eq t buffer-invisibility-spec)
+        (null (assoc invisible buffer-invisibility-spec)))))
+
 (defun avy--next-visible-point ()
   "Return the next closest point without 'invisible property."
   (let ((s (point)))
     (while (and (not (= (point-max) (setq s (next-char-property-change s))))
-                (get-char-property s 'invisible)))
+                (not (avy--visible-p s))))
     s))
 
 (defun avy--next-invisible-point ()
   "Return the next closest point with 'invisible property."
   (let ((s (point)))
     (while (and (not (= (point-max) (setq s (next-char-property-change s))))
-                (not (get-char-property s 'invisible))))
+                (avy--visible-p s)))
     s))
 
 (defun avy--find-visible-regions (rbeg rend)
@@ -883,7 +924,7 @@ When GROUP is non-nil, (BEG . END) should delimit that regex group."
         (save-excursion
           (goto-char (car pair))
           (while (re-search-forward regex (cdr pair) t)
-            (unless (get-char-property (1- (point)) 'invisible)
+            (when (avy--visible-p (1- (point)))
               (when (or (null pred)
                         (funcall pred))
                 (push (cons (cons (match-beginning group)
@@ -1404,7 +1445,7 @@ BEG and END narrow the scope where candidates are searched."
                 (while (> (point) ws)
                   (when (or (null predicate)
                             (and predicate (funcall predicate)))
-                    (unless (get-char-property (point) 'invisible)
+                    (unless (not (avy--visible-p (point)))
                       (push (cons (point) (selected-window)) window-cands)))
                   (subword-backward))
                 (and (= (point) ws)
@@ -1906,6 +1947,8 @@ Otherwise, the whole regex is highlighted."
         char break overlays regex)
     (unwind-protect
          (progn
+           (avy--make-backgrounds
+            (avy-window-list))
            (while (and (not break)
                        (setq char
                              (read-char (format "%d  char%s: "
@@ -1949,7 +1992,7 @@ Otherwise, the whole regex is highlighted."
                        (goto-char (car pair))
                        (setq regex (funcall re-builder str))
                        (while (re-search-forward regex (cdr pair) t)
-                         (unless (get-char-property (1- (point)) 'invisible)
+                         (unless (not (avy--visible-p (1- (point))))
                            (let* ((idx (if (= (length (match-data)) 4) 1 0))
                                   (ov (make-overlay
                                        (match-beginning idx) (match-end idx))))
@@ -1967,7 +2010,8 @@ Otherwise, the whole regex is highlighted."
                                      (overlay-get ov 'window)))
                              overlays)))
       (dolist (ov overlays)
-        (delete-overlay ov)))))
+        (delete-overlay ov))
+      (avy--done))))
 
 ;;;###autoload
 (defun avy-goto-char-timer (&optional arg)

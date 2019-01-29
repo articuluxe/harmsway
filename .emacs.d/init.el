@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-01-16 10:16:24 dan.harms>
+;; Modified Time-stamp: <2019-01-22 16:33:17 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2826,7 +2826,7 @@ See `https://github.com/company-mode/company-mode/issues/205'."
   :after flycheck
   :disabled
   :config
-  (add-hook 'flycheck-mode-hook #'turn-on-flycheck-inline))
+  (add-hook 'flycheck-mode-hook #'flycheck-inline-mode))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; flycheck-posframe ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package flycheck-posframe

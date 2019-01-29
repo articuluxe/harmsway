@@ -1,6 +1,6 @@
 ;;; hl-todo.el --- highlight TODO and similar keywords  -*- lexical-binding: t -*-
 
-;; Copyright (C) 2013-2018  Jonas Bernoulli
+;; Copyright (C) 2013-2019  Jonas Bernoulli
 
 ;; Author: Jonas Bernoulli <jonas@bernoul.li>
 ;; Homepage: https://github.com/tarsius/hl-todo
@@ -148,10 +148,13 @@ including alphanumeric characters, cannot be used here."
            (funcall (if backward #'re-search-backward #'re-search-forward)
                     regexp bound t)))
        (or (apply #'derived-mode-p hl-todo-text-modes)
-           (nth 8 (syntax-ppss)) ; inside comment or string
+           (hl-todo--inside-comment-or-string-p)
            (and (or (not bound)
                     (funcall (if backward #'< #'>) bound (point)))
                 (hl-todo--search regexp bound backward)))))
+
+(defun hl-todo--inside-comment-or-string-p ()
+  (nth 8 (syntax-ppss)))
 
 (defun hl-todo--get-face ()
   (let ((face (cdr (assoc (match-string 2) hl-todo-keyword-faces))))
@@ -231,6 +234,40 @@ because it uses a regexp instead of a more sophisticated
 matcher."
   (interactive)
   (occur hl-todo--regexp))
+
+;;;###autoload
+(defun hl-todo-insert-keyword (keyword)
+  "Insert TODO or similar keyword.
+If point is not inside a string or comment, then insert a new
+comment.  If point is at the end of the line, then insert the
+comment there, otherwise insert it as a new line before the
+current line."
+  (interactive
+   (list (completing-read
+          "Insert keyword: "
+          (mapcar (pcase-lambda (`(,keyword . ,face))
+                    (propertize keyword 'face
+                                (if (stringp face)
+                                    (list :inherit 'hl-todo :foreground face)
+                                  face)))
+                  hl-todo-keyword-faces))))
+  (cond
+   ((hl-todo--inside-comment-or-string-p)
+    (insert (concat (and (not (memq (char-before) '(?\s ?\t))) " ")
+                    keyword
+                    (and (not (memq (char-after) '(?\s ?\t ?\n))) " "))))
+   ((eolp)
+    (insert (concat (and (not (memq (char-before) '(?\s ?\t))) " ")
+                    (format "%s %s " comment-start keyword))))
+   (t
+    (goto-char (line-beginning-position))
+    (insert (format "%s %s \n"
+                    (if (derived-mode-p 'lisp-mode 'emacs-lisp-mode)
+                        (format "%s%s" comment-start comment-start)
+                      comment-start)
+                    keyword))
+    (backward-char)
+    (indent-region (line-beginning-position) (line-end-position)))))
 
 ;;; _
 (provide 'hl-todo)

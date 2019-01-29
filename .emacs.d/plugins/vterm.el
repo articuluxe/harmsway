@@ -81,6 +81,7 @@ for different shell. "
   :type 'hook
   :group 'vterm)
 
+
 (defface vterm
   '((t :inherit default))
   "Default face to use in Term mode."
@@ -146,7 +147,8 @@ for different shell. "
   (setq-local scroll-margin 0)
 
   (add-hook 'window-size-change-functions #'vterm--window-size-change t t)
-  (let ((process-environment (append '("TERM=xterm") process-environment)))
+  (let ((process-environment (append '("TERM=xterm") process-environment))
+        (process-adaptive-read-buffering nil))
     (setq vterm--process
           (make-process
            :name "vterm"
@@ -182,7 +184,9 @@ for different shell. "
 (mapcar (lambda (key)
           (define-key vterm-mode-map (kbd key) #'vterm--self-insert))
         (append (cl-loop for number from 1 to 12
-                         collect (format "<f%i>" number))
+                         for key = (format "<f%i>" number)
+                         unless (member key vterm-keymap-exceptions)
+                         collect key)
                 (cl-loop for prefix in '("C-" "M-")
                          append (cl-loop for char from ?a to ?z
                                          for key = (format "%s%c" prefix char)
@@ -224,6 +228,30 @@ for different shell. "
   (when vterm--term
     (dolist (char (string-to-list string))
       (vterm--update vterm--term (char-to-string char) nil nil nil))))
+
+(defvar vterm--redraw-timer nil)
+(make-variable-buffer-local 'vterm--redraw-timer)
+
+(defvar vterm-timer-delay 0.01
+  "Delay for refreshing the terminal buffer after receiving updates from
+libvterm. Improves performance when receiving large bursts of data.
+If nil, never delay")
+
+(defun vterm--invalidate()
+  (if vterm-timer-delay
+      (unless vterm--redraw-timer
+        (setq vterm--redraw-timer
+              (run-with-timer vterm-timer-delay nil
+                              #'vterm--delayed-redraw (current-buffer))))
+    (vterm--delayed-redraw (current-buffer))))
+
+(defun vterm--delayed-redraw(buffer)
+  (with-current-buffer buffer
+    (let ((inhibit-redisplay t)
+          (inhibit-read-only t))
+      (when vterm--term
+        (vterm--redraw vterm--term)))
+    (setq vterm--redraw-timer nil)))
 
 ;;;###autoload
 (defun vterm ()
