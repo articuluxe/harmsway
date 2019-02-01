@@ -1,10 +1,10 @@
 ;;; json-navigator.el --- View and navigate JSON structures
 
-;; Copyright (C) 2017 Damien Cassou
+;; Copyright (C) 2017-2019 Damien Cassou
 
 ;; Author: Damien Cassou <damien@cassou.me>
 ;; URL: https://github.com/DamienCassou/json-navigator
-;; Version: 0.1.0
+;; Version: 0.1.1
 ;; Package-Requires: ((emacs "24.3") (hierarchy "0.6.0"))
 
 ;; This file is not part of GNU Emacs.
@@ -182,8 +182,13 @@ instead of a full one."
 ;;;###autoload
 (defun json-navigator-navigate-region (&optional start end)
   "Navigate JSON inside region between START and END.
-If START (respectively END) is nil, use `point-min' (respectively `point-max') instead."
-  (interactive "r")
+If START (respectively END) is nil, use `point-min' (respectively
+`point-max') instead.
+
+Interactively, if no region is active, use the whole buffer instead."
+  (interactive (if (use-region-p)
+                   (list (region-beginning) (region-end))
+                 (list)))
   (let ((start (or start (point-min)))
         (end (or end (point-max))))
     (json-navigator-display-tree (json-navigator--read-region start end))))

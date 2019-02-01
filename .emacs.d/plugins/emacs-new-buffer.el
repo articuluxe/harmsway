@@ -63,21 +63,19 @@
   "Creates a new buffer with timestamp as the name"
   (interactive)
   (let ((new-buffer-name (emacs-new-buffer--get-buffer-name)))
-    (find-file (concatenate 'string
-                            "~/"
-                            "temp-"
-                            new-buffer-name))))
+    (find-file (concat "~/"
+                       "temp-"
+                       new-buffer-name))))
 
 (defun emacs-new-buffer-as (extension)
   "Creates a new buffer with timestamp as the name and extension as specified"
   (interactive "sEnter a file extension for the new buffer: ")
   (let ((new-buffer-name (emacs-new-buffer--get-buffer-name)))
-    (find-file (concatenate 'string
-                            "~/"
-                            "temp-"
-                            new-buffer-name
-                            "."
-                            extension))))
+    (find-file (concat "~/"
+                       "temp-"
+                       new-buffer-name
+                       "."
+                       extension))))
 
 (defun emacs-new-buffer--get-buffer-name ()
   (format-time-string "%Y%m%d-%H%M%S"))

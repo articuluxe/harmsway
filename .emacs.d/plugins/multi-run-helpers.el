@@ -23,7 +23,7 @@
 
 ;;; Commentary:
 
-;; This contains helper functions for multi-run.el. See that file for the user interface.
+;; This contains helper functions for multi-run.el.  See that file for the user interface.
 
 ;; See the full documentation on https://www.github.com/sagarjha/multi-run.
 
@@ -32,55 +32,23 @@
 (defvar multi-run-timers-list nil
   "Internal list of timers to cancel when multi-run-kill-all-timers is called.")
 
-(defun multi-run-match-term-type-p (multi-run-term-type)
-  "Return non-nil if MULTI-RUN-TERM-TYPE is one of the supported terminal types."
-  (memq multi-run-term-type '(eshell shell ansi-term term multi-term)))
-
 (defun multi-run-get-buffer-name (term-num)
   "Return the name of the buffer for a given terminal number TERM-NUM."
-  (let ((term-num-in-str (number-to-string term-num)))
-    (pcase multi-run-term-type
-      ('eshell (concat "eshell<" term-num-in-str ">"))
-      ('shell (concat "shell<" term-num-in-str ">"))
-      ('ansi-term (concat "ansi-term<" term-num-in-str ">"))
-      ('term (concat "term<" term-num-in-str ">"))
-      ('multi-term (concat "terminal<" term-num-in-str ">"))
-      (multi-run-term-type (error "Value of multi-run-term-type should be one of the following symbols: eshell, shell, ansi-term, term, multi-term")))))
-
-(defun multi-run-get-input-function ()
-  "Return the name of the function that will run the input on the terminal."
-  (pcase multi-run-term-type
-    ('eshell 'eshell-send-input)
-    ('shell 'comint-send-input)
-    ((pred multi-run-match-term-type-p) 'term-send-input)
-    (multi-run-term-type (error "Value of multi-run-term-type should be one of the following symbols: eshell, shell, ansi-term, term, multi-term"))))
-
-(defun multi-run-get-new-input-point ()
-  "Move point to the latest prompt in the terminal buffer."
-  (pcase multi-run-term-type
-    ('eshell eshell-last-output-end)
-    ((pred multi-run-match-term-type-p) (process-mark (get-buffer-process (current-buffer))))
-    (multi-run-term-type (error "Value of multi-run-term-type should be one of the following symbols: eshell, shell, ansi-term, term, multi-term"))))
+  (concat "eshell<" (number-to-string term-num) ">"))
 
 (defun multi-run-open-terminal (term-num)
   "Open terminal number TERM-NUM in a buffer if it's not already open.  In any case, switch to it."
   (unless (get-buffer (multi-run-get-buffer-name term-num))
     (progn
-      (pcase multi-run-term-type
-        ('eshell (eshell term-num))
-        ('shell (shell))
-        ('ansi-term (ansi-term "/bin/bash"))
-        ('term (term "/bin/bash"))
-        ('multi-term (multi-term))
-        (multi-run-term-type (error "Value of multi-run-term-type should be one of the following symbols: eshell, shell, ansi-term, term, multi-term")))
+      (eshell term-num)
       (rename-buffer (multi-run-get-buffer-name term-num)))))
 
 (defun multi-run-on-single-terminal (command term-num)
   "Run the command COMMAND on a single terminal with number TERM-NUM."
   (set-buffer (multi-run-get-buffer-name term-num))
-  (goto-char (multi-run-get-new-input-point))
+  (goto-char eshell-last-output-end)
   (insert command)
-  (funcall (multi-run-get-input-function)))
+  (eshell-send-input))
 
 (defun multi-run-on-terminals (command term-nums &optional delay)
   "Run the COMMAND on terminals in TERM-NUMS with an optional DELAY between running on successive terminals."
@@ -97,24 +65,28 @@
         (setq term-nums (cdr term-nums))
         (setq delay-cnt (1+ delay-cnt))))))
 
-(defun multi-run-create-terminals (num-terminals)
-  "Create NUM-TERMINALS number of terminals."
-  (dotimes (i num-terminals)
-    (multi-run-open-terminal (1+ i))))
+(defun multi-run-create-terminals ()
+  "Create terminals given by multi-run-terminals-list."
+  (mapc 'multi-run-open-terminal multi-run-terminals-list))
 
-(defun multi-run-make-vertical-or-horizontal-pane (num-terminals offset sym-vec choice)
-  "Helper function for multi-run-configure-terminals.  Create NUM-TERMINALS number of windows with buffer names given by OFFSET into SYM-VEC.  The windows are created in a single vertical or horizontal pane determined by CHOICE."
-  (if (= num-terminals 1) (aref sym-vec offset)
-    (list (if (= choice 0) '| '-) `(,(if (= choice 0) :left-size-ratio :upper-size-ratio)
-				    ,(/ (- num-terminals 1.0) num-terminals))
-	  (multi-run-make-vertical-or-horizontal-pane (1- num-terminals) (1- offset) sym-vec choice) (aref sym-vec offset))))
+(defun calculate-window-batch (num-terminals)
+  "Calculate the window batch parameters for displaying NUM-TERMINALS."
+  (round (sqrt num-terminals))
+  )
+
+(defun multi-run-make-vertical-or-horizontal-pane (num-terminals offset sym-vec)
+  "Helper function for multi-run-configure-terminals.  Create NUM-TERMINALS number of windows with buffer names given by OFFSET into SYM-VEC in a single vertical pane."
+  (if (= num-terminals 1) (aref sym-vec (1- offset))
+    (list '- `(,:upper-size-ratio
+	       ,(/ (- num-terminals 1.0) num-terminals))
+	  (multi-run-make-vertical-or-horizontal-pane (1- num-terminals) (1- offset) sym-vec) (aref sym-vec (1- offset)))))
 
 (defun multi-run-make-internal-recipe (num-terminals window-batch sym-vec)
-  "Helper function for multi-run-configure-terminals.  Create a recipe for wlf:layout for NUM-TERMINALS number of terminal buffers with WINDOW-BATCH of them in one vertical pane.  Get symbol names for terminals from SYM-VEC."
-  (let ((num-panes (if (= (% num-terminals window-batch) 0)
-		       (/ num-terminals window-batch) (1+ (/ num-terminals window-batch)))))
+  "Create a recipe for wlf:layout for NUM-TERMINALS terminal buffers with WINDOW-BATCH of them in one vertical pane.  Get symbol names for terminals from SYM-VEC."
+  (let* ((num-panes (if (= (% num-terminals window-batch) 0)
+			(/ num-terminals window-batch) (1+ (/ num-terminals window-batch)))))
     (if (<= num-terminals window-batch)
-	(multi-run-make-vertical-or-horizontal-pane num-terminals num-terminals sym-vec 1)
+	(multi-run-make-vertical-or-horizontal-pane num-terminals num-terminals sym-vec)
       (list '| `(:left-size-ratio ,(/ (- num-panes 1.0) num-panes))
 	    (multi-run-make-internal-recipe (- num-terminals (if (= (% num-terminals window-batch) 0)
 								 window-batch
@@ -122,23 +94,17 @@
 					    window-batch sym-vec)
 	    (multi-run-make-vertical-or-horizontal-pane (if (= (% num-terminals window-batch) 0) window-batch
 							  (% num-terminals window-batch))
-							num-terminals sym-vec 1)))))
+							num-terminals sym-vec)))))
 
-(defun multi-run-make-symbols (num-terminals hint &optional cnt)
-  "Create unique symbols for NUM-TERMINALS number of terminals with common prefix HINT having created recursively symbols for CNT of them."
-  (unless cnt
-    (setq cnt 0))
-  (when (<= cnt num-terminals)
-    (vconcat (vector (make-symbol (concat hint (number-to-string cnt)))) (multi-run-make-symbols num-terminals hint (1+ cnt)))))
+(defun multi-run-make-symbols (hint)
+  "Create unique symbols for the terminals with common prefix HINT."
+  (mapcar (lambda (num) (make-symbol (concat hint (number-to-string num)))) multi-run-terminals-list))
 
-(defun multi-run-make-dict (num-terminals hint-fun sym-vec &optional cnt)
-  "Create a dictionary of terminal symbol names for NUM-TERMINALS number of terminals with names provided by HINT-FUN and symbols from SYM-VEC, having created recursively entries for CNT of them."
-  (unless cnt
-    (setq cnt 1))
-  (when (<= cnt num-terminals)
-    (cons (list :name (aref sym-vec cnt)
-		:buffer (funcall hint-fun cnt))
-	  (multi-run-make-dict num-terminals hint-fun sym-vec (1+ cnt)))))
+(defun multi-run-make-dict (hint-fun sym-list)
+  "Create a dictionary of terminal symbol names according to HINT-FUN and symbols from SYM-LIST."
+  (mapcar* (lambda (symbol num) (list :name symbol
+				      :buffer (funcall hint-fun num)))
+	   sym-list multi-run-terminals-list))
 
 (defun multi-run-copy-one-file-sudo (source-file destination-file-or-directory &optional non-root)
   "Copy SOURCE-FILE to DESTINATION-FILE-OR-DIRECTORY at remote nodes for all terminals.  Copy with sudo if NON-ROOT is false."
