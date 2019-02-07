@@ -13,7 +13,7 @@
    (spring-green6 "#3e594e")
    (aquamarine4   "#518270")
    (orange3       "#f5c791")
-   (crimson0      "#E14676")
+   (crimson0      "#DC3F70")
 
    ;; Color vars
    (bg1 "#222933")
@@ -22,7 +22,7 @@
    (bg4 "#3a4556")
 
    (keyword     crimson0)
-   (second-key  keyword)
+   (metakey     keyword)
    (builtin     teal4)
    (functions   cyan3)
 
@@ -37,7 +37,7 @@
    (comment-alt vermilion7)
 
    (str         capri4)
-   (str-alt     spring-green4)
+   (str-alt     azure4)
    (doc         str-alt)
 
    (prep        magenta1)
@@ -83,7 +83,7 @@
    (line-color2       str)
    (line-bg1          bg2)
    (line-bg2          bg3)
-   (line-border       bg3)
+   (line-border       bg2)
 
    ;; Telephone-line
    (segment-active    gray2)

@@ -158,8 +158,8 @@
 (declare-function avy-push-mark "ext:avy")
 (declare-function avy--remove-leading-chars "ext:avy")
 
-(defun swiper--avy-candidate ()
-  (let* ((avy-all-windows nil)
+(defun swiper--avy-candidates ()
+  (let* (
          ;; We'll have overlapping overlays, so we sort all the
          ;; overlays in the visible region by their start, and then
          ;; throw out non-Swiper overlays or overlapping Swiper
@@ -177,24 +177,28 @@
                                                swiper-faces))
                                 (setq min-overlay-start (overlay-start ov))))
                             visible-overlays))
-         (offset (if (eq (ivy-state-caller ivy-last) 'swiper) 1 0))
-         (candidates (nconc
-                      (mapcar (lambda (ov)
-                                (cons (overlay-start ov)
-                                      (overlay-get ov 'window)))
-                              overlays-for-avy)
-                      (save-excursion
-                        (save-restriction
-                          (narrow-to-region (window-start) (window-end))
-                          (goto-char (point-min))
-                          (forward-line)
-                          (let ((win (selected-window))
-                                cands)
-                            (while (not (eobp))
-                              (push (cons (+ (point) offset) win)
-                                    cands)
-                              (forward-line))
-                            cands))))))
+         (offset (if (eq (ivy-state-caller ivy-last) 'swiper) 1 0)))
+    (nconc
+     (mapcar (lambda (ov)
+               (cons (overlay-start ov)
+                     (overlay-get ov 'window)))
+             overlays-for-avy)
+     (save-excursion
+       (save-restriction
+         (narrow-to-region (window-start) (window-end))
+         (goto-char (point-min))
+         (forward-line)
+         (let ((win (selected-window))
+               cands)
+           (while (not (eobp))
+             (push (cons (+ (point) offset) win)
+                   cands)
+             (forward-line))
+           cands))))))
+
+(defun swiper--avy-candidate ()
+  (let ((candidates (swiper--avy-candidates))
+        (avy-all-windows nil))
     (unwind-protect
          (prog2
              (avy--make-backgrounds
@@ -208,34 +212,42 @@
            (avy-push-mark))
       (avy--done))))
 
+(defun swiper--avy-goto (candidate)
+  (if (window-minibuffer-p (cdr candidate))
+      (let ((cand-text (save-excursion
+                         (goto-char (car candidate))
+                         (buffer-substring-no-properties
+                          (line-beginning-position)
+                          (line-end-position)))))
+        (ivy-set-index (cl-position-if
+                        (lambda (x) (cl-search x cand-text))
+                        ivy--old-cands))
+        (ivy--exhibit)
+        (ivy-done)
+        (ivy-call))
+    (ivy-quit-and-run
+      (avy-action-goto (avy-candidate-beg candidate)))))
+
 ;;;###autoload
 (defun swiper-avy ()
   "Jump to one of the current swiper candidates."
   (interactive)
   (unless (require 'avy nil 'noerror)
     (error "Package avy isn't installed"))
-  (unless (string= ivy-text "")
-    (let ((candidate (swiper--avy-candidate)))
-      (if (window-minibuffer-p (cdr candidate))
-          (let ((cand-text (save-excursion
-                             (goto-char (car candidate))
-                             (buffer-substring-no-properties
-                              (line-beginning-position)
-                              (line-end-position)))))
-            (ivy-set-index (cl-position-if
-                            (lambda (x) (cl-search x cand-text))
-                            ivy--old-cands))
-            (ivy--exhibit)
-            (ivy-done)
-            (ivy-call))
-        (ivy-quit-and-run
-          (avy-action-goto (avy-candidate-beg candidate)))))))
+  (cl-case (length ivy-text)
+    (0
+     (user-error "Need at least one char of input"))
+    (1
+     (let ((swiper-min-highlight 1))
+       (swiper--update-input-ivy))))
+  (swiper--avy-goto (swiper--avy-candidate)))
 
 (declare-function mc/create-fake-cursor-at-point "ext:multiple-cursors-core")
 (declare-function multiple-cursors-mode "ext:multiple-cursors-core")
 
 (defun swiper-mc ()
-  "Create a fake cursor for each `swiper' candidate."
+  "Create a fake cursor for each `swiper' candidate.
+Make sure `swiper-mc' is on `mc/cmds-to-run-once' list."
   (interactive)
   (unless (require 'multiple-cursors nil t)
     (error "Multiple-cursors isn't installed"))
@@ -306,14 +318,16 @@
     twittering-mode
     vc-dir-mode
     w3m-mode
-    woman-mode)
+    woman-mode
+    xref--xref-buffer-mode)
   "List of major-modes that are incompatible with `font-lock-ensure'.")
 
 (defun swiper-font-lock-ensure-p ()
   "Return non-nil if we should `font-lock-ensure'."
   (or (derived-mode-p 'magit-mode)
       (bound-and-true-p magit-blame-mode)
-      (memq major-mode swiper-font-lock-exclude)))
+      (memq major-mode swiper-font-lock-exclude)
+      (not (derived-mode-p 'prog-mode))))
 
 (defun swiper-font-lock-ensure ()
   "Ensure the entired buffer is highlighted."
@@ -416,7 +430,10 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
   (interactive)
   (swiper--ivy (swiper--candidates) initial-input))
 
-(defvar swiper--current-window-start nil)
+(defvar swiper--current-window-start nil
+  "Store `window-start' to restore it later.
+This prevents a \"jumping\" behavior which occurs when variables
+such as `scroll-conservatively' are set to a high value.")
 
 (defun swiper--extract-matches (regex cands)
   "Extract captured REGEX groups from CANDS."
@@ -675,8 +692,10 @@ Matched candidates should have `swiper-invocation-face'."
                     (setq swiper--current-match-start (match-beginning 0))))
                 (isearch-range-invisible (line-beginning-position)
                                          (line-end-position))
-                (unless (and (>= (point) (window-start))
-                             (<= (point) (window-end (ivy-state-window ivy-last) t)))
+                (when (and (display-graphic-p)
+                           (or
+                            (< (point) (window-start))
+                            (> (point) (window-end (ivy-state-window ivy-last) t))))
                   (recenter))
                 (setq swiper--current-window-start (window-start))))
             (swiper--add-overlays
@@ -799,7 +818,7 @@ the face, window and priority of the overlay."
         (swiper--ensure-visible)
         (cond (swiper-action-recenter
                (recenter))
-              (swiper--current-window-start
+              ((and swiper--current-window-start (display-graphic-p))
                (set-window-start (selected-window) swiper--current-window-start)))
         (when (/= (point) swiper--opoint)
           (unless (and transient-mark-mode mark-active)

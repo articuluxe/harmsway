@@ -14,7 +14,7 @@
    (keyword     azure1)
    ;; (keyword     capri1)
    ;; TODO: a bit more bright
-   (second-key  cerise4 cerise4)
+   (metakey     cerise4 cerise4)
    (builtin     capri3)
    (functions   builtin)
    (var         ultramarine3)
@@ -65,7 +65,7 @@
    (line-fg           fg4)
    (line-bg1          bg2)
    (line-bg2          bg3)
-   (line-border       bg3)
+   (line-border       (if kaolin-themes-modeline-border bg3 line-bg1))
 
    (segment-active    gray3)
    (segment-inactive  gray3)

@@ -1326,14 +1326,16 @@ The amount of time spent searching is limited by
   (unless branch
     (setq branch (magit-get-current-branch)))
   (and branch
-       (let ((remote (magit-get "branch" branch "remote")))
+       (when-let ((remote (magit-get "branch" branch "remote")))
          (and (not (and non-local (equal remote ".")))
-              remote))))
+              (propertize remote 'face 'magit-branch-remote)))))
 
 (defun magit-get-push-remote (&optional branch)
-  (or (and (or branch (setq branch (magit-get-current-branch)))
-           (magit-get "branch" branch "pushRemote"))
-      (magit-get "remote.pushDefault")))
+  (when-let ((remote
+              (or (and (or branch (setq branch (magit-get-current-branch)))
+                       (magit-get "branch" branch "pushRemote"))
+                  (magit-get "remote.pushDefault"))))
+    (propertize remote 'face 'magit-branch-remote)))
 
 (defun magit-get-push-branch (&optional branch verify)
   (and (or branch (setq branch (magit-get-current-branch)))

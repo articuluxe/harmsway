@@ -47,7 +47,7 @@
 
 
    (keyword     teal2)
-   (second-key  teal2)
+   (metakey     teal2)
    (var         magenta4)
    (const       magenta4)
    (builtin     azure4)
@@ -99,7 +99,7 @@
    (line-fg           fg4)
    (line-bg1          bg2)
    (line-bg2          bg3)
-   (line-border       bg3)
+   (line-border       (if kaolin-themes-modeline-border bg3 line-bg1))
 
    ;; Telephone-line
    (segment-active    gray2)

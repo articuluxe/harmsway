@@ -29,7 +29,7 @@
 (require 'treemacs-icons)
 (require 'treemacs-async)
 (require 'treemacs-customization)
-(require 'treemacs-structure)
+(require 'treemacs-dom)
 (require 'treemacs-workspaces)
 (eval-and-compile
   (require 'treemacs-macros)
@@ -143,23 +143,25 @@ DEFAULT: Face"
 
 (define-inline treemacs--get-dir-content (dir)
   "Get the content of DIR, separated into sublists of first dirs, then files."
-  (inline-quote
-   (let* ((sort-func
-           (pcase treemacs-sorting
-             ('alphabetic-asc #'treemacs--sort-alphabetic-asc)
-             ('alphabetic-desc #'treemacs--sort-alphabetic-desc)
-             ('alphabetic-case-insensitive-asc  #'treemacs--sort-alphabetic-case-insensitive-asc)
-             ('alphabetic-case-insensitive-desc #'treemacs--sort-alphabetic-case-insensitive-desc)
-             ('size-asc #'treemacs--sort-size-asc)
-             ('size-desc #'treemacs--sort-size-desc)
-             ('mod-time-asc #'treemacs--sort-mod-time-asc)
-             ('mod-time-desc #'treemacs--sort-mod-time-desc)
-             (_ (error "[Treemacs] Unknown treemacs-sorting value '%s'" treemacs-sorting))))
-          ;; `directory-files' is much faster in a temp buffer for whatever reason
-          (entries (with-temp-buffer (-> ,dir (directory-files t nil t) (treemacs--filter-files-to-be-shown))))
-          (dirs-files (-separate #'file-directory-p entries)))
-     (list (sort (cl-first dirs-files) sort-func)
-           (sort (cl-second dirs-files) sort-func)))))
+  (inline-letevals (dir)
+    (inline-quote
+     ;; `directory-files' is much faster in a temp buffer for whatever reason
+     (with-temp-buffer
+       (let* ((sort-func
+               (pcase treemacs-sorting
+                 ('alphabetic-asc #'treemacs--sort-alphabetic-asc)
+                 ('alphabetic-desc #'treemacs--sort-alphabetic-desc)
+                 ('alphabetic-case-insensitive-asc  #'treemacs--sort-alphabetic-case-insensitive-asc)
+                 ('alphabetic-case-insensitive-desc #'treemacs--sort-alphabetic-case-insensitive-desc)
+                 ('size-asc #'treemacs--sort-size-asc)
+                 ('size-desc #'treemacs--sort-size-desc)
+                 ('mod-time-asc #'treemacs--sort-mod-time-asc)
+                 ('mod-time-desc #'treemacs--sort-mod-time-desc)
+                 (_ (error "[Treemacs] Unknown treemacs-sorting value '%s'" treemacs-sorting))))
+              (entries (-> ,dir (directory-files t nil t) (treemacs--filter-files-to-be-shown)))
+              (dirs-files (-separate #'file-directory-p entries)))
+         (list (sort (cl-first dirs-files) sort-func)
+               (sort (cl-second dirs-files) sort-func)))))))
 
 (define-inline treemacs--create-dir-button-strings (path prefix parent depth)
   "Return the text to insert for a directory button for PATH.
@@ -295,6 +297,24 @@ DIRS: List of Collapse Paths. Each Collapse Path is a list of
                (button-start b) (+ beg (length parent))
                '(face treemacs-directory-collapsed-face)))))))))
 
+(defmacro treemacs--map-when-unrolled (items interval &rest mapper)
+  "Unrolled variant of dash.el's `--map-when'.
+Specialized towards applying MAPPER to ITEMS on a given INTERVAL."
+  (declare (indent 2))
+  `(let* ((ret nil)
+          (--items-- ,items)
+          (reps (/ (length --items--) ,interval))
+          (--loop-- 0))
+     (while (< --loop-- reps)
+       ,@(-repeat
+          (1- interval)
+          '(setq ret (cons (pop --items--) ret)))
+       (setq ret
+             (-let [it (pop --items--)]
+               (cons ,@mapper ret)))
+       (cl-incf --loop--))
+     (nreverse (nconc --items-- ret))))
+
 (define-inline treemacs--create-branch (root depth git-future collapse-process &optional parent)
   "Create a new treemacs branch under ROOT.
 The branch is indented at DEPTH and uses the eventual outputs of
@@ -373,21 +393,20 @@ set to PARENT."
 
          (insert
           (apply #'concat
-                 (--map-when (= 0 (% (+ 1 it-index) 2))
-                             (propertize it 'face
-                                         (treemacs--get-button-face
-                                          (concat ,root "/" it) git-info 'treemacs-directory-face))
-                             dir-strings)))
+                 (treemacs--map-when-unrolled dir-strings 2
+                   (propertize
+                    it 'face
+                    (treemacs--get-button-face
+                     (concat ,root "/" it) git-info 'treemacs-directory-face)))))
 
          (end-of-line)
 
          (insert
           (apply #'concat
-                 (--map-when (= 0 (% (+ 1 it-index) 3))
-                             (propertize it 'face
-                                         (treemacs--get-button-face
-                                          (concat ,root "/" it) git-info 'treemacs-git-unmodified-face))
-                             file-strings)))
+                 (treemacs--map-when-unrolled file-strings 3
+                   (propertize it 'face
+                               (treemacs--get-button-face
+                                (concat ,root "/" it) git-info 'treemacs-git-unmodified-face)))))
 
          (save-excursion
            (treemacs--collapse-dirs (treemacs--parse-collapsed-dirs ,collapse-process))
@@ -411,7 +430,7 @@ BUFFER: Buffer"
         (run-with-idle-timer 2 nil #'treemacs--resize-git-cache))
       (-let [parent-path (treemacs-button-get parent-btn :path)]
         ;; the node may have been closed or deleted by now
-        (when (and (treemacs-get-from-shadow-index parent-path)
+        (when (and (treemacs-find-in-dom parent-path)
                    (memq (treemacs-button-get parent-btn :state) '(dir-node-open root-node-open)))
           (let ((depth (1+ (treemacs-button-get parent-btn :depth)))
                 (git-info (treemacs--get-or-parse-git-result git-future))
@@ -567,6 +586,17 @@ PROJECT: Project Struct"
          (unless (= it-index last-index)
            (insert separator))))
      (treemacs--apply-root-bottom-extensions current-workspace))))
+
+(defun treemacs-update-node (path)
+  "Update the node identified by its PATH.
+Throws an error when the node cannot be found. Does nothing if the node is not
+expanded."
+  (treemacs-unless-let (btn (treemacs-goto-node path))
+      (error "Node at path %s cannot be found" path)
+    (when (treemacs-is-node-expanded? btn)
+      (funcall (alist-get (treemacs-button-get btn :state) treemacs-TAB-actions-config))
+      (funcall (alist-get (treemacs-button-get btn :state) treemacs-TAB-actions-config))
+      (hl-line-highlight))))
 
 (provide 'treemacs-rendering)
 

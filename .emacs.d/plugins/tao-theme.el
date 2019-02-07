@@ -91,22 +91,6 @@
   (if tao-theme-use-boxes
       color nil))
 
-(defun tao-theme-scale-to-colors (scale)	
-    "Create grayscale from colors alist"	  
-    (mapcar (lambda (it) (format "#%02X%02X%02X" it it it)) scale))
-
-;; TODO refactor that into two `tao-theme-scale-to-colors` and `tao-sepia-filter`
-(defun tao-theme-scale-to-colors-sepia (scale)
-  "Create grayscale from colors alist"
-  (mapcar (lambda (it)            
-              (let ((r (+ it (* tao-theme-sepia-depth 1.8)))
-                    (g (+ it (* tao-theme-sepia-depth 1.5)))
-                    (b (* it tao-theme-sepia-saturation)))                  
-                (format "#%02X%02X%02X"
-                        (if (> r 255) 255 r)
-                        (if (> g 255) 255 g)
-                        (if (> b 255) 255 b))))
-              scale))
 
 (defun tao-theme-colors-to-palette (colors)
   "Create palette of named colors from alist of colors"
@@ -139,6 +123,23 @@
         (push (- #xFF alpha) golden-scale)))
     (sort golden-scale '<)))
 
+(defun tao-theme-scale-to-colors (scale)	
+    "Create grayscale from colors alist"	  
+    (mapcar (lambda (it) (format "#%02X%02X%02X" it it it)) scale))
+
+;; TODO refactor that into two `tao-theme-scale-to-colors` and `tao-sepia-filter`
+(defun tao-theme-scale-to-colors-sepia (scale)
+  "Create grayscale from colors alist"
+  (mapcar (lambda (it)            
+              (let ((r (+ it (* tao-theme-sepia-depth 1.8)))
+                    (g (+ it (* tao-theme-sepia-depth 1.5)))
+                    (b (* it tao-theme-sepia-saturation)))                  
+                (format "#%02X%02X%02X"
+                        (if (> r 255) 255 r)
+                        (if (> g 255) 255 g)
+                        (if (> b 255) 255 b))))
+              scale))
+
 
 (defun tao-theme-yin-palette ()
   "Generate a dark version of the golden gradient alist."  
@@ -168,7 +169,7 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(default                                          ((t (:foreground ,color-10 :background ,color-4 ))))
    `(italic                                          ((t (:italic t ))))
    `(variable-pitch                                   ((t (:foreground ,color-9 :height ,(tao-theme-height 1.0)))))   
-   `(hl-paren-face                                    ((t (:foreground ,color-12 :background ,color-3))))
+   `(hl-paren-face                                    ((t (:foreground ,color-12 :background ,color-3 :italic t))))
    `(cursor                                           ((t (:foreground ,color-13 :background ,color-14))))
    `(escape-glyph                                     ((t (:foreground ,color-13 :bold t))))
    `(header-line                                      ((t (:inherit mode-line))))
@@ -222,7 +223,7 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(font-lock-comment-face                           ((t (:foreground ,color-7 :italic t ))))
    `(font-lock-comment-delimiter-face                 ((t (:foreground ,color-9))))
    `(font-lock-constant-face                          ((t (:foreground ,color-9 :weight bold))))
-   `(font-lock-doc-face                               ((t (:foreground ,color-9 :weight normal :italic t))))
+   `(font-lock-doc-face                               ((t (:foreground ,color-8 :weight normal :italic t))))
    `(font-lock-function-name-face                     ((t (:foreground ,color-10 :box ,(tao-boxed color-9) ))))
    `(font-lock-variable-name-face                     ((t (:foreground ,color-11))))
    `(font-lock-negation-char-face                     ((t (:foreground ,color-14))))
@@ -574,7 +575,7 @@ Also bind `class' to ((class color) (min-colors 89))."
    ;; jsx
    `(rjsx-tag                                         ((t (:foreground, color-8 :italic t))))
    `(rjsx-tag-bracket-face                            ((t (:foreground, color-8 :italic t))))   
-   `(rjsx-attr                                        ((t (:foreground, color-9 :bold nil :italic nil ))))
+   `(rjsx-attr                                        ((t (:foreground, color-8 :italic t :bold nil))))
    ;; jabber-mode
    `(jabber-roster-user-away                          ((t (:foreground ,color-11))))
    `(jabber-roster-user-online                        ((t (:foreground ,color-10))))
@@ -757,7 +758,7 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(org-footnote                                     ((t (:foreground ,color-12 ))))
    `(org-meta-line                                    ((t (:background ,color-4 :foreground ,color-9 :height ,(tao-theme-height 0.8) :inherit fixed-pitch :box ,(tao-boxed color-6)))))
    `(org-block-begin-line                             ((t (:background ,color-5 :foreground ,color-8 :height ,(tao-theme-height 0.8) :inherit fixed-pitch :box (:color ,color-1 :line-width 1 :style released-button )))))
-   `(org-block-end-line                               ((t (:background ,color-5 :foreground ,color-8 :height ,(tao-theme-height 0.8) :inherit fixed-pitch :box (:color ,color-1 :line-width 1 :style released-button )))))      
+   `(org-block-end-line                               ((t (:background ,color-3 :foreground ,color-6 :height ,(tao-theme-height 0.8) :inherit fixed-pitch))))      
    `(org-special-keyword                              ((t (:inherit org-meta-line :foreground ,color-9))))
    `(org-property-value                               ((t (:inherit org-meta-line :foreground ,color-8 ))))
    `(org-block-background                             ((t (:foreground ,color-3 :height ,(tao-theme-height 0.8) :inherit fixed-pitch))))
@@ -857,7 +858,7 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(sh-quoted-exec                                   ((t (:foreground ,color-10))))
    ;; show-paren
    `(show-paren-mismatch                              ((t (:foreground ,color-1 :background ,color-14 :weight bold))))
-   `(show-paren-match                                 ((t (:background ,color-5 :foreground ,color-14))))
+   `(show-paren-match                                 ((t (:foreground ,color-11 :underline t))))
    ;; smartparens
    `(sp-show-pair-mismatch-face                       ((t (:background ,color-6 :foreground ,color-14 :bold t :underline t))))
    `(sp-show-pair-match-face                          ((t (:background ,color-3 :foreground ,color-14 :box ,(tao-boxed color-8)))))

@@ -154,16 +154,6 @@ Optionally include MORE-PROPERTIES (like `face' or `display')."
   (declare (indent 1))
   (apply #'propertize string 'icon t more-properties))
 
-(defun treemacs-update-node (path)
-  "Update the node identified by its PATH.
-Throws an error when the node cannot be found. Does nothing if the node is not
-expanded."
-  (treemacs-unless-let (btn (treemacs-goto-node path))
-      (error "Node at path %s cannot be found" path)
-    (when (treemacs-is-node-expanded? btn)
-      (funcall (alist-get (treemacs-button-get btn :state) treemacs-TAB-actions-config))
-      (funcall (alist-get (treemacs-button-get btn :state) treemacs-TAB-actions-config)))))
-
 (cl-defmacro treemacs-render-node
     (&key icon
           label-form
@@ -194,13 +184,13 @@ when the project is refreshed, but also for compatiblity and integration with
 
 MORE-PROPERTIES is a plist of text properties that can arbitrarily added to the
 node for quick retrieval later."
-  (cl-assert (and icon label-form state key-form)
-             :show-args "All values except `more-properties' and `face' are mandatory")
+  (treemacs-static-assert (and icon label-form state key-form)
+    "All values except :more-properties and :face are mandatory")
   `(list prefix ,icon
          (propertize ,label-form
                      'button '(t)
                      'category 'default-button
-                     ,@(when face (list 'face face))
+                     ,@(when face `((quote face) ,face))
                      'help-echo nil
                      :custom t
                      :state ,state
@@ -214,7 +204,9 @@ node for quick retrieval later."
   "Define a type of node that is a leaf and cannot be further expanded.
 
 Based on the given NAME this macro will define a `treemacs-${name}-state' state
-variable and a `treemacs-${name}-icon' icon variable.
+variable and a `treemacs-${name}-icon' icon variable. If the icon should not be
+static, and should be instead computed every time this node is rendered in its
+parent's :render-action use 'dynamic-icon as a value for ICON.
 
 The ICON is a string that should be created with `treemacs-as-icon'. If the icon
 is for a file you can also use `treemacs-icon-for-file'.
@@ -227,7 +219,8 @@ type."
         (icon-name  (intern (format "treemacs-%s-icon" name))))
     `(progn
        (defvar ,state-name ',state-name)
-       (defvar ,icon-name ,icon)
+       ,(unless (equal icon (quote 'dynamic-icon))
+          `(defvar ,icon-name ,icon))
        ,(when ret-action
           `(treemacs-define-RET-action ,state-name ,ret-action))
        ,(when tab-action
@@ -240,6 +233,8 @@ type."
     (name &key
           icon-open
           icon-closed
+          icon-open-form
+          icon-closed-form
           query-function
           render-action
           ret-action
@@ -252,6 +247,12 @@ type."
   "Define a type of node that can be further expanded.
 
 ICON-OPEN and ICON-CLOSED are strings and must be created by `treemacs-as-icon'.
+They will be defvar'd as 'treemacs-icon-${name}-open/closed'.
+As an alternative to static icons you can also supply ICON-OPEN-FORM and
+ICON-CLOSED-FORM that will be dynamically executed whenever a new icon is
+needed. Keep in mind that, since child nodes are first rendered by their
+parents, a CLOSED-ICON-FORM will need to be repeated in the parent's
+RENDER-ACTION.
 
 QUERY-FUNCTION is a form and will be invoked when the node is expanded. It must
 provide the list of elements that will be rendered with RENDER-ACTION.
@@ -286,14 +287,22 @@ TOP-LEVEL-MARKER will define a function named `treemacs-${NAME}-extension' that
 can be passed to `treemacs-define-root-extension', and it requires the same
 additional keys."
   (declare (indent 1))
-  (when project-marker
-    (warn ":project-marker is obsolete, use :top-level-marker instead."))
-  (cl-assert (or (when (or top-level-marker project-marker) (not root-marker))
-                 (when root-marker (not (or top-level-marker project-marker)))
-                 (and (not root-marker) (not (or top-level-marker project-marker))))
-             :show-args "Root and project markers cannot both be set.")
-  (cl-assert (and icon-open icon-closed query-function render-action)
-             :show-args "All values (except additional root information) are mandatory")
+  (treemacs-static-assert (not project-marker)
+    ":project-marker is obsolete, use :top-level-marker instead.")
+  ;; TODO(2019/01/29): simplify
+  (treemacs-static-assert
+      (or (when (or top-level-marker project-marker) (not root-marker))
+          (when root-marker (not (or top-level-marker project-marker)))
+          (and (not root-marker) (not (or top-level-marker project-marker))))
+    "Root and top-level markers cannot both be set.")
+  (treemacs-static-assert (and (or icon-open-form icon-open)
+                               (or icon-closed-form icon-closed)
+                               query-function render-action)
+    "All values (except additional root information) are mandatory")
+  (treemacs-static-assert (or (null icon-open) (null icon-open-form))
+    ":icon-open and :icon-open-form are mutually exclusive.")
+  (treemacs-static-assert (or (null icon-closed) (null icon-closed-form))
+    ":icon-closed and :icon-closed-form are mutually exclusive.")
   (let ((open-icon-name    (intern (format "treemacs-icon-%s-open"    (symbol-name name))))
         (closed-icon-name  (intern (format "treemacs-icon-%s-closed"  (symbol-name name))))
         (open-state-name   (intern (format "treemacs-%s-open-state"   (symbol-name name))))
@@ -303,8 +312,10 @@ additional keys."
         (do-expand-name    (intern (format "treemacs--do-expand-%s"   (symbol-name name))))
         (do-collapse-name  (intern (format "treemacs--do-collapse-%s" (symbol-name name)))))
     `(progn
-       (defvar ,open-icon-name ,icon-open)
-       (defvar ,closed-icon-name ,icon-closed)
+       ,(when open-icon-name
+         `(defvar ,open-icon-name ,icon-open))
+       ,(when closed-icon-name
+          `(defvar ,closed-icon-name ,icon-closed))
        (defvar ,open-state-name ',open-state-name)
        (defvar ,closed-state-name ',closed-state-name)
 
@@ -340,7 +351,7 @@ additional keys."
            (treemacs--button-open
             :button btn
             :new-state ',open-state-name
-            :new-icon ,open-icon-name
+            :new-icon ,(if icon-open open-icon-name icon-open-form)
             :immediate-insert t
             :open-action
             (treemacs--create-buttons
@@ -374,7 +385,7 @@ additional keys."
          (treemacs--button-close
           :button btn
           :new-state ',closed-state-name
-          :new-icon ,closed-icon-name
+          :new-icon ,(if icon-closed closed-icon-name icon-closed-form)
           :post-close-action
           (treemacs-on-collapse (treemacs-button-get btn :path))))
 
@@ -382,8 +393,8 @@ additional keys."
        (treemacs-define-TAB-action ',closed-state-name #',expand-name)
 
        ,(when root-marker
-          (cl-assert (and root-label root-face root-key-form)
-                     :show-args "Root information must be provided when `:root-marker' is non-nil")
+          (treemacs-static-assert (and root-label root-face root-key-form)
+            ":root-label, :root-face and :root-key-form must be provided when `:root-marker' is non-nil")
           `(cl-defun ,(intern (format "treemacs-%s-extension" (upcase (symbol-name name)))) (parent)
              (-let [depth (1+ (treemacs-button-get parent :depth))]
                (insert
@@ -405,32 +416,58 @@ additional keys."
                             :state ,closed-state-name)))))
 
        ,(when (or top-level-marker project-marker)
-          (cl-assert (and root-label root-face root-key-form)
-                     :show-args "Root information must be provided when `:top-level-marker' is non-nil")
+          (treemacs-static-assert (and root-label root-face root-key-form)
+            ":root-label :root-face :root-key-form must be provided when `:top-level-marker' is non-nil")
           (let ((ext-name (intern (format "treemacs-%s-extension" (upcase (symbol-name name)))))
                 (project-var-name (intern (format "treemacs-%s-extension-project" (symbol-name name)))))
             (put ext-name :defined-in (or load-file-name (buffer-name)))
             `(progn
-               (defvar-local ,project-var-name nil
-                 ,(format "The project displaying the local %s extension." name))
-               (defun ,ext-name (&rest _)
-                 (treemacs-with-writable-buffer
-                  (-let [pr (make-treemacs-project
-                             :name ,root-label
-                             :path ,root-key-form)]
-                    (insert ,closed-icon-name)
-                    (treemacs--set-project-position pr (point-marker))
-                    (setq-local ,project-var-name pr)
-                    (insert (propertize ,root-label
-                                        'button '(t)
-                                        'category 'default-button
-                                        'face ,root-face
-                                        :custom t
-                                        :key ,root-key-form
-                                        :path (list pr)
-                                        :depth 0
-                                        :project pr
-                                        :state ,closed-state-name)))))))))))
+               ,(if (equal top-level-marker (quote 'variadic))
+                    `(defun ,ext-name (items)
+                       (let ((separator (if treemacs-space-between-root-nodes "\n\n" "\n"))
+                             (last-index (1- (length items))))
+                         (treemacs-with-writable-buffer
+                          (--each items
+                            (let* ((extension-label (car it))
+                                   (extension-key (cdr it))
+                                   (pr (make-treemacs-project
+                                        :name extension-label
+                                        :path extension-key)))
+                              (insert ,closed-icon-name)
+                              (treemacs--set-project-position ,root-key-form (point-marker))
+                              (insert (propertize extension-label
+                                                  'button '(t)
+                                                  'category 'default-button
+                                                  'face ,root-face
+                                                  :custom t
+                                                  :key extension-key
+                                                  :path (list extension-key)
+                                                  :depth 0
+                                                  :project pr
+                                                  :state ,closed-state-name))
+                              (unless (= it-index last-index)
+                                (insert separator)))))))
+                  `(progn
+                     (defvar-local ,project-var-name nil
+                       ,(format "The project displaying the local %s extension." name))
+                     (defun ,ext-name (&rest _)
+                       (treemacs-with-writable-buffer
+                        (-let [pr (make-treemacs-project
+                                   :name ,root-label
+                                   :path ,root-key-form)]
+                          (insert ,closed-icon-name)
+                          (treemacs--set-project-position ,root-key-form (point-marker))
+                          (setq-local ,project-var-name pr)
+                          (insert (propertize ,root-label
+                                              'button '(t)
+                                              'category 'default-button
+                                              'face ,root-face
+                                              :custom t
+                                              :key ,root-key-form
+                                              :path (list ,root-key-form)
+                                              :depth 0
+                                              :project pr
+                                              :state ,closed-state-name)))))))))))))
 
 (defun treemacs-initialize ()
   "Initialize treemacs in an external buffer for extension use."

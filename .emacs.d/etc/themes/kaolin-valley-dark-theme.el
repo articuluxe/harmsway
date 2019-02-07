@@ -4,8 +4,16 @@
 ;;; Code:
 (require 'kaolin-themes)
 
-(define-kaolin-theme valley-dark  "Colorful Kaolin theme with brown background."
+(defgroup kaolin-valley-dark nil
+  "Kaolin valley dark theme options."
+  :group 'kaolin-themes)
 
+(defcustom kaolin-valley-dark-alt-bg nil
+  "Use alternative brighter background."
+  :type 'boolean
+  :group 'kaolin-valley-dark)
+
+(define-kaolin-theme valley-dark  "Colorful Kaolin theme with dark brown background."
   ;; Palette modification
   (
    ;; Colors
@@ -15,21 +23,20 @@
    (cerulean4     "#47629E")
 
    ;; Color vars
-   ;; TODO: (??) make more bright
+   ;; dark      bright   terminal
    (bg0 "#1C1616")
-   ;; (bg1 "#211D1D" black1)
-   (bg1 "#232020" black1)
-   (bg2 "#282323" black2)
-   (bg3 "#2E2828" black3)
-   (bg4 "#352D2D" black4)
+   (bg1 (if kaolin-valley-dark-alt-bg "#28211E" "#211F1D") black1)
+   (bg2 (if kaolin-valley-dark-alt-bg "#332a25" "#282423") black2)
+   (bg3 (if kaolin-valley-dark-alt-bg "#372d28" "#2E2828") black3)
+   (bg4 (if kaolin-valley-dark-alt-bg "#3f342d" "#352D2D") black4)
    ;; (pane "#262122")
-   ;; (bg-alt "#453947")
 
    (fg1 amber9)
 
    (keyword     teal0)
-   (second-key  keyword)
+   (metakey     keyword)
    (builtin     aquamarine1)
+   (header      orange3)
 
    (var         crimson3)
    (const       crimson3)
@@ -47,7 +54,7 @@
    (prep        vermilion3)
    (num         harlequin3)
    (bool        num)
-   (warning     amber1)
+   (warning     amber0)
    (err         red3)
 
    (dim-buffer white0)
@@ -56,7 +63,7 @@
    (hl-line    (if kaolin-themes-hl-line-colored bg3 bg3))
    (hl-indent  "#453947")
    ;; TODO:
-   (selection bg4)
+   (selection amber6)
    ;; TODO:
    (pulse bg4)
 
@@ -84,7 +91,7 @@
    (line-color2       str)
    (line-bg1          bg2)
    (line-bg2          bg3)
-   (line-border       bg3)
+   (line-border       (if kaolin-themes-modeline-border bg4 line-bg1))
 
    (prompt aquamarine1)
 

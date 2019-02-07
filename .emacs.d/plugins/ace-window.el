@@ -158,10 +158,11 @@ Consider changing this if the overlay tends to overlap with other things."
   '((?x aw-delete-window "Delete Window")
     (?m aw-swap-window "Swap Windows")
     (?M aw-move-window "Move Window")
+    (?c aw-copy-window "Copy Window")
     (?j aw-switch-buffer-in-window "Select Buffer")
     (?n aw-flip-window)
     (?u aw-switch-buffer-other-window "Switch Buffer Other Window")
-    (?c aw-split-window-fair "Split Fair Window")
+    (?F aw-split-window-fair "Split Fair Window")
     (?v aw-split-window-vert "Split Vert Window")
     (?b aw-split-window-horz "Split Horz Window")
     (?o delete-other-windows "Delete Other Windows")
@@ -477,7 +478,8 @@ Amend MODE-LINE to the mode line for the duration of the selection."
                    (when (eq aw-action 'exit)
                      (setq aw-action nil)))
                  (or (car wnd-list) start-window))
-                ((and (<= (length wnd-list) aw-dispatch-when-more-than)
+                ((and (<= (+ (length wnd-list) (if (aw-ignored-p start-window) 1 0))
+                          aw-dispatch-when-more-than)
                       (not aw-dispatch-always)
                       (not aw-ignore-current))
                  (let ((wnd (next-window nil nil next-window-scope)))
@@ -559,9 +561,8 @@ window."
   (interactive "p")
   (cl-case arg
     (0
-     (setq aw-ignore-on
-           (not aw-ignore-on))
-     (ace-select-window))
+     (let ((aw-ignore-on (not aw-ignore-on)))
+       (ace-select-window)))
     (4 (ace-swap-window))
     (16 (ace-delete-window))
     (t (ace-select-window))))
@@ -724,6 +725,12 @@ Switch the current window to the previous buffer."
     (aw-switch-to-window window)
     (switch-to-buffer buffer)))
 
+(defun aw-copy-window (window)
+  "Copy the current buffer to WINDOW."
+  (let ((buffer (current-buffer)))
+    (aw-switch-to-window window)
+    (switch-to-buffer buffer)))
+
 (defun aw-split-window-vert (window)
   "Split WINDOW vertically."
   (select-window window)
@@ -750,10 +757,11 @@ Modify `aw-fair-aspect-ratio' to tweak behavior."
       (aw-split-window-vert window))))
 
 (defun aw-switch-buffer-other-window (window)
-  "Switch buffer in WINDOW without selecting WINDOW."
+  "Switch buffer in WINDOW."
   (aw-switch-to-window window)
-  (aw--switch-buffer)
-  (aw-flip-window))
+  (unwind-protect
+      (aw--switch-buffer)
+    (aw-flip-window)))
 
 (defun aw--face-rel-height ()
   (let ((h (face-attribute 'aw-leading-char-face :height)))
@@ -762,6 +770,8 @@ Modify `aw-fair-aspect-ratio' to tweak behavior."
        1)
       ((floatp h)
        (1+ (floor h)))
+      ((integerp h)
+       1)
       (t
        (error "unexpected: %s" h)))))
 

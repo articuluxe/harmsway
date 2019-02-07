@@ -869,6 +869,16 @@ already have been created."
            (indent 1))
   `(when-let (lsp--cur-workspace ,workspace) ,@body))
 
+(defun lsp--window-show-message (_workspace params)
+  "Send the server's messages to log.
+PARAMS - the data sent from _WORKSPACE."
+  (-let (((&hash "message" "type") params))
+    (funcall (case type
+               (1 'lsp--error)
+               (2 'lsp--warn)
+               (t 'lsp--info))
+             message)))
+
 (defun lsp--window-log-message (workspace params)
   "Send the server's messages to log.
 PARAMS - the data sent from WORKSPACE."
@@ -1571,28 +1581,30 @@ disappearing, unset all the variables related to it."
 
 (defun lsp--client-capabilities ()
   "Return the client capabilites."
-  `(:workspace (
-                :applyEdit t
-                :executeCommand (:dynamicRegistration :json-false)
-                :workspaceFolders t)
-               :textDocument (
-                              :declaration (:linkSupport t)
-                              :definition (:linkSupport t)
-                              :implementation (:linkSupport t)
-                              :typeDefinition (:linkSupport t)
-                              :synchronization (:willSave t :didSave t :willSaveWaitUntil t)
-                              :documentSymbol (:symbolKind (:valueSet ,(cl-coerce
-                                                                        (cl-loop for kind from 1 to 25 collect kind)
-                                                                        'vector))
-                                                           :hierarchicalDocumentSymbolSupport t)
-                              :formatting (:dynamicRegistration t)
-                              :codeAction (:dynamicRegistration t)
-                              :completion (:completionItem (:snippetSupport ,lsp-enable-snippet))
-                              :signatureHelp (:signatureInformation (:parameterInformation (:labelOffsetSupport t))))))
+  `(
+    :workspace (:workspaceEdit (
+                                :documentChanges t
+                                :resourceOperations ("create" "rename" "delete"))
+                               :applyEdit t
+                               :symbol (:symbolKind (:valueSet ,(apply 'vector (number-sequence 1 26))))
+                               :executeCommand (:dynamicRegistration :json-false)
+                               :didChangeWatchedFiles (:dynamicRegistration t)
+                               :workspaceFolders t)
+    :textDocument (
+                   :declaration (:linkSupport t)
+                   :definition (:linkSupport t)
+                   :implementation (:linkSupport t)
+                   :typeDefinition (:linkSupport t)
+                   :synchronization (:willSave t :didSave t :willSaveWaitUntil t)
+                   :documentSymbol (:symbolKind (:valueSet ,(apply 'vector (number-sequence 1 26)))
+                                                :hierarchicalDocumentSymbolSupport t)
+                   :formatting (:dynamicRegistration t)
+                   :codeAction (:dynamicRegistration t)
+                   :completion (:completionItem (:snippetSupport ,lsp-enable-snippet))
+                   :signatureHelp (:signatureInformation (:parameterInformation (:labelOffsetSupport t))))))
 
 (defun lsp--server-register-capability (reg)
   "Register capability REG."
-  (lsp--cur-workspace-check)
   (-let (((&hash "method" "id" "registerOptions") reg))
     (push
      (make-lsp--registered-capability :id id :method method :options registerOptions)
@@ -1651,18 +1663,11 @@ disappearing, unset all the variables related to it."
 (defun lsp--read-from-file (file)
   "Read FILE content."
   (when (file-exists-p file)
-    (with-demoted-errors "Failed to read file with message %S"
-      (with-temp-buffer
-        (insert-file-contents-literally file)
-        (first (read-from-string
-                (buffer-substring-no-properties (point-min) (point-max))))))))
+    (first (read-from-string (f-read-text file 'utf-8)))))
 
 (defun lsp--persist (file-name to-persist)
   "Persist TO-PERSIST in FILE-NAME."
-  (with-demoted-errors "Failed to persist file: %S"
-    (with-temp-file file-name
-      (erase-buffer)
-      (insert (prin1-to-string to-persist)))))
+  (f-write-text (prin1-to-string to-persist) 'utf-8 file-name))
 
 (defun lsp-workspace-folders-add (project-root)
   "Add PROJECT-ROOT to the list of workspace folders."
@@ -1825,25 +1830,32 @@ interface Range {
       (lsp--region-to-range (region-beginning) (region-end))
     (lsp--region-to-range (point-at-bol) (point-at-eol))))
 
+(defun lsp--check-document-changes-version (document-changes)
+  "Verify that DOCUMENT-CHANGES have the proper version."
+  (unless (--every?
+           (or
+            (not (gethash "textDocument" it))
+            (let* ((ident (gethash "textDocument" it))
+                   (filename (lsp--uri-to-path (gethash "uri" ident)))
+                   (version (gethash "version" ident)))
+              (with-current-buffer (find-file-noselect filename)
+                (or (null version) (zerop version) (equal version (lsp--cur-file-version))))))
+           document-changes)
+    (error "Document changes cannot be applied")))
+
 (defun lsp--apply-workspace-edit (edit)
-  "Apply the WorkspaceEdit object EDIT.
-
-interface WorkspaceEdit {
-  changes?: { [uri: string]: TextEdit[]; };
-  documentChanges?: TextDocumentEdit[];
-}"
-  (let ((changes (gethash "changes" edit))
-        (document-changes (gethash "documentChanges" edit)))
-    (if document-changes
-        (seq-do #'lsp--apply-text-document-edit document-changes)
-
-      (when (hash-table-p changes)
-        (maphash
-         (lambda (uri text-edits)
-           (let ((filename (lsp--uri-to-path uri)))
-             (with-current-buffer (find-file-noselect filename)
-               (lsp--apply-text-edits text-edits))))
-         changes)))))
+  "Apply the WorkspaceEdit object EDIT."
+  (if-let (document-changes (gethash "documentChanges" edit))
+      (progn
+        (lsp--check-document-changes-version document-changes)
+        (seq-do #'lsp--apply-text-document-edit document-changes))
+    (when-let (changes (gethash "changes" edit))
+      (maphash
+       (lambda (uri text-edits)
+         (let ((filename (lsp--uri-to-path uri)))
+           (with-current-buffer (find-file-noselect filename)
+             (lsp--apply-text-edits text-edits))))
+       changes))))
 
 (defun lsp--apply-text-document-edit (edit)
   "Apply the TextDocumentEdit object EDIT.
@@ -1857,12 +1869,32 @@ interface TextDocumentEdit {
   textDocument: VersionedTextDocumentIdentifier;
   edits: TextEdit[];
 }"
-  (let* ((ident (gethash "textDocument" edit))
-         (filename (lsp--uri-to-path (gethash "uri" ident)))
-         (version (gethash "version" ident)))
-    (with-current-buffer (find-file-noselect filename)
-      (when (or (null version) (equal version (lsp--cur-file-version)))
-        (lsp--apply-text-edits (gethash "edits" edit))))))
+  (pcase (gethash "kind" edit)
+    ("create" (-let* (((&hash "uri" "options") edit)
+                      (file-name (lsp--uri-to-path uri)))
+                (f-touch file-name)
+                (when (-some->> options (gethash "override"))
+                  (f-write-text "" nil file-name))))
+    ("delete" (-let* (((&hash "uri" "options") edit)
+                      (file-name (lsp--uri-to-path uri))
+                      (recursive (and options (gethash "recursive" options))))
+                (f-delete file-name recursive)))
+    ("rename" (-let* (((&hash "oldUri" "newUri" "options") edit)
+                      (old-file-name (lsp--uri-to-path oldUri))
+                      (new-file-name (lsp--uri-to-path newUri))
+                      (buf (find-buffer-visiting old-file-name)))
+                (when buf
+                  (with-current-buffer buf
+                    (save-buffer)
+                    (lsp--text-document-did-close)))
+                (rename-file old-file-name new-file-name (and options (gethash "override" options)))
+                (when buf
+                  (with-current-buffer buf
+                    (set-buffer-modified-p nil)
+                    (set-visited-file-name new-file-name)
+                    (lsp)))))
+    (_ (with-current-buffer (find-file-noselect (lsp--uri-to-path (lsp--ht-get edit "textDocument" "uri")))
+         (lsp--apply-text-edits (gethash "edits" edit))))))
 
 (defun lsp--text-edit-sort-predicate (e1 e2)
   (let ((start1 (lsp--position-to-point (gethash "start" (gethash "range" e1))))
@@ -2501,42 +2533,25 @@ RENDER-ALL - nil if only the signature should be rendered."
 
 (defalias 'lsp-get-or-calculate-code-actions 'lsp-code-actions-at-point)
 
-(defun lsp--execute-code-action (action)
-  "Parses a code action represented as a CodeAction LSP type."
-  ;; If we have edits, we can apply them directly without incurring in
-  ;; another roundtrip.
-  (when-let ((edit (gethash "edit" action)))
-    (lsp--apply-workspace-edit edit))
-  (if-let ((command (gethash "command" action))
-           (action-handler (lsp--find-action-handler command)))
-      (funcall action-handler action)
-    (lsp--execute-command command)))
-
 (defun lsp--execute-command (action)
-  "Parses and executes a code action represented as a Command LSP
-type."
+  "Parse and execute a code ACTION represented as a Command LSP type."
   (if-let* ((command (gethash "command" action))
             (action-handler (lsp--find-action-handler command)))
       (funcall action-handler action)
     (lsp--send-execute-command command (gethash "arguments" action))))
-
-(defun lsp--execute-command-or-code-action (action)
-  "Parses and calls 'workspace/executeCommand' on the result of a
-'textDocument/codeAction' call, which can be a Command or a
-CodeAction type."
-  (when-let ((command (gethash "command" action)))
-    ;; If we have a "command" and it's of string type, we received a
-    ;; Command; otherwise, a CodeAction.
-    (if (stringp command)
-        (lsp--execute-command action)
-      (lsp--execute-code-action action))))
 
 (defun lsp-execute-code-action (action)
   "Execute code action ACTION.
 If ACTION is not set it will be selected from `lsp-code-actions'."
   (interactive (list (lsp--select-action
                       (lsp-code-actions-at-point))))
-  (lsp--execute-command-or-code-action action))
+  (when-let ((edit (gethash "edit" action)))
+    (lsp--apply-workspace-edit edit))
+
+  (let ((command (gethash "command" action)))
+    (cond
+     ((stringp command) (lsp--execute-command action))
+     ((hash-table-p command) (lsp--execute-command command)))))
 
 (defun lsp--make-document-formatting-params ()
   "Create document formatting params."
@@ -2954,7 +2969,7 @@ PARSER is the workspace parser used for handling the message."
       (signal 'lsp-unknown-message-type (list json-data)))))
 
 (defconst lsp--default-notification-handlers
-  (lsp-ht ("window/showMessage" 'lsp--window-log-message)
+  (lsp-ht ("window/showMessage" 'lsp--window-show-message)
           ("window/logMessage" 'lsp--window-log-message)
           ("textDocument/publishDiagnostics" 'lsp--on-diagnostics)
           ("textDocument/diagnosticsEnd" 'ignore)
@@ -3299,22 +3314,23 @@ Return a nested alist keyed by symbol names. e.g.
 (defun lsp-server-present? (final-command)
   "Check whether FINAL-COMMAND is present."
   ;; executable-find only gained support for remote checks after 26.1 release
-  (cond
-   ((not (file-remote-p default-directory))
-    (executable-find (nth 0 final-command)))
-   ((not (version<= emacs-version "26.1"))
-    (executable-find (nth 0 final-command) (file-remote-p default-directory)))
-   (t)))
+  (or (and (cond
+            ((not (file-remote-p default-directory))
+             (executable-find (first final-command)))
+            ((not (version<= emacs-version "26.1"))
+             (executable-find (first final-command) (file-remote-p default-directory)))
+            (t))
+           (prog1 t
+             (lsp-log "Command \"%s\" is present on the path." (s-join " " final-command))))
+      (ignore (lsp-log "Command \"%s\" is not present on the path." (s-join " " final-command)))))
 
 (defun lsp-stdio-connection (command)
   "Create LSP stdio connection named name.
-COMMAND is either list of strings, string or function which
-returns the command to execute."
+  COMMAND is either list of strings, string or function which
+  returns the command to execute."
   (list :connect (lambda (filter sentinel name)
                    (let ((final-command (lsp-resolve-final-function command))
                          (process-name (generate-new-buffer-name name)))
-                     (unless (lsp-server-present? final-command)
-                       (error (format "Couldn't find command %s" final-command)))
                      (let ((proc (make-process
                                   :name process-name
                                   :connection-type 'pipe
@@ -3331,9 +3347,9 @@ returns the command to execute."
 
 (defun lsp--open-network-stream (host port name &optional retry-count sleep-interval)
   "Open network stream to HOST:PORT.
-NAME will be passed to `open-network-stream'.
-RETRY-COUNT is the number of the retries.
-SLEEP-INTERVAL is the sleep interval between each retry."
+  NAME will be passed to `open-network-stream'.
+  RETRY-COUNT is the number of the retries.
+  SLEEP-INTERVAL is the sleep interval between each retry."
   (let ((retries 0)
         connection)
     (while (and (not connection) (< retries (or retry-count 100)))
@@ -3363,7 +3379,7 @@ SLEEP-INTERVAL is the sleep interval between each retry."
 
 (defun lsp-tcp-connection (command)
   "Create LSP TCP connection named name.
-COMMAND-FN will be called to generate Language Server command."
+  COMMAND-FN will be called to generate Language Server command."
   (list
    :connect (lambda (filter sentinel name)
               (let* ((host "localhost")
@@ -3385,21 +3401,21 @@ COMMAND-FN will be called to generate Language Server command."
 
 (defun lsp-tramp-connection (local-command)
   "Create LSP stdio connection named name.
-COMMAND is either list of strings, string or function which
-returns the command to execute."
+  COMMAND is either list of strings, string or function which
+  returns the command to execute."
   (list :connect (lambda (filter sentinel name)
                    (let* ((final-command (lsp-resolve-final-function local-command))
                           ;; wrap with stty to disable converting \r to \n
-                          (wrapped-command (append '("stty" "-icrnl" ";") final-command))
-                          (process-name (generate-new-buffer-name name)))
-                     (let ((proc (apply 'start-file-process-shell-command process-name
-                                        (format "*%s*" process-name) wrapped-command)))
-                       (set-process-sentinel proc sentinel)
-                       (set-process-filter proc filter)
-                       (set-process-query-on-exit-flag proc nil)
-                       (set-process-coding-system proc 'binary 'binary)
-                       (cons proc proc))))
-        :test? (lambda () (-> local-command lsp-resolve-final-function lsp-server-present?))))
+                          (wrapped-command (append '("stty" "raw" ";") final-command))
+  (process-name (generate-new-buffer-name name)))
+             (let ((proc (apply 'start-file-process-shell-command process-name
+                                (format "*%s*" process-name) wrapped-command)))
+               (set-process-sentinel proc sentinel)
+               (set-process-filter proc filter)
+               (set-process-query-on-exit-flag proc nil)
+               (set-process-coding-system proc 'binary 'binary)
+               (cons proc proc))))
+      :test? (lambda () (-> local-command lsp-resolve-final-function lsp-server-present?))))
 
 (defun lsp--auto-configure ()
   "Autoconfigure `lsp-ui', `company-lsp' if they are installed."
@@ -3571,15 +3587,31 @@ remote machine and vice versa."
     (--when-let (->> lsp-clients
                      hash-table-values
                      (-filter (-lambda (client)
-                                (and (or
-                                      (-some-> client lsp--client-activation-fn (funcall buffer-file-name buffer-major-mode))
-                                      (and (-contains? (lsp--client-major-modes client) buffer-major-mode)
-                                           (eq (---truthy? remote?) (---truthy? (lsp--client-remote? client)))))
+                                (and (or (-some-> client lsp--client-activation-fn (funcall buffer-file-name buffer-major-mode))
+                                         (and (-contains? (lsp--client-major-modes client) buffer-major-mode)
+                                              (eq (---truthy? remote?) (---truthy? (lsp--client-remote? client)))))
                                      (-some-> client lsp--client-new-connection (plist-get :test?) funcall)))))
-      (-let (((add-on-clients main-clients) (-separate 'lsp--client-add-on? it)))
-        ;; Pick only one client (with the highest priority) that is not declared as add-on? t.
-        (cons (and main-clients (--max-by (> (lsp--client-priority it) (lsp--client-priority other)) main-clients))
-              add-on-clients)))))
+      (lsp-log "Found the following clients for %s: %s"
+               file-name
+               (s-join ", "
+                       (-map (lambda (client)
+                               (format "(server-id %s, priority %s)"
+                                       (lsp--client-server-id client)
+                                       (lsp--client-priority client)))
+                             it)))
+      (-let* (((add-on-clients main-clients) (-separate 'lsp--client-add-on? it))
+              (selected-clients (cons (and main-clients (--max-by (> (lsp--client-priority it)
+                                                                     (lsp--client-priority other))
+                                                                  main-clients))
+                                      add-on-clients)))
+        (lsp-log "The following clients were selected based on priority: %s"
+                 (s-join ", "
+                         (-map (lambda (client)
+                                 (format "(server-id %s, priority %s)"
+                                         (lsp--client-server-id client)
+                                         (lsp--client-priority client)))
+                               selected-clients)))
+        selected-clients))))
 
 (defun lsp-register-client (client)
   "Registers LSP client CLIENT."

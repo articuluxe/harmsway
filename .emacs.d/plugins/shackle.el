@@ -4,7 +4,7 @@
 
 ;; Author: Vasilij Schneidermann <v.schneidermann@gmail.com>
 ;; URL: https://github.com/wasamasa/shackle
-;; Version: 1.0.2
+;; Version: 1.0.3
 ;; Keywords: convenience
 ;; Package-Requires: ((cl-lib "0.5"))
 
@@ -320,7 +320,7 @@ afterwards."
     (prog1 window
       (when (and window (window-live-p window)
                  shackle-select-reused-windows)
-        (select-window window t)))))
+        (select-window window)))))
 
 (defun shackle--display-buffer-same (buffer alist)
   "Display BUFFER in the currently selected window.
@@ -453,7 +453,7 @@ window."
     (when (plist-get plist :inhibit-window-quit)
       (shackle--inhibit-window-quit window))
     (when (and (plist-get plist :select) (window-live-p window))
-      (select-window window t))
+      (select-window window))
     window)))
 
 ;;;###autoload

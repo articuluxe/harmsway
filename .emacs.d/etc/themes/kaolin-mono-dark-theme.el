@@ -23,7 +23,7 @@
    (hl aquamarine3)
    (keyword spring-green8)
 
-   (second-key  magenta4 cerise4)
+   (metakey     magenta4 cerise4)
    ;; (builtin     "#E0F3EB")
    (builtin     spring-green9)
    (functions   builtin)
@@ -46,7 +46,7 @@
 
    (dim-buffer bg0)
    ;; TODO:
-   (hl-line    (if kaolin-themes-hl-line-colored brown6 bg3) (if kaolin-themes-hl-line-colored "#af5f00" bg3))
+   (hl-line    (if kaolin-themes-hl-line-colored "#af5f00" bg3))
    (hl-indent  bg4)
    (selection  bg4)
    (pulse      bg4)
@@ -85,7 +85,7 @@
    (line-bg1          bg2)
    (line-bg2          bg3)
    (line-color2       keyword)
-   (line-border       bg3)
+   (line-border       (if kaolin-themes-modeline-border bg3 line-bg1))
 
    (segment-active    gray3)
    (segment-inactive  gray3)

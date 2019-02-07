@@ -29,7 +29,7 @@
 (require 'treemacs-impl)
 (require 'treemacs-icons)
 (require 'treemacs-persistence)
-(require 'treemacs-structure)
+(require 'treemacs-dom)
 (require 'treemacs-workspaces)
 (eval-and-compile (require 'treemacs-macros))
 
@@ -205,7 +205,7 @@ to it will instead show a blank."
       (define-key map (kbd "cd")        #'treemacs-create-dir)
       (define-key map (kbd "R")         #'treemacs-rename)
       (define-key map (kbd "u")         #'treemacs-goto-parent-node)
-      (define-key map (kbd "q")         #'bury-buffer)
+      (define-key map (kbd "q")         #'treemacs-quit)
       (define-key map (kbd "Q")         #'treemacs-kill-buffer)
       (define-key map (kbd "ov")        #'treemacs-visit-node-vertical-split)
       (define-key map (kbd "oh")        #'treemacs-visit-node-horizontal-split)
@@ -333,7 +333,7 @@ Used as a post command hook."
   (treemacs--setup-icon-highlight)
   (treemacs--setup-icon-background-colors)
   (treemacs--setup-mode-line)
-  (treemacs--reset-index)
+  (treemacs--reset-dom)
   (treemacs--reset-project-positions))
 
 (provide 'treemacs-mode)

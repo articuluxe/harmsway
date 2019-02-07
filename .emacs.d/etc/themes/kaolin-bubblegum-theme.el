@@ -26,7 +26,7 @@
 
    (keyword     vermilion3)
    (builtin     aquamarine3)
-   (second-key  teal0)
+   (metakey     teal0)
 
    ;; TODO:
    (functions   lime3)
@@ -93,7 +93,7 @@
    (line-bg1          bg2)
    (line-bg2          bg3)
    (line-color2       builtin)
-   (line-border       bg3)
+   (line-border       (if kaolin-themes-modeline-border bg3 line-bg1))
 
    (segment-active    gray3)
    (segment-inactive  gray3)
