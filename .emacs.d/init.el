@@ -3387,6 +3387,9 @@ This may perform related customization."
               (my/syntax-color-hex-values))
             ))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; jinja-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package jinja2-mode :mode "\\.jinja$")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; jq-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package jq-mode
   :mode "\\.jq$"
