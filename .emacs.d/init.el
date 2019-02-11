@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-01-22 16:33:17 dan.harms>
+;; Modified Time-stamp: <2019-02-11 11:33:59 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3171,24 +3171,23 @@ This may perform related customization."
 (use-package applescript-mode
   :mode "\\.applescript$"
   :config
-  (add-hook 'applescript-mode-hook
-            (lambda ()
-              (define-key as-mode-map "\C-c\C-c" 'comment-region)
-              (define-key as-mode-map "\C-c\C-u" 'uncomment-region)
-              (define-key as-mode-map "\C-c\C-e" 'as-execute-buffer)
-              )))
+  ;; (add-hook 'applescript-mode-hook
+  ;;           (lambda ()
+  ;;             ))
+  ;; remap 'as-execute-buffer
+  (define-key as-mode-map "\C-c\C-c" nil)
+  (define-key as-mode-map "\C-c\C-ce" #'as-execute-buffer)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; awk-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-hook 'awk-mode-hook
           (lambda()
             (setq comment-start "#") (setq comment-end "")
-            (define-key awk-mode-map "\C-c\C-c" 'comment-region)
-            (define-key awk-mode-map "\C-c\C-u" 'uncomment-region)
             ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; bat-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun harmsway-company-cmd-fix-shell (orig-fun &rest args)
-  "Fix the shell used to create candidates by `company-cmd'."
+  "Fix shell used to create candidates by `company-cmd', aka ORIG-FUN with ARGS."
   (let ((shell-file-name (executable-find "cmdproxy.exe")))
     (apply orig-fun args)))
 
@@ -3201,12 +3200,11 @@ This may perform related customization."
             (lambda()
               (setq-default indent-tabs-mode nil)
               (dos-indent)
-              (define-key bat-mode-map "\C-c\C-c" 'comment-region)
-              (define-key bat-mode-map "\C-c\C-u" 'uncomment-region)
-              ;; the following conflicted with C-c C-c
-              (define-key bat-mode-map "\C-c\C-r" 'bat-run)
               (setq-local company-smart-backend 'company-cmd)
-              )))
+              ))
+  ;; remap 'bat-run
+  (define-key bat-mode-map "\C-c\C-c" nil)
+  (define-key bat-mode-map "\C-c\C-cr" 'bat-run))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; bazel-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package bazel-mode
@@ -3226,14 +3224,10 @@ This may perform related customization."
           (lambda()
             (setq indent-tabs-mode nil)
             (subword-mode 1)
+            (setq comment-start "#") (setq comment-end "")
             ;; (idle-highlight-mode 1)
             ;; conf-colon-mode still bound to "\C-c:"
             (local-unset-key "\C-c\C-c")
-            ;; conf-unix-mode now bound to "\C-cu"
-            (local-unset-key "\C-c\C-u")
-            (define-key conf-mode-map "\C-cu" 'conf-unix-mode)
-            (define-key conf-mode-map "\C-c\C-c" 'comment-region)
-            (define-key conf-mode-map "\C-c\C-u" 'uncomment-region)
             ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; cmake-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3264,8 +3258,7 @@ This may perform related customization."
   :config
   (add-hook 'crontab-mode-hook
             (lambda ()
-              (define-key crontab-mode-map "\C-c\C-c" 'comment-region)
-              (define-key crontab-mode-map "\C-c\C-u" 'uncomment-region)
+              (setq comment-start "#") (setq comment-end "")
               )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; css-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3287,10 +3280,8 @@ This may perform related customization."
   :config
   (add-hook 'dart-mode-hook
             (lambda()
-              (define-key dart-mode-map "\C-c\C-c" 'comment-region)
-              (define-key dart-mode-map "\C-c\C-u" 'uncomment-region)
+              ;; (flycheck-mode 1)
               )))
-;not sure this is needed (add-hook 'dart-mode-hook 'flycheck-mode)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dotenv-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package dotenv-mode :mode ("\\.env$" "\\.env\\.example$"))
@@ -3321,8 +3312,6 @@ This may perform related customization."
             (setq indent-tabs-mode nil)
             (add-hook 'completion-at-point-functions 'harmsway-company-at-point nil t)
             (define-key emacs-lisp-mode-map "\r" 'reindent-then-newline-and-indent)
-            (define-key emacs-lisp-mode-map "\C-c\C-c" 'comment-region)
-            (define-key emacs-lisp-mode-map "\C-c\C-u" 'uncomment-region)
             (define-key emacs-lisp-mode-map (kbd "\C-c RET")
               (lambda()(interactive)
                 (byte-compile-file (buffer-file-name))))
@@ -3553,8 +3542,9 @@ This may perform related customization."
   (when (eq 0 (call-process "python" nil nil nil "-c" "import jedi"))
     (require 'jedi-core))
   (define-key python-mode-map "\C-j" 'newline-and-indent)
-  (define-key python-mode-map "\C-c\C-c" 'comment-region)
-  (define-key python-mode-map "\C-c\C-u" 'uncomment-region)
+  ;; remap 'python-shell-send-buffer
+  (define-key python-mode-map "\C-c\C-c" nil)
+  (define-key python-mode-map "\C-c\C-cc" #'python-shell-send-buffer)
   (define-key python-mode-map [?\C-\M-g] 'python-nav-forward-sexp)
   (define-key python-mode-map (kbd "\C-c RET")
     (lambda()(interactive)
@@ -3636,8 +3626,9 @@ Requires Flake8 2.0 or newer. See URL
   :config
   (setq sh-basic-offset 4)
   (define-key sh-mode-map "\r" 'reindent-then-newline-and-indent)
-  (define-key sh-mode-map "\C-c\C-c" 'comment-region)
-  (define-key sh-mode-map "\C-c\C-u" 'uncomment-region)
+  ;; remap 'sh-case
+  (define-key sh-mode-map "\C-c\C-c" nil)
+  (define-key sh-mode-map "\C-c\C-cc" 'sh-case)
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; shell-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3686,8 +3677,6 @@ Requires Flake8 2.0 or newer. See URL
             (setq-default indent-tabs-mode nil)
             ;; (idle-highlight-mode 1)
             (define-key nxml-mode-map "\r" 'reindent-then-newline-and-indent)
-            (define-key nxml-mode-map "\C-c\C-c" 'comment-region)
-            (define-key nxml-mode-map "\C-c\C-u" 'uncomment-region)
             (make-local-variable 'company-backends)
             (setq company-backends
                   (list

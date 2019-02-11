@@ -1,8 +1,8 @@
 ;; coding.el --- coding utilities
-;; Copyright (C) 2015-2018  Dan Harms (dharms)
+;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2018-10-29 09:31:47 dharms>
+;; Modified Time-stamp: <2019-02-11 11:41:45 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -29,8 +29,8 @@
   (setq use-package-verbose t)
   (require 'use-package))
 
-(global-set-key "\C-c\C-c" 'comment-region)
-(global-set-key "\C-c\C-u" 'uncomment-region)
+(global-set-key "\C-c\C-c\C-c" #'comment-region)
+(global-set-key "\C-c\C-c\C-u" #'uncomment-region)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; cc-chainsaw ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package cc-chainsaw :disabled t)
@@ -123,8 +123,7 @@
   (c-add-style "harmsway" harmsway-c-style)
   (setq-default indent-tabs-mode nil)
   (setq-default c-auto-newline t)
-  (define-key c-mode-base-map "\C-c\C-c" 'comment-region)
-  (define-key c-mode-base-map "\C-c\C-u" 'uncomment-region)
+  (define-key c++-mode-map "\C-c\C-c" nil)
   (define-key c++-mode-map "\C-c/" 'toggle-c-comment-delimiters)
   (define-key c-mode-base-map (kbd "C-S-o") 'c-context-open-line)
   (define-key c-mode-base-map (kbd "C-c C-;")
