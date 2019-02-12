@@ -1,0 +1,2 @@
+cp src/IBM-Plex-Mono/fonts/complete/ttf/*.ttf ../../../.fonts/plex
+
