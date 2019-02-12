@@ -3,7 +3,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dan.harms)
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Monday, March 14, 2016
-;; Modified Time-stamp: <2019-01-16 10:45:45 dan.harms>
+;; Modified Time-stamp: <2019-02-12 11:10:27 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: config
 
@@ -43,11 +43,13 @@
                            "Cousine 11"
                            "Office Code Pro 10"
                            "DejaVu Sans Mono 10"
+                           "Lekton 12"
                            "Monofur 14"
                            "Anonymous Pro 13"
                            "Envy Code R 13"
                            "M+ 2m regular 12"
                            "InputMono 11"
+                           "IBM 3270 12"
                            "Andale Mono 11"
                            "Hasklig 11"
                            "droid sans mono 10"
@@ -58,14 +60,22 @@
                            "oxygen mono 10"
                            "Code New Roman 12"
                            "Monaco 10"
+                           "BPmono 10"
+                           "agave 10"
                            "M+ 1m 12"
                            "SpaceMono 11"
                            "RobotoMono 11"
                            "Iosevka 11"
+                           "League Mono Variable 10"
+                           "Cutive Mono 12"
                            "Monospace 10"
                            "Hermit 11"
+                           "APL385 Unicode 12"
+                           "DaddyTimeMono 11"
+                           "bedstead 12"
                            "Akkurat-Mono 10"
                            "ProggyCleanTT 14"
+                           "B612 12"
                            ))
   (choose-font-init))
 
