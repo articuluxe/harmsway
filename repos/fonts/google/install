@@ -3,3 +3,4 @@ cp src/apache/robotomono/*.ttf ../../../.fonts/robotomono
 cp src/ofl/spacemono/*.ttf ../../../.fonts/spacemono
 cp src/ofl/inconsolata/*.ttf ../../../.fonts/inconsolata
 cp src/ofl/cutivemono/*.ttf ../../../.fonts/cutive
+cp src/ofl/sharetechmono/*.ttf ../../../.fonts/sharetech
