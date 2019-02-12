@@ -1,0 +1,2 @@
+cp src/fonts/ttf/*.ttf ../../../.fonts/b612
+
