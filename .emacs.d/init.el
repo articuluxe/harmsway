@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-02-11 11:33:59 dan.harms>
+;; Modified Time-stamp: <2019-02-13 13:01:29 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -723,14 +723,26 @@ line."
 (use-package yascroll :config (global-yascroll-bar-mode 1))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; iflipb ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package
-  iflipb
+(use-package iflipb
+  :disabled
   :bind (("<C-tab>" . iflipb-next-buffer)
          ("M-' TAB" . iflipb-next-buffer)
          ("<C-S-tab>" . iflipb-previous-buffer)
          ("<C-S-iso-lefttab>" . iflipb-previous-buffer)
          ("M-' <backtab>" . iflipb-previous-buffer)
          ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; nswbuff ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package nswbuff
+  :bind (("<C-tab>" . nswbuff-switch-to-next-buffer)
+         ("<C-S-tab>" . nswbuff-switch-to-previous-buffer)
+         ("<C-S-iso-lefttab>" . nswbuff-switch-to-previous-buffer)
+         )
+  :init
+  (setq nswbuff-recent-buffers-first t)
+  (setq nswbuff-delay-switch nil)
+  (setq nswbuff-display-intermediate-buffers nil)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; copyright ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package copyright
