@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-02-18 08:50:32 dan.harms>
+;; Modified Time-stamp: <2019-02-18 09:28:25 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1092,6 +1092,11 @@ Only one letter is shown, the first that applies."
         #'magit-display-buffer-same-window-except-diff-v1)
   ;; to display fullframe, use 'magit-display-buffer-fullframe-status-v1
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; forge ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package forge
+  :disabled
+  :after magit)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; magit-org-todos ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package magit-org-todos
