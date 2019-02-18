@@ -31,9 +31,9 @@
    (fg3 gray3)
    (fg4 gray4)
 
-   (keyword     cerulean4)
+   (keyword     blue4)
    (metakey     keyword)
-   (builtin     vermilion4)
+   (builtin     cerulean4)
 
    (var         crimson3)
    (const       crimson3)
@@ -50,11 +50,11 @@
    (prep        capri1)
    (num         capri1)
    (bool        num)
-   (warning     orange1)
+   (warning     vermilion3)
    (err         red1)
 
    (dim-buffer white0)
-   (hl         ultramarine2)
+   (hl         cerise3)
    ;; TODO: add colored
    (hl-line    (if kaolin-hl-line-colored bg2 bg2))
    (hl-indent  gray9)
@@ -63,7 +63,7 @@
    ;; TODO:
    (pulse cyan3)
 
-   (todo crimson4)
+   (todo red3)
 
    (tooltip-hl-bg bg3)
    (tooltip-hl-fg hl)
@@ -79,9 +79,9 @@
    (rb8 spring-green4)
    (rb9 crimson4)
 
-   (diff-add aquamarine4)
-   (diff-mod vermilion4)
-   (diff-rem red4)
+   (diff-add spring-green1)
+   (diff-mod vermilion3)
+   (diff-rem red0)
 
     ;; Mode-line
    (line-fg           fg4)
@@ -96,7 +96,7 @@
    (win-border    bg3)
    (line-num-bg   bg1)
    (line-num-fg   chartreuse8)
-   (line-num-hl   hl)
+   (line-num-hl   ultramarine2)
 
    (cursor        gray3)
 
@@ -108,17 +108,17 @@
   ((link                   (:foreground capri1 :underline underline))
 
    (org-level-1           (:foreground keyword :bold bold :height 1.1))
-   (org-level-2            (:foreground var :bold nil))
-   (org-level-3            (:foreground str :bold nil))
-   (org-level-4            (:foreground builtin :bold nil))
+   (org-level-2            (:foreground str :bold nil))
+   (org-level-3            (:foreground builtin :bold nil))
+   (org-level-4            (:foreground functions :bold nil))
    (org-code               (:foreground keyword))
    (org-verbatim           (:foreground orange2))
    (org-list-dt            (:foreground str))
    (org-checkbox           (:foreground str))
    (org-table              (:foreground ultramarine2))
-   (org-date               (:foreground ultramarine2))
+   (org-date               (:foreground vermilion3))
 
-   (js2-object-property          (:foreground brown1))
+   (js2-object-property          (:foreground functions))
    (evil-ex-info                 (:foreground crimson4)))
 
 

@@ -129,6 +129,7 @@
    `(linum ((t (:inherit fringe :foreground ,blue-gray))))
    `(nlinum-current-line ((t (:inherit linum :foreground ,dark-green))))
    `(popup-tip-face ((t (:background ,fg :foreground ,bg))))
+   `(trailing-whitespace ((t (:foreground ,white :underline t))))
    `(vertical-border ((t (:foreground ,darker-gray))))
 
    ;;; Modes
@@ -282,12 +283,14 @@
    `(dired-flagged ((t (:foreground ,dark-red))))
 
    ;; diredfl
-   `(diredfl-compressed-file-suffix ((t (:foreground ,light-blue))))
+   `(diredfl-compressed-file-name ((t (:foreground ,light-blue))))
+   `(diredfl-compressed-file-suffix ((t (:inherit diredfl-compressed-file-name))))
    `(diredfl-date-time ((t (:inherit font-lock-keyword-face))))
    `(diredfl-deletion-file-name ((t (:inherit dired-flagged))))
    `(diredfl-deletion ((t (:inherit dired-mark))))
    `(diredfl-dir-heading ((t (:inherit dired-header))))
    `(diredfl-dir-name ((t (:inherit dired-directory))))
+   `(diredfl-executable-tag ((t (:foreground ,red))))
    `(diredfl-flag-mark ((t (:inherit dired-flagged))))
    `(diredfl-flag-mark-line ((t (:background ,purple-bg))))
    `(diredfl-file-name ((t (:foreground ,fg))))
@@ -296,10 +299,11 @@
    `(diredfl-number ((t (:inherit highlight-numbers-number))))
    `(diredfl-symlink ((t (:inherit dired-symlink))))
 
-   `(diredfl-no-priv ((t (:foreground ,blue-gray))))
    `(diredfl-dir-priv ((t (:foreground ,purple))))
-   `(diredfl-rare-priv ((t (:foreground ,lightest-green))))
    `(diredfl-exec-priv ((t (:foreground ,red))))
+   `(diredfl-link-priv ((t (:foreground ,blue))))
+   `(diredfl-no-priv ((t (:foreground ,blue-gray))))
+   `(diredfl-rare-priv ((t (:foreground ,lightest-green))))
    `(diredfl-read-priv ((t (:foreground ,green))))
    `(diredfl-write-priv ((t (:foreground ,light-blue))))
 
@@ -415,11 +419,6 @@
    `(git-gutter:separator ((t (:foreground ,green :bold t))))
    `(git-gutter:unchanged ((t (:foreground ,yellow))))
 
-   ;; guide-key
-   `(guide-key/prefix-command-face ((t (:foreground ,green))))
-   `(guide-key/highlight-command-face ((t (:foreground ,blue))))
-   `(guide-key/key-face ((t (:foreground ,gray))))
-
    ;; gnus
    `(gnus-button ((t (:bold t))))
    `(gnus-cite-1 ((t (:foreground "light blue"))))
@@ -494,6 +493,11 @@
    `(gnus-summary-normal-undownloaded ((t (:foreground ,dark-gray))))
    `(gnus-summary-normal-unread ((t (:foreground ,blue))))
    `(gnus-summary-selected ((t (:underline t))))
+
+   ;; guide-key
+   `(guide-key/prefix-command-face ((t (:foreground ,green))))
+   `(guide-key/highlight-command-face ((t (:foreground ,blue))))
+   `(guide-key/key-face ((t (:foreground ,gray))))
 
    ;; helm
    `(helm-M-x-key ((t (:foreground ,orange :underline nil))))
@@ -618,10 +622,6 @@
    `(js2-private-member ((t (:foreground ,dark-tan))))
    `(js2-warning ((t ( :underline ,orange))))
 
-   ;; Man
-   `(Man-overstrike ((t (:foreground ,blue))))
-   `(Man-underline ((t (:foreground ,yellow))))
-
    ;; magit
    `(magit-section-heading ((t (:foreground ,blue))))
    `(magit-section-heading-selection ((t (:foreground ,light-blue))))
@@ -693,6 +693,10 @@
    ;; makey
    `(makey-key-mode-button-face ((t (:inherit font-lock-constant-face))))
 
+   ;; Man
+   `(Man-overstrike ((t (:foreground ,blue))))
+   `(Man-underline ((t (:foreground ,yellow))))
+
    ;; message-mode
    `(message-cited-text ((t (:inherit font-lock-comment-face))))
    `(message-header-cc ((t (:foreground ,blue :bold t))))
@@ -736,6 +740,11 @@
    `(neo-vc-unregistered-face ((t (:foreground nil :background nil))))
    `(neo-vc-up-to-date-face ((t (:foreground ,fg))))
 
+   ;; nswbuff
+   `(nswbuff-current-buffer-face ((t (:foreground ,nimbus-warn :underline t))))
+   `(nswbuff-separator-face ((t (:inherit font-lock-keyword-face))))
+   `(nswbuff-special-buffers-face ((t (:inherit font-lock-constant-face))))
+
    ;; org
    `(org-agenda-date ((t (:foreground ,blue))))
    `(org-agenda-date-today ((t (:foreground ,light-blue))))
@@ -763,8 +772,14 @@
    `(org-scheduled-previously ((t (:foreground ,orange))))
    `(org-scheduled-today ((t (:foreground ,yellow))))
    `(org-special-keyword ((t (:foreground ,blue-gray))))
+   `(org-table ((t (:foreground ,lightest-blue))))
    `(org-tag ((t (:foreground ,brown))))
    `(org-time-grid ((t (:foreground ,blue-gray))))
+   `(org-upcoming-deadline ((t (:inherit org-warning :bold nil))))
+   `(org-warning ((t (:inherit font-lock-warning-face :foreground ,red))))
+
+   ;; org-recur
+   `(org-recur ((t (:foreground ,dark-tan))))
 
    ;; org-super-agenda
    `(org-super-agenda-header ((t (:inherit org-agenda-structure))))
@@ -864,8 +879,8 @@
    `(term-default-bg-color ((t (:inherit bg))))
    `(term-default-fg-color ((t (:inherit fg))))
 
-   ;; trailing whitespace
-   `(trailing-whitespace ((t (:background ,white :bold t))))
+   ;; transient
+   `(transient-key ((t (:inherit font-lock-constant-face))))
 
    ;; twittering
    `(twittering-timeline-footer-face ((t (:inherit font-lock-function-name-face))))

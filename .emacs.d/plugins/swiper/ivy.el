@@ -1307,7 +1307,8 @@ will be called for each element of this list.")
                   (t
                    current))))
         (if (eq action #'identity)
-            (funcall action x)
+            (prog1 x
+              (ivy-recursive-restore))
           (select-window (ivy--get-window ivy-last))
           (set-buffer (ivy-state-buffer ivy-last))
           (prog1 (unwind-protect
@@ -4121,8 +4122,7 @@ The selected history element will be inserted into the minibuffer."
   (interactive)
   (let ((enable-recursive-minibuffers t)
         (history (symbol-value (ivy-state-history ivy-last)))
-        (old-last ivy-last)
-        (ivy-recursive-restore nil))
+        (old-last ivy-last))
     (ivy-read "Reverse-i-search: "
               (delete-dups (copy-sequence history))
               :action (lambda (x)

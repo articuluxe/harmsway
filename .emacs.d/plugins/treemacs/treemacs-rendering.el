@@ -39,6 +39,13 @@
   treemacs--start-watching
   treemacs--stop-watching)
 
+(treemacs-import-functions-from "treemacs-tags"
+  treemacs--goto-tag-button-at
+  treemacs--tags-path-of)
+
+(treemacs-import-functions-from "treemacs-interface"
+  treemacs-TAB-action)
+
 (treemacs-import-functions-from "treemacs-extensions"
   treemacs--apply-root-top-extensions
   treemacs--apply-root-bottom-extensions
@@ -69,6 +76,18 @@ is a marker pointing to POS."
   (declare (side-effect-free t))
   (inline-letevals (pos)
     (inline-quote (copy-marker ,pos t))))
+
+(define-inline treemacs--current-screen-line ()
+  "Get the current screen line in the selected window."
+  (inline-quote
+   (max 1 (count-screen-lines (window-start) (point-at-eol)))))
+
+(define-inline treemacs--lines-in-window ()
+  "Determine the number of lines visible in the current (treemacs) window.
+A simple call to something like `window-screen-lines' is insufficient becase
+the height of treemacs' icons must be taken into account."
+  (/ (- (window-pixel-height) (window-mode-line-height))
+     (max treemacs--icon-size (frame-char-height))))
 
 (define-inline treemacs--sort-alphabetic-asc (f1 f2)
   "Sort F1 and F2 alphabetically asc."
@@ -158,7 +177,7 @@ DEFAULT: Face"
                  ('mod-time-asc #'treemacs--sort-mod-time-asc)
                  ('mod-time-desc #'treemacs--sort-mod-time-desc)
                  (_ (error "[Treemacs] Unknown treemacs-sorting value '%s'" treemacs-sorting))))
-              (entries (-> ,dir (directory-files t nil t) (treemacs--filter-files-to-be-shown)))
+              (entries (-> ,dir (directory-files :absolute-names nil :no-sort) (treemacs--filter-files-to-be-shown)))
               (dirs-files (-separate #'file-directory-p entries)))
          (list (sort (cl-first dirs-files) sort-func)
                (sort (cl-second dirs-files) sort-func)))))))
@@ -450,13 +469,13 @@ BUFFER: Buffer"
 (defun treemacs--resize-git-cache ()
   "Cuts `treemacs--git-cache' back down to size.
 Specifically its size will be reduced to half of `treemacs--git-cache-max-size'."
-  (cl-block body
-    (let* ((size (ht-size treemacs--git-cache))
-           (count (- size (/ treemacs--git-cache-max-size 2))))
-      (treemacs--maphash treemacs--git-cache (key _)
-        (ht-remove! treemacs--git-cache key)
-        (when (>= 0 (cl-decf count))
-          (cl-return-from body))))))
+  (treemacs-block
+   (let* ((size (ht-size treemacs--git-cache))
+          (count (- size (/ treemacs--git-cache-max-size 2))))
+     (treemacs--maphash treemacs--git-cache (key _)
+       (ht-remove! treemacs--git-cache key)
+       (when (>= 0 (cl-decf count))
+         (treemacs-return :done))))))
 
 (cl-defmacro treemacs--button-close (&key button new-state new-icon post-close-action)
   "Close node given by BTN, use NEW-ICON and set state of BTN to NEW-STATE."
@@ -497,7 +516,10 @@ Specifically its size will be reduced to half of `treemacs--git-cache-max-size'.
      :post-open-action
      (progn
        (treemacs-on-expand path btn nil)
-       (treemacs--start-watching path)))))
+       (treemacs--start-watching path)))
+    ;; in the post-open-action point is right at the end of the close-button's
+    ;; save-recursion, we need to be back at the root for the recenter calculation
+    (treemacs--maybe-recenter treemacs-recenter-after-project-expand)))
 
 (defun treemacs--collapse-root-node (btn &optional recursive)
   "Collapse the given root BTN.
@@ -597,6 +619,60 @@ expanded."
       (funcall (alist-get (treemacs-button-get btn :state) treemacs-TAB-actions-config))
       (funcall (alist-get (treemacs-button-get btn :state) treemacs-TAB-actions-config))
       (hl-line-highlight))))
+
+(defun treemacs-delete-single-node (path &optional project)
+  "Delete single node at given PATH and PROJECT.
+Does nothing when the given node is not visible. Must be run in a treemacs
+buffer.
+
+This will also take care of all the necessary house-keeping like making sure
+child nodes are deleted as well and everything is removed from the dom.
+
+If multiple nodes are to be deleted it is more efficient to make multiple calls
+to `treemacs-do-delete-single-node' wrapped in `treemacs-save-position' instead.
+
+PATH: Node Path
+Project: Project Struct"
+  (treemacs-save-position
+    (treemacs-do-delete-single-node path project)))
+
+(define-inline treemacs-do-delete-single-node (path &optional project)
+  "Actual implementation of single node deletion.
+Will delete node at given PATH and PROJECT. See also
+`treemacs-delete-single-node'.
+
+PATH: Node Path
+Project: Project Struct"
+  (inline-letevals (path project)
+    (inline-quote
+     (when (treemacs-is-path-visible? ,path)
+       (-let [pos nil]
+         (--when-let (treemacs-find-in-dom ,path)
+           (setf pos (treemacs-dom-node->position it))
+           (when (treemacs-is-node-expanded? pos)
+             (goto-char pos)
+             (treemacs-TAB-action :purge))
+           (treemacs-dom-node->remove-from-dom! it))
+         (unless pos (treemacs-goto-node ,path ,project))
+         (treemacs-with-writable-buffer
+          (treemacs--delete-line)))
+       (hl-line-highlight)))))
+
+(defun treemacs--maybe-recenter (when)
+  "Potentially recenter based on value of WHEN.
+Recenter indiscriminately when WHEN is 'always. Otherwise recentering depends
+on the distance between `point' and the window top/bottom being smaller than
+`treemacs-recenter-distance'."
+  (pcase when
+    ('always (recenter))
+    ((guard (memq when '(t on-distance))) ;; t for backward compatibility, remove eventually
+     (let* ((current-line (float (treemacs--current-screen-line)))
+            (all-lines (float (treemacs--lines-in-window)))
+            (distance-from-top (/ current-line all-lines))
+            (distance-from-bottom (- 1.0 distance-from-top)))
+       (when (or (> treemacs-recenter-distance distance-from-top)
+                 (> treemacs-recenter-distance distance-from-bottom))
+         (recenter))))))
 
 (provide 'treemacs-rendering)
 

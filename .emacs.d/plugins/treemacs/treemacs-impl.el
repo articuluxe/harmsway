@@ -48,6 +48,7 @@
   treemacs-refresh)
 
 (treemacs-import-functions-from "treemacs-rendering"
+  treemacs--current-screen-line
   treemacs--add-root-element
   treemacs--expand-root-node
   treemacs--collapse-root-node
@@ -605,27 +606,27 @@ IS-FILE?: Bool"
         (curr-path (--if-let (treemacs-current-button)
                        (treemacs--nearest-path it)
                      (f-expand "~"))))
-    (cl-block body
-      (setq path-to-create (read-file-name
-                            (if is-file?"Create File: " "Create Directory: ")
-                            (f-slash (if (f-dir? curr-path)
-                                         curr-path
-                                       (f-dirname curr-path)))))
-      (treemacs-error-return-if (file-exists-p path-to-create)
-        "%s already exists." (propertize path-to-create 'face 'font-lock-string-face))
-      (treemacs--without-filewatch
-       (if is-file?
-           (-let [dir (f-dirname path-to-create)]
-             (unless (f-exists? dir)
-               (make-directory dir t))
-             (f-touch path-to-create))
-         (make-directory path-to-create t)))
-      (-when-let (project (treemacs--find-project-for-path path-to-create))
-        (treemacs-without-messages (treemacs--do-refresh (current-buffer) project))
-        (treemacs-goto-file-node (treemacs--canonical-path path-to-create) project)
-        (recenter))
-      (treemacs-pulse-on-success
-          "Created %s." (propertize path-to-create 'face 'font-lock-string-face)))))
+    (treemacs-block
+     (setq path-to-create (read-file-name
+                           (if is-file?"Create File: " "Create Directory: ")
+                           (f-slash (if (f-dir? curr-path)
+                                        curr-path
+                                      (f-dirname curr-path)))))
+     (treemacs-error-return-if (file-exists-p path-to-create)
+       "%s already exists." (propertize path-to-create 'face 'font-lock-string-face))
+     (treemacs--without-filewatch
+      (if is-file?
+          (-let [dir (f-dirname path-to-create)]
+            (unless (f-exists? dir)
+              (make-directory dir t))
+            (f-touch path-to-create))
+        (make-directory path-to-create t)))
+     (-when-let (project (treemacs--find-project-for-path path-to-create))
+       (treemacs-without-messages (treemacs--do-refresh (current-buffer) project))
+       (treemacs-goto-file-node (treemacs--canonical-path path-to-create) project)
+       (recenter))
+     (treemacs-pulse-on-success
+         "Created %s." (propertize path-to-create 'face 'font-lock-string-face)))))
 
 (define-inline treemacs--follow-path-elements (btn items)
   "Starting at BTN follow (goto and open) every single element in ITEMS.
@@ -1094,18 +1095,6 @@ Will refresh every project when PROJECT is 'all."
      (unless treemacs-silent-refresh
        (treemacs-log "Refresh complete.")))))
 
-(defun treemacs--maybe-recenter ()
-  "Potentially recenter after following a file or tag.
-The answer depends on the distance between `point' and the window top/bottom
-being smaller than `treemacs-follow-recenter-distance'."
-  (let* ((current-line (float (count-lines (window-start) (point))))
-         (all-lines (float (window-height)))
-         (distance-from-top (/ current-line all-lines))
-         (distance-from-bottom (- 1.0 distance-from-top)))
-    (when (or (> treemacs-follow-recenter-distance distance-from-top)
-              (> treemacs-follow-recenter-distance distance-from-bottom))
-      (recenter))))
-
 (defun treemacs--setup-peek-buffer (btn &optional goto-tag?)
   "Setup the peek buffer and window for BTN.
 Additionally also navigate to BTN's tag if GOTO-TAG is t.
@@ -1142,6 +1131,13 @@ GOTO-TAG: Bool"
             (kill-buffer buffer-to-kill))
           (with-selected-window window
             (switch-to-buffer buffer-to-restore)))))))
+
+(define-inline treemacs-is-node-file-or-dir? (node)
+  "Return t when NODE is a file or directory."
+  (inline-letevals (node)
+    (inline-quote
+     (memq (treemacs-button-get node :state)
+           '(file-node-open file-node-closed dir-node-open dir-node-closed)))))
 
 (defun treemacs-is-path-visible? (path)
   "Return whether a node for PATH is displayed in the current buffer.

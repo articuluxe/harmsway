@@ -23,7 +23,7 @@
    (cerulean4     "#47629E")
 
    ;; Color vars
-   ;; dark      bright   terminal
+   ;;                                  bright    dark      terminal
    (bg0 "#1C1616")
    (bg1 (if kaolin-valley-dark-alt-bg "#28211E" "#211F1D") black1)
    (bg2 (if kaolin-valley-dark-alt-bg "#332a25" "#282423") black2)
@@ -45,25 +45,28 @@
 
    (comment     brown2)
    ;; TODO:
+   ;; (comment     "#553a41")
+   ;; TODO:
    (comment-alt teal2)
 
    (str         magenta3)
    (str-alt     cerise4)
    (doc         str-alt)
 
-   (prep        vermilion3)
+   (prep        ultramarine3)
    (num         harlequin3)
    (bool        num)
    (warning     amber0)
    (err         red3)
 
    (dim-buffer white0)
-   (hl         capri3)
+   (hl         vermilion3)
    ;; TODO: add colored
    (hl-line    (if kaolin-themes-hl-line-colored bg3 bg3))
    (hl-indent  "#453947")
-   ;; TODO:
+   ;; TODO: selected comments are almost invisible
    (selection amber6)
+   (selection red6)
    ;; TODO:
    (pulse bg4)
 
@@ -113,7 +116,7 @@
   (
    (highlight-quoted-symbol  (:foreground num))
 
-   (org-document-title     (:foreground orange3 :bold bold))
+   (org-document-title     (:foreground header :bold bold))
    ;; (org-document-info      (:foreground brown3))
 
    ;; TODO:

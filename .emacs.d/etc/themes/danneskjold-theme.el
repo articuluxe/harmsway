@@ -208,6 +208,8 @@
      `(org-level-4                  ((,c (:foreground ,white))))
      `(org-level-5                  ((,c (:foreground ,white))))
      `(org-level-6                  ((,c (:foreground ,white))))
+     `(org-level-7                  ((,c (:foreground ,white))))
+     `(org-level-8                  ((,c (:foreground ,white))))
      `(org-code                     ((,c (:foreground ,orange))))
      `(org-column                   ((,c (:background ,black))))
      `(org-column-title             ((,c (:background ,black :foreground ,comment))))

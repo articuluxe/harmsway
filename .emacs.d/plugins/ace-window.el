@@ -431,7 +431,7 @@ The new frame is set to the same size as the previous frame, offset by
               (avy-mouse-event-window char)))
         ((= char (aref (kbd "C-g") 0))
          (throw 'done 'exit))
-        ((= char aw-make-frame-char)
+        ((and aw-make-frame-char (= char aw-make-frame-char))
          ;; Make a new frame and perform any action on its window.
          (let ((start-win (selected-window))
                (end-win (frame-selected-window (aw-make-frame))))
@@ -765,7 +765,7 @@ Modify `aw-fair-aspect-ratio' to tweak behavior."
     (aw-flip-window)))
 
 (defun aw-execute-command-other-window (window)
-  "Exectute a command in WINDOW."
+  "Execute a command in WINDOW."
   (aw-switch-to-window window)
   (unwind-protect
       (funcall

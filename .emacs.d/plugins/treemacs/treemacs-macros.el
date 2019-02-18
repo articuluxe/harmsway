@@ -265,7 +265,7 @@ it on the same line."
            (curr-window    (treemacs-get-local-window))
            (curr-win-line  (when curr-window
                              (with-selected-window curr-window
-                               (max 1 (1- (count-screen-lines (window-start) (point-at-eol))))))))
+                               (treemacs--current-screen-line)))))
       ,main-form
       ;; try to stay at the same file/tag
       ;; if the tag no longer exists move to the tag's owning file node
@@ -308,7 +308,8 @@ it on the same line."
       ,@final-form
       (when curr-win-line
         (with-selected-window curr-window
-          (recenter curr-win-line))))))
+          ;; recenter starts counting at 0
+          (recenter (1- curr-win-line)))))))
 
 (defmacro treemacs-run-in-every-buffer (&rest body)
   "Run BODY once locally in every treemacs buffer (and its frame)."
@@ -360,27 +361,32 @@ Entry variables will bound based on NAMES which is a list of two elements."
       ,table)))
 
 (defmacro treemacs-error-return (error-msg &rest msg-args)
-  "Simplifies the pattern of an early failure in a `cl-block' named 'body'.
+  "Early return failure from `treemacs-block'.
 Will pass ERROR-MSG and MSG-ARGS to `treemacs-pulse-on-failure'."
   (declare (indent 1) (debug (form body)))
-  `(cl-return-from body
+  `(cl-return-from __body__
      (treemacs-pulse-on-failure ,error-msg ,@msg-args)))
 
 (defmacro treemacs-error-return-if (predicate error-msg &rest msg-args)
-  "Simplifies the pattern of an early failure in a `cl-block' named 'body'.
+  "Early return from `treemacs-block'.
 When PREDICATE returns non-nil value will pass ERROR-MSG and MSG-ARGS to
 `treemacs-pulse-on-failure'."
   (declare (indent 1) (debug (form sexp body)))
   `(when ,predicate
-     (cl-return-from body
+     (cl-return-from __body__
        (treemacs-pulse-on-failure ,error-msg ,@msg-args))))
 
+(defmacro treemacs-return (ret)
+  "Early return from `treemacs-block', returning RET."
+  (declare (debug t))
+  `(cl-return-from __body__ ,ret))
+
 (defmacro treemacs-return-if (predicate ret)
-  "Simplifies the pattern of an early return from a `cl-block' named 'body'.
+  "Early return from `treemacs-block'.
 When PREDICATE returns non-nil RET will be returned."
   (declare (indent 1) (debug (form sexp)))
   `(when ,predicate
-     (cl-return-from body ,ret)))
+     (cl-return-from __body__ ,ret)))
 
 (cl-defmacro treemacs-first-child-node-where (btn &rest predicate)
   "Among the *direct* children of BTN find the first child matching PREDICATE.
@@ -400,6 +406,13 @@ For the PREDICATE call the button being checked is bound as 'child-btn'."
                  (when ,@predicate (cl-return-from __search__ child-btn)) )
                 ((> depth child-depth)
                  (cl-return-from __search__ nil))))))))))
+
+(defmacro treemacs-block (&rest forms)
+  "Put FORMS in a `cl-block' named '__body__'.
+This pattern is oftentimes used in treemacs, see also `treemacs-return-if',
+`treemacs-return', `treemacs-error-return' and `treemacs-error-return-if'"
+  (declare (debug t))
+  `(cl-block __body__ ,@forms))
 
 (defmacro treemacs-is-path (left op &optional right)
   "Readable utility macro for various path predicates.

@@ -804,7 +804,7 @@ With point in code or when `iedit-mode' is already active, toggle
 misspelled word with `flyspell'.  Call this command a second time
 to choose a different correction."
   (interactive)
-  (if (or iedit-mode
+  (if (or (bound-and-true-p iedit-mode)
           (and (derived-mode-p 'prog-mode)
                (not (or (nth 4 (syntax-ppss))
                         (nth 3 (syntax-ppss))))))
@@ -944,7 +944,7 @@ command was called, go to its unstaged changes section."
 (define-minor-mode unpackaged/magit-log-date-headers-mode
   "Display date/time headers in `magit-log' buffers."
   :global t
-  (if magit-log-date-headers-mode
+  (if unpackaged/magit-log-date-headers-mode
       (progn
         ;; Enable mode
         (add-hook 'magit-post-refresh-hook #'unpackaged/magit-log--add-date-headers)

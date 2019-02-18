@@ -2,6 +2,7 @@
 ;;; Commentary:
 ;;
 ;;; Color order
+;; TODO: add color close to color5 but satured
 ;;
 ;; color0 - almost pure/contrast >= 70 sat & > 70 val
 ;; color1 - regular
@@ -114,6 +115,7 @@
     (amber9 "#eee6d3")
 
     ;; Orange #FF7F00
+    ;; TODO: maybe add #dbb68f
     (orange0 "#e67417")
     (orange1 "#dbac66")
     (orange2 "#b87e3c")
@@ -126,7 +128,7 @@
     (orange9 "#EEE6D3")
 
     ;; Vermilion #FF3F00
-    (vermilion0 "#FA4716")
+    (vermilion0 "#F84B1B")
     (vermilion1 "#ca6036")
     (vermilion2 "#a14223")
     (vermilion3 "#ee7042")
@@ -238,13 +240,10 @@
     (violet9 "#E2D3EE")
 
     ;; Ultramarine #3F00FF
-    ;; TODO adjust
-    (ultramarine0 "#4618dc")
-    (ultramarine1 "#5f3eca")
-    ;; TODO:
-    (ultramarine2  "#6D6487")
-    ;; (ultramarine3 "#6d44eb")
-    (ultramarine3 "#9C83F2")
+    (ultramarine0 "#554AF5")
+    (ultramarine1 "#7F77F2")
+    (ultramarine2 "#6D6487")
+    (ultramarine3 "#9587DD")
     (ultramarine4 "#787096")
     (ultramarine5 "#16141e")
     ;; (ultramarine6 "#322E40")
@@ -558,10 +557,10 @@
     (font-lock-comment-face           (:foreground kaolin-comment :italic kaolin-themes-italic-comments))
     (font-lock-constant-face          (:foreground const))
     (font-lock-doc-face               (:foreground doc))
-    (font-lock-function-name-face     (:foreground functions :bold bold))
-    (font-lock-keyword-face           (:foreground keyword :bold bold))
-    (font-lock-negation-char-face     (:foreground red1))
-    (font-lock-preprocessor-face      (:foreground prep :bold nil))
+    (font-lock-function-name-face     (:foreground functions))
+    (font-lock-keyword-face           (:foreground keyword))
+    (font-lock-negation-char-face     (:foreground err))
+    (font-lock-preprocessor-face      (:foreground prep))
     (font-lock-reference-face         (:foreground const))
     (font-lock-string-face            (:foreground str))
     (font-lock-type-face              (:foreground type))
@@ -590,7 +589,7 @@
     (bold-italic         (:bold bold :italic italic))
     (link                (:foreground link :underline underline))
     (link-visited        (:inherit 'link :underline nil))
-    (success             (:background nil :foreground spring-green1))
+    (success             (:background nil :foreground done))
     (escape-glyph        (:background nil :foreground cyan3))
 
     (menu        (:background bg2 :foreground fg2))
@@ -603,7 +602,6 @@
     (match        (:background nil :foreground hl))
     (isearch      (:background nil :foreground hl :bold bold :underline underline))
     (isearch-fail (:background nil :foreground err))
-
 
     ;; Interface
     (package-name          (:inherit 'link :underline nil))

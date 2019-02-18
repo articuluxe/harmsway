@@ -7,7 +7,7 @@
 ;; Maintainer: João Távora <joaotavora@gmail.com>
 ;; URL: https://github.com/joaotavora/eglot
 ;; Keywords: convenience, languages
-;; Package-Requires: ((emacs "26.1") (jsonrpc "1.0.7") (flymake "1.0.2"))
+;; Package-Requires: ((emacs "26.1") (jsonrpc "1.0.7") (flymake "1.0.5"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -1678,13 +1678,13 @@ DUMMY is ignored."
 (defvar eglot--temp-location-buffers (make-hash-table :test #'equal)
   "Helper variable for `eglot--handling-xrefs'.")
 
+(defvar eglot-xref-lessp-function #'ignore
+  "Compare two `xref-item' objects for sorting.")
+
 (defmacro eglot--handling-xrefs (&rest body)
   "Properly sort and handle xrefs produced and returned by BODY."
   `(unwind-protect
-       (sort (progn ,@body)
-             (lambda (a b)
-               (< (xref-location-line (xref-item-location a))
-                  (xref-location-line (xref-item-location b)))))
+       (sort (progn ,@body) eglot-xref-lessp-function)
      (maphash (lambda (_uri buf) (kill-buffer buf)) eglot--temp-location-buffers)
      (clrhash eglot--temp-location-buffers)))
 
@@ -1767,24 +1767,24 @@ Try to visit the target file for a richer summary line."
              locations))))
 
 (cl-defmethod xref-backend-references ((_backend (eql eglot)) identifier)
-  (unless (eglot--server-capable :referencesProvider)
-    (cl-return-from xref-backend-references nil))
-  (let ((params
-         (or (get-text-property 0 :textDocumentPositionParams identifier)
-             (let ((rich (car (member identifier eglot--xref-known-symbols))))
-               (and rich (get-text-property 0 :textDocumentPositionParams rich))))))
-    (unless params
-      (eglot--error "Don' know where %s is in the workspace!" identifier))
-    (eglot--handling-xrefs
-     (mapcar
-      (eglot--lambda ((Location) uri range)
-        (eglot--xref-make identifier uri range))
-      (jsonrpc-request (eglot--current-server-or-lose)
-                       :textDocument/references
-                       (append
-                        params
-                        (list :context
-                              (list :includeDeclaration t))))))))
+  (when (eglot--server-capable :referencesProvider)
+    (let ((params
+           (or (get-text-property 0 :textDocumentPositionParams identifier)
+            (let ((rich (car (member identifier eglot--xref-known-symbols))))
+              (and rich
+                   (get-text-property 0 :textDocumentPositionParams rich))))))
+      (unless params
+        (eglot--error "Don' know where %s is in the workspace!" identifier))
+      (eglot--handling-xrefs
+       (mapcar
+        (eglot--lambda ((Location) uri range)
+          (eglot--xref-make identifier uri range))
+        (jsonrpc-request (eglot--current-server-or-lose)
+                         :textDocument/references
+                         (append
+                          params
+                          (list :context
+                                (list :includeDeclaration t)))))))))
 
 (cl-defmethod xref-backend-apropos ((_backend (eql eglot)) pattern)
   (when (eglot--server-capable :workspaceSymbolProvider)

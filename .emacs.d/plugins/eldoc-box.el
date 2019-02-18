@@ -67,14 +67,16 @@ in that mode the childframe is cleared as soon as point moves.")
   "If set to non-nil, eldoc-box clears childframe when you hit \C-g.")
 
 (defvar eldoc-box-frame-parameters
-  '(
-    ;; (left . -1)
+  '(;; make the childframe unseen when first created
+    (left . -1)
+    (top . -1)
+    (width  . 0)
+    (height  . 0)
+
     (no-accept-focus . t)
     (no-focus-on-map . t)
     (min-width  . 0)
-    ;; (width  . 0)
     (min-height  . 0)
-    ;; (height  . 0)
     (internal-border-width . 1)
     (vertical-scroll-bars . nil)
     (horizontal-scroll-bars . nil)
@@ -84,7 +86,6 @@ in that mode the childframe is cleared as soon as point moves.")
     (line-spacing . 0)
     (unsplittable . t)
     (undecorated . t)
-    ;; (top . -1)
     (visibility . nil)
     (mouse-wheel-frame . nil)
     (no-other-frame . t)
@@ -144,17 +145,19 @@ It will be passes with two arguments: WIDTH and HEIGHT of the childframe.")
   "A convenient minor mode to display doc at point.
 You can use C-g to hide the doc."
   :lighter ""
-  (if eldoc-box-hover-at-point-mode
-      (progn (setq-local
-              eldoc-box-position-function
-              #'eldoc-box--default-at-point-position-function)
-             (setq-local eldoc-box-clear-with-C-g t)
-             (remove-hook 'pre-command-hook #'eldoc-pre-command-refresh-echo-area t)
-             (add-hook 'pre-command-hook #'eldoc-box-quit-frame t t))
-    (add-hook 'pre-command-hook #'eldoc-pre-command-refresh-echo-area t)
-    (remove-hook 'pre-command-hook #'eldoc-box-quit-frame t)
-    (kill-local-variable 'eldoc-box-position-function)
-    (kill-local-variable 'eldoc-box-clear-with-C-g)))
+  (if eldoc-box-hover-mode
+      (if eldoc-box-hover-at-point-mode
+          (progn (setq-local
+                  eldoc-box-position-function
+                  #'eldoc-box--default-at-point-position-function)
+                 (setq-local eldoc-box-clear-with-C-g t)
+                 (remove-hook 'pre-command-hook #'eldoc-pre-command-refresh-echo-area t)
+                 (add-hook 'pre-command-hook #'eldoc-box-quit-frame t t))
+        (add-hook 'pre-command-hook #'eldoc-pre-command-refresh-echo-area t)
+        (remove-hook 'pre-command-hook #'eldoc-box-quit-frame t)
+        (kill-local-variable 'eldoc-box-position-function)
+        (kill-local-variable 'eldoc-box-clear-with-C-g))
+    (message "Enable eldoc-box-hover-mode first")))
 
 ;;;; Backstage
 ;;;;; Variable
@@ -198,32 +201,44 @@ Position is calculated base on WIDTH and HEIGHT of childframe text window"
         ;; y position + a little padding (16)
         16))
 
+(defun eldoc-box--point-position-relative-to-native-frame (&optional position window)
+  "Return (X . Y) as the coordinate of POSITION in WINDOW.
+The coordinate is relative to the native frame.
+
+WINDOW nil means use selected window."
+  (let* ((window (window-normalize-window window t))
+	 (pos-in-window
+	  (pos-visible-in-window-p
+	   (or position (window-point window)) window t)))
+    (when pos-in-window
+      ;; change absolute to relative to native frame
+      (let ((edges (window-edges window t nil t)))
+	(cons (+ (nth 0 edges) (nth 0 pos-in-window))
+	      (+ (nth 1 edges) (nth 1 pos-in-window)))))))
+
 (defun eldoc-box--default-at-point-position-function (width height)
   "Set `eldoc-box-position-function' to this function to have childframe appear under point.
 Position is calculated base on WIDTH and HEIGHT of childframe text window"
-  ;; (window-absolute-pixel-position)
-  ;; (posn-x-y (posn-at-point))
-  (let* ((point-pos (window-absolute-pixel-position))
-         (frame-pos (frame-edges nil 'native-edges))
-         (x (- (car point-pos) (car frame-pos))) ; relative to native frame
-         (y (- (cdr point-pos) (nth 1 frame-pos)))
+  (let* ((point-pos (eldoc-box--point-position-relative-to-native-frame))
+         ;; calculate point coordinate relative to native frame
+         ;; because childframe coordinate is relative to native frame
+         (x (car point-pos))
+         (y (cdr point-pos))
          ;; (en (frame-char-width))
          (em (frame-char-height))
-         (frame-geometry (frame-geometry))
-         (tool-bar (if (and tool-bar-mode
-                            (alist-get 'tool-bar-external frame-geometry))
-                       (cdr (alist-get 'tool-bar-size frame-geometry))
-                     0)))
+         (frame-geometry (frame-geometry)))
     (cons (if (< (- (frame-inner-width) width) x)
               ;; space on the right of the pos is not enough
               ;; put to left
               (max 0 (- x width))
+            ;; normal, just return x
             x)
           (if (< (- (frame-inner-height) height) y)
               ;; space under the pos is not enough
               ;; put above
               (max 0 (- y height))
-            (+ y em tool-bar)))))
+            ;; normal, just return y + em
+            (+ y em)))))
 
 (defun eldoc-box--get-frame (buffer)
   "Return a childframe displaying BUFFER.
@@ -234,13 +249,15 @@ Checkout `lsp-ui-doc--make-frame', `lsp-ui-doc--move-frame'."
                             `((default-minibuffer-frame . ,(selected-frame))
                               (minibuffer . ,(minibuffer-window))
                               (left-fringe . ,(frame-char-width)))))
-         (window (or (and eldoc-box--frame (frame-selected-window eldoc-box--frame))
-                     (display-buffer-in-child-frame
-                      buffer
-                      `((child-frame-parameters . ,parameter)))))
-         (frame (window-frame window))
+         window frame
          (main-frame (selected-frame)))
-    (make-frame-visible frame)
+    (if eldoc-box--frame
+        (progn (setq frame eldoc-box--frame)
+               (setq window (frame-selected-window frame)))
+      (setq window (display-buffer-in-child-frame
+                    buffer
+                    `((child-frame-parameters . ,parameter))))
+      (setq frame (window-frame window)))
     (set-window-dedicated-p window t)
     (redirect-frame-focus frame (frame-parent frame))
     (set-face-attribute 'internal-border frame :inherit 'eldoc-box-border)
@@ -262,7 +279,8 @@ Checkout `lsp-ui-doc--make-frame', `lsp-ui-doc--move-frame'."
       (set-frame-size frame width height t)
       ;; move position
       (set-frame-position frame (car pos) (cdr pos)))
-    (setq eldoc-box--frame frame)))
+    (setq eldoc-box--frame frame)
+    (make-frame-visible frame)))
 
 
 ;;;;; ElDoc
