@@ -37,9 +37,11 @@
 (require 'magit-diff)
 (require 'magit-wip)
 
+(require 'transient) ; See #3732.
+
 ;; For `magit-apply'
-(declare-function magit-am-popup "magit-sequence" (&optional arg))
-(declare-function magit-patch-apply-popup "magit-files" (&optional arg))
+(declare-function magit-am "magit-sequence" ())
+(declare-function magit-patch-apply "magit-files" ())
 ;; For `magit-discard-files'
 (declare-function magit-checkout-stage "magit-merge" (file arg))
 (declare-function magit-checkout-read-stage "magit-merge" (file))
@@ -129,11 +131,11 @@ so causes the change to be applied to the index as well."
       (`(,(or `unstaged `staged) ,_)
        (user-error "Change is already in the working tree"))
       (`(untracked ,(or `file `files))
-       (magit-am-popup))
+       (magit-am))
       (`(,_ region) (magit-apply-region it args))
       (`(,_   hunk) (magit-apply-hunk   it args))
       (`(,_  hunks) (magit-apply-hunks  it args))
-      (`(rebase-sequence file) (magit-patch-apply-popup))
+      (`(rebase-sequence file) (magit-patch-apply))
       (`(,_   file) (magit-apply-diff   it args))
       (`(,_  files) (magit-apply-diffs  it args)))))
 
