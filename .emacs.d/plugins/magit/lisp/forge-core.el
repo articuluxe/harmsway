@@ -167,6 +167,16 @@ argument.")
 (cl-defgeneric forge-get-pullreq ()
   "Return a forge pullreq object.")
 
+(cl-defgeneric forge-get-url (obj)
+  "Return the URL for a forge object.")
+
+(cl-defgeneric forge-browse (obj)
+  "Visit the URL corresponding to a forge object in a browser."
+  (browse-url (forge-get-url obj)))
+
+(cl-defgeneric forge-visit (obj)
+  "View a forge object in a separate buffer.")
+
 (cl-defgeneric forge--object-id (class &rest args)
   "Return the database id for the CLASS object specified by ARGS.")
 
@@ -195,11 +205,11 @@ at that time."
                                  (if (atom val) val (alist-get 'id val))))
              rows))))
 
-(cl-defgeneric forge--format-url (object slot &optional spec))
+(cl-defgeneric forge--format (object slot &optional spec))
 
-(cl-defmethod forge--format-url ((remote string) slot &optional spec)
+(cl-defmethod forge--format ((remote string) slot &optional spec)
   (if-let ((parts (forge--split-remote-url remote)))
-      (forge--format-url
+      (forge--format
        (forge-get-repository 'stub remote) slot
        (pcase-let* ((`(,host ,owner ,name) parts)
                     (path (if owner (concat owner "/" name) name)))

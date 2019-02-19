@@ -48,6 +48,18 @@
 (cl-defmethod forge-get-repository ((post forge-post))
   (forge-get-repository (forge-get-topic post)))
 
+;;; Utilities
+
+(cl-defmethod forge-get-url ((post forge-post))
+  (forge--format post (let ((topic (forge-get-parent post)))
+                        (cond ((forge--childp topic 'forge-issue)
+                               'issue-post-url-format)
+                              ((forge--childp topic 'forge-pullreq)
+                               'pullreq-post-url-format)))))
+
+(cl-defmethod forge-browse :after ((post forge-post))
+  (oset (forge-get-topic post) unread-p nil))
+
 ;;; Sections
 
 (defun forge-post-at-point ()
@@ -76,9 +88,9 @@
 
 ;;; Utilities
 
-(cl-defmethod forge--format-url ((post forge-post) slot &optional spec)
-  (forge--format-url (forge-get-topic post) slot
-                     `(,@spec (?I . ,(oref post number)))))
+(cl-defmethod forge--format ((post forge-post) slot &optional spec)
+  (forge--format (forge-get-topic post) slot
+                 `(,@spec (?I . ,(oref post number)))))
 
 ;;; Mode
 
@@ -97,7 +109,7 @@
 (defvar-local forge--cancel-post-function nil)
 (defvar-local forge--pre-post-buffer nil)
 
-(defun forge--prepare-post-buffer (filename)
+(defun forge--prepare-post-buffer (filename &optional header)
   (let ((file (magit-git-dir
                (convert-standard-filename
                 (concat "magit/posts/" filename)))))
@@ -107,6 +119,8 @@
           (buf (find-file-noselect file)))
       (with-current-buffer buf
         (forge-post-mode)
+        (when header
+          (magit-set-header-line-format header))
         (setq forge--pre-post-buffer prevbuf)
         (when resume
           (forge--display-post-buffer buf)

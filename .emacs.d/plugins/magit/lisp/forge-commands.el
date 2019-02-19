@@ -148,9 +148,7 @@ have to do so.  See https://platform.github.community/t/7284."
 Prefer a topic over a branch and that over a commit."
   (interactive)
   (if-let ((topic (forge-topic-at-point)))
-      (if (forge-issue-p topic)
-          (forge-browse-issue topic)
-        (forge-browse-pullreq topic))
+      (forge-browse topic)
     (if-let ((branch (magit-branch-at-point)))
         (forge-browse-branch branch)
       (call-interactively 'forge-browse-commit))))
@@ -181,8 +179,19 @@ Prefer a topic over a branch and that over a commit."
         (message "%s does not appear to be available on any remote.  %s"
                  rev "You might have to push it first.")))
     (browse-url
-     (forge--format-url repo 'commit-url-format
-                        `((?r . ,(magit-commit-p rev)))))))
+     (forge--format repo 'commit-url-format
+                    `((?r . ,(magit-commit-p rev)))))))
+
+;;;###autoload
+(defun forge-copy-url-at-point-as-kill ()
+  "Copy the url of the thing at point."
+  (interactive)
+  (if-let ((url (forge-get-url (or (forge-post-at-point)
+                                   (forge-current-topic)))))
+      (progn
+        (kill-new url)
+        (message "Copied %S" url))
+    (user-error "Nothing at point with a URL")))
 
 ;;;###autoload
 (defun forge-browse-branch (branch)
@@ -196,67 +205,54 @@ Prefer a topic over a branch and that over a commit."
       (or (setq remote (or (magit-get-push-remote branch)
                            (magit-get-upstream-remote branch)))
           (user-error "Cannot determine remote for %s" branch)))
-    (browse-url (forge--format-url remote 'branch-url-format
-                                   `((?r . ,branch))))))
+    (browse-url (forge--format remote 'branch-url-format
+                               `((?r . ,branch))))))
 
 ;;;###autoload
 (defun forge-browse-remote (remote)
   "Visit the url corresponding to REMOTE using a browser."
   (interactive (list (magit-read-remote "Browse remote")))
-  (browse-url (forge--format-url remote 'remote-url-format)))
+  (browse-url (forge--format remote 'remote-url-format)))
 
 ;;;###autoload
 (defun forge-browse-topic ()
   "Visit the current topic using a browser."
   (interactive)
   (if-let ((topic (forge-current-topic)))
-      (if (forge-issue-p topic)
-          (forge-browse-issue topic)
-        (forge-browse-pullreq topic))
+      (forge-browse topic)
     (user-error "There is no topic at point")))
 
 ;;;###autoload
 (defun forge-browse-pullreqs (repo)
   "Visit the url corresponding to REPO's pull-requests using a browser."
   (interactive (list (forge-get-repository 'stub)))
-  (browse-url (forge--format-url repo 'pullreqs-url-format)))
+  (browse-url (forge--format repo 'pullreqs-url-format)))
 
 ;;;###autoload
 (defun forge-browse-pullreq (pullreq)
   "Visit the url corresponding to PULLREQ using a browser."
   (interactive (list (forge-read-pullreq "Browse pull-request" t)))
-  (browse-url (forge--format-url pullreq 'pullreq-url-format))
-  (oset pullreq unread-p nil))
+  (forge-browse pullreq))
 
 ;;;###autoload
 (defun forge-browse-issues (repo)
   "Visit the url corresponding to REPO's issues using a browser."
   (interactive (list (forge-get-repository 'stub)))
-  (browse-url (forge--format-url repo 'issues-url-format)))
+  (browse-url (forge--format repo 'issues-url-format)))
 
 ;;;###autoload
 (defun forge-browse-issue (issue)
   "Visit the url corresponding to ISSUE using a browser."
   (interactive (list (forge-read-issue "Browse issue" t)))
-  (browse-url (forge--format-url issue 'issue-url-format))
-  (oset issue unread-p nil))
+  (forge-browse issue))
 
 ;;;###autoload
 (defun forge-browse-post ()
   "Visit the url corresponding to the post at point using a browser."
   (interactive)
-  (let ((post (forge-post-at-point)))
-    (cl-etypecase post
-      (forge-issue   (forge-browse-issue post))
-      (forge-pullreq (forge-browse-pullreq post))
-      (forge-post
-       (let ((topic (forge-get-topic post)))
-         (browse-url
-          (forge--format-url post
-                             (cl-etypecase topic
-                               (forge-issue   'issue-post-url-format)
-                               (forge-pullreq 'pullreq-post-url-format))))
-         (oset topic unread-p nil))))))
+  (if-let ((post (forge-post-at-point)))
+      (forge-browse post)
+    (user-error "There is no post at point")))
 
 ;;; Visit
 
@@ -265,26 +261,20 @@ Prefer a topic over a branch and that over a commit."
   "View the topic at point in a separate buffer."
   (interactive)
   (if-let ((topic (forge-topic-at-point)))
-      (if (forge-issue-p topic)
-          (forge-visit-issue topic)
-        (forge-visit-pullreq topic))
+      (forge-visit topic)
     (user-error "There is no topic at point")))
 
 ;;;###autoload
 (defun forge-visit-pullreq (pullreq)
   "View the pull-request at point in a separate buffer."
   (interactive (list (forge-read-pullreq "View pull-request" t)))
-  (let ((magit-generate-buffer-name-function 'forge-topic-buffer-name))
-    (magit-mode-setup-internal #'forge-topic-mode (list pullreq) t))
-  (oset pullreq unread-p nil))
+  (forge-visit pullreq))
 
 ;;;###autoload
 (defun forge-visit-issue (issue)
   "View the issue at point in a separate buffer."
   (interactive (list (forge-read-issue "View issue" t)))
-  (let ((magit-generate-buffer-name-function 'forge-topic-buffer-name))
-    (magit-mode-setup-internal #'forge-topic-mode (list issue) t))
-  (oset issue unread-p nil))
+  (forge-visit issue))
 
 ;;; Create
 
@@ -316,20 +306,26 @@ Prefer a topic over a branch and that over a commit."
                                 (magit-get-upstream-branch upstream)))
                          (car (member "origin/master" branches))))))
      (list source target)))
-  (let ((buf (forge--prepare-post-buffer "new-pullreq")))
+  (let* ((repo (forge-get-repository t))
+         (buf (forge--prepare-post-buffer
+               "new-pullreq"
+               (forge--format repo "Create new pull-request on %p"))))
     (with-current-buffer buf
       (setq forge--buffer-base-branch target)
       (setq forge--buffer-head-branch source)
-      (setq forge--buffer-post-object (forge-get-repository t))
+      (setq forge--buffer-post-object repo)
       (setq forge--submit-post-function 'forge--submit-create-pullreq))
     (forge--display-post-buffer buf)))
 
 (defun forge-create-issue ()
   "Create a new issue for the current repository."
   (interactive)
-  (let ((buf (forge--prepare-post-buffer "new-issue")))
+  (let* ((repo (forge-get-repository t))
+         (buf (forge--prepare-post-buffer
+               "new-issue"
+               (forge--format repo "Create new issue on %p"))))
     (with-current-buffer buf
-      (setq forge--buffer-post-object (forge-get-repository t))
+      (setq forge--buffer-post-object repo)
       (setq forge--submit-post-function 'forge--submit-create-issue))
     (forge--display-post-buffer buf)))
 
@@ -338,7 +334,8 @@ Prefer a topic over a branch and that over a commit."
   (interactive)
   (let* ((topic (car magit-refresh-args))
          (buf (forge--prepare-post-buffer
-               (format "%s:new-comment" (oref topic number)))))
+               (forge--format topic "%i:new-comment")
+               (forge--format topic "New comment on #%i of %p"))))
     (with-current-buffer buf
       (setq forge--buffer-post-object topic)
       (setq forge--submit-post-function 'forge--submit-create-post))
@@ -350,13 +347,15 @@ Prefer a topic over a branch and that over a commit."
   "Edit an existing post."
   (interactive)
   (let* ((post (forge-post-at-point))
-         (buf (forge--prepare-post-buffer
-               (cl-typecase post
-                 (forge-topic (format "%s"
-                                      (oref post number)))
-                 (forge-post  (format "%s:%s"
-                                      (oref (forge-get-topic post) number)
-                                      (oref post number)))))))
+         (buf (cl-typecase post
+                (forge-topic
+                 (forge--prepare-post-buffer
+                  (forge--format post "%i")
+                  (forge--format post "Edit #%i of %p")))
+                (forge-post
+                 (forge--prepare-post-buffer
+                  (forge--format post "%i:%I")
+                  (forge--format post "Edit comment on #%i of %p"))))))
     (with-current-buffer buf
       (setq forge--buffer-post-object post)
       (setq forge--submit-post-function 'forge--submit-edit-post)

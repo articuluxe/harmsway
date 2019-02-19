@@ -28,7 +28,7 @@
 (put 'naquadah 'theme-immediate t)
 
 ;; These colors are stolen from Tango.
-(defvar naquadah-colors
+(setq naquadah-colors
   '((((class color) (min-colors 65535))
      (aluminium-1 . "#eeeeec")
      (aluminium-2 . "#d3d7cf")
@@ -58,6 +58,7 @@
      (scarlet-red-2 . "#dc1010")
      (scarlet-red-3 . "#b40000")
      (background . "#262B2C")
+     (background-indentation . "#2F2F2F")
      (black . "#0c191C")
      (gradient-1 . "#729fcf")  ;; sky-blue-1
      (gradient-2 . "#8ae234")  ;; chameleon-1
@@ -196,7 +197,7 @@
      (gradient-9 . "red")    ;; orange-2
      (gradient-10 . "yellow")    ;; plum-2
      (gradient-11 . "yellow")   ;; chocolate-2
-     ))
+     )))
   "The color values for each color name for a given
       condition.  The format is: ((condition) (key . value) (key
       . value) ...)")
@@ -269,6 +270,7 @@
  '(escape-glyph (:foreground chameleon-1))
 
  '(highlight (:background scarlet-red-2))
+ '(highlight-indentation-face (:background background-indentation))
  '(fringe (:background black))
  '(mode-line (:foreground aluminium-1 :background black
                           :box (:line-width 1 :color aluminium-6)))
@@ -620,6 +622,18 @@
  ;; flyspell
  '(flyspell-incorrect (:underline (:style wave :color scarlet-red-1)))
  '(flyspell-duplicate (:underline (:style wave :color orange-2)))
+
+ ;; company
+ '(company-tooltip (:background butter-1))
+ '(company-tooltip-selection (:background orange-1))
+ '(company-tooltip-common (:foreground scarlet-red-1))
+ '(company-tooltip-annotation (:background scarlet-red-3))
+ '(company-scrollbar-fg (:background scarlet-red-3))
+ '(company-scrollbar-bg (:background butter-1))
+ '(company-preview (:background sky-blue-1))
+ '(company-preview-common (:inherit company-preview :foreground scarlet-red-3))
+ '(company-preview-search (:inherit company-preview :background sky-blue-1))
+ '(company-echo-common (:background scarlet-red-3))
 
  ;; git-gutter
  '(git-gutter:modified (:foreground orange-1))

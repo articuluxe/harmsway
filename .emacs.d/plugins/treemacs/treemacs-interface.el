@@ -719,12 +719,19 @@ For slower scrolling see `treemacs-previous-line-other-window'"
 (with-no-warnings
   (make-obsolete #'treemacs-add-project #'treemacs-add-project-to-workspace "v2.2.1"))
 
-(defun treemacs-remove-project-from-workspace ()
-  "Remove the project at point from the current workspace."
-  (interactive)
-  (treemacs-unless-let (project (treemacs-project-at-point))
-      (treemacs-pulse-on-failure "There is no project here.")
-    (treemacs-do-remove-project-from-workspace project)
+(defun treemacs-remove-project-from-workspace (&optional arg)
+  "Remove the project at point from the current workspace.
+With a prefix ARG select project to remove by name."
+  (interactive "P")
+  (let ((project (treemacs-project-at-point))
+        (save-pos))
+    (when (or arg (null project))
+      (setf project (treemacs--select-project-by-name)
+            save-pos (not (equal project (treemacs-project-at-point)))))
+    (if save-pos
+        (treemacs-save-position
+         (treemacs-do-remove-project-from-workspace project))
+      (treemacs-do-remove-project-from-workspace project))
     (whitespace-cleanup)
     (treemacs-pulse-on-success "Removed project %s from the workspace."
       (propertize (treemacs-project->name project) 'face 'font-lock-type-face))))
@@ -941,10 +948,12 @@ Only works with a single project in the workspace."
    (let* ((workspace (treemacs-current-workspace))
           (projects  (treemacs-workspace->projects workspace))
           (project1  (treemacs-project-at-point))
-          (index1    (or (treemacs-error-return-if (null project1) "There is nothing to move here.")
+          (index1    (or (treemacs-error-return-if (null project1)
+                           "There is nothing to move here.")
                          (-elem-index project1 projects)))
           (index2    (1- index1))
-          (project2  (or (treemacs-error-return-if (> 0 index2) "There is no project to transpose above.")
+          (project2  (or (treemacs-error-return-if (> 0 index2)
+                           "There is no project to switch places with above.")
                          (nth index2 projects)))
           (bounds1  (treemacs--get-bounds-of-project project1))
           (bounds2  (treemacs--get-bounds-of-project project2)))
@@ -964,10 +973,12 @@ Only works with a single project in the workspace."
    (let* ((workspace (treemacs-current-workspace))
           (projects  (treemacs-workspace->projects workspace))
           (project1  (treemacs-project-at-point))
-          (index1    (or (treemacs-error-return (null project1) "There is nothing to move here.")
+          (index1    (or (treemacs-error-return-if (null project1)
+                           "There is nothing to move here.")
                          (-elem-index project1 projects)))
           (index2    (1+ index1))
-          (project2  (or (treemacs-error-return (>= index2 (length projects)) "There is no project to transpose below.")
+          (project2  (or (treemacs-error-return-if (>= index2 (length projects))
+                           "There is no project to switch places with below.")
                          (nth index2 projects)))
           (bounds1  (treemacs--get-bounds-of-project project1))
           (bounds2  (treemacs--get-bounds-of-project project2)))

@@ -144,6 +144,9 @@ The following %-sequences are supported:
               (oref topic repository)
               'forge-repository))
 
+(cl-defmethod forge-get-topic ((topic forge-topic))
+  topic)
+
 (cl-defmethod forge-list-recent-topics ((repo forge-repository) table)
   (let* ((id (oref repo id))
          (limit forge-topic-list-limit)
@@ -206,15 +209,74 @@ The following %-sequences are supported:
 
 ;;; Utilities
 
-(cl-defmethod forge--format-url ((topic forge-topic) slot &optional spec)
-  (forge--format-url (forge-get-repository topic) slot
-                     `(,@spec (?i . ,(oref topic number)))))
+(cl-defmethod forge--format ((topic forge-topic) slot &optional spec)
+  (forge--format (forge-get-repository topic) slot
+                 `(,@spec (?i . ,(oref topic number)))))
+
+(cl-defmethod forge-visit ((topic forge-topic))
+  (let ((magit-generate-buffer-name-function 'forge-topic-buffer-name))
+    (magit-mode-setup-internal #'forge-topic-mode (list topic) t)))
+
+(cl-defmethod forge-visit :after ((topic forge-topic))
+  (oset topic unread-p nil))
 
 (defun forge--sanitize-string (string)
   ;; For Gitlab this may also be nil.
   (if string
       (replace-regexp-in-string "\r\n" "\n" string t t)
     ""))
+
+(defun forge-insert-topics (heading topics)
+  "Under a new section with HEADING, insert TOPICS."
+  (when topics
+    (let ((width (length (number-to-string (oref (car topics) number))))
+          list-section-type topic-section-type)
+      (cond ((forge--childp (car topics) 'forge-issue)
+             (setq list-section-type  'issues)
+             (setq topic-section-type 'issue))
+            ((forge--childp (car topics) 'forge-pullreq)
+             (setq list-section-type  'pullreqs)
+             (setq topic-section-type 'pullreq)))
+      (magit-insert-section ((eval list-section-type) nil t)
+        (magit-insert-heading
+          (format "%s (%s)"
+                  (propertize heading 'face 'magit-section-heading)
+                  (length topics)))
+        (magit-insert-section-body
+          (dolist (topic topics)
+            (forge-insert-topic topic topic-section-type width))
+          (insert ?\n))))))
+
+(defun forge-insert-topic (topic &optional topic-section-type width)
+  "Insert TOPIC as a new section.
+If TOPIC-SECTION-TYPE is provided, it is the section type to use.
+If WIDTH is provided, it is a fixed width to use for the topic
+identifier."
+  (unless topic-section-type
+    (setq topic-section-type
+          (cond ((forge--childp topic 'forge-issue) 'issue)
+                ((forge--childp topic 'forge-pullreq) 'pullreq))))
+  (magit-insert-section ((eval topic-section-type) topic t)
+    (forge--insert-topic-contents topic width)))
+
+(cl-defmethod forge--format-topic-id ((topic forge-topic))
+  (propertize (format "#%s" (oref topic number)) 'face 'magit-dimmed))
+
+(cl-defmethod forge--insert-topic-contents ((topic forge-topic) width)
+  (with-slots (number title unread-p closed) topic
+    (insert
+     (format (if width
+                 (format "%%-%is %%s%%s\n" (1+ width))
+               "%s %s%s\n")
+             (forge--format-topic-id topic)
+             (magit-log-propertize-keywords
+              nil (propertize title 'face
+                              (cond (unread-p 'forge-topic-unread)
+                                    (closed   'forge-topic-closed)
+                                    (t        'forge-topic-open))))
+             (if-let ((labels (forge--format-topic-labels topic)))
+                 (concat " " labels)
+               "")))))
 
 ;;; Mode
 
@@ -347,9 +409,9 @@ The following %-sequences are supported:
       (fill-region (point-min) (point-max)))
     (buffer-string)))
 
-(defun forge--topic-type-prefix (topic)
-  (and (forge--childp (forge-get-repository topic) 'forge-gitlab-repository)
-       (if (forge--childp topic 'forge-pullreq) "!" "#")))
+(cl-defmethod forge--topic-type-prefix ((_ forge-topic))
+  "Get the identifier prefix specific to the type of TOPIC."
+  "#")
 
 (defun forge--topic-buffer-lock-value (args)
   (and (derived-mode-p 'forge-topic-mode)
@@ -584,12 +646,12 @@ alist, containing just `text' and `position'.")
         (setq-local bug-reference-url-format
                     (if (forge--childp repo 'forge-gitlab-repository)
                         (lambda ()
-                          (forge--format-url repo
-                                             (if (equal (match-string 3) "#")
-                                                 'issue-url-format
-                                               'pullreq-url-format)
-                                             `((?i . ,(match-string 2)))))
-                      (forge--format-url repo 'issue-url-format '((?i . "%s")))))
+                          (forge--format repo
+                                         (if (equal (match-string 3) "#")
+                                             'issue-url-format
+                                           'pullreq-url-format)
+                                         `((?i . ,(match-string 2)))))
+                      (forge--format repo 'issue-url-format '((?i . "%s")))))
         (setq-local bug-reference-bug-regexp
                     (if (forge--childp repo 'forge-gitlab-repository)
                         "\\(?3:[!#]\\)\\(?2:[0-9]+\\)"

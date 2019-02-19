@@ -133,8 +133,7 @@ forges and hosts.  "
     (let* ((remotes (magit-list-remotes))
            (remote (or remote
                        (if (cdr remotes)
-                           (car (member (or (magit-get "forge.remote") "origin")
-                                        remotes))
+                           (car (member (forge--get-remote) remotes))
                          (car remotes)))))
       (if-let ((url (and remote (magit-git-string "remote" "get-url" remote))))
           (forge-get-repository url remote demand)
@@ -203,6 +202,9 @@ forges and hosts.  "
 
 ;;; Utilities
 
+(defsubst forge--get-remote ()
+  (or (magit-get "forge.remote") "origin"))
+
 (defun forge-read-repository (prompt)
   (let ((choice (magit-completing-read
                  prompt
@@ -231,9 +233,11 @@ forges and hosts.  "
                       :limit 1]
                      table (oref repo id)))))
 
-(cl-defmethod forge--format-url ((repo forge-repository) slot &optional spec)
+(cl-defmethod forge--format ((repo forge-repository) format-or-slot &optional spec)
   (format-spec
-   (eieio-oref repo slot)
+   (if (symbolp format-or-slot)
+       (eieio-oref repo format-or-slot)
+     format-or-slot)
    (with-slots (githost owner name) repo
      (let ((path (if owner (concat owner "/" name) name)))
        `(,@spec
@@ -242,6 +246,9 @@ forges and hosts.  "
          (?n . ,name)
          (?p . ,path)
          (?P . ,(replace-regexp-in-string "/" "%2F" path)))))))
+
+(cl-defmethod forge-get-url ((repo forge-repository))
+  (forge--format (oref repo remote) 'remote-url-format))
 
 (defun forge--set-field-callback ()
   (let ((buf (current-buffer)))
