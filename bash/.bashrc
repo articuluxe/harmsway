@@ -74,6 +74,9 @@ host=${domain:-$(hostname -s)}
 [ -r ~/."$host".env ] && . ~/."$host".env
 [ -r ~/.bash_"$host" ] && . ~/.bash_"$host"
 
+# If we are in a container, initialize it
+[ -r ~/.singularity_profile ] && test "${SINGULARITY_NAME}" && . ~/.singularity_profile
+
 # Source personal data
 [ -r ~/.personal.env ] && . ~/.personal.env
 

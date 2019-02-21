@@ -7,6 +7,8 @@ alias emacs="\$EDITOR"
 
 # NOT sourcing the site file
 
+alias xrdev="singularity shell -B /net,/opt/xr,/opt/xr_job_agent,/opt/1tick -s /bin/bash ~/src/centos_6~f27_1.1.0~onload_201805~v_4.4~development.simg"
+
 use_gcc()
 {
    export CC=$CSTDLIB_BIN/gcc
