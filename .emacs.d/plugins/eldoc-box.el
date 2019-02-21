@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2017-2018 Sebastien Chapuis, 2018 Yuan Fu
 
-;; Version: 1.4
+;; Version: 1.8
 
 ;; Author: Sebastien Chapuis <sebastien@chapu.is>
 ;; Maintainer: Yuan Fu <casouri@gmail.com>
@@ -251,7 +251,7 @@ Checkout `lsp-ui-doc--make-frame', `lsp-ui-doc--move-frame'."
                               (left-fringe . ,(frame-char-width)))))
          window frame
          (main-frame (selected-frame)))
-    (if eldoc-box--frame
+    (if (and eldoc-box--frame (frame-live-p eldoc-box--frame))
         (progn (setq frame eldoc-box--frame)
                (setq window (frame-selected-window frame)))
       (setq window (display-buffer-in-child-frame
