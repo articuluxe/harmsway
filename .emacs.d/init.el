@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-02-18 09:28:25 dan.harms>
+;; Modified Time-stamp: <2019-02-20 23:24:18 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1225,7 +1225,7 @@ Only one letter is shown, the first that applies."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; beacon ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package beacon
   :bind (("M-s C-l" . beacon-blink)
-         ("C-c 0b" . beacon-mode))
+         ("C-c 0 M-b" . beacon-mode))
   :defer t
   :config
   (add-to-list 'beacon-dont-blink-major-modes 'etags-select-mode)
@@ -1611,7 +1611,7 @@ Only one letter is shown, the first that applies."
   (if eldoc-box-hover-mode
       (eldoc-box-hover-mode -1)
     (eldoc-box-hover-mode 1)))
-(bind-key "C-c 0d" #'harmsway-toggle-eldoc-box-mode)
+(bind-key "C-c 0b" #'harmsway-toggle-eldoc-box-mode)
 (use-package eldoc-box)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smex ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2026,6 +2026,11 @@ Only one letter is shown, the first that applies."
               (call-interactively command))
             (dired-get-marked-files))))
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; disk-usage ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package disk-usage
+  :bind (("C-c 0du" . disk-usage)
+         ("C-c 0d." . disk-usage-here)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; sunrise-commander ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package sunrise-commander
