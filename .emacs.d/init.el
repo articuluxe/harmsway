@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-02-20 23:24:18 dharms>
+;; Modified Time-stamp: <2019-02-21 08:47:40 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1552,6 +1552,7 @@ Only one letter is shown, the first that applies."
          ("M-s M-i" . counsel-imenu)
          ("M-s M-l" . counsel-git-log)
          ("M-s M-e" . counsel-find-file-extern)
+         ("C-c 0ei" . counsel-read-env)
          ("M-s M-d" . counsel-dired-jump)
          ("M-s M-v" . counsel-file-jump)
          ("M-s M-y" . counsel-yank-pop)
@@ -3026,7 +3027,7 @@ See `https://github.com/company-mode/company-mode/issues/205'."
          ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; list-environment ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package list-environment :bind ("C-c 0e" . list-environment))
+(use-package list-environment :bind ("C-c 0ee" . list-environment))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; sort-words ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package sort-words :commands sort-words)
