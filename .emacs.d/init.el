@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-02-21 08:47:40 dan.harms>
+;; Modified Time-stamp: <2019-02-22 06:46:11 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -178,7 +178,7 @@ up to 10 times."
   (setq-default display-buffer-reuse-frames t))
 ;; visual settings
 (setq-default fill-column 78)
-(mouse-avoidance-mode 'banish)
+(mouse-avoidance-mode 'exile)
 (setq mouse-yank-at-point t)
 (blink-cursor-mode 1)
 (setq blink-cursor-blinks 0)
