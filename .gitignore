@@ -5,3 +5,4 @@ repos/**/src/
 *.so
 scripts/woff*
 scripts/ttf*
+.emacs.d/plugins/sqlite/emacsql-sqlite

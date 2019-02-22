@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-02-22 06:46:11 dharms>
+;; Modified Time-stamp: <2019-02-22 14:32:38 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -66,7 +66,6 @@
                      ,(concat my/plugins-directory "multiple-cursors/")
                      ,(concat my/plugins-directory "powerline/")
                      ,(concat my/plugins-directory "realgud/")
-                     ,(concat my/plugins-directory "rtags/")
                      ,(concat my/plugins-directory "smart-jump/")
                      ,(concat my/plugins-directory "smart-mode-line/")
                      ,(concat my/plugins-directory "sunrise/")
