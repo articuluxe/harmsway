@@ -5,7 +5,7 @@
 ;; Author: Pierre Neidhardt <mail@ambrevar.xyz>
 ;; Maintainer: Pierre Neidhardt <mail@ambrevar.xyz>
 ;; URL: https://gitlab.com/Ambrevar/emacs-disk-usage
-;; Version: 1.1.0
+;; Version: 1.2.0
 ;; Package-Requires: ((emacs "26.1"))
 ;; Keywords: files, convenience, tools
 
@@ -26,6 +26,9 @@
 
 ;;; Commentary:
 ;;
+;; Warning: BSD and macOS users need `gdu`, the "GNU du" from the "GNU
+;; coreutils".
+;;
 ;; Disk Usage is a file system analyzer: it offers a tabulated view of file
 ;; listings sorted by size.  Directory sizes are computed recursively.  The results
 ;; are cached for speed.
@@ -35,7 +38,7 @@
 ;; `disk-usage-dired-at-point' to open a `dired' buffer for the current
 ;; directory.
 ;;
-;; Instead of displaying only the current folder, ~disk-usage~ can also display
+;; Instead of displaying only the current folder, `disk-usage' can also display
 ;; files in all subfolders recursively with `disk-usage-toggle-recursive'.
 ;;
 ;; Marked files can be trashed with `disk-usage-delete-marked-files'.  When
@@ -75,31 +78,57 @@
   "Whether to kill the current `disk-usage' buffer before moving directory."
   :type 'boolean)
 
-(defvar disk-usage--du-command "du")
-(defvar disk-usage--du-args "-sb")
-(defvar disk-usage--find-command "find")
+(defcustom disk-usage-du-command (if (member system-type '(gnu gnu/linux gnu/kfreebsd))
+                                     "du"
+                                   "gdu")
+  "Non-GNU users need GNU's `du' for the `-b' flag.  See `disk-usage-du-args'."
+  :type 'string)
+(defvaralias 'disk-usage--du-command 'disk-usage-du-command)
 
-(defcustom disk-usage--directory-size-function
-  (if (executable-find disk-usage--du-command)
-      #'disk-usage--directory-size-with-du
-    #'disk-usage--directory-size-with-emacs)
+(defcustom disk-usage-du-args "-sb"
+  "Non-GNU users need GNU's `du' for the `-b' flag.  See `disk-usage-du-command'."
+  :type 'string)
+(defvaralias 'disk-usage--du-args 'disk-usage-du-args)
+
+(defcustom disk-usage-find-command "find"
+  "The `find' executable.  This is required for recursive listings."
+  :type 'string)
+(defvaralias 'disk-usage--find-command 'disk-usage-find-command)
+
+(defcustom disk-usage-directory-size-function
+  (if (executable-find disk-usage-du-command)
+      #'disk-usage-directory-size-with-du
+    #'disk-usage-directory-size-with-emacs)
   "Function that returns the total disk usage of the directory passed as argument."
-  :type '(choice (function :tag "Native (slow)" disk-usage--directory-size-with-emacs)
-                 (function :tag "System \"du\"" disk-usage--directory-size-with-du)))
+  :type '(choice (function :tag "Native (slow)" disk-usage-directory-size-with-emacs)
+                 (function :tag "System \"du\"" disk-usage-directory-size-with-du)))
+(defvaralias 'disk-usage--directory-size-function 'disk-usage-directory-size-function)
 
 (defface disk-usage-inaccessible
-  '((t :foreground "red"
+  '((t :inherit error
        :underline t))
   "Face for inaccessible folders.")
 
 (defface disk-usage-symlink
-  '((t :foreground "orange"))
+  '((t :inherit warning))
   "Face for symlinks.")
 
 (defface disk-usage-symlink-directory
   '((t :inherit disk-usage-symlink
        :underline t))
-  "Face for symlinks.")
+  "Face for symlinked directories.")
+
+(defface disk-usage-size
+  '((t :inherit default))
+  "Face for sizes.")
+
+(defface disk-usage-percent
+  '((t :inherit default))
+  "Face for the percent column.")
+
+(defface disk-usage-children
+  '((t :inherit default))
+  "Face for the children column.")
 
 (defvar disk-usage-mode-map
   (let ((map (make-sparse-keymap)))
@@ -268,12 +297,12 @@ See `disk-usage-add-filters' and `disk-usage-remove-filters'.")
 $ find . -type f -exec du -sb {} +"
   (setq directory (or directory default-directory))
   (let ((pair-strings (split-string (with-temp-buffer
-                           (process-file disk-usage--find-command nil '(t nil) nil
+                           (process-file disk-usage-find-command nil '(t nil) nil
                                          directory
                                          "-type" "f"
                                          "-exec"
-                                         disk-usage--du-command
-                                         disk-usage--du-args "{}" "+")
+                                         disk-usage-du-command
+                                         disk-usage-du-args "{}" "+")
                            (buffer-string))
                                     "\n" 'omit-nulls)))
     (cl-loop for pair-string in pair-strings
@@ -310,26 +339,28 @@ It takes the directory to scan as argument."
                 (gethash path disk-usage--cache))))
     (unless size
       (message "Computing disk usage for %S..." path)
-      (setq size (funcall disk-usage--directory-size-function path))
+      (setq size (funcall disk-usage-directory-size-function path))
       (puthash path size disk-usage--cache))
     size))
 
-(defun disk-usage--directory-size-with-emacs (path)
+(defun disk-usage-directory-size-with-emacs (path)
   "Return the total disk usage of directory PATH as a number.
 This is slow but does not require any external process."
   (disk-usage--total (disk-usage--list path)))
+(defalias 'disk-usage--directory-size-with-emacs 'disk-usage-directory-size-with-emacs)
 
-(defun disk-usage--directory-size-with-du (path)
-  "See `disk-usage--directory-size-function'."
+(defun disk-usage-directory-size-with-du (path)
+  "See `disk-usage-directory-size-function'."
   (string-to-number
    (cl-first
     (split-string
      (with-temp-buffer
        (with-output-to-string
-         (process-file disk-usage--du-command
+         (process-file disk-usage-du-command
                        nil '(t nil) nil
-                       disk-usage--du-args path))
+                       disk-usage-du-args path))
        (buffer-string))))))
+(defalias 'disk-usage--directory-size-with-du 'disk-usage-directory-size-with-du)
 
 (defun disk-usage--sort-by-size (a b)
   (< (disk-usage--file-info-size (car a))
@@ -459,11 +490,13 @@ FILE-ENTRY may be a string or a button."
                          cols)
                      cols))))
       (setq x (tabulated-list-print-col 0
-                                        (funcall disk-usage-size-format-function
-                                                 (string-to-number (aref cols 0)))
+                                        (propertize
+                                         (funcall disk-usage-size-format-function
+                                                  (string-to-number (aref cols 0)))
+                                         'face 'disk-usage-size)
                                         x))
-      (setq x (tabulated-list-print-col 1 (aref cols 1) x))
-      (setq x (tabulated-list-print-col 2 (aref cols 2) x))
+      (setq x (tabulated-list-print-col 1 (propertize (aref cols 1) 'face 'disk-usage-percent) x))
+      (setq x (tabulated-list-print-col 2 (propertize (aref cols 2) 'face 'disk-usage-children) x))
       (setq x (tabulated-list-print-col 3 (disk-usage--print-file-col (aref cols 3)) x))
       (cl-loop for i from 4 below ncols
                do (setq x (tabulated-list-print-col i (aref cols i) x))))

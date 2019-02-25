@@ -318,8 +318,9 @@
 
      ;; Popup
      `(popup-face ((,c (:foreground ,white :background ,ada-midnight))))
-     `(popup-menu-mouse-face ((,c (:foreground ,yellow :background ,ada-midnight))))
-     `(popup-menu-selection-face ((,c (:foreground ,yellow :background ,ada-midnight))))
+     `(popup-menu-mouse-face ((,c (:foreground ,white :background ,sbt-midnight))))
+     `(popup-menu-selection-face ((,c (:foreground ,white :background ,sbt-midnight))))
+     `(flx-highlight-face ((,c (:underline ,red :background ,sbt-midnight :foreground ,white))))
 
      ;; Powerline
      `(powerline-active1 ((,c (:foreground ,yellow))))

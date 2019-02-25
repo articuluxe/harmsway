@@ -43,14 +43,8 @@
    (num         violet3)
    (bool        num)
 
-   ; var1
-   ;; (str         crimson3)
-   ;; (str-alt     pink4)
-   ; var2
-   ;; (str         amber3)
-   ;; (str-alt     orange3)
    (str         cyan3)
-   (str-alt     spring-green4)
+   (str-alt     cyan4)
    (doc         str-alt)
 
    (dim-buffer bg0)
@@ -114,7 +108,7 @@
    ;; (telephone-line-accent-active   (:inherit 'mode-line :background line-bg2 :foreground azure8))
    ;; (telephone-line-accent-inactive (:inherit 'mode-line-inactive :background line-bg1 :foreground gray9))
 
-   (highlight-quoted-quote   (:foreground type))
+   (highlight-quoted-quote   (:foreground aquamarine3))
    (highlight-quoted-symbol  (:foreground type))
 
    ;; TODO:

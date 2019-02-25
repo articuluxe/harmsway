@@ -1,3 +1,3 @@
 find src -maxdepth 1 -name \*.el | grep -v dir-locals | xargs -I '{}' cp '{}' ../../../.emacs.d/plugins
 make -C src LDFLAGS='-L ../../pg/src'
-cp src/sqlite/emacsql-sqlite ../../../.emacs.d/plugins/sqlite
+cp src/sqlite/emacsql-sqlite ../../../.emacs.d/plugins/sqlite/
