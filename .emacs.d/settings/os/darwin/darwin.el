@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2019-02-20 23:19:14 dharms>
+;; Modified Time-stamp: <2019-02-25 07:26:33 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -31,9 +31,6 @@
 
 (when (executable-find "gls")
   (setq insert-directory-program "gls"))
-
-(with-eval-after-load 'disk-usage
-  (setq disk-usage--du-args "-s"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Process Viewer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package vkill :bind ("C-c 0p" . vkill))
