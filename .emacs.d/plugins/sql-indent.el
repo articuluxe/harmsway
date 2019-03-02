@@ -385,7 +385,7 @@ But don't go before LIMIT."
 ;;;;; Find the syntax and beginning of the current block
 
 (defconst sqlind-end-statement-regexp
-  "\\_<end\\_>\\(?:[ \t\n\r\t]*\\)\\(if\\_>\\|loop\\_>\\|case\\_>\\)?\\(?:[ \t\n\r\f]*\\)\\([a-z0-9_]+\\)?"
+  "\\_<end\\_>\\(?:[ \t\n\r\f]*\\)\\(if\\_>\\|loop\\_>\\|case\\_>\\)?\\(?:[ \t\n\r\f]*\\)\\([a-z0-9_]+\\)?"
   "Match an end of statement.
 Matches a string like \"end if|loop|case MAYBE-LABEL\".")
 
@@ -488,7 +488,7 @@ We try to avoid false positives, like \"end if\" or the various
          (forward-word -1)
          ;; we don't want to match an "end if", and things like "drop index if
          ;; exists..." and "create index if not exist..."
-         (not (looking-at "end\\|table\\|view\\|index\\|trigger\\procedude\\|function\\|package\\|body")))))
+         (not (looking-at "end\\|table\\|view\\|index\\|trigger\\|procedure\\|function\\|package\\|body")))))
 
 (defun sqlind-maybe-if-statement ()
   "If (point) is on an IF statement, report its syntax."

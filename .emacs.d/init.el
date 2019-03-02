@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-03-02 10:55:02 dharms>
+;; Modified Time-stamp: <2019-03-02 11:10:39 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1094,6 +1094,12 @@ Only one letter is shown, the first that applies."
         #'magit-display-buffer-same-window-except-diff-v1)
   ;; to display fullframe, use 'magit-display-buffer-fullframe-status-v1
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; transient ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package transient
+  :after magit
+  :config
+  (transient-bind-q-to-quit))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; forge ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package forge

@@ -96,6 +96,9 @@
    `(diff-refine-removed ((t (:inherit diff-removed))))
    `(tool-bar ((t (:background, gitnb-black :foreground, gitnb-dark-green))))
    `(menu ((t (:background, gitnb-green :foreground, gitnb-black :box nil))))
+   `(tty-menu-selected-face ((t  (:background, gitnb-bright-green :foreground, gitnb-black :weight bold))))
+   `(tty-menu-enabled-face ((t  (:background, gitnb-green :foreground, gitnb-black))))
+   `(tty-menu-disabled-face ((t  (:background, gitnb-grey :foreground, gitnb-black))))
 
    ;; -- plugins
    `(isearch ((t (:foreground, gitnb-bright-green :background, gitnb-dark-green ))))
@@ -156,6 +159,12 @@
    `(sml/vc ((t (:foreground, gitnb-bright-green))))
    `(sml/vc-edited ((t (:foreground, gitnb-bright-green :weight bold))))
    `(sml/battery ((t (:weight bold))))
+   `(sml/projectile ((t (:foreground, gitnb-light-green ))))
+   `(sml/filename ((t (:foreground, gitnb-green))))
+   `(sml/read-only ((t (:foreground, gitnb-grey))))
+   `(sml/position-percentage ((t (:foreground, gitnb-grey))))
+   `(sml/prefix  ((t (:foreground, gitnb-light-green))))
+   `(sml/process ((t (:foreground, gitnb-light-green))))
 
    `(smerge-base ((t (:foreground, gitnb-bright-green :background, gitnb-dark-green))))
    `(smerge-markers ((t (:foreground, gitnb-bright-green :background, gitnb-dark-green))))

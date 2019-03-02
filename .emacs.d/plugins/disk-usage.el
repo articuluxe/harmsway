@@ -296,24 +296,26 @@ See `disk-usage-add-filters' and `disk-usage-remove-filters'.")
   "This is the equivalent of running the shell command
 $ find . -type f -exec du -sb {} +"
   (setq directory (or directory default-directory))
-  (let ((pair-strings (split-string (with-temp-buffer
-                           (process-file disk-usage-find-command nil '(t nil) nil
-                                         directory
-                                         "-type" "f"
-                                         "-exec"
-                                         disk-usage-du-command
-                                         disk-usage-du-args "{}" "+")
-                           (buffer-string))
-                                    "\n" 'omit-nulls)))
-    (cl-loop for pair-string in pair-strings
-             for pair = (split-string pair-string "\t")
-             for name = (cadr pair)
-             for attributes = (file-attributes name)
-             when (cl-loop for filter in disk-usage-filters
-                           always (funcall filter name attributes))
-             collect (disk-usage--file-info-make
-                      :name name
-                      :size (string-to-number (cl-first pair))))))
+  (let* ((default-directory directory)
+         ;; Note: Cannot use `process-lines' if we want to work on remote hosts.
+         (subdirs (split-string
+                        (with-temp-buffer
+                          (process-file disk-usage-find-command nil '(t nil) nil
+                                        (file-local-name directory)
+                                        "-type" "d")
+                          (buffer-string))
+                        "\n" 'omit-nulls)))
+    (cl-loop for dir in subdirs
+             append (cl-loop for file in (directory-files-and-attributes dir 'full nil 'nosort)
+                             for name = (concat (file-remote-p directory) (car file))
+                             for attributes = (cdr file)
+                             when (and attributes
+                                       (not (file-attribute-type attributes))
+                                       (cl-loop for filter in disk-usage-filters
+                                                always (funcall filter name attributes)))
+                             collect (disk-usage--file-info-make
+                                      :name name
+                                      :size (file-attribute-size attributes))))))
 
 (defcustom disk-usage-list-function #'disk-usage--list
   "Function that returns a list of `disk-usage--file-info'.
@@ -338,6 +340,8 @@ It takes the directory to scan as argument."
   (let ((size (unless current-prefix-arg
                 (gethash path disk-usage--cache))))
     (unless size
+      ;; TODO: Add progress "bar"?  But can we get progress for "du"?
+      ;; Maybe just print progress when using `disk-usage-directory-size-with-emacs'.
       (message "Computing disk usage for %S..." path)
       (setq size (funcall disk-usage-directory-size-function path))
       (puthash path size disk-usage--cache))
@@ -358,7 +362,7 @@ This is slow but does not require any external process."
        (with-output-to-string
          (process-file disk-usage-du-command
                        nil '(t nil) nil
-                       disk-usage-du-args path))
+                       disk-usage-du-args (file-local-name path)))
        (buffer-string))))))
 (defalias 'disk-usage--directory-size-with-du 'disk-usage-directory-size-with-du)
 
@@ -530,7 +534,7 @@ Also see `disk-usage-by-types-mode'."
   "Display listing of files in DIRECTORY with their size.
 If DIRECTORY is nil, use current directory."
   (interactive "D")
-  (unless (file-accessible-directory-p directory)
+  (unless (and (stringp directory) (file-accessible-directory-p directory))
     (error "Directory cannot be opened: %S" directory))
   (unless disk-usage--cache
     (setq disk-usage--cache (make-hash-table :test #'equal)))
