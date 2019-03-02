@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-02-22 14:32:38 dan.harms>
+;; Modified Time-stamp: <2019-03-02 10:55:02 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -742,6 +742,9 @@ line."
   (setq nswbuff-delay-switch nil)
   (setq nswbuff-display-intermediate-buffers nil)
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; mission-control ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package mission-control :bind ("s-\\" . mcon-switch))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; copyright ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package copyright
