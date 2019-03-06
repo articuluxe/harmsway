@@ -1,9 +1,9 @@
 ;;; good-word.el --- utilities for word processing
-;; Copyright (C) 2016, 2018  Dan Harms (dharms)
+;; Copyright (C) 2016, 2018-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Tuesday, October 18, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2018-03-30 13:07:05 dan.harms>
+;; Modified Time-stamp: <2019-03-06 09:23:42 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: text writing
 
@@ -31,6 +31,8 @@
   (setq use-package-verbose t)
   (require 'use-package))
 
+(use-package wc-goal-mode)
+
 (use-package adaptive-wrap
   :config
   (setq-default adaptive-wrap-extra-indent -2)
@@ -42,6 +44,7 @@
             (lambda()
               (adaptive-wrap-prefix-mode)))
   (visual-line-mode 1)
+  (wc-goal-mode 1)
   ;; uncomment to move by logical lines, not visual lines
   ;; (setq line-move-visual nil)
   ;; uncomment as an alternative to visual-line-mode that only word
@@ -67,6 +70,7 @@
   ("l" font-lock-mode "font-lock-mode")
   ("t" toggle-truncate-lines "truncate lines")
   ("j" hydra-set-justification/body "justify" :exit t)
+  ("c" wc-goal-mode "word-count-goal-mode")
   ("q" nil "cancel")
   )
 
