@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-03-02 11:10:39 dharms>
+;; Modified Time-stamp: <2019-03-06 06:21:07 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3255,8 +3255,7 @@ This may perform related customization."
             ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; cmake-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package
-  cmake-mode
+(use-package cmake-mode
   :mode ("CMakeLists\\.txt$" "\\.cmake$")
   :config
   (use-package cmake-font-lock)
@@ -3274,6 +3273,10 @@ This may perform related customization."
                                (setq-local company-smart-backend
                                            'company-cmake)))
   )
+(use-package eldoc-cmake
+  :after cmake-mode
+  :config
+  (add-hook 'cmake-mode-hook #'eldoc-cmake-enable))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; crontab-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package crontab-mode
