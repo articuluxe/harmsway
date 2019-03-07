@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-03-06 06:21:07 dharms>
+;; Modified Time-stamp: <2019-03-07 06:34:19 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -234,6 +234,9 @@ Cf.  `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
   (when (version< "24.3" emacs-version)
     (require 'dash)
     (eval-after-load "dash" '(dash-enable-font-lock))))
+
+(when (< emacs-major-version 27)
+  (push (concat my/elisp-directory "compat/27/0/-/") load-path))
 
 ;; (when (version< "24.3" emacs-version)
 ;;   (require 's))
