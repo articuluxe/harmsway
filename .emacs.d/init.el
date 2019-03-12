@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-03-07 06:34:19 dharms>
+;; Modified Time-stamp: <2019-03-09 12:13:25 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -775,6 +775,10 @@ line."
 (use-package banner-comment
   :commands (banner-comment)
   :bind ([?\C-c?\C-\M-/] . banner-comment))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; poporg ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package poporg
+  :bind ("C-c 0/" . #'poporg-dwim))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; list-register ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package list-register :bind ("C-x rv" . list-register))
