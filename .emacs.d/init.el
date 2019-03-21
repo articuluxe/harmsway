@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-03-09 12:13:25 dharms>
+;; Modified Time-stamp: <2019-03-21 09:32:25 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1530,6 +1530,7 @@ Only one letter is shown, the first that applies."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ivy-rich ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package ivy-rich
+  :if (> emacs-major-version 24)
   :after ivy
   :config
   (ivy-rich-mode 1)
