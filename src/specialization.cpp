@@ -1,4 +1,5 @@
 #include <typeinfo>
+#include <iostream>
 
 template <typename T>
 struct trait;
