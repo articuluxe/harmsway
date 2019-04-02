@@ -1,0 +1,5 @@
+cd src
+./autogen.sh
+./configure
+make
+
