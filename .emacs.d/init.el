@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-03-21 09:32:25 dan.harms>
+;; Modified Time-stamp: <2019-04-05 11:35:55 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3083,6 +3083,7 @@ See `https://github.com/company-mode/company-mode/issues/205'."
                      gitignore-mode
                      java-mode
                      json-mode
+                     lua-mode
                      nxml-mode
                      perl-mode
                      protobuf-mode
