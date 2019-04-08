@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-04-05 11:35:55 dan.harms>
+;; Modified Time-stamp: <2019-04-08 12:37:09 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3497,8 +3497,10 @@ This may perform related customization."
   :interpreter "lua"
   :init
   (setq lua-indent-string-contents t)
-  (add-hook 'lua-mode-hook (lambda()
-                             )))
+  (add-hook 'lua-mode-hook
+            (lambda()
+              (setq-local company-smart-backend 'company-lua)
+              )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; markdown-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package markdown-mode
