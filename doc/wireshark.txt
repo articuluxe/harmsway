@@ -1,10 +1,10 @@
 #! -*- Mode: sh -*-
 # wireshark.txt --- wireshark help
-# Copyright (C) 2016-2018  Dan Harms (dan.harms)
+# Copyright (C) 2016-2019  Dan Harms (dan.harms)
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Tuesday, September 13, 2016
 # Version: 1.0
-# Modified Time-stamp: <2018-11-07 10:29:24 dan.harms>
+# Modified Time-stamp: <2019-04-12 16:23:38 dan.harms>
 # Modified by: Dan Harms
 # Keywords: wireshark
 
@@ -24,10 +24,14 @@ tshark -b filesize:10240 -b duration:1 -w <output>.pcap
 tshark -b filesize:100 -a files:20 -w <output>.pcap
 # rolling capture of 4 GB of data (128 files of 32 MB)
 dumpcap -i<interface> -w <output>.pcap -b filesize:32768 -b files:128
+# print out packets containing a hex string
+tshark -r input.pcap -R 'frame contains fc:01' -x
 # print out ethernet packets destined to a particular address
 tshark -r input.erf -n -t ad -R 'ip.dst==233.72.75.96'
 
 ################################## tcpdump ###################################
+# capture a filter
+tcpdump -i any '(tcp and host 10.28.132.129)' -X
 # write to file
 tcpdump -i eth0 -w output.pcap
 # read from file
