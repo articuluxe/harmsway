@@ -1,0 +1,7 @@
+cd src
+autoconf
+./configure --prefix=$HOME/opt/stow/git
+make
+make install
+cd $HOME/opt/stow
+stow git
