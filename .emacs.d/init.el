@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-04-12 06:19:44 dharms>
+;; Modified Time-stamp: <2019-04-15 09:22:22 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -211,6 +211,7 @@ Cf.  `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (global-set-key (kbd "M-' DEL") 'kill-whole-line)
 (global-set-key (kbd "C-x M-;") 'comment-line)
 (global-set-key (kbd "C-x M-p") 'transpose-paragraphs)
+(global-set-key (kbd "ESC M-SPC") 'move-to-window-line-top-bottom)
 (global-set-key [(next)] 'scroll-up-line)
 (global-set-key [(prior)] 'scroll-down-line)
 (global-set-key [f5] 'toggle-truncate-lines)
@@ -1033,7 +1034,7 @@ line."
               ("g" . magit-status)
               ("SPC" . my/enter-magit-status-fullscreen)
               ("l" . magit-list-repositories)
-              ("M-g" . magit-dispatch-popup)
+              ("M-g" . magit-dispatch)
               ("f" . magit-find-file) ;; view arbitrary blobs
               ("4f" . magit-find-file-other-window)
               ("h" . magit-log-buffer-file) ;; show all commits that touch current file
@@ -1130,6 +1131,8 @@ Only one letter is shown, the first that applies."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; shell ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq-default comint-input-ignoredups t)
 (setq comint-terminfo-terminal "ansi")
+(add-hook 'comint-output-filter-functions 'comint-truncate-buffer)
+(setq comint-buffer-maximum-size 1024)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; shx ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package shx :config (shx-global-mode 1))
