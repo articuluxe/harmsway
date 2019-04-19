@@ -103,7 +103,8 @@ edit it.
   (magit-merge-assert)
   (cl-pushnew "--no-ff" args :test #'equal)
   (apply #'magit-run-git-with-editor "merge" "--edit"
-         (append args (list rev))))
+         (append (delete "--ff-only" args)
+                 (list rev))))
 
 ;;;###autoload
 (defun magit-merge-nocommit (rev &optional args)
@@ -131,9 +132,9 @@ branch, then also remove the respective remote branch."
    (list (magit-read-other-local-branch
           (format "Merge `%s' into" (magit-get-current-branch))
           nil
-          (when-let ((upstream (magit-get-upstream-branch)))
-            (when-let ((upstream (cdr (magit-split-branch-name upstream))))
-              (and (magit-branch-p upstream) upstream))))
+          (when-let ((upstream (magit-get-upstream-branch))
+                     (upstream (cdr (magit-split-branch-name upstream))))
+            (and (magit-branch-p upstream) upstream)))
          (magit-merge-arguments)))
   (let ((current (magit-get-current-branch)))
     (when (zerop (magit-call-git "checkout" branch))
@@ -212,7 +213,7 @@ then also remove the respective remote branch."
                                           rev
                                           (or branch "HEAD")))
     (magit-insert-section (diffbuf)
-      (magit-git-wash #'magit-diff-wash-diffs
+      (magit--insert-diff
         "merge-tree" (magit-git-string "merge-base" head rev) head rev))))
 
 ;;;###autoload

@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-04-15 09:22:22 dharms>
+;; Modified Time-stamp: <2019-04-19 15:52:54 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1023,6 +1023,7 @@ line."
   ;; (plink), and we put git in our exec-path anyways, so the full path is
   ;; unneeded.  This is also the default setting anyway on other platforms.
   (setq magit-git-executable "git")
+  (setq magit-revision-filter-files-on-follow t)
   (setq magit-log-show-refname-after-summary nil)
   (setq magit-no-confirm '())
   (setq magit-process-find-password-functions 'magit-process-password-auth-source)

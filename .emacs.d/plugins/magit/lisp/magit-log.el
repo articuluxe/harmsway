@@ -461,23 +461,32 @@ the upstream isn't ahead of the current branch) show."
    ("-c" "Show graph in color"      "--color")
    ("-d" "Show refnames"            "--decorate")]
   [["Refresh"
-    ("g" "buffer"                   magit-log-do-refresh)
+    ("g" "buffer"                   magit-log-refresh)
     ("s" "buffer and set defaults"  magit-log-set-default-arguments)
     ("w" "buffer and save defaults" magit-log-save-default-arguments)]
    ["Margin"
     ("L" "toggle visibility"        magit-toggle-margin)
     ("l" "cycle style"              magit-cycle-margin-style)
     ("d" "toggle details"           magit-toggle-margin-details)
-    ("x" "toggle shortstat"         magit-toggle-log-margin-style)]])
+    ("x" "toggle shortstat"         magit-toggle-log-margin-style)]]
+  (interactive)
+  (if (not (eq current-transient-command 'magit-log-refresh))
+      (transient-setup 'magit-log-refresh)
+    (magit-log-refresh-assert)
+    (pcase-let ((`(,args ,files) (magit-log-arguments t)))
+      (cond ((derived-mode-p 'magit-log-select-mode)
+             (setcar (cdr magit-refresh-args) args))
+            ((derived-mode-p 'magit-log-mode)
+             (setcdr magit-refresh-args (list args files)))
+            (t
+             (setq-local magit-log-section-arguments args))))
+    (magit-refresh)))
 
 (defun magit-log--initial-value ()
-  (if-let ((file (magit-file-relative-name)))
-      (magit-log--merge-args
-       (if-let ((buffer (magit-mode-get-buffer 'magit-log-mode)))
-           (nth 2 (buffer-local-value 'magit-refresh-args buffer))
-         (default-value 'magit-log-arguments))
-       (list file))
-    (apply #'magit-log--merge-args (magit-log-get-buffer-args))))
+  (pcase-let ((`(,args ,files) (magit-log-get-buffer-args)))
+    (when-let ((file (magit-file-relative-name)))
+      (setq files (list file)))
+    (magit-log--merge-args args files)))
 
 (defun magit-log-refresh--initial-value ()
   (cond ((derived-mode-p 'magit-log-select-mode)
@@ -573,18 +582,6 @@ the upstream isn't ahead of the current branch) show."
 
 ;;;; Refresh Commands
 
-(defun magit-log-do-refresh (args files)
-  "Set the local log arguments for the current buffer."
-  (interactive (magit-log-arguments t))
-  (magit-log-refresh-assert)
-  (cond ((derived-mode-p 'magit-log-select-mode)
-         (setcar (cdr magit-refresh-args) args))
-        ((derived-mode-p 'magit-log-mode)
-         (setcdr magit-refresh-args (list args files)))
-        (t
-         (setq-local magit-log-section-arguments args)))
-  (magit-refresh))
-
 (defun magit-log-set-default-arguments (args files)
   "Set the global log arguments for the current buffer."
   (interactive (magit-log-arguments t))
@@ -631,9 +628,7 @@ the upstream isn't ahead of the current branch) show."
 
 (defun magit-log-read-revs (&optional use-current)
   (or (and use-current (--when-let (magit-get-current-branch) (list it)))
-      (let ((collection `(,@(and (file-exists-p (magit-git-dir "FETCH_HEAD"))
-                                 (list "FETCH_HEAD"))
-                          ,@(magit-list-refnames))))
+      (let ((collection (magit-list-refnames nil t)))
         (split-string
          (magit-completing-read-multiple "Log rev,s" collection
                                          "\\(\\.\\.\\.?\\|[, ]\\)"
@@ -1011,12 +1006,12 @@ Do not add this to a hook variable."
          (remove "--literal-pathspecs" magit-git-global-arguments)))
     (magit-git-wash (apply-partially #'magit-log-wash-log 'log)
       "log"
-      (format "--format=%s%%h%s%%x00%s%%x00%%aN%%x00%%at%%x00%%s%s"
+      (format "--format=%s%%h%%x00%s%%x00%s%%x00%%aN%%x00%%at%%x00%%s%s"
               (if (and (member "--left-right" args)
                        (not (member "--graph" args)))
                   "%m "
                 "")
-              (if (member "--decorate" args) "%d" "")
+              (if (member "--decorate" args) "%D" "")
               (if (member "--show-signature" args)
                   (progn (setq args (remove "--show-signature" args)) "%G?")
                 "")
@@ -1052,8 +1047,8 @@ Do not add this to a hook variable."
 (defconst magit-log-heading-re
   (concat "^"
           "\\(?4:[-_/|\\*o<>. ]*\\)"               ; graph
-          "\\(?1:[0-9a-fA-F]+\\)"                  ; sha1
-          "\\(?3:[^\0\n]+)\\)?\0"                  ; refs
+          "\\(?1:[0-9a-fA-F]+\\)?\0"               ; sha1
+          "\\(?3:[^\0\n]+\\)?\0"                   ; refs
           "\\(?7:[BGUXYREN]\\)?\0"                 ; gpg
           "\\(?5:[^\0\n]*\\)\0"                    ; author
           ;; Note: Date is optional because, prior to Git v2.19.0,
@@ -1076,8 +1071,8 @@ Do not add this to a hook variable."
 (defconst magit-log-bisect-vis-re
   (concat "^"
           "\\(?4:[-_/|\\*o<>. ]*\\)"               ; graph
-          "\\(?1:[0-9a-fA-F]+\\)"                  ; sha1
-          "\\(?3:[^\0\n]+)\\)?\0"                  ; refs
+          "\\(?1:[0-9a-fA-F]+\\)?\0"               ; sha1
+          "\\(?3:[^\0\n]+\\)?\0"                   ; refs
           "\\(?2:.*\\)$"))                         ; msg
 
 (defconst magit-log-bisect-log-re
@@ -1337,7 +1332,9 @@ If there is no blob buffer in the same frame, then do nothing."
 (defun magit-log-maybe-update-blob-buffer-1 ()
   (unless magit--update-revision-buffer
     (when-let ((commit (magit-section-value-if 'commit))
-               (buffer (--first (with-current-buffer it magit-buffer-revision)
+               (buffer (--first (with-current-buffer it
+                                  (eq revert-buffer-function
+                                      'magit-revert-rev-file-buffer))
                                 (mapcar #'window-buffer (window-list)))))
         (setq magit--update-blob-buffer (list commit buffer))
         (run-with-idle-timer
@@ -1575,11 +1572,16 @@ Type \\[magit-cherry-pick] to apply the commit at point.
 
 (defun magit-insert-cherry-headers ()
   "Insert headers appropriate for `magit-cherry-mode' buffers."
-  (magit-insert-head-branch-header (nth 1 magit-refresh-args))
-  (magit-insert-upstream-branch-header (nth 1 magit-refresh-args)
-                                       (nth 0 magit-refresh-args)
-                                       "Upstream: ")
-  (insert ?\n))
+  (let* ((branch (propertize (cadr magit-refresh-args) 'face
+                             'magit-branch-local))
+         (upstream (car magit-refresh-args))
+         (upstream (propertize upstream 'face
+                               (if (magit-local-branch-p upstream)
+                                   'magit-branch-local
+                                 'magit-branch-remote))))
+    (magit-insert-head-branch-header branch)
+    (magit-insert-upstream-branch-header branch upstream "Upstream: ")
+    (insert ?\n)))
 
 (defun magit-insert-cherry-commits ()
   "Insert commit sections into a `magit-cherry-mode' buffer."
@@ -1670,11 +1672,11 @@ Type \\[magit-reset] to reset `HEAD' to the commit at point.
 
 (defun magit-insert-unpulled-from-upstream ()
   "Insert commits that haven't been pulled from the upstream yet."
-  (when (magit-git-success "rev-parse" "@{upstream}")
+  (when-let ((upstream (magit-get-upstream-branch)))
     (magit-insert-section (unpulled "..@{upstream}" t)
       (magit-insert-heading
         (format (propertize "Unpulled from %s:" 'face 'magit-section-heading)
-                (magit-get-upstream-branch)))
+                upstream))
       (magit-insert-log "..@{upstream}" magit-log-section-arguments))))
 
 (magit-define-section-jumper magit-jump-to-unpulled-from-pushremote
@@ -1712,7 +1714,7 @@ behind of the current branch, then show the commits that have
 not yet been pushed into the upstream branch.  If no upstream is
 configured or if the upstream is not behind of the current branch,
 then show the last `magit-log-section-commit-count' commits."
-  (let ((upstream (magit-rev-parse "@{upstream}")))
+  (let ((upstream (magit-get-upstream-branch)))
     (if (or (not upstream)
             (magit-rev-ancestor-p "HEAD" upstream))
         (magit-insert-recent-commits 'unpushed "@{upstream}..")

@@ -171,8 +171,8 @@ and then set it as the upstream branch, offer a local or a remote
 branch as default completion candidate, when they have the choice.
 
 This affects all commands that use `magit-read-upstream-branch'
-or `magit-read-starting-point', which includes all commands that
-change the upstream and many which create new branches."
+or `magit-read-starting-point', which includes most commands
+that change the upstream and many that create new branches."
   :package-version '(magit . "2.4.2")
   :group 'magit-commands
   :type 'boolean)
@@ -470,7 +470,7 @@ call function WASHER with ARGS as its sole argument."
 (defun magit-git-version (&optional raw)
   (--when-let (let (magit-git-global-arguments)
                 (ignore-errors (substring (magit-git-string "version") 12)))
-    (if raw it (and (string-match "^\\([0-9]+\\.[0-9]+\\.[0-9]+\\)" it)
+    (if raw it (and (string-match "\\`\\([0-9]+\\(\\.[0-9]+\\)\\{1,2\\}\\)" it)
                     (match-string 1 it)))))
 
 ;;; Variables
@@ -821,6 +821,11 @@ tracked file."
   (magit-git-items "ls-files" "-z" "--others" "--ignored"
                    "--exclude-standard" "--directory"))
 
+(defun magit-skip-worktree-files ()
+  (--keep (and (and (= (aref it 0) ?S)
+                    (substring it 2)))
+          (magit-git-items "ls-files" "-z" "-t")))
+
 (defun magit-revision-files (rev)
   (magit-with-toplevel
     (magit-git-items "ls-tree" "-z" "-r" "--name-only" rev)))
@@ -1117,38 +1122,46 @@ Git."
     (and (or lax (not (string-match-p "[~^]" it)))
          (substring it 5))))
 
-(defun magit-ref-fullname (name)
-  "Return fully qualified refname for NAME.
-If NAME is ambiguous, return nil.  NAME may include suffixes such
-as \"^1\" and \"~3\".  "
+(defun magit-ref-abbrev (refname)
+  "Return an unambigious abbreviation of REFNAME."
+  (magit-rev-parse "--verify" "--abbrev-ref" refname))
+
+(defun magit-ref-fullname (refname)
+  "Return fully qualified refname for REFNAME.
+If REFNAME is ambiguous, return nil."
+  (magit-rev-parse "--verify" "--symbolic-full-name" refname))
+
+(defun magit-ref-ambiguous-p (refname)
   (save-match-data
-    (if (string-match "\\`\\([^^~]+\\)\\(.*\\)" name)
-        (--when-let (magit-rev-parse "--symbolic-full-name"
-                                     (match-string 1 name))
-          (concat it (match-string 2 name)))
-      (error "`name' has an unrecognized format"))))
+    (if (string-match "\\`\\([^^~]+\\)\\(.*\\)" refname)
+        (not (magit-ref-fullname (match-string 1 refname)))
+      (error "%S has an unrecognized format" refname))))
 
-(defun magit-ref-ambiguous-p (name)
-  (not (magit-ref-fullname name)))
-
-(cl-defun magit-ref-maybe-qualify (name &optional (prefix "heads/"))
-  "If NAME is ambiguous, prepend PREFIX to it."
-  (concat (and (magit-ref-ambiguous-p name)
-               prefix)
-          name))
+(defun magit-ref-maybe-qualify (refname &optional prefix)
+  "If REFNAME is ambiguous, try to disambiguate it by prepend PREFIX to it.
+Return an unambigious refname, either REFNAME or that prefixed
+with PREFIX, nil otherwise.  If REFNAME has an offset suffix
+such as \"~1\", then that is preserved.  If optional PREFIX is
+nil, then use \"heads/\".  "
+  (if (magit-ref-ambiguous-p refname)
+      (let ((refname (concat (or prefix "heads/") refname)))
+        (and (not (magit-ref-ambiguous-p refname)) refname))
+    refname))
 
 (defun magit-ref-exists-p (ref)
   (magit-git-success "show-ref" "--verify" ref))
 
 (defun magit-ref-equal (a b)
-  "Return t if the refs A and B are `equal'.
+  "Return t if the refnames A and B are `equal'.
 A symbolic-ref pointing to some ref, is `equal' to that ref,
-as are two symbolic-refs pointing to the same ref."
-  (equal (magit-ref-fullname a)
-         (magit-ref-fullname b)))
+as are two symbolic-refs pointing to the same ref.  Refnames
+may be abbreviated."
+  (let ((a (magit-ref-fullname a))
+        (b (magit-ref-fullname b)))
+    (and a b (equal a b))))
 
 (defun magit-ref-eq (a b)
-  "Return t if the refs A and B are `eq'.
+  "Return t if the refnames A and B are `eq'.
 A symbolic-ref is `eq' to itself, but not to the ref it points
 to, or to some other symbolic-ref that points to the same ref."
   (let ((symbolic-a (magit-symbolic-ref-p a))
@@ -1267,41 +1280,38 @@ The amount of time spent searching is limited by
       (cl-incf i))
     prev))
 
-(defun magit-get-upstream-ref (&optional branch)
-  (and (or branch (setq branch (magit-get-current-branch)))
-       (let ((remote (magit-get "branch" branch "remote"))
-             (merge  (magit-get "branch" branch "merge")))
-         (when (and remote merge)
-           (cond ((string-equal remote ".") merge)
-                 ((string-prefix-p "refs/heads/" merge)
-                  (concat "refs/remotes/" remote "/" (substring merge 11))))))))
-
 (defun magit-set-upstream-branch (branch upstream)
+  "Set UPSTREAM as the upstream of BRANCH.
+If UPSTREAM is nil, then unset BRANCH's upstream.
+Otherwise UPSTREAM has to be an existing branch."
   (if upstream
-      (pcase-let ((`(,remote . ,merge) (magit-split-branch-name upstream)))
-        (setf (magit-get (format "branch.%s.remote" branch)) remote)
-        (setf (magit-get (format "branch.%s.merge"  branch))
-              (concat "refs/heads/" merge)))
+      (magit-call-git "branch" "--set-upstream-to" upstream branch)
     (magit-call-git "branch" "--unset-upstream" branch)))
 
-(defun magit-get-upstream-branch (&optional branch verify)
-  (and (or branch (setq branch (magit-get-current-branch)))
-       (when-let ((remote (magit-get "branch" branch "remote"))
-                  (merge  (magit-get "branch" branch "merge")))
-         (and (string-prefix-p "refs/heads/" merge)
-              (let* ((upstream (substring merge 11))
-                     (upstream
-                      (cond ((string-equal remote ".")
-                             (propertize upstream 'face 'magit-branch-local))
-                            ((string-match-p "[@:]" remote)
-                             (propertize (concat remote " " upstream)
-                                         'face 'magit-branch-remote))
-                            (t
-                             (propertize (concat remote "/" upstream)
-                                         'face 'magit-branch-remote)))))
-                (and (or (not verify)
-                         (magit-rev-verify upstream))
-                     upstream))))))
+(defun magit-get-upstream-ref (&optional branch)
+  "Return the upstream branch of BRANCH as a fully qualified ref.
+It BRANCH is nil, then return the upstream of the current branch,
+if any, nil otherwise.  If the upstream is not configured, the
+configured remote is an url, or the named branch does not exist,
+then return nil.  I.e.  return an existing local or
+remote-tracking branch ref."
+  (when-let ((branch (or branch (magit-get-current-branch))))
+    (magit-ref-fullname (concat branch "@{upstream}"))))
+
+(defun magit-get-upstream-branch (&optional branch)
+  "Return the name of the upstream branch of BRANCH.
+It BRANCH is nil, then return the upstream of the current branch
+if any, nil otherwise.  If the upstream is not configured, the
+configured remote is an url, or the named branch does not exist,
+then return nil.  I.e.  return the name of an existing local or
+remote-tracking branch.  The returned string is colorized
+according to the branch type."
+  (when-let ((branch (or branch (magit-get-current-branch)))
+             (upstream (magit-ref-abbrev (concat branch "@{upstream}"))))
+    (propertize upstream 'face
+                (if (equal (magit-get "branch" branch "remote") ".")
+                    'magit-branch-local
+                  'magit-branch-remote))))
 
 (defun magit-get-indirect-upstream-branch (branch &optional force)
   (let ((remote (magit-get "branch" branch "remote")))
@@ -1316,26 +1326,46 @@ The amount of time spent searching is limited by
          (let ((upstream (magit-get-upstream-branch branch)))
            ;; whose upstream...
            (and upstream
-                ;; has the same name as BRANCH and...
+                ;; has the same name as BRANCH...
                 (equal (substring upstream (1+ (length remote))) branch)
                 ;; and can be fast-forwarded to BRANCH.
                 (magit-rev-ancestor-p upstream branch)
                 upstream)))))
 
-(defun magit-get-upstream-remote (&optional branch non-local)
-  (unless branch
-    (setq branch (magit-get-current-branch)))
-  (and branch
-       (when-let ((remote (magit-get "branch" branch "remote")))
-         (and (not (and non-local (equal remote ".")))
-              (propertize remote 'face 'magit-branch-remote)))))
+(defun magit-get-upstream-remote (&optional branch allow-unnamed)
+  (when-let ((branch (or branch (magit-get-current-branch)))
+             (remote (magit-get "branch" branch "remote")))
+    (and (not (equal remote "."))
+         (cond ((member remote (magit-list-remotes))
+                (propertize remote 'face 'magit-branch-remote))
+               ((and allow-unnamed
+                     (string-match-p "\\(\\`.\\{0,2\\}/\\|[:@]\\)" remote))
+                (propertize remote 'face 'bold))))))
 
-(defun magit-get-current-remote ()
-  (or (magit-get-upstream-remote nil t)
-      (let ((remotes (magit-list-remotes)))
-        (if (= (length remotes) 1)
-            (car remotes)
-          (car (member "origin" remotes))))))
+(defun magit-get-unnamed-upstream (&optional branch)
+  (when-let ((branch (or branch (magit-get-current-branch)))
+             (remote (magit-get "branch" branch "remote"))
+             (merge  (magit-get "branch" branch "merge")))
+    (and (magit--unnamed-upstream-p remote merge)
+         (list (propertize remote 'face 'bold)
+               (propertize merge  'face 'magit-branch-remote)))))
+
+(defun magit--unnamed-upstream-p (remote merge)
+  (and remote (string-match-p "\\(\\`\\.\\{0,2\\}/\\|[:@]\\)" remote)
+       merge  (string-prefix-p "refs/" merge)))
+
+(defun magit--valid-upstream-p (remote merge)
+  (and (or (equal remote ".")
+           (member remote (magit-list-remotes)))
+       (string-prefix-p "refs/" merge)))
+
+(defun magit-get-current-remote (&optional allow-unnamed)
+  (or (magit-get-upstream-remote nil allow-unnamed)
+      (when-let ((remotes (magit-list-remotes))
+                 (remote (if (= (length remotes) 1)
+                             (car remotes)
+                           (car (member "origin" remotes)))))
+        (propertize remote 'face 'magit-branch-remote))))
 
 (defun magit-get-push-remote (&optional branch)
   (when-let ((remote
@@ -1345,12 +1375,12 @@ The amount of time spent searching is limited by
     (propertize remote 'face 'magit-branch-remote)))
 
 (defun magit-get-push-branch (&optional branch verify)
-  (and (or branch (setq branch (magit-get-current-branch)))
-       (when-let ((remote (magit-get-push-remote branch))
-                  (push-branch (concat remote "/" branch)))
-         (and (or (not verify)
-                  (magit-rev-verify push-branch))
-              (propertize push-branch 'face 'magit-branch-remote)))))
+  (when-let ((branch (or branch (setq branch (magit-get-current-branch))))
+             (remote (magit-get-push-remote branch))
+             (target (concat remote "/" branch)))
+    (and (or (not verify)
+             (magit-rev-verify target))
+         (propertize target 'face 'magit-branch-remote))))
 
 (defun magit-get-@{push}-branch (&optional branch)
   (let ((ref (magit-rev-parse "--symbolic-full-name"
@@ -1393,12 +1423,29 @@ as into its upstream."
          (--when-let (or target (magit-get-current-branch))
            (magit-git-success "merge-base" "--is-ancestor" branch it)))))
 
+(defun magit-get-tracked (refname)
+  "Return the remote branch tracked by the remote-tracking branch REFNAME.
+The returned value has the form (REMOTE . REF), where REMOTE is
+the name of a remote and REF is the ref local to the remote."
+  (when-let ((ref (magit-ref-fullname refname)))
+    (save-match-data
+      (-some (lambda (line)
+               (and (string-match "\
+\\`remote\\.\\([^.]+\\)\\.fetch=\\+?\\([^:]+\\):\\(.+\\)" line)
+                    (let ((rmt (match-string 1 line))
+                          (src (match-string 2 line))
+                          (dst (match-string 3 line)))
+                      (and (string-match (format "\\`%s\\'"
+                                                 (replace-regexp-in-string
+                                                  "*" "\\(.+\\)" dst t t))
+                                         ref)
+                           (cons rmt (replace-regexp-in-string
+                                      "*" (match-string 1 ref) src))))))
+             (magit-git-lines "config" "--local" "--list")))))
+
 (defun magit-split-branch-name (branch)
   (cond ((member branch (magit-list-local-branch-names))
          (cons "." branch))
-        ((string-match " " branch)
-         (pcase-let ((`(,url ,branch) (split-string branch " ")))
-           (cons url branch)))
         ((string-match "/" branch)
          (or (-some (lambda (remote)
                       (and (string-match (format "\\`\\(%s\\)/\\(.+\\)\\'" remote)
@@ -1513,8 +1560,20 @@ SORTBY is a key or list of keys to pass to the `--sort' flag of
                         name)))
             (magit-git-lines "show-ref"))))
 
-(defun magit-list-refnames (&optional namespaces)
-  (magit-list-refs namespaces "%(refname:short)"))
+(defun magit-list-refnames (&optional namespaces include-special)
+  (nconc (magit-list-refs namespaces "%(refname:short)")
+         (and include-special
+              (magit-list-special-refnames))))
+
+(defvar magit-special-refnames
+  '("HEAD" "ORIG_HEAD" "FETCH_HEAD" "MERGE_HEAD" "CHERRY_PICK_HEAD"))
+
+(defun magit-list-special-refnames ()
+  (let ((gitdir (magit-gitdir)))
+    (cl-mapcan (lambda (name)
+                 (and (file-exists-p (expand-file-name name gitdir))
+                      (list name)))
+               magit-special-refnames)))
 
 (defun magit-list-branch-names ()
   (magit-list-refnames (list "refs/heads" "refs/remotes")))
@@ -1736,12 +1795,6 @@ In refs buffers the displayed text is controlled by other means
 and this option only controls what face is used.")
 
 (defun magit-format-ref-labels (string)
-  ;; To support Git <2.2.0, we remove the surrounding parentheses here
-  ;; rather than specifying that STRING should be generated with Git's
-  ;; "%D" placeholder.
-  (setq string (->> string
-                    (replace-regexp-in-string "\\`\\s-*(" "")
-                    (replace-regexp-in-string ")\\s-*\\'" "")))
   (save-match-data
     (let ((regexp "\\(, \\|tag: \\|HEAD -> \\)")
           names)
@@ -1790,7 +1843,7 @@ and this option only controls what face is used.")
                    name))
                remotes))
         (let* ((current (magit-get-current-branch))
-               (target  (magit-get-upstream-branch current t)))
+               (target  (magit-get-upstream-branch current)))
           (dolist (name branches)
             (let ((push (car (member (magit-get-push-branch name) remotes))))
               (when push
@@ -1920,26 +1973,18 @@ and this option only controls what face is used.")
                  beg)
                end))))
 
-(defvar magit-thingatpt--git-revision-chars "-_./[:alnum:]@{}^~!"
-  "Characters allowable in filenames, excluding space and colon.")
-
-(put 'git-revision 'end-op
-     (lambda ()
-       (re-search-forward
-        (concat "\\=[" magit-thingatpt--git-revision-chars "]*")
-        nil t)))
-
-(put 'git-revision 'beginning-op
-     (lambda ()
-       (if (re-search-backward
-            (concat "[^" magit-thingatpt--git-revision-chars "]") nil t)
-           (forward-char)
-         (goto-char (point-min)))))
-
 (put 'git-revision 'thing-at-point 'magit-thingatpt--git-revision)
-
 (defun magit-thingatpt--git-revision ()
-  (--when-let (bounds-of-thing-at-point 'git-revision)
+  (--when-let
+      (let ((c "\s\n\t~^:?*[\\"))
+        (cl-letf (((get 'git-revision 'beginning-op)
+                   (if (re-search-backward (format "[%s]" c) nil t)
+                       (forward-char)
+                     (goto-char (point-min))))
+                  ((get 'git-revision 'end-op)
+                   (lambda ()
+                     (re-search-forward (format "\\=[^%s]*" c) nil t))))
+          (bounds-of-thing-at-point 'git-revision)))
     (let ((text (buffer-substring-no-properties (car it) (cdr it))))
       (and (magit-commit-p text) text))))
 
@@ -1955,7 +2000,7 @@ and this option only controls what face is used.")
                              (magit-get-current-branch))))
 
 (defun magit-read-branch-or-commit (prompt &optional secondary-default)
-  (or (magit-completing-read prompt (cons "HEAD" (magit-list-refnames))
+  (or (magit-completing-read prompt (magit-list-refnames nil t)
                              nil nil nil 'magit-revision-history
                              (or (magit-branch-or-commit-at-point)
                                  secondary-default
@@ -2007,10 +2052,12 @@ and this option only controls what face is used.")
                              (magit-get-current-branch))))
 
 (defun magit-read-local-branch-or-commit (prompt)
-  (let ((branches (magit-list-local-branch-names))
+  (let ((choices (nconc (magit-list-local-branch-names)
+                        (magit-list-special-refnames)))
         (commit (magit-commit-at-point)))
-    (or (magit-completing-read prompt
-                               (if commit (cons commit branches) branches)
+    (when commit
+      (push commit choices))
+    (or (magit-completing-read prompt choices
                                nil nil nil 'magit-revision-history
                                (or (magit-local-branch-at-point) commit))
                      (user-error "Nothing selected"))))
@@ -2041,7 +2088,10 @@ and this option only controls what face is used.")
   (let* ((current (magit-get-current-branch))
          (atpoint (magit-branch-or-commit-at-point))
          (exclude (or exclude current))
-         (default (or (and (not (equal atpoint exclude)) atpoint)
+         (default (or (and (not (equal atpoint exclude))
+                           (not (and (not current)
+                                     (magit-rev-equal atpoint "HEAD")))
+                           atpoint)
                       (and (not (equal current exclude)) current)
                       secondary-default
                       (magit-get-previous-branch))))
@@ -2078,28 +2128,26 @@ and this option only controls what face is used.")
                                (car atrev)))))
 
 (defun magit-read-upstream-branch (&optional branch prompt)
+  "Read the upstream for BRANCH using PROMPT.
+If optional BRANCH is nil, then read the upstream for the
+current branch, or raise an error if no branch is checked
+out.  Only existing branches can be selected."
   (unless branch
     (setq branch (or (magit-get-current-branch)
                      (error "Need a branch to set its upstream"))))
-  (magit-completing-read
-   (or prompt (format "Change upstream of %s to" branch))
-   (-union (--map (concat it "/" branch)
-                  (magit-list-remotes))
-           (delete branch (magit-list-branch-names)))
-   nil nil nil 'magit-revision-history
-   (or (let ((r (magit-remote-branch-at-point))
-             (l (magit-branch-at-point)))
-         (when (and l (equal l branch))
-           (setq l nil))
-         (if magit-prefer-remote-upstream (or r l) (or l r)))
-       (let ((r (magit-branch-p "origin/master"))
-             (l (and (not (equal branch "master"))
-                     (magit-branch-p "master"))))
-         (if magit-prefer-remote-upstream (or r l) (or l r)))
-       (let ((previous (magit-get-previous-branch)))
-         (and (not (equal previous branch)) previous)))))
+  (let ((branches (delete branch (magit-list-branch-names))))
+    (magit-completing-read
+     (or prompt (format "Change upstream of %s to" branch))
+     branches nil t nil 'magit-revision-history
+     (or (let ((r (car (member (magit-remote-branch-at-point) branches)))
+               (l (car (member (magit-local-branch-at-point) branches))))
+           (if magit-prefer-remote-upstream (or r l) (or l r)))
+         (let ((r (car (member "origin/master" branches)))
+               (l (car (member "master" branches))))
+           (if magit-prefer-remote-upstream (or r l) (or l r)))
+         (car (member (magit-get-previous-branch) branches))))))
 
-(defun magit-read-starting-point (prompt &optional branch)
+(defun magit-read-starting-point (prompt &optional branch default)
   (or (magit-completing-read
        (concat prompt
                (and branch
@@ -2113,7 +2161,7 @@ and this option only controls what face is used.")
               (magit-list-refnames)
               (directory-files (magit-git-dir) nil "_HEAD\\'"))
        nil nil nil 'magit-revision-history
-       (magit--default-starting-point))
+       (or default (magit--default-starting-point)))
       (user-error "Nothing selected")))
 
 (defun magit--default-starting-point ()

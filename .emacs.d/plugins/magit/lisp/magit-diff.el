@@ -29,6 +29,7 @@
 ;;; Code:
 
 (eval-when-compile
+  (require 'ansi-color)
   (require 'subr-x))
 
 (require 'git-commit)
@@ -48,16 +49,21 @@
 (declare-function magit-current-blame-chunk "magit-blame" ())
 (declare-function magit-blame-mode "magit-blame" (&optional arg))
 (defvar magit-blame-mode)
-(defvar git-rebase-line)
+;; For `magit-diff-show-or-scroll'
+(declare-function git-rebase-current-line "git-rebase" ())
 ;; For `magit-diff-unmerged'
 (declare-function magit-merge-in-progress-p "magit-merge" ())
 (declare-function magit--merge-range "magit-merge" (&optional head))
 ;; For `magit-diff--dwim'
 (declare-function forge--pullreq-ref "forge-pullreq" (pullreq))
+;; For `magit-diff-wash-diff'
+(declare-function ansi-color-apply-on-region "ansi-color" (begin end))
 
 (eval-when-compile
   (cl-pushnew 'base-ref eieio--known-slot-names)
-  (cl-pushnew 'orig-rev eieio--known-slot-names))
+  (cl-pushnew 'orig-rev eieio--known-slot-names)
+  (cl-pushnew 'action-type eieio--known-slot-names)
+  (cl-pushnew 'target eieio--known-slot-names))
 
 (require 'diff-mode)
 (require 'smerge-mode)
@@ -449,6 +455,24 @@ a good reason to include a long line in the body sometimes."
   :type '(choice (const   :tag "Don't fill" nil)
                  (integer :tag "Fill if longer than")))
 
+(defcustom magit-revision-filter-files-on-follow nil
+  "Whether to honor file filter if log arguments include --follow.
+
+When a commit is displayed from a log buffer, the resulting
+revision buffer usually shares the log's file arguments,
+restricting the diff to those files.  However, there's a
+complication when the log arguments include --follow: if the log
+follows a file across a rename event, keeping the file
+restriction would mean showing an empty diff in revision buffers
+for commits before the rename event.
+
+When this option is nil, the revision buffer ignores the log's
+filter if the log arguments include --follow.  If non-nil, the
+log's file filter is always honored."
+  :package-version '(magit . "2.91.0")
+  :group 'magit-revision
+  :type 'boolean)
+
 ;;;; Diff Sections
 
 (defcustom magit-diff-section-arguments '("--no-ext-diff")
@@ -661,6 +685,13 @@ and `:slant'."
 ;;; Commands
 ;;;; Diff popups
 
+(defvar magit-diff-section-file-args nil)
+(put 'magit-diff-section-file-args 'permanent-local t)
+(put 'magit-diff-section-file-args 'safe-local-variable
+     (lambda (val)
+       (and (listp val)
+            (-all-p #'stringp val))))
+
 ;;;###autoload (autoload 'magit-diff "magit-diff" nil t)
 (define-transient-command magit-diff ()
   "Show changes between different versions."
@@ -679,7 +710,9 @@ and `:slant'."
    (magit-diff:-M)
    (magit-diff:-C)
    ("-x" "Disallow external diff drivers" "--no-ext-diff")
-   ("-s" "Show stats"                     "--stat")]
+   ("-s" "Show stats"                     "--stat")
+   (5 magit-diff:--color-moved)
+   (5 magit-diff:--color-moved-ws)]
   ["Actions"
    [("d" "Dwim"          magit-diff-dwim)
     ("r" "Diff range"    magit-diff-range)
@@ -709,37 +742,38 @@ and `:slant'."
    (magit-diff:-C)
    ("-x" "Disallow external diff drivers" "--no-ext-diff")
    ("-s" "Show stats"                     "--stat"
-    :if-derived magit-diff-mode)]
+    :if-derived magit-diff-mode)
+   (5 magit-diff:--color-moved)
+   (5 magit-diff:--color-moved-ws)]
   ["Actions"
-   [("g" "Refresh"                magit-diff-do-refresh)
+   [("g" "Refresh"                magit-diff-refresh)
     ("s" "Set defaults"           magit-diff-set-default-arguments)
     ("w" "Save defaults"          magit-diff-save-default-arguments)]
    [("t" "Toggle hunk refinement" magit-diff-toggle-refine-hunk)
     ("F" "Toggle file filter"     magit-diff-toggle-file-filter)]
    [:if-mode magit-diff-mode
     ("r" "Switch range type"      magit-diff-switch-range-type)
-    ("f" "Flip revisions"         magit-diff-flip-revs)]])
-
-(defvar magit-diff-section-file-args nil)
-(put 'magit-diff-section-file-args 'permanent-local t)
-(put 'magit-diff-section-file-args 'safe-local-variable
-     (lambda (val)
-       (and (listp val)
-            (-all-p #'stringp val))))
+    ("f" "Flip revisions"         magit-diff-flip-revs)]]
+  (interactive)
+  (if (not (eq current-transient-command 'magit-diff-refresh))
+      (transient-setup 'magit-diff-refresh)
+    (pcase-let ((`(,args ,files) (magit-diff-arguments t)))
+      (if (derived-mode-p 'magit-diff-mode)
+          (setcdr (cdr magit-refresh-args) (list args files))
+        (setq-local magit-diff-section-arguments args)
+        (setq-local magit-diff-section-file-args files)))
+    (magit-refresh)))
 
 (defun magit-diff--initial-value ()
-  (if-let ((file (magit-file-relative-name)))
-      (magit-diff--merge-args
-       (if-let ((buffer (magit-mode-get-buffer 'magit-diff-mode)))
-           (nth 3 (buffer-local-value 'magit-refresh-args buffer))
-         (default-value 'magit-diff-arguments))
-       (list file))
-    ;; We cannot possibly know what suffix command the user is
-    ;; about to invoke, so we also don't know from which buffer
-    ;; we should get the current values.  However it is much
-    ;; more likely that we will end up updating the diff buffer,
-    ;; and we therefore use the value from that buffer.
-    (apply #'magit-diff--merge-args (magit-diff-get-buffer-args))))
+  ;; We cannot possibly know what suffix command the user is
+  ;; about to invoke, so we also don't know from which buffer
+  ;; we should get the current values.  However it is much
+  ;; more likely that we will end up updating the diff buffer,
+  ;; and we therefore use the value from that buffer.
+  (pcase-let ((`(,args ,files) (magit-diff-get-buffer-args)))
+    (when-let ((file (magit-file-relative-name)))
+      (setq files (list file)))
+    (magit-diff--merge-args args files)))
 
 (defun magit-diff-refresh--initial-value ()
   (if (derived-mode-p 'magit-diff-mode)
@@ -836,6 +870,36 @@ and `:slant'."
     (?u "[u]ntracked" "untracked")
     (?d "[d]irty"     "dirty")
     (?a "[a]ll"       "all")))
+
+(define-infix-argument magit-diff:--color-moved ()
+  :description "Color moved lines"
+  :class 'transient-option
+  :key "-m"
+  :argument "--color-moved="
+  :reader 'magit-diff-select-color-moved-mode)
+
+(defun magit-diff-select-color-moved-mode (&rest _ignore)
+  (magit-read-char-case "Color moved " t
+    (?d "[d]efault" "default")
+    (?p "[p]lain"   "plain")
+    (?b "[b]locks"  "blocks")
+    (?z "[z]ebra"   "zebra")
+    (?Z "[Z] dimmed-zebra" "dimmed-zebra")))
+
+(define-infix-argument magit-diff:--color-moved-ws ()
+  :description "Whitespace treatment for --color-moved"
+  :class 'transient-option
+  :key "=w"
+  :argument "--color-moved-ws="
+  :reader 'magit-diff-select-color-moved-ws-mode)
+
+(defun magit-diff-select-color-moved-ws-mode (&rest _ignore)
+  (magit-read-char-case "Ignore whitespace " t
+    (?i "[i]ndentation"  "allow-indentation-change")
+    (?e "[e]nd of line"  "ignore-space-at-eol")
+    (?s "[s]pace change" "ignore-space-change")
+    (?a "[a]ll space"    "ignore-all-space")
+    (?n "[n]o"           "no")))
 
 ;;;; Diff commands
 
@@ -1080,7 +1144,9 @@ be committed."
 (defun magit-show-commit--arguments ()
   (pcase-let ((`(,args ,diff-files) (magit-diff-arguments)))
     (list args (if (derived-mode-p 'magit-log-mode)
-                   (and (not (member "--follow" (nth 1 magit-refresh-args)))
+                   (and (or magit-revision-filter-files-on-follow
+                            (not (member "--follow"
+                                         (nth 1 magit-refresh-args))))
                         (nth 2 magit-refresh-args))
                  diff-files))))
 
@@ -1113,16 +1179,6 @@ for a revision."
 
 ;;;; Setting commands
 
-(defun magit-diff-do-refresh (args files)
-  "Set the local diff arguments for the current buffer."
-  (interactive (magit-diff-arguments t))
-  (cond ((derived-mode-p 'magit-diff-mode)
-         (setcdr (cdr magit-refresh-args) (list args files)))
-        (t
-         (setq-local magit-diff-section-arguments args)
-         (setq-local magit-diff-section-file-args files)))
-  (magit-refresh))
-
 (defun magit-diff-set-default-arguments (args files)
   "Set the global diff arguments for the current buffer."
   (interactive (magit-diff-arguments t))
@@ -1149,7 +1205,7 @@ for a revision."
 
 (defun magit-diff-switch-range-type ()
   "Convert diff range type.
-Change \"revA..revB\" to \"revB...revA\", or vice versa."
+Change \"revA..revB\" to \"revA...revB\", or vice versa."
   (interactive)
   (let ((range (car magit-refresh-args)))
     (if (and range
@@ -1239,9 +1295,9 @@ instead."
   (magit-refresh))
 
 (defun magit-diff-context-p ()
-  (--if-let (--first (string-match "^-U\\([0-9]+\\)$" it)
-                     (car (magit-diff-arguments t)))
-      (not (equal "-U0" it))
+  (if-let ((arg (--first (string-match "^-U\\([0-9]+\\)$" it)
+                         (car (magit-diff-arguments t)))))
+      (not (equal arg "-U0"))
     t))
 
 (defun magit-diff-ignore-any-space-p ()
@@ -1580,15 +1636,13 @@ commit or stash at point, then prompt for a commit."
       (setq cmd 'magit-show-commit)
       (setq buf (magit-mode-get-buffer 'magit-revision-mode)))
      ((derived-mode-p 'git-rebase-mode)
-      (save-excursion
-        (goto-char (line-beginning-position))
-        (--if-let (and git-rebase-line
-                       (looking-at git-rebase-line)
-                       (match-string 2))
-            (progn (setq rev it)
-                   (setq cmd 'magit-show-commit)
-                   (setq buf (magit-mode-get-buffer 'magit-revision-mode)))
-          (user-error "No commit on this line"))))
+      (with-slots (action-type target)
+          (git-rebase-current-line)
+        (if (not (eq action-type 'commit))
+            (user-error "No commit on this line")
+          (setq rev target)
+          (setq cmd 'magit-show-commit)
+          (setq buf (magit-mode-get-buffer 'magit-revision-mode)))))
      (t
       (magit-section-case
         (branch
@@ -1695,14 +1749,12 @@ is set in `magit-mode-setup'."
 
 (defun magit-insert-diff (rev-or-range)
   "Insert the diff into this `magit-diff-mode' buffer."
-  (let ((magit-git-global-arguments
-         (remove "--literal-pathspecs" magit-git-global-arguments)))
-    (magit-git-wash #'magit-diff-wash-diffs
-      "diff" rev-or-range "-p" "--no-prefix"
-      (and (member "--stat" (nth 2 magit-refresh-args)) "--numstat")
-      (nth 1 magit-refresh-args)
-      (nth 2 magit-refresh-args) "--"
-      (nth 3 magit-refresh-args))))
+  (magit--insert-diff
+    "diff" rev-or-range "-p" "--no-prefix"
+    (and (member "--stat" (nth 2 magit-refresh-args)) "--numstat")
+    (nth 1 magit-refresh-args)
+    (nth 2 magit-refresh-args) "--"
+    (nth 3 magit-refresh-args)))
 
 (defvar magit-file-section-map
   (let ((map (make-sparse-keymap)))
@@ -1752,6 +1804,34 @@ is set in `magit-mode-setup'."
           "\\([0-9]+\\|Bin\\(?: +[0-9]+ -> [0-9]+ bytes\\)?$\\) ?"
           "\\(\\+*\\)"   ; add
           "\\(-*\\)$"))  ; del
+
+(defvar magit-diff--reset-non-color-moved
+  (list
+   "-c" "color.diff.context=normal"
+   "-c" "color.diff.plain=normal" ; historical synonym for context
+   "-c" "color.diff.meta=normal"
+   "-c" "color.diff.frag=normal"
+   "-c" "color.diff.func=normal"
+   "-c" "color.diff.old=normal"
+   "-c" "color.diff.new=normal"
+   "-c" "color.diff.commit=normal"
+   "-c" "color.diff.whitespace=normal"
+   ;; "git-range-diff" does not support "--color-moved", so we don't
+   ;; need to reset contextDimmed, oldDimmed, newDimmed, contextBold,
+   ;; oldBold, and newBold.
+   ))
+
+(defun magit--insert-diff (&rest args)
+  (declare (indent 0))
+  (let ((magit-git-global-arguments
+         (remove "--literal-pathspecs" magit-git-global-arguments)))
+    (setq args (-flatten args))
+    (when (cl-member-if (lambda (arg) (string-prefix-p "--color-moved" arg)) args)
+      (push "--color=always" (cdr args))
+      (setq magit-git-global-arguments
+            (append magit-diff--reset-non-color-moved
+                    magit-git-global-arguments)))
+    (magit-git-wash #'magit-diff-wash-diffs args)))
 
 (defun magit-diff-wash-diffs (args &optional limit)
   (when (member "--stat" args)
@@ -1816,6 +1896,9 @@ section or a child thereof."
         (if (looking-at "^$") (forward-line) (insert "\n"))))))
 
 (defun magit-diff-wash-diff (args)
+  (when (cl-member-if (lambda (arg) (string-prefix-p "--color-moved" arg)) args)
+    (require 'ansi-color)
+    (ansi-color-apply-on-region (point-min) (point-max)))
   (cond
    ((looking-at "^Submodule")
     (magit-diff-wash-submodule))
@@ -1918,7 +2001,8 @@ section or a child thereof."
     (oset section header header)
     (when modes
       (magit-insert-section (hunk)
-        (insert modes)))
+        (insert modes)
+        (magit-insert-heading)))
     (magit-wash-sequence #'magit-diff-wash-hunk)))
 
 (defun magit-diff-wash-submodule ()
@@ -2048,18 +2132,11 @@ Staging and applying changes is documented in info node
 
 (defun magit-insert-revision-diff (rev)
   "Insert the diff into this `magit-revision-mode' buffer."
-  (let ((magit-git-global-arguments
-         (remove "--literal-pathspecs" magit-git-global-arguments)))
-    ;; Before v2.2.0, "--format=" did not mean "no output".
-    ;; Instead the default format was used.  So use "--format=%n"
-    ;; and then delete the empty lines.
-    (magit-git-wash (lambda (args)
-                      (delete-region (point) (progn (forward-line 3) (point)))
-                      (magit-diff-wash-diffs args))
-      "show" "-p" "--cc" "--format=%n" "--no-prefix"
-      (and (member "--stat" (nth 2 magit-refresh-args)) "--numstat")
-      (nth 2 magit-refresh-args) (concat rev "^{commit}") "--"
-      (nth 3 magit-refresh-args))))
+  (magit--insert-diff
+    "show" "-p" "--cc" "--format=" "--no-prefix"
+    (and (member "--stat" (nth 2 magit-refresh-args)) "--numstat")
+    (nth 2 magit-refresh-args) (concat rev "^{commit}") "--"
+    (nth 3 magit-refresh-args)))
 
 (defun magit-insert-revision-tag (rev)
   "Insert tag message and headers into a revision buffer.
@@ -2205,8 +2282,7 @@ or a ref which is not a branch, then it inserts nothing."
 (defun magit-insert-revision-headers (rev)
   "Insert headers about the commit into a revision buffer."
   (magit-insert-section (headers)
-    ;; Before v2.2.0, "%D" was not supported.
-    (--when-let (magit-rev-format "%d" rev "--decorate=full")
+    (--when-let (magit-rev-format "%D" rev "--decorate=full")
       (insert (magit-format-ref-labels it) ?\s))
     (insert (propertize (magit-rev-parse (concat rev "^{commit}"))
                         'face 'magit-hash))
@@ -2339,7 +2415,7 @@ or a ref which is not a branch, then it inserts nothing."
   "Insert section showing unstaged changes."
   (magit-insert-section (unstaged)
     (magit-insert-heading "Unstaged changes:")
-    (magit-git-wash #'magit-diff-wash-diffs
+    (magit--insert-diff
       "diff" magit-diff-section-arguments "--no-prefix"
       "--" magit-diff-section-file-args)))
 
@@ -2361,7 +2437,7 @@ or a ref which is not a branch, then it inserts nothing."
   (unless (magit-bare-repo-p)
     (magit-insert-section (staged)
       (magit-insert-heading "Staged changes:")
-      (magit-git-wash #'magit-diff-wash-diffs
+      (magit--insert-diff
         "diff" "--cached" magit-diff-section-arguments "--no-prefix"
         "--" magit-diff-section-file-args))))
 

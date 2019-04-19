@@ -47,7 +47,7 @@
 (declare-function magit-checkout-read-stage "magit-merge" (file))
 (defvar auto-revert-verbose)
 ;; For `magit-stage-untracked'
-(declare-function magit-submodule-add "magit-submodule"
+(declare-function magit-submodule-add-1 "magit-submodule"
                   (url &optional path name args))
 (declare-function magit-submodule-read-name-for-path "magit-submodule"
                   (path &optional prefer-short))
@@ -131,11 +131,12 @@ so causes the change to be applied to the index as well."
       (`(,(or `unstaged `staged) ,_)
        (user-error "Change is already in the working tree"))
       (`(untracked ,(or `file `files))
-       (magit-am))
+       (call-interactively 'magit-am))
       (`(,_ region) (magit-apply-region it args))
       (`(,_   hunk) (magit-apply-hunk   it args))
       (`(,_  hunks) (magit-apply-hunks  it args))
-      (`(rebase-sequence file) (magit-patch-apply))
+      (`(rebase-sequence file)
+       (call-interactively 'magit-patch-apply))
       (`(,_   file) (magit-apply-diff   it args))
       (`(,_  files) (magit-apply-diffs  it args)))))
 
@@ -296,7 +297,7 @@ ignored) files."
   (when (magit-anything-staged-p)
     (magit-confirm 'stage-all-changes))
   (magit-with-toplevel
-    (magit-stage-1 (if all "--all" "-u"))))
+    (magit-stage-1 (if all "--all" "-u") magit-diff-section-file-args)))
 
 (defun magit-stage-1 (arg &optional files)
   (magit-wip-commit-before-change files " before stage")
@@ -333,7 +334,7 @@ ignored) files."
                 (and (equal (bound-and-true-p borg-user-emacs-directory)
                             topdir)
                      (file-name-nondirectory (directory-file-name repo)))))
-          (magit-submodule-add
+          (magit-submodule-add-1
            (let ((default-directory
                    (file-name-as-directory (expand-file-name repo))))
              (or (magit-get "remote" (magit-get-some-remote) "url")
@@ -419,7 +420,7 @@ without requiring confirmation."
             (magit-untracked-files))
     (magit-confirm 'unstage-all-changes))
   (magit-wip-commit-before-change nil " before unstage")
-  (magit-run-git "reset" "HEAD" "--")
+  (magit-run-git "reset" "HEAD" "--" magit-diff-section-file-args)
   (magit-wip-commit-after-apply nil " after unstage"))
 
 ;;;; Discard
