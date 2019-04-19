@@ -147,6 +147,16 @@ don't work well in the snippet view.")
   "Make an edit buffer name from BASE-BUFFER-NAME and LANG."
   (concat "*Narrowed Edit " base-buffer-name "[" lang "]*"))
 
+(defun fence-edit--line-beginning-position-at-pos (pos)
+  "Return the position of the beginning of the line at POS.
+
+Used to find the position at which the code to edit begins. The
+beginning of the line is needed to handle indentation."
+  (interactive)
+  (save-excursion
+    (goto-char pos)
+    (line-beginning-position)))
+
 (defun fence-edit--next-line-beginning-position-at-pos (pos)
   "Return the position of the beginning of the line after the line at POS.
 
@@ -168,24 +178,31 @@ Return nil if no block is found."
     (beginning-of-line)
     (let ((pos (point))
           (blocks fence-edit-blocks)
-          block re-start re-end lang-id start end lang)
+          block re-start re-end lang-id start end lang include-ends)
       (catch 'exit
         (while (setq block (pop blocks))
           (save-excursion
             (setq re-start (car block)
                   re-end (nth 1 block)
-                  lang-id (nth 2 block))
-            (if (or (looking-at re-start)
-                    (re-search-backward re-start nil t))
-                (progn
-                  (setq start (fence-edit--next-line-beginning-position-at-pos (match-end 0))
-                        lang (if (integerp lang-id)
-                                 (match-string lang-id)
-                               (symbol-name lang-id)))
-                  (if (and (and (goto-char (match-end 0))
-                                (re-search-forward re-end nil t))
-                           (>= (match-beginning 0) pos))
-                      (throw 'exit `(,start ,(match-beginning 0) ,lang)))))))))))
+                  lang-id (nth 2 block)
+                  include-ends (nth 3 block))
+            (when (or (looking-at re-start)
+                      (re-search-backward re-start nil t))
+              (setq start
+                    (if include-ends
+                        (fence-edit--line-beginning-position-at-pos (match-beginning 0))
+                      (fence-edit--next-line-beginning-position-at-pos (match-end 0)))
+                    lang (if (integerp lang-id)
+                             (match-string lang-id)
+                           (symbol-name lang-id))
+                    end
+                    (when (and (goto-char (match-end 0))
+                               (re-search-forward re-end nil t))
+                      (if include-ends
+                          (match-end 0)
+                        (match-beginning 0))))
+              (when (and end (>= end pos))
+                (throw 'exit `(,start ,end ,lang))))))))))
 
 (defun fence-edit--get-mode-for-lang (lang)
   "Try to get a mode function from language name LANG.
@@ -211,9 +228,9 @@ The assumption is that language `LANG' has a mode `LANG-mode'."
      (propertize " " 'display '(space :width left-margin)))
    ;; left fringe
    (when (< 0 (or (and (numberp left-fringe-width)
-                       left-fringe-width)
+                       left-fringe-width))
              (and (not left-fringe-width)
-                  (frame-parameter nil 'left-fringe))))
+                  (frame-parameter nil 'left-fringe)))
      (propertize " " 'display '(space :width left-fringe)))
    ;; display line numbers
    (when display-line-numbers
@@ -221,6 +238,18 @@ The assumption is that language `LANG' has a mode `LANG-mode'."
    ;; instructions
    "Press C-c ' (C-c apostrophe) to save, C-c C-k to abort."))
 
+(defun fence-edit--list-major-modes ()
+  "Return a list of all major modes which are associated with a
+  magic string or file extension.
+
+This will not produce an exhaustive list of major modes but it
+will hopefully list all the major modes that a user would want to
+pick."
+  (delete-dups (mapcar #'cdr (append magic-mode-alist
+                                     auto-mode-alist
+                                     magic-fallback-mode-alist))))
+
+;;;###autoload
 (defun fence-edit-code-region (beg end &optional lang)
   "Edit region (BEG and END) in language LANG."
   (interactive (append
@@ -228,7 +257,9 @@ The assumption is that language `LANG' has a mode `LANG-mode'."
                     (list (region-beginning) (region-end))
                   (list (point-min) (point-max)))
                 (when current-prefix-arg
-                  (list (read-string "Edit language: ")))))
+                  (list (string-trim-right
+                         (completing-read "Edit Language: " (fence-edit--list-major-modes))
+                         "-mode")))))
   (let* ((beg (copy-marker beg))
          (end (copy-marker end t))
          (pos (point))
@@ -269,6 +300,14 @@ The assumption is that language `LANG' has a mode `LANG-mode'."
       (goto-char edit-point)
       (set-buffer-modified-p nil))))
 
+;;;###autoload
+(defun fence-edit-code-region-with-mode ()
+  "Same as `fence-edit-code-region' but always prompt for the mode."
+  (interactive)
+  (setq current-prefix-arg '(4))
+  (call-interactively #'fence-edit-code-region))
+
+;;;###autoload
 (defun fence-edit-code-at-point ()
   "Look for a code block at point and, if found, edit it."
   (interactive)
@@ -278,6 +317,17 @@ The assumption is that language `LANG' has a mode `LANG-mode'."
          (lang (nth 2 block)))
     (when block
       (fence-edit-code-region beg end lang))))
+
+;;;###autoload
+(defun fence-edit-dwim ()
+  "Try to be smart about which fence-edit function to call.
+
+If no region is active, call `fence-edit-code-at-point'.
+If the region is active, call `fence-edit-code-region-with-mode'."
+  (interactive)
+  (if (region-active-p)
+      (call-interactively #'fence-edit-code-region-with-mode)
+    (call-interactively #'fence-edit-code-at-point)))
 
 (defun fence-edit--guard-edit-buffer ()
   "Throw an error if current buffer doesn't look like an edit buffer."

@@ -5,7 +5,7 @@
 ;; Author: Feng Shu <tumashu@163.com>
 ;; Maintainer: Feng Shu <tumashu@163.com>
 ;; URL: https://github.com/tumashu/posframe
-;; Version: 0.4.2
+;; Version: 0.4.3
 ;; Keywords: tooltip
 ;; Package-Requires: ((emacs "26"))
 
@@ -52,10 +52,10 @@
 
 ;; **** Simple way
 ;; #+BEGIN_EXAMPLE
-;; ;; NOTE: buffers prefixed with space will be not showed in buffer-list.
-;; (posframe-show " *my-posframe-buffer*"
-;;                :string "This is a test"
-;;                :position (point))
+;; (when (posframe-workable-p)
+;;   (posframe-show " *my-posframe-buffer*"
+;;                  :string "This is a test"
+;;                  :position (point)))
 ;; #+END_EXAMPLE
 
 ;; **** Advanced way
@@ -66,8 +66,9 @@
 ;;   (erase-buffer)
 ;;   (insert "Hello world"))
 
-;; (posframe-show my-posframe-buffer
-;;                :position (point))
+;; (when (posframe-workable-p)
+;;   (posframe-show my-posframe-buffer
+;;                  :position (point)))
 ;; #+END_EXAMPLE
 
 ;; **** Arguments
@@ -163,6 +164,13 @@ frame.")
 (defvar-local posframe--initialized-p nil
   "Record initialize status of `posframe-show'.")
 
+(defun posframe-workable-p ()
+  "Test posframe workable status."
+  (and (>= emacs-major-version 26)
+       (not (or noninteractive
+                emacs-basic-display
+                (not (display-graphic-p))))))
+
 (cl-defun posframe--create-posframe (posframe-buffer
                                      &key
                                      parent-frame
@@ -171,6 +179,7 @@ frame.")
                                      left-fringe
                                      right-fringe
                                      internal-border-width
+                                     internal-border-color
                                      font
                                      keep-ratio
                                      override-parameters
@@ -200,10 +209,12 @@ This posframe's buffer is POSFRAME-BUFFER."
       ;; Many variables take effect after call `set-window-buffer'
       (setq-local display-line-numbers nil)
       (setq-local frame-title-format "")
+      (setq-local left-margin-width nil)
+      (setq-local right-margin-width nil)
       (setq-local left-fringe-width nil)
       (setq-local right-fringe-width nil)
       (setq-local fringes-outside-margins 0)
-      (setq-local truncate-lines t)
+      (setq-local truncate-lines nil)
       (setq-local cursor-type nil)
       (setq-local cursor-in-non-selected-windows nil)
       (setq-local show-trailing-whitespace nil)
@@ -262,6 +273,9 @@ This posframe's buffer is POSFRAME-BUFFER."
                        (inhibit-double-buffering . ,posframe-inhibit-double-buffering)
                        ;; Do not save child-frame when use desktop.el
                        (desktop-dont-save . t))))
+        (when internal-border-color
+          (set-face-background 'internal-border
+                               internal-border-color posframe--frame))
         (let ((posframe-window (frame-root-window posframe--frame)))
           ;; This method is more stable than 'setq mode/header-line-format nil'
           (unless respect-mode-line
@@ -285,6 +299,7 @@ This posframe's buffer is POSFRAME-BUFFER."
                          left-fringe
                          right-fringe
                          internal-border-width
+                         internal-border-color
                          font
                          foreground-color
                          background-color
@@ -296,7 +311,8 @@ This posframe's buffer is POSFRAME-BUFFER."
                          keep-ratio
                          override-parameters
                          timeout
-                         refresh)
+                         refresh
+                         &allow-other-keys)
   "Pop posframe and show STRING at POSITION.
 
 POSITION can be:
@@ -364,8 +380,8 @@ right fringe with be showed with number width.
 
 By default, posframe shows no border, user can let border
 showed by setting INTERNAL-BORDER-WIDTH to a postive number,
-by the way, border's color is specified by the background of
-the ‘internal-border’ face.
+by the way, border's color can be specified by INTERNAL-BORDER-COLOR
+or ‘internal-border’ face.
 
 By default, posframe's font is deriverd from current frame
 user can set posframe's font with FONT argument.
@@ -443,6 +459,7 @@ you can use `posframe-delete-all' to delete all posframes."
              :left-fringe left-fringe
              :right-fringe right-fringe
              :internal-border-width internal-border-width
+             :internal-border-color internal-border-color
              :foreground-color foreground-color
              :background-color background-color
              :keep-ratio keep-ratio
@@ -494,6 +511,9 @@ you can use `posframe-delete-all' to delete all posframes."
       (posframe--run-refresh-timer
        posframe refresh height min-height width min-width)
 
+      ;; Make sure not hide buffer's content for scroll down.
+      (set-window-point (frame-root-window posframe--frame) 0)
+
       ;; Do not return anything.
       nil)))
 
@@ -529,13 +549,11 @@ will be removed."
   (when (and string (stringp string))
     (remove-text-properties
      0 (length string) '(read-only t) string)
-    ;; Does inserting string then deleting the before
-    ;; contents reduce flicking? Maybe :-)
-    (goto-char (point-min))
-    (if no-properties
-        (insert (substring-no-properties string))
-      (insert string))
-    (delete-region (point) (point-max))))
+    (let ((str (if no-properties
+                   (substring-no-properties string)
+                 string)))
+      (erase-buffer)
+      (insert str))))
 
 (defun posframe--set-frame-size (posframe height min-height width min-width)
   "Set POSFRAME's size.
@@ -566,7 +584,9 @@ This need PARENT-FRAME-WIDTH and PARENT-FRAME-HEIGHT"
                 (cons parent-frame-width parent-frame-height)))
   ;; Make posframe's posframe--frame visible
   (unless (frame-visible-p posframe)
-    (make-frame-visible posframe)))
+    (make-frame-visible posframe)
+    ;; Fix issue: https://github.com/tumashu/ivy-posframe/pull/30
+    (redraw-frame posframe)))
 
 (defun posframe--run-timeout-timer (posframe secs)
   "Hide POSFRAME after a delay of SECS seconds."

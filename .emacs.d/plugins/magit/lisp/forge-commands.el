@@ -43,7 +43,7 @@ for a repository using the command `forge-add-pullreq-refspec'."
 ;;; Dispatch
 
 ;;;###autoload (autoload 'forge-dispatch "forge-commands" nil t)
-(define-transient-command forge-dispatch
+(define-transient-command forge-dispatch ()
   "Dispatch a forge command."
   [["Fetch"
     ("f f" "topics"        forge-pull)
@@ -332,6 +332,8 @@ Prefer a topic over a branch and that over a commit."
 (defun forge-create-post ()
   "Create a new post on an existing topic."
   (interactive)
+  (unless (derived-mode-p 'forge-topic-mode)
+    (user-error "This command is only available from topic buffers"))
   (let* ((topic (car magit-refresh-args))
          (buf (forge--prepare-post-buffer
                (forge--format topic "%i:new-comment")
@@ -458,8 +460,8 @@ Please see the manual for more information."
           (let ((tracking (concat upstream "/" pr-branch)))
             (unless (magit-branch-p tracking)
               (magit-call-git "fetch" upstream))
-            (let ((inhibit-magit-refresh t))
-              (magit-branch-create branch tracking "--force"))
+            (magit-call-git "branch" branch tracking)
+            (magit-branch-maybe-adjust-upstream branch tracking)
             (magit-set upstream "branch" branch "pushRemote")
             (magit-set upstream "branch" branch "pullRequestRemote"))
         (if (magit-remote-p remote)

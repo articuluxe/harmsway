@@ -1,6 +1,6 @@
 ;;; multi-run.el --- Manage multiple terminals and run commands on them
 
-;; Copyright (C) 2015-2018  Sagar Jha
+;; Copyright (C) 2015-2019  Sagar Jha
 
 ;; Author: Sagar Jha
 ;; URL: https://www.github.com/sagarjha/multi-run
@@ -30,39 +30,22 @@
 ;;; Code:
 
 (require 'window-layout)
+(require 'multi-run-vars)
 (require 'multi-run-helpers)
 
 (defgroup multi-run nil
   "Run commands in multiple terminal windows."
   :group 'terminals)
 
-(defvar multi-run-terminals-list nil
-  "List of terminals to run the command on.")
-
-(defvar multi-run-hostnames-list nil
-  "List of hostnames for multi-run-ssh.")
-
-(defvar multi-run-ssh-username nil
-  "SSH username for multi-run-ssh.")
-
 (defun multi-run-configure-terminals (&optional num-terminals window-batch)
   "Display NUM-TERMINALS number of terminals given by multi-run-terminals-list on the screen with WINDOW-BATCH number of them in one single vertical slot."
-  (let* ((num-terminals (if num-terminals (progn (setq multi-run-terminals-list (number-sequence 1 num-terminals)) num-terminals) (length multi-run-terminals-list)))
-	 (window-batch (if window-batch window-batch (calculate-window-batch num-terminals)))
-	 (master-buffer-name (buffer-name))
-	 (master-buffer-symbol (make-symbol "master"))
-	 (sym-list (multi-run-make-symbols "term"))
-	 (buffer-dict (cons (list :name master-buffer-symbol
-				  :buffer master-buffer-name)
-			    (multi-run-make-dict 'multi-run-get-buffer-name sym-list)))
-	 (internal-recipe (multi-run-make-internal-recipe num-terminals window-batch (vconcat sym-list)))
-	 (overall-recipe `(- (:upper-size-ratio 0.9)
-			     ,internal-recipe ,master-buffer-symbol)))
+  (let* ((master-buffer-name (buffer-name))
+	 (num-terminals (if num-terminals
+			    (progn (setq multi-run-terminals-list (number-sequence 1 num-terminals)) num-terminals)
+			  (length multi-run-terminals-list)))
+	 (window-batch (if window-batch window-batch (calculate-window-batch num-terminals))))
     (multi-run-create-terminals)
-    (wlf:layout
-     overall-recipe
-     buffer-dict)
-    (select-window (get-buffer-window master-buffer-name))
+    (multi-run-display-buffers master-buffer-name num-terminals window-batch "term" 'multi-run-get-buffer-name)
     (concat "multi-run-terminals-list is " (prin1-to-string multi-run-terminals-list))))
 
 (defun multi-run-with-delay (delay &rest cmd)
@@ -70,16 +53,16 @@
   (let ((delay-now 0))
     (dolist (command cmd)
       (setq multi-run-timers-list (cons (run-at-time (concat (number-to-string delay-now) " sec") nil 'multi-run-on-terminals command multi-run-terminals-list delay) multi-run-timers-list))
-      (setq delay-now (+ delay-now (* (length multi-run-terminals-list) delay)))))
-  nil)
+      (setq delay-now (+ delay-now (* (length multi-run-terminals-list) delay))))
+    nil))
 
 (defun multi-run-with-delay2 (delay &rest cmd)
   "With the provided DELAY, run one or more commands CMD on multiple terminals - but the delay is between different command invocations at the terminals."
   (let ((delay-now 0))
     (dolist (command cmd)
       (setq multi-run-timers-list (cons (run-at-time (concat (number-to-string delay-now) " sec") nil 'multi-run-on-terminals command multi-run-terminals-list) multi-run-timers-list))
-      (setq delay-now (+ delay-now delay))))
-  nil)
+      (setq delay-now (+ delay-now delay)))
+    nil))
 
 (defun multi-run (&rest cmd)
   "Run one or more commands CMD on multiple terminals."
@@ -100,41 +83,67 @@
 
 (defun multi-run-ssh ()
   "Establish ssh connections in the terminals with the help of user-defined variables."
-  (multi-run-on-terminals (lambda (x) (concat "ssh " (if multi-run-ssh-username
-							 (concat multi-run-ssh-username "@") "")
-					      (elt multi-run-hostnames-list (1- x)))) multi-run-terminals-list))
+  (multi-run-on-terminals (lambda (term-num) (concat "ssh " (if multi-run-ssh-username
+								(concat multi-run-ssh-username "@") "")
+						     (elt multi-run-hostnames-list (1- term-num)))) multi-run-terminals-list))
 
 (defun multi-run-find-remote-files-sudo (file-path &optional window-batch non-root)
   "Open file specified by FILE-PATH for all terminals and display them on the screen with WINDOW-BATCH number of them in one single vertical slot.  Open with sudo if NON-ROOT is false."
-  (let* ((non-root (if non-root non-root nil))
+  (let* ((master-buffer-name (buffer-name))
+	 (non-root (if non-root non-root nil))
 	 (num-terminals (length multi-run-terminals-list))
 	 (window-batch (if window-batch window-batch (calculate-window-batch num-terminals)))
-	 (master-buffer-name (buffer-name))
-	 (master-buffer-symbol (make-symbol "master"))
-	 (buffer-list (mapcar
-		       (lambda (x) (cons x (find-file (concat "/ssh:"
-							      (when multi-run-ssh-username
-								(concat multi-run-ssh-username "@"))
-							      (elt multi-run-hostnames-list (1- x))
-							      (when (not non-root) (concat "|sudo:" (elt multi-run-hostnames-list (1- x))))
-							      ":" file-path))))
-		       multi-run-terminals-list))
-	 (sym-list (multi-run-make-symbols "file"))
-	 (buffer-dict (cons (list :name master-buffer-symbol
-				  :buffer master-buffer-name)
-			    (multi-run-make-dict (lambda (term-num) (cdr (assoc term-num buffer-list))) sym-list)))
-	 (internal-recipe (multi-run-make-internal-recipe num-terminals window-batch (vconcat sym-list)))
-	 (overall-recipe `(- (:upper-size-ratio 0.9)
-			     ,internal-recipe ,master-buffer-symbol)))
-    (wlf:layout
-     overall-recipe
-     buffer-dict)
-    (select-window (get-buffer-window master-buffer-name)))
-  nil)
+	 (term-num-buffer-list (mapcar
+				(lambda (term-num) (cons term-num (find-file (multi-run-get-full-remote-path file-path term-num (not non-root)))))
+				multi-run-terminals-list)))
+    (multi-run-display-buffers master-buffer-name num-terminals window-batch "file" (lambda (term-num) (cdr (assoc term-num term-num-buffer-list))))
+    (setq multi-run-buffers-assoc-list term-num-buffer-list)
+    nil))
 
 (defun multi-run-find-remote-files (file-path &optional window-batch)
   "Open file specified by FILE-PATH for all terminals and display them on the screen with WINDOW-BATCH number of them in one single vertical slot."
   (multi-run-find-remote-files-sudo file-path window-batch 't))
+
+(defun multi-run-execute-on-single-buffer (buffer)
+  "Run user command on BUFFER."
+  (set-buffer buffer)
+  (ignore-errors (call-interactively this-original-command))
+  (set-window-point (get-buffer-window buffer) (point)))
+
+(defun multi-run-execute-command ()
+  "Execute the command on all the files."
+  (when multi-run-start
+    (unless (eq this-original-command 'eshell-send-input)
+      (if (eq this-original-command 'keyboard-quit)
+	  (multi-run-edit-files-quit)
+	(mapc (lambda (term-num) (multi-run-execute-on-single-buffer (cdr (assoc term-num multi-run-buffers-assoc-list)))) (cdr multi-run-terminals-list))))))
+
+(defun multi-run-edit-files (&optional window-batch)
+  "Enable editing files opened by `multi-run-find-remote-files'.  Display the files on the frame with WINDOW-BATCH number of them in one single vertical slot."
+  (let* ((master-buffer-name (buffer-name))
+	 (num-terminals (length multi-run-terminals-list))
+	 (window-batch (if window-batch window-batch (calculate-window-batch num-terminals))))
+    (multi-run-display-buffers master-buffer-name num-terminals window-batch "file" (lambda (term-num) (cdr (assoc term-num multi-run-buffers-assoc-list))))
+    (select-window (get-buffer-window (cdr (assoc (car multi-run-terminals-list) multi-run-buffers-assoc-list))))
+    (setq multi-run-start nil)
+    (add-hook 'post-command-hook 'multi-run-execute-command t nil)
+    (setq multi-run-start 't)
+    "Editing multiple files. Press C-g to quit editing and return to this buffer"))
+
+(defun multi-run-edit-files-quit ()
+  "Disable editing files."
+  (remove-hook 'post-command-hook 'multi-run-execute-command nil)
+  (other-window -1))
+
+(defun multi-run-execute-function-on-single-buffer (buffer fun)
+  "Run on BUFFER the function FUN."
+  (set-buffer buffer)
+  (funcall fun)
+  (set-window-point (get-buffer-window buffer) (point)))
+
+(defun multi-run-execute-function-on-files (fun)
+  "Execute FUN on the buffers opened by `multi-run-find-remote-files'."
+  (mapc (lambda (term-num) (multi-run-execute-function-on-single-buffer (cdr (assoc term-num multi-run-buffers-assoc-list)) fun)) multi-run-terminals-list))
 
 (defun multi-run-copy-sudo (file1 file-or-directory1 &rest files)
   "Copy FILE1 to FILE-OR-DIRECTORY1.  With multiple arguments, the last element FILES is the destination directory, the rest are source files to copy."
@@ -146,14 +155,13 @@
 
 (defun multi-run-kill-terminals ()
   "Kill active terminals."
-  (mapc (lambda (terminal-num) (kill-buffer (multi-run-get-buffer-name terminal-num))) multi-run-terminals-list)
+  (mapc (lambda (term-num) (kill-buffer (multi-run-get-buffer-name term-num))) multi-run-terminals-list)
   nil)
 
 (defun multi-run-kill-all-timers ()
   "Cancel commands running on a loop or via delay functions."
   (mapc 'cancel-timer multi-run-timers-list)
   "All timers canceled")
-
 
 (provide 'multi-run)
 ;;; multi-run.el ends here

@@ -58,6 +58,12 @@ Indentation is created by repeating `treemacs-indentation-string'."
   :type 'integer
   :group 'treemacs)
 
+(defcustom treemacs-eldoc-display t
+  "Enables eldoc display of the file path at point.
+Requires eldoc mode to be enabled."
+  :type 'boolean
+  :group 'treemacs)
+
 (defcustom treemacs-indentation-string " "
   "The string that is for indentation in the file tree.
 Indentation is created by repeating this string `treemacs-indentation' many
@@ -361,15 +367,18 @@ Possible values are:
                  (const :tag "Never" nil))
   :group 'treemacs)
 
-(defcustom treemacs-recenter-after-project-expand 'on-distance
+(defcustom treemacs-recenter-after-project-expand 'on-visibility
   "Decides when to recenter view after expanding a project root node.
 
 Possible values are:
  * nil: never recenter
  * 'always: always recenter
- * 'on-distance: recenter based on `treemacs-recenter-distance'"
+ * 'on-distance: recenter based on `treemacs-recenter-distance'
+ * 'on-visibility: recenter only when the newly rendered lines don't fit the
+   current screen"
   :type '(choice (const :tag "Always" always)
                  (const :tag "Based on Distance" on-distance)
+                 (const :tag "Based on Visibility" on-visibility)
                  (const :tag "Never" nil))
   :group 'treemacs)
 
@@ -488,8 +497,23 @@ is enabled, since constantly expanding an entire project is fairly expensive."
   :group 'treemacs
   :type 'string)
 
+(defcustom treemacs-missing-project-action 'ask
+  "Action to perform when a persisted project is not found on the disk.
+If the project is not found, the project can either be kept in the project list,
+or removed from it.  If the project is removed, when projects are persisted, the
+missing project will not appear in the project list next time Emacs is started."
+  :type '(choice (const :tag "Ask whether to remove" ask)
+                 (const :tag "Remove without asking" remove)
+                 (const :tag "Keep without asking" keep))
+  :group 'treemacs)
+
 (defcustom treemacs-space-between-root-nodes t
   "When non-nil treemacs will separate root nodes with an empty line."
+  :type 'boolean
+  :group 'treemacs)
+
+(defcustom treemacs-wrap-around t
+  "When non-nil treemacs will wrap around buffer edges when moving between lines."
   :type 'boolean
   :group 'treemacs)
 
@@ -549,7 +573,7 @@ not apply to the simple `treemacs-git-mode.'"
   :type 'number
   :group 'treemacs-git)
 
-(defcustom treemacs-python-executable (executable-find "python")
+(defcustom treemacs-python-executable (executable-find "python3")
   "The python executable used by treemacs.
 An asynchronous python process is used in two optional feaures:
 `treemacs-collapse-dirs' and the extended variant of `treemacs-git-mode'.
@@ -652,6 +676,25 @@ button's position will be wrong, even if it wasn't deleted outright):
    point was on the header.
  * The current button's tag path, as collected by `treemacs--tags-path-of'. Is
    nil if the current button is nil."
+  :type 'hook
+  :group 'treemacs-hooks)
+
+(defcustom treemacs-quit-hook nil
+  "Hooks to run when `treemacs-quit' is called.
+The hooks will be run *after* the treemacs buffer was buried."
+  :type 'hook
+  :group 'treemacs-hooks)
+
+(defcustom treemacs-kill-hook nil
+  "Hooks to run when `treemacs-kill-buffer' is called.
+The hooks will be run *after* the treemacs buffer was destroyed."
+  :type 'hook
+  :group 'treemacs-hooks)
+
+(defcustom treemacs-select-hook nil
+  "Hooks to run when the treemacs window is selected.
+This only applies to commands like `treemacs' or `treemacs-select-window', not
+general window selection commands like `other-window'."
   :type 'hook
   :group 'treemacs-hooks)
 

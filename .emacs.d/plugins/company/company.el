@@ -1,11 +1,11 @@
 ;;; company.el --- Modular text completion framework  -*- lexical-binding: t -*-
 
-;; Copyright (C) 2009-2018  Free Software Foundation, Inc.
+;; Copyright (C) 2009-2019  Free Software Foundation, Inc.
 
 ;; Author: Nikolaj Schumacher
 ;; Maintainer: Dmitry Gutov <dgutov@yandex.ru>
 ;; URL: http://company-mode.github.io/
-;; Version: 0.9.9
+;; Version: 0.9.10
 ;; Keywords: abbrev, convenience, matching
 ;; Package-Requires: ((emacs "24.3"))
 
@@ -2188,10 +2188,12 @@ inserted."
   (interactive)
   (when (company-manual-begin)
     (if (or company-selection-changed
-            (eq last-command 'company-complete-common))
+            (and (eq real-last-command 'company-complete)
+                 (eq last-command 'company-complete-common)))
         (call-interactively 'company-complete-selection)
       (call-interactively 'company-complete-common)
-      (setq this-command 'company-complete-common))))
+      (when company-candidates
+        (setq this-command 'company-complete-common)))))
 
 (defun company-complete-number (n)
   "Insert the Nth candidate visible in the tooltip.

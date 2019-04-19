@@ -374,7 +374,7 @@ Should contain 2 %s constructs to allow for theme name and directory/prefix")
      (elfeed-search-filter-face                 (:inherit 'font-lock-string-face))
 
      ;; smart-mode-line
-     (sml/global                                (:foreground gruvbox-burlywood4 :inverse-video nil))
+     (sml/global                                (:foreground gruvbox-light4 :inverse-video nil))
      (sml/modes                                 (:foreground gruvbox-bright_green))
      (sml/filename                              (:foreground gruvbox-bright_red :weight 'bold))
      (sml/prefix                                (:foreground gruvbox-light1))
@@ -567,6 +567,14 @@ Should contain 2 %s constructs to allow for theme name and directory/prefix")
      (diredp-read-priv                          (:foreground gruvbox-bright_red  :background gruvbox-dark_red))
      (diredp-write-priv                         (:foreground gruvbox-bright_aqua :background gruvbox-dark_aqua))
 
+     ;; neotree
+     (neo-banner-face                           (:foreground gruvbox-bright_purple :bold t))
+     (neo-dir-link-face                         (:foreground gruvbox-bright_yellow))
+     (neo-expand-btn-face                       (:foreground gruvbox-bright_orange))
+     (neo-file-link-face                        (:foreground gruvbox-light0))
+     (neo-header-face                           (:foreground gruvbox-bright_purple))
+     (neo-root-dir-face                         (:foreground gruvbox-bright_purple :bold t))
+
      ;; eshell
      (eshell-prompt-face                         (:foreground gruvbox-bright_aqua))
      (eshell-ls-archive-face                     (:foreground gruvbox-light3))
@@ -592,6 +600,13 @@ Should contain 2 %s constructs to allow for theme name and directory/prefix")
      (tabbar-unselected-modified                 (:inherit 'tabbar-modified))
      (tabbar-selected                            (:inherit 'tabbar-default :foreground gruvbox-bright_yellow))
      (tabbar-selected-modified                   (:inherit 'tabbar-selected))
+
+     ;; wgrep
+     (wgrep-delete-face                          (:strike-through gruvbox-bright_red))
+     (wgrep-done-face                            (:foreground gruvbox-turquoise4))
+     (wgrep-face                                 (:underline (:color gruvbox-bright_yellow :style 'line)))
+     (wgrep-file-face                            (:inherit 'highlight))
+     (wgrep-reject-face                          (:foreground gruvbox-bright_red :bold t))
 
      ;; hydra
      (hydra-face-red (:foreground gruvbox-bright_red :weight 'bold))

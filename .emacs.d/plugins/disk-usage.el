@@ -5,7 +5,7 @@
 ;; Author: Pierre Neidhardt <mail@ambrevar.xyz>
 ;; Maintainer: Pierre Neidhardt <mail@ambrevar.xyz>
 ;; URL: https://gitlab.com/Ambrevar/emacs-disk-usage
-;; Version: 1.2.0
+;; Version: 1.3.1
 ;; Package-Requires: ((emacs "26.1"))
 ;; Keywords: files, convenience, tools
 
@@ -263,7 +263,7 @@ See `disk-usage-add-filters' and `disk-usage-remove-filters'.")
                      (and (file-accessible-directory-p directory)
                           (directory-files-and-attributes
                            directory
-                           'full nil 'nosort)))))
+                           'full directory-files-no-dot-files-regexp 'nosort)))))
     (or (cl-loop for l in listing
                  for attributes = (cl-rest l)
                  for path = (cl-first l)
@@ -280,9 +280,7 @@ See `disk-usage-add-filters' and `disk-usage-remove-filters'.")
                           :name path
                           :size (file-attribute-size attributes))
                  ;; Folders
-                 else if (and (eq t (file-attribute-type attributes))
-                              (not (string= "." (file-name-base path)))
-                              (not (string= ".." (file-name-base path))))
+                 else if (eq t (file-attribute-type attributes))
                  collect
                  (disk-usage--file-info-make
                   :name path
@@ -299,15 +297,21 @@ $ find . -type f -exec du -sb {} +"
   (let* ((default-directory directory)
          ;; Note: Cannot use `process-lines' if we want to work on remote hosts.
          (subdirs (split-string
-                        (with-temp-buffer
-                          (process-file disk-usage-find-command nil '(t nil) nil
-                                        (file-local-name directory)
-                                        "-type" "d")
-                          (buffer-string))
-                        "\n" 'omit-nulls)))
-    (cl-loop for dir in subdirs
-             append (cl-loop for file in (directory-files-and-attributes dir 'full nil 'nosort)
-                             for name = (concat (file-remote-p directory) (car file))
+                   (with-temp-buffer
+                     (process-file disk-usage-find-command nil '(t nil) nil
+                                   (file-local-name directory)
+                                   "-type" "d")
+                     (buffer-string))
+                   "\n" 'omit-nulls))
+         (remote-subdirs (mapcar (lambda (item)
+                                   (concat (file-remote-p directory) item))
+                                 subdirs)))
+    (cl-loop for dir in remote-subdirs
+             append (cl-loop for file in (directory-files-and-attributes dir
+                                                                         'full
+                                                                         directory-files-no-dot-files-regexp
+                                                                         'nosort)
+                             for name = (car file)
                              for attributes = (cdr file)
                              when (and attributes
                                        (not (file-attribute-type attributes))
@@ -322,6 +326,7 @@ $ find . -type f -exec du -sb {} +"
 It takes the directory to scan as argument."
   :type '(choice (function :tag "Hierarchical" disk-usage--list)
                  (function :tag "Flat (recursive)" disk-usage--list-recursively)))
+(make-variable-buffer-local 'disk-usage-list-function)
 
 (defun disk-usage-toggle-recursive ()
   "Toggle between hierarchical and flat view."
@@ -355,15 +360,16 @@ This is slow but does not require any external process."
 
 (defun disk-usage-directory-size-with-du (path)
   "See `disk-usage-directory-size-function'."
-  (string-to-number
-   (cl-first
-    (split-string
-     (with-temp-buffer
-       (with-output-to-string
-         (process-file disk-usage-du-command
-                       nil '(t nil) nil
-                       disk-usage-du-args (file-local-name path)))
-       (buffer-string))))))
+  (or (ignore-errors (string-to-number
+                      (cl-first
+                       (split-string
+                        (with-temp-buffer
+                          (with-output-to-string
+                            (process-file disk-usage-du-command
+                                          nil '(t nil) nil
+                                          disk-usage-du-args (file-local-name path)))
+                          (buffer-string))))))
+      0))
 (defalias 'disk-usage--directory-size-with-du 'disk-usage-directory-size-with-du)
 
 (defun disk-usage--sort-by-size (a b)
@@ -533,7 +539,7 @@ Also see `disk-usage-by-types-mode'."
 (defun disk-usage (&optional directory)
   "Display listing of files in DIRECTORY with their size.
 If DIRECTORY is nil, use current directory."
-  (interactive "D")
+  (interactive "DDirectory name: ")
   (unless (and (stringp directory) (file-accessible-directory-p directory))
     (error "Directory cannot be opened: %S" directory))
   (unless disk-usage--cache
@@ -555,13 +561,18 @@ If DIRECTORY is nil, use current directory."
   (interactive)
   (disk-usage default-directory))
 
-(defun disk-usage-up (&optional discard-previous-buffer)
+(defun disk-usage-up (&optional toggle-discard-previous-buffer)
   "Run `disk-usage' in the parent directory.
-With DISCARD-PREVIOUS-BUFFER or prefix argument, current buffer
-is deleted before switching."
+If `disk-usage-discard-previous-buffer' is non-nil,
+the current buffer is discarded before switched.
+With TOGGLE-DISCARD-PREVIOUS-BUFFER or prefix argument, this behaviour is
+reversed."
   (interactive "p")
   (let ((directory default-directory))
-    (when (and (or discard-previous-buffer disk-usage-discard-previous-buffer)
+    (when (and (or (and (not toggle-discard-previous-buffer)
+                        disk-usage-discard-previous-buffer)
+                   (and toggle-discard-previous-buffer
+                        (not disk-usage-discard-previous-buffer)))
                (eq major-mode 'disk-usage-mode))
       (kill-this-buffer))
     (disk-usage (expand-file-name ".." directory))))
@@ -621,8 +632,13 @@ non-nil or with prefix argument."
                                                     "Delete" "Trash")))
     (cl-loop for entry in tabulated-list-entries
              if (disk-usage--file-info-marked (car entry))
-             do (let ((delete-by-moving-to-trash (not permanently)))
-                  (delete-file (disk-usage--file-info-name (car entry)))))
+             do (let ((delete-by-moving-to-trash (not permanently))
+                      (file (disk-usage--file-info-name (car entry))))
+                  (if (file-directory-p file)
+                      (delete-directory file
+                                        'recursive
+                                        delete-by-moving-to-trash)
+                    (delete-file file delete-by-moving-to-trash))))
     (tabulated-list-revert)))
 
 (defun disk-usage-find-file-at-point ()
@@ -754,7 +770,7 @@ Also see `disk-usage-mode'."
 
 ;;;###autoload
 (defun disk-usage-by-types (&optional directory)
-  (interactive "D")
+  (interactive "DDirectory name: ")
   (setq directory (file-truename (or (and (file-directory-p directory)
                                           directory)
                                      default-directory)))

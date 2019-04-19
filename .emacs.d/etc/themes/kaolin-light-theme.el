@@ -13,10 +13,12 @@
   :type 'boolean
   :group 'kaolin-light)
 
-(define-kaolin-theme light  "Light Kaolin theme variant."
+(define-kaolin-theme light
+  "Light Kaolin theme variant."
 
   ;; Palette modification
   (
+
    ;; Colors
    (spring-green6 "#3e594e")
    (aquamarine4   "#518270")
@@ -32,6 +34,7 @@
    (azure4        "#4C7A90")
    ;; TODO: less contrast
    (ultramarine1  "#6D46E3")
+   (orange1 "#DBA451")
 
    ;; Color vars
    (bg0 "#f5f6f5")
@@ -63,7 +66,7 @@
    (bool        num)
    (prep        ultramarine1)
    (warning     orange1)
-   (err         crimson0)
+   (err         crimson3)
 
    (dim-buffer white0)
    ;; TODO:
@@ -74,7 +77,7 @@
    (selection  azure9)
    (pulse      teal8)
 
-   (done aquamarine1)
+   (done erin2)
    (todo crimson0)
 
    (tooltip-hl-bg bg3)
@@ -113,9 +116,9 @@
 
    (ivy1          gray9)
    ;; TODO:
-   (ivy2          capri1)
-   (ivy3          orange0)
-   (ivy4          red4))
+   (search1          capri1)
+   (search2          orange0)
+   (search3          red4))
 
   ((link                    (:foreground prep :underline underline))
 
@@ -127,7 +130,7 @@
    (org-level-3             (:foreground vermilion4 :bold nil))
    (org-level-4             (:foreground cerise4 :bold nil))
    (org-code                (:foreground teal1))
-   (org-date                (:foreground vermilion4))
+   (org-date                (:foreground vermilion3))
    (org-verbatim            (:foreground orange2))
 
    (js2-object-property     (:foreground brown1))
@@ -136,6 +139,7 @@
   (when kaolin-themes-git-gutter-solid
     (custom-theme-set-faces
      'kaolin-light
+     `(show-paren-match     ((t (:background nil :foreground ,red0 :bold bold))))
      `(git-gutter:added     ((t (:background ,diff-add :foreground ,diff-add))))
      `(git-gutter:modified  ((t (:background ,diff-mod :foreground ,diff-mod))))
      `(git-gutter:deleted   ((t (:background ,diff-rem :foreground ,diff-rem)))))))

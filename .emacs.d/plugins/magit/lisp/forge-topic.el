@@ -147,17 +147,17 @@ The following %-sequences are supported:
 (cl-defmethod forge-get-topic ((topic forge-topic))
   topic)
 
-(cl-defmethod forge-list-recent-topics ((repo forge-repository) table)
+(cl-defmethod forge-ls-recent-topics ((repo forge-repository) table)
   (let* ((id (oref repo id))
          (limit forge-topic-list-limit)
          (open-limit   (if (consp limit) (car limit) limit))
          (closed-limit (if (consp limit) (cdr limit) limit))
-         (issues (forge-sql [:select * :from $s1
+         (topics (forge-sql [:select * :from $s1
                              :where (and (= repository $s2)
                                          (notnull unread-p))]
                             table id)))
     (mapc (lambda (row)
-            (cl-pushnew row issues :test #'equal))
+            (cl-pushnew row topics :test #'equal))
           (if (consp limit)
               (forge-sql [:select * :from $s1
                           :where (and (= repository $s2)
@@ -171,18 +171,19 @@ The following %-sequences are supported:
                        table id)))
     (unless (zerop closed-limit)
       (mapc (lambda (row)
-              (cl-pushnew row issues :test #'equal))
+              (cl-pushnew row topics :test #'equal))
             (forge-sql [:select * :from $s1
                         :where (and (= repository $s2)
                                     (notnull closed))
                         :order-by [(desc updated)]
                         :limit $s3]
                        table id closed-limit)))
-    (cl-sort (mapcar (lambda (row)
-                       (closql--remake-instance
-                        (if (eq table 'pullreq) 'forge-pullreq 'forge-issue)
-                        (forge-db) row))
-                     issues)
+    (cl-sort (mapcar (let ((class (if (eq table 'pullreq)
+                                      'forge-pullreq
+                                    'forge-issue)))
+                       (lambda (row)
+                         (closql--remake-instance class (forge-db) row)))
+                     topics)
              (cdr forge-topic-list-order)
              :key (lambda (it) (eieio-oref it (car forge-topic-list-order))))))
 
@@ -338,7 +339,8 @@ identifier."
                                     'magit-diff-hunk-heading t heading)
             (magit-insert-heading heading))
           (insert (forge--fontify-markdown body) "\n\n"))))
-    (when (fboundp 'markdown-display-inline-images)
+    (when (and (display-images-p)
+               (fboundp 'markdown-display-inline-images))
       (let ((markdown-display-remote-images t))
         (markdown-display-inline-images)))))
 
@@ -421,14 +423,6 @@ identifier."
 
 (cl-defmethod forge--topic-type-prefix ((_repo forge-repository) _type)
   "#")
-
-(defun forge--topic-buffer-lock-value (args)
-  (and (derived-mode-p 'forge-topic-mode)
-       (let ((topic (car args)))
-         (concat (forge--topic-type-prefix topic)
-                 (number-to-string (oref topic number))))))
-
-(add-hook 'magit-buffer-lock-functions 'forge--topic-buffer-lock-value)
 
 ;;; Completion
 
@@ -623,24 +617,28 @@ alist, containing just `text' and `position'.")
   "Apply bug reference overlays to region."
   (save-excursion
     (let ((beg-line (progn (goto-char start) (line-beginning-position)))
-	  (end-line (progn (goto-char end) (line-end-position))))
+          (end-line (progn (goto-char end) (line-end-position))))
       ;; Remove old overlays.
       (bug-reference-unfontify beg-line end-line)
       (goto-char beg-line)
       (while (and (< (point) end-line)
-		  (re-search-forward bug-reference-bug-regexp end-line 'move))
-	(when (and (or (not bug-reference-prog-mode)
-		       ;; This tests for both comment and string syntax.
-		       (nth 8 (syntax-ppss)))
+                  (re-search-forward bug-reference-bug-regexp end-line 'move))
+        (when (and (or (not bug-reference-prog-mode)
+                       ;; This tests for both comment and string syntax.
+                       (nth 8 (syntax-ppss)))
+                   ;; This is the part where this redefinition differs
+                   ;; from the original defined in "bug-reference.el".
                    (not (and (derived-mode-p 'magit-status-mode
                                              'forge-notifications-mode)
                              (= (match-beginning 0)
-                                (line-beginning-position)))))
-	  (let ((overlay (make-overlay (match-beginning 0) (match-end 0)
-	                               nil t nil)))
-	    (overlay-put overlay 'category 'bug-reference)
-	    ;; Don't put a link if format is undefined
-	    (when bug-reference-url-format
+                                (line-beginning-position))))
+                   ;; End of additions.
+                   )
+          (let ((overlay (make-overlay (match-beginning 0) (match-end 0)
+                                       nil t nil)))
+            (overlay-put overlay 'category 'bug-reference)
+            ;; Don't put a link if format is undefined
+            (when bug-reference-url-format
               (overlay-put overlay 'bug-reference-url
                            (if (stringp bug-reference-url-format)
                                (format bug-reference-url-format

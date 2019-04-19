@@ -4,13 +4,13 @@
 ;; Description: Frame and window commands (interactive functions).
 ;; Author: Drew Adams
 ;; Maintainer: Drew Adams (concat "drew.adams" "@" "oracle" ".com")
-;; Copyright (C) 1996-2018, Drew Adams, all rights reserved.
+;; Copyright (C) 1996-2019, Drew Adams, all rights reserved.
 ;; Created: Tue Mar  5 16:30:45 1996
 ;; Version: 0
 ;; Package-Requires: ((frame-fns "0"))
-;; Last-Updated: Sat Sep 22 16:15:43 2018 (-0700)
+;; Last-Updated: Mon Mar 18 19:49:52 2019 (-0700)
 ;;           By: dradams
-;;     Update #: 3138
+;;     Update #: 3172
 ;; URL: https://www.emacswiki.org/emacs/download/frame-cmds.el
 ;; Doc URL: https://emacswiki.org/emacs/FrameModes
 ;; Doc URL: https://www.emacswiki.org/emacs/OneOnOneEmacs
@@ -20,7 +20,8 @@
 ;;
 ;; Features that might be required by this library:
 ;;
-;;   `avoid', `frame-fns', `misc-fns', `strings', `thingatpt',
+;;   `avoid', `backquote', `bytecomp', `cconv', `cl-lib',
+;;   `frame-fns', `macroexp', `misc-fns', `strings', `thingatpt',
 ;;   `thingatpt+'.
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -68,7 +69,7 @@
 ;;    kinds of frames.  These include: `default-frame-alist',
 ;;    `initial-frame-alist', and `special-display-frame-alist'.  The
 ;;    complete list of such frame alist variables is available using
-;;    function `frame-alist-var-names', defined here.
+;;    function `frcmds-frame-alist-var-names', defined here.
 ;;
 ;;    Example: Suppose you change the background color of a frame and
 ;;    want to make that the default background color for new frames in
@@ -91,8 +92,9 @@
 ;;
 ;;  User options defined here:
 ;;
-;;    `available-screen-pixel-bounds', `enlarge-font-tries',
-;;    `frame-config-register', `frame-parameters-to-exclude',
+;;    `available-screen-pixel-bounds', `clone-frame-parameters',
+;;    `enlarge-font-tries', `frame-config-register',
+;;    `frame-parameters-to-exclude',
 ;;    `move-frame-wrap-within-display-flag'
 ;;    `rename-frame-when-iconify-flag', `show-hide-show-function',
 ;;    `window-mgr-title-bar-pixel-height'.
@@ -282,6 +284,14 @@
 ;;
 ;;; Change Log:
 ;;
+;; 2019/03/18 dadams
+;;     clone-frame: Use frame-geom-value-numeric.
+;; 2019/03/03 dadams
+;;     Added: clone-frame-parameters.
+;;     clone-frame: Always select new frame.  Augment current params with clone-frame-parameters.
+;; 2019/03/02 dadama
+;;     clone-frame: Bind fit-frame-inhibit-fitting-flag to preserve current frame dimensions.
+;;                  Return the new frame.
 ;; 2018/09/22 dadams
 ;;     Moved to mouse+.el: tear-off-window(-if-not-alone).
 ;; 2018/09/21 dadams
@@ -634,6 +644,22 @@ Don't forget to mention your Emacs and library versions."))
           "https://www.emacswiki.org/emacs/FrameModes")
   :link '(emacs-commentary-link :tag "Commentary" "frame-cmds"))
 
+(defcustom clone-frame-parameters (cons 30 30)
+  "Frame parameter settings that override those of the frame to clone.
+The value can be an alist of frame parameters or a cons of two
+integers, (LEFT-OFFSET . TOP-OFFSET).
+
+The latter case sets parameters `left' and `top' of the new frame to
+the `left' and `top' of the selected frame, offset by adding
+LEFT-OFFSET and TOP-OFFSET to them, respectively."
+  :type '(choice
+          (cons :tag "Offset from current frame location"
+                (integer :tag "Left")
+                (integer :tag "Top"))
+          (alist :tag "Parameters to augment/replace those of current frame"
+                 :key-type (symbol :tag "Parameter")))
+  :group 'Frame-Commands)
+
 (defcustom rename-frame-when-iconify-flag t
   "*Non-nil means frames are renamed when iconified.
 The new name is the name of the current buffer."
@@ -848,7 +874,7 @@ With a prefix arg, prompt for a buffer and delete all windows, on any
 
 
 
-;; REPLACES ORIGINAL (built-in):
+;; REPLACES ORIGINAL in `window.el' (built-in prior to Emacs 24.5):
 ;;
 ;; 1) Use `read-buffer' in interactive spec.
 ;; 2) Do not raise an error if BUFFER is a string that does not name a buffer.
@@ -1030,8 +1056,9 @@ Interactively, FRAME is nil, and FRAME-P depends on the prefix arg:
 
 ;;;###autoload
 (defun clone-frame (&optional frame no-clone)
-  "Make a new frame with the same parameters as FRAME.
+  "Make and select a new frame with the same parameters as FRAME.
 With a prefix arg, don't clone - just call `make-frame-command'.
+Return the new frame.
 
 FRAME defaults to the selected frame.  The frame is created on the
 same terminal as FRAME.  If the terminal is a text-only terminal then
@@ -1039,10 +1066,22 @@ also select the new frame."
   (interactive "i\nP")
   (if no-clone
       (make-frame-command)
-    (let* ((default-frame-alist  (frame-parameters frame))
-           (new-fr  (make-frame)))
-      (unless (if (fboundp 'display-graphic-p) (display-graphic-p) window-system)
-        (select-frame new-fr)))))
+    (let* ((fit-frame-inhibit-fitting-flag  t)
+           (clone-frame-parameters          (if (and clone-frame-parameters
+                                                     (not (consp (car clone-frame-parameters))))
+                                                `((left . ,(+ (car clone-frame-parameters)
+                                                              (or (frame-geom-value-numeric
+                                                                   'left (frame-parameter frame 'left))
+                                                                  0)))
+                                                  (top  . ,(+ (cdr clone-frame-parameters)
+                                                              (or (frame-geom-value-numeric
+                                                                   'top (frame-parameter frame 'top))
+                                                                  0))))
+                                              clone-frame-parameters))
+           (default-frame-alist             (append clone-frame-parameters (frame-parameters frame)))
+           (new-fr                          (make-frame)))
+      (select-frame new-fr)
+      new-fr)))
 
 ;;;###autoload
 (defun rename-frame (&optional old-name new-name all-named)
@@ -1260,17 +1299,21 @@ In Lisp code:
          (top    . ,new-top)
          (height . ,new-height)
          ;; If we actually changed a parameter, record the old one for restoration.
-         ,(and new-left    (/= (frame-geom-value-numeric 'left orig-left)
-                               (frame-geom-value-numeric 'left new-left))
+         ,(and new-left
+               (/= (frame-geom-value-numeric 'left orig-left)
+                   (frame-geom-value-numeric 'left new-left))
                (cons 'restore-left   orig-left))
-         ,(and new-top     (/= (frame-geom-value-numeric 'top orig-top)
-                               (frame-geom-value-numeric 'top new-top))
+         ,(and new-top
+               (/= (frame-geom-value-numeric 'top orig-top)
+                   (frame-geom-value-numeric 'top new-top))
                (cons 'restore-top    orig-top))
-         ,(and new-width   (/= (frame-geom-value-numeric 'width orig-width)
-                               (frame-geom-value-numeric 'width new-width))
+         ,(and new-width
+               (/= (frame-geom-value-numeric 'width orig-width)
+                   (frame-geom-value-numeric 'width new-width))
                (cons 'restore-width  orig-width))
-         ,(and new-height  (/= (frame-geom-value-numeric 'height orig-height)
-                               (frame-geom-value-numeric 'height new-height))
+         ,(and new-height
+               (/= (frame-geom-value-numeric 'height orig-height)
+                   (frame-geom-value-numeric 'height new-height))
                (cons 'restore-height orig-height)))))
     (show-frame frame)
     (incf fr-origin (if (eq direction 'horizontal) fr-pixel-width fr-pixel-height))))
@@ -1969,9 +2012,9 @@ The CAR of each list item is a string variable name.
 The CDR is nil."
   (let ((vars  ()))
     (mapatoms (lambda (sym) (and (boundp sym)
-                                 (setq sym  (symbol-name sym))
-                                 (string-match "frame-alist$" sym)
-                                 (push (list sym) vars))))
+                            (setq sym  (symbol-name sym))
+                            (string-match "frame-alist$" sym)
+                            (push (list sym) vars))))
     vars))
 
 (defun frcmds-frame-parameter-names ()

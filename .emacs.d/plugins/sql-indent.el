@@ -84,7 +84,7 @@ constituents so that syntactic navigation works over them.")
 (defconst sqlind-comment-start-skip "\\(--+\\|/\\*+\\)\\s *"
   "Regexp to match the start of a SQL comment.")
 
-(defconst sqlind-comment-end "\\*+\\/"
+(defconst sqlind-comment-end "\\*+/"
   "Regexp to match the end of a multiline SQL comment.")
 
 (defvar sqlind-comment-prefix "\\*+\\s "
@@ -134,7 +134,7 @@ whitespace, or at the end of the buffer."
 (defun sqlind-search-backward (start regexp limit)
   "Search for REGEXP from START backward until LIMIT.
 Finds a match that is not inside a comment or string, moves point
-to the match and returns it. If no match is found, point is moved
+to the match and returns it.  If no match is found, point is moved
 to LIMIT and nil is returned."
   (goto-char start)
   (let ((done nil))
@@ -168,7 +168,7 @@ a string or comment."
     (let ((ppss-point (syntax-ppss point))
           (ppss-start (syntax-ppss start)))
       (and (equal (nth 3 ppss-point) (nth 3 ppss-start)) ; string
-           (equal (nth 4 ppss-start) (nth 4 ppss-start)) ; comment
+           (equal (nth 4 ppss-point) (nth 4 ppss-start)) ; comment
            (= (nth 0 ppss-point) (nth 0 ppss-start)))))) ; same nesting
 
 (defun sqlind-column-definition-start (pos limit)
@@ -309,7 +309,7 @@ But don't go before LIMIT."
     (catch 'done
       (while (> (point) (or limit (point-min)))
         (when (re-search-backward
-               ";\\|:=\\|\\_<\\(declare\\|begin\\|cursor\\|for\\|while\\|loop\\|if\\|then\\|else\\|elsif\\)\\_>\\|)"
+               ";\\|:=\\|\\_<\\(declare\\|begin\\|cursor\\|for\\|while\\|loop\\|if\\|then\\|else\\|elsif\\|elseif\\)\\_>\\|)"
                limit 'noerror)
           (unless (sqlind-in-comment-or-string (point))
             (let ((candidate-pos (match-end 0)))
@@ -321,6 +321,9 @@ But don't go before LIMIT."
                     ((looking-at "cursor\\|for\\|while")
                      ;; statement begins at the start of the keyword
                      (throw 'done (point)))
+                    ((looking-at "else?if")
+                     ;; statement begins at the start of the keyword
+                     (throw 'done (point)))
                     ((looking-at "then\\|else")
                      ;; then and else start statements when they are inside
                      ;; blocks, not expressions.
@@ -328,9 +331,6 @@ But don't go before LIMIT."
                      (when (looking-at ";")
                        ;; Statement begins after the keyword
                        (throw 'done candidate-pos)))
-                    ((looking-at "elsif")
-                     ;; statement begins at the start of the keyword
-                     (throw 'done (point)))
                     ((looking-at "if")
                      (when (sqlind-good-if-candidate)
                        ;; statement begins at the start of the keyword
@@ -479,7 +479,7 @@ See also `sqlind-beginning-of-block'"
            nil))))))
 
 (defun sqlind-good-if-candidate ()
-  "Return true if point is on an actual if statement.
+  "Return non-nil if point is on an actual if statement.
 We try to avoid false positives, like \"end if\" or the various
 \"drop STUFF if exists\" variants."
   (and (looking-at "if")
@@ -504,7 +504,7 @@ We try to avoid false positives, like \"end if\" or the various
                        "bad closing for if block" (point) pos))))))))
 
 (defun sqlind-maybe-case-statement ()
-  "If (point) is on a case statement"
+  "If (point) is on a case statement."
   (when (looking-at "case")
     (save-excursion
       (sqlind-backward-syntactic-ws)
@@ -803,6 +803,14 @@ See also `sqlind-beginning-of-block'"
 	      ;; not a procedure after all.
 	      (throw 'exit nil)))
 
+          ;; Find out if it is a drop procedure or function statement
+          (save-excursion
+            (sqlind-backward-syntactic-ws)
+            (forward-word -1)
+            (when (looking-at "drop")
+              ;; not a procedure after all
+              (throw 'exit nil)))
+
 	  ;; so it is a definition
 
 	  ;; if the procedure starts with "create or replace", move
@@ -878,7 +886,7 @@ See also `sqlind-beginning-of-block'"
 
 (defconst sqlind-start-block-regexp
   (concat "\\(\\_<"
-	  (regexp-opt '("if" "then" "else" "elsif" "loop"
+	  (regexp-opt '("if" "then" "else" "elsif" "elseif" "loop"
 			"begin" "declare" "create" "alter" "exception"
 			"procedure" "function" "end" "case") t)
 	  "\\_>\\)\\|)\\|\\$\\$")
@@ -1028,7 +1036,7 @@ reverse order (a stack) and is used to skip over nested blocks."
       ;; when we are not looking at a select component, find the
       ;; nearest one from us.
 
-      (while (re-search-backward sqlind-select-clauses-regexp start t)
+      (while (sqlind-search-backward (point) sqlind-select-clauses-regexp start)
 	(let* ((match-pos (match-beginning 0))
 	       (clause (sqlind-match-string 0)))
 	  (setq clause (replace-regexp-in-string "[ \t\r\n\f]" " " clause))
@@ -1302,7 +1310,7 @@ KIND is the symbol determining the type of the block ('if, 'loop,
 			  (list 'block-end start-kind start-label)))
 		   anchor))))
 
-	     ((memq block-kind '(else elsif))
+	     ((memq block-kind '(else elsif elseif))
 	      ;; search the enclosing then context and refine form there.  The
 	      ;; `cdr' in sqlind-syntax-of-line is used to remove the
 	      ;; block-start context for the else clause
@@ -1485,8 +1493,8 @@ not a statement-continuation POS is the same as the
     ;; create block start syntax if needed
 
     ((and (eq syntax-symbol 'in-block)
-          (memq (nth 1 syntax) '(if elsif then case))
-          (looking-at "\\(then\\|\\(els\\(e\\|if\\)\\)\\)\\_>"))
+          (memq (nth 1 syntax) '(if elsif elseif then case))
+          (looking-at "\\(then\\|\\(els\\(e\\|e?if\\)\\)\\)\\_>"))
      (let ((what (intern (sqlind-match-string 0))))
        ;; the only invalid combination is a then statement in
        ;; an (in-block "then") context
@@ -1656,16 +1664,16 @@ The following syntax symbols are defined for SQL code:
   are buffer locations denoting the problematic region.  ANCHOR
   is undefined for this syntax info
 
-- in-comment -- line is inside a multi line comment, ANCHOR is
+- `in-comment' -- line is inside a multi line comment, ANCHOR is
   the start of the comment.
 
-- comment-start -- line starts with a comment.  ANCHOR is the
+- `comment-start' -- line starts with a comment.  ANCHOR is the
   start of the enclosing block.
 
-- in-string -- line is inside a string, ANCHOR denotes the start
+- `in-string' -- line is inside a string, ANCHOR denotes the start
   of the string.
 
-- toplevel -- line is at toplevel (not inside any programming
+- `toplevel' -- line is at toplevel (not inside any programming
   construct).  ANCHOR is usually (point-min).
 
 - (in-block BLOCK-KIND LABEL) -- line is inside a block
@@ -1778,7 +1786,7 @@ clause (select, from, where, etc) in which the current point is.
   table was defined and a new one is about to start.
 
 - select-table-continuation -- line is inside the from clause,
-  inside a table definition which starts on a previous line. Note
+  inside a table definition which starts on a previous line.  Note
   that ANCHOR still points to the start of the select statement
   itself.
 
@@ -2265,7 +2273,7 @@ statement.  For example:
   )
 
 This function only makes sense in a
-'nested-statement-continuation sytnax indentation rule."
+'nested-statement-continuation SYTNAX indentation rule."
   (save-excursion
     (goto-char (sqlind-anchor-point syntax))
     (forward-char 1)

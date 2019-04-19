@@ -121,6 +121,11 @@ This only takes effect if on a local connection. (e.g. Not Tramp)"
   :type 'boolean
   :group 'dired-sidebar)
 
+(defcustom dired-sidebar-skip-subtree-parent t
+  "Whether to skip subtree parent directory when jumping up."
+  :type 'boolean
+  :group 'dired-sidebar)
+
 (defcustom dired-sidebar-pop-to-sidebar-on-toggle-open t
   "Whether to jump to sidebar upon toggling open.
 
@@ -500,19 +505,6 @@ Works around marker pointing to wrong buffer in Emacs 25."
        (advice-add x :around #'dired-sidebar-advice-hide-temporarily))
      dired-sidebar-toggle-hidden-commands))
 
-  (unless (file-remote-p default-directory)
-    (cond
-     ((dired-sidebar-using-tui-p)
-      (dired-sidebar-setup-tui))
-     ((and (eq dired-sidebar-theme 'icons)
-           (display-graphic-p)
-           (or
-            (fboundp 'all-the-icons-dired-mode)
-            (autoloadp (symbol-function 'all-the-icons-dired-mode))))
-      (with-no-warnings
-        (all-the-icons-dired-mode)))
-     (:default :no-theme)))
-
   (when dired-sidebar-use-custom-font
     (dired-sidebar-set-font))
 
@@ -532,7 +524,23 @@ Works around marker pointing to wrong buffer in Emacs 25."
   (dired-build-subdir-alist)
   (dired-unadvertise (dired-current-directory))
   (dired-sidebar-update-buffer-name)
-  (dired-sidebar-update-state (current-buffer)))
+  (dired-sidebar-update-state (current-buffer))
+
+  ;; Move setting theme until the end after `dired-sidebar' has set up
+  ;; its directory structure.
+  ;; https://github.com/jojojames/dired-sidebar/issues/29
+  (unless (file-remote-p default-directory)
+    (cond
+     ((dired-sidebar-using-tui-p)
+      (dired-sidebar-setup-tui))
+     ((and (eq dired-sidebar-theme 'icons)
+           (display-graphic-p)
+           (or
+            (fboundp 'all-the-icons-dired-mode)
+            (autoloadp (symbol-function 'all-the-icons-dired-mode))))
+      (with-no-warnings
+        (all-the-icons-dired-mode)))
+     (:default :no-theme))))
 
 ;; User Interface
 
@@ -723,7 +731,8 @@ Select alternate window using `dired-sidebar-alternate-select-window-function'."
    ;; If `dired-subtree' is used, `dired-current-directory' is redefined.
    ;; So move point to the top of the buffer to get the actual directory and
    ;; not the one at point.
-   (goto-char (point-min))
+   (when dired-sidebar-skip-subtree-parent
+     (goto-char (point-min)))
    (let* ((dir (dired-current-directory))
           (up (file-name-directory (directory-file-name dir)))
           (up-name (dired-sidebar-buffer-name up)))

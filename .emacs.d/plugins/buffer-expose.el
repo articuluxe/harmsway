@@ -4,7 +4,7 @@
 
 ;; Author: Clemens Radermacher <clemera@posteo.net>
 ;; URL: https://github.com/clemera/buffer-expose
-;; Version: 0.3
+;; Version: 0.4.1
 ;; Package-Requires: ((emacs "25") (cl-lib "0.5"))
 ;; Keywords: convenience
 
@@ -101,9 +101,13 @@ Should return the string to display.")
   '((t :inherit font-lock-warning-face))
   "Face for avy chars in modelines.")
 
-(defcustom buffer-expose-aw-keys '(?a ?s ?d ?f ?g ?h ?j ?k ?l ?\;)
+(defcustom buffer-expose-aw-keys '(?a ?d ?g ?h ?j ?l ?e ?i ?w ?o ?c ?m)
   "Keys for selecting windows with avy."
   :type '(repeat character))
+
+(defcustom buffer-expose-auto-init-aw nil
+  "Whether to start with ace-window activated."
+  :type 'boolean)
 
 (defun buffer-expose-choose-default-action (buf)
   "Restore inital window config and switch to choosen buffer BUF."
@@ -155,19 +159,36 @@ A value if 0 means no limit."
     (18 . (6 . 3))
     (16 . (4 . 4))
     (12 . (4 . 3))
-    (8 . (4 . 2))
-    (6 . (3 . 2))
-    (4 . (2 . 2))
-    (2 . (2 . 1))
-    (1 . (1 . 1)))
+    (11 . (4 . 3))
+    (10 . (4 . 3))
+    (9  . (4 . 3))
+    (8  . (4 . 2))
+    (7  . (4 . 2))
+    (6  . (3 . 2))
+    (5  . (3 . 2))
+    (4  . (2 . 2))
+    (3  . (2 . 2))
+    (2  . (2 . 1))
+    (1  . (1 . 1)))
   "Rules for the amount of windows and how to display them.
 
 The `car' contains the number of buffers to display and is mapped
 to a display rule. Each display rule is a cell (columns . rows)
 which defines the number of colums and the number of rows per
-page. See also `buffer-expose--get-rule'"
+page. If you always want the same grid layout set
+`buffer-expose-default-rule'. See also `buffer-expose--get-rule'
+for the algorithm for choosing the layout rule."
   :type '(alist :key-type integer
                 :value-type (cons interger interger)))
+
+(defcustom buffer-expose-default-rule nil
+  "Default rule for grid layout.
+
+The rule format is a cell of (columns . rows) which defines the
+number of colums and the number of rows per page. If set the grid
+will always use this layout regardless how many buffers are
+available for display."
+  :type '(cons integer integer))
 
 (defcustom buffer-expose-hide-modelines nil
   "Whether to hide modelines in the overview."
@@ -216,6 +237,8 @@ page. See also `buffer-expose--get-rule'"
     (define-key map (kbd "<") 'buffer-expose-first-window)
     (define-key map (kbd ">") 'buffer-expose-last-window)
     (define-key map (kbd "SPC") 'buffer-expose-ace-window)
+    (define-key map (kbd ",") 'buffer-expose-ace-window)
+    (define-key map (kbd "TAB") 'buffer-expose-next-window)
     (define-key map (kbd "<tab>") 'buffer-expose-next-window)
     (define-key map (kbd "<S-iso-lefttab>") 'buffer-expose-prev-window)
     (define-key map (kbd "]") 'buffer-expose-next-page)
@@ -362,18 +385,21 @@ The rule is choosen based on NUM number of buffers and MAX amount
 of windows per page (see `buffer-expose-grid-alist'). If MAX is
 nil it defaults to `buffer-expose-max-num-windows'. If there are
 less buffers available than windows the first rule which
-corresponds to the number of buffers is choosen."
-  (let ((nums (mapcar 'car buffer-expose-grid-alist)))
-    (while (and nums
-                ;; fewer buffers than rule
-                (or (< num (car nums))
-                    ;; qrule exceeds limit
-                    (> (car nums) (or max
-                                      buffer-expose-max-num-windows))))
-      (pop nums))
-    (when nums
-      (cdr (assq (car nums)
-                 buffer-expose-grid-alist)))))
+corresponds to the number of buffers in
+`buffer-expose-grid-alist' is choosen. This can be overidden by
+`buffer-expose-default-rule'."
+  (or buffer-expose-default-rule
+      (let ((nums (mapcar 'car buffer-expose-grid-alist)))
+        (while (and nums
+                    ;; fewer buffers than rule
+                    (or (< num (car nums))
+                        ;; qrule exceeds limit
+                        (> (car nums) (or max
+                                          buffer-expose-max-num-windows))))
+          (pop nums))
+        (when nums
+          (cdr (assq (car nums)
+                     buffer-expose-grid-alist))))))
 
 (defun buffer-expose--get-major-modes ()
   "Get a list of available major modes."
@@ -463,7 +489,8 @@ NAME defaults to `buffer-expose--empty-buffer-name'."
                                        (buffer-expose--ace-p
                                         (:propertize
                                          (:eval (window-parameter (selected-window) 'ace-window-path))
-                                         face buffer-expose-ace-char-face))
+                                         face buffer-expose-ace-char-face)
+                                        " ")
                                        " "
                                        (:propertize (:eval (funcall buffer-expose-mode-line-title-func))
                                                     face buffer-expose-mode-line-face))))
@@ -541,14 +568,17 @@ which should be included."
   (buffer-expose--init-map)
 
   ;; some buffers (dired and maybe more) need this to display correctly
-  (dolist (w (window-list nil 'nomini))
-    (with-current-buffer (window-buffer w)
-      (redisplay)))
 
-    ;; setup new window-switch behaviour
+
+  ;; setup new window-switch behaviour
   (buffer-expose--select-window (frame-first-window))
   ;; initil message how to use
-  (message buffer-expose-key-hint))
+  (message buffer-expose-key-hint)
+  (when buffer-expose-auto-init-aw
+    (buffer-expose-ace-window))
+  (dolist (w (window-list nil 'nomini))
+    (with-current-buffer (window-buffer w)
+      (redisplay))))
 
 (defvar buffer-expose-fringe nil)
 
@@ -562,16 +592,18 @@ which should be included."
     (push (cons var (symbol-value var))
           buffer-expose--reset-variables))
 
-  (let ((p (frame-parameters)))
-    (setq buffer-expose-fringe (list fringe-mode
-                              (assq 'left-fringe p)
-                              (assq 'right-fringe p))))
+  (when (boundp 'fringe-mode)
+    (let ((p (frame-parameters)))
+      (setq buffer-expose-fringe (list fringe-mode
+                                       (assq 'left-fringe p)
+                                       (assq 'right-fringe p)))))
 
   ;; minor modes
   (dolist (mode '(scroll-bar-mode window-divider-mode))
-    (if (symbol-value mode)
-        (push mode buffer-expose--reactivate-modes)
-      (push mode buffer-expose--redisable-modes)))
+    (when (boundp mode)
+      (if (symbol-value mode)
+          (push mode buffer-expose--reactivate-modes)
+        (push mode buffer-expose--redisable-modes))))
 
   (setq mouse-autoselect-window nil
         mouse-1-click-follows-link nil)
@@ -579,8 +611,10 @@ which should be included."
   (when buffer-expose-hide-cursor-in-other-windows
     (setq cursor-in-non-selected-windows nil))
 
-  (fringe-mode -1)
-  (scroll-bar-mode -1)
+  (when (fboundp 'fringe-mode)
+    (fringe-mode -1))
+  (when (fboundp 'scroll-bar-mode)
+    (scroll-bar-mode -1))
   (let ((window-divider-default-places t))
     (window-divider-mode 1)))
 
@@ -650,9 +684,10 @@ MAX is the maximum of windows to display per page."
 
 (defun buffer-expose--reset-modes ()
   "Reset modes."
-  (setq fringe-mode (pop buffer-expose-fringe))
-  (modify-frame-parameters
-   nil  buffer-expose-fringe)
+  (when (boundp 'fringe-mode)
+    (setq fringe-mode (pop buffer-expose-fringe))
+    (modify-frame-parameters
+     nil  buffer-expose-fringe))
 
   (dolist (mode buffer-expose--reactivate-modes)
     (funcall mode 1))
@@ -968,6 +1003,24 @@ F defaults to the currently selected window."
   (funcall #'aw-switch-to-window w)
   (buffer-expose-choose))
 
+(defun buffer-expose-ace-handler (char)
+  "Execute buffer-expose action for CHAR."
+  (cond ((memq char '(27 ?\C-g ?,))
+         ;; exit silently
+         (throw 'done 'exit))
+        ((mouse-event-p char)
+         (signal 'user-error (list "Mouse event not handled" char)))
+        (t
+         (require 'edmacro)
+         (let* ((key (kbd (edmacro-format-keys (vector char))))
+                (cmd (or (lookup-key buffer-expose-exit-map key)
+                         (lookup-key buffer-expose-grid-map key))))
+           (if cmd
+               (progn (call-interactively cmd)
+                      (throw 'done 'exit))
+             (message "No such candidate: %s, hit `C-g' to quit."
+                      (if (characterp char) (string char) char)))))))
+
 (defun buffer-expose-ace-window ()
   "Choose a window with ‘ace-window’."
   (interactive)
@@ -978,7 +1031,7 @@ F defaults to the currently selected window."
            (aw-background nil)
            (aw-ignored-buffers nil)
            (avy-dispatch-alist nil)
-           (aw-dispatch-function #'avy-handler-default)
+           (aw-dispatch-function #'buffer-expose-ace-handler)
            (foreground (face-attribute 'aw-leading-char-face :foreground)))
       (cl-letf (((symbol-function #'aw--lead-overlay)
                  #'ignore))
@@ -1003,12 +1056,16 @@ F defaults to the currently selected window."
   (if buffer-expose--prev-stack
       (progn (buffer-expose--restore-windows
               (pop buffer-expose--prev-stack))
-             (buffer-expose--select-window (frame-first-window)))
+             (buffer-expose--select-window (frame-first-window))
+             (when buffer-expose-auto-init-aw
+               (buffer-expose-ace-window)))
     (if buffer-expose--buffer-list
         (progn
           (buffer-expose-fill-grid)
           ;; update the new window for highlighting
-          (buffer-expose--select-window (frame-first-window)))
+          (buffer-expose--select-window (frame-first-window))
+          (when buffer-expose-auto-init-aw
+            (buffer-expose-ace-window)))
       (error "No next view available"))))
 
 (defun buffer-expose-prev-page ()
@@ -1020,7 +1077,9 @@ F defaults to the currently selected window."
               buffer-expose--prev-stack)
         (buffer-expose--restore-windows (pop buffer-expose--next-stack))
         ;; for consistency with next-page make sure it behaves the same
-        (buffer-expose--select-window (frame-first-window)))
+        (buffer-expose--select-window (frame-first-window))
+        (when buffer-expose-auto-init-aw
+          (buffer-expose-ace-window)))
     (error "No previous view available")))
 
 (defun buffer-expose-kill-buffer ()

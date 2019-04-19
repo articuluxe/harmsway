@@ -214,6 +214,25 @@ or most optimal searcher."
   :group 'dumb-jump
   :type 'boolean)
 
+(defcustom dumb-jump-git-grep-search-args
+  ""
+  "Appends the passed arguments to the git-grep search function. Default: \"\""
+  :group 'dumb-jump
+  :type 'string)
+
+(defcustom dumb-jump-ag-search-args
+  ""
+  "Appends the passed arguments to the ag search function. Default: \"\""
+  :group 'dumb-jump
+  :type 'string)
+
+(defcustom dumb-jump-rg-search-args
+  "--pcre2"
+  "Appends the passed arguments to the rg search function. Default: \"--pcre2\""
+  :group 'dumb-jump
+  :type 'string)
+
+
 (defcustom dumb-jump-find-rules
   '((:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "elisp"
            :regex "\\\((defun|cl-defun)\\s+JJJ\\j"
@@ -558,7 +577,7 @@ or most optimal searcher."
            :regex "(^|\\W)alias(_method)?\\W+JJJ(\\W|$)"
            :tests ("alias test some_method"
                    "alias_method :test, :some_method"
-                   "alias_method ’test’ ’some_method’"
+                   "alias_method 'test' 'some_method'"
                    "some_class.send(:alias_method, :test, :some_method)")
            :not ("alias some_method test"
                  "alias_method :some_method, :test"
@@ -694,6 +713,15 @@ or most optimal searcher."
     (:type "class" :supports ("ag" "grep" "rg" "git-grep") :language "php"
            :regex "class\\s*JJJ\\s*(extends|implements|\\\{)"
            :tests ("class test{" "class test {" "class test extends foo" "class test implements foo"))
+
+    ;; dart
+    (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "dart"
+           :regex "\\bJJJ\\s*\\([^()]*\\)\\s*[{]"
+           :tests ("test(foo) {" "test (foo){" "test(foo){"))
+
+    (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "dart"
+           :regex "class\\s*JJJ\\s*[\\\(\\\{]"
+           :tests ("class test(object) {" "class test{"))
 
     ;; faust
     (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "faust"
@@ -1154,7 +1182,7 @@ or most optimal searcher."
     (:type "type" :supports ("ag" "grep" "rg" "git-grep") :language "systemverilog"
            :regex "\\s*class\\s+\\bJJJ\\b"
            :tests ("virtual class test;" "class test;" "class test extends some_class")
-           :not ("virtual class testing;" "class test2;"))
+           :not ("virtual class testing;" "class test2;" "class some_test" "class some_class extends test"))
 
     (:type "type" :supports ("ag" "grep" "rg" "git-grep") :language "systemverilog"
            :regex "\\s*task\\s+\\bJJJ\\b"
@@ -1170,6 +1198,12 @@ or most optimal searcher."
            :regex "function\\s[^\\s]+\\s*\\bJJJ\\b"
            :tests ("function Matrix test ;" "function Matrix test;")
            :not ("function test blah"))
+
+        ;; matches SV class handle declarations
+    (:type "function" :supports ("ag" "rg" "git-grep") :language "systemverilog"
+           :regex "^\\s*[^\\s]*\\s*[^\\s]+\\s+\\bJJJ\\b"
+           :tests ("some_class_name test" "  another_class_name  test ;" "some_class test[];" "some_class #(1) test")
+           :not ("test some_class_name" "class some_class extends test"))
 
     ;; vhdl
     (:type "type" :supports ("ag" "grep" "rg" "git-grep") :language "vhdl"
@@ -1311,6 +1345,7 @@ or most optimal searcher."
     (:language "javascript" :ext "vue" :agtype "js" :rgtype "js")
     (:language "javascript" :ext "html" :agtype "html" :rgtype "html")
     (:language "javascript" :ext "css" :agtype "css" :rgtype "css")
+    (:language "dart" :ext "dart" :agtype nil :rgtype "dart")
     (:language "lua" :ext "lua" :agtype "lua" :rgtype "lua")
     (:language "nim" :ext "nim" :agtype "nim" :rgtype "nim")
     (:language "nix" :ext "nix" :agtype "nix" :rgtype "nix")
@@ -1952,6 +1987,7 @@ current file."
     (:comment ";" :language "elisp")
     (:comment ";" :language "commonlisp")
     (:comment "//" :language "javascript")
+    (:comment "//" :language "dart")
     (:comment "--" :language "haskell")
     (:comment "--" :language "lua")
     (:comment "//" :language "rust")
@@ -2453,6 +2489,8 @@ searcher symbol."
                       (if (s-ends-with? ".gz" cur-file)
                           " --search-zip"
                         "")
+                      (when (not (s-blank? dumb-jump-ag-search-args))
+                        (concat " " dumb-jump-ag-search-args))
                       (s-join "" (--map (format " --%s" it) agtypes))))
          (exclude-args (dumb-jump-arg-joiner
                         "--ignore-dir" (--map (shell-quote-argument (s-replace proj-dir "" it)) exclude-paths)))
@@ -2506,7 +2544,9 @@ Using ag to search only the files found via git-grep literal symbol search."
          (rgtypes (dumb-jump-get-rg-type-by-language lang))
          (proj-dir (file-name-as-directory proj))
          (cmd (concat dumb-jump-rg-cmd
-                      " --color never --no-heading --line-number -U --pcre2"
+                      " --color never --no-heading --line-number -U"
+                      (when (not (s-blank? dumb-jump-rg-search-args))
+                        (concat " " dumb-jump-rg-search-args))
                       (s-join "" (--map (format " --type %s" it) rgtypes))))
          (exclude-args (dumb-jump-arg-joiner
                         "-g" (--map (shell-quote-argument (concat "!" (s-replace proj-dir "" it))) exclude-paths)))
@@ -2521,9 +2561,10 @@ Using ag to search only the files found via git-grep literal symbol search."
          (ggtypes (when (f-ext cur-file) (dumb-jump-get-git-grep-type-by-language lang)))
          (cmd (concat dumb-jump-git-grep-cmd
                       " --color=never --line-number"
-                      (if dumb-jump-git-grep-search-untracked
-                          " --untracked"
-                        "")
+                      (when dumb-jump-git-grep-search-untracked
+                        " --untracked")
+                      (when (not (s-blank? dumb-jump-git-grep-search-args))
+                        (concat " " dumb-jump-git-grep-search-args))
                       " -E"))
          (fileexps (s-join " " (--map (shell-quote-argument (format "%s/*.%s" proj it)) ggtypes)))
          (exclude-args (s-join " "

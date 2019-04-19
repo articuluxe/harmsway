@@ -24,8 +24,10 @@
 (require 'ht)
 (require 's)
 (require 'pfuture)
-(require 'treemacs-impl)
+(require 'treemacs-core-utils)
 (require 'treemacs-customization)
+(require 'treemacs-workspaces)
+(require 'treemacs-dom)
 (eval-and-compile
   (require 'inline)
   (require 'treemacs-macros))
@@ -42,10 +44,78 @@
         (f-join treemacs-dir "treemacs-git-status.py")
       (f-join treemacs-dir "src/scripts/treemacs-git-status.py"))))
 
+(defvar treemacs--single-file-git-status.py
+  (eval-when-compile
+    (if (member "treemacs-single-file-git-status.py" (directory-files treemacs-dir))
+        (f-join treemacs-dir "treemacs-single-file-git-status.py")
+      (f-join treemacs-dir "src/scripts/treemacs-single-file-git-status.py"))))
+
+(defvar treemacs--git-cache-max-size 60
+  "Maximum size for `treemacs--git-cache'.
+If it does reach that size it will be cut back to 30 entries.")
+
+(defvar treemacs--git-cache (make-hash-table :size treemacs--git-cache-max-size :test #'equal)
+  "Stores the results of previous git status calls for directories.
+Its effective type is HashMap<FilePath, HashMap<FilePath, Char>>.
+
+These cached results are used as a standin during immediate rendering when
+`treemacs-git-mode' is set to be deferred, so as to minimize the effect of large
+face changes, epsecially when a full project is refreshed.
+
+Since this table is a global value that can effectively grow indefinitely its
+value is limited by `treemacs--git-cache-max-size'.")
+
+(define-inline treemacs--git-status-face (status default)
+  "Get the git face for the given STATUS.
+Use DEFAULT as default match.
+
+STATUS: String
+DEFAULT: Face"
+  (declare (pure t) (side-effect-free t))
+  (inline-letevals (status default)
+    (inline-quote
+     (pcase ,status
+       ("M" 'treemacs-git-modified-face)
+       ("U" 'treemacs-git-conflict-face)
+       ("?" 'treemacs-git-untracked-face)
+       ("!" 'treemacs-git-ignored-face)
+       ("A" 'treemacs-git-added-face)
+       ("R" 'treemacs-git-renamed-face)
+       (_   ,default)))))
+
+(define-inline treemacs--get-node-face (path git-info default)
+  "Return the appropriate face for PATH based on GIT-INFO.
+If there is no git entry for PATH return DEFAULT.
+
+PATH: Filepath
+GIT-INFO: Hashtable
+DEFAULT: Face"
+  (declare (pure t) (side-effect-free t))
+  (inline-letevals (path git-info default)
+    (inline-quote
+     (treemacs--git-status-face (ht-get ,git-info ,path) ,default))))
+
+(defun treemacs--resize-git-cache ()
+  "Cuts `treemacs--git-cache' back down to size.
+Specifically its size will be reduced to half of `treemacs--git-cache-max-size'."
+  (treemacs-block
+   (let* ((size (ht-size treemacs--git-cache))
+          (count (- size (/ treemacs--git-cache-max-size 2))))
+     (treemacs--maphash treemacs--git-cache (key _)
+       (ht-remove! treemacs--git-cache key)
+       (when (>= 0 (cl-decf count))
+         (treemacs-return :done))))))
+
 (defun treemacs--git-status-process-function (path)
   "Dummy with PATH.
 Real implementation will be `fset' based on `treemacs-git-mode' value."
   (ignore path))
+
+(defun treemacs--git-status-process (path project)
+  "Run `treemacs--git-status-process-function' on PATH, if allowed for PROJECT.
+Remote projects are ignored."
+  (when (treemacs-project->is-local-and-readable? project)
+    (treemacs--git-status-process-function path)))
 
 (defun treemacs--git-status-parse-function (_future)
   "Dummy with FUTURE.
@@ -58,14 +128,21 @@ Real implementation will be `fset' based on `treemacs-git-mode' value."
     (let* ((file-name-handler-alist nil)
            (git-root (expand-file-name git-root))
            (default-directory path)
-           (future (pfuture-new
-                    treemacs-python-executable
-                    "-O"
-                    "-S"
-                    treemacs--git-status.py
-                    git-root
-                    (number-to-string treemacs-max-git-entries)
-                    treemacs-git-command-pipe)))
+           (open-dirs (-some->>
+                       path
+                       (treemacs-find-in-dom)
+                       (treemacs-dom-node->children)
+                       (-map #'treemacs-dom-node->key)
+                       ;; Remove extension nodes
+                       (-filter #'stringp)))
+           (command `(,treemacs-python-executable
+                      "-O" "-S"
+                      ,treemacs--git-status.py
+                      ,git-root
+                      ,(number-to-string treemacs-max-git-entries)
+                      ,treemacs-git-command-pipe
+                      ,@open-dirs))
+           (future (apply #'pfuture-new command)))
       future)))
 
 (defun treemacs--parse-git-status-extended (git-future)
@@ -74,22 +151,13 @@ The real parsing and formatting is done by the python process. All that's really
 left to do is pick up the cons list and put it in a hash table.
 
 GIT-FUTURE: Pfuture"
-  (-let [git-info-hash (make-hash-table :test #'equal :size 1000)]
+  (-let [ret (ht)]
     (when git-future
       (pfuture-await-to-finish git-future)
       (when (= 0 (process-exit-status git-future))
         (-let [git-output (pfuture-result git-future)]
-          (treemacs--read-git-status-into-hash git-output git-info-hash))))
-    git-info-hash))
-
-(define-inline treemacs--read-git-status-into-hash (output ht)
-  "Read given OUTPUT into given hash table HT."
-  (inline-letevals (output ht)
-    (inline-quote
-     (unless (s-blank? ,output)
-       (--each (read ,output)
-         ;; key = path, value = git state char
-         (ht-set! ,ht (cdr it) (aref (car it) 0)))))))
+          (setf ret (read git-output)))))
+    ret))
 
 (defun treemacs--git-status-process-simple (path)
   "Start a simple git status process for files under PATH."
@@ -128,19 +196,116 @@ GIT-FUTURE: Pfuture"
                           (setq i (1+ i))
                         (ht-set! git-info-hash
                                  (f-join git-root (s-trim-left path))
-                                 (aref (s-trim-left status) 0)))))
+                                 (substring (s-trim-left status) 0 1)))))
                   (setq i (1+ i)))))))))
     git-info-hash))
 
-(defun treemacs--collapsed-dirs-process (path)
+(defun treemacs--apply-deferred-git-state (parent-btn git-future buffer)
+  "Apply the git fontification for direct children of PARENT-BTN.
+GIT-FUTURE is parsed the same way as in `treemacs--create-branch'. Additionally
+since this function is run on an idle timer the BUFFER to work on must be passed
+as well since the user may since select a different buffer, window or frame.
+
+PARENT-BTN: Button
+GIT-FUTURE: Pfuture|HashMap
+BUFFER: Buffer"
+  (when (and (buffer-live-p buffer) git-future)
+    (with-current-buffer buffer
+      ;; cut the cache down to size if it grows too large
+      (when (> (ht-size treemacs--git-cache) treemacs--git-cache-max-size)
+        (run-with-idle-timer 2 nil #'treemacs--resize-git-cache))
+      (-let [parent-path (treemacs-button-get parent-btn :path)]
+        ;; the node may have been closed or deleted by now
+        (when (and (treemacs-find-in-dom parent-path)
+                   (memq (treemacs-button-get parent-btn :state) '(dir-node-open root-node-open)))
+          (let ((depth (1+ (treemacs-button-get parent-btn :depth)))
+                (git-info (treemacs--get-or-parse-git-result git-future))
+                (btn parent-btn))
+            (ht-set! treemacs--git-cache parent-path git-info)
+            (treemacs-with-writable-buffer
+             ;; the depth check ensures that we only iterate over the nodes that are below parent-btn
+             ;; and stop when we've moved on to nodes that are above or belong to the next project
+             (while (and (setq btn (next-button btn))
+                         (>= (treemacs-button-get btn :depth) depth))
+               (-let [path (treemacs-button-get btn :path)]
+                 (when (and (= depth (treemacs-button-get btn :depth))
+                            (not (treemacs-button-get btn :no-git)))
+                   (treemacs-button-put
+                    btn 'face
+                    (treemacs--get-node-face path git-info (treemacs-button-get btn :default-face)))))))))))))
+
+(defun treemacs-update-single-file-git-state (file)
+  "Update the FILE node's git state, wrapped in `treemacs-save-position'.
+Internally calls `treemacs-do-update-single-file-git-state'.
+
+FILE: Filepath"
+  (with-no-warnings
+    (treemacs-save-position
+     (treemacs-do-update-single-file-git-state file))))
+
+(defun treemacs-do-update-single-file-git-state (file)
+  "Asynchronously update the given FILE node's git fontification.
+Since an update to a single node can potentially also mean a change to the
+states of all its parents they will likewise be updated by this function. If the
+file's current and new git status are the same this function will do nothing.
+
+FILE: Filepath"
+  (let* ((local-buffer (current-buffer))
+         (parent (treemacs--parent file))
+         (parent-node (treemacs-find-in-dom parent))
+         ;; include the first parent...
+         (parents (cons (treemacs-dom-node->key parent-node)
+                        ;; ...but exclude the project root
+                        (cdr (-map #'treemacs-dom-node->key
+                                   (treemacs-dom-node->all-parents parent-node)))))
+         (current-state (or (-some-> treemacs--git-cache (ht-get parent) (ht-get file)) "0"))
+         (cmd `(,treemacs-python-executable
+                "-S" "-O"
+                ,treemacs--single-file-git-status.py ,file ,current-state ,@parents)))
+    (pfuture-callback cmd
+      :directory parent
+      :name "Treemacs Update Single File Process"
+      :on-success
+      (when (buffer-live-p local-buffer)
+        (with-current-buffer local-buffer
+          (treemacs-with-writable-buffer
+           ;; first the file node with its own default face
+           (-let [output (read (pfuture-callback-output))]
+             (-let [(file . state) (pop output)]
+               (-when-let (pos (treemacs-find-visible-node file))
+                 (-let [face (treemacs--git-status-face state 'treemacs-git-unmodified-face)]
+                   (put-text-property
+                    (button-start pos) (button-end pos)
+                    'face face))))
+             ;; then the directories
+             (pcase-dolist (`(,file . ,state) output)
+               (-when-let (pos (treemacs-find-visible-node file))
+                 (-let [face (treemacs--git-status-face state 'treemacs-directory-face)]
+                   (put-text-property
+                    (button-start pos) (button-end pos)
+                    'face face))))))))
+      :on-error
+      (pcase (process-exit-status process)
+        (2 (ignore "No Change, Do Nothing"))
+        (_
+         (-let [err-str (treemacs--remove-trailing-newline (pfuture-output-from-buffer pfuture-buffer))]
+           (treemacs-log "Update of node \"%s\" failed with status \"%s\" and result"
+                         file (treemacs--remove-trailing-newline status))
+           (treemacs-log "\"%s\"" (treemacs--remove-trailing-newline err-str))))))))
+
+(defun treemacs--collapsed-dirs-process (path project)
   "Start a new process to determine dirs to collpase under PATH.
+Only starts the process if PROJECT is locally accessible (i.e. exists, and
+is not remote.)
 Output format is an elisp list of string lists that's read directly.
 Every string list consists of the following elements:
  * The path that is being collapsed
  * The string to be appened to the collapsed path in the treemacs view
  * The single directories being collapsed, to be put under filewatch
    if `treemacs-filewatch-mode' is on."
-  (when (> treemacs-collapse-dirs 0)
+  (when (and (> treemacs-collapse-dirs 0)
+             treemacs-python-executable
+             (treemacs-project->is-local-and-readable? project))
     ;; needs to be set or we'll run into trouble when deleting
     ;; haven't taken the time to figure out why, so let's just leave it at that
     (-let [default-directory path]
@@ -236,12 +401,19 @@ FUTURE: Pfuture process"
        (ht)))))
 
 (treemacs-only-during-init
- (pcase (cons (not (null (executable-find "git")))
-              (not (null (executable-find "python3"))))
-   (`(t . t)
-    (treemacs-git-mode 'deferred))
-   (`(t . _)
-    (treemacs-git-mode 'simple))))
+ (let ((has-git    (not (null (executable-find "git"))))
+       (has-python (not (null (executable-find "python3")))))
+   (pcase (cons has-git has-python)
+     (`(t . t)
+      (treemacs-git-mode 'deferred))
+     (`(t . _)
+      (treemacs-git-mode 'simple)))
+
+   (when has-python
+     (setf treemacs-collapse-dirs 3))
+
+   (unless (or has-python (boundp 'treemacs-no-load-time-warnings))
+     (treemacs-log "Python3 not found, advanced git-mode and directory flattening features will be disabled."))))
 
 (provide 'treemacs-async)
 

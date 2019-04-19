@@ -54,9 +54,9 @@
 
    (tooltip-hl-bg bg4)
 
-   (ivy2 cerise1)
-   (ivy3 amber3)
-   (ivy4 spring-green1)
+   (search1 vermilion3)
+   (search2 teal0)
+   (search3 yellow3)
 
    (rb1 blue4)
    (rb2 violet4)
@@ -83,13 +83,13 @@
 
    (win-border    bg3)
    (line-num-fg   gray3)
-   (line-num-hl   keyword)
-   (cursor        "#c3c8e0"))
+   (line-num-hl   keyword))
 
   (
    (highlight-quoted-quote   (:foreground functions))
    (highlight-quoted-symbol  (:foreground amber3))
 
+   (org-document-title  (:foreground cyan3))
    (org-code            (:foreground pink1))
    (org-verbatim        (:foreground spring-green1))
 

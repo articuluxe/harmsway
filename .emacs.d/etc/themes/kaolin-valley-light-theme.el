@@ -45,10 +45,10 @@
    (bg4 (if kaolin-valley-light-alt-bg white2 "#EBD7BE"))
 
    ;; TODO
-   (fg1 black4)
-   (fg2 gray0)
-   (fg3 gray2)
-   (fg4 gray4)
+   (fg1 "#5E5854")
+   (fg2 "#6b6560")
+   (fg3 "#79716c")
+   (fg4 "#867e78")
 
    (keyword     teal0)
    (metakey     keyword)
@@ -67,10 +67,9 @@
    (doc         str-alt)
 
    (prep        vermilion0)
-   ;; TODO:
    (num         vermilion0)
    (bool        num)
-   (warning     orange1)
+   (warning     orange0)
    (err         red3)
 
    (dim-buffer white0)
@@ -82,7 +81,7 @@
    (pulse bg4)
 
    (todo red3)
-   (done aquamarine1)
+   (done erin2)
 
    (tooltip-fg fg3)
    (tooltip-hl-bg bg3)
@@ -117,14 +116,14 @@
 
    (win-border    bg3)
    (line-num-fg   brown8)
-   (line-num-hl   amber0)
+   (line-num-hl   amber1)
 
    (cursor       gray3)
 
    (ivy1          gray9)
-   (ivy2          cerise0)
-   (ivy3          amber0)
-   (ivy4          red3))
+   (search1       cerise0)
+   (search2       amber0)
+   (search3       red3))
 
   (
 
@@ -137,7 +136,7 @@
    ;; (org-level-4            (:foreground vermilion4 :bold nil))
    (org-code               (:foreground keyword))
    (org-verbatim           (:foreground orange2))
-   (org-date               (:foreground aquamarine1 :underline kaolin-themes-underline)))
+   (org-date               (:foreground erin2 :underline kaolin-themes-underline)))
 
   (when kaolin-themes-git-gutter-solid
     (custom-theme-set-faces

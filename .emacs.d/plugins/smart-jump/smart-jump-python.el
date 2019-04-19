@@ -29,6 +29,17 @@
 (require 'smart-jump)
 (require 'python)
 (require 'anaconda-mode nil t)
+(require 'elpy-mode nil t)
+
+(defcustom smart-jump-python-force-elpy nil
+  "If true, use elpy even if elpy-mode is not turned on."
+  :type 'boolean
+  :group 'smart-jump)
+
+(defun smart-jump-python-elpy-available-p ()
+  "Return whether or not `elpy' is available."
+  (or smart-jump-python-force-elpy
+    (bound-and-true-p elpy-mode)))
 
 (defun smart-jump-python-anaconda-available-p ()
   "Return whether or not `anaconda-mode' is available."
@@ -42,6 +53,15 @@
                        :pop-fn 'anaconda-mode-go-back
                        :refs-fn 'anaconda-mode-find-references
                        :should-jump #'smart-jump-python-anaconda-available-p
+                       :heuristic 'point
+                       :async 600)
+  
+  (smart-jump-register :modes 'python-mode
+                       :jump-fn 'elpy-goto-definition
+                       :pop-fn 'xref-pop-marker-stack
+                       ;; pending https://github.com/jorgenschaefer/elpy/issues/1082
+                       :refs-fn nil
+                       :should-jump #'smart-jump-python-elpy-available-p
                        :heuristic 'point
                        :async 600))
 

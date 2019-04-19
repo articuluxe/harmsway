@@ -96,6 +96,11 @@ option."
   :type 'boolean
   :group 'lsp-ui-doc)
 
+(defcustom lsp-ui-doc-delay 0.2
+  "Number of seconds before showing the doc."
+  :type 'number
+  :group 'lsp-ui-doc)
+
 (defface lsp-ui-doc-background
   '((((background light)) :background "#b3b3b3")
     (t :background "#272A36"))
@@ -148,11 +153,6 @@ The function takes a string as parameter and should return a string.
 If this variable is nil (the default), the documentation will be rendered
 as markdown.")
 
-(defvar lsp-ui-doc-custom-markup-modes
-  '((rust-mode "no_run" "rust,no_run" "rust,ignore" "rust,should_panic"))
-  "Mode to uses with markdown code blocks.
-They are added to `markdown-code-lang-modes'")
-
 (defvar lsp-ui-doc-frame-hook nil
   "Hooks run on child-frame creation.
 The functions receive 2 parameters: the frame and its window.")
@@ -172,6 +172,9 @@ Because some variables are buffer local.")
 
 (defvar-local lsp-ui-doc--inline-ov nil
   "Overlay used to display the documentation in the buffer.")
+
+(defvar-local lsp-ui-doc--bounds nil)
+(defvar-local lsp-ui-doc--timer nil)
 
 (defmacro lsp-ui-doc--with-buffer (&rest body)
   "Execute BODY in the lsp-ui-doc buffer."
@@ -208,16 +211,6 @@ Because some variables are buffer local.")
 ;; Markdown 2.3.
 (defvar markdown-fontify-code-block-default-mode)
 
-(defun lsp-ui-doc--setup-markdown (mode)
-  "Setup the ‘markdown-mode’ in the frame.
-MODE is the mode used in the parent frame."
-  (make-local-variable 'markdown-code-lang-modes)
-  (dolist (mark (alist-get mode lsp-ui-doc-custom-markup-modes))
-    (add-to-list 'markdown-code-lang-modes (cons mark mode)))
-  (setq-local markdown-fontify-code-blocks-natively t)
-  (setq-local markdown-fontify-code-block-default-mode mode)
-  (setq-local markdown-hide-markup t))
-
 (defun lsp-ui-doc--inline-wrapped-line (string)
   "Wraps a line of text for inline display."
   (cond ((string-empty-p string) "")
@@ -233,41 +226,21 @@ MODE is the mode used in the parent frame."
              (split-string string "\n")
              "\n"))
 
-(defun lsp-ui-doc--extract-marked-string (marked-string)
+(defun lsp-ui-doc--extract-marked-string (marked-string &optional language)
   "Render the MARKED-STRING."
   (string-trim-right
    (let* ((string (if (stringp marked-string)
                       marked-string
                     (gethash "value" marked-string)))
           (with-lang (hash-table-p marked-string))
-          (language (and with-lang (gethash "language" marked-string)))
-          (render-fn (if with-lang (lsp-get-renderer language)
-                       (and (functionp lsp-ui-doc-render-function)
-                            lsp-ui-doc-render-function)))
-          (mode major-mode))
+          (language (or (and with-lang (or (gethash "language" marked-string) (gethash "kind" marked-string)))
+                        language)))
      (cond
       (lsp-ui-doc-use-webkit
        (if (and language (not (string= "text" language)))
-         (format "```%s\n%s\n```" language string)
+           (format "```%s\n%s\n```" language string)
          string))
-      (render-fn
-       (funcall render-fn string))
-      (t
-       (with-temp-buffer
-         (if (lsp-ui-doc--inline-p)
-             (insert (lsp-ui-doc--inline-formatted-string string))
-           (insert string))
-
-         (delay-mode-hooks
-           (let ((inhibit-message t))
-             (funcall (cond ((and with-lang (string= "text" language)) 'text-mode)
-                            ((fboundp 'gfm-view-mode) 'gfm-view-mode)
-                            (t 'markdown-mode))))
-           (when (derived-mode-p 'markdown-mode)
-             (lsp-ui-doc--setup-markdown mode))
-           (ignore-errors
-             (font-lock-ensure)))
-         (buffer-string)))))))
+      (t (lsp--render-element marked-string))))))
 
 (defun lsp-ui-doc--filter-marked-string (list-marked-string)
   (let ((groups (--separate (and (hash-table-p it)
@@ -291,8 +264,9 @@ We don't extract the string that `lps-line' is already displaying."
                ;; (propertize "\n\n" 'face '(:height 0.4))
                ))
    ;; when we get markdown contents, render using emacs gfm-view-mode / markdown-mode
-   ((string= (gethash "kind" contents) "markdown") (lsp-ui-doc--extract-marked-string contents))
-   ((gethash "kind" contents) (gethash "value" contents)) ;; MarkupContent
+   ((string= (gethash "kind" contents) "markdown") ;; Markdown MarkupContent
+    (lsp-ui-doc--extract-marked-string contents "markdown"))
+   ((gethash "kind" contents) (gethash "value" contents)) ;; Plaintext MarkupContent
    ((gethash "language" contents) ;; MarkedString
     (lsp-ui-doc--extract-marked-string contents))))
 
@@ -349,6 +323,7 @@ We don't extract the string that `lps-line' is already displaying."
 
 (defun lsp-ui-doc--hide-frame ()
   "Hide the frame."
+  (setq lsp-ui-doc--bounds nil)
   (when (overlayp lsp-ui-doc--inline-ov)
     (delete-overlay lsp-ui-doc--inline-ov))
   (when (lsp-ui-doc--get-frame)
@@ -385,7 +360,9 @@ We don't extract the string that `lps-line' is already displaying."
       (lsp-ui-doc--line-height)))
 
 (defun lsp-ui-doc--webkit-resize-callback (size)
-  (xwidget-resize (lsp-ui-doc--webkit-get-xwidget) (aref size 0) (aref size 1))
+  (let ((offset-width (round (aref size 0)))
+        (offset-height (round (aref size 1))))
+    (xwidget-resize (lsp-ui-doc--webkit-get-xwidget) offset-width offset-height))
   (lsp-ui-doc--move-frame (lsp-ui-doc--get-frame)))
 
 (defun lsp-ui-doc--resize-buffer ()
@@ -630,7 +607,8 @@ HEIGHT is the documentation number of lines."
          (name-buffer (lsp-ui-doc--make-buffer-name))
          (buffer (get-buffer name-buffer))
          (params (append lsp-ui-doc-frame-parameters
-                         `((default-minibuffer-frame . ,(selected-frame))
+                         `((name . "")
+                           (default-minibuffer-frame . ,(selected-frame))
                            (minibuffer . ,(minibuffer-window))
                            (left-fringe . ,(frame-char-width))
                            (background-color . ,(face-background 'lsp-ui-doc-background nil t)))))
@@ -659,16 +637,62 @@ HEIGHT is the documentation number of lines."
       (lsp-ui-doc--webkit-run-xwidget))
     frame))
 
+(defun lsp-ui-doc--make-request nil
+  "Request the documentation to the LS."
+  (when (and (not (bound-and-true-p lsp-ui-peek-mode))
+             (lsp--capability "hoverProvider"))
+    (-if-let (bounds (or (and (symbol-at-point) (bounds-of-thing-at-point 'symbol))
+                         (and (looking-at "[[:graph:]]") (cons (point) (1+ (point))))))
+        (unless (equal lsp-ui-doc--bounds bounds)
+          (lsp--send-request-async
+           (lsp--make-request "textDocument/hover" (lsp--text-document-position-params))
+           (lambda (hover) (lsp-ui-doc--callback hover bounds (current-buffer)))))
+      (lsp-ui-doc--hide-frame))))
+
+(defun lsp-ui-doc--callback (hover bounds buffer)
+  "Process the received documentation.
+HOVER is the doc returned by the LS.
+BOUNDS are points of the symbol that have been requested.
+BUFFER is the buffer where the request has been made."
+  (if (and hover
+           (>= (point) (car bounds)) (<= (point) (cdr bounds))
+           (eq buffer (current-buffer)))
+      (progn
+        (setq lsp-ui-doc--bounds bounds)
+        (and lsp-ui-doc--timer (cancel-timer lsp-ui-doc--timer))
+        (setq lsp-ui-doc--timer
+              (run-with-idle-timer
+               lsp-ui-doc-delay nil
+               (lambda nil (lsp-ui-doc--display
+                            (thing-at-point 'symbol t) (lsp-ui-doc--extract (gethash "contents" hover)))))))
+    (lsp-ui-doc--hide-frame)))
+
 (defun lsp-ui-doc--delete-frame ()
   "Delete the child frame if it exists."
   (-when-let (frame (lsp-ui-doc--get-frame))
     (delete-frame frame)
     (lsp-ui-doc--set-frame nil)))
 
-(defadvice select-window (after lsp-ui-doc--select-window activate)
-  "Delete the child frame if window changes."
-  (unless (equal (ad-get-arg 0) (selected-window))
-    (lsp-ui-doc--hide-frame)))
+(defun lsp-ui-doc--visible-p ()
+  "Return whether the LSP UI doc is visible"
+  (or (overlayp lsp-ui-doc--inline-ov)
+      (and (lsp-ui-doc--get-frame)
+           (frame-visible-p (lsp-ui-doc--get-frame)))))
+
+(defadvice select-window (around lsp-ui-doc--select-window activate)
+  "Delete the child frame if currently selected window changes.
+Does nothing if the newly-selected window is the same window as
+before, or if the new window is the minibuffer."
+  (let ((initial-window (selected-window)))
+    (prog1 ad-do-it
+      (when (lsp-ui-doc--visible-p)
+        (let* ((current-window (selected-window))
+               (doc-buffer (get-buffer (lsp-ui-doc--make-buffer-name))))
+          (unless (or (window-minibuffer-p current-window)
+                      (equal current-window initial-window)
+                      (and doc-buffer
+                           (equal (window-buffer initial-window) doc-buffer)))
+            (lsp-ui-doc--hide-frame)))))))
 
 (advice-add 'load-theme :before (lambda (&rest _) (lsp-ui-doc--delete-frame)))
 (add-hook 'window-configuration-change-hook #'lsp-ui-doc--hide-frame)
@@ -679,15 +703,6 @@ HEIGHT is the documentation number of lines."
             (get-buffer it)
             (and (buffer-live-p it) it)
             (kill-buffer it)))
-
-(defun lsp-ui-doc--on-hover (hover)
-  "Handler for `lsp-on-hover-hook'.
-HOVER is the returned signature information."
-  (--if-let (-some->> hover (gethash "contents"))
-      (lsp-ui-doc--display (thing-at-point 'symbol t)
-                           (lsp-ui-doc--extract it))
-    (eldoc-message nil)
-    (lsp-ui-doc--hide-frame)))
 
 (define-minor-mode lsp-ui-doc-mode
   "Minor mode for showing hover information in child frame."
@@ -705,11 +720,10 @@ HOVER is the returned signature information."
         ;; ‘frameset-filter-alist’ for explanation.
         (cl-callf copy-tree frameset-filter-alist)
         (push '(lsp-ui-doc-frame . :never) frameset-filter-alist)))
-
-    (add-hook 'lsp-on-hover-hook 'lsp-ui-doc--on-hover nil t)
+    (add-hook 'post-command-hook 'lsp-ui-doc--make-request nil t)
     (add-hook 'delete-frame-functions 'lsp-ui-doc--on-delete nil t))
    (t
-    (remove-hook 'lsp-on-hover-hook 'lsp-ui-doc--on-hover t)
+    (remove-hook 'post-command-hook 'lsp-ui-doc--make-request t)
     (remove-hook 'delete-frame-functions 'lsp-ui-doc--on-delete t))))
 
 (defun lsp-ui-doc-enable (enable)
@@ -720,7 +734,9 @@ It is supposed to be called from `lsp-ui--toggle'"
 (defun lsp-ui-doc-show ()
   "Trigger display hover information popup."
   (interactive)
-  (lsp-ui-doc--on-hover (lsp-request "textDocument/hover" (lsp--text-document-position-params))))
+  (lsp-ui-doc--callback (lsp-request "textDocument/hover" (lsp--text-document-position-params))
+                        (or (bounds-of-thing-at-point 'symbol) (cons (point) (1+ (point))))
+                        (current-buffer)))
 
 (defun lsp-ui-doc-hide ()
   "Hide hover information popup."

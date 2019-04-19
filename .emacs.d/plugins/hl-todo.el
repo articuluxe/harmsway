@@ -6,6 +6,8 @@
 ;; Homepage: https://github.com/tarsius/hl-todo
 ;; Keywords: convenience
 
+;; Package-Requires: ((emacs "25"))
+
 ;; This file is not part of GNU Emacs.
 
 ;; This file is free software; you can redistribute it and/or modify
@@ -32,19 +34,23 @@
 ;; activated in buffers whose major-mode derives from `prog-mode'.
 
 ;; This package also provides commands for moving to the next or
-;; previous keyword and to invoke `occur' with a regexp that matches
-;; all known keywords.  If you want to use these commands, then you
-;; should bind them in `hl-todo-mode-map', e.g.:
+;; previous keyword, to invoke `occur' with a regexp that matches all
+;; known keywords, and to insert a keyword.  If you want to use these
+;; commands, then you should bind them in `hl-todo-mode-map', e.g.:
 ;;
 ;;   (define-key hl-todo-mode-map (kbd "C-c p") 'hl-todo-previous)
 ;;   (define-key hl-todo-mode-map (kbd "C-c n") 'hl-todo-next)
 ;;   (define-key hl-todo-mode-map (kbd "C-c o") 'hl-todo-occur)
+;;   (define-key hl-todo-mode-map (kbd "C-c i") 'hl-todo-insert)
 
 ;; See [[https://www.emacswiki.org/emacs/FixmeMode][this list]] on the Emacswiki for other packages that implement
 ;; the same basic features, but which might also provide additional
 ;; features that you might like, but which I don't deem necessary.
 
 ;;; Code:
+
+(eval-when-compile
+  (require 'subr-x))
 
 (defgroup hl-todo nil
   "Highlight TODO and similar keywords in comments and strings."
@@ -98,10 +104,17 @@ located inside a string."
     ("HACK"   . "#d0bf8f")
     ("TEMP"   . "#d0bf8f")
     ("FIXME"  . "#cc9393")
-    ("XXX"    . "#cc9393")
-    ("XXXX"   . "#cc9393")
-    ("???"    . "#cc9393"))
-  "Faces used to highlight specific TODO keywords."
+    ("XXX+"   . "#cc9393")
+    ("\\?\\?\\?+" . "#cc9393"))
+  "Faces used to highlight specific TODO keywords.
+
+Each entry has the form (KEYWORD . COLOR).  KEYWORD is used as
+part of a regular expression.  If (regexp-quote KEYWORD) is not
+equal to KEYWORD, then it is ignored by `hl-todo-insert-keyword'.
+
+The syntax class of the characters at either end has to be `word'
+in `hl-todo--syntax-table'.  That syntax table derives from
+`text-mode-syntax-table' but uses `word' as the class of \"?\"."
   :package-version '(hl-todo . "2.0.0")
   :group 'hl-todo
   :type '(repeat (cons (string :tag "Keyword")
@@ -126,10 +139,16 @@ including alphanumeric characters, cannot be used here."
 (defvar-local hl-todo--keywords nil)
 
 (defun hl-todo--setup ()
+  (when-let ((bomb (assoc "???" hl-todo-keyword-faces)))
+    ;; If the user customized this variable before we started to
+    ;; treat the strings as regexps, then the string "???" might
+    ;; still be present.  We have to remove it because it results
+    ;; in the regexp search taking forever.
+    (setq hl-todo-keyword-faces (delete bomb hl-todo-keyword-faces)))
   (setq hl-todo--regexp
         (concat "\\(\\<"
-                (regexp-opt (mapcar #'car hl-todo-keyword-faces) t)
-                "\\>"
+                "\\(" (mapconcat #'car hl-todo-keyword-faces "\\|") "\\)"
+                "\\(?:\\>\\|\\>\\?\\)"
                 (and (not (equal hl-todo-highlight-punctuation ""))
                      (concat "[" hl-todo-highlight-punctuation "]*"))
                 "\\)"))
@@ -138,26 +157,33 @@ including alphanumeric characters, cannot be used here."
            (1 (hl-todo--get-face) t t))))
   (font-lock-add-keywords nil hl-todo--keywords t))
 
-(defvar hl-todo--syntax-table (copy-syntax-table text-mode-syntax-table))
+(defvar hl-todo--syntax-table
+  (let ((table (copy-syntax-table text-mode-syntax-table)))
+    (modify-syntax-entry ?? "w" table)
+    table))
 
 (defun hl-todo--search (&optional regexp bound backward)
   (unless regexp
     (setq regexp hl-todo--regexp))
-  (and (let ((case-fold-search nil))
-         (with-syntax-table hl-todo--syntax-table
-           (funcall (if backward #'re-search-backward #'re-search-forward)
-                    regexp bound t)))
-       (or (apply #'derived-mode-p hl-todo-text-modes)
-           (hl-todo--inside-comment-or-string-p)
-           (and (or (not bound)
-                    (funcall (if backward #'< #'>) bound (point)))
-                (hl-todo--search regexp bound backward)))))
+  (cl-block nil
+    (while (let ((case-fold-search nil))
+             (with-syntax-table hl-todo--syntax-table
+               (funcall (if backward #'re-search-backward #'re-search-forward)
+                        regexp bound t)))
+      (cond ((or (apply #'derived-mode-p hl-todo-text-modes)
+                 (hl-todo--inside-comment-or-string-p))
+             (cl-return t))
+            ((and bound (funcall (if backward #'<= #'>=) (point) bound))
+             (cl-return nil))))))
 
 (defun hl-todo--inside-comment-or-string-p ()
   (nth 8 (syntax-ppss)))
 
 (defun hl-todo--get-face ()
-  (let ((face (cdr (assoc (match-string 2) hl-todo-keyword-faces))))
+  (let* ((keyword (match-string 2))
+         (face (cdr (cl-find-if (lambda (elt)
+                                  (string-match-p (car elt) keyword))
+                                hl-todo-keyword-faces))))
     (if (stringp face)
         (list :inherit 'hl-todo :foreground face)
       face)))
@@ -231,12 +257,14 @@ A negative argument means move forward that many keywords."
   "Use `occur' to find all TODO or similar keywords.
 This actually finds a superset of the highlighted keywords,
 because it uses a regexp instead of a more sophisticated
-matcher."
+matcher.  It also finds occurrences that are not within a
+string or comment."
   (interactive)
-  (occur hl-todo--regexp))
+  (with-syntax-table hl-todo--syntax-table
+    (occur hl-todo--regexp)))
 
 ;;;###autoload
-(defun hl-todo-insert-keyword (keyword)
+(defun hl-todo-insert (keyword)
   "Insert TODO or similar keyword.
 If point is not inside a string or comment, then insert a new
 comment.  If point is at the end of the line, then insert the
@@ -245,12 +273,14 @@ current line."
   (interactive
    (list (completing-read
           "Insert keyword: "
-          (mapcar (pcase-lambda (`(,keyword . ,face))
-                    (propertize keyword 'face
-                                (if (stringp face)
-                                    (list :inherit 'hl-todo :foreground face)
-                                  face)))
-                  hl-todo-keyword-faces))))
+          (cl-mapcan (pcase-lambda (`(,keyword . ,face))
+                       (and (equal (regexp-quote keyword) keyword)
+                            (list (propertize
+                                   keyword 'face
+                                   (if (stringp face)
+                                       (list :inherit 'hl-todo :foreground face)
+                                     face)))))
+                     hl-todo-keyword-faces))))
   (cond
    ((hl-todo--inside-comment-or-string-p)
     (insert (concat (and (not (memq (char-before) '(?\s ?\t))) " ")
@@ -268,6 +298,9 @@ current line."
                     keyword))
     (backward-char)
     (indent-region (line-beginning-position) (line-end-position)))))
+
+(define-obsolete-function-alias 'hl-todo-insert-keyword
+  'hl-todo-insert "Hl-Todo 3.0.0")
 
 ;;; _
 (provide 'hl-todo)

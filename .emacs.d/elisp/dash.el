@@ -921,9 +921,11 @@ See also: `-drop'"
   "Rotate LIST N places to the right.  With N negative, rotate to the left.
 The time complexity is O(n)."
   (declare (pure t) (side-effect-free t))
-  (if (> n 0)
-      (append (last list n) (butlast list n))
-    (append (-drop (- n) list) (-take (- n) list))))
+  (when list
+    (let* ((len (length list))
+           (n-mod-len (mod n len))
+           (new-tail-len (- len n-mod-len)))
+      (append (-drop new-tail-len list) (-take new-tail-len list)))))
 
 (defun -insert-at (n x list)
   "Return a list with X inserted into LIST at position N.
@@ -1650,6 +1652,10 @@ All returned symbols are guaranteed to be unique."
      (t
       (cons (list s source) (dash--match-cons-1 match-form s))))))
 
+(defun dash--get-expand-function (type)
+  "Get expand function name for TYPE."
+  (intern (format "dash-expand:%s" type)))
+
 (defun dash--match-cons-1 (match-form source &optional props)
   "Match MATCH-FORM against SOURCE.
 
@@ -1669,7 +1675,7 @@ SOURCE is a proper or improper list."
        ((cdr match-form)
         (cond
          ((and (symbolp (car match-form))
-               (memq (car match-form) '(&keys &plist &alist &hash)))
+               (functionp (dash--get-expand-function (car match-form))))
           (dash--match-kv (dash--match-kv-normalize-match-form match-form) (dash--match-cons-get-cdr skip-cdr source)))
          ((dash--match-ignore-place-p (car match-form))
           (dash--match-cons-1 (cdr match-form) source
@@ -1810,6 +1816,27 @@ kv can be any key-value store, such as plist, alist or hash-table."
      (t
       (cons (list s source) (dash--match-kv-1 (cdr match-form) s (car match-form)))))))
 
+(defun dash-expand:&hash (key source)
+  "Generate extracting KEY from SOURCE for &hash destructuring."
+  `(gethash ,key ,source))
+
+(defun dash-expand:&plist (key source)
+  "Generate extracting KEY from SOURCE for &plist destructuring."
+  `(plist-get ,source ,key))
+
+(defun dash-expand:&alist (key source)
+  "Generate extracting KEY from SOURCE for &alist destructuring."
+  `(cdr (assoc ,key ,source)))
+
+(defun dash-expand:&hash? (key source)
+  "Generate extracting KEY from SOURCE for &hash? destructuring.
+Similar to &hash but check whether the map is not nil."
+  (let ((src (make-symbol "src")))
+    `(let ((,src ,source))
+       (when ,src (gethash ,key ,src)))))
+
+(defalias 'dash-expand:&keys 'dash-expand:&plist)
+
 (defun dash--match-kv-1 (match-form source type)
   "Match MATCH-FORM against SOURCE of type TYPE.
 
@@ -1827,13 +1854,8 @@ Valid values are &plist, &alist and &hash."
                  (lambda (kv)
                    (let* ((k (car kv))
                           (v (cadr kv))
-                          (getter (cond
-                                   ((or (eq type '&plist) (eq type '&keys))
-                                    `(plist-get ,source ,k))
-                                   ((eq type '&alist)
-                                    `(cdr (assoc ,k ,source)))
-                                   ((eq type '&hash)
-                                    `(gethash ,k ,source)))))
+                          (getter
+                           (funcall (dash--get-expand-function type) k source)))
                      (cond
                       ((symbolp v)
                        (list (list v getter)))
@@ -1866,7 +1888,7 @@ Key-value stores are disambiguated by placing a token &plist,
       (let ((s (car match-form)))
         (cons (list s source)
               (dash--match (cddr match-form) s))))
-     ((memq (car match-form) '(&keys &plist &alist &hash))
+     ((functionp (dash--get-expand-function (car match-form)))
       (dash--match-kv (dash--match-kv-normalize-match-form match-form) source))
      (t (dash--match-cons match-form source))))
    ((vectorp match-form)

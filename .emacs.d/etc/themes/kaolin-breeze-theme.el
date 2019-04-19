@@ -64,6 +64,7 @@
    (pulse cyan3)
 
    (todo red3)
+   (done erin2)
 
    (tooltip-hl-bg bg3)
    (tooltip-hl-fg hl)
@@ -101,9 +102,9 @@
    (cursor        gray3)
 
    (ivy1          gray9)
-   (ivy2          capri1)
-   (ivy3          orange0)
-   (ivy4          red4))
+   (search1          capri1)
+   (search2          orange0)
+   (search3          red4))
 
   ((link                   (:foreground capri1 :underline underline))
 

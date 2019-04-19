@@ -5,7 +5,7 @@
 ;; Author: Alexander Miller <alexanderm@web.de>
 ;; Homepage: https://github.com/Alexander-Miller/pfuture
 ;; Package-Requires: ((emacs "25.2"))
-;; Version: 1.3
+;; Version: 1.6
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -25,6 +25,7 @@
 ;;; Code:
 
 (require 'cl-lib)
+(require 'inline)
 
 ;;;###autoload
 (defun pfuture-new (cmd &rest cmd-args)
@@ -73,7 +74,8 @@ Internally based on `make-process'. Requires lexical scope.
 
 The first - and only required - argument is COMMAND. It is an (unquoted) list of
 the command and the arguments for the process that should be started. A vector
-is likewise acceptable - the difference is purely cosmetic.
+is likewise acceptable - the difference is purely cosmetic (this does not apply
+when command is passed as a variable, in this case it must be a list).
 
 The rest of the argument list is made up of the following keyword arguments:
 
@@ -82,7 +84,7 @@ code of 0. In its context, these variables are bound:
 `process': The process object, as passed to the sentinel callback function.
 `status': The string exit status, as passed to the sentinel callback function.
 `pfuture-buffer': The buffer where the output of the process is collected,
- including both stdin and stdout. You can use `pfuture-output-from-buffer' to
+ including both stdin and stdout. You can use `pfuture-callback-output' to
  quickly grab the buffer's content.
 
 ON-SUCCESS may take one of 3 forms: an unquoted sexp, a quoted function or an
@@ -107,7 +109,8 @@ fall back to \"Pfuture Callback [$COMMAND]\".
 CONNECTION-TYPE will be passed to the :connection-process property of
 `make-process'. If not given it will fall back to 'pipe.
 
-BUFFER is the buffer that will be used by the process to collect its output.
+BUFFER is the buffer that will be used by the process to collect its output,
+quickly collectible with `pfuture-output-from-buffer'.
 Providing a buffer outside of specific use-cases is not necessary, as by default
 pfuture will assign every launched command its own unique buffer and kill it
 after ON-SUCCESS or ON-ERROR have finished running. However, no such cleanup
@@ -120,28 +123,24 @@ custom filter output needs to be gathered another way. Note that the process'
 buffer is stored in its `buffer' property and is therefore accessible via
 \(process-get process 'buffer\)."
   (declare (indent 1))
-  (let* ((command (cond
-                   ((vectorp command)
-                    `(quote ,(cl-map 'list #'identity command)))
-                   ((eq '\` (car command))
-                    (prog1 command
-                      ;; a backquoted command's name is just about impossible to handle otherwise
-                      (setf name (or name (concat "Pfuture Callback: []")))))
-                   (t `(quote ,command))))
-         (name (or name (concat "Pfuture Callback: [" (mapconcat #'identity command " ") "]")))
+  (let* ((command (if (vectorp command)
+                      `(quote ,(cl-map 'list #'identity command))
+                    command))
          (connection-type (or connection-type (quote 'pipe)))
          (directory (or directory default-directory)))
     (unless (or on-success on-error)
       (setq on-success '(function ignore)))
     `(let* ((default-directory ,directory)
-            (pfuture-buffer (or ,buffer (generate-new-buffer ,name)))
+            (name (or ,name (format "Pfuture-Callback %s" ,command)))
+            (pfuture-buffer (or ,buffer (generate-new-buffer name)))
             (process
              (make-process
-              :name ,name
+              :name name
               :command ,command
               :connection-type ,connection-type
               :filter ,(or filter '(function pfuture--append-output-to-buffer))
               :sentinel (lambda (process status)
+                          (ignore status)
                           ,@(when on-status-change
                               `((pfuture--decompose-fn-form ,on-status-change
                                   process status pfuture-buffer)))
@@ -155,6 +154,11 @@ buffer is stored in its `buffer' property and is therefore accessible via
                                `(kill-buffer (process-get process 'buffer))))))))
        (process-put process 'buffer pfuture-buffer)
        process)))
+
+(defmacro pfuture-callback-output ()
+  "Retrieve the output from the pfuture-buffer variable in the current scope.
+Meant to be used with `pfuture-callback'."
+  `(pfuture-output-from-buffer pfuture-buffer))
 
 (cl-defun pfuture-await (process &key (timeout 1) (just-this-one t))
   "Block until PROCESS has produced output and return it.
@@ -183,10 +187,12 @@ If the process never quits this method will block forever. Use with caution!"
       (accept-process-output process nil nil t)))
   (process-get process 'result))
 
-(defsubst pfuture-result (process)
+(define-inline pfuture-result (process)
   "Return the output of a pfuture PROCESS."
   (declare (side-effect-free t))
-  (process-get process 'result))
+  (inline-letevals (process)
+    (inline-quote
+     (process-get ,process 'result))))
 
 (defun pfuture--append-output (process msg)
   "Append PROCESS' MSG to the already saved output."
@@ -198,11 +204,13 @@ If the process never quits this method will block forever. Use with caution!"
     (goto-char (point-max))
     (insert msg)))
 
-(defsubst pfuture-output-from-buffer (buffer)
+(define-inline pfuture-output-from-buffer (buffer)
   "Return the process output collected in BUFFER."
   (declare (side-effect-free t))
-  (with-current-buffer buffer
-    (buffer-string)))
+  (inline-letevals (buffer)
+    (inline-quote
+     (with-current-buffer ,buffer
+       (buffer-string)))))
 
 (provide 'pfuture)
 

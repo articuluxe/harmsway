@@ -107,15 +107,15 @@
    `(link-visited               ((,class (:foreground ,aqua2  :underline  (:color ,aqua2)))))
    `(button                     ((,class (:foreground ,blue1  :background ,bg :bold t :box (:line-width -1 :color ,black2 :style released-button)))))
    `(custom-button              ((,class (:inherit    button))))
-   `(linum                      ((,class (:background ,bg     :foreground ,grey1  :bold nil :box nil :overline nil :underline nil :italic nil))))
-   `(line-number                ((,class (:background ,black1 :foreground ,grey1  :bold t))))
-   `(line-number-current-line   ((,class (:background ,black1 :foreground ,green1 :bold t))))
+   `(linum                      ((,class (:background ,bg :foreground ,grey1  :bold nil :box nil :overline nil :underline nil :italic nil))))
+   `(line-number                ((,class (:background ,bg :foreground ,grey1  :bold t))))
+   `(line-number-current-line   ((,class (:background ,bg :foreground ,green1 :bold t))))
    `(region                     ((,class (:background ,black1 :foreground ,fg))))
    `(highlight                  ((,class (:background ,black1 :foreground ,fg))))
    `(hl-line                    ((,class (:background ,grey2))))
    `(highlight-indentation-face ((,class (:background ,grey2))))
    `(header-line                ((,class (:background ,bg))))
-   `(fringe                     ((,class (:background ,black1))))
+   `(fringe                     ((,class (:background ,bg))))
    `(cursor                     ((,class (:background ,red1))))
    `(minibuffer-prompt          ((,class (:foreground ,purple1))))
    `(vertical-border            ((,class (:foreground ,black2))))
@@ -332,7 +332,7 @@
    `(neo-root-dir-face   ((,class (:foreground ,purple1 :bold t :underline t))))
 
    ;; treemacs
-   `(treemacs-header-face   ((,class (:foreground ,red1 :bold t :underline t :height 1.4))))
+   `(treemacs-root-face   ((,class (:foreground ,purple2 :bold t :underline t :overline t :height 1.2))))
 
    ;; Rust & Racer
    `(cargo-process--standard-face ((,class (:foreground ,blue1))))
@@ -684,16 +684,16 @@
    `(company-template-field               ((,class (:inherit yas-field-highlight-face))))
 
    ;; Org-Mode
-   `(org-agenda-calendar-event     ((,class (:foreground ,blue1))))
-   `(org-agenda-calendar-sexp      ((,class (:foreground ,blue1))))
+   `(org-agenda-calendar-event     ((,class (:foreground ,aqua2 :bold t))))
+   `(org-agenda-calendar-sexp      ((,class (:foreground ,aqua2 :bold t))))
    `(org-agenda-clocking           ((,class (:foreground ,bg :background ,red3)))) ;; TODO
    `(org-agenda-column-dateline    ((,class (:foreground ,bg :background ,red3)))) ;; TODO
    `(org-agenda-current-time       ((,class (:foreground ,brown1 :bold t))))
-   `(org-agenda-date               ((,class (:background ,brown2 :foreground ,black2 :box (:color ,black2 :line-with -1)))))
-   `(org-agenda-date-weekend       ((,class (:background ,grey1  :foreground ,black2 :box (:color ,black2 :line-with -1)))))
-   `(org-agenda-date-today         ((,class (:background ,blue3  :foreground ,brown2 :box (:color ,black2 :line-with -1) :bold t))))
+   `(org-agenda-date               ((,class (:foreground ,brown1 :bold t))))
+   `(org-agenda-date-weekend       ((,class (:foreground ,brown2 :bold t))))
+   `(org-agenda-date-today         ((,class (:foreground ,red3 :bold t :italic t :height 1.5))))
    `(org-agenda-diary              ((,class (:foreground ,bg :background ,red3)))) ;; TODO
-   `(org-agenda-dimmed-todo-face   ((,class (:foreground ,bg :background ,red3)))) ;; TODO
+   `(org-agenda-dimmed-todo-face   ((,class (:foreground ,grey1))))
    `(org-agenda-done               ((,class (:foreground ,green1))))
    `(org-agenda-filter-category    ((,class (:foreground ,bg :background ,red3)))) ;; TODO
    `(org-agenda-filter-regexp      ((,class (:foreground ,bg :background ,red3)))) ;; TODO
@@ -749,12 +749,12 @@
    `(org-meta-line                 ((,class (:foreground ,purple2   :bold t))))
    `(org-mode-line-clock           ((,class (:foreground ,bg :background ,red3)))) ;; TODO
    `(org-mode-line-clock-overrun   ((,class (:foreground ,bg :background ,red3)))) ;; TODO
-   `(org-priority                  ((,class (:background ,purple1 :foreground ,black1 :bold t :undeline t :overline t))))
+   `(org-priority                  ((,class (:background ,purple1 :foreground ,black1 :bold t :underline t :overline t))))
    `(org-property-value            ((,class (:foreground ,brown2 :bold t))))
    `(org-quote                     ((,class (:foreground ,bg :background ,red3)))) ;; TODO
-   `(org-scheduled                 ((,class (:foreground ,blue1))))
+   `(org-scheduled                 ((,class (:foreground ,green1))))
    `(org-scheduled-previously      ((,class (:foreground ,purple1))))
-   `(org-scheduled-today           ((,class (:foreground ,brown1))))
+   `(org-scheduled-today           ((,class (:foreground ,blue1))))
    `(org-sexp-date                 ((,class (:inherit org-date))))
    `(org-special-keyword           ((,class (:foreground ,purple2 :underline t :bold t))))
    `(org-table                     ((,class (:foreground ,brown1 :background ,bg2))))
@@ -762,6 +762,7 @@
    `(org-tag-group                 ((,class (:foreground ,bg :background ,red3)))) ;; TODO
    `(org-target                    ((,class (:foreground ,bg :background ,red3)))) ;; TODO
    `(org-time-grid                 ((,class (:foreground ,brown1))))
+   `(org-upcoming-distant-deadline ((,class (:foreground ,yellow1))))
    `(org-agenda-current-time       ((,class (:foreground ,brown1 :background ,bg2 :bold t))))
    `(org-todo                      ((,class (:background ,red2 :foreground ,black1 :bold t :box (:line-width -1 :color ,black2)))))
    `(org-upcoming-deadline         ((,class (:foreground ,orange1))))
@@ -818,6 +819,10 @@
    `(elfeed-search-tag-face           ((,class (:foreground ,green1))))
    `(elfeed-search-unread-title-face  ((,class (:bold t))))
    `(elfeed-search-title-face         ((,class (:foreground ,blue1))))
+   `(elfeed-log-date-face             ((,class (:foreground ,brown1))))
+   `(elfeed-log-info-level-face       ((,class (:foreground ,green1))))
+   `(elfeed-log-warn-level-face       ((,class (:foreground ,yellow1))))
+   `(elfeed-log-error-level-face      ((,class (:foreground ,red2))))
 
    ;; LSP
    `(lsp-face-highlight-read  ((,class (:background ,blue2 :foreground ,black2))))

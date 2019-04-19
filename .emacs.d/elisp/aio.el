@@ -2,6 +2,11 @@
 
 ;; This is free and unencumbered software released into the public domain.
 
+;; Author: Christopher Wellons <wellons@nullprogram.com>
+;; URL: https://github.com/skeeto/emacs-aio
+;; Version: 0.1
+;; Package-Requires: ((emacs "26.1"))
+
 ;;; Commentary:
 
 ;; The main components of this package are `aio-defun' / `aio-lambda'
@@ -20,8 +25,8 @@
 (require 'generator)
 
 ;; Register new error types
-(setf (get 'aio-timeout 'error-conditions) '(aio-timeout error)
-      (get 'aio-timeout 'error-message) "Timeout was reached")
+(define-error 'aio-cancel "Promise was canceled")
+(define-error 'aio-timeout "Timeout was reached")
 
 (defun aio-promise ()
   "Create a new promise object."
@@ -43,6 +48,7 @@ called (e.g. `funcall') in order to retrieve the value."
 
 (defun aio-listen (promise callback)
   "Add CALLBACK to PROMISE.
+
 If the promise has already been resolved, the callback will be
 scheduled for the next event loop turn."
   (let ((result (aio-result promise)))
@@ -136,40 +142,49 @@ value, or any uncaught error signal."
            (doc-string 3))
   `(defalias ',name (aio-lambda ,arglist ,@body)))
 
-(aio-defun aio-timeout (promise seconds)
-  "Create a promise based on PROMISE with a timeout after SECONDS.
+(defun aio-wait-for (promise)
+  "Synchronously wait for PROMISE, blocking the current thread."
+  (while (null (aio-result promise))
+    (accept-process-output))
+  (funcall (aio-result promise)))
 
-If PROMISE resolves first, the timeout promise resolves to its
-value rather than a timeout. When the timeout is reached, the
-aio-timeout symbol is signaled for the result.
+(defun aio-cancel (promise &optional reason)
+  "Attempt to cancel PROMISE, returning non-nil if successful.
 
-Note: The original asynchronous task is, of course, not actually
-canceled by the timeout, which may matter in some cases. For this
-reason it's preferable for the originator of the promise to
-support timeouts directly."
-  (let ((timeout (aio-promise)))
-    (run-at-time seconds nil #'aio-resolve timeout
-                 (lambda () (signal 'aio-timeout seconds)))
-    (let ((fastest-promise (aio-await (aio-select (list promise timeout)))))
-      (funcall (aio-result fastest-promise)))))
+All awaiters will receive an aio-cancel signal. The actual
+underlying asynchronous operation will not actually be canceled."
+  (unless (aio-result promise)
+    (aio-resolve promise (lambda () (signal 'aio-cancel reason)))))
+
+(defmacro aio-with-async (&rest body)
+  "Evaluate BODY asynchronously as if it was inside `aio-lambda'.
+
+Since BODY is evalued inside an asynchronous lambda, `aio-await'
+is available here. This macro evaluates to a promise for BODY's
+eventual result."
+  (declare (indent 0))
+  `(let ((promise (funcall (aio-lambda ()
+                             (aio-await (aio-sleep 0))
+                             ,@body))))
+     (prog1 promise
+       ;; The is the main feature: Force the final result to be
+       ;; realized so that errors are reported.
+       (aio-listen promise #'funcall))))
+
+(defmacro aio-chain (expr)
+  "`aio-await' on EXPR and replace place EXPR with the next promise.
+
+EXPR must be setf-able. Returns (cdr result). This macro is
+intended to be used with `aio-make-callback' in order to follow
+a chain of promise-yielding promises."
+  (let ((result (make-symbol "result")))
+    `(let ((,result (aio-await ,expr)))
+       (setf ,expr (car ,result))
+       (cdr ,result))))
 
 ;; Useful promise-returning functions:
 
 (require 'url)
-
-(defun aio-select (promises)
-  "Return a new promise that resolves when any in PROMISES resolves.
-
-The result of the returned promise is the input promise that
-completed. Use an additional `aio-await' or `aio-result' to
-retrieve its value."
-  (let ((result (aio-promise)))
-    (prog1 result
-      (dolist (promise promises)
-        (aio-listen promise (lambda (_)
-                              (when result
-                                (aio-resolve result (lambda () promise))
-                                (setf result nil))))))))
 
 (aio-defun aio-all (promises)
   "Return a promise that resolves when all PROMISES are resolved."
@@ -200,7 +215,24 @@ automatically wrapped with a value function (see `aio-resolve')."
   (let ((promise (aio-promise)))
     (prog1 promise
       (run-at-time seconds nil
-                   (lambda () (aio-resolve promise (lambda () result)))))))
+                   #'aio-resolve promise (lambda () result)))))
+
+(defun aio-idle (seconds &optional result)
+  "Create a promise that is resolved after idle SECONDS with RESULT.
+
+The result is a value, not a value function, and it will be
+automatically wrapped with a value function (see `aio-resolve')."
+  (let ((promise (aio-promise)))
+    (prog1 promise
+      (run-with-idle-timer seconds nil
+                           #'aio-resolve promise (lambda () result)))))
+
+(defun aio-timeout (seconds)
+  "Create a promise with a timeout error after SECONDS."
+  (let ((timeout (aio-promise)))
+    (prog1 timeout
+      (run-at-time seconds nil#'aio-resolve timeout
+                   (lambda () (signal 'aio-timeout seconds))))))
 
 (defun aio-url-retrieve (url &optional silent inhibit-cookies)
   "Wraps `url-retrieve' in a promise.
@@ -221,56 +253,172 @@ caller."
                             (lambda ()
                               (signal (car error) (cdr error)))))))))
 
-(defun aio-process-sentinel (process)
-  "Return a promise representing the sentinel of PROCESS.
+(cl-defun aio-make-callback (&key tag once)
+  "Return a new callback function and its first promise.
 
-This promise resolves to the status string passed to the sentinel
-function. It is safe to apply this function multiple times to the
-same process."
-  (let ((old-promise (process-get process :aio-sentinel)))
-    (if old-promise
-        old-promise
-      (let* ((promise (aio-promise))
-             (callback (lambda (process status)
-                         (setf (process-sentinel process) nil
-                               (process-get process :aio-sentinel) nil)
-                         (aio-resolve promise (lambda () status)))))
-        (prog1 promise
-          (setf (process-sentinel process) callback
-                (process-get process :aio-sentinel) promise))))))
+Returns a cons (callback . promise) where callback is function
+suitable for repeated invocation. This makes it useful for
+process filters and sentinels. The promise is the first promise
+to be resolved by the callback.
 
-(defun aio-process-filter (process)
-  "Return a promise representing the filter of PROCESS.
+The promise resolves to:
+  (next-promise . callback-args)
+Or when TAG is supplied:
+  (next-promise TAG . callback-args)
+Or if ONCE is non-nil:
+  callback-args
 
-This promise resolves to the process output string passed to the
-filter. If the process terminates, this promise resolves to nil.
+The callback resolves next-promise on the next invocation. This
+creates a chain of promises representing the sequence of calls.
+Note: To avoid keeping lots of garbage in memory, avoid holding
+onto the first promise (i.e. capturing it in a closure).
 
-It is safe to apply this function multiple times to the same
-process. In fact, if the last filter promise has been resolved,
-it is necessary to use this function to create a promise for the
-next chunk of output."
-  (let ((old-filter (process-get process :aio-filter)))
-    (if old-filter
-        old-filter
-      (let* ((promise (aio-promise))
-             (sentinel (aio-process-sentinel process))
-             (callback (lambda (process output)
-                         (setf (process-filter process) nil
-                               (process-get process :aio-filter) nil)
-                         (aio-resolve promise (lambda () output))))
-             (finalizer nil))
-        (prog1 promise
-          ;; Use setf to allow anonymous function to reference itself
-          (setf finalizer
-                (lambda (_)
-                  (if (process-live-p process)
-                      ;; Reregister sentinel
-                      (aio-listen sentinel finalizer)
-                    (funcall callback process nil))))
-          ;; Also monitor the process sentinel
-          (aio-listen sentinel finalizer)
-          (setf (process-filter process) callback
-                (process-get process :aio-filter) promise))))))
+The `aio-chain' macro makes it easier to use these promises."
+  (let* ((promise (aio-promise))
+         (callback
+          (if once
+              (lambda (&rest args)
+                (let ((result (if tag
+                                  (cons tag args)
+                                args)))
+                  (aio-resolve promise (lambda () result))))
+            (lambda (&rest args)
+              (let* ((next-promise (aio-promise))
+                     (result (if tag
+                                 (cons next-promise (cons tag args))
+                               (cons next-promise args))))
+                (aio-resolve promise (lambda () result))
+                (setf promise next-promise))))))
+    (cons callback promise)))
+
+;; A simple little queue
+
+(defsubst aio--queue-empty-p (queue)
+  "Return non-nil if QUEUE is empty.
+An empty queue is (nil . nil)."
+  (null (caar queue)))
+
+(defsubst aio--queue-get (queue)
+  "Get the next item from QUEUE, or nil for empty."
+  (let ((head (car queue)))
+    (cond ((null head)
+           nil)
+          ((eq head (cdr queue))
+           (prog1 (car head)
+             (setf (car queue) nil
+                   (cdr queue) nil)))
+          ((prog1 (car head)
+             (setf (car queue) (cdr head)))))))
+
+(defsubst aio--queue-put (queue element)
+  "Append ELEMENT to QUEUE, returning ELEMENT."
+  (let ((new (list element)))
+    (prog1 element
+      (if (null (car queue))
+          (setf (car queue) new
+                (cdr queue) new)
+        (setf (cdr (cdr queue)) new
+              (cdr queue) new)))))
+
+;; An efficient select()-like interface for promises
+
+(defun aio-make-select (&optional promises)
+  "Create a new `aio-select' object for waiting on multiple promises."
+  (let ((select (record 'aio-select
+                        ;; Membership table
+                        (make-hash-table :test 'eq)
+                        ;; "Seen" table (avoid adding multiple callback)
+                        (make-hash-table :test 'eq :weakness 'key)
+                        ;; Queue of pending resolved promises
+                        (cons nil nil)
+                        ;; Callback to resolve select's own promise
+                        nil)))
+    (prog1 select
+      (dolist (promise promises)
+        (aio-select-add select promise)))))
+
+(defun aio-select-add (select promise)
+  "Add PROMISE to the set of promises in SELECT.
+
+SELECT is created with `aio-make-select'. It is valid to add a
+promise that was previously removed."
+  (let ((members (aref select 1))
+        (seen (aref select 2)))
+    (prog1 promise
+      (unless (gethash promise seen)
+        (setf (gethash promise seen) t
+              (gethash promise members) t)
+        (aio-listen promise
+                    (lambda (_)
+                      (when (gethash promise members)
+                        (aio--queue-put (aref select 3) promise)
+                        (remhash promise members)
+                        (let ((callback (aref select 4)))
+                          (when callback
+                            (setf (aref select 4) nil)
+                            (funcall callback))))))))))
+
+(defun aio-select-remove (select promise)
+  "Remove PROMISE form the set of promises in SELECT.
+
+SELECT is created with `aio-make-select'."
+  (remhash promise (aref select 1)))
+
+(defun aio-select-promises (select)
+  "Return a list of promises in SELECT.
+
+SELECT is created with `aio-make-select'. "
+  (cl-loop for key being the hash-keys of (aref select 1)
+           collect key))
+
+(defun aio-select (select)
+  "Return a promise that resolves when any promise in SELECT resolves.
+
+SELECT is created with `aio-make-select'. This function is
+level-triggered: if a promise in SELECT is already resolved, it
+returns immediately with that promise. Promises returned by
+`aio-select' are automatically removed from SELECT. Use this
+function to repeatedly wait on a set of promises.
+
+Note: The promise returned by this function resolves to another
+promise, not that promise's result. You will need to `aio-await'
+on it, or use `aio-result'."
+  (let* ((result (aio-promise))
+         (callback (lambda ()
+                     (let ((promise (aio--queue-get (aref select 3))))
+                       (aio-resolve result (lambda () promise))))))
+    (prog1 result
+      (if (aio--queue-empty-p (aref select 3))
+          (setf (aref select 4) callback)
+        (funcall callback)))))
+
+;; Semaphores
+
+(defun aio-sem (init)
+  "Create a new semaphore with initial value INIT."
+  (record 'aio-sem
+          ;; Semaphore value
+          init
+          ;; Queue of waiting async functions
+          (cons nil nil)))
+
+(defun aio-sem-post (sem)
+  "Increment the value of SEM.
+
+If asynchronous functions are awaiting on SEM, then one will be
+woken up. This function is not awaitable."
+  (when (<= (cl-incf (aref sem 1)) 0)
+    (let ((waiting (aio--queue-get (aref sem 2))))
+      (when waiting
+        (aio-resolve waiting (lambda () nil))))))
+
+(defun aio-sem-wait (sem)
+  "Decrement the value of SEM.
+
+If SEM is at zero, returns a promise that will resolve when
+another asynchronous function uses `aio-sem-post'."
+  (when (< (cl-decf (aref sem 1)) 0)
+    (aio--queue-put (aref sem 2) (aio-promise))))
 
 (provide 'aio)
 

@@ -8,9 +8,9 @@
 ;; Created: Fri Mar 19 15:58:58 1999
 ;; Version: 2017.10.23
 ;; Package-Requires: ()
-;; Last-Updated: Thu Jan 17 13:11:52 2019 (-0800)
+;; Last-Updated: Wed Mar 20 20:35:35 2019 (-0700)
 ;;           By: dradams
-;;     Update #: 11287
+;;     Update #: 11516
 ;; URL: https://www.emacswiki.org/emacs/download/dired%2b.el
 ;; Doc URL: https://www.emacswiki.org/emacs/DiredPlus
 ;; Keywords: unix, mouse, directories, diredp, dired
@@ -99,9 +99,10 @@
 ;;  font-locking, and this effect is established only when Dired+ is
 ;;  loaded, which defines the font-lock keywords for Dired.  These
 ;;  options include `diredp-compressed-extensions',
-;;  `diredp-ignore-compressed-flag', and `dired-omit-extensions'.
-;;  This means that if you change the value of such an option then you
-;;  will see the change only in a new Emacs session.
+;;  `diredp-ignore-compressed-flag', `dired-omit-extensions', and
+;;  `diredp-omit-files-regexp'.  This means that if you change the
+;;  value of such an option then you will see the change only in a new
+;;  Emacs session.
 ;;
 ;;  (You can see the effect in the same session if you use `C-M-x' on
 ;;  the `defvar' sexp for `diredp-font-lock-keywords-1', and then you
@@ -443,9 +444,10 @@
 ;;    `diredp-flag-mark-line', `diredp-get-file-or-dir-name',
 ;;    `diredp-ignored-file-name', `diredp-link-priv',
 ;;    `diredp-mode-line-flagged', `diredp-mode-line-marked'
-;;    `diredp-no-priv', `diredp-number', `diredp-other-priv',
-;;    `diredp-rare-priv', `diredp-read-priv', `diredp-symlink',
-;;    `diredp-tagged-autofile-name', `diredp-write-priv'.
+;;    `diredp-omit-file-name', `diredp-no-priv', `diredp-number',
+;;    `diredp-other-priv', `diredp-rare-priv', `diredp-read-priv',
+;;    `diredp-symlink', `diredp-tagged-autofile-name',
+;;    `diredp-write-priv'.
 ;;
 ;;  Commands defined here:
 ;;
@@ -528,6 +530,7 @@
 ;;    `diredp-marked-recursive',
 ;;    `diredp-marked-recursive-other-window',
 ;;    `diredp-mark-extension-recursive',
+;;    `diredp-mark-files-containing-regexp-recursive',
 ;;    `diredp-mark-files-regexp-recursive',
 ;;    `diredp-mark-files-tagged-all', `diredp-mark-files-tagged-none',
 ;;    `diredp-mark-files-tagged-not-all',
@@ -601,6 +604,7 @@
 ;;    `diredp-ignore-compressed-flag',
 ;;    `diredp-image-show-this-file-use-frame-flag' (Emacs 22+),
 ;;    `diredp-max-frames', `diredp-move-file-dirs' (Emacs 24+),
+;;    `diredp-omit-files-regexp'
 ;;    `diredp-prompt-for-bookmark-prefix-flag',
 ;;    `diredp-visit-ignore-extensions', `diredp-visit-ignore-regexps',
 ;;    `diredp-w32-local-drives', `diredp-wrap-around-flag'.
@@ -786,6 +790,24 @@
 ;;
 ;;; Change Log:
 ;;
+;; 2019/03/20 dadams
+;;     Added option diredp-omit-files-regexp.
+;;     Face diredp-omit-file-name: Added strike-through.
+;;     diredp-font-lock-keywords-1, for face diredp-omit-file-name:
+;;       Move to file name.  Use diredp-omit-files-regexp.  Append * for executable flag.  Highlight whole line.
+;; 2019/03/17 dadams
+;;     diredp-font-lock-keywords-1:
+;;       Use just dired-omit-files as regexp - its components already have ^...$.
+;;       Removed superfluous execute *'s in regexps and superfluous concat for compressed extensions.
+;;     Face diredp-omit-file-name: Removed :strike-through for default value.
+;; 2019/03/16 dadms
+;;     Added face diredp-omit-file-name.
+;;     diredp-font-lock-keywords-1: Use face diredp-omit-file-name for dired-omit-files matches.
+;; 2019/03/15 dadams
+;;     diredp-font-lock-keywords-1: Treat dired-omit-files like dired-omit-extensions.
+;; 2019/01/27 dadams
+;;     Added: diredp-mark-files-containing-regexp-recursive.
+;;              Bound to M-+ % g.  Added to diredp-marks-recursive-menu, diredp-regexp-recursive-menu.
 ;; 2019/01/17 dadams
 ;;     Added: diredp-mark-sexp-recursive.  Bound to M-+ M-(, M-+ * (.  Added to diredp-marks-recursive-menu.
 ;;     dired-query: Use dired-query-alist only when available.
@@ -2034,7 +2056,10 @@ support the use of such keys then customize this option to nil."
 ;;;###autoload
 (defcustom diredp-compressed-extensions '(".tar" ".taz" ".tgz" ".arj" ".lzh"
                                           ".lzma" ".xz" ".zip" ".z" ".Z" ".gz" ".bz2")
-  "*List of compressed-file extensions, for highlighting."
+  "*List of compressed-file extensions, for highlighting.
+
+Note: If you change the value of this option then you need to restart
+Emacs to see the effect of the new value on font-locking."
   :type '(repeat string) :group 'Dired-Plus)
 
 (when (> emacs-major-version 21)        ; Emacs 22+
@@ -2099,7 +2124,10 @@ This option has no effect unless you use libraries `Bookmark and
   "*Non-nil means to font-lock names of compressed files as ignored files.
 This applies to filenames whose extensions are in
 `diredp-compressed-extensions'.  If nil they are highlighted using
-face `diredp-compressed-file-name'."
+face `diredp-compressed-file-name'.
+
+Note: If you change the value of this option then you need to restart
+Emacs to see the effect of the new value on font-locking."
   :type 'boolean :group 'Dired-Plus)
 
 ;;;###autoload
@@ -2153,6 +2181,48 @@ the circumstances in which they show the files in separate frames."
 File names should be relative (no directory component).
 Target directory names should be absolute."
     :group 'files :type '(alist :key-type file :value-type directory)))
+
+;; (Not used - just use the body directly in the option default value.
+;; (defun diredp-omit-files-regexp ()
+;;   "Return regexp to use for font-locking, using `dired-omit-files' as base."
+;;   (let* ((strg  dired-omit-files)
+;;          (strg  (if (eq ?^ (aref strg 0)) (substring strg 1) strg)) ; Remove initial ^
+;;          (strg  (replace-regexp-in-string "\\(\\\\[|]\\)\\^" "\\1" strg 'FIXEDCASE nil)) ; Remove other ^'s
+;;          (strg  (replace-regexp-in-string "\\([$]\\)" "" strg 'FIXEDCASE nil))) ; Remove $'s
+;;     strg))
+
+;;;###autoload
+(defcustom diredp-omit-files-regexp (let* ((strg  dired-omit-files)
+                                           (strg  (if (eq ?^ (aref strg 0)) ; Remove initial ^
+                                                      (substring strg 1)
+                                                    strg))
+                                           (strg  (replace-regexp-in-string "\\(\\\\[|]\\)\\^" ; Remove other ^'s
+                                                                            "\\1"
+                                                                            strg
+                                                                            'FIXEDCASE
+                                                                            nil))
+                                           (strg  (replace-regexp-in-string "\\([$]\\)" ; Remove $'s
+                                                                            ""
+                                                                            strg
+                                                                            'FIXEDCASE
+                                                                            nil)))
+                                      strg)
+  "Regexp for font-locking file names to be omitted by `dired-omit-mode'.
+The regexp is matched only against the file name, but the entire line
+is highlighted (with face `diredp-omit-file-name').
+
+The default value of this option differs from that of
+`dired-omit-files' by removing \"^\" from the beginning, and \"$\"
+from the end, of each regexp choice.  (The default value of
+`dired-omit-files', at least prior to Emacs 27, uses \"^\" and \"$\",
+but it should not.)
+
+If you want to control the beginning and end of choice matches then
+use \"\\`\" and \"\\'\" instead of \"^\" and \"$\".
+
+Note: If you change the value of this option then you need to restart
+Emacs to see the effect of the new value on font-locking."
+  :group 'Dired-Plus :type 'regexp)
 
 ;;;###autoload
 (defcustom diredp-prompt-for-bookmark-prefix-flag nil
@@ -3441,11 +3511,10 @@ This means the `.' plus the file extension.  Example: `.elc'."
 (defvar diredp-flag-mark-line 'diredp-flag-mark-line)
 
 (defface diredp-ignored-file-name
-    '(;; (((background dark)) (:foreground "#FFFF921F921F")) ; ~ salmon
-      ;; (((background dark)) (:foreground "#A71F5F645F64")) ; ~ dark salmon
-      (((background dark)) (:foreground "#C29D6F156F15")) ; ~ salmon
-      (t                   (:foreground "#00006DE06DE0")))                  ; ~ dark cyan
-  "*Face used for ignored file names  in Dired buffers."
+  '((((background dark)) (:foreground "#C29D6F156F15"))    ; ~ salmon
+    (t                   (:foreground "#00006DE06DE0"))) ; ~ dark cyan
+  "*Face used for files whose names are omitted based on the extension.
+See also face `diredp-omit-file-name'."
   :group 'Dired-Plus :group 'font-lock-highlighting-faces)
 (defvar diredp-ignored-file-name 'diredp-ignored-file-name)
 
@@ -3481,6 +3550,19 @@ This means the `.' plus the file extension.  Example: `.elc'."
 In particular, inode number, number of hard links, and file size."
   :group 'Dired-Plus :group 'font-lock-highlighting-faces)
 (defvar diredp-number 'diredp-number)
+
+(defface diredp-omit-file-name
+  (if (assq :inherit custom-face-attributes) ; Emacs 22+
+      '((((background dark)) (:inherit diredp-ignored-file-name :strike-through "#555555555555")) ; ~ dark gray
+        (t                   (:inherit diredp-ignored-file-name :strike-through "#AAAAAAAAAAAA"))) ; ~ light gray
+    '((((background dark)) (:foreground "#C29D6F156F15")) ; ~ salmon
+      (t                   (:foreground "#00006DE06DE0")))) ; ~ dark cyan
+  "*Face used for files whose names will be omitted in `dired-omit-mode'.
+This means file names that match regexp `diredp-omit-files-regexp'.
+\(File names matching `dired-omit-extensions' are highlighted with face
+`diredp-ignored-file-name' instead.)"
+  :group 'Dired-Plus :group 'font-lock-highlighting-faces)
+(defvar diredp-omit-file-name 'diredp-omit-file-name)
 
 (defface diredp-other-priv
     '((((background dark)) (:background "#111117175555")) ; ~ dark blue
@@ -3535,10 +3617,10 @@ In particular, inode number, number of hard links, and file size."
 (defvar diredp-font-lock-keywords-1
   (list
    '("^  \\(.+:\\)$" 1 diredp-dir-heading) ; Directory headers
-   '("^  wildcard.*$" 0 'default)       ; Override others, e.g. `l' for `diredp-other-priv'.
-   '("^  (No match).*$" 0 'default)     ; Override others, e.g. `t' for `diredp-other-priv'.
+   '("^  wildcard.*$" 0 'default)   ; Override others, e.g. `l' for `diredp-other-priv'.
+   '("^  (No match).*$" 0 'default) ; Override others, e.g. `t' for `diredp-other-priv'.
    '("[^ .]\\(\\.[^. /]+\\)$" 1 diredp-file-suffix) ; Suffix, including `.'.
-   '("\\([^ ]+\\) -> .+$" 1 diredp-symlink) ; Symbolic links
+   '("\\([^ ]+\\) -> .+$" 1 diredp-symlink)         ; Symbolic links
 
    ;; 1) Date/time and 2) filename w/o suffix.
    ;;    This is a bear, and it is fragile - Emacs can change `dired-move-to-filename-regexp'.
@@ -3549,8 +3631,8 @@ In particular, inode number, number of hard links, and file size."
                                                  "\\)[*]?$")) ; Compressed-file name
                    nil nil (list 0 diredp-compressed-file-name 'keep t)))
      `(,dired-move-to-filename-regexp
-       (7 diredp-date-time t t)         ; Date/time, locale (western or eastern)
-       (2 diredp-date-time t t)         ; Date/time, ISO
+       (7 diredp-date-time t t) ; Date/time, locale (western or eastern)
+       (2 diredp-date-time t t) ; Date/time, ISO
        (,(concat "\\(.+\\)\\(" (concat (funcall #'regexp-opt diredp-compressed-extensions)
                                        "\\)[*]?$"))
         nil nil (0 diredp-compressed-file-name keep t)))) ; Compressed-file suffix
@@ -3559,22 +3641,26 @@ In particular, inode number, number of hard links, and file size."
              (list 1 'diredp-date-time t t) ; Date/time
              (list "\\(.+\\)$" nil nil (list 0 diredp-file-name 'keep t))) ; Filename
      `(,dired-move-to-filename-regexp
-       (7 diredp-date-time t t)         ; Date/time, locale (western or eastern)
-       (2 diredp-date-time t t)         ; Date/time, ISO
+       (7 diredp-date-time t t) ; Date/time, locale (western or eastern)
+       (2 diredp-date-time t t) ; Date/time, ISO
        ("\\(.+\\)$" nil nil (0 diredp-file-name keep t)))) ; Filename (not a compressed file)
 
-   ;; Files to ignore
-   (list (concat "^  \\(.*\\("
-                 (mapconcat #'regexp-quote (or (and (boundp 'dired-omit-extensions)  dired-omit-extensions)
-                                               completion-ignored-extensions)
-                            "[*]?\\|")
-                 (and diredp-ignore-compressed-flag
-                      (concat "\\|" (mapconcat #'regexp-quote diredp-compressed-extensions "[*]?\\|")))
-                 "[*]?\\)\\)$") ; Allow for executable flag (*).
-         1 diredp-ignored-file-name t)
+   ;; Files to ignore.
+   ;;   Use face `diredp-ignored-file-name' for omission by file-name extension.
+   ;;   Use face `diredp-omit-file-name' for omission by entire file name.
+   (let* ((omit-exts   (or (and (boundp 'dired-omit-extensions)  dired-omit-extensions)
+                           completion-ignored-extensions))
+          (omit-exts   (and omit-exts  (mapconcat #'regexp-quote omit-exts "\\|")))
+          (compr-exts  (and diredp-ignore-compressed-flag
+                            (concat "\\|" (mapconcat #'regexp-quote diredp-compressed-extensions "\\|")))))
+     (list (concat "^  \\(.*\\(" omit-exts compr-exts "\\)[*]?\\)$") ; [*]? allows for executable flag (*).
+           1 diredp-ignored-file-name t))
+   `(,(concat "^.*" dired-move-to-filename-regexp
+              "\\(" diredp-omit-files-regexp "\\).*[*]?$") ; [*]? allows for executable flag (*).
+     (0 diredp-omit-file-name t))
 
    ;; Compressed-file (suffix)
-   (list (concat "\\(" (concat (funcall #'regexp-opt diredp-compressed-extensions) "\\)[*]?$"))
+   (list (concat "\\(" (funcall #'regexp-opt diredp-compressed-extensions) "\\)[*]?$")
          1 diredp-compressed-file-suffix t)
    '("\\([*]\\)$" 1 diredp-executable-tag t) ; Executable (*)
 
@@ -5746,7 +5832,8 @@ When called from Lisp, optional arg DETAILS is passed to
   (setq diredp-last-copied-filenames  (car kill-ring-yank-pointer)))
 
 ;;;###autoload
-(defun diredp-mark-files-regexp-recursive (regexp &optional marker-char ignore-marks-p details) ; Bound to `M-+ % m'
+(defun diredp-mark-files-regexp-recursive (regexp
+                                           &optional marker-char ignore-marks-p details) ; Bound to `M-+ % m'
   "Mark all files matching REGEXP, including those in marked subdirs.
 Like `dired-mark-files-regexp' but act recursively on marked subdirs.
 
@@ -5794,6 +5881,79 @@ When called from Lisp, DETAILS is passed to `diredp-get-subdirs'."
                                                (let ((fn  (dired-get-filename nil 'NO-ERROR)))
                                                  (and fn  (diredp-string-match-p regexp fn))))
                                           "file")
+                changed   (+ changed (or (car chg.mtch)  0))
+                matched   (+ matched (or (cdr chg.mtch)  0))))))
+    (message "%s file%s%s%s newly %s"
+             matched
+             (dired-plural-s matched)
+             (if (not (= matched changed)) " matched, " "")
+             (if (not (= matched changed)) changed "")
+             (if (eq ?\040 dired-marker-char) "unmarked" "marked"))))
+
+;;;###autoload
+(defun diredp-mark-files-containing-regexp-recursive (regexp
+                                                      &optional marker-char ignore-marks-p details) ; `M-+ % g'
+  "Mark files with contents containing a REGEXP match, including in marked subdirs.
+Like `dired-mark-files-containing-regexp' but act recursively on
+marked subdirs.
+
+A non-negative prefix arg means to UNmark the files instead.
+
+A non-positive prefix arg means to ignore subdir markings and act
+instead on ALL subdirs.  That is, mark all matching files in this
+directory and all descendant directories.
+
+REGEXP is added to `regexp-search-ring', for regexp search.
+
+Note: If there is more than one Dired buffer for a given subdirectory
+then only the first such is used.
+
+If a file is visited in a buffer and `dired-always-read-filesystem' is
+nil, this looks in the buffer without revisiting the file, so the
+results might be inconsistent with the file on disk if its contents
+have changed since it was last visited.
+
+When called from Lisp, DETAILS is passed to `diredp-get-subdirs'."
+
+  (interactive (let* ((numarg   (and current-prefix-arg  (prefix-numeric-value current-prefix-arg)))
+                      (unmark   (and numarg  (>= numarg 0)))
+                      (ignorep  (and numarg  (<= numarg 0))))
+                 (list (diredp-read-regexp (concat (if unmark "UNmark" "Mark") " files containing (regexp): "))
+                       (and unmark  ?\040)
+                       ignorep)))
+  (add-to-list 'regexp-search-ring regexp) ; Add REGEXP to `regexp-search-ring'.
+
+
+  (let ((dired-marker-char  (or marker-char  dired-marker-char))
+        (sdirs              (diredp-get-subdirs ignore-marks-p details))
+        (matched            0)
+        (changed            0)
+        dbufs chg.mtch)
+    (message "%s files..." (if (eq ?\040 dired-marker-char) "UNmarking" "Marking"))
+    (dolist (dir  (cons default-directory sdirs))
+      (when (setq dbufs  (dired-buffers-for-dir (expand-file-name dir))) ; Dirs with Dired buffers only.
+        (with-current-buffer (car dbufs)
+          (setq chg.mtch
+                (diredp-mark-if
+                 (and (not (diredp-looking-at-p dired-re-dot))
+                      (not (eolp))
+                      (let ((fname  (dired-get-filename nil t)))
+                                  
+                        (and fname
+                             (file-readable-p fname)
+                             (not (file-directory-p fname))
+                             (let ((prebuf  (get-file-buffer fname)))
+                               (message "Checking %s" fname)
+                               ;; For now, do it inside Emacs.  Grep might be better if there are lots of files.
+                               (if (and prebuf  (or (not (boundp 'dired-always-read-filesystem))
+                                                    (not dired-always-read-filesystem))) ; Emacs 26+
+                                   (with-current-buffer prebuf
+                                     (save-excursion (goto-char (point-min)) (re-search-forward regexp nil t)))
+                                 (with-temp-buffer
+                                   (insert-file-contents fname)
+                                   (goto-char (point-min))
+                                   (re-search-forward regexp nil t)))))))
+                 "file")
                 changed   (+ changed (or (car chg.mtch)  0))
                 matched   (+ matched (or (cdr chg.mtch)  0))))))
     (message "%s file%s%s%s newly %s"
@@ -5983,7 +6143,8 @@ When called from Lisp, DETAILS is passed to `diredp-get-subdirs'."
                                      (buffer-substring (progn (skip-chars-backward " \t") (point))
                                                        (progn (skip-chars-backward "^ \t") (point)))))
                              ;; `NAME', `SYM'
-                             (setq name  (buffer-substring (point) (or (dired-move-to-end-of-filename t)  (point)))
+                             (setq name  (buffer-substring (point)
+                                                           (or (dired-move-to-end-of-filename t)  (point)))
                                    sym   (if (diredp-looking-at-p " -> ")
                                              (buffer-substring (progn (forward-char 4) (point))
                                                                (line-end-position))
@@ -11209,7 +11370,8 @@ Here and below (in marked subdirs)
   \\[diredp-mark-directories-recursive]\t\t- Mark directories
   \\[diredp-mark-executables-recursive]\t\t- Mark executables
   \\[diredp-mark-symlinks-recursive]\t\t- Mark symbolic links
-  \\[diredp-mark-files-regexp-recursive]\t\t- Mark regexp matches
+  \\[diredp-mark-files-containing-regexp-recursive]\t\t- Mark content regexp matches
+  \\[diredp-mark-files-regexp-recursive]\t\t- Mark filename regexp matches
 "
     (and (featurep 'bookmark+)
          "  \\[diredp-mark-autofiles-recursive]\t\t- Mark autofiles
@@ -12406,8 +12568,11 @@ If no one is selected, symmetric encryption will be performed.  "
 (define-key diredp-menu-bar-regexp-menu [mark-recursive]
   (cons "Here and Below" diredp-regexp-recursive-menu))
 (define-key diredp-regexp-recursive-menu [diredp-mark-files-regexp-recursive]
-    '(menu-item "Mark..." diredp-mark-files-regexp-recursive
-      :help "Mark all files matching a regexp, including those in marked subdirs"))
+    '(menu-item "Mark Named..." diredp-mark-files-regexp-recursive
+      :help "Mark all file names matching a regexp, including those in marked subdirs"))
+(define-key diredp-regexp-recursive-menu [diredp-mark-files-containing-regexp-recursive]
+    '(menu-item "Mark Containing..." diredp-mark-files-containing-regexp-recursive
+      :help "Mark all files with content matching a regexp, including in marked subdirs"))
 
 ;; We don't use `define-obsolete-variable-alias' so that byte-compilation in older Emacs
 ;; works for newer Emacs too.
@@ -12636,9 +12801,12 @@ If no one is selected, symmetric encryption will be performed.  "
 (define-key diredp-marks-recursive-menu [diredp-mark-sexp-recursive]
   '(menu-item "If..." diredp-mark-sexp-recursive
     :help "Mark files satisfying specified condition, including those in marked subdirs"))
+(define-key diredp-marks-recursive-menu [diredp-mark-files-containing-regexp-recursive]
+  '(menu-item "Containing Regexp..." diredp-mark-files-containing-regexp-recursive
+    :help "Mark all files with content matching a regexp, including in marked subdirs"))
 (define-key diredp-marks-recursive-menu [diredp-mark-files-regexp-recursive]
-  '(menu-item "Regexp..." diredp-mark-files-regexp-recursive
-    :help "Mark all files matching a regexp, including those in marked subdirs"))
+  '(menu-item "Named Regexp..." diredp-mark-files-regexp-recursive
+    :help "Mark all file names matching a regexp, including those in marked subdirs"))
 (define-key diredp-marks-recursive-menu [diredp-mark-extension-recursive]
   '(menu-item "Extension..." diredp-mark-extension-recursive
     :help "Mark all files with a given extension, including those in marked subdirs"))
@@ -13023,6 +13191,7 @@ If no one is selected, symmetric encryption will be performed.  "
   (define-key diredp-recursive-map ":s"        'diredp-do-sign-recursive)               ; `: s'
   (define-key diredp-recursive-map ":v"        'diredp-do-verify-recursive))            ; `: v'
 (define-key diredp-recursive-map "%c"          'diredp-capitalize-recursive)            ; `% c'
+(define-key diredp-recursive-map "%g"          'diredp-mark-files-containing-regexp-recursive) ; `% g'
 (define-key diredp-recursive-map "%l"          'diredp-downcase-recursive)              ; `% l'
 (define-key diredp-recursive-map "%m"          'diredp-mark-files-regexp-recursive)     ; `% m'
 (define-key diredp-recursive-map "%u"          'diredp-upcase-recursive)                ; `% u'

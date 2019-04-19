@@ -27,131 +27,13 @@
 (require 'lsp)
 (require 'dash)
 (require 'dash-functional)
+(require 'lsp-pyls)
+(require 'lsp-rust)
+(require 'lsp-solargraph)
+(require 'lsp-vetur)
+(require 'lsp-intelephense)
+(require 'lsp-css)
 
-
-;; Python
-
-(defgroup lsp-python nil
-  "Python."
-  :group 'lsp-mode
-  :tag "Python")
-
-(defcustom lsp-clients-python-library-directories '("/usr/")
-  "List of directories which will be considered to be libraries."
-  :group 'lsp-python
-  :risky t
-  :type '(repeat string))
-
-(defcustom lsp-clients-python-command '("pyls")
-  "PYLS command."
-  :group 'lsp-python
-  :risky t
-  :type 'list)
-
-(defcustom lsp-clients-python-settings
-  '(
-    :plugins.jedi_completion.enabled t
-    :plugins.jedi_definition.follow_imports t
-    ;; List of configuration sources to use. (enum: ["pycodestyle", "pyflakes"])
-    :configurationSources  ("pycodestyle")
-    ;; Enable or disable the plugin.
-    :plugins.jedi_completion.enabled t
-    ;; Enable or disable the plugin.
-    :plugins.jedi_definition.enabled t
-    ;; The goto call will follow imports.
-    :plugins.jedi_definition.follow_imports nil
-    ;; If follow_imports is True will decide if it follow builtin imports.
-    :plugins.jedi_definition.follow_builtin_imports nil
-    ;; Enable or disable the plugin.
-    :plugins.jedi_hover.enabled t
-    ;; Enable or disable the plugin.
-    :plugins.jedi_references.enabled t
-    ;; Enable or disable the plugin.
-    :plugins.jedi_signature_help.enabled nil
-    ;; Enable or disable the plugin.
-    :plugins.jedi_symbols.enabled nil
-    ;; If True lists the names of all scopes instead of only the module namespace.
-    :plugins.jedi_symbols.all_scopes t
-    ;; Enable or disable the plugin.
-    :plugins.mccabe.enabled nil
-    ;; The minimum threshold that triggers warnings about cyclomatic complexity.
-    :plugins.mccabe.threshold 15
-    ;; Enable or disable the plugin.
-    :plugins.preload.enabled true
-    ;; List of modules to import on startup
-    :plugins.preload.modules nil
-    ;; Enable or disable the plugin.
-    :plugins.pycodestyle.enabled t
-    ;; Exclude files or directories which match these patterns(list of strings).
-    :plugins.pycodestyle.exclude nil
-    ;;  When parsing directories, only check filenames matching these patterns.
-    :plugins.pycodestyle.filename nil
-    ;; Select errors and warnings (list of string)
-    :plugins.pycodestyle.select nil
-    ;; Ignore errors and warnings (list of string)
-    :plugins.pycodestyle.ignore nil
-    ;; Hang closing bracket instead of matching indentation of opening bracket's line.
-    :plugins.pycodestyle.hangClosing nil
-    ;; Set maximum allowed line length.
-    :plugins.pycodestyle.maxLineLength nil
-    ;; Enable or disable the plugin.
-    :plugins.pydocstyle.enabled nil
-    ;; Choose the basic list of checked errors by specifying an existing
-    ;; convention. One of ("pep257","numpy")
-    :plugins.pydocstyle.convention nil
-    ;; Ignore errors and warnings in addition to the specified convention.
-    :plugins.pydocstyle.addIgnore nil
-    ;; Select errors and warnings in addition to the specified convention.
-    :plugins.pydocstyle.addSelect nil
-    ;; Ignore errors and warnings
-    :plugins.pydocstyle.ignore nil
-    ;; Select errors and warnings
-    :plugins.pydocstyle.select nil
-    ;; Check only files that exactly match the given regular expression; default
-    ;; is to match files that don't start with 'test_' but end with '.py'.
-    :plugins.pydocstyle.match "(?!test_).*\\.py"
-    ;; Enable or disable the plugin.
-    :plugins.pydocstyle.matchDir nil
-    ;; Enable or disable the plugin.
-    :plugins.pyflakes.enabled t
-    ;; Enable or disable the plugin.
-    :plugins.rope_completion.enabled t
-    ;; Enable or disable the plugin.
-    :plugins.yapf.enabled t
-    ;; Builtin and c-extension modules that are allowed to be imported and inspected by rope.
-    :rope.extensionModules nil
-    ;; The name of the folder in which rope stores project configurations and
-    ;; data. Pass `nil' for not using such a folder at all.
-    :rope.ropeFolder nil)
-  "Lsp clients configuration settings."
-  :group 'lsp-python
-  :risky t
-  :type 'plist)
-
-;;; pyls
-(lsp-register-client
- (make-lsp-client :new-connection (lsp-stdio-connection (lambda () lsp-clients-python-command))
-                  :major-modes '(python-mode)
-                  :priority -1
-                  :server-id 'pyls
-                  :initialized-fn (lambda (workspace)
-                                    (with-lsp-workspace workspace
-                                      (lsp--set-configuration `(:pyls ,lsp-clients-python-settings))))
-                  :library-folders-fn (lambda (_workspace)
-                                        lsp-clients-python-library-directories)))
-
-;;; CSS
-(defun lsp-clients-css--apply-code-action (action)
-  "Apply ACTION as workspace edit command."
-  (lsp--apply-text-edits (caddr (gethash "arguments" action))))
-
-(lsp-register-client
- (make-lsp-client :new-connection (lsp-stdio-connection '("css-languageserver" "--stdio"))
-                  :major-modes '(css-mode less-mode less-css-mode sass-mode scss-mode)
-                  :priority -1
-                  :action-handlers (lsp-ht ("_css.applyCodeAction" 'lsp-clients-css--apply-code-action))
-                  :server-id 'css-ls))
-
 ;;; Bash
 (lsp-register-client
  (make-lsp-client :new-connection (lsp-stdio-connection '("bash-language-server" "start"))
@@ -213,18 +95,18 @@ finding the executable with variable `exec-path'."
   :risky t
   :type '(repeat string))
 
-(defun lsp-typescript-javascript-tsx-jsx-activate-p (filename major-mode)
-  "Checks if the javascript-typescript language server should be enabled
+(defun lsp-typescript-javascript-tsx-jsx-activate-p (filename mode)
+  "Check if the javascript-typescript language server should be enabled
 based on FILE-NAME and MAJOR-MODE"
-  (or (member major-mode '(typescript-mode typescript-tsx-mode js-mode js2-mode rjsx-mode))
+  (or (member mode '(typescript-mode typescript-tsx-mode js-mode js2-mode rjsx-mode))
       (and (eq major-mode 'web-mode)
            (or (string-suffix-p ".tsx" filename t)
                (string-suffix-p ".jsx" filename t)))))
 
 (lsp-register-client
- (make-lsp-client :new-connection (lsp-stdio-connection
-                                   (-const `(,lsp-clients-javascript-typescript-server
-                                             ,@lsp-clients-typescript-javascript-server-args)))
+ (make-lsp-client :new-connection (lsp-stdio-connection (lambda ()
+                                                          (cons lsp-clients-javascript-typescript-server
+                                                                lsp-clients-typescript-javascript-server-args)))
                   :activation-fn 'lsp-typescript-javascript-tsx-jsx-activate-p
                   :priority -3
                   :ignore-messages '("readFile .*? requested by TypeScript but content not available")
@@ -252,9 +134,9 @@ finding the executable with variable `exec-path'."
   :type '(repeat string))
 
 (lsp-register-client
- (make-lsp-client :new-connection (lsp-stdio-connection
-                                   (-const `(,lsp-clients-typescript-server
-                                             ,@lsp-clients-typescript-server-args)))
+ (make-lsp-client :new-connection (lsp-stdio-connection (lambda ()
+                                                          (cons lsp-clients-typescript-server
+                                                                lsp-clients-typescript-server-args)))
                   :activation-fn 'lsp-typescript-javascript-tsx-jsx-activate-p
                   :priority -2
                   :ignore-messages '("readFile .*? requested by TypeScript but content not available")
@@ -282,11 +164,18 @@ finding the executable with variable `exec-path'."
   :risky t
   :type '(repeat string))
 
-(defun lsp-clients-flow-tag-present-p (file-name)
-  "Checks if the '// @flow' or `/* @flow */' tag is present in
+(defun lsp-clients-flow-tag-file-present-p (file-name)
+  "Check if the '// @flow' or `/* @flow */' tag is present in
 the contents of FILE-NAME."
   (with-temp-buffer
     (insert-file-contents file-name)
+    (lsp-clients-flow-tag-string-present-p (buffer-string))))
+
+(defun lsp-clients-flow-tag-string-present-p (file-contents)
+  "Helper for `lsp-clients-flow-tag-file-present-p' that works
+with the file contents."
+  (with-temp-buffer
+    (insert file-contents)
     (save-excursion
       (goto-char (point-min))
       (let (stop found)
@@ -303,6 +192,8 @@ the contents of FILE-NAME."
                  (setq stop t))
                 ((looking-at "//")
                  (forward-line))
+                ((looking-at "*")
+                 (forward-line))
                 ((looking-at "/\\*")
                  (save-excursion
                    (when (not (re-search-forward "*/" nil t))
@@ -312,56 +203,24 @@ the contents of FILE-NAME."
         found))))
 
 (defun lsp-clients-flow-project-p (file-name)
-  "Checks if FILE-NAME is part of a Flow project, that is, if
+  "Check if FILE-NAME is part of a Flow project, that is, if
 there is a .flowconfig file in the folder hierarchy."
   (locate-dominating-file file-name ".flowconfig"))
 
-(defun lsp-clients-flow-activate-p (file-name major-mode)
-  "Checks if the Flow language server should be enabled for a
-particular FILE-NAME and MAJOR-MODE."
+(defun lsp-clients-flow-activate-p (file-name _mode)
+  "Check if the Flow language server should be enabled for a
+particular FILE-NAME and MODE."
   (and (derived-mode-p 'js-mode 'web-mode 'js2-mode 'flow-js2-mode 'rjsx-mode)
        (lsp-clients-flow-project-p file-name)
-       (lsp-clients-flow-tag-present-p file-name)))
+       (lsp-clients-flow-tag-file-present-p file-name)))
 
 (lsp-register-client
- (make-lsp-client :new-connection (lsp-stdio-connection
-                                   (-const `(,lsp-clients-flow-server
-                                             ,@lsp-clients-flow-server-args)))
+ (make-lsp-client :new-connection (lsp-stdio-connection (lambda ()
+                                                          (cons lsp-clients-flow-server
+                                                                lsp-clients-flow-server-args)))
                   :priority -1
                   :activation-fn 'lsp-clients-flow-activate-p
                   :server-id 'flow-ls))
-
-;;; Vue
-(defgroup lsp-vue nil
-  "Vue."
-  :group 'lsp-mode
-  :tag "Vue")
-
-(defcustom lsp-clients-vue-server "vls"
-  "The vue-language-server executable to use.
-Leave as just the executable name to use the default behavior of
-finding the executable with `exec-path'."
-  :group 'lsp-vue
-  :risky t
-  :type 'file)
-
-(defcustom lsp-clients-vue-server-args '()
-  "Extra arguments for the vue-language-server language server."
-  :group 'lsp-vue
-  :risky t
-  :type '(repeat string))
-
-(defun lsp-vue--ls-command ()
-  "Generate the language server startup command."
-  `(,lsp-clients-vue-server
-    ,@lsp-clients-vue-server-args))
-
-(lsp-register-client
- (make-lsp-client :new-connection (lsp-stdio-connection 'lsp-vue--ls-command)
-                  :major-modes '(vue-mode)
-                  :priority -1
-                  :ignore-messages '("readFile .*? requested by Vue but content not available")
-                  :server-id 'vls))
 
 
 ;;; GO language
@@ -434,13 +293,23 @@ defaults to half of your CPU cores."
 (defun lsp-clients-go--make-init-options ()
   "Init options for golang."
   `(:funcSnippetEnabled ,(lsp-clients-go--bool-to-json lsp-clients-go-func-snippet-enabled)
-    :disableFuncSnippet ,(lsp-clients-go--bool-to-json (not lsp-clients-go-func-snippet-enabled))
-    :gocodeCompletionEnabled ,(lsp-clients-go--bool-to-json lsp-clients-go-gocode-completion-enabled)
-    :formatTool ,lsp-clients-go-format-tool
-    :goimportsLocalPrefix ,lsp-clients-go-imports-local-prefix
-    :maxParallelism ,lsp-clients-go-max-parallelism
-    :useBinaryPkgCache ,lsp-clients-go-use-binary-pkg-cache
-    :diagnosticsEnabled ,lsp-clients-go-diagnostics-enabled))
+                        :disableFuncSnippet ,(lsp-clients-go--bool-to-json (not lsp-clients-go-func-snippet-enabled))
+                        :gocodeCompletionEnabled ,(lsp-clients-go--bool-to-json lsp-clients-go-gocode-completion-enabled)
+                        :formatTool ,lsp-clients-go-format-tool
+                        :goimportsLocalPrefix ,lsp-clients-go-imports-local-prefix
+                        :maxParallelism ,lsp-clients-go-max-parallelism
+                        :useBinaryPkgCache ,lsp-clients-go-use-binary-pkg-cache
+                        :diagnosticsEnabled ,lsp-clients-go-diagnostics-enabled))
+
+
+(lsp-register-client
+ (make-lsp-client :new-connection (lsp-stdio-connection "gopls")
+                  :major-modes '(go-mode)
+                  :priority 0
+                  :initialization-options 'lsp-clients-go--make-init-options
+                  :server-id 'gopls
+                  :library-folders-fn (lambda (_workspace)
+                                        lsp-clients-go-library-directories)))
 
 (lsp-register-client
  (make-lsp-client :new-connection (lsp-stdio-connection
@@ -463,28 +332,6 @@ defaults to half of your CPU cores."
                                         lsp-clients-go-library-directories)))
 
 
-;; RUST
-(defun lsp-clients--rust-window-progress (_workspace params)
-  "Progress report handling.
-PARAMS progress report notification data."
-  ;; Minimal implementation - we could show the progress as well.
-  (lsp-log (gethash "title" params)))
-
-(lsp-register-client
- (make-lsp-client :new-connection (lsp-stdio-connection '("rls"))
-                  :major-modes '(rust-mode rustic-mode)
-                  :priority -1
-                  :server-id 'rls
-                  :notification-handlers (lsp-ht ("window/progress" 'lsp-clients--rust-window-progress))))
-
-;; Ruby
-(lsp-register-client
- (make-lsp-client :new-connection (lsp-stdio-connection '("solargraph" "stdio"))
-                  :major-modes '(ruby-mode enh-ruby-mode)
-                  :priority -1
-                  :multi-root t
-                  :server-id 'ruby-ls))
-
 ;; PHP
 (defgroup lsp-php nil
   "PHP."
@@ -498,10 +345,9 @@ PARAMS progress report notification data."
   :type 'file)
 
 (lsp-register-client
- (make-lsp-client :new-connection (lsp-stdio-connection
-                                   (-const lsp-clients-php-server-command))
+ (make-lsp-client :new-connection (lsp-stdio-connection (lambda () lsp-clients-php-server-command))
                   :major-modes '(php-mode)
-                  :priority -1
+                  :priority -2
                   :server-id 'php-ls))
 
 
@@ -520,18 +366,8 @@ PARAMS progress report notification data."
           (repeat :tag "List of string values"
                   string)))
 
-(defcustom lsp-ocaml-reason-lang-server-command
-  '("ocaml-language-server" "--stdio")
-  "The command that starts the language server."
-  :group 'lsp-ocaml
-  :type '(choice
-          (string :tag "Single string value")
-          (repeat :tag "List of string values"
-                  string)))
-
 (lsp-register-client
- (make-lsp-client :new-connection (lsp-stdio-connection
-                                   (-const lsp-ocaml-ocaml-lang-server-command))
+ (make-lsp-client :new-connection (lsp-stdio-connection (lambda () lsp-ocaml-ocaml-lang-server-command))
                   :major-modes '(reason-mode caml-mode tuareg-mode)
                   :priority -1
                   :server-id 'ocaml-ls))
@@ -614,7 +450,10 @@ finding the executable with `exec-path'."
   :group 'lsp-mode
   :tag "Elixir")
 
-(defcustom lsp-clients-elixir-server-executable "language_server.sh"
+(defcustom lsp-clients-elixir-server-executable
+  (if (equal system-type 'windows-nt)
+      "language_server.bat"
+    "language_server.sh")
   "The elixir-language-server executable to use.
 Leave as just the executable name to use the default behavior of
 finding the executable with `exec-path'."
@@ -622,8 +461,8 @@ finding the executable with `exec-path'."
   :type 'file)
 
 (lsp-register-client
- (make-lsp-client :new-connection (lsp-stdio-connection
-                                   (-const lsp-clients-elixir-server-executable))
+ (make-lsp-client :new-connection (lsp-stdio-connection (lambda ()
+                                                          `(,lsp-clients-elixir-server-executable)))
                   :major-modes '(elixir-mode)
                   :priority -1
                   :server-id 'elixir-ls))
@@ -654,10 +493,47 @@ finding the executable with `exec-path'."
 
 (lsp-register-client
  (make-lsp-client :new-connection (lsp-stdio-connection 'lsp-clients--fortls-command)
-                  :major-modes '(f90-mode)
+                  :major-modes '(f90-mode fortran-mode)
                   :priority -1
                   :server-id 'fortls))
 
 
+
+;; Kotlin
+(defgroup lsp-kotlin nil
+  "Kotlin."
+  :group 'lsp-mode
+  :tag "Kotlin")
+
+(lsp-register-client
+ (make-lsp-client :new-connection (lsp-stdio-connection '("kotlin-language-server"))
+                  :major-modes '(kotlin-mode)
+                  :priority -1
+                  :server-id 'kotlin-ls))
+
+
+;; Hack
+(defgroup lsp-hack nil
+  "Hack."
+  :group 'lsp-mode
+  :tag "Hack")
+
+(defcustom lsp-clients-hack-command '("hh_client" "lsp" "--from" "emacs")
+  "hh_client command."
+  :group 'lsp-hack
+  :risky t
+  :type 'list)
+
+(lsp-register-client
+ (make-lsp-client :new-connection (lsp-stdio-connection (lambda () lsp-clients-hack-command))
+                  :major-modes '(hack-mode)
+                  :priority -1
+                  :server-id 'hack
+                  ;; ignore some unsupported messages from Nuclide
+                  :notification-handlers (lsp-ht ("telemetry/event" 'ignore)
+                                                 ("$/cancelRequest" 'ignore))
+                  :request-handlers (lsp-ht ("window/showStatus" 'ignore))))
+
+
 (provide 'lsp-clients)
 ;;; lsp-clients.el ends here

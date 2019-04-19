@@ -40,8 +40,8 @@
 ;; Aquamarine #00FFBF - 163
 ;; Teal #00A89D - 178
 ;; Cyan #00FFFF - 182
-;; Azure/Sky Blue #007FFF - 210
 ;; Capri/Deep Sky Blue #00BFFF - 201
+;; Azure/Sky Blue #007FFF - 210
 ;; Cerulean #003FFF - 221
 ;; Blue #0000FF - 238
 ;; Ultramarine #3F00FF - 254
@@ -52,6 +52,19 @@
 ;; Pink/rose #FF007F - 335
 ;; Crimson #FF003F - 347
 ;;
+
+(defun color-lab-luminance (color)
+  "Return the luminance through LAB color space of a color string (e.g. \"#ffaa00\", \"blue\")."
+  (nth 0 (apply #'color-srgb-to-lab (color-name-to-rgb color))))
+
+(defun color-dark-p (color)
+  "Return t if COLOR (e.g. hex string or name) is dark."
+  (< (color-lab-luminance color) 50))
+
+(defun color-light-p (color)
+  "Return t if COLOR (e.g. hex string or name) is light."
+  (> (color-lab-luminance color) 50))
+
 ;;; Code:
 (defconst kaolin-palette
   '(
@@ -90,10 +103,9 @@
     (white4 "#bebec4")
 
     ;; Yellow #FFFF00
-    ;; TODO: adjust
     (yellow0 "#eeeb28")
-    (yellow1 "#b9b963") ; yellow
-    (yellow2 "#919120") ; dark-yellow
+    (yellow1 "#E3D168")
+    (yellow2 "#a39423") ; dark-yellow
     (yellow3 "#eae46a")
     (yellow4 "#c8c493" "#ffd7a5")
     (yellow5 "#1e1e14") ; old midnight yellow
@@ -104,7 +116,7 @@
 
     ;; Amber #FFBF00
     (amber0 "#f3c91f")
-    (amber1 "#d4b668")
+    (amber1 "#CFB05F")
     (amber2 "#91762a")
     (amber3 "#eed891")
     (amber4 "#c5b378")
@@ -115,12 +127,12 @@
     (amber9 "#eee6d3")
 
     ;; Orange #FF7F00
-    ;; TODO: maybe add #dbb68f
     (orange0 "#e67417")
     (orange1 "#dbac66")
     (orange2 "#b87e3c")
     (orange3 "#f5c791")
-    (orange4 "#e1b079")
+    ;; (orange4 "#e1b079")
+    (orange4 "#dbb68f")
     (orange5 "#1e1914")
     (orange6 "#40392E")
     (orange7 "#847968")
@@ -254,9 +266,9 @@
 
     ;; Blue #0000FF
     (blue0 "#3237CA")
-    (blue1 "#4145b6")
-    ;; TODO: change
-    (blue2 "#2B2FA6")
+    (blue1 "#4246BA")
+    ;; (blue2 "#2C30AB")
+    (blue2 "#3242A1")
     (blue3 "#526AF3")
     (blue4 "#807f96") ; old faded-blue
     (blue5 "#14141e" black2) ; old alt-midnight-blue
@@ -463,10 +475,10 @@
     (done spring-green3)
 
     (button amber6)
-    ;; TODO: add light style
-    (button-border gray3)
+    (button-border (if (color-dark-p bg1) gray3 white4))
     (button-hl amber3)
 
+    (adaptive-fg (if (color-dark-p bg1) white0 bg1))
     ;; TODO: add pos-tip in custom-theme-set-variables
     (tooltip-bg bg2)
     (tooltip-fg fg2)
@@ -496,7 +508,6 @@
     (builtin     teal4)
     (header      builtin)
     (functions   builtin)
-    ;; TODO: (??) change to brown3 like sierra.vim
     (str         spring-green3)
     (str-alt     spring-green4)
     (doc         str-alt)
@@ -543,10 +554,10 @@
     (company-scroll-bg (if kaolin-themes-distinct-company-scrollbar bg4 bg2))
     (company-scroll-fg (if kaolin-themes-distinct-company-scrollbar line-num-hl bg4))
 
-    (ivy1        fg1)
-    (ivy2        azure3)
-    (ivy3        amber3)
-    (ivy4        violet3)))
+    (ivy1     fg1)
+    (search1  azure3)
+    (search2  amber3)
+    (search3  violet3)))
 
 ;; Predefined Kaolin face specifications
 (defconst kaolin-faces
@@ -574,10 +585,10 @@
     (default             (:background bg1 :foreground fg1))
     (warning             (:foreground warning))
     (error               (:foreground err))
-    (shadow              (:foreground gray4))
+    (shadow              (:foreground comment))
     (file-name-shadow    (:inherit 'shadow))
-    (region              (:background selection :inverse-video nil))
-    (secondary-selection (:background spring-green6))
+    (region              (:background selection :foreground fg4))
+    (secondary-selection (:background hl-bg :foreground adaptive-fg))
     (fringe              (:background fringe :foreground fg1))
     (cursor              (:background cursor))
     (vertical-border     (:foreground win-border))
@@ -593,6 +604,7 @@
     (escape-glyph        (:background nil :foreground cyan3))
 
     (menu        (:background bg2 :foreground fg2))
+    ;; TODO: default bg
     (header-line (:background bg4 :foreground var))
     (tool-bar    (:inherit 'header-line))
 
@@ -604,22 +616,52 @@
     (isearch-fail (:background nil :foreground err))
 
     ;; Interface
-    (package-name          (:inherit 'link :underline nil))
-    (button                (:inherit 'link))
-    (custom-button         (:background bg4 :foreground fg3 :box (:line-width 2 :color button-border :style nil)))
-    (custom-button-mouse   (:inherit 'custom-button :foreground button-hl :box (:line-width 2 :color button-hl :style 'released-button)))
-    (custom-button-pressed (:inherit 'custom-button :foreground button-hl :box (:line-width 2 :color button-border :style 'pressed-button)))
-    (custom-button-unraised (:inherit 'custom-button))
+    (package-name                   (:inherit 'link :underline nil))
+    (button                         (:inherit 'link))
+    (custom-button                  (:background bg4 :foreground fg3 :box (:line-width 2 :color button-border :style nil)))
+    (custom-button-mouse            (:inherit 'custom-button :foreground button-hl :box (:line-width 2 :color button-hl :style 'released-button)))
+    (custom-button-pressed          (:inherit 'custom-button :foreground button-hl :box (:line-width 2 :color button-border :style 'pressed-button)))
+    (custom-button-unraised         (:inherit 'custom-button))
     (custom-button-pressed-unraised (:inherit 'custom-button-pressed))
-    (custom-state          (:background nil :foreground teal1))
-    (custom-changed        (:background nil :foreground orange1))
-    (custom-visibility     (:background nil :foreground cyan1 :height 0.9 :underline underline))
-    (custom-invalid        (:background nil :foreground err))
-    (custom-set            (:background nil :foreground done))
-    (custom-variable-tag   (:foreground type))
-    (widget-documentation  (:background nil :foreground var))
-    (widget-button         (:background nil :foreground keyword))
-    (widget-field          (:background bg2 :foreground fg2 :box (:line-width 2 :color bg3 :style nil)))
+    (custom-group-tag               (:foreground header :height 1.2 :weight 'bold))
+    (custom-group-subtitle          (:foreground header :height 1.0 :weight 'bold))
+    (custom-variable-button         (:inherit 'button))
+    (custom-comment                 (:background hl-bg :foreground fg1))
+    (custom-comment-tag             (:foreground comment))
+    (custom-documentation           (:foreground fg1))
+    (custom-visibility              (:background nil :foreground cyan1 :height 0.9 :underline underline))
+    (custom-state                   (:background nil :foreground str))
+    (custom-changed                 (:background nil :foreground diff-mod))
+    (custom-set                     (:background nil :foreground done))
+    (custom-themed                  (:background nil :foreground done))
+    (custom-invalid                 (:background nil :foreground err))
+    (custom-variable-tag            (:foreground var))
+    (custom-variable-obsolete       (:inherit 'shadow))
+    (widget-documentation           (:background nil :foreground var))
+    (widget-button                  (:background nil :foreground keyword))
+    (widget-button-pressed          (:background nil :foreground builtin))
+    (widget-field                   (:background bg2 :foreground fg2 :box (:line-width 2 :color bg3 :style nil)))
+    (widget-single-line-field       (:inherit 'widget-field))
+
+    ;; Compilation
+    (compilation-column-number  (:foreground fg2))
+    (compilation-line-number    (:foreground num))
+    (compilation-info           (:inherit 'success))
+    (compilation-warning        (:inherit 'warning))
+    (compilation-error          (:inherit 'error :weight 'bold))
+    (compilation-mode-line-exit (:inherit 'compilation-info))
+    (compilation-mode-line-fail (:inherit 'compilation-error))
+
+    ;; Dired
+    (dired-header     (:foreground header :weight 'bold))
+    (dired-directory  (:foreground keyword))
+    (dired-ignored    (:foreground comment))
+    (dired-flagged    (:foreground err))
+    (dired-mark       (:foreground num :weight 'bold))
+    (dired-marked     (:foreground hl :weight 'bold))
+    (dired-perm-write (:foreground fg1 :underline t))
+    (dired-symlink    (:foreground functions))
+    (dired-warning    (:inherit 'font-lock-warning-face))
 
     ;; Highlighting
     (highlight                (:background hl-bg :foreground fg1))
@@ -643,6 +685,10 @@
 
     ;; Eldoc
     (eldoc-highlight-function-argument  (:inherit 'font-lock-constant-face))
+
+    ;; Eldoc-box
+    (eldoc-box-body (:background tooltip-bg))
+    (eldoc-box-border (:background bg4))
 
     ;; Pulse
     (pulse-highlight-start-face (:background pulse))
@@ -770,9 +816,18 @@
     (ac-completion-face    (:foreground keyword :underline underline))
     (icompletep-determined (:foreground builtin))
 
-    ;; TODO: info faces
-    (info-quoted-name      (:foreground builtin))
-    (info-string           (:foreground str))
+    ;; info faces
+    (Info-quoted      (:foreground builtin))
+    (info-quoted-name (:foreground builtin))
+    (info-string      (:foreground str))
+    (info-menu-star   (:foreground err))
+    (info-index-match (:inherit 'match))
+    (info-node        (:foreground functions))
+    (info-menu-header (:foreground keyword :weight 'bold :height 1.1))
+    (info-title-1     (:foreground header :weight 'bold :height 1.3))
+    (info-title-2     (:foreground header :weight 'bold :height 1.2))
+    (info-title-3     (:foreground header :weight 'bold :height 1.1))
+    (info-title-4     (:foreground header :weight 'bold))
 
     ;; Helpful
     (helpful-heading (:foreground header :weight 'bold :height 1.1))
@@ -788,7 +843,7 @@
     (company-tooltip-search-selection (:background selection))
     (company-scrollbar-bg             (:background company-scroll-bg))
     (company-scrollbar-fg             (:background company-scroll-fg))
-    (company-template-field           (:background keyword :foreground bg1))
+    (company-template-field           (:foreground comment :underline t))
     (company-echo-common              (:background bg1 :foreground amber3))
     (company-preview                  (:background nil :foreground keyword))
     (company-preview-common           (:background bg2 :foreground amber3))
@@ -841,14 +896,15 @@
     (magit-branch-remote          (:foreground aquamarine1))
     (magit-hunk-heading           (:background bg3))
     (magit-hunk-heading-highlight (:background bg3))
-    (magit-diff-base              (:background amber2 :foreground fg2))
-    (magit-diff-base-highlight    (:background amber2 :foreground fg1))
+    ;; TODO:
+    (magit-diff-base              (:background vermilion3 :foreground fg2))
+    (magit-diff-base-highlight    (:background vermilion3 :foreground fg1))
     (magit-diff-file-header       (:background bg3 :foreground fg2))
-    (magit-diff-context           (:background bg3 :foreground fg3))
+    (magit-diff-context           (:background bg2 :foreground fg3))
     (magit-diff-context-highlight (:background bg3 :foreground fg2))
-    (magit-diff-added             (:background diff-bg-add :foreground fg1))
+    (magit-diff-added             (:background bg2 :foreground diff-bg-add))
     (magit-diff-added-highlight   (:background diff-bg-add :foreground fg0))
-    (magit-diff-removed           (:background diff-bg-rem :foreground fg1))
+    (magit-diff-removed           (:background bg2 :foreground diff-bg-rem))
     (magit-diff-removed-highlight (:background diff-bg-rem :foreground fg0))
     (magit-diffstat-added         (:foreground diff-add))
     (magit-diffstat-removed       (:foreground diff-rem))
@@ -883,7 +939,7 @@
     (magit-bisect-good            (:foreground aquamarine1))
     (magit-bisect-bad             (:foreground red0))
     (magit-bisect-skip            (:foreground lime1))
-    (magit-signature-good         (:foreground aquamarine1))
+    (magit-signature-good         (:foreground spring-green3))
     (magit-signature-bad          (:foreground red0))
     (magit-signature-untrusted    (:foreground cyan1))
 
@@ -896,6 +952,11 @@
     (transient-enabled-suffix  (:background done :foreground bg1))
     (transient-disabled-suffix (:background err :foreground bg1))
 
+    ;; Flymake
+    (flymake-note    (:underline (:style underline-style :color done)))
+    (flymake-warning (:underline (:style underline-style :color warning)))
+    (flymake-error   (:underline (:style underline-style :color err)))
+
     ;; Flycheck
     (flycheck-info           (:underline (:style underline-style :color done)))
     (flycheck-warning        (:underline (:style underline-style :color warning)))
@@ -904,13 +965,19 @@
     (flycheck-fringe-warning (:foreground warning))
     (flycheck-fringe-info    (:foreground done))
 
+    ;; Flycheck posframe
+    (flycheck-posframe-face            (:inherit 'default))
+    (flycheck-posframe-background-face (:background tooltip-bg))
+    (flycheck-posframe-info-face       (:inherit 'flycheck-posframe-face :foreground tooltip-fg))
+    (flycheck-posframe-warning-face    (:inherit 'flycheck-posframe-face :foreground warning))
+    (flycheck-posframe-error-face      (:inherit 'flycheck-posframe-face :foreground err))
+
     ;; Flyspell
     (flyspell-duplicate (:underline (:style underline-style :color warning)))
     (flyspell-incorrect (:underline (:style underline-style :color err)))
 
     ;; Hydra
     (hydra-face-red      (:foreground red1))
-    ;; TODO: (??) change to teal
     (hydra-face-teal     (:foreground teal0))
     (hydra-face-blue     (:foreground azure3))
     (hydra-face-pink     (:foreground pink1))
@@ -997,6 +1064,7 @@
     (undo-tree-visualizer-register-face      (:foreground type))
 
     ;; Rainbow delimeters
+    ;; TODO: light themes
     (show-paren-match (:background nil :foreground orange1 :bold bold))
     (show-paren-mismatch (:background red2 :foreground bg2))
 
@@ -1155,7 +1223,8 @@
     (org-done                      (:foreground done  :bold bold))
     (org-headline-done             (:foreground gray4  :bold nil))
     (org-ellipsis                  (:foreground builtin :underline nil))
-    (org-date                      (:foreground amber3 :underline underline))
+    (org-date                      (:foreground builtin :underline underline))
+    (org-date-selected             (:background bg4 :foreground hl :weight 'bold))
     (org-link                      (:inherit 'link))
     (org-code                      (:foreground amber3))
     (org-verbatim                  (:foreground azure3))
@@ -1193,6 +1262,7 @@
     (org-agenda-date-weekend     (:foreground warning))
     (org-agenda-done             (:foreground done))
     (org-agenda-structure        (:foreground builtin))
+    (org-agenda-clocking         (:background hl-bg :foreground fg1))
     (org-scheduled               (:foreground fg1))
     (org-scheduled-today         (:foreground functions :height 1.2 :bold bold))
     (org-sexp-date               (:foreground fg4))
@@ -1238,6 +1308,10 @@
     ;; Evil-goggles
     ;; TODO: add rest of evil goggles faces
     (evil-goggles-default-face  (:background pulse))
+
+    ;; Evil-snipe
+    (evil-snipe-first-match-face (:foreground search1))
+    (evil-snipe-matches-face     (:foreground search2))
 
     ;; Beacon-mode
     (beacon-fallback-background (:background pulse))
@@ -1321,10 +1395,11 @@
     (helm-bookmark-w3m                        (:foreground type))
 
      ;; Avy
-    (avy-lead-face-0 (:background spring-green2 :foreground fg1))
-    (avy-lead-face   (:background red2 :foreground fg1))
-    (avy-lead-face-1 (:background capri2 :foreground fg1))
-    (avy-lead-face-2 (:background magenta2 :foreground fg1))
+    (avy-background-face (:inherit 'font-lock-comment-face))
+    (avy-lead-face       (:background spring-green2 :foreground adaptive-fg :weight 'bold))
+    (avy-lead-face-0     (:background red2 :foreground adaptive-fg :weight 'bold))
+    (avy-lead-face-1     (:background magenta2 :foreground adaptive-fg :weight 'bold))
+    (avy-lead-face-2     (:background capri2 :foreground adaptive-fg :weight 'bold))
 
     ;; Ivy
     (ivy-current-match           (:background hl-line :foreground hl :bold t))
@@ -1335,15 +1410,15 @@
     (ivy-modified-buffer         (:foreground diff-mod))
     (ivy-remote                  (:foreground prep))
     (ivy-minibuffer-match-face-1 (:background nil :foreground ivy1))
-    (ivy-minibuffer-match-face-2 (:background nil :foreground ivy2 :bold bold))
-    (ivy-minibuffer-match-face-3 (:background nil :foreground ivy3 :bold bold))
-    (ivy-minibuffer-match-face-4 (:background nil :foreground ivy4 :bold bold))
+    (ivy-minibuffer-match-face-2 (:background nil :foreground search1 :bold bold))
+    (ivy-minibuffer-match-face-3 (:background nil :foreground search2 :bold bold))
+    (ivy-minibuffer-match-face-4 (:background nil :foreground search3 :bold bold))
 
     ;; Swiper
     (swiper-match-face-1 (:background bg2 :foreground ivy1))
-    (swiper-match-face-2 (:background bg2 :foreground ivy2 :bold bold))
-    (swiper-match-face-3 (:background bg2 :foreground ivy3 :bold bold))
-    (swiper-match-face-4 (:background bg2 :foreground ivy4 :bold bold))
+    (swiper-match-face-2 (:background bg2 :foreground search1 :bold bold))
+    (swiper-match-face-3 (:background bg2 :foreground search2 :bold bold))
+    (swiper-match-face-4 (:background bg2 :foreground search3 :bold bold))
     (swiper-line-face    (:inherit 'hl-line))
 
     ;; Awesome-tabs

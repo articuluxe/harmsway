@@ -442,7 +442,7 @@
     (diredfl-write-priv             :foreground red :background bg-alt)
 
     ;; doom-modeline
-    (doom-modeline-eldoc-bar :foreground green)
+    (doom-modeline-eldoc-bar :background green)
     (doom-modeline-inactive-bar :background nil) ; transparent
 
     ;; elscreen
@@ -1267,7 +1267,7 @@
 
 (defvar doom-themes-common-vars
   '((ansi-color-names-vector
-     (vconcat (mapcar #'doom-color '(base0 red green yellow blue magenta cyan base8))))
+     (vconcat (mapcar #'doom-color '(bg red green yellow blue magenta cyan fg))))
 
     (fci-rule-color (doom-color 'base5))
 

@@ -26,7 +26,7 @@
 (require 'f)
 (require 's)
 (require 'dash)
-(require 'treemacs-impl)
+(require 'treemacs-core-utils)
 (require 'treemacs-filewatch-mode)
 (require 'treemacs-rendering)
 (require 'treemacs-follow-mode)
@@ -59,14 +59,31 @@
   "Goto next line.
 A COUNT argument, moves COUNT lines down."
   (interactive "p")
-  (forward-line count)
+  ;; Move to EOL - if point is in the middle of a button, forward-button
+  ;; just moves to the end of the current button.
+  (goto-char (line-end-position))
+  ;; Don't show the "No more buttons" message.
+  (ignore-errors
+    (forward-button count treemacs-wrap-around))
+  ;; Move to BOL, since the button might not start at BOL, but parts
+  ;; of Treemacs might expect that the point is always at BOL.
+  (forward-line 0)
   (treemacs--evade-image))
 
 (defun treemacs-previous-line (&optional count)
   "Goto previous line.
 A COUNT argument, moves COUNT lines up."
   (interactive "p")
-  (forward-line (- count))
+  ;; Move to the start of line - if point is in the middle of a button,
+  ;; backward-button just moves to the start of the current button.
+  (forward-line 0)
+  ;; Don't show the "No more buttons" message.
+  (ignore-errors
+    (backward-button count treemacs-wrap-around))
+  ;; Move to BOL, since backward-button moves to the end of the button,
+  ;; and the button might not start at BOL, but parts of Treemacs might
+  ;; expect that the point is always at BOL.
+  (forward-line 0)
   (treemacs--evade-image))
 
 (defun treemacs-toggle-node (&optional arg)
@@ -301,7 +318,10 @@ Treemacs knows how to open files on linux, windows and macos."
   "Quit treemacs with `bury-buffer'.
 With a prefix ARG call `treemacs-kill-buffer' instead."
   (interactive "P")
-  (if arg (treemacs-kill-buffer) (bury-buffer)))
+  (if arg
+      (treemacs-kill-buffer)
+    (bury-buffer)
+    (run-hooks 'treemacs-quit-hook)))
 
 (defun treemacs-kill-buffer ()
   "Kill the treemacs buffer."
@@ -310,7 +330,8 @@ With a prefix ARG call `treemacs-kill-buffer' instead."
     ;; teardown logic handled in kill hook
     (if (one-window-p)
         (kill-this-buffer)
-      (kill-buffer-and-window))))
+      (kill-buffer-and-window))
+    (run-hooks 'treemacs-kill-hook)))
 
 (defun treemacs-delete (&optional arg)
   "Delete node at point.
@@ -637,7 +658,7 @@ For slower scrolling see `treemacs-previous-line-other-window'"
 (defun treemacs-previous-project ()
   "Move to the next project root node."
   (interactive)
-  (-let [pos (previous-single-char-property-change (point-at-bol) :project)]
+  (-let [pos (treemacs--prev-project-pos)]
     (if (or (= pos (point))
             (= pos (point-min)))
         (treemacs-pulse-on-failure "There is no previous project to move to.")
@@ -673,13 +694,26 @@ For slower scrolling see `treemacs-previous-line-other-window'"
            (propertize new-name 'face 'font-lock-type-face)))))))
   (treemacs--evade-image))
 
-(defun treemacs-add-project-to-workspace (path)
-  "Add a projec at given PATH to the current workspace."
+(defun treemacs-add-project-to-workspace (path &optional name)
+  "Add a project at given PATH to the current workspace.
+The PATH's directory name will be used as a NAME for a project. The NAME can
+\(or must) be entered manully with either a prefix arg or if a project with the
+auto-selected name already exists."
   (interactive "DProject root: ")
-  (pcase (treemacs-do-add-project-to-workspace path)
+  (let* ((default-name (treemacs--filename path))
+         (double-name (--first (string= default-name (treemacs-project->name it))
+                               (treemacs-workspace->projects (treemacs-current-workspace)))))
+    (if (or current-prefix-arg double-name)
+        (setf name (read-string "Project Name: " (unless double-name (treemacs--filename path))))
+      (setf name default-name)))
+  (pcase (treemacs-do-add-project-to-workspace path name)
     (`(success ,project)
      (treemacs-pulse-on-success "Added project %s to the workspace."
        (propertize (treemacs-project->name project) 'face 'font-lock-type-face)))
+    (`(invalid-path ,reason)
+     (treemacs-pulse-on-failure (concat "Path '%s' is invalid: %s")
+       (propertize path 'face 'font-lock-string-face)
+       reason))
     (`(invalid-name ,name)
      (treemacs-pulse-on-failure "Name '%s' is invalid."
        (propertize name 'face 'font-lock-string-face)))
@@ -690,7 +724,8 @@ For slower scrolling see `treemacs-previous-line-other-window'"
     (`(duplicate-name ,duplicate)
      (goto-char (treemacs-project->position duplicate))
      (treemacs-pulse-on-failure "A project with the name %s already exists."
-       (propertize (treemacs-project->name duplicate) 'face 'font-lock-type-face)))))
+       (propertize (treemacs-project->name duplicate) 'face 'font-lock-type-face))))
+  nil)
 (defalias 'treemacs-add-project #'treemacs-add-project-to-workspace)
 (with-no-warnings
   (make-obsolete #'treemacs-add-project #'treemacs-add-project-to-workspace "v2.2.1"))
