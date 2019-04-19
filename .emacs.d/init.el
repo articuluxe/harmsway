@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-04-19 15:52:54 dan.harms>
+;; Modified Time-stamp: <2019-04-19 15:53:51 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1611,9 +1611,6 @@ Only one letter is shown, the first that applies."
          ))                             ;toggle with C-c C-a
   (let ((elt (assoc 'counsel-M-x ivy-initial-inputs-alist)))
     (when elt (setf (cdr elt) "")))
-  ;; avoid slow "du -s" invocation on large repos
-  (setq counsel--git-grep-count-func
-        (lambda() (1+ counsel--git-grep-count-threshold)))
   ;; fallback to basic find-file
   (define-key counsel-find-file-map "\C-x\C-f"
     (lambda ()

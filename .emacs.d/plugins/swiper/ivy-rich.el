@@ -274,7 +274,7 @@ or /a/…/f.el."
 (defun ivy-rich-switch-buffer-indicators (candidate)
   (let* ((buffer (get-buffer candidate))
          (process-p (get-buffer-process buffer)))
-    (destructuring-bind
+    (cl-destructuring-bind
         (mode filename directory read-only)
         (ivy-rich--local-values candidate '(major-mode buffer-file-name default-directory buffer-read-only))
       (let ((modified (if (and (buffer-modified-p buffer)
@@ -337,7 +337,7 @@ or /a/…/f.el."
 (defun ivy-rich--switch-buffer-root-and-filename (candidate)
   (let* ((buffer (get-buffer candidate))
          (truenamep t))
-    (destructuring-bind
+    (cl-destructuring-bind
         (filename directory mode)
         (ivy-rich--local-values buffer '(buffer-file-name default-directory major-mode))
       ;; Only make sense when `filename' and `root' are both not `nil'
@@ -363,7 +363,7 @@ or /a/…/f.el."
 
 (defun ivy-rich-switch-buffer-path (candidate)
   (if-let ((result (ivy-rich--switch-buffer-root-and-filename candidate)))
-      (destructuring-bind (root . filename) result
+      (cl-destructuring-bind (root . filename) result
         (cond
          ;; Case: absolute
          ((or (memq ivy-rich-path-style '(full absolute))
@@ -391,14 +391,14 @@ or /a/…/f.el."
   (let ((doc (replace-regexp-in-string
               ":\\(\\(before\\|after\\)\\(-\\(whilte\\|until\\)\\)?\\|around\\|override\\|\\(filter-\\(args\\|return\\)\\)\\) advice:[ ]*‘.+?’[\r\n]+"
               ""
-              (or (documentation (intern candidate)) ""))))
+              (or (ignore-errors (documentation (intern-soft candidate))) ""))))
     (if (string-match "^\\(.+\\)\\([\r\n]\\)?" doc)
         (setq doc (match-string 1 doc))
       "")))
 
 (defun ivy-rich-counsel-variable-docstring (candidate)
   (let ((doc (documentation-property
-              (intern candidate) 'variable-documentation)))
+              (intern-soft candidate) 'variable-documentation)))
     (if (and doc (string-match "^\\(.+\\)\\([\r\n]\\)?" doc))
         (setq doc (match-string 1 doc))
       "")))
