@@ -215,14 +215,14 @@ This variable is useful for `ivy-posframe-read-action' .")
            string))
        :position (point)
        :poshandler poshandler
-       :background-color (face-attribute 'ivy-posframe :background)
-       :foreground-color (face-attribute 'ivy-posframe :foreground)
+       :background-color (face-attribute 'ivy-posframe :background nil t)
+       :foreground-color (face-attribute 'ivy-posframe :foreground nil t)
        :height ivy-posframe-height
        :width ivy-posframe-width
        :min-height (or ivy-posframe-min-height (+ ivy-height 1))
        :min-width (or ivy-posframe-min-width (round (* (frame-width) 0.62)))
        :internal-border-width ivy-posframe-border-width
-       :internal-border-color (face-attribute 'ivy-posframe-border :background)
+       :internal-border-color (face-attribute 'ivy-posframe-border :background nil t)
        :override-parameters ivy-posframe-parameters))))
 
 (defun ivy-posframe-display (str)

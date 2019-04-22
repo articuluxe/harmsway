@@ -34,17 +34,18 @@
 (deftheme melancholy
   "A dark theme for dark minds")
 
-(let ((my-active     "#F92672")
-       (my-visited    "#999999")
-       (my-info       "#FFB728")
-       (my-highlight  "#96BF33")
-       (my-contrast   "#666666")
-       (my-hicontrast "#DEDEDE")
-       (my-subtle     "#333333")
-       (my-pop        "#00B7FF")
-       (my-warning    "#FF6969")
-       (my-btw        "#8B4538")
-       (my-white      "#FFFFFF")
+(let ((my-active       "#F92672")
+       (my-visited      "#999999")
+       (my-info         "#FFB728")
+       (my-highlight    "#96BF33")
+       (my-contrast     "#666666")
+       (my-deepcontrast "#444444")
+       (my-hicontrast   "#DEDEDE")
+       (my-shadow       "#333333")
+       (my-pop          "#00B7FF")
+       (my-warning      "#FF6969")
+       (my-btw          "#8B4538")
+       (my-white        "#FFFFFF")
       )
 
 ;;;; Theme Faces
@@ -54,43 +55,38 @@
 
     ;;;; window and frame settings
     ;; ========================================
-    `(fringe ((t (:inherit default))))
-    `(header-line ((t (:foreground ,my-hicontrast :background ,my-subtle))))
+    
+    `(header-line ((t (:foreground ,my-hicontrast :background ,my-shadow))))
     `(vertical-border ((t (:foreground ,my-contrast))))
-    `(scroll-bar ((t (:background ,my-visited :foreground ,my-subtle))))
+    `(scroll-bar ((t (:background ,my-visited :foreground ,my-shadow))))
     `(hl-line ((t (:background ,my-contrast))))
     
     ;; line numbers
     ;; ========================================
-    `(linum ((t (:foreground ,my-subtle :height 88 :strikethrough nil))))
-
+    `(linum ((t (:foreground ,my-deepcontrast))))
+    `(line-number ((t (:foreground ,my-deepcontrast))))
+    `(line-number-current-line ((t (:foreground ,my-highlight))))
     ;; base settings
     ;; ========================================
-
-    `(button ((t (:underline (:color foreground-color :style line) :foreground ,my-active))))
-    `(cursor ((t (:background ,my-hicontrast))))
-
+    `(default ((t (:inherit nil :stipple nil :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 99 :width normal :foundry "unknown" :family "Monospace Regular" :background ,my-shadow :foreground ,my-hicontrast ))))
+    `(fixed-pitch ((t (:family "Monospace Regular"))))
+    `(variable-pitch ((t (normal :family "ubuntu" :weight normal :height 99))))
     `(bold ((t (:weight bold))))
     `(italic ((t (:slant italic))))
     `(bold-italic ((t (:weight bold :slant italic))))
-
-    `(default ((t (:inherit nil :stipple nil :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 99 :width normal :foundry "unknown" :family "Monospace Regular"))))
-    `(fixed-pitch ((t (:family "Monospace Regular"))))
-    `(variable-pitch ((t (normal :family "ubuntu" :weight normal :height 99))))
-
+    `(shadow ((t (:background ,my-shadow))))
+    `(button ((t (:underline (:color foreground-color :style line) :foreground ,my-active))))
+    `(cursor ((t (:background ,my-hicontrast))))
     `(link ((t (:foreground ,my-active :underline t :weight bold))))
     `(link-visited ((t ( :foreground ,my-visited))))
-
-    `(shadow ((t (:background ,my-subtle))))
-
+    `(fringe ((t (:inherit default))))
     `(match ((t (:background ,my-pop))))
     `(highlight ((t (:background ,my-active))))
-    `(lazy-highlight ((t (:foreground ,my-subtle :background ,my-highlight))))
-    `(secondary-selection ((t (:background ,my-info))))
-
+    `(lazy-highlight ((t (:foreground ,my-shadow :background ,my-highlight))))
+    `(secondary-selection ((t (:background ,my-deepcontrast))))
     `(font-lock-builtin-face ((t (:foreground ,my-highlight))))
-    `(font-lock-comment-delimiter-face ((t (:foreground "#8C8C8C"))))
-    `(font-lock-comment-face ((t (:foreground "#8C8C8C"))))
+    `(font-lock-comment-delimiter-face ((t (:foreground ,my-visited))))
+    `(font-lock-comment-face ((t (:foreground ,my-visited))))
     `(font-lock-constant-face ((t (:foreground "#DFAF8F"))))
     `(font-lock-doc-face ((t (:foreground ,my-info))))
     `(font-lock-function-name-face ((t (:foreground ,my-pop))))
@@ -103,17 +99,16 @@
     `(font-lock-type-face ((t (:foreground ,my-pop))))
     `(font-lock-variable-name-face ((t (:foreground ,my-highlight))))
     `(font-lock-warning-face ((t (:foreground ,my-warning))))
-
-    `(tooltip ((t (:foreground "#161A1F" :background "#EEE8AA")) (t (:inherit (variable-pitch)))))
+    `(tooltip ((t (:foreground ,my-shadow :background "#EEE8AA")) (t (:inherit (variable-pitch)))))
     `(trailing-whitespace ((t (:background ,my-warning))))
 
     ;; parens / smart-parens
     ;; ========================================
-    `(show-paren-match ((t (:background ,my-subtle :weight bold))))
+    `(show-paren-match ((t (:background ,my-shadow :weight bold))))
     `(show-paren-mismatch ((t (:background ,my-warning :weight bold))))
-    `(sp-show-pair-match-face ((t (:background ,my-subtle :weight bold))))
+    `(sp-show-pair-match-face ((t (:background ,my-shadow :weight bold))))
     `(sp-show-pair-mismatch-face ((t (:background ,my-warning :weight bold))))
-
+    `(sp-pair-overlay-face ((t (:background ,my-contrast))))
 
     ;; info/errors
     ;; ========================================
@@ -135,14 +130,18 @@
 
     ;; helm
     ;; ========================================
-    `(helm-buffer-directory ((t (:foreground ,my-subtle :background ,my-hicontrast))))
+    `(helm-buffer-directory ((t (:foreground ,my-shadow :background ,my-hicontrast))))
+    `(helm-grep-match ((t (:foreground ,my-highlight))))
     `(helm-header ((t ( :foreground ,my-white))))
     `(helm-source-header ((t (:foreground ,my-contrast :family "Open-sans" :height 125 :weight bold :underline t) )))
     `(helm-selection ((t (:background ,my-pop :foreground "#161A1F"))))
-    `(helm-separator ((t (:background ,my-info))))
+    `(helm-separator ((t (:background ,my-deepcontrast))))
 
-    `(isearch ((t (:background ,my-highlight :foreground ,my-subtle))))
+    `(isearch ((t (:background ,my-highlight :foreground ,my-shadow))))
     `(isearch-fail ((t (:background ,my-pop))))
+
+    ;; magit
+    `(magit-section-highlight ((t (:background ,my-deepcontrast))))
 
     ;; minibuffer
     ;; ========================================
@@ -150,11 +149,11 @@
 
     ;; modeline
     ;; ========================================
-    `(mode-line ((t (:background ,my-subtle :foreground ,my-pop ))))
+    `(mode-line ((t (:background ,my-shadow :foreground ,my-pop ))))
     `(mode-line-buffer-id ((t (:weight bold))))
     `(mode-line-emphasis ((t (:weight extra-bold))))
     `(mode-line-highlight ((t (:box (:line-width 2 :color ,my-contrast :style released-button))) (t (:inherit (highlight)))))
-    `(mode-line-inactive ((t (:background ,my-subtle :foreground ,my-contrast ))))
+    `(mode-line-inactive ((t (:background ,my-shadow :foreground ,my-contrast ))))
 
 
     ;; org-mode
@@ -162,9 +161,9 @@
     `(org-agenda-date-today ((t (:foreground ,my-highlight :weight bold))))
     `(org-agenda-date-weekend ((t (:foreground ,my-contrast))))
     `(org-agenda-done ((t (:foreground ,my-contrast :strike-through t))))
-    `(org-block ((t (:foreground ,my-pop :box nil))))
-    `(org-block-begin-line ((t (:background ,my-subtle :foreground ,my-pop))))
-    `(org-block-end-line ((t (:background ,my-subtle :foreground ,my-pop))))
+    `(org-block-begin-line ((t (:background ,my-contrast :foreground ,my-shadow))))
+    `(org-block ((t (:background ,my-deepcontrast :foreground ,my-pop :box nil))))
+    `(org-block-end-line ((t (:background ,my-contrast :foreground ,my-shadow))))
     `(org-document-info ((t (:foreground ,my-pop :height 1.25 ))))
     `(org-document-title ((t (:foreground ,my-info :height 1.35 :weight extra-bold ))))
     `(org-done ((t (:foreground ,my-highlight :strike-through t))))
@@ -176,7 +175,7 @@
     `(org-level-5 ((t  :foreground ,my-highlight )))
     `(org-level-6 ((t  :foreground ,my-contrast )))
     `(org-level-7 ((t  :foreground ,my-hicontrast )))
-    `(Org-link ((t (:foreground ,my-active :underline t ))))
+    `(org-link ((t (:foreground ,my-active :underline t ))))
     `(org-table ((t :family "Monospace Regular")))
     `(query-replace ((t (:inherit isearch))))
     `(region ((t (:background ,my-visited))))

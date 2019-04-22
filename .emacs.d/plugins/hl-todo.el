@@ -112,10 +112,17 @@ Each entry has the form (KEYWORD . COLOR).  KEYWORD is used as
 part of a regular expression.  If (regexp-quote KEYWORD) is not
 equal to KEYWORD, then it is ignored by `hl-todo-insert-keyword'.
 
-The syntax class of the characters at either end has to be `word'
-in `hl-todo--syntax-table'.  That syntax table derives from
-`text-mode-syntax-table' but uses `word' as the class of \"?\"."
-  :package-version '(hl-todo . "2.0.0")
+The syntax class of the characters at either end has to be `w'
+\(which means word) in `hl-todo--syntax-table'.  That syntax
+table derives from `text-mode-syntax-table' but uses `w' as the
+class of \"?\".
+
+This package, like most of Emacs, does not use POSIX regexp
+backtracking.  See info node `(elisp)POSIX Regexp' for why that
+matters.  If you have two keywords \"TODO-NOW\" and \"TODO\", then
+they must be specified in that order.  Alternatively you could
+use \"TODO\\(-NOW\\)?\"."
+  :package-version '(hl-todo . "3.0.0")
   :group 'hl-todo
   :type '(repeat (cons (string :tag "Keyword")
                        (choice :tag "Face   "
@@ -182,7 +189,8 @@ including alphanumeric characters, cannot be used here."
 (defun hl-todo--get-face ()
   (let* ((keyword (match-string 2))
          (face (cdr (cl-find-if (lambda (elt)
-                                  (string-match-p (car elt) keyword))
+                                  (string-match-p (format "\\`%s\\'" (car elt))
+                                                  keyword))
                                 hl-todo-keyword-faces))))
     (if (stringp face)
         (list :inherit 'hl-todo :foreground face)
@@ -300,7 +308,7 @@ current line."
     (indent-region (line-beginning-position) (line-end-position)))))
 
 (define-obsolete-function-alias 'hl-todo-insert-keyword
-  'hl-todo-insert "Hl-Todo 3.0.0")
+  'hl-todo-insert "hl-todo 3.0.0")
 
 ;;; _
 (provide 'hl-todo)
