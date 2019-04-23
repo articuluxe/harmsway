@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2019-02-11 11:41:45 dan.harms>
+;; Modified Time-stamp: <2019-04-23 14:09:50 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -121,7 +121,6 @@
 (defun harmsway-c-init-hook ()
   "Initialization common to all c-modes, run once when loaded."
   (c-add-style "harmsway" harmsway-c-style)
-  (setq-default indent-tabs-mode nil)
   (setq-default c-auto-newline t)
   (define-key c++-mode-map "\C-c\C-c" nil)
   (define-key c++-mode-map "\C-c/" 'toggle-c-comment-delimiters)
@@ -140,6 +139,7 @@
  'c-mode-common-hook
  (lambda ()
    (require 'compile)
+   (setq-local indent-tabs-mode nil)
    (setq c-tab-always-indent nil)
    (setq c-insert-tab-function 'indent-for-tab-command)
    ;; handle CamelCase
@@ -195,6 +195,7 @@
    ;; add some c++-specific rotate-text keywords
    (setq rotate-text-local-symbols '(("class" "struct")
                                      ("true" "false")
+                                     ("public" "protected" "private")
                                      ))
    ) t)
 
