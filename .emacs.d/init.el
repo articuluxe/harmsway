@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-04-24 08:20:12 dharms>
+;; Modified Time-stamp: <2019-04-24 08:40:33 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -149,8 +149,9 @@ up to 10 times."
           (apply orig-fun args)))))
   (advice-add 'pop-to-mark-command :around
               #'my/multi-pop-to-mark))
+(electric-pair-mode 1)
 ;; show current function
-(which-function-mode t)
+(which-function-mode 1)
 ;; winner mode
 (winner-mode 1)
 ;; don't try to create "other files"
