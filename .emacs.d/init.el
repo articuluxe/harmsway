@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-04-19 15:53:51 dan.harms>
+;; Modified Time-stamp: <2019-04-24 06:22:09 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1015,7 +1015,7 @@ line."
   (interactive)
   (require 'magit)
   (let ((magit-display-buffer-function #'magit-display-buffer-fullframe-status-v1))
-    (magit-status-internal default-directory)))
+    (magit-status-setup-buffer default-directory)))
 (use-package magit
   :if (not (version< emacs-version "24.4"))
   :init
@@ -3299,6 +3299,9 @@ This may perform related customization."
               (setq comment-start "#") (setq comment-end "")
               )))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; csproj-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package csproj-mode :mode "\\.[^.]*proj$")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; css-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-hook 'css-mode-hook
           (lambda()
@@ -3684,6 +3687,11 @@ Requires Flake8 2.0 or newer. See URL
             (setq-local company-smart-backend 'company-shell)
             ;; (add-hook 'completion-at-point-functions 'harmsway-company-at-point nil t)
             ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; sln-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package sln-mode
+  :mode "\\.sln$"
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; sql-indent ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package sql-indent
