@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2019-04-23 14:09:50 dan.harms>
+;; Modified Time-stamp: <2019-04-24 12:19:23 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -143,7 +143,7 @@
    (setq c-tab-always-indent nil)
    (setq c-insert-tab-function 'indent-for-tab-command)
    ;; handle CamelCase
-   (if (version< emacs-version "23.2")
+   (if (version< emacs-version "24.3")
        (c-subword-mode 1)
      (subword-mode 1))
    (c-toggle-hungry-state t)
@@ -192,6 +192,8 @@
           ;; This is fairly aggressive; can reenable if desired
           ;; ("\\<Q[A-Z][A-Za-z0-9]*\\>" . font-lock-type-face)
           ) t)
+   (make-local-variable 'electric-pair-pairs)
+   (push (cons ?< ?>) electric-pair-pairs)
    ;; add some c++-specific rotate-text keywords
    (setq rotate-text-local-symbols '(("class" "struct")
                                      ("true" "false")
