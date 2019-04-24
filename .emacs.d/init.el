@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-04-24 06:22:09 dharms>
+;; Modified Time-stamp: <2019-04-24 08:20:12 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -418,16 +418,16 @@ not an error if any files do not exist."
 
 (use-package custom-text-utils
   :bind (("M-s i" . my/indent-line-relative)
-         ("\e\e\\" . jump-to-matching-paren)
-         ("M-]" . highlight-paren-right)
-         ("M-[" . highlight-paren-left)
-         ("M-s p" . highlight-enclosing-paren)
-         ("\e\er" . highlight-current-sexp)
+         ;; ("\e\e\\" . jump-to-matching-paren)
+         ;; ("M-]" . highlight-paren-right)
+         ;; ("M-[" . highlight-paren-left)
+         ;; ("M-s p" . highlight-enclosing-paren)
+         ;; ("\e\er" . highlight-current-sexp)
          ("C-c q" . clean-up-buffer)
-         ("\e\e(" . enclose-by-braces-paren)
-         ("\e\e[" . enclose-by-braces-bracket)
-         ("\e\e{" . enclose-by-braces-brace)
-         ("\e\e<" . enclose-by-braces-caret)
+         ;; ("\e\e(" . enclose-by-braces-paren)
+         ;; ("\e\e[" . enclose-by-braces-bracket)
+         ;; ("\e\e{" . enclose-by-braces-brace)
+         ;; ("\e\e<" . enclose-by-braces-caret)
          ))
 
 (use-package custom-buffer-utils
@@ -831,6 +831,17 @@ line."
 (use-package embrace
   :bind (("C-=" . embrace-commander)
          ("M-' =" . embrace-commander)
+         ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; corral ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package corral
+  :bind (("\e\e9" . corral-parentheses-backward)
+         ("\e\e0" . corral-parentheses-forward)
+         ("M-[" . corral-brackets-backward)
+         ("M-]" . corral-brackets-forward)
+         ("\e\e[" . corral-braces-backward)
+         ("\e\e]" . corral-braces-forward)
+         ("\e\e\"" . corral-double-quotes-backward)
          ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; iedit ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
