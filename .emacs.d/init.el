@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-04-24 08:40:33 dan.harms>
+;; Modified Time-stamp: <2019-04-25 16:08:44 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1011,7 +1011,11 @@ line."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; makefile-executor ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package makefile-executor
-  :hook (makefile-mode . makefile-executor-mode))
+  :hook (makefile-mode . makefile-executor-mode)
+  :config
+  (define-key makefile-executor-mode-map "\C-c\C-c" nil)
+  (define-key makefile-executor-mode-map "\C-c\C-l" 'makefile-executor-execute-last)
+  (define-key makefile-mode-map "\C-c\C-c" nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; magit ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defvar my/git-keymap)
