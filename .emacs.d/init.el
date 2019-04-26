@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-04-25 16:08:44 dan.harms>
+;; Modified Time-stamp: <2019-04-26 10:55:54 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1046,6 +1046,7 @@ line."
   (setq magit-auto-revert-tracked-only t)
   (setq magit-prefer-remote-upstream t)
   (setq magit-section-visibility-indicator '("…" . t))
+  (setq magit-clone-always-transient t)
   ;; git commands
   :bind (:map my/git-keymap
               ("g" . magit-status)
@@ -2883,9 +2884,14 @@ See `https://github.com/company-mode/company-mode/issues/205'."
   :after flycheck
   :if (display-graphic-p)
   :init
+  (defface flycheck-posframe-background-face
+    '((t :background "yellow"))
+    "Background face used for flycheck posframe popups."
+    :group 'flycheck-posframe)
   (defface flycheck-posframe-face
-    '((t (:background "yellow" :foreground "black")))
-    "Face used for flycheck posframe popups.")
+    '((t (:foreground "black")))
+    "Face used for flycheck posframe popups."
+    :group 'flycheck-posframe)
   :config
   (add-hook 'flycheck-mode-hook #'flycheck-posframe-mode))
 
