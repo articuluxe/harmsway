@@ -1,10 +1,10 @@
-;;; company-restclient.el --- company-mode completion back-end for restclient-mode
+;;; company-restclient.el --- company-mode completion back-end for restclient-mode  -*- lexical-binding: t -*-
 
 ;; Public domain.
 
 ;; Author:    Iku Iwasa <iku.iwasa@gmail.com>
 ;; URL:       https://github.com/iquiw/company-restclient
-;; Version:   0.2.0
+;; Version:   0.3.0
 ;; Package-Requires: ((cl-lib "0.5") (company "0.8.0") (emacs "24") (know-your-http-well "0.2.0") (restclient "0.0.0"))
 
 ;;; Commentary:
@@ -66,13 +66,13 @@ The key is header name and the value is list of header values.")
     (header (or (company-grab "^[-[:alpha:]]*")
                 (company-restclient--grab-var)
                 (company-grab-symbol)))
-    (vardecl nil)
     (comment nil)
+    ;; Try to grab variable for vardecl too, as it can be variable reference.
     (t (company-restclient--grab-var))))
 
 (defun company-restclient--grab-var ()
   "Grab variable for completion prefix."
-  (company-grab ".\\(:[^: \n]*\\)" 1))
+  (company-grab "\\(:[^: \n]*\\)" 1))
 
 (defun company-restclient-candidates (prefix)
   "Provide completion candidates for the given PREFIX."

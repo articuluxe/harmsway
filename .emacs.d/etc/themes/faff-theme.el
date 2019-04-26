@@ -4,7 +4,7 @@
 
 ;; Author: James Ferguson <(concat "wjcferguson" at-sign "gmail.com")>
 ;; URL: https://github.com/WJCFerguson/emacs-faff-theme
-;; Version: 2.3
+;; Version: 2.5
 ;; Keywords: color theme
 
 ;; This file is not part of GNU Emacs.
@@ -82,6 +82,10 @@
  '(fringe ((t (:inherit default :background "cornsilk3"))))
  '(header-line ((t (:inherit mode-line :background "cornsilk2" :box nil))))
  '(js2-external-variable ((t (:foreground "orange3"))))
+ '(js2-function-call ((t (:inherit font-lock-function-name-face))))
+ '(js2-jsdoc-type ((t (:inherit font-lock-type-face))))
+ '(js2-jsdoc-value ((t (:inherit font-lock-variable-name-face)))) '(dired-subtree-depth-1-face ((t (:background "cornsilk2"))))
+ '(js2-object-property ((t (:inherit font-lock-variable-name-face))))
  '(tooltip ((((class color)) (:inherit (variable-pitch) :foreground "black" :background "lightyellow")) (t (:inherit (variable-pitch)))))
  '(mode-line ((t (:background "gold" :foreground "black" :box nil))))
  '(mode-line-buffer-id ((t (:weight bold))))
@@ -111,7 +115,7 @@
  '(dired-filetype-source ((t (:foreground "red4" :weight bold))))
  '(dired-filetype-video ((t (:foreground "brown"))))
  '(flymake-warning ((t (:background "gray"))))
- '(dired-subtree-depth-1-face ((t (:background "cornsilk2"))))
+ '(dired-filetype-js ((t (:foreground "goldenrod4"))))
  '(dired-subtree-depth-2-face ((t (:background "cornsilk1"))))
  '(dired-subtree-depth-3-face ((t (:background "white"))))
  '(dired-subtree-depth-4-face ((t (:background "cornsilk2"))))
@@ -168,6 +172,8 @@
  '(powerline-active2 ((t (:inherit mode-line :background "gold3"))))
  '(powerline-inactive1 ((t (:inherit mode-line-inactive :background "grey11" :foreground "grey45"))))
  '(powerline-inactive2 ((t (:inherit mode-line-inactive :background "grey20" :foreground "grey55"))))
+ '(rjsx-tag ((t (:inherit font-lock-keyword-face))))
+ '(rjsx-tag-bracket-face ((t (:inherit font-lock-keyword-face))))
  '(scroll-bar ((t (:background "grey90"))))
  '(sh-heredoc ((t (:foreground "tan4"))))
  '(success ((t (:foreground "darkgreen" :weight bold))))

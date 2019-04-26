@@ -112,6 +112,25 @@ realgud-loc-pat struct")
        :line-group 3)
       )
 
+;; FIXME breakpoints aren't locations. It should be a different structure
+;; Regular expression that describes a gdb "info breakpoint" line
+;; For example:
+;; 1       breakpoint     keep y   0x0000000000401471 in vcdnav_get_entries at ctest.c:67
+
+(setf (gethash "debugger-breakpoint" realgud:gdb-pat-hash)
+  (make-realgud-loc-pat
+   :regexp (format "^%s[ \t]+\\(breakpoint\\)[ \t]+\\(keep\\|del\\)[ \t]+\\([yn]\\)[ \t]+.*at \\(.+\\):%s"
+		   realgud:regexp-captured-num realgud:regexp-captured-num)
+   :num 1
+   :text-group 2  ;; misnamed Is "breakpoint" or "watchpoint"
+   :string 3      ;; misnamed. Is "keep" or "del"
+   ;; Enable is missing
+   ;; Skipped address
+   :file-group 5
+   :line-group 6)
+  )
+
+
 (setf (gethash "font-lock-keywords" realgud:gdb-pat-hash)
       '(
 	;; #2  0x080593ac in main (argc=2, argv=0xbffff5a4, envp=0xbffff5b0)
@@ -126,6 +145,23 @@ realgud-loc-pat struct")
 	( "#\\(?:^\\|\n\\)\\([0-9]+\\)  "
 	 (1 realgud-backtrace-number-face))
 	))
+
+(setf (gethash "font-lock-breakpoint-keywords" realgud:gdb-pat-hash)
+  '(
+    ;; The breakpoint number, type and disposition
+    ;; 1       breakpoint     keep y   0x0000000000401471 in vcdnav_get_entries at ctest.c:67
+    ;; ^       ^^^^^^^^^^     ^^^^
+    ("^\\([0-9]+\\)[ \t]+\\(breakpoint\\)[ \t]+\\(keep\\|del\\)"
+     (1 realgud-breakpoint-number-face)
+     (2 font-lock-function-name-face nil t)     ; t means optional.
+     (3 font-lock-function-name-face nil t))     ; t means optional.
+
+    ;; 1       breakpoint     keep y   0x0000000000401471 in vcdnav_get_entries at ctest.c:67
+    ;;                                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ^^
+    (" in[ \t]+\\(.+*\\):\\([0-9]+\\)"
+     (1 realgud-file-name-face)
+     (2 realgud-line-number-face))
+    ))
 
 (setf (gethash "gdb" realgud-pat-hash) realgud:gdb-pat-hash)
 

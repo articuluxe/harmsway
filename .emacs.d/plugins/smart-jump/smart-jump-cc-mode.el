@@ -31,6 +31,8 @@
 ;;; Code:
 (require 'smart-jump)
 
+(defvar rtags-rc-binary-name)
+
 ;;;###autoload
 (defun smart-jump-cc-mode-register ()
   "Register `cc-mode' for `smart-jump'."
@@ -71,7 +73,7 @@
                                       (and
                                        (fboundp 'rtags-executable-find)
                                        (fboundp 'rtags-is-indexed)
-                                       (rtags-executable-find "rc")
+                                       (rtags-executable-find rtags-rc-binary-name)
                                        (rtags-is-indexed)))
                        :heuristic 'point
                        :async 2000

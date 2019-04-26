@@ -1,4 +1,4 @@
-;; Copyright (C) 2010-2018 Free Software Foundation, Inc
+;; Copyright (C) 2010-2019 Free Software Foundation, Inc
 
 ;; Author: Rocky Bernstein <rocky@gnu.org>
 
@@ -40,7 +40,7 @@ realgud-loc-pat struct")
 ;; before a command prompt.
 ;;
 ;; For example:
-;;   (/usr/bin/zonetab2pot.py:15): <module>
+;;   (/usr/bin/zonetab2pot.py:15 @3): <module>
 ;;   (/usr/bin/zonetab2pot.py:15 remapped <string>): <module>
 ;; or MS Windows:
 ;;   (c:\\mydirectory\\gcd.py:10): <module>
@@ -55,7 +55,7 @@ realgud-loc-pat struct")
 (setf (gethash "ignore-re-file-list" realgud:trepan3k-pat-hash)
       (list realgud-python-ignore-file-re))
 
-;; Regular expression that describes a trepan3k prompt.
+;; realgud-loc-pat that describes a trepan3k prompt.
 ;; Note: the prompt in nested debugging
 ;; For example:
 ;; (trepan3)
@@ -76,6 +76,12 @@ realgud-loc-pat struct")
 (setf (gethash "debugger-backtrace" realgud:trepan3k-pat-hash)
       realgud:python-trepan-backtrace-pat)
 
+;;  realgud-loc-pat that describes a line a Python "info break" line.
+;; For example:
+;; 1   breakpoint    keep y   at /usr/local/bin/trepan3k:7
+(setf (gethash "debugger-breakpoint" realgud:trepan3k-pat-hash)
+      realgud-python-breakpoint-pat)
+
 ;;  realgud-loc-pat that describes a Python backtrace line.
 (setf (gethash "lang-backtrace" realgud:trepan3k-pat-hash)
       realgud-python-backtrace-loc-pat)
@@ -84,7 +90,7 @@ realgud-loc-pat struct")
 (setf (gethash "pytest-error" realgud:trepan3k-pat-hash)
       realgud-pytest-error-loc-pat)
 
-;;  Regular expression that describes location in a flake8 message
+;;  realgud-loc-pat that describes location in a flake8 message
 (setf (gethash "flake8-msg" realgud:trepan3k-pat-hash)
       realgud-flake8-msg-loc-pat)
 
@@ -115,16 +121,20 @@ realgud-loc-pat struct")
 (setf (gethash "font-lock-keywords" realgud:trepan3k-pat-hash)
       realgud:python-debugger-font-lock-keywords)
 
+(setf (gethash "font-lock-breakpoint-keywords" realgud:trepan3k-pat-hash)
+      realgud:python-debugger-font-lock-breakpoint-keywords)
+
 (setf (gethash "trepan3k" realgud-pat-hash) realgud:trepan3k-pat-hash)
 
 (defvar realgud:trepan3k-command-hash (make-hash-table :test 'equal)
   "Hash key is command name like 'shell' and the value is
   the trepan3k command to use, like 'python'")
 
-(setf (gethash "eval"   realgud:trepan3k-command-hash) "eval %s")
-(setf (gethash "pprint" realgud:trepan3k-command-hash) "pp %s")
-(setf (gethash "shell"  realgud:trepan3k-command-hash) "python")
-(setf (gethash "until"  realgud:trepan3k-command-hash) "continue %l")
+(setf (gethash "eval"             realgud:trepan3k-command-hash) "eval %s")
+(setf (gethash "info-breakpoints" realgud:trepan3k-command-hash) "info break")
+(setf (gethash "pprint"           realgud:trepan3k-command-hash) "pp %s")
+(setf (gethash "shell"            realgud:trepan3k-command-hash) "python")
+(setf (gethash "until"            realgud:trepan3k-command-hash) "continue %l")
 
 ;; If your version of trepan3k doesn't support "quit!",
 ;; get a more recent version of trepan3k

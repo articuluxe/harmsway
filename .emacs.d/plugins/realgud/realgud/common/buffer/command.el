@@ -1,4 +1,4 @@
-;; Copyright (C) 2015-2018 Free Software Foundation, Inc
+;; Copyright (C) 2015-2019 Free Software Foundation, Inc
 ;; Author: Rocky Bernstein <rocky@gnu.org>
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -84,6 +84,7 @@
   source-path          ;; last source-code path we've seen
 
   bt-buf               ;; backtrace buffer if it exists
+  brkpt-buf            ;; breakpoint buffer if it exists
   bp-list              ;; list of breakpoints
   divert-output?       ;; Output is part of a conversation between front-end
                        ;; debugger.
@@ -148,6 +149,7 @@
 ;; FIXME: figure out how to put in a loop.
 (realgud-struct-field-setter "realgud-cmdbuf-info" "bp-list")
 (realgud-struct-field-setter "realgud-cmdbuf-info" "bt-buf")
+(realgud-struct-field-setter "realgud-cmdbuf-info" "brkpt-buf")
 (realgud-struct-field-setter "realgud-cmdbuf-info" "cmd-args")
 (realgud-struct-field-setter "realgud-cmdbuf-info" "last-input-end")
 (realgud-struct-field-setter "realgud-cmdbuf-info" "divert-output?")
@@ -201,13 +203,18 @@
 ;; FIXME: this is a cheat. We are inserting
 ;; and afterwards inserting ""
 (defun realgud:cmdbuf-bp-list-describe (info)
-  (let ((bp-list (realgud-cmdbuf-info-bp-list info)))
+  (let ((bp-list (realgud-cmdbuf-info-bp-list info))
+	;; For reasons I don't understand bp-list has duplicates
+	(bp-nums nil))
     (cond (bp-list
 	   (insert "** Breakpoint list (bp-list)\n")
 	   (dolist (loc bp-list "")
 	     (let ((bp-num (realgud-loc-num loc)))
-	       (insert (format "*** Breakpoint %d\n" bp-num))
-	       (realgud:org-mode-append-loc loc))))
+	       (when (not (cl-member bp-num bp-nums))
+		 (insert (format "*** Breakpoint %d\n" bp-num))
+		 (realgud:org-mode-append-loc loc)
+		 (setq bp-nums (cl-adjoin bp-num bp-nums))
+	       ))))
 	  ;; Since we are inserting, the below in fact
 	  ;; inserts nothing. The string return is
 	  ;; aspirational for when this is fixed
@@ -247,7 +254,7 @@
   "Display realgud-cmdcbuf-info fields of BUFFER.
 BUFFER is either a debugger command or source buffer. If BUFFER is not given
 the current buffer is used as a starting point.
-Information is put in an internal buffer called *Describe*."
+Information is put in an internal buffer called *Describe Debugger Session*."
   (interactive "")
   (setq buffer (realgud-get-cmdbuf buffer))
   (if buffer
@@ -256,7 +263,7 @@ Information is put in an internal buffer called *Describe*."
 	      (cmdbuf-name (buffer-name)))
 	  (if info
 	      (progn
-		(switch-to-buffer (get-buffer-create "*Describe*"))
+		(switch-to-buffer (get-buffer-create "*Describe Debugger Session*"))
 		(setq buffer-read-only 'nil)
 		(delete-region (point-min) (point-max))
 		;;(insert "#+OPTIONS:    H:2 num:nil toc:t \\n:nil ::t |:t ^:nil -:t f:t *:t tex:t d:(HIDE) tags:not-in-toc\n")
@@ -426,6 +433,7 @@ values set in the debugger's init.el."
   (with-current-buffer-safe cmd-buf
     (let ((realgud-loc-pat (gethash "loc" regexp-hash))
 	  (font-lock-keywords)
+	  (font-lock-breakpoint-keywords)
 	  )
       (setq realgud-cmdbuf-info
 	    (make-realgud-cmdbuf-info
@@ -442,6 +450,7 @@ values set in the debugger's init.el."
 	     :regexp-hash regexp-hash
 	     :srcbuf-list nil
 	     :bt-buf nil
+	     :brkpt-buf nil
 	     :bp-list nil
 	     :divert-output? nil
 	     :cmd-hash cmd-hash
@@ -464,8 +473,11 @@ values set in the debugger's init.el."
       (if font-lock-keywords
 	  (set (make-local-variable 'font-lock-defaults)
 	       (list font-lock-keywords)))
+      (setq font-lock-breakpoint-keywords (realgud-cmdbuf-pat "font-lock-breakpoint-keywords"))
+      (if font-lock-breakpoint-keywords
+	  (set (make-local-variable 'font-lock-breakpoint-keywords)
+	       (list font-lock-breakpoint-keywords)))
       )
-
     (put 'realgud-cmdbuf-info 'variable-documentation
 	 "Debugger object for a process buffer."))
   )

@@ -2884,7 +2884,7 @@ Applies on type formatting."
   (when-let (file-name (or path (buffer-file-name)))
     (->> (lsp-session)
          (lsp-session-folders)
-         (--first (f-ancestor-of? it file-name)))))
+         (--first (f-ancestor-of? it (f-canonical file-name))))))
 
 (defun lsp-on-revert ()
   "Executed when a file is reverted.
@@ -3122,7 +3122,8 @@ If INCLUDE-DECLARATION is non-nil, request the server to include declarations."
      (condition-case nil
          (funcall fn)
        (lsp-capability-not-supported nil))
-     nil)) nil)
+     nil))
+  eldoc-last-message)
 
 (defvar-local lsp--highlight-bounds nil)
 (defvar-local lsp--highlight-timer nil)
@@ -3923,7 +3924,7 @@ WORKSPACE is the active workspace."
     (unless pos
       (signal 'lsp-invalid-header-name (list s)))
     (setq key (substring s 0 pos)
-          val (substring s (+ 2 pos)))
+          val (s-trim-left (substring s (+ 1 pos))))
     (when (string-equal key "Content-Length")
       (cl-assert (cl-loop for c across val
                           when (or (> c ?9) (< c ?0)) return nil
@@ -4583,14 +4584,14 @@ SESSION is the currently active session. The function will also
 pick only remote enabled clients in case the FILE-NAME is on
 remote machine and vice versa."
   (let ((remote? (file-remote-p file-name)))
-    (--when-let (->> lsp-clients
-                     hash-table-values
-                     (-filter (-lambda (client)
-                                (and (or (-some-> client lsp--client-activation-fn (funcall buffer-file-name buffer-major-mode))
-                                         (and (not (lsp--client-activation-fn client))
-                                              (-contains? (lsp--client-major-modes client) buffer-major-mode)
-                                              (eq (---truthy? remote?) (---truthy? (lsp--client-remote? client)))))
-                                     (-some-> client lsp--client-new-connection (plist-get :test?) funcall)))))
+    (-when-let (matching-clients (->> lsp-clients
+                                      hash-table-values
+                                      (-filter (-lambda (client)
+                                                 (and (or (-some-> client lsp--client-activation-fn (funcall buffer-file-name buffer-major-mode))
+                                                          (and (not (lsp--client-activation-fn client))
+                                                               (-contains? (lsp--client-major-modes client) buffer-major-mode)
+                                                               (eq (---truthy? remote?) (---truthy? (lsp--client-remote? client)))))
+                                                      (-some-> client lsp--client-new-connection (plist-get :test?) funcall))))))
       (lsp-log "Found the following clients for %s: %s"
                file-name
                (s-join ", "
@@ -4598,8 +4599,8 @@ remote machine and vice versa."
                                (format "(server-id %s, priority %s)"
                                        (lsp--client-server-id client)
                                        (lsp--client-priority client)))
-                             it)))
-      (-let* (((add-on-clients main-clients) (-separate 'lsp--client-add-on? it))
+                             matching-clients)))
+      (-let* (((add-on-clients main-clients) (-separate 'lsp--client-add-on? matching-clients))
               (selected-clients (if-let (main-client (and main-clients
                                                           (--max-by (> (lsp--client-priority it)
                                                                        (lsp--client-priority other))
@@ -4878,12 +4879,13 @@ Returns nil if the project should not be added to the current SESSION."
 
 (defun lsp-find-session-folder (session file-name)
   "Look in the current SESSION for folder containing FILE-NAME."
-  (->> session
-       (lsp-session-folders)
-       (--filter (or (f-same? it file-name)
-                     (f-ancestor-of? it file-name)))
-       (--max-by (> (length it)
-                    (length other)))))
+  (let ((file-name-canonical (f-canonical file-name)))
+    (->> session
+	 (lsp-session-folders)
+	 (--filter (or (f-same? it file-name-canonical)
+                       (f-ancestor-of? it file-name-canonical)))
+	 (--max-by (> (length it)
+                      (length other))))))
 
 (defun lsp-find-workspace (server-id file-name)
   "Find workspace for SERVER-ID for FILE-NAME."
@@ -4900,7 +4902,9 @@ Returns nil if the project should not be added to the current SESSION."
   (and
    (->> session
         (lsp-session-folders-blacklist)
-        (--first (f-ancestor-of? it file-name))
+        (--first (and (f-ancestor-of? it file-name)
+                      (prog1 t
+                        (lsp--info "File %s is in blacklisted directory %s" file-name it))))
         not)
    (or
     (when lsp-auto-guess-root
@@ -4953,7 +4957,7 @@ such."
                 (push project-root (lsp-session-folders session))
                 (lsp--persist-session session))
               (lsp--ensure-lsp-servers session clients project-root ignore-multi-folder))
-          (lsp--warn  "%s not in project." (buffer-name))
+          (lsp--warn "%s not in project or it is blacklisted." (buffer-name))
           nil)
       (lsp--warn "No LSP server for %s." major-mode)
       nil)))
