@@ -1,10 +1,11 @@
-;;; company-cmd.el --- company-mode completion backend for cmd.exe scripts -*- lexical-binding: t -*-
+;;; company-cmd.el --- company backend for cmd/batch -*- lexical-binding: t -*-
+
+;; This is free and unencumbered software released into the public domain.
 
 ;; Author: Noah Peart
-;; Copyright (C) 2016 Noah Peart, all rights reserved
-;; URL: https://github.com/nverno/cmd-mode
-;; Version: 1.0
+;; URL: https://github.com/nverno/company-cmd
 ;; Package-Requires ((company "0.8.0") (cl-lib "0.5.0"))
+;; Keywords: convenience
 
 ;; This file is not part of GNU Emacs
 
@@ -34,39 +35,39 @@
 ;; See: [cmd-mode](http://github.com/nverno/cmd-mode) for combining with
 ;; completion-at-point (not provided in base `bat-mode').
 
-;; Example:
-;;
-;; ![example pic](http://raw.githubusercontent.com/nverno/cmd-mode/master/test-cmd.png)
-;;
-
 ;;; Code:
-
+(eval-when-compile (require 'cl-lib))
 (require 'company)
-(require 'cl-lib)
 
-(defvar company-cmd-modes '(bat-mode dos-mode cmd-mode ntcmd-mode)
-  "Various modes for editing windows batch files.")
+(defgroup company-cmd nil
+  "CMD/DOS completion backend."
+  :group 'company
+  :prefix "company-cmd-")
 
-(defvar company-cmd-candidates nil
+(defcustom company-cmd-modes '(bat-mode dos-mode cmd-mode ntcmd-mode)
+  "Various modes for editing windows batch files."
+  :type '(repeat function))
+
+(defvar company-cmd-candidates ()
   "List of completion candidates and meta info.")
 
-(defun company-cmd-build-alist ()
-  "Build list of commands to offer for completion."
-  (let ((raw
-         (split-string
-          (replace-regexp-in-string
-           "\n\\s-+" " "
-           (shell-command-to-string
-            "help | findstr /b /v /c:\"For more\"")) "\n" t)))
-    (setq company-cmd-candidates
-          (mapcar #'(lambda (str)
-                      (let ((pos (string-match "\\s-" str)))
-                        (cons (substring str 0 pos)
-                              (replace-regexp-in-string
-                               "^\\s-+" " "
-                               (substring str (1+ pos) (length str))))))
-                  raw)))
-  company-cmd-candidates)
+(defun company-cmd-candidates ()
+  "Build/return list of commands to offer for completion."
+  (or company-cmd-candidates
+      (let ((raw
+             (split-string
+              (replace-regexp-in-string
+               "\n\\s-+" " "
+               (shell-command-to-string
+                "help | findstr /b /v /c:\"For more\"")) "\n" t)))
+        (setq company-cmd-candidates
+              (mapcar #'(lambda (str)
+                          (let ((pos (string-match "\\s-" str)))
+                            (cons (substring str 0 pos)
+                                  (replace-regexp-in-string
+                                   "^\\s-+" " "
+                                   (substring str (1+ pos) (length str))))))
+                      raw)))))
 
 (defun company-cmd-prefix ()
   "Prefix for bat completion."
@@ -75,17 +76,14 @@
        (company-grab-symbol)))
 
 (defun company-cmd-meta (candidate)
-  "Return short documentation string for `CANDIDATE'."
+  "Return short documentation string for CANDIDATE."
   (cdr (assoc-string candidate company-cmd-candidates t)))
 
 (defun company-cmd-doc (candidate)
-  "Return buffer with detailed help for `CANDIDATE'."
+  "Return buffer with detailed help for CANDIDATE."
   (with-temp-buffer
     (call-process "cmd.exe" nil t nil "/c" (concat " help " candidate))
-    (goto-char (point-min))
-    (company-doc-buffer
-     (buffer-substring-no-properties (line-beginning-position)
-                                     (point-max)))))
+    (company-doc-buffer (buffer-string))))
 
 (defun company-cmd-offer-candidates (arg)
   "Offer completion candidates, if an uppercase character is found,
@@ -93,8 +91,7 @@ the candidates are all uppercase."
   (let* ((case-fold-search nil)
         (to-upper (string-match-p "[A-Z]+" arg))
         (completion-ignore-case t)
-        (res (all-completions arg (or company-cmd-candidates
-                                      (company-cmd-build-alist)))))
+        (res (all-completions arg (company-cmd-candidates))))
     (if to-upper res
       (mapcar #'downcase res))))
 
