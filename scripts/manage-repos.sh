@@ -1,11 +1,11 @@
 #!/bin/bash
 # -*- Mode: sh -*-
 # manage-repos.sh --- clone and update repos
-# Copyright (C) 2017  Dan Harms (dharms)
+# Copyright (C) 2017, 2019  Dan Harms (dharms)
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Friday, March 17, 2017
 # Version: 1.0
-# Modified Time-stamp: <2017-07-13 07:16:12 dharms>
+# Modified Time-stamp: <2019-05-03 08:54:06 dharms>
 # Modified by: Dan Harms
 # Keywords: git repo
 
@@ -18,7 +18,7 @@ fi
 
 cd "$dir"
 
-find "$dir" -type f -name clone | sort | while read fname; do
+find "$dir" -type f -name clone | sort | while read -r fname; do
     parent=$( dirname "$fname" )
     pushd "$parent" &> /dev/null
     repo=$( basename "$PWD" )
@@ -46,6 +46,9 @@ find "$dir" -type f -name clone | sort | while read fname; do
     # install
     if [ -f "$parent/install" ]; then
         ./install
+    fi
+    if [ -f "$parent/install_$(uname -s)" ]; then
+        ./install_$(uname -s)
     fi
     popd &> /dev/null
 done

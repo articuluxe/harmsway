@@ -4,7 +4,6 @@ mkdir -p bld/$(uname -s)
 cd bld/$(uname -s)
 mkdir -p $(hostname -s)
 cd $(hostname -s)
-pwd
 ../../../configure --prefix=$HOME/opt/stow/ctags --program-prefix=ex --disable-xml
 make
 make install
