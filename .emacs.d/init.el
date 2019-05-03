@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-04-26 10:55:54 dan.harms>
+;; Modified Time-stamp: <2019-05-03 06:31:54 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2194,16 +2194,21 @@ Only one letter is shown, the first that applies."
 (add-hook 'ediff-keymap-setup-hook 'my/add-merge-to-ediff-mode-map)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ediff-trees ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(define-prefix-command 'my/ediff-trees-keymap)
+(define-prefix-command 'harmsway-difftrees-keymap)
 (use-package ediff-trees
-  :bind (("C-c e" . my/ediff-trees-keymap)
-         :map my/ediff-trees-keymap
+  :bind (("C-c e" . harmsway-difftrees-keymap)
+         :map harmsway-difftrees-keymap
          ("e" . ediff-trees)
          ("n" . ediff-trees-examine-next)
          ("p" . ediff-trees-examine-previous)
          ("C-n" . ediff-trees-examine-next-regexp)
          ("C-p" . ediff-trees-examine-previous-regexp)
          ))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ztree ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package ztree
+  :bind (:map harmsway-difftrees-keymap
+              ("z" . ztree-diff)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; diff-hl ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun harmsway-diff-hl-revert-highlight-hunk (end)
