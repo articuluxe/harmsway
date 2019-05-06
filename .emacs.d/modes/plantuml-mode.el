@@ -37,6 +37,7 @@
 
 ;;; Change log:
 ;;
+;; version 1.2.10, 2019-04-03 Avoid messing with window layouts and buffers -- courtesy of https://github.com/wailo
 ;; version 1.2.9, Revamped indentation support, now working with a greater number of keywords
 ;; version 1.2.8, 2019-01-07 Support indentation for activate / deactivate blocks; allow customization of `plantuml-java-args'
 ;; version 1.2.7, 2018-08-15 Added support for indentation; Fixed the comiling error when installing with melpa
@@ -285,10 +286,11 @@ to choose where to display it:
                                 (switch-to-buffer-other-frame plantuml-preview-buffer))
                                ((= prefix 4)
                                 (switch-to-buffer-other-window plantuml-preview-buffer))
-                               (t (switch-to-buffer plantuml-preview-buffer)))
+                               (t (display-buffer plantuml-preview-buffer)))
                               (when imagep
-                                (image-mode)
-                                (set-buffer-multibyte t)))))))
+                                (with-current-buffer plantuml-preview-buffer
+                                  (image-mode)
+                                  (set-buffer-multibyte t))))))))
 
 (defun plantuml-preview-buffer (prefix)
   "Preview diagram from the PlantUML sources in the current buffer.

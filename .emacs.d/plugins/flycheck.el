@@ -204,6 +204,7 @@ attention to case differences."
     javascript-standard
     json-jsonlint
     json-python-json
+    json-jq
     jsonnet
     less
     less-stylelint
@@ -7748,9 +7749,34 @@ Return the absolute path to the directory"
   "Return directory where rebar.config is located."
   (locate-rebar3-project-root buffer-file-name))
 
+(flycheck-def-option-var flycheck-erlang-rebar3-profile nil erlang-rebar3
+  "The rebar3 profile to use.
+
+The profile used when compiling, if VALUE is nil \"test\" will be used
+when the file is located in test directory, otherwise \"default\" will be
+used as profile."
+  :type 'string
+  :safe #'stringp
+  :package-version '(flycheck . "32"))
+
+(defun flycheck-erlang-rebar3-get-profile ()
+  "Return rebar3 profile.
+
+Use flycheck-erlang-rebar3-profile if set, otherwise use test profile if
+dirname is test or else default."
+  (cond
+   (flycheck-erlang-rebar3-profile flycheck-erlang-rebar3-profile)
+   ((and buffer-file-name
+         (string= "test"
+                  (file-name-base
+                   (directory-file-name
+                    (file-name-directory buffer-file-name)))))
+    "test")
+   (t "default")))
+
 (flycheck-define-checker erlang-rebar3
   "An Erlang syntax checker using the rebar3 build tool."
-  :command ("rebar3" "compile")
+  :command ("rebar3" "as" (eval (flycheck-erlang-rebar3-get-profile)) "compile")
   :error-parser
   (lambda (output checker buffer)
     ;; rebar3 outputs ANSI terminal colors, which don't match up with
@@ -8688,6 +8714,23 @@ See URL `https://docs.python.org/3.5/library/json.html#command-line-interface'."
   :modes json-mode
   ;; The JSON parser chokes if the buffer is empty and has no JSON inside
   :predicate (lambda () (not (flycheck-buffer-empty-p))))
+
+(flycheck-define-checker json-jq
+  "JSON checker using the jq tool.
+
+This checker accepts multiple consecutive JSON values in a
+single input, which is useful for jsonlines data.
+
+See URL `https://stedolan.github.io/jq/'."
+  :command ("jq" "." source null-device)
+  ;; Example error message:
+  ;;   parse error: Expected another key-value pair at line 3, column 1
+  :error-patterns
+  ((error line-start
+          (optional "parse error: ")
+          (message) "at line " line ", column " column
+          (zero-or-more not-newline) line-end))
+  :modes json-mode)
 
 (flycheck-define-checker jsonnet
   "A Jsonnet syntax checker using the jsonnet binary.

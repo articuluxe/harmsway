@@ -162,6 +162,7 @@ GIT-FUTURE: Pfuture"
 (defun treemacs--git-status-process-simple (path)
   "Start a simple git status process for files under PATH."
   (let* ((default-directory (f-canonical path))
+         (process-environment (cons "GIT_OPTIONAL_LOCKS=0" process-environment))
          (future (pfuture-new "git" "status" "--porcelain" "--ignored" "-z" ".")))
     (process-put future 'default-directory default-directory)
     future))
@@ -275,14 +276,14 @@ FILE: Filepath"
                (-when-let (pos (treemacs-find-visible-node file))
                  (-let [face (treemacs--git-status-face state 'treemacs-git-unmodified-face)]
                    (put-text-property
-                    (button-start pos) (button-end pos)
+                    (treemacs-button-start pos) (treemacs-button-end pos)
                     'face face))))
              ;; then the directories
              (pcase-dolist (`(,file . ,state) output)
                (-when-let (pos (treemacs-find-visible-node file))
                  (-let [face (treemacs--git-status-face state 'treemacs-directory-face)]
                    (put-text-property
-                    (button-start pos) (button-end pos)
+                    (treemacs-button-start pos) (treemacs-button-end pos)
                     'face face))))))))
       :on-error
       (pcase (process-exit-status process)

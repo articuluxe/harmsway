@@ -5,8 +5,8 @@
 ;; Author: Christian Johansson <christian@cvj.se>
 ;; Maintainer: Christian Johansson <christian@cvj.se>
 ;; Created: 5 Jul 2016
-;; Modified: 27 Apr 2019
-;; Version: 3.1.2
+;; Modified: 3 May 2019
+;; Version: 3.1.4
 ;; Keywords: tools, convenience
 ;; URL: https://github.com/cjohansson/emacs-ssh-deploy
 
@@ -274,6 +274,9 @@
 (defconst ssh-deploy--status-detecting-remote-changes 5
   "The mode-line status for detecting remote changes.")
 
+(defconst ssh-deploy--status-file-difference 6
+  "The mode-line status for checking file difference.")
+
 (defconst ssh-deploy--status-undefined 10
   "The mode-line undefined status.")
 
@@ -379,6 +382,9 @@
       (setq status-text "mv.."))
 
      ((= status ssh-deploy--status-detecting-remote-changes)
+      (setq status-text "chgs.."))
+
+     ((= status ssh-deploy--status-file-difference)
       (setq status-text "diff.."))
 
      ((and ssh-deploy-root-local ssh-deploy-root-remote)
@@ -439,7 +445,7 @@
            (lambda()
              (if (or (> force 0) (not (file-exists-p path-remote))
                      (and (file-exists-p revision-path)
-                          (ediff-same-file-contents revision-path path-remote)))
+                          (nth 0 (ssh-deploy--diff-files revision-path path-remote))))
                  (progn
                    (unless (file-directory-p (file-name-directory path-remote))
                      (make-directory (file-name-directory path-remote) t))
@@ -472,7 +478,7 @@
           (if (or (> force 0)
                   (not (file-exists-p path-remote))
                   (and (file-exists-p revision-path)
-                       (ediff-same-file-contents revision-path path-remote)))
+                       (nth 0 (ssh-deploy--diff-files revision-path path-remote))))
               (progn
                 (when (> ssh-deploy-verbose 0) (message "Uploading file '%s' to '%s'.. (synchronously)" path-local path-remote))
                 (unless (file-directory-p (file-name-directory path-remote))
@@ -620,7 +626,7 @@
              (lambda (file)
                (let ((file-a (gethash file files-a-relative-hash))
                      (file-b (gethash file files-b-relative-hash)))
-                 (if (ediff-same-file-contents file-a file-b)
+                 (if (nth 0 (ssh-deploy--diff-files file-a file-b))
                      (if (equal files-both-equals nil)
                          (setq files-both-equals (list file))
                        (push file files-both-equals))
@@ -692,6 +698,11 @@
     (set (make-local-variable 'ssh-deploy-automatically-detect-remote-changes) remote-changes)
     (set (make-local-variable 'ssh-deploy-exclude-list) exclude-list)))
 
+(defun ssh-deploy--diff-files (file-a file-b)
+  "Check difference between FILE-A and FILE-B."
+  (let ((result (ediff-same-file-contents file-a file-b)))
+    (list result file-a file-b)))
+
 
 ;; PUBLIC functions
 ;;
@@ -699,14 +710,29 @@
 ;; these functions MUST only use module variables as fall-backs for missing arguments.
 
 
-;; TODO Add support for async version of this function
 ;;;###autoload
-(defun ssh-deploy-diff-files (file-a file-b)
-  "Find difference between FILE-A and FILE-B."
+(defun ssh-deploy-diff-files (file-a file-b &optional async async-with-threads)
+  "Find difference between FILE-A and FILE-B, do it asynchronous if ASYNC is aboe zero and use threads if ASYNC-WITH-THREADS is above zero."
   (message "Comparing file '%s' to '%s'.." file-a file-b)
-  (if (ediff-same-file-contents file-a file-b)
-      (message "Files have identical contents.")
-    (ediff file-a file-b)))
+  (let ((async (or async ssh-deploy-async))
+        (async-with-threads (or async-with-threads ssh-deploy-async-with-threads)))
+    (ssh-deploy--mode-line-set-status-and-update ssh-deploy--status-file-difference file-a)
+    (if (> async 0)
+        (ssh-deploy--async-process
+         (lambda() (ssh-deploy--diff-files file-a file-b))
+         (lambda(result)
+           (ssh-deploy--mode-line-set-status-and-update ssh-deploy--status-idle (nth 1 result))
+           (if (nth 0 result)
+               (message "File '%s' and '%s' have identical contents. (asynchronously)" (nth 1 result) (nth 2 result))
+             (message "File '%s' and '%s' does not have identical contents, launching ediff.. (asynchronously)" file-a file-b)
+             (ediff file-a file-b)))
+         async-with-threads)
+      (let ((result (ssh-deploy--diff-files file-a file-b)))
+        (ssh-deploy--mode-line-set-status-and-update ssh-deploy--status-idle (nth 1 result))
+        (if (nth 0 result)
+            (message "File '%s' and '%s' have identical contents. (synchronously)" (nth 1 result) (nth 2 result))
+          (message "File '%s' and '%s' does not have identical contents, launching ediff.. (synchronously)" file-a file-b)
+          (ediff file-a file-b))))))
 
 ;;;###autoload
 
@@ -789,11 +815,11 @@
                       ;; Does a local revision of the file exist?
                       (if (file-exists-p revision-path)
 
-                          (if (ediff-same-file-contents revision-path path-remote)
+                          (if (nth 0 (ssh-deploy--diff-files revision-path path-remote))
                               (list 4 (format "Remote file '%s' has not changed." path-remote) path-local)
                             (list 5 (format "Remote file '%s' has changed compared to local revision, please download or diff." path-remote) path-local revision-path))
 
-                        (if (ediff-same-file-contents path-local path-remote)
+                        (if (nth 0 (ssh-deploy--diff-files path-local path-remote))
                             (list 6 (format "Remote file '%s' has not changed compared to local file, created local revision." path-remote) path-local revision-path)
                           (list 7 (format "Remote file '%s' has changed compared to local file, please download or diff." path-remote) path-local path-remote)))
 
@@ -1024,7 +1050,7 @@
     (if (and (ssh-deploy--file-is-in-path-p path-local root-local)
              (ssh-deploy--file-is-included-p path-local exclude-list))
         (if file-or-directory
-            (ssh-deploy-diff-files path-local path-remote)
+            (ssh-deploy-diff-files path-local path-remote async async-with-threads)
           (ssh-deploy-diff-directories path-local path-remote on-explicit-save debug async async-with-threads revision-folder remote-changes exclude-list))
       (when debug (message "Path '%s' is not in the root '%s' or is excluded from it." path-local root-local)))))
 

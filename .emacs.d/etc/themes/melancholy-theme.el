@@ -52,10 +52,13 @@
   (custom-theme-set-faces
     'melancholy
 
+    ;;;; default
+    ;; ========================================
+    `(default ((t (:inherit nil :stipple nil :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 99 :width normal :foundry "unknown" :family "Monospace Regular" :background ,my-shadow :foreground ,my-hicontrast ))))
 
     ;;;; window and frame settings
     ;; ========================================
-    
+    `(fringe ((t (:inherit default))))
     `(header-line ((t (:foreground ,my-hicontrast :background ,my-shadow))))
     `(vertical-border ((t (:foreground ,my-contrast))))
     `(scroll-bar ((t (:background ,my-visited :foreground ,my-shadow))))
@@ -66,9 +69,15 @@
     `(linum ((t (:foreground ,my-deepcontrast))))
     `(line-number ((t (:foreground ,my-deepcontrast))))
     `(line-number-current-line ((t (:foreground ,my-highlight))))
+
     ;; base settings
     ;; ========================================
-    `(default ((t (:inherit nil :stipple nil :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 99 :width normal :foundry "unknown" :family "Monospace Regular" :background ,my-shadow :foreground ,my-hicontrast ))))
+    `(cursor ((t (:background ,my-hicontrast))))
+    `(region ((t (:background ,my-deepcontrast))))
+    `(query-replace ((t (:inherit isearch))))
+    `(match ((t (:background ,my-pop))))
+    `(highlight ((t (:background ,my-active))))
+    `(lazy-highlight ((t (:foreground ,my-shadow :background ,my-highlight))))
     `(fixed-pitch ((t (:family "Monospace Regular"))))
     `(variable-pitch ((t (normal :family "ubuntu" :weight normal :height 99))))
     `(bold ((t (:weight bold))))
@@ -76,13 +85,8 @@
     `(bold-italic ((t (:weight bold :slant italic))))
     `(shadow ((t (:background ,my-shadow))))
     `(button ((t (:underline (:color foreground-color :style line) :foreground ,my-active))))
-    `(cursor ((t (:background ,my-hicontrast))))
     `(link ((t (:foreground ,my-active :underline t :weight bold))))
     `(link-visited ((t ( :foreground ,my-visited))))
-    `(fringe ((t (:inherit default))))
-    `(match ((t (:background ,my-pop))))
-    `(highlight ((t (:background ,my-active))))
-    `(lazy-highlight ((t (:foreground ,my-shadow :background ,my-highlight))))
     `(secondary-selection ((t (:background ,my-deepcontrast))))
     `(font-lock-builtin-face ((t (:foreground ,my-highlight))))
     `(font-lock-comment-delimiter-face ((t (:foreground ,my-visited))))
@@ -147,15 +151,6 @@
     ;; ========================================
     `(minibuffer-prompt ((t (:foreground ,my-pop :weight bold))))
 
-    ;; modeline
-    ;; ========================================
-    `(mode-line ((t (:background ,my-shadow :foreground ,my-pop ))))
-    `(mode-line-buffer-id ((t (:weight bold))))
-    `(mode-line-emphasis ((t (:weight extra-bold))))
-    `(mode-line-highlight ((t (:box (:line-width 2 :color ,my-contrast :style released-button))) (t (:inherit (highlight)))))
-    `(mode-line-inactive ((t (:background ,my-shadow :foreground ,my-contrast ))))
-
-
     ;; org-mode
     ;; ========================================
     `(org-agenda-date-today ((t (:foreground ,my-highlight :weight bold))))
@@ -164,6 +159,7 @@
     `(org-block-begin-line ((t (:background ,my-contrast :foreground ,my-shadow))))
     `(org-block ((t (:background ,my-deepcontrast :foreground ,my-pop :box nil))))
     `(org-block-end-line ((t (:background ,my-contrast :foreground ,my-shadow))))
+    `(org-date ((t (:foreground ,my-visited))))
     `(org-document-info ((t (:foreground ,my-pop :height 1.25 ))))
     `(org-document-title ((t (:foreground ,my-info :height 1.35 :weight extra-bold ))))
     `(org-done ((t (:foreground ,my-highlight :strike-through t))))
@@ -177,8 +173,7 @@
     `(org-level-7 ((t  :foreground ,my-hicontrast )))
     `(org-link ((t (:foreground ,my-active :underline t ))))
     `(org-table ((t :family "Monospace Regular")))
-    `(query-replace ((t (:inherit isearch))))
-    `(region ((t (:background ,my-visited))))
+    
 
     ) ;; custom-theme-set-faces ends here
 ) ;; let ends here

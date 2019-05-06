@@ -608,6 +608,28 @@ int foo()
     ;; Assuming 2 space indent.
     (should (string= "def xxx\n  xxx\nend" (buffer-string)))))
 
+(defun yas-test-delete-and-insert-command (beg end new)
+  "Simulate a completion command (similar to company-mode)."
+  (interactive "r\ns")
+  ;; Simulate a completion command (like what company-mode does)
+  ;; which deletes the "xxx" and then replaces it with something
+  ;; else.
+  (delete-region beg end)
+  (insert new))
+
+(ert-deftest indent-mirrors-on-complex-update ()
+  "Don't get messed up by command that deletes and then inserts."
+  (with-temp-buffer
+    (ruby-mode)
+    (yas-minor-mode 1)
+    (yas-expand-snippet "def foo\n  ${1:slice} = append($1)\nend")
+    (yas-mock-insert "xxx")
+    (ert-simulate-command `(yas-test-delete-and-insert-command
+                            ,(- (point) 3) ,(point) ,"yyy"))
+    ;; Assuming 2 space indent.
+    (should (string= "def foo\n  yyy = append(yyy)\nend" (buffer-string)))))
+
+
 
 (ert-deftest snippet-with-multiline-mirrors-issue-665 ()
   "In issue 665, a multi-line mirror is attempted."
@@ -1099,6 +1121,27 @@ hello ${1:$(when (stringp yas-text) (funcall func yas-text))} foo${1:$$(concat \
      (yas-mock-insert "def")
      (ert-simulate-command '(yas-next-field-or-maybe-expand))
      (should (string= (buffer-string) "<-<-abcdef\n")))))
+
+(ert-deftest nested-snippet-expansion-5-nested-delete ()
+  "See Github #996."
+  (let ((yas-triggers-in-field t))
+    (yas-with-snippet-dirs
+     '((".emacs.d/snippets"
+        ("text-mode"
+         ("sel" . "${1:ch}")
+         ("ch" . "<-${1:ch}"))))
+     (yas-reload-all)
+     (text-mode)
+     (yas-minor-mode +1)
+     (insert "sel")
+     (ert-simulate-command '(yas-expand))
+     (ert-simulate-command '(forward-word 1))
+     (ert-simulate-command '(yas-expand))
+     (ert-simulate-command '(forward-word 1))
+     ;; The (cl-assert (memq pfield (yas--snippet-fields psnippet)))
+     ;; in `yas--on-field-overlay-modification' failed here.
+     (ert-simulate-command '(delete-backward-char 1))
+     (should (string= (buffer-string) "<-c\n")))))
 
 
 ;;; Loading

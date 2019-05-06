@@ -4,7 +4,7 @@
 
 ;; Author: Tom Willemse <tom@ryuslash.org>
 ;; Keywords: faces
-;; Version: 6.1.0
+;; Version: 6.2.0
 ;; URL: http://projects.ryuslash.org/yoshi-theme/
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -54,7 +54,7 @@
    `(error ((t (:foreground ,fgred :weight bold))))
    `(font-lock-builtin-face ((t (:foreground ,fgcyan))))
    `(font-lock-comment-delimiter-face ((t (:foreground ,fgdim :inherit unspecified))))
-   `(font-lock-comment-face ((t (:foreground ,fgdim))))
+   `(font-lock-comment-face ((t (:foreground ,fgpink))))
    `(font-lock-constant-face ((t (:foreground ,fgred))))
    `(font-lock-doc-face ((t (:foreground ,fggreen :inherit unspecified))))
    `(font-lock-function-name-face ((t (:foreground ,fgblue))))
@@ -173,6 +173,11 @@
    `(flycheck-error ((t (:inherit unspecified :underline (:color ,fgred :style wave)))))
    `(flycheck-warning ((t (:inherit unspecified :underline (:color ,fgorange :style wave)))))
 
+   ;;; Flycheck inline
+   `(flycheck-inline-error ((t (:inherit unspecified :foreground ,fgred :height 0.8))))
+   `(flycheck-inline-info ((t (:inherit unspecified :foreground ,fgblue :height 0.8))))
+   `(flycheck-inline-warning ((t (:inherit unspecified :foreground ,fgorange :height 0.8))))
+
    ;;; Flymake
    `(flymake-errline ((t (:background unspecified :underline (:color ,fgred :style wave)))))
    `(flymake-infoline ((t (:background unspecified :underline (:color ,fgblue :style wave)))))
@@ -252,6 +257,9 @@
    `(hl-indent-block-face-5 ((t (:background ,bggreen))))
    `(hl-indent-block-face-6 ((t (:background ,bgturquoise))))
    `(hl-indent-face ((t (:inherit unspecified :background ,bgdim))))
+
+   ;;; Highlight indent guides
+   `(highlight-indent-guides-character-face ((t (:inherit unspecified :foreground ,bgbright))))
 
    ;;; Hydra
    `(hydra-face-amaranth ((t (:foreground ,fgorange :weight bold))))

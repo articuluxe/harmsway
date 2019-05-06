@@ -224,10 +224,10 @@ OPEN-ACTION or POST-OPEN-ACTION are expected to take over insertion."
      (-let [p (point)]
        (treemacs-with-writable-buffer
         (treemacs-button-put ,button :state ,new-state)
-        (beginning-of-line)
         ,@(when new-icon
-            `((treemacs--button-symbol-switch ,new-icon)))
-        (end-of-line)
+            `((beginning-of-line)
+              (treemacs--button-symbol-switch ,new-icon)))
+        (goto-char (treemacs-button-end ,button))
         ,@(if immediate-insert
               `((progn
                   (insert (apply #'concat ,open-action))))
@@ -284,7 +284,7 @@ DIRS: List of Collapse Paths. Each Collapse Path is a list of
             (treemacs--start-watching (car it))
             (dolist (step (nthcdr 2 it))
               (treemacs--start-watching step t)))
-          (let ((props (text-properties-at (button-start b)))
+          (let ((props (text-properties-at (treemacs-button-start b)))
                 (new-path (nth (- (length it) 1) it)))
             (treemacs-button-put b :path new-path)
             ;; if the collapsed path leads to a symlinked directory the button needs to be marked as a symlink
@@ -302,7 +302,7 @@ DIRS: List of Collapse Paths. Each Collapse Path is a list of
               (insert dir)
               (add-text-properties beg (point) props)
               (add-text-properties
-               (button-start b) (+ beg (length parent))
+               (treemacs-button-start b) (+ beg (length parent))
                '(face treemacs-directory-collapsed-face)))))))))
 
 (defmacro treemacs--map-when-unrolled (items interval &rest mapper)
@@ -451,14 +451,16 @@ set to PARENT."
                 (/= (1+ (treemacs-button-get btn :depth))
                     (treemacs-button-get (copy-marker next t) :depth)))
             (delete-trailing-whitespace)
-          ;; Delete from end of the current line to end of the last sub-button.
+          ;; Delete from end of the current button to end of the last sub-button.
           ;; This will make the EOL of the last button become the EOL of the
           ;; current button, making the treemacs--projects-end marker track
           ;; properly when collapsing the last project or a last directory of the
           ;; last project.
-          (let* ((pos-start (point-at-eol))
+          (let* ((pos-start (treemacs-button-end ,button))
                  (next (treemacs--next-non-child-button ,button))
-                 (pos-end (if next (-> next (button-start) (previous-button) (button-end)) (point-max))))
+                 (pos-end (if next
+                              (-> next (treemacs-button-start) (previous-button) (treemacs-button-end))
+                            (point-max))))
             (delete-region pos-start pos-end))))
       ,post-close-action)))
 
@@ -538,7 +540,7 @@ RECURSIVE: Bool"
          (when recursive
            (--each (treemacs--get-children-of btn)
              (when (eq 'dir-node-closed (treemacs-button-get it :state))
-               (goto-char (button-start it))
+               (goto-char (treemacs-button-start it))
                (treemacs--expand-dir-node it :git-future git-future :recursive t)))))))))
 
 (defun treemacs--collapse-dir-node (btn &optional recursive)

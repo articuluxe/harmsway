@@ -404,7 +404,8 @@ Update the minibuffer with the amount of lines collected every
       (setq ivy-completion-end (match-end 0)))
     (ivy-read "company cand: " company-candidates
               :action #'ivy-completion-in-region-action
-              :unwind #'company-abort)))
+              :unwind #'company-abort
+              :caller 'counsel-company)))
 
 ;;** `counsel-irony'
 (declare-function irony-completion-candidates-async "ext:irony-completion")
@@ -1027,7 +1028,8 @@ Usable with `ivy-resume', `ivy-next-line-and-call' and
 (ivy-set-actions
  'counsel-descbinds
  '(("d" counsel-descbinds-action-find "definition")
-   ("I" counsel-descbinds-action-info "info")))
+   ("I" counsel-descbinds-action-info "info")
+   ("x" counsel-descbinds-action-exec "execute")))
 
 (defvar counsel-descbinds-history nil
   "History for `counsel-descbinds'.")
@@ -1073,6 +1075,12 @@ See `describe-buffer-bindings' for further information."
 See `describe-function' for further information."
   (let ((cmd (cddr x)))
     (describe-function cmd)))
+
+(defun counsel-descbinds-action-exec (x)
+  "Run candidate X.
+See `execute-extended-command' for further information."
+  (let ((cmd (cddr x)))
+    (command-execute cmd 'record)))
 
 (defun counsel-descbinds-action-find (x)
   "Find symbol definition of candidate X.
@@ -1740,11 +1748,12 @@ choose between `yes-or-no-p' and `y-or-n-p'; otherwise default to
 
 (defun counsel-find-file-copy (x)
   "Copy file X."
-  (let ((ivy-inhibit-action
-         (lambda (new-name)
-           (require 'dired-aux)
-           (dired-copy-file x new-name 1))))
-    (counsel-find-file)))
+  (require 'dired-aux)
+  (counsel--find-file-1 "Copy file to: "
+                        ivy--directory
+                        (lambda (new-name)
+                          (dired-copy-file x new-name 1))
+                        'counsel-find-file-copy))
 
 (defun counsel-find-file-delete (x)
   "Delete file X."
@@ -1754,20 +1763,27 @@ choose between `yes-or-no-p' and `y-or-n-p'; otherwise default to
             (counsel--yes-or-no-p "Delete %s? " x))
     (dired-delete-file x dired-recursive-deletes delete-by-moving-to-trash)
     (dired-clean-up-after-deletion x)
-    (ivy--reset-state ivy-last)))
+    (let ((win (and (not (eq ivy-exit 'done))
+                    (active-minibuffer-window))))
+      (when win (with-selected-window win (ivy--cd ivy--directory))))))
 
 (defun counsel-find-file-move (x)
   "Move or rename file X."
-  (ivy-read "Rename file to: " #'read-file-name-internal
-            :matcher #'counsel--find-file-matcher
-            :action (lambda (new-name)
-                      (require 'dired-aux)
-                      (dired-rename-file x new-name 1))
-            :keymap counsel-find-file-map
-            :caller 'counsel-find-file-move))
+  (require 'dired-aux)
+  (counsel--find-file-1 "Rename file to: "
+                        ivy--directory
+                        (lambda (new-name)
+                          (dired-rename-file x new-name 1))
+                        'counsel-find-file-move))
 
 (defun counsel-find-file-mkdir-action (_x)
-  (make-directory (expand-file-name ivy-text ivy--directory)))
+  "Create a directory from `ivy-text'."
+  (let ((dir (file-name-as-directory
+              (expand-file-name ivy-text ivy--directory)))
+        (win (and (not (eq ivy-exit 'done))
+                  (active-minibuffer-window))))
+    (make-directory dir)
+    (when win (with-selected-window win (ivy--cd dir)))))
 
 (ivy-set-actions
  'counsel-find-file
@@ -2100,6 +2116,7 @@ When INITIAL-INPUT is non-nil, use it in the minibuffer during completion."
             :action (lambda (f)
                       (with-ivy-window
                         (find-file f)))
+            :require-match t
             :caller 'counsel-recentf))
 (ivy-set-actions
  'counsel-recentf
