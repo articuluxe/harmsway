@@ -1,1 +1,3 @@
 cp src/src/elisp/*.el ../../../.emacs.d/plugins/treemacs
+cp src/src/extra/*.el ../../../.emacs.d/plugins/treemacs
+cp src/src/scripts/*.py ../../../.emacs.d/plugins/treemacs

@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-05-03 06:31:54 dharms>
+;; Modified Time-stamp: <2019-05-07 09:59:57 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2088,12 +2088,29 @@ Only one letter is shown, the first that applies."
   (setq neo-vc-integration '(face char))
   )
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; treemacs ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define-prefix-command 'harmsway-treemacs-keymap)
 (use-package treemacs
-  :bind ("C-c 0t" . treemacs)
+  :bind (("C-c 0t" . harmsway-treemacs-keymap)
+         :map harmsway-treemacs-keymap
+         ("t" . treemacs)
+         ("f" . treemacs-find-file)
+         ("SPC" . treemacs-select-window)
+         ("1" . treemacs-delete-other-windows)
+         ("B" . treemacs-bookmark)
+         ("M-t" . treemacs-find-tag))
   :init
   (setq treemacs-no-png-images t)
-  (setq treemacs-collapse-dirs 3)
+  (setq treemacs-collapse-dirs (if (executable-find "python3") 3 0))
+  (setq treemacs-persist-file (concat my/user-directory "treemacs"))
+  :config
+  (treemacs-follow-mode 1)
+  (treemacs-filewatch-mode 1)
+  (treemacs-fringe-indicator-mode)
+  (treemacs-git-mode 'extended)
   )
+(use-package treemacs-magit
+  :after treemacs)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; deft ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package deft

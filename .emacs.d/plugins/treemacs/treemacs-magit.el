@@ -3,7 +3,7 @@
 ;; Copyright (C) 2018 Alexander Miller
 
 ;; Author: Alexander Miller <alexanderm@web.de>
-;; Package-Requires: ((treemacs "2.1") (magit "2.13.0") (with-editor "2.7.3"))
+;; Package-Requires: ((emacs "25.2") (treemacs "0.0") (pfuture "1.3" )(magit "2.90.0"))
 ;; Package-Version: 0
 ;; Homepage: https://github.com/Alexander-Miller/treemacs
 
@@ -22,109 +22,132 @@
 
 ;;; Commentary:
 ;;; Closing the gaps for filewatch- and git-modes in conjunction with magit.
-;;; Specifically this package will advice and hook into magit so as to
-;;; artificially produce filewatch events for changes that treemacs would
-;;; otherwise not catch, nameley the committing and (un)staging of files.
+;;; Specifically this package will hook into magit so as to artificially
+;;; produce filewatch events for changes that treemacs would otherwise
+;;; not catch, nameley the committing and (un)staging of files.
 
 ;;; Code:
 
 (require 'treemacs)
 (require 'magit)
-(require 'with-editor)
+(require 'pfuture)
+(require 'seq)
 
-(defvar treemacs-magit--commit-directory nil
-  "In case of a commit through `with-editor' the git root is saved here.")
+;; no need for dash for a single when-let
+(eval-when-compile
+  (when (version< emacs-version "26")
+    (defalias 'if-let* #'if-let)
+    (defalias 'when-let* #'when-let)))
 
-(defsubst treemacs-magit--change-path (path)
-  "Create a fake updated path based on PATH.
-The calls to `magit-toplevel' that we use to determine the updated path after a
-commit return the repository root - most likely also the root of the treemacs
-project -  which is then marked as changed. This cannot quite work since
-treemacs expects to update the parent of the file that was changed, so we
-pretend that a fake file was changed."
-  (concat (treemacs--canonical-path path) "/TREEMACS-MAGIT"))
+(defvar treemacs-magit--timers nil
+  "Cached list of roots an update is scheduled for.")
 
-(defun treemacs-magit--pre-finish-hook ()
-  "Hook to save the git root when a commit is about to run.
-The root is saved in `treemacs-magit--commit-directory' and picked up by
-`treemacs-magit--post-finish-hook' after the commit has actually run to set an
-appropriate refresh flag."
-  (when (string= (buffer-name) "COMMIT_EDITMSG")
-    (setq treemacs-magit--commit-directory (treemacs-magit--change-path (magit-toplevel)))))
+(defun treemacs-magit--schedule-update ()
+  "Schedule an update to potentially run after 3 seconds of idle time.
+In order for the update to fully run several conditions must be met:
+ * A timer for an update for the given dir must not already exist
+   (see `treemacs-magit--timers')
+ * The dir must be part of a treemacs workspace, and
+ * The project must not be set for refresh already."
+  (when treemacs-git-mode
+    (let ((magit-root (treemacs--canonical-path (magit-toplevel))))
+      (unless (member magit-root treemacs-magit--timers)
+        (push magit-root treemacs-magit--timers)
+        (run-with-idle-timer
+         3 nil
+         (lambda ()
+           (unwind-protect
+               (pcase treemacs-git-mode
+                 ('simple
+                  (treemacs-magit--simple-git-mode-update magit-root))
+                 ((or 'extended 'deferred)
+                  (treemacs-magit--extended-git-mode-update magit-root)))
+             (setf treemacs-magit--timers (delete magit-root treemacs-magit--timers)))))))))
 
-(defun treemacs-magit--post-finish-hook ()
-  "Ensures a project is refreshed after a commit through `with-editor'.
-The project's root must previously have been set by
-`treemacs-magit--pre-finish-hook'."
-  (when treemacs-magit--commit-directory
-    (treemacs--filewatch-callback `(:treemacs-magit-commit changed ,treemacs-magit--commit-directory))
-    (setq treemacs-magit--commit-directory nil)))
+(defun treemacs-magit--simple-git-mode-update (magit-root)
+  "Update the project at the given MAGIT-ROOT.
+Without the parsing ability of extended git-mode this update uses
+filewatch-mode's mechanics to update the entire project."
+  (treemacs-run-in-every-buffer
+   (when-let* ((project (treemacs--find-project-for-path magit-root)))
+     (let* ((project-root (treemacs-project->path project))
+            (dom-node (treemacs-find-in-dom project-root)))
+       (when (and dom-node
+                  (null (treemacs-dom-node->refresh-flag dom-node)))
+         (treemacs--set-refresh-flags project-root))))))
 
-(defun treemacs-magit--post-commit-advice (&rest _)
-  "Advice for commit cases not covered by `with-editor' hooks.
-In practive this means functions like `magit-commit-extend' which do not call
-`with-editor' to edit a commit message, but run the commit immediately."
-  (treemacs--filewatch-callback `(treemacs-magit-commit-event changed ,(treemacs-magit--change-path (magit-toplevel)))))
+(defun treemacs-magit--extended-git-mode-update (magit-root)
+  "Update the project at the given MAGIT-ROOT.
+This runs due to a commit or stash action, so we know that no files have
+actually been added or deleted. This allows us to forego rebuilding the entire
+project structure just to be sure we caught everything. Instead we grab the
+current git status and just go through the lines as they are right now."
+  ;; we run a single git process to update every buffer, so we need to gather
+  ;; the visible dirs in every buffer
+  ;; this collection may contain duplicates, but they are removed in python
+  (-let [visible-dirs nil]
+    (treemacs-run-in-every-buffer
+     (dolist (dir (-some->> magit-root
+                            (treemacs-find-in-dom)
+                            (treemacs-dom-node->children)
+                            (-map #'treemacs-dom-node->key)))
+       (push dir visible-dirs)))
+    (pfuture-callback `(,treemacs-python-executable
+                        "-O" "-S"
+                        ,treemacs--git-status.py
+                        ,magit-root
+                        ,(number-to-string treemacs-max-git-entries)
+                        ,treemacs-git-command-pipe
+                        ,@visible-dirs)
+      :directory magit-root
+      :on-success
+      (progn
+        (ignore status)
+        (treemacs-magit--update-callback magit-root pfuture-buffer)))))
 
-(defun treemacs-magit--process-stage-event (root files)
-  "Push filewatch events under ROOT for FILES."
-  (dolist (file files)
-    (treemacs--filewatch-callback `(treemacs-magit-stage-event changed ,(concat root file)))))
-
-(defun treemacs-magit--post-stage-advice (&rest _)
-  "Advice run after every stage command of magit."
-  (run-with-idle-timer 2 nil #'treemacs-magit--process-stage-event
-                       (magit-toplevel) (magit-staged-files)))
-
-(defun treemacs-magit--post-unstage-advice (&rest _)
-  "Advice run after every unstage command of magit."
-  (run-with-idle-timer 2 nil #'treemacs-magit--process-stage-event
-                       (magit-toplevel) (magit-unstaged-files)))
-
-(defun treemacs-magit--setup-or-teardown ()
-  "Set up or tear down the bridge between treemacs and magit.
-Which branch runs depends on whether `treemacs-filewatch' and
-`treemacs-git-mode'are both enabled or not."
-  (if (and treemacs-git-mode treemacs-filewatch-mode)
-      (treemacs-magit--setup)
-    (treemacs-magit--teardown)))
-
-(defun treemacs-magit--setup ()
-  "Set up the bridge between treemacs and magit."
-  (add-hook 'with-editor-pre-finish-hook #'treemacs-magit--pre-finish-hook)
-  (add-hook 'with-editor-post-finish-hook #'treemacs-magit--post-finish-hook)
-
-  (advice-add #'magit-commit-extend        :after #'treemacs-magit--post-commit-advice)
-  (advice-add #'magit-commit-fixup         :after #'treemacs-magit--post-commit-advice)
-  (advice-add #'magit-commit-instant-fixup :after #'treemacs-magit--post-commit-advice)
-
-  (advice-add #'magit-stage          :after #'treemacs-magit--post-stage-advice)
-  (advice-add #'magit-stage-file     :after #'treemacs-magit--post-stage-advice)
-  (advice-add #'magit-stage-modified :after #'treemacs-magit--post-stage-advice)
-
-  (advice-add #'magit-unstage      :after #'treemacs-magit--post-unstage-advice)
-  (advice-add #'magit-unstage-file :after #'treemacs-magit--post-unstage-advice)
-  (advice-add #'magit-unstage-all  :after #'treemacs-magit--post-unstage-advice))
-
-(defun treemacs-magit--teardown ()
-  "Tear down the bridge between treemacs and magit."
-  (remove-hook 'with-editor-pre-finish-hook  #'treemacs-magit--pre-finish-hook)
-  (remove-hook 'with-editor-post-finish-hook #'treemacs-magit--post-finish-hook)
-
-  (advice-remove #'magit-commit-extend        #'treemacs-magit--post-commit-advice)
-  (advice-remove #'magit-commit-fixup         #'treemacs-magit--post-commit-advice)
-  (advice-remove #'magit-commit-instant-fixup #'treemacs-magit--post-commit-advice)
-
-  (advice-remove #'magit-stage          #'treemacs-magit--post-stage-advice)
-  (advice-remove #'magit-stage-file     #'treemacs-magit--post-stage-advice)
-  (advice-remove #'magit-stage-modified #'treemacs-magit--post-stage-advice)
-
-  (advice-remove #'magit-unstage      #'treemacs-magit--post-unstage-advice)
-  (advice-remove #'magit-unstage-file #'treemacs-magit--post-unstage-advice)
-  (advice-remove #'magit-unstage-all  #'treemacs-magit--post-unstage-advice))
+(defun treemacs-magit--update-callback (magit-root pfuture-buffer)
+  "Run the update as a pfuture callback.
+Will update nodes under MAGIT-ROOT with output in PFUTURE-BUFFER."
+  (let ((ht (read (pfuture-output-from-buffer pfuture-buffer))))
+    (treemacs-run-in-every-buffer
+     (let ((dom-node (or (treemacs-find-in-dom magit-root)
+                         (when-let* ((project
+                                      (seq-find
+                                       (lambda (pr) (treemacs-is-path (treemacs-project->path pr) :in magit-root))
+                                       (treemacs-workspace->projects (treemacs-current-workspace)))))
+                           (treemacs-find-in-dom (treemacs-project->path project))))))
+       (when (and dom-node
+                  (null (treemacs-dom-node->refresh-flag dom-node)))
+         (save-excursion
+           (goto-char (treemacs-dom-node->position dom-node))
+           (forward-line 1)
+           (let* ((node (treemacs-node-at-point))
+                  (start-depth (-some-> node (treemacs-button-get :depth)))
+                  (curr-depth start-depth)
+                  (path (-some-> node (treemacs-button-get :path))))
+             (treemacs-with-writable-buffer
+              (while (and node
+                          (file-exists-p path)
+                          (>= curr-depth start-depth))
+                (put-text-property (treemacs-button-start node) (treemacs-button-end node) 'face
+                                   (treemacs--get-node-face
+                                    path ht
+                                    (if (memq (treemacs-button-get node :state)
+                                              '(file-node-open file-node-closed))
+                                        'treemacs-git-unmodified-face
+                                      'treemacs-directory-face)))
+                (forward-line 1)
+                (if (eobp)
+                    (setf node nil)
+                  (setf node (treemacs-node-at-point)
+                        path (-some-> node (treemacs-button-get :path))
+                        curr-depth (-some-> node (treemacs-button-get :depth)))))))))))))
 
 (unless (featurep 'treemacs-magit)
-  (treemacs-magit--setup-or-teardown))
+  (add-hook 'magit-post-commit-hook      #'treemacs-magit--schedule-update)
+  (add-hook 'git-commit-post-finish-hook #'treemacs-magit--schedule-update)
+  (add-hook 'magit-post-stage-hook       #'treemacs-magit--schedule-update)
+  (add-hook 'magit-post-unstage-hook     #'treemacs-magit--schedule-update))
 
 (provide 'treemacs-magit)
 

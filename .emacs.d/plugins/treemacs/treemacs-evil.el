@@ -3,7 +3,7 @@
 ;; Copyright (C) 2018 Alexander Miller
 
 ;; Author: Alexander Miller <alexanderm@web.de>
-;; Package-Requires: ((evil "1.2.12") (treemacs "0"))
+;; Package-Requires: ((evil "1.2.12") (treemacs "0.0"))
 ;; Package-Version: 0
 ;; Homepage: https://github.com/Alexander-Miller/treemacs
 
@@ -43,6 +43,23 @@
     (with-current-buffer it
       (evil-treemacs-state))))
 
+(defun treemacs--evil-window-move-compatibility-advice (orig-fun &rest args)
+  "Close Treemacs while moving windows around.
+Then call ORIG-FUN with its ARGS and reopen treemacs if it was open before."
+  (let* ((treemacs-window (treemacs-get-local-window))
+         (is-active (and treemacs-window (window-live-p treemacs-window))))
+    (when is-active (treemacs))
+    (apply orig-fun args)
+    (when is-active
+      (save-selected-window
+        (treemacs)))))
+
+(dolist (func '(evil-window-move-far-left
+                evil-window-move-far-right
+                evil-window-move-very-top
+                evil-window-move-very-bottom))
+  (advice-add func :around #'treemacs--evil-window-move-compatibility-advice))
+
 (advice-add 'treemacs-leftclick-action   :after #'treemacs--turn-off-visual-state-after-click)
 (advice-add 'treemacs-doubleclick-action :after #'treemacs--turn-off-visual-state-after-click)
 
@@ -62,9 +79,11 @@
 (define-key evil-treemacs-state-map (kbd "b")   #'treemacs-add-bookmark)
 (define-key evil-treemacs-state-map (kbd "?")   #'treemacs-helpful-hydra)
 (define-key evil-treemacs-state-map (kbd "RET") #'treemacs-RET-action)
+(define-key evil-treemacs-state-map (kbd "H")   #'treemacs-collapse-parent-node)
 
 (evil-define-key 'treemacs treemacs-mode-map (kbd "yr")     #'treemacs-copy-project-root)
 (evil-define-key 'treemacs treemacs-mode-map (kbd "yy")     #'treemacs-copy-path-at-point)
+(evil-define-key 'treemacs treemacs-mode-map (kbd "yf")     #'treemacs-copy-file)
 (evil-define-key 'treemacs treemacs-mode-map (kbd "gr")     #'treemacs-refresh)
 (evil-define-key 'treemacs treemacs-mode-map [down-mouse-1] #'ignore)
 (evil-define-key 'treemacs treemacs-mode-map (kbd "h")      #'treemacs-root-up)
