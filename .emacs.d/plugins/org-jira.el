@@ -9,7 +9,7 @@
 ;;
 ;; Maintainer: Matthew Carter <m@ahungry.com>
 ;; URL: https://github.com/ahungry/org-jira
-;; Version: 4.3.1
+;; Version: 4.3.0
 ;; Keywords: ahungry jira org bug tracker
 ;; Package-Requires: ((emacs "24.5") (cl-lib "0.5") (request "0.2.0") (s "0.0.0") (dash "2.14.1"))
 
@@ -37,9 +37,6 @@
 ;; issue servers.
 
 ;;; News:
-
-;;;; Changes in 4.3.1:
-;; - Fix to make custom-jql results sync worklogs properly.
 
 ;;;; Changes in 4.3.0:
 ;; - Allow org-jira-set-issue-reporter call to dynamically set this value.
@@ -126,7 +123,7 @@
 (require 'jiralib)
 (require 'org-jira-sdk)
 
-(defconst org-jira-version "4.3.1"
+(defconst org-jira-version "4.3.0"
   "Current version of org-jira.el.")
 
 (defgroup org-jira nil
@@ -690,10 +687,6 @@ to change the property names this sets."
      (org-jira-find-value comp 'name))
    (org-jira-find-value issue 'fields 'components) ", "))
 
-(defun org-jira-get-issue-labels (issue)
-  "Return the labels the ISSUE belongs to."
-  (org-jira-find-value issue 'fields 'labels))
-
 (defun org-jira-decode (data)
   "Decode text DATA.
 
@@ -796,17 +789,17 @@ This format is typically generated from org-jira-worklogs-to-org-clocks call."
   (when (caddr clock-entry) (insert (format "  %s\n" (org-jira-decode (caddr clock-entry))))) ;; No comment is nil, so don't print it
   )
 
-(defun org-jira-logbook-reset (issue-id filename &optional clocks)
-  "Find logbook for ISSUE-ID in FILENAME, delete it.
+(defun org-jira-logbook-reset (issue-id &optional clocks)
+  "Find logbook for ISSUE-ID, delete it.
 Re-create it with CLOCKS.  This is used for worklogs."
   (interactive)
   (let ((existing-logbook-p nil))
     ;; See if the LOGBOOK already exists or not.
-    (ensure-on-issue-id-with-filename issue-id filename
+    (ensure-on-issue-id issue-id
       (let ((drawer-name (or (org-clock-drawer-name) "LOGBOOK")))
         (when (search-forward (format ":%s:" drawer-name) nil 1 1)
           (setq existing-logbook-p t))))
-    (ensure-on-issue-id-with-filename issue-id filename
+    (ensure-on-issue-id issue-id
       (let ((drawer-name (or (org-clock-drawer-name) "LOGBOOK")))
         (if existing-logbook-p
             (progn ;; If we had a logbook, drop it and re-create in a bit.
@@ -839,8 +832,6 @@ Re-create it with CLOCKS.  This is used for worklogs."
       (setq tmp ""))
     (cond ((eq key 'components)
            (org-jira-get-issue-components issue))
-          ((eq key 'labels)
-           (org-jira-get-issue-labels issue))
           ((member key '(created updated startDate))
            (org-jira-transform-time-format tmp))
           ((eq key 'status)
@@ -1104,7 +1095,7 @@ ORG-JIRA-PROJ-KEY-OVERRIDE being set before and after running."
                       (when (or (and val (not (string= val "")))
                                 (eq entry 'assignee)) ;; Always show assignee
                         (org-jira-entry-put (point) (symbol-name entry) val))))
-                  '(assignee filename reporter type priority labels resolution status components created updated))
+                  '(assignee filename reporter type priority resolution status components created updated))
 
             (org-jira-entry-put (point) "ID" issue-id)
             (org-jira-entry-put (point) "CUSTOM_ID" issue-id)
@@ -1151,7 +1142,7 @@ ORG-JIRA-PROJ-KEY-OVERRIDE being set before and after running."
 
             ;; only sync worklog clocks when the user sets it to be so.
             (when org-jira-worklog-sync-p
-              (org-jira-update-worklogs-for-issue issue-id filename))))))))
+              (org-jira-update-worklogs-for-issue issue-id))))))))
 
 (defun org-jira--render-issues-from-issue-list (Issues)
   "Add the issues from ISSUES list into the org file(s).
@@ -1260,11 +1251,8 @@ Expects input in format such as: [2017-04-05 Wed 01:00]--[2017-04-05 Wed 01:46] 
 (defun org-jira-update-worklogs-from-org-clocks ()
   "Update or add a worklog based on the org clocks."
   (interactive)
-  (let ((issue-id (org-jira-get-from-org 'issue 'key))
-        (filename (org-jira-filename)))
-    (org-jira-log (format "About to sync worklog for issue: %s in file: %s"
-                  issue-id filename))
-    (ensure-on-issue-id-with-filename issue-id filename
+  (let ((issue-id (org-jira-get-from-org 'issue 'key)))
+    (ensure-on-issue-id issue-id
       (search-forward (format ":%s:" (or (org-clock-drawer-name) "LOGBOOK"))  nil 1 1)
       (org-beginning-of-line)
       ;; (org-cycle 1)
@@ -1297,8 +1285,7 @@ Expects input in format such as: [2017-04-05 Wed 01:00]--[2017-04-05 Wed 01:46] 
                      comment-text
                      (cl-function
                       (lambda (&key data &allow-other-keys)
-                        (org-jira-log (format "Updating worklog from org-jira-update-worklogs-from-org-clocks call"))
-                        (org-jira-update-worklogs-for-issue issue-id filename))))
+                        (org-jira-update-worklogs-for-issue issue-id))))
                   ;; else
                   (jiralib-add-worklog
                    issue-id
@@ -1307,8 +1294,7 @@ Expects input in format such as: [2017-04-05 Wed 01:00]--[2017-04-05 Wed 01:46] 
                    comment-text
                    (cl-function
                     (lambda (&key data &allow-other-keys)
-                      (org-jira-log (format "Adding worklog from org-jira-update-worklogs-from-org-clocks call"))
-                      (org-jira-update-worklogs-for-issue issue-id filename))))
+                      (org-jira-update-worklogs-for-issue issue-id))))
                   )
                 )))))
       )))
@@ -1520,23 +1506,19 @@ purpose of wiping an old subtree."
 
 (defun org-jira-update-worklogs-for-current-issue ()
   "Update the worklogs for the current issue."
-  (let ((issue-id (org-jira-get-from-org 'issue 'key))
-        (filename (org-jira-filename)))
-    (org-jira-update-worklogs-for-issue issue-id filename)))
+  (-> (org-jira-get-from-org 'issue 'key)
+      org-jira-update-worklogs-for-issue))
 
-(defun org-jira-update-worklogs-for-issue (issue-id filename)
-  "Update the worklogs for the current ISSUE-ID located in FILENAME."
-  (org-jira-log (format "org-jira-update-worklogs-for-issue id: %s filename: %s"
-                issue-id filename))
+(defun org-jira-update-worklogs-for-issue (issue-id)
+  "Update the worklogs for the current issue."
   ;; Run the call
   (jiralib-get-worklogs
    issue-id
    (org-jira-with-callback
-     (ensure-on-issue-id-with-filename issue-id filename
+     (ensure-on-issue-id issue-id
        (let ((worklogs (org-jira-find-value cb-data 'worklogs)))
-         (org-jira-log (format "org-jira-update-worklogs-for-issue cb id: %s fn: %s"
-                       issue-id filename))
-         (org-jira-logbook-reset issue-id filename
+         (org-jira-logbook-reset
+          issue-id
           (org-jira-sort-org-clocks (org-jira-worklogs-to-org-clocks
                                      (jiralib-worklog-import--filter-apply worklogs)))))))))
 
@@ -1712,7 +1694,7 @@ that should be bound to an issue."
    'org-jira-type-read-history
    (car org-jira-type-read-history)))
 
-(defun org-jira-get-issue-struct (project type summary description &optional parent-id)
+(defun org-jira-get-issue-struct (project type summary description)
   "Create an issue struct for PROJECT, of TYPE, with SUMMARY and DESCRIPTION."
   (if (or (equal project "")
           (equal type "")
@@ -1725,7 +1707,6 @@ that should be bound to an issue."
          (ticket-struct
           `((fields
              (project (key . ,project))
-             (parent (key . ,parent-id))
              (issuetype (id . ,(car (rassoc type (if (and (boundp 'parent-id) parent-id)
                                                      (jiralib-get-subtask-types)
                                                    (jiralib-get-issue-types))))))
@@ -1767,8 +1748,8 @@ that should be bound to an issue."
           (equal summary ""))
       (error "Must provide all information!"))
   (let* ((parent-id (org-jira-parse-issue-id))
-         (ticket-struct (org-jira-get-issue-struct project type summary description parent-id)))
-    (org-jira-get-issues (list (jiralib-create-subtask ticket-struct)))))
+         (ticket-struct (org-jira-get-issue-struct project type summary description)))
+    (org-jira-get-issues (list (jiralib-create-subtask ticket-struct parent-id)))))
 
 (defun org-jira-strip-string (str)
   "Remove the beginning and ending white space for a string STR."

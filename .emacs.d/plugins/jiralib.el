@@ -313,7 +313,6 @@ request.el, so if at all possible, it should be avoided."
     (case (intern method)
       ('getStatuses (jiralib--rest-call-it "/rest/api/2/status"))
       ('getIssueTypes (jiralib--rest-call-it "/rest/api/2/issuetype"))
-      ('getSubTaskIssueTypes (jiralib--rest-call-it "/rest/api/2/issuetype"))
       ('getIssueTypesByProject
        (let ((response (jiralib--rest-call-it (format "/rest/api/2/project/%s" (first params)))))
          (cl-coerce (cdr (assoc 'issueTypes response)) 'list)))
@@ -352,13 +351,8 @@ request.el, so if at all possible, it should be avoided."
                         :data (json-encode (first params)))))
          (jiralib--rest-call-it (cdr (assoc 'self response)) :type "GET")
          ))
-      ('createIssueWithParent
-       (let ((response (jiralib--rest-call-it
-                        "/rest/api/2/issue"
-                        :type "POST"
-                        :data (json-encode (first params)))))
-         (jiralib--rest-call-it (cdr (assoc 'self response)) :type "GET")
-         ))
+      ('createIssueWithParent (jiralib--rest-call-it
+                               ))
       ('editComment (jiralib--rest-call-it
                      (format "/rest/api/2/issue/%s/comment/%s" (first params) (second params))
                      :data (json-encode `((body . ,(third params))))
@@ -893,11 +887,12 @@ Return nil if the field is not found"
 ISSUE is a Hashtable object."
   (jiralib-call "createIssue" nil issue))
 
-(defun jiralib-create-subtask (subtask)
+(defun jiralib-create-subtask (subtask parent-issue-id)
   "Create SUBTASK for issue with PARENT-ISSUE-ID.
 
 SUBTASK is a Hashtable object."
-  (jiralib-call "createIssueWithParent" nil subtask))
+  (jiralib-call "createIssueWithParent" nil subtask parent-issue-id))
+
 
 (defvar jiralib-subtask-types-cache nil)
 

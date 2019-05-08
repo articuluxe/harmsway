@@ -385,7 +385,7 @@ Update the minibuffer with the amount of lines collected every
 ;;** `counsel-company'
 (defvar company-candidates)
 (defvar company-point)
-(defvar company-common)
+(defvar company-prefix)
 (declare-function company-complete "ext:company")
 (declare-function company-mode "ext:company")
 (declare-function company-complete-common "ext:company")
@@ -399,9 +399,8 @@ Update the minibuffer with the amount of lines collected every
   (unless company-candidates
     (company-complete))
   (when company-point
-    (when (looking-back company-common (line-beginning-position))
-      (setq ivy-completion-beg (match-beginning 0))
-      (setq ivy-completion-end (match-end 0)))
+    (setq ivy-completion-beg (- company-point (length company-prefix)))
+    (setq ivy-completion-end company-point)
     (ivy-read "company cand: " company-candidates
               :action #'ivy-completion-in-region-action
               :unwind #'company-abort
@@ -2614,23 +2613,28 @@ NEEDLE is the search string."
          (funcall ivy--regex-function str))
    counsel--regex-look-around))
 
+(defun counsel--ag-extra-switches (regex)
+  "Get additional switches needed for look-arounds."
+  (and (stringp counsel--regex-look-around)
+       ;; using look-arounds
+       (string-match-p "\\`\\^(\\?[=!]" regex)
+       (concat " " counsel--regex-look-around " ")))
+
 (defun counsel-ag-function (string)
   "Grep in the current directory for STRING."
-  (let ((command-args (counsel--split-command-args string)))
-    (let ((switches (car command-args))
-          (search-term (cdr command-args)))
-      (or
-       (let ((ivy-text search-term))
-         (ivy-more-chars))
-       (let ((default-directory (ivy-state-directory ivy-last))
-             (regex (counsel--grep-regex search-term)))
-         (if (and (stringp counsel--regex-look-around)
-                  (string-match-p "\\`\\^(\\?[=!]" regex)) ;; using look-arounds
-             (setq switches (concat switches " " counsel--regex-look-around)))
-         (counsel--async-command (counsel--format-ag-command
-                                  switches
-                                  (shell-quote-argument regex)))
-         nil)))))
+  (let* ((command-args (counsel--split-command-args string))
+         (search-term (cdr command-args)))
+    (or
+     (let ((ivy-text search-term))
+       (ivy-more-chars))
+     (let* ((default-directory (ivy-state-directory ivy-last))
+            (regex (counsel--grep-regex search-term))
+            (switches (concat (car command-args)
+                              (counsel--ag-extra-switches regex))))
+       (counsel--async-command (counsel--format-ag-command
+                                switches
+                                (shell-quote-argument regex)))
+       nil))))
 
 ;;;###autoload
 (cl-defun counsel-ag (&optional initial-input initial-directory extra-ag-args ag-prompt
@@ -2692,12 +2696,13 @@ CALLER is passed to `ivy-read'."
         (and (string-match "\"\\(.*\\)\"" (buffer-name))
              (match-string 1 (buffer-name))))
   (let* ((command-args (counsel--split-command-args ivy-text))
+         (regex (counsel--grep-regex (cdr command-args)))
+         (switches (concat (car command-args)
+                           (counsel--ag-extra-switches regex)))
          (cmd (format cmd-template
                       (concat
-                       (car command-args)
-                       (shell-quote-argument
-                        (counsel--elisp-to-pcre
-                         (ivy--regex (cdr command-args)))))))
+                       switches
+                       (shell-quote-argument regex))))
          (cands (split-string (shell-command-to-string cmd)
                               counsel-async-split-string-re
                               t)))
@@ -3311,26 +3316,19 @@ attachment directory associated with the current buffer, all
 contained files are listed, so the return value could conceivably
 include attachments of other Org buffers."
   (require 'org-attach)
-  (let* ((ids (let (res)
-                (save-excursion
-                  (goto-char (point-min))
-                  (while (re-search-forward "^:ID:[\t ]+\\(.*\\)$" nil t)
-                    (push (match-string-no-properties 1) res))
-                  (nreverse res))))
-         (files
-          (cl-remove-if-not
-           #'file-exists-p
-           (mapcar (lambda (id)
-                     (expand-file-name
-                      (concat (substring id 0 2) "/" (substring id 2))
-                      org-attach-directory))
-                   ids))))
+  (let (dirs)
+    (save-excursion
+      (goto-char (point-min))
+      (while (re-search-forward "^:\\(ATTACH_DIR\\|ID\\):[\t ]+\\(.*\\)$" nil t)
+        (let ((dir (org-attach-dir)))
+          (when dir
+            (push dir dirs)))))
     (cl-mapcan
      (lambda (dir)
        (mapcar (lambda (file)
                  (file-relative-name (expand-file-name file dir)))
                (org-attach-file-list dir)))
-     files)))
+     (nreverse dirs))))
 
 ;;;###autoload
 (defun counsel-org-file ()
@@ -5188,6 +5186,8 @@ The properties include:
     the root directory of the source code
 `blddir'
     the root directory of the build (in or outside the `srcdir')
+`bldenv'
+    the build environment as passed to `compilation-environment'
 `recursive'
     the completion should be run again in `blddir' of this result
 `cmd'
@@ -5251,6 +5251,19 @@ You may, for example, want to add \"-jN\" for the number of cores
 N in your system."
   :type 'string)
 
+(defcustom counsel-compile-env nil
+  "List of environment variables for compilation to inherit.
+Each element should be a string of the form ENVVARNAME=VALUE.  This
+list is passed to `compilation-environment'."
+  :type '(repeat (string :tag "ENVVARNAME=VALUE")))
+
+(defvar counsel-compile-env-history nil
+  "History for `counsel-compile-env'.")
+
+(defvar counsel-compile-env-pattern
+  "[_[:digit:][:upper:]]+=[/[:album:]]*"
+  "Pattern to match valid environment variables.")
+
 (defcustom counsel-compile-make-pattern "\\`\\(?:GNUm\\|[Mm]\\)akefile\\'"
   "Regexp for matching the names of Makefiles."
   :type 'regexp)
@@ -5284,6 +5297,15 @@ trees."
                                 (match-string-no-properties 1)))))))
     (sort targets #'string-lessp)))
 
+(defun counsel-compile--pretty-propertize (leader text face)
+  "Return a pretty string of the form \" LEADER TEXT\".
+LEADER is propertized with a warning face and the remaining
+text with FACE."
+  (concat (propertize (concat " " leader " ")
+                      'face
+                      'font-lock-warning-face)
+          (propertize text 'face face)))
+
 (defun counsel--compile-get-make-targets (srcdir &optional blddir)
   "Return a list of Make targets for a given SRCDIR/BLDDIR combination.
 
@@ -5294,11 +5316,16 @@ The resulting strings are tagged with properties that
   (let ((fmt (format (propertize "make %s %%s" 'cmd t)
                      counsel-compile-make-args))
         (suffix (and blddir
-                     (concat (propertize " in " 'face 'font-lock-warning-face)
-                             (propertize blddir 'face 'dired-directory))))
-        (props `(srcdir ,srcdir blddir ,default-directory)))
+                     (counsel-compile--pretty-propertize "in" blddir
+                                                         'dired-directory)))
+        (build-env (and counsel-compile-env
+                        (counsel-compile--pretty-propertize
+                         "with"
+                         (mapconcat #'identity counsel-compile-env " ")
+                         'font-lock-variable-name-face)))
+        (props `(srcdir ,srcdir blddir ,blddir bldenv ,counsel-compile-env)))
     (mapcar (lambda (target)
-              (setq target (concat (format fmt target) suffix))
+              (setq target (concat (format fmt target) suffix build-env))
               (add-text-properties 0 (length target) props target)
               target)
             (counsel-compile--probe-make-targets (or blddir srcdir)))))
@@ -5375,12 +5402,18 @@ This is determined by `counsel-compile-local-builds', which see."
   "Update `counsel-compile-history' from the compilation state."
   (let* ((srcdir (counsel--compile-root))
          (blddir default-directory)
+         (bldenv compilation-environment)
          (cmd (concat
                (propertize (car compilation-arguments) 'cmd t)
                (unless (file-equal-p blddir srcdir)
-                 (concat (propertize " in " 'face 'font-lock-warning-face)
-                         (propertize blddir 'face 'dired-directory))))))
-    (add-text-properties 0 (length cmd) `(srcdir ,srcdir blddir ,blddir) cmd)
+                 (counsel-compile--pretty-propertize "in" blddir
+                                                     'dired-directory))
+               (when bldenv
+                 (counsel-compile--pretty-propertize "with"
+                                                     (mapconcat #'identity bldenv " ")
+                                                     'font-lock-variable-name-face)))))
+    (add-text-properties 0 (length cmd)
+                         `(srcdir ,srcdir blddir ,blddir bldenv ,bldenv) cmd)
     (add-to-history 'counsel-compile-history cmd)))
 
 (defun counsel-compile--action (cmd)
@@ -5389,13 +5422,15 @@ This is determined by `counsel-compile-local-builds', which see."
 If CMD has the `recursive' property set we call `counsel-compile'
 again to further refine the compile options in the directory
 specified by the `blddir' property."
-  (let ((blddir (get-text-property 0 'blddir cmd)))
+  (let ((blddir (get-text-property 0 'blddir cmd))
+        (bldenv (get-text-property 0 'bldenv cmd)))
     (if (get-text-property 0 'recursive cmd)
         (counsel-compile blddir)
       (when (get-char-property 0 'cmd cmd)
         (setq cmd (substring-no-properties
                    cmd 0 (next-single-property-change 0 'cmd cmd))))
-      (let ((default-directory blddir))
+      (let ((default-directory (or blddir default-directory))
+            (compilation-environment bldenv))
         ;; No need to specify `:history' because of this hook.
         (add-hook 'compilation-start-hook #'counsel-compile--update-history)
         (unwind-protect
@@ -5410,6 +5445,45 @@ specified by the `blddir' property."
             (counsel--get-compile-candidates dir)
             :action #'counsel-compile--action
             :caller 'counsel-compile))
+
+
+(defun counsel-compile-env--format-hint (cands)
+  "Return a formatter for compile-env CANDS."
+  (let ((rmstr
+         (propertize "remove" 'face 'font-lock-warning-face))
+        (addstr
+         (propertize "add" 'face 'font-lock-variable-name-face)))
+    (ivy--format-function-generic
+     (lambda (selected)
+       (format "%s %s"
+               (if (member selected counsel-compile-env) rmstr addstr)
+               selected))
+     #'identity
+     cands
+     "\n")))
+
+(defun counsel-compile-env--update (var)
+  "Update `counsel-compile-env' either adding or removing VAR."
+  (cond ((member var counsel-compile-env)
+         (setq counsel-compile-env (delete var counsel-compile-env)))
+        ((string-match-p counsel-compile-env-pattern var)
+         (push var counsel-compile-env))
+        (t (user-error "Ignoring malformed variable: '%s'" var))))
+
+;;;###autoload
+(defun counsel-compile-env ()
+  "Update `counsel-compile-env' interactively."
+  (interactive)
+  (let ((ivy-format-function #'counsel-compile-env--format-hint))
+    (ivy-read "Compile environment variable: "
+              (delete-dups (append
+                            counsel-compile-env counsel-compile-env-history))
+              :action #'counsel-compile-env--update
+              :predicate (lambda (cand)
+                           (string-match-p counsel-compile-env-pattern
+                                           cand))
+              :history 'counsel-compile-env-history
+              :caller 'counsel-compile-env)))
 
 ;;** `counsel-minor'
 (defun counsel--minor-candidates ()

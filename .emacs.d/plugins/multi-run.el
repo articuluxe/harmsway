@@ -1,4 +1,4 @@
-;;; multi-run.el --- Manage multiple terminals and run commands on them
+;;; multi-run.el --- Efficiently manage multiple remote nodes  -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2015-2019  Sagar Jha
 
@@ -6,7 +6,7 @@
 ;; URL: https://www.github.com/sagarjha/multi-run
 ;; Package-Requires: ((emacs "24") (window-layout "1.4"))
 ;; Version: 1.0
-;; Keywords: tools, terminals
+;; Keywords: multiple shells, multi-run, remote nodes
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -23,9 +23,7 @@
 
 ;;; Commentary:
 
-;; The functions below are self-explanatory with the documentation string.
-
-;; See the full documentation on https://www.github.com/sagarjha/multi-run.
+;; See the full documentation at https://www.github.com/sagarjha/multi-run.
 
 ;;; Code:
 
@@ -113,13 +111,15 @@
 (defun multi-run-execute-command ()
   "Execute the command on all the files."
   (when multi-run-start
-    (unless (eq this-original-command 'eshell-send-input)
+    (unless (or (eq this-original-command 'multi-run-edit-files)
+		(eq this-original-command 'eshell-send-input))
       (if (eq this-original-command 'keyboard-quit)
 	  (multi-run-edit-files-quit)
 	(mapc (lambda (term-num) (multi-run-execute-on-single-buffer (cdr (assoc term-num multi-run-buffers-assoc-list)))) (cdr multi-run-terminals-list))))))
 
 (defun multi-run-edit-files (&optional window-batch)
   "Enable editing files opened by `multi-run-find-remote-files'.  Display the files on the frame with WINDOW-BATCH number of them in one single vertical slot."
+  (interactive)
   (let* ((master-buffer-name (buffer-name))
 	 (num-terminals (length multi-run-terminals-list))
 	 (window-batch (if window-batch window-batch (calculate-window-batch num-terminals))))

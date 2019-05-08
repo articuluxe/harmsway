@@ -4154,10 +4154,11 @@ If the region is active, forward to `kill-ring-save' instead."
 Don't finish completion."
   (interactive)
   (delete-minibuffer-contents)
-  (if (and ivy--directory
-           (ivy--dirname-p (ivy-state-current ivy-last)))
-      (insert (substring (ivy-state-current ivy-last) 0 -1))
-    (insert (ivy-state-current ivy-last))))
+  (let ((end (and ivy--directory
+                  (ivy--dirname-p (ivy-state-current ivy-last))
+                  -1)))
+    (insert (substring-no-properties
+             (ivy-state-current ivy-last) 0 end))))
 
 (define-obsolete-variable-alias 'ivy--preferred-re-builders
     'ivy-preferred-re-builders "0.10.0")
