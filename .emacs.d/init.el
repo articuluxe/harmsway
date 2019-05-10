@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-05-07 09:59:57 dan.harms>
+;; Modified Time-stamp: <2019-05-09 08:35:26 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1081,6 +1081,7 @@ line."
   (setq magit-repository-directories
         `(,(cons (expand-file-name "~/src") 2)))
   (add-hook 'magit-post-refresh-hook 'diff-hl-magit-post-refresh)
+  (add-hook 'magit-section-movement-hook 'magit-status-maybe-update-blob-buffer)
   (push (cons 'stashes 'hide) magit-section-initial-visibility-alist)
   (push (cons [* unpushed status] 'show) magit-section-initial-visibility-alist)
   (push (cons [* unpulled status] 'show) magit-section-initial-visibility-alist)
