@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-05-09 08:35:26 dharms>
+;; Modified Time-stamp: <2019-05-10 09:28:01 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1640,6 +1640,10 @@ Only one letter is shown, the first that applies."
       (ivy-done)))
   (counsel-mode 1)
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; frog-jump-buffer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package frog-jump-buffer
+  :bind ("M-i" . frog-jump-buffer))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; eldoc-box ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun harmsway-toggle-eldoc-box-mode ()
