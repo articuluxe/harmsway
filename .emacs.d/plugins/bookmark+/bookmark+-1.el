@@ -7,9 +7,9 @@
 ;; Copyright (C) 2000-2019, Drew Adams, all rights reserved.
 ;; Copyright (C) 2009, Thierry Volpiatto.
 ;; Created: Mon Jul 12 13:43:55 2010 (-0700)
-;; Last-Updated: Mon Feb 18 22:27:48 2019 (-0800)
+;; Last-Updated: Thu May  9 09:10:24 2019 (-0700)
 ;;           By: dradams
-;;     Update #: 8873
+;;     Update #: 8899
 ;; URL: https://www.emacswiki.org/emacs/download/bookmark%2b-1.el
 ;; Doc URL: https://www.emacswiki.org/emacs/BookmarkPlus
 ;; Keywords: bookmarks, bookmark+, placeholders, annotations, search, info, url, eww, w3m, gnus
@@ -200,9 +200,10 @@
 ;;    `bmkp-jump-in-navlist-other-window',
 ;;    `bmkp-jump-to-bookmark-linked-at' (Emacs 22+),
 ;;    `bmkp-jump-to-bookmark-linked-at-mouse' (Emacs 22+),
-;;    `bmkp-jump-to-type', `bmkp-jump-to-type-other-window',
-;;    `bmkp-list-all-tags', `bmkp-list-defuns-in-commands-file',
-;;    `bmkp-local-file-jump', `bmkp-local-file-jump-other-window',
+;;    `bmkp-jump-to-list', `bmkp-jump-to-type',
+;;    `bmkp-jump-to-type-other-window', `bmkp-list-all-tags',
+;;    `bmkp-list-defuns-in-commands-file', `bmkp-local-file-jump',
+;;    `bmkp-local-file-jump-other-window',
 ;;    `bmkp-local-non-dir-file-jump',
 ;;    `bmkp-local-non-dir-file-jump-other-window',
 ;;    `bmkp-make-bookmark-savable', `bmkp-make-bookmark-temporary',
@@ -479,11 +480,13 @@
 ;;  Non-interactive functions defined here:
 ;;
 ;;    `bmkext-jump-gnus', `bmkext-jump-man', `bmkext-jump-w3m',
-;;    `bmkext-jump-woman', `bmkp-all-exif-data',
-;;    `bmkp-all-tags-alist-only', `bmkp-all-tags-regexp-alist-only',
-;;    `bmkp-alpha-cp', `bmkp-alpha-p', `bmkp-annotated-alist-only',
-;;    `bmkp-annotated-bookmark-p', `bmkp-autofile-alist-only',
-;;    `bmkp-autofile-all-tags-alist-only',
+;;    `bmkext-jump-woman', `bmkp-add-jump-to-list-button',
+;;    `bmkp-all-exif-data', `bmkp-all-tags-alist-only',
+;;    `bmkp-all-tags-regexp-alist-only', `bmkp-alpha-cp',
+;;    `bmkp-alpha-p', `bmkp-annotated-alist-only',
+;;    `bmkp-annotated-bookmark-p',
+;;    `bmkp-annotation-or-bookmark-description',
+;;    `bmkp-autofile-alist-only', `bmkp-autofile-all-tags-alist-only',
 ;;    `bmkp-autofile-all-tags-regexp-alist-only',
 ;;    `bmkp-autofile-bookmark-p',
 ;;    `bmkp-autofile-some-tags-alist-only',
@@ -619,8 +622,8 @@
 ;;    `bmkp-position-post-context',
 ;;    `bmkp-position-post-context-region',
 ;;    `bmkp-position-pre-context', `bmkp-position-pre-context-region',
-;;    `bmkp-printable-vars+vals', `bmkp-readable-p',
-;;    `bmkp-read-bookmark-file-default',
+;;    `bmkp-printable-vars+vals', `bmkp-propertize',
+;;    `bmkp-readable-p', `bmkp-read-bookmark-file-default',
 ;;    `bmkp-read-bookmark-file-name', `bmkp-read-from-whole-string',
 ;;    `bmkp-read-regexp', `bmkp-read-tag-completing',
 ;;    `bmkp-read-tags', `bmkp-read-tags-completing',
@@ -3872,6 +3875,15 @@ use `regexp-history'."
                          (t (format "%s: " prompt)))
                    nil (or history  'regexp-history) default))))
 
+;; Same as `icicle-propertize'.  (Not used yet.)
+;;
+(defun bmkp-propertize (object &rest properties)
+  "Like `propertize', but for all Emacs versions.
+If OBJECT is not a string, then use `prin1-to-string' to get a string."
+  (let ((new  (if (stringp object) (copy-sequence object) (prin1-to-string object))))
+    (add-text-properties 0 (length new) properties new)
+    new))
+
 (defun bmkp-new-bookmark-default-names (&optional first-def)
   "Return a list of default names (strings) for a new bookmark.
 A non-nil optional arg FIRST-DEF is prepended to the list of names
@@ -4693,6 +4705,24 @@ Raise an error if the entire string was not used."
                       (end-of-file nil))))
     (if more-left (error "Can't read whole string") (car read-data))))
 
+;;;###autoload (autoload 'bmkp-jump-to-list "bookmark+")
+(defun bmkp-jump-to-list (bookmark
+                          &optional position msgp) ; Bound globally to `C-x j C-l', `C-x p C-l'
+  "Jump to BOOKMARK entry in `*Bookmark List*'.
+You are prompted for BOOKMARK (a bookmark name).
+If you use library `bookmark+-lit.el':
+ * The defaults for BOOKMARK are the lighted bookmarks at point.
+ * A prefix arg means only lighted bookmarks at point are candidates."
+  (interactive (let* ((litp   (fboundp 'bmkp-bookmarks-lighted-at-point))
+                      (lbmks  (and litp  (bmkp-bookmarks-lighted-at-point (point) nil 'MSG)))
+                      (bmk    (bookmark-completing-read (if current-prefix-arg "Lighted bookmark" "Bookmark")
+                                                        (and litp  (if current-prefix-arg (car lbmks) lbmks))
+                                                        (and current-prefix-arg  lbmks))))
+                 (list bmk (point) t)))
+  (pop-to-buffer (get-buffer-create "*Bookmark List*"))
+  (bookmark-bmenu-list)
+  (bmkp-bmenu-goto-bookmark-named (setq bmkp-last-bmenu-bookmark  bookmark)))
+
 ;;;###autoload (autoload 'bmkp-make-function-bookmark "bookmark+")
 (defun bmkp-make-function-bookmark (bookmark-name function &optional msg-p) ; Bound globally to `C-x p c F'.
   "Create a bookmark that invokes FUNCTION when \"jumped\" to.
@@ -5112,6 +5142,7 @@ If the current buffer is not visiting a file, prompt for the file name."
   "Show the bookmark list just for bookmarks for the current buffer.
 Set `bmkp-last-specific-buffer' to the current buffer name."
   (interactive)
+  (unless bookmark-alist (bookmark-maybe-load-default-file))
   (let ((orig-last-spec-buf  bmkp-last-specific-buffer)
         (orig-filter-fn      bmkp-bmenu-filter-function)
         (orig-title          bmkp-bmenu-title)
@@ -8613,7 +8644,7 @@ link text, and it is inserted at POSITION (point if POSITION is nil)."
 ;;  *** Other Bookmark+ Functions (`bmkp-*') ***
 
 ;;;###autoload (autoload 'bmkp-describe-bookmark "bookmark+")
-(defun bmkp-describe-bookmark (bookmark &optional defn) ; Bound to `C-x p ?'
+(defun bmkp-describe-bookmark (bookmark &optional defn) ; Bound to `C-h M'
   "Describe BOOKMARK.
 With a prefix argument, show the internal definition of the bookmark.
 BOOKMARK is a bookmark name or a bookmark record.
@@ -8635,7 +8666,7 @@ Starting with Emacs 22, if the file is an image file then:
     (setq bookmark  (bookmark-get-bookmark bookmark))
     (help-setup-xref (list #'bmkp-describe-bookmark bookmark) (interactive-p))
     (let ((help-text  (bmkp-bookmark-description bookmark)))
-      (bmkp-with-help-window "*Help*" (princ help-text))
+      (bmkp-with-help-window "*Help*" (princ help-text) (bmkp-add-jump-to-list-button bookmark))
       (with-current-buffer "*Help*"
         (save-excursion
           (goto-char (point-min))
@@ -8654,10 +8685,10 @@ Starting with Emacs 22, if the file is an image file then:
                                                  (keymap
                                                   (mouse-2
                                                    . (lambda (e) (interactive "e")
-                                                             (find-file ,image-file)))
+                                                       (find-file ,image-file)))
                                                   (13
                                                    . (lambda () (interactive)
-                                                             (find-file ,image-file))))))))
+                                                       (find-file ,image-file))))))))
                    (buffer-read-only  nil))
               (replace-match image-string)))))
       help-text)))
@@ -8817,6 +8848,21 @@ Inserted subdirs:\t%s\nHidden subdirs:\t\t%s\n"
                     (error nil))))))
       help-text)))
 
+(defun bmkp-add-jump-to-list-button (bookmark)
+  "Add a [Show in `*Bookmark List*'] button for BOOKMARK."
+  (with-current-buffer "*Help*"
+    (let ((buffer-read-only  nil))
+      ;; Add button to go to the bookmark entry in `*Bookmark List*'.
+      ;; Not for Emacs 21.3 - its `help-insert-xref-button' signature is different.
+      (when (and (> emacs-major-version 21) ; In `help-mode.el'.
+                 (condition-case nil (require 'help-mode nil t) (error nil))
+                 (fboundp 'help-insert-xref-button))
+        (goto-char (point-min)) (forward-line 2)
+        (help-insert-xref-button "[Show in `*Bookmark List*']"
+                                 #'bmkp-jump-to-list-button
+                                 (bookmark-name-from-record bookmark))
+        (insert "\n")))))
+
 ;; This is the same as `help-all-exif-data' in `help-fns+.el', but we avoid requiring that library.
 (defun bmkp-all-exif-data (file)
   "Return all EXIF data from FILE, using command-line tool `exiftool'."
@@ -8846,7 +8892,14 @@ If it is a record then it need not belong to `bookmark-alist'."
          (help-text     (format "Bookmark `%s'\n%s\n\n%s" bname (make-string (+ 11 (length bname)) ?-)
                                 (pp-to-string bmk))))
     (bmkp-with-help-window "*Help*" (princ help-text))
+    (bmkp-add-jump-to-list-button bookmark)
     help-text))
+
+(defun bmkp-annotation-or-bookmark-description (bookmark)
+  "Return the annotation or description of BOOKMARK as a string.
+If BOOKMARK has an annotation then use that; else the description."
+  (or (bookmark-get-annotation bookmark)
+      (bmkp-bookmark-description bookmark)))
 
 ;;;###autoload (autoload 'bmkp-list-defuns-in-commands-file "bookmark+")
 (defun bmkp-list-defuns-in-commands-file ()
@@ -12922,6 +12975,7 @@ Don't forget to mention your Emacs and library versions."))
                          (bookmark-insert-file-format-version-stamp))
                        (insert "(\n)"))
                      (bmkp-empty-file new-file)
+                     (setq bmkp-last-as-first-bookmark-file  nil) ; Prevent starting from a file of temp bmks.
                      (bookmark-load new-file t 'nosave) ; Saving was done just above.
                      (when bookmark-save-flag (bmkp-toggle-saving-bookmark-file (interactive-p))))
                    (when (interactive-p) (message "Bookmarking is now TEMPORARY")))

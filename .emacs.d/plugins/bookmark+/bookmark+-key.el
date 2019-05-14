@@ -6,9 +6,9 @@
 ;; Maintainer: Drew Adams (concat "drew.adams" "@" "oracle" ".com")
 ;; Copyright (C) 2010-2019, Drew Adams, all rights reserved.
 ;; Created: Fri Apr  1 15:34:50 2011 (-0700)
-;; Last-Updated: Mon Feb 18 22:15:59 2019 (-0800)
+;; Last-Updated: Wed May  1 16:51:46 2019 (-0700)
 ;;           By: dradams
-;;     Update #: 805
+;;     Update #: 810
 ;; URL: https://www.emacswiki.org/emacs/download/bookmark%2b-key.el
 ;; Doc URL: https://www.emacswiki.org/emacs/BookmarkPlus
 ;; Keywords: bookmarks, bookmark+, placeholders, annotations, search, info, url, eww, w3m, gnus
@@ -201,6 +201,9 @@ Each value of the list is a prefix key bound to keymap
 ;;(@* "Keymaps")
 ;;; Keymaps ----------------------------------------------------------
 
+;; `help-map'
+(define-key help-map "M"  'bmkp-describe-bookmark)
+
 ;; `bookmark-map'
 
 ;; (define-key ctl-x-map "p" bookmark-map)
@@ -215,6 +218,7 @@ Each value of the list is a prefix key bound to keymap
 (define-key bookmark-map "I"      'bookmark-insert-location)                          ; `C-x p I'
 (define-key bookmark-map "K"      'bmkp-set-desktop-bookmark) ; `C-x p K' (also `C-x r K', `C-x p c K')
 (define-key bookmark-map "L"      'bmkp-switch-bookmark-file-create)                  ; `C-x p L'
+(define-key bookmark-map "\C-l"   'bmkp-jump-to-list)                                 ; `C-x p C-l'
 (define-key bookmark-map "m"      'bmkp-bookmark-set-confirm-overwrite)               ; `C-x p m'
 (define-key bookmark-map "N"      'bmkp-navlist-bmenu-list)                           ; `C-x p N'
 (define-key bookmark-map "o"      'bookmark-jump-other-window)           ; `C-x p o' (also `C-x 4 j j')
@@ -231,7 +235,7 @@ Each value of the list is a prefix key bound to keymap
   (define-key bookmark-map "\C-u" 'bmkp-unlight-bookmark-here)                        ; `C-x p C-u'
   (define-key bookmark-map "="    'bmkp-bookmarks-lighted-at-point))                  ; `C-x p ='
 (define-key bookmark-map ","      'bmkp-this-file/buffer-bmenu-list)                  ; `C-x p ,'
-(define-key bookmark-map "?"      'bmkp-describe-bookmark)                            ; `C-x p ?'
+(define-key bookmark-map "?"      'bmkp-describe-bookmark-lighted-here)               ; `C-x p ?'
 (define-key bookmark-map ":"      'bmkp-choose-navlist-of-type)                       ; `C-x p :'
 (define-key bookmark-map "\r"     'bmkp-toggle-autonamed-bookmark-set/delete)         ; `C-x p RET'
 (define-key bookmark-map [delete] 'bmkp-delete-bookmarks)                             ; `C-x p delete'
@@ -452,6 +456,7 @@ Each value of the list is a prefix key bound to keymap
 (define-key bmkp-jump-other-window-map "K"    'bmkp-desktop-jump)           ; SAME COMMAND: `C-x 4 j K'
 (define-key bmkp-jump-map              "l"    'bmkp-local-file-jump)                        ; `C-x j l'
 (define-key bmkp-jump-other-window-map "l"    'bmkp-local-file-jump-other-window)         ; `C-x 4 j l'
+(define-key bmkp-jump-map              "\C-l" 'bmkp-jump-to-list)                         ; `C-x j C-l'
 (define-key bmkp-jump-map              "m"    'bmkp-man-jump)                               ; `C-x j m'
 (define-key bmkp-jump-other-window-map "m"    'bmkp-man-jump-other-window)                ; `C-x 4 j m'
 (define-key bmkp-jump-map              "n"    'bmkp-remote-file-jump)         ; `C-x j n' ("_n_etwork")

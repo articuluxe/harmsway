@@ -4,11 +4,11 @@
 ;; Description: Documentation for package Bookmark+
 ;; Author: Drew Adams
 ;; Maintainer: Drew Adams (concat "drew.adams" "@" "oracle" ".com")
-;; Copyright (C) 2000-201, Drew Adams, all rights reserved.
+;; Copyright (C) 2000-2019, Drew Adams, all rights reserved.
 ;; Created: Fri Sep 15 07:58:41 2000
-;; Last-Updated: Mon Feb 18 22:48:44 2019 (-0800)
+;; Last-Updated: Fri May 10 16:29:04 2019 (-0700)
 ;;           By: dradams
-;;     Update #: 15299
+;;     Update #: 15322
 ;; URL: https://www.emacswiki.org/emacs/download/bookmark%2b-doc.el
 ;; Doc URL: https://www.emacswiki.org/emacs/BookmarkPlus
 ;; Keywords: bookmarks, bookmark+, placeholders, annotations, search,
@@ -177,6 +177,7 @@
 ;;    (@> "Using Highlighted Bookmarks")
 ;;    (@> "Bookmark Links")
 ;;      (@> "Org Mode Links that Jump To Bookmarks")
+;;    (@> "Bookmark Menus")
 ;;    (@> "Use Bookmark+ with Icicles")
 ;;    (@> "Bookmark Compatibility with Vanilla Emacs (`bookmark.el')")
 ;;    (@> "New Bookmark Structure")
@@ -434,6 +435,15 @@
 ;;       from the `Bookmark+' menu, including submenus `Jump To',
 ;;       `Tags', and `Highlight'.
 ;;
+;;     - Bookmark+ adds two items to the menu bar `Edit' menu:
+;;
+;;       . Save the active region text as a bookmark.
+;;       . Jump to the bookmark to copy the text to the kill ring, so
+;;         you can then yank it anywhere.
+;;
+;;     - Some modes provide a `Bookmarks Here' menu-bar submenu with
+;;       items to access bookmarks for the current file/buffer.
+;;
 ;;  * Improvements for the bookmark-list display.
 ;;
 ;;    This is buffer `*Bookmark List*', aka the bookmark "menu list"
@@ -568,10 +578,23 @@
 ;;
 ;;     - Information about individual bookmarks.
 ;;
-;;       . Anywhere in Emacs, `C-x p ?'  (command
+;;       . Anywhere in Emacs, `C-x h M'  (command
 ;;         `bmkp-describe-bookmark') describes any bookmark.  With a
 ;;         prefix argument, it shows you the full information that
 ;;         defines it (internal form).
+;;
+;;       . With the cursor on a highlighted bookmark, `C-x p ?' shows
+;;         the same description, and a prefix argment has the same
+;;         effect (show internal form).
+;;
+;;       . Hovering your mouse over a highlighted bookmark shows the
+;;         same description, in a tooltip.  Actually, you can
+;;         customize the description using option
+;;         `bmkp-tooltip-content-function'.  The default value is
+;;         `bmkp-bookmark-description', which describes the bookmark.
+;;         A value of `bmkp-annotation-or-bookmark-description', for
+;;         example, shows the bookmark annotation if there is one, or
+;;         the full description if not.
 ;;
 ;;       . In the bookmark list, `C-h RET' (or `C-h C-RET') describes
 ;;         the bookmark under the cursor.  The description is as
@@ -2561,7 +2584,7 @@
 ;;  Other important keys pertaining to tags (the keys in parentheses
 ;;  work in any buffer, not just buffer `*Bookmark List*'):
 ;;
-;;  * `C-h RET' (`C-x p ?') shows you the tags that belong to a
+;;  * `C-h RET' (`C-h M') shows you the tags that belong to a
 ;;    bookmark.  With a prefix argument it shows you the full internal
 ;;    form of the tags, that is, the name+value pairs.
 ;;
@@ -3828,7 +3851,7 @@
 ;;  any Emacs text that jump to particular bookmarks when you follow
 ;;  them (by hitting `RET' or clicking `mouse-2').  If you hit `?' or
 ;;  double-click `mouse-1' on such a bookmark link then the bookmark
-;;  is described, showing the same information as `C-x p ?'
+;;  is described, showing the same information as `C-h M'
 ;;  (`bmkp-describe-bookmark').
 ;;
 ;;  You are prompted for the bookmark to link.  If the region is
@@ -3882,6 +3905,33 @@
 ;;  prompt.  In Org mode you can use the usual Org key bindings to
 ;;  follow the link.  In any mode you can use standard Org command
 ;;  `org-open-at-point-global' (not bound to a key by default).
+ 
+;;(@* "Bookmark Menus")
+;;  ** Bookmark Menus **
+;;
+;;  Two menu-bar menus for Bookmark+ have already been mentioned:
+;;
+;;  * Menu `Bookmark+', for the bookmark-list display (buffer
+;;    `*Bookmark List*').
+;;
+;;  * Menu `Bookmarks', which is typically a submenu of the menu-bar
+;;    `Edit' menu (available also with vanilla Emacs but enhanced by
+;;    Bookmark+).
+;;
+;;  Access to bookmarks for the currently visited file or current
+;;  buffer is available as a `Bookmarks Here' submenu of the
+;;  major-mode menu-bar menu in modes Info and Buffer-Menu.
+;;
+;;  The menu items let you cycle among bookmarks in the current
+;;  file/buffer or access the bookmark-list display for only those
+;;  bookmarks.
+;;
+;;  If you use library Dired+ then the same access is available in
+;;  Dired mode on menu-bar menu `Dir' > `Bookmark' > `Here'.
+;;
+;;  If you use library Imenu+ then the same access is available in an
+;;  Imenu submenu `Bookmarks Here'.  In this case there are also menu
+;;  items to jump to each bookmark in the file/buffer.
  
 ;;(@* "Use Bookmark+ with Icicles")
 ;;  ** Use Bookmark+ with Icicles **

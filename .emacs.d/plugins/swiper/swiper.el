@@ -206,12 +206,9 @@
                     (perform-replace from to t t nil)))
              (set-window-configuration wnd-conf))))))))
 
-(defvar avy-background)
 (defvar avy-all-windows)
 (defvar avy-style)
 (defvar avy-keys)
-(declare-function avy--regex-candidates "ext:avy")
-(declare-function avy--process "ext:avy")
 (declare-function avy--overlay-post "ext:avy")
 (declare-function avy-action-goto "ext:avy")
 (declare-function avy-candidate-beg "ext:avy")
@@ -280,20 +277,23 @@
       (avy--done))))
 
 (defun swiper--avy-goto (candidate)
-  (if (window-minibuffer-p (cdr candidate))
-      (let ((cand-text (save-excursion
-                         (goto-char (car candidate))
-                         (buffer-substring-no-properties
-                          (line-beginning-position)
-                          (line-end-position)))))
-        (ivy-set-index (cl-position-if
-                        (lambda (x) (cl-search x cand-text))
-                        ivy--old-cands))
-        (ivy--exhibit)
-        (ivy-done)
-        (ivy-call))
-    (ivy-quit-and-run
-      (avy-action-goto (avy-candidate-beg candidate)))))
+  (cond ((let ((win (cdr-safe candidate)))
+           (and win (window-minibuffer-p win)))
+         (let ((cand-text (save-excursion
+                            (goto-char (car candidate))
+                            (buffer-substring-no-properties
+                             (line-beginning-position)
+                             (line-end-position)))))
+           (ivy-set-index (cl-position-if
+                           (lambda (x) (cl-search x cand-text))
+                           ivy--old-cands))
+           (ivy--exhibit)
+           (ivy-done)
+           (ivy-call)))
+        ((or (consp candidate)
+             (number-or-marker-p candidate))
+         (ivy-quit-and-run
+           (avy-action-goto (avy-candidate-beg candidate))))))
 
 ;;;###autoload
 (defun swiper-avy ()
@@ -320,13 +320,14 @@ Make sure `swiper-mc' is on `mc/cmds-to-run-once' list."
     (error "Multiple-cursors isn't installed"))
   (unless (window-minibuffer-p)
     (error "Call me only from `swiper'"))
-  (let ((cands (nreverse ivy--old-cands)))
+  (let ((cands (nreverse ivy--old-cands))
+        (action (ivy--get-action ivy-last)))
     (unless (string= ivy-text "")
       (ivy-exit-with-action
        (lambda (_)
          (let (cand)
            (while (setq cand (pop cands))
-             (swiper--action cand)
+             (funcall action cand)
              (when cands
                (mc/create-fake-cursor-at-point))))
          (multiple-cursors-mode 1))))))
@@ -767,6 +768,10 @@ Matched candidates should have `swiper-invocation-face'."
     (goto-char (point-min))
     (isearch-clean-overlays)))
 
+(defun swiper--recenter-p ()
+  (or (display-graphic-p)
+      (not recenter-redisplay)))
+
 (defun swiper--update-input-ivy ()
   "Called when `ivy' input is updated."
   (with-ivy-window
@@ -809,7 +814,7 @@ Matched candidates should have `swiper-invocation-face'."
                     (setq swiper--current-match-start (match-beginning 0))))
                 (isearch-range-invisible (line-beginning-position)
                                          (line-end-position))
-                (when (and (display-graphic-p)
+                (when (and (swiper--recenter-p)
                            (or
                             (< (point) (window-start))
                             (> (point) (window-end (ivy-state-window ivy-last) t))))
@@ -818,12 +823,12 @@ Matched candidates should have `swiper-invocation-face'."
             (swiper--add-overlays
              re
              (max
-              (if (display-graphic-p)
+              (if (swiper--recenter-p)
                   (window-start)
                 (line-beginning-position (- (window-height))))
               swiper--point-min)
              (min
-              (if (display-graphic-p)
+              (if (swiper--recenter-p)
                   (window-end (selected-window) t)
                 (line-end-position (window-height)))
               swiper--point-max))))))))
@@ -948,7 +953,8 @@ the face, window and priority of the overlay."
         (swiper--ensure-visible)
         (cond (swiper-action-recenter
                (recenter))
-              ((and swiper--current-window-start (display-graphic-p))
+              ((and swiper--current-window-start
+                    (swiper--recenter-p))
                (set-window-start (selected-window) swiper--current-window-start)))
         (when (/= (point) swiper--opoint)
           (unless (and transient-mark-mode mark-active)
@@ -1280,7 +1286,8 @@ When not running `swiper-isearch' already, start it."
           (setq str (buffer-substring-no-properties (car bnd) (cdr bnd))))
         (setq swiper--isearch-point-history
               (list (cons "" (car bnd))))
-        (insert str))
+        (insert str)
+        (ivy--insert-symbol-boundaries))
     (let (thing)
       (if (use-region-p)
           (progn
@@ -1300,17 +1307,72 @@ When not running `swiper-isearch' already, start it."
     map)
   "Keymap for `swiper-isearch'.")
 
+(defface swiper-isearch-current-match
+  '((((class color) (background light))
+     :background "#65a7e2" :foreground "white")
+    (((class color) (background dark))
+     :background "#1a4b77" :foreground "black"))
+  "Face used by `swiper-isearch' for highlighting the current match.")
+
+(defun swiper-isearch-format-function (_cands)
+  (let* ((half-height (/ ivy-height 2))
+         (current (ivy-state-current ivy-last))
+         (i (1- ivy--index))
+         (j 0)
+         (len 0)
+         res s)
+    (while (and (>= i 0)
+                (string= (nth i ivy--old-cands)
+                         current))
+      (cl-decf i)
+      (cl-incf j))
+    (while (and (>= i 0)
+                (< len half-height))
+      (setq s (nth i ivy--old-cands))
+      (unless (equal s (car res))
+        (push (ivy--format-minibuffer-line s) res)
+        (cl-incf len))
+      (cl-decf i))
+    (setq res (nreverse res))
+    (let ((current-str
+           (ivy--add-face
+            (ivy--format-minibuffer-line current)
+            'ivy-current-match))
+          (start 0))
+      (dotimes (_ (1+ j))
+        (string-match ivy--old-re current-str start)
+        (setq start (match-end 0)))
+      (ivy-add-face-text-property
+       (match-beginning 0) (match-end 0)
+       'swiper-isearch-current-match current-str)
+      (push current-str res))
+    (cl-incf len)
+    (setq i (1+ ivy--index))
+    (while (and (< i ivy--length)
+                (string= (nth i ivy--old-cands) current))
+      (cl-incf i))
+    (while (and (< i ivy--length)
+                (< len ivy-height))
+      (setq s (nth i ivy--old-cands))
+      (unless (equal s (car res))
+        (push (ivy--format-minibuffer-line s) res)
+        (cl-incf len))
+      (cl-incf i))
+    (mapconcat #'identity (nreverse res) "\n")))
+
 ;;;###autoload
 (defun swiper-isearch (&optional initial-input)
   "A `swiper' that's not line-based."
   (interactive)
   (swiper--init)
+  (swiper-font-lock-ensure)
   (setq swiper--isearch-point-history
         (list
          (cons "" (point))))
   (let ((ivy-fixed-height-minibuffer t)
         (cursor-in-non-selected-windows nil)
         (swiper-min-highlight 1)
+        (ivy-format-function #'swiper-isearch-format-function)
         res)
     (unwind-protect
          (and

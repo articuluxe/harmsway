@@ -322,6 +322,11 @@ For more information, look up `delete-other-windows'."
   :type 'boolean
   :group 'dired-sidebar)
 
+(defcustom dired-sidebar-one-instance-p nil
+  "Only show one buffer instance for dired-sidebar for each frame."
+  :type 'boolean
+  :group 'dired-sidebar)
+
 ;; Internal
 
 (defvar dired-sidebar-basedir (file-name-directory load-file-name)
@@ -553,12 +558,15 @@ With universal argument, use current directory."
   (interactive)
   (if (dired-sidebar-showing-sidebar-p)
       (dired-sidebar-hide-sidebar)
-    (let* ((file-to-show (dired-sidebar-get-file-to-show))
+    (let* ((old-buffer (dired-sidebar-buffer (selected-frame)))
+           (file-to-show (dired-sidebar-get-file-to-show))
            (dir-to-show (or dir
                             (when current-prefix-arg default-directory)
                             (dired-sidebar-get-dir-to-show)))
            (sidebar-buffer (dired-sidebar-get-or-create-buffer dir-to-show)))
       (dired-sidebar-show-sidebar sidebar-buffer)
+      (when (and dired-sidebar-one-instance-p old-buffer (not (eq sidebar-buffer old-buffer)))
+        (kill-buffer old-buffer))
       (if (and dired-sidebar-follow-file-at-point-on-toggle-open
                file-to-show)
           (if dired-sidebar-pop-to-sidebar-on-toggle-open
@@ -696,8 +704,10 @@ window selection."
                (progn
                  (switch-to-buffer buf-name)
                  (dired-sidebar-update-state (current-buffer)))
-             ;; Copied from `dired-find-file'.
-             (find-file dired-file-name)
+             (if (and dired-sidebar-one-instance-p (file-directory-p dired-file-name))
+                 (find-alternate-file dired-file-name)
+               ;; Copied from `dired-find-file'.
+               (find-file dired-file-name))
              (dired-sidebar-mode)
              (dired-sidebar-update-state (current-buffer)))))
       ;; Select the sidebar window so that `next-window' is consistent
@@ -740,7 +750,9 @@ Select alternate window using `dired-sidebar-alternate-select-window-function'."
          (progn
            (switch-to-buffer up-name)
            (dired-sidebar-update-state (current-buffer)))
-       (dired-up-directory)
+         (if dired-sidebar-one-instance-p
+             (find-alternate-file "..")
+           (dired-up-directory))
        (dired-sidebar-mode)
        (dired-sidebar-update-state (current-buffer)))
      (let ((default-directory up))

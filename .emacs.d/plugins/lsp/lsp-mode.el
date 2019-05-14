@@ -268,27 +268,39 @@ When nil, all registered clients are considered candidates.")
   "If non-nil lsp-mode will watch the files in the workspace if
 the server has requested that."
   :type 'boolean
-  :group 'lsp-mode)
-
-(defcustom lsp-file-watch-ignored '(".idea"
-                                    ".ensime_cache"
-                                    ".eunit"
-                                    "node_modules"
-                                    ".git"
-                                    ".hg"
-                                    ".fslckout"
-                                    "_FOSSIL_"
-                                    ".bzr"
-                                    "_darcs"
-                                    ".tox"
-                                    ".svn"
-                                    ".stack-work"
-                                    ".bloop"
-                                    ".metals"
-                                    "target")
-  "List of directories which won't be monitored when creating file watches."
   :group 'lsp-mode
-  :type '(repeat string))
+  :package-version '(lsp-mode . "6.1"))
+
+(defcustom lsp-file-watch-ignored '(; SCM tools
+                                    "[/\\\\]\\.git$"
+                                    "[/\\\\]\\.hg$"
+                                    "[/\\\\]\\.bzr$"
+                                    "[/\\\\]_darcs$"
+                                    "[/\\\\]\\.svn$"
+                                    "[/\\\\]_FOSSIL_$"
+                                    ; IDE tools
+                                    "[/\\\\]\\.idea$"
+                                    "[/\\\\]\\.ensime_cache$"
+                                    "[/\\\\]\\.eunit$"
+                                    "[/\\\\]node_modules$"
+                                    "[/\\\\]\\.fslckout$"
+                                    "[/\\\\]\\.tox$"
+                                    "[/\\\\]\\.stack-work$"
+                                    "[/\\\\]\\.bloop$"
+                                    "[/\\\\]\\.metals$"
+                                    "[/\\\\]target$"
+                                    ; Autotools output
+                                    "[/\\\\]\\.deps$"
+                                    "[/\\\\]build-aux$"
+                                    "[/\\\\]autom4te.cache$"
+                                    "[/\\\\]\\.reference$")
+  "List of regexps matching directory paths which won't be monitored when creating file watches."
+  :group 'lsp-mode
+  :type '(repeat string)
+  :package-version '(lsp-mode . "6.1"))
+
+;; Allow lsp-file-watch-ignored as a file or directory-local variable
+(put 'lsp-file-watch-ignored 'safe-local-variable 'lsp--string-listp)
 
 (defcustom lsp-after-uninitialized-hook nil
   "List of functions to be called after a Language Server has been uninitialized."
@@ -497,6 +509,7 @@ If set to `:none' neither of two will be enabled."
 
 (defvar lsp-language-id-configuration '((".*.vue" . "vue")
                                         (".*.tsx" . "typescriptreact")
+                                        (julia-mode . "julia")
                                         (java-mode . "java")
                                         (python-mode . "python")
                                         (lsp--render-markdown . "markdown")
@@ -604,12 +617,12 @@ They are added to `markdown-code-lang-modes'")
 (defface lsp-lens-mouse-face
   '((t :height 0.8 :inherit link))
   "The face used for code lens overlays."
-  :group 'lsp-mode)
+  :group 'lsp-faces)
 
 (defface lsp-lens-face
   '((t :height 0.8 :inherit shadow))
   "The face used for code lens overlays."
-  :group 'lsp-mode)
+  :group 'lsp-faces)
 
 (defvar-local lsp--lens-overlays nil
   "Current lenses.")
@@ -676,6 +689,10 @@ They are added to `markdown-code-lang-modes'")
 (defun seq-rest (sequence)
   "Return a sequence of the elements of SEQUENCE except the first one."
   (seq-drop sequence 1))
+
+(defun lsp--string-listp (sequence)
+  "Return t if all elements of SEQUENCE are strings, else nil."
+  (not (seq-find (lambda (x) (not (stringp x))) sequence)))
 
 (defun lsp--info (format &rest args)
   "Display lsp info message with FORMAT with ARGS."
@@ -4571,7 +4588,8 @@ returns the command to execute."
             (with-current-buffer it
               (setq lsp--buffer-workspaces (delete workspace lsp--buffer-workspaces))
               (lsp--uninitialize-workspace)
-              (lsp--spinner-stop))))
+              (lsp--spinner-stop)
+              (lsp--remove-cur-overlays))))
 
         ;; cleanup session from references to the closed workspace.
         (--each (hash-table-keys folder->workspaces)
@@ -4580,9 +4598,7 @@ returns the command to execute."
         ;; Kill standard error buffer only if the process exited normally.
         ;; Leave it intact otherwise for debugging purposes.
         (when (and (eq status 'exit) (zerop (process-exit-status process)) (buffer-live-p stderr))
-          (kill-buffer stderr))
-
-        (lsp--remove-cur-overlays))
+          (kill-buffer stderr)))
 
       (run-hook-with-args 'lsp-after-uninitialized-hook workspace)
 

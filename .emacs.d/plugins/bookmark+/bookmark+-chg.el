@@ -6,9 +6,9 @@
 ;; Maintainer: Drew Adams (concat "drew.adams" "@" "oracle" ".com")
 ;; Copyright (C) 2000-2019, Drew Adams, all rights reserved.
 ;; Created: Fri Sep 15 07:58:41 2000
-;; Last-Updated: Mon Feb 18 22:33:46 2019 (-0800)
+;; Last-Updated: Thu May  9 09:13:08 2019 (-0700)
 ;;           By: dradams
-;;     Update #: 16496
+;;     Update #: 16516
 ;; URL: https://www.emacswiki.org/emacs/download/bookmark%2b-chg.el
 ;; Doc URL: https://www.emacswiki.org/emacs/BookmarkPlus
 ;; Keywords: bookmarks, bookmark+
@@ -146,6 +146,17 @@
  
 ;;;(@* "CHANGE LOG FOR `bookmark+-1.el'")
 ;;
+;; 2019/05/09 dadams
+;;     bmkp-this-buffer-bmenu-list: Call bookmark-maybe-load-default-file at outset.
+;; 2019/05/02 dadams
+;;     Added: bmkp-add-jump-to-list-button.
+;;     bmkp-describe-bookmark(-internals): Use bmkp-add-jump-to-list-button.
+;; 2019/05/01 dadams
+;;     Added bmkp-jump-to-list.
+;; 2019/04/23 dadams
+;;     Added bmkp-annotation-or-bookmark-description, bmkp-propertize.
+;; 2019/04/21 dadams
+;;     bmkp-temporary-bookmarking-mode: When enable mode reset bmkp-temporary-bookmarking-mode to nil.
 ;; 2019/02/18
 ;;     bmkp-autofile-bookmark-p, bmkp-file-target-set, bmkp-autofile-add-tags,
 ;;       bmkp-get-autofile-bookmark:
@@ -1384,6 +1395,10 @@
  
 ;;;(@* "CHANGE LOG FOR `bookmark+-bmu.el'")
 ;;
+;; 2019/04/23 dadams
+;;     Added bmkp-bmenu-edit-menu.
+;;     Moved bmkp-bmenu-edit-marked to bmkp-bmenu-edit-menu from main Bookmark+ menu.
+;;     bmkp-bmenu-show-menu: Added bookmark-bmenu-show-annotation.
 ;; 2018/11/24 dadams
 ;;     bookmark-bmenu-other-(window|frame):
 ;;       Added missing bookmark-name arg to b-j-o-(window|frame).  Thx to Alan Wehmann.
@@ -2033,6 +2048,10 @@
  
 ;;;(@* "CHANGE LOG FOR `bookmark+-key.el'")
 ;;
+;; 2019/05/01 dadams
+;;     Bind bmkp-jump-to-list to C-x p C-l, C-x j C-l.
+;; 2019/04/22 dadams
+;;     Bind bmkp-describe-bookmark to C-h M, bmkp-describe-bookmark-lighted-here to C-x p ?.
 ;; 2018/10/10 dadams
 ;;     Bound bookmark-jump-other-frame to C-x 5 B, C-x j 5 globally, and J 5 in bookmark-list buffer.
 ;; 2017/10/14 dadams
@@ -2178,6 +2197,14 @@
  
 ;;;(@* "CHANGE LOG FOR `bookmark+-lit.el'")
 ;;
+;; 2019/05/01 dadams
+;;     Added bmkp-lighted-jump-to-list.
+;; 2019/04/23 dadams
+;;     Added bmkp-tooltip-content-function.
+;;     bmkp-make/move-overlay-of-style: Use bmkp-tooltip-content-function.
+;; 2019/04/22 dadams
+;;     Added bmkp-describe-bookmark-lighted-here.
+;;     bmkp-make/move-overlay-of-style: Put bookmark description on overlay help-echo property.
 ;; 2018/09/21 dadams
 ;;     Added: bmkp--pop-to-buffer-same-window.  (Added also to bookmark+-bmu.el.)
 ;;     bmkp-lighted-jump: Use bmkp--pop-to-buffer-same-window, not switch-to-buffer.
@@ -2311,8 +2338,12 @@
  
 ;;;(@* "CHANGE LOG FOR `bookmark+.el'")
 ;;
+;; 2019/04/22 dadams
+;;     Version 2019.04.22
+;; 2019/04/22 dadams
+;;     Version 2019.02.18
 ;; 2018/10/17 dadams
-;;     Version 2018-10-17.
+;;     Version 2018.10.17.
 ;; 2018/09/21 dadams
 ;;     Version 2017.09.21.
 ;; 2017/03/31 dadams

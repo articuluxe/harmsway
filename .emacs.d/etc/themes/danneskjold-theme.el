@@ -173,7 +173,7 @@
      `(magit-diff-context ((,c (:background ,black :foreground ,frost))))
      `(magit-diff-context-highlight ((,c (:background ,black :foreground ,frost))))
      `(magit-section-highlight ((,c (:background ,black))))
-     `(magit-section-heading ((,c (:foreground ,yellow :inherit nil))))
+     `(magit-section-heading ((,c (:foreground ,yellow))))
      `(magit-diff-hunk-heading ((,c (:foreground ,blue :background ,sbt-midnight))))
      `(magit-diff-hunk-heading-highlight ((,c (:foreground ,blue :background ,sbt-midnight))))
      `(magit-diff-lines-heading ((,c (:foreground ,frost :background ,sbt-midnight))))

@@ -498,6 +498,12 @@ The new frame is set to the same size as the previous frame, offset by
              (let ((avy-dispatch-alist))
                (avy-handler-default char)))))))
 
+(defcustom aw-display-mode-overlay t
+  "When nil, don't display overlays. Rely on the mode line instead."
+  :type 'boolean)
+
+(defvar ace-window-display-mode)
+
 (defun aw-select (mode-line &optional action)
   "Return a selected other window.
 Amend MODE-LINE to the mode line for the duration of the selection."
@@ -543,7 +549,10 @@ Amend MODE-LINE to the mode line for the duration of the selection."
                         (let* ((avy-handler-function aw-dispatch-function)
                                (avy-translate-char-function aw-translate-char-function)
                                (res (avy-read (avy-tree candidate-list aw-keys)
-                                              #'aw--lead-overlay
+                                              (if (and ace-window-display-mode
+                                                       (null aw-display-mode-overlay))
+                                                  (lambda (_path _leaf))
+                                                #'aw--lead-overlay)
                                               #'avy--remove-leading-chars)))
                           (if (eq res 'exit)
                               (setq aw-action nil)
@@ -583,6 +592,7 @@ Amend MODE-LINE to the mode line for the duration of the selection."
   (aw-select " Ace - Delete Other Windows"
              #'delete-other-windows))
 
+(declare-function transpose-frame "ext:transpose-frame")
 (defun aw-transpose-frame (w)
   "Select any window on frame and `tranpose-frame'."
   (transpose-frame (window-frame w)))
