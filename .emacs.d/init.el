@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-05-10 09:28:01 dharms>
+;; Modified Time-stamp: <2019-05-15 10:17:34 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -782,6 +782,10 @@ line."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; poporg ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package poporg
   :bind ("C-c 0/" . #'poporg-dwim))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; fence-edit ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package fence-edit
+  :commands (fence-edit-code-at-point fence-edit-dwim))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; list-register ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package list-register :bind ("C-x rv" . list-register))
