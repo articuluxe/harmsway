@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-05-15 10:17:34 dan.harms>
+;; Modified Time-stamp: <2019-05-15 13:16:52 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3778,6 +3778,8 @@ Requires Flake8 2.0 or newer. See URL
             (setq-default indent-tabs-mode nil)
             ;; (idle-highlight-mode 1)
             (define-key nxml-mode-map "\r" 'reindent-then-newline-and-indent)
+            (make-local-variable 'electric-pair-pairs)
+            (push (cons ?< ?>) electric-pair-pairs)
             (make-local-variable 'company-backends)
             (setq company-backends
                   (list
