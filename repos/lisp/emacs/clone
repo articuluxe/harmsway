@@ -1,0 +1,4 @@
+mkdir -p src
+cd src
+wget https://ftp.gnu.org/gnu/emacs/emacs-26.2.tar.xz
+tar -xf emacs-26.2.tar.xz

@@ -1,0 +1,8 @@
+cd src/emacs-26.2
+mkdir -p bld
+cd bld
+../configure --with-ns --without-dbus --with-imagemagick --disable-ns-self-contained --prefix=$HOME/opt/stow/emacs
+make
+make install
+cd $HOME/opt/stow
+stow emacs
