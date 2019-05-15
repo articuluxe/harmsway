@@ -5,7 +5,7 @@
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Friday, March 17, 2017
 # Version: 1.0
-# Modified Time-stamp: <2019-05-03 08:54:06 dharms>
+# Modified Time-stamp: <2019-05-15 16:30:12 dan.harms>
 # Modified by: Dan Harms
 # Keywords: git repo
 
@@ -44,11 +44,12 @@ find "$dir" -type f -name clone | sort | while read -r fname; do
         popd &> /dev/null
     fi
     # install
-    if [ -f "$parent/install" ]; then
+    if [ -f "$parent/.ignore_install" ]; then
+        :
+    elif [ -f "$parent/install_$(uname -s)" ]; then
+        ./"install_$(uname -s)"
+    elif [ -f "$parent/install" ]; then
         ./install
-    fi
-    if [ -f "$parent/install_$(uname -s)" ]; then
-        ./install_$(uname -s)
     fi
     popd &> /dev/null
 done
