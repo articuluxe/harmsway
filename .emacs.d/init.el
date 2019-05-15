@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-05-15 13:16:52 dan.harms>
+;; Modified Time-stamp: <2019-05-15 22:17:44 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2356,7 +2356,15 @@ Only one letter is shown, the first that applies."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; zoom-window ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package zoom-window
-  :bind ("C-0" . zoom-window-zoom))
+             :bind ("C-0" . zoom-window-zoom))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; gif-screencast ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package gif-screencast
+  :commands (gif-screencast)
+  :config
+  (define-key gif-screencast-mode-map (kbd "<f3>") #'gif-screencast-toggle-pause)
+  (define-key gif-screencast-mode-map (kbd "<f4>") #'gif-screencast-stop)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; perspective ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package perspective

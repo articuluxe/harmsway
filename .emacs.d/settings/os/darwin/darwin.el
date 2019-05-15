@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2019-02-25 07:26:33 dharms>
+;; Modified Time-stamp: <2019-05-15 08:42:26 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -37,5 +37,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; spotlight ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package spotlight :bind ("C-c C-g" . spotlight))
+
+(with-eval-after-load 'gif-screencast
+  (setq gif-screencast-args '("-x"))
+  (setq gif-screencast-capture-format "ppm"))
 
 ;; darwin.el ends here
