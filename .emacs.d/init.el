@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-05-15 22:17:44 dharms>
+;; Modified Time-stamp: <2019-05-16 08:25:29 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3641,6 +3641,9 @@ This may perform related customization."
               (setq-local company-smart-backend 'company-jedi)))
   :config
   (use-package virtualenvwrapper)
+  (use-package pipenv
+    :config
+    (add-hook 'python-mode-hook 'pipenv-mode))
   ;;(setq venv-location "?")
   ;; add jedi if installed
   (when (eq 0 (call-process "python" nil nil nil "-c" "import jedi"))
