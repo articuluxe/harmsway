@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-05-16 08:25:29 dharms>
+;; Modified Time-stamp: <2019-05-16 08:47:23 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2218,6 +2218,13 @@ Only one letter is shown, the first that applies."
   "Add a `merge A and B to C' command to ediff."
   (define-key ediff-mode-map "c" 'ediff-copy-both-to-C))
 (add-hook 'ediff-keymap-setup-hook 'my/add-merge-to-ediff-mode-map)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; diffview ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package diffview
+  :after diff-mode
+  :bind (:map diff-mode-map
+              ("C-c C-v" . diffview-current)
+              ("C-c C-g" . diffview-region)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ediff-trees ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (define-prefix-command 'harmsway-difftrees-keymap)
