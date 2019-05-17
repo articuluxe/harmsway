@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-05-17 08:46:24 dharms>
+;; Modified Time-stamp: <2019-05-17 10:05:34 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3079,6 +3079,7 @@ See `https://github.com/company-mode/company-mode/issues/205'."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; easy-kill ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package easy-kill
+  :disabled
   :config
   (global-set-key [remap kill-ring-save] #'easy-kill)
   (global-set-key [remap mark-sexp] #'easy-mark))
