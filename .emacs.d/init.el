@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-05-16 22:25:59 dharms>
+;; Modified Time-stamp: <2019-05-17 08:46:24 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1536,7 +1536,9 @@ Only one letter is shown, the first that applies."
          ("\e\et" . avy-goto-char-timer)
          ("\e\ew" . avy-goto-word-1)
          ("\e\el" . avy-goto-line)
-         ))
+         )
+  :config
+  (global-set-key "\e\eia" 'avy-resume))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ivy ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package ivy
