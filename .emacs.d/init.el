@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-05-16 08:47:23 dharms>
+;; Modified Time-stamp: <2019-05-16 22:25:59 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3556,6 +3556,7 @@ This may perform related customization."
     (define-key json-mode-map "\C-c\C-f" #'json-navigator-navigate-after-point)
     (define-key json-mode-map "\C-c\C-n" #'json-navigator-navigate-region))
   (use-package json-pointer)
+  (use-package jq-format)
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; logview-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
