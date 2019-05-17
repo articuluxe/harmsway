@@ -1,4 +1,5 @@
 cd src
+git checkout v2.11.4
 autoconf
 ./configure --prefix=$HOME/opt/stow/git
 make
