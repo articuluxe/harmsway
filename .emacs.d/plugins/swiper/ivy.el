@@ -1330,10 +1330,13 @@ will be called for each element of this list.")
                             (setq ivy-marked-candidates
                                   (mapcar (lambda (s) (substring s l))
                                           ivy-marked-candidates))
-                            (if (> (length (help-function-arglist action)) 1)
-                                (funcall action x ivy-marked-candidates)
-                              (dolist (c ivy-marked-candidates)
-                                (funcall action c))))
+                            (let ((arglist (help-function-arglist action)))
+                              (if (and (> (length arglist) 1)
+                                       (member 'marked-candidates arglist))
+                                  (funcall action x ivy-marked-candidates)
+                                (dolist (c ivy-marked-candidates)
+                                  (let ((default-directory (ivy-state-directory ivy-last)))
+                                    (funcall action c))))))
                         (funcall action x))
                    (ivy-recursive-restore))
             (unless (or (eq ivy-exit 'done)
@@ -1788,7 +1791,8 @@ found, it falls back to the key t."
 
 (defun ivy--remove-props (str &rest props)
   "Return STR with text PROPS destructively removed."
-  (remove-list-of-text-properties 0 (length str) props str)
+  (ignore-errors
+    (remove-list-of-text-properties 0 (length str) props str))
   str)
 
 ;;** Entry Point
@@ -2086,7 +2090,9 @@ This is useful for recursive `ivy-read'."
              (setq coll (ivy--buffer-list
                          ""
                          (and ivy-use-virtual-buffers
-                              (member caller '(ivy-switch-buffer counsel-switch-buffer)))
+                              (member caller '(ivy-switch-buffer
+                                               ivy-switch-buffer-other-window
+                                               counsel-switch-buffer)))
                          predicate)))
             (dynamic-collection
              (setq coll (funcall collection ivy-text)))
@@ -3612,7 +3618,10 @@ CANDS is a list of strings."
     (ivy-set-index (max (1- ivy--length) 0)))
   (if (null cands)
       (setf (ivy-state-current ivy-last) "")
-    (setf (ivy-state-current ivy-last) (copy-sequence (nth ivy--index cands)))
+    (let ((cur (nth ivy--index cands)))
+      (setf (ivy-state-current ivy-last) (if (stringp cur)
+                                             (copy-sequence cur)
+                                           cur)))
     (let* ((bnd (ivy--minibuffer-index-bounds
                  ivy--index ivy--length ivy-height))
            (wnd-cands (cl-subseq cands (car bnd) (cadr bnd)))
@@ -3627,9 +3636,11 @@ CANDS is a list of strings."
 (defun ivy--wnd-cands-to-str (wnd-cands)
   (let ((str (concat "\n"
                      (funcall ivy-format-function
-                              (mapcar
-                               #'ivy--format-minibuffer-line
-                               wnd-cands)))))
+                              (condition-case nil
+                                  (mapcar
+                                   #'ivy--format-minibuffer-line
+                                   wnd-cands)
+                                (error wnd-cands))))))
     (put-text-property 0 (length str) 'read-only nil str)
     str))
 
@@ -4570,7 +4581,16 @@ EVENT gives the mouse position."
           (append ivy-marked-candidates (list marked-cand)))))
 
 (defun ivy-mark ()
-  "Mark the selected candidate and move to the next one."
+  "Mark the selected candidate and move to the next one.
+
+In `ivy-call', `ivy-action' will be called in turn for all marked
+candidates.
+
+However, if `ivy-action' has a second (optional) argument called
+`marked-candidates', then `ivy-action' will be called with two
+arguments: the current candidate and the list of all marked
+candidates. This way, `ivy-action' can make decisions based on
+the whole marked list."
   (interactive)
   (unless (ivy--marked-p)
     (ivy--mark (ivy-state-current ivy-last)))

@@ -398,9 +398,9 @@ Update the minibuffer with the amount of lines collected every
   (company-mode 1)
   (unless company-candidates
     (company-complete))
-  (when company-point
-    (setq ivy-completion-beg (- company-point (length company-prefix)))
-    (setq ivy-completion-end company-point)
+  (when company-common
+    (setq ivy-completion-beg (- (point) (length company-common)))
+    (setq ivy-completion-end (point))
     (ivy-read "company cand: " company-candidates
               :action #'ivy-completion-in-region-action
               :unwind #'company-abort
@@ -3580,6 +3580,9 @@ Position of selected mark outside accessible part of buffer")))
 (declare-function package-delete "package")
 (declare-function package-desc-extras "package")
 
+(defvar counsel-package-history nil
+  "History for `counsel-package'.")
+
 (defun counsel--package-candidates ()
   "Return completion alist for `counsel-package'."
   (unless package--initialized
@@ -3612,6 +3615,7 @@ Additional actions:\\<ivy-minibuffer-map>
             (counsel--package-candidates)
             :action #'counsel-package-action
             :require-match t
+            :history 'counsel-package-history
             :caller 'counsel-package))
 
 (cl-pushnew '(counsel-package . "^+") ivy-initial-inputs-alist :key #'car)
@@ -5493,6 +5497,9 @@ specified by the `blddir' property."
               :caller 'counsel-compile-env)))
 
 ;;** `counsel-minor'
+(defvar counsel-minor-history nil
+  "History for `counsel-minor'.")
+
 (defun counsel--minor-candidates ()
   "Return completion alist for `counsel-minor'.
 
@@ -5533,6 +5540,7 @@ Additional actions:\\<ivy-minibuffer-map>
   (ivy-read "Minor modes (enable +mode or disable -mode): "
             (counsel--minor-candidates)
             :require-match t
+            :history 'counsel-minor-history
             :sort t
             :action (lambda (x)
                       (call-interactively (cdr x)))))

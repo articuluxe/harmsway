@@ -157,30 +157,33 @@
 (defun swiper-query-replace ()
   "Start `query-replace' with string to replace from last search string."
   (interactive)
-  (if (null (window-minibuffer-p))
-      (user-error "Should only be called in the minibuffer through `swiper-map'")
-    (swiper--query-replace-setup)
-    (unwind-protect
-         (let* ((enable-recursive-minibuffers t)
-                (from (ivy--regex ivy-text))
-                (to (minibuffer-with-setup-hook
-                        (lambda ()
-                          (setq minibuffer-default
-                                (if (string-match "\\`\\\\_<\\(.*\\)\\\\_>\\'" ivy-text)
-                                    (match-string 1 ivy-text)
-                                  ivy-text)))
-                      (ivy-read
-                       (format "Query replace %s with: " from) nil
-                       :update-fn #'swiper--query-replace-updatefn))))
-           (swiper--cleanup)
-           (ivy-exit-with-action
-            (lambda (_)
-              (with-ivy-window
-                (move-beginning-of-line 1)
-                (let ((inhibit-read-only t))
-                  (perform-replace from to
-                                   t t nil))))))
-      (swiper--query-replace-cleanup))))
+  (cond ((null (window-minibuffer-p))
+         (user-error "Should only be called in the minibuffer through `swiper-map'"))
+        ((string= "" ivy-text)
+         (user-error "Empty input"))
+        (t
+         (swiper--query-replace-setup)
+         (unwind-protect
+              (let* ((enable-recursive-minibuffers t)
+                     (from (ivy--regex ivy-text))
+                     (to (minibuffer-with-setup-hook
+                             (lambda ()
+                               (setq minibuffer-default
+                                     (if (string-match "\\`\\\\_<\\(.*\\)\\\\_>\\'" ivy-text)
+                                         (match-string 1 ivy-text)
+                                       ivy-text)))
+                           (ivy-read
+                            (format "Query replace %s with: " from) nil
+                            :update-fn #'swiper--query-replace-updatefn))))
+                (swiper--cleanup)
+                (ivy-exit-with-action
+                 (lambda (_)
+                   (with-ivy-window
+                     (move-beginning-of-line 1)
+                     (let ((inhibit-read-only t))
+                       (perform-replace from to
+                                        t t nil))))))
+           (swiper--query-replace-cleanup)))))
 
 (defvar inhibit-message)
 
@@ -535,6 +538,8 @@ such as `scroll-conservatively' are set to a high value.")
 (defun swiper--occur-cands (fname cands)
   (when cands
     (with-current-buffer (ivy-state-buffer ivy-last)
+      (when (eq (ivy-state-caller ivy-last) 'swiper-isearch)
+        (setq cands (mapcar #'swiper--line-at-point cands)))
       (let* ((pt-min (point-min))
              (line-delta
               (save-restriction
@@ -639,6 +644,7 @@ When capture groups are present in the input, print them instead of lines."
   (when (setq swiper--reveal-mode
               (bound-and-true-p reveal-mode))
     (reveal-mode -1))
+  (lazy-highlight-cleanup t)
   (when (bound-and-true-p evil-mode)
     (evil-set-jump)))
 
@@ -764,9 +770,44 @@ Matched candidates should have `swiper-invocation-face'."
   "Clean up the overlays."
   (while swiper--overlays
     (delete-overlay (pop swiper--overlays)))
+  ;; force cleanup unless it's :unwind
+  (lazy-highlight-cleanup
+   (if (eq ivy-exit 'done) lazy-highlight-cleanup t))
   (save-excursion
     (goto-char (point-min))
     (isearch-clean-overlays)))
+
+(defun swiper--add-cursor-overlay (wnd)
+  (let ((ov (make-overlay (point) (if (eolp) (point) (1+ (point))))))
+    (if (eolp)
+        (overlay-put ov 'after-string (propertize " " 'face 'ivy-cursor))
+      (overlay-put ov 'face 'ivy-cursor))
+    (overlay-put ov 'window wnd)
+    (push ov swiper--overlays)))
+
+(defun swiper--add-line-overlay (wnd)
+  (let ((beg (if visual-line-mode
+                 (save-excursion
+                   (beginning-of-visual-line)
+                   (point))
+               (line-beginning-position)))
+        (end (if visual-line-mode
+                 (save-excursion
+                   (end-of-visual-line)
+                   (point))
+               (1+ (line-end-position)))))
+    (push (swiper--make-overlay beg end 'swiper-line-face wnd 0)
+          swiper--overlays)))
+
+(defun swiper--make-overlay (beg end face wnd priority)
+  "Create an overlay bound by BEG and END.
+FACE, WND and PRIORITY are properties corresponding to
+the face, window and priority of the overlay."
+  (let ((overlay (make-overlay beg end)))
+    (overlay-put overlay 'face face)
+    (overlay-put overlay 'window wnd)
+    (overlay-put overlay 'priority priority)
+    overlay))
 
 (defun swiper--recenter-p ()
   (or (display-graphic-p)
@@ -838,87 +879,71 @@ Matched candidates should have `swiper-invocation-face'."
 BEG and END, when specified, are the point bounds.
 WND, when specified is the window."
   (setq wnd (or wnd (ivy-state-window ivy-last)))
-  (let ((pt (point))
-        (ov (if visual-line-mode
-                (make-overlay
-                 (save-excursion
-                   (beginning-of-visual-line)
-                   (point))
-                 (save-excursion
-                   (end-of-visual-line)
-                   (point)))
-              (make-overlay
-               (line-beginning-position)
-               (1+ (line-end-position))))))
-    (overlay-put ov 'face 'swiper-line-face)
-    (overlay-put ov 'window wnd)
-    (push ov swiper--overlays)
-    (let* ((wh (window-height))
-           (beg (or beg (save-excursion
-                          (forward-line (- wh))
-                          (point))))
-           (end (or end (save-excursion
-                          (forward-line wh)
-                          (point))))
-           (case-fold-search (ivy--case-fold-p re)))
-      (when (>= (length re) swiper-min-highlight)
-        (save-excursion
-          (goto-char beg)
-          ;; RE can become an invalid regexp
-          (while (and (ignore-errors (re-search-forward re end t))
-                      (> (- (match-end 0) (match-beginning 0)) 0))
-            ;; Don't highlight a match if it spans multiple
-            ;; lines. `count-lines' returns 1 if the match is within a
-            ;; single line, even if it includes the newline, and 2 or
-            ;; greater otherwise. We hope that the inclusion of the
-            ;; newline will not ever be a problem in practice.
-            (when (< (count-lines (match-beginning 0) (match-end 0)) 2)
-              (let ((faces (if (= (match-end 0) pt)
-                               swiper-faces
-                             swiper-background-faces)))
-                (unless (and (consp ivy--old-re)
-                             (null
-                              (save-match-data
-                                (ivy--re-filter ivy--old-re
-                                                (list
-                                                 (buffer-substring-no-properties
-                                                  (line-beginning-position)
-                                                  (line-end-position)))))))
-                  (let ((mb (match-beginning 0))
-                        (me (match-end 0)))
-                    (unless (> (- me mb) 2017)
-                      (swiper--add-overlay mb me
-                                           (if (zerop ivy--subexps)
-                                               (cadr faces)
-                                             (car faces))
-                                           wnd 0))))
-                (let ((i 1)
-                      (j 0))
-                  (while (<= (cl-incf j) ivy--subexps)
-                    (let ((bm (match-beginning j))
-                          (em (match-end j)))
-                      (when (and (integerp em)
-                                 (integerp bm))
-                        (while (and (< j ivy--subexps)
-                                    (integerp (match-beginning (+ j 1)))
-                                    (= em (match-beginning (+ j 1))))
-                          (setq em (match-end (cl-incf j))))
-                        (swiper--add-overlay
-                         bm em
-                         (nth (1+ (mod (+ i 2) (1- (length faces))))
-                              faces)
-                         wnd i)
-                        (cl-incf i)))))))))))))
+  (swiper--add-line-overlay wnd)
+  (let* ((pt (point))
+         (wh (window-height))
+         (beg (or beg (save-excursion
+                        (forward-line (- wh))
+                        (point))))
+         (end (or end (save-excursion
+                        (forward-line wh)
+                        (point))))
+         (case-fold-search (ivy--case-fold-p re)))
+    (when (>= (length re) swiper-min-highlight)
+      (save-excursion
+        (goto-char beg)
+        ;; RE can become an invalid regexp
+        (while (and (ignore-errors (re-search-forward re end t))
+                    (> (- (match-end 0) (match-beginning 0)) 0))
+          ;; Don't highlight a match if it spans multiple
+          ;; lines. `count-lines' returns 1 if the match is within a
+          ;; single line, even if it includes the newline, and 2 or
+          ;; greater otherwise. We hope that the inclusion of the
+          ;; newline will not ever be a problem in practice.
+          (when (< (count-lines (match-beginning 0) (match-end 0)) 2)
+            (let* ((faces (if (= (match-end 0) pt)
+                              swiper-faces
+                            swiper-background-faces))
+                   (adder-fn (lambda (beg end face priority)
+                               (push (swiper--make-overlay beg end face wnd priority)
+                                     isearch-lazy-highlight-overlays))))
+              (unless (and (consp ivy--old-re)
+                           (null
+                            (save-match-data
+                              (ivy--re-filter ivy--old-re
+                                              (list
+                                               (buffer-substring-no-properties
+                                                (line-beginning-position)
+                                                (line-end-position)))))))
+                (swiper--add-properties faces adder-fn)))))))))
 
-(defun swiper--add-overlay (beg end face wnd priority)
-  "Add overlay bound by BEG and END to `swiper--overlays'.
-FACE, WND and PRIORITY are properties corresponding to
-the face, window and priority of the overlay."
-  (let ((overlay (make-overlay beg end)))
-    (push overlay swiper--overlays)
-    (overlay-put overlay 'face face)
-    (overlay-put overlay 'window wnd)
-    (overlay-put overlay 'priority priority)))
+(defun swiper--add-properties (faces adder-fn)
+  (let ((mb (match-beginning 0))
+        (me (match-end 0)))
+    (unless (> (- me mb) 2017)
+      (funcall adder-fn
+               mb me
+               (if (zerop ivy--subexps)
+                   (cadr faces)
+                 (car faces))
+               0)))
+  (let ((i 1)
+        (j 0))
+    (while (<= (cl-incf j) ivy--subexps)
+      (let ((bm (match-beginning j))
+            (em (match-end j)))
+        (when (and (integerp em)
+                   (integerp bm))
+          (while (and (< j ivy--subexps)
+                      (integerp (match-beginning (+ j 1)))
+                      (= em (match-beginning (+ j 1))))
+            (setq em (match-end (cl-incf j))))
+          (funcall adder-fn
+                   bm em
+                   (nth (1+ (mod (+ i 2) (1- (length faces))))
+                        faces)
+                   i)
+          (cl-incf i))))))
 
 (defcustom swiper-action-recenter nil
   "When non-nil, recenter after exiting `swiper'."
@@ -1220,6 +1245,10 @@ come back to the same place as when \"a\" was initially entered.")
 
 (defun swiper-isearch-function (str)
   "Collect STR matches in the current buffer for `swiper-isearch'."
+  (with-ivy-window
+    (swiper--isearch-function str)))
+
+(defun swiper--isearch-function (str)
   (let* ((case-fold-search (ivy--case-fold-p str))
          (re-full (funcall ivy--regex-function str))
          (re (ivy-re-to-str re-full)))
@@ -1231,48 +1260,39 @@ come back to the same place as when \"a\" was initially entered.")
             cands
             idx-found
             (idx 0))
-        (with-ivy-window
-          (save-excursion
-            (goto-char (point-min))
-            (while (re-search-forward re nil t)
-              (unless idx-found
-                (when (or
-                       (eq (match-beginning 0) pt-hist)
-                       (>= (match-beginning 0) (cdar swiper--isearch-point-history)))
-                  (push (cons str (match-beginning 0)) swiper--isearch-point-history)
-                  (setq idx-found idx)))
-              (cl-incf idx)
-              (let ((line (buffer-substring
-                           (line-beginning-position)
-                           (line-end-position)))
-                    (pos (if swiper-goto-start-of-match
-                             (match-beginning 0)
-                           (point))))
-                (put-text-property 0 1 'point pos line)
-                (push line cands)))))
+        (save-excursion
+          (goto-char (point-min))
+          (while (re-search-forward re nil t)
+            (unless idx-found
+              (when (or
+                     (eq (match-beginning 0) pt-hist)
+                     (>= (match-beginning 0) (cdar swiper--isearch-point-history)))
+                (push (cons str (match-beginning 0)) swiper--isearch-point-history)
+                (setq idx-found idx)))
+            (cl-incf idx)
+            (let ((pos (if swiper-goto-start-of-match
+                           (match-beginning 0)
+                         (point))))
+              (push pos cands))))
         (setq ivy--old-re re)
         (when idx-found
           (ivy-set-index idx-found))
         (setq ivy--old-cands (nreverse cands))))))
 
-(defun swiper--add-cursor-overlay ()
-  (let ((ov (make-overlay (point) (if (eolp) (point) (1+ (point))))))
-    (if (eolp)
-        (overlay-put ov 'after-string (propertize " " 'face 'ivy-cursor))
-      (overlay-put ov 'face 'ivy-cursor))
-    (push ov swiper--overlays)))
-
 (defun swiper-isearch-action (x)
   "Move to X for `swiper-isearch'."
-  (if (> (length x) 0)
+  (if (or (numberp x)
+          (and (> (length x) 0)
+               (setq x (get-text-property 0 'point x))))
       (with-ivy-window
-        (goto-char (get-text-property 0 'point x))
+        (goto-char x)
         (isearch-range-invisible (line-beginning-position)
                                  (line-end-position))
         (unless (eq ivy-exit 'done)
           (swiper--cleanup)
           (swiper--add-overlays (ivy--regex ivy-text))
-          (swiper--add-cursor-overlay)))
+          (swiper--add-cursor-overlay
+           (ivy-state-window ivy-last))))
     (swiper--cleanup)))
 
 (defun swiper-isearch-thing-at-point ()
@@ -1314,51 +1334,94 @@ When not running `swiper-isearch' already, start it."
      :background "#1a4b77" :foreground "black"))
   "Face used by `swiper-isearch' for highlighting the current match.")
 
-(defun swiper-isearch-format-function (_cands)
+(defun swiper--isearch-same-line-p (s1 s2)
+  "Check if S1 and S2 are equal and on the same line."
+  (and (equal s1 s2)
+       (<= (count-lines
+            (get-text-property 0 'point s2)
+            (get-text-property 0 'point s1))
+           1)))
+
+(defun swiper-isearch-format-function (cands)
+  (if (numberp (car-safe cands))
+      (swiper--isearch-format
+       ivy--index ivy--length ivy--old-cands
+       ivy--old-re
+       (ivy-state-current ivy-last)
+       (ivy-state-buffer ivy-last))
+    (ivy-format-function-default cands)))
+
+(defun swiper--line-at-point (pt)
+  (save-excursion
+    (goto-char pt)
+    (let ((s (buffer-substring
+              (line-beginning-position)
+              (line-end-position))))
+      (put-text-property 0 1 'point pt s)
+      s)))
+
+(defun swiper--isearch-highlight (str &optional current)
+  (let ((start 0)
+        (i 0))
+    (while (string-match ivy--old-re str start)
+      (setq start (match-end 0))
+      (swiper--add-properties
+       (if (eq current i)
+           swiper-faces
+         swiper-background-faces)
+       (lambda (beg end face _priority)
+         (ivy-add-face-text-property
+          beg end face str)))
+      (cl-incf i))
+    str))
+
+(defun swiper--isearch-format (index length cands regex current buffer)
   (let* ((half-height (/ ivy-height 2))
-         (current (ivy-state-current ivy-last))
-         (i (1- ivy--index))
+         (i (1- index))
          (j 0)
          (len 0)
          res s)
-    (while (and (>= i 0)
-                (string= (nth i ivy--old-cands)
-                         current))
-      (cl-decf i)
-      (cl-incf j))
-    (while (and (>= i 0)
-                (< len half-height))
-      (setq s (nth i ivy--old-cands))
-      (unless (equal s (car res))
-        (push (ivy--format-minibuffer-line s) res)
-        (cl-incf len))
-      (cl-decf i))
-    (setq res (nreverse res))
-    (let ((current-str
-           (ivy--add-face
-            (ivy--format-minibuffer-line current)
-            'ivy-current-match))
-          (start 0))
-      (dotimes (_ (1+ j))
-        (string-match ivy--old-re current-str start)
-        (setq start (match-end 0)))
-      (ivy-add-face-text-property
-       (match-beginning 0) (match-end 0)
-       'swiper-isearch-current-match current-str)
-      (push current-str res))
-    (cl-incf len)
-    (setq i (1+ ivy--index))
-    (while (and (< i ivy--length)
-                (string= (nth i ivy--old-cands) current))
-      (cl-incf i))
-    (while (and (< i ivy--length)
-                (< len ivy-height))
-      (setq s (nth i ivy--old-cands))
-      (unless (equal s (car res))
-        (push (ivy--format-minibuffer-line s) res)
-        (cl-incf len))
-      (cl-incf i))
-    (mapconcat #'identity (nreverse res) "\n")))
+    (with-current-buffer buffer
+      (while (and (>= i 0)
+                  (swiper--isearch-same-line-p
+                   (swiper--line-at-point (nth i cands))
+                   (swiper--line-at-point current)))
+        (cl-decf i)
+        (cl-incf j))
+      (while (and (>= i 0)
+                  (< len half-height))
+        (setq s (swiper--line-at-point (nth i cands)))
+        (unless (swiper--isearch-same-line-p s (car res))
+          (push (swiper--isearch-highlight s) res)
+          (cl-incf len))
+        (cl-decf i))
+      (setq res (nreverse res))
+      (let ((current-str
+             (swiper--line-at-point current))
+            (start 0))
+        (dotimes (_ (1+ j))
+          (string-match regex current-str start)
+          (setq start (match-end 0)))
+        (swiper--isearch-highlight current-str j)
+        (ivy-add-face-text-property
+         0 (length current-str)
+         'swiper-line-face current-str t)
+        (push current-str res))
+      (cl-incf len)
+      (setq i (1+ index))
+      (while (and (< i length)
+                  (swiper--isearch-same-line-p
+                   (swiper--line-at-point (nth i cands))
+                   (swiper--line-at-point current)))
+        (cl-incf i))
+      (while (and (< i length)
+                  (< len ivy-height))
+        (setq s (swiper--line-at-point (nth i cands)))
+        (unless (swiper--isearch-same-line-p s (car res))
+          (push (swiper--isearch-highlight s) res)
+          (cl-incf len))
+        (cl-incf i))
+      (mapconcat #'identity (nreverse res) "\n"))))
 
 ;;;###autoload
 (defun swiper-isearch (&optional initial-input)
