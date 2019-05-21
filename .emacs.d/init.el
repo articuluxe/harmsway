@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-05-23 08:03:41 dharms>
+;; Modified Time-stamp: <2019-05-23 08:40:18 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1168,6 +1168,9 @@ Only one letter is shown, the first that applies."
         (remove 'ansi-color-process-output comint-output-filter-functions))
   (add-hook 'shell-mode-hook
             (lambda ()
+              (font-lock-mode -1)       ;disable font lock, prevent re-enabling
+              (make-local-variable 'font-lock-function)
+              (setq font-lock-function (lambda (_) nil))
               (add-hook 'comint-preoutput-filter-functions
                         'xterm-color-filter nil t)))
   (add-hook 'compilation-start-hook
