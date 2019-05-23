@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-05-17 10:05:34 dan.harms>
+;; Modified Time-stamp: <2019-05-23 08:03:41 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2890,7 +2890,7 @@ See `https://github.com/company-mode/company-mode/issues/205'."
   (setq flycheck-indication-mode nil)
   (setq flycheck-global-modes
         '(emacs-lisp-mode python-mode dart-mode sh-mode c++-mode json-mode
-                          js2-mode))
+                          js2-mode go-mode))
   (setq-default flycheck-emacs-lisp-load-path 'inherit)
   (setq-default flycheck-shellcheck-follow-sources nil)
   (use-package flycheck-package :config (flycheck-package-setup))
@@ -3459,6 +3459,13 @@ This may perform related customization."
   :mode ("/\\.gitattributes\\'"
          "/info/attributes\\'"
          "/git/attributes\\'"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; go ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package go-mode :mode "\\.go$"
+  :init
+  (add-hook 'go-mode-hook #'go-eldoc-setup))
+(use-package go-guru :after go-mode)
+(use-package go-eldoc :after go-mode)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; groovy ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package groovy-mode :interpreter "groovy"
