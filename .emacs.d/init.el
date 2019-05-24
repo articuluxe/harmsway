@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-05-23 08:40:42 dan.harms>
+;; Modified Time-stamp: <2019-05-24 08:46:14 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2940,7 +2940,7 @@ See `https://github.com/company-mode/company-mode/issues/205'."
     "Background face used for flycheck posframe popups."
     :group 'flycheck-posframe)
   (defface flycheck-posframe-face
-    '((t (:foreground "black")))
+    '((t (:foreground "black" :background "yellow")))
     "Face used for flycheck posframe popups."
     :group 'flycheck-posframe)
   :config
