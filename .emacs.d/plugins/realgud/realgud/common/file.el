@@ -25,7 +25,7 @@
 (declare-function buffer-killed?        'helper)
 (declare-function compilation-find-file 'compile)
 (declare-function realgud-cmdbuf-info-ignore-re-file-list  'realgud-buffer-command)
-(declare-function realgud-cmdbuf-info-ignore-re-file-list= 'realgud-buffer-command)
+(declare-function realgud-cmdbuf-info-source-path=         'realgud-buffer-command)
 (declare-function realgud-cmdbuf-mutex                     'realgud-buffer-command)
 (declare-function realgud-cmdbuf-filename-remap-alist      'realgud-buffer-command)
 (declare-function realgud-cmdbuf-filename-remap-alist=     'realgud-buffer-command)
@@ -191,5 +191,20 @@ problem as best as we can determine."
 	(if filename
 	    (format "File named `%s' not readable" filename))))
   )
+
+;; FIXME: should allow column number to be passed in.
+(defun realgud:file-remove-ignore(path-to-stop-ignoring)
+  "Remove `path-to-stop-ignoring' from the list of paths which
+are ignored in debugger location tracking. You might do this if you accidentllay
+added a a path for ignoring by mistake."
+  (interactive
+   (list (completing-read "File name to stop ignoring: "
+		    (realgud-cmdbuf-ignore-re-path-list (current-buffer))
+		    nil t)))
+  (when (member path-to-stop-ignoring (realgud-cmdbuf-ignore-re-file-list (current-buffer)))
+    (realgud-cmdbuf-info-ignore-re-path-list=
+     (delete path-to-stop-ignoring (realgud-cmdbuf-ignore-re-file-list (current-buffer)))))
+  )
+
 
 (provide-me "realgud-")

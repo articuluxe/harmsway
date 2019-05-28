@@ -82,8 +82,9 @@
   treemacs-find-in-dom
   treemacs-get-position-of
   treemacs-dom-node->children
-  treemacs-dom-node->key
   treemacs-dom-node->closed
+  treemacs-dom-node->key
+  treemacs-dom-node->parent
   treemacs-dom-node->position
   treemacs-project-p
   treemacs--on-rename
@@ -861,7 +862,8 @@ failed.  PROJECT is used for determining whether Git actions are appropriate."
                             (treemacs-dom-node->position dom-node)
                           (treemacs-project->position project)))
                    ;; do the rest manually
-                   (search-result (if manual-parts (treemacs--follow-path-elements btn manual-parts) btn)))
+                   (search-result (if manual-parts (treemacs--follow-path-elements btn manual-parts)
+                                    (goto-char btn))))
               (if (eq 'follow-failed search-result)
                   (prog1 nil
                     (goto-char start))
@@ -877,18 +879,12 @@ Unlike `treemacs-find-node' this will not expand other nodes in the view, but
 only look among those currently visible. The result however is the same: either
 a marker ponting to the found node or nil.
 
+Unlike `treemacs-find-node', this function does not go to the node.
+
 PATH: Node Path"
-  (-let [node (treemacs-find-in-dom path)]
-    ;; just finding a node in the dom is far from enough to be sure it is visible
-    ;; it can still be closed with children, or be one of the children of a closed node
-    (if (and node
-             (treemacs-dom-node->position node)
-             (null (treemacs-dom-node->closed node)))
-        (treemacs-dom-node->position node)
-      (-when-let (parent (treemacs-find-in-dom (treemacs--parent path)))
-        (when (treemacs-dom-node->position parent)
-          (treemacs-first-child-node-where (treemacs-dom-node->position parent)
-            (treemacs-is-path path :same-as (treemacs-button-get child-btn :path))))))))
+  (when (treemacs-is-path-visible? path)
+    (save-excursion
+      (treemacs-find-node path))))
 
 (defun treemacs-find-node (path &optional project)
   "Find position of node identified by PATH under PROJECT in the current buffer.
@@ -920,15 +916,11 @@ successful.
 
 PATH: Filepath | Node Path
 PROJECT Project Struct"
-  (cond
-   ((stringp path)
-    (when (file-exists-p path) (treemacs-find-file-node path project)))
-   ((eq :custom (car path))
-    (treemacs--find-custom-top-level-node path))
-   ((stringp (car path))
-    (treemacs--find-custom-dir-node path))
-   (t
-    (treemacs--find-custom-project-node path))))
+  (treemacs-with-path path
+    :file-action (when (file-exists-p path) (treemacs-find-file-node path project))
+    :top-level-extension-action (treemacs--find-custom-top-level-node path)
+    :directory-extension-action (treemacs--find-custom-dir-node path)
+    :project-extension-action (treemacs--find-custom-project-node path)))
 
 (defun treemacs-goto-node (path &optional project)
   "Move point to button identified by PATH under PROJECT in the current buffer.
@@ -937,15 +929,11 @@ point.
 
 PATH: Filepath | Node Path
 PROJECT Project Struct"
-  (cond
-   ((stringp path)
-    (when (file-exists-p path) (treemacs-goto-file-node path project)))
-   ((eq :custom (car path))
-    (treemacs--goto-custom-top-level-node path))
-   ((stringp (car path))
-    (treemacs--goto-custom-dir-node path))
-   (t
-    (treemacs--goto-custom-project-node path))))
+  (treemacs-with-path path
+    :file-action (when (file-exists-p path) (treemacs-goto-file-node path project))
+    :top-level-extension-action (treemacs--goto-custom-top-level-node path)
+    :directory-extension-action (treemacs--goto-custom-dir-node path)
+    :project-extension-action (treemacs--goto-custom-project-node path)))
 
 (defun treemacs-find-file-node (path &optional project)
   "Find position of node identified by PATH under PROJECT in the current buffer.
@@ -986,7 +974,9 @@ PROJECT: Project Struct"
                     (treemacs-project->position project)
                   (treemacs-dom-node->position dom-node)))
            ;; do the rest manually - at least the actual file to move to is still left in manual-parts
-           (search-result (if manual-parts (save-match-data (treemacs--follow-each-dir btn manual-parts project)) btn)))
+           (search-result (if manual-parts (save-match-data
+                                             (treemacs--follow-each-dir btn manual-parts project))
+                            (goto-char btn))))
       (if (eq 'follow-failed search-result)
           (prog1 nil
             (goto-char start))
@@ -1130,11 +1120,15 @@ Valid states are 'visible, 'exists and 'none."
   (declare (pure t) (side-effect-free t))
   (inline-letevals (path)
     (inline-quote
-     (if (treemacs-is-path ,path :same-as "/")
-         ,path
-       (-> ,path
-           (file-name-directory)
-           (treemacs--unslash))))))
+     (treemacs-with-path ,path
+       :file-action (if (treemacs-is-path ,path :same-as "/")
+                        ,path
+                      (-> ,path
+                          (file-name-directory)
+                          (treemacs--unslash)))
+       :top-level-extension-action (when (> (length ,path) 2) (butlast ,path))
+       :directory-extension-action (if (> (length ,path) 2) (butlast ,path) (car ,path))
+       :project-extension-action (if (> (length ,path) 2) (butlast ,path) (treemacs-project->path (car ,path)))))))
 
 (defun treemacs--evade-image ()
   "The cursor visibly blinks when on top of an icon.
@@ -1142,7 +1136,7 @@ It needs to be moved aside in a way that works for all indent depths and
 `treemacs-indentation' settings."
   (when (eq major-mode 'treemacs-mode)
     (beginning-of-line)
-    (when (get-text-property (point) 'display)
+    (when (eq 'image (car (get-text-property (point) 'display)))
       (forward-char 1))))
 
 (defun treemacs--read-first-project-path ()
@@ -1269,11 +1263,29 @@ GOTO-TAG: Bool"
 
 (defun treemacs-is-path-visible? (path)
   "Return whether a node for PATH is displayed in the current buffer.
-The return value, if PATH is visible, is either the dom node of PATH - if it
-is an expanded directory - or the dom node of its parent - if it is a dir or
-file below an expanded directory."
-  (or (treemacs-find-in-dom path)
-      (treemacs-find-in-dom (treemacs--parent path))))
+The return value is a boolean indicating whether the node is visible."
+  (let* ((current-node (treemacs-find-in-dom path))
+         (current-parent (treemacs-find-in-dom (treemacs--parent path))))
+    (cond
+     ;; All parents must be expanded.
+     (current-parent
+      (not (or (treemacs-dom-node->closed current-parent)
+               (-some #'treemacs-dom-node->closed
+                      (treemacs-dom-node->all-parents current-parent)))))
+     ;; Root-level node in DOM -> must be visible.
+     (current-node t)
+     ;; The node may be a collapsed project.
+     ((stringp path)
+      (->> (treemacs-current-workspace)
+           (treemacs-workspace->projects)
+           (--some-p (treemacs-is-path path :same-as (treemacs-project->path it)))))
+
+     ;; The node may still be a non-variadic top-level extension.
+     ;; Check the length of path to avoid false positives for children of
+     ;; top-level extension nodes
+     ((and (eq :custom (car path)) (= 2 (length path)))
+      (when (treemacs-project->position (cadr path)) t)))))
+
 
 (defun treemacs--copy-or-move (action)
   "Internal implementation for copying and moving files.

@@ -384,12 +384,11 @@ Update the minibuffer with the amount of lines collected every
 
 ;;** `counsel-company'
 (defvar company-candidates)
-(defvar company-point)
+(defvar company-common)
 (defvar company-prefix)
+(declare-function company-abort "ext:company")
 (declare-function company-complete "ext:company")
 (declare-function company-mode "ext:company")
-(declare-function company-complete-common "ext:company")
-(declare-function company-abort "ext:company")
 
 ;;;###autoload
 (defun counsel-company ()
@@ -398,13 +397,17 @@ Update the minibuffer with the amount of lines collected every
   (company-mode 1)
   (unless company-candidates
     (company-complete))
-  (when company-common
-    (setq ivy-completion-beg (- (point) (length company-common)))
-    (setq ivy-completion-end (point))
-    (ivy-read "company cand: " company-candidates
-              :action #'ivy-completion-in-region-action
-              :unwind #'company-abort
-              :caller 'counsel-company)))
+  (let ((len (cond (company-common
+                    (length company-common))
+                   (company-prefix
+                    (length company-prefix)))))
+    (when len
+      (setq ivy-completion-beg (- (point) len))
+      (setq ivy-completion-end (point))
+      (ivy-read "Candidate: " company-candidates
+                :action #'ivy-completion-in-region-action
+                :unwind #'company-abort
+                :caller 'counsel-company))))
 
 ;;** `counsel-irony'
 (declare-function irony-completion-candidates-async "ext:irony-completion")
@@ -3897,6 +3900,58 @@ Note: Duplicate elements of `kill-ring' are always deleted."
  '(("d" counsel-yank-pop-action-remove "delete")
    ("r" counsel-yank-pop-action-rotate "rotate")))
 
+;;** `counsel-register'
+(defvar counsel-register-actions
+  '(("\\`buffer position" . jump-to-register)
+    ("\\`text" . insert-register)
+    ("\\`rectangle" . insert-register)
+    ("\\`window configuration" . jump-to-register)
+    ("\\`frame configuration" . jump-to-register)
+    ("\\`[-+]?[0-9]+\\(?:\\.[0-9]\\)?\\'" . insert-register)
+    ("\\`the file" . jump-to-register)
+    ("\\`keyboard macro" . jump-to-register)
+    ("\\`file-query" . jump-to-register))
+  "Alist of (REGEXP . FUNCTION) pairs for `counsel-register'.
+Selecting a register whose description matches REGEXP specifies
+FUNCTION as the action to take on the register.")
+
+(defvar counsel-register-history nil
+  "History for `counsel-register'.")
+
+(defun counsel-register-action (register)
+  "Default action for `counsel-register'.
+
+Call a function on REGISTER.  The function is determined by
+matching the register's value description against a regexp in
+`counsel-register-actions'."
+  (let* ((val (get-text-property 0 'register register))
+         (desc (register-describe-oneline val))
+         (action (cdr (cl-assoc-if (lambda (re) (string-match-p re desc))
+                                   counsel-register-actions))))
+    (if action
+        (funcall action val)
+      (error "No action was found for register %s"
+             (single-key-description val)))))
+
+;;;###autoload
+(defun counsel-register ()
+  "Interactively choose a register."
+  (interactive)
+  (ivy-read "Register: "
+            (cl-mapcan
+             (lambda (reg)
+               (let ((s (funcall register-preview-function reg)))
+                 (setq s (substring s 0 (string-match-p "[ \t\n\r]+\\'" s)))
+                 (unless (string= s "")
+                   (put-text-property 0 1 'register (car reg) s)
+                   (list s))))
+             register-alist)
+            :require-match t
+            :sort t
+            :history 'counsel-register-history
+            :action #'counsel-register-action
+            :caller 'counsel-register))
+
 ;;** `counsel-evil-registers'
 (make-obsolete-variable
  'counsel-evil-registers-height
@@ -4573,6 +4628,14 @@ COUNT defaults to 1."
                         (insert-char (get-text-property 0 'code name) count)
                         (setq ivy-completion-end (point))))
             :caller 'counsel-unicode-char))
+
+(defun counsel-unicode-copy (name)
+  "Ivy action to copy the unicode from NAME to the kill ring."
+  (kill-new (char-to-string (get-text-property 0 'code name))))
+
+(ivy-set-actions
+ 'counsel-unicode-char
+ '(("w" counsel-unicode-copy "copy")))
 
 ;;** `counsel-colors'
 (defun counsel-colors-action-insert-hex (color)
@@ -5359,11 +5422,18 @@ subdirectories that builds may be invoked in."
            counsel-compile-build-directories))
 
 (defun counsel--get-build-subdirs (blddir)
-  "Return all subdirs of BLDDIR sorted by modification time."
-  (mapcar #'car (sort (directory-files-and-attributes
-                       blddir t directory-files-no-dot-files-regexp t)
-                      (lambda (x y)
-                        (time-less-p (nth 6 y) (nth 6 x))))))
+  "Return all subdirs under BLDDIR sorted by modification time.
+If there are non-directory files in BLDDIR, include BLDDIR in the
+list as it may also be a build directory."
+  (let* ((files (directory-files-and-attributes
+                 blddir t directory-files-no-dot-files-regexp t))
+         (dirs (cl-remove-if-not #'cl-second files)))
+    ;; Any non-dir files?
+    (when (< (length dirs)
+             (length files))
+      (push (cons blddir (file-attributes blddir)) dirs))
+    (mapcar #'car (sort dirs (lambda (x y)
+                               (time-less-p (nth 6 y) (nth 6 x)))))))
 
 (defun counsel-compile-get-build-directories (&optional dir)
   "Return a list of potential build directories."
@@ -5393,7 +5463,7 @@ subdirectories that builds may be invoked in."
         (when (or (and srcdir (file-in-directory-p srcdir root))
                   (and blddir (file-in-directory-p blddir root)))
           (push item history))))
-    history))
+    (nreverse history)))
 
 (defun counsel--get-compile-candidates (&optional dir)
   "Return the list of compile commands.
@@ -5427,6 +5497,12 @@ This is determined by `counsel-compile-local-builds', which see."
                          `(srcdir ,srcdir blddir ,blddir bldenv ,bldenv) cmd)
     (add-to-history 'counsel-compile-history cmd)))
 
+(defvar counsel-compile--current-build-dir nil
+  "Tracks the last directory `counsel-compile' was called with.
+
+This state allows us to set it correctly if the user has manually
+edited the command, thus losing our embedded state.")
+
 (defun counsel-compile--action (cmd)
   "Process CMD to call `compile'.
 
@@ -5440,7 +5516,9 @@ specified by the `blddir' property."
       (when (get-char-property 0 'cmd cmd)
         (setq cmd (substring-no-properties
                    cmd 0 (next-single-property-change 0 'cmd cmd))))
-      (let ((default-directory (or blddir default-directory))
+      (let ((default-directory (or blddir
+                                   counsel-compile--current-build-dir
+                                   default-directory))
             (compilation-environment bldenv))
         ;; No need to specify `:history' because of this hook.
         (add-hook 'compilation-start-hook #'counsel-compile--update-history)
@@ -5452,6 +5530,7 @@ specified by the `blddir' property."
 (defun counsel-compile (&optional dir)
   "Call `compile' completing with smart suggestions, optionally for DIR."
   (interactive)
+  (setq counsel-compile--current-build-dir (or dir default-directory))
   (ivy-read "Compile command: "
             (counsel--get-compile-candidates dir)
             :action #'counsel-compile--action

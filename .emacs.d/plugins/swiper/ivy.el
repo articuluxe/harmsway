@@ -450,7 +450,8 @@ action functions.")
   directory
   caller
   current
-  def)
+  def
+  multi-action)
 
 (defvar ivy-last (make-ivy-state)
   "The last parameters passed to `ivy-read'.
@@ -826,7 +827,8 @@ selection, non-nil otherwise."
               (t
                (message "")
                (setcar actions (1+ action-idx))
-               (ivy-set-action actions)))))))
+               (ivy-set-action actions))))))
+  (ivy-shrink-after-dispatching))
 
 (defun ivy-shrink-after-dispatching ()
   "Shrink the window after dispatching when action list is too large."
@@ -1326,17 +1328,17 @@ will be called for each element of this list.")
           (set-buffer (ivy-state-buffer ivy-last))
           (prog1 (unwind-protect
                       (if ivy-marked-candidates
-                          (let ((l (length ivy-mark-prefix)))
+                          (let ((prefix-len (length ivy-mark-prefix)))
                             (setq ivy-marked-candidates
-                                  (mapcar (lambda (s) (substring s l))
+                                  (mapcar (lambda (s) (substring s prefix-len))
                                           ivy-marked-candidates))
-                            (let ((arglist (help-function-arglist action)))
-                              (if (and (> (length arglist) 1)
-                                       (member 'marked-candidates arglist))
-                                  (funcall action x ivy-marked-candidates)
-                                (dolist (c ivy-marked-candidates)
-                                  (let ((default-directory (ivy-state-directory ivy-last)))
-                                    (funcall action c))))))
+                            (if (ivy-state-multi-action ivy-last)
+                                (funcall
+                                 (ivy-state-multi-action ivy-last)
+                                 ivy-marked-candidates)
+                              (dolist (c ivy-marked-candidates)
+                                (let ((default-directory (ivy-state-directory ivy-last)))
+                                  (funcall action c)))))
                         (funcall action x))
                    (ivy-recursive-restore))
             (unless (or (eq ivy-exit 'done)
@@ -1801,7 +1803,8 @@ found, it falls back to the key t."
                     &key
                       predicate require-match initial-input
                       history preselect def keymap update-fn sort
-                      action unwind re-builder matcher
+                      action multi-action
+                      unwind re-builder matcher
                       dynamic-collection caller)
   "Read a string in the minibuffer, with completion.
 
@@ -1842,6 +1845,11 @@ to sort candidates before displaying them.
 
 ACTION is a function to call after selecting a candidate.
 It takes the candidate, which is a string, as its only argument.
+
+MULTI-ACTION, when non-nil, is called instead of ACTION when
+there are marked candidates. It takes the list of candidates as
+its only argument. When it's nil, ACTION is called on each marked
+candidate.
 
 UNWIND is a function of no arguments to call before exiting.
 
@@ -1921,6 +1929,7 @@ customizations apply to the current completion session."
                         update-fn)
            :sort sort
            :action action
+           :multi-action multi-action
            :frame (selected-frame)
            :window (selected-window)
            :buffer (current-buffer)
@@ -3247,6 +3256,12 @@ before substring matches."
        (nreverse res-virtual-prefix)
        (nreverse res-virtual-noprefix)))))
 
+(defvar ivy-flx-limit 200
+  "Used to conditionally turn off flx sorting.
+
+When the amount of matching candidates exceeds this limit, then
+no sorting is done.")
+
 (defun ivy--recompute-index (name re-str cands)
   "Recompute index of selected candidate matching NAME.
 RE-STR is the regexp, CANDS are the current candidates."
@@ -3277,8 +3292,8 @@ RE-STR is the regexp, CANDS are the current candidates."
                (not (eq caller 'swiper))
                (not (and ivy--flx-featurep
                          (eq ivy--regex-function 'ivy--regex-fuzzy)
-                         ;; Limit to 200 candidates
-                         (null (nthcdr 200 cands))))
+                         ;; Limit to configured number of candidates
+                         (null (nthcdr ivy-flx-limit cands))))
                ;; If there was a preselected candidate, don't try to
                ;; keep it selected even if the regexp still matches it.
                ;; See issue #1563.  See also `ivy--preselect-index',
@@ -3367,12 +3382,6 @@ This function serves as a fallback when nothing else is available."
            (const ivy-minibuffer-match-face-3)
            (const ivy-minibuffer-match-face-4)
            (face :tag "Other face"))))
-
-(defvar ivy-flx-limit 200
-  "Used to conditionally turn off flx sorting.
-
-When the amount of matching candidates exceeds this limit, then
-no sorting is done.")
 
 (defun ivy--minibuffer-face (n)
   "Return Nth face from `ivy-minibuffer-faces'.
@@ -3542,18 +3551,25 @@ Note: The usual last two arguments are flipped for convenience.")
         (while (and (string-match re str start)
                     (> (- (match-end 0) (match-beginning 0)) 0))
           (setq start (match-end 0))
-          (let ((i 0))
+          (let ((i 0)
+                (n 0)
+                prev)
             (while (<= i ivy--subexps)
-              (let ((face
-                     (cond ((zerop ivy--subexps)
-                            (cadr ivy-minibuffer-faces))
-                           ((zerop i)
-                            (car ivy-minibuffer-faces))
-                           (t
-                            (ivy--minibuffer-face i)))))
-                (ivy-add-face-text-property
-                 (match-beginning i) (match-end i)
-                 face str))
+              (let ((beg (match-beginning i))
+                    (end (match-end i)))
+                (when (and beg end)
+                  (unless (and prev (= prev beg))
+                    (cl-incf n))
+                  (let ((face
+                         (cond ((zerop ivy--subexps)
+                                (cadr ivy-minibuffer-faces))
+                               ((zerop i)
+                                (car ivy-minibuffer-faces))
+                               (t
+                                (ivy--minibuffer-face n)))))
+                    (ivy-add-face-text-property beg end face str))
+                  (unless (zerop i)
+                    (setq prev end))))
               (cl-incf i)))))))
   str)
 
@@ -4372,21 +4388,23 @@ When `ivy-calling' isn't nil, call `ivy-occur-press'."
 (defun ivy--occur-insert-lines (cands)
   "Insert CANDS into `ivy-occur' buffer."
   (font-lock-mode -1)
-  (dolist (str cands)
-    (setq str (ivy--highlight-fuzzy (copy-sequence str)))
+  (dolist (cand cands)
+    (setq cand
+          (if (string-match "\\`\\(.*:[0-9]+:\\)\\(.*\\)\\'" cand)
+              (let ((file-and-line (match-string 1 cand))
+                    (grep-line (match-string 2 cand)))
+                (concat
+                 (propertize file-and-line 'face 'ivy-grep-info)
+                 (ivy--highlight-fuzzy grep-line)))
+            (ivy--highlight-fuzzy cand)))
     (add-text-properties
-     0 (length str)
+     0 (length cand)
      '(mouse-face
        highlight
        help-echo "mouse-1: call ivy-action")
-     str)
-    (insert (if (string-match-p "\\`.[/\\]" str) "" "    ")
-            str ?\n))
-  (goto-char (point-min))
-  (forward-line 4)
-  (while (re-search-forward "^.*:[[:digit:]]+:" nil t)
-    (ivy-add-face-text-property
-     (match-beginning 0) (match-end 0) 'ivy-grep-info nil t)))
+     cand)
+    (insert (if (string-match-p "\\`.[/\\]" cand) "" "    ")
+            cand ?\n)))
 
 (defun ivy-occur ()
   "Stop completion and put the current candidates into a new buffer.
@@ -4583,14 +4601,12 @@ EVENT gives the mouse position."
 (defun ivy-mark ()
   "Mark the selected candidate and move to the next one.
 
-In `ivy-call', `ivy-action' will be called in turn for all marked
+In `ivy-call', :action will be called in turn for all marked
 candidates.
 
-However, if `ivy-action' has a second (optional) argument called
-`marked-candidates', then `ivy-action' will be called with two
-arguments: the current candidate and the list of all marked
-candidates. This way, `ivy-action' can make decisions based on
-the whole marked list."
+However, if :multi-action was supplied to `ivy-read', then it
+will be called with `ivy-marked-candidates'. This way, it can
+make decisions based on the whole marked list."
   (interactive)
   (unless (ivy--marked-p)
     (ivy--mark (ivy-state-current ivy-last)))

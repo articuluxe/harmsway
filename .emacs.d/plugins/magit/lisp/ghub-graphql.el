@@ -279,7 +279,7 @@ See Info node `(ghub)GraphQL Support'."
           (when (vectorp node)
             (let ((alist (cl-coerce node 'list))
                   vars)
-              (when (assq :edges alist)
+              (when (cadr (assq :edges alist))
                 (push (list 'first 100) vars)
                 (setq loc  (treepy-up loc))
                 (setq node (treepy-node loc))
@@ -301,7 +301,7 @@ See Info node `(ghub)GraphQL Support'."
                                    (nth 2 elt)) variables))
                       ((= (length elt) 2)
                        (push elt vars))))
-              (setq loc (treepy-replace loc (cl-coerce vars 'vector))))))
+              (setq loc (treepy-replace loc (vconcat (nreverse vars)))))))
         (if (treepy-end-p loc)
             (let ((node (copy-sequence (treepy-node loc))))
               (when variables
