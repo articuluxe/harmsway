@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-05-24 08:46:14 dharms>
+;; Modified Time-stamp: <2019-05-28 15:07:54 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1156,6 +1156,11 @@ Only one letter is shown, the first that applies."
 (setq comint-terminfo-terminal "ansi")
 (add-hook 'comint-output-filter-functions 'comint-truncate-buffer)
 (setq comint-buffer-maximum-size 1024)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; vterm ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package vterm
+  :commands vterm
+  :bind ("C-c 0v" . vterm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; shx ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package shx :config (shx-global-mode 1))
