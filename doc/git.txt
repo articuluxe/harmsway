@@ -179,3 +179,5 @@ git am some.patch
 git bundle create repo.bundle master
 # use a bundle
 git clone repo.bundle -b master repo
+# archive a remote repo as a tarball, extract in place
+git archive --format=tar --prefix=DEST/ --remote=NAME@git.drupal.org:sandbox/USER/proj.git BRANCH | tar -xf -

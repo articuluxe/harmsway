@@ -3,6 +3,15 @@
 #include <limits>
 #include <sstream>
 
+/** Algorithm test(a,b)
+ * Input a and b
+ * Output does x
+ * a <- 1
+ * if b = 0 then
+ *   doSomething(a,b)
+ * return a + b
+ */
+
 template <typename T>
 static std::string print_bits(T t)
 {
