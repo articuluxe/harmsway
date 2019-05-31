@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-05-31 06:57:05 dharms>
+;; Modified Time-stamp: <2019-05-31 13:02:40 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2528,6 +2528,11 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 (defvar rtags-exec (executable-find "rdm"))
 (use-package rtags
   :disabled
+  )
+
+(use-package eglot
+  :commands eglot
+  :bind ("C-c '" . eglot)
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; flyspell ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
