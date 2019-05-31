@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-05-28 15:07:54 dan.harms>
+;; Modified Time-stamp: <2019-05-31 06:57:05 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1160,7 +1160,14 @@ Only one letter is shown, the first that applies."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; vterm ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package vterm
   :commands vterm
-  :bind ("C-c 0v" . vterm))
+  :bind ("C-c 0vv" . vterm))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; vterm-toggle ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package vterm-toggle
+  :commands vterm-toggle
+  :bind (("C-c 0vt" . vterm-toggle)
+         ("C-c 0vn" . vterm-toggle-forward)
+         ("C-c 0vp" . vterm-toggle-backward)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; shx ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package shx :config (shx-global-mode 1))
