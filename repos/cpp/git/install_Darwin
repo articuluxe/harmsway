@@ -1,0 +1,8 @@
+dir=$PWD
+./install
+cd $dir
+cd src/contrib/credential/osxkeychain
+make
+echo "Installing git-credential-osxkeychain"
+cp git-credential-osxkeychain $HOME/opt/bin
+stat $HOME/opt/bin/git-credential-osxkeychain
