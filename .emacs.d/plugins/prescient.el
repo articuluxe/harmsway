@@ -218,7 +218,7 @@ as a sub-query delimiter."
       ;; Return an empty subquery list.
       (unless (<= (length query) 1)
         ;; Otherwise, the number of spaces should be reduced by one.
-        (substring query 1))
+        (list (substring query 1)))
     ;; Trim off a single space from the beginning and end, if present.
     ;; Otherwise, they would generate empty splits and cause us to
     ;; match literal whitespace.
@@ -282,6 +282,30 @@ capture groups matching \"f\" and \"a\"."
              query
              "\\W*"))
 
+(defun prescient--fuzzy-regexp (query &optional with-groups)
+  "Return a regexp for fuzzy-matching QUERY.
+This means that the regexp will only match a given string if
+all characters in QUERY are present anywhere in the string in
+the specified order.
+
+If WITH-GROUPS is non-nil, enclose the parts of the regexp that
+match the QUERY characters in capture groups, so that the match
+data can be used to highlight the matched substrings."
+  (let ((chars (string-to-list query)))
+    (concat
+     (prescient--with-group
+      (regexp-quote
+       (char-to-string (car chars)))
+      with-groups)
+     (mapconcat
+      (lambda (char)
+        (format "[^%c\n]*%s" char
+                (prescient--with-group
+                 (regexp-quote
+                  (char-to-string char))
+                 with-groups)))
+      (cdr chars) ""))))
+
 ;; Remove this and do not document further changes in CHANGELOG after
 ;; six months or two releases, whichever comes later.
 (define-obsolete-function-alias
@@ -319,13 +343,7 @@ enclose literal substrings with capture groups."
                (string-match-p subquery "")
                subquery))
             (`fuzzy
-             (mapconcat
-              (lambda (char)
-                (prescient--with-group
-                 (regexp-quote
-                  (char-to-string char))
-                 with-groups))
-              subquery ".*"))))
+             (prescient--fuzzy-regexp subquery with-groups))))
         (pcase prescient-filter-method
           ;; We support `literal+initialism' for backwards
           ;; compatibility.

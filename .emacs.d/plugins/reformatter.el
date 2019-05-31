@@ -212,19 +212,30 @@ DISPLAY-ERRORS, shows a buffer if the formatting fails."
 
        ,minor-mode-form)))
 
+(defconst reformatter--can-use-replace-buffer-contents
+  (when (fboundp 'replace-buffer-contents)
+    (with-temp-buffer
+      (insert "\u2666\nabc\n")
+      (let ((a (current-buffer)))
+        (with-temp-buffer
+          (insert "\u2666\naXbc\n")
+          (replace-buffer-contents a)
+          (string= (buffer-string) "\u2666\nabc\n")))))
+  "Non-nil if `replace-buffer-contents' is present and correct in this Emacs.
+Notably, in Emacs 26.1 and corresponding development snapshots,
+this function was present but very broken in the presence of
+unicode characters.")
+
 (defun reformatter-replace-buffer-contents-from-file (file)
   "Replace the accessible portion of the current buffer with the contents of FILE."
-  (if (and (fboundp 'replace-buffer-contents)
-           ;; The initial version of `replace-buffer-contents' in 26.1 was very broken
-           (version<= "26.2" emacs-version))
-      (progn
-        (let ((tmp (generate-new-buffer " *temp*")))
-          (unwind-protect
-              (progn
-                (with-current-buffer tmp
-                  (insert-file-contents file nil nil nil t))
-                (replace-buffer-contents tmp))
-            (kill-buffer tmp))))
+  (if reformatter--can-use-replace-buffer-contents
+      (let ((tmp (generate-new-buffer " *temp*")))
+        (unwind-protect
+            (progn
+              (with-current-buffer tmp
+                (insert-file-contents file nil nil nil t))
+              (replace-buffer-contents tmp))
+          (kill-buffer tmp)))
     (insert-file-contents file nil nil nil t)))
 
 
