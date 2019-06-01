@@ -5,4 +5,4 @@ CC= CXX= ./configure --prefix=$HOME/opt/stow/git
 make
 make install
 cd $HOME/opt/stow
-stow git
+stow -R git

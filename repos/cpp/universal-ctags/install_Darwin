@@ -7,3 +7,5 @@ cd $(hostname -s)
 ../../../configure --prefix=$HOME/opt/stow/ctags --program-prefix=ex --disable-xml
 make
 make install
+cd $HOME/opt/stow/ctags
+stow -R ctags

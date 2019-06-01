@@ -5,4 +5,4 @@ cd bld
 make
 make install
 cd $HOME/opt/stow
-stow emacs
+stow -R emacs
