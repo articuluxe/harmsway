@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-05-31 13:02:40 dan.harms>
+;; Modified Time-stamp: <2019-06-04 13:51:08 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1885,7 +1885,7 @@ Only one letter is shown, the first that applies."
                         ("@urgent" . ?u)
                         ))
   ;; capture
-  (setq org-default-notes-file "~/Dropbox/notes/todo.org")
+  (setq org-default-notes-file "~/Dropbox/notes/capture.org")
   ;; refiling
   (setq org-log-refile 'time)
   (setq org-refile-targets '((nil :maxlevel . 9)
