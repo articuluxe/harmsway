@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-06-04 13:51:08 dharms>
+;; Modified Time-stamp: <2019-06-04 14:04:13 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3804,6 +3804,11 @@ Requires Flake8 2.0 or newer. See URL
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; text-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-hook 'text-mode-hook #'good-word/init-word-processor)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; typescript ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package typescript-mode
+  :mode "\\.ts$"
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; web ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package web
