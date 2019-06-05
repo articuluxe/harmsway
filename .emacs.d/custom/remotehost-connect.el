@@ -1,9 +1,9 @@
 ;;; remotehost-connect.el --- manages connections to remote hosts
-;; Copyright (C) 2016-2018  Dan Harms (dharms)
+;; Copyright (C) 2016-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Monday, April 18, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2018-04-02 10:00:40 dan.harms>
+;; Modified Time-stamp: <2019-06-05 08:46:31 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: remote hosts
 
@@ -30,6 +30,7 @@
 (require 'tramp)
 (require 'ivy)
 (require 'read-file)
+(require 'cl-lib)
 
 (defvar remotehost-connect-hosts '()
   "List of hosts to connect to.")
@@ -95,6 +96,9 @@ when called interactively with a prefix argument."
                   remotehost-connect-hosts))
     (setq hosts (sort hosts (lambda (left right)
                               (string-lessp (car left) (car right)))))
+    (setq hosts (cl-remove-duplicates hosts :test (lambda (x y)
+                                                    (equal (car x)
+                                                           (car y)))))
     (ivy-read "Remote host: " hosts
               :history 'remotehost-connect-history
               :action (lambda (x)
