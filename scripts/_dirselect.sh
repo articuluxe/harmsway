@@ -1,11 +1,11 @@
 #!/bin/bash
 # -*- Mode: sh -*-
 # _dirselect.sh --- select a dir from disk
-# Copyright (C) 2016-2018  Dan Harms (dharms)
+# Copyright (C) 2016-2019  Dan Harms (dharms)
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Thursday, May  5, 2016
 # Version: 1.0
-# Modified Time-stamp: <2018-10-23 14:40:07 dan.harms>
+# Modified Time-stamp: <2019-06-06 10:12:50 dan.harms>
 # Modified by: Dan Harms
 # Keywords: bash script
 
@@ -15,7 +15,7 @@ prompt=${2:-"Select a directory: "}
 dirs=("$dir"/*)
 # loop through, replace with basename
 for e in "${dirs[@]}" ; do
-    if [ -d $e ]; then
+    if [ -d "$e" ]; then
         dirsbase=( ${dirsbase[@]} $(basename $e) )
     fi
 done
@@ -34,8 +34,8 @@ select opt in $opts "Quit"; do
     if [ "$opt" == "Quit" ]; then
         exit
     elif ((REPLY > 0)); then
-        if [ ! -z $opt ]; then
-            echo $opt
+        if [ ! -z "$opt" ]; then
+            echo "$opt"
             exit
         fi
     fi
