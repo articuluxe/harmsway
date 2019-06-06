@@ -1,0 +1,4 @@
+cd src
+npm install
+npm run compile
+# run as: node out/server/src/server.js
