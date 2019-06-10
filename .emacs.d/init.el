@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-06-04 14:04:13 dharms>
+;; Modified Time-stamp: <2019-06-09 21:56:36 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3678,10 +3678,6 @@ This may perform related customization."
                             (car company-backends)))))
               (setq-local company-smart-backend 'company-jedi)))
   :config
-  (use-package pipenv
-    :config
-    (add-hook 'python-mode-hook 'pipenv-mode))
-  (use-package pyvenv)
   ;; add jedi if installed
   (when (eq 0 (call-process "python" nil nil nil "-c" "import jedi"))
     (require 'jedi-core))
@@ -3725,6 +3721,28 @@ Requires Flake8 2.0 or newer. See URL
     (use-package flycheck-pyflakes)
     )
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; conda ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package conda
+  :bind (("C-c rca" . conda-env-activate)
+         ("C-c rcd" . conda-env-deactivate)
+         ("C-c rcb" . conda-env-activate-for-buffer)
+         ("C-c rcl" . conda-env-list))
+  :config
+  (conda-env-initialize-interactive-shells)
+  )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; pyvenv ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package pyvenv
+  :bind (("C-c rva" . pyvenv-activate)
+         ("C-c rvw" . pyvenv-workon)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; pipenv ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package pipenv
+  :bind (("C-c rpa" . pipenv-activate)
+         ("C-c rpd" . pipenv-deactivate))
+  :config
+  (add-hook 'python-mode-hook 'pipenv-mode))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; rust-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package rust-mode :mode "\\.rs$")
