@@ -3,7 +3,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dan.harms)
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Monday, March 14, 2016
-;; Modified Time-stamp: <2019-06-09 21:50:50 dharms>
+;; Modified Time-stamp: <2019-06-10 15:43:56 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: config
 
@@ -46,6 +46,7 @@
                            "Envy Code R 11"
                            "M+ 2m regular 11"
                            "Hack 10"
+                           "UbuntuMono 12"
                            "Hasklig 10"
                            "Luculent 11"
                            "Iosevka 11"
@@ -60,6 +61,7 @@
                            "DroidSansMono 10"
                            "FiraCode 10"
                            "Crystal 12"
+                           "NovaMono 12"
                            "OxygenMono 11"
                            "LeagueMonoVariable 10"
                            "Inconsolata 12"

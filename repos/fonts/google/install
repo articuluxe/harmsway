@@ -4,3 +4,5 @@ cp src/ofl/spacemono/*.ttf ../../../.fonts/spacemono
 cp src/ofl/inconsolata/*.ttf ../../../.fonts/inconsolata
 cp src/ofl/cutivemono/*.ttf ../../../.fonts/cutive
 cp src/ofl/sharetechmono/*.ttf ../../../.fonts/sharetech
+cp src/ofl/novamono/*.ttf ../../../.fonts/novamono
+cp src/ufl/ubuntumono/*.ttf ../../../.fonts/ubuntu
