@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-06-09 21:56:36 dharms>
+;; Modified Time-stamp: <2019-06-10 08:53:00 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3722,25 +3722,30 @@ Requires Flake8 2.0 or newer. See URL
     )
   )
 
+(define-prefix-command 'harmsway-python-prefix)
+(global-set-key "\C-cr" 'harmsway-python-prefix)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; conda ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package conda
-  :bind (("C-c rca" . conda-env-activate)
-         ("C-c rcd" . conda-env-deactivate)
-         ("C-c rcb" . conda-env-activate-for-buffer)
-         ("C-c rcl" . conda-env-list))
+  :bind (:map harmsway-python-prefix
+              ("ca" . conda-env-activate)
+              ("cd" . conda-env-deactivate)
+              ("cb" . conda-env-activate-for-buffer)
+              ("cl" . conda-env-list))
   :config
-  (conda-env-initialize-interactive-shells)
-  )
+  (conda-env-initialize-interactive-shells))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; pyvenv ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package pyvenv
-  :bind (("C-c rva" . pyvenv-activate)
-         ("C-c rvw" . pyvenv-workon)))
+  :bind (:map harmsway-python-prefix
+              ("va" . pyvenv-activate)
+              ("vw" . pyvenv-workon)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; pipenv ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package pipenv
-  :bind (("C-c rpa" . pipenv-activate)
-         ("C-c rpd" . pipenv-deactivate))
+  :bind (:map harmsway-python-prefix
+              ("pa" . pipenv-activate)
+              ("pd" . pipenv-deactivate))
   :config
   (add-hook 'python-mode-hook 'pipenv-mode))
 
