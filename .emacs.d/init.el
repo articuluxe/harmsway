@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-06-10 08:53:00 dharms>
+;; Modified Time-stamp: <2019-06-11 16:56:30 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3680,11 +3680,14 @@ This may perform related customization."
   :config
   ;; add jedi if installed
   (when (eq 0 (call-process "python" nil nil nil "-c" "import jedi"))
-    (require 'jedi-core))
+    (require 'jedi-core)
+    (define-key python-mode-map "\C-cj." #'jedi:goto-definition)
+    (define-key python-mode-map "\C-cj," #'jedi:goto-definition-pop-marker)
+    (define-key python-mode-map "\C-cj?" #'jedi:show-doc))
   (define-key python-mode-map "\C-j" 'newline-and-indent)
   ;; remap 'python-shell-send-buffer
   (define-key python-mode-map "\C-c\C-c" nil)
-  (define-key python-mode-map "\C-c\C-cc" #'python-shell-send-buffer)
+  (define-key python-mode-map "\C-c\C-b" #'python-shell-send-buffer)
   (define-key python-mode-map [?\C-\M-g] 'python-nav-forward-sexp)
   (define-key python-mode-map (kbd "\C-c RET")
     (lambda()(interactive)
@@ -3723,7 +3726,7 @@ Requires Flake8 2.0 or newer. See URL
   )
 
 (define-prefix-command 'harmsway-python-prefix)
-(global-set-key "\C-cr" 'harmsway-python-prefix)
+(global-set-key "\C-cv" 'harmsway-python-prefix)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; conda ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package conda
@@ -3739,7 +3742,11 @@ Requires Flake8 2.0 or newer. See URL
 (use-package pyvenv
   :bind (:map harmsway-python-prefix
               ("va" . pyvenv-activate)
-              ("vw" . pyvenv-workon)))
+              ("vw" . pyvenv-workon)
+              ("vc" . pyvenv-create)
+              ("vd" . pyvenv-deactivate))
+  :config
+  (add-hook 'pyvenv-post-activate-hooks #'pyvenv-restart-python))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; pipenv ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package pipenv

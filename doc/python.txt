@@ -1,0 +1,29 @@
+#!/usr/bin/env sh
+# -*- Mode: sh -*-
+# python.txt --- python helpers
+# Copyright (C) 2019  Dan Harms (dan.harms)
+# Author: Dan Harms <dan.harms@xrtrading.com>
+# Created: Tuesday, June 11, 2019
+# Version: 1.0
+# Modified Time-stamp: <2019-06-11 16:36:51 dan.harms>
+# Modified by: Dan Harms
+# Keywords: python help
+
+################################### conda ####################################
+# create virtual env
+conda create -n ENV [python=x.x] anaconda
+# list env
+conda info -e
+# activate it
+source activate ENV
+# install packages
+conda install -n ENV <package>
+# deactivate
+conda deactivate
+# delete virtual env
+conda remove -n ENV -all
+
+
+conda update conda
+
+# code ends here
