@@ -3,7 +3,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2019-05-08 09:32:40 dharms>
+;; Modified Time-stamp: <2019-06-11 08:39:27 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -40,6 +40,7 @@
                             "Iosevka 12"
                             "Anka/Coder 14"
                             "League Mono Variable 14"
+                            "Ubuntu Mono 14"
                             "Andale Mono 14"
                             "M+ 2m regular 14"
                             "Droid Sans Mono 12"
@@ -58,6 +59,7 @@
                             "Space Mono 12"
                             "Roboto Mono 12"
                             "Hack 11"
+                            "Novamono 14"
                             "IBM 3270 16"
                             "M+ 1m 13"
                             "B612 Mono 14"

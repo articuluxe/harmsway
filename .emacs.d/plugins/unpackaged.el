@@ -194,6 +194,20 @@ output string."
       (org-agenda-remove-restriction-lock t)
       (message nil))))
 
+(defun unpackaged/org-agenda-olp (outline-path &optional file only-todos)
+  "Show an agenda restricted to subtree at OUTLINE-PATH.
+FILE may be a filename to search in, or nil to look in the
+current buffer.  If ONLY-TODOS is non-nil, show only to-do
+items. OUTLINE-PATH is a list of strings which are outline
+headings.  See function `org-find-olp'."
+  (when file
+    (push file outline-path))
+  (let ((marker (org-find-olp outline-path (not file))))
+    (with-current-buffer (marker-buffer marker)
+      (org-with-wide-buffer
+       (goto-char marker)
+       (unpackaged/org-agenda-current-subtree-or-region only-todos)))))
+
 (defface unpackaged/org-agenda-preview
   '((t (:background "black")))
   "Face for Org Agenda previews."
@@ -292,7 +306,7 @@ to kill-ring."
         (narrow-to-region beg end)
         (goto-char (point-min))
         (while (re-search-forward (rx (or space bol)
-                                      (group (1+ upper))
+                                      (group (1+ (or upper "-")))
                                       (or space eol (char punct)))
                                   nil t)
           (setf (buffer-substring (match-beginning 1) (match-end 1))
@@ -307,7 +321,7 @@ to kill-ring."
     (save-restriction
       (goto-char beg)
       (narrow-to-region beg end)
-      (while (re-search-forward (rx (or "`" "‘") (group (1+ (or "-" word))) "'") nil t)
+      (while (re-search-forward (rx (or "`" "‘") (group (1+ (or word (syntax symbol)))) "'") nil t)
         (replace-match (concat "~" (match-string 1) "~") t)))))
 
 ;;;###autoload

@@ -1,12 +1,12 @@
-;;; load-relative.el --- relative file load (within a multi-file Emacs package)
+;;; load-relative.el --- Relative file load (within a multi-file Emacs package) -*- lexical-binding: t -*-
 
 ;; Author: Rocky Bernstein <rocky@gnu.org>
-;; Version: 1.3
+;; Version: 1.3.1
 ;; Keywords: internal
 ;; URL: http://github.com/rocky/emacs-load-relative
 ;; Compatibility: GNU Emacs 23.x
 
-;; Copyright (C) 2015, 2016, 2017 Free Software Foundation, Inc
+;; Copyright (C) 2015-2019 Free Software Foundation, Inc
 
 ;; This program is free software: you can redistribute it and/or
 ;; modify it under the terms of the GNU General Public License as
@@ -104,7 +104,7 @@
 
 ;;; Code:
 
-;; Press C-x C-e at the end of the next line configure the program in
+;; Press C-x C-e at the end of the next line configure the program in GNU emacs
 ;; for building via "make" to get set up.
 ;; (compile (format "EMACSLOADPATH=:%s ./autogen.sh" "."))
 ;; After that you can run:
@@ -124,7 +124,7 @@ readevalloop of `lread.c' as the car of variable
 Failing that, we use `load-file-name' which should work in some
 subset of the same places that the first method works.  However
 `load-file-name' will be nil for code that is eval'd.  To cover
-those cases, we try `buffer-file-name' which is initially
+those cases, we try function `buffer-file-name' which is initially
 correct, for eval'd code, but will change and may be wrong if the
 code sets or switches buffers after the initial execution.
 
@@ -172,8 +172,9 @@ methods work we will use the file-name value find via
 (defun autoload-relative (function-or-list
                           file &optional docstring interactive type
                           symbol)
-  "Autoload an Emacs Lisp file relative to Emacs Lisp code that is in
-the process of being loaded or eval'd.
+  ;; FIXME: Docstring talks of FUNCTION but argname is `function-or-list'.
+  "Autoload an Emacs Lisp file relative to Emacs Lisp code that is in the process
+of being loaded or eval'd.
 
 
 Define FUNCTION to autoload from FILE.  FUNCTION is a symbol.
@@ -182,7 +183,7 @@ FILE is a string to pass to `load'.
 
 DOCSTRING is documentation for the function.
 
-INTERACATIVE if non-nil says function can be called
+INTERACTIVE if non-nil says function can be called
 interactively.
 
 TYPE indicates the type of the object: nil or omitted says
@@ -197,10 +198,14 @@ defined (as given by `symbol-file' is used if other methods of
 finding __FILE__ don't work."
 
   (if (listp function-or-list)
-      (mapcar (lambda(function)
-                (autoload function-or-list
-                  (relative-expand-file-name file symbol)
-                  docstring interactive type))
+      ;; FIXME: This looks broken:
+      ;; - Shouldn't it iterate on `function-or-list' instead of `file'?
+      ;; - Shouldn't the `autoload' take `function' rather than
+      ;;   `function-or-list' as argument?
+      (mapc (lambda(_function)
+              (autoload function-or-list
+                (relative-expand-file-name file symbol)
+                docstring interactive type))
               file)
     (autoload function-or-list (relative-expand-file-name file symbol)
       docstring interactive type))
@@ -283,11 +288,7 @@ buffer-setting or buffer changing operations."
 (defmacro require-relative-list (list &optional opt-prefix)
   "Run `require-relative' on each name in LIST which should be a list of
 strings, each string being the relative name of file you want to run."
-  `(progn
-     (eval-when-compile
-       (require 'cl
-                (dolist (rel-file ,list)
-                  (require-relative rel-file (__FILE__) ,opt-prefix))))
+  `(eval-and-compile
      (dolist (rel-file ,list)
        (require-relative rel-file (__FILE__) ,opt-prefix))))
 

@@ -3,7 +3,7 @@
 ;; Author: Jessie Hildebrandt <jessieh.net>
 ;; Homepage: https://gitlab.com/jessieh/mood-one-theme
 ;; Keywords: mode-line faces
-;; Version: 1.0.2
+;; Version: 1.0.3
 ;; Package-Requires: ((emacs "24.4"))
 
 ;; This file is not part of GNU Emacs.
@@ -49,24 +49,6 @@
 
 (deftheme mood-one
   "A dark color scheme inspired by the Doom One theme.")
-
-;;
-;; Config
-;;
-
-(defgroup mood-one-theme nil
-  "A dark color scheme inspired by the Doom One theme."
-  :group 'faces)
-
-(defcustom mood-one-theme-diff-hl-fringe-bmp t
-  "If t, an alternative fringe bitmap will be provided in diff-hl mode.  Requires restart to take effect."
-  :group 'mood-one-theme
-  :type 'boolean)
-
-(defcustom mood-one-theme-flycheck-fringe-bmp t
-  "If t, an alternative fringe bitmap will be provided in flycheck mode.  Requires restart to take effect."
-  :group 'mood-one-theme
-  :type 'boolean)
 
 ;;
 ;; Helper functions

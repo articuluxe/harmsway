@@ -5,6 +5,7 @@
 
 ;; Author: Feng Shu
 ;; Maintainer: Feng Shu <tumashu@163.com>
+;; Maintainer: Naoya Yamashita <conao3@gmail.com>
 ;; URL: https://github.com/tumashu/ivy-posframe
 ;; Version: 0.1.0
 ;; Keywords: abbrev, convenience, matching, ivy
@@ -54,22 +55,58 @@
 ;; *** Global mode
 ;; #+BEGIN_EXAMPLE
 ;; (require 'ivy-posframe)
-;; (setq ivy-display-function #'ivy-posframe-display)
-;; ;; (setq ivy-display-function #'ivy-posframe-display-at-frame-center)
-;; ;; (setq ivy-display-function #'ivy-posframe-display-at-window-center)
-;; ;; (setq ivy-display-function #'ivy-posframe-display-at-frame-bottom-left)
-;; ;; (setq ivy-display-function #'ivy-posframe-display-at-window-bottom-left)
-;; ;; (setq ivy-display-function #'ivy-posframe-display-at-point)
-;; (ivy-posframe-enable)
+;; ;; display at `ivy-posframe-style'
+;; (setq ivy-posframe-display-functions-alist '((t . ivy-posframe-display)))
+;; ;; (setq ivy-posframe-display-functions-alist '((t . ivy-posframe-display-at-frame-center)))
+;; ;; (setq ivy-posframe-display-functions-alist '((t . ivy-posframe-display-at-window-center)))
+;; ;; (setq ivy-posframe-display-functions-alist '((t . ivy-posframe-display-at-frame-bottom-left)))
+;; ;; (setq ivy-posframe-display-functions-alist '((t . ivy-posframe-display-at-window-bottom-left)))
+;; (ivy-posframe-mode 1)
 ;; #+END_EXAMPLE
 ;; *** Per-command mode.
 ;; #+BEGIN_EXAMPLE
 ;; (require 'ivy-posframe)
 ;; ;; Different command can use different display function.
-;; (push '(counsel-M-x . ivy-posframe-display-at-window-bottom-left) ivy-display-functions-alist)
-;; (push '(complete-symbol . ivy-posframe-display-at-point) ivy-display-functions-alist)
-;; (push '(swiper . ivy-posframe-display-at-point) ivy-display-functions-alist)
-;; (ivy-posframe-enable)
+;; (setq ivy-posframe-display-functions-alist
+;;       '((swiper          . ivy-posframe-display-at-point)
+;;         (complete-symbol . ivy-posframe-display-at-point)
+;;         (counsel-M-x     . ivy-posframe-display-at-window-bottom-left)
+;;         (t               . ivy-posframe-display)))
+;; (ivy-posframe-mode 1)
+;; #+END_EXAMPLE
+;;
+;; You can use ivy original display function on specify function.
+;; You may want to use the original display function because display
+;; of Swiper at point hides the contents of the buffer.
+;; #+BEGIN_EXAMPLE
+;; (require 'ivy-posframe)
+;; ;; Different command can use different display function.
+;; (setq ivy-posframe-display-functions-alist
+;;       '((swiper          . nil)
+;;         (complete-symbol . ivy-posframe-display-at-point)
+;;         (counsel-M-x     . ivy-posframe-display-at-window-bottom-left)
+;;         (t               . ivy-posframe-display)))
+;; (ivy-posframe-mode 1)
+;; #+END_EXAMPLE
+;;
+;; You may want to change the height of ivy by a function only while
+;; using posframe. This is possible with the code below.
+;;
+;; The following example displays swiper on 20 lines by default for ivy,
+;; and displays other functions in posframe at the location specified on
+;; 40 lines.
+;; #+BEGIN_EXAMPLE
+;; (require 'ivy-posframe)
+;; ;; Different command can use different display function.
+;; (setq ivy-posframe-height-alist '((swiper . 20)
+;;                                   (t      . 40)))
+;;
+;; (setq ivy-posframe-display-functions-alist
+;;       '((swiper          . nil)
+;;         (complete-symbol . ivy-posframe-display-at-point)
+;;         (counsel-M-x     . ivy-posframe-display-at-window-bottom-left)
+;;         (t               . ivy-posframe-display)))
+;; (ivy-posframe-mode 1)
 ;; #+END_EXAMPLE
 ;;
 ;; NOTE: Using swiper as example: swiper's display function *only*
@@ -81,13 +118,6 @@
 ;; The value of variable `this-command' will be used as the search key
 ;; by ivy to find display function in `ivy-display-functions-alist',
 ;; "C-h v this-command" is a good idea.
-
-;; *** Fallback mode
-;; #+BEGIN_EXAMPLE
-;; (require 'ivy-posframe)
-;; (push '(t . ivy-posframe-display) ivy-display-functions-alist)
-;; (ivy-posframe-enable)
-;; #+END_EXAMPLE
 
 ;; ** Tips
 
@@ -107,7 +137,8 @@
 ;; #+BEGIN_EXAMPLE
 ;; (defun ivy-posframe-display-at-XXX (str)
 ;;   (ivy-posframe--display str #'your-own-poshandler-function))
-;; (ivy-posframe-enable) ; This line is needed.
+;; (setq ivy-posframe-display-functions-alist '((t . ivy-posframe-display-at-XXX)))
+;; (ivy-posframe-mode 1) ; This line is needed.
 ;; #+END_EXAMPLE
 
 ;;; Code:
@@ -152,6 +183,11 @@ When nil, Using current frame's font as fallback."
   :group 'ivy-posframe
   :type 'number)
 
+(defcustom ivy-posframe-size-function #'ivy-posframe-get-size
+  "The function which is used to deal with posframe's size."
+  :group 'ivy-posframe
+  :type 'function)
+
 (defcustom ivy-posframe-border-width 1
   "The border width used by ivy-posframe.
 When 0, no border is showed."
@@ -165,6 +201,21 @@ When 0, no border is showed."
 
 (defcustom ivy-posframe-parameters nil
   "The frame parameters used by ivy-posframe."
+  :group 'ivy-posframe
+  :type 'string)
+
+(defcustom ivy-posframe-height-alist nil
+  "The `ivy-height-alist' while working ivy-posframe."
+  :group 'ivy-posframe
+  :type 'sexp)
+
+(defcustom ivy-posframe-display-functions-alist '((t . ivy-posframe-display))
+  "The `ivy-display-functions-alist' while working ivy-posframe."
+  :group 'ivy-posframe
+  :type 'sexp)
+
+(defcustom ivy-posframe-lighter " ivy-posframe"
+  "The lighter string used by `ivy-posframe-mode'."
   :group 'ivy-posframe
   :type 'string)
 
@@ -191,37 +242,42 @@ When 0, no border is showed."
 This variable is useful for `ivy-posframe-read-action' .")
 
 (defvar ivy-posframe--display-p nil
-  "The status of `ivy-posframe--display'")
+  "The status of `ivy-posframe--display'.")
 
 ;; Fix warn
 (defvar emacs-basic-display)
 
 (defun ivy-posframe--display (str &optional poshandler)
-  "Show STR in ivy's posframe."
+  "Show STR in ivy's posframe with POSHANDLER."
   (if (not (posframe-workable-p))
       (ivy-display-function-fallback str)
     (setq ivy-posframe--display-p t)
     (with-ivy-window
-      (posframe-show
-       ivy-posframe-buffer
-       :font ivy-posframe-font
-       :string str
-       :position (point)
-       :poshandler poshandler
-       :background-color (face-attribute 'ivy-posframe :background nil t)
-       :foreground-color (face-attribute 'ivy-posframe :foreground nil t)
-       :height ivy-posframe-height
-       :width ivy-posframe-width
-       :min-height (or ivy-posframe-min-height (+ ivy-height 1))
-       :min-width (or ivy-posframe-min-width (round (* (frame-width) 0.62)))
-       :internal-border-width ivy-posframe-border-width
-       :internal-border-color (face-attribute 'ivy-posframe-border :background nil t)
-       :override-parameters ivy-posframe-parameters))
-    (ivy-posframe--add-prompt)))
+      (apply #'posframe-show
+             ivy-posframe-buffer
+             :font ivy-posframe-font
+             :string str
+             :position (point)
+             :poshandler poshandler
+             :background-color (face-attribute 'ivy-posframe :background nil t)
+             :foreground-color (face-attribute 'ivy-posframe :foreground nil t)
+             :internal-border-width ivy-posframe-border-width
+             :internal-border-color (face-attribute 'ivy-posframe-border :background nil t)
+             :override-parameters ivy-posframe-parameters
+             (funcall ivy-posframe-size-function)))
+    (ivy-posframe--add-prompt 'ignore)))
+
+(defun ivy-posframe-get-size ()
+  "The default functon used by `ivy-posframe-size-function'."
+  (list
+   :height ivy-posframe-height
+   :width ivy-posframe-width
+   :min-height (or ivy-posframe-min-height (+ ivy-height 1))
+   :min-width (or ivy-posframe-min-width (round (* (frame-width) 0.62)))))
 
 (defun ivy-posframe-display (str)
-  (let ((func (intern (format "ivy-posframe-display-at-%s"
-                              ivy-posframe-style))))
+  "Display STR via `posframe' by `ivy-posframe-style'."
+  (let ((func (intern (format "ivy-posframe-display-at-%s" ivy-posframe-style))))
     (if (functionp func)
         (funcall func str)
       (ivy-posframe-display-at-frame-bottom-left str))))
@@ -258,19 +314,6 @@ This variable is useful for `ivy-posframe-read-action' .")
   (interactive)
   (when (ivy-posframe-read-action)
     (ivy-done)))
-
-(defun ivy-posframe--add-prompt ()
-  "Add the ivy prompt to the posframe."
-  (unless ivy-posframe--ignore-prompt
-    (with-current-buffer (window-buffer (active-minibuffer-window))
-      (let ((point (point))
-            (prompt (buffer-string)))
-        (remove-text-properties 0 (length prompt) '(read-only nil) prompt)
-        (with-current-buffer ivy-posframe-buffer
-          (goto-char (point-min))
-          (kill-line 1)
-          (insert prompt "  \n")
-          (add-text-properties point (1+ point) '(face ivy-posframe-cursor)))))))
 
 (defun ivy-posframe-read-action ()
   "Change the action to one of the available ones.
@@ -413,10 +456,21 @@ selection, non-nil otherwise."
         (ivy-quit-and-run
           (avy-action-goto (avy-candidate-beg candidate)))))))
 
-(defun ivy-posframe--minibuffer-setup (orig-func)
-  "Advice function of `ivy--minibuffer-setup'."
+;;; Variables
+
+(defvar ivy-posframe-advice-alist
+  '((ivy--minibuffer-setup      . ivy-posframe--minibuffer-setup)
+    (ivy--queue-exhibit         . ivy-posframe--add-prompt)
+    (ivy--display-function-prop . ivy-posframe--display-function-prop)
+    (ivy--height                . ivy-posframe--height)
+    (ivy-read                   . ivy-posframe--read)))
+
+;;; Advice
+
+(defun ivy-posframe--minibuffer-setup (fn &rest args)
+  "Advice function of FN, `ivy--minibuffer-setup' with ARGS."
   (let ((ivy-fixed-height-minibuffer nil))
-    (funcall orig-func))
+    (apply fn args))
   (when (and ivy-posframe-hide-minibuffer
              ;; only hide minibuffer's info when posframe is showed.
              ivy-posframe--display-p)
@@ -427,44 +481,68 @@ selection, non-nil otherwise."
                      `(:background ,bg-color :foreground ,bg-color)))
       (setq-local cursor-type nil))))
 
-;;;###autoload
-(defun ivy-posframe-enable ()
-  "Enable ivy-posframe."
-  (interactive)
-  (require 'ivy)
-  ;; Add all display functions of ivy-posframe to
-  ;; `ivy-display-functions-props'.
-  (mapatoms
-   (lambda (func)
-     (when (and (functionp func)
-                (string-match-p "^ivy-posframe-display" (symbol-name func))
-                (not (assq func ivy-display-functions-props)))
-       (push `(,func :cleanup ivy-posframe-cleanup)
-             ivy-display-functions-props))))
-  (define-key ivy-minibuffer-map
-    [remap ivy-read-action] 'ivy-posframe-read-action)
-  (define-key ivy-minibuffer-map
-    [remap ivy-dispatching-done] 'ivy-posframe-dispatching-done)
-  (define-key ivy-minibuffer-map [remap ivy-avy] 'ivy-posframe-avy)
-  (define-key ivy-minibuffer-map [remap swiper-avy] 'ivy-posframe-swiper-avy)
-  (advice-add 'ivy--minibuffer-setup :around #'ivy-posframe--minibuffer-setup)
-  (advice-add 'ivy--queue-exhibit :after #'ivy-posframe--add-prompt)
-  (message "ivy-posframe is enabled, disabling it need to reboot emacs."))
+(defun ivy-posframe--add-prompt (fn &rest args)
+  "Add the ivy prompt to the posframe.  Advice FN with ARGS."
+  (apply fn args)
+  (unless ivy-posframe--ignore-prompt
+    (with-current-buffer (window-buffer (active-minibuffer-window))
+      (let ((point (point))
+            (prompt (buffer-string)))
+        (remove-text-properties 0 (length prompt) '(read-only nil) prompt)
+        (with-current-buffer ivy-posframe-buffer
+          (goto-char (point-min))
+          (delete-region (point) (line-beginning-position 2))
+          (insert prompt "  \n")
+          (add-text-properties point (1+ point) '(face ivy-posframe-cursor)))))))
+
+(defun ivy-posframe--display-function-prop (fn &rest args)
+  "Around advice of FN with ARGS."
+  (let ((ivy-display-functions-props
+         (append ivy-display-functions-props
+                 (mapcar
+                  (lambda (elm)
+                    `(,elm :cleanup ivy-posframe-cleanup))
+                  (mapcar #'cdr ivy-posframe-display-functions-alist)))))
+    (apply fn args)))
+
+(defun ivy-posframe--height (fn &rest args)
+  "Around advide of FN with ARGS."
+  (let ((ivy-height-alist
+         (append ivy-posframe-height-alist ivy-height-alist)))
+    (apply fn args)))
+
+(defun ivy-posframe--read (fn &rest args)
+  "Around advice of FN with AGS."
+  (let ((ivy-display-functions-alist
+         (append ivy-posframe-display-functions-alist ivy-display-functions-alist)))
+    (apply fn args)))
 
 ;;;###autoload
-(defun ivy-posframe-demo ()
-  "Toggle a demo config of ivy-posframe.
-This function is ONLY used to test ivy-posframe."
+(define-minor-mode ivy-posframe-mode
+  "Display ivy via posframe."
+  :init-value nil
+  :global t
+  :require 'ivy-posframe
+  :lighter ivy-posframe-lighter
+  :group 'ivy-posframe
+  :keymap '(([remap ivy-avy]              . ivy-posframe-avy)
+            ([remap swiper-avy]           . ivy-posframe-swiper-avy)
+            ([remap ivy-read-action]      . ivy-posframe-read-action)
+            ([remap ivy-dispatching-done] . ivy-posframe-dispatching-done))
+  (let ((advices ivy-posframe-advice-alist))
+    (if ivy-posframe-mode
+        (mapcar (lambda (elm)
+                  (advice-add (car elm) :around (cdr elm)))
+                advices)
+      (mapcar (lambda (elm)
+                (advice-remove (car elm) (cdr elm)))
+              advices))))
+
+;;;###autoload
+(defun ivy-posframe-enable ()
   (interactive)
-  (ivy-posframe-enable)
-  (let ((config '(t . ivy-posframe-display-at-frame-center)))
-    (if (member config ivy-display-functions-alist)
-        (progn
-          (setq ivy-display-functions-alist
-                (remove config ivy-display-functions-alist))
-          (message "Ivy-posframe: Demo is disabled."))
-      (push config ivy-display-functions-alist)
-      (message "Ivy-posframe: Demo is enabled."))))
+  (ivy-posframe-mode 1)
+  (message "ivy-posframe: suggest use `ivy-posframe-mode' instead."))
 
 (provide 'ivy-posframe)
 

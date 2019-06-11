@@ -1,11 +1,11 @@
-;;; shx.el --- "Extras" for the (comint-mode) shell -*- lexical-binding: t -*-
+;;; shx.el --- Extras for the comint-mode shell -*- lexical-binding: t -*-
 
 ;; Authors: Chris Rayner (dchrisrayner@gmail.com)
 ;; Created: May 23 2011
 ;; Keywords: processes, tools
 ;; URL: https://github.com/riscy/shx-for-emacs
 ;; Package-Requires: ((emacs "24.4"))
-;; Version: 1.1.0
+;; Version: 1.1.1
 
 ;; This file is NOT part of GNU Emacs.
 
@@ -26,13 +26,6 @@
 ;; stream, enabling plots and graphics to be embedded, and adds command-line
 ;; functions which plug into Emacs (e.g. use :e <filename> to edit a file).
 
-;;; Manual install:
-
-;; 1. Move shx.el to a directory in your load-path or add this to your .emacs:
-;;    (add-to-list 'load-path "~/path/to/this-file/")
-;; 2. Add this line to your .emacs:
-;;    (require 'shx)
-;;
 ;; Type M-x shx RET to create a new shell session using shx.
 ;; Type M-x customize-group RET shx RET to see customization options.
 ;; You can enable shx in every comint-mode buffer with (shx-global-mode 1).
@@ -47,7 +40,7 @@
 ;; Compiler pacifier
 (defvar evil-state)
 (defvar tramp-syntax)
-(declare-function evil-insert-state "evil-states")
+(declare-function evil-insert-state "ext:evil-states.el" nil t)
 
 
 ;;; customization options and other variables
@@ -93,6 +86,7 @@
 
 (defcustom shx-flash-prompt-time 0.25
   "Length of time (in seconds) the prompt flashes, when so advised."
+  :link '(function-link shx-flash-prompt)
   :type 'float)
 
 (defcustom shx-show-hints t
@@ -120,7 +114,7 @@ or, set the terminal to canonical mode with 'stty -icanon'."
 (defcustom shx-max-output most-positive-fixnum
   "The length at which an output line is long enough to be broken.
 Setting this to 1024 can lead to enormous performance gains, but
-sacrifices the soundness of markup and trigger matching."
+sacrifices the soundness of shx's markup and trigger matching."
   :link '(function-link shx--break-long-line-maybe)
   :type 'integer)
 
@@ -130,7 +124,7 @@ sacrifices the soundness of markup and trigger matching."
 (defvar shx-cmd-syntax "\\([^[:space:]]+\\)[[:space:]]*\\(.*[^[:space:]]?\\)"
   "Regex for recognizing shx commands in input or markup.")
 
-(defvar shx-markup-syntax (concat "^<" shx-cmd-syntax ">$")
+(defvar shx-markup-syntax (concat "^<" shx-cmd-syntax ">\n")
   "Regex for recognizing shx commands in markup.")
 
 (defvar shx-mode-map
@@ -212,7 +206,8 @@ This function overrides `comint-input-sender'."
         (comint-simple-send process input)
       (condition-case-unless-debug error-descriptor
           (funcall shx-cmd (substitute-env-vars (match-string 2 input)))
-        (error (shx-insert 'error (error-message-string error-descriptor) "\n")))
+        (error (shx-insert 'error (error-message-string error-descriptor)
+                           'default "\n")))
       (with-current-buffer (process-buffer process)
         ;; advance the process mark to trick comint-mode
         (set-marker (process-mark process) (point)))
@@ -384,10 +379,21 @@ With non-nil WITHOUT-PREFIX, strip `shx-cmd-prefix' from each."
 
 (defun shx--restart-shell ()
   "Guess the shell command and use `comint-exec' to restart."
-  ;; guess which shell command to use per Emacs convention:
-  (let ((cmd (or explicit-shell-file-name (getenv "ESHELL") shell-file-name)))
+  (let ((cmd (shx--validate-shell-file-name)))
     (shx-insert 'font-lock-doc-face cmd " at " default-directory 'default "\n")
     (comint-exec (current-buffer) (buffer-name) cmd nil nil)))
+
+(defun shx--validate-shell-file-name ()
+  "Guess which shell command to run, even if on a remote host or container.
+If the answer turns out to be tricky, store it in `explicit-shell-file-name'."
+  (let ((remote-id (or (file-remote-p default-directory) ""))
+        ;; guess which shell command to run per `shell' convention:
+        (cmd (or explicit-shell-file-name (getenv "ESHELL") shell-file-name)))
+    (cond ((file-exists-p (concat remote-id cmd)) cmd)
+          (t (set (make-local-variable 'explicit-shell-file-name)
+                  (if (file-exists-p (concat remote-id "/bin/sh"))
+                      "/bin/sh"  ; /bin/sh _usually_ exists...
+                    (read-file-name "Shell: " nil "/bin/sh")))))))
 
 (defun shx--match-last-line (regexp)
   "Return a form to find REGEXP on the last line of the buffer."
@@ -432,7 +438,7 @@ not nil, then insert the command into the current buffer."
     (when (string-match (or regexp ".") (concat (car command) (cdr command)))
       (when insert-kept-command
         (shx-insert 'font-lock-constant-face (car command) ": "
-                    'font-lock-string-face command (cdr command) "\n"))
+                    'font-lock-string-face command (cdr command) 'default "\n"))
       (ring-insert comint-input-ring (cdr command)))))
 
 
@@ -617,7 +623,7 @@ If a TIMER-NUMBER is not supplied, enumerate all shx timers.
          (< timer-number (length shx-timer-list))
          (let ((timer (nth timer-number shx-timer-list)))
            (shx-insert "Stopped " 'font-lock-string-face
-                       (shx--format-timer-string timer) "\n")
+                       (shx--format-timer-string timer) 'default "\n")
            (cancel-timer timer))))
   (shx-insert-timer-list))
 
@@ -646,7 +652,7 @@ If a TIMER-NUMBER is not supplied, enumerate all shx timers.
   :diff file1.txt \"file 2.csv\""
   (setq files (shx-tokenize files))
   (if (/= (length files) 2)
-      (shx-insert 'error "diff <file1> <file2>\n")
+      (shx-insert 'error "diff <file1> <file2>" 'default "\n")
     (shx-insert "Diffing " 'font-lock-doc-face (car files) 'default
                 " and " 'font-lock-doc-face (cadr files) 'default "\n")
     (shx--asynch-funcall #'ediff (mapcar 'expand-file-name files))))
@@ -656,7 +662,8 @@ If a TIMER-NUMBER is not supplied, enumerate all shx timers.
 \nExamples:\n
   :e directory/to/file
 \nOr edit a remote file using `tramp':\n
-  :e /user@server#port:directory/to/file"
+  :e /ssh:user@server#port:directory/to/file
+  :e /docker:02fbc948e009:/directory/to/file"
   (setq file (car (shx-tokenize file)))
   (if (or (string= "" file) (not file))
       (shx-insert 'error "Couldn't parse filename" 'default "\n")
@@ -682,12 +689,12 @@ may take a while and unfortunately blocks Emacs in the meantime.
   :f prefix
   :f *suffix"
   (if (equal file "")
-      (shx-insert 'error "find <prefix>\n")
+      (shx-insert 'error "find <prefix>" 'default "\n")
     (let* ((fuzzy-file (mapconcat 'char-to-string (string-to-list file) "*"))
            (command (format "find . -iname '%s*'" fuzzy-file))
            (output (shell-command-to-string command)))
       (if (equal "" output)
-          (shx-insert 'error "No matches for \"" file "\"\n")
+          (shx-insert 'error "No matches for \"" file "\"" 'default "\n")
         (shx--hint (concat "finding under " default-directory))
         (apply #'shx-insert-filenames
                (split-string (string-remove-suffix "\n" output) "\n"))
@@ -699,7 +706,7 @@ may take a while and unfortunately blocks Emacs in the meantime.
   :pipe make
   :pipe git repack -a -d --depth=250 --window=250"
   (if (equal command "")
-      (shx-insert 'error "pipe <command>\n")
+      (shx-insert 'error "pipe <command>" 'default "\n")
     (let ((compilation-buffer-name-function
            (lambda (_mode) "*shx-pipe*")))
       (shx-insert "Piping "
@@ -746,7 +753,7 @@ This enables it to be accessed later using `shx-cmd-kept'."
   (let* ((command (substring-no-properties (ring-ref comint-input-ring 1)))
          (desc (read-string (format "'%s'\nDescription: " command))))
     (if (string-empty-p desc)
-        (shx-insert 'error "Description is required\n")
+        (shx-insert 'error "Description is required" 'default "\n")
       (add-to-list 'shx-kept-commands `(,desc . ,command))
       (customize-save-variable 'shx-kept-commands shx-kept-commands)
       (shx-insert "Keeping as " 'font-lock-doc-face desc "\n")
@@ -759,7 +766,7 @@ access via \\[comint-previous-input] and \\[comint-next-input].\n
 The list containing all of these commands is `shx-kept-commands'.
 That list can be added to using `shx-cmd-keep'."
   (if (string-empty-p regexp)
-      (shx-insert 'error "kept <regexp>\n")
+      (shx-insert 'error "kept <regexp>" 'default "\n")
     (shx--restore-kept-commands regexp t)
     (shx--hint "M-x customize-variable shx-kept-commands edits this list")))
 (defalias 'shx-cmd-k #'shx-cmd-kept)
@@ -924,6 +931,7 @@ See the function `shx-mode' for details."
         (default-directory (or directory default-directory)))
     ;; `switch-to-buffer' first (`shell' uses the unpredictable `pop-to-buffer')
     (switch-to-buffer name)
+    (shx--validate-shell-file-name)
     (shell name)
     ;; shx might already be active due to shx-global-mode:
     (unless shx-mode (shx-mode))))
@@ -956,7 +964,7 @@ See the function `shx-mode' for details."
   (when (derived-mode-p 'comint-mode) (shx-mode +1)))
 
 
-;; advice to change the behavior of some functions within`shx-mode'
+;; advice to change the behavior of some functions within `shx-mode'
 
 (defun shx-show-output (&rest _args)
   "Recenter window so that as much output as possible is shown.

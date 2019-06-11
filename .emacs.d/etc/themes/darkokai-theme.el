@@ -147,7 +147,7 @@ Also affects 'linum-mode' background."
           ;; Adaptive colors
           (darkokai-fg               "#f8fbfc")
           (darkokai-bg               "#242728")
-          (darkokai-highlight-line   "#424748")
+          (darkokai-highlight-line   "#323342")
           (darkokai-highlight        "#5D6365")
           (darkokai-emph             "#ffffff")
           (darkokai-comments         "#6A6D70")
@@ -2985,10 +2985,10 @@ Also affects 'linum-mode' background."
       (,terminal-class (:foreground ,terminal-darkokai-blue))))
 
    `(ivy-minibuffer-match-face-1
-     ((,class (:foreground ,darkokai-violet
-                           :underline t))
-      (,terminal-class (:foreground ,terminal-darkokai-violet
-                                    :underline t))))
+     ((,class (:foreground ,darkokai-comments
+                           :underline nil))
+      (,terminal-class (:foreground ,terminal-darkokai-comments
+                                    :underline nil))))
 
    `(ivy-minibuffer-match-face-2
      ((,class (:foreground ,darkokai-violet-l
@@ -3240,6 +3240,10 @@ Also affects 'linum-mode' background."
                            :background ,darkokai-highlight-line))
       (,terminal-class (:foreground ,terminal-darkokai-red
                                     :background ,terminal-darkokai-highlight-line))))
+
+   `(magit-section-highlight
+     ((,class (:background ,darkokai-highlight-line))
+      (,terminal-class (:background ,terminal-darkokai-highlight-line))))
 
    `(magit-section-title
      ((,class (:foreground ,darkokai-yellow

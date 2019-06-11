@@ -603,6 +603,7 @@
     (link-visited        (:inherit 'link :underline nil))
     (success             (:background nil :foreground done))
     (escape-glyph        (:background nil :foreground cyan3))
+    (trailing-whitespace (:background err))
 
     (menu        (:background bg2 :foreground fg2))
     ;; TODO: default bg
@@ -869,9 +870,9 @@
     (company-scrollbar-bg             (:background company-scroll-bg))
     (company-scrollbar-fg             (:background company-scroll-fg))
     (company-template-field           (:foreground comment :underline t))
-    (company-echo-common              (:background bg1 :foreground amber3))
+    (company-echo-common              (:background bg1 :foreground diff-mod))
     (company-preview                  (:background nil :foreground keyword))
-    (company-preview-common           (:background bg2 :foreground amber3))
+    (company-preview-common           (:background bg2 :foreground diff-mod))
     (company-preview-search           (:inherit 'company-tooltip-search))
 
     ;; all-the-icons
@@ -1166,7 +1167,24 @@
    (ediff-odd-diff-B (:background bg4))
    (ediff-odd-diff-C (:background bg4))
 
-   ;; TODO: calfw
+   ;; calfw
+   (cfw:face-grid (:foreground comment))
+   (cfw:face-title (:foreground prep :weight 'bold :height 1.8))
+   (cfw:face-default-content (:foreground fg1))
+   (cfw:face-day-title (:background bg3 :foreground fg1))
+   (cfw:face-today (:background bg3 :foreground prep))
+   (cfw:face-today-title (:background todo :foreground bg1))
+   (cfw:face-saturday (:background bg3 :foreground todo))
+   (cfw:face-sunday (:background bg3 :foreground todo))
+   (cfw:face-holiday (:background bg3 :foreground functions))
+   (cfw:face-periods (:foreground num))
+   (cfw:face-header (:background bg3 :foreground str))
+   (cfw:face-annotation (:foreground doc))
+   (cfw:face-select (:background hl :foreground bg1))
+   (cfw:face-toolbar (:background nil :foreground nil))
+   (cfw:face-toolbar-button-on (:background nil :foreground hl))
+   (cfw:face-toolbar-button-off (:foreground fg4))
+   (cfw:face-disable (:background bg3 :foreground comment))
 
     ;; Imenu list
     ;; (imenu-list-entry-subalist-face-0 (:inherit 'font-lock-keyword-face))
@@ -1189,6 +1207,18 @@
     (treemacs-on-success-pulse-face (:background diff-bg-add :foreground bg1))
     (treemacs-on-failure-pulse-face (:background err :foreground bg1))
     (treemacs-term-node-face        (:foreground prep))
+
+    ;; Neotree
+    (neo-root-dir-face    (:foreground keyword :underline nil))
+    (neo-dir-link-face    (:foreground functions))
+    (neo-file-link-face   (:foreground fg1))
+    (neo-expand-btn-face  (:foreground hl))
+    (neo-vc-added-face    (:foreground diff-add))
+    (neo-vc-edited-face   (:foreground diff-mod))
+    (neo-vc-removed-face  (:foreground diff-rem :strike-through t))
+    (neo-vc-conflict-face (:foreground err))
+    (neo-vc-missing-face  (:foreground warning))
+    (neo-vc-ignored-face  (:foreground comment))
 
     ;; Git gutter
     (git-gutter:unchanged (:background bg1 :foreground nil))
@@ -1237,18 +1267,17 @@
     (eshell-ls-unreadable (:foreground var))
 
     ;; Whitespace mode
-    ;; TODO: rework
-    (whitespace-empty            (:background spring-green6 :foreground fg4))
-    (whitespace-line             (:background bg3 :foreground warning))
-    (whitespace-newline          (:foreground cyan3))
-    (whitespace-indentation      (:background hl-indent))
-    (whitespace-tab              (:background aquamarine4))
-    (whitespace-space            (:background gray4 :foreground spring-green6))
-    (whitespace-hspace           (:foreground cyan1))
-    (whitespace-space-before-tab (:background orange2 :foreground bg2))
-    (whitespace-space-after-tab  (:background orange2 :foreground bg2))
-    (whitespace-trailing         (:foreground red0))
-    (whitespace-big-indent       (:background red2 :foreground red0))
+    (whitespace-empty            (:background bg4))
+    (whitespace-line             (:background bg1 :foreground err))
+    (whitespace-newline          (:foreground bg2 :foreground num))
+    (whitespace-indentation      (:background hl-indent :foreground hl-indent))
+    (whitespace-tab              (:background bg2 :foreground comment))
+    (whitespace-space            (:background bg2 :foreground comment))
+    (whitespace-space-before-tab (:background diff-add :foreground bg2))
+    (whitespace-space-after-tab  (:background diff-add :foreground bg2))
+    ;; (whitespace-hspace           (:foreground num))
+    (whitespace-trailing         (:inherit 'trailing-whitespace :foreground bg2))
+    (whitespace-big-indent       (:background red0 :foreground bg2))
 
     ;; Org-mode
     (org-todo                      (:foreground todo :bold bold))
@@ -1426,6 +1455,13 @@
     (helm-source-go-package-godoc-description (:foreground str))
     (helm-bookmark-w3m                        (:foreground type))
 
+    ;; Wgrep
+    (wgrep-face        (:background bg2 :foreground diff-mod))
+    (wgrep-delete-face (:background diff-bg-rem :foreground bg2))
+    (wgrep-done-face   (:foreground done))
+    (wgrep-file-face   (:foreground comment))
+    (wgrep-reject-face (:inherit 'error))
+
      ;; Avy
     (avy-background-face (:inherit 'font-lock-comment-face))
     (avy-lead-face       (:background spring-green2 :foreground adaptive-fg :weight 'bold))
@@ -1441,6 +1477,7 @@
     (ivy-confirm-face            (:inherit 'success))
     (ivy-modified-buffer         (:foreground diff-mod))
     (ivy-remote                  (:foreground prep))
+    (ivy-grep-info               (:foreground header))
     (ivy-minibuffer-match-face-1 (:background nil :foreground ivy1))
     (ivy-minibuffer-match-face-2 (:background nil :foreground search1 :bold bold))
     (ivy-minibuffer-match-face-3 (:background nil :foreground search2 :bold bold))

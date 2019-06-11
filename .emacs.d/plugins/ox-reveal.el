@@ -335,10 +335,10 @@ content."
           (const multiplex)))
 
 (defcustom org-reveal-external-plugins nil
-  "Additional third-party Plugins to load with reveal. 
-Each entry should contain a name and an expression of the form 
+  "Additional third-party Plugins to load with reveal.
+Each entry should contain a name and an expression of the form
 \"{src: '%srelative/path/from/reveal/root', async:true/false,condition: jscallbackfunction(){}}\"
-Note that some plugins have dependencies such as jquery; these must be included here as well, 
+Note that some plugins have dependencies such as jquery; these must be included here as well,
 BEFORE the plugins that depend on them."
   :group 'org-export-reveal
   :type 'alist)
@@ -611,23 +611,17 @@ using custom variable `org-reveal-root'."
   "Return the necessary scripts for initializing reveal.js using
 custom variable `org-reveal-root'."
   (let* ((root-path (file-name-as-directory (plist-get info :reveal-root)))
-         (head-min-js (concat root-path "lib/js/head.min.js"))
          (reveal-js (concat root-path "js/reveal.js"))
          ;; Local files
          (local-root-path (org-reveal--file-url-to-path root-path))
-         (local-head-min-js (concat local-root-path "lib/js/head.min.js"))
          (local-reveal-js (concat local-root-path "js/reveal.js"))
          (in-single-file (plist-get info :reveal-single-file)))
     (concat
-     ;; reveal.js/lib/js/head.min.js
      ;; reveal.js/js/reveal.js
      (if (and in-single-file
-              (file-readable-p local-head-min-js)
               (file-readable-p local-reveal-js))
          ;; Embed scripts into HTML
          (concat "<script>\n"
-                 (org-reveal--read-file local-head-min-js)
-                 "\n"
                  (org-reveal--read-file local-reveal-js)
                  "\n</script>")
        ;; Fall-back to extern script links
@@ -636,10 +630,9 @@ custom variable `org-reveal-root'."
            (error (concat "Cannot read "
                             (mapconcat 'identity
                                        (delq nil (mapcar (lambda (file) (if (not (file-readable-p file)) file))
-                                                         (list local-head-min-js local-reveal-js)))
+                                                         (list local-reveal-js)))
                                        ", "))))
        (concat
-        "<script src=\"" head-min-js "\"></script>\n"
         "<script src=\"" reveal-js "\"></script>\n"))
      ;; plugin headings
      "
@@ -671,11 +664,15 @@ overview: %s,
 
      ;; slide width
      (let ((width (plist-get info :reveal-width)))
-       (if (> width 0) (format "width: %d,\n" width) ""))
+       (cond ((and (integerp width) (> width 0)) (format "width: %d,\n" width))
+             ((stringp width) (format "width: '%s',\n" width))
+             (t "")))
 
      ;; slide height
      (let ((height (plist-get info :reveal-height)))
-       (if (> height 0) (format "height: %d,\n" height) ""))
+       (cond ((and (integerp height) (> height 0)) (format "height: %d,\n" height))
+             ((stringp height) (format "height: '%s',\n" height))
+             (t "")))
 
      ;; slide margin
      (let ((margin (string-to-number (plist-get info :reveal-margin))))
@@ -1060,7 +1057,7 @@ window.klipse_settings = { " langselector  ": \".klipse\" };
                 (format "\n<pre%s%s><code class=\"%s\" %s>%s</code></pre>"
                         (or (frag-class frag info) "")
                         label lang code-attribs code)
-              (format "\n<pre %s%s>%s</pre>"
+              (format "\n<pre %s%s><code trim>%s</code></pre>"
                       (or (frag-class frag info)
                           (format " class=\"src src-%s\"" lang))
                       label code)
@@ -1279,8 +1276,12 @@ Return output file name."
 
 ;; Register auto-completion for speaker notes.
 (when org-reveal-note-key-char
-  (add-to-list 'org-structure-template-alist
-               (list org-reveal-note-key-char "#+BEGIN_NOTES\n\?\n#+END_NOTES")))
+  (if (version< (cdr (get 'org-structure-template-alist 'custom-package-version))  "9.2")
+      (add-to-list 'org-structure-template-alist
+                   (list org-reveal-note-key-char "#+BEGIN_NOTES\n\?\n#+END_NOTES"))
+    (add-to-list 'org-structure-template-alist
+                 (cons org-reveal-note-key-char "notes"))))
+
 
 (provide 'ox-reveal)
 
