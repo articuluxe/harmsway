@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-06-11 23:32:11 dharms>
+;; Modified Time-stamp: <2019-06-11 23:37:53 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3759,6 +3759,14 @@ Requires Flake8 2.0 or newer. See URL
               ("pd" . pipenv-deactivate))
   :config
   (add-hook 'python-mode-hook 'pipenv-mode))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; python-docstring ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package python-docstring
+  :after python
+  :bind (:map python-mode-map
+              ("C-c /" . python-docstring-fill))
+  :config
+  (add-hook 'python-mode-hook 'python-docstring-mode))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; rust-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package rust-mode :mode "\\.rs$")
