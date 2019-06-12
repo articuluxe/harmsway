@@ -47,7 +47,11 @@ function __prompt_command() {
     local blue='\[\e[0;34m\]'
     local purple='\[\e[0;35m\]'
 
-    PS1+="${red}\h:${rst}${yellow}\w${rst}${purple}\$(__git_ps1 \" (%s)\")${rst}"
+    PS1+="${red}\h:${rst}"
+    if [ ! -z "$CONDA_DEFAULT_ENV" ] && [ "$CONDA_DEFAULT_ENV" != "base" ]; then
+        PS1+=" ${green}($(basename $CONDA_DEFAULT_ENV)) ${rst}"
+    fi
+    PS1+="${yellow}\w${rst}${purple}\$(__git_ps1 \" (%s)\")${rst}"
     if [ $EXIT != 0 ]; then
         PS1+=" ${redb}[${EXIT}]${rst}${blue}>${rst} "
     else
