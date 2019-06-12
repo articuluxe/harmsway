@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-06-12 08:33:57 dharms>
+;; Modified Time-stamp: <2019-06-12 09:47:35 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3770,20 +3770,21 @@ Requires Flake8 2.0 or newer. See URL
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; python-docstring ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package python-docstring
   :after python
-  :bind (:map python-mode-map
-              ("C-c /" . python-docstring-fill))
+  :init
+  (add-hook 'python-mode-hook 'python-docstring-mode)
   :config
-  (add-hook 'python-mode-hook 'python-docstring-mode))
+  (define-key python-mode-map "\C-c/" 'python-docstring-fill))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; importmagic ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package importmagic
   :after python
-  :config
+  :init
   (add-hook 'python-mode-hook 'importmagic-mode)
+  :config
   (define-key importmagic-mode-map "\C-c\C-l" nil)
-  (define-key importmagic-mode-map "\C-cimm" #'importmagic-fix-imports)
-  (define-key importmagic-mode-map "\C-cim." #'importmagic-fix-symbol-at-point)
-  )
+  (define-key python-mode-map "\C-cimm" 'importmagic-mode)
+  (define-key python-mode-map "\C-cimf" 'importmagic-fix-imports)
+  (define-key python-mode-map "\C-cim." 'importmagic-fix-symbol-at-point))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; rust-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package rust-mode :mode "\\.rs$")
