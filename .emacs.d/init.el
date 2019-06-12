@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-06-11 16:56:30 dan.harms>
+;; Modified Time-stamp: <2019-06-11 23:32:11 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3642,6 +3642,10 @@ This may perform related customization."
 (use-package pcap-mode
   :mode ("\\.pcap$" . pcap-mode)
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; pip-requirements ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package pip-requirements
+  :mode ("\\.pip$" . pip-requirements-mode))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; plantuml ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package plantuml-mode
