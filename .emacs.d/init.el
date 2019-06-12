@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-06-11 23:37:53 dharms>
+;; Modified Time-stamp: <2019-06-11 23:46:02 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3759,6 +3759,13 @@ Requires Flake8 2.0 or newer. See URL
               ("pd" . pipenv-deactivate))
   :config
   (add-hook 'python-mode-hook 'pipenv-mode))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; py-isort ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package py-isort
+  :commands (py-isort-region py-isort-buffer)
+  :bind (:map python-mode-map
+              ("C-c isb" . py-isort-buffer)
+              ("C-c isr" . py-isort-region)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; python-docstring ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package python-docstring
