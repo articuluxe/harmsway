@@ -74,6 +74,7 @@ C++11 includes the following new language features:
 - [inline-namespaces](#inline-namespaces)
 - [non-static data member initializers](#non-static-data-member-initializers)
 - [right angle brackets](#right-angle-brackets)
+- [ref-qualified member functions](#ref-qualified-member-functions)
 
 C++11 includes the following new library features:
 - [std::move](#stdmove)
@@ -696,6 +697,13 @@ void f(T&& t) {
 int x = 0;
 f(0); // deduces as f(int&&)
 f(x); // deduces as f(int&)
+
+int& y = x;
+f(y); // deduces as f(int& &&) => f(int&)
+
+int&& z = 0; // NOTE: `z` is an lvalue with type `int&&`.
+f(z); // deduces as f(int&& &) => f(int&&)
+f(std::move(z)); // deduces as f(int&& &&) => f(int&&)
 ```
 
 See also: [`std::move`](#stdmove), [`std::forward`](#stdforward), [`rvalue references`](#rvalue-references).
@@ -1160,12 +1168,41 @@ class Human {
 };
 ```
 
-### Right angle Brackets
+### Right angle brackets
 C++11 is now able to infer when a series of right angle brackets is used as an operator or as a closing statement of typedef, without having to add whitespace.
 
 ```c++
 typedef std::map<int, std::map <int, std::map <int, int> > > cpp98LongTypedef;
 typedef std::map<int, std::map <int, std::map <int, int>>>   cpp11LongTypedef;
+```
+
+### Ref-qualified member functions
+Member functions can now be qualified depending on whether `*this` is an lvalue or rvalue reference.
+
+```c++
+struct Bar {
+  // ...
+};
+
+struct Foo {
+  Bar getBar() & { return bar; }
+  Bar getBar() const& { return bar; }
+  Bar getBar() && { return std::move(bar); }
+  Bar getBar() const&& { return std::move(bar); }
+private:
+  Bar bar{};
+};
+
+Foo foo{};
+Bar bar = foo.getBar(); // calls `Bar getBar() &`
+
+const Foo foo2{};
+Bar bar2 = foo2.getBar(); // calls `Bar Foo::getBar() const&`
+
+Foo{}.getBar(); // calls `Bar Foo::getBar() &&`
+std::move(foo).getBar(); // calls `Bar Foo::getBar() &&`
+
+std::move(foo2).getBar(); // calls `Bar Foo::getBar() const&&`
 ```
 
 ## C++11 Library Features

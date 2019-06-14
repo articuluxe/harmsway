@@ -5,7 +5,7 @@
 ;; Author: Joost Kremers <joostkremers@fastmail.fm>
 ;; Maintainer: Joost Kremers <joostkremers@fastmail.fm>
 ;; Created: 31 Oct 2009
-;; Version: 2.27
+;; Version: 2.28
 ;; Keywords: text, pandoc
 ;; Package-Requires: ((hydra "0.10.0") (dash "2.10.0"))
 
@@ -190,6 +190,7 @@ matches KEY."
     ("wiki" "Wiki Formats" "w"
      ("creole"               "Creole 1.0"                "c" both)
      ("dokuwiki"             "DokuWiki"                  "d" both)
+     ("jira"                 "JiraWiki"                  "j" output)
      ("mediawiki"            "MediaWiki"                 "m" both)
      ("tikiwiki"             "TikiWiki"                  "t" both)
      ("twiki"                "Twiki"                     "T" input)
@@ -389,7 +390,7 @@ possible to customize the extensions."
     ("styles"                              ())
     ("table_captions"                      ("markdown"))
     ("task_lists"                          ("markdown" "gfm"))
-    ("tex_math_dollars"                    ("markdown" "html"))
+    ("tex_math_dollars"                    ("markdown" "markdown_mmd" "html"))
     ("tex_math_double_backslash"           ("markdown_mmd" "html"))
     ("tex_math_single_backslash"           ("markdown_github" "html"))
     ("yaml_metadata_block"                 ("markdown")))
