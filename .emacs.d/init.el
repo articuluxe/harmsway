@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-06-17 14:32:45 dan.harms>
+;; Modified Time-stamp: <2019-06-17 15:19:43 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3740,8 +3740,11 @@ Requires Flake8 2.0 or newer. See URL
               ("cd" . conda-env-deactivate)
               ("cb" . conda-env-activate-for-buffer)
               ("cl" . conda-env-list))
+  :init
+  (put 'conda-project-env-name 'safe-local-variable 'stringp)
   :config
-  (conda-env-initialize-interactive-shells))
+  (conda-env-initialize-interactive-shells)
+  (conda-env-autoactivate-mode 1))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; pyvenv ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package pyvenv
@@ -3787,6 +3790,12 @@ Requires Flake8 2.0 or newer. See URL
   (define-key python-mode-map "\C-cimf" 'importmagic-fix-imports)
   (define-key python-mode-map "\C-cim." 'importmagic-fix-symbol-at-point))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;; python-switch-quotes ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package python-switch-quotes
+  :after python
+  :config
+  (define-key python-mode-map "\C-c'" #'python-switch-quotes))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; rust-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package rust-mode :mode "\\.rs$")
 
@@ -3797,12 +3806,6 @@ Requires Flake8 2.0 or newer. See URL
   (add-hook 'python-mode-hook
             (lambda ()
               (sphinx-doc-mode 1))))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;; python-switch-quotes ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package python-switch-quotes
-  :after python
-  :config
-  (define-key python-mode-map "\C-c'" #'python-switch-quotes))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; qt-pro-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package qt-pro-mode :mode ("\\.pr[oi]$"))

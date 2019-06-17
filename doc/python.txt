@@ -5,7 +5,7 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Tuesday, June 11, 2019
 # Version: 1.0
-# Modified Time-stamp: <2019-06-11 16:36:51 dan.harms>
+# Modified Time-stamp: <2019-06-17 14:11:02 dan.harms>
 # Modified by: Dan Harms
 # Keywords: python help
 
@@ -23,7 +23,16 @@ conda deactivate
 # delete virtual env
 conda remove -n ENV -all
 
-
 conda update conda
+
+#################################### pip #####################################
+pip list [--outdated]
+pip show <package>
+pip install . [--upgrade]
+pip [un]install <package>
+# requirements files
+pip freeze > requirements.txt
+pip install -r requirements.txt
+
 
 # code ends here
