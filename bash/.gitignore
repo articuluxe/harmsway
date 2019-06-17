@@ -1,5 +1,7 @@
-# proviso files
+# project files
 *.proviso
+.*.env
+repo-setup.sh
 
 # TAGS files
 TAGS
