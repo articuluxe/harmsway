@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-06-14 06:37:03 dharms>
+;; Modified Time-stamp: <2019-06-17 14:32:45 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3862,6 +3862,11 @@ Requires Flake8 2.0 or newer. See URL
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; strace-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package strace-mode :mode "\\.strace$")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; swift-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package swift-mode
+  :mode "\\.swift$"
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; text-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-hook 'text-mode-hook #'good-word/init-word-processor)
