@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-06-18 08:38:26 dharms>
+;; Modified Time-stamp: <2019-06-18 12:06:21 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2139,6 +2139,8 @@ Only one letter is shown, the first that applies."
   )
 (use-package treemacs-magit
   :after treemacs)
+(use-package lsp-treemacs
+  :commands (lsp-treemacs-errors-list lsp-treemacs-quick-fix))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; deft ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package deft
