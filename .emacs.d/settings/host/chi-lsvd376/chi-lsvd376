@@ -3,7 +3,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dan.harms)
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Monday, March 14, 2016
-;; Modified Time-stamp: <2019-06-14 09:47:26 dan.harms>
+;; Modified Time-stamp: <2019-06-18 11:05:47 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: config
 
@@ -39,6 +39,7 @@
                            "Anka/Coder 10"
                            "monoid 10"
                            "Edlo 10"
+                           "Ubuntu Mono 12"
                            "Share Tech Mono 11"
                            "IBM Plex Mono 10"
                            "Ricty Diminished 11"
