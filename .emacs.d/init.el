@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-06-18 12:06:21 dan.harms>
+;; Modified Time-stamp: <2019-06-19 08:06:14 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -318,8 +318,8 @@ not an error if any files do not exist."
          ("C-c dg" . proviso-gud-open-gdb)
          ("C-c dr" . proviso-gud-open-realgud)
          ("C-c dp" . proviso-gud-open-pdb)
-         ("C-c pd" . proviso-open-dired-this-project)
-         ("C-c pD" . proviso-open-dired-all-projects)
+         ("C-c pd" . proviso-dired-open-this-project)
+         ("C-c pD" . proviso-dired-open-all-projects)
          ("C-c pp" . proviso-display-print-project)
          ("C-c pn" . proviso-display-echo-project-names)
          ("C-c pe" . proviso-display-projects)
