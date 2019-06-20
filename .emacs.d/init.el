@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-06-19 08:06:14 dharms>
+;; Modified Time-stamp: <2019-06-20 10:22:23 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1474,7 +1474,7 @@ Only one letter is shown, the first that applies."
   plur
   :if (not (version< emacs-version "24.4"))
   :bind (("C-c 0gs" . plur-isearch-forward)
-         ("C-c 0gr" . plur-replace)
+         ("C-c 0gp" . plur-replace)
          ("C-c 0g%" . plur-query-replace)
          :map isearch-mode-map
          ("C-p" . plur-isearch-forward)
@@ -1609,7 +1609,8 @@ Only one letter is shown, the first that applies."
          ("M-s M-r" . counsel-recentf)
          ("M-s M-p" . counsel-git-grep)
          ("M-s M-g" . counsel-grep)
-         ("M-s M-c" . counsel-ag)
+         ("C-c 0ga" . counsel-ag)
+         ("C-c 0gr" . counsel-rg)
          ("M-s M-z" . counsel-git-stash)
          ("M-s M-i" . counsel-imenu)
          ("M-s M-l" . counsel-git-log)
