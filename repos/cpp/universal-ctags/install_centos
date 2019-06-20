@@ -1,0 +1,10 @@
+cd src
+git apply ../centos.patch
+./autogen.sh
+mkdir -p bld
+cd bld
+../configure --prefix=$HOME/opt/stow/ctags --program-prefix=ex --disable-xml
+make
+make install
+cd $HOME/opt/stow
+stow -R ctags
