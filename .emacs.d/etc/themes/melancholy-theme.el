@@ -94,7 +94,7 @@
     `(font-lock-constant-face ((t (:foreground "#DFAF8F"))))
     `(font-lock-doc-face ((t (:foreground ,my-info))))
     `(font-lock-function-name-face ((t (:foreground ,my-pop))))
-    `(font-lock-keyword-face ((t (:foreground ,my-active :height 121 :weight bold))))
+    `(font-lock-keyword-face ((t (:foreground ,my-active :weight bold))))
     `(font-lock-negation-char-face ((t (:foreground "#F37DEE"))))
     `(font-lock-preprocessor-face ((t (:foreground ,my-active))))
     `(font-lock-regexp-grouping-backslash ((t (:foreground ,my-btw  ))))

@@ -37,6 +37,8 @@
 (defvar forge-topic-list-mode-map
   (let ((map (make-sparse-keymap)))
     (set-keymap-parent map tabulated-list-mode-map)
+    (define-key map (kbd "'") 'forge-dispatch)
+    (define-key map (kbd "?") 'magit-dispatch)
     map)
   "Local keymap for Forge-Topic-List mode buffers.")
 
@@ -88,7 +90,7 @@
 (defun forge-list-issues (repo)
   "List issues in a separate buffer."
   (interactive (list (forge-get-repository t)))
-  (forge--list-topics 'forge-issue-list-mode "*Issues*"
+  (forge--list-topics 'forge-issue-list-mode nil
     (forge-sql [:select $i1 :from issue :where (= repository $s2)]
                (forge--topic-list-columns-vector)
                (oref repo id))))
@@ -109,7 +111,7 @@
 (defun forge-list-pullreqs (repo)
   "List pull-requests in a separate buffer."
   (interactive (list (forge-get-repository t)))
-  (forge--list-topics 'forge-pullreq-list-mode "*Pull-Requests*"
+  (forge--list-topics 'forge-pullreq-list-mode nil
     (forge-sql [:select $i1 :from pullreq :where (= repository $s2)]
                (forge--topic-list-columns-vector)
                (oref repo id))))
@@ -129,7 +131,14 @@
 (defun forge--list-topics (mode buffer-name rows)
   (declare (indent 2))
   (let ((topdir (magit-toplevel)))
-    (with-current-buffer (get-buffer-create buffer-name)
+    (with-current-buffer
+        (get-buffer-create
+         (or buffer-name
+             (let ((repo (forge-get-repository t)))
+               (format "*%s: %s/%s*"
+                       (substring (symbol-name mode) 0 -5)
+                       (oref repo owner)
+                       (oref repo name)))))
       (setq default-directory topdir)
       (funcall mode)
       (setq tabulated-list-entries

@@ -108,7 +108,7 @@
 (defun lsp-treemacs-quick-fix ()
   "Select the element under cursor."
   (interactive)
-  (let ((key (button-get (treemacs-node-at-point) :key)))
+  (let ((key (button-get (treemacs-node-at-point) :data)))
     (if (and (consp key) (lsp-diagnostic-p (cdr key)))
         (-let (((file . diag) key)
                (session (lsp-session)))
@@ -119,7 +119,7 @@
               (save-excursion
                 (goto-char (point-min))
                 (forward-line (lsp-diagnostic-line diag))
-                (call-interactively #'lsp-execute-code-action)))))
+                (lsp-execute-code-action-by-kind "quickfix")))))
       (user-error "Not no a diagnostic"))))
 
 (defun lsp-treemacs-open-file (&rest _)

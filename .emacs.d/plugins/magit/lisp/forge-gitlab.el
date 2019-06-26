@@ -394,12 +394,20 @@ it is all or nothing.")
                       ;; We should use the label's `id' instead of its
                       ;; `name' but a topic's `labels' field is a list
                       ;; of names instead of a list of ids or an alist.
-                      ;; If a label is renamed, then things break.
+                      ;; As a result of this we cannot recognize when
+                      ;; a label is renamed and a topic continues to be
+                      ;; tagged with the old label name until it itself
+                      ;; is modified somehow.  Additionally it leads to
+                      ;; name conflicts between group and project
+                      ;; labels.  See #160.
                       (list (forge--object-id id .name)
                             .name
                             (downcase .color)
                             .description)))
-                  data))))
+                  ;; For now simply remove one of the duplicates.
+                  (cl-delete-duplicates data
+                                        :key (apply-partially #'alist-get 'name)
+                                        :test #'equal)))))
 
 ;;;; Notifications
 
@@ -507,6 +515,18 @@ it is all or nothing.")
        (forge--set-topic-field repo topic 'assignee_ids
                                (--map (caddr (assoc it users)) assignees))))))
 
+(cl-defmethod forge--delete-comment
+  ((_repo forge-gitlab-repository) post)
+  (forge--glab-delete
+   post
+   (cl-etypecase post
+     (forge-pullreq-post
+      "/projects/:project/merge_requests/:topic/notes/:number")
+     (forge-issue-post
+      "/projects/:project/issues/:topic/notes/:number")))
+  (closql-delete post)
+  (magit-refresh))
+
 (cl-defmethod forge--topic-templates ((repo forge-gitlab-repository)
                                       (_ (subclass forge-issue)))
   (--filter (string-match-p "\\`\\.gitlab/issue_templates/.+\\.md\\'" it)
@@ -569,6 +589,22 @@ it is all or nothing.")
              :noerror noerror :reader reader
              :callback callback
              :errorback (or errorback (and callback t))))
+
+(cl-defun forge--glab-delete (obj resource
+                                  &optional params
+                                  &key query payload headers
+                                  silent unpaginate noerror reader
+                                  host callback errorback)
+  (declare (indent defun))
+  (glab-delete (forge--format-resource obj resource)
+               params
+               :host (or host (oref (forge-get-repository obj) apihost))
+               :auth 'forge
+               :query query :payload payload :headers headers
+               :silent silent :unpaginate unpaginate
+               :noerror noerror :reader reader
+               :callback callback
+               :errorback (or errorback (and callback t))))
 
 ;;; _
 (provide 'forge-gitlab)

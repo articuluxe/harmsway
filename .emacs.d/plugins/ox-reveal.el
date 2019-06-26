@@ -139,7 +139,7 @@ When set to `auto', an automatic title slide is generated. When
 set to a string, use this string as a format string for title
 slide, where the following escaping elements are allowed:
 
-  %s stands for the title
+  %t stands for the title
   %a stands for the author's name.
   %e stands for the author's email.
   %d stands for the date.
@@ -439,8 +439,7 @@ holding contextual information."
 					(org-export-get-headline-number headline info)
 					"-"))
 	     (preferred-id (or (org-element-property :CUSTOM_ID headline)
-			       section-number
-			       (org-element-property :ID headline)))
+			       (org-export-get-reference headline info)))
 	     (hlevel (org-reveal--get-hlevel info))
 	     (header (plist-get info :reveal-slide-header))
 	     (header-div (when header (format "<div class=\"slide-header\">%s</div>\n" header)))
@@ -455,7 +454,8 @@ holding contextual information."
              (default-slide-background-transition (plist-get info :reveal-default-slide-background-transition))
              (slide-section-tag (format "<section %s%s>\n"
                                         (org-html--make-attribute-string
-                                         `(:id ,(format "slide-sec-%s" preferred-id)
+                                         `(:id ,(format "slide-%s" preferred-id)
+                                           :class ,(org-element-property :HTML_CONTAINER_CLASS headline)
                                            :data-transition ,(org-element-property :REVEAL_DATA_TRANSITION headline)
                                            :data-state ,(org-element-property :REVEAL_DATA_STATE headline)
                                            :data-background ,(or (org-element-property :REVEAL_BACKGROUND headline)
@@ -959,6 +959,17 @@ Extract and set `attr_html' to plain-list tag attributes."
             tag
             )))
 
+(defun org-reveal--insert-bibliography (&optional ignore)
+  "Create a slide for the bibliography from org-ref, if it exists"
+  (if (fboundp 'org-ref-get-html-bibliography)
+      (progn 
+        ;; here we could employ other bibliographic engines
+        (fset 'bibliography 'org-ref-get-html-bibliography)
+        (when (funcall 'bibliography)
+            (concat "<section>"
+                    (funcall 'bibliography)
+                    "</section>")))))
+
 (defun org-reveal--build-pre/postamble (type info)
   "Return document preamble or postamble as a string, or nil."
   (let ((section (plist-get info (intern (format ":reveal-%s" type))))
@@ -1155,6 +1166,7 @@ info is a plist holding export options."
                      (when footer (format "<div class=\"slide-footer\">%s</div>\n" footer))))
                  "</section>\n"))))
    contents
+   (org-reveal--insert-bibliography)
    "</div>
 </div>\n"
    (org-reveal--build-pre/postamble 'postamble info)
@@ -1234,7 +1246,6 @@ transformed fragment attribute to ELEM's attr_html plist."
   (let* ((extension (concat "." org-html-extension))
          (file (org-export-output-file-name extension subtreep))
          (clientfile (org-export-output-file-name (concat "_client" extension) subtreep)))
-
     ; export filename_client HTML file if multiplexing
     (setq client-multiplex nil)
     (setq retfile (org-export-to-file 'reveal file

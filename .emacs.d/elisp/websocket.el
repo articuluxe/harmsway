@@ -4,7 +4,7 @@
 
 ;; Author: Andrew Hyatt <ahyatt@gmail.com>
 ;; Keywords: Communication, Websocket, Server
-;; Version: 1.11
+;; Version: 1.11.1
 ;; Package-Requires: ((cl-lib "0.5"))
 ;;
 ;; This program is free software; you can redistribute it and/or
@@ -46,6 +46,7 @@
 (require 'bindat)
 (require 'url-parse)
 (require 'url-cookie)
+(require 'seq)
 (eval-when-compile (require 'cl-lib))
 
 ;;; Code:
@@ -99,7 +100,7 @@ same for the protocols."
   accept-string
   (inflight-input nil))
 
-(defvar websocket-version "1.11"
+(defvar websocket-version "1.11.1"
   "Version numbers of this version of websocket.el.")
 
 (defvar websocket-debug nil
@@ -284,20 +285,13 @@ many bytes were consumed from the string."
 (defun websocket-mask (key data)
   "Using string KEY, mask string DATA according to the RFC.
 This is used to both mask and unmask data."
-  ;; If we don't make the string unibyte here, a string of bytes that should be
-  ;; interpreted as a unibyte string will instead be interpreted as a multibyte
-  ;; string of the same length (for example, 6 multibyte chars for 你好 instead
-  ;; of the correct 6 unibyte chars, which would convert into 2 multibyte
-  ;; chars).
-  (funcall
-   #'encode-coding-string
-   (let ((result (make-string (length data) ?x)))
-     (cl-loop
-      for i from 0 below (length data)
-      do
-      (setf (seq-elt result i) (logxor (aref key (mod i 4)) (seq-elt data i)))
-      finally (return result)))
-   'utf-8))
+  ;; Returning the string as unibyte is important here. Because we set the
+  ;; string byte by byte, this results in a unibyte string.
+  (cl-loop
+   with result = (make-string (length data) ?x)
+   for i from 0 below (length data)
+   do (setf (seq-elt result i) (logxor (aref key (mod i 4)) (seq-elt data i)))
+   finally return result))
 
 (defun websocket-ensure-length (s n)
   "Ensure the string S has at most N bytes.

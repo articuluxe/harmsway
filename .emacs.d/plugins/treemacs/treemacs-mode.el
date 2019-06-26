@@ -1,6 +1,6 @@
 ;;; treemacs.el --- A tree style file viewer package -*- lexical-binding: t -*-
 
-;; Copyright (C) 2018 Alexander Miller
+;; Copyright (C) 2019 Alexander Miller
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -264,7 +264,8 @@ to it will instead show a blank."
   (defvar treemacs-mode-map
     (let ((map (make-sparse-keymap)))
       (define-key map (kbd "?")         #'treemacs-helpful-hydra)
-      (define-key map [mouse-1]         #'treemacs-leftclick-action)
+      (define-key map [down-mouse-1]    #'treemacs-leftclick-action)
+      (define-key map [drag-mouse-1]    #'treemacs-dragleftclick-action)
       (define-key map [double-mouse-1]  #'treemacs-doubleclick-action)
       (define-key map [mouse-3]         #'treemacs-rightclick-menu)
       (define-key map [tab]             #'treemacs-TAB-action)
@@ -401,8 +402,9 @@ Will simply return `treemacs--eldoc-msg'."
   (add-to-list 'delete-frame-functions #'treemacs--on-frame-kill)
   (add-hook 'post-command-hook #'treemacs--post-command nil t)
 
+
   (treemacs--build-indentation-cache 6)
-  (treemacs--adjust-icons-to-window-system)
+  (treemacs--select-icon-set)
   (treemacs--setup-icon-highlight)
   (treemacs--setup-icon-background-colors)
   (treemacs--setup-mode-line)

@@ -49,12 +49,15 @@ for a repository using the command `forge-add-pullreq-refspec'."
     ("f f" "topics"        forge-pull)
     ("f n" "notifications" forge-pull-notifications)]
    ["List"
-    ("l p" "pull-requests" forge-list-pullreqs)
     ("l i" "issues"        forge-list-issues)
+    ("l p" "pull-requests" forge-list-pullreqs)
     ("l n" "notifications" forge-list-notifications)]
    ["Create"
+    ("c i" "issue"         forge-create-issue)
     ("c p" "pull-request"  forge-create-pullreq)
-    ("c i" "issue"         forge-create-issue)]])
+    ("c u" "pull-request from issue" forge-create-pullreq-from-issue)]]
+  [["Configure"
+    ("r" "forge.repository" forge-forge.remote)]])
 
 ;;; Pull
 
@@ -280,32 +283,7 @@ Prefer a topic over a branch and that over a commit."
 
 (defun forge-create-pullreq (source target)
   "Create a new pull-request for the current repository."
-  (interactive
-   (let* ((atpoint  (magit-branch-at-point))
-          (current  (magit-get-current-branch))
-          (branches (magit-list-remote-branch-names))
-          (source   (magit-completing-read
-                     "Source branch" branches nil t nil 'magit-revision-history
-                     (or (and atpoint
-                              (if (magit-remote-branch-p atpoint)
-                                  atpoint
-                                (magit-get-push-branch atpoint t)))
-                         (and current
-                              (if (magit-remote-branch-p current)
-                                  current
-                                (magit-get-push-branch current t))))))
-          (local    (cdr (magit-split-branch-name source)))
-          (local    (and (magit-branch-p local) local))
-          (upstream (and local (magit-get-upstream-branch local)))
-          (branches (delete source branches))
-          (target   (magit-completing-read
-                     "Target branch" branches nil t nil 'magit-revision-history
-                     (or (and upstream
-                              (if (magit-remote-branch-p upstream)
-                                  upstream
-                                (magit-get-upstream-branch upstream)))
-                         (car (member "origin/master" branches))))))
-     (list source target)))
+  (interactive (forge-create-pullreq--read-args))
   (let* ((repo (forge-get-repository t))
          (buf (forge--prepare-post-buffer
                "new-pullreq"
@@ -316,6 +294,40 @@ Prefer a topic over a branch and that over a commit."
       (setq forge--buffer-post-object repo)
       (setq forge--submit-post-function 'forge--submit-create-pullreq))
     (forge--display-post-buffer buf)))
+
+(defun forge-create-pullreq-from-issue (issue source target)
+  "Convert an existing issue into a pull-request."
+  (interactive (cons (oref (forge-read-issue "Convert issue") number)
+                     (forge-create-pullreq--read-args)))
+  (forge--create-pullreq-from-issue (forge-get-repository t)
+                                    issue source target))
+
+(defun forge-create-pullreq--read-args ()
+  (let* ((source  (magit-completing-read
+                   "Source branch"
+                   (magit-list-remote-branch-names)
+                   nil t nil 'magit-revision-history
+                   (or (when-let ((d (magit-branch-at-point)))
+                         (if (magit-remote-branch-p d)
+                             d
+                           (magit-get-push-branch d t)))
+                       (when-let ((d (magit-get-current-branch)))
+                         (if (magit-remote-branch-p d)
+                             d
+                           (magit-get-push-branch d t))))))
+         (remote  (oref (forge-get-repository t) remote))
+         (targets (delete source (magit-list-remote-branch-names remote)))
+         (target  (magit-completing-read
+                   "Target branch" targets nil t nil 'magit-revision-history
+                   (let* ((d (cdr (magit-split-branch-name source)))
+                          (d (and (magit-branch-p d) d))
+                          (d (and d (magit-get-upstream-branch d)))
+                          (d (and d (if (magit-remote-branch-p d)
+                                        d
+                                      (magit-get-upstream-branch d))))
+                          (d (or d (concat remote "/master"))))
+                     (car (member d targets))))))
+    (list source target)))
 
 (defun forge-create-issue ()
   "Create a new issue for the current repository."
@@ -442,6 +454,15 @@ point is currently on."
           'confirm)
         (mapconcat #'car value ","))))))
 
+;;; Delete
+
+(defun forge-delete-comment (comment)
+  "Delete the comment at point."
+  (interactive (list (or (forge-comment-at-point)
+                         (user-error "There is no post at point"))))
+  (when (yes-or-no-p "Do you really want to delete the selected comment? ")
+    (forge--delete-comment (forge-get-repository t) comment)))
+
 ;;; Branch
 
 ;;;###autoload
@@ -456,7 +477,7 @@ Please see the manual for more information."
   (let ((branch (format "pr-%s" number)))
     (when (magit-branch-p branch)
       (user-error "Branch `%s' already exists" branch))
-    (magit-git "branch" branch (forge--pullreq-ref-1 number))
+    (magit-git "branch" branch (forge--pullreq-ref number))
     ;; More often than not this is the correct target branch.
     (magit-call-git "branch" branch "--set-upstream-to=master")
     (magit-set (number-to-string number) "branch" branch "pullRequest")
@@ -464,7 +485,7 @@ Please see the manual for more information."
     branch))
 
 (cl-defmethod forge--branch-pullreq ((repo forge-repository) pullreq)
-  (with-slots (number title editable-p cross-repo-p
+  (with-slots (number title editable-p cross-repo-p state
                       base-ref base-repo
                       head-ref head-repo head-user)
       pullreq
@@ -474,49 +495,58 @@ Please see the manual for more information."
            (remote head-user)
            (branch (forge--pullreq-branch pullreq t))
            (pr-branch head-ref))
-      (if (not cross-repo-p)
-          (let ((tracking (concat upstream "/" pr-branch)))
-            (unless (magit-branch-p tracking)
-              (magit-call-git "fetch" upstream))
-            (magit-call-git "branch" branch tracking)
-            (magit-branch-maybe-adjust-upstream branch tracking)
-            (magit-set upstream "branch" branch "pushRemote")
-            (magit-set upstream "branch" branch "pullRequestRemote"))
-        (if (magit-remote-p remote)
-            (let ((url   (magit-git-string "remote" "get-url" remote))
-                  (fetch (magit-get-all "remote" remote "fetch")))
-              (unless (forge--url-equal
-                       url (format "git@%s:%s.git" host head-repo))
-                (user-error
-                 "Remote `%s' already exists but does not point to %s"
-                 remote url))
-              (unless (member (format "+refs/heads/*:refs/remotes/%s/*" remote)
-                              fetch)
-                (magit-git "remote" "set-branches" "--add" remote pr-branch)
-                (magit-git "fetch" remote)))
-          (magit-git
-           "remote" "add" "-f" "--no-tags"
-           "-t" pr-branch remote
-           (cond ((or (string-prefix-p "git@" upstream-url)
-                      (string-prefix-p "ssh://git@" upstream-url))
-                  (format "git@%s:%s.git" host head-repo))
-                 ((string-prefix-p "https://" upstream-url)
-                  (format "https://%s/%s.git" host head-repo))
-                 ((string-prefix-p "git://" upstream-url)
-                  (format "git://%s/%s.git" host head-repo))
-                 (t (error "%s has an unexpected format" upstream-url)))))
-        (magit-git "branch" "--force" branch (concat remote "/" pr-branch))
-        (if (and editable-p
-                 (equal branch pr-branch))
-            (magit-set remote "branch" branch "pushRemote")
-          (magit-set upstream "branch" branch "pushRemote")))
-      (magit-set remote "branch" branch "pullRequestRemote")
-      (magit-set "true" "branch" branch "rebase")
-      (magit-git "branch" branch
-                 (concat "--set-upstream-to="
-                         (if magit-branch-prefer-remote-upstream
-                             (concat upstream "/" base-ref)
-                           base-ref)))
+      (when (string-match-p ":" pr-branch)
+        ;; Such a branch name would be invalid.  If we encounter
+        ;; it anyway, then that means that the source branch and
+        ;; the merge-request ref are missing.
+        (error "Cannot check out this Gitlab merge-request \
+because the source branch has been deleted"))
+      (if (not (eq state 'open))
+          (magit-git "branch" "--force" branch
+                     (format "refs/pullreqs/%s" number))
+        (if (not cross-repo-p)
+            (let ((tracking (concat upstream "/" pr-branch)))
+              (unless (magit-branch-p tracking)
+                (magit-call-git "fetch" upstream))
+              (magit-call-git "branch" branch tracking)
+              (magit-branch-maybe-adjust-upstream branch tracking)
+              (magit-set upstream "branch" branch "pushRemote")
+              (magit-set upstream "branch" branch "pullRequestRemote"))
+          (if (magit-remote-p remote)
+              (let ((url   (magit-git-string "remote" "get-url" remote))
+                    (fetch (magit-get-all "remote" remote "fetch")))
+                (unless (forge--url-equal
+                         url (format "git@%s:%s.git" host head-repo))
+                  (user-error
+                   "Remote `%s' already exists but does not point to %s"
+                   remote url))
+                (unless (member (format "+refs/heads/*:refs/remotes/%s/*" remote)
+                                fetch)
+                  (magit-git "remote" "set-branches" "--add" remote pr-branch)
+                  (magit-git "fetch" remote)))
+            (magit-git
+             "remote" "add" "-f" "--no-tags"
+             "-t" pr-branch remote
+             (cond ((or (string-prefix-p "git@" upstream-url)
+                        (string-prefix-p "ssh://git@" upstream-url))
+                    (format "git@%s:%s.git" host head-repo))
+                   ((string-prefix-p "https://" upstream-url)
+                    (format "https://%s/%s.git" host head-repo))
+                   ((string-prefix-p "git://" upstream-url)
+                    (format "git://%s/%s.git" host head-repo))
+                   (t (error "%s has an unexpected format" upstream-url))))
+            (magit-git "branch" "--force" branch (concat remote "/" pr-branch)))
+          (if (and editable-p
+                   (equal branch pr-branch))
+              (magit-set remote "branch" branch "pushRemote")
+            (magit-set upstream "branch" branch "pushRemote")))
+        (magit-set remote "branch" branch "pullRequestRemote")
+        (magit-set "true" "branch" branch "rebase")
+        (magit-git "branch" branch
+                   (concat "--set-upstream-to="
+                           (if magit-branch-prefer-remote-upstream
+                               (concat upstream "/" base-ref)
+                             base-ref))))
       (magit-set (number-to-string number) "branch" branch "pullRequest")
       (magit-set title                     "branch" branch "description")
       (magit-refresh)
@@ -528,8 +558,12 @@ Please see the manual for more information."
 Please see the manual for more information."
   (interactive (list (forge-read-pullreq-or-number "Checkout pull request" t)))
   (magit-checkout
-   (let ((inhibit-magit-refresh t))
-     (forge-branch-pullreq pullreq))))
+   (or (if (not (eq (oref pullreq state) 'open))
+           (magit-ref-p (format "refs/pullreqs/%s"
+                                (oref pullreq number)))
+         (magit-branch-p (forge--pullreq-branch pullreq)))
+       (let ((inhibit-magit-refresh t))
+         (forge-branch-pullreq pullreq)))))
 
 ;;;###autoload
 (defun forge-checkout-worktree (path pullreq)
@@ -562,6 +596,12 @@ information."
                              (forge-branch-pullreq pullreq))))
 
 ;;; Misc
+
+(define-infix-command forge-forge.remote ()
+  :class 'magit--git-variable:choices
+  :variable "forge.remote"
+  :choices 'magit-list-remotes
+  :default "origin")
 
 ;;;###autoload
 (defun forge-list-notifications ()

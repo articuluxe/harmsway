@@ -1,8 +1,8 @@
 ;;; gif-screencast.el --- One-frame-per-action GIF recording -*- lexical-binding: t -*-
 
-;; Copyright (C) 2018, 2019 Pierre Neidhardt <mail@ambrevar.xyz>
+;; Copyright (C) 2018 Pierre Neidhardt <ambrevar@gmail.com>
 
-;; Author: Pierre Neidhardt <mail@ambrevar.xyz>
+;; Author: Pierre Neidhardt <ambrevar@gmail.com>
 ;; URL: https://gitlab.com/ambrevar/emacs-gif-screencast
 ;; Version: 1.0
 ;; Package-Requires: ((emacs "25.1"))
@@ -69,13 +69,12 @@ various programs run here."
   "A program for cropping the screenshots.
 If `gif-screencast-cropping-program' is not found, cropping will be skipped.")
 
-(defcustom gif-screencast-cropping-args #'gif-screencast-cropping-arg-list
+(defcustom gif-screencast-cropping-args nil
   "Arguments to `gif-screencast-cropping-program'.
-This can either be a list of strings or a function taking no arguments and
-returning a list of strings. "
+Don't specify \"-format\" and \"-crop\" since these commands are used
+as the default arguments."
   :group 'gif-screencast
-  :type '(choice (repeat string)
-                 function))
+  :type '(repeat string))
 
 (defcustom gif-screencast-want-optimized t
   "If non-nil, run `gif-screencast-optimize' over the resulting GIF."
@@ -143,14 +142,6 @@ If you are a macOS user, \"ppm\" should be specified."
   :global t
   :require 'gif-screencast
   :keymap gif-screencast-mode-map)
-
-(defun gif-screencast-cropping-arg-list ()
-  "Return cropping arguments as a list of strings."
-  (list
-   "-format"
-   (format "%s" gif-screencast-capture-format)
-   "-crop"
-   (gif-screencast--cropping-region)))
 
 (defvar gif-screencast--counter 0
   "Number of running screenshots.")
@@ -234,11 +225,11 @@ If you are a macOS user, \"ppm\" should be specified."
                           "cropping"
                           (get-buffer-create gif-screencast-log)
                           gif-screencast-cropping-program
-                          (append (cond
-                                   ((functionp gif-screencast-cropping-args)
-                                    (funcall gif-screencast-cropping-args))
-                                   (t
-                                    gif-screencast-cropping-args))
+                          (append '("-format")
+                                  (list (format "%s" gif-screencast-capture-format))
+                                  '("-crop")
+                                  (list (gif-screencast--cropping-region))
+                                  gif-screencast-cropping-args
                                   (mapcar 'cdr gif-screencast--frames)))))
             (set-process-sentinel p 'gif-screencast--generate-gif)))
       (message "Cropping program '%s' not found (See `gif-screencast-cropping-program')" gif-screencast-cropping-program)

@@ -155,7 +155,7 @@
     (setq type (if current-prefix-arg nil 'open)))
   (if (forge--childp (forge-get-repository t) 'forge-unusedapi-repository)
       (let* ((num (read-number (concat prompt ": ")))
-             (ref (forge--pullreq-ref-1 num)))
+             (ref (forge--pullreq-ref num)))
         (unless (magit-ref-exists-p ref)
           (user-error "Reference `%s' doesn't exist.  Maybe pull first?" ref))
         num)
@@ -165,7 +165,11 @@
   (with-slots (head-ref number cross-repo-p editable-p) pullreq
     (let ((branch head-ref)
           (branch-n (format "pr-%s" number)))
-      (when (and cross-repo-p (not editable-p))
+      (when (or (and cross-repo-p (not editable-p))
+                ;; Such a branch name would be invalid.  If we encounter
+                ;; this, then it means that we are dealing with a Gitlab
+                ;; pull-request whose source branch has been deleted.
+                (string-match-p ":" branch))
         (setq branch branch-n))
       (when (and confirm-reset (magit-branch-p branch))
         (when (member branch '("master" "next" "maint"))
@@ -199,14 +203,9 @@ yourself, in which case you probably should not reset either.
           (message "")))
       branch)))
 
-(defun forge--pullreq-ref-1 (number)
-  (let ((ref (format "refs/pullreqs/%s" number)))
-    (and (magit-rev-verify ref) ref)))
-
 (defun forge--pullreq-ref (pullreq)
-  (let ((branch (forge--pullreq-branch pullreq)))
-    (or (and branch (magit-rev-verify branch) branch)
-        (forge--pullreq-ref-1 (oref pullreq number)))))
+  (let ((ref (format "refs/pullreqs/%s" (oref pullreq number))))
+    (and (magit-rev-verify ref) ref)))
 
 (cl-defmethod forge-get-url ((pullreq forge-pullreq))
   (forge--format pullreq 'pullreq-url-format))

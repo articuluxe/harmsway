@@ -86,7 +86,7 @@
  '(icompletep-determined ((t (:foreground "#A6E22E"))))
  '(icompletep-keys ((t (:foreground "#F92672"))))
  '(icompletep-nb-candidates ((t (:foreground "#AE81FF"))))
- '(isearch ((t (:foreground "#F2594B" :background "#C4BE89"))))
+ '(isearch ((t (:foreground "#dddddd" :background "#C4BE89"))))
  '(isearch-fail ((t (:foreground "#FFFFFF" :background "#CD2C24"))))
  '(markdown-italic-face ((t (:slant italic))))
  '(markdown-bold-face ((t (:weight bold))))

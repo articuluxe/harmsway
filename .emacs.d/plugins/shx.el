@@ -5,9 +5,7 @@
 ;; Keywords: processes, tools
 ;; URL: https://github.com/riscy/shx-for-emacs
 ;; Package-Requires: ((emacs "24.4"))
-;; Version: 1.1.1
-
-;; This file is NOT part of GNU Emacs.
+;; Version: 1.1.2
 
 ;; This file is free software; you can redistribute it and/or modify it under
 ;; the terms of the GNU General Public License as published by the Free Software
@@ -18,7 +16,7 @@
 ;; A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
 
 ;; You should have received a copy of the GNU General Public License along with
-;; this file.  If not, see <http://www.gnu.org/licenses/>.
+;; this file.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Commentary:
 
@@ -40,7 +38,7 @@
 ;; Compiler pacifier
 (defvar evil-state)
 (defvar tramp-syntax)
-(declare-function evil-insert-state "ext:evil-states.el" nil t)
+(declare-function evil-insert-state "ext:evil-states.el" (&optional arg) t)
 
 
 ;;; customization options and other variables
@@ -59,7 +57,7 @@
   "Path to ImageMagick's convert binary."
   :type 'string)
 
-(defcustom shx-mode-lighter "shx"
+(defcustom shx-mode-lighter " shx"
   "Lighter for the shx minor mode."
   :type 'string)
 
@@ -319,6 +317,14 @@ This is robust to various styles of quoting and escaping."
             (shx--replace-from-list '(("" "'") ("" " ") ("" "\"")) token))
           (ignore-errors (split-string-and-unquote str))))
 
+(defun shx-tokenize-filenames (str)
+  "Turn STR into a list of filenames, or nil if parsing fails.
+If any path is absolute, prepend `comint-file-name-prefix' to it."
+  (mapcar (lambda (filename)
+            (cond ((not (file-name-absolute-p filename)) filename)
+                  (t (concat comint-file-name-prefix filename))))
+          (shx-tokenize str)))
+
 (defun shx--all-commands (&optional without-prefix)
   "Return a list of all shx commands.
 With non-nil WITHOUT-PREFIX, strip `shx-cmd-prefix' from each."
@@ -364,7 +370,7 @@ With non-nil WITHOUT-PREFIX, strip `shx-cmd-prefix' from each."
 (defun shx--get-user-cmd (cmd-prefix)
   "Return user command prefixed by CMD-PREFIX, or nil."
   (let* ((prefix (format "%s%s" shx-cmd-prefix (downcase cmd-prefix)))
-         (completion (try-completion prefix obarray 'functionp)))
+         (completion (try-completion prefix obarray #'functionp)))
     (when completion
       (let ((user-cmd (intern (if (eq completion t) prefix completion))))
         (when (functionp user-cmd) user-cmd)))))
@@ -381,6 +387,8 @@ With non-nil WITHOUT-PREFIX, strip `shx-cmd-prefix' from each."
   "Guess the shell command and use `comint-exec' to restart."
   (let ((cmd (shx--validate-shell-file-name)))
     (shx-insert 'font-lock-doc-face cmd " at " default-directory 'default "\n")
+    ;; manually align comint-file-name-prefix with the default-directory:
+    (setq-local comint-file-name-prefix (or (file-remote-p default-directory) ""))
     (comint-exec (current-buffer) (buffer-name) cmd nil nil)))
 
 (defun shx--validate-shell-file-name ()
@@ -390,10 +398,10 @@ If the answer turns out to be tricky, store it in `explicit-shell-file-name'."
         ;; guess which shell command to run per `shell' convention:
         (cmd (or explicit-shell-file-name (getenv "ESHELL") shell-file-name)))
     (cond ((file-exists-p (concat remote-id cmd)) cmd)
-          (t (set (make-local-variable 'explicit-shell-file-name)
-                  (if (file-exists-p (concat remote-id "/bin/sh"))
-                      "/bin/sh"  ; /bin/sh _usually_ exists...
-                    (read-file-name "Shell: " nil "/bin/sh")))))))
+          (t (setq-local explicit-shell-file-name
+                         (if (file-exists-p (concat remote-id "/bin/sh"))
+                             "/bin/sh"  ; /bin/sh _usually_ exists...
+                           (file-local-name (read-file-name "Shell: "))))))))
 
 (defun shx--match-last-line (regexp)
   "Return a form to find REGEXP on the last line of the buffer."
@@ -475,7 +483,7 @@ are sent straight through to the process to handle paging."
 
 (defun shx-insert (&rest args)
   "Insert ARGS as an output field, combined using `shx-cat'."
-  (insert (propertize (apply 'shx-cat args) 'field 'output)))
+  (insert (propertize (apply #'shx-cat args) 'field 'output)))
 
 (defun shx-insert-filenames (&rest files)
   "Insert FILES, propertized to be clickable."
@@ -579,7 +587,7 @@ Cancel a delayed command with :stop (`shx-cmd-stop').
 
 (defun shx-cmd-pulse (args)
   "Repeat a shell command indefinitely with a given delay.
-ARGS are <deley in seconds> <command>.
+ARGS are a string of the form '<delay in seconds> <command>'.
 Cancel a pulsing command with :stop (`shx-cmd-stop').
 \nExample:\n
   :pulse 10 date"
@@ -650,12 +658,12 @@ If a TIMER-NUMBER is not supplied, enumerate all shx timers.
   "(SAFE) Launch an Emacs `ediff' between FILES.
 \nExample:\n
   :diff file1.txt \"file 2.csv\""
-  (setq files (shx-tokenize files))
+  (setq files (shx-tokenize-filenames files))
   (if (/= (length files) 2)
       (shx-insert 'error "diff <file1> <file2>" 'default "\n")
     (shx-insert "Diffing " 'font-lock-doc-face (car files) 'default
                 " and " 'font-lock-doc-face (cadr files) 'default "\n")
-    (shx--asynch-funcall #'ediff (mapcar 'expand-file-name files))))
+    (shx--asynch-funcall #'ediff (mapcar #'expand-file-name files))))
 
 (defun shx-cmd-edit (file)
   "(SAFE) Open FILE in the current window.
@@ -664,7 +672,7 @@ If a TIMER-NUMBER is not supplied, enumerate all shx timers.
 \nOr edit a remote file using `tramp':\n
   :e /ssh:user@server#port:directory/to/file
   :e /docker:02fbc948e009:/directory/to/file"
-  (setq file (car (shx-tokenize file)))
+  (setq file (car (shx-tokenize-filenames file)))
   (if (or (string= "" file) (not file))
       (shx-insert 'error "Couldn't parse filename" 'default "\n")
     (shx-insert "Editing " 'font-lock-doc-face file 'default "\n")
@@ -785,7 +793,7 @@ See `Man-notify-method' for what happens when the page is ready."
 \nExamples:\n
   :oedit directory/to/file
   :oedit /username@server:~/directory/to/file"
-  (setq file (car (shx-tokenize file)))
+  (setq file (car (shx-tokenize-filenames file)))
   (if (or (string= "" file) (not file))
       (shx-insert 'error "Couldn't parse filename" 'default "\n")
     (shx-insert "Editing " 'font-lock-doc-face file 'default "\n")
@@ -828,7 +836,7 @@ its own to point the process back at the local filesystem.
   \"Topic 1\" YHEIGHT1
   \"Topic 2\" YHEIGHT2
   \"Topic 3\" YHEIGHT3"
-  (shx-insert-plot (car (shx-tokenize filename))
+  (shx-insert-plot (car (shx-tokenize-filenames filename))
                    (concat "set boxwidth 1.5 relative;"
                            "set style data histograms;"
                            "set xtic rotate by -40 scale 0 font \",10\";"
@@ -841,7 +849,7 @@ its own to point the process back at the local filesystem.
   "(SAFE) Show heatmap of FILENAME.
 \nFor example, \":plotmatrix file.dat\" where file.dat contains:\n
   1.5   2    3\n  4     5    6\n  7     8    9.5"
-  (shx-insert-plot (car (shx-tokenize filename))
+  (shx-insert-plot (car (shx-tokenize-filenames filename))
                    (concat "set view map; unset xtics; unset ytics;"
                            "unset title; set colorbox; set palette defined"
                            "(0 \"#ffffff\", 1 \"#d5e585\", 2 \"#8cc555\","
@@ -855,14 +863,14 @@ its own to point the process back at the local filesystem.
   1 2\n  2 4\n  4 8\n
 Or just a single column:
   1\n  2\n  3\n  5"
-  (shx-insert-plot (car (shx-tokenize filename))
+  (shx-insert-plot (car (shx-tokenize-filenames filename))
                    "plot" "w l lw 1 notitle"))
 
 (defun shx-cmd-plot3d (filename)
   "(SAFE) Show surface plot of FILENAME.
 Read about gnuplot's expectations of the data here:
 http://www.gnuplotting.org/tag/pm3d/"
-  (shx-insert-plot (car (shx-tokenize filename))
+  (shx-insert-plot (car (shx-tokenize-filenames filename))
                    "unset tics;set view 4, 20, 1.4, 1;splot"
                    "w pm3d notitle"))
 
@@ -872,13 +880,13 @@ http://www.gnuplotting.org/tag/pm3d/"
   1 2\n  2 4\n  4 8\n
 Or just a single column:
   1\n  2\n  3\n  5"
-  (shx-insert-plot (car (shx-tokenize filename))
+  (shx-insert-plot (car (shx-tokenize-filenames filename))
                    "plot" "w p ps 2 pt 7 notitle"))
 (defalias 'shx-cmd-plot #'shx-cmd-plotscatter)
 
 (defun shx-cmd-view (filename)
   "(SAFE) View image with FILENAME directly in the buffer."
-  (shx-insert-image (car (shx-tokenize filename))))
+  (shx-insert-image (car (shx-tokenize-filenames filename))))
 
 
 ;;; loading
@@ -998,12 +1006,15 @@ This function only works when the shx minor mode is active."
 
 (defun shx--with-shx-cwd (func &rest args)
   "Call FUNC with ARGS using the `shx-cwd' property as `default-directory'."
-  (let* ((shx-comint-advise nil)
-         (inhibit-field-text-motion t)
-         (shx-cwd (save-excursion (comint-previous-prompt 1)
-                                  (get-text-property (point-at-bol) 'shx-cwd)))
-         (default-directory (or shx-cwd default-directory)))
-    (apply func args)))
+  (if (not shx-mode)
+      (apply func args)
+    (let* ((shx-comint-advise nil)
+           (inhibit-field-text-motion t)
+           (shx-cwd (save-excursion
+                      (comint-previous-prompt 1)
+                      (get-text-property (point-at-bol) 'shx-cwd)))
+           (default-directory (or shx-cwd default-directory)))
+      (apply func args))))
 
 (advice-add #'find-file-at-point :around #'shx--with-shx-cwd)
 (advice-add #'ffap-at-mouse :around #'shx--with-shx-cwd)

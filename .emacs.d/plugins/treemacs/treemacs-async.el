@@ -1,6 +1,6 @@
 ;;; treemacs.el --- A tree style file viewer package -*- lexical-binding: t -*-
 
-;; Copyright (C) 2018 Alexander Miller
+;; Copyright (C) 2019 Alexander Miller
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -136,7 +136,7 @@ Real implementation will be `fset' based on `treemacs-git-mode' value."
                        ;; Remove extension nodes
                        (-filter #'stringp)))
            (command `(,treemacs-python-executable
-                      "-O" "-S"
+                      "-O"
                       ,treemacs--git-status.py
                       ,git-root
                       ,(number-to-string treemacs-max-git-entries)
@@ -281,7 +281,7 @@ FILE: Filepath"
                                    (treemacs-dom-node->all-parents parent-node)))))
          (current-state (or (-some-> treemacs--git-cache (ht-get parent) (ht-get file)) "0"))
          (cmd `(,treemacs-python-executable
-                "-S" "-O"
+                "-O"
                 ,treemacs--single-file-git-status.py ,file ,current-state ,@parents)))
     (pfuture-callback cmd
       :directory parent
@@ -332,7 +332,6 @@ Every string list consists of the following elements:
     (-let [default-directory path]
       (pfuture-new treemacs-python-executable
                    "-O"
-                   "-S"
                    treemacs--dirs-to-collpase.py
                    path
                    (number-to-string treemacs-collapse-dirs)

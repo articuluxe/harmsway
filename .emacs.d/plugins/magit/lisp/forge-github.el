@@ -299,10 +299,17 @@ repositories.
     (forge--msg nil t nil "Pulling notifications")
     (pcase-let*
         ((`(,_ ,apihost ,forge ,_) spec)
-         (notifs (--keep (forge--ghub-massage-notification it forge githost)
-                         (forge--ghub-get nil "/notifications"
-                                          '((all . "true"))
-                                          :host apihost :unpaginate t)))
+         (notifs (-keep (lambda (data)
+                          ;; Github may return notifications for repos
+                          ;; the user no longer has access to.  Trying
+                          ;; to retrieve information for such a repo
+                          ;; leads to an error, which we suppress.  See #164.
+                          (with-demoted-errors "forge--pull-notifications: %S"
+                            (forge--ghub-massage-notification
+                             data forge githost)))
+                        (forge--ghub-get nil "/notifications"
+                                         '((all . "true"))
+                                         :host apihost :unpaginate t)))
          (groups (-partition-all 100 notifs))
          (pages  (length groups))
          (page   0)
@@ -381,13 +388,37 @@ repositories.
 
 ;;; Mutations
 
+(cl-defmethod forge--create-pullreq-from-issue ((repo forge-github-repository)
+                                                issue source target)
+  (pcase-let* ((`(,base-remote . ,base-branch)
+                (magit-split-branch-name target))
+               (`(,head-remote . ,head-branch)
+                (magit-split-branch-name source))
+               (head-repo (forge-get-repository 'stub head-remote))
+               (issue-obj (forge-get-issue repo issue)))
+    (forge--ghub-post repo "/repos/:owner/:repo/pulls"
+                      `((issue . ,issue)
+                        (base  . ,base-branch)
+                        (head  . ,(if (equal head-remote base-remote)
+                                      head-branch
+                                    (concat (oref head-repo owner) ":"
+                                            head-branch)))
+                        (maintainer_can_modify . t))
+                      :callback  (lambda (&rest _)
+                                   (closql-delete issue-obj)
+                                   (forge-pull))
+                      :errorback (lambda (&rest _) (forge-pull)))))
+
 (cl-defmethod forge--submit-create-pullreq ((_ forge-github-repository) repo)
   (let-alist (forge--topic-parse-buffer)
     (pcase-let* ((`(,base-remote . ,base-branch)
                   (magit-split-branch-name forge--buffer-base-branch))
                  (`(,head-remote . ,head-branch)
                   (magit-split-branch-name forge--buffer-head-branch))
-                 (head-repo (forge-get-repository 'stub head-remote)))
+                 (head-repo (forge-get-repository 'stub head-remote))
+                 (url-mime-accept-string
+                  ;; Support draft pull-requests.
+                  "application/vnd.github.shadow-cat-preview+json"))
       (forge--ghub-post repo "/repos/:owner/:repo/pulls"
                         `((title . , .title)
                           (body  . , .body)
@@ -396,6 +427,8 @@ repositories.
                                         head-branch
                                       (concat (oref head-repo owner) ":"
                                               head-branch)))
+                          (draft . ,(and (member .draft '("t" "true" "yes"))
+                                         t))
                           (maintainer_can_modify . t))
                         :callback  (forge--post-submit-callback)
                         :errorback (forge--post-submit-errorback)))))
@@ -452,6 +485,12 @@ repositories.
                    :payload labels
                    :callback (forge--set-field-callback)))
 
+(cl-defmethod forge--delete-comment
+  ((_repo forge-github-repository) post)
+  (forge--ghub-delete post "repos/:owner/:repo/issues/comments/:number")
+  (closql-delete post)
+  (magit-refresh))
+
 (cl-defmethod forge--set-topic-assignees
   ((_repo forge-github-repository) topic assignees)
   (let ((value (mapcar #'car (closql--iref topic 'assignees))))
@@ -468,25 +507,27 @@ repositories.
 (cl-defmethod forge--topic-templates ((repo forge-github-repository)
                                       (_ (subclass forge-issue)))
   (when-let ((files (magit-revision-files (oref repo default-branch))))
-    (if-let ((file (--first (string-match-p "\
+    (let ((case-fold-search t))
+      (if-let ((file (--first (string-match-p "\
 \\`\\(\\|docs/\\|\\.github/\\)issue_template\\(\\.[a-zA-Z0-9]+\\)?\\'" it)
-                            files)))
-        (list file)
-      (--filter (string-match-p "\\`\\.github/ISSUE_TEMPLATE/[^/]*" it)
-                files))))
+                              files)))
+          (list file)
+        (--filter (string-match-p "\\`\\.github/ISSUE_TEMPLATE/[^/]*" it)
+                  files)))))
 
 (cl-defmethod forge--topic-templates ((repo forge-github-repository)
                                       (_ (subclass forge-pullreq)))
   (when-let ((files (magit-revision-files (oref repo default-branch))))
-    (if-let ((file (--first (string-match-p "\
+    (let ((case-fold-search t))
+      (if-let ((file (--first (string-match-p "\
 \\`\\(\\|docs/\\|\\.github/\\)pull_request_template\\(\\.[a-zA-Z0-9]+\\)?\\'" it)
                               files)))
-        (list file)
-      ;; Unlike for issues, the web interface does not support
-      ;; multiple pull-request templates.  The API does though,
-      ;; but due to this limitation I doubt many people use them,
-      ;; so Forge doesn't support them either.
-      )))
+          (list file)
+        ;; Unlike for issues, the web interface does not support
+        ;; multiple pull-request templates.  The API does though,
+        ;; but due to this limitation I doubt many people use them,
+        ;; so Forge doesn't support them either.
+        ))))
 
 ;;; Utilities
 
@@ -549,10 +590,10 @@ repositories.
               :callback callback :errorback errorback))
 
 (cl-defun forge--ghub-delete (obj resource
-                                 &optional params
-                                 &key query payload headers
-                                 silent unpaginate noerror reader
-                                 host callback errorback)
+                                  &optional params
+                                  &key query payload headers
+                                  silent unpaginate noerror reader
+                                  host callback errorback)
   (ghub-delete (forge--format-resource obj resource)
                params
                :host (or host (oref (forge-get-repository obj) apihost))

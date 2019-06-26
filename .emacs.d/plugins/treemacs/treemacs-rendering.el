@@ -1,6 +1,6 @@
 ;;; treemacs.el --- A tree style file viewer package -*- lexical-binding: t -*-
 
-;; Copyright (C) 2018 Alexander Miller
+;; Copyright (C) 2019 Alexander Miller
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -360,7 +360,7 @@ set to PARENT."
          (setq dir-strings
                (treemacs--create-buttons
                 :nodes dirs
-                :extra-vars ((dir-prefix (concat prefix treemacs-icon-closed)))
+                :extra-vars ((dir-prefix (concat prefix treemacs-icon-dir-closed)))
                 :depth ,depth
                 :node-name node
                 :node-action (treemacs--create-dir-button-strings node dir-prefix ,parent ,depth)))
@@ -529,7 +529,7 @@ RECURSIVE: Bool"
        :immediate-insert nil
        :button btn
        :new-state 'dir-node-open
-       :new-icon treemacs-icon-open
+       :new-icon treemacs-icon-dir-open
        :open-action
        (progn
          ;; do on-expand first so buttons that need collapsing can quickly find their parent
@@ -552,7 +552,7 @@ Remove all open dir and tag entries under BTN when RECURSIVE."
   (treemacs--button-close
    :button btn
    :new-state 'dir-node-closed
-   :new-icon treemacs-icon-closed
+   :new-icon treemacs-icon-dir-closed
    :post-close-action
    (-let [path (treemacs-button-get btn :path)]
      (treemacs--stop-watching path)

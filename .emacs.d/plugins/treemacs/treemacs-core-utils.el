@@ -1,6 +1,6 @@
 ;;; treemacs.el --- A tree style file viewer package -*- lexical-binding: t -*-
 
-;; Copyright (C) 2018 Alexander Miller
+;; Copyright (C) 2019 Alexander Miller
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -142,14 +142,13 @@ longer be contigious.")
 
 (defconst treemacs-dir
   ;; locally we're in src/elisp, installed from melpa we're at the package root
-  (eval-when-compile
-    (-let [dir (-> (if load-file-name
-                       (file-name-directory load-file-name)
-                     default-directory)
-                   (expand-file-name))]
-      (if (s-ends-with? "src/elisp/" dir)
-          (-> dir (f-parent) (f-parent))
-        dir)))
+  (-let [dir (-> (if load-file-name
+                     (file-name-directory load-file-name)
+                   default-directory)
+                 (expand-file-name))]
+    (if (s-ends-with? "src/elisp/" dir)
+        (-> dir (f-parent) (f-parent))
+      dir))
   "The directory treemacs.el is stored in.")
 
 (defvar treemacs--no-messages nil
