@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-06-20 10:22:23 dan.harms>
+;; Modified Time-stamp: <2019-06-26 23:33:18 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -59,6 +59,7 @@
                      ,(concat my/plugins-directory "expand-region/")
                      ,(concat my/plugins-directory "http/")
                      ,(concat my/plugins-directory "hydra/")
+                     ,(concat my/plugins-directory "icons/")
                      ,(concat my/plugins-directory "js2/")
                      ,(concat my/plugins-directory "lsp/")
                      ,(concat my/plugins-directory "magit/lisp/")

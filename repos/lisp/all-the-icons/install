@@ -1,0 +1,3 @@
+cp src/*.el ../../../.emacs.d/plugins/icons
+cp src/data/*.el ../../../.emacs.d/plugins/icons/data
+cp src/fonts/*.ttf ../../../.fonts/icons
