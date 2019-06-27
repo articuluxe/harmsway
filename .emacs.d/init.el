@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-06-27 11:13:51 dan.harms>
+;; Modified Time-stamp: <2019-06-27 16:11:12 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1731,6 +1731,10 @@ Only one letter is shown, the first that applies."
   (sml/setup)
   )
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; minions ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package minions
+  :if (version<= "25.2" emacs-version))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; doom-modeline ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package doom-modeline
   :if (version<= "25.1" emacs-version)
@@ -1739,7 +1743,12 @@ Only one letter is shown, the first that applies."
   (setq doom-modeline-vcs-max-length 15)
   (setq doom-modeline-persp-name nil)
   (setq doom-modeline-buffer-file-name-style 'relative-from-project)
-  (add-hook 'after-init-hook #'doom-modeline-mode))
+  (when (featurep 'minions)
+    (setq doom-modeline-minor-modes t))
+  (add-hook 'after-init-hook #'doom-modeline-mode)
+  :config
+  (when (featurep 'minions)
+    (minions-mode 1)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; all-the-icons ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package all-the-icons)
@@ -2626,7 +2635,9 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   :bind ("C-c \\ TAB" . #'harmsway-company-ispell-at-point))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ace-popup-menu ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package ace-popup-menu :config (ace-popup-menu-mode 1))
+(use-package ace-popup-menu
+  :disabled
+  :config (ace-popup-menu-mode 1))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; hippie-expand ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (global-set-key "\M-/" 'hippie-expand)
