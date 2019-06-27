@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-06-27 10:10:37 dan.harms>
+;; Modified Time-stamp: <2019-06-27 11:13:51 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1735,6 +1735,10 @@ Only one letter is shown, the first that applies."
 (use-package doom-modeline
   :if (version<= "25.1" emacs-version)
   :init
+  (setq doom-modeline-checker-simple-format nil)
+  (setq doom-modeline-vcs-max-length 15)
+  (setq doom-modeline-persp-name nil)
+  (setq doom-modeline-buffer-file-name-style 'relative-from-project)
   (add-hook 'after-init-hook #'doom-modeline-mode))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; all-the-icons ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
