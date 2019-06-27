@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-06-27 08:36:03 dharms>
+;; Modified Time-stamp: <2019-06-27 10:10:37 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1039,7 +1039,7 @@ line."
   (let ((magit-display-buffer-function #'magit-display-buffer-fullframe-status-v1))
     (magit-status-setup-buffer default-directory)))
 (use-package magit
-  :if (not (version< emacs-version "24.4"))
+  :if (not (version< emacs-version "25.1"))
   :init
   ;; The following allows remote repositories to work under tramp on windows
   ;; (plink), and we put git in our exec-path anyways, so the full path is
@@ -1132,6 +1132,7 @@ Only one letter is shown, the first that applies."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; transient ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package transient
   :after magit
+  :if (version<= "25.1" emacs-version)
   :config
   (transient-bind-q-to-quit))
 
@@ -1147,6 +1148,7 @@ Only one letter is shown, the first that applies."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; git-timemachine ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package git-timemachine
+  :if (version<= "24.3" emacs-version)
   :bind (:map my/git-keymap ("t" . git-timemachine)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; vc-msg ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1161,11 +1163,13 @@ Only one letter is shown, the first that applies."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; vterm ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package vterm
+  :if (version<= "25.1" emacs-version)
   :commands vterm
   :bind ("C-c 0vv" . vterm))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; vterm-toggle ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package vterm-toggle
+  :if (version<= "25.1" emacs-version)
   :commands vterm-toggle
   :bind (("C-c 0vt" . vterm-toggle)
          ("C-c 0vn" . vterm-toggle-forward)
@@ -1529,6 +1533,7 @@ Only one letter is shown, the first that applies."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; deadgrep ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package deadgrep
+  :if (version<= "25.1" emacs-version)
   :bind ("C-c 0gd" . deadgrep)
   :init
   (setq deadgrep-project-root-function #'proviso-current-project-root))
@@ -1677,7 +1682,9 @@ Only one letter is shown, the first that applies."
       (eldoc-box-hover-mode -1)
     (eldoc-box-hover-mode 1)))
 (bind-key "C-c 0b" #'harmsway-toggle-eldoc-box-mode)
-(use-package eldoc-box)
+(use-package eldoc-box
+  :if (version<= "26.1" emacs-version)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smex ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package smex
@@ -1726,6 +1733,7 @@ Only one letter is shown, the first that applies."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; doom-modeline ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package doom-modeline
+  :if (version<= "25.1" emacs-version)
   :init
   (add-hook 'after-init-hook #'doom-modeline-mode))
 
@@ -3905,7 +3913,8 @@ Requires Flake8 2.0 or newer. See URL
   :commands (web-http-call web-http-get web-http-post
                            web-json-post web-get)
   :config
-  (add-to-list 'company-dabbrev-code-modes 'web-mode)
+  (with-eval-after-load 'company-dabbrev-code
+    (add-to-list 'company-dabbrev-code-modes 'web-mode))
   (add-hook 'web-mode-hook
             (lambda ()
               (make-local-variable 'company-backends)
