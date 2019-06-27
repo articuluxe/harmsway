@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-06-26 23:33:18 dharms>
+;; Modified Time-stamp: <2019-06-27 08:36:03 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -65,10 +65,9 @@
                      ,(concat my/plugins-directory "magit/lisp/")
                      ,(concat my/plugins-directory "multi-line/")
                      ,(concat my/plugins-directory "multiple-cursors/")
-                     ,(concat my/plugins-directory "powerline/")
                      ,(concat my/plugins-directory "realgud/")
                      ,(concat my/plugins-directory "smart-jump/")
-                     ,(concat my/plugins-directory "smart-mode-line/")
+                     ,(concat my/plugins-directory "smart-mode-line/") ;todo remove
                      ,(concat my/plugins-directory "sunrise/")
                      ,(concat my/plugins-directory "swiper/")
                      ,(concat my/plugins-directory "treemacs/")
@@ -1698,10 +1697,12 @@ Only one letter is shown, the first that applies."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; powerline ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; does not interact with rich-minority mode: try delight.el?
 ;; (powerline-default-theme)
-(use-package powerline)
+(use-package powerline
+ :disabled)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; rich-minority ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package rich-minority
+  :disabled
   ;; this dependency actually comes from smart-mode-line, which uses
   ;; rich-minority.
   :if (version<= "24.3" emacs-version)
@@ -1717,10 +1718,25 @@ Only one letter is shown, the first that applies."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; smart-mode-line ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package smart-mode-line
   :if (version<= "24.3" emacs-version)
+  :disabled
   :config
   (setq sml/no-confirm-load-theme t)
   (sml/setup)
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; doom-modeline ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package doom-modeline
+  :init
+  (add-hook 'after-init-hook #'doom-modeline-mode))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; all-the-icons ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package all-the-icons)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;; all-the-icons-dired ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package all-the-icons-dired
+  :after dired
+  :init
+  (add-hook 'dired-mode-hook #'all-the-icons-dired-mode))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; moody ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package moody
