@@ -1,0 +1,2 @@
+cp src/sources/noto-sans/*.ttf ../../../.fonts/noto
+cp src/sources/shs/*.otf ../../../.fonts/source-han-sans

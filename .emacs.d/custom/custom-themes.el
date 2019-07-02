@@ -2,7 +2,7 @@
 ;; Copyright (C) 2016-2019  Dan Harms (dan.harms)
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Wednesday, December 21, 2016
-;; Modified Time-stamp: <2019-04-25 14:13:51 dan.harms>
+;; Modified Time-stamp: <2019-07-02 13:16:07 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: themes colors
 
@@ -215,13 +215,14 @@
                                                                       :background "LightGoldenrod")))))
            (custom-theme-set-faces sym '(magit-section-highlight ((t (:background "PaleGoldenrod"))))))
           )
-    (cond ((memq sym harmsway/sml-dark-themes)
-           (load-theme 'smart-mode-line-dark t))
-          ((memq sym harmsway/sml-light-themes)
-           (load-theme 'smart-mode-line-light t))
-          ((memq sym harmsway/sml-respectful-themes)
-           (load-theme 'smart-mode-line-respectful t))
-          )))
+    ;; (cond ((memq sym harmsway/sml-dark-themes)
+    ;;        (load-theme 'smart-mode-line-dark t))
+    ;;       ((memq sym harmsway/sml-light-themes)
+    ;;        (load-theme 'smart-mode-line-light t))
+    ;;       ((memq sym harmsway/sml-respectful-themes)
+    ;;        (load-theme 'smart-mode-line-respectful t))
+    ;;       )
+    ))
 (advice-add 'counsel-load-theme-action :after #'harmsway/after-load-theme)
 
 (provide 'custom-themes)
