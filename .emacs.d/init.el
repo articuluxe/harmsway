@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-06-27 16:11:12 dan.harms>
+;; Modified Time-stamp: <2019-07-02 09:04:20 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -67,7 +67,6 @@
                      ,(concat my/plugins-directory "multiple-cursors/")
                      ,(concat my/plugins-directory "realgud/")
                      ,(concat my/plugins-directory "smart-jump/")
-                     ,(concat my/plugins-directory "smart-mode-line/") ;todo remove
                      ,(concat my/plugins-directory "sunrise/")
                      ,(concat my/plugins-directory "swiper/")
                      ,(concat my/plugins-directory "treemacs/")
