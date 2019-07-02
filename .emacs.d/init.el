@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-07-02 09:38:37 dharms>
+;; Modified Time-stamp: <2019-07-02 09:58:38 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1151,6 +1151,7 @@ Only one letter is shown, the first that applies."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; magit-org-todos ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package magit-org-todos
+  :disabled
   :after magit
   :config (magit-org-todos-autoinsert))
 
