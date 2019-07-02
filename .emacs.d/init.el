@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-07-02 09:04:20 dharms>
+;; Modified Time-stamp: <2019-07-02 09:38:37 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -752,6 +752,15 @@ line."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; mission-control ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package mission-control :bind ("s-\\" . mcon-switch))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; centaur-tabs ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package centaur-tabs
+  :bind (("C-<prior>" . centaur-tabs-backward)
+         ("C-<next>" . centaur-tabs-forward))
+  :init
+  (setq centaur-tabs-style "chamfer")
+  :config
+  (centaur-tabs-mode 1))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; copyright ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package copyright
@@ -2572,6 +2581,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   :disabled
   )
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; eglot ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package eglot
   :commands eglot
   :bind ("C-c '" . eglot)
