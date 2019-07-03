@@ -3,7 +3,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2019-06-14 07:31:35 dharms>
+;; Modified Time-stamp: <2019-07-03 08:46:06 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -37,6 +37,7 @@
                             "IBM Plex Mono 14"
                             "Edlo 14"
                             "mononoki 12"
+                            "Victor Mono 14"
                             "Hasklig 14"
                             "Source Code Pro 13"
                             "Inconsolata 14"
