@@ -20,6 +20,24 @@ build_in_container()
     run_in_container "python -m xrmake2"
 }
 
+upgrade_simutils()
+{
+    cd "$HOME"/london_utils || exit
+    pip install . --upgrade
+    if [ $? -ne 0 ]; then
+        echo "Error updating london_utils; stopping..."
+    else
+        echo "Updated london_utils"
+        cd "$HOME"/simulation_utils || exit
+        pip install . --upgrade
+        if [ $? -ne 0 ]; then
+            echo "Error updating simulation_utils; stopping..."
+        else
+            "Updated simulation_utils"
+        fi
+    fi
+}
+
 use_gcc()
 {
    export CC=$CSTDLIB_BIN/gcc
