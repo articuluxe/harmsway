@@ -3,7 +3,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2019-07-03 08:45:49 dharms>
+;; Modified Time-stamp: <2019-07-08 08:39:07 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -40,6 +40,7 @@
                             "NanumGothicCoding 14"
                             "Edlo 12"
                             "mononoki 12"
+                            "Essential PragmataPro 14"
                             "Victor Mono 12"
                             "Iosevka 12"
                             "Hasklig 12"
