@@ -36,6 +36,11 @@
   "Whether to redefine the terminal colors that Emacs knows about.
 Set to non-nil if you're using a matching parchment terminal theme.")
 
+(defvar parchment-add-mode-hooks nil
+  "Whether to add mode hooks to modify faces per major mode.
+Allows better fine-tuning of styles, but may be too intrusive if you
+switch themes often.")
+
 (defmacro parchment-style-theme (&rest styles)
   "Apply a list of face STYLES associated with theme THEME.
 Wraps `custom-theme-set-faces' with a compact syntax.
@@ -92,8 +97,17 @@ BACKGROUND are nil then they will be skipped."
     (tty-color-define "brightcyan"    14 (tty-color-standard-values pale-cyan))
     (tty-color-define "brightwhite"   15 (tty-color-standard-values pale-yellow)))
 
+  ;; Style HTML tags
+  (defun parchment-modify-sgml-tags ()
+    (when (member 'parchment custom-enabled-themes)
+      (face-remap-add-relative 'font-lock-function-name-face
+                               `(:foreground ,magenta))))
+
   (when parchment-want-modify-tty-colors
     (add-hook 'tty-setup-hook #'parchment-modify-tty-colors))
+
+  (when parchment-add-mode-hooks
+    (add-hook 'sgml-mode-hook 'parchment-modify-sgml-tags))
 
   (parchment-style-theme
     ;; FACE                     FOREGROUND   BACKGROUND   ATTRIBUTES
@@ -184,6 +198,7 @@ BACKGROUND are nil then they will be skipped."
     (font-lock-doc-face         green        nil)
 
     ;; filetype syntax highlighting
+    (css-selector               blue         nil)
     (diff-added                 green        pale-green)
     (diff-changed               blue         pale-blue)
     (diff-context               nil          nil)

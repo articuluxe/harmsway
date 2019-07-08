@@ -39,13 +39,6 @@
 ;; (require 'vterm)
 ;; ```
 
-;; If you want to have the module compiled, wrap the call to `require` as follows:
-
-;; ```
-;; (add-to-list 'load-path "path/to/emacs-libvterm")
-;; (let (vterm-install)
-;;   (require 'vterm))
-;; ```
 
 ;;; Code:
 
@@ -61,20 +54,22 @@
   (let ((default-directory (file-name-directory (locate-library "vterm"))))
     (unless (file-executable-p (concat default-directory "vterm-module.so" ))
       (let* ((buffer (get-buffer-create vterm-install-buffer-name))
-             (status (call-process "sh" nil buffer t "-c"
+             status)
+        (pop-to-buffer vterm-install-buffer-name)
+        (setq status (call-process "sh" nil buffer t "-c"
                                    "mkdir -p build;                             \
                                     cd build;                                   \
                                     cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo ..; \
-                                    make")))
+                                    make") )
         (if (eq status 0)
             (message "Compilation of emacs-libvterm module succeeded")
-          (pop-to-buffer vterm-install-buffer-name)
           (error "Compilation of emacs-libvterm module failed!"))))))
 
-(when (boundp 'vterm-install)
-  (vterm-module-compile))
 
-(require 'vterm-module)
+(unless (require 'vterm-module nil t)
+  (vterm-module-compile)
+  (require 'vterm-module))
+
 (require 'subr-x)
 (require 'cl-lib)
 (require 'color)
@@ -169,7 +164,7 @@ for different shell"
 (define-key vterm-mode-map [tab]                       #'vterm--self-insert)
 (define-key vterm-mode-map [backspace]                 #'vterm--self-insert)
 (define-key vterm-mode-map [M-backspace]               #'vterm--self-insert)
-(define-key vterm-mode-map [return]                    #'vterm--self-insert)
+(define-key vterm-mode-map [return]                    #'vterm-send-return)
 (define-key vterm-mode-map [left]                      #'vterm--self-insert)
 (define-key vterm-mode-map [right]                     #'vterm--self-insert)
 (define-key vterm-mode-map [up]                        #'vterm--self-insert)
@@ -227,6 +222,11 @@ for different shell"
   "Sends `C-_' to the libvterm."
   (interactive)
   (vterm-send-key "_" nil nil t))
+
+(defun vterm-send-return ()
+  "Sends C-m to the libvterm."
+  (interactive)
+   (process-send-string vterm--process "\C-m"))
 
 (defun vterm-yank ()
   "Implementation of `yank' (paste) in vterm."
@@ -300,10 +300,12 @@ Argument BUFFER the terminal buffer."
 
 Then triggers a redraw from the module."
   (let ((inhibit-redisplay t)
-        (inhibit-read-only t))
-    (with-current-buffer (process-buffer process)
-      (vterm--write-input vterm--term input)
-      (vterm--update vterm--term))))
+        (inhibit-read-only t)
+        (buf (process-buffer process)))
+    (when (buffer-live-p buf)
+      (with-current-buffer  buf
+        (vterm--write-input vterm--term input)
+        (vterm--update vterm--term)))))
 
 (defun vterm--sentinel (process event)
   "Sentinel of vterm PROCESS.

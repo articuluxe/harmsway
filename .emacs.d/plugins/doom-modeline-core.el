@@ -101,6 +101,9 @@ It returns a file name which can be used directly as argument of
     ("pause" . "\xe034")
     ("priority_high" . "\xe645")
 
+    ;; Persp
+    ("aspect_ratio" . "\xe85b")
+
     ;; LSP
     ("rocket" . "\xf135")
 
@@ -188,6 +191,9 @@ If the actual char height is larger, it respects the actual char height.")
 
 (defvar doom-modeline-persp-name t
   "Whether display perspective name or not. Non-nil to display in mode-line.")
+
+(defvar doom-modeline-persp-name-icon nil
+  "Whether display icon for persp name. Nil to display a # sign. It respects `doom-modeline-icon'.")
 
 (defvar doom-modeline-lsp t
   "Whether display `lsp' state or not. Non-nil to display in mode-line.")
@@ -497,9 +503,12 @@ If the actual char height is larger, it respects the actual char height.")
                             'mode-line
                           'mode-line-inactive)))
 
-(defsubst doom-modeline--font-height ()
+(defun doom-modeline--font-height ()
   "Calculate the actual char height of the mode-line."
-  (round (* 1.68 (frame-char-height))))
+  (let ((height (face-attribute 'mode-line :height)))
+    (round (* 1.68 (if (number-or-marker-p height)
+                       (/ height 10)
+                     (frame-char-height))))))
 
 (defun doom-modeline-icon-octicon (&rest args)
   "Display octicon via ARGS."

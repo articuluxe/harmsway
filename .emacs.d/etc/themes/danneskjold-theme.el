@@ -218,13 +218,13 @@
      `(org-latex-and-related        ((,c (:foreground "#FAF9FF"))))
      `(org-list-dt                  ((,c (:foreground ,yellow))))
      `(org-footnote                 ((,c (:foreground ,orange))))
-     `(org-priority                 ((,c (:foreground ,frost))))
+     `(org-priority                 ((,c (:foreground ,red))))
 
      `(org-date                     ((,c (:foreground ,violet))))
      `(org-todo                     ((,c (:foreground ,yellow))))
      `(org-done                     ((,c (:foreground ,green))))
      `(org-headline-done            ((,c (:foreground ,grey-.5 :strike-through t :bold nil))))
-     `(org-special-keyword          ((,c (:foreground ,orange))))
+     `(org-special-keyword          ((,c (:foreground "orange"))))
      `(org-checkbox-statistics-todo ((,c (:inherit org-todo))))
      `(org-checkbox-statistics-done ((,c (:inherit org-done))))
 
@@ -258,8 +258,8 @@
      `(org-habit-overdue-future-face ((,c (:background ,black :underline t :foreground ,red))))
 
      `(org-scheduled ((,c (:foreground ,white))))
-     `(org-warning ((,c (:foreground ,red))))
-     `(org-scheduled-today ((,c (:foreground ,green))))
+     `(org-warning ((,c (:foreground ,yellow :slant italic))))
+     `(org-scheduled-today ((,c (:foreground ,white))))
      `(org-scheduled-previously ((,c (:foreground ,red))))
      `(org-time-grid ((,c (:foreground ,invisible))))
 
@@ -275,7 +275,7 @@
      `(org-agenda-done ((,c (:foreground ,green))))
      `(org-agenda-diary ((,c (:foreground ,orange :slant italic))))
      `(org-agenda-dimmed-todo-face ((,c (:foreground ,comment))))
-     `(org-agenda-current-time ((,c (:foreground ,yellow))))
+     `(org-agenda-current-time ((,c (:foreground ,frost))))
      `(org-upcoming-deadline ((,c (:foreground ,violet))))
 
      `(secondary-selection ((,c (:background ,sbt-midnight))))

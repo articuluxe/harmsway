@@ -4,7 +4,7 @@
 
 ;; Author: Clemens Radermacher <clemera@posteo.net>
 ;; URL: https://github.com/clemera/frog-menu
-;; Version: 0.2.8
+;; Version: 0.2.9
 ;; Package-Requires: ((emacs "26") (avy "0.4") (posframe "0.4"))
 ;; Keywords: convenience
 
@@ -373,7 +373,9 @@ Returns the formatted grid string."
     (let* ((length (apply #'max
                           (mapcar #'string-width strings)))
            (wwidth (or width (frame-width)))
-           (columns (min cols (/ wwidth (+ frog-menu-min-col-padding length))))
+           (columns (max 1 (min cols
+                                (/ wwidth
+                                   (+ frog-menu-min-col-padding length)))))
            (colwidth (/ wwidth columns))
            (column 0)
            (first t)

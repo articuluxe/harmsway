@@ -234,8 +234,16 @@ When 0, no border is showed."
   "Face used by the ivy-posframe's fake cursor."
   :group 'ivy-posframe)
 
-(defvar ivy-posframe-buffer " *ivy-posframe-buffer*"
-  "The posframe-buffer used by ivy-posframe.")
+(defun ivy-posframe-buffer-setter (sym val)
+  "Set SYM as VAL and create buffer named `ivy-posframe-buffer'."
+  (set-default sym val)
+  (get-buffer-create val))
+
+(defcustom ivy-posframe-buffer " *ivy-posframe-buffer*"
+  "The posframe-buffer used by ivy-posframe."
+  :set #'ivy-posframe-buffer-setter
+  :type 'string
+  :group 'ivy-posframe)
 
 (defvar ivy-posframe--ignore-prompt nil
   "When non-nil, ivy-posframe will ignore prompt.
@@ -467,7 +475,31 @@ selection, non-nil otherwise."
 
 ;;; Advice
 
-(defun ivy-posframe--minibuffer-setup (fn &rest args)
+(defmacro ivy-posframe--defun-advice (name arglist &optional docstring &rest body)
+  "Define NAME as a `ivy-posframe' advice function.  see `defun'.
+The definition is (lambda ARGLIST [DOCSTRING] BODY...).
+See also the function `interactive'.
+DECL is a declaration, optional, of the form (declare DECLS...) where
+DECLS is a list of elements of the form (PROP . VALUES).  These are
+interpreted according to `defun-declarations-alist'.
+The return value is undefined.
+
+\(fn NAME ARGLIST &optional DOCSTRING DECL &rest BODY)"
+  (declare (doc-string 3) (indent 2))
+  (let ((decls (cond
+                ((eq (car-safe docstring) 'declare)
+                 (prog1 (cdr docstring) (setq docstring nil)))
+                ((and (stringp docstring)
+                      (eq (car-safe (car body)) 'declare))
+                 (prog1 (cdr (car body)) (setq body (cdr body)))))))
+    `(defun ,name ,arglist
+       ,(when (stringp docstring) docstring)
+       (declare ,@decls)
+       (when (display-graphic-p)
+         ,(unless (stringp docstring) docstring)
+         ,@body))))
+
+(ivy-posframe--defun-advice ivy-posframe--minibuffer-setup (fn &rest args)
   "Advice function of FN, `ivy--minibuffer-setup' with ARGS."
   (let ((ivy-fixed-height-minibuffer nil))
     (apply fn args))
@@ -481,7 +513,7 @@ selection, non-nil otherwise."
                      `(:background ,bg-color :foreground ,bg-color)))
       (setq-local cursor-type nil))))
 
-(defun ivy-posframe--add-prompt (fn &rest args)
+(ivy-posframe--defun-advice ivy-posframe--add-prompt (fn &rest args)
   "Add the ivy prompt to the posframe.  Advice FN with ARGS."
   (apply fn args)
   (unless ivy-posframe--ignore-prompt
@@ -495,7 +527,7 @@ selection, non-nil otherwise."
           (insert prompt "  \n")
           (add-text-properties point (1+ point) '(face ivy-posframe-cursor)))))))
 
-(defun ivy-posframe--display-function-prop (fn &rest args)
+(ivy-posframe--defun-advice ivy-posframe--display-function-prop (fn &rest args)
   "Around advice of FN with ARGS."
   (let ((ivy-display-functions-props
          (append ivy-display-functions-props
@@ -505,13 +537,13 @@ selection, non-nil otherwise."
                   (mapcar #'cdr ivy-posframe-display-functions-alist)))))
     (apply fn args)))
 
-(defun ivy-posframe--height (fn &rest args)
+(ivy-posframe--defun-advice ivy-posframe--height (fn &rest args)
   "Around advide of FN with ARGS."
   (let ((ivy-height-alist
          (append ivy-posframe-height-alist ivy-height-alist)))
     (apply fn args)))
 
-(defun ivy-posframe--read (fn &rest args)
+(ivy-posframe--defun-advice ivy-posframe--read (fn &rest args)
   "Around advice of FN with AGS."
   (let ((ivy-display-functions-alist
          (append ivy-posframe-display-functions-alist ivy-display-functions-alist)))
@@ -529,14 +561,13 @@ selection, non-nil otherwise."
             ([remap swiper-avy]           . ivy-posframe-swiper-avy)
             ([remap ivy-read-action]      . ivy-posframe-read-action)
             ([remap ivy-dispatching-done] . ivy-posframe-dispatching-done))
-  (let ((advices ivy-posframe-advice-alist))
-    (if ivy-posframe-mode
-        (mapcar (lambda (elm)
-                  (advice-add (car elm) :around (cdr elm)))
-                advices)
-      (mapcar (lambda (elm)
-                (advice-remove (car elm) (cdr elm)))
-              advices))))
+  (if ivy-posframe-mode
+      (mapc (lambda (elm)
+              (advice-add (car elm) :around (cdr elm)))
+            ivy-posframe-advice-alist)
+    (mapc (lambda (elm)
+            (advice-remove (car elm) (cdr elm)))
+          ivy-posframe-advice-alist)))
 
 ;;;###autoload
 (defun ivy-posframe-enable ()

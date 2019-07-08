@@ -1,4 +1,4 @@
-;;; prescient.el --- Better sorting and filtering. -*- lexical-binding: t -*-
+;;; prescient.el --- Better sorting and filtering -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2017-2018 Radon Rosborough
 
@@ -7,7 +7,7 @@
 ;; Keywords: extensions
 ;; Created: 7 Aug 2017
 ;; Package-Requires: ((emacs "25.1"))
-;; Version: 3.1
+;; Version: 3.2
 
 ;;; Commentary:
 

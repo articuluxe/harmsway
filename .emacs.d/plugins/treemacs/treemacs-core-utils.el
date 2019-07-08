@@ -107,6 +107,9 @@
 (treemacs-import-functions-from "treemacs-visuals"
   treemacs-pulse-on-failure)
 
+(treemacs-import-functions-from "treemacs-persistence"
+  treemacs--maybe-load-workspaces)
+
 (declare-function treemacs-mode "treemacs-mode")
 
 (defvar treemacs--closed-node-states
@@ -569,6 +572,7 @@ buffer."
 (defun treemacs--init (&optional root name)
   "Initialize a treemacs buffer from the current workspace.
 Add a project for ROOT and NAME if they are non-nil."
+  (treemacs--maybe-load-workspaces)
   (let ((origin-buffer (current-buffer))
         (current-workspace (treemacs-current-workspace))
         (run-hook? nil))
@@ -1318,7 +1322,7 @@ from `treemacs-copy-file' or `treemacs-move-file'."
        (treemacs-error-return-if (not (treemacs-is-node-file-or-dir? node))
          wrong-type-msg)
        (let* ((source (treemacs-button-get node :path))
-              (destination (read-directory-name prompt nil default-directory :must-match))
+              (destination (file-name-as-directory (read-directory-name prompt nil default-directory :must-match)))
               (filename (treemacs--filename source))
               (move-to-on-success (f-join destination filename)))
          (when (file-exists-p (f-join destination filename))

@@ -297,7 +297,7 @@ the server has requested that."
                                     "[/\\\\]_darcs$"
                                     "[/\\\\]\\.svn$"
                                     "[/\\\\]_FOSSIL_$"
-                                    ; IDE tools
+                                    ;; IDE tools
                                     "[/\\\\]\\.idea$"
                                     "[/\\\\]\\.ensime_cache$"
                                     "[/\\\\]\\.eunit$"
@@ -308,7 +308,7 @@ the server has requested that."
                                     "[/\\\\]\\.bloop$"
                                     "[/\\\\]\\.metals$"
                                     "[/\\\\]target$"
-                                    ; Autotools output
+                                    ;; Autotools output
                                     "[/\\\\]\\.deps$"
                                     "[/\\\\]build-aux$"
                                     "[/\\\\]autom4te.cache$"
@@ -1303,19 +1303,19 @@ WORKSPACE is the workspace that contains the diagnostics."
                          (--map (-let* (((&hash "message" "severity" "range") (lsp-diagnostic-original it))
                                         ((start . end) (lsp--range-to-region range)))
                                   (when (= start end)
-				    (-let (((&hash "line" start-line "character") (gethash "start" range)))
+                                    (-let (((&hash "line" start-line "character") (gethash "start" range)))
                                       (if-let ((region (flymake-diag-region (current-buffer)
-									    (1+ start-line)
-									    character)))
-					  (setq start (car region)
-						end (cdr region))
-					(save-excursion
-					  (save-restriction
-					    (widen)
-					    (goto-char (point-min))
-					    (-let (((&hash "line" end-line) (gethash "end" range)))
-					      (setq start (point-at-bol (1+ start-line))
-						    end (point-at-eol (1+ end-line)))))))))
+                                                                            (1+ start-line)
+                                                                            character)))
+                                          (setq start (car region)
+                                                end (cdr region))
+                                        (save-excursion
+                                          (save-restriction
+                                            (widen)
+                                            (goto-char (point-min))
+                                            (-let (((&hash "line" end-line) (gethash "end" range)))
+                                              (setq start (point-at-bol (1+ start-line))
+                                                    end (point-at-eol (1+ end-line)))))))))
                                   (flymake-make-diagnostic (current-buffer)
                                                            start
                                                            end
@@ -1470,7 +1470,7 @@ WORKSPACE is the workspace that contains the diagnostics."
                 (lsp--folding-range-end range)))
     nil))
 (put 'lsp-folding-range 'bounds-of-thing-at-point
-      #'lsp--folding-range-at-point-bounds)
+     #'lsp--folding-range-at-point-bounds)
 
 (defun lsp--get-nearest-folding-range (&optional backward)
   (let ((point (point))
@@ -1495,17 +1495,17 @@ WORKSPACE is the workspace that contains the diagnostics."
                          (lsp--folding-range-end range)))
           (cl-return-from break))))))
 (put 'lsp--folding-range 'forward-op
-      #'lsp--folding-range-at-point-forward-op)
+     #'lsp--folding-range-at-point-forward-op)
 
 (defun lsp--folding-range-at-point-beginning-op ()
   (goto-char (car (lsp--folding-range-at-point-bounds))))
 (put 'lsp--folding-range 'beginning-op
-      #'lsp--folding-range-at-point-beginning-op)
+     #'lsp--folding-range-at-point-beginning-op)
 
 (defun lsp--folding-range-at-point-end-op ()
   (goto-char (cdr (lsp--folding-range-at-point-bounds))))
 (put 'lsp--folding-range 'end-op
-      #'lsp--folding-range-at-point-end-op)
+     #'lsp--folding-range-at-point-end-op)
 
 (defun lsp--range-at-point-bounds ()
   (or (lsp--folding-range-at-point-bounds)
@@ -1520,7 +1520,7 @@ WORKSPACE is the workspace that contains the diagnostics."
 
 ;; A more general purpose "thing", useful for applications like focus.el
 (put 'lsp--range 'bounds-of-thing-at-point
-      #'lsp--range-at-point-bounds)
+     #'lsp--range-at-point-bounds)
 
 
 ;; lenses support
@@ -2251,7 +2251,10 @@ If NO-MERGE is non-nil, don't merge the results but return alist workspace->resu
 (defun lsp--shutdown-workspace ()
   "Shut down the language server process for ‘lsp--cur-workspace’."
   (with-demoted-errors "LSP error: %S"
-    (lsp-request "shutdown" nil)
+    (let ((lsp-response-timeout 0.5))
+      (condition-case _err
+          (lsp-request "shutdown" nil)
+        (error (lsp--error "Timeout while sending shutdown request."))))
     (lsp-notify "exit" nil))
   (lsp--uninitialize-workspace))
 
@@ -2455,7 +2458,8 @@ in that particular folder."
   (interactive
    (list (read-directory-name "Select folder to add: "
                               (or (lsp--suggest-project-root) default-directory) nil t)))
-  (push project-root (lsp-session-folders (lsp-session)))
+  (cl-pushnew (f-canonical project-root)
+              (lsp-session-folders (lsp-session)) :test 'equal)
   (lsp--persist-session (lsp-session)))
 
 (defun lsp-workspace-folders-remove (project-root)
@@ -2524,9 +2528,7 @@ in that particular folder."
   nil nil nil
   (cond
    (lsp--managed-mode
-    (when (and lsp-enable-indentation
-               (lsp--capability "documentRangeFormattingProvider"))
-      (setq-local indent-region-function #'lsp-format-region))
+
 
     (add-function :before-until (local 'eldoc-documentation-function) #'lsp-eldoc-function)
     (eldoc-mode 1)
@@ -2582,6 +2584,11 @@ in that particular folder."
                                       (alist-get kind lsp--sync-methods))))
   (when (and lsp-auto-configure (lsp--capability "documentSymbolProvider"))
     (lsp-enable-imenu))
+
+  (when (and lsp-auto-configure
+             lsp-enable-indentation
+             (lsp--capability "documentRangeFormattingProvider"))
+    (setq-local indent-region-function #'lsp-format-region))
 
   (run-hooks 'lsp-after-open-hook)
   (lsp--set-document-link-timer))
@@ -2723,36 +2730,101 @@ interface TextDocumentEdit {
     (_ (with-current-buffer (find-file-noselect (lsp--uri-to-path (lsp--ht-get edit "textDocument" "uri")))
          (lsp--apply-text-edits (gethash "edits" edit))))))
 
-(defun lsp--text-edit-sort-predicate (e1 e2)
-  (let ((start1 (lsp--position-to-point (gethash "start" (gethash "range" e1))))
-        (start2 (lsp--position-to-point (gethash "start" (gethash "range" e2)))))
-    (if (= start1 start2)
-        (let ((end1 (lsp--position-to-point (gethash "end" (gethash "range" e1))))
-              (end2 (lsp--position-to-point (gethash "end" (gethash "range" e2)))))
-          (> end1 end2))
-      (> start1 start2))))
+(defun lsp--position-compare (left right)
+  "Compare position LEFT and RIGHT."
+  (let ((left-line (gethash "line" left))
+        (right-line (gethash "line" right)))
+    (if (= left-line right-line)
+        (let ((left-character (gethash "character" left))
+              (right-character (gethash "character" right)))
+          (> left-character right-character))
+      (> left-line right-line))))
 
-(defun lsp--apply-text-edits (edits)
-  "Apply the edits described in the TextEdit[] object in EDITS."
+(defun lsp--position-equal (left right)
+  "Return whether LEFT and RIGHT positions are equal."
+  (and (= (gethash "line" left) (gethash "line" right))
+       (= (gethash "character" left) (gethash "character" right))))
+
+(defun lsp--text-edit-sort-predicate (e1 e2)
+  (let ((start1 (gethash "start" (gethash "range" e1)))
+        (start2 (gethash "start" (gethash "range" e2))))
+    (if (lsp--position-equal start1 start2)
+        (lsp--position-compare (gethash "end" (gethash "range" e1))
+                               (gethash "end" (gethash "range" e2)))
+      (lsp--position-compare  start1 start2))))
+
+(defun lsp--apply-text-edit (text-edit)
+  "Apply the edits described in the TextEdit object in TEXT-EDIT."
   ;; We sort text edits so as to apply edits that modify latter parts of the
   ;; document first. Furthermore, because the LSP spec dictates that:
   ;; "If multiple inserts have the same position, the order in the array
   ;; defines which edit to apply first."
   ;; We reverse the initial list and sort stably to make sure the order among
   ;; edits with the same position is preserved.
-  (atomic-change-group
-    (seq-each #'lsp--apply-text-edit
-              (seq-sort #'lsp--text-edit-sort-predicate
-                        (nreverse edits)))))
-
-(defun lsp--apply-text-edit (text-edit)
-  "Apply the edits described in the TextEdit object in TEXT-EDIT."
   (-let* (((&hash "newText" "range") text-edit)
           ((start . end) (lsp--range-to-region range)))
     (save-excursion
       (goto-char start)
       (delete-region start end)
       (insert newText))))
+
+(defun lsp--apply-text-edit-replace-buffer-contents (text-edit)
+  "Apply the edits described in the TextEdit object in TEXT-EDIT.
+The method uses `replace-buffer-contents'."
+  (-let* (((&hash "newText" "range") text-edit)
+          (source (current-buffer))
+          ((beg . end) (lsp--range-to-region range)))
+    (with-temp-buffer
+      (insert newText)
+      (let ((temp (current-buffer)))
+        (with-current-buffer source
+          (save-excursion
+            (save-restriction
+              (narrow-to-region beg end)
+
+              ;; On emacs versions < 26.2,
+              ;; `replace-buffer-contents' is buggy - it calls
+              ;; change functions with invalid arguments - so we
+              ;; manually call the change functions here.
+              ;;
+              ;; See emacs bugs #32237, #32278:
+              ;; https://debbugs.gnu.org/cgi/bugreport.cgi?bug=32237
+              ;; https://debbugs.gnu.org/cgi/bugreport.cgi?bug=32278
+              (let ((inhibit-modification-hooks t)
+                    (length (- end beg)))
+                (run-hook-with-args 'before-change-functions
+                                    beg end)
+                (with-no-warnings (replace-buffer-contents temp))
+                (run-hook-with-args 'after-change-functions
+                                    beg (+ beg (length newText))
+                                    length)))))))))
+
+(defun lsp--apply-text-edits (edits)
+  "Apply the edits described in the TextEdit[] object.
+This method is used if we do not have `buffer-replace-content'."
+  (unless (seq-empty-p edits)
+    (atomic-change-group
+      (let* ((change-group (when (functionp 'undo-amalgamate-change-group)
+                             (prepare-change-group)))
+             (howmany (length edits))
+             (reporter (make-progress-reporter
+                        (lsp--info "Applying %s edits to `%s'..."
+                                   howmany (current-buffer))
+                        0 howmany))
+             (done 0)
+             (apply-edit (if (functionp 'replace-buffer-contents)
+                             'lsp--apply-text-edit-replace-buffer-contents
+                           'lsp--apply-text-edit)))
+        (unwind-protect
+            (->> edits
+                 (nreverse)
+                 (seq-sort #'lsp--text-edit-sort-predicate)
+                 (mapc (lambda (edit)
+                         (progress-reporter-update reporter (cl-incf done))
+                         (funcall apply-edit edit))))
+          (when (functionp 'undo-amalgamate-change-group)
+            (with-no-warnings (undo-amalgamate-change-group change-group)))
+          (progress-reporter-done reporter))))))
 
 (defun lsp--capability (cap &optional capabilities)
   "Get the value of capability CAP.  If CAPABILITIES is non-nil, use them instead."
@@ -3044,11 +3116,11 @@ Applies on type formatting."
 (defun lsp-buffer-language ()
   "Get language corresponding current buffer."
   (or (->> lsp-language-id-configuration
-        (-first (-lambda ((mode-or-pattern . language))
-                  (cond
-                   ((and (stringp mode-or-pattern) (s-matches? mode-or-pattern buffer-file-name)) language)
-                   ((eq mode-or-pattern major-mode) language))))
-        cl-rest)
+           (-first (-lambda ((mode-or-pattern . language))
+                     (cond
+                      ((and (stringp mode-or-pattern) (s-matches? mode-or-pattern buffer-file-name)) language)
+                      ((eq mode-or-pattern major-mode) language))))
+           cl-rest)
       (lsp-warn "Unable to calculate the languageId for current buffer. Take a look at lsp-language-id-configuration.")))
 
 (defun lsp-workspace-root (&optional path)
@@ -3343,11 +3415,11 @@ If INCLUDE-DECLARATION is non-nil, request the server to include declarations."
         (progn
           (pop-to-buffer buffer)
           (with-current-buffer buffer
-           (let ((inhibit-read-only t))
-             (erase-buffer)
-             (insert (lsp--render-on-hover-content contents t))
-             (goto-char (point-min))
-             (view-mode t))))
+            (let ((inhibit-read-only t))
+              (erase-buffer)
+              (insert (lsp--render-on-hover-content contents t))
+              (goto-char (point-min))
+              (view-mode t))))
       (lsp--info "No content at point."))))
 
 (defun lsp--point-in-bounds-p (bounds)
@@ -3403,7 +3475,11 @@ Stolen from `org-copy-visible'."
     (while (re-search-forward "^[-]+$" nil t)
       (replace-match ""))
 
-    (gfm-view-mode)
+    ;; markdown-mode v2.3 does not yet provide gfm-view-mode
+    (if (fboundp 'gfm-view-mode)
+        (gfm-view-mode)
+      (gfm-mode))
+
     (lsp--setup-markdown major-mode)))
 
 (defun lsp--fontlock-with-mode (str mode)
@@ -3631,8 +3707,7 @@ If ACTION is not set it will be selected from `lsp-code-actions'."
 (defun lsp-format-region (s e)
   "Ask the server to format the region, or if none is selected, the current line."
   (interactive "r")
-  (unless (or (lsp--capability "documentFormattingProvider")
-              (lsp--capability "documentRangeFormattingProvider")
+  (unless (or (lsp--capability "documentRangeFormattingProvider")
               (lsp--registered-capability "textDocument/rangeFormatting"))
     (signal 'lsp-capability-not-supported (list "documentFormattingProvider")))
   (let ((edits (lsp-request "textDocument/rangeFormatting"
@@ -3645,22 +3720,13 @@ If ACTION is not set it will be selected from `lsp-code-actions'."
   (lsp-execute-code-action-by-kind "source.organizeImports"))
 
 (defun lsp--apply-formatting (edits)
-  (if (fboundp 'replace-buffer-contents)
-      (let ((current-buffer (current-buffer)))
-        (with-temp-buffer
-          (insert-buffer-substring-no-properties current-buffer)
-          (let ((lsp--server-sync-method 'full))
-            (lsp--apply-text-edits edits))
-          (let ((temp-buffer (current-buffer)))
-            (with-current-buffer current-buffer
-              (replace-buffer-contents temp-buffer)))))
-    (let ((point (point))
-          (w-start (window-start)))
-      (let ((lsp--server-sync-method 'full))
-        (lsp--apply-text-edits edits))
-      (goto-char point)
-      (goto-char (line-beginning-position))
-      (set-window-start (selected-window) w-start))))
+  (let ((point (point))
+        (w-start (window-start)))
+    (let ((lsp--server-sync-method 'full))
+      (lsp--apply-text-edits edits))
+    (goto-char point)
+    (goto-char (line-beginning-position))
+    (set-window-start (selected-window) w-start)))
 
 (defun lsp--make-document-range-formatting-params (start end)
   "Make DocumentRangeFormattingParams for selected region.
@@ -3889,16 +3955,21 @@ perform the request synchronously."
     (when edits
       (lsp--apply-workspace-edit edits))))
 
-(cl-defun lsp-find-locations (method &optional extra &key display-action)
+(cl-defun lsp-find-locations (method &optional extra &key display-action references?)
   "Send request named METHOD and get cross references of the symbol under point.
-EXTRA is a plist of extra parameters."
-  (let ((loc (lsp-request method
-                          (append (lsp--text-document-position-params) extra))))
-    (if loc
-        (xref--show-xrefs
-         (lsp--locations-to-xref-items (if (sequencep loc) loc (list loc)))
-         display-action)
-      (message "Not found for: %s" (thing-at-point 'symbol t)))))
+EXTRA is a plist of extra parameters.
+REFERENCES? t when METHOD returns references."
+  (if-let ((loc (lsp-request method
+                             (append (lsp--text-document-position-params) extra))))
+      (let ((xrefs (lsp--locations-to-xref-items (if (sequencep loc) loc (list loc)))))
+        (if (boundp 'xref-show-definitions-function)
+            (with-no-warnings
+              (funcall (if references? xref-show-xrefs-function xref-show-definitions-function)
+                       (-const xrefs)
+                       `((window . ,(selected-window))
+                         (display-action . ,display-action))))
+          (xref--show-xrefs xrefs display-action)))
+    (message "Not found for: %s" (thing-at-point 'symbol t))))
 
 (cl-defun lsp-find-declaration (&key display-action)
   "Find declarations of the symbol under point."
@@ -3926,7 +3997,8 @@ EXTRA is a plist of extra parameters."
     (signal 'lsp-capability-not-supported (list "referencesProvider")))
   (lsp-find-locations "textDocument/references"
                       (list :context `(:includeDeclaration ,(or include-declaration json-false)))
-                      :display-action display-action))
+                      :display-action display-action
+                      :references? t))
 
 (cl-defun lsp-find-type-definition (&key display-action)
   "Find type definitions of the symbol under point."
@@ -4121,7 +4193,7 @@ WORKSPACE is the active workspace."
     (if content-length
         (string-to-number content-length)
 
-      ;; This usually means either the server our our parser is
+      ;; This usually means either the server or our parser is
       ;; screwed up with a previous Content-Length
       (error "No Content-Length header"))))
 
@@ -4467,11 +4539,11 @@ Return a nested alist keyed by symbol names. e.g.
 
 (defun lsp-server-present? (final-command)
   "Check whether FINAL-COMMAND is present."
-  ;; executable-find only gained support for remote checks after 26.1 release
+  ;; executable-find only gained support for remote checks after 27 release
   (or (and (cond
             ((not (file-remote-p default-directory))
              (executable-find (cl-first final-command)))
-            ((not (version<= emacs-version "26.2"))
+            ((version<= "27.0" emacs-version)
              (with-no-warnings (executable-find (cl-first final-command) (file-remote-p default-directory))))
             (t))
            (prog1 t
@@ -5274,8 +5346,8 @@ such."
 (defun lsp-workspace-shutdown (workspace)
   "Shut the workspace WORKSPACE and the language server associated with it"
   (interactive (list (lsp--completing-read "Select server: "
-					   (lsp-workspaces)
-					   'lsp--workspace-print nil t)))
+                                           (lsp-workspaces)
+                                           'lsp--workspace-print nil t)))
   (lsp--warn "Stopping %s" (lsp--workspace-print workspace))
   (setf (lsp--workspace-shutdown-action workspace) 'shutdown)
   (with-lsp-workspace workspace (lsp--shutdown-workspace)))
@@ -5295,8 +5367,8 @@ such."
 (defun lsp-workspace-restart (workspace)
   "Restart the workspace WORKSPACE and the language server associated with it"
   (interactive (list (lsp--completing-read "Select workspace: "
-					   (lsp-workspaces)
-					   'lsp--workspace-print nil t)))
+                                           (lsp-workspaces)
+                                           'lsp--workspace-print nil t)))
   (lsp--warn "Restarting %s" (lsp--workspace-print workspace))
   (setf (lsp--workspace-shutdown-action workspace) 'restart)
   (with-lsp-workspace workspace (lsp--shutdown-workspace)))

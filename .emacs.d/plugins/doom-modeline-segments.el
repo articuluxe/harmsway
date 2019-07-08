@@ -1330,27 +1330,34 @@ Requires `eyebrowse-mode' to be enabled."
                    (fboundp 'safe-persp-name)
                    (fboundp 'get-current-persp))
           (let* ((persp (get-current-persp))
-                 (name (safe-persp-name persp)))
+                 (name (safe-persp-name persp))
+                 (icon (if (and doom-modeline-icon doom-modeline-persp-name-icon)
+                           (doom-modeline-icon-material "aspect_ratio" :v-adjust -0.225)
+                         "#"))
+                 (face (if (and persp
+                                (not (persp-contain-buffer-p (current-buffer) persp)))
+                           'doom-modeline-persp-buffer-not-in-persp
+                         'doom-modeline-persp-name)))
             (unless (string-equal persp-nil-name name)
               (concat
                (doom-modeline-spc)
-               (propertize
-                (format "#%s" name)
-                'face (if (and persp
-                               (not (persp-contain-buffer-p (current-buffer) persp)))
-                          'doom-modeline-persp-buffer-not-in-persp
-                        'doom-modeline-persp-name)
-                'help-echo "mouse-1: Switch perspective
+               (propertize icon
+                           'face `(:inherit ,(get-text-property 0 'face icon)
+                                   :inherit ,face))
+               (doom-modeline-vspc)
+               (propertize name
+                           'face face
+                           'help-echo "mouse-1: Switch perspective
 mouse-2: Show help for minor mode"
-                'mouse-face 'mode-line-highlight
-                'local-map (let ((map (make-sparse-keymap)))
-                             (define-key map [mode-line mouse-1]
-                               #'persp-switch)
-                             (define-key map [mode-line mouse-2]
-                               (lambda ()
-                                 (interactive)
-                                 (describe-function 'persp-mode)))
-                             map))
+                           'mouse-face 'mode-line-highlight
+                           'local-map (let ((map (make-sparse-keymap)))
+                                        (define-key map [mode-line mouse-1]
+                                          #'persp-switch)
+                                        (define-key map [mode-line mouse-2]
+                                          (lambda ()
+                                            (interactive)
+                                            (describe-function 'persp-mode)))
+                                        map))
                (doom-modeline-spc)))))))
 
 (add-hook 'find-file-hook #'doom-modeline-update-persp-name)
@@ -1622,8 +1629,10 @@ mouse-3: Describe current input method")
                       'help-echo
                       (if workspaces
                           (concat "LSP Connected "
-                                  (string-join (--map (format "[%s]\n" (lsp--workspace-print it))
-                                                      workspaces))
+                                  (string-join
+                                   (mapcar (lambda (w)
+                                             (format "[%s]\n" (lsp--workspace-print w)))
+                                           workspaces))
                                   "C-mouse-1: Switch to another workspace folder
 mouse-1: Describe current session
 mouse-2: Quit server
@@ -1631,28 +1640,28 @@ mouse-3: Reconnect to server")
                         "LSP Disconnected
 mouse-1: Reload to start server")
                       'mouse-face '(:box 0)
-                      'local-map
-                      (let ((map (make-sparse-keymap)))
-                        (if workspaces
-                            (progn
-                              (define-key map [mode-line C-mouse-1]
-                                #'lsp-workspace-folders-open)
-                              (define-key map [mode-line mouse-1]
-                                #'lsp-describe-session)
-                              (define-key map [mode-line mouse-2]
-                                #'lsp-workspace-shutdown)
-                              (define-key map [mode-line mouse-3]
-                                #'lsp-workspace-restart))
-                          (progn
-                            (define-key map [mode-line mouse-1]
-                              (lambda ()
-                                (interactive)
-                                (ignore-errors (revert-buffer t t))))))
-                        map)))))
+                      'local-map (let ((map (make-sparse-keymap)))
+                                   (if workspaces
+                                       (progn
+                                         (define-key map [mode-line C-mouse-1]
+                                           #'lsp-workspace-folders-open)
+                                         (define-key map [mode-line mouse-1]
+                                           #'lsp-describe-session)
+                                         (define-key map [mode-line mouse-2]
+                                           #'lsp-workspace-shutdown)
+                                         (define-key map [mode-line mouse-3]
+                                           #'lsp-workspace-restart))
+                                     (progn
+                                       (define-key map [mode-line mouse-1]
+                                         (lambda ()
+                                           (interactive)
+                                           (ignore-errors (revert-buffer t t))))))
+                                   map)))))
+(add-hook 'lsp-before-initialize-hook #'doom-modeline-update-lsp)
 (add-hook 'lsp-after-initialize-hook #'doom-modeline-update-lsp)
 (add-hook 'lsp-after-uninitialized-hook #'doom-modeline-update-lsp)
+(add-hook 'lsp-before-open-hook #'doom-modeline-update-lsp)
 (add-hook 'lsp-after-open-hook #'doom-modeline-update-lsp)
-(add-hook 'lsp-workspace-folders-changed-hook #'doom-modeline-update-lsp)
 
 (defvar-local doom-modeline--eglot nil)
 (defun doom-modeline-update-eglot ()

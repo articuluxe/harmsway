@@ -44,7 +44,6 @@
 (require 'avy)
 (require 'dash)
 (require 'frog-menu)
-(require 'projectile nil t)
 
 (defgroup frog-jump-buffer nil
   "Fast buffer switching interface."
@@ -64,6 +63,18 @@
 Shows all buffers by default."
   :type 'symbol)
 
+(defcustom frog-jump-buffer-include-current-buffer t
+  "Set to `nil' to remove the current buffer from always being the first option."
+  :type 'boolean)
+
+(defcustom frog-jump-buffer-posframe-parameters frog-menu-posframe-parameters
+  "Explicit frame parameters to be used by the posframe `frog-jump-buffer' creates."
+  :type 'list)
+
+(defcustom frog-jump-buffer-posframe-handler 'posframe-poshandler-point-bottom-left-corner
+  "This is the posframe handler that `frog-jump-buffer' should use."
+  :type 'function)
+
 (defcustom frog-jump-buffer-filter-actions
   '(("1" "[all]" frog-jump-buffer-filter-all)
     ("2" "[mode]" frog-jump-buffer-filter-same-mode)
@@ -72,7 +83,7 @@ Shows all buffers by default."
 Each action is a list of the form: (KEY DESCRIPTION FILTER-FUNCTION)."
   :type 'list)
 
-(when (boundp 'projectile)
+(when (require 'projectile nil t)
   (add-to-list
    'frog-jump-buffer-filter-actions
    '("4" "[project]" frog-jump-buffer-filter-same-project) t))
@@ -126,10 +137,14 @@ Each action is a list of the form: (KEY DESCRIPTION FILTER-FUNCTION)."
       frog-jump-buffer-current-ignore-buffers))
    buffers))
 
+(defun frog-jump-buffer-list ()
+  "Return the buffer list to apply the filters to."
+  (buffer-list))
+
 (defun frog-jump-buffer-buffer-names ()
   "Filter and limit the number of buffers to show."
   (-take frog-jump-buffer-max-buffers
-         (frog-jump-buffer-match (mapcar #'buffer-name (buffer-list)))))
+         (frog-jump-buffer-match (mapcar #'buffer-name (frog-jump-buffer-list)))))
 
 (defvar frog-jump-buffer-target-other-window nil
   "This is a placeholder variable for determining which window to open the chosen buffer in.")
@@ -170,7 +185,11 @@ Each action is a list of the form: (KEY DESCRIPTION FILTER-FUNCTION)."
 
 (defun frog-jump-buffer-current-ignore-buffers ()
   "Return all the filters and regex rejections."
-  (-non-nil (append frog-jump-buffer-ignore-buffers (list frog-jump-buffer-current-filter-function))))
+  (-non-nil
+   (append frog-jump-buffer-ignore-buffers
+           (list frog-jump-buffer-current-filter-function)
+           (unless frog-jump-buffer-include-current-buffer
+             (list (buffer-name (current-buffer)))))))
 
 ;;;###autoload
 (defun frog-jump-buffer ()
@@ -179,6 +198,8 @@ If FILTER-FUNCTION is present, filter the `buffer-list' with it."
   (interactive)
   (let* ((frog-menu-avy-padding t)
          (frog-menu-grid-column-function (lambda () 1))
+         (frog-menu-posframe-parameters frog-jump-buffer-posframe-parameters)
+         (frog-menu-display-option-alist `((avy-posframe . ,frog-jump-buffer-posframe-handler)))
          (frog-jump-buffer-current-ignore-buffers (frog-jump-buffer-current-ignore-buffers))
          (buffer-names (frog-jump-buffer-buffer-names))
          (actions (frog-jump-buffer-actions))

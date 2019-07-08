@@ -24,6 +24,7 @@
 (require 'image)
 (require 'dash)
 (require 's)
+(require 'ht)
 (require 'treemacs-visuals)
 (require 'treemacs-themes)
 (require 'treemacs-workspaces)
@@ -85,7 +86,7 @@ Necessary since root icons are not rectangular."
            (create-image ,file-path 'imagemagick nil :ascent 'center :width width :height height)
          (create-image ,file-path 'png nil :ascent 'center))))))
 
-(define-inline treemacs---create-icon-strings (file fallback)
+(define-inline treemacs--create-icon-strings (file fallback)
   "Create propertized icon strings for a given FILE image and TUI FALLBACK."
   (inline-letevals (file fallback)
     (inline-quote
@@ -104,9 +105,19 @@ Necessary since root icons are not rectangular."
                         " ")))))
        (cons gui-icon tui-icon)))))
 
-(cl-defmacro treemacs-create-icon (&key file (fallback " ") extensions)
+(defmacro treemacs--splice-icon (icon)
+  "Splice the given ICON data depending on whether it is a value or an sexp."
+  (if (listp icon)
+      `(progn ,@icon)
+    `(progn ,icon)))
+
+(cl-defmacro treemacs-create-icon (&key file icon (fallback " ") icons-dir extensions)
   "Create an icon for the current theme.
 - FILE is a file path relative to the icon directory of the current theme.
+- ICON is a string of an already created icon. Mutually exclusive with FILE.
+- ICONS-DIR can optionally be used to overwrite the path used to find icons.
+  Normally the current theme's icon-path is used, but it may be convenient to
+  use another when calling `treemacs-modify-theme'.
 - FALLBACK is the fallback string for situations where png images are
   unavailable.
 - EXTENSIONS is a list of file extensions the icon should be used for.
@@ -116,12 +127,17 @@ Necessary since root icons are not rectangular."
   An extension may also be a symbol instead of a string. In this case treemacs
   will also create a variable named \"treemacs-icon-%s\" making it universally
   accessible."
-  `(let* ((icon-path (f-join (treemacs-theme->path treemacs--current-theme) ,file))
-          (icon-pair (treemacs---create-icon-strings icon-path ,fallback))
+  (treemacs-static-assert (or (null icon) (null file))
+    "FILE and ICON arguments are mutually exclusive")
+  `(let* ((icons-dir ,(if icons-dir icons-dir `(treemacs-theme->path treemacs--current-theme)))
+          (icon-path ,(if file `(f-join icons-dir ,file) nil))
+          (icon-pair ,(if file `(treemacs--create-icon-strings icon-path ,fallback)
+                        `(cons ,(treemacs--splice-icon icon) ,fallback)))
           (gui-icons (treemacs-theme->gui-icons treemacs--current-theme))
           (tui-icons (treemacs-theme->tui-icons treemacs--current-theme))
           (gui-icon  (car icon-pair))
           (tui-icon  (cdr icon-pair)))
+     ,(unless file `(ignore icon-path))
      ,@(->> (-filter #'symbolp extensions)
             (--map `(progn (add-to-list 'treemacs--icon-symbols ',it)
                            (defvar ,(intern (format "treemacs-icon-%s" it)) nil))))
@@ -263,7 +279,20 @@ TUI icons will be used if
     (dolist (icon-symbol treemacs--icon-symbols)
       (let ((variable (intern (format "treemacs-icon-%s" icon-symbol)))
             (value    (ht-get icons icon-symbol)))
-        (set variable value)))))
+        (set (make-local-variable variable) value)))))
+
+(defmacro treemacs-get-icon-value (ext &optional tui theme)
+  "Get the value of an icon for extension EXT.
+If TUI is non-nil the terminal fallback value is returned.
+THEME is the name of the theme to look in. Will cause an error if the theme
+does not exist."
+  `(let* ((theme ,(if theme
+                      `(treemacs--find-theme ,theme)
+                    `(treemacs-current-theme)))
+          (icons ,(if tui
+                     `(treemacs-theme->tui-icons theme)
+                   `(treemacs-theme->gui-icons theme))))
+     (ht-get icons ,ext)))
 
 ;;;###autoload
 (defun treemacs-define-custom-icon (icon &rest file-extensions)

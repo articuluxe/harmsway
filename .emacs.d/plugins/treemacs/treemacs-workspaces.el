@@ -16,7 +16,8 @@
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 ;;; Commentary:
-;;; TODO
+;;; Everything about creating, (re)moving, (re)naming and otherwise editing
+;;; projects and workspaces.
 
 ;;; Code:
 
@@ -28,6 +29,9 @@
 (eval-and-compile
   (require 'inline)
   (require 'treemacs-macros))
+
+(treemacs-import-functions-from "treemacs"
+  treemacs-select-window)
 
 (treemacs-import-functions-from "treemacs-rendering"
   treemacs--projects-end
@@ -43,7 +47,6 @@
   treemacs-next-project)
 
 (treemacs-import-functions-from "treemacs-persistence"
-  treemacs--restore
   treemacs--persist)
 
 (treemacs--defstruct treemacs-project name path path-status)
@@ -61,7 +64,14 @@
 (defvar-local treemacs--project-positions nil)
 
 (defvar-local treemacs--project-of-buffer nil
-  "The project that the current buffer falls under, if any.");; TODO invalidate when?
+  "The project that the current buffer falls under, if any.")
+
+(define-inline treemacs--invalidate-buffer-project-cache ()
+  "Set all buffers' `treemacs--project-of-buffer' to nil.
+To be called whenever a project or workspace changes."
+  (inline-quote
+   (dolist (buf (buffer-list (selected-frame)))
+     (setf (buffer-local-value 'treemacs--project-of-buffer buf) nil))))
 
 (defun treemacs--default-current-user-project-function ()
   "Find the current project.el project."
@@ -243,14 +253,15 @@ Return values may be as follows:
   - the created workspace"
   (treemacs-block
    (-let [name (read-string "Workspace name: ")]
-     (when (treemacs--is-name-invalid? name)
-       (treemacs-return `(invalid-name ,name)))
+     (treemacs-return-if (treemacs--is-name-invalid? name)
+       `(invalid-name ,name))
      (-when-let (ws (--first (string= name (treemacs-workspace->name it))
                              treemacs--workspaces))
        (treemacs-return `(duplicate-name ,ws)))
      (-let [workspace (make-treemacs-workspace :name name)]
        (add-to-list 'treemacs--workspaces workspace :append)
        (treemacs--persist)
+       (run-hook-with-args 'treemacs-create-workspace-functions workspace)
        `(success ,workspace)))))
 
 (defun treemacs-do-remove-workspace (&optional ask-to-confirm)
@@ -278,10 +289,33 @@ Return values may be as follows:
                                           (propertize (treemacs-workspace->name to-delete)
                                                       'face 'font-lock-type-face)))))
        (treemacs-return 'user-cancel))
-     ;; TODO re-render
      (setq treemacs--workspaces (delete to-delete treemacs--workspaces))
      (treemacs--persist)
+     (treemacs--invalidate-buffer-project-cache)
+     (dolist (frame (frame-list))
+       (with-selected-frame frame
+         (-when-let (current-ws (treemacs-current-workspace))
+           (when (eq current-ws to-delete)
+             (treemacs--rerender-after-workspace-change)))))
+     (run-hook-with-args 'treemacs-delete-workspace-functions to-delete)
      `(success ,to-delete ,treemacs--workspaces))))
+
+(defun treemacs--rerender-after-workspace-change ()
+  "Redraw treemacs after the current workspace was changed or deleted."
+  (let* ((treemacs-buffer (treemacs-get-local-buffer))
+         (in-treemacs? (eq (current-buffer) treemacs-buffer)))
+    (pcase (treemacs-current-visibility)
+      ('none
+       (ignore))
+      ('exists
+       (kill-buffer treemacs-buffer)
+       (save-selected-window (treemacs-select-window))
+       (delete-window (treemacs-get-local-window)))
+      ('visible
+       (kill-buffer treemacs-buffer)
+       (if in-treemacs?
+           (treemacs-select-window)
+         (save-selected-window (treemacs-select-window)))))))
 
 (defun treemacs--get-path-status (path)
   "Get the status of PATH.
@@ -379,6 +413,7 @@ NAME: String"
                                    (treemacs-workspace->projects (treemacs-current-workspace))))
          (treemacs-return `(duplicate-name ,double)))
        (treemacs--add-project-to-current-workspace project)
+       (treemacs--invalidate-buffer-project-cache)
        (treemacs-run-in-every-buffer
         (treemacs-with-writable-buffer
          (goto-char (treemacs--projects-end))
@@ -400,6 +435,7 @@ NAME: String"
          (treemacs--insert-into-dom (make-treemacs-dom-node
                                      :key path :position (treemacs-project->position project)))))
        (treemacs--persist)
+       (run-hook-with-args 'treemacs-create-project-functions project)
        `(success ,project)))))
 
 (defalias 'treemacs-add-project-at #'treemacs-do-add-project-to-workspace)
@@ -418,7 +454,7 @@ PROJECT: Project Struct"
       (when (treemacs-project->is-expanded? project)
         (treemacs--collapse-root-node project-pos t))
       (treemacs--remove-project-from-current-workspace project)
-
+      (treemacs--invalidate-buffer-project-cache)
       (let ((previous-button (previous-button project-pos))
             (next-button (next-button project-pos)))
         (cond
@@ -451,6 +487,7 @@ PROJECT: Project Struct"
         (recenter)))
     (treemacs--evade-image)
     (hl-line-highlight)))
+  (run-hook-wrapped 'treemacs-delete-project-functions project)
   (treemacs--persist))
 
 (defun treemacs-do-switch-workspace ()
@@ -471,8 +508,37 @@ Return values may be as follows:
           (name (completing-read "Switch to: " workspaces nil t))
           (selected (cdr (--first (string= (car it) name) workspaces))))
      (setf (treemacs-current-workspace) selected)
+     (treemacs--invalidate-buffer-project-cache)
+     (treemacs--rerender-after-workspace-change)
+     (run-hooks 'treemacs-switch-workspace-hook)
      (treemacs-return
-       `(success ,selected)))))
+      `(success ,selected)))))
+
+(defun treemacs-do-rename-workspace ()
+  "Rename a workspace.
+Return values may be as follows:
+
+* If the given name is invalid:
+  - the symbol `invalid-name'
+  - the name
+* If everything went well:
+  - the symbol `success'
+  - the old-name
+  - the renamed workspace"
+  (treemacs-block
+   (let* ((current-ws (treemacs-current-workspace))
+          (old-name (treemacs-workspace->name current-ws))
+          (name-map (-> (--map (cons (treemacs-workspace->name it) it)  treemacs--workspaces)
+                        (sort (lambda (n _) (string= (car n) old-name)))))
+          (str-to-rename (completing-read "Rename: " name-map))
+          (ws-to-rename (cdr (assoc str-to-rename name-map)))
+          (new-name (read-string "New name: ")))
+     (treemacs-return-if (treemacs--is-name-invalid? new-name)
+       `(invalid-name ,new-name))
+     (setf (treemacs-workspace->name ws-to-rename) new-name)
+     (treemacs--persist)
+     (run-hook-with-args 'treemacs-rename-workspace-functions ws-to-rename old-name)
+     `(success ,old-name ,ws-to-rename))))
 
 (defun treemacs--is-name-invalid? (name)
   "Validate the NAME of a project or workspace.

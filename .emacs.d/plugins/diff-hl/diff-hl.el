@@ -5,7 +5,7 @@
 ;; Author:   Dmitry Gutov <dgutov@yandex.ru>
 ;; URL:      https://github.com/dgutov/diff-hl
 ;; Keywords: vc, diff
-;; Version:  1.8.6
+;; Version:  1.8.7
 ;; Package-Requires: ((cl-lib "0.2") (emacs "24.3"))
 
 ;; This file is part of GNU Emacs.
@@ -248,17 +248,17 @@ the end position as its only argument."
                diff-hl-reference-revision))))
 
 (defun diff-hl-changes-buffer (file backend)
+  ;; FIXME: To diff against the staging area, call 'git diff-files -p'.
   (let ((buf-name " *diff-hl* "))
     (condition-case err
         (diff-hl-with-diff-switches
-         ;; FIXME: To diff against the staging area, call 'git diff-files -p'.
          (vc-call-backend backend 'diff (list file)
                           diff-hl-reference-revision nil
                           buf-name))
       (error
+       ;; https://github.com/dgutov/diff-hl/issues/117
        (when (string-match-p "\\`Failed (status 128)" (error-message-string err))
          (diff-hl-with-diff-switches
-          ;; FIXME: To diff against the staging area, call 'git diff-files -p'.
           (vc-call-backend backend 'diff (list file)
                            "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
                            nil
@@ -546,7 +546,6 @@ The value of this variable is a mode line template as in
         ;; Magit versions 2.0-2.3 don't do the above and call this
         ;; instead, but only when they dosn't call `revert-buffer':
         (add-hook 'magit-not-reverted-hook 'diff-hl-update nil t)
-        (add-hook 'auto-revert-mode-hook 'diff-hl-update nil t)
         (add-hook 'text-scale-mode-hook 'diff-hl-maybe-redefine-bitmaps nil t))
     (remove-hook 'after-save-hook 'diff-hl-update t)
     (remove-hook 'after-change-functions 'diff-hl-edit t)
@@ -555,7 +554,6 @@ The value of this variable is a mode line template as in
     (remove-hook 'after-revert-hook 'diff-hl-update t)
     (remove-hook 'magit-revert-buffer-hook 'diff-hl-update t)
     (remove-hook 'magit-not-reverted-hook 'diff-hl-update t)
-    (remove-hook 'auto-revert-mode-hook 'diff-hl-update t)
     (remove-hook 'text-scale-mode-hook 'diff-hl-maybe-redefine-bitmaps t)
     (diff-hl-remove-overlays)))
 

@@ -8,9 +8,9 @@
 ;; Author: Emmanuel Bustos <ema2159@gmail.com>
 ;; Maintainer: Emmanuel Bustos <ema2159@gmail.com>
 ;; Created: 2019-21-19 22:14:34
-;; Version: 4
+;; Version: 5
 ;; Known Compatibility: GNU Emacs 26.2
-;; Package-Requires: ((emacs "24.4"))
+;; Package-Requires: ((emacs "24.4") (powerline "2.4")  (cl-lib "0.5"))
 ;;
 ;;
 
@@ -35,13 +35,15 @@
 
 ;;; Commentary:
 ;;
-;; Provide an out of box configuration to use tabs in Emacs.
+;; Emacs plugin aiming to become an aesthetic, modern looking tabs plugin.
 ;;
 
+;;; Code:
 ;;; Require
 (require 'cl-lib)
 (require 'color)
 (require 'which-func)
+(require 'powerline)
 
 ;; Compiler pacifier
 (declare-function ivy-read "ext:ivy.el" t t)
@@ -50,116 +52,16 @@
 (declare-function all-the-icons-auto-mode-match? "ext:all-the-icons.el" t t)
 (declare-function all-the-icons-icon-for-file "ext:all-the-icons.el" t t)
 (declare-function all-the-icons-icon-for-mode "ext:all-the-icons.el" t t)
+(declare-function projectile-project-root "ext:projectile.el" t t)
+(declare-function projectile-project-name "ext:projectile.el" t t)
 (defvar ivy-source-centaur-tabs-group)
 (defvar helm-source-centaur-tabs-group)
 
-;;; Code:
 ;;;;;;;;;;;;;;;;;;;;;;; Centaur-Tabs source code ;;;;;;;;;;;;;;;;;;;;;;;
 
 (defgroup centaur-tabs nil
   "Display a tab bar in the header line."
   :group 'convenience)
-
-;;; Faces
-;;
-(defcustom centaur-tabs-cycle-scope nil
-  "*Specify the scope of cyclic navigation through tabs.
-The following scopes are possible:
-
-- `tabs'
-    Navigate through visible tabs only.
-- `groups'
-    Navigate through tab groups only.
-- default
-    Navigate through visible tabs, then through tab groups."
-  :group 'centaur-tabs
-  :type '(choice :tag "Cycle through..."
-		 (const :tag "Visible Tabs Only" tabs)
-		 (const :tag "Tab Groups Only" groups)
-		 (const :tag "Visible Tabs then Tab Groups" nil)))
-
-(defcustom centaur-tabs-auto-scroll-flag t
-  "*Non-nil means to automatically scroll the tab bar.
-That is, when a tab is selected outside of the tab bar visible area,
-the tab bar is scrolled horizontally so the selected tab becomes
-visible."
-  :group 'centaur-tabs
-  :type 'boolean)
-
-(defcustom centaur-tabs-common-group-name "Common"
-  "If the current buffer does not belong to any project the group name uses the name of this variable."
-  :group 'centaur-tabs
-  :type 'string)
-
-(defcustom centaur-tabs-label-fixed-length 0
-  "Fixed length of label.  Set to 0 if dynamic."
-  :group 'centaur-tabs
-  :type 'int)
-
-(defcustom centaur-tabs-hide-tabs-hooks
-  '(magit-status-mode-hook magit-popup-mode-hook reb-mode-hook)
-  "Set hooks to buffer in which it isn't desired to have tabs."
-  :type '(repeat symbol)
-  :group 'centaur-tabs)
-
-(defcustom centaur-tabs-background-color "black"
-  "*Background color of the tab bar.
-By default, use the background color specified for the
-`centaur-tabs-default' face (or inherited from another face), or the
-background color of the `default' face otherwise."
-  :group 'centaur-tabs
-  :type 'face)
-
-(defcustom centaur-tabs-height 22
-  "The height of tab."
-  :group 'centaur-tabs
-  :type 'int)
-
-(defcustom centaur-tabs-bar-height (+ 6 centaur-tabs-height)
-  "The height of bar."
-  :group 'centaur-tabs
-  :type 'int)
-
-(defcustom centaur-tabs-style "bar"
-  "The style of tab."
-  :group 'centaur-tabs
-  :type 'string)
-
-(defcustom centaur-tabs-display-sticky-function-name nil
-  "Non-nil to display sticky function name in tab.
-Sticky function is the function at the top of the current window sticky."
-  :group 'centaur-tabs
-  :type 'boolean)
-
-(defcustom centaur-tabs-set-icons nil
-  "When non nil, display an icon from all-the-icons alongside the tab name."
-  :group 'centaur-tabs
-  :type 'boolean)
-
-(defcustom centaur-tabs-set-bar nil
-  "When non nil, display a bar at the left of the currently selected tab."
-  :group 'centaur-tabs
-  :type 'boolean)
-
-(defcustom centaur-tabs-set-close-button t
-  "When non nil, display a clickable x button for closing the tabs."
-  :group 'centaur-tabs
-  :type 'boolean)
-
-(defcustom centaur-tabs-close-button (make-string 1 #x00D7)
-  "When non nil, display a clickable x button for closing the tabs."
-  :group 'centaur-tabs
-  :type 'string)
-
-(defcustom centaur-tabs-set-modified-marker nil
-  "When non nil, display a marker when the buffer is modified."
-  :group 'centaur-tabs
-  :type 'boolean)
-
-(defcustom centaur-tabs-modified-marker (make-string 1 #x23FA)
-  "When non nil, display a marker when the buffer is modified."
-  :group 'centaur-tabs
-  :type 'string)
 
 ;;; Faces
 ;;
@@ -206,6 +108,11 @@ Sticky function is the function at the top of the current window sticky."
   "Face used for selected close button."
   :group 'centaur-tabs)
 
+(defface centaur-tabs-close-mouse-face
+  '((t (:inherit underline)))
+  "Face used for close button when hovered with the mouse."
+  :group 'centaur-tabs)
+
 (defface centaur-tabs-modified-marker-selected
   `((t (:inherit centaur-tabs-selected)))
   "Face used for selected modified marker."
@@ -238,6 +145,113 @@ Sticky function is the function at the top of the current window sticky."
      (:inherit default)))
   "Face used to inherit tabbar-unselected-modified face")
 
+;;; Customs
+;;
+(defcustom centaur-tabs-cycle-scope nil
+  "*Specify the scope of cyclic navigation through tabs.
+The following scopes are possible:
+
+- `tabs'
+    Navigate through visible tabs only.
+- `groups'
+    Navigate through tab groups only.
+- default
+    Navigate through visible tabs, then through tab groups."
+  :group 'centaur-tabs
+  :type '(choice :tag "Cycle through..."
+		 (const :tag "Visible Tabs Only" tabs)
+		 (const :tag "Tab Groups Only" groups)
+		 (const :tag "Visible Tabs then Tab Groups" nil)))
+
+(defcustom centaur-tabs-auto-scroll-flag t
+  "*Non-nil means to automatically scroll the tab bar.
+That is, when a tab is selected outside of the tab bar visible area,
+the tab bar is scrolled horizontally so the selected tab becomes
+visible."
+  :group 'centaur-tabs
+  :type 'boolean)
+
+(defcustom centaur-tabs-common-group-name "Common"
+  "If the current buffer does not belong to any project the group name uses the name of this variable."
+  :group 'centaur-tabs
+  :type 'string)
+
+(defcustom centaur-tabs-label-fixed-length 0
+  "Fixed length of label.  Set to 0 if dynamic."
+  :group 'centaur-tabs
+  :type 'int)
+
+(defcustom centaur-tabs-hide-tabs-hooks
+  '(magit-status-mode-hook magit-popup-mode-hook reb-mode-hook)
+  "Set hooks to buffer in which it isn't desired to have tabs."
+  :type '(repeat symbol)
+  :group 'centaur-tabs)
+
+(defcustom centaur-tabs-background-color (face-background 'centaur-tabs-default)
+  "*Background color of the tab bar.
+By default, use the background color specified for the
+`centaur-tabs-default' face (or inherited from another face), or the
+background color of the `default' face otherwise."
+  :group 'centaur-tabs
+  :type 'face)
+
+(defcustom centaur-tabs-height 22
+  "The height of tab."
+  :group 'centaur-tabs
+  :type 'int)
+
+(defcustom centaur-tabs-bar-height (+ 6 centaur-tabs-height)
+  "The height of bar."
+  :group 'centaur-tabs
+  :type 'int)
+
+(defcustom centaur-tabs-style "bar"
+  "The style of tab."
+  :group 'centaur-tabs
+  :type 'string)
+
+(defcustom centaur-tabs-set-icons nil
+  "When non nil, display an icon from all-the-icons alongside the tab name."
+  :group 'centaur-tabs
+  :type 'boolean)
+
+(defcustom centaur-tabs-set-bar nil
+  "When non nil, display a bar at the left of the currently selected tab."
+  :group 'centaur-tabs
+  :type 'boolean)
+
+(defcustom centaur-tabs-set-close-button t
+  "When non nil, display a clickable x button for closing the tabs."
+  :group 'centaur-tabs
+  :type 'boolean)
+
+(defcustom centaur-tabs-close-button (make-string 1 #x00D7)
+  "When non nil, display a clickable x button for closing the tabs."
+  :group 'centaur-tabs
+  :type 'string)
+
+(defcustom centaur-tabs-set-modified-marker nil
+  "When non nil, display a marker when the buffer is modified."
+  :group 'centaur-tabs
+  :type 'boolean)
+
+(defcustom centaur-tabs-modified-marker (make-string 1 #x23FA)
+  "When non nil, display a marker when the buffer is modified."
+  :group 'centaur-tabs
+  :type 'string)
+
+(defcustom centaur-tabs-mouse-pointer 'hand
+  "Cursor to display when hovering the tabs.
+Default is 'hand.  The following scopes are possible:
+- arrow
+- hand
+- vdrag
+- hdrag
+- modeline
+- hourglass"
+  :group 'centaur-tabs
+  :type 'variable)
+
 (defvar centaur-tabs-hide-tab-function 'centaur-tabs-hide-tab
   "Function to hide tab.
 This fucntion accepet tab name, tab will hide if this function return ni.")
@@ -268,6 +282,8 @@ group.  Notice that it is better that a buffer belongs to one group.")
 (defvar centaur-tabs-adjust-buffer-order-function 'centaur-tabs-adjust-buffer-order
   "Function to adjust buffer order after switch tab.
 Default is `centaur-tabs-adjust-buffer-order', you can write your own rule.")
+
+(defvar centaur-tabs--buffer-show-groups nil)
 
 ;; Separators
 (defvar centaur-tabs-style-left nil)
@@ -518,7 +534,7 @@ Otherwise insert it."
 (defun centaur-tabs-insert-at (list index insert-element)
   "Insert INSERT-ELEMENT in LIST at index INDEX."
   (let ((counter 0)
-	(result '()))
+	result)
     (dolist (element list)
       (if (equal counter index)
 	  (setq result (append result (list element insert-element)))
@@ -578,25 +594,26 @@ current cached copy."
 
 (defun centaur-tabs-icon (tab face)
   "Generate all-the-icons icon for TAB using FACE's background."
-  (when (featurep 'all-the-icons)
-    (with-current-buffer (car tab)
-      (ignore-errors
-      (let* ((icon (if (and (buffer-file-name)
-			    (all-the-icons-auto-mode-match?))
-		       (all-the-icons-icon-for-file (file-name-nondirectory (buffer-file-name))
-						    :v-adjust 0.01)
-		     (all-the-icons-icon-for-mode major-mode
-						  :v-adjust 0.01)))
-	     (background (face-background face))
-	     (original-props (get-text-property 0 'face icon)))
-	(remove-text-properties 0 1 '(face nil) icon)
-	;; Pop :background from face so it doesn't accumulate
-	;; The unless part is to omit the initial case when :background hasn't been added
-	(unless (<= (length original-props) 6)
-	  (pop original-props))
-	(add-face-text-property 0 1 original-props nil icon)
-	(add-face-text-property 0 1 `(:background ,background) nil icon)
-	icon)))))
+  (if (featurep 'all-the-icons)
+      (with-current-buffer (car tab)
+	(ignore-errors
+	  (let* ((icon (if (and (buffer-file-name)
+				(all-the-icons-auto-mode-match?))
+			   (all-the-icons-icon-for-file (file-name-nondirectory (buffer-file-name))
+							:v-adjust 0.01)
+			 (all-the-icons-icon-for-mode major-mode
+						      :v-adjust 0.01)))
+		 (background (face-background face))
+		 (original-props (get-text-property 0 'face icon)))
+	    (remove-text-properties 0 1 '(face nil) icon)
+	    ;; Pop :background from face so it doesn't accumulate
+	    ;; The unless part is to omit the initial case when :background hasn't been added
+	    (unless (<= (length original-props) 6)
+	      (pop original-props))
+	    (add-face-text-property 0 1 original-props nil icon)
+	    (add-face-text-property 0 1 `(:background ,background) nil icon)
+	    icon)))
+    ""))
 
 ;; Utility functions
 (defun centaur-tabs-buffer-close-tab (tab)
@@ -605,6 +622,10 @@ current cached copy."
     (with-current-buffer buffer
       (kill-buffer buffer))
     (centaur-tabs-display-update)))
+
+(defun centaur-tabs-headline-match ()
+  "Make headline use centaur-tabs-default-face."
+  (set-face-attribute 'header-line nil :background (face-background 'centaur-tabs-default)))
 
 ;; Hooks for modification
 (defun centaur-tabs-on-saving-buffer ()
@@ -652,7 +673,7 @@ Call `centaur-tabs-tab-label-function' to obtain a label for TAB."
 		  (propertize
 		   centaur-tabs-active-bar
 		   'centaur-tabs-tab tab
-		   'pointer 'hand
+		   'pointer centaur-tabs-mouse-pointer
 		   'local-map (purecopy (centaur-tabs-make-header-line-mouse-map
 					 'mouse-1
 					 `(lambda (event) (interactive "e")
@@ -660,11 +681,14 @@ Call `centaur-tabs-tab-label-function' to obtain a label for TAB."
 					      (when (windowp window) (select-window window)))
 					    (centaur-tabs-buffer-select-tab ',tab)))))
 		""))
-	 (icon (if centaur-tabs-set-icons
+	 (icon (if (and centaur-tabs-set-icons
+			(not centaur-tabs--buffer-show-groups))
 		   (propertize
 		    (centaur-tabs-icon tab face)
 		    'centaur-tabs-tab tab
-		    'pointer 'hand
+		    'pointer centaur-tabs-mouse-pointer
+		    'help-echo (with-current-buffer (centaur-tabs-tab-value tab)
+				 (format "%s" (format-mode-line mode-name)))
 		    'local-map (purecopy (centaur-tabs-make-header-line-mouse-map
 					  'mouse-1
 					  `(lambda (event) (interactive "e")
@@ -682,7 +706,7 @@ Call `centaur-tabs-tab-label-function' to obtain a label for TAB."
 			   'face (if selected-p
 				     'centaur-tabs-modified-marker-selected
 				   'centaur-tabs-modified-marker-unselected)
-			   'pointer 'hand
+			   'pointer centaur-tabs-mouse-pointer
 			   'centaur-tabs-tab tab
 			   'local-map (purecopy (centaur-tabs-make-header-line-mouse-map
 						 'mouse-1
@@ -699,9 +723,9 @@ Call `centaur-tabs-tab-label-function' to obtain a label for TAB."
 				'face (if selected-p
 					  'centaur-tabs-modified-marker-selected
 					'centaur-tabs-modified-marker-unselected)
-				'pointer 'hand
-				'centaur-tabs-tab tab
+				'pointer centaur-tabs-mouse-pointer
 				'help-echo "Close buffer"
+				'centaur-tabs-tab tab
 				'local-map (purecopy (centaur-tabs-make-header-line-mouse-map
 						      'mouse-1
 						      `(lambda (event) (interactive "e") (centaur-tabs-buffer-close-tab ',tab)))))
@@ -710,10 +734,10 @@ Call `centaur-tabs-tab-label-function' to obtain a label for TAB."
 			      'face (if selected-p
 					'centaur-tabs-close-selected
 				      'centaur-tabs-close-unselected)
-			      'pointer 'hand
-			      'centaur-tabs-tab tab
+			      'pointer centaur-tabs-mouse-pointer
 			      'help-echo "Close buffer"
-			      'mouse-face 'underline
+			      'centaur-tabs-tab tab
+			      'mouse-face 'centaur-tabs-close-mouse-face
 			      'local-map (purecopy (centaur-tabs-make-header-line-mouse-map
 						    'mouse-1
 						    `(lambda (event) (interactive "e") (centaur-tabs-buffer-close-tab ',tab))))))
@@ -728,7 +752,7 @@ Call `centaur-tabs-tab-label-function' to obtain a label for TAB."
       " "
       'face face
       'centaur-tabs-tab tab
-      'pointer 'hand
+      'pointer centaur-tabs-mouse-pointer
       'local-map (purecopy (centaur-tabs-make-header-line-mouse-map
 			    'mouse-1
 			    `(lambda (event) (interactive "e")
@@ -742,7 +766,9 @@ Call `centaur-tabs-tab-label-function' to obtain a label for TAB."
 	tab)
       'centaur-tabs-tab tab
       'face face
-      'pointer 'hand
+      'pointer centaur-tabs-mouse-pointer
+      'help-echo (with-current-buffer (centaur-tabs-tab-value tab)
+			    (buffer-file-name))
       'local-map (purecopy (centaur-tabs-make-header-line-mouse-map
 			    'mouse-1
 			    `(lambda (event) (interactive "e")
@@ -753,7 +779,7 @@ Call `centaur-tabs-tab-label-function' to obtain a label for TAB."
       " "
       'face face
       'centaur-tabs-tab tab
-      'pointer 'hand
+      'pointer centaur-tabs-mouse-pointer
       'local-map (purecopy (centaur-tabs-make-header-line-mouse-map
 			    'mouse-1
 			    `(lambda (event) (interactive "e")
@@ -816,9 +842,8 @@ Call `centaur-tabs-tab-label-function' to obtain a label for TAB."
     (centaur-tabs-set-template
      tabset
      (list (nreverse elts)
-	   (propertize "%-"
-		       'face (list :background padcolor
-				   :foreground padcolor)
+	   (propertize "% "
+		       'face (list :background padcolor)
 		       'pointer 'arrow)))
     ))
 
@@ -1130,7 +1155,6 @@ Return the the first group where the current buffer is."
 
 ;;; Tab bar callbacks
 ;;
-(defvar centaur-tabs--buffer-show-groups nil)
 
 (defsubst centaur-tabs-buffer-show-groups (flag)
   "Set display of tabs for groups of buffers to FLAG."
@@ -1185,7 +1209,7 @@ COLOR1 and COLOR2 must be supplied as hex strings with a leading #."
 (defun centaur-tabs-separator-color-srgb-to-apple-rgb (red green blue)
   "Convert RED GREEN BLUE colors from sRGB color space to Apple RGB.
 RED, GREEN and BLUE should be between 0.0 and 1.0, inclusive."
-  (apply 'centaur-tabs-separator-color-xyz-to-apple-rgb (color-srgb-to-xyz red green blue)))
+  (apply #'centaur-tabs-separator-color-xyz-to-apple-rgb (color-srgb-to-xyz red green blue)))
 
 (defun centaur-tabs-separator-hex-color (color)
   "Get the hexadecimal value of COLOR."
@@ -1318,7 +1342,7 @@ BODY-2X is an optional argument."
 			  (color2 (or color2 "None"))
 			  (colori (or colori "None")))
 			let-vars)
-	   (apply 'create-image
+	   (apply #'create-image
 		  ,(append `(concat (format "/* XPM */ static char * %s_%s[] = { \"%s %s 3 1\", \"0 c %s\", \"1 c %s\", \"2 c %s\","
 					    ,(replace-regexp-in-string "-" "_" name)
 					    (symbol-name ',dir)
@@ -1347,7 +1371,7 @@ BODY-2X is an optional argument."
 					     body-2x
 					     '("};")))))))))))
 
-(defmacro centaur-tabs-separator-alternate (dir)
+(defun centaur-tabs-separator-alternate (dir)
   "Generate an alternating pattern XPM function for DIR."
   (centaur-tabs-separator-pattern-defun "alternate" dir 4
 					'((2 2 1 1)
@@ -1359,12 +1383,12 @@ BODY-2X is an optional argument."
 					  (0 0 0 0 2 2 2 2)
 					  (0 0 0 0 2 2 2 2))))
 
-(defmacro centaur-tabs-separator-bar (dir)
+(defun centaur-tabs-separator-bar (dir)
   "Generate a bar XPM function for DIR."
   (centaur-tabs-separator-pattern-defun "bar" dir 2
 					'((2 2))))
 
-(defmacro centaur-tabs-separator-box (dir)
+(defun centaur-tabs-separator-box (dir)
   "Generate a box XPM function for DIR."
   (centaur-tabs-separator-pattern-defun "box" dir 2
 					'((0 0)
@@ -1382,7 +1406,7 @@ BODY-2X is an optional argument."
 					  (1 1 1 1)
 					  (1 1 1 1))))
 
-(defmacro centaur-tabs-separator-chamfer (dir)
+(defun centaur-tabs-separator-chamfer (dir)
   "Generate a chamfer XPM function for DIR."
   (centaur-tabs-separator-pattern-defun "chamfer" dir 3
 					'((0 0 0))
@@ -1399,7 +1423,7 @@ BODY-2X is an optional argument."
 					  (0 0 0 0 1 1)
 					  (0 0 0 0 0 1))))
 
-(defmacro centaur-tabs-separator-rounded (dir)
+(defun centaur-tabs-separator-rounded (dir)
   "Generate a rounded XPM function for DIR."
   (centaur-tabs-separator-pattern-defun "rounded" dir 6
 					'((0 0 0 0 0 0))
@@ -1425,7 +1449,7 @@ BODY-2X is an optional argument."
 					  (0 0 0 0 0 0 0 0 0 0 0 1)
 					  (0 0 0 0 0 0 0 0 0 0 0 1))))
 
-(defmacro centaur-tabs-separator-slant (dir)
+(defun centaur-tabs-separator-slant (dir)
   "Generate a slant XPM function for DIR."
   (let* ((row-modifier (if (eq dir 'left) 'identity 'reverse)))
     (centaur-tabs-separator-wrap-defun "slant" dir 'width
@@ -1435,7 +1459,7 @@ BODY-2X is an optional argument."
 				       `((cl-loop for i from 0 to (1- (* height 2))
 						  concat (centaur-tabs-separator-pattern-to-string (,row-modifier (centaur-tabs-separator-row-pattern (/ i 2) (* width 2)))))))))
 
-(defmacro centaur-tabs-separator-wave (dir)
+(defun centaur-tabs-separator-wave (dir)
   "Generate a wave XPM function for DIR."
   (centaur-tabs-separator-pattern-defun "wave" dir 11
 					'((0 0 0 0 0 0 1 1 1 1 1))
@@ -1491,7 +1515,7 @@ BODY-2X is an optional argument."
 					  (0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 1 1)
 					  (0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0))))
 
-(defmacro centaur-tabs-separator-zigzag (dir)
+(defun centaur-tabs-separator-zigzag (dir)
   "Generate a zigzag pattern XPM function for DIR."
   (centaur-tabs-separator-pattern-defun "zigzag" dir 3
 					'((1 1 1)
@@ -1550,22 +1574,22 @@ Create one if the frame doesn't have one yet."
     (modify-frame-parameters nil `((powerline-cache . ,table)))
     table))
 
-(centaur-tabs-separator-memoize (centaur-tabs-separator-alternate left))
-(centaur-tabs-separator-memoize (centaur-tabs-separator-alternate right))
-(centaur-tabs-separator-memoize (centaur-tabs-separator-bar left))
-(centaur-tabs-separator-memoize (centaur-tabs-separator-bar right))
-(centaur-tabs-separator-memoize (centaur-tabs-separator-box left))
-(centaur-tabs-separator-memoize (centaur-tabs-separator-box right))
-(centaur-tabs-separator-memoize (centaur-tabs-separator-chamfer left))
-(centaur-tabs-separator-memoize (centaur-tabs-separator-chamfer right))
-(centaur-tabs-separator-memoize (centaur-tabs-separator-rounded left))
-(centaur-tabs-separator-memoize (centaur-tabs-separator-rounded right))
-(centaur-tabs-separator-memoize (centaur-tabs-separator-slant left))
-(centaur-tabs-separator-memoize (centaur-tabs-separator-slant right))
-(centaur-tabs-separator-memoize (centaur-tabs-separator-wave left))
-(centaur-tabs-separator-memoize (centaur-tabs-separator-wave right))
-(centaur-tabs-separator-memoize (centaur-tabs-separator-zigzag left))
-(centaur-tabs-separator-memoize (centaur-tabs-separator-zigzag right))
+(centaur-tabs-separator-memoize (centaur-tabs-separator-alternate 'left))
+(centaur-tabs-separator-memoize (centaur-tabs-separator-alternate 'right))
+(centaur-tabs-separator-memoize (centaur-tabs-separator-bar 'left))
+(centaur-tabs-separator-memoize (centaur-tabs-separator-bar 'right))
+(centaur-tabs-separator-memoize (centaur-tabs-separator-box 'left))
+(centaur-tabs-separator-memoize (centaur-tabs-separator-box 'right))
+(centaur-tabs-separator-memoize (centaur-tabs-separator-chamfer 'left))
+(centaur-tabs-separator-memoize (centaur-tabs-separator-chamfer 'right))
+(centaur-tabs-separator-memoize (centaur-tabs-separator-rounded 'left))
+(centaur-tabs-separator-memoize (centaur-tabs-separator-rounded 'right))
+(centaur-tabs-separator-memoize (centaur-tabs-separator-slant 'left))
+(centaur-tabs-separator-memoize (centaur-tabs-separator-slant 'right))
+(centaur-tabs-separator-memoize (centaur-tabs-separator-wave 'left))
+(centaur-tabs-separator-memoize (centaur-tabs-separator-wave 'right))
+(centaur-tabs-separator-memoize (centaur-tabs-separator-zigzag 'left))
+(centaur-tabs-separator-memoize (centaur-tabs-separator-zigzag 'right))
 
 (defun centaur-tabs-select-separator-style (tab-style)
   "Set the separator style to TAB-STYLE."
@@ -1578,47 +1602,19 @@ That is, a string used to represent it on the tab bar."
   ;; Init tab style.
   ;; Render tab.
     (format " %s"
-	    (let ((bufname (centaur-tabs-buffer-name (car tab))))
+	    (let ((bufname (if centaur-tabs--buffer-show-groups
+			       (centaur-tabs-tab-tabset tab)
+			     (centaur-tabs-buffer-name (car tab)))))
 	      (if (> centaur-tabs-label-fixed-length 0)
 		  (centaur-tabs-truncate-string  centaur-tabs-label-fixed-length bufname)
 		bufname))))
 
 (defun centaur-tabs-buffer-name (tab-buffer)
-  "Get buffer name of tab using TAB-BUFFER.
-Will merge sticky function name in tab if option `centaur-tabs-display-sticky-function-name' is non-nil."
-  (if (and centaur-tabs-display-sticky-function-name
-	   (boundp 'centaur-tabs-last-sticky-func-name)
-	   centaur-tabs-last-sticky-func-name
-	   (equal tab-buffer (current-buffer)))
-      (format "%s [%s]" (buffer-name tab-buffer) centaur-tabs-last-sticky-func-name)
-    (buffer-name tab-buffer)))
+  "Get buffer name of tab using TAB-BUFFER."
+  (buffer-name tab-buffer))
 
 (defvar centaur-tabs-last-scroll-y 0
   "Holds the scroll y of window from the last run of post-command-hooks.")
-
-(defun centaur-tabs-monitor-window-scroll ()
-  "This function is used to monitor the window scroll.
-Currently, this function is only use for option `centaur-tabs-display-sticky-function-name'."
-  (when centaur-tabs-display-sticky-function-name
-    (let ((scroll-y (window-start)))
-      (when (and scroll-y
-		 (integerp scroll-y))
-	(unless (equal scroll-y centaur-tabs-last-scroll-y)
-	  (let ((func-name (save-excursion
-			     (goto-char scroll-y)
-			     (which-function))))
-	    (when (or
-		   (not (boundp 'centaur-tabs-last-sticky-func-name))
-		   (not (equal func-name centaur-tabs-last-sticky-func-name)))
-	      (set (make-local-variable 'centaur-tabs-last-sticky-func-name) func-name)
-
-	      ;; Use `ignore-errors' avoid integerp error when execute `centaur-tabs-line-format'.
-	      (ignore-errors
-		(centaur-tabs-line-format centaur-tabs-current-tabset))
-	      ))))
-      (setq centaur-tabs-last-scroll-y scroll-y))))
-
-(add-hook 'post-command-hook #'centaur-tabs-monitor-window-scroll)
 
 (defun centaur-tabs-separator-render (item face)
   "Render ITEM using FACE."
@@ -1632,7 +1628,7 @@ Currently, this function is only use for option `centaur-tabs-display-sticky-fun
   "Select TAB."
   (let ((buffer (centaur-tabs-tab-value tab)))
     (switch-to-buffer buffer)
-    (centaur-tabs-buffer-show-groups nil)
+    ;; (centaur-tabs-buffer-show-groups nil)
     (centaur-tabs-display-update)
     ))
 
@@ -1666,7 +1662,7 @@ first."
   "Initialize tab bar buffer data.
 Run as `centaur-tabs-init-hook'."
   (setq centaur-tabs--buffers nil
-	centaur-tabs--buffer-show-groups nil
+	;; centaur-tabs--buffer-show-groups nil
 	centaur-tabs-current-tabset-function 'centaur-tabs-buffer-tabs
 	centaur-tabs-tab-label-function 'centaur-tabs-buffer-tab-label
 	centaur-tabs-select-tab-function 'centaur-tabs-buffer-select-tab
@@ -1677,7 +1673,7 @@ Run as `centaur-tabs-init-hook'."
   "Quit tab bar buffer.
 Run as `centaur-tabs-quit-hook'."
   (setq centaur-tabs--buffers nil
-	centaur-tabs--buffer-show-groups nil
+	;; centaur-tabs--buffer-show-groups nil
 	centaur-tabs-current-tabset-function nil
 	centaur-tabs-tab-label-function nil
 	centaur-tabs-select-tab-function nil
@@ -1723,9 +1719,9 @@ TYPE is default option."
 			 (not (cdr (centaur-tabs-tabs ttabset))))
 		    'tabs
 		  centaur-tabs-cycle-scope))
-	 selected tab)
+	 _selected tab)
     (when tabset
-      (setq selected (centaur-tabs-selected-tab tabset))
+      ;; (setq _selected (centaur-tabs-selected-tab tabset))
       (setq tabset (centaur-tabs-tabs tabset)
 	    tab (car (if backward (last tabset) tabset)))
       (centaur-tabs-buffer-select-tab tab))))
@@ -1817,7 +1813,7 @@ Optional argument REVERSED default is move backward, if reversed is non-nil move
   (let* ((current-group-name (cdr (centaur-tabs-selected-tab (centaur-tabs-current-tabset t)))))
     ;; Kill all buffers in current group.
     (centaur-tabs-kill-buffer-match-rule
-     (lambda (buffer) t))
+     (lambda (_buffer) t))
     ;; Switch to next group.
     (centaur-tabs-forward-group)
     ))
@@ -1911,10 +1907,10 @@ not the actual logical index position of the current group."
 (defun centaur-tabs-get-extensions ()
   "Get file extension of tabs."
   (set centaur-tabs-tabsets-tabset (centaur-tabs-map-tabsets 'centaur-tabs-selected-tab))
-  (let ((extension-names '()))
+  (let (extension-names)
     (mapc #'(lambda (buffer)
 	      (with-current-buffer buffer
-		(when (string-equal current-group-name (cdr (centaur-tabs-selected-tab (centaur-tabs-current-tabset t))))
+		(when (string-equal 'current-group-name (cdr (centaur-tabs-selected-tab (centaur-tabs-current-tabset t))))
 		  (when (buffer-file-name buffer)
 		    (add-to-list 'extension-names (file-name-extension (buffer-file-name buffer))))
 		  )))
@@ -1984,6 +1980,53 @@ Other buffer group by `centaur-tabs-get-group-name' with project name."
      "OrgMode")
     (t
      (centaur-tabs-get-group-name (current-buffer))))))
+
+(defun centaur-tabs-group-buffer-groups ()
+  "Use centaur-tabs's own buffer grouping function."
+  (interactive)
+  (setq centaur-tabs-buffer-groups-function 'centaur-tabs-buffer-groups))
+
+;; Projectile integration. Taken from tabbar-ruler
+(defvar centaur-tabs-projectile-buffer-group-calc nil
+  "Set buffer groups for projectile.
+Should be buffer local and speed up calculation of buffer groups.")
+
+(defun centaur-tabs-projectile-buffer-groups ()
+  "Return the list of group names BUFFER belongs to.
+Return only one group for each buffer."
+
+  (if centaur-tabs-projectile-buffer-group-calc
+      (symbol-value 'centaur-tabs-projectile-buffer-group-calc)
+    (set (make-local-variable 'centaur-tabs-projectile-buffer-group-calc)
+
+         (cond
+          ((or (get-buffer-process (current-buffer)) (memq major-mode '(comint-mode compilation-mode))) '("Term"))
+          ((string-equal "*" (substring (buffer-name) 0 1)) '("Misc"))
+          ((condition-case _err
+               (projectile-project-root)
+             (error nil)) (list (projectile-project-name)))
+          ((memq major-mode '(emacs-lisp-mode python-mode emacs-lisp-mode c-mode
+					      c++-mode javascript-mode js-mode
+					      js2-mode makefile-mode
+					      lua-mode vala-mode)) '("Coding"))
+          ((memq major-mode '(nxhtml-mode html-mode
+					  mhtml-mode css-mode)) '("HTML"))
+          ((memq major-mode '(org-mode calendar-mode diary-mode)) '("Org"))
+          ((memq major-mode '(dired-mode)) '("Dir"))
+          (t '("Other"))))
+    (symbol-value 'centaur-tabs-projectile-buffer-group-calc)))
+
+(defun centaur-tabs-group-by-projectile-project()
+  "Group by projectile project."
+  (interactive)
+  (setq centaur-tabs-buffer-groups-function 'centaur-tabs-projectile-buffer-groups))
+
+;; Show groups instead of tabs
+(defun centaur-tabs-toggle-groups ()
+  "Show group names on the tabs instead of buffer names."
+  (interactive)
+  (centaur-tabs-buffer-show-groups (not centaur-tabs--buffer-show-groups))
+  (centaur-tabs-display-update))
 
 ;; Helm source for switching group in helm.
 
