@@ -1,10 +1,11 @@
+#!/usr/bin sh
 # -*- Mode: sh; comment-start: "#" -*-
 # unix.txt --- misc. helpful commands
-# Copyright (C) 2015-2018   (dan.harms)
+# Copyright (C) 2015-2019   (dan.harms)
 # Author:  <dan.harms@xrtrading.com>
 # Created: Friday, March 20, 2015
 # Version: 1.0
-# Modified Time-stamp: <2018-03-07 18:19:35 dharms>
+# Modified Time-stamp: <2019-07-08 16:31:28 dan.harms>
 # Modified by: Dan Harms
 # Keywords: help
 

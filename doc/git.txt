@@ -1,4 +1,5 @@
- # -*- Mode: sh -*-
+#! /usr/bin/sh
+# -*- Mode: sh -*-
 
 #################################### INIT ####################################
 git config --global user.name "Dan Harms"
