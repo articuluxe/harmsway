@@ -7,6 +7,8 @@ alias emacs="\$EDITOR"
 
 # NOT sourcing the site file
 
+export TERM=xterm-24bit
+
 export CONTAINER=centos_6~f27_1.1.0~onload_201805~v_5.1~development.simg
 alias xrdev="singularity shell -B /net,/opt/xr,/opt/xr_job_agent,/opt/1tick,/fry,/data,/shared -s /bin/bash ~/containers/$CONTAINER"
 
