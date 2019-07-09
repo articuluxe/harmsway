@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-07-02 09:58:38 dan.harms>
+;; Modified Time-stamp: <2019-07-09 15:43:21 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2587,6 +2587,23 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
   :commands eglot
   :bind ("C-c '" . eglot)
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; lsp-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package lsp-mode
+  :commands lsp
+  :bind ("C-c =" . lsp)
+  :init
+  ;; (setq lsp-enable-symbol-highlighting nil)
+  (setq lsp-pyls-plugins-rope-completion-enabled nil)
+  )
+
+(use-package lsp-ui
+  :after lsp-mode)
+
+(use-package company-lsp
+  :disabled
+  :config
+  (setq-default company-smart-backend 'company-lsp))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; flyspell ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun harmsway-toggle-flyspell-prog-mode ()

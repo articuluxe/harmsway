@@ -3,6 +3,7 @@ autosaves
 backups
 bookmark-files
 bookmarks
+company-statistics-cache.el
 emacs-bmk-bmenu-state
 history
 ido-last
