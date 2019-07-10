@@ -35,7 +35,7 @@ upgrade_simutils()
         if [ $? -ne 0 ]; then
             echo "Error updating simulation_utils; stopping..."
         else
-            "Updated simulation_utils"
+            echo "Updated simulation_utils"
         fi
     fi
 }
