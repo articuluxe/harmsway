@@ -1,0 +1,2 @@
+cp src/build/*.el ../../../../.emacs.d/etc/themes
+cp src/base16-theme.el ../../../../.emacs.d/plugins
