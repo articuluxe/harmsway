@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # -*- Mode: sh -*-
 # xr-release.sh --- distribute xr release to hosts
-# Copyright (C) 2016-2017  Dan Harms (dan.harms)
+# Copyright (C) 2016-2017, 2019  Dan Harms (dan.harms)
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Monday, May 30, 2016
-# Modified Time-stamp: <2017-11-21 15:19:12 dan.harms>
+# Modified Time-stamp: <2019-07-11 09:34:59 dan.harms>
 # Modified by: Dan Harms
 # Keywords: xr config
 
@@ -23,7 +23,7 @@ else
 fi
 
 cd ~/src/harmsway/ || exit 1
-host/chi-ldbd098/bin/xr-tar-world.sh
+xr-tar-world.sh
 
 # numhosts=${#hosts[*]}
 # i=0
@@ -34,6 +34,6 @@ host/chi-ldbd098/bin/xr-tar-world.sh
 #    i=$(( $i+1 ))
 # done
 
-echo "${hosts[*]}" | xargs -P 16 -I {} scp -p xr-world.tar {}:~
+echo "${hosts[*]}" | xargs -P 16 -I {} scp -pq xr-world.tar {}:~
 
 # code ends here
