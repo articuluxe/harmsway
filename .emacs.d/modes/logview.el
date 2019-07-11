@@ -1,8 +1,8 @@
 ;; logview.el --- major mode to view log files
-;; Copyright (C) 2015-2018  Dan Harms (dharms)
+;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2018-01-04 16:16:43 dan.harms>
+;; Modified Time-stamp: <2019-07-11 16:06:50 dan.harms>
 ;; Keywords: tools
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -43,7 +43,7 @@ This helps delimit fields in the fix protocol, using a pipe `|'."
 (add-hook 'logview-mode-hook #'logview-hide-ctrl-a)
 
 (defun logview-mode()
-  "logview mode is a mode for browsing log files."
+  "This logview mode is a mode for browsing log files."
   (interactive)
   (kill-all-local-variables)
   (setq major-mode 'logview-mode)
@@ -88,7 +88,8 @@ This helps delimit fields in the fix protocol, using a pipe `|'."
 (defun logview-enter-tail-mode ()
   "Enable `auto-revert-tail-mode' for the current buffer."
   (interactive)
-  (setq auto-revert-interval 1)
+  (setq auto-revert-interval 2)
+  (set (make-local-variable 'auto-revert-remote-files) t)
   (auto-revert-set-timer)
   (auto-revert-tail-mode 1))
 
