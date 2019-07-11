@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-07-09 15:43:21 dan.harms>
+;; Modified Time-stamp: <2019-07-11 09:04:40 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1032,20 +1032,23 @@ line."
   (define-key makefile-mode-map "\C-c\C-c" nil))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; magit ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defvar my/git-keymap)
-(define-prefix-command 'my/git-keymap)
-(global-set-key "\M-sm" 'my/git-keymap)
+(defvar harmsway-git-keymap)
+(define-prefix-command 'harmsway-git-keymap)
+(global-set-key "\M-sm" 'harmsway-git-keymap)
+
 (defun magit-remove-git-lock-file ()
-  "Remove git's index lock file, if it exists."
+  "Remove git's index lock file(s), if any exist."
   (interactive)
-  (let ((base (magit-toplevel)))
-    (delete-file (concat base "/.git/index.lock"))))
+  (require 'remove-files)
+  (remove-files-regexp "index\\.lock" (magit-toplevel)))
+
 (defun my/enter-magit-status-fullscreen ()
   "Enter magit's status window, filling the entire frame."
   (interactive)
   (require 'magit)
   (let ((magit-display-buffer-function #'magit-display-buffer-fullframe-status-v1))
     (magit-status-setup-buffer default-directory)))
+
 (use-package magit
   :if (not (version< emacs-version "25.1"))
   :init
@@ -1062,7 +1065,7 @@ line."
   (setq magit-section-visibility-indicator '("…" . t))
   (setq magit-clone-always-transient t)
   ;; git commands
-  :bind (:map my/git-keymap
+  :bind (:map harmsway-git-keymap
               ("g" . magit-status)
               ("SPC" . my/enter-magit-status-fullscreen)
               ("l" . magit-list-repositories)
@@ -1158,11 +1161,11 @@ Only one letter is shown, the first that applies."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; git-timemachine ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package git-timemachine
   :if (version<= "24.3" emacs-version)
-  :bind (:map my/git-keymap ("t" . git-timemachine)))
+  :bind (:map harmsway-git-keymap ("t" . git-timemachine)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; vc-msg ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package vc-msg
-  :bind (:map my/git-keymap ("." . vc-msg-show)))
+  :bind (:map harmsway-git-keymap ("." . vc-msg-show)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; shell ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq-default comint-input-ignoredups t)
