@@ -266,56 +266,67 @@ If the actual char height is larger, it respects the actual char height.")
   and`iedit', etc.")
 
 (defface doom-modeline-debug
-  `((t (:inherit font-lock-doc-face)))
+  '((t (:inherit font-lock-doc-face)))
   "Face for debug-level messages in the modeline. Used by `*flycheck'.")
 
 (defface doom-modeline-info
-  `((t (:inherit (success bold))))
+  '((t (:inherit (success bold))))
   "Face for info-level messages in the modeline. Used by `*vc'.")
 
 (defface doom-modeline-warning
-  `((t (:inherit (warning bold))))
+  '((t (:inherit (warning bold))))
   "Face for warnings in the modeline. Used by `*flycheck'")
 
 (defface doom-modeline-urgent
-  `((t (:inherit (error bold))))
+  '((t (:inherit (error bold))))
   "Face for errors in the modeline. Used by `*flycheck'")
 
 (defface doom-modeline-unread-number
-  `((t (:inherit italic)))
+  '((t (:inherit italic)))
   "Face for unread number in the modeline. Used by `github', `mu4e', etc.")
 
-(defface doom-modeline-bar '((t (:inherit highlight)))
+(defface doom-modeline-bar
+  '((t (:inherit highlight)))
   "The face used for the left-most bar on the mode-line of an active window.")
 
-(defface doom-modeline-inactive-bar `((t (:background ,(face-foreground 'mode-line-inactive))))
+(defface doom-modeline-inactive-bar
+  `((t (:background ,(face-foreground 'mode-line-inactive))))
   "The face used for the left-most bar on the mode-line of an inactive window.")
 
-(defface doom-modeline-evil-emacs-state '((t (:inherit doom-modeline-warning)))
+(defface doom-modeline-evil-emacs-state
+  '((t (:inherit doom-modeline-warning)))
   "Face for the Emacs state tag in evil state indicator.")
 
-(defface doom-modeline-evil-insert-state '((t (:inherit doom-modeline-urgent)))
+(defface doom-modeline-evil-insert-state
+  '((t (:inherit doom-modeline-urgent)))
   "Face for the insert state tag in evil state indicator.")
 
-(defface doom-modeline-evil-motion-state '((t :inherit doom-modeline-buffer-path))
+(defface doom-modeline-evil-motion-state
+  '((t :inherit doom-modeline-buffer-path))
   "Face for the motion state tag in evil state indicator.")
 
-(defface doom-modeline-evil-normal-state '((t (:inherit doom-modeline-info)))
+(defface doom-modeline-evil-normal-state
+  '((t (:inherit doom-modeline-info)))
   "Face for the normal state tag in evil state indicator.")
 
-(defface doom-modeline-evil-operator-state '((t (:inherit doom-modeline-buffer-path)))
+(defface doom-modeline-evil-operator-state
+  '((t (:inherit doom-modeline-buffer-path)))
   "Face for the operator state tag in evil state indicator.")
 
-(defface doom-modeline-evil-visual-state '((t (:inherit doom-modeline-buffer-file)))
+(defface doom-modeline-evil-visual-state
+  '((t (:inherit doom-modeline-buffer-file)))
   "Face for the visual state tag in evil state indicator.")
 
-(defface doom-modeline-evil-replace-state '((t (:inherit doom-modeline-buffer-modified)))
+(defface doom-modeline-evil-replace-state
+  '((t (:inherit doom-modeline-buffer-modified)))
   "Face for the replace state tag in evil state indicator.")
 
-(defface doom-modeline-persp-name '((t (:inherit (font-lock-comment-face italic))))
+(defface doom-modeline-persp-name
+  '((t (:inherit (font-lock-comment-face italic))))
   "Face for the replace state tag in evil state indicator.")
 
-(defface doom-modeline-persp-buffer-not-in-persp '((t (:inherit (font-lock-doc-face bold italic))))
+(defface doom-modeline-persp-buffer-not-in-persp
+  '((t (:inherit (font-lock-doc-face bold italic))))
   "Face for the replace state tag in evil state indicator.")
 
 ;;
@@ -391,9 +402,13 @@ If the actual char height is larger, it respects the actual char height.")
                " "
                'face (if (doom-modeline--active) 'mode-line 'mode-line-inactive)
                'display `((space :align-to (- (+ right right-fringe right-margin)
-                                              ,(string-width
-                                                (format-mode-line
-                                                 (cons "" rhs-forms)))))))
+                                              ,(* (if (number-or-marker-p (face-attribute 'mode-line :height))
+                                                      (/ (window-font-width nil 'mode-line)
+                                                         (frame-char-width) 1.0)
+                                                    1)
+                                                  (string-width
+                                                   (format-mode-line
+                                                    (cons "" rhs-forms))))))))
               rhs-forms))
       (concat "Modeline:\n"
               (format "  %s\n  %s"
@@ -506,9 +521,9 @@ If the actual char height is larger, it respects the actual char height.")
 (defun doom-modeline--font-height ()
   "Calculate the actual char height of the mode-line."
   (let ((height (face-attribute 'mode-line :height)))
-    (round (* 1.68 (if (number-or-marker-p height)
-                       (/ height 10)
-                     (frame-char-height))))))
+    (round (* 1.68 (cond ((integerp height) (/ height 10))
+                         ((floatp height) (* height (frame-char-height)))
+                         (t (frame-char-height)))))))
 
 (defun doom-modeline-icon-octicon (&rest args)
   "Display octicon via ARGS."
