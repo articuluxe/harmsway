@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-07-12 10:07:42 dharms>
+;; Modified Time-stamp: <2019-07-12 12:54:51 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3825,9 +3825,8 @@ Requires Flake8 2.0 or newer. See URL
               ("cd" . conda-env-deactivate)
               ("cb" . conda-env-activate-for-buffer)
               ("cl" . conda-env-list))
-  :init
-  (put 'conda-project-env-name 'safe-local-variable 'stringp)
   :config
+  (put 'conda-project-env-name 'safe-local-variable 'stringp)
   (conda-env-initialize-interactive-shells)
   (conda-env-autoactivate-mode 1))
 
