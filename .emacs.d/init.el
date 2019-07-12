@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-07-12 06:59:22 dharms>
+;; Modified Time-stamp: <2019-07-12 10:07:42 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1597,6 +1597,7 @@ Only one letter is shown, the first that applies."
   (setq ivy-count-format "(%d/%d) ")
   (setq ivy-wrap t)
   (setq ivy-use-selectable-prompt t)
+  (setq ivy-use-virtual-buffers t)
   :config
   (global-set-key "\e\eii" 'ivy-resume)
   (ivy-mode 1))
