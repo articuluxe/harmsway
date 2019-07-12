@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-07-11 09:04:40 dharms>
+;; Modified Time-stamp: <2019-07-12 06:59:22 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -362,6 +362,16 @@ not an error if any files do not exist."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; tags ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (when (> emacs-major-version 24)
+
+  (defun harmsway-xref-find-definition-mouse (click)
+    "Click to find definition at point."
+    (interactive "e")
+    (let ((pt (posn-point (event-start click)))
+          (xref-backend-functions '(elisp--xref-backend)))
+      (goto-char pt)
+      (call-interactively 'xref-find-definitions)))
+  ;; (global-set-key (kbd "<mouse-3>") #'harmsway-xref-find-definition-mouse)
+
   (defun harmsway-xref-find-definition ()
     "Jump straight to a definition."
     (interactive)
