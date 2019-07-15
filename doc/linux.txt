@@ -5,7 +5,7 @@
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Monday, January 18, 2016
 # Version: 1.0
-# Modified Time-stamp: <2019-07-10 12:50:14 dan.harms>
+# Modified Time-stamp: <2019-07-15 09:29:38 dan.harms>
 # Modified by: Dan Harms
 # Keywords: linux docs
 
@@ -40,6 +40,10 @@ systemctl start --user emacs
 systemctl stop --user emacs
 # Permanently disable
 systemctl disable --user emacs
+
+# free up swqp (read pages from swap into ram)
+/sudo /sbin/swapoff -a
+/sbin/swapon -a
 
 # does sudo require a tty? Comment out /etc/sudoers:
 #Defaults    requiretty
