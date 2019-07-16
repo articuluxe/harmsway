@@ -22,19 +22,22 @@ build_in_container()
 
 upgrade_simutils()
 {
-    cd "$HOME"/london_utils || exit
+    pushd "$HOME"/london_utils &> /dev/null
     pip install . --upgrade
     if [ $? -ne 0 ]; then
         echo "Error updating london_utils; stopping..."
+        popd &> /dev/null
     else
         echo "Updated london_utils"
-        cd "$HOME"/simulation_utils || exit
+        pushd "$HOME"/simulation_utils &> /dev/null
         pip install . --upgrade
         if [ $? -ne 0 ]; then
             echo "Error updating simulation_utils; stopping..."
         else
             echo "Updated simulation_utils"
         fi
+        popd &> /dev/null
+        popd &> /dev/null
     fi
 }
 
