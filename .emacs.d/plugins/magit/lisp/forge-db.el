@@ -43,7 +43,7 @@
 (defclass forge-database (closql-database)
   ((object-class :initform forge-repository)))
 
-(defconst forge--db-version 3)
+(defconst forge--db-version 4)
 
 (defvar forge--db-connection nil
   "The EmacSQL database connection.")
@@ -54,24 +54,18 @@
     (closql-db 'forge-database 'forge--db-connection
                forge-database-file t)
     (let* ((db forge--db-connection)
-           (version (caar (emacsql db "PRAGMA user_version"))))
+           (version (caar (emacsql db "PRAGMA user_version")))
+           (version (forge--db-maybe-update forge--db-connection version)))
       (cond
-       ((and (= version 2) (= forge--db-version 3))
-        (message "Upgrading Forge database from version 2 to 3...")
-        (let ((db forge--db-connection))
-          (emacsql-with-transaction db
-            (emacsql db [:create-table pullreq-review-request $S1]
-                     (cdr (assq 'pullreq-review-request forge--db-table-schemata)))
-            (emacsql db (format "PRAGMA user_version = %s" 3))))
-        (message "Upgrading Forge database from version 2 to 3...done"))
        ((> version forge--db-version)
         (emacsql-close db)
-        (user-error "BUG: forge-db-version is too low"))
+        (user-error
+         "The Forge database was created with a newer Forge version.  %s"
+         "You need to update the Forge package."))
        ((< version forge--db-version)
         (emacsql-close db)
-        (if (yes-or-no-p "The database scheme changed. Reset database now? ")
-            (forge-reset-database)
-          (user-error "Abort"))))))
+        (error "BUG: The Forge database scheme changed %s"
+               "and there is no upgrade path")))))
   forge--db-connection)
 
 ;;; Api
@@ -159,7 +153,8 @@
       (participants :default eieio-unbound)
       (posts        :default eieio-unbound)
       (reactions    :default eieio-unbound)
-      (timeline     :default eieio-unbound)]
+      (timeline     :default eieio-unbound)
+      (marks        :default eieio-unbound)]
      (:foreign-key
       [repository] :references repository [id]
       :on-delete :cascade))
@@ -179,6 +174,16 @@
       :on-delete :cascade)
      (:foreign-key
       [id] :references label [id]
+      :on-delete :cascade))
+
+    (issue-mark
+     [(issue :not-null)
+      (id :not-null)]
+     (:foreign-key
+      [issue] :references issue [id]
+      :on-delete :cascade)
+     (:foreign-key
+      [id] :references mark [id]
       :on-delete :cascade))
 
     (issue-post
@@ -206,9 +211,21 @@
       [repository] :references repository [id]
       :on-delete :cascade))
 
+    (mark
+     [;; For now this is always nil because it seems more useful to
+      ;; share marks between repositories.  We cannot omit this slot
+      ;; though because `closql--iref' expects `id' to be the second
+      ;; slot.
+      repository
+      (id :not-null :primary-key)
+      name
+      face
+      description])
+
     (notification
      [(class :not-null)
       (id :not-null :primary-key)
+      thread-id
       repository
       forge
       reason
@@ -256,7 +273,8 @@
       (reactions       :default eieio-unbound)
       (review-requests :default eieio-unbound)
       (reviews         :default eieio-unbound)
-      (timeline        :default eieio-unbound)]
+      (timeline        :default eieio-unbound)
+      (marks           :default eieio-unbound)]
      (:foreign-key
       [repository] :references repository [id]
       :on-delete :cascade))
@@ -276,6 +294,16 @@
       :on-delete :cascade)
      (:foreign-key
       [id] :references label [id]
+      :on-delete :cascade))
+
+    (pullreq-mark
+     [(pullreq :not-null)
+      (id :not-null)]
+     (:foreign-key
+      [pullreq] :references pullreq [id]
+      :on-delete :cascade)
+     (:foreign-key
+      [id] :references mark [id]
       :on-delete :cascade))
 
     (pullreq-post
@@ -318,6 +346,29 @@
     (pcase-dolist (`(,table . ,schema) forge--db-table-schemata)
       (emacsql db [:create-table $i1 $S2] table schema))
     (emacsql db (format "PRAGMA user_version = %s" forge--db-version))))
+
+(defun forge--db-maybe-update (db version)
+  (emacsql-with-transaction db
+    (when (= version 2)
+      (message "Upgrading Forge database from version 2 to 3...")
+      (emacsql db [:create-table pullreq-review-request $S1]
+               (cdr (assq 'pullreq-review-request forge--db-table-schemata)))
+      (emacsql db "PRAGMA user_version = 3")
+      (setq version 3)
+      (message "Upgrading Forge database from version 2 to 3...done"))
+    (when (= version 3)
+      (message "Upgrading Forge database from version 3 to 4...")
+      (emacsql db [:drop-table notification])
+      (pcase-dolist (`(,table . ,schema) forge--db-table-schemata)
+        (when (memq table '(notification
+                            mark issue-mark pullreq-mark))
+          (emacsql db [:create-table $i1 $S2] table schema)))
+      (emacsql db [:alter-table issue   :add-column mark :default $i1] eieio-unbound)
+      (emacsql db [:alter-table pullreq :add-column mark :default $i1] eieio-unbound)
+      (emacsql db "PRAGMA user_version = 4")
+      (setq version 4)
+      (message "Upgrading Forge database from version 3 to 4...done"))
+    version))
 
 ;;; _
 (provide 'forge-db)

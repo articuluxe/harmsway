@@ -224,9 +224,10 @@ This variable has to be customized before `forge' is loaded."
                  `(,@spec (?i . ,(oref topic number)))))
 
 (cl-defmethod forge-visit ((topic forge-topic))
-  (forge-topic-setup-buffer topic))
+  (forge-topic-setup-buffer topic)
+  (forge-topic-mark-read (forge-get-repository topic) topic))
 
-(cl-defmethod forge-visit :after ((topic forge-topic))
+(cl-defmethod forge-topic-mark-read ((_ forge-repository) topic)
   (oset topic unread-p nil))
 
 (defun forge--sanitize-string (string)
@@ -280,16 +281,15 @@ identifier."
 
 (cl-defmethod forge--insert-topic-contents ((topic forge-topic) width prefix)
   (with-slots (number title unread-p closed) topic
-    (insert
-     (format (if width
-                 (format "%%-%is %%s" (1+ width))
-               "%s %s")
-             (forge--format-topic-id topic prefix)
-             (magit-log-propertize-keywords
-              nil (propertize title 'face
-                              (cond (unread-p 'forge-topic-unread)
-                                    (closed   'forge-topic-closed)
-                                    (t        'forge-topic-open))))))
+    (insert (format (if width (format "%%-%is" (1+ width)) "%s")
+                    (forge--format-topic-id topic prefix)))
+    (forge--insert-topic-marks topic)
+    (insert " ")
+    (insert (magit-log-propertize-keywords
+             nil (propertize title 'face
+                             (cond (unread-p 'forge-topic-unread)
+                                   (closed   'forge-topic-closed)
+                                   (t        'forge-topic-open)))))
     (forge--insert-topic-labels topic)
     (insert "\n")
     (magit-log-format-author-margin
@@ -313,6 +313,7 @@ identifier."
   '(forge-insert-topic-title
     forge-insert-topic-state
     forge-insert-topic-labels
+    forge-insert-topic-marks
     forge-insert-topic-assignees
     forge-insert-topic-review-requests))
 
@@ -421,40 +422,78 @@ identifier."
                labels " ")))
 
 (defun forge--insert-topic-labels (topic &optional skip-separator labels)
-  (pcase-dolist (`(,name ,color ,_desc)
+  (pcase-dolist (`(,name ,color ,description)
                  (or labels (closql--iref topic 'labels)))
     (if skip-separator
         (setq skip-separator nil)
       (insert " "))
-    (let ((color2 (forge--contrast-color color)))
-      (insert (propertize name 'face (list :foreground color :box "black")))
+    (let* ((background (forge--sanitize-color color))
+           (foreground (forge--contrast-color background)))
+      (insert name)
       (let ((o (make-overlay (- (point) (length name)) (point))))
         (overlay-put o 'priority 2)
         (overlay-put o 'evaporate t)
-        (overlay-put o 'face (list :background color :foreground color2))))))
+        (overlay-put o 'face
+                     (list :background background
+                           :foreground foreground
+                           :box "black"))
+        (when description
+          (overlay-put o 'help-echo description))))))
+
+(defvar forge-topic-marks-section-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map [remap magit-edit-thing] 'forge-edit-topic-marks)
+    map))
+
+(cl-defun forge-insert-topic-marks
+    (&optional (topic forge-buffer-topic))
+  (magit-insert-section (topic-marks)
+    (insert (format "%-11s" "Marks: "))
+    (if-let ((marks (closql--iref topic 'marks)))
+        (forge--insert-topic-marks topic t marks)
+      (insert (propertize "none" 'face 'magit-dimmed)))
+    (insert ?\n)))
+
+(defun forge--insert-topic-marks (topic &optional skip-separator marks)
+  (pcase-dolist (`(,name ,face ,description)
+                  (or marks (closql--iref topic 'marks)))
+    (if skip-separator
+        (setq skip-separator nil)
+      (insert " "))
+    (insert name)
+    (let ((o (make-overlay (- (point) (length name)) (point))))
+      (overlay-put o 'priority 2)
+      (overlay-put o 'evaporate t)
+      (overlay-put o 'face face)
+      (when description
+        (overlay-put o 'help-echo description)))))
+
+(defun forge--sanitize-color (color)
+  (cond ((x-color-values color) color)
+        ;; Discard alpha information.
+        ((string-match-p "\\`#.\\{4\\}\\'" color) (substring color 0 3))
+        ((string-match-p "\\`#.\\{8\\}\\'" color) (substring color 0 6))
+        (t "#000000"))) ; Use fallback instead of invalid color.
 
 (defun forge--contrast-color (color)
-  (if (> (forge--color-brightness color) 127) "black" "white"))
+  "Return black or white depending on the luminance of COLOR."
+  (if (> (forge--x-color-luminance color) 0.5) "black" "white"))
 
-(defun forge--color-brightness (color)
-  ;; https://www.w3.org/TR/AERT/#color-contrast
-  ;; https://developer.mozilla.org/en-US/docs/Web/CSS/color_value#RGB_colors
-  (let (r g b)
-    (save-match-data
-      (cond ((string-match "\\`#.\\{6\\}\\'" color)
-             (setq r (substring color 1 3))
-             (setq g (substring color 3 5))
-             (setq b (substring color 5 7)))
-            ((string-match "\\`#.\\{3\\}\\'" color)
-             (setq r (make-string 2 (aref color 1)))
-             (setq g (make-string 2 (aref color 2)))
-             (setq b (make-string 2 (aref color 3))))
-            (t
-             (error "Color does not have #RRGGBB or #RGB format"))))
-    (/ (+ (* (read (concat "#x" r)) 299)
-          (* (read (concat "#x" g)) 587)
-          (* (read (concat "#x" b)) 114))
-       1000)))
+;; Copy of `rainbow-x-color-luminance'.
+(defun forge--x-color-luminance (color)
+  "Calculate the luminance of a color string (e.g. \"#ffaa00\", \"blue\").
+Return a value between 0 and 1."
+  (let ((values (x-color-values color)))
+    (forge--color-luminance (/ (nth 0 values) 256.0)
+                            (/ (nth 1 values) 256.0)
+                            (/ (nth 2 values) 256.0))))
+
+;; Copy of `rainbow-color-luminance'.
+;; Also see https://en.wikipedia.org/wiki/Relative_luminance.
+(defun forge--color-luminance (red green blue)
+  "Calculate the luminance of color composed of RED, GREEN and BLUE.
+Return a value between 0 and 1."
+  (/ (+ (* .2126 red) (* .7152 green) (* .0722 blue)) 256))
 
 (defvar forge-topic-assignees-section-map
   (let ((map (make-sparse-keymap)))

@@ -131,17 +131,33 @@ It returns a file name which can be used directly as argument of
 
 
 ;;
-;; Variables
+;; Customizations
 ;;
 
-(defvar doom-modeline-height 25
+(defgroup doom-modeline nil
+  "A minimal and modern mode-line."
+  :group 'mode-line)
+
+(defface doom-modeline-persp-name
+  '((t (:inherit (font-lock-comment-face italic))))
+  "Face for the replace state tag in evil state indicator.")
+
+(defface doom-modeline-persp-buffer-not-in-persp
+  '((t (:inherit (font-lock-doc-face bold italic))))
+  "Face for the replace state tag in evil state indicator.")
+
+(defcustom doom-modeline-height 25
   "How tall the mode-line should be. It's only respected in GUI.
-If the actual char height is larger, it respects the actual char height.")
+If the actual char height is larger, it respects the actual char height."
+  :group 'doom-modeline
+  :type 'integer)
 
-(defvar doom-modeline-bar-width (if (eq system-type 'darwin) 3 6)
-  "How wide the mode-line bar should be. It's only respected in GUI.")
+(defcustom doom-modeline-bar-width (if (eq system-type 'darwin) 3 6)
+  "How wide the mode-line bar should be. It's only respected in GUI."
+  :type 'integer
+  :group 'doom-modeline)
 
-(defvar doom-modeline-buffer-file-name-style 'truncate-upto-project
+(defcustom doom-modeline-buffer-file-name-style 'truncate-upto-project
   "Determines the style used by `doom-modeline-buffer-file-name'.
 
   Given ~/Projects/FOSS/emacs/lisp/comint.el
@@ -154,180 +170,250 @@ If the actual char height is larger, it respects the actual char height.")
   relative-from-project => emacs/lisp/comint.el
   relative-to-project => lisp/comint.el
   file-name => comint.el
-  buffer-name => comint.el<2> (uniquify buffer name)")
+  buffer-name => comint.el<2> (uniquify buffer name)"
+  :type '(choice (const truncate-upto-project)
+                 (const truncate-upto-project)
+                 (const truncate-from-project)
+                 (const truncate-with-project)
+                 (const truncate-except-project)
+                 (const truncate-upto-root)
+                 (const truncate-all)
+                 (const relative-from-project)
+                 (const relative-to-project)
+                 (const file-name)
+                 (const buffer-name))
+  :group'doom-modeline)
 
-(defvar doom-modeline-icon (display-graphic-p)
-  "Whether display icons in mode-line or not.")
+(defcustom doom-modeline-icon (display-graphic-p)
+  "Whether display icons in mode-line or not."
+  :group 'doom-modeline
+  :type 'boolean)
 
-(defvar doom-modeline-major-mode-icon t
-  "Whether display the icon for major mode. It respects `doom-modeline-icon'.")
+(defcustom doom-modeline-major-mode-icon t
+  "Whether display the icon for major mode. It respects `doom-modeline-icon'."
+  :type 'boolean
+  :group'doom-modeline)
 
-(defvar doom-modeline-major-mode-color-icon t
-  "Whether display color icons for `major-mode'. It respects `doom-modeline-icon' and `all-the-icons-color-icons'.")
+(defcustom doom-modeline-major-mode-color-icon t
+  "Whether display color icons for `major-mode'. It respects `doom-modeline-icon' and `all-the-icons-color-icons'."
+  :type 'boolean
+  :group 'doom-modeline)
 
-(defvar doom-modeline-buffer-state-icon t
-  "Whether display icons for buffer states. It respects `doom-modeline-icon'.")
+(defcustom doom-modeline-buffer-state-icon t
+  "Whether display icons for buffer states. It respects `doom-modeline-icon'."
+  :type 'boolean
+  :group 'doom-modeline)
 
-(defvar doom-modeline-buffer-modification-icon t
-  "Whether display buffer modification icon. It respects `doom-modeline-icon' and `doom-modeline-buffer-state-icon'.")
+(defcustom doom-modeline-buffer-modification-icon t
+  "Whether display buffer modification icon. It respects `doom-modeline-icon' and `doom-modeline-buffer-state-icon'."
+  :type 'boolean
+  :group 'doom-modeline)
 
-(defvar doom-modeline-minor-modes nil
-  "Whether display minor modes in mode-line or not.")
+(defcustom doom-modeline-minor-modes nil
+  "Whether display minor modes in mode-line or not."
+  :type 'boolean
+  :group 'doom-modeline)
 
-(defvar doom-modeline-enable-word-count nil
-  "If non-nil, a word count will be added to the selection-info modeline segment.")
+(defcustom doom-modeline-enable-word-count nil
+  "If non-nil, a word count will be added to the selection-info modeline segment."
+  :type 'boolean
+  :group 'doom-modeline)
 
-(defvar doom-modeline-buffer-encoding t
-  "Whether display buffer encoding.")
+(defcustom doom-modeline-buffer-encoding t
+  "Whether display buffer encoding."
+  :type 'boolean
+  :group 'doom-modeline)
 
-(defvar doom-modeline-indent-info nil
-  "Whether display indentation information.")
+(defcustom doom-modeline-indent-info nil
+  "Whether display indentation information."
+  :type 'boolean
+  :group 'doom-modeline)
 
-(defvar doom-modeline-checker-simple-format t
-  "If non-nil, only display one number for checker information if applicable.")
+(defcustom doom-modeline-checker-simple-format t
+  "If non-nil, only display one number for checker information if applicable."
+  :type 'boolean
+  :group 'doom-modeline)
 
-(defvar doom-modeline-vcs-max-length 12
-  "The maximum displayed length of the branch name of version control.")
+(defcustom doom-modeline-vcs-max-length 12
+  "The maximum displayed length of the branch name of version control."
+  :type 'integer
+  :group 'doom-modeline)
 
-(defvar doom-modeline-persp-name t
-  "Whether display perspective name or not. Non-nil to display in mode-line.")
+(defcustom doom-modeline-persp-name t
+  "Whether display perspective name or not. Non-nil to display in mode-line."
+  :type 'boolean
+  :group 'doom-modeline)
 
-(defvar doom-modeline-persp-name-icon nil
-  "Whether display icon for persp name. Nil to display a # sign. It respects `doom-modeline-icon'.")
+(defcustom doom-modeline-persp-name-icon nil
+  "Whether display icon for persp name. Nil to display a # sign. It respects `doom-modeline-icon'."
+  :type 'boolean
+  :group 'doom-modeline)
 
-(defvar doom-modeline-lsp t
-  "Whether display `lsp' state or not. Non-nil to display in mode-line.")
+(defcustom doom-modeline-lsp t
+  "Whether display `lsp' state or not. Non-nil to display in mode-line."
+  :type 'boolean
+  :group 'doom-modeline)
 
-(defvar doom-modeline-github nil
-  "Whether display github notifications or not. Requires `ghub' package.")
+(defcustom doom-modeline-github nil
+  "Whether display github notifications or not. Requires `ghub' package."
+  :type 'boolean
+  :group 'doom-modeline)
 
-(defvar doom-modeline-github-interval (* 30 60)
-  "The interval of checking github.")
+(defcustom doom-modeline-github-interval 1800 ; (* 30 60)
+  "The interval of checking github."
+  :type 'integer
+  :group 'doom-modeline)
 
-(defvar doom-modeline-env-version t
-  "Whether display environment version or not.")
+(defcustom doom-modeline-env-version t
+  "Whether display environment version or not."
+  :type 'boolean
+  :group 'doom-modeline)
 
-(defvar doom-modeline-mu4e t
-  "Whether display mu4e notifications or not. Requires `mu4e-alert' package.")
+(defcustom doom-modeline-mu4e t
+  "Whether display mu4e notifications or not. Requires `mu4e-alert' package."
+  :type 'boolean
+  :group 'doom-modeline)
 
-(defvar doom-modeline-irc t
-  "Whether display irc notifications or not. Requires `circe' package.")
+(defcustom doom-modeline-irc t
+  "Whether display irc notifications or not. Requires `circe' package."
+  :type 'boolean
+  :group 'doom-modeline)
 
-(defvar doom-modeline-irc-stylize 'identity
-  "Function to stylize the irc buffer names.")
+(defcustom doom-modeline-irc-stylize 'identity
+  "Function to stylize the irc buffer names."
+  :type 'function
+  :group 'doom-modeline)
+
 
 ;;
-;; Custom faces
+;; Faces
 ;;
 
-(defgroup doom-modeline nil
-  "Doom mode-line faces."
+(defgroup doom-modeline-faces nil
+  "The faces of `doom-modeline'."
+  :group 'doom-modeline
   :group 'faces)
 
 (defface doom-modeline-buffer-path
   '((t (:inherit (mode-line-emphasis bold))))
-  "Face used for the dirname part of the buffer path.")
+  "Face used for the dirname part of the buffer path."
+  :group 'doom-modeline-faces)
 
 (defface doom-modeline-buffer-file
   '((t (:inherit (mode-line-buffer-id bold))))
-  "Face used for the filename part of the mode-line buffer path.")
+  "Face used for the filename part of the mode-line buffer path."
+  :group 'doom-modeline-faces)
 
 (defface doom-modeline-buffer-modified
   '((t (:inherit (error bold) :background nil)))
-  "Face used for the 'unsaved' symbol in the mode-line.")
+  "Face used for the 'unsaved' symbol in the mode-line."
+  :group 'doom-modeline-faces)
 
 (defface doom-modeline-buffer-major-mode
   '((t (:inherit (mode-line-emphasis bold))))
-  "Face used for the major-mode segment in the mode-line.")
+  "Face used for the major-mode segment in the mode-line."
+  :group 'doom-modeline-faces)
 
 (defface doom-modeline-buffer-minor-mode
   '((t (:inherit (mode-line-buffer-id bold))))
-  "Face used for the minor-modes segment in the mode-line.")
+  "Face used for the minor-modes segment in the mode-line."
+  :group 'doom-modeline-faces)
 
 (defface doom-modeline-project-parent-dir
   '((t (:inherit (font-lock-comment-face bold))))
-  "Face used for the project parent directory of the mode-line buffer path.")
+  "Face used for the project parent directory of the mode-line buffer path."
+  :group 'doom-modeline-faces)
 
 (defface doom-modeline-project-dir
   '((t (:inherit (font-lock-string-face bold))))
-  "Face used for the project directory of the mode-line buffer path.")
+  "Face used for the project directory of the mode-line buffer path."
+  :group 'doom-modeline-faces)
 
 (defface doom-modeline-project-root-dir
   '((t (:inherit (mode-line-emphasis bold))))
-  "Face used for the project part of the mode-line buffer path.")
+  "Face used for the project part of the mode-line buffer path."
+  :group 'doom-modeline-faces)
 
 (defface doom-modeline-highlight
   '((t (:inherit mode-line-emphasis)))
-  "Face for bright segments of the mode-line.")
+  "Face for bright segments of the mode-line."
+  :group 'doom-modeline-faces)
 
 (defface doom-modeline-panel
   '((t (:inherit mode-line-highlight)))
-  "Face for 'X out of Y' segments, such as `anzu', `evil-substitute'
-  and`iedit', etc.")
+  "Face for 'X out of Y' segments, such as `anzu', `evil-substitute' and`iedit', etc."
+  :group 'doom-modeline-faces)
 
 (defface doom-modeline-debug
   '((t (:inherit font-lock-doc-face)))
-  "Face for debug-level messages in the modeline. Used by `*flycheck'.")
+  "Face for debug-level messages in the modeline. Used by `*flycheck'."
+  :group 'doom-modeline-faces)
 
 (defface doom-modeline-info
   '((t (:inherit (success bold))))
-  "Face for info-level messages in the modeline. Used by `*vc'.")
+  "Face for info-level messages in the modeline. Used by `*vc'."
+  :group 'doom-modeline-faces)
 
 (defface doom-modeline-warning
   '((t (:inherit (warning bold))))
-  "Face for warnings in the modeline. Used by `*flycheck'")
+  "Face for warnings in the modeline. Used by `*flycheck'."
+  :group 'doom-modeline-faces)
 
 (defface doom-modeline-urgent
   '((t (:inherit (error bold))))
-  "Face for errors in the modeline. Used by `*flycheck'")
+  "Face for errors in the modeline. Used by `*flycheck'."
+  :group 'doom-modeline-faces)
 
 (defface doom-modeline-unread-number
   '((t (:inherit italic)))
-  "Face for unread number in the modeline. Used by `github', `mu4e', etc.")
+  "Face for unread number in the modeline. Used by `github', `mu4e', etc."
+  :group 'doom-modeline-faces)
 
 (defface doom-modeline-bar
   '((t (:inherit highlight)))
-  "The face used for the left-most bar on the mode-line of an active window.")
+  "The face used for the left-most bar on the mode-line of an active window."
+  :group 'doom-modeline-faces)
 
 (defface doom-modeline-inactive-bar
   `((t (:background ,(face-foreground 'mode-line-inactive))))
-  "The face used for the left-most bar on the mode-line of an inactive window.")
+  "The face used for the left-most bar on the mode-line of an inactive window."
+  :group 'doom-modeline-faces)
 
 (defface doom-modeline-evil-emacs-state
   '((t (:inherit doom-modeline-warning)))
-  "Face for the Emacs state tag in evil state indicator.")
+  "Face for the Emacs state tag in evil state indicator."
+  :group 'doom-modeline-faces)
 
 (defface doom-modeline-evil-insert-state
   '((t (:inherit doom-modeline-urgent)))
-  "Face for the insert state tag in evil state indicator.")
+  "Face for the insert state tag in evil state indicator."
+  :group 'doom-modeline-faces)
 
 (defface doom-modeline-evil-motion-state
   '((t :inherit doom-modeline-buffer-path))
-  "Face for the motion state tag in evil state indicator.")
+  "Face for the motion state tag in evil state indicator."
+  :group 'doom-modeline-faces)
 
 (defface doom-modeline-evil-normal-state
   '((t (:inherit doom-modeline-info)))
-  "Face for the normal state tag in evil state indicator.")
+  "Face for the normal state tag in evil state indicator."
+  :group 'doom-modeline-faces)
 
 (defface doom-modeline-evil-operator-state
   '((t (:inherit doom-modeline-buffer-path)))
-  "Face for the operator state tag in evil state indicator.")
+  "Face for the operator state tag in evil state indicator."
+  :group 'doom-modeline-faces)
 
 (defface doom-modeline-evil-visual-state
   '((t (:inherit doom-modeline-buffer-file)))
-  "Face for the visual state tag in evil state indicator.")
+  "Face for the visual state tag in evil state indicator."
+  :group 'doom-modeline-faces)
 
 (defface doom-modeline-evil-replace-state
   '((t (:inherit doom-modeline-buffer-modified)))
-  "Face for the replace state tag in evil state indicator.")
+  "Face for the replace state tag in evil state indicator."
+  :group 'doom-modeline-faces)
 
-(defface doom-modeline-persp-name
-  '((t (:inherit (font-lock-comment-face italic))))
-  "Face for the replace state tag in evil state indicator.")
-
-(defface doom-modeline-persp-buffer-not-in-persp
-  '((t (:inherit (font-lock-doc-face bold italic))))
-  "Face for the replace state tag in evil state indicator.")
 
 ;;
 ;; Externals

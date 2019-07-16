@@ -94,19 +94,29 @@ VISIT is passed as second argument to `insert-file-contents'."
   (dired-mode)
   (dired-build-subdir-alist))
 
-(defmacro elgrep-line-position (num-or-re pos-op search-op)
-  "If NUM-OR-RE is a number then act like (POS-OP (1+ NUM-OR-RE)).
+(defmacro elgrep-line-position (limiter pos-op search-op)
+  "If LIMITER is a number then act like (POS-OP (1+ LIMITER)).
 Thereby POS-OP is `line-end-position' or `line-beginning-position'.
-If NUM-OR-RE is a regular expression search with SEARCH-OP for that RE
+If LIMITER is a regular expression search with SEARCH-OP for that RE
+and return `line-end-position' or `line-beginning-position'
+of the line with the match, respectively.
+If LIMITER is a function call it with no args, call POS-OP afterwards,
 and return `line-end-position' or `line-beginning-position'
 of the line with the match, respectively."
-  `(if (stringp ,num-or-re)
+  `(cond
+    ((stringp ,limiter)
        (save-excursion
 	 (save-match-data
-	   (,search-op ,num-or-re nil t) ;; t=noerror
-	   (,pos-op)
-	   ))
-     (,pos-op (and ,num-or-re (1+ ,num-or-re)))))
+	   (when (,search-op ,limiter nil t) ;; t=noerror
+	     (,pos-op))
+	   )))
+    ((numberp ,limiter)
+     (,pos-op (and ,limiter (1+ ,limiter))))
+    ((functionp ,limiter)
+     (save-excursion
+       (save-match-data
+	 (when (funcall ,limiter)
+	   (,pos-op)))))))
 
 (defun elgrep-classify (classifier list &rest options)
   "Use CLASSIFIER to map the LIST entries to class denotators.
@@ -250,7 +260,9 @@ Binds M-up and M-down to one step in history up and down, respectively.")
 
 (define-widget 'elgrep-context-widget 'menu-choice
   "Widget type for `elgrep-w-c-beg' and `elgrep-w-c-end'."
-  :value 0 :args '((number :tag "Number of Lines") (regexp :tag "Regexp")))
+  :value 0 :args '((number :tag "Number of Lines")
+		   (regexp :tag "Regexp")
+		   (function :tag "Function")))
 
 ;;;###autoload
 (defun elgrep-menu (&optional reset)
@@ -494,8 +506,8 @@ Defaults to the value of `case-fold-search'.
 :search-fun
 Function to search forward for occurences of RE
 with the same arguments as `re-search-forward'.
-It is actually not required that REGEXP is a regular expression.
-t just must be be understood by :search-fun.
+It gets RE as first argument.
+Thereby it is not required that RE is a regular expression.
 Defaults to `re-search-forward'.
 
 :keep-elgrep-buffer
@@ -585,24 +597,31 @@ See `elgrep' for the valid options in plist OPTIONS."
 			  (last-pos (point-min)))
 		      (goto-char (point-min))
 		      (while (funcall search-fun re nil t)
-			(let* ((n (/ (length (match-data)) 2))
-			       (matchdata (cl-loop for i from 0 below n
-						   collect
-						   (let ((context-beginning (save-excursion
-									      (goto-char (match-beginning 0))
-									      (elgrep-line-position (plist-get options :c-beg) line-beginning-position re-search-backward)))
-							 (context-end (elgrep-line-position (plist-get options :c-end) line-end-position re-search-forward)))
-						     (list :match (match-string-no-properties i)
-							   :context (funcall c-op context-beginning context-end)
-							   :line (prog1
-								     (setq last-line-number
-									   (+ last-line-number
-									      (count-lines last-pos (line-beginning-position))))
-								   (setq last-pos (line-beginning-position)))
-							   :context-beg context-beginning
-							   :context-end context-end
-							   :beg (match-beginning i)
-							   :end (match-end i))))))
+			(when-let* ((n (/ (length (match-data)) 2))
+				    (context-beginning
+				     (save-excursion
+				       (goto-char (match-beginning 0))
+				       (elgrep-line-position (plist-get options :c-beg) line-beginning-position re-search-backward)))
+				    (context-end
+				     (save-excursion
+				       (goto-char context-beginning)
+				       (elgrep-line-position (plist-get options :c-end) line-end-position re-search-forward)))
+				    (matchdata (and
+						(< (match-end 0) context-end)
+						(cl-loop
+						 for i from 0 below n
+						 collect
+						 (list :match (match-string-no-properties i)
+						       :context (funcall c-op context-beginning context-end)
+						       :line (prog1
+								 (setq last-line-number
+								       (+ last-line-number
+									  (count-lines last-pos (line-beginning-position))))
+							       (setq last-pos (line-beginning-position)))
+						       :context-beg context-beginning
+						       :context-end context-end
+						       :beg (match-beginning i)
+						       :end (match-end i))))))
 			  (setq filematch (cons matchdata filematch))))
 		      (when filematch
 			(setq filematches (cons (cons file (nreverse filematch)) filematches)))))
@@ -665,6 +684,8 @@ See `elgrep' for the valid options in the plist OPTIONS."
 (require 'easymenu)
 ;;;###autoload
 (easy-menu-add-item global-map '("menu-bar" "tools") ["Search Files (Elgrep)..." elgrep-menu t] "grep")
+
+(defvar next-error-highlight-no-select) ;; defined in "simple.el"
 
 (defun elgrep-first-error-no-select (&optional n)
   "Restart at first error.

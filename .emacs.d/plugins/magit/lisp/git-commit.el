@@ -469,15 +469,21 @@ This is only used if Magit is available."
 (when (eq system-type 'windows-nt)
   (add-hook 'find-file-not-found-functions #'git-commit-file-not-found))
 
+(defconst git-commit-usage-message "\
+Type \\[with-editor-finish] to finish, \
+\\[with-editor-cancel] to cancel, and \
+\\[git-commit-prev-message] and \\[git-commit-next-message] \
+to recover older messages")
+
 ;;;###autoload
 (defun git-commit-setup ()
-  ;; Pretend that git-commit-mode is a major-mode,
-  ;; so that directory-local settings can be used.
   (when (fboundp 'magit-toplevel)
     ;; `magit-toplevel' is autoloaded and defined in magit-git.el,
     ;; That library declares this functions without loading
     ;; magit-process.el, which defines it.
     (require 'magit-process nil t))
+  ;; Pretend that git-commit-mode is a major-mode,
+  ;; so that directory-local settings can be used.
   (let ((default-directory
           (or (and (not (file-exists-p ".dir-locals.el"))
                    ;; When $GIT_DIR/.dir-locals.el doesn't exist,
@@ -503,7 +509,9 @@ This is only used if Magit is available."
           (git-commit-mode t)
           (with-editor-mode t))
       (normal-mode t)))
+  ;; Show our own message using our hook.
   (setq with-editor-show-usage nil)
+  (setq with-editor-usage-message git-commit-usage-message)
   (unless with-editor-mode
     ;; Maybe already enabled when using `shell-command' or an Emacs shell.
     (with-editor-mode 1))

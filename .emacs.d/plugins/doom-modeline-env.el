@@ -33,6 +33,29 @@
 ;; Externals
 (defvar python-shell-interpreter)
 
+;;
+;; Customizations
+;;
+
+(defgroup doom-modeline-env nil
+  "The environment parser for doom-modeline."
+  :group 'doom-modeline)
+
+(defcustom doom-modeline-env-load-string "..."
+  "What to dispaly as the version while a new one is being loaded."
+  :type 'string
+  :group 'doom-modeline-env)
+
+(defcustom doom-modeline-before-update-env-hook nil
+  "Hooks that run before the modeline version string is updated."
+  :type 'hook
+  :group 'doom-modeline-env)
+
+(defcustom doom-modeline-after-update-env-hook nil
+  "Hooks that run after the modeline version string is updated."
+  :type 'hook
+  :group 'doom-modeline-env)
+
 ;; Show version string for multi-version managers like rvm, rbenv, pyenv, etc.
 (defvar-local doom-modeline-env--version nil
   "The version to display with major-mode in mode-line.
@@ -47,15 +70,6 @@ Example: '(\"--version\") ")
   "A function that returns version number from a programs --version (or similar) command.
 Example: 'doom-modeline-env--ruby")
 
-(defvar doom-modeline-load-string "..."
-  "What to dispaly as the version while a new one is being loaded.")
-
-(defvar doom-modeline-after-update-env-hook nil
-  "Hooks that run after the modeline version string is updated.")
-
-(defvar doom-modeline-before-update-env-hook nil
-  "Hooks that run before the modeline version string is updated.")
-
 (defun doom-modeline-update-env ()
   "Update environment info on mode-line."
   (when (and doom-modeline-env-version
@@ -66,7 +80,7 @@ Example: 'doom-modeline-env--ruby")
     (let ((default-directory (doom-modeline-project-root))
           (buffer (current-buffer)))
       (run-hooks 'doom-modeline-before-update-env-hook)
-      (setq doom-modeline-env--version doom-modeline-load-string)
+      (setq doom-modeline-env--version doom-modeline-env-load-string)
       (doom-modeline-env--get
        doom-modeline-env--command
        doom-modeline-env--command-args
@@ -129,17 +143,21 @@ PARSER should be a function for parsing COMMAND's output line-by-line, to
         (parser-var  (intern (format "doom-modeline-env-%s-parser-fn" name)))
         (exe-var     (intern (format "doom-modeline-env-%s-executable" name))))
     (macroexp-progn
-     `((defvar ,enable-var t
-         (format "Whether to display the version string for %s buffers." ',name))
+     `((defcustom ,enable-var t
+         (format "Whether to display the version string for %s buffers." ',name)
+         :type 'boolean
+         :group 'doom-modeline-env)
        (defvar ,command-var ',action-fn
          (concat "A function that returns the shell command and arguments (as a list) to\n"
                  "produce a version string."))
        (defvar ,parser-var ',parse-fn
          (format "The function for parsing each line of `%s's output." ',command-var))
-       (defvar ,exe-var nil
+       (defcustom ,exe-var nil
          (format (concat "What executable to use for the version indicator in %s buffers.\n\n"
                          "If nil, the default binary for this language is used.")
-                 ',name))
+                 ',name)
+         :type 'string
+         :group 'doom-modeline-env)
        (defalias ',parse-fn ,parser
          (format "The line parser for %s buffers.\n\nUsed by `%s'."
                  ',name ',update-fn))

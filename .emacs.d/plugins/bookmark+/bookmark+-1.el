@@ -7,9 +7,9 @@
 ;; Copyright (C) 2000-2019, Drew Adams, all rights reserved.
 ;; Copyright (C) 2009, Thierry Volpiatto.
 ;; Created: Mon Jul 12 13:43:55 2010 (-0700)
-;; Last-Updated: Thu May  9 09:10:24 2019 (-0700)
+;; Last-Updated: Sat Jul 13 09:14:49 2019 (-0700)
 ;;           By: dradams
-;;     Update #: 8899
+;;     Update #: 8915
 ;; URL: https://www.emacswiki.org/emacs/download/bookmark%2b-1.el
 ;; Doc URL: https://www.emacswiki.org/emacs/BookmarkPlus
 ;; Keywords: bookmarks, bookmark+, placeholders, annotations, search, info, url, eww, w3m, gnus
@@ -17,11 +17,11 @@
 ;;
 ;; Features that might be required by this library:
 ;;
-;;   `backquote', `bookmark', `bookmark+-1', `bytecomp', `cconv',
-;;   `cl-lib', `col-highlight', `crosshairs', `font-lock',
-;;   `font-lock+', `hl-line', `hl-line+', `kmacro', `macroexp', `pp',
-;;   `replace', `syntax', `text-mode', `thingatpt', `thingatpt+',
-;;   `vline'.
+;;   `backquote', `bookmark', `bookmark+-1', `button', `bytecomp',
+;;   `cconv', `cl-lib', `col-highlight', `crosshairs', `font-lock',
+;;   `font-lock+', `help-mode', `hl-line', `hl-line+', `kmacro',
+;;   `macroexp', `pp', `replace', `syntax', `text-mode', `thingatpt',
+;;   `thingatpt+', `vline'.
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -2352,9 +2352,10 @@ Lines beginning with `#' are ignored."
 ;;
 ;; 1. Make it a command (added `interactive' spec).  Prefix arg means add or edit (choose any bookmark).
 ;; 2. Manage buffer-modified-p.
+;; 3. Emacs 26+: Added ignored &rest arg to accommodate vanilla Emacs fix to bug #20150 (not a bug for us).
 ;;
 ;;;###autoload (autoload 'bookmark-edit-annotation "bookmark+")
-(defun bookmark-edit-annotation (bookmark)
+(defun bookmark-edit-annotation (bookmark &rest _IGNORED)
   "Pop up a buffer for editing bookmark BOOKMARK's annotation.
 Interactively, you are prompted for the bookmark name.  With a prefix
 arg, you can choose any bookmark.  Otherwise, only annotated bookmarks
@@ -3349,7 +3350,8 @@ operations such as `find-coding-systems-region'."
 ;;    (Do not let `pp' parse all of `bookmark-alist' at once.)
 ;; 6. Unless `bmkp-propertize-bookmark-names-flag', remove text properties from bookmark name and file name.
 ;;    Remove them also from bookmark names in a sequence bookmark `sequence' entry.
-;; 7. Bind `print-circle' around `pp', to record bNAME with `bmkp-full-record' prop, when appropriate.
+;; 7. Bind `print-circle' and `print-gensym' around `pp', to record bNAME with `bmkp-full-record' prop, when
+;;    appropriate.
 ;; 8. Use `case', not `cond'.
 ;; 9. Run `bmkp-write-bookmark-file-hook' functions after writing the bookmark file.
 ;;
@@ -3397,7 +3399,7 @@ contain a `%s' construct, so that it can be passed along with FILE to
                                                             nil t))
                             (error "Invalid bookmark-file")))
             end    (and start
-                        (or (save-excursion (goto-char start) (and (looking-at ")") start)) ; Empty bmk list: ().
+                        (or (save-excursion (goto-char start) (and (looking-at ")") start)) ; Bmk list = ().
                             (save-excursion (goto-char (point-max)) (re-search-backward "^)" nil t))
                             (error "Invalid bookmark-file"))))
       (if (not start)                   ; New file, no header yet.
@@ -3429,7 +3431,8 @@ contain a `%s' construct, so that it can be passed along with FILE to
                      (put-text-property 0 (length bname) (car (cadr entry)) nil bname)))))
           (setcar bmk bname)
           (when (setq last-fname  (assq 'filename bmk)) (setcdr last-fname fname))
-          (let ((print-circle  bmkp-propertize-bookmark-names-flag))
+          (let ((print-circle  bmkp-propertize-bookmark-names-flag)
+                (print-gensym  bmkp-propertize-bookmark-names-flag))
             (if (not (and rem-all-p  (bmkp-sequence-bookmark-p bmk)))
                 (pp bmk (current-buffer))
               ;; Remove text properties from bookmark names in the `sequence' entry of sequence bookmark.
@@ -4451,7 +4454,9 @@ BOOKMARK is a bookmark name or a bookmark record."
                 ";; either a string or a cons whose key is a string.\n;;\n"
                 ";; DO NOT MODIFY THESE COMMENTS.\n;;\n"
                 ";; Type \\<bmkp-edit-tags-mode-map>`\\[bmkp-edit-tags-send]' when done.\n\n")))
-      (let ((print-circle  bmkp-propertize-bookmark-names-flag)) (pp btags))
+      (let ((print-circle  bmkp-propertize-bookmark-names-flag)
+            (print-gensym  bmkp-propertize-bookmark-names-flag))
+        (pp btags))
       (goto-char (point-min)))
     (pop-to-buffer edbuf)
     (buffer-enable-undo)
@@ -4653,6 +4658,7 @@ Non-interactively, optional arg MSG-P means display progress messages."
         (let ((print-length           nil)
               (print-level            nil)
               (print-circle           bmkp-propertize-bookmark-names-flag)
+              (print-gensym           bmkp-propertize-bookmark-names-flag)
               (version-control        (case bookmark-version-control
                                         ((nil)      nil)
                                         (never      'never)
@@ -7021,8 +7027,10 @@ predicate."
 
 (defun bmkp-repeat-command (command)
   "Repeat COMMAND."
-  (let ((repeat-message-function  'ignore))
-    (setq last-repeatable-command  command)
+  (require 'repeat)                   ; Define its vars before we let-bind them.
+  (let ((repeat-previous-repeated-command  command)
+        (repeat-message-function           #'ignore)
+        (last-repeatable-command           'repeat))
     (repeat nil)))
 
 
@@ -8707,6 +8715,7 @@ the file is an image file then the description includes the following:
   `exiftool'."
   (setq bookmark  (bookmark-get-bookmark bookmark))
   (let ((print-circle     bmkp-propertize-bookmark-names-flag) ; For `pp-to-string'
+        (print-gensym     bmkp-propertize-bookmark-names-flag) ; For `pp-to-string'
         (print-length     nil)          ; For `pp-to-string'
         (print-level      nil)          ; For `pp-to-string'
         (bname            (bmkp-bookmark-name-from-record bookmark))
@@ -8848,6 +8857,15 @@ Inserted subdirs:\t%s\nHidden subdirs:\t\t%s\n"
                     (error nil))))))
       help-text)))
 
+(when (and (> emacs-major-version 21)
+           (condition-case nil (require 'help-mode nil t) (error nil))
+           (get 'help-xref 'button-category-symbol)) ; In `button.el'
+  (define-button-type 'bmkp-jump-to-list-button
+    :supertype 'help-xref
+    'help-function #'bmkp-jump-to-list
+    'help-echo
+    (purecopy "mouse-2, RET: Show in `*Bookmark List*'")))
+
 (defun bmkp-add-jump-to-list-button (bookmark)
   "Add a [Show in `*Bookmark List*'] button for BOOKMARK."
   (with-current-buffer "*Help*"
@@ -8887,6 +8905,7 @@ If it is a record then it need not belong to `bookmark-alist'."
          (IGNORE        (set-text-properties 0 (length bname) nil bname)) ; Strip properties from name.
          (bmk           (cons bname (bmkp-bookmark-data-from-record bookmark))) ; Fake bmk with stripped name.
          (print-circle  bmkp-propertize-bookmark-names-flag) ; For `pp-to-string'
+         (print-gensym  bmkp-propertize-bookmark-names-flag) ; For `pp-to-string'
          (print-length  nil)            ; For `pp-to-string'
          (print-level   nil)            ; For `pp-to-string'
          (help-text     (format "Bookmark `%s'\n%s\n\n%s" bname (make-string (+ 11 (length bname)) ?-)
@@ -9842,7 +9861,7 @@ With a prefix arg, use `last-kbd-macro' as the keyboard macro."
        (list bname kmac 'MSG)))
     (let* ((bmk     (bmkp-get-bookmark-in-alist bookmark-name 'NOERROR))
            (exists  (and bmk  (bmkp-function-bookmark-p bmk))))
-      (bmkp-make-function-bookmark bookmark-name (read-kbd-macro keyboard-macro 'NEED-VECTOR) msg-p)
+      (bmkp-make-function-bookmark bookmark-name keyboard-macro msg-p)
       (when msg-p
         (message "Function bookmark `%s' %s" bookmark-name (if exists "replaced" "created")))))
 
@@ -9956,7 +9975,7 @@ VARIABLES is the list of variables.  Each entry in VARIABLES is either
     (when unprintables (message "Unsavable (unreadable) vars: %S" unprintables)  (sit-for 3))
     vars+vals))
 
-;; Same as `savehist-printable' in `savehist-20+.el', except added `print-circle' binding.
+;; Same as `savehist-printable' in `savehist-20+.el', except added `print-circle' and `print-gensym' bindings.
 (defun bmkp-readable-p (value)
   "Return non-nil if VALUE is Lisp-readable if printed using `prin1'."
   (cond ((numberp value))
@@ -9970,7 +9989,8 @@ VARIABLES is the list of variables.  Each entry in VARIABLES is either
              (condition-case nil
                  (let ((print-readably  t)
                        (print-level     nil)
-                       (print-circle    bmkp-propertize-bookmark-names-flag))
+                       (print-circle    bmkp-propertize-bookmark-names-flag)
+                       (print-gensym    bmkp-propertize-bookmark-names-flag))
                    (prin1 value (current-buffer)) ; Print value into a buffer and try to read back.
                    (read (point-min-marker))
                    t)
@@ -10064,7 +10084,7 @@ BOOKMARK is a bookmark name or a bookmark record."
       (handler . bmkp-jump-eww)))
 
   (add-hook 'eww-mode-hook (lambda () (set (make-local-variable 'bookmark-make-record-function)
-                                           'bmkp-make-eww-record)))
+                                      'bmkp-make-eww-record)))
 
   (defun bmkp-eww-new-buffer-name ()
     "Return a new buffer name for the current `eww-mode' buffer.
@@ -10085,14 +10105,14 @@ BOOKMARK is a bookmark name or a bookmark record."
                                       (generate-new-buffer "*eww*"))) ; Might get renamed later.
           ;; VAR `bmkp-eww-new-buf-name' is free here.  It is bound in `bmkp-eww-rename-buffer'.
           (after-render-function  `(lambda ()
-                                    (when (and bmkp-eww-buffer-renaming  bmkp-eww-new-buf-name)
-                                      (kill-buffer)
-                                      (set-buffer bmkp-eww-new-buf-name))
-                                    (bookmark-default-handler
-                                     `("" (buffer . ,(current-buffer))
-                                       . ,(bmkp-bookmark-data-from-record ,(car bookmark))))
-                                    (dolist (var  '(bmkp-eww-jumping-p eww-after-render-hook))
-                                      (kill-local-variable var)))))
+                                     (when (and bmkp-eww-buffer-renaming  bmkp-eww-new-buf-name)
+                                       (kill-buffer)
+                                       (set-buffer bmkp-eww-new-buf-name))
+                                     (bookmark-default-handler
+                                      `("" (buffer . ,(current-buffer))
+                                        . ,(bmkp-bookmark-data-from-record ,(car bookmark))))
+                                     (dolist (var  '(bmkp-eww-jumping-p eww-after-render-hook))
+                                       (kill-local-variable var)))))
       (setq bmkp-eww-jumping-p  t)
       (with-current-buffer buffer
         (eww-mode)
@@ -10117,14 +10137,14 @@ that `bmkp-jump-eww' will use the already visited buffer."
   ;; The EWW buffer is renamed on each visit, if `bmkp-eww-buffer-renaming' is non-nil.
   (eval-after-load "eww"
     '(when (> emacs-major-version 24)   ; Emacs 25+
-      (add-hook   'eww-after-render-hook      'bmkp-eww-rename-buffer)
-      (advice-add 'eww-restore-history :after 'bmkp-eww-rename-buffer)))
+       (add-hook   'eww-after-render-hook      'bmkp-eww-rename-buffer)
+       (advice-add 'eww-restore-history :after 'bmkp-eww-rename-buffer)))
 
 
   ;; Eval this so that even if the library is byte-compiled with Emacs 20,
   ;; loading it into Emacs 22+ will define variable `bmkp-eww-auto-bookmark-mode'.
   (eval '(define-minor-mode bmkp-eww-auto-bookmark-mode
-          "Toggle automatically setting a bookmark when you visit a URL with EWW.
+           "Toggle automatically setting a bookmark when you visit a URL with EWW.
 The bookmark name is the title of the web page.
 
 If option `bmkp-eww-auto-type' is `create-or-update' then such a
@@ -10133,24 +10153,29 @@ is `update-only' then no new bookmark is created automatically, but an
 existing bookmark is updated.  (Updating a bookmark increments the
 recorded number of visits.)  You can toggle the option using
 `\\[bmkp-toggle-eww-auto-type]'."
-          :init-value nil :global t :group 'bookmark-plus :require 'bookmark+
-          :lighter bmkp-auto-idle-bookmark-mode-lighter ; @@@@@ RENAME THIS?
-          :link `(url-link :tag "Send Bug Report"
-                  ,(concat "mailto:" "drew.adams" "@" "oracle" ".com?subject=\
+           :init-value nil :global t :group 'bookmark-plus :require 'bookmark+
+           :lighter bmkp-auto-idle-bookmark-mode-lighter ; @@@@@ RENAME THIS?
+           :link `(url-link :tag "Send Bug Report"
+                            ,(concat "mailto:" "drew.adams" "@" "oracle" ".com?subject=\
 Bookmark bug: \
 &body=Describe bug here, starting with `emacs -Q'.  \
 Don't forget to mention your Emacs and library versions."))
-          :link '(url-link :tag "Download" "https://www.emacswiki.org/emacs/download/bookmark%2b.el")
-          :link '(url-link :tag "Description" "https://www.emacswiki.org/emacs/BookmarkPlus")
-          :link '(emacs-commentary-link :tag "Commentary" "bookmark+")
-          (cond (bmkp-eww-auto-bookmark-mode
-                 (add-hook   'eww-after-render-hook      'bmkp-set-eww-bookmark-here)
-                 (advice-add 'eww-restore-history :after 'bmkp-set-eww-bookmark-here))
-                (t
-                 (remove-hook   'eww-after-render-hook   'bmkp-set-eww-bookmark-here)
-                 (advice-remove 'eww-restore-history     'bmkp-set-eww-bookmark-here)))
-          (when (interactive-p)
-            (message "Automatic EWW bookmarking is now %s" (if bmkp-eww-auto-bookmark-mode "ON" "OFF")))))
+           :link '(url-link :tag "Download" "https://www.emacswiki.org/emacs/download/bookmark%2b.el")
+           :link '(url-link :tag "Description" "https://www.emacswiki.org/emacs/BookmarkPlus")
+           :link '(emacs-commentary-link :tag "Commentary" "bookmark+")
+           (cond (bmkp-eww-auto-bookmark-mode
+                  (add-hook   'eww-after-render-hook      'bmkp-set-eww-bookmark-here)
+                  (advice-add 'eww-restore-history :after 'bmkp-set-eww-bookmark-here))
+                 (t
+                  (remove-hook   'eww-after-render-hook   'bmkp-set-eww-bookmark-here)
+                  (advice-remove 'eww-restore-history     'bmkp-set-eww-bookmark-here)))
+           (when (interactive-p)
+             (message "Automatic EWW bookmarking is now %s"
+                      (if bmkp-eww-auto-bookmark-mode
+                          (if (eq bmkp-eww-auto-type 'update-only)
+                              "ON, updating only"
+                            "ON, creating or UPDATING")
+                        "OFF")))))
 
   (defun bmkp-set-eww-bookmark-here (&optional nomsg)
     "Set an EWW bookmark for the URL of the current EWW buffer.
@@ -10437,7 +10462,9 @@ BOOKMARK is a bookmark name or a bookmark record."
 
 (defun bmkp-dired-remember-*-marks (beg end)
   "Return a list of the files and subdirs marked `*' in Dired."
-  (when selective-display (let ((inhibit-read-only  t)) (subst-char-in-region beg end ?\r ?\n)))
+  (if (fboundp 'dired--unhide)          ; Emacs 27+ uses invisible text, not `selective-display'.
+      (dired--unhide (point-min) (point-max))
+    (when selective-display (let ((inhibit-read-only  t)) (subst-char-in-region beg end ?\r ?\n))))
   (let ((mfiles  ())
         fil)
     (save-excursion (goto-char beg)
@@ -12156,7 +12183,6 @@ This is a repeatable version of `bmkp-next-bookmark'.
 N defaults to 1, meaning the next bookmark.
 Plain `C-u' means start over at the first bookmark (and no repeat)."
   (interactive "P")
-  (require 'repeat)
   (bmkp-repeat-command 'bmkp-next-bookmark))
 
 ;;;###autoload (autoload 'bmkp-previous-bookmark-repeat "bookmark+")
@@ -12164,7 +12190,6 @@ Plain `C-u' means start over at the first bookmark (and no repeat)."
   "Jump to the Nth-previous bookmark in the bookmark navigation list.
 See `bmkp-next-bookmark-repeat'."
   (interactive "P")
-  (require 'repeat)
   (bmkp-repeat-command 'bmkp-previous-bookmark))
 
 ;;;###autoload (autoload 'bmkp-next-bookmark-other-window-repeat "bookmark+")
@@ -12174,7 +12199,6 @@ This is a repeatable version of `bmkp-next-bookmark'.
 N defaults to 1, meaning the next bookmark.
 Plain `C-u' means start over at the first bookmark (and no repeat)."
   (interactive "P")
-  (require 'repeat)
   (bmkp-repeat-command 'bmkp-next-bookmark-other-window))
 
 ;;;###autoload (autoload 'bmkp-previous-bookmark-other-window-repeat "bookmark+")
@@ -12182,7 +12206,6 @@ Plain `C-u' means start over at the first bookmark (and no repeat)."
   "Jump to Nth-previous bookmark in bookmark navlist in another window.
 See `bmkp-next-bookmark-repeat'."
   (interactive "P")
-  (require 'repeat)
   (bmkp-repeat-command 'bmkp-previous-bookmark-other-window))
 
 ;;;###autoload (autoload 'bmkp-next-bookmark-this-file/buffer "bookmark+")
@@ -12211,7 +12234,6 @@ This is a repeatable version of `bmkp-next-bookmark-this-file/buffer'.
 N defaults to 1, meaning the next one.
 Plain `C-u' means start over at the first one (and no repeat)."
   (interactive "P")
-  (require 'repeat)
   (bmkp-repeat-command 'bmkp-next-bookmark-this-file/buffer))
 
 ;;;###autoload (autoload 'bmkp-previous-bookmark-this-file/buffer-repeat "bookmark+")
@@ -12220,7 +12242,6 @@ Plain `C-u' means start over at the first one (and no repeat)."
   "Jump to the Nth previous bookmark for the current file/buffer.
 See `bmkp-next-bookmark-this-file/buffer-repeat'."
   (interactive "P")
-  (require 'repeat)
   (bmkp-repeat-command 'bmkp-previous-bookmark-this-file/buffer))
 
 ;;;###autoload (autoload 'bmkp-next-bookmark-this-file "bookmark+")
@@ -12248,7 +12269,6 @@ This is a repeatable version of `bmkp-next-bookmark-this-file'.
 N defaults to 1, meaning the next one.
 Plain `C-u' means start over at the first one (and no repeat)."
   (interactive "P")
-  (require 'repeat)
   (bmkp-repeat-command 'bmkp-next-bookmark-this-file))
 
 ;;;###autoload (autoload 'bmkp-previous-bookmark-this-file-repeat "bookmark+")
@@ -12256,7 +12276,6 @@ Plain `C-u' means start over at the first one (and no repeat)."
   "Jump to the Nth previous bookmark for the current file.
 See `bmkp-next-bookmark-this-file-repeat'."
   (interactive "P")
-  (require 'repeat)
   (bmkp-repeat-command 'bmkp-previous-bookmark-this-file))
 
 
@@ -12285,7 +12304,6 @@ This is a repeatable version of `bmkp-next-bookmark-this-buffer'.
 N defaults to 1, meaning the next one.
 Plain `C-u' means start over at the first one (and no repeat)."
   (interactive "P")
-  (require 'repeat)
   (bmkp-repeat-command 'bmkp-next-bookmark-this-buffer))
 
 ;;;###autoload (autoload 'bmkp-previous-bookmark-this-buffer-repeat "bookmark+")
@@ -12293,7 +12311,6 @@ Plain `C-u' means start over at the first one (and no repeat)."
   "Jump to the Nth previous bookmark in the current buffer.
 See `bmkp-next-bookmark-this-buffer-repeat'."
   (interactive "P")
-  (require 'repeat)
   (bmkp-repeat-command 'bmkp-previous-bookmark-this-buffer))
 
 ;;;###autoload (autoload 'bmkp-next-bookmark-w32 "bookmark+")
@@ -12322,7 +12339,6 @@ This is a repeatable version of `bmkp-next-bookmark'.
 N defaults to 1, meaning the next bookmark.
 Plain `C-u' means start over at the first one (and no repeat)."
   (interactive "P")
-  (require 'repeat)
   (let ((bmkp-use-w32-browser-p  t))  (bmkp-repeat-command 'bmkp-next-bookmark)))
 
 ;;;###autoload (autoload 'bmkp-previous-bookmark-w32-repeat "bookmark+")
@@ -12330,7 +12346,6 @@ Plain `C-u' means start over at the first one (and no repeat)."
   "Windows `Open' the Nth previous bookmark in the bookmark navlist.
 See `bmkp-next-bookmark-w32-repeat'."
   (interactive "P")
-  (require 'repeat)
   (let ((bmkp-use-w32-browser-p  t))  (bmkp-repeat-command 'bmkp-previous-bookmark)))
 
 ;; In spite of their names, `bmkp-cycle-specific-(buffers|files)*' just cycle bookmarks in the

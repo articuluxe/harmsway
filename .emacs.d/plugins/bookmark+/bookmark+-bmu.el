@@ -7,9 +7,9 @@
 ;; Copyright (C) 2000-2019, Drew Adams, all rights reserved.
 ;; Copyright (C) 2009, Thierry Volpiatto, all rights reserved.
 ;; Created: Mon Jul 12 09:05:21 2010 (-0700)
-;; Last-Updated: Tue Apr 23 08:15:14 2019 (-0700)
+;; Last-Updated: Fri Jun 28 08:57:29 2019 (-0700)
 ;;           By: dradams
-;;     Update #: 4004
+;;     Update #: 4037
 ;; URL: https://www.emacswiki.org/emacs/download/bookmark%2b-bmu.el
 ;; Doc URL: https://www.emacswiki.org/emacs/BookmarkPlus
 ;; Keywords: bookmarks, bookmark+, placeholders, annotations, search, info, url, eww, w3m, gnus
@@ -1533,15 +1533,34 @@ C-u \\[bmkp-toggle-autonamed-bookmark-set/delete]\t- Delete all autonamed bookma
 Cycle Bookmarks (anywhere)
 ---------------
 
-\\[bmkp-next-bookmark-this-file/buffer-repeat] ...\t- Next bookmark in buffer         (C-x p n, C-x p C-n)
-\\[bmkp-previous-bookmark-this-file/buffer-repeat] ...\t- Prev bookmark in buffer         (C-x p p, \
+\\[bmkp-next-bookmark-this-file/buffer-repeat]...\t- Next bookmark in buffer         (C-x p n, C-x p C-n)
+\\[bmkp-previous-bookmark-this-file/buffer-repeat]...\t- Prev bookmark in buffer         (C-x p p, \
 C-x p C-p)
-\\[bmkp-next-bookmark-repeat] ...\t- Next bookmark in navlist        (C-x p f, C-x p C-f)
-\\[bmkp-previous-bookmark-repeat] ...\t- Prev bookmark in navlist        (C-x p b, C-x p C-b)
-\\[bmkp-next-bookmark-w32-repeat] ...\t- MS Windows `Open' next     bookmark in navlist
-\\[bmkp-next-bookmark-w32-repeat] ...\t- MS Windows `Open' previous bookmark in navlist
-\\[bmkp-next-lighted-this-buffer-repeat]...\t- Next highlighted bookmark in buffer
-\\[bmkp-previous-lighted-this-buffer-repeat] ...\t- Prev highlighted bookmark in buffer
+\\[bmkp-next-bookmark-repeat]...- Next bookmark in navlist        (C-x p f, C-x p C-f)
+\\[bmkp-previous-bookmark-repeat]...\t- Prev bookmark in navlist        (C-x p b, C-x p C-b)
+\\[bmkp-next-bookmark-w32-repeat]...\t- MS Windows `Open' next     in navlist   (C-x p next)
+\\[bmkp-previous-bookmark-w32-repeat]...- MS Windows `Open' previous in navlist  (C-x p prior)
+\\[bmkp-next-lighted-this-buffer-repeat]...- Next highlighted bookmark in buffer  (C-x p C-down)
+\\[bmkp-previous-lighted-this-buffer-repeat]...\t- Prev highlighted bookmark in buffer     (C-x p C-up)
+
+ Similar, but not bound to keys by default:
+  \\[bmkp-next-autonamed-bookmark-repeat]        (and `previous')
+  \\[bmkp-next-bookmark-list-bookmark-repeat]    (and `previous')
+  \\[bmkp-next-desktop-bookmark-repeat]          (and `previous')
+  \\[bmkp-next-dired-bookmark-repeat]            (and `previous')
+  \\[bmkp-next-eww-bookmark-repeat]              (and `previous')
+  \\[bmkp-next-file-bookmark-repeat]             (and `previous')
+  \\[bmkp-next-gnus-bookmark-repeat]             (and `previous')
+  \\[bmkp-next-info-bookmark-repeat]             (and `previous')
+  \\[bmkp-next-lighted-bookmark-repeat]          (and `previous')
+  \\[bmkp-next-local-file-bookmark-repeat]       (and `previous')
+  \\[bmkp-next-man-bookmark-repeat]              (and `previous')
+  \\[bmkp-next-non-file-bookmark-repeat]         (and `previous')
+  \\[bmkp-next-remote-file-bookmark-repeat]      (and `previous')
+  \\[bmkp-next-specific-buffers-bookmark-repeat] (and `previous')
+  \\[bmkp-next-specific-files-bookmark-repeat]   (and `previous')
+  \\[bmkp-next-url-bookmark-repeat]              (and `previous')
+  \\[bmkp-next-variable-list-bookmark-repeat]    (and `previous')
 
 
 Search-and-Replace in Bookmark Targets (here, in sort order)
@@ -1764,8 +1783,8 @@ bookmarks (`C-u': remote also)
 \\[bmkp-bmenu-show-only-region-bookmarks]\t- Show only region bookmarks
 \\[bmkp-bmenu-show-only-function-bookmarks]\t- Show only function bookmarks
 \\[bmkp-bmenu-show-only-url-bookmarks]\t- Show only URL bookmarks
-\\[bmkp-bmenu-show-only-eww-bookmarks]\t- Show only EWW (URL) bookmarks
-\\[bmkp-bmenu-show-only-w3m-bookmarks]\t- Show only W3M (URL) bookmarks
+\\[bmkp-bmenu-show-only-eww-bookmarks]\t- Show only EWW bookmarks
+\\[bmkp-bmenu-show-only-w3m-bookmarks]\t- Show only W3M bookmarks
 \\[bmkp-bmenu-show-only-variable-list-bookmarks]\t- Show only variable-list bookmarks
 \\[bmkp-bmenu-show-only-tagged-bookmarks]\t- Show only tagged bookmarks
 \\[bmkp-bmenu-show-only-untagged-bookmarks]\t- Show only untagged bookmarks
@@ -1813,7 +1832,7 @@ bmkp-bmenu-omitted-bookmarks     - List of omitted bookmarks
 bmkp-bmenu-state-file            - File to save bookmark-list state
                                    (\"home\") nil: do not save/restore
 bmkp-sort-comparer               - Initial sort
-bmkp-sort-orders-for-cycling-alist - Sort orders that `\\[bmkp-bmenu-change-sort-order-repeat]' ... cycles
+bmkp-sort-orders-for-cycling-alist - Sort orders that `\\[bmkp-bmenu-change-sort-order-repeat]'... cycles
 
 
 Other Options
@@ -1824,7 +1843,7 @@ bookmark-completion-ignore-case  - Case-sensitive completion?
 bookmark-default-file            - File to save bookmarks in
 bookmark-menu-length             - Max size of bookmark-name menu item
 bookmark-save-flag               - Whether and when to save
-bookmark-use-annotations         - Query for annotation when saving?
+bookmark-use-annotations         - Edit annotation when set bookmark?
 bookmark-version-control         - Numbered backups of bookmark file?
 
 bmkp-autoname-format        - Format of autonamed bookmark name
@@ -4434,6 +4453,7 @@ Save the command definition in `bmkp-bmenu-commands-file'."
       (let ((print-length           nil)
             (print-level            nil)
             (print-circle           bmkp-propertize-bookmark-names-flag)
+            (print-gensym           bmkp-propertize-bookmark-names-flag)
             (version-control        (case bookmark-version-control
                                       ((nil)      nil)
                                       (never      'never)
@@ -4484,6 +4504,7 @@ Use the command at any time to restore them."
       (let ((print-length           nil)
             (print-level            nil)
             (print-circle           bmkp-propertize-bookmark-names-flag)
+            (print-gensym           bmkp-propertize-bookmark-names-flag)
             (version-control        (case bookmark-version-control
                                       ((nil)      nil)
                                       (never      'never)
@@ -4563,6 +4584,7 @@ the omit list and the sort & filter information."
       (let ((print-length           nil)
             (print-level            nil)
             (print-circle           bmkp-propertize-bookmark-names-flag)
+            (print-gensym           bmkp-propertize-bookmark-names-flag)
             (version-control        (case bookmark-version-control
                                       ((nil)      nil)
                                       (never      'never)
@@ -4579,7 +4601,7 @@ the omit list and the sort & filter information."
         (unless errorp (message "Command `%s' defined and saved in file `%s'"
                                 fn bmkp-bmenu-commands-file))))))
 
-;; We use this because Emacs 20 has no `print-circle'. and otherwise
+;; We use this because Emacs 20 has no `print-circle' or `print-gensym'. and otherwise
 ;; property `bmkp-full-record' would make the state file unreadable.
 ;;
 (defun bmkp-maybe-unpropertize-bookmark-names (list &optional copy)
@@ -4689,6 +4711,7 @@ If you use this function non-interactively, be sure to load library
       (let ((print-length           nil)
             (print-level            nil)
             (print-circle           bmkp-propertize-bookmark-names-flag)
+            (print-gensym           bmkp-propertize-bookmark-names-flag)
             (version-control        (case bookmark-version-control
                                       ((nil)      nil)
                                       (never      'never)
@@ -5430,6 +5453,7 @@ prefix arg, any that are marked are included."
       (if defn
           (let* ((bname         (bmkp-bookmark-name-from-record bmk))
                  (print-circle  bmkp-propertize-bookmark-names-flag) ; For `pp-to-string'
+                 (print-gensym  bmkp-propertize-bookmark-names-flag) ; For `pp-to-string'
                  (print-length  nil)    ; For `pp-to-string'
                  (print-level   nil)    ; For `pp-to-string'
                  (help-text     (format "%s\n%s\n\n%s"

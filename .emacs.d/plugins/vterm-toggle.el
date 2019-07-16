@@ -1,4 +1,4 @@
-;;; vterm-toggle.el --- toggles between the vterm buffer and whatever buffer you are editing.
+;;; vterm-toggle.el --- Toggles between the vterm buffer and other buffers.  -*- lexical-binding: t; -*-
 
 ;; Author: jixiuf  jixiuf@qq.com
 ;; Keywords: vterm terminals
@@ -80,7 +80,7 @@ for example
    (defun vterm-toggle-after-ssh-login (user host port localdir)
     (when (equal host \"my-host\")
         (vterm-send-string \"zsh\" t)
-        (vterm-send-key \"<return>\" nil nil nil)))"
+        (vterm-send-return)))"
   :group 'vterm-toggle
   :type 'hook)
 
@@ -91,7 +91,7 @@ for example
 (defvar vterm-toggle--buffer-list nil
   "The list of non-dedicated terminal buffers managed by `vterm-toggle'.")
 
-(defun vterm-toggle--default-vterm-mode-p(&optional args)
+(defun vterm-toggle--default-vterm-mode-p(&optional _args)
   "Check buffer is term-mode-p.
 Optional argument ARGS optional args."
   (derived-mode-p 'vterm-mode))
@@ -177,7 +177,7 @@ Optional argument ARGS optional args."
                          (equal vterm-host cur-host))
                 (vterm-send-key "u" nil nil t)
                 (vterm-send-string cd-cmd t)
-                (vterm-send-key "<return>" nil nil nil)))
+                (vterm-send-return)))
             (vterm-toggle--switch-evil-state vterm-toggle-evil-state-when-enter))
           (when vterm-toggle-fullscreen-p
             (delete-other-windows)))
@@ -187,11 +187,11 @@ Optional argument ARGS optional args."
           (if cur-user
               (vterm-send-string (format "ssh %s@%s%s" cur-user cur-host cur-port) t)
             (vterm-send-string (format "ssh %s%s"  cur-host cur-port) t))
-          (vterm-send-key "<return>" nil nil nil)
+          (vterm-send-return)
           (run-hook-with-args 'vterm-toggle-after-ssh-login-function
                               cur-user cur-host cur-port dir)
           (vterm-send-string cd-cmd t)
-          (vterm-send-key "<return>" nil nil nil))
+          (vterm-send-return))
         (when vterm-toggle-fullscreen-p
           (delete-other-windows))
         (vterm-toggle--switch-evil-state vterm-toggle-evil-state-when-enter)))))
@@ -285,13 +285,13 @@ Optional argument ARGS optional args."
                vterm-toggle--window-configration)
       (set-window-configuration vterm-toggle--window-configration))))
 
-(add-hook 'kill-buffer-hook 'vterm-toggle--exit-hook)
+(add-hook 'kill-buffer-hook #'vterm-toggle--exit-hook)
 ;; (add-hook 'vterm-exit-functions #'vterm-toggle--exit-hook)
 
 (defun vterm-toggle--mode-hook()
   "Hook for `vterm-mode-hook'."
   (add-to-list 'vterm-toggle--buffer-list (current-buffer)))
-(add-hook 'vterm-mode-hook 'vterm-toggle--mode-hook)
+(add-hook 'vterm-mode-hook #'vterm-toggle--mode-hook)
 
 (defun vterm-toggle--switch (direction offset)
   "Internal `vterm-toggle' buffers switch function.
@@ -300,7 +300,7 @@ If DIRECTION `backward', switch to the previous term.
 Option OFFSET for skip OFFSET number term buffer."
   (if vterm-toggle--buffer-list
       (let ((buffer-list-len (length vterm-toggle--buffer-list))
-	        (index (position (current-buffer) vterm-toggle--buffer-list)))
+	        (index (cl-position (current-buffer) vterm-toggle--buffer-list)))
 	    (if index
 	        (let ((target-index (if (eq direction 'forward)
 				                    (mod (+ index offset) buffer-list-len)

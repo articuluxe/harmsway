@@ -1,4 +1,4 @@
-;;; centaur-tabs.el --- Provide an out of box configuration to use tabs -*- lexical-binding: t; -*-
+;;; centaur-tabs.el --- Aesthetic, modern looking customizable tabs plugin  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2019  Emmanuel Bustos
 
@@ -364,22 +364,26 @@ You should use this hook to reset dependent data.")
 
 (defun centaur-tabs-inherit-tabbar-faces ()
   "Function for using already existing faces for other tab plugins."
-  (custom-set-faces
-   '(centaur-tabs-default ((t (:inherit tabbar-default))))
-   '(centaur-tabs-selected ((t (:inherit tabbar-selected))))
-   '(centaur-tabs-unselected ((t (:inherit tabbar-unselected))))
-   '(centaur-tabs-selected-modified ((t (:inherit tabbar-selected-modified))))
-   '(centaur-tabs-unselected-modified ((t (:inherit tabbar-unselected-modified)))))
-   (set-face-attribute 'centaur-tabs-default nil
-		       :background (face-background 'tabbar-default nil t))
-   (set-face-attribute 'centaur-tabs-selected nil
-		       :background (face-background 'tabbar-selected nil t))
-   (set-face-attribute 'centaur-tabs-unselected nil
-		       :background (face-background 'tabbar-unselected nil t))
-   (set-face-attribute 'centaur-tabs-selected-modified nil
-		       :background (face-background 'centaur-tabs-selected nil t))
-   (set-face-attribute 'centaur-tabs-unselected-modified nil
-		       :background (face-background 'centaur-tabs-unselected nil t)))
+  (set-face-attribute 'centaur-tabs-default nil
+		      :inherit 'tabbar-default)
+  (set-face-attribute 'centaur-tabs-selected nil
+		      :inherit 'tabbar-selected)
+  (set-face-attribute 'centaur-tabs-unselected nil
+		      :inherit 'tabbar-unselected)
+  (set-face-attribute 'centaur-tabs-selected-modified nil
+		      :inherit 'tabbar-selected-modified)
+  (set-face-attribute 'centaur-tabs-unselected-modified nil
+		      :inherit 'tabbar-unselected-modified)
+  (set-face-attribute 'centaur-tabs-default nil
+		      :background (face-background 'tabbar-default nil t))
+  (set-face-attribute 'centaur-tabs-selected nil
+		      :background (face-background 'tabbar-selected nil t))
+  (set-face-attribute 'centaur-tabs-unselected nil
+		      :background (face-background 'tabbar-unselected nil t))
+  (set-face-attribute 'centaur-tabs-selected-modified nil
+		      :background (face-background 'centaur-tabs-selected nil t))
+  (set-face-attribute 'centaur-tabs-unselected-modified nil
+		      :background (face-background 'centaur-tabs-unselected nil t)))
 
 (defun centaur-tabs--make-xpm (face width height)
   "Create an XPM bitmap via FACE WIDTH and HEIGHT.
@@ -437,8 +441,8 @@ The result is a list just as long as the number of existing tab sets."
 It is initialized with tabs build from the list of OBJECTS."
   (let* ((tabset (intern name centaur-tabs-tabsets))
 	 (tabs (cl-mapcar #'(lambda (object)
-			   (centaur-tabs-make-tab object tabset))
-		       objects)))
+			      (centaur-tabs-make-tab object tabset))
+			  objects)))
     (set tabset tabs)
     (put tabset 'select (car tabs))
     (put tabset 'start 0)
@@ -633,7 +637,10 @@ current cached copy."
 
 (defun centaur-tabs-headline-match ()
   "Make headline use centaur-tabs-default-face."
-  (set-face-attribute 'header-line nil :background (face-background 'centaur-tabs-default)))
+  (set-face-attribute 'header-line nil :background (face-background 'centaur-tabs-unselected)
+		      :box nil
+		      :overline nil
+		      :underline nil))
 
 ;; Hooks for modification
 (defun centaur-tabs-on-saving-buffer ()
@@ -776,7 +783,7 @@ Call `centaur-tabs-tab-label-function' to obtain a label for TAB."
       'face face
       'pointer centaur-tabs-mouse-pointer
       'help-echo (with-current-buffer (centaur-tabs-tab-value tab)
-			    (buffer-file-name))
+		   (buffer-file-name))
       'local-map (purecopy (centaur-tabs-make-header-line-mouse-map
 			    'mouse-1
 			    `(lambda (event) (interactive "e")
@@ -1050,13 +1057,6 @@ Returns non-nil if the new state is enabled.
   :require 'centaur-tabs
   :global t
   :keymap centaur-tabs-mode-map
-  ;;Initialize things
-  ;; If set, initialize selected over
-  (when (eq centaur-tabs-set-bar 'over)
-    (set-face-attribute 'centaur-tabs-selected nil :overline (face-background 'centaur-tabs-active-bar-face))
-    (set-face-attribute 'centaur-tabs-selected-modified nil :overline (face-background 'centaur-tabs-active-bar-face))
-    (set-face-attribute 'centaur-tabs-unselected nil :overline nil)
-    (set-face-attribute 'centaur-tabs-unselected-modified nil :overline nil))
   (if centaur-tabs-mode
 ;;; ON
       (unless (centaur-tabs-mode-on-p)
@@ -1098,13 +1098,13 @@ visiting a file.  The current buffer is always included."
    'centaur-tabs-hide-tab-cached
    (delq nil
 	 (cl-mapcar #'(lambda (b)
-		     (cond
-		      ;; Always include the current buffer.
-		      ((eq (current-buffer) b) b)
-		      ((buffer-file-name b) b)
-		      ((char-equal ?\  (aref (buffer-name b) 0)) nil)
-		      ((buffer-live-p b) b)))
-		 (buffer-list)))))
+			(cond
+			 ;; Always include the current buffer.
+			 ((eq (current-buffer) b) b)
+			 ((buffer-file-name b) b)
+			 ((char-equal ?\  (aref (buffer-name b) 0)) nil)
+			 ((buffer-live-p b) b)))
+		    (buffer-list)))))
 
 (defun centaur-tabs-buffer-mode-derived-p (mode parents)
   "Return non-nil if MODE derives from a mode in PARENTS."
@@ -1158,7 +1158,7 @@ Return the the first group where the current buffer is."
 		   (let ((e (assq (centaur-tabs-tab-value tab) bl)))
 		     (or (and e (memq tabset
 				      (cl-mapcar 'centaur-tabs-get-tabset
-					      (nth 2 e))))
+						 (nth 2 e))))
 			 (centaur-tabs-delete-tab tab))))
 		 ;; Return empty tab sets
 		 (unless (centaur-tabs-tabs tabset)
@@ -1616,13 +1616,13 @@ Create one if the frame doesn't have one yet."
 That is, a string used to represent it on the tab bar."
   ;; Init tab style.
   ;; Render tab.
-    (format " %s"
-	    (let ((bufname (if centaur-tabs--buffer-show-groups
-			       (centaur-tabs-tab-tabset tab)
-			     (centaur-tabs-buffer-name (car tab)))))
-	      (if (> centaur-tabs-label-fixed-length 0)
-		  (centaur-tabs-truncate-string  centaur-tabs-label-fixed-length bufname)
-		bufname))))
+  (format " %s"
+	  (let ((bufname (if centaur-tabs--buffer-show-groups
+			     (centaur-tabs-tab-tabset tab)
+			   (centaur-tabs-buffer-name (car tab)))))
+	    (if (> centaur-tabs-label-fixed-length 0)
+		(centaur-tabs-truncate-string  centaur-tabs-label-fixed-length bufname)
+	      bufname))))
 
 (defun centaur-tabs-buffer-name (tab-buffer)
   "Get buffer name of tab using TAB-BUFFER."
@@ -1677,18 +1677,22 @@ first."
   "Initialize tab bar buffer data.
 Run as `centaur-tabs-init-hook'."
   (setq centaur-tabs--buffers nil
-	;; centaur-tabs--buffer-show-groups nil
 	centaur-tabs-current-tabset-function 'centaur-tabs-buffer-tabs
 	centaur-tabs-tab-label-function 'centaur-tabs-buffer-tab-label
 	centaur-tabs-select-tab-function 'centaur-tabs-buffer-select-tab
 	)
+  ;; If set, initialize selected overline
+  (when (eq centaur-tabs-set-bar 'over)
+    (set-face-attribute 'centaur-tabs-selected nil :overline (face-background 'centaur-tabs-active-bar-face))
+    (set-face-attribute 'centaur-tabs-selected-modified nil :overline (face-background 'centaur-tabs-active-bar-face))
+    (set-face-attribute 'centaur-tabs-unselected nil :overline nil)
+    (set-face-attribute 'centaur-tabs-unselected-modified nil :overline nil))
   (add-hook 'kill-buffer-hook #'centaur-tabs-buffer-track-killed))
 
 (defun centaur-tabs-buffer-quit ()
   "Quit tab bar buffer.
 Run as `centaur-tabs-quit-hook'."
   (setq centaur-tabs--buffers nil
-	;; centaur-tabs--buffer-show-groups nil
 	centaur-tabs-current-tabset-function nil
 	centaur-tabs-tab-label-function nil
 	centaur-tabs-select-tab-function nil
@@ -1731,12 +1735,11 @@ TYPE is default option."
   (let* ((tabset (centaur-tabs-current-tabset t))
 	 (ttabset (centaur-tabs-get-tabsets-tabset))
 	 (_cycle (if (and (eq centaur-tabs-cycle-scope 'groups)
-			 (not (cdr (centaur-tabs-tabs ttabset))))
-		    'tabs
-		  centaur-tabs-cycle-scope))
+			  (not (cdr (centaur-tabs-tabs ttabset))))
+		     'tabs
+		   centaur-tabs-cycle-scope))
 	 _selected tab)
     (when tabset
-      ;; (setq _selected (centaur-tabs-selected-tab tabset))
       (setq tabset (centaur-tabs-tabs tabset)
 	    tab (car (if backward (last tabset) tabset)))
       (centaur-tabs-buffer-select-tab tab))))
@@ -1762,7 +1765,7 @@ Optional argument REVERSED default is move backward, if reversed is non-nil move
   (let* ((bufset (centaur-tabs-current-tabset t))
 	 (old-bufs (centaur-tabs-tabs bufset))
 	 (new-bufs (list))
-         the-buffer)
+	 the-buffer)
     (while (and
 	    old-bufs
 	    (not (string= (buffer-name) (format "%s" (car (car old-bufs))))))
@@ -1789,7 +1792,7 @@ Optional argument REVERSED default is move backward, if reversed is non-nil move
 	 (old-bufs (centaur-tabs-tabs bufset))
 	 (first-buf (car old-bufs))
 	 (new-bufs (list))
-         not-yet-this-buf)
+	 not-yet-this-buf)
     (if (string= (buffer-name) (format "%s" (car first-buf)))
 	old-bufs                     ; the current tab is the leftmost
       (setq not-yet-this-buf first-buf)
@@ -1916,8 +1919,8 @@ not the actual logical index position of the current group."
   "Refresh tabs groups."
   (set centaur-tabs-tabsets-tabset (centaur-tabs-map-tabsets 'centaur-tabs-selected-tab))
   (cl-mapcar #'(lambda (group)
-	      (format "%s" (cdr group)))
-	  (centaur-tabs-tabs centaur-tabs-tabsets-tabset)))
+		 (format "%s" (cdr group)))
+	     (centaur-tabs-tabs centaur-tabs-tabsets-tabset)))
 
 (defun centaur-tabs-get-extensions ()
   "Get file extension of tabs."
@@ -2014,21 +2017,21 @@ Return only one group for each buffer."
       (symbol-value 'centaur-tabs-projectile-buffer-group-calc)
     (set (make-local-variable 'centaur-tabs-projectile-buffer-group-calc)
 
-         (cond
-          ((or (get-buffer-process (current-buffer)) (memq major-mode '(comint-mode compilation-mode))) '("Term"))
-          ((string-equal "*" (substring (buffer-name) 0 1)) '("Misc"))
-          ((condition-case _err
-               (projectile-project-root)
-             (error nil)) (list (projectile-project-name)))
-          ((memq major-mode '(emacs-lisp-mode python-mode emacs-lisp-mode c-mode
+	 (cond
+	  ((or (get-buffer-process (current-buffer)) (memq major-mode '(comint-mode compilation-mode))) '("Term"))
+	  ((string-equal "*" (substring (buffer-name) 0 1)) '("Misc"))
+	  ((condition-case _err
+	       (projectile-project-root)
+	     (error nil)) (list (projectile-project-name)))
+	  ((memq major-mode '(emacs-lisp-mode python-mode emacs-lisp-mode c-mode
 					      c++-mode javascript-mode js-mode
 					      js2-mode makefile-mode
 					      lua-mode vala-mode)) '("Coding"))
-          ((memq major-mode '(nxhtml-mode html-mode
+	  ((memq major-mode '(nxhtml-mode html-mode
 					  mhtml-mode css-mode)) '("HTML"))
-          ((memq major-mode '(org-mode calendar-mode diary-mode)) '("Org"))
-          ((memq major-mode '(dired-mode)) '("Dir"))
-          (t '("Other"))))
+	  ((memq major-mode '(org-mode calendar-mode diary-mode)) '("Org"))
+	  ((memq major-mode '(dired-mode)) '("Dir"))
+	  (t '("Other"))))
     (symbol-value 'centaur-tabs-projectile-buffer-group-calc)))
 
 (defun centaur-tabs-group-by-projectile-project()
@@ -2121,18 +2124,20 @@ Operates over buffer BUF"
 (defun centaur-tabs-adjust-buffer-order ()
   "Put the two buffers switched to the adjacent position after current buffer changed."
   ;; Don't trigger by centaur-tabs command, it's annoying.
-  ;; This feature should trigger by search plugins, such as ibuffer, helm or ivy.
-  (unless (string-prefix-p "centaur-tabs" (format "%s" this-command))
-    ;; Just continue when buffer changed.
+  ;; This feature should be trigger by search plugins, such as ibuffer, helm or ivy.
+  (unless (or (string-prefix-p "centaur-tabs" (format "%s" this-command))
+	      (string-prefix-p "mouse-drag-header-line" (format "%s" this-command))
+	      (string-prefix-p "(lambda (event) (interactive e)" (format "%s" this-command)))
+    ;; Just continue when the buffer has changed.
     (when (and (not (eq (current-buffer) centaur-tabs-last-focus-buffer))
 	       (not (minibufferp)))
       (let* ((current (current-buffer))
 	     (previous centaur-tabs-last-focus-buffer)
 	     (current-group (cl-first (funcall centaur-tabs-buffer-groups-function))))
-	;; Record last focus buffer.
+	;; Record the last focused buffer.
 	(setq centaur-tabs-last-focus-buffer current)
 
-	;; Just continue if two buffers are in same group.
+	;; Just continue if two buffers are in the same group.
 	(when (string= current-group centaur-tabs-last-focus-buffer-group)
 	  (let* ((bufset (centaur-tabs-get-tabset current-group))
 		 (current-group-tabs (centaur-tabs-tabs bufset))
@@ -2140,7 +2145,7 @@ Operates over buffer BUF"
 		 (current-buffer-index (cl-position current current-group-buffers))
 		 (previous-buffer-index (cl-position previous current-group-buffers)))
 
-	    ;; If the two tabs are not adjacent, swap the positions of the two tabs.
+	    ;; If the tabs are not adjacent, swap their positions.
 	    (when (and current-buffer-index
 		       previous-buffer-index
 		       (> (abs (- current-buffer-index previous-buffer-index)) 1))
@@ -2157,11 +2162,13 @@ Operates over buffer BUF"
 		(centaur-tabs-display-update)
 		))))
 
-	;; Update the group name of the last access tab.
+	;; Update the group name of the last accessed tab.
 	(setq centaur-tabs-last-focus-buffer-group current-group)
 	))))
 
-(add-hook 'post-command-hook centaur-tabs-adjust-buffer-order-function)
+(defun centaur-tabs-enable-buffer-reordering ()
+  "Enable the buffer adjusting functionality."
+  (add-hook 'post-command-hook centaur-tabs-adjust-buffer-order-function))
 
 (provide 'centaur-tabs)
 

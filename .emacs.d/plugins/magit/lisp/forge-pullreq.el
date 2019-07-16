@@ -65,6 +65,7 @@
    (review-requests      :closql-table (pullreq-review-request assignee))
    (reviews)
    (timeline)
+   (marks                :closql-table (pullreq-mark mark))
    ;; We don't use these fields:
    ;; includesCreatedEdit (huh?),
    ;; lastEditedAt (same as updatedAt?),
@@ -122,11 +123,11 @@
               (oref post pullreq)
               'forge-pullreq))
 
-(cl-defmethod forge-ls-pullreqs ((repo forge-repository) &optional type)
-  (forge-ls-topics repo 'forge-pullreq type))
-
 (cl-defmethod forge-get-repository ((post forge-pullreq-post))
   (forge-get-repository (forge-get-pullreq post)))
+
+(cl-defmethod forge-ls-pullreqs ((repo forge-repository) &optional type)
+  (forge-ls-topics repo 'forge-pullreq type))
 
 ;;; Utilities
 
@@ -140,11 +141,12 @@
                             (oref topic number)
                             (oref topic title))))
          (choices (forge-ls-pullreqs repo type))
-         (choice  (magit-completing-read prompt
-                                         (mapcar format choices)
-                                         nil nil nil nil
-                                         (and default
-                                              (funcall format default))))
+         (choice  (magit-completing-read
+                   prompt
+                   (mapcar format choices)
+                   nil nil nil nil
+                   (and default
+                        (funcall format default))))
          (number  (and (string-match "\\([0-9]+\\)" choice)
                        (string-to-number (match-string 1 choice)))))
     (and number
