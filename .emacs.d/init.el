@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-07-12 12:54:51 dharms>
+;; Modified Time-stamp: <2019-07-16 10:15:43 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3742,6 +3742,17 @@ This may perform related customization."
     (add-to-list 'org-src-lang-modes '("plantuml" . plantuml))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; python-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defun python-shell-send-region-or-line ()
+  "Send intelligently from `python-mode' buffer to python shell."
+  (interactive)
+  (let ((beg (if (region-active-p) (region-beginning)
+               (save-excursion (beginning-of-line) (point))))
+        (end (if (region-active-p) (region-end)
+               (save-excursion (python-nav-forward-statement) (point)))))
+    (setq deactivate-mark t)
+    (python-shell-send-region beg end)
+    (python-nav-forward-statement)))
+
 (use-package python
   :if (executable-find "python")
   :mode ("\\.py[iw]?$" . python-mode)
@@ -3778,6 +3789,7 @@ This may perform related customization."
   ;; remap 'python-shell-send-buffer
   (define-key python-mode-map "\C-c\C-c" nil)
   (define-key python-mode-map "\C-c\C-b" #'python-shell-send-buffer)
+  (define-key python-mode-map "\C-c\C-r" #'python-shell-send-region-or-line)
   (define-key python-mode-map [?\C-\M-g] 'python-nav-forward-sexp)
   (define-key python-mode-map (kbd "\C-c RET")
     (lambda()(interactive)
