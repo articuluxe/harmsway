@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-07-16 10:15:43 dan.harms>
+;; Modified Time-stamp: <2019-07-17 12:33:51 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3892,8 +3892,9 @@ Requires Flake8 2.0 or newer. See URL
   :config
   (define-key python-mode-map "\C-c'" #'python-switch-quotes))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; rust-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package rust-mode :mode "\\.rs$")
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; blacken ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package blacken
+  :bind ("C-c M-b" . blacken-buffer))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; sphinx-doc ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package sphinx-doc
@@ -3902,6 +3903,9 @@ Requires Flake8 2.0 or newer. See URL
   (add-hook 'python-mode-hook
             (lambda ()
               (sphinx-doc-mode 1))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; rust-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package rust-mode :mode "\\.rs$")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; qt-pro-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package qt-pro-mode :mode ("\\.pr[oi]$"))
