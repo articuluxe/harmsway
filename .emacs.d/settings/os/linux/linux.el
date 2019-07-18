@@ -1,9 +1,9 @@
 ;; linux.el --- linux os settings file
-;; Copyright (C) 2015-2017  Dan Harms (dharms)
+;; Copyright (C) 2015-2017, 2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-11-29 10:08:46 dharms>
+;; Modified Time-stamp: <2019-07-18 15:54:04 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -32,6 +32,9 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Process Viewer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package proced :bind ("C-c 0p" . proced))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; mount ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package mount :bind ("C-c 0m" . mount))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; neato-graph-bar ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package neato-graph-bar :bind ("C-c 0o" . neato-graph-bar))
