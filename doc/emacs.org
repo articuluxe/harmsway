@@ -158,6 +158,7 @@ C-x C-k b    bind last macro to a key sequence
 C-x C-k 0-9  good macro key sequences
 C-x C-k n    give last macro a name
 C-x C-k r    apply macro to all lines in region
+C-x q        pause macro and read input (kbd-macro-query)
 
 * Popwin
 [f1]
