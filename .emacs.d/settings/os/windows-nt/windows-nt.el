@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2019-01-07 15:16:56 dan.harms>
+;; Modified Time-stamp: <2019-07-19 13:07:23 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -56,6 +56,7 @@
     (shell)))
 
 (setq-default comint-process-echoes t)
+(add-hook 'comint-output-filter-functions #'comint-strip-ctrl-m)
 (setq w32-get-true-file-attributes nil)
 (setq w32-pipe-read-delay 0)
 (setq tramp-default-method "plink")
