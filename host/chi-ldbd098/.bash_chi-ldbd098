@@ -11,12 +11,12 @@ alias xrdev="singularity shell -B /net,/opt/xr,/opt/xr_job_agent,/opt/1tick,/fry
 
 run_in_container()
 {
-    "$HOME"/snap/snap/start_container.sh "$HOME"/bin/run-in-container.sh $1
+    "$HOME"/snap/snap/start_container.sh "$HOME"/bin/run-in-container.sh "$@"
 }
 
 build_in_container()
 {
-    run_in_container "python -m xrmake2"
+    run_in_container "python -m xrmake2" "$@"
 }
 
 upgrade_simutils()
