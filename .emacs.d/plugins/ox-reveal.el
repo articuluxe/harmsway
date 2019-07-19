@@ -72,10 +72,12 @@
     (:reveal-title-slide-background-position "REVEAL_TITLE_SLIDE_BACKGROUND_POSITION" nil nil t)
     (:reveal-title-slide-background-repeat "REVEAL_TITLE_SLIDE_BACKGROUND_REPEAT" nil nil t)
     (:reveal-title-slide-background-transition "REVEAL_TITLE_SLIDE_BACKGROUND_TRANSITION" nil nil t)
+    (:reveal-title-slide-background-opacity "REVEAL_TITLE_SLIDE_BACKGROUND_OPACITY" nil nil t)
     (:reveal-default-slide-background "REVEAL_DEFAULT_SLIDE_BACKGROUND" nil nil t)
     (:reveal-default-slide-background-size "REVEAL_DEFAULT_SLIDE_BACKGROUND_SIZE" nil nil t)
     (:reveal-default-slide-background-position "REVEAL_DEFAULT_SLIDE_BACKGROUND_POSITION" nil nil t)
     (:reveal-default-slide-background-repeat "REVEAL_DEFAULT_SLIDE_BACKGROUND_REPEAT" nil nil t)
+    (:reveal-default-slide-background-opacity "REVEAL_DEFAULT_SLIDE_BACKGROUND_OPACITY" nil nil t)
     (:reveal-default-slide-background-transition "REVEAL_DEFAULT_SLIDE_BACKGROUND_TRANSITION" nil nil t)
     (:reveal-mathjax-url "REVEAL_MATHJAX_URL" nil org-reveal-mathjax-url t)
     (:reveal-preamble "REVEAL_PREAMBLE" nil org-reveal-preamble t)
@@ -459,7 +461,10 @@ exporter."
                    :data-background-repeat ,(or (org-element-property :REVEAL_BACKGROUND_REPEAT headline)
 						default-slide-background-repeat)
                    :data-background-transition ,(or (org-element-property :REVEAL_BACKGROUND_TRANS headline)
-                                                    default-slide-background-transition)))
+                                                    default-slide-background-transition)
+		   :data-background-opacity
+		   ,(or (org-element-property :REVEAL_BACKGROUND_OPACITY headline)
+			(plist-get info :reveal-default-slide-background-opacity))))
             (let ((extra-attrs (org-element-property :REVEAL_EXTRA_ATTR headline)))
               (if-format " %s" extra-attrs)))))
 
@@ -717,7 +722,9 @@ transitionSpeed: '%s',\n"
              (plist-get info :reveal-multiplex-id)
              (plist-get info :reveal-multiplex-url)))
 
-     (if-format "%s,\n" (plist-get info :reveal-extra-initial-js))
+     (let ((extra-initial-js  (plist-get info :reveal-extra-initial-js)))
+       (unless (string= extra-initial-js "")
+	 (format "%s,\n" extra-initial-js)))
 
      ;; optional JS library heading
      (if in-single-file ""
@@ -1199,6 +1206,7 @@ info is a plist holding export options."
              (title-slide-background-position (plist-get info :reveal-title-slide-background-position))
              (title-slide-background-repeat (plist-get info :reveal-title-slide-background-repeat))
              (title-slide-background-transition (plist-get info :reveal-title-slide-background-transition))
+	     (title-slide-background-opacity (plist-get info :reveal-title-slide-background-opacity))
              (title-slide-with-header (plist-get info :reveal-slide-global-header))
              (title-slide-with-footer (plist-get info :reveal-slide-global-footer)))
          (concat "<section id=\"sec-title-slide\""
@@ -1212,6 +1220,8 @@ info is a plist holding export options."
                    (concat " data-background-repeat=\"" title-slide-background-repeat "\""))
                  (when title-slide-background-transition
                    (concat " data-background-transition=\"" title-slide-background-transition "\""))
+		 (when title-slide-background-opacity
+		   (concat " data-background-opacity=\"" title-slide-background-opacity "\""))
                  ">"
                  (when title-slide-with-header
                    (let ((header (plist-get info :reveal-slide-header)))
@@ -1333,6 +1343,25 @@ transformed fragment attribute to ELEM's attr_html plist."
     (message "Obsoleting soon. Use the \"Export scope\" switch instead to utilize parent heading properties.")
     ret))
 
+;; Generate a heading of ToC for current buffer and write to current
+;; point
+(defun org-reveal-manual-toc ()
+  (interactive)
+  (insert ;; at current point
+   (mapconcat
+    'identity
+    (org-element-map (org-element-parse-buffer) 'headline
+      (lambda (headline)
+	(let ((title (org-element-property :raw-value headline)))
+	  (concat
+	   ;; Leading spaces by headline level
+	   (make-string (* 2 (org-element-property :level headline)) ?\s)
+	   "- [["
+	   title
+	   "]["
+	   title
+	   "]]"))))
+    "\n")))
 ;;;###autoload
 (defun org-reveal-publish-to-reveal
  (plist filename pub-dir)
@@ -1352,7 +1381,6 @@ Return output file name."
                    (list org-reveal-note-key-char "#+BEGIN_NOTES\n\?\n#+END_NOTES"))
     (add-to-list 'org-structure-template-alist
                  (cons org-reveal-note-key-char "notes"))))
-
 
 (provide 'ox-reveal)
 

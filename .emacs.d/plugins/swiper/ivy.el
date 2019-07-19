@@ -1125,14 +1125,8 @@ If the text hasn't changed as a result, forward to `ivy-alt-done'."
               ((and (string= ivy-text "")
                     (eq (ivy-state-collection ivy-last)
                         #'read-file-name-internal))
-                ;; For `read-file-name' compat, unchanged initial input means
-                ;; that `ivy-read' shall return INITIAL-INPUT.
-                ;; `read-file-name-default' `string-equal' return value with
-                ;; provided INITIAL-INPUT to detect that the user choose the
-                ;; default, `default-filename'.  We must return `ivy--directory'
-                ;; in unchanged form in cased `ivy--directory' started out as
-                ;; INITIAL-INPUT in abbreviated form.
-               ivy--directory)          ; Unchanged (unexpanded)
+               (or (ivy-state-def ivy-last)
+                   ivy--directory))
               (t
                (expand-file-name ivy-text ivy--directory))))
   (insert (ivy-state-current ivy-last))
@@ -2023,10 +2017,10 @@ customizations apply to the current completion session."
                          (car ivy--all-candidates))
                    (setq ivy-exit 'done))
                (read-from-minibuffer
-                prompt
-                (ivy-state-initial-input ivy-last)
-                (make-composed-keymap keymap ivy-minibuffer-map)
-                nil
+                          prompt
+                          (ivy-state-initial-input ivy-last)
+                          (make-composed-keymap keymap ivy-minibuffer-map)
+                          nil
                 hist))
              (when (eq ivy-exit 'done)
                (let ((item (if ivy--directory
@@ -2120,14 +2114,14 @@ This is useful for recursive `ivy-read'."
              (require 'tramp)
              (when (and (equal def initial-input)
                         (member "./" ivy-extra-directories))
-               (setf (ivy-state-def state) (setq def nil)))
+               (setq def nil))
              (setq ivy--directory default-directory)
              (when (and initial-input
                         (not (equal initial-input "")))
                (cond ((file-directory-p initial-input)
                       (when (equal (file-name-nondirectory initial-input) "")
                         (setf (ivy-state-preselect state) (setq preselect nil))
-                        (setf (ivy-state-def state) (setq def nil)))
+                        (setq def nil))
                       (setq ivy--directory (file-name-as-directory initial-input))
                       (setq initial-input nil)
                       (when preselect
@@ -3221,7 +3215,9 @@ CANDIDATES are assumed to be static."
         (if (memq (cdr (assq (ivy-state-caller ivy-last)
                              ivy-index-functions-alist))
                   '(ivy-recompute-index-swiper
-                    ivy-recompute-index-swiper-async))
+                    ivy-recompute-index-swiper-async
+                    ivy-recompute-index-swiper-async-backward
+                    ivy-recompute-index-swiper-backward))
             (progn
               (ivy--recompute-index name re-str cands)
               (setq ivy--old-cands (ivy--sort name cands)))
@@ -3278,16 +3274,12 @@ The alist VAL is a sorting function with the signature of
 (defun ivy--sort (name candidates)
   "Re-sort candidates by NAME.
 All CANDIDATES are assumed to match NAME."
-  (let ((key (or (ivy-state-caller ivy-last)
-                 (when (functionp (ivy-state-collection ivy-last))
-                   (ivy-state-collection ivy-last))
-                 this-command))
-        fun)
-    (cond ((and ivy--flx-featurep
+  (let (fun)
+    (cond ((setq fun (ivy-alist-setting ivy-sort-matches-functions-alist))
+           (funcall fun name candidates))
+          ((and ivy--flx-featurep
                 (eq ivy--regex-function 'ivy--regex-fuzzy))
            (ivy--flx-sort name candidates))
-          ((setq fun (ivy-alist-setting ivy-sort-matches-functions-alist key))
-           (funcall fun name candidates))
           (t
            candidates))))
 
@@ -3444,6 +3436,16 @@ CANDS are the current candidates."
               res))))
     (error 0)))
 
+(defun ivy-recompute-index-swiper-backward (re-str cands)
+  "Recompute index of selected candidate when using `swiper-backward'.
+CANDS are the current candidates."
+  (let ((idx (ivy-recompute-index-swiper re-str cands)))
+    (if (or (= idx -1)
+            (<= (read (get-text-property 0 'swiper-line-number (nth idx cands)))
+                (line-number-at-pos)))
+        idx
+      (- idx 1))))
+
 (defun ivy-recompute-index-swiper-async (_re-str cands)
   "Recompute index of selected candidate when using `swiper' asynchronously.
 CANDS are the current candidates."
@@ -3467,6 +3469,18 @@ CANDS are the current candidates."
               (setq idx (cl-position (pop tail) cands :test #'equal)))
             (or idx 0))
         ivy--index))))
+
+(defun ivy-recompute-index-swiper-async-backward (re-str cands)
+  "Recompute index of selected candidate when using `swiper-backward'
+asynchronously. CANDS are the current candidates."
+  (if (= (length cands) 0)
+      0
+    (let ((idx (ivy-recompute-index-swiper-async re-str cands)))
+      (if
+          (<= (string-to-number (nth idx cands))
+              (with-ivy-window (line-number-at-pos)))
+          idx
+        (- idx 1)))))
 
 (defun ivy-recompute-index-zero (_re-str _cands)
   "Recompute index of selected candidate.

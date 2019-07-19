@@ -287,7 +287,8 @@ Prefer a topic over a branch and that over a commit."
   (let* ((repo (forge-get-repository t))
          (buf (forge--prepare-post-buffer
                "new-pullreq"
-               (forge--format repo "Create new pull-request on %p"))))
+               (forge--format repo "Create new pull-request on %p")
+               source)))
     (with-current-buffer buf
       (setq forge--buffer-base-branch target)
       (setq forge--buffer-head-branch source)
@@ -703,6 +704,15 @@ information."
   "List notifications."
   (interactive)
   (forge-notifications-setup-buffer))
+
+(defun forge-toggle-closed-visibility ()
+  "Toggle whether recently closed issues are shown."
+  (interactive)
+  (make-variable-buffer-local 'forge-topic-list-limit)
+  (if (atom forge-topic-list-limit)
+      (setq forge-topic-list-limit (cons forge-topic-list-limit 5))
+    (setcdr forge-topic-list-limit (* -1 (cdr forge-topic-list-limit))))
+  (magit-refresh))
 
 ;;;###autoload
 (defun forge-add-pullreq-refspec ()

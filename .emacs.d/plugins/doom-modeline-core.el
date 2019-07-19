@@ -37,11 +37,11 @@
 ;; Compatibilities
 ;;
 
-(unless (>= emacs-major-version 26)
-  (with-no-warnings
+(eval-and-compile
+  (unless (>= emacs-major-version 26)
     ;; Define `if-let*' and `when-let*' variants for 25 users.
-    (defalias 'if-let* #'if-let)
-    (defalias 'when-let* #'when-let)))
+    (unless (fboundp 'if-let*) (defalias 'if-let* #'if-let))
+    (unless (fboundp 'when-let*) (defalias 'when-let* #'when-let))))
 
 ;; Don’t compact font caches during GC.
 (if (eq system-type 'windows-nt)
@@ -137,14 +137,6 @@ It returns a file name which can be used directly as argument of
 (defgroup doom-modeline nil
   "A minimal and modern mode-line."
   :group 'mode-line)
-
-(defface doom-modeline-persp-name
-  '((t (:inherit (font-lock-comment-face italic))))
-  "Face for the replace state tag in evil state indicator.")
-
-(defface doom-modeline-persp-buffer-not-in-persp
-  '((t (:inherit (font-lock-doc-face bold italic))))
-  "Face for the replace state tag in evil state indicator.")
 
 (defcustom doom-modeline-height 25
   "How tall the mode-line should be. It's only respected in GUI.
@@ -411,6 +403,16 @@ If the actual char height is larger, it respects the actual char height."
 
 (defface doom-modeline-evil-replace-state
   '((t (:inherit doom-modeline-buffer-modified)))
+  "Face for the replace state tag in evil state indicator."
+  :group 'doom-modeline-faces)
+
+(defface doom-modeline-persp-name
+  '((t (:inherit (font-lock-comment-face italic))))
+  "Face for the replace state tag in evil state indicator."
+  :group 'doom-modeline-faces)
+
+(defface doom-modeline-persp-buffer-not-in-persp
+  '((t (:inherit (font-lock-doc-face bold italic))))
   "Face for the replace state tag in evil state indicator."
   :group 'doom-modeline-faces)
 

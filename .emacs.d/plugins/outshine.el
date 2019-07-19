@@ -846,6 +846,60 @@ This function will be hooked to `outline-minor-mode'."
 
 ;; copied and adapted from Alexander Vorobiev
 ;; http://www.mail-archive.com/emacs-orgmode@gnu.org/msg70648.html
+(defmacro outshine-define-key (keymap key def condition &optional mode)
+  "Define key with fallback.
+
+Binds KEY to definition DEF in keymap KEYMAP, the binding is
+active when the CONDITION is true. Otherwise turns MODE off and
+re-enables previous definition for KEY. If MODE is nil, tries to
+recover it by stripping off \"-map\" from KEYMAP name.
+
+DEF must be a quoted symbol of an interactive command.
+
+This interns a named function `outshine-kbd-[key-name]' with the
+appropriate docstring so that calling `describe-key' on KEY
+produces a more informative output."
+  (declare (indent defun))
+  (let ((fn-name
+         (intern (format "outshine-kbd-%s"
+                         (if (eq (car-safe key) 'kbd)
+                             (cadr key)
+                           key))))
+        (docstring
+         (format "Run the interactive command `%s' if the following condition \
+is satisfied:\n\n    %s\n
+Otherwise, fallback to the original binding of %s in the current mode."
+                 (cadr def) ;; def is a quoted symbol (quote sym)
+                 condition key))
+        (mode-name
+         (cond (mode mode)
+               ((string-match
+                 (rx (group (1+ any)) "-map" eol) (symbol-name keymap))
+                (intern (match-string 1 (symbol-name keymap))))
+               (t (error "Could not deduce mode name from keymap name")))))
+    `(progn
+       (defun ,fn-name ()
+         ,docstring
+         (interactive)
+         (call-interactively
+          (if ,condition
+              ,def
+            ;; turn mode off and recover the original function
+            (let ((,mode-name nil))
+              ;; Check for `<tab>'.  It translates to `TAB' which
+              ;; will prevent `(key-binding ...)' from finding the
+              ;; original binding.
+              (if (equal (kbd "<tab>") ,key)
+                  (or (key-binding ,key)
+                      (key-binding (kbd "TAB")))
+                (key-binding ,key))))))
+       (define-key ,keymap ,key ',fn-name))))
+
+;;;;;; original macro (obsolete)
+
+;; Note: the new macro uses a quoted symbol for the binding DEF, matching
+;; the signature of `define-key'.
+(make-obsolete 'outshine-define-key-with-fallback 'outshine-define-key "3.0")
 (defmacro outshine-define-key-with-fallback
     (keymap key def condition &optional mode)
   "Define key with fallback.
@@ -853,6 +907,7 @@ Binds KEY to definition DEF in keymap KEYMAP, the binding is
 active when the CONDITION is true. Otherwise turns MODE off and
 re-enables previous definition for KEY. If MODE is nil, tries to
 recover it by stripping off \"-map\" from KEYMAP name."
+  (declare (indent 2))
   `(define-key
      ,keymap
      ,key
@@ -881,7 +936,6 @@ recover it by stripping off \"-map\" from KEYMAP name."
            (condition-case nil
                (call-interactively original-func)
              (error nil)))))))
-(put 'outshine-define-key-with-fallback 'lisp-indent-function 2)
 
 ;;;;; Normalize regexps
 
@@ -1713,7 +1767,7 @@ With a numeric prefix ARG, show all headlines up to that level."
               ((save-excursion
                  (beginning-of-line)
                  (looking-at outline-regexp))
-               (max 1 (funcall outline-level)))
+               (max 1 (save-excursion (beginning-of-line) (funcall outline-level))))
               (t 1))))
         (outline-hide-sublevels toplevel))
       (outshine--cycle-message "OVERVIEW")
@@ -2341,52 +2395,53 @@ marking subtree (and subsequently run the tex command)."
 
 ;;;;;; Visibility Cycling
 
-(outshine-define-key-with-fallback
-    outshine-mode-map (kbd "TAB")
-  (outshine-cycle arg)
-  (or (and (bobp) (not (outline-on-heading-p))
-           outshine-org-style-global-cycling-at-bob-p)
-      (outline-on-heading-p)))
+(outshine-define-key outshine-mode-map
+  (kbd "TAB") 'outshine-cycle
+  (or (outline-on-heading-p)
+      (and (bobp) outshine-org-style-global-cycling-at-bob-p)))
+
+(outshine-define-key outshine-mode-map
+  (kbd "<backtab>") 'outshine-cycle-buffer
+  (or (outline-on-heading-p) (bobp)))
 
 ;; Works on the console too.
 (define-key outshine-mode-map (kbd "M-TAB") 'outshine-cycle-buffer)
 
-(outshine-define-key-with-fallback
-    outshine-mode-map (kbd "M-<left>")
-  (outshine-hide-more) (outline-on-heading-p))
+(outshine-define-key outshine-mode-map
+  (kbd "M-<left>") 'outshine-hide-more
+  (outline-on-heading-p))
 
-(outshine-define-key-with-fallback
-    outshine-mode-map (kbd "M-<right>")
-  (outshine-show-more) (outline-on-heading-p))
+(outshine-define-key outshine-mode-map
+  (kbd "M-<right>") 'outshine-show-more
+  (outline-on-heading-p))
 
 ;;;;;; Headline Insertion
 
-(outshine-define-key-with-fallback
-    outshine-mode-map (kbd "M-RET")
-  (outshine-insert-heading) (outline-on-heading-p))
+(outshine-define-key outshine-mode-map
+  (kbd "M-RET") 'outshine-insert-heading
+  (outline-on-heading-p))
 
 ;;;;;; Structure Editing
 
-(outshine-define-key-with-fallback
-    outshine-mode-map (kbd "M-S-<left>")
-  (outline-promote) (outline-on-heading-p))
-
-(outshine-define-key-with-fallback
-    outshine-mode-map (kbd "M-S-<right>")
-  (outline-demote) (outline-on-heading-p))
-
-(outshine-define-key-with-fallback
-    outshine-mode-map (kbd "M-S-<up>")
-  (outline-move-subtree-up) (outline-on-heading-p))
-
-(outshine-define-key-with-fallback
-    outshine-mode-map (kbd "M-S-<down>")
-  (outline-move-subtree-down) (outline-on-heading-p))
+(outshine-define-key outshine-mode-map
+  (kbd "M-S-<left>") 'outline-promote
+  (outline-on-heading-p))
+(outshine-define-key outshine-mode-map
+  (kbd "M-S-<right>") 'outline-demote
+  (outline-on-heading-p))
+(outshine-define-key outshine-mode-map
+  (kbd "M-S-<up>") 'outline-move-subtree-up
+  (outline-on-heading-p))
+(outshine-define-key outshine-mode-map
+  (kbd "M-S-<down>") 'outline-move-subtree-down
+  (outline-on-heading-p))
 
 ;;;;;; Motion
 
-(define-key outshine-mode-map [M-up] 'outline-previous-visible-heading)
-(define-key outshine-mode-map [M-down] 'outline-next-visible-heading)
+(define-key outshine-mode-map
+  [M-up] 'outline-previous-visible-heading)
+(define-key outshine-mode-map
+  [M-down] 'outline-next-visible-heading)
 
 ;;;;; Other Keybindings
 ;; refer to Key Bindings section in outshine-org-cmds.el

@@ -172,9 +172,18 @@ descriptions.")
 
 (defvar counsel-async-split-string-re "\n"
   "Store the regexp for splitting shell command output.")
+(make-obsolete-variable
+ 'counsel-async-split-string-re 'counsel-async-split-string-re-alist "<2019-07-16 Tue>")
+
+(defvar counsel-async-split-string-re-alist '((t . "\n"))
+  "Store the regexp for splitting shell command output.")
 
 (defvar counsel-async-ignore-re nil
   "Regexp matching candidates to ignore in `counsel--async-filter'.")
+(make-obsolete-variable 'counsel-async-ignore-re 'counsel-async-ignore-re-alist "<2019-07-16 Tue>")
+
+(defvar counsel-async-ignore-re-alist nil
+  "An alist of regexp matching candidates to ignore in `counsel--async-filter'.")
 
 (defun counsel--async-command (cmd &optional sentinel filter name)
   "Start and return new counsel process by calling CMD.
@@ -201,6 +210,12 @@ respectively."
 
 (defvar counsel-grep-last-line nil)
 
+(defun counsel--split-string (&optional str)
+  (split-string
+   (or str (buffer-string))
+   (ivy-alist-setting counsel-async-split-string-re-alist)
+   t))
+
 (defun counsel--async-sentinel (process _msg)
   "Sentinel function for an asynchronous counsel PROCESS."
   (when (eq (process-status process) 'exit)
@@ -209,7 +224,7 @@ respectively."
           (ivy--set-candidates
            (ivy--sort-maybe
             (with-current-buffer (process-buffer process)
-              (split-string (buffer-string) counsel-async-split-string-re t))))
+              (counsel--split-string))))
           (setq counsel-grep-last-line nil)
           (when counsel--async-start
             (setq counsel--async-duration
@@ -253,12 +268,11 @@ Update the minibuffer with the amount of lines collected every
       (with-current-buffer (process-buffer process)
         (setq numlines (count-lines (point-min) (point-max)))
         (ivy--set-candidates
-         (let ((lines (split-string (buffer-string)
-                                    counsel-async-split-string-re
-                                    t)))
-           (if (stringp counsel-async-ignore-re)
+         (let ((lines (counsel--split-string))
+               (ignore-re (ivy-alist-setting counsel-async-ignore-re-alist)))
+           (if (stringp ignore-re)
                (cl-remove-if (lambda (line)
-                               (string-match-p counsel-async-ignore-re line))
+                               (string-match-p ignore-re line))
                              lines)
              lines))))
       (let ((ivy--prompt (format "%d++ %s" numlines (ivy-state-prompt ivy-last))))
@@ -1519,10 +1533,7 @@ When REVERT is non-nil, regenerate the current *ivy-occur* buffer."
                        " ")))
          (cmd (concat (format counsel-git-grep-cmd positive-pattern) negative-patterns))
          cands)
-    (setq cands (split-string
-                 (shell-command-to-string cmd)
-                 counsel-async-split-string-re
-                 t))
+    (setq cands (counsel--split-string (shell-command-to-string cmd)))
     ;; Need precise number of header lines for `wgrep' to work.
     (insert (format "-*- mode:grep; default-directory: %S -*-\n\n\n"
                     default-directory))
@@ -1582,6 +1593,8 @@ done") "\n" t)))
 
 (defvar counsel-git-log-split-string-re "^commit "
   "The `split-string' separates when split output of `counsel-git-log-cmd'.")
+(make-obsolete-variable
+ 'counsel-git-log-split-string-re 'counsel-async-split-string-re-alist "<2019-07-16 Tue>")
 
 (defun counsel-git-log-function (str)
   "Search for STR in git log."
@@ -1607,7 +1620,7 @@ done") "\n" t)))
 (defun counsel-git-log-show-commit-action (log-entry)
   "Visit the commit corresponding to LOG-ENTRY."
   (require 'magit-diff)
-  (let ((commit (substring-no-properties log-entry 0 (string-match-p "\n" log-entry))))
+  (let ((commit (substring-no-properties log-entry 0 (string-match-p "\\W" log-entry))))
     (magit-show-commit commit)))
 
 (ivy-set-actions
@@ -1694,21 +1707,24 @@ currently checked out."
 
 (defvar counsel-yank-pop-truncate-radius)
 
+(defun counsel--git-log-format-function (str)
+  (let ((counsel-yank-pop-truncate-radius 5))
+    (counsel--yank-pop-format-function str)))
+
 ;;;###autoload
 (defun counsel-git-log ()
   "Call the \"git log --grep\" shell command."
   (interactive)
-  (let ((counsel-async-split-string-re counsel-git-log-split-string-re)
-        (counsel-async-ignore-re "^[ \n]*$")
-        (counsel-yank-pop-truncate-radius 5))
-    (ivy-read "Grep log: " #'counsel-git-log-function
-              :dynamic-collection t
-              :action #'counsel-git-log-action
-              :unwind #'counsel-delete-process
-              :caller 'counsel-git-log)))
+  (ivy-read "Grep log: " #'counsel-git-log-function
+            :dynamic-collection t
+            :action #'counsel-git-log-action
+            :unwind #'counsel-delete-process
+            :caller 'counsel-git-log))
 
-(add-to-list 'ivy-format-functions-alist '(counsel-git-log . counsel--yank-pop-format-function))
+(add-to-list 'ivy-format-functions-alist '(counsel-git-log . counsel--git-log-format-function))
 (add-to-list 'ivy-height-alist '(counsel-git-log . 4))
+(add-to-list 'counsel-async-split-string-re-alist '(counsel-git-log . "^commit "))
+(add-to-list 'counsel-async-ignore-re-alist '(counsel-git-log . "^[ \n]*$"))
 
 ;;* File
 ;;** `counsel-find-file'
@@ -2760,9 +2776,7 @@ CALLER is passed to `ivy-read'."
                       (concat
                        switches
                        (shell-quote-argument regex))))
-         (cands (split-string (shell-command-to-string cmd)
-                              counsel-async-split-string-re
-                              t)))
+         (cands (counsel--split-string (shell-command-to-string cmd))))
     ;; Need precise number of header lines for `wgrep' to work.
     (insert (format "-*- mode:grep; default-directory: %S -*-\n\n\n"
                     default-directory))
@@ -2964,6 +2978,16 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
       (unless res
         (goto-char init-point)))))
 
+;;;###autoload
+(defun counsel-grep-backward (&optional initial-input)
+  "Grep for a string in the file visited by the current buffer going
+backward similar to `swiper-backward'. When non-nil, INITIAL-INPUT is
+the initial search pattern."
+  (interactive)
+  (let ((ivy-index-functions-alist
+         '((counsel-grep . ivy-recompute-index-swiper-async-backward))))
+    (counsel-grep initial-input)))
+
 ;;** `counsel-grep-or-swiper'
 (defcustom counsel-grep-swiper-limit 300000
   "Buffer size threshold for `counsel-grep-or-swiper'.
@@ -2999,6 +3023,17 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
     (when (file-writable-p buffer-file-name)
       (save-buffer))
     (counsel-grep initial-input)))
+
+;;** `counsel-grep-or-swiper-backward'
+;;;###autoload
+(defun counsel-grep-or-swiper-backward (&optional initial-input)
+  "Call `swiper-backward' for small buffers and `counsel-grep-backward' for
+large ones.  When non-nil, INITIAL-INPUT is the initial search pattern."
+  (interactive)
+  (let ((ivy-index-functions-alist
+         '((swiper . ivy-recompute-index-swiper-backward)
+           (counsel-grep . ivy-recompute-index-swiper-async-backward))))
+    (counsel-grep-or-swiper initial-input)))
 
 ;;** `counsel-recoll'
 (defun counsel-recoll-function (str)

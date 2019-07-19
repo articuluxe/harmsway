@@ -46,8 +46,12 @@ include (number . >) and (updated . string>)."
 All unread topics are always shown.  If the value of this option
 has the form (OPEN . CLOSED), then the integer OPEN specifies the
 maximal number of topics and CLOSED specifies the maximal number
-of closed topics.  The value can also be an integer, in which
-case it limits the number of closed topics only."
+of closed topics.  IF CLOSED is negative then show no closed
+topics until the command `forge-toggle-closed-visibility' changes
+the sign.
+
+The value can also be an integer, in which case it limits the
+number of closed topics only."
   :package-version '(forge . "0.1.0")
   :group 'forge
   :type '(choice (number :tag "Maximal number of closed issues")
@@ -178,7 +182,7 @@ This variable has to be customized before `forge' is loaded."
                         :where (and (= repository $s2)
                                     (isnull closed))]
                        table id)))
-    (unless (zerop closed-limit)
+    (when (> closed-limit 0)
       (mapc (lambda (row)
               (cl-pushnew row topics :test #'equal))
             (forge-sql [:select * :from $s1
@@ -312,6 +316,7 @@ identifier."
 (defvar forge-topic-headers-hook
   '(forge-insert-topic-title
     forge-insert-topic-state
+    forge-insert-topic-refs
     forge-insert-topic-labels
     forge-insert-topic-marks
     forge-insert-topic-assignees
@@ -494,6 +499,25 @@ Return a value between 0 and 1."
   "Calculate the luminance of color composed of RED, GREEN and BLUE.
 Return a value between 0 and 1."
   (/ (+ (* .2126 red) (* .7152 green) (* .0722 blue)) 256))
+
+(cl-defun forge-insert-topic-refs
+    (&optional (topic forge-buffer-topic))
+  (when (forge-pullreq-p topic)
+    (magit-insert-section (topic-refs)
+      (with-slots (cross-repo-p base-repo base-ref head-repo head-ref) topic
+        (let ((separator (propertize ":" 'face 'magit-dimmed))
+              (deleted (propertize "(deleted)" 'face 'magit-dimmed)))
+          (insert (format "%-11s" "Refs: ")
+                  (if cross-repo-p
+                      (concat base-repo separator base-ref)
+                    base-ref)
+                  (propertize "..." 'face 'magit-dimmed)
+                  (if cross-repo-p
+                      (if (and head-repo head-ref)
+                          (concat head-repo separator head-ref)
+                        deleted)
+                    (or head-ref deleted))
+                  "\n"))))))
 
 (defvar forge-topic-assignees-section-map
   (let ((map (make-sparse-keymap)))
