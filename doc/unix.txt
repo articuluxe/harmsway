@@ -5,7 +5,7 @@
 # Author:  <dan.harms@xrtrading.com>
 # Created: Friday, March 20, 2015
 # Version: 1.0
-# Modified Time-stamp: <2019-07-08 16:31:28 dan.harms>
+# Modified Time-stamp: <2019-07-23 09:34:27 dan.harms>
 # Modified by: Dan Harms
 # Keywords: help
 
@@ -15,11 +15,6 @@ last reboot
 
 # find git
 wget http://kernel.org/pub/software/scm/git/git-2.1.4.tar.gz
-
-# install x
-yum groupinstall basic-desktop desktop-platform x11 fonts
-# change default runlevel in /etc/inittab:
-id:5:initdefault:
 
 # locate program using regex
 locate --regex '\bprogram$'
@@ -38,9 +33,9 @@ ifconfig eth0 mtu 1000
 MTU=1000
 # show process using a file
 fuser
-# find out which distro you're running
-facter lsbdistrelease
-cat /etc/*-release
+# show processes
+ps wax | grep emacs | grep -v grep
+pgrep -n emacs
 
 # compare 2 directories
 diff -qr one two

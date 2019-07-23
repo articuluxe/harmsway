@@ -5,11 +5,13 @@
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Monday, January 18, 2016
 # Version: 1.0
-# Modified Time-stamp: <2019-07-15 09:29:38 dan.harms>
+# Modified Time-stamp: <2019-07-23 09:34:31 dan.harms>
 # Modified by: Dan Harms
 # Keywords: linux docs
 
 #################################### yum #####################################
+# install x
+yum groupinstall basic-desktop desktop-platform x11 fonts
 # find out what repositories your system is configured to query
 yum repolist | expand
 # query any package
@@ -24,9 +26,16 @@ sudo rpm -ivh epel-release-6-8.noarch.rpm
 sudo yum install aspell-en
 ls
 
+# change default runlevel in /etc/inittab:
+id:5:initdefault:
+
 # list fonts
 xfontsel
 xlsfonts | grep -i liberation | grep 12
+
+# find out which distro you're running
+facter lsbdistrelease
+cat /etc/*-release
 
 # report system usage statistics at /etc/logrotate.d/app
 # configure: /etc/logrorate.conf
