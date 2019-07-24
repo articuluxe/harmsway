@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-07-17 12:33:51 dan.harms>
+;; Modified Time-stamp: <2019-07-24 13:44:58 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3859,6 +3859,9 @@ Requires Flake8 2.0 or newer. See URL
               ("pd" . pipenv-deactivate))
   :config
   (add-hook 'python-mode-hook 'pipenv-mode))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; pydoc-info ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package pydoc-info)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; py-isort ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package py-isort

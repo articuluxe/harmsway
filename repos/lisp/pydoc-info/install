@@ -1,0 +1,1 @@
+cp src/pydoc-info.el ../../../.emacs.d/plugins

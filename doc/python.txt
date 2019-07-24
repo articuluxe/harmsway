@@ -5,9 +5,11 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Tuesday, June 11, 2019
 # Version: 1.0
-# Modified Time-stamp: <2019-06-17 14:11:02 dan.harms>
+# Modified Time-stamp: <2019-07-24 13:47:22 dan.harms>
 # Modified by: Dan Harms
 # Keywords: python help
+
+pip install epc jedi isort importmagic flake8 black
 
 ################################### conda ####################################
 # create virtual env
@@ -34,5 +36,10 @@ pip [un]install <package>
 pip freeze > requirements.txt
 pip install -r requirements.txt
 
+############################## python info docs ##############################
+wget https://bitbucket.org/jonwaltman/pydoc-info/downloads/python.info.gz
+gunzip python.info
+sudo cp python.info /usr/share/info
+sudo install-info --info-dir=/usr/share/info python.info
 
 # code ends here
