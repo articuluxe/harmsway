@@ -22,6 +22,7 @@
 
 (require 'bug-reference)
 (require 'markdown-mode)
+(require 'parse-time)
 
 (require 'forge)
 (require 'forge-post)
@@ -298,7 +299,7 @@ identifier."
     (insert "\n")
     (magit-log-format-author-margin
      (oref topic author)
-     (format-time-string "%s" (date-to-time (oref topic created)))
+     (format-time-string "%s" (parse-iso8601-time-string (oref topic created)))
      t)))
 
 ;;; Mode

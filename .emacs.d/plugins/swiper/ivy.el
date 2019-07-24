@@ -4,7 +4,7 @@
 
 ;; Author: Oleh Krehel <ohwoeowho@gmail.com>
 ;; URL: https://github.com/abo-abo/swiper
-;; Version: 0.11.0
+;; Version: 0.12.0
 ;; Package-Requires: ((emacs "24.1"))
 ;; Keywords: matching
 
@@ -1125,8 +1125,12 @@ If the text hasn't changed as a result, forward to `ivy-alt-done'."
               ((and (string= ivy-text "")
                     (eq (ivy-state-collection ivy-last)
                         #'read-file-name-internal))
-               (or (ivy-state-def ivy-last)
-                   ivy--directory))
+               (if (ivy-state-def ivy-last)
+                   (if (> (length ivy--directory)
+                          (1+ (length (expand-file-name (ivy-state-def ivy-last)))))
+                       ivy--directory
+                     (copy-sequence (ivy-state-def ivy-last)))
+                 ivy--directory))
               (t
                (expand-file-name ivy-text ivy--directory))))
   (insert (ivy-state-current ivy-last))
@@ -1140,7 +1144,8 @@ If the text hasn't changed as a result, forward to `ivy-alt-done'."
   (interactive)
   (if (null (ivy-state-action ivy-last))
       (user-error "The last session isn't compatible with `ivy-resume'")
-    (when (eq (ivy-state-caller ivy-last) 'swiper)
+    (when (memq (ivy-state-caller ivy-last)
+                '(swiper swiper-isearch swiper-backward swiper-isearch-backward))
       (switch-to-buffer (ivy-state-buffer ivy-last)))
     (with-current-buffer (ivy-state-buffer ivy-last)
       (let ((default-directory (ivy-state-directory ivy-last)))
@@ -2170,7 +2175,7 @@ This is useful for recursive `ivy-read'."
                                                counsel-switch-buffer)))
                          predicate)))
             (dynamic-collection
-             (setq coll (funcall collection ivy-text)))
+             (setq coll (funcall collection (or initial-input ""))))
             ((consp (car-safe collection))
              (setq collection (cl-remove-if-not predicate collection))
              (when (and sort (setq sort-fn (ivy--sort-function caller)))
@@ -2484,7 +2489,9 @@ Minibuffer bindings:
 (defun ivy--preselect-index (preselect candidates)
   "Return the index of PRESELECT in CANDIDATES."
   (cond ((integerp preselect)
-         preselect)
+         (if (integerp (car candidates))
+             (cl-position preselect candidates)
+           preselect))
         ((cl-position preselect candidates :test #'equal))
         ((ivy--regex-p preselect)
          (cl-position preselect candidates :test #'string-match-p))))
@@ -2560,6 +2567,13 @@ regexp is passed to `regexp-quote'."
         (push s res)))
     (mapcar #'ivy--regex-or-literal (nreverse res))))
 
+(defun ivy--trim-trailing-re (regex)
+  "Trim incomplete REGEX.
+If REGEX ends with \\|, trim it, since then it matches an empty string."
+  (if (string-match "\\`\\(.*\\)[\\]|\\'" regex)
+      (match-string 1 regex)
+    regex))
+
 (defun ivy--regex (str &optional greedy)
   "Re-build regex pattern from STR in case it has a space.
 When GREEDY is non-nil, join words in a greedy way."
@@ -2571,6 +2585,7 @@ When GREEDY is non-nil, join words in a greedy way."
           (cdr hashed))
       (when (string-match-p "\\(?:[^\\]\\|^\\)\\\\\\'" str)
         (setq str (substring str 0 -1)))
+      (setq str (ivy--trim-trailing-re str))
       (cdr (puthash str
                     (let ((subs (ivy--split str)))
                       (if (= (length subs) 1)
@@ -2660,6 +2675,7 @@ foo\!bar -> matches \"foo!bar\"
 foo\ bar -> matches \"foo bar\"
 
 Returns a list suitable for `ivy-re-match'."
+  (setq str (ivy--trim-trailing-re str))
   (let* (regex-parts
          (raw-parts (ivy--split-negation str)))
     (dolist (part (ivy--split-spaces (car raw-parts)))
@@ -2692,6 +2708,7 @@ match.  Everything after \"!\" should not match."
 (defun ivy--regex-fuzzy (str)
   "Build a regex sequence from STR.
 Insert .* between each char."
+  (setq str (ivy--trim-trailing-re str))
   (if (string-match "\\`\\(\\^?\\)\\(.*?\\)\\(\\$?\\)\\'" str)
       (prog1
           (concat (match-string 1 str)
@@ -2745,9 +2762,11 @@ tries to ensure that it does not change depending on the number of candidates."
 (defun ivy--input ()
   "Return the current minibuffer input."
   ;; assume one-line minibuffer input
-  (buffer-substring-no-properties
-   (minibuffer-prompt-end)
-   (line-end-position)))
+  (save-excursion
+    (goto-char (minibuffer-prompt-end))
+    (buffer-substring-no-properties
+     (point)
+     (line-end-position))))
 
 (defun ivy--minibuffer-cleanup ()
   "Delete the displayed completion candidates."
@@ -2865,8 +2884,7 @@ parts beyond their respective faces `ivy-confirm-face' and
         ;; option left.  Since the user input stays put, we have to manually
         ;; remove the face as well.
         (when ivy--use-selectable-prompt
-          (if (or (= ivy--index -1)
-                  (= ivy--length 0))
+          (if (= ivy--index -1)
               (ivy-add-face-text-property
                (minibuffer-prompt-end) (line-end-position) 'ivy-prompt-match)
             (remove-list-of-text-properties
@@ -3240,8 +3258,18 @@ CANDIDATES are assumed to be static."
                    res))))
     (setq ivy--all-candidates res)))
 
+(defun ivy--shorter-matches-first (_name cands)
+  "Sort CANDS according to their length."
+  (if (< (length cands) ivy-sort-max-size)
+      (cl-sort
+       (copy-sequence cands)
+       (lambda (s1 s2)
+         (< (length s1) (length s2))))
+    cands))
+
 (defcustom ivy-sort-matches-functions-alist
   '((t . nil)
+    (ivy-completion-in-region . ivy--shorter-matches-first)
     (ivy-switch-buffer . ivy-sort-function-buffer))
   "An alist of functions for sorting matching candidates.
 
@@ -3430,7 +3458,7 @@ CANDS are the current candidates."
                   (res 0)
                   (i 0))
               (dolist (c cands)
-                (when (eq n (read (get-text-property 0 'swiper-line-number c)))
+                (when (eq n (get-text-property 0 'swiper-line-number c))
                   (setq res i))
                 (cl-incf i))
               res))))
@@ -3441,7 +3469,7 @@ CANDS are the current candidates."
 CANDS are the current candidates."
   (let ((idx (ivy-recompute-index-swiper re-str cands)))
     (if (or (= idx -1)
-            (<= (read (get-text-property 0 'swiper-line-number (nth idx cands)))
+            (<= (get-text-property 0 'swiper-line-number (nth idx cands))
                 (line-number-at-pos)))
         idx
       (- idx 1))))

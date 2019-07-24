@@ -453,6 +453,9 @@ prefixes in `which-key-paging-prefixes'"
                                       which-key-undo-key
                                       which-key-undo))
 
+(defvar which-key-persistent-popup nil
+  "Whether or not to disable `which-key--hide-popup'.")
+
 (defcustom which-key-hide-alt-key-translations t
   "Hide key translations using Alt key if non nil.
 These translations are not relevant most of the times since a lot
@@ -1080,13 +1083,13 @@ total height."
 
 (defun which-key--hide-popup ()
   "This function is called to hide the which-key buffer."
-  (unless (member real-this-command which-key--paging-functions)
+  (unless (or which-key-persistent-popup
+              (member real-this-command which-key--paging-functions))
     (setq which-key--last-try-2-loc nil)
     (setq which-key--pages-obj nil)
     (setq which-key--automatic-display nil)
     (setq which-key--prior-show-keymap-args nil)
-    (when (and which-key-idle-secondary-delay
-               which-key--secondary-timer-active)
+    (when (and which-key-idle-secondary-delay which-key--secondary-timer-active)
       (which-key--start-timer))
     (which-key--lighter-restore)
     (cl-case which-key-popup-type
@@ -2426,12 +2429,16 @@ Only if no bindings fit fallback to LOC2."
                     'which-key-keymap-history)))
 
 ;;;###autoload
-(defun which-key-show-keymap (keymap)
+(defun which-key-show-keymap (keymap &optional no-paging)
   "Show the top-level bindings in KEYMAP using which-key. KEYMAP
-is selected interactively from all available keymaps."
+is selected interactively from all available keymaps.
+
+If NO-PAGING is non-nil, which-key will not intercept subsequent
+keypresses for the paging functionality."
   (interactive (list (which-key--read-keymap)))
   (which-key--show-keymap (symbol-name keymap)
-                          (symbol-value keymap)))
+                          (symbol-value keymap)
+                          nil nil no-paging))
 
 ;;;###autoload
 (defun which-key-show-full-keymap (keymap)
@@ -2461,7 +2468,8 @@ is selected interactively by mode in `minor-mode-map-alist'."
     (which-key--show-keymap (symbol-name mode-sym)
                             (cdr (assq mode-sym minor-mode-map-alist)))))
 
-(defun which-key--show-keymap (keymap-name keymap &optional prior-args all)
+(defun which-key--show-keymap
+    (keymap-name keymap &optional prior-args all no-paging)
   (when prior-args (push prior-args which-key--prior-show-keymap-args))
   (let ((bindings (which-key--get-bindings nil keymap nil all)))
     (if (= (length bindings) 0)
@@ -2474,15 +2482,16 @@ is selected interactively by mode in `minor-mode-map-alist'."
             (t (setq which-key--pages-obj
                      (which-key--create-pages bindings nil keymap-name))
                (which-key--show-page)))
-      (let* ((key (key-description (list (read-key))))
-             (next-def (lookup-key keymap (kbd key))))
-        (cond ((and which-key-use-C-h-commands (string= "C-h" key))
-               (which-key-C-h-dispatch))
-              ((keymapp next-def)
-               (which-key--hide-popup-ignore-command)
-               (which-key--show-keymap (concat keymap-name " " key) next-def
-                                       (cons keymap-name keymap)))
-              (t (which-key--hide-popup)))))))
+      (unless no-paging
+        (let* ((key (key-description (list (read-key))))
+               (next-def (lookup-key keymap (kbd key))))
+          (cond ((and which-key-use-C-h-commands (string= "C-h" key))
+                 (which-key-C-h-dispatch))
+                ((keymapp next-def)
+                 (which-key--hide-popup-ignore-command)
+                 (which-key--show-keymap (concat keymap-name " " key) next-def
+                                         (cons keymap-name keymap)))
+                (t (which-key--hide-popup))))))))
 
 (defun which-key--evil-operator-filter (binding)
   (let ((def (intern (cdr binding))))

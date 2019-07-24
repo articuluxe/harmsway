@@ -296,6 +296,25 @@ group.  Notice that it is better that a buffer belongs to one group.")
   "Function to adjust buffer order after switch tab.
 Default is `centaur-tabs-adjust-buffer-order', you can write your own rule.")
 
+(defcustom centaur-tabs-adjust-buffer-order nil
+  "Set automatic buffer ordering for buffer changing commands.
+The ordering is appliet for non click or tab motion commands.
+There are four options:
+1 - nil: No ordering applied
+2 - t: Move the currently selected tab to the side (right or left) of the last
+visited tab.
+3 - left: Move the currently selected tab to left of the last visited tab.
+4 - right: Move the currently selected tab to right of the last visited tab."
+  :group 'centaur-tabs
+  :type '(choice :tag "Automatic buffer reordering..."
+		 (const :tag "Do not adjust buffer order." nil)
+		 (const :tag "When the currently selected tab(A) is at the right of the last visited
+tab(B), move A to the right of B. When the currently selected tab(A) is at the left of the last visited
+tab(B), move A to the left of B" t)
+		 (const :tag "Move the currently selected tab to the left of the the last visited tab." left)
+		 (const :tag "Move the currently selected tab to the right of the the last visited tab." right)))
+
+
 (defvar centaur-tabs--buffer-show-groups nil)
 
 ;; Separators
@@ -1650,10 +1669,19 @@ That is, a string used to represent it on the tab bar."
 		'face face))
    (t item)))
 
+(defvar centaur-tabs-last-focused-buffer nil
+  "The last focused buffer.")
+
+(defvar centaur-tabs-last-focused-buffer-group nil
+  "The group name of last focused buffer.")
+
 (defun centaur-tabs-buffer-select-tab (tab)
   "Select TAB."
-  (let ((buffer (centaur-tabs-tab-value tab)))
+  (let ((buffer (centaur-tabs-tab-value tab))
+	(group (centaur-tabs-tab-tabset tab)))
     (switch-to-buffer buffer)
+    (setq centaur-tabs-last-focused-buffer buffer)
+    (setq centaur-tabs-last-focused-buffer-group group)
     ;; (centaur-tabs-buffer-show-groups nil)
     (centaur-tabs-display-update)
     ))
@@ -2013,7 +2041,8 @@ Other buffer group by `centaur-tabs-get-group-name' with project name."
 (defun centaur-tabs-group-buffer-groups ()
   "Use centaur-tabs's own buffer grouping function."
   (interactive)
-  (setq centaur-tabs-buffer-groups-function 'centaur-tabs-buffer-groups))
+  (setq centaur-tabs-buffer-groups-function 'centaur-tabs-buffer-groups)
+  (centaur-tabs-display-update))
 
 ;; Projectile integration. Taken from tabbar-ruler
 (defvar centaur-tabs-projectile-buffer-group-calc nil
@@ -2048,7 +2077,8 @@ Return only one group for each buffer."
 (defun centaur-tabs-group-by-projectile-project()
   "Group by projectile project."
   (interactive)
-  (setq centaur-tabs-buffer-groups-function 'centaur-tabs-projectile-buffer-groups))
+  (setq centaur-tabs-buffer-groups-function 'centaur-tabs-projectile-buffer-groups)
+  (centaur-tabs-display-update))
 
 ;; Show groups instead of tabs
 (defun centaur-tabs-toggle-groups ()
@@ -2095,6 +2125,9 @@ Return only one group for each buffer."
      (string-prefix-p "*helm" name)
      (string-prefix-p "*Compile-Log*" name)
      (string-prefix-p "*lsp" name)
+     (string-prefix-p "*company" name)
+     (string-prefix-p "*Flycheck" name)
+     (string-prefix-p "*tramp" name)
 
      ;; Is not magit buffer.
      (and (string-prefix-p "magit" name)
@@ -2109,12 +2142,6 @@ Operates over buffer BUF"
       (setq hide (funcall centaur-tabs-hide-tab-function buf))
       (puthash buf hide centaur-tabs-hide-hash))
     hide))
-
-(defvar centaur-tabs-last-focus-buffer nil
-  "The last focus buffer.")
-
-(defvar centaur-tabs-last-focus-buffer-group nil
-  "The group name of last focus buffer.")
 
 (defun centaur-tabs-remove-nth-element (nth list)
   "Remove NTH element from LIST."
@@ -2140,16 +2167,17 @@ Operates over buffer BUF"
 	      (string-prefix-p "mouse-drag-header-line" (format "%s" this-command))
 	      (string-prefix-p "(lambda (event) (interactive e)" (format "%s" this-command)))
     ;; Just continue when the buffer has changed.
-    (when (and (not (eq (current-buffer) centaur-tabs-last-focus-buffer))
+    (when (and centaur-tabs-adjust-buffer-order
+	       (not (eq (current-buffer) centaur-tabs-last-focused-buffer))
 	       (not (minibufferp)))
       (let* ((current (current-buffer))
-	     (previous centaur-tabs-last-focus-buffer)
+	     (previous centaur-tabs-last-focused-buffer)
 	     (current-group (cl-first (funcall centaur-tabs-buffer-groups-function))))
 	;; Record the last focused buffer.
-	(setq centaur-tabs-last-focus-buffer current)
+	(setq centaur-tabs-last-focused-buffer current)
 
 	;; Just continue if two buffers are in the same group.
-	(when (string= current-group centaur-tabs-last-focus-buffer-group)
+	(when (string= current-group centaur-tabs-last-focused-buffer-group)
 	  (let* ((bufset (centaur-tabs-get-tabset current-group))
 		 (current-group-tabs (centaur-tabs-tabs bufset))
 		 (current-group-buffers (cl-mapcar 'car current-group-tabs))
@@ -2163,18 +2191,24 @@ Operates over buffer BUF"
 	      (let* ((copy-group-tabs (cl-copy-list current-group-tabs))
 		     (previous-tab (nth previous-buffer-index copy-group-tabs))
 		     (current-tab (nth current-buffer-index copy-group-tabs))
-		     (base-group-tabs (centaur-tabs-remove-nth-element previous-buffer-index copy-group-tabs))
-		     (new-group-tabs
-		      (if (> current-buffer-index previous-buffer-index)
-			  (centaur-tabs-insert-before base-group-tabs current-tab previous-tab)
-			(centaur-tabs-insert-after base-group-tabs current-tab previous-tab))))
+		     (base-group-tabs (centaur-tabs-remove-nth-element current-buffer-index copy-group-tabs))
+		     new-group-tabs)
+		(cond
+		 ((eq centaur-tabs-adjust-buffer-order 'left)
+		  (setq new-group-tabs (centaur-tabs-insert-before base-group-tabs previous-tab current-tab)))
+		 ((eq centaur-tabs-adjust-buffer-order 'right)
+		  (setq new-group-tabs (centaur-tabs-insert-after  base-group-tabs previous-tab current-tab)))
+		 (t
+		  (if (> current-buffer-index previous-buffer-index)
+		      (setq new-group-tabs (centaur-tabs-insert-after  base-group-tabs previous-tab current-tab))
+		    (setq new-group-tabs (centaur-tabs-insert-before  base-group-tabs previous-tab current-tab)))))
 		(set bufset new-group-tabs)
 		(centaur-tabs-set-template bufset nil)
 		(centaur-tabs-display-update)
 		))))
 
 	;; Update the group name of the last accessed tab.
-	(setq centaur-tabs-last-focus-buffer-group current-group)
+	(setq centaur-tabs-last-focused-buffer-group current-group)
 	))))
 
 (defun centaur-tabs-enable-buffer-reordering ()

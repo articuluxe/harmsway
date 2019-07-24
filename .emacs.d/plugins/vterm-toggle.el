@@ -2,7 +2,7 @@
 
 ;; Author: jixiuf  jixiuf@qq.com
 ;; Keywords: vterm terminals
-;; Version: 0.0.2
+;; Version: 0.0.3
 ;; URL: https://github.com/jixiuf/vterm-toggle
 ;; Package-Requires: ((emacs "25.1") (vterm "0.0.1"))
 
@@ -39,16 +39,13 @@
 
 (require 'tramp)
 (require 'vterm)
-(require 'evil nil  t)
 
-(defcustom vterm-toggle-evil-state-when-enter 'insert
-  "Evil state for vterm buffer when swith to vterm buffer.
-nil means don't switch states when toggling"
+(defcustom vterm-toggle-show-hook nil
+  "Hooks when swith to vterm buffer."
   :group 'vterm-toggle
   :type 'symbolp)
-(defcustom vterm-toggle-evil-state-when-leave 'normal
-  "Default evil state for vterm buffer when leave.
-nil means don't switch states when toggling"
+(defcustom vterm-toggle-hide-hook nil
+  "Hooks when hide vterm buffer."
   :group 'vterm-toggle
   :type 'symbolp)
 
@@ -97,14 +94,6 @@ Optional argument ARGS optional args."
   (derived-mode-p 'vterm-mode))
 
 
-(defun vterm-toggle--switch-evil-state (state)
-  "Switch to `evil-state'.
-Argument STATE Emacs state."
-  (when (and state
-             (featurep 'evil)
-             (bound-and-true-p evil-local-mode))
-    (funcall (intern (format "evil-%S-state" state)))))
-
 ;;;###autoload
 (defun vterm-toggle(&optional args)
   "Vterm toggle.
@@ -134,7 +123,7 @@ Optional argument ARGS ."
   (dolist (buf (buffer-list))
     (with-current-buffer buf
       (when (funcall vterm-toggle--vterm-buffer-p-function args)
-        (vterm-toggle--switch-evil-state vterm-toggle-evil-state-when-leave)
+        (run-hooks 'vterm-toggle-hide-hook)
         (bury-buffer))))
   (when vterm-toggle--window-configration
     (set-window-configuration vterm-toggle--window-configration))
@@ -168,7 +157,8 @@ Optional argument ARGS optional args."
       (setq cd-cmd (concat " cd " (shell-quote-argument dir))))
     (if shell-buffer
         (progn
-          (unless (funcall vterm-toggle--vterm-buffer-p-function args)
+          (when (and (not (funcall vterm-toggle--vterm-buffer-p-function args))
+                     (not (get-buffer-window shell-buffer)))
             (setq vterm-toggle--window-configration (current-window-configuration)))
           (pop-to-buffer shell-buffer)
           (with-current-buffer shell-buffer
@@ -184,14 +174,14 @@ Optional argument ARGS optional args."
                 (vterm-send-key "u" nil nil t)
                 (vterm-send-string cd-cmd t)
                 (vterm-send-return)))
-            (vterm-toggle--switch-evil-state vterm-toggle-evil-state-when-enter))
+            (run-hooks 'vterm-toggle-show-hook))
           (when vterm-toggle-fullscreen-p
             (delete-other-windows)))
       (setq vterm-toggle--window-configration (current-window-configuration))
       (with-current-buffer (vterm-toggle--new)
         (when remote-p
           (let* ((method (tramp-find-method nil cur-user cur-host))
-                (login-cmd (vterm-toggle-tramp-get-method-parameter method 'tramp-login-program)))
+                 (login-cmd (vterm-toggle-tramp-get-method-parameter method 'tramp-login-program)))
             (if cur-user
                 (vterm-send-string (format "%s %s@%s%s" login-cmd cur-user cur-host cur-port) t)
               (vterm-send-string (format "%s %s%s"  login-cmd cur-host cur-port) t)))
@@ -202,7 +192,7 @@ Optional argument ARGS optional args."
           (vterm-send-return))
         (when vterm-toggle-fullscreen-p
           (delete-other-windows))
-        (vterm-toggle--switch-evil-state vterm-toggle-evil-state-when-enter)))))
+        (run-hooks 'vterm-toggle-show-hook)))))
 
 (defun vterm-toggle--new()
   "New vterm buffer."
@@ -272,16 +262,13 @@ Optional argument ARGS optional args."
 (defun vterm-toggle--recent-other-buffer(&optional args)
   "Get last viewed buffer.
 Optional argument ARGS optional args."
-  (let ((list (buffer-list))
-        (index 0)
-        shell-buffer buf )
-    (cl-loop until shell-buffer do
-             (setq buf (nth index list))
+  (let (shell-buffer)
+    (cl-loop for buf in (buffer-list) do
              (with-current-buffer buf
                (when (and (not (funcall vterm-toggle--vterm-buffer-p-function args))
                           (not (char-equal ?\  (aref (buffer-name) 0))))
                  (setq shell-buffer buf)))
-             (setq index (1+ index)))
+             until shell-buffer)
     shell-buffer))
 
 (defun vterm-toggle--exit-hook()

@@ -109,6 +109,7 @@
        (hash           dark-tan)
        (heading        purple)
        (ignore         blue-gray)
+       (indent         darker-gray)
        (key            blue)
        (line           blue-gray)
        (line-current   dark-green)
@@ -188,7 +189,7 @@
    `(match ((t (:foreground ,black :background ,match))))
    `(popup-tip-face ((t (:background ,fg :foreground ,bg))))
    `(trailing-whitespace ((t (:foreground ,white :underline t))))
-   `(vertical-border ((t (:foreground ,darker-gray))))
+   `(vertical-border ((t (:foreground ,indent))))
 
    ;;; Modes
 
@@ -612,9 +613,9 @@
    `(helm-match ((t (:inherit highlight :foreground ,current))))
    `(helm-moccur-buffer ((t (:inherit compilation-info))))
    `(helm-prefarg ((t (:foreground ,green :bold t))))
-   `(helm-selection ((t (:background ,selection))))
+   `(helm-selection ((t (:background ,purple-bg))))
    `(helm-source-header ((t (:background ,darkerer-gray))))
-   `(helm-visible-mark ((t (:background ,purple-bg))))
+   `(helm-visible-mark ((t (:inherit region))))
 
    ;; helm-swoop
    `(helm-swoop-line-number-face ((t (:foreground ,line))))
@@ -624,10 +625,10 @@
 
    ;; highlight-indentation
    `(highlight-indentation-current-column-face ((t (:background ,gray))))
-   `(highlight-indentation-face ((t (:background ,darker-gray))))
+   `(highlight-indentation-face ((t (:background ,indent))))
 
    ;; highlight-indent-guides
-   `(highlight-indent-guides-character-face ((t (:foreground ,darker-gray))))
+   `(highlight-indent-guides-character-face ((t (:foreground ,indent))))
    `(highlight-indent-guides-odd-face ((t (:background ,darkest-gray))))
    `(highlight-indent-guides-even-face ((t (:background ,darker-gray))))
 
@@ -654,7 +655,7 @@
    `(ido-subdir ((t (:foreground ,yellow))))
 
    ;; indent-guide
-   `(indent-guide-face ((t (:foreground ,darker-gray))))
+   `(indent-guide-face ((t (:foreground ,indent))))
 
    ;; info
    `(Info-quoted ((t (:inherit font-lock-constant-face))))
@@ -852,6 +853,8 @@
    `(org-agenda-date-weekend ((t (:inherit org-agenda-date :slant italic))))
    `(org-agenda-done ((t (:foreground ,dark-green))))
    `(org-agenda-structure ((t (:foreground ,heading))))
+   `(org-block-begin-line ((t (:inherit org-meta-line :underline ,indent))))
+   `(org-block-end-line ((t (:inherit org-meta-line :overline ,indent))))
    `(org-checkbox ((t (:foreground ,dark-tan))))
    `(org-date ((t (:inherit link))))
    `(org-date-selected ((t (:inherit highlight :foreground ,current))))

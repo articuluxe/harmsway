@@ -248,6 +248,63 @@ If UNSAFE is non-nil, assume point is on headline."
            do (goto-char pos)))
 
 ;;;###autoload
+(cl-defun unpackaged/package-org-docs (&optional (package (unpackaged/buffer-provides)))
+  "Return documentation about PACKAGE as an Org string.
+Interactively, place on kill ring."
+  (interactive)
+  (let* ((commands (--map (cons it (if (documentation it)
+                                       (unpackaged/docstring-to-org (documentation it))
+                                     "Undocumented."))
+                          (-sort (-on #'string< #'symbol-name)
+                                 (unpackaged/package-commands package))))
+         (functions (seq-difference (--map (cons it (if (documentation it)
+                                                        (unpackaged/docstring-to-org (documentation it))
+                                                      "Undocumented."))
+                                           (-sort (-on #'string< #'symbol-name)
+                                                  (unpackaged/package-functions package)))
+                                    commands))
+         (commands-string (when commands
+                            (format "* Commands\n\n%s"
+                                    (s-join "\n"
+                                            (--map (format "+  ~%s~ :: %s"
+                                                           (car it) (cdr it))
+                                                   commands)))))
+         (functions-string (when functions
+                             (format "* Functions\n\n%s"
+                                     (s-join "\n"
+                                             (--map (format "+  ~%s~ :: %s"
+                                                            (car it) (cdr it))
+                                                    functions)))))
+         (string (s-join "\n\n" (list commands-string functions-string))))
+    (if (called-interactively-p 'any)
+        (progn
+          (kill-new string)
+          (message "Documentation stored in kill ring"))
+      string)))
+
+(cl-defun unpackaged/package-commands (&optional (package (unpackaged/buffer-provides)))
+  "Return list of command symbols in PACKAGE, or current buffer's package."
+  (let* ((functions (unpackaged/package-functions package)))
+    (-select #'commandp functions)))
+
+(cl-defun unpackaged/package-functions (&optional (package (unpackaged/buffer-provides)))
+  "Return list of functions defined in PACKAGE, or current buffer's package."
+  (let* ((prefix (symbol-name package))
+         (symbols))
+    (mapatoms (lambda (symbol)
+                (when (string-prefix-p prefix (symbol-name symbol))
+                  (push symbol symbols))))
+    (-select #'fboundp symbols)))
+
+(cl-defun unpackaged/buffer-provides (&optional (buffer (current-buffer)))
+  "Return symbol that Emacs package in BUFFER provides."
+  ;; I couldn't find an existing function that does this, but this is simple enough.
+  (save-excursion
+    (goto-char (point-max))
+    (re-search-backward (rx bol "(provide '" (group (1+ (not (any ")")))) ")"))
+    (intern (match-string 1))))
+
+;;;###autoload
 (defun unpackaged/elisp-to-org ()
   "Convert elisp code in region to Org syntax and put in kill-ring.
 Extracts and converts docstring to Org text, and places code in
@@ -278,23 +335,39 @@ to kill-ring."
                                                 collect `(goto-char (point-min))
                                                 collect form)
                                      (buffer-string))))
-    (--> (string-buffer--> docstring
-                           (unpackaged/caps-to-code (point-min) (point-max))
-                           (unpackaged/symbol-quotes-to-org-code (point-min) (point-max))
-                           (unfill-region (point-min) (point-max))
-                           (while (re-search-forward (rx bol (group (1+ blank))) nil t)
-                             (replace-match "" t t nil 1))
-                           (when (looking-at "\"")
-                             (delete-char 1))
-                           (when (progn
-                                   (goto-char (point-max))
-                                   (looking-back "\"" nil))
-                             (delete-char -1)))
-         (if (called-interactively-p 'interactive)
-             (progn
-               (message it)
-               (kill-new it))
-           it))))
+    (let (args)
+      (--> (string-buffer--> docstring
+                             (progn
+                               ;; End-of-string function argument list
+                               (goto-char (point-max))
+                               (when (re-search-backward (rx "\n\n" "(fn " (group (1+ not-newline)) ")" eos) nil t)
+                                 (setf args (match-string 1))
+                                 (replace-match "" t t)))
+                             (unpackaged/caps-to-code (point-min) (point-max))
+                             (unpackaged/symbol-quotes-to-org-code (point-min) (point-max))
+                             (unfill-region (point-min) (point-max))
+                             (while (re-search-forward (rx bol (group (1+ blank))) nil t)
+                               (replace-match "" t t nil 1))
+                             (while (re-search-forward "\n" nil t)
+                               (replace-match "\n   " t t))
+                             (when (looking-at "\"")
+                               (delete-char 1))
+                             (when (progn
+                                     (goto-char (point-max))
+                                     (looking-back "\"" nil))
+                               (delete-char -1))
+                             (while (re-search-forward (rx bol (group (>= 2 " ")) (group (1+ (not space)) (1+ not-newline))) nil t)
+                               ;; Indented code samples, by two or more spaces
+                               (replace-match (concat (match-string 1) "~" (match-string 2) "~")))
+                             (when args
+                               (goto-char (point-min))
+                               (insert "~(" args ")~ ")))
+           (s-trim it)
+           (if (called-interactively-p 'interactive)
+               (progn
+                 (message it)
+                 (kill-new it))
+             it)))))
 
 ;;;###autoload
 (defun unpackaged/caps-to-code (beg end)
@@ -321,7 +394,7 @@ to kill-ring."
     (save-restriction
       (goto-char beg)
       (narrow-to-region beg end)
-      (while (re-search-forward (rx (or "`" "‘") (group (1+ (or word (syntax symbol)))) "'") nil t)
+      (while (re-search-forward (rx (or "`" "‘") (group (1+ (or word (syntax symbol)))) (or "’" "'")) nil t)
         (replace-match (concat "~" (match-string 1) "~") t)))))
 
 ;;;###autoload
@@ -779,22 +852,47 @@ Deletes the package first to remove obsolete versions."
 
 ;;;###autoload
 (defun unpackaged/flex-fill-paragraph (&optional unfill)
-  "Fill paragraph, incrementing fill column each time this command is repeated.
-When the command is called for the first time in a sequence,
-unfill to the default `fill-column'.  With prefix, unfill
-completely.  This command does not modify the stored value of
-`fill-column'."
+  "Fill paragraph, incrementing fill column to cause a change when repeated.
+When called for the first time in a sequence, unfill to the
+default `fill-column'.  When called repeatedly, increase
+`fill-column' until filling changes.  With prefix, unfill
+completely.  The global value of `fill-column' is not modified;
+it is only bound around calls to `fill-paragraph'."
   (interactive "P")
   (let ((fill-column
          (cond (unfill (setf unpackaged/flex-fill-paragraph-column nil)
                        most-positive-fixnum)
                (t (setf unpackaged/flex-fill-paragraph-column
                         (if (equal last-command this-command)
-                            (1+ (or unpackaged/flex-fill-paragraph-column
-                                    fill-column))
+                            (or (unpackaged/flex-fill-paragraph--next-fill-column) fill-column)
                           fill-column))))))
     (fill-paragraph)
     (message "Fill column: %s" fill-column)))
+
+(defun unpackaged/flex-fill-paragraph--next-fill-column ()
+  "Return next `fill-column' value that causes a change in current paragraph."
+  ;; This works well, but because of all the temp buffers, sometimes when called
+  ;; in rapid succession, it can cause GC, which can be noticeable.  It would be
+  ;; nice to avoid that.  Note that this has primarily been tested on
+  ;; `emacs-lisp-mode'; hopefully it works well in other modes.
+  (let* ((point (point))
+         (source-buffer (current-buffer))
+         (mode major-mode)
+         (fill-column (or unpackaged/flex-fill-paragraph-column fill-column)))
+    (with-temp-buffer
+      (delay-mode-hooks
+        (funcall mode))
+      (insert-buffer-substring source-buffer)
+      (goto-char point)
+      (cl-loop with old-fill-column = fill-column
+               with hash = (buffer-hash)
+               while (and (fill-paragraph)
+                          (string= hash (buffer-hash)))
+               ;; If filling doesn't change after 100 iterations, abort by returning nil.
+               if (> (- fill-column old-fill-column) 100)
+               return nil
+               else do (cl-incf fill-column)
+               finally return fill-column))))
 
 ;;;###autoload
 (defun unpackaged/iedit-scoped (orig-fn)
