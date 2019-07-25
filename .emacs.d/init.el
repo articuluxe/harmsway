@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-07-25 14:39:07 dan.harms>
+;; Modified Time-stamp: <2019-07-25 16:09:11 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3696,7 +3696,7 @@ This may perform related customization."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; markdown-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package markdown-mode
   :mode (("README\\.md$" . gfm-mode)
-         ("\\.md$" . markdown-mode)
+         ("\\.mk?d$" . markdown-mode)
          ("\\.markdown$" . markdown-mode)
          ("LICENSE$" . markdown-mode)
          ("README$" . markdown-mode)
