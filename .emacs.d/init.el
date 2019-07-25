@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-07-24 13:44:58 dan.harms>
+;; Modified Time-stamp: <2019-07-25 14:39:07 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1050,6 +1050,7 @@ line."
   "Remove git's index lock file(s), if any exist."
   (interactive)
   (require 'remove-files)
+  (require 'magit)
   (remove-files-regexp "index\\.lock" (magit-toplevel)))
 
 (defun my/enter-magit-status-fullscreen ()
