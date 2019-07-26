@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-07-25 16:09:11 dan.harms>
+;; Modified Time-stamp: <2019-07-26 13:04:53 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1316,6 +1316,29 @@ Only one letter is shown, the first that applies."
   :config
   (add-to-list 'beacon-dont-blink-major-modes 'etags-select-mode)
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; eww ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defun harmsway-browse-last-url ()
+  "Open prior link in `eww'."
+  (interactive)
+  (save-excursion
+    (ffap-next-url t t)))
+
+(use-package eww
+  :init
+  (setq browse-url-browser-function
+        '(("google.*maps" . browse-url-generic)
+          ("maps.*google" . browse-url-generic)
+          ("." . eww-browse-url)
+          ))
+  :config
+  (define-key eww-mode-map "L" #'harmsway-browse-last-url))
+
+(use-package eww-lnum
+  :after eww
+  :config
+  (define-key eww-mode-map "f" #'eww-lnum-follow)
+  (define-key eww-mode-map "F" #'eww-lnum-universal))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; bookmark+ ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package bookmark+
