@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-07-26 13:04:53 dan.harms>
+;; Modified Time-stamp: <2019-07-30 16:11:27 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1202,6 +1202,10 @@ Only one letter is shown, the first that applies."
 (use-package shx :config (shx-global-mode 1))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; xterm-color ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defun harmsway-compilation-filter (f proc string)
+  "A compilation filter for `xterm-color' to call F for PROC and STRING."
+  (funcall f proc (xterm-color-filter string)))
+
 (use-package xterm-color
   :demand t
   :init
@@ -1214,14 +1218,7 @@ Only one letter is shown, the first that applies."
               (setq font-lock-function (lambda (_) nil))
               (add-hook 'comint-preoutput-filter-functions
                         'xterm-color-filter nil t)))
-  (add-hook 'compilation-start-hook
-            (lambda (proc)
-              (when (eq (process-filter proc) 'compilation-filter)
-                (set-process-filter
-                 proc
-                 (lambda (proc string)
-                   (funcall 'compilation-filter proc
-                            (xterm-color-filter string))))))))
+  (advice-add 'compilation-filter :around #'harmsway-compilation-filter))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; shell-pop ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package shell-pop
