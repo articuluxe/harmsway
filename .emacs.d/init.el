@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-08-02 15:24:05 dan.harms>
+;; Modified Time-stamp: <2019-08-03 21:20:28 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -320,7 +320,8 @@ not an error if any files do not exist."
          ("C-c pd" . proviso-dired-open-this-project)
          ("C-c pD" . proviso-dired-open-all-projects)
          ("C-c pp" . proviso-display-print-project)
-         ("C-c pn" . proviso-display-echo-project-names)
+         ("C-c pn" . proviso-display-echo-current-project-name)
+         ("C-c pN" . proviso-display-echo-project-names)
          ("C-c pe" . proviso-display-projects)
          ("C-c p <SPC>" . proviso-dashboard-show)
          ("C-c pg" . proviso-refresh-current-project)

@@ -1,6 +1,4 @@
-(proviso-define-project
- "scratch"
- :initfun (lambda (proj)
+(:initfun (lambda (proj)
             (proviso-put proj :proj-alist
                          `((:name "scratch")
                            (:name "c++lib" :dir ,(getenv "CSTDLIB_INC"))
