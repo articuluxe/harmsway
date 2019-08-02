@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-07-30 16:11:27 dharms>
+;; Modified Time-stamp: <2019-08-02 15:24:05 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1795,10 +1795,17 @@ Only one letter is shown, the first that applies."
     (minions-mode 1)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; all-the-icons ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package all-the-icons)
+(use-package all-the-icons
+  ;; :config
+  ;; (setq all-the-icons-mode-icon-alist
+  ;;       `(,@all-the-icons-mode-icon-alist
+  ;;                                       ; more here
+  ;;         ))
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;; all-the-icons-dired ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package all-the-icons-dired
+  :disabled
   :after dired
   :init
   (add-hook 'dired-mode-hook #'all-the-icons-dired-mode))
