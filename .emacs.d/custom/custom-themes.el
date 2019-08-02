@@ -2,7 +2,7 @@
 ;; Copyright (C) 2016-2019  Dan Harms (dan.harms)
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Wednesday, December 21, 2016
-;; Modified Time-stamp: <2019-07-24 12:35:05 dan.harms>
+;; Modified Time-stamp: <2019-08-02 09:56:09 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: themes colors
 
@@ -173,6 +173,8 @@
            (harmsway/make-all-font-sizes-the-same-please))
           ((eq sym 'misterioso)
            (custom-theme-set-faces sym '(cursor ((t (:background "#cae682"))))))
+          ((eq sym 'naquadah)
+           (custom-theme-set-faces sym '(region ((t (:background "#555753"))))))
           ((eq sym 'obsidian)
            (custom-theme-set-faces sym '(cursor ((t (:background "#e8e2b7")))))
            (custom-theme-set-faces sym '(show-paren-match-face ((t (:background "#678cb1"))))))
