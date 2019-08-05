@@ -130,22 +130,29 @@ This variable has to be customized before `forge' is loaded."
 (cl-defmethod forge--object-id ((class (subclass forge-topic)) repo number)
   "Return the id for a CLASS object in REPO identified by id NUMBER."
   (base64-encode-string
-   (format "%s:%s%s"
-           (base64-decode-string (oref repo id))
-           (substring (symbol-name class)
-                      (length (oref-default class closql-class-prefix)))
-           number)
+   (encode-coding-string
+    (format "%s:%s%s"
+            (base64-decode-string (oref repo id))
+            (substring (symbol-name class)
+                       (length (oref-default class closql-class-prefix)))
+            number)
+    'utf-8)
    t))
 
-(cl-defmethod forge--object-id ((prefix string) id)
+(cl-defmethod forge--object-id ((prefix string) number-or-id)
   (base64-encode-string
-   (format "%s:%s"
-           (base64-decode-string prefix)
-           ;; TODO Simply use `id', which is always an integer, except
-           ;; when called by `forge--update-labels(gitlab)', in which
-           ;; case the string also shouldn't be decoded because it is
-           ;; NOT base64 encoded.
-           (or (ignore-errors (base64-decode-string id)) id))
+   (encode-coding-string
+    (format "%s:%s"
+            (base64-decode-string prefix)
+            (if (numberp number-or-id)
+                number-or-id
+              ;; Currently every id is base64 encode.  Unfortunately
+              ;; we cannot use the ids of Gitlab labels (see comment
+              ;; in the respective `forge--update-labels' method),
+              ;; and have to use their names, which are not encoded.
+              (or (ignore-errors (base64-decode-string number-or-id))
+                  number-or-id)))
+    'utf-8)
    t))
 
 ;;; Query
@@ -160,6 +167,32 @@ This variable has to be customized before `forge' is loaded."
 
 (cl-defmethod forge-get-topic ((topic forge-topic))
   topic)
+
+(cl-defmethod forge-get-topic ((repo forge-repository) number-or-id)
+  (if (numberp number-or-id)
+      (if (< number-or-id 0)
+          (forge-get-pullreq repo (abs number-or-id))
+        (or (forge-get-pullreq repo number-or-id)
+            (forge-get-issue repo number-or-id)))
+    (or (forge-get-pullreq number-or-id)
+        (forge-get-issue number-or-id))))
+
+(cl-defmethod forge-get-topic ((number integer))
+  (if (< number 0)
+      (forge-get-pullreq (abs number))
+    (or (forge-get-pullreq number)
+        (forge-get-issue number))))
+
+(cl-defmethod forge-get-topic ((id string))
+  (or (forge-get-pullreq id)
+      (forge-get-issue id)))
+
+(defun forge--topic-string-to-number (s)
+  (save-match-data
+    (if (string-match "\\`\\([!#]\\)?\\([0-9]+\\)" s)
+        (* (if (equal (match-string 1 s) "!") -1 1)
+           (string-to-number (match-string 2 s)))
+      (error "forge--topic-string-to-number: Invalid argument %S" s))))
 
 (cl-defmethod forge-ls-recent-topics ((repo forge-repository) table)
   (let* ((id (oref repo id))
@@ -592,14 +625,8 @@ Return a value between 0 and 1."
                    prompt choices nil nil nil nil
                    (and default
                         (forge--topic-format-choice
-                         default (and (not gitlabp) "")))))
-         (number  (and (string-match "\\`\\([!#]*\\)\\([0-9]+\\)" choice)
-                       (string-to-number (match-string 2 choice)))))
-    (and number
-         (if (equal (match-string 1 choice) "!")
-             (forge-get-pullreq repo number)
-           (or (forge-get-issue repo number)
-               (forge-get-pullreq repo number))))))
+                         default (and (not gitlabp) ""))))))
+    (forge--topic-string-to-number choice)))
 
 (defun forge--topic-format-choice (topic &optional prefix)
   (format "%s%s  %s"

@@ -61,6 +61,7 @@
 ;; ;; (setq ivy-posframe-display-functions-alist '((t . ivy-posframe-display-at-window-center)))
 ;; ;; (setq ivy-posframe-display-functions-alist '((t . ivy-posframe-display-at-frame-bottom-left)))
 ;; ;; (setq ivy-posframe-display-functions-alist '((t . ivy-posframe-display-at-window-bottom-left)))
+;; ;; (setq ivy-posframe-display-functions-alist '((t . ivy-posframe-display-at-frame-top-center)))
 ;; (ivy-posframe-mode 1)
 ;; #+END_EXAMPLE
 ;; *** Per-command mode.
@@ -249,17 +250,14 @@ When 0, no border is showed."
   "When non-nil, ivy-posframe will ignore prompt.
 This variable is useful for `ivy-posframe-read-action' .")
 
-(defvar ivy-posframe--display-p nil
-  "The status of `ivy-posframe--display'.")
-
 ;; Fix warn
 (defvar emacs-basic-display)
+(defvar ivy--display-function)
 
 (defun ivy-posframe--display (str &optional poshandler)
   "Show STR in ivy's posframe with POSHANDLER."
   (if (not (posframe-workable-p))
       (ivy-display-function-fallback str)
-    (setq ivy-posframe--display-p t)
     (with-ivy-window
       (apply #'posframe-show
              ivy-posframe-buffer
@@ -311,11 +309,13 @@ This variable is useful for `ivy-posframe-read-action' .")
 (defun ivy-posframe-display-at-point (str)
   (ivy-posframe--display str #'posframe-poshandler-point-bottom-left-corner))
 
+(defun ivy-posframe-display-at-frame-top-center (str)
+  (ivy-posframe--display str #'posframe-poshandler-frame-top-center))
+
 (defun ivy-posframe-cleanup ()
   "Cleanup ivy's posframe."
   (when (posframe-workable-p)
-    (posframe-hide ivy-posframe-buffer)
-    (setq ivy-posframe--display-p nil)))
+    (posframe-hide ivy-posframe-buffer)))
 
 (defun ivy-posframe-dispatching-done ()
   "Select one of the available actions and call `ivy-done'."
@@ -332,7 +332,7 @@ selection, non-nil otherwise."
   (let* ((actions (ivy-state-action ivy-last))
          (caller (ivy-state-caller ivy-last))
          (display-function
-          (or ivy-display-function
+          (or ivy--display-function
               (cdr (or (assq caller ivy-display-functions-alist)
                        (assq t ivy-display-functions-alist))))))
     (if (not (ivy--actionp actions))
@@ -504,10 +504,15 @@ The return value is undefined.
   (let ((ivy-fixed-height-minibuffer nil))
     (apply fn args))
   (when (and ivy-posframe-hide-minibuffer
-             ;; only hide minibuffer's info when posframe is showed.
-             ivy-posframe--display-p)
+             (posframe-workable-p)
+             ;; if display-function is not a ivy-posframe style display-function.
+             ;; do not hide minibuffer.
+             ;; The hypothesis is that all ivy-posframe style display functions
+             ;; have ivy-posframe as name prefix, need improve!
+             (string-match-p "^ivy-posframe" (symbol-name ivy--display-function)))
     (let ((ov (make-overlay (point-min) (point-max) nil nil t)))
       (overlay-put ov 'window (selected-window))
+      (overlay-put ov 'ivy-posframe t)
       (overlay-put ov 'face
                    (let ((bg-color (face-background 'default nil)))
                      `(:background ,bg-color :foreground ,bg-color)))

@@ -31,7 +31,6 @@
    (closql-primary-key   :initform id)
    (closql-order-by      :initform [(desc number)])
    (closql-foreign-key   :initform repository)
-   (closql-foreign-table :initform repository)
    (closql-class-prefix  :initform "forge-")
    (id                   :initarg :id)
    (repository           :initarg :repository)
@@ -83,7 +82,6 @@
    (closql-primary-key   :initform id)
    (closql-order-by      :initform [(asc number)])
    (closql-foreign-key   :initform pullreq)
-   (closql-foreign-table :initform pullreq)
    (closql-class-prefix  :initform "forge-pullreq-")
    (id                   :initarg :id)
    (pullreq              :initarg :pullreq)
@@ -106,25 +104,31 @@
 
 ;;; Query
 
+(cl-defmethod forge-get-repository ((post forge-pullreq-post))
+  (forge-get-repository (forge-get-pullreq post)))
+
 (cl-defmethod forge-get-topic ((post forge-pullreq-post))
   (forge-get-pullreq post))
 
-(cl-defmethod forge-get-pullreq ((repo forge-repository) number)
- (closql-get (forge-db)
-             (forge--object-id 'forge-pullreq repo number)
-             'forge-pullreq))
+(cl-defmethod forge-get-pullreq ((repo forge-repository) number-or-id)
+  (closql-get (forge-db)
+              (if (numberp number-or-id)
+                  (forge--object-id 'forge-pullreq repo number-or-id)
+                number-or-id)
+              'forge-pullreq))
 
 (cl-defmethod forge-get-pullreq ((number integer))
   (when-let ((repo (forge-get-repository t)))
     (forge-get-pullreq repo number)))
 
+(cl-defmethod forge-get-pullreq ((id string))
+  (when-let ((repo (forge-get-repository t)))
+    (forge-get-pullreq repo id)))
+
 (cl-defmethod forge-get-pullreq ((post forge-pullreq-post))
   (closql-get (forge-db)
               (oref post pullreq)
               'forge-pullreq))
-
-(cl-defmethod forge-get-repository ((post forge-pullreq-post))
-  (forge-get-repository (forge-get-pullreq post)))
 
 (cl-defmethod forge-ls-pullreqs ((repo forge-repository) &optional type)
   (forge-ls-topics repo 'forge-pullreq type))
@@ -146,22 +150,9 @@
                    (mapcar format choices)
                    nil nil nil nil
                    (and default
-                        (funcall format default))))
-         (number  (and (string-match "\\([0-9]+\\)" choice)
-                       (string-to-number (match-string 1 choice)))))
-    (and number
-         (forge-get-pullreq repo number))))
-
-(defun forge-read-pullreq-or-number (prompt &optional type)
-  (when (eq type t)
-    (setq type (if current-prefix-arg nil 'open)))
-  (if (forge--childp (forge-get-repository t) 'forge-unusedapi-repository)
-      (let* ((num (read-number (concat prompt ": ")))
-             (ref (forge--pullreq-ref num)))
-        (unless (magit-ref-exists-p ref)
-          (user-error "Reference `%s' doesn't exist.  Maybe pull first?" ref))
-        num)
-    (forge-read-pullreq prompt type)))
+                        (funcall format default)))))
+    (and (string-match "\\`\\([0-9]+\\)" choice)
+         (string-to-number (match-string 1 choice)))))
 
 (defun forge--pullreq-branch (pullreq &optional confirm-reset)
   (with-slots (head-ref number cross-repo-p editable-p) pullreq
@@ -171,11 +162,11 @@
                 ;; Such a branch name would be invalid.  If we encounter
                 ;; this, then it means that we are dealing with a Gitlab
                 ;; pull-request whose source branch has been deleted.
-                (string-match-p ":" branch))
+                (string-match-p ":" branch)
+                ;; These are usually the target, not soruce, of a pr.
+                (member branch '("master" "next" "maint")))
         (setq branch branch-n))
       (when (and confirm-reset (magit-branch-p branch))
-        (when (member branch '("master" "next" "maint"))
-          (setq branch branch-n))
         (when (magit-branch-p branch)
           (if (string-prefix-p "pr-" branch)
               (unless (y-or-n-p
@@ -235,6 +226,8 @@ yourself, in which case you probably should not reset either.
     map))
 
 (defun forge-insert-pullreqs ()
+  "Insert a list of mostly recent and/or open pull-requests.
+Also see option `forge-topic-list-limit'."
   (when-let ((repo (forge-get-repository nil)))
     (unless (oref repo sparse-p)
       (forge-insert-topics "Pull requests"
@@ -269,6 +262,7 @@ yourself, in which case you probably should not reset either.
     "#"))
 
 (defun forge-insert-assigned-pullreqs ()
+  "Insert a list of open pull-requests that are assigned to you."
   (when-let ((repo (forge-get-repository nil)))
     (unless (oref repo sparse-p)
       (forge-insert-topics "Assigned pull requests"

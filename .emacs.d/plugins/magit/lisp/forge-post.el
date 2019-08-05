@@ -82,7 +82,9 @@
 (defun forge-current-topic ()
   (or (forge-topic-at-point)
       (and (derived-mode-p 'forge-topic-mode)
-           forge-buffer-topic)))
+           forge-buffer-topic)
+      (and (derived-mode-p 'forge-topic-list-mode)
+           (forge-get-topic (tabulated-list-get-id)))))
 
 (defun forge--pullreq-from-rev (rev)
   (when-let ((repo    (forge-get-repository nil))
@@ -189,9 +191,10 @@
           (if (buffer-live-p prevbuf) prevbuf (current-buffer))
         (if (and topic
                  (forge--childp repo 'forge-github-repository)
-                 (fboundp 'forge-pullreq-p)
-                 (forge-pullreq-p topic))
-            (forge--pull-pullreq repo topic)
+                 (or (and (fboundp 'forge-pullreq-p)
+                          (forge-pullreq-p topic))
+                     (oref repo selective-p)))
+            (forge--pull-topic repo (oref topic number))
           (forge-pull))))))
 
 (defun forge--post-submit-errorback ()

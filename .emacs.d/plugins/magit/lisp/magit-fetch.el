@@ -45,7 +45,8 @@ Ignored for Git versions before v2.8.0."
   "Fetch from another repository."
   :man-page "git-fetch"
   ["Arguments"
-   ("-p" "Prune deleted branches" ("-p" "--prune"))]
+   ("-p" "Prune deleted branches" ("-p" "--prune"))
+   ("-t" "Fetch all tags" ("-t" "--tags"))]
   ["Fetch from"
    ("p" magit-fetch-from-pushremote)
    ("u" magit-fetch-from-upstream)
@@ -144,11 +145,8 @@ results in an error."
 ;;;###autoload
 (defun magit-fetch-all (args)
   "Fetch from all remotes."
-  (interactive (list (cl-intersection (magit-fetch-arguments)
-                                      (list "--verbose" "--prune")
-                                      :test #'equal)))
-  (run-hooks 'magit-credential-hook)
-  (magit-run-git-async "remote" "update" args))
+  (interactive (list (magit-fetch-arguments)))
+  (magit-git-fetch nil (cons "--all" args)))
 
 ;;;###autoload
 (defun magit-fetch-all-prune ()

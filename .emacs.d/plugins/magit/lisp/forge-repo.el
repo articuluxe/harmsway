@@ -42,37 +42,39 @@
    (create-issue-url-format   :initform nil :allocation :class)
    (create-pullreq-url-format :initform nil :allocation :class)
    (pullreq-refspec           :initform nil :allocation :class)
-   (id                        :initarg  :id)
-   (forge-id                  :initarg  :forge-id)
-   (forge                     :initarg  :forge)
-   (owner                     :initarg  :owner)
-   (name                      :initarg  :name)
-   (apihost                   :initarg  :apihost)
-   (githost                   :initarg  :githost)
-   (remote                    :initarg  :remote)
+   (id                        :initform nil :initarg :id)
+   (forge-id                  :initform nil :initarg :forge-id)
+   (forge                     :initform nil :initarg :forge)
+   (owner                     :initform nil :initarg :owner)
+   (name                      :initform nil :initarg :name)
+   (apihost                   :initform nil :initarg :apihost)
+   (githost                   :initform nil :initarg :githost)
+   (remote                    :initform nil :initarg :remote)
    (sparse-p                  :initform t)
-   (created)
-   (updated)
-   (pushed)
-   (parent)
-   (description)
-   (homepage)
-   (default-branch)
-   (archived-p)
-   (fork-p)
-   (locked-p)
-   (mirror-p)
-   (private-p)
-   (issues-p)
-   (wiki-p)
-   (stars)
-   (watchers)
-   (assignees       :closql-table assignee)
-   (forks           :closql-table fork)
-   (issues          :closql-class forge-issue)
-   (labels          :closql-table label)
-   (pullreqs        :closql-class forge-pullreq)
-   (revnotes        :closql-class forge-revnote))
+   (created                   :initform nil)
+   (updated                   :initform nil)
+   (pushed                    :initform nil)
+   (parent                    :initform nil)
+   (description               :initform nil)
+   (homepage                  :initform nil)
+   (default-branch            :initform nil)
+   (archived-p                :initform nil)
+   (fork-p                    :initform nil)
+   (locked-p                  :initform nil)
+   (mirror-p                  :initform nil)
+   (private-p                 :initform nil)
+   (issues-p                  :initform t)
+   (wiki-p                    :initform nil)
+   (stars                     :initform nil)
+   (watchers                  :initform nil)
+   (assignees                 :closql-table assignee)
+   (forks                     :closql-table fork)
+   (issues                    :closql-class forge-issue)
+   (labels                    :closql-table label)
+   (pullreqs                  :closql-class forge-pullreq)
+   (revnotes                  :closql-class forge-revnote)
+   (selective-p               :initform nil)
+   (worktree                  :initform nil))
   :abstract t)
 
 (defclass forge-unusedapi-repository (forge-repository) () :abstract t)
@@ -128,6 +130,9 @@ forges and hosts."
 
 (defconst forge--signal-no-entry '(t stub create))
 
+(cl-defmethod forge-get-repository (((_ id) (head :id)))
+  (closql-get (forge-db) id 'forge-repository))
+
 (cl-defmethod forge-get-repository ((demand symbol) &optional remote)
   "Return the current forge repository.
 
@@ -148,7 +153,9 @@ repository, if any."
                              (car remotes)))))
           (if-let ((url (and remote
                              (magit-git-string "remote" "get-url" remote))))
-              (forge-get-repository url remote demand)
+              (when-let ((repo (forge-get-repository url remote demand)))
+                (oset repo worktree (magit-toplevel))
+                repo)
             (when (memq demand forge--signal-no-entry)
               (error
                "Cannot determine forge repository.  %s\n%s  %s"
@@ -215,6 +222,20 @@ repository, if any."
 
 ;;; Utilities
 
+(defun forge-repository-at-point ()
+  (magit-section-value-if 'forge-repo))
+
+(defun forge-current-repository ()
+  (or (forge-repository-at-point)
+      (and (derived-mode-p 'forge-repository-list-mode)
+           (forge-get-repository (list :id (tabulated-list-get-id))))))
+
+(cl-defmethod forge-visit ((repo forge-repository))
+  (let ((worktree (oref repo worktree)))
+    (if (and worktree (file-directory-p worktree))
+        (magit-status-setup-buffer worktree)
+      (forge-list-issues (oref repo id)))))
+
 (defun forge--get-remote ()
   (or (magit-get "forge.remote") "origin"))
 
@@ -226,16 +247,17 @@ repository, if any."
                          (forge-sql [:select [githost owner name]
                                      :from repository]))
                  nil t nil nil
-                 (when-let ((default (forge-get-repository nil)))
+                 (when-let ((default (or (forge-current-repository)
+                                         (forge-get-repository nil))))
                    (format "%s/%s @%s"
                            (oref default owner)
                            (oref default name)
                            (oref default githost))))))
     (save-match-data
       (string-match "\\`\\([^/]+\\)/\\([^/]+\\) @\\(.+\\)\\'" choice)
-      (forge-get-repository (list (match-string 3 choice)
-                                  (match-string 1 choice)
-                                  (match-string 2 choice))))))
+      (list (match-string 3 choice)
+            (match-string 1 choice)
+            (match-string 2 choice)))))
 
 (cl-defmethod forge--topics-until ((repo forge-repository) until table)
   (if (oref repo sparse-p)
@@ -284,7 +306,9 @@ repository, if any."
     (when (buffer-live-p forge--mode-line-buffer)
       (with-current-buffer forge--mode-line-buffer
         (setq mode-line-process
-              (concat " " (propertize msg 'face 'magit-mode-line-process))))
+              (if done
+                  nil
+                (concat " " (propertize msg 'face 'magit-mode-line-process)))))
       (force-mode-line-update t))))
 
 ;;; _

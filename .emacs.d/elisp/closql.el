@@ -44,7 +44,6 @@
    (closql-table         :initform nil :allocation :class)
    (closql-primary-key   :initform nil :allocation :class)
    (closql-foreign-key   :initform nil :allocation :class)
-   (closql-foreign-table :initform nil :allocation :class)
    (closql-order-by      :initform nil :allocation :class)
    (closql-database      :initform nil :initarg :closql-database))
   :abstract t)
@@ -77,7 +76,7 @@
           (slot-missing obj slot 'oref))
       (cl-check-type obj eieio-object)
       (let ((value (aref obj c))
-            (class (closql--slot-get obj slot :closql-class))
+            (class (closql--slot-class obj slot))
             (table (closql--slot-table obj slot))
             (db    (closql--oref obj 'closql-database)))
         (cond
@@ -147,7 +146,7 @@
 (defun closql--dset (db obj slot value)
   (let* ((key   (oref-default obj closql-primary-key))
          (id    (closql--oref obj key))
-         (class (closql--slot-get obj slot :closql-class))
+         (class (closql--slot-class obj slot))
          (table (closql--slot-table obj slot)))
     (cond
      (class
@@ -208,6 +207,9 @@
                key id)))))
 
 ;;;; Slot Properties
+
+(defun closql--slot-class (obj slot)
+  (closql--slot-get obj slot :closql-class))
 
 (defun closql--slot-table (obj slot)
   (let ((tbl (closql--slot-get obj slot :closql-table)))
@@ -359,9 +361,7 @@
   (unless class
     (setq class (oref-default db object-class)))
   (emacsql db
-           (vconcat (if (eq select '*)
-                        [:select * :from $i2]
-                      [:select $i1 :from $i2])
+           (vconcat [:select $i1 :from $i2]
                     (and pred
                          [:where class :in $v3])
                     (if-let ((order (oref-default class closql-order-by)))

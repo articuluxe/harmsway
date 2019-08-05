@@ -519,6 +519,10 @@ which visits the thing at point using `browse-url'."
   (interactive)
   (user-error "There is no thing at point that could be browsed"))
 
+(with-eval-after-load 'bug-reference
+  (define-key bug-reference-map [remap magit-visit-thing]
+    'bug-reference-push-button))
+
 (easy-menu-define magit-mode-menu magit-mode-map
   "Magit menu"
   '("Magit"
@@ -1126,8 +1130,10 @@ Run hooks `magit-pre-refresh-hook' and `magit-post-refresh-hook'."
           (when magit-refresh-verbose
             (message "Refreshing magit..."))
           (magit-run-hook-with-benchmark 'magit-pre-refresh-hook)
-          (when (derived-mode-p 'magit-mode)
-            (magit-refresh-buffer))
+          (cond ((derived-mode-p 'magit-mode)
+                 (magit-refresh-buffer))
+                ((derived-mode-p 'tabulated-list-mode)
+                 (revert-buffer)))
           (--when-let (and magit-refresh-status-buffer
                            (not (derived-mode-p 'magit-status-mode))
                            (magit-get-mode-buffer 'magit-status-mode))

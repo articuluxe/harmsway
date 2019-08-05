@@ -73,8 +73,8 @@ function."
 (defconst go--max-dangling-operator-length 2
   "The maximum length of dangling operators.
 This must be at least the length of the longest string matched by
-‘go-dangling-operators-regexp.’, and must be updated whenever
-that constant is changed.")
+‘go-dangling-operators-regexp’ and must be updated whenever that
+constant is changed.")
 
 (defconst go-identifier-regexp "[[:word:][:multibyte:]]+")
 (defconst go-type-name-no-prefix-regexp "\\(?:[[:word:][:multibyte:]]+\\.\\)?[[:word:][:multibyte:]]+")
@@ -209,6 +209,14 @@ look like others.  For example, a subset of wgo projects look like
 gb projects.  That's why we need to detect wgo first, to avoid
 mis-identifying them as gb projects."
   :type '(repeat function)
+  :group 'go)
+
+(defcustom go-confirm-playground-uploads t
+  "Ask before uploading code to the public Go Playground.
+
+Set this to nil to upload without prompting.
+"
+  :type 'boolean
   :group 'go)
 
 (defcustom godoc-command "go doc"
@@ -529,17 +537,22 @@ STOP-AT-STRING is not true, over strings."
          (point-min))))
 
 (defun go-previous-line-has-dangling-op-p ()
-  "Return non-nil if the current line is a continuation line."
-  (let* ((cur-line (line-number-at-pos))
-         (val (gethash cur-line go-dangling-cache 'nope)))
-    (if (or (go--buffer-narrowed-p) (equal val 'nope))
-        (save-excursion
-          (beginning-of-line)
-          (go--backward-irrelevant t)
-          (setq val (looking-back go-dangling-operators-regexp
-                                  (- (point) go--max-dangling-operator-length)))
-          (if (not (go--buffer-narrowed-p))
-              (puthash cur-line val go-dangling-cache))))
+  "Return non-nil if the current line is a continuation line.
+
+The returned value is the beginning of the line with the dangling operator."
+  (let* ((line-begin (line-beginning-position))
+         (val (gethash line-begin go-dangling-cache 'nope)))
+    (when (or (go--buffer-narrowed-p) (equal val 'nope))
+      (save-excursion
+        (beginning-of-line)
+        (go--backward-irrelevant t)
+        (if (looking-back go-dangling-operators-regexp
+                          (- (point) go--max-dangling-operator-length))
+            (setq val (line-beginning-position))
+          (setq val nil))
+
+        (if (not (go--buffer-narrowed-p))
+            (puthash line-begin val go-dangling-cache))))
     val))
 
 (defun go--at-function-definition ()
@@ -578,9 +591,58 @@ current line will be returned."
           (current-indentation))
       (current-indentation))))
 
+(defun go--dangling-line-opens-indent-p ()
+  "Return non-nil if current dangling line indents the following line."
+  (save-excursion
+    (let ((line-begin (line-beginning-position))
+          (start-paren-level (go-paren-level)))
+
+      (go-goto-opening-parenthesis)
+
+      (let ((in-parens (and
+                        ;; opening paren-like character is actually a paren
+                        (eq (char-after) ?\()
+                        ;; point is before the closing paren
+                        (< (go-paren-level) start-paren-level)
+                        ;;  still on starting line
+                        (>= (point) line-begin))))
+
+        (if (not in-parens)
+            ;; if line doesn't open a paren, check if we are a dangling line under
+            ;; a dangling assignment with nothing on RHS of "="
+            ;;
+            ;; foo :=
+            ;;   bar ||   // check if we are this line (need to open indent)
+            ;;     baz ||
+            ;;     qux
+            (progn
+              (goto-char line-begin)
+              (let ((prev-line (go-previous-line-has-dangling-op-p)))
+                (when prev-line
+                  (goto-char prev-line)
+                  (and
+                   (not (go-previous-line-has-dangling-op-p))
+                   (looking-at ".*=[[:space:]]*$")))))
+          (or
+           ;; previous line is dangling and opens indent
+           (let ((prev-line (go-previous-line-has-dangling-op-p)))
+             (when prev-line
+               (save-excursion
+                 (goto-char prev-line)
+                 (end-of-line)
+                 (go--dangling-line-opens-indent-p))))
+
+           ;; or paren is only preceded by identifier or other parens
+           (string-match-p "^[[:space:]]*[[:word:][:multibyte:]]*(*$" (buffer-substring line-begin (point)))
+
+           ;; or a preceding paren on this line opens an indent
+           (and
+            (> (point) line-begin)
+            (progn (backward-char) (go--dangling-line-opens-indent-p)))))))))
+
 (defun go-indentation-at-point ()
   (save-excursion
-    (let (start-nesting)
+    (let (start-nesting dangling-line)
       (back-to-indentation)
       (setq start-nesting (go-paren-level))
 
@@ -589,24 +651,38 @@ current line will be returned."
         (current-indentation))
        ((looking-at "[])}]")
         (go-goto-opening-parenthesis)
-        (if (go-previous-line-has-dangling-op-p)
-            (- (current-indentation) tab-width)
+        (if (and
+             (not (eq (char-after) ?\())
+             (go-previous-line-has-dangling-op-p))
+            (go--non-dangling-indent)
           (go--indentation-for-opening-parenthesis)))
-       ((progn (go--backward-irrelevant t)
-               (looking-back go-dangling-operators-regexp
-                             (- (point) go--max-dangling-operator-length)))
+       ((setq dangling-line (go-previous-line-has-dangling-op-p))
+        (goto-char dangling-line)
+        (end-of-line)
+
         ;; only one nesting for all dangling operators in one operation
-        (if (go-previous-line-has-dangling-op-p)
+        (if (and
+             (not (go--dangling-line-opens-indent-p))
+             (go-previous-line-has-dangling-op-p))
             (current-indentation)
           (+ (current-indentation) tab-width)))
        ((zerop (go-paren-level))
         0)
        ((progn (go-goto-opening-parenthesis) (< (go-paren-level) start-nesting))
-        (if (go-previous-line-has-dangling-op-p)
-            (current-indentation)
-          (+ (go--indentation-for-opening-parenthesis) tab-width)))
+        (if (and
+             (not (eq (char-after) ?\())
+             (go-previous-line-has-dangling-op-p))
+            (+ (go--non-dangling-indent) tab-width)
+          (+ (go--indentation-for-opening-parenthesis) tab-width))
+        )
        (t
         (current-indentation))))))
+
+(defun go--non-dangling-indent ()
+  (save-excursion
+    (while (go-previous-line-has-dangling-op-p)
+      (forward-line -1))
+    (current-indentation)))
 
 (defun go-mode-indent-line ()
   (interactive)
@@ -1066,8 +1142,8 @@ with goflymake \(see URL `https://github.com/dougm/goflymake'), gocode
 (defun gofmt ()
   "Format the current buffer according to the formatting tool.
 
-The tool used can be set via ‘gofmt-command` (default: gofmt) and additional
-arguments can be set as a list via ‘gofmt-args`."
+The tool used can be set via ‘gofmt-command’ (default: gofmt) and additional
+arguments can be set as a list via ‘gofmt-args’."
   (interactive)
   (let ((tmpfile (go--make-nearby-temp-file "gofmt" nil ".go"))
         (patchbuf (get-buffer-create "*Gofmt patch*"))
@@ -1273,27 +1349,36 @@ declaration."
 (defun go-play-region (start end)
   "Send the region between START and END to the Playground.
 If non-nil `go-play-browse-function' is called with the
-Playground URL."
+Playground URL.
+
+By default this function will prompt to confirm you want to upload
+code to the Playground. You can disable the confirmation by setting
+`go-confirm-playground-uploads' to nil.
+"
   (interactive "r")
-  (let* ((url-request-method "POST")
-         (url-request-extra-headers
-          '(("Content-Type" . "application/x-www-form-urlencoded")))
-         (url-request-data
-          (encode-coding-string
-           (buffer-substring-no-properties start end)
-           'utf-8))
-         (content-buf (url-retrieve
-                       "https://play.golang.org/share"
-                       (lambda (arg)
-                         (cond
-                          ((equal :error (car arg))
-                           (signal 'go-play-error (cdr arg)))
-                          (t
-                           (re-search-forward "\n\n")
-                           (let ((url (format "https://play.golang.org/p/%s"
-                                              (buffer-substring (point) (point-max)))))
-                             (when go-play-browse-function
-                               (funcall go-play-browse-function url)))))))))))
+  (if (and go-confirm-playground-uploads
+           (not (yes-or-no-p "Upload to public Go Playground?")))
+      (message "Upload aborted")
+    (let* ((url-request-method "POST")
+           (url-request-extra-headers
+            '(("Content-Type" . "application/x-www-form-urlencoded")))
+           (url-request-data
+            (encode-coding-string
+             (buffer-substring-no-properties start end)
+             'utf-8))
+
+           (content-buf (url-retrieve
+                         "https://play.golang.org/share"
+                         (lambda (arg)
+                           (cond
+                            ((equal :error (car arg))
+                             (signal 'go-play-error (cdr arg)))
+                            (t
+                             (re-search-forward "\n\n")
+                             (let ((url (format "https://play.golang.org/p/%s"
+                                                (buffer-substring (point) (point-max)))))
+                               (when go-play-browse-function
+                                 (funcall go-play-browse-function url))))))))))))
 
 ;;;###autoload
 (defun go-download-play (url)

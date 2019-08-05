@@ -343,7 +343,6 @@ mouse-1: Previous buffer\nmouse-3: Next buffer"
 (advice-add #'undo :after #'doom-modeline-update-buffer-file-name)
 (advice-add #'undo-tree-undo-1 :after #'doom-modeline-update-buffer-file-name)
 (advice-add #'undo-tree-redo-1 :after #'doom-modeline-update-buffer-file-name)
-(advice-add #'fill-paragraph :after #'doom-modeline-update-buffer-file-name)
 (advice-add #'symbol-overlay-rename :after #'doom-modeline-update-buffer-file-name)
 (advice-add #'popup-create :after #'doom-modeline-update-buffer-file-name)
 (advice-add #'popup-delete :after #'doom-modeline-update-buffer-file-name)
@@ -480,7 +479,10 @@ directory, the file name, and its state (modified, read-only or non-existent)."
   (propertize
    (concat
     (doom-modeline-spc)
-    (propertize (format-mode-line mode-name)
+    (propertize (format-mode-line
+                 (or (and (boundp 'delighted-modes)
+                          (cadr (assq major-mode delighted-modes)))
+                     mode-name))
                 'help-echo "Major mode\n\
 mouse-1: Display major mode menu\n\
 mouse-2: Show help for major mode\n\
@@ -521,30 +523,27 @@ mouse-3: Toggle minor modes"
 
 (doom-modeline-def-segment minor-modes
   (when doom-modeline-minor-modes
-    (let ((active (doom-modeline--active)))
+    (let ((face (if (doom-modeline--active)
+                    'doom-modeline-buffer-minor-mode
+                  'mode-line-inactive)))
       (if (bound-and-true-p minions-mode)
           (concat
            (doom-modeline-spc)
            (propertize minions-mode-line-lighter
-                       'face (if active
-                                 'doom-modeline-buffer-minor-mode
-                               'mode-line-inactive)
+                       'face face
                        'help-echo "Minions
 mouse-1: Display minor modes menu"
                        'mouse-face 'mode-line-highlight
                        'local-map (make-mode-line-mouse-map
                                    'mouse-1 #'minions-minor-modes-menu))
            (doom-modeline-spc))
-        (propertize
-         (concat
-          (replace-regexp-in-string (regexp-quote "%")
-                                    "%%%%"
-                                    (format-mode-line minor-mode-alist)
-                                    t t)
-          (doom-modeline-spc))
-         'face (if active
-                   'doom-modeline-buffer-minor-mode
-                 'mode-line-inactive))))))
+        (concat
+         (propertize (replace-regexp-in-string
+                      "%" "%%%%"
+                      (format-mode-line minor-mode-alist)
+                      t t)
+                     'face face)
+         (doom-modeline-spc))))))
 
 
 ;;
@@ -1614,7 +1613,7 @@ mouse-3: Describe current input method")
   "Update `lsp-mode' status."
   (setq doom-modeline--lsp
         (let* ((workspaces (lsp-workspaces))
-               (face (if workspaces 'success 'warning))
+               (face (if workspaces 'doom-modeline-lsp-success 'doom-modeline-lsp-warning))
                (icon (doom-modeline-lsp-icon "LSP" face)))
           (propertize icon
                       'help-echo
@@ -1665,10 +1664,10 @@ mouse-1: Reload to start server")
                      (`(,_id ,doing ,done-p ,detail) (and server (eglot--spinner server)))
                      (last-error (and server (jsonrpc-last-error server)))
                      (face (cond
-                            (last-error 'error)
+                            (last-error 'doom-modeline-lsp-error)
                             ((and doing (not done-p)) 'compilation-mode-line-run)
-                            ((and pending (cl-plusp pending)) 'warning)
-                            (nick 'success)
+                            ((and pending (cl-plusp pending)) 'doom-modeline-lsp-warning)
+                            (nick 'doom-modeline-lsp-success)
                             (t 'mode-line)))
                      (icon (doom-modeline-lsp-icon "EGLOT" face)))
           (propertize icon

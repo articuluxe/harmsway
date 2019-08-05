@@ -199,7 +199,6 @@
      `(org-block                    ((,c ())))
      `(org-block-begin-line         ((,c (:foreground ,invisible))))
      `(org-block-end-line           ((,c (:inherit org-block-begin-line))))
-     `(org-block-background         ((,c (:background ,current-line))))
      `(org-archived                 ((,c (:foreground ,invisible))))
      `(org-document-title           ((,c (:foreground ,blue))))
      `(org-level-1                  ((,c (:foreground ,white))))
@@ -258,7 +257,7 @@
      `(org-habit-overdue-future-face ((,c (:background ,black :underline t :foreground ,red))))
 
      `(org-scheduled ((,c (:foreground ,white))))
-     `(org-warning ((,c (:foreground ,yellow :slant italic))))
+     `(org-warning ((,c (:foreground ,orange :slant italic))))
      `(org-scheduled-today ((,c (:foreground ,white))))
      `(org-scheduled-previously ((,c (:foreground ,red))))
      `(org-time-grid ((,c (:foreground ,invisible))))
@@ -270,7 +269,7 @@
      `(org-agenda-date-weekend ((,c (:foreground ,green))))
 
      `(org-agenda-structure ((,c (:foreground ,white))))
-     `(org-agenda-calendar-event ((,c (:foreground ,orange :slant italic))))
+     `(org-agenda-calendar-event ((,c (:foreground ,comment :slant italic))))
 
      `(org-agenda-done ((,c (:foreground ,green))))
      `(org-agenda-diary ((,c (:foreground ,orange :slant italic))))

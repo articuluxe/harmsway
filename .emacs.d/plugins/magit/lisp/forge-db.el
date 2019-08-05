@@ -43,7 +43,7 @@
 (defclass forge-database (closql-database)
   ((object-class :initform forge-repository)))
 
-(defconst forge--db-version 4)
+(defconst forge--db-version 6)
 
 (defvar forge--db-connection nil
   "The EmacSQL database connection.")
@@ -110,7 +110,9 @@
       (issues    :default eieio-unbound)
       (labels    :default eieio-unbound)
       (revnotes  :default eieio-unbound)
-      (pullreqs  :default eieio-unbound)])
+      (pullreqs  :default eieio-unbound)
+      selective-p
+      worktree])
 
     (assignee
      [(repository :not-null)
@@ -368,6 +370,18 @@
       (emacsql db "PRAGMA user_version = 4")
       (setq version 4)
       (message "Upgrading Forge database from version 3 to 4...done"))
+    (when (= version 4)
+      (message "Upgrading Forge database from version 4 to 5...")
+      (emacsql db [:alter-table repository :add-column selective-p :default nil])
+      (emacsql db "PRAGMA user_version = 5")
+      (setq version 5)
+      (message "Upgrading Forge database from version 4 to 5...done"))
+    (when (= version 5)
+      (message "Upgrading Forge database from version 5 to 6...")
+      (emacsql db [:alter-table repository :add-column worktree :default nil])
+      (emacsql db "PRAGMA user_version = 6")
+      (setq version 6)
+      (message "Upgrading Forge database from version 5 to 6...done"))
     version))
 
 ;;; _

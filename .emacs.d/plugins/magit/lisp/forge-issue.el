@@ -31,7 +31,6 @@
    (closql-primary-key   :initform id)
    (closql-order-by      :initform [(desc number)])
    (closql-foreign-key   :initform repository)
-   (closql-foreign-table :initform repository)
    (closql-class-prefix  :initform "forge-")
    (id                   :initarg :id)
    (repository           :initarg :repository)
@@ -62,7 +61,6 @@
    (closql-primary-key   :initform id)
    (closql-order-by      :initform [(asc number)])
    (closql-foreign-key   :initform issue)
-   (closql-foreign-table :initform issue)
    (closql-class-prefix  :initform "forge-issue-")
    (id                   :initarg :id)
    (issue                :initarg :issue)
@@ -77,17 +75,26 @@
 
 ;;; Query
 
+(cl-defmethod forge-get-repository ((post forge-issue-post))
+  (forge-get-repository (forge-get-issue post)))
+
 (cl-defmethod forge-get-topic ((post forge-issue-post))
   (forge-get-issue post))
 
-(cl-defmethod forge-get-issue ((repo forge-repository) number)
+(cl-defmethod forge-get-issue ((repo forge-repository) number-or-id)
   (closql-get (forge-db)
-              (forge--object-id 'forge-issue repo number)
+              (if (numberp number-or-id)
+                  (forge--object-id 'forge-issue repo number-or-id)
+                number-or-id)
               'forge-issue))
 
 (cl-defmethod forge-get-issue ((number integer))
   (when-let ((repo (forge-get-repository t)))
     (forge-get-issue repo number)))
+
+(cl-defmethod forge-get-issue ((id string))
+  (when-let ((repo (forge-get-repository t)))
+    (forge-get-issue repo id)))
 
 (cl-defmethod forge-get-issue ((post forge-issue-post))
   (closql-get (forge-db)
@@ -113,11 +120,9 @@
                    prompt
                    (mapcar format choices)
                    nil nil nil nil
-                   (and default (funcall format default))))
-         (number  (and (string-match "\\([0-9]+\\)" choice)
-                       (string-to-number (match-string 1 choice)))))
-    (and number
-         (forge-get-issue repo number))))
+                   (and default (funcall format default)))))
+    (and (string-match "\\`\\([0-9]+\\)" choice)
+         (string-to-number (match-string 1 choice)))))
 
 (cl-defmethod forge-get-url ((issue forge-issue))
   (forge--format issue 'issue-url-format))
@@ -145,6 +150,8 @@
     map))
 
 (defun forge-insert-issues ()
+  "Insert a list of mostly recent and/or open issues.
+Also see option `forge-topic-list-limit'."
   (when-let ((repo (forge-get-repository nil)))
     (when (and (not (oref repo sparse-p))
                (or (not (slot-boundp repo 'issues-p)) ; temporary KLUDGE
@@ -154,6 +161,7 @@
                            (forge--topic-type-prefix repo 'issue)))))
 
 (defun forge-insert-assigned-issues ()
+  "Insert a list of open issues that are assigned to you."
   (when-let ((repo (forge-get-repository nil)))
     (unless (oref repo sparse-p)
       (forge-insert-topics "Assigned issues"

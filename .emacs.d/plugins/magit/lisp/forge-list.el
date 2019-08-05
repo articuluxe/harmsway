@@ -31,14 +31,30 @@
   :type 'hook
   :options '(hl-line-mode))
 
+(defvar forge-topic-list-columns
+  '(("#" 5 forge-topic-list-sort-by-number (:right-align t) number nil)
+    ("Title" 35 t nil title  nil)
+    ))
+
+(defvar forge-repository-list-columns
+  '(("Owner"    20 t   nil owner nil)
+    ("Name"     20 t   nil name  nil)
+    ("N"         1 t   nil sparse-p nil)
+    ("S"         1 t   nil selective-p nil)
+    ("Worktree" 99 t   nil worktree nil)
+    ))
+
 ;;; Modes
-;;;; Topic
+;;;; Topics
 
 (defvar forge-topic-list-mode-map
   (let ((map (make-sparse-keymap)))
     (set-keymap-parent map tabulated-list-mode-map)
-    (define-key map (kbd "'") 'forge-dispatch)
-    (define-key map (kbd "?") 'magit-dispatch)
+    (define-key map (kbd "RET") 'forge-visit-topic)
+    (define-key map [return]    'forge-visit-topic)
+    (define-key map (kbd "o")   'forge-browse-topic)
+    (define-key map (kbd "'")   'forge-dispatch)
+    (define-key map (kbd "?")   'magit-dispatch)
     map)
   "Local keymap for Forge-Topic-List mode buffers.")
 
@@ -48,58 +64,80 @@
   (setq-local x-stretch-cursor  nil)
   (setq tabulated-list-padding  0)
   (setq tabulated-list-sort-key (cons "#" nil))
-  (setq tabulated-list-format   (vconcat (--map `(,@(-take 3 it)
-                                                  ,@(-flatten (nth 3 it)))
-                                                forge-topic-list-columns)))
+  (setq tabulated-list-format
+        (vconcat (--map `(,@(-take 3 it)
+                          ,@(-flatten (nth 3 it)))
+                        forge-topic-list-columns)))
   (tabulated-list-init-header))
-
-;;;; Issue
-
-(defvar forge-issue-list-mode-map
-  (let ((map (make-sparse-keymap)))
-    (set-keymap-parent map forge-topic-list-mode-map)
-    (define-key map (kbd "RET") 'forge-list-visit-issue)
-    (define-key map [return]    'forge-list-visit-issue)
-    (define-key map (kbd "o")   'forge-list-browse-issue)
-    map)
-  "Local keymap for Forge-Issue-List mode buffers.")
 
 (define-derived-mode forge-issue-list-mode forge-topic-list-mode
   "Issues"
   "Major mode for browsing a list of issues.")
 
-;;;; Pullreq
-
-(defvar forge-pullreq-list-mode-map
-  (let ((map (make-sparse-keymap)))
-    (set-keymap-parent map forge-topic-list-mode-map)
-    (define-key map (kbd "RET") 'forge-list-visit-pullreq)
-    (define-key map [return]    'forge-list-visit-pullreq)
-    (define-key map (kbd "o")   'forge-list-browse-pullreq)
-    map)
-  "Local keymap for Forge-Pullreq-List mode buffers.")
-
 (define-derived-mode forge-pullreq-list-mode forge-topic-list-mode
   "Pull-Requests"
   "Major mode for browsing a list of pull-requests.")
+
+;;;; Repository
+
+(defvar forge-repository-list-mode-map
+  (let ((map (make-sparse-keymap)))
+    (set-keymap-parent map tabulated-list-mode-map)
+    (define-key map (kbd "RET") 'forge-visit-repository)
+    (define-key map [return]    'forge-visit-repository)
+    (define-key map (kbd "o")   'forge-browse-repository)
+    (define-key map (kbd "'")   'forge-dispatch)
+    (define-key map (kbd "?")   'magit-dispatch)
+    map)
+  "Local keymap for Forge-Repository-List mode buffers.")
+
+(define-derived-mode forge-repository-list-mode tabulated-list-mode
+  "Repositories"
+  "Major mode for browsing a list of repositories."
+  (setq-local x-stretch-cursor  nil)
+  (setq tabulated-list-padding  0)
+  (setq tabulated-list-sort-key (cons "Owner" nil))
+  (setq tabulated-list-format
+        (vconcat (--map `(,@(-take 3 it)
+                          ,@(-flatten (nth 3 it)))
+                        forge-repository-list-columns)))
+  (add-hook 'tabulated-list-revert-hook 'forge-repository-list-refresh nil t)
+  (tabulated-list-init-header))
+
+(defun forge-repository-list-refresh ()
+  (setq tabulated-list-entries
+        (mapcar (lambda (row)
+                  (list (car row)
+                        (vconcat
+                         (cl-mapcar (lambda (val col)
+                                      (if-let ((pp (nth 5 col)))
+                                          (funcall pp val)
+                                        (if val (format "%s" val) "")))
+                                    (cdr row)
+                                    forge-repository-list-columns))))
+                (forge-sql [:select $i1 :from repository
+                            :order-by [(asc owner) (asc name)]]
+                           (forge--list-columns-vector
+                            forge-repository-list-columns)))))
 
 ;;; Commands
 ;;;; Issue
 
 ;;;###autoload
-(defun forge-list-issues (repo)
-  "List issues in a separate buffer."
-  (interactive (list (forge-get-repository t)))
-  (forge--list-topics 'forge-issue-list-mode nil
+(defun forge-list-issues (id)
+  "List issues of the current repository in a separate buffer."
+  (interactive (list (oref (forge-get-repository t) id)))
+  (forge--list-topics id 'forge-issue-list-mode nil
     (forge-sql [:select $i1 :from issue :where (= repository $s2)]
                (forge--topic-list-columns-vector)
-               (oref repo id))))
+               id)))
 
 ;;;###autoload
-(defun forge-list-assigned-issues (repo)
-  "List issues assigned to you in a separate buffer."
-  (interactive (list (forge-get-repository t)))
-  (forge--list-topics 'forge-issue-list-mode nil
+(defun forge-list-assigned-issues (id)
+  "List issues of the current repository that are assigned to you.
+List them in a separate buffer."
+  (interactive (list (oref (forge-get-repository t) id)))
+  (forge--list-topics id 'forge-issue-list-mode nil
     (forge-sql
      [:select $i1 :from [issue issue_assignee assignee]
       :where (and (= issue_assignee:issue issue:id)
@@ -109,35 +147,25 @@
                   (isnull issue:closed))
       :order-by [(desc updated)]]
      (forge--topic-list-columns-vector)
-     (oref repo id)
-     (ghub--username (ghub--host)))))
-
-(defun forge-list-visit-issue ()
-  "View the issue at point in a separate buffer."
-  (interactive)
-  (forge-visit-issue (forge-get-issue (tabulated-list-get-id))))
-
-(defun forge-list-browse-issue ()
-  "Visit the url corresponding to the issue at point in a browser."
-  (interactive)
-  (forge-browse-issue (forge-get-issue (tabulated-list-get-id))))
+     id (ghub--username (ghub--host)))))
 
 ;;;; Pullreq
 
 ;;;###autoload
-(defun forge-list-pullreqs (repo)
-  "List pull-requests in a separate buffer."
-  (interactive (list (forge-get-repository t)))
-  (forge--list-topics 'forge-pullreq-list-mode nil
+(defun forge-list-pullreqs (id)
+  "List pull-requests of the current repository in a separate buffer."
+  (interactive (list (oref (forge-get-repository t) id)))
+  (forge--list-topics id 'forge-pullreq-list-mode nil
     (forge-sql [:select $i1 :from pullreq :where (= repository $s2)]
                (forge--topic-list-columns-vector)
-               (oref repo id))))
+               id)))
 
 ;;;###autoload
-(defun forge-list-assigned-pullreqs (repo)
-  "List pull-requests assigned to you in a separate buffer."
-  (interactive (list (forge-get-repository t)))
-  (forge--list-topics 'forge-pullreq-list-mode nil
+(defun forge-list-assigned-pullreqs (id)
+  "List pull-requests of the current repository that are assigned to you.
+List them in a separate buffer."
+  (interactive (list (oref (forge-get-repository t) id)))
+  (forge--list-topics id 'forge-pullreq-list-mode nil
     (forge-sql
      [:select $i1 :from [pullreq pullreq_assignee assignee]
       :where (and (= pullreq_assignee:pullreq pullreq:id)
@@ -147,34 +175,38 @@
                   (isnull pullreq:closed))
       :order-by [(desc updated)]]
      (forge--topic-list-columns-vector)
-     (oref repo id)
-     (ghub--username (ghub--host)))))
+     id (ghub--username (ghub--host)))))
 
-(defun forge-list-visit-pullreq ()
-  "View the pull-request at point in a separate buffer."
-  (interactive)
-  (forge-visit-pullreq (forge-get-pullreq (tabulated-list-get-id))))
+;;;; Repository
 
-(defun forge-list-browse-pullreq ()
-  "Visit the url corresponding to the pull-request at point in a browser."
+;;;###autoload
+(defun forge-list-repositories ()
+  "List known repositories in a separate buffer.
+Here \"known\" means that an entry exists in the local database."
   (interactive)
-  (forge-browse-pullreq (forge-get-pullreq (tabulated-list-get-id))))
+  (with-current-buffer (get-buffer-create "*Forge Repositories*")
+    (forge-repository-list-mode)
+    (forge-repository-list-refresh)
+    (tabulated-list-print)
+    (switch-to-buffer (current-buffer))))
 
 ;;; Internal
 
-(defun forge--list-topics (mode buffer-name rows)
+(defun forge--list-topics (repo-id mode buffer-name rows)
   (declare (indent 2))
-  (let ((topdir (magit-toplevel)))
+  (let ((repo (forge-get-repository (list :id repo-id)))
+        (topdir (magit-toplevel)))
     (with-current-buffer
         (get-buffer-create
          (or buffer-name
-             (let ((repo (forge-get-repository t)))
-               (format "*%s: %s/%s*"
-                       (substring (symbol-name mode) 0 -5)
-                       (oref repo owner)
-                       (oref repo name)))))
-      (setq default-directory topdir)
+             (format "*%s: %s/%s*"
+                     (substring (symbol-name mode) 0 -5)
+                     (oref repo owner)
+                     (oref repo name))))
       (funcall mode)
+      (setq forge-buffer-repository repo)
+      (when topdir
+        (setq default-directory topdir))
       (setq tabulated-list-entries
             (mapcar (lambda (row)
                       (list (car row)
@@ -183,21 +215,25 @@
                                           (if-let ((pp (nth 5 col)))
                                               (funcall pp val)
                                             (if val (format "%s" val) "")))
-                                        row forge-topic-list-columns))))
+                                        (cdr row)
+                                        forge-topic-list-columns))))
                     rows))
       (tabulated-list-print)
       (switch-to-buffer (current-buffer)))))
 
-(defvar forge-topic-list-columns
-  '(("#" 5
-     (lambda (a b)
-       (> (car a) (car b)))
-     (:right-align t) number nil)
-    ("Title" 35 t nil title  nil)
-    ))
+(defun forge-topic-list-sort-by-number (a b)
+  "Sort the `tabulated-list-entries' by topic number.
+This assumes that `number' is the first column, otherwise
+it silently fails."
+  (ignore-errors
+    (> (read (aref (cadr a) 0))
+       (read (aref (cadr b) 0)))))
 
 (defun forge--topic-list-columns-vector (&optional qualify)
-  (let ((lst (--map (nth 4 it) forge-topic-list-columns)))
+  (forge--list-columns-vector forge-topic-list-columns qualify))
+
+(defun forge--list-columns-vector (columns &optional qualify)
+  (let ((lst (cons 'id (--map (nth 4 it) columns))))
     (vconcat (if qualify (-replace 'name 'packages:name lst) lst))))
 
 ;;; _

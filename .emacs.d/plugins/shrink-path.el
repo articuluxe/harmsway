@@ -49,7 +49,7 @@
   "Return fish-style truncated string based on FULL-PATH.
 Optional parameter TRUNCATE-ALL will cause the function to truncate the last
 directory too."
-  (let* ((home (getenv "HOME"))
+  (let* ((home (expand-file-name "~"))
          (path (replace-regexp-in-string
                 (s-concat "^" home) "~" full-path))
          (split (s-split "/" path 'omit-nulls))

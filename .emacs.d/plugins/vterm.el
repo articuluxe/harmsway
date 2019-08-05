@@ -42,7 +42,7 @@
 
 ;;; Code:
 
-(require 'ansi-color)
+(require 'term)
 
 (defvar vterm-install-buffer-name " *Install vterm"
   "Name of the buffer used for compiling vterm-module.")
@@ -84,7 +84,7 @@
   :type 'number
   :group 'vterm)
 
-(defcustom vterm-keymap-exceptions '("C-c" "C-x" "C-u" "C-g" "C-h" "M-x" "M-o" "C-v" "M-v" "C-y")
+(defcustom vterm-keymap-exceptions '("C-c" "C-x" "C-u" "C-g" "C-h" "M-x" "M-o" "C-v" "M-v" "C-y" "M-y")
   "Exceptions for vterm-keymap.
 
 If you use a keybinding with a prefix-key, add that prefix-key to
@@ -120,11 +120,92 @@ for different shell"
   :type 'hook
   :group 'vterm)
 
+(defface vterm-color-default
+  `((t :inherit default))
+  "The default normal color and bright color.
+the foreground color are used for normal color,
+and background color are used for bright color. "
+  :group 'vterm)
+
+(defface vterm-color-black
+  `((t :inherit term-color-black))
+  "Face used to render black color code.
+the foreground color are used for normal color,
+and background color are used for bright color. "
+  :group 'vterm)
+
+(defface vterm-color-red
+  `((t :inherit term-color-red))
+  "Face used to render red color code.
+the foreground color are used for normal color,
+and background color are used for bright color. "
+  :group 'vterm)
+
+(defface vterm-color-green
+  `((t :inherit term-color-green))
+  "Face used to render green color code.
+the foreground color are used for normal color,
+and background color are used for bright color. "
+  :group 'vterm)
+
+(defface vterm-color-yellow
+  `((t :inherit term-color-yellow))
+  "Face used to render yellow color code.
+the foreground color are used for normal color,
+and background color are used for bright color. "
+  :group 'vterm)
+
+(defface vterm-color-blue
+  `((t :inherit term-color-blue))
+  "Face used to render blue color code.
+the foreground color are used for normal color,
+and background color are used for bright color. "
+  :group 'vterm)
+
+(defface vterm-color-magenta
+  `((t :inherit term-color-magenta))
+  "Face used to render magenta color code.
+the foreground color are used for normal color,
+and background color are used for bright color. "
+  :group 'vterm)
+
+(defface vterm-color-cyan
+  `((t :inherit term-color-cyan))
+  "Face used to render cyan color code.
+the foreground color are used for normal color,
+and background color are used for bright color. "
+  :group 'vterm)
+
+(defface vterm-color-white
+  `((t :inherit term-color-white))
+  "Face used to render white color code.
+the foreground color are used for normal color,
+and background color are used for bright color. "
+  :group 'vterm)
+
+(defvar vterm-color-palette
+  [vterm-color-black
+   vterm-color-red
+   vterm-color-green
+   vterm-color-yellow
+   vterm-color-blue
+   vterm-color-magenta
+   vterm-color-cyan
+   vterm-color-white]
+  "Color palette for the foreground and background.")
+
 (defvar-local vterm--term nil
   "Pointer to Term.")
 
 (defvar-local vterm--process nil
   "Shell process of current term.")
+
+(defvar-local vterm--redraw-timer nil)
+
+(defvar vterm-timer-delay 0.01
+  "Delay for refreshing the buffer after receiving updates from libvterm.
+Improves performance when receiving large bursts of data.
+If nil, never delay")
 
 (define-derived-mode vterm-mode fundamental-mode "VTerm"
   "Major mode for vterm buffer."
@@ -140,7 +221,7 @@ for different shell"
   (if (version< emacs-version "27")
       (add-hook 'window-size-change-functions #'vterm--window-size-change-26 t t)
     (add-hook 'window-size-change-functions #'vterm--window-size-change t t))
-  (let ((process-environment (append '("TERM=xterm"
+  (let ((process-environment (append '("TERM=xterm-256color"
                                        "INSIDE_EMACS=vterm"
                                        "LINES"
                                        "COLUMNS")
@@ -151,34 +232,16 @@ for different shell"
            :name "vterm"
            :buffer (current-buffer)
            :command `("/bin/sh" "-c"
-                      ,(format "stty -nl sane iutf8 rows %d columns %d >/dev/null && exec %s"
+                      ,(format "stty -nl sane iutf8 erase ^? rows %d columns %d >/dev/null && exec %s"
                                (window-body-height)
                                (window-body-width)
                                vterm-shell))
            :coding 'no-conversion
            :connection-type 'pty
            :filter #'vterm--filter
-           :sentinel (when vterm-exit-functions #'vterm--sentinel)))))
+           :sentinel (when vterm-exit-functions #'vterm--sentinel))))
+  (vterm--set-pty-name vterm--term (process-tty-name vterm--process)))
 
-;; Keybindings
-(define-key vterm-mode-map [tab]                       #'vterm--self-insert)
-(define-key vterm-mode-map [backspace]                 #'vterm--self-insert)
-(define-key vterm-mode-map [M-backspace]               #'vterm--self-insert)
-(define-key vterm-mode-map [return]                    #'vterm-send-return)
-(define-key vterm-mode-map [left]                      #'vterm--self-insert)
-(define-key vterm-mode-map [right]                     #'vterm--self-insert)
-(define-key vterm-mode-map [up]                        #'vterm--self-insert)
-(define-key vterm-mode-map [down]                      #'vterm--self-insert)
-(define-key vterm-mode-map [home]                      #'vterm--self-insert)
-(define-key vterm-mode-map [end]                       #'vterm--self-insert)
-(define-key vterm-mode-map [escape]                    #'vterm--self-insert)
-(define-key vterm-mode-map [remap self-insert-command] #'vterm--self-insert)
-(define-key vterm-mode-map [remap yank]                #'vterm-yank)
-(define-key vterm-mode-map (kbd "C-c C-y")             #'vterm--self-insert)
-(define-key vterm-mode-map (kbd "C-c C-c")             #'vterm-send-ctrl-c)
-(define-key vterm-mode-map (kbd "C-_")                 #'vterm--self-insert)
-(define-key vterm-mode-map (kbd "C-SPC")               #'vterm--self-insert)
-(define-key vterm-mode-map (kbd "C-/")                 #'vterm-undo)
 
 ;; Function keys and most of C- and M- bindings
 (mapc (lambda (key)
@@ -192,6 +255,52 @@ for different shell"
                                        for key = (format "%s%c" prefix char)
                                        unless (member key vterm-keymap-exceptions)
                                        collect key))))
+
+;; Keybindings
+(define-key vterm-mode-map [tab]                       #'vterm-send-tab)
+(define-key vterm-mode-map (kbd "TAB")                 #'vterm-send-tab)
+(define-key vterm-mode-map [backtab]                   #'vterm--self-insert)
+(define-key vterm-mode-map [backspace]                 #'vterm-send-backspace)
+(define-key vterm-mode-map (kbd "DEL")                 #'vterm-send-backspace)
+(define-key vterm-mode-map [M-backspace]               #'vterm-send-meta-backspace)
+(define-key vterm-mode-map (kbd "M-DEL")               #'vterm-send-meta-backspace)
+(define-key vterm-mode-map [return]                    #'vterm-send-return)
+(define-key vterm-mode-map (kbd "RET")                 #'vterm-send-return)
+(define-key vterm-mode-map [left]                      #'vterm-send-left)
+(define-key vterm-mode-map [right]                     #'vterm-send-right)
+(define-key vterm-mode-map [up]                        #'vterm-send-up)
+(define-key vterm-mode-map [down]                      #'vterm-send-down)
+(define-key vterm-mode-map [home]                      #'vterm--self-insert)
+(define-key vterm-mode-map [end]                       #'vterm--self-insert)
+(define-key vterm-mode-map [escape]                    #'vterm--self-insert)
+(define-key vterm-mode-map [remap yank]                #'vterm-yank)
+(define-key vterm-mode-map [remap yank-pop]            #'vterm-yank-pop)
+(define-key vterm-mode-map (kbd "C-SPC")               #'vterm--self-insert)
+(define-key vterm-mode-map (kbd "C-_")                 #'vterm--self-insert)
+(define-key vterm-mode-map (kbd "C-/")                 #'vterm-undo)
+(define-key vterm-mode-map (kbd "M-.")                 #'vterm-send-meta-dot)
+(define-key vterm-mode-map (kbd "M-,")                 #'vterm-send-meta-comma)
+(define-key vterm-mode-map (kbd "C-c C-y")             #'vterm--self-insert)
+(define-key vterm-mode-map (kbd "C-c C-c")             #'vterm-send-ctrl-c)
+(define-key vterm-mode-map [remap self-insert-command] #'vterm--self-insert)
+
+(define-key vterm-mode-map (kbd "C-c C-t")             #'vterm-copy-mode)
+
+(defvar vterm-copy-mode-map (make-sparse-keymap)
+  "Minor mode map for `vterm-copy-mode'.")
+(define-key vterm-copy-mode-map (kbd "C-c C-t")        #'vterm-copy-mode)
+
+(define-minor-mode vterm-copy-mode
+  "Toggle vterm copy mode."
+  :group 'vterm
+  :lighter " VTermCopy"
+  :keymap vterm-copy-mode-map
+  (if vterm-copy-mode
+      (progn                            ;enable vterm-copy-mode
+        (use-local-map nil)
+        (vterm-send-stop))
+    (use-local-map vterm-mode-map)
+    (vterm-send-start)))
 
 (defun vterm--self-insert ()
   "Sends invoking key to libvterm."
@@ -209,9 +318,69 @@ for different shell"
   (when vterm--term
     (let ((inhibit-redisplay t)
           (inhibit-read-only t))
-      (when (and shift (not meta) (not ctrl))
+      (when (and (not (symbolp last-input-event)) shift (not meta) (not ctrl))
         (setq key (upcase key)))
       (vterm--update vterm--term key shift meta ctrl))))
+
+(defun vterm-send-start ()
+  "Output from the system is started when the system receives START."
+  (interactive)
+  (vterm-send-key "<start>"))
+
+(defun vterm-send-stop ()
+  "Output from the system is stopped when the system receives STOP."
+  (interactive)
+  (vterm-send-key "<stop>"))
+
+(defun vterm-send-return ()
+  "Sends `<return>' to the libvterm."
+  (interactive)
+  (vterm-send-key "<return>"))
+
+(defun vterm-send-tab ()
+  "Sends `<tab>' to the libvterm."
+  (interactive)
+  (vterm-send-key "<tab>"))
+
+(defun vterm-send-backspace ()
+  "Sends `<backspace>' to the libvterm."
+  (interactive)
+  (vterm-send-key "<backspace>"))
+
+(defun vterm-send-meta-backspace ()
+  "Sends `M-<backspace>' to the libvterm."
+  (interactive)
+  (vterm-send-key "<backspace>" nil t))
+
+(defun vterm-send-up ()
+  "Sends `<up>' to the libvterm."
+  (interactive)
+  (vterm-send-key "<up>"))
+
+(defun vterm-send-down ()
+  "Sends `<down>' to the libvterm."
+  (interactive)
+  (vterm-send-key "<down>"))
+
+(defun vterm-send-left()
+  "Sends `<left>' to the libvterm."
+  (interactive)
+  (vterm-send-key "<left>"))
+
+(defun vterm-send-right()
+  "Sends `<right>' to the libvterm."
+  (interactive)
+  (vterm-send-key "<right>"))
+
+(defun vterm-send-meta-dot()
+  "Sends `M-.' to the libvterm."
+  (interactive)
+  (vterm-send-key "." nil t))
+
+(defun vterm-send-meta-comma()
+  "Sends `M-,' to the libvterm."
+  (interactive)
+  (vterm-send-key "," nil t))
 
 (defun vterm-send-ctrl-c ()
   "Sends `C-c' to the libvterm."
@@ -223,16 +392,22 @@ for different shell"
   (interactive)
   (vterm-send-key "_" nil nil t))
 
-(defun vterm-send-return ()
-  "Sends C-m to the libvterm."
-  (interactive)
-  (process-send-string vterm--process "\C-m"))
-
-(defun vterm-yank ()
+(defun vterm-yank (&optional arg)
   "Implementation of `yank' (paste) in vterm."
-  (interactive)
-  (vterm-send-string (current-kill 0)
-                     (not current-prefix-arg)))
+  (interactive "P")
+  (let ((inhibit-read-only t))
+    (cl-letf (((symbol-function 'insert-for-yank)
+               #'(lambda(str) (vterm-send-string str t))))
+      (yank arg))))
+
+(defun vterm-yank-pop(&optional arg)
+  "Implementation of `yank-pop' in vterm."
+  (interactive "p")
+  (let ((inhibit-read-only t)
+        (yank-undo-function #'(lambda(_start _end) (vterm-undo))))
+    (cl-letf (((symbol-function 'insert-for-yank)
+               #'(lambda(str) (vterm-send-string str t))))
+      (yank-pop arg))))
 
 (defun vterm-send-string (string &optional paste-p)
   "Send the string STRING to vterm.
@@ -244,13 +419,6 @@ Optional argument PASTE-P paste-p."
       (vterm--update vterm--term (char-to-string char) nil nil nil))
     (when paste-p
       (vterm--update vterm--term "<end_paste>" nil nil nil))))
-
-(defvar-local vterm--redraw-timer nil)
-
-(defvar vterm-timer-delay 0.01
-  "Delay for refreshing the buffer after receiving updates from libvterm.
-Improves performance when receiving large bursts of data.
-If nil, never delay")
 
 (defun vterm--invalidate()
   "The terminal buffer is invalidated, the buffer needs redrawing."
@@ -307,7 +475,7 @@ Then triggers a redraw from the module."
         (vterm--write-input vterm--term input)
         (vterm--update vterm--term)))))
 
-(defun vterm--sentinel (process event)
+(defun vterm--sentinel (process _event)
   "Sentinel of vterm PROCESS.
 Argument EVENT process event."
   (let ((buf (process-buffer process)))
@@ -361,6 +529,27 @@ Feeds the size change to the virtual terminal."
   "Run the `vterm--set-title-hook' with TITLE as argument."
   (run-hook-with-args 'vterm-set-title-functions title))
 
+(defun vterm--set-directory (path)
+  "Set `default-directory' to PATH."
+  (when (file-directory-p path)
+    (setq default-directory path)))
+
+(defun vterm--get-color(index)
+  "Get color by index from `vterm-color-palette'.
+Argument INDEX index of color."
+  (cond
+   ((and (>= index 0)(< index 8))
+    (face-foreground
+     (elt vterm-color-palette index)
+     nil 'default))
+   ((and (>= index 8 )(< index 16))
+    (face-background
+     (elt vterm-color-palette (% index 8))
+     nil 'default))
+   ((= index -1)               ;-1 foreground
+    (face-foreground 'vterm-color-default nil 'default))
+   (t                                   ;-2 background
+    (face-background 'vterm-color-default nil 'default))))
 
 (provide 'vterm)
 ;;; vterm.el ends here

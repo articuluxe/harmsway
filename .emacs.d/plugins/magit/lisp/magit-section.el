@@ -479,6 +479,17 @@ With a prefix argument also expand it." heading)
   "Show the body of the current section."
   (interactive (list (magit-current-section)))
   (oset section hidden nil)
+  (magit-section--maybe-wash section)
+  (when-let ((beg (oref section content)))
+    (remove-overlays beg (oref section end) 'invisible t))
+  (magit-section-maybe-update-visibility-indicator section)
+  (magit-section-maybe-cache-visibility section)
+  (dolist (child (oref section children))
+    (if (oref child hidden)
+        (magit-section-hide child)
+      (magit-section-show child))))
+
+(defun magit-section--maybe-wash (section)
   (when-let ((washer (oref section washer)))
     (oset section washer nil)
     (let ((inhibit-read-only t)
@@ -491,15 +502,7 @@ With a prefix argument also expand it." heading)
           (oset section content (point-marker))
           (funcall washer)
           (oset section end (point-marker)))))
-    (magit-section-update-highlight))
-  (when-let ((beg (oref section content)))
-    (remove-overlays beg (oref section end) 'invisible t))
-  (magit-section-maybe-update-visibility-indicator section)
-  (magit-section-maybe-cache-visibility section)
-  (dolist (child (oref section children))
-    (if (oref child hidden)
-        (magit-section-hide child)
-      (magit-section-show child))))
+    (magit-section-update-highlight)))
 
 (defun magit-section-hide (section)
   "Hide the body of the current section."
@@ -1076,9 +1079,12 @@ insert a newline character if necessary."
   (declare (indent defun))
   (when args
     (let ((heading (apply #'concat args)))
-      (insert (if (text-property-not-all 0 (length heading) 'face nil heading)
+      (insert (if (or (text-property-not-all 0 (length heading)
+                                             'font-lock-face nil heading)
+                      (text-property-not-all 0 (length heading)
+                                             'face nil heading))
                   heading
-                (propertize heading 'face 'magit-section-heading)))))
+                (propertize heading 'font-lock-face 'magit-section-heading)))))
   (unless (bolp)
     (insert ?\n))
   (magit-maybe-make-margin-overlay)
@@ -1239,7 +1245,7 @@ invisible."
                           magit-diff-hunk-heading-selection)))
     (setq face (list :foreground (face-foreground face))))
   (let ((ov (make-overlay start end nil t)))
-    (overlay-put ov 'face face)
+    (overlay-put ov 'font-lock-face face)
     (overlay-put ov 'evaporate t)
     (push ov magit-section-highlight-overlays)
     ov))
@@ -1404,11 +1410,12 @@ invisible."
           (overlay-put
            ov 'after-string
            (propertize
-            (car magit-section-visibility-indicator) 'face
+            (car magit-section-visibility-indicator) 'font-lock-face
             (let ((pos (overlay-start ov)))
-              (delq nil (nconc (--map (overlay-get it 'face)
+              (delq nil (nconc (--map (overlay-get it 'font-lock-face)
                                       (overlays-at pos))
-                               (list (get-char-property pos 'face))))))))))))
+                               (list (get-char-property
+                                      pos 'font-lock-face))))))))))))
 
 (defun magit-section-maybe-remove-visibility-indicator (section)
   (when (and magit-section-visibility-indicator

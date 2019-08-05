@@ -202,7 +202,7 @@ background color of the `default' face otherwise."
   :group 'centaur-tabs
   :type 'int)
 
-(defcustom centaur-tabs-bar-height (+ 6 centaur-tabs-height)
+(defcustom centaur-tabs-bar-height (+ 8 centaur-tabs-height)
   "The height of bar."
   :group 'centaur-tabs
   :type 'int)
@@ -719,12 +719,17 @@ Call `centaur-tabs-tab-label-function' to obtain a label for TAB."
 		   centaur-tabs-active-bar
 		   'centaur-tabs-tab tab
 		   'pointer centaur-tabs-mouse-pointer
-		   'local-map (purecopy (centaur-tabs-make-header-line-mouse-map
-					 'mouse-1
-					 `(lambda (event) (interactive "e")
-					    (let ((window (posn-window (event-start event))))
-					      (when (windowp window) (select-window window)))
-					    (centaur-tabs-buffer-select-tab ',tab)))))
+		   'local-map (purecopy
+			       (let ((map (make-sparse-keymap)))
+				 (define-key map (vector 'header-line 'mouse-1)
+				   `(lambda (event) (interactive "e")
+				      (let ((window (posn-window (event-start event))))
+					(when (windowp window) (select-window window)))
+				      (centaur-tabs-buffer-select-tab ',tab)))
+				 (define-key map (vector 'header-line 'mouse-2)
+				   `(lambda (event) (interactive "e")
+				      (centaur-tabs-buffer-close-tab ',tab)))
+				 map)))
 		""))
 	 (icon (if (and centaur-tabs-set-icons
 			(not centaur-tabs--buffer-show-groups))
@@ -734,12 +739,17 @@ Call `centaur-tabs-tab-label-function' to obtain a label for TAB."
 		    'pointer centaur-tabs-mouse-pointer
 		    'help-echo (with-current-buffer (centaur-tabs-tab-value tab)
 				 (format "%s" (format-mode-line mode-name)))
-		    'local-map (purecopy (centaur-tabs-make-header-line-mouse-map
-					  'mouse-1
-					  `(lambda (event) (interactive "e")
-					     (let ((window (posn-window (event-start event))))
-					       (when (windowp window) (select-window window)))
-					     (centaur-tabs-buffer-select-tab ',tab)))))
+		    'local-map (purecopy
+				(let ((map (make-sparse-keymap)))
+				  (define-key map (vector 'header-line 'mouse-1)
+				    `(lambda (event) (interactive "e")
+				       (let ((window (posn-window (event-start event))))
+					 (when (windowp window) (select-window window)))
+				       (centaur-tabs-buffer-select-tab ',tab)))
+				  (define-key map (vector 'header-line 'mouse-2)
+				    `(lambda (event) (interactive "e")
+				       (centaur-tabs-buffer-close-tab ',tab)))
+				  map)))
 		 ""))
 	 (modified-marker (propertize
 			   (if (and centaur-tabs-set-modified-marker
@@ -798,12 +808,17 @@ Call `centaur-tabs-tab-label-function' to obtain a label for TAB."
       'face face
       'centaur-tabs-tab tab
       'pointer centaur-tabs-mouse-pointer
-      'local-map (purecopy (centaur-tabs-make-header-line-mouse-map
-			    'mouse-1
-			    `(lambda (event) (interactive "e")
-			       (let ((window (posn-window (event-start event))))
-				 (when (windowp window) (select-window window)))
-			       (centaur-tabs-buffer-select-tab ',tab)))))
+      'local-map (purecopy
+		  (let ((map (make-sparse-keymap)))
+		    (define-key map (vector 'header-line 'mouse-1)
+		      `(lambda (event) (interactive "e")
+			 (let ((window (posn-window (event-start event))))
+			   (when (windowp window) (select-window window)))
+			 (centaur-tabs-buffer-select-tab ',tab)))
+		    (define-key map (vector 'header-line 'mouse-2)
+		      `(lambda (event) (interactive "e")
+			 (centaur-tabs-buffer-close-tab ',tab)))
+		    map)))
      icon
      (propertize
       (if centaur-tabs-tab-label-function
@@ -814,23 +829,33 @@ Call `centaur-tabs-tab-label-function' to obtain a label for TAB."
       'pointer centaur-tabs-mouse-pointer
       'help-echo (with-current-buffer (centaur-tabs-tab-value tab)
 		   (buffer-file-name))
-      'local-map (purecopy (centaur-tabs-make-header-line-mouse-map
-			    'mouse-1
-			    `(lambda (event) (interactive "e")
-			       (let ((window (posn-window (event-start event))))
-				 (when (windowp window) (select-window window)))
-			       (centaur-tabs-buffer-select-tab ',tab)))))
+      'local-map (purecopy
+		  (let ((map (make-sparse-keymap)))
+		    (define-key map (vector 'header-line 'mouse-1)
+		      `(lambda (event) (interactive "e")
+			 (let ((window (posn-window (event-start event))))
+			   (when (windowp window) (select-window window)))
+			 (centaur-tabs-buffer-select-tab ',tab)))
+		    (define-key map (vector 'header-line 'mouse-2)
+		      `(lambda (event) (interactive "e")
+			 (centaur-tabs-buffer-close-tab ',tab)))
+		    map)))
      (propertize
       " "
       'face face
       'centaur-tabs-tab tab
       'pointer centaur-tabs-mouse-pointer
-      'local-map (purecopy (centaur-tabs-make-header-line-mouse-map
-			    'mouse-1
-			    `(lambda (event) (interactive "e")
-			       (let ((window (posn-window (event-start event))))
-				 (when (windowp window) (select-window window)))
-			       (centaur-tabs-buffer-select-tab ',tab)))))
+      'local-map (purecopy
+		  (let ((map (make-sparse-keymap)))
+		    (define-key map (vector 'header-line 'mouse-1)
+		      `(lambda (event) (interactive "e")
+			 (let ((window (posn-window (event-start event))))
+			   (when (windowp window) (select-window window)))
+			 (centaur-tabs-buffer-select-tab ',tab)))
+		    (define-key map (vector 'header-line 'mouse-2)
+		      `(lambda (event) (interactive "e")
+			 (centaur-tabs-buffer-close-tab ',tab)))
+		    map)))
      modified-marker
      close-button
      (centaur-tabs-separator-render centaur-tabs-style-right face))))
@@ -968,14 +993,18 @@ instead."
   "Select the previous available tab.
 Depend on the setting of the option `centaur-tabs-cycle-scope'."
   (interactive)
-  (centaur-tabs-cycle t))
+  (if (centaur-tabs-current-tabset t)
+      (centaur-tabs-cycle t)
+    (previous-buffer)))
 
 ;;;###autoload
 (defun centaur-tabs-forward ()
   "Select the next available tab.
 Depend on the setting of the option `centaur-tabs-cycle-scope'."
   (interactive)
-  (centaur-tabs-cycle))
+  (if (centaur-tabs-current-tabset t)
+      (centaur-tabs-cycle)
+    (next-buffer)))
 
 ;;;###autoload
 (defun centaur-tabs-backward-group ()
@@ -1981,8 +2010,10 @@ not the actual logical index position of the current group."
 (setq uniquify-buffer-name-style 'post-forward-angle-brackets)
 (setq uniquify-after-kill-buffer-p t)
 
-(dolist (hook centaur-tabs-hide-tabs-hooks)
-  (add-hook hook (lambda () (setq-local header-line-format nil))))
+(mapc (lambda (hook)
+	(add-hook hook (lambda ()
+			 (setq-local header-line-format nil))))
+      centaur-tabs-hide-tabs-hooks)
 
 ;; Rules to control buffer's group rules.
 (defvar centaur-tabs-groups-hash (make-hash-table :test 'equal))
