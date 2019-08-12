@@ -1,6 +1,6 @@
 mkdir -p src/build
 cd src/build
-cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo ..
+PATH=/usr/bin cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo ..
 make
 cd ../..
 cp src/vterm.el ../../../.emacs.d/plugins

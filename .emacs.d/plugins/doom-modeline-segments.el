@@ -159,6 +159,7 @@
 (declare-function mu4e-alert-default-mode-line-formatter 'mu4e-alert)
 (declare-function mu4e-alert-enable-mode-line-display 'mu4e-alert)
 (declare-function nyan-create 'nyan-mode)
+(declare-function org-edit-src-save 'org-src)
 (declare-function org-narrow-to-block 'org)
 (declare-function org-narrow-to-element 'org)
 (declare-function org-narrow-to-subtree 'org)
@@ -299,6 +300,7 @@ Uses `all-the-icons-material' to fetch the icon."
 (advice-add #'org-narrow-to-block :after #'doom-modeline-update-buffer-file-state-icon)
 (advice-add #'org-narrow-to-element :after #'doom-modeline-update-buffer-file-state-icon)
 (advice-add #'org-narrow-to-subtree :after #'doom-modeline-update-buffer-file-state-icon)
+(advice-add #'org-edit-src-save :after #'doom-modeline-update-buffer-file-state-icon)
 
 (when (>= emacs-major-version 26)
   (add-variable-watcher
@@ -346,6 +348,7 @@ mouse-1: Previous buffer\nmouse-3: Next buffer"
 (advice-add #'symbol-overlay-rename :after #'doom-modeline-update-buffer-file-name)
 (advice-add #'popup-create :after #'doom-modeline-update-buffer-file-name)
 (advice-add #'popup-delete :after #'doom-modeline-update-buffer-file-name)
+(advice-add #'org-edit-src-save :after #'doom-modeline-update-buffer-file-name)
 
 (with-no-warnings
   (if (boundp 'after-focus-change-function)
@@ -1471,7 +1474,8 @@ mouse-1: Display Line and Column Mode Menu"
 
 (defsubst doom-modeline--overwrite ()
   "The current overwrite state. Requires `overwrite-mode' to be enabled."
-  (when (bound-and-true-p overwrite-mode)
+  (when (and (bound-and-true-p overwrite-mode)
+             (not (bound-and-true-p evil-local-mode)))
     (propertize " <O> " 'face (if (doom-modeline--active)
                                   'doom-modeline-urgent
                                 'mode-line-inactive))))

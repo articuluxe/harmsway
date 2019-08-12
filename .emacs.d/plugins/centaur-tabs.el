@@ -144,6 +144,20 @@
      (:inherit default)))
   "Face used to inherit tabbar-unselected-modified face")
 
+(defvar centaur-tabs-close-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (vector 'header-line 'mouse-1) 'centaur-tabs-do-close)
+    (define-key map (vector 'header-line 'mouse-2) 'centaur-tabs-do-close)
+    map)
+  "Keymap used for setting mouse events for close button.")
+
+(defvar centaur-tabs-default-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (vector 'header-line 'mouse-1) 'centaur-tabs-do-select)
+    (define-key map (vector 'header-line 'mouse-2) 'centaur-tabs-do-close)
+    map)
+  "Keymap used for setting mouse events for a tab.")
+
 ;;; Customs
 ;;
 (defcustom centaur-tabs-cycle-scope nil
@@ -693,6 +707,32 @@ hooked functions"
 (add-hook 'first-change-hook #'centaur-tabs-on-modifying-buffer)
 (add-hook 'after-change-functions #'centaur-tabs-after-modifying-buffer)
 
+(defun centaur-tabs-get-tab-from-event (event)
+  "Given a mouse EVENT, extract the tab at the mouse point."
+  (let ((pos (posn-string (event-start event))))
+    (get-text-property (cdr pos) 'centaur-tabs-tab (car pos))))
+
+(defun centaur-tabs-do-select (event)
+  "Given a mouse EVENT, select the tab at the mouse point."
+  (interactive "e")
+  (select-window (posn-window (event-start event)))
+  (centaur-tabs-buffer-select-tab `,(centaur-tabs-get-tab-from-event event)))
+
+(defun centaur-tabs-do-close (event)
+  "Given a mouse EVENT, close the tab at the mouse point."
+  (interactive "e")
+  (centaur-tabs-buffer-close-tab `,(centaur-tabs-get-tab-from-event event)))
+
+;; Change the font and height for all tab faces
+(defun centaur-tabs-change-fonts (family height)
+  "Change the fonts of all the tabs.
+FAMILY is the font family and HEIGHT is the font height."
+  (dolist (centaur-face '(centaur-tabs-selected
+			  centaur-tabs-selected-modified
+			  centaur-tabs-unselected
+			  centaur-tabs-unselected-modified))
+    (set-face-attribute centaur-face nil :family family :height height)))
+
 ;;; Tabs
 ;;
 (defsubst centaur-tabs-line-tab (tab)
@@ -700,36 +740,28 @@ hooked functions"
 That is, a propertized string used as an `header-line-format' template
 element.
 Call `centaur-tabs-tab-label-function' to obtain a label for TAB."
-  (let* ((selected-p (centaur-tabs-selected-p tab (centaur-tabs-current-tabset)))
-	 (modified-p (buffer-modified-p (centaur-tabs-tab-value tab)))
-	 (not-read-only-p (with-current-buffer (centaur-tabs-tab-value tab)
-			    (not buffer-read-only)))
+  (let* ((buf (centaur-tabs-tab-value tab))
+	 (buf-file-name (buffer-file-name buf))
+	 (selected-p (centaur-tabs-selected-p tab (centaur-tabs-current-tabset)))
+	 (not-read-only-p (with-current-buffer buf (not buffer-read-only)))
+	 (modified-p (and not-read-only-p (buffer-modified-p buf)))
+	 (use-mod-mark-p (and centaur-tabs-set-modified-marker modified-p))
+	 (mod-mark-face (if selected-p
+			    'centaur-tabs-modified-marker-selected
+			  'centaur-tabs-modified-marker-unselected))
 	 (face (if selected-p
-		   (if (and modified-p
-			    not-read-only-p)
+		   (if modified-p
 		       'centaur-tabs-selected-modified
 		     'centaur-tabs-selected)
-		 (if (and modified-p
-			  not-read-only-p)
+		 (if modified-p
 		     'centaur-tabs-unselected-modified
 		   'centaur-tabs-unselected)))
-	 (bar (if (and selected-p
-		       (eq centaur-tabs-set-bar 'left))
+	 (bar (if (and selected-p (eq centaur-tabs-set-bar 'left))
 		  (propertize
 		   centaur-tabs-active-bar
 		   'centaur-tabs-tab tab
 		   'pointer centaur-tabs-mouse-pointer
-		   'local-map (purecopy
-			       (let ((map (make-sparse-keymap)))
-				 (define-key map (vector 'header-line 'mouse-1)
-				   `(lambda (event) (interactive "e")
-				      (let ((window (posn-window (event-start event))))
-					(when (windowp window) (select-window window)))
-				      (centaur-tabs-buffer-select-tab ',tab)))
-				 (define-key map (vector 'header-line 'mouse-2)
-				   `(lambda (event) (interactive "e")
-				      (centaur-tabs-buffer-close-tab ',tab)))
-				 map)))
+		   'local-map centaur-tabs-default-map)
 		""))
 	 (icon (if (and centaur-tabs-set-icons
 			(not centaur-tabs--buffer-show-groups))
@@ -737,134 +769,73 @@ Call `centaur-tabs-tab-label-function' to obtain a label for TAB."
 		    (centaur-tabs-icon tab face selected-p)
 		    'centaur-tabs-tab tab
 		    'pointer centaur-tabs-mouse-pointer
-		    'help-echo (with-current-buffer (centaur-tabs-tab-value tab)
-				 (format "%s" (format-mode-line mode-name)))
-		    'local-map (purecopy
-				(let ((map (make-sparse-keymap)))
-				  (define-key map (vector 'header-line 'mouse-1)
-				    `(lambda (event) (interactive "e")
-				       (let ((window (posn-window (event-start event))))
-					 (when (windowp window) (select-window window)))
-				       (centaur-tabs-buffer-select-tab ',tab)))
-				  (define-key map (vector 'header-line 'mouse-2)
-				    `(lambda (event) (interactive "e")
-				       (centaur-tabs-buffer-close-tab ',tab)))
-				  map)))
-		 ""))
-	 (modified-marker (propertize
-			   (if (and centaur-tabs-set-modified-marker
-				    modified-p
-				    not-read-only-p
-				    (not centaur-tabs-set-close-button))
-			       centaur-tabs-modified-marker
-			     "") ;; Returns last one if all are not nil
-			   'face (if selected-p
-				     'centaur-tabs-modified-marker-selected
-				   'centaur-tabs-modified-marker-unselected)
-			   'pointer centaur-tabs-mouse-pointer
-			   'centaur-tabs-tab tab
-			   'local-map (purecopy (centaur-tabs-make-header-line-mouse-map
-						 'mouse-1
-						 `(lambda (event) (interactive "e")
-						    (let ((window (posn-window (event-start event))))
-						      (when (windowp window) (select-window window)))
-						    (centaur-tabs-buffer-select-tab ',tab))))))
-	 (close-button (if centaur-tabs-set-close-button
-			   (if (and centaur-tabs-set-modified-marker
-				    not-read-only-p
-				    modified-p)
-			       (propertize
-				centaur-tabs-modified-marker
-				'face (if selected-p
-					  'centaur-tabs-modified-marker-selected
-					'centaur-tabs-modified-marker-unselected)
-				'pointer centaur-tabs-mouse-pointer
-				'help-echo "Close buffer"
-				'centaur-tabs-tab tab
-				'local-map (purecopy (centaur-tabs-make-header-line-mouse-map
-						      'mouse-1
-						      `(lambda (event) (interactive "e") (centaur-tabs-buffer-close-tab ',tab)))))
-			     (propertize
-			      centaur-tabs-close-button
-			      'face (if selected-p
-					'centaur-tabs-close-selected
-				      'centaur-tabs-close-unselected)
-			      'pointer centaur-tabs-mouse-pointer
-			      'help-echo "Close buffer"
-			      'centaur-tabs-tab tab
-			      'mouse-face 'centaur-tabs-close-mouse-face
-			      'local-map (purecopy (centaur-tabs-make-header-line-mouse-map
-						    'mouse-1
-						    `(lambda (event) (interactive "e") (centaur-tabs-buffer-close-tab ',tab))))))
-			 "")))
+		    'help-echo (with-current-buffer buf (format-mode-line mode-name))
+		    'local-map centaur-tabs-default-map)
+		 "")))
     (when (or (not centaur-tabs-style-left)
 	      (not centaur-tabs-style-right))
       (centaur-tabs-select-separator-style centaur-tabs-style))
     (concat
      (centaur-tabs-separator-render centaur-tabs-style-left face)
      bar
-     (propertize
-      " "
-      'face face
-      'centaur-tabs-tab tab
-      'pointer centaur-tabs-mouse-pointer
-      'local-map (purecopy
-		  (let ((map (make-sparse-keymap)))
-		    (define-key map (vector 'header-line 'mouse-1)
-		      `(lambda (event) (interactive "e")
-			 (let ((window (posn-window (event-start event))))
-			   (when (windowp window) (select-window window)))
-			 (centaur-tabs-buffer-select-tab ',tab)))
-		    (define-key map (vector 'header-line 'mouse-2)
-		      `(lambda (event) (interactive "e")
-			 (centaur-tabs-buffer-close-tab ',tab)))
-		    map)))
-     icon
-     (propertize
-      (if centaur-tabs-tab-label-function
-	  (funcall centaur-tabs-tab-label-function tab)
-	tab)
-      'centaur-tabs-tab tab
-      'face face
-      'pointer centaur-tabs-mouse-pointer
-      'help-echo (with-current-buffer (centaur-tabs-tab-value tab)
-		   (buffer-file-name))
-      'local-map (purecopy
-		  (let ((map (make-sparse-keymap)))
-		    (define-key map (vector 'header-line 'mouse-1)
-		      `(lambda (event) (interactive "e")
-			 (let ((window (posn-window (event-start event))))
-			   (when (windowp window) (select-window window)))
-			 (centaur-tabs-buffer-select-tab ',tab)))
-		    (define-key map (vector 'header-line 'mouse-2)
-		      `(lambda (event) (interactive "e")
-			 (centaur-tabs-buffer-close-tab ',tab)))
-		    map)))
-     (propertize
-      " "
-      'face face
-      'centaur-tabs-tab tab
-      'pointer centaur-tabs-mouse-pointer
-      'local-map (purecopy
-		  (let ((map (make-sparse-keymap)))
-		    (define-key map (vector 'header-line 'mouse-1)
-		      `(lambda (event) (interactive "e")
-			 (let ((window (posn-window (event-start event))))
-			   (when (windowp window) (select-window window)))
-			 (centaur-tabs-buffer-select-tab ',tab)))
-		    (define-key map (vector 'header-line 'mouse-2)
-		      `(lambda (event) (interactive "e")
-			 (centaur-tabs-buffer-close-tab ',tab)))
-		    map)))
-     modified-marker
-     close-button
-     (centaur-tabs-separator-render centaur-tabs-style-right face))))
 
-(defun centaur-tabs-make-header-line-mouse-map (mouse function)
-  "Function for mapping FUNCTION to mouse button MOUSE."
-  (let ((map (make-sparse-keymap)))
-    (define-key map (vector 'header-line mouse) function)
-    map))
+     ;; icon
+     (if (= (length icon) 0) ""
+       (concat
+	(propertize
+	 " "
+	 'face face
+	 'centaur-tabs-tab tab
+	 'pointer centaur-tabs-mouse-pointer
+	 'local-map centaur-tabs-default-map)
+	icon))
+
+     ;; tab name
+     (propertize
+      (concat
+       (if centaur-tabs-tab-label-function
+	   (funcall centaur-tabs-tab-label-function tab)
+	 (buffer-name buf))
+       " ")
+      'centaur-tabs-tab tab
+      'face face
+      'pointer centaur-tabs-mouse-pointer
+      'help-echo buf-file-name
+      'local-map centaur-tabs-default-map)
+
+     ;; close button and/or modified marker
+     (if centaur-tabs-set-close-button
+	 (propertize
+	  (if use-mod-mark-p
+	      centaur-tabs-modified-marker
+	    centaur-tabs-close-button)
+	  'face (if use-mod-mark-p
+		    mod-mark-face
+		  (if selected-p
+		      'centaur-tabs-close-selected
+		    'centaur-tabs-close-unselected))
+	  'pointer centaur-tabs-mouse-pointer
+	  'help-echo "Close buffer"
+	  'centaur-tabs-tab tab
+	  'mouse-face 'centaur-tabs-close-mouse-face
+	  'local-map centaur-tabs-close-map)
+       (if (and centaur-tabs-set-modified-marker modified-p)
+	   (propertize
+	    centaur-tabs-modified-marker
+	    'face mod-mark-face
+	    'pointer centaur-tabs-mouse-pointer
+	    'centaur-tabs-tab tab
+	    'help-echo buf-file-name
+	    'local-map centaur-tabs-default-map)
+	 ""))
+
+     (propertize
+      " "
+      'face face
+      'centaur-tabs-tab tab
+      'pointer centaur-tabs-mouse-pointer
+      'local-map centaur-tabs-default-map)
+     (centaur-tabs-separator-render centaur-tabs-style-right face))))
 
 (defun centaur-tabs-line-format (tabset)
   "Return the `header-line-format' value to display TABSET."
@@ -1678,14 +1649,10 @@ That is, a string used to represent it on the tab bar."
   (format " %s"
 	  (let ((bufname (if centaur-tabs--buffer-show-groups
 			     (centaur-tabs-tab-tabset tab)
-			   (centaur-tabs-buffer-name (car tab)))))
+			   (buffer-name (car tab)))))
 	    (if (> centaur-tabs-label-fixed-length 0)
 		(centaur-tabs-truncate-string  centaur-tabs-label-fixed-length bufname)
 	      bufname))))
-
-(defun centaur-tabs-buffer-name (tab-buffer)
-  "Get buffer name of tab using TAB-BUFFER."
-  (buffer-name tab-buffer))
 
 (defvar centaur-tabs-last-scroll-y 0
   "Holds the scroll y of window from the last run of post-command-hooks.")
@@ -2004,11 +1971,6 @@ not the actual logical index position of the current group."
     extension-names))
 
 ;;;;;;;;;;;;;;;;;;;;;;; Default configurations ;;;;;;;;;;;;;;;;;;;;;;;
-
-;; Uniquify tab name when open multiple buffers with same filename.
-(setq uniquify-separator "/")
-(setq uniquify-buffer-name-style 'post-forward-angle-brackets)
-(setq uniquify-after-kill-buffer-p t)
 
 (mapc (lambda (hook)
 	(add-hook hook (lambda ()

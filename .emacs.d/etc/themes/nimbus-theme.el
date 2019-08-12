@@ -69,6 +69,7 @@
        (red            "#d65946")
        (dark-red       "#ad3632")
 
+       (lightest-gray  "#a0a0a0")
        (lighter-gray   "#959595")
        (light-gray     "#858585")
        (gray           "#757575")
@@ -108,6 +109,7 @@
        (file           blue)
        (hash           dark-tan)
        (heading        purple)
+       (hl-line        blue-bg)
        (ignore         blue-gray)
        (indent         darker-gray)
        (key            blue)
@@ -115,7 +117,7 @@
        (line-current   dark-green)
        (name           dark-green)
        (number         orange)
-       (selection      blue-bg)
+       (selection      purple-bg)
        (separator      orange)
        (special        blue-gray)
        (summary        red)
@@ -274,17 +276,18 @@
    `(comint-highlight-prompt ((t (:foreground ,green))))
 
    ;; company
-   `(company-preview-common ((t (:inherit font-lock-comment-face))))
+   `(company-preview ((t (:background ,selection))))
+   `(company-preview-common ((t (:foreground ,lightest-gray))))
    `(company-scrollbar-bg ((t (:background ,dark-teal-bg))))
    `(company-scrollbar-fg ((t (:background ,teal-bg))))
    `(company-template-field ((t (:inherit highlight))))
-   `(company-tooltip ((t (:foreground ,fg :background ,darker-gray))))
+   `(company-tooltip ((t (:foreground ,fg :background ,light-purple-bg))))
    `(company-tooltip-annotation ((t (:inherit font-lock-type-face))))
    `(company-tooltip-annotation-selection ((t (:inherit font-lock-type-face))))
    `(company-tooltip-common ((t (:inherit company-tooltip :foreground ,current))))
-   `(company-tooltip-common-selection ((t (:foreground ,fg :background ,blue-bg))))
+   `(company-tooltip-common-selection ((t (:foreground ,fg :background ,selection))))
    `(company-tooltip-mouse ((t (:inherit company-tooltip-selection))))
-   `(company-tooltip-selection ((t (:foreground ,fg :background ,blue-bg))))
+   `(company-tooltip-selection ((t (:foreground ,fg :background ,selection))))
 
    ;; compilation
    `(compilation-info ((t (:inherit success))))
@@ -323,6 +326,7 @@
 
    ;; deadgrep
    `(deadgrep-meta-face ((t (:foreground ,line))))
+   `(deadgrep-filename-face ((t (:foreground ,file))))
 
    ;; debbugs
    `(debbugs-gnu-done ((t (:foreground ,gray))))
@@ -370,7 +374,7 @@
    `(diredfl-dir-name ((t (:inherit dired-directory))))
    `(diredfl-executable-tag ((t (:foreground ,executable))))
    `(diredfl-flag-mark ((t (:inherit dired-flagged))))
-   `(diredfl-flag-mark-line ((t (:background ,purple-bg))))
+   `(diredfl-flag-mark-line ((t (:background ,selection))))
    `(diredfl-file-name ((t (:foreground ,file))))
    `(diredfl-file-suffix ((t (:foreground ,light-gray))))
    `(diredfl-ignored-file-name ((t (:foreground ,ignore))))
@@ -397,7 +401,7 @@
    `(diredp-executable-tag ((t (:foreground ,executable))))
    `(diredp-file-name ((t (:foreground ,file))))
    `(diredp-flag-mark ((t (:inherit dired-flagged))))
-   `(diredp-flag-mark-line ((t (:background ,purple-bg))))
+   `(diredp-flag-mark-line ((t (:background ,selection))))
    `(diredp-file-suffix ((t (:foreground ,light-gray))))
    `(diredp-ignored-file-name ((t (:foreground ,ignore))))
    `(diredp-mode-line-flagged ((t (:inherit dired-flagged))))
@@ -613,7 +617,7 @@
    `(helm-match ((t (:inherit highlight :foreground ,current))))
    `(helm-moccur-buffer ((t (:inherit compilation-info))))
    `(helm-prefarg ((t (:foreground ,green :bold t))))
-   `(helm-selection ((t (:background ,purple-bg))))
+   `(helm-selection ((t (:background ,selection))))
    `(helm-source-header ((t (:background ,darkerer-gray))))
    `(helm-visible-mark ((t (:inherit region))))
 
@@ -642,7 +646,7 @@
    `(highlight-quoted-symbol ((t (:foreground ,purple))))
 
    ;; hl-line
-   `(hl-line ((t (:background ,selection))))
+   `(hl-line ((t (:background ,hl-line))))
 
    ;; hl-todo
    `(hl-todo ((t (:foreground ,pink :bold nil :slant italic))))
@@ -730,9 +734,9 @@
    `(magit-diffstat-removed ((t (:foreground ,diff-removed))))
 
    `(magit-diff-hunk-heading ((t (:inherit default :background ,dark-teal-bg))))
-   `(magit-section-highlight ((t (:background ,selection))))
+   `(magit-section-highlight ((t (:background ,hl-line))))
    `(magit-diff-context-highlight ((t (:background ,gray-bg))))
-   `(magit-diff-file-heading-highlight ((t (:background ,selection :slant normal :underline nil))))
+   `(magit-diff-file-heading-highlight ((t (:background ,hl-line :slant normal :underline nil))))
    `(magit-diff-hunk-heading-highlight ((t (:background ,teal-bg))))
    `(magit-diff-added-highlight ((t (:foreground ,diff-added :background ,darkest-gray))))
    `(magit-diff-removed-highlight ((t (:foreground ,diff-removed :background ,darkest-gray))))
@@ -1107,7 +1111,7 @@
    `(w3m-underline ((t (:foreground ,green :underline t))))
 
    ;; yasnippet
-   `(yas-field-highlight-face ((t (:inherit highlight))))
+   `(yas-field-highlight-face ((t (:background ,selection))))
 
    ) ;; end of custom-theme-set-faces
 

@@ -102,11 +102,11 @@ defining them in this alist."
 ;;; Color Palette
 
 (defvar zenburn-default-colors-alist
-  '(("zenburn-fg+1"     . "#FFFFEF")
-    ("zenburn-fg+2"     . "#FFFFFD")
-    ("zenburn-fg"       . "#DCDCCC")
+  '(("zenburn-fg-1"     . "#656555")
     ("zenburn-fg-05"    . "#989890")
-    ("zenburn-fg-1"     . "#656555")
+    ("zenburn-fg"       . "#DCDCCC")
+    ("zenburn-fg+1"     . "#FFFFEF")
+    ("zenburn-fg+2"     . "#FFFFFD")
     ("zenburn-bg-2"     . "#000000")
     ("zenburn-bg-1"     . "#2B2B2B")
     ("zenburn-bg-08"    . "#303030")
@@ -116,19 +116,19 @@ defining them in this alist."
     ("zenburn-bg+1"     . "#4F4F4F")
     ("zenburn-bg+2"     . "#5F5F5F")
     ("zenburn-bg+3"     . "#6F6F6F")
-    ("zenburn-red+2"    . "#ECB3B3")
-    ("zenburn-red+1"    . "#DCA3A3")
-    ("zenburn-red"      . "#CC9393")
-    ("zenburn-red-1"    . "#BC8383")
-    ("zenburn-red-2"    . "#AC7373")
-    ("zenburn-red-3"    . "#9C6363")
-    ("zenburn-red-4"    . "#8C5353")
-    ("zenburn-red-5"    . "#7C4343")
     ("zenburn-red-6"    . "#6C3333")
+    ("zenburn-red-5"    . "#7C4343")
+    ("zenburn-red-4"    . "#8C5353")
+    ("zenburn-red-3"    . "#9C6363")
+    ("zenburn-red-2"    . "#AC7373")
+    ("zenburn-red-1"    . "#BC8383")
+    ("zenburn-red"      . "#CC9393")
+    ("zenburn-red+1"    . "#DCA3A3")
+    ("zenburn-red+2"    . "#ECB3B3")
     ("zenburn-orange"   . "#DFAF8F")
-    ("zenburn-yellow"   . "#F0DFAF")
-    ("zenburn-yellow-1" . "#E0CF9F")
     ("zenburn-yellow-2" . "#D0BF8F")
+    ("zenburn-yellow-1" . "#E0CF9F")
+    ("zenburn-yellow"   . "#F0DFAF")
     ("zenburn-green-5"  . "#2F4F2F")
     ("zenburn-green-4"  . "#3F5F3F")
     ("zenburn-green-3"  . "#4F6F4F")
@@ -211,6 +211,8 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(custom-variable-tag ((t (:foreground ,zenburn-blue :weight bold))))
    `(custom-group-tag ((t (:foreground ,zenburn-blue :weight bold :height 1.2))))
    `(custom-state ((t (:foreground ,zenburn-green+4))))
+;;;;; display-fill-column-indicator
+     `(fill-column-indicator ((,class :foreground ,zenburn-bg-05 :weight semilight)))
 ;;;;; eww
    '(eww-invalid-certificate ((t (:inherit error))))
    '(eww-valid-certificate   ((t (:inherit success))))
@@ -455,12 +457,13 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(debbugs-gnu-stale ((t (:foreground ,zenburn-orange))))
    `(debbugs-gnu-tagged ((t (:foreground ,zenburn-red))))
 ;;;;; diff
-   `(diff-added          ((t (:background ,zenburn-green-5 :foreground ,zenburn-green+2))))
+   ;; Please read (info "(magit)Theming Faces") before changing this.
+   `(diff-added          ((t (:background "#335533" :foreground ,zenburn-green))))
    `(diff-changed        ((t (:background "#555511" :foreground ,zenburn-yellow-1))))
-   `(diff-removed        ((t (:background ,zenburn-red-6 :foreground ,zenburn-red+1))))
-   `(diff-refine-added   ((t (:background ,zenburn-green-4 :foreground ,zenburn-green+3))))
+   `(diff-removed        ((t (:background "#553333" :foreground ,zenburn-red-2))))
+   `(diff-refine-added   ((t (:background "#338833" :foreground ,zenburn-green+4))))
    `(diff-refine-changed ((t (:background "#888811" :foreground ,zenburn-yellow))))
-   `(diff-refine-removed ((t (:background ,zenburn-red-5 :foreground ,zenburn-red+2))))
+   `(diff-refine-removed ((t (:background "#883333" :foreground ,zenburn-red))))
    `(diff-header ((,class (:background ,zenburn-bg+2))
                   (t (:background ,zenburn-fg :foreground ,zenburn-bg))))
    `(diff-file-header
@@ -527,22 +530,22 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(doom-modeline-bar  ((t (:background ,zenburn-yellow))))
    `(doom-modeline-inactive-bar  ((t (:background nil))))
 ;;;;; ediff
-   `(ediff-current-diff-A ((t (:inherit diff-removed))))
-   `(ediff-current-diff-Ancestor ((t (:inherit ediff-current-diff-A))))
-   `(ediff-current-diff-B ((t (:inherit diff-added))))
-   `(ediff-current-diff-C ((t (:foreground ,zenburn-blue+2 :background ,zenburn-blue-5))))
+   `(ediff-current-diff-A ((t (:foreground ,zenburn-fg :background ,zenburn-red-4))))
+   `(ediff-current-diff-Ancestor ((t (:foreground ,zenburn-fg :background ,zenburn-red-4))))
+   `(ediff-current-diff-B ((t (:foreground ,zenburn-fg :background ,zenburn-green-2))))
+   `(ediff-current-diff-C ((t (:foreground ,zenburn-fg :background ,zenburn-blue-5))))
    `(ediff-even-diff-A ((t (:background ,zenburn-bg+1))))
    `(ediff-even-diff-Ancestor ((t (:background ,zenburn-bg+1))))
    `(ediff-even-diff-B ((t (:background ,zenburn-bg+1))))
    `(ediff-even-diff-C ((t (:background ,zenburn-bg+1))))
-   `(ediff-fine-diff-A ((t (:inherit diff-refine-removed :weight bold))))
-   `(ediff-fine-diff-Ancestor ((t (:inherit ediff-fine-diff-A))))
-   `(ediff-fine-diff-B ((t (:inherit diff-refine-added :weight bold))))
-   `(ediff-fine-diff-C ((t (:foreground ,zenburn-blue+3 :background ,zenburn-blue-4 :weight bold))))
+   `(ediff-fine-diff-A ((t (:foreground ,zenburn-fg :background ,zenburn-red-2 :weight bold))))
+   `(ediff-fine-diff-Ancestor ((t (:foreground ,zenburn-fg :background ,zenburn-red-2 weight bold))))
+   `(ediff-fine-diff-B ((t (:foreground ,zenburn-fg :background ,zenburn-green :weight bold))))
+   `(ediff-fine-diff-C ((t (:foreground ,zenburn-fg :background ,zenburn-blue-3 :weight bold ))))
    `(ediff-odd-diff-A ((t (:background ,zenburn-bg+2))))
-   `(ediff-odd-diff-Ancestor ((t (:inherit ediff-odd-diff-A))))
-   `(ediff-odd-diff-B ((t (:inherit ediff-odd-diff-A))))
-   `(ediff-odd-diff-C ((t (:inherit ediff-odd-diff-A))))
+   `(ediff-odd-diff-Ancestor ((t (:background ,zenburn-bg+2))))
+   `(ediff-odd-diff-B ((t (:background ,zenburn-bg+2))))
+   `(ediff-odd-diff-C ((t (:background ,zenburn-bg+2))))
 ;;;;; egg
    `(egg-text-base ((t (:foreground ,zenburn-fg))))
    `(egg-help-header-1 ((t (:foreground ,zenburn-yellow))))
@@ -961,19 +964,18 @@ Also bind `class' to ((class color) (min-colors 89))."
      ((t (:underline t))))
 ;;;;; magit
 ;;;;;; headings and diffs
+   ;; Please read (info "(magit)Theming Faces") before changing this.
    `(magit-section-highlight           ((t (:background ,zenburn-bg+05))))
    `(magit-section-heading             ((t (:foreground ,zenburn-yellow :weight bold))))
    `(magit-section-heading-selection   ((t (:foreground ,zenburn-orange :weight bold))))
-
-   `(magit-diff-added ((t (:inherit diff-added))))
-   `(magit-diff-added-highlight ((t (:inherit diff-refine-added))))
-   `(magit-diff-removed ((t (:inherit diff-removed))))
-   `(magit-diff-removed-highlight ((t (:inherit diff-refine-removed))))
-
    `(magit-diff-file-heading           ((t (:weight bold))))
-   `(magit-diff-file-heading-highlight ((t (:background ,zenburn-bg+05  :weight bold))))
-   `(magit-diff-file-heading-selection ((t (:background ,zenburn-bg+05
-                                                        :foreground ,zenburn-orange :weight bold))))
+   `(magit-diff-file-heading-highlight ((t (:background ,zenburn-bg+05 :weight bold))))
+   `(magit-diff-file-heading-selection ((t (:background ,zenburn-bg+05 :weight bold
+                                                        :foreground ,zenburn-orange))))
+   `(magit-diff-added                  ((t (:background ,zenburn-green-2))))
+   `(magit-diff-added-highlight        ((t (:background ,zenburn-green))))
+   `(magit-diff-removed                ((t (:background ,zenburn-red-4))))
+   `(magit-diff-removed-highlight      ((t (:background ,zenburn-red-3))))
    `(magit-diff-hunk-heading           ((t (:background ,zenburn-bg+1))))
    `(magit-diff-hunk-heading-highlight ((t (:background ,zenburn-bg+2))))
    `(magit-diff-hunk-heading-selection ((t (:background ,zenburn-bg+2
@@ -982,8 +984,8 @@ Also bind `class' to ((class color) (min-colors 89))."
                                                         :foreground ,zenburn-bg+2))))
    `(magit-diff-context-highlight      ((t (:background ,zenburn-bg+05
                                                         :foreground "grey70"))))
-   `(magit-diffstat-added   ((t (:foreground ,zenburn-green+4))))
-   `(magit-diffstat-removed ((t (:foreground ,zenburn-red))))
+   `(magit-diffstat-added              ((t (:foreground ,zenburn-green+4))))
+   `(magit-diffstat-removed            ((t (:foreground ,zenburn-red))))
 ;;;;;; popup
    `(magit-popup-heading             ((t (:foreground ,zenburn-yellow  :weight bold))))
    `(magit-popup-key                 ((t (:foreground ,zenburn-green-2 :weight bold))))
@@ -1610,28 +1612,39 @@ Also bind `class' to ((class color) (min-colors 89))."
 
 (defvar zenburn-add-font-lock-keywords nil
   "Whether to add font-lock keywords for zenburn color names.
+
 In buffers visiting library `zenburn-theme.el' the zenburn
-specific keywords are always added.  In all other Emacs-Lisp
-buffers this variable controls whether this should be done.
-This requires library `rainbow-mode'.")
+specific keywords are always added, provided that library has
+been loaded (because that is where the code that does it is
+definded).  If you visit this file and only enable the theme,
+then you have to turn `rainbow-mode' off and on again for the
+zenburn-specific font-lock keywords to be used.
+
+In all other Emacs-Lisp buffers this variable controls whether
+this should be done.  This requires library `rainbow-mode'.")
 
 (defvar zenburn-colors-font-lock-keywords nil)
 
-;; (defadvice rainbow-turn-on (after zenburn activate)
-;;   "Maybe also add font-lock keywords for zenburn colors."
-;;   (when (and (derived-mode-p 'emacs-lisp-mode)
-;;              (or zenburn-add-font-lock-keywords
-;;                  (equal (file-name-nondirectory (buffer-file-name))
-;;                         "zenburn-theme.el")))
-;;     (unless zenburn-colors-font-lock-keywords
-;;       (setq zenburn-colors-font-lock-keywords
-;;             `((,(regexp-opt (mapcar 'car zenburn-colors-alist) 'words)
-;;                (0 (rainbow-colorize-by-assoc zenburn-colors-alist))))))
-;;     (font-lock-add-keywords nil zenburn-colors-font-lock-keywords)))
+(defun zenburn--rainbow-turn-on ()
+  "Maybe also add font-lock keywords for zenburn colors."
+  (when (and (derived-mode-p 'emacs-lisp-mode)
+             (or zenburn-add-font-lock-keywords
+                 (and (buffer-file-name)
+                      (equal (file-name-nondirectory (buffer-file-name))
+                             "zenburn-theme.el"))))
+    (unless zenburn-colors-font-lock-keywords
+      (setq zenburn-colors-font-lock-keywords
+            `((,(regexp-opt (mapcar 'car zenburn-default-colors-alist) 'words)
+               (0 (rainbow-colorize-by-assoc zenburn-default-colors-alist))))))
+    (font-lock-add-keywords nil zenburn-colors-font-lock-keywords 'end)))
 
-;; (defadvice rainbow-turn-off (after zenburn activate)
-;;   "Also remove font-lock keywords for zenburn colors."
-;;   (font-lock-remove-keywords nil zenburn-colors-font-lock-keywords))
+(defun zenburn--rainbow-turn-off ()
+  "Also remove font-lock keywords for zenburn colors."
+  (font-lock-remove-keywords nil zenburn-colors-font-lock-keywords))
+
+(when (fboundp 'advice-add)
+  (advice-add 'rainbow-turn-on :after  #'zenburn--rainbow-turn-on)
+  (advice-add 'rainbow-turn-off :after #'zenburn--rainbow-turn-off))
 
 ;;; Footer
 

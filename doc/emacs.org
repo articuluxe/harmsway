@@ -43,7 +43,7 @@ C-x C-+   /   C-x C--
 ;; (@* "List") (C-x p)
 M-d >         open dired for marked
 M-q           query-replace in marked files
-C-h p         describe current
+C-h M         describe current
 C-h >         describe marked
 r             rename
 M-r/R         relocate [marked]

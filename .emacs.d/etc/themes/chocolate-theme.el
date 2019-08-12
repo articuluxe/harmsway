@@ -74,8 +74,8 @@
   (cursor (:background chocolate-hue-4))
   (link (:foreground chocolate-hue-1 :underline t))
   (link-visited (:foreground chocolate-hue-1 :underline nil))
-  (mode-line (:foreground chocolate-hue-6 :background chocolate-syntax-bg :box nil))
-  (mode-line-inactive (:foreground chocolate-hue-6-3 :background chocolate-hue-6 :box nil))
+  (mode-line (:foreground chocolate-hue-6 :background chocolate-syntax-light :box nil))
+  (mode-line-inactive (:foreground chocolate-hue-6-3 :background chocolate-syntax-bg-light :box nil))
   (fringe (:background chocolate-syntax-bg))
   (linum (:foreground chocolate-hue-4-2))
   (region (:background chocolate-syntax-light :distant-foreground chocolate-hue-4))
@@ -240,14 +240,25 @@
 
   ;; MODE SUPPORT: powerline
   (powerline-active1 (:background chocolate-syntax-light :foreground chocolate-hue-4 :inherit 'mode-line))
-  (powerline-active2 (:background chocolate-syntax-light :inherit 'mode-line))
+  (powerline-active2 (:background chocolate-syntax-bg))
   (powerline-inactive1 (:background chocolate-syntax-bg-dark :inherit 'mode-line-inactive))
   (powerline-inactive2 (:background chocolate-syntax-bg-dark :inherit 'mode-line-inactive))
   (spaceline-highlight-face (:background chocolate-hue-6 :foreground chocolate-syntax-bg-dark))
 
+  ;; MODE SUPPORT: centaur tabs
+  (centaur-tabs-default (:background chocolate-syntax-bg-dark :foreground chocolate-hue-4))
+  (centaur-tabs-selected (:background chocolate-syntax-bg :foreground chocolate-hue-4 :weight 'bold))
+  (centaur-tabs-unselected (:background chocolate-syntax-bg-dark :foreground chocolate-mono-3 :weight 'light))
+  (centaur-tabs-selected-modified (:background chocolate-syntax-bg :foreground chocolate-hue-6 :weight 'bold))
+  (centaur-tabs-unselected-modified (:background chocolate-syntax-bg-dark :foreground chocolate-hue-6-3 :weight 'light))
+  (centaur-tabs-active-bar-face (:background chocolate-hue-7))
+  (centaur-tabs-modified-marker-selected (:inherit 'centaur-tabs-selected-modified :foreground chocolate-hue-6-2))
+  (centaur-tabs-modified-marker-unselected (:inherit 'centaur-tabs-unselected-modified))
+
   ;; MODE SUPPORT: latex
   (font-latex-sectioning-5-face (:foreground chocolate-hue-6-2))
   (font-latex-italic-face (:foreground chocolate-hue-9-5 :inherit 'italic))
+  (font-latex-bold-face (:foreground chocolate-hue-7 :inherit 'bold))
 
   (ffap
    (:inherit 'highlight))
@@ -1469,7 +1480,7 @@
    (:inherit
     ('bold 'font-lock-function-name-face)))
   (tooltip
-   (:foreground chocolate-mono-1 :background chocolate-syntax-bg))
+   (:foreground chocolate-mono-1 :background chocolate-syntax-bg-light))
   (eldoc-highlight-function-argument
    (:inherit 'bold))
   (vc-edited-state

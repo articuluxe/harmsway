@@ -27,12 +27,12 @@
 
 ;; Highlight TODO and similar keywords in comments and strings.
 
-;; You can either turn on `hl-todo-mode' in individual buffers or use
-;; the the global variant `global-hl-todo-mode'.  Note that the option
-;; `hl-todo-activate-in-modes' controls in what buffers the local mode
-;; will be activated if you do the latter.  By default it will only be
-;; activated in buffers whose major-mode derives from `prog-mode' or
-;; `text-mode'.
+;; You can either explicitly turn on `hl-todo-mode' in certain buffers
+;; or use the the global variant `global-hl-todo-mode', which enables
+;; the local mode based on each buffer's major-mode and the options
+;; `hl-todo-include-modes' and `hl-todo-exclude-modes'.  By default
+;; `hl-todo-mode' is enabled for all buffers whose major-mode derive
+;; from either `prog-mode' or `text-mode', except `org-mode'.
 
 ;; This package also provides commands for moving to the next or
 ;; previous keyword, to invoke `occur' with a regexp that matches all
@@ -50,6 +50,8 @@
 
 ;;; Code:
 
+(require' cl-lib)
+
 (eval-when-compile
   (require 'subr-x))
 
@@ -66,17 +68,28 @@ color specified using the option `hl-todo-keyword-faces' as
 foreground color."
   :group 'hl-todo)
 
-(defcustom hl-todo-activate-in-modes '(prog-mode text-mode)
-  "Major-modes in which `hl-todo-mode' should be activated.
+(define-obsolete-variable-alias 'hl-todo-activate-in-modes
+  'hl-todo-include-modes "hl-todo 3.1.0")
 
-This is used by `global-hl-todo-mode', which activates
-`hl-todo-mode' in all buffers whose major-mode derived from one
-of the modes listed here.
+(defcustom hl-todo-include-modes '(prog-mode text-mode)
+  "Major-modes in which `hl-todo-mode' is activated.
 
-Even though `org-mode' indirectly derives from `text-mode' this
-mode is never activated in `org-mode' buffers because that mode
-provides its own TODO keyword handling."
+This is used by `global-hl-todo-mode', which activates the local
+`hl-todo-mode' in all buffers whose major-mode derive from one
+of the modes listed here, but not from one of the modes listed
+in `hl-todo-exclude-modes'."
   :package-version '(hl-todo . "2.1.0")
+  :group 'hl-todo
+  :type '(repeat function))
+
+(defcustom hl-todo-exclude-modes '(org-mode)
+  "Major-modes in which `hl-todo-mode' is not activated.
+
+This is used by `global-hl-todo-mode', which activates the local
+`hl-todo-mode' in all buffers whose major-mode derived from one
+of the modes listed in `hl-todo-include-modes', but not from one
+of the modes listed here."
+  :package-version '(hl-todo . "3.1.0")
   :group 'hl-todo
   :type '(repeat function))
 
@@ -146,7 +159,10 @@ including alphanumeric characters, cannot be used here."
 (defvar-local hl-todo--regexp nil)
 (defvar-local hl-todo--keywords nil)
 
-(defun hl-todo--setup ()
+(defun hl-todo--regexp ()
+  (or hl-todo--regexp (hl-todo--setup-regexp)))
+
+(defun hl-todo--setup-regexp ()
   (when-let ((bomb (assoc "???" hl-todo-keyword-faces)))
     ;; If the user customized this variable before we started to
     ;; treat the strings as regexps, then the string "???" might
@@ -159,7 +175,10 @@ including alphanumeric characters, cannot be used here."
                 "\\(?:\\>\\|\\>\\?\\)"
                 (and (not (equal hl-todo-highlight-punctuation ""))
                      (concat "[" hl-todo-highlight-punctuation "]*"))
-                "\\)"))
+                "\\)")))
+
+(defun hl-todo--setup ()
+  (hl-todo--setup-regexp)
   (setq hl-todo--keywords
         `(((lambda (bound) (hl-todo--search nil bound))
            (1 (hl-todo--get-face) t t))))
@@ -221,8 +240,8 @@ including alphanumeric characters, cannot be used here."
   hl-todo-mode hl-todo--turn-on-mode-if-desired)
 
 (defun hl-todo--turn-on-mode-if-desired ()
-  (when (and (apply #'derived-mode-p hl-todo-activate-in-modes)
-             (not (derived-mode-p 'org-mode)))
+  (when (and (apply #'derived-mode-p hl-todo-include-modes)
+             (not (apply #'derived-mode-p hl-todo-exclude-modes)))
     (hl-todo-mode 1)))
 
 ;;;###autoload
@@ -237,7 +256,7 @@ A negative argument means move backward that many keywords."
                 (not (eobp))
                 (progn
                   (when (let ((case-fold-search nil))
-                          (looking-at hl-todo--regexp))
+                          (looking-at (hl-todo--regexp)))
                     (goto-char (match-end 0)))
                   (or (hl-todo--search)
                       (user-error "No more matches"))))
@@ -254,7 +273,7 @@ A negative argument means move forward that many keywords."
     (while (and (> arg 0)
                 (not (bobp))
                 (let ((start (point)))
-                  (hl-todo--search (concat hl-todo--regexp "\\=") nil t)
+                  (hl-todo--search (concat (hl-todo--regexp) "\\=") nil t)
                   (or (hl-todo--search nil nil t)
                       (progn (goto-char start)
                              (user-error "No more matches")))))
@@ -270,7 +289,7 @@ matcher.  It also finds occurrences that are not within a
 string or comment."
   (interactive)
   (with-syntax-table hl-todo--syntax-table
-    (occur hl-todo--regexp)))
+    (occur (hl-todo--regexp))))
 
 ;;;###autoload
 (defun hl-todo-insert (keyword)

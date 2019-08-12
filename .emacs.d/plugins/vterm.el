@@ -42,6 +42,9 @@
 
 ;;; Code:
 
+(unless module-file-suffix
+  (error "VTerm needs module support. Please compile your Emacs with the --with-modules option!"))
+
 (require 'term)
 
 (defvar vterm-install-buffer-name " *Install vterm"
@@ -51,7 +54,7 @@
 (defun vterm-module-compile ()
   "This function compiles the vterm-module."
   (interactive)
-  (let ((default-directory (file-name-directory (locate-library "vterm"))))
+  (let ((default-directory (file-name-directory (file-truename (locate-library "vterm")))))
     (unless (file-executable-p (concat default-directory "vterm-module.so" ))
       (let* ((buffer (get-buffer-create vterm-install-buffer-name))
              status)
@@ -290,6 +293,8 @@ If nil, never delay")
   "Minor mode map for `vterm-copy-mode'.")
 (define-key vterm-copy-mode-map (kbd "C-c C-t")        #'vterm-copy-mode)
 
+(defvar-local vterm--copy-saved-point nil)
+
 (define-minor-mode vterm-copy-mode
   "Toggle vterm copy mode."
   :group 'vterm
@@ -298,7 +303,10 @@ If nil, never delay")
   (if vterm-copy-mode
       (progn                            ;enable vterm-copy-mode
         (use-local-map nil)
-        (vterm-send-stop))
+        (vterm-send-stop)
+        (setq vterm--copy-saved-point (point)))
+    (if vterm--copy-saved-point
+        (goto-char vterm--copy-saved-point))
     (use-local-map vterm-mode-map)
     (vterm-send-start)))
 
@@ -441,10 +449,10 @@ Argument BUFFER the terminal buffer."
       (setq vterm--redraw-timer nil))))
 
 ;;;###autoload
-(defun vterm ()
+(defun vterm (&optional buffer-name)
   "Create a new vterm."
   (interactive)
-  (let ((buffer (generate-new-buffer "vterm")))
+  (let ((buffer (generate-new-buffer (or buffer-name "vterm"))))
     (with-current-buffer buffer
       (vterm-mode))
     (switch-to-buffer buffer)))
@@ -531,8 +539,19 @@ Feeds the size change to the virtual terminal."
 
 (defun vterm--set-directory (path)
   "Set `default-directory' to PATH."
-  (when (file-directory-p path)
-    (setq default-directory path)))
+  (if (string-match "^\\(.*?\\)@\\(.*?\\):\\(.*?\\)$" path)
+      (progn
+        (let ((user (match-string 1 path))
+              (host (match-string 2 path))
+              (dir (match-string 3 path)))
+          (if (and (string-equal user user-login-name)
+                   (string-equal host (system-name)))
+              (progn
+                (when (file-directory-p dir)
+                  (setq default-directory dir)))
+            (setq default-directory (concat "/-:" path)))))
+    (when (file-directory-p path)
+      (setq default-directory path))))
 
 (defun vterm--get-color(index)
   "Get color by index from `vterm-color-palette'.

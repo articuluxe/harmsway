@@ -2033,44 +2033,6 @@ around `scroll-down-command' (which see)."
          (message "No suspended transient command"))))
 
 ;;; Value
-;;;; Core
-
-(defun transient-args (&optional prefix separate)
-  "Return the value of the transient from which the current suffix was called.
-
-If optional PREFIX is non-nil, then it should be a symbol, a
-transient prefix command.  In that case only return the value
-of the transient if the suffix was actually invoked from that
-transient.  Otherwise return nil.  This function is also used
-internally, in which PREFIX can also be a `transient-prefix'
-object.
-
-If optional SEPARATE is non-nil, then separate the arguments
-into two groups.  If SEPARATE is t, then separate into atoms
-and conses (nil isn't a valid value, so it doesn't matter that
-that is both an atom and a cons).
-
-SEPARATE can also be a predicate function, in which case the
-first element is a list of the values for which it returns
-non-nil and the second a list of the values for which it
-returns nil.
-
-For transients that are used to pass arguments to a subprosess
-\(such as git), `stringp' is a useful value for SEPARATE, it
-separates non-positional arguments from positional arguments.
-The value of Magit's file argument for example looks like this:
-\(\"--\" file...)."
-  (let ((val (if (transient-prefix--eieio-childp prefix)
-                 (delq nil (mapcar 'transient-infix-value
-                                   transient--suffixes))
-               (and (or (not prefix)
-                        (eq prefix current-transient-command))
-                    (delq nil (mapcar 'transient-infix-value
-                                      current-transient-suffixes))))))
-    (if separate
-        (-separate (if (eq separate t) #'atom separate) val)
-      val)))
-
 ;;;; Init
 
 (cl-defgeneric transient-init-scope (obj)
@@ -2343,19 +2305,36 @@ commands."
       (cl-call-next-method obj value))))
 
 (cl-defmethod transient-set-value ((obj transient-prefix))
-  (oset (oref obj prototype) value (transient-args))
+  (oset (oref obj prototype) value (transient-get-value))
   (transient--history-push obj))
 
 ;;;; Save
 
 (cl-defmethod transient-save-value ((obj transient-prefix))
-  (let ((value (transient-args)))
+  (let ((value (transient-get-value)))
     (oset (oref obj prototype) value value)
     (setf (alist-get (oref obj command) transient-values) value)
     (transient-save-values))
   (transient--history-push obj))
 
-;;;; Use
+;;;; Get
+
+(defun transient-args (prefix)
+  "Return the value of the transient prefix command PREFIX.
+If the current command was invoked from the transient prefix
+command PREFIX, then return the active infix arguments.  If
+the current command was not invoked from PREFIX, then return
+the set, saved or default value for PREFIX."
+  (if (eq current-transient-command prefix)
+      (delq nil (mapcar 'transient-infix-value current-transient-suffixes))
+    (let ((transient--prefix nil)
+          (transient--layout nil)
+          (transient--suffixes nil))
+      (transient--init-objects prefix nil nil)
+      (delq nil (mapcar 'transient-infix-value transient--suffixes)))))
+
+(defun transient-get-value ()
+  (delq nil (mapcar 'transient-infix-value current-transient-suffixes)))
 
 (cl-defgeneric transient-infix-value (obj)
   "Return the value of the suffix object OBJ.
@@ -2425,7 +2404,7 @@ that.  Otherwise return the value of the `command' slot."
   "Push the current value of OBJ to its entry in `transient-history'."
   (let ((key (transient--history-key obj)))
     (setf (alist-get key transient-history)
-          (let ((args (transient-args)))
+          (let ((args (transient-get-value)))
             (cons args (delete args (alist-get key transient-history)))))))
 
 (cl-defgeneric transient--history-init (obj)
