@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-08-14 15:02:01 dharms>
+;; Modified Time-stamp: <2019-08-16 13:13:47 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -714,9 +714,17 @@ line."
           )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ibuffer-vc ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defun harmsway-ibuffer-magit-status ()
+  "Open magit status for the current ibuffer.
+From `manuel-oberti.github.io' on 20190806."
+  (interactive)
+  (require 'magit)
+  (let ((buf (ibuffer-current-buffer t)))
+    (magit-status (cdr (ibuffer-vc-root buf)))))
 (use-package ibuffer-vc
   :after ibuffer
   :config
+  (define-key ibuffer-mode-map "v" #'harmsway-ibuffer-magit-status)
   (add-hook 'ibuffer-mode-hook
             (lambda ()
               (ibuffer-vc-set-filter-groups-by-vc-root)
