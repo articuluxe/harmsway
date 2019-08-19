@@ -3894,7 +3894,7 @@ Requires Flake8 2.0 or newer. See URL
   (add-hook 'python-mode-hook 'pipenv-mode))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; pydoc-info ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package pydoc-info)
+(use-package pydoc-info :after python-mode)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; py-isort ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package py-isort
