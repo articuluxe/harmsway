@@ -557,7 +557,7 @@ the upstream isn't ahead of the current branch) show."
 (defun magit-read-file-trace (&rest _ignored)
   (let ((file  (magit-read-file-from-rev "HEAD" "File"))
         (trace (magit-read-string "Trace")))
-    (concat trace (or (match-string 2 trace) ":") file)))
+    (concat trace ":" file)))
 
 ;;;; Setup Commands
 
@@ -1254,12 +1254,13 @@ exists mostly for backward compatibility reasons."
   "When moving in a log or cherry buffer, update the revision buffer.
 If there is no revision buffer in the same frame, then do nothing."
   (when (derived-mode-p 'magit-log-mode 'magit-cherry-mode 'magit-reflog-mode)
-    (magit-log-maybe-update-revision-buffer-1)))
+    (magit--maybe-update-revision-buffer)))
 
-(defun magit-log-maybe-update-revision-buffer-1 ()
-  (unless magit--update-revision-buffer
-    (when-let ((commit (magit-section-value-if 'commit))
-               (buffer (magit-get-mode-buffer 'magit-revision-mode nil t)))
+(defun magit--maybe-update-revision-buffer ()
+  (when-let ((commit (magit-section-value-if 'commit))
+             (buffer (magit-get-mode-buffer 'magit-revision-mode nil t)))
+    (if magit--update-revision-buffer
+        (setq magit--update-revision-buffer (list commit buffer))
       (setq magit--update-revision-buffer (list commit buffer))
       (run-with-idle-timer
        magit-update-other-window-delay nil
@@ -1280,29 +1281,30 @@ If there is no revision buffer in the same frame, then do nothing."
   "When moving in a log or cherry buffer, update the blob buffer.
 If there is no blob buffer in the same frame, then do nothing."
   (when (derived-mode-p 'magit-log-mode 'magit-cherry-mode 'magit-reflog-mode)
-    (magit-log-maybe-update-blob-buffer-1)))
+    (magit--maybe-update-blob-buffer)))
 
-(defun magit-log-maybe-update-blob-buffer-1 ()
-  (unless magit--update-revision-buffer
-    (when-let ((commit (magit-section-value-if 'commit))
-               (buffer (--first (with-current-buffer it
-                                  (eq revert-buffer-function
-                                      'magit-revert-rev-file-buffer))
-                                (mapcar #'window-buffer (window-list)))))
+(defun magit--maybe-update-blob-buffer ()
+  (when-let ((commit (magit-section-value-if 'commit))
+             (buffer (--first (with-current-buffer it
+                                (eq revert-buffer-function
+                                    'magit-revert-rev-file-buffer))
+                              (mapcar #'window-buffer (window-list)))))
+    (if magit--update-blob-buffer
         (setq magit--update-blob-buffer (list commit buffer))
-        (run-with-idle-timer
-         magit-update-other-window-delay nil
-         (lambda ()
-           (pcase-let ((`(,rev ,buf) magit--update-blob-buffer))
-             (setq magit--update-blob-buffer nil)
-             (when (buffer-live-p buf)
-               (with-selected-window (get-buffer-window buf)
-                 (with-current-buffer buf
-                   (save-excursion
-                     (magit-blob-visit (list (magit-rev-parse rev)
-                                             (magit-file-relative-name
-                                              magit-buffer-file-name))
-                                       (line-number-at-pos))))))))))))
+      (setq magit--update-blob-buffer (list commit buffer))
+      (run-with-idle-timer
+       magit-update-other-window-delay nil
+       (lambda ()
+         (pcase-let ((`(,rev ,buf) magit--update-blob-buffer))
+           (setq magit--update-blob-buffer nil)
+           (when (buffer-live-p buf)
+             (with-selected-window (get-buffer-window buf)
+               (with-current-buffer buf
+                 (save-excursion
+                   (magit-blob-visit (list (magit-rev-parse rev)
+                                           (magit-file-relative-name
+                                            magit-buffer-file-name))
+                                     (line-number-at-pos))))))))))))
 
 (defun magit-log-goto-commit-section (rev)
   (let ((abbrev (magit-rev-format "%h" rev)))
@@ -1591,10 +1593,11 @@ Type \\[magit-cherry-pick] to apply the commit at point.
   (when-let ((upstream (magit-get-upstream-branch)))
     (magit-insert-section (unpulled "..@{upstream}" t)
       (magit-insert-heading
-        (format (propertize "Unpulled from %s:"
+        (format (propertize "Unpulled from %s."
                             'font-lock-face 'magit-section-heading)
                 upstream))
-      (magit-insert-log "..@{upstream}" magit-buffer-log-args))))
+      (magit-insert-log "..@{upstream}" magit-buffer-log-args)
+      (magit-log-insert-child-count))))
 
 (magit-define-section-jumper magit-jump-to-unpulled-from-pushremote
   "Unpulled from <push-remote>" unpulled
@@ -1611,10 +1614,11 @@ Type \\[magit-cherry-pick] to apply the commit at point.
                            magit-status-sections-hook)))
       (magit-insert-section (unpulled (concat ".." it) t)
         (magit-insert-heading
-          (format (propertize "Unpulled from %s:"
+          (format (propertize "Unpulled from %s."
                               'font-lock-face 'magit-section-heading)
                   (propertize it 'font-lock-face 'magit-branch-remote)))
-        (magit-insert-log (concat ".." it) magit-buffer-log-args)))))
+        (magit-insert-log (concat ".." it) magit-buffer-log-args)
+        (magit-log-insert-child-count)))))
 
 (defvar magit-unpushed-section-map
   (let ((map (make-sparse-keymap)))
@@ -1643,10 +1647,11 @@ then show the last `magit-log-section-commit-count' commits."
   (when (magit-git-success "rev-parse" "@{upstream}")
     (magit-insert-section (unpushed "@{upstream}..")
       (magit-insert-heading
-        (format (propertize "Unmerged into %s:"
+        (format (propertize "Unmerged into %s."
                             'font-lock-face 'magit-section-heading)
                 (magit-get-upstream-branch)))
-      (magit-insert-log "@{upstream}.." magit-buffer-log-args))))
+      (magit-insert-log "@{upstream}.." magit-buffer-log-args)
+      (magit-log-insert-child-count))))
 
 (defun magit-insert-recent-commits (&optional type value)
   "Insert section showing recent commits.
@@ -1678,10 +1683,22 @@ Show the last `magit-log-section-commit-count' commits."
                            magit-status-sections-hook)))
       (magit-insert-section (unpushed (concat it "..") t)
         (magit-insert-heading
-          (format (propertize "Unpushed to %s:"
+          (format (propertize "Unpushed to %s."
                               'font-lock-face 'magit-section-heading)
                   (propertize it 'font-lock-face 'magit-branch-remote)))
-        (magit-insert-log (concat it "..") magit-buffer-log-args)))))
+        (magit-insert-log (concat it "..") magit-buffer-log-args)
+        (magit-log-insert-child-count)))))
+
+(defun magit-log-insert-child-count ()
+  (when magit-section-show-child-count
+    (let ((count (length (oref magit-insert-section--current children))))
+      (when (> count 0)
+        (when (= count (magit-log-get-commit-limit))
+          (setq count (format "%s+" count)))
+        (save-excursion
+          (goto-char (- (oref magit-insert-section--current content) 2))
+          (insert (format " (%s)" count))
+          (delete-char 1))))))
 
 ;;;; Auxiliary Log Sections
 

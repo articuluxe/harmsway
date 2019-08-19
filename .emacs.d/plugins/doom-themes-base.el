@@ -284,6 +284,9 @@
     (all-the-icons-lsilver  :foreground (doom-lighten grey 0.7))
     (all-the-icons-dsilver  :foreground (doom-lighten grey 0.1))
 
+    ;; all-the-icons-dired
+    (all-the-icons-dired-dir-face    :foreground doc-comments)
+
     ;; anzu
     (anzu-replace-highlight :background base0 :foreground red   :weight 'bold :strike-through t)
     (anzu-replace-to        :background base0 :foreground green :weight 'bold)
@@ -423,7 +426,12 @@
     (diredp-date-time              :foreground blue)
 
     ;; dired-k
-    (dired-k-directory :foreground blue)
+    (dired-k-modified :foreground vc-modified :weight 'bold)
+    (dired-k-commited :foreground green :weight 'bold)
+    (dired-k-added :foreground vc-added :weight 'bold)
+    (dired-k-untracked :foreground teal :weight 'bold)
+    (dired-k-ignored :foreground base5 :weight 'bold)
+    (dired-k-directory :foreground blue :weight 'bold)
 
     ;; dired-subtree
     (dired-subtree-depth-1-face :background (doom-darken bg-alt 0.02))

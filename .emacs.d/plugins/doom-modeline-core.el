@@ -104,10 +104,13 @@ It returns a file name which can be used directly as argument of
     ;; Persp
     ("aspect_ratio" . "\xe85b")
 
+    ;; Preview
+    ("pageview" . "\xe8a0")
+
     ;; LSP
     ("rocket" . "\xf135")
 
-    ;; github
+    ;; GitHub
     ("github" . "\xf09b")
 
     ;; debug
@@ -115,7 +118,6 @@ It returns a file name which can be used directly as argument of
 
     ;; mu4e
     ("email" . "\xe0be")
-    ;; ("mail" . "\xe158")
 
     ;; irc
     ("message" . "\xe0c9")
@@ -252,12 +254,12 @@ If the actual char height is larger, it respects the actual char height."
   :group 'doom-modeline)
 
 (defcustom doom-modeline-github nil
-  "Whether display github notifications or not. Requires `ghub' package."
+  "Whether display GitHub notifications or not. Requires `ghub' package."
   :type 'boolean
   :group 'doom-modeline)
 
 (defcustom doom-modeline-github-interval 1800 ; (* 30 60)
-  "The interval of checking github."
+  "The interval of checking GitHub."
   :type 'integer
   :group 'doom-modeline)
 

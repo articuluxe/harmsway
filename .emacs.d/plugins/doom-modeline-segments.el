@@ -65,6 +65,8 @@
 (defvar flymake--backend-state)
 (defvar flymake--mode-line-format)
 (defvar flymake-menu)
+(defvar grip-port)
+(defvar grip-process)
 (defvar helm--mode-line-display-prefarg)
 (defvar iedit-occurrences-overlays)
 (defvar mc/mode-line)
@@ -140,6 +142,7 @@
 (declare-function flymake-running-backends 'flymake)
 (declare-function flymake-show-diagnostics-buffer 'flymake)
 (declare-function flymake-start 'flymake)
+(declare-function grip-mode 'grip-mode)
 (declare-function helm-candidate-number-at-point 'helm)
 (declare-function helm-get-candidate-number 'helm)
 (declare-function iedit-find-current-occurrence-overlay 'iedit-lib)
@@ -1746,11 +1749,11 @@ mouse-3: Reconnect to server" nick (eglot--major-mode server)))
 
 (defvar doom-modeline--github-notifications-number 0)
 (defvar doom-modeline-before-github-fetch-notification-hook nil
-  "Hooks before fetching github notifications.
+  "Hooks before fetching GitHub notifications.
 Example:
   (add-hook 'doom-modeline-before-github-fetch-notification-hook #'auth-source-pass-enable)")
 (defun doom-modeline--github-fetch-notifications ()
-  "Fetch github notifications."
+  "Fetch GitHub notifications."
   (when (and doom-modeline-github
              (fboundp 'async-start))
     ;; load `async' if it exists but is not loaded
@@ -1779,7 +1782,7 @@ Example:
 
 (defvar doom-modeline--github-timer nil)
 (defun doom-modeline-github-timer ()
-  "Start/Stop the timer for github fetching."
+  "Start/Stop the timer for GitHub fetching."
   (if (timerp doom-modeline--github-timer)
       (cancel-timer doom-modeline--github-timer))
   (setq doom-modeline--github-timer
@@ -1799,7 +1802,7 @@ Example:
 (doom-modeline-github-timer)
 
 (doom-modeline-def-segment github
-  "The github notifications."
+  "The GitHub notifications."
   (if (and doom-modeline-github
            (doom-modeline--active)
            (> doom-modeline--github-notifications-number 0))
@@ -1823,15 +1826,15 @@ mouse-3: Fetch notifications"
         'local-map (let ((map (make-sparse-keymap)))
                      (define-key map [mode-line mouse-1]
                        (lambda ()
-                         "Open github notifications page."
+                         "Open GitHub notifications page."
                          (interactive)
                          (run-with-timer 300 nil #'doom-modeline--github-fetch-notifications)
                          (browse-url "https://github.com/notifications")))
                      (define-key map [mode-line mouse-3]
                        (lambda ()
-                         "Fetching github notifications."
+                         "Fetching GitHub notifications."
                          (interactive)
-                         (message "Fetching github notifications...")
+                         (message "Fetching GitHub notifications...")
                          (doom-modeline--github-fetch-notifications)))
                      map))
        (doom-modeline-spc))))
@@ -2290,6 +2293,47 @@ The cdr can also be a function that returns a name to use.")
      (propertize "*%b*" 'face (if active
                                   'doom-modeline-buffer-file
                                 'mode-line-inactive)))))
+
+;;
+;; Markdown/org preview
+;;
+
+(doom-modeline-def-segment grip
+  (when (bound-and-true-p grip-mode)
+    (concat
+     (doom-modeline-spc)
+
+     (let ((face (if (doom-modeline--active)
+                     (if grip-process
+                         (pcase (process-status grip-process)
+                           ('run 'all-the-icons-lblue)
+                           ('exit 'warning)
+                           (_ 'error))
+                       'error)
+                   'mode-line-inactive)))
+       (propertize
+        (if doom-modeline-icon
+            (doom-modeline-icon-material
+             "pageview"
+             :face face
+             :height 1.2
+             :v-adjust -0.2)
+          (propertize "G" 'face `(:inherit (,face bold))))
+        'help-echo (format "Preview on: http://localhost:%d
+mouse-1: Open browser
+mouse-2: Stop preview"
+                           grip-port)
+        'mouse-face '(:box 0)
+        'local-map (let ((map (make-sparse-keymap)))
+                     (define-key map [mode-line mouse-1]
+                       (lambda ()
+                         (interactive)
+                         (browse-url (format "http://localhost:%d" grip-port))))
+                     (define-key map [mode-line mouse-2]
+                       #'grip-mode)
+                     map)))
+
+     (doom-modeline-spc))))
 
 (provide 'doom-modeline-segments)
 
