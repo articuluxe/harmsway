@@ -5,7 +5,7 @@
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Friday, May 29, 2015
 # Version: 1.0
-# Modified Time-stamp: <2019-01-07 15:26:42 dan.harms>
+# Modified Time-stamp: <2019-08-21 10:09:26 dan.harms>
 # Modified by: Dan Harms
 # Keywords: configuration
 
@@ -41,10 +41,11 @@ if [ -f "$dest" ] ; then
    rm -f "$dest"
 fi
 
-$tar c"$verbose"f "$dest" config doc src .gdbinit .gnupg .fonts .config .terminfo
+$tar c"$verbose"f "$dest" config doc src .gnupg .fonts .config .terminfo
 $tar u"$verbose"f "$dest" --exclude=*.elc .emacs.d
 $tar u"$verbose"f "$dest" --transform=s%ext%.emacs.d/ext% ext
 $tar u"$verbose"f "$dest" --transform=s/scripts/bin/ scripts
+$tar u"$verbose"f "$dest" --transform=s/dotfiles\\/// dotfiles
 $tar u"$verbose"f "$dest" --transform=s/bash\\/// bash
 $tar u"$verbose"f "$dest" --transform=s/tcsh\\/// tcsh
 $tar u"$verbose"f "$dest" --transform=s%user/$user\\/%% user/$user
