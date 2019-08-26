@@ -1,0 +1,1 @@
+cp src/packages/csv-mode/*.el ../../../.emacs.d/modes
