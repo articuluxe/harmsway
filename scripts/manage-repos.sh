@@ -5,7 +5,7 @@
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Friday, March 17, 2017
 # Version: 1.0
-# Modified Time-stamp: <2019-05-15 16:30:12 dan.harms>
+# Modified Time-stamp: <2019-09-03 11:05:09 dan.harms>
 # Modified by: Dan Harms
 # Keywords: git repo
 
@@ -16,7 +16,7 @@ if [ ! -d "$dir" ]; then
     exit 1
 fi
 
-cd "$dir"
+cd "$dir" || exit 1
 
 find "$dir" -type f -name clone | sort | while read -r fname; do
     parent=$( dirname "$fname" )
@@ -30,7 +30,7 @@ find "$dir" -type f -name clone | sort | while read -r fname; do
         ./clone
     fi
     # update
-    if [ -d "$parent/src" -a -d "$parent/src/.git" ]; then
+    if [ -d "$parent/src/.git" ]; then
         pushd src &> /dev/null
         git fetch --all
         res=$( git log HEAD..origin --oneline )
@@ -41,6 +41,11 @@ find "$dir" -type f -name clone | sort | while read -r fname; do
             echo -e
             git pull
         fi
+        popd &> /dev/null
+    elif [ -d "$parent/src/.hg" ]; then
+        pushd src &> /dev/null
+        hg pull
+        hg update
         popd &> /dev/null
     fi
     # install
