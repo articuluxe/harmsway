@@ -260,9 +260,8 @@ BUFFER: Buffer"
 Internally calls `treemacs-do-update-single-file-git-state'.
 
 FILE: Filepath"
-  (with-no-warnings
-    (treemacs-save-position
-     (treemacs-do-update-single-file-git-state file))))
+  (treemacs-save-position
+   (treemacs-do-update-single-file-git-state file)))
 
 (defun treemacs-do-update-single-file-git-state (file)
   "Asynchronously update the given FILE node's git fontification.
@@ -279,7 +278,8 @@ FILE: Filepath"
                         ;; ...but exclude the project root
                         (cdr (-map #'treemacs-dom-node->key
                                    (treemacs-dom-node->all-parents parent-node)))))
-         (current-state (or (-some-> treemacs--git-cache (ht-get parent) (ht-get file)) "0"))
+         (git-cache (ht-get treemacs--git-cache parent))
+         (current-state (or (-some-> git-cache (ht-get file)) "0"))
          (cmd `(,treemacs-python-executable
                 "-O"
                 ,treemacs--single-file-git-status.py ,file ,current-state ,@parents)))
@@ -293,6 +293,8 @@ FILE: Filepath"
            ;; first the file node with its own default face
            (-let [output (read (pfuture-callback-output))]
              (-let [(file . state) (pop output)]
+               (when git-cache
+                 (ht-set! git-cache file state))
                (-when-let (pos (treemacs-find-visible-node file))
                  (-let [face (treemacs--git-status-face state 'treemacs-git-unmodified-face)]
                    (put-text-property
@@ -320,10 +322,16 @@ Only starts the process if PROJECT is locally accessible (i.e. exists, and
 is not remote.)
 Output format is an elisp list of string lists that's read directly.
 Every string list consists of the following elements:
- * The path that is being collapsed
- * The string to be appened to the collapsed path in the treemacs view
- * The single directories being collapsed, to be put under filewatch
-   if `treemacs-filewatch-mode' is on."
+ 1) the extra text that must be appended in the view
+ 2) The original full and uncollapsed path
+ 3) a series of intermediate steps which are the result of appending the
+    collapsed path elements onto the original, ending in
+ 4) the full path to the
+    directory that the collapsing leads to. For Example:
+    (\"/26.0/elpa\"
+     \"/home/a/Documents/git/treemacs/.cask\"
+     \"/home/a/Documents/git/treemacs/.cask/26.0\"
+     \"/home/a/Documents/git/treemacs/.cask/26.0/elpa\")"
   (when (and (> treemacs-collapse-dirs 0)
              treemacs-python-executable
              (treemacs-project->is-local-and-readable? project))

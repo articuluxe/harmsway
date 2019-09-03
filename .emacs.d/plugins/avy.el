@@ -248,7 +248,7 @@ Typically, these modes don't use the text representation."
   "In case there is only one candidate jumps directly to it."
   :type 'boolean)
 
-(defcustom avy-del-last-char-by '(8 127)
+(defcustom avy-del-last-char-by '(?\b ?\d)
   "List of event types, i.e. key presses, that delete the last
 character read.  The default represents `C-h' and `DEL'.  See
 `event-convert-list'."
@@ -453,7 +453,7 @@ KEYS is the path from the root of `avy-tree' to LEAF."
     (cond ((setq dispatch (assoc char avy-dispatch-alist))
            (setq avy-action (cdr dispatch))
            (throw 'done 'restart))
-          ((memq char '(27 ?\C-g))
+          ((memq char '(?\e ?\C-g))
            ;; exit silently
            (throw 'done 'abort))
           ((eq char ??)
@@ -960,9 +960,12 @@ When GROUP is non-nil, (BEG . END) should delimit that regex group."
             (when (avy--visible-p (1- (point)))
               (when (or (null pred)
                         (funcall pred))
-                (push (cons (cons (match-beginning group)
-                                  (match-end group))
-                            wnd) candidates)))))))
+                (push (cons
+                       (if (numberp group)
+                           (cons (match-beginning group)
+                                 (match-end group))
+                         (funcall group))
+                       wnd) candidates)))))))
     (nreverse candidates)))
 
 (defvar avy--overlay-offset 0
@@ -1233,20 +1236,22 @@ exist."
     (ignore #'ignore)
     (t (error "Unexpected style %S" style))))
 
-(cl-defun avy-jump (regex &key window-flip beg end action pred)
+(cl-defun avy-jump (regex &key window-flip beg end action pred group)
   "Jump to REGEX.
 The window scope is determined by `avy-all-windows'.
 When WINDOW-FLIP is non-nil, do the opposite of `avy-all-windows'.
 BEG and END narrow the scope where candidates are searched.
 ACTION is a function that takes point position as an argument.
-When PRED is non-nil, it's a filter for matching point positions."
+When PRED is non-nil, it's a filter for matching point positions.
+When GROUP is non-nil, it's either a match group in REGEX, or a function
+that returns a cons of match beginning and end."
   (setq avy-action (or action avy-action))
   (let ((avy-all-windows
          (if window-flip
              (not avy-all-windows)
            avy-all-windows)))
     (avy-process
-     (avy--regex-candidates regex beg end pred))))
+     (avy--regex-candidates regex beg end pred group))))
 
 (defun avy--generic-jump (regex window-flip &optional beg end)
   "Jump to REGEX.
@@ -1361,6 +1366,20 @@ BEG and END narrow the scope where candidates are searched."
               :beg beg
               :end end)))
 
+;;;###autoload
+(defun avy-goto-whitespace-end (arg &optional beg end)
+  "Jump to the end of a whitespace sequence.
+The window scope is determined by `avy-all-windows'.
+When ARG is non-nil, do the opposite of `avy-all-windows'.
+BEG and END narrow the scope where candidates are searched."
+  (interactive "P")
+  (avy-with avy-goto-whitespace-end
+    (avy-jump "[ \t]+\\|\n[ \t]*"
+              :window-flip arg
+              :beg beg
+              :end end
+              :group (lambda () (cons (point) (1+ (point)))))))
+
 (defun avy-goto-word-0-above (arg)
   "Jump to a word start between window start and point.
 The window scope is determined by `avy-all-windows'.
@@ -1376,6 +1395,22 @@ When ARG is non-nil, do the opposite of `avy-all-windows'."
   (interactive "P")
   (avy-with avy-goto-word-0
     (avy-goto-word-0 arg (point) (window-end (selected-window) t))))
+
+(defun avy-goto-whitespace-end-above (arg)
+  "Jump to the end of a whitespace sequence between point and window end.
+The window scope is determined by `avy-all-windows'.
+When ARG is non-nil, do the opposite of `avy-all-windows'."
+  (interactive "P")
+  (avy-with avy-goto-whitespace-end
+    (avy-goto-whitespace-end arg (window-start) (point))))
+
+(defun avy-goto-whitespace-end-below (arg)
+  "Jump to the end of a whitespace sequence between window start and point.
+The window scope is determined by `avy-all-windows'.
+When ARG is non-nil, do the opposite of `avy-all-windows'."
+  (interactive "P")
+  (avy-with avy-goto-whitespace-end
+    (avy-goto-whitespace-end arg (point) (window-end (selected-window) t))))
 
 ;;;###autoload
 (defun avy-goto-word-1 (char &optional arg beg end symbol)

@@ -6,9 +6,9 @@
 ;; Maintainer: Drew Adams (concat "drew.adams" "@" "oracle" ".com")
 ;; Copyright (C) 2000-2019, Drew Adams, all rights reserved.
 ;; Created: Fri Sep 15 07:58:41 2000
-;; Last-Updated: Thu May 16 09:15:47 2019 (-0700)
+;; Last-Updated: Tue Aug 13 15:04:47 2019 (-0700)
 ;;           By: dradams
-;;     Update #: 15327
+;;     Update #: 15334
 ;; URL: https://www.emacswiki.org/emacs/download/bookmark%2b-doc.el
 ;; Doc URL: https://www.emacswiki.org/emacs/BookmarkPlus
 ;; Keywords: bookmarks, bookmark+, placeholders, annotations, search,
@@ -1508,6 +1508,12 @@
 ;;  editing buffer.  Use `C-c C-c' when you are done editing, to save
 ;;  your changes.  (To cancel, just kill the buffer: `C-x k'.)
 ;;
+;;  You can also clone (duplicate) a bookmark, using `M-n', and then
+;;  edit any parts of it (e.g. using `e').  By default, the clone has
+;;  the same name, but with "<2>" appended.  With a prefix arg you are
+;;  prompted for the name.  Outside of the bookmark list you can use
+;;  `C-x p 2' to clone a bookmark.
+;;
 ;;  There are many more keys and commands for editing bookmark tags.
 ;;  You can copy tags (`C-x p t c') from one bookmark and paste them
 ;;  to others, either replacing the original tags (`C-x p t C-y') or
@@ -1722,9 +1728,9 @@
 ;;  session.
 ;;
 ;;  The state that is saved and restored using a bookmark-list
-;;  bookmark or a command defined using `c' is only a partial state.
-;;  The current set of markings and some other information are not
-;;  saved, in order to save disk space and save/restore time.
+;;  bookmark or a command defined using `C-c C-c' is only a partial
+;;  state.  The current set of markings and some other information are
+;;  not saved, in order to save disk space and save/restore time.
 ;;
 ;;  Sometimes, however, you really want to save the entire
 ;;  bookmark-list state, creating a full snapshot.  You can use `C-c
@@ -1740,10 +1746,10 @@
 ;;  bookmark list and any accessory lists (hidden and marked bookmarks
 ;;  etc.).
 ;;
-;;  Whether you use `c' or `C' to define a state-restoring command or
-;;  you create a bookmark-list bookmark, you can create a sequence
-;;  bookmark that combines such bookmark-list restoration with
-;;  activation of other bookmarks.  (To include a state-restoring
+;;  Whether you use `C-c C-c' or `C-c C-C' to define a state-restoring
+;;  command or you create a bookmark-list bookmark, you can create a
+;;  sequence bookmark that combines such bookmark-list restoration
+;;  with activation of other bookmarks.  (To include a state-restoring
 ;;  command in a sequence, you need to first create a function
 ;;  bookmark that uses the command, and then include that bookmark in
 ;;  the sequence.)

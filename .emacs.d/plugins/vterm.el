@@ -94,6 +94,10 @@ If you use a keybinding with a prefix-key, add that prefix-key to
 this list. Note that after doing so that prefix-key cannot be sent
 to the terminal anymore."
   :type '(repeat string)
+  :set (lambda (sym val)
+         (set sym val)
+         (when (fboundp 'vterm--exclude-keys)
+           (vterm--exclude-keys val)))
   :group 'vterm)
 
 (defcustom vterm-exit-functions nil
@@ -247,17 +251,23 @@ If nil, never delay")
 
 
 ;; Function keys and most of C- and M- bindings
-(mapc (lambda (key)
-        (define-key vterm-mode-map (kbd key) #'vterm--self-insert))
-      (append (cl-loop for number from 1 to 12
-                       for key = (format "<f%i>" number)
-                       unless (member key vterm-keymap-exceptions)
-                       collect key)
-              (cl-loop for prefix in '("C-" "M-")
-                       append (cl-loop for char from ?a to ?z
-                                       for key = (format "%s%c" prefix char)
-                                       unless (member key vterm-keymap-exceptions)
-                                       collect key))))
+(defun vterm--exclude-keys (exceptions)
+  (mapc (lambda (key)
+          (define-key vterm-mode-map (kbd key) nil))
+        exceptions)
+  (mapc (lambda (key)
+          (define-key vterm-mode-map (kbd key) #'vterm--self-insert))
+        (append (cl-loop for number from 1 to 12
+                         for key = (format "<f%i>" number)
+                         unless (member key exceptions)
+                         collect key)
+                (cl-loop for prefix in '("C-" "M-")
+                         append (cl-loop for char from ?a to ?z
+                                         for key = (format "%s%c" prefix char)
+                                         unless (member key exceptions)
+                                         collect key)))))
+
+(vterm--exclude-keys vterm-keymap-exceptions)
 
 ;; Keybindings
 (define-key vterm-mode-map [tab]                       #'vterm-send-tab)
@@ -273,6 +283,8 @@ If nil, never delay")
 (define-key vterm-mode-map [right]                     #'vterm-send-right)
 (define-key vterm-mode-map [up]                        #'vterm-send-up)
 (define-key vterm-mode-map [down]                      #'vterm-send-down)
+(define-key vterm-mode-map [prior]                     #'vterm-send-prior)
+(define-key vterm-mode-map [next]                      #'vterm-send-next)
 (define-key vterm-mode-map [home]                      #'vterm--self-insert)
 (define-key vterm-mode-map [end]                       #'vterm--self-insert)
 (define-key vterm-mode-map [escape]                    #'vterm--self-insert)
@@ -292,6 +304,8 @@ If nil, never delay")
 (defvar vterm-copy-mode-map (make-sparse-keymap)
   "Minor mode map for `vterm-copy-mode'.")
 (define-key vterm-copy-mode-map (kbd "C-c C-t")        #'vterm-copy-mode)
+(define-key vterm-copy-mode-map [return]               #'vterm-copy-mode-done)
+(define-key vterm-copy-mode-map (kbd "RET")            #'vterm-copy-mode-done)
 
 (defvar-local vterm--copy-saved-point nil)
 
@@ -309,6 +323,16 @@ If nil, never delay")
         (goto-char vterm--copy-saved-point))
     (use-local-map vterm-mode-map)
     (vterm-send-start)))
+
+(defun vterm-copy-mode-done ()
+  "Save the active region to the kill ring and exit `vterm-copy-mode'."
+  (interactive)
+  (unless vterm-copy-mode
+    (user-error "This command is effective only in vterm-copy-mode"))
+  (unless (region-active-p)
+    (user-error "No region is active"))
+  (kill-ring-save (region-beginning) (region-end))
+  (vterm-copy-mode -1))
 
 (defun vterm--self-insert ()
   "Sends invoking key to libvterm."
@@ -379,6 +403,16 @@ If nil, never delay")
   "Sends `<right>' to the libvterm."
   (interactive)
   (vterm-send-key "<right>"))
+
+(defun vterm-send-prior()
+  "Sends `<prior>' to the libvterm."
+  (interactive)
+  (vterm-send-key "<prior>"))
+
+(defun vterm-send-next()
+  "Sends `<next>' to the libvterm."
+  (interactive)
+  (vterm-send-key "<next>"))
 
 (defun vterm-send-meta-dot()
   "Sends `M-.' to the libvterm."

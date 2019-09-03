@@ -6,9 +6,9 @@
 ;; Maintainer: Drew Adams (concat "drew.adams" "@" "oracle" ".com")
 ;; Copyright (C) 2000-2019, Drew Adams, all rights reserved.
 ;; Created: Fri Sep 15 07:58:41 2000
-;; Last-Updated: Sat Jul 13 09:09:02 2019 (-0700)
+;; Last-Updated: Wed Aug 21 11:02:35 2019 (-0700)
 ;;           By: dradams
-;;     Update #: 16540
+;;     Update #: 16551
 ;; URL: https://www.emacswiki.org/emacs/download/bookmark%2b-chg.el
 ;; Doc URL: https://www.emacswiki.org/emacs/BookmarkPlus
 ;; Keywords: bookmarks, bookmark+
@@ -146,6 +146,8 @@
  
 ;;;(@* "CHANGE LOG FOR `bookmark+-1.el'")
 ;;
+;; 2019/08/13 dadams
+;;     Added bmkp-clone-bookmark, bmkp-copy-bookmark (alias).
 ;; 2019/07/13 dadams
 ;;     bookmark-edit-annotation: Added &rest _IGNORED, to accommodate vanilla change for bug #20150.
 ;; 2019/06/08 dadams
@@ -1408,6 +1410,11 @@
  
 ;;;(@* "CHANGE LOG FOR `bookmark+-bmu.el'")
 ;;
+;; 2019/08/13 dadams
+;;     Added bmkp-bmenu-clone-bookmark, bmkp-bmenu-copy-bookmark (alias).  Bound to M-n in bmk list.
+;;       Added it to bmkp-bmenu-menubar-menu, bmkp-bmenu-mouse-3-menu.
+;; 2019/08/09 dadams
+;;     bmkp-file-handler: Changed default to LightBlue background.
 ;; 2019/05/19 dadams
 ;;     Bind print-gensym wherever we bind print-circle.
 ;; 2019/04/23 dadams
@@ -2063,6 +2070,9 @@
  
 ;;;(@* "CHANGE LOG FOR `bookmark+-key.el'")
 ;;
+;; 2019/08/13 dadams
+;;     Bind bmkp-clone-bookmark to C-x p 2.
+;;     menu-bar-bookmark-map: Add bmkp-clone-bookmark.
 ;; 2019/05/16 dadams
 ;;     Added: bmkp-add-bookmarks-here-menu-flag, bmkp-here-menu, bmkp-exists-bookmark-satisfying-p,
 ;;            bmkp-exists-this-file/buffer-bookmarks-p, bmkp-bookmarks-here-menu-command-entries,
@@ -2218,6 +2228,8 @@
  
 ;;;(@* "CHANGE LOG FOR `bookmark+-lit.el'")
 ;;
+;; 2019/08/21 dadams
+;;     bmkp-toggle-auto-light-when-(jump|set): Fix message: symbol-name, not symbol-value.
 ;; 2019/05/01 dadams
 ;;     Added bmkp-lighted-jump-to-list.
 ;; 2019/04/23 dadams

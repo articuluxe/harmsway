@@ -8,9 +8,9 @@
 ;; Created: Fri Mar 19 15:58:58 1999
 ;; Version: 2019.04.21
 ;; Package-Requires: ()
-;; Last-Updated: Wed Jul  3 20:06:35 2019 (-0700)
+;; Last-Updated: Sun Jul 21 09:47:33 2019 (-0700)
 ;;           By: dradams
-;;     Update #: 11707
+;;     Update #: 11727
 ;; URL: https://www.emacswiki.org/emacs/download/dired%2b.el
 ;; Doc URL: https://www.emacswiki.org/emacs/DiredPlus
 ;; Keywords: unix, mouse, directories, diredp, dired
@@ -805,7 +805,13 @@
 ;;; Change Log:
 ;;
 ;; 2019/07/03 dadams
-;;     diredp-mark-if: Use char-after, not diredp-looking-at-p.
+;;     dired-mark-unmarked-files: Apply fix for Emacs bug #27465.
+;;     diredp-mark-if, diredp-mark-sexp(-recursive), dired-mark-unmarked-files:
+;;       Use char-after, not diredp-looking-at-p.
+;; 2019/07/19 dadams
+;;     diredp-change-marks-recursive, diredp-unmark-all-files-recursive,
+;;       diredp-mark-files(-containing)-regexp-recursive, diredp-mark-sexp-recursive, diredp-mark-recursive-1:
+;;         Added missing PREDICATE arg in calls to diredp-get-subdirs.
 ;; 2019/06/25 dadams
 ;;     diredp-mark-if, diredp-this-file-(un)marked-p: Use regexp-quote for marker char.
 ;; 2019/06/03 dadams
@@ -2390,7 +2396,6 @@ Otherwise return a cons (CHANGED . MATCHED), where:
         (when ,predicate
           (setq matched  (1+ matched))
           (unless (eq dired-marker-char (char-after))
-              (diredp-looking-at-p (regexp-quote (char-to-string dired-marker-char)))
             (delete-char 1) (insert dired-marker-char) (setq changed  (1+ changed))))
         (forward-line 1))
       (when ,singular (message "%s %s%s%s newly %s%s"
@@ -5938,7 +5943,7 @@ When called from Lisp:
            (nosubs             (natnump numarg))
            (ignore-marks       (and numarg  (<= numarg 0)))
            (dired-marker-char  new)
-           (sdirs              (diredp-get-subdirs ignore-marks details))
+           (sdirs              (diredp-get-subdirs ignore-marks predicate details))
            (old-strg           (format "\n%c" old))
            (count              0)
            dbufs)
@@ -6006,7 +6011,7 @@ When called from Lisp:
            (nosubs             (natnump numarg))
            (ignore-marks       (and numarg  (<= numarg 0)))
            (dired-marker-char  ?\  )    ; Unmark
-           (sdirs              (diredp-get-subdirs ignore-marks details))
+           (sdirs              (diredp-get-subdirs ignore-marks predicate details))
            (mrk-strg           (format "\n%c" mark))
            (count              0)
            dbufs)
@@ -6149,7 +6154,7 @@ When called from Lisp, DETAILS is passed to `diredp-get-subdirs'."
                        diredp-list-file-attributes)))
   (add-to-list 'regexp-search-ring regexp) ; Add REGEXP to `regexp-search-ring'.
   (let ((dired-marker-char  (or marker-char  dired-marker-char))
-        (sdirs              (diredp-get-subdirs ignore-marks-p details))
+        (sdirs              (diredp-get-subdirs ignore-marks-p nil details))
         (matched            0)
         (changed            0)
         dbufs chg.mtch)
@@ -6205,7 +6210,7 @@ When called from Lisp, DETAILS is passed to `diredp-get-subdirs'."
                        diredp-list-file-attributes)))
   (add-to-list 'regexp-search-ring regexp) ; Add REGEXP to `regexp-search-ring'.
   (let ((dired-marker-char  (or marker-char  dired-marker-char))
-        (sdirs              (diredp-get-subdirs ignore-marks-p details))
+        (sdirs              (diredp-get-subdirs ignore-marks-p nil details))
         (matched            0)
         (changed            0)
         dbufs chg.mtch)
@@ -6350,7 +6355,7 @@ When called from Lisp, DETAILS is passed to `diredp-get-subdirs'."
            (matched            0)
            (changed            0)
            dbufs chg.mtch mode nlink uid gid size time name sym)
-      (dolist (dir  (cons default-directory (diredp-get-subdirs ignorep details)))
+      (dolist (dir  (cons default-directory (diredp-get-subdirs ignorep nil details)))
         (when (setq dbufs  (dired-buffers-for-dir (expand-file-name dir))) ; Dirs with Dired buffers only.
           (with-current-buffer (car dbufs)
             (setq chg.mtch
@@ -6387,7 +6392,7 @@ When called from Lisp, DETAILS is passed to `diredp-get-subdirs'."
                               mode   (buffer-substring (point) (+ mode-len (point))))
                         (forward-char mode-len)
                         ;; Skip any extended attributes marker ("." or "+").
-                        (unless (diredp-looking-at-p " ") (forward-char 1))
+                        (unless (eq (char-after) ?\   ) (forward-char 1))
                         (setq nlink  (read (current-buffer))) ; `NLINK'
 
                         ;; `UID'
@@ -6568,7 +6573,7 @@ When called from Lisp, optional arg DETAILS is passed to
          (unmark             (and numarg  (>= numarg 0)))
          (ignorep            (and numarg  (<= numarg 0)))
          (dired-marker-char  (if unmark ?\040 dired-marker-char))
-         (sdirs              (diredp-get-subdirs ignorep details))
+         (sdirs              (diredp-get-subdirs ignorep nil details))
          (changed            0)
          (matched            0)
          dbufs chg.mtch)
@@ -6786,7 +6791,7 @@ When called from Lisp, optional arg DETAILS is passed to
 Like `dired-do-create-files', but act recursively on subdirs, and
 always keep markings.
 Prompts for the target directory, in which to create the files.
-FILE-CREATOR OPERATION is as in `dired-create-files'.
+FILE-CREATOR and OPERATION are as in `dired-create-files'.
 Non-nil IGNORE-MARKS-P means ignore all marks - include all files in this
 Dired buffer and all subdirs, recursively.
 
@@ -9137,8 +9142,9 @@ Non-interactively:
                        nil
                        current-prefix-arg
                        nil))
-    (let ((dired-marker-char  (if unflag-p ?\   dired-marker-char)))
-      (diredp-mark-if (and (diredp-looking-at-p " ") ; Not already marked
+    (let ((dired-marker-char  (if unflag-p ?\   dired-marker-char))
+          (unmarkedp          (eq (char-after) ?\   )))
+      (diredp-mark-if (and (if unflag-p (not unmarkedp) unmarkedp) ; Fixes Emacs bug #27465.
                            (let ((fn  (dired-get-filename localp 'NO-ERROR))) ; Uninteresting
                              (and fn  (diredp-string-match-p regexp fn))))
                       msg))))
@@ -10656,7 +10662,7 @@ refer at all to the underlying file system.  Contrast this with
                                                 (string-to-number (match-string 2))))
                 mode   (buffer-substring (point) (+ mode-len (point))))
           (forward-char mode-len)
-          (unless (diredp-looking-at-p " ") (forward-char 1)) ; Skip any extended attributes marker ("." or "+").
+          (unless (eq (char-after) ?\   ) (forward-char 1)) ; Skip any extended attributes marker ("." or "+").
           (setq nlink  (read (current-buffer)))
           ;; Karsten Wenger <kw@cis.uni-muenchen.de> fixed uid.
 

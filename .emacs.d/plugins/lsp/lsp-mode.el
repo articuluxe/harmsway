@@ -1,11 +1,11 @@
 ;;; lsp-mode.el --- LSP mode                              -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2018  Vibhav Pant, Ivan Yonchovski
+;; Copyright (C) 2019  Vibhav Pant, Ivan Yonchovski
 
 ;; Author: Vibhav Pant, Fangrui Song, Ivan Yonchovski
 ;; Keywords: languages
 ;; Package-Requires: ((emacs "25.1") (dash "2.14.1") (dash-functional "2.14.1") (f "0.20.0") (ht "2.0") (spinner "1.7.3") (markdown-mode "2.3"))
-;; Version: 6.0
+;; Version: 6.1
 
 ;; URL: https://github.com/emacs-lsp/lsp-mode
 ;; This program is free software; you can redistribute it and/or modify
@@ -510,6 +510,12 @@ are determined by the index of the element."
   :type 'number
   :group 'lsp-mode)
 
+(defcustom lsp-tcp-connection-timeout 2
+  "The timeout for tcp connection in seconds."
+  :type 'number
+  :group 'lsp-mode
+  :package-version '(lsp-mode . "6.2"))
+
 (defconst lsp--imenu-compare-function-alist
   (list (cons 'name #'lsp--imenu-compare-name)
         (cons 'kind #'lsp--imenu-compare-kind)
@@ -603,7 +609,9 @@ If set to `:none' neither of two will be enabled."
     ("textDocument/prepareRename"
      :check-command (lambda (workspace)
                       (with-lsp-workspace workspace
-                        (let ((table (lsp--capability "renameProvider")))
+                        (let ((table (or (lsp--capability "renameProvider")
+                                         (-some-> (lsp--registered-capability "textDocument/rename")
+                                                  (lsp--registered-capability-options)))))
                           (and (hash-table-p table)
                                (gethash "prepareProvider" table)))))))
 
@@ -1322,8 +1330,8 @@ PARAMS - the data sent from WORKSPACE."
      :original diag)))
 
 (defalias 'lsp--buffer-for-file (if (eq system-type 'windows-nt)
-                                  #'find-buffer-visiting
-                                #'get-file-buffer))
+                                    #'find-buffer-visiting
+                                  #'get-file-buffer))
 
 
 (defun lsp--on-diagnostics (workspace params)
@@ -2371,6 +2379,7 @@ disappearing, unset all the variables related to it."
                      (documentSymbol . ((symbolKind . ((valueSet . ,(apply 'vector (number-sequence 1 26)))))
                                         (hierarchicalDocumentSymbolSupport . t)))
                      (formatting . ((dynamicRegistration . t)))
+                     (rename . ((dynamicRegistration . t)))
                      (codeAction . ((dynamicRegistration . t)
                                     (codeActionLiteralSupport . ((codeActionKind . ((valueSet . [""
                                                                                                  "quickfix"
@@ -2384,8 +2393,8 @@ disappearing, unset all the variables related to it."
                                                                               (or
                                                                                (fboundp 'yas-expand-snippet)
                                                                                (warn (concat
-                                                                                      "Yasnippet is not present but `lsp-enable-snippet' is set to `t'. "
-                                                                                      "You must either install yasnippet or disable snippet support."))
+                                                                                      "Yasnippet is not required but `lsp-enable-snippet' is set to `t'. "
+                                                                                      "You must either required yasnippet or disable snippet support."))
                                                                                t)
                                                                             :json-false))
                                                        (documentationFormat . ["markdown"])))
@@ -2928,11 +2937,11 @@ This method is used if we do not have `buffer-replace-content'."
 
 (defun lsp--registered-capability (method)
   "Check whether there is workspace providing METHOD."
-  (--first
-   (seq-find (lambda (reg)
-               (equal (lsp--registered-capability-method reg) method))
-             (lsp--workspace-registered-server-capabilities it))
-   (lsp-workspaces)))
+  (->> (lsp-workspaces)
+       (--keep (seq-find (lambda (reg)
+                           (equal (lsp--registered-capability-method reg) method))
+                         (lsp--workspace-registered-server-capabilities it)))
+       cl-first))
 
 (defvar-local lsp--before-change-vals nil
   "Store the positions from the `lsp-before-change' function
@@ -4023,9 +4032,11 @@ perform the request synchronously."
 
 (defun lsp--get-symbol-to-rename ()
   "Get synbol at point."
-  (if (let ((table (lsp--capability "renameProvider")))
-        (and (hash-table-p table)
-             (gethash "prepareProvider" table)))
+  (if (let ((rename-provider (or (lsp--capability "renameProvider")
+                                 (-some-> (lsp--registered-capability "textDocument/rename")
+                                          (lsp--registered-capability-options)))))
+        (and (hash-table-p rename-provider)
+             (gethash "prepareProvider" rename-provider)))
       (-let (((start . end) (lsp--range-to-region
                              (lsp-request "textDocument/prepareRename"
                                           (lsp--text-document-position-params)))))
@@ -4037,7 +4048,8 @@ perform the request synchronously."
   (interactive (list (let ((symbol (lsp--get-symbol-to-rename)))
                        (read-string (format "Rename %s to: " symbol) symbol))))
   (lsp--cur-workspace-check)
-  (unless (lsp--capability "renameProvider")
+  (unless (or (lsp--capability "renameProvider")
+              (lsp--registered-capability "textDocument/rename"))
     (signal 'lsp-capability-not-supported (list "renameProvider")))
   (let ((edits (lsp-request "textDocument/rename"
                             `(:textDocument ,(lsp--text-document-identifier)
@@ -4686,14 +4698,16 @@ standard I/O."
                        (cons proc proc))))
         :test? (lambda () (-> command lsp-resolve-final-function lsp-server-present?))))
 
-(defun lsp--open-network-stream (host port name &optional retry-count sleep-interval)
+(defun lsp--open-network-stream (host port name )
   "Open network stream to HOST:PORT.
   NAME will be passed to `open-network-stream'.
   RETRY-COUNT is the number of the retries.
   SLEEP-INTERVAL is the sleep interval between each retry."
-  (let ((retries 0)
-        connection)
-    (while (and (not connection) (< retries (or retry-count 100)))
+  (let* ((retries 0)
+         (sleep-interval 0.01)
+         (number-of-retries (/ lsp-tcp-connection-timeout sleep-interval))
+         connection)
+    (while (and (not connection) (< retries number-of-retries))
       (condition-case err
           (setq connection (open-network-stream name nil host port :type 'plain))
         (file-error
@@ -4702,9 +4716,9 @@ standard I/O."
                       host
                       port
                       (error-message-string err))
-           (sit-for (or sleep-interval 0.02))
+           (sleep-for sleep-interval)
            (cl-incf retries)))))
-    connection))
+    (or connection (error "Port %s was never taken. Consider increasing `lsp-tcp-connection-timeout'." port))))
 
 (defun lsp--find-available-port (host starting-port)
   "Find available port on HOST starting from STARTING-PORT."
@@ -4737,7 +4751,7 @@ process listening for TCP connections on the provided port."
                      (tcp-proc (lsp--open-network-stream host port (concat name "::tcp"))))
 
                 ;; TODO: Same :noquery issue (see above)
-                (set-process-query-on-exit-flag (get-buffer-process (get-buffer (process-name proc))) nil)
+                (set-process-query-on-exit-flag proc nil)
                 (set-process-query-on-exit-flag tcp-proc nil)
                 (set-process-filter tcp-proc filter)
                 (cons tcp-proc proc)))

@@ -7,9 +7,9 @@
 ;; Copyright (C) 2000-2019, Drew Adams, all rights reserved.
 ;; Copyright (C) 2009, Thierry Volpiatto, all rights reserved.
 ;; Created: Mon Jul 12 09:05:21 2010 (-0700)
-;; Last-Updated: Fri Jun 28 08:57:29 2019 (-0700)
+;; Last-Updated: Tue Aug 13 16:07:35 2019 (-0700)
 ;;           By: dradams
-;;     Update #: 4037
+;;     Update #: 4070
 ;; URL: https://www.emacswiki.org/emacs/download/bookmark%2b-bmu.el
 ;; Doc URL: https://www.emacswiki.org/emacs/BookmarkPlus
 ;; Keywords: bookmarks, bookmark+, placeholders, annotations, search, info, url, eww, w3m, gnus
@@ -107,6 +107,7 @@
 ;;    `bmkp-bmenu-add-tags', `bmkp-bmenu-add-tags-to-marked',
 ;;    `bmkp-bmenu-change-sort-order',
 ;;    `bmkp-bmenu-change-sort-order-repeat',
+;;    `bmkp-bmenu-clone-bookmark', `bmkp-bmenu-copy-bookmark',
 ;;    `bmkp-bmenu-copy-marked-to-bookmark-file',
 ;;    `bmkp-bmenu-copy-tags',
 ;;    `bmkp-bmenu-create-bookmark-file-from-marked',
@@ -578,8 +579,8 @@ Don't forget to mention your Emacs and library versions."))
   :group 'bookmark-plus :group 'faces)
 
 (defface bmkp-file-handler
-    '((((background dark)) (:background "#272740402727")) ; ~ dark green
-      (t (:background "Thistle")))
+    '((((background dark)) (:background "#FFFF78CB48E1")) ; ~ dark brown
+      (t (:background "LightBlue")))
   "*Face used for a bookmark that has a `file-handler' attribute."
   :group 'bookmark-plus :group 'faces)
 
@@ -4765,6 +4766,29 @@ Non-interactively, non-nil MSG-P means display messages."
         (message "No bookmarks relocated")))
     count))
 
+;;;###autoload (autoload 'bmkp-copy-bookmark "bookmark+")
+(defalias 'bmkp-bmenu-copy-bookmark 'bmkp-bmenu-clone-bookmark)
+;;;###autoload (autoload 'bmkp-bmenu-clone-bookmark "bookmark+")
+(defun bmkp-bmenu-clone-bookmark (&optional arg confirm-overwrite-p) ; Bound to `M-n' in bookmark list
+  "Create a duplicate copy named of the bookmark under the cursor.
+The clone name is the same as that bookmark, but with \"<2>\" appended.
+With a prefix arg you are instead prompted for the clone name."
+  (interactive "P\np")
+  (bmkp-bmenu-barf-if-not-in-menu-list)
+  (bookmark-bmenu-ensure-position)
+  (let* ((orig     (bookmark-bmenu-bookmark))
+         ;; Remove any `bmkp-full-record' property from name.
+         (_IGNORE  (remove-text-properties 0 (length orig) '(bmkp-full-record nil) orig))
+         (default  (concat orig "<2>"))
+         (new      (if arg
+                       (bmkp-completing-read-lax "Clone name" default)
+                     default)))
+    (while (equal orig new)
+      (setq new  (bmkp-completing-read-lax "Clone name (must be different)" default)))
+    ;; Remove any `bmkp-full-record' property from name.
+    (remove-text-properties 0 (length new) '(bmkp-full-record nil) new)
+    (bmkp-clone-bookmark orig new confirm-overwrite-p)))
+
 ;;;###autoload (autoload 'bmkp-bmenu-edit-bookmark-name-and-location "bookmark+")
 (defun bmkp-bmenu-edit-bookmark-name-and-location (&optional internalp) ; Bound to `r' in bookmark list
   "Edit the bookmark under the cursor: its name and location.
@@ -5522,6 +5546,7 @@ are marked or ALLP is non-nil."
 (define-key bookmark-bmenu-mode-map "B"                    nil) ; For Emacs 20
 (define-key bookmark-bmenu-mode-map "BM"                   'bmkp-bmenu-mark-non-file-bookmarks)
 (define-key bookmark-bmenu-mode-map "BS"                   'bmkp-bmenu-show-only-non-file-bookmarks)
+(define-key bookmark-bmenu-mode-map (kbd "M-n")            'bmkp-bmenu-clone-bookmark)
 (define-key bookmark-bmenu-mode-map (kbd "C-c C-c")        'bmkp-bmenu-define-command)
 (define-key bookmark-bmenu-mode-map (kbd "C-c C-S-c")      'bmkp-bmenu-define-full-snapshot-command)
 (define-key bookmark-bmenu-mode-map (kbd "C-c C-j")        'bmkp-bmenu-define-jump-marked-command)
@@ -5778,6 +5803,9 @@ are marked or ALLP is non-nil."
 (define-key bmkp-bmenu-menubar-menu [bmkp-bmenu-make-sequence-from-marked]
   '(menu-item "New Sequence Bookmark from Marked..." bmkp-bmenu-make-sequence-from-marked
     :help "Create or update a sequence bookmark from the visible marked bookmarks"))
+(define-key bmkp-bmenu-menubar-menu [bmkp-bmenu-clone-bookmark]
+  '(menu-item "Clone (Duplicate) This Bookmark" bmkp-bmenu-clone-bookmark
+    :help "Clone this bookmark.  (`\\[bmkp-bmenu-edit-bookmark-record]' to edit.)"))
 
 (define-key bmkp-bmenu-menubar-menu [top-sep3] '("--")) ; ----------
 (define-key bmkp-bmenu-menubar-menu [bmkp-choose-navlist-from-bookmark-list]
@@ -6623,6 +6651,7 @@ are marked or ALLP is non-nil."
                                     ,@(and (fboundp 'org-add-link-type)
                                            '(["Store Org Link" org-store-link]))
                                     ["Rename or Relocate..." bmkp-bmenu-edit-bookmark-name-and-location]
+                                    ["Clone (Duplicate)" bmkp-bmenu-clone-bookmark]
                                     ["Edit Internal Record (Lisp)..." bmkp-bmenu-edit-bookmark-record]
                                     ["Show Annotation" bookmark-bmenu-show-annotation
                                      :active (bookmark-get-annotation bmk-name)]

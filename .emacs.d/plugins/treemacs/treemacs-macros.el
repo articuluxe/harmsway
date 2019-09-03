@@ -259,14 +259,18 @@ attempt first to keep point on the same file/tag, and if that does not work keep
 it on the same line."
   (declare (debug (form body)))
   `(treemacs-without-following
+    (declare-function treemacs--tags-path-of "treemacs-tags")
+    (declare-function treemacs--goto-tag-button-at "treemacs-tags")
+    (declare-function treemacs--current-screen-line "treemacs-rendering")
     (let* ((curr-btn       (treemacs-current-button))
            (curr-point     (point-marker))
            (next-path      (-some-> curr-btn (treemacs--next-non-child-button) (button-get :path)))
            (prev-path      (-some-> curr-btn (treemacs--prev-non-child-button) (button-get :path)))
            (curr-node-path (-some-> curr-btn (treemacs-button-get :path)))
            (curr-state     (-some-> curr-btn (treemacs-button-get :state)))
-           (curr-file      (-some-> curr-btn (treemacs--nearest-path)))
+           (collapse       (-some-> curr-btn (treemacs-button-get :collapsed)))
            (curr-tagpath   (-some-> curr-btn (treemacs--tags-path-of)))
+           (curr-file      (if collapse (treemacs-button-get curr-btn :key) (-some-> curr-btn (treemacs--nearest-path))))
            (curr-window    (treemacs-get-local-window))
            (curr-win-line  (when curr-window
                              (with-selected-window curr-window
@@ -349,7 +353,8 @@ foregoing typechecking for its properties for the hope of improved performance."
                  (define-inline ,func-name (self)
                    ,(format "Get the '%s' property of `%s' SELF." prop-name name)
                    (declare (side-effect-free t))
-                   (inline-quote (aref ,',self ,(1+ it)))))))
+                   (inline-letevals (self)
+                     (inline-quote (aref ,',self ,(1+ it))))))))
           (number-sequence 0 (1- (length properties)))))))
 
 (defmacro treemacs-only-during-init (&rest body)
