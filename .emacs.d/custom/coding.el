@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2019-04-24 12:19:23 dan.harms>
+;; Modified Time-stamp: <2019-09-04 10:11:53 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -192,8 +192,9 @@
           ;; This is fairly aggressive; can reenable if desired
           ;; ("\\<Q[A-Z][A-Za-z0-9]*\\>" . font-lock-type-face)
           ) t)
-   (make-local-variable 'electric-pair-pairs)
-   (push (cons ?< ?>) electric-pair-pairs)
+   ;; disable <> electricity for now.  Need to be smarter.
+   ;; (make-local-variable 'electric-pair-pairs)
+   ;; (push (cons ?< ?>) electric-pair-pairs)
    ;; add some c++-specific rotate-text keywords
    (setq rotate-text-local-symbols '(("class" "struct")
                                      ("true" "false")
