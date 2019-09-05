@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-09-04 06:26:32 dharms>
+;; Modified Time-stamp: <2019-09-06 11:00:02 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -333,6 +333,7 @@ not an error if any files do not exist."
          ("s" . proviso-deploy-save-file)
          ("S" . proviso-deploy-save-file-as)
          ("g" . proviso-deploy-revert-file)
+         ("I" . proviso-deploy-import-file)
          ("+" . proviso-deploy-add-deploy)
          ("=" . proviso-deploy-add-deploy-cmd)
          ("-" . proviso-deploy-add-deploy-env)
@@ -347,6 +348,7 @@ not an error if any files do not exist."
          ("f" . proviso-deploy-find-file)
          ("F" . proviso-deploy-find-file-other-window)
          ("t" . proviso-deploy-edit-deploy)
+         ("E" . proviso-deploy-edit-deploy-file)
          ("<SPC>" . proviso-deploy-show)
          )
   :init
