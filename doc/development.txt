@@ -1,11 +1,11 @@
 #!/usr/bin/env sh
 # -*- Mode: sh -*-
 # development.txt --- tips when developing
-# Copyright (C) 2017-2018  Dan Harms (dan.harms)
+# Copyright (C) 2017-2019  Dan Harms (dan.harms)
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Tuesday, February  7, 2017
 # Version: 1.0
-# Modified Time-stamp: <2018-12-11 11:16:57 dan.harms>
+# Modified Time-stamp: <2019-09-10 09:47:35 dan.harms>
 # Modified by: Dan Harms
 # Keywords: gnu elf development
 
@@ -34,6 +34,9 @@ lsof -np <pid>
 # connect to process
 gdb -p <pid>
 "call close(<fd>)" "q"
+# find out how long a process has been running
+ps -p <pid> -o etime
+
 # examine onload sockets
 sudo onload_stackdump netstat
 # kill an onload socket
