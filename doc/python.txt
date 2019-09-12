@@ -5,7 +5,7 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Tuesday, June 11, 2019
 # Version: 1.0
-# Modified Time-stamp: <2019-07-24 13:47:22 dan.harms>
+# Modified Time-stamp: <2019-09-12 11:38:38 dan.harms>
 # Modified by: Dan Harms
 # Keywords: python help
 
@@ -41,5 +41,8 @@ wget https://bitbucket.org/jonwaltman/pydoc-info/downloads/python.info.gz
 gunzip python.info
 sudo cp python.info /usr/share/info
 sudo install-info --info-dir=/usr/share/info python.info
+
+# print sys.path
+python -c "import sys; print('\n'.join(sys.path))"
 
 # code ends here

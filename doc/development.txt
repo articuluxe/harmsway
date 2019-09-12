@@ -5,7 +5,7 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Tuesday, February  7, 2017
 # Version: 1.0
-# Modified Time-stamp: <2019-09-10 09:47:35 dan.harms>
+# Modified Time-stamp: <2019-09-12 11:36:46 dan.harms>
 # Modified by: Dan Harms
 # Keywords: gnu elf development
 
@@ -52,6 +52,9 @@ sudo lsof -u <UID> 2>/dev/null | sc -l
 
 # strace
 strace -f -e [open|network] <cmd>
+# count how many system calls a python library makes on load
+strace python -c "import <something>" 2> out.strace
+egrep '^(stat|read|open|fstat)' out.strace | wc -l
 
 # print debug info about what ld.so does at runtime
 LD_DEBUG=libs ./executable
