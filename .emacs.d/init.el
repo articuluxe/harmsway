@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-09-06 11:00:02 dharms>
+;; Modified Time-stamp: <2019-09-11 08:26:34 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -332,7 +332,7 @@ not an error if any files do not exist."
          ("o" . proviso-deploy-open-file)
          ("s" . proviso-deploy-save-file)
          ("S" . proviso-deploy-save-file-as)
-         ("g" . proviso-deploy-revert-file)
+         ("V" . proviso-deploy-revert-file)
          ("I" . proviso-deploy-import-file)
          ("+" . proviso-deploy-add-deploy)
          ("=" . proviso-deploy-add-deploy-cmd)
