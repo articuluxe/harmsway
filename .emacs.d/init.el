@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-09-11 08:26:34 dharms>
+;; Modified Time-stamp: <2019-09-13 10:33:32 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -943,6 +943,7 @@ From `manuel-oberti.github.io' on 20190806."
 
          ("C-\\ :" . mc/mark-all-in-region)
          ("C-\\ M-;" . mc/mark-all-in-region-regexp)
+         ("C-\\ |" . mc/vertical-align-with-space)
 
          ("C-S-h ;" . mc/mark-all-like-this-in-defun)
          ("C-\\ h;" . mc/mark-all-like-this-in-defun)
