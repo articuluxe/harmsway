@@ -656,13 +656,20 @@ case keyword. It returns nil for the case line itself."
             (or (go--empty-line-p) (go--boring-comment-p))
             (zerop (forward-line 1))))
 
-    ;; If we are looking at the start of an interesting comment, our
-    ;; prefix is the comment opener and any space following.
-    (if (looking-at (concat go--comment-start-regexp "[[:space:]]*"))
-        ;; Replace "/*" opener with spaces so following lines don't
-        ;; get "/*" prefix.
-        (replace-regexp-in-string "/\\*" "  "
-                                  (match-string-no-properties 0)))))
+    ;; If we are in a block comment, set prefix based on first line
+    ;; with content.
+    (if (go-in-comment-p)
+        (progn
+          (looking-at "[[:space:]]*")
+          (match-string-no-properties 0))
+
+      ;; Else if we are looking at the start of an interesting comment, our
+      ;; prefix is the comment opener and any space following.
+      (if (looking-at (concat go--comment-start-regexp "[[:space:]]*"))
+          ;; Replace "/*" opener with spaces so following lines don't
+          ;; get "/*" prefix.
+          (replace-regexp-in-string "/\\*" "  "
+                                    (match-string-no-properties 0))))))
 
 (defun go--fill-paragraph (&rest args)
   "Wrap fill-paragraph to set custom fill-prefix."
@@ -716,8 +723,8 @@ thing for comments."
     (while (and (not done) (not (zerop arg)))
       ;; If we are moving backwards and aren't currently looking at a
       ;; comment, move back one line. This is to make sure
-      ;; (go--file-forward-paragraph -1) always works properly as the
-      ;; inverse of (go--file-forward-paragraph 1).
+      ;; (go--fill-forward-paragraph -1) always works properly as the
+      ;; inverse of (go--fill-forward-paragraph 1).
       (when (and
              (= single -1)
              (not (go-in-comment-p))
@@ -737,7 +744,14 @@ thing for comments."
           (setq saw-comment t))
 
         (if (not saw-comment)
-            (setq done t)
+            (progn
+              ;; In fill-region case user may have selected a region
+              ;; with non-comments. fill-region will loop forever
+              ;; until it makes it to the end of the region, so just
+              ;; fall back to `forward-paragraph' so we make progress.
+              (when mark-active
+                (setq arg (forward-paragraph arg)))
+              (setq done t))
           ;; If we are going backwards, back up one more line so
           ;; we are on the line before the comment.
           (when (= single -1)

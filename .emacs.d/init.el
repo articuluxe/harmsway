@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-09-13 10:33:32 dan.harms>
+;; Modified Time-stamp: <2019-09-16 09:34:13 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -360,7 +360,6 @@ not an error if any files do not exist."
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; tags ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(setq company-etags-support-ctags-only t)
 (when (> emacs-major-version 24)
 
   (defun harmsway-xref-find-definition-mouse (click)

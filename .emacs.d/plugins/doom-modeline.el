@@ -4,7 +4,7 @@
 
 ;; Author: Vincent Zhang <seagle0128@gmail.com>
 ;; Homepage: https://github.com/seagle0128/doom-modeline
-;; Version: 2.6.0
+;; Version: 2.6.1
 ;; Package-Requires: ((emacs "25.1") (all-the-icons "1.0.0") (shrink-path "0.2.0") (dash "2.11.0"))
 ;; Keywords: faces mode-line
 
@@ -45,8 +45,8 @@
 ;; - A workspace number segment for eyebrowse
 ;; - A perspective name segment for persp-mode
 ;; - A window number segment for winum and window-numbering
-;; - An indicator for modal editing state, including evil, overwrite, god, ryo and
-;;   xah-fly-keys, etc.
+;; - An indicator for modal editing state, including evil, overwrite, god, ryo
+;;   and xah-fly-keys, etc.
 ;; - An indicator for remote host
 ;; - An indicator for current input method
 ;; - An indicator for debug state
@@ -60,7 +60,8 @@
 ;; - An indicator for markdown/org preivews with grip
 ;; - An indicator for battery status with fancy-battery
 ;; - Truncated file name, file icon, buffer state and project name in buffer
-;;   information segment, which is compatible with projectile and project
+;;   information segment, which is compatible with project, find-file-in-project
+;;   and projectile
 ;; - New mode-line for Info-mode buffers
 ;; - New package mode-line for paradox
 ;; - New mode-line for helm buffers

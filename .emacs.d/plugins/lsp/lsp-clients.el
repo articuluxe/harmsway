@@ -41,6 +41,7 @@
 (require 'lsp-metals)
 (require 'lsp-fsharp)
 (require 'lsp-erlang)
+(require 'lsp-haxe)
 
 ;;; Bash
 (lsp-register-client
@@ -504,10 +505,31 @@ responsiveness at the cost of possibile stability issues."
  (make-lsp-client :new-connection (lsp-stdio-connection
                                    (lambda () lsp-clients-angular-language-server-command))
                   :activation-fn (lambda (&rest _args)
-                                   (string-match-p ".*\.html$" (buffer-file-name)))
+                                   (and (string-match-p ".*\.html$" (buffer-file-name))
+                                        (lsp-workspace-root)
+                                        (file-exists-p (f-join (lsp-workspace-root) "angular.json"))))
                   :priority -1
                   :add-on? t
                   :server-id 'angular-ls))
+
+
+;; TeX
+(defgroup lsp-tex nil
+  "LSP support for TeX and friends, using Digestif."
+  :group 'lsp-mode
+  :link '(url-link "https://github.com/astoff/digestif/"))
+
+(defcustom lsp-clients-digestif-executable "digestif"
+  "Command to start the Digestif language server."
+  :group 'lsp-tex
+  :risky t
+  :type 'file)
+
+(lsp-register-client
+ (make-lsp-client :new-connection (lsp-stdio-connection lsp-clients-digestif-executable)
+                  :major-modes '(plain-tex-mode latex-mode)
+                  :priority -1
+                  :server-id 'digestif))
 
 
 (provide 'lsp-clients)

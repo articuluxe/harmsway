@@ -296,8 +296,9 @@ Uses `all-the-icons-material' to fetch the icon."
 (advice-add #'undo :after #'doom-modeline-update-buffer-file-state-icon)
 (advice-add #'undo-tree-undo-1 :after #'doom-modeline-update-buffer-file-state-icon)
 (advice-add #'undo-tree-redo-1 :after #'doom-modeline-update-buffer-file-state-icon)
-(advice-add #'narrow-to-region :after #'doom-modeline-update-buffer-file-state-icon)
+(advice-add #'generate-new-buffer :after #'doom-modeline-update-buffer-file-state-icon)
 (advice-add #'not-modified :after #'doom-modeline-update-buffer-file-state-icon)
+(advice-add #'narrow-to-region :after #'doom-modeline-update-buffer-file-state-icon)
 (advice-add #'widen :after #'doom-modeline-update-buffer-file-state-icon)
 (advice-add #'fancy-narrow-to-region :after #'doom-modeline-update-buffer-file-state-icon)
 (advice-add #'fancy-widen :after #'doom-modeline-update-buffer-file-state-icon)
@@ -379,7 +380,9 @@ mouse-1: Previous buffer\nmouse-3: Next buffer"
 ;; `doom-modeline--buffer-file-name' may consume lots of CPU if it's called too frequently.
 (defun doom-modeline-update-buffer-file-name-face (&rest _)
   "Update the face of buffer file name in mode-line."
-  (when (and doom-modeline--buffer-file-name (buffer-modified-p))
+  (when (and buffer-file-name
+             doom-modeline--buffer-file-name
+             (buffer-modified-p))
     (setq doom-modeline--buffer-file-name
           (propertize doom-modeline--buffer-file-name 'face 'doom-modeline-buffer-modified))))
 (add-hook 'after-change-functions #'doom-modeline-update-buffer-file-name-face)

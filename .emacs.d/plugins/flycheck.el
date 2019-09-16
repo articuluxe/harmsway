@@ -183,6 +183,7 @@ attention to case differences."
     erlang-rebar3
     erlang
     eruby-erubis
+    eruby-ruumba
     fortran-gfortran
     go-gofmt
     go-golint
@@ -1971,13 +1972,14 @@ Return non-nil if CHECKER supports MODE and nil otherwise."
   (let ((mode (or mode major-mode)))
     (memq mode (flycheck-checker-get checker 'modes))))
 
+(define-obsolete-variable-alias 'flycheck-enabled-checkers
+  'flycheck--automatically-enabled-checkers "32")
+
 (defvar flycheck--automatically-enabled-checkers nil
   "Syntax checkers included in automatic selection.
 
 A list of Flycheck syntax checkers included in automatic
 selection for the current buffer.")
-(define-obsolete-variable-alias 'flycheck-enabled-checkers
-  'flycheck--automatically-enabled-checkers "32")
 (make-variable-buffer-local 'flycheck--automatically-enabled-checkers)
 
 (defun flycheck-may-enable-checker (checker)
@@ -7895,6 +7897,48 @@ See URL `http://www.kuwata-lab.com/erubis/'."
   :command ("erubis" "-z" source)
   :error-patterns
   ((error line-start (file-name) ":" line ": " (message) line-end))
+  :modes (html-erb-mode rhtml-mode)
+  :next-checkers ((warning . eruby-ruumba)))
+
+(flycheck-def-config-file-var flycheck-ruumbarc eruby-ruumba ".ruumba.yml"
+  :safe #'stringp)
+
+(flycheck-def-option-var flycheck-ruumba-lint-only nil eruby-ruumba
+  "Whether to only report code issues in Ruumba.
+
+When non-nil, only report code issues in Ruumba, via `--lint'.
+Otherwise report style issues as well."
+  :safe #'booleanp
+  :type 'boolean
+  :package-version '(flycheck . "32"))
+
+(flycheck-define-checker eruby-ruumba
+  "An eRuby syntax and style checker using the Ruumba tool.
+
+You need at least Ruumba 0.1.7 for this syntax checker.
+
+See URL `https://github.com/ericqweinstein/ruumba'."
+  :command ("ruumba"
+            "--display-cop-names"
+            "--force-exclusion"
+            "--format" "emacs"
+            "--cache" "false"
+            (config-file "--config" flycheck-ruumbarc)
+            (option-flag "--lint" flycheck-ruumba-lint-only)
+            ;; Ruumba takes the original file name as argument when reading
+            ;; from standard input
+            "--stdin" source-original)
+  :standard-input t
+  :working-directory flycheck-ruby--find-project-root
+  :error-patterns
+  ((info line-start (file-name) ":" line ":" column ": C: "
+         (optional (id (one-or-more (not (any ":")))) ": ") (message) line-end)
+   (warning line-start (file-name) ":" line ":" column ": W: "
+            (optional (id (one-or-more (not (any ":")))) ": ") (message)
+            line-end)
+   (error line-start (file-name) ":" line ":" column ": " (or "E" "F") ": "
+          (optional (id (one-or-more (not (any ":")))) ": ") (message)
+          line-end))
   :modes (html-erb-mode rhtml-mode))
 
 (flycheck-def-args-var flycheck-gfortran-args fortran-gfortran
@@ -9667,8 +9711,8 @@ See URL `https://racket-lang.org/'."
      (flycheck-increment-error-columns
       (seq-remove
        (lambda (err)
-         (string=
-          "/usr/share/racket/pkgs/compiler-lib/compiler/commands/expand.rkt"
+         (string-suffix-p
+          "/share/racket/pkgs/compiler-lib/compiler/commands/expand.rkt"
           (flycheck-error-filename err)))
        errors))))
   :error-patterns

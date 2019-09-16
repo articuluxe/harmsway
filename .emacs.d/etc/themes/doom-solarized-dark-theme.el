@@ -26,7 +26,7 @@ legibility."
   "If non-nil, adds a 4px padding to the mode-line. Can be an integer to
 determine the exact padding."
   :group 'doom-solarized-dark-theme
-  :type '(or integer boolean))
+  :type '(choice integer boolean))
 
 ;;
 (def-doom-theme doom-solarized-dark
@@ -67,15 +67,15 @@ determine the exact padding."
    (builtin        blue)
    (comments       (if doom-solarized-dark-brighter-comments blue base5))
    (doc-comments   teal)
-   (constants      violet)
+   (constants      magenta)
    (functions      blue)
    (keywords       green)
    (methods        cyan)
    (operators      orange)
    (type           yellow)
    (strings        cyan)
-   (variables      magenta)
-   (numbers        violet)
+   (variables      violet)
+   (numbers        magenta)
    (region         base0)
    (error          red)
    (warning        yellow)
