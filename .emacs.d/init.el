@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-09-16 09:34:13 dan.harms>
+;; Modified Time-stamp: <2019-09-17 07:17:51 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3831,7 +3831,8 @@ This may perform related customization."
     (lambda()(interactive)
       (compile (concat "python " (buffer-file-name)))))
   (if (executable-find "flake8")
-      (progn
+      (unless (xfer-util-test-exe-versions '("flake8 --version" .
+                                             (("^\\([[:digit:].]+\\)" . "3.0"))))
         (flycheck-define-checker python-flake8
           "A Python syntax and style checker using Flake8.
 
