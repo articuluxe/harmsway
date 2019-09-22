@@ -3,7 +3,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2019-08-02 08:34:31 dharms>
+;; Modified Time-stamp: <2019-09-21 21:47:48 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -31,6 +31,7 @@
                             "CamingoCode 12"
                             "Monego 12"
                             "Dank Mono 14"
+                            "Cascadia Code 14"
                             "Meslo LG S 12"
                             "IBM Plex Mono 12"
                             "Menlo 14"
