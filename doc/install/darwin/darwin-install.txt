@@ -53,6 +53,12 @@ brew tap universal-ctags/universal-ctags
 brew install --HEAD universal-ctags
 ln -s /usr/local/bin/ctags ~/bin/exctags
 
+# railwaycat emacs port
+brew tap railwaycat/emacsmacport
+brew install emacs-mac
+# to disable
+brew untap railwaycat/emacsmacport
+
 # Local Variables:
 # mode: sh
 # End:
