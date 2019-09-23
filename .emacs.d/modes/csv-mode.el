@@ -4,7 +4,8 @@
 
 ;; Author: "Francis J. Wright" <F.J.Wright@qmul.ac.uk>
 ;; Time-stamp: <23 August 2004>
-;; Version: 1.7
+;; Version: 1.8
+;; Package-Requires: ((emacs "24.1"))
 ;; Keywords: convenience
 
 ;; This package is free software; you can redistribute it and/or modify
@@ -969,24 +970,30 @@ The fields yanked are those last killed by `csv-kill-fields'."
   (and (overlay-get o 'csv) (delete-overlay o)))
 
 (defun csv--column-widths ()
-  (let ((widths '()))
+  "Return a list of two lists (COLUMN-WIDTHS FIELD-WIDTHS).
+COLUMN-WIDTHS contains the widths of the columns after point.
+FIELD-WIDTHS contains the widths of each individual field after
+point."
+  (let ((column-widths '())
+        (field-widths '()))
     ;; Construct list of column widths:
     (while (not (eobp))                   ; for each record...
       (or (csv-not-looking-at-record)
-          (let ((w widths)
+          (let ((w column-widths)
                 (col (current-column))
-                x)
+                field-width)
             (while (not (eolp))
               (csv-end-of-field)
-              (setq x (- (current-column) col)) ; Field width.
+              (setq field-width (- (current-column) col))
+              (push field-width field-widths)
               (if w
-                  (if (> x (car w)) (setcar w x))
-                (setq w (list x)
-                      widths (nconc widths w)))
+                  (if (> field-width (car w)) (setcar w field-width))
+                (setq w (list field-width)
+                      column-widths (nconc column-widths w)))
               (or (eolp) (forward-char))  ; Skip separator.
               (setq w (cdr w) col (current-column)))))
       (forward-line))
-    widths))
+    (list column-widths (nreverse field-widths))))
 
 (defun csv-align-fields (hard beg end)
   "Align all the fields in the region to form columns.
@@ -1017,23 +1024,22 @@ If there is no selected region, default to the whole buffer."
       (narrow-to-region beg end)
       (set-marker end nil)
       (goto-char (point-min))
-      (let ((widths (csv--column-widths)))
+      (pcase-let ((`(,column-widths ,field-widths) (csv--column-widths)))
 
 	;; Align fields:
 	(goto-char (point-min))
 	(while (not (eobp))		; for each record...
 	  (unless (csv-not-looking-at-record)
-            (let ((w widths)
+            (let ((w column-widths)
                   (column 0))    ;Desired position of left-side of this column.
               (while (and w (not (eolp)))
                 (let* ((beg (point))
                        (align-padding (if (bolp) 0 csv-align-padding))
                        (left-padding 0) (right-padding 0)
-                       (field-width
-                        (- (- (current-column)
-                              (progn (csv-end-of-field) (current-column)))))
+                       (field-width (pop field-widths))
                        (column-width (pop w))
                        (x (- column-width field-width))) ; Required padding.
+                  (csv-end-of-field)
                   (set-marker end (point)) ; End of current field.
                   ;; beg = beginning of current field
                   ;; end = (point) = end of current field

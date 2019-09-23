@@ -48,6 +48,7 @@
 (require 'cl-lib)
 (require 'url)
 (require 'mail-utils)
+(require 'autorevert)
 
 (defgroup request nil
   "Compatible layer for URL request in Emacs."
@@ -1045,7 +1046,7 @@ removed from the buffer before it is shown to the parser function.
                     (setf (request-response--tempfiles response) tempfiles)
                     (apply #'request--curl-command url :files* files*
                            :response response :encoding encoding settings)))
-         (proc (apply #'start-file-process "request curl" buffer command)))
+         (proc (apply #'start-process "request curl" buffer command)))
     (request--install-timeout timeout response)
     (request-log 'debug "Run: %s" (mapconcat 'identity command " "))
     (setf (request-response--buffer response) buffer)
@@ -1173,23 +1174,27 @@ START-URL is the URL requested."
         (apply #'request--callback buffer settings))))))
 
 (cl-defun request--curl-sync (url &rest settings &key response &allow-other-keys)
-  (let (finished)
+  (let (finished
+        (restore-p auto-revert-notify-watch-descriptor))
     (prog1 (apply #'request--curl url
                   :semaphore (lambda (&rest _) (setq finished t))
                   settings)
       (let ((proc (get-buffer-process (request-response--buffer response))))
+        (when restore-p
+          (auto-revert-notify-rm-watch))
         (with-local-quit
           (cl-loop with iter = 0
                    until (or (>= iter 10) finished)
-                   if (request--process-live-p proc)
-                     do (accept-process-output proc 0.3)
-                   else
-                     do (cl-incf iter) and
-                     do (sleep-for 0 300)
+                   do (accept-process-output nil 0.3)
+                   unless (request--process-live-p proc)
+                     do (cl-incf iter)
                    end
                    finally (when (>= iter 10)
-                             (request-log 'verbose
-                               "request--curl-sync: semaphore never called"))))))))
+                             (let ((m "request--curl-sync: semaphore never called"))
+                               (princ (format "%s\n" m) #'external-debugging-output)
+                               (request-log 'error m)))))
+        (when restore-p
+          (auto-revert-notify-add-watch))))))
 
 (defun request--curl-get-cookies (host localpart secure)
   (request--netscape-get-cookies (request--curl-cookie-jar)

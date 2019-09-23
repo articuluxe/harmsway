@@ -617,10 +617,11 @@ If icon gray out option enabled, gray out icon if not SELECTED."
 		    (all-the-icons-icon-for-file
 		     (file-name-nondirectory (buffer-file-name))
 		     :v-adjust centaur-tabs-icon-v-adjust
-             :height centaur-tabs-icon-scale-factor)
-		  (all-the-icons-icon-for-mode major-mode
-                                       :v-adjust centaur-tabs-icon-v-adjust
-                                       :height centaur-tabs-icon-scale-factor)))
+	             :height centaur-tabs-icon-scale-factor)
+		  (all-the-icons-icon-for-mode
+		   major-mode
+		   :v-adjust centaur-tabs-icon-v-adjust
+		   :height centaur-tabs-icon-scale-factor)))
 	       (background (face-background face))
 	       (inactive (if (and (not selected)
 				  (eq centaur-tabs-gray-out-icons 'buffer))
@@ -664,9 +665,6 @@ BEGIN, END and LENGTH are just standard arguments for after-changes-function
 hooked functions"
   (centaur-tabs-set-template centaur-tabs-current-tabset nil)
   (centaur-tabs-display-update))
-(add-hook 'after-save-hook #'centaur-tabs-saved-marker-update)
-(add-hook 'first-change-hook #'centaur-tabs-saved-marker-update)
-(add-hook 'after-change-functions #'centaur-tabs-after-modifying-buffer)
 
 (defun centaur-tabs-force-update ()
   "Force update all tabs."
@@ -1712,8 +1710,12 @@ Run as `centaur-tabs-init-hook'."
     (set-face-attribute 'centaur-tabs-selected-modified nil :overline (face-background 'centaur-tabs-active-bar-face))
     (set-face-attribute 'centaur-tabs-unselected nil :overline nil)
     (set-face-attribute 'centaur-tabs-unselected-modified nil :overline nil))
+  (add-hook 'after-save-hook #'centaur-tabs-saved-marker-update)
+  (add-hook 'first-change-hook #'centaur-tabs-saved-marker-update)
+  (add-hook 'after-change-functions #'centaur-tabs-after-modifying-buffer)
   (add-hook 'kill-buffer-hook #'centaur-tabs-buffer-track-killed)
-  (add-hook 'buffer-list-update-hook #'centaur-tabs-buffer-update-groups))
+  (add-hook 'buffer-list-update-hook #'centaur-tabs-buffer-update-groups)
+  (centaur-tabs-force-update))
 
 (defun centaur-tabs-buffer-quit ()
   "Quit tab bar buffer.
@@ -1723,7 +1725,11 @@ Run as `centaur-tabs-quit-hook'."
 	centaur-tabs-tab-label-function nil
 	centaur-tabs-select-tab-function nil
 	)
-  (remove-hook 'kill-buffer-hook 'centaur-tabs-buffer-track-killed))
+  (remove-hook 'after-save-hook 'centaur-tabs-saved-marker-update)
+  (remove-hook 'first-change-hook 'centaur-tabs-saved-marker-update)
+  (remove-hook 'after-change-functions 'centaur-tabs-after-modifying-buffer)
+  (remove-hook 'kill-buffer-hook 'centaur-tabs-buffer-track-killed)
+  (remove-hook 'buffer-list-update-hook 'centaur-tabs-buffer-update-groups))
 
 (add-hook 'centaur-tabs-init-hook #'centaur-tabs-buffer-init)
 (add-hook 'centaur-tabs-quit-hook #'centaur-tabs-buffer-quit)

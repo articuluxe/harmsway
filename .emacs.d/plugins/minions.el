@@ -1,6 +1,6 @@
 ;;; minions.el --- A minor-mode menu for the mode line  -*- lexical-binding: t -*-
 
-;; Copyright (C) 2018  Jonas Bernoulli
+;; Copyright (C) 2018-2019  Jonas Bernoulli
 
 ;; Author: Jonas Bernoulli <jonas@bernoul.li>
 ;; Homepage: https://github.com/tarsius/minions
@@ -88,13 +88,22 @@ global minor-mode, nil otherwise."
   :group 'minions
   :type '(repeat (symbol :tag "Mode")))
 
+(defcustom minions-mode-line-face nil
+  "Face used for the mode menu in the mode line."
+  :package-version '(minions . "0.3.2")
+  :group 'minions
+  :group 'mode-line-faces
+  :type '(choice (const :tag "No face" nil) face))
+
 (defcustom minions-mode-line-lighter ";-"
   "Text used for the mode menu in the mode line."
+  :package-version '(minions . "0.2.0")
   :group 'minions
   :type 'string)
 
 (defcustom minions-mode-line-delimiters '("(" . ")")
   "Strings placed around mode elements in the mode line."
+  :package-version '(minions . "0.3.1")
   :group 'minions
   :type '(choice (const :tag "No delimiters")
                  (cons (string :tag "Before string")
@@ -146,17 +155,18 @@ mouse-3: Toggle minor modes"
           `(:propertize ("" (:eval (--filter (memq (car it) minions-direct)
                                              minor-mode-alist)))
 			mouse-face mode-line-highlight
-			help-echo "Minor mode\n\
-mouse-1: Display minor mode menu\n\
-mouse-2: Show help for minor mode\n\
+			help-echo "Minor mode
+mouse-1: Display minor mode menu
+mouse-2: Show help for minor mode
 mouse-3: Toggle minor modes"
 			local-map ,mode-line-minor-mode-keymap)
           " "
-          `(:propertize minions-mode-line-lighter
-                        mouse-face mode-line-highlight
-                        help-echo "Minions
+          '(:eval (propertize minions-mode-line-lighter
+                              'face minions-mode-line-face
+                              'mouse-face 'mode-line-highlight
+                              'help-echo "Minions
 mouse-1: Display minor modes menu"
-                        local-map ,minions-mode-line-minor-modes-map)
+                              'local-map minions-mode-line-minor-modes-map))
           '(:eval (cdr minions-mode-line-delimiters))
           (propertize "%]" 'help-echo recursive-edit-help-echo)
           " "))

@@ -120,11 +120,13 @@ located inside a string."
     ("FIXME"  . "#cc9393")
     ("XXX+"   . "#cc9393")
     ("\\?\\?\\?+" . "#cc9393"))
-  "Faces used to highlight specific TODO keywords.
+  "An alist mapping keywords to colors/faces used to display them.
 
 Each entry has the form (KEYWORD . COLOR).  KEYWORD is used as
 part of a regular expression.  If (regexp-quote KEYWORD) is not
 equal to KEYWORD, then it is ignored by `hl-todo-insert-keyword'.
+Instead of a color (a string), each COLOR may alternatively be a
+face.
 
 The syntax class of the characters at either end has to be `w'
 \(which means word) in `hl-todo--syntax-table'.  That syntax
@@ -142,6 +144,21 @@ use \"TODO\\(-NOW\\)?\"."
                        (choice :tag "Face   "
                                (string :tag "Color")
                                (sexp :tag "Face")))))
+
+(defcustom hl-todo-color-background nil
+  "Whether to emphasize keywords using the background color.
+
+If an entry in `hl-todo-keyword-faces' specifies a face, then the
+respective keyword is displayed using exactly that face.  In that
+case this option is irrelevant.
+
+Otherwise, if an entry specifies only a color, then the `hl-todo'
+face controls the appearance of the respective keyword, except
+for either the foreground or the background color.  This option
+controls which of the two it is."
+  :package-version '(hl-todo . "3.1.0")
+  :group 'hl-todo
+  :type 'boolean)
 
 (defcustom hl-todo-highlight-punctuation ""
   "String of characters to highlight after keywords.
@@ -207,14 +224,19 @@ including alphanumeric characters, cannot be used here."
   (nth 8 (syntax-ppss)))
 
 (defun hl-todo--get-face ()
-  (let* ((keyword (match-string 2))
-         (face (cdr (cl-find-if (lambda (elt)
-                                  (string-match-p (format "\\`%s\\'" (car elt))
-                                                  keyword))
-                                hl-todo-keyword-faces))))
-    (if (stringp face)
-        (list :inherit 'hl-todo :foreground face)
-      face)))
+  (let ((keyword (match-string 2)))
+    (hl-todo--combine-face
+      (cdr (cl-find-if (lambda (elt)
+                         (string-match-p (format "\\`%s\\'" (car elt))
+                                         keyword))
+                       hl-todo-keyword-faces)))))
+
+(defun hl-todo--combine-face (face)
+  (if (stringp face)
+      (list :inherit 'hl-todo
+            (if hl-todo-color-background :background :foreground)
+            face)
+    face))
 
 (defvar hl-todo-mode-map (make-sparse-keymap)
   "Keymap for `hl-todo-mode'.")
@@ -303,11 +325,8 @@ current line."
           "Insert keyword: "
           (cl-mapcan (pcase-lambda (`(,keyword . ,face))
                        (and (equal (regexp-quote keyword) keyword)
-                            (list (propertize
-                                   keyword 'face
-                                   (if (stringp face)
-                                       (list :inherit 'hl-todo :foreground face)
-                                     face)))))
+                            (list (propertize keyword 'face
+                                              (hl-todo--combine-face face)))))
                      hl-todo-keyword-faces))))
   (cond
    ((hl-todo--inside-comment-or-string-p)

@@ -1275,9 +1275,9 @@ already have been created."
               (condition-case _err
                   (yes-or-no-p
                    (format
-                    "There are %s files in folder %s and watching the repo which may slow Emacs down. To configure:
-1. Use `lsp-enable-file-watchers' to disable file watchers globally or for the project(via .dir-local).
-2. Increase/set to nil `lsp-file-watch-threshold' to remove the warning.
+                    "There are %s files in folder %s so watching the repo may slow Emacs down. To configure:
+1. Disable file watchers globally or for the project (via .dir-locals) by using `lsp-enable-file-watchers'.
+2. Remove this warning by increasing or setting to nil `lsp-file-watch-threshold'.
 Do you want to continue?"
                     number-of-files
                     dir))
@@ -1530,7 +1530,8 @@ WORKSPACE is the workspace that contains the diagnostics."
 
 (defun lsp--get-folding-ranges ()
   "Get the folding ranges for the current buffer."
-  (unless (lsp--capability "foldingRangeProvider")
+  (unless (or (lsp--capability "foldingRangeProvider")
+              (lsp--registered-capability "textDocument/foldingRange"))
     (signal 'lsp-capability-not-supported (list "foldingRangeProvider")))
   (-let [(tick . ranges) lsp--cached-folding-ranges]
     (if (eq tick (buffer-chars-modified-tick))
@@ -1636,7 +1637,9 @@ WORKSPACE is the workspace that contains the diagnostics."
     (cdr outer)))
 
 (defun lsp--folding-range-at-point-bounds ()
-  (if (and (lsp--capability "foldingRangeProvider") lsp-enable-folding)
+  (if (and (or (lsp--capability "foldingRangeProvider")
+               (lsp--registered-capability "textDocument/foldingRange"))
+           lsp-enable-folding)
       (if-let ((range (lsp--get-current-innermost-folding-range)))
           (cons (lsp--folding-range-beg range)
                 (lsp--folding-range-end range)))
@@ -1657,7 +1660,9 @@ WORKSPACE is the workspace that contains the diagnostics."
     found))
 
 (defun lsp--folding-range-at-point-forward-op (n)
-  (when (and (lsp--capability "foldingRangeProvider") lsp-enable-folding
+  (when (and (or (lsp--capability "foldingRangeProvider")
+                 (lsp--registered-capability "textDocument/foldingRange"))
+             lsp-enable-folding
              (not (zerop n)))
     (cl-block break
       (dotimes (_ (abs n))
@@ -1764,18 +1769,20 @@ BUFFER-MODIFIED? determines whether the buffer is modified or not."
               (run-with-timer lsp-lens-debounce-interval nil 'lsp--lens-refresh buffer-modified?)))
 
 (defun lsp--lens-keymap (command)
-  (let ((map (make-sparse-keymap))
-        (server-id (->> (lsp-workspaces)
-                        cl-first
-                        (or lsp--cur-workspace)
-                        lsp--workspace-client
-                        lsp--client-server-id)))
+  (-let ((map (make-sparse-keymap))
+         (server-id (->> (lsp-workspaces)
+                         (cl-first)
+                         (or lsp--cur-workspace)
+                         (lsp--workspace-client)
+                         (lsp--client-server-id))))
     (define-key map [mouse-1]
-      (lambda ()
-        (interactive)
-        (lsp-execute-command server-id
-                             (intern (gethash "command" command))
-                             (gethash "arguments" command))))
+      (if (functionp (gethash "command" command))
+          (gethash "command" command)
+        (lambda ()
+          (interactive)
+          (lsp-execute-command server-id
+                               (intern (gethash "command" command))
+                               (gethash "arguments" command)))))
     map))
 
 (defun lsp--lens-display (lenses)
@@ -1797,10 +1804,10 @@ BUFFER-MODIFIED? determines whether the buffer is modified or not."
                      (list (lsp--position-to-point (lsp--ht-get (cl-first sorted) "range" "start"))
                            (s-join (propertize "|" 'face 'lsp-lens-face)
                                    (-map
-                                    (-lambda ((lens &as &hash "command" (command &as &hash "title")))
+                                    (-lambda ((lens &as &hash "command" (command &as &hash "title" "face")))
                                       (propertize
                                        title
-                                       'face 'lsp-lens-face
+                                       'face (or face 'lsp-lens-face )
                                        'mouse-face 'lsp-lens-mouse-face
                                        'local-map (lsp--lens-keymap command)))
                                     sorted))))))
@@ -2459,7 +2466,7 @@ disappearing, unset all the variables related to it."
                    (applyEdit . t)
                    (symbol . ((symbolKind . ((valueSet . ,(apply 'vector (number-sequence 1 26)))))))
                    (executeCommand . ((dynamicRegistration . :json-false)))
-                   (didChangeWatchedFiles . ,(when lsp-enable-file-watchers '((dynamicRegistration . t))))
+                   ,@(when lsp-enable-file-watchers '((didChangeWatchedFiles . ((dynamicRegistration . t)))))
                    (workspaceFolders . t)
                    (configuration . t)))
      (textDocument . ((declaration . ((linkSupport . t)))
@@ -3333,10 +3340,12 @@ Applies on type formatting."
 
 (defun lsp-workspace-root (&optional path)
   "Find the workspace root for the current file or PATH."
-  (when-let (file-name (or path (buffer-file-name)))
+  (-when-let* ((file-name (or path (buffer-file-name)))
+               (file-name (f-canonical file-name)))
     (->> (lsp-session)
          (lsp-session-folders)
-         (--first (f-ancestor-of? it (f-canonical file-name))))))
+         (--first (and (lsp--files-same-host it file-name)
+                       (f-ancestor-of? it file-name))))))
 
 (defun lsp-on-revert ()
   "Executed when a file is reverted.
@@ -5649,12 +5658,12 @@ Returns nil if the project should not be added to the current SESSION."
   (condition-case nil
       (let* ((project-root-suggestion (or (lsp--suggest-project-root) default-directory))
              (choices (list
-                       (format "Import project root %s" project-root-suggestion)
+                       (format "Import project root \"%s\"." project-root-suggestion)
                        "Import project by selecting root directory interactively."
-                       (format "Do not ask more for the current project(add \"%s\" to lsp-session-folder-blacklist)"
+                       (format "Do not ask again for the current project by adding \"%s\" to lsp-session-folder-blacklist."
                                project-root-suggestion)
-                       "Do not ask more for the current project(select ignore path interactively)."
-                       "Do nothing and ask me again when opening other files from the folder."))
+                       "Do not ask again for the current project by selecting ignore path interactively."
+                       "Do nothing; ask again when opening other files from the current project."))
              (action-index (cl-position
                             (completing-read (format "%s is not part of any project. Select action: "
                                                      (buffer-name))
