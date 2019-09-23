@@ -5,18 +5,20 @@
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Thursday, August  9, 2018
 # Version: 1.0
-# Modified Time-stamp: <2019-02-28 12:07:45 dan.harms>
+# Modified Time-stamp: <2019-09-23 06:37:45 dharms>
 # Modified by: Dan Harms
 # Keywords: emacs tools
 
+exe="$EMACS_CLIENT"/emacsclient
+
 server_ok()
 {
-    "$EMACS_ROOT"/bin/emacsclient -a "false" -e "(boundp 'server-process)"
+    "$exe" -a "false" -e "(boundp 'server-process)"
 }
 
 if [ "t" = "$(server_ok)" ]; then
     echo "Shutting down Emacs server"
-    "$EMACS_ROOT"/bin/emacsclient -e '(kill-emacs)'
+    "$exe" -e '(kill-emacs)'
 else
     echo "Emacs server not running"
 fi

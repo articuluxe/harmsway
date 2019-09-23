@@ -1,7 +1,7 @@
 # -*- Mode: sh -*-
 # .bash_rubicon
 
-export VISUAL="$EMACS_ROOT"/Emacs
+export VISUAL="$EMACS_BIN"/Emacs
 export EDITOR="$VISUAL -nw"
 alias emacs="\$EDITOR"
 

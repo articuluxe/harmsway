@@ -5,31 +5,34 @@
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Tuesday, July 31, 2018
 # Version: 1.0
-# Modified Time-stamp: <2019-02-28 12:07:08 dan.harms>
+# Modified Time-stamp: <2019-09-23 06:37:38 dharms>
 # Modified by: Dan Harms
 # Keywords: emacs tools
 
+exe="$EMACS_CLIENT"/emacsclient
+
+if [ ! -x "$exe" ]; then exe="$EMACS_ROOT"/bin/emacsclient; fi
 
 visible_frames()
 {
-    "$EMACS_ROOT"/bin/emacsclient -a "" -e '(length (visible-frame-list))'
+    "$exe" -a "" -e '(length (visible-frame-list))'
 }
 
 change_focus()
 {
-    "$EMACS_ROOT"/bin/emacsclient -n -e "(select-frame-set-input-focus (selected-frame))" > /dev/null 2>&1
+    "$exe" -n -e "(select-frame-set-input-focus (selected-frame))" > /dev/null 2>&1
 }
 
 test "$(visible_frames)" -eq "1" && change_focus
 
 if [ "$(visible_frames)" -lt "2" ]; then
     # need to create a frame
-    "$EMACS_ROOT"/bin/emacsclient -n -c "$@" && change_focus
+    "$exe" -n -c "$@" && change_focus
 else
     # already a visible frame besides daemon
     change_focus
     # -n $@ errors when no args
-    test "$#" -ne "0" && "$EMACS_ROOT"/bin/emacsclient -n "$@"
+    test "$#" -ne "0" && "$exe" -n "$@"
 fi
 
 # code ends here
