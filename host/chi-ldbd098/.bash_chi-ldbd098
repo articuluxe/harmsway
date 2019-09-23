@@ -1,7 +1,7 @@
 # -*- Mode: sh -*-
 # .bash_chi-ldbd098
 
-export VISUAL="$EMACS_ROOT"/bin/emacs
+export VISUAL="$EMACS_BIN"/emacs
 export EDITOR="$VISUAL -nw"
 alias emacs="\$EDITOR"
 
