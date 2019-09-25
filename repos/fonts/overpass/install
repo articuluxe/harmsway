@@ -1,0 +1,2 @@
+cp src/desktop-fonts/overpass-mono/*.otf ../../../.fonts/overpass
+
