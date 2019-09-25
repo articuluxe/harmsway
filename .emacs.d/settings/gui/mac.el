@@ -1,9 +1,9 @@
-;; ns.el --- mac gui settings
-;; Copyright (C) 2015-2016, 2018  Dan Harms (dharms)
+;; mac.el --- mac gui settings
+;; Copyright (C) 2015-2016, 2018-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2018-08-08 17:42:22 dharms>
+;; Modified Time-stamp: <2019-09-25 06:54:50 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -34,6 +34,9 @@
 ;; ;; don't accelerate scrolling
 ;; (setq mouse-wheel-progressive-speed nil)
 ;; (setq mouse-wheel-follow-mouse nil)
+
+(setq mac-option-modifier 'meta)
+(setq mac-command-modifier 'super)
 
 ;; toggle full-screen
 (defun ns-toggle-full-screen() (interactive)
