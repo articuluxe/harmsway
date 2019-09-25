@@ -9,9 +9,11 @@ alias emacs="\$EDITOR"
 
 alias xrdev="singularity shell -B /net,/opt/xr,/opt/xr_job_agent,/opt/1tick,/fry,/data,/shared -s /bin/bash ~/containers/$CONTAINER"
 
+. /shared/spack/opt/profile/spack.sh
+
 run_in_container()
 {
-    "$HOME"/snap/snap/start_container.sh "$HOME"/bin/run-in-container.sh "$@"
+    "$HOME"/snap/start_container.sh "$HOME"/bin/run-in-container.sh "$@"
 }
 
 build_in_container()
@@ -21,15 +23,15 @@ build_in_container()
 
 upgrade_simutils()
 {
-    pushd "$HOME"/london_utils &> /dev/null
-    pip install . --upgrade
+    pushd "$HOME"/lon/london_utils &> /dev/null
+    pip install --user ./
     if [ $? -ne 0 ]; then
         echo "Error updating london_utils; stopping..."
         popd &> /dev/null
     else
         echo "Updated london_utils"
-        pushd "$HOME"/simulation_utils &> /dev/null
-        pip install . --upgrade
+        pushd "$HOME"/lon/simulation_utils &> /dev/null
+        pip install --user ./
         if [ $? -ne 0 ]; then
             echo "Error updating simulation_utils; stopping..."
         else
@@ -49,17 +51,17 @@ use_gcc()
 
 use_gcc
 
-# >>> conda initialize >>>
-# !! Contents within this block are managed by 'conda init' !!
-__conda_setup="$('/fry/home/dan.harms/anaconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
-if [ $? -eq 0 ]; then
-    eval "$__conda_setup"
-else
-    if [ -f "/fry/home/dan.harms/anaconda3/etc/profile.d/conda.sh" ]; then
-        . "/fry/home/dan.harms/anaconda3/etc/profile.d/conda.sh"
-    else
-        export PATH="/fry/home/dan.harms/anaconda3/bin:$PATH"
-    fi
-fi
-unset __conda_setup
-# <<< conda initialize <<<
+# # >>> conda initialize >>>
+# # !! Contents within this block are managed by 'conda init' !!
+# __conda_setup="$('/fry/home/dan.harms/anaconda3/bin/conda' 'shell.bash' 'hook' 2> /dev/null)"
+# if [ $? -eq 0 ]; then
+#     eval "$__conda_setup"
+# else
+#     if [ -f "/fry/home/dan.harms/anaconda3/etc/profile.d/conda.sh" ]; then
+#         . "/fry/home/dan.harms/anaconda3/etc/profile.d/conda.sh"
+#     else
+#         export PATH="/fry/home/dan.harms/anaconda3/bin:$PATH"
+#     fi
+# fi
+# unset __conda_setup
+# # <<< conda initialize <<<
