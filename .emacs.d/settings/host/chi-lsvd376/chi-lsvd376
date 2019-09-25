@@ -3,7 +3,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dan.harms)
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Monday, March 14, 2016
-;; Modified Time-stamp: <2019-09-23 09:36:44 dan.harms>
+;; Modified Time-stamp: <2019-09-25 09:23:31 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: config
 
@@ -51,6 +51,7 @@
                            "Cousine 10"
                            "Office Code Pro 10"
                            "Victor Mono 12"
+                           "Overpass Mono 12"
                            "DejaVu Sans Mono 10"
                            "Lekton 12"
                            "Monofur 14"
