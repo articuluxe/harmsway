@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-09-17 07:17:51 dharms>
+;; Modified Time-stamp: <2019-09-25 16:17:09 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3806,6 +3806,8 @@ This may perform related customization."
               (local-unset-key [backtab]) ;save backtab for yasnippet
                                         ; S-TAB ran dedent-line in python,
                                         ; we can just use TAB instead
+              (when (featurep 'jedi-core)
+                (jedi-mode 1))
               ;; fine-tune company
               (make-local-variable 'company-backends)
               (setq company-backends
@@ -3818,6 +3820,7 @@ This may perform related customization."
   ;; add jedi if installed
   (when (eq 0 (call-process "python" nil nil nil "-c" "import jedi"))
     (require 'jedi-core)
+    (setq jedi:tooltip-method nil)
     (define-key python-mode-map "\C-cj." #'jedi:goto-definition)
     (define-key python-mode-map "\C-cj," #'jedi:goto-definition-pop-marker)
     (define-key python-mode-map "\C-cj?" #'jedi:show-doc))
