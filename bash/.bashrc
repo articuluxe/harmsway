@@ -30,7 +30,9 @@ complete -o default -F _pip_completion pip
 
 set -o emacs
 shopt -s cdspell
-shopt -s dirspell
+if [[ $BASH_VERSINFO -ge 4 ]]; then
+    shopt -s dirspell
+fi
 # verify commands before running abbrev.
 shopt -s histverify
 # append to history from multiple sessions
