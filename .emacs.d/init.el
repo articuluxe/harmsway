@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-09-25 16:17:09 dan.harms>
+;; Modified Time-stamp: <2019-09-26 14:28:49 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3789,7 +3789,7 @@ This may perform related customization."
     (python-shell-send-region beg end)
     (python-nav-forward-statement)))
 
-(use-package python-mode
+(use-package python
   :if (executable-find "python")
   :mode ("\\.py[iw]?$" . python-mode)
   :interpreter ("python" . python-mode)
@@ -3820,10 +3820,7 @@ This may perform related customization."
   ;; add jedi if installed
   (when (eq 0 (call-process "python" nil nil nil "-c" "import jedi"))
     (require 'jedi-core)
-    (setq jedi:tooltip-method nil)
-    (define-key python-mode-map "\C-cj." #'jedi:goto-definition)
-    (define-key python-mode-map "\C-cj," #'jedi:goto-definition-pop-marker)
-    (define-key python-mode-map "\C-cj?" #'jedi:show-doc))
+    (setq jedi:tooltip-method nil))
   (define-key python-mode-map "\C-j" 'newline-and-indent)
   ;; remap 'python-shell-send-buffer
   (define-key python-mode-map "\C-c\C-c" nil)
@@ -3901,7 +3898,7 @@ Requires Flake8 2.0 or newer. See URL
   (add-hook 'python-mode-hook 'pipenv-mode))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; pydoc-info ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package pydoc-info :after python-mode)
+(use-package pydoc-info :after python)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; py-isort ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package py-isort
@@ -3912,7 +3909,7 @@ Requires Flake8 2.0 or newer. See URL
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; python-docstring ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package python-docstring
-  :after python-mode
+  :after python
   :init
   (add-hook 'python-mode-hook 'python-docstring-mode)
   :config
@@ -3920,7 +3917,7 @@ Requires Flake8 2.0 or newer. See URL
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; importmagic ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package importmagic
-  :after python-mode
+  :after python
   :init
   (add-hook 'python-mode-hook 'importmagic-mode)
   :config
@@ -3931,7 +3928,7 @@ Requires Flake8 2.0 or newer. See URL
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;; python-switch-quotes ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package python-switch-quotes
-  :after python-mode
+  :after python
   :config
   (define-key python-mode-map "\C-c'" #'python-switch-quotes))
 
@@ -3941,7 +3938,7 @@ Requires Flake8 2.0 or newer. See URL
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; sphinx-doc ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package sphinx-doc
-  :after python-mode
+  :after python
   :init
   (add-hook 'python-mode-hook
             (lambda ()
