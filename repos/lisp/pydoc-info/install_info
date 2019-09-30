@@ -1,4 +1,2 @@
 wget https://bitbucket.org/jonwaltman/pydoc-info/downloads/python.info.gz
-sudo cp python.info.gz /usr/share/info
-sudo install-info --info-dir=/usr/share/info python.info.gz
-rm python.info.gz
+mv python.info.gz ../../../.emacs.d/etc/info/python2

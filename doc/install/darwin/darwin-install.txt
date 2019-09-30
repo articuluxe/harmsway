@@ -38,6 +38,7 @@ brew install boost
 brew install --HEAD asio
 brew install the_silver_searcher
 brew install ripgrep
+brew install wget
 
 brew install coreutils
 (setq insert-directory-program "gls")
