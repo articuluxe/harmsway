@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-09-27 08:39:08 dharms>
+;; Modified Time-stamp: <2019-09-29 22:58:44 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3768,7 +3768,8 @@ This may perform related customization."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; pip-requirements ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package pip-requirements
-  :mode ("\\.pip$" . pip-requirements-mode))
+  :mode (("\\.pip$" . pip-requirements-mode)
+         ("requirements.+\\.txt$" . pip-requirements-mode)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; plantuml ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package plantuml-mode
