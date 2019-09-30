@@ -1,0 +1,13 @@
+PYTHONVER=3.7.3
+cd src
+rm -rf ./bld
+mkdir -p bld
+cd bld
+wget http://www.python.org/ftp/python/$PYTHONVER/Python-$PYTHONVERrc1.tar.xz
+tar -xf Python-$PYTHONVERrc1.tar.xz
+cd Python-$PYTHONVERrc1/Doc
+sphinx-build -b texinfo -d build/doctrees . build/texinfo
+cd build/texinfo
+make
+gzip python.info
+cp python.info.gz ../../../../../../../../../.emacs.d/etc/info/python3

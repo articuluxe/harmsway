@@ -5,11 +5,11 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Tuesday, June 11, 2019
 # Version: 1.0
-# Modified Time-stamp: <2019-09-25 13:52:46 dan.harms>
+# Modified Time-stamp: <2019-09-30 08:47:19 dharms>
 # Modified by: Dan Harms
 # Keywords: python help
 
-pip install epc jedi isort importmagic flake8 black
+pip install epc jedi isort importmagic flake8 black sphinx
 
 ################################### conda ####################################
 # create virtual env
