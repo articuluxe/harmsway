@@ -5,18 +5,17 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Friday, September 27, 2019
 # Version: 1.0
-# Modified Time-stamp: <2019-09-27 15:29:23 dan.harms>
+# Modified Time-stamp: <2019-09-30 15:54:11 dan.harms>
 # Modified by: Dan Harms
 # Keywords: tools
 
 import os
 import sys
 
-
 def main(dir):
     old = os.umask(0o02)
     print("Prior umask was ", oct(old))
-    os.mkdir(dir)
+    os.makedirs(dir)
 
 
 if __name__ == '__main__':
