@@ -7,3 +7,4 @@ cp src/Proggy/proggy-clean-tt/Proggy.ttf ../../../.fonts/proggy
 cp src/Akkurat-Mono/akkurat-mono-1.000/*.OTF ../../../.fonts/akkurat
 cp src/Hasklig/Hasklig-1.1/*.otf ../../../.fonts/hasklig
 cp src/Andale-Mono/andale-mono-2.00x/*.ttf ../../../.fonts/andale
+cp src/Pt-Mono/pt-mono-1.003/*.ttf ../../../.fonts/ptmono
