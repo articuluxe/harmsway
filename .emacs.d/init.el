@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-09-29 22:58:44 dharms>
+;; Modified Time-stamp: <2019-10-02 11:03:35 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3364,7 +3364,11 @@ This may perform related customization."
        (hosts-dir (concat my/user-directory "settings/host/"))
        (all-hosts-dir (concat hosts-dir "hosts/"))
        (host-dir (file-name-as-directory (concat hosts-dir system)))
-       (host-file (concat host-dir system)))
+       ;; look for host file inside a same-named directory, otherwise
+       ;; just try to load the file
+       (host-file (if (file-directory-p host-dir)
+                      (concat host-dir system)
+                    (directory-file-name host-dir))))
   ;; the list of remote hosts contained in the plist `remotehost-connect-hosts'
   ;; and sourced from a list of hosts in the file `hosts/site'
   ;; serves 3 purposes:
