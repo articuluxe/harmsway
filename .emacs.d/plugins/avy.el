@@ -451,7 +451,8 @@ KEYS is the path from the root of `avy-tree' to LEAF."
   "The default handler for a bad CHAR."
   (let (dispatch)
     (cond ((setq dispatch (assoc char avy-dispatch-alist))
-           (setq avy-action (cdr dispatch))
+           (unless (eq avy-style 'words)
+             (setq avy-action (cdr dispatch)))
            (throw 'done 'restart))
           ((memq char '(?\e ?\C-g))
            ;; exit silently
@@ -862,8 +863,10 @@ multiple OVERLAY-FN invocations."
         (res (avy--process-1 candidates overlay-fn cleanup-fn)))
     (cond
       ((null res)
-       (message "zero candidates")
-       t)
+       (if (and (eq avy-style 'words) candidates)
+           (avy-process original-cands overlay-fn cleanup-fn)
+         (message "zero candidates")
+         t))
       ((eq res 'restart)
        (avy-process original-cands overlay-fn cleanup-fn))
       ;; ignore exit from `avy-handler-function'
@@ -1346,12 +1349,14 @@ When ARG is non-nil, do the opposite of `avy-all-windows'."
   "Jump to one of the current isearch candidates."
   (interactive)
   (avy-with avy-isearch
-    (let ((avy-background nil))
-      (avy-process
-       (avy--regex-candidates (if isearch-regexp
-                                  isearch-string
-                                (regexp-quote isearch-string))))
-      (isearch-done))))
+    (let ((avy-background nil)
+          (avy-case-fold-search case-fold-search))
+      (prog1
+          (avy-process
+           (avy--regex-candidates (if isearch-regexp
+                                      isearch-string
+                                    (regexp-quote isearch-string))))
+        (isearch-done)))))
 
 ;;;###autoload
 (defun avy-goto-word-0 (arg &optional beg end)

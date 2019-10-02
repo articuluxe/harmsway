@@ -95,8 +95,7 @@ language-server/bin/php-language-server.php"))
                                     :autoport))
                                 (haskell-mode . ("hie-wrapper"))
                                 (kotlin-mode . ("kotlin-language-server"))
-                                (go-mode . ("go-langserver" "-mode=stdio"
-                                            "-gocodecompletion"))
+                                (go-mode . ("gopls"))
                                 ((R-mode ess-r-mode) . ("R" "--slave" "-e"
                                                         "languageserver::run()"))
                                 (java-mode . eglot--eclipse-jdt-contact)
@@ -1110,6 +1109,9 @@ under cursor."
              for probe = (plist-member caps feat)
              if (not probe) do (cl-return nil)
              if (eq (cadr probe) :json-false) do (cl-return nil)
+             ;; If the server specifies null as the value of the capability, it
+             ;; makes sense to treat it like false.
+             if (null (cadr probe)) do (cl-return nil)
              if (not (listp (cadr probe))) do (cl-return (if more nil (cadr probe)))
              finally (cl-return (or (cadr probe) t)))))
 
@@ -2053,7 +2055,10 @@ is not active."
                  (goto-char (point-max))
                  (insert "\n"
                          (propertize
-                          label 'face 'eldoc-highlight-function-argument)
+                          (if (stringp label)
+                              label
+                            (apply #'buffer-substring (mapcar #'1+ label)))
+                          'face 'eldoc-highlight-function-argument)
                          ": " (eglot--format-markup documentation))))))
          (buffer-string))))
    when moresigs concat "\n"))

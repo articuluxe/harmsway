@@ -587,7 +587,7 @@ Add a project for ROOT and NAME if they are non-nil."
        (treemacs--setup-buffer)
        (treemacs-mode)
        (unless current-workspace
-         (treemacs--find-workspace)
+         (treemacs--find-workspace (buffer-file-name origin-buffer))
          (setq current-workspace (treemacs-current-workspace))
          (run-hook-with-args treemacs-workspace-first-found-functions
                              current-workspace (selected-frame)))
@@ -597,7 +597,8 @@ Add a project for ROOT and NAME if they are non-nil."
        (when (treemacs-workspace->is-empty?)
          (-> (treemacs--read-first-project-path)
              (treemacs--canonical-path)
-             (treemacs-do-add-project-to-workspace)))
+             (treemacs-do-add-project-to-workspace))
+         (treemacs-log "Created first project."))
        (goto-char 2)
        (setf run-hook? t)))
     (when root (treemacs-do-add-project-to-workspace (treemacs--canonical-path root) name))

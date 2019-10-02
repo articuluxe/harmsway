@@ -399,7 +399,8 @@ identifier."
             (let ((heading
                    (format-spec
                     forge-post-heading-format
-                    `((?a . ,(propertize author  'font-lock-face 'forge-post-author))
+                    `((?a . ,(propertize (or author "(ghost)")
+                                         'font-lock-face 'forge-post-author))
                       (?c . ,(propertize created 'font-lock-face 'forge-post-date))
                       (?C . ,(propertize (apply #'format "%s %s ago"
                                                 (magit--age
@@ -847,7 +848,7 @@ some `bug-reference' variables to the appropriate values."
       (add-hook 'completion-at-point-functions
                 'forge-topic-completion-at-point nil t))))
 
-(unless noninteractive
+(when (and (not noninteractive) forge--sqlite-available-p)
   (dolist (hook forge-bug-reference-hooks)
     (add-hook hook #'forge-bug-reference-setup)))
 

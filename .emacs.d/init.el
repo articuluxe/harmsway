@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-10-02 11:03:35 dan.harms>
+;; Modified Time-stamp: <2019-10-02 12:30:11 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1403,7 +1403,7 @@ Only one letter is shown, the first that applies."
   (setq recentf-max-saved-items 200)
   (setq recentf-max-menu-items 12)
   (setq recentf-save-file (concat my/user-directory "recentf"))
-  (setq recentf-exclude '( "-tags\\'" "ido\.last\\'" "emacs-bmk-bmenu-state"))
+  (setq recentf-exclude '( "-tags\\'" "ido\\.last\\'" "emacs-bmk-bmenu-state"))
   (recentf-mode 1)
   )
 

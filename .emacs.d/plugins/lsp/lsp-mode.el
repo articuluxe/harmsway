@@ -299,6 +299,7 @@ the server has requested that."
   :type 'boolean
   :group 'lsp-mode
   :package-version '(lsp-mode . "6.1"))
+;;;###autoload(put 'lsp-enable-file-watchers 'safe-local-variable #'booleanp)
 
 (defcustom lsp-file-watch-ignored '(; SCM tools
                                     "[/\\\\]\\.git$"
@@ -568,7 +569,9 @@ Changes take effect only when a new session is started."
                                         (".*\.jsx$" . "javascriptreact")
                                         (".*\.xml$" . "xml")
                                         (".*\.hx$" . "haxe")
+                                        (".*\.lua$" . "lua")
                                         (sh-mode . "shellscript")
+                                        (sh-mode . "lua")
                                         (scala-mode . "scala")
                                         (julia-mode . "julia")
                                         (java-mode . "java")
@@ -615,6 +618,7 @@ Changes take effect only when a new session is started."
                                         (dart-mode . "dart")
                                         (erlang-mode . "erlang")
                                         (dockerfile-mode . "dockerfile")
+                                        (csharp-mode . "csharp")
                                         (plain-tex-mode . "plaintex")
                                         (latex-mode . "latex"))
   "Language id configuration.")
@@ -674,7 +678,7 @@ must be used for handling a particular message.")
   :group 'lsp-mode
   :type 'boolean)
 
-(defcustom lsp-lens-debounce-interval 0.7
+(defcustom lsp-lens-debounce-interval 0.2
   "Debounce interval for loading lenses."
   :group 'lsp-mode
   :type 'number)
@@ -694,6 +698,7 @@ must be used for handling a particular message.")
 Set to nil to disable the warning."
   :type 'number
   :group 'lsp-mode)
+;;;###autoload(put 'lsp-file-watch-threshold 'safe-local-variable (lambda (i) (or (numberp i) (not i))))
 
 (defvar lsp-custom-markup-modes
   '((rust-mode "no_run" "rust,no_run" "rust,ignore" "rust,should_panic"))
@@ -1727,7 +1732,11 @@ Results are meaningful only if FROM and TO are on the same line."
 
 (defun lsp--lens-overlay-ensure-at (pos)
   "Find or create a lens for the line at POS."
-  (or (car (cl-remove-if-not (lambda (ov) (lsp--lens-overlay-matches-pos ov pos)) lsp--lens-overlays))
+  (or (when-let ((ov (-first (lambda (ov) (lsp--lens-overlay-matches-pos ov pos)) lsp--lens-overlays)))
+        (save-excursion
+          (goto-char pos)
+          (move-overlay ov (point-at-bol) (1+ (point-at-eol))))
+        ov)
       (let* ((ov (save-excursion
                    (goto-char pos)
                    (make-overlay (point-at-bol) (1+ (point-at-eol))))))
@@ -2477,6 +2486,7 @@ disappearing, unset all the variables related to it."
                       (documentSymbol . ((symbolKind . ((valueSet . ,(apply 'vector (number-sequence 1 26)))))
                                          (hierarchicalDocumentSymbolSupport . t)))
                       (formatting . ((dynamicRegistration . t)))
+                      (rangeFormatting . ((dynamicRegistration . t)))
                       (rename . ((dynamicRegistration . t)))
                       (semanticHighlightingCapabilities . ((semanticHighlighting . ,lsp-enable-semantic-highlighting)))
                       (codeAction . ((dynamicRegistration . t)
@@ -3803,44 +3813,47 @@ RENDER-ALL - nil if only the signature should be rendered."
   (if (and lsp--hover-saved-bounds
            (lsp--point-in-bounds-p lsp--hover-saved-bounds))
       (lsp--eldoc-message lsp--eldoc-saved-message)
-
-    (setq lsp--hover-saved-bounds nil
-          lsp--eldoc-saved-message nil)
-    (let ((request-id (cl-incf lsp-hover-request-id)) (pending 0))
-      (when (and lsp-eldoc-enable-hover (lsp--capability "hoverProvider"))
-        (cl-incf pending)
-        (lsp-request-async
-         "textDocument/hover"
-         (lsp--text-document-position-params)
-         (lambda (hover)
-           (when (and (eq request-id lsp-hover-request-id))
-             (when hover
-               (when-let (range (gethash "range" hover))
-                 (setq lsp--hover-saved-bounds (lsp--range-to-region range)))
-               (-let (((&hash "contents") hover))
-                 (when-let (message
-                            (and contents (lsp--render-on-hover-content contents lsp-eldoc-render-all)))
-                   (when (or (and (not lsp-eldoc-prefer-signature-help) (setq pending 1))
+    (let* ((whitespace-or-newline (looking-at "[[:space:]\n]")))
+      (if whitespace-or-newline
+          (progn
+            (setq lsp--hover-saved-bounds nil
+                  lsp--eldoc-saved-message nil)
+            (lsp--eldoc-message nil))
+        (let ((request-id (cl-incf lsp-hover-request-id)) (pending 0))
+          (when (and lsp-eldoc-enable-hover (lsp--capability "hoverProvider"))
+            (cl-incf pending)
+            (lsp-request-async
+             "textDocument/hover"
+             (lsp--text-document-position-params)
+             (lambda (hover)
+               (when (and (eq request-id lsp-hover-request-id))
+                 (when hover
+                   (when-let (range (gethash "range" hover))
+                     (setq lsp--hover-saved-bounds (lsp--range-to-region range)))
+                   (-let (((&hash "contents") hover))
+                     (when-let (message
+                                (and contents (lsp--render-on-hover-content contents lsp-eldoc-render-all)))
+                       (when (or (and (not lsp-eldoc-prefer-signature-help) (setq pending 1))
+                                 (not lsp--eldoc-saved-message))
+                         (setq lsp--eldoc-saved-message message)))))
+                 (when (zerop (cl-decf pending))
+                   (lsp--eldoc-message lsp--eldoc-saved-message))
+                 (run-hook-with-args 'lsp-on-hover-hook hover)))
+             :error-handler #'ignore))
+          (when (and lsp-eldoc-enable-signature-help (lsp--capability "signatureHelpProvider"))
+            (cl-incf pending)
+            (lsp-request-async
+             "textDocument/signatureHelp"
+             (lsp--text-document-position-params)
+             (lambda (signature)
+               (when (eq request-id lsp-hover-request-id)
+                 (when-let (message (and signature (lsp--signature->eldoc-message signature)))
+                   (when (or (and lsp-eldoc-prefer-signature-help (setq pending 1))
                              (not lsp--eldoc-saved-message))
-                     (setq lsp--eldoc-saved-message message)))))
-             (when (zerop (cl-decf pending))
-               (lsp--eldoc-message lsp--eldoc-saved-message))
-             (run-hook-with-args 'lsp-on-hover-hook hover)))
-         :error-handler #'ignore))
-      (when (and lsp-eldoc-enable-signature-help (lsp--capability "signatureHelpProvider"))
-        (cl-incf pending)
-        (lsp-request-async
-         "textDocument/signatureHelp"
-         (lsp--text-document-position-params)
-         (lambda (signature)
-           (when (eq request-id lsp-hover-request-id)
-             (when-let (message (and signature (lsp--signature->eldoc-message signature)))
-               (when (or (and lsp-eldoc-prefer-signature-help (setq pending 1))
-                         (not lsp--eldoc-saved-message))
-                 (setq lsp--eldoc-saved-message message)))
-             (when (zerop (cl-decf pending))
-               (lsp--eldoc-message lsp--eldoc-saved-message))))
-         :error-handler #'ignore)))))
+                     (setq lsp--eldoc-saved-message message)))
+                 (when (zerop (cl-decf pending))
+                   (lsp--eldoc-message lsp--eldoc-saved-message))))
+             :error-handler #'ignore)))))))
 
 (defun lsp--select-action (actions)
   "Select an action to execute from ACTIONS."
@@ -3914,19 +3927,24 @@ If ACTION is not set it will be selected from `lsp-code-actions'."
 (defun lsp-format-buffer ()
   "Ask the server to format this document."
   (interactive "*")
-  (unless (or (lsp--capability "documentFormattingProvider")
-              (lsp--registered-capability "textDocument/formatting"))
-    (signal 'lsp-capability-not-supported (list "documentFormattingProvider")))
-  (let ((edits (lsp-request "textDocument/formatting"
-                            (lsp--make-document-formatting-params))))
-    (lsp--apply-formatting edits)))
+  (cond ((or (lsp--capability "documentFormattingProvider")
+             (lsp--registered-capability "textDocument/formatting"))
+         (let ((edits (lsp-request "textDocument/formatting"
+                                   (lsp--make-document-formatting-params))))
+           (lsp--apply-formatting edits)))
+        ((or (lsp--capability "documentRangeFormattingProvider")
+             (lsp--registered-capability "textDocument/rangeFormatting"))
+         (save-excursion
+           (widen)
+           (lsp-format-region (point-min) (point-max))))
+        (t (signal 'lsp-capability-not-supported (list "documentFormattingProvider")))))
 
 (defun lsp-format-region (s e)
   "Ask the server to format the region, or if none is selected, the current line."
   (interactive "r")
   (unless (or (lsp--capability "documentRangeFormattingProvider")
               (lsp--registered-capability "textDocument/rangeFormatting"))
-    (signal 'lsp-capability-not-supported (list "documentFormattingProvider")))
+    (signal 'lsp-capability-not-supported (list "documentRangeFormattingProvider")))
   (let ((edits (lsp-request "textDocument/rangeFormatting"
                             (lsp--make-document-range-formatting-params s e))))
     (lsp--apply-formatting edits)))
@@ -3976,7 +3994,7 @@ interface DocumentRangeFormattingParams {
 
 (defun lsp--make-document-highlight-callback (buf)
   "Create a callback to process the reply of a
-'textDocument/documentHightlight' message for the buffer BUF.
+'textDocument/documentHighlight' message for the buffer BUF.
 A reference is highlighted only if it is visible in a window."
   (cl-check-type buf buffer)
   (lambda (highlights)
@@ -4558,7 +4576,7 @@ textDocument/didOpen for the new file."
                          (gethash method lsp--default-notification-handlers)))
         (funcall handler workspace params)
       (unless (string-prefix-p "$" method)
-        (lsp-warn "Unknown method: %s" method)))))
+        (lsp-warn "Unknown notification: %s" method)))))
 
 (defun lsp--build-workspace-configuration-response (params)
   "Get section configuration.
@@ -4596,6 +4614,19 @@ WORKSPACE is the active workspace."
                        empty-response)
                       ("workspace/configuration"
                        (lsp--make-response request (lsp--build-workspace-configuration-response params)))
+                      ("workspace/workspaceFolders"
+                       (lsp--make-response
+                        request
+                        (let ((folders (or (-> workspace
+                                               (lsp--workspace-client)
+                                               (lsp--client-server-id)
+                                               (gethash (lsp-session-server-id->folders (lsp-session))))
+                                           (lsp-session-folders (lsp-session)))))
+                          (->> folders
+                               (-distinct)
+                               (-map (lambda (folder)
+                                       (list :uri (lsp--path-to-uri folder))))
+                               (apply #'vector)))))
                       (other
                        (-if-let (handler (gethash other (lsp--client-request-handlers client) nil))
                            (lsp--make-response request (funcall handler workspace params))
@@ -4754,7 +4785,9 @@ WORKSPACE is the active workspace."
           (let* ((body-sep-pos (string-match-p "\r\n\r\n" chunk)))
             (if body-sep-pos
                 ;; We've got all the headers, handle them all at once:
-                (let* ((header-raw (substring chunk 0 body-sep-pos))
+                (let* ((header-raw (substring chunk (or (string-match-p "Content-Length" chunk)
+                                                        (error "Unable to find Content-Length header."))
+                                              body-sep-pos))
                        (content (substring chunk (+ body-sep-pos 4)))
                        (headers
                         (mapcar 'lsp--parse-header
