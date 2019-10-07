@@ -2465,6 +2465,8 @@ See `completion-in-region' for further information."
                   (string= str (car comps))))
            (message "Sole match"))
           (t
+           (when (eq collection 'crm--collection-fn)
+             (setq comps (delete-dups comps)))
            (let* ((len (ivy-completion-common-length (car comps)))
                   (initial (cond ((= len 0)
                                   "")
@@ -3014,6 +3016,7 @@ Possible choices are 'ivy-magic-slash-non-match-cd-selected,
                (and (or (> ivy--index 0)
                         (= ivy--length 1)
                         magic)
+                    (not (ivy--prompt-selected-p))
                     (not (equal (ivy-state-current ivy-last) ""))
                     (file-directory-p (ivy-state-current ivy-last))
                     (or (eq ivy-magic-slash-non-match-action
@@ -4636,6 +4639,16 @@ When `ivy-calling' isn't nil, call `ivy-occur-press'."
       (ivy-occur-previous-line arg)
       (ivy-occur-press-and-switch))))
 
+(defun ivy-occur-next-error (n &optional reset)
+  "A `next-error-function' for `ivy-occur-mode'."
+  (interactive "p")
+  (when reset
+    (goto-char (point-min)))
+  (setq n (or n 1))
+  (let ((ivy-calling t))
+    (cond ((< n 0) (ivy-occur-previous-line (- n)))
+          (t (ivy-occur-next-line n)))))
+
 (define-derived-mode ivy-occur-mode fundamental-mode "Ivy-Occur"
   "Major mode for output from \\[ivy-occur].
 
@@ -4732,7 +4745,10 @@ There is no limit on the number of *ivy-occur* buffers."
         (setf (ivy-state-text ivy-last) ivy-text)
         (setq ivy-occur-last ivy-last))
       (ivy-exit-with-action
-       (lambda (_) (pop-to-buffer buffer))))))
+       (lambda (_)
+         (pop-to-buffer buffer)
+         (setq next-error-last-buffer buffer)
+         (setq-local next-error-function #'ivy-occur-next-error))))))
 
 (defun ivy-occur-revert-buffer ()
   "Refresh the buffer making it up-to date with the collection.

@@ -100,12 +100,7 @@ forges and hosts."
                                owner name
                                :host apihost
                                :auth 'forge
-                               :forge (cl-ecase class
-                                        (forge-github-repository    'ghub)
-                                        (forge-gitlab-repository    'glab)
-                                        (forge-gitea-repository     'gtea)
-                                        (forge-gogs-repository      'gogs)
-                                        (forge-bitbucket-repository 'buck))))))
+                               :forge (forge--ghub-type-symbol class)))))
     (cons (base64-encode-string
            (format "%s:%s" id
                    (cond (stub path)
@@ -311,6 +306,25 @@ repository, if any."
                 (concat " " (propertize msg 'font-lock-face
                                         'magit-mode-line-process)))))
       (force-mode-line-update t))))
+
+(cl-defmethod ghub--host ((repo forge-repository))
+  (cl-call-next-method (forge--ghub-type-symbol (eieio-object-class repo))))
+
+(cl-defmethod ghub--username ((repo forge-repository))
+  (let ((sym (forge--ghub-type-symbol (eieio-object-class repo))))
+    (cl-call-next-method (ghub--host sym) sym)))
+
+(defun forge--ghub-type-symbol (class)
+  (cl-ecase class
+    ;; This package does not define a `forge-gitlab-http-repository'
+    ;; class, but we suggest at #9 that users define such a class if
+    ;; they must connect to a Gitlab instance that uses http instead
+    ;; of https.
+    ((forge-gitlab-repository forge-gitlab-http-repository) 'gitlab)
+    (forge-github-repository    'github)
+    (forge-gitea-repository     'gittea)
+    (forge-gogs-repository      'gogs)
+    (forge-bitbucket-repository 'bitbucket)))
 
 ;;; _
 (provide 'forge-repo)

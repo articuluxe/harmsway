@@ -784,6 +784,25 @@ With a prefix ARG select project to remove by name."
      (treemacs-pulse-on-success "Selected workspace %s."
        (propertize (treemacs-workspace->name workspace))))))
 
+(defun treemacs-set-fallback-workspace (&optional arg)
+  "Set the current workspace as the default fallback.
+With a non-nil prefix ARG choose the fallback instead.
+
+The fallback workspace is the one treemacs will select when it is opened for the
+first time and the current file at the time is not part of any of treemacs'
+workspaces."
+  (interactive "P")
+  (treemacs-block
+   (-let [fallback (if arg (treemacs--select-workspace-by-name) (treemacs-current-workspace))]
+     (treemacs-error-return-if (null fallback)
+       "There is no workspace with that name.")
+     (setf treemacs--workspaces
+           (sort treemacs--workspaces
+                 (lambda (ws _) (equal ws fallback))))
+     (treemacs--persist)
+     (treemacs-pulse-on-success "Selected workspace %s as fallback."
+       (propertize (treemacs-workspace->name fallback) 'face 'font-lock-type-face)))))
+
 (defun treemacs-rename-workspace ()
   "Select a workspace to rename."
   (interactive)
@@ -1015,6 +1034,10 @@ Only works with a single project in the workspace."
         (f-write (apply #'concat (--map (concat it "\n") lines)) 'utf-8 treemacs-persist-file)
         (kill-buffer)
         (treemacs--restore)
+        (-if-let (ws (treemacs--select-workspace-by-name
+                      (treemacs-workspace->name (treemacs-current-workspace))))
+            (setf (treemacs-current-workspace) ws)
+          (treemacs--find-workspace))
         (treemacs--consolidate-projects)
         (-some-> (get-buffer treemacs--org-edit-buffer-name) (kill-buffer))
         (run-hooks 'treemacs-workspace-edit-hook)

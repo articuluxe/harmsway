@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-10-02 12:30:11 dan.harms>
+;; Modified Time-stamp: <2019-10-08 09:52:07 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1263,6 +1263,7 @@ Only one letter is shown, the first that applies."
           (occur-mode :popup t :select nil :align bottom)
           (vlf-occur-mode :popup t :select nil :align bottom)
           (grep-mode :popup t :select nil :align bottom)
+          (ivy-occur-grep-mode :popup t :select nil :align bottom)
           ("\\*.*Help.*\\*" :regexp t :popup t :select t)
           ("\\*xref\\*" :regexp t :popup t :select t :align bottom)
           (help-mode :popup t :select t)

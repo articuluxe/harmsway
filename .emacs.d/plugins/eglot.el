@@ -170,6 +170,14 @@ as 0, i.e. don't block at all."
   :type '(choice (boolean :tag "Whether to inhibit autoreconnection")
                  (integer :tag "Number of seconds")))
 
+(defcustom eglot-autoshutdown nil
+  "If non-nil, shut down server after killing last managed buffer."
+  :type 'boolean)
+
+(defcustom eglot-send-changes-idle-time 0.5
+  "Don't tell server of changes before Emacs's been idle for this many seconds."
+  :type 'number)
+
 (defcustom eglot-events-buffer-size 2000000
   "Control the size of the Eglot events buffer.
 If a number, don't let the buffer grow larger than that many
@@ -844,7 +852,7 @@ This docstring appeases checkdoc, that's all."
                           (push server
                                 (gethash project eglot--servers-by-project))
                           (setf (eglot--capabilities server) capabilities)
-                          (jsonrpc-notify server :initialized `(:__dummy__ t))
+                          (jsonrpc-notify server :initialized (make-hash-table))
                           (dolist (buffer (buffer-list))
                             (with-current-buffer buffer
                               (eglot--maybe-activate-editing-mode server)))
@@ -1109,9 +1117,6 @@ under cursor."
              for probe = (plist-member caps feat)
              if (not probe) do (cl-return nil)
              if (eq (cadr probe) :json-false) do (cl-return nil)
-             ;; If the server specifies null as the value of the capability, it
-             ;; makes sense to treat it like false.
-             if (null (cadr probe)) do (cl-return nil)
              if (not (listp (cadr probe))) do (cl-return (if more nil (cadr probe)))
              finally (cl-return (or (cadr probe) t)))))
 
@@ -1172,8 +1177,9 @@ and just return it.  PROMPT shouldn't end with a question mark."
    (eglot--managed-mode
     (add-hook 'after-change-functions 'eglot--after-change nil t)
     (add-hook 'before-change-functions 'eglot--before-change nil t)
-    (add-hook 'kill-buffer-hook 'eglot--signal-textDocument/didClose nil t)
     (add-hook 'kill-buffer-hook 'eglot--managed-mode-onoff nil t)
+    ;; Prepend "didClose" to the hook after the "onoff", so it will run first
+    (add-hook 'kill-buffer-hook 'eglot--signal-textDocument/didClose nil t)
     (add-hook 'before-revert-hook 'eglot--signal-textDocument/didClose nil t)
     (add-hook 'before-save-hook 'eglot--signal-textDocument/willSave nil t)
     (add-hook 'after-save-hook 'eglot--signal-textDocument/didSave nil t)
@@ -1223,7 +1229,11 @@ Reset in `eglot--managed-mode-onoff'.")
              (setq eglot--cached-current-server nil)
              (when server
                (setf (eglot--managed-buffers server)
-                     (delq buf (eglot--managed-buffers server)))))))))
+                     (delq buf (eglot--managed-buffers server)))
+               (when (and eglot-autoshutdown
+                          (not (eglot--shutdown-requested server))
+                          (not (eglot--managed-buffers server)))
+                 (eglot-shutdown server))))))))
 
 (defun eglot--current-server ()
   "Find the current logical EGLOT server."
@@ -1308,7 +1318,7 @@ Uses THING, FACE, DEFS and PREPEND."
                (nick (and server (eglot--project-nickname server)))
                (pending (and server (hash-table-count
                                      (jsonrpc--request-continuations server))))
-               (`(,_id ,doing ,done-p ,detail) (and server (eglot--spinner server)))
+               (`(,_id ,doing ,done-p ,_detail) (and server (eglot--spinner server)))
                (last-error (and server (jsonrpc-last-error server))))
     (append
      `(,(eglot--mode-line-props "eglot" 'eglot-mode-line nil))
@@ -1326,15 +1336,13 @@ Uses THING, FACE, DEFS and PREPEND."
                      (format "An error occured: %s\n" (plist-get last-error
                                                                  :message)))))
          ,@(when (and doing (not done-p))
-             `("/" ,(eglot--mode-line-props
-                     (format "%s%s" doing
-                             (if detail (format ":%s" detail) ""))
-                     'compilation-mode-line-run '())))
+             `("/" ,(eglot--mode-line-props doing
+                                            'compilation-mode-line-run '())))
          ,@(when (cl-plusp pending)
              `("/" ,(eglot--mode-line-props
-                     (format "%d outstanding requests" pending) 'warning
+                     (format "%d" pending) 'warning
                      '((mouse-3 eglot-forget-pending-continuations
-                                "fahgettaboudit"))))))))))
+                                "forget pending continuations"))))))))))
 
 (add-to-list 'mode-line-misc-info
              `(eglot--managed-mode (" [" eglot--mode-line-format "] ")))
@@ -1587,10 +1595,11 @@ Records BEG, END and PRE-CHANGE-LENGTH locally."
   (let ((buf (current-buffer)))
     (setq eglot--change-idle-timer
           (run-with-idle-timer
-           0.5 nil (lambda () (eglot--with-live-buffer buf
-                                (when eglot--managed-mode
-                                  (eglot--signal-textDocument/didChange)
-                                  (setq eglot--change-idle-timer nil))))))))
+           eglot-send-changes-idle-time
+           nil (lambda () (eglot--with-live-buffer buf
+                            (when eglot--managed-mode
+                              (eglot--signal-textDocument/didChange)
+                              (setq eglot--change-idle-timer nil))))))))
 
 ;; HACK! Launching a deferred sync request with outstanding changes is a
 ;; bad idea, since that might lead to the request never having a
@@ -1952,10 +1961,11 @@ is not active."
        :company-prefix-length
        (save-excursion
          (when (car bounds) (goto-char (car bounds)))
-         (looking-back
-          (regexp-opt
-           (cl-coerce (cl-getf completion-capability :triggerCharacters) 'list))
-          (line-beginning-position)))
+         (when (listp completion-capability)
+           (looking-back
+            (regexp-opt
+             (cl-coerce (cl-getf completion-capability :triggerCharacters) 'list))
+            (line-beginning-position))))
        :exit-function
        (lambda (comp _status)
          (let ((comp (if (get-text-property 0 'eglot--lsp-completion comp)
