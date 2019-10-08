@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-10-08 09:52:07 dan.harms>
+;; Modified Time-stamp: <2019-10-09 08:59:14 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -302,9 +302,11 @@ not an error if any files do not exist."
 (use-package proviso
   :demand t
   :bind (("C-c gg" . proviso-grep)
+         ("C-c psg" . proviso-search-grep)
          ("C-c gag" . proviso-ag)
+         ("C-c psa" . proviso-search-ag)
          ("C-c gr" . proviso-rg)
-         ("C-c ps" . proviso-search)
+         ("C-c psr" . proviso-search-rg)
          ("C-c pt" . proviso-gentags-generate-tags)
          ("C-c ff" . proviso-finder-find-file)
          ("C-c 4ff" . proviso-finder-find-file-other-window)
