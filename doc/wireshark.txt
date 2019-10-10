@@ -5,13 +5,15 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Tuesday, September 13, 2016
 # Version: 1.0
-# Modified Time-stamp: <2019-07-08 16:28:12 dan.harms>
+# Modified Time-stamp: <2019-10-10 11:29:28 dan.harms>
 # Modified by: Dan Harms
 # Keywords: wireshark
 
 # convert from .erf to .pcap
 tshark -r <file>.erf -q -z io,phs
 editcap -F libpcap -T ether <file>.erf <file>.pcap
+# save packets in a timeframe
+editcap -A "2019-10-10 09:59:00" in.pcap out.pcapng
 
 # list interfaces
 tshark -D

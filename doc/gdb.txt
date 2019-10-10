@@ -5,7 +5,7 @@
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Tuesday, May  3, 2016
 # Version: 1.0
-# Modified Time-stamp: <2019-07-08 16:33:03 dan.harms>
+# Modified Time-stamp: <2019-10-10 11:10:34 dan.harms>
 # Modified by: Dan Harms
 # Keywords: gdb help doc
 
@@ -57,5 +57,9 @@ end
 break abort
 # attach to running process
 gdb -p <pid>
+# save stack of all running threads
+set pagination off
+set logging on
+thread apply all bt
 
 # code ends here
