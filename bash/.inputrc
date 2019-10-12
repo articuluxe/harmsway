@@ -1,6 +1,8 @@
 $include /etc/inputrc
 "\e[5~":history-search-backward
 "\e[6~":history-search-forward
+Control-j: "\C-a$(\C-e)"
+
 $if Bash
     # auto-expand !-key-chords on <space> (breaks gdb)
     Space:magic-space
@@ -20,4 +22,4 @@ set show-all-if-ambiguous on
 set show-all-if-unmodified on
 set mark-modified-lines on
 set visible-stats on
-
+set revert-all-at-newline on
