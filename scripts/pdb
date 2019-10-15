@@ -1,0 +1,14 @@
+#!/bin/sh
+# -*- Mode: sh -*-
+# pdb --- a pdb wrapper
+# Copyright (C) 2019  Dan Harms (dan.harms)
+# Author: Dan Harms <dan.harms@xrtrading.com>
+# Created: Tuesday, October 15, 2019
+# Version: 1.0
+# Modified Time-stamp: <2019-10-15 11:49:59 dan.harms>
+# Modified by: Dan Harms
+# Keywords: tools python debugging
+
+exec python -m pdb "$@"
+
+# code ends here
