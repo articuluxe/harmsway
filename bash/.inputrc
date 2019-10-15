@@ -1,7 +1,7 @@
 $include /etc/inputrc
 "\e[5~":history-search-backward
 "\e[6~":history-search-forward
-Control-j: "\C-a$(\C-e)"
+Control-p: "\C-a$(\C-e)"
 
 $if Bash
     # auto-expand !-key-chords on <space> (breaks gdb)
