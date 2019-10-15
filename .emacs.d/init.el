@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-10-10 09:55:03 dan.harms>
+;; Modified Time-stamp: <2019-10-15 13:37:29 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3801,7 +3801,6 @@ This may perform related customization."
     (python-nav-forward-statement)))
 
 (use-package python
-  :if (executable-find "python")
   :mode ("\\.py[iw]?$" . python-mode)
   :interpreter ("python" . python-mode)
   :init
@@ -3829,7 +3828,7 @@ This may perform related customization."
               (setq-local company-smart-backend 'company-jedi)))
   :config
   ;; add jedi if installed
-  (when (eq 0 (call-process "python" nil nil nil "-c" "import jedi"))
+  (when (eq 0 (call-process python-shell-interpreter nil nil nil "-c" "import jedi"))
     (require 'jedi-core)
     (setq jedi:tooltip-method nil))
   (define-key python-mode-map "\C-j" 'newline-and-indent)
