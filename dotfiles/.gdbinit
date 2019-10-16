@@ -1,10 +1,10 @@
 # -*- Mode: gdb-script -*-
 # .gdbinit --- gdb configuration file
-# Copyright (C) 2015, 2017-2018  Dan Harms (dan.harms)
+# Copyright (C) 2015, 2017-2019  Dan Harms (dan.harms)
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Thursday, June 11, 2015
 # Version: 1.0
-# Modified Time-stamp: <2018-10-30 15:16:49 dan.harms>
+# Modified Time-stamp: <2019-10-16 14:09:46 dharms>
 # Modified by: Dan Harms
 # Keywords: configuration
 
@@ -21,6 +21,9 @@ set history expansion on
 
 # disable auto-loading checks
 set auto-load safe-path /
+
+# Handle SIP on Mac OS 10.12
+set startup-with-shell off
 
 # quit immediately
 define qquit
