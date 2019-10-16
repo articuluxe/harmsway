@@ -410,9 +410,20 @@ For mode=set, all covered lines will have this weight."
   ;; we cannot use 'symbols in regexp-opt because GNU Emacs <24
   ;; doesn't understand that
   (append
-   `((go--match-func
+   `(
+     ;; Fontify types in function signatures.
+     (go--match-func
+      ;; The signature logic is "anchored" to a "func" keyword, so
+      ;; `go--match-func' must match all signature types in a single
+      ;; invocation since it can't remember if it is inside a "func"
+      ;; across invocations. So, it must have an explicit limit on the
+      ;; number of sub-expressions.
       ,@(mapcar (lambda (x) `(,x font-lock-type-face))
                 (number-sequence 1 go--font-lock-func-param-num-groups)))
+
+     ;; Fontify types in e.g. "var foo string".
+     (go--match-ident-type-pair 1 font-lock-type-face)
+
      (,(concat "\\_<" (regexp-opt go-mode-keywords t) "\\_>") . font-lock-keyword-face)
      (,(concat "\\(\\_<" (regexp-opt go-builtins t) "\\_>\\)[[:space:]]*(") 1 font-lock-builtin-face)
      (,(concat "\\_<" (regexp-opt go-constants t) "\\_>") . font-lock-constant-face)
@@ -1256,6 +1267,36 @@ of last search.  Return t if search succeeded."
         (when regions
           (set-match-data (go--make-match-data regions))
           t)))))
+
+(defun go--match-ident-type-pair (end)
+  "Search for identifier + type-name pairs.
+
+For example, this looks for the \"foo bar\" in \"var foo bar\",
+yielding match-data for \"bar\" since that is a type name to be
+fontified. This approach matches type names in var and const
+decls, and in struct definitions. Return non-nil if search
+succeeds."
+  (let (type-names found-match)
+    ;; Find the starting ident, e.g. "foo" in "var foo bar".
+    (while (and
+            (not found-match)
+            (re-search-forward (concat "\\_<" go-identifier-regexp "\\_>") end t))
+      (cond
+       ;; Skip keywords, such as the "var" in "var foo bar".
+       ((member (match-string 0) go-mode-keywords))
+
+       ;; If our identifier is followed by a space.
+       ((> (skip-syntax-forward " ") 0)
+        (when (and
+               ;; And it looks like a type name.
+               (looking-at go-type-name-regexp)
+               ;; And it isn't a keyword.
+               (not (member (match-string 1) go-mode-keywords)))
+          (setq found-match t)))))
+
+    ;; Return whether we found an ident/type pair. match-data will be
+    ;; that of the final looking-at call.
+    found-match))
 
 (defun go--match-func-type-names (end)
   (cond
@@ -2579,6 +2620,50 @@ If BUFFER, return the number of characters in that buffer instead."
   (with-current-buffer (or buffer (current-buffer))
     (1- (position-bytes (point-max)))))
 
+(defvar go-dot-mod-mode-map
+  (let ((map (make-sparse-keymap)))
+    map)
+  "Keymap for `go-dot-mod-mode'.")
+
+(defvar go-dot-mod-mode-syntax-table
+  (let ((st (make-syntax-table)))
+    ;; handle '//' comment syntax
+    (modify-syntax-entry ?/ ". 124b" st)
+    (modify-syntax-entry ?\n "> b" st)
+    st)
+  "Syntax table for `go-dot-mod-mode'.")
+
+(defconst go-dot-mod-mode-keywords
+  '("module" "go" "require" "replace" "exclude")
+  "All keywords for go.mod files.  Used for font locking.")
+
+(defvar go-dot-mod-font-lock-keywords
+  `(
+    (,(concat "^\\s-*" (regexp-opt go-dot-mod-mode-keywords t) "\\s-") . font-lock-keyword-face))
+  "Keyword highlighting specification for `go-dot-mod-mode'.")
+
+;;;###autoload
+(define-derived-mode go-dot-mod-mode fundamental-mode "Go Mod"
+  "A major mode for editing go.mod files."
+  :syntax-table go-dot-mod-mode-syntax-table
+  (set (make-local-variable 'comment-start) "// ")
+  (set (make-local-variable 'comment-end)   "")
+  (set (make-local-variable 'comment-use-syntax) t)
+  (set (make-local-variable 'comment-start-skip) "\\(//+\\)\\s *")
+
+  (set (make-local-variable 'font-lock-defaults)
+       '(go-dot-mod-font-lock-keywords))
+  (set (make-local-variable 'indent-line-function) 'go-mode-indent-line)
+
+  ;; Go style
+  (setq indent-tabs-mode t)
+
+  ;; we borrow the go-mode-indent function so we need this buffer cache
+  (set (make-local-variable 'go-dangling-cache) (make-hash-table :test 'eql))
+  (add-hook 'before-change-functions #'go--reset-dangling-cache-before-change t t))
+
+;;;###autoload
+(add-to-list 'auto-mode-alist '("go\\.mod\\'" . go-dot-mod-mode))
 
 ;; Polyfills for functions added in Emacs 26.  Remove these once we don’t
 ;; support Emacs 25 any more.

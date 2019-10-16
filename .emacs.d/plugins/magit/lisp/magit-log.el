@@ -442,6 +442,7 @@ the upstream isn't ahead of the current branch) show."
    [""
     ("L" "local branches" magit-log-branches)
     (7 "B" "matching branches" magit-log-matching-branches)
+    (7 "T" "matching tags" magit-log-matching-tags)
     ("b" "all branches"   magit-log-all-branches)
     ("a" "all references" magit-log-all)
     (7 "m" "merged"       magit-log-merged)]
@@ -599,9 +600,9 @@ the upstream isn't ahead of the current branch) show."
                                          magit-log-read-revs-map)
          "[, ]" t))))
 
-(defun magit-log-read-pattern ()
-  "Read a string from the user to use as --branches= pattern."
-  (magit-read-string "Type a pattern to pass to --branches"))
+(defun magit-log-read-pattern (option)
+  "Read a string from the user to pass as parameter to OPTION."
+  (magit-read-string (format "Type a pattern to pass to %s" option)))
 
 ;;;###autoload
 (defun magit-log-current (revs &optional args files)
@@ -641,9 +642,17 @@ completion candidates."
 ;;;###autoload
 (defun magit-log-matching-branches (pattern &optional args files)
   "Show log for all branches matching PATTERN and `HEAD'."
-  (interactive (cons (magit-log-read-pattern) (magit-log-arguments)))
+  (interactive (cons (magit-log-read-pattern "--branches") (magit-log-arguments)))
   (magit-log-setup-buffer
    (list "HEAD" (format "--branches=%s" pattern))
+   args files))
+
+;;;###autoload
+(defun magit-log-matching-tags (pattern &optional args files)
+  "Show log for all tags matching PATTERN and `HEAD'."
+  (interactive (cons (magit-log-read-pattern "--tags") (magit-log-arguments)))
+  (magit-log-setup-buffer
+   (list "HEAD" (format "--tags=%s" pattern))
    args files))
 
 ;;;###autoload

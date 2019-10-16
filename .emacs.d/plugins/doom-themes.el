@@ -24,6 +24,8 @@
 ;;   `doom-vibrant'
 ;;
 ;; Additional themes
+;;   [X] `doom-acario-dark' (added by gagbo)
+;;   [X] `doom-acario-light' (added by gagbo)
 ;;   [X] `doom-city-lights' (added by fuxialexnder)
 ;;   [X] `doom-challenger-deep' (added by fuxialexnder)
 ;;   [X] `doom-dracula' (added by fuxialexnder)
@@ -35,6 +37,7 @@
 ;;   [X] `doom-nord' (added by fuxialexnder)
 ;;   [X] `doom-nord-light' (added by fuxialexnder)
 ;;   [X] `doom-nova' (added by bigardone)
+;;   [X] `doom-oceanic-next' (added by juanwolf)
 ;;   [X] `doom-opera' (added by jwintz)
 ;;   [X] `doom-opera-light' (added by jwintz)
 ;;   [X] `doom-outrun' (added by ema2159)

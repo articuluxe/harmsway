@@ -44,6 +44,49 @@
 (require 'lsp-haxe)
 (require 'lsp-vhdl)
 
+;;; Ada
+(defgroup lsp-ada nil
+  "Settings for Ada Language Server."
+  :group 'tools
+  :tag "Language Server"
+  :package-version '(lsp-mode . "6.2"))
+
+(defcustom lsp-ada-project-file "default.gpr"
+  "Set the project file full path to configure the language server with.
+  The ~ prefix (for the user home directory) is supported.
+  See https://github.com/AdaCore/ada_language_server for a per-project
+  configuration example."
+  :type 'string
+  :group 'lsp-ada
+  :package-version '(lsp-mode . "6.2"))
+
+(defcustom lsp-ada-option-charset "UTF-8"
+  "The charset to use by the Ada Language server. Defaults to 'UTF-8'."
+  :type 'string
+  :group 'lsp-ada
+  :package-version '(lsp-mode . "6.2"))
+
+(defcustom lsp-ada-enable-diagnostics t
+  "A boolean to disable diagnostics. Defaults to true."
+  :type 'boolean
+  :group 'lsp-ada
+  :package-version '(lsp-mode . "6.2"))
+
+(lsp-register-custom-settings
+ '(("ada.projectFile" lsp-ada-project-file)
+   ("ada.enableDiagnostics" lsp-ada-enable-diagnostics)
+   ("ada.defaultCharset" lsp-ada-option-charset)))
+
+(lsp-register-client
+ (make-lsp-client :new-connection (lsp-stdio-connection '("ada_language_server"))
+                  :major-modes '(ada-mode)
+                  :priority -1
+                  :initialized-fn (lambda (workspace)
+                                    (with-lsp-workspace workspace
+                                      (lsp--set-configuration
+                                       (lsp-configuration-section "ada"))))
+                  :server-id 'ada-ls))
+
 ;;; Bash
 (lsp-register-client
  (make-lsp-client :new-connection (lsp-stdio-connection '("bash-language-server" "start"))
@@ -293,6 +336,28 @@ particular FILE-NAME and MODE."
                   :major-modes '(reason-mode caml-mode tuareg-mode)
                   :priority -1
                   :server-id 'ocaml-ls))
+
+(defgroup lsp-merlin nil
+  "LSP support for OCaml, using merlin."
+  :group 'lsp-mode
+  :link '(url-link "https://github.com/ocaml/merlin"))
+
+(defcustom lsp-merlin-command
+  '("ocamlmerlin-lsp")
+  "Command to start ocaml-language-server."
+  :group 'lsp-ocaml
+  :type '(choice
+          (string :tag "Single string value")
+          (repeat :tag "List of string values"
+                  string)))
+
+(lsp-register-client
+ (make-lsp-client
+  :new-connection
+  (lsp-stdio-connection (lambda () lsp-merlin-command))
+  :major-modes '(caml-mode tuareg-mode)
+  :priority 0
+  :server-id 'merlin))
 
 
 ;; C-family (C, C++, Objective-C, Objective-C++)

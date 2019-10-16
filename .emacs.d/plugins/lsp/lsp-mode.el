@@ -570,6 +570,7 @@ Changes take effect only when a new session is started."
                                         (".*\\.xml$" . "xml")
                                         (".*\\.hx$" . "haxe")
                                         (".*\\.lua$" . "lua")
+                                        (ada-mode . "ada")
                                         (sh-mode . "shellscript")
                                         (sh-mode . "lua")
                                         (scala-mode . "scala")
@@ -620,7 +621,8 @@ Changes take effect only when a new session is started."
                                         (dockerfile-mode . "dockerfile")
                                         (csharp-mode . "csharp")
                                         (plain-tex-mode . "plaintex")
-                                        (latex-mode . "latex"))
+                                        (latex-mode . "latex")
+                                        (vhdl-mode . "vhdl"))
   "Language id configuration.")
 
 (defvar lsp-method-requirements
@@ -1260,6 +1262,23 @@ DELETE when `lsp-mode.el' is deleted.")
             (push (concat dir "/" file) files)))))
     (nconc result (nreverse files))))
 
+(defun lsp--ask-about-watching-big-repo (number-of-files dir)
+  "Ask the user if they want to watch NUMBER-OF-FILES from a repository DIR.
+This is useful when there is a lot of files in a repository, as
+that may slow Emacs down. Returns t if the user wants to watch
+the entire repository, nil otherwise."
+  (prog1
+      (yes-or-no-p
+       (format
+        "There are %s files in folder %s so watching the repo may slow Emacs down.
+Do you want to watch all files in %s? "
+        number-of-files
+        dir
+        dir))
+    (lsp--info
+     (concat "You can configure this warning with the `lsp-enable-file-watchers' "
+             "and `lsp-file-watch-threshold' variables"))))
+
 (defun lsp-watch-root-folder (dir callback &optional watch warn-big-repo?)
   "Create recursive file notificaton watch in DIR.
 CALLBACK will be called when there are changes in any of
@@ -1278,14 +1297,7 @@ already have been created."
              (or
               (< number-of-files lsp-file-watch-threshold)
               (condition-case _err
-                  (yes-or-no-p
-                   (format
-                    "There are %s files in folder %s so watching the repo may slow Emacs down. To configure:
-1. Disable file watchers globally or for the project (via .dir-locals) by using `lsp-enable-file-watchers'.
-2. Remove this warning by increasing or setting to nil `lsp-file-watch-threshold'.
-Do you want to continue?"
-                    number-of-files
-                    dir))
+                  (lsp--ask-about-watching-big-repo number-of-files dir)
                 ('quit)))))
       (condition-case err
           (progn
@@ -2161,7 +2173,7 @@ If WORKSPACE is not provided current workspace will be used."
 (defalias 'lsp-make-request 'lsp--make-request)
 
 (defun lsp--make-response (request result)
-  "Create reponse for REQUEST with RESULT."
+  "Create response for REQUEST with RESULT."
   `(:jsonrpc "2.0" :id ,(gethash "id" request) :result ,result))
 
 (defun lsp-make-notification (method &optional params)
@@ -2367,7 +2379,7 @@ If NO-MERGE is non-nil, don't merge the results but return alist workspace->resu
                            (buffer-live-p buf))
                       (with-current-buffer buf
                         (handle-result))
-                    (lsp-log "Buffer is not alive ignoring reponse. Method %s." method))))
+                    (lsp-log "Buffer is not alive ignoring response. Method %s." method))))
         ('tick (let ((tick (buffer-chars-modified-tick)))
                  (lambda (result)
                    (when (buffer-live-p buf)
@@ -2383,7 +2395,7 @@ If NO-MERGE is non-nil, don't merge the results but return alist workspace->resu
              (if (and (eq (length results) count)
                       (eq buf (current-buffer)))
                  (handle-result)
-               (lsp-log "Buffer switched - ignoring reponse. Method %s" method))))))))
+               (lsp-log "Buffer switched - ignoring response. Method %s" method))))))))
 
 (defun lsp--create-default-error-handler (method)
   "Default error handler.
@@ -3669,7 +3681,20 @@ MODE is the mode used in the parent frame."
     (add-to-list 'markdown-code-lang-modes (cons mark mode)))
   (setq-local markdown-fontify-code-blocks-natively t)
   (setq-local markdown-fontify-code-block-default-mode mode)
-  (setq-local markdown-hide-markup t))
+  (setq-local markdown-hide-markup t)
+
+  ;; Render some common HTML entities.
+  ;; This should really happen in markdown-mode instead,
+  ;; but it doesn't, so we do it here for now.
+  (setq prettify-symbols-alist
+	(cl-loop for i from 0 to 255
+                 collect (cons (format "&#x%02X;" i) i)))
+  (push '("&lt;" . ?<) prettify-symbols-alist)
+  (push '("&gt;" . ?>) prettify-symbols-alist)
+  (push '("&amp;" . ?&) prettify-symbols-alist)
+  (setq prettify-symbols-compose-predicate
+	(lambda (_start _end _match) t))
+  (prettify-symbols-mode 1))
 
 (defun lsp--buffer-string-visible ()
   "Return visible buffer string.
@@ -3694,18 +3719,8 @@ Stolen from `org-copy-visible'."
   "Render markdown."
 
   (let((markdown-enable-math nil))
-    (goto-char (point-min))
-    (while (re-search-forward "&gt;" nil t)
-      (replace-match ">"))
-
-    (goto-char (point-min))
-
-    (while (re-search-forward "&lt;" nil t)
-      (replace-match "<"))
-
-    (goto-char (point-min))
-
     ;; temporary patch --- since the symbol is not rendered fine in lsp-ui
+    (goto-char (point-min))
     (while (re-search-forward "^[-]+$" nil t)
       (replace-match ""))
 
@@ -5053,7 +5068,8 @@ standard I/O."
   (list :connect (lambda (filter sentinel name)
                    (let ((final-command (lsp-resolve-final-function command))
                          (process-name (generate-new-buffer-name name)))
-                     (let ((proc (make-process
+                     (let* ((stderr-buf (format "*%s::stderr*" process-name))
+                            (proc (make-process
                                   :name process-name
                                   :connection-type 'pipe
                                   :buffer (format "*%s*" process-name)
@@ -5061,9 +5077,10 @@ standard I/O."
                                   :command final-command
                                   :filter filter
                                   :sentinel sentinel
-                                  :stderr (format "*%s::stderr*" process-name)
+                                  :stderr stderr-buf
                                   :noquery t)))
                        (set-process-query-on-exit-flag proc nil)
+                       (set-process-query-on-exit-flag (get-buffer-process stderr-buf) nil)
                        (cons proc proc))))
         :test? (lambda () (-> command lsp-resolve-final-function lsp-server-present?))))
 
@@ -5709,37 +5726,39 @@ IGNORE-MULTI-FOLDER to ignore multi folder server."
 Returns nil if the project should not be added to the current SESSION."
   (condition-case nil
       (let* ((project-root-suggestion (or (lsp--suggest-project-root) default-directory))
-             (choices (list
-                       (format "Import project root \"%s\"." project-root-suggestion)
-                       "Import project by selecting root directory interactively."
-                       (format "Do not ask again for the current project by adding \"%s\" to lsp-session-folder-blacklist."
-                               project-root-suggestion)
-                       "Do not ask again for the current project by selecting ignore path interactively."
-                       "Do nothing; ask again when opening other files from the current project."))
-             (action-index (cl-position
-                            (completing-read (format "%s is not part of any project. Select action: "
-                                                     (buffer-name))
-                                             choices
-                                             nil
-                                             t)
-                            choices
-                            :test 'equal)))
-        (cl-case action-index
-          (0 project-root-suggestion)
-          (1 (read-directory-name "Select workspace folder to add: "
-                                  (or project-root-suggestion default-directory)
-                                  nil
-                                  t))
-          (2 (push project-root-suggestion (lsp-session-folders-blacklist session))
-             (lsp--persist-session session)
-             nil)
-          (3 (push (read-directory-name "Select folder to blacklist: "
-                                        (or project-root-suggestion default-directory)
-                                        nil
-                                        t)
-                   (lsp-session-folders-blacklist session))
-             (lsp--persist-session session)
-             nil)
+             (action (read-key (format
+                                "%s is not part of any project. Select action:
+
+%s==>Import project root %s.
+%s==>Import project by selecting root directory interactively.
+%s==>Do not ask again for the current project by adding %s to lsp-session-folder-blacklist.
+%s==>Do not ask again for the current project by selecting ignore path interactively.
+%s==>Do nothing: ask again when opening other files from the current project."
+                                (propertize (buffer-name) 'face 'bold)
+                                (propertize "i" 'face 'success)
+                                (propertize project-root-suggestion 'face 'bold)
+                                (propertize "I" 'face 'success)
+                                (propertize "d" 'face 'warning)
+                                (propertize project-root-suggestion 'face 'bold)
+                                (propertize "D" 'face 'warning)
+                                (propertize "n" 'face 'warning)))))
+        (cl-case action
+          (?i project-root-suggestion)
+          (?\r project-root-suggestion)
+          (?I (read-directory-name "Select workspace folder to add: "
+                                   (or project-root-suggestion default-directory)
+                                   nil
+                                   t))
+          (?d (push project-root-suggestion (lsp-session-folders-blacklist session))
+              (lsp--persist-session session)
+              nil)
+          (?D (push (read-directory-name "Select folder to blacklist: "
+                                         (or project-root-suggestion default-directory)
+                                         nil
+                                         t)
+                    (lsp-session-folders-blacklist session))
+              (lsp--persist-session session)
+              nil)
           (t nil)))
     ('quit)))
 

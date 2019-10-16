@@ -1013,7 +1013,7 @@ point."
 (defun csv-align-fields (hard beg end)
   "Align all the fields in the region to form columns.
 The alignment style is specified by `csv-align-style'.  The number of
-spaces specified by `csv-align-fields' appears after each separator.
+spaces specified by `csv-align-padding' appears after each separator.
 Use soft alignment done by displaying virtual white space after the
 separators unless invoked with an argument, in which case insert real
 space characters into the buffer after the separators.
@@ -1316,44 +1316,59 @@ If there is already a header line, then unset the header line."
   (interactive "P")
   (if csv--header-line
       (progn
+        (delete-overlay csv--header-line)
         (setq csv--header-line nil)
         (kill-local-variable 'header-line-format))
-    (setq csv--header-line (copy-marker
-                            (if use-current-line
-                                (line-beginning-position)
-                              (point-min))))
-    (setq csv--header-hscroll nil)
+    (save-excursion
+      (unless use-current-line (goto-char (point-min)))
+      (setq csv--header-line (make-overlay (line-beginning-position)
+                                           (line-end-position)
+                                           nil nil t))
+      (overlay-put csv--header-line 'modification-hooks
+                   '(csv--header-flush)))
+    (csv--header-flush)
     (setq header-line-format
-          '(:eval (progn
-                    ;; FIXME: Won't work with multiple windows showing that
-                    ;; same buffer.
-		    (if (eq (window-hscroll) csv--header-hscroll)
-                        csv--header-string
-		      (setq csv--header-hscroll (window-hscroll))
-		      (setq csv--header-string
-                            (csv--compute-header-string))))))))
+          '(:eval (csv--header-string)))))
+
+(defun csv--header-flush (&rest _)
+  ;; Force re-computation of the header-line.
+  (setq csv--header-hscroll nil))
+
+(defun csv--header-string ()
+  ;; FIXME: Won't work with multiple windows showing that same buffer.
+  (if (eql (window-hscroll) csv--header-hscroll)
+      csv--header-string
+    (setq csv--header-hscroll (window-hscroll))
+    (setq csv--header-string
+          (csv--compute-header-string))))
 
 (defun csv--compute-header-string ()
-  (save-excursion
-    (goto-char csv--header-line)
-    (move-to-column csv--header-hscroll)
-    (let ((str (buffer-substring (point) (line-end-position)))
-          (i 0))
-      (while (and i (< i (length str)))
-        (let ((prop (get-text-property i 'display str)))
-          (and (eq (car-safe prop) 'space)
-               (eq (car-safe (cdr prop)) :align-to)
-               (let* ((x (nth 2 prop))
-                      (nexti (next-single-property-change i 'display str))
-                      (newprop
-                       `(space :align-to
-                               ,(if (numberp x) (- x csv--header-hscroll)
-                                  `(- ,x csv--header-hscroll)))))
-                 (put-text-property i (or nexti (length str))
-                                    'display newprop str)
-                 (setq i nexti))))
-        (setq i (next-single-property-change i 'display str)))
-      (concat (propertize " " 'display '((space :align-to 0))) str))))
+  (with-demoted-errors "csv--compute-header-string %S"
+    (save-excursion
+      (goto-char (overlay-start csv--header-line))
+      ;; Re-set the line-end-position, just in case.
+      (move-overlay csv--header-line (point) (line-end-position))
+      (jit-lock-fontify-now (point) (line-end-position))
+      ;; Not sure why it is sometimes nil!
+      (move-to-column (or csv--header-hscroll 0))
+      (let ((str (buffer-substring (point) (line-end-position)))
+            (i 0))
+        (while (and i (< i (length str)))
+          (let ((prop (get-text-property i 'display str)))
+            (and (eq (car-safe prop) 'space)
+                 (eq (car-safe (cdr prop)) :align-to)
+                 (let* ((x (nth 2 prop))
+                        (nexti (next-single-property-change i 'display str))
+                        (newprop
+                         `(space :align-to
+                                 ,(if (numberp x)
+                                      (- x (or csv--header-hscroll 0))
+                                    `(- ,x csv--header-hscroll)))))
+                   (put-text-property i (or nexti (length str))
+                                      'display newprop str)
+                   (setq i nexti))))
+          (setq i (next-single-property-change i 'display str)))
+        (concat (propertize " " 'display '((space :align-to 0))) str)))))
 
 ;;; Auto-alignment
 
@@ -1404,7 +1419,8 @@ If there is already a header line, then unset the header line."
                 (setq pos (text-property-any pos (point-max) 'csv--jit t)))
       (jit-lock-refontify
        pos (setq pos (or (text-property-any pos (point-max) 'csv--jit nil)
-                         (point-max)))))))
+                         (point-max))))))
+  (csv--header-flush))
 
 (defun csv--ellipsis-width ()
   (let ((ellipsis
@@ -1415,6 +1431,12 @@ If there is already a header line, then unset the header line."
 
 (defun csv--jit-align (beg end)
   (save-excursion
+    ;; This is run with inhibit-modification-hooks set, so the overlays'
+    ;; modification-hook doesn't work :-(
+    (and csv--header-line
+         (<= beg (overlay-end csv--header-line))
+         (>= end (overlay-start csv--header-line))
+         (csv--header-flush))
     ;; First, round up to a whole number of lines.
     (goto-char end)
     (unless (bolp) (forward-line 1) (setq end (point)))
@@ -1532,7 +1554,7 @@ If there is already a header line, then unset the header line."
                 (unless (eolp) (forward-char)) ; Skip separator.
                 ))))
 	(forward-line)))
-    `(jit-lock-bounds ,beg . end)))
+    `(jit-lock-bounds ,beg . ,end)))
 
 (define-minor-mode csv-align-fields-mode
   "Align columns on the fly."
@@ -1547,7 +1569,8 @@ If there is already a header line, then unset the header line."
    (t
     (remove-from-invisibility-spec '(csv-truncate . t))
     (jit-lock-unregister #'csv--jit-align)
-    (csv--jit-unalign (point-min) (point-max)))))
+    (csv--jit-unalign (point-min) (point-max))))
+  (csv--header-flush))
 
 ;;; TSV support
 

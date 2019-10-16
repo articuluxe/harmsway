@@ -127,6 +127,12 @@ for different shell"
   :type 'hook
   :group 'vterm)
 
+(defcustom vterm-term-environment-variable "xterm-256color"
+  "TERM value for terminal."
+  :type 'string
+  :group 'vterm)
+
+
 (defface vterm-color-default
   `((t :inherit default))
   "The default normal color and bright color.
@@ -218,17 +224,14 @@ If nil, never delay")
   "Major mode for vterm buffer."
   (buffer-disable-undo)
   (setq vterm--term (vterm--new (window-body-height)
-                                (window-body-width)
+                                (- (window-body-width) (vterm--get-margin-width))
                                 vterm-max-scrollback))
 
   (setq buffer-read-only t)
   (setq-local scroll-conservatively 101)
   (setq-local scroll-margin 0)
-
-  (if (version< emacs-version "27")
-      (add-hook 'window-size-change-functions #'vterm--window-size-change-26 t t)
-    (add-hook 'window-size-change-functions #'vterm--window-size-change t t))
-  (let ((process-environment (append '("TERM=xterm-256color"
+  (let ((process-environment (append `(,(concat "TERM="
+						                        vterm-term-environment-variable)
                                        "INSIDE_EMACS=vterm"
                                        "LINES"
                                        "COLUMNS")
@@ -241,14 +244,15 @@ If nil, never delay")
            :command `("/bin/sh" "-c"
                       ,(format "stty -nl sane iutf8 erase ^? rows %d columns %d >/dev/null && exec %s"
                                (window-body-height)
-                               (window-body-width)
+                               (- (window-body-width) (vterm--get-margin-width))
                                vterm-shell))
            :coding 'no-conversion
            :connection-type 'pty
            :filter #'vterm--filter
            :sentinel (when vterm-exit-functions #'vterm--sentinel))))
-  (vterm--set-pty-name vterm--term (process-tty-name vterm--process)))
-
+  (vterm--set-pty-name vterm--term (process-tty-name vterm--process))
+  (process-put vterm--process 'adjust-window-size-function
+               #'vterm--window-adjust-process-window-size))
 
 ;; Function keys and most of C- and M- bindings
 (defun vterm--exclude-keys (exceptions)
@@ -290,6 +294,7 @@ If nil, never delay")
 (define-key vterm-mode-map [escape]                    #'vterm--self-insert)
 (define-key vterm-mode-map [remap yank]                #'vterm-yank)
 (define-key vterm-mode-map [remap yank-pop]            #'vterm-yank-pop)
+(define-key vterm-mode-map [remap mouse-yank-primary]  #'vterm-yank-primary)
 (define-key vterm-mode-map (kbd "C-SPC")               #'vterm--self-insert)
 (define-key vterm-mode-map (kbd "C-_")                 #'vterm--self-insert)
 (define-key vterm-mode-map (kbd "C-/")                 #'vterm-undo)
@@ -442,6 +447,15 @@ If nil, never delay")
                #'(lambda(str) (vterm-send-string str t))))
       (yank arg))))
 
+(defun vterm-yank-primary ()
+  "Implementation of `mouse-yank-primary' in vterm."
+  (interactive)
+  (let ((inhibit-read-only t)
+        (primary (gui-get-primary-selection)))
+    (cl-letf (((symbol-function 'insert-for-yank)
+               #'(lambda(str) (vterm-send-string str t))))
+      (insert-for-yank primary))))
+
 (defun vterm-yank-pop(&optional arg)
   "Implementation of `yank-pop' in vterm."
   (interactive "p")
@@ -479,6 +493,10 @@ Argument BUFFER the terminal buffer."
       (let ((inhibit-redisplay t)
             (inhibit-read-only t))
         (when vterm--term
+          (when (and (require 'display-line-numbers nil 'noerror)
+                     (get-buffer-window buffer t)
+                     (ignore-errors (display-line-numbers-update-width)))
+            (window--adjust-process-windows))
           (vterm--redraw vterm--term)))
       (setq vterm--redraw-timer nil))))
 
@@ -524,26 +542,26 @@ Argument EVENT process event."
     (run-hook-with-args 'vterm-exit-functions
                         (if (buffer-live-p buf) buf nil))))
 
-(defun vterm--window-size-change-26 (frame)
-  "Callback triggered by a size change of the FRAME.
+(defun vterm--window-adjust-process-window-size (process windows)
+  "Adjust process window size considering the width of line number."
+  (let* ((size (funcall window-adjust-process-window-size-function
+                        process windows))
+         (width (car size))
+         (height (cdr size))
+         (inhibit-read-only t))
+    (setq width (- width (vterm--get-margin-width)))
+    (when (and (processp process)
+               (process-live-p process))
+      (vterm--set-size vterm--term height width))
+    (cons width height)))
 
-This is only used, when variable `emacs-version' < 27. Calls
-`vterm--window-size-change' for every window of FRAME."
-  (dolist (window (window-list frame))
-    (vterm--window-size-change window)))
-
-(defun vterm--window-size-change (window)
-  "Callback triggered by a size change of the WINDOW.
-
-Feeds the size change to the virtual terminal."
-  (with-current-buffer (window-buffer window)
-    (when (and (processp vterm--process)
-               (process-live-p vterm--process))
-      (let ((height (window-body-height window))
-            (width (window-body-width window))
-            (inhibit-read-only t))
-        (set-process-window-size vterm--process height width)
-        (vterm--set-size vterm--term height width)))))
+(defun vterm--get-margin-width ()
+  "Get margin width of vterm buffer when `display-line-numbers-mode' is enabled."
+  (let ((width 0))
+    (when (and (boundp 'display-line-numbers)
+               display-line-numbers)
+      (setq width (+ (or display-line-numbers-width 0) 2)))
+    width))
 
 (defun vterm--delete-lines (line-num count &optional delete-whole-line)
   "Delete COUNT lines from LINE-NUM.
@@ -583,10 +601,10 @@ if N is negative backward-line from end of buffer."
                    (string-equal host (system-name)))
               (progn
                 (when (file-directory-p dir)
-                  (setq default-directory dir)))
-            (setq default-directory (concat "/-:" path)))))
+                  (setq default-directory (file-name-as-directory dir))))
+            (setq default-directory (file-name-as-directory (concat "/-:" path))))))
     (when (file-directory-p path)
-      (setq default-directory path))))
+      (setq default-directory (file-name-as-directory path)))))
 
 (defun vterm--get-color(index)
   "Get color by index from `vterm-color-palette'.

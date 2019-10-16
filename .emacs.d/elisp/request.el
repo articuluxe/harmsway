@@ -50,6 +50,7 @@
 (require 'mail-utils)
 (require 'autorevert)
 
+
 (defgroup request nil
   "Compatible layer for URL request in Emacs."
   :group 'comm
@@ -887,6 +888,31 @@ Currently it is used only for testing.")
   (or request--curl-cookie-jar
       (expand-file-name "curl-cookie-jar" request-storage-directory)))
 
+(defvar request--curl-capabilities-cache
+  (make-hash-table :test 'eq :weakness 'key)
+  "Used to avoid invoking curl more than once for version info.  By skeeto/elfeed.")
+
+(defun request--curl-capabilities ()
+  "Return capabilities plist for curl.  By skeeto/elfeed.
+:version     -- cURL's version string
+:compression -- non-nil if --compressed is supported."
+  (let ((cache-value (gethash request-curl request--curl-capabilities-cache)))
+    (if cache-value
+        cache-value
+      (with-temp-buffer
+        (call-process request-curl nil t nil "--version")
+        (let ((version
+               (progn
+                 (setf (point) (point-min))
+                 (when (re-search-forward "[.0-9]+" nil t)
+                   (match-string 0))))
+              (compression
+               (progn
+                 (setf (point) (point-min))
+                 (not (null (re-search-forward "libz\\>" nil t))))))
+          (setf (gethash request-curl request--curl-capabilities-cache)
+                `(:version ,version :compression ,compression)))))))
+
 (defconst request--curl-write-out-template
   (if (eq system-type 'windows-nt)
       "\\n(:num-redirects %{num_redirects} :url-effective %{url_effective})"
@@ -902,16 +928,14 @@ Currently it is used only for testing.")
          &aux
          (cookie-jar (convert-standard-filename
                       (expand-file-name (request--curl-cookie-jar)))))
+  "BUG: Simultaneous requests are a known cause of cookie-jar corruption."
   (append
    (list request-curl "--silent" "--include"
          "--location"
-         ;; FIXME: test automatic decompression
-         "--compressed"
-         ;; FIMXE: this way of using cookie might be problem when
-         ;;        running multiple requests.
          "--cookie" cookie-jar "--cookie-jar" cookie-jar
          "--write-out" request--curl-write-out-template)
    request-curl-options
+   (when (plist-get (request--curl-capabilities) :compression) (list "--compressed"))
    (when unix-socket (list "--unix-socket" unix-socket))
    (cl-loop for (name filename path mime-type) in files*
             collect "--form"
@@ -971,6 +995,10 @@ Currently it is used only for testing.")
                    (insert data)
                    (write-region (point-min) (point-max) tf nil 'silent))
                  (list name filename tf mime-type)))))))
+
+
+(declare-function tramp-get-remote-tmpdir "tramp")
+(declare-function tramp-dissect-file-name "tramp")
 
 (defun request--make-temp-file ()
   "Create a temporary file."
@@ -1174,14 +1202,15 @@ START-URL is the URL requested."
         (apply #'request--callback buffer settings))))))
 
 (cl-defun request--curl-sync (url &rest settings &key response &allow-other-keys)
-  (let (finished
-        (restore-p auto-revert-notify-watch-descriptor))
+  (let (finished)
     (prog1 (apply #'request--curl url
                   :semaphore (lambda (&rest _) (setq finished t))
                   settings)
       (let ((proc (get-buffer-process (request-response--buffer response))))
-        (when restore-p
-          (auto-revert-notify-rm-watch))
+        (auto-revert-set-timer)
+        (dolist (buf (buffer-list))
+          (with-current-buffer buf
+            (when auto-revert-use-notify (auto-revert-notify-rm-watch))))
         (with-local-quit
           (cl-loop with iter = 0
                    until (or (>= iter 10) finished)
@@ -1192,9 +1221,7 @@ START-URL is the URL requested."
                    finally (when (>= iter 10)
                              (let ((m "request--curl-sync: semaphore never called"))
                                (princ (format "%s\n" m) #'external-debugging-output)
-                               (request-log 'error m)))))
-        (when restore-p
-          (auto-revert-notify-add-watch))))))
+                               (request-log 'error m)))))))))
 
 (defun request--curl-get-cookies (host localpart secure)
   (request--netscape-get-cookies (request--curl-cookie-jar)

@@ -267,7 +267,7 @@ Default is 'hand.  The following scopes are possible:
 
 (defvar centaur-tabs-hide-tab-function 'centaur-tabs-hide-tab
   "Function to hide tab.
-This fucntion accepet tab name, tab will hide if this function return ni.")
+This function filters tabs.  The tab will hide if this function returns nil.")
 
 (defvar centaur-tabs-current-tabset-function nil
   "Function called with no argument to obtain the current tab set.
@@ -1051,6 +1051,15 @@ hidden, it is shown again.  Signal an error if Centaur-Tabs mode is off."
 (defvar centaur-tabs-mode-map
   (let ((km (make-sparse-keymap)))
     (define-key km centaur-tabs-prefix-key centaur-tabs-prefix-map)
+
+    ;;; Use mouse wheel to switch between buffers of same group
+    (define-key km (kbd "<header-line> <mouse-5>") 'centaur-tabs-forward )
+    (define-key km (kbd "<header-line> <mouse-4>") 'centaur-tabs-backward )
+
+    ;;; Use right click to show the rest of groups
+    (define-key km (kbd "<header-line> <mouse-3>") 'centaur-tabs--groups-menu )
+
+    
     km)
   "Keymap to use in  Centaur-Tabs mode.")
 
@@ -2048,9 +2057,7 @@ Other buffer group by `centaur-tabs-get-group-name' with project name."
 Should be buffer local and speed up calculation of buffer groups.")
 
 (defun centaur-tabs-projectile-buffer-groups ()
-  "Return the list of group names BUFFER belongs to.
-Return only one group for each buffer."
-
+  "Return the list of group names BUFFER belongs to."
   (if centaur-tabs-projectile-buffer-group-calc
       (symbol-value 'centaur-tabs-projectile-buffer-group-calc)
     (set (make-local-variable 'centaur-tabs-projectile-buffer-group-calc)
@@ -2059,8 +2066,8 @@ Return only one group for each buffer."
 	  ((or (get-buffer-process (current-buffer)) (memq major-mode '(comint-mode compilation-mode))) '("Term"))
 	  ((string-equal "*" (substring (buffer-name) 0 1)) '("Misc"))
 	  ((condition-case _err
-	       (projectile-project-root)
-	     (error nil)) (list (projectile-project-name)))
+		    (projectile-project-root)
+		  (error nil)) (list (projectile-project-name)))
 	  ((memq major-mode '(emacs-lisp-mode python-mode emacs-lisp-mode c-mode
 					      c++-mode javascript-mode js-mode
 					      js2-mode makefile-mode
@@ -2120,6 +2127,9 @@ Return only one group for each buffer."
      (string-prefix-p "*company" name)
      (string-prefix-p "*Flycheck" name)
      (string-prefix-p "*tramp" name)
+     (string-prefix-p " *Mini" name)
+     (string-prefix-p "*help" name)
+     (string-prefix-p "*Help" name)
 
      ;; Is not magit buffer.
      (and (string-prefix-p "magit" name)
@@ -2206,6 +2216,24 @@ Operates over buffer BUF"
 (defun centaur-tabs-enable-buffer-reordering ()
   "Enable the buffer adjusting functionality."
   (add-hook 'post-command-hook centaur-tabs-adjust-buffer-order-function))
+
+
+(defun centaur-tabs--groups-menu-list ()
+  "Make the menu of the tabs groups."
+  (cons "Centaur tabs groups menu"
+	(mapcar
+	 (lambda (g)
+	   (cons g g))
+	 (sort (centaur-tabs-get-groups) 'string<))))
+
+(defun centaur-tabs--groups-menu ()
+  "Show a popup menu with the centaur tabs groups."
+  (interactive)
+  (let*
+      ((sorted-groups (centaur-tabs--groups-menu-list))
+       (group (x-popup-menu t (list "Centaur tabs groups menu" sorted-groups))))
+    (centaur-tabs-switch-group group)))
+
 
 (provide 'centaur-tabs)
 

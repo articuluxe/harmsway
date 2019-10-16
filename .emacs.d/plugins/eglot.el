@@ -71,6 +71,8 @@
 (require 'filenotify)
 (require 'ert)
 (require 'array)
+(defvar company-backends) ; forward-declare, but don't require company yet
+
 
 
 ;;; User tweakable stuff
@@ -100,7 +102,8 @@ language-server/bin/php-language-server.php"))
                                                         "languageserver::run()"))
                                 (java-mode . eglot--eclipse-jdt-contact)
                                 (dart-mode . ("dart_language_server"))
-                                (elixir-mode . ("language_server.sh")))
+                                (elixir-mode . ("language_server.sh"))
+                                (ada-mode . ("ada_language_server")))
   "How the command `eglot' guesses the server to start.
 An association list of (MAJOR-MODE . CONTACT) pairs.  MAJOR-MODE
 is a mode symbol, or a list of mode symbols.  The associated
@@ -491,6 +494,9 @@ treated as in `eglot-dbind'."
                                          (:labelOffsetSupport t)))
              :references         `(:dynamicRegistration :json-false)
              :definition         `(:dynamicRegistration :json-false)
+             :declaration        `(:dynamicRegistration :json-false)
+             :implementation     `(:dynamicRegistration :json-false)
+             :typeDefinition     `(:dynamicRegistration :json-false)
              :documentSymbol     (list
                                   :dynamicRegistration :json-false
                                   :symbolKind `(:valueSet
@@ -1090,6 +1096,7 @@ under cursor."
            (const :tag "Go to definition" :definitionProvider)
            (const :tag "Go to type definition" :typeDefinitionProvider)
            (const :tag "Go to implementation" :implementationProvider)
+           (const :tag "Go to declaration" :implementationProvider)
            (const :tag "Find references" :referencesProvider)
            (const :tag "Highlight symbols automatically" :documentHighlightProvider)
            (const :tag "List symbols in buffer" :documentSymbolProvider)
@@ -1166,9 +1173,10 @@ and just return it.  PROMPT shouldn't end with a question mark."
   "Bindings saved by `eglot--setq-saving'.")
 
 (defmacro eglot--setq-saving (symbol binding)
-  `(progn (push (cons ',symbol (symbol-value ',symbol))
-                eglot--saved-bindings)
-          (setq-local ,symbol ,binding)))
+  `(when (boundp ',symbol)
+     (push (cons ',symbol (symbol-value ',symbol))
+           eglot--saved-bindings)
+     (setq-local ,symbol ,binding)))
 
 (define-minor-mode eglot--managed-mode
   "Mode for source buffers managed by some EGLOT project."
@@ -1189,7 +1197,9 @@ and just return it.  PROMPT shouldn't end with a question mark."
     (add-hook 'post-self-insert-hook 'eglot--post-self-insert-hook nil t)
     (add-hook 'pre-command-hook 'eglot--pre-command-hook nil t)
     (eglot--setq-saving eldoc-documentation-function #'eglot-eldoc-function)
+    (eglot--setq-saving xref-prompt-for-identifier nil)
     (eglot--setq-saving flymake-diagnostic-functions '(eglot-flymake-backend t))
+    (eglot--setq-saving company-backends '(company-capf))
     (add-function :around (local 'imenu-create-index-function) #'eglot-imenu)
     (flymake-mode 1)
     (eldoc-mode 1))
@@ -1709,19 +1719,7 @@ Calls REPORT-FN maybe if server publishes diagnostics in time."
     (funcall report-fn (cdr eglot--unreported-diagnostics))
     (setq eglot--unreported-diagnostics nil)))
 
-(defun eglot-xref-backend ()
-  "EGLOT xref backend."
-  (when (eglot--server-capable :definitionProvider) 'eglot))
-
-(defvar eglot--xref-known-symbols nil)
-
-(defun eglot--xref-reset-known-symbols (&rest _dummy)
-  "Reset `eglot--xref-reset-known-symbols'.
-DUMMY is ignored."
-  (setq eglot--xref-known-symbols nil))
-
-(advice-add 'xref-find-definitions :after #'eglot--xref-reset-known-symbols)
-(advice-add 'xref-find-references :after #'eglot--xref-reset-known-symbols)
+(defun eglot-xref-backend () "EGLOT xref backend." 'eglot)
 
 (defvar eglot--temp-location-buffers (make-hash-table :test #'equal)
   "Helper variable for `eglot--handling-xrefs'.")
@@ -1729,12 +1727,17 @@ DUMMY is ignored."
 (defvar eglot-xref-lessp-function #'ignore
   "Compare two `xref-item' objects for sorting.")
 
-(defmacro eglot--handling-xrefs (&rest body)
-  "Properly sort and handle xrefs produced and returned by BODY."
-  `(unwind-protect
-       (sort (progn ,@body) eglot-xref-lessp-function)
-     (maphash (lambda (_uri buf) (kill-buffer buf)) eglot--temp-location-buffers)
-     (clrhash eglot--temp-location-buffers)))
+(cl-defmacro eglot--collecting-xrefs ((collector) &rest body)
+  "Sort and handle xrefs collected with COLLECTOR in BODY."
+  (declare (indent 1) (debug (sexp &rest form)))
+  (let ((collected (cl-gensym "collected")))
+    `(unwind-protect
+         (let (,collected)
+           (cl-flet ((,collector (xref) (push xref ,collected)))
+             ,@body)
+           (sort ,collected eglot-xref-lessp-function))
+       (maphash (lambda (_uri buf) (kill-buffer buf)) eglot--temp-location-buffers)
+       (clrhash eglot--temp-location-buffers))))
 
 (defun eglot--xref-make (name uri range)
   "Like `xref-make' but with LSP's NAME, URI and RANGE.
@@ -1767,83 +1770,79 @@ Try to visit the target file for a richer summary line."
     (xref-make summary (xref-make-file-location file line column))))
 
 (cl-defmethod xref-backend-identifier-completion-table ((_backend (eql eglot)))
-  (when (eglot--server-capable :documentSymbolProvider)
-    (let ((server (eglot--current-server-or-lose))
-          (text-id (eglot--TextDocumentIdentifier)))
-      (completion-table-with-cache
-       (lambda (string)
-         (setq eglot--xref-known-symbols
-               (mapcar
-                (eglot--lambda
-                    ((SymbolInformation) name kind location containerName)
-                  (propertize name
-                              :textDocumentPositionParams
-                              (list :textDocument text-id
-                                    :position (plist-get
-                                               (plist-get location :range)
-                                               :start))
-                              :locations (vector location)
-                              :kind kind
-                              :containerName containerName))
-                (jsonrpc-request server
-                                 :textDocument/documentSymbol
-                                 `(:textDocument ,text-id))))
-         (all-completions string eglot--xref-known-symbols))))))
+  (eglot--error "cannot (yet) provide reliable completion table for LSP symbols"))
 
 (cl-defmethod xref-backend-identifier-at-point ((_backend (eql eglot)))
-  (when-let ((symatpt (symbol-at-point)))
-    (propertize (symbol-name symatpt)
-                :textDocumentPositionParams
-                (eglot--TextDocumentPositionParams))))
+  ;; JT@19/10/09: This is a totally dummy identifier that isn't even
+  ;; passed to LSP.  The reason for this particular wording is to
+  ;; construct a readable message "No references for LSP identifier at
+  ;; point.".   See http://github.com/joaotavora/eglot/issues/314
+  "LSP identifier at point.")
 
-(cl-defmethod xref-backend-definitions ((_backend (eql eglot)) identifier)
-  (let* ((rich-identifier
-          (car (member identifier eglot--xref-known-symbols)))
-         (definitions
-          (if rich-identifier
-              (get-text-property 0 :locations rich-identifier)
-            (jsonrpc-request (eglot--current-server-or-lose)
-                             :textDocument/definition
-                             (get-text-property
-                              0 :textDocumentPositionParams identifier))))
-         (locations
-          (and definitions
-               (if (vectorp definitions) definitions (vector definitions)))))
-    (eglot--handling-xrefs
-     (mapcar (eglot--lambda ((Location) uri range)
-               (eglot--xref-make identifier uri range))
-             locations))))
+(defvar eglot--lsp-xref-refs nil
+  "`xref' objects for overriding `xref-backend-references''s.")
 
-(cl-defmethod xref-backend-references ((_backend (eql eglot)) identifier)
-  (when (eglot--server-capable :referencesProvider)
-    (let ((params
-           (or (get-text-property 0 :textDocumentPositionParams identifier)
-            (let ((rich (car (member identifier eglot--xref-known-symbols))))
-              (and rich
-                   (get-text-property 0 :textDocumentPositionParams rich))))))
-      (unless params
-        (eglot--error "Don' know where %s is in the workspace!" identifier))
-      (eglot--handling-xrefs
-       (mapcar
-        (eglot--lambda ((Location) uri range)
-          (eglot--xref-make identifier uri range))
-        (jsonrpc-request (eglot--current-server-or-lose)
-                         :textDocument/references
-                         (append
-                          params
-                          (list :context
-                                (list :includeDeclaration t)))))))))
+(cl-defun eglot--lsp-xrefs-for-method (method &key extra-params capability)
+  "Make `xref''s for METHOD, EXTRA-PARAMS, check CAPABILITY."
+  (unless (eglot--server-capable
+           (or capability
+               (intern
+                (format ":%sProvider"
+                        (cadr (split-string (symbol-name method)
+                                            "/"))))))
+    (eglot--error "Sorry, this server doesn't do %s" method))
+  (let ((response
+         (jsonrpc-request
+          (eglot--current-server-or-lose)
+          method (append (eglot--TextDocumentPositionParams) extra-params))))
+    (eglot--collecting-xrefs (collect)
+      (mapc
+       (eglot--lambda ((Location) uri range)
+         (collect (eglot--xref-make (symbol-at-point) uri range)))
+       (if (vectorp response) response (list response))))))
+
+(cl-defun eglot--lsp-xref-helper (method &key extra-params capability )
+  "Helper for `eglot-find-declaration' & friends."
+  (let ((eglot--lsp-xref-refs (eglot--lsp-xrefs-for-method
+                               method
+                               :extra-params extra-params
+                               :capability capability)))
+    (xref-find-references "LSP identifier at point.")))
+
+(defun eglot-find-declaration ()
+  "Find declaration for SYM, the identifier at point."
+  (interactive)
+  (eglot--lsp-xref-helper :textDocument/declaration))
+
+(defun eglot-find-implementation ()
+  "Find implementation for SYM, the identifier at point."
+  (interactive)
+  (eglot--lsp-xref-helper :textDocument/implementation))
+
+(defun eglot-find-typeDefinition ()
+  "Find type definition for SYM, the identifier at point."
+  (interactive)
+  (eglot--lsp-xref-helper :textDocument/typeDefinition))
+
+(cl-defmethod xref-backend-definitions ((_backend (eql eglot)) _identifier)
+  (eglot--lsp-xrefs-for-method :textDocument/definition))
+
+(cl-defmethod xref-backend-references ((_backend (eql eglot)) _identifier)
+  (or
+   eglot--lsp-xref-refs
+   (eglot--lsp-xrefs-for-method
+    :textDocument/references :extra-params `(:context (:includeDeclaration t)))))
 
 (cl-defmethod xref-backend-apropos ((_backend (eql eglot)) pattern)
   (when (eglot--server-capable :workspaceSymbolProvider)
-    (eglot--handling-xrefs
-     (mapcar
-      (eglot--lambda ((SymbolInformation) name location)
-        (eglot--dbind ((Location) uri range) location
-          (eglot--xref-make name uri range)))
-      (jsonrpc-request (eglot--current-server-or-lose)
-                       :workspace/symbol
-                       `(:query ,pattern))))))
+    (eglot--collecting-xrefs (collect)
+      (mapc
+       (eglot--lambda ((SymbolInformation) name location)
+         (eglot--dbind ((Location) uri range) location
+           (collect (eglot--xref-make name uri range))))
+       (jsonrpc-request (eglot--current-server-or-lose)
+                        :workspace/symbol
+                        `(:query ,pattern))))))
 
 (defun eglot-format-buffer ()
   "Format contents of current buffer."
@@ -1880,52 +1879,69 @@ is not active."
 
 (defun eglot-completion-at-point ()
   "EGLOT's `completion-at-point' function."
-  (let* ((bounds (bounds-of-thing-at-point 'symbol))
-        (server (eglot--current-server-or-lose))
-        (completion-capability (eglot--server-capable :completionProvider))
-        (sort-completions (lambda (completions)
-                            (sort completions
-                                  (lambda (a b)
-                                    (string-lessp
-                                     (or (get-text-property 0 :sortText a) "")
-                                     (or (get-text-property 0 :sortText b) ""))))))
-        (metadata `(metadata . ((display-sort-function . ,sort-completions))))
-        strings)
-    (when completion-capability
+  ;; Commit logs for this function help understand what's going on.
+  (when-let (completion-capability (eglot--server-capable :completionProvider))
+    (let* ((server (eglot--current-server-or-lose))
+           (sort-completions (lambda (completions)
+                               (sort completions
+                                     (lambda (a b)
+                                       (string-lessp
+                                        (or (get-text-property 0 :sortText a) "")
+                                        (or (get-text-property 0 :sortText b) ""))))))
+           (metadata `(metadata . ((display-sort-function . ,sort-completions))))
+           (response (jsonrpc-request server
+                                      :textDocument/completion
+                                      (eglot--CompletionParams)
+                                      :deferred :textDocument/completion
+                                      :cancel-on-input t))
+           (items (append ; coerce to list
+                   (if (vectorp response) response (plist-get response :items))
+                   nil))
+           (proxies
+            (mapcar (jsonrpc-lambda
+                        (&rest item &key label insertText insertTextFormat
+                               &allow-other-keys)
+                      (let ((proxy
+                             (cond ((and (eql insertTextFormat 2)
+                                         (eglot--snippet-expansion-fn))
+                                    (string-trim-left label))
+                                   (t
+                                    (or insertText (string-trim-left label))))))
+                        (put-text-property 0 1 'eglot--lsp-item item proxy)
+                        proxy))
+                    items))
+           (bounds
+            (cl-loop with probe =
+                     (plist-get (plist-get (car items) :textEdit) :range)
+                     for item in (cdr items)
+                     for range = (plist-get (plist-get item :textEdit) :range)
+                     unless (and range (equal range probe))
+                     return (bounds-of-thing-at-point 'symbol)
+                     finally (cl-return (or (and probe
+                                                 (eglot--range-region probe))
+                                            (bounds-of-thing-at-point 'symbol))))))
       (list
        (or (car bounds) (point))
        (or (cdr bounds) (point))
-       (lambda (string pred action)
-         (if (eq action 'metadata) metadata
-           (funcall
-            (completion-table-dynamic
-             (lambda (_ignored)
-               (let* ((resp (jsonrpc-request server
-                                             :textDocument/completion
-                                             (eglot--CompletionParams)
-                                             :deferred :textDocument/completion
-                                             :cancel-on-input t))
-                      (items (if (vectorp resp) resp (plist-get resp :items))))
-                 (setq
-                  strings
-                  (mapcar
-                   (jsonrpc-lambda
-                       (&rest all &key label insertText insertTextFormat
-                              &allow-other-keys)
-                     (let ((completion
-                            (cond ((and (eql insertTextFormat 2)
-                                        (eglot--snippet-expansion-fn))
-                                   (string-trim-left label))
-                                  (t
-                                   (or insertText (string-trim-left label))))))
-                       (put-text-property 0 1 'eglot--lsp-completion all completion)
-                       completion))
-                   items)))))
-            string pred action)))
+       (lambda (probe pred action)
+         (cond
+          ((eq action 'metadata) metadata)               ; metadata
+          ((eq action 'lambda) (member probe proxies))   ; test-completion
+          ((eq (car-safe action) 'boundaries) nil)       ; boundaries
+          ((and (null action) (member probe proxies) t)) ; try-completion
+          ((eq action t)                                 ; all-completions
+           (cl-remove-if-not
+            (lambda (proxy)
+              (let* ((item (get-text-property 0 'eglot--lsp-item proxy))
+                     (filterText (plist-get item :filterText)))
+                (and (or (null pred) (funcall pred proxy))
+                     (string-prefix-p
+                      probe (or filterText proxy) completion-ignore-case))))
+            proxies))))
        :annotation-function
-       (lambda (obj)
+       (lambda (proxy)
          (eglot--dbind ((CompletionItem) detail kind insertTextFormat)
-             (get-text-property 0 'eglot--lsp-completion obj)
+             (get-text-property 0 'eglot--lsp-item proxy)
            (let* ((detail (and (stringp detail)
                                (not (string= detail ""))
                                detail))
@@ -1940,10 +1956,9 @@ is not active."
                             (eglot--snippet-expansion-fn)
                             " (snippet)"))))))
        :company-doc-buffer
-       (lambda (obj)
+       (lambda (proxy)
          (let* ((documentation
-                 (let ((lsp-comp
-                        (get-text-property 0 'eglot--lsp-completion obj)))
+                 (let ((lsp-comp (get-text-property 0 'eglot--lsp-item proxy)))
                    (or (plist-get lsp-comp :documentation)
                        (and (eglot--server-capable :completionProvider
                                                    :resolveProvider)
@@ -1967,46 +1982,45 @@ is not active."
              (cl-coerce (cl-getf completion-capability :triggerCharacters) 'list))
             (line-beginning-position))))
        :exit-function
-       (lambda (comp _status)
-         (let ((comp (if (get-text-property 0 'eglot--lsp-completion comp)
-                         comp
-                       ;; When selecting from the *Completions*
-                       ;; buffer, `comp' won't have any properties.  A
-                       ;; lookup should fix that (github#148)
-                       (cl-find comp strings :test #'string=))))
-           (eglot--dbind ((CompletionItem) insertTextFormat
-                          insertText
-                          textEdit
-                          additionalTextEdits)
-               (get-text-property 0 'eglot--lsp-completion comp)
-             (let ((snippet-fn (and (eql insertTextFormat 2)
-                                    (eglot--snippet-expansion-fn))))
-               (cond (textEdit
-                      ;; Undo the just the completed bit.  If before
-                      ;; completion the buffer was "foo.b" and now is
-                      ;; "foo.bar", `comp' will be "bar".  We want to
-                      ;; delete only "ar" (`comp' minus the symbol
-                      ;; whose bounds we've calculated before)
-                      ;; (github#160).
-                      (delete-region (+ (- (point) (length comp))
-                                        (if bounds (- (cdr bounds) (car bounds)) 0))
-                                     (point))
-                      (eglot--dbind ((TextEdit) range newText) textEdit
-                        (pcase-let ((`(,beg . ,end) (eglot--range-region range)))
-                          (delete-region beg end)
-                          (goto-char beg)
-                          (funcall (or snippet-fn #'insert) newText)))
-                      (when (cl-plusp (length additionalTextEdits))
-                        (eglot--apply-text-edits additionalTextEdits)))
-                     (snippet-fn
-                      ;; A snippet should be inserted, but using plain
-                      ;; `insertText'.  This requires us to delete the
-                      ;; whole completion, since `insertText' is the full
-                      ;; completion's text.
-                      (delete-region (- (point) (length comp)) (point))
-                      (funcall snippet-fn insertText))))
-             (eglot--signal-textDocument/didChange)
-             (eglot-eldoc-function))))))))
+       (lambda (proxy _status)
+         (eglot--dbind ((CompletionItem) insertTextFormat
+                        insertText
+                        textEdit
+                        additionalTextEdits)
+             (or (get-text-property 0 'eglot--lsp-item proxy)
+                 ;; When selecting from the *Completions*
+                 ;; buffer, `proxy' won't have any properties.  A
+                 ;; lookup should fix that (github#148)
+                 (get-text-property
+                  0 'eglot--lsp-item (cl-find proxy proxies :test #'string=)))
+           (let ((snippet-fn (and (eql insertTextFormat 2)
+                                  (eglot--snippet-expansion-fn))))
+             (cond (textEdit
+                    ;; Undo (yes, undo) the newly inserted completion.
+                    ;; If before completion the buffer was "foo.b" and
+                    ;; now is "foo.bar", `proxy' will be "bar".  We
+                    ;; want to delete only "ar" (`proxy' minus the
+                    ;; symbol whose bounds we've calculated before)
+                    ;; (github#160).
+                    (delete-region (+ (- (point) (length proxy))
+                                      (if bounds (- (cdr bounds) (car bounds)) 0))
+                                   (point))
+                    (eglot--dbind ((TextEdit) range newText) textEdit
+                      (pcase-let ((`(,beg . ,end) (eglot--range-region range)))
+                        (delete-region beg end)
+                        (goto-char beg)
+                        (funcall (or snippet-fn #'insert) newText)))
+                    (when (cl-plusp (length additionalTextEdits))
+                      (eglot--apply-text-edits additionalTextEdits)))
+                   (snippet-fn
+                    ;; A snippet should be inserted, but using plain
+                    ;; `insertText'.  This requires us to delete the
+                    ;; whole completion, since `insertText' is the full
+                    ;; completion's text.
+                    (delete-region (- (point) (length proxy)) (point))
+                    (funcall snippet-fn insertText))))
+           (eglot--signal-textDocument/didChange)
+           (eglot-eldoc-function)))))))
 
 (defvar eglot--highlights nil "Overlays for textDocument/documentHighlight.")
 
@@ -2419,8 +2433,8 @@ If SKIP-SIGNATURE, don't try to send textDocument/signatureHelp."
                                                    (changed 2)
                                                    (deleted 3)))))))
              ((eq action 'renamed)
-              (handle-event '(desc 'deleted file))
-              (handle-event '(desc 'created file1)))))))
+              (handle-event `(,desc 'deleted ,file))
+              (handle-event `(,desc 'created ,file1)))))))
       (unwind-protect
           (progn
 	    (dolist (dir glob-dirs)

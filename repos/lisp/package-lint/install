@@ -1,3 +1,3 @@
 cp src/package-lint.el ../../../.emacs.d/plugins
 mkdir -p ../../../.emacs.d/plugins/data
-cp src/data/stdlib-changes.gz ../../../.emacs.d/plugins/data
+cp src/data/stdlib-changes ../../../.emacs.d/plugins/data

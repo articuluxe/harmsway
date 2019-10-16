@@ -624,6 +624,7 @@ HEIGHT is the documentation number of lines."
     (set-window-dedicated-p window t)
     (redirect-frame-focus frame (frame-parent frame))
     (set-face-background 'internal-border lsp-ui-doc-border frame)
+    (set-face-background 'fringe nil frame)
     (run-hook-with-args 'lsp-ui-doc-frame-hook frame window)
     (when lsp-ui-doc-use-webkit
       (define-key (current-global-map) [xwidget-event]
@@ -730,6 +731,7 @@ before, or if the new window is the minibuffer."
     (add-hook 'post-command-hook 'lsp-ui-doc--make-request nil t)
     (add-hook 'delete-frame-functions 'lsp-ui-doc--on-delete nil t))
    (t
+    (lsp-ui-doc-hide)
     (remove-hook 'post-command-hook 'lsp-ui-doc--make-request t)
     (remove-hook 'delete-frame-functions 'lsp-ui-doc--on-delete t))))
 
