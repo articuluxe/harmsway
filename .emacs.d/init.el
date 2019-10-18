@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-10-18 09:16:33 dan.harms>
+;; Modified Time-stamp: <2019-10-18 10:01:48 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3418,6 +3418,7 @@ This may perform related customization."
                 ("SConscript"   . python-mode)
                 ("\\.otq$"      . conf-mode) ;one-tick-query files
                 ("\\.bmk$"      . emacs-lisp-mode)
+                ("\\.gdb$"      . gdb-script-mode)
                 )
               auto-mode-alist))
 
