@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-10-15 13:37:29 dan.harms>
+;; Modified Time-stamp: <2019-10-18 08:52:37 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1057,13 +1057,6 @@ From `manuel-oberti.github.io' on 20190806."
 (define-prefix-command 'harmsway-git-keymap)
 (global-set-key "\M-sm" 'harmsway-git-keymap)
 
-(defun magit-remove-git-lock-file ()
-  "Remove git's index lock file(s), if any exist."
-  (interactive)
-  (require 'remove-files)
-  (require 'magit)
-  (remove-files-regexp "index\\.lock" (magit-toplevel)))
-
 (defun my/enter-magit-status-fullscreen ()
   "Enter magit's status window, filling the entire frame."
   (interactive)
@@ -1174,6 +1167,9 @@ Only one letter is shown, the first that applies."
   :disabled
   :after magit)
 
+(use-package proviso-file
+  :bind (:map harmsway-git-keymap ("." . proviso-file-remove-git-lock)))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; magit-org-todos ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package magit-org-todos
   :disabled
@@ -1187,7 +1183,7 @@ Only one letter is shown, the first that applies."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; vc-msg ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package vc-msg
-  :bind (:map harmsway-git-keymap ("." . vc-msg-show)))
+  :bind (:map harmsway-git-keymap ("," . vc-msg-show)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; shell ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq-default comint-input-ignoredups t)
