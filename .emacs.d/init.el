@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-10-18 10:01:48 dan.harms>
+;; Modified Time-stamp: <2019-10-18 23:10:18 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -302,14 +302,16 @@ not an error if any files do not exist."
 (use-package proviso
   :demand t
   :bind (("C-c gg" . proviso-grep)
-         ("C-c psg" . proviso-search-grep)
+         ("C-c ppg" . proviso-grep-all)
          ("C-c gag" . proviso-ag)
-         ("C-c psa" . proviso-search-ag)
+         ("C-c ppa" . proviso-ag-all)
          ("C-c gr" . proviso-rg)
-         ("C-c psr" . proviso-search-rg)
+         ("C-c ppr" . proviso-rg-all)
          ("C-c pt" . proviso-gentags-generate-tags)
          ("C-c ff" . proviso-finder-find-file)
          ("C-c 4ff" . proviso-finder-find-file-other-window)
+         ("C-c ppf" . proviso-find-file-all)
+         ("C-c pp4f" . proviso-find-file-all-other-window)
          ("C-c fd" . proviso-finder-open-dir)
          ("C-c 4fd" . proviso-finder-open-dir-other-window)
          ("C-c fr" . proviso-finder-recompute-cache)
@@ -318,7 +320,7 @@ not an error if any files do not exist."
          ("C-c dp" . proviso-gud-open-pdb)
          ("C-c pd" . proviso-dired-open-this-project)
          ("C-c pD" . proviso-dired-open-all-projects)
-         ("C-c pp" . proviso-display-print-project)
+         ("C-c pi" . proviso-display-print-project)
          ("C-c pn" . proviso-display-echo-current-project-name)
          ("C-c pN" . proviso-display-echo-project-names)
          ("C-c pe" . proviso-display-projects)
