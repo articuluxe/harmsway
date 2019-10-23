@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-10-18 23:10:18 dharms>
+;; Modified Time-stamp: <2019-10-23 10:18:17 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3363,14 +3363,14 @@ This may perform related customization."
     ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; host ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(let* ((system (harmsway-unqualify-host-name (system-name)))
+(let* ((this-host (harmsway-unqualify-host-name (system-name)))
        (hosts-dir (concat my/user-directory "settings/host/"))
        (all-hosts-dir (concat hosts-dir "hosts/"))
-       (host-dir (file-name-as-directory (concat hosts-dir system)))
+       (host-dir (file-name-as-directory (concat hosts-dir this-host)))
        ;; look for host file inside a same-named directory, otherwise
        ;; just try to load the file
        (host-file (if (file-directory-p host-dir)
-                      (concat host-dir system)
+                      (concat host-dir this-host)
                     (directory-file-name host-dir))))
   ;; the list of remote hosts contained in the plist `remotehost-connect-hosts'
   ;; and sourced from a list of hosts in the file `hosts/site'
@@ -3397,7 +3397,7 @@ This may perform related customization."
       (load host-file t)
     ;; otherwise look for current host in hosts file
     (dolist (plist remotehost-connect-hosts)
-      (and (string= (plist-get plist :host) system)
+      (and (string= (plist-get plist :host) this-host)
            (plist-get plist :site)
            (my/load-site-file (plist-get plist :site)))))
   )
