@@ -1,4 +1,4 @@
 ((deploy . (
-"rm $HOME/.emacs.d/ext/$PROJECT/*.elc"
-(".*\\.el$" . "$HOME/.emacs.d/ext/$PROJECT/")
+"rm ~/.emacs.d/ext/$PROJECT/*.elc"
+(".*\\.el$" . "~/.emacs.d/ext/$PROJECT/")
 )))
