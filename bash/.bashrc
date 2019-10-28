@@ -45,6 +45,7 @@ ulimit -c unlimited
 source ~/config/git-completion.sh
 source ~/config/git-prompt.sh
 
+alias pscores='ps -eL -o user,pid,tid,psr,comm,args'
 alias magit='emax -e "(magit-status \"$(pwd)\")" > /dev/null 2>&1'
 
 export PROMPT_COMMAND=__prompt_command
