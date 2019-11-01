@@ -886,14 +886,11 @@ Otherwise, fallback to the original binding of %s in the current mode."
               ,def
             ;; turn mode off and recover the original function
             (let ((,mode-name nil))
-              ;; Check for `<tab>'.  It translates to `TAB' which
-              ;; will prevent `(key-binding ...)' from finding the
-              ;; original binding.
-              (if (equal (kbd "<tab>") ,key)
-                  (or (key-binding ,key)
-                      (key-binding (kbd "TAB")))
-                (key-binding ,key))))))
-       (define-key ,keymap ,key ',fn-name))))
+              (or (key-binding ,key)
+                  ,(if (equal (kbd "<tab>") key)
+                       (key-binding (kbd "TAB")))
+                  (lambda nil (interactive) (message "`%s' can do nothing useful here." (key-description ,key))))))))
+       (define-key ,keymap ,key (quote ,fn-name)))))
 
 ;;;;;; original macro (obsolete)
 

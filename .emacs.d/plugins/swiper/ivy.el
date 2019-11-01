@@ -462,6 +462,7 @@ action functions.")
     map)
   "Keymap used in the minibuffer.")
 (autoload 'hydra-ivy/body "ivy-hydra" "" t)
+(autoload 'ivy-hydra-read-action "ivy-hydra" "" t)
 
 (defvar ivy-mode-map
   (let ((map (make-sparse-keymap)))
@@ -709,13 +710,13 @@ N is obtained from `ivy-more-chars-alist'."
                       ,@body)))
      (abort-recursive-edit)))
 
-(defun ivy-exit-with-action (action)
+(defun ivy-exit-with-action (action &optional exit-code)
   "Quit the minibuffer and call ACTION afterwards."
   (ivy-set-action
    `(lambda (x)
       (funcall ',action x)
       (ivy-set-action ',(ivy-state-action ivy-last))))
-  (setq ivy-exit 'done)
+  (setq ivy-exit (or exit-code 'done))
   (exit-minibuffer))
 
 (defmacro with-ivy-window (&rest body)
@@ -868,7 +869,7 @@ key (a string), cmd and doc (a string)."
   :type '(radio
           (function-item ivy-read-action-by-key)
           (function-item ivy-read-action-ivy)
-          (function-item ivy-read-action-hydra)))
+          (function-item ivy-hydra-read-action)))
 
 (defun ivy-read-action ()
   "Change the action to one of the available ones.
@@ -925,8 +926,9 @@ selection, non-nil otherwise."
 (defun ivy-dispatching-done ()
   "Select one of the available actions and call `ivy-done'."
   (interactive)
-  (when (ivy-read-action)
-    (ivy-done))
+  (let ((ivy-exit 'ivy-dispatching-done))
+    (when (ivy-read-action)
+      (ivy-done)))
   (ivy-shrink-after-dispatching))
 
 (defun ivy-dispatching-call ()
@@ -1531,7 +1533,8 @@ If so, move to that directory, while keeping only the file name."
                            :initial-value nil))))
           (ivy-exit-with-action
            (lambda (_)
-             (ivy-ffap-url-fetcher url)))
+             (ivy-ffap-url-fetcher url))
+           'no-update-history)
         (setq input (expand-file-name input))
         (let ((file (file-name-nondirectory input))
               (dir (expand-file-name (file-name-directory input))))
@@ -2131,20 +2134,23 @@ customizations apply to the current completion session."
                 (ivy-state-initial-input ivy-last)
                 (make-composed-keymap keymap ivy-minibuffer-map)
                 nil
-                hist))
+                hist)
+               (pop (symbol-value hist)))
              (when (eq ivy-exit 'done)
-               (let ((item (if ivy--directory
-                               (ivy-state-current ivy-last)
-                             ivy-text)))
-                 (unless (equal item "")
-                   (set hist (cons (propertize item 'ivy-index ivy--index)
-                                   (delete item
-                                           (cdr (symbol-value hist))))))))
+               (ivy--update-history hist))
              (setq result (ivy-state-current ivy-last))))
       (ivy--cleanup))
     (ivy-call)
     (ivy--remove-props (ivy-state-current ivy-last) 'idx)
     result))
+
+(defun ivy--update-history (hist)
+  (let ((item (if ivy--directory
+                  (ivy-state-current ivy-last)
+                ivy-text)))
+    (unless (equal item "")
+      (set hist (cons (propertize item 'ivy-index ivy--index)
+                      (delete item (symbol-value hist)))))))
 
 (defun ivy--cleanup ()
   ;; Fixes a bug in ESS, #1660
@@ -2186,11 +2192,8 @@ This is useful for recursive `ivy-read'."
          (sort (or (ivy-state-sort state) (assoc caller ivy-sort-functions-alist)))
          (initial-input
           (or (ivy-state-initial-input state)
-              (let ((init (cdr (assq caller ivy-initial-inputs-alist))))
-                (cond ((functionp init)
-                       (funcall init))
-                      (t
-                       init)))))
+              (let ((init (ivy-alist-setting ivy-initial-inputs-alist caller)))
+                (if (functionp init) (funcall init) init))))
          (def (ivy-state-def state)))
     (setq ivy--extra-candidates (ivy--compute-extra-candidates caller))
     (setq ivy--directory nil)

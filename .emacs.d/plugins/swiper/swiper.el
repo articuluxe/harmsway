@@ -158,7 +158,11 @@ Treated as non-nil when searching backwards."
        (propertize
         (if (stringp lisp)
             lisp
-          ivy-text)
+          (set-match-data (overlay-get ov 'md))
+          (condition-case nil
+              (with-current-buffer (nth 4 (overlay-get ov 'md))
+                (match-substitute-replacement ivy-text))
+            (error ivy-text)))
         'face 'error)))))
 
 (defun swiper--query-replace-cleanup ()
@@ -174,13 +178,14 @@ Treated as non-nil when searching backwards."
         (while (and (re-search-forward re end t)
                     (not (eobp)))
           (let ((ov (make-overlay (1- (match-end 0)) (match-end 0)))
-                (md (match-data)))
+                (md (match-data t)))
             (overlay-put
              ov 'matches
              (mapcar
               (lambda (x)
                 (list `(match-string ,x) (match-string x)))
               (number-sequence 0 (1- (/ (length md) 2)))))
+            (overlay-put ov 'md md)
             (push ov swiper--query-replace-overlays))
           (unless (> (match-end 0) (match-beginning 0))
             (forward-char)))))))
@@ -565,7 +570,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
   (let ((thing (ivy-thing-at-point)))
     (when (use-region-p)
       (deactivate-mark))
-    (swiper thing)))
+    (swiper (regexp-quote thing))))
 
 ;;;###autoload
 (defun swiper-all-thing-at-point ()
@@ -574,7 +579,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
   (let ((thing (ivy-thing-at-point)))
     (when (use-region-p)
       (deactivate-mark))
-    (swiper-all thing)))
+    (swiper-all (regexp-quote thing))))
 
 (defun swiper--extract-matches (regex cands)
   "Extract captured REGEX groups from CANDS."
@@ -1097,20 +1102,24 @@ WND, when specified is the window."
             (when (eq ivy-exit 'done)
               (push-mark swiper--opoint t)
               (message "Mark saved where search started"))))
-        (add-to-history
-         'regexp-search-ring
-         re
-         regexp-search-ring-max)
-        ;; integration with evil-mode's search
-        (when (bound-and-true-p evil-mode)
-          (when (eq evil-search-module 'isearch)
-            (setq isearch-string ivy-text))
-          (when (eq evil-search-module 'evil-search)
-            (add-to-history 'evil-ex-search-history re)
-            (setq evil-ex-search-pattern (list re t t))
-            (setq evil-ex-search-direction 'forward)
-            (when evil-ex-search-persistent-highlight
-              (evil-ex-search-activate-highlight evil-ex-search-pattern))))))))
+        (swiper--remember-search-history re)))))
+
+(defun swiper--remember-search-history (re)
+  "Add the search pattern RE to the search history ring."
+  (add-to-history
+   'regexp-search-ring
+   re
+   regexp-search-ring-max)
+  ;; integration with evil-mode's search
+  (when (bound-and-true-p evil-mode)
+    (when (eq evil-search-module 'isearch)
+      (setq isearch-string ivy-text))
+    (when (eq evil-search-module 'evil-search)
+      (add-to-history 'evil-ex-search-history re)
+      (setq evil-ex-search-pattern (list re t t))
+      (setq evil-ex-search-direction 'forward)
+      (when evil-ex-search-persistent-highlight
+        (evil-ex-search-activate-highlight evil-ex-search-pattern)))))
 
 (defun swiper-from-isearch ()
   "Invoke `swiper' from isearch."
@@ -1457,7 +1466,8 @@ that we search only for one character."
           (goto-char (match-beginning 0)))
         (isearch-range-invisible (point) (1+ (point)))
         (swiper--maybe-recenter)
-        (unless (eq ivy-exit 'done)
+        (if (eq ivy-exit 'done)
+            (swiper--remember-search-history (ivy--regex ivy-text))
           (swiper--cleanup)
           (swiper--delayed-add-overlays)
           (swiper--add-cursor-overlay
@@ -1580,10 +1590,10 @@ When not running `swiper-isearch' already, start it."
         (dotimes (_ (1+ j))
           (string-match regex current-str start)
           (setq start (match-end 0)))
-        (swiper--isearch-highlight current-str j)
-        (font-lock-append-text-property
+        (font-lock-prepend-text-property
          0 (length current-str)
          'face 'swiper-line-face current-str)
+        (swiper--isearch-highlight current-str j)
         (push current-str res))
       (cl-incf len)
       (setq i (1+ index))

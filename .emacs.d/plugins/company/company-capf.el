@@ -83,6 +83,8 @@ that accompanied the completion table that's currently is use.")
 (defun company-capf--clear-current-data (_ignored)
   (setq company-capf--current-completion-data nil))
 
+(defvar-local company-capf--sorted nil)
+
 (defun company-capf (command &optional arg &rest _args)
   "`company-mode' backend using `completion-at-point-functions'."
   (interactive (list 'interactive))
@@ -98,35 +100,9 @@ that accompanied the completion table that's currently is use.")
             (length (cons prefix length))
             (t prefix))))))
     (`candidates
-     (let ((res (company--capf-data)))
-       (company-capf--save-current-data res)
-       (when res
-         (let* ((table (nth 3 res))
-                (pred (plist-get (nthcdr 4 res) :predicate))
-                (meta (completion-metadata
-                       (buffer-substring (nth 1 res) (nth 2 res))
-                       table pred))
-                (sortfun (cdr (assq 'display-sort-function meta)))
-                (candidates (completion-all-completions arg table pred (length arg)))
-                (last (last candidates))
-                (base-size (and (numberp (cdr last)) (cdr last))))
-           (when base-size
-             (setcdr last nil))
-           (when sortfun
-             (setq candidates (funcall sortfun candidates)))
-           (if (not (zerop (or base-size 0)))
-               (let ((before (substring arg 0 base-size)))
-                 (mapcar (lambda (candidate)
-                           (concat before candidate))
-                         candidates))
-             candidates)))))
+     (company-capf--candidates arg))
     (`sorted
-     (let ((res company-capf--current-completion-data))
-       (when res
-         (let ((meta (completion-metadata
-                      (buffer-substring (nth 1 res) (nth 2 res))
-                      (nth 3 res) (plist-get (nthcdr 4 res) :predicate))))
-           (cdr (assq 'display-sort-function meta))))))
+     company-capf--sorted)
     (`match
      ;; Ask the for the `:company-match' function.  If that doesn't help,
      ;; fallback to sniffing for face changes to get a suitable value.
@@ -176,6 +152,33 @@ that accompanied the completion table that's currently is use.")
     (`post-completion
      (company--capf-post-completion arg))
     ))
+
+(defun company-capf--candidates (input)
+  (let ((res (company--capf-data)))
+    (company-capf--save-current-data res)
+    (when res
+      (let* ((table (nth 3 res))
+             (pred (plist-get (nthcdr 4 res) :predicate))
+             (meta (completion-metadata
+                    (buffer-substring (nth 1 res) (nth 2 res))
+                    table pred))
+             (candidates (completion-all-completions input table pred
+                                                     (length input)
+                                                     meta))
+             (sortfun (cdr (assq 'display-sort-function meta)))
+             (last (last candidates))
+             (base-size (and (numberp (cdr last)) (cdr last))))
+        (when base-size
+          (setcdr last nil))
+        (setq company-capf--sorted (functionp sortfun))
+        (when sortfun
+          (setq candidates (funcall sortfun candidates)))
+        (if (not (zerop (or base-size 0)))
+            (let ((before (substring input 0 base-size)))
+              (mapcar (lambda (candidate)
+                        (concat before candidate))
+                      candidates))
+          candidates)))))
 
 (defun company--capf-post-completion (arg)
   (let* ((res company-capf--current-completion-data)

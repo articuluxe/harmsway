@@ -148,6 +148,7 @@ instead."
 (defvar keycast--this-command nil)
 (defvar keycast--this-command-keys nil)
 (defvar keycast--command-repetitions 0)
+(defvar keycast--reading-passwd nil)
 
 (defun keycast-mode-line-update ()
   "Update mode line with current `this-command' and `this-command-keys'."
@@ -159,9 +160,7 @@ instead."
   ;; values have been reset to nil.
   (setq keycast--this-command-keys (this-command-keys))
   (setq keycast--this-command this-command)
-  (force-mode-line-update t))
-
-(add-hook 'pre-command-hook 'keycast-mode-line-update t)
+  (force-mode-line-update))
 
 (defvar keycast--removed-tail nil)
 
@@ -181,7 +180,8 @@ instead."
                (setq keycast--removed-tail (cdr cons))
                (setcdr cons (list 'mode-line-keycast)))
               (t
-               (setcdr cons (cons 'mode-line-keycast (cdr cons))))))
+               (setcdr cons (cons 'mode-line-keycast (cdr cons)))))
+        (add-hook 'pre-command-hook 'keycast-mode-line-update t))
     (let ((cons (memq 'mode-line-keycast mode-line-format)))
       (cond (keycast--removed-tail
              (setcar cons (car keycast--removed-tail))
@@ -189,7 +189,8 @@ instead."
             (t
              (setcar cons (cadr cons))
              (setcdr cons (cddr cons)))))
-    (setq keycast--removed-tail nil)))
+    (setq keycast--removed-tail nil)
+    (remove-hook 'pre-command-hook 'keycast-mode-line-update)))
 
 (defun keycast-bottom-right-window-p ()
   (and (window-at-side-p nil 'right)
@@ -209,6 +210,7 @@ instead."
 (defvar mode-line-keycast
   '(:eval
     (and (funcall keycast-window-predicate)
+         (not keycast--reading-passwd)
          (let* ((key (ignore-errors
                        (key-description keycast--this-command-keys)))
                 (cmd keycast--this-command)
@@ -231,6 +233,12 @@ instead."
 
 (put 'mode-line-keycast 'risky-local-variable t)
 (make-variable-buffer-local 'mode-line-keycast)
+
+(defun keycast--read-passwd (fn prompt &optional confirm default)
+  (let ((keycast--reading-passwd t))
+    (funcall fn prompt confirm default)))
+
+(advice-add 'read-passwd :around #'keycast--read-passwd)
 
 ;;; _
 (provide 'keycast)

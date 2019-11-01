@@ -36,6 +36,7 @@
       (ct-yellow-d    "#ffaf5f")
       (red-d          "#ff5458")
       (ct-red-d       "#ff5f00")
+      (red-dd         "#8e3939")
       (red            "#ff8080")
       (ct-red         "#ff8787")
       (magenta        "#c991e1")
@@ -53,6 +54,7 @@
       (green          "#95ffa4")
       (ct-green       "#5fffaf")
       (green-d        "#62d196")
+      (green-dd       "#128046")
       (ct-green-d     "#5fd787")
       )
 
@@ -330,6 +332,9 @@
      `(window-divider-last-pixel   ((,c (:foreground ,vertical-bar))
                                     (,ct (:foreground ,ct-vertical-bar))))
 
+     `(fill-column-indicator      ((,c (:foreground ,grey-ddd))
+                                  (,ct (:foreground ,ct-grey-ddd))))
+
      ;; Plugins
      ;; Avy
      `(avy-lead-face-0    ((,c (:background ,search-bg :foreground ,search-fg))
@@ -351,8 +356,8 @@
                                     (,ct (:background ,ct-selection))))
      `(company-tooltip-mouse       ((,c (:background ,magenta :foreground ,bg))
                                     (,ct (:background ,ct-magenta :foreground ,ct-bg))))
-     `(company-tooltip-annotation  ((,c (:foreground ,magenta-d))
-                                    (,ct (:foreground ,ct-magenta-d))))
+     `(company-tooltip-annotation  ((,c (:foreground ,cyan))
+                                    (,ct (:foreground ,ct-cyan))))
      `(company-scrollbar-bg        ((,c (:background ,black))
                                     (,ct (:background ,ct-black))))
      `(company-scrollbar-fg        ((,c (:background ,blue))
@@ -617,11 +622,11 @@
                                          (,ct (:foreground ,ct-cyan))))
      `(magit-diff-added                 ((,c (:foreground ,vc-added))
                                          (,ct (:foreground ,ct-vc-added))))
-     `(magit-diff-added-highlight       ((,c (:background ,vc-added :foreground ,bg))
+     `(magit-diff-added-highlight       ((,c (:background ,vc-added :foreground ,green-dd))
                                          (,ct (:background ,ct-vc-added :foreground ,bg))))
      `(magit-diff-removed               ((,c (:foreground ,vc-deleted))
                                          (,ct (:foreground ,ct-vc-deleted))))
-     `(magit-diff-removed-highlight     ((,c (:background ,vc-deleted :foreground ,bg))
+     `(magit-diff-removed-highlight     ((,c (:background ,vc-deleted :foreground ,red-dd))
                                          (,ct (:background ,ct-vc-deleted :foreground ,bg))))
      `(smerge-refined-added             ((,c (:foreground ,vc-added))
                                          (,ct (:foreground ,ct-vc-added))))
@@ -848,8 +853,7 @@
      `(org-list-bullet           ((,c (:foreground ,cyan))
                                   (,ct (:foreground ,ct-cyan))))
      `(message-header-name ((,c (:foreground ,green))
-                            (,ct (:foreground ,ct-green)))))
-    ))
+                            (,ct (:foreground ,ct-green)))))))
 
 ;;;###autoload
 (when load-file-name

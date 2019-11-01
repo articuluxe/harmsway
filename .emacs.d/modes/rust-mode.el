@@ -19,8 +19,10 @@
                    (require 'url-vars))
 
 (require 'json)
+(require 'thingatpt)
 
 (defvar electric-pair-inhibit-predicate)
+(defvar electric-pair-skip-self)
 (defvar electric-indent-chars)
 
 (defvar rust-buffer-project)
@@ -163,6 +165,11 @@ to the function arguments.  When nil, `->' will be indented one level."
 (defcustom rust-rustfmt-bin "rustfmt"
   "Path to rustfmt executable."
   :type 'string
+  :group 'rust-mode)
+
+(defcustom rust-rustfmt-switches '("--edition" "2018")
+  "Arguments to pass when invoking the `rustfmt' executable."
+  :type '(repeat string)
   :group 'rust-mode)
 
 (defcustom rust-cargo-bin "cargo"
@@ -365,11 +372,8 @@ buffer."
               ((nth 3 (syntax-ppss))
                (let*
                    ((string-begin-pos (nth 8 (syntax-ppss)))
-                    (end-of-prev-line-pos (when (> (line-number-at-pos) 1)
-                                            (save-excursion
-                                              (forward-line -1)
-                                              (end-of-line)
-                                              (point)))))
+                    (end-of-prev-line-pos (unless (rust--same-line-p (point) (point-min))
+                                            (line-end-position 0))))
                  (when
                      (and
                       ;; If the string begins with an "r" it's a raw string and
@@ -389,7 +393,7 @@ buffer."
 
                    ;; Indent to the same level as the previous line, or the
                    ;; start of the string if the previous line starts the string
-                   (if (= (line-number-at-pos end-of-prev-line-pos) (line-number-at-pos string-begin-pos))
+                   (if (rust--same-line-p end-of-prev-line-pos string-begin-pos)
                        ;; The previous line is the start of the string.
                        ;; If the backslash is the only character after the
                        ;; string beginning, indent to the next indent
@@ -529,6 +533,11 @@ buffer."
       (if (<= (current-column) (current-indentation))
           (indent-line-to indent)
         (save-excursion (indent-line-to indent))))))
+
+(defun rust--same-line-p (pos1 pos2)
+  "Return non-nil if POS1 and POS2 are on the same line."
+  (save-excursion (= (progn (goto-char pos1) (line-end-position))
+                     (progn (goto-char pos2) (line-end-position)))))
 
 
 ;; Font-locking definitions and helpers
@@ -674,7 +683,7 @@ Returns nil if the point is not within a Rust string."
       1 font-lock-preprocessor-face keep)
 
      ;; Builtin formatting macros
-     (,(concat (rust-re-grab (concat (regexp-opt rust-builtin-formatting-macros) "!")) (concat rust-formatting-macro-opening-re "\\(?:" rust-start-of-string-re) "\\)?")
+     (,(concat (rust-re-grab (concat (rust-re-word (regexp-opt rust-builtin-formatting-macros)) "!")) (concat rust-formatting-macro-opening-re "\\(?:" rust-start-of-string-re) "\\)?")
       (1 'rust-builtin-formatting-macro-face)
       (rust-string-interpolation-matcher
        (rust-end-of-string)
@@ -682,7 +691,7 @@ Returns nil if the point is not within a Rust string."
        (0 'rust-string-interpolation-face t nil)))
 
      ;; write! macro
-     (,(concat (rust-re-grab "write\\(ln\\)?!") (concat rust-formatting-macro-opening-re "[[:space:]]*[^\"]+,[[:space:]]*" rust-start-of-string-re))
+     (,(concat (rust-re-grab (concat (rust-re-word "write\\(ln\\)?") "!")) (concat rust-formatting-macro-opening-re "[[:space:]]*[^\"]+,[[:space:]]*" rust-start-of-string-re))
       (1 'rust-builtin-formatting-macro-face)
       (rust-string-interpolation-matcher
        (rust-end-of-string)
@@ -1042,6 +1051,13 @@ This wraps the default defined by `electric-pair-inhibit-predicate'."
        (rust-is-lt-char-operator)))
    (funcall (default-value 'electric-pair-inhibit-predicate) char)))
 
+(defun rust-electric-pair-skip-self-wrap (char)
+  "Skip CHAR instead of inserting a second closing character.
+This wraps the default defined by `electric-pair-skip-self'."
+  (or
+   (= ?> char)
+   (funcall (default-value 'electric-pair-skip-self) char)))
+
 (defun rust-ordinary-lt-gt-p ()
   "Test whether the `<' or `>' at point is an ordinary operator of some kind.
 
@@ -1352,8 +1368,14 @@ This is written mainly to be used as `end-of-defun-function' for Rust."
     (erase-buffer)
     (insert-buffer-substring buf)
     (let* ((tmpf (make-temp-file "rustfmt"))
-           (ret (call-process-region (point-min) (point-max) rust-rustfmt-bin
-                                     t `(t ,tmpf) nil)))
+           (ret (apply 'call-process-region
+                       (point-min)
+                       (point-max)
+                       rust-rustfmt-bin
+                       t
+                       `(t ,tmpf)
+                       nil
+                       rust-rustfmt-switches)))
       (unwind-protect
           (cond
            ((zerop ret)
@@ -1463,16 +1485,20 @@ Return the created process."
   (interactive)
   (unless (executable-find rust-rustfmt-bin)
     (error "Could not locate executable \%s\"" rust-rustfmt-bin))
-  (let ((proc
-         (start-process "rustfmt-diff"
-                        (with-current-buffer
-                            (get-buffer-create "*rustfmt-diff*")
-                          (let ((inhibit-read-only t))
-                            (erase-buffer))
-                          (current-buffer))
-                        rust-rustfmt-bin
-                        "--check"
-                        (buffer-file-name))))
+  (let* ((buffer
+          (with-current-buffer
+              (get-buffer-create "*rustfmt-diff*")
+            (let ((inhibit-read-only t))
+              (erase-buffer))
+            (current-buffer)))
+         (proc
+          (apply 'start-process
+                 "rustfmt-diff"
+                 buffer
+                 rust-rustfmt-bin
+                 "--check"
+                 (cons (buffer-file-name)
+                       rust-rustfmt-switches))))
     (set-process-sentinel proc 'rust-format-diff-buffer-sentinel)
     proc))
 
@@ -1557,6 +1583,7 @@ Return the created process."
 (defvar rust-mode-map
   (let ((map (make-sparse-keymap)))
     (define-key map (kbd "C-c C-f") 'rust-format-buffer)
+    (define-key map (kbd "C-c d") 'rust-dbg-wrap-or-unwrap)
     map)
   "Keymap for Rust major mode.")
 
@@ -1608,6 +1635,7 @@ Return the created process."
   (setq-local end-of-defun-function 'rust-end-of-defun)
   (setq-local parse-sexp-lookup-properties t)
   (setq-local electric-pair-inhibit-predicate 'rust-electric-pair-inhibit-predicate-wrap)
+  (setq-local electric-pair-skip-self 'rust-electric-pair-skip-self-wrap)
 
   (add-hook 'before-save-hook 'rust-before-save-hook nil t)
   (add-hook 'after-save-hook 'rust-after-save-hook nil t)
@@ -1640,8 +1668,8 @@ Return the created process."
 (defvar rustc-compilation-regexps
   (let ((file "\\([^\n]+\\)")
         (start-line "\\([0-9]+\\)")
-        (start-col  "\\([0-9]+\\)"))
-    (let ((re (concat "^\\(?:error\\|\\(warning\\)\\)[^-]+--> \\(" file ":" start-line ":" start-col "\\)")))
+        (start-col "\\([0-9]+\\)"))
+    (let ((re (concat "^\\(?:error\\|\\(warning\\)\\)[^\0]+?--> \\(" file ":" start-line ":" start-col "\\)")))
       (cons re '(3 4 5 (1) 2))))
   "Specifications for matching errors in rustc invocations.
 See `compilation-error-regexp-alist' for help on their format.")
@@ -1773,6 +1801,42 @@ visit the new file."
       (goto-char 0)
       (let ((output (json-read)))
         (cdr (assoc-string "root" output))))))
+
+(defun rust-insert-dbg ()
+  "Insert the dbg! macro."
+  (cond ((region-active-p)
+         (insert-parentheses)
+         (backward-char 1))
+        (t
+         (insert "(")
+         (forward-sexp)
+         (insert ")")
+         (backward-sexp)))
+  (insert "dbg!"))
+
+;;;###autoload
+(defun rust-dbg-wrap-or-unwrap ()
+  "Either remove or add the dbg! macro."
+  (interactive)
+  (save-excursion
+    (if (region-active-p)
+        (rust-insert-dbg)
+
+      (let ((beginning-of-symbol (ignore-errors (beginning-of-thing 'symbol))))
+        (when beginning-of-symbol
+          (goto-char beginning-of-symbol)))
+
+      (let ((dbg-point (save-excursion
+                         (or (and (looking-at-p "dbg!") (+ 4 (point)))
+                             (ignore-errors
+                               (while (not (rust-looking-back-str "dbg!"))
+                                 (backward-up-list))
+                               (point))))))
+        (cond (dbg-point
+               (goto-char dbg-point)
+               (delete-char -4)
+               (delete-pair))
+              (t (rust-insert-dbg)))))))
 
 (provide 'rust-mode)
 

@@ -277,37 +277,55 @@ not specified, then faces based on `default', `mode-line' and
 
 ;;; Active Window
 
-;; Inspired by, but not identical to, code in `powerline'.  Unlike
-;; that, do not unset `moody--active-window' using `focus-out-hook'
-;; because it is called when a non-Emacs window gains focus, but
-;; Emacs still considers the previous Emacs window to be selected,
-;; so we have to do the same.
-
-(defvar moody--active-window (frame-selected-window))
+(defvar moody--active-window (selected-window))
 
 (defun moody-window-active-p ()
   "Return t if the selected window is the active window.
 Or put differently, return t if the possibly only temporarily
 selected window is still going to be selected when we return
 to the command loop."
-  (eq (selected-window) moody--active-window))
+  (if (fboundp 'old-selected-window)
+      (or (eq (selected-window)
+              (old-selected-window))
+          (and (not (zerop (minibuffer-depth)))
+	       (eq (selected-window)
+	           (with-selected-window (minibuffer-window)
+	             (minibuffer-selected-window)))))
+    (eq (selected-window) moody--active-window)))
 
-(defun moody--set-active-window (&rest _)
-  (let ((win (frame-selected-window)))
-    (unless (minibuffer-window-active-p win)
-      (setq moody--active-window win)
-      (force-mode-line-update))))
-
-(add-hook 'after-make-frame-functions       'moody--set-active-window)
-(add-hook 'window-configuration-change-hook 'moody--set-active-window)
-(add-hook 'focus-in-hook                    'moody--set-active-window)
-(advice-add 'select-window :after           'moody--set-active-window)
-(advice-add 'select-frame :after            'moody--set-active-window)
-(advice-add 'delete-frame :after            'moody--set-active-window)
+(unless (fboundp 'old-selected-window)
+  (defun moody--set-active-window (_)
+    (let ((win (selected-window)))
+      (unless (minibuffer-window-active-p win)
+        (setq moody--active-window win))))
+  (add-hook 'pre-redisplay-functions 'moody--set-active-window))
 
 ;;; Kludges
 
-(advice-add 'resize-temp-buffer-window :before 'redisplay)
+(defvar-local moody--size-hacked-p nil)
+
+(defun moody-redisplay (&optional _force &rest _ignored)
+  "Call `redisplay' to trigger mode-line height calculations.
+
+Certain functions, including e.g. `fit-window-to-buffer', base
+their size calculations on values which are incorrect if the
+mode-line has a height different from that of the `default' face
+and certain other calculations have not yet taken place for the
+window in question.
+
+These calculations can be triggered by calling `redisplay'
+explicitly at the appropriate time and this functions purpose
+is to make it easier to do so.
+
+This function is like `redisplay' with non-nil FORCE argument.
+It accepts an arbitrary number of arguments making it suitable
+as a `:before' advice for any function."
+  (unless moody--size-hacked-p
+    (setq moody--size-hacked-p t)
+    (redisplay t)))
+
+(advice-add 'fit-window-to-buffer :before #'moody-redisplay)
+(advice-add 'resize-temp-buffer-window :before #'moody-redisplay)
 
 (declare-function color-srgb-to-xyz "color" (red green blue))
 (declare-function color-rgb-to-hex "color" (red green blue &optional

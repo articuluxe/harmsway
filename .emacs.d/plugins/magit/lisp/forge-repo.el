@@ -169,7 +169,9 @@ repository, if any."
 
 (cl-defmethod forge-get-repository (((host owner name) list)
 				    &optional remote demand)
-  "Return the repository identified by HOST, OWNER and NAME."
+  "((host owner name) &optional remote demand)
+
+Return the repository identified by HOST, OWNER and NAME."
   (if-let ((spec (assoc host forge-alist)))
       (pcase-let ((`(,githost ,apihost ,forge ,class) spec))
         (let* ((row (car (forge-sql [:select * :from repository
@@ -249,10 +251,11 @@ repository, if any."
                            (oref default name)
                            (oref default githost))))))
     (save-match-data
-      (string-match "\\`\\([^/]+\\)/\\([^/]+\\) @\\(.+\\)\\'" choice)
-      (list (match-string 3 choice)
-            (match-string 1 choice)
-            (match-string 2 choice)))))
+      (if (string-match "\\`\\(.+\\)/\\([^/]+\\) @\\(.+\\)\\'" choice)
+          (list (match-string 3 choice)
+                (match-string 1 choice)
+                (match-string 2 choice))
+        (error "BUG")))))
 
 (cl-defmethod forge--topics-until ((repo forge-repository) until table)
   (if (oref repo sparse-p)

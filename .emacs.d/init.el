@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-10-23 10:18:17 dan.harms>
+;; Modified Time-stamp: <2019-11-01 13:48:02 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1693,6 +1693,7 @@ Only one letter is shown, the first that applies."
          ("C-c 0cf" . counsel-faces)
          ("C-c 0ce" . counsel-colors-emacs)
          ("C-c 0cw" . counsel-colors-web)
+         ("M-s M-w" . counsel-search)
          :map ivy-minibuffer-map
          ("M-y" . ivy-next-line-and-call)
          )

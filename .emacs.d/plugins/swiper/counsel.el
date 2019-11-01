@@ -389,6 +389,8 @@ Update the minibuffer with the amount of lines collected every
 (declare-function company-abort "ext:company")
 (declare-function company-complete "ext:company")
 (declare-function company-mode "ext:company")
+(declare-function company-call-backend "ext:company")
+(declare-function company--clean-string "ext:company")
 
 ;;;###autoload
 (defun counsel-company ()
@@ -409,7 +411,13 @@ Update the minibuffer with the amount of lines collected every
                 :caller 'counsel-company))))
 
 (ivy-configure 'counsel-company
+  :display-transformer-fn #'counsel--company-display-transformer
   :unwind-fn #'company-abort)
+
+(defun counsel--company-display-transformer (s)
+  (concat s (let ((annot (company-call-backend 'annotation s)))
+              (when annot
+                (company--clean-string annot)))))
 
 ;;** `counsel-irony'
 (declare-function irony-completion-candidates-async "ext:irony-completion")
@@ -1316,7 +1324,7 @@ INITIAL-INPUT can be given as the initial minibuffer input."
     (define-key map (kbd "C-x C-d") 'counsel-cd)
     map))
 
-(defvar counsel-git-grep-cmd-default "git --no-pager grep --full-name -n --no-color -i -I -e \"%s\""
+(defvar counsel-git-grep-cmd-default "git --no-pager grep -n --no-color -I -e \"%s\""
   "Initial command for `counsel-git-grep'.")
 
 (defvar counsel-git-grep-cmd nil
@@ -1362,7 +1370,9 @@ Typical value: '(recenter)."
    (ivy-more-chars)
    (progn
      (counsel--async-command
-      (funcall counsel-git-grep-cmd-function string))
+      (concat
+       (funcall counsel-git-grep-cmd-function string)
+       (if (ivy--case-fold-p string) " -i" "")))
      nil)))
 
 (defun counsel-git-grep-action (x)
@@ -1511,7 +1521,10 @@ When CMD is non-nil, prompt for a specific \"git grep\" command."
    (ivy-more-chars)
    (let ((regex (setq ivy--old-re
                       (ivy--regex str t))))
-     (counsel--async-command (format counsel-git-grep-cmd regex))
+     (counsel--async-command
+      (concat
+       (format counsel-git-grep-cmd regex)
+       (if (ivy--case-fold-p str) " -i" "")))
      nil)))
 
 (defun counsel-git-grep-switch-cmd ()
@@ -1554,7 +1567,10 @@ When CMD is non-nil, prompt for a specific \"git grep\" command."
                               (format "| grep -v %s" (car x))))
                        regex
                        " "))))
-    (concat (format counsel-git-grep-cmd positive-pattern) negative-patterns)))
+    (concat
+     (format counsel-git-grep-cmd positive-pattern)
+     negative-patterns
+     (if (ivy--case-fold-p input) " -i" ""))))
 
 (defun counsel-git-grep-occur (&optional _cands)
   "Generate a custom occur buffer for `counsel-git-grep'."
@@ -1897,7 +1913,7 @@ Skip some dotfiles unless `ivy-text' requires them."
         (setq res (cl-remove-if-not counsel--find-file-predicate res))))
     (if (or (null ivy-use-ignore)
             (null counsel-find-file-ignore-regexp)
-            (string-match-p "\\`\\." ivy-text))
+            (string-match-p counsel-find-file-ignore-regexp ivy-text))
         res
       (or (cl-remove-if
            (lambda (x)
@@ -1937,7 +1953,8 @@ The preselect behavior can be customized via user options
    (when counsel-find-file-at-point
      (require 'ffap)
      (let ((f (ffap-guesser)))
-       (when f (expand-file-name f))))
+       (when (and f (not (ivy-ffap-url-p f)))
+         (expand-file-name f))))
    (and counsel-preselect-current-file
         buffer-file-name
         (file-name-nondirectory buffer-file-name))))
@@ -2008,7 +2025,7 @@ If USE-IGNORE is non-nil, try to generate a command that respects
         (when (and use-ignore ivy-use-ignore
                    counsel-find-file-ignore-regexp
                    (cdr filter-cmd)
-                   (not (string-match-p "\\`\\." ivy-text))
+                   (not (string-match-p counsel-find-file-ignore-regexp ivy-text))
                    (not (string-match-p counsel-find-file-ignore-regexp
                                         (or (car ivy--old-cands) ""))))
           (let ((ignore-re (list (counsel--elisp-to-pcre
@@ -2801,7 +2818,9 @@ NEEDLE is the search string."
             (regex (counsel--grep-regex search-term))
             (switches (concat (car command-args)
                               (counsel--ag-extra-switches regex)
-                              (and (ivy--case-fold-p string) " -i "))))
+                              (if (ivy--case-fold-p string)
+                                  " -i "
+                                " -s "))))
        (counsel--async-command (counsel--format-ag-command
                                 switches
                                 (shell-quote-argument regex)))
@@ -2869,6 +2888,7 @@ CALLER is passed to `ivy-read'."
   "Change the directory for the currently running Ivy grep-like command.
 Works for `counsel-git-grep', `counsel-ag', etc."
   (interactive)
+  (counsel-delete-process)
   (let ((input ivy-text)
         (new-dir (counsel-read-directory-name "cd: ")))
     (ivy-quit-and-run
@@ -2939,7 +2959,9 @@ This uses `counsel-ag' with `counsel-ack-base-command' replacing
   (interactive)
   (let ((counsel-ag-base-command counsel-ack-base-command)
         (counsel--grep-tool-look-around t))
-    (counsel-ag initial-input :caller 'counsel-ack)))
+    (counsel-ag
+     initial-input nil nil nil
+     :caller 'counsel-ack)))
 
 
 ;;** `counsel-rg'
@@ -3018,11 +3040,16 @@ substituted by the search regexp and file, respectively.  Neither
   "Grep in the current directory for STRING."
   (or
    (ivy-more-chars)
-   (let ((regex (counsel--elisp-to-pcre
-                 (setq ivy--old-re
-                       (ivy--regex string)))))
+   (let* ((regex (counsel--elisp-to-pcre
+                  (setq ivy--old-re
+                        (ivy--regex string))))
+          (cmd (format counsel-grep-command (shell-quote-argument regex))))
      (counsel--async-command
-      (format counsel-grep-command (shell-quote-argument regex)))
+      (if (ivy--case-fold-p regex)
+          (progn
+            (string-match " " cmd)
+            (replace-match " -i " nil nil cmd))
+        cmd))
      nil)))
 
 (defvar counsel--grep-last-pos nil
@@ -5722,7 +5749,8 @@ This variable is suitable for addition to
 `savehist-additional-variables'.")
 
 (defvar counsel-compile-root-functions
-  '(counsel--project-current
+  '(counsel--projectile-root
+    counsel--project-current
     counsel--configure-root
     counsel--git-root
     counsel--dir-locals-root)
@@ -5736,6 +5764,12 @@ found.")
 The root is determined by `counsel-compile-root-functions'."
   (or (run-hook-with-args-until-success 'counsel-compile-root-functions)
       (error "Couldn't find project root")))
+
+(defun counsel--projectile-root ()
+  "Return root of current projectile project or nil on failure.
+Use `projectile-project-root' to determine the root."
+  (and (fboundp 'projectile-project-root)
+       (projectile-project-root)))
 
 (defun counsel--project-current ()
   "Return root of current project or nil on failure.
@@ -5989,6 +6023,14 @@ specified by the `blddir' property."
             :action #'counsel-compile--action
             :caller 'counsel-compile))
 
+(ivy-add-actions
+ 'counsel-compile
+ '(("d" counsel-compile-forget-command "delete")))
+
+(defun counsel-compile-forget-command (cmd)
+  "Delete CMD from `counsel-compile-history'."
+  (setq counsel-compile-history
+        (delete cmd counsel-compile-history)))
 
 (defun counsel-compile-env--format-hint (cands)
   "Return a formatter for compile-env CANDS."
@@ -6101,19 +6143,42 @@ Additional actions:\\<ivy-minibuffer-map>
             :action #'counsel-M-x-action
             :caller 'counsel-major))
 
-;;* `counsel-google'
+;;* `counsel-search'
 (declare-function request "ext:request")
-(defun counsel-google-function (input)
-  "Create a request to Google with INPUT.
+
+(defcustom counsel-search-engine 'ddg
+  "The search engine choice in `counsel-search-engines-alist'."
+  :type '(choice
+          (const ddg)
+          (const google)))
+
+(defcustom counsel-search-engines-alist
+  '((google
+     "http://suggestqueries.google.com/complete/search"
+     "https://www.google.com/search?q="
+     counsel--search-request-data-google)
+    (ddg
+     "https://duckduckgo.com/ac/"
+     "https://duckduckgo.com/html/?q="
+     counsel--search-request-data-ddg))
+  "Search engine parameters for `counsel-search'."
+  :type '(list))
+
+(defun counsel--search-request-data-google (data)
+  (mapcar #'identity (aref data 1)))
+
+(defun counsel--search-request-data-ddg (data)
+  (mapcar #'cdar data))
+
+(defun counsel-search-function (input)
+  "Create a request to a search engine with INPUT.
 Return 0 tells `ivy--exhibit' not to update the minibuffer.
 We update it in the callback with `ivy-update-candidates'."
   (or
    (ivy-more-chars)
-   (progn
-     (require 'request)
-     (require 'json)
+   (let ((engine (cdr (assoc counsel-search-engine counsel-search-engines-alist))))
      (request
-      "http://suggestqueries.google.com/complete/search"
+      (nth 0 engine)
       :type "GET"
       :params (list
                (cons "client" "firefox")
@@ -6122,17 +6187,28 @@ We update it in the callback with `ivy-update-candidates'."
       :success (cl-function
                 (lambda (&key data &allow-other-keys)
                   (ivy-update-candidates
-                   (mapcar #'identity (aref data 1))))))
+                   (funcall (nth 2 engine) data)))))
      0)))
 
-(defun counsel-google ()
-  "Ivy interface for Google."
+(defun counsel-search-action (x)
+  "Search for X."
+  (browse-url
+   (concat
+    (nth 2 (assoc counsel-search-engine counsel-search-engines-alist))
+    x)))
+
+(defun counsel-search ()
+  "Ivy interface for dynamically querying a search engine."
   (interactive)
-  (ivy-read "search: " #'counsel-google-function
-            :action (lambda (x)
-                      (browse-url (concat "https://www.google.com/search?q=" x)))
+  (require 'request)
+  (require 'json)
+  (ivy-read "search: " #'counsel-search-function
+            :action #'counsel-search-action
             :dynamic-collection t
-            :caller 'counsel-google))
+            :caller 'counsel-search))
+
+(define-obsolete-function-alias 'counsel-google
+    'counsel-search "<2019-10-17 Thu>")
 
 ;;* `counsel-mode'
 (defvar counsel-mode-map

@@ -118,8 +118,7 @@ located inside a string."
     ("HACK"   . "#d0bf8f")
     ("TEMP"   . "#d0bf8f")
     ("FIXME"  . "#cc9393")
-    ("XXX+"   . "#cc9393")
-    ("\\?\\?\\?+" . "#cc9393"))
+    ("XXX+"   . "#cc9393"))
   "An alist mapping keywords to colors/faces used to display them.
 
 Each entry has the form (KEYWORD . COLOR).  KEYWORD is used as
@@ -189,7 +188,7 @@ including alphanumeric characters, cannot be used here."
   (setq hl-todo--regexp
         (concat "\\(\\<"
                 "\\(" (mapconcat #'car hl-todo-keyword-faces "\\|") "\\)"
-                "\\(?:\\>\\|\\>\\?\\)"
+                "\\>"
                 (and (not (equal hl-todo-highlight-punctuation ""))
                      (concat "[" hl-todo-highlight-punctuation "]*"))
                 "\\)")))
@@ -201,10 +200,7 @@ including alphanumeric characters, cannot be used here."
            (1 (hl-todo--get-face) t t))))
   (font-lock-add-keywords nil hl-todo--keywords t))
 
-(defvar hl-todo--syntax-table
-  (let ((table (copy-syntax-table text-mode-syntax-table)))
-    (modify-syntax-entry ?? "w" table)
-    table))
+(defvar hl-todo--syntax-table (copy-syntax-table text-mode-syntax-table))
 
 (defun hl-todo--search (&optional regexp bound backward)
   (unless regexp
@@ -333,17 +329,19 @@ current line."
     (insert (concat (and (not (memq (char-before) '(?\s ?\t))) " ")
                     keyword
                     (and (not (memq (char-after) '(?\s ?\t ?\n))) " "))))
-   ((eolp)
+   ((and (eolp)
+         (not (looking-back "^[\s\t]*" (line-beginning-position) t)))
     (insert (concat (and (not (memq (char-before) '(?\s ?\t))) " ")
                     (format "%s %s " comment-start keyword))))
    (t
     (goto-char (line-beginning-position))
-    (insert (format "%s %s \n"
+    (insert (format "%s %s "
                     (if (derived-mode-p 'lisp-mode 'emacs-lisp-mode)
                         (format "%s%s" comment-start comment-start)
                       comment-start)
                     keyword))
-    (backward-char)
+    (unless (looking-at "[\s\t]*$")
+      (save-excursion (insert "\n")))
     (indent-region (line-beginning-position) (line-end-position)))))
 
 (define-obsolete-function-alias 'hl-todo-insert-keyword

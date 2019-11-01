@@ -39,7 +39,7 @@
   :type '(choice (symbol :tag 'rls "rls")
                  (symbol :tag 'rust-analyzer "rust-analyzer"))
   :group 'lsp-mode
-  :package-version '(lsp-mode . "6.1"))
+  :package-version '(lsp-mode . "6.2"))
 
 (defcustom lsp-rust-library-directories '("~/.cargo/registry/src" "~/.rustup/toolchains")
   "List of directories which will be considered to be libraries."
@@ -140,10 +140,7 @@ the latest build duration."
                                       "winapi"
                                       ]
   "A list of Cargo crates to blacklist."
-  :type '(restricted-sexp :match-alternatives (lambda (xs)
-                                                (and
-                                                 (vectorp xs)
-                                                 (seq-every-p #'stringp xs))))
+  :type 'lsp-string-vector
   :group 'lsp-rust
   :package-version '(lsp-mode . "6.1"))
 
@@ -156,10 +153,7 @@ change."
 
 (defcustom lsp-rust-features []
   "A list of Cargo features to enable."
-  :type '(restricted-sexp :match-alternatives (lambda (xs)
-                                                (and
-                                                 (vectorp xs)
-                                                 (seq-every-p #'stringp xs))))
+  :type 'lsp-string-vector
   :group 'lsp-rust
   :package-version '(lsp-mode . "6.1"))
 
@@ -332,7 +326,7 @@ PARAMS progress report notification data."
 (defcustom lsp-rust-analyzer-server-command '("ra_lsp_server")
   "Command to start rust-analyzer."
   :type '(repeat string)
-  :package-version '(lsp-mode . "6.1"))
+  :package-version '(lsp-mode . "6.2"))
 
 (defconst lsp-rust-notification-handlers
   '(("rust-analyzer/publishDecorations" . (lambda (_w _p)))))
@@ -348,23 +342,70 @@ PARAMS progress report notification data."
 (defun lsp-rust-uri-filename (text-document)
   (lsp--uri-to-path (gethash "uri" text-document)))
 
-(defun lsp-rust-apply-text-document-edit (edit)
-  "Like lsp--apply-text-document-edit, but it allows nil version."
-  (let* ((ident (gethash "textDocument" edit))
-         (filename (lsp-rust-uri-filename ident))
-         (version (gethash "version" ident)))
-    (with-current-buffer (find-file-noselect filename)
-      (when (or (not version) (= version (lsp--cur-file-version)))
-        (lsp--apply-text-edits (gethash "edits" edit))))))
-
 (defun lsp-rust-apply-source-change (data)
   (seq-doseq (it (-> data (ht-get "workspaceEdit") (ht-get "documentChanges")))
-    (lsp-rust-apply-text-document-edit it))
+    (lsp--apply-text-document-edit it))
   (-when-let (cursor-position (ht-get data "cursorPosition"))
     (let ((filename (lsp-rust-uri-filename (ht-get cursor-position "textDocument")))
           (position (ht-get cursor-position "position")))
       (find-file filename)
       (lsp-rust-goto-lsp-loc position))))
+
+(define-derived-mode lsp-rust-analyzer-syntax-tree-mode special-mode "Rust-Analyzer-Syntax-Tree"
+  "Mode for the rust-analyzer syntax tree buffer.")
+
+(defun lsp-rust-analyzer-syntax-tree ()
+  "Display syntax tree for current buffer."
+  (interactive)
+  (-if-let* ((workspace (lsp-find-workspace 'rust-analyzer default-directory))
+             (root (lsp-workspace-root default-directory))
+             (params (list :textDocument (lsp--text-document-identifier)
+                           :range (if (use-region-p)
+                                      (lsp--region-to-range (region-beginning) (region-end))
+                                    (lsp--region-to-range (point-min) (point-max)))))
+             (results (with-lsp-workspace workspace
+                        (lsp-send-request (lsp-make-request
+                                           "rust-analyzer/syntaxTree"
+                                           params)))))
+      (let ((buf (get-buffer-create (format "*rust-analyzer syntax tree %s*" root)))
+            (inhibit-read-only t))
+        (with-current-buffer buf
+          (lsp-rust-analyzer-syntax-tree-mode)
+          (erase-buffer)
+          (insert results)
+          (goto-char (point-min)))
+        (pop-to-buffer buf))
+    (message "rust-analyzer not running.")))
+
+(define-derived-mode lsp-rust-analyzer-status-mode special-mode "Rust-Analyzer-Status"
+  "Mode for the rust-analyzer status buffer.")
+
+(defun lsp-rust-analyzer-status ()
+  "Displays status information for rust-analyzer."
+  (interactive)
+  (-if-let* ((workspace (lsp-find-workspace 'rust-analyzer default-directory))
+             (root (lsp-workspace-root default-directory))
+             (results (with-lsp-workspace workspace
+                        (lsp-send-request (lsp-make-request
+                                           "rust-analyzer/analyzerStatus")))))
+      (let ((buf (get-buffer-create (format "*rust-analyzer status %s*" root)))
+            (inhibit-read-only t))
+        (with-current-buffer buf
+          (lsp-rust-analyzer-status-mode)
+          (erase-buffer)
+          (insert results)
+          (pop-to-buffer buf)))
+    (message "rust-analyzer not running.")))
+
+(defun lsp-rust-analyzer-join-lines ()
+  "Join selected lines into one, smartly fixing up whitespace and trailing commas."
+  (interactive)
+  (let* ((params (list :textDocument (lsp--text-document-identifier)
+                       :range (if (use-region-p)
+                                  (lsp--region-to-range (region-beginning) (region-end))
+                                (lsp--region-to-range (point) (point)))))
+         (result (lsp-send-request (lsp-make-request "rust-analyzer/joinLines" params))))
+    (lsp-rust-apply-source-change result)))
 
 (lsp-register-client
  (make-lsp-client
@@ -380,8 +421,9 @@ PARAMS progress report notification data."
   "Switch priorities of lsp servers."
   (interactive)
   (dolist (server '(rls rust-analyzer))
-    (setf (lsp--client-priority (gethash server lsp-clients))
-          (* (lsp--client-priority (gethash server lsp-clients)) -1))))
+    (when (natnump (setf (lsp--client-priority (gethash server lsp-clients))
+                         (* (lsp--client-priority (gethash server lsp-clients)) -1)))
+      (message (format "Switched to server %s." server)))))
 
 (provide 'lsp-rust)
 ;;; lsp-rust.el ends here

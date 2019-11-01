@@ -28,6 +28,7 @@
 
 ;;; Code:
 
+(require 'cl-lib)
 (require 'all-the-icons)
 (require 'shrink-path)
 (require 'subr-x)
@@ -124,7 +125,6 @@ It returns a file name which can be used directly as argument of
     ("battery-three-quarters" . "\xf241")))
 (doom-moddeline--set-font-widths doom-modeline-rhs-icons-alist)
 
-
 ;;
 ;; Customizations
 ;;
@@ -198,32 +198,48 @@ Specify another one if you encounter the issue."
   :group'doom-modeline)
 
 (defcustom doom-modeline-icon (display-graphic-p)
-  "Whether display icons in mode-line or not."
+  "Whether display icons in mode-line.
+
+It respects `all-the-icons-color-icons'.
+While using the server mode in GUI, should set the value explicitly."
   :type 'boolean
   :group 'doom-modeline)
 
 (defcustom doom-modeline-major-mode-icon t
-  "Whether display the icon for major mode. It respects `doom-modeline-icon'."
+  "Whether display the icon for `major-mode'.
+
+It respects `doom-modeline-icon'."
   :type 'boolean
   :group'doom-modeline)
 
 (defcustom doom-modeline-major-mode-color-icon t
-  "Whether display color icons for `major-mode'. It respects `doom-modeline-icon' and `all-the-icons-color-icons'."
+  "Whether display the colorful icon for `major-mode'.
+
+It respects `doom-modeline-major-mode-icon'."
   :type 'boolean
-  :group 'doom-modeline)
+  :group'doom-modeline)
 
 (defcustom doom-modeline-buffer-state-icon t
-  "Whether display icons for buffer states. It respects `doom-modeline-icon'."
+  "Whether display the icon for the buffer state.
+
+It respects `doom-modeline-icon'."
   :type 'boolean
   :group 'doom-modeline)
 
 (defcustom doom-modeline-buffer-modification-icon t
-  "Whether display buffer modification icon. It respects `doom-modeline-icon' and `doom-modeline-buffer-state-icon'."
+  "Whether display the modification icon for the buffer.
+
+It respects `doom-modeline-icon' and `doom-modeline-buffer-state-icon'."
+  :type 'boolean
+  :group 'doom-modeline)
+
+(defcustom doom-modeline-unicode-fallback t
+  "Whether to use unicode as a fallback (instead of ASCII) when not using icons."
   :type 'boolean
   :group 'doom-modeline)
 
 (defcustom doom-modeline-minor-modes (featurep 'minions)
-  "Whether display minor modes in mode-line or not."
+  "Whether display minor modes in mode-line."
   :type 'boolean
   :group 'doom-modeline)
 
@@ -247,28 +263,34 @@ Specify another one if you encounter the issue."
   :type 'boolean
   :group 'doom-modeline)
 
+(defcustom doom-modeline-number-limit 99
+  "The maximum number displayed for notifications."
+  :type 'integer
+  :group 'doom-modeline)
+
 (defcustom doom-modeline-vcs-max-length 12
   "The maximum displayed length of the branch name of version control."
   :type 'integer
   :group 'doom-modeline)
 
 (defcustom doom-modeline-persp-name t
-  "Whether display perspective name or not. Non-nil to display in mode-line."
-  :type 'boolean
-  :group 'doom-modeline)
+  "Whether display perspective name.
 
-(defcustom doom-modeline-persp-name-icon nil
-  "Whether display icon for persp name. Nil to display a # sign. It respects `doom-modeline-icon'."
+Non-nil to display in mode-line."
   :type 'boolean
   :group 'doom-modeline)
 
 (defcustom doom-modeline-lsp t
-  "Whether display `lsp' state or not. Non-nil to display in mode-line."
+  "Whether display `lsp' state.
+
+Non-nil to display in mode-line."
   :type 'boolean
   :group 'doom-modeline)
 
 (defcustom doom-modeline-github nil
-  "Whether display GitHub notifications or not. Requires `ghub' package."
+  "Whether display GitHub notifications/
+
+It requires `ghub' and `async' packages."
   :type 'boolean
   :group 'doom-modeline)
 
@@ -278,17 +300,21 @@ Specify another one if you encounter the issue."
   :group 'doom-modeline)
 
 (defcustom doom-modeline-env-version t
-  "Whether display environment version or not."
+  "Whether display environment version."
   :type 'boolean
   :group 'doom-modeline)
 
 (defcustom doom-modeline-mu4e t
-  "Whether display mu4e notifications or not. Requires `mu4e-alert' package."
+  "Whether display mu4e notifications.
+
+It requires `mu4e-alert' package."
   :type 'boolean
   :group 'doom-modeline)
 
 (defcustom doom-modeline-irc t
-  "Whether display irc notifications or not. Requires `circe' package."
+  "Whether display irc notifications.
+
+It requires `circe' package."
   :type 'boolean
   :group 'doom-modeline)
 
@@ -359,23 +385,23 @@ Specify another one if you encounter the issue."
   :group 'doom-modeline-faces)
 
 (defface doom-modeline-debug
-  '((t (:inherit font-lock-doc-face)))
-  "Face for debug-level messages in the modeline. Used by `*flycheck'."
+  '((t (:inherit (font-lock-doc-face bold))))
+  "Face for debug-level messages in the modeline. Used by `*checker'."
   :group 'doom-modeline-faces)
 
 (defface doom-modeline-info
   '((t (:inherit (success bold))))
-  "Face for info-level messages in the modeline. Used by `*vc'."
+  "Face for info-level messages in the modeline. Used by `*vc' and `*chcker'."
   :group 'doom-modeline-faces)
 
 (defface doom-modeline-warning
   '((t (:inherit (warning bold))))
-  "Face for warnings in the modeline. Used by `*flycheck'."
+  "Face for warnings in the modeline. Used by `*checker'."
   :group 'doom-modeline-faces)
 
 (defface doom-modeline-urgent
   '((t (:inherit (error bold))))
-  "Face for errors in the modeline. Used by `*flycheck'."
+  "Face for errors in the modeline. Used by `*checker'."
   :group 'doom-modeline-faces)
 
 (defface doom-modeline-unread-number
@@ -571,6 +597,26 @@ Specify another one if you encounter the issue."
 ;; Plugins
 ;;
 
+(defvar-local doom-modeline--size-hacked-p nil)
+(defun doom-modeline-redisplay (&rest _)
+  "Call `redisplay' to trigger mode-line height calculations.
+  Certain functions, including e.g. `fit-window-to-buffer', base
+  their size calculations on values which are incorrect if the
+  mode-line has a height different from that of the `default' face
+  and certain other calculations have not yet taken place for the
+  window in question.
+  These calculations can be triggered by calling `redisplay'
+  explicitly at the appropriate time and this functions purpose
+  is to make it easier to do so.
+  This function is like `redisplay' with non-nil FORCE argument.
+  It accepts an arbitrary number of arguments making it suitable
+  as a `:before' advice for any function."
+  (unless doom-modeline--size-hacked-p
+    (setq doom-modeline--size-hacked-p t)
+    (redisplay t)))
+(advice-add #'fit-window-to-buffer :before #'doom-modeline-redisplay)
+(advice-add #'resize-temp-buffer-window :before #'doom-modeline-redisplay)
+
 ;; Keep `doom-modeline-current-window' up-to-date
 (defun doom-modeline--get-current-window ()
   "Get the current window but should exclude the child windows."
@@ -659,38 +705,63 @@ Specify another one if you encounter the issue."
                          ((floatp height) (* height (frame-char-height)))
                          (t (frame-char-height)))))))
 
-(defun doom-modeline-icon-octicon (&rest args)
-  "Display octicon via ARGS."
-  (when doom-modeline-icon
-    (apply #'all-the-icons-octicon args)))
+(defun doom-modeline-icon (icon-set icon-name unicode text face &rest args)
+  "Display icon of ICON-NAME with FACE and ARGS in mode-line.
 
-(defun doom-modeline-icon-faicon (&rest args)
-  "Display font awesome icon via ARGS."
-  (when doom-modeline-icon
-    (apply #'all-the-icons-faicon args)))
+  ICON-SET includes `octicon', `faicon', `material', `alltheicons' and `fileicon'.
+  UNICODE is the unicode char fallback. TEXT is the ASCII char fallback."
+  (let ((face (or face 'mode-line)))
+    (or (when (and icon-name (not (string-empty-p icon-name)))
+          (pcase icon-set
+            ('octicon
+             (apply #'doom-modeline-icon-octicon icon-name :face face args))
+            ('faicon
+             (apply #'doom-modeline-icon-faicon icon-name :face face args))
+            ('material
+             (apply #'doom-modeline-icon-material icon-name :face face args))
+            ('alltheicon
+             (apply #'doom-modeline-icon-alltheicon icon-name :face face args))
+            ('fileicon
+             (apply #'doom-modeline-icon-fileicon icon-name :face face args))))
+        (when (and doom-modeline-unicode-fallback
+                   unicode
+                   (not (string-empty-p unicode))
+                   (char-displayable-p (string-to-char unicode)))
+          (propertize unicode 'face face))
+        (when text (propertize text 'face face)))))
 
-(defun doom-modeline-icon-material (&rest args)
-  "Display material icon via ARGS."
+(defun doom-modeline-icon-octicon (icon-name &rest args)
+  "Display octicon with ARGS."
   (when doom-modeline-icon
-    (apply #'all-the-icons-material args)))
+    (apply #'all-the-icons-octicon icon-name args)))
 
-(defun doom-modeline-icon-alltheicon (&rest args)
-  "Display alltheicon via ARGS."
+(defun doom-modeline-icon-faicon (icon-name &rest args)
+  "Display font awesome icon with ARGS."
   (when doom-modeline-icon
-    (apply #'all-the-icons-alltheicon args)))
+    (apply #'all-the-icons-faicon icon-name args)))
 
-(defun doom-modeline-icon-fileicon (&rest args)
-  "Display fileicon via ARGS."
+(defun doom-modeline-icon-material (icon-name &rest args)
+  "Display material icon with ARGS."
   (when doom-modeline-icon
-    (apply #'all-the-icons-fileicon args)))
+    (apply #'all-the-icons-material icon-name args)))
+
+(defun doom-modeline-icon-alltheicon (icon-name &rest args)
+  "Display alltheicon with ARGS."
+  (when doom-modeline-icon
+    (apply #'all-the-icons-alltheicon icon-name args)))
+
+(defun doom-modeline-icon-fileicon (icon-name &rest args)
+  "Display fileicon with ARGS."
+  (when doom-modeline-icon
+    (apply #'all-the-icons-fileicon icon-name args)))
 
 (defun doom-modeline-icon-for-mode (&rest args)
-  "Display icon for major mode via ARGS."
+  "Display icon for major mode with ARGS."
   (when doom-modeline-icon
     (apply #'all-the-icons-icon-for-mode args)))
 
 (defun doom-modeline-icon-for-file (&rest args)
-  "Display icon for major mode via ARGS."
+  "Display icon for major mode with ARGS."
   (when doom-modeline-icon
     (apply #'all-the-icons-icon-for-file args)))
 
@@ -740,7 +811,7 @@ Specify another one if you encounter the issue."
                                      if (= d 0) collect (string-to-char " ")
                                      else collect (string-to-char "."))
                             (if (eq idx len) "\"};" "\",\n")))))
-          'xpm t :ascent 'center))))))
+  'xpm t :ascent 'center))))))
 
 ;; Fix: invalid-regexp "Trailing backslash" while handling $HOME on Windows
 (defun doom-modeline-shrink-path--dirs-internal (full-path &optional truncate-all)

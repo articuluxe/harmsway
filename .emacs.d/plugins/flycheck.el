@@ -277,7 +277,8 @@ attention to case differences."
     xml-xmlstarlet
     xml-xmllint
     yaml-jsyaml
-    yaml-ruby)
+    yaml-ruby
+    yaml-yamllint)
   "Syntax checkers available for automatic selection.
 
 A list of Flycheck syntax checkers to choose from when syntax
@@ -4137,7 +4138,7 @@ overlays."
     (with-current-buffer buf
       (-when-let* ((fn flycheck-help-echo-function)
                    (errs (flycheck-overlay-errors-at pos)))
-        (funcall fn errs)))))
+        (propertize (funcall fn errs) 'help-echo-inhibit-substitution t)))))
 
 (defun flycheck-help-echo-all-error-messages (errs)
   "Concatenate error messages and ids from ERRS."
@@ -4385,7 +4386,7 @@ message to stretch arbitrarily far."
 
 (defun flycheck-error-list-update-source ()
   "Update the source buffer of the error list."
-  (when (not (eq (current-buffer) (get-buffer flycheck-error-list-buffer)))
+  (unless (eq (current-buffer) (get-buffer flycheck-error-list-buffer))
     ;; We must not update the source buffer, if the current buffer is the error
     ;; list itself.
     (flycheck-error-list-set-source (current-buffer))))
@@ -4849,6 +4850,10 @@ The echo area may be used if the cursor is not in the echo area,
 and if the echo area is not occupied by minibuffer input."
   (not (or cursor-in-echo-area (active-minibuffer-window))))
 
+(define-derived-mode flycheck-error-message-mode text-mode
+  "Flycheck error messages"
+  "Major mode for extended error messages.")
+
 (defun flycheck-display-error-messages (errors)
   "Display the messages of ERRORS.
 
@@ -4862,9 +4867,13 @@ In the latter case, show messages in the buffer denoted by
 variable `flycheck-error-message-buffer'."
   (when (and errors (flycheck-may-use-echo-area-p))
     (let ((messages (seq-map #'flycheck-error-format-message-and-id errors)))
-      (display-message-or-buffer (string-join messages "\n\n")
-                                 flycheck-error-message-buffer
-                                 'not-this-window))))
+      (let ((result (display-message-or-buffer (string-join messages "\n\n")
+                                               flycheck-error-message-buffer
+                                               'not-this-window)))
+        (when (window-live-p result)
+          (with-current-buffer (window-buffer result)
+            (unless (derived-mode-p 'flycheck-error-message-mode)
+              (flycheck-error-message-mode))))))))
 
 (defun flycheck-display-error-messages-unless-error-list (errors)
   "Show messages of ERRORS unless the error list is visible.
@@ -7645,6 +7654,24 @@ This variable has no effect, if
         (defvar flycheck-emacs-lisp-check-declare)
         (setq flycheck-emacs-lisp-check-declare ,value)))))
 
+(defun flycheck--emacs-lisp-enabled-p ()
+  "Check whether to enable Emacs Lisp checkers in the current buffer."
+  (not
+   (or
+    ;; Do not check buffers used for autoloads generation during package
+    ;; installation.  These buffers are too short-lived for being checked, and
+    ;; doing so causes spurious errors.  See
+    ;; https://github.com/flycheck/flycheck/issues/45 and
+    ;; https://github.com/bbatsov/prelude/issues/248.  We must also not check
+    ;; compilation buffers, but as these are ephemeral, Flycheck won't check
+    ;; them anyway.
+    (flycheck-autoloads-file-p)
+    ;; Cask/Carton and dir-locals files contain data, not code, and don't need
+    ;; to follow Checkdoc conventions either.
+    (and (buffer-file-name)
+         (member (file-name-nondirectory (buffer-file-name))
+                 '("Cask" "Carton" ".dir-locals.el" ".dir-locals-2.el"))))))
+
 (flycheck-define-checker emacs-lisp
   "An Emacs Lisp syntax checker using the Emacs Lisp Byte compiler.
 
@@ -7689,6 +7716,7 @@ See Info Node `(elisp)Byte Compilation'."
      (flycheck-collapse-error-message-whitespace
       (flycheck-sanitize-errors errors))))
   :modes (emacs-lisp-mode lisp-interaction-mode)
+  :enabled flycheck--emacs-lisp-enabled-p
   :predicate
   (lambda ()
     (and
@@ -7702,15 +7730,7 @@ See Info Node `(elisp)Byte Compilation'."
      (buffer-file-name)
      ;; Do not check buffers which should not be byte-compiled.  The checker
      ;; process will refuse to compile these, which would confuse Flycheck
-     (not (bound-and-true-p no-byte-compile))
-     ;; Do not check buffers used for autoloads generation during package
-     ;; installation.  These buffers are too short-lived for being checked, and
-     ;; doing so causes spurious errors.  See
-     ;; https://github.com/flycheck/flycheck/issues/45 and
-     ;; https://github.com/bbatsov/prelude/issues/248.  We must also not check
-     ;; compilation buffers, but as these are ephemeral, Flycheck won't check
-     ;; them anyway.
-     (not (flycheck-autoloads-file-p))))
+     (not (bound-and-true-p no-byte-compile))))
   :next-checkers (emacs-lisp-checkdoc))
 
 (defconst flycheck-emacs-lisp-checkdoc-form
@@ -7777,14 +7797,7 @@ The checker runs `checkdoc-current-buffer'."
   :error-patterns
   ((warning line-start (file-name) ":" line ": " (message) line-end))
   :modes (emacs-lisp-mode)
-  :predicate
-  (lambda ()
-    ;; Do not check Autoloads, Cask/Carton and dir-locals files.  These files
-    ;; really don't need to follow Checkdoc conventions.
-    (not (or (flycheck-autoloads-file-p)
-             (and (buffer-file-name)
-                  (member (file-name-nondirectory (buffer-file-name))
-                          '("Cask" "Carton" ".dir-locals.el")))))))
+  :enabled flycheck--emacs-lisp-enabled-p)
 
 (dolist (checker '(emacs-lisp emacs-lisp-checkdoc))
   (setf (car (flycheck-checker-get checker 'command))
@@ -11233,6 +11246,22 @@ See URL `http://www.ruby-doc.org/stdlib-2.0.0/libdoc/yaml/rdoc/YAML.html'."
           "at line " line " column " column line-end))
   :modes yaml-mode
   :next-checkers ((warning . cwl)))
+
+(flycheck-def-config-file-var flycheck-yamllintrc yaml-yamllint ".yamllint"
+  :safe #'stringp)
+
+(flycheck-define-checker yaml-yamllint
+  "A YAML syntax checker using YAMLLint.
+See URL `https://github.com/adrienverge/yamllint'."
+  :standard-input t
+  :command ("yamllint" "-f" "parsable" "-"
+            (config-file "-c" flycheck-yamllintrc))
+  :error-patterns
+  ((error line-start
+          (file-name) ":" line ":" column ": [error] " (message) line-end)
+   (warning line-start
+            (file-name) ":" line ":" column ": [warning] " (message) line-end))
+  :modes yaml-mode)
 
 (provide 'flycheck)
 

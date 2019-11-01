@@ -42,7 +42,6 @@
 ;;; Require
 (require 'cl-lib)
 (require 'color)
-(require 'which-func)
 (require 'powerline)
 
 ;; Compiler pacifier
@@ -128,6 +127,31 @@
     (define-key map (vector 'header-line 'mouse-2) 'centaur-tabs-do-close)
     map)
   "Keymap used for setting mouse events for close button.")
+
+
+(defvar centaur-tabs-backward-tab-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (vector 'header-line 'mouse-1) 'centaur-tabs-backward--button)
+    (define-key map (vector 'header-line 'mouse-3) 'centaur-tabs--groups-menu)
+    map)
+  "Keymap used for setting mouse events for backward tab button.")
+
+(defvar centaur-tabs-forward-tab-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (vector 'header-line 'mouse-1) 'centaur-tabs-forward--button)
+    (define-key map (vector 'header-line 'mouse-3) 'centaur-tabs--groups-menu)
+    map)
+  "Keymap used for setting mouse events for forward tab button.")
+
+(defvar centaur-tabs-down-tab-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (vector 'header-line 'mouse-1) 'centaur-tabs--groups-menu)
+    (define-key map (vector 'header-line 'mouse-3) 'centaur-tabs--groups-menu)
+    map)
+  "Keymap used for setting mouse events for down tab button.")
+
+
+
 
 (defvar centaur-tabs-default-map
   (let ((map (make-sparse-keymap)))
@@ -267,7 +291,7 @@ Default is 'hand.  The following scopes are possible:
 
 (defvar centaur-tabs-hide-tab-function 'centaur-tabs-hide-tab
   "Function to hide tab.
-This function filters tabs.  The tab will hide if this function returns nil.")
+This function filters tabs.  The tab will hide if this function returns t.")
 
 (defvar centaur-tabs-current-tabset-function nil
   "Function called with no argument to obtain the current tab set.
@@ -313,6 +337,26 @@ tab(B), move A to the right of B. When the currently selected tab(A) is at the l
 tab(B), move A to the left of B" t)
 		 (const :tag "Move the currently selected tab to the left of the the last visited tab." left)
 		 (const :tag "Move the currently selected tab to the right of the the last visited tab." right)))
+
+(defcustom centaur-tabs-show-navigation-buttons nil
+  "When non-nil, show the buttons for backward/forward tabs."
+  :group 'centaur-tabs
+  :type 'boolean)
+
+(defcustom centaur-tabs-down-tab-text " ▾ "
+  "Text icon to show in the down button tab."
+  :group 'centaur-tabs
+  :type 'string)
+
+(defcustom centaur-tabs-backward-tab-text " ⏴ "
+  "Text icon to show in the backward button tab."
+  :group 'centaur-tabs
+  :type 'string)
+
+(defcustom centaur-tabs-forward-tab-text " ⏵ "
+  "Text icon to show in the forward button tab."
+  :group 'centaur-tabs
+  :type 'string)
 
 
 (defvar centaur-tabs--buffer-show-groups nil)
@@ -801,6 +845,19 @@ Call `centaur-tabs-tab-label-function' to obtain a label for TAB."
       'local-map centaur-tabs-default-map)
      (centaur-tabs-separator-render centaur-tabs-style-right face))))
 
+(defsubst centaur-tabs-button-tab (button)
+  "Return the display representation of button BUTTON.
+That is, a propertized string used as an `header-line-format' template
+element."
+  (let* ((face 'centaur-tabs-unselected))
+    (concat
+     (centaur-tabs-separator-render centaur-tabs-style-left face)
+     (propertize
+      button
+      'face face
+      'mouse-face 'highlight)
+     (centaur-tabs-separator-render centaur-tabs-style-right face))))
+
 (defun centaur-tabs-line-format (tabset)
   "Return the `header-line-format' value to display TABSET."
   (let* ((sel (centaur-tabs-selected-tab tabset))
@@ -846,15 +903,33 @@ Call `centaur-tabs-tab-label-function' to obtain a label for TAB."
     ;; Cache and return the new tab bar.
     (centaur-tabs-set-template
      tabset
-     (list (nreverse elts)
-	   (propertize "% "
-		       'face (list :background padcolor)
-		       'pointer 'arrow)))
+     (list
+      (centaur-tabs-line-format--buttons)
+      (nreverse elts)
+      (propertize "% "
+                  'face (list :background padcolor)
+                  'pointer 'arrow)))
     ))
+
+(defun centaur-tabs-line-format--buttons ()
+  "Return the buttons fragment of the header line."
+  (if centaur-tabs-show-navigation-buttons
+      (concat
+       (propertize (centaur-tabs-button-tab centaur-tabs-down-tab-text)
+                   'local-map centaur-tabs-down-tab-map
+                   'help-echo "Change tab group")
+       (propertize (centaur-tabs-button-tab centaur-tabs-backward-tab-text)
+                   'local-map centaur-tabs-backward-tab-map
+                   'help-echo "Previous tab")
+       (propertize (centaur-tabs-button-tab centaur-tabs-forward-tab-text)
+                   'local-map centaur-tabs-forward-tab-map
+                   'help-echo "Next tab"))
+    ""))
 
 (defun centaur-tabs-line ()
   "Return the header line templates that represent the tab bar.
-Inhibit display of the tab bar in current window `centaur-tabs-hide-tab-function' return nil."
+Inhibit display of the tab bar in current window where
+`centaur-tabs-hide-tab-function' return t."
   (cond
    ((centaur-tabs-hide-tab-cached (current-buffer))
     ;; Don't show the tab bar.
@@ -984,6 +1059,20 @@ Depend on the setting of the option `centaur-tabs-cycle-scope'."
   (interactive)
   (let ((centaur-tabs-cycle-scope 'tabs))
     (centaur-tabs-cycle)))
+
+(defun centaur-tabs-backward--button (event)
+  "Same as centaur-tabs-backward, but changing window to EVENT source."
+  (interactive "e")
+  (select-window (posn-window (event-start event)))
+  (centaur-tabs-backward))
+
+
+(defun centaur-tabs-forward--button (event)
+  "Same as centaur-tabs-forward, but changing window to EVENT source."
+  (interactive "e")
+  (select-window (posn-window (event-start event)))
+  (centaur-tabs-forward))
+
 
 ;;; Minor modes
 ;;
@@ -1955,7 +2044,7 @@ not the actual logical index position of the current group."
 	 (key (make-vector 1 event))
 	 (key-desc (key-description key)))
     (centaur-tabs-select-visible-nth-tab
-     (string-to-number (nth 1 (split-string key-desc "-"))))))
+     (string-to-number (car (last (split-string key-desc "-")))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;; Utils functions ;;;;;;;;;;;;;;;;;;;;;;;
 (defun centaur-tabs-get-groups ()

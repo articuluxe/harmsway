@@ -1,4 +1,4 @@
-;;; lsp.el --- LSP mode                              -*- lexical-binding: t; -*-
+;;; lsp-clients.el --- lightweight clients                       -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2018 Ivan Yonchovski
 
@@ -43,6 +43,8 @@
 (require 'lsp-erlang)
 (require 'lsp-haxe)
 (require 'lsp-vhdl)
+(require 'lsp-yaml)
+(require 'lsp-terraform)
 
 ;;; Ada
 (defgroup lsp-ada nil
@@ -143,7 +145,8 @@ finding the executable with variable `exec-path'."
 
 (defun lsp-typescript-javascript-tsx-jsx-activate-p (filename &optional _)
   "Check if the javascript-typescript language server should be enabled based on FILENAME."
-  (string-match-p (rx (one-or-more anything) "." (or "ts" "js") (opt "x") string-end) filename))
+  (or (string-match-p (rx (one-or-more anything) "." (or "ts" "js") (opt "x") string-end) filename)
+      (derived-mode-p 'js-mode 'js2-mode 'typescript-mode)))
 
 (lsp-register-client
  (make-lsp-client :new-connection (lsp-stdio-connection (lambda ()
@@ -203,6 +206,7 @@ directory containing the package. Example:
                                                                 lsp-clients-typescript-server-args)))
                   :activation-fn 'lsp-typescript-javascript-tsx-jsx-activate-p
                   :priority -2
+                  :completion-in-comments? t
                   :initialization-options (lambda ()
                                             (list :plugins lsp-clients-typescript-plugins
                                                   :logVerbosity lsp-clients-typescript-log-verbosity))
@@ -300,11 +304,26 @@ particular FILE-NAME and MODE."
   `("php" ,(expand-file-name "~/.composer/vendor/felixfbecker/language-server/bin/php-language-server.php"))
   "Install directory for php-language-server."
   :group 'lsp-php
-  :type 'file)
+  :type '(repeat string))
+
+(defun lsp-php--create-connection ()
+  "Create lsp connection."
+  (plist-put
+   (lsp-stdio-connection
+    (lambda () lsp-clients-php-server-command))
+   :test? (lambda ()
+            (if (and (cdr lsp-clients-php-server-command)
+                     (eq (string-match-p "php[0-9.]*\\'" (car lsp-clients-php-server-command)) 0))
+                ;; Start with the php command and the list has more elems. Test the existence of the PHP script.
+                (let ((php-file (nth 1 lsp-clients-php-server-command)))
+                  (or (file-exists-p php-file)
+                      (progn
+                        (lsp-log "%s is not present." php-file)
+                        nil)))
+              t))))
 
 (lsp-register-client
- (make-lsp-client :new-connection (lsp-stdio-connection
-                                   (lambda () lsp-clients-php-server-command))
+ (make-lsp-client :new-connection (lsp-php--create-connection)
                   :major-modes '(php-mode)
                   :priority -2
                   :server-id 'php-ls))
@@ -478,7 +497,7 @@ finding the executable with `exec-path'."
   :group 'lsp-kotlin
   :package-version '(lsp-mode . "6.1"))
 
-(defcustom lsp-kotlin-compiler-jvm-target "default"
+(defcustom lsp-kotlin-compiler-jvm-target "1.8"
   "Specifies the JVM target, e.g. \"1.6\" or \"1.8\""
   :type 'string
   :group 'lsp-kotlin
@@ -647,13 +666,44 @@ responsiveness at the cost of possibile stability issues."
                   :server-id 'digestif))
 
 
+;; Vim script
+(defgroup lsp-vim nil
+  "LSP support for TeX and friends, using Digestif."
+  :group 'lsp-mode)
+
+(defcustom lsp-clients-vim-executable '("vim-language-server" "--stdio")
+  "Command to start the Digestif language server."
+  :group 'lsp-vim
+  :risky t
+  :type 'file)
+
+(defcustom lsp-clients-vim-initialization-options '((iskeyword . "vim iskeyword option")
+                                                    (vimruntime . "/usr/bin/vim")
+                                                    (runtimepath . "/usr/bin/vim")
+                                                    (diagnostic . ((enable . t)))
+                                                    (indexes . ((runtimepath . t)
+                                                                (gap . 100)
+                                                                (count . 3)))
+                                                    (suggest . ((fromVimruntime . t)
+                                                                (fromRuntimepath . :json-false))))
+  "Initialization options for vim language server."
+  :group 'lsp-vim
+  :type 'alist)
+
+(lsp-register-client
+ (make-lsp-client :new-connection (lsp-stdio-connection lsp-clients-vim-executable)
+                  :major-modes '(vimrc-mode)
+                  :priority -1
+                  :server-id 'vimls
+                  :initialization-options (lambda ()
+                                            lsp-clients-vim-initialization-options)))
+
+
 ;; LUA
 (defgroup lsp-emmy-lua nil
   "LSP support for emmy-lua."
   :group 'lsp-mode
   :link '(url-link "https://github.com/EmmyLua/EmmyLua-LanguageServer"))
-
-
 
 (defcustom lsp-clients-emmy-lua-java-path "java"
   "Path to java which will be used for running emmy-lua language server."

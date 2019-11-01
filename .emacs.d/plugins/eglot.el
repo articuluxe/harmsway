@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2018 Free Software Foundation, Inc.
 
-;; Version: 1.4
+;; Version: 1.5
 ;; Author: João Távora <joaotavora@gmail.com>
 ;; Maintainer: João Távora <joaotavora@gmail.com>
 ;; URL: https://github.com/joaotavora/eglot
@@ -218,6 +218,7 @@ let the buffer grow forever."
   (defvar eglot--lsp-interface-alist
     `(
       (CodeAction (:title) (:kind :diagnostics :edit :command))
+      (ConfigurationItem () (:scopeUri :section))
       (Command (:title :command) (:arguments))
       (CompletionItem (:label)
                       (:kind :detail :documentation :deprecated :preselect
@@ -474,7 +475,8 @@ treated as in `eglot-dbind'."
                         :executeCommand `(:dynamicRegistration :json-false)
                         :workspaceEdit `(:documentChanges :json-false)
                         :didChangeWatchedFiles `(:dynamicRegistration t)
-                        :symbol `(:dynamicRegistration :json-false))
+                        :symbol `(:dynamicRegistration :json-false)
+                        :configuration t)
             :textDocument
             (list
              :synchronization (list
@@ -487,7 +489,8 @@ treated as in `eglot-dbind'."
                                            t
                                          :json-false))
                                     :contextSupport t)
-             :hover              `(:dynamicRegistration :json-false)
+             :hover              (list :dynamicRegistration :json-false
+                                       :contentFormat ["markdown" "plaintext"])
              :signatureHelp      (list :dynamicRegistration :json-false
                                        :signatureInformation
                                        `(:parameterInformation
@@ -1078,10 +1081,14 @@ Doubles as an indicator of snippet support."
                (if (stringp markup) (list (string-trim markup)
                                           (intern "gfm-view-mode"))
                  (list (plist-get markup :value)
-                       major-mode))))
+                       (pcase (plist-get markup :kind)
+                         ("markdown" 'gfm-view-mode)
+                         (_ major-mode))))))
     (with-temp-buffer
       (insert string)
-      (ignore-errors (funcall mode)) (font-lock-ensure) (buffer-string))))
+      (ignore-errors (delay-mode-hooks (funcall mode)))
+      (font-lock-ensure)
+      (buffer-string))))
 
 (defcustom eglot-ignored-server-capabilites (list)
   "LSP server capabilities that Eglot could use, but won't.
@@ -1172,8 +1179,33 @@ and just return it.  PROMPT shouldn't end with a question mark."
 (defvar-local eglot--saved-bindings nil
   "Bindings saved by `eglot--setq-saving'.")
 
+(defvar eglot-stay-out-of '()
+  "List of Emacs things that Eglot should try to stay of.
+Before Eglot starts \"managing\" a particular buffer, it
+opinionatedly sets some peripheral Emacs facilites, such as
+Flymake, Xref and Company.  These overriding settings help ensure
+consistent Eglot behaviour and only stay in place until
+\"managing\" stops (usually via `eglot-shutdown'), whereupon the
+previous settings are restored.
+
+However, if you wish for Eglot to stay out of a particular Emacs
+facility that you'd like to keep control of, add a string, a
+symbol, or a regexp here that will be matched against the
+variable's name, and Eglot will refrain from setting it.
+
+For example, to keep your Company customization use
+
+(add-to-list 'eglot-stay-out-of 'company)")
+
 (defmacro eglot--setq-saving (symbol binding)
-  `(when (boundp ',symbol)
+  `(when (and (boundp ',symbol)
+              (not (cl-find (symbol-name ',symbol)
+                            eglot-stay-out-of
+                            :test
+                            (lambda (s thing)
+                              (let ((re (if (symbolp thing) (symbol-name thing)
+                                          thing)))
+                                (string-match re s))))))
      (push (cons ',symbol (symbol-value ',symbol))
            eglot--saved-bindings)
      (setq-local ,symbol ,binding)))
@@ -1189,6 +1221,7 @@ and just return it.  PROMPT shouldn't end with a question mark."
     ;; Prepend "didClose" to the hook after the "onoff", so it will run first
     (add-hook 'kill-buffer-hook 'eglot--signal-textDocument/didClose nil t)
     (add-hook 'before-revert-hook 'eglot--signal-textDocument/didClose nil t)
+    (add-hook 'after-revert-hook 'eglot--after-revert-hook nil t)
     (add-hook 'before-save-hook 'eglot--signal-textDocument/willSave nil t)
     (add-hook 'after-save-hook 'eglot--signal-textDocument/didSave nil t)
     (add-hook 'xref-backend-functions 'eglot-xref-backend nil t)
@@ -1200,15 +1233,16 @@ and just return it.  PROMPT shouldn't end with a question mark."
     (eglot--setq-saving xref-prompt-for-identifier nil)
     (eglot--setq-saving flymake-diagnostic-functions '(eglot-flymake-backend t))
     (eglot--setq-saving company-backends '(company-capf))
-    (add-function :around (local 'imenu-create-index-function) #'eglot-imenu)
+    (eglot--setq-saving company-tooltip-align-annotations t)
+    (eglot--setq-saving imenu-create-index-function #'eglot-imenu)
     (flymake-mode 1)
     (eldoc-mode 1))
    (t
-    (remove-hook 'flymake-diagnostic-functions 'eglot-flymake-backend t)
     (remove-hook 'after-change-functions 'eglot--after-change t)
     (remove-hook 'before-change-functions 'eglot--before-change t)
     (remove-hook 'kill-buffer-hook 'eglot--signal-textDocument/didClose t)
     (remove-hook 'before-revert-hook 'eglot--signal-textDocument/didClose t)
+    (remove-hook 'after-revert-hook 'eglot--after-revert-hook t)
     (remove-hook 'before-save-hook 'eglot--signal-textDocument/willSave t)
     (remove-hook 'after-save-hook 'eglot--signal-textDocument/didSave t)
     (remove-hook 'xref-backend-functions 'eglot-xref-backend t)
@@ -1262,6 +1296,11 @@ Reset in `eglot--managed-mode-onoff'.")
 (defvar-local eglot--unreported-diagnostics nil
   "Unreported Flymake diagnostics for this buffer.")
 
+(defvar revert-buffer-preserve-modes)
+(defun eglot--after-revert-hook ()
+  "Eglot's `after-revert-hook'."
+  (when revert-buffer-preserve-modes (eglot--signal-textDocument/didOpen)))
+
 (defun eglot--maybe-activate-editing-mode (&optional server)
   "Maybe activate mode function `eglot--managed-mode'.
 If SERVER is supplied, do it only if BUFFER is managed by it.  In
@@ -1273,7 +1312,8 @@ that case, also signal textDocument/didOpen."
          :eglot "`eglot--cached-current-server' is non-nil, but it shouldn't be!\n\
 Please report this as a possible bug.")
         (setq eglot--cached-current-server nil)))
-    ;; Called even when revert-buffer-in-progress-p
+    ;; Called when `revert-buffer-in-progress-p' is t but
+    ;; `revert-buffer-preserve-modes' is nil.
     (let* ((cur (and buffer-file-name (eglot--current-server)))
            (server (or (and (null server) cur) (and server (eq server cur) cur))))
       (when server
@@ -1622,9 +1662,9 @@ Records BEG, END and PRE-CHANGE-LENGTH locally."
             '((name . eglot--signal-textDocument/didChange)))
 
 (defvar-local eglot-workspace-configuration ()
-  "Alist of (SETTING . VALUE) entries configuring the LSP server.
-Setting should be a keyword, value can be any value that can be
-converted to JSON.")
+  "Alist of (SECTION . VALUE) entries configuring the LSP server.
+SECTION should be a keyword or a string, value can be anything
+that can be converted to JSON.")
 
 (put 'eglot-workspace-configuration 'safe-local-variable 'listp)
 
@@ -1636,11 +1676,33 @@ When called interactively, use the currently active server"
    server :workspace/didChangeConfiguration
    (list
     :settings
-    (cl-loop for (k . v) in eglot-workspace-configuration
-             collect (if (keywordp k)
-                         k
-                       (intern (format ":%s" k)))
+    (cl-loop for (section . v) in eglot-workspace-configuration
+             collect (if (keywordp section)
+                         section
+                       (intern (format ":%s" section)))
              collect v))))
+
+(cl-defmethod eglot-handle-request
+  (server (_method (eql workspace/configuration)) &key items)
+  "Handle server request workspace/configuration."
+  (apply #'vector
+         (mapcar
+          (eglot--lambda ((ConfigurationItem) scopeUri section)
+            (let* ((path (eglot--uri-to-path scopeUri)))
+              (when (file-directory-p path)
+                (with-temp-buffer
+                  (let ((default-directory path))
+                    (setq-local major-mode (eglot--major-mode server))
+                    (hack-dir-local-variables-non-file-buffer)
+                    (alist-get section eglot-workspace-configuration
+                               nil nil
+                               (lambda (wsection section)
+                                 (string=
+                                  (if (keywordp wsection)
+                                      (substring (symbol-name wsection) 1)
+                                    wsection)
+                                  section))))))))
+          items)))
 
 (defun eglot--signal-textDocument/didChange ()
   "Send textDocument/didChange to server."
@@ -1889,46 +1951,60 @@ is not active."
                                         (or (get-text-property 0 :sortText a) "")
                                         (or (get-text-property 0 :sortText b) ""))))))
            (metadata `(metadata . ((display-sort-function . ,sort-completions))))
-           (response (jsonrpc-request server
-                                      :textDocument/completion
-                                      (eglot--CompletionParams)
-                                      :deferred :textDocument/completion
-                                      :cancel-on-input t))
-           (items (append ; coerce to list
-                   (if (vectorp response) response (plist-get response :items))
-                   nil))
+           resp items (cached-proxies :none)
            (proxies
-            (mapcar (jsonrpc-lambda
-                        (&rest item &key label insertText insertTextFormat
-                               &allow-other-keys)
-                      (let ((proxy
-                             (cond ((and (eql insertTextFormat 2)
-                                         (eglot--snippet-expansion-fn))
-                                    (string-trim-left label))
-                                   (t
-                                    (or insertText (string-trim-left label))))))
-                        (put-text-property 0 1 'eglot--lsp-item item proxy)
-                        proxy))
-                    items))
-           (bounds
-            (cl-loop with probe =
-                     (plist-get (plist-get (car items) :textEdit) :range)
-                     for item in (cdr items)
-                     for range = (plist-get (plist-get item :textEdit) :range)
-                     unless (and range (equal range probe))
-                     return (bounds-of-thing-at-point 'symbol)
-                     finally (cl-return (or (and probe
-                                                 (eglot--range-region probe))
-                                            (bounds-of-thing-at-point 'symbol))))))
+            (lambda ()
+              (if (listp cached-proxies) cached-proxies
+                (setq resp
+                      (jsonrpc-request server
+                                       :textDocument/completion
+                                       (eglot--CompletionParams)
+                                       :deferred :textDocument/completion
+                                       :cancel-on-input t))
+                (setq items (append
+                             (if (vectorp resp) resp (plist-get resp :items))
+                             nil))
+                (setq cached-proxies
+                      (mapcar
+                       (jsonrpc-lambda
+                           (&rest item &key label insertText insertTextFormat
+                                  &allow-other-keys)
+                         (let ((proxy
+                                (cond ((and (eql insertTextFormat 2)
+                                            (eglot--snippet-expansion-fn))
+                                       (string-trim-left label))
+                                      (t
+                                       (or insertText (string-trim-left label))))))
+                           (unless (zerop (length item))
+                             (put-text-property 0 1 'eglot--lsp-item item proxy))
+                           proxy))
+                       items)))))
+           resolved
+           (resolve-maybe
+            ;; Maybe completion/resolve JSON object `lsp-comp' into
+            ;; another JSON object, if at all possible.  Otherwise,
+            ;; just return lsp-comp.
+            (lambda (lsp-comp)
+              (cond (resolved resolved)
+                    ((and (eglot--server-capable :completionProvider
+                                                 :resolveProvider)
+                          (plist-get lsp-comp :data))
+                     (setq resolved
+                           (jsonrpc-request server :completionItem/resolve
+                                            lsp-comp :cancel-on-input t)))
+                    (t lsp-comp))))
+           (bounds (bounds-of-thing-at-point 'symbol)))
       (list
        (or (car bounds) (point))
        (or (cdr bounds) (point))
        (lambda (probe pred action)
          (cond
           ((eq action 'metadata) metadata)               ; metadata
-          ((eq action 'lambda) (member probe proxies))   ; test-completion
+          ((eq action 'lambda)                           ; test-completion
+           (member probe (funcall proxies)))
           ((eq (car-safe action) 'boundaries) nil)       ; boundaries
-          ((and (null action) (member probe proxies) t)) ; try-completion
+          ((and (null action)                            ; try-completion
+                (member probe (funcall proxies)) t))
           ((eq action t)                                 ; all-completions
            (cl-remove-if-not
             (lambda (proxy)
@@ -1937,7 +2013,7 @@ is not active."
                 (and (or (null pred) (funcall pred proxy))
                      (string-prefix-p
                       probe (or filterText proxy) completion-ignore-case))))
-            proxies))))
+            (funcall proxies)))))
        :annotation-function
        (lambda (proxy)
          (eglot--dbind ((CompletionItem) detail kind insertTextFormat)
@@ -1959,13 +2035,7 @@ is not active."
        (lambda (proxy)
          (let* ((documentation
                  (let ((lsp-comp (get-text-property 0 'eglot--lsp-item proxy)))
-                   (or (plist-get lsp-comp :documentation)
-                       (and (eglot--server-capable :completionProvider
-                                                   :resolveProvider)
-                            (plist-get
-                             (jsonrpc-request server :completionItem/resolve
-                                              lsp-comp :cancel-on-input t)
-                             :documentation)))))
+                   (plist-get (funcall resolve-maybe lsp-comp) :documentation)))
                 (formatted (and documentation
                                 (eglot--format-markup documentation))))
            (when formatted
@@ -1973,6 +2043,7 @@ is not active."
                (erase-buffer)
                (insert formatted)
                (current-buffer)))))
+       :company-require-match 'never
        :company-prefix-length
        (save-excursion
          (when (car bounds) (goto-char (car bounds)))
@@ -1987,12 +2058,15 @@ is not active."
                         insertText
                         textEdit
                         additionalTextEdits)
-             (or (get-text-property 0 'eglot--lsp-item proxy)
-                 ;; When selecting from the *Completions*
-                 ;; buffer, `proxy' won't have any properties.  A
-                 ;; lookup should fix that (github#148)
-                 (get-text-property
-                  0 'eglot--lsp-item (cl-find proxy proxies :test #'string=)))
+             (funcall
+              resolve-maybe
+              (or (get-text-property 0 'eglot--lsp-item proxy)
+                        ;; When selecting from the *Completions*
+                        ;; buffer, `proxy' won't have any properties.
+                        ;; A lookup should fix that (github#148)
+                        (get-text-property
+                         0 'eglot--lsp-item
+                         (cl-find proxy (funcall proxies) :test #'string=))))
            (let ((snippet-fn (and (eql insertTextFormat 2)
                                   (eglot--snippet-expansion-fn))))
              (cond (textEdit
@@ -2217,10 +2291,11 @@ If SKIP-SIGNATURE, don't try to send textDocument/signatureHelp."
          :deferred :textDocument/documentHighlight))))
   eldoc-last-message)
 
-(defun eglot-imenu (oldfun)
-  "EGLOT's `imenu-create-index-function' overriding OLDFUN."
-  (if (eglot--server-capable :documentSymbolProvider)
-      (let ((entries
+(defun eglot-imenu ()
+  "EGLOT's `imenu-create-index-function'."
+  (unless (eglot--server-capable :documentSymbolProvider)
+    (eglot--error "Server isn't a :documentSymbolProvider"))
+  (let ((entries
              (mapcar
               (eglot--lambda
                   ((SymbolInformation) name kind location containerName)
@@ -2248,7 +2323,7 @@ If SKIP-SIGNATURE, don't try to send textDocument/signatureHelp."
                                           elems)))))
          (seq-group-by (lambda (e) (get-text-property 0 :kind (car e)))
                        entries)))
-    (funcall oldfun)))
+  )
 
 (defun eglot--apply-text-edits (edits &optional version)
   "Apply EDITS for current buffer if at VERSION, or if it's nil."
@@ -2282,7 +2357,9 @@ If SKIP-SIGNATURE, don't try to send textDocument/signatureHelp."
                           ;; https://debbugs.gnu.org/cgi/bugreport.cgi?bug=32237
                           ;; https://debbugs.gnu.org/cgi/bugreport.cgi?bug=32278
                           (let ((inhibit-modification-hooks t)
-                                (length (- end beg)))
+                                (length (- end beg))
+                                (beg (marker-position beg))
+                                (end (marker-position end)))
                             (run-hook-with-args 'before-change-functions
                                                 beg end)
                             (replace-buffer-contents temp)
@@ -2472,19 +2549,6 @@ If SKIP-SIGNATURE, don't try to send textDocument/signatureHelp."
    &key id done title message &allow-other-keys)
   "Handle notification window/progress"
   (setf (eglot--spinner server) (list id title done message)))
-
-
-;;; cquery-specific
-;;;
-(defclass eglot-cquery (eglot-lsp-server) ()
-  :documentation "Cquery's C/C++ langserver.")
-
-(cl-defmethod eglot-initialization-options ((server eglot-cquery))
-  "Passes through required cquery initialization options"
-  (let* ((root (car (project-roots (eglot--project server))))
-         (cache (expand-file-name ".cquery_cached_index/" root)))
-    (list :cacheDirectory (file-name-as-directory cache)
-          :progressReportFrequencyMs -1)))
 
 
 ;;; eclipse-jdt-specific

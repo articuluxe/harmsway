@@ -4,7 +4,7 @@
 
 ;; Author: Vincent Zhang <seagle0128@gmail.com>
 ;; Homepage: https://github.com/seagle0128/doom-modeline
-;; Version: 2.6.2
+;; Version: 2.7.0
 ;; Package-Requires: ((emacs "25.1") (all-the-icons "1.0.0") (shrink-path "0.2.0") (dash "2.11.0"))
 ;; Keywords: faces mode-line
 
@@ -47,9 +47,10 @@
 ;; - A window number segment for winum and window-numbering
 ;; - An indicator for modal editing state, including evil, overwrite, god, ryo
 ;;   and xah-fly-keys, etc.
-;; - An indicator for remote host
+;; - An indicator for battery status
 ;; - An indicator for current input method
 ;; - An indicator for debug state
+;; - An indicator for remote host
 ;; - An indicator for LSP state with lsp-mode or eglot
 ;; - An indicator for github notifications
 ;; - An indicator for unread emails with mu4e-alert
@@ -58,7 +59,6 @@
 ;; - An indicator for party parrot
 ;; - An indicator for PDF page number with pdf-tools
 ;; - An indicator for markdown/org preivews with grip
-;; - An indicator for battery status with fancy-battery
 ;; - Truncated file name, file icon, buffer state and project name in buffer
 ;;   information segment, which is compatible with project, find-file-in-project
 ;;   and projectile
@@ -90,7 +90,7 @@
 
 (doom-modeline-def-modeline 'main
   '(bar workspace-name window-number modals matches buffer-info remote-host buffer-position parrot selection-info)
-  '(objed-state misc-info persp-name fancy-battery grip irc mu4e github debug lsp minor-modes input-method indent-info buffer-encoding major-mode process vcs checker))
+  '(objed-state misc-info persp-name battery grip irc mu4e github debug lsp minor-modes input-method indent-info buffer-encoding major-mode process vcs checker))
 
 (doom-modeline-def-modeline 'minimal
   '(bar matches buffer-info-simple)
@@ -98,11 +98,11 @@
 
 (doom-modeline-def-modeline 'special
   '(bar window-number modals matches buffer-info buffer-position parrot selection-info)
-  '(objed-state misc-info fancy-battery irc-buffers debug lsp minor-modes input-method indent-info buffer-encoding major-mode process checker))
+  '(objed-state misc-info battery irc-buffers debug lsp minor-modes input-method indent-info buffer-encoding major-mode process checker))
 
 (doom-modeline-def-modeline 'project
   '(bar window-number buffer-default-directory)
-  '(misc-info fancy-battery mu4e github debug major-mode process))
+  '(misc-info battery mu4e github debug major-mode process))
 
 (doom-modeline-def-modeline 'package
   '(bar window-number package)
@@ -126,7 +126,7 @@
 
 (doom-modeline-def-modeline 'timemachine
   '(bar window-number matches git-timemachine buffer-position parrot selection-info)
-  '(misc-info fancy-battery mu4e github debug minor-modes indent-info buffer-encoding major-mode))
+  '(misc-info battery mu4e github debug minor-modes indent-info buffer-encoding major-mode))
 
 ;;
 ;; Interfaces
@@ -200,7 +200,9 @@ If DEFAULT is non-nil, set the default mode-line for all buffers."
 
 (defvar doom-modeline-mode-map (make-sparse-keymap))
 
-(declare-function helm-display-mode-line 'helm) ; suppress warnings
+ ;; suppress warnings
+(declare-function battery-update 'battery)
+(declare-function helm-display-mode-line 'helm)
 
 ;;;###autoload
 (define-minor-mode doom-modeline-mode
@@ -227,11 +229,14 @@ If DEFAULT is non-nil, set the default mode-line for all buffers."
         (add-hook 'pdf-view-mode-hook #'doom-modeline-set-pdf-modeline)
         (add-hook 'git-timemachine-mode-hook #'doom-modeline-set-timemachine-modeline)
         (add-hook 'paradox-menu-mode-hook #'doom-modeline-set-package-modeline)
-        ;; Add advice
+        ;; Add advices
         (advice-add #'helm-display-mode-line :override #'doom-modeline-set-helm-modeline))
     (progn
       ;; Restore mode-line
       (setq-default mode-line-format doom-modeline--old-format)
+      (dolist (bname '("*scratch*" "*Messages*"))
+        (with-current-buffer bname
+          (setq mode-line-format doom-modeline--old-format)))
       ;; Remove hooks
       (remove-hook 'Info-mode-hook #'doom-modeline-set-info-modeline)
       (remove-hook 'dired-mode-hook #'doom-modeline-set-project-modeline)

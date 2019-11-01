@@ -5,7 +5,7 @@
 ;; Author: Artem Malyshev <proofit404@gmail.com>
 ;; URL: https://github.com/proofit404/pythonic
 ;; Version: 0.1.1
-;; Package-Requires: ((emacs "25") (s "1.9") (f "0.17.2"))
+;; Package-Requires: ((emacs "25.1") (s "1.9") (f "0.17.2"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -236,7 +236,7 @@ print(json.dumps(yaml.safe_load(open(sys.argv[-1], 'r'))))
                              (assoc
                               (if pythonic-docker-compose-service-name
                                   pythonic-docker-compose-service-name
-                                (completing-read "Service: " (mapcar 'car volumes) nil t))
+                                (completing-read "Service: " (mapcar #'car volumes) nil t))
                               volumes)
                          (car volumes)))
                (service (car volume))
@@ -266,7 +266,7 @@ arguments passed to `call-process'. CWD will be working directory
 for running process."
   (let ((default-directory (pythonic-aliased-path (or cwd default-directory))))
     (python-shell-with-environment
-      (apply 'process-file pythonic-interpreter file buffer display args))))
+      (apply #'process-file pythonic-interpreter file buffer display args))))
 
 (cl-defun pythonic-start-process (&key process buffer args cwd filter sentinel (query-on-exit t))
   "Pythonic wrapper around `start-process'.
@@ -280,7 +280,7 @@ function if necessary.  QUERY-ON-EXIT will be corresponding
 process flag."
   (let ((default-directory (pythonic-aliased-path (or cwd default-directory))))
     (python-shell-with-environment
-      (let ((process (apply 'start-file-process process buffer pythonic-interpreter args)))
+      (let ((process (apply #'start-file-process process buffer pythonic-interpreter args)))
         (when filter
           (set-process-filter process filter))
         (when sentinel

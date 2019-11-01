@@ -302,6 +302,7 @@ If nil, never delay")
 (define-key vterm-mode-map (kbd "M-,")                 #'vterm-send-meta-comma)
 (define-key vterm-mode-map (kbd "C-c C-y")             #'vterm--self-insert)
 (define-key vterm-mode-map (kbd "C-c C-c")             #'vterm-send-ctrl-c)
+(define-key vterm-mode-map (kbd "C-c C-l")             #'vterm-clear-scrollback)
 (define-key vterm-mode-map [remap self-insert-command] #'vterm--self-insert)
 
 (define-key vterm-mode-map (kbd "C-c C-t")             #'vterm-copy-mode)
@@ -434,6 +435,11 @@ If nil, never delay")
   (interactive)
   (vterm-send-key "c" nil nil t))
 
+(defun vterm-clear-scrollback ()
+  "Sends `<clear-scrollback>' to the libvterm."
+  (interactive)
+  (vterm-send-key "<clear_scrollback>"))
+
 (defun vterm-undo ()
   "Sends `C-_' to the libvterm."
   (interactive)
@@ -492,13 +498,13 @@ Argument BUFFER the terminal buffer."
     (with-current-buffer buffer
       (let ((inhibit-redisplay t)
             (inhibit-read-only t))
+        (setq vterm--redraw-timer nil)
         (when vterm--term
           (when (and (require 'display-line-numbers nil 'noerror)
                      (get-buffer-window buffer t)
                      (ignore-errors (display-line-numbers-update-width)))
             (window--adjust-process-windows))
-          (vterm--redraw vterm--term)))
-      (setq vterm--redraw-timer nil))))
+          (vterm--redraw vterm--term))))))
 
 ;;;###autoload
 (defun vterm (&optional buffer-name)
@@ -622,6 +628,13 @@ Argument INDEX index of color."
     (face-foreground 'vterm-color-default nil 'default))
    (t                                   ;-2 background
     (face-background 'vterm-color-default nil 'default))))
+
+(defun vterm--eval(str)
+  "evaluate Elisp code contained in a string.
+Argument STR Elisp code."
+  (eval (car (read-from-string
+              (format "(progn %s)" str)))))
+
 
 (provide 'vterm)
 ;;; vterm.el ends here
