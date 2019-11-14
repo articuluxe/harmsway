@@ -3,7 +3,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2019-10-15 06:50:50 dharms>
+;; Modified Time-stamp: <2019-11-13 22:42:36 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -50,6 +50,7 @@
                             "Ubuntu Mono 14"
                             "League Mono Variable 12"
                             "Andale Mono 12"
+                            "NotoMono Nerd Font Mono 14"
                             "Go Mono 14"
                             "M+ 2m regular 14"
                             "Droid Sans Mono 12"
