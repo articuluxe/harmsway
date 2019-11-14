@@ -1,2 +1,6 @@
 cp src/patched-fonts/Noto/Mono/complete/Noto\ Mono\ Nerd\ Font\ Complete\ Mono.ttf ../../../.fonts/noto
 cp src/patched-fonts/LiberationMono/complete/Literation\ Mono\ Nerd\ Font\ Complete\ Mono.ttf ../../../.fonts/liberation
+cp src/patched-fonts/Terminus/terminus-ttf-4.40.1/Regular/complete/Terminess\ \(TTF\)\ Nerd\ Font\ Complete\ Mono.ttf ../../../.fonts/terminus
+cp src/patched-fonts/Terminus/terminus-ttf-4.40.1/Bold/complete/Terminess\ \(TTF\)\ Bold\ Nerd\ Font\ Complete\ Mono.ttf ../../../.fonts/terminus
+cp src/patched-fonts/Terminus/terminus-ttf-4.40.1/Italic/complete/Terminess\ \(TTF\)\ Italic\ Nerd\ Font\ Complete\ Mono.ttf ../../../.fonts/terminus
+cp src/patched-fonts/Terminus/terminus-ttf-4.40.1/BoldItalic/complete/Terminess\ \(TTF\)\ Bold\ Italic\ Nerd\ Font\ Complete\ Mono.ttf ../../../.fonts/terminus
