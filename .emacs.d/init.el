@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-11-01 13:48:02 dan.harms>
+;; Modified Time-stamp: <2019-11-14 12:55:27 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2131,6 +2131,7 @@ Only one letter is shown, the first that applies."
   (setq wdired-create-parent-directories t)
   (setq wdired-allow-to-change-permissions t)
   ;; (use-package ivy-dired-history)
+  (use-package dired-rsync :config (define-key dired-mode-map "\M-r" #'dired-rsync))
   (use-package dired-sidebar
     :init
     (setq dired-sidebar-use-evil-integration nil)
