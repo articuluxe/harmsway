@@ -1,1 +1,2 @@
 cp src/patched-fonts/Noto/Mono/complete/Noto\ Mono\ Nerd\ Font\ Complete\ Mono.ttf ../../../.fonts/noto
+cp src/patched-fonts/LiberationMono/complete/Literation\ Mono\ Nerd\ Font\ Complete\ Mono.ttf ../../../.fonts/liberation
