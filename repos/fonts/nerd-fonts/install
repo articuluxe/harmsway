@@ -4,3 +4,7 @@ cp src/patched-fonts/Terminus/terminus-ttf-4.40.1/Regular/complete/Terminess\ \(
 cp src/patched-fonts/Terminus/terminus-ttf-4.40.1/Bold/complete/Terminess\ \(TTF\)\ Bold\ Nerd\ Font\ Complete\ Mono.ttf ../../../.fonts/terminus
 cp src/patched-fonts/Terminus/terminus-ttf-4.40.1/Italic/complete/Terminess\ \(TTF\)\ Italic\ Nerd\ Font\ Complete\ Mono.ttf ../../../.fonts/terminus
 cp src/patched-fonts/Terminus/terminus-ttf-4.40.1/BoldItalic/complete/Terminess\ \(TTF\)\ Bold\ Italic\ Nerd\ Font\ Complete\ Mono.ttf ../../../.fonts/terminus
+cp src/patched-fonts/iA-Writer/iA\ Writer\ Mono/Regular/complete/iM\ Writing\ Mono\ S\ Regular\ Nerd\ Font\ Complete\ Mono.ttf ../../../.fonts/ia-writer
+cp src/patched-fonts/iA-Writer/iA\ Writer\ Mono/Bold/complete/iM\ Writing\ Mono\ S\ Bold\ Nerd\ Font\ Complete\ Mono.ttf ../../../.fonts/ia-writer
+cp src/patched-fonts/iA-Writer/iA\ Writer\ Mono/Italic/complete/iM\ Writing\ Mono\ S\ Italic\ Nerd\ Font\ Complete\ Mono.ttf ../../../.fonts/ia-writer
+cp src/patched-fonts/iA-Writer/iA\ Writer\ Mono/BoldItalic/complete/iM\ Writing\ Mono\ S\ Bold\ Italic\ Nerd\ Font\ Complete\ Mono.ttf ../../../.fonts/ia-writer
