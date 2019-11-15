@@ -5,7 +5,7 @@
 # Author:  <dan.harms@xrtrading.com>
 # Created: Friday, March 20, 2015
 # Version: 1.0
-# Modified Time-stamp: <2019-07-23 09:34:27 dan.harms>
+# Modified Time-stamp: <2019-10-30 13:08:57 dan.harms>
 # Modified by: Dan Harms
 # Keywords: help
 
@@ -103,5 +103,7 @@ awk '/^num/ {n++; sum+=$2} END {print n?sum/n:0}' file
 awk -F, 'NF < 18 { print $0;}' <file>
 # find which column matches a regex
 head -1 file.csv | awk -F, '{for (i=1; i <= NF; ++i) { if ($i ~ /regex/) {print i,$i;}}}'
+# filter out lines where a column is 0
+awk -F, '$10 != 0' <file>
 
 # code ends here

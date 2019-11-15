@@ -5,7 +5,7 @@
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Monday, January 18, 2016
 # Version: 1.0
-# Modified Time-stamp: <2019-07-23 09:34:31 dan.harms>
+# Modified Time-stamp: <2019-10-30 14:47:05 dan.harms>
 # Modified by: Dan Harms
 # Keywords: linux docs
 
@@ -25,6 +25,9 @@ rpm -ivh epel-release-6-8.noarch.rpm
 sudo rpm -ivh epel-release-6-8.noarch.rpm
 sudo yum install aspell-en
 ls
+
+# clear out swap space
+swapoff -a; swapon -a
 
 # change default runlevel in /etc/inittab:
 id:5:initdefault:
