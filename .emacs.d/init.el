@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-11-14 12:55:27 dan.harms>
+;; Modified Time-stamp: <2019-11-18 12:47:17 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1171,6 +1171,11 @@ Only one letter is shown, the first that applies."
 
 (use-package proviso-file
   :bind (:map harmsway-git-keymap ("." . proviso-file-remove-git-lock)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; monky ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package monky
+  :bind (:map harmsway-git-keymap
+              ("w" . monky-status)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; magit-org-todos ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package magit-org-todos
