@@ -32,7 +32,7 @@ a repository also adds a refspec that fetches all pull-requests.
 In repositories with huge numbers of pull-requests you might want
 to not do so, in which case you should set this option to `ask'.
 
-You can also set this to nil and later add the refspec exlicitly
+You can also set this to nil and later add the refspec explicitly
 for a repository using the command `forge-add-pullreq-refspec'."
   :package-version '(forge . "0.2.0")
   :group 'forge
@@ -53,7 +53,10 @@ for a repository using the command `forge-add-pullreq-refspec'."
     ("l i" "issues"        forge-list-issues)
     ("l p" "pull-requests" forge-list-pullreqs)
     ("l n" "notifications" forge-list-notifications)
-    ("l r" "repositories"  forge-list-repositories)]
+    ("l r" "repositories"  forge-list-repositories)
+    (7 "o i" "owned issues"        forge-list-owned-issues)
+    (7 "o p" "owned pull-requests" forge-list-owned-pullreqs)
+    (7 "o r" "owned repositories"  forge-list-owned-repositories)]
    ["Create"
     ("c i" "issue"         forge-create-issue)
     ("c p" "pull-request"  forge-create-pullreq)
@@ -598,8 +601,8 @@ because the source branch has been deleted"))
                     (format "git://%s/%s.git" host head-repo))
                    ((string-prefix-p "http://" upstream-url)
                     (format "http://%s/%s.git" host head-repo))
-                   (t (error "%s has an unexpected format" upstream-url))))
-            (magit-git "branch" "--force" branch (concat remote "/" pr-branch)))
+                   (t (error "%s has an unexpected format" upstream-url)))))
+          (magit-git "branch" "--force" branch (concat remote "/" pr-branch))
           (if (and editable-p
                    (equal branch pr-branch))
               (magit-set remote "branch" branch "pushRemote")
@@ -732,6 +735,27 @@ information."
         (magit-refresh))
     (user-error "There is no topic at point")))
 
+;;; Fork
+
+;;;###autoload
+(defun forge-fork (fork remote)
+  "Fork the current repository to FORK and add it as a REMOTE.
+Currently this only support Github.com."
+  (interactive
+   (let ((fork (magit-completing-read "Fork to"
+                                      (mapcar #'car forge-owned-accounts))))
+     (list fork
+           (read-string "Remote name: "
+                        (or (plist-get (cdr (assoc fork forge-owned-accounts))
+                                       'remote-name)
+                            fork)))))
+  (let ((repo (forge-get-repository 'stub)))
+    (forge--fork-repository repo fork)
+    (magit-remote-add remote
+                      (magit-clone--name-to-url
+                       (concat fork "/" (oref repo name)))
+                      (list "--fetch"))))
+
 ;;; Misc
 
 (define-infix-command forge-forge.remote ()
@@ -795,6 +819,26 @@ pull individual topics when the user invokes `forge-pull-topic'."
       (magit-read-char-case "Pull " nil
         (?a "[a]ll topics"        (forge-pull repo))
         (?i "[i]ndividual topics" (oset repo selective-p t))))))
+
+;;;###autoload
+(defun forge-add-user-repositories (host user)
+  "Add all of USER's repositories from HOST to the database.
+This may take a while.  Only Github is supported at the moment."
+  (interactive
+   (list (forge-read-host "Add repositories from Github host"
+                          'forge-github-repository)
+         (read-string "User: ")))
+  (forge--add-user-repos 'forge-github-repository host user))
+
+;;;###autoload
+(defun forge-add-organization-repositories (host organization)
+  "Add all of ORGANIZATION's repositories from HOST to the database.
+This may take a while.  Only Github is supported at the moment."
+  (interactive
+   (list (forge-read-host "Add repositories from Github host"
+                          'forge-github-repository)
+         (read-string "Organization: ")))
+  (forge--add-organization-repos 'forge-github-repository host organization))
 
 ;;;###autoload
 (defun forge-remove-repository (host owner name)

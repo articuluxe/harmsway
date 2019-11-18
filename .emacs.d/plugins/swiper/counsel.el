@@ -1395,7 +1395,7 @@ Typical value: '(recenter)."
         (swiper--add-overlays (ivy--regex ivy-text))))))
 
 (defun counsel-git-grep-transformer (str)
-  "Higlight file and line number in STR."
+  "Highlight file and line number in STR."
   (when (string-match "\\`\\([^:]+\\):\\([^:]+\\):" str)
     (ivy-add-face-text-property (match-beginning 1) (match-end 1)
                                 'ivy-grep-info
@@ -1505,6 +1505,7 @@ When CMD is non-nil, prompt for a specific \"git grep\" command."
                 :keymap counsel-git-grep-map
                 :action #'counsel-git-grep-action
                 :history 'counsel-git-grep-history
+                :require-match t
                 :caller 'counsel-git-grep))))
 
 (ivy-configure 'counsel-git-grep
@@ -2862,6 +2863,7 @@ CALLER is passed to `ivy-read'."
               :keymap counsel-ag-map
               :history 'counsel-git-grep-history
               :action #'counsel-git-grep-action
+              :require-match t
               :caller (or caller 'counsel-ag))))
 
 (ivy-configure 'counsel-ag
@@ -4335,6 +4337,9 @@ PREFIX is used to create the key."
   (with-ivy-window
     (imenu (cdr x))))
 
+(defvar counsel-imenu-history nil
+  "History for `counsel-imenu'.")
+
 ;;;###autoload
 (defun counsel-imenu ()
   "Jump to a buffer position indexed by imenu."
@@ -4344,6 +4349,7 @@ PREFIX is used to create the key."
             :require-match t
             :action #'counsel-imenu-action
             :keymap counsel-imenu-map
+            :history 'counsel-imenu-history
             :caller 'counsel-imenu))
 
 ;;** `counsel-list-processes'
@@ -5228,6 +5234,24 @@ If called with a prefix, will suggest those values."
    ("d" counsel-kmacro-action-delete-kmacro "delete")
    ("f" counsel-kmacro-action-copy-format "copy format")
    ("e" counsel-kmacro-action-execute-after-prompt "execute after prompt")))
+
+;;** `counsel-geiser-doc-look-up-manual'
+(declare-function geiser-doc-manual-for-symbol "ext:geiser-doc")
+(defvar geiser-completion-symbol-list-func)
+
+(defvar counsel-geiser-doc-look-up-manual-history ()
+  "History for `counsel-geiser-doc-look-up-manual'.")
+
+;;;###autoload
+(defun counsel-geiser-doc-look-up-manual ()
+  "Search Scheme documentation."
+  (interactive)
+  (ivy-read "Symbol: " geiser-completion-symbol-list-func
+            :require-match t
+            :history 'counsel-geiser-doc-look-up-manual-history
+            :action (lambda (cand)
+                      (geiser-doc-manual-for-symbol (intern cand)))
+            :caller 'counsel-geiser-doc-look-up-manual))
 
 ;;* Misc. OS
 ;;** `counsel-rhythmbox'
@@ -6229,6 +6253,7 @@ We update it in the callback with `ivy-update-candidates'."
                 (yank-pop . counsel-yank-pop)
                 (info-lookup-symbol . counsel-info-lookup-symbol)
                 (pop-to-mark-command . counsel-mark-ring)
+                (geiser-doc-look-up-manual . counsel-geiser-doc-look-up-manual)
                 (bookmark-jump . counsel-bookmark)))
       (define-key map (vector 'remap (car binding)) (cdr binding)))
     map)

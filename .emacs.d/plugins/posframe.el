@@ -6,7 +6,7 @@
 ;; Maintainer: Feng Shu <tumashu@163.com>
 ;; URL: https://github.com/tumashu/posframe
 ;; Version: 0.5.0
-;; Keywords: tooltip
+;; Keywords: convenience, tooltip
 ;; Package-Requires: ((emacs "26"))
 
 ;; This file is part of GNU Emacs.
@@ -36,7 +36,9 @@
 ;; 1. It is fast enough for daily usage :-)
 ;; 2. It works well with CJK languages.
 
-;; NOTE: For MacOS users, posframe needs Emacs version >= 26.0.91
+;; NOTE:
+;; 1. For MacOS users, posframe needs Emacs version >= 26.0.91
+;; 2. Posframe will be very very slow when emacs is built with --with-x-toolkit=athena.
 
 ;; [[./snapshots/posframe-1.png]]
 
@@ -309,7 +311,7 @@ This posframe's buffer is BUFFER-OR-NAME."
       posframe--frame)))
 
 (defun posframe-arghandler-default (_buffer-or-name _arg-name value)
-  "The default value of `posframe-arghandler'. Return VALUE."
+  "The default value of `posframe-arghandler'.  Return VALUE."
   value)
 
 ;;;###autoload
@@ -382,15 +384,18 @@ The builtin poshandler functions are listed below:
 2.  `posframe-poshandler-frame-top-center'
 3.  `posframe-poshandler-frame-top-left-corner'
 4.  `posframe-poshandler-frame-top-right-corner'
-5.  `posframe-poshandler-frame-bottom-left-corner'
-6.  `posframe-poshandler-frame-bottom-right-corner'
-7.  `posframe-poshandler-window-center'
-8.  `posframe-poshandler-window-top-left-corner'
-9.  `posframe-poshandler-window-top-right-corner'
-10. `posframe-poshandler-window-bottom-left-corner'
-11. `posframe-poshandler-window-bottom-right-corner'
-12. `posframe-poshandler-point-top-left-corner'
-13. `posframe-poshandler-point-bottom-left-corner'
+5.  `posframe-poshandler-frame-bottom-center'
+6.  `posframe-poshandler-frame-bottom-left-corner'
+7.  `posframe-poshandler-frame-bottom-right-corner'
+8.  `posframe-poshandler-window-center'
+9.  `posframe-poshandler-window-top-center'
+10. `posframe-poshandler-window-top-left-corner'
+11. `posframe-poshandler-window-top-right-corner'
+12. `posframe-poshandler-window-bottom-center'
+13. `posframe-poshandler-window-bottom-left-corner'
+14. `posframe-poshandler-window-bottom-right-corner'
+15. `posframe-poshandler-point-top-left-corner'
+16. `posframe-poshandler-point-bottom-left-corner'
 
 This posframe's buffer is BUFFER-OR-NAME, which can be a buffer
 or a name of a (possibly nonexistent) buffer.
@@ -879,6 +884,19 @@ in docstring of `posframe-show'."
               (plist-get info :mode-line-height)
               (plist-get info :minibuffer-height))))
 
+(defun posframe-poshandler-frame-bottom-center (info)
+  "Posframe's position handler.
+
+Get a position which let posframe stay onto its parent-frame's
+bottom center.  The structure of INFO can be found in docstring of
+`posframe-show'."
+  (cons (/ (- (plist-get info :parent-frame-width)
+              (plist-get info :posframe-width))
+           2)
+        (- 0
+           (plist-get info :mode-line-height)
+           (plist-get info :minibuffer-height))))
+
 (defun posframe-poshandler-window-center (info)
   "Posframe's position handler.
 
@@ -919,6 +937,19 @@ docstring of `posframe-show'."
              (- 0 posframe-width))
           window-top)))
 
+(defun posframe-poshandler-window-top-center (info)
+  "Posframe's position handler.
+
+Get a position which let posframe stay onto current window's
+top center.  The structure of INFO can be found in docstring of
+`posframe-show'."
+  (let* ((window-left (plist-get info :parent-window-left))
+         (window-top (plist-get info :parent-window-top))
+         (window-width (plist-get info :parent-window-width))
+         (posframe-width (plist-get info :posframe-width)))
+    (cons (+ window-left (/ (- window-width posframe-width) 2))
+          window-top)))
+
 (defun posframe-poshandler-window-bottom-left-corner (info)
   "Posframe's position handler.
 
@@ -949,6 +980,23 @@ docstring of `posframe-show'."
          (mode-line-height (plist-get info :mode-line-height)))
     (cons (+ window-left window-width
              (- 0 posframe-width))
+          (+ window-top window-height
+             (- 0 mode-line-height posframe-height)))))
+
+(defun posframe-poshandler-window-bottom-center (info)
+  "Posframe's position handler.
+
+Get a position which let posframe stay onto current window's
+bottom center.  The structure of INFO can be found in docstring of
+`posframe-show'."
+  (let* ((window-left (plist-get info :parent-window-left))
+         (window-top (plist-get info :parent-window-top))
+         (window-width (plist-get info :parent-window-width))
+         (window-height (plist-get info :parent-window-height))
+         (posframe-width (plist-get info :posframe-width))
+         (posframe-height (plist-get info :posframe-height))
+         (mode-line-height (plist-get info :mode-line-height)))
+    (cons (+ window-left (/ (- window-width posframe-width) 2))
           (+ window-top window-height
              (- 0 mode-line-height posframe-height)))))
 

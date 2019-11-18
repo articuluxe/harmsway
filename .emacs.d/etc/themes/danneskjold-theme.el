@@ -125,7 +125,7 @@
      `(compilation-error ((,c (:foreground ,red))))
      `(compilation-line-number ((,c (:foreground ,yellow))))
      `(compilation-column-number ((,c (:foreground ,green))))
-     `(compilation-warning ((,c (:underline (:color ,red :style wave)))))
+     `(compilation-warning ((,c (:foreground ,orange :underline (:color ,red :style wave)))))
      `(compilation-info ((,c (:foreground ,diredcl))))
 
      ;; Linum
@@ -227,6 +227,10 @@
      `(org-checkbox-statistics-todo ((,c (:inherit org-todo))))
      `(org-checkbox-statistics-done ((,c (:inherit org-done))))
 
+     ;; cider
+     `(cider-stacktrace-error-class-face ((,c (:foreground ,yellow))))
+     `(cider-stacktrace-error-message-face ((,c (:foreground ,green))))
+
      ;; minimap
      `(minimap-active-region-background ((,c (:background ,sbt-midnight))))
 
@@ -276,6 +280,7 @@
      `(org-agenda-dimmed-todo-face ((,c (:foreground ,comment))))
      `(org-agenda-current-time ((,c (:foreground ,frost))))
      `(org-upcoming-deadline ((,c (:foreground ,violet))))
+     `(org-upcoming-distant-deadline ((,c (:foreground ,comment))))
 
      `(secondary-selection ((,c (:background ,sbt-midnight))))
 

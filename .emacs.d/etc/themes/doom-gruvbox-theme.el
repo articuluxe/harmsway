@@ -214,7 +214,8 @@ determine the exact padding."
    (button :foreground green :underline t :bold t)
 
    ;; ediff
-   (ediff-fine-diff-A :background (doom-blend red bg 0.3) :weight 'bold)
+   (ediff-fine-diff-A    :background (doom-blend red bg 0.3) :weight 'bold)
+   (ediff-current-diff-A :background (doom-blend red bg 0.1))
 
    ;; flycheck
    (flycheck-error   :underline `(:style wave :color ,red)    :background base3)
@@ -224,6 +225,14 @@ determine the exact padding."
    ;; helm
    (helm-swoop-target-line-face :foreground magenta :inverse-video t)
 
+   ;; magit
+   (magit-section-heading             :foreground yellow :weight 'bold)
+   (magit-branch-current              :underline cyan :inherit 'magit-branch-local)
+   (magit-diff-hunk-heading           :background base3 :foreground fg-alt)
+   (magit-diff-hunk-heading-highlight :background accent :foreground fg)
+   (magit-diff-context                :foreground bg-alt :foreground fg-alt)
+
+ 
    ;;;;;;;; Major mode faces ;;;;;;;;
    ;; css-mode / scss-mode
    (css-proprietary-property :foreground keywords)

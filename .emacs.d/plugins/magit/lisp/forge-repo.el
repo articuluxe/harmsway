@@ -257,6 +257,28 @@ Return the repository identified by HOST, OWNER and NAME."
                 (match-string 2 choice))
         (error "BUG")))))
 
+(defun forge-read-host (prompt &optional class)
+  (magit-completing-read
+   prompt
+   (if class
+       (-keep (pcase-lambda (`(,githost ,_apihost ,_id ,c))
+                (and (child-of-class-p c class) githost))
+              forge-alist)
+     (mapcar #'car forge-alist))
+   nil t))
+
+(defun forge--as-githost (host)
+  (or (car (car (cl-member host forge-alist :test #'equal :key #'car)))
+      (car (car (cl-member host forge-alist :test #'equal :key #'cadr)))
+      (car (car (cl-member host forge-alist :test #'equal :key #'caddr)))
+      (user-error "Cannot determine githost for %S" host)))
+
+(defun forge--as-apihost (host)
+  (or (cadr (car (cl-member host forge-alist :test #'equal :key #'cadr)))
+      (cadr (car (cl-member host forge-alist :test #'equal :key #'car)))
+      (cadr (car (cl-member host forge-alist :test #'equal :key #'caddr)))
+      (user-error "Cannot determine githost for %S" host)))
+
 (cl-defmethod forge--topics-until ((repo forge-repository) until table)
   (if (oref repo sparse-p)
       until

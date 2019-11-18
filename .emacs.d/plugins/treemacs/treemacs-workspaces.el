@@ -433,8 +433,8 @@ NAME: String"
            (end-of-line)
            (treemacs--insert-root-separator)))
          (treemacs--add-root-element project)
-         (treemacs--insert-into-dom (make-treemacs-dom-node
-                                     :key path :position (treemacs-project->position project)))))
+         (treemacs-dom-node->insert-into-dom!
+          (make-treemacs-dom-node :key path :position (treemacs-project->position project)))))
        (treemacs--persist)
        (run-hook-with-args 'treemacs-create-project-functions project)
        `(success ,project)))))
@@ -488,7 +488,7 @@ PROJECT: Project Struct"
         (recenter)))
     (treemacs--evade-image)
     (hl-line-highlight)))
-  (run-hook-wrapped 'treemacs-delete-project-functions project)
+  (run-hook-with-args 'treemacs-delete-project-functions project)
   (treemacs--persist))
 
 (defun treemacs-do-switch-workspace ()

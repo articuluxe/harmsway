@@ -18,7 +18,7 @@
 
 ;; Author: zk_phi
 ;; URL: http://hins11.yu-yake.com/
-;; Version: 2.1.3
+;; Version: 2.1.4
 
 ;;; Commentary:
 
@@ -39,6 +39,7 @@
 ;; 2.1.1 add option phi-search-highlight-mismatch-part
 ;; 2.1.2 prefer direct keymapping to remapping
 ;; 2.1.3 add option "phi-search-overlay-priority"
+;; 2.1.4 add command "phi-search-case-toggle"
 
 ;;; Code:
 
@@ -80,6 +81,7 @@
     (define-key kmap (kbd "C-v") 'phi-search-scroll-up)
     (define-key kmap (kbd "M-v") 'phi-search-scroll-down)
     (define-key kmap (kbd "C-l") 'phi-search-recenter)
+    (define-key kmap (kbd "M-c") 'phi-search-case-toggle)
     (define-key kmap (kbd "C-w") 'phi-search-yank-word)
     (define-key kmap (kbd "RET") 'phi-search-complete)
     (define-key kmap (kbd "C-c C-c") 'phi-search-unlimit)
@@ -163,6 +165,9 @@
 (defvar phi-search--pending-message nil
   "a pending message string, or nil.")
 
+(defvar phi-search--case-sensitive nil
+  "case sensitivity for this phi-search session.")
+
 ;; + utilities
 
 (defun phi-search--search-forward (query limit &optional filter inclusive)
@@ -171,8 +176,8 @@ to search for candidates. like (search-forward-regexp <> nil t)
 but case-sensitivity is handled automatically and result is
 filtered with FILTER. zero-width match is accepted only when
 INCLUSIVE is non-nil."
-  (let* ((case-fold-search (or (not phi-search-case-sensitive)
-                               (and (eq phi-search-case-sensitive 'guess)
+  (let* ((case-fold-search (or (not phi-search--case-sensitive)
+                               (and (eq phi-search--case-sensitive 'guess)
                                     (string= query (downcase query)))))
          (pos1 (point))
          (pos2 (search-forward-regexp query limit t)))
@@ -470,6 +475,22 @@ Otherwise yank a word from target buffer and expand query."
            (point)))))
     (kill-region (region-beginning) (region-end))))
 
+(defun phi-search-case-toggle (arg)
+  "change case sensitivity for phi-search on-the-fly.
+   parameter prefix arg: C-u or C-4: activate case sensitivity
+                      C-0: Case deactivate sensitivity
+                      nil: toggle value"
+  (interactive "p")
+  (let ((newvalue
+         (cond ((= 4 arg) t)
+               ((= 0 arg) nil)
+               (t (not phi-search--case-sensitive)))))
+    (setq phi-search--case-sensitive newvalue)
+    (message (if newvalue
+                 "Enabled phi-search-case-sensitive."
+               "Disabled phi-search-case-sensitive.")))
+  (phi-search--update))
+
 ;; + start/end phi-search
 
 (defun phi-search--initialize (modeline-fmt keybinds filter-fn update-fn
@@ -493,7 +514,8 @@ Otherwise yank a word from target buffer and expand query."
             phi-search--overlays                 nil
             phi-search--target                   (cons wnd buf)
             phi-search--convert-query-function   conv-fn
-            phi-search--before-complete-function complete-fn)
+            phi-search--before-complete-function complete-fn
+            phi-search--case-sensitive           phi-search-case-sensitive)
       (minibuffer-with-setup-hook
           (lambda ()
             ;; *FIXME* does wrong when a timer modifies the minibuffer

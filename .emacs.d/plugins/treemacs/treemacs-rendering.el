@@ -43,10 +43,6 @@
 (treemacs-import-functions-from "treemacs-visuals"
   treemacs--get-indentation)
 
-(treemacs-import-functions-from "treemacs-tags"
-  treemacs--goto-tag-button-at
-  treemacs--tags-path-of)
-
 (treemacs-import-functions-from "treemacs-interface"
   treemacs-TAB-action)
 
@@ -57,6 +53,10 @@
   treemacs--apply-project-bottom-extensions
   treemacs--apply-directory-top-extensions
   treemacs--apply-directory-bottom-extensions)
+
+(treemacs-import-functions-from "treemacs-tags"
+  treemacs--expand-file-node
+  treemacs--expand-tag-node)
 
 (defvar-local treemacs--projects-end nil
   "Marker pointing to position at the end of the last project.
@@ -297,6 +297,11 @@ DIRS: List of Collapse Paths. Each Collapse Path is a list of
               (treemacs--start-watching original-path)
               (dolist (step extra-steps)
                 (treemacs--start-watching step t)))
+            ;; make extra dom entries for the flattened steps
+            (-let [dom-node (treemacs-find-in-dom original-path)]
+              (dolist (step extra-steps)
+                (ht-set! treemacs-dom step dom-node))
+              (setf (treemacs-dom-node->collapse-keys dom-node) extra-steps))
             (-let [props (text-properties-at (treemacs-button-start b))]
               (treemacs-button-put b :path new-path)
               ;; if the collapsed path leads to a symlinked directory the button needs to be marked as a symlink
@@ -361,9 +366,16 @@ set to PARENT."
        (let* ((dirs-and-files (treemacs--get-dir-content ,root))
               (dirs (cl-first dirs-and-files))
               (files (cl-second dirs-and-files))
+              (parent-node (treemacs-find-in-dom ,root))
+              (dir-dom-nodes (--map (make-treemacs-dom-node :parent parent-node :key it) dirs))
+              (file-dom-nodes (--map (make-treemacs-dom-node :parent parent-node :key it) files))
               (git-info)
               (file-strings)
               (dir-strings))
+         (setf (treemacs-dom-node->children parent-node)
+               (nconc dir-dom-nodes file-dom-nodes (treemacs-dom-node->children parent-node)))
+         (dolist (it (treemacs-dom-node->children parent-node))
+           (treemacs-dom-node->insert-into-dom! it))
          (setq dir-strings
                (treemacs--create-buttons
                 :nodes dirs
@@ -446,7 +458,7 @@ set to PARENT."
 
          (save-excursion
            (treemacs--collapse-dirs (treemacs--parse-collapsed-dirs ,collapse-process))
-           (treemacs--reopen-at ,root ,git-future))
+           (treemacs--reentry ,root ,git-future))
          (point-at-eol))))))
 
 (cl-defmacro treemacs--button-close (&key button new-state new-icon post-close-action)
@@ -494,12 +506,12 @@ set to PARENT."
            :new-state 'root-node-open
            :open-action
            (progn
+             ;; TODO(2019/10/14): go back to post open
+             ;; expand first because it creates a dom node entry
+             (treemacs-on-expand path btn)
              (treemacs--apply-project-top-extensions btn project)
              (goto-char (treemacs--create-branch path (1+ (treemacs-button-get btn :depth)) git-future collapse-future btn))
-             (treemacs--apply-project-bottom-extensions btn project))
-           :post-open-action
-           (progn
-             (treemacs-on-expand path btn nil)
+             (treemacs--apply-project-bottom-extensions btn project)
              (treemacs--start-watching path)
              ;; Performing FS ops on a disconnected Tramp project
              ;; might have changed the state to connected.
@@ -540,12 +552,10 @@ RECURSIVE: Bool"
          :open-action
          (progn
            ;; do on-expand first so buttons that need collapsing can quickly find their parent
-           (treemacs-on-expand path btn (treemacs-parent-of btn))
+           (treemacs-on-expand path btn)
            (treemacs--apply-directory-top-extensions btn path)
            (goto-char (treemacs--create-branch path (1+ (treemacs-button-get btn :depth)) git-future collapse-future btn))
-           (treemacs--apply-directory-bottom-extensions btn path))
-         :post-open-action
-         (progn
+           (treemacs--apply-directory-bottom-extensions btn path)
            (treemacs--start-watching path)
            (when recursive
              (--each (treemacs-collect-child-nodes btn)
@@ -579,18 +589,22 @@ Remove all open dir and tag entries under BTN when RECURSIVE."
 
 PROJECT: Project Struct"
   (insert treemacs-icon-root)
-  (treemacs--set-project-position project (point-marker))
-  (insert
-   (propertize (treemacs-project->name project)
-               'button '(t)
-               'category 'default-button
-               'face (treemacs--root-face project)
-               :project project
-               :symlink (when (treemacs-project->is-readable? project)
-                          (file-symlink-p (treemacs-project->path project)))
-               :state 'root-node-closed
-               :path (treemacs-project->path project)
-               :depth 0)))
+  (let* ((pos (point-marker))
+         (path (treemacs-project->path project))
+         (dom-node (make-treemacs-dom-node :key path :position pos)))
+    (treemacs-dom-node->insert-into-dom! dom-node)
+    (treemacs--set-project-position project pos)
+    (insert
+     (propertize (treemacs-project->name project)
+                 'button '(t)
+                 'category 'default-button
+                 'face (treemacs--root-face project)
+                 :project project
+                 :symlink (when (treemacs-project->is-readable? project)
+                            (file-symlink-p path))
+                 :state 'root-node-closed
+                 :path path
+                 :depth 0))))
 
 (defun treemacs--render-projects (projects)
   "Actually render the given PROJECTS in the current buffer."
@@ -676,49 +690,52 @@ Will delete node at given PATH and PROJECT. See also
 
 PATH: Node Path
 Project: Project Struct"
-  (when (and (treemacs-is-path-visible? path)
-             ;; dont bother deleting this since we'll do the parent next
-             (file-exists-p (treemacs--parent path)))
-    (-let [pos nil]
-      (--when-let (treemacs-find-in-dom path)
-        (setf pos (treemacs-dom-node->position it))
-        (when (treemacs-is-node-expanded? pos)
-          (goto-char pos)
-          (treemacs-TAB-action :purge))
-        (treemacs-dom-node->remove-from-dom! it))
-      (unless pos
-        (setf pos (treemacs-goto-node path project :ignore-file-exists-check)))
-      (when pos
-        (treemacs-with-writable-buffer
-         (-let [node (treemacs-node-at-point)]
-           (if (treemacs-button-get node :collapsed)
-               (treemacs--delete-at-collapsed-path node path)
-             (treemacs--delete-line))))))))
+  (-when-let (dom-node (treemacs-find-in-dom path))
+    (-let [btn (or (treemacs-dom-node->position dom-node)
+                   (treemacs-goto-node path project :ignore-file-exists))]
+      (goto-char btn)
+      (when (treemacs-is-node-expanded? btn)
+        (treemacs-TAB-action :purge))
+      (treemacs-with-writable-buffer
+       (if (treemacs-button-get btn :collapsed)
+           (treemacs--delete-at-flattened-path btn path dom-node)
+         (treemacs--delete-line)
+         (treemacs-dom-node->remove-from-dom! dom-node))))))
 
-(define-inline treemacs--delete-at-collapsed-path (node deleted-path)
-  "Handle a delete for a flattened path NODE for given DELETED-PATH.
+(defun treemacs--delete-at-flattened-path (btn deleted-path dom-node)
+  "Handle a delete for a flattened path BTN for given DELETED-PATH.
+Remove DOM-NODE from the dom if the entire line was deleted.
 
-NODE: Button
-DELETED-PATH: File Path"
-  (inline-letevals (node deleted-path)
-    (inline-quote
-     (let ((key (treemacs-button-get ,node :key)))
-       (if (string= ,deleted-path key)
-           (treemacs--delete-line)
-         (let* ((new-path (treemacs--parent ,deleted-path))
-                (new-label (substring new-path (length key)))
-                (new-coll-count (length (cdr (f-split new-label)))))
-           (end-of-line)
-           (treemacs-button-put ,node :path new-path)
-           (delete-region (point) (previous-single-char-property-change (point-at-eol) :collapsed))
-           (if (= 0 new-coll-count)
-               (treemacs-button-put ,node :collapsed nil)
-             (let ((curr-collapse-info (treemacs-button-get ,node :collapsed)))
-               (treemacs-button-put
-                ,node :collapsed
-                (cons new-coll-count (-take (1+ new-coll-count) (cdr curr-collapse-info))))
-               (-let [properties (text-properties-at (1- (point)))]
-                 (insert (apply #'propertize new-label properties)))))))))))
+Btn: Button
+DELETED-PATH: File Path
+DOM-NODE: Dom Node"
+  (let ((key (treemacs-button-get btn :key))
+        (curr-collapse-steps (cdr (treemacs-button-get btn :collapsed))))
+    (if (string= deleted-path key)
+        (progn
+          ;; remove full dom entry if entire line was deleted
+          (treemacs--delete-line)
+          (treemacs-dom-node->remove-from-dom! dom-node))
+      ;; otherwise change the current line and update its properties
+      (let* ((path (treemacs-button-get btn :path))
+             (new-path (treemacs--parent deleted-path))
+             (delete-offset (- (length path) (length new-path)))
+             (new-label (substring new-path (length key)))
+             (new-coll-count (length (cdr (f-split new-label)))))
+        (treemacs-button-put btn :path new-path)
+        (end-of-line)
+        ;; delete just enough to get rid of the deleted dirs
+        (delete-region (- (point) delete-offset) (point))
+        ;; then remove the deleted directories from the dom
+        (-let [removed-collapse-keys (last curr-collapse-steps (1+ new-coll-count))]
+          (treemacs-dom-node->remove-collapse-keys! dom-node removed-collapse-keys)
+          (-each removed-collapse-keys #'treemacs--stop-watching))
+        ;; and update inline collpase info
+        (if (= 0 new-coll-count)
+            (treemacs-button-put btn :collapsed nil)
+          (treemacs-button-put
+           btn :collapsed
+           (cons new-coll-count (-take (1+ new-coll-count) curr-collapse-steps))))))))
 
 (defun treemacs--determine-insert-position (path parent-btn sort-function)
   "Determine the insert location for PATH under PARENT-BTN.
@@ -732,56 +749,102 @@ be taken into account.
 PATH: File Path
 PARENT-BTN: Button
 SORT-FUNCTION: Button -> Boolean."
-  (or
-   (if (file-directory-p path)
-       ;; for directoies
-       (or
-        ;; insert directory before first dir node that fits sort-function
-        (--when-let
-            (treemacs-first-child-node-where parent-btn
-              (-let [child-path (treemacs-button-get child-btn :path)]
-                (or (and (file-directory-p child-path)
-                         (funcall sort-function path child-path))
-                    (not (file-directory-p child-path)))))
-          (previous-button it))
-        ;; if there are no directories try before first file node
-        (--when-let (treemacs-first-child-node-where parent-btn
-                      (not (file-directory-p (treemacs-button-get child-btn :path))))
-          (previous-button it)))
-     ;; for files
-     (or
-      ;; insert before first file node that fits sort-function
-      (--when-let
-          (treemacs-first-child-node-where parent-btn
-            (-let [child-path (treemacs-button-get child-btn :path)]
-              (and (not (file-directory-p child-path))
-                   (funcall sort-function path child-path))))
-        (previous-button it))))
-   ;; if neither works just use the next neighbour of parent
-   (if (treemacs-button-get parent-btn :parent)
-       (treemacs--next-neighbour-of parent-btn)
-     ;; unless parent is a project, then we must use the last node in the project
-     (-> parent-btn
-         (treemacs-button-get :project)
-         (treemacs--get-bounds-of-project)
-         (cdr))) ))
+  (let* ((parent-dom-node (treemacs-find-in-dom (treemacs-button-get parent-btn :path)))
+         (children (treemacs-dom-node->children parent-dom-node))
+         (dirs-files (--separate (-let [path (treemacs-dom-node->key it)]
+                                   (and (stringp path) (file-directory-p path)))
+                                 children))
+         (dirs (sort (car dirs-files) (lambda (d1 d2)
+                                        (funcall sort-function
+                                                 (treemacs-dom-node->key d1)
+                                                 (treemacs-dom-node->key d2)))))
+         (files (sort (cadr dirs-files) (lambda (f1 f2)
+                                        (funcall sort-function
+                                                 (treemacs-dom-node->key f1)
+                                                 (treemacs-dom-node->key f2))))))
+    (if (file-directory-p path)
+        ;; insert directory ...
+        (or
+         ;; at first dir that fits sort order
+         (--when-let (--first (funcall sort-function path (treemacs-dom-node->key it)) dirs)
+           (previous-button (or (treemacs-dom-node->position it)
+                                (treemacs-find-node (treemacs-dom-node->key it)))))
+         ;; after last dir
+         (--when-let (-last-item dirs)
+           (or (treemacs-dom-node->position it)
+               (treemacs-find-node (treemacs-dom-node->key it))))
+         ;; before first file
+         (--when-let (car files)
+           (previous-button (or (treemacs-dom-node->position it)
+                                (treemacs-find-node (treemacs-dom-node->key it)))))
+         ;; after parent
+         parent-btn)
+      ;; insert file ...
+      (or
+       ;; at first file that fits sort order
+       (--when-let (--first (funcall sort-function path (treemacs-dom-node->key it)) files)
+         (previous-button (or (treemacs-dom-node->position it)
+                              (treemacs-find-node (treemacs-dom-node->key it)))) )
+       ;; after last file
+       (--when-let (-last-item files)
+         (or (treemacs-dom-node->position it)
+             (treemacs-find-node (treemacs-dom-node->key it))) )
+       ;; before first dir
+       (--when-let (car dirs)
+         (previous-button (or (treemacs-dom-node->position it)
+                              (treemacs-find-node (treemacs-dom-node->key it)))))
+       ;; after parent
+       parent-btn))))
 
 (defun treemacs-do-insert-single-node (path parent-path)
   "Insert single file node at given PATH and PARENT-PATH.
 
 PATH: File Path
 PARENT-PATH: File Path"
-  (-when-let (parent-node (treemacs-find-visible-node parent-path))
-    (when (treemacs-is-node-expanded? parent-node)
-      (treemacs-with-writable-buffer
-       (let* ((sort-function (treemacs--get-sort-fuction))
-              (insert-after (treemacs--determine-insert-position path parent-node sort-function)))
-         (goto-char insert-after)
-         (end-of-line)
-         (insert "\n" (treemacs--create-string-for-single-insert
-                       path parent-node (1+ (button-get parent-node :depth))))
-         (when treemacs-git-mode
-           (treemacs-do-update-single-file-git-state path :exclude-parents)))))))
+  (-when-let (parent-dom-node (treemacs-find-in-dom parent-path))
+    ;; file events can be chaotic to the point that something is "created"
+    ;; that is already present
+    (unless (treemacs-find-in-dom path)
+      (-let [parent-btn (treemacs-dom-node->position parent-dom-node)]
+        (if (and (file-directory-p path)
+                 (null (treemacs-first-child-node-where parent-btn t)))
+            (treemacs-insert-new-flattened-directory path parent-btn parent-dom-node)
+          (when (treemacs-is-node-expanded? parent-btn)
+            (treemacs-with-writable-buffer;; TODO(2019/11/04): just one global call for refresh?
+             (let* ((sort-function (treemacs--get-sort-fuction))
+                    (insert-after (treemacs--determine-insert-position path parent-btn sort-function)))
+               (goto-char insert-after)
+               (end-of-line)
+               (insert "\n" (treemacs--create-string-for-single-insert
+                             path parent-btn (1+ (button-get parent-btn :depth))))
+               (-let [new-dom-node (make-treemacs-dom-node :key path :parent parent-dom-node)]
+                 (treemacs-dom-node->insert-into-dom! new-dom-node)
+                 (treemacs-dom-node->add-child! parent-dom-node new-dom-node))
+               (when treemacs-git-mode
+                 (treemacs-do-update-single-file-git-state path :exclude-parents :override-status))))))))))
+
+(defun treemacs-insert-new-flattened-directory (path parent-btn parent-dom-node)
+  "Insert PATH as new flattened directory under PARENT-BTN.
+Create a new dom node as child of PARENT-DOM-NODE and start watching PATH.
+
+PATH: File Path
+PARENT-BTN: Button
+PARENT-DOM-NODE: Dom Node Struct"
+  (treemacs-with-writable-buffer
+   (-let [current-path (treemacs-button-get parent-btn :path)]
+     (-if-let (collapse-info (treemacs-button-get parent-btn :collapsed))
+         (progn
+           (cl-incf (car collapse-info))
+           (setf (cdr collapse-info) (nconc (cdr collapse-info) (list path))))
+       (treemacs-button-put parent-btn :collapsed (list 2 current-path path)))
+     (treemacs-button-put parent-btn :path path)
+     (setf (treemacs-dom-node->collapse-keys parent-dom-node)
+           (cons path (treemacs-dom-node->collapse-keys parent-dom-node)))
+     (ht-set! treemacs-dom path parent-dom-node)
+     (treemacs--start-watching path :collapse)
+     (-let [props (text-properties-at parent-btn)]
+       (goto-char (treemacs-button-end parent-btn))
+       (insert (apply #'propertize (substring path (length current-path)) props))))))
 
 (define-inline treemacs--create-string-for-single-insert (path parent depth)
   "Create the necessary strings to insert a new file node.
@@ -858,7 +921,7 @@ parents' git status can be updated."
   (let ((recurse t)
         (refreshed-nodes nil))
     (-when-let (change-list (treemacs-dom-node->refresh-flag node))
-      (treemacs-dom-node->reset-refresh-flag! node)
+      (setf (treemacs-dom-node->refresh-flag node) nil)
       (push node refreshed-nodes)
       (if (> (length change-list) 8)
           (progn
@@ -866,7 +929,9 @@ parents' git status can be updated."
             (if (null (treemacs-dom-node->parent node))
                 (treemacs-project->refresh! project)
               (treemacs--refresh-dir (treemacs-dom-node->key node) project)))
-        (dolist (change change-list)
+        ;; reverse in case so order is preserved, e.g. first change then delete
+        ;; must be handled in that original order
+        (dolist (change (nreverse change-list))
           (-let [(type . path) change]
             (pcase type
               ('deleted
@@ -891,6 +956,62 @@ parents' git status can be updated."
                      (treemacs--recursive-refresh-descent child project)))))
     ;; TODO(2019/07/30): add as little as possible
     refreshed-nodes))
+
+(define-inline treemacs--should-reenter? (path)
+  "Check if PATH should not be reentered.
+Returns nil if PATH is either not a file or it should be hidden on account of
+`treemacs-show-hidden-files' being non-nil.
+
+PATH: Node Path"
+  (declare (side-effect-free t))
+  (inline-letevals (path)
+    (inline-quote
+     (let ((path (cond
+                  ((stringp ,path)
+                   ,path)
+                  ;; tags should be reopened also
+                  ((and (consp ,path)
+                        (stringp (car ,path)))
+                   (car ,path)))))
+       (if path
+           (or treemacs-show-hidden-files
+               (not (s-matches? treemacs-dotfiles-regex
+                                (treemacs--filename path))))
+         t)))))
+
+(defun treemacs--reentry (path &optional git-info)
+  "Reopen dirs below PATH.
+GIT-INFO is passed through from the previous branch build.
+
+PATH: Node Path
+GIT-INFO: Pfuture | Map<String, String>"
+  (let* ((dom-node (treemacs-find-in-dom path))
+         (reopen-list (treemacs-dom-node->reentry-nodes dom-node)))
+    ;; get rid of the reentry-remnant so it wont pollute the actual dom
+    (setf (treemacs-dom-node->reentry-nodes dom-node) nil)
+    (dolist (to-reopen-dom-node reopen-list)
+      ;; the dom-node in the reentry-remnant and the one currently in the dom
+      ;; are different, we need to make sure the latter is present, otherwise
+      ;; the file has since been deleted
+      (let* ((reopen-path (treemacs-dom-node->key to-reopen-dom-node))
+             (actual-dom-node (treemacs-find-in-dom reopen-path)))
+        (when (and actual-dom-node
+                   (treemacs--should-reenter? reopen-path))
+          ;; move the next level of the reentry-remnant to the new reopened dom
+          ;; so the process can continue
+          (setf (treemacs-dom-node->reentry-nodes actual-dom-node)
+                (treemacs-dom-node->reentry-nodes to-reopen-dom-node))
+          (treemacs--reopen-node (treemacs-goto-node reopen-path) git-info))))))
+
+(defun treemacs--reopen-node (btn &optional git-info)
+  "Reopen file BTN.
+GIT-INFO is passed through from the previous branch build."
+  (pcase (treemacs-button-get btn :state)
+    ('dir-node-closed  (treemacs--expand-dir-node btn :git-future git-info))
+    ('file-node-closed (treemacs--expand-file-node btn))
+    ('tag-node-closed  (treemacs--expand-tag-node btn))
+    ('root-node-closed (treemacs--expand-root-node btn))
+    (other             (funcall (alist-get other treemacs-TAB-actions-config) btn))))
 
 (provide 'treemacs-rendering)
 

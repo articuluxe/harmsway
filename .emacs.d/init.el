@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-11-18 12:47:17 dan.harms>
+;; Modified Time-stamp: <2019-11-18 12:53:56 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3472,7 +3472,7 @@ This may perform related customization."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; bazel-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package bazel-mode
-  :mode ("\\.bazel$" "\\.bzl$" "WORKSPACE$")
+  :mode ("\\.bazel$" "\\.bzl$" "WORKSPACE$" "BUILD$")
   :config
   (add-hook 'bazel-mode-hook
             (lambda()

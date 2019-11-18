@@ -1,4 +1,4 @@
-;;; solarized-light-theme.el --- Solarized Light Theme for Emacs.
+;;; solarized-light-theme.el --- Solarized Light Theme for Emacs  -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2011-2019 Bozhidar Batsov
 
@@ -22,12 +22,20 @@
 ;;; Code:
 
 (require 'solarized)
+(eval-when-compile
+  (require 'solarized-palettes))
 
 (deftheme solarized-light "The light variant of the Solarized colour theme")
 
-(create-solarized-theme 'light 'solarized-light)
+(solarized-with-color-variables 'light 'solarized-light
+  solarized-light-color-palette-alist)
 
 (provide-theme 'solarized-light)
 
 (provide 'solarized-light-theme)
+
+;; Local Variables:
+;; indent-tabs-mode: nil
+;; End:
+
 ;;; solarized-light-theme.el ends here

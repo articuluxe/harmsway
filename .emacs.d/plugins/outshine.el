@@ -2364,9 +2364,9 @@ marking subtree (and subsequently run the tex command)."
      :active (outline-on-heading-p) :keys "M-S-<left>"]
     ["Demote Heading" outline-demote
      :active (outline-on-heading-p) :keys "M-S-<right>"]
-    ["Move Heading Up" outline-move-heading-up
+    ["Move Heading Up" outline-move-subtree-up
      :active (outline-on-heading-p) :keys "M-S-<up>"]
-    ["Move Heading Down" outline-move-heading-down
+    ["Move Heading Down" outline-move-subtree-down
      :active (outline-on-heading-p) :keys "M-S-<down>"]
     "--"
     ["Previous Visible Heading" outline-previous-visible-heading

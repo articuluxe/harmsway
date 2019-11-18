@@ -276,6 +276,46 @@ or most optimal searcher."
            :tests ("(defparameter test " "(defparameter test\n")
            :not ("(defparameter tester" "(defparameter test?" "(defparameter test-"))
 
+    ;; racket
+    (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "racket"
+           :regex "\\\(define\\s+\\(\\s*JJJ\\j"
+           :tests ("(define (test blah)" "(define (test\n")
+           :not ("(define test blah" "(define (test-asdf blah)" "(define test (lambda (blah"))
+
+    (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "racket"
+           :regex "\\\(define\\s+JJJ\\s*\\\(\\s*lambda"
+           :tests ("(define test (lambda (blah" "(define test (lambda\n")
+           :not ("(define test blah" "(define test-asdf (lambda (blah)" "(define (test)" "(define (test blah) (lambda (foo"))
+
+    (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "racket"
+           :regex "\\\(let\\s+JJJ\\s*(\\\(|\\\[)*"
+           :tests ("(let test ((blah foo) (bar bas))" "(let test\n" "(let test [(foo")
+           :not ("(let ((test blah"))
+
+    (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "racket"
+           :regex "\\\(define\\s+JJJ\\j"
+           :tests ("(define test " "(define test\n")
+           :not ("(define (test"))
+
+    (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "racket"
+           :regex "(\\\(|\\\[)\\s*JJJ\\s+"
+           :tests ("(let ((test 'foo" "(let [(test 'foo" "(let [(test 'foo" "(let [[test 'foo" "(let ((blah 'foo) (test 'bar)")
+           :not ("{test foo"))
+
+    (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "racket"
+           :regex "\\\(lambda\\s+\\\(?[^\(\)]*\\s*JJJ\\j\\s*\\\)?"
+           :tests ("(lambda (test)" "(lambda (foo test)" "(lambda test (foo)")
+           :not ("(lambda () test"))
+
+    (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "racket"
+           :regex "\\\(define\\s+\\\([^\(\)]+\\s*JJJ\\j\\s*\\\)?"
+           :tests ("(define (foo test)" "(define (foo test bar)")
+           :not ("(define foo test" "(define (test foo" "(define (test)"))
+
+    (:type "type" :supports ("ag" "grep" "rg" "git-grep") :language "racket"
+           :regex "\\(struct\\s+JJJ\\j"
+           :tests ("(struct test (a b)"))
+
     ;; scheme
     (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "scheme"
            :regex "\\\(define\\s+\\(\\s*JJJ\\j"
@@ -1479,6 +1519,7 @@ or most optimal searcher."
     (:language "r" :ext "Rnw" :agtype "r" :rgtype "r")
     (:language "r" :ext "Rtex" :agtype "r" :rgtype nil)
     (:language "r" :ext "Rrst" :agtype "r" :rgtype nil)
+    (:language "racket" :ext "rkt" :agtype "racket" :rgtype "lisp")
     (:language "crystal" :ext "cr" :agtype "crystal" :rgtype "crystal")
     (:language "crystal" :ext "ecr" :agtype "crystal" :rgtype nil)
     (:language "ruby" :ext "rb" :agtype "ruby" :rgtype "ruby")
@@ -1823,11 +1864,13 @@ This is the persistent action (\\[helm-execute-persistent-action]) for helm."
           (plist-get result :line)
           (s-trim (plist-get result :context))))
 
-(defun dumb-jump-ivy-jump-to-selected (results choices proj)
-  "Offer CHOICES as canidates through ivy-read then execute
-dumb-jump-to-selected on RESULTS CHOICES and selected choice.
-Ignore PROJ"
-  (dumb-jump-to-selected results choices (ivy-read "Jump to: " choices)))
+(defun dumb-jump-ivy-jump-to-selected (results choices _proj)
+  "Offer CHOICES as candidates through `ivy-read', then execute
+`dumb-jump-result-follow' on the selected choice.  Ignore _PROJ."
+  (ivy-read "Jump to: " (-zip choices results)
+            :action (lambda (cand)
+                      (dumb-jump-result-follow (cdr cand)))
+            :caller 'dumb-jump-ivy-jump-to-selected))
 
 (defun dumb-jump-prompt-user-for-choice (proj results)
   "Put a PROJ's list of RESULTS in a 'popup-menu' (or helm/ivy)
@@ -2131,6 +2174,7 @@ current file."
     (:comment "#" :language "python")
     (:comment "%" :language "matlab")
     (:comment "#" :language "r")
+    (:comment ";" :language "racket")
     (:comment "#" :language "ruby")
     (:comment "#" :language "crystal")
     (:comment "#" :language "nim")

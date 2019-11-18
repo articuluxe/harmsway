@@ -28,23 +28,12 @@
 
 ;;; Variables
 
-(defvar forge-github-token-scopes '(repo)
+(defvar forge-github-token-scopes '(repo user read:org)
   "The Github API scopes needed by Forge.
 
-`repo' is the only required scope.  Without this scope none of
-Forge's features that use the API work.  Instead of this scope
-you could use `public_repo' if you are only interested in public
-repositories.
-
-`repo' Grants read/write access to code, commit statuses,
-  invitations, collaborators, adding team memberships, and
-  deployment statuses for public and private repositories
-  and organizations.
-
-`public_repo' Grants read/write access to code, commit statuses,
-  collaborators, and deployment statuses for public repositories
-  and organizations. Also required for starring public
-  repositories.")
++Visit https://github.com/settings/tokens to change the scopes
++of existing tokens and for a list of all available scopes see
++https://developer.github.com/apps/building-oauth-apps/understanding-scopes-for-oauth-apps.")
 
 ;;; Class
 
@@ -65,7 +54,8 @@ repositories.
 ;;; Pull
 ;;;; Repository
 
-(cl-defmethod forge--pull ((repo forge-github-repository) until)
+(cl-defmethod forge--pull ((repo forge-github-repository) until
+                           &optional callback)
   (let ((buf (current-buffer))
         (dir default-directory))
     (ghub-fetch-repository
@@ -85,11 +75,13 @@ repositories.
            (forge--update-revnotes   repo .commitComments))
          (oset repo sparse-p nil))
        (forge--msg repo t t   "Storing REPO")
-       (if forge-pull-notifications
-           (forge--pull-notifications (eieio-object-class repo)
-                                      (oref repo githost)
-                                      (lambda () (forge--git-fetch buf dir repo)))
-         (forge--git-fetch buf dir repo)))
+       (cond
+        (callback (funcall callback))
+        (forge-pull-notifications
+         (forge--pull-notifications (eieio-object-class repo)
+                                    (oref repo githost)
+                                    (lambda () (forge--git-fetch buf dir repo))))
+        (t (forge--git-fetch buf dir repo))))
      `((issues-until       . ,(forge--topics-until repo until 'issue))
        (pullRequests-until . ,(forge--topics-until repo until 'pullreq)))
      :host (oref repo apihost)
@@ -401,6 +393,64 @@ repositories.
       (oset topic unread-p nil)
       (forge--ghub-patch notif "/notifications/threads/:thread-id"))))
 
+;;;; Miscellaneous
+
+(cl-defmethod forge--add-user-repos
+  ((class (subclass forge-github-repository)) host user)
+  (forge--fetch-user-repos
+   class (forge--as-apihost host) user
+   (apply-partially 'forge--batch-add-callback (forge--as-githost host) user)))
+
+(cl-defmethod forge--add-organization-repos
+  ((class (subclass forge-github-repository)) host org)
+  (forge--fetch-organization-repos
+   class (forge--as-apihost host) org
+   (apply-partially 'forge--batch-add-callback (forge--as-githost host) org)))
+
+(cl-defmethod forge--fetch-user-repos
+  ((_ (subclass forge-github-repository)) host user callback)
+  (ghub--graphql-vacuum
+   '(query (user
+            [(login $login String!)]
+            (repositories
+             [(:edges t)
+	      (ownerAffiliations . (OWNER))]
+             name)))
+   `((login . ,user))
+   (lambda (d)
+     (funcall callback
+              (--map (alist-get 'name it)
+                     (let-alist d .user.repositories))))
+   nil :host host))
+
+(cl-defmethod forge--fetch-organization-repos
+  ((_ (subclass forge-github-repository)) host org callback)
+  (ghub--graphql-vacuum
+   '(query (organization
+	    [(login $login String!)]
+	    (repositories [(:edges t)] name)))
+   `((login . ,org))
+   (lambda (d)
+     (funcall callback
+              (--map (alist-get 'name it)
+                     (let-alist d .organization.repositories))))
+   nil :host host))
+
+(defun forge--batch-add-callback (host owner names)
+  (let ((repos (cl-mapcan (lambda (name)
+                            (let ((repo (forge-get-repository
+                                         (list host owner name)
+                                         nil 'create)))
+                              (and (oref repo sparse-p)
+                                   (list repo))))
+                          names))
+        cb)
+    (setq cb (lambda ()
+               (when-let ((repo (pop repos)))
+                 (message "Adding %s..." (oref repo name))
+                 (forge--pull repo nil cb))))
+    (funcall cb)))
+
 ;;; Mutations
 
 (cl-defmethod forge--create-pullreq-from-issue ((repo forge-github-repository)
@@ -556,6 +606,14 @@ repositories.
         ;; but due to this limitation I doubt many people use them,
         ;; so Forge doesn't support them either.
         ))))
+
+(cl-defmethod forge--fork-repository ((repo forge-github-repository) fork)
+  (with-slots (owner name) repo
+    (forge--ghub-post repo
+                      (format "/repos/%s/%s/forks" owner name)
+                      (and (not (equal fork (ghub--username (ghub--host nil))))
+                           `((organization . ,fork))))
+    (ghub-wait (format "/repos/%s/%s" fork name) nil :auth 'forge)))
 
 ;;; Utilities
 

@@ -727,6 +727,7 @@ When capture groups are present in the input, print them instead of lines."
 This is the regex used in the minibuffer where candidates have
 line numbers.  For the buffer, use `ivy--regex' instead."
   (let* ((re-builder (ivy-alist-setting ivy-re-builders-alist))
+         (str (replace-regexp-in-string "\\\\n" "\n" str))
          (re (cond
                ((equal str "")
                 "")
@@ -1001,8 +1002,12 @@ WND, when specified is the window."
       (save-excursion
         (goto-char beg)
         ;; RE can become an invalid regexp
-        (while (and (ignore-errors (re-search-forward re end t))
-                    (> (- (match-end 0) (match-beginning 0)) 0))
+        (while (progn
+                 (when (eolp)
+                   (unless (eobp)
+                     (forward-char)))
+                 (and (ignore-errors (re-search-forward re end t))
+                      (> (- (match-end 0) (match-beginning 0)) 0)))
           ;; Don't highlight a match if it spans multiple
           ;; lines. `count-lines' returns 1 if the match is within a
           ;; single line, even if it includes the newline, and 2 or
@@ -1031,7 +1036,7 @@ WND, when specified is the window."
     (unless (> (- me mb) 2017)
       (funcall adder-fn
                mb me
-               (if (zerop ivy--subexps)
+               (if (and ivy-use-group-face-if-no-groups (zerop ivy--subexps))
                    (nth (1+ (mod (or re-idx 0) (1- (length faces)))) faces)
                  (car faces))
                0)))
@@ -1042,10 +1047,11 @@ WND, when specified is the window."
             (em (match-end j)))
         (when (and (integerp em)
                    (integerp bm))
-          (while (and (< j ivy--subexps)
-                      (integerp (match-beginning (+ j 1)))
-                      (= em (match-beginning (+ j 1))))
-            (setq em (match-end (cl-incf j))))
+          (when (eq (ivy-alist-setting ivy-re-builders-alist t) #'ivy--regex-fuzzy)
+            (while (and (< j ivy--subexps)
+                        (integerp (match-beginning (+ j 1)))
+                        (= em (match-beginning (+ j 1))))
+              (setq em (match-end (cl-incf j)))))
           (funcall adder-fn
                    bm em
                    (nth (1+ (mod (+ i 2) (1- (length faces))))
@@ -1534,12 +1540,17 @@ When not running `swiper-isearch' already, start it."
   (if (numberp (car-safe cands))
       (if (string= ivy--old-re "^$")
           ""
-        (swiper--isearch-format
-         ivy--index ivy--length ivy--old-cands
-         ivy--old-re
-         (ivy-state-current ivy-last)
-         (ivy-state-buffer ivy-last)))
-    (ivy-format-function-default cands)))
+        (mapconcat
+         #'identity
+         (swiper--isearch-format
+          ivy--index ivy--length ivy--old-cands
+          ivy--old-re
+          (ivy-state-current ivy-last)
+          (ivy-state-buffer ivy-last))
+         "\n"))
+    (funcall
+     (ivy-alist-setting ivy-format-functions-alist t)
+     cands)))
 
 (defun swiper--line-at-point (pt)
   (save-excursion
@@ -1547,22 +1558,27 @@ When not running `swiper-isearch' already, start it."
     (let ((s (buffer-substring
               (line-beginning-position)
               (line-end-position))))
-      (put-text-property 0 1 'point pt s)
-      (ivy-cleanup-string s))))
+      (if (string= s "")
+          s
+        (put-text-property 0 1 'point pt s)
+        (ivy-cleanup-string s)))))
 
 (defun swiper--isearch-highlight (str &optional current)
   (let ((start 0)
         (i 0))
-    (while (string-match ivy--old-re str start)
-      (setq start (match-end 0))
-      (swiper--add-properties
-       (if (eq current i)
-           swiper-faces
-         swiper-background-faces)
-       (lambda (beg end face _priority)
-         (ivy-add-face-text-property
-          beg end face str)))
-      (cl-incf i))
+    (catch 'done
+      (while (string-match ivy--old-re str start)
+        (if (= (match-beginning 0) (match-end 0))
+            (throw 'done t)
+          (setq start (match-end 0)))
+        (swiper--add-properties
+         (if (eq current i)
+             swiper-faces
+           swiper-background-faces)
+         (lambda (beg end face _priority)
+           (ivy-add-face-text-property
+            beg end face str)))
+        (cl-incf i)))
     str))
 
 (defun swiper--isearch-format (index length cands regex current buffer)
@@ -1611,7 +1627,7 @@ When not running `swiper-isearch' already, start it."
           (push (swiper--isearch-highlight s) res)
           (cl-incf len))
         (cl-incf i))
-      (mapconcat #'identity (nreverse res) "\n"))))
+      (nreverse res))))
 
 ;;;###autoload
 (defun swiper-isearch (&optional initial-input)

@@ -300,20 +300,18 @@ This function's exact configuration is stored in `treemacs-RET-actions-config'."
   "Define the behaviour of `treemacs-RET-action'.
 Determines that a button with a given STATE should lead to the execution of
 ACTION.
-
-First deletes the previous entry with key STATE from
-`treemacs-RET-actions-config'and then inserts the new tuple."
-  (setq treemacs-RET-actions-config (assq-delete-all state treemacs-RET-actions-config))
+The list of possible states can be found in `treemacs-valid-button-states'.
+ACTION should be one of the `treemacs-visit-node-*' commands."
+  (setf treemacs-RET-actions-config (assq-delete-all state treemacs-RET-actions-config))
   (push (cons state action) treemacs-RET-actions-config))
 
 (defun treemacs-define-TAB-action (state action)
   "Define the behaviour of `treemacs-TAB-action'.
 Determines that a button with a given STATE should lead to the execution of
 ACTION.
-
-First deletes the previous entry with key STATE from
-`treemacs-TAB-actions-config' and then inserts the new tuple."
-  (setq treemacs-TAB-actions-config (assq-delete-all state treemacs-TAB-actions-config))
+The list of possible states can be found in `treemacs-valid-button-states'.
+ACTION should be one of the `treemacs-visit-node-*' commands."
+  (setf treemacs-TAB-actions-config (assq-delete-all state treemacs-TAB-actions-config))
   (push (cons state action) treemacs-TAB-actions-config))
 
 (defun treemacs-visit-node-in-external-application ()
@@ -383,9 +381,10 @@ will instead be wiped irreversibly."
             (treemacs--on-file-deletion path)
             (treemacs-without-messages
              (treemacs-run-in-every-buffer
-              (-when-let (project (treemacs--find-project-for-path path))
-                (when (treemacs-is-path-visible? path)
-                  (treemacs--do-refresh (current-buffer) project))))))))
+              (when (treemacs-is-path-visible? path)
+                (treemacs-delete-single-node path)))))
+          (treemacs-log "Deleted %s."
+            (propertize path 'face 'font-lock-string-face))))
     (treemacs-pulse-on-failure "Nothing to delete here."))
   (treemacs--evade-image))
 
@@ -437,7 +436,7 @@ likewise be updated."
        (treemacs--replace-recentf-entry old-path new-path)
        (-let [treemacs-silent-refresh t]
          (treemacs-run-in-every-buffer
-          (treemacs--on-rename old-path new-path)
+          (treemacs--on-rename old-path new-path treemacs-filewatch-mode)
           (treemacs--do-refresh (current-buffer) project)))
        (treemacs--reload-buffers-after-rename old-path new-path)
        (treemacs-goto-file-node new-path project)
@@ -1107,7 +1106,7 @@ node is not a file/dir, then the next-closest file node will be used. If all
 nodes are non-files, or if there is no node at point, $HOME will be set as the
 working directory.
 
-Every instance of the string `$file' will be replaced with the (properly quoted)
+Every instance of the string `$path' will be replaced with the (properly quoted)
 absolute path of the node (if it is present)."
   (interactive "P")
   (let* ((cmd (read-shell-command "Command: "))
@@ -1128,7 +1127,7 @@ absolute path of the node (if it is present)."
      (t
       (setf working-dir (treemacs--parent working-dir))))
     (when (and node (treemacs-is-node-file-or-dir? node))
-      (setf cmd (s-replace "$file" (shell-quote-argument (treemacs-button-get node :path)) cmd)))
+      (setf cmd (s-replace "$path" (shell-quote-argument (treemacs-button-get node :path)) cmd)))
     (pfuture-callback `(,shell-file-name ,shell-command-switch ,cmd)
       :name name
       :buffer buffer

@@ -76,6 +76,7 @@
 (require 'subr-x)
 (require 'cl-lib)
 (require 'color)
+(require 'compile)
 
 (defcustom vterm-shell shell-file-name
   "The shell that gets run in the vterm."
@@ -132,6 +133,15 @@ for different shell"
   :type 'string
   :group 'vterm)
 
+(defcustom vterm-eval-cmds '(("find-file" find-file)
+                             ("message" message)
+                             ("vterm-clear-scrollback" vterm-clear-scrollback))
+  "Map of commands to functions. To be used by vterm--eval.
+
+Avoid using EVAL on input arguments, as it could allow a third
+party to commandeer your editor."
+  :type '(alist :key-type string)
+  :group 'vterm)
 
 (defface vterm-color-default
   `((t :inherit default))
@@ -252,7 +262,35 @@ If nil, never delay")
            :sentinel (when vterm-exit-functions #'vterm--sentinel))))
   (vterm--set-pty-name vterm--term (process-tty-name vterm--process))
   (process-put vterm--process 'adjust-window-size-function
-               #'vterm--window-adjust-process-window-size))
+               #'vterm--window-adjust-process-window-size)
+  (setq next-error-function 'vterm-next-error-function))
+
+(defun vterm--compilation-setup ()
+  "function to setup `compilation-shell-minor-mode' for vterm.
+`'compilation-shell-minor-mode' would change the value of
+local variable `next-error-function',so we should call this function in
+`compilation-shell-minor-mode-hook'."
+  (when (eq major-mode 'vterm-mode)
+    (setq next-error-function 'vterm-next-error-function)))
+
+(add-hook 'compilation-shell-minor-mode-hook #'vterm--compilation-setup)
+
+;;;###autoload
+(defun vterm-next-error-function (n &optional reset)
+  "Advance to the next error message and visit the file where the error was.
+This is the value of `next-error-function' in Compilation buffers."
+  (interactive "p")
+  (let* ((pt (point))
+         (msg (compilation-next-error (or n 1) nil
+				                      (or compilation-current-error
+					                      compilation-messages-start
+					                      (point-min))))
+         (default-directory default-directory)
+         (pwd (vterm--get-pwd)))
+    (when pwd
+      (setq default-directory pwd))
+    (goto-char pt)
+    (compilation-next-error-function n reset)))
 
 ;; Function keys and most of C- and M- bindings
 (defun vterm--exclude-keys (exceptions)
@@ -296,6 +334,7 @@ If nil, never delay")
 (define-key vterm-mode-map [remap yank-pop]            #'vterm-yank-pop)
 (define-key vterm-mode-map [remap mouse-yank-primary]  #'vterm-yank-primary)
 (define-key vterm-mode-map (kbd "C-SPC")               #'vterm--self-insert)
+(define-key vterm-mode-map (kbd "S-SPC")               #'vterm-send-space)
 (define-key vterm-mode-map (kbd "C-_")                 #'vterm--self-insert)
 (define-key vterm-mode-map (kbd "C-/")                 #'vterm-undo)
 (define-key vterm-mode-map (kbd "M-.")                 #'vterm-send-meta-dot)
@@ -371,14 +410,21 @@ If nil, never delay")
   (vterm-send-key "<stop>"))
 
 (defun vterm-send-return ()
-  "Sends `<return>' to the libvterm."
+  "Sends C-m to the libvterm."
   (interactive)
-  (vterm-send-key "<return>"))
+  (if (vterm--get-icrnl vterm--term)
+      (process-send-string vterm--process "\C-j")
+    (process-send-string vterm--process "\C-m")))
 
 (defun vterm-send-tab ()
   "Sends `<tab>' to the libvterm."
   (interactive)
   (vterm-send-key "<tab>"))
+
+(defun vterm-send-space ()
+  "Sends `<space>' to the libvterm."
+  (interactive)
+  (vterm-send-key " "))
 
 (defun vterm-send-backspace ()
   "Sends `<backspace>' to the libvterm."
@@ -444,6 +490,7 @@ If nil, never delay")
   "Sends `C-_' to the libvterm."
   (interactive)
   (vterm-send-key "_" nil nil t))
+
 
 (defun vterm-yank (&optional arg)
   "Implementation of `yank' (paste) in vterm."
@@ -557,9 +604,11 @@ Argument EVENT process event."
          (inhibit-read-only t))
     (setq width (- width (vterm--get-margin-width)))
     (when (and (processp process)
-               (process-live-p process))
-      (vterm--set-size vterm--term height width))
-    (cons width height)))
+               (process-live-p process)
+               (> width 0)
+               (> height 0))
+      (vterm--set-size vterm--term height width)
+      (cons width height))))
 
 (defun vterm--get-margin-width ()
   "Get margin width of vterm buffer when `display-line-numbers-mode' is enabled."
@@ -598,19 +647,35 @@ if N is negative backward-line from end of buffer."
 
 (defun vterm--set-directory (path)
   "Set `default-directory' to PATH."
-  (if (string-match "^\\(.*?\\)@\\(.*?\\):\\(.*?\\)$" path)
-      (progn
-        (let ((user (match-string 1 path))
-              (host (match-string 2 path))
-              (dir (match-string 3 path)))
-          (if (and (string-equal user user-login-name)
-                   (string-equal host (system-name)))
-              (progn
-                (when (file-directory-p dir)
-                  (setq default-directory (file-name-as-directory dir))))
-            (setq default-directory (file-name-as-directory (concat "/-:" path))))))
-    (when (file-directory-p path)
-      (setq default-directory (file-name-as-directory path)))))
+  (let ((dir (vterm--get-directory path)))
+    (when dir (setq default-directory dir))))
+
+(defun vterm--get-directory (path)
+  "Get  normalized directory to PATH."
+  (when path
+    (let (directory)
+      (if (string-match "^\\(.*?\\)@\\(.*?\\):\\(.*?\\)$" path)
+          (progn
+            (let ((user (match-string 1 path))
+                  (host (match-string 2 path))
+                  (dir (match-string 3 path)))
+              (if (and (string-equal user user-login-name)
+                       (string-equal host (system-name)))
+                  (progn
+                    (when (file-directory-p dir)
+                      (setq directory (file-name-as-directory dir))))
+                (setq directory (file-name-as-directory (concat "/-:" path))))))
+        (when (file-directory-p path)
+          (setq directory (file-name-as-directory path))))
+      directory)))
+
+(defun vterm--get-pwd (&optional linenum)
+  "Get working directory at LINENUM."
+  (let ((raw-pwd (vterm--get-pwd-raw
+                  vterm--term
+                  (or linenum (line-number-at-pos)))))
+    (when raw-pwd
+      (vterm--get-directory raw-pwd))))
 
 (defun vterm--get-color(index)
   "Get color by index from `vterm-color-palette'.
@@ -630,11 +695,17 @@ Argument INDEX index of color."
     (face-background 'vterm-color-default nil 'default))))
 
 (defun vterm--eval(str)
-  "evaluate Elisp code contained in a string.
-Argument STR Elisp code."
-  (eval (car (read-from-string
-              (format "(progn %s)" str)))))
+  "Parse STR for command and arguments and call command defined in vterm-eval-cmds.
 
+All passed in arguments are strings and forwarded as string to
+the called functions."
+  (let* ((parts (split-string-and-unquote str))
+         (command (car parts))
+         (args (cdr parts))
+         (f (assoc command vterm-eval-cmds)))
+    (if f
+        (apply (cadr f) args)
+      (message "Failed to find command: %s" command))))
 
 (provide 'vterm)
 ;;; vterm.el ends here

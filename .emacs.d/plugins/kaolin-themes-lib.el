@@ -122,7 +122,7 @@
     (amber4 "#c5b378")
     (amber5 "#1e1c14")
     (amber6 "#403B2E")
-    (amber7 "#847C68")
+    (amber7 "#6E6653")
     (amber8 "#c7c2af")
     (amber9 "#eee6d3")
 
@@ -503,11 +503,11 @@
     (diff-rem    red1)
 
     (diff-bg-add spring-green2)
-    (diff-bg-mod purple3)
+    (diff-bg-mod vermilion4)
     (diff-bg-rem crimson4)
 
     (keyword     teal1)
-    (metakey     comment)
+    (metakey     (if kaolin-themes-distinct-metakeys keyword comment))
     (builtin     teal4)
     (header      builtin)
     (functions   builtin)
@@ -731,6 +731,7 @@
     (highlight-numbers-number (:foreground num))
     (highlight-quoted-quote   (:inherit 'font-lock-builtin-face))
     (highlight-quoted-symbol  (:inherit 'font-lock-keyword-face))
+    (highlight-symbol-face    (:background bg4))
 
     ;; Highlight indent guides
     (highlight-indent-guides-odd-face        (:background hl-indent))
@@ -1303,13 +1304,13 @@
 
     ;; Whitespace mode
     (whitespace-empty            (:background bg4))
-    (whitespace-line             (:background bg1 :foreground err))
-    (whitespace-newline          (:foreground bg2 :foreground num))
+    (whitespace-line             (:background bg1 :foreground num))
     (whitespace-indentation      (:background hl-indent :foreground hl-indent))
     (whitespace-tab              (:background bg2 :foreground comment))
     (whitespace-space            (:background bg2 :foreground comment))
-    (whitespace-space-before-tab (:background diff-add :foreground bg2))
-    (whitespace-space-after-tab  (:background diff-add :foreground bg2))
+    (whitespace-newline          (:inherit 'whitespace-space))
+    (whitespace-space-before-tab (:background diff-mod :foreground bg2))
+    (whitespace-space-after-tab  (:background diff-mod :foreground bg2))
     ;; (whitespace-hspace           (:foreground num))
     (whitespace-trailing         (:inherit 'trailing-whitespace :foreground bg2))
     (whitespace-big-indent       (:background red0 :foreground bg2))
@@ -1334,14 +1335,14 @@
 
     (org-document-info-keyword     (:foreground metakey))
     (org-meta-line                 (:inherit 'org-document-info-keyword))
-    (org-block                     (:background bg2))
-    (org-block-begin-line          (:background comment :foreground bg4 :distant-foreground fg4))
+    (org-block                     (:background bg3 :foreground fg2))
+    (org-block-begin-line          (:background bg2 :foreground comment))
     (org-block-end-line            (:inherit 'org-block-begin-line))
     (org-list-dt                   (:inherit 'org-checkbox))
     (org-document-title            (:foreground builtin :bold bold))
     (org-document-info             (:foreground builtin))
     (org-footnote                  (:foreground fg4 :underline underline))
-    (org-quote                     (:foreground fg3 :italic italic))
+    (org-quote                     (:background bg2 :foreground fg2 :italic italic))
     (org-verse                     (:foreground fg3 :italic italic))
 
     (org-level-1            (:foreground keyword :bold bold :height 1.1))
@@ -1532,6 +1533,10 @@
     (swiper-match-face-2 (:background bg2 :foreground search1 :bold bold))
     (swiper-match-face-3 (:background bg2 :foreground search2 :bold bold))
     (swiper-match-face-4 (:background bg2 :foreground search3 :bold bold))
+    (swiper-background-match-face-1 (:inherit 'swiper-match-face-1 :bold nil :background bg1))
+    (swiper-background-match-face-2 (:inherit 'swiper-match-face-2 :bold nil :background bg1))
+    (swiper-background-match-face-3 (:inherit 'swiper-match-face-3 :bold nil :background bg1))
+    (swiper-background-match-face-4 (:inherit 'swiper-match-face-4 :bold nil :background bg1))
     (swiper-line-face    (:inherit 'hl-line))
 
     ;; Awesome-tabs

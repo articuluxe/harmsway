@@ -198,7 +198,7 @@ Specify another one if you encounter the issue."
   :group'doom-modeline)
 
 (defcustom doom-modeline-icon (display-graphic-p)
-  "Whether display icons in mode-line.
+  "Whether display the icons in mode-line.
 
 It respects `all-the-icons-color-icons'.
 While using the server mode in GUI, should set the value explicitly."
@@ -233,13 +233,13 @@ It respects `doom-modeline-icon' and `doom-modeline-buffer-state-icon'."
   :type 'boolean
   :group 'doom-modeline)
 
-(defcustom doom-modeline-unicode-fallback t
+(defcustom doom-modeline-unicode-fallback nil
   "Whether to use unicode as a fallback (instead of ASCII) when not using icons."
   :type 'boolean
   :group 'doom-modeline)
 
 (defcustom doom-modeline-minor-modes (featurep 'minions)
-  "Whether display minor modes in mode-line."
+  "Whether display the minor modes in mode-line."
   :type 'boolean
   :group 'doom-modeline)
 
@@ -249,12 +249,12 @@ It respects `doom-modeline-icon' and `doom-modeline-buffer-state-icon'."
   :group 'doom-modeline)
 
 (defcustom doom-modeline-buffer-encoding t
-  "Whether display buffer encoding."
+  "Whether display the buffer encoding."
   :type 'boolean
   :group 'doom-modeline)
 
 (defcustom doom-modeline-indent-info nil
-  "Whether display indentation information."
+  "Whether display the indentation information."
   :type 'boolean
   :group 'doom-modeline)
 
@@ -274,21 +274,26 @@ It respects `doom-modeline-icon' and `doom-modeline-buffer-state-icon'."
   :group 'doom-modeline)
 
 (defcustom doom-modeline-persp-name t
-  "Whether display perspective name.
+  "Whether display the perspective name.
 
 Non-nil to display in mode-line."
   :type 'boolean
   :group 'doom-modeline)
 
+(defcustom doom-modeline-display-default-persp-name nil
+  "If non nil the default perspective name is displayed in the mode-line."
+  :type 'boolean
+  :group 'doom-modeline)
+
 (defcustom doom-modeline-lsp t
-  "Whether display `lsp' state.
+  "Whether display the `lsp' state.
 
 Non-nil to display in mode-line."
   :type 'boolean
   :group 'doom-modeline)
 
 (defcustom doom-modeline-github nil
-  "Whether display GitHub notifications/
+  "Whether display the GitHub notifications.
 
 It requires `ghub' and `async' packages."
   :type 'boolean
@@ -300,21 +305,31 @@ It requires `ghub' and `async' packages."
   :group 'doom-modeline)
 
 (defcustom doom-modeline-env-version t
-  "Whether display environment version."
+  "Whether display the environment version."
+  :type 'boolean
+  :group 'doom-modeline)
+
+(defcustom doom-modeline-evil-state-icon t
+  "Whether display the `evil' state icon."
   :type 'boolean
   :group 'doom-modeline)
 
 (defcustom doom-modeline-mu4e t
-  "Whether display mu4e notifications.
+  "Whether display the mu4e notifications.
 
 It requires `mu4e-alert' package."
   :type 'boolean
   :group 'doom-modeline)
 
 (defcustom doom-modeline-irc t
-  "Whether display irc notifications.
+  "Whether display the irc notifications.
 
-It requires `circe' package."
+It requires `circe' or `erc' package."
+  :type 'boolean
+  :group 'doom-modeline)
+
+(defcustom doom-modeline-irc-buffers nil
+  "Whether display the unread irc buffers."
   :type 'boolean
   :group 'doom-modeline)
 
@@ -384,6 +399,11 @@ It requires `circe' package."
   "Face for 'X out of Y' segments, such as `anzu', `evil-substitute' and`iedit', etc."
   :group 'doom-modeline-faces)
 
+(defface doom-modeline-host
+  '((t (:inherit italic)))
+  "Face for remote hosts in the modeline."
+  :group 'doom-modeline-faces)
+
 (defface doom-modeline-debug
   '((t (:inherit (font-lock-doc-face bold))))
   "Face for debug-level messages in the modeline. Used by `*checker'."
@@ -414,13 +434,13 @@ It requires `circe' package."
   "The face used for the left-most bar on the mode-line of an active window."
   :group 'doom-modeline-faces)
 
-(defface doom-modeline-inactive-bar
+(defface doom-modeline-bar-inactive
   `((t (:background ,(face-foreground 'mode-line-inactive))))
   "The face used for the left-most bar on the mode-line of an inactive window."
   :group 'doom-modeline-faces)
 
 (defface doom-modeline-evil-emacs-state
-  '((t (:inherit doom-modeline-warning)))
+  '((t (:inherit (doom-modeline-highlight bold))))
   "Face for the Emacs state tag in evil state indicator."
   :group 'doom-modeline-faces)
 
@@ -430,7 +450,7 @@ It requires `circe' package."
   :group 'doom-modeline-faces)
 
 (defface doom-modeline-evil-motion-state
-  '((t :inherit doom-modeline-buffer-path))
+  '((t :inherit doom-modeline-buffer-file))
   "Face for the motion state tag in evil state indicator."
   :group 'doom-modeline-faces)
 
@@ -440,12 +460,12 @@ It requires `circe' package."
   :group 'doom-modeline-faces)
 
 (defface doom-modeline-evil-operator-state
-  '((t (:inherit doom-modeline-buffer-path)))
+  '((t (:inherit doom-modeline-buffer-file)))
   "Face for the operator state tag in evil state indicator."
   :group 'doom-modeline-faces)
 
 (defface doom-modeline-evil-visual-state
-  '((t (:inherit doom-modeline-buffer-file)))
+  '((t (:inherit doom-modeline-warning)))
   "Face for the visual state tag in evil state indicator."
   :group 'doom-modeline-faces)
 
@@ -466,17 +486,52 @@ It requires `circe' package."
 
 (defface doom-modeline-lsp-success
   '((t (:inherit success)))
-  "Face for success state in LSP."
+  "Face for LSP success state."
   :group 'doom-modeline-faces)
 
 (defface doom-modeline-lsp-warning
   '((t (:inherit warning)))
-  "Face for warning state in LSP."
+  "Face for LSP warning state."
   :group 'doom-modeline-faces)
 
 (defface doom-modeline-lsp-error
   '((t (:inherit error)))
-  "Face for error state in LSP."
+  "Face for LSP error state."
+  :group 'doom-modeline-faces)
+
+(defface doom-modeline-lsp-running
+  '((t (:inherit compilation-mode-line-run)))
+  "Face for LSP running state."
+  :group 'doom-modeline-faces)
+
+(defface doom-modeline-battery-charging
+  '((t (:inherit success)))
+  "Face for battery charging statues."
+  :group 'doom-modeline-faces)
+
+(defface doom-modeline-battery-full
+  '((t (:inherit success)))
+  "Face for battery full statues."
+  :group 'doom-modeline-faces)
+
+(defface doom-modeline-battery-normal
+  '((t (:inherit mode-line)))
+  "Face for battery normal statues."
+  :group 'doom-modeline-faces)
+
+(defface doom-modeline-battery-warning
+  '((t (:inherit warning)))
+  "Face for battery warning statues."
+  :group 'doom-modeline-faces)
+
+(defface doom-modeline-battery-critical
+  '((t (:inherit error)))
+  "Face for battery critical statues."
+  :group 'doom-modeline-faces)
+
+(defface doom-modeline-battery-error
+  '((t (:inherit error)))
+  "Face for battery error statues."
   :group 'doom-modeline-faces)
 
 
@@ -868,6 +923,7 @@ directory too."
                          (and (doom-modeline--active)
                               'doom-modeline-buffer-file))))
            (when face `(:inherit ,face))))))
+     'mouse-face 'mode-line-highlight
      'help-echo (concat buffer-file-truename
                         (unless (string= (file-name-nondirectory buffer-file-truename)
                                          (buffer-name))

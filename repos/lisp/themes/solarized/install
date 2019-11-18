@@ -1,2 +1,4 @@
 cp src/solarized.el ../../../../.emacs.d/plugins
+cp src/solarized-palettes.el ../../../../.emacs.d/plugins
+cp src/solarized-theme-utils.el ../../../../.emacs.d/plugins
 cp src/solarized-*-theme.el ../../../../.emacs.d/etc/themes

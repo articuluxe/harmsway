@@ -62,7 +62,7 @@ Must be bound to a mouse click, or EVENT will not be supplied."
     (when (region-active-p)
       (keyboard-quit))
     (-when-let (state (treemacs--prop-at-point :state))
-      (--if-let (cdr (assq state treemacs-RET-actions-config))
+      (--if-let (cdr (assq state treemacs-doubleclick-actions-config))
           (progn
             (funcall it)
             (treemacs--evade-image))
@@ -113,9 +113,9 @@ Must be bound to a mouse click, or EVENT will not be supplied."
 Determines that a button with a given STATE should lead to the execution of
 ACTION.
 
-First deletes the previous entry with key STATE from
-`treemacs-doubleclick-actions-config' and then inserts the new tuple."
-  (setq treemacs-doubleclick-actions-config (assq-delete-all state treemacs-doubleclick-actions-config))
+The list of possible states can be found in `treemacs-valid-button-states'.
+ACTION should be one of the `treemacs-visit-node-*' commands."
+  (setf treemacs-doubleclick-actions-config (assq-delete-all state treemacs-doubleclick-actions-config))
   (push (cons state action) treemacs-doubleclick-actions-config))
 
 ;;;###autoload
@@ -136,8 +136,8 @@ ignore any prefix argument."
 
 (defun treemacs--imenu-tag-noselect (file tag-path)
   "Return a list of the source buffer for FILE and the position of the tag from TAG-PATH."
-  (let ((tag (car tag-path))
-        (path (cdr tag-path)))
+  (let ((tag (-last-item tag-path))
+        (path (-butlast tag-path)))
     (condition-case e
         (progn
           (find-file-noselect file)
@@ -145,9 +145,7 @@ ignore any prefix argument."
             (dolist (path-item path)
               (setq index (cdr (assoc path-item index))))
             (-let [(buf . pos) (treemacs--extract-position
-                              (cdr (--first
-                                    (equal (car it) tag)
-                                    index)))]
+                                (cdr (--first (equal (car it) tag) index)))]
               ;; some imenu implementations, like markdown, will only provide
               ;; a raw buffer position (an int) to move to
 	      (list (or buf (get-file-buffer file)) pos))))
@@ -180,7 +178,7 @@ ignore any prefix argument."
            (let (file tag-path)
              (with-current-buffer (marker-buffer btn)
                (setq file (treemacs--nearest-path btn)
-                     tag-path (treemacs--tags-path-of btn)))
+                     tag-path (treemacs-button-get btn :path)))
              (treemacs--imenu-tag-noselect file tag-path)))
           ('call-xref
            (let ((xref (xref-definition

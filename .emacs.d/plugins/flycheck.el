@@ -4203,11 +4203,15 @@ overlays."
   (flycheck-error-level-interesting-p (get-char-property pos 'flycheck-error)))
 
 (defun flycheck-error-level-interesting-p (err)
-  "Check if ERR severity is >= `flycheck-navigation-minimum-level'."
+  "Check if ERR severity is >= `flycheck-navigation-minimum-level'.
+
+ERR is also interesting (the function returns true) if there are
+no errors as or more severe than `flycheck-navigation-minimum-level'."
   (when (flycheck-error-p err)
     (-if-let (min-level flycheck-navigation-minimum-level)
-        (<= (flycheck-error-level-severity min-level)
-            (flycheck-error-level-severity (flycheck-error-level err)))
+        (or (<= (flycheck-error-level-severity min-level)
+                (flycheck-error-level-severity (flycheck-error-level err)))
+            (not (flycheck-has-current-errors-p min-level)))
       t)))
 
 (defun flycheck-next-error-pos (n &optional reset)
@@ -9489,6 +9493,8 @@ Requires Flake8 3.0 or newer. See URL
                     flycheck-option-int)
             (option "--max-line-length" flycheck-flake8-maximum-line-length nil
                     flycheck-option-int)
+            (eval (when buffer-file-name
+                    (concat "--stdin-display-name=" buffer-file-name)))
             "-")
   :standard-input t
   :error-filter (lambda (errors)
@@ -9496,7 +9502,7 @@ Requires Flake8 3.0 or newer. See URL
                     (seq-map #'flycheck-flake8-fix-error-level errors)))
   :error-patterns
   ((warning line-start
-            "stdin:" line ":" (optional column ":") " "
+            (file-name) ":" line ":" (optional column ":") " "
             (id (one-or-more (any alpha)) (one-or-more digit)) " "
             (message (one-or-more not-newline))
             line-end))
@@ -11258,9 +11264,9 @@ See URL `https://github.com/adrienverge/yamllint'."
             (config-file "-c" flycheck-yamllintrc))
   :error-patterns
   ((error line-start
-          (file-name) ":" line ":" column ": [error] " (message) line-end)
+          "stdin:" line ":" column ": [error] " (message) line-end)
    (warning line-start
-            (file-name) ":" line ":" column ": [warning] " (message) line-end))
+            "stdin:" line ":" column ": [warning] " (message) line-end))
   :modes yaml-mode)
 
 (provide 'flycheck)

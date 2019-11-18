@@ -233,14 +233,14 @@
 
     ;; vterm
     (vterm               :foreground fg)
-    (vterm-color-black   :background base0   :foreground base0)
-    (vterm-color-red     :background red     :foreground red)
-    (vterm-color-green   :background green   :foreground green)
-    (vterm-color-yellow  :background yellow  :foreground yellow)
-    (vterm-color-blue    :background blue    :foreground blue)
-    (vterm-color-magenta :background magenta :foreground magenta)
-    (vterm-color-cyan    :background cyan    :foreground cyan)
-    (vterm-color-white   :background base8   :foreground base8)
+    (vterm-color-black   :background (doom-lighten base0 0.25)   :foreground base0)
+    (vterm-color-red     :background (doom-lighten red 0.25)     :foreground red)
+    (vterm-color-green   :background (doom-lighten green 0.25)   :foreground green)
+    (vterm-color-yellow  :background (doom-lighten yellow 0.25)  :foreground yellow)
+    (vterm-color-blue    :background (doom-lighten blue 0.25)    :foreground blue)
+    (vterm-color-magenta :background (doom-lighten magenta 0.25) :foreground magenta)
+    (vterm-color-cyan    :background (doom-lighten cyan 0.25)    :foreground cyan)
+    (vterm-color-white   :background (doom-lighten base8 0.25)   :foreground base8)
 
     ;; widget
     (widget-button-pressed :foreground red)
@@ -1305,6 +1305,19 @@
     (rst-level-4 :inherit 'rst-adornment :weight 'bold)
     (rst-level-5 :inherit 'rst-adornment :weight 'bold)
     (rst-level-6 :inherit 'rst-adornment :weight 'bold)
+
+    ;; telephone-line
+    (telephone-line-accent-active :foreground fg :background base4)
+    (telephone-line-accent-inactive :foreground fg :background base2)
+    (telephone-line-projectile :foreground green)
+    (telephone-line-evil :foreground fg :weight 'bold)
+    (telephone-line-evil-insert :background (doom-blend green bg 0.5) :weight 'bold)
+    (telephone-line-evil-normal :background (doom-blend red bg 0.5) :weight 'bold)
+    (telephone-line-evil-visual :background (doom-blend orange bg 0.5) :weight 'bold)
+    (telephone-line-evil-replace :background (doom-color bg-alt) :weight 'bold)
+    (telephone-line-evil-motion :background (doom-blend blue bg 0.5) :weight 'bold)
+    (telephone-line-evil-operator :background (doom-blend violet bg 0.5) :weight 'bold)
+    (telephone-line-evil-emacs :background (doom-blend magenta bg 0.5) :weight 'bold)
 
     ;; typescript-mode
     (typescript-jsdoc-tag :foreground doc-comments)
