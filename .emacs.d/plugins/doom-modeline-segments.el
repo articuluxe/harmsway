@@ -467,9 +467,9 @@ directory, the file name, and its state (modified, read-only or non-existent)."
        (let ((eol (coding-system-eol-type buffer-file-coding-system)))
          (propertize
           (pcase eol
-            (0 "LF")
-            (1 "CRLF")
-            (2 "CR")
+            (0 "LF ")
+            (1 "CRLF ")
+            (2 "CR ")
             (_ ""))
           'face face
           'mouse-face mouse-face
@@ -482,8 +482,6 @@ directory, the file name, and its state (modified, read-only or non-existent)."
           'local-map (let ((map (make-sparse-keymap)))
 		               (define-key map [mode-line mouse-1] 'mode-line-change-eol)
 		               map)))
-
-       (doom-modeline-spc)
 
        ;; coding system
        (propertize
@@ -2025,9 +2023,9 @@ mouse-1: Toggle Debug on Quit"
            (sep (doom-modeline-vspc))
            (seg-sep (and (or dap edebug on-error on-quit) (doom-modeline-spc))))
       (concat seg-sep
-              (and dap (concat dap sep))
-              (and edebug (concat edebug sep))
-              (and on-error (concat on-error sep))
+              (and dap (concat dap (and (or edebug on-error on-quit) sep)))
+              (and edebug (concat edebug (and (or on-error on-quit) sep)))
+              (and on-error (concat on-error (and on-quit sep)))
               on-quit
               seg-sep))))
 
@@ -2113,11 +2111,11 @@ value of name. This is necessary in cases where the user has stylized the name
 to be an icon and we don't want to remove that so we just return the original."
   (or (and (boundp 'tracking-shorten)
            (car (tracking-shorten (list name))))
-      (and (boundp 'rcirc-short-buffer-name)
-           (rcirc-short-buffer-name name))
       (and (boundp 'erc-track-shorten-function)
            (functionp erc-track-shorten-function)
 	       (car (funcall erc-track-shorten-function (list name))))
+      (and (boundp 'rcirc-short-buffer-name)
+           (rcirc-short-buffer-name name))
       name))
 
 (defun doom-modeline--tracking-buffers (buffers)
@@ -2139,41 +2137,59 @@ to be an icon and we don't want to remove that so we just return the original."
    (doom-modeline-vspc)))
 
 (defun doom-modeline--circe-active ()
-  "Checks if `circe' is active"
+  "Checks if `circe' is active."
   (and (boundp 'tracking-mode-line-buffers)
        (derived-mode-p 'circe-mode)))
 
-(defun doom-modeline--rcirc-active ()
-  "Checks if `rcirc' is active"
-  (and (bound-and-true-p rcirc-track-minor-mode)
-       (boundp 'rcirc-activity)))
-
 (defun doom-modeline--erc-active ()
-  "Checks if `erc' is active"
+  "Checks if `erc' is active."
   (and (bound-and-true-p erc-track-mode)
        (boundp 'erc-modified-channels-alist)))
 
+(defun doom-modeline--rcirc-active ()
+  "Checks if `rcirc' is active."
+  (and (bound-and-true-p rcirc-track-minor-mode)
+       (boundp 'rcirc-activity)))
+
+(defun doom-modeline--irc-active ()
+  "Checks if any IRC is active."
+  (or (doom-modeline--circe-active)
+      (doom-modeline--erc-active)
+      (doom-modeline--rcirc-active)))
+
 (defun doom-modeline--get-buffers ()
-  "Gets the buffers that have activity"
+  "Gets the buffers that have activity."
   (cond
    ((doom-modeline--circe-active)
     tracking-buffers)
-   ((doom-modeline--rcirc-active)
-    (mapcar (lambda (b)
-              (buffer-name b))
-            rcirc-activity))
    ((doom-modeline--erc-active)
     (mapcar (lambda (l)
               (buffer-name (car l)))
-            erc-modified-channels-alist))))
+            erc-modified-channels-alist))
+   ((doom-modeline--rcirc-active)
+    (mapcar (lambda (b)
+              (buffer-name b))
+            rcirc-activity))))
+
+;; Create a modeline segment that contains all the irc tracked buffers
+(doom-modeline-def-segment irc-buffers
+  "The list of shortened, unread irc buffers."
+  (when (and doom-modeline-irc
+             (doom-modeline--active)
+             (doom-modeline--irc-active))
+    (let* ((buffers (doom-modeline--get-buffers))
+           (number (length buffers)))
+      (when (> number 0)
+        (concat
+         (doom-modeline-spc)
+         (doom-modeline--tracking-buffers buffers)
+         (doom-modeline-spc))))))
 
 (doom-modeline-def-segment irc
   "A notification icon for any unread irc buffer."
   (when (and doom-modeline-irc
              (doom-modeline--active)
-             (or (doom-modeline--circe-active)
-                 (doom-modeline--rcirc-active)
-                 (doom-modeline--erc-active)))
+             (doom-modeline--irc-active))
     (let* ((buffers (doom-modeline--get-buffers))
            (number (length buffers)))
       (when (> number 0)
@@ -2198,11 +2214,11 @@ to be an icon and we don't want to remove that so we just return the original."
                                          ((doom-modeline--circe-active)
                                           "mouse-1: Switch to previous unread buffer
 mouse-3: Switch to next unread buffer")
-                                         ((doom-modeline--rcirc-active)
-                                          "mouse-1: Switch to server buffer
-mouse-3: Switch to next unread buffer")
                                          ((doom-modeline--erc-active)
                                           "mouse-1: Switch to buffer
+mouse-3: Switch to next unread buffer")
+                                         ((doom-modeline--rcirc-active)
+                                          "mouse-1: Switch to server buffer
 mouse-3: Switch to next unread buffer")))
                      'mouse-face 'mode-line-highlight
                      'local-map (let ((map (make-sparse-keymap)))
@@ -2212,16 +2228,16 @@ mouse-3: Switch to next unread buffer")))
                                       #'tracking-previous-buffer)
                                     (define-key map [mode-line mouse-3]
                                       #'tracking-next-buffer))
-                                   ((doom-modeline--rcirc-active)
-                                    (define-key map [mode-line mouse-1]
-                                      #'rcirc-switch-to-server-buffer)
-                                    (define-key map [mode-line mouse-3]
-                                      #'rcirc-next-active-buffer))
                                    ((doom-modeline--erc-active)
                                     (define-key map [mode-line mouse-1]
                                       #'erc-switch-to-buffer)
                                     (define-key map [mode-line mouse-3]
-                                      #'erc-track-switch-buffer)))
+                                      #'erc-track-switch-buffer))
+                                   ((doom-modeline--rcirc-active)
+                                    (define-key map [mode-line mouse-1]
+                                      #'rcirc-switch-to-server-buffer)
+                                    (define-key map [mode-line mouse-3]
+                                      #'rcirc-next-active-buffer)))
                                   map))
 
          ;; Disaplay the unread irc buffers
@@ -2248,7 +2264,7 @@ mouse-3: Switch to next unread buffer")))
 ;; battery status
 ;;
 
-(defvar-local doom-modeline--battery-status nil)
+(defvar doom-modeline--battery-status nil)
 (defun doom-modeline-update-battery-status ()
   "Update battery status."
   (setq doom-modeline--battery-status

@@ -551,7 +551,7 @@ If you prefer the old behaviors, then set this to t."
 (defface magit-diff-hunk-region
   `((t :inherit bold
        ,@(and (>= emacs-major-version 27)
-              (list :extend (face-attribute 'region :extend)))))
+              (list :extend (ignore-errors (face-attribute 'region :extend))))))
   "Face used by `magit-diff-highlight-hunk-region-using-face'.
 
 This face is overlaid over text that uses other hunk faces,
@@ -573,7 +573,7 @@ and `:slant'."
   :group 'magit-faces)
 
 (defface magit-diff-lines-heading
-  '((((class color) (background light))
+  `((((class color) (background light))
      ,@(and (>= emacs-major-version 27) '(:extend t))
      :inherit magit-diff-hunk-heading-highlight
      :background "LightSalmon3")

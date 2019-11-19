@@ -1321,7 +1321,8 @@ declarations are also included."
   (let (found-match)
     (while (and
             (not found-match)
-            (re-search-forward (concat "\\(\\_<" go-identifier-regexp "\\)?(") end t))
+            (re-search-forward (concat "\\(\\_<" go-identifier-regexp "\\)?(") end t)
+            (not (go-in-string-or-comment-p)))
       (save-excursion
         (goto-char (match-beginning 0))
 
@@ -1473,27 +1474,19 @@ gets highlighted by the font lock keyword."
            ;; We aren't on right side of equals sign.
            (not (go--looking-back-p "=")))
 
-           (or
-            ;; We are followed directly by comma.
-            (looking-at-p "[[:space:]]*,")
+          (setq found-match t)
 
-            ;; Or we are followed by a space and non-space (non-space
-            ;; might be a type name or "=").
-            (looking-at-p "[[:space:]]+[^[:space:]]"))
-
-           (setq found-match t)
-
-           ;; Unset match data subexpressions that don't apply based on
-           ;; the decl kind.
-           (let ((md (match-data)))
-             (cond
-              ((string= decl "var")
-               (setf (nth 4 md) nil (nth 5 md) nil (nth 6 md) nil (nth 7 md) nil))
-              ((string= decl "const")
-               (setf (nth 2 md) nil (nth 3 md) nil (nth 6 md) nil (nth 7 md) nil))
-              ((string= decl "type")
-               (setf (nth 2 md) nil (nth 3 md) nil (nth 4 md) nil (nth 5 md) nil)))
-             (set-match-data md)))
+          ;; Unset match data subexpressions that don't apply based on
+          ;; the decl kind.
+          (let ((md (match-data)))
+            (cond
+             ((string= decl "var")
+              (setf (nth 4 md) nil (nth 5 md) nil (nth 6 md) nil (nth 7 md) nil))
+             ((string= decl "const")
+              (setf (nth 2 md) nil (nth 3 md) nil (nth 6 md) nil (nth 7 md) nil))
+             ((string= decl "type")
+              (setf (nth 2 md) nil (nth 3 md) nil (nth 4 md) nil (nth 5 md) nil)))
+            (set-match-data md)))
 
          (t
           (save-match-data
@@ -2015,11 +2008,11 @@ code to the Playground. You can disable the confirmation by setting
 "
   (interactive "r")
   (if (and go-confirm-playground-uploads
-           (not (yes-or-no-p "Upload to public Go Playground?")))
+           (not (yes-or-no-p "Upload to public Go Playground? ")))
       (message "Upload aborted")
     (let* ((url-request-method "POST")
            (url-request-extra-headers
-            '(("Content-Type" . "application/x-www-form-urlencoded")))
+            '(("Content-Type" . "text/plain; charset=UTF-8")))
            (url-request-data
             (encode-coding-string
              (buffer-substring-no-properties start end)
