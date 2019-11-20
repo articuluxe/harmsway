@@ -534,6 +534,11 @@ It requires `circe' or `erc' package."
   "Face for battery error statues."
   :group 'doom-modeline-faces)
 
+(defface doom-modeline-buffer-timemachine
+  '((t (:inherit (doom-modeline-buffer-path italic))))
+  "Face for battery error statues."
+  :group 'doom-modeline-faces)
+
 
 ;;
 ;; Externals
@@ -633,14 +638,14 @@ It requires `circe' or `erc' package."
 
 (defun doom-modeline (key)
   "Return a mode-line configuration associated with KEY (a symbol).
-  Throws an error if it doesn't exist."
+Throws an error if it doesn't exist."
   (let ((fn (intern-soft (format "doom-modeline-format--%s" key))))
     (when (functionp fn)
       `(:eval (,fn)))))
 
 (defun doom-modeline-set-modeline (key &optional default)
   "Set the modeline format. Does nothing if the modeline KEY doesn't exist.
-  If DEFAULT is non-nil, set the default mode-line for all buffers."
+If DEFAULT is non-nil, set the default mode-line for all buffers."
   (when-let ((modeline (doom-modeline key)))
     (setf (if default
               (default-value 'mode-line-format)
@@ -760,24 +765,31 @@ It requires `circe' or `erc' package."
                          ((floatp height) (* height (frame-char-height)))
                          (t (frame-char-height)))))))
 
+(defun doom-modeline-add-variable-watcher (symbol watch-function)
+  "Cause WATCH-FUNCTION to be called when SYMBOL is set if possible.
+
+See docs of `add-variable-watcher'."
+  (when (fboundp 'add-variable-watcher)
+    (add-variable-watcher symbol watch-function)))
+
 (defun doom-modeline-icon (icon-set icon-name unicode text face &rest args)
   "Display icon of ICON-NAME with FACE and ARGS in mode-line.
 
-  ICON-SET includes `octicon', `faicon', `material', `alltheicons' and `fileicon'.
-  UNICODE is the unicode char fallback. TEXT is the ASCII char fallback."
+ICON-SET includes `octicon', `faicon', `material', `alltheicons' and `fileicon'.
+UNICODE is the unicode char fallback. TEXT is the ASCII char fallback."
   (let ((face (or face 'mode-line)))
     (or (when (and icon-name (not (string-empty-p icon-name)))
           (pcase icon-set
             ('octicon
-             (apply #'doom-modeline-icon-octicon icon-name :face face args))
+             (apply #'all-the-icons-octicon icon-name :face face args))
             ('faicon
-             (apply #'doom-modeline-icon-faicon icon-name :face face args))
+             (apply #'all-the-icons-faicon icon-name :face face args))
             ('material
-             (apply #'doom-modeline-icon-material icon-name :face face args))
+             (apply #'all-the-icons-material icon-name :face face args))
             ('alltheicon
-             (apply #'doom-modeline-icon-alltheicon icon-name :face face args))
+             (apply #'all-the-icons-alltheicon icon-name :face face args))
             ('fileicon
-             (apply #'doom-modeline-icon-fileicon icon-name :face face args))))
+             (apply #'all-the-icons-fileicon icon-name :face face args))))
         (when (and doom-modeline-unicode-fallback
                    unicode
                    (not (string-empty-p unicode))
@@ -785,45 +797,10 @@ It requires `circe' or `erc' package."
           (propertize unicode 'face face))
         (when text (propertize text 'face face)))))
 
-(defun doom-modeline-icon-octicon (icon-name &rest args)
-  "Display octicon with ARGS."
-  (when doom-modeline-icon
-    (apply #'all-the-icons-octicon icon-name args)))
-
-(defun doom-modeline-icon-faicon (icon-name &rest args)
-  "Display font awesome icon with ARGS."
-  (when doom-modeline-icon
-    (apply #'all-the-icons-faicon icon-name args)))
-
-(defun doom-modeline-icon-material (icon-name &rest args)
-  "Display material icon with ARGS."
-  (when doom-modeline-icon
-    (apply #'all-the-icons-material icon-name args)))
-
-(defun doom-modeline-icon-alltheicon (icon-name &rest args)
-  "Display alltheicon with ARGS."
-  (when doom-modeline-icon
-    (apply #'all-the-icons-alltheicon icon-name args)))
-
-(defun doom-modeline-icon-fileicon (icon-name &rest args)
-  "Display fileicon with ARGS."
-  (when doom-modeline-icon
-    (apply #'all-the-icons-fileicon icon-name args)))
-
-(defun doom-modeline-icon-for-mode (&rest args)
-  "Display icon for major mode with ARGS."
-  (when doom-modeline-icon
-    (apply #'all-the-icons-icon-for-mode args)))
-
-(defun doom-modeline-icon-for-file (&rest args)
-  "Display icon for major mode with ARGS."
-  (when doom-modeline-icon
-    (apply #'all-the-icons-icon-for-file args)))
-
 (defvar-local doom-modeline-project-root nil)
 (defun doom-modeline-project-root ()
   "Get the path to the root of your project.
-  Return `default-directory' if no project was found."
+Return `default-directory' if no project was found."
   (setq doom-modeline-project-root
         (or doom-modeline-project-root
             (pcase doom-modeline-project-detection

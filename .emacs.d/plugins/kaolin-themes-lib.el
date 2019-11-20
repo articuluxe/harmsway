@@ -1452,12 +1452,11 @@
     ;; Helm
     (helm-M-x-key                             (:foreground keysym))
     (helm-action                              (:foreground fg1 :underline underline))
-    (helm-header                              (:foreground type :underline nil :box nil))
-    ;; TODO:
-    (helm-helper                              (:foreground type))
-    (helm-source-header                       (:background bg2 :foreground header :underline nil :bold bold))
-    (helm-match                               (:foreground search1 :bold bold))
+    (helm-header                              (:inherit 'header-line))
     (helm-header-line-left-margin             (:inherit 'header-line))
+    (helm-helper                              (:foreground keysym))
+    (helm-source-header                       (:background bg2 :foreground num :underline nil :bold bold))
+    (helm-match                               (:foreground search1 :bold bold))
     (helm-selection                           (:background bg3 :foreground hl :bold bold))
     (helm-selection-line                      (:inherit 'helm-selection))
     (helm-visible-mark                        (:background diff-bg-add :foreground bg1))
@@ -1507,6 +1506,13 @@
     (helm-time-zone-current                   (:foreground builtin))
     (helm-time-zone-home                      (:foreground type))
     (helm-source-go-package-godoc-description (:foreground str))
+
+    ;; helm-swoop
+    (helm-swoop-line-number-face       (:background nil :foreground line-num-fg))
+    (helm-swoop-target-line-face       (:inherit 'isearch))
+    (helm-swoop-target-line-block-face (:inherit 'isearch))
+    (helm-swoop-target-word-face       (:background num :foreground bg1 :bold bold))
+
 
     ;; Wgrep
     (wgrep-face        (:background bg2 :foreground diff-mod))
