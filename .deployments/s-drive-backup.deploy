@@ -1,0 +1,3 @@
+((deploy . (
+("/home/dan.harms/.emacs.d/bookmarks" . "/shares/dan.harms/hq-fs-common/dharms/")
+)))
