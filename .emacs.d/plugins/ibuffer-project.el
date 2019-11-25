@@ -5,7 +5,7 @@
 ;; Author: Andrii Kolomoiets <andreyk.mad@gmail.com>
 ;; Keywords: tools
 ;; URL: https://github.com/muffinmad/emacs-ibuffer-project
-;; Package-Version: 1.1
+;; Package-Version: 1.2.1
 ;; Package-Requires: ((emacs "25.1"))
 
 ;; This file is NOT part of GNU Emacs.
@@ -65,8 +65,8 @@
 
 (defun ibuffer-project-root (buf)
   "Return a cons cell (project-root . root-type) for BUF."
-  (with-current-buffer buf
-    (unless (string-match-p "^ " (buffer-name))
+  (unless (string-match-p "^ " (buffer-name buf))
+    (with-current-buffer buf
       (let ((dir (cdr (project-current))))
         (cond
          (dir (cons dir 'project))
@@ -91,12 +91,22 @@
   (:description "project filename relative")
   (let* ((bufa (car a))
          (bufb (car b))
-         (filea (buffer-local-value 'buffer-file-name bufa))
-         (fileb (buffer-local-value 'buffer-file-name bufb)))
-    (cond
-     ((and filea fileb) (string-lessp filea fileb))
-     ((or filea fileb) (null fileb))
-     (t (string-lessp (buffer-name bufa) (buffer-name bufb))))))
+         (projecta (car (ibuffer-project-root bufa)))
+         (projectb (car (ibuffer-project-root bufb))))
+    (if (equal projecta projectb)
+        (let ((filea (buffer-local-value 'buffer-file-name bufa))
+              (fileb (buffer-local-value 'buffer-file-name bufb)))
+          (cond
+           ((and filea fileb) (string-lessp filea fileb))
+           ((or filea fileb) (null fileb))
+           (t (let* ((namea (buffer-name bufa))
+                     (nameb (buffer-name bufb))
+                     (asteriska (string-match-p "^*" namea))
+                     (asteriskb (string-match-p "^*" nameb)))
+                (if (if asteriska (not asteriskb) asteriskb)
+                    (null asteriska)
+                  (string-lessp namea nameb))))))
+      (string-lessp projecta projectb))))
 
 (defvar ibuffer-project-file-relative-header-map
   (let ((map (make-sparse-keymap)))
@@ -118,8 +128,9 @@
 ;;;###autoload
 (defun ibuffer-project-generate-filter-groups ()
   "Create ibuffer filters based on project root of buffers."
-  (let ((roots (ibuffer-remove-duplicates
-                (delq nil (mapcar 'ibuffer-project-root (buffer-list))))))
+  (let ((roots (sort (ibuffer-remove-duplicates
+                      (delq nil (mapcar 'ibuffer-project-root (buffer-list))))
+                     (lambda (a b) (string-lessp (car a) (car b))))))
     (mapcar (lambda (root)
               (cons (ibuffer-project-group-name (car root) (cdr root))
                     `((project-root . ,root))))

@@ -208,6 +208,9 @@ Basic, Font Lock, Isearch, Jabber, rst, magit, Web faces are included.")
    `(whitespace-space-before-tab ((t (:background ,organic-bg :foreground ,alum-3))) t)
    `(whitespace-trailing ((t (:background ,organic-bg :foreground ,plum-1))) t)
 
+   ;; ace-jump
+   `(ace-jump-face-foreground ((t (:foreground "red" :underline nil))) t)
+
    ;; diff
    '(diff-indicator-added ((t (:foreground "#339933"))) t)
    '(diff-added ((t (:foreground "#339933"))) t)
@@ -236,10 +239,9 @@ Basic, Font Lock, Isearch, Jabber, rst, magit, Web faces are included.")
    `(git-gutter:deleted ((t (:foreground ,red-2))) t)
    '(git-gutter:modified ((t (:foreground "DodgerBlue3"))) t)
 
-   ;; git-gutter-fringe
-   '(git-gutter-fr:added ((t (:foreground "#339933"))) t)
-   `(git-gutter-fr:deleted ((t (:foreground ,red-2))) t)
-   `(git-gutter-fr:modified ((t (:foreground ,organic-comment-fg))) t)
+   `(git-gutter-fr:added ((t (:foreground "PaleGreen3" :background "PaleGreen3"))) t)
+   `(git-gutter-fr:deleted ((t (:foreground "tomato1" :background "tomato1"))) t)
+   `(git-gutter-fr:modified ((t (:foreground "LightSkyBlue3" :background "LightSkyBlue3"))) t)
 
    ;; org-mode
    `(org-table ((t (:foreground ,organic-builtin-fg))) t)

@@ -60,6 +60,7 @@
  '(cursor ((t (:background "#8b8bff" :foreground "#cfdfef"))))
  '(show-paren-match ((t (:background "#4e4e8f"))))
  '(show-paren-match-face ((t (:background "#4e4e8f"))))
+ '(show-paren-match-expression ((t (:background "#2e2e3f"))))
  '(link ((t (:foreground "#ff8bff"))))
  '(link-visited ((t (:foreground "#cb6ecbv"))))  ; not a vim color, just a little darker
 
@@ -100,6 +101,16 @@
  '(font-lock-type-face ((t (:foreground "#ff8bff"))))
  '(font-lock-variable-name-face ((t nil)))
  '(font-lock-warning-face ((t (:foreground "#ffffff" :background "#6e2e2e"))))
+
+  ;; diff-mode
+  ;;
+  ;; Not from the inkpot palette, dark colors so we can see the refined colors properly.
+ '(diff-added ((t (:background "#163616"))))
+ '(diff-removed ((t (:background "#361616"))))
+  ;; Refine colors for emacs 27+.
+ '(diff-refine-added ((t (:background "#306d30"))))
+ '(diff-refine-removed ((t (:background "#6d3030"))))
+
  '(w3m-anchor ((t (:foreground "#c080d0"))))
  '(info-xref ((t (:foreground "#409090"))))
  '(info-menu-star ((t (:foreground "#409090"))))
@@ -211,6 +222,10 @@
 
  ;; highlight-numbers (melpa)
  '(highlight-numbers-number ((t (:foreground "#f0ad6d"))))
+
+ ;; lsp-mode
+ '(lsp-face-highlight-read ((t (:background "#343443"))))
+ '(lsp-face-highlight-textual ((t (:background "#343443"))))
 
  ;; auto-complete (melpa)
  '(ac-candidate-face ((t (:foreground "#ffffff" :background "#4e4e8f"))))

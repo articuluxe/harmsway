@@ -672,9 +672,9 @@ BUFFER is the buffer where the request has been made."
                (lambda nil
                  (lsp-ui-doc--display
                   (thing-at-point 'symbol t)
-                  (->> (gethash "contents" hover)
-                       lsp-ui-doc--extract
-                       (replace-regexp-in-string "\r" "")))))))
+                  (-some->> (gethash "contents" hover)
+                    lsp-ui-doc--extract
+                    (replace-regexp-in-string "\r" "")))))))
     (lsp-ui-doc--hide-frame)))
 
 (defun lsp-ui-doc--delete-frame ()
@@ -756,6 +756,17 @@ It is supposed to be called from `lsp-ui--toggle'"
   "Hide hover information popup."
   (interactive)
   (lsp-ui-doc--hide-frame))
+
+(defun lsp-ui-doc--glance-hide-frame ()
+  "Hook to hide hover information popup for lsp-ui-doc-glance."
+  (lsp-ui-doc-hide)
+  (remove-hook 'pre-command-hook 'lsp-ui-doc--glance-hide-frame))
+
+(defun lsp-ui-doc-glance ()
+  "Trigger display hover information popup and hide it on next typing."
+  (interactive)
+  (lsp-ui-doc-show)
+  (add-hook 'pre-command-hook 'lsp-ui-doc--glance-hide-frame))
 
 (provide 'lsp-ui-doc)
 ;;; lsp-ui-doc.el ends here

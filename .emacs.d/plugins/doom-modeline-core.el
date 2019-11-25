@@ -248,6 +248,13 @@ It respects `doom-modeline-icon' and `doom-modeline-buffer-state-icon'."
   :type 'boolean
   :group 'doom-modeline)
 
+(defcustom doom-modeline-continuous-word-count-modes
+  '(text-mode)
+  "Major modes in which to display word count continuously.
+Also applies to any derived modes. Respects `doom-modeline-enable-word-count'."
+  :type 'list
+  :group 'doom-modeline)
+
 (defcustom doom-modeline-buffer-encoding t
   "Whether display the buffer encoding."
   :type 'boolean
@@ -309,8 +316,10 @@ It requires `ghub' and `async' packages."
   :type 'boolean
   :group 'doom-modeline)
 
-(defcustom doom-modeline-evil-state-icon t
-  "Whether display the `evil' state icon."
+(defcustom doom-modeline-modal-icon t
+  "Whether display the modal state icon.
+
+Including `evil', `overwrite', `god', `ryo' and `xah-fly-keys', etc."
   :type 'boolean
   :group 'doom-modeline)
 
@@ -535,7 +544,7 @@ It requires `circe' or `erc' package."
   :group 'doom-modeline-faces)
 
 (defface doom-modeline-buffer-timemachine
-  '((t (:inherit (doom-modeline-buffer-path italic))))
+  '((t (:inherit (doom-modeline-buffer-file italic underline))))
   "Face for battery error statues."
   :group 'doom-modeline-faces)
 
@@ -778,7 +787,7 @@ See docs of `add-variable-watcher'."
 ICON-SET includes `octicon', `faicon', `material', `alltheicons' and `fileicon'.
 UNICODE is the unicode char fallback. TEXT is the ASCII char fallback."
   (let ((face (or face 'mode-line)))
-    (or (when (and icon-name (not (string-empty-p icon-name)))
+    (or (when (and doom-modeline-icon icon-name (not (string-empty-p icon-name)))
           (pcase icon-set
             ('octicon
              (apply #'all-the-icons-octicon icon-name :face face args))

@@ -11,9 +11,7 @@
   (
    ;; Colors
    (spring-green6 "#3e594e")
-   ;; (aquamarine1   "#47BF9D")
-   ;; (aquamarine4   "#518270")
-   (aquamarine4   "#729C8C")
+   (aquamarine4   "#74A895")
    (teal1         "#4FA19C")
    (orange3       "#f5c791")
    (crimson0      "#DC4473")
@@ -26,6 +24,7 @@
    (orange9       "#EEDCC1")
 
    ;; Color vars
+   (bg0 "#262628")
    (bg1 black3)
    (bg2 black4)
    (bg3 gray0)
@@ -38,14 +37,13 @@
    (functions   capri4)
 
    (var         aquamarine4)
-   ;; (const       cyan1)
    (const       teal1)
    ;; (type        orange3)
    (type        lime4)
 
-   ;; (comment     gray5)
-   (comment     cerulean7)
-   (comment-alt vermilion7)
+   (comment     gray5)
+   ;; (comment     orange7)
+   (comment-alt orange7)
 
    (str         pink3)
    (str-alt     crimson7)
@@ -56,6 +54,7 @@
    (num         crimson3)
    (bool        num)
    (warning     amber0)
+   ;; (warning     orange1)
    (err         red3)
 
    (dim-buffer white0)
@@ -63,13 +62,11 @@
    ;; TODO: add colored
    (hl-line    bg2)
    ;; (hl-indent  cerulean7)
-   ;; TODO:
    (selection crimson6)
-   ;; (selection ultramarine6)
    ;; TODO:
    (pulse bg4)
 
-   (todo red1)
+   (todo red3)
    (done aquamarine1)
 
    (tooltip-hl-bg bg3)
@@ -90,6 +87,8 @@
    (diff-mod vermilion4)
    (diff-rem red1)
 
+   (evil-normal       functions)
+
     ;; Mode-line
    (line-fg           fg4)
    (line-color1       functions)
@@ -104,21 +103,22 @@
 
    (win-border    bg3)
    (line-num-fg   comment)
-   (line-num-hl   hl)
+   (line-num-hl   teal3)
 
    (cursor        fg1)
 
    (ivy1          gray9)
-   (search1       cerulean3)
-   (search2       yellow0)
-   (search3       green3))
+   ;; (search1       cerulean3)
+   (search1       capri0)
+   (search2       vermilion3)
+   (search3       spring-green0))
 
   (
    (highlight-quoted-quote   (:foreground orange3))
    (highlight-quoted-symbol  (:foreground amber3))
 
-   (org-document-title     (:foreground orange3 :bold bold))
-   (org-verbatim     (:foreground cyan1 :bold bold))
+   (org-document-title (:foreground orange3 :bold bold :height 1.3))
+   (org-verbatim       (:foreground cyan1 :bold bold))
 
    (org-level-1            (:foreground var :bold bold :height 1.1))
    (org-level-2            (:foreground functions  :bold nil))

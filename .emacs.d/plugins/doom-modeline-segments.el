@@ -1024,6 +1024,20 @@ mouse-1: List all problems%s"
            (doom-modeline-spc)))
       "")))
 
+;;
+;; Word Count
+;;
+
+(doom-modeline-def-segment word-count
+  "The buffer word count.
+Displayed when in a major mode in `doom-modeline-continuous-word-count-modes',
+or any derived mode. Respects `doom-modeline-enable-word-count'."
+  (when (and doom-modeline-enable-word-count
+             (apply #'derived-mode-p doom-modeline-continuous-word-count-modes))
+    (propertize (format " %dW " (count-words (point-min) (point-max)))
+                'face (if (doom-modeline--active)
+                          'mode-line
+                        'mode-line-inactive))))
 
 ;;
 ;; Selection
@@ -1071,20 +1085,24 @@ lines are selected, or the NxM dimensions of a block selection."
 
 (defsubst doom-modeline--macro-recording ()
   "Display current Emacs or evil macro being recorded."
-  (when (and (doom-modeline--active) (or defining-kbd-macro executing-kbd-macro))
-    (let ((sep (propertize " " 'face 'doom-modeline-panel)))
-      (concat sep
-              (doom-modeline-icon 'material "fiber_manual_record" "●"
-                                  (if (bound-and-true-p evil-this-macro)
-                                      (char-to-string evil-this-macro)
-                                    "Macro")
-                                  'doom-modeline-panel
-                                  :v-adjust -0.225)
-              sep
-              (doom-modeline-icon 'octicon "triangle-right" "▶" ">"
-                                  'doom-modeline-panel
-                                  :v-adjust -0.05)
-              sep))))
+  (when (and (doom-modeline--active)
+             (or defining-kbd-macro executing-kbd-macro))
+    (let ((sep (propertize " " 'face 'doom-modeline-panel ))
+          (vsep (propertize " " 'face
+                            '(:inherit (doom-modeline-panel variable-pitch)))))
+      (concat
+       sep
+       (doom-modeline-icon 'material "fiber_manual_record" "●"
+                           (if (bound-and-true-p evil-this-macro)
+                               (char-to-string evil-this-macro)
+                             "Macro")
+                           'doom-modeline-panel
+                           :v-adjust -0.225)
+       vsep
+       (doom-modeline-icon 'octicon "triangle-right" "▶" ">"
+                           'doom-modeline-panel
+                           :v-adjust -0.05)
+       sep))))
 
 ;; `anzu' and `evil-anzu' expose current/total state that can be displayed in the
 ;; mode-line.
@@ -1530,7 +1548,7 @@ mouse-1: Display Line and Column Mode Menu"
                  (doom-modeline-spc)
                  (doom-modeline-icon
                   'material
-                  (when doom-modeline-evil-state-icon "fiber_manual_record")
+                  (when doom-modeline-modal-icon "fiber_manual_record")
                   "●"
                   (string-trim (evil-state-property evil-state :tag t))
                   (if (doom-modeline--active)
@@ -1553,11 +1571,14 @@ mouse-1: Display Line and Column Mode Menu"
              (not (bound-and-true-p evil-local-mode)))
     (propertize (concat
                  (doom-modeline-spc)
-                 (doom-modeline-icon 'material "fiber_manual_record" "●" "<O>"
-                                     (if (doom-modeline--active)
-                                         'doom-modeline-urgent
-                                       'mode-line-inactive)
-                                     :v-adjust -0.225)
+                 (doom-modeline-icon
+                  'material
+                  (when doom-modeline-modal-icon "fiber_manual_record")
+                  "●" "<O>"
+                  (if (doom-modeline--active)
+                      'doom-modeline-urgent
+                    'mode-line-inactive)
+                  :v-adjust -0.225)
                  (doom-modeline-spc))
                 'help-echo "Overwrite state")))
 
@@ -1566,11 +1587,14 @@ mouse-1: Display Line and Column Mode Menu"
   (when (bound-and-true-p god-local-mode)
     (propertize (concat
                  (doom-modeline-spc)
-                 (doom-modeline-icon 'material "fiber_manual_record" "●" "<G>"
-                                     (if (doom-modeline--active)
-                                         'doom-modeline-evil-normal-state
-                                       'mode-line-inactive)
-                                     :v-adjust -0.225)
+                 (doom-modeline-icon
+                  'material
+                  (when doom-modeline-modal-icon "fiber_manual_record")
+                  "●" "<G>"
+                  (if (doom-modeline--active)
+                      'doom-modeline-evil-normal-state
+                    'mode-line-inactive)
+                  :v-adjust -0.225)
                  (doom-modeline-spc))
                 'help-echo "God mode")))
 
@@ -1579,11 +1603,14 @@ mouse-1: Display Line and Column Mode Menu"
   (when (bound-and-true-p ryo-modal-mode)
     (propertize (concat
                  (doom-modeline-spc)
-                 (doom-modeline-icon 'material "fiber_manual_record" "●" "<R>"
-                                     (if (doom-modeline--active)
-                                         'doom-modeline-evil-normal-state
-                                       'mode-line-inactive)
-                                     :v-adjust -0.225)
+                 (doom-modeline-icon
+                  'material
+                  (when doom-modeline-modal-icon "fiber_manual_record")
+                  "●" "<R>"
+                  (if (doom-modeline--active)
+                      'doom-modeline-evil-normal-state
+                    'mode-line-inactive)
+                  :v-adjust -0.225)
                  (doom-modeline-spc))
                 'help-echo "Ryo modal")))
 
@@ -1594,25 +1621,32 @@ mouse-1: Display Line and Column Mode Menu"
       (if xah-fly-insert-state-q
           (propertize (concat
                        (doom-modeline-spc)
-                       (doom-modeline-icon 'material "fiber_manual_record" "●" "<I>"
-                                           (if active
-                                               'doom-modeline-evil-insert-state
-                                             'mode-line-inactive)
-                                           :v-adjust -0.225)
+                       (doom-modeline-icon
+                        'material
+                        (when doom-modeline-modal-icon "fiber_manual_record")
+                        "●" "<I>"
+                        (if active
+                            'doom-modeline-evil-insert-state
+                          'mode-line-inactive)
+                        :v-adjust -0.225)
                        (doom-modeline-spc))
                       'help-echo "Xah-fly insert state")
         (propertize (concat
                      (doom-modeline-spc)
-                     (doom-modeline-icon 'material "fiber_manual_record" "●" "<C>"
-                                         (if active
-                                             'doom-modeline-evil-normal-state
-                                           'mode-line-inactive)
-                                         :v-adjust -0.225)
+                     (doom-modeline-icon
+                      'material
+                      (when doom-modeline-modal-icon "fiber_manual_record")
+                      "●" "<X>"
+                      (if active
+                          'doom-modeline-evil-normal-state
+                        'mode-line-inactive)
+                      :v-adjust -0.225)
                      (doom-modeline-spc))
                     'help-echo "Xah-fly normal state")))))
 
 (doom-modeline-def-segment modals
-  "Displays modal editing states, including `evil', `overwrite', `god', `ryo' and `xha-fly-kyes', etc."
+  "Displays modal editing states, including `evil', `overwrite', `god', `ryo'
+and `xha-fly-kyes', etc."
   (concat (doom-modeline--evil)
           (doom-modeline--overwrite)
           (doom-modeline--god)
@@ -1902,7 +1936,7 @@ Example:
      (doom-modeline-spc)
      (propertize
       (concat
-       (doom-modeline-icon 'faicon "github" "⌗" "#" 'doom-modeline-warning :v-adjust -0.0575)
+       (doom-modeline-icon 'faicon "github" "🔔" "#" 'doom-modeline-warning :v-adjust -0.0575)
        (doom-modeline-vspc)
        (propertize
         (if (> doom-modeline--github-notification-number  doom-modeline-number-limit)
@@ -2120,37 +2154,28 @@ to be an icon and we don't want to remove that so we just return the original."
    buffers
    (doom-modeline-vspc)))
 
-(defun doom-modeline--circe-active ()
-  "Checks if `circe' is active."
-  (and (boundp 'tracking-mode-line-buffers)
-       (derived-mode-p 'circe-mode)))
+(defun doom-modeline--circe-p ()
+  "Checks if `circe' is in use."
+  (boundp 'tracking-mode-line-buffers))
 
-(defun doom-modeline--erc-active ()
-  "Checks if `erc' is active."
-  (and (bound-and-true-p erc-track-mode)
-       (boundp 'erc-modified-channels-alist)))
+(defun doom-modeline--erc-p ()
+  "Checks if `erc' is in use."
+  (boundp 'erc-modified-channels-alist))
 
-(defun doom-modeline--rcirc-active ()
-  "Checks if `rcirc' is active."
-  (and (bound-and-true-p rcirc-track-minor-mode)
-       (boundp 'rcirc-activity)))
-
-(defun doom-modeline--irc-active ()
-  "Checks if any IRC is active."
-  (or (doom-modeline--circe-active)
-      (doom-modeline--erc-active)
-      (doom-modeline--rcirc-active)))
+(defun doom-modeline--rcirc-p ()
+  "Checks if `rcirc' is in use."
+  (bound-and-true-p rcirc-track-minor-mode))
 
 (defun doom-modeline--get-buffers ()
   "Gets the buffers that have activity."
   (cond
-   ((doom-modeline--circe-active)
+   ((doom-modeline--circe-p)
     tracking-buffers)
-   ((doom-modeline--erc-active)
+   ((doom-modeline--erc-p)
     (mapcar (lambda (l)
               (buffer-name (car l)))
             erc-modified-channels-alist))
-   ((doom-modeline--rcirc-active)
+   ((doom-modeline--rcirc-p)
     (mapcar (lambda (b)
               (buffer-name b))
             rcirc-activity))))
@@ -2158,9 +2183,7 @@ to be an icon and we don't want to remove that so we just return the original."
 ;; Create a modeline segment that contains all the irc tracked buffers
 (doom-modeline-def-segment irc-buffers
   "The list of shortened, unread irc buffers."
-  (when (and doom-modeline-irc
-             (doom-modeline--active)
-             (doom-modeline--irc-active))
+  (when doom-modeline-irc
     (let* ((buffers (doom-modeline--get-buffers))
            (number (length buffers)))
       (when (> number 0)
@@ -2171,9 +2194,7 @@ to be an icon and we don't want to remove that so we just return the original."
 
 (doom-modeline-def-segment irc
   "A notification icon for any unread irc buffer."
-  (when (and doom-modeline-irc
-             (doom-modeline--active)
-             (doom-modeline--irc-active))
+  (when doom-modeline-irc
     (let* ((buffers (doom-modeline--get-buffers))
            (number (length buffers)))
       (when (> number 0)
@@ -2195,29 +2216,29 @@ to be an icon and we don't want to remove that so we just return the original."
                                          buffers
                                          ", ")
                                         (cond
-                                         ((doom-modeline--circe-active)
+                                         ((doom-modeline--circe-p)
                                           "mouse-1: Switch to previous unread buffer
 mouse-3: Switch to next unread buffer")
-                                         ((doom-modeline--erc-active)
+                                         ((doom-modeline--erc-p)
                                           "mouse-1: Switch to buffer
 mouse-3: Switch to next unread buffer")
-                                         ((doom-modeline--rcirc-active)
+                                         ((doom-modeline--rcirc-p)
                                           "mouse-1: Switch to server buffer
 mouse-3: Switch to next unread buffer")))
                      'mouse-face 'mode-line-highlight
                      'local-map (let ((map (make-sparse-keymap)))
                                   (cond
-                                   ((doom-modeline--circe-active)
+                                   ((doom-modeline--circe-p)
                                     (define-key map [mode-line mouse-1]
                                       #'tracking-previous-buffer)
                                     (define-key map [mode-line mouse-3]
                                       #'tracking-next-buffer))
-                                   ((doom-modeline--erc-active)
+                                   ((doom-modeline--erc-p)
                                     (define-key map [mode-line mouse-1]
                                       #'erc-switch-to-buffer)
                                     (define-key map [mode-line mouse-3]
                                       #'erc-track-switch-buffer))
-                                   ((doom-modeline--rcirc-active)
+                                   ((doom-modeline--rcirc-p)
                                     (define-key map [mode-line mouse-1]
                                       #'rcirc-switch-to-server-buffer)
                                     (define-key map [mode-line mouse-3]

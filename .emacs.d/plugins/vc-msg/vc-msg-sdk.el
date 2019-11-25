@@ -33,6 +33,14 @@
   "Format SECONDS to date and time."
   (current-time-string (seconds-to-time (string-to-number seconds))))
 
+(defun vc-msg-sdk-git-rootdir ()
+  "Git root directory."
+  (locate-dominating-file default-directory ".git"))
+
+(defun vc-msg-sdk-get-current-file ()
+  "Get current file path."
+  buffer-file-name)
+
 (defun vc-msg-sdk-format-timezone (timezone)
   "Format TIMEZONE and show city as extra information."
   (concat timezone

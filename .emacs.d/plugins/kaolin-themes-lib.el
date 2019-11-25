@@ -1046,11 +1046,16 @@
     (flyspell-incorrect (:underline (:style underline-style :color err)))
 
     ;; Hydra
-    (hydra-face-red      (:foreground red1))
-    (hydra-face-teal     (:foreground teal0))
+    ;; (hydra-face-red      (:foreground red1))
+    (hydra-face-red      (:foreground err))
+    (hydra-face-teal     (:foreground teal3))
     (hydra-face-blue     (:foreground azure3))
     (hydra-face-pink     (:foreground pink1))
-    (hydra-face-amaranth (:foreground magenta4))
+    (hydra-face-amaranth (:foreground purple3))
+
+    ;; Hydra-posframe
+    (hydra-posframe-face (:background bg2 :foreground fg1))
+    (hydra-posframe-border-face (:background bg2))
 
     ;; Ido
     (ido-indicator   (:foreground num))
@@ -1225,7 +1230,7 @@
     ;; Imenu list
     ;; (imenu-list-entry-subalist-face-0 (:inherit 'font-lock-keyword-face))
     (imenu-list-entry-face   (:inherit 'font-lock-keyword-name-face))
-    (imenu-list-entry-face-0 (:inherit 'font-lock-keyword-face :height 1.1))
+    (imenu-list-entry-face-0 (:inherit 'font-lock-keyword-face :height 1.0))
     (imenu-list-entry-face-1 (:inherit 'font-lock-function-name-face))
     (imenu-list-entry-face-2 (:inherit 'font-lock-string-face))
     (imenu-list-entry-face-3 (:inherit 'font-lock-type-face))
@@ -1335,7 +1340,7 @@
 
     (org-document-info-keyword     (:foreground metakey))
     (org-meta-line                 (:inherit 'org-document-info-keyword))
-    (org-block                     (:background bg3 :foreground fg2))
+    (org-block                     (:background bg2 :foreground fg2))
     (org-block-begin-line          (:background bg2 :foreground comment :height 0.9))
     (org-block-end-line            (:inherit 'org-block-begin-line))
     (org-list-dt                   (:inherit 'org-checkbox))
@@ -1413,8 +1418,10 @@
     (beacon-fallback-background (:background pulse))
 
     ;; Solaire mode
-    (solaire-default-face       (:background pane))
-    (solaire-hl-line-face  (:inherit 'hl-line :background bg3))
+    (solaire-default-face    (:inherit 'default :background pane))
+    (solaire-minibuffer-face (:inherit 'solaire-default-face))
+    (solaire-hl-line-face    (:inherit 'hl-line :background bg3))
+    (solaire-org-hide-face   (:inherit 'org-hide))
 
     ;; Tuareg/OCaml
     (tuareg-font-double-colon-face            (:foreground warning))
@@ -1455,12 +1462,12 @@
     (helm-header                              (:inherit 'header-line))
     (helm-header-line-left-margin             (:inherit 'header-line))
     (helm-helper                              (:foreground keysym))
-    (helm-source-header                       (:background bg2 :foreground num :underline nil :bold bold))
+    (helm-source-header                       (:background bg2 :foreground str :underline nil :bold bold))
     (helm-match                               (:foreground search1 :bold bold))
     (helm-selection                           (:background bg3 :foreground hl :bold bold))
     (helm-selection-line                      (:inherit 'helm-selection))
     (helm-visible-mark                        (:background diff-bg-add :foreground bg1))
-    (helm-candidate-number                    (:foreground num))
+    (helm-candidate-number                    (:foreground str))
     (helm-separator                           (:foreground type))
 
     (helm-bookmark-addressbook                (:foreground prep))

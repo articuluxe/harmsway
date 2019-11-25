@@ -89,7 +89,7 @@
 ;;
 
 (doom-modeline-def-modeline 'main
-  '(bar workspace-name window-number modals matches buffer-info remote-host buffer-position parrot selection-info)
+  '(bar workspace-name window-number modals matches buffer-info remote-host buffer-position word-count parrot selection-info)
   '(objed-state misc-info persp-name battery grip irc mu4e github debug lsp minor-modes input-method indent-info buffer-encoding major-mode process vcs checker))
 
 (doom-modeline-def-modeline 'minimal
@@ -97,7 +97,7 @@
   '(media-info major-mode))
 
 (doom-modeline-def-modeline 'special
-  '(bar window-number modals matches buffer-info buffer-position parrot selection-info)
+  '(bar window-number modals matches buffer-info buffer-position word-count parrot selection-info)
   '(objed-state misc-info battery irc-buffers debug minor-modes input-method indent-info buffer-encoding major-mode process))
 
 (doom-modeline-def-modeline 'project
@@ -129,8 +129,8 @@
   '(helm-help))
 
 (doom-modeline-def-modeline 'timemachine
-  '(bar window-number matches git-timemachine buffer-position parrot selection-info)
-  '(misc-info battery irc mu4e github debug minor-modes indent-info buffer-encoding major-mode))
+  '(bar window-number matches git-timemachine buffer-position word-count parrot selection-info)
+  '(misc-info minor-modes indent-info buffer-encoding major-mode))
 
 ;;
 ;; Interfaces
@@ -189,14 +189,14 @@ If DEFAULT is non-nil, set the default mode-line for all buffers."
   (doom-modeline-set-modeline 'pdf))
 
 ;;;###autoload
-(defun doom-modeline-set-helm-modeline (&rest _)
-  "Set helm mode-line."
-  (doom-modeline-set-modeline 'helm))
-
-;;;###autoload
-(defun doom-modeline-set-timemachine-modeline (&rest _)
+(defun doom-modeline-set-timemachine-modeline ()
   "Set timemachine mode-line."
   (doom-modeline-set-modeline 'timemachine))
+
+;;;###autoload
+(defun doom-modeline-set-helm-modeline (&rest _) ; To advice helm
+  "Set helm mode-line."
+  (doom-modeline-set-modeline 'helm))
 
 
 ;;
