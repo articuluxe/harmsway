@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2019-07-18 15:54:04 dan.harms>
+;; Modified Time-stamp: <2019-11-27 08:56:46 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -38,5 +38,12 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; neato-graph-bar ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package neato-graph-bar :bind ("C-c 0o" . neato-graph-bar))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; trashed ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package trashed
+  :bind ("C-c 0 DEL")
+  :init
+  (setq trashed-action-confirmer 'y-or-n-p)
+  )
 
 ;; linux.el ends here
