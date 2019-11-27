@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-11-18 12:53:56 dan.harms>
+;; Modified Time-stamp: <2019-11-27 09:03:36 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -857,6 +857,12 @@ From `manuel-oberti.github.io' on 20190806."
 (use-package annot
   :disabled
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; fancy-narrow ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package fancy-narrow
+  :disabled
+  :bind (("C-x nf" . fancy-narrow-to-region)
+         ("C-x nW" . fancy-widen)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; expand-region ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package expand-region
