@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-11-27 09:03:57 dharms>
+;; Modified Time-stamp: <2019-12-03 08:44:29 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3673,6 +3673,10 @@ This may perform related customization."
   (with-eval-after-load 'json-mode
     (require 'jq-mode)
     (define-key json-mode-map "\C-c\C-q" #'jq-interactively)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; counsel-jq ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package counsel-jq
+  :bind ("M-s M-j" . counsel-jq))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; js-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package nodejs-repl
