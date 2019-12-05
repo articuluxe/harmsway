@@ -1,0 +1,16 @@
+#+TITLE:Windows install instructions
+
+* Chocolatey
+** choco install -y 
+  - git
+  - putty
+  - gnuwin32-coreutils.install
+  - gnupg
+  - diffutils
+  - hunspell-portable
+  - Everything
+  - universal-ctags
+  - rg
+  - ag
+  - fd
+  - Git-Credential-Manager-for-Windows

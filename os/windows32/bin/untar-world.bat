@@ -1,17 +1,15 @@
 @echo off
 rem -*- Mode: bat -*-
-rem install-emacs.bat --- install emacs (xr style)
-rem Copyright (C) 2015-2019  Dan Harms (dan.harms)
+rem untar-world.bat --- untar the world (xr style)
+rem Copyright (C) 2017-2019  Dan Harms (dan.harms)
 rem Author: Dan Harms <dan.harms@xrtrading.com>
-rem Created: Thursday, May 21, 2015
+rem Created: Thursday, December 21, 2017
 rem Version: 1.0
-rem Modified Time-stamp: <2019-12-06 11:37:23 Dan.Harms>
+rem Modified Time-stamp: <2019-12-06 11:19:19 Dan.Harms>
 rem Modified by: Dan.Harms
 rem Keywords: install perfect editor
-
 setlocal
 setlocal enabledelayedexpansion
-
 
 set verbose=
 if not %1. == . (
@@ -22,15 +20,15 @@ if "%HOME%". == . (
     echo "HOME directory undefined, aborting."
     exit /b
 )
-if "%EMACS_DIR%". == . (
-    echo "EMACS_DIR undefined, aborting."
+if "%EMACS_BIN%". == . (
+    echo "EMACS_BIN undefined, aborting."
     exit /b
 )
 
 if "%TAR_EXE%". == . (
-   echo "TAR_EXE undefined, aborting."
-   exit /b
-   )
+    echo "TAR_EXE undefined, aborting."
+    exit /b
+)
 
 if "%GREP_EXE%". == . (
     echo "GREP_EXE undefined, aborting."
@@ -42,36 +40,23 @@ if "%FIND_EXE%". == . (
     exit /b
 )
 
-set "user=%USERNAME%"
 set "timeout=c:\Windows\System32\timeout"
 set orig_dir=%cd%
 set script_dir=%~dp0
-set int=emacs.tar
+set int=world.tar
 set manifest=.bk_manifest
 set backup=emacs_bk.tar
 set install_log=emacs-install.log
 
-for /f "usebackq" %%i in (`hostname`) do set host=%%i
-
-
-if exist %int% (
-    del %int%
-)
-
-echo Tarring .emacs.d into %int%...
-%TAR_EXE% c%verbose%f %int% --exclude=*.elc .emacs.d .fonts
-%TAR_EXE% u%verbose%f %int% --transform=s$site/xr/$$ site/xr/.emacs.d
-%TAR_EXE% u%verbose%f %int% --transform=s$ext$.emacs.d/ext$ ext
-%TAR_EXE% u%verbose%f %int% --transform=s$host/%host%/$$ host/%host%/.emacs.d
-
 cd "%HOME%"
+
 if exist .emacs.d (
     if exist %backup% del %backup%
     "%FIND_EXE%" .emacs.d/backups -mindepth 1 -type d -empty -delete
     for /f %%i in (%orig_dir%\.emacs.d\%manifest%) do (
         call :backup %%i %backup%
     )
-    "%timeout%" /t 2
+    %timeout% /t 2
     rmdir .emacs.d /s /q
     mkdir .emacs.d
     if exist %backup% (
@@ -81,7 +66,7 @@ if exist .emacs.d (
 )
 
 echo Untarring %int% into %cd%...
-%TAR_EXE% -x%verbose%pf %orig_dir:C:=%\%int% --overwrite
+"%TAR_EXE%" -x%verbose%pf %orig_dir:C:=%\%int% --overwrite
 
 rem del %orig_dir%\%int%
 
@@ -91,7 +76,7 @@ set cmd=(byte-recompile-directory \"%path%\" 0 t)
 
 echo Compiling emacs files in directory %path%...
 echo.
-"%EMACS_DIR%\bin\emacs" --batch -u %user% --eval "%cmd%" > %install_log% 2>&1
+"%EMACS_BIN%\emacs" --batch -u %USERNAME% --eval "%cmd%" > %install_log% 2>&1
 "%GREP_EXE%" -i error %install_log%
 "%GREP_EXE%" -e '^Done' %install_log%
 echo.
@@ -114,4 +99,4 @@ exit /b 0
 
 endlocal
 
-rem xr-install-emacs.bat ends here
+rem untar-world.bat ends here
