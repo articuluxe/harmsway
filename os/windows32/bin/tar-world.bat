@@ -5,8 +5,8 @@ rem Copyright (C) 2015-2019  Dan Harms (dan.harms)
 rem Author: Dan Harms <dan.harms@xrtrading.com>
 rem Created: Thursday, May 21, 2015
 rem Version: 1.0
-rem Modified Time-stamp: <2019-12-06 11:11:57 Dan.Harms>
-rem Modified by: Dan.Harms
+rem Modified Time-stamp: <2019-12-06 16:09:45 dan.harms>
+rem Modified by: Dan Harms
 rem Keywords: tar whole world
 
 setlocal
@@ -25,11 +25,15 @@ if "%MSYS_DIR%". == . (
 if "%TAR_EXE%". == . (
    echo "TAR_EXE undefined, aborting."
    exit /b
-   )
+)
+
+if "%HOSTNAME_EXE%". == . (
+    echo "HOSTNAME_EXE undefined, aborting."
+    exit /b
+)
 
 set "id=%MSYS_DIR%\id"
 set "uname=%MSYS_DIR%\uname"
-set "hostname=%MSYS_DIR%\hostname"
 set site=xr
 
 set curr_dir=%cd%
@@ -40,7 +44,7 @@ for /f "delims=" %%i in ('"%id%" -nu') do set user=%%i
 echo user is %user%
 for /f "delims=" %%i in ('"%uname%"') do set os=%%i
 echo os is %os%
-for /f "delims=" %%i in ('"%hostname%"') do set host=%%i
+for /f "delims=" %%i in ('"%HOSTNAME_EXE%"') do set host=%%i
 echo host is %host%
 echo site is %site%
 

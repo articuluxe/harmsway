@@ -5,7 +5,7 @@ rem Copyright (C) 2015-2019   (dan.harms)
 rem Author:  <dan.harms@xrtrading.com>
 rem Created: Friday, April 10, 2015
 rem Version: 1.0
-rem Modified Time-stamp: <2019-12-06 09:28:32 Dan.Harms>
+rem Modified Time-stamp: <2019-12-06 16:02:48 dan.harms>
 rem Keywords: pageant ssh
 
 setlocal
@@ -23,7 +23,7 @@ if "%PUTTY_DIR%". == . (
 set "exe=%PUTTY_DIR%\pageant.exe"
 set "key_file=%HOME%\.ssh\Dan.Harms.ppk"
 
-start %exe% %key_file%
+start "%exe%" "%key_file%"
 
 endlocal
 
