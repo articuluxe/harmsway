@@ -1,11 +1,12 @@
-;;; remotehost-connect.el --- manages connections to remote hosts
+;;; remotehost-connect.el --- Manages connections to remote hosts
 ;; Copyright (C) 2016-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Monday, April 18, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2019-06-05 08:46:31 dharms>
-;; Modified by: Dan Harms
-;; Keywords: remote hosts
+;; Modified Time-stamp: <2019-12-09 10:08:10 Dan.Harms>
+;; Modified by: Dan.Harms
+;; Keywords: tools remote hosts
+;; Package-Requires: ((emacs "25.1"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -21,7 +22,7 @@
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 ;;; Commentary:
-
+;; Provides an interface to connect to remote hosts.
 ;;
 
 ;;; Code:
@@ -37,19 +38,32 @@
 (defvar remotehost-connect-history nil
   "History for `remotehost-connect'.")
 
-(defun remotehost-connect--derive-remote-name (plist)
-  "Derive the remote file name implied by the settings in PLIST."
-  (format "/%s:%s@%s:%s"
-          (plist-get plist :method)
-          (plist-get plist :user)
-          (plist-get plist :host)
-          (plist-get plist :dir)))
+(defun remotehost-connect--derive-remote-name (method user host dir)
+  "Derive the remote file name defined by METHOD, USER, HOST and DIR."
+  (format "/%s:%s@%s:%s" method user host dir))
 
-(defun remotehost-connect--find-file (plist)
-  "Opens a remote host location, whose properties are contained in PLIST."
-  (let ((file (remotehost-connect--derive-remote-name plist)))
-    (find-file file)
-    ))
+(defun remotehost-connect--derive-remote-name-plist (plist)
+  "Derive the remote file name implied by the settings in PLIST."
+  (remotehost-connect--derive-remote-name
+   (plist-get plist :method)
+   (plist-get plist :user)
+   (plist-get plist :host)
+   (plist-get plist :dir)))
+
+(defun remotehost-connect--find-file (target)
+  "Opens a remote host location TARGET.
+TARGET may be a plist containing connection properties, or a host name."
+  (let (file)
+    (cond ((listp target)
+           (setq file (remotehost-connect--derive-remote-name-plist target))
+           (find-file file))
+          ((stringp target)
+           (setq file (remotehost-connect--derive-remote-name
+                       tramp-default-method tramp-default-user
+                       target "~"))
+           (find-file file))
+          (t
+           (user-error "Unknown target for remotehost-connect: %s" target)))))
 
 ;;;###autoload
 (defun remotehost-connect-read-file (file)
@@ -102,7 +116,9 @@ when called interactively with a prefix argument."
     (ivy-read "Remote host: " hosts
               :history 'remotehost-connect-history
               :action (lambda (x)
-                        (remotehost-connect--find-file (cdr x)))
+                        (if (consp x)
+                            (remotehost-connect--find-file (cdr x))
+                          (remotehost-connect--find-file x)))
               :caller 'remotehost-connect
               )))
 
