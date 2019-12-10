@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-12-03 08:44:29 dharms>
+;; Modified Time-stamp: <2019-12-10 09:49:37 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2277,6 +2277,10 @@ Only one letter is shown, the first that applies."
           (noslash . "")
           (nospace . "")))
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; compare-windows ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(setq compare-ignore-whitespace t)
+(global-set-key "\M-sdw" #'compare-windows)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; diff ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; better colors in older versions
