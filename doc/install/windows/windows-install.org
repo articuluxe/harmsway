@@ -14,3 +14,6 @@
   - ag
   - fd
   - Git-Credential-Manager-for-Windows
+  - mingw
+  - llvm
+  - make
