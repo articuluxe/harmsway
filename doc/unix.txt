@@ -5,7 +5,7 @@
 # Author:  <dan.harms@xrtrading.com>
 # Created: Friday, March 20, 2015
 # Version: 1.0
-# Modified Time-stamp: <2019-10-30 13:08:57 dan.harms>
+# Modified Time-stamp: <2019-12-12 10:54:32 dan.harms>
 # Modified by: Dan Harms
 # Keywords: help
 
@@ -15,6 +15,8 @@ last reboot
 
 # find git
 wget http://kernel.org/pub/software/scm/git/git-2.1.4.tar.gz
+# inspect file system usage
+ncdu -x $HOME
 
 # locate program using regex
 locate --regex '\bprogram$'

@@ -1,0 +1,21 @@
+#!/usr/bin/env sh
+# -*- Mode: sh -*-
+# java.txt --- java help
+# Copyright (C) 2019  Dan Harms (dan.harms)
+# Author: Dan Harms <dan.harms@xrtrading.com>
+# Created: Thursday, December 12, 2019
+# Version: 1.0
+# Modified Time-stamp: <2019-12-12 15:58:01 dan.harms>
+# Modified by: Dan Harms
+# Keywords: help doc java
+
+# list a jar's contents
+jar -tf archive.jar
+# extract
+jar -xvf archive.jar
+# update some files
+jar -uf archive.jar <files...>
+# create a new jar
+jar -cvf new.jar <files...>
+
+# code ends here
