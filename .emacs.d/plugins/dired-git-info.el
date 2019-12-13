@@ -4,7 +4,7 @@
 
 ;; Author: Clemens Radermacher <clemera@posteo.net>
 ;; URL: https://github.com/clemera/dired-git-info
-;; Version: 0.2
+;; Version: 0.3
 ;; Package-Requires: ((emacs "25"))
 ;; Keywords: dired, files
 
@@ -238,6 +238,15 @@ info format and defaults to `dgi-commit-message-format'."
                   (overlay-put ov 'display ovs)
                   ;; hl line mode should have priority
                   (overlay-put ov 'priority -60))))))))))
+
+;;;###autoload
+(defun dired-git-info-auto-enable ()
+  "Enable `dired-git-info-mode' if current dired buffer is in a git repo.
+
+Add this function to `dired-after-readin-hook' to enable the mode
+automatically inside git repos."
+  (when (locate-dominating-file "." ".git")
+    (dired-git-info-mode)))
 
 
 (provide 'dired-git-info)

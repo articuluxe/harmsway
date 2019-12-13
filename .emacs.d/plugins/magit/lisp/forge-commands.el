@@ -50,6 +50,7 @@ for a repository using the command `forge-add-pullreq-refspec'."
     ("f t" "one topic"     forge-pull-topic)
     ("f n" "notifications" forge-pull-notifications)]
    ["List"
+    ("l t" "topics"        forge-list-topics)
     ("l i" "issues"        forge-list-issues)
     ("l p" "pull-requests" forge-list-pullreqs)
     ("l n" "notifications" forge-list-notifications)
@@ -63,6 +64,7 @@ for a repository using the command `forge-add-pullreq-refspec'."
     ("c u" "pull-request from issue" forge-create-pullreq-from-issue
      :if (lambda () (forge-github-repository-p (forge-get-repository nil))))]]
   [["Configure"
+    ("a" "add repository to database" forge-add-repository)
     ("r" "forge.repository" forge-forge.remote)]])
 
 ;;; Pull
@@ -585,8 +587,12 @@ because the source branch has been deleted"))
                   (user-error
                    "Remote `%s' already exists but does not point to %s"
                    remote url))
-                (unless (member (format "+refs/heads/*:refs/remotes/%s/*" remote)
-                                fetch)
+                (unless (or (member (format "+refs/heads/*:refs/remotes/%s/*"
+                                            remote)
+                                    fetch)
+                            (member (format "+refs/heads/%s:refs/remotes/%s/%s"
+                                            pr-branch remote pr-branch)
+                                    fetch))
                   (magit-git "remote" "set-branches" "--add" remote pr-branch)
                   (magit-git "fetch" remote)))
             (magit-git
@@ -817,8 +823,10 @@ pull individual topics when the user invokes `forge-pull-topic'."
     (let ((repo (forge-get-repository url nil 'create)))
       (oset repo sparse-p nil)
       (magit-read-char-case "Pull " nil
-        (?a "[a]ll topics"        (forge-pull repo))
-        (?i "[i]ndividual topics" (oset repo selective-p t))))))
+        (?a "[a]ll topics"
+            (forge-pull repo))
+        (?i "[i]ndividual topics (useful for casual contributors)"
+            (oset repo selective-p t))))))
 
 ;;;###autoload
 (defun forge-add-user-repositories (host user)
@@ -853,6 +861,20 @@ This may take a while.  Only Github is supported at the moment."
        (user-error "Abort"))))
   (closql-delete (forge-get-repository (list host owner name)))
   (magit-refresh))
+
+;;;###autoload
+(defun forge-remove-topic-locally (n)
+  "Remove a topic from the local database only.
+Due to how the supported APIs work, it would be too expensive to
+automatically remove topics from the local datbase that were
+removed from the forge.  The purpose of this command is to allow
+you to manually clean up the local database."
+  (interactive (list (forge-read-topic "Delete topic LOCALLY only")))
+  (closql-delete (forge-get-topic n))
+  (if (and (derived-mode-p 'forge-topic-mode)
+           (eq n (oref forge-buffer-topic number)))
+      (kill-buffer (current-buffer))
+    (magit-refresh)))
 
 ;;;###autoload
 (defun forge-reset-database ()

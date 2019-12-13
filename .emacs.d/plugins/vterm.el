@@ -45,36 +45,13 @@
 (unless module-file-suffix
   (error "VTerm needs module support. Please compile your Emacs with the --with-modules option!"))
 
-(require 'term)
-
-(defvar vterm-install-buffer-name " *Install vterm"
-  "Name of the buffer used for compiling vterm-module.")
-
-;;;###autoload
-(defun vterm-module-compile ()
-  "This function compiles the vterm-module."
-  (interactive)
-  (let ((default-directory (file-name-directory (file-truename (locate-library "vterm")))))
-    (unless (file-executable-p (concat default-directory "vterm-module.so" ))
-      (let* ((buffer (get-buffer-create vterm-install-buffer-name))
-             status)
-        (pop-to-buffer vterm-install-buffer-name)
-        (setq status (call-process "sh" nil buffer t "-c"
-                                   "mkdir -p build;                             \
-                                    cd build;                                   \
-                                    cmake -DCMAKE_BUILD_TYPE=RelWithDebInfo ..; \
-                                    make") )
-        (if (eq status 0)
-            (message "Compilation of emacs-libvterm module succeeded")
-          (error "Compilation of emacs-libvterm module failed!"))))))
-
-
-(unless (require 'vterm-module nil t)
-  (vterm-module-compile)
-  (require 'vterm-module))
+(or (require 'vterm-module nil t)
+    (and (require 'vterm-module-make)
+         (require 'vterm-module))) 
 
 (require 'subr-x)
 (require 'cl-lib)
+(require 'term)
 (require 'color)
 (require 'compile)
 
@@ -102,7 +79,11 @@ to the terminal anymore."
   :group 'vterm)
 
 (defcustom vterm-exit-functions nil
-  "Shell exit hook.
+  "List of functions called when a vterm process exits.
+
+Each function is called with two arguments: the vterm buffer of
+the process if any, and a string describing the event passed from
+the sentinel.
 
 This hook applies only to new vterms, created after setting this
 value with `add-hook'.
@@ -120,7 +101,7 @@ those functions are called one by one, with 1 arguments.
 The value of HOOK may be nil, a function, or a list of functions.
 for example
     (defun vterm--rename-buffer-as-title (title)
-    (rename-buffer (format \"vterm %s\" title)))
+    (rename-buffer (format \"vterm %s\" title) t))
     (add-hook 'vterm-set-title-functions 'vterm--rename-buffer-as-title)
 
 see http://tldp.org/HOWTO/Xterm-Title-4.html about how to set terminal title
@@ -339,11 +320,15 @@ This is the value of `next-error-function' in Compilation buffers."
 (define-key vterm-mode-map (kbd "C-/")                 #'vterm-undo)
 (define-key vterm-mode-map (kbd "M-.")                 #'vterm-send-meta-dot)
 (define-key vterm-mode-map (kbd "M-,")                 #'vterm-send-meta-comma)
+(define-key vterm-mode-map (kbd "M-d")                 #'vterm-send-meta-d)
+(define-key vterm-mode-map (kbd "M-f")                 #'vterm-send-meta-f)
+(define-key vterm-mode-map (kbd "M-b")                 #'vterm-send-meta-b)
 (define-key vterm-mode-map (kbd "C-c C-y")             #'vterm--self-insert)
 (define-key vterm-mode-map (kbd "C-c C-c")             #'vterm-send-ctrl-c)
 (define-key vterm-mode-map (kbd "C-c C-l")             #'vterm-clear-scrollback)
 (define-key vterm-mode-map (kbd "C-\\")                #'vterm-send-ctrl-slash)
 (define-key vterm-mode-map (kbd "C-c C-g")             #'vterm-send-ctrl-g)
+(define-key vterm-mode-map (kbd "C-c C-u")             #'vterm-send-ctrl-u)
 (define-key vterm-mode-map [remap self-insert-command] #'vterm--self-insert)
 
 (define-key vterm-mode-map (kbd "C-c C-t")             #'vterm-copy-mode)
@@ -400,6 +385,16 @@ This is the value of `next-error-function' in Compilation buffers."
       (when (and (not (symbolp last-input-event)) shift (not meta) (not ctrl))
         (setq key (upcase key)))
       (vterm--update vterm--term key shift meta ctrl))))
+
+(defun vterm-send (key)
+  "Sends KEY to libvterm. KEY can be anything ‘kbd’ understands."
+  (let* ((event (listify-key-sequence (kbd key)))
+         (modifiers (event-modifiers event))
+         (base (event-basic-type event)))
+    (vterm-send-key (char-to-string base)
+                    (memq 'shift modifiers)
+                    (memq 'meta modifiers)
+                    (memq 'control modifiers))))
 
 (defun vterm-send-start ()
   "Output from the system is started when the system receives START."
@@ -478,6 +473,21 @@ This is the value of `next-error-function' in Compilation buffers."
   (interactive)
   (vterm-send-key "," nil t))
 
+(defun vterm-send-meta-d ()
+  "Send `M-d' to the libvterm."
+  (interactive)
+  (vterm-send-key "d" nil t nil))
+
+(defun vterm-send-meta-f ()
+  "Send `M-f' to the libvterm."
+  (interactive)
+  (vterm-send-key "f" nil t nil))
+
+(defun vterm-send-meta-b ()
+  "Send `M-b' to the libvterm."
+  (interactive)
+  (vterm-send-key "b" nil t nil))
+
 (defun vterm-send-ctrl-c ()
   "Sends `C-c' to the libvterm."
   (interactive)
@@ -490,6 +500,10 @@ This is the value of `next-error-function' in Compilation buffers."
 (defun vterm-send-ctrl-g ()
   (interactive)
   (vterm-send-key "g" nil nil t))
+
+(defun vterm-send-ctrl-u ()
+  (interactive)
+  (vterm-send-key "u" nil nil t))
 
 (defun vterm-clear-scrollback ()
   "Sends `<clear-scrollback>' to the libvterm."
@@ -598,12 +612,13 @@ Then triggers a redraw from the module."
         (vterm--write-input vterm--term input)
         (vterm--update vterm--term)))))
 
-(defun vterm--sentinel (process _event)
+(defun vterm--sentinel (process event)
   "Sentinel of vterm PROCESS.
 Argument EVENT process event."
   (let ((buf (process-buffer process)))
     (run-hook-with-args 'vterm-exit-functions
-                        (if (buffer-live-p buf) buf nil))))
+                        (if (buffer-live-p buf) buf nil)
+                        event)))
 
 (defun vterm--window-adjust-process-window-size (process windows)
   "Adjust process window size considering the width of line number."

@@ -52,6 +52,7 @@
 (defvar aw-keys)
 (defvar battery-echo-area-format)
 (defvar battery-load-critical)
+(defvar battery-mode-line-format)
 (defvar battery-mode-line-limit)
 (defvar battery-status-function)
 (defvar edebug-execution-mode)
@@ -239,7 +240,7 @@ buffer where knowing the current project directory is important."
                                                   :v-adjust 0.0)
                           icon)
                         'help-echo (format "Major-mode: %s" (format-mode-line mode-name))
-                        'display '(raise -0.175))))))
+                        'display '(raise -0.135))))))
 (add-hook 'find-file-hook #'doom-modeline-update-buffer-file-icon)
 (add-hook 'after-change-major-mode-hook #'doom-modeline-update-buffer-file-icon)
 (add-hook 'clone-indirect-buffer-hook #'doom-modeline-update-buffer-file-icon)
@@ -257,32 +258,39 @@ buffer where knowing the current project directory is important."
   "Displays an ICON of buffer state with FACE.
 TEXT is the alternative if it is not applicable.
 Uses `all-the-icons-material' to fetch the icon."
-  (when doom-modeline-buffer-state-icon
-    (doom-modeline-icon 'material icon unicode text face
-                        :height  1.1
-                        :v-adjust -0.225)))
+  (doom-modeline-icon 'material icon unicode text face
+                      :height  1.1
+                      :v-adjust -0.225))
 
 (defvar-local doom-modeline--buffer-file-state-icon nil)
 (defun doom-modeline-update-buffer-file-state-icon (&rest _)
   "Update the buffer or file state in mode-line."
   (setq doom-modeline--buffer-file-state-icon
-        (ignore-errors
-          (cond (buffer-read-only
-                 (doom-modeline-buffer-file-state-icon
-                  "lock" "🔒" "%1*" 'doom-modeline-warning))
-                ((and buffer-file-name (buffer-modified-p)
-                      doom-modeline-buffer-modification-icon)
-                 (doom-modeline-buffer-file-state-icon
-                  "save" "💾" "%1*" 'doom-modeline-buffer-modified))
-                ((and buffer-file-name (not (file-exists-p buffer-file-name)))
-                 (doom-modeline-buffer-file-state-icon
-                  "do_not_disturb_alt" "🚫" "!" 'doom-modeline-urgent))
-                ((or (buffer-narrowed-p)
-                     (and (bound-and-true-p fancy-narrow-mode)
-                          (fancy-narrow-active-p)))
-                 (doom-modeline-buffer-file-state-icon
-                  "vertical_align_center" "↕" "><" 'doom-modeline-warning))
-                (t "")))))
+        (when doom-modeline-buffer-state-icon
+          (ignore-errors
+            (cond (buffer-read-only
+                   (doom-modeline-buffer-file-state-icon
+                    "lock" "🔒" "%1*" `(:inherit doom-modeline-warning
+                                        :weight ,(if doom-modeline-icon
+                                                     'normal
+                                                   'bold))))
+                  ((and buffer-file-name (buffer-modified-p)
+                        doom-modeline-buffer-modification-icon)
+                   (doom-modeline-buffer-file-state-icon
+                    "save" "💾" "%1*" `(:inherit doom-modeline-buffer-modified
+                                        :weight ,(if doom-modeline-icon
+                                                     'normal
+                                                   'bold))))
+                  ((and buffer-file-name
+                        (not (file-exists-p buffer-file-name)))
+                   (doom-modeline-buffer-file-state-icon
+                    "block" "🚫" "!" 'doom-modeline-urgent))
+                  ((or (buffer-narrowed-p)
+                       (and (bound-and-true-p fancy-narrow-mode)
+                            (fancy-narrow-active-p)))
+                   (doom-modeline-buffer-file-state-icon
+                    "vertical_align_center" "↕" "><" 'doom-modeline-warning))
+                  (t ""))))))
 (add-hook 'find-file-hook #'doom-modeline-update-buffer-file-state-icon)
 (add-hook 'after-revert-hook #'doom-modeline-update-buffer-file-state-icon)
 (add-hook 'after-save-hook #'doom-modeline-update-buffer-file-state-icon)
@@ -320,6 +328,15 @@ Uses `all-the-icons-material' to fetch the icon."
  (lambda (_sym val op _where)
    (when (eq op 'set)
      (setq doom-modeline-icon val)
+     (dolist (buf (buffer-list))
+       (with-current-buffer buf
+         (doom-modeline-update-buffer-file-state-icon))))))
+
+(doom-modeline-add-variable-watcher
+ 'doom-modeline-unicode-fallback
+ (lambda (_sym val op _where)
+   (when (eq op 'set)
+     (setq doom-modeline-unicode-fallback val)
      (dolist (buf (buffer-list))
        (with-current-buffer buf
          (doom-modeline-update-buffer-file-state-icon))))))
@@ -383,7 +400,8 @@ mouse-1: Previous buffer\nmouse-3: Next buffer"
              doom-modeline--buffer-file-name
              (buffer-modified-p))
     (setq doom-modeline--buffer-file-name
-          (propertize doom-modeline--buffer-file-name 'face 'doom-modeline-buffer-modified))))
+          (propertize doom-modeline--buffer-file-name
+                      'face 'doom-modeline-buffer-modified))))
 (add-hook 'after-change-functions #'doom-modeline-update-buffer-file-name-face)
 
 (defsubst doom-modeline--buffer-mode-icon ()
@@ -391,23 +409,22 @@ mouse-1: Previous buffer\nmouse-3: Next buffer"
   (when (and doom-modeline-icon doom-modeline-major-mode-icon)
     (when-let ((icon (or doom-modeline--buffer-file-icon
                          (doom-modeline-update-buffer-file-icon))))
-      (when icon
-        (concat
-         (if (doom-modeline--active)
-             (if doom-modeline-major-mode-color-icon
-                 icon
-               (propertize icon 'face `(:inherit ,(let ((props (get-text-property 0 'face icon)))
-                                                    props (remove :inherit props))
-                                        :inherit mode-line)))
-           (propertize icon 'face `(:inherit ,(get-text-property 0 'face icon)
-                                    :inherit mode-line-inactive)))
-         (doom-modeline-vspc))))))
+      (concat
+       (if (doom-modeline--active)
+           (if doom-modeline-major-mode-color-icon
+               icon
+             (propertize icon 'face `(:inherit ,(let ((props (get-text-property 0 'face icon)))
+                                                  props (remove :inherit props))
+                                      :inherit mode-line)))
+         (propertize icon 'face `(:inherit ,(get-text-property 0 'face icon)
+                                  :inherit mode-line-inactive)))
+       (doom-modeline-vspc)))))
 
 (defsubst doom-modeline--buffer-state-icon ()
   "The icon of the current buffer state."
-  (when-let ((icon (or doom-modeline--buffer-file-state-icon
-                       (doom-modeline-update-buffer-file-state-icon))))
-    (when icon
+  (when doom-modeline-buffer-state-icon
+    (when-let ((icon (or doom-modeline--buffer-file-state-icon
+                         (doom-modeline-update-buffer-file-state-icon))))
       (concat
        (if (doom-modeline--active)
            icon
@@ -568,22 +585,24 @@ mouse-3: Toggle minor modes"
                     'doom-modeline-buffer-minor-mode
                   'mode-line-inactive)))
       (if (bound-and-true-p minions-mode)
-          (concat (doom-modeline-spc)
-                  (propertize minions-mode-line-lighter
-                              'face face
-                              'help-echo "Minions
+          (concat
+           (doom-modeline-spc)
+           (propertize (string-trim minions-mode-line-lighter)
+                       'face face
+                       'help-echo "Minions
 mouse-1: Display minor modes menu"
-                              'mouse-face 'mode-line-highlight
-                              'local-map (make-mode-line-mouse-map
-                                          'mouse-1 #'minions-minor-modes-menu))
-                  (doom-modeline-spc))
-        (concat (propertize (replace-regexp-in-string
-                             "%" "%%%%"
-                             (format-mode-line minor-mode-alist)
-                             t t)
-                            'face face)
-                (doom-modeline-spc))))))
-
+                       'mouse-face 'mode-line-highlight
+                       'local-map (make-mode-line-mouse-map
+                                   'mouse-1 #'minions-minor-modes-menu))
+           (doom-modeline-spc))
+        `(:propertize ("" minor-mode-alist " ")
+          face ,face
+          mouse-face mode-line-highlight
+          help-echo "Minor mode
+mouse-1: Display minor mode menu
+mouse-2: Show help for minor mode
+mouse-3: Toggle minor modes"
+          local-map ,mode-line-minor-mode-keymap)))))
 
 ;;
 ;; VCS
@@ -612,7 +631,7 @@ Uses `all-the-icons-octicon' to fetch the icon."
                   ((memq state '(removed conflict unregistered))
                    (doom-modeline-vcs-icon "alert" "⚠" "!" 'doom-modeline-urgent))
                   (t
-                   (doom-modeline-vcs-icon "git-branch" "⑆" "@" 'doom-modeline-info -0.05)))))))
+                   (doom-modeline-vcs-icon "git-branch" "" "@" 'doom-modeline-info -0.05)))))))
 (add-hook 'find-file-hook #'doom-modeline-update-vcs-icon t)
 (add-hook 'after-save-hook #'doom-modeline-update-vcs-icon)
 (advice-add #'vc-refresh-state :after #'doom-modeline-update-vcs-icon)
@@ -661,27 +680,27 @@ Uses `all-the-icons-octicon' to fetch the icon."
 (advice-add #'vc-refresh-state :after #'doom-modeline-update-vcs-text)
 
 (doom-modeline-def-segment vcs
-"Displays the current branch, colored based on its state."
-(let ((active (doom-modeline--active)))
-  (when-let ((icon doom-modeline--vcs-icon)
-             (text doom-modeline--vcs-text))
-    (concat
-     (doom-modeline-spc)
-     (propertize
+  "Displays the current branch, colored based on its state."
+  (let ((active (doom-modeline--active)))
+    (when-let ((icon doom-modeline--vcs-icon)
+               (text doom-modeline--vcs-text))
       (concat
+       (doom-modeline-spc)
+       (propertize
+        (concat
+         (if active
+             icon
+           (propertize icon
+                       'face `(:inherit ,(get-text-property 0 'face icon)
+                               :inherit mode-line-inactive)))
+         (doom-modeline-vspc))
+        'mouse-face 'mode-line-highlight
+        'help-echo (get-text-property 1 'help-echo vc-mode)
+        'local-map (get-text-property 1 'local-map vc-mode))
        (if active
-           icon
-         (propertize icon
-                     'face `(:inherit ,(get-text-property 0 'face icon)
-                             :inherit mode-line-inactive)))
-       (doom-modeline-vspc))
-      'mouse-face 'mode-line-highlight
-      'help-echo (get-text-property 1 'help-echo vc-mode)
-      'local-map (get-text-property 1 'local-map vc-mode))
-     (if active
-         text
-       (propertize text 'face 'mode-line-inactive))
-     (doom-modeline-spc)))))
+           text
+         (propertize text 'face 'mode-line-inactive))
+       (doom-modeline-spc)))))
 
 
 ;;
@@ -710,16 +729,16 @@ Uses `all-the-icons-material' to fetch the icon."
               (pcase status
                 ('finished  (if flycheck-current-errors
                                 (let-alist (flycheck-count-errors flycheck-current-errors)
-                                  (doom-modeline-checker-icon "do_not_disturb_alt" "🚫" "!"
+                                  (doom-modeline-checker-icon "block" "🚫" "!"
                                                               (cond (.error 'doom-modeline-urgent)
                                                                     (.warning 'doom-modeline-warning)
                                                                     (t 'doom-modeline-info))))
-                              (doom-modeline-checker-icon "check" "✔" "-" 'doom-modeline-info)))
-                ('running     (doom-modeline-checker-icon "access_time" "⏰" "*" 'doom-modeline-debug))
+                              (doom-modeline-checker-icon "check" "✓" "-" 'doom-modeline-info)))
+                ('running     (doom-modeline-checker-icon "access_time" "⏱" "*" 'doom-modeline-debug))
                 ('no-checker  (doom-modeline-checker-icon "sim_card_alert" "⚠" "-" 'doom-modeline-debug))
-                ('errored     (doom-modeline-checker-icon "sim_card_alert" "❗" "!" 'doom-modeline-urgent))
+                ('errored     (doom-modeline-checker-icon "sim_card_alert" "⚠" "-" 'doom-modeline-urgent))
                 ('interrupted (doom-modeline-checker-icon "pause" "⏸" "=" 'doom-modeline-debug))
-                ('suspicious  (doom-modeline-checker-icon "priority_high" "❓" "?" 'doom-modeline-urgent))
+                ('suspicious  (doom-modeline-checker-icon "priority_high" "❗" "!" 'doom-modeline-urgent))
                 (_ nil))))
           (propertize icon
                       'help-echo (concat "Flycheck\n"
@@ -871,7 +890,7 @@ mouse-3: Next error"
                                      ((> severity note-level)    (cl-incf .warning))
                                      (t                          (cl-incf .note))))))
                         (if (> (+ .error .warning .note) 0)
-                            (doom-modeline-checker-icon "do_not_disturb_alt" "🚫" "!"
+                            (doom-modeline-checker-icon "block" "🚫" "!"
                                                         (cond ((> .error 0) 'doom-modeline-urgent)
                                                               ((> .warning 0) 'doom-modeline-warning)
                                                               (t 'doom-modeline-info)))
@@ -1030,14 +1049,14 @@ mouse-1: List all problems%s"
 
 (doom-modeline-def-segment word-count
   "The buffer word count.
-Displayed when in a major mode in `doom-modeline-continuous-word-count-modes',
-or any derived mode. Respects `doom-modeline-enable-word-count'."
+Displayed when in a major mode in `doom-modeline-continuous-word-count-modes'.
+Respects `doom-modeline-enable-word-count'."
   (when (and doom-modeline-enable-word-count
-             (apply #'derived-mode-p doom-modeline-continuous-word-count-modes))
-    (propertize (format " %dW " (count-words (point-min) (point-max)))
-                'face (if (doom-modeline--active)
-                          'mode-line
-                        'mode-line-inactive))))
+             (member major-mode doom-modeline-continuous-word-count-modes))
+    (let ((word-count (format " %dW" (count-words (point-min) (point-max)))))
+      (if (doom-modeline--active)
+          word-count
+        (propertize word-count 'face 'mode-line-inactive)))))
 
 ;;
 ;; Selection
@@ -1541,117 +1560,78 @@ mouse-1: Display Line and Column Mode Menu"
 ;; Modals (evil, overwrite, god, ryo and xah-fly-keys, etc.)
 ;;
 
+(defun doom-modeline--modal-icon (text face help-echo)
+  "Display the model icon."
+  (propertize (doom-modeline-icon
+               'material
+               (when doom-modeline-modal-icon "fiber_manual_record")
+               "●"
+               text
+               (if (doom-modeline--active) face 'mode-line-inactive)
+               :v-adjust -0.225)
+              'help-echo help-echo))
+
 (defsubst doom-modeline--evil ()
   "The current evil state. Requires `evil-mode' to be enabled."
   (when (bound-and-true-p evil-local-mode)
-    (propertize (concat
-                 (doom-modeline-spc)
-                 (doom-modeline-icon
-                  'material
-                  (when doom-modeline-modal-icon "fiber_manual_record")
-                  "●"
-                  (string-trim (evil-state-property evil-state :tag t))
-                  (if (doom-modeline--active)
-                      (cond ((evil-normal-state-p) 'doom-modeline-evil-normal-state)
-                            ((evil-emacs-state-p) 'doom-modeline-evil-emacs-state)
-                            ((evil-insert-state-p) 'doom-modeline-evil-insert-state)
-                            ((evil-motion-state-p) 'doom-modeline-evil-motion-state)
-                            ((evil-visual-state-p) 'doom-modeline-evil-visual-state)
-                            ((evil-operator-state-p) 'doom-modeline-evil-operator-state)
-                            ((evil-replace-state-p) 'doom-modeline-evil-replace-state)
-                            (t 'mode-line))
-                    'mode-line-inactive)
-                  :v-adjust -0.225)
-                 (doom-modeline-spc))
-                'help-echo (evil-state-property evil-state :name t))))
+    (doom-modeline--modal-icon
+     (string-trim (evil-state-property evil-state :tag t))
+     (cond
+      ((evil-normal-state-p) 'doom-modeline-evil-normal-state)
+      ((evil-emacs-state-p) 'doom-modeline-evil-emacs-state)
+      ((evil-insert-state-p) 'doom-modeline-evil-insert-state)
+      ((evil-motion-state-p) 'doom-modeline-evil-motion-state)
+      ((evil-visual-state-p) 'doom-modeline-evil-visual-state)
+      ((evil-operator-state-p) 'doom-modeline-evil-operator-state)
+      ((evil-replace-state-p) 'doom-modeline-evil-replace-state)
+      (t 'doom-modeline-evil-normal-state))
+     (evil-state-property evil-state :name t))))
 
 (defsubst doom-modeline--overwrite ()
   "The current overwrite state. Requires `overwrite-mode' to be enabled."
   (when (and (bound-and-true-p overwrite-mode)
              (not (bound-and-true-p evil-local-mode)))
-    (propertize (concat
-                 (doom-modeline-spc)
-                 (doom-modeline-icon
-                  'material
-                  (when doom-modeline-modal-icon "fiber_manual_record")
-                  "●" "<O>"
-                  (if (doom-modeline--active)
-                      'doom-modeline-urgent
-                    'mode-line-inactive)
-                  :v-adjust -0.225)
-                 (doom-modeline-spc))
-                'help-echo "Overwrite state")))
+    (doom-modeline--modal-icon "<O>" 'doom-modeline-urgent "Overwrite state")))
 
 (defsubst doom-modeline--god ()
   "The current god state. Requires `god-mode' to be enabled."
   (when (bound-and-true-p god-local-mode)
-    (propertize (concat
-                 (doom-modeline-spc)
-                 (doom-modeline-icon
-                  'material
-                  (when doom-modeline-modal-icon "fiber_manual_record")
-                  "●" "<G>"
-                  (if (doom-modeline--active)
-                      'doom-modeline-evil-normal-state
-                    'mode-line-inactive)
-                  :v-adjust -0.225)
-                 (doom-modeline-spc))
-                'help-echo "God mode")))
+    (doom-modeline--modal-icon "<G>" 'doom-modeline-evil-normal-state "God mode")))
 
 (defsubst doom-modeline--ryo ()
   "The current ryo-modal state. Requires `ryo-modal-mode' to be enabled."
   (when (bound-and-true-p ryo-modal-mode)
-    (propertize (concat
-                 (doom-modeline-spc)
-                 (doom-modeline-icon
-                  'material
-                  (when doom-modeline-modal-icon "fiber_manual_record")
-                  "●" "<R>"
-                  (if (doom-modeline--active)
-                      'doom-modeline-evil-normal-state
-                    'mode-line-inactive)
-                  :v-adjust -0.225)
-                 (doom-modeline-spc))
-                'help-echo "Ryo modal")))
+    (doom-modeline--modal-icon "<R>" 'doom-modeline-evil-normal-state "Ryo modal")))
 
 (defsubst doom-modeline--xah-fly-keys ()
   "The current `xah-fly-keys' state."
-  (when (boundp 'xah-fly-insert-state-q)
-    (let ((active (doom-modeline--active)))
-      (if xah-fly-insert-state-q
-          (propertize (concat
-                       (doom-modeline-spc)
-                       (doom-modeline-icon
-                        'material
-                        (when doom-modeline-modal-icon "fiber_manual_record")
-                        "●" "<I>"
-                        (if active
-                            'doom-modeline-evil-insert-state
-                          'mode-line-inactive)
-                        :v-adjust -0.225)
-                       (doom-modeline-spc))
-                      'help-echo "Xah-fly insert state")
-        (propertize (concat
-                     (doom-modeline-spc)
-                     (doom-modeline-icon
-                      'material
-                      (when doom-modeline-modal-icon "fiber_manual_record")
-                      "●" "<X>"
-                      (if active
-                          'doom-modeline-evil-normal-state
-                        'mode-line-inactive)
-                      :v-adjust -0.225)
-                     (doom-modeline-spc))
-                    'help-echo "Xah-fly normal state")))))
+  (when (bound-and-true-p xah-fly-keys)
+    (doom-modeline--modal-icon (if xah-fly-insert-state-q "<I>" "<C>")
+                               (if xah-fly-insert-state-q
+                                   'doom-modeline-evil-insert-state
+                                 'doom-modeline-evil-normal-state)
+                               (format "Xah-fly %s mode"
+                                       (if xah-fly-insert-state-q
+                                           "insert"
+                                         "command")))))
 
 (doom-modeline-def-segment modals
   "Displays modal editing states, including `evil', `overwrite', `god', `ryo'
 and `xha-fly-kyes', etc."
-  (concat (doom-modeline--evil)
-          (doom-modeline--overwrite)
-          (doom-modeline--god)
-          (doom-modeline--ryo)
-          (doom-modeline--xah-fly-keys)))
+  (let* ((evil (doom-modeline--evil))
+         (ow (doom-modeline--overwrite))
+         (god (doom-modeline--god))
+         (ryo (doom-modeline--ryo))
+         (xf (doom-modeline--xah-fly-keys))
+         (vsep (doom-modeline-vspc))
+         (sep (and (or evil ow god ryo xf) (doom-modeline-spc))))
+    (concat sep
+            (and evil (concat evil (and (or ow god ryo xf) vsep)))
+            (and ow (concat ow (and (or god ryo xf) vsep)))
+            (and god (concat god (and (or ryo xf) vsep)))
+            (and ryo (concat ryo (and xf vsep)))
+            xf
+            sep)))
 
 
 ;;
@@ -1876,7 +1856,7 @@ mouse-1: Start server"))
 
 
 ;;
-;; Github
+;; GitHub
 ;;
 
 (defvar doom-modeline--github-notification-number 0)
@@ -1965,7 +1945,7 @@ mouse-3: Fetch notifications"
 
 
 ;;
-;; Debug state
+;; Debug states
 ;;
 
 (defun doom-modeline-debug-icon (face &rest args)
@@ -2038,18 +2018,18 @@ mouse-1: Toggle Debug on Quit"
            (edebug (doom-modeline--debug-edebug))
            (on-error (doom-modeline--debug-on-error))
            (on-quit (doom-modeline--debug-on-quit))
-           (sep (doom-modeline-vspc))
-           (seg-sep (and (or dap edebug on-error on-quit) (doom-modeline-spc))))
-      (concat seg-sep
-              (and dap (concat dap (and (or edebug on-error on-quit) sep)))
-              (and edebug (concat edebug (and (or on-error on-quit) sep)))
-              (and on-error (concat on-error (and on-quit sep)))
+           (vsep (doom-modeline-vspc))
+           (sep (and (or dap edebug on-error on-quit) (doom-modeline-spc))))
+      (concat sep
+              (and dap (concat dap (and (or edebug on-error on-quit) vsep)))
+              (and edebug (concat edebug (and (or on-error on-quit) vsep)))
+              (and on-error (concat on-error (and on-quit vsep)))
               on-quit
-              seg-sep))))
+              sep))))
 
 
 ;;
-;; pdf pages
+;; PDF pages
 ;;
 
 (defvar-local doom-modeline--pdf-pages nil)
@@ -2260,7 +2240,10 @@ mouse-3: Switch to next unread buffer")))
 		      (delq 'rcirc-activity-string global-mode-string))
         (remove-hook 'window-configuration-change-hook
 		             #'rcirc-window-configuration-change))
-    (when rcirc-track-minor-mode (rcirc-track-minor-mode 1))))
+    (when (and rcirc-track-minor-mode
+               (not (memq 'rcirc-activity-string global-mode-string)))
+	  (setq global-mode-string
+		    (append global-mode-string '(rcirc-activity-string))))))
 (add-hook 'rcirc-track-minor-mode-hook #'doom-modeline-override-rcirc-modeline)
 (add-hook 'doom-modeline-mode-hook #'doom-modeline-override-rcirc-modeline)
 
@@ -2271,49 +2254,49 @@ mouse-3: Switch to next unread buffer")))
 
 (defvar doom-modeline--battery-status nil)
 (defun doom-modeline-update-battery-status ()
-"Update battery status."
-(setq doom-modeline--battery-status
-      (when (bound-and-true-p display-battery-mode)
-        (let* ((data (and (bound-and-true-p battery-status-function)
-                          (funcall battery-status-function)))
-               (charging? (string-equal "AC" (cdr (assoc ?L data))))
-               (percentage (car (read-from-string (or (cdr (assq ?p data)) "ERR"))))
-               (valid-percentage? (and (numberp percentage)
-                                       (>= percentage 0)
-                                       (<= percentage battery-mode-line-limit)))
-               (face (if valid-percentage?
-                         (cond (charging? 'doom-modeline-battery-charging)
-                               ((< percentage battery-load-critical) 'doom-modeline-battery-critical)
-                               ((< percentage 25) 'doom-modeline-battery-warning)
-                               ((< percentage 95) 'doom-modeline-battery-normal)
-                               (t 'doom-modeline-battery-full))
-                       'doom-modeline-battery-error))
-               (icon (if valid-percentage?
-                         (cond (charging?
-                                (doom-modeline-icon 'alltheicon "battery-charging" "🔋" "+"
-                                                    face :height 1.4 :v-adjust -0.1))
-                               ((> percentage 95)
-                                (doom-modeline-icon 'faicon "battery-full" "🔋" "-"
-                                                    face :v-adjust -0.0575))
-                               ((> percentage 70)
-                                (doom-modeline-icon 'faicon "battery-three-quarters" "🔋" "-"
-                                                    face :v-adjust -0.0575))
-                               ((> percentage 40)
-                                (doom-modeline-icon 'faicon "battery-half" "🔋" "-"
-                                                    face :v-adjust -0.0575))
-                               ((> percentage battery-load-critical)
-                                (doom-modeline-icon 'faicon "battery-quarter" "🔋" "-"
-                                                    face :v-adjust -0.0575))
-                               (t (doom-modeline-icon 'faicon "battery-empty" "🔋" "!"
-                                                      face :v-adjust -0.0575)))
-                       (doom-modeline-icon 'faicon "battery-empty" "⚠" "N/A"
-                                           face :v-adjust -0.0575)))
-               (text (if valid-percentage? (format "%d%%%%" percentage) ""))
-               (help-echo (if (and battery-echo-area-format data valid-percentage?)
-                              (battery-format battery-echo-area-format data)
-                            "Battery status not available")))
-          (cons (propertize icon 'help-echo help-echo)
-                (propertize text 'face face 'help-echo help-echo))))))
+  "Update battery status."
+  (setq doom-modeline--battery-status
+        (when (bound-and-true-p display-battery-mode)
+          (let* ((data (and (bound-and-true-p battery-status-function)
+                            (funcall battery-status-function)))
+                 (charging? (string-equal "AC" (cdr (assoc ?L data))))
+                 (percentage (car (read-from-string (or (cdr (assq ?p data)) "ERR"))))
+                 (valid-percentage? (and (numberp percentage)
+                                         (>= percentage 0)
+                                         (<= percentage battery-mode-line-limit)))
+                 (face (if valid-percentage?
+                           (cond (charging? 'doom-modeline-battery-charging)
+                                 ((< percentage battery-load-critical) 'doom-modeline-battery-critical)
+                                 ((< percentage 25) 'doom-modeline-battery-warning)
+                                 ((< percentage 95) 'doom-modeline-battery-normal)
+                                 (t 'doom-modeline-battery-full))
+                         'doom-modeline-battery-error))
+                 (icon (if valid-percentage?
+                           (cond (charging?
+                                  (doom-modeline-icon 'alltheicon "battery-charging" "🔋" "+"
+                                                      face :height 1.4 :v-adjust -0.1))
+                                 ((> percentage 95)
+                                  (doom-modeline-icon 'faicon "battery-full" "🔋" "-"
+                                                      face :v-adjust -0.0575))
+                                 ((> percentage 70)
+                                  (doom-modeline-icon 'faicon "battery-three-quarters" "🔋" "-"
+                                                      face :v-adjust -0.0575))
+                                 ((> percentage 40)
+                                  (doom-modeline-icon 'faicon "battery-half" "🔋" "-"
+                                                      face :v-adjust -0.0575))
+                                 ((> percentage battery-load-critical)
+                                  (doom-modeline-icon 'faicon "battery-quarter" "🔋" "-"
+                                                      face :v-adjust -0.0575))
+                                 (t (doom-modeline-icon 'faicon "battery-empty" "🔋" "!"
+                                                        face :v-adjust -0.0575)))
+                         (doom-modeline-icon 'faicon "battery-empty" "⚠" "N/A"
+                                             face :v-adjust -0.0575)))
+                 (text (if valid-percentage? (format "%d%%%%" percentage) ""))
+                 (help-echo (if (and battery-echo-area-format data valid-percentage?)
+                                (battery-format battery-echo-area-format data)
+                              "Battery status not available")))
+            (cons (propertize icon 'help-echo help-echo)
+                  (propertize text 'face face 'help-echo help-echo))))))
 
 (doom-modeline-add-variable-watcher
  'doom-modeline-icon
@@ -2350,16 +2333,20 @@ mouse-3: Switch to next unread buffer")))
       (progn
         (advice-add #'battery-update :override #'doom-modeline-update-battery-status)
         (setq global-mode-string
-		      (delq 'battery-mode-line-string global-mode-string)))
+		      (delq 'battery-mode-line-string global-mode-string))
+        (and (bound-and-true-p display-battery-mode) (battery-update)))
     (progn
       (advice-remove #'battery-update #'doom-modeline-update-battery-status)
-      (when display-battery-mode (display-battery-mode 1)))))
+      (when (and display-battery-mode battery-status-function battery-mode-line-format
+                 (not (memq 'battery-mode-line-string global-mode-string)))
+        (setq global-mode-string
+		      (append global-mode-string '(battery-mode-line-string)))))))
 (add-hook 'display-battery-mode-hook #'doom-modeline-override-battery-modeline)
 (add-hook 'doom-modeline-mode-hook #'doom-modeline-override-battery-modeline)
 
 
 ;;
-;; package information
+;; Package information
 ;;
 
 (doom-modeline-def-segment package
@@ -2509,34 +2496,34 @@ The cdr can also be a function that returns a name to use.")
 ;;
 
 (doom-modeline-def-segment grip
-(when (bound-and-true-p grip-mode)
-  (concat
-   (doom-modeline-spc)
-   (let ((face (if (doom-modeline--active)
-                   (if grip-process
-                       (pcase (process-status grip-process)
-                         ('run 'doom-modeline-buffer-path)
-                         ('exit 'doom-modeline-warning)
-                         (_ 'doom-modeline-urgent))
-                     'doom-modeline-urgent)
-                 'mode-line-inactive)))
-     (propertize (doom-modeline-icon 'material "pageview" "🗐" "@"
-                                     (if doom-modeline-icon
-                                         `(:inherit ,face :weight normal)
-                                       face)
-                                     :height 1.2 :v-adjust -0.2)
-                 'help-echo (format "Preview on: http://localhost:%d
+  (when (bound-and-true-p grip-mode)
+    (concat
+     (doom-modeline-spc)
+     (let ((face (if (doom-modeline--active)
+                     (if grip-process
+                         (pcase (process-status grip-process)
+                           ('run 'doom-modeline-buffer-path)
+                           ('exit 'doom-modeline-warning)
+                           (_ 'doom-modeline-urgent))
+                       'doom-modeline-urgent)
+                   'mode-line-inactive)))
+       (propertize (doom-modeline-icon 'material "pageview" "🗐" "@"
+                                       (if doom-modeline-icon
+                                           `(:inherit ,face :weight normal)
+                                         face)
+                                       :height 1.2 :v-adjust -0.2)
+                   'help-echo (format "Preview on: http://localhost:%d
 mouse-1: Open browser
 mouse-2: Stop preview"
-                                    grip-port)
-                 'mouse-face 'mode-line-highlight
-                 'local-map (let ((map (make-sparse-keymap)))
-                              (define-key map [mode-line mouse-1]
-                                #'grip-browse-preview)
-                              (define-key map [mode-line mouse-2]
-                                #'grip-mode)
-                              map)))
-   (doom-modeline-spc))))
+                                      grip-port)
+                   'mouse-face 'mode-line-highlight
+                   'local-map (let ((map (make-sparse-keymap)))
+                                (define-key map [mode-line mouse-1]
+                                  #'grip-browse-preview)
+                                (define-key map [mode-line mouse-2]
+                                  #'grip-mode)
+                                map)))
+     (doom-modeline-spc))))
 
 (provide 'doom-modeline-segments)
 

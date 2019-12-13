@@ -627,13 +627,14 @@ to `ivy-highlight-face'."
                      (insert (format "%S " sym)))
                  (read-from-minibuffer "Eval: "
                                        (format
-                                        (if (and sym-value (consp sym-value))
+                                        (if (and sym-value (or (consp sym-value)
+                                                               (symbolp sym-value)))
                                             "(setq '%S)"
                                           "(setq %S)")
                                         sym-value)
                                        read-expression-map t
                                        'read-expression-history))))
-    (eval-expression expr)))
+    expr))
 
 (defun counsel--setq-doconst (x)
   "Return a cons of description and value for X.
@@ -710,12 +711,15 @@ With a prefix arg, restrict list to variables defined using
                          (if (assoc res cands)
                              (cdr (assoc res cands))
                            (read res)))
+                   (kill-new (format "(setq %S %S)" sym res))
                    (set sym (if (and (listp res) (eq (car res) 'quote))
                                 (cadr res)
                               res))))
              (unless (boundp sym)
                (set sym nil))
-             (counsel-read-setq-expression sym)))
+             (let ((expr (counsel-read-setq-expression sym)))
+               (kill-new (prin1-char expr))
+               (eval-expression expr))))
       (when doc
         (lv-delete-window)))))
 
@@ -2756,14 +2760,14 @@ It applies no filtering to ivy--all-candidates."
     (define-key map (kbd "C-x C-d") 'counsel-cd)
     map))
 
-(defcustom counsel-ag-base-command
-  (if (memq system-type '(ms-dos windows-nt))
-      "ag --vimgrep %s"
-    "ag --nocolor --nogroup %s")
+(defcustom counsel-ag-base-command "ag --vimgrep %s"
   "Format string to use in `counsel-ag-function' to construct the command.
 The %s will be replaced by optional extra ag arguments followed by the
 regex string."
-  :type 'string)
+  :type '(radio
+          (const "ag --vimgrep %s")
+          (const "ag --nocolor --nogroup %s")
+          (string :tag "custom")))
 
 (defvar counsel-ag-command nil)
 
@@ -6233,6 +6237,45 @@ We update it in the callback with `ivy-update-candidates'."
 
 (define-obsolete-function-alias 'counsel-google
     'counsel-search "<2019-10-17 Thu>")
+
+;;* `counsel-compilation-errors'
+(defun counsel--compilation-errors-buffer (buf)
+  (with-current-buffer buf
+    (let ((res nil)
+          (pt (point-min)))
+      (save-excursion
+        (while (setq pt (compilation-next-single-property-change
+                         pt 'compilation-message))
+          (let ((loc (get-text-property pt 'compilation-message)))
+            (when (and loc (setq loc (compilation--message->loc loc)))
+              (goto-char pt)
+              (push
+               (propertize
+                (buffer-substring-no-properties pt (line-end-position))
+                'pt pt
+                'buffer buf)
+               res)))))
+      (nreverse res))))
+
+(defun counsel-compilation-errors-cands ()
+  (cl-loop
+     for buf in (buffer-list)
+     when (compilation-buffer-p buf)
+     nconc (counsel--compilation-errors-buffer buf)))
+
+(defun counsel-compilation-errors-action (x)
+  (pop-to-buffer (get-text-property 0 'buffer x))
+  (goto-char (get-text-property 0 'pt x))
+  (compile-goto-error))
+
+;;;###autoload
+(defun counsel-compilation-errors ()
+  "Compilation errors."
+  (interactive)
+  (ivy-read "compilation errors: " (counsel-compilation-errors-cands)
+            :require-match t
+            :action #'counsel-compilation-errors-action
+            :history 'counsel-compilation-errors-history))
 
 ;;* `counsel-mode'
 (defvar counsel-mode-map

@@ -30,6 +30,8 @@
 (eval-when-compile
   (require 'gv))
 
+(declare-function treemacs--all-scopes-and-buffers "treemacs-scope")
+
 (defmacro treemacs-import-functions-from (file &rest functions)
   "Import FILE's FUNCTIONS.
 Creates a list of `declare-function' statements."
@@ -109,14 +111,11 @@ Log ERROR-MSG if no button is selected, otherwise run BODY."
 
 (defmacro treemacs-without-following (&rest body)
   "Execute BODY with `treemacs--ready-to-follow' set to nil."
-  ;; no warnings since `treemacs--ready-to-follow' is defined in treemacs-follow-mode.el
-  ;; and should stay there since this file is for macros only
   (declare (debug t))
-  `(let ((o (with-no-warnings treemacs--ready-to-follow)))
-     (with-no-warnings (setq treemacs--ready-to-follow nil))
-     (unwind-protect
-         (progn ,@body)
-       (with-no-warnings (setq treemacs--ready-to-follow o)))))
+  `(let ((treemacs--ready-to-follow nil))
+     ;; ignore because not every module using this macro requires follow-mode.el
+     (ignore treemacs--ready-to-follow)
+     ,@body))
 
 (cl-defmacro treemacs-do-for-button-state
     (&key on-root-node-open
@@ -314,22 +313,23 @@ not work keep it on the same line."
              (treemacs-goto-node curr-node-path)
            (error (ignore)))))
       (treemacs--evade-image)
-      ,@final-form
       (when (get-text-property (point) 'invisible)
         (goto-char (next-single-property-change (point) 'invisible)))
       (when curr-win-line
-        (with-selected-window curr-window
-          ;; recenter starts counting at 0
-          (recenter (1- curr-win-line)))))))
+        (-let [buffer-point (point)]
+          (with-selected-window curr-window
+            ;; recenter starts counting at 0
+            (recenter (1- curr-win-line))
+            (set-window-point (selected-window) buffer-point))))
+      ,@final-form)))
 
 (defmacro treemacs-run-in-every-buffer (&rest body)
   "Run BODY once locally in every treemacs buffer (and its frame)."
   (declare (debug t))
-  `(pcase-dolist (`(,--frame-- . ,--buffer--) treemacs--buffer-access)
+  `(pcase-dolist (`(,_ . ,--buffer--) (treemacs--all-scopes-and-buffers))
      (when (buffer-live-p --buffer--)
-       (with-selected-frame --frame--
-         (with-current-buffer --buffer--
-           ,@body)))))
+       (with-current-buffer --buffer--
+         ,@body))))
 
 (defmacro treemacs--defstruct (name &rest properties)
   "Define a struct with NAME and PROPERTIES.

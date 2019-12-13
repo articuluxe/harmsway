@@ -618,21 +618,30 @@ raw-header slot."
   "Return FILE as the local file name."
   (or (file-remote-p file 'localname) file))
 
-(defun request--parse-data (response parser)
-  "Run PARSER in current buffer if ERROR-THROWN is nil,
-then kill the current buffer."
+(defun request--parse-data (response encoding parser)
+  "For buffer held by RESPONSE, first decode via user's ENCODING elective,
+then send to PARSER."
   (let ((buffer (request-response--buffer response)))
-    (when (and (buffer-live-p buffer) parser)
+    (when (buffer-live-p buffer)
       (with-current-buffer buffer
         (request-log 'trace "request--parse-data: %s" (buffer-string))
-        (unless (equal (request-response-status-code response) 204)
+        (unless (eq (request-response-status-code response) 204)
+          (recode-region (point-min) (point-max) encoding 'no-conversion)
           (goto-char (point-min))
-          (setf (request-response-data response) (funcall parser)))))))
+          (setf (request-response-data response)
+                (if parser (funcall parser) (buffer-string))))))))
+
+(defsubst request-url-file-p (url)
+  "Return non-nil if URL looks like a file URL."
+  (let ((scheme (and (stringp url) (url-type (url-generic-parse-url url)))))
+    (and (stringp scheme)
+         (not (string-match-p "^http" scheme)))))
 
 (cl-defun request--callback (buffer
                              &key
                              parser success error complete
                              status-code response
+                             encoding
                              &allow-other-keys)
   (request-log 'debug "request--callback: UNPARSED\n%s"
                (when (buffer-live-p buffer)
@@ -649,19 +658,15 @@ then kill the current buffer."
        (data (request-response-data response))
        (done-p (request-response-done-p response)))
     (let* ((response-url (request-response-url response))
-           (scheme (and (stringp response-url)
-                        (url-type (url-generic-parse-url response-url))))
-           (curl-file-p (and (stringp scheme)
-                             (not (string-match-p "^http" scheme))
-                             (eq (request-response--backend response) 'curl))))
-      ;; curl does not add a header for say file:///foo/bar
+           (curl-file-p (and (eq (request-response--backend response) 'curl)
+                             (request-url-file-p response-url))))
       (unless curl-file-p
         (request--clean-header response)
         (request--cut-header response)))
 
     ;; Parse response even if `error-thrown' is set, e.g., timeout
     (condition-case err
-        (request--parse-data response parser)
+        (request--parse-data response encoding parser)
       (error (unless error-thrown (setq error-thrown err))
              (unless symbol-status (setq symbol-status 'parse-error))))
     (kill-buffer buffer)
@@ -898,15 +903,15 @@ Currently it is used only for testing.")
 (cl-defun request--curl-command
     (url &key type data headers response files* unix-socket encoding
          &allow-other-keys
-         &aux
-         (cookie-jar (convert-standard-filename
-                      (expand-file-name (request--curl-cookie-jar)))))
+         &aux (cookie-jar (convert-standard-filename
+                           (expand-file-name (request--curl-cookie-jar)))))
   "BUG: Simultaneous requests are a known cause of cookie-jar corruption."
   (append
-   (list request-curl "--silent" "--include"
-         "--location"
-         "--cookie" cookie-jar "--cookie-jar" cookie-jar
-         "--write-out" request--curl-write-out-template)
+   (list request-curl
+         "--silent" "--location"
+         "--cookie" cookie-jar "--cookie-jar" cookie-jar)
+   (unless (request-url-file-p url)
+     (list "--include" "--write-out" request--curl-write-out-template))
    request-curl-options
    (when (plist-get (request--curl-capabilities) :compression) (list "--compressed"))
    (when unix-socket (list "--unix-socket" unix-socket))
@@ -1052,12 +1057,14 @@ removed from the buffer before it is shown to the parser function.
     (request-log 'debug "request--curl: %s" (mapconcat 'identity command " "))
     (setf (request-response--buffer response) buffer)
     (process-put proc :request-response response)
+    (set-process-coding-system proc 'no-conversion 'no-conversion)
     (set-process-query-on-exit-flag proc nil)
-    (set-process-sentinel proc 'request--curl-callback)
-    (when semaphore
-      (set-process-sentinel proc (lambda (&rest args)
-                                   (apply #'request--curl-callback args)
-                                   (apply semaphore args))))))
+    (let ((callback-2 (apply-partially #'request--curl-callback url)))
+      (if semaphore
+          (set-process-sentinel proc (lambda (&rest args)
+                                       (apply callback-2 args)
+                                       (apply semaphore args)))
+        (set-process-sentinel proc callback-2)))))
 
 (defun request--curl-read-and-delete-tail-info ()
   "Read a sexp at the end of buffer and remove it and preceding character.
@@ -1099,11 +1106,13 @@ See \"set-cookie-av\" in http://www.ietf.org/rfc/rfc2965.txt")
   (when (looking-at-p "HTTP/1\\.[0-1] 200 Connection established")
     (delete-region (point) (progn (request--goto-next-body) (point)))))
 
-(defun request--curl-preprocess ()
+(defun request--curl-preprocess (&optional url)
   "Pre-process current buffer before showing it to user."
   (let (history)
     (cl-destructuring-bind (&key num-redirects url-effective)
-        (request--curl-read-and-delete-tail-info)
+        (if (request-url-file-p url)
+            `(:num-redirects 0 :url-effective ,url)
+          (request--curl-read-and-delete-tail-info))
       (goto-char (point-min))
       (request--consume-100-continue)
       (request--consume-200-connection-established)
@@ -1146,7 +1155,7 @@ START-URL is the URL requested."
            for response in (cdr history)
            do (setf (request-response-url response) url)))
 
-(defun request--curl-callback (proc event)
+(defun request--curl-callback (url proc event)
   (let* ((buffer (process-buffer proc))
          (response (process-get proc :request-response))
          (settings (request-response-settings response)))
@@ -1163,7 +1172,7 @@ START-URL is the URL requested."
       (cl-destructuring-bind (&key code history error url-effective &allow-other-keys)
           (condition-case err
               (with-current-buffer buffer
-                (request--curl-preprocess))
+                (request--curl-preprocess url))
             ((debug error)
              (list :error err)))
         (request--curl-absolutify-location-history (plist-get settings :url)
@@ -1200,7 +1209,12 @@ START-URL is the URL requested."
                   settings)
       (let ((proc (get-buffer-process (request-response--buffer response))))
         (auto-revert-set-timer)
-        (when auto-revert-use-notify (request-auto-revert-notify-rm-watch))
+        (when auto-revert-use-notify
+          (if noninteractive
+              (dolist (buf (buffer-list))
+                (with-current-buffer buf
+                  (request-auto-revert-notify-rm-watch)))
+            (request-auto-revert-notify-rm-watch)))
         (with-local-quit
           (cl-loop with iter = 0
                    until (or (>= iter 10) finished)

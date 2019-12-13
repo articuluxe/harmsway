@@ -1989,12 +1989,13 @@
 ;;;;; highlight-symbol
      `(highlight-symbol-foreground-color ,base1)
      `(highlight-symbol-colors
-       (--map (solarized-color-blend it ,base03 0.25)
-              '(,yellow ,cyan ,red ,violet ,green ,orange ,blue)))
+       '(,@(mapcar
+            (lambda (color) (solarized-color-blend color base03 0.25))
+            `(,yellow ,cyan ,red ,violet ,green ,orange ,blue))))
 ;;;;; highlight-tail
      `(highlight-tail-colors
-       '((,base02 . 0)(,green-lc . 20)(,cyan-lc . 30)(,blue-lc . 50)
-         (,yellow-lc . 60)(,orange-lc . 70)(,magenta-lc . 85)(,base02 . 100)))
+       '((,base02 . 0) (,green-lc . 20) (,cyan-lc . 30) (,blue-lc . 50)
+         (,yellow-lc . 60) (,orange-lc . 70) (,magenta-lc . 85) (,base02 . 100)))
 ;;;;; hl-anything
      `(hl-fg-colors '(,base03 ,base03 ,base03 ,base03 ,base03 ,base03
                               ,base03 ,base03))

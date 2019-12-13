@@ -129,6 +129,14 @@
 ;;     (or (plist-get info arg-name) value)))
 ;; #+END_EXAMPLE
 
+;; *** Some packages which use posframe
+;; 1. [[https://github.com/yanghaoxie/which-key-posframe][which-key-posframe]]
+;; 2. [[https://github.com/conao3/ddskk-posframe.el][ddskk-posframe]]
+;; 3. [[https://github.com/tumashu/pyim][pyim]]
+;; 4. [[https://github.com/tumashu/ivy-posframe][ivy-posframe]]
+;; 5. [[https://github.com/tumashu/company-posframe][company-posframe]]
+;; 6. ...
+
 ;;; Code:
 ;; * posframe's code                         :CODE:
 (require 'cl-lib)
@@ -563,7 +571,13 @@ You can use `posframe-delete-all' to delete all posframes."
       ;; Make sure not hide buffer's content for scroll down.
       (set-window-point (frame-root-window posframe--frame) 0)
 
-      ;; Do not return anything.
+      ;; Force raise the current posframe.
+      (raise-frame posframe--frame)
+
+      ;; Sometimes, if no this line, border can not be showed properly.
+      (redisplay)
+
+      ;;Do not return anything.
       nil)))
 
 (defun posframe--get-font-height (position)
@@ -610,11 +624,11 @@ It will set the size by the POSFRAME's HEIGHT, MIN-HEIGHT
 WIDTH and MIN-WIDTH."
   (if (and width height)
       (unless (equal posframe--last-posframe-size
-                     (cons width height))
+                     (list height min-height width min-width))
         (fit-frame-to-buffer
          posframe height min-height width min-width)
         (setq-local posframe--last-posframe-size
-                    (cons width height)))
+                    (list height min-height width min-width)))
     (fit-frame-to-buffer
      posframe height min-height width min-width)))
 
@@ -671,6 +685,36 @@ WIDTH and MIN-WIDTH."
                          (fit-frame-to-buffer
                           frame height min-height width min-width)))
                    posframe height min-height width min-width)))))
+
+(defun posframe-refresh (buffer-or-name)
+  "Refresh posframe pertaining to BUFFER-OR-NAME.
+
+For example:
+
+   (defvar buf \" *test*\")
+   (posframe-show buf)
+
+   (with-current-buffer buf
+     (erase-buffer)
+     (insert \"ffffffffffffff\")
+     (posframe-refresh buf))
+
+User can use posframe-show's :refresh argument,
+to do similar job:
+
+   (defvar buf \" *test*\")
+   (posframe-show buf :refresh 0.25)
+
+   (with-current-buffer buf
+     (erase-buffer)
+     (insert \"ffffffffffffff\"))"
+  (dolist (frame (frame-list))
+    (let ((buffer-info (frame-parameter frame 'posframe-buffer)))
+      (when (or (equal buffer-or-name (car buffer-info))
+                (equal buffer-or-name (cdr buffer-info)))
+        (with-current-buffer buffer-or-name
+          (apply #'fit-frame-to-buffer
+                 frame posframe--last-posframe-size))))))
 
 (defun posframe-hide (buffer-or-name)
   "Hide posframe pertaining to BUFFER-OR-NAME.

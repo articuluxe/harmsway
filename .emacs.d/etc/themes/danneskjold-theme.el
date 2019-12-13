@@ -25,17 +25,17 @@
       (white          "#FFFFFF")
       (white-c        "#000000")
 
-      (yellow         "#FFDB45") ;; "#E2C770" "#F9BA32"
+      (yellow         "#ffcc00") ;; "#E2C770" "#F9BA32"
       (yellow-c       "#281580")
 
       (grey           "#C0C5CF")
       (grey-.5        "#828284")
       (grey-1         "#525254")
       (grey-2         "#39393D")
-      (orange         "#FF9009") ;; "#FD971F"
+      (orange         "#ffa500") ;; "#FD971F"
       (red            "#E74C3C") ;; "#F34A4A"
       (magenta        "#F92672")
-      (violet         "#9C91E4")
+      (violet         "#7b68ee")
       (blue           "#4CB5F5") ;; "#268BD2"
       (blue+2         "#727280")
       (cyan           "#66D9EF")
@@ -46,7 +46,7 @@
 
       ;; danneskjold-colors
       (frost        "#D0E1F9")
-      (invisible    "#7B9ED2")
+      (invisible    "#2b4b6e")
       (comment      "#A4C2EB")
 
       (sbt-midnight   "#282c34")
@@ -89,7 +89,7 @@
      'danneskjold
      `(default ((,c (:foreground ,white :background ,black))))
      `(fringe ((,c (:foreground ,invisible :background ,black))))
-     `(region ((,c (:foreground ,black :background ,white))))
+     `(region ((,c (:background "#373d4f"))))
      `(button ((,c (:foreground ,frost :underline t :weight normal))))
      `(link ((,c (:foreground ,frost :underline t))))
      `(menu ((,c (:foreground ,white :background ,ada-midnight))))
@@ -118,9 +118,9 @@
                          :weight normal))))
 
      ;; Mode-line
-     `(mode-line ((,c (:background ,ada-midnight :foreground ,comment))))
-     `(mode-line-inactive ((,c (:background ,sbt-midnight :foreground ,invisible))))
-     `(mode-line-buffer-id ((,c (:foreground ,fg))))
+     `(mode-line ((,c (:background ,black :foreground ,invisible))))
+     `(mode-line-inactive ((,c (:background ,black :foreground ,invisible))))
+     `(mode-line-buffer-id ((,c (:foreground ,white))))
 
      `(compilation-error ((,c (:foreground ,red))))
      `(compilation-line-number ((,c (:foreground ,yellow))))
@@ -196,8 +196,8 @@
      `(org-document-info            ((,c (:foreground ,yellow))))
      `(org-document-info-keyword    ((,c (:foreground ,comment))))
      `(org-meta-line                ((,c (:foreground ,comment))))
-     `(org-block                    ((,c ())))
-     `(org-block-begin-line         ((,c (:foreground ,invisible))))
+     `(org-block                    ((,c (:background "#0e1824"))))
+     `(org-block-begin-line         ((,c (:foreground ,yellow))))
      `(org-block-end-line           ((,c (:inherit org-block-begin-line))))
      `(org-archived                 ((,c (:foreground ,invisible))))
      `(org-document-title           ((,c (:foreground ,blue))))
@@ -218,12 +218,14 @@
      `(org-list-dt                  ((,c (:foreground ,yellow))))
      `(org-footnote                 ((,c (:foreground ,orange))))
      `(org-priority                 ((,c (:foreground ,red))))
+     `(org-drawer                 ((,c (:foreground ,orange))))
 
-     `(org-date                     ((,c (:foreground ,violet))))
+     `(org-date                     ((,c (:foreground "#c5d0e6"))))
      `(org-todo                     ((,c (:foreground ,yellow))))
      `(org-done                     ((,c (:foreground ,green))))
      `(org-headline-done            ((,c (:foreground ,grey-.5 :strike-through t :bold nil))))
-     `(org-special-keyword          ((,c (:foreground "orange"))))
+     `(org-special-keyword          ((,c (:foreground "#ffcc00"))))
+     `(org-property-value          ((,c (:foreground ,white))))
      `(org-checkbox-statistics-todo ((,c (:inherit org-todo))))
      `(org-checkbox-statistics-done ((,c (:inherit org-done))))
 
@@ -273,7 +275,7 @@
      `(org-agenda-date-weekend ((,c (:foreground ,green))))
 
      `(org-agenda-structure ((,c (:foreground ,white))))
-     `(org-agenda-calendar-event ((,c (:foreground ,comment :slant italic))))
+     `(org-agenda-calendar-event ((,c (:foreground ,yellow :slant italic))))
 
      `(org-agenda-done ((,c (:foreground ,green))))
      `(org-agenda-diary ((,c (:foreground ,orange :slant italic))))
@@ -282,7 +284,7 @@
      `(org-upcoming-deadline ((,c (:foreground ,violet))))
      `(org-upcoming-distant-deadline ((,c (:foreground ,comment))))
 
-     `(secondary-selection ((,c (:background ,sbt-midnight))))
+     `(secondary-selection ((,c (:background "#1f0e11"))))
 
      ;; Hydra
      `(hydra-face-red ((,c (:foreground ,red))))
@@ -410,6 +412,7 @@
      `(eshell-ls-symlink ((,c (:foreground ,waddles))))
      `(eshell-ls-readonly ((,c (:foreground ,invisible))))
      `(eshell-ls-missing ((,c (:foreground ,red))))
+     `(eshell-ls-product ((,c (:foreground ,comment))))
      `(eshell-ls-special ((,c (:foreground ,comment :underline t))))
 
      `(epe-remote-face ((,c (:foreground ,comment))))
@@ -437,6 +440,9 @@
      `(dired-subtree-depth-7-face ((,c (:background ,black))))
      `(dired-subtree-depth-8-face ((,c (:background ,black))))
      `(dired-subtree-depth-9-face ((,c (:background ,black))))
+
+     ;; custom hacks
+     `(dired-collapsed-dirs ((,c (:background ,black :foreground ,frost))))
 
      ;; dired-rainbow
      `(dired-rainbow-executable-unix-face ((,c (:foreground ,green))))

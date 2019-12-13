@@ -34,6 +34,8 @@
 ;; TODO: Capture on scrolling (e.g. program outputting to Eshell buffer).
 ;; TODO: Add support for on-screen keystroke display, e.g. screenkey.
 
+(require 'xdg)
+
 (defgroup gif-screencast nil
   "Predefined configurations for `gif-screencast'."
   :group 'multimedia)
@@ -110,6 +112,7 @@ returning a list of strings. "
   :type 'boolean)
 
 (defcustom gif-screencast-output-directory (or (getenv "XDG_VIDEOS_DIR")
+					       (xdg-user-dir "VIDEOS")
                                                (expand-file-name "Videos/emacs/" "~"))
   "Output directory for the GIF file."
   :group 'gif-screencast

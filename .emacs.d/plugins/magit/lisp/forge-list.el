@@ -75,6 +75,14 @@ This is a list of package names.  Used by the commands
   :group 'forge
   :type '(repeat (string :tag "Name")))
 
+;;; Variables
+
+(defvar-local forge--tabulated-list-columns nil)
+(put 'forge--tabulated-list-columns 'permanent-local t)
+
+(defvar-local forge--tabulated-list-query nil)
+(put 'forge--tabulated-list-query 'permanent-local t)
+
 ;;; Modes
 ;;;; Topics
 
@@ -104,6 +112,41 @@ This is a list of package names.  Used by the commands
   "Pull-Requests"
   "Major mode for browsing a list of pull-requests.")
 
+(defun forge-topic-list-setup (mode id buffer-name columns fn)
+  (declare (indent 4))
+  (let* ((repo (forge-get-repository (list :id id)))
+         (topdir (magit-toplevel)))
+    (with-current-buffer
+        (get-buffer-create
+         (or buffer-name
+             (format "*%s: %s/%s*"
+                     (substring (symbol-name mode) 0 -5)
+                     (oref repo owner)
+                     (oref repo name))))
+      (setq forge--tabulated-list-columns (or columns forge-topic-list-columns))
+      (setq forge--tabulated-list-query fn)
+      (setq forge-buffer-repository repo)
+      (when topdir
+        (setq default-directory topdir))
+      (cl-letf (((symbol-function #'tabulated-list-revert) #'ignore)) ; see #229
+        (funcall mode))
+      (forge-topic-list-refresh)
+      (add-hook 'tabulated-list-revert-hook
+                'forge-topic-list-refresh nil t)
+      (tabulated-list-init-header)
+      (tabulated-list-print)
+      (switch-to-buffer (current-buffer)))))
+
+(defun forge-topic-list-refresh ()
+  (setq tabulated-list-format
+        (vconcat (--map `(,@(-take 3 it)
+                          ,@(-flatten (nth 3 it)))
+                        forge--tabulated-list-columns)))
+  (tabulated-list-init-header)
+  (setq tabulated-list-entries
+        (mapcar #'forge--tablist-format-entry
+                (funcall forge--tabulated-list-query))))
+
 ;;;; Repository
 
 (defvar forge-repository-list-mode-map
@@ -121,6 +164,7 @@ This is a list of package names.  Used by the commands
   "Repositories"
   "Major mode for browsing a list of repositories."
   (setq-local x-stretch-cursor  nil)
+  (setq forge--tabulated-list-columns forge-repository-list-columns)
   (setq tabulated-list-padding  0)
   (setq tabulated-list-sort-key (cons "Owner" nil))
   (setq tabulated-list-format
@@ -129,64 +173,75 @@ This is a list of package names.  Used by the commands
                         forge-repository-list-columns)))
   (tabulated-list-init-header))
 
+(defun forge-repository-list-setup (fn buf)
+  (with-current-buffer (get-buffer-create buf)
+    (cl-letf (((symbol-function #'tabulated-list-revert) #'ignore)) ; see #229
+      (forge-repository-list-mode))
+    (funcall fn)
+    (add-hook 'tabulated-list-revert-hook fn nil t)
+    (tabulated-list-print)
+    (switch-to-buffer (current-buffer))))
+
 (defun forge-repository-list-refresh ()
   (setq tabulated-list-entries
-        (mapcar #'forge-repository-list-format-entry
+        (mapcar #'forge--tablist-format-entry
                 (forge-sql [:select $i1 :from repository
                             :order-by [(asc owner) (asc name)]]
-                           (forge--list-columns-vector
-                            forge-repository-list-columns)))))
+                           (forge--tablist-columns-vector)))))
 
 (defun forge-repository-list-owned-refresh ()
   (setq tabulated-list-entries
-        (mapcar #'forge-repository-list-format-entry
+        (mapcar #'forge--tablist-format-entry
                 (forge-sql [:select $i1 :from repository
                             :where (and (in owner $v2)
                                         (not (in name $v3)))
                             :order-by [(asc owner) (asc name)]]
-                           (forge--list-columns-vector
-                            forge-repository-list-columns)
+                           (forge--tablist-columns-vector)
                            (vconcat (mapcar #'car forge-owned-accounts))
                            (vconcat forge-owned-blacklist)))))
 
-(defun forge-repository-list-format-entry (row)
-  (list (car row)
-        (vconcat
-         (cl-mapcar (lambda (val col)
-                      (if-let ((pp (nth 5 col)))
-                          (funcall pp val)
-                        (if val (format "%s" val) "")))
-                    (cdr row)
-                    forge-repository-list-columns))))
-
 ;;; Commands
+;;;; Topic
+
+;;;###autoload
+(defun forge-list-topics (id)
+  "List topics of the current repository in a separate buffer."
+  (interactive (list (oref (forge-get-repository t) id)))
+  (forge-topic-list-setup #'forge-topic-list-mode id nil nil
+    (lambda ()
+      (forge-sql [:select $i1 :from issue   :where (= repository $s2) :union
+                  :select $i1 :from pullreq :where (= repository $s2)]
+                 (forge--tablist-columns-vector)
+                 id))))
+
 ;;;; Issue
 
 ;;;###autoload
 (defun forge-list-issues (id)
   "List issues of the current repository in a separate buffer."
   (interactive (list (oref (forge-get-repository t) id)))
-  (forge--list-topics id 'forge-issue-list-mode nil
-    (forge-sql [:select $i1 :from issue :where (= repository $s2)]
-               (forge--topic-list-columns-vector)
-               id)))
+  (forge-topic-list-setup #'forge-issue-list-mode id nil nil
+    (lambda ()
+      (forge-sql [:select $i1 :from issue :where (= repository $s2)]
+                 (forge--tablist-columns-vector)
+                 id))))
 
 ;;;###autoload
 (defun forge-list-assigned-issues (id)
   "List issues of the current repository that are assigned to you.
 List them in a separate buffer."
   (interactive (list (oref (forge-get-repository t) id)))
-  (forge--list-topics id 'forge-issue-list-mode nil
-    (forge-sql
-     [:select $i1 :from [issue issue_assignee assignee]
-      :where (and (= issue_assignee:issue issue:id)
-                  (= issue_assignee:id    assignee:id)
-                  (= issue:repository     $s2)
-                  (= assignee:login       $s3)
-                  (isnull issue:closed))
-      :order-by [(desc updated)]]
-     (forge--topic-list-columns-vector 'issue)
-     id (ghub--username (forge-get-repository (list :id id))))))
+  (forge-topic-list-setup #'forge-issue-list-mode id nil nil
+    (lambda ()
+      (forge-sql [:select $i1 :from [issue issue_assignee assignee]
+                  :where (and (= issue_assignee:issue issue:id)
+                              (= issue_assignee:id    assignee:id)
+                              (= issue:repository     $s2)
+                              (= assignee:login       $s3)
+                              (isnull issue:closed))
+                  :order-by [(desc updated)]]
+                 (forge--tablist-columns-vector 'issue)
+                 id (ghub--username (forge-get-repository (list :id id)))))))
 
 ;;;###autoload
 (defun forge-list-owned-issues ()
@@ -195,20 +250,20 @@ Options `forge-owned-accounts' and `forge-owned-blacklist'
 controls which repositories are considered to be owned by you.
 Only Github is supported for now."
   (interactive)
-  (forge--list-topics nil 'forge-issue-list-mode "My issues"
-    (forge-sql
-     [:select $i1 :from [issue repository]
-      :where (and (= issue:repository repository:id)
-                  (in repository:owner $v2)
-                  (not (in repository:name $v3))
-                  (isnull issue:closed))
-      :order-by [(asc repository:owner)
-                 (asc repository:name)
-                 (desc issue:number)]]
-     (forge--list-columns-vector forge-global-topic-list-columns 'issue)
-     (vconcat (mapcar #'car forge-owned-accounts))
-     (vconcat forge-owned-blacklist))
-    forge-global-topic-list-columns))
+  (forge-topic-list-setup #'forge-issue-list-mode nil "My issues"
+                          forge-global-topic-list-columns
+    (lambda ()
+      (forge-sql [:select $i1 :from [issue repository]
+                  :where (and (= issue:repository repository:id)
+                              (in repository:owner $v2)
+                              (not (in repository:name $v3))
+                              (isnull issue:closed))
+                  :order-by [(asc repository:owner)
+                             (asc repository:name)
+                             (desc issue:number)]]
+                 (forge--tablist-columns-vector 'issue)
+                 (vconcat (mapcar #'car forge-owned-accounts))
+                 (vconcat forge-owned-blacklist)))))
 
 ;;;; Pullreq
 
@@ -216,27 +271,28 @@ Only Github is supported for now."
 (defun forge-list-pullreqs (id)
   "List pull-requests of the current repository in a separate buffer."
   (interactive (list (oref (forge-get-repository t) id)))
-  (forge--list-topics id 'forge-pullreq-list-mode nil
-    (forge-sql [:select $i1 :from pullreq :where (= repository $s2)]
-               (forge--topic-list-columns-vector)
-               id)))
+  (forge-topic-list-setup #'forge-pullreq-list-mode id nil nil
+    (lambda ()
+      (forge-sql [:select $i1 :from pullreq :where (= repository $s2)]
+                 (forge--tablist-columns-vector)
+                 id))))
 
 ;;;###autoload
 (defun forge-list-assigned-pullreqs (id)
   "List pull-requests of the current repository that are assigned to you.
 List them in a separate buffer."
   (interactive (list (oref (forge-get-repository t) id)))
-  (forge--list-topics id 'forge-pullreq-list-mode nil
-    (forge-sql
-     [:select $i1 :from [pullreq pullreq_assignee assignee]
-      :where (and (= pullreq_assignee:pullreq pullreq:id)
-                  (= pullreq_assignee:id      assignee:id)
-                  (= pullreq:repository       $s2)
-                  (= assignee:login           $s3)
-                  (isnull pullreq:closed))
-      :order-by [(desc updated)]]
-     (forge--topic-list-columns-vector 'pullreq)
-     id (ghub--username (forge-get-repository (list :id id))))))
+  (forge-topic-list-setup #'forge-pullreq-list-mode id nil nil
+    (lambda ()
+      (forge-sql [:select $i1 :from [pullreq pullreq_assignee assignee]
+                  :where (and (= pullreq_assignee:pullreq pullreq:id)
+                              (= pullreq_assignee:id      assignee:id)
+                              (= pullreq:repository       $s2)
+                              (= assignee:login           $s3)
+                              (isnull pullreq:closed))
+                  :order-by [(desc updated)]]
+                 (forge--tablist-columns-vector 'pullreq)
+                 id (ghub--username (forge-get-repository (list :id id)))))))
 
 ;;;###autoload
 (defun forge-list-owned-pullreqs ()
@@ -245,20 +301,20 @@ Options `forge-owned-accounts' and `forge-owned-blacklist'
 controls which repositories are considered to be owned by you.
 Only Github is supported for now."
   (interactive)
-  (forge--list-topics nil 'forge-pullreq-list-mode "My pullreqs"
-    (forge-sql
-     [:select $i1 :from [pullreq repository]
-      :where (and (= pullreq:repository repository:id)
-                  (in repository:owner $v2)
-                  (not (in repository:name $v3))
-                  (isnull pullreq:closed))
-      :order-by [(asc repository:owner)
-                 (asc repository:name)
-                 (desc pullreq:number)]]
-     (forge--list-columns-vector forge-global-topic-list-columns 'pullreq)
-     (vconcat (mapcar #'car forge-owned-accounts))
-     (vconcat forge-owned-blacklist))
-    forge-global-topic-list-columns))
+  (forge-topic-list-setup #'forge-pullreq-list-mode nil "My pullreqs"
+                          forge-global-topic-list-columns
+    (lambda ()
+      (forge-sql [:select $i1 :from [pullreq repository]
+                  :where (and (= pullreq:repository repository:id)
+                              (in repository:owner $v2)
+                              (not (in repository:name $v3))
+                              (isnull pullreq:closed))
+                  :order-by [(asc repository:owner)
+                             (asc repository:name)
+                             (desc pullreq:number)]]
+                 (forge--tablist-columns-vector 'pullreq)
+                 (vconcat (mapcar #'car forge-owned-accounts))
+                 (vconcat forge-owned-blacklist)))))
 
 ;;;; Repository
 
@@ -267,13 +323,8 @@ Only Github is supported for now."
   "List known repositories in a separate buffer.
 Here \"known\" means that an entry exists in the local database."
   (interactive)
-  (with-current-buffer (get-buffer-create "*Forge Repositories*")
-    (forge-repository-list-mode)
-    (forge-repository-list-refresh)
-    (add-hook 'tabulated-list-revert-hook
-              'forge-repository-list-refresh nil t)
-    (tabulated-list-print)
-    (switch-to-buffer (current-buffer))))
+  (forge-repository-list-setup #'forge-repository-list-refresh
+                               "*Forge Repositories*"))
 
 ;;;###autoload
 (defun forge-list-owned-repositories ()
@@ -283,50 +334,10 @@ and options `forge-owned-accounts' and `forge-owned-blacklist'
 controls which repositories are considered to be owned by you.
 Only Github is supported for now."
   (interactive)
-  (with-current-buffer (get-buffer-create "*Forge Owned Repositories*")
-    (forge-repository-list-mode)
-    (forge-repository-list-owned-refresh)
-    (add-hook 'tabulated-list-revert-hook
-              'forge-repository-list-owned-refresh nil t)
-    (tabulated-list-print)
-    (switch-to-buffer (current-buffer))))
+  (forge-repository-list-setup #'forge-repository-list-owned-refresh
+                               "*Forge Owned Repositories*"))
 
 ;;; Internal
-
-(defun forge--list-topics (repo-id mode buffer-name rows &optional columns)
-  (declare (indent 3))
-  (let ((repo (and repo-id (forge-get-repository (list :id repo-id))))
-        (topdir (magit-toplevel))
-        (columns (or columns forge-topic-list-columns)))
-    (with-current-buffer
-        (get-buffer-create
-         (or buffer-name
-             (format "*%s: %s/%s*"
-                     (substring (symbol-name mode) 0 -5)
-                     (oref repo owner)
-                     (oref repo name))))
-      (funcall mode)
-      (setq forge-buffer-repository repo)
-      (when topdir
-        (setq default-directory topdir))
-      (setq tabulated-list-format
-            (vconcat (--map `(,@(-take 3 it)
-                              ,@(-flatten (nth 3 it)))
-                            columns)))
-      (setq tabulated-list-entries
-            (mapcar (lambda (row)
-                      (list (car row)
-                            (vconcat
-                             (cl-mapcar (lambda (val col)
-                                          (if-let ((pp (nth 5 col)))
-                                              (funcall pp val)
-                                            (if val (format "%s" val) "")))
-                                        (cdr row)
-                                        columns))))
-                    rows))
-      (tabulated-list-init-header)
-      (tabulated-list-print)
-      (switch-to-buffer (current-buffer)))))
 
 (defun forge-topic-list-sort-by-number (a b)
   "Sort the `tabulated-list-entries' by topic number.
@@ -336,11 +347,8 @@ it silently fails."
     (> (read (aref (cadr a) 0))
        (read (aref (cadr b) 0)))))
 
-(defun forge--topic-list-columns-vector (&optional table)
-  (forge--list-columns-vector forge-topic-list-columns table))
-
-(defun forge--list-columns-vector (columns &optional table)
-  (let ((columns (cons 'id (--map (nth 4 it) columns))))
+(defun forge--tablist-columns-vector (&optional table)
+  (let ((columns (cons 'id (--map (nth 4 it) forge--tabulated-list-columns))))
     (vconcat (if table
                  (let ((table (symbol-name table)))
                    (--map (let ((col (symbol-name it)))
@@ -349,6 +357,16 @@ it silently fails."
                               (intern (concat table ":" col))))
                           columns))
                columns))))
+
+(defun forge--tablist-format-entry (row)
+  (list (car row)
+        (vconcat
+         (cl-mapcar (lambda (val col)
+                      (if-let ((pp (nth 5 col)))
+                          (funcall pp val)
+                        (if val (format "%s" val) "")))
+                    (cdr row)
+                    forge--tabulated-list-columns))))
 
 ;;; _
 (provide 'forge-list)

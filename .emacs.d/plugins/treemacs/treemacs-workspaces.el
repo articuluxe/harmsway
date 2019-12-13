@@ -24,8 +24,8 @@
 (require 'dash)
 (require 'ht)
 (require 'treemacs-core-utils)
-(require 'treemacs-visuals)
 (require 'treemacs-dom)
+(require 'treemacs-scope)
 (eval-and-compile
   (require 'inline)
   (require 'treemacs-macros))
@@ -48,6 +48,10 @@
 
 (treemacs-import-functions-from "treemacs-persistence"
   treemacs--persist)
+
+(treemacs-import-functions-from "treemacs-visuals"
+  treemacs--forget-last-highlight
+  treemacs-pulse-on-failure)
 
 (treemacs--defstruct treemacs-project name path path-status)
 
@@ -105,12 +109,19 @@ PATH: String"
                         treemacs--workspaces)
             (car treemacs--workspaces))))))
 
-(defun treemacs--find-project-for-buffer ()
-  "In the current workspace find the project current buffer's file falls under."
-  (unless treemacs--project-of-buffer
-    (when (buffer-file-name)
-      (setq treemacs--project-of-buffer (treemacs-is-path (buffer-file-name) :in-workspace))))
-  treemacs--project-of-buffer)
+(define-inline treemacs--find-project-for-buffer (&optional buffer-file)
+  "In the current workspace find the project current buffer's file falls under.
+Optionally supply the BUFFER-FILE in case it is not available by calling
+`buffer-file-name' (like in dired).
+
+FILE: Filepath"
+  (inline-letevals (buffer-file)
+    (inline-quote
+     (progn
+       (unless treemacs--project-of-buffer
+         (let ((path (or ,buffer-file (buffer-file-name))))
+           (when path (setf treemacs--project-of-buffer (treemacs-is-path path :in-workspace)))))
+       treemacs--project-of-buffer))))
 
 (define-inline treemacs--find-project-for-path (path)
   "Return the project for PATH in the current workspace."
@@ -580,9 +591,10 @@ PROJECT: Project Struct"
           (current-workspace (treemacs-current-workspace))
           ;; gather both the projects actually in the workspace ...
           (projects-in-workspace (-> current-workspace (treemacs-workspace->projects)))
-          (projects-in-buffer))
+          (projects-in-buffer)
+          (expanded-projects-in-buffer))
      (goto-char 0)
-     ;; ... as well as the projects currently show in the buffer
+     ;; ... as well as the projects currently shown in the buffer
      (unless (s-blank? (buffer-string))
        (push (treemacs-project-at-point) projects-in-buffer)
        (let (next-pos)
@@ -591,6 +603,12 @@ PROJECT: Project Struct"
            (goto-char next-pos)
            (unless (treemacs-button-get (treemacs-current-button) :custom)
              (push (treemacs-project-at-point) projects-in-buffer)))))
+     ;; remember which ones are expanded, close them so the dom position can be rebuilt
+     (dolist (project-in-buffer projects-in-buffer)
+       (-let [project-btn (treemacs-project->position project-in-buffer)]
+         (when (eq 'root-node-open (treemacs-button-get project-btn :state))
+           (push project-in-buffer expanded-projects-in-buffer)
+           (treemacs--collapse-root-node project-btn))))
      ;; figure out which ones have been deleted and and remove them from the dom
      (dolist (project-in-buffer projects-in-buffer)
        (unless (--first (treemacs-is-path (treemacs-project->path project-in-buffer)
@@ -598,7 +616,7 @@ PROJECT: Project Struct"
                                           (treemacs-project->path it))
                         projects-in-workspace)
          (treemacs-on-collapse (treemacs-project->path project-in-buffer) :purge)
-         (setq projects-in-buffer (delete project-in-buffer projects-in-buffer))))
+         (setf projects-in-buffer (delete project-in-buffer projects-in-buffer))))
      (treemacs-with-writable-buffer
       (treemacs--forget-last-highlight)
       ;; delete everything's that's visible and render it again - the order of projects could
@@ -609,13 +627,13 @@ PROJECT: Project Struct"
       ;; re-expand the projects that were expanded before the consolidation
       (let (next-pos)
         (-let [btn (treemacs-current-button)]
-          (when (treemacs-find-in-dom (treemacs-button-get btn :path))
+          (when (member (treemacs-button-get btn :project) expanded-projects-in-buffer)
             (treemacs--expand-root-node btn)))
         (while (/= (point-max)
                    (setq next-pos (treemacs--next-project-pos)))
           (goto-char next-pos)
           (-let [btn (treemacs-current-button)]
-            (when (treemacs-find-in-dom (treemacs-button-get btn :path))
+            (when (member (treemacs-button-get btn :project) expanded-projects-in-buffer)
               (treemacs--expand-root-node btn))))))
      ;; go back to the previous position
      (if (and current-file

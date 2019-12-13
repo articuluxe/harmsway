@@ -4,8 +4,8 @@
 
 ;; Author: Vibhav Pant, Fangrui Song, Ivan Yonchovski
 ;; Keywords: languages
-;; Package-Requires: ((emacs "25.1") (dash "2.14.1") (dash-functional "2.14.1") (f "0.20.0") (ht "2.0") (spinner "1.7.3") (markdown-mode "2.3"))
-;; Version: 6.2
+;; Package-Requires: ((emacs "25.1") (dash "2.14.1") (dash-functional "2.14.1") (f "0.20.0") (ht "2.0") (spinner "1.7.3") (markdown-mode "2.3") (lv "0"))
+;; Version: 6.2.1
 
 ;; URL: https://github.com/emacs-lsp/lsp-mode
 ;; This program is free software; you can redistribute it and/or modify
@@ -44,6 +44,7 @@
 (require 'imenu)
 (require 'inline)
 (require 'json)
+(require 'lv)
 (require 'network-stream)
 (require 'pcase)
 (require 's)
@@ -59,11 +60,13 @@
 (require 'ewoc)
 (require 'yasnippet nil t)
 
-(declare-function company-mode "company")
-(declare-function flycheck-mode "flycheck")
-(declare-function lsp-ui-flycheck-enable "lsp-ui")
-(declare-function evil-set-command-property "evil")
-(declare-function projectile-project-root "projectile")
+(declare-function company-mode "ext:company")
+(declare-function flycheck-mode "ext:flycheck")
+(declare-function lsp-ui-flycheck-enable "ext:lsp-ui-flycheck")
+(declare-function evil-set-command-property "ext:evil-common")
+(declare-function projectile-project-root "ext:projectile")
+
+(defvar c-basic-offset)
 
 (defconst lsp--message-type-face
   `((1 . ,compilation-error-face)
@@ -121,18 +124,6 @@
 
 (defcustom lsp-print-performance nil
   "If non-nil, print performance info in the logs."
-  :group 'lsp-mode
-  :type 'boolean
-  :package-version '(lsp-mode . "6.1"))
-
-(defcustom lsp-use-native-json t
-  "If non-nil, use native json parsing if available."
-  :group 'lsp-mode
-  :type 'boolean
-  :package-version '(lsp-mode . "6.1"))
-
-(defcustom lsp-json-use-lists nil
-  "If non-nil, use lists instead of vectors when doing json deserialization."
   :group 'lsp-mode
   :type 'boolean
   :package-version '(lsp-mode . "6.1"))
@@ -415,28 +406,11 @@ This flag affects only server which do not support incremental update."
   :type 'boolean
   :group 'lsp-mode)
 
-(defcustom lsp-eldoc-enable-signature-help t
-  "If non-nil, eldoc will display signature help when it is present."
-  :type 'boolean
-  :group 'lsp-mode)
-
-(defcustom lsp-eldoc-prefer-signature-help t
-  "If non-nil, eldoc will display signature help when both hover and signature help are present."
-  :type 'boolean
-  :group 'lsp-mode)
-
 (defcustom lsp-eldoc-render-all nil
   "Display all of the info returned by document/onHover.
 If this is set to nil, `eldoc' will show only the symbol information."
   :type 'boolean
   :group 'lsp-mode)
-
-(defcustom lsp-signature-render-all t
-  "Display all of the info returned by textDocument/signatureHelp.
-If this is set to nil, `eldoc' will show only the active signature."
-  :type 'boolean
-  :group 'lsp-mode
-  :package-version '(lsp-mode . "6.1"))
 
 (defcustom lsp-enable-completion-at-point t
   "Enable `completion-at-point' integration."
@@ -463,6 +437,11 @@ If this is set to nil, `eldoc' will show only the active signature."
   :type 'boolean
   :group 'lsp-mode)
 
+(defcustom lsp-enable-text-document-color t
+  "Enable `textDocument/documentColor' integration."
+  :type 'boolean
+  :group 'lsp-mode)
+
 (defcustom lsp-before-save-edits t
   "If non-nil, `lsp-mode' will apply edits suggested by the language server before saving a document."
   :type 'boolean
@@ -484,12 +463,6 @@ diagnostics have changed."
 (defcustom lsp-workspace-folders-changed-hook nil
   "Hooks to run after the folders has changed.
 The hook will receive two parameters list of added and removed folders."
-  :type 'hook
-  :group 'lsp-mode)
-
-(defcustom lsp-on-hover-hook nil
-  "The hooks that run after on hover and signature information has been loaded.
-The hook is called with two params: the signature information and hover data."
   :type 'hook
   :group 'lsp-mode)
 
@@ -582,7 +555,9 @@ Changes take effect only when a new session is started."
                                         (".*\\.xml$" . "xml")
                                         (".*\\.hx$" . "haxe")
                                         (".*\\.lua$" . "lua")
+                                        (".*\\.sql$" . "sql")
                                         (ada-mode . "ada")
+                                        (sql-mode . "sql")
                                         (vimrc-mode . "vim")
                                         (sh-mode . "shellscript")
                                         (sh-mode . "lua")
@@ -617,6 +592,7 @@ Changes take effect only when a new session is started."
                                         (php-mode . "php")
                                         (powershell-mode . "powershell")
                                         (json-mode . "json")
+                                        (jsonc-mode . "jsonc")
                                         (rjsx-mode . "javascript")
                                         (js2-mode . "javascript")
                                         (js-mode . "javascript")
@@ -641,8 +617,14 @@ Changes take effect only when a new session is started."
                                         (latex-mode . "latex")
                                         (vhdl-mode . "vhdl")
                                         (terraform-mode . "terraform")
-                                        (ess-r-mode . "r"))
+                                        (ess-r-mode . "r")
+                                        (crystal-mode . "crystal"))
   "Language id configuration.")
+
+(defvar lsp--last-active-workspaces nil
+  "Keep track of last active workspace.
+We want to try the last workspace first when jumping into a library
+directory")
 
 (defvar lsp-method-requirements
   '(("textDocument/onTypeFormatting" :capability "documentOnTypeFormattingProvider")
@@ -784,8 +766,11 @@ They are added to `markdown-code-lang-modes'")
 
 (defun lsp-elt (sequence n)
   "Return Nth element of SEQUENCE or nil if N is out of range."
-  (if (listp sequence) (elt sequence n)
-    (and (> (length sequence) n) (elt sequence n))))
+  (cond
+   ((listp sequence) (elt sequence n))
+   ((arrayp sequence)
+    (and (> (length sequence) n) (aref sequence n)))
+   (t (and (> (length sequence) n) (elt sequence n)))))
 
 ;; define seq-first and seq-rest for older emacs
 (defun lsp-seq-first (sequence)
@@ -830,6 +815,7 @@ serialize as a JSON array of strings."
 
 (defun lsp--eldoc-message (&optional msg)
   "Show MSG in eldoc."
+  (setq lsp--eldoc-saved-message msg)
   (run-with-idle-timer 0 nil (lambda () (eldoc-message msg))))
 
 (defun lsp-log (format &rest args)
@@ -1085,7 +1071,18 @@ INHERIT-INPUT-METHOD will be proxied to `completing-read' without changes."
   ;; structure is an alist of the form (KEY . VALUE), where KEY is a
   ;; string (regularly in all caps), and VALUE may be a string, a
   ;; boolean, or a sequence of strings.
-  (environment-fn))
+  (environment-fn)
+
+  ;; ‘after-open-fn’ workspace after open specific hooks.
+  (after-open-fn nil)
+
+  ;; ‘async-request-handlers’ is a hash table mapping request method names
+  ;; (strings) to functions handling the respective requests that may take
+  ;; time to finish.  Upon receiving a request, ‘lsp-mode’ will call the
+  ;; associated handler function passing three arguments, the ‘lsp--workspace’
+  ;; object, the deserialized request parameters and the callback which accept
+  ;; result as its parameter.
+  (async-request-handlers (make-hash-table :test 'equal) :read-only t))
 
 ;; from http://emacs.stackexchange.com/questions/8082/how-to-get-buffer-position-given-line-number-and-column-number
 (defun lsp--line-character-to-point (line character)
@@ -1527,7 +1524,7 @@ WORKSPACE is the workspace that contains the diagnostics."
       "Report new diagnostics to flymake."
       (funcall lsp--flymake-report-fn
                (-some->> (lsp-diagnostics)
-                 (gethash buffer-file-name)
+                 (gethash (lsp--fix-path-casing buffer-file-name))
                  (--map (-let* (((&hash "message" "severity" "range") (lsp-diagnostic-original it))
                                 ((start . end) (lsp--range-to-region range)))
                           (when (= start end)
@@ -2039,6 +2036,7 @@ CALLBACK - callback for the lenses."
     (define-key map (kbd "C-<down-mouse-1>") #'lsp-find-definition-mouse)
     (define-key map (kbd "C-<mouse-1>") #'ignore)
     (define-key map (kbd "<mouse-3>") #'lsp-mouse-click)
+    (define-key map (kbd "C-S-SPC") #'lsp-signature-activate)
     map)
   "Keymap for `lsp-mode'.")
 
@@ -2078,7 +2076,7 @@ CALLBACK - callback for the lenses."
      ("Workspace Folders"
       ["Add" lsp-workspace-folders-add]
       ["Remove" lsp-workspace-folders-remove]
-      ["Switch" lsp-workspace-folders-switch])
+      ["Open" lsp-workspace-folders-open])
      ["Toggle Lenses" lsp-lens-mode]))
   "Menu for lsp-mode.")
 
@@ -2233,16 +2231,19 @@ If WORKSPACE is not provided current workspace will be used."
   "Create notification body for method METHOD and parameters PARAMS."
   (lsp--make-notification method params))
 
+(defmacro lsp--json-serialize (params)
+  (if (progn
+        (require 'json)
+        (fboundp 'json-serialize))
+      `(json-serialize ,params
+                       :null-object nil
+                       :false-object :json-false)
+    `(let ((json-false :json-false))
+       (json-encode ,params))))
+
 (defun lsp--make-message (params)
   "Create a LSP message from PARAMS, after encoding it to a JSON string."
-  (let* ((json-false :json-false)
-         (body (if (and lsp-use-native-json
-                        (fboundp 'json-serialize))
-                   (with-no-warnings
-                     (json-serialize params
-                                     :null-object nil
-                                     :false-object :json-false))
-                 (json-encode params))))
+  (let ((body (lsp--json-serialize params) ))
     (concat "Content-Length: "
             (number-to-string (1+ (string-bytes body)))
             "\r\n\r\n"
@@ -2383,21 +2384,25 @@ If NO-WAIT is non-nil send the request as notification."
            ;; max time by which we must get a response
            (expected-time (+ send-time lsp-response-timeout))
            resp-result resp-error)
-      (lsp-request-async method params (lambda (res) (setf resp-result (or res :finished)))
-                         :error-handler (lambda (err) (setf resp-error err))
-                         :no-merge no-merge
-                         :mode 'detached)
+      (unwind-protect
+          (progn
+            (lsp-request-async method params (lambda (res) (setf resp-result (or res :finished)))
+                               :error-handler (lambda (err) (setf resp-error err))
+                               :no-merge no-merge
+                               :mode 'detached
+                               :cancel-token :sync-request)
 
-      (while (not (or resp-error resp-result))
-        (accept-process-output nil 0.001)
-        (when (< expected-time (time-to-seconds (current-time)))
-          (error "Timeout while waiting for response. Method: %s." method)))
+            (while (not (or resp-error resp-result))
+              (accept-process-output nil 0.001)
+              (when (< expected-time (time-to-seconds (current-time)))
+                (error "Timeout while waiting for response. Method: %s." method)))
 
-      (cond
-       ((eq resp-result :finished) nil)
-       (resp-result resp-result)
-       ((ht? resp-error) (error (gethash "message" resp-error)))
-       (t (error (gethash "message" (cl-first resp-error))))))))
+            (cond
+             ((eq resp-result :finished) nil)
+             (resp-result resp-result)
+             ((ht? resp-error) (error (gethash "message" resp-error)))
+             (t (error (gethash "message" (cl-first resp-error))))))
+        (lsp-cancel-request-by-token :sync-request)))))
 
 (cl-defun lsp-request-async (method params callback &key mode error-handler no-merge cancel-token)
   "Send request METHOD with PARAMS."
@@ -2501,6 +2506,7 @@ If NO-MERGE is non-nil, don't merge the results but return alist workspace->resu
                                     cancel-token))
              (id (cl-incf lsp-last-id))
              (body (plist-put body :id id)))
+        (setq lsp--last-active-workspaces target-workspaces)
         (when cancel-token
           (puthash cancel-token (cons id target-workspaces) lsp--cancelable-requests))
         (seq-doseq (workspace target-workspaces)
@@ -2549,7 +2555,7 @@ disappearing, unset all the variables related to it."
     (when (process-live-p proc)
       (kill-process proc))
     (unless lsp--buffer-workspaces
-      (lsp--managed-mode -1))))
+      (lsp-managed-mode -1))))
 
 (defun lsp--client-capabilities (&optional custom-capabilities)
   "Return the client capabilities."
@@ -2824,57 +2830,80 @@ in that particular folder."
                                       nil t)))
   (find-file project-root))
 
-(define-minor-mode lsp--managed-mode
+(defun lsp--maybe-enable-signature-help (trigger-characters)
+  (let ((ch last-command-event))
+    (when (cl-find ch trigger-characters :key #'string-to-char)
+      (lsp-signature-activate))))
+(define-minor-mode lsp-managed-mode
   "Mode for source buffers managed by lsp-mode."
   nil nil nil
-  (cond
-   (lsp--managed-mode
-    (add-function :before-until (local 'eldoc-documentation-function) #'lsp-eldoc-function)
-    (eldoc-mode 1)
-    (add-hook 'after-change-functions #'lsp-on-change nil t)
-    (add-hook 'after-revert-hook #'lsp-on-revert nil t)
-    (add-hook 'after-save-hook #'lsp-on-save nil t)
-    (add-hook 'auto-save-hook #'lsp--on-auto-save nil t)
-    (add-hook 'before-change-functions #'lsp-before-change nil t)
-    (add-hook 'before-save-hook #'lsp--before-save nil t)
-    (when (and lsp-enable-completion-at-point (lsp--capability "completionProvider"))
-      (setq-local completion-at-point-functions nil)
-      (add-hook 'completion-at-point-functions #'lsp-completion-at-point nil t))
-    (add-hook 'kill-buffer-hook #'lsp--text-document-did-close nil t)
-    (add-hook 'post-self-insert-hook #'lsp--on-self-insert nil t)
-    (add-hook 'post-command-hook #'lsp--post-command nil t)
+  (let ((on-type-formatting-handler (when-let (provider (and lsp-enable-on-type-formatting
+                                                             (lsp--capability "documentOnTypeFormattingProvider")))
+                                      (-let [(&hash "moreTriggerCharacter" more-trigger-characters
+                                                    "firstTriggerCharacter" first-trigger-characters) provider]
+                                        (lambda ()
+                                          (lsp--on-type-formatting first-trigger-characters
+                                                                   more-trigger-characters)))))
+        (signature-help-handler (-when-let ((&hash? "triggerCharacters" trigger-characters)
+                                            (and lsp-signature-auto-activate
+                                                 (lsp--capability "signatureHelpProvider")))
+                                  (lambda ()
+                                    (lsp--maybe-enable-signature-help trigger-characters)))))
+    (cond
+     (lsp-managed-mode
+      (add-function :before-until (local 'eldoc-documentation-function) #'lsp-eldoc-function)
+      (eldoc-mode 1)
+      (add-hook 'after-change-functions #'lsp-on-change nil t)
+      (add-hook 'after-revert-hook #'lsp-on-revert nil t)
+      (add-hook 'after-save-hook #'lsp-on-save nil t)
+      (add-hook 'auto-save-hook #'lsp--on-auto-save nil t)
+      (add-hook 'before-change-functions #'lsp-before-change nil t)
+      (add-hook 'before-save-hook #'lsp--before-save nil t)
+      (when (and lsp-enable-completion-at-point (lsp--capability "completionProvider"))
+        (setq-local completion-at-point-functions nil)
+        (add-hook 'completion-at-point-functions #'lsp-completion-at-point nil t))
+      (add-hook 'kill-buffer-hook #'lsp--text-document-did-close nil t)
+      (when on-type-formatting-handler
+        (add-hook 'post-self-insert-hook on-type-formatting-handler nil t))
+      (when signature-help-handler
+        (add-hook 'post-self-insert-hook signature-help-handler nil t))
+      (add-hook 'post-command-hook #'lsp--post-command nil t)
+      (lsp--on-idle (current-buffer))
+      (when lsp-enable-xref
+        (add-hook 'xref-backend-functions #'lsp--xref-backend nil t))
+      (when (and lsp-enable-text-document-color (lsp--capability "colorProvider"))
+        (add-hook 'lsp-on-change-hook #'lsp--document-color nil t)))
+     (t
+      (setq-local indent-region-function nil)
+      (remove-function (local 'eldoc-documentation-function) #'lsp-eldoc-function)
 
-    (lsp--on-idle (current-buffer))
-    (when lsp-enable-xref
-      (add-hook 'xref-backend-functions #'lsp--xref-backend nil t)))
-   (t
-    (setq-local indent-region-function nil)
-    (remove-function (local 'eldoc-documentation-function) #'lsp-eldoc-function)
+      (remove-hook 'post-command-hook #'lsp--post-command t)
+      (remove-hook 'after-change-functions #'lsp-on-change t)
+      (remove-hook 'after-revert-hook #'lsp-on-revert t)
+      (remove-hook 'after-save-hook #'lsp-on-save t)
+      (remove-hook 'auto-save-hook #'lsp--on-auto-save t)
+      (remove-hook 'before-change-functions #'lsp-before-change t)
+      (remove-hook 'before-save-hook #'lsp--before-save t)
+      (remove-hook 'completion-at-point-functions #'lsp-completion-at-point t)
+      (remove-hook 'kill-buffer-hook #'lsp--text-document-did-close t)
+      (remove-hook 'post-self-insert-hook on-type-formatting-handler t)
+      (remove-hook 'post-self-insert-hook signature-help-handler t)
 
-    (remove-hook 'post-command-hook #'lsp--post-command t)
-    (remove-hook 'after-change-functions #'lsp-on-change t)
-    (remove-hook 'after-revert-hook #'lsp-on-revert t)
-    (remove-hook 'after-save-hook #'lsp-on-save t)
-    (remove-hook 'auto-save-hook #'lsp--on-auto-save t)
-    (remove-hook 'before-change-functions #'lsp-before-change t)
-    (remove-hook 'before-save-hook #'lsp--before-save t)
-    (remove-hook 'completion-at-point-functions #'lsp-completion-at-point t)
-    (remove-hook 'kill-buffer-hook #'lsp--text-document-did-close t)
-    (remove-hook 'post-self-insert-hook #'lsp--on-self-insert t)
+      (when lsp--on-idle-timer
+        (cancel-timer lsp--on-idle-timer)
+        (setq lsp--on-idle-timer nil))
 
-    (when lsp--on-idle-timer
-      (cancel-timer lsp--on-idle-timer)
-      (setq lsp--on-idle-timer nil))
+      (remove-hook 'lsp-on-idle-hook #'lsp--document-links t)
+      (remove-hook 'lsp-on-idle-hook #'lsp--document-highlight t)
 
-    (remove-hook 'lsp-on-idle-hook #'lsp--document-links t)
-    (remove-hook 'lsp-on-idle-hook #'lsp--document-highlight t)
+      (lsp--remove-overlays 'lsp-sem-highlight)
+      (lsp--remove-overlays 'lsp-highlight)
+      (lsp--remove-overlays 'lsp-links)
+      (lsp--remove-overlays 'lsp-color)
+      (lsp-lens-mode -1)
 
-    (lsp--remove-overlays 'lsp-sem-highlight)
-    (lsp--remove-overlays 'lsp-highlight)
-    (lsp--remove-overlays 'lsp-links)
-    (lsp-lens-mode -1)
-
-    (remove-hook 'xref-backend-functions #'lsp--xref-backend t))))
+      (remove-hook 'xref-backend-functions #'lsp--xref-backend t)
+      (remove-hook 'lsp-on-change-hook #'lsp--document-color t)))))
 
 (defun lsp--text-document-did-open ()
   "'document/didOpen event."
@@ -2889,7 +2918,7 @@ in that particular folder."
                :version lsp--cur-version
                :text (buffer-substring-no-properties (point-min) (point-max)))))
 
-  (lsp--managed-mode 1)
+  (lsp-managed-mode 1)
 
   (let* ((sync (gethash "textDocumentSync" (lsp--server-capabilities)))
          (kind (if (hash-table-p sync) (gethash "change" sync) sync)))
@@ -2901,7 +2930,8 @@ in that particular folder."
       (lsp-enable-imenu))
 
     (when (and lsp-enable-indentation
-               (lsp--capability "documentRangeFormattingProvider"))
+               (or (lsp--capability "documentRangeFormattingProvider")
+                   (lsp--registered-capability "textDocument/rangeFormatting")))
       (setq-local indent-region-function #'lsp-format-region))
 
     (when (and lsp-enable-symbol-highlighting
@@ -2915,7 +2945,11 @@ in that particular folder."
   (lsp--on-change-debounce (current-buffer))
   (lsp--on-idle (current-buffer))
 
-  (run-hooks 'lsp-after-open-hook))
+  (run-hooks 'lsp-after-open-hook)
+  (-some-> lsp--cur-workspace
+    (lsp--workspace-client)
+    (lsp--client-after-open-fn)
+    (funcall)))
 
 (defun lsp--text-document-identifier ()
   "Make TextDocumentIdentifier.
@@ -3126,6 +3160,8 @@ The method uses `replace-buffer-contents'."
                                     beg (+ beg (length newText))
                                     length)))))))))
 
+(defvar-local lsp--filter-cr? t)
+
 (defun lsp--apply-text-edits (edits)
   "Apply the edits described in the TextEdit[] object."
   (unless (seq-empty-p edits)
@@ -3143,6 +3179,11 @@ The method uses `replace-buffer-contents'."
                            'lsp--apply-text-edit)))
         (unwind-protect
             (->> edits
+                 (mapc (lambda (edit)
+                         (when lsp--filter-cr?
+                           ;; filter \r out of text since it's mostly useless
+                           (ht-set edit "newText"
+                                   (s-replace "\r" "" (ht-get edit "newText" ""))))))
                  (nreverse)
                  (seq-sort #'lsp--text-edit-sort-predicate)
                  (mapc (lambda (edit)
@@ -3347,7 +3388,9 @@ Added to `after-change-functions'."
 
   ;; force cleanup overlays after each change
   (lsp--remove-overlays 'lsp-highlight)
-  (lsp--on-change-debounce (current-buffer)))
+  (lsp--on-change-debounce (current-buffer))
+  (setq lsp--last-signature-index nil)
+  (setq lsp--last-signature nil))
 
 
 
@@ -3393,14 +3436,14 @@ Added to `after-change-functions'."
   (when (and (buffer-live-p buffer)
              (equal buffer (current-buffer))
              (not lsp-inhibit-lsp-hooks)
-             lsp--managed-mode)
+             lsp-managed-mode)
     (run-hooks 'lsp-on-idle-hook)))
 
 (defun lsp--on-change-debounce (buffer)
   (when (and (buffer-live-p buffer)
              (equal buffer (current-buffer))
              (not lsp-inhibit-lsp-hooks)
-             lsp--managed-mode)
+             lsp-managed-mode)
     (run-hooks 'lsp-on-change-hook)))
 
 (defun lsp--after-change (&rest _)
@@ -3416,20 +3459,17 @@ Added to `after-change-functions'."
 
 
 
-(defun lsp--on-self-insert ()
+(defun lsp--on-type-formatting (first-trigger-characters more-trigger-characters)
   "Self insert handling.
 Applies on type formatting."
-  (-when-let* ((provider (and lsp-enable-on-type-formatting
-                              (lsp--capability "documentOnTypeFormattingProvider")))
-               (ch last-command-event))
-    (when (or (eq (string-to-char (gethash "firstTriggerCharacter" provider)) ch)
-              (cl-find ch (gethash "moreTriggerCharacter" provider) :key #'string-to-char))
-      (let ((tick (buffer-chars-modified-tick)))
-        (lsp-request-async "textDocument/onTypeFormatting"
-                           (append (lsp--make-document-formatting-params)
-                                   `(:ch ,(char-to-string ch) :position ,(lsp--cur-position)))
-                           (lambda (edits)
-                             (when (= tick (buffer-chars-modified-tick)) (lsp--apply-text-edits edits))))))))
+  (let ((ch last-command-event))
+    (when (or (eq (string-to-char first-trigger-characters) ch)
+              (cl-find ch more-trigger-characters :key #'string-to-char))
+      (lsp-request-async "textDocument/onTypeFormatting"
+                         (append (lsp--make-document-formatting-params)
+                                 `(:ch ,(char-to-string ch) :position ,(lsp--cur-position)))
+                         #'lsp--apply-text-edits
+                         :mode 'tick))))
 
 
 ;; links
@@ -3585,24 +3625,11 @@ and the position respectively."
                            (lambda (diag)
                              (let ((line (lsp-diagnostic-line diag)))
                                (and (>= line start) (<= line end))))
-                           (gethash buffer-file-name (lsp-diagnostics) nil))))
+                           (gethash (lsp--fix-path-casing buffer-file-name)
+                                    (lsp-diagnostics) nil))))
     (cl-coerce (seq-map #'lsp-diagnostic-original diags-in-range) 'vector)))
 
 (defalias 'lsp--cur-line-diagnotics 'lsp-cur-line-diagnostics)
-
-(defun lsp--gethash (key table &optional dflt)
-  "Look up KEY in TABLE and return its associated value,
-unless KEY not found or its value is false, when it returns DFLT.
-DFLT defaults to nil.
-
-Needed for completion request fallback behavior for the fields
-'sortText', 'filterText', and 'insertText' as described here:
-
-https://microsoft.github.io/language-server-protocol/specification#textDocument_completion"
-  (let ((result (gethash key table dflt)))
-    (when (member result '(nil "" 0 :json-false))
-      (setq result dflt))
-    result))
 
 (defun lsp--make-completion-item (item)
   (propertize (or (gethash "insertText" item)
@@ -3745,13 +3772,7 @@ If INCLUDE-DECLARATION is non-nil, request the server to include declarations."
 
 (defun lsp-eldoc-function ()
   "`lsp-mode' eldoc function."
-  (run-hook-wrapped
-   'lsp-eldoc-hook
-   (lambda (fn)
-     (condition-case nil
-         (funcall fn)
-       (lsp-capability-not-supported nil))
-     nil))
+  (run-hooks 'lsp-eldoc-hook)
   eldoc-last-message)
 
 (defun dash-expand:&lsp-wks (key source)
@@ -3904,6 +3925,18 @@ When language is nil render as markup if `markdown-mode' is loaded."
     (t (error "Failed to handle %s" content)))
    ""))
 
+(defun lsp--select-action (actions)
+  "Select an action to execute from ACTIONS."
+  (cond
+   ((seq-empty-p actions) (signal 'lsp-no-code-actions nil))
+   ((and (eq (seq-length actions) 1) lsp-auto-execute-action)
+    (lsp-seq-first actions))
+   (t (lsp--completing-read "Select code action: "
+                            (seq-into actions 'list)
+                            (-lambda ((&hash "title" "command"))
+                              (or title command))
+                            nil t))))
+
 (defun lsp--render-on-hover-content (contents render-all)
   "Render the content received from 'document/onHover' request.
 CONTENTS  - MarkedString | MarkedString[] | MarkupContent
@@ -3935,97 +3968,231 @@ RENDER-ALL - nil if only the signature should be rendered."
          contents)))
      "\n"))))
 
+
+
+(defvar-local lsp--last-signature nil)
+(defvar-local lsp--last-signature-index nil)
+(defvar lsp--last-signature-buffer nil)
+
+(defvar lsp-signature-mode-map
+  (-doto (make-sparse-keymap)
+    (define-key (kbd "M-n") #'lsp-signature-next)
+    (define-key (kbd "M-p") #'lsp-signature-previous)
+    (define-key (kbd "C-c C-k") #'lsp-signature-stop))
+  "Keymap for `lsp-signature-mode-map'")
+
+(define-minor-mode lsp-signature-mode ""
+  nil nil nil
+  :keymap lsp-signature-mode-map
+  :lighter ""
+  :group 'lsp-mode)
+
+(defcustom lsp-signature-render-documentation t
+  "Display signature documentation in `eldoc'."
+  :type 'boolean
+  :group 'lsp-mode
+  :package-version '(lsp-mode . "6.2"))
+
+(defcustom lsp-signature-auto-activate t
+  "Auto-activate the documentation when  "
+  :type 'boolean
+  :group 'lsp-mode
+  :package-version '(lsp-mode . "6.2"))
+
+(defun lsp-signature-stop ()
+  (interactive)
+  (lsp-cancel-request-by-token :signature)
+  (remove-hook 'lsp-on-idle-hook #'lsp-signature t)
+  (remove-hook 'post-command-hook #'lsp-signature-maybe-stop)
+  (lv-delete-window)
+  (lsp-signature-mode -1))
+
+(defun lsp--lv-message (message)
+  (setq lsp--last-signature-buffer (current-buffer))
+  (let ((lv-force-update t))
+    (lv-message message)))
+
+(defun lsp--handle-signature-update (signature)
+  (let ((message (lsp--signature->message signature)))
+    (if (s-present? message)
+        (lsp--lv-message message)
+      (lsp-signature-stop))))
+
+(defun lsp-signature-maybe-stop ()
+  (when (and lsp--last-signature-buffer
+             (not (equal (current-buffer) lsp--last-signature-buffer)))
+    (lsp-signature-stop)))
+
+(defun lsp-signature-activate ()
+  (interactive)
+  (setq-local lsp--last-signature nil)
+  (setq-local lsp--last-signature-index nil)
+  (add-hook 'lsp-on-idle-hook #'lsp-signature nil t)
+  (add-hook 'post-command-hook #'lsp-signature-maybe-stop)
+  (lsp-signature-mode t))
+
+(defun lsp-signature-next ()
+  "Show next signature."
+  (interactive)
+  (when (and lsp--last-signature-index
+             lsp--last-signature
+             (< (1+ lsp--last-signature-index) (length (gethash "signatures" lsp--last-signature))))
+    (setq-local lsp--last-signature-index (1+ lsp--last-signature-index))
+    (lsp--lv-message (lsp--signature->message lsp--last-signature))))
+
+(defun lsp-signature-previous ()
+  "Next signature."
+  (interactive)
+  (when (and lsp--last-signature-index
+             lsp--last-signature
+             (not (zerop lsp--last-signature-index)))
+    (setq-local lsp--last-signature-index (1- lsp--last-signature-index))
+    (lsp--lv-message (lsp--signature->message lsp--last-signature))))
+
+(defun lsp--signature->message (signature-help)
+  "Generate eldoc message from SIGNATURE-HELP response."
+  (setq lsp--last-signature signature-help)
+
+  (when (and signature-help (not (seq-empty-p (gethash "signatures" signature-help))))
+    (-let* (((&hash "activeSignature" active-index
+                    "activeParameter" active-parameter
+                    "signatures")     signature-help)
+            (active-index (or lsp--last-signature-index active-index 0))
+            (_ (setq lsp--last-signature-index active-index))
+            ((signature &as &hash? "label" "parameters") (seq-elt signatures active-index))
+            (prefix (format "%s/%s%s"
+                            (1+ active-index)
+                            (length signatures)
+                            (propertize "│ " 'face 'shadow)))
+            (prefix-length (- (length prefix) 2))
+            (method-docs (when lsp-signature-render-documentation
+                           (let ((docs (lsp--render-on-hover-content
+                                        (gethash "documentation" signature)
+                                        t)))
+                             (when (s-present? docs)
+                               (concat
+                                (propertize (concat "\n"
+                                                    (s-repeat prefix-length "─")
+                                                    "┴─────────────────────────────────────────────────")
+                                            'face 'shadow)
+                                "\n"
+                                docs
+                                (propertize (concat "\n"
+                                                    (s-repeat prefix-length "─")
+                                                    "──────────────────────────────────────────────────")
+                                            'face 'shadow)))))))
+      (when (and active-parameter (not (seq-empty-p parameters)))
+        (-when-let* ((param (when (and (< -1 active-parameter (length parameters)))
+                              (seq-elt parameters active-parameter)))
+                     (selected-param-label (let ((label (gethash "label" param)))
+                                             (if (stringp label) label (append label nil))))
+                     (start (if (stringp selected-param-label)
+                                (s-index-of selected-param-label label)
+                              (cl-first selected-param-label)))
+                     (end (if (stringp selected-param-label)
+                              (+ start (length selected-param-label))
+                            (cl-second selected-param-label))))
+          (add-face-text-property start end 'eldoc-highlight-function-argument nil label)))
+      (concat prefix label method-docs))))
+
+(defun lsp-signature ()
+  "Display signature info (based on `textDocument/signatureHelp')"
+  (lsp-request-async "textDocument/signatureHelp"
+                     (lsp--text-document-position-params)
+                     #'lsp--handle-signature-update
+                     :cancel-token :signature))
+
+
+;; color presentation
+(defun lsp--color-create-interactive-command (color range)
+  (lambda ()
+    (interactive)
+    (-let [(&hash? "textEdit" text-edit
+                   "additionalTextEdits" additional-text-edits)
+           (lsp--completing-read
+            "Select color presentation: "
+            (lsp-request
+             "textDocument/colorPresentation"
+             `(:textDocument ,(lsp--text-document-identifier)
+                             :color ,color
+                             :range ,range))
+            (-lambda ((&hash "label")) label)
+            nil
+            t)]
+      (lsp--apply-text-edit text-edit)
+      (lsp--apply-text-edits additional-text-edits))))
+
+(defun lsp--number->color (number)
+  (let ((result (format "%x"
+                        (round (* (or number 0) 255.0)))))
+    (if (= 1 (length result))
+        (concat "0" result)
+      result)))
+
+(defun lsp--document-color ()
+  "Document color handler."
+  (lsp-request-async
+   "textDocument/documentColor"
+   `(:textDocument ,(lsp--text-document-identifier))
+   (lambda (result)
+     (lsp--remove-overlays 'lsp-color)
+     (seq-do
+      (-lambda ((&hash "color" (color &as &hash "red" "green" "blue")
+                       "range"))
+        (-let* (((beg . end) (lsp--range-to-region range))
+                (overlay (make-overlay beg end))
+                (command (lsp--color-create-interactive-command color range)))
+          (overlay-put overlay 'lsp-color t)
+          (overlay-put overlay 'evaporate t)
+          (overlay-put overlay
+                       'before-string
+                       (propertize
+               	        "⬛"
+                        'face `((:foreground ,(format "#%s%s%s"
+                                                      (lsp--number->color red)
+                                                      (lsp--number->color green)
+                                                      (lsp--number->color blue))))
+                        'action command
+                        'mouse-face 'lsp-lens-mouse-face
+                        'local-map (-doto (make-sparse-keymap)
+                                     (define-key [mouse-1] command))))))
+      result))
+   :mode 'tick
+   :cancel-token :document-color-token))
+
+
+
+;; hover
+
 (defvar-local lsp--hover-saved-bounds nil)
 (defvar-local lsp--eldoc-saved-message nil)
 
-(defun lsp--signature->eldoc-message (signature-help)
-  "Generate eldoc message from SIGNATURE-HELP response."
-  ;; (setq my/signature-help signature-help)
-  (-when-let* (((&hash "activeSignature" active-signature-index
-                       "activeParameter" active-parameter
-                       "signatures") signature-help)
-               (signatures (append signatures nil)))
-    (->> signatures
-         (-map-indexed
-          (-lambda (index (signature &as &hash "label"))
-            (cond
-             ((= index active-signature-index)
-              (-when-let* ((parameters (append (gethash "parameters" signature) nil))
-                           (param (seq-elt parameters active-parameter))
-                           (selected-param-label (let ((label (-some->> param (gethash "label"))))
-                                                   (if (stringp label) label (append label nil))))
-                           (start (if (stringp selected-param-label)
-                                      (s-index-of selected-param-label label)
-                                    (cl-first selected-param-label)))
-                           (end (if (stringp selected-param-label)
-                                    (+ start (length selected-param-label))
-                                  (cl-second selected-param-label))))
-                (add-face-text-property start end 'eldoc-highlight-function-argument nil label))
-              label)
-             (lsp-signature-render-all (propertize label 'face 'shadow)))))
-         (-filter #'identity)
-         (s-join "\n"))))
-
-(defvar-local lsp-hover-request-id 0)
-
 (defun lsp-hover ()
-  "Display signature or hover info based on the current position."
+  "Display hover info (based on `textDocument/signatureHelp')."
   (if (and lsp--hover-saved-bounds
            (lsp--point-in-bounds-p lsp--hover-saved-bounds))
       (lsp--eldoc-message lsp--eldoc-saved-message)
     (setq lsp--hover-saved-bounds nil
           lsp--eldoc-saved-message nil)
-    (let ((request-id (cl-incf lsp-hover-request-id))
-          (pending 0)
-          (whitespace-or-newline (looking-at "[[:space:]\n]")))
-      (if whitespace-or-newline
-          (lsp--eldoc-message nil)
-        (when (and lsp-eldoc-enable-hover (lsp--capability "hoverProvider"))
-          (cl-incf pending)
-          (lsp-request-async
-           "textDocument/hover"
-           (lsp--text-document-position-params)
-           (lambda (hover)
-             (when (and (eq request-id lsp-hover-request-id))
-               (when hover
-                 (when-let (range (gethash "range" hover))
-                   (setq lsp--hover-saved-bounds (lsp--range-to-region range)))
-                 (-let (((&hash "contents") hover))
-                   (when-let (message
-                              (and contents (lsp--render-on-hover-content contents lsp-eldoc-render-all)))
-                     (when (or (and (not lsp-eldoc-prefer-signature-help) (setq pending 1))
-                               (not lsp--eldoc-saved-message))
-                       (setq lsp--eldoc-saved-message message)))))
-               (when (zerop (cl-decf pending))
-                 (lsp--eldoc-message lsp--eldoc-saved-message))
-               (run-hook-with-args 'lsp-on-hover-hook hover)))
-           :error-handler #'ignore)))
-      (when (and lsp-eldoc-enable-signature-help (lsp--capability "signatureHelpProvider"))
-        (cl-incf pending)
+    (if (looking-at "[[:space:]\n]")
+        (lsp--eldoc-message nil)
+      (when (and lsp-eldoc-enable-hover (lsp--capability "hoverProvider"))
         (lsp-request-async
-         "textDocument/signatureHelp"
+         "textDocument/hover"
          (lsp--text-document-position-params)
-         (lambda (signature)
-           (when (eq request-id lsp-hover-request-id)
-             (when-let (message (and signature (lsp--signature->eldoc-message signature)))
-               (when (or (and lsp-eldoc-prefer-signature-help (setq pending 1))
-                         (not lsp--eldoc-saved-message))
-                 (setq lsp--eldoc-saved-message message)))
-             (when (zerop (cl-decf pending))
-               (lsp--eldoc-message lsp--eldoc-saved-message))))
-         :error-handler #'ignore)))))
+         (lambda (hover)
+           (when hover
+             (when-let (range (gethash "range" hover))
+               (setq lsp--hover-saved-bounds (lsp--range-to-region range)))
+             (-let* ((contents (gethash "contents" hover)))
+               (lsp--eldoc-message (and contents
+                                        (lsp--render-on-hover-content contents
+                                                                      lsp-eldoc-render-all))))))
+         :error-handler #'ignore
+         :mode 'tick
+         :cancel-token :eldoc-hover)))))
 
-(defun lsp--select-action (actions)
-  "Select an action to execute from ACTIONS."
-  (cond
-   ((seq-empty-p actions) (signal 'lsp-no-code-actions nil))
-   ((and (eq (seq-length actions) 1) lsp-auto-execute-action)
-    (lsp-seq-first actions))
-   (t (lsp--completing-read "Select code action: "
-                            (seq-into actions 'list)
-                            (-lambda ((&hash "title" "command"))
-                              (or title command))
-                            nil t))))
+
 
 (defun lsp--find-action-handler (command)
   "Find action handler for particular COMMAND."
@@ -4081,8 +4248,10 @@ If ACTION is not set it will be selected from `lsp-code-actions'."
 (defun lsp--make-document-formatting-params ()
   "Create document formatting params."
   `(:textDocument ,(lsp--text-document-identifier)
-                  :options (:tabSize ,tab-width :insertSpaces
-                                     ,(if indent-tabs-mode :json-false t))))
+                  :options (:tabSize ,(if (bound-and-true-p c-buffer-is-cc-mode)
+                                          c-basic-offset
+                                        tab-width)
+                                     :insertSpaces ,(if indent-tabs-mode :json-false t))))
 
 (defun lsp-format-buffer ()
   "Ask the server to format this document."
@@ -4736,51 +4905,13 @@ PARAMS are the `workspace/configuration' request params"
             (gethash section (lsp-configuration-section section))))
     (apply #'vector)))
 
-(defun lsp--on-request (workspace request)
-  "Call the appropriate handler for REQUEST, and send the return value to the server.
-WORKSPACE is the active workspace."
-  (-let* ((recv-time (current-time))
-          ((&hash "params" "method" "id") request)
+(defun lsp--send-request-response (workspace recv-time request response)
+  "Send the RESPONE for REQUEST in WORKSPACE and log if needed."
+  (-let* (((&hash "params" "method" "id") request)
+          (process (lsp--workspace-proc workspace))
+          (response (lsp--make-response request response))
           (req-entry (and lsp-print-io
                           (lsp--make-log-entry method id params 'incoming-req)))
-          (client (lsp--workspace-client workspace))
-          (process (lsp--workspace-proc workspace))
-          (empty-response (lsp--make-response request nil))
-          (response (pcase method
-                      ("client/registerCapability"
-                       (seq-doseq (reg (gethash "registrations" params))
-                         (lsp--server-register-capability reg))
-                       empty-response)
-                      ("window/showMessageRequest"
-                       (let ((choice (lsp--window-log-message-request params)))
-                         (lsp--make-response request `(:title ,choice))))
-                      ("client/unregisterCapability"
-                       (seq-doseq (unreg (gethash "unregisterations" params))
-                         (lsp--server-unregister-capability unreg))
-                       empty-response)
-                      ("workspace/applyEdit"
-                       (lsp--apply-workspace-edit (gethash "edit" params))
-                       empty-response)
-                      ("workspace/configuration"
-                       (lsp--make-response request (lsp--build-workspace-configuration-response params)))
-                      ("workspace/workspaceFolders"
-                       (lsp--make-response
-                        request
-                        (let ((folders (or (-> workspace
-                                               (lsp--workspace-client)
-                                               (lsp--client-server-id)
-                                               (gethash (lsp-session-server-id->folders (lsp-session))))
-                                           (lsp-session-folders (lsp-session)))))
-                          (->> folders
-                               (-distinct)
-                               (-map (lambda (folder)
-                                       (list :uri (lsp--path-to-uri folder))))
-                               (apply #'vector)))))
-                      (other
-                       (-if-let (handler (gethash other (lsp--client-request-handlers client) nil))
-                           (lsp--make-response request (funcall handler workspace params))
-                         (lsp-warn "Unknown request method: %s" other)
-                         empty-response))))
           (resp-entry (and lsp-print-io
                            (lsp--make-log-entry method id response 'outgoing-resp
                                                 (/ (nth 2 (time-since recv-time)) 1000)))))
@@ -4789,6 +4920,55 @@ WORKSPACE is the active workspace."
       (lsp--log-entry-new req-entry workspace)
       (lsp--log-entry-new resp-entry workspace))
     (lsp--send-no-wait (lsp--make-message response) process)))
+
+(defun lsp--on-request (workspace request)
+  "Call the appropriate handler for REQUEST, and send the return value to the server.
+WORKSPACE is the active workspace."
+  (-let* ((recv-time (current-time))
+          ((&hash "params" "method") request)
+          (client (lsp--workspace-client workspace))
+          (response (pcase method
+                      ("client/registerCapability"
+                       (seq-doseq (reg (gethash "registrations" params))
+                         (lsp--server-register-capability reg))
+                       nil)
+                      ("window/showMessageRequest"
+                       (let ((choice (lsp--window-log-message-request params)))
+                         `(:title ,choice)))
+                      ("client/unregisterCapability"
+                       (seq-doseq (unreg (gethash "unregisterations" params))
+                         (lsp--server-unregister-capability unreg))
+                       nil)
+                      ("workspace/applyEdit"
+                       (lsp--apply-workspace-edit (gethash "edit" params))
+                       nil)
+                      ("workspace/configuration"
+                       (lsp--build-workspace-configuration-response params))
+                      ("workspace/workspaceFolders"
+                       (let ((folders (or (-> workspace
+                                              (lsp--workspace-client)
+                                              (lsp--client-server-id)
+                                              (gethash (lsp-session-server-id->folders (lsp-session))))
+                                          (lsp-session-folders (lsp-session)))))
+                         (->> folders
+                              (-distinct)
+                              (-map (lambda (folder)
+                                      (list :uri (lsp--path-to-uri folder))))
+                              (apply #'vector))))
+                      (other
+                       (-if-let (handler (gethash other (lsp--client-request-handlers client) nil))
+                           (funcall handler workspace params)
+                         (-if-let (handler (gethash other (lsp--client-async-request-handlers client) nil))
+                             (progn
+                               (funcall handler workspace params
+                                        (-partial #'lsp--send-request-response
+                                                  workspace recv-time request))
+                               'delay-response)
+                           (lsp-warn "Unknown request method: %s" other)
+                           nil))))))
+    ;; Send response to the server.
+    (unless (eq response 'delay-response)
+      (lsp--send-request-response workspace recv-time request response))))
 
 (defun lsp--error-string (err)
   "Format ERR as a user friendly string."
@@ -4822,20 +5002,19 @@ WORKSPACE is the active workspace."
                  nil (format "Invalid Content-Length value: %s" val)))
     (cons key val)))
 
-(defun lsp--read-json (str)
+(defmacro lsp--read-json (str)
   "Read json string STR."
-  (let* ((use-native-json (and lsp-use-native-json (fboundp 'json-parse-string)))
-         (json-array-type (if lsp-json-use-lists 'list 'vector))
-         (json-object-type 'hash-table)
-         (json-false nil))
-    (if use-native-json
-        (with-no-warnings
-          (with-temp-buffer
-            (json-parse-string str
-                               :object-type 'hash-table
-                               :null-object nil
-                               :false-object nil)))
-      (json-read-from-string str))))
+  (if (progn
+        (require 'json)
+        (fboundp 'json-parse-string))
+      `(json-parse-string ,str
+                          :object-type 'hash-table
+                          :null-object nil
+                          :false-object nil)
+    `(let ((json-array-type 'vector)
+           (json-object-type 'hash-table)
+           (json-false nil))
+       (json-read-from-string ,str))))
 
 (defun lsp--log-request-time (server-id method id start-time before-send received-time after-parsed-time after-processed-time)
   (when lsp-print-performance
@@ -4870,47 +5049,48 @@ WORKSPACE is the active workspace."
 
 (defun lsp--parser-on-message (json-data workspace)
   "Called when the parser P read a complete MSG from the server."
-  (with-lsp-workspace workspace
-    (let* ((client (lsp--workspace-client workspace))
-           (received-time (current-time))
-           (server-id (lsp--client-server-id client))
-           (after-parsed-time (current-time))
-           (id (--when-let (gethash "id" json-data)
-                 (if (stringp it) (string-to-number it) it)))
-           (data (gethash "result" json-data)))
-      (pcase (lsp--get-message-type json-data)
-        ('response
-         (cl-assert id)
-         (-let [(callback _ method start-time before-send) (gethash id (lsp--client-response-handlers client))]
-           (when lsp-print-io
-             (lsp--log-entry-new
-              (lsp--make-log-entry method id data 'incoming-resp
-                                   (/ (nth 2 (time-since before-send)) 1000))
-              lsp--cur-workspace))
-           (when callback
-             (funcall callback (gethash "result" json-data))
-             (remhash id (lsp--client-response-handlers client))
-             (lsp--log-request-time server-id method id start-time before-send
-                                    received-time after-parsed-time (current-time)))))
-        ('response-error
-         (cl-assert id)
-         (-let [(_ callback method start-time before-send) (gethash id (lsp--client-response-handlers client))]
-           (when lsp-print-io
-             (lsp--log-entry-new
-              (lsp--make-log-entry method id data 'incoming-resp
-                                   (/ (nth 2 (time-since before-send)) 1000))
-              lsp--cur-workspace))
-           (when callback
-             (funcall callback (gethash "error" json-data))
-             (remhash id (lsp--client-response-handlers client))
-             (lsp--log-request-time server-id method id start-time before-send
-                                    received-time after-parsed-time (current-time)))))
-        ('notification
-         (let ((before-notification (current-time)))
-           (lsp--on-notification lsp--cur-workspace json-data)
-           (lsp--log-notification-performance
-            server-id json-data received-time after-parsed-time before-notification (current-time))))
-        ('request (lsp--on-request lsp--cur-workspace json-data))))))
+  (with-demoted-errors "Error processing message %S."
+    (with-lsp-workspace workspace
+      (let* ((client (lsp--workspace-client workspace))
+             (received-time (current-time))
+             (server-id (lsp--client-server-id client))
+             (after-parsed-time (current-time))
+             (id (--when-let (gethash "id" json-data)
+                   (if (stringp it) (string-to-number it) it)))
+             (data (gethash "result" json-data)))
+        (pcase (lsp--get-message-type json-data)
+          ('response
+           (cl-assert id)
+           (-let [(callback _ method start-time before-send) (gethash id (lsp--client-response-handlers client))]
+             (when lsp-print-io
+               (lsp--log-entry-new
+                (lsp--make-log-entry method id data 'incoming-resp
+                                     (/ (nth 2 (time-since before-send)) 1000))
+                workspace))
+             (when callback
+               (funcall callback (gethash "result" json-data))
+               (remhash id (lsp--client-response-handlers client))
+               (lsp--log-request-time server-id method id start-time before-send
+                                      received-time after-parsed-time (current-time)))))
+          ('response-error
+           (cl-assert id)
+           (-let [(_ callback method start-time before-send) (gethash id (lsp--client-response-handlers client))]
+             (when lsp-print-io
+               (lsp--log-entry-new
+                (lsp--make-log-entry method id data 'incoming-resp
+                                     (/ (nth 2 (time-since before-send)) 1000))
+                workspace))
+             (when callback
+               (funcall callback (gethash "error" json-data))
+               (remhash id (lsp--client-response-handlers client))
+               (lsp--log-request-time server-id method id start-time before-send
+                                      received-time after-parsed-time (current-time)))))
+          ('notification
+           (let ((before-notification (current-time)))
+             (lsp--on-notification workspace json-data)
+             (lsp--log-notification-performance
+              server-id json-data received-time after-parsed-time before-notification (current-time))))
+          ('request (lsp--on-request workspace json-data)))))))
 
 (defun lsp--json-pretty-print (msg)
   "Convert json MSG string to pretty printed json string."
@@ -4957,13 +5137,15 @@ WORKSPACE is the active workspace."
             (when (>= chunk-length left-to-receive)
               (lsp--parser-on-message
                (condition-case err
-                   (let ((parsed-message (nreverse
-                                          (prog1 body
-                                            (setf leftovers nil
-                                                  body-length nil
-                                                  body-received nil
-                                                  body nil)))))
-                     (lsp--read-json (decode-coding-string (apply #'concat parsed-message) 'utf-8)))
+                   (let ((parsed-message (decode-coding-string
+                                          (apply #'concat
+                                                 (nreverse
+                                                  (prog1 body
+                                                    (setf leftovers nil
+                                                          body-length nil
+                                                          body-received nil
+                                                          body nil)))) 'utf-8) ))
+                     (lsp--read-json parsed-message))
                  (error
                   (lsp-warn "Failed to parse the following chunk:\n'''\n%s\n'''\nwith message %s"
                             (concat leftovers input)
@@ -5154,7 +5336,7 @@ Ignore non-boolean keys whose value is nil."
                          (funcall environment-fn)
                        nil)))
     (-flatten (cons (cl-loop for (key . value) in environment
-                             if (or value
+                             if (or (eval value)
                                     (eq (get value 'custom-type) 'boolean))
                              collect (concat key "=" (lsp--value-to-string
                                                       (eval value))))
@@ -5941,7 +6123,7 @@ Returns nil if the project should not be added to the current SESSION."
          (--max-by (> (length it)
                       (length other))))))
 
-(defun lsp-find-workspace (server-id file-name)
+(defun lsp-find-workspace (server-id &optional file-name)
   "Find workspace for SERVER-ID for FILE-NAME."
   (-when-let* ((session (lsp-session))
                (folder->servers (lsp-session-folder->servers session))
@@ -5971,8 +6153,13 @@ Returns nil if the project should not be added to the current SESSION."
 (defun lsp--try-open-in-library-workspace ()
   "Try opening current file as library file in any of the active workspace.
 The library folders are defined by each client for each of the active workspace."
+
   (when-let (workspace (->> (lsp-session)
                             (lsp--session-workspaces)
+                            ;; Sort the last active workspaces first as they are more likely to be
+                            ;; the correct ones, especially when jumping to a definition.
+                            (-sort (lambda (a _b)
+                                     (-contains? lsp--last-active-workspaces a)))
                             (--first
                              (and (-contains? (-> it lsp--workspace-client lsp--client-major-modes)
                                               major-mode)
@@ -6048,7 +6235,7 @@ such."
   (interactive)
   (with-no-warnings (when (functionp 'lsp-ui-mode) (lsp-ui-mode -1)))
   (lsp--text-document-did-close t)
-  (lsp--managed-mode -1)
+  (lsp-managed-mode -1)
   (lsp-mode -1)
   (setq-local lsp--buffer-workspaces nil)
   (lsp--info "Disconnected"))
@@ -6146,8 +6333,8 @@ This avoids overloading the server with many files when starting Emacs."
 
 ;; avy integration
 
-(declare-function avy-process "avy" (candidates overlay-fn cleanup-fn))
-(declare-function avy--key-to-char "avy" (c))
+(declare-function avy-process "ext:avy" (candidates overlay-fn cleanup-fn))
+(declare-function avy--key-to-char "ext:avy" (c))
 (defvar avy-action)
 
 (defun lsp-avy-lens ()

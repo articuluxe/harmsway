@@ -1,6 +1,7 @@
-;;; dumb-jump.el --- jump to definition for 40+ languages without configuration. -*- lexical-binding: t; -*-
+;;; dumb-jump.el --- Jump to definition for 40+ languages without configuration -*- lexical-binding: t; -*-
 ;; Copyright (C) 2015-2019 jack angers
 ;; Author: jack angers and contributors
+;; Url: https://github.com/jacktasia/dumb-jump
 ;; Version: 0.5.3
 ;; Package-Requires: ((emacs "24.3") (f "0.20.0") (s "1.11.0") (dash "2.9.0") (popup "0.5.3"))
 ;; Keywords: programming
@@ -979,8 +980,7 @@ or most optimal searcher."
                    "test unwrap wrap nr@Naoeu {..} (Action action, specSpecs) = \n    undefined")
            :not ("nottest n = n * 2"
                  "let testnot x y = x * y" "test $ y z" "let test a o = mda"
-                 "test :: Sometype -> AnotherType aoeu kek = undefined"
-                 ))
+                 "test :: Sometype -> AnotherType aoeu kek = undefined"))
 
     (:type "type-like" :supports ("ag") :language "haskell"
            :regex "^\\s*((data(\\s+family)?)|(newtype)|(type(\\s+family)?))\\s+JJJ\\s+"
@@ -997,8 +997,7 @@ or most optimal searcher."
            :regex "(data|newtype)\\s{1,3}(?!JJJ\\s+)([^=]{1,40})=((\\s{0,3}JJJ\\s+)|([^=]{0,500}?((?<!(-- ))\\|\\s{0,3}JJJ\\s+)))"
            :tests ("data Something a = Test { b :: Kek }"
                    "data Mem a = TrueMem { b :: Kek } | Test (Mem Int) deriving Mda"
-                   "newtype SafeTest a = Test (Kek a) deriving (YonedaEmbedding)"
-                   )
+                   "newtype SafeTest a = Test (Kek a) deriving (YonedaEmbedding)")
            :not ("data Test = Test { b :: Kek }"))
 
 
@@ -1013,8 +1012,7 @@ or most optimal searcher."
                    "newtype Mem = Mem { -- | Some docs \n test :: Kek -- ^ More docs } deriving Eq"
                    "newtype Mem = Mem { test :: Kek } deriving (Eq,Monad)"
                    "newtype NewMem = OldMem { test :: [Tx] }"
-                   "newtype BlockHeaderList ssc = BHL\n { test :: ([Aoeu a], [Ssss])\n    } deriving (Eq)"
-                   )
+                   "newtype BlockHeaderList ssc = BHL\n { test :: ([Aoeu a], [Ssss])\n    } deriving (Eq)")
            :not ("data Heh = Mda { sometest :: Kek, testsome :: Mem }"))
 
     (:type "typeclass" :supports ("ag") :language "haskell"
@@ -1470,6 +1468,7 @@ or most optimal searcher."
     (:language "coffeescript" :ext "coffee" :agtype "coffee" :rgtype "coffeescript")
     (:language "faust" :ext "dsp" :agtype nil :rgtype nil)
     (:language "faust" :ext "lib" :agtype nil :rgtype nil)
+    (:language "fortran" :ext "F" :agtype "fortran" :rgtype "fortran")
     (:language "fortran" :ext "f" :agtype "fortran" :rgtype "fortran")
     (:language "fortran" :ext "f77" :agtype "fortran" :rgtype "fortran")
     (:language "fortran" :ext "f90" :agtype "fortran" :rgtype "fortran")
@@ -1625,7 +1624,7 @@ a symbol then it's probably a function call"
 
 (defcustom dumb-jump-aggressive
   nil
-  "If `t` jump aggressively with the possiblity of a false positive.
+  "If `t` jump aggressively with the possibility of a false positive.
 If `nil` always show list of more than 1 match."
   :group 'dumb-jump
   :type 'boolean)
@@ -2025,8 +2024,8 @@ to keep looking for another root."
   "Return a list of results based on current file context and calling grep/ag.
 CUR-FILE is the path of the current buffer.
 PROJ-ROOT is that file's root project directory.
-LANG is a string programming langage with CONFIG a property list
-of project configuraiton."
+LANG is a string programming language with CONFIG a property list
+of project configuration."
   (let* ((cur-line (if prompt 0 (dumb-jump-get-point-line)))
          (look-for-start (when (not prompt)
                            (- (car (bounds-of-thing-at-point 'symbol))

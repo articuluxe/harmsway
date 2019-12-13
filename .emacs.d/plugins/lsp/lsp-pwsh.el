@@ -2,9 +2,8 @@
 
 ;; Copyright (C) 2019  Kien Nguyen
 
-;; Author: kien.n.quang@gmail.com
-;; URL: https://github.com/kiennq/lsp-powershell
-;; Keywords: languages
+;; Author: kien.n.quang at gmail.com
+;; Keywords: lsp
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -27,6 +26,9 @@
 
 (require 'lsp-mode)
 (require 'f)
+(require 'dash)
+(require 's)
+(require 'ht)
 
 (defgroup lsp-pwsh nil
   "LSP support for PowerShell, using the PowerShellEditorServices."
@@ -234,6 +236,9 @@ Must not nil.")
 
 (defun lsp-pwsh--command ()
   "Return the command to start server."
+  (unless (and lsp-pwsh-exe (file-executable-p lsp-pwsh-exe))
+    (user-error "Use `lsp-pwsh-exe' with the value of `%s' is not a valid powershell binary"
+                lsp-pwsh-exe))
   ;; Download extension
   (lsp-pwsh-setup)
   `(,lsp-pwsh-exe "-NoProfile" "-NonInteractive" "-NoLogo"
@@ -257,6 +262,32 @@ Must not nil.")
 (defun lsp-pwsh--extra-init-params ()
   "Return form describing parameters for language server.")
 
+(defun lsp-pwsh--apply-code-action-edits (action)
+  "Handle ACTION for PowerShell.ApplyCodeActionEdits."
+  (-if-let* ((command (gethash "command" action))
+             ((&hash "StartLineNumber" "EndLineNumber"
+                     "StartColumnNumber" "EndColumnNumber" "Text")
+              (lsp-seq-first (gethash "arguments" action)))
+             (edits `[,(ht ("range" (ht ("start"
+                                         (ht ("line" (- StartLineNumber 1))
+                                             ("character" (- StartColumnNumber 1))))
+                                        ("end"
+                                         (ht ("line" (- EndLineNumber 1))
+                                             ("character" (- EndColumnNumber 1))))))
+                           ("newText" Text))]))
+      (lsp--apply-text-edits edits)
+    (lsp-send-execute-command command (gethash "arguments" action))))
+
+(defun lsp-pwsh--show-code-action-document (action)
+  "Handle ACTION for PowerShell.ShowCodeActionDocumentation."
+  (-if-let* ((rule-raw (lsp-seq-first (gethash "arguments" action)))
+             (rule-id (if (s-prefix-p "PS" rule-raw) (substring rule-raw 2) rule-raw)))
+      (browse-url
+       (concat "https://github.com/PowerShell/PSScriptAnalyzer/blob/master/RuleDocumentation/"
+               rule-id
+               ".md"))
+    (lsp-warn "Cannot show documentation for code action, no ruleName was supplied")))
+
 (defvar lsp-pwsh--major-modes '(powershell-mode))
 
 (lsp-register-client
@@ -264,13 +295,21 @@ Must not nil.")
   :new-connection (lsp-stdio-connection #'lsp-pwsh--command)
   :major-modes lsp-pwsh--major-modes
   :server-id 'pwsh-ls
-  :priority 1
+  :priority -1
   :initialization-options #'lsp-pwsh--extra-init-params
-  :notification-handlers (lsp-ht ("powerShell/executionStatusChanged" 'ignore))
+  :notification-handlers (lsp-ht ("powerShell/executionStatusChanged" #'ignore)
+                                 ("output" #'ignore))
+  :action-handlers (lsp-ht ("PowerShell.ApplyCodeActionEdits"
+                            #'lsp-pwsh--apply-code-action-edits)
+                           ("PowerShell.ShowCodeActionDocumentation"
+                            #'lsp-pwsh--show-code-action-document))
   :initialized-fn (lambda (w)
                     (with-lsp-workspace w
                       (lsp--set-configuration
-                       (lsp-configuration-section "powershell"))))
+                       (lsp-configuration-section "powershell")))
+                    (let ((caps (lsp--workspace-server-capabilities w)))
+                      (ht-set caps "documentRangeFormattingProvider" t)
+                      (ht-set caps "documentFormattingProvider" t)))
   ))
 
 ;; Compatibility
@@ -282,10 +321,10 @@ Must not nil.")
               '((name . --force-post-completion-for-pwsh))))
 
 ;;; Utils
-(defconst lsp-pwsh-unzip-script "%s -noprofile -noninteractive -nologo -ex bypass -command Expand-Archive -Path '%s' -DestinationPath '%s'"
+(defconst lsp-pwsh-unzip-script "\"%s\" -noprofile -noninteractive -nologo -ex bypass -command Expand-Archive -Path '%s' -DestinationPath '%s'"
   "Powershell script to unzip vscode extension package file.")
 
-(defconst lsp-pwsh-editor-svcs-dl-script "%s -noprofile -noninteractive -nologo -ex bypass -command Invoke-WebRequest -UseBasicParsing -uri '%s' -outfile '%s'"
+(defconst lsp-pwsh-editor-svcs-dl-script "\"%s\" -noprofile -noninteractive -nologo -ex bypass -command Invoke-WebRequest -UseBasicParsing -uri '%s' -outfile '%s'"
   "Command executed via `shell-command' to download the latest PowerShellEditorServices release.")
 
 (defcustom lsp-pwsh-github-asset-url

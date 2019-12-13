@@ -133,6 +133,37 @@ major mode is a member of this list (space separated entries)."
   :type  '(repeat symbol)
   :group 'annotate)
 
+(defcustom annotate-summary-ask-query t
+  "If non nil a prompt asking  for a query to filter the database
+before  showing it  in  a summary  window is  used.   If nil  the
+database is not filtered at all."
+  :type 'boolean
+  :group 'annotate)
+
+(defcustom annotate-annotation-max-size-not-place-new-line 15
+ "The maximum `string-width` allowed for an annotation to be
+ placed on the right margin of the window instead of its own line
+ after the annotated text."
+  :type  'number
+  :group 'annotate)
+
+(defcustom annotate-annotation-position-policy :by-length
+  "policy for annotation's position:
+  - :newline
+    always in a new-line
+  - :margin
+     always on right margin
+  - :by-length
+    decide by text's length
+
+    if the length is more than the value of
+    `annotate-annotation-max-size-not-place-new-line' place the
+    annotation on a new line, place on the right margin
+    otherwise.
+"
+  :type  'symbol
+  :group 'annotate)
+
 (defconst annotate-warn-file-changed-control-string
   (concat "The file '%s' has changed on disk "
           "from the last time the annotations were saved.\n"
@@ -181,6 +212,18 @@ annotation as defined in the database."
 
 (defconst annotate-info-root-name "dir"
   "The pseudo-filename of info root")
+
+(defconst annotate-summary-buffer-name "*annotations*"
+  "The name of the buffer for summary window")
+
+(defconst annotate-annotation-prompt "Annotation: "
+  "The prompt when asking user for annotation modification")
+
+(defconst annotate-summary-delete-button-label "[delete]"
+  "The label for the button, in summary window, to delete an annotation")
+
+(defconst annotate-summary-replace-button-label "[replace]"
+  "The label for the button, in summary window, to replace an annotation")
 
 (defun annotate-annotations-exist-p ()
   "Does this buffer contains at least one or more annotations?"
@@ -311,7 +354,7 @@ modified (for example a newline is inserted)."
      (t
       (cl-destructuring-bind (start end)
           (annotate-bounds)
-        (let ((annotation-text (read-from-minibuffer "Annotation: ")))
+        (let ((annotation-text (read-from-minibuffer annotate-annotation-prompt)))
           (annotate-create-annotation start end annotation-text nil)
           (font-lock-fontify-block 1)))))
     (set-buffer-modified-p t)))
@@ -352,65 +395,6 @@ modified (for example a newline is inserted)."
         (message "No previous annotations.")
       ;; jump to first overlay in list
       (goto-char (overlay-start (nth 0 overlays))))))
-
-(defun annotate-info-actual-filename ()
-  "The info  filename that feed  this buffer  or nil if  not this
-buffer is not on info-mode"
-  (annotate-guess-filename-for-dump Info-current-file nil))
-
-(defun annotate-actual-file-name ()
-  "Get the actual file name of the current buffer"
-  (substring-no-properties (or (annotate-info-actual-filename)
-                               (buffer-file-name)
-                               "")))
-
-(cl-defun annotate-guess-filename-for-dump (filename
-                                            &optional (return-filename-if-not-found-p t))
-  "Prepare an acceptable filename suitable for metadata database."
-  (cond
-   ((annotate-string-empty-p filename)
-    nil)
-   ((file-exists-p filename)
-    filename)
-   (t
-    (let ((found (if return-filename-if-not-found-p
-                     filename
-                   nil)))
-      (cl-block surrounding
-        (dolist (extension annotate-info-valid-file-extensions)
-          (let ((filename-maybe (concat filename extension)))
-            (when (file-exists-p filename-maybe)
-              (setf found filename-maybe)
-              (cl-return-from surrounding found)))))
-      found))))
-
-(defun annotate-save-annotations ()
-  "Save all annotations to disk."
-  (interactive)
-  (let ((file-annotations (cl-remove-if (lambda (a)
-                                          (= (annotate-beginning-of-annotation a)
-                                             (annotate-ending-of-annotation    a)))
-                                        (annotate-describe-annotations)))
-        (all-annotations  (annotate-load-annotation-data))
-        (filename         (annotate-guess-filename-for-dump (annotate-actual-file-name))))
-    (if (assoc-string filename all-annotations)
-        (setcdr (assoc-string filename all-annotations)
-                (list file-annotations
-                        (annotate-buffer-checksum)))
-      (setq all-annotations
-            (push (list filename
-                        file-annotations
-                        (annotate-buffer-checksum))
-                  all-annotations)))
-    ;; remove duplicate entries (a user reported seeing them)
-    (dolist (entry all-annotations)
-      (delete-dups entry))
-    ;; skip files with no annotations
-    (annotate-dump-annotation-data (cl-remove-if (lambda (entry)
-                                                   (null (cdr entry)))
-                                                 all-annotations))
-    (if annotate-use-messages
-        (message "Annotations saved."))))
 
 (defun annotate-actual-comment-start ()
   "String for comment start related to current buffer's major
@@ -796,10 +780,14 @@ to 'maximum-width'."
     (let ((newline-position (point)))
       (goto-char (1- (point))) ; we start at the start of the previous line
       ;; find overlays in the preceding line
-      (let ((prefix             (annotate-make-prefix)) ; white spaces before first annotation
+      (let ((prefix-first       (annotate-make-prefix)) ; white spaces
+                                                        ; before first
+                                                        ; line of
+                                                        ; annotation
+            (prefix-rest        (make-string annotate-annotation-column ? ))
             (bol                (progn (beginning-of-line) (point)))
             (eol                (progn (end-of-line) (point)))
-            (text               "")
+            (annotation-text    "")
             (overlays           nil)
             (annotation-counter 1))
         ;; include previous line if point is at bol:
@@ -822,36 +810,62 @@ to 'maximum-width'."
                                                   (<= (overlay-start a)
                                                       newline-position
                                                       (overlay-end a))))
-                                      (overlays-in bol eol))
+                                  (overlays-in bol eol))
                     (lambda (x y)
                       (< (overlay-end x) (overlay-end y)))))
-        ;; put each annotation on its own line
+        ;; configure each annotation's properties  and place it on the
+        ;; the window. The actual  position of the annotation (newline
+        ;; or  right  marigin)  is  indicated  by  the  value  of  the
+        ;; variable: `annotate-annotation-position-policy'.
         (dolist (ov overlays)
-          (cl-incf annotation-counter)
-          (let ((face           (if (= (cl-rem annotation-counter 2) 0)
-                                    'annotate-annotation
-                                  'annotate-annotation-secondary))
-                (face-highlight (if (= (cl-rem annotation-counter 2) 0)
-                                    'annotate-highlight
-                                  'annotate-highlight-secondary)))
+          (let* ((face                (if (= (cl-rem annotation-counter 2) 0)
+                                          'annotate-annotation
+                                        'annotate-annotation-secondary))
+                 (face-highlight      (if (= (cl-rem annotation-counter 2) 0)
+                                          'annotate-highlight
+                                        'annotate-highlight-secondary))
+                 (annotation-long-p   (> (string-width (overlay-get ov 'annotation))
+                                         annotate-annotation-max-size-not-place-new-line))
+                 (position-new-line-p (cl-case annotate-annotation-position-policy
+                                        (:new-line
+                                         t)
+                                        (:by-length
+                                         annotation-long-p)
+                                        (otherwise
+                                         nil)))
+                 (multiline-annotation (if position-new-line-p
+                                           (list (overlay-get ov 'annotation))
+                                         (save-match-data
+                                           (split-string (annotate-lineate (overlay-get ov
+                                                                                        'annotation)
+                                                                           (- eol bol))
+                                                         "\n"))))
+                 (annotation-stopper   (if position-new-line-p
+                                           (if (= annotation-counter
+                                                  (length overlays))
+                                               "\n"
+                                             "")
+                                         "\n")))
+            (cl-incf annotation-counter)
             (overlay-put ov 'face face-highlight)
-            (dolist (l (save-match-data
-                         (split-string (annotate-lineate (overlay-get ov 'annotation)
-                                                         (- eol bol))
-                                       "\n")))
-              (setq text
-                    (concat text
-                            prefix
+            (when position-new-line-p
+              (setf prefix-first " \n"))
+            (dolist (l multiline-annotation)
+              (setq annotation-text
+                    (concat annotation-text
+                            prefix-first
                             (propertize l 'face face)
-                            "\n"))
+                            annotation-stopper))
               ;; white space before for all but the first annotation line
-              (setq prefix (make-string annotate-annotation-column ? )))))
+              (if position-new-line-p
+                  (setq prefix-first (concat prefix-first prefix-rest))
+                (setq prefix-first prefix-rest)))))
         ;; build facespec with the annotation text as display property
-        (if (string= text "")
+        (if (string= annotation-text "")
             ;; annotation has been removed: remove display prop
             (list 'face 'default 'display nil)
           ;; annotation has been changed/added: change/add display prop
-          (list 'face 'default 'display text))))))
+          (list 'face 'default 'display annotation-text))))))
 
 (defun annotate--remove-annotation-property (begin end)
   "Cleans up annotation properties associated with a region."
@@ -914,6 +928,48 @@ an overlay and it's annotation."
                       (1+ (- (line-number-at-pos end) (line-number-at-pos start))))))
   (format "-%i,%i +%i,%i" start-line diff-size start-line diff-size)))
 
+;;; database related procedures
+
+(defun annotate-info-actual-filename ()
+  "The info  filename that feed  this buffer  or nil if  not this
+buffer is not on info-mode"
+  (annotate-guess-filename-for-dump Info-current-file nil))
+
+(defun annotate-actual-file-name ()
+  "Get the actual file name of the current buffer"
+  (substring-no-properties (or (annotate-info-actual-filename)
+                               (buffer-file-name)
+                               "")))
+
+(cl-defun annotate-guess-filename-for-dump (filename
+                                            &optional (return-filename-if-not-found-p t))
+  "Prepare an acceptable filename suitable for metadata database."
+  (cond
+   ((annotate-string-empty-p filename)
+    nil)
+   ((file-exists-p filename)
+    filename)
+   (t
+    (let ((found (if return-filename-if-not-found-p
+                     filename
+                   nil)))
+      (cl-block surrounding
+        (dolist (extension annotate-info-valid-file-extensions)
+          (let ((filename-maybe (concat filename extension)))
+            (when (file-exists-p filename-maybe)
+              (setf found filename-maybe)
+              (cl-return-from surrounding found)))))
+      found))))
+
+(defun annotate-make-annotation-dump-entry (filename file-annotations checksum)
+  (list filename
+        file-annotations
+        checksum))
+
+(defun annotate-make-record (filename file-annotations checksum)
+  "Make an annotation record: see `annotate-load-annotations'"
+  (annotate-make-annotation-dump-entry filename file-annotations checksum))
+
 (defun annotate-checksum-from-dump (record)
   "Get the checksum field from an annotation list loaded from a
 file."
@@ -934,30 +990,58 @@ file."
   "Get the starting point of an annotation. The arg 'annotation' must be a single
 annotation field got from a file dump of all annotated buffers,
 essentially what you get from:
-(annotate-annotations-from-dump (annotate-load-annotations))). "
+(annotate-annotations-from-dump (nth index (annotate-load-annotations)))). "
   (cl-first annotation))
 
 (defun annotate-ending-of-annotation (annotation)
   "Get the ending point of an annotation. The arg 'annotation' must be a single
 annotation field got from a file dump of all annotated buffers,
 essentially what you get from:
-(annotate-annotations-from-dump (annotate-load-annotations))). "
+(annotate-annotations-from-dump (nth index (annotate-load-annotations))))."
   (cl-second annotation))
 
 (defun annotate-annotation-string (annotation)
   "Get the text of an annotation. The arg 'annotation' must be a single
 annotation field got from a file dump of all annotated buffers,
 essentially what you get from:
-(annotate-annotations-from-dump (annotate-load-annotations))). "
+(annotate-annotations-from-dump (nth index (annotate-load-annotations))))."
   (nth 2 annotation))
 
 (defun annotate-annotated-text (annotation)
   "Get the annotated text of an annotation. The arg 'annotation' must be a single
 annotation field got from a file dump of all annotated buffers,
 essentially what you get from:
-(annotate-annotations-from-dump (annotate-load-annotations))). "
+(annotate-annotations-from-dump (nth index (annotate-load-annotations))))."
   (and (> (length annotation) 3)
        (nth 3 annotation)))
+
+(defun annotate-save-annotations ()
+  "Save all annotations to disk."
+  (interactive)
+  (let ((file-annotations (cl-remove-if (lambda (a)
+                                          (= (annotate-beginning-of-annotation a)
+                                             (annotate-ending-of-annotation    a)))
+                                        (annotate-describe-annotations)))
+        (all-annotations  (annotate-load-annotation-data))
+        (filename         (annotate-guess-filename-for-dump (annotate-actual-file-name))))
+    (if (assoc-string filename all-annotations)
+        (setcdr (assoc-string filename all-annotations)
+                (list file-annotations
+                      (annotate-buffer-checksum)))
+      (setq all-annotations
+            (push (list filename
+                        file-annotations
+                        (annotate-buffer-checksum))
+                  all-annotations)))
+    ;; remove duplicate entries (a user reported seeing them)
+    (dolist (entry all-annotations)
+      (delete-dups entry))
+    ;; skip files with no annotations
+    (annotate-dump-annotation-data (cl-remove-if (lambda (entry)
+                                                   (null (cdr entry)))
+                                                 all-annotations))
+    (if annotate-use-messages
+        (message "Annotations saved."))))
 
 (defun annotate-load-annotation-old-format ()
   "Load all annotations from disk in old format."
@@ -984,7 +1068,42 @@ essentially what you get from:
         (message "Annotations loaded."))))
 
 (defun annotate-load-annotations ()
-  "Load all annotations from disk."
+  "Load all annotations from disk.
+
+The format of the database is:
+
+(list record-1 record-2 ... record-n)
+
+Each record is:
+
+(list filename annotations checksum)
+
+where:
+
+filename: a string identifying a file on the file-system, or the
+string \"dir\" for top-level info file.
+
+checksum: a string used to fingerprint the annotate file above,
+used to check if a file has been modified.
+
+annotations:
+
+(list annotation-1 annotation-2 ... annotation-n) or nil
+
+finally annotation is:
+
+(list start end annotation-string annotated-text)
+
+start:             the buffer position where annotated text start
+end:               the buffer position where annotated text ends
+annotation-string: the text of annotation
+annotated-text:    the substring of buffer starting from 'start' an ending with 'end' (as above)
+
+example:
+
+'(\"/foo/bar\" ((0 9 \"note\" \"annotated\")) hash-as-hex-string)
+
+"
   (cl-labels ((old-format-p (annotation)
                             (not (stringp (cl-first (last annotation))))))
     (interactive)
@@ -1024,6 +1143,121 @@ essentially what you get from:
         (font-lock-fontify-buffer)
         (when annotate-use-messages
           (message "Annotations loaded."))))))
+
+(defun annotate-db-clean-records (records-db)
+  "Remove records from arg `records-db' that have empty annotation, example:
+
+'((\"/foo/bar.dat\" nil \"abababababababababababababab\")
+  (\"/foo/baz.dat\" ((0 9 \"note\" \"annotated\")) \"abababababababababababababab\"))
+
+will become:
+
+'((\"/foo/baz.dat\" ((0 9 \"note\" \"annotated\")) \"abababababababababababababab\"))
+
+i.e. the first record is removed."
+  (cl-remove-if (lambda (a) (null (annotate-annotations-from-dump a)))
+                records-db))
+
+(defun annotate-db-purge ()
+ "Update datbase *on disk* removing all the records with empty
+annotation."
+  (interactive)
+  (let ((db (annotate-db-clean-records (annotate-load-annotation-data))))
+    (annotate-dump-annotation-data db)))
+
+(defun annotate-load-annotation-data ()
+  "Read and return saved annotations."
+  (with-temp-buffer
+    (when (file-exists-p annotate-file)
+      (insert-file-contents annotate-file))
+    (goto-char (point-max))
+    (cond ((= (point) 1)
+           nil)
+          (t
+           (goto-char (point-min))
+           (read (current-buffer))))))
+
+(defun annotate-dump-annotation-data (data)
+  "Save `data` into annotation file."
+  (with-temp-file annotate-file
+    (let ((print-length nil))
+      (prin1 data (current-buffer)))))
+
+(cl-defmacro with-matching-annotation-fns ((filename
+                                            beginning
+                                            ending)
+                                           &body body)
+  "Anaphoric macro to build functions to find annotations"
+  `(let ((filename-match-p          (lambda (record)
+                                      (string= (annotate-filename-from-dump record)
+                                               ,filename)))
+         (annotation-limits-match-p (lambda (a)
+                                      (and (= (annotate-beginning-of-annotation a)
+                                              ,beginning)
+                                           (= (annotate-ending-of-annotation    a)
+                                              ,ending)))))
+     ,@body))
+
+(defun annotate-db-remove-annotation (db-records
+                                      record-filename
+                                      annotation-beginning
+                                      annotation-ending)
+  "Remove from database `db-records' the annotation indentified by
+ the triplets `record-filename', `annotation-beginning' and
+ `annotation-ending'; if such annotation does exists."
+  (with-matching-annotation-fns
+   (record-filename
+    annotation-beginning
+    annotation-ending)
+   (let ((file-matched-record (cl-find-if filename-match-p db-records)))
+     (if file-matched-record
+         (let* ((rest-of-db      (cl-remove-if filename-match-p db-records))
+                (new-annotations (cl-remove-if annotation-limits-match-p
+                                               (annotate-annotations-from-dump file-matched-record)))
+                (checksum        (annotate-checksum-from-dump file-matched-record))
+                (new-record      (annotate-make-record record-filename
+                                                       new-annotations
+                                                       checksum)))
+           (push new-record
+                 rest-of-db))
+      db-records))))
+
+(defun annotate-db-replace-annotation (db-records
+                                       record-filename
+                                       annotation-beginning
+                                       annotation-ending
+                                       replacing-text)
+  "Replace the text of annotation from database `db-records'
+ indentified by the triplets `record-filename',
+ `annotation-beginning' and `annotation-ending'; if such
+ annotation does exists."
+  (with-matching-annotation-fns
+   (record-filename
+    annotation-beginning
+    annotation-ending)
+   (let ((file-matched-record (cl-find-if filename-match-p db-records)))
+     (if file-matched-record
+         (let ((old-annotation   (cl-find-if annotation-limits-match-p
+                                             (annotate-annotations-from-dump file-matched-record))))
+           (if old-annotation
+               (let* ((rest-of-db       (cl-remove-if filename-match-p db-records))
+                      (rest-annotations (cl-remove-if annotation-limits-match-p
+                                                      (annotate-annotations-from-dump file-matched-record)))
+                      (checksum         (annotate-checksum-from-dump file-matched-record))
+                      (new-annotation   (annotate-make-annotation annotation-beginning
+                                                                  annotation-ending
+                                                                  replacing-text
+                                                                  (annotate-annotated-text old-annotation)))
+                      (new-record       (annotate-make-record record-filename
+                                                              (append (list new-annotation)
+                                                                      rest-annotations)
+                                                              checksum)))
+                 (push new-record
+                       rest-of-db))
+             db-records))
+       db-records))))
+
+;;;; database related procedures ends here
 
 (defun annotate-clear-annotations ()
   "Clear all current annotations."
@@ -1136,7 +1370,7 @@ The searched interval can be customized setting the variable:
   "Change annotation at point. If empty, delete annotation."
   (let* ((highlight (car (overlays-at pos)))
          (annotation (read-from-minibuffer
-                      "Annotation: "
+                      annotate-annotation-prompt
                       (overlay-get highlight 'annotation))))
     (save-excursion
       (goto-char (overlay-end highlight))
@@ -1185,6 +1419,9 @@ The searched interval can be customized setting the variable:
          (t
           (1+ (point))))))
 
+(defun annotate-make-annotation (beginning ending annotation annotated-text)
+  (list beginning ending annotation annotated-text))
+
 (defun annotate-describe-annotations ()
   "Return a list of all annotations in the current buffer."
   (let ((overlays (overlays-in 0 (buffer-size))))
@@ -1201,28 +1438,6 @@ The searched interval can be customized setting the variable:
                       (buffer-substring-no-properties from to))))
             overlays)))
 
-(defun annotate-load-annotation-data ()
-  "Read and return saved annotations."
-  (with-temp-buffer
-    (when (file-exists-p annotate-file)
-      (insert-file-contents annotate-file))
-    (goto-char (point-max))
-    (cond ((= (point) 1)
-           nil)
-          (t
-           (goto-char (point-min))
-           (read (current-buffer))))))
-
-(defun annotate-dump-annotation-data (data)
-  "Save `data` into annotation file."
-  (with-temp-file annotate-file
-    (let ((print-length nil))
-      (prin1 data (current-buffer)))))
-
-(define-button-type 'annotate-summary-button
-  'follow-link t
-  'help-echo "Click to show")
-
 (defun annotate-info-root-dir-p (filename)
   "Is the name of this file equals to the info root node?"
   (string= filename
@@ -1236,14 +1451,15 @@ sophisticated way than plain text"
                              (with-temp-buffer
                                (insert-file-contents filename)
                                (buffer-string)))
-              (info-format-p () ;; lot of guesswork here :(
+              (info-format-p () ; lot of guesswork here :(
                              (cond
                               ((annotate-info-root-dir-p filename)
                                :info)
                               (t
                                (let* ((file-contents     (file-contents))
                                       (has-info-p        (string-match "info" filename))
-                                      (has-separator-p   (string-match "" file-contents))
+                                      (separator-re      "\^L?\^_\^L?\^J")
+                                      (has-separator-p   (string-match separator-re file-contents))
                                       (has-node-p        (string-match "Node:" file-contents)))
                                  (if (or (annotate-info-root-dir-p filename)
                                          (and has-separator-p
@@ -1254,8 +1470,22 @@ sophisticated way than plain text"
                                    nil))))))
     (info-format-p)))
 
-(defun annotate-summary-button-pressed (button)
-  "Callback called when an annotate-summary-button is activated"
+;;;; summary window procedures
+
+(define-button-type 'annotate-summary-show-annotation-button
+  'follow-link t
+  'help-echo "Click to show")
+
+(define-button-type 'annotate-summary-delete-annotation-button
+  'follow-link t
+  'help-echo "Click to remove annotation")
+
+(define-button-type 'annotate-summary-replace-annotation-button
+  'follow-link t
+  'help-echo "Click to replace annotation")
+
+(defun annotate-summary-show-annotation-button-pressed (button)
+  "Callback called when an annotate-summary-show-annotation-button is activated"
   (let* ((file      (button-get button 'file))
          (file-type (annotate-guess-file-format file)))
     (cond
@@ -1271,8 +1501,46 @@ sophisticated way than plain text"
         (with-current-buffer buffer
           (goto-char (button-get button 'go-to))))))))
 
-(defun annotate-show-annotation-summary ()
-  "Show a summary of all the annotations in a temp buffer"
+(defun annotate-summary-delete-annotation-button-pressed (button)
+  (let* ((filename        (button-get button 'file))
+         (beginning       (button-get button 'beginning))
+         (ending          (button-get button 'ending))
+         (begin-of-button (button-get button 'begin-of-button))
+         (end-of-button   (button-get button 'end-of-button))
+         (db              (annotate-load-annotation-data))
+         (filtered        (annotate-db-remove-annotation db filename beginning ending)))
+    (annotate-dump-annotation-data filtered)
+    (with-current-buffer annotate-summary-buffer-name
+      (read-only-mode -1)
+      (save-excursion
+        (button-put button 'invisible t)
+        (let ((annotation-button (previous-button (point))))
+          (button-put annotation-button 'face '(:strike-through t)))
+        (let ((replace-button (next-button (point))))
+          (button-put replace-button 'invisible t)))
+      (read-only-mode 1))))
+
+(defun annotate-summary-replace-annotation-button-pressed (button)
+  (let* ((filename             (button-get button 'file))
+         (annotation-beginning (button-get button 'beginning))
+         (annotation-ending    (button-get button 'ending))
+         (query                (button-get button 'query))
+         (db                   (annotate-load-annotation-data))
+         (old-annotation       (button-get button 'text))
+         (new-annotation-text  (read-from-minibuffer annotate-annotation-prompt old-annotation)))
+    (when (not (annotate-string-empty-p new-annotation-text))
+      (let ((replaced-annotation-db (annotate-db-replace-annotation db
+                                                                    filename
+                                                                    annotation-beginning
+                                                                    annotation-ending
+                                                                    new-annotation-text)))
+        (annotate-dump-annotation-data replaced-annotation-db)
+        (annotate-show-annotation-summary query)))))
+
+(defun annotate-show-annotation-summary (&optional arg-query)
+ "Show a summary of all the annotations in a temp buffer, the
+results can be filtered with a simple query language: see
+`annotate-summary-filter-db'."
   (interactive)
   (cl-labels ((ellipsize (text prefix-string)
                          (let* ((prefix-length   (string-width prefix-string))
@@ -1289,7 +1557,12 @@ sophisticated way than plain text"
                              text)))
               (wrap      (text)
                          (concat "\"" text "\""))
-              (insert-item-summary (filename snippet-text button-text)
+              (insert-item-summary (filename
+                                    snippet-text
+                                    button-text
+                                    annotation-beginning
+                                    annotation-ending
+                                    filter-query)
                                    (insert annotate-summary-list-prefix-snippet)
                                    (insert (wrap (ellipsize snippet-text
                                                             annotate-summary-list-prefix-snippet)))
@@ -1300,9 +1573,40 @@ sophisticated way than plain text"
                                                               'face
                                                               'bold)
                                                   'file   filename
-                                                  'go-to  annotation-begin
-                                                  'action 'annotate-summary-button-pressed
-                                                  'type   'annotate-summary-button)
+                                                  'go-to  annotation-beginning
+                                                  'action 'annotate-summary-show-annotation-button-pressed
+                                                  'type   'annotate-summary-show-annotation-button)
+                                   (insert "\n\n")
+                                   (insert annotate-summary-list-prefix)
+                                   (insert "  ")
+                                   (let ((del-button (insert-button
+                                                       annotate-summary-delete-button-label
+                                                      'file       filename
+                                                      'beginning  annotation-beginning
+                                                      'ending     annotation-ending
+                                                      'action
+                                                      'annotate-summary-delete-annotation-button-pressed
+                                                      'type
+                                                      'annotate-summary-delete-annotation-button)))
+                                     (button-put del-button
+                                                 'begin-of-button
+                                                 (annotate-beginning-of-line-pos))
+                                     (button-put del-button
+                                                 'end-of-button
+                                                 (annotate-end-of-line-pos)))
+                                   (insert "\n")
+                                   (insert annotate-summary-list-prefix)
+                                   (insert "  ")
+                                   (insert-button annotate-summary-replace-button-label
+                                                  'file       filename
+                                                  'beginning  annotation-beginning
+                                                  'ending     annotation-ending
+                                                  'query      filter-query
+                                                  'text       button-text
+                                                  'action
+                                                  'annotate-summary-replace-annotation-button-pressed
+                                                  'type
+                                                  'annotate-summary-replace-annotation-button)
                                    (insert "\n\n"))
               (clean-snippet (snippet)
                              (save-match-data
@@ -1338,20 +1642,30 @@ sophisticated way than plain text"
                              (cl-every (lambda (a)
                                          (cl-every 'null
                                                    (annotate-annotations-from-dump a)))
-                                       dump)))
-    (let ((dump (annotate-load-annotation-data)))
+                                       dump))
+              (get-query     ()
+                             (cond
+                              (arg-query
+                               arg-query)
+                              (annotate-summary-ask-query
+                               (read-from-minibuffer "Query: "))
+                              (t
+                               ".*"))))
+    (let* ((filter-query (get-query))
+           (dump         (annotate-summary-filter-db (annotate-load-annotation-data)
+                                                     filter-query)))
       (if (db-empty-p dump)
           (when annotate-use-messages
             (message "The annotation database is empty"))
         (with-current-buffer-window
-         "*annotations*" nil nil
-         (display-buffer "*annotations*")
-         (select-window (get-buffer-window "*annotations*" t))
+         annotate-summary-buffer-name nil nil
+         (display-buffer annotate-summary-buffer-name)
+         (select-window (get-buffer-window annotate-summary-buffer-name t))
          (outline-mode)
          (use-local-map nil)
          (local-set-key "q" (lambda ()
                               (interactive)
-                              (kill-buffer "*annotations*")))
+                              (kill-buffer annotate-summary-buffer-name)))
          (dolist (annotation dump)
            (let* ((all-annotations (annotate-annotations-from-dump annotation))
                   (db-filename     (annotate-filename-from-dump annotation)))
@@ -1367,8 +1681,486 @@ sophisticated way than plain text"
                                                          annotation-begin
                                                          annotation-end)))
                    (insert-item-summary db-filename
-                                        snippet-text button-text))))))
-         (read-only-mode))))))
+                                        snippet-text
+                                        button-text
+                                        annotation-begin
+                                        annotation-end
+                                        filter-query))))))
+         (read-only-mode 1))))))
+
+;;;; end summary window procedures
+
+;;;; filtering summary window: parser, lexer, etc.
+
+(defvar annotate-summary-query  nil
+  "Holds the query to filter annotations when
+summary window is shown")
+
+(defvar annotate-summary-query-current-token nil
+  "Holds the next token of the query in `annotate-summary-query'")
+
+(defun annotate-summary-query-lexer-symbol (res)
+  "The symbol identifying the token (e.g. 'and)"
+  (elt res 0))
+
+(defun annotate-summary-query-lexer-string (res)
+  "The string associated with this token"
+  (elt res 1))
+
+(defun annotate-summary-query-lexer-start (res)
+ "The starting point of the substring of
+`annotate-summary-query' for this token"
+  (elt res 2))
+
+(defun annotate-summary-query-lexer-end (res)
+  "The ending point of the substring of
+`annotate-summary-query' for this token"
+
+  (elt res 3))
+
+(cl-defun annotate-summary-lexer (&optional (look-ahead-p nil))
+  "The lexer for `annotate-summary-query'.
+
+This  function, when  called, will  produce the  next token  from
+`annotate-summary-query';  a token  is  a substring  with a  well
+defined meaning according to our grammar.
+
+For example this string:
+
+p.* and (a or not b)'
+
+will be broken into these tokens:
+
+'(re        \"p.*\"   0  3)
+'(and       \"and\"   4  7)
+'(open-par  \"(\"     8  9)
+'(re        \"a\"     9 10)
+'(or        \"or\"   11 12)
+'(not       \"not\"  14 17)
+'(re        \"b\"    18 19)
+'(close-par \"(\"    19 20)
+
+The format is a proper list where:
+- first element
+  a symbol representing the type of the token
+   - 're                  = regular expression
+   - 'and , 'or , 'not    = logical operator
+   - 'open-par, close-par = open and closing parenthesis respectively
+- second element
+  the  value (the actual substring for this token)
+
+- third and fourth element (currently unused)
+ the substring limits for this token (as returned by
+ `match-beginning' and `match-end'
+
+Note that spaces are ignored and  all the tokens except `re' must
+not be prefixed with a backslash to match. So, for example not ->
+will match the token type 'not but \not will match the token 're;
+this  way  we  can  'protect' a  regexp  that  contains  reserved
+keyword (aka escaping).
+
+the  special value  :no-more-token  is returned  after the  whole
+input is processed.
+
+Calling this function with value of `look-ahead-p' nil will `consume' the token from
+`annotate-summary-query' (i.e. that string is modified)
+
+example:
+'a and b' -> 'and b', '(re \"a\" 0 1)
+
+when `look-ahead-p' is not nil the token is recognized but not cut away from
+`annotate-summary-query'
+
+example:
+'a and b' -> 'a and b', '(re \"a\" 0 1)
+"
+  (cl-labels ((build-token (token-symbol token-string token-beginning token-end)
+                              (list token-symbol
+                                    token-string
+                                    token-beginning
+                                    token-end))
+              (build-results  (token-symbol register-num)
+                              (build-token token-symbol
+                                           (match-string register-num annotate-summary-query)
+                                           (match-beginning register-num)
+                                           (match-end       register-num)))
+              (cut-query      (match-results)
+                              (setf annotate-summary-query
+                                    (cl-subseq annotate-summary-query
+                                               (annotate-summary-query-lexer-end match-results)))))
+    (let ((re (concat "\\((\\)\\|\\()\\)\\|\\(and\\)\\|\\(not\\)\\|"
+                      "\\(or\\)\\|\\(\".*\"\\)\\|\\([^[:space:]]+\\)")))
+      (save-match-data
+        (let* ((matchedp (string-match re annotate-summary-query))
+               (res      (if matchedp
+                             (cond
+                              ((match-string 1 annotate-summary-query)
+                               (build-results 'open-par 1))
+                              ((match-string 2 annotate-summary-query)
+                               (build-results 'close-par 2))
+                              ((match-string 3 annotate-summary-query)
+                               (build-results 'and 3))
+                              ((match-string 4 annotate-summary-query)
+                               (build-results 'not 4))
+                              ((match-string 5 annotate-summary-query)
+                               (build-results 'or 5))
+                              ((match-string 6 annotate-summary-query)
+                               (build-results 'escaped-re 6))
+                              ((match-string 7 annotate-summary-query)
+                               (build-results 're 7))
+                              (t
+                               :no-more-tokens))
+                           :no-more-tokens)))
+          (when (and (listp res)
+                     (not look-ahead-p))
+            (cut-query res))
+          res)))))
+
+(defun annotate-summary-query-parse-end-input-p (token)
+ "Non nil if there are no more tokens in
+`annotate-summary-query'"
+  (eq token :no-more-tokens))
+
+(cl-defun annotate-summary-query-parse-note (filter-fn annotation &optional (res nil))
+  "Parser rule for note:
+
+This function will parse the following production rules
+
+NOTE       := '(' NOTE ')'
+               | NOTE OPERATOR NOTE
+               | NOT NOTE
+               | RE
+               | ESCAPED-RE
+               | epsilon
+OPERATOR   := AND | OR
+FILE-MASK  := RE
+RE         := [^[:space:]] ; as regular expression
+ESCAPED-RE := DELIMITER
+              ANYTHING
+              DELIMITER
+ANYTHING   := .*           ; as a regualar expression
+AND        := 'and'
+OR         := 'or'
+NOT        := 'not'
+DELIMITER  := \" ; ASCII 34 (dec) 22 (hex)
+
+Arguments:
+
+- filter-fn is a function that accept two parameters: the regular
+  expression to match (a token of type 're, see the lexer
+  `annotate-summary-lexer' and a single annotation record (see
+  `annotate-load-annotations').
+
+  This function will reject (its value is nil) records that do
+  not match the annotation.
+
+- annotation
+  the annotation to test
+
+- res the results of this production rule (internal use only)
+
+"
+  (cl-labels ((token-symbol-match-p (looking-symbol token)
+                                    (eq looking-symbol
+                                        (annotate-summary-query-lexer-symbol token)))
+              ;; this function will parse the rule operator
+              ;; OPERATOR   := AND | OR
+              ;; where
+              ;; previous-token is the value of the token just matched in rule
+              ;; NOTE OPERATOR NOTE
+              ;; filter-fn     see the docstring
+              ;; matchp        non nil if (funcall filter-fn previous-token) is not nil
+              (operator             (previous-token filter-fn annotation matchp)
+                                    (let ((look-ahead        (annotate-summary-lexer t)))
+                                      (if (annotate-summary-query-parse-end-input-p look-ahead)
+                                          ;; end of input, recurse one more time
+                                          (annotate-summary-query-parse-note filter-fn
+                                                                             annotation
+                                                                             matchp)
+                                        (let ((look-ahead-symbol
+                                               (annotate-summary-query-lexer-symbol look-ahead))
+                                              (look-ahead-string
+                                               (annotate-summary-query-lexer-string look-ahead)))
+                                          (cond
+                                           ((not (cl-find look-ahead-symbol '(and or close-par)))
+                                            (error (format (concat "Expecting for operator "
+                                                                   "('and' or 'or') or \")\". "
+                                                                   "found %S instead")
+                                                           look-ahead-string)))
+                                           (t
+                                            ;; found operator, recurse to search for rhs of rule
+                                            ;; NOTE OPERATOR NOTE
+                                            (annotate-summary-query-parse-note filter-fn
+                                                                               annotation
+                                                                               matchp))))))))
+    (let* ((look-ahead (annotate-summary-lexer t))) ; the next token that the lexer *will* consume
+                                                    ; note the second arg is non nil
+      (if (not (annotate-summary-query-parse-end-input-p look-ahead))
+          (progn
+            (cond
+             ((token-symbol-match-p 'close-par look-ahead) ; ignore closing parens
+              res)
+             ((token-symbol-match-p 'open-par look-ahead) ; next token is an open parens
+              ;; trying to match the rule:
+              ;; NOTE := '(' NOTE ')'
+              (annotate-summary-lexer) ; consume the token ')'
+              ;; match the note inside the parens
+              (let ((matchp             (annotate-summary-query-parse-note filter-fn
+                                                                           annotation)) ; recurse
+                    ;; after the note there *must* be a closing parenthesis
+                    (maybe-close-parens (annotate-summary-lexer)))
+                ;; if not this is an error
+                (when (or (annotate-summary-query-parse-end-input-p maybe-close-parens)
+                          (not (eq (annotate-summary-query-lexer-symbol maybe-close-parens)
+                                   'close-par)))
+                  (error "Unmatched parens"))
+                ;; continue parsing
+                (annotate-summary-query-parse-note filter-fn annotation matchp))) ; recurse
+             ((token-symbol-match-p 'not look-ahead)
+              (annotate-summary-lexer) ; consume the token 'not'
+              ;; the note after the 'not'  operator in rule
+              ;; NOTE := NOT NOTE
+              ;; the  third argument  is the  value to  return if
+              ;; there are no more token left in the input string
+              (let ((res (annotate-summary-query-parse-note filter-fn annotation :error))) ; recurse
+                ;; if there are  no more tokens here this  is an error
+                ;; because, according  to the  grammar, after a  NOT a
+                ;; NOTE is non optional
+                (if (eq :error res)
+                    (error "No more input after 'not'")
+                  ;; if the last  rule (saved in res) is  not nil (and
+                  ;; is  not  :error)  return  nil,  return  the  last
+                  ;; annotation otherwise remember that the user asked
+                  ;; for an annotation that *not* matches a regex
+                  (if (null res)
+                      annotation
+                    nil))))
+             ;; trying to match the rule:
+             ;; NOTE := NOTE AND NOTE
+             ((token-symbol-match-p 'and look-ahead)
+              (annotate-summary-lexer) ; consume the 'and' token
+              (let ((lhs res)          ; the left side of this rule lhs AND rhs
+                    (rhs (annotate-summary-query-parse-note filter-fn annotation :error))) ; recurse
+                (if (eq :error rhs) ; see the 'not' operator above
+                    (error "No more input after 'and'")
+                  (and lhs rhs)))) ; both rules must match as this is a logic and
+             ;; trying to match the rule:
+             ;; NOTE := NOTE OR NOTE
+             ((token-symbol-match-p 'or look-ahead)
+              (annotate-summary-lexer) ; consume the 'or'
+              (let ((lhs res)          ; the left side of this rule (lhs OR rhs)
+                    (rhs (annotate-summary-query-parse-note filter-fn annotation :error))) ; recurse
+                (if (eq :error rhs)
+                    (error "No more input after 'or'")
+                  (or lhs rhs)))) ; either lhs or rhs  match as this is a logic or
+             ((token-symbol-match-p 'escaped-re look-ahead)
+              ;; here we match the rule:
+              ;; NOTE := ESCAPED-RE
+              ;; ESCAPED-RE is a delimited string like "foo bar"
+              ;; we first unescape the protected token
+              ;; "\"foo bar\"" ->  "foo bar" (yes, just remove the delimiters)
+              ;; then we apply the filter function (see the docstring)
+              (let* ((escaped   (annotate-summary-query-lexer-string (annotate-summary-lexer)))
+                     (unescaped (substring escaped 1 (1- (length escaped)))) ; remove delimiters
+                     (matchp    (funcall filter-fn unescaped annotation)))   ; apply the filter funcrion
+                ;; and finally continue the parsing saving the results
+                ;; of applying the filter-fn function
+                (operator escaped filter-fn annotation matchp)))
+             (t
+              ;; here we match the rule:
+              ;; NOTE := RE
+              ;; RE   := a regular expression
+              ;; first just get the RE token
+              (let* ((regex     (annotate-summary-query-lexer-string (annotate-summary-lexer)))
+                     ;; then apply the filter function (see the docstring)
+                     (matchp    (funcall filter-fn regex annotation)))
+                ;; and finally continue the parsing saving the results
+                ;; of applying the filter-fn function
+                (operator regex filter-fn annotation matchp)))))
+        ;; if we are here the lexer can not find any more tokens in the query
+        ;; just return the value of res
+        res)))) ; end of `(if (not (annotate-summary-query-parse-end-input-p look-ahead))'
+
+(defun annotate-summary-query-parse-expression ()
+  "Parse rule for expression:
+
+I feel this  is very likely wrong in many  ways, i hope linguists
+are going to forgive me :-)
+
+EXPRESSION := FILE-MASK
+               | FILE-MASK AND NOTE
+               | FILE-MASK OR NOTE
+               | epsilon
+NOTE       := '(' NOTE ')'
+               | NOTE OPERATOR NOTE
+               | NOT NOTE
+               | RE
+               | ESCAPED-RE
+               | epsilon
+OPERATOR   := AND | OR
+FILE-MASK  := RE
+RE         := [^[:space:]] ; as a regular expression
+ESCAPED-RE := DELIMITER
+              ANYTHING
+              DELIMITER
+ANYTHING   := .*           ; as a regular expression
+AND        := 'and'
+OR         := 'or'
+NOT        := 'not'
+DELIMITER  := \" ; ASCII 34 (dec) 22 (hex)
+
+Note: this function return the annotation part of the record, see
+`annotate-load-annotations'.
+
+"
+  (lambda (annotation query file-filter-fn note-filter-fn)
+    (let ((annotate-summary-query query) ; save the query
+          (query-notes-only       nil)) ; the query for just the notes
+      (let ((next-token (annotate-summary-lexer))) ; get file-mask
+        ;; if there are no more tokes just return all the records
+        ;; these match the empty string as in rule
+        ;; EXPRESSION := epsilon
+        (if (annotate-summary-query-parse-end-input-p next-token)
+            (annotate-annotations-from-dump annotation)
+          ;; otherwise test the record with the file-mask
+          (let* ((filtered-annotation (funcall file-filter-fn
+                                               (annotate-summary-query-lexer-string next-token)
+                                               annotation))
+                 ;; get the operator as in rule
+                 (operator-token (annotate-summary-lexer)))
+            ;; if there are no operator just return the filtered (by file-mask)
+            ;; as in rule
+            ;; EXPRESSION := FILE-MASK
+            (if (annotate-summary-query-parse-end-input-p operator-token)
+                (annotate-annotations-from-dump filtered-annotation)
+              ;; otherwise get the operator and continue to parse the rule
+              ;; EXPRESSION := FILE-MASK AND NOTE
+              ;; or
+              ;; EXPRESSION := FILE-MASK OR  NOTE
+              (let ((operator (annotate-summary-query-lexer-symbol operator-token)))
+                (cond
+                 ((eq operator 'or) ; operator is 'or
+                  ;; try to parse with the rule
+                  ;; EXPRESSION := FILE-MASK OR NOTE
+                  ;; return  only  the  list  annotation  filtered  by
+                  ;; file-mask the former is non nil
+                  (if filtered-annotation
+                      (annotate-annotations-from-dump filtered-annotation)
+                    ;; the annotation filtered by  file-mask is empty, try to
+                    ;; match the NOTE rule
+                    (let ((look-ahead (annotate-summary-lexer t)))
+                      ;; no more  input after  operator this  is wrong
+                      ;; according to the rule  we are trying to match:
+                      ;; EXPRESSION := FILE-MASK OR NOTE
+                      (if (annotate-summary-query-parse-end-input-p look-ahead)
+                          (error "No more input after 'or'")
+                        (progn
+                          ;; copy  the string  for  note parsing  note
+                          ;; that annotate-summary-query only contains
+                          ;; the substring to match the NOTE rule
+                          (setf query-notes-only (concat annotate-summary-query))
+                          ;; parse all  the annotations, we get  a list
+                          ;; where non nil elements are the annotation
+                          ;; that passes the note-filter-fn test
+                          (mapcar (lambda (a)
+                                    (let ((annotate-summary-query (concat query-notes-only)))
+                                      (annotate-summary-query-parse-note note-filter-fn
+                                                                         a)))
+                                  (annotate-annotations-from-dump annotation)))))))
+                 ((eq operator 'and)
+                  ;; try to parse with the rule
+                  ;; EXPRESSION := FILE-MASK OR NOTE
+                  (let ((look-ahead (annotate-summary-lexer t)))
+                    ;; no more  input after  operator, this  is wrong
+                    ;; according to the rule  we are trying to match:
+                    ;; EXPRESSION := FILE-MASK AND NOTE
+                    (if (annotate-summary-query-parse-end-input-p look-ahead)
+                        (error "No more input after 'and'")
+                      (progn
+                        ;; copy  the string  for  note parsing  note
+                        ;; that annotate-summary-query only contains
+                        ;; the substring to match the NOTE rule
+                        (setf query-notes-only (concat annotate-summary-query))
+                        ;; parse the already filtered by file-mask annotations only
+                        ;; we get a list where non nil elements are the annotation
+                        ;; that passes the note-filter-fn test
+                        (mapcar (lambda (a)
+                                  (let ((annotate-summary-query (concat query-notes-only)))
+                                    (annotate-summary-query-parse-note note-filter-fn
+                                                                       a)))
+                                (annotate-annotations-from-dump filtered-annotation))))))
+                 (t
+                  ;; there  is something  after  the  file-mask in  the
+                  ;; input but it is not an operator
+                  (error (format "Unknown operator: %s is not in '(and, or)"
+                                 (annotate-summary-query-lexer-string operator-token)))))))))))))
+
+(defun annotate-summary-filter-db (annotations-dump query)
+  "Filter an annotation database with a query.
+
+The argument `query' is a string that respect a simple syntax:
+
+- [file-mask] (and | or) [not] regex-note (and | or) [not] regexp-note ...
+
+where
+
+- file-mask: is a regular expression that should match the filepath
+ the annotation refers to;
+- and, or, not : you guess? Classics logical operators;
+- regex-note: the text of annotation must match this regular expression.
+
+Examples:
+
+- lisp$ and TODO
+ matches the text `TODO' in all lisp files
+
+Parenthesis can be used for the expression related to the text of
+annotation, like this:
+
+- lisp$ and (TODO or important)
+ the same as above but checks also for string `important'
+
+- /home/foo/
+ matches all the annotation that refers to file in the directory
+ `/home/foo'
+
+- /home/foo/ and not minor
+ matches all the annotation that refers to file in the directory
+ `/home/foo' and that not contains the text `minor'.
+
+- .* and \"not\"
+ the \" can be used to escape strings
+"
+  (let* ((parser             (annotate-summary-query-parse-expression))
+         (filter-file        (lambda (file-mask annotation-dump)
+                               (let ((filename
+                                      (annotate-filename-from-dump annotation-dump)))
+                                 (and (string-match-p file-mask filename)
+                                      annotation-dump))))
+         (filter-annotations (lambda (re annotation-dump-2)
+                               (and (string-match-p re
+                                                    (annotate-annotation-string annotation-dump-2))
+                                    annotation-dump-2)))
+         (filter             (lambda (single-annotation)
+                                (let ((filtered-annotations (funcall parser
+                                                                     single-annotation
+                                                                     query
+                                                                     filter-file
+                                                                     filter-annotations)))
+                                  (setf filtered-annotations
+                                        (cl-remove-if 'null filtered-annotations))
+                                  (when filtered-annotations
+                                    (let ((filename (annotate-filename-from-dump
+                                                     single-annotation))
+                                          (checksum (annotate-checksum-from-dump
+                                                     single-annotation)))
+                                      (annotate-make-annotation-dump-entry filename
+                                                                           filtered-annotations
+                                                                           checksum))))))
+         (filtered           (mapcar filter annotations-dump)))
+    (cl-remove-if 'null filtered)))
+
+;;;; end of filtering: parser, lexer, etc.
 
 (provide 'annotate)
 ;;; annotate.el ends here

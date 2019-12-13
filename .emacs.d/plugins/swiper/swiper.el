@@ -149,20 +149,16 @@ Treated as non-nil when searching backwards."
 (defun swiper--query-replace-updatefn ()
   (let ((lisp (ignore-errors (nth 2 (query-replace-compile-replacement ivy-text t)))))
     (dolist (ov swiper--query-replace-overlays)
-      (when lisp
-        (dolist (x (overlay-get ov 'matches))
-          (setq lisp (cl-subst (cadr x) (car x) lisp :test #'equal)))
-        (setq lisp (ignore-errors (eval lisp))))
       (overlay-put
        ov 'after-string
        (propertize
-        (if (stringp lisp)
-            lisp
-          (set-match-data (overlay-get ov 'md))
-          (condition-case nil
-              (with-current-buffer (nth 4 (overlay-get ov 'md))
-                (match-substitute-replacement ivy-text))
-            (error ivy-text)))
+        (condition-case nil
+            (with-current-buffer (overlay-buffer ov)
+              (set-match-data (overlay-get ov 'md))
+              (if (consp lisp)
+                  (eval lisp)
+                (match-substitute-replacement ivy-text)))
+          (error ivy-text))
         'face 'error)))))
 
 (defun swiper--query-replace-cleanup ()
@@ -172,7 +168,7 @@ Treated as non-nil when searching backwards."
 (defun swiper--query-replace-setup ()
   (with-ivy-window
     (let ((end (window-end (selected-window) t))
-          (re (ivy--regex ivy-text)))
+          (re ivy--old-re))
       (save-excursion
         (beginning-of-line)
         (while (re-search-forward re end t)
@@ -200,14 +196,18 @@ Treated as non-nil when searching backwards."
          (swiper--query-replace-setup)
          (unwind-protect
               (let* ((enable-recursive-minibuffers t)
-                     (from (ivy--regex ivy-text))
+                     (from ivy--old-re)
+                     (groups (number-sequence 1 ivy--subexps))
                      (default
-                      (format "\\,(concat %s)"
-                              (if (<= ivy--subexps 1)
-                                  "\\&"
-                                (mapconcat (lambda (i) (format "\\%d" i))
-                                           (number-sequence 1 ivy--subexps)
-                                           " \" \" "))))
+                      (list
+                       (mapconcat (lambda (i) (format "\\%d" i)) groups " ")
+                       (format "\\,(concat %s)"
+                               (if (<= ivy--subexps 1)
+                                   "\\&"
+                                 (mapconcat
+                                  (lambda (i) (format "\\%d" i))
+                                  groups
+                                  " \" \" ")))))
                      (to
                       (query-replace-compile-replacement
                        (ivy-read
@@ -252,6 +252,7 @@ Treated as non-nil when searching backwards."
                     (goto-char (point-min))
                     (perform-replace from to t t nil)))
              (set-window-configuration wnd-conf))))))))
+(put 'swiper-all-query-replace 'no-counsel-M-x t)
 
 (defvar avy-all-windows)
 (defvar avy-style)

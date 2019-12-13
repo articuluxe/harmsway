@@ -23,6 +23,7 @@
 
 (require 'dash)
 (require 'treemacs-customization)
+(require 'treemacs-scope)
 (require 'treemacs-core-utils)
 (require 'treemacs-interface)
 (eval-and-compile (require 'treemacs-macros))
@@ -34,7 +35,7 @@
 
 (with-eval-after-load 'winum
   (when (boundp 'winum-ignored-buffers-regexp)
-    (add-to-list 'winum-ignored-buffers-regexp (regexp-quote (format "%sFramebuffer-" treemacs--buffer-name-prefix)))))
+    (add-to-list 'winum-ignored-buffers-regexp (regexp-quote (format "%sScoped-Buffer-" treemacs--buffer-name-prefix)))))
 
 (with-eval-after-load 'ace-window
   (when (boundp 'aw-ignored-buffers)
@@ -53,7 +54,7 @@
     (when (or t(eq persp-activated-for 'frame))
       (-when-let (w (--first (treemacs-is-treemacs-window? it)
                              (window-list)))
-        (unless (assoc (selected-frame) treemacs--buffer-access)
+        (unless (assoc (treemacs-scope->current-scope treemacs--current-scope-type) treemacs--buffer-storage)
           (delete-window w)))))
   (declare-function treemacs--remove-treemacs-window-in-new-frames "treemacs-compatibility")
   (if (boundp 'persp-activated-functions)

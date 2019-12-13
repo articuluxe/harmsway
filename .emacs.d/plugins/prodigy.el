@@ -223,7 +223,7 @@ The list is a property list with the following properties:
    * nil or not set - use the value of `prodigy-kill-process-buffer-on-stop'.
 
 `truncate-output'
- Truncates the process ouptut buffer.  If set to t, truncates to
+ Truncates the process output buffer.  If set to t, truncates to
  `prodigy-view-buffer-maximum-size' lines.  If set to an integer,
  truncates to that number of lines.
 
@@ -700,7 +700,7 @@ The timer is not created if already exists."
   (get-buffer prodigy-buffer-name))
 
 (defun prodigy-buffer-visible-p ()
-  "Retrun true if the prodigy buffer is visible in any window."
+  "Return true if the prodigy buffer is visible in any window."
   (-any?
    (lambda (window)
      (equal (window-buffer window) (prodigy-buffer)))
@@ -712,7 +712,7 @@ The timer is not created if already exists."
 If status has been changed since last time, update the service
 status.
 
-When NEXT is specifed, call that to start a new timer.  See
+When NEXT is specified, call that to start a new timer.  See
 `prodigy-every'."
   (when (prodigy-buffer-visible-p)
     (-each prodigy-services
@@ -801,11 +801,20 @@ associated service definition."
   (--first (eq (prodigy-service-id it) id) prodigy-services))
 
 (defun prodigy-url (service)
-  "Return SERVICE url."
+  "Return SERVICE url or urls."
   (or
    (prodigy-service-url service)
    (-when-let (port (prodigy-service-port service))
      (format "http://localhost:%d" port))))
+
+(defun prodigy-single-url (service)
+  "Return a single url for service.
+If service defines several urls, ask the user which one is
+preferred."
+  (-when-let (url (prodigy-url service))
+    (if (listp url)
+        (prodigy-completing-read "URL: " url)
+      url)))
 
 (defun prodigy-discover-initialize ()
   "Initialize discover by adding prodigy context menu."
@@ -1259,6 +1268,16 @@ started."
     (kill-new cmd-str)
     (message "%s" cmd-str)))
 
+(defun prodigy-copy-url ()
+  "Copy url of service at point."
+  (interactive)
+  (-when-let (service (prodigy-current-service))
+    (-if-let (url (prodigy-single-url service))
+        (progn
+          (kill-new url)
+          (message "%s" url))
+      (message "Service does not specify url or port, cannot determine url"))))
+
 (defun prodigy-start ()
   "Start service at line or marked services."
   (interactive)
@@ -1294,11 +1313,8 @@ SIGNINT signal."
   "Browse service url at point if possible to figure out."
   (interactive)
   (-when-let (service (prodigy-current-service))
-    (-if-let (url (prodigy-url service))
-        (progn
-          (when (listp url)
-            (setq url (prodigy-completing-read "URL: " url)))
-          (browse-url url))
+    (-if-let (url (prodigy-single-url service))
+        (browse-url url)
       (message "Service does not specify url or port, cannot determine url"))))
 
 (defun prodigy-refresh ()
@@ -1408,7 +1424,7 @@ This function will refresh the Prodigy buffer."
   "Define a new service with ARGS.
 
 If service with that name already exists, the service is updated.
-The old service process is transfered to the new service."
+The old service process is transferred to the new service."
   (declare (indent defun))
   (let* ((service-name (plist-get args :name))
          (fn

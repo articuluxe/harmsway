@@ -122,6 +122,7 @@ forges and hosts."
           their-id)))
 
 (defvar-local forge-buffer-repository nil)
+(put 'forge-buffer-repository 'permanent-local t)
 
 (defconst forge--signal-no-entry '(t stub create))
 
@@ -189,7 +190,7 @@ Return the repository identified by HOST, OWNER and NAME."
                           (oref obj sparse-p)))
                  (error "Cannot use `%s' in %S yet.\n%s"
                         this-command (magit-toplevel)
-                        "Use `M-x forge-pull' before trying again."))
+                        "Use `M-x forge-add-repository' before trying again."))
                 ((and (eq demand 'full) obj
                       (oref obj sparse-p))
                  (setq obj nil)))
@@ -198,17 +199,19 @@ Return the repository identified by HOST, OWNER and NAME."
             (pcase-let ((`(,id . ,forge-id)
                          (forge--repository-ids class host owner name
                                                 (eq demand 'stub))))
-              (setq obj (funcall class
-                                 :id       id
-                                 :forge-id forge-id
-                                 :forge    forge
-                                 :owner    owner
-                                 :name     name
-                                 :apihost  apihost
-                                 :githost  githost
-                                 :remote   remote)))
-            (when (eq demand 'create)
-              (closql-insert (forge-db) obj)))
+              ;; The repo might have been renamed on the forge.  #188
+              (unless (setq obj (forge-get-repository (list :id id)))
+                (setq obj (funcall class
+                                   :id       id
+                                   :forge-id forge-id
+                                   :forge    forge
+                                   :owner    owner
+                                   :name     name
+                                   :apihost  apihost
+                                   :githost  githost
+                                   :remote   remote))
+                (when (eq demand 'create)
+                  (closql-insert (forge-db) obj)))))
           obj))
     (when (memq demand forge--signal-no-entry)
       (error "Cannot determine forge repository.  No entry for %S in %s"

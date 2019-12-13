@@ -37,7 +37,9 @@
 
 ;;; Code:
 
+(require 'cl-lib)
 (require 'tramp)
+(require 'tramp-sh)
 (require 'vterm)
 
 (defcustom vterm-toggle-show-hook nil
@@ -77,12 +79,12 @@
   :group 'vterm-toggle
   :type 'boolean)
 
-(defcustom vterm-toggle-after-ssh-login-function nil
+(defcustom vterm-toggle-after-remote-login-function nil
   "Those functions are called one by one after open a ssh session.
-`vterm-toggle-after-ssh-login-function' should be a symbol, a hook variable.
+`vterm-toggle-after-remote-login-function' should be a symbol, a hook variable.
 The value of HOOK may be nil, a function, or a list of functions.
 for example
-   (defun vterm-toggle-after-ssh-login (user host port localdir)
+   (defun vterm-toggle-after-ssh-login (method user host port localdir)
     (when (equal host \"my-host\")
         (vterm-send-string \"zsh\" t)
         (vterm-send-return)))"
@@ -146,6 +148,18 @@ If the `tramp-methods' entry does not exist, return NIL."
   (let ((entry (assoc param (assoc method tramp-methods))))
     (when entry (cadr entry))))
 
+(when (version<= emacs-version "26.3")
+  (with-eval-after-load 'tramp-sh
+    (defun tramp-get-sh-extra-args (shell)
+      "Find extra args for SHELL."
+      (let ((alist tramp-sh-extra-args)
+	        item extra-args)
+        (while (and alist (null extra-args))
+          (setq item (pop alist))
+          (when (string-match-p (car item) shell)
+	        (setq extra-args (cdr item))))
+        extra-args))))
+
 (defun vterm-toggle-show(&optional make-cd args)
   "Show the vterm buffer.
 Optional argument MAKE-CD whether insert a cd command.
@@ -154,15 +168,17 @@ Optional argument ARGS optional args."
   (let* ((shell-buffer (vterm-toggle--get-buffer
                         make-cd (not vterm-toggle-cd-auto-create-buffer) args))
          (dir (expand-file-name default-directory))
-         cd-cmd cur-host vterm-dir vterm-host cur-user cur-port remote-p)
+         cd-cmd cur-host vterm-dir vterm-host cur-user cur-port remote-p cur-method login-cmd)
     (if (ignore-errors (file-remote-p dir))
         (with-parsed-tramp-file-name dir nil
           (setq remote-p t)
           (setq cur-host host)
-          (setq cur-user user)
-          (setq cur-port (if port (concat ":" port) ""))
+          (setq cur-method (tramp-find-method method user cur-host))
+          (setq cur-user (or (tramp-find-user cur-method user cur-host) ""))
+          (setq cur-port (or port ""))
           (setq dir localname))
       (setq cur-host (system-name)))
+    (setq login-cmd (vterm-toggle-tramp-get-method-parameter cur-method 'tramp-login-program))
     (setq cd-cmd (concat " cd " (shell-quote-argument dir)))
     (if shell-buffer
         (progn
@@ -189,21 +205,51 @@ Optional argument ARGS optional args."
             (delete-other-windows)))
       (setq vterm-toggle--window-configration (current-window-configuration))
       (with-current-buffer (setq shell-buffer (vterm-toggle--new))
+        (vterm-toggle--wait-prompt)
         (when remote-p
-          (let* ((method (tramp-find-method nil cur-user cur-host))
-                 (login-cmd (vterm-toggle-tramp-get-method-parameter method 'tramp-login-program)))
-            (if cur-user
-                (vterm-send-string (format "%s %s@%s%s" login-cmd cur-user cur-host cur-port) t)
-              (vterm-send-string (format "%s %s%s"  login-cmd cur-host cur-port) t)))
+          (let* ((method  (if (string-equal login-cmd "ssh") "ssh" cur-method))
+                 (login-opts (vterm-toggle-tramp-get-method-parameter method 'tramp-login-args))
+                 (login-shell (vterm-toggle-tramp-get-method-parameter method 'tramp-remote-shell))
+                 (login-shell-args (tramp-get-sh-extra-args login-shell))
+                 ;; (vterm-toggle-tramp-get-method-parameter cur-method 'tramp-remote-shell)
+                 (spec (format-spec-make
+			            ?h cur-host ?u cur-user ?p cur-port ?c ""
+			            ?l (concat login-shell " " login-shell-args)))
+                 (cmd
+                  (concat login-cmd " "
+                          (mapconcat
+		                   (lambda (x)
+			                 (setq x (mapcar (lambda (y) (format-spec y spec)) x))
+			                 (unless (member "" x) (string-join x " ")))
+		                   login-opts " "))))
+            (vterm-send-string cmd)
+            (vterm-send-return)
+            (run-hook-with-args 'vterm-toggle-after-remote-login-function
+                                method cur-user cur-host cur-port dir))
+          (vterm-send-string cd-cmd)
           (vterm-send-return)
-          (run-hook-with-args 'vterm-toggle-after-ssh-login-function
-                              cur-user cur-host cur-port dir)
-          (vterm-send-string cd-cmd t)
-          (vterm-send-return))
+          (setq default-directory
+	            (file-name-as-directory
+	             (if (and (string= cur-host (system-name))
+                          (string= cur-user (user-real-login-name)))
+		             (expand-file-name dir)
+                   (concat "/" cur-method ":" (if (string-empty-p cur-user) ""
+                                                (concat cur-user "@") )
+                           cur-host ":" dir)))))
         (when vterm-toggle-fullscreen-p
           (delete-other-windows))
         (run-hooks 'vterm-toggle-show-hook)))
     shell-buffer))
+
+(defun vterm-toggle--wait-prompt()
+  "Wait prompt."
+  (let ((wait-ms 0))
+    (cl-loop until (or (> (length (string-trim
+                                   (buffer-substring-no-properties
+                                    (point-min) (point-max)))) 0)
+                       (> wait-ms 3000)) do
+                       (sleep-for 0.01)
+                       (setq wait-ms (+ wait-ms 10)))))
 
 ;;;###autoload
 (defun vterm-toggle-insert-cd()
@@ -249,6 +295,7 @@ Optional argument ARGS optional args."
       vterm-toggle--vterm-dedicated-buffer
     (setq vterm-toggle--vterm-dedicated-buffer (vterm-toggle--new))
     (with-current-buffer vterm-toggle--vterm-dedicated-buffer
+      (vterm-toggle--wait-prompt)
       (setq vterm-toggle--dedicated-p t)
       vterm-toggle--vterm-dedicated-buffer)))
 

@@ -1,4 +1,4 @@
-;;; perspective.el --- switch between named "perspectives" of the editor
+;;; perspective.el --- switch between named "perspectives" of the editor  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2008-2018 Natalie Weizenbaum <nex342@gmail.com>
 ;;
@@ -6,7 +6,7 @@
 
 ;; Author: Natalie Weizenbaum <nex342@gmail.com>
 ;; URL: http://github.com/nex3/perspective-el
-;; Package-Requires: ((cl-lib "0.5"))
+;; Package-Requires: ((emacs "24.4") (cl-lib "0.5"))
 ;; Version: 2.3
 ;; Created: 2008-03-05
 ;; By: Natalie Weizenbaum <nex342@gmail.com>
@@ -30,13 +30,6 @@
 (require 'cl-lib)
 (require 'thingatpt)
 (require 'subr-x)                       ; hash-table-values
-
-;; 'cl' is still required because the use of 'lexical-let'.  'lexical-let' has
-;; been deprecated since emacs 24.1, and it should be replaced with true
-;; lexical bindings.  For more information, please see
-;; https://www.gnu.org/software/emacs/manual/html_node/cl/
-;; Obsolete-Lexical-Binding.html
-(require 'cl)
 
 (defvar ido-temp-list)
 
@@ -71,7 +64,7 @@ perspectives."
                (string :tag "Divider")))
 
 (defcustom persp-mode-prefix-key (kbd "C-x x")
-  "Prefix key to activate perspective-map"
+  "Prefix key to activate perspective-map."
   :group 'perspective-mode
   :set (lambda (sym value)
          (when (and (bound-and-true-p persp-mode-map)
@@ -86,41 +79,23 @@ perspectives."
   :type 'boolean)
 
 (defcustom persp-sort 'name
-  "What order to sort perspectives. If 'name, then sort alphabetically. If 'access, then sort by last time accessed (latest first). If 'created, then sort by time created (latest first)."
+  "What order to sort perspectives.
+If 'name, then sort alphabetically.
+If 'access, then sort by last time accessed (latest first).
+If 'created, then sort by time created (latest first)."
   :group 'perspective-mode
   :type '(choice (const :tag "By Name"          name)
                  (const :tag "By Time Accessed" access)
                  (const :tag "By Time Created"  created)))
 
 (defcustom persp-state-default-file nil
-  "When non-nil, it provides a default argument for
-`persp-state-save` and `persp-state-load` to work with.
+  "When non-nil, it provides a default argument for `persp-state-save` and `persp-state-load` to work with.
 
 `persp-state-save` overwrites this file without prompting, which
 makes it easy to use in, e.g., `kill-emacs-hook` to automatically
 save state when exiting Emacs."
   :group 'perspective-mode
   :type 'file)
-
-;; This is only available in Emacs >23,
-;; so we redefine it here for compatibility.
-(unless (fboundp 'with-selected-frame)
-  (defmacro with-selected-frame (frame &rest body)
-    "Execute the forms in BODY with FRAME as the selected frame.
-The value returned is the value of the last form in BODY.
-See also `with-temp-buffer'."
-    (declare (indent 1) (debug t))
-    (let ((old-frame (make-symbol "old-frame"))
-          (old-buffer (make-symbol "old-buffer")))
-      `(let ((,old-frame (selected-frame))
-             (,old-buffer (current-buffer)))
-         (unwind-protect
-             (progn (select-frame ,frame)
-                    ,@body)
-           (if (frame-live-p ,old-frame)
-               (select-frame ,old-frame))
-           (if (buffer-live-p ,old-buffer)
-               (set-buffer ,old-buffer)))))))
 
 (defmacro persp-let-frame-parameters (bindings &rest body)
   "Like `let', but for frame parameters.
@@ -144,12 +119,43 @@ After BODY is evaluated, frame parameters are reset to their original values."
   (window-configuration (current-window-configuration))
   (point-marker (point-marker)))
 
+(defmacro persp-current-buffers ()
+  "Return a list of all buffers in the current perspective."
+  `(persp-buffers (persp-curr)))
+
+(defun persp-is-current-buffer (buf)
+  "Return T if BUF is in the current perspective."
+  (memq buf (persp-current-buffers)))
+
+(defun persp-buffer-filter (buf)
+  "Return F if BUF is in the current perspective. Used for
+filtering in buffer display modes like ibuffer."
+  (not (persp-is-current-buffer buf)))
+
+(defmacro with-current-perspective (&rest body)
+  "Operate on BODY when we are in a perspective."
+  (declare (indent 0))
+  `(when (persp-curr)
+     ,@body))
+
+(defun persp-current-name ()
+  "Get the name of the current perspective."
+  (persp-name (persp-curr)))
+
+(defun persp-scratch-buffer (&optional name)
+  (let* ((current-name  (persp-current-name))
+         (name          (or name current-name))
+         (initial-persp (equal name persp-initial-frame-name)))
+    (concat "*scratch*"
+            (unless initial-persp
+              (format " (%s)" name)))))
+
 (defalias 'persp-killed-p 'persp-killed
   "Return whether the perspective CL-X has been killed.")
 
 (defvar persp-interactive-completion-function
   (if ido-mode 'ido-completing-read 'completing-read)
-  "The function which is used by perspective.el to interactivly complete user input")
+  "The function which is used by perspective.el to interactively complete user input.")
 
 (defvar persp-before-switch-hook nil
   "A hook that's run before `persp-switch'.
@@ -188,6 +194,9 @@ Run with the activated perspective active.")
 
 (defvar persp-mode-map (make-sparse-keymap)
   "Keymap for perspective-mode.")
+
+(defvar perspective-map nil
+  "Sub-keymap for perspective-mode")
 
 (define-prefix-command 'perspective-map)
 (define-key persp-mode-map persp-mode-prefix-key 'perspective-map)
@@ -239,11 +248,16 @@ perspective-local values."
   (or (frame-parameter frame 'persp--hash)
       (make-hash-table)))
 
+(defun persp-mode-guard ()
+  (unless (bound-and-true-p persp-mode)
+    (persp-error "persp-mode is not active")))
+
 (defun persp-curr (&optional frame)
   "Get the current perspective in FRAME.
 FRAME defaults to the currently selected frame."
   ;; XXX: This must return a non-nil value to avoid breaking frames initialized
   ;; with after-make-frame-functions bound to nil.
+  (persp-mode-guard)
   (or (frame-parameter frame 'persp--curr)
       (make-persp-internal)))
 
@@ -256,7 +270,7 @@ FRAME defaults to the currently selected frame."
   (frame-parameter frame 'persp--last))
 
 (defun persp-mode-set-prefix-key (newkey)
-  "Set the prefix key to activate persp-mode"
+  "Set NEWKEY as the prefix key to activate persp-mode."
   (substitute-key-definition 'perspective-map nil persp-mode-map)
   (define-key persp-mode-map newkey 'perspective-map))
 
@@ -280,9 +294,11 @@ This prevents the persp-mode from completely breaking Emacs."
         (persp-mode -1)))))
 
 (defun persp-error (&rest args)
-  "Like `error', but marks it as a persp-specific error.
+  "Like `error', but mark it as a persp-specific error.
 Used along with `persp-protect' to ensure that persp-mode doesn't
-bring down Emacs."
+bring down Emacs.
+
+ARGS will be interpreted by `format-message'."
   (if persp-protected
       (signal 'persp-error (list (apply 'format args)))
     (apply 'error args)))
@@ -308,7 +324,7 @@ for the perspective."
       (dotimes (_ 2) (push (pop args) keywords)))
     (setq keywords (reverse keywords))
     `(let ((persp (make-persp-internal ,@keywords)))
-       (when (persp-curr)
+       (with-current-perspective
          (setf (persp-local-variables persp) (persp-local-variables (persp-curr))))
        (puthash (persp-name persp) persp (perspectives-hash))
        (with-perspective (persp-name persp)
@@ -322,7 +338,7 @@ for the perspective."
   "Save the current perspective state.
 Specifically, save the current window configuration and
 perspective-local variables to `persp-curr'"
-  (when (persp-curr)
+  (with-current-perspective
     (setf (persp-local-variables (persp-curr))
           (mapcar
            (lambda (c)
@@ -384,7 +400,7 @@ REQUIRE-MATCH can take the same values as in `completing-read'."
   (declare (indent 1))
   (let ((old (cl-gensym)))
     `(progn
-       (let ((,old (when (persp-curr) (persp-name (persp-curr))))
+       (let ((,old (with-current-perspective (persp-current-name)))
              (last-persp-cache (persp-last)))
          (unwind-protect
              (progn
@@ -413,9 +429,10 @@ window-side creating perspectives."
 The new perspective will start with only an `initial-major-mode'
 buffer called \"*scratch* (NAME)\"."
   (make-persp :name name
-    (switch-to-buffer (concat "*scratch* (" name ")"))
+    (switch-to-buffer (persp-scratch-buffer name))
     (funcall initial-major-mode)
-    (insert initial-scratch-message)
+    (when initial-scratch-message
+      (insert initial-scratch-message))
     (persp-reset-windows)))
 
 (defun persp-reactivate-buffers (buffers)
@@ -424,10 +441,10 @@ Returns BUFFERS with all non-living buffers removed.
 
 See also `other-buffer'."
   (cl-loop for buf in (reverse buffers)
-           if (not (null (buffer-name buf)))
+           when (buffer-live-p buf)
            collect buf into living-buffers
            and do (switch-to-buffer buf)
-           finally return (reverse living-buffers)))
+           finally return (nreverse living-buffers)))
 
 (defun persp-set-local-variables (vars)
   "Set the local variables given in VARS.
@@ -476,7 +493,7 @@ Has no effect when `persp-show-modestring' is nil."
 (defun persp-format-name (name)
   "Format the perspective name given by NAME for display in the modeline."
   (let ((string-name (format "%s" name)))
-    (if (equal name (persp-name (persp-curr)))
+    (if (equal name (persp-current-name))
         (propertize string-name 'face 'persp-selected-face)
       (propertize string-name
                   'local-map persp-mode-line-map
@@ -492,6 +509,7 @@ This is used for cycling between perspectives."
   (persp-get-quick-helper char prev (persp-names)))
 
 (defun persp-get-quick-helper (char prev names)
+  "Helper for `persp-get-quick' using CHAR, PREV, and NAMES."
   (if (null names) nil
     (let ((name (car names)))
       (cond
@@ -522,7 +540,7 @@ If NORECORD is non-nil, do not update the
 `persp-last-switch-time' for the switched perspective."
   (interactive "i")
   (if (null name) (setq name (persp-prompt (and (persp-last) (persp-name (persp-last))))))
-  (if (and (persp-curr) (equal name (persp-name (persp-curr)))) name
+  (if (and (persp-curr) (equal name (persp-current-name))) name
     (let ((persp (gethash name (perspectives-hash))))
       (set-frame-parameter nil 'persp--last (persp-curr))
       (when (null persp)
@@ -541,7 +559,7 @@ If NORECORD is non-nil, do not update the
   (set-frame-parameter nil 'persp--curr persp)
   (persp-reset-windows)
   (persp-set-local-variables (persp-local-variables persp))
-  (persp-reactivate-buffers (persp-buffers persp))
+  (setf (persp-buffers persp) (persp-reactivate-buffers (persp-buffers persp)))
   (setq buffer-name-history (persp-buffer-history persp))
   (set-window-configuration (persp-window-configuration persp))
   (when (marker-position (persp-point-marker persp))
@@ -567,7 +585,7 @@ See `persp-switch', `persp-get-quick'."
   "Switch to next perspective (to the right)."
   (interactive)
   (let* ((names (persp-names))
-         (pos (cl-position (persp-name (persp-curr)) names)))
+         (pos (cl-position (persp-current-name) names)))
     (cond
      ((null pos) (persp-find-some))
      ((= pos (1- (length names)))
@@ -578,7 +596,7 @@ See `persp-switch', `persp-get-quick'."
   "Switch to previous perspective (to the left)."
   (interactive)
   (let* ((names (persp-names))
-         (pos (cl-position (persp-name (persp-curr)) names)))
+         (pos (cl-position (persp-current-name) names)))
     (cond
      ((null pos) (persp-find-some))
      ((= pos 0)
@@ -619,8 +637,8 @@ See also `persp-switch' and `persp-remove-buffer'."
     (let ((read-buffer-function nil))
       (read-buffer "Add buffer to perspective: "))))
   (let ((buffer (get-buffer buffer)))
-    (unless (memq buffer (persp-buffers (persp-curr)))
-      (push buffer (persp-buffers (persp-curr))))))
+    (unless (persp-is-current-buffer buffer)
+      (push buffer (persp-current-buffers)))))
 
 (defun persp-set-buffer (buffer-name)
   "Associate BUFFER-NAME with the current perspective and remove it from any other."
@@ -642,7 +660,7 @@ Otherwise, returns (FRAME . NAME), the frame and name of another
 perspective that has the buffer.
 
 Prefers perspectives in the selected frame."
-  (cl-loop for frame in (sort (frame-list) (lambda (frame1 frame2) (eq frame2 (selected-frame))))
+  (cl-loop for frame in (sort (frame-list) (lambda (_frame1 frame2) (eq frame2 (selected-frame))))
            do (cl-loop for persp being the hash-values of (perspectives-hash frame)
                        if (and (not (and (equal frame (selected-frame))
                                          (equal (persp-name persp) (persp-name (persp-curr frame)))))
@@ -658,7 +676,7 @@ Prefers perspectives in the selected frame."
     (let ((read-buffer-function nil))
       (read-buffer-to-switch "Switch to buffer: "))))
   (let ((buffer (window-normalize-buffer-to-switch-to buffer-or-name)))
-    (if (memq buffer (persp-buffers (persp-curr)))
+    (if (persp-is-current-buffer buffer)
         (switch-to-buffer buffer)
       (let ((other-persp (persp-buffer-in-other-p buffer)))
         (when (eq (car-safe other-persp) (selected-frame))
@@ -685,7 +703,7 @@ See also `persp-switch' and `persp-add-buffer'."
                ;; the loop because otherwise it will go on infinitely.
                (setq window (unless (eq window new-window) new-window))))))
         (t (bury-buffer buffer)))
-  (setf (persp-buffers (persp-curr)) (remq buffer (persp-buffers (persp-curr)))))
+  (setf (persp-current-buffers) (remq buffer (persp-current-buffers))))
 
 (defun persp-kill (name)
   "Kill the perspective given by NAME.
@@ -693,10 +711,10 @@ See also `persp-switch' and `persp-add-buffer'."
 Killing a perspective means that all buffers associated with that
 perspective and no others are killed."
   (interactive "i")
-  (if (null name) (setq name (persp-prompt (persp-name (persp-curr)) t)))
+  (if (null name) (setq name (persp-prompt (persp-current-name) t)))
   (with-perspective name
     (run-hooks 'persp-killed-hook)
-    (mapc 'persp-remove-buffer (persp-buffers (persp-curr)))
+    (mapc 'persp-remove-buffer (persp-current-buffers))
     (setf (persp-killed (persp-curr)) t))
   (remhash name (perspectives-hash))
   (persp-update-modestring)
@@ -708,7 +726,7 @@ perspective and no others are killed."
             (last (nth 1 names)))
        (when last
          (gethash last (perspectives-hash))))))
-  (when (or (not (persp-curr)) (equal name (persp-name (persp-curr))))
+  (when (or (not (persp-curr)) (equal name (persp-current-name)))
     ;; Don't let persp-last get set to the deleted persp.
     (persp-let-frame-parameters ((persp--last (persp-last)))
       (persp-switch (persp-find-some)))))
@@ -719,14 +737,14 @@ perspective and no others are killed."
   (if (gethash name (perspectives-hash))
       (persp-error "Perspective `%s' already exists" name)
     ;; rename the perspective-specific *scratch* buffer
-    (let* ((old-scratch-name (format "*scratch* (%s)" (persp-name (persp-curr))))
-           (new-scratch-name (format "*scratch* (%s)" name))
+    (let* ((old-scratch-name (persp-scratch-buffer))
+           (new-scratch-name (persp-scratch-buffer name))
            (scratch-buffer (get-buffer old-scratch-name)))
       (when scratch-buffer
         (with-current-buffer scratch-buffer
           (rename-buffer new-scratch-name))))
     ;; rewire the rest of the perspective inside its data structures
-    (remhash (persp-name (persp-curr)) (perspectives-hash))
+    (remhash (persp-current-name) (perspectives-hash))
     (puthash name (persp-curr) (perspectives-hash))
     (setf (persp-name (persp-curr)) name)
     (persp-update-modestring)))
@@ -744,10 +762,11 @@ copied across frames."
           (if persp (cl-return-from persp-all-get (persp-buffers persp))))))))
 
 (defun persp-read-buffer (prompt &optional def require-match)
-  "A replacement for the built-in `read-buffer'.
-Meant to be used with `read-buffer-function'. Return the name of
-the buffer selected, only selecting from buffers within the
-current perspective.
+  "A replacement for the built-in `read-buffer', meant to be used with `read-buffer-function'.
+Return the name of the buffer selected, only selecting from buffers
+within the current perspective.
+
+PROMPT, DEF, and REQUIRE-MATCH documented in `read-buffer'.
 
 With a prefix arg, uses the old `read-buffer' instead."
   (persp-protect
@@ -773,7 +792,7 @@ With a prefix arg, uses the old `read-buffer' instead."
 
 (defun persp-complete-buffer ()
   "Perform completion on all buffers within the current perspective."
-  (lexical-let ((persp-names (mapcar 'buffer-name (persp-buffers (persp-curr)))))
+  (let ((persp-names (mapcar 'buffer-name (persp-current-buffers))))
     (apply-partially 'completion-table-with-predicate
                      (or minibuffer-completion-table 'internal-complete-buffer)
                      (lambda (name)
@@ -845,16 +864,16 @@ See also `persp-add-buffer'."
 
     (let ((buffer (window-buffer window)))
       (with-selected-frame frame
-        (unless (memq buffer (persp-buffers (persp-curr)))
+        (unless (persp-is-current-buffer buffer)
           ;; If a buffer from outside this perspective was selected, it's because
           ;; this perspective is out of buffers. For lack of any better option, we
           ;; recreate the scratch buffer.
           ;;
           ;; If we were just in a scratch buffer, change the name slightly.
           ;; Otherwise our new buffer will get deleted too.
-          (let ((name (concat "*scratch* (" (persp-name (persp-curr)) ")")))
+          (let ((name (persp-scratch-buffer)))
             (when (and bury-or-kill (equal name (buffer-name old-buffer)))
-              (setq name (concat "*scratch*  (" (persp-name (persp-curr)) ")")))
+              (setq name (persp-scratch-buffer)))
             (with-selected-window window
               (switch-to-buffer name)
               (funcall initial-major-mode))))))))
@@ -899,7 +918,7 @@ named collections of buffers and window configurations."
         (add-hook 'ido-make-buffer-list-hook 'persp-set-ido-buffers)
         (setq read-buffer-function 'persp-read-buffer)
         (mapc 'persp-init-frame (frame-list))
-        (setf (persp-buffers (persp-curr)) (buffer-list))
+        (setf (persp-current-buffers) (buffer-list))
 
         (run-hooks 'persp-mode-hook))
     (ad-deactivate-regexp "^persp-.*")
@@ -960,7 +979,7 @@ it. In addition, if one exists already, runs BODY in it immediately."
   `(progn
      (add-hook 'persp-created-hook
                (lambda ()
-                 (when (string= (persp-name (persp-curr)) ,name)
+                 (when (string= (persp-current-name) ,name)
                    ,@body))
                'append)
      (when (gethash ,name (perspectives-hash))
@@ -969,13 +988,13 @@ it. In addition, if one exists already, runs BODY in it immediately."
 (defun persp-set-ido-buffers ()
   "Restrict the ido buffer to the current perspective."
   (let ((persp-names
-         (remq nil (mapcar 'buffer-name (persp-buffers (persp-curr)))))
+         (remq nil (mapcar 'buffer-name (persp-current-buffers))))
         (indices (make-hash-table :test 'equal)))
     (cl-loop for elt in ido-temp-list
              for i upfrom 0
              do (puthash elt i indices))
     (setq ido-temp-list
-          (sort (intersection persp-names ido-temp-list)
+          (sort (cl-intersection persp-names ido-temp-list)
                 (lambda (a b)
                   (< (gethash a indices)
                      (gethash b indices)))))))
@@ -1027,15 +1046,15 @@ perspective beginning with the given letter."
 ;;   ]
 ;; }
 
-(defstruct persp--state-complete
+(cl-defstruct persp--state-complete
   files
   frames)
 
-(defstruct persp--state-frame
+(cl-defstruct persp--state-frame
   persps
   order)
 
-(defstruct persp--state-single
+(cl-defstruct persp--state-single
   buffers
   windows)
 
@@ -1090,19 +1109,16 @@ to the perspective's *scratch* buffer."
      entry)
     ;; leaf: modify this
     ((eq 'leaf (car entry))
-     (lexical-let ((leaf-props (cdr entry)))
+     (let ((leaf-props (cdr entry)))
        (cons 'leaf
              (cl-loop for prop in leaf-props
                    collect (if (not (eq 'buffer (car prop)))
                                prop
-                             (lexical-let ((bn (cadr prop)))
+                             (let ((bn (cadr prop)))
                                (if (member bn valid-buffers)
                                    prop
                                  (cons 'buffer
-                                       (cons (lexical-let ((scratch-persp (format "*scratch* (%s)" persp)))
-                                               (if (get-buffer scratch-persp)
-                                                   scratch-persp
-                                                 "*scratch*"))
+                                       (cons (persp-scratch-buffer persp)
                                              (cddr prop))))))))))
     ;; recurse
     (t (cons (car entry) (cl-loop for e in (cdr entry)
@@ -1112,18 +1128,18 @@ to the perspective's *scratch* buffer."
   (cl-loop for frame in (frame-list)
            if (frame-parameter frame 'persp--hash) ; XXX: filter non-perspective-enabled frames
            collect (with-selected-frame frame
-                     (lexical-let ((persps-in-frame (make-hash-table :test 'equal))
-                                   (persp-names-in-order (persp-names)))
+                     (let ((persps-in-frame (make-hash-table :test 'equal))
+                           (persp-names-in-order (persp-names)))
                        (cl-loop for persp in persp-names-in-order do
                                 (unless (persp-killed-p (gethash persp (perspectives-hash)))
                                   (with-perspective persp
-                                    (lexical-let* ((buffers
-                                                    (cl-loop for buffer in (persp-buffers (persp-curr))
-                                                             if (persp--state-interesting-buffer-p buffer)
-                                                             collect (buffer-name buffer)))
-                                                   (windows
-                                                    (cl-loop for entry in (window-state-get (frame-root-window) t)
-                                                             collect (persp--state-window-state-massage entry persp buffers))))
+                                    (let* ((buffers
+                                            (cl-loop for buffer in (persp-current-buffers)
+                                                     if (persp--state-interesting-buffer-p buffer)
+                                                     collect (buffer-name buffer)))
+                                           (windows
+                                            (cl-loop for entry in (window-state-get (frame-root-window) t)
+                                                     collect (persp--state-window-state-massage entry persp buffers))))
                                       (puthash persp
                                                (make-persp--state-single
                                                 :buffers buffers
@@ -1141,8 +1157,8 @@ FILE defaults to the value of persp-state-default-file if it is
 set.
 
 Each perspective's buffer list and window layout will be saved.
-Frames and their associated perspectives will also be saved
-(but not the original frame sizes).
+Frames and their associated perspectives will also be saved,
+but not the original frame sizes.
 
 Buffers with * characters in their names, as well as buffers without
 associated files will be ignored. If such buffers are currently
@@ -1155,22 +1171,22 @@ visible in a perspective as windows, they will be saved as
                 t))
   (unless persp-mode
     (message "persp-mode not enabled, nothing to save")
-    (return-from persp-state-save))
-  (lexical-let ((target-file (if (and file (not (string-equal "" file)))
-                                 ;; file provided as argument, just use it
-                                 (expand-file-name file)
-                               ;; no file provided as argument
-                               (if interactive?
-                                   ;; return nil in interactive call mode, since
-                                   ;; read-file-name should have provided a reasonable
-                                   ;; default
-                                   nil
-                                 ;; in non-interactive call mode, we want to fall back to
-                                 ;; the default, but only if it is set
-                                 (if (and persp-state-default-file
-                                          (not (string-equal "" persp-state-default-file)))
-                                     (expand-file-name persp-state-default-file)
-                                   nil)))))
+    (cl-return-from persp-state-save))
+  (let ((target-file (if (and file (not (string-equal "" file)))
+                         ;; file provided as argument, just use it
+                         (expand-file-name file)
+                       ;; no file provided as argument
+                       (if interactive?
+                           ;; return nil in interactive call mode, since
+                           ;; read-file-name should have provided a reasonable
+                           ;; default
+                           nil
+                         ;; in non-interactive call mode, we want to fall back to
+                         ;; the default, but only if it is set
+                         (if (and persp-state-default-file
+                                  (not (string-equal "" persp-state-default-file)))
+                             (expand-file-name persp-state-default-file)
+                           nil)))))
     (unless target-file
       (error "No target file specified"))
     ;; overwrite the target file if:
@@ -1186,14 +1202,14 @@ visible in a perspective as windows, they will be saved as
                                   target-file))
                (not (or current-prefix-arg
                         (yes-or-no-p "Target file exists. Overwrite? "))))
-      (error "persp-state-save cancelled"))
+      (error "Cancelled persp-state-save"))
     ;; before hook
     (run-hooks 'persp-state-before-save-hook)
     ;; actually save
     (persp-save)
-    (lexical-let ((state-complete (make-persp--state-complete
-                                   :files (persp--state-file-data)
-                                   :frames (persp--state-frame-data))))
+    (let ((state-complete (make-persp--state-complete
+                           :files (persp--state-file-data)
+                           :frames (persp--state-frame-data))))
       ;; create or overwrite target-file:
       (with-temp-file target-file (prin1 state-complete (current-buffer))))
     ;; after hook
@@ -1219,12 +1235,12 @@ restored."
   ;; before hook
   (run-hooks 'persp-state-before-load-hook)
   ;; actually load
-  (lexical-let ((tmp-persp-name (format "%04x%04x" (random (expt 16 4)) (random (expt 16 4))))
-                (frame-count 0)
-                (state-complete (read-from-whole-string
-                                 (with-temp-buffer
-                                   (insert-file-contents file)
-                                   (buffer-string)))))
+  (let ((tmp-persp-name (format "%04x%04x" (random (expt 16 4)) (random (expt 16 4))))
+        (frame-count 0)
+        (state-complete (read
+                         (with-temp-buffer
+                           (insert-file-contents-literally file)
+                           (buffer-string)))))
     ;; open all files in a temporary perspective to avoid polluting "main"
     (persp-switch tmp-persp-name)
     (cl-loop for file in (persp--state-complete-files state-complete) do
@@ -1232,7 +1248,7 @@ restored."
                (find-file file)))
     ;; iterate over the frames
     (cl-loop for frame in (persp--state-complete-frames state-complete) do
-             (incf frame-count)
+             (cl-incf frame-count)
              (when (> frame-count 1)
                (make-frame-command))
              ;; XXX: The condition in binding frame-persp-table and
@@ -1242,15 +1258,15 @@ restored."
              ;; persp--state-frame (released version). The special case can be
              ;; removed in the future, as there should be very few or no files
              ;; left in the old format.
-             (lexical-let* ((frame-persp-table (if (hash-table-p frame)
-                                                   frame
-                                                 (persp--state-frame-persps frame)))
-                            (frame-persp-order (if (hash-table-p frame)
-                                                   (hash-table-keys frame)
-                                                 (reverse (persp--state-frame-order frame)))))
+             (let* ((frame-persp-table (if (hash-table-p frame)
+                                           frame
+                                         (persp--state-frame-persps frame)))
+                    (frame-persp-order (if (hash-table-p frame)
+                                           (hash-table-keys frame)
+                                         (reverse (persp--state-frame-order frame)))))
                ;; iterate over the perspectives in the frame in the appropriate order
                (cl-loop for persp in frame-persp-order do
-                        (lexical-let ((state-single (gethash persp frame-persp-table)))
+                        (let ((state-single (gethash persp frame-persp-table)))
                           (persp-switch persp)
                           (cl-loop for buffer in (persp--state-single-buffers state-single) do
                                    (persp-add-buffer buffer))

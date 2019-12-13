@@ -476,10 +476,6 @@
     (todo red1)
     (done spring-green3)
 
-    (button amber6)
-    (button-border (if (color-dark-p bg1) gray3 white4))
-    (button-hl amber3)
-
     (adaptive-fg (if (color-dark-p bg1) white0 bg1))
     ;; TODO: add pos-tip in custom-theme-set-variables
     (tooltip-bg bg2)
@@ -528,8 +524,14 @@
     (keysym      prep)
     (prompt      keyword)
 
+    ;; Custom buttons
+    (button amber6)
+    (button-bg doc)
+    (button-border (if (color-dark-p bg1) gray3 white4))
+    (button-hl amber3)
+
     ;; Mode-line
-    (line-fg           fg4)
+    (line-fg           fg3)
     (line-inactive     comment)
     (line-bg1          bg2)
     (line-bg2          bg4)
@@ -622,9 +624,9 @@
     ;; Interface
     (package-name                   (:inherit 'link :underline nil))
     (button                         (:inherit 'link))
-    (custom-button                  (:background bg4 :foreground fg3 :box (:line-width 2 :color button-border :style nil)))
-    (custom-button-mouse            (:inherit 'custom-button :foreground button-hl :box (:line-width 2 :color button-hl :style 'released-button)))
-    (custom-button-pressed          (:inherit 'custom-button :foreground button-hl :box (:line-width 2 :color button-border :style 'pressed-button)))
+    (custom-button                  (:background button-bg :foreground adaptive-fg :box (:line-width 2 :color button-bg :style 'none) :height 0.9))
+    (custom-button-mouse            (:inherit 'custom-button :foreground button-hl :box (:line-width 2 :color button-hl :style 'none)))
+    (custom-button-pressed          (:inherit 'custom-button :foreground button-hl :box (:line-width 2 :color button-border :style 'none)))
     (custom-button-unraised         (:inherit 'custom-button))
     (custom-button-pressed-unraised (:inherit 'custom-button-pressed))
     (custom-group-tag               (:foreground header :height 1.2 :weight 'bold))
@@ -644,7 +646,7 @@
     (widget-documentation           (:background nil :foreground var))
     ;; (widget-button                  (:background nil :foreground keyword))
     (widget-button-pressed          (:background nil :foreground builtin))
-    (widget-field                   (:background bg2 :foreground fg2 :box (:line-width 2 :color bg3 :style nil)))
+    (widget-field                   (:background bg2 :foreground fg2 :box (:line-width 2 :color bg4 :style nil)))
     (widget-single-line-field       (:inherit 'widget-field))
 
     ;; Dashboard
@@ -1478,12 +1480,13 @@
     (helm-bookmark-man                        (:foreground doc))
     (helm-bookmark-w3m                        (:foreground search1))
 
-    (helm-buffer-not-saved                    (:foreground diff-add))
     (helm-buffer-process                      (:foreground str))
     (helm-buffer-saved-out                    (:background diff-bg-mod :foreground bg1))
     (helm-buffer-size                         (:foreground fg1))
     (helm-buffer-directory                    (:foreground keyword))
     (helm-buffer-archive                      (:foreground const))
+    (helm-buffer-not-saved                    (:foreground diff-mod))
+    (helm-buffer-modified                     (:foreground warning))
 
     (helm-etags-file                          (:foreground str))
     (helm-ff-directory                        (:foreground keyword :bold bold))
@@ -1545,7 +1548,7 @@
     (ivy-modified-buffer         (:foreground diff-mod))
     (ivy-remote                  (:foreground prep))
     (ivy-subdir                  (:foreground keyword :bold bold))
-    (ivy-virtual                 (:foreground doc))
+    (ivy-virtual                 (:foreground ivy1))
     (ivy-minibuffer-match-face-1 (:background nil :foreground ivy1))
     (ivy-minibuffer-match-face-2 (:background nil :foreground search1 :bold bold))
     (ivy-minibuffer-match-face-3 (:background nil :foreground search2 :bold bold))
