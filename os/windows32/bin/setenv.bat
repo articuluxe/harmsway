@@ -5,7 +5,7 @@ rem Copyright (C) 2019  Dan Harms (Dan.Harms)
 rem Author: Dan Harms <dan.harms@xrtrading.com>
 rem Created: Thursday, December  5, 2019
 rem Version: 1.0
-rem Modified Time-stamp: <2019-12-13 16:09:58 Dan.Harms>
+rem Modified Time-stamp: <2019-12-16 08:57:07 Dan.Harms>
 rem Modified by: Dan.Harms
 rem Keywords:
 
@@ -17,7 +17,7 @@ setx NAME Dan.Harms
 setx EMACS_ROOT "C:\Program Files\emacs-26.3"
 setx EMACS_BIN "%EMACS_ROOT%\bin"
 setx EDITOR "%EMACS_BIN%\runemacs.exe"
-setx VISUAL "%EMACS_BIN\emacs.exe"
+setx VISUAL "%EMACS_BIN%\emacs.exe"
 setx MSYS_DIR "C:\Program Files (x86)\GnuWin32\bin"
 setx GIT_DIR "C:\Program Files\Git"
 setx FIND_EXE "%GIT_DIR%\usr\bin\find"
