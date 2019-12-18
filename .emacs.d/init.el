@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-12-10 09:49:37 dan.harms>
+;; Modified Time-stamp: <2019-12-18 14:25:57 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -4052,6 +4052,10 @@ Requires Flake8 2.0 or newer. See URL
 (use-package typescript-mode
   :mode "\\.ts$"
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; uml-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package uml-mode
+ :commands uml-mode)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; web ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package web
