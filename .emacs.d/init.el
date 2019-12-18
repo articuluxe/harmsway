@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-12-18 14:25:57 dharms>
+;; Modified Time-stamp: <2019-12-18 14:32:44 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1259,6 +1259,10 @@ Only one letter is shown, the first that applies."
   :init
   (setq terminal-here-project-root-function #'proviso-current-project-root)
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; reveal-in-folder ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package reveal-in-folder
+  :bind (("C-c M-e" . reveal-in-folder)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; simpleclip ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package simpleclip
