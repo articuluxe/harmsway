@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2019  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-12-18 17:31:52 dharms>
+;; Modified Time-stamp: <2019-12-19 13:54:58 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2425,9 +2425,9 @@ Only one letter is shown, the first that applies."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; visual-regexp ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package visual-regexp
-  :bind (("C-c 0gv" . vr/replace)
-         ("C-c 0gV" . vr/query-replace)
-         ("C-c 0g\\" . vr/mc-mark)))
+  :bind (("M-s r" . vr/replace)
+         ("M-s %" . vr/query-replace)
+         ("M-s \\" . vr/mc-mark)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; shebang ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package shebang)
