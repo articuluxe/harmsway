@@ -5,7 +5,7 @@ rem Copyright (C) 2019  Dan Harms (Dan.Harms)
 rem Author: Dan Harms <dan.harms@xrtrading.com>
 rem Created: Thursday, December  5, 2019
 rem Version: 1.0
-rem Modified Time-stamp: <2019-12-16 08:57:07 Dan.Harms>
+rem Modified Time-stamp: <2019-12-19 16:15:18 Dan.Harms>
 rem Modified by: Dan.Harms
 rem Keywords:
 
@@ -27,6 +27,8 @@ setx TAR_EXE "%GIT_DIR%\usr\bin\tar"
 setx PUTTY_DIR "%ChocolateyInstall%\bin"
 setx DICPATH "%HOME%\config\hunspell"
 setx DICTIONARY "%DICPATH%\ENU"
+setx PYTHON_DIR "C:\Python38"
+setx PYTHON_USER_DIR "%HOME%\AppData\Roaming\Python\Python38"
 
 echo "Creating symbolic links..."
 

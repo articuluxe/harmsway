@@ -17,3 +17,4 @@
   - mingw
   - llvm
   - make
+  - python

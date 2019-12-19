@@ -1,2 +1,2 @@
 
-pip install epc jedi isort importmagic flake8 black sphinx
+pip install epc jedi isort importmagic flake8 black sphinx virtualenv
