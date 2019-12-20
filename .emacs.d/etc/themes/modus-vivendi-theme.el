@@ -4,7 +4,7 @@
 
 ;; Author: Protesilaos Stavrou <info@protesilaos.com>
 ;; URL: https://gitlab.com/protesilaos/modus-themes
-;; Version: 0.1.0
+;; Version: 0.2.1
 ;; Package-Requires: ((emacs "25.1"))
 ;; Keywords: faces, theme, accessibility
 
@@ -324,11 +324,11 @@ between foreground and background is >= 7:1)."
    `(avy-lead-face-0 ((,class (:inherit modus-theme-intense-blue :weight bold))))
    `(avy-lead-face-1 ((,class (:inherit modus-theme-intense-red :weight bold))))
    `(avy-lead-face-2 ((,class (:inherit modus-theme-intense-green :weight bold))))
-   ;;;; aw
+   ;;;; aw (ace-window)
    `(aw-background-face ((,class (:background ,bg-dim :foreground ,fg-dim))))
-   `(aw-key-face ((,class (:background ,bg-main :foreground ,magenta-intense :weight bold))))
-   `(aw-leading-char-face ((,class (:background ,bg-main :foreground ,red-intense :weight bold))))
-   `(aw-minibuffer-leading-char-face ((,class (:background ,bg-main :foreground ,red-intense))))
+   `(aw-key-face ((,class (:foreground ,blue-intense :weight bold))))
+   `(aw-leading-char-face ((,class (:height 1.5 :background ,bg-main :foreground ,red-intense :weight bold))))
+   `(aw-minibuffer-leading-char-face ((,class (:foreground ,magenta-active))))
    `(aw-mode-line-face ((,class (:weight bold))))
    ;;;; buttons, links, widgets
    `(button ((,class (:foreground ,blue-alt-other :underline t))))
@@ -390,6 +390,12 @@ between foreground and background is >= 7:1)."
    `(custom-state ((,class (:foreground ,cyan-alt-other))))
    `(custom-themed ((,class (:inherit modus-theme-subtle-blue))))
    `(custom-variable-tag ((,class (:foreground ,cyan :weight bold))))
+   ;;;; dashboard (emacs-dashboard)
+   `(dashboard-banner-logo-title ((,class (:foreground ,fg-special-cold :weight bold))))
+   `(dashboard-footer ((,class (:foreground ,fg-special-mild :weight bold))))
+   `(dashboard-heading ((,class (:foreground ,fg-special-warm :weight bold))))
+   `(dashboard-navigator ((,class (:foreground ,cyan-alt-other))))
+   `(dashboard-text-banner ((,class (:foreground ,fg-dim))))
    ;;;; deadgrep
    `(deadgrep-filename-face ((,class (:foreground ,cyan :weight bold))))
    `(deadgrep-match-face ((,class (:inherit modus-theme-subtle-blue))))
@@ -534,15 +540,19 @@ between foreground and background is >= 7:1)."
    `(eldoc-box-body ((,class (:background ,bg-alt :foreground ,fg-main))))
    `(eldoc-box-border ((,class (:background ,fg-alt))))
    ;;;; elfeed
-   `(elfeed-search-date-face ((,class (:inherit default))))
-   `(elfeed-search-title-face ((,class (:inherit default))))
-   `(elfeed-search-unread-title-face ((,class (:inherit default :weight bold))))
-   `(elfeed-search-feed-face ((,class (:foreground ,blue))))
-   `(elfeed-search-tag-face ((,class (:foreground ,cyan))))
+   `(elfeed-log-date-face ((,class (:foreground ,blue))))
    `(elfeed-log-debug-level-face ((,class (:inherit modus-theme-intense-magenta))))
    `(elfeed-log-error-level-face ((,class (:inherit modus-theme-intense-red))))
-   `(elfeed-log-warn-level-face ((,class (:inherit modus-theme-subtle-yellow))))
    `(elfeed-log-info-level-face ((,class (:inherit modus-theme-subtle-cyan))))
+   `(elfeed-log-warn-level-face ((,class (:inherit modus-theme-subtle-yellow))))
+   `(elfeed-search-date-face ((,class (:foreground ,fg-special-cold))))
+   `(elfeed-search-feed-face ((,class (:foreground ,cyan))))
+   `(elfeed-search-filter-face ((,class (:foreground ,fg-special-cold))))
+   `(elfeed-search-last-update-face ((,class (:foreground ,fg-special-mild))))
+   `(elfeed-search-tag-face ((,class (:foreground ,fg-special-mild))))
+   `(elfeed-search-title-face ((,class (:foreground ,fg-main))))
+   `(elfeed-search-unread-count-face ((,class (:foreground ,fg-special-warm))))
+   `(elfeed-search-unread-title-face ((,class (:weight bold))))
    ;;;; emms
    `(emms-playlist-track-face ((,class (:foreground ,blue))))
    `(emms-playlist-selected-face ((,class (:foreground ,magenta :weight bold))))
@@ -593,6 +603,29 @@ between foreground and background is >= 7:1)."
    `(eshell-ls-symlink ((,class (:foreground ,cyan :underline t))))
    `(eshell-ls-unreadable ((,class (:background ,bg-inactive :foreground ,fg-inactive))))
    `(eshell-prompt ((,class (:foreground ,cyan-alt-other :weight bold))))
+   ;;;; evil-mode
+   `(evil-ex-commands ((,class (:foreground ,magenta-alt-other))))
+   `(evil-ex-info ((,class (:foreground ,cyan-alt-other))))
+   `(evil-ex-lazy-highlight ((,class (:inherit lazy-highlight))))
+   `(evil-ex-search ((,class (:inherit isearch))))
+   `(evil-ex-substitute-matches ((,class (:inherit modus-theme-refine-yellow :underline t))))
+   `(evil-ex-substitute-replacement ((,class (:inherit modus-theme-intense-green :weight bold))))
+   ;;;; evil-goggles
+   `(evil-goggles-change-face ((,class (:inherit modus-theme-refine-yellow))))
+   `(evil-goggles-commentary-face ((,class (:inherit modus-theme-subtle-neutral :slant ,modus-theme-slant))))
+   `(evil-goggles-default-face ((,class (:inherit modus-theme-subtle-neutral))))
+   `(evil-goggles-delete-face ((,class (:inherit modus-theme-refine-red))))
+   `(evil-goggles-fill-and-move-face ((,class (:inherit evil-goggles-default-face))))
+   `(evil-goggles-indent-face ((,class (:inherit evil-goggles-default-face))))
+   `(evil-goggles-join-face ((,class (:inherit modus-theme-subtle-green))))
+   `(evil-goggles-nerd-commenter-face ((,class (:inherit evil-goggles-commentary-face))))
+   `(evil-goggles-paste-face ((,class (:inherit modus-theme-subtle-cyan))))
+   `(evil-goggles-record-macro-face ((,class (:inherit modus-theme-special-cold))))
+   `(evil-goggles-replace-with-register-face ((,class (:inherit modus-theme-refine-magenta))))
+   `(evil-goggles-set-marker-face ((,class (:inherit modus-theme-intense-magenta))))
+   `(evil-goggles-shift-face ((,class (:inherit evil-goggles-default-face))))
+   `(evil-goggles-surround-face ((,class (:inherit evil-goggles-default-face))))
+   `(evil-goggles-yank-face ((,class (:inherit modus-theme-subtle-blue))))
    ;;;; eww
    `(eww-invalid-certificate ((,class (:inherit error))))
    `(eww-valid-certificate ((,class (:inherit success))))
@@ -871,13 +904,13 @@ between foreground and background is >= 7:1)."
    `(info-menu-star ((,class (:inherit default))))
    `(info-node ((,class ((:weight bold)))))
    ;;;; ivy
-   `(ivy-action ((,class (:foreground ,magenta-alt))))
+   `(ivy-action ((,class (:foreground ,red-alt :weight bold))))
    `(ivy-completions-annotations ((,class (:foreground ,fg-special-cold :slant ,modus-theme-slant))))
    `(ivy-confirm-face ((,class (:foreground ,cyan))))
    `(ivy-current-match ((,class (:inherit modus-theme-special-mild :weight bold :underline t))))
    `(ivy-cursor ((,class (:inherit cursor))))
    `(ivy-grep-info ((,class (:foreground ,cyan-alt))))
-   `(ivy-grep-line-number ((,class (:inherit line-number))))
+   `(ivy-grep-line-number ((,class (:foreground ,fg-special-warm))))
    `(ivy-highlight-face ((,class (:foreground ,magenta))))
    `(ivy-match-required-face ((,class (:inherit error))))
    `(ivy-minibuffer-match-face-1 ((,class (:inherit modus-theme-subtle-neutral))))
@@ -895,9 +928,12 @@ between foreground and background is >= 7:1)."
    `(ivy-virtual ((,class (:foreground ,magenta-alt-other))))
    `(ivy-yanked-word ((,class (:inherit modus-theme-refine-blue))))
    ;;;; ivy-posframe
-   `(ivy-posframe ((,class (:background ,bg-alt :foreground ,fg-main))))
-   `(ivy-posframe-border ((,class (:inherit default :background ,fg-main))))
+   `(ivy-posframe ((,class (:background ,bg-dim :foreground ,fg-main))))
+   `(ivy-posframe-border ((,class (:background ,bg-active))))
    `(ivy-posframe-cursor ((,class (:inherit cursor))))
+   ;;;; keycast
+   `(keycast-command ((,class (:foreground ,red-active :weight bold))))
+   `(keycast-key ((,class (:height 1.2 :inherit modus-theme-special-warm :weight bold :box (:line-width -3 :style released-button)))))
    ;;;; line numbers (display-line-numbers-mode and global variant)
    `(line-number ((,class (:background ,bg-alt :foreground ,fg-alt))))
    `(line-number-current-line ((,class (:background ,bg-active :foreground ,fg-active :weight bold))))
@@ -1196,6 +1232,8 @@ between foreground and background is >= 7:1)."
    `(outline-6 ((,class (:inherit org-level-6))))
    `(outline-7 ((,class (:inherit org-level-7))))
    `(outline-8 ((,class (:inherit org-level-8))))
+   ;;;; paren-face
+   `(parenthesis ((,class (:foreground ,fg-alt))))
    ;;;; pass
    `(pass-mode-directory-face ((,class (:foreground ,fg-special-cold :weight bold))))
    `(pass-mode-entry-face ((,class (:inherit default))))
@@ -1206,6 +1244,13 @@ between foreground and background is >= 7:1)."
    `(persp-face-lighter-nil-persp ((,class (:foreground ,fg-active :weight bold))))
    ;;;; perspective
    `(persp-selected-face ((,class (:foreground ,blue-active :weight bold))))
+   ;;;; powerline
+   `(powerline-active0 ((,class (:background ,fg-inactive :foreground ,bg-inactive))))
+   `(powerline-active1 ((,class (:background ,bg-active :foreground ,fg-active))))
+   `(powerline-active2 ((,class (:background ,bg-alt :foreground ,fg-active))))
+   `(powerline-inactive0 ((,class (:background ,bg-inactive :foreground ,fg-inactive))))
+   `(powerline-inactive1 ((,class (:background ,bg-alt :foreground ,fg-alt))))
+   `(powerline-inactive2 ((,class (:background ,bg-main :foreground ,fg-alt))))
    ;;;; prodigy
    `(prodigy-green-face ((,class (:foreground ,green))))
    `(prodigy-red-face ((,class (:foreground ,red))))
@@ -1234,6 +1279,17 @@ between foreground and background is >= 7:1)."
    `(rainbow-delimiters-depth-9-face ((,class (:foreground ,yellow-alt))))
    `(rainbow-delimiters-mismatched-face ((,class (:foreground ,red-alt :weight bold))))
    `(rainbow-delimiters-unmatched-face ((,class (:foreground ,red :weight bold))))
+   ;;;; ruler-mode
+   `(ruler-mode-column-number ((,class (:inherit ruler-mode-default :foreground ,fg-main :weight bold))))
+   `(ruler-mode-comment-column ((,class (:inherit ruler-mode-default :foreground ,red-active))))
+   `(ruler-mode-current-column ((,class (:inherit ruler-mode-default :foreground ,cyan-active :box t))))
+   `(ruler-mode-default ((,class (:background ,bg-inactive :foreground ,fg-inactive))))
+   `(ruler-mode-fill-column ((,class (:inherit ruler-mode-default :foreground ,green-active))))
+   `(ruler-mode-fringes ((,class (:inherit ruler-mode-default :foreground ,blue-active))))
+   `(ruler-mode-goal-column ((,class (:inherit ruler-mode-default :foreground ,magenta-active))))
+   `(ruler-mode-margins ((,class (:inherit ruler-mode-default :foreground ,bg-main))))
+   `(ruler-mode-pad ((,class (:background ,bg-active :foreground ,fg-inactive))))
+   `(ruler-mode-tab-stop ((,class (:inherit ruler-mode-default :foreground ,yellow-active))))
    ;;;; shell scripts
    `(sh-heredoc ((,class (:inherit font-lock-string-face))))
    `(sh-quoted-exec ((,class (:inherit font-lock-builtin-face))))

@@ -104,7 +104,7 @@ Using current frame's font if it it nil."
   :group 'company-posframe
   :type 'function)
 
-(defcustom company-posframe-quickhelp-delay 0.5
+(defcustom company-posframe-quickhelp-delay 1
   "Delay, in seconds, before the quickhelp popup appears.
 
 If set to nil the popup won't automatically appear, but can still
@@ -168,6 +168,13 @@ be triggered manually using `company-posframe-quickhelp-show'."
 
     keymap)
   "Keymap that is enabled during an active completion in posframe.")
+
+(defun company-posframe-enable-overriding-keymap (keymap)
+  "Advice function of `company-enable-overriding-keymap'."
+  (company-uninstall-map)
+  (if (eq keymap company-active-map)
+      (setq company-my-keymap company-posframe-active-map)
+    (setq company-my-keymap keymap)))
 
 (defun company-posframe-format-backend-name (backend)
   "Format BACKEND for displaying in the modeline."
@@ -241,12 +248,7 @@ COMMAND: See `company-frontends'."
          (company-posframe-quickhelp-cancel-timer))
        (company-posframe-quickhelp-hide)
        (company-posframe-hide))
-      (update
-       ;; Important: This line is very important, we need to override
-       ;; company-active-map again, this is do the job of
-       ;; `company--perform'.
-       (company-enable-overriding-keymap company-posframe-active-map)
-       (company-posframe-show))
+      (update (company-posframe-show))
       (post-command
        (when (not run-quickhelp-command-p)
          (company-posframe-show))))))
@@ -313,8 +315,7 @@ just grab the first candidate and press forward."
         doc))))
 
 (defun company-posframe-quickhelp-set-timer ()
-  (when (or (null company-posframe-quickhelp-timer)
-            (eq this-command #'company-posframe-quickhelp-manual-begin))
+  (when (null company-posframe-quickhelp-timer)
     (setq company-posframe-quickhelp-timer
           (run-with-idle-timer company-posframe-quickhelp-delay nil
                                'company-posframe-quickhelp-show))))
@@ -351,7 +352,10 @@ just grab the first candidate and press forward."
         (apply #'posframe-show
                company-posframe-quickhelp-buffer
                :string (propertize doc 'face 'company-posframe-quickhelp)
-               :min-width (min 60 (length header-line))
+               :width (let ((n (apply #'max (mapcar #'string-width
+                                                    (split-string doc "\n+")))))
+                        (max (length header-line) (min fill-column n)))
+               :min-width (length header-line)
                :min-height height
                :height height
                :respect-header-line t
@@ -363,7 +367,7 @@ just grab the first candidate and press forward."
                :position
                (with-current-buffer company-posframe-buffer
                  (let ((pos posframe--last-posframe-pixel-position))
-                   (cons (+ (car pos) (frame-pixel-width posframe--frame))
+                   (cons (car pos) ;(+ (car pos) (frame-pixel-width posframe--frame))
                          (cdr pos))))
                company-posframe-quickhelp-show-params)))))
 
@@ -400,6 +404,8 @@ just grab the first candidate and press forward."
       (message "company-posframe can not work in current emacs environment.")
     (if company-posframe-mode
         (progn
+          (advice-add #'company-enable-overriding-keymap
+                      :override #'company-posframe-enable-overriding-keymap)
           (advice-add #'company-pseudo-tooltip-frontend
                       :override #'company-posframe-frontend)
           (advice-add #'company-pseudo-tooltip-unless-just-one-frontend
@@ -409,6 +415,8 @@ just grab the first candidate and press forward."
           (message company-posframe-notification))
       (posframe-delete company-posframe-buffer)
       (posframe-delete company-posframe-quickhelp-buffer)
+      (advice-remove #'company-enable-overriding-keymap
+                     #'company-posframe-enable-overriding-keymap)
       (advice-remove #'company-pseudo-tooltip-frontend
                      #'company-posframe-frontend)
       (advice-remove #'company-pseudo-tooltip-unless-just-one-frontend
