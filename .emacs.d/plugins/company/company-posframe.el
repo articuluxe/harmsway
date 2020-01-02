@@ -69,6 +69,7 @@
 (require 'cl-lib)
 (require 'company)
 (require 'posframe)
+(require 'subr-x)
 
 (defgroup company-posframe nil
   "Use a child-frame as company candidate menu"
@@ -78,11 +79,13 @@
 (defcustom company-posframe-font nil
   "The font used by company-posframe's frame.
 Using current frame's font if it it nil."
-  :group 'company-posframe)
+  :group 'company-posframe
+  :type 'face)
 
 (defcustom company-posframe-lighter " company-posframe"
   "The lighter string used by `company-posframe-mode'."
-  :group 'company-posframe)
+  :group 'company-posframe
+  :type 'string)
 
 (defcustom company-posframe-show-indicator t
   "Display an indicator for backends in the mode line of the posframe."
@@ -128,6 +131,10 @@ be triggered manually using `company-posframe-quickhelp-show'."
   '((t :inherit default))
   "Face for company-posframe-quickhelp doc.")
 
+(defface company-posframe-quickhelp-header
+  '((t :inherit header-line))
+  "Face for company-posframe-quickhelp header.")
+
 (defvar company-posframe-buffer " *company-posframe-buffer*"
   "company-posframe's buffer which used by posframe.")
 
@@ -138,7 +145,8 @@ be triggered manually using `company-posframe-quickhelp-show'."
   "Quickhelp idle timer.")
 
 (defvar company-posframe-quickhelp-show-params
-  (list :internal-border-width 1
+  (list :poshandler #'company-posframe-quickhelp-right-poshandler
+        :internal-border-width 1
         :timeout 60
         :internal-border-color "gray50"
         :no-properties nil
@@ -168,13 +176,6 @@ be triggered manually using `company-posframe-quickhelp-show'."
 
     keymap)
   "Keymap that is enabled during an active completion in posframe.")
-
-(defun company-posframe-enable-overriding-keymap (keymap)
-  "Advice function of `company-enable-overriding-keymap'."
-  (company-uninstall-map)
-  (if (eq keymap company-active-map)
-      (setq company-my-keymap company-posframe-active-map)
-    (setq company-my-keymap keymap)))
 
 (defun company-posframe-format-backend-name (backend)
   "Format BACKEND for displaying in the modeline."
@@ -248,7 +249,12 @@ COMMAND: See `company-frontends'."
          (company-posframe-quickhelp-cancel-timer))
        (company-posframe-quickhelp-hide)
        (company-posframe-hide))
-      (update (company-posframe-show))
+      (update
+       ;; Important: This line is very important, we need to override
+       ;; company-active-map again, this is do the job of
+       ;; `company--perform'.
+       (company-enable-overriding-keymap company-posframe-active-map)
+       (company-posframe-show))
       (post-command
        (when (not run-quickhelp-command-p)
          (company-posframe-show))))))
@@ -310,9 +316,18 @@ just grab the first candidate and press forward."
 (defun company-posframe-quickhelp-doc (selected)
   (cl-letf (((symbol-function 'completing-read)
              #'company-posframe-quickhelp-completing-read))
-    (let* ((doc (company-posframe-quickhelp-fetch-docstring selected)))
-      (unless (member doc '(nil ""))
-        doc))))
+    (let* ((header
+            (substitute-command-keys
+             (concat
+              "## "
+              "\\<company-posframe-active-map>\\[company-posframe-quickhelp-toggle]:Show/Hide  "
+              "\\<company-posframe-active-map>\\[company-posframe-quickhelp-scroll-up]:Scroll-Up  "
+              "\\<company-posframe-active-map>\\[company-posframe-quickhelp-scroll-down]:Scroll-Down "
+              "##\n")))
+           (body (company-posframe-quickhelp-fetch-docstring selected))
+           (doc (concat (propertize header 'face 'company-posframe-quickhelp-header)
+                        (propertize body 'face 'company-posframe-quickhelp))))
+      doc)))
 
 (defun company-posframe-quickhelp-set-timer ()
   (when (null company-posframe-quickhelp-timer)
@@ -331,45 +346,33 @@ just grab the first candidate and press forward."
     (let* ((selected (nth company-selection company-candidates))
            (doc (let ((inhibit-message t))
                   (company-posframe-quickhelp-doc selected)))
+           (width
+            (let ((n (apply #'max (mapcar #'string-width
+                                          (split-string doc "\n+")))))
+              (+ (min fill-column n) 1)))
            (height
             (max (+ company-tooltip-limit
                     (if company-posframe-show-indicator 1 0)
-                    (if company-posframe-show-metadata 1 0)
-                    -1)
+                    (if company-posframe-show-metadata 1 0))
                  (with-current-buffer company-posframe-buffer
-                   (- (frame-height posframe--frame) 1))))
-           (header-line
-            (substitute-command-keys
-             (concat
-              "## "
-              "\\<company-posframe-active-map>\\[company-posframe-quickhelp-toggle]:Show/Hide  "
-              "\\<company-posframe-active-map>\\[company-posframe-quickhelp-scroll-up]:Scroll-Up  "
-              "\\<company-posframe-active-map>\\[company-posframe-quickhelp-scroll-down]:Scroll-Down "
-              "##"))))
+                   (frame-height posframe--frame)))))
       (when doc
-        (with-current-buffer (get-buffer-create company-posframe-quickhelp-buffer)
-          (setq-local header-line-format header-line))
         (apply #'posframe-show
                company-posframe-quickhelp-buffer
-               :string (propertize doc 'face 'company-posframe-quickhelp)
-               :width (let ((n (apply #'max (mapcar #'string-width
-                                                    (split-string doc "\n+")))))
-                        (max (length header-line) (min fill-column n)))
-               :min-width (length header-line)
+               :string doc
+               :width width
+               :min-width width
                :min-height height
                :height height
-               :respect-header-line t
-               ;; When first show quickhelp's posframe, it seem using wrong height,
-               ;; maybe header-line's reason, just refresh again, ugly but useful :-).
-               :refresh 0.5
                :background-color (face-attribute 'company-posframe-quickhelp :background nil t)
                :foreground-color (face-attribute 'company-posframe-quickhelp :foreground nil t)
-               :position
-               (with-current-buffer company-posframe-buffer
-                 (let ((pos posframe--last-posframe-pixel-position))
-                   (cons (car pos) ;(+ (car pos) (frame-pixel-width posframe--frame))
-                         (cdr pos))))
                company-posframe-quickhelp-show-params)))))
+
+(defun company-posframe-quickhelp-right-poshandler (_info)
+  (with-current-buffer company-posframe-buffer
+    (let ((pos posframe--last-posframe-pixel-position))
+      (cons (+ (car pos) (frame-pixel-width posframe--frame))
+            (cdr pos)))))
 
 (defun company-posframe-quickhelp-hide ()
   (posframe-hide company-posframe-quickhelp-buffer))
@@ -404,8 +407,6 @@ just grab the first candidate and press forward."
       (message "company-posframe can not work in current emacs environment.")
     (if company-posframe-mode
         (progn
-          (advice-add #'company-enable-overriding-keymap
-                      :override #'company-posframe-enable-overriding-keymap)
           (advice-add #'company-pseudo-tooltip-frontend
                       :override #'company-posframe-frontend)
           (advice-add #'company-pseudo-tooltip-unless-just-one-frontend
@@ -415,8 +416,6 @@ just grab the first candidate and press forward."
           (message company-posframe-notification))
       (posframe-delete company-posframe-buffer)
       (posframe-delete company-posframe-quickhelp-buffer)
-      (advice-remove #'company-enable-overriding-keymap
-                     #'company-posframe-enable-overriding-keymap)
       (advice-remove #'company-pseudo-tooltip-frontend
                      #'company-posframe-frontend)
       (advice-remove #'company-pseudo-tooltip-unless-just-one-frontend

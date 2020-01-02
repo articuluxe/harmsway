@@ -189,20 +189,20 @@
      `(monky-diff-del ((,c (:foreground ,red))))
 
      ;; Org-mode
-     `(org-tag                      ((,c (:foreground ,invisible :bold nil))))
+     `(org-tag                      ((,c (:foreground ,frost :slant italic))))
      `(org-ellipsis                 ((,c (:inherit hs-face :underline nil))))
-     `(org-link                     ((,c (:foreground ,frost :underline ,diredcl))))
+     `(org-link                     ((,c (:foreground ,frost :underline ,invisible))))
      `(org-hide                     ((,c (:foreground ,black))))
      `(org-table                    ((,c (:foreground ,yellow))))
      `(org-quote                    ((,c (:slant italic :foreground ,grey :background ,current-line))))
-     `(org-document-info            ((,c (:foreground ,yellow))))
-     `(org-document-info-keyword    ((,c (:foreground ,comment))))
-     `(org-meta-line                ((,c (:foreground ,comment))))
+     `(org-document-info            ((,c (:foreground ,white))))
+     `(org-document-info-keyword    ((,c (:foreground ,frost :bold t))))
+     `(org-meta-line                ((,c (:foreground ,frost))))
      `(org-block                    ((,c (:background "#0e1824"))))
-     `(org-block-begin-line         ((,c (:foreground ,yellow))))
+     `(org-block-begin-line         ((,c (:foreground "selectedControlColor" :slant italic))))
      `(org-block-end-line           ((,c (:inherit org-block-begin-line))))
      `(org-archived                 ((,c (:foreground ,invisible))))
-     `(org-document-title           ((,c (:foreground ,blue))))
+     `(org-document-title           ((,c (:foreground ,white :bold t))))
      `(org-level-1                  ((,c (:foreground ,white))))
      `(org-level-2                  ((,c (:foreground ,white))))
      `(org-level-3                  ((,c (:foreground ,white))))
@@ -222,7 +222,7 @@
      `(org-priority                 ((,c (:foreground ,red))))
      `(org-drawer                 ((,c (:foreground ,orange))))
 
-     `(org-date                     ((,c (:foreground "#c5d0e6"))))
+     `(org-date                     ((,c (:foreground "NavajoWhite1" :underline "NavajoWhite4"))))
      `(org-todo                     ((,c (:foreground ,yellow))))
      `(org-done                     ((,c (:foreground ,green))))
      `(org-headline-done            ((,c (:foreground ,grey-.5 :strike-through t :bold nil))))
@@ -267,14 +267,14 @@
      `(org-scheduled ((,c (:foreground ,white))))
      `(org-warning ((,c (:foreground ,orange :slant italic))))
      `(org-scheduled-today ((,c (:foreground ,white))))
-     `(org-scheduled-previously ((,c (:foreground ,red))))
+     `(org-scheduled-previously ((,c (:foreground "darkred" :bold t ))))
      `(org-time-grid ((,c (:foreground ,invisible))))
 
      `(org-agenda-clocking ((,c (:foreground ,diredcl :background ,ada-midnight))))
 
      `(org-agenda-date ((,c (:foreground ,blue))))
      `(org-agenda-date-today ((,c (:foreground ,white))))
-     `(org-agenda-date-weekend ((,c (:foreground ,green))))
+     `(org-agenda-date-weekend ((,c (:foreground ,white :bold t))))
 
      `(org-agenda-structure ((,c (:foreground ,white))))
      `(org-agenda-calendar-event ((,c (:foreground ,yellow :slant italic))))
@@ -283,7 +283,7 @@
      `(org-agenda-diary ((,c (:foreground ,orange :slant italic))))
      `(org-agenda-dimmed-todo-face ((,c (:foreground ,comment))))
      `(org-agenda-current-time ((,c (:foreground ,frost))))
-     `(org-upcoming-deadline ((,c (:foreground ,violet))))
+     `(org-upcoming-deadline ((,c (:foreground ,red))))
      `(org-upcoming-distant-deadline ((,c (:foreground ,comment))))
 
      ;; Hydra

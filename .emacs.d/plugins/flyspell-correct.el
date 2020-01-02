@@ -1,10 +1,11 @@
-;;; flyspell-correct.el --- Correcting words with flyspell via custom interface
+;;; flyspell-correct.el --- Correcting words with flyspell via custom interface  -*- lexical-binding: t; -*-
 ;;
-;; Copyright (c) 2016-2018 Boris Buliga
+;; Copyright (c) 2016-2019 Boris Buliga
 ;;
 ;; Author: Boris Buliga <boris@d12frosted.io>
 ;; URL: https://github.com/d12frosted/flyspell-correct
-;; Package-version: 0.5.0
+;; Version: 0.6.1
+;; Package-Requires: ((emacs "24"))
 ;;
 ;; This file is not part of GNU Emacs.
 ;;
@@ -80,8 +81,6 @@ of (command, word) to be used by `flyspell-do-correct'."
 ;;; On point word correction
 ;;
 
-(defalias 'flyspell-correct-word-generic 'flyspell-correct-at-point)
-
 ;;;###autoload
 (defun flyspell-correct-at-point ()
   "Correct word before point using `flyspell-correct-interface'.
@@ -138,8 +137,6 @@ Adapted from `flyspell-correct-word-before-point'."
 ;;; Previous word correction
 ;;
 
-(defalias 'flyspell-correct-previous-word-generic 'flyspell-correct-previous)
-
 ;;;###autoload
 (defun flyspell-correct-previous (position)
   "Correct the first misspelled word that occurs before POSITION.
@@ -153,8 +150,6 @@ With a prefix argument, automatically continues to all prior misspelled words in
 
 ;;; Next word correction
 ;;
-
-(defalias 'flyspell-correct-next-word-generic 'flyspell-correct-next)
 
 ;;;###autoload
 (defun flyspell-correct-next (position)
@@ -171,31 +166,31 @@ misspelled words in the buffer."
 ;;
 
 ;;;###autoload
-(defun flyspell-correct-wrapper (arg)
-  "Correct spelling error in a dwim fashion based on ARG.
+(defun flyspell-correct-wrapper ()
+  "Correct spelling error in a dwim fashion based on universal argument.
 
 - One \\[universal-argument] enables rapid mode.
 - Two \\[universal-argument]'s changes direction of spelling
   errors search.
 - Three \\[universal-argument]'s changes direction of spelling
   errors search and enables rapid mode."
-  (interactive "P")
+  (interactive)
   (when (or (not (mark t))
 	    (/= (mark t) (point)))
     (push-mark (point) t))
 
-  (let ((flyspell-forward-direction nil)
-		    (flyspell-rapid nil))
+  (let ((forward-direction nil)
+		    (rapid nil))
     (cond
      ((equal current-prefix-arg '(4))  ; C-u = rapid
-	    (setq flyspell-rapid t))
+	    (setq rapid t))
      ((equal current-prefix-arg '(16)) ; C-u C-u = change direction
-      (setq flyspell-forward-direction t))
+      (setq forward-direction t))
      ((equal current-prefix-arg '(64)) ; C-u C-u C-u = do both
-	    (setq flyspell-rapid t)
-	    (setq flyspell-forward-direction t)))
+	    (setq rapid t)
+	    (setq forward-direction t)))
 
-    (flyspell-correct-move (point) flyspell-forward-direction flyspell-rapid)))
+    (flyspell-correct-move (point) forward-direction rapid)))
 
 ;;;###autoload
 (defun flyspell-correct-move (position &optional forward rapid)
@@ -212,10 +207,7 @@ until all errors in buffer have been addressed."
   ;; `flyspell-correct-word-before-point'.
   (interactive "d")
   (save-excursion
-    (let ((top (window-start))
-          (bot (window-end))
-          (incorrect-word-pos)
-          (position-at-incorrect-word))
+    (let ((incorrect-word-pos))
 
       ;; narrow the region
       (overlay-recenter (point))
@@ -230,13 +222,10 @@ until all errors in buffer have been addressed."
           (setq overlay-list (cdr-safe overlay-list))
           (when (and overlay
                      (flyspell-overlay-p overlay))
-            (setq position-at-incorrect-word
-                  (and (<= (overlay-start overlay) position)
-                       (>= (overlay-end overlay) position)))
             (setq incorrect-word-pos (overlay-start overlay))
             (let ((scroll (> incorrect-word-pos (window-end))))
               (goto-char incorrect-word-pos)
-              (when scroll (recenter)))
+              (when scroll (ignore-errors (recenter))))
 
             ;; try to correct word `flyspell-correct-at-point' returns t when
             ;; there is nothing to correct. In such case we just skip current

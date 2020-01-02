@@ -54,11 +54,11 @@ determine the exact padding."
    (teal       '("#35a69c" "#33aa99" "brightgreen"  ))
    (yellow     '("#b58900" "#ECBE7B" "yellow"       ))
    (blue       '("#268bd2" "#51afef" "brightblue"   ))
-   (dark-blue  '("#E1E3E5" "#2257A0" "blue"         ))
+   (dark-blue  '("#3F88AD" "#2257A0" "blue"         ))
    (magenta    '("#d33682" "#c678dd" "magenta"      ))
    (violet     '("#6c71c4" "#a9a1e1" "brightmagenta"))
    (cyan       '("#2aa198" "#46D9FF" "brightcyan"   ))
-   (dark-cyan  '("#D7DDD7" "#5699AF" "cyan"         ))
+   (dark-cyan  '("#204052" "#5699AF" "cyan"         ))
 
    ;; face categories -- required for all themes
    (highlight      blue)
@@ -130,6 +130,14 @@ determine the exact padding."
    ((font-lock-type-face &override) :slant 'italic)
    ((font-lock-builtin-face &override) :slant 'italic)
    ((font-lock-function-name-face &override) :foreground type)
+
+   (font-lock-keyword-face
+    :weight 'bold
+    :foreground keywords)
+
+   (font-lock-constant-face
+    :weight 'bold
+    :foreground constants)
 
 
    (doom-modeline-bar :background (if -modeline-bright modeline-bg highlight))

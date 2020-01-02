@@ -12,7 +12,7 @@
 ;;
 ;; Keywords: faces
 ;; Homepage: https://github.com/thblt/eziam-theme-emacs
-;; Version: 1.1.1
+;; Version: 1.2
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -33,7 +33,6 @@
 ;; for Emacs.
 
 ;;; Code:
-
 
 ;;;; Variables
 
@@ -269,6 +268,8 @@ block using `eziam-with-color-variables'."
      `(ac-gtags-selection-face                          ((t (:background ,color-4 :foreground ,color-8))))
      `(ac-emmet-candidate-face                          ((t (:background ,color-5 :foreground ,color-1))))
      `(ac-emmet-selection-face                          ((t (:background ,color-4 :foreground ,color-8))))
+;;;;; auto-dim-other-buffers
+     `(auto-dim-other-buffers-face                      ((t (:background ,color-2))))
 ;;;;; popup
      `(popup-tip-face                                   ((t (:background ,color-8 :foreground ,color-1))))
      `(popup-scroll-bar-foreground-face                 ((t (:background ,color-3))))
@@ -722,7 +723,7 @@ block using `eziam-with-color-variables'."
      `(org-sexp-date                                    ((t (:foreground ,color-8 :underline t))))
      `(org-special-keyword                              ((t (:foreground ,color-5))))
      `(org-table                                        ((t (:foreground ,color-8))))
-     `(org-tag                                          ((t (:foreground ,color-4))))
+     `(org-tag                                          ((t (:foreground ,color-4 :distant-foreground ,color-0))))
      `(org-target                                       ((t (:foreground ,color-4))))
      `(org-time-grid                                    ((t (:foreground ,color-8))))
      `(org-done                                         ((t (:bold t :background ,color-4 :foreground ,color-8 :weight bold))))

@@ -1,12 +1,12 @@
-;;; flyspell-correct-avy-menu.el --- Correcting words with flyspell via avy-menu interface
+;;; flyspell-correct-avy-menu.el --- Correcting words with flyspell via avy-menu interface -*- lexical-binding: t; -*-
 ;;
-;; Copyright (c) 2016-2018 Boris Buliga;
+;; Copyright (c) 2016-2019 Boris Buliga;
 ;;
 ;; Author: Boris Buliga <boris@d12frosted.io>
 ;;         Clemens Radermacher <clemera@posteo.net>
 ;; URL: https://github.com/d12frosted/flyspell-correct
-;; Package-Version: 0.5.0
-;; Package-Requires: ((flyspell-correct "0.5.0") (avy-menu "0.1.1"))
+;; Version: 0.6.1
+;; Package-Requires: ((flyspell-correct "0.5.0") (avy-menu "0.1.1") (emacs "24"))
 ;;
 ;; This file is not part of GNU Emacs.
 ;;

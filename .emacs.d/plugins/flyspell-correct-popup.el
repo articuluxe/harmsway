@@ -1,11 +1,11 @@
-;;; flyspell-correct-popup.el --- Correcting words with flyspell via popup interface
+;;; flyspell-correct-popup.el --- Correcting words with flyspell via popup interface -*- lexical-binding: t; -*-
 ;;
-;; Copyright (c) 2016-2018 Boris Buliga
+;; Copyright (c) 2016-2019 Boris Buliga
 ;;
 ;; Author: Boris Buliga <boris@d12frosted.io>
 ;; URL: https://github.com/d12frosted/flyspell-correct
-;; Package-Version: 0.5.0
-;; Package-Requires: ((flyspell-correct "0.5.0") (popup "0.5.3"))
+;; Version: 0.6.1
+;; Package-Requires: ((flyspell-correct "0.5.0") (popup "0.5.3") (emacs "24"))
 ;;
 ;; This file is not part of GNU Emacs.
 ;;

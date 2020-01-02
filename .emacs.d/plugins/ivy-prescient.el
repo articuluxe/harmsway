@@ -6,7 +6,7 @@
 ;; Homepage: https://github.com/raxod502/prescient.el
 ;; Keywords: extensions
 ;; Created: 1 May 2018
-;; Package-Requires: ((emacs "25.1") (prescient "3.3") (ivy "0.11.0"))
+;; Package-Requires: ((emacs "25.1") (prescient "4.0") (ivy "0.11.0"))
 ;; Version: 3.3
 
 ;;; Commentary:
@@ -189,6 +189,8 @@ wasn't in the call to `ivy-read'."
   :group 'prescient
   (if ivy-prescient-mode
       (progn
+        (ivy-prescient-mode -1)
+        (setq ivy-prescient-mode t)
         (when ivy-prescient-enable-filtering
           (cl-shiftf ivy-prescient--old-re-builder
                      (alist-get t ivy-re-builders-alist)

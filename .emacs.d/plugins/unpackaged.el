@@ -626,6 +626,45 @@ A `font-lock-keywords' function that searches up to LIMIT."
              while applied
              finally return applied-p)))
 
+(defun unpackaged/org-outline-numbers (&optional remove-p)
+  "Add outline number overlays to the current buffer.
+When REMOVE-P is non-nil (interactively, with prefix), remove
+them.  Overlays are not automatically updated when the outline
+structure changes."
+  ;; NOTE: This does not necessarily play nicely with org-indent-mode
+  ;; or org-bullets, but it probably wouldn't be too hard to fix that.
+  (interactive (list current-prefix-arg))
+  (cl-labels ((heading-number ()
+               (or (when-let ((num (previous-sibling-number)))
+                     (1+ num))
+                   1))
+              (previous-sibling-number ()
+               (save-excursion
+                 (let ((pos (point)))
+                   (org-backward-heading-same-level 1)
+                   (when (/= pos (point))
+                     (heading-number)))))
+              (number-list ()
+               (let ((ancestor-numbers (save-excursion
+                                         (cl-loop while (org-up-heading-safe)
+                                                  collect (heading-number)))))
+                 (nreverse (cons (heading-number) ancestor-numbers))))
+              (add-overlay ()
+               (let* ((ov-length (org-current-level))
+                      (ov (make-overlay (point) (+ (point) ov-length)))
+                      (ov-string (concat (mapconcat #'number-to-string (number-list) ".")
+                                         ".")))
+                 (overlay-put ov 'org-outline-numbers t)
+                 (overlay-put ov 'display ov-string))))
+    (remove-overlays nil nil 'org-outline-numbers t)
+    (unless remove-p
+      (org-with-wide-buffer
+       (goto-char (point-min))
+       (when (org-before-first-heading-p)
+         (outline-next-heading))
+       (cl-loop do (add-overlay)
+                while (outline-next-heading))))))
+
 ;;;###autoload
 (defmacro unpackaged/def-org-maybe-surround (&rest keys)
   "Define and bind interactive commands for each of KEYS that surround the region or insert text.

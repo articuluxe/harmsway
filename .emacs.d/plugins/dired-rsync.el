@@ -1,6 +1,6 @@
 ;;; dired-rsync.el --- Allow rsync from dired buffers -*- lexical-binding: t -*-
 ;;
-;; Copyright (C) 2018 Alex Bennée
+;; Copyright (C) 2018, 2019, 2020 Alex Bennée
 ;;
 ;; Author: Alex Bennée <alex@bennee.com>
 ;; Maintainer: Alex Bennée <alex@bennee.com>
@@ -118,17 +118,20 @@ It is run in the context of the failed process buffer."
 
 It SPLIT-USER is set we remove the user@ part as well.  We assume
 hosts don't need quoting."
-  (let ((parts (s-split ":" file-or-path)))
-    (let ((host (nth 1 parts)))
-      (if (and split-user (s-contains? "@" host))
-          (nth 1 (s-split "@" host))
-        host))))
+  (with-parsed-tramp-file-name file-or-path tfop
+    (if (or split-user (not tfop-user))
+        tfop-host
+      (format "%s@%s" tfop-user tfop-host))))
 
-
+;; This is tricky for remote-to-remote because we may have an implied
+;; user from the local config which isn't available on the remote
+;; .ssh/config
 (defun dired-rsync--extract-user-from-tramp (file-or-path)
   "Extract the username part of a tramp FILE-OR-PATH."
-  (when (s-contains? "@" file-or-path)
-    (nth 1 (s-split ":" (nth 0 (s-split "@" file-or-path))))))
+  (with-parsed-tramp-file-name file-or-path tfop
+    (or tfop-user
+        ; somehow extract .ssh/config user for tfop-host
+        (getenv "USER"))))
 
 
 (defun dired-rsync--extract-paths-from-tramp (files)
@@ -231,6 +234,7 @@ dired-buffer modeline."
 
 (defun dired-rsync--do-run (command details)
   "Run rsync COMMAND in a unique buffer, passing DETAILS to sentinel."
+  (message "cmd:%s" command)
   (let* ((buf (format "*rsync @ %s" (current-time-string)))
          (proc (start-process-shell-command "*rsync*" buf command)))
     (set-process-sentinel
@@ -294,7 +298,7 @@ the copy is running.  It also handles both source and destinations on
 ssh/scp tramp connections."
   ;; Interactively grab dest if not called with
   (interactive
-   (list (read-file-name "rsync to:" (dired-dwim-target-directory)
+   (list (read-file-name "rsync to: " (dired-dwim-target-directory)
                          nil nil nil 'file-directory-p)))
 
   (setq dest (expand-file-name dest))

@@ -151,9 +151,6 @@
     map)
   "Keymap used for setting mouse events for down tab button.")
 
-
-
-
 (defvar centaur-tabs-default-map
   (let ((map (make-sparse-keymap)))
     (define-key map (vector 'header-line 'mouse-1) 'centaur-tabs-do-select)
@@ -261,6 +258,11 @@ There are two options:
 		 (const :tag "Put bar as an overline" over)))
 
 (defcustom centaur-tabs-set-close-button t
+  "When non nil, display a clickable x button for closing the tabs."
+  :group 'centaur-tabs
+  :type 'boolean)
+
+(defcustom centaur-tabs-set-left-close-button nil
   "When non nil, display a clickable x button for closing the tabs."
   :group 'centaur-tabs
   :type 'boolean)
@@ -792,6 +794,19 @@ Call `centaur-tabs-tab-label-function' to obtain a label for TAB."
      (centaur-tabs-separator-render centaur-tabs-style-left face)
      bar
 
+     ;; left close button
+     (if centaur-tabs-set-left-close-button
+	 (propertize
+	  centaur-tabs-close-button
+	  'face (if selected-p
+		    'centaur-tabs-close-selected
+		  'centaur-tabs-close-unselected)
+	  'pointer centaur-tabs-mouse-pointer
+	  'help-echo "Close buffer"
+	  'centaur-tabs-tab tab
+	  'mouse-face 'centaur-tabs-close-mouse-face
+	  'local-map centaur-tabs-close-map))
+
      ;; icon
      (if (= (length icon) 0) ""
        (concat
@@ -982,7 +997,7 @@ previous tab."
 	 (tab-pos (cl-position tab tabs)))
     (nth
      (if backward
-	(if (= tab-pos 0) tabs-len (1- tab-pos))
+	 (if (= tab-pos 0) tabs-len (1- tab-pos))
        (if (= tab-pos tabs-len) 0 (1+ tab-pos)))
      tabs)))
 
@@ -1153,7 +1168,7 @@ hidden, it is shown again.  Signal an error if Centaur-Tabs mode is off."
     ;;; Use right click to show the rest of groups
     (define-key km (kbd "<header-line> <mouse-3>") 'centaur-tabs--groups-menu )
 
-    
+
     km)
   "Keymap to use in  Centaur-Tabs mode.")
 
@@ -2181,8 +2196,8 @@ Should be buffer local and speed up calculation of buffer groups.")
 	  ((or (get-buffer-process (current-buffer)) (memq major-mode '(comint-mode compilation-mode))) '("Term"))
 	  ((string-equal "*" (substring (buffer-name) 0 1)) '("Misc"))
 	  ((condition-case _err
-		    (projectile-project-root)
-		  (error nil)) (list (projectile-project-name)))
+	       (projectile-project-root)
+	     (error nil)) (list (projectile-project-name)))
 	  ((memq major-mode '(emacs-lisp-mode python-mode emacs-lisp-mode c-mode
 					      c++-mode javascript-mode js-mode
 					      js2-mode makefile-mode

@@ -13,7 +13,7 @@
 ;; GNU General Public License for more details.
 
 ;; You should have received a copy of the GNU General Public License
-;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Commentary:
 ;;; Not autoloaded, but user-facing functions.
@@ -346,7 +346,7 @@ With a prefix ARG call `treemacs-kill-buffer' instead."
 (defun treemacs-kill-buffer ()
   "Kill the treemacs buffer."
   (interactive)
-  (when (eq 'treemacs-mode major-mode)
+  (when treemacs--in-this-buffer
     ;; teardown logic handled in kill hook
     (if (one-window-p)
         (kill-this-buffer)

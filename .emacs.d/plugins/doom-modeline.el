@@ -4,7 +4,7 @@
 
 ;; Author: Vincent Zhang <seagle0128@gmail.com>
 ;; Homepage: https://github.com/seagle0128/doom-modeline
-;; Version: 2.8.2
+;; Version: 2.8.3
 ;; Package-Requires: ((emacs "25.1") (all-the-icons "1.0.0") (shrink-path "0.2.0") (dash "2.11.0"))
 ;; Keywords: faces mode-line
 
@@ -54,6 +54,7 @@
 ;; - An indicator for LSP state with lsp-mode or eglot
 ;; - An indicator for github notifications
 ;; - An indicator for unread emails with mu4e-alert
+;; - An indicator for unread emails with gnus (basically builtin)
 ;; - An indicator for irc notifications with circe, rcirc or erc.
 ;; - An indicator for buffer position which is compatible with nyan-mode
 ;; - An indicator for party parrot
@@ -90,7 +91,7 @@
 
 (doom-modeline-def-modeline 'main
   '(bar workspace-name window-number modals matches buffer-info remote-host buffer-position word-count parrot selection-info)
-  '(objed-state misc-info persp-name battery grip irc mu4e github debug lsp minor-modes input-method indent-info buffer-encoding major-mode process vcs checker))
+  '(objed-state misc-info persp-name battery grip irc mu4e gnus github debug lsp minor-modes input-method indent-info buffer-encoding major-mode process vcs checker))
 
 (doom-modeline-def-modeline 'minimal
   '(bar matches buffer-info-simple)
@@ -102,11 +103,11 @@
 
 (doom-modeline-def-modeline 'project
   '(bar window-number buffer-default-directory)
-  '(misc-info battery irc mu4e github debug major-mode process))
+  '(misc-info battery irc mu4e gnus github debug major-mode process))
 
 (doom-modeline-def-modeline 'vcs
   '(bar window-number modals matches buffer-info buffer-position parrot selection-info)
-  '(misc-info battery irc mu4e github debug minor-modes buffer-encoding major-mode process))
+  '(misc-info battery irc mu4e gnus github debug minor-modes buffer-encoding major-mode process))
 
 (doom-modeline-def-modeline 'package
   '(bar window-number package)
@@ -119,6 +120,10 @@
 (doom-modeline-def-modeline 'media
   '(bar window-number buffer-size buffer-info)
   '(misc-info media-info major-mode process vcs))
+
+(doom-modeline-def-modeline 'message
+  '(bar window-number modals matches buffer-info-simple buffer-position word-count parrot selection-info)
+  '(objed-state misc-info battery debug minor-modes input-method indent-info buffer-encoding major-mode))
 
 (doom-modeline-def-modeline 'pdf
   '(bar window-number buffer-size buffer-info pdf-pages)
@@ -184,6 +189,11 @@ If DEFAULT is non-nil, set the default mode-line for all buffers."
   (doom-modeline-set-modeline 'media))
 
 ;;;###autoload
+(defun doom-modeline-set-message-modeline ()
+  "Set message mode-line."
+  (doom-modeline-set-modeline 'message))
+
+;;;###autoload
 (defun doom-modeline-set-pdf-modeline ()
   "Set pdf mode-line."
   (doom-modeline-set-modeline 'pdf))
@@ -225,7 +235,7 @@ If DEFAULT is non-nil, set the default mode-line for all buffers."
         (doom-modeline-set-main-modeline t) ; Set default mode-line
         ;; These buffers are already created and don't get modelines
         (dolist (bname '("*scratch*" "*Messages*"))
-          (if (buffer-live-p bname)
+          (if (buffer-live-p (get-buffer bname))
               (with-current-buffer bname
                 (doom-modeline-set-main-modeline))))
         ;; Add hooks
@@ -233,6 +243,8 @@ If DEFAULT is non-nil, set the default mode-line for all buffers."
         (add-hook 'dired-mode-hook #'doom-modeline-set-project-modeline)
         (add-hook 'dashboard-mode-hook #'doom-modeline-set-project-modeline)
         (add-hook 'image-mode-hook #'doom-modeline-set-media-modeline)
+        (add-hook 'message-mode-hook #'doom-modeline-set-message-modeline)
+        (add-hook 'git-commit-mode-hook #'doom-modeline-set-message-modeline)
         (add-hook 'magit-mode-hook #'doom-modeline-set-vcs-modeline)
         (add-hook 'circe-mode-hook #'doom-modeline-set-special-modeline)
         (add-hook 'erc-mode-hook #'doom-modeline-set-special-modeline)
@@ -246,7 +258,7 @@ If DEFAULT is non-nil, set the default mode-line for all buffers."
       ;; Restore mode-line
       (setq-default mode-line-format doom-modeline--old-format)
       (dolist (bname '("*scratch*" "*Messages*"))
-        (if (buffer-live-p bname)
+        (if (buffer-live-p (get-buffer bname))
             (with-current-buffer bname
               (setq mode-line-format doom-modeline--old-format))))
       ;; Remove hooks
@@ -254,6 +266,8 @@ If DEFAULT is non-nil, set the default mode-line for all buffers."
       (remove-hook 'dired-mode-hook #'doom-modeline-set-project-modeline)
       (remove-hook 'dashboard-mode-hook #'doom-modeline-set-project-modeline)
       (remove-hook 'image-mode-hook #'doom-modeline-set-media-modeline)
+      (remove-hook 'message-mode-hook #'doom-modeline-set-message-modeline)
+      (remove-hook 'git-commit-mode-hook #'doom-modeline-set-message-modeline)
       (remove-hook 'magit-mode-hook #'doom-modeline-set-vcs-modeline)
       (remove-hook 'circe-mode-hook #'doom-modeline-set-special-modeline)
       (remove-hook 'erc-mode-hook #'doom-modeline-set-special-modeline)
