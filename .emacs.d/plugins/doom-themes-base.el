@@ -6,6 +6,7 @@
      :background (doom-darken red 0.25)
      :foreground base0
      :distant-foreground base0)
+    (doom-visual-bell :background error)
 
     ;; --- base faces -------------------------
     (bold        :weight 'bold :foreground (unless bold base8))
@@ -130,7 +131,7 @@
     (dired-flagged    :foreground red)
     (dired-header     :foreground blue :weight 'bold)
     (dired-mark       :foreground orange :weight 'bold)
-    (dired-marked     :foreground magenta :weight 'bold)
+    (dired-marked     :foreground magenta :weight 'bold :inverse-video t)
     (dired-perm-write :foreground fg :underline t)
     (dired-symlink    :foreground cyan :weight 'bold)
     (dired-warning    :foreground warning)
@@ -1252,7 +1253,7 @@
     (org-table           :foreground violet)
     (org-tag             :foreground doc-comments :weight 'normal)
     (org-ref-cite-face   :foreground yellow :weight 'light :underline t)
-    (org-latex-and-related :foreground magenta)
+    (org-latex-and-related :foreground base8 :weight 'bold)
     (org-todo            :foreground green :bold 'inherit)
     (org-verbatim        :foreground green)
     (org-warning         :foreground warning)
@@ -1282,6 +1283,10 @@
     (org-habit-alert-future-face   :weight 'bold :background (doom-blend yellow bg-alt 0.3))
     (org-habit-overdue-face        :weight 'bold :background (doom-blend red bg-alt 0.5))
     (org-habit-overdue-future-face :weight 'bold :background (doom-blend red bg-alt 0.3))
+
+    ;; org-pomodoro
+    (org-pomodoro-mode-line :foreground red)
+    (org-pomodoro-mode-line-overtime :foreground warning :weight 'bold)
 
     ;; pkgbuild-mode
     (pkgbuild-error-face :underline `(:style wave :color ,red))

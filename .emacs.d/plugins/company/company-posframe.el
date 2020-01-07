@@ -132,7 +132,7 @@ be triggered manually using `company-posframe-quickhelp-show'."
   "Face for company-posframe-quickhelp doc.")
 
 (defface company-posframe-quickhelp-header
-  '((t :inherit header-line))
+  '((t :inherit header-line :box nil :extend t))
   "Face for company-posframe-quickhelp header.")
 
 (defvar company-posframe-buffer " *company-posframe-buffer*"
@@ -143,6 +143,10 @@ be triggered manually using `company-posframe-quickhelp-show'."
 
 (defvar-local company-posframe-quickhelp-timer nil
   "Quickhelp idle timer.")
+
+(defvar company-posframe-show-params nil
+  "List of extra parameters passed to `posframe-show' in
+  `company-posframe-show'.")
 
 (defvar company-posframe-quickhelp-show-params
   (list :poshandler #'company-posframe-quickhelp-right-poshandler
@@ -176,6 +180,13 @@ be triggered manually using `company-posframe-quickhelp-show'."
 
     keymap)
   "Keymap that is enabled during an active completion in posframe.")
+
+(defun company-posframe-enable-overriding-keymap (keymap)
+  "Advice function of `company-enable-overriding-keymap'."
+  (company-uninstall-map)
+  (if (eq keymap company-active-map)
+      (setq company-my-keymap company-posframe-active-map)
+    (setq company-my-keymap keymap)))
 
 (defun company-posframe-format-backend-name (backend)
   "Format BACKEND for displaying in the modeline."
@@ -213,17 +224,18 @@ be triggered manually using `company-posframe-quickhelp-show'."
       (when company-posframe-show-indicator
         (setq-local mode-line-format `(,(substring backend-names 0
                                                    (min width (length backend-names)))))))
-    (posframe-show buffer
-                   :string contents
-                   :position (- (point) (length company-prefix))
-                   :min-height (+ height
-                                  (if company-posframe-show-indicator 1 0))
-                   :min-width width
-                   :x-pixel-offset (* -1 company-tooltip-margin (default-font-width))
-                   :respect-mode-line company-posframe-show-indicator
-                   :font company-posframe-font
-                   :min-width company-tooltip-minimum-width
-                   :background-color (face-attribute 'company-tooltip :background))))
+    (apply #'posframe-show buffer
+           :string contents
+           :position (- (point) (length company-prefix))
+           :min-height (+ height
+                          (if company-posframe-show-indicator 1 0))
+           :min-width width
+           :x-pixel-offset (* -1 company-tooltip-margin (default-font-width))
+           :respect-mode-line company-posframe-show-indicator
+           :font company-posframe-font
+           :min-width company-tooltip-minimum-width
+           :background-color (face-attribute 'company-tooltip :background)
+           company-posframe-show-params)))
 
 (defun company-posframe-hide ()
   "Hide company-posframe candidate menu."
@@ -249,12 +261,7 @@ COMMAND: See `company-frontends'."
          (company-posframe-quickhelp-cancel-timer))
        (company-posframe-quickhelp-hide)
        (company-posframe-hide))
-      (update
-       ;; Important: This line is very important, we need to override
-       ;; company-active-map again, this is do the job of
-       ;; `company--perform'.
-       (company-enable-overriding-keymap company-posframe-active-map)
-       (company-posframe-show))
+      (update (company-posframe-show))
       (post-command
        (when (not run-quickhelp-command-p)
          (company-posframe-show))))))
@@ -407,6 +414,8 @@ just grab the first candidate and press forward."
       (message "company-posframe can not work in current emacs environment.")
     (if company-posframe-mode
         (progn
+          (advice-add #'company-enable-overriding-keymap
+                      :override #'company-posframe-enable-overriding-keymap)
           (advice-add #'company-pseudo-tooltip-frontend
                       :override #'company-posframe-frontend)
           (advice-add #'company-pseudo-tooltip-unless-just-one-frontend
@@ -416,6 +425,8 @@ just grab the first candidate and press forward."
           (message company-posframe-notification))
       (posframe-delete company-posframe-buffer)
       (posframe-delete company-posframe-quickhelp-buffer)
+      (advice-remove #'company-enable-overriding-keymap
+                     #'company-posframe-enable-overriding-keymap)
       (advice-remove #'company-pseudo-tooltip-frontend
                      #'company-posframe-frontend)
       (advice-remove #'company-pseudo-tooltip-unless-just-one-frontend

@@ -43,7 +43,6 @@
       (green-3        "#86B20E")
       (dark-cyan      "#8FA1B3")
 
-
       ;; danneskjold-colors
       (frost        "#D0E1F9")
       (invisible    "#2b4b6e")
@@ -222,13 +221,13 @@
      `(org-priority                 ((,c (:foreground ,red))))
      `(org-drawer                 ((,c (:foreground ,orange))))
 
-     `(org-date                     ((,c (:foreground "NavajoWhite1" :underline "NavajoWhite4"))))
+     `(org-date                     ((,c (:foreground "DarkSlateGray1" :underline "DarkSlateGray4"))))
      `(org-todo                     ((,c (:foreground ,yellow))))
      `(org-done                     ((,c (:foreground ,green))))
      `(org-headline-done            ((,c (:foreground ,grey-.5 :strike-through t :bold nil))))
      `(org-special-keyword          ((,c (:foreground "#ffcc00"))))
      `(org-property-value          ((,c (:foreground ,white))))
-     `(org-checkbox-statistics-todo ((,c (:foreground ,comment))))
+     `(org-checkbox-statistics-todo ((,c (:inherit org-todo))))
      `(org-checkbox-statistics-done ((,c (:inherit org-done))))
 
      ;; cider
@@ -237,11 +236,6 @@
 
      ;; minimap
      `(minimap-active-region-background ((,c (:background ,sbt-midnight))))
-
-     ;; lsp
-     ;; lsp-face-highlight-textual
-     ;; lsp-face-highlight-read
-     ;; lsp-face-highlight-write
 
      ;; vc
      `(vc-annotate-face-3F3FFF ((,c (:foreground ,blue))))

@@ -4432,12 +4432,20 @@ An extra action allows to switch to the process buffer."
 ;;** `counsel-esh-history'
 (defun counsel--browse-history (ring)
   "Use Ivy to navigate through RING."
-  (setq ivy-completion-beg (point))
-  (setq ivy-completion-end (point))
-  (ivy-read "History: " (ivy-history-contents ring)
-            :keymap ivy-reverse-i-search-map
-            :action #'ivy-completion-in-region-action
-            :caller 'counsel-shell-history))
+  (let* ((proc (get-buffer-process (current-buffer)))
+         (end (point))
+         (beg (if proc
+                  (min (process-mark proc) end)
+                end))
+         (input (when (< beg end)
+                  (concat "^" (buffer-substring beg end)))))
+    (setq ivy-completion-beg beg)
+    (setq ivy-completion-end end)
+    (ivy-read "History: " (ivy-history-contents ring)
+              :keymap ivy-reverse-i-search-map
+              :initial-input input
+              :action #'ivy-completion-in-region-action
+              :caller 'counsel-shell-history)))
 
 (defvar eshell-history-ring)
 
@@ -5693,11 +5701,14 @@ The buffers are those opened during a session of `counsel-switch-buffer'."
 (defun counsel--switch-buffer-update-fn ()
   (unless counsel--switch-buffer-previous-buffers
     (setq counsel--switch-buffer-previous-buffers (buffer-list)))
-  (let* ((current (ivy-state-current ivy-last))
-         (virtual (assoc current ivy--virtual-buffers)))
+  (let* ((virtual (assoc (ivy-state-current ivy-last) ivy--virtual-buffers)))
+    (when (member (ivy-state-current ivy-last) ivy-marked-candidates)
+      (setf (ivy-state-current ivy-last)
+            (substring (ivy-state-current ivy-last) (length ivy-mark-prefix))))
     (cond
-      ((get-buffer current)
-       (ivy-call))
+      ((get-buffer (ivy-state-current ivy-last))
+       (let ((ivy-marked-candidates nil))
+         (ivy-call)))
       ((and counsel-switch-buffer-preview-virtual-buffers virtual (file-exists-p (cdr virtual)))
        (let ((buf (ignore-errors
                     ;; may not open due to `large-file-warning-threshold' etc.

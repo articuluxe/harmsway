@@ -72,11 +72,11 @@
 (defvar flymake--mode-line-format)
 (defvar flymake-menu)
 (defvar gnus-newsrc-alist)
+(defvar gnus-newsrc-hashtb)
 (defvar grip-port)
 (defvar grip-process)
 (defvar helm--mode-line-display-prefarg)
 (defvar iedit-occurrences-overlays)
-(defvar mc/mode-line)
 (defvar minions-direct)
 (defvar minions-mode-line-minor-modes-map)
 (defvar mu4e-alert-mode-line)
@@ -138,8 +138,6 @@
 (declare-function evil-visual-state-p 'evil-states)
 (declare-function eyebrowse--get 'eyebrowse)
 (declare-function fancy-narrow-active-p 'fancy-narrow)
-(declare-function fancy-narrow-to-region 'fancy-narrow)
-(declare-function fancy-widen 'fancy-narrow)
 (declare-function flycheck-buffer 'flycheck)
 (declare-function flycheck-count-errors 'flycheck)
 (declare-function flycheck-list-errors 'flycheck)
@@ -157,7 +155,6 @@
 (declare-function flymake-show-diagnostics-buffer 'flymake)
 (declare-function flymake-start 'flymake)
 (declare-function gnus-demon-add-handler 'gnus-demon)
-(declare-function gnus-group-unread 'gnus)
 (declare-function grip-browse-preview 'grip-mode)
 (declare-function grip-mode 'grip-mode)
 (declare-function helm-candidate-number-at-point 'helm)
@@ -173,21 +170,15 @@
 (declare-function lsp-workspace-restart 'lsp-mode)
 (declare-function lsp-workspace-shutdown 'lsp-mode)
 (declare-function lsp-workspaces 'lsp-mode)
-(declare-function magit-toplevel 'magit-git)
 (declare-function mc/num-cursors 'multiple-cursors-core)
 (declare-function mu4e-alert-default-mode-line-formatter 'mu4e-alert)
 (declare-function mu4e-alert-enable-mode-line-display 'mu4e-alert)
 (declare-function nyan-create 'nyan-mode)
 (declare-function org-edit-src-save 'org-src)
-(declare-function org-narrow-to-block 'org)
-(declare-function org-narrow-to-element 'org)
-(declare-function org-narrow-to-subtree 'org)
-(declare-function org-toggle-narrow-to-subtree 'org)
 (declare-function parrot-create 'parrot)
 (declare-function pdf-cache-number-of-pages 'pdf-cache)
 (declare-function persp-add-buffer 'persp-mode)
 (declare-function persp-contain-buffer-p 'persp-mode)
-(declare-function persp-remove-buffer 'persp-mode)
 (declare-function persp-switch 'persp-mode)
 (declare-function popup-create 'popup)
 (declare-function popup-delete 'popup)
@@ -1022,10 +1013,10 @@ Displayed when in a major mode in `doom-modeline-continuous-word-count-modes'.
 Respects `doom-modeline-enable-word-count'."
   (when (and doom-modeline-enable-word-count
              (member major-mode doom-modeline-continuous-word-count-modes))
-    (let ((word-count (format " %dW" (count-words (point-min) (point-max)))))
-      (if (doom-modeline--active)
-          word-count
-        (propertize word-count 'face 'mode-line-inactive)))))
+    (propertize (format " %dW" (count-words (point-min) (point-max)))
+                'face (if (doom-modeline--active)
+                          'mode-line
+                        'mode-line-inactive))))
 
 ;;
 ;; Selection
@@ -1576,14 +1567,13 @@ mouse-1: Display Line and Column Mode Menu"
 (defsubst doom-modeline--xah-fly-keys ()
   "The current `xah-fly-keys' state."
   (when (bound-and-true-p xah-fly-keys)
-    (doom-modeline--modal-icon (if xah-fly-insert-state-q "<I>" "<C>")
-                               (if xah-fly-insert-state-q
+    (if xah-fly-insert-state-q
+        (doom-modeline--modal-icon "<I>"
                                    'doom-modeline-evil-insert-state
-                                 'doom-modeline-evil-normal-state)
-                               (format "Xah-fly %s mode"
-                                       (if xah-fly-insert-state-q
-                                           "insert"
-                                         "command")))))
+                                   (format "Xah-fly insert mode"))
+      (doom-modeline--modal-icon "<C>"
+                                 'doom-modeline-evil-normal-state
+                                 (format "Xah-fly command mode")))))
 
 (doom-modeline-def-segment modals
   "Displays modal editing states, including `evil', `overwrite', `god', `ryo'
@@ -1737,7 +1727,7 @@ mouse-1: Reload to start server")
                                    map)))))
 (add-hook 'lsp-before-initialize-hook #'doom-modeline-update-lsp)
 (add-hook 'lsp-after-initialize-hook #'doom-modeline-update-lsp)
-(add-hook 'lsp-after-uninitialized-hook #'doom-modeline-update-lsp)
+(add-hook 'lsp-after-uninitialized-functions #'doom-modeline-update-lsp)
 (add-hook 'lsp-before-open-hook #'doom-modeline-update-lsp)
 (add-hook 'lsp-after-open-hook #'doom-modeline-update-lsp)
 
@@ -1820,20 +1810,8 @@ mouse-1: Start server"))
             (delq (assq 'eglot--managed-mode mode-line-misc-info) mode-line-misc-info))
     (add-to-list 'mode-line-misc-info
                  `(eglot--managed-mode (" [" eglot--mode-line-format "] ")))))
-(with-eval-after-load 'eglot
-  (doom-modeline-override-eglot-modeline))
+(add-hook 'eglot--managed-mode-hook #'doom-modeline-override-eglot-modeline)
 (add-hook 'doom-modeline-mode-hook #'doom-modeline-override-eglot-modeline)
-
-(defun doom-modeline-override-lsp-modeline ()
-  "Override `lsp-mode' mode-line."
-  (if (bound-and-true-p doom-modeline-mode)
-      (setq global-mode-string
-            (delete '(t (:eval (-keep #'lsp--workspace-status-string (lsp-workspaces)))) global-mode-string))
-    (add-to-list 'global-mode-string
-                 '(t (:eval (-keep #'lsp--workspace-status-string (lsp-workspaces)))))))
-(with-eval-after-load 'lsp-mode
-  (doom-modeline-override-lsp-modeline))
-(add-hook 'doom-modeline-mode-hook #'doom-modeline-override-lsp-modeline)
 
 
 ;;
@@ -2046,7 +2024,7 @@ mouse-1: Toggle Debug on Quit"
      (propertize
       (concat
        (doom-modeline-icon 'material "email" "📧" "#" 'doom-modeline-warning
-                           :height 1.1 :v-adjust -0.225)
+                           :height 1.1 :v-adjust -0.2)
        (doom-modeline-vspc)
        (propertize
         (if (> mu4e-alert-mode-line doom-modeline-number-limit)
@@ -2075,6 +2053,7 @@ mouse-1: Toggle Debug on Quit"
             :after #'doom-modeline-override-mu4e-alert-modeline)
 (add-hook 'doom-modeline-mode-hook #'doom-modeline-override-mu4e-alert-modeline)
 
+
 ;;
 ;; `gnus' notifications
 ;;
@@ -2090,26 +2069,49 @@ mouse-1: Toggle Debug on Quit"
           (let ((total-unread-news-number 0))
             (mapc (lambda (g)
                     (let* ((group (car g))
-                           (unread (gnus-group-unread group)))
+                           ;; `gnus-group-unread' is a macro
+                           (unread (car (gethash group gnus-newsrc-hashtb))))
                       (when (and (numberp unread)
                                  (> unread 0))
                         (setq total-unread-news-number (+ total-unread-news-number unread)))))
                   gnus-newsrc-alist)
             total-unread-news-number))))
 
+;; Update the modeline after changes have been made
+(add-hook 'gnus-group-update-hook #'doom-modeline-update-gnus-status)
+(add-hook 'gnus-summary-update-hook #'doom-modeline-update-gnus-status)
+(add-hook 'gnus-group-update-group-hook #'doom-modeline-update-gnus-status)
+(add-hook 'gnus-after-getting-new-news-hook #'doom-modeline-update-gnus-status)
+
+;; Only start to listen to gnus when gnus is actually running
+(defun doom-modeline-start-gnus-listener ()
+  (when (and doom-modeline-gnus
+             (not doom-modeline--gnus-started))
+    (setq doom-modeline--gnus-started t)
+    ;; Scan gnus in the background if the timer is higher than 0
+    (doom-modeline-update-gnus-status)
+    (if (> doom-modeline-gnus-timer 0)
+        (gnus-demon-add-handler 'gnus-demon-scan-news doom-modeline-gnus-timer nil))))
+(add-hook 'gnus-started-hook #'doom-modeline-start-gnus-listener)
+
+;; Stop the listener if gnus isn't running
+(defun doom-modeline-stop-gnus-listener ()
+  (setq doom-modeline--gnus-started nil))
+(add-hook 'gnus-exit-gnus-hook #'doom-modeline-stop-gnus-listener)
+
 (doom-modeline-def-segment gnus
   "Show notifications of any unread emails in `gnus'."
   (when (and (doom-modeline--active)
              doom-modeline-gnus
              doom-modeline--gnus-started
-             ;; don't display if the unread mails count is zero
+             ;; Don't display if the unread mails count is zero
              (> doom-modeline--gnus-unread-mail 0))
     (concat
      (doom-modeline-spc)
      (propertize
       (concat
        (doom-modeline-icon 'material "email" "📧" "#" 'doom-modeline-warning
-                           :height 1.1 :v-adjust -0.225)
+                           :height 1.1 :v-adjust -0.2)
        (doom-modeline-vspc)
        (propertize
         (if (> doom-modeline--gnus-unread-mail doom-modeline-number-limit)
@@ -2121,28 +2123,6 @@ mouse-1: Toggle Debug on Quit"
                      "You have an unread email"
                    (format "You have %s unread emails" doom-modeline--gnus-unread-mail)))
      (doom-modeline-spc))))
-
-;; Only start to listen to gnus when gnus is actually running
-(defun doom-modeline-start-gnus-listener ()
-  (when (and doom-modeline-gnus
-             (not doom-modeline--gnus-started))
-    (setq doom-modeline--gnus-started t)
-    ;; scan gnus in the background if the timer is higher than 0
-    (doom-modeline-update-gnus-status)
-    (if (> doom-modeline-gnus-timer 0)
-        (gnus-demon-add-handler 'gnus-demon-scan-news doom-modeline-gnus-timer nil))))
-(add-hook 'gnus-started-hook #'doom-modeline-start-gnus-listener)
-
-;; Stop the listener if gnus isn't running
-(defun doom-modeline-stop-gnus-listener ()
-  (setq doom-modeline--gnus-started nil))
-(add-hook 'gnus-exit-gnus-hook #'doom-modeline-stop-gnus-listener)
-
-;; Update the modeline after changes have been made
-(add-hook 'gnus-group-update-hook #'doom-modeline-update-gnus-status)
-(add-hook 'gnus-summary-update-hook #'doom-modeline-update-gnus-status)
-(add-hook 'gnus-group-update-group-hook #'doom-modeline-update-gnus-status)
-(add-hook 'gnus-after-getting-new-news-hook #'doom-modeline-update-gnus-status)
 
 
 ;;
@@ -2285,11 +2265,8 @@ mouse-3: Switch to next unread buffer")))
 (defun doom-modeline-override-rcirc-modeline ()
   "Override default `rcirc' mode-line."
   (if (bound-and-true-p doom-modeline-mode)
-      (progn
-        (setq global-mode-string
-		      (delq 'rcirc-activity-string global-mode-string))
-        (remove-hook 'window-configuration-change-hook
-		             #'rcirc-window-configuration-change))
+      (setq global-mode-string
+		    (delq 'rcirc-activity-string global-mode-string))
     (when (and rcirc-track-minor-mode
                (not (memq 'rcirc-activity-string global-mode-string)))
 	  (setq global-mode-string

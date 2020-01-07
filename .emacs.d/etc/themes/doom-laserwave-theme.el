@@ -1,4 +1,4 @@
-;;; doom-laserwave-theme.el --- inspired by VS Code laserwave
+;;; doom-laserwave-theme.el --- inspired by VS Code laserwave -*- no-byte-compile: t; -*-
 (require 'doom-themes)
 
 ;;
@@ -157,6 +157,10 @@ determine the exact padding."
    ((org-block-begin-line &override) :background base2)
    (org-hide :foreground hidden)
    (solaire-org-hide-face :foreground hidden)
+
+   ;; org-pomodoro
+   (org-pomodoro-mode-line) ; unreadable otherwise
+   (org-pomodoro-mode-line-overtime :inherit 'org-pomodoro-mode-line :weight 'bold)
 
    ;; --- extra variables ---------------------
    (paren-face-match  :foreground yellow   :background (doom-darken bg 0.2) :weight 'ultra-bold)

@@ -612,7 +612,7 @@
 
     (menu        (:background bg2 :foreground fg2))
     ;; TODO: default bg
-    (header-line (:background nil :foreground var))
+    (header-line (:background nil :foreground num))
     (tool-bar    (:inherit 'header-line))
 
     (tooltip      (:background tooltip-bg :foreground tooltip-fg))
@@ -726,6 +726,24 @@
     (diredfl-tagged-autofile-name   (:foreground num :underline underline))
     (diredfl-write-priv             (:foreground diff-mod))
 
+    ;; Jabber
+    (jabber-activity-face          (:foreground todo   :weight 'bold))
+    (jabber-activity-personal-face (:foreground str  :weight 'bold))
+    (jabber-chat-error             (:foreground err   :weight 'bold))
+    (jabber-chat-prompt-foreign    (:foreground const   :weight 'bold))
+    (jabber-chat-prompt-local      (:foreground builtin  :weight 'bold))
+    (jabber-chat-prompt-system     (:foreground str-alt :weight 'bold))
+    (jabber-chat-text-foreign      (:foreground fg1))
+    (jabber-chat-text-local        (:foreground fg1))
+    (jabber-rare-time-face         (:foreground str-alt))
+    (jabber-roster-user-away       (:foreground warning))
+    (jabber-roster-user-chatty     (:foreground done :weight 'bold))
+    (jabber-roster-user-dnd        (:foreground err))
+    (jabber-roster-user-error      (:foreground err))
+    (jabber-roster-user-offline    (:foreground comment))
+    (jabber-roster-user-online     (:foreground done :weight 'bold))
+    (jabber-roster-user-xa         (:foreground num))
+        
     ;; Highlighting
     (highlight                (:background hl-bg :foreground fg1))
     (lazy-highlight           (:background bg4 :foreground hl))
@@ -1537,6 +1555,11 @@
     (avy-lead-face-0     (:background red2 :foreground adaptive-fg :weight 'bold))
     (avy-lead-face-1     (:background magenta2 :foreground adaptive-fg :weight 'bold))
     (avy-lead-face-2     (:background capri2 :foreground adaptive-fg :weight 'bold))
+
+    ;; Ace-window
+    (aw-leading-char-face (:background nil :foreground hl :bold bold :height 1.4))
+    (aw-background-face   (:foreground comment :bold bold))
+    (aw-key-face          (:foreground keysym :bold bold))
 
     ;; Ivy
     (ivy-confirm-face            (:inherit 'success))
