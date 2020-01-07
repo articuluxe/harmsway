@@ -1,8 +1,8 @@
 ;;; custom-themes.el --- customize themes
-;; Copyright (C) 2016-2019  Dan Harms (dan.harms)
+;; Copyright (C) 2016-2020  Dan Harms (dan.harms)
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Wednesday, December 21, 2016
-;; Modified Time-stamp: <2019-11-25 12:13:13 dharms>
+;; Modified Time-stamp: <2020-01-07 13:40:54 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: themes colors
 
@@ -27,15 +27,6 @@
 
 (setq custom-safe-themes t)
 ;; (set-face-attribute 'default nil :slant 'italic)
-;; solarized
-(setq solarized-use-more-italic t)
-(setq solarized-distinct-fringe-background t)
-(setq solarized-use-variable-pitch nil)
-(setq solarized-height-minus-1 1)
-(setq solarized-height-plus-1 1)
-(setq solarized-height-plus-2 1)
-(setq solarized-height-plus-3 1)
-(setq solarized-height-plus-4 1)
 ;; kaolin customization
 (setq kaolin-italic-comments t)
 
