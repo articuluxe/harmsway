@@ -1,329 +1,322 @@
-;;; twilight-theme.el --- Twilight Color Theme for Emacs.
+;;; twilight-theme.el --- A port of the classic old-school theme
 
-;; Copyright (C) 2008 Marcus Crafter <crafterm@redartisan.com>
-;; Copyright (C) 2015-2017 Jason Blevins <jrblevin@sdf.org>
+;; Copyright (C) 2019 , Ian Y.E. Pan
 
-;; Author: Marcus Crafter
-;;	Jason Blevins
-;; Adapted-By: Yesudeep Mangalapilly
-;; Keywords: textmate twilight color theme
-;; URL: https://github.com/jrblevin/twilight-emacs
-;; Version: 1.1
+;; Author: Ian Y.E. Pan
 
-;; This file is NOT a part of GNU Emacs.
+;; This program is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
 
-;;; License:
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+;; GNU General Public License for more details.
 
-;; MIT License
-;; -----------
-;; Permission is hereby granted, free of charge, to any person
-;; obtaining a copy of this software and associated documentation
-;; files (the "Software"), to deal in the Software without
-;; restriction, including without limitation the rights to use,
-;; copy, modify, merge, publish, distribute, sublicense, and/or
-;; sell copies of the Software, and to permit persons to whom the
-;; Software is furnished to do so, subject to the following
-;; conditions:
-;;
-;; The above copyright notice and this permission notice shall
-;; be included in all copies or substantial portions of the
-;; Software.
-;;
-;; THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
-;; EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
-;; OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
-;; NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
-;; HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
-;; WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-;; FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
-;; OTHER DEALINGS IN THE SOFTWARE.
+;; You should have received a copy of the GNU General Public License
+;; along with this program. If not, see <http://www.gnu.org/licenses/>.
 
-;;; Usage:
-;;
-;; Defines a colour scheme resembling that of the original TextMate
-;; Twilight colour theme.  To use add the file to your
-;; `custom-theme-directory' and run `M-x customize-themes'.
-;; Alternatively, you may add the following to your init file:
-;;
-;;     (load-theme 'twilight t)
-;;
-;; Credits due to the excellent TextMate Twilight theme.
-;;
-;; Thanks to Travis Jeffery for ido-mode and fixes to the
-;; minibuffer-prompt to fit in with the rest of the theme.
+;; This file is not part of Emacs.
+
+;;; Commentary:
 
 ;;; Code:
 
-(deftheme twilight
-  "TextMate Twilight theme for GNU Emacs.")
-
-(let ((tw-bg-2        "#000000")
-      (tw-bg-1        "#111111")
-      (tw-bg          "#141414")
-      (tw-bg+2        "#212121")
-      (tw-bg+3        "#313131")
-      (tw-bg+4        "#4b474c")
-      (tw-bg+5        "#5f5a60")
-      (tw-bg+8        "#8f8a80")
-      (tw-fg-d        "#d4d0c8")
-      (tw-fg-c        "#cacaca")
-      (tw-fg          "#d8d8d8")
-      (tw-fg+1        "#e8e8e8")
-      (tw-fg+2        "#f8f8f8")
-      (tw-wt          "#ffffff")
-      (tw-rd-1        "#a3472c")
-      (tw-rd          "#cf6a4c")
-      (tw-mg-1        "#ef2929")
-      (tw-mg          "#ee799f")
-      (tw-dark-org    "#9b703f")
-      (tw-med-org     "#efa510")
-      (tw-light-org   "#f2b73f")
-      (tw-pale-org    "#cda869")
-      (tw-dark-grn-2  "#4b5335")
-      (tw-dark-grn-1  "#5a6340")
-      (tw-dark-grn    "#646d4a")
-      (tw-med-grn     "#8f9d6a")
-      (tw-blu-1       "#5d6c84")
-      (tw-blu         "#7587A6")
-      (tw-cy-1        "#41595c")
-      (tw-cy          "#5d8084")
-      (tw-pale-pur    "#89788a")
-      (tw-med-pur     "#9b859d"))
-
-  (custom-theme-set-variables
-   'twilight
-   '(frame-brackground-mode (quote dark)))
-
+(deftheme twilight)
+(let ((class '((class color) (min-colors 89)))
+      (fg0     "#cacaca")
+      (fg1     "#d8d8d8")
+      (fg2     "#e8e8e8")
+      (fg3     "#f4f4f4")
+      (fg4     "#fafafa")
+      (bg00    "#000000")
+      (bg0     "#0a0a0a")
+      (bg1     "#141414")
+      (bg2     "#252525")
+      (bg3     "#313131")
+      (bg4     "#4b474c")
+      (tw-r    "#d05e5f")
+      (tw-g    "#bce580")
+      (tw-b    "#71a2db")
+      (key2    "#f2b73f")
+      (key3    "#f2b73f")
+      (accent  "#ffffff")
+      (builtin "#89788a")
+      (keyword "#cda869")
+      (const   "#cf6a4c")
+      (comment "#888888")
+      (func    "#9b703f")
+      (str     "#ececec")
+      (type    "#89788a")
+      (var     "#7587a6")
+      (warning "#ef2929"))
   (custom-theme-set-faces
    'twilight
-   `(default ((t (:background ,tw-bg :foreground ,tw-fg))))
-   `(cursor ((t (:background ,tw-pale-org))))
-   `(buffers-tab ((t (:background ,tw-bg :foreground ,tw-fg-c))))
+   `(default ((,class (:background ,bg1 :foreground ,fg1))))
 
-   `(font-lock-warning-face ((t (:background ,tw-mg :foreground ,tw-bg-2))))
-   `(font-lock-builtin-face ((t (:foreground ,tw-pale-pur))))
-   `(font-lock-comment-face ((t (:foreground ,tw-bg+5 :italic t))))
-   `(font-lock-comment-delimiter-face ((t (:foreground ,tw-bg+5))))
-   `(font-lock-constant-face ((t (:foreground ,tw-rd))))
-   `(font-lock-doc-string-face ((t (:foreground ,tw-med-org))))
-   `(font-lock-function-name-face ((t (:foreground ,tw-dark-org))))
-   `(font-lock-keyword-face ((t (:foreground ,tw-pale-org))))
-   `(font-lock-preprocessor-face ((t (:foreground ,tw-rd))))
-   `(font-lock-string-face ((t (:foreground ,tw-med-grn))))
-   `(font-lock-type-face ((t (:foreground ,tw-pale-pur))))
-   `(font-lock-variable-name-face ((t (:foreground ,tw-blu))))
-   `(font-lock-warning-face ((t (:background ,tw-mg :foreground ,tw-mg-1))))
-   `(font-lock-reference-face ((t (:inherit font-lock-constant-face)))) ; obsolete
-   `(font-lock-regexp-grouping-backslash ((t (:foreground ,tw-light-org))))
-   `(font-lock-regexp-grouping-construct ((t (:foreground ,tw-mg-1))))
+   `(company-preview-common ((t (:foreground unspecified :background ,bg2))))
+   `(company-scrollbar-bg ((t (:background ,bg0))))
+   `(company-scrollbar-fg ((t (:background ,comment))))
+   `(company-tooltip ((t (:inherit default :background ,bg0))))
+   `(company-tooltip-common ((t (:inherit font-lock-constant-face))))
+   `(company-tooltip-selection ((t (:background ,bg3))))
 
-   `(minibuffer-prompt ((t (:foreground ,tw-bg+5))))
-   `(fringe ((t (:background ,tw-bg+3 :foreground ,tw-bg+8))))
-   `(linum ((t (:background ,tw-bg :foreground ,tw-bg+3))))
-   `(linum-highlight-face ((t (:inherit linum :foreground ,tw-pale-org))))
-   `(hl-line ((t (:background ,tw-bg+2))))
-   `(mode-line ((t (:background ,tw-bg+3 :foreground ,tw-fg-c
-                    :box (:line-width 1 :color ,tw-fg-c)))))
-   `(mode-line-inactive ((t (:background ,tw-bg+4 :foreground ,tw-bg+8
-                    :box (:line-width 1 :color ,tw-bg+4)))))
-   `(mode-line-buffer-id ((t (:foreground ,tw-med-grn))))
-   `(gui-element ((t (:background ,tw-fg-d :foreground ,tw-bg-2))))
-   `(region ((t (:background ,tw-bg+3))))
-   `(shadow ((t (:foreground ,tw-bg+4))))
-   `(highlight ((t (:background ,tw-bg-1))))
-   `(highline-face ((t (:background ,tw-cy))))
-   `(secondary-selection ((t (:background ,tw-blu-1))))
-   `(link ((t :foreground ,tw-blu, :underline t)))
-   `(link-visited ((t :foreground ,tw-blu-1, :underline t)))
-   `(tooltip ((t (:background ,tw-fg-d :foreground ,tw-bg))))
-   `(widget-field ((t (:background ,tw-bg+8))))
-   `(text-cursor ((t (:background ,tw-pale-org :foreground ,tw-bg-2))))
-   `(escape-glyph ((t (:foreground ,tw-cy))))
-   `(underline ((nil (:underline nil))))
-   `(yas/field-highlight-face ((t (:background ,tw-bg+2))))
-   `(mumamo-background-chunk-submode ((t (:background ,tw-bg+2))))
-   `(trailing-whitespace ((t (:background ,tw-rd :foreground ,tw-fg))))
+   `(font-lock-builtin-face ((,class (:foreground ,builtin))))
+   `(font-lock-comment-face ((,class (:slant italic :foreground ,comment))))
+   `(font-lock-negation-char-face ((,class (:foreground ,const))))
+   `(font-lock-reference-face ((,class (:foreground ,const))))
+   `(font-lock-constant-face ((,class (:foreground ,const))))
+   `(font-lock-doc-face ((,class (:foreground ,comment))))
+   `(font-lock-function-name-face ((,class (:foreground ,func :bold t))))
+   `(font-lock-keyword-face ((,class (:bold ,class :foreground ,keyword))))
+   `(font-lock-string-face ((,class (:foreground ,str))))
+   `(font-lock-type-face ((,class (:foreground ,type ))))
+   `(font-lock-variable-name-face ((,class (:foreground ,var))))
+   `(font-lock-warning-face ((,class (:foreground ,warning :background ,bg2))))
 
-   ;; Ido
-   `(ido-subdir ((t (:foreground ,tw-rd))))
-   `(ido-first-match ((t (:foreground ,tw-med-grn))))
-   `(ido-only-match ((t (:foreground ,tw-med-grn))))
+   `(region ((,class (:background ,bg2))))
+   `(highlight ((,class (:foreground ,bg3 :background ,fg3))))
+   `(hl-line ((,class (:background  ,bg2))))
+   `(fringe ((,class (:background ,bg1 :foreground ,fg4))))
+   `(cursor ((,class (:background ,fg1))))
+   `(show-paren-match-face ((,class (:background ,warning))))
+   `(show-paren-match ((t (:foreground ,accent :underline t))))
+   `(show-paren-mismatch ((t (:background ,warning))))
+   `(isearch ((,class (:bold t :foreground ,accent :background ,bg4))))
+   `(vertical-border ((,class (:foreground ,bg3))))
+   `(minibuffer-prompt ((,class (:bold t :foreground ,keyword))))
+   `(default-italic ((,class (:italic t))))
+   `(link ((,class (:foreground ,const :underline t))))
+   `(warning ((,class (:foreground ,warning))))
+   `(dired-directory ((t (:inherit (font-lock-keyword-face)))))
 
-   ;; Enhanced-Ruby-Mode
-   `(ruby-string-delimiter-face  ((t (:foreground ,tw-dark-grn-1))))
-   `(ruby-regexp-delimiter-face ((t (:foreground ,tw-light-org))))
-   `(ruby-heredoc-delimiter-face ((t (:foreground ,tw-med-pur))))
-   `(ruby-op-face ((t (:foreground ,tw-pale-org))))
+   `(mode-line ((,class (:bold nil :foreground ,fg1 :background ,bg1))))
+   `(mode-line-inactive ((,class (:bold nil :foreground ,fg2 :background ,bg1))))
+   `(mode-line-buffer-id ((,class (:bold t :foreground ,func :background nil))))
+   `(mode-line-highlight ((,class (:foreground ,keyword :box nil :weight bold))))
+   `(mode-line-emphasis ((,class (:foreground ,fg1))))
 
-   ;; Org
-   `(org-hide ((((background dark)) (:foreground ,tw-bg))))
-   `(org-clock-overlay ((t (:foreground ,tw-wt))))
-   `(outline-4 ((t (:foreground ,tw-bg+8))))
+   `(org-code ((,class (:foreground ,fg2))))
+   `(org-hide ((,class (:foreground ,fg4))))
+   `(org-level-1 ((,class (:bold t :foreground ,keyword :height 1.1))))
+   `(org-level-2 ((,class (:bold nil :foreground ,func))))
+   `(org-level-3 ((,class (:bold t :foreground ,keyword))))
+   `(org-level-4 ((,class (:bold nil :foreground ,var))))
+   `(org-date ((,class (:underline t :foreground ,var) )))
+   `(org-footnote  ((,class (:underline t :foreground ,fg4))))
+   `(org-link ((,class (:underline t :foreground ,type ))))
+   `(org-special-keyword ((,class (:foreground ,func))))
+   `(org-block ((,class (:foreground ,fg2 :background ,bg0))))
+   `(org-quote ((,class (:inherit org-block :slant italic))))
+   `(org-verse ((,class (:inherit org-block :slant italic))))
+   `(org-todo ((,class (:box (:line-width 1 :color ,fg3) :foreground ,keyword :bold t))))
+   `(org-done ((,class (:box (:line-width 1 :color ,bg3) :bold t :foreground ,bg4))))
+   `(org-warning ((,class (:underline t :foreground ,warning))))
+   `(org-agenda-structure ((,class (:weight bold :foreground ,fg3 :box (:color ,fg4) :background ,bg3))))
+   `(org-agenda-date ((,class (:foreground ,var :height 1.1 ))))
+   `(org-agenda-date-weekend ((,class (:weight normal :foreground ,fg4))))
+   `(org-agenda-date-today ((,class (:weight bold :foreground ,keyword :height 1.4))))
+   `(org-agenda-done ((,class (:foreground ,bg4))))
+   `(org-scheduled ((,class (:foreground ,type))))
+   `(org-scheduled-today ((,class (:foreground ,func :weight bold :height 1.2))))
+   `(org-ellipsis ((,class (:foreground ,builtin))))
+   `(org-verbatim ((,class (:foreground ,fg4))))
+   `(org-document-info-keyword ((,class (:foreground ,func))))
+   `(org-sexp-date ((,class (:foreground ,fg4))))
 
-   ;; Diff
-   `(diff-header ((t (:background ,tw-bg+5))))
-   `(diff-file-header ((t (:inherit diff-header))))
-   `(diff-removed ((t (:background ,tw-rd-1))))
-   `(diff-changed ((t (:background ,tw-pale-org))))
-   `(diff-added ((t (:background  ,tw-dark-grn))))
-   `(diff-refine-added ((t (:background ,tw-med-grn))))
-   `(diff-refine-change ((t (:background ,tw-light-org))))
-   `(diff-refine-removed ((t (:background ,tw-rd))))
+   `(font-latex-bold-face ((,class (:foreground ,type))))
+   `(font-latex-italic-face ((,class (:foreground ,key3 :italic t))))
+   `(font-latex-string-face ((,class (:foreground ,str))))
+   `(font-latex-match-reference-keywords ((,class (:foreground ,const))))
+   `(font-latex-match-variable-keywords ((,class (:foreground ,var))))
 
-   ;; git-commit
-   `(git-commit-comment-action ((t (:foreground ,tw-med-grn :weight bold))))
-   `(git-commit-comment-branch ((t (:foreground ,tw-blu :weight bold))))
-   `(git-commit-comment-heading ((t (:foreground ,tw-pale-org :weight bold))))
+   `(ido-only-match ((,class (:foreground ,keyword))))
+   `(ido-subdir ((,class (:weight bold :foreground ,fg0))))
+   `(ido-first-match ((,class (:foreground ,keyword :bold t))))
 
-   ;; isearch
-   `(isearch ((t (:foreground ,tw-bg :background ,tw-light-org))))
-   `(isearch-fail ((t (:foreground ,tw-bg :background ,tw-mg-1))))
-   `(isearch-lazy-highlight-face ((t (:foreground ,tw-fg :background ,tw-blu))))
+   `(gnus-header-content ((,class (:foreground ,keyword))))
+   `(gnus-header-from ((,class (:foreground ,var))))
+   `(gnus-header-name ((,class (:foreground ,type))))
+   `(gnus-header-subject ((,class (:foreground ,func :bold t))))
 
-   ;; imenu-list
-   `(imenu-list-entry-face-0 ((t (:foreground ,tw-pale-org))))
-   `(imenu-list-entry-face-1 ((t (:foreground ,tw-light-org))))
-   `(imenu-list-entry-face-2 ((t (:foreground ,tw-med-org))))
-   `(imenu-list-entry-face-3 ((t (:foreground ,tw-dark-org))))
-   `(imenu-list-entry-subalist-face-0 ((t (:inherit imenu-list-entry-face-0 :weight bold))))
-   `(imenu-list-entry-subalist-face-1 ((t (:inherit imenu-list-entry-face-1 :weight bold))))
-   `(imenu-list-entry-subalist-face-2 ((t (:inherit imenu-list-entry-face-2 :weight bold))))
-   `(imenu-list-entry-subalist-face-3 ((t (:inherit imenu-list-entry-face-3 :weight bold))))
+   `(mu4e-view-url-number-face ((,class (:foreground ,type))))
+   `(mu4e-cited-1-face ((,class (:foreground ,fg2))))
+   `(mu4e-cited-7-face ((,class (:foreground ,fg3))))
+   `(mu4e-header-marks-face ((,class (:foreground ,type))))
 
-   ;; flyspell
-   `(flyspell-incorrect ((t (:underline (:style wave :color ,tw-mg-1)))))
-   `(flyspell-duplicate ((t (:underline (:style wave :color ,tw-rd)))))
+   `(ffap ((,class (:foreground ,fg4))))
 
-   ;; flycheck
-   `(flycheck-error ((t (:underline (:style wave :color ,tw-mg-1)))))
-   `(flycheck-warning ((t (:underline (:style wave :color ,tw-rd)))))
-   `(flycheck-fringe-error ((t (:foreground ,tw-bg :background ,tw-mg-1))))
-   `(flycheck-fringe-info ((t (:foreground ,tw-bg :background ,tw-pale-org))))
-   `(flycheck-fringe-warning ((t (:foreground ,tw-bg :background ,tw-rd))))
+   `(js2-private-function-call ((,class (:foreground ,const))))
+   `(js2-jsdoc-html-tag-delimiter ((,class (:foreground ,str))))
+   `(js2-jsdoc-html-tag-name ((,class (:foreground ,key2))))
+   `(js2-external-variable ((,class (:foreground ,type  ))))
+   `(js2-function-param ((,class (:foreground ,const))))
+   `(js2-jsdoc-value ((,class (:foreground ,str))))
+   `(js2-private-member ((,class (:foreground ,fg3))))
+   `(js2-warning ((t (:underline ,warning))))
+   `(js2-error ((t (:foreground ,warning :weight bold))))
+   `(js2-jsdoc-tag ((t (:foreground ,var))))
+   `(js2-jsdoc-type ((t (:foreground ,var))))
+   `(js2-instance-member ((t (:foreground ,var))))
+   `(js2-object-property ((t (:foreground ,func))))
+   `(js2-magic-paren ((t (:foreground ,const))))
+   `(js2-function-call ((t (:foreground ,const))))
+   `(js2-keywords ((t (:foreground ,keyword))))
+   `(js3-warning-face ((,class (:underline ,keyword))))
+   `(js3-error-face ((,class (:underline ,warning))))
+   `(js3-external-variable-face ((,class (:foreground ,var))))
+   `(js3-function-param-face ((,class (:foreground ,key3))))
+   `(js3-jsdoc-tag-face ((,class (:foreground ,keyword))))
+   `(js3-instance-member-face ((,class (:foreground ,const))))
 
-   ;; AUCTeX
-   `(font-latex-bold-face ((t (:foreground ,tw-blu :inherit bold))))
-   `(font-latex-doctex-documentation-face ((t (:background ,tw-bg+3))))
-   `(font-latex-doctex-preprocessor-face ((t (:foreground ,tw-blu :inherit bold))))
-   `(font-latex-italic-face ((t (:foreground ,tw-blu :inherit italic))))
-   `(font-latex-math-face ((t (:foreground ,tw-med-grn))))
-   `(font-latex-script-char-face ((t (:foreground ,tw-dark-grn-2))))
-   `(font-latex-sectioning-5-face ((t (:foreground ,tw-med-org :inherit variable-pitch))))
-   `(font-latex-sedate-face ((t (:foreground ,tw-blu))))
-   `(font-latex-slide-title-face ((t (:foreground ,tw-blu))))
-   `(font-latex-string-face ((t (:inherit font-lock-string-face))))
-   `(font-latex-verbatim-face ((t (:foreground ,tw-rd :inherit fixed-pitch))))
-   `(font-latex-warning-face ((t (:foreground ,tw-mg-1 :inherit bold))))
+   `(ac-completion-face ((,class (:underline t :foreground ,keyword))))
+   `(info-quoted-name ((,class (:foreground ,builtin))))
+   `(info-string ((,class (:foreground ,str))))
+   `(icompletep-determined ((,class :foreground ,builtin)))
 
-   ;; company-mode
-   `(company-tooltip ((t (:background ,tw-bg+3 :foreground ,tw-fg))))
-   `(company-tooltip-selection ((t (:background ,tw-dark-org))))
-   `(company-tooltip-common ((t (:inherit company-tooltip :bold t))))
-   `(company-tooltip-annotation ((t (:inherit company-tooltip :foreground ,tw-rd))))
-   `(company-tooltip-common-selection ((t (:inherit company-tooltip-common :background ,tw-dark-org))))
-   `(company-tooltip-search ((t (:inherit company-tooltip-selection :foreground ,tw-bg-2))))
-   `(company-scrollbar-fg ((t (:background ,tw-bg+8))))
-   `(company-scrollbar-bg ((t (:background ,tw-bg+4))))
-   `(company-preview ((t (:background ,tw-dark-org))))
-   `(company-preview-common ((t (:inherit company-preview :foreground ,tw-wt))))
-   `(company-preview-search ((t (:inherit company-preview-common :foreground ,tw-bg-2))))
+   `(slime-repl-inputed-output-face ((,class (:foreground ,type))))
+   `(trailing-whitespace ((,class :foreground nil :background ,warning)))
+   `(lazy-highlight ((,class (:foreground ,fg2 :background ,bg3))))
 
-   ;; magit: headings
-   `(magit-section-highlight ((t (:background ,tw-bg+3))))
-   `(magit-section-heading ((t (:foreground ,tw-pale-org :weight bold))))
-   `(magit-section-heading-selection ((t (:foreground ,tw-med-org :weight bold))))
-   ;; magit: diffs
-   `(magit-diff-file-heading ((t (:weight bold))))
-   `(magit-diff-file-heading-highlight ((t (:background ,tw-bg+3 :weight bold))))
-   `(magit-diff-file-heading-selection ((t (:background ,tw-bg+3 :foreground ,tw-med-org :weight bold))))
-   `(magit-diff-hunk-heading ((t (:background ,tw-bg+2))))
-   `(magit-diff-hunk-heading-highlight ((t (:background ,tw-bg+3))))
-   `(magit-diff-hunk-heading-selection ((t (:background ,tw-bg+3 :foreground ,tw-med-org))))
-   `(magit-diff-lines-heading ((t (:background ,tw-med-org :foreground ,tw-bg+3))))
-   `(magit-diff-context-face ((t (:foreground ,tw-fg-d))))
-   `(magit-diff-context-highlight ((t (:background ,tw-bg+3 :foreground ,tw-fg-d))))
-   `(magit-diff-added-face ((t (:background ,tw-dark-grn :foreground ,tw-fg))))
-   `(magit-diff-added-highlight-face ((t (:background ,tw-med-grn :foreground ,tw-fg))))
-   `(magit-diff-removed-face ((t (:background ,tw-rd-1 :foreground ,tw-fg))))
-   `(magit-diff-removed-highlight-face ((t (:background ,tw-rd :foreground ,tw-fg))))
-   `(magit-diff-base-face ((t (:background ,tw-cy-1 :foreground ,tw-fg))))
-   `(magit-diff-base-highlight-face ((t (:background ,tw-cy :foreground ,tw-fg))))
-   `(magit-diffstat-added ((t (:foreground ,tw-med-grn))))
-   `(magit-diffstat-removed ((t (:foreground ,tw-rd-1))))
-   ;; magit: popup
-   `(magit-popup-heading ((t (:foreground ,tw-pale-org :weight bold))))
-   `(magit-popup-key ((t (:foreground ,tw-dark-grn-1 :weight bold))))
-   `(magit-popup-argument ((t (:foreground ,tw-dark-grn :weight bold))))
-   `(magit-popup-disabled-argument ((t (:foreground ,tw-fg-c :weight normal))))
-   `(magit-popup-option-value ((t (:foreground ,tw-blu-1 :weight bold))))
-   ;; magit: process
-   `(magit-process-ok ((t (:foreground ,tw-dark-grn :weight bold))))
-   `(magit-process-ng ((t (:foreground ,tw-rd :weight bold))))
-   ;; magit: log
-   `(magit-log-author ((t (:foreground ,tw-med-org))))
-   `(magit-log-date ((t (:foreground ,tw-fg-c))))
-   `(magit-log-graph ((t (:foreground ,tw-fg+1))))
-   ;; magit: sequence
-   `(magit-sequence-pick ((t (:foreground ,tw-light-org))))
-   `(magit-sequence-stop ((t (:foreground ,tw-dark-grn))))
-   `(magit-sequence-part ((t (:foreground ,tw-pale-org))))
-   `(magit-sequence-head ((t (:foreground ,tw-blu))))
-   `(magit-sequence-drop ((t (:foreground ,tw-rd))))
-   `(magit-sequence-done ((t (:foreground ,tw-fg-c))))
-   `(magit-sequence-onto ((t (:foreground ,tw-fg-c))))
-   ;; magit: bisect
-   `(magit-bisect-good ((t (:foreground ,tw-dark-grn))))
-   `(magit-bisect-skip ((t (:foreground ,tw-pale-org))))
-   `(magit-bisect-bad ((t (:foreground ,tw-rd))))
-   ;; magit: blame
-   `(magit-blame-heading ((t (:background ,tw-bg-1 :foreground ,tw-blu-1))))
-   `(magit-blame-hash ((t (:background ,tw-bg-1 :foreground ,tw-blu-1))))
-   `(magit-blame-name ((t (:background ,tw-bg-1 :foreground ,tw-med-org))))
-   `(magit-blame-date ((t (:background ,tw-bg-1 :foreground ,tw-med-org))))
-   `(magit-blame-summary ((t (:background ,tw-bg-1 :foreground ,tw-blu-1 :weight bold))))
-   ;; magit: references etc
-   `(magit-dimmed ((t (:foreground ,tw-bg+8))))
-   `(magit-hash ((t (:foreground ,tw-bg+8))))
-   `(magit-tag ((t (:foreground ,tw-med-org :weight bold))))
-   `(magit-branch-remote ((t (:foreground ,tw-dark-grn :weight bold))))
-   `(magit-branch-local ((t (:foreground ,tw-blu :weight bold))))
-   `(magit-branch-current ((t (:foreground ,tw-blu :weight bold :box t))))
-   `(magit-head ((t (:foreground ,tw-blu :weight bold))))
-   `(magit-refname ((t (:background ,tw-bg+3 :foreground ,tw-fg :weight bold))))
-   `(magit-refname-stash ((t (:background ,tw-bg+3 :foreground ,tw-fg :weight bold))))
-   `(magit-refname-wip ((t (:background ,tw-bg+3 :foreground ,tw-fg :weight bold))))
-   `(magit-signature-good ((t (:foreground ,tw-dark-grn))))
-   `(magit-signature-bad ((t (:foreground ,tw-rd))))
-   `(magit-signature-untrusted ((t (:foreground ,tw-pale-org))))
-   `(magit-cherry-unmatched ((t (:foreground ,tw-cy))))
-   `(magit-cherry-equivalent ((t (:foreground ,tw-mg))))
-   `(magit-reflog-commit ((t (:foreground ,tw-dark-grn))))
-   `(magit-reflog-amend ((t (:foreground ,tw-mg))))
-   `(magit-reflog-merge ((t (:foreground ,tw-dark-grn))))
-   `(magit-reflog-checkout ((t (:foreground ,tw-blu))))
-   `(magit-reflog-reset ((t (:foreground ,tw-rd))))
-   `(magit-reflog-rebase ((t (:foreground ,tw-mg))))
-   `(magit-reflog-cherry-pick ((t (:foreground ,tw-dark-grn))))
-   `(magit-reflog-remote ((t (:foreground ,tw-cy))))
-   `(magit-reflog-other ((t (:foreground ,tw-cy))))
+   `(undo-tree-visualizer-current-face ((,class :foreground ,builtin)))
+   `(undo-tree-visualizer-default-face ((,class :foreground ,fg2)))
+   `(undo-tree-visualizer-unmodified-face ((,class :foreground ,var)))
+   `(undo-tree-visualizer-register-face ((,class :foreground ,type)))
 
-   ;; term
-   `(term-color-black ((t (:foreground ,tw-bg+3 :background ,tw-bg))))
-   `(term-color-red ((t (:foreground ,tw-rd :background ,tw-rd-1))))
-   `(term-color-green ((t (:foreground ,tw-med-grn :background ,tw-dark-grn))))
-   `(term-color-yellow ((t (:foreground ,tw-med-org :background ,tw-pale-org))))
-   `(term-color-blue ((t (:foreground ,tw-blu :background ,tw-blu-1))))
-   `(term-color-magenta ((t (:foreground ,tw-mg :background ,tw-mg-1))))
-   `(term-color-cyan ((t (:foreground ,tw-cy :background ,tw-cy-1))))
-   `(term-color-white ((t (:foreground ,tw-fg-c :background ,tw-bg+5))))
-   `(term-default-fg-color ((t (:inherit term-color-white))))
-   `(term-default-bg-color ((t (:inherit term-color-black))))))
+   `(rainbow-delimiters-depth-1-face ((,class :foreground ,fg1)))
+   `(rainbow-delimiters-depth-2-face ((,class :foreground ,type)))
+   `(rainbow-delimiters-depth-3-face ((,class :foreground ,var)))
+   `(rainbow-delimiters-depth-4-face ((,class :foreground ,const)))
+   `(rainbow-delimiters-depth-5-face ((,class :foreground ,keyword)))
+   `(rainbow-delimiters-depth-6-face ((,class :foreground ,fg1)))
+   `(rainbow-delimiters-depth-7-face ((,class :foreground ,type)))
+   `(rainbow-delimiters-depth-8-face ((,class :foreground ,var)))
+   `(rainbow-delimiters-unmatched-face ((,class :foreground ,warning)))
+
+   `(magit-item-highlight ((,class :background ,bg3)))
+   `(magit-section-heading        ((,class (:foreground ,keyword :weight bold))))
+   `(magit-hunk-heading           ((,class (:background ,bg3))))
+   `(magit-section-highlight      ((,class (:background ,bg2))))
+   `(magit-hunk-heading-highlight ((,class (:background ,bg3))))
+   `(magit-diff-context-highlight ((,class (:background ,bg3 :foreground ,fg3))))
+   `(magit-diffstat-added   ((,class (:foreground ,type))))
+   `(magit-diffstat-removed ((,class (:foreground ,var))))
+   `(magit-process-ok ((,class (:foreground ,func :weight bold))))
+   `(magit-process-ng ((,class (:foreground ,warning :weight bold))))
+   `(magit-branch ((,class (:foreground ,const :weight bold))))
+   `(magit-log-author ((,class (:foreground ,fg3))))
+   `(magit-hash ((,class (:foreground ,fg2))))
+   `(magit-diff-file-header ((,class (:foreground ,fg2 :background ,bg3))))
+
+   `(term ((,class (:foreground ,fg1 :background ,bg1))))
+   `(term-color-black ((,class (:foreground ,bg3 :background ,bg3))))
+   `(term-color-blue ((,class (:foreground ,func :background ,func))))
+   `(term-color-red ((,class (:foreground ,keyword :background ,bg3))))
+   `(term-color-green ((,class (:foreground ,type :background ,bg3))))
+   `(term-color-yellow ((,class (:foreground ,var :background ,var))))
+   `(term-color-magenta ((,class (:foreground ,builtin :background ,builtin))))
+   `(term-color-cyan ((,class (:foreground ,str :background ,str))))
+   `(term-color-white ((,class (:foreground ,fg2 :background ,fg2))))
+
+   `(helm-header ((,class (:foreground ,fg2 :background ,bg1 :underline nil :box nil))))
+   `(helm-source-header ((,class (:foreground ,keyword :background ,bg1 :underline nil :weight bold))))
+   `(helm-selection ((,class (:background ,bg2 :underline nil))))
+   `(helm-selection-line ((,class (:background ,bg2))))
+   `(helm-visible-mark ((,class (:foreground ,bg1 :background ,bg3))))
+   `(helm-candidate-number ((,class (:foreground ,bg1 :background ,fg1))))
+   `(helm-separator ((,class (:foreground ,type :background ,bg1))))
+   `(helm-time-zone-current ((,class (:foreground ,builtin :background ,bg1))))
+   `(helm-time-zone-home ((,class (:foreground ,type :background ,bg1))))
+   `(helm-buffer-not-saved ((,class (:foreground ,type :background ,bg1))))
+   `(helm-buffer-process ((,class (:foreground ,builtin :background ,bg1))))
+   `(helm-buffer-saved-out ((,class (:foreground ,fg1 :background ,bg1))))
+   `(helm-buffer-size ((,class (:foreground ,fg1 :background ,bg1))))
+   `(helm-ff-directory ((,class (:foreground ,func :background ,bg1 :weight bold))))
+   `(helm-ff-file ((,class (:foreground ,fg1 :background ,bg1 :weight normal))))
+   `(helm-ff-executable ((,class (:foreground ,key2 :background ,bg1 :weight normal))))
+   `(helm-ff-invalid-symlink ((,class (:foreground ,key3 :background ,bg1 :weight bold))))
+   `(helm-ff-symlink ((,class (:foreground ,keyword :background ,bg1 :weight bold))))
+   `(helm-ff-prefix ((,class (:foreground ,bg1 :background ,keyword :weight normal))))
+   `(helm-grep-cmd-line ((,class (:foreground ,fg1 :background ,bg1))))
+   `(helm-grep-file ((,class (:foreground ,fg1 :background ,bg1))))
+   `(helm-grep-finish ((,class (:foreground ,fg2 :background ,bg1))))
+   `(helm-grep-lineno ((,class (:foreground ,fg1 :background ,bg1))))
+   `(helm-grep-match ((,class (:foreground nil :background nil :inherit helm-match))))
+   `(helm-grep-running ((,class (:foreground ,func :background ,bg1))))
+   `(helm-moccur-buffer ((,class (:foreground ,func :background ,bg1))))
+   `(helm-source-go-package-godoc-description ((,class (:foreground ,str))))
+   `(helm-bookmark-w3m ((,class (:foreground ,type))))
+
+   `(web-mode-builtin-face ((,class (:inherit ,font-lock-builtin-face))))
+   `(web-mode-comment-face ((,class (:inherit ,font-lock-comment-face))))
+   `(web-mode-constant-face ((,class (:inherit ,font-lock-constant-face))))
+   `(web-mode-keyword-face ((,class (:foreground ,keyword))))
+   `(web-mode-doctype-face ((,class (:inherit ,font-lock-comment-face))))
+   `(web-mode-function-name-face ((,class (:inherit ,font-lock-function-name-face))))
+   `(web-mode-string-face ((,class (:foreground ,str))))
+   `(web-mode-type-face ((,class (:inherit ,font-lock-type-face))))
+   `(web-mode-html-attr-name-face ((,class (:foreground ,func))))
+   `(web-mode-html-attr-value-face ((,class (:foreground ,keyword))))
+   `(web-mode-warning-face ((,class (:inherit ,font-lock-warning-face))))
+   `(web-mode-html-tag-face ((,class (:foreground ,builtin))))
+
+   `(jde-java-font-lock-package-face ((t (:foreground ,var))))
+   `(jde-java-font-lock-public-face ((t (:foreground ,keyword))))
+   `(jde-java-font-lock-private-face ((t (:foreground ,keyword))))
+   `(jde-java-font-lock-constant-face ((t (:foreground ,const))))
+   `(jde-java-font-lock-modifier-face ((t (:foreground ,key3))))
+   `(jde-jave-font-lock-protected-face ((t (:foreground ,keyword))))
+   `(jde-java-font-lock-number-face ((t (:foreground ,var))))
+
+   `(centaur-tabs-default ((t (:background ,bg1 :foreground ,fg1))))
+   `(centaur-tabs-selected ((t (:background ,bg1 :foreground ,fg3 :box nil))))
+   `(centaur-tabs-unselected ((t (:background ,bg0 :foreground ,fg0 :box nil))))
+   `(centaur-tabs-selected-modified ((t (:background ,bg1 :foreground ,accent :box nil))))
+   `(centaur-tabs-unselected-modified ((t (:background ,bg0 :foreground ,fg4 :box nil))))
+   `(centaur-tabs-active-bar-face ((t (:background ,accent :box nil))))
+   `(centaur-tabs-modified-marker-selected ((t (:inherit 'centaur-tabs-selected-modified :foreground ,accent :box nil))))
+   `(centaur-tabs-modified-marker-unselected ((t (:inherit 'centaur-tabs-unselected-modified :foreground ,accent :box nil))))
+
+   `(solaire-default-face ((t (:inherit default :background ,bg0))))
+   `(solaire-minibuffer-face ((t (:inherit default :background ,bg0))))
+   `(solaire-hl-line-face ((t (:inherit hl-line :background ,bg1))))
+   `(solaire-org-hide-face ((t (:inherit org-hide :background ,bg0))))
+
+
+   `(ivy-confirm-face ((t (:inherit minibuffer-prompt :foreground ,keyword))))
+   `(ivy-current-match ((t (:background ,bg3))))
+   `(ivy-highlight-face ((t (:inherit font-lock-builtin-face))))
+   `(ivy-match-required-face ((t (:inherit minibuffer-prompt :foreground ,warning))))
+   `(ivy-minibuffer-match-face-1 ((t (:inherit isearch))))
+   `(ivy-minibuffer-match-face-2 ((t (:inherit ivy-minibuffer-match-face-1))))
+   `(ivy-minibuffer-match-face-3 ((t (:inherit ivy-minibuffer-match-face-2))))
+   `(ivy-minibuffer-match-face-4 ((t (:inherit ivy-minibuffer-match-face-2))))
+   `(ivy-minibuffer-match-highlight ((t (:inherit ivy-current-match))))
+   `(ivy-modified-buffer ((t (:inherit default :foreground ,var))))
+   `(ivy-virtual ((t (:inherit default :foreground ,comment))))
+   `(ivy-posframe ((t (:background ,bg00))))
+
+   `(counsel-key-binding ((t (:foreground ,var))))
+
+   `(swiper-match-face-1 ((t (:inherit ivy-minibuffer-match-face-1))))
+   `(swiper-match-face-2 ((t (:inherit ivy-minibuffer-match-face-2))))
+   `(swiper-match-face-3 ((t (:inherit ivy-minibuffer-match-face-3))))
+   `(swiper-match-face-4 ((t (:inherit ivy-minibuffer-match-face-4))))
+   `(swiper-line-face ((t (:foreground ,fg0 :background ,bg4))))
+
+
+   `(diff-hl-insert ((t (:foreground ,tw-g))))
+   `(diff-hl-delete ((t (:foreground ,tw-r))))
+   `(diff-hl-change ((t (:foreground ,tw-b))))
+
+   `(sml/global    ((t :foreground ,keyword :weight normal)))
+   `(sml/filename  ((t :foreground ,accent  :weight normal)))
+   `(sml/prefix    ((t :foreground ,fg3     :weight normal)))
+   `(sml/read-only ((t :foreground ,keyword :weight normal)))
+   `(sml/modes     ((t :foreground ,type    :weight normal)))
+   ))
 
 (provide-theme 'twilight)
 
-;;;###autoload
-(when load-file-name
-  (add-to-list 'custom-theme-load-path
-               (file-name-as-directory (file-name-directory load-file-name))))
-
-;;; twilight-theme.el ends here
+;;; wilmersdorf-theme.el ends here
