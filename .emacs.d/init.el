@@ -1,9 +1,9 @@
 ;; init.el --- Initialization file
-;; Copyright (C) 2015-2019  Dan Harms (dharms)
+;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2019-12-19 13:54:58 dan.harms>
-;; Modified by: Dan Harms
+;; Modified Time-stamp: <2020-01-07 09:45:36 Dan.Harms>
+;; Modified by: Dan.Harms
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -2820,7 +2820,8 @@ completion at point mechanism does not interfere with `completion-at-point-funct
   (setq company-require-match nil)
   (setq company-minimum-prefix-length 1)
   (setq company-dabbrev-minimum-length 1)
-  (setq company-dabbrev-downcase 'case-replace)
+  (setq company-dabbrev-downcase nil)
+  (setq company-dabbrev-ignore-case t)
   ;; (setq company-begin-commands '(self-insert-command))
   (setq company-show-numbers t)
   (setq company-tooltip-align-annotations t)
