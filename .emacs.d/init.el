@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-01-14 08:53:08 Dan.Harms>
+;; Modified Time-stamp: <2020-01-15 08:52:20 Dan.Harms>
 ;; Modified by: Dan.Harms
 ;; Keywords:
 
@@ -108,7 +108,7 @@
 (require 'bind-key)
 
 (set-register ?~ (cons 'file "~/"))
-(set-register ?\C-i (cons 'file (expand-file-name "init.el" user-emacs-directory)))
+(set-register ?\C-i (cons 'file user-init-file))
 (set-register ?\C-d (cons 'file "~/Documents"))
 (set-register ?\C-k (cons 'file "~/Desktop"))
 (set-register ?\C-w (cons 'file "~/Downloads"))
