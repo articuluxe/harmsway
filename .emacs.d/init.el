@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-01-15 09:49:23 dan.harms>
+;; Modified Time-stamp: <2020-01-15 12:52:49 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1273,10 +1273,22 @@ Only one letter is shown, the first that applies."
 (use-package reveal-in-folder
   :bind (("C-c M-e" . reveal-in-folder)))
 
+(define-prefix-command 'harmsway-clipboard-keymap)
+(global-set-key "\C-ct" 'harmsway-clipboard-keymap)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; simpleclip ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package simpleclip
+  :demand t
+  :bind (:map harmsway-clipboard-keymap
+              ("c" . simpleclip-copy)
+              ("x" . simpleclip-cut)
+              ("v" . simpleclip-paste))
   :config
   (simpleclip-mode 1))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; clipetty ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package clipetty
+  :bind (:map harmsway-clipboard-keymap ("t" . clipetty-kill-ring-save)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; shackle ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package shackle
