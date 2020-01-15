@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-01-07 09:45:36 Dan.Harms>
+;; Modified Time-stamp: <2020-01-14 08:53:08 Dan.Harms>
 ;; Modified by: Dan.Harms
 ;; Keywords:
 
@@ -20,11 +20,18 @@
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 ;;; Commentary:
-
+;; Emacs customizations.
 ;;
 
 ;;; Code:
 (require 'subr-x)
+
+;; early-init
+(when (< emacs-major-version 27)
+  (let ((load-path
+         (append (list (expand-file-name "~/.emacs.d/"))
+                 load-path)))
+    (load "early-init")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; load-path ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (eval-and-compile
