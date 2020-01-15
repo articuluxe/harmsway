@@ -2,8 +2,8 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-01-15 08:52:20 Dan.Harms>
-;; Modified by: Dan.Harms
+;; Modified Time-stamp: <2020-01-15 09:49:23 dan.harms>
+;; Modified by: Dan Harms
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -108,7 +108,6 @@
 (require 'bind-key)
 
 (set-register ?~ (cons 'file "~/"))
-(set-register ?\C-i (cons 'file user-init-file))
 (set-register ?\C-d (cons 'file "~/Documents"))
 (set-register ?\C-k (cons 'file "~/Desktop"))
 (set-register ?\C-w (cons 'file "~/Downloads"))
@@ -117,6 +116,9 @@
 (set-register ?\C-h (cons 'file "~/src/harmsway"))
 (set-register ?\C-e (cons 'file "~/src/harmsway/.emacs.d"))
 (set-register ?\C-o (cons 'file "~/org"))
+(add-hook 'after-init-hook
+          (lambda ()
+            (set-register ?\C-i (cons 'file user-init-file))))
 
 (use-package custom-backups
   :defines my/backup-exclude-regex
