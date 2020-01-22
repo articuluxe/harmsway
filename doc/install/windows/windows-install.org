@@ -18,3 +18,5 @@
   - llvm
   - make
   - python
+  - zip, unzip, gzip
+
