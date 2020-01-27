@@ -630,7 +630,7 @@
      (&dark  :distant-foreground highlight)
      (&light :distant-foreground base0))
     (helm-match :inherit 'bold :foreground highlight :distant-foreground base8)
-    (helm-source-header          :background base2 :foreground base5)
+    (helm-source-header          :background base2 :foreground keywords :weight 'bold)
     (helm-swoop-target-line-face :foreground highlight :inverse-video t)
     (helm-visible-mark           :inherit '(bold highlight))
     (helm-moccur-buffer          :inherit 'link)
@@ -699,7 +699,7 @@
     ((indent-guide-face &inherit highlight-indentation-face))
 
     ;; ivy
-    (ivy-current-match :background region :distant-foreground nil)
+    (ivy-current-match :background region :distant-foreground nil :extend t)
     (ivy-minibuffer-match-face-1
      :background nil
      :foreground (doom-lighten grey 0.14)
@@ -1349,6 +1349,8 @@
 
 (defvar doom-themes-base-vars
   '((ansi-color-names-vector
+     (vconcat (mapcar #'doom-color '(bg red green yellow blue magenta cyan fg))))
+    (rustic-ansi-faces
      (vconcat (mapcar #'doom-color '(bg red green yellow blue magenta cyan fg))))
 
     (fci-rule-color (doom-color 'base5))

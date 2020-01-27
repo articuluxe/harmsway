@@ -5,6 +5,9 @@ Many of these descriptions and examples come from various resources (see [Acknow
 
 C++20 includes the following new language features:
 - [concepts](#concepts)
+- [designated initializers](#designated-initializers)
+- [template syntax for lambdas](#template-syntax-for-lambdas)
+- [range-based for loop with initializer](#range-based-for-loop-with-initializer)
 
 C++20 includes the following new library features:
 - [concepts library](#concepts-library)
@@ -23,7 +26,7 @@ C++17 includes the following new language features:
 - [constexpr if](#constexpr-if)
 - [utf-8 character literals](#utf-8-character-literals)
 - [direct-list-initialization of enums](#direct-list-initialization-of-enums)
-- [New standard attributes](#new-standard-attributes)
+- [new standard attributes](#new-standard-attributes)
 
 C++17 includes the following new library features:
 - [std::variant](#stdvariant)
@@ -255,6 +258,35 @@ concept C = requires(T x) {
 ```
 See also: [concepts library](#concepts-library).
 
+### Designated initializers
+C-style designated initializer syntax. Any member fields that are not explicitly listed in the designated initializer list are default-initialized.
+```c++
+struct A {
+  int x;
+  int y;
+  int z = 123;
+};
+
+A a {.x = 1, .z = 2}; // a.x == 1, a.y == 0, a.z == 2
+```
+
+### Template syntax for lambdas
+Use familiar template syntax in lambda expressions.
+```c++
+auto f = []<typename T>(std::vector<T> v) {
+  // ...
+};
+```
+
+### Range-based for loop with initializer
+This feature simplifies common code patterns, helps keep scopes tight, and offers an elegant solution to a common lifetime problem.
+```c++
+for (std::vector v{1, 2, 3}; auto& e : v) {
+  std::cout << e;
+}
+// prints "123"
+```
+
 ## C++20 Library Features
 
 ### Concepts library
@@ -292,8 +324,8 @@ Automatic template argument deduction much like how it's done for functions, but
 template <typename T = float>
 struct MyContainer {
   T val;
-  MyContainer() : val() {}
-  MyContainer(T val) : val(val) {}
+  MyContainer() : val{} {}
+  MyContainer(T val) : val{val} {}
   // ...
 };
 MyContainer c1 {1}; // OK MyContainer<int>
@@ -320,7 +352,7 @@ A fold expression performs a fold of a template parameter pack over a binary ope
 * An expression of the form `(... op e)` or `(e op ...)`, where `op` is a fold-operator and `e` is an unexpanded parameter pack, are called _unary folds_.
 * An expression of the form `(e1 op ... op e2)`, where `op` are fold-operators, is called a _binary fold_. Either `e1` or `e2` is an unexpanded parameter pack, but not both.
 ```c++
-template<typename... Args>
+template <typename... Args>
 bool logicalAnd(Args... args) {
     // Binary folding.
     return (true && ... && args);
@@ -330,7 +362,7 @@ bool& b2 = b;
 logicalAnd(b, b2, true); // == true
 ```
 ```c++
-template<typename... Args>
+template <typename... Args>
 auto sum(Args... args) {
     // Unary folding.
     return (... + args);
@@ -342,9 +374,9 @@ sum(1.0, 2.0f, 3); // == 6.0
 Changes to `auto` deduction when used with the uniform initialization syntax. Previously, `auto x {3};` deduces a `std::initializer_list<int>`, which now deduces to `int`.
 ```c++
 auto x1 {1, 2, 3}; // error: not a single element
-auto x2 = {1, 2, 3}; // decltype(x2) is std::initializer_list<int>
-auto x3 {3}; // decltype(x3) is int
-auto x4 {3.0}; // decltype(x4) is double
+auto x2 = {1, 2, 3}; // x2 is std::initializer_list<int>
+auto x3 {3}; // x3 is int
+auto x4 {3.0}; // x4 is double
 ```
 
 ### constexpr lambda
@@ -403,6 +435,16 @@ S x2 = S{123};        // mov eax, dword ptr [.L_ZZ4mainE2x2]
                       // .L_ZZ4mainE2x2: .long 123
 ```
 
+It can also be used to declare and define a static member variable, such that it does not need to be initialized in the source file.
+```c++
+struct S {
+  S() : id{count++} {}
+  ~S() { count--; }
+  int id;
+  static inline int count{0}; // declare and initialize count to 0 within the class
+};
+```
+
 ### Nested namespaces
 Using the namespace resolution operator to create nested namespace definitions.
 ```c++
@@ -433,9 +475,9 @@ y; // == 0
 ```
 ```c++
 std::unordered_map<std::string, int> mapping {
-  {"a", 1}, 
-  {"b", 2}, 
-  {"c", 3},
+  {"a", 1},
+  {"b", 2},
+  {"c", 3}
 };
 
 // Destructure by reference.
@@ -504,22 +546,48 @@ byte e = byte{256}; // ERROR
 ```
 
 ### New standard attributes
-C++17 introduces three new attributes: `[[fallthrough]]`, `[[nodiscard]]` and `[[maybe_unused]]`:
+C++17 introduces three new attributes: `[[fallthrough]]`, `[[nodiscard]]` and `[[maybe_unused]]`.
+* `[[fallthrough]]` indicates to the compiler that falling through in a switch statement is intended behavior.
 ```c++
-// Will warn if return of foo() is ignored
-[[nodiscard]] int foo();
+switch (n) {
+  case 1: [[fallthrough]]
+    // ...
+  case 2:
+    // ...
+    break;
+}
+```
 
-int main() {
-  int a {1};
-  switch (a) {
-      // Indicates that falling through on case 1 is intentional
-      case 1: [[fallthrough]]
-      case 2:
-      // Indicates that b might be unused, such as on production builds
-        [[maybe_unused]] int b = foo();
-        assert(b > 0);
-        break;
-  }
+* `[[nodiscard]]` issues a warning when either a function or class has this attribute and its return value is discarded.
+```c++
+[[nodiscard]] bool do_something() {
+  return is_success; // true for success, false for failure
+}
+
+do_something(); // warning: ignoring return value of 'bool do_something()',
+                // declared with attribute 'nodiscard'
+```
+```c++
+// Only issues a warning when `error_info` is returned by value.
+struct [[nodiscard]] error_info {
+  // ...
+};
+
+error_info do_something() {
+  error_info ei;
+  // ...
+  return ei;
+}
+
+do_something(); // warning: ignoring returned value of type 'error_info',
+                // declared with attribute 'nodiscard'
+```
+
+* `[[maybe_unused]]` indicates to the compiler that a variable or parameter might be unused and is intended.
+```c++
+void my_callback(std::string msg, [[maybe_unused]] bool error) {
+  // Don't care if `msg` is an error message, just log it.
+  log(msg);
 }
 ```
 
@@ -589,14 +657,14 @@ Invoke a `Callable` object with parameters. Examples of `Callable` objects are `
 ```c++
 template <typename Callable>
 class Proxy {
-    Callable c;
+  Callable c;
 public:
-    Proxy(Callable c): c(c) {}
-    template <class... Args>
-    decltype(auto) operator()(Args&&... args) {
-        // ...
-        return std::invoke(c, std::forward<Args>(args)...);
-    }
+  Proxy(Callable c): c(c) {}
+  template <class... Args>
+  decltype(auto) operator()(Args&&... args) {
+    // ...
+    return std::invoke(c, std::forward<Args>(args)...);
+  }
 };
 auto add = [](int x, int y) {
   return x + y;
@@ -620,7 +688,7 @@ The new `std::filesystem` library provides a standard way to manipulate files, d
 Here, a big file is copied to a temporary path if there is available space:
 ```c++
 const auto bigFilePath {"bigFileToCopy"};
-if (std::filesystem::exists(bigFilePath)) {   
+if (std::filesystem::exists(bigFilePath)) {
   const auto bigFileSize {std::filesystem::file_size(bigFilePath)};
   std::filesystem::path tmpPath {"/tmp"};
   if (std::filesystem::space(tmpPath).available > bigFileSize) {
@@ -1147,7 +1215,7 @@ constexpr const int& y = x; // error -- constexpr variable `y` must be initializ
 Constant expressions with classes:
 ```c++
 struct Complex {
-  constexpr Complex(double r, double i) : re(r), im(i) { }
+  constexpr Complex(double r, double i) : re{r}, im{i} { }
   constexpr double real() { return re; }
   constexpr double imag() { return im; }
 
@@ -1164,7 +1232,7 @@ Constructors can now call other constructors in the same class using an initiali
 ```c++
 struct Foo {
   int foo;
-  Foo(int foo) : foo(foo) {}
+  Foo(int foo) : foo{foo} {}
   Foo() : Foo(0) {}
 };
 
@@ -1227,13 +1295,8 @@ struct C : B {
 
 Class cannot be inherited from.
 ```c++
-struct A final {
-
-};
-
-struct B : A { // error -- base 'A' is marked 'final'
-
-};
+struct A final {};
+struct B : A {}; // error -- base 'A' is marked 'final'
 ```
 
 ### Default functions
@@ -1241,7 +1304,7 @@ A more elegant, efficient way to provide a default implementation of a function,
 ```c++
 struct A {
   A() = default;
-  A(int x) : x(x) {}
+  A(int x) : x{x} {}
   int x {1};
 };
 A a; // a.x == 1
@@ -1251,7 +1314,7 @@ A a2 {123}; // a.x == 123
 With inheritance:
 ```c++
 struct B {
-  B() : x(1) {}
+  B() : x{1} {}
   int x;
 };
 
@@ -1270,7 +1333,7 @@ class A {
   int x;
 
 public:
-  A(int x) : x(x) {};
+  A(int x) : x{x} {};
   A(const A&) = delete;
   A& operator=(const A&) = delete;
 };
@@ -1300,9 +1363,9 @@ The copy constructor and copy assignment operator are called when copies are mad
 ```c++
 struct A {
   std::string s;
-  A() : s("test") {}
-  A(const A& o) : s(o.s) {}
-  A(A&& o) : s(std::move(o.s)) {}
+  A() : s{"test"} {}
+  A(const A& o) : s{o.s} {}
+  A(A&& o) : s{std::move(o.s)} {}
   A& operator=(A&& o) {
    s = std::move(o.s);
    return *this;
@@ -1404,7 +1467,7 @@ Allows non-static data members to be initialized where they are declared, potent
 ```c++
 // Default initialization prior to C++11
 class Human {
-    Human() : age(0) {}
+    Human() : age{0} {}
   private:
     unsigned age;
 };
@@ -1437,7 +1500,7 @@ struct Foo {
   Bar getBar() && { return std::move(bar); }
   Bar getBar() const&& { return std::move(bar); }
 private:
-  Bar bar{};
+  Bar bar;
 };
 
 Foo foo{};
@@ -1508,7 +1571,7 @@ void g() noexcept {
 ## C++11 Library Features
 
 ### std::move
-`std::move` indicates that the object passed to it may be moved, or in other words, moved from one object to another without a copy. The object passed in should not be used after the move in certain situations.
+`std::move` indicates that the object passed to it may have its resources transferred. Moves can often be more efficient than copies. Using objects that have been moved from should be used with care, as they can be left in an unspecified state (see: [What can I do with a moved-from object?](http://stackoverflow.com/questions/7027523/what-can-i-do-with-a-moved-from-object)).
 
 A definition of `std::move` (performing a move is nothing more than casting to an rvalue):
 ```c++
@@ -1520,7 +1583,7 @@ typename remove_reference<T>::type&& move(T&& arg) {
 
 Transferring `std::unique_ptr`s:
 ```c++
-std::unique_ptr<int> p1 {new int{0}};
+std::unique_ptr<int> p1 {new int{0}}; // in practice, use std::make_unique
 std::unique_ptr<int> p2 = p1; // error -- cannot copy unique pointers
 std::unique_ptr<int> p3 = std::move(p1); // move `p1` into `p3`
                                          // now unsafe to dereference object held by `p1`
@@ -1566,7 +1629,7 @@ void foo(bool clause) { /* do something... */ }
 
 std::vector<std::thread> threadsVector;
 threadsVector.emplace_back([]() {
-  // Lambda function that will be invoked    
+  // Lambda function that will be invoked
 });
 threadsVector.emplace_back(foo, true);  // thread will run foo(true)
 for (auto& thread : threadsVector) {
@@ -1732,8 +1795,8 @@ int CountTwos(const T& container) {
   });
 }
 
-std::vector<int> vec = {2,2,43,435,4543,534};
-int arr[8] = {2,43,45,435,32,32,32,32};
+std::vector<int> vec = {2, 2, 43, 435, 4543, 534};
+int arr[8] = {2, 43, 45, 435, 32, 32, 32, 32};
 auto a = CountTwos(vec); // 2
 auto b = CountTwos(arr);  // 1
 ```

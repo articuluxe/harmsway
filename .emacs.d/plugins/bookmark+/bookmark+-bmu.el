@@ -4,12 +4,12 @@
 ;; Description: Bookmark+ code for the `*Bookmark List*' (bmenu).
 ;; Author: Drew Adams, Thierry Volpiatto
 ;; Maintainer: Drew Adams (concat "drew.adams" "@" "oracle" ".com")
-;; Copyright (C) 2000-2019, Drew Adams, all rights reserved.
+;; Copyright (C) 2000-2020, Drew Adams, all rights reserved.
 ;; Copyright (C) 2009, Thierry Volpiatto, all rights reserved.
 ;; Created: Mon Jul 12 09:05:21 2010 (-0700)
-;; Last-Updated: Tue Oct 29 11:24:21 2019 (-0700)
+;; Last-Updated: Wed Jan 22 12:53:11 2020 (-0800)
 ;;           By: dradams
-;;     Update #: 4075
+;;     Update #: 4114
 ;; URL: https://www.emacswiki.org/emacs/download/bookmark%2b-bmu.el
 ;; Doc URL: https://www.emacswiki.org/emacs/BookmarkPlus
 ;; Keywords: bookmarks, bookmark+, placeholders, annotations, search, info, url, eww, w3m, gnus
@@ -118,6 +118,7 @@
 ;;    `bmkp-bmenu-describe-this+move-down',
 ;;    `bmkp-bmenu-describe-this+move-up',
 ;;    `bmkp-bmenu-describe-this-bookmark',`bmkp-bmenu-dired-marked',
+;;    `bmkp-bmenu-edit-annotations-for-marked',
 ;;    `bmkp-bmenu-edit-bookmark-name-and-location',
 ;;    `bmkp-bmenu-filter-annotation-incrementally',
 ;;    `bmkp-bmenu-filter-bookmark-name-incrementally',
@@ -205,6 +206,7 @@
 ;;    `bmkp-bmenu-show-only-url-bookmarks',
 ;;    `bmkp-bmenu-show-only-variable-list-bookmarks',
 ;;    `bmkp-bmenu-show-only-w3m-bookmarks',
+;;    `bmkp-bmenu-show-or-edit-annotation',
 ;;    `bmkp-bmenu-show-this-annotation+move-down',
 ;;    `bmkp-bmenu-show-this-annotation+move-up',
 ;;    `bmkp-bmenu-sort-by-bookmark-name',
@@ -1198,21 +1200,22 @@ Non-interactively:
                         (or (not last-bookmark-file-from-state)
                             (bmkp-same-file-p last-bookmark-file-from-state
                                               bmkp-current-bookmark-file)))
-               (setq bmkp-sort-comparer                (cdr (assq 'last-sort-comparer           state))
-                     bmkp-reverse-sort-p               (cdr (assq 'last-reverse-sort-p          state))
-                     bmkp-reverse-multi-sort-p         (cdr (assq 'last-reverse-multi-sort-p    state))
-                     bmkp-latest-bookmark-alist        (cdr (assq 'last-latest-bookmark-alist   state))
-                     bmkp-bmenu-omitted-bookmarks      (cdr (assq 'last-bmenu-omitted-bookmarks state))
-                     bmkp-bmenu-marked-bookmarks       (cdr (assq 'last-bmenu-marked-bookmarks  state))
-                     bmkp-bmenu-filter-function        (cdr (assq 'last-bmenu-filter-function   state))
-                     bmkp-bmenu-filter-pattern         (or (cdr (assq 'last-bmenu-filter-pattern state))
+               (setq bmkp-sort-comparer                (cdr (assq 'last-sort-comparer                state))
+                     bmkp-reverse-sort-p               (cdr (assq 'last-reverse-sort-p               state))
+                     bmkp-reverse-multi-sort-p         (cdr (assq 'last-reverse-multi-sort-p         state))
+                     bmkp-latest-bookmark-alist        (cdr (assq 'last-latest-bookmark-alist        state))
+                     bmkp-bmenu-omitted-bookmarks      (cdr (assq 'last-bmenu-omitted-bookmarks      state))
+                     bmkp-bmenu-marked-bookmarks       (cdr (assq 'last-bmenu-marked-bookmarks       state))
+                     bmkp-bmenu-filter-function        (cdr (assq 'last-bmenu-filter-function        state))
+                     bmkp-bmenu-filter-pattern         (or (cdr (assq 'last-bmenu-filter-pattern     state))
                                                            "")
-                     bmkp-bmenu-title                  (cdr (assq 'last-bmenu-title             state))
-                     bmkp-last-bmenu-bookmark          (cdr (assq 'last-bmenu-bookmark          state))
-                     bmkp-last-specific-buffer         (cdr (assq 'last-specific-buffer         state))
-                     bmkp-last-specific-file           (cdr (assq 'last-specific-file           state))
-                     bookmark-bmenu-toggle-filenames   (cdr (assq 'last-bmenu-toggle-filenames  state))
-                     bmkp-last-bookmark-file           bmkp-current-bookmark-file
+                     bmkp-bmenu-title                  (cdr (assq 'last-bmenu-title                  state))
+                     bmkp-last-bmenu-bookmark          (cdr (assq 'last-bmenu-bookmark               state))
+                     bmkp-last-specific-buffer         (cdr (assq 'last-specific-buffer              state))
+                     bmkp-last-specific-file           (cdr (assq 'last-specific-file                state))
+                     bookmark-bmenu-toggle-filenames   (cdr (assq 'last-bmenu-toggle-filenames       state))
+                     bmkp-last-bookmark-file           (or  (cdr (assq 'last-previous-bookmark-file  state))
+                                                            bmkp-current-bookmark-file)
                      bmkp-current-bookmark-file        last-bookmark-file-from-state
                      bmkp-bmenu-before-hide-marked-alist
                      (cdr (assq 'last-bmenu-before-hide-marked-alist   state))
@@ -1383,7 +1386,7 @@ Help - Bookmark Info
 \\[bmkp-bmenu-describe-this+move-up]\t- Show the info, then move to previous bookmark
 \\[bmkp-bmenu-describe-marked]\t- Show info about the marked bookmarks  (`C-u': internal form)
 \\[bookmark-bmenu-locate]\t- Show location of bookmark (in minibuffer)
-\\[bmkp-bmenu-show-or-edit-annotation]\t- Show bookmark's annotation            (`C-u': edit it)
+\\[bookmark-bmenu-show-annotation]\t- Show bookmark's annotation
 \\[bookmark-bmenu-show-all-annotations]\t- Show the annotations of all annotated bookmarks
 
 \\[bmkp-list-defuns-in-commands-file]
@@ -1409,6 +1412,7 @@ Bookmark Files
 
 \\[bmkp-toggle-saving-bookmark-file]\t- Toggle autosaving to the current bookmark file
 \\[bookmark-bmenu-save]\t- Save bookmarks now     (`C-u': Save As... - prompt for file)
+\\[bmkp-empty-file]\t- Empty existing bookmark file or create new, empty one
 
 C-u \\[bmkp-bmenu-refresh-menu-list]\t- Revert to bookmarks in the bookmark file    (overwrite load)
 \\[bmkp-switch-bookmark-file-create]\t- Switch to a different bookmark file         (overwrite load)
@@ -1421,7 +1425,6 @@ C-u \\[bmkp-switch-bookmark-file-create]\t- Switch back to the previous bookmark
 \\[bmkp-bmenu-copy-marked-to-bookmark-file]\t- Copy the marked bookmarks to a bookmark file
 \\[bmkp-bmenu-create-bookmark-file-from-marked]\t- Copy the marked bookmarks to a new bookmark file
 C-u \\[bmkp-bmenu-create-bookmark-file-from-marked]\t- Same, plus create bookmark-file bookmark for it
-\\[bmkp-empty-file]\t- Empty a bookmark file or create a new, empty bookmark file
 
 
 General
@@ -1441,11 +1444,15 @@ Anywhere:
 \\[bmkp-set-bookmark-file-bookmark]\t- Create a bookmark to a bookmark file (`j y' to load it)
 \\[bmkp-delete-bookmarks]\t- Delete some bookmarks at point or all in buffer
 \\[bmkp-make-function-bookmark]\t- Create a function bookmark
+
 \\[bmkp-choose-navlist-of-type]\t- Set the navlist to the bookmarks of a type you choose
 \\[bmkp-choose-navlist-from-bookmark-list]\t- Set the navlist to the bookmarks of a \
 bookmark-list bookmark
 \\[bmkp-navlist-bmenu-list]\t- Open `*Bookmark List*' for bookmarks in navlist
+
 \\[bmkp-this-file/buffer-bmenu-list]\t- Open `*Bookmark List*' for bookmarks in current file/buffer
+\\[bmkp-switch-to-bookmark-file-this-file/buffer]\t- Switch to bookmark file for current file/buffer
+\\[bmkp-save-bookmarks-this-file/buffer]\t- Save bookmarks for current file/buffer to a file
 \\<bookmark-bmenu-mode-map>
 
 
@@ -1627,7 +1634,8 @@ Modify, Delete Bookmarks
 \\[bookmark-bmenu-relocate]\t- Relocate bookmark
 \\[bmkp-bmenu-relocate-marked]\t- Relocate marked bookmarks
 \\[bmkp-bmenu-edit-tags]\t- Edit bookmark's tags
-C-u \\[bmkp-bmenu-show-or-edit-annotation]\t- Edit bookmark's annotation
+\\[bookmark-bmenu-edit-annotation]\t- Edit bookmark's annotation
+\\[bmkp-bmenu-edit-annotations-for-marked]\t- Edit annotations of marked bookmarks (`C-u': all)
 \\[bmkp-bmenu-edit-bookmark-record]\t- Edit internal Lisp record for bookmark
 \\[bmkp-bmenu-edit-marked]\t- Edit internal Lisp records of marked bookmarks  (`C-u': all)
 \\[bmkp-bmenu-toggle-temporary]\t- Toggle temporary/savable status of bookmark
@@ -1759,8 +1767,8 @@ access
 \\[bmkp-bmenu-sort-by-last-local-file-update]\t- Sort by last local file update (edit)
 
 
-Hide/Show (`*Bookmark List*')
------------------------------
+Hide/Show (Filtering `*Bookmark List*')
+---------------------------------------
 
 \\[bmkp-bmenu-show-all]\t- Show all bookmarks
 \\[bmkp-bmenu-toggle-show-only-marked]\t- Toggle showing only marked bookmarks
@@ -2115,7 +2123,7 @@ See `bookmark-jump' for info about the prefix arg."
 ;; 4. Doc string reflects enhanced behavior of `bookmark-show-annotation'.
 ;;
 ;;;###autoload (autoload 'bookmark-bmenu-show-annotation "bookmark+")
-(defun bookmark-bmenu-show-annotation (msg-p) ; Only in `mouse-3' menu.
+(defun bookmark-bmenu-show-annotation (&optional msg-p) ; Bound to `a a' in bookmark list
   "Show the annotation for the current bookmark, or follow it if external.
 If the annotation is external then jump to its destination.
 Non-interactively, non-nil MSG-P means display messages."
@@ -4186,8 +4194,32 @@ Non-interactively, non-nil MSG-P means display messages."
 ;;(@* "General Menu-List (`-*bmenu-*') Commands and Functions")
 ;;  *** General Menu-List (`-*bmenu-*') Commands and Functions ***
 
+;;;###autoload (autoload 'bmkp-bmenu-create/edit-annotations-for-marked "bookmark+")
+(defun bmkp-bmenu-edit-annotations-for-marked (&optional allp include-omitted-p) ; `a >' in bookmark list
+  "Edit the annotations of the marked bookmarks, in separate buffers.
+Create an annotation for any marked bookmark that has none.
+When you finish editing, use `\\[bmkp-edit-annotations-send]'.
+The current bookmark list is then updated to reflect your edits.
+
+If no bookmark is marked, edit the annotation of the bookmark of the
+current line.
+
+With a non-negative prefix arg, edit annotations for all bookmarks.
+
+Omitted bookmarks are excluded, by default.  With a negative prefix
+arg, any that are marked are included."
+  (interactive (list (and current-prefix-arg  (>= (prefix-numeric-value current-prefix-arg) 0))
+                     (and current-prefix-arg  (<  (prefix-numeric-value current-prefix-arg) 0))))
+  (bmkp-bmenu-barf-if-not-in-menu-list)
+  (setq bmkp-last-bmenu-bookmark  (bookmark-bmenu-bookmark))
+  ;; No marked bookmarks.  Mark this bookmark, so that `C-c C-c' in edit buffer will find it.
+  (unless bmkp-bmenu-marked-bookmarks (bookmark-bmenu-mark))
+  (let ((bmks  (bmkp-bmenu-marked-or-this-or-all allp include-omitted-p)))
+    (unless bmks (error "No marked bookmarks"))
+    (dolist (bmk  (bmkp-sort-omit bmks)) (bookmark-edit-annotation bmk))))
+
 ;;;###autoload (autoload 'bmkp-bmenu-show-or-edit-annotation "bookmark+")
-(defun bmkp-bmenu-show-or-edit-annotation (editp msg-p) ; Bound to `a' in bookmark list.
+(defun bmkp-bmenu-show-or-edit-annotation (editp msg-p) ; Not bound anymore.
   "Show annotation for current bookmark in another window.  `C-u': Edit.
 With no prefix arg, show the annotation.  With a prefix arg, edit it."
   (interactive "P\np")
@@ -5540,10 +5572,14 @@ are marked or ALLP is non-nil."
 (define-key bookmark-bmenu-mode-map "#"                    nil) ; For Emacs 20
 (define-key bookmark-bmenu-mode-map "#M"                   'bmkp-bmenu-mark-autonamed-bookmarks)
 (define-key bookmark-bmenu-mode-map "#S"                   'bmkp-bmenu-show-only-autonamed-bookmarks)
-(define-key bookmark-bmenu-mode-map "\M-a"                 'bookmark-bmenu-show-all-annotations)
 ;; `a' is `bookmark-bmenu-show-annotation' in vanilla Emacs.
-(define-key bookmark-bmenu-mode-map "a"                    'bmkp-bmenu-show-or-edit-annotation)
-;; `A' is `bookmark-bmenu-show-all-annotations' in vanilla Emacs (unbound in Bookmark+).
+;; `A' is `bookmark-bmenu-show-all-annotations' in vanilla Emacs.
+;; `e' is `bookmark-bmenu-edit-annotation' in vanilla Emacs.
+(define-key bookmark-bmenu-mode-map "a"                    nil) ; For Emacs 20
+(define-key bookmark-bmenu-mode-map "aa"                   'bookmark-bmenu-show-annotation)
+(define-key bookmark-bmenu-mode-map "aA"                   'bookmark-bmenu-show-all-annotations)
+(define-key bookmark-bmenu-mode-map "ae"                   'bookmark-bmenu-edit-annotation)
+(define-key bookmark-bmenu-mode-map "a>"                   'bmkp-bmenu-edit-annotations-for-marked)
 (define-key bookmark-bmenu-mode-map "A"                    nil) ; For Emacs 20
 (define-key bookmark-bmenu-mode-map "AM"                   'bmkp-bmenu-mark-autofile-bookmarks)
 (define-key bookmark-bmenu-mode-map "AS"                   'bmkp-bmenu-show-only-autofile-bookmarks)
@@ -5613,8 +5649,7 @@ are marked or ALLP is non-nil."
 (define-key bookmark-bmenu-mode-map "KS"                   'bmkp-bmenu-show-only-desktop-bookmarks)
 (define-key bookmark-bmenu-mode-map "L"                    'bmkp-switch-bookmark-file-create)
 (define-key bookmark-bmenu-mode-map [(control shift ?l)]   'bookmark-bmenu-locate) ; `C-L' (aka `C-S-l')
-(define-key bookmark-bmenu-mode-map "\M-l"
-  'bmkp-bmenu-load-marked-bookmark-file-bookmarks)
+(define-key bookmark-bmenu-mode-map "\M-l"                 'bmkp-bmenu-load-marked-bookmark-file-bookmarks)
 (define-key bookmark-bmenu-mode-map "\M-L"                 'bmkp-temporary-bookmarking-mode)
 (define-key bookmark-bmenu-mode-map "M"                    nil) ; For Emacs 20
 (define-key bookmark-bmenu-mode-map "MM"                   'bmkp-bmenu-mark-man-bookmarks)
@@ -5890,9 +5925,6 @@ are marked or ALLP is non-nil."
 
 
 ;;; `Bookmark File' submenu ------------------------------------------
-(define-key bmkp-bmenu-bookmark-file-menu [bmkp-empty-file]
-  '(menu-item "Empty Bookmark File..." bmkp-empty-file
-    :help "Empty an existing bookmark file or create a new, empty bookmark file"))
 (define-key bmkp-bmenu-bookmark-file-menu [bmkp-bmenu-set-bookmark-file-bookmark-from-marked]
   '(menu-item "Set Bookmark-File Bookmark from Marked..."
     bmkp-bmenu-set-bookmark-file-bookmark-from-marked
@@ -5913,19 +5945,33 @@ are marked or ALLP is non-nil."
   '(menu-item "Load Marked Bookmark-File Bookmarks..." bmkp-bmenu-load-marked-bookmark-file-bookmarks
     :help "Load the marked bookmark-file bookmarks, in order"))
 (define-key bmkp-bmenu-bookmark-file-menu [bmkp-bmenu-load-marking-unmark-first]
-  '(menu-item "Load Bookmark File, Mark Only Loaded...." bmkp-bmenu-load-marking-unmark-first
-    :help "`bookmark-load', marking only bookmarks that are loaded."))
+  '(menu-item "Load Bookmarks, Mark Only Those Loaded...." bmkp-bmenu-load-marking-unmark-first
+    :help "`bookmark-load', marking those loaded, unmarking others"))
 (define-key bmkp-bmenu-bookmark-file-menu [bmkp-bmenu-load-marking]
-  '(menu-item "Load Bookmark File, Mark Loaded...." bmkp-bmenu-load-marking
-    :help "`bookmark-load', marking bookmarks that are loaded."))
-(define-key bmkp-bmenu-bookmark-file-menu [bookmark-bmenu-load]
-  '(menu-item "Add Bookmarks from File..." bookmark-bmenu-load
-    :help "Load additional bookmarks from a bookmark file"))
+  '(menu-item "Load Bookmarks, Mark Those Loaded...." bmkp-bmenu-load-marking
+    :help "`bookmark-load', marking bookmarks that are loaded"))
+(define-key bmkp-bmenu-bookmark-file-menu [bf-sep2] '("--")) ; ------------
+;;; (define-key bmkp-bmenu-bookmark-file-menu [bmkp-save-bookmarks-this-file/buffer]
+;;;   '(menu-item "Save Bookmarks Here to File (No Switch)..." bmkp-save-bookmarks-this-file/buffer
+;;;     :help "Save bookmarks defined for the current file or buffer to file"))
+;;; (define-key bmkp-bmenu-bookmark-file-menu [bmkp-switch-to-bookmark-file-this-file/buffer]
+;;;   '(menu-item "Switch to Bookmarks Here..." bmkp-switch-to-bookmark-file-this-file/buffer
+;;;     :help "Switch to a bookmark file with only bookmarks for this file or buffer"))
+(define-key bmkp-bmenu-bookmark-file-menu [bmkp-switch-to-last-bookmark-file]
+  '(menu-item "Switch to Last Bookmark File" bmkp-switch-to-last-bookmark-file
+    :help "Switch back to last set of bookmarks used, *replacing* current set" :keys "C-u L"))
 (define-key bmkp-bmenu-bookmark-file-menu [bmkp-switch-bookmark-file-create]
-  '(menu-item "Switch to Bookmark File..." bmkp-switch-bookmark-file-create
-    :help "Switch to a different bookmark file, *replacing* the current set of bookmarks"))
+  '(menu-item "Switch to Bookmarks..." bmkp-switch-bookmark-file-create
+    :help "Switch to another bookmark file, *replacing* the current set of bookmarks"))
+(define-key bmkp-bmenu-bookmark-file-menu [bookmark-bmenu-load]
+  '(menu-item "Load (Add) Bookmarks..." bookmark-bmenu-load
+    :help "Load additional bookmarks from a bookmark file"))
+(define-key bmkp-bmenu-bookmark-file-menu [bf-sep1] '("--")) ; ------------
+(define-key bmkp-bmenu-bookmark-file-menu [bmkp-empty-file]
+  '(menu-item "Empty Bookmark File..." bmkp-empty-file
+    :help "Empty an existing bookmark file or create a new, empty bookmark file"))
 (define-key bmkp-bmenu-bookmark-file-menu [bmkp-revert-bookmark-file]
-  '(menu-item "Revert to Saved Bookmark File..." bmkp-revert-bookmark-file
+  '(menu-item "Revert to Saved Bookmarks..." bmkp-revert-bookmark-file
     :help "Revert to bookmarks in current bookmark file, as last saved" :keys "C-u g"))
 
 
@@ -6243,9 +6289,12 @@ are marked or ALLP is non-nil."
 (define-key bmkp-bmenu-edit-menu [bmkp-bmenu-edit-bookmark-record]
   '(menu-item "Edit Full Record (Lisp)" bmkp-bmenu-edit-bookmark-record
     :help "Edit full record (Lisp sexp) for this bookmark, in another window"))
+(define-key bmkp-bmenu-edit-menu [bmkp-bmenu-edit-annotations-for-marked]
+  '(menu-item "Edit Annotations of Marked" bmkp-bmenu-edit-annotations-for-marked
+    :help "Edit annotations (created if missing) for the marked bookmarks"))
 (define-key bmkp-bmenu-edit-menu [bookmark-bmenu-edit-annotation]
-  '(menu-item "Edit/Create Annotation" bookmark-bmenu-edit-annotation
-    :help "Edit annotation for this bookmark (create if none), in another window" :keys "C-u a"))
+  '(menu-item "Edit Annotation" bookmark-bmenu-edit-annotation
+    :help "Edit annotation for this bookmark (create if none), in another window"))
 
 ;;; `Show' submenu ---------------------------------------------------
 (define-key bmkp-bmenu-show-menu [bookmark-bmenu-show-all-annotations]
@@ -6253,7 +6302,7 @@ are marked or ALLP is non-nil."
     :help "Show the annotations for all bookmarks (in another window)"))
 (define-key bmkp-bmenu-show-menu [bookmark-bmenu-show-annotation]
   '(menu-item "Show Annotation" bookmark-bmenu-show-annotation
-    :help "Show the annotation for this bookmark (in another window)" :keys "a"
+    :help "Show the annotation for this bookmark (in another window)"
     :enable (and (bookmark-bmenu-bookmark)  (bookmark-get-annotation (bookmark-bmenu-bookmark)))))
 (define-key bmkp-bmenu-show-menu [bookmark-bmenu-toggle-filenames]
   '(menu-item "Show/Hide File Names" bookmark-bmenu-toggle-filenames
@@ -6659,7 +6708,7 @@ are marked or ALLP is non-nil."
                                     ["Edit Internal Record (Lisp)..." bmkp-bmenu-edit-bookmark-record]
                                     ["Show Annotation" bookmark-bmenu-show-annotation
                                      :active (bookmark-get-annotation bmk-name)]
-                                    ["Add/Edit Annotation..." bookmark-bmenu-edit-annotation]
+                                    ["Edit Annotation..." bookmark-bmenu-edit-annotation]
 
                                     "--" ; ----------------------------------------------------
                                     ["Describe" bmkp-bmenu-describe-this-bookmark])))

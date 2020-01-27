@@ -12,7 +12,7 @@
 ;;
 ;; Keywords: faces
 ;; Homepage: https://github.com/thblt/eziam-theme-emacs
-;; Version: 1.3
+;; Version: 4
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -67,6 +67,7 @@
    ("ol8-fg"                 . nil)
    ("ol8-bg"                 . nil)
    ;; Misc
+   ("colored-comments"       . "#ccffcc")
    ("transient-highlight"    . "yellow")
    ("transient-highlight-fg" . "#000000")
    ("warning"                . "gold")

@@ -2,7 +2,7 @@
 
 ;; Author: Alex Griffin <a@ajgrf.com>
 ;; URL: https://github.com/ajgrf/parchment
-;; Version: 0.3.0-pre
+;; Version: 0.3.0
 ;; Package-Requires: ((emacs "24"))
 
 ;; Copyright © 2019 Alex Griffin <a@ajgrf.com>
@@ -199,6 +199,8 @@ BACKGROUND are nil then they will be skipped."
 
     ;; filetype syntax highlighting
     (css-selector               blue         nil)
+    (cider-repl-prompt-face     blue         nil          :weight bold)
+    (clojure-keyword-face       blue         nil)
     (diff-added                 green        pale-green)
     (diff-changed               blue         pale-blue)
     (diff-context               nil          nil)
@@ -211,9 +213,11 @@ BACKGROUND are nil then they will be skipped."
     (diff-refine-removed ((((type tty)) :inherit diff-removed :underline t)
                           (t :inherit diff-removed :box t)))
     (diff-removed               red          pale-red)
+    (js2-function-call          nil          nil)
     (ledger-font-pending-face   magenta      nil          :slant italic)
     (ledger-font-posting-date-face blue      nil)
     (ledger-occur-xact-face     nil          beige)
+    (makefile-space             nil          pale-red)
     (markdown-header-face-1     black        pale-gray    :weight bold :height 1.3 :overline t)
     (markdown-header-face-2     blue         pale-cyan    :weight bold :overline t)
     (markdown-header-face-3     green        pale-green   :weight bold :overline t)
@@ -249,6 +253,7 @@ BACKGROUND are nil then they will be skipped."
     (org-document-title         black        nil          :weight bold :height 1.8)
     (org-document-info          nil          nil)
     (org-document-info-keyword  cyan         pale-cyan)
+    (org-drawer                 cyan         pale-cyan)
     (org-meta-line              cyan         pale-cyan)
     (org-block-begin-line ((((type tty)) :foreground ,black :background ,pale-gray :underline t)
                             (t :foreground "#55554e" :background ,pale-gray :underline t :box "#ccccbb")))
@@ -323,6 +328,8 @@ BACKGROUND are nil then they will be skipped."
     (sh-heredoc                 green        nil          :inherit font-lock-string-face)
     (sh-quoted-exec             nil          nil)
     (vimrc-number               nil          nil)
+    (web-mode-html-tag-face     cyan         nil)
+    (web-mode-html-attr-name-face nil        nil)
 
     ;; package interface elements
     (calendar-month-header      nil          nil          :weight bold)

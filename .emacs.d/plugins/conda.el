@@ -1,9 +1,9 @@
 ;;; conda.el --- Work with your conda environments
 
-;; Copyright (C) 2016-2019 Rami Chowdhury
+;; Copyright (C) 2016-2020 Rami Chowdhury
 ;; Author: Rami Chowdhury <rami.chowdhury@gmail.com>
 ;; URL: http://github.com/necaris/conda.el
-;; Version: 0.3
+;; Version: 0.4
 ;; Keywords: python, environment, conda
 ;; Package-Requires: ((emacs "24.4") (pythonic "0.1.0") (dash "2.13.0") (s "1.11.0") (f "0.18.2"))
 
@@ -53,7 +53,7 @@ environment variable."
   :group 'conda)
 
 (defcustom conda-env-subdirectory "envs"
-  "Location of the environments subdirectory relative to `conda-anaconda-home`."
+  "Location of the environments subdirectory relative to `conda-env-home-directory`."
   :type 'string
   :group 'conda)
 
@@ -502,7 +502,7 @@ This can be set by a buffer-local or project-local variable (e.g. a
 `.dir-locals.el` that defines `conda-project-env-name`), or inferred from an
 `environment.yml` or similar at the project level."
   (interactive)
-  (let ((env-name (if conda-project-env-name
+  (let ((env-name (if (bound-and-true-p conda-project-env-name)
                       conda-project-env-name
                     (conda--infer-env-from-buffer))))
     (if (not env-name)

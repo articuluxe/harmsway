@@ -1,6 +1,6 @@
 ;;; treemacs.el --- A tree style file viewer package -*- lexical-binding: t -*-
 
-;; Copyright (C) 2019 Alexander Miller
+;; Copyright (C) 2020 Alexander Miller
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -249,15 +249,15 @@ Necessary since root icons are not rectangular."
   :config
   (progn
     ;; directory and other icons
-    (treemacs-create-icon :file "root.png"        :extensions (root)       :fallback "")
-    (treemacs-create-icon :file "dir-closed.png"  :extensions (dir-closed) :fallback (propertize "+ " 'face 'treemacs-term-node-face))
-    (treemacs-create-icon :file "dir-open.png"    :extensions (dir-open)   :fallback (propertize "- " 'face 'treemacs-term-node-face))
-    (treemacs-create-icon :file "tags-leaf.png"   :extensions (tag-leaf)   :fallback (propertize "• " 'face 'font-lock-constant-face))
-    (treemacs-create-icon :file "tags-open.png"   :extensions (tag-open)   :fallback (propertize "▸ " 'face 'font-lock-string-face))
-    (treemacs-create-icon :file "tags-closed.png" :extensions (tag-closed) :fallback (propertize "▾ " 'face 'font-lock-string-face))
-    (treemacs-create-icon :file "error.png"       :extensions (error)      :fallback (propertize "• " 'face 'font-lock-string-face))
-    (treemacs-create-icon :file "warning.png"     :extensions (warning)    :fallback (propertize "• " 'face 'font-lock-string-face))
-    (treemacs-create-icon :file "info.png"        :extensions (info)       :fallback (propertize "• " 'face 'font-lock-string-face))
+    (treemacs-create-icon :file "vsc/root-closed.png" :extensions (root)       :fallback "")
+    (treemacs-create-icon :file "vsc/dir-closed.png"  :extensions (dir-closed) :fallback (propertize "+ " 'face 'treemacs-term-node-face))
+    (treemacs-create-icon :file "vsc/dir-open.png"    :extensions (dir-open)   :fallback (propertize "- " 'face 'treemacs-term-node-face))
+    (treemacs-create-icon :file "tags-leaf.png"       :extensions (tag-leaf)   :fallback (propertize "• " 'face 'font-lock-constant-face))
+    (treemacs-create-icon :file "tags-open.png"       :extensions (tag-open)   :fallback (propertize "▸ " 'face 'font-lock-string-face))
+    (treemacs-create-icon :file "tags-closed.png"     :extensions (tag-closed) :fallback (propertize "▾ " 'face 'font-lock-string-face))
+    (treemacs-create-icon :file "error.png"           :extensions (error)      :fallback (propertize "• " 'face 'font-lock-string-face))
+    (treemacs-create-icon :file "warning.png"         :extensions (warning)    :fallback (propertize "• " 'face 'font-lock-string-face))
+    (treemacs-create-icon :file "info.png"            :extensions (info)       :fallback (propertize "• " 'face 'font-lock-string-face))
 
     ;; ;; file icons
     (treemacs-create-icon :file "txt.png"         :extensions (fallback))
@@ -270,6 +270,7 @@ Necessary since root icons are not rectangular."
     (treemacs-create-icon :file "cpp.png"         :extensions ("cpp" "cxx" "hpp" "tpp" "cc" "hh"))
     (treemacs-create-icon :file "haskell.png"     :extensions ("hs" "lhs"))
     (treemacs-create-icon :file "cabal.png"       :extensions ("cabal"))
+    (treemacs-create-icon :file "lock.png"        :extensions ("lock"))
     (treemacs-create-icon :file "python.png"      :extensions ("py" "pyc"))
     (treemacs-create-icon :file "markdown.png"    :extensions ("md"))
     (treemacs-create-icon :file "asciidoc.png"    :extensions ("adoc" "asciidoc"))
@@ -292,12 +293,14 @@ Necessary since root icons are not rectangular."
     (treemacs-create-icon :file "go.png"          :extensions ("go"))
     (treemacs-create-icon :file "php.png"         :extensions ("php"))
     (treemacs-create-icon :file "js.png"          :extensions ("js" "jsx"))
+    (treemacs-create-icon :file "babel.png"       :extensions ("babel"))
     (treemacs-create-icon :file "hy.png"          :extensions ("hy"))
     (treemacs-create-icon :file "json.png"        :extensions ("json"))
     (treemacs-create-icon :file "julia.png"       :extensions ("jl"))
     (treemacs-create-icon :file "elx.png"         :extensions ("ex"))
     (treemacs-create-icon :file "elx-light.png"   :extensions ("exs" "eex"))
     (treemacs-create-icon :file "ocaml.png"       :extensions ("ml" "mli"))
+    (treemacs-create-icon :file "direnv.png"      :extensions ("envrc"))
     (treemacs-create-icon :file "puppet.png"      :extensions ("pp"))
     (treemacs-create-icon :file "docker.png"      :extensions ("dockerfile"))
     (treemacs-create-icon :file "vagrant.png"     :extensions ("vagrantfile"))
@@ -308,6 +311,7 @@ Necessary since root icons are not rectangular."
     (treemacs-create-icon :file "erlang.png"      :extensions ("erl" "hrl"))
     (treemacs-create-icon :file "purescript.png"  :extensions ("purs"))
     (treemacs-create-icon :file "nix.png"         :extensions ("nix"))
+    (treemacs-create-icon :file "project.png"     :extensions ("project"))
     (treemacs-create-icon :file "scons.png"       :extensions ("sconstruct" "sconstript"))
     (treemacs-create-icon :file "vsc/make.png"    :extensions ("makefile"))
     (treemacs-create-icon :file "vsc/license.png" :extensions ("license"))

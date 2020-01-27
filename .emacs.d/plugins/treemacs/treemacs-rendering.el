@@ -1,6 +1,6 @@
 ;;; treemacs.el --- A tree style file viewer package -*- lexical-binding: t -*-
 
-;; Copyright (C) 2019 Alexander Miller
+;; Copyright (C) 2020 Alexander Miller
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -264,8 +264,8 @@ NODE-NAME is the variable individual nodes are bound to in NODE-ACTION."
            (push it strings))))
      (nreverse strings)))
 
-(defun treemacs--collapse-dirs (dirs)
-  "Display DIRS as collpased.
+(defun treemacs--flatten-dirs (dirs)
+  "Display DIRS as flattened.
 Go to each dir button, expand its label with the collapsed dirs, set its new
 path and give it a special parent-path property so opening it will add the
 correct cache entries.
@@ -457,7 +457,7 @@ set to PARENT."
          (insert (apply #'concat file-strings))
 
          (save-excursion
-           (treemacs--collapse-dirs (treemacs--parse-collapsed-dirs ,collapse-process))
+           (treemacs--flatten-dirs (treemacs--parse-collapsed-dirs ,collapse-process))
            (treemacs--reentry ,root ,git-future))
          (point-at-eol))))))
 
@@ -709,8 +709,9 @@ Remove DOM-NODE from the dom if the entire line was deleted.
 Btn: Button
 DELETED-PATH: File Path
 DOM-NODE: Dom Node"
-  (let ((key (treemacs-button-get btn :key))
-        (curr-collapse-steps (cdr (treemacs-button-get btn :collapsed))))
+  (let* ((key (treemacs-button-get btn :key))
+         (coll-status (treemacs-button-get btn :collapsed))
+         (curr-collapse-steps (cdr coll-status)))
     (if (string= deleted-path key)
         (progn
           ;; remove full dom entry if entire line was deleted
@@ -721,13 +722,14 @@ DOM-NODE: Dom Node"
              (new-path (treemacs--parent deleted-path))
              (delete-offset (- (length path) (length new-path)))
              (new-label (substring new-path (length key)))
+             (old-coll-count (car coll-status))
              (new-coll-count (length (cdr (f-split new-label)))))
         (treemacs-button-put btn :path new-path)
         (end-of-line)
         ;; delete just enough to get rid of the deleted dirs
         (delete-region (- (point) delete-offset) (point))
         ;; then remove the deleted directories from the dom
-        (-let [removed-collapse-keys (last curr-collapse-steps (1+ new-coll-count))]
+        (-let [removed-collapse-keys (last curr-collapse-steps (- old-coll-count new-coll-count))]
           (treemacs-dom-node->remove-collapse-keys! dom-node removed-collapse-keys)
           (-each removed-collapse-keys #'treemacs--stop-watching))
         ;; and update inline collpase info
@@ -906,9 +908,11 @@ WHEN can take the following values:
 
 (defun treemacs--recursive-refresh ()
   "Recursively descend the dom, updating only the refresh-marked nodes."
-  (dolist (project (treemacs-workspace->projects (treemacs-current-workspace)))
-    (-when-let (root-node (-> project (treemacs-project->path) (treemacs-find-in-dom)))
-      (treemacs--recursive-refresh-descent root-node project))))
+  (pcase-dolist (`(,_ . ,shelf) treemacs--buffer-storage)
+    (-let [workspace (treemacs-scope-shelf->workspace shelf)]
+      (dolist (project (treemacs-workspace->projects workspace))
+        (-when-let (root-node (-> project (treemacs-project->path) (treemacs-find-in-dom)))
+          (treemacs--recursive-refresh-descent root-node project))))))
 
 (defun treemacs--recursive-refresh-descent (node project)
   "The recursive descent implementation of `treemacs--recursive-refresh'.

@@ -50,6 +50,8 @@
 (declare-function magit-auto-revert-buffers "magit-autorevert" ())
 ;; For `magit-refresh-buffer'
 (declare-function magit-process-unset-mode-line-error-status "magit-process" ())
+;; For `magit-refresh-get-relative-position'
+(declare-function magit-hunk-section-p "magit-diff" (obj))
 ;; For `magit-mode-setup-internal'
 (declare-function magit-status-goto-initial-section "magit-status" ())
 ;; For `magit-mode' from `bookmark'
@@ -63,7 +65,7 @@
 (defcustom magit-mode-hook
   '(magit-load-config-extensions)
   "Hook run when entering a mode derived from Magit mode."
-  :package-version '(magit . "2.91.0")
+  :package-version '(magit . "3.0.0")
   :group 'magit-modes
   :type 'hook
   :options '(magit-load-config-extensions
@@ -230,7 +232,7 @@ Valid values are:
 
 For more information see info node `(magit)Transient Arguments
 and Buffer Arguments'."
-  :package-version '(magit . "2.91.0")
+  :package-version '(magit . "3.0.0")
   :group 'magit-buffers
   :group 'magit-commands
   :type '(choice (const :tag "always use args from buffer" always)
@@ -259,7 +261,7 @@ Valid values are:
 
 For more information see info node `(magit)Transient Arguments
 and Buffer Arguments'."
-  :package-version '(magit . "2.91.0")
+  :package-version '(magit . "3.0.0")
   :group 'magit-buffers
   :group 'magit-commands
   :type '(choice (const :tag "always use args from buffer" always)
@@ -329,56 +331,22 @@ recommended value."
 ;;; Key Bindings
 
 (defvar magit-mode-map
-  (let ((map (make-keymap)))
-    (suppress-keymap map t)
-    (cond ((featurep 'jkl)
-           (define-key map   [return]  'magit-visit-thing)
-           (define-key map [C-return]  'magit-dired-jump)
-           (define-key map   [tab]     'magit-section-toggle)
-           (define-key map [C-tab]     'magit-section-cycle)
-           (define-key map [M-tab]     'magit-section-cycle-diffs)
-           (define-key map [S-tab]     'magit-section-cycle-global)
-           (define-key map (kbd "M-o") 'magit-section-up)
-           (define-key map (kbd   "i") 'magit-section-backward)
-           (define-key map (kbd   "k") 'magit-section-forward)
-           (define-key map (kbd "M-i") 'magit-section-backward-sibling)
-           (define-key map (kbd "M-k") 'magit-section-forward-sibling)
-           (define-key map (kbd   "p") 'magit-push)
-           (define-key map (kbd   ",") 'magit-delete-thing)
-           (define-key map (kbd   ";") 'magit-file-untrack)
-           (define-key map (kbd "C-c C-i") 'magit-gitignore))
-          (t
-           (define-key map [C-return]  'magit-visit-thing)
-           (define-key map (kbd "C-m") 'magit-visit-thing)
-           (define-key map (kbd "C-M-i") 'magit-dired-jump)
-           (define-key map (kbd "C-i") 'magit-section-toggle)
-           (define-key map [C-tab]     'magit-section-cycle)
-           (define-key map [M-tab]     'magit-section-cycle-diffs)
-           ;; [backtab] is the most portable binding for Shift+Tab.
-           (define-key map [backtab]   'magit-section-cycle-global)
-           (define-key map (kbd   "^") 'magit-section-up)
-           (define-key map (kbd   "p") 'magit-section-backward)
-           (define-key map (kbd   "n") 'magit-section-forward)
-           (define-key map (kbd "M-p") 'magit-section-backward-sibling)
-           (define-key map (kbd "M-n") 'magit-section-forward-sibling)
-           (define-key map (kbd   "P") 'magit-push)
-           (define-key map (kbd   "k") 'magit-delete-thing)
-           (define-key map (kbd   "K") 'magit-file-untrack)
-           (define-key map (kbd   "i") 'magit-gitignore)
-           (define-key map (kbd   "I") 'magit-gitignore)))
+  (let ((map (make-sparse-keymap)))
+    (set-keymap-parent map magit-section-mode-map)
+    (define-key map [C-return]  'magit-visit-thing)
+    (define-key map (kbd "C-m") 'magit-visit-thing)
+    (define-key map (kbd "C-M-i") 'magit-dired-jump)
+    (define-key map [M-tab]     'magit-section-cycle-diffs)
+    (define-key map (kbd   "P") 'magit-push)
+    (define-key map (kbd   "k") 'magit-delete-thing)
+    (define-key map (kbd   "K") 'magit-file-untrack)
+    (define-key map (kbd   "i") 'magit-gitignore)
+    (define-key map (kbd   "I") 'magit-gitignore)
     (define-key map (kbd "SPC") 'magit-diff-show-or-scroll-up)
     (define-key map (kbd "DEL") 'magit-diff-show-or-scroll-down)
     (define-key map "+"         'magit-diff-more-context)
     (define-key map "-"         'magit-diff-less-context)
     (define-key map "0"         'magit-diff-default-context)
-    (define-key map "1"         'magit-section-show-level-1)
-    (define-key map "2"         'magit-section-show-level-2)
-    (define-key map "3"         'magit-section-show-level-3)
-    (define-key map "4"         'magit-section-show-level-4)
-    (define-key map (kbd "M-1") 'magit-section-show-level-1-all)
-    (define-key map (kbd "M-2") 'magit-section-show-level-2-all)
-    (define-key map (kbd "M-3") 'magit-section-show-level-3-all)
-    (define-key map (kbd "M-4") 'magit-section-show-level-4-all)
     (define-key map "$" 'magit-process-buffer)
     (define-key map "%" 'magit-worktree)
     (define-key map "a" 'magit-cherry-apply)
@@ -406,10 +374,10 @@ recommended value."
     (define-key map "q" 'magit-mode-bury-buffer)
     (define-key map "r" 'magit-rebase)
     (define-key map "R" 'magit-file-rename)
-    (define-key map "t" 'magit-tag)
-    (define-key map "T" 'magit-notes)
     (define-key map "s" 'magit-stage-file)
     (define-key map "S" 'magit-stage-modified)
+    (define-key map "t" 'magit-tag)
+    (define-key map "T" 'magit-notes)
     (define-key map "u" 'magit-unstage-file)
     (define-key map "U" 'magit-unstage-all)
     (define-key map "v" 'magit-revert-no-commit)
@@ -577,13 +545,13 @@ Magit is documented in info node `(magit)'."
   "Obsolete.  Possibly the arguments used to refresh the current buffer.
 Some third-party packages might still use this, but Magit does not.")
 (put 'magit-refresh-args 'permanent-local t)
-(make-obsolete-variable 'magit-refresh-args nil "Magit 2.91.0")
+(make-obsolete-variable 'magit-refresh-args nil "Magit 3.0.0")
 
 (defvar magit-buffer-lock-functions nil
   "Obsolete buffer-locking support for third-party modes.
 Implement the generic function `magit-buffer-value' for
 your mode instead of adding an entry to this variable.")
-(make-obsolete-variable 'magit-buffer-lock-functions nil "Magit 2.91.0")
+(make-obsolete-variable 'magit-buffer-lock-functions nil "Magit 3.0.0")
 
 (cl-defgeneric magit-buffer-value ()
   (when-let ((fn (cdr (assq major-mode magit-buffer-lock-functions))))
@@ -632,7 +600,7 @@ your mode instead of adding an entry to this variable.")
 
 (defun magit-mode-setup (mode &rest args)
   "Setup up a MODE buffer using ARGS to generate its content."
-  (declare (obsolete magit-setup-buffer "Magit 2.91.0"))
+  (declare (obsolete magit-setup-buffer "Magit 3.0.0"))
   (with-no-warnings
     (magit-mode-setup-internal mode args)))
 
@@ -640,7 +608,7 @@ your mode instead of adding an entry to this variable.")
   "Setup up a MODE buffer using ARGS to generate its content.
 When optional LOCKED is non-nil, then create a buffer that is
 locked to its value, which is derived from MODE and ARGS."
-  (declare (obsolete magit-setup-buffer "Magit 2.91.0"))
+  (declare (obsolete magit-setup-buffer "Magit 3.0.0"))
   (let* ((value   (and locked
                        (with-temp-buffer
                          (with-no-warnings
@@ -883,7 +851,7 @@ If a frame, then only consider buffers on that frame."
     (magit--not-inside-repository-error)))
 
 (defun magit-mode-get-buffer (mode &optional create frame value)
-  (declare (obsolete magit-get-mode-buffer "Magit 2.91.0"))
+  (declare (obsolete magit-get-mode-buffer "Magit 3.0.0"))
   (when create
     (error "`magit-mode-get-buffer's CREATE argument is obsolete"))
   (if-let ((topdir (magit-toplevel)))
@@ -1111,10 +1079,10 @@ Run hooks `magit-pre-refresh-hook' and `magit-post-refresh-hook'."
           (erase-buffer)
           (save-excursion
             (apply refresh (with-no-warnings magit-refresh-args))))
-        (dolist (window windows)
-          (with-selected-window (car window)
+        (pcase-dolist (`(,window . ,args) windows)
+          (with-selected-window window
             (with-current-buffer buffer
-              (apply #'magit-section-goto-successor (cdr window)))))
+              (apply #'magit-section-goto-successor args))))
         (run-hooks 'magit-refresh-buffer-hook)
         (magit-section-update-highlight)
         (set-buffer-modified-p nil))

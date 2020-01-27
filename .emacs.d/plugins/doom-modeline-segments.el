@@ -1,6 +1,6 @@
 ;;; doom-modeline-segments.el --- The segments for doom-modeline -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2018-2019 Vincent Zhang
+;; Copyright (C) 2018-2020 Vincent Zhang
 
 ;; This file is not part of GNU Emacs.
 
@@ -73,8 +73,7 @@
 (defvar flymake-menu)
 (defvar gnus-newsrc-alist)
 (defvar gnus-newsrc-hashtb)
-(defvar grip-port)
-(defvar grip-process)
+(defvar grip--process)
 (defvar helm--mode-line-display-prefarg)
 (defvar iedit-occurrences-overlays)
 (defvar minions-direct)
@@ -155,8 +154,10 @@
 (declare-function flymake-show-diagnostics-buffer 'flymake)
 (declare-function flymake-start 'flymake)
 (declare-function gnus-demon-add-handler 'gnus-demon)
+(declare-function grip--preview-url 'grip-mode)
 (declare-function grip-browse-preview 'grip-mode)
-(declare-function grip-mode 'grip-mode)
+(declare-function grip-stop-preview 'grip-mode)
+(declare-function grip-restart-preview 'grip-mode)
 (declare-function helm-candidate-number-at-point 'helm)
 (declare-function helm-get-candidate-number 'helm)
 (declare-function iedit-find-current-occurrence-overlay 'iedit-lib)
@@ -262,29 +263,30 @@ Uses `all-the-icons-material' to fetch the icon."
   (setq doom-modeline--buffer-file-state-icon
         (when doom-modeline-buffer-state-icon
           (ignore-errors
-            (cond (buffer-read-only
-                   (doom-modeline-buffer-file-state-icon
-                    "lock" "🔒" "%1*" `(:inherit doom-modeline-warning
-                                        :weight ,(if doom-modeline-icon
-                                                     'normal
-                                                   'bold))))
-                  ((and buffer-file-name (buffer-modified-p)
-                        doom-modeline-buffer-modification-icon)
-                   (doom-modeline-buffer-file-state-icon
-                    "save" "💾" "%1*" `(:inherit doom-modeline-buffer-modified
-                                        :weight ,(if doom-modeline-icon
-                                                     'normal
-                                                   'bold))))
-                  ((and buffer-file-name
-                        (not (file-exists-p buffer-file-name)))
-                   (doom-modeline-buffer-file-state-icon
-                    "block" "🚫" "!" 'doom-modeline-urgent))
-                  ((or (buffer-narrowed-p)
+            (concat
+             (cond (buffer-read-only
+                    (doom-modeline-buffer-file-state-icon
+                     "lock" "🔒" "%1*" `(:inherit doom-modeline-warning
+                                         :weight ,(if doom-modeline-icon
+                                                      'normal
+                                                    'bold))))
+                   ((and buffer-file-name (buffer-modified-p)
+                         doom-modeline-buffer-modification-icon)
+                    (doom-modeline-buffer-file-state-icon
+                     "save" "💾" "%1*" `(:inherit doom-modeline-buffer-modified
+                                         :weight ,(if doom-modeline-icon
+                                                      'normal
+                                                    'bold))))
+                   ((and buffer-file-name
+                         (not (file-exists-p buffer-file-name)))
+                    (doom-modeline-buffer-file-state-icon
+                     "block" "🚫" "!" 'doom-modeline-urgent))
+                   (t ""))
+             (when (or (buffer-narrowed-p)
                        (and (bound-and-true-p fancy-narrow-mode)
                             (fancy-narrow-active-p)))
-                   (doom-modeline-buffer-file-state-icon
-                    "vertical_align_center" "↕" "><" 'doom-modeline-warning))
-                  (t ""))))))
+               (doom-modeline-buffer-file-state-icon
+                "vertical_align_center" "↕" "><" 'doom-modeline-warning)))))))
 
 (defvar-local doom-modeline--buffer-file-name nil)
 (defun doom-modeline-update-buffer-file-name (&rest _)
@@ -2527,8 +2529,8 @@ The cdr can also be a function that returns a name to use.")
     (concat
      (doom-modeline-spc)
      (let ((face (if (doom-modeline--active)
-                     (if grip-process
-                         (pcase (process-status grip-process)
+                     (if grip--process
+                         (pcase (process-status grip--process)
                            ('run 'doom-modeline-buffer-path)
                            ('exit 'doom-modeline-warning)
                            (_ 'doom-modeline-urgent))
@@ -2539,16 +2541,19 @@ The cdr can also be a function that returns a name to use.")
                                            `(:inherit ,face :weight normal)
                                          face)
                                        :height 1.2 :v-adjust -0.2)
-                   'help-echo (format "Preview on: http://localhost:%d
-mouse-1: Open browser
-mouse-2: Stop preview"
-                                      grip-port)
+                   'help-echo (format "Preview on %s
+mouse-1: Preview in browser
+mouse-2: Stop preview
+mouse-3: Restart preview"
+                                      (grip--preview-url))
                    'mouse-face 'mode-line-highlight
                    'local-map (let ((map (make-sparse-keymap)))
                                 (define-key map [mode-line mouse-1]
                                   #'grip-browse-preview)
                                 (define-key map [mode-line mouse-2]
-                                  #'grip-mode)
+                                  #'grip-stop-preview)
+                                (define-key map [mode-line mouse-3]
+                                  #'grip-restart-preview)
                                 map)))
      (doom-modeline-spc))))
 

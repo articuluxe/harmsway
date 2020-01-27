@@ -1,6 +1,6 @@
 ;;; eziam-common.el --- Common tools and face assignment table for Eziam
 
-;; Copyright (c) 2016-2019 Thibault Polge <thibault@thb.lt>
+;; Copyright (c) 2016-2020 Thibault Polge <thibault@thb.lt>
 
 ;; Eziam is based on Tao theme, copyright (C) 2014 Peter <11111000000
 ;; at email.com> with contributions by Jasonm23 <jasonm23@gmail.com>.
@@ -12,7 +12,7 @@
 ;;
 ;; Keywords: faces
 ;; Homepage: https://github.com/thblt/eziam-theme-emacs
-;; Version: 1.3
+;; Version: 4
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -74,6 +74,9 @@ Appearance for specific modes are controlled with dedicated variables
 (defcustom eziam-outshine-heading-style nil
   "Style for Outshine headings.  See `eziam-heading-style' for legal values.")
 
+(defcustom eziam-color-comments nil
+  "If non-nil, comments will be rendered in a non-neutral color. I like this better.")
+
 (defun eziam--heading-height (height)
   "Return HEIGHT if EZIAM-SCALE-HEADINGS is non-nil."
   (if eziam-scale-headings
@@ -114,14 +117,14 @@ block using `eziam-with-color-variables'."
         (ol-classic-7     `(:height ,(eziam--heading-height 1.0) :foreground ,ol7-fg :background ,ol7-bg :underline t :weight bold :slant italic))
         (ol-classic-8     `(:height ,(eziam--heading-height 1.0) :foreground ,ol8-fg :background ,ol8-bg :underline t :slant italic))
         ;; Outline headings, gray blocks style
-        (ol-gray-blocks-1 `(:background ,color-6 :height 1.6 :foreground ,color-1 :weight normal :slant normal :overline nil :underline nil :box ,color-4))
-        (ol-gray-blocks-2 `(:background ,color-5 :height 1.4 :foreground ,color-1 :weight normal :slant normal :overline nil :underline nil :box nil))
-        (ol-gray-blocks-3 `(:background ,color-4 :height 1.2 :foreground ,color-7 :weight normal :slant normal :overline nil :underline nil :box nil))
-        (ol-gray-blocks-4 `(:background ,color-3 :height 1.0 :foreground ,color-7 :weight normal :slant italic :overline nil :underline ,color-5 :box nil))
-        (ol-gray-blocks-5 `(:background ,color-2 :height 1.0 :foreground ,color-7 :weight bold   :slant normal :overline nil :underline ,color-5 :box nil))
-        (ol-gray-blocks-6 `(:background ,color-1 :height 1.0 :foreground ,color-7 :weight normal :slant normal :overline nil :underline ,color-7 :box nil))
-        (ol-gray-blocks-7 `(:background ,color-1 :height 1.0 :foreground ,color-6 :weight normal :slant italic :overline nil :underline ,color-7 :box nil))
-        (ol-gray-blocks-8 `(:background ,color-0 :height 1.0 :foreground ,color-7 :weight normal :slant italic :overline nil :underline nil :box nil))
+        (ol-gray-blocks-1 `(:background ,color-6 :height ,(eziam--heading-height 1.6) :foreground ,color-1 :weight normal :slant normal :overline nil :underline nil :box ,color-4))
+        (ol-gray-blocks-2 `(:background ,color-5 :height ,(eziam--heading-height 1.4) :foreground ,color-1 :weight normal :slant normal :overline nil :underline nil :box nil))
+        (ol-gray-blocks-3 `(:background ,color-4 :height ,(eziam--heading-height 1.2) :foreground ,color-7 :weight normal :slant normal :overline nil :underline nil :box nil))
+        (ol-gray-blocks-4 `(:background ,color-3 :height ,(eziam--heading-height 1.0) :foreground ,color-7 :weight normal :slant italic :overline nil :underline ,color-5 :box nil))
+        (ol-gray-blocks-5 `(:background ,color-2 :height ,(eziam--heading-height 1.0) :foreground ,color-7 :weight bold   :slant normal :overline nil :underline ,color-5 :box nil))
+        (ol-gray-blocks-6 `(:background ,color-1 :height ,(eziam--heading-height 1.0) :foreground ,color-7 :weight normal :slant normal :overline nil :underline ,color-7 :box nil))
+        (ol-gray-blocks-7 `(:background ,color-1 :height ,(eziam--heading-height 1.0) :foreground ,color-6 :weight normal :slant italic :overline nil :underline ,color-7 :box nil))
+        (ol-gray-blocks-8 `(:background ,color-0 :height ,(eziam--heading-height 1.0) :foreground ,color-7 :weight normal :slant italic :overline nil :underline nil :box nil))
 
         (markdown-heading-style (or eziam-markdown-heading-style eziam-heading-style))
         (outline-heading-style  (or eziam-outline-heading-style eziam-heading-style))
@@ -202,12 +205,12 @@ block using `eziam-with-color-variables'."
      `(trailing-whitespace                              ((t (:background ,color-7))))
      `(vertical-border                                  ((t (:foreground ,color-4 :background ,color-1))))
 ;;;;; font lock
-     `(font-lock-builtin-face                           ((t (:foreground ,color-8 :weight bold))))
-     `(font-lock-comment-face                           ((t (:foreground ,color-5 :slant italic))))
+     `(font-lock-builtin-face                           ((t (:foreground ,color-7 :weight bold))))
+     `(font-lock-comment-face                           ((t (:foreground ,(if eziam-color-comments colored-comments color-5) :slant italic))))
      `(font-lock-delimiter-face                         ((t (:foreground ,color-5 :slant italic))))
      `(font-lock-constant-face                          ((t (:foreground ,color-5 :weight bold))))
-     `(font-lock-doc-face                               ((t (:foreground ,color-6 :slant italic))))
-     `(font-lock-function-name-face                     ((t (:background ,color-0 :box (:color ,color-2)))))
+     `(font-lock-doc-face                               ((t (:foreground ,(if eziam-color-comments colored-comments color-5)))))
+     `(font-lock-function-name-face                     ((t (:background ,color-0 :overline ,color-2 :underline ,color-2 :slant italic))))
      `(font-lock-keyword-face                           ((t (:foreground ,color-8 :weight bold))))
      `(font-lock-negation-char-face                     ((t (:foreground ,color-8 :weight bold))))
      `(font-lock-preprocessor-face                      ((t (:foreground ,color-8))))
@@ -215,8 +218,8 @@ block using `eziam-with-color-variables'."
      `(font-lock-regexp-grouping-backslash              ((t (:foreground ,color-6 :weight bold))))
      `(font-lock-string-face                            ((t (:foreground ,color-6))))
      `(font-lock-type-face                              ((t (:foreground ,color-7 :underline t))))
-     `(font-lock-variable-name-face                     ((t (:foreground ,color-8 ))))
-     `(font-lock-warning-face                           ((t (:foreground ,color-8 :weight bold))))
+     `(font-lock-variable-name-face                     ((t (:foreground ,color-7 :slant italic))))
+     `(font-lock-warning-face                           ((t (:foreground ,warning :weight bold))))
      `(c-annotation-face                                ((t (:inherit font-lock-constant-face))))
 ;;;;; newsticker
      `(newsticker-date-face                             ((t (:foreground ,color-8))))
@@ -379,16 +382,16 @@ block using `eziam-with-color-variables'."
      `(flycheck-fringe-info                             ((t (:foreground ,info))))
      `(flycheck-error-list-info                         ((t (:foreground ,info))))
 ;;;;; flymake
-     `(flymake-errline                                  ((,class ,error-text)))
-     `(flymake-warnline                                 ((,class ,warning-text)))
-     `(flymake-infoline                                 ((,class ,info-text)))
+     `(flymake-error                                    ((,class ,error-text)))
+     `(flymake-warning                                  ((,class ,warning-text)))
+     `(flymake-note                                     ((,class ,info-text)))
 ;;;;; flyspell
      `(flyspell-duplicate                               ((,class ,warning-text)))
      `(flyspell-incorrect                               ((,class ,error-text)))
 ;;;;; erc
      `(erc-action-face                                  ((t (:inherit erc-default-face))))
      `(erc-bold-face                                    ((t (:weight bold))))
-     `(erc-current-nick-face                            ((t (:foreground ,color-8 :weight bold))))
+     `(erc-current-nick-face                            ((t (:inverse-video t :weight bold))))
      `(erc-dangerous-host-face                          ((t (:inherit font-lock-warning-face))))
      `(erc-default-face                                 ((t (:foreground ,color-8))))
      `(erc-direct-msg-face                              ((t (:inherit erc-default))))
@@ -596,6 +599,7 @@ block using `eziam-with-color-variables'."
      `(macrostep-expansion-highlight-face               ((t (:inherit highlight))))
      `(macrostep-macro-face                             ((t (:underline t))))
 ;;;;; magit
+     `(magit-section-highlight                          ((t (:background ,color-2 :extend t))))
      `(magit-section-title                              ((t (:foreground ,color-8 :weight bold))))
      `(magit-branch                                     ((t (:foreground ,color-8 :weight bold))))
      `(magit-item-highlight                             ((t (:inverse-video t))))
@@ -1067,8 +1071,8 @@ block using `eziam-with-color-variables'."
      theme-name
 ;;;;; pdf-tools midnight-mode
      `(pdf-view-midnight-colors ,(if (string-lessp color-8 color-1)
-                                     `(quote (,color-1 . ,color-8))
-                                   `(quote (,color-8 . ,color-1))))
+                                     `(quote (,color-0 . ,color-8))
+                                   `(quote (,color-8 . ,color-0))))
 ;;;;; ansi-color
      `(ansi-color-names-vector [,color-2
                                 ,color-7

@@ -1,6 +1,6 @@
 ;;; treemacs.el --- A tree style file viewer package -*- lexical-binding: t -*-
 
-;; Copyright (C) 2019 Alexander Miller
+;; Copyright (C) 2020 Alexander Miller
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -50,6 +50,7 @@
   treemacs-get-local-buffer
   treemacs-get-local-buffer-create
   treemacs-scope-shelf->buffer
+  treemacs-scope-shelf->workspace
   treemacs-current-visibility
   treemacs--select-visible-window
   treemacs--remove-buffer-after-kill

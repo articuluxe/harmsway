@@ -50,6 +50,10 @@
   :group 'convenience
   :prefix "frog-jump-buffer-")
 
+(defcustom frog-jump-buffer-sort '(lambda(one two) nil)
+  "User defined sorting function" 
+  :type 'function)
+
 (defcustom frog-jump-buffer-ignore-buffers '("\\` ")
   "This is a list of regexps of buffer names to ignore or buffer-matching filter functions to use."
   :type '(repeat (choice regexp function)))
@@ -110,7 +114,7 @@ Each action is a list of the form: (KEY DESCRIPTION FILTER-FUNCTION)."
       (append (frog-jump-buffer-default-filter-actions) frog-jump-buffer-filter-actions)
     frog-jump-buffer-filter-actions))
 
-(defvar frog-jump-buffer-current-filter-function frog-jump-buffer-default-filter
+(defvar frog-jump-buffer-current-filter-function nil
   "This is a placeholder variable for determining which function to filter buffers by.")
 
 (defun frog-jump-buffer-get-current-filter-name ()
@@ -267,6 +271,8 @@ If FILTER-FUNCTION is present, filter the `buffer-list' with it."
   (let* ((frog-menu-avy-padding t)
          (frog-menu-grid-column-function (lambda () 1))
          (frog-menu-posframe-parameters frog-jump-buffer-posframe-parameters)
+         (frog-jump-buffer-current-filter-function
+          (or frog-jump-buffer-current-filter-function frog-jump-buffer-default-filter))
          (frog-menu-display-option-alist `((avy-posframe . ,frog-jump-buffer-posframe-handler)))
          (frog-jump-buffer-include-virtual-buffers
           (eq frog-jump-buffer-current-filter-function 'frog-jump-buffer-filter-recentf))
@@ -274,7 +280,7 @@ If FILTER-FUNCTION is present, filter the `buffer-list' with it."
          (buffer-names (-take frog-jump-buffer-max-buffers (frog-jump-buffer-buffer-names)))
          (actions (frog-jump-buffer-actions))
          (prompt (frog-jump-buffer-prompt))
-         (res (frog-menu-read prompt buffer-names actions)))
+         (res (frog-menu-read prompt (cl-sort buffer-names frog-jump-buffer-sort) actions)))
     (unless res
       (error "Quit"))
     (frog-jump-buffer-handle-result res)))

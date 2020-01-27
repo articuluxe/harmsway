@@ -488,7 +488,7 @@ We try to avoid false positives, like \"end if\" or the various
          (forward-word -1)
          ;; we don't want to match an "end if", and things like "drop index if
          ;; exists..." and "create index if not exist..."
-         (not (looking-at "end\\|table\\|view\\|index\\|trigger\\|procedure\\|function\\|package\\|body")))))
+         (not (looking-at "end\\|schema\\|table\\|view\\|index\\|trigger\\|procedure\\|function\\|package\\|body")))))
 
 (defun sqlind-maybe-if-statement ()
   "If (point) is on an IF statement, report its syntax."
@@ -721,9 +721,14 @@ present."
             (sqlind-forward-syntactic-ws))
            (t (throw 'finished nil))))))))
 
-(defun sqlind-maybe-create-statement ()
+(defun sqlind-maybe-create-statement (&optional all-statements)
   "If (point) is on a CREATE statement, report its syntax.
-See also `sqlind-beginning-of-block'"
+See also `sqlind-beginning-of-block'
+
+Normally, only block start create statements are considered (such
+as creation of procedures).  In particular, create
+table/view/index statements are ignored unless the ALL-STATEMENTS
+argument is t"
   (when (or (looking-at "create\\_>\\(?:[ \t\n\r\f]+\\)\\(or\\(?:[ \t\n\r\f]+\\)replace\\_>\\)?")
             (looking-at "alter\\_>"))
     (prog1 t                            ; make sure we return t
@@ -755,36 +760,40 @@ See also `sqlind-beginning-of-block'"
           (when (string-match "\\(.*?\\)(" name)
             (setq name (match-string 1 name)))
 
-	  (if (memq what '(procedure function package package-body))
-	      ;; check is name is in the form user.name, if so then suppress user part.
-	      (progn
-		(when (string-match "\\(?:.*\\.\\)?\\(.*\\)" name)
-		  (setq name (match-string 1 name)))
-		(if (null sqlind-end-stmt-stack)
-		(throw 'finished
-		  (list (if (memq what '(procedure function)) 'defun-start what)
-			name))
-		(cl-destructuring-bind (pos kind label) (pop sqlind-end-stmt-stack)
-		  (when (not (eq kind nil))
-		    (throw 'finished
-		      (list 'syntax-error
-			    "bad closing for create block" (point) pos)))
-		  (unless (sqlind-labels-match label name)
-		    (throw 'finished
-		      (list 'syntax-error
-			    "label mismatch in create block" (point) pos))))))
-	    ;; we are creating a non-code block thing: table, view,
-	    ;; index, etc.  These things only exist at toplevel.
-	    (unless (null sqlind-end-stmt-stack)
-	      (throw 'finished
-		(list 'syntax-error "nested create statement" (point) (point))))
-	    (throw 'finished (list 'create-statement what name))))))))
+	  (cond
+            ((memq what '(procedure function package package-body))
+             ;; check is name is in the form user.name, if so then suppress user part.
+	     (when (string-match "\\(?:.*\\.\\)?\\(.*\\)" name)
+	       (setq name (match-string 1 name)))
+	     (if (null sqlind-end-stmt-stack)
+		 (throw 'finished
+		   (list (if (memq what '(procedure function)) 'defun-start what)
+			 name))
+	       (cl-destructuring-bind (pos kind label) (pop sqlind-end-stmt-stack)
+		 (when (not (eq kind nil))
+		   (throw 'finished
+		     (list 'syntax-error
+			   "bad closing for create block" (point) pos)))
+		 (unless (sqlind-labels-match label name)
+		   (throw 'finished
+		     (list 'syntax-error
+			   "label mismatch in create block" (point) pos))))))
+            ((memq what '(table view index))
+             ;; Table, view and index creations do not begin blocks and they
+             ;; are ignored unless the ALL-STATEMENTS parameter is t
+             (when all-statements
+               (throw 'finished (list 'create-statement what name))))
+            (t
+	     (unless (null sqlind-end-stmt-stack)
+	       (throw 'finished
+		 (list 'syntax-error "nested create statement" (point) (point))))
+	     (throw 'finished (list 'create-statement what name)))))))))
 
 (defun sqlind-maybe-defun-statement ()
   "If (point) is on a procedure definition statement, report its syntax.
 See also `sqlind-beginning-of-block'"
   (catch 'exit
-    (when (looking-at "\\(procedure\\|function\\)\\(?:[ \t\n\r\f]+\\)\\([a-z0-9_]+\\)")
+    (when (looking-at "\\(procedure\\|function\\)\\(?:[ \t\n\r\f]+\\)\\(?:[a-z0-9_]+\\.\\)?\\([a-z0-9_]+\\)")
       (prog1 t                          ; make sure we return t
 	(let ((proc-name (sqlind-match-string 2)))
 	  ;; need to find out if this is a procedure/function
@@ -803,13 +812,21 @@ See also `sqlind-beginning-of-block'"
 	      ;; not a procedure after all.
 	      (throw 'exit nil)))
 
-          ;; Find out if it is a drop procedure or function statement
           (save-excursion
             (sqlind-backward-syntactic-ws)
+            ;; Find out if it is a drop procedure or function statement
             (forward-word -1)
             (when (looking-at "drop")
               ;; not a procedure after all
-              (throw 'exit nil)))
+              (throw 'exit nil))
+            ;; Find out if it is a "comment on" statement (postgres only)
+            (when (and (eq sql-product 'postgres)
+                       (looking-at "on"))
+              (sqlind-backward-syntactic-ws)
+              (forward-word -1)
+              (when (looking-at "comment")
+                ;; not a procedure after all.
+                (throw 'exit nil))))
 
 	  ;; so it is a definition
 
@@ -866,6 +883,12 @@ See also `sqlind-beginning-of-block'"
         (cond ((looking-at ";")
                ;; Assume the $$ is ending a statement (previous line is a ';'
                ;; which ends another statement)
+               (push (list saved-pos '$$ "") sqlind-end-stmt-stack)
+               (goto-char saved-pos))
+              ((progn (forward-word -1)
+                      (looking-at "end"))
+               ;; Assume the $$ is ending a statement (previous line contains
+               ;; an "end" keyword)
                (push (list saved-pos '$$ "") sqlind-end-stmt-stack)
                (goto-char saved-pos))
               ((null sqlind-end-stmt-stack)
@@ -1604,6 +1627,10 @@ procedure block."
         (goto-char context-start)
         (when (or (>= context-start pos)
                   (and (looking-at sqlind-start-block-regexp)
+                       ;; create table/view/index statements are not block
+                       ;; contexts
+                       (or (not (looking-at "\\(create\\)\\|\\(alter\\)"))
+                           (catch 'finished (sqlind-maybe-create-statement) nil))
                        (not (sqlind-looking-at-begin-transaction))))
           (goto-char pos)
           ;; if we are at the start of a statement, or the nearest statement
@@ -1625,6 +1652,14 @@ procedure block."
               ;; else
               (setq context-start (point))
               (setq context (list (cons block-info context-start))))))
+
+        (goto-char context-start)
+        (when (and (eq 'statement-continuation (sqlind-syntax-symbol context))
+                   (looking-at "\\(create\\)\\|\\(alter\\)"))
+          (let ((create-info (catch 'finished (sqlind-maybe-create-statement t) nil)))
+            (when create-info
+              (pop context)         ; remove the statement continuation syntax
+              (push (cons create-info context-start) context))))
 
         (let ((parse-info (syntax-ppss pos)))
           (cond ((nth 4 parse-info)   ; inside a comment

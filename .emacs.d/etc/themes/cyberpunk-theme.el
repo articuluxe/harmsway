@@ -107,7 +107,7 @@
       (cyberpunk-white-2 "#F8F8F8")
       (cyberpunk-white-3 "#fffafa"))
 
- (custom-theme-set-faces
+  (custom-theme-set-faces
    'cyberpunk
    '(button ((t (:underline t))))
    `(link ((,class (:foreground ,cyberpunk-yellow :underline t :weight bold))))
@@ -453,19 +453,19 @@
 
    ;; magit
    ;; magit headings and diffs
-   `(magit-section-highlight ((t (:background ,cyberpunk-bg+1))))
+   `(magit-section-highlight ((t (:background ,cyberpunk-bg-1))))
    `(magit-section-heading ((t (:foreground ,cyberpunk-blue+1 :weight bold))))
    `(magit-section-heading-selection ((t (:foreground ,cyberpunk-red+1 :weight bold))))
    `(magit-diff-file-heading           ((t (:weight bold))))
    `(magit-diff-file-heading-highlight ((t (:background ,cyberpunk-bg+2  :weight bold))))
    `(magit-diff-file-heading-selection ((t (:background ,cyberpunk-bg+2
-                                            :foreground ,cyberpunk-blue-6 :weight bold))))
+                                                        :foreground ,cyberpunk-blue-6 :weight bold))))
    `(magit-diff-hunk-heading           ((t (:background ,cyberpunk-bg))))
    `(magit-diff-hunk-heading-highlight ((t (:background ,cyberpunk-bg+1))))
    `(magit-diff-hunk-heading-selection ((t (:background ,cyberpunk-bg+1
-                                            :foreground ,cyberpunk-blue-6))))
+                                                        :foreground ,cyberpunk-blue-6))))
    `(magit-diff-lines-heading          ((t (:background ,cyberpunk-blue-6
-                                            :foreground ,cyberpunk-bg+1))))
+                                                        :foreground ,cyberpunk-bg+1))))
    `(magit-diff-added                  ((t (:foreground ,cyberpunk-blue-5))))
    `(magit-diff-added-highlight        ((t (:inherit magit-diff-added :weight bold))))
    `(magit-diff-removed                ((t (:foreground ,cyberpunk-magenta))))
@@ -605,15 +605,15 @@
      ((,class (:inherit font-lock-comment-face))))
    `(org-archived ((,class (:slant italic))))
    `(org-checkbox ((,class (:background ,cyberpunk-gray-2 :foreground ,cyberpunk-black
-                                   :box (:line-width 1 :style released-button)))))
+                                        :box (:line-width 1 :style released-button)))))
    `(org-date ((,class (:foreground ,cyberpunk-blue-7 :underline t))))
    `(org-done ((,class (:bold t :weight bold :foreground ,cyberpunk-green
                               :box (:line-width 1 :style none)))))
    `(org-todo ((,class (:bold t :foreground ,cyberpunk-orange :weight bold
                               :box (:line-width 1 :style none)))))
-   `(org-level-1 ((,class (:foreground ,cyberpunk-pink-1 :height 1.3))))
-   `(org-level-2 ((,class (:foreground ,cyberpunk-yellow :height 1.2))))
-   `(org-level-3 ((,class (:foreground ,cyberpunk-blue-5 :height 1.1))))
+   `(org-level-1 ((,class (:foreground ,cyberpunk-pink-1))))
+   `(org-level-2 ((,class (:foreground ,cyberpunk-yellow))))
+   `(org-level-3 ((,class (:foreground ,cyberpunk-blue-5))))
    `(org-level-4 ((,class (:foreground ,cyberpunk-green))))
    `(org-level-5 ((,class (:foreground ,cyberpunk-orange))))
    `(org-level-6 ((,class (:foreground ,cyberpunk-pink))))
@@ -749,8 +749,12 @@
                                            :background ,cyberpunk-blue))))
    `(term-color-white ((,class (:foreground ,cyberpunk-fg
                                             :background ,cyberpunk-bg-1))))
+   ;; term-default-fg-color & term-default-bg-color are obsolete, kept
+   ;; here for compatibility reasons.
    `(term-default-fg-color ((,class (:inherit term-color-white))))
    `(term-default-bg-color ((,class (:inherit term-color-black))))
+   ;; Used in 24.3 and later to replace above.
+   `(term ((,class (:foreground ,cyberpunk-fg :background ,cyberpunk-bg))))
 
    ;; volatile-highlights
    `(vhl/default-face ((,class (:background ,cyberpunk-gray-5))))
@@ -790,7 +794,7 @@
    `(wl-highlight-message-unimportant-header-contents ((,class (:foreground ,cyberpunk-fg))))
    `(wl-highlight-summary-answered-face ((,class (:foreground ,cyberpunk-blue))))
    `(wl-highlight-summary-disposed-face ((,class (:foreground ,cyberpunk-fg
-                                                         :slant italic))))
+                                                              :slant italic))))
    `(wl-highlight-summary-new-face ((,class (:foreground ,cyberpunk-blue))))
    `(wl-highlight-summary-normal-face ((,class (:foreground ,cyberpunk-fg))))
    `(wl-highlight-summary-thread-top-face ((,class (:foreground ,cyberpunk-yellow))))
@@ -818,13 +822,26 @@
    `(custom-button ((,class (:box (:line-width 2 :style released-button)
                                   :background ,cyberpunk-bg-05 :foreground ,cyberpunk-fg))))
    `(custom-button-unraised ((,class (:background ,cyberpunk-bg-05 :foreground ,cyberpunk-fg))))
+
+   ;; info
+   `(Info-quoted ((,class (:inherit fixed-pitch-serif :foreground ,cyberpunk-pink))))
+
+   ;; dired
+   `(dired-symlink-face ((,class (:foreground ,cyberpunk-pink))))
+
+   ;; dired+
+   `(diredp-symlink ((,class (:foreground ,cyberpunk-pink))))
+   `(diredp-compressed-file-suffix ((,class (:foreground ,cyberpunk-blue-1))))
+
+   ;; ivy
+   `(ivy-current-match ((,class (:box (:line-width 3 :color ,cyberpunk-magenta :style pressed-button) :weight bold))))
    )
 
   ;;; custom theme variables
   (custom-theme-set-variables
    'cyberpunk
    `(ansi-color-names-vector [,cyberpunk-bg ,cyberpunk-red-2 ,cyberpunk-green ,cyberpunk-orange
-                                          ,cyberpunk-blue-1 ,cyberpunk-magenta ,cyberpunk-cyan ,cyberpunk-fg])
+                                            ,cyberpunk-blue-1 ,cyberpunk-magenta ,cyberpunk-cyan ,cyberpunk-fg])
    ;; fill-column-indicator
    `(fci-rule-color ,cyberpunk-bg-05)))
 

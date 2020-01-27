@@ -1,6 +1,6 @@
 ;;; treemacs.el --- A tree style file viewer package -*- lexical-binding: t -*-
 
-;; Copyright (C) 2019 Alexander Miller
+;; Copyright (C) 2020 Alexander Miller
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -359,35 +359,42 @@ A delete action must always be confirmed. Directories are deleted recursively.
 By default files are deleted by moving them to the trash. With a prefix ARG they
 will instead be wiped irreversibly."
   (interactive "P")
-  (-if-let (btn (treemacs-current-button))
-      (if (not (memq (treemacs-button-get btn :state) '(file-node-open file-node-closed dir-node-open dir-node-closed)))
-          (treemacs-pulse-on-failure "Only files and directories can be deleted.")
-        (let* ((delete-by-moving-to-trash (not arg))
-               (path (treemacs-button-get btn :path))
-               (file-name (treemacs--filename path)))
-          (when
-              (cond
-               ((f-file? path)
-                (when (yes-or-no-p (format "Delete %s ? " file-name))
-                  (treemacs--without-filewatch (delete-file path delete-by-moving-to-trash))
-                  t))
-               ((f-directory? path)
-                (when (yes-or-no-p (format "Recursively delete %s ? " file-name))
-                  (treemacs--without-filewatch (delete-directory path t delete-by-moving-to-trash))
-                  t))
-               (t (progn
-                    (treemacs-pulse-on-failure
-                        "Item is neither a file, nor a directory - treemacs does not know how to delete it. (Maybe it no longer exists?)")
-                    nil)))
-            (treemacs--on-file-deletion path)
-            (treemacs-without-messages
-             (treemacs-run-in-every-buffer
-              (when (treemacs-is-path-visible? path)
-                (treemacs-delete-single-node path)))))
-          (treemacs-log "Deleted %s."
-            (propertize path 'face 'font-lock-string-face))))
-    (treemacs-pulse-on-failure "Nothing to delete here."))
-  (treemacs--evade-image))
+  (treemacs-block
+   (treemacs-unless-let (btn (treemacs-current-button))
+       (treemacs-pulse-on-failure "Nothing to delete here.")
+     (treemacs-error-return-if (not (memq (treemacs-button-get btn :state)
+                                          '(file-node-open file-node-closed dir-node-open dir-node-closed)))
+       "Only files and directories can be deleted.")
+     (treemacs--without-filewatch
+      (let* ((delete-by-moving-to-trash (not arg))
+             (path (treemacs-button-get btn :path))
+             (file-name (propertize (treemacs--filename path) 'face 'font-lock-string-face)))
+        (cond
+         ((f-symlink? path)
+          (when (yes-or-no-p (format "Remove link '%s -> %s' ? "
+                                     file-name
+                                     (propertize (file-symlink-p path) 'face 'font-lock-face)))
+            (delete-file path delete-by-moving-to-trash)
+            t))
+         ((f-file? path)
+          (when (yes-or-no-p (format "Delete '%s' ? " file-name))
+            (delete-file path delete-by-moving-to-trash)
+            t))
+         ((f-directory? path)
+          (when (yes-or-no-p (format "Recursively delete '%s' ? " file-name))
+            (delete-directory path t delete-by-moving-to-trash)
+            t))
+         (t
+          (treemacs-error-return
+              (treemacs-pulse-on-failure
+                  "Item is neither a file, a link or a directory - treemacs does not know how to delete it. (Maybe it no longer exists?)"))))
+        (treemacs--on-file-deletion path)
+        (treemacs-without-messages
+         (treemacs-run-in-every-buffer
+          (treemacs-delete-single-node path)))
+        (treemacs-log "Deleted %s."
+          (propertize path 'face 'font-lock-string-face))))
+     (treemacs--evade-image))))
 
 (defun treemacs-create-file ()
   "Create a new file.
@@ -709,7 +716,7 @@ auto-selected name already exists."
       (setf name default-name)))
   (pcase (treemacs-do-add-project-to-workspace path name)
     (`(success ,project)
-     (treemacs-pulse-on-success "Added project %s to the workspace."
+     (treemacs-pulse-on-success "Added project '%s' to the workspace."
        (propertize (treemacs-project->name project) 'face 'font-lock-type-face)))
     (`(invalid-path ,reason)
      (treemacs-pulse-on-failure (concat "Path '%s' is invalid: %s")
@@ -720,8 +727,13 @@ auto-selected name already exists."
        (propertize name 'face 'font-lock-string-face)))
     (`(duplicate-project ,duplicate)
      (goto-char (treemacs-project->position duplicate))
-     (treemacs-pulse-on-success "A project for %s already exists."
+     (treemacs-pulse-on-failure "A project for '%s' already exists. Projects may not overlap."
        (propertize (treemacs-project->path duplicate) 'face 'font-lock-string-face)))
+    (`(includes-project ,project)
+     (goto-char (treemacs-project->position project))
+     (treemacs-pulse-on-failure "Project '%s' is included in '%s'. Projects May not overlap."
+       (propertize (treemacs-project->name project) 'face 'font-lock-type-face)
+       (propertize path 'face 'font-lock-string-face)))
     (`(duplicate-name ,duplicate)
      (goto-char (treemacs-project->position duplicate))
      (treemacs-pulse-on-failure "A project with the name %s already exists."
@@ -1149,23 +1161,29 @@ absolute path of the node (if it is present)."
         (message "%s" (pfuture-callback-output))
         (kill-buffer buffer)))))
 
-(defun treemacs-select-buffer-scope ()
+(defun treemacs-select-scope-type ()
   "Select the scope for treemacs buffers.
 The default (and only) option is scoping by frame, which means that every Emacs
 frame (and only an Emacs frame) will have its own unique treemacs buffer.
 Additional scope types can be enbaled by installing the appropriate package.
 
 The following packages offer additional scope types:
- * treemacs-persp"
+ * treemacs-persp
+
+To programmatically set the scope type see `treemacs-set-scope-type'."
   (interactive)
-  (let* ((selection (completing-read "Select Treemacs Scope: " treemacs--scope-types))
-         (new-scope-type (cdr (assoc selection treemacs--scope-types))))
-    (if (eq new-scope-type treemacs--current-scope-type)
-        (treemacs-log "New scope type is same as old, nothing has changed.")
-      (setf treemacs--current-scope-type new-scope-type)
-      (treemacs--on-scope-type-change)
+  (let* ((selection (completing-read "Select Treemacs Scope: " treemacs-scope-types))
+         (new-scope-type (-> selection (intern) (assoc treemacs-scope-types) (cdr))))
+    (cond
+     ((null new-scope-type)
+      (treemacs-log "Nothing selected, type %s remains in effect."
+        (propertize selection 'face 'font-lock-type-face)))
+     ((eq new-scope-type treemacs--current-scope-type)
+      (treemacs-log "New scope type is same as old, nothing has changed."))
+     (t
+      (treemacs--do-set-scope-type new-scope-type)
       (treemacs-log "Scope of type %s is now in effect."
-        (propertize selection 'face 'font-lock-type-face)))))
+        (propertize selection 'face 'font-lock-type-face))))))
 
 (provide 'treemacs-interface)
 

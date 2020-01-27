@@ -1,6 +1,6 @@
 ;;; treemacs.el --- A tree style file viewer package -*- lexical-binding: t -*-
 
-;; Copyright (C) 2019 Alexander Miller
+;; Copyright (C) 2020 Alexander Miller
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -325,13 +325,18 @@ not work keep it on the same line."
 
 (defmacro treemacs-run-in-every-buffer (&rest body)
   "Run BODY once locally in every treemacs buffer.
-Only includes treemacs filetree buffers, not extensions."
+Only includes treemacs filetree buffers, not extensions.
+Sets `treemacs-override-workspace' so calls to `treemacs-current-workspace'
+return the workspace of the active treemacs buffer."
   (declare (debug t))
   `(pcase-dolist (`(,_ . ,shelf) (treemacs--scope-store))
-     (-let [buffer (treemacs-scope-shelf->buffer shelf)]
+     (let ((buffer (treemacs-scope-shelf->buffer shelf))
+           (workspace (treemacs-scope-shelf->workspace shelf)))
        (when (buffer-live-p buffer)
-         (with-current-buffer buffer
-           ,@body)))))
+         (-let [treemacs-override-workspace workspace]
+           (ignore treemacs-override-workspace)
+           (with-current-buffer buffer
+             ,@body))))))
 
 (defmacro treemacs-run-in-all-derived-buffers (&rest body)
   "Run BODY once locally in every treemacs buffer.
@@ -530,6 +535,18 @@ If any of the IGNORED-ERRORS matches, the error is suppressed and nil returned."
               (unless (string-match-p ,(nth 1 ignore-spec) (error-message-string ,err))
                 (signal (car ,err) (cdr ,err)))))
           ignored-errors))))
+
+(defmacro treemacs-debounce (guard delay &rest body)
+  "Debounce a function call.
+Based on a timer GUARD variable run function BODY with the given DELAY."
+  (declare (indent 2))
+  `(unless ,guard
+     (setf ,guard
+           (run-with-idle-timer
+            ,delay nil
+            (lambda ()
+              ,@body
+              (setf ,guard nil))))))
 
 (provide 'treemacs-macros)
 

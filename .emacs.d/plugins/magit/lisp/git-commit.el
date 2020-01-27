@@ -313,7 +313,7 @@ In this context a \"keyword\" is text surrounded be brackets."
   :group 'git-commit-faces)
 
 (define-obsolete-face-alias 'git-commit-note
-  'git-commit-keyword "Git-Commit 2.91.0")
+  'git-commit-keyword "Git-Commit 3.0.0")
 
 (defface git-commit-pseudo-header
   '((t :inherit font-lock-string-face))
@@ -367,12 +367,8 @@ This is only used if Magit is available."
 
 (defvar git-commit-mode-map
   (let ((map (make-sparse-keymap)))
-    (cond ((featurep 'jkl)
-           (define-key map (kbd "C-M-i") 'git-commit-prev-message)
-           (define-key map (kbd "C-M-k") 'git-commit-next-message))
-          (t
-           (define-key map (kbd "M-p") 'git-commit-prev-message)
-           (define-key map (kbd "M-n") 'git-commit-next-message)))
+    (define-key map (kbd "M-p")     'git-commit-prev-message)
+    (define-key map (kbd "M-n")     'git-commit-next-message)
     (define-key map (kbd "C-c C-i") 'git-commit-insert-pseudo-header)
     (define-key map (kbd "C-c C-a") 'git-commit-ack)
     (define-key map (kbd "C-c M-i") 'git-commit-suggested)
@@ -781,7 +777,7 @@ With a numeric prefix ARG, go forward ARG comments."
                   nil nil nil 'git-commit-read-ident-history)))
         (save-match-data
           (if (string-match "\\`\\([^<]+\\) *<\\([^>]+\\)>\\'" str)
-              (list (string-trim (match-string 1 str))
+              (list (save-match-data (string-trim (match-string 1 str)))
                     (string-trim (match-string 2 str)))
             (user-error "Invalid input"))))
     (list (read-string "Name: ")

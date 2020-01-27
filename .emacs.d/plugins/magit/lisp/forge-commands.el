@@ -62,7 +62,8 @@ for a repository using the command `forge-add-pullreq-refspec'."
     ("c i" "issue"         forge-create-issue)
     ("c p" "pull-request"  forge-create-pullreq)
     ("c u" "pull-request from issue" forge-create-pullreq-from-issue
-     :if (lambda () (forge-github-repository-p (forge-get-repository nil))))]]
+     :if (lambda () (forge-github-repository-p (forge-get-repository nil))))
+    ("c f" "fork or remote" forge-fork)]]
   [["Configure"
     ("a" "add repository to database" forge-add-repository)
     ("r" "forge.repository" forge-forge.remote)]])
@@ -505,7 +506,7 @@ topic N and modify that instead."
         (mapconcat #'car value ","))))))
 
 (defun forge-edit-topic-review-requests (n)
-  "Edit the review-requests the current pull-request.
+  "Edit the review-requests of the current pull-request.
 If there is no current topic or with a prefix argument read a
 topic N and modify that instead."
   (interactive (list (forge-read-pullreq "Request review for")))
@@ -746,7 +747,8 @@ information."
 ;;;###autoload
 (defun forge-fork (fork remote)
   "Fork the current repository to FORK and add it as a REMOTE.
-Currently this only support Github.com."
+If the fork already exists, then that isn't an error; the remote
+is added anyway.  Currently this only support Github.com."
   (interactive
    (let ((fork (magit-completing-read "Fork to"
                                       (mapcar #'car forge-owned-accounts))))

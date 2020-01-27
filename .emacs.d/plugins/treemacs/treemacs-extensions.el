@@ -1,6 +1,6 @@
 ;;; treemacs.el --- A tree style file viewer package -*- lexical-binding: t -*-
 
-;; Copyright (C) 2019 Alexander Miller
+;; Copyright (C) 2020 Alexander Miller
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -205,7 +205,6 @@ node for quick retrieval later."
                        'button '(t)
                        'category 'default-button
                        ,@(when face `((quote face) ,face))
-                       'help-echo nil
                        :custom t
                        :state ,state
                        :parent node

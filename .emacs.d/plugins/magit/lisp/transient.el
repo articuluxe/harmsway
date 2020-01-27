@@ -173,7 +173,7 @@ of this variable use \"C-x t\" when a transient is active."
   :group 'transient
   :type 'boolean)
 
-(defcustom transient-read-with-initial-input t
+(defcustom transient-read-with-initial-input nil
   "Whether to use the last history element as initial minibuffer input."
   :package-version '(transient . "0.2.0")
   :group 'transient
@@ -451,7 +451,7 @@ If `transient-save-history' is nil, then do nothing."
    (command     :initarg :command)
    (level       :initarg :level)
    (variable    :initarg :variable    :initform nil)
-   (value       :initarg :value)
+   (value) (default-value :initarg :value)
    (scope       :initarg :scope       :initform nil)
    (history     :initarg :history     :initform nil)
    (history-pos :initarg :history-pos :initform 0)
@@ -640,7 +640,8 @@ to the setup function:
                            [&optional lambda-doc]
                            [&rest keywordp sexp]
                            [&rest vectorp]
-                           [&optional ("interactive" interactive) def-body])))
+                           [&optional ("interactive" interactive) def-body]))
+           (doc-string 3))
   (pcase-let ((`(,class ,slots ,suffixes ,docstr ,body)
                (transient--expand-define-args args)))
     `(progn
@@ -679,7 +680,8 @@ ARGLIST.  The infix arguments are usually accessed by using
                            [&optional lambda-doc]
                            [&rest keywordp sexp]
                            ("interactive" interactive)
-                           def-body)))
+                           def-body))
+           (doc-string 3))
   (pcase-let ((`(,class ,slots ,_ ,docstr ,body)
                (transient--expand-define-args args)))
     `(progn
@@ -726,7 +728,8 @@ keyword.
 \(fn NAME ARGLIST [DOCSTRING] [KEYWORD VALUE]...)"
   (declare (debug (&define name lambda-list
                            [&optional lambda-doc]
-                           [&rest keywordp sexp])))
+                           [&rest keywordp sexp]))
+           (doc-string 3))
   (pcase-let ((`(,class ,slots ,_ ,docstr ,_)
                (transient--expand-define-args args)))
     `(progn
@@ -2113,13 +2116,14 @@ Non-infix suffix commands usually don't have a value."
   nil)
 
 (cl-defmethod transient-init-value ((obj transient-prefix))
-  (if (slot-boundp obj 'value)
-      (let ((value (oref obj value)))
-        (when (functionp value)
-          (oset obj value (funcall value))))
-    (oset obj value
-          (if-let ((saved (assq (oref obj command) transient-values)))
-              (cdr saved)
+  (oset obj value
+        (if-let ((saved (assq (oref obj command) transient-values)))
+            (cdr saved)
+          (if-let ((default (and (slot-boundp obj 'default-value)
+                                 (oref obj default-value))))
+              (if (functionp default)
+                  (funcall default)
+                default)
             nil))))
 
 (cl-defmethod transient-init-value ((obj transient-switch))
@@ -2208,7 +2212,9 @@ it\", in which case it is pointless to preserve history.)"
                                    (cons value transient--history)))
              (initial-input (and transient-read-with-initial-input
                                  (car transient--history)))
-             (history (cons 'transient--history (if initial-input 1 0)))
+             (history (if initial-input
+                          (cons 'transient--history 1)
+                        'transient--history))
              (value
               (cond
                (reader (funcall reader prompt initial-input history))
@@ -2223,6 +2229,9 @@ it\", in which case it is pointless to preserve history.)"
               ((and (equal value "\"\"") allow-empty)
                (setq value "")))
         (when value
+          (when (bound-and-true-p ivy-mode)
+            (set-text-properties 0 (length (car transient--history)) nil
+                                 (car transient--history)))
           (setf (alist-get history-key transient-history)
                 (delete-dups transient--history)))
         value))))

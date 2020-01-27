@@ -1,6 +1,6 @@
 ;;; treemacs-persp.el --- Persp-mode integration for treemacs -*- lexical-binding: t -*-
 
-;; Copyright (C) 2019 Alexander Miller
+;; Copyright (C) 2020 Alexander Miller
 
 ;; Author: Alexander Miller <alexanderm@web.de>
 ;; Package-Requires: ((emacs "25.2") (treemacs "0.0") (persp-mode "2.9.7"))
@@ -30,7 +30,7 @@
 (require 'eieio)
 
 (defclass treemacs-persp-scope (treemacs-scope) () :abstract t)
-(add-to-list 'treemacs--scope-types (cons "Perpsectives" 'treemacs-persp-scope))
+(add-to-list 'treemacs-scope-types (cons 'Perspectives 'treemacs-persp-scope))
 
 (cl-defmethod treemacs-scope->current-scope ((_ (subclass treemacs-persp-scope)))
   (or (get-current-persp) 'none))

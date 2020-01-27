@@ -1,6 +1,6 @@
 ;;; treemacs-icons-dired.el --- Treemacs icons for dired -*- lexical-binding: t -*-
 
-;; Copyright (C) 2019 Alexander Miller
+;; Copyright (C) 2020 Alexander Miller
 
 ;; Author: Alexander Miller <alexanderm@web.de>
 ;; Package-Requires: ((treemacs "0.0") (emacs "25.2") (cl-lib "0.5"))
@@ -127,6 +127,7 @@ This will make sure the icons' background colors will align with hl-line mode."
   :global     t
   (if treemacs-icons-dired-mode
       (progn
+        (treemacs--setup-icon-background-colors)
         (add-hook 'dired-after-readin-hook #'treemacs-icons-dired--display)
         (add-hook 'dired-mode-hook #'treemacs--select-icon-set)
         (add-hook 'dired-mode-hook #'treemacs-icons-dired--enable-highlight-correction)

@@ -106,7 +106,7 @@
 (defun forge-read-issue (prompt &optional type)
   (when (eq type t)
     (setq type (if current-prefix-arg nil 'open)))
-  (let* ((default (forge-issue-at-point))
+  (let* ((default (forge-current-issue))
          (repo    (forge-get-repository (or default t)))
          (format  (lambda (topic)
                     (format "%s  %s"
@@ -126,12 +126,23 @@
 
 ;;; Sections
 
+(defun forge-current-issue ()
+  (or (forge-issue-at-point)
+      (and (derived-mode-p 'forge-topic-mode)
+           (forge-issue-p forge-buffer-topic)
+           forge-buffer-topic)
+      (and (derived-mode-p 'forge-topic-list-mode)
+           (let ((topic (forge-get-topic (tabulated-list-get-id))))
+             (and (forge-issue-p topic)
+                  topic)))))
+
 (defun forge-issue-at-point ()
   (or (magit-section-value-if 'issue)
       (when-let ((post (magit-section-value-if 'post)))
-        (if (forge-issue-p post)
-            post
-          (forge-get-issue post)))))
+        (cond ((forge-issue-p post)
+               post)
+              ((forge-issue-post-p post)
+               (forge-get-issue post))))))
 
 (defvar forge-issues-section-map
   (let ((map (make-sparse-keymap)))

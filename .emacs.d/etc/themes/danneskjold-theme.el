@@ -109,7 +109,7 @@
      `(font-lock-function-name-face ((,c (:foreground ,yellow))))
      `(font-lock-type-face ((,c (:foreground ,orange))))
      `(font-lock-constant-face ((,c (:foreground ,yellow))))
-     `(font-lock-warning-face ((,c (:underline (:color ,red :style wave)))))
+     `(font-lock-warning-face ((,c (:underline (:color "orange" :style wave)))))
 
      `(mmm-default-submode-face ((,c (:background ,ada-midnight))))
 
@@ -126,7 +126,7 @@
      `(compilation-error ((,c (:foreground ,red))))
      `(compilation-line-number ((,c (:foreground ,yellow))))
      `(compilation-column-number ((,c (:foreground ,green))))
-     `(compilation-warning ((,c (:foreground ,orange :underline (:color ,red :style wave)))))
+     `(compilation-warning ((,c (:underline (:color "orange" :style wave)))))
      `(compilation-info ((,c (:foreground ,diredcl))))
 
      ;; Linum
@@ -221,7 +221,7 @@
      `(org-priority                 ((,c (:foreground ,red))))
      `(org-drawer                 ((,c (:foreground ,orange))))
 
-     `(org-date                     ((,c (:foreground "DarkSlateGray1" :underline "DarkSlateGray4"))))
+     `(org-date                     ((,c (:foreground "LightSteelBlue2" :underline "LightSteelBlue4"))))
      `(org-todo                     ((,c (:foreground ,yellow))))
      `(org-done                     ((,c (:foreground ,green))))
      `(org-headline-done            ((,c (:foreground ,grey-.5 :strike-through t :bold nil))))
@@ -259,9 +259,9 @@
      `(org-habit-overdue-future-face ((,c (:background ,black :underline t :foreground ,red))))
 
      `(org-scheduled ((,c (:foreground ,white))))
-     `(org-warning ((,c (:foreground ,orange :slant italic))))
+     `(org-warning ((,c (:foreground "#FFCA00"))))
      `(org-scheduled-today ((,c (:foreground ,white))))
-     `(org-scheduled-previously ((,c (:foreground "darkred" :bold t ))))
+     `(org-scheduled-previously ((,c (:inherit org-warning :slant italic))))
      `(org-time-grid ((,c (:foreground ,invisible))))
 
      `(org-agenda-clocking ((,c (:foreground ,diredcl :background ,ada-midnight))))
@@ -379,7 +379,8 @@
      `(elfeed-search-date-face ((,c (:foreground ,diredcl))))
 
      ;; Flycheck
-     `(flycheck-warning ((,c (:underline (:color ,red :style wave)))))
+     `(flycheck-warning ((,c (:underline (:color "orange" :style wave)))))
+     `(flymake-error ((,c (:underline (:color "red" :style wave)))))
 
      ;; js2-mode
      `(js2-function-param ((,c (:foreground ,yellow))))
@@ -447,7 +448,7 @@
      `(diredp-dir-name ((,c (:foreground ,blue))))
      `(diredp-file-name ((,c (:foreground ,white))))
      `(diredp-file-suffix ((,c (:foreground ,invisible))))
-     `(diredp-ignored-file-name ((,c (:foreground ,invisible))))
+     `(diredp-ignored-file-name ((,c ())))
      `(diredp-compressed-file-suffix ((,c (:foreground ,orange))))
      `(diredp-rainbow-media-face ((,c (:foreground ,yellow))))
      `(diredp-symlink ((,c (:foreground ,yellow))))
