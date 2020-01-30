@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-01-30 06:21:29 dharms>
+;; Modified Time-stamp: <2020-01-30 06:39:05 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2027,6 +2027,7 @@ Only one letter is shown, the first that applies."
                         (:endgroup . nil)
                         ("@mobile" . ?m)
                         ("@urgent" . ?u)
+                        ("verb" . ?v)
                         ))
   ;; capture
   (setq org-default-notes-file "~/Dropbox/notes/capture.org")
