@@ -2,8 +2,8 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-01-30 09:00:39 Dan.Harms>
-;; Modified by: Dan.Harms
+;; Modified Time-stamp: <2020-01-30 11:49:23 dan.harms>
+;; Modified by: Dan Harms
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -1735,6 +1735,7 @@ Only one letter is shown, the first that applies."
          ("C-c 0ce" . counsel-colors-emacs)
          ("C-c 0cw" . counsel-colors-web)
          ("M-s M-w" . counsel-search)
+         ("M-s !" . counsel-flycheck)
          :map ivy-minibuffer-map
          ("M-y" . ivy-next-line-and-call)
          )
