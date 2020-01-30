@@ -2,8 +2,8 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-01-30 06:39:05 dharms>
-;; Modified by: Dan Harms
+;; Modified Time-stamp: <2020-01-30 09:00:39 Dan.Harms>
+;; Modified by: Dan.Harms
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -2846,6 +2846,7 @@ completion at point mechanism does not interfere with `completion-at-point-funct
   (setq company-dabbrev-minimum-length 1)
   (setq company-dabbrev-downcase nil)
   (setq company-dabbrev-ignore-case t)
+  (setq company-etags-ignore-case t)
   ;; (setq company-begin-commands '(self-insert-command))
   (setq company-show-numbers t)
   (setq company-tooltip-align-annotations t)
