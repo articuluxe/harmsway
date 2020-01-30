@@ -1,12 +1,10 @@
 ;;; remotehost-connect.el --- Manages connections to remote hosts
-;; Copyright (C) 2016-2019  Dan Harms (dharms)
+;; Copyright (C) 2016-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Monday, April 18, 2016
-;; Version: 1.0
-;; Modified Time-stamp: <2019-12-09 10:08:10 Dan.Harms>
+;; Modified Time-stamp: <2020-02-06 09:55:00 Dan.Harms>
 ;; Modified by: Dan.Harms
 ;; Keywords: tools remote hosts
-;; Package-Requires: ((emacs "25.1"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -32,15 +30,20 @@
 (require 'ivy)
 (require 'read-file)
 (require 'cl-lib)
+(require 'subr-x)
 
 (defvar remotehost-connect-hosts '()
   "List of hosts to connect to.")
 (defvar remotehost-connect-history nil
   "History for `remotehost-connect'.")
 
-(defun remotehost-connect--derive-remote-name (method user host dir)
-  "Derive the remote file name defined by METHOD, USER, HOST and DIR."
-  (format "/%s:%s@%s:%s" method user host dir))
+(defun remotehost-connect--derive-remote-name (method user host dir
+                                                      &optional hops)
+  "Derive the remote file name defined by METHOD, USER, HOST, DIR and HOPS."
+  (let ((str (format "/%s:%s@%s" method user host)))
+    (dolist (hop hops)
+      (setq str (concat str "|" hop)))
+    (concat str (format ":%s" dir))))
 
 (defun remotehost-connect--derive-remote-name-plist (plist)
   "Derive the remote file name implied by the settings in PLIST."
@@ -48,7 +51,8 @@
    (plist-get plist :method)
    (plist-get plist :user)
    (plist-get plist :host)
-   (plist-get plist :dir)))
+   (plist-get plist :dir)
+   (plist-get plist :hops)))
 
 (defun remotehost-connect--find-file (target)
   "Opens a remote host location TARGET.
@@ -82,37 +86,58 @@ followed by an optional description, separated by whitespace."
         (push `(:host ,host :description ,desc) lst)))
     lst))
 
+(defun remotehost-connect--gather-hosts (method user dir
+                                                &optional hops)
+  "Gather hosts from `remotehost-connect-hosts'.
+METHOD, USER and DIR describe the remote file, as in tramp.
+Optional HOPS is a list of additional hops to add to the result.
+A plist is returned that describes the result."
+  (let (host)
+    (cl-remove-duplicates
+     (sort
+      (mapcar (lambda (plist)
+                (when (setq host (plist-get plist :host))
+                  (cons (format "%-18s %s" host
+                                (plist-get plist :description))
+                        (list :method method
+                              :user user
+                              :host host
+                              :dir dir
+                              :hops hops
+                              ))))
+              remotehost-connect-hosts)
+      (lambda (left right) (string-lessp (car left) (car right))))
+     :test (lambda (x y) (equal (car x) (car y))))))
+
 ;;;###autoload
-(defun remotehost-connect (&optional user dir)
+(defun remotehost-connect (&optional arg)
   "Connect to a remote host from `remotehost-connect-hosts'.
-Optional argument USER allows overriding the remote user,
-when called interactively with a prefix argument.
-Optional argument DIR allows overriding the remote directory,
-when called interactively with a prefix argument."
-  (interactive (list (if current-prefix-arg
-                         (read-string "User: " tramp-default-user) nil)
-                     (if current-prefix-arg
-                         (read-string "Dir: " "~"))))
-  (let ((method tramp-default-method)
-        hosts host desc disp conn)
-    (setq hosts
-          (mapcar (lambda (plist)
-                    (setq host (plist-get plist :host))
-                    (when host
-                      (setq desc (plist-get plist :description))
-                      (setq disp (format "%-18s %s" host desc))
-                      (cons disp
-                            (list :method method
-                                  :user (or user tramp-default-user)
-                                  :host host
-                                  :dir (or dir "~")
-                                  ))))
-                  remotehost-connect-hosts))
-    (setq hosts (sort hosts (lambda (left right)
-                              (string-lessp (car left) (car right)))))
-    (setq hosts (cl-remove-duplicates hosts :test (lambda (x y)
-                                                    (equal (car x)
-                                                           (car y)))))
+Optional argument ARG allows overriding the default values for
+ method, user and starting directory."
+  (interactive "P")
+  (let* ((method tramp-default-method)
+         (user tramp-default-user)
+         (dir "~")
+         (numhops 1)
+         hosts hop hops)
+    (when arg
+      (when (>= (prefix-numeric-value arg) 16)
+        (setq method (read-string "Method: " method)))
+      (when (>= (prefix-numeric-value arg) 4)
+        (setq user (read-string "User: " user)))
+      (when (>= (prefix-numeric-value arg) 16)
+        (setq dir (read-string "Directory: " dir)))
+      (when (>= (prefix-numeric-value arg) 64)
+        (setq hop (read-string
+                   (format "Add hop #%d: " numhops)
+                   "sudo:root@"))
+        (while (and hop (not (string-empty-p hop)))
+          (push hop hops)
+          (incf numhops)
+          (setq hop (read-string
+                     (format "Add hop #%d: " numhops)
+                     hop)))))
+    (setq hosts (remotehost-connect--gather-hosts method user dir hops))
     (ivy-read "Remote host: " hosts
               :history 'remotehost-connect-history
               :action (lambda (x)
@@ -139,14 +164,46 @@ X is a plist containing the connection properties."
   (interactive)
   (let ((plist (cdr x))
         dir)
-    (setq dir (read-directory-name "Remote dir: " "~"))
+    (setq dir (read-string "Remote dir: " "~"))
     (when dir
       (plist-put plist :dir dir)
       (remotehost-connect--find-file plist))))
 
+(defun remotehost-connect-override-settings (x)
+  "Read input to specify various settings via `remotehost-connect'.
+X is a plist containing the connection properties."
+  (interactive)
+  (let* ((plist (cdr x))
+         (method (plist-get plist :method))
+         (user (plist-get plist :user))
+         (dir (plist-get plist :dir))
+         (numhops 1)
+         hops hop)
+    (when (and (setq method (read-string "Method: " method))
+               (not (string-empty-p method)))
+      (plist-put plist :method method))
+    (when (and (setq user (read-string "User: " user))
+               (not (string-empty-p user)))
+      (plist-put plist :user user))
+    (when (and (setq dir (read-string "Directory: " dir))
+               (not (string-empty-p dir)))
+      (plist-put plist :dir dir))
+    (while (and (setq hop
+                      (read-string
+                       (format "Add hop #%d: " numhops)
+                       (or (car (plist-get plist :hops))
+                           "sudo:root@")))
+                (not (string-empty-p hop)))
+      (push hop hops)
+      (incf numhops))
+    (unless (seq-empty-p hops)
+      (plist-put plist :hops hops))
+    (remotehost-connect--find-file plist)))
+
 (ivy-add-actions 'remotehost-connect
                  '(("u" remotehost-connect-change-user "user")
-                   ("d" remotehost-connect-change-dir "directory")))
+                   ("d" remotehost-connect-change-dir "directory")
+                   ("v" remotehost-connect-override-settings "override")))
 
 (provide 'remotehost-connect)
 ;;; remotehost-connect.el ends here
