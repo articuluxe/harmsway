@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-01-29 13:53:46 dan.harms>
+;; Modified Time-stamp: <2020-01-30 06:21:29 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2046,6 +2046,7 @@ Only one letter is shown, the first that applies."
      (python . t)
      (sql . t)
      (sqlite . t)
+     (verb . t)
      ))
   (if (< emacs-major-version 26)
       (progn
@@ -3203,6 +3204,12 @@ See `https://github.com/company-mode/company-mode/issues/205'."
               (setq-local company-smart-backend 'company-restclient)))
   )
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; verb ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package verb
+  :after org
+  :config
+  (define-key org-mode-map "\C-cv" verb-command-map))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-insert ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package auto-insert-choose+
   :bind ("C-c st" . auto-insert)
@@ -3932,7 +3939,7 @@ Requires Flake8 2.0 or newer. See URL
   )
 
 (define-prefix-command 'harmsway-python-prefix)
-(global-set-key "\C-cv" 'harmsway-python-prefix)
+(global-set-key "\C-c\M-p" 'harmsway-python-prefix)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; conda ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package conda
