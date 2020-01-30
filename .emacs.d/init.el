@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-01-30 11:49:23 dan.harms>
+;; Modified Time-stamp: <2020-01-30 15:28:26 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1541,7 +1541,10 @@ Only one letter is shown, the first that applies."
          )
   :config
   (setq dumb-jump-selector 'ivy)
-  (setq dumb-jump-prefer-searcher 'rg)
+  (cond ((executable-find "rg")
+         (setq dumb-jump-prefer-searcher 'rg))
+        ((executable-find "ag")
+         (setq dumb-jump-prefer-searcher 'ag)))
   (push ".proviso" dumb-jump-project-denoters)
   (setq dumb-jump-max-find-time 5)
   )
