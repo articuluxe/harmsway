@@ -32,6 +32,10 @@ sudo apt-get install i2c-tools
 sudo apt-get emacs
 sudo apt-get install emacs
 #+END_SRC
+** ppa
+sudo add-apt-repository ppa:kelleyk/emacs
+sudo apt update
+sudo apt install emacs26
 ** local
 #+BEGIN_SRC sh
 cd emacs-25.1/

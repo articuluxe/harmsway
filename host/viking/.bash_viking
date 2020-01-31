@@ -1,7 +1,7 @@
 # -*- Mode: sh -*-
 # .bash_viking
 
-export VISUAL=/usr/local/bin/emacs
+export VISUAL=/usr/bin/emacs26
 export EDITOR="$VISUAL -nw"
 alias emacs="\$EDITOR"
 

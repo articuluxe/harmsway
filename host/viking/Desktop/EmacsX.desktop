@@ -8,4 +8,4 @@ Icon=gnome-panel-launcher
 Name=EmacsX
 Comment=Launch EmacsX
 Path=
-Exec=/usr/local/bin/emacs
+Exec=/usr/bin/emacs26
