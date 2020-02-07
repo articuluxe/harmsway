@@ -1,0 +1,5 @@
+mkdir -p release
+cd release
+curl -O -L https://github.com/vjeantet/alerter/releases/download/002/alerter_v002_darwin_amd64.zip
+unzip -o alerter_v002_darwin_amd64.zip
+cp -pf alerter ../../../../scripts
