@@ -4,7 +4,7 @@
 
 ;; Author: Toby Cubitt <toby-undo-tree@dr-qubit.org>
 ;; Maintainer: Toby Cubitt <toby-undo-tree@dr-qubit.org>
-;; Version: 0.7.3
+;; Version: 0.7.4
 ;; Keywords: convenience, files, undo, redo, history, tree
 ;; URL: http://www.dr-qubit.org/emacs.php
 ;; Repository: http://www.dr-qubit.org/git/undo-tree.git
@@ -2256,9 +2256,9 @@ which is defined in the `warnings' library.\n")
     ;; leading nil to the lists, and have the pointers point to that
     ;; initially.
     ;; Note: using '(nil) instead of (list nil) in the `let*' results in
-    ;;       bizarre errors when the code is byte-compiled, where parts of the
-    ;;       lists appear to survive across different calls to this function.
-    ;;       An obscure byte-compiler bug, perhaps?
+    ;;       errors when the code is byte-compiled, presumably because the
+    ;;       Lisp reader generates a single cons, and that same cons gets used
+    ;;       each call.
     (let* ((region-changeset (list nil))
 	   (r region-changeset)
 	   (delta-list (list nil))
@@ -2273,7 +2273,7 @@ which is defined in the `warnings' library.\n")
       ;; --- initialisation ---
       (cond
        ;; if this is a repeated undo in the same region, start pulling changes
-       ;; from NODE at which undo-in-region branch iss attached, and detach
+       ;; from NODE at which undo-in-region branch is attached, and detach
        ;; the branch, using it as initial FRAGMENT of branch being constructed
        (repeated-undo-in-region
 	(setq original-current node

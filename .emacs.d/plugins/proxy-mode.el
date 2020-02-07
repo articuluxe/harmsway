@@ -141,8 +141,8 @@
   :keymap proxy-mode-map
   :global nil
   (if proxy-mode
-      (proxy-mode-enable)
-    (proxy-mode-disable)))
+      (proxy-mode-disable)
+    (proxy-mode-enable)))
 
 ;; ;;;###autoload
 ;; (define-globalized-minor-mode global-proxy-mode proxy-mode proxy-mode)

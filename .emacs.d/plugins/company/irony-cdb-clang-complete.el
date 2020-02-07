@@ -20,7 +20,8 @@
 
 ;;; Commentary:
 ;;
-;; This file defines a compilation database for .clang_complete file.
+;; This file defines a compilation database for .clang_complete and
+;; compile_flags.txt, both of which have the same format.
 ;;
 
 ;;; Code:
@@ -40,8 +41,20 @@
 
 (defun irony-cdb-clang-complete--locate-db ()
   (when buffer-file-name
-    (irony--awhen (locate-dominating-file buffer-file-name ".clang_complete")
-      (concat (file-name-as-directory it) ".clang_complete"))))
+    (catch 'fname
+      (locate-dominating-file
+       buffer-file-name
+       ;; locate-dominating-file will invoke the lambda on suitable
+       ;; directories, and if we have either of our files there, we
+       ;; return its filename, by throwing it.
+       (lambda (d)
+         (let ((cfname (concat (file-name-as-directory d) "compile_flags.txt"))
+               (ccname (concat (file-name-as-directory d) ".clang_complete")))
+           (if (file-exists-p cfname)
+               (throw 'fname cfname)
+             (if (file-exists-p ccname)
+                 (throw 'fname ccname)
+               nil))))))))
 
 (defun irony-cdb-clang-complete--load-db (cc-file)
   (with-temp-buffer

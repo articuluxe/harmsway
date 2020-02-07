@@ -1557,18 +1557,24 @@ Return the created process."
         (push (list buffer
                     (rust--format-get-loc buffer nil))
               buffer-loc)))
-    (dolist (window (window-list))
-      (let ((buffer (window-buffer window)))
-        (when (or (eq buffer base)
-                  (eq (buffer-base-buffer buffer) base))
-          (let ((start (window-start window))
-                (point (window-point window)))
-            (push (list window
-                        (rust--format-get-loc buffer start)
-                        (rust--format-get-loc buffer point))
-                  window-loc)))))
+    (dolist (frame (frame-list))
+      (dolist (window (window-list frame))
+	(let ((buffer (window-buffer window)))
+	  (when (or (eq buffer base)
+		    (eq (buffer-base-buffer buffer) base))
+	    (let ((start (window-start window))
+		  (point (window-point window)))
+	      (push (list window
+			  (rust--format-get-loc buffer start)
+			  (rust--format-get-loc buffer point))
+		    window-loc))))))
     (unwind-protect
-        (rust--format-call (current-buffer))
+        ;; save and restore window start position
+        ;; after reformatting
+        ;; to avoid the disturbing scrolling
+        (let ((w-start (window-start)))
+          (rust--format-call (current-buffer))
+          (set-window-start (selected-window) w-start))
       (dolist (loc buffer-loc)
         (let* ((buffer (pop loc))
                (pos (rust--format-get-pos buffer (pop loc))))

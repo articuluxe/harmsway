@@ -432,27 +432,27 @@ It requires `circe' or `erc' package."
 
 (defface doom-modeline-debug
   '((t (:inherit (font-lock-doc-face bold))))
-  "Face for debug-level messages in the modeline. Used by `*checker'."
+  "Face for debug-level messages in the modeline. Used by vcs, checker, etc."
   :group 'doom-modeline-faces)
 
 (defface doom-modeline-info
   '((t (:inherit (success bold))))
-  "Face for info-level messages in the modeline. Used by `*vc' and `*chcker'."
+  "Face for info-level messages in the modeline. Used by vcs, checker, etc."
   :group 'doom-modeline-faces)
 
 (defface doom-modeline-warning
   '((t (:inherit (warning bold))))
-  "Face for warnings in the modeline. Used by `*checker'."
+  "Face for warnings in the modeline. Used by vcs, checker, etc."
   :group 'doom-modeline-faces)
 
 (defface doom-modeline-urgent
   '((t (:inherit (error bold))))
-  "Face for errors in the modeline. Used by `*checker'."
+  "Face for errors in the modeline. Used by vcs, checker, etc."
   :group 'doom-modeline-faces)
 
 (defface doom-modeline-unread-number
   '((t (:inherit italic)))
-  "Face for unread number in the modeline. Used by `github', `mu4e', etc."
+  "Face for unread number in the modeline. Used by GitHub, mu4e, etc."
   :group 'doom-modeline-faces)
 
 (defface doom-modeline-bar
@@ -502,12 +502,12 @@ It requires `circe' or `erc' package."
 
 (defface doom-modeline-persp-name
   '((t (:inherit (font-lock-comment-face italic))))
-  "Face for the replace state tag in evil state indicator."
+  "Face for the persp name."
   :group 'doom-modeline-faces)
 
 (defface doom-modeline-persp-buffer-not-in-persp
   '((t (:inherit (font-lock-doc-face bold italic))))
-  "Face for the replace state tag in evil state indicator."
+  "Face for the buffers which are not in the persp."
   :group 'doom-modeline-faces)
 
 (defface doom-modeline-lsp-success
@@ -532,37 +532,37 @@ It requires `circe' or `erc' package."
 
 (defface doom-modeline-battery-charging
   '((t (:inherit success :weight normal)))
-  "Face for battery charging statues."
+  "Face for battery charging status."
   :group 'doom-modeline-faces)
 
 (defface doom-modeline-battery-full
   '((t (:inherit success :weight normal)))
-  "Face for battery full statues."
+  "Face for battery full status."
   :group 'doom-modeline-faces)
 
 (defface doom-modeline-battery-normal
   '((t (:inherit mode-line :weight normal)))
-  "Face for battery normal statues."
+  "Face for battery normal status."
   :group 'doom-modeline-faces)
 
 (defface doom-modeline-battery-warning
   '((t (:inherit warning :weight normal)))
-  "Face for battery warning statues."
+  "Face for battery warning status."
   :group 'doom-modeline-faces)
 
 (defface doom-modeline-battery-critical
   '((t (:inherit error :weight normal)))
-  "Face for battery critical statues."
+  "Face for battery critical status."
   :group 'doom-modeline-faces)
 
 (defface doom-modeline-battery-error
   '((t (:inherit error :weight normal)))
-  "Face for battery error statues."
+  "Face for battery error status."
   :group 'doom-modeline-faces)
 
 (defface doom-modeline-buffer-timemachine
   '((t (:inherit (doom-modeline-buffer-file italic underline))))
-  "Face for battery error statues."
+  "Face for timemachine status."
   :group 'doom-modeline-faces)
 
 
@@ -800,7 +800,7 @@ then this function does nothing."
      (* (if (and (>= emacs-major-version 27)
                  (not (eq system-type 'darwin)))
             1.0
-          1.68)
+          (if doom-modeline-icon 1.68 1.25))
         (cond ((integerp height) (/ height 10))
               ((floatp height) (* height (frame-char-height)))
               (t (frame-char-height)))))))

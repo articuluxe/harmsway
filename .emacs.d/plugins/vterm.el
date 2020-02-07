@@ -43,7 +43,8 @@
 ;;; Code:
 
 (unless module-file-suffix
-  (error "VTerm needs module support. Please compile your Emacs with the --with-modules option!"))
+  (error "VTerm needs module support. Please compile your Emacs
+  with the --with-modules option!"))
 
 (or (require 'vterm-module nil t)
     (and (require 'vterm-module-make)
@@ -64,12 +65,26 @@
   "Maximum 'scrollback' value."
   :type 'number
   :group 'vterm)
+
 (defcustom vterm-min-window-width 80
   "Minimum window width."
   :type 'number
   :group 'vterm)
 
-(defcustom vterm-keymap-exceptions '("C-c" "C-x" "C-u" "C-g" "C-h" "M-x" "M-o" "C-v" "M-v" "C-y" "M-y")
+(defcustom vterm-kill-buffer-on-exit nil
+  "Kill vterm buffer when the attached process is terminated."
+  :type '(radio (const :tag "Kill buffer" t)
+                (const :tag "Do not kill buffer" nil))
+  :group 'vterm)
+
+(defcustom vterm-clear-scrollback nil
+  "If not nil `C-l' will clear both screen and scrollback.
+else it will only clean screen."
+  :type 'number
+  :group 'vterm)
+
+(defcustom vterm-keymap-exceptions
+'("C-c" "C-x" "C-u" "C-g" "C-h" "C-l" "M-x" "M-o" "C-v" "M-v" "C-y" "M-y")
   "Exceptions for vterm-keymap.
 
 If you use a keybinding with a prefix-key, add that prefix-key to
@@ -103,13 +118,14 @@ Note that this hook will not work if another package like
 those functions are called one by one, with 1 arguments.
 `vterm-set-title-functions' should be a symbol, a hook variable.
 The value of HOOK may be nil, a function, or a list of functions.
-for example
+For example
     (defun vterm--rename-buffer-as-title (title)
     (rename-buffer (format \"vterm %s\" title) t))
-    (add-hook 'vterm-set-title-functions 'vterm--rename-buffer-as-title)
+    (add-hook 'vterm-set-title-functions
+              'vterm--rename-buffer-as-title)
 
-see http://tldp.org/HOWTO/Xterm-Title-4.html about how to set terminal title
-for different shell"
+See http://tldp.org/HOWTO/Xterm-Title-4.html about how to set
+terminal title for different shell"
   :type 'hook
   :group 'vterm)
 
@@ -126,6 +142,17 @@ for different shell"
 Avoid using EVAL on input arguments, as it could allow a third
 party to commandeer your editor."
   :type '(alist :key-type string)
+  :group 'vterm)
+
+(defcustom vterm-disable-bold-font nil
+  "Disable bold fonts or not."
+  :type  'boolean
+  :group 'vterm)
+
+(defface vterm-font-default
+  `((t :inherit default))
+  "The default font for vterm buffer.
+Monospaced font whihc is fixed idth and height is recommended."
   :group 'vterm)
 
 (defface vterm-color-default
@@ -209,8 +236,10 @@ color is used as ansi color 15."
   "Shell process of current term.")
 
 (defvar-local vterm--redraw-timer nil)
+(defvar-local vterm--redraw-immididately nil)
+(defvar-local vterm--linenum-remapping nil)
 
-(defvar vterm-timer-delay 0.01
+(defvar vterm-timer-delay 0.1
   "Delay for refreshing the buffer after receiving updates from libvterm.
 Improves performance when receiving large bursts of data.
 If nil, never delay")
@@ -218,20 +247,29 @@ If nil, never delay")
 (define-derived-mode vterm-mode fundamental-mode "VTerm"
   "Major mode for vterm buffer."
   (buffer-disable-undo)
-  (setq vterm--term (vterm--new (window-body-height)
-                                (- (window-body-width) (vterm--get-margin-width))
-                                vterm-max-scrollback))
-
-  (setq buffer-read-only t)
-  (setq-local scroll-conservatively 101)
-  (setq-local scroll-margin 0)
+  (face-remap-add-relative 'default 'vterm-font-default)
+  (and (boundp 'display-line-numbers)
+       (let ((font-height (expt text-scale-mode-step text-scale-mode-amount)))
+         (setq vterm--linenum-remapping
+               (face-remap-add-relative 'line-number :height font-height))))
   (let ((process-environment (append `(,(concat "TERM="
-						                        vterm-term-environment-variable)
+                                                vterm-term-environment-variable)
                                        "INSIDE_EMACS=vterm"
                                        "LINES"
                                        "COLUMNS")
                                      process-environment))
-        (process-adaptive-read-buffering nil))
+        (process-adaptive-read-buffering nil)
+        (width (max (- (window-body-width) (vterm--get-margin-width))
+                    vterm-min-window-width)))
+    (setq vterm--term (vterm--new (window-body-height)
+                                  width vterm-max-scrollback
+                                  vterm-disable-bold-font))
+    (setq buffer-read-only t)
+    (setq-local scroll-conservatively 101)
+    (setq-local scroll-margin 0)
+    (setq-local hscroll-margin 0)
+    (setq-local hscroll-step 1)
+    (setq-local truncate-lines t)
     (setq vterm--process
           (make-process
            :name "vterm"
@@ -239,21 +277,24 @@ If nil, never delay")
            :command `("/bin/sh" "-c"
                       ,(format "stty -nl sane iutf8 erase ^? rows %d columns %d >/dev/null && exec %s"
                                (window-body-height)
-                               (- (window-body-width) (vterm--get-margin-width))
-                               vterm-shell))
+                               width vterm-shell))
            :coding 'no-conversion
            :connection-type 'pty
            :filter #'vterm--filter
-           :sentinel (when vterm-exit-functions #'vterm--sentinel))))
+           ;; Sentinel needed if there are exit functions or if vterm-kill-buffer-on-exit
+           ;; is set to t. In this latter case, vterm--sentinel will kill the buffer
+           :sentinel (when (or vterm-exit-functions
+                               vterm-kill-buffer-on-exit)
+                       #'vterm--sentinel))))
   (vterm--set-pty-name vterm--term (process-tty-name vterm--process))
   (process-put vterm--process 'adjust-window-size-function
                #'vterm--window-adjust-process-window-size)
   (setq next-error-function 'vterm-next-error-function))
 
 (defun vterm--compilation-setup ()
-  "function to setup `compilation-shell-minor-mode' for vterm.
-`'compilation-shell-minor-mode' would change the value of
-local variable `next-error-function',so we should call this function in
+  "Function to setup `compilation-shell-minor-mode' for vterm.
+`'compilation-shell-minor-mode' would change the value of local
+variable `next-error-function', so we should call this function in
 `compilation-shell-minor-mode-hook'."
   (when (eq major-mode 'vterm-mode)
     (setq next-error-function 'vterm-next-error-function)))
@@ -355,10 +396,13 @@ This is the value of `next-error-function' in Compilation buffers."
 (define-key vterm-mode-map (kbd "C-c C-y")             #'vterm--self-insert)
 (define-key vterm-mode-map (kbd "C-c C-c")             #'vterm-send-C-c)
 (define-key vterm-mode-map (kbd "C-c C-l")             #'vterm-clear-scrollback)
+(define-key vterm-mode-map (kbd "C-l")                 #'vterm-clear)
 (define-key vterm-mode-map (kbd "C-\\")                #'vterm-send-ctrl-slash)
 (define-key vterm-mode-map (kbd "C-c C-g")             #'vterm-send-C-g)
 (define-key vterm-mode-map (kbd "C-c C-u")             #'vterm-send-C-u)
 (define-key vterm-mode-map [remap self-insert-command] #'vterm--self-insert)
+
+(define-key vterm-mode-map (kbd "C-c C-r")             #'vterm-reset-cursor-point)
 
 (define-key vterm-mode-map (kbd "C-c C-t")             #'vterm-copy-mode)
 
@@ -367,8 +411,8 @@ This is the value of `next-error-function' in Compilation buffers."
 (define-key vterm-copy-mode-map (kbd "C-c C-t")        #'vterm-copy-mode)
 (define-key vterm-copy-mode-map [return]               #'vterm-copy-mode-done)
 (define-key vterm-copy-mode-map (kbd "RET")            #'vterm-copy-mode-done)
+(define-key vterm-copy-mode-map (kbd "C-c C-r")        #'vterm-reset-cursor-point)
 
-(defvar-local vterm--copy-saved-point nil)
 
 (define-minor-mode vterm-copy-mode
   "Toggle vterm copy mode."
@@ -378,10 +422,8 @@ This is the value of `next-error-function' in Compilation buffers."
   (if vterm-copy-mode
       (progn                            ;enable vterm-copy-mode
         (use-local-map nil)
-        (vterm-send-stop)
-        (setq vterm--copy-saved-point (point)))
-    (if vterm--copy-saved-point
-        (goto-char vterm--copy-saved-point))
+        (vterm-send-stop))
+    (vterm-reset-cursor-point)
     (use-local-map vterm-mode-map)
     (vterm-send-start)))
 
@@ -413,7 +455,8 @@ This is the value of `next-error-function' in Compilation buffers."
           (inhibit-read-only t))
       (when (and (not (symbolp last-input-event)) shift (not meta) (not ctrl))
         (setq key (upcase key)))
-      (vterm--update vterm--term key shift meta ctrl))))
+      (vterm--update vterm--term key shift meta ctrl)
+      (setq vterm--redraw-immididately t))))
 
 (defun vterm-send (key)
   "Sends KEY to libvterm. KEY can be anything ‘kbd’ understands."
@@ -511,18 +554,24 @@ This is the value of `next-error-function' in Compilation buffers."
   (interactive)
   (vterm-send-key "\\" nil nil t))
 
-
-
 (defun vterm-clear-scrollback ()
   "Sends `<clear-scrollback>' to the libvterm."
   (interactive)
   (vterm-send-key "<clear_scrollback>"))
 
+(defun vterm-clear (&optional arg)
+  "Sends `<clear-scrollback>' to the libvterm."
+  (interactive "P")
+  (if (or
+       (and vterm-clear-scrollback (not arg))
+       (and arg (not vterm-clear-scrollback)))
+      (vterm-clear-scrollback))
+  (vterm-send-C-l))
+
 (defun vterm-undo ()
   "Sends `C-_' to the libvterm."
   (interactive)
   (vterm-send-key "_" nil nil t))
-
 
 (defun vterm-yank (&optional arg)
   "Implementation of `yank' (paste) in vterm."
@@ -559,16 +608,19 @@ Optional argument PASTE-P paste-p."
     (dolist (char (string-to-list string))
       (vterm--update vterm--term (char-to-string char) nil nil nil))
     (when paste-p
-      (vterm--update vterm--term "<end_paste>" nil nil nil))))
+      (vterm--update vterm--term "<end_paste>" nil nil nil)))
+  (setq vterm--redraw-immididately t))
 
 (defun vterm--invalidate()
   "The terminal buffer is invalidated, the buffer needs redrawing."
-  (if vterm-timer-delay
+  (if (and (not vterm--redraw-immididately)
+           vterm-timer-delay)
       (unless vterm--redraw-timer
         (setq vterm--redraw-timer
               (run-with-timer vterm-timer-delay nil
                               #'vterm--delayed-redraw (current-buffer))))
-    (vterm--delayed-redraw (current-buffer))))
+    (vterm--delayed-redraw (current-buffer))
+    (setq vterm--redraw-immididately nil)))
 
 (defun vterm--delayed-redraw(buffer)
   "Redraw the terminal buffer .
@@ -576,14 +628,19 @@ Argument BUFFER the terminal buffer."
   (when (buffer-live-p buffer)
     (with-current-buffer buffer
       (let ((inhibit-redisplay t)
-            (inhibit-read-only t))
+            (inhibit-read-only t)
+            (windows (get-buffer-window-list)))
         (setq vterm--redraw-timer nil)
         (when vterm--term
-          (when (and (require 'display-line-numbers nil 'noerror)
+          (when (and (bound-and-true-p display-line-numbers)
+                     (require 'display-line-numbers nil 'noerror)
                      (get-buffer-window buffer t)
                      (ignore-errors (display-line-numbers-update-width)))
             (window--adjust-process-windows))
-          (vterm--redraw vterm--term))))))
+          (vterm--redraw vterm--term)
+          (unless (zerop (window-hscroll))
+            (when (cl-member (selected-window) windows :test #'eq)
+              (set-window-hscroll (selected-window) 0))))))))
 
 ;;;###autoload
 (defun vterm (&optional buffer-name)
@@ -626,7 +683,26 @@ Argument EVENT process event."
   (let ((buf (process-buffer process)))
     (run-hook-with-args 'vterm-exit-functions
                         (if (buffer-live-p buf) buf nil)
-                        event)))
+                        event)
+    (if (and vterm-kill-buffer-on-exit (buffer-live-p buf))
+        (kill-buffer buf))
+    ))
+
+(defun vterm--text-scale-mode (&optional argv)
+  "fix `line-number' height for scaled text"
+  (and text-scale-mode
+       (equal major-mode 'vterm-mode)
+       (boundp 'display-line-numbers)
+       (let ((height (expt text-scale-mode-step
+	    				   text-scale-mode-amount)))
+         (when vterm--linenum-remapping
+           (face-remap-remove-relative vterm--linenum-remapping))
+         (setq vterm--linenum-remapping
+               (face-remap-add-relative 'line-number :height height))))
+  (window--adjust-process-windows))
+
+(advice-add #'text-scale-mode :after #'vterm--text-scale-mode)
+
 
 (defun vterm--window-adjust-process-window-size (process windows)
   "Adjust process window size considering the width of line number."
@@ -642,22 +718,20 @@ Argument EVENT process event."
                (> width 0)
                (> height 0))
       (vterm--set-size vterm--term height width)
-      ;; (scroll-left)
       (cons width height))))
 
 (defun vterm--get-margin-width ()
   "Get margin width of vterm buffer when `display-line-numbers-mode' is enabled."
   (let ((width 0))
-    (when (and (boundp 'display-line-numbers)
-               display-line-numbers)
-      (setq width (+ (or display-line-numbers-width 0) 2)))
+    (when (bound-and-true-p display-line-numbers)
+      (setq width (+ width (or display-line-numbers-width 0) 4)))
     width))
 
 (defun vterm--delete-lines (line-num count &optional delete-whole-line)
   "Delete COUNT lines from LINE-NUM.
-if LINE-NUM is negative backward-line from end of buffer.
- If option DELETE-WHOLE-LINE is non-nil, then this command kills
- the whole line including its terminating newline"
+If LINE-NUM is negative backward-line from end of buffer.
+If option DELETE-WHOLE-LINE is non-nil, then this command kills
+the whole line including its terminating newline"
   (save-excursion
     (when (vterm--goto-line line-num)
       (delete-region (point) (point-at-eol count))
@@ -667,7 +741,7 @@ if LINE-NUM is negative backward-line from end of buffer.
 
 (defun vterm--goto-line(n)
   "Go to line N and return true on success.
-if N is negative backward-line from end of buffer."
+If N is negative backward-line from end of buffer."
   (cond
    ((> n 0)
     (goto-char (point-min))
@@ -686,7 +760,7 @@ if N is negative backward-line from end of buffer."
     (when dir (setq default-directory dir))))
 
 (defun vterm--get-directory (path)
-  "Get  normalized directory to PATH."
+  "Get normalized directory to PATH."
   (when path
     (let (directory)
       (if (string-match "^\\(.*?\\)@\\(.*?\\):\\(.*?\\)$" path)
@@ -741,6 +815,40 @@ the called functions."
     (if f
         (apply (cadr f) args)
       (message "Failed to find command: %s" command))))
+
+(defun vterm--get-prompt-point ()
+  "Get the position of the end of current prompt."
+  (let (pt)
+    (save-excursion
+      (setq pt (vterm--get-prompt-point-internal
+                vterm--term (line-number-at-pos))))
+    pt))
+
+(defun vterm-reset-cursor-point ()
+  "Make sure the cursor at the right postion."
+  (interactive)
+  (vterm--reset-point vterm--term))
+
+(defun vterm--get-cursor-point ()
+  "Get term cursor position."
+  (save-excursion
+    (vterm-reset-cursor-point)))
+
+
+(defun vterm--at-prompt-p ()
+  "Check whether the cursor postion is at shell prompt or not."
+  (let ((pt (point))
+        (term-cursor-pt (vterm--get-cursor-point))
+        (prompt-pt (vterm--get-prompt-point)))
+    (unless prompt-pt
+      (save-excursion
+        (goto-char (point-at-bol))
+        (term-skip-prompt)
+        (setq prompt-pt (point))))
+    (and
+     (= pt term-cursor-pt)
+     (or (= pt prompt-pt)
+         (string-blank-p (buffer-substring-no-properties pt prompt-pt))))))
 
 (provide 'vterm)
 ;;; vterm.el ends here

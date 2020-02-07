@@ -1,11 +1,13 @@
 ;;; wgrep-helm.el --- Writable helm-grep-mode buffer and apply the changes to files
 
+;; Copyright (C) 2010-2020 Masahiro Hayashi
+
 ;; Author: Masahiro Hayashi <mhayashi1120@gmail.com>
 ;; Keywords: grep edit extensions
 ;; Package-Requires: ((wgrep "2.1.1"))
 ;; URL: http://github.com/mhayashi1120/Emacs-wgrep/raw/master/wgrep-helm.el
 ;; Emacs: GNU Emacs 25 or later
-;; Version: 2.3.1
+;; Version: 2.3.2
 
 ;; This program is free software; you can redistribute it and/or
 ;; modify it under the terms of the GNU General Public License as

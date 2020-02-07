@@ -1,11 +1,13 @@
 ;;; wgrep-pt.el --- Writable pt buffer and apply the changes to files
 
+;; Copyright (C) 2010-2020 Masahiro Hayashi
+
 ;; Author: Masahiro Hayashi <mhayashi1120@gmail.com>, Bailey Ling <bling@live.ca>
 ;; Keywords: grep edit extensions
 ;; Package-Requires: ((wgrep "2.1.5"))
 ;; URL: http://github.com/mhayashi1120/Emacs-wgrep/raw/master/wgrep-pt.el
 ;; Emacs: GNU Emacs 22 or later
-;; Version: 0.0.1
+;; Version: 0.0.2
 
 ;; This program is free software; you can redistribute it and/or
 ;; modify it under the terms of the GNU General Public License as

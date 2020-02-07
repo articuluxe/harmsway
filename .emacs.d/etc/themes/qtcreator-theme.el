@@ -74,6 +74,7 @@
    `(font-lock-comment-face ((,t (:foreground ,green-0))))
    `(font-lock-comment-delimiter-face((t (:inherit font-lock-comment-face))))
    `(font-lock-constant-face ((,t (:foreground ,blue-2))))
+   `(font-lock-doc-face ((,class (:foreground ,blue-2))))
    `(font-lock-function-name-face ((,class (:foreground ,cyan-1))))
    `(font-lock-keyword-face ((,class (:foreground ,yellow-1))))
    `(font-lock-string-face ((,class (:foreground ,green-0))))
@@ -108,7 +109,12 @@
       (t (:foreground ,green-0 :weight bold :underline t))))
    `(flycheck-fringe-error ((t (:foreground ,red-0 :weight bold))))
    `(flycheck-fringe-warning ((t (:foreground ,orange-3 :weight bold))))
-   `(flycheck-fringe-info ((t (:foreground ,green-0 :weight bold)))))
+   `(flycheck-fringe-info ((t (:foreground ,green-0 :weight bold))))
+
+  ;; Highlight doxygen mode
+  `(highlight-doxygen-comment ((t (:inherit font-lock-doc-face))))
+  `(highlight-doxygen-command ((t (:foreground ,blue-1 :weight bold)))))
+
 
   (custom-theme-set-variables
    'qtcreator

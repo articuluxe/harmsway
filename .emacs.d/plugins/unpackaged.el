@@ -137,6 +137,80 @@ With prefix, toggle `ibuffer-show-empty-filter-groups'."
 
 ;;; Misc
 
+(defmacro unpackaged/define-chooser (name &rest choices)
+  "Define a chooser command NAME offering CHOICES.
+Each of CHOICES should be a list, the first of which is the
+choice's name, and the rest of which is its body forms."
+  (declare (indent defun))
+  ;; Avoid redefining existing, non-chooser functions.
+  (cl-assert (or (not (fboundp name))
+                 (get name :unpackaged/define-chooser)))
+  (let* ((choice-names (mapcar #'car choices))
+         (choice-list (--map (cons (car it) `(lambda (&rest args)
+                                               ,@(cdr it)))
+                             choices))
+         (prompt (format "Choose %s: " name))
+         (docstring (concat "Choose between: " (s-join ", " choice-names))))
+    `(progn
+       (defun ,name ()
+         ,docstring
+         (interactive)
+         (let* ((choice-name (completing-read ,prompt ',choice-names)))
+           (funcall (alist-get choice-name ',choice-list nil nil #'equal))))
+       (put ',name :unpackaged/define-chooser t))))
+
+;;;###autoload
+(defun unpackaged/lorem-ipsum-overlay ()
+  "Overlay all text in current buffer with \"lorem ipsum\" text.
+When called again, remove overlays.  Useful for taking
+screenshots without revealing buffer contents."
+  (interactive)
+  (require 'lorem-ipsum)
+  (let ((ovs (overlays-in (point-min) (point-max))))
+    (if (cl-loop for ov in ovs
+                 thereis (overlay-get ov :lorem-ipsum-overlay))
+        ;; Remove overlays.
+        (dolist (ov ovs)
+          (when (overlay-get ov :lorem-ipsum-overlay)
+            (delete-overlay ov)))
+      ;; Add overlays.
+      (let ((lorem-ipsum-words (--> lorem-ipsum-text
+                                    (-flatten it) (apply #'concat it)
+                                    (split-string it (rx (or space punct)) 'omit-nulls)))
+            (case-fold-search nil))
+        (cl-labels ((overlay-match ()
+                                   (let* ((beg (match-beginning 0))
+                                          (end (match-end 0))
+                                          (replacement-word (lorem-word (match-string 0)))
+                                          (ov (make-overlay beg end)))
+                                     (when replacement-word
+                                       (overlay-put ov :lorem-ipsum-overlay t)
+                                       (overlay-put ov 'display replacement-word))))
+                    (lorem-word (word)
+                                (if-let* ((matches (lorem-matches (length word))))
+                                    (apply-case word (downcase (seq-random-elt matches)))
+                                  ;; Word too long: compose one.
+                                  (apply-case word (downcase (compose-word (length word))))))
+                    (lorem-matches (length &optional (comparator #'=))
+                                   (cl-loop for liw in lorem-ipsum-words
+                                            when (funcall comparator (length liw) length)
+                                            collect liw))
+                    (apply-case (source target)
+                                (cl-loop for sc across-ref source
+                                         for tc across-ref target
+                                         when (not (string-match-p (rx lower) (char-to-string sc)))
+                                         do (setf tc (string-to-char (upcase (char-to-string tc)))))
+                                target)
+                    (compose-word (length)
+                                  (cl-loop while (> length 0)
+                                           for word = (seq-random-elt (lorem-matches length #'<=))
+                                           concat word
+                                           do (cl-decf length (length word)))))
+          (save-excursion
+            (goto-char (point-min))
+            (while (re-search-forward (rx (1+ alpha)) nil t)
+              (overlay-match))))))))
+
 (cl-defun unpackaged/mpris-track (&optional player)
   "Return the artist, album, and title of the track playing in MPRIS-supporting player.
 Returns a string in format \"ARTIST - ALBUM: TITLE [PLAYER]\".  If no track is

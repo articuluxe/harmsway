@@ -1,6 +1,6 @@
 ;;; humanoid-themes.el --- Color themes with a dark and light variant -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2018-2019 Thomas Friese
+;; Copyright (C) 2018-2020 Thomas Friese
 
 ;; Author: Thomas Friese
 ;; URL: https://github.com/humanoid-colors/emacs-humanoid-themes
@@ -102,25 +102,46 @@ to 'auto, tags may not be properly aligned."
         ;;                                                               GUI       TER                                          GUI       TER
         ;; colors
         (black         (if (eq variant 'dark) (if (humanoid-true-color) "#070708" "gray4")           (if (humanoid-true-color) "#070708" "gray4")))
+        (red-light     (if (eq variant 'dark) (if (humanoid-true-color) "#fc466a" "red2")            (if (humanoid-true-color) "#e02e41" "firebrick3")))
         (red           (if (eq variant 'dark) (if (humanoid-true-color) "#f11235" "red2")            (if (humanoid-true-color) "#b0151a" "firebrick3")))
-        (red-bg        (if (eq variant 'dark) (if (humanoid-true-color) "#49171e" "OrangeRed4")      (if (humanoid-true-color) "#fba0a3" "pink")))
-        (red-bg-s      (if (eq variant 'dark) (if (humanoid-true-color) "#2c1316" "DarkRed")         (if (humanoid-true-color) "#feddde" "MistyRose")))
+        (red-dark      (if (eq variant 'dark) (if (humanoid-true-color) "#ab1f29" "red2")            (if (humanoid-true-color) "#911609" "firebrick3")))
+        (red-bg        (if (eq variant 'dark) (if (humanoid-true-color) "#5a171f" "OrangeRed4")      (if (humanoid-true-color) "#ffbdbe" "pink")))
+        (red-bg-s      (if (eq variant 'dark) (if (humanoid-true-color) "#330e11" "DarkRed")         (if (humanoid-true-color) "#ffe0e1" "MistyRose")))
+        (green-light   (if (eq variant 'dark) (if (humanoid-true-color) "#3ee766" "chartreuse3")     (if (humanoid-true-color) "#59b34e" "SpringGreen4")))
         (green         (if (eq variant 'dark) (if (humanoid-true-color) "#02d849" "chartreuse3")     (if (humanoid-true-color) "#388e3c" "SpringGreen4")))
-        (green-bg      (if (eq variant 'dark) (if (humanoid-true-color) "#1b500f" "DarkOliveGreen")  (if (humanoid-true-color) "#aae0a0" "DarkSeaGreen1")))
-        (green-bg-s    (if (eq variant 'dark) (if (humanoid-true-color) "#1f2b0e" "DarkGreen")       (if (humanoid-true-color) "#d8facf" "honeydew2")))
+        (green-dark    (if (eq variant 'dark) (if (humanoid-true-color) "#02c05d" "chartreuse3")     (if (humanoid-true-color) "#2e8046" "SpringGreen4")))
+        (green-bg      (if (eq variant 'dark) (if (humanoid-true-color) "#124e18" "DarkOliveGreen")  (if (humanoid-true-color) "#bef8b4" "DarkSeaGreen1")))
+        (green-bg-s    (if (eq variant 'dark) (if (humanoid-true-color) "#0d330d" "DarkGreen")       (if (humanoid-true-color) "#e0ffd6" "honeydew2")))
+        (yellow-light  (if (eq variant 'dark) (if (humanoid-true-color) "#fad417" "goldenrod1")      (if (humanoid-true-color) "#fad417" "goldenrod1")))
         (yellow        (if (eq variant 'dark) (if (humanoid-true-color) "#ffb627" "goldenrod1")      (if (humanoid-true-color) "#ffb627" "goldenrod1")))
+        (yellow-dark   (if (eq variant 'dark) (if (humanoid-true-color) "#ed9725" "goldenrod1")      (if (humanoid-true-color) "#ed9725" "goldenrod1")))
         (yellow-bg     (if (eq variant 'dark) (if (humanoid-true-color) "#32322c" "wheat4")          (if (humanoid-true-color) "#f6f1e0" "linen")))
+        (orange-light  (if (eq variant 'dark) (if (humanoid-true-color) "#fea608" "DarkOrange")      (if (humanoid-true-color) "#ff6914" "OrangeRed")))
         (orange        (if (eq variant 'dark) (if (humanoid-true-color) "#ff9505" "DarkOrange")      (if (humanoid-true-color) "#ff3d00" "OrangeRed")))
+        (orange-dark   (if (eq variant 'dark) (if (humanoid-true-color) "#ff7805" "DarkOrange")      (if (humanoid-true-color) "#b6391f" "OrangeRed")))
+        (blue-light    (if (eq variant 'dark) (if (humanoid-true-color) "#02c6fc" "DeepSkyBlue2")    (if (humanoid-true-color) "#05a5c5" "DodgerBlue3")))
         (blue          (if (eq variant 'dark) (if (humanoid-true-color) "#00a6fb" "DeepSkyBlue2")    (if (humanoid-true-color) "#0082c9" "DodgerBlue3")))
+        (blue-dark     (if (eq variant 'dark) (if (humanoid-true-color) "#1486fc" "DeepSkyBlue2")    (if (humanoid-true-color) "#065daf" "DodgerBlue3")))
         (blue-bg       (if (eq variant 'dark) (if (humanoid-true-color) "#134e69" "RoyalBlue4")      (if (humanoid-true-color) "#8acff4" "LightSkyBlue1")))
         (blue-bg-s     (if (eq variant 'dark) (if (humanoid-true-color) "#15313e" "DodgerBlue4")     (if (humanoid-true-color) "#b5e2fa" "azure2")))
-        (magenta       (if (eq variant 'dark) (if (humanoid-true-color) "#df6ee3" "magenta1")        (if (humanoid-true-color) "#630f87" "purple3")))
-        (purple        (if (eq variant 'dark) (if (humanoid-true-color) "#811cac" "purple3")         (if (humanoid-true-color) "#ff60ee" "magenta2")))
-        (aqua          (if (eq variant 'dark) (if (humanoid-true-color) "#0ed1d1" "turquoise2")      (if (humanoid-true-color) "#008e8e" "cyan4")))
+        (magenta-light (if (eq variant 'dark) (if (humanoid-true-color) "#fe80d6" "magenta2")        (if (humanoid-true-color) "#9715a4" "purple3")))
+        (magenta       (if (eq variant 'dark) (if (humanoid-true-color) "#f15ee3" "magenta2")        (if (humanoid-true-color) "#700f98" "purple3")))
+        (magenta-dark  (if (eq variant 'dark) (if (humanoid-true-color) "#d94fdb" "magenta2")        (if (humanoid-true-color) "#5e0f8c" "purple3")))
+        (purple-light  (if (eq variant 'dark) (if (humanoid-true-color) "#c56afe" "purple2")         (if (humanoid-true-color) "#7518c4" "magenta2")))
+        (purple        (if (eq variant 'dark) (if (humanoid-true-color) "#b257fd" "purple2")         (if (humanoid-true-color) "#4d10a5" "magenta2")))
+        (purple-dark   (if (eq variant 'dark) (if (humanoid-true-color) "#9445e5" "purple2")         (if (humanoid-true-color) "#2f1086" "magenta2")))
+        (aqua-light    (if (eq variant 'dark) (if (humanoid-true-color) "#34f0f6" "turquoise2")      (if (humanoid-true-color) "#2aaaab" "cyan4")))
+        (aqua          (if (eq variant 'dark) (if (humanoid-true-color) "#0dd9d6" "turquoise2")      (if (humanoid-true-color) "#008e8e" "cyan4")))
+        (aqua-dark     (if (eq variant 'dark) (if (humanoid-true-color) "#0cbacf" "turquoise2")      (if (humanoid-true-color) "#226e76" "cyan4")))
         (aqua-bg       (if (eq variant 'dark) (if (humanoid-true-color) "#0e2726" "DarkSlateGrey")   (if (humanoid-true-color) "#acefef" "azure1")))
         (cyan          (if (eq variant 'dark) (if (humanoid-true-color) "#1de9b6" "aquamarine2")     (if (humanoid-true-color) "#00bfa5" "aquamarine3")))
+        (brown-light   (if (eq variant 'dark) (if (humanoid-true-color) "#cb8802" "gray64")          (if (humanoid-true-color) "#cb8802" "gray42")))
+        (brown         (if (eq variant 'dark) (if (humanoid-true-color) "#b27701" "gray64")          (if (humanoid-true-color) "#b27701" "gray42")))
+        (brown-dark    (if (eq variant 'dark) (if (humanoid-true-color) "#7f5501" "gray64")          (if (humanoid-true-color) "#7f5501" "gray42")))
         (white         (if (eq variant 'dark) (if (humanoid-true-color) "#fcfcfc" "grey99")          (if (humanoid-true-color) "#fcfcfc" "gray99")))
+        (gray-light    (if (eq variant 'dark) (if (humanoid-true-color) "#f4f4ee" "gray64")          (if (humanoid-true-color) "#c0c0bd" "gray42")))
         (gray          (if (eq variant 'dark) (if (humanoid-true-color) "#c0c0bd" "gray64")          (if (humanoid-true-color) "#60615d" "gray42")))
+        (gray-dark     (if (eq variant 'dark) (if (humanoid-true-color) "#60615d" "gray64")          (if (humanoid-true-color) "#2f3337" "gray42")))
         ;; generic
         (act1          (if (eq variant 'dark) (if (humanoid-true-color) "#3b4045" "gray28")          (if (humanoid-true-color) "#e8e8e2" "gray89")))
         (act2          (if (eq variant 'dark) (if (humanoid-true-color) "#484e54" "gray32")          (if (humanoid-true-color) "#deded8" "gray83")))
@@ -140,38 +161,45 @@ to 'auto, tags may not be properly aligned."
         (comment       (if (eq variant 'dark) (if (humanoid-true-color) "#6b7566" "LemonChiffon4")   (if (humanoid-true-color) "#8b9985" "LemonChiffon4")))
         (comment-bg    (if (eq variant 'dark) (if (humanoid-true-color) "#232629" "gray18")          (if (humanoid-true-color) "#f8f8f2" "gray96")))
         (comment-light (if (eq variant 'dark) (if (humanoid-true-color) "#75715e" "LightGoldenrod4") (if (humanoid-true-color) "#6b7566" "LightYellow4")))
-        (comp          (if (eq variant 'dark) (if (humanoid-true-color) "#7ecb20" "YellowGreen")     (if (humanoid-true-color) "#5f23a3" "purple4")))
-        (const         (if (eq variant 'dark) (if (humanoid-true-color) "#df6ee3" "magenta1")        (if (humanoid-true-color) "#880e4f" "DarkRed")))
+        (comp          (if (eq variant 'dark) (if (humanoid-true-color) "#b257fd" "purple2")         (if (humanoid-true-color) "#4d10a5" "magenta2")))
+        (const         (if (eq variant 'dark) (if (humanoid-true-color) "#f15ee3" "magenta1")        (if (humanoid-true-color) "#880e4f" "DarkRed")))
         (cursor        (if (eq variant 'dark) (if (humanoid-true-color) "#64dd17" "chartreuse2")     (if (humanoid-true-color) "#64dd17" "chartreuse2")))
         (err           (if (eq variant 'dark) (if (humanoid-true-color) "#f11235" "red2")            (if (humanoid-true-color) "#b0151a" "firebrick3")))
-        (func          (if (eq variant 'dark) (if (humanoid-true-color) "#0ed1d1" "cyan3")           (if (humanoid-true-color) "#ff3d00" "OrangeRed")))
-        (head1         (if (eq variant 'dark) (if (humanoid-true-color) "#42a5f5" "DeepSkyBlue1")    (if (humanoid-true-color) "#2376ad" "DodgerBlue3")))
+        (func          (if (eq variant 'dark) (if (humanoid-true-color) "#b27701" "cyan3")           (if (humanoid-true-color) "#b27701" "gray42")))
+        (head1         (if (eq variant 'dark) (if (humanoid-true-color) "#42a5f5" "DeepSkyBlue2")    (if (humanoid-true-color) "#2376ad" "DodgerBlue3")))
         (head1-bg      (if (eq variant 'dark) (if (humanoid-true-color) "#293239" "gray17")          (if (humanoid-true-color) "#efefe9" "gray97")))
-        (head2         (if (eq variant 'dark) (if (humanoid-true-color) "#29b6f6" "DeepSkyBlue2")    (if (humanoid-true-color) "#2b6590" "DodgerBlue4")))
+        (head2         (if (eq variant 'dark) (if (humanoid-true-color) "#42cde8" "DeepSkyBlue1")    (if (humanoid-true-color) "#2595ab" "DeepSkyBlue4")))
         (head2-bg      (if (eq variant 'dark) (if (humanoid-true-color) "#293235" "gray18")          (if (humanoid-true-color) "#efefe9" "gray97")))
-        (head3         (if (eq variant 'dark) (if (humanoid-true-color) "#26c6da" "cyan3")           (if (humanoid-true-color) "#2d5475" "RoyalBlue4")))
+        (head3         (if (eq variant 'dark) (if (humanoid-true-color) "#42dbc8" "cyan3")           (if (humanoid-true-color) "#27a89e" "cyan4")))
         (head3-bg      (if (eq variant 'dark) (if (humanoid-true-color) "#293235" "gray19")          (if (humanoid-true-color) "#efefe9" "gray97")))
-        (head4         (if (eq variant 'dark) (if (humanoid-true-color) "#26a69a" "LightSeaGreen")   (if (humanoid-true-color) "#2c445b" "SlateBlue4")))
+        (head4         (if (eq variant 'dark) (if (humanoid-true-color) "#42c96a" "MediumSeaGreen")  (if (humanoid-true-color) "#29a466" "MediumSeaGreen")))
         (head4-bg      (if (eq variant 'dark) (if (humanoid-true-color) "#32322c" "gray20")          (if (humanoid-true-color) "#efefe9" "gray97")))
-        (head5         (if (eq variant 'dark) (if (humanoid-true-color) "#66bb6a" "PaleGreen3")      (if (humanoid-true-color) "#293542" "DarkSlateBlue")))
+        (head5         (if (eq variant 'dark) (if (humanoid-true-color) "#65bd44" "ForestGreen")     (if (humanoid-true-color) "#519f2a" "ForestGreen")))
         (head5-bg      (if (eq variant 'dark) (if (humanoid-true-color) "#32322c" "gray26")          (if (humanoid-true-color) "#efefe9" "gray97")))
-        (highlight     (if (eq variant 'dark) (if (humanoid-true-color) "#484e54" "gray30")          (if (humanoid-true-color) "#e8e8e2" "gray89")))
-        (highlight-dim (if (eq variant 'dark) (if (humanoid-true-color) "#545b62" "gray36")          (if (humanoid-true-color) "#deded8" "gray85")))
+        (head6         (if (eq variant 'dark) (if (humanoid-true-color) "#a5b646" "khaki3")          (if (humanoid-true-color) "#819e2a" "OliveDrab")))
+        (head6-bg      (if (eq variant 'dark) (if (humanoid-true-color) "#293235" "gray19")          (if (humanoid-true-color) "#efefe9" "gray97")))
+        (head7         (if (eq variant 'dark) (if (humanoid-true-color) "#b1854a" "DarkGoldenrod")   (if (humanoid-true-color) "#9e8b2b" "khaki4")))
+        (head7-bg      (if (eq variant 'dark) (if (humanoid-true-color) "#32322c" "gray20")          (if (humanoid-true-color) "#efefe9" "gray97")))
+        (head8         (if (eq variant 'dark) (if (humanoid-true-color) "#ad4d4d" "IndianRed3")      (if (humanoid-true-color) "#9e5b2b" "SaddleBrown")))
+        (head8-bg      (if (eq variant 'dark) (if (humanoid-true-color) "#32322c" "gray26")          (if (humanoid-true-color) "#efefe9" "gray97")))
+        (highlight     (if (eq variant 'dark) (if (humanoid-true-color) "#484e54" "gray30")          (if (humanoid-true-color) "#c0c0bd" "gray89")))
+        (highlight-dim (if (eq variant 'dark) (if (humanoid-true-color) "#3b4045" "gray36")          (if (humanoid-true-color) "#deded8" "gray85")))
         (keyword       (if (eq variant 'dark) (if (humanoid-true-color) "#00a6fb" "DeepSkyBlue2")    (if (humanoid-true-color) "#0069c0" "RoyalBlue")))
         (lnum          (if (eq variant 'dark) (if (humanoid-true-color) "#5d6658" "SlateGrey")       (if (humanoid-true-color) "#98a890" "SlateGrey")))
-        (mat           (if (eq variant 'dark) (if (humanoid-true-color) "#ffb627" "goldenrod1")      (if (humanoid-true-color) "#29422d" "DarkSlateGrey")))
+        (mat           (if (eq variant 'dark) (if (humanoid-true-color) "#ced8a2" "gray82")          (if (humanoid-true-color) "#29422d" "DarkSlateGrey")))
         (meta          (if (eq variant 'dark) (if (humanoid-true-color) "#c0c0bd" "gray71")          (if (humanoid-true-color) "#60615d" "gray20")))
+        (num           (if (eq variant 'dark) (if (humanoid-true-color) "#ffb627" "goldenrod1")      (if (humanoid-true-color) "#700f98" "purple3")))
         (str           (if (eq variant 'dark) (if (humanoid-true-color) "#02d849" "green3")          (if (humanoid-true-color) "#388e3c" "SpringGreen4")))
         (suc           (if (eq variant 'dark) (if (humanoid-true-color) "#20bf55" "green4")          (if (humanoid-true-color) "#5a9216" "OliveDrab")))
         (ttip          (if (eq variant 'dark) (if (humanoid-true-color) "#75715e" "wheat4")          (if (humanoid-true-color) "#6b7566" "LightYellow4")))
         (ttip-bg       (if (eq variant 'dark) (if (humanoid-true-color) "#484e54" "gray25")          (if (humanoid-true-color) "#e8e8e2" "gray88")))
         (ttip-sl       (if (eq variant 'dark) (if (humanoid-true-color) "#545b62" "gray28")          (if (humanoid-true-color) "#deded8" "gray84")))
         (type          (if (eq variant 'dark) (if (humanoid-true-color) "#0097a7" "cyan4")           (if (humanoid-true-color) "#007c91" "cyan4")))
-        (var           (if (eq variant 'dark) (if (humanoid-true-color) "#c6ff00" "GreenYellow")     (if (humanoid-true-color) "#0d47a1" "DeepSkyBlue4")))
+        (var           (if (eq variant 'dark) (if (humanoid-true-color) "#0ed1d1" "turquoise2")      (if (humanoid-true-color) "#0d47a1" "DeepSkyBlue4")))
         (war           (if (eq variant 'dark) (if (humanoid-true-color) "#ff9505" "DarkOrange")      (if (humanoid-true-color) "#ff3d00" "OrangeRed"))))
 
-    (cl-loop for (var . val) in humanoid-custom-colors
-             do (set var val))
+    (cl-loop for (cvar . val) in humanoid-custom-colors
+             do (set cvar val))
 
     (custom-theme-set-faces
      theme-name
@@ -219,7 +247,8 @@ to 'auto, tags may not be properly aligned."
      `(header-line                         ((,class (:background ,bg2))))
      `(highlight                           ((,class (:foreground ,base :background ,highlight))))
      `(hl-line                             ((,class (:background ,bg3 :extend t))))
-     `(isearch                             ((,class (:foreground ,act1 :background ,mat))))
+     `(hl-todo                             ((,class (:foreground ,magenta))))
+     `(isearch                             ((,class (:foreground ,mat :background ,highlight))))
      `(lazy-highlight                      ((,class (:background ,highlight-dim :weight normal))))
      `(link                                ((,class (:foreground unspecified :underline t))))
      `(link-visited                        ((,class (:inherit link))))
@@ -241,10 +270,10 @@ to 'auto, tags may not be properly aligned."
      `(outline-2                     ((,class (:inherit bold :foreground ,head2 :height ,(if humanoid-org-height 1.2 1.0) :background ,(when humanoid-org-highlight head2-bg)))))
      `(outline-3                     ((,class (:bold nil :foreground ,head3 :height ,(if humanoid-org-height 1.1 1.0) :background ,(when humanoid-org-highlight head3-bg)))))
      `(outline-4                     ((,class (:bold nil :foreground ,head4 :background ,(when humanoid-org-highlight head4-bg)))))
-     `(outline-5                     ((,class (:bold nil :foreground ,head5))))
-     `(outline-6                     ((,class (:bold nil :foreground ,head1))))
-     `(outline-7                     ((,class (:bold nil :foreground ,head2))))
-     `(outline-8                     ((,class (:bold nil :foreground ,head3))))
+     `(outline-5                     ((,class (:bold nil :foreground ,head5 :background ,(when humanoid-org-highlight head5-bg)))))
+     `(outline-6                     ((,class (:bold nil :foreground ,head6 :background ,(when humanoid-org-highlight head6-bg)))))
+     `(outline-7                     ((,class (:bold nil :foreground ,head7 :background ,(when humanoid-org-highlight head7-bg)))))
+     `(outline-8                     ((,class (:bold nil :foreground ,head8 :background ,(when humanoid-org-highlight head8-bg)))))
 
 ;;;;; ace-window
      `(aw-leading-char-face ((,class (:foreground ,func :weight bold :height 2.0 :box (:line-width 1 :color ,keyword :style released-button)))))
@@ -252,6 +281,40 @@ to 'auto, tags may not be properly aligned."
 ;;;;; ahs
      `(ahs-face                     ((,class (:background ,highlight))))
      `(ahs-plugin-whole-buffer-face ((,class (:background ,mat :foreground ,act1))))
+
+;;;;; all-the-icons
+     `(all-the-icons-red       ((,class (:foreground ,red))))
+     `(all-the-icons-lred      ((,class (:foreground ,red-light))))
+     `(all-the-icons-dred      ((,class (:foreground ,red-dark))))
+     `(all-the-icons-green     ((,class (:foreground ,green))))
+     `(all-the-icons-lgreen    ((,class (:foreground ,green-light))))
+     `(all-the-icons-dgreen    ((,class (:foreground ,green-dark))))
+     `(all-the-icons-yellow    ((,class (:foreground ,yellow))))
+     `(all-the-icons-lyellow   ((,class (:foreground ,yellow-light))))
+     `(all-the-icons-dyellow   ((,class (:foreground ,yellow-dark))))
+     `(all-the-icons-blue      ((,class (:foreground ,blue))))
+     `(all-the-icons-blue-alt  ((,class (:foreground ,builtin))))
+     `(all-the-icons-lblue     ((,class (:foreground ,blue-light))))
+     `(all-the-icons-dblue     ((,class (:foreground ,blue-dark))))
+     `(all-the-icons-maroon    ((,class (:foreground ,brown))))
+     `(all-the-icons-lmaroon   ((,class (:foreground ,brown-light))))
+     `(all-the-icons-dmaroon   ((,class (:foreground ,brown-dark))))
+     `(all-the-icons-orange    ((,class (:foreground ,orange))))
+     `(all-the-icons-lorange   ((,class (:foreground ,orange-light))))
+     `(all-the-icons-dorange   ((,class (:foreground ,orange-dark))))
+     `(all-the-icons-purple    ((,class (:foreground ,purple))))
+     `(all-the-icons-lpurple   ((,class (:foreground ,purple-light))))
+     `(all-the-icons-dpurple   ((,class (:foreground ,purple-dark))))
+     `(all-the-icons-cyan      ((,class (:foreground ,aqua))))
+     `(all-the-icons-cyan-alt  ((,class (:foreground ,cyan))))
+     `(all-the-icons-lcyan     ((,class (:foreground ,aqua-light))))
+     `(all-the-icons-dcyan     ((,class (:foreground ,aqua-dark))))
+     `(all-the-icons-pink      ((,class (:foreground ,magenta))))
+     `(all-the-icons-lpink     ((,class (:foreground ,magenta-light))))
+     `(all-the-icons-dpink     ((,class (:foreground ,magenta-dark))))
+     `(all-the-icons-silver    ((,class (:foreground ,gray))))
+     `(all-the-icons-lsilver   ((,class (:foreground ,gray-light))))
+     `(all-the-icons-dsilver   ((,class (:foreground ,gray-dark))))
 
 ;;;;; anzu-mode
      `(anzu-mode-line ((,class (:foreground ,yellow :inherit bold))))
@@ -267,6 +330,9 @@ to 'auto, tags may not be properly aligned."
 
 ;;;;; c
      `(c-annotation-face ((,class (:inherit font-lock-constant-face))))
+
+;;;;; calendar
+     `(holiday ((,class (:background ,war))))
 
 ;;;;; calfw
      `(cfw:face-title               ((,class (:foreground ,head1 :height 2.0 :weight bold :inherit variable-pitch))))
@@ -289,9 +355,9 @@ to 'auto, tags may not be properly aligned."
      `(cfw:face-toolbar-button-on   ((,class (:foreground ,base :weight bold))))
 
 ;;;;; centaur-tabs
-     `(centaur-tabs-default                    ((,class (:background ,bg1 :foreground ,bg1))))
+     `(centaur-tabs-default                    ((,class (:background ,bg1 :foreground ,base-dim))))
      `(centaur-tabs-selected                   ((,class (:background ,bg1 :foreground ,base :weight normal))))
-     `(centaur-tabs-unselected                 ((,class (:background ,bg2 :foreground ,base-dim :weight light))))
+     `(centaur-tabs-unselected                 ((,class (:background ,bg2 :foreground ,comment-light :weight light))))
      `(centaur-tabs-selected-modified          ((,class (:background ,bg1 :foreground ,war :weight normal))))
      `(centaur-tabs-unselected-modified        ((,class (:background ,bg2 :weight light :foreground ,war))))
      `(centaur-tabs-active-bar-face            ((,class (:background ,blue))))
@@ -306,7 +372,7 @@ to 'auto, tags may not be properly aligned."
      `(cider-test-error-face     ((,class      (:background ,war :foreground ,act1))))
      `(cider-test-failure-face   ((,class      (:background ,err :foreground ,act1))))
      `(cider-test-success-face   ((,class      (:background ,suc :foreground ,act1))))
-     `(cider-traced-face         ((,class :box (:color ,cyan :line-width -1 :style nil))))
+     `(cider-traced-face         ((,class      (:box (:color ,cyan :line-width -1 :style nil)))))
 
 ;;;;; company
      `(company-echo-common              ((,class (:background ,base :foreground ,act1))))
@@ -325,22 +391,22 @@ to 'auto, tags may not be properly aligned."
      `(company-tooltip-selection        ((,class (:background ,ttip-sl :foreground ,base))))
 
 ;;;;; diff
-     `(diff-added             ((,class :background ,green-bg-s :foreground ,green :extend t)))
-     `(diff-changed           ((,class :background nil :foreground ,keyword)))
-     `(diff-header            ((,class :background ,cblk-ln-bg :foreground ,func :extend t)))
-     `(diff-file-header       ((,class :background ,cblk-ln-bg :foreground ,cblk :extend t)))
-     `(diff-indicator-added   ((,class :background nil :foreground ,green :extend t)))
-     `(diff-indicator-changed ((,class :background nil :foreground ,keyword)))
-     `(diff-indicator-removed ((,class :background nil :foreground ,red :extend t)))
-     `(diff-refine-added      ((,class :background ,green-bg)))
-     `(diff-refine-changed    ((,class :background ,keyword)))
-     `(diff-refine-removed    ((,class :background ,red-bg)))
-     `(diff-removed           ((,class :background ,red-bg-s :foreground ,red :extend t)))
+     `(diff-added             ((,class (:background nil         :foreground ,green :extend t))))
+     `(diff-changed           ((,class (:background nil         :foreground ,blue))))
+     `(diff-header            ((,class (:background ,cblk-ln-bg :foreground ,func :extend t))))
+     `(diff-file-header       ((,class (:background ,cblk-ln-bg :foreground ,cblk :extend t))))
+     `(diff-indicator-added   ((,class (:background nil         :foreground ,green :extend t))))
+     `(diff-indicator-changed ((,class (:background nil         :foreground ,blue))))
+     `(diff-indicator-removed ((,class (:background nil         :foreground ,red))))
+     `(diff-refine-added      ((,class (:background ,green-bg   :foreground ,base))))
+     `(diff-refine-changed    ((,class (:background ,blue-bg    :foreground ,base))))
+     `(diff-refine-removed    ((,class (:background ,red-bg     :foreground ,base))))
+     `(diff-removed           ((,class (:background nil         :foreground ,red :extend t))))
 
 ;;;;; diff-hl
-     `(diff-hl-change ((,class :background ,blue-bg :foreground ,blue)))
-     `(diff-hl-delete ((,class :background ,red-bg :foreground ,red)))
-     `(diff-hl-insert ((,class :background ,green-bg :foreground ,green)))
+     `(diff-hl-change ((,class (:background ,blue-bg-s :foreground ,blue))))
+     `(diff-hl-delete ((,class (:background ,red-bg-s :foreground ,red))))
+     `(diff-hl-insert ((,class (:background ,green-bg-s :foreground ,green))))
 
 ;;;;; dired
      `(dired-directory  ((,class (:foreground ,keyword :background ,bg1 :inherit bold))))
@@ -355,6 +421,7 @@ to 'auto, tags may not be properly aligned."
 
 ;;;;; doom-modeline
      `(doom-modeline-bar                ((,class (:background ,bg2))))
+     `(doom-modeline-bar-inactive       ((,class (:background ,comment))))
      `(doom-modeline-buffer-major-mode  ((,class (:inherit font-lock-type-face))))
      `(doom-modeline-buffer-modified    ((,class (:inherit warning))))
      `(doom-modeline-buffer-path        ((,class (:inherit font-lock-keyword-face))))
@@ -369,22 +436,22 @@ to 'auto, tags may not be properly aligned."
      `(doom-modeline-warning            ((,class (:inherit warning))))
 
 ;;;;; ediff
-     `(ediff-current-diff-A        ((,class (:background ,red-bg-s   :foreground ,red :extend t))))
-     `(ediff-current-diff-Ancestor ((,class (:background ,yellow-bg  :foreground ,aqua :extend t))))
-     `(ediff-current-diff-B        ((,class (:background ,green-bg-s :foreground ,green :extend t))))
-     `(ediff-current-diff-C        ((,class (:background ,blue-bg-s  :foreground ,blue :extend t))))
+     `(ediff-current-diff-A        ((,class (:background ,red-bg-s   :extend t))))
+     `(ediff-current-diff-Ancestor ((,class (:background ,yellow-bg  :extend t))))
+     `(ediff-current-diff-B        ((,class (:background ,green-bg-s :extend t))))
+     `(ediff-current-diff-C        ((,class (:background ,blue-bg-s  :extend t))))
      `(ediff-even-diff-A           ((,class (:background ,bg3 :extend t))))
      `(ediff-even-diff-Ancestor    ((,class (:background ,bg3 :extend t))))
      `(ediff-even-diff-B           ((,class (:background ,bg3 :extend t))))
      `(ediff-even-diff-C           ((,class (:background ,bg3 :extend t))))
-     `(ediff-fine-diff-A           ((,class (:background ,red-bg    :inherit bold :foreground ,base :extend t))))
-     `(ediff-fine-diff-Ancestor    ((,class (:background ,yellow-bg :inherit bold :extend t))))
-     `(ediff-fine-diff-B           ((,class (:background ,green-bg  :inherit bold :foreground ,base :extend t))))
-     `(ediff-fine-diff-C           ((,class (:background ,blue-bg   :inherit bold :foreground ,base :extend t))))
-     `(ediff-odd-diff-A            ((,class (:background ,bg4 :extend t))))
-     `(ediff-odd-diff-Ancestor     ((,class (:background ,bg4 :extend t))))
-     `(ediff-odd-diff-B            ((,class (:background ,bg4 :extend t))))
-     `(ediff-odd-diff-C            ((,class (:background ,bg4 :extend t))))
+     `(ediff-fine-diff-A           ((,class (:background ,red-bg    :extend t))))
+     `(ediff-fine-diff-Ancestor    ((,class (:background ,yellow-bg :extend t))))
+     `(ediff-fine-diff-B           ((,class (:background ,green-bg))))
+     `(ediff-fine-diff-C           ((,class (:background ,blue-bg))))
+     `(ediff-odd-diff-A            ((,class (:background ,bg3 :extend t))))
+     `(ediff-odd-diff-Ancestor     ((,class (:background ,bg3 :extend t))))
+     `(ediff-odd-diff-B            ((,class (:background ,bg3 :extend t))))
+     `(ediff-odd-diff-C            ((,class (:background ,bg3 :extend t))))
 
 ;;;;; ein
      `(ein:cell-input-area           ((,class (:background ,bg2))))
@@ -446,7 +513,7 @@ to 'auto, tags may not be properly aligned."
      `(ess-r-signal-keyword-face       ((,class (:foreground ,war))))
 
 ;;;;; evil
-     `(evil-ex-lazy-highlight         ((,class (:background ,mat :foreground ,act1))))
+     `(evil-ex-lazy-highlight         ((,class (:background ,comment :foreground ,comment-bg))))
      `(evil-ex-substitute-matches     ((,class (:background ,red-bg :foreground ,red))))
      `(evil-ex-substitute-replacement ((,class (:background ,green-bg :foreground ,green))))
 
@@ -487,12 +554,12 @@ to 'auto, tags may not be properly aligned."
      `(flycheck-fringe-warning          ((,class (:foreground ,war :inherit bold))))
      `(flycheck-info
        ((,(append '((supports :underline (:style line))) class)
-         (:underline (:style line :color ,keyword)))
-        (,class (:foreground ,base :background ,keyword :inherit bold :underline t))))
+         (:underline (:style line :color ,comment)))
+        (,class (:foreground ,base :background ,comment :underline t))))
      `(flycheck-warning
        ((,(append '((supports :underline (:style line))) class)
-         (:underline (:style line :color ,war)))
-        (,class (:foreground ,base :background ,war :inherit bold :underline t))))
+         (:underline (:style line :color ,comment-light)))
+        (,class (:foreground ,base :background ,comment-light :underline t))))
 
 ;;;;; flymake
      `(flymake-error ((,(append '((supports :underline (:style line))) class)
@@ -534,10 +601,23 @@ to 'auto, tags may not be properly aligned."
 ;;;;; git
      `(git-commit-summary ((,class (:foreground ,base :inherit bold))))
 
-;;;;; git-gutter-fr
-     `(git-gutter-fr:added    ((,class (:foreground ,green :inherit bold))))
-     `(git-gutter-fr:deleted  ((,class (:foreground ,war :inherit bold))))
-     `(git-gutter-fr:modified ((,class (:foreground ,keyword :inherit bold))))
+;;;;; git-gutter
+     `(git-gutter:added        ((,class (:foreground ,green :inherit bold))))
+     `(git-gutter:deleted      ((,class (:foreground ,red :inherit bold))))
+     `(git-gutter:modified     ((,class (:foreground ,purple :inherit bold))))
+     `(git-gutter:separator    ((,class (:foreground ,aqua :inherit bold))))
+     `(git-gutter:unchanged    ((,class (:background ,yellow))))
+     `(git-gutter+:added       ((,class (:inherit git-gutter:added))))
+     `(git-gutter+:deleted     ((,class (:inherit git-gutter:deleted))))
+     `(git-gutter+:modified    ((,class (:inherit git-gutter:modified))))
+     `(git-gutter+:separator   ((,class (:inherit git-gutter:separator))))
+     `(git-gutter+:unchanged   ((,class (:inherit git-gutter:unchanged))))
+     `(git-gutter-fr:added     ((,class (:inherit git-gutter:added))))
+     `(git-gutter-fr:deleted   ((,class (:inherit git-gutter:deleted))))
+     `(git-gutter-fr:modified  ((,class (:inherit git-gutter:modified))))
+     `(git-gutter-fr+:added    ((,class (:inherit git-gutter:added))))
+     `(git-gutter-fr+:deleted  ((,class (:inherit git-gutter:deleted))))
+     `(git-gutter-fr+:modified ((,class (:inherit git-gutter:modified))))
 
 ;;;;; git-timemachine
      `(git-timemachine-minibuffer-detail-face ((,class (:foreground ,blue :inherit bold :background ,blue-bg))))
@@ -604,7 +684,7 @@ to 'auto, tags may not be properly aligned."
      `(helm-selection                   ((,class (:background ,highlight))))
      `(helm-selection-line              ((,class (:background ,bg3))))
      `(helm-separator                   ((,class (:foreground ,comp :background ,bg1))))
-     `(helm-source-header               ((,class (:background ,head2 :foreground ,act1 :inherit bold))))
+     `(helm-source-header               ((,class (:background ,cblk-ln-bg :foreground ,cblk :inherit bold))))
      `(helm-time-zone-current           ((,class (:foreground ,keyword :background ,bg1))))
      `(helm-time-zone-home              ((,class (:foreground ,comp :background ,bg1))))
      `(helm-visible-mark                ((,class (:foreground ,func :background ,bg3))))
@@ -615,14 +695,11 @@ to 'auto, tags may not be properly aligned."
      `(helm-swoop-target-word-face       ((,class (:background ,highlight :foreground ,mat))))
 
 ;;;;; highlights
-     `(hi-green  ((,class (:foreground ,green :background ,green-bg))))
-     `(hi-yellow ((,class (:foreground ,yellow :background ,yellow-bg))))
-
-;;;;; highlight-indentation
+     `(hi-green                   ((,class (:foreground ,green :background ,green-bg))))
+     `(hi-yellow                  ((,class (:foreground ,yellow :background ,yellow-bg))))
      `(highlight-indentation-face ((,class (:background ,comment-bg))))
-
-;;;;; highlight-symbol
-     `(highlight-symbol-face ((,class (:background ,bg2))))
+     `(highlight-numbers-number   ((,class (:foreground ,num))))
+     `(highlight-symbol-face      ((,class (:background ,bg2))))
 
 ;;;;; hydra
      `(hydra-face-blue ((,class (:foreground ,blue))))
@@ -653,6 +730,9 @@ to 'auto, tags may not be properly aligned."
      `(ivy-minibuffer-match-face-3 ((,class (:foreground ,head4 :underline t))))
      `(ivy-minibuffer-match-face-4 ((,class (:foreground ,head3 :underline t))))
      `(ivy-remote                  ((,class (:foreground ,cyan))))
+
+;;;;; ivy-posframe
+     `(ivy-posframe ((,class (:background ,bg3))))
 
 ;;;;; latex
      `(font-latex-bold-face                ((,class (:foreground ,comp))))
@@ -685,31 +765,31 @@ to 'auto, tags may not be properly aligned."
      `(linum-relative-current-face ((,class (:foreground ,base))))
 
 ;;;;; magit
-     `(magit-bisect-bad                  ((,class :foreground ,war)))
-     `(magit-bisect-good                 ((,class :foreground ,suc)))
-     `(magit-bisect-skip                 ((,class :foreground ,yellow)))
-     `(magit-blame-culprit               ((,class :background ,yellow-bg :foreground ,yellow)))
-     `(magit-blame-date                  ((,class :background ,yellow-bg :foreground ,green)))
-     `(magit-blame-hash                  ((,class :background ,yellow-bg :foreground ,func)))
-     `(magit-blame-header                ((,class :background ,yellow-bg :foreground ,green)))
-     `(magit-blame-heading               ((,class :background ,yellow-bg :foreground ,green :extend t)))
-     `(magit-blame-name                  ((,class :background ,yellow-bg :foreground ,yellow)))
-     `(magit-blame-sha1                  ((,class :background ,yellow-bg :foreground ,func)))
-     `(magit-blame-subject               ((,class :background ,yellow-bg :foreground ,yellow)))
-     `(magit-blame-summary               ((,class :background ,yellow-bg :foreground ,yellow :extend t)))
-     `(magit-blame-time                  ((,class :background ,yellow-bg :foreground ,green)))
+     `(magit-bisect-bad                  ((,class (:foreground ,war))))
+     `(magit-bisect-good                 ((,class (:foreground ,suc))))
+     `(magit-bisect-skip                 ((,class (:foreground ,yellow))))
+     `(magit-blame-culprit               ((,class (:background ,yellow-bg :foreground ,yellow))))
+     `(magit-blame-date                  ((,class (:background ,yellow-bg :foreground ,green))))
+     `(magit-blame-hash                  ((,class (:background ,yellow-bg :foreground ,func))))
+     `(magit-blame-header                ((,class (:background ,yellow-bg :foreground ,green))))
+     `(magit-blame-heading               ((,class (:background ,yellow-bg :foreground ,green :extend t))))
+     `(magit-blame-name                  ((,class (:background ,yellow-bg :foreground ,yellow))))
+     `(magit-blame-sha1                  ((,class (:background ,yellow-bg :foreground ,func))))
+     `(magit-blame-subject               ((,class (:background ,yellow-bg :foreground ,yellow))))
+     `(magit-blame-summary               ((,class (:background ,yellow-bg :foreground ,yellow :extend t))))
+     `(magit-blame-time                  ((,class (:background ,yellow-bg :foreground ,green))))
      `(magit-branch                      ((,class (:foreground ,const :inherit bold))))
      `(magit-branch-current              ((,class (:background ,blue-bg :foreground ,blue :inherit bold :box t))))
      `(magit-branch-local                ((,class (:background ,blue-bg :foreground ,blue :inherit bold))))
      `(magit-branch-remote               ((,class (:background ,aqua-bg :foreground ,aqua :inherit bold))))
      `(magit-cherry-equivalent           ((,class (:foreground ,magenta))))
      `(magit-cherry-unmatched            ((,class (:foreground ,cyan))))
-     `(magit-diff-added                  ((,class (:background ,green-bg-s :foreground ,green :extend t))))
-     `(magit-diff-added-highlight        ((,class (:background ,green-bg :foreground ,green :extend t))))
-     `(magit-diff-removed                ((,class (:background ,red-bg-s :foreground ,red :extend t))))
-     `(magit-diff-removed-highlight      ((,class (:background ,red-bg :foreground ,red :extend t))))
+     `(magit-diff-added                  ((,class (:background ,bg2        :foreground ,green :extend t))))
+     `(magit-diff-added-highlight        ((,class (:background ,green-bg-s :foreground ,green :extend t))))
+     `(magit-diff-removed                ((,class (:background ,bg2        :foreground ,red   :extend t))))
+     `(magit-diff-removed-highlight      ((,class (:background ,red-bg-s   :foreground ,red   :extend t))))
      `(magit-diff-context                ((,class (:background ,bg1 :foreground ,base :extend t))))
-     `(magit-diff-context-highlight      ((,class (:background ,bg0 :foreground ,base :extend t))))
+     `(magit-diff-context-highlight      ((,class (:background ,bg0 :foreground ,base))))
      `(magit-diff-file-heading           ((,class (:inherit bold :extend t))))
      `(magit-diff-file-heading-selection ((,class (:inherit magit-diff-file-heading-highlight :foreground ,meta :extend t))))
      `(magit-diff-hunk-heading           ((,class (:background ,ttip-bg :foreground ,cblk :extend t))))
@@ -723,7 +803,7 @@ to 'auto, tags may not be properly aligned."
      `(magit-hash                        ((,class (:foreground ,var))))
      `(magit-hunk-heading                ((,class (:background ,bg3 :extend t))))
      `(magit-hunk-heading-highlight      ((,class (:background ,bg3 :extend t))))
-     `(magit-item-highlight              ((,class (:background ,bg2 :extend t))))
+     `(magit-item-highlight              ((,class (:background ,bg2))))
      `(magit-log-author                  ((,class (:foreground ,func))))
      `(magit-log-head-label-head         ((,class (:background ,yellow :foreground ,act1 :inherit bold))))
      `(magit-log-head-label-local        ((,class (:background ,keyword :foreground ,act1 :inherit bold))))
@@ -928,8 +1008,8 @@ to 'auto, tags may not be properly aligned."
      `(rainbow-delimiters-depth-10-face   ((,class (:foreground ,yellow))))
      `(rainbow-delimiters-depth-11-face   ((,class (:foreground ,blue))))
      `(rainbow-delimiters-depth-12-face   ((,class (:foreground ,magenta))))
-     `(rainbow-delimiters-mismatched-face ((,class :foreground ,err :overline t :inverse-video t)))
-     `(rainbow-delimiters-unmatched-face  ((,class :foreground ,err :overline t)))
+     `(rainbow-delimiters-mismatched-face ((,class (:foreground ,err :overline t :inverse-video t))))
+     `(rainbow-delimiters-unmatched-face  ((,class (:foreground ,err :overline t))))
 
 ;;;;; rcirc
      `(rcirc-bright-nick   ((,class (:background ,aqua-bg :foreground ,cyan))))
@@ -940,8 +1020,8 @@ to 'auto, tags may not be properly aligned."
      `(rcirc-url           ((,class (:inherit link))))
 
 ;;;;; shell script
-     `(sh-quoted-exec ((,class :foreground ,comp)))
-     `(sh-heredoc     ((,class :foreground ,war)))
+     `(sh-quoted-exec ((,class (:foreground ,comp))))
+     `(sh-heredoc     ((,class (:foreground ,war))))
 
 ;;;;; shm
      `(shm-current-face    ((,class (:background ,green-bg-s))))
@@ -1018,15 +1098,29 @@ to 'auto, tags may not be properly aligned."
      `(tabbar-unselected-modified ((,class (:inherit tabbar-unselected :background ,bg1 :foreground ,red))))
 
 ;;;;; term
-     `(term               ((,class (:foreground ,base :background ,bg1))))
-     `(term-color-black   ((,class (:foreground ,black))))
-     `(term-color-blue    ((,class (:foreground ,blue))))
-     `(term-color-cyan    ((,class (:foreground ,cyan))))
-     `(term-color-green   ((,class (:foreground ,green))))
-     `(term-color-magenta ((,class (:foreground ,magenta))))
-     `(term-color-red     ((,class (:foreground ,red))))
-     `(term-color-white   ((,class (:foreground ,white))))
-     `(term-color-yellow  ((,class (:foreground ,yellow))))
+     `(term               ((,class (:foreground ,base    :background ,bg1))))
+     `(term-color-black   ((,class (:foreground ,bg4     :background ,bg4))))
+     `(term-color-blue    ((,class (:foreground ,keyword :background ,keyword))))
+     `(term-color-cyan    ((,class (:foreground ,cyan    :background ,cyan))))
+     `(term-color-green   ((,class (:foreground ,green   :background ,green))))
+     `(term-color-magenta ((,class (:foreground ,magenta :background ,magenta))))
+     `(term-color-red     ((,class (:foreground ,red     :background ,red))))
+     `(term-color-white   ((,class (:foreground ,base    :background ,base))))
+     `(term-color-yellow  ((,class (:foreground ,yellow  :background ,yellow))))
+
+;;;;; vterm
+     `(vterm-color-default ((,class (:foreground ,base :background ,bg1))))
+     ;; vterm-color-black used to render black color code.
+     ;; The foreground color is used as ANSI color 0 and the background
+     ;; color is used as ANSI color 8.
+     `(vterm-color-black   ((,class (:foreground ,bg4     :background ,bg4))))
+     `(vterm-color-blue    ((,class (:foreground ,blue    :background ,blue))))
+     `(vterm-color-cyan    ((,class (:foreground ,cyan    :background ,cyan))))
+     `(vterm-color-green   ((,class (:foreground ,green   :background ,green))))
+     `(vterm-color-magenta ((,class (:foreground ,magenta :background ,magenta))))
+     `(vterm-color-red     ((,class (:foreground ,red     :background ,red))))
+     `(vterm-color-white   ((,class (:foreground ,base    :background ,base))))
+     `(vterm-color-yellow  ((,class (:foreground ,yellow  :background ,yellow))))
 
 ;;;;; tide
      `(tide-hl-identifier-face ((,class (:foreground ,yellow :background ,yellow-bg))))
@@ -1081,7 +1175,7 @@ to 'auto, tags may not be properly aligned."
      `(escape-glyph-face                    ((,class (:foreground ,comment))))
      `(ffap                                 ((,class (:foreground ,base))))
      `(flx-highlight-face                   ((,class (:foreground ,comp :underline nil))))
-     `(icompletep-determined                ((,class :foreground ,keyword)))
+     `(icompletep-determined                ((,class (:foreground ,keyword))))
      `(js2-external-variable                ((,class (:foreground ,comp))))
      `(js2-function-param                   ((,class (:foreground ,const))))
      `(js2-jsdoc-html-tag-delimiter         ((,class (:foreground ,str))))
@@ -1096,11 +1190,11 @@ to 'auto, tags may not be properly aligned."
      `(js3-jsdoc-tag-face                   ((,class (:foreground ,keyword))))
      `(js3-warning-face                     ((,class (:underline ,keyword))))
      `(slime-repl-inputed-output-face       ((,class (:foreground ,comp))))
-     `(trailing-whitespace                  ((,class :foreground nil :background ,err)))
-     `(undo-tree-visualizer-current-face    ((,class :foreground ,keyword)))
-     `(undo-tree-visualizer-default-face    ((,class :foreground ,base)))
-     `(undo-tree-visualizer-register-face   ((,class :foreground ,comp)))
-     `(undo-tree-visualizer-unmodified-face ((,class :foreground ,var))))
+     `(trailing-whitespace                  ((,class (:foreground nil :background ,err))))
+     `(undo-tree-visualizer-current-face    ((,class (:foreground ,keyword))))
+     `(undo-tree-visualizer-default-face    ((,class (:foreground ,base))))
+     `(undo-tree-visualizer-register-face   ((,class (:foreground ,comp))))
+     `(undo-tree-visualizer-unmodified-face ((,class (:foreground ,var)))))
 
     (custom-theme-set-variables
      theme-name
@@ -1109,8 +1203,8 @@ to 'auto, tags may not be properly aligned."
      `(ansi-color-names-vector [,bg4 ,red ,green ,yellow ,blue ,magenta ,cyan ,base])
 
 ;;;;; hl-todo
-     `(hl-todo-keyword-faces '(("TODO"       . ,purple)
-                               ("NEXT"       . ,purple)
+     `(hl-todo-keyword-faces '(("TODO"       . ,magenta)
+                               ("NEXT"       . ,magenta)
                                ("THEM"       . ,aqua)
                                ("PROG"       . ,cyan)
                                ("OKAY"       . ,blue)
@@ -1119,9 +1213,9 @@ to 'auto, tags may not be properly aligned."
                                ("DONE"       . ,suc)
                                ("NOTE"       . ,yellow)
                                ("KLUDGE"     . ,orange)
-                               ("HACK"       . ,magenta)
+                               ("HACK"       . ,purple)
                                ("TEMP"       . ,gray)
-                               ("FIXME"      . ,purple)
+                               ("FIXME"      . ,magenta)
                                ("XXX"        . ,var)
                                ("XXXX"       . ,var)
                                ("\\?\\?\\?+" . ,var)))
@@ -1136,9 +1230,5 @@ to 'auto, tags may not be properly aligned."
                (file-name-as-directory (file-name-directory load-file-name))))
 
 (provide 'humanoid-themes)
-
-;; Local Variables:
-;; no-byte-compile: t
-;; End:
 
 ;;; humanoid-themes.el ends here

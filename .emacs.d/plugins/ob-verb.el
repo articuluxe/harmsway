@@ -6,7 +6,7 @@
 ;; Maintainer: Federico Tedin <federicotedin@gmail.com>
 ;; Homepage: https://github.com/federicotdn/verb
 ;; Keywords: tools
-;; Package-Version: 2.4.0
+;; Package-Version: 2.6.0
 ;; Package-Requires: ((emacs "26"))
 
 ;; This file is NOT part of GNU Emacs.
@@ -73,14 +73,16 @@ with the contents of the exported request.
 
 Called when :op `export' is passed to `org-babel-execute:verb'."
   (pcase name
-    ("human"
+    ((or "human" "verb")
      (save-window-excursion
-       (with-current-buffer (verb--export-to-human rs)
-	 (verb--buffer-string-no-properties))))
-    ("verb"
-     (save-window-excursion
-       (with-current-buffer (verb--export-to-verb rs)
-	 (verb--buffer-string-no-properties))))
+       (let ((fn (if (string= name "human")
+		     #'verb--export-to-human
+		   #'verb--export-to-verb))
+	     result)
+	 (with-current-buffer (funcall fn rs)
+	   (setq result (verb--buffer-string-no-properties))
+	   (kill-buffer)
+	   result))))
     ("curl"
      (verb--export-to-curl rs t t))
     (_
@@ -104,6 +106,9 @@ variable.
 Called when :op `send' is passed to `org-babel-execute:verb'.  An
 optional argument may follow `send'."
   (when (eq verb-url-retrieve-function #'url-queue-retrieve)
+    ;; TODO: url-queue isn't working here because of the use of
+    ;; `sleep-for'. Maybe we could use `ert-run-idle-timers' but that
+    ;; sounds like a bad idea.
     (user-error "%s"
 		(concat "Using `url-queue-retrieve' with"
 			" Babel is currently not supported\n"

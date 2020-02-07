@@ -193,7 +193,7 @@
      `(org-link                     ((,c (:foreground ,frost :underline ,invisible))))
      `(org-hide                     ((,c (:foreground ,black))))
      `(org-table                    ((,c (:foreground ,yellow))))
-     `(org-quote                    ((,c (:slant italic :foreground ,grey :background ,current-line))))
+     `(org-quote                    ((,c (:slant italic :foreground ,white))))
      `(org-document-info            ((,c (:foreground ,white))))
      `(org-document-info-keyword    ((,c (:foreground ,frost :bold t))))
      `(org-meta-line                ((,c (:foreground ,frost))))
@@ -213,7 +213,7 @@
      `(org-code                     ((,c (:foreground ,orange))))
      `(org-column                   ((,c (:background ,black))))
      `(org-column-title             ((,c (:background ,black :foreground ,comment))))
-     `(org-verbatim                 ((,c (:foreground ,blue))))
+     `(org-verbatim                 ((,c (:foreground "#ffc" :family "Inconsolata LGC"))))
      `(org-formula                  ((,c (:foreground ,orange))))
      `(org-latex-and-related        ((,c (:foreground "#FAF9FF"))))
      `(org-list-dt                  ((,c (:foreground ,yellow))))
@@ -499,6 +499,13 @@
 
      ;; yas
      `(yas-field-highlight-face ((,c (:background ,ada-midnight))))
+
+     ;; epresent
+     `(epresent-title-face ((,c (:inherit 'default :height 2.0))))
+     `(epresent-heading-face ((,c ())))
+     `(epresent-subheading-face ((,c ())))
+     `(epresent-author-face ((,c (:inherit 'default))))
+     `(epresent-bullet-face ((,c (:inherit 'default))))
 
      ;; hackernews
      `(hackernews-score-face ((,c (:foreground ,white))))

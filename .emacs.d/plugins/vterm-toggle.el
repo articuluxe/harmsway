@@ -51,13 +51,6 @@
   :group 'vterm-toggle
   :type 'symbolp)
 
-(defcustom vterm-toggle-prompt-regexp
-  (concat "\\(?:^\\|\r\\)"
-	      "[^]#$%>\n]*#?[#$%➜⇒»☞@λ] *\\(\e\\[[0-9;]*[a-zA-Z] *\\)*")
-  "Vterm prompt regexp."
-  :group 'vterm-toggle
-  :type 'string)
-
 (defcustom vterm-toggle-fullscreen-p t
   "Open vterm buffer fullscreen or not."
   :group 'vterm-toggle
@@ -164,7 +157,7 @@ If the `tramp-methods' entry does not exist, return NIL."
   "Show the vterm buffer.
 Optional argument MAKE-CD whether insert a cd command.
 Optional argument ARGS optional args."
-  (interactive)
+  (interactive "P")
   (let* ((shell-buffer (vterm-toggle--get-buffer
                         make-cd (not vterm-toggle-cd-auto-create-buffer) args))
          (dir (expand-file-name default-directory))
@@ -185,7 +178,11 @@ Optional argument ARGS optional args."
           (when (and (not (funcall vterm-toggle--vterm-buffer-p-function args))
                      (not (get-buffer-window shell-buffer)))
             (setq vterm-toggle--window-configration (current-window-configuration)))
-          (pop-to-buffer shell-buffer)
+          (if vterm-toggle-fullscreen-p
+              (progn
+                (delete-other-windows)
+                (switch-to-buffer shell-buffer))
+            (pop-to-buffer shell-buffer))
           (with-current-buffer shell-buffer
             (when (derived-mode-p 'vterm-mode)
               (setq vterm-toggle--cd-cmd cd-cmd)
@@ -198,11 +195,10 @@ Optional argument ARGS optional args."
               (when (and (not (equal vterm-dir dir))
                          (equal vterm-host cur-host)
                          make-cd
-                         (vterm-toggle--accept-cmd-p))
+                         (vterm--at-prompt-p))
                 (vterm-toggle-insert-cd)))
             (run-hooks 'vterm-toggle-show-hook))
-          (when vterm-toggle-fullscreen-p
-            (delete-other-windows)))
+          )
       (setq vterm-toggle--window-configration (current-window-configuration))
       (with-current-buffer (setq shell-buffer (vterm-toggle--new))
         (vterm-toggle--wait-prompt)
@@ -266,20 +262,6 @@ after you have toggle to the vterm buffer with `vterm-toggle'."
       (vterm)
     (vterm-other-window)))
 
-(defun vterm-toggle--skip-prompt ()
-  "Skip past the text matching regexp `vterm-toggle-prompt-regexp'.
-If this takes us past the end of the current line, don't skip at all."
-  (let ((eol (line-end-position)))
-    (when (and (looking-at vterm-toggle-prompt-regexp)
-	           (<= (match-end 0) eol))
-      (goto-char (match-end 0)))))
-
-(defun vterm-toggle--accept-cmd-p ()
-  "Check whether the vterm can accept user comand."
-  (save-excursion
-    (goto-char (point-at-bol))
-    (vterm-toggle--skip-prompt)))
-
 
 (defun vterm-toggle--get-buffer(&optional make-cd ignore-prompt-p args)
   "Get vterm buffer.
@@ -304,31 +286,30 @@ Optional argument ARGS optional args."
 Optional argument MAKE-CD make cd or not.
 Optional argument ARGS optional args."
   (let ((shell-buffer)
+        (curbuf (current-buffer))
         buffer-host
         vterm-host)
     (if (ignore-errors (file-remote-p default-directory))
         (with-parsed-tramp-file-name default-directory nil
           (setq buffer-host host))
       (setq buffer-host (system-name)))
-    (dolist (buf (buffer-list))
-      (with-current-buffer buf
-        (when (and (funcall vterm-toggle--vterm-buffer-p-function args)
-                   (not vterm-toggle--dedicated-p))
-          (cond
-           ((and (derived-mode-p 'vterm-mode)
-                 make-cd)
-            (if (ignore-errors (file-remote-p default-directory))
-                (with-parsed-tramp-file-name default-directory nil
-                  (setq vterm-host host))
-              (setq vterm-host (system-name)))
-            (when (and (or ignore-prompt-p
-                           (vterm-toggle--accept-cmd-p))
-                       (equal buffer-host vterm-host))
-              (unless shell-buffer
-                (setq shell-buffer buf))))
-           (t
-            (unless shell-buffer
-              (setq shell-buffer buf)))))))
+    (cl-loop for buf in (buffer-list) do
+             (with-current-buffer buf
+               (when (and (funcall vterm-toggle--vterm-buffer-p-function args)
+                          (not (eq curbuf buf))
+                          (not vterm-toggle--dedicated-p))
+                 (cond
+                  ((and  make-cd (derived-mode-p 'vterm-mode))
+                   (if (ignore-errors (file-remote-p default-directory))
+                       (with-parsed-tramp-file-name default-directory nil
+                         (setq vterm-host host))
+                     (setq vterm-host (system-name)))
+                   (when (and (or ignore-prompt-p
+                                  (vterm--at-prompt-p))
+                              (equal buffer-host vterm-host))
+                     (setq shell-buffer buf)))
+                  (t (setq shell-buffer buf)))))
+             until shell-buffer)
     shell-buffer))
 
 (defun vterm-toggle--recent-other-buffer(&optional args)

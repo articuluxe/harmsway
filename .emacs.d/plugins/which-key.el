@@ -1556,7 +1556,7 @@ no title exists."
             ((not (string-equal repl-res "")) repl-res)
             ((and (eq which-key-show-prefix 'echo) alternate)
              alternate)
-            ((and (member which-key-show-prefix '(bottom top))
+            ((and (member which-key-show-prefix '(bottom top mode-line))
                   (eq which-key-side-window-location 'bottom)
                   echo-keystrokes)
              (if alternate alternate
@@ -1672,6 +1672,16 @@ return the docstring."
   (let* ((orig-sym (intern original))
          (doc (when (commandp orig-sym)
                 (documentation orig-sym)))
+         (doc (when doc
+                (replace-regexp-in-string
+                 (concat "^\\(?::"
+                         (regexp-opt '("around" "override"
+                                       "after" "after-until" "after-while"
+                                       "before" "before-until" "before-while"
+                                       "filter-args" "filter-return"))
+                         " advice: [^\n]+\n"
+                         "\\)+\n")
+                 "" doc)))
          (docstring (when doc
                       (which-key--propertize (car (split-string doc "\n"))
                                              'face 'which-key-docstring-face))))

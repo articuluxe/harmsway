@@ -104,11 +104,12 @@
 (declare-function battery-format 'battery)
 (declare-function battery-update 'battery)
 (declare-function dap--cur-session 'dap-mode)
+(declare-function dap--debug-session-name 'dap-mode)
+(declare-function dap--debug-session-state 'dap-mode)
 (declare-function dap--session-running 'dap-mode)
 (declare-function dap-debug-recent 'dap-mode)
 (declare-function dap-disconnect 'dap-mode)
 (declare-function dap-hydra 'dap-hydra)
-(declare-function dap-mode-line 'dap-mode)
 (declare-function edebug-help 'edebug)
 (declare-function edebug-next-mode 'edebug)
 (declare-function edebug-stop 'edebug)
@@ -156,8 +157,8 @@
 (declare-function gnus-demon-add-handler 'gnus-demon)
 (declare-function grip--preview-url 'grip-mode)
 (declare-function grip-browse-preview 'grip-mode)
-(declare-function grip-stop-preview 'grip-mode)
 (declare-function grip-restart-preview 'grip-mode)
+(declare-function grip-stop-preview 'grip-mode)
 (declare-function helm-candidate-number-at-point 'helm)
 (declare-function helm-get-candidate-number 'helm)
 (declare-function iedit-find-current-occurrence-overlay 'iedit-lib)
@@ -251,7 +252,7 @@ buffer where knowing the current project directory is important."
 
 (defun doom-modeline-buffer-file-state-icon (icon unicode text face)
   "Displays an ICON of buffer state with FACE.
-TEXT is the alternative if it is not applicable.
+UNICODE and TEXT are the alternatives if it is not applicable.
 Uses `all-the-icons-material' to fetch the icon."
   (doom-modeline-icon 'material icon unicode text face
                       :height  1.1
@@ -1523,7 +1524,8 @@ mouse-1: Display Line and Column Mode Menu"
 ;;
 
 (defun doom-modeline--modal-icon (text face help-echo)
-  "Display the model icon."
+  "Display the model icon with FACE and HELP-ECHO.
+TEXT is alternative if icon is not available."
   (propertize (doom-modeline-icon
                'material
                (when doom-modeline-modal-icon "fiber_manual_record")
@@ -1551,18 +1553,18 @@ mouse-1: Display Line and Column Mode Menu"
      (evil-state-property evil-state :name t))))
 
 (defsubst doom-modeline--overwrite ()
-  "The current overwrite state. Requires `overwrite-mode' to be enabled."
+  "The current overwrite state which is enabled by command `overwrite-mode'."
   (when (and (bound-and-true-p overwrite-mode)
              (not (bound-and-true-p evil-local-mode)))
-    (doom-modeline--modal-icon "<O>" 'doom-modeline-urgent "Overwrite state")))
+    (doom-modeline--modal-icon "<O>" 'doom-modeline-urgent "Overwrite mode")))
 
 (defsubst doom-modeline--god ()
-  "The current god state. Requires `god-mode' to be enabled."
+  "The current god state which is enabled by the command `god-mode'."
   (when (bound-and-true-p god-local-mode)
     (doom-modeline--modal-icon "<G>" 'doom-modeline-evil-normal-state "God mode")))
 
 (defsubst doom-modeline--ryo ()
-  "The current ryo-modal state. Requires `ryo-modal-mode' to be enabled."
+  "The current ryo-modal state which is enabled by the command `ryo-modal-mode'."
   (when (bound-and-true-p ryo-modal-mode)
     (doom-modeline--modal-icon "<R>" 'doom-modeline-evil-normal-state "Ryo modal")))
 
@@ -1690,7 +1692,7 @@ mouse-3: Describe current input method")
 
 (defvar-local doom-modeline--lsp nil)
 (defun doom-modeline-update-lsp (&rest _)
-  "Update `lsp-mode' status."
+  "Update `lsp-mode' state."
   (setq doom-modeline--lsp
         (let* ((workspaces (lsp-workspaces))
                (face (if workspaces 'doom-modeline-lsp-success 'doom-modeline-lsp-warning))
@@ -1735,7 +1737,7 @@ mouse-1: Reload to start server")
 
 (defvar-local doom-modeline--eglot nil)
 (defun doom-modeline-update-eglot ()
-  "Update `eglot' status."
+  "Update `eglot' state."
   (setq doom-modeline--eglot
         (pcase-let* ((server (eglot-current-server))
                      (nick (and server (eglot--project-nickname server)))
@@ -1916,29 +1918,31 @@ mouse-3: Fetch notifications"
 (defsubst doom-modeline--debug-dap ()
   "The current `dap-mode' state."
   (when (and (bound-and-true-p dap-mode)
-             (bound-and-true-p lsp-mode)
-             (dap--session-running (dap--cur-session)))
-    (propertize (doom-modeline-debug-icon 'doom-modeline-warning)
-                'help-echo (format "DAP (%s)
+             (bound-and-true-p lsp-mode))
+    (when-let ((session (dap--cur-session)))
+      (propertize (doom-modeline-debug-icon (if (dap--session-running session)
+                                                'doom-modeline-info
+                                              'doom-modeline-debug))
+                  'help-echo (format "DAP (%s - %s)
 mouse-1: Display debug hydra
 mouse-2: Display recent configurations
 mouse-3: Disconnect session"
-                                   (dap-mode-line))
-                'mouse-face 'mode-line-highlight
-                'local-map (let ((map (make-sparse-keymap)))
-                             (define-key map [mode-line mouse-1]
-                               #'dap-hydra)
-                             (define-key map [mode-line mouse-2]
-                               #'dap-debug-recent)
-                             (define-key map [mode-line mouse-3]
-                               #'dap-disconnect)
-                             map))))
+                                     (dap--debug-session-name session)
+                                     (dap--debug-session-state session))
+                  'mouse-face 'mode-line-highlight
+                  'local-map (let ((map (make-sparse-keymap)))
+                               (define-key map [mode-line mouse-1]
+                                 #'dap-hydra)
+                               (define-key map [mode-line mouse-2]
+                                 #'dap-debug-recent)
+                               (define-key map [mode-line mouse-3]
+                                 #'dap-disconnect)
+                               map)))))
 
 (defsubst doom-modeline--debug-edebug ()
   "The current `edebug' state."
-  (when (or (bound-and-true-p edebug-mode)
-            (bound-and-true-p edebug-x-mode))
-    (propertize (doom-modeline-debug-icon 'doom-modeline-warning)
+  (when (bound-and-true-p edebug-mode)
+    (propertize (doom-modeline-debug-icon 'doom-modeline-info)
                 'help-echo (format "EDebug (%s)
 mouse-1: Show help
 mouse-2: Next
@@ -1966,7 +1970,7 @@ mouse-1: Toggle Debug on Error"
 (defsubst doom-modeline--debug-on-quit ()
   "The current `debug-on-quit' state."
   (when debug-on-quit
-    (propertize (doom-modeline-debug-icon 'doom-modeline-info)
+    (propertize (doom-modeline-debug-icon 'doom-modeline-warning)
                 'help-echo "Debug on Quit
 mouse-1: Toggle Debug on Quit"
                 'mouse-face 'mode-line-highlight
@@ -2062,7 +2066,7 @@ mouse-1: Toggle Debug on Quit"
 
 (defvar doom-modeline--gnus-unread-mail 0)
 (defvar doom-modeline--gnus-started nil
-  "Used to determine if gnus has started")
+  "Used to determine if gnus has started.")
 (defun doom-modeline-update-gnus-status (&rest _)
   "Get the total number of unread news of gnus group."
   (setq doom-modeline--gnus-unread-mail
@@ -2087,6 +2091,7 @@ mouse-1: Toggle Debug on Quit"
 
 ;; Only start to listen to gnus when gnus is actually running
 (defun doom-modeline-start-gnus-listener ()
+  "Start GNUS listener."
   (when (and doom-modeline-gnus
              (not doom-modeline--gnus-started))
     (setq doom-modeline--gnus-started t)
@@ -2098,6 +2103,7 @@ mouse-1: Toggle Debug on Quit"
 
 ;; Stop the listener if gnus isn't running
 (defun doom-modeline-stop-gnus-listener ()
+  "Stop GNUS listener."
   (setq doom-modeline--gnus-started nil))
 (add-hook 'gnus-exit-gnus-hook #'doom-modeline-stop-gnus-listener)
 
@@ -2132,8 +2138,7 @@ mouse-1: Toggle Debug on Quit"
 ;;
 
 (defun doom-modeline--shorten-irc (name)
-  "Wrapper for `tracking-shorten' and `erc-track-shorten-function'that only
-takes one NAME.
+  "Wrapper for `tracking-shorten' and `erc-track-shorten-function' with NAME.
 
 One key difference is that when `tracking-shorten' and
 `erc-track-shorten-function' returns nil we will instead return the original
@@ -2167,15 +2172,15 @@ to be an icon and we don't want to remove that so we just return the original."
    (doom-modeline-vspc)))
 
 (defun doom-modeline--circe-p ()
-  "Checks if `circe' is in use."
+  "Check if `circe' is in use."
   (boundp 'tracking-mode-line-buffers))
 
 (defun doom-modeline--erc-p ()
-  "Checks if `erc' is in use."
+  "Check if `erc' is in use."
   (boundp 'erc-modified-channels-alist))
 
 (defun doom-modeline--rcirc-p ()
-  "Checks if `rcirc' is in use."
+  "Check if `rcirc' is in use."
   (bound-and-true-p rcirc-track-minor-mode))
 
 (defun doom-modeline--get-buffers ()
@@ -2195,7 +2200,8 @@ to be an icon and we don't want to remove that so we just return the original."
 ;; Create a modeline segment that contains all the irc tracked buffers
 (doom-modeline-def-segment irc-buffers
   "The list of shortened, unread irc buffers."
-  (when doom-modeline-irc
+  (when (and doom-modeline-irc
+             (doom-modeline--active))
     (let* ((buffers (doom-modeline--get-buffers))
            (number (length buffers)))
       (when (> number 0)
@@ -2206,7 +2212,8 @@ to be an icon and we don't want to remove that so we just return the original."
 
 (doom-modeline-def-segment irc
   "A notification icon for any unread irc buffer."
-  (when doom-modeline-irc
+  (when (and doom-modeline-irc
+             (doom-modeline--active))
     (let* ((buffers (doom-modeline--get-buffers))
            (number (length buffers)))
       (when (> number 0)
@@ -2257,7 +2264,7 @@ mouse-3: Switch to next unread buffer")))
                                       #'rcirc-next-active-buffer)))
                                   map))
 
-         ;; Disaplay the unread irc buffers
+         ;; Display the unread irc buffers as well
          (when doom-modeline-irc-buffers
            (concat (doom-modeline-spc)
                    (doom-modeline--tracking-buffers buffers)))
