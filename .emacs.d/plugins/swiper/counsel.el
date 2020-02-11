@@ -882,9 +882,17 @@ packages are, in order of precedence, `amx' and `smex'."
 (defvar counsel-M-x-history nil
   "History for `counsel-M-x'.")
 
+(defsubst counsel--string-trim-left (string &optional regexp)
+  "Trim STRING of leading string matching REGEXP.
+
+REGEXP defaults to \"[ \\t\\n\\r]+\"."
+  (if (string-match (concat "\\`\\(?:" (or regexp "[ \t\n\r]+") "\\)") string)
+      (replace-match "" t t string)
+    string))
+
 (defun counsel-M-x-action (cmd)
   "Execute CMD."
-  (setq cmd (intern cmd))
+  (setq cmd (intern (counsel--string-trim-left cmd "\\^")))
   (cond ((bound-and-true-p amx-initialized)
          (amx-rank cmd))
         ((bound-and-true-p smex-initialized-p)
@@ -2398,6 +2406,7 @@ By default `counsel-bookmark' opens a dired buffer for directories."
  'counsel-bookmark
  `(("d" bookmark-delete "delete")
    ("e" bookmark-rename "edit")
+   ("s" bookmark-set "overwrite")
    ("x" ,(counsel--apply-bookmark-fn #'counsel-find-file-extern)
         "open externally")
    ("r" ,(counsel--apply-bookmark-fn #'counsel-find-file-as-root)

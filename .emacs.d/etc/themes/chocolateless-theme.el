@@ -1,6 +1,6 @@
-;;; lavenderless-theme.el --- A colorless theme inspired by Lavender
+;;; chocolateless-theme.el --- A colorless theme inspired by Chocolate
 
-;; Copyright (C) 2019–2020 Thomas Letan
+;; Copyright (C) 2020 Thomas Letan
 ;;
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -30,18 +30,18 @@
 ;;; Code:
 (require 'colorless-themes)
 
-(colorless-themes-make lavenderless
-                       "#29222E"    ; bg
-                       "#362145"    ; bg+
-                       "#3b3341"    ; current-line
-                       "#51415C"    ; fade
-                       "#E0CEED"    ; fg
-                       "#d2c2d7"    ; fg+
-                       "#68d3a7"    ; primary
-                       "#cc3333"    ; red
-                       "#FF6200"    ; orange
-                       "#F4DC97"    ; yellow
-                       "#A6E22E")   ; green
+(colorless-themes-make chocolateless
+                       "#33272A"    ; bg
+                       "#261D1F"    ; bg+
+                       "#4B393E"    ; current-line
+                       "#705B5F"    ; fade
+                       "#C7AE9D"    ; fg
+                       "#EAEAFE"    ; fg+
+                       "#DC672C"    ; primary
+                       "#e05151"    ; red
+                       "#F88425"    ; orange
+                       "#e0c184"    ; yellow
+                       "#43d089")   ; green
 
-(provide 'lavenderless-theme)
-;;; lavenderless-theme.el ends here
+(provide 'chocolateless-theme)
+;;; chocolateless-theme.el ends here

@@ -1,6 +1,6 @@
 ;;; colorless-themes.el --- A macro to generate mostly colorless themes
 
-;; Copyright (C) 2018–2019 Thomas Letan
+;; Copyright (C) 2018–2020 Thomas Letan
 ;;
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -19,7 +19,7 @@
 ;; URL: https://git.sr.ht/~lthms/colorless-themes.el
 ;; Version: 0.1
 ;; License: GPL-3
-;; Keywords: themes, faces
+;; Keywords: faces themes, faces
 
 ;;; Commentary:
 
@@ -65,7 +65,7 @@ ORANGE, YELLOW and GREEN are pretty self-explanatory."
       '(powerline-active2 ((t (:background ,bg+))))
       '(powerline-inactive1 ((t (:background ,fade))))
       '(powerline-inactive2 ((t (:background ,fade))))
-      '(link ((t (:foreground ,docs))))
+      '(link ((t (:underline ,docs))))
       '(secondary-selection ((t ())))
       '(shadow ((t ())))
       '(region ((t (:background ,fg :foreground ,bg))))
@@ -84,8 +84,8 @@ ORANGE, YELLOW and GREEN are pretty self-explanatory."
       '(font-lock-type-face ((t ())))
       '(font-lock-comment-delimiter-face ((t (:foreground ,docs))))
       '(font-lock-comment-face ((t (:foreground ,docs))))
-      '(font-lock-doc-face ((t (:weight bold :foreground ,docs))))
-      '(font-lock-string-face ((t (:weight bold))))
+      '(font-lock-doc-face ((t (:foreground ,docs))))
+      '(font-lock-string-face ((t (:weight bold :background ,bg+))))
       '(whitespace-space ((t (:foreground ,fade))))
       '(whitespace-tab ((t (:foreground ,fade))))
       '(whitespace-newline ((t (:foreground ,fade))))
@@ -124,9 +124,9 @@ ORANGE, YELLOW and GREEN are pretty self-explanatory."
       '(org-tag ((t (:foreground ,docs))))
       '(org-todo ((t (:foreground ,yellow))))
       '(org-done ((t (:foreground ,green))))
-      '(org-block ((t (:foreground ,docs))))
-      '(org-block-begin-line ((t (:height 0.7))))
-      '(org-block-end-line ((t (:height 0.7))))
+      '(org-block ((t ())))
+      '(org-block-begin-line ((t :foreground ,fg+ :height 0.8)))
+      '(org-block-end-line ((t :foreground ,fg+ :height 0.8)))
       '(org-meta-line ((t ())))
       '(org-document-info-keyword ((t ())))
       '(org-document-info ((t ())))
@@ -135,11 +135,15 @@ ORANGE, YELLOW and GREEN are pretty self-explanatory."
       '(proof-tacticals-name-face ((t ())))
       '(proof-locked-face ((t (:background ,fade))))
       '(proof-queue-face ((t (:background ,bg+))))
-      '(proof-error-face ((t (:foreground ,red))))
-      '(proof-warning-face ((t (:foreground ,orange))))
+      '(proof-error-face ((t (:underline ,red))))
+      '(proof-warning-face ((t (:underline ,orange))))
       '(proof-declaration-name-face ((t (:weight bold))))
       '(coq-cheat-face ((t (:foreground ,bg :background ,red))))
       '(coq-solve-tactics-face ((t ())))
+      '(company-coq-coqdoc-h1-face ((t (:weight bold))))
+      '(company-coq-coqdoc-h2-face ((t (:weight bold))))
+      '(company-coq-coqdoc-h2-face ((t (:weight bold))))
+      '(company-coq-coqdoc-h2-face ((t (:weight bold))))
       '(elixir-atom-face ((t ())))
       '(elixir-attribute-face ((t (:foreground ,docs))))
       '(haskell-pragma-face ((t (:weight bold :foreground ,docs))))
@@ -152,14 +156,14 @@ ORANGE, YELLOW and GREEN are pretty self-explanatory."
       '(diff-hl-change ((t (:foreground ,fade :background ,yellow))))
       '(diff-hl-insert ((t (:foreground ,fade :background ,green))))
       '(diff-hl-delete ((t (:foreground ,fade :background ,red))))
-      '(flycheck-info ((t (:foreground ,green))))
-      '(flycheck-error ((t (:foreground ,red))))
-      '(flycheck-warning ((t (:foreground ,orange))))
+      '(flycheck-info ((t (:underline ,green))))
+      '(flycheck-error ((t (:underline ,red))))
+      '(flycheck-warning ((t (:underline ,orange))))
       '(flycheck-fringe-info ((t (:foreground ,green))))
       '(flycheck-fringe-error ((t (:foreground ,red))))
       '(flycheck-fringe-warning ((t (:foreground ,orange))))
-      '(flyspell-incorrect ((t (:foreground ,red))))
-      '(flyspell-duplicate ((t (:foreground ,orange))))
+      '(flyspell-incorrect ((t (:underline ,red))))
+      '(flyspell-duplicate ((t (:underline ,orange))))
       '(fringe ((t (()))))
       '(git-commit-summary ((t ())))
       '(git-commit-overlong-summary ((t (:foreground ,red))))
@@ -205,9 +209,9 @@ ORANGE, YELLOW and GREEN are pretty self-explanatory."
       '(font-latex-sedate-face ((t ())))
       '(font-latex-string-face ((t (:weight bold))))
       '(font-latex-math-face ((t ())))
-      '(font-latex-subscript-face ((t ())))
       '(font-latex-italic-face ((t (:slant italic))))
       '(font-latex-superscript-face ((t ())))
+      '(font-latex-subscript-face ((t ())))
       '(font-latex-script-char-face ((t ())))
       '(font-latex-sectioning-0-face ((t ())))
       '(font-latex-sectioning-1-face ((t ())))
@@ -242,7 +246,13 @@ ORANGE, YELLOW and GREEN are pretty self-explanatory."
       '(sh-quoted-exec ((t ())))
       '(tuareg-font-lock-governing-face ((t ())))
       '(tuareg-font-lock-operator-face ((t ())))
-      '(tuareg-font-double-colon-face ((t ()))))
+      '(tuareg-font-double-colon-face ((t ())))
+      '(header-line ((t (:background ,current-line :foreground ,fg))))
+      '(centaur-tabs-unselected ((t (:background ,current-line :foreground ,fg))))
+      '(centaur-tabs-unselected-modified ((t (:background ,current-line :foreground ,fg))))
+      '(centaur-tabs-selected ((t (:background ,bg :foreground ,fg))))
+      '(centaur-tabs-selected-modified ((t (:background ,bg :foreground ,fg))))
+      '(centaur-tabs-active-bar-face ((t (:background ,docs)))))
 
      ;;;###autoload
      (when load-file-name

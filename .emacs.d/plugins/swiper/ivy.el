@@ -960,20 +960,28 @@ selection, non-nil otherwise."
            (setcar actions (1+ action-idx))
            (ivy-set-action actions)))))
 
+(defvar ivy-marked-candidates nil
+  "List of marked candidates.
+Use `ivy-mark' to populate this.
+
+When this list is non-nil at the end of the session, the action
+will be called for each element of this list.")
+
 (defun ivy-read-action-ivy (actions)
   "Select an action from ACTIONS using Ivy."
   (let ((enable-recursive-minibuffers t))
     (if (and (> (minibuffer-depth) 1)
              (eq (ivy-state-caller ivy-last) 'ivy-read-action-ivy))
         (minibuffer-keyboard-quit)
-      (ivy-read (format "action (%s): " (ivy-state-current ivy-last))
-                (cl-mapcar
-                 (lambda (a i) (cons (format "[%s] %s" (nth 0 a) (nth 2 a)) i))
-                 (cdr actions) (number-sequence 1 (length (cdr actions))))
-                :action (lambda (a)
-                          (setcar actions (cdr a))
-                          (ivy-set-action actions))
-                :caller 'ivy-read-action-ivy))))
+      (let ((ivy-marked-candidates ivy-marked-candidates))
+        (ivy-read (format "action (%s): " (ivy-state-current ivy-last))
+                  (cl-mapcar
+                   (lambda (a i) (cons (format "[%s] %s" (nth 0 a) (nth 2 a)) i))
+                   (cdr actions) (number-sequence 1 (length (cdr actions))))
+                  :action (lambda (a)
+                            (setcar actions (cdr a))
+                            (ivy-set-action actions))
+                  :caller 'ivy-read-action-ivy)))))
 
 (defun ivy-shrink-after-dispatching ()
   "Shrink the window after dispatching when action list is too large."
@@ -1120,11 +1128,13 @@ contains a single candidate.")
            (cond ((string-match
                    "\\`\\([^/]+?\\):\\(?:\\(.*\\)@\\)?\\(.*\\)\\'"
                    ivy-text)
-                  (ivy-set-text (ivy-state-current ivy-last)))
+                  (save-match-data
+                    (ivy-set-text (ivy-state-current ivy-last))))
                  ((string-match
                    "\\`\\([^/]+?\\):\\(?:\\(.*\\)@\\)?\\(.*\\)\\'"
                    (ivy-state-current ivy-last))
-                  (ivy-set-text (ivy-state-current ivy-last)))))
+                  (save-match-data
+                    (ivy-set-text (ivy-state-current ivy-last))))))
       (string-match
        "\\`/\\([^/]+?\\):\\(?:\\(.*\\)@\\)?\\(.*\\)\\'"
        ivy-text)))
@@ -1341,9 +1351,10 @@ If the text hasn't changed as a result, forward to `ivy-alt-done'."
   "Move cursor vertically down ARG candidates.
 If the input is empty, select the previous history element instead."
   (interactive "p")
-  (if (string= ivy-text "")
-      (ivy-previous-history-element 1)
-    (ivy-next-line arg)))
+  (let ((orig-index ivy--index))
+    (ivy-next-line arg)
+    (when (and (string= ivy-text "") (eq ivy--index orig-index))
+      (ivy-previous-history-element 1))))
 
 (defun ivy-previous-line (&optional arg)
   "Move cursor vertically up ARG candidates."
@@ -1361,9 +1372,10 @@ If the input is empty, select the previous history element instead."
   "Move cursor vertically up ARG candidates.
 If the input is empty, select the previous history element instead."
   (interactive "p")
-  (when (string= ivy-text "")
-    (ivy-previous-history-element 1))
-  (ivy-previous-line arg))
+  (let ((orig-index ivy--index))
+    (ivy-previous-line arg)
+    (when (and (string= ivy-text "") (eq ivy--index orig-index))
+      (ivy-previous-history-element 1))))
 
 (defun ivy-toggle-calling ()
   "Flip `ivy-calling'."
@@ -1466,13 +1478,6 @@ See variable `ivy-recursive-restore' for further information."
              ivy-recursive-restore
              (not (eq ivy-last ivy-recursive-last)))
     (ivy--reset-state (setq ivy-last ivy-recursive-last))))
-
-(defvar ivy-marked-candidates nil
-  "List of marked candidates.
-Use `ivy-mark' to populate this.
-
-When this list is non-nil at the end of the session, the action
-will be called for each element of this list.")
 
 (defvar ivy-mark-prefix ">"
   "Prefix used by `ivy-mark'.")
@@ -4452,13 +4457,20 @@ BUFFER may be a string or nil."
   (let ((ivy--recompute-index-inhibit t))
     (ivy--exhibit)))
 
+(defun ivy--kill-current-candidate-buffer ()
+  (setf (ivy-state-preselect ivy-last) ivy--index)
+  (setq ivy--old-re nil)
+  (setq ivy--all-candidates (ivy--buffer-list "" ivy-use-virtual-buffers nil))
+  (let ((ivy--recompute-index-inhibit t))
+    (ivy--exhibit)))
+
 (defun ivy--kill-buffer-action (buffer)
   "Kill BUFFER."
   (ivy--kill-buffer-or-virtual buffer)
   (unless (buffer-live-p (ivy-state-buffer ivy-last))
     (setf (ivy-state-buffer ivy-last)
           (with-ivy-window (current-buffer))))
-  (ivy--kill-current-candidate))
+  (ivy--kill-current-candidate-buffer))
 
 (defvar ivy-switch-buffer-map
   (let ((map (make-sparse-keymap)))

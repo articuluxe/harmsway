@@ -1,6 +1,6 @@
 ;;; nofrils-darkless-theme.el --- Port of nofrils-dark using colorless-themes
 
-;; Copyright (C) 2019 Thomas Letan
+;; Copyright (C) 2019–2020 Thomas Letan
 ;;
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -16,11 +16,11 @@
 ;; along with this program. If not, see <http://www.gnu.org/licenses/>.
 
 ;; Author: Thomas Letan <contact@thomasletan.fr>
-;; URL: https://git.sr.ht/~lthms/colorles-themes.el
+;; URL: https://git.sr.ht/~lthms/colorless-themes.el
 ;; Version: 0.1
 ;; Package-Requires: ((colorless-themes "0.1"))
 ;; License: GPL-3
-;; Keywords: theme
+;; Keywords: faces theme
 
 ;;; Commentary:
 ;; This is a port of nofrils-dark, which is the original theme that motivated me

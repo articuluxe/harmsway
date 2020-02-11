@@ -1,12 +1,12 @@
 ;;; simpleclip.el --- Simplified access to the system clipboard
 ;;
-;; Copyright (c) 2012-2018 Roland Walker
+;; Copyright (c) 2012-2020 Roland Walker
 ;;
 ;; Author: Roland Walker <walker@pobox.com>
 ;; Homepage: http://github.com/rolandwalker/simpleclip
 ;; URL: http://raw.githubusercontent.com/rolandwalker/simpleclip/master/simpleclip.el
-;; Version: 1.0.8
-;; Last-Updated:  5 Nov 2018
+;; Version: 1.0.10
+;; Last-Updated: 10 Feb 2020
 ;; Keywords: convenience
 ;;
 ;; Simplified BSD License
@@ -87,14 +87,6 @@
 ;;
 ;; Compatibility and Requirements
 ;;
-;;     GNU Emacs version 25.1           : yes
-;;     GNU Emacs version 24.5           : yes
-;;     GNU Emacs version 24.4           : yes
-;;     GNU Emacs version 24.3           : yes
-;;     GNU Emacs version 23.3           : yes
-;;     GNU Emacs version 22.2           : yes, with some limitations
-;;     GNU Emacs version 21.x and lower : unknown
-;;
 ;;     No external dependencies
 ;;
 ;;     Tested on OS X, X11, and MS Windows
@@ -157,8 +149,8 @@
 
 ;;; requirements
 
-;; for callf, assert
-(require 'cl)
+;; for cl-callf, cl-assert
+(require 'cl-lib)
 
 (autoload 'term-send-raw-string "term")
 
@@ -173,7 +165,7 @@
 ;;;###autoload
 (defgroup simpleclip nil
   "Simplified access to the system clipboard."
-  :version "1.0.8"
+  :version "1.0.10"
   :link '(emacs-commentary-link :tag "Commentary" "simpleclip")
   :link '(url-link :tag "GitHub" "http://github.com/rolandwalker/simpleclip")
   :link '(url-link :tag "EmacsWiki" "http://emacswiki.org/emacs/Simpleclip")
@@ -374,8 +366,8 @@ in GNU Emacs 24.1 or higher."
 ;;;###autoload
 (defun simpleclip-set-contents (str-val)
   "Set the contents of the system clipboard to STR-VAL."
-  (callf or str-val "")
-  (assert (stringp str-val) nil "STR-VAL must be a string or nil")
+  (cl-callf or str-val "")
+  (cl-assert (stringp str-val) nil "STR-VAL must be a string or nil")
   (condition-case nil
       (cond
         ((fboundp 'ns-set-pasteboard)
@@ -512,7 +504,6 @@ is 'toggle."
 ;;
 ;; Local Variables:
 ;; indent-tabs-mode: nil
-;; mangle-whitespace: t
 ;; require-final-newline: t
 ;; coding: utf-8
 ;; byte-compile-warnings: (not cl-functions redefine)

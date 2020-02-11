@@ -640,8 +640,9 @@ between foreground and background is >= 7:1)."
    `(compilation-warning ((,class (:foreground ,yellow :weight bold))))
    ;;;; completions
    `(completions-annotations ((,class (:foreground ,fg-special-cold :slant ,modus-theme-slant))))
-   `(completions-common-part ((,class nil)))
-   `(completions-first-difference ((,class (:weight bold))))
+   `(completions-common-part ((,class (:foreground ,cyan-alt-other))))
+   `(completions-first-difference ((,class (:foreground ,blue-alt-other :weight bold))))
+   `(icomplete-first-match ((,class (:foreground ,magenta :weight bold))))
    ;;;; counsel
    `(counsel-active-mode ((,class (:foreground ,magenta-alt-other))))
    `(counsel-application-name ((,class (:foreground ,red-alt-other))))
@@ -1243,7 +1244,7 @@ between foreground and background is >= 7:1)."
    `(helm-grep-finish ((,class (:foreground ,green))))
    `(helm-grep-lineno ((,class (:foreground ,fg-special-warm))))
    `(helm-grep-match ((,class (:inherit modus-theme-subtle-blue))))
-   `(helm-header ((,class (:background ,bg-alt :foreground ,fg-main :weight bold))))
+   `(helm-header ((,class (:background ,bg-header :foreground ,fg-header :weight bold))))
    `(helm-header-line-left-margin ((,class (:foreground ,yellow-intense :weight bold))))
    `(helm-history-deleted ((,class (:inherit modus-theme-intense-red :weight bold))))
    `(helm-history-remote ((,class (:foreground ,red-alt-other))))
@@ -1258,7 +1259,8 @@ between foreground and background is >= 7:1)."
    `(helm-non-file-buffer ((,class (:foreground ,fg-alt))))
    `(helm-prefarg ((,class (:foreground ,red-alt))))
    `(helm-resume-need-update ((,class (:inherit modus-theme-intense-red))))
-   `(helm-selection ((,class (:inherit modus-theme-special-mild :weight bold :box t))))
+   `(helm-selection  ((,class (,@(and (>= emacs-major-version 27) '(:extend t))
+                                 :inherit modus-theme-intense-cyan :weight bold))))
    `(helm-separator ((,class (:foreground ,fg-special-mild))))
    `(helm-source-header ((,class (:inherit modus-theme-special-cold :weight bold
                                            ,@(when modus-operandi-theme-scale-headings
@@ -1674,9 +1676,16 @@ between foreground and background is >= 7:1)."
    `(org-agenda-clocking ((,class (:inherit modus-theme-special-cold))))
    `(org-agenda-column-dateline ((,class (:inherit modus-theme-subtle-neutral))))
    `(org-agenda-current-time ((,class (:inherit modus-theme-intense-cyan))))
-   `(org-agenda-date ((,class (:foreground ,fg-main))))
-   `(org-agenda-date-today ((,class (:inherit modus-theme-subtle-cyan :weight bold :box t))))
-   `(org-agenda-date-weekend ((,class (:foreground ,fg-alt))))
+   `(org-agenda-date ((,class (:inherit ,modus-theme-variable-pitch :foreground ,fg-main
+                                        ,@(when modus-operandi-theme-scale-headings
+                                            (list :height modus-operandi-theme-scale-4))))))
+   `(org-agenda-date-today ((,class (:inherit ,modus-theme-variable-pitch :background ,cyan-subtle-bg
+                                              :foreground ,fg-main :weight bold
+                                              ,@(when modus-operandi-theme-scale-headings
+                                                  (list :height modus-operandi-theme-scale-4))))))
+   `(org-agenda-date-weekend ((,class (:inherit ,modus-theme-variable-pitch :foreground ,fg-alt
+                                                ,@(when modus-operandi-theme-scale-headings
+                                                    (list :height modus-operandi-theme-scale-4))))))
    `(org-agenda-diary ((,class (:background ,bg-main :foreground ,fg-main))))
    `(org-agenda-dimmed-todo-face ((,class (:inherit modus-theme-subtle-neutral))))
    `(org-agenda-done ((,class (:foreground ,green))))
@@ -1685,7 +1694,10 @@ between foreground and background is >= 7:1)."
    `(org-agenda-filter-regexp ((,class (:background ,bg-active :foreground ,fg-main :box t))))
    `(org-agenda-filter-tags ((,class (:background ,bg-active :foreground ,fg-main :box t))))
    `(org-agenda-restriction-lock ((,class (:background ,bg-dim :foreground ,fg-dim))))
-   `(org-agenda-structure ((,class (:foreground ,fg-special-mild))))
+   `(org-agenda-structure ((,class (:inherit ,modus-theme-variable-pitch
+                                             :foreground ,fg-special-mild
+                                             ,@(when modus-operandi-theme-scale-headings
+                                           (list :height modus-operandi-theme-scale-3))))))
    `(org-archived ((,class (:background ,bg-alt :foreground ,fg-alt))))
    `(org-block ((,class (:background ,bg-main :foreground ,fg-main))))
    `(org-block-begin-line ((,class (:background ,bg-dim :foreground ,fg-special-mild))))
@@ -1708,13 +1720,13 @@ between foreground and background is >= 7:1)."
    `(org-footnote ((,class (:foreground ,blue-alt :underline t))))
    `(org-formula ((,class (:foreground ,red-alt))))
    `(org-habit-alert-face ((,class (:inherit modus-theme-intense-yellow))))
-   `(org-habit-alert-future-face ((,class (:inherit modus-theme-subtle-yellow))))
+   `(org-habit-alert-future-face ((,class (:inherit modus-theme-refine-yellow))))
    `(org-habit-clear-face ((,class (:inherit modus-theme-intense-magenta))))
-   `(org-habit-clear-future-face ((,class (:inherit modus-theme-subtle-magenta))))
+   `(org-habit-clear-future-face ((,class (:inherit modus-theme-refine-magenta))))
    `(org-habit-overdue-face ((,class (:inherit modus-theme-intense-red))))
-   `(org-habit-overdue-future-face ((,class (:inherit modus-theme-subtle-red))))
+   `(org-habit-overdue-future-face ((,class (:inherit modus-theme-refine-red))))
    `(org-habit-ready-face ((,class (:inherit modus-theme-intense-blue))))
-   `(org-habit-ready-future-face ((,class (:inherit modus-theme-subtle-blue))))
+   `(org-habit-ready-future-face ((,class (:inherit modus-theme-refine-blue))))
    `(org-headline-done ((,class (:foreground ,green-nuanced))))
    `(org-hide ((,class (:foreground ,fg-main))))
    `(org-latex-and-related ((,class (:foreground ,magenta-refine-fg))))

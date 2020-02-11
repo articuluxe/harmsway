@@ -1,4 +1,4 @@
-;;; lavenderless-theme.el --- A colorless theme inspired by Lavender
+;;; einkless-theme.el --- Port of eink using colorless-themes
 
 ;; Copyright (C) 2019–2020 Thomas Letan
 ;;
@@ -23,25 +23,26 @@
 ;; Keywords: faces theme
 
 ;;; Commentary:
-;; The main source of inspiration of this theme is Lavender.
+;; This is a port of eink, which is the original theme that motivated me
+;; to try “mostly colorless themes” to begin with.
 ;;
-;; https://github.com/emacsfodder/emacs-lavender-theme/
+;; https://github.com/robertmeta/nofrils
 
 ;;; Code:
 (require 'colorless-themes)
 
-(colorless-themes-make lavenderless
-                       "#29222E"    ; bg
-                       "#362145"    ; bg+
-                       "#3b3341"    ; current-line
-                       "#51415C"    ; fade
-                       "#E0CEED"    ; fg
-                       "#d2c2d7"    ; fg+
-                       "#68d3a7"    ; primary
-                       "#cc3333"    ; red
-                       "#FF6200"    ; orange
-                       "#F4DC97"    ; yellow
-                       "#A6E22E")   ; green
+(colorless-themes-make einkless
+                       "#fefef0"    ; bg
+                       "#e3e3da"    ; bg+
+                       "#eeeee0"    ; current-line
+                       "#ddddd0"    ; fade
+                       "#666660"    ; fg
+                       "#999990"    ; fg+
+                       "#000008"    ; primary
+                       "#ed6666"    ; red
+                       "#FFBF00"    ; orange
+                       "#fff1aa"    ; yellow
+                       "#87c484")   ; green
 
-(provide 'lavenderless-theme)
-;;; lavenderless-theme.el ends here
+(provide 'einkless-theme)
+;;; einkless-theme.el ends here

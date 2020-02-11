@@ -102,10 +102,17 @@ Using current frame's font if it it nil."
   :group 'company-posframe
   :type 'string)
 
-(defcustom company-posframe-backend-format-function #'company-posframe-format-backend-name
+(defcustom company-posframe-quickhelp-x-offset 0
+  "Horizontal offset for company posframe quickhelp."
+  :group 'company-posframe
+  :type 'integer)
+
+(defcustom company-posframe-backend-format-function #'company-posframe-format-backend-name-active-first
   "Function used to format each backend in the indicator."
   :group 'company-posframe
-  :type 'function)
+  :type '(choice (const :tag "show in order" company-posframe-format-backend-name)
+                 (const :tag "show active backend first" company-posframe-format-backend-name-active-first)
+                 (function :tag "custom function" nil)))
 
 (defcustom company-posframe-quickhelp-delay 1
   "Delay, in seconds, before the quickhelp popup appears.
@@ -114,6 +121,11 @@ If set to nil the popup won't automatically appear, but can still
 be triggered manually using `company-posframe-quickhelp-show'."
   :type '(choice (number :tag "Delay in seconds")
                  (const :tag "Don't popup help automatically" nil)))
+
+(defcustom company-posframe-quickhelp-show-header t
+  "Display a header for the posframe quickhelp frame."
+  :group 'company-posframe
+  :type 'boolean)
 
 (defface company-posframe-inactive-backend-name
   '((t :inherit mode-line))
@@ -190,11 +202,38 @@ be triggered manually using `company-posframe-quickhelp-show'."
         (setq company-my-keymap company-posframe-active-map)
       (setq company-my-keymap keymap))))
 
-(defun company-posframe-format-backend-name (backend)
+(defun company-posframe-format-backend-name-active-first (backends separator)
+  "Format BACKEND for displaying in the modeline, displays active backend first"
+  (let (active
+        inactive)
+
+    (dolist (backend company-backends)
+      (if (eq backend company-backend)
+          (add-to-list 'active (propertize (company-posframe-format-backend-name-active-first-helper backend)
+                                           'face 'company-posframe-active-backend-name))
+        (add-to-list 'inactive (propertize (company-posframe-format-backend-name-active-first-helper backend)
+                                           'face 'company-posframe-inactive-backend-name))
+        ))
+    (mapconcat (lambda (elem) (format "%s" elem)) (append active inactive) separator)
+    ))
+
+(defun company-posframe-format-backend-name-active-first-helper (backend)
+  "Helper function for `company-posframe-format-backend-name-active-first`"
+  (cl-typecase backend
+    (symbol (string-remove-prefix "company-" (symbol-name backend)))
+    (list (format "[%s]" (mapconcat #'company-posframe-format-backend-name-active-first-helper backend "|")))
+    (otherwise "-")))
+
+(defun company-posframe-format-backend-name (backends separator)
   "Format BACKEND for displaying in the modeline."
+  (mapconcat #'company-posframe-format-backend-name-helper backends separator)
+  )
+
+(defun company-posframe-format-backend-name-helper (backend)
+  "Helper function for `company-posframe-format-backend-name`"
   (propertize (cl-typecase backend
                 (symbol (string-remove-prefix "company-" (symbol-name backend)))
-                (list (format "[%s]" (mapconcat #'company-posframe-format-backend-name backend "|")))
+                (list (format "[%s]" (mapconcat #'company-posframe-format-backend-name-helper backend "|")))
                 (otherwise "-"))
               'face (if (equal backend company-backend)
                         'company-posframe-active-backend-name
@@ -207,9 +246,7 @@ be triggered manually using `company-posframe-quickhelp-show'."
                  (company-fetch-metadata)))
          (lines (company--create-lines company-selection height))
          (backend-names (when company-posframe-show-indicator
-                          (mapconcat company-posframe-backend-format-function
-                                     company-backends
-                                     company-posframe-backend-separator)))
+                          (funcall company-posframe-backend-format-function company-backends company-posframe-backend-separator)))
          (width (length (car lines)))
          (contents (concat (mapconcat #'identity lines "\n")
                            (if meta
@@ -333,13 +370,14 @@ just grab the first candidate and press forward."
   (cl-letf (((symbol-function 'completing-read)
              #'company-posframe-quickhelp-completing-read))
     (let* ((header
-            (substitute-command-keys
-             (concat
-              "## "
-              "\\<company-posframe-active-map>\\[company-posframe-quickhelp-toggle]:Show/Hide  "
-              "\\<company-posframe-active-map>\\[company-posframe-quickhelp-scroll-up]:Scroll-Up  "
-              "\\<company-posframe-active-map>\\[company-posframe-quickhelp-scroll-down]:Scroll-Down "
-              "##\n")))
+            (if company-posframe-quickhelp-show-header
+                (substitute-command-keys
+                 (concat
+                  "## "
+                  "\\<company-posframe-active-map>\\[company-posframe-quickhelp-toggle]:Show/Hide  "
+                  "\\<company-posframe-active-map>\\[company-posframe-quickhelp-scroll-up]:Scroll-Up  "
+                  "\\<company-posframe-active-map>\\[company-posframe-quickhelp-scroll-down]:Scroll-Down "
+                  "##\n")) ""))
            (body (company-posframe-quickhelp-fetch-docstring selected))
            (doc (concat (propertize header 'face 'company-posframe-quickhelp-header)
                         (propertize body 'face 'company-posframe-quickhelp))))
@@ -387,7 +425,7 @@ just grab the first candidate and press forward."
 (defun company-posframe-quickhelp-right-poshandler (_info)
   (with-current-buffer company-posframe-buffer
     (let ((pos posframe--last-posframe-pixel-position))
-      (cons (+ (car pos) (frame-pixel-width posframe--frame))
+      (cons (+ (car pos) (+ company-posframe-quickhelp-x-offset (frame-pixel-width posframe--frame)))
             (cdr pos)))))
 
 (defun company-posframe-quickhelp-hide ()

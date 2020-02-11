@@ -135,6 +135,134 @@ With prefix, toggle `ibuffer-show-empty-filter-groups'."
                             (when (eq (widget-get widget :custom-state) 'modified)
                               (widget-apply widget :custom-set)))))))
 
+;;; Elfeed
+
+(cl-defmacro unpackaged/elfeed-search-view-hydra-define (name body views)
+  "Define a pretty hydra named NAME with BODY and VIEWS.
+VIEWS is a plist: in it, each property is a string which becomes
+a column header in the hydra, and each value is a list of lists
+in this format: (KEY COMPONENT &optional LABEL).
+
+The KEY is a key sequence passed to `kbd', like \"s\" or \"S
+TAB\".  The COMPONENT is an Elfeed filter component, which may
+begin with \"+\" or \"=\", and in which spaces are automatically
+escaped as required by Elfeed.  The LABEL, if present, is a
+string displayed next to the KEY; if absent, COMPONENT is
+displayed.
+
+In the resulting hydra, when KEY is pressed, the COMPONENT is
+toggled in `elfeed-search-filter'.  It is toggled between three
+states: normal, inverse, and absent.  For example, the component
+\"+tag\" cycles between three states in the filter: \"+tag\",
+\"-tag\", and \"\".  The appropriate inverse prefix is used
+according to the component's prefix (i.e. for \"=\", the inverse
+is \"~\", and for \"\" (a plain regexp), \"!\" is used).
+
+These special components may be used to read choices from the
+Elfeed database with completion and toggle them:
+
+  :complete-age   Completes and sets the age token.
+  :complete-feed  Completes and toggles a feed token.
+  :complete-tag   Completes and toggles a tag token.
+  nil             Sets default filter.
+
+A complete example:
+
+  (unpackaged/elfeed-search-view-hydra-define my/elfeed-search-view-hydra
+    (:foreign-keys warn)
+    (\"Views\"
+     ((\"@\" :complete-age \"Date\")
+      (\"d\" nil))
+     \"Status\"
+     ((\"su\" \"+unread\"))
+     \"Feed\"
+     ((\"f TAB\" :complete-feed \"Choose\")
+      (\"fE\" \"=Planet Emacslife\" \"Planet Emacslife\"))
+     \"Tags\"
+     ((\"t TAB\" :complete-tag \"Choose\")
+      (\"te\" \"+Emacs\"))
+     \"\"
+     ((\"tn\" \"+news\"))))"
+  (declare (indent defun))
+  (cl-labels ((escape-spaces (string)
+                             ;; Return STRING with spaces escaped with "\s-".  Necessary
+                             ;; because Elfeed treats all literal spaces as separating tokens.
+                             (replace-regexp-in-string (rx space) "\\s-" string t t)))
+    (let* ((completion-fns
+            (list (cons :complete-age
+                        (lambda ()
+                          (interactive)
+                          (save-match-data
+                            (let* ((date-regexp (rx (group (or bos blank) "@" (1+ digit) (1+ (not blank)))))
+                                   (date-tag (when (string-match date-regexp elfeed-search-filter)
+                                               (match-string 1 elfeed-search-filter))))
+                              (elfeed-search-set-filter
+                               (replace-regexp-in-string date-regexp (read-string "Date: " date-tag)
+                                                         elfeed-search-filter t t))))))
+                  (cons :complete-feed
+                        '(concat "=" (replace-regexp-in-string
+                                      (rx space) "\\s-"
+                                      (->> (hash-table-values elfeed-db-feeds)
+                                           (--map (elfeed-meta it :title))
+                                           (completing-read "Feed: ")
+                                           regexp-quote) t t)))
+                  (cons :complete-tag
+                        '(concat "+" (completing-read "Tag: " (elfeed-db-get-all-tags))))))
+           (body (append '(:title elfeed-search-filter :color pink :hint t :quit-key "q")
+                         body))
+           (heads (cl-loop for (heading views) on views by #'cddr
+                           collect heading
+                           collect (cl-loop for (key component label) in views
+                                            collect
+                                            `(,key
+                                              ,(cl-typecase component
+                                                 ((and function (not null))
+                                                  ;; I don't understand why nil matches
+                                                  ;; (or lambda function), but it does,
+                                                  ;; so we have to account for it.  See
+                                                  ;; (info-lookup-symbol 'cl-typep).
+                                                  `(funcall ,component))
+                                                 (string
+                                                  `(elfeed-search-set-filter
+                                                    (unpackaged/elfeed-search-filter-toggle-component
+                                                     elfeed-search-filter ,(escape-spaces component))))
+                                                 (otherwise
+                                                  `(elfeed-search-set-filter
+                                                    ,(when component
+                                                       `(unpackaged/elfeed-search-filter-toggle-component
+                                                         elfeed-search-filter ,component)))))
+                                              ,(or label component "Default"))))))
+      ;; I am so glad I discovered `cl-sublis'.  I tried several variations of `cl-labels' and
+      ;; `cl-macrolet' and `cl-symbol-macrolet', but this is the only way that has worked.
+      (setf heads (cl-sublis completion-fns heads))
+      `(pretty-hydra-define ,name ,body
+         ,heads))))
+
+(cl-defun unpackaged/elfeed-search-filter-toggle-component (string component)
+  "Return STRING (which should be `elfeed-search-filter') having toggled COMPONENT.
+Tries to intelligently handle components based on their prefix:
++tag, =feed, regexp."
+  (save-match-data
+    (cl-labels ((toggle (component +prefix -prefix string)
+                        (let ((+pat (rx-to-string `(seq (or bos blank)
+                                                        (group ,+prefix ,component)
+                                                        (or eos blank))))
+                              (-pat (rx-to-string `(seq (group (or bos (1+ blank)) ,-prefix ,component)
+                                                        (or eos blank)))))
+                          ;; TODO: In newer Emacs versions, the `rx' pattern `literal'
+                          ;; evaluates at runtime in `pcase' expressions.
+                          (pcase string
+                            ((pred (string-match +pat)) (rm (concat -prefix component) string))
+                            ((pred (string-match -pat)) (rm "" string))
+                            (_ (concat string " " +prefix component)))))
+                (rm (new string) (replace-match new t t string 1)))
+      (pcase component
+        ((rx bos "+" (group (1+ anything)))
+         (toggle (match-string 1 component) "+" "-" string))
+        ((rx bos "=" (group (1+ anything)))
+         (toggle (match-string 1 component) "=" "~" string))
+        (_ (toggle component "" "!" string))))))
+
 ;;; Misc
 
 (defmacro unpackaged/define-chooser (name &rest choices)
@@ -159,11 +287,33 @@ choice's name, and the rest of which is its body forms."
            (funcall (alist-get choice-name ',choice-list nil nil #'equal))))
        (put ',name :unpackaged/define-chooser t))))
 
+(defcustom unpackaged/lorem-ipsum-overlay-exclude nil
+  "List of regexps to exclude from `unpackaged/lorem-ipsum-overlay'."
+  :type '(repeat regexp))
+
 ;;;###autoload
 (defun unpackaged/lorem-ipsum-overlay ()
   "Overlay all text in current buffer with \"lorem ipsum\" text.
 When called again, remove overlays.  Useful for taking
-screenshots without revealing buffer contents."
+screenshots without revealing buffer contents.
+
+Each piece of non-whitespace text in the buffer is compared with
+regexps in `unpackaged/lorem-ipsum-overlay-exclude', and ones
+that match are not overlaid.  Note that the regexps are compared
+against the entire non-whitespace token, up-to and including the
+preceding whitespace, but only the alphabetic part of the token
+is overlaid.  For example, in an Org buffer, a line that starts
+with:
+
+  #+TITLE: unpackaged.el
+
+could be matched against the exclude regexp (in `rx' syntax):
+
+  (rx (or bol bos blank) \"#+\" (1+ alnum) \":\" (or eol eos blank))
+
+And the line would be overlaid like:
+
+  #+TITLE: parturient.et"
   (interactive)
   (require 'lorem-ipsum)
   (let ((ovs (overlays-in (point-min) (point-max))))
@@ -178,10 +328,10 @@ screenshots without revealing buffer contents."
                                     (-flatten it) (apply #'concat it)
                                     (split-string it (rx (or space punct)) 'omit-nulls)))
             (case-fold-search nil))
-        (cl-labels ((overlay-match ()
-                                   (let* ((beg (match-beginning 0))
-                                          (end (match-end 0))
-                                          (replacement-word (lorem-word (match-string 0)))
+        (cl-labels ((overlay-match (group)
+                                   (let* ((beg (match-beginning group))
+                                          (end (match-end group))
+                                          (replacement-word (lorem-word (match-string group)))
                                           (ov (make-overlay beg end)))
                                      (when replacement-word
                                        (overlay-put ov :lorem-ipsum-overlay t)
@@ -208,8 +358,16 @@ screenshots without revealing buffer contents."
                                            do (cl-decf length (length word)))))
           (save-excursion
             (goto-char (point-min))
-            (while (re-search-forward (rx (1+ alpha)) nil t)
-              (overlay-match))))))))
+            (while (re-search-forward (rx (group (1+ (or bol bos blank (not alpha)))
+                                                 (0+ (not (any alpha blank)))
+                                                 (group (1+ alpha))
+                                                 (0+ (not (any alpha blank)))))
+                                      nil t)
+              (unless (cl-member (match-string 0) unpackaged/lorem-ipsum-overlay-exclude
+                                 :test (lambda (string regexp)
+                                         (string-match-p regexp string)))
+                (overlay-match 2))
+              (goto-char (match-end 2)))))))))
 
 (cl-defun unpackaged/mpris-track (&optional player)
   "Return the artist, album, and title of the track playing in MPRIS-supporting player.
@@ -399,10 +557,11 @@ Interactively, place on kill ring."
 (cl-defun unpackaged/buffer-provides (&optional (buffer (current-buffer)))
   "Return symbol that Emacs package in BUFFER provides."
   ;; I couldn't find an existing function that does this, but this is simple enough.
-  (save-excursion
-    (goto-char (point-max))
-    (re-search-backward (rx bol "(provide '" (group (1+ (not (any ")")))) ")"))
-    (intern (match-string 1))))
+  (with-current-buffer buffer
+    (save-excursion
+      (goto-char (point-max))
+      (re-search-backward (rx bol "(provide '" (group (1+ (not (any ")")))) ")"))
+      (intern (match-string 1)))))
 
 ;;;###autoload
 (defun unpackaged/elisp-to-org ()
@@ -565,10 +724,7 @@ Instead of random IDs like \"#orga1b2c3\", use heading titles,
 made unique when necessary."
   :global t
   (if unpackaged/org-export-html-with-useful-ids-mode
-      (progn
-        (advice-add #'org-export-new-title-reference :override #'unpackaged/org-export-new-title-reference)
-        (advice-add #'org-export-get-reference :override #'unpackaged/org-export-get-reference))
-    (advice-remove #'org-export-new-title-reference #'unpackaged/org-export-new-title-reference)
+      (advice-add #'org-export-get-reference :override #'unpackaged/org-export-get-reference)
     (advice-remove #'org-export-get-reference #'unpackaged/org-export-get-reference)))
 
 (defun unpackaged/org-export-get-reference (datum info)
@@ -672,9 +828,9 @@ A `font-lock-keywords' function that searches up to LIMIT."
                                  do (setf pos (next-single-property-change pos 'face nil limit))
                                  while (and pos (not (equal pos prev-pos)))
                                  for face-at = (get-text-property pos 'face)
-                                 for face-matches-p = (or (eq face-at 'org-table)
+                                 for face-matches-p = (or (eq face-at face)
                                                           (when (listp face-at)
-                                                            (member 'org-table face-at)))
+                                                            (member face face-at)))
                                  when (or (and not (not face-matches-p))
                                           face-matches-p)
                                  return pos
@@ -827,6 +983,7 @@ search whole subtree."
   "Return non-nil if ELEMENT is a descendant of TYPE.
 TYPE should be an element type, like `item' or `paragraph'.
 ELEMENT should be a list like that returned by `org-element-context'."
+  ;; MAYBE: Use `org-element-lineage'.
   (when-let* ((parent (org-element-property :parent element)))
     (or (eq type (car parent))
         (unpackaged/org-element-descendant-of type parent))))
@@ -871,6 +1028,7 @@ appropriate.  In tables, insert a new row or end the table."
                  (forward-line)
                  (insert "\n")
                  (forward-line -1))
+               ;; FIXME: looking-back is supposed to be called with more arguments.
                (while (not (looking-back (rx (repeat 3 (seq (optional blank) "\n")))))
                  (insert "\n"))
                (forward-line -1)))))
@@ -953,17 +1111,17 @@ appropriate.  In tables, insert a new row or end the table."
                                '(read-only t))))))
 
 ;;;###autoload
-(defun unpackaged/org-sort-multi (keys)
-  "Call `org-sort-entries' with multiple sorting methods specified in KEYS."
-  ;; Message copied from `org-sort-entries'.
-  (interactive (list (read-string "Sort by: [a]lpha  [n]umeric  [p]riority  p[r]operty  todo[o]rder  [f]unc
-         [t]ime [s]cheduled  [d]eadline  [c]reated  cloc[k]ing
-         A/N/P/R/O/F/T/S/D/C/K means reversed: ")))
-  (seq-do (lambda (key)
-            (org-sort-entries nil key))
-          (nreverse keys)))
+(defun unpackaged/org-sort-multi ()
+  "Call `org-sort' until \\[keyboard-quit] is pressed."
+  (interactive)
+  ;; Not sure if `with-local-quit' is necessary, but probably a good
+  ;; idea in case of recursive edit.
+  (with-local-quit
+    (cl-loop while (call-interactively #'org-sort))))
 
 ;;; Packages
+
+(require 'package)
 
 (defun unpackaged/package-delete-all-versions (name &optional force)
   "Delete all versions of package named NAME.
@@ -984,9 +1142,9 @@ NAME may be a string or symbol."
                       (error "Package `%s' depends on `%s'" (package-desc-name dependent) package-name)))
                   (unless (string-prefix-p (file-name-as-directory (expand-file-name package-user-dir))
                                            (expand-file-name (package-desc-dir first-desc)))
-                    (error "Package `%s' is a system package"))))
+                    (error "Package `%s' is a system package" symbol))))
     ;; Checks passed: delete packages.
-    (cl-loop for (symbol . descs) in matching-versions
+    (cl-loop for (_symbol . descs) in matching-versions
              do (--each descs
                   (package-delete it force)))))
 
@@ -1218,7 +1376,7 @@ command was called, go to its unstaged changes section."
                              (file-relative-name buffer-file-name
                                                  (locate-dominating-file buffer-file-name ".git"))))
          (section-ident `((file . ,buffer-file-path) (unstaged) (status))))
-    (magit-status)
+    (call-interactively #'magit-status)
     (delete-other-windows)
     (when buffer-file-path
       (goto-char (point-min))
@@ -1341,19 +1499,19 @@ preferring the preferred type."
            (potential-feeds (esxml-query-all "link[rel=alternate]" dom))
            (return (if all
                        ;; Return all URLs
-                       (cl-loop for (tag attrs) in potential-feeds
+                       (cl-loop for (_tag attrs) in potential-feeds
                                 when (feed-p (alist-get 'type attrs))
                                 collect (url-expand-file-name (alist-get 'href attrs) url))
                      (or
                       ;; Return the first URL of preferred type
-                      (cl-loop for (tag attrs) in potential-feeds
+                      (cl-loop for (_tag attrs) in potential-feeds
                                when (equal preferred-type (alist-get 'type attrs))
                                return (url-expand-file-name (alist-get 'href attrs) url))
                       ;; Return the first URL of non-preferred type
-                      (cl-loop for (tag attrs) in potential-feeds
+                      (cl-loop for (_tag attrs) in potential-feeds
                                when (feed-p (alist-get 'type attrs))
                                return (url-expand-file-name (alist-get 'href attrs) url))))))
-      (if (called-interactively-p)
+      (if (called-interactively-p 'interactive)
           (insert (if (listp return)
                       (s-join " " return)
                     return))

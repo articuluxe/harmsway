@@ -1,4 +1,4 @@
-;;; lavenderless-theme.el --- A colorless theme inspired by Lavender
+;;; broceliande-theme.el --- A greenish colorless theme
 
 ;; Copyright (C) 2019–2020 Thomas Letan
 ;;
@@ -30,18 +30,18 @@
 ;;; Code:
 (require 'colorless-themes)
 
-(colorless-themes-make lavenderless
-                       "#29222E"    ; bg
-                       "#362145"    ; bg+
-                       "#3b3341"    ; current-line
-                       "#51415C"    ; fade
-                       "#E0CEED"    ; fg
-                       "#d2c2d7"    ; fg+
-                       "#68d3a7"    ; primary
+(colorless-themes-make broceliande
+                       "#001c1c"    ; bg
+                       "#294040"    ; bg+
+                       "#142e2e"    ; current-line
+                       "#33635d"    ; fade
+                       "#1fae9b"    ; fg
+                       "#39d7c2"    ; fg+
+                       "cyan"       ; primary
                        "#cc3333"    ; red
                        "#FF6200"    ; orange
                        "#F4DC97"    ; yellow
                        "#A6E22E")   ; green
 
-(provide 'lavenderless-theme)
-;;; lavenderless-theme.el ends here
+(provide 'broceliande-theme)
+;;; broceliande-theme.el ends here

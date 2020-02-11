@@ -1,6 +1,6 @@
 ;;; hydrangealess-theme.el --- A colorless theme inspired by hydrangea
 
-;; Copyright (C) 2018–2019 Thomas Letan
+;; Copyright (C) 2018–2020 Thomas Letan
 ;;
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -13,14 +13,14 @@
 ;; GNU General Public License for more details.
 ;;
 ;; You should have received a copy of the GNU General Public License
-;; along with this program. If not, see <http://www.gnu.org/licenses/>.
+;; along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 ;; Author: Thomas Letan <contact@thomasletan.fr>
-;; URL: https://git.sr.ht/~lthms/colorles-themes.el
+;; URL: https://git.sr.ht/~lthms/colorless-themes.el
 ;; Version: 0.1
 ;; Package-Requires: ((colorless-themes "0.1"))
 ;; License: GPL-3
-;; Keywords: theme
+;; Keywords: faces theme
 
 ;;; Commentary:
 ;; The main source of inspiration of this theme is hydrangea.
