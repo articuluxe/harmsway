@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-02-12 15:07:49 dan.harms>
+;; Modified Time-stamp: <2020-02-12 15:08:07 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -473,6 +473,9 @@ not an error if any files do not exist."
   :commands
   (move-buffer-file move-buffer-to-new-frame harmsway-revert-buffer)
   )
+
+(use-package underline-text
+  :bind ("C-c /" . underline-text))
 
 (use-package custom-word-count
   :if (version< emacs-version "24.0")
