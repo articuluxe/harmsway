@@ -1,0 +1,1 @@
+cp -pf src/toast/bin/Release/toast.exe ../../../os/windows32/bin
