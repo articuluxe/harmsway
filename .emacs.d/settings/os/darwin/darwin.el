@@ -1,8 +1,8 @@
 ;; darwin.el --- os settings file
-;; Copyright (C) 2015-2019  Dan Harms (dharms)
+;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2019-05-16 08:47:43 dharms>
+;; Modified Time-stamp: <2020-02-12 13:27:03 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -34,6 +34,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Process Viewer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package vkill :bind ("C-c 0p" . vkill))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; osx-plist ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package osx-plist
+  :commands (osx-plist-parse-file osx-plist-parse-buffer))
 
 (with-eval-after-load 'gif-screencast
   (setq gif-screencast-args '("-x"))
