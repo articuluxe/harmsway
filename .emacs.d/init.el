@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-01-30 15:28:26 dan.harms>
+;; Modified Time-stamp: <2020-02-12 15:07:49 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2456,6 +2456,12 @@ Only one letter is shown, the first that applies."
   :bind (("M-s r" . vr/replace)
          ("M-s %" . vr/query-replace)
          ("M-s \\" . vr/mc-mark)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; info-colors ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package info-colors
+  :after info
+  :config
+  (add-hook 'Info-selection-hook 'info-colors-fontify-node))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; shebang ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package shebang)
