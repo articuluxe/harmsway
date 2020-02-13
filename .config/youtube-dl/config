@@ -1,0 +1,3 @@
+# Extract audio
+-x
+-o ~/Movies/youtube-dl/%(title)s.%(ext)s

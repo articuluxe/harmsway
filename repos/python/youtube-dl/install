@@ -1,0 +1,6 @@
+mkdir -p release
+curl -L https://yt-dl.org/downloads/latest/youtube-dl -o release/youtube-dl
+# wget https://yt-dl.org/downloads/latest/youtube-dl -O release/youtube-dl
+cd release
+chmod a+rx youtube-dl
+cp -pf youtube-dl ../../../../os/Darwin/bin
