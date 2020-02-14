@@ -2,8 +2,8 @@
 ;; Copyright (C) 2020  Dan.Harms (Dan.Harms)
 ;; Author: Dan.Harms <dan.harms@xrtrading.com>
 ;; Created: Tuesday, January 14, 2020
-;; Modified Time-stamp: <2020-01-14 08:47:21 Dan.Harms>
-;; Modified by: Dan.Harms
+;; Modified Time-stamp: <2020-02-14 11:12:04 dharms>
+;; Modified by: Dan Harms
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -26,6 +26,7 @@
 ;;; Code:
 
 (setq package-enable-at-startup nil)
+(setq frame-inhibit-implied-resize t)
 
 (tool-bar-mode -1)
 (scroll-bar-mode -1)
