@@ -1,0 +1,10 @@
+cd src
+git submodule update --init
+autoreconf -fi
+autoconf
+./configure --disable-maintainer-mode --with-oniguruma=builtin --prefix=$HOME/opt/stow/jq
+make
+make install
+# TODO validate this
+cd $HOME/opt/stow
+ls
