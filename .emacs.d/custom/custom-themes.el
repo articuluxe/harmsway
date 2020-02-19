@@ -2,7 +2,7 @@
 ;; Copyright (C) 2016-2020  Dan Harms (dan.harms)
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Wednesday, December 21, 2016
-;; Modified Time-stamp: <2020-01-07 13:40:54 dan.harms>
+;; Modified Time-stamp: <2020-02-19 10:40:19 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords: themes colors
 
@@ -226,6 +226,16 @@
            (custom-theme-set-faces sym '(header-line ((t (:foreground "grey20"
                                                                       :background "LightGoldenrod")))))
            (custom-theme-set-faces sym '(magit-section-highlight ((t (:background "PaleGoldenrod"))))))
+          ((memq sym '(nordless lavenderless broceliande chocolateless seagreenless nofrils-darkless
+                               hydrangealess einkless darkless))
+                (custom-theme-set-faces
+                 sym
+                 `(show-paren-match ((t (:foreground ,(face-attribute 'cursor :foreground nil t)
+                                                     :background ,(face-attribute 'cursor :background nil t))))))
+                (custom-theme-set-faces
+                 sym
+                 `(show-paren-mismatch ((t (:background ,(face-attribute 'show-paren-mismatch :foreground nil t)
+                                                        :foreground ,(face-attribute 'cursor :background nil t)))))))
           )
     ;; (cond ((memq sym harmsway/sml-dark-themes)
     ;;        (load-theme 'smart-mode-line-dark t))
