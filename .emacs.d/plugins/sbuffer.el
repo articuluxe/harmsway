@@ -5,7 +5,7 @@
 ;; Author: Adam Porter <adam@alphapapa.net>
 ;; URL: https://github.com/alphapapa/sbuffer.el
 ;; Package-Version: 0.1-pre
-;; Package-Requires: ((emacs "26.3") (dash "2.17") (dash-functional "2.17") (f "0.17") (magit-section "0.1") (magit "2.90.1"))
+;; Package-Requires: ((emacs "26.3") (dash "2.17") (dash-functional "2.17") (f "0.17") (magit-section "0.1"))
 ;; Keywords: convenience
 
 ;;; License:
@@ -38,7 +38,9 @@
 
 (require 'cl-lib)
 (require 'eieio)
+(require 'project)
 (require 'subr-x)
+(require 'vc)
 
 ;; For faces.
 (require 'outline)
@@ -48,13 +50,10 @@
 (require 'f)
 (require 'magit-section)
 
-;; FIXME: Require Magit due to <https://github.com/magit/magit/issues/4052>.
-(require 'magit)
-
 ;;;; Variables
 
 (defvar sbuffer-mode-map
-  (let ((map (make-sparse-keymap magit-section-mode-map)))
+  (let ((map (copy-keymap magit-section-mode-map)))
     (define-key map (kbd "g") #'sbuffer)
     (define-key map (kbd "k") #'sbuffer-kill)
     (define-key map (kbd "s") #'sbuffer-save)
@@ -78,6 +77,13 @@ The depth number is appended to the prefix."
   :type '(choice (const :tag "Outline faces" "outline-")
                  (const :tag "Prism faces (requires `prism')" "prism-level-")))
 
+(defcustom sbuffer-vc-state nil
+  "Show buffers' VC state.
+With a lot of file-backed buffers open, this might be slow,
+because `vc-registered' and `vc-refresh-state' must be called to
+get correct results."
+  :type 'boolean)
+
 (defface sbuffer-group
   '((t (:underline nil :weight bold)))
   "Face for Sbuffer groups.")
@@ -93,6 +99,10 @@ The depth number is appended to the prefix."
 (defface sbuffer-size
   '((t (:inherit font-lock-comment-face)))
   "Face for the size of buffers and groups.")
+
+(defface sbuffer-vc
+  '((t (:inherit font-lock-warning-face)))
+  "Face for the VC status of buffers.")
 
 ;; Silence byte-compiler.  This is defined later in the file.
 (defvar sbuffer-groups)
@@ -110,7 +120,13 @@ The depth number is appended to the prefix."
       ;; to implement "chains" of grouping functions.
       ((group-by (fns sequence)
                  (cl-typecase fns
+                   (function
+                    ;; "Regular" subgroups (naming things is hard).
+                    (-group-by fns sequence))
                    (list (cl-typecase (car fns)
+                           (function
+                            ;; "Regular" subgroups (naming things is hard).
+                            (group-buffers fns sequence))
                            (list
                             ;; "Recursive sub-subgroups" (naming things is hard).
 
@@ -121,13 +137,7 @@ The depth number is appended to the prefix."
                             (append (group-by (car fns) (-select (caar fns) sequence))
                                     (if (cdr fns)
                                         (group-by (cdr fns) (-select (-not (caar fns)) sequence))
-                                      (-select (-not (caar fns)) sequence))))
-                           (function
-                            ;; "Regular" subgroups (naming things is hard).
-                            (group-buffers fns sequence))))
-                   (function
-                    ;; "Regular" subgroups (naming things is hard).
-                    (-group-by fns sequence))))
+                                      (-select (-not (caar fns)) sequence))))))))
        (group-buffers (fns buffers)
                       (if (cdr fns)
                           (let ((groups (group-by (car fns) buffers)))
@@ -246,8 +256,20 @@ NAME, okay, `checkdoc'?"
          (face (list :inherit (list buffer-face level-face)))
          (name (propertize (buffer-name buffer) 'face face))
          (size (propertize (concat "(" (file-size-human-readable (buffer-size buffer)) ")")
-                           'face 'sbuffer-size)))
-    (concat name modified-s " " size)))
+                           'face 'sbuffer-size))
+         ;; Getting correct, up-to-date results from vc is harder than it should be.
+         (vc-state (when sbuffer-vc-state
+                     (or (when (and (buffer-file-name buffer)
+                                    (vc-registered (buffer-file-name buffer)))
+                           (with-current-buffer buffer
+                             ;; Unfortunately, this seems to be necessary to get the correct state.
+                             (vc-refresh-state))
+                           (pcase (vc-state (buffer-file-name buffer))
+                             ((and 'edited it)
+                              (propertize (format " %s" it)
+                                          'face 'sbuffer-vc))))
+                         ""))))
+    (concat name modified-s " " size vc-state)))
 
 (defun sbuffer--map-sections (fn sections)
   "Map FN across SECTIONS."
@@ -291,6 +313,15 @@ TYPE, okay, `checkdoc'?"
 
 ;; NOTE: We use `byte-compile' explicitly because uncompiled closures
 ;; don't work in `-select', or something like that.
+
+(defun sbuffer-and (name &rest preds)
+  ;; Copied from dash-functional.el.
+  "Return a grouping function that groups buffers matching all of PREDS.
+The resulting group is named NAME.  This can also be used with a
+single predicate to apply a name to a group."
+  (byte-compile (lambda (x)
+                  (when (-all? (-cut funcall <> x) preds)
+                    name))))
 
 (defun sbuffer-or (name &rest preds)
   ;; Copied from dash-functional.el.
@@ -421,6 +452,12 @@ NAME, okay, `checkdoc'?"
       "*special*"
     "non-special buffers"))
 
+(sbuffer-defauto-group project
+  (when-let* ((project (with-current-buffer buffer
+                         (project-current)))
+              (project-root (car (project-roots project))))
+    (concat "Project: " project-root)))
+
 ;;;;;; Group-defining macro
 
 ;; This seems to work better than I expected.
@@ -429,18 +466,23 @@ NAME, okay, `checkdoc'?"
   "FIXME: Docstring."
   (declare (indent defun))
   `(cl-macrolet ((group (&rest groups) `(list ,@groups))
+                 (group-and (name &rest groups)
+                            `(sbuffer-and ,name ,@groups))
                  (group-or (name &rest groups)
                            `(sbuffer-or ,name ,@groups))
                  (group-not (name group)
                             `(sbuffer-not ,name ,group))
                  (mode-match (name regexp)
                              `(sbuffer-group 'mode-match ,name ,regexp))
+                 (name-match (name regexp)
+                             `(sbuffer-group 'name-match ,name ,regexp))
                  (dir (dirs &optional depth)
                       `(sbuffer-group 'dir ,dirs ,depth))
                  (auto-directory () `(sbuffer-group 'auto-directory))
                  (auto-file () `(sbuffer-group 'auto-file))
                  (auto-indirect () `(sbuffer-group 'auto-indirect))
-                 (auto-mode () `(sbuffer-group 'auto-mode)))
+                 (auto-mode () `(sbuffer-group 'auto-mode))
+                 (auto-project () `(sbuffer-group 'auto-project)))
      (list ,@groups)))
 
 ;;;; Additional customization
@@ -453,9 +495,10 @@ NAME, okay, `checkdoc'?"
     (group (group-or "*Help/Info*"
                      (mode-match "*Help*" (rx bos "help-"))
                      (mode-match "*Info*" (rx bos "info-"))))
-    (group (mode-match "*Magit*" (rx bos "magit-"))
+    (group (mode-match "*Magit*" (rx bos (or "magit" "forge") "-"))
            (auto-directory))
     (group (group-not "*Special*" (auto-file))
+           (group (name-match "**Special**" (rx bos "*" (or "Messages" "Warnings" "scratch" "Backtrace") "*")))
            (mode-match "*Helm*" (rx bos "helm-"))
            (auto-mode))
     (dir "~/.emacs.d")
@@ -484,46 +527,6 @@ This may seem confusing at first, but once you get the hang of
 it, it's powerful and flexible.  Study the default groups and the
 resulting output, and you should figure it out quickly enough."
   :type '(repeat (or function list)))
-
-;; TODO: The groups should be set with a DSL that looks something like this:
-
-;; (sbuffer-set-groups '(((:or "*Misc*"
-;;                             (:name-match "*Flycheck*" (rx "*Flycheck"))))
-;;                       ((:or "*Help/Info*"
-;;                             (:mode-match "*Help*" (rx bos "help-"))
-;;                             (:mode-match "*Info*" (rx bos "info-")))
-;;                        :auto-mode)
-;;                       ((:mode-match "*Helm*" (rx bos "helm-")))
-;;                       ((:dir "~/org" nil)
-;;                        (:mode-match "Magit" (rx bos "magit-"))
-;;                        (:indirect :auto-file))
-;;                       (:dir "~/.emacs.d" nil)
-;;                       (:dir "~/.bin" nil)
-;;                       (:dir '("~/.config" "~/.homesick/repos/main/home/.config") nil)
-;;                       (:dir "~/src/emacs" 1)
-;;                       (:dir "/usr/share" 1)
-;;                       (:mode-match "*Magit*" (rx bos "magit-"))
-;;                       :auto-dir :auto-mode))
-
-;; The challenge is to transform that into this:
-
-;; (setf sbuffer-groups (list (list (sbuffer-or "*Misc*"
-;;                                              (apply-partially #'sbuffer-group-buffer-name-match "*Flycheck*" (rx "*Flycheck"))))
-;;                            (list (sbuffer-or "*Help/Info*"
-;;                                              (apply-partially #'sbuffer-group-mode-match "*Help*" (rx bos "help-"))
-;;                                              (apply-partially #'sbuffer-group-mode-match "*Info*" (rx bos "info-")))
-;;                                  'sbuffer-group-by-major-mode)
-;;                            (list (apply-partially #'sbuffer-group-mode-match "*Helm*" (rx bos "helm-")))
-;;                            (list (apply-partially #'sbuffer-group-dir "~/org" nil)
-;;                                  (apply-partially #'sbuffer-group-mode-match "Magit" (rx bos "magit-"))
-;;                                  (list #'sbuffer-group-by-indirect #'sbuffer-group-by-file))
-;;                            (apply-partially #'sbuffer-group-dir "~/.emacs.d" nil)
-;;                            (apply-partially #'sbuffer-group-dir "~/.bin" nil)
-;;                            (apply-partially #'sbuffer-group-dir '("~/.config" "~/.homesick/repos/main/home/.config") nil)
-;;                            (apply-partially #'sbuffer-group-dir "~/src/emacs" 1)
-;;                            (apply-partially #'sbuffer-group-dir "/usr/share" 1)
-;;                            (apply-partially #'sbuffer-group-mode-match "*Magit*" (rx bos "magit-"))
-;;                            'sbuffer-group-by-directory 'sbuffer-group-by-major-mode))
 
 ;;;; Footer
 

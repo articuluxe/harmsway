@@ -68,6 +68,7 @@
 ;;     breakpoint (provided by built-in gdb-mi.el)
 ;;     calendar and diary
 ;;     calfw
+;;     change-log and log-view (`vc-print-log' and `vc-print-root-log')
 ;;     column-enforce-mode
 ;;     company-mode
 ;;     company-posframe
@@ -87,8 +88,10 @@
 ;;     disk-usage
 ;;     diff-hl
 ;;     diff-mode
+;;     dim-autoload
 ;;     dired
 ;;     dired-async
+;;     dired-git
 ;;     dired-git-info
 ;;     dired-narrow
 ;;     dired-subtree
@@ -99,6 +102,7 @@
 ;;     ediff
 ;;     eldoc-box
 ;;     elfeed
+;;     enhanced-ruby-mode
 ;;     emms
 ;;     epa
 ;;     equake
@@ -196,6 +200,7 @@
 ;;     window-divider-mode
 ;;     writegood-mode
 ;;     xah-elisp-mode
+;;     xref
 ;;     xterm-color (and ansi-colors)
 ;;     ztree
 
@@ -606,6 +611,19 @@ between foreground and background is >= 7:1)."
    `(cfw:face-toolbar ((,class (:background ,bg-active :foreground ,bg-active))))
    `(cfw:face-toolbar-button-off ((,class (:background ,bg-alt :foreground ,cyan))))
    `(cfw:face-toolbar-button-on ((,class (:background ,bg-main :foreground ,blue-intense :weight bold))))
+   ;;;; change-log and log-view (`vc-print-log' and `vc-print-root-log')
+   `(change-log-acknowledgment ((,class (:foreground ,yellow-nuanced))))
+   `(change-log-conditionals ((,class (:foreground ,magenta-alt))))
+   `(change-log-date ((,class (:foreground ,magenta-nuanced))))
+   `(change-log-email ((,class (:foreground ,cyan-nuanced))))
+   `(change-log-file ((,class (:foreground ,blue-nuanced))))
+   `(change-log-list ((,class (:foreground ,magenta-alt-other))))
+   `(change-log-name ((,class (:foreground ,cyan-nuanced))))
+   `(log-edit-header ((,class (:foreground ,blue :weight bold))))
+   `(log-edit-summary ((,class (:foreground ,magenta-alt-other))))
+   `(log-edit-unknown-header ((,class (:foreground ,fg-alt))))
+   `(log-view-file ((,class (:foreground ,fg-special-cold :weight bold))))
+   `(log-view-message ((,class (:foreground ,fg-special-warm))))
    ;;;; column-enforce-mode
    `(column-enforce-face ((,class (:inherit modus-theme-refine-yellow))))
    ;;;; company-mode
@@ -769,6 +787,8 @@ between foreground and background is >= 7:1)."
    `(diff-refine-changed ((,class (:inherit modus-theme-intense-yellow))))
    `(diff-refine-removed ((,class (:inherit modus-theme-intense-red))))
    `(diff-removed ((,class (:inherit modus-theme-subtle-red))))
+   ;;;; dim-autoload
+   `(dim-autoload-cookie-line ((,class (:foreground ,fg-alt :slant ,modus-theme-slant))))
    ;;;; dired
    `(dired-directory ((,class (:foreground ,blue :weight bold))))
    `(dired-flagged ((,class (:inherit modus-theme-intense-red))))
@@ -783,6 +803,9 @@ between foreground and background is >= 7:1)."
    `(dired-async-failures ((,class (:foreground ,red-active :weight bold))))
    `(dired-async-message ((,class (:foreground ,green-active :weight bold))))
    `(dired-async-mode-message ((,class (:foreground ,cyan-active :weight bold))))
+   ;;;; dired-git
+   `(dired-git-branch-else ((,class (:foreground ,magenta-alt :weight bold))))
+   `(dired-git-branch-master ((,class (:foreground ,magenta-alt-other :weight bold))))
    ;;;; dired-git-info
    `(dgi-commit-message-face ((,class (:foreground ,fg-special-mild))))
    ;;;; dired-narrow
@@ -899,6 +922,14 @@ between foreground and background is >= 7:1)."
    `(elfeed-search-title-face ((,class (:foreground ,fg-main))))
    `(elfeed-search-unread-count-face ((,class (:foreground ,fg-special-warm))))
    `(elfeed-search-unread-title-face ((,class (:weight bold))))
+   ;;;; enhanced-ruby-mode
+   `(enh-ruby-heredoc-delimiter-face ((,class (:foreground ,blue-alt-other))))
+   `(enh-ruby-op-face ((,class (:foreground ,fg-main))))
+   `(enh-ruby-regexp-delimiter-face ((,class (:foreground ,green))))
+   `(enh-ruby-regexp-face ((,class (:foreground ,magenta))))
+   `(enh-ruby-string-delimiter-face ((,class (:foreground ,blue-alt))))
+   `(erm-syn-errline ((,class (:foreground ,red :underline t))))
+   `(erm-syn-warnline ((,class (:foreground ,yellow :underline t))))
    ;;;; emms
    `(emms-playlist-track-face ((,class (:foreground ,blue))))
    `(emms-playlist-selected-face ((,class (:foreground ,magenta :weight bold))))
@@ -1774,6 +1805,7 @@ between foreground and background is >= 7:1)."
    `(org-time-grid ((,class (:foreground ,cyan-nuanced))))
    `(org-todo ((,class (:foreground ,magenta-alt-other))))
    `(org-upcoming-deadline ((,class (:foreground ,red-alt-other))))
+   `(org-upcoming-distant-deadline ((,class (:foreground ,red-nuanced))))
    `(org-verbatim ((,class (:background ,bg-alt :foreground ,fg-special-calm))))
    `(org-verse ((,class (:inherit org-quote))))
    `(org-warning ((,class (:foreground ,blue-intense))))
@@ -2139,6 +2171,10 @@ between foreground and background is >= 7:1)."
    `(xah-elisp-cap-variable ((,class (:foreground ,red-alt-other))))
    `(xah-elisp-command-face ((,class (:foreground ,cyan-alt-other))))
    `(xah-elisp-dollar-symbol ((,class (:foreground ,green))))
+   ;;;; xref
+   `(xref-file-header ((,class (:foreground ,fg-special-cold :weight bold))))
+   `(xref-line-number ((,class (:foreground ,fg-alt))))
+   `(xref-match ((,class (:inherit match))))
    ;;;; ztree
    `(ztreep-arrow-face ((,class (:foreground ,fg-inactive))))
    `(ztreep-diff-header-face ((,class (:height 1.2 :foreground ,fg-special-cold :weight bold))))

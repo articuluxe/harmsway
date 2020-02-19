@@ -651,8 +651,8 @@ See also `sqlind-beginning-of-block'"
     (when (or (not (eq sql-product 'postgres))
               (save-excursion
                 (sqlind-backward-syntactic-ws)
-                (skip-syntax-backward "_") ; note that the $$ is symbol constitent!
-                (looking-at "\\$\\$")))
+                (skip-syntax-backward "_w") ; note that the $$ is symbol constituent!
+                (looking-at "\\(\\$\\$\\)\\|begin\\|then\\|else")))
       (throw 'finished
         (if (null sqlind-end-stmt-stack)
             'declare-statement
@@ -1634,6 +1634,15 @@ not a statement-continuation POS is the same as the
      (push (sqlind-refine-end-syntax
             nil "" (point) context)
            context))
+
+    ;; See #92 and pr92b.sql, no such thing as a nested declare statement, use
+    ;; the context of the previous declare-statement!
+    ((and (eq sql-product 'postgres)
+          (eq syntax-symbol 'declare-statement)
+          (looking-at "declare\\_>"))
+     (goto-char anchor)
+     (setq context (sqlind-syntax-of-line)))
+
     )
   context))
 
@@ -1937,11 +1946,14 @@ clause (select, from, where, etc) in which the current point is.
     (in-select-clause               sqlind-lineup-to-clause-end
                                     sqlind-right-justify-logical-operator)
     (insert-clause                  sqlind-right-justify-clause)
-    (in-insert-clause               sqlind-lineup-to-clause-end)
+    (in-insert-clause               sqlind-lineup-to-clause-end
+                                    sqlind-right-justify-logical-operator)
     (delete-clause                  sqlind-right-justify-clause)
-    (in-delete-clause               sqlind-lineup-to-clause-end)
+    (in-delete-clause               sqlind-lineup-to-clause-end
+                                    sqlind-right-justify-logical-operator)
     (update-clause                  sqlind-right-justify-clause)
-    (in-update-clause               sqlind-lineup-to-clause-end))
+    (in-update-clause               sqlind-lineup-to-clause-end
+                                    sqlind-right-justify-logical-operator))
   "Define the indentation amount for each syntactic symbol.
 
 The value of this variable is an ALIST with the format:
@@ -2201,7 +2213,10 @@ with AND, OR or NOT to be aligned so they sit under the WHERE clause."
     (cl-destructuring-bind ((_sym clause) . anchor) (car syntax)
       (if (and (equal clause "where")
                (looking-at "and\\|or\\|not"))
-          (- base-indentation (1+ (- (match-end 0) (match-beginning 0))))
+          (progn
+            (goto-char anchor)
+            (+ (current-column)
+               (- (length clause) (- (match-end 0) (match-beginning 0)))))
         base-indentation))))
 
 (defun sqlind-left-justify-logical-operator (syntax base-indentation)

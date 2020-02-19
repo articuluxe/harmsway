@@ -4,7 +4,9 @@
 
 ;; Author: Tomohiro Matsuyama <m2ym.pub@gmail.com>
 ;; Keywords: convenience
-;; Package-Requires: ((cl-lib "0.3"))
+;; Version: 0.1.5
+;; Package-Requires: ((emacs "26.1") (cl-lib "0.3"))
+;; URL: https://github.com/emacsorphanage/yascroll
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -51,7 +53,11 @@
 logical position to the right-edge of the window, and PADDING is \
 a positive number of padding to the edge."
   (save-excursion
-    (let* ((window-width (window-width))
+    (let* ((line-number-width
+            (if (and (boundp 'display-line-numbers-mode) display-line-numbers-mode)
+                (+ (line-number-display-width) 2)
+              0))
+           (window-width (- (window-width) line-number-width))
            (window-margin (+ left-margin-width right-margin-width))
            (column-bol (progn (yascroll:vertical-motion (cons 0 0))
                               (current-column)))
@@ -63,7 +69,11 @@ a positive number of padding to the edge."
            (padding (- window-width
                        window-margin
                        column-eol-visual
-                       (if window-system 0 1))))
+                       (if window-system 0 1)))
+           ;; When horizontal scroll has passed EOL, add padding for the columns
+           ;; between EOL and the first column in the visible window.
+           (padding (+ padding
+                       (- (max (window-hscroll) column-eol) column-eol))))
       (list (point) padding))))
 
 
@@ -133,13 +143,15 @@ not be displayed."
 (make-variable-buffer-local 'yascroll:thumb-overlays)
 
 (defun yascroll:compute-thumb-size (window-lines buffer-lines)
-  "Return the proper size (height) of scroll bar thumb."
+  "Return the proper size (height) of scroll bar thumb.
+Doc-this WINDOW-LINES and BUFFER-LINES."
   (if (zerop buffer-lines)
       1
     (max 1 (floor (* (/ (float window-lines) buffer-lines) window-lines)))))
 
 (defun yascroll:compute-thumb-window-line (window-lines buffer-lines scroll-top)
-  "Return the line number of scroll bar thumb relative to window."
+  "Return the line number of scroll bar thumb relative to window.
+Doc-this WINDOW-LINES, BUFFER-LINES and SCROLL-TOP."
   (if (zerop buffer-lines)
       0
     (floor (* window-lines (/ (float scroll-top) buffer-lines)))))
@@ -289,7 +301,7 @@ not be displayed."
 
 (defun yascroll:safe-show-scroll-bar ()
   "Same as `yascroll:show-scroll-bar' except that if errors occurs in this \
-function, this function will suppress the errors and disable `yascroll-bar-mode'."
+function, this function will suppress the errors and disable `yascroll-bar-mode`."
   (condition-case var
       (yascroll:show-scroll-bar)
     (error (yascroll:handle-error var))))

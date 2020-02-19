@@ -61,10 +61,34 @@
 
 (defcustom flyspell-correct-interface #'flyspell-correct-dummy
   "Interface for `flyspell-correct-at-point'.
-It has to be function that accepts two arguments - candidates and
-misspelled word. It has to return either replacement word
-or (command, word) tuple that will be passed to
-`flyspell-do-correct'."
+
+`flyspell-correct-interface' is a function accepting two arguments:
+
+  - candidates for correction (list of strings)
+  - misspelled word (string)
+
+Result must be either a string (replacement word) or a cons of a
+command and a string (replacement word), where the command is one
+of the following:
+
+  - skip - do nothing to misspelled word, in rapid mode used for
+    jumping to the next (or previous) misspelled word
+
+  - break - do nothing to misspelled word, break from rapid mode
+
+  - stop - do nothing to misspelled word, break from rapid
+    mode (if enabled) and leave the point at the misspelled word
+
+  - save - replace misspelled word with replacement word and save
+    it to the personal dictionary
+
+  - session - replace misspelled word with replacement word and
+    save it to the session dictionary (correction will be
+    discarded upon quitting Emacs)
+
+  - buffer - replace misspelled word with replacement word and
+    save it to the buffer dictionary (added to the bottom of
+    buffer)"
   :group 'flyspell-correct
   :type 'function)
 
@@ -147,7 +171,7 @@ Adapted from `flyspell-correct-word-before-point'."
                   ;; Some interfaces actually eat 'C-g' so it's impossible to
                   ;; stop rapid mode. So when interface returns nil we treat it
                   ;; as a stop. Fixes #60.
-                  (unless res (setq res (cons 'stop word)))
+                  (unless res (setq res (cons 'break word)))
                   (cond
                    ((stringp res)
                     (flyspell-do-correct
@@ -156,6 +180,7 @@ Adapted from `flyspell-correct-word-before-point'."
                     (let ((cmd (car res))
                           (wrd (cdr res)))
                       (unless (or (eq cmd 'skip)
+                                  (eq cmd 'break)
                                   (eq cmd 'stop))
                         (flyspell-do-correct
                          cmd poss wrd cursor-location start end opoint)
@@ -239,7 +264,8 @@ until all errors in buffer have been addressed."
   ;; `flyspell-correct-word-before-point'.
   (interactive "d")
   (let ((original-pos (point))
-        (hard-reset-pos))
+        (target-pos (point))
+        (hard-move-point))
     (save-excursion
       (let ((incorrect-word-pos))
 
@@ -275,26 +301,40 @@ until all errors in buffer have been addressed."
               ;; But with rapid mode, `hard-reset-pos' will be set to nil
               ;; eventually. Which gives more predictable point location in
               ;; general.
-              (setq hard-reset-pos
+              (setq hard-move-point
                     (and (>= original-pos (overlay-start overlay))
                          (<= original-pos (overlay-end overlay))))
 
               ;; Correct a word using `flyspell-correct-at-point'.
               (let ((res (flyspell-correct-at-point)))
                 (when res
+                  ;; stop at misspelled word
+                  (when (eq (car-safe res) 'stop)
+                    (setq target-pos incorrect-word-pos
+                          hard-move-point t))
+
+                  ;; break from rapid mode
+                  (when (or
+                         ;; treat skip as one-time rapid mode enabler
+                         (and (not (eq (car-safe res) 'skip))
+                              (not rapid))
+
+                         ;; explicit rapid mode disablers
+                         (eq (car-safe res) 'break)
+                         (eq (car-safe res) 'stop))
+                    (setq overlay nil))
+
+                  ;; push mark
                   (when (or (not (mark t))
 	                          (/= (mark t) (point)))
-                    (push-mark (point) t))
-                  (when (or (not rapid)
-                            (eq (car-safe res) 'stop))
-                    (setq overlay nil)))))))
+                    (push-mark (point) t)))))))
 
         (when incorrect-word-pos
           (goto-char incorrect-word-pos)
           (forward-word)
           (when (= (mark t) (point)) (pop-mark)))))
-    (when hard-reset-pos
-      (goto-char original-pos))))
+    (when hard-move-point
+      (goto-char target-pos))))
 
 ;;; Overlays
 

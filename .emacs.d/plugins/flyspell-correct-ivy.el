@@ -5,7 +5,7 @@
 ;; Author: Boris Buliga <boris@d12frosted.io>
 ;; URL: https://github.com/d12frosted/flyspell-correct
 ;; Version: 0.6.1
-;; Package-Requires: ((flyspell-correct "0.6.1") (ivy "0.8.0") (emacs "24"))
+;; Package-Requires: ((flyspell-correct "0.6.1") (ivy "0.8.0") (emacs "24.3"))
 ;;
 ;; This file is not part of GNU Emacs.
 ;;
@@ -39,34 +39,57 @@
 
 ;; Interface implementation
 
+(defvar flyspell-correct-ivy-map (make-sparse-keymap)
+  "Keymap used in the `flyspell-correct-ivy' minibuffer.")
+
+(defvar-local flyspell-correct-ivy--result nil
+  "Result of `flyspell-correct-ivy'.
+
+See `flyspell-correct-interface' for more information.")
+
 ;;;###autoload
 (defun flyspell-correct-ivy (candidates word)
   "Run `ivy-read' for the given CANDIDATES.
 
 List of CANDIDATES is given by flyspell for the WORD.
 
-Return a selected word to use as a replacement or a tuple
-of (command, word) to be used by `flyspell-do-correct'."
-  (let* (result
-         (action-default (lambda (x) (setq result x)))
-         (action-save-word (lambda (_) (setq result (cons 'save word))))
-         (action-accept-session (lambda (_) (setq result (cons 'session word))))
-         (action-accept-buffer (lambda (_) (setq result (cons 'buffer word))))
-         (action-skip-word (lambda (_) (setq result (cons 'skip word))))
+Return result according to `flyspell-correct-interface'
+specification."
+  (setq flyspell-correct-ivy--result nil)
+  (let* ((action-default
+          (lambda (x)
+            (setq flyspell-correct-ivy--result x)))
+         (action-save-word
+          (lambda (_)
+            (setq flyspell-correct-ivy--result (cons 'save word))))
+         (action-accept-session
+          (lambda (_)
+            (setq flyspell-correct-ivy--result (cons 'session word))))
+         (action-accept-buffer
+          (lambda (_)
+            (setq flyspell-correct-ivy--result (cons 'buffer word))))
+         (action-skip-word
+          (lambda (_)
+            (setq flyspell-correct-ivy--result (cons 'skip word))))
+         (action-stop
+          (lambda (_)
+            (setq flyspell-correct-ivy--result (cons 'stop word))))
          (action `(1
                    ("o" ,action-default "correct")
                    ("s" ,action-save-word "Save")
                    ("S" ,action-accept-session "Accept (session)")
                    ("b" ,action-accept-buffer "Accept (buffer)")
-                   ("k" ,action-skip-word "Skip"))))
+                   ("k" ,action-skip-word "Skip")
+                   ("p" ,action-stop "Stop"))))
     (ivy-read (format "Suggestions for \"%s\" in dictionary \"%s\": "
                       word (or ispell-local-dictionary
                                ispell-dictionary
                                "Default"))
               candidates
               :action action
+              :keymap flyspell-correct-ivy-map
               :caller 'flyspell-correct-ivy)
-    result))
+    flyspell-correct-ivy--result))
 
 (setq flyspell-correct-interface #'flyspell-correct-ivy)
 

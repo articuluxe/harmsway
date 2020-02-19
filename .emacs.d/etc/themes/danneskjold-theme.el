@@ -14,6 +14,7 @@
   "Amazing. Beautiful. Contrast.")
 
 (let ((c '((class color) (min-colors 89)))
+      (class '((class color) (min-colors 89)))
       (background     "#000000")
       (fg             "#ffffff")
 
@@ -27,6 +28,32 @@
 
       (yellow         "#ffcc00") ;; "#E2C770" "#F9BA32"
       (yellow-c       "#281580")
+
+      ;; test
+      (turquoise-bright "#1abc9c")
+      (turquoise-dark "#16a085")
+      (green-bright "#2ecc71")
+      (green-dark "#27ae60")
+      (blue-bright "#3498db")
+      (blue-dark "#2980b9")
+      (magenta-bright "#9b59b6")
+      (magenta-dark "#8e44ad")
+      (grey-blue-bright "#34495e")
+      (grey-blue-dark "#2c3e50")
+      (yellow-bright "#f1c40f")
+      (yellow-dark "#f39c12")
+      (orange-bright "#e67e22")
+      (orange-dark "#d35400")
+      (red-bright "#e74c3c")
+      (red-dark "#c0392b")
+      (grey-bright2 "#ecf0f1")
+      (grey-bright1 "#bdc3c7")
+      (grey-dark1 "#95a5a6")
+      (grey-dark2 "#7f8c8d")
+      (black "#000")
+      (white "#fff")
+
+      ;; end
 
       (grey           "#C0C5CF")
       (grey-.5        "#828284")
@@ -151,37 +178,116 @@
      `(lazy-highlight ((,c (:foreground ,black :background ,yellow))))
 
      ;; Diff
-     `(diff-header ((,c (:foreground ,yellow))))
-     `(diff-file-header ((,c (:foreground ,yellow))))
-     `(diff-indicator-removed ((,c (:foreground ,black))))
-     `(diff-removed ((,c (:foreground ,red))))
-     `(diff-added ((,c (:foreground ,green))))
-     `(diff-indicator-added ((,c (:foreground ,black))))
-     `(diff-refine-removed ((,c (:foreground ,red-forest))))
-     `(diff-refine-added ((,c (:foreground ,summer-flower))))
+     ;; `(diff-header ((,c (:foreground ,yellow))))
+     ;; `(diff-file-header ((,c (:foreground ,yellow))))
+     ;; `(diff-indicator-removed ((,c (:foreground ,black))))
+     ;; `(diff-removed ((,c (:foreground ,red))))
+     ;; `(diff-added ((,c (:foreground ,green))))
+     ;; `(diff-indicator-added ((,c (:foreground ,black))))
+     ;; `(diff-refine-removed ((,c (:foreground ,red-forest))))
+     ;; `(diff-refine-added ((,c (:foreground ,summer-flower))))
 
-     `(diff-context ((,c (:foreground ,comment))))
+     ;; `(diff-context ((,c (:foreground ,comment))))
+
+     ;; diff
+     `(diff-added ((,class (:foreground ,green-dark))))
+     `(diff-changed ((,class (:foreground ,magenta-bright))))
+     `(diff-removed ((,class (:foreground ,yellow-dark))))
+     `(diff-header ((,class (:foreground ,magenta-dark :background nil))))
+     `(diff-file-header ((,class (:foreground ,blue-dark :background nil))))
+     `(diff-hunk-header ((,class (:foreground ,magenta-bright))))
+     `(diff-refine-removed ((,class (:inherit magit-diff-removed-highlight :foreground ,red-bright))))
+     `(diff-refine-added ((,class (:inherit magit-diff-added-highlight :foreground ,blue-bright))))
+
+     ;; diff-hl
+     `(diff-hl-change ((,class (:foreground ,blue-dark :background ,blue-dark))))
+     `(diff-hl-delete ((,class (:foreground ,orange-bright :background ,orange-dark))))
+     `(diff-hl-insert ((,class (:foreground ,green-dark :background ,green-dark))))
+
+     ;; ediff
+     `(ediff-even-diff-A ((,class (:foreground nil :background nil :inverse-video t))))
+     `(ediff-even-diff-B ((,class (:foreground nil :background nil :inverse-video t))))
+     `(ediff-odd-diff-A  ((,class (:foreground ,grey-dark1 :background nil :inverse-video t))))
+     `(ediff-odd-diff-B  ((,class (:foreground ,grey-dark1 :background nil :inverse-video t))))
+
+     ;; dired+
+     `(diredp-compressed-file-suffix ((,class (:foreground ,yellow-dark))))
+     `(diredp-date-time ((,class (:foreground ,yellow-bright))))
+     `(diredp-deletion ((,class (:foreground ,red-bright :weight bold :slant italic))))
+     `(diredp-deletion-file-name ((,class (:foreground ,red-bright :underline t))))
+     `(diredp-dir-heading ((,class (:foreground ,orange-bright :underline t :weight bold))))
+     `(diredp-dir-priv ((,class (:foreground ,magenta-bright :background nil))))
+     `(diredp-exec-priv ((,class (:foreground ,green-bright :background nil))))
+     `(diredp-executable-tag ((,class (:foreground ,green-bright :background nil))))
+     `(diredp-file-name ((,class (:foreground ,grey-bright1))))
+     `(diredp-file-suffix ((,class (:foreground ,magenta-dark))))
+     `(diredp-flag-mark ((,class (:foreground ,red-bright :weight bold))))
+     `(diredp-flag-mark-line ((,class (:inherit highlight))))
+     `(diredp-ignored-file-name ((,class (:foreground ,grey-dark1))))
+     `(diredp-link-priv ((,class (:background nil :foreground ,orange-bright))))
+     `(diredp-mode-line-flagged ((,class (:foreground ,yellow-dark))))
+     `(diredp-mode-line-marked ((,class (:foreground ,magenta-bright))))
+     `(diredp-no-priv ((,class (:foreground ,grey-dark1 :background nil))))
+     `(diredp-number ((,class (:foreground ,yellow-dark))))
+     `(diredp-other-priv ((,class (:background nil :foreground ,yellow-dark))))
+     `(diredp-rare-priv ((,class (:foreground ,red-dark :background nil))))
+     `(diredp-read-priv ((,class (:foreground ,blue-dark :background nil))))
+     `(diredp-symlink ((,class (:foreground ,orange-bright))))
+     `(diredp-write-priv ((,class (:foreground ,magenta-bright :background nil))))
+
 
      ;; Magit
-     `(git-commit-summary ((,c (:foreground ,white))))
-     `(git-commit-comment-file ((,c (:foreground ,green))))
-     `(git-commit-comment-heading ((,c (:foreground ,frost))))
+     ;; `(git-commit-summary ((,c (:foreground ,white))))
+     ;; `(git-commit-comment-file ((,c (:foreground ,green))))
+     ;; `(git-commit-comment-heading ((,c (:foreground ,frost))))
 
-     `(magit-diff-added ((,c (:foreground ,green))))
-     `(magit-diff-added-highlight ((,c (:foreground ,green))))
-     `(magit-diff-removed ((,c (:foreground ,red))))
-     `(magit-diff-removed-highlight ((,c (:foreground ,red))))
-     `(magit-diff-context ((,c (:background ,black :foreground ,frost))))
-     `(magit-diff-context-highlight ((,c (:background ,black :foreground ,frost))))
-     `(magit-section-highlight ((,c (:background ,black))))
-     `(magit-section-heading ((,c (:foreground ,yellow))))
-     `(magit-diff-hunk-heading ((,c (:foreground ,blue :background ,sbt-midnight))))
-     `(magit-diff-hunk-heading-highlight ((,c (:foreground ,blue :background ,sbt-midnight))))
-     `(magit-diff-lines-heading ((,c (:foreground ,frost :background ,sbt-midnight))))
-     `(magit-blame-heading ((,c (:foreground ,blue :background ,sbt-midnight))))
-     `(magit-diff-lines-heading ((,c (:foreground ,orange :background ,sbt-midnight))))
-     `(magit-diff-lines-boundary ((,c (:foreground ,white :background ,sbt-midnight))))
-     `(magit-diff-hunk-heading-highlight ((,c (:foreground ,white :background ,sbt-midnight))))
+     ;; `(magit-diff-added ((,c (:foreground ,green))))
+     ;; `(magit-diff-added-highlight ((,c (:foreground ,green))))
+     ;; `(magit-diff-removed ((,c (:foreground ,red))))
+     ;; `(magit-diff-removed-highlight ((,c (:foreground ,red))))
+     ;; `(magit-diff-context ((,c (:background ,black :foreground ,frost))))
+     ;; `(magit-diff-context-highlight ((,c (:background ,black :foreground ,frost))))
+     ;; `(magit-section-highlight ((,c (:background ,black))))
+     ;; `(magit-section-heading ((,c (:foreground ,yellow))))
+     ;; `(magit-diff-hunk-heading ((,c (:foreground ,blue :background ,sbt-midnight))))
+     ;; `(magit-diff-hunk-heading-highlight ((,c (:foreground ,blue :background ,sbt-midnight))))
+     ;; `(magit-diff-lines-heading ((,c (:foreground ,frost :background ,sbt-midnight))))
+     ;; `(magit-blame-heading ((,c (:foreground ,blue :background ,sbt-midnight))))
+     ;; `(magit-diff-lines-heading ((,c (:foreground ,orange :background ,sbt-midnight))))
+     ;; `(magit-diff-lines-boundary ((,c (:foreground ,white :background ,sbt-midnight))))
+     ;; `(magit-diff-hunk-heading-highlight ((,c (:foreground ,white :background ,sbt-midnight))))
+
+     ;; magit
+     `(magit-branch ((,class (:foreground ,green-dark))))
+     `(magit-header ((,class (:inherit nil :weight bold))))
+     `(magit-item-highlight ((,class (:inherit highlight :background nil))))
+     `(magit-log-graph ((,class (:foreground ,grey-dark2))))
+     `(magit-log-sha1 ((,class (:foreground ,yellow-bright))))
+     `(magit-log-head-label-bisect-bad ((,class (:foreground ,red-dark))))
+     `(magit-log-head-label-bisect-good ((,class (:foreground ,green-dark))))
+     `(magit-log-head-label-default ((,class (:foreground ,yellow-bright :box nil :weight bold))))
+     `(magit-log-head-label-local ((,class (:foreground ,magenta-bright :box nil :weight bold))))
+     `(magit-log-head-label-remote ((,class (:foreground ,magenta-bright :box nil :weight bold))))
+     `(magit-log-head-label-tags ((,class (:foreground ,magenta-dark :box nil :weight bold))))
+     `(magit-section-title ((,class (:foreground ,blue-dark :weight bold))))
+
+     ;; magit `next'
+     `(magit-section ((,class (:inherit nil))))
+     `(magit-section-highlight ((,class (:background "#0e1824"))))
+     `(magit-section-heading ((,class (:foreground ,blue-bright))))
+     `(magit-branch-local ((,class (:foreground ,turquoise-bright))))
+     `(magit-branch-remote ((,class (:foreground ,yellow-bright))))
+     `(magit-hash ((,class (:foreground ,grey-bright2))))
+     `(magit-diff-file-heading ((,class (:foreground ,yellow))))
+     `(magit-diff-file-heading-highlight ((,class (:foreground ,yellow-bright :background "#0e1824"))))
+     `(magit-diff-hunk-heading ((,class (:foreground ,magenta-bright))))
+     `(magit-diff-hunk-heading-highlight ((,class (:inherit magit-diff-hunk-heading :weight bold))))
+     `(magit-diff-context ((,class (:foreground ,grey-bright1))))
+     `(magit-diff-context-highlight ((,class (:foreground ,grey-bright2 :background "#0e1824"))))
+     `(magit-diff-added ((,class (:foreground ,green-dark))))
+     `(magit-diff-added-highlight ((,class (:foreground ,green-bright :background "#0e1824"))))
+     `(magit-diff-removed ((,class (:foreground ,red-dark))))
+     `(magit-diff-removed-highlight ((,class (:foreground ,red-bright :background "#0e1824"))))
 
      ;; Monky
      `(monky-diff-add ((,c (:foreground ,green))))
@@ -230,6 +336,9 @@
      `(org-checkbox-statistics-todo ((,c (:inherit org-todo))))
      `(org-checkbox-statistics-done ((,c (:inherit org-done))))
 
+     ;; packages
+     `(package-name                 ((,c (:inherit org-link))))
+
      ;; cider
      `(cider-stacktrace-error-class-face ((,c (:foreground ,yellow))))
      `(cider-stacktrace-error-message-face ((,c (:foreground ,green))))
@@ -277,7 +386,7 @@
      `(org-agenda-diary ((,c (:foreground ,orange :slant italic))))
      `(org-agenda-dimmed-todo-face ((,c (:foreground ,comment))))
      `(org-agenda-current-time ((,c (:foreground ,frost))))
-     `(org-upcoming-deadline ((,c (:foreground ,red))))
+     `(org-upcoming-deadline ((,c (:foreground ,orange))))
      `(org-upcoming-distant-deadline ((,c (:foreground ,comment))))
 
      ;; Hydra

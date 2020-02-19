@@ -1167,7 +1167,8 @@ is shown, or if there is no need to start the closing timer."
   "Slightly modified version of `fit-buffer-to-window'.
 Use &rest params because `fit-buffer-to-window' has a different
 call signature in different emacs versions"
-  (let ((fit-window-to-buffer-horizontally t))
+  (let ((fit-window-to-buffer-horizontally t)
+        (window-min-height 1))
     (apply #'fit-window-to-buffer window params)))
 
 (defun which-key--show-buffer-side-window (act-popup-dim)
@@ -1320,11 +1321,11 @@ width) in lines and characters respectively."
     (cond
      ((and alpha (not which-key-sort-uppercase-first))
       (if (string-equal da db)
-          (string-lessp a b)
+          (not (string-lessp a b))
         (string-lessp da db)))
      ((and alpha which-key-sort-uppercase-first)
       (if (string-equal da db)
-          (not (string-lessp a b))
+          (string-lessp a b)
         (string-lessp da db)))
      ((not which-key-sort-uppercase-first)
       (let ((aup (not (string-equal da a)))
@@ -2316,7 +2317,7 @@ after first page."
 This function will also detect evil bindings made using
 `evil-define-key' in this map. These bindings will depend on the
 current evil state. "
-  (interactive)
+  (interactive "P")
   (let ((map-sym (intern (format "%s-map" major-mode))))
     (if (and (boundp map-sym) (keymapp (symbol-value map-sym)))
         (which-key--show-keymap

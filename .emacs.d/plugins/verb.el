@@ -6,7 +6,7 @@
 ;; Maintainer: Federico Tedin <federicotedin@gmail.com>
 ;; Homepage: https://github.com/federicotdn/verb
 ;; Keywords: tools
-;; Package-Version: 2.7.0
+;; Package-Version: 2.7.2
 ;; Package-Requires: ((emacs "26"))
 
 ;; This file is NOT part of GNU Emacs.
@@ -61,21 +61,21 @@ header value (\"charset=utf-8\")."
 
 (defcustom verb-content-type-handlers
   '(;; Text handlers
-    ("text/html" . html-mode)
-    ("\\(application\\|text\\)/xml" . xml-mode)
-    ("application/xhtml+xml" . xml-mode)
-    ("application/json" . verb--handler-json)
-    ("application/javascript" . js-mode)
-    ("application/css" . css-mode)
-    ("text/plain" . text-mode)
+    ("text/html" html-mode)
+    ("\\(application\\|text\\)/xml" xml-mode)
+    ("application/xhtml+xml" xml-mode)
+    ("application/json" verb--handler-json)
+    ("application/javascript" js-mode)
+    ("application/css" css-mode)
+    ("text/plain" text-mode)
     ;; Binary handlers
-    ("application/pdf" . (doc-view-mode . t))
-    ("image/png" . (image-mode . t))
-    ("image/svg+xml" . (image-mode . t))
-    ("image/x-windows-bmp" . (image-mode . t))
-    ("image/gif" . (image-mode . t))
-    ("image/jpe?g" . (image-mode . t)))
-  "Alist of content type handlers.
+    ("application/pdf" doc-view-mode t)
+    ("image/png" image-mode t)
+    ("image/svg+xml" image-mode t)
+    ("image/x-windows-bmp" image-mode t)
+    ("image/gif" image-mode t)
+    ("image/jpe?g" image-mode t))
+  "List of content type handlers.
 Handlers are functions to be called without any arguments.  There are
 two types of handlers: text and binary.
 
@@ -87,19 +87,23 @@ Binary handlers, on the other hand, are called after the binary
 contents of the response have been inserted into a unibyte buffer
 \(with that buffer as the current buffer).
 
-Entries of the alist must have the form (CONTENT-TYPE . HANDLER).
+Both handler types should prepare the contents of the response buffer,
+so that the user can then access or modify the information received in
+a convenient way.
+
+Entries of the alist must have the form (CONTENT-TYPE HANDLER BIN?).
 CONTENT-TYPE must be a regexp which can match any number of valid
 content types, or a string containing a content type.  HANDLER must be
-either a function, in which case it will be used as a text handler, or
-\(FN . t), in which case FN will be used as a binary handler function.
+a function that takes no arguments.  BIN?, if present, must be t, in
+order to indicate that this handler is binary instead of text.
 
 To choose a handler, Verb will try to match the received content type
 with each CONTENT-TYPE in the alist (sequentially) using
 `string-match-p'.  The handler for the first CONTENT-TYPE to match
 will be used."
-  :type '(alist :key-type regexp
-		:value-type (choice function
-				    (cons function (const t)))))
+  :type '(repeat (list regexp function
+		       (choice (const :tag "Binary" t)
+			       (const :tag "Text" nil)))))
 
 (defcustom verb-export-functions
   '(("human" . verb--export-to-human)
@@ -255,14 +259,14 @@ hierarchy."
 (defface verb-log-error '((t :inherit error))
   "Face for highlighting E entries in the log buffer.")
 
-(defconst verb--comment-character "#"
-  "Character to use to mark commented lines.
-Should be set to the same character Org uses to comment lines.")
-
 (defconst verb--http-methods '("GET" "POST" "DELETE" "PUT"
 			       "OPTIONS" "HEAD" "PATCH"
 			       "TRACE" "CONNECT")
   "List of valid HTTP methods.")
+
+(defconst verb--bodyless-http-methods '("GET" "HEAD" "DELETE" "TRACE"
+					"OPTIONS" "CONNECT")
+  "List of HTTP methods which usually don't include bodies.")
 
 (defconst verb--log-buffer-name "*Verb Log*"
   "Default name for log buffer.")
@@ -367,12 +371,10 @@ comfortably.  All commands listed in this keymap automatically enable
      ("\\s-\\(\"[[:graph:]]+?\"\\)\\s-*:."
       (1 'verb-json-key))
      ;; {{(format "%s" "Lisp code tag")}}
-     (,(concat "^.*?\\("
-	       (car verb-code-tag-delimiters)
+     (,(concat (car verb-code-tag-delimiters)
 	       ".*?"
-	       (cdr verb-code-tag-delimiters)
-	       "\\).*$")
-      (1 'verb-code-tag))))
+	       (cdr verb-code-tag-delimiters))
+      (0 'verb-code-tag))))
   (font-lock-flush))
 
 (defvar verb-mode-map
@@ -1175,7 +1177,7 @@ non-nil, do not add the command to the kill ring."
 		       (string-to-number content-length)
 		     bytes)))
        (format " | %s byte%s"
-	       value
+	       (file-size-human-readable value)
 	       (if (= value 1) "" "s"))))))
 
 (cl-defmethod verb-request-spec-url-to-string ((rs verb-request-spec))
@@ -1215,15 +1217,16 @@ present, return (nil . nil)."
       (cons nil nil))))
 
 (defun verb--get-handler (content-type)
-  "Get a handler from `verb-content-type-handlers' for a CONTENT-TYPE.
+  "Return a handler from `verb-content-type-handlers' for a CONTENT-TYPE.
 CONTENT-TYPE must be the value returned by `verb--headers-content-type'."
-  (catch 'end
-    (dolist (key-value verb-content-type-handlers)
-      (let ((case-fold-search t)
-	    (regexp (car key-value))
-	    (handler (cdr key-value)))
-	(when (string-match-p regexp (car content-type))
-	  (throw 'end handler))))))
+  (when (car content-type)
+    (catch 'end
+      (dolist (key-value verb-content-type-handlers)
+	(let ((case-fold-search t)
+	      (regexp (car key-value))
+	      (handler (cdr key-value)))
+	  (when (string-match-p regexp (car content-type))
+	    (throw 'end handler)))))))
 
 (defun verb--maybe-store-response (response)
   "Store RESPONSE depending on its request metadata.
@@ -1291,7 +1294,7 @@ view the HTTP response in a user-friendly way."
 			 (url-host url) (url-port url))))
 	(verb--log num 'E msg)
 	(verb--log num 'E "Error details: %s" http-error)
-	(user-error msg))))
+	(user-error "%s" msg))))
 
   ;; No errors, continue to read response
   (let ((elapsed (- (time-to-seconds) start))
@@ -1328,15 +1331,16 @@ view the HTTP response in a user-friendly way."
 	;; Default handler is fundamental mode (text)
 	(setq handler #'fundamental-mode))
 
-      (if (functionp handler)
+      (if (= (length handler) 1)
 	  ;; Text handler
-	  (setq text-handler handler)
+	  (setq text-handler (nth 0 handler))
 	;; Binary handler (maybe)
 	(unless (and (consp handler)
-		     (functionp (car handler))
-		     (eq (cdr handler) t))
+		     (functionp (nth 0 handler))
+		     (eq (nth 1 handler) t)
+		     (= (length handler) 2))
 	  (user-error "Invalid content handler: %s" handler))
-	(setq binary-handler (car handler))))
+	(setq binary-handler (nth 0 handler))))
 
     ;; Remove headers and blank line from buffer
     ;; All left should be the content
@@ -1502,15 +1506,15 @@ If a validation does not pass, signal with `user-error'."
   (unless (oref rs method)
     (user-error "%s" (concat "No HTTP method specified\n"
 			     "Make sure you specify a concrete HTTP "
-			     "method (i.e. not " verb--template-keyword
+			     "method (not " verb--template-keyword
 			     ") in the heading hierarchy")))
   (let ((url (oref rs url)))
     (unless url
       (user-error "%s" (concat "No URL specified\nMake sure you specify "
 			       "a nonempty URL in the heading hierarchy")))
     (unless (url-host url)
-      (user-error "%s" (concat "URL has no host defined\n"
-			       "Make sure you specify a host "
+      (user-error "%s" (concat "URL has no schema or host defined\n"
+			       "Make sure you specify a schema and host "
 			       "(e.g. \"https://github.com\") in the "
 			       "heading hierarchy"))))
   rs)
@@ -1565,6 +1569,13 @@ be loaded into."
 				  "own version of it")
 		   h)))
 
+    ;; Maybe log a warning if body is present but method usually
+    ;; doesn't take one
+    (when (and (member url-request-method verb--bodyless-http-methods)
+	       url-request-data)
+      (verb--log num 'W "Body is present but request method is %s"
+		 url-request-method))
+
     ;; Send the request!
     (condition-case err
 	(funcall verb-url-retrieve-function
@@ -1591,7 +1602,7 @@ be loaded into."
 		 ;; Log the error
 		 (verb--log num 'E msg)
 		 ;; Signal it
-		 (user-error msg)))))
+		 (user-error "%s" msg)))))
 
     ;; Show user some quick information
     (message "%s request sent to %s"
@@ -1923,41 +1934,38 @@ METHOD [URL]
 
 [BODY]
 
-Each COMMENT must be a blank line, or a line starting with
-`verb--comment-character' or \":\" (see Org headline property
-syntax).  All comments will be ignored.
+Each COMMENT must start with \"#\" or \":\" (see Org mode comments and
+headline property syntax).  All comments will be discarded after being
+read (they are not part of the returned value).  COMMENT may also be a
+blank line.
 
 METHOD must be a method matched by `verb--http-methods-regexp' (that
 is, an HTTP method or the value of `verb--template-keyword').
 Matching is case-insensitive.
 
-URL can be the empty string, or a URL with an \"http\" or \"https\"
-schema.
-PARTIAL-URL can be the empty string, or the path + query string +
-fragment part of a URL.
-
 URL must be a full URL, or a part of it.  If present, the schema must
 be \"http\" or \"https\".  If the schema is not present, the URL will
 be interpreted as a path, plus (if present) query string and fragment.
 Therefore, using just \"example.org\" (note no schema present) as URL
-will result in a URL with its path set to \"example.org\", not its
+will result in a URL with its path set to \"example.org\", not as its
 host.
 
-Each HEADER must be in the form of KEY: VALUE. KEY must be a nonempty
-string, VALUE can be the nonempty string.
+Each HEADER must be in the form of KEY: VALUE.  KEY must be a nonempty
+string, VALUE can be the empty string.  HEADER may also start with
+\"#\", in which case it will be ignored.
 
-BODY can contain arbitrary text.  Note that there must be a blank
+BODY can contain arbitrary data.  Note that there must be a blank
 line between the HEADER list and BODY.
-
-Before returning the request specification, set its metadata to
-METADATA.
 
 As a special case, if the text specification consists exclusively of
 comments and/or whitespace, or is the empty string, signal
 `verb-empty-spec'.
 
 If TEXT does not conform to the request specification text format,
-signal an error."
+signal an error.
+
+Before returning the request specification, set its metadata to
+METADATA."
   (let ((context (current-buffer))
 	method url headers body)
     (with-temp-buffer
@@ -1965,15 +1973,8 @@ signal an error."
       (goto-char (point-min))
 
       ;; Skip initial blank lines, comments and properties
-      (while (and (re-search-forward
-		   (concat "^\\s-*\\(\\("
-			   ;; Headline properties
-			   ":"
-			   "\\|"
-			   ;; Comments
-			   verb--comment-character
-			   "\\).*\\)?$")
-		   (line-end-position) t)
+      (while (and (re-search-forward "^\\s-*\\(\\(:\\|#\\).*\\)?$"
+				     (line-end-position) t)
 		  (not (eobp)))
 	(forward-char))
       ;; Check if the entire specification was just comments or empty
@@ -2022,8 +2023,7 @@ signal an error."
       (while (re-search-forward "^\\(.+\\)$" (line-end-position) t)
 	(let ((line (match-string 1)))
 	  ;; Process line if it doesn't start with '#'
-	  (unless (string-prefix-p verb--comment-character
-				   (string-trim-left line))
+	  (unless (string-prefix-p "#" (string-trim-left line))
 	    ;; Check if line matches KEY: VALUE after evaluating any
 	    ;; present code tags
 	    (setq line (verb--eval-code-tags-in-string line context))
