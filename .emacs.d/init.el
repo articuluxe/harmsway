@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-02-12 15:08:07 dan.harms>
+;; Modified Time-stamp: <2020-02-19 09:43:52 dan.harms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1868,6 +1868,12 @@ Only one letter is shown, the first that applies."
   :after dired
   :init
   (add-hook 'dired-mode-hook #'all-the-icons-dired-mode))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;; all-the-icons-ivy-rich ;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package all-the-icons-ivy-rich
+  :after all-the-icons
+  :config
+  (all-the-icons-ivy-rich-mode 1))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; moody ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package moody
