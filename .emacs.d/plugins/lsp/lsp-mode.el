@@ -113,6 +113,8 @@
    "Operator"
    "TypeParameter"])
 
+(defconst lsp--empty-ht (make-hash-table))
+
 (define-obsolete-variable-alias 'lsp-print-io 'lsp-log-io "lsp-mode 6.1")
 
 (defcustom lsp-log-io nil
@@ -503,7 +505,7 @@ The hook will receive two parameters list of added and removed folders."
 (defcustom lsp-imenu-sort-methods '(kind name)
   "How to sort the imenu items.
 
-The value is a list of `kind' `name' or `position'. Priorities
+The value is a list of `kind' `name' or `position'.  Priorities
 are determined by the index of the element."
   :type '(repeat (choice (const name)
                          (const position)
@@ -529,7 +531,7 @@ are determined by the index of the element."
 METHOD is one of the symbols accepted by
 `lsp-imenu-sort-methods'.
 
-FUNCTION takes two hash tables representing DocumentSymbol. It
+FUNCTION takes two hash tables representing DocumentSymbol.  It
 returns a negative number, 0, or a positive number indicating
 whether the first parameter is less than, equal to, or greater
 than the second parameter.")
@@ -679,7 +681,7 @@ directory")
     ("textDocument/rangeFormatting" :capability "documentRangeFormattingProvider")
     ("textDocument/references" :capability "referencesProvider")
     ("textDocument/selectionRange" :capability "selectionRangeProvider")
-    ("textDocument/signatureHelp" "signatureHelpProvider")
+    ("textDocument/signatureHelp" :capability "signatureHelpProvider")
     ("textDocument/typeDefinition" :capability "typeDefinitionProvider")
     ("workspace/executeCommand" :capability "executeCommandProvider")
     ("workspace/symbol" :capability "workspaceSymbolProvider"))
@@ -1142,7 +1144,7 @@ INHERIT-INPUT-METHOD will be proxied to `completing-read' without changes."
       ;; server may send character position beyond the current line and we
       ;; should fallback to line end.
       (let ((line-end (line-end-position)))
-        (if (> character (- line-end (point)))
+        (if (or (not character) (> character (- line-end (point))))
             line-end
           (forward-char character)
           (point))))))
@@ -2035,12 +2037,14 @@ CALLBACK - callback for the lenses."
     (add-hook 'lsp-on-idle-hook #'lsp--lens-idle-function nil t)
     (add-hook 'lsp-on-change-hook (lambda () (lsp--lens-schedule-refresh t)) nil t)
     (add-hook 'after-save-hook (lambda () (lsp--lens-schedule-refresh t)) nil t)
+    (add-hook 'before-revert-hook #'lsp-lens-hide nil t)
     (lsp-lens-refresh t))
    (t
     (lsp-lens-hide)
     (remove-hook 'lsp-on-idle-hook #'lsp--lens-idle-function t)
     (remove-hook 'lsp-on-change-hook (lambda () (lsp--lens-schedule-refresh nil)) t)
     (remove-hook 'after-save-hook (lambda () (lsp--lens-schedule-refresh t)) t)
+    (remove-hook 'before-revert-hook #'lsp-lens-hide t)
     (setq lsp--lens-last-count nil)
     (setq lsp--lens-backend-cache nil))))
 
@@ -2753,7 +2757,6 @@ callback will be executed only if the buffer was not modified.
 
 ERROR-CALLBACK will be called in case the request has failed.
 If NO-MERGE is non-nil, don't merge the results but return alist workspace->result."
-  (lsp--flush-delayed-changes)
 
   (when cancel-token
     (lsp-cancel-request-by-token cancel-token))
@@ -2816,8 +2819,8 @@ To find out what capabilities support your server use `M-x lsp-describe-session'
   (with-demoted-errors "LSP error: %S"
     (let ((lsp-response-timeout 0.5))
       (condition-case _err
-          (lsp-request "shutdown" (make-hash-table))
-        (error (lsp--error "Timeout while sending shutdown request."))))
+          (lsp-request "shutdown" lsp--empty-ht)
+        (error (lsp--error "Timeout while sending shutdown request"))))
     (lsp-notify "exit" nil))
   (setf (lsp--workspace-shutdown-action lsp--cur-workspace) (or (and restart 'restart) 'shutdown))
   (lsp--uninitialize-workspace))
@@ -3491,7 +3494,7 @@ The method uses `replace-buffer-contents'."
   "Get the value of capability CAP.  If CAPABILITIES is non-nil, use them instead."
   (gethash cap (or capabilities
                    (lsp--server-capabilities)
-                   (make-hash-table))))
+                   lsp--empty-ht)))
 
 (defun lsp--registered-capability (method)
   "Check whether there is workspace providing METHOD."
@@ -3658,18 +3661,27 @@ Added to `after-change-functions'."
          (lambda (workspace)
            (pcase (or lsp-document-sync-method
                       (lsp--workspace-sync-method workspace))
-             (1 (cl-pushnew (list lsp--cur-workspace
+             (1 (cl-pushnew (list workspace
                                   (current-buffer)
                                   (lsp--versioned-text-document-identifier)
                                   (lsp--full-change-event))
                             lsp--delayed-requests
                             :test 'equal))
-             (2 (push (list lsp--cur-workspace
-                            (current-buffer)
-                            (lsp--versioned-text-document-identifier)
-                            (lsp--text-document-content-change-event
-                             start end length))
-                      lsp--delayed-requests))))
+             (2
+              (with-lsp-workspace workspace
+                (lsp-notify
+                 "textDocument/didChange"
+                 (list :textDocument (lsp--versioned-text-document-identifier)
+                       :contentChanges (vector (lsp--text-document-content-change-event
+                                                start end length)))))
+              ;; TODO investigate why this does not work
+              ;; (push (list workspace
+              ;;             (current-buffer)
+              ;;
+              ;;             (lsp--text-document-content-change-event
+              ;;              start end length))
+              ;;       lsp--delayed-requests)
+              )))
          (lsp-workspaces))
         (when lsp--delay-timer (cancel-timer lsp--delay-timer))
         (setq lsp--delay-timer (run-with-idle-timer
@@ -3975,6 +3987,40 @@ PLIST is the additional data to attach to each candidate."
                            'lsp-sort-text sort-text))
              it)))
 
+(defun lsp--capf-company-match (candidate)
+  "Return highlights of typed prefix inside CANDIDATE."
+  (let* ((prefix (downcase
+                  (buffer-substring-no-properties
+                   (plist-get (text-properties-at 0 candidate) 'lsp-completion-start-point)
+                   (point))))
+         (prefix-len (length prefix))
+         (prefix-pos 0)
+         (label (downcase candidate))
+         (label-len (length label))
+         (label-pos 0)
+         matches start)
+    (while (and (not matches)
+                (< prefix-pos prefix-len))
+      (while (and (< prefix-pos prefix-len)
+                  (< label-pos label-len))
+        (if (equal (aref prefix prefix-pos) (aref label label-pos))
+            (progn
+              (unless start (setq start label-pos))
+              (cl-incf prefix-pos))
+          (when start
+            (setq matches (nconc matches `((,start . ,label-pos))))
+            (setq start nil)))
+        (cl-incf label-pos))
+      (when start (setq matches (nconc matches `((,start . ,label-pos)))))
+      ;; Search again when the whole prefix is not matched
+      (when (< prefix-pos prefix-len)
+        (setq matches nil))
+      ;; Start search from next offset of prefix to find a match with label
+      (unless matches
+        (cl-incf prefix-pos)
+        (setq label-pos 0)))
+    matches))
+
 (defun lsp-completion-at-point ()
   "Get lsp completions."
   (when (or (--some (lsp--client-completion-in-comments? (lsp--workspace-client it))
@@ -4038,30 +4084,7 @@ PLIST is the additional data to attach to each candidate."
        (save-excursion
          (goto-char bounds-start)
          (lsp--looking-back-trigger-characters-p trigger-chars))
-       :company-match
-       (lambda (candidate)
-         (let* ((prefix (downcase
-                         (buffer-substring-no-properties
-                          (plist-get (text-properties-at 0 candidate) 'lsp-completion-start-point)
-                          (point))))
-                (prefix-len (length prefix))
-                (prefix-pos 0)
-                (label (downcase candidate))
-                (label-len (length label))
-                (label-pos 0)
-                matches start)
-           (while (and (< prefix-pos prefix-len)
-                       (< label-pos label-len))
-             (if (equal (aref prefix prefix-pos) (aref label label-pos))
-                 (progn
-                   (unless start (setq start label-pos))
-                   (cl-incf prefix-pos))
-               (when start
-                 (setq matches (nconc matches `((,start . ,label-pos))))
-                 (setq start nil)))
-             (cl-incf label-pos))
-           (when start (setq matches (nconc matches `((,start . ,label-pos)))))
-           matches))
+       :company-match #'lsp--capf-company-match
        :exit-function
        (lambda (candidate _status)
          (-let* (((&plist 'lsp-completion-item item
@@ -4089,7 +4112,8 @@ PLIST is the additional data to attach to each candidate."
            (when additional-text-edits
              (lsp--apply-text-edits additional-text-edits)))
          (lsp--capf-clear-cache)
-         (when lsp-signature-auto-activate
+         (when (and lsp-signature-auto-activate
+                    (lsp-feature? "textDocument/signatureHelp"))
            (lsp-signature-activate))
 
          (setq-local lsp-inhibit-lsp-hooks nil)
@@ -4925,6 +4949,12 @@ unless overridden by a more specific face association."
 unless overridden by a more specific face association."
   :group 'lsp-faces)
 
+(defface lsp-face-semhl-disable
+  '((t :inherit font-lock-comment-face))
+  "Face used for semantic highlighting scopes matching meta.disabled,
+unless overridden by a more specific face association."
+  :group 'lsp-faces)
+
 (defface lsp-face-semhl-deprecated
   '((t (:underline (:color "yellow" :style wave))))
   "Face used for semantic highlighting scopes matching storage.type.primitive.*,
@@ -4957,13 +4987,15 @@ unless overridden by a more specific face association."
     ((("entity.name.type.enum")) . lsp-face-semhl-type-enum)
     ((("entity.name.type.typedef")
       ("entity.name.type.dependent")
-      ("entity.name.other.dependent")) . lsp-face-semhl-type-typedef)
+      ("entity.name.other.dependent")
+      ("entity.name.type.concept.cpp")) . lsp-face-semhl-type-typedef)
     ((("entity.name.namespace")) . lsp-face-semhl-namespace)
     ((("entity.name.function.preprocessor")) . lsp-face-semhl-preprocessor)
     ((("entity.name.type.template")) . lsp-face-semhl-type-template)
     ((("storage.type.primitive")) . lsp-face-semhl-type-primitive)
     ((("constant.other.key")) . lsp-face-semhl-constant)
     ((("constant.numeric.decimal")) . lsp-face-semhl-constant)
+    ((("meta.disabled")) . lsp-face-semhl-disabled)
     ((("invalid.deprecated")) .  lsp-face-semhl-deprecated))
   "Each element of this list should be of the form
  ((SCOPES-1 ... SCOPES-N) . FACE), where SCOPES-1, ..., SCOPES-N are lists of
@@ -5304,8 +5336,15 @@ textDocument/didOpen for the new file."
 
 (advice-add 'set-visited-file-name :around #'lsp--on-set-visited-file-name)
 
+(defvar lsp--flushing-delayed-changes nil)
+
 (defun lsp--send-no-wait (message proc)
   "Send MESSAGE to PROC without waiting for further output."
+
+  (unless lsp--flushing-delayed-changes
+    (let ((lsp--flushing-delayed-changes t))
+      (lsp--flush-delayed-changes)))
+
   (condition-case err
       (process-send-string proc message)
     ('error (lsp--error "Sending to process failed with the following error: %s"
@@ -6184,7 +6223,7 @@ SESSION is the active session."
                (lsp--workspace-status workspace) 'initialized)
 
          (with-lsp-workspace workspace
-           (lsp-notify "initialized" (make-hash-table)))
+           (lsp-notify "initialized" lsp--empty-ht))
 
          (when-let (initialize-fn (lsp--client-initialized-fn client))
            (funcall initialize-fn workspace))

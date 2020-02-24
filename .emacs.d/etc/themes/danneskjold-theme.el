@@ -370,7 +370,7 @@
      `(org-scheduled ((,c (:foreground ,white))))
      `(org-warning ((,c (:foreground "#FFCA00"))))
      `(org-scheduled-today ((,c (:foreground ,white))))
-     `(org-scheduled-previously ((,c (:inherit org-warning :slant italic))))
+     `(org-scheduled-previously ((,c (:foreground ,violet :slant italic))))
      `(org-time-grid ((,c (:foreground ,invisible))))
 
      `(org-agenda-clocking ((,c (:foreground ,diredcl :background ,ada-midnight))))

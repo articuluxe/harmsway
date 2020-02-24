@@ -102,11 +102,12 @@
 
 
    `(mode-line ((,class (:background "#2f7e9d" :foreground "#f2f2f2" :box (:line-width 1 :color "#2f7e9d")))))
-   `(mode-line-inactive ((,class (:background "#cccccc" :foreground "#454545" :box (:line-width 1 :color "#cccccc")))))
+   `(mode-line-inactive ((,class (:background "#cccccc" :foreground "#f2f2f2" :box (:line-width 1 :color "#cccccc")))))
    `(mode-line-buffer-id ((,class (:weight bold))))
    `(mode-line-emphasis ((,class (:foreground "#f2f2f2"))))
-   `(mode-line-highlight ((,class (:foreground "#fffbc4"))))
+   `(mode-line-highlight ((,class (:background "#fffbc4" :foreground "#454545"))))
    `(header-line ((,class (:background "#2f7e9d" :foreground "#f2f2f2" :box (:line-width 1 :color "#2f7e9d")))))
+   `(header-line-highlight ((,class (:background "#fffbc4" :foreground "#454545"))))
 
 
    `(error ((,class (:weight bold :foreground "#d0372d"))))
@@ -210,10 +211,16 @@
    `(compilation-column-number ((,class (:foreground "#cc6d00"))))
    `(compilation-line-number ((,class (:foreground "#cc6d00"))))
    `(compilation-message-face ((,class (:foreground "#2f7e9d"))))
-   `(compilation-mode-line-exit ((,class (:foreground "#2e994c"))))
-   `(compilation-mode-line-fail ((,class (:foreground "#d0372D"))))
-   `(compilation-mode-line-run ((,class (:foreground "#2f7e9d"))))
+   `(compilation-error ((,class (:foreground "#ff9999"))))
+   `(compilation-warning ((,class (:foreground "#f4ad49"))))
+   `(compilation-info ((,class (:foreground "#b4efb4"))))
+   `(compilation-mode-line-fail ((,class (:foreground "#ff9999"))))
+   `(compilation-mode-line-exit ((,class (:foreground "#b4efb4"))))
+   `(compilation-mode-line-run ((,class (:foreground "#b48cff"))))
 
+   `(eglot-mode-line ((,class (:foreground "#f2f2f2" :weight bold))))
+
+   `(xref-file-header ((,class (:weight bold :foreground "#2f7e9d" :background "#f2f2f2"))))
 
    `(flycheck-info ((,class (:underline (:color "#2e994c" :style wave) :weight bold))))
    `(flycheck-warning ((,class (:underline (:color "#cc6d00" :style wave) :weight bold))))

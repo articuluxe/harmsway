@@ -137,6 +137,7 @@
 (declare-function evil-state-property 'evil-common)
 (declare-function evil-visual-state-p 'evil-states)
 (declare-function eyebrowse--get 'eyebrowse)
+(declare-function face-remap-remove-relative 'face-remap)
 (declare-function fancy-narrow-active-p 'fancy-narrow)
 (declare-function flycheck-buffer 'flycheck)
 (declare-function flycheck-count-errors 'flycheck)
@@ -370,11 +371,24 @@ mouse-1: Previous buffer\nmouse-3: Next buffer"
 
 (defsubst doom-modeline--buffer-name ()
   "The current buffer name."
-  (when-let ((name (or doom-modeline--buffer-file-name
-                       (doom-modeline-update-buffer-file-name))))
-    (if (doom-modeline--active)
-        name
-      (propertize name 'face 'mode-line-inactive))))
+  ;; Only display the buffer name if the window is small, but doesn't need to
+  ;; respect file-name style.
+  (if (and (not (eq doom-modeline-buffer-file-name-style 'file-name))
+           doom-modeline--limited-width-p)
+      (propertize "%b"
+                  'face (cond ((and buffer-file-name (buffer-modified-p))
+                               'doom-modeline-buffer-modified)
+                              ((doom-modeline--active) 'doom-modeline-buffer-file)
+                              (t 'mode-line-inactive))
+                  'mouse-face 'mode-line-highlight
+                  'help-echo "Buffer name
+mouse-1: Previous buffer\nmouse-3: Next buffer"
+                  'local-map mode-line-buffer-identification-keymap)
+    (when-let ((name (or doom-modeline--buffer-file-name
+                         (doom-modeline-update-buffer-file-name))))
+      (if (doom-modeline--active)
+          name
+        (propertize name 'face 'mode-line-inactive)))))
 
 (doom-modeline-def-segment buffer-info
   "Combined information about the current buffer, including the current working
@@ -988,8 +1002,8 @@ mouse-1: List all problems%s"
           (if icon (doom-modeline-vspc) (doom-modeline-spc))
           (if active
               text
-            (propertize text 'face 'mode-line-inactive))
-          (doom-modeline-spc)))))))
+            (propertize text 'face 'mode-line-inactive))))
+       (doom-modeline-spc)))))
 
 
 ;;
@@ -1369,6 +1383,7 @@ Requires `eyebrowse-mode' to be enabled."
   (setq doom-modeline--persp-name
         ;; Support `persp-mode', while not support `perspective'
         (when (and doom-modeline-persp-name
+                   (not doom-modeline--limited-width-p)
                    (bound-and-true-p persp-mode)
                    (fboundp 'safe-persp-name)
                    (fboundp 'get-current-persp))
@@ -1917,7 +1932,6 @@ mouse-3: Fetch notifications"
 (defun doom-modeline--normal-visual (&rest _)
   "Restore the face of mode-line."
   (when doom-modeline--debug-cookie
-    (require 'face-remap)
     (face-remap-remove-relative doom-modeline--debug-cookie)
     (force-mode-line-update)))
 

@@ -39,11 +39,10 @@
 ;; Compatibilities
 ;;
 
-(eval-and-compile
-  (unless (>= emacs-major-version 26)
-    ;; Define `if-let*' and `when-let*' variants for 25 users.
-    (unless (fboundp 'if-let*) (defalias 'if-let* #'if-let))
-    (unless (fboundp 'when-let*) (defalias 'when-let* #'when-let))))
+(unless (>= emacs-major-version 26)
+  ;; Define `if-let*' and `when-let*' variants for 25 users.
+  (unless (fboundp 'if-let*) (defalias 'if-let* #'if-let))
+  (unless (fboundp 'when-let*) (defalias 'when-let* #'when-let)))
 
 ;; Don’t compact font caches during GC.
 (when (eq system-type 'windows-nt)
@@ -148,6 +147,14 @@ If the actual char height is larger, it respects the actual char height."
          (set sym (if (> val 0) val 1)))
   :group 'doom-modeline)
 
+(defcustom doom-modeline-window-width-limit (+ fill-column 20)
+  "The limit of the window width.
+
+If `window-width' is smaller than the limit, some information won't be displayed."
+  :type '(choice integer
+                 (const :tag "Disable" nil))
+  :group 'doom-modeline)
+
 (defcustom doom-modeline-project-detection
   (cond ((fboundp 'ffip-get-project-root-directory) 'ffip)
         ((fboundp 'projectile-project-root) 'projectile)
@@ -162,11 +169,10 @@ The project management packages have some issues on detecting project root.
 e.g. `projectile' doesn't handle symlink folders well, while `project' is
 unable to hanle sub-projects.
 Specify another one if you encounter the issue."
-  :type '(choice
-          (const :tag "Find File in Project" ffip)
-          (const :tag "Projectile" projectile)
-          (const :tag "Built-in Project" project)
-          (const :tag "Disable" nil))
+  :type '(choice (const :tag "Find File in Project" ffip)
+                 (const :tag "Projectile" projectile)
+                 (const :tag "Built-in Project" project)
+                 (const :tag "Disable" nil))
   :group 'doom-modeline)
 
 (defcustom doom-modeline-buffer-file-name-style 'auto
@@ -581,7 +587,110 @@ It requires `circe' or `erc' package."
 
 
 ;;
-;; Modeline library
+;; Core helpers
+;;
+
+;; FIXME #183: Force to caculate mode-line height
+;; @see https://github.com/seagle0128/doom-modeline/issues/183
+(defvar-local doom-modeline--size-hacked-p nil)
+(defun doom-modeline-redisplay (&rest _)
+  "Call `redisplay' to trigger mode-line height calculations.
+
+Certain functions, including e.g. `fit-window-to-buffer', base
+their size calculations on values which are incorrect if the
+mode-line has a height different from that of the `default' face
+and certain other calculations have not yet taken place for the
+window in question.
+
+These calculations can be triggered by calling `redisplay'
+explicitly at the appropriate time and this functions purpose
+is to make it easier to do so.
+
+This function is like `redisplay' with non-nil FORCE argument.
+It accepts an arbitrary number of arguments making it suitable
+as a `:before' advice for any function.  If the current buffer
+has no mode-line or this function has already been calle in it,
+then this function does nothing."
+  (when (and doom-modeline-mode
+             mode-line-format
+             (not doom-modeline--size-hacked-p))
+    (setq doom-modeline--size-hacked-p t)
+    (redisplay t)))
+(advice-add #'fit-window-to-buffer :before #'doom-modeline-redisplay)
+(advice-add #'resize-temp-buffer-window :before #'doom-modeline-redisplay)
+
+;; Keep `doom-modeline-current-window' up-to-date
+(defun doom-modeline--get-current-window (&optional frame)
+  "Get the current window but should exclude the child windows."
+  (if (and (fboundp 'frame-parent) (frame-parent frame))
+      (frame-selected-window (frame-parent frame))
+    (frame-selected-window frame)))
+
+(defvar doom-modeline-current-window (doom-modeline--get-current-window))
+
+(defun doom-modeline--active ()
+  "Whether is an active window."
+  (and doom-modeline-current-window
+       (eq (doom-modeline--get-current-window) doom-modeline-current-window)))
+
+(defun doom-modeline-set-selected-window (&rest _)
+  "Set `doom-modeline-current-window' appropriately."
+  (when-let ((win (doom-modeline--get-current-window)))
+    (unless (minibuffer-window-active-p win)
+      (setq doom-modeline-current-window win))))
+
+(defun doom-modeline-unset-selected-window ()
+  "Unset `doom-modeline-current-window' appropriately."
+  (setq doom-modeline-current-window nil))
+
+(add-hook 'window-configuration-change-hook #'doom-modeline-set-selected-window)
+(add-hook 'buffer-list-update-hook #'doom-modeline-set-selected-window)
+(add-hook 'after-make-frame-functions #'doom-modeline-set-selected-window)
+(add-hook 'delete-frame-functions #'doom-modeline-set-selected-window)
+(advice-add #'handle-switch-frame :after #'doom-modeline-set-selected-window)
+(with-no-warnings
+  (if (boundp 'after-focus-change-function)
+      (progn
+        (defun doom-modeline-refresh-frame ()
+          (setq doom-modeline-current-window nil)
+          (cl-loop for frame in (frame-list)
+                   if (eq (frame-focus-state frame) t)
+                   return (setq doom-modeline-current-window
+                                (doom-modeline--get-current-window frame)))
+          (force-mode-line-update))
+        (add-function :after after-focus-change-function #'doom-modeline-refresh-frame))
+    (progn
+      (add-hook 'focus-in-hook #'doom-modeline-set-selected-window)
+      (add-hook 'focus-out-hook #'doom-modeline-unset-selected-window))))
+
+;; Ensure modeline is inactive when Emacs is unfocused (and active otherwise)
+(defvar doom-modeline-remap-face-cookie nil)
+(defun doom-modeline-focus ()
+  "Focus mode-line."
+  (when doom-modeline-remap-face-cookie
+    (require 'face-remap)
+    (face-remap-remove-relative doom-modeline-remap-face-cookie)))
+(defun doom-modeline-unfocus ()
+  "Unfocus mode-line."
+  (setq doom-modeline-remap-face-cookie
+        (face-remap-add-relative 'mode-line 'mode-line-inactive)))
+
+(with-no-warnings
+  (if (boundp 'after-focus-change-function)
+      (progn
+        (defun doom-modeline-focus-change (&rest _)
+          (if (frame-focus-state)
+              (doom-modeline-focus)
+            (doom-modeline-unfocus)))
+        (advice-add #'handle-switch-frame :after #'doom-modeline-focus-change)
+        (add-function :after after-focus-change-function #'doom-modeline-focus-change))
+    (progn
+      (add-hook 'focus-in-hook #'doom-modeline-focus)
+      (add-hook 'focus-out-hook #'doom-modeline-unfocus))))
+
+
+;;
+;; Core
 ;;
 
 (defvar doom-modeline-fn-alist ())
@@ -640,7 +749,6 @@ It requires `circe' or `erc' package."
 (add-hook 'window-setup-hook #'doom-modeline-refresh-font-width-cache)
 (add-hook 'after-make-frame-functions #'doom-modeline-refresh-font-width-cache)
 
-(declare-function doom-modeline-spc 'doom-modeline-core) ; suppress warnings
 (defun doom-modeline-def-modeline (name lhs &optional rhs)
   "Defines a modeline format and byte-compiles it.
 NAME is a symbol to identify it (used by `doom-modeline' for retrieval).
@@ -659,7 +767,8 @@ Example:
       (lambda ()
         (list lhs-forms
               (propertize
-               (doom-modeline-spc)
+               " "
+               'face (if (doom-modeline--active) 'mode-line 'mode-line-inactive)
                'display `((space
                            :align-to
                            (- (+ right right-fringe right-margin)
@@ -693,124 +802,20 @@ If DEFAULT is non-nil, set the default mode-line for all buffers."
 
 
 ;;
-;; Plugins
+;; Helpers
 ;;
-
-;; FIXME #183: Force to caculate mode-line height
-;; @see https://github.com/seagle0128/doom-modeline/issues/183
-(defvar-local doom-modeline--size-hacked-p nil)
-(defun doom-modeline-redisplay (&rest _)
-  "Call `redisplay' to trigger mode-line height calculations.
-
-Certain functions, including e.g. `fit-window-to-buffer', base
-their size calculations on values which are incorrect if the
-mode-line has a height different from that of the `default' face
-and certain other calculations have not yet taken place for the
-window in question.
-
-These calculations can be triggered by calling `redisplay'
-explicitly at the appropriate time and this functions purpose
-is to make it easier to do so.
-
-This function is like `redisplay' with non-nil FORCE argument.
-It accepts an arbitrary number of arguments making it suitable
-as a `:before' advice for any function.  If the current buffer
-has no mode-line or this function has already been calle in it,
-then this function does nothing."
-  (when (and doom-modeline-mode
-             mode-line-format
-             (not doom-modeline--size-hacked-p))
-    (setq doom-modeline--size-hacked-p t)
-    (redisplay t)))
-(advice-add #'fit-window-to-buffer :before #'doom-modeline-redisplay)
-(advice-add #'resize-temp-buffer-window :before #'doom-modeline-redisplay)
-
-;; Keep `doom-modeline-current-window' up-to-date
-(defun doom-modeline--get-current-window (&optional frame)
-  "Get the current window but should exclude the child windows."
-  (if (and (fboundp 'frame-parent) (frame-parent frame))
-      (frame-selected-window (frame-parent frame))
-    (frame-selected-window frame)))
-
-(defvar doom-modeline-current-window (doom-modeline--get-current-window))
-(defun doom-modeline-set-selected-window (&rest _)
-  "Set `doom-modeline-current-window' appropriately."
-  (when-let ((win (doom-modeline--get-current-window)))
-    (unless (minibuffer-window-active-p win)
-      (setq doom-modeline-current-window win)
-      (force-mode-line-update))))
-
-(defun doom-modeline-unset-selected-window ()
-  "Unset `doom-modeline-current-window' appropriately."
-  (setq doom-modeline-current-window nil)
-  (force-mode-line-update))
-
-(add-hook 'window-configuration-change-hook #'doom-modeline-set-selected-window)
-(add-hook 'buffer-list-update-hook #'doom-modeline-set-selected-window)
-(add-hook 'after-make-frame-functions #'doom-modeline-set-selected-window)
-(add-hook 'delete-frame-functions #'doom-modeline-set-selected-window)
-(advice-add #'handle-switch-frame :after #'doom-modeline-set-selected-window)
-(with-no-warnings
-  (if (boundp 'after-focus-change-function)
-      (progn
-        (defun doom-modeline-refresh-frame ()
-          (setq doom-modeline-current-window nil)
-          (cl-loop for frame in (frame-list)
-                   if (eq (frame-focus-state frame) t)
-                   return (setq doom-modeline-current-window
-                                (doom-modeline--get-current-window frame)))
-          (force-mode-line-update))
-        (add-function :after after-focus-change-function #'doom-modeline-refresh-frame))
-    (progn
-      (add-hook 'focus-in-hook #'doom-modeline-set-selected-window)
-      (add-hook 'focus-out-hook #'doom-modeline-unset-selected-window))))
-
-;; Ensure modeline is inactive when Emacs is unfocused (and active otherwise)
-(defvar doom-modeline-remap-face-cookie nil)
-(defun doom-modeline-focus ()
-  "Focus mode-line."
-  (when doom-modeline-remap-face-cookie
-    (require 'face-remap)
-    (face-remap-remove-relative doom-modeline-remap-face-cookie)))
-(defun doom-modeline-unfocus ()
-  "Unfocus mode-line."
-  (setq doom-modeline-remap-face-cookie
-        (face-remap-add-relative 'mode-line 'mode-line-inactive)))
-
-(with-no-warnings
-  (if (boundp 'after-focus-change-function)
-      (progn
-        (defun doom-modeline-focus-change (&rest _)
-          (if (frame-focus-state)
-              (doom-modeline-focus)
-            (doom-modeline-unfocus)))
-        (advice-add #'handle-switch-frame :after #'doom-modeline-focus-change)
-        (add-function :after after-focus-change-function #'doom-modeline-focus-change))
-    (progn
-      (add-hook 'focus-in-hook #'doom-modeline-focus)
-      (add-hook 'focus-out-hook #'doom-modeline-unfocus))))
-
-
-;;
-;; Modeline helpers
-;;
-
-(defun doom-modeline--active ()
-  "Whether is an active window."
-  (and doom-modeline-current-window
-       (eq (selected-window) doom-modeline-current-window)))
-
-(defsubst doom-modeline-vspc ()
-  "Text style with icons in mode-line."
-  (propertize " " 'face (if (doom-modeline--active)
-                            'variable-pitch
-                          '(:inherit (variable-pitch mode-line-inactive)))))
 
 (defsubst doom-modeline-spc ()
   "Text style with whitespace."
   (propertize " " 'face (if (doom-modeline--active)
                             'mode-line
                           'mode-line-inactive)))
+
+(defsubst doom-modeline-vspc ()
+  "Text style with icons in mode-line."
+  (propertize " " 'face (if (doom-modeline--active)
+                            'variable-pitch
+                          '(:inherit (variable-pitch mode-line-inactive)))))
 
 (defun doom-modeline--font-height ()
   "Calculate the actual char height of the mode-line."
@@ -909,6 +914,23 @@ ARGS is same as `all-the-icons-octicon' and others."
                                      else collect (string-to-char "."))
                             (if (eq idx len) "\"};" "\",\n")))))
           'xpm t :ascent 'center))))))
+
+;; Check whether `window-width' is smaller than the limit
+(defvar-local doom-modeline--limited-width-p nil)
+(defun doom-modeline-window-size-change-function (&rest _)
+  "Function for `window-size-change-functions'."
+  (setq doom-modeline--limited-width-p
+        (and doom-modeline-window-width-limit
+             (<= (+ (window-width)
+                    (or scroll-bar-width 0)
+                    (or left-fringe-width 0)
+                    (or right-fringe-width 0)
+                    (or left-margin-width 0)
+                    (or right-margin-width 0))
+                 doom-modeline-window-width-limit))))
+
+(add-hook 'window-size-change-functions #'doom-modeline-window-size-change-function)
+(add-hook 'buffer-list-update-hook #'doom-modeline-window-size-change-function)
 
 (defvar-local doom-modeline--project-detected-p nil)
 (defvar-local doom-modeline--project-root nil)

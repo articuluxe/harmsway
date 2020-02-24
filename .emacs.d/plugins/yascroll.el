@@ -4,7 +4,7 @@
 
 ;; Author: Tomohiro Matsuyama <m2ym.pub@gmail.com>
 ;; Keywords: convenience
-;; Version: 0.1.5
+;; Version: 0.1.8
 ;; Package-Requires: ((emacs "26.1") (cl-lib "0.3"))
 ;; URL: https://github.com/emacsorphanage/yascroll
 
@@ -58,22 +58,19 @@ a positive number of padding to the edge."
                 (+ (line-number-display-width) 2)
               0))
            (window-width (- (window-width) line-number-width))
-           (window-margin (+ left-margin-width right-margin-width))
-           (column-bol (progn (yascroll:vertical-motion (cons 0 0))
-                              (current-column)))
+           (window-hscroll (window-hscroll))
+           (tty-offset (if (display-graphic-p) 0 1))
+           ;; If truncation is off we’re computing the continued line’s first
+           ;; column. With horizontal scroll truncation is always on and we can
+           ;; use it’s value as first visible column.
+           (column-bol (if (or truncate-lines (> window-hscroll 0))
+                           window-hscroll
+                         (progn (yascroll:vertical-motion (cons 0 0))
+                                (current-column))))
            (column-eol (progn (yascroll:vertical-motion
-                               (cons (- window-width 1 (if window-system 0 1)) 0))
+                               (cons (- window-width 1 tty-offset) 0))
                               (current-column)))
-           (column-eol-visual (- column-eol column-bol))
-
-           (padding (- window-width
-                       window-margin
-                       column-eol-visual
-                       (if window-system 0 1)))
-           ;; When horizontal scroll has passed EOL, add padding for the columns
-           ;; between EOL and the first column in the visible window.
-           (padding (+ padding
-                       (- (max (window-hscroll) column-eol) column-eol))))
+           (padding (- window-width (- column-eol column-bol) tty-offset)))
       (list (point) padding))))
 
 
@@ -119,12 +116,13 @@ not be displayed."
   :group 'yascroll)
 
 (defcustom yascroll:enabled-window-systems
-  '(nil x w32 ns pc)
+  '(nil x w32 ns pc mac)
   "A list of window-system's where yascroll can work."
   :type '(repeat (choice (const :tag "Termcap" nil)
                          (const :tag "X window" x)
                          (const :tag "MS-Windows" w32)
                          (const :tag "Macintosh Cocoa" ns)
+                         (const :tag "Macintosh Emacs Port" mac)
                          (const :tag "MS-DOS" pc)))
   :group 'yascroll)
 

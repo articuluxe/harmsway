@@ -4,7 +4,7 @@
 
 ;; Author: Adam Porter <adam@alphapapa.net>
 ;; URL: https://github.com/alphapapa/sbuffer.el
-;; Package-Version: 0.1-pre
+;; Package-Version: 0.1
 ;; Package-Requires: ((emacs "26.3") (dash "2.17") (dash-functional "2.17") (f "0.17") (magit-section "0.1"))
 ;; Keywords: convenience
 
@@ -64,7 +64,7 @@
 
 (defgroup sbuffer nil
   "Like Ibuffer, but using Magit-Section sections."
-  :link '(url-link "http://github.com/alphapapa/sbuffer.el")
+  :link '(url-link "https://github.com/alphapapa/sbuffer.el")
   :group 'convenience)
 
 (defcustom sbuffer-reverse nil
@@ -76,6 +76,15 @@
 The depth number is appended to the prefix."
   :type '(choice (const :tag "Outline faces" "outline-")
                  (const :tag "Prism faces (requires `prism')" "prism-level-")))
+
+(defcustom sbuffer-initial-face-depth 1
+  ;; Setting it to 1, because in the default Emacs config, it presents
+  ;; better contrast between the first two levels (blue/orange rather than
+  ;; black/blue), and the bold blue is a bit less harsh than the bold black.
+  "First depth level used for outline faces.
+May be used to skip the first N level faces.  See
+`sbuffer-face-prefix'."
+  :type 'integer)
 
 (defcustom sbuffer-vc-state nil
   "Show buffers' VC state.
@@ -196,10 +205,8 @@ get correct results."
         (sbuffer-mode)
         (erase-buffer)
         (magit-insert-section (sbuffer-root)
-          (magit-insert-heading
-            (propertize "sbuffer" 'face (sbuffer-level-face 1)))
           (--each groups
-            (insert-thing it 1)))
+            (insert-thing it 0)))
         (setf buffer-read-only t)
         (pop-to-buffer (current-buffer))
         (goto-char pos)))))
@@ -242,7 +249,7 @@ NAME, okay, `checkdoc'?"
 
 (defun sbuffer-level-face (level)
   "Return face for LEVEL."
-  (intern (format "%s%s" sbuffer-face-prefix level)))
+  (intern (format "%s%s" sbuffer-face-prefix (+ level sbuffer-initial-face-depth))))
 
 (defun sbuffer-format-buffer (buffer depth)
   "Return string for BUFFER to be displayed at DEPTH."
@@ -336,7 +343,7 @@ The resulting group is named NAME."
   "Return a grouping function that groups buffers which do not match PRED.
 The resulting group is named NAME."
   (byte-compile (lambda (x)
-                  (when (not (funcall pred x))
+                  (unless (funcall pred x)
                     name))))
 
 ;;;;;; Grouping predicates
@@ -463,7 +470,8 @@ NAME, okay, `checkdoc'?"
 ;; This seems to work better than I expected.
 
 (defmacro sbuffer-defgroups (&rest groups)
-  "FIXME: Docstring."
+  "Expand GROUPS into a group definition suitable for `sbuffer-groups'.
+See documentation for details."
   (declare (indent defun))
   `(cl-macrolet ((group (&rest groups) `(list ,@groups))
                  (group-and (name &rest groups)
@@ -492,26 +500,63 @@ NAME, okay, `checkdoc'?"
 
 (defcustom sbuffer-groups
   (sbuffer-defgroups
-    (group (group-or "*Help/Info*"
-                     (mode-match "*Help*" (rx bos "help-"))
-                     (mode-match "*Info*" (rx bos "info-"))))
-    (group (mode-match "*Magit*" (rx bos (or "magit" "forge") "-"))
-           (auto-directory))
-    (group (group-not "*Special*" (auto-file))
-           (group (name-match "**Special**" (rx bos "*" (or "Messages" "Warnings" "scratch" "Backtrace") "*")))
-           (mode-match "*Helm*" (rx bos "helm-"))
-           (auto-mode))
-    (dir "~/.emacs.d")
-    (group (dir (if (bound-and-true-p org-directory)
-                    org-directory
-                  "~/org"))
-           (group (auto-indirect)
-                  (auto-file))
-           (group-not "*special*" (auto-file))
-           (auto-mode))
+    (group
+     ;; Subgroup collecting all `help-mode' and `info-mode' buffers.
+     (group-or "*Help/Info*"
+               (mode-match "*Help*" (rx bos "help-"))
+               (mode-match "*Info*" (rx bos "info-"))))
+    (group
+     ;; Subgroup collecting all special buffers (i.e. ones that are not
+     ;; file-backed), except `magit-status-mode' buffers (which are allowed to fall
+     ;; through to other groups, so they end up grouped with their project buffers).
+     (group-and "*Special*"
+                (lambda (buffer)
+                  (unless (or (funcall (mode-match "Magit" (rx bos "magit-status"))
+                                       buffer)
+                              (funcall (auto-file) buffer))
+                    "*Special*")))
+     (group
+      ;; Subgroup collecting these "special special" buffers
+      ;; separately for convenience.
+      (name-match "**Special**"
+                  (rx bos "*" (or "Messages" "Warnings" "scratch" "Backtrace") "*")))
+     (group
+      ;; Subgroup collecting all other Magit buffers, grouped by directory.
+      (mode-match "*Magit* (non-status)" (rx bos (or "magit" "forge") "-"))
+      (auto-directory))
+     ;; Subgroup for Helm buffers.
+     (mode-match "*Helm*" (rx bos "helm-"))
+     ;; Remaining special buffers are grouped automatically by mode.
+     (auto-mode))
+    ;; All buffers under "~/.emacs.d" (or wherever it is).
+    (dir user-emacs-directory)
+    (group
+     ;; Subgroup collecting buffers in `org-directory' (or "~/org" if
+     ;; `org-directory' is not yet defined).
+     (dir (if (bound-and-true-p org-directory)
+              org-directory
+            "~/org"))
+     (group
+      ;; Subgroup collecting indirect Org buffers, grouping them by file.
+      ;; This is very useful when used with `org-tree-to-indirect-buffer'.
+      (auto-indirect)
+      (auto-file))
+     ;; Group remaining buffers by whether they're file backed, then by mode.
+     (group-not "*special*" (auto-file))
+     (auto-mode))
+    (group
+     ;; Subgroup collecting buffers in a version-control project,
+     ;; grouping them by directory and then major mode.
+     (auto-project) (auto-mode))
+    ;; Group remaining buffers by directory, then major mode.
     (auto-directory)
     (auto-mode))
   "List of grouping functions recursively applied to buffers.
+Note that this is likely to look very ugly in the customization
+UI due to lambdas being byte-compiled.  Please see the source
+code for this option's definition to see the human-readable group
+definitions.
+
 Each item may be an Sbuffer grouping function or a list of
 grouping functions (each element of which may also be a list, and
 so forth, spiraling into infinity...oh, hello, Alice).

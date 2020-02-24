@@ -719,7 +719,8 @@ restrict the log to the lines that the region touches."
   "Show log for the definition at point."
   (interactive (list (or (magit-file-relative-name)
                          (user-error "Buffer isn't visiting a file"))
-                     (funcall magit-log-trace-definition-function)
+                     (or (funcall magit-log-trace-definition-function)
+                         (user-error "No function at point found"))
                      (or magit-buffer-refname
                          (magit-get-current-branch)
                          "HEAD")))
@@ -727,7 +728,7 @@ restrict the log to the lines that the region touches."
   (magit-log-setup-buffer
    (list rev)
    (cons (format "-L:%s%s:%s"
-                 (regexp-quote fn)
+                 (replace-regexp-in-string ":" "\\:" (regexp-quote fn) nil t)
                  (if (derived-mode-p 'lisp-mode 'emacs-lisp-mode)
                      ;; Git doesn't treat "-" the same way as
                      ;; "_", leading to false-positives such as

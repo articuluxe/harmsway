@@ -5,7 +5,7 @@
 ;; Author: Joost Kremers <joostkremers@fastmail.fm>
 ;; Maintainer: Joost Kremers <joostkremers@fastmail.fm>
 ;; Created: 31 Oct 2009
-;; Version: 2.28
+;; Version: 2.29
 ;; Keywords: text, pandoc
 ;; Package-Requires: ((hydra "0.10.0") (dash "2.10.0"))
 
@@ -165,84 +165,90 @@ matches KEY."
 
 (defvar pandoc--formats
   '(("markdown" "Markdown Formats" "m"
-     ("markdown"             "Pandoc Markdown"             "m" both)
-     ("markdown_mmd"         "Markdown (MMD)"              "M" both)
-     ("markdown_phpextra"    "Markdown (PHPExtra)"         "P" both)
-     ("markdown_strict"      "Markdown (Strict)"           "S" both)
-     ("commonmark"           "CommonMark"                  "C" both)
-     ("gfm"                  "GitHub-flavoured Markdown"   "g" both)
-     ("markdown_github"      "Markdown (Github; obsolete)" "G" both))
+     ("markdown"               "Pandoc Markdown"               "m" both)
+     ("markdown_mmd"           "Markdown (MMD)"                "M" both)
+     ("markdown_phpextra"      "Markdown (PHPExtra)"           "P" both)
+     ("markdown_strict"        "Markdown (Strict)"             "S" both)
+     ("commonmark"             "CommonMark"                    "C" both)
+     ("gfm"                    "GitHub-flavoured Markdown"     "g" both)
+     ("markdown_github"        "Markdown (Github; obsolete)"   "G" both))
 
     ("html" "HTML Formats" "h"
-     ("html"                 "HTML (default)"            "h" both)
-     ("html4"                "HTML4"                     "t" output)
-     ("html5"                "HTML5"                     "H" output))
+     ("html"                   "HTML (default)"               "h" both)
+     ("html4"                  "HTML4"                        "t" output)
+     ("html5"                  "HTML5"                        "H" output))
 
     ("slide-show" "Slide Show Formats" "s"
-     ("beamer"               "Beamer"                    "B" output) ; Also under TeX
-     ("dzslides"             "DZSlides"                  "d" output)
-     ("revealjs"             "RevealJS"                  "j" output)
-     ("pptx"                 "MS PowerPoint"             "p" output)
-     ("s5"                   "S5 HTML/JS"                "s" output)
-     ("slideous"             "Slideous"                  "u" output)
-     ("slidy"                "Slidy"                     "y" output))
+     ("beamer"                 "Beamer"                       "B" output) ; Also under TeX
+     ("dzslides"               "DZSlides"                     "d" output)
+     ("revealjs"               "RevealJS"                     "j" output)
+     ("pptx"                   "MS PowerPoint"                "p" output)
+     ("s5"                     "S5 HTML/JS"                   "s" output)
+     ("slideous"               "Slideous"                     "u" output)
+     ("slidy"                  "Slidy"                        "y" output))
 
     ("wiki" "Wiki Formats" "w"
-     ("creole"               "Creole 1.0"                "c" both)
-     ("dokuwiki"             "DokuWiki"                  "d" both)
-     ("jira"                 "JiraWiki"                  "j" output)
-     ("mediawiki"            "MediaWiki"                 "m" both)
-     ("tikiwiki"             "TikiWiki"                  "t" both)
-     ("twiki"                "Twiki"                     "T" input)
-     ("vimwiki"              "Vimwiki"                   "v" both)
-     ("zimwiki"              "ZimWiki"                   "z" both))
+     ("creole"                 "Creole 1.0"                   "c" both)
+     ("dokuwiki"               "DokuWiki"                     "d" both)
+     ("jira"                   "JiraWiki"                     "j" both)
+     ("mediawiki"              "MediaWiki"                    "m" both)
+     ("tikiwiki"               "TikiWiki"                     "t" both)
+     ("twiki"                  "Twiki"                        "T" input)
+     ("vimwiki"                "Vimwiki"                      "v" both)
+     ("zimwiki"                "ZimWiki"                      "z" both))
 
     ("wordprocessor" "Wordprocessor Formats" "W"
-     ("docx"                 "MS Word (docx)"            "d" both)
-     ("icml"                 "InDesign ICML"             "i" output)
-     ("odt"                  "LibreOffice Text Document" "l" both)
-     ("opendocument"         "OpenDocument XML"          "o" output)
-     ("rtf"                  "Rich Text Format"          "r" output))
+     ("docx"                   "MS Word (docx)"               "d" both)
+     ("icml"                   "InDesign ICML"                "i" output)
+     ("odt"                    "LibreOffice Text Document"    "l" both)
+     ("opendocument"           "OpenDocument XML"             "o" output)
+     ("rtf"                    "Rich Text Format"             "r" output))
 
     ("tex" "TeX-based Formats" "t"
-     ("beamer"               "Beamer Slide Show"         "B" output) ; Also under Slide Shows Formats.
-     ("context"              "ConTeXt"                   "c" output)
-     ("latex"                "LaTeX"                     "l" both)
-     ("texinfo"              "TeXinfo"                   "i" output)) ; Also under Documentation Formats.
+     ("beamer"                 "Beamer Slide Show"            "B" output) ; Also under Slide Shows Formats.
+     ("context"                "ConTeXt"                      "c" output)
+     ("latex"                  "LaTeX"                        "l" both)
+     ("texinfo"                "TeXinfo"                      "i" output)) ; Also under Documentation Formats.
 
     ("ebook" "E-Book Formats" "e"
-     ("epub"                 "EPUB (default)"            "e" both)
-     ("epub2"                "EPUB2 E-Book"              "p" output)
-     ("epub3"                "EPUB3 E-Book"              "E" output)
-     ("fb2"                  "FictionBook2"              "f" both))
+     ("epub"                   "EPUB (default)"               "e" both)
+     ("epub2"                  "EPUB2 E-Book"                 "p" output)
+     ("epub3"                  "EPUB3 E-Book"                 "E" output)
+     ("fb2"                    "FictionBook2"                 "f" both))
 
     ("text" "Text-Based Formats" "T"
-     ("asciidoc"             "AsciiDoc"                  "a" output)
-     ("plain"                "Plain Text"                "p" output)
-     ("rst"                  "reStructuredText"          "r" both)
-     ("textile"              "Textile"                   "t" both)
-     ("t2t"                  "txt2tags"                  "T" both))
+     ("asciidoc"               "AsciiDoc"                     "a" output)
+     ("csv"                    "CSV"                          "c" input)
+     ("plain"                  "Plain Text"                   "p" output)
+     ("rst"                    "reStructuredText"             "r" both)
+     ("textile"                "Textile"                      "t" both)
+     ("t2t"                    "txt2tags"                     "T" both))
 
     ("documentation" "Documentation Formats" "d"
-     ("docbook"              "DocBook XML"               "d" input) ; docbook and docbook4 share the same key.
-     ("docbook4"             "DocBook XML v.4"           "d" output) ; They won't appear in the same menu anyway.
-     ("docbook5"             "DocBook XML v.5"           "D" output)
-     ("haddock"              "Haddock"                   "h" both)
-     ("man"                  "Man Page"                  "m" output)
-     ("ms"                   "Groff MS"                  "g" output)
-     ("tei"                  "TEI"                       "t" output)
-     ("texinfo"              "TeXinfo"                   "i" output)) ; Also under TeX Formats.
+     ("docbook"                "DocBook XML"                  "d" input) ; docbook and docbook4 share the same key.
+     ("docbook4"               "DocBook XML v.4"              "d" output) ; They won't appear in the same menu anyway.
+     ("docbook5"               "DocBook XML v.5"              "D" output)
+     ("haddock"                "Haddock"                      "h" both)
+     ("man"                    "Man Page"                     "m" output)
+     ("ms"                     "Groff MS"                     "g" output)
+     ("tei"                    "TEI"                          "t" output)
+     ("texinfo"                "TeXinfo"                      "i" output)) ; Also under TeX Formats.
 
     ("emacs" "Emacs-based Formats" "E"
-     ("muse"                 "Muse"                      "m" both)
-     ("org"                  "Org-mode"                  "o" both))
+     ("muse"                   "Muse"                         "m" both)
+     ("org"                    "Org-mode"                     "o" both))
+
+    ("jats" "JATS formats" "j"
+     ("jats"                   "Archiving Tag Set"            "j" both)
+     ("jats_articleauthoring"  "Article Authoring Tag Set"    "a" both)
+     ("jats_publishing"        "Publishing Tag Set"           "p" both)
+     ("jats_archiving"         "Archiving Tag Set"            "x" both))
 
     ("misc" "Miscellaneous Formats" "v"
-     ("ipynb"                "Jupyter Notebook"          "p" both)
-     ("jats"                 "JATS XML"                  "J" both)
-     ("json"                 "JSON"                      "j" both)
-     ("native"               "Native Haskell"            "n" both)
-     ("opml"                 "OPML"                      "o" both)))
+     ("ipynb"                  "Jupyter Notebook"             "p" both)
+     ("json"                   "JSON"                         "j" both)
+     ("native"                 "Native Haskell"               "n" both)
+     ("opml"                   "OPML"                         "o" both)))
   "List of Pandoc formats, their descriptions and hydra shortcut keys.")
 
 (defun pandoc--extract-formats (io)
@@ -508,6 +514,7 @@ These are set by `define-pandoc-alist-option'.")
     (write-extensions ,@(mapcar 'list (sort (mapcar #'car pandoc--extensions) #'string<)))
     (output)
     (data-dir)
+    (defaults)
     (extract-media)
     (file-scope)
     (output-dir)
@@ -1205,13 +1212,14 @@ evaluated."
 (define-pandoc-number-option tab-stop                (reader "t" "%-23s")      "Tab Stop Width")
 (define-pandoc-switch        preserve-tabs           (reader "p" "%-23s")      "Preserve Tabs")
 (define-pandoc-switch        normalize               (reader "n" "%-23s")      "Normalize Document")
-(define-pandoc-file-option   metadata-file           (reader "M" "%-23s")      "Metadata File")
+(define-pandoc-list-option   metadata-file           (reader "M" "%-23s") file "Metadata File" "Metadata File")
 (define-pandoc-alist-option  metadata                (reader "m" "%-23s")      "Metadata" "Metadata item")
 (define-pandoc-list-option   filter                  (reader "f" "%-23s") file "Filters" "Filter")
 (define-pandoc-list-option   lua-filter              (reader "l" "%-23s") file "Lua Filters" "Lua Filter")
 (define-pandoc-string-option default-image-extension (reader "i" "%-23s")      "Default Image Extension")
 (define-pandoc-string-option indented-code-classes   (reader "c" "%-23s")      "Indented Code Classes")
-(define-pandoc-number-option base-header-level       (reader "h" "%-23s")      "Base Header Level")
+(define-pandoc-number-option shift-heading-level-by  (reader "h" "%-23s")      "Header Level Shift")
+(define-pandoc-number-option base-header-level       (reader "h" "%-23s")      "Base Header Level*")
 (define-pandoc-switch        old-dashes              (reader "o" "%-23s")      "Use Old-style Dashes")
 (define-pandoc-switch        smart                   (reader "s" "%-23s")      "Smart*") ; obsolete
 (define-pandoc-switch        parse-raw               (reader "r" "%-23s")      "Parse Raw*") ; obsolete
@@ -1249,12 +1257,13 @@ evaluated."
 ;;; Options affecting specific writers
 
 ;; general
+(define-pandoc-choice-option ipynb-output       (specific "p" "%-21s")        "Jupyter Output Cells" ("best" "all" "none") ("ipynb"))
 (define-pandoc-list-option   pdf-engine-opt     (specific "o" "%-21s") string "PDF Options" "PDF Option")
 (define-pandoc-choice-option pdf-engine         (specific "e" "%-21s")        "PDF Engine"
   ("pdflatex" "lualatex" "xelatex" "wkhtmltopdf" "weasyprint" "prince" "context" "pdfroff"))
 (define-pandoc-file-option   reference-doc      (specific "R" "%-21s")        "Reference Doc")
 (define-pandoc-file-option   reference-docx     (specific "d" "%-21s")        "Reference docx File*") ;obsolete
-(define-pandoc-file-option   reference-odt      (specific "o" "%-21s")        "Reference ODT File*") ;obsolete
+(define-pandoc-file-option   reference-odt      (specific "O" "%-21s")        "Reference ODT File*") ;obsolete
 (define-pandoc-number-option slide-level        (specific "h" "%-21s")        "Slide Level Header")
 (define-pandoc-switch        incremental        (specific "i" "%-21s")        "Incremental")
 (define-pandoc-switch        number-sections    (specific "n" "%-21s")        "Number Sections")

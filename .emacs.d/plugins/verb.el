@@ -6,7 +6,7 @@
 ;; Maintainer: Federico Tedin <federicotedin@gmail.com>
 ;; Homepage: https://github.com/federicotdn/verb
 ;; Keywords: tools
-;; Package-Version: 2.7.2
+;; Package-Version: 2.8.0
 ;; Package-Requires: ((emacs "26"))
 
 ;; This file is NOT part of GNU Emacs.
@@ -102,8 +102,8 @@ with each CONTENT-TYPE in the alist (sequentially) using
 `string-match-p'.  The handler for the first CONTENT-TYPE to match
 will be used."
   :type '(repeat (list regexp function
-		       (choice (const :tag "Binary" t)
-			       (const :tag "Text" nil)))))
+                       (choice (const :tag "Binary" t)
+                               (const :tag "Text" nil)))))
 
 (defcustom verb-export-functions
   '(("human" . verb--export-to-human)
@@ -146,8 +146,8 @@ Value `when-empty' means automatically show the headers buffer only
 when the response's body size is 0.
 Any other value means always show the headers buffer."
   :type '(choice (const :tag "Never" nil)
-		 (const :tag "When empty" when-empty)
-		 (const :tag "Always" t)))
+                 (const :tag "When empty" when-empty)
+                 (const :tag "Always" t)))
 
 (defcustom verb-show-timeout-warning 10.0
   "Reasonable max duration (s) for an HTTP request.
@@ -155,7 +155,7 @@ Indicates the number of seconds to wait after an HTTP request is sent
 to warn the user about a possible network timeout.  When set to nil,
 don't show any warnings."
   :type '(choice (float :tag "Time in seconds")
-		 (const :tag "Off" nil)))
+                 (const :tag "Off" nil)))
 
 (defcustom verb-babel-timeout 10.0
   "Timeout (s) for HTTP requests made from a Babel source blocks.
@@ -177,17 +177,17 @@ recommended you change them to something else through this setting."
 For more information on `url-retrieve' and `url-queue-retrieve', see
 info node `(url)Retrieving URLs'."
   :type '(choice (function-item
-		  :tag "url-retrieve from url.el"
-		  url-retrieve)
-		 (function-item
-		  :tag "url-queue-retrieve from url-queue.el"
-		  url-queue-retrieve)))
+                  :tag "url-retrieve from url.el"
+                  url-retrieve)
+                 (function-item
+                  :tag "url-queue-retrieve from url-queue.el"
+                  url-queue-retrieve)))
 
 (defcustom verb-json-max-pretty-print-size (* 1 1024 1024)
   "Max JSON file size (bytes) to automatically prettify when received.
 If nil, never prettify JSON files automatically."
   :type '(choice (integer :tag "Max bytes")
-		 (const :tag "Off" nil)))
+                 (const :tag "Off" nil)))
 
 (defcustom verb-enable-log t
   "When non-nil, log different events in the *Verb Log* buffer."
@@ -219,7 +219,7 @@ Note that if a heading has a tag, then all its subheadings inherit
 that tag as well.  This can be changed via the
 `org-use-tag-inheritance' variable."
   :type '(choice (string :tag "verb")
-		 (const :tag "All" t)))
+                 (const :tag "All" t)))
 
 (defcustom verb-trim-body-end nil
   "When set to a regexp, use it to trim request body endings.
@@ -227,8 +227,8 @@ If set to nil, read request bodies as they appear on the buffer.  In
 that case, if any whitespace is present between the body end and the
 next heading (or buffer end), it will be included in the body."
   :type '(choice (regexp :tag "Other regexp")
-		 (const :tag "All whitespace" "[ \t\n\r]+")
-		 (const :tag "Disable" nil)))
+                 (const :tag "All whitespace" "[ \t\n\r]+")
+                 (const :tag "Disable" nil)))
 
 (defcustom verb-base-headers nil
   "Set of HTTP headers used as base when reading request specs.
@@ -238,7 +238,7 @@ hierarchy."
   :type '(alist :key-type string :value-type string))
 
 (defface verb-http-keyword '((t :inherit font-lock-constant-face
-				:weight bold))
+                                :weight bold))
   "Face for highlighting HTTP methods.")
 
 (defface verb-header '((t :inherit font-lock-constant-face))
@@ -260,23 +260,23 @@ hierarchy."
   "Face for highlighting E entries in the log buffer.")
 
 (defconst verb--http-methods '("GET" "POST" "DELETE" "PUT"
-			       "OPTIONS" "HEAD" "PATCH"
-			       "TRACE" "CONNECT")
+                               "OPTIONS" "HEAD" "PATCH"
+                               "TRACE" "CONNECT")
   "List of valid HTTP methods.")
 
 (defconst verb--bodyless-http-methods '("GET" "HEAD" "DELETE" "TRACE"
-					"OPTIONS" "CONNECT")
+                                        "OPTIONS" "CONNECT")
   "List of HTTP methods which usually don't include bodies.")
 
 (defconst verb--log-buffer-name "*Verb Log*"
   "Default name for log buffer.")
 
 (defconst verb--url-pre-defined-headers '("MIME-Version"
-					  "Connection"
-					  "Host"
-					  "Accept-Encoding"
-					  "Extension"
-					  "Content-Length")
+                                          "Connection"
+                                          "Host"
+                                          "Accept-Encoding"
+                                          "Extension"
+                                          "Content-Length")
   "List of HTTP headers which are automatically added by url.el.
 The values of these headers can't be easily modified by Verb, so a
 warning will be shown to the user if they set any of them (as they
@@ -336,6 +336,11 @@ here under its value.")
 (defvar verb--requests-count 0
   "Number of HTTP requests sent in the past.")
 
+(defvar verb--inhibit-code-tags-evaluation nil
+  "When non-nil, do not evaluate code tags in requests specs.
+This variable is used mostly to parse and then copy request specs to
+other buffers without actually expanding the embedded code tags.")
+
 ;;;###autoload
 (defvar verb-command-map
   (let ((map (make-sparse-keymap)))
@@ -372,8 +377,8 @@ comfortably.  All commands listed in this keymap automatically enable
       (1 'verb-json-key))
      ;; {{(format "%s" "Lisp code tag")}}
      (,(concat (car verb-code-tag-delimiters)
-	       ".*?"
-	       (cdr verb-code-tag-delimiters))
+               ".*?"
+               (cdr verb-code-tag-delimiters))
       (0 'verb-code-tag))))
   (font-lock-flush))
 
@@ -382,20 +387,22 @@ comfortably.  All commands listed in this keymap automatically enable
     (easy-menu-define verb-mode-menu map
       "Menu for Verb mode"
       '("Verb"
-	["Send request on selected window" verb-send-request-on-point]
-	["Send request on other window & switch" verb-send-request-on-point-other-window]
-	["Send request on other window" verb-send-request-on-point-other-window-stay]
-	"--"
-	["Kill response buffers" verb-kill-all-response-buffers]
-	"--"
-	["Set variable value" verb-set-var]
-	"--"
-	["Export request to curl" verb-export-request-on-point-curl]
-	["Export request to human-readable" verb-export-request-on-point-human]
-	["Export request to Verb" verb-export-request-on-point-verb]
-	"--"
-	["Customize Verb" verb-customize-group]
-	["View log" verb-view-log]))
+        ["Send request on selected window" verb-send-request-on-point]
+        ["Send request on other window & switch"
+         verb-send-request-on-point-other-window]
+        ["Send request on other window"
+         verb-send-request-on-point-other-window-stay]
+        "--"
+        ["Kill response buffers" verb-kill-all-response-buffers]
+        "--"
+        ["Set variable value" verb-set-var]
+        "--"
+        ["Export request to curl" verb-export-request-on-point-curl]
+        ["Export request to human-readable" verb-export-request-on-point-human]
+        ["Export request to Verb" verb-export-request-on-point-verb]
+        "--"
+        ["Customize Verb" verb-customize-group]
+        ["View log" verb-view-log]))
     map)
   "Keymap for `verb-mode'.")
 
@@ -413,14 +420,18 @@ more details on how to use it."
     (verb--setup-font-lock-keywords)
     (when (buffer-file-name)
       (verb--log nil 'I
-		 "Verb mode enabled in buffer: %s"
-		 (buffer-name))
+                 "Verb mode enabled in buffer: %s"
+                 (buffer-name))
       (verb--log nil 'I "Org version: %s, GNU Emacs version: %s"
-		 (org-version)
-		 emacs-version))))
+                 (org-version)
+                 emacs-version))))
 
 (defvar verb-response-headers-mode-map
   (let ((map (make-sparse-keymap)))
+    (easy-menu-define verb-mode-menu map
+      "Menu for Verb response headers mode"
+      '("Verb"
+        ["Hide response headers" verb-kill-buffer-and-window]))
     (define-key map (kbd "q") 'verb-kill-buffer-and-window)
     map)
   "Keymap for `verb-response-headers-mode'.")
@@ -429,8 +440,8 @@ more details on how to use it."
   "Major mode for displaying an HTTP response's headers."
   (font-lock-add-keywords
    nil `(;; Key: Value
-	 (,verb--http-header-regexp
-	  (1 'verb-header)))))
+         (,verb--http-header-regexp
+          (1 'verb-header)))))
 
 (define-derived-mode verb-log-mode special-mode "Verb[Log]"
   "Major mode for displaying Verb logs.
@@ -453,17 +464,17 @@ If this buffer is killed, it will be created again when the next
 message is logged.  To turn off logging, set `verb-enable-log' to nil."
   (font-lock-add-keywords
    nil '(;; (request number e.g. 10)
-	 ("^[[:digit:]-]+\\s-"
-	  (0 'bold))
-	 ;; Log level I after request number
-	 ("^[[:digit:]-]*\\s-+\\(I\\)"
-	  (1 'verb-log-info))
-	 ;; Log level W after request number
-	 ("^[[:digit:]-]*\\s-+\\(W\\)"
-	  (1 'verb-log-warning))
-	 ;; Log level E after request number
-	 ("^[[:digit:]-]*\\s-+\\(E\\)"
-	  (1 'verb-log-error)))))
+         ("^[[:digit:]-]+\\s-"
+          (0 'bold))
+         ;; Log level I after request number
+         ("^[[:digit:]-]*\\s-+\\(I\\)"
+          (1 'verb-log-info))
+         ;; Log level W after request number
+         ("^[[:digit:]-]*\\s-+\\(W\\)"
+          (1 'verb-log-warning))
+         ;; Log level E after request number
+         ("^[[:digit:]-]*\\s-+\\(E\\)"
+          (1 'verb-log-error)))))
 
 (defun verb--http-method-p (m)
   "Return non-nil if M is a valid HTTP method."
@@ -474,8 +485,8 @@ message is logged.  To turn off logging, set `verb-enable-log' to nil."
   (when (consp l)
     (catch 'end
       (dolist (elem l)
-	(unless (consp elem)
-	  (throw 'end nil)))
+        (unless (consp elem)
+          (throw 'end nil)))
       t)))
 
 (defun verb--http-headers-p (h)
@@ -484,59 +495,59 @@ KEY and VALUE must be strings.  KEY must not be the empty string."
   (when (consp h)
     (catch 'end
       (dolist (elem h)
-	(unless (and (consp elem)
-		     (stringp (car elem))
-		     (stringp (cdr elem))
-		     (not (string-empty-p (car elem))))
-	  (throw 'end nil)))
+        (unless (and (consp elem)
+                     (stringp (car elem))
+                     (stringp (cdr elem))
+                     (not (string-empty-p (car elem))))
+          (throw 'end nil)))
       t)))
 
 (defclass verb-request-spec ()
   ((method :initarg :method
-	   :initform nil
-	   :type (or null verb--http-method)
-	   :documentation "HTTP method.")
+           :initform nil
+           :type (or null verb--http-method)
+           :documentation "HTTP method.")
    (url :initarg :url
-	:initform nil
-	:type (or null url)
-	:documentation "Request URL.")
+        :initform nil
+        :type (or null url)
+        :documentation "Request URL.")
    (headers :initarg :headers
-	    :initform ()
-	    :type (or null verb--http-headers)
-	    :documentation "HTTP headers.")
+            :initform ()
+            :type (or null verb--http-headers)
+            :documentation "HTTP headers.")
    (body :initarg :body
-	 :initform nil
-	 :type (or null string)
-	 :documentation "Request body.")
+         :initform nil
+         :type (or null string)
+         :documentation "Request body.")
    (metadata :initarg :metadata
-	     :initform nil
-	     :type (or null verb--alist)
-	     :documentation "User-defined request metadata."))
+             :initform nil
+             :type (or null verb--alist)
+             :documentation "User-defined request metadata."))
   "Represents an HTTP request to be made.")
 
 (defclass verb-response ()
   ((request :initarg :request
-	    :type verb-request-spec
-	    :documentation "Corresponding request.")
+            :type verb-request-spec
+            :documentation "Corresponding request.")
    (headers :initarg :headers
-	    :type (or null verb--http-headers)
-	    :documentation "Response headers.")
+            :type (or null verb--http-headers)
+            :documentation "Response headers.")
    (status :initarg :status
-	   :type (or null string)
-	   :documentation "Response's first line.")
+           :type (or null string)
+           :documentation "Response's first line.")
    (duration :initarg :duration
-	     :type float
-	     :documentation
-	     "Time taken for response to be received, in seconds.")
+             :type float
+             :documentation
+             "Time taken for response to be received, in seconds.")
    (body :initarg :body
-	 :initform nil
-	 :type (or null string)
-	 :documentation "Response body.")
+         :initform nil
+         :type (or null string)
+         :documentation "Response body.")
    (body-bytes :initarg :body-bytes
-	       :initform 0
-	       :type integer
-	       :documentation
-	       "Number of bytes in response body."))
+               :initform 0
+               :type integer
+               :documentation
+               "Number of bytes in response body."))
   "Represents an HTTP response to a request.")
 
 (defvar verb-response-body-mode-map
@@ -547,9 +558,9 @@ KEY and VALUE must be strings.  KEY must not be the empty string."
     (easy-menu-define verb-response-body-mode-menu map
       "Menu for Verb response body mode"
       '("Verb[Body]"
-	["Toggle show response headers" verb-toggle-show-headers]
-	["Kill buffer and window" verb-kill-response-buffer-and-window]
-	["Re-send request" verb-re-send-request]))
+        ["Toggle show response headers" verb-toggle-show-headers]
+        ["Kill buffer and window" verb-kill-response-buffer-and-window]
+        ["Re-send request" verb-re-send-request]))
     map)
   "Keymap for `verb-response-body-mode'.")
 
@@ -559,13 +570,13 @@ KEY and VALUE must be strings.  KEY must not be the empty string."
   :group 'verb
   (if verb-response-body-mode
       (progn
-	(setq header-line-format
-	      (verb--response-header-line-string verb-http-response))
-	(when verb-auto-show-headers-buffer
-	  (if (eq verb-auto-show-headers-buffer 'when-empty)
-	      (when (zerop (oref verb-http-response body-bytes))
-		(verb-toggle-show-headers))
-	    (verb-toggle-show-headers))))
+        (setq header-line-format
+              (verb--response-header-line-string verb-http-response))
+        (when verb-auto-show-headers-buffer
+          (if (eq verb-auto-show-headers-buffer 'when-empty)
+              (when (zerop (oref verb-http-response body-bytes))
+                (verb-toggle-show-headers))
+            (verb-toggle-show-headers))))
     (setq header-line-format nil)))
 
 (defun verb-view-log ()
@@ -591,27 +602,27 @@ If `verb-enable-log' is nil, do not log anything."
   (when verb-enable-log
     (with-current-buffer (get-buffer-create verb--log-buffer-name)
       (unless (derived-mode-p 'verb-log-mode)
-	(verb-log-mode))
+        (verb-log-mode))
       (let ((inhibit-read-only t)
-	    (last "")
-	    (line (line-number-at-pos)))
-	;; Get last logged request number
-	(when (re-search-backward "^\\(-\\|[[:digit:]]+\\)\\s-"
-				  nil t)
-	  (setq last (match-string 1)))
-	(goto-char (point-max))
-	;; Log new message
-	(insert (format "%s  %s  "
-			(if (string= last request)
-			    (make-string (length request) ? )
-			  request)
-			level)
-		(apply #'format args)
-		"\n")
-	;; If logged messaged contained newlines, add a blank line
-	;; to make things more readable
-	(when (> (line-number-at-pos) (1+ line))
-	  (newline))))))
+            (last "")
+            (line (line-number-at-pos)))
+        ;; Get last logged request number
+        (when (re-search-backward "^\\(-\\|[[:digit:]]+\\)\\s-"
+                                  nil t)
+          (setq last (match-string 1)))
+        (goto-char (point-max))
+        ;; Log new message
+        (insert (format "%s  %s  "
+                        (if (string= last request)
+                            (make-string (length request) ? )
+                          request)
+                        level)
+                (apply #'format args)
+                "\n")
+        ;; If logged messaged contained newlines, add a blank line
+        ;; to make things more readable
+        (when (> (line-number-at-pos) (1+ line))
+          (newline))))))
 
 (defun verb--ensure-verb-mode ()
   "Ensure `verb-mode' is enabled in the current buffer."
@@ -658,33 +669,33 @@ Using PATH (\"test\" \"foo\" 1) will yield \"oranges\"."
       (setq
        obj
        (cond
-	(;; Path element is a string (or symbol)
-	 (or (stringp key) (symbolp key))
-	 (when (symbolp key)
-	   (setq key (symbol-name key)))
-	 ;; Obj may be an alist, plist or hash-table
-	 (pcase json-object-type
-	   ('alist
-	    (cdr (assoc-string key obj)))
-	   ('plist
-	    (plist-get obj (intern (concat ":" key))))
-	   ('hash-table
-	    (gethash key obj))
-	   (_
-	    (user-error "%s" "Unknown value for `json-object-type'"))))
-	(;; Path element is an integer
-	 (integerp key)
-	 ;; Obj may be a list or a vector
-	 (pcase json-array-type
-	   ('list
-	    (nth key obj))
-	   ('vector
-	    (aref obj key))
-	   (_
-	    (user-error "%s" "Unknown value for `json-array-type'"))))
-	(;; Invalid key type
-	 t
-	 (user-error "Invalid key: %s" key)))))
+        (;; Path element is a string (or symbol)
+         (or (stringp key) (symbolp key))
+         (when (symbolp key)
+           (setq key (symbol-name key)))
+         ;; Obj may be an alist, plist or hash-table
+         (pcase json-object-type
+           ('alist
+            (cdr (assoc-string key obj)))
+           ('plist
+            (plist-get obj (intern (concat ":" key))))
+           ('hash-table
+            (gethash key obj))
+           (_
+            (user-error "%s" "Unknown value for `json-object-type'"))))
+        (;; Path element is an integer
+         (integerp key)
+         ;; Obj may be a list or a vector
+         (pcase json-array-type
+           ('list
+            (nth key obj))
+           ('vector
+            (aref obj key))
+           (_
+            (user-error "%s" "Unknown value for `json-array-type'"))))
+        (;; Invalid key type
+         t
+         (user-error "Invalid key: %s" key)))))
     obj))
 
 (defun verb--buffer-string-no-properties ()
@@ -721,8 +732,8 @@ Return t if there was a heading to move towards to and nil otherwise."
 Does not use property inheritance.  Matching is case-insensitive."
   (verb--back-to-heading)
   (seq-filter (lambda (e)
-		(string-prefix-p prefix (car e) t))
-	      (org-entry-properties (point))))
+                (string-prefix-p prefix (car e) t))
+              (org-entry-properties (point))))
 
 (defun verb--heading-contents ()
   "Return the current heading's text contents.
@@ -730,17 +741,17 @@ If not on a heading, signal an error."
   (unless (org-at-heading-p)
     (user-error "%s" "Can't get heading text contents: not at a heading"))
   (let ((start (save-excursion
-		 (end-of-line)
-		 (unless (eobp) (forward-char))
-		 (point)))
-	(end (save-excursion
-	       (goto-char (org-entry-end-position))
-	       (when (and (org-at-heading-p)
-			  (not (eobp)))
-		 (backward-char))
-	       (point))))
+                 (end-of-line)
+                 (unless (eobp) (forward-char))
+                 (point)))
+        (end (save-excursion
+               (goto-char (org-entry-end-position))
+               (when (and (org-at-heading-p)
+                          (not (eobp)))
+                 (backward-char))
+               (point))))
     (if (<= start end)
-	(buffer-substring-no-properties start end)
+        (buffer-substring-no-properties start end)
       "")))
 
 (defun verb--request-spec-from-heading ()
@@ -755,14 +766,14 @@ If not on a heading, signal an error."
   (unless (org-at-heading-p)
     (user-error "%s" "Can't read request spec: not at a heading"))
   (when (or (member verb-tag (verb--heading-tags))
-	    (eq verb-tag t))
+            (eq verb-tag t))
     (let ((text (verb--maybe-extract-babel-src-block
-		 (verb--heading-contents)))
-	  (metadata (verb--heading-properties verb--metadata-prefix)))
+                 (verb--heading-contents)))
+          (metadata (verb--heading-properties verb--metadata-prefix)))
       (unless (string-empty-p text)
-	(condition-case nil
-	    (verb-request-spec-from-string text metadata)
-	  (verb-empty-spec nil))))))
+        (condition-case nil
+            (verb-request-spec-from-string text metadata)
+          (verb-empty-spec nil))))))
 
 (defun verb--maybe-extract-babel-src-block (text)
   "Return contents of the first Verb Babel source block in TEXT.
@@ -771,24 +782,24 @@ If no Babel source blocks are found, return TEXT."
     (insert text)
     (goto-char (point-min))
     (let ((case-fold-search t)
-	  start result)
+          start result)
       (when (search-forward "#+begin_src" nil t)
-	(unless (looking-at " +verb")
-	  (user-error "%s" (concat "Found a non-verb Babel source block\n"
-				   "Make sure all source blocks in the "
-				   "hierarchy use \"verb\" as language")))
-	;; Found the start
-	(end-of-line)
-	(forward-char)
-	(setq start (point))
-	(when (search-forward "#+end_src" nil t)
-	  ;; Found the end
-	  (beginning-of-line)
-	  (backward-char)
-	  (setq result
-		(if (<= start (point))
-		    (buffer-substring-no-properties start (point))
-		  ""))))
+        (unless (looking-at " +verb")
+          (user-error "%s" (concat "Found a non-verb Babel source block\n"
+                                   "Make sure all source blocks in the "
+                                   "hierarchy use \"verb\" as language")))
+        ;; Found the start
+        (end-of-line)
+        (forward-char)
+        (setq start (point))
+        (when (search-forward "#+end_src" nil t)
+          ;; Found the end
+          (beginning-of-line)
+          (backward-char)
+          (setq result
+                (if (<= start (point))
+                    (buffer-substring-no-properties start (point))
+                  ""))))
       (or result text))))
 
 (defun verb--request-spec-from-babel-src-block (pos body)
@@ -801,16 +812,16 @@ request spec, not only the section contained by the source block."
   (save-excursion
     (goto-char pos)
     (let* ((metadata (verb--heading-properties verb--metadata-prefix))
-	   (rs (verb-request-spec-from-string body metadata)))
+           (rs (verb-request-spec-from-string body metadata)))
       ;; Go up one level first, if possible. Do this to avoid
       ;; re-reading the request in the current level (contained in the
       ;; source block). If no more levels exist, skip the call to
       ;; `verb--request-spec-from-hierarchy'.
       (when (verb--up-heading)
-	;; Continue reading requests from the headings
-	;; hierarchy. Pre-include the one we read from the source block
-	;; at the end of the list.
-	(setq rs (verb--request-spec-from-hierarchy rs)))
+        ;; Continue reading requests from the headings
+        ;; hierarchy. Pre-include the one we read from the source block
+        ;; at the end of the list.
+        (setq rs (verb--request-spec-from-hierarchy rs)))
       (verb--request-spec-post-process rs))))
 
 (defun verb--request-spec-post-process (rs)
@@ -821,8 +832,8 @@ Return another request spec corresponding to RS."
   ;; Use `verb-base-headers' if necessary
   (when verb-base-headers
     (setq rs (verb-request-spec-override
-	      (verb-request-spec :headers verb-base-headers)
-	      rs)))
+              (verb-request-spec :headers verb-base-headers)
+              rs)))
   ;; Validate and return
   (verb-request-spec-validate rs))
 
@@ -843,30 +854,30 @@ all the request specs in SPECS, in the order they were passed in."
       ;; If there's at least one heading above us, go up through the
       ;; headings tree taking a request specification from each level.
       (while (not done)
-	(let ((spec (verb--request-spec-from-heading)))
-	  (when spec (push spec specs)))
-	(setq done (not (verb--up-heading)))))
+        (let ((spec (verb--request-spec-from-heading)))
+          (when spec (push spec specs)))
+        (setq done (not (verb--up-heading)))))
     (if specs
-	(progn
-	  (setq final-spec (car specs))
-	  (when (< 1 (length specs))
-	    (dolist (spec (cdr specs))
-	      ;; Override spec 1 with spec 2, and the result with spec
-	      ;; 3, then with 4, etc.
-	      (setq final-spec (verb-request-spec-override final-spec
-							   spec))))
-	  ;; Process and return
-	  (verb--request-spec-post-process final-spec))
+        (progn
+          (setq final-spec (car specs))
+          (when (< 1 (length specs))
+            (dolist (spec (cdr specs))
+              ;; Override spec 1 with spec 2, and the result with spec
+              ;; 3, then with 4, etc.
+              (setq final-spec (verb-request-spec-override final-spec
+                                                           spec))))
+          ;; Process and return
+          (verb--request-spec-post-process final-spec))
       (user-error (concat "No request specifications found\n"
-			  "Remember to tag your headlines with :%s:")
-		  verb-tag))))
+                          "Remember to tag your headlines with :%s:")
+                  verb-tag))))
 
 (defun verb--split-window ()
   "Split selected window by its longest side."
   (split-window nil nil (if (< (window-pixel-height)
-			       (window-pixel-width))
-			    'right
-			  'below)))
+                               (window-pixel-width))
+                            'right
+                          'below)))
 
 (defun verb-kill-response-buffer-and-window (&optional keep-window)
   "Delete response window and kill its buffer.
@@ -878,14 +889,14 @@ delete any window displaying it."
   (let ((response-buf (current-buffer)))
     (when verb--response-headers-buffer
       (when-let ((w (get-buffer-window verb--response-headers-buffer)))
-	(ignore-errors
-	  (delete-window w)))
+        (ignore-errors
+          (delete-window w)))
       (when (buffer-live-p verb--response-headers-buffer)
-	(kill-buffer verb--response-headers-buffer)))
+        (kill-buffer verb--response-headers-buffer)))
     (unless keep-window
       (when-let ((w (get-buffer-window response-buf)))
-	(ignore-errors
-	  (delete-window))))
+        (ignore-errors
+          (delete-window))))
     (kill-buffer response-buf)))
 
 (defun verb-re-send-request ()
@@ -899,7 +910,7 @@ If you use this command frequently, consider setting
 having many response buffers open."
   (interactive)
   (verb--request-spec-send (oref verb-http-response request)
-			   'this-window))
+                           'this-window))
 
 (defun verb-kill-buffer-and-window ()
   "Delete selected window and kill its current buffer.
@@ -916,31 +927,28 @@ unless DEFAULT is non-nil, in which case that value is used instead."
   (let ((val (assoc-string var verb--vars)))
     (unless val
       (setq val (cons var
-		      (or default
-			  (read-string (format "(verb-var) Set value for %s: "
-					       var)))))
+                      (or default
+                          (read-string (format "[verb-var] Set value for %s: "
+                                               var)))))
       (push val verb--vars))
     (cdr val)))
 
 (defun verb-set-var (&optional var value)
   "Set new value for variable VAR previously set with `verb-var'.
 When called interactively, prompt the user for a variable that has
-been set once with `verb-var', and then prompt for VALUE."
+been set once with `verb-var', and then prompt for VALUE.  Otherwise,
+use string VAR and value VALUE."
   (interactive)
   (verb--ensure-verb-mode)
-  (unless verb--vars
-    (user-error "%s" (concat "No variables have been initialized yet\n"
-			     "Run a {{(verb-var my-var)}} code tag first")))
   (let* ((v (or var
-	       (completing-read "Variable: " (mapcar (lambda (e)
-						       (symbol-name (car e)))
-						     verb--vars)
-				nil t)))
-	 (val (or value (read-string (format "Set value for %s: " v))))
-	 (elem (assoc-string v verb--vars)))
+               (completing-read "Variable: " (mapcar (lambda (e)
+                                                       (symbol-name (car e)))
+                                                     verb--vars))))
+         (val (or value (read-string (format "Set value for %s: " v))))
+         (elem (assoc-string v verb--vars)))
     (if elem
-	(setcdr elem val)
-      (user-error "Variable does not exist: %s" v))))
+        (setcdr elem val)
+      (push (cons (intern v) val) verb--vars))))
 
 (defun verb-read-file (file &optional coding-system)
   "Return a buffer with the contents of FILE.
@@ -959,8 +967,8 @@ Set the buffer's `verb-kill-this-buffer' variable to t."
   (let ((inhibit-read-only t))
     (dolist (key-value headers)
       (let ((key (car key-value))
-	    (value (cdr key-value)))
-	(insert key ": " value "\n")))
+            (value (cdr key-value)))
+        (insert key ": " value "\n")))
     (unless (zerop (buffer-size))
       (backward-delete-char 1))))
 
@@ -971,46 +979,48 @@ Set the buffer's `verb-kill-this-buffer' variable to t."
     (user-error "%s" "This buffer is not showing an HTTP response"))
 
   (when (and verb--response-headers-buffer
-	     (not (get-buffer-window verb--response-headers-buffer)))
+             (not (get-buffer-window verb--response-headers-buffer)))
     (when (buffer-live-p verb--response-headers-buffer)
       (kill-buffer verb--response-headers-buffer))
     (setq verb--response-headers-buffer nil))
 
   (if verb--response-headers-buffer
       (progn
-	(ignore-errors
-	  (delete-window (get-buffer-window verb--response-headers-buffer)))
-	(kill-buffer verb--response-headers-buffer)
-	(setq verb--response-headers-buffer nil))
+        (ignore-errors
+          (delete-window (get-buffer-window verb--response-headers-buffer)))
+        (kill-buffer verb--response-headers-buffer)
+        (setq verb--response-headers-buffer nil))
     (setq verb--response-headers-buffer
-	  (generate-new-buffer "*HTTP Headers*"))
+          (generate-new-buffer "*HTTP Headers*"))
     (let ((headers (oref verb-http-response headers)))
       (with-selected-window (verb--split-window)
-	(switch-to-buffer verb--response-headers-buffer)
-	(verb-response-headers-mode)
-	(setq header-line-format (format "HTTP Response Headers | count: %s"
-					 (length headers)))
-	(verb--insert-header-contents headers)
-	(fit-window-to-buffer)))))
+        (switch-to-buffer verb--response-headers-buffer)
+        (verb-response-headers-mode)
+        (setq header-line-format (format "HTTP Response Headers | count: %s"
+                                         (length headers)))
+        (verb--insert-header-contents headers)
+        (fit-window-to-buffer)))))
 
 ;;;###autoload
-(defun verb-send-request-on-point-other-window ()
+(defun verb-send-request-on-point-other-window (&optional arg)
   "Send the request specified by the selected heading's text contents.
-Show the results on another window and switch to it (use
-`verb-send-request-on-point')."
-  (interactive)
-  (verb-send-request-on-point 'other-window))
+Show the results on another window and switch to it, using
+`verb-send-request-on-point'.  See that function's documentation for a
+description of prefix argument ARG."
+  (interactive "P")
+  (verb-send-request-on-point 'other-window arg))
 
 ;;;###autoload
-(defun verb-send-request-on-point-other-window-stay ()
+(defun verb-send-request-on-point-other-window-stay (&optional arg)
   "Send the request specified by the selected heading's text contents.
-Show the results on another window, but don't switch to it (use
-`verb-send-request-on-point')."
-  (interactive)
-  (verb-send-request-on-point 'stay-window))
+Show the results on another window but don't switch to it, using
+`verb-send-request-on-point'.  See that function's documentation for a
+description of prefix argument ARG."
+  (interactive "P")
+  (verb-send-request-on-point 'stay-window arg))
 
 ;;;###autoload
-(defun verb-send-request-on-point (where)
+(defun verb-send-request-on-point (where &optional arg)
   "Send the request specified by the selected heading's text contents.
 After the request has been sent, return the response buffer (the buffer
 where the response will be loaded into).
@@ -1025,12 +1035,90 @@ keep the current one selected.  If WHERE is `this-window', show the
 results of the request in the current window.  If WHERE has any other
 value, send the request but do not show the results anywhere.
 
+If prefix argument ARG is non-nil, allow the user to quickly edit the
+request before it is sent.  The changes made will not affect the
+contents of the current buffer and will be discarded after the request
+is sent.
+
 The `verb-post-response-hook' hook is called after a response has been
 received."
-  (interactive (list 'this-window))
+  (interactive (list 'this-window current-prefix-arg))
   (verb--ensure-verb-mode)
-  (verb--request-spec-send (verb--request-spec-from-hierarchy)
-			   where))
+  (let* ((verb--inhibit-code-tags-evaluation arg)
+         (rs (verb--request-spec-from-hierarchy)))
+    (if arg
+        ;; If ARG is non-nil, setup a buffer to edit the request
+        (verb--setup-temp-request-buffer rs
+                                         (current-buffer)
+                                         (selected-window)
+                                         verb--vars
+                                         where)
+      ;; If ARG is nil, just send the request
+      (verb--request-spec-send rs where))))
+
+(defun verb--setup-temp-request-buffer (rs source-buffer source-window
+                                           verb-variables where)
+  "Setup and show a temporary buffer for editing a request spec.
+After the user has finished modifying the buffer, they can press
+\\<org-mode-map>\\[org-ctrl-c-ctrl-c] to send the request.
+Argument RS indicates the request specification to edit.
+SOURCE-BUFFER and SOURCE-WINDOW indicate which buffer and window
+should be current/active when the request is sent.  VERB-VARIABLES
+should contain the Verb user-defined variables set in SOURCE-BUFFER.
+WHERE describes where the response should be shown in (see
+`verb-send-request-on-point' for a complete description)."
+  (select-window (verb--split-window))
+  (switch-to-buffer (get-buffer-create "*Edit HTTP Request*"))
+  ;; "Reset" the buffer in case it wasn't killed correctly
+  (erase-buffer)
+  (unless (derived-mode-p 'org-mode)
+    (org-mode))
+  (verb--ensure-verb-mode)
+
+  ;; Don't require tagging for this temp buffer
+  (set (make-local-variable 'verb-tag) t)
+
+  ;; Copy over verb variables
+  (setq verb--vars verb-variables)
+
+  ;; Insert the request spec
+  (insert "* Press 'C-c C-c' to send the request.\n")
+
+  (when-let (metadata (oref rs metadata))
+    (insert ":properties:\n")
+    (dolist (element metadata)
+      (insert (format ":%s: %s\n" (car element) (cdr element))))
+    (insert ":end:\n"))
+
+  (insert "# You can also press 'C-c C-k' to cancel.\n"
+          "# Note that any changes made here won't be saved.\n"
+          (verb-request-spec-to-string rs))
+
+  ;; Use a copy of Org mode's keymap as the local keymap, so
+  ;; that we can rebind C-c C-c freely
+  (use-local-map (copy-keymap org-mode-map))
+
+  ;; Rebind C-c C-c to send the request
+  (local-set-key (kbd "C-c C-c")
+                 (lambda ()
+                   "Send the request specified in the current buffer."
+                   (interactive)
+                   (verb--send-temp-request-on-point source-buffer
+                                                     source-window
+                                                     where)))
+  (local-set-key (kbd "C-c C-k") #'verb-kill-buffer-and-window))
+
+(defun verb--send-temp-request-on-point (source-buffer source-window where)
+  "Send the request specified in the current temporary buffer.
+SOURCE-BUFFER and SOURCE-WINDOW specify what buffer and window must be
+selected/active when the request is actually sent.  WHERE specifies
+where the result shoud be shown in."
+  (unwind-protect
+      (let ((new-rs (verb--request-spec-from-hierarchy)))
+        (with-selected-window source-window
+          (with-current-buffer source-buffer
+            (verb--request-spec-send new-rs where))))
+    (verb-kill-buffer-and-window)))
 
 ;;;###autoload
 (defun verb-kill-all-response-buffers (&optional keep-windows)
@@ -1041,7 +1129,7 @@ If KEEP-WINDOWS is non-nil, do not delete their respective windows."
   (dolist (buf (buffer-list))
     (with-current-buffer buf
       (when verb-http-response
-	(verb-kill-response-buffer-and-window keep-windows)))))
+        (verb-kill-response-buffer-and-window keep-windows)))))
 
 ;;;###autoload
 (defun verb-export-request-on-point (&optional name)
@@ -1057,10 +1145,10 @@ explicitly.  Lisp code tags will be evaluated before exporting."
   (interactive)
   (verb--ensure-verb-mode)
   (let ((rs (verb--request-spec-from-hierarchy))
-	(exporter (or name
-		      (completing-read "Export function: "
-				       verb-export-functions
-				       nil t))))
+        (exporter (or name
+                      (completing-read "Export function: "
+                                       verb-export-functions
+                                       nil t))))
     (when-let ((fn (cdr (assoc exporter verb-export-functions))))
       (funcall fn rs)
       (verb--log nil 'I "Exported request to %s format." exporter))))
@@ -1092,21 +1180,21 @@ Return a new buffer with the export results inserted into it."
   (with-current-buffer (generate-new-buffer "*HTTP Request Spec*")
     (text-mode)
     (insert (propertize "HTTP Method: " 'font-lock-face 'bold)
-	    (oref rs method) "\n"
-	    (propertize "URL: " 'font-lock-face 'bold)
-	    (url-recreate-url (oref rs url)) "\n"
-	    (propertize "Headers:\n" 'font-lock-face 'bold))
+            (oref rs method) "\n"
+            (propertize "URL: " 'font-lock-face 'bold)
+            (url-recreate-url (oref rs url)) "\n"
+            (propertize "Headers:\n" 'font-lock-face 'bold))
     (let ((headers (oref rs headers)))
       (if headers
-	  (dolist (key-value headers)
-	    (insert "    " (car key-value) ": " (cdr key-value) "\n"))
-	(insert "    No headers defined.\n")))
+          (dolist (key-value headers)
+            (insert "    " (car key-value) ": " (cdr key-value) "\n"))
+        (insert "    No headers defined.\n")))
     (insert "\n")
     (let ((body (oref rs body)))
       (if body
-	  (insert (propertize "Body:" 'font-lock-face 'bold) "\n"
-		  body "\n")
-	(insert "No body defined.")))
+          (insert (propertize "Body:" 'font-lock-face 'bold) "\n"
+                  body "\n")
+        (insert "No body defined.")))
     (switch-to-buffer-other-window (current-buffer))
     (current-buffer)))
 
@@ -1136,10 +1224,10 @@ non-nil, do not add the command to the kill ring."
       ;; GET: no argument needed
       ((or "PATCH" "PUT" "POST")
        (insert "-X "
-	       (oref rs method)
-	       " \\\n--data-raw '"
-	       (or (oref rs body) "")
-	       "'"))
+               (oref rs method)
+               " \\\n--data-raw '"
+               (or (oref rs body) "")
+               "'"))
       ("DELETE"
        (insert "-X DELETE"))
       ("OPTIONS"
@@ -1152,33 +1240,33 @@ non-nil, do not add the command to the kill ring."
        (user-error "%s" "CONNECT method not supported in curl format")))
     (let ((result (verb--buffer-string-no-properties)))
       (unless no-kill
-	(kill-new result))
+        (kill-new result))
       (unless no-message
-	(message "Curl command copied to the kill ring"))
+        (message "Curl command copied to the kill ring"))
       ;; Return the generated command
       result)))
 
 (cl-defmethod verb--response-header-line-string ((response verb-response))
   "Return a short description of an HTTP RESPONSE's properties."
   (let ((status-line (oref response status))
-	(elapsed (oref response duration))
-	(headers (oref response headers))
-	(bytes (oref response body-bytes)))
+        (elapsed (oref response duration))
+        (headers (oref response headers))
+        (bytes (oref response body-bytes)))
     (concat
      (or status-line "No Response")
      " | "
      (format "%.4gs" elapsed)
      (let ((content-type (or (car (verb--headers-content-type headers))
-			     "-")))
+                             "-")))
        (format " | %s" content-type))
      (let* ((content-length (cdr (assoc-string "Content-Length"
-					       headers t)))
-	    (value (if content-length
-		       (string-to-number content-length)
-		     bytes)))
+                                               headers t)))
+            (value (if content-length
+                       (string-to-number content-length)
+                     bytes)))
        (format " | %s byte%s"
-	       (file-size-human-readable value)
-	       (if (= value 1) "" "s"))))))
+               (file-size-human-readable value)
+               (if (= value 1) "" "s"))))))
 
 (cl-defmethod verb-request-spec-url-to-string ((rs verb-request-spec))
   "Return RS's url member as a string if it is non-nil."
@@ -1190,15 +1278,15 @@ non-nil, do not add the command to the kill ring."
   "Handler for \"application/json\" content type."
   (js-mode)
   (when (< (oref verb-http-response body-bytes)
-	   (or verb-json-max-pretty-print-size 0))
+           (or verb-json-max-pretty-print-size 0))
     (unwind-protect
-	(unless (zerop (buffer-size))
-	  (let ((json-pretty-print-max-secs 0))
-	    (buffer-disable-undo)
-	    (json-pretty-print-buffer)
-	    ;; "Use" `json-pretty-print-max-secs' here to avoid byte-compiler warning in
-	    ;; Emacs 26
-	    json-pretty-print-max-secs))
+        (unless (zerop (buffer-size))
+          (let ((json-pretty-print-max-secs 0))
+            (buffer-disable-undo)
+            (json-pretty-print-buffer)
+            ;; "Use" `json-pretty-print-max-secs' here to avoid
+            ;; byte-compiler warning in Emacs 26
+            json-pretty-print-max-secs))
       (buffer-enable-undo))
     (goto-char (point-min))))
 
@@ -1208,12 +1296,12 @@ The value returned has the form (TYPE . CHARSET).  If the charset is
 not present, return (TYPE . nil).  If the header itself is not
 present, return (nil . nil)."
   (let* ((value (cdr (assoc-string "Content-Type" headers t)))
-	 (type-subtype (and value (string-trim (car (split-string
-						     value ";"))))))
+         (type-subtype (and value (string-trim (car (split-string
+                                                     value ";"))))))
     (if (and value type-subtype)
-	(cons type-subtype
-	      (when (string-match "charset=\\([[:alnum:]-]+\\)" value)
-		(match-string 1 value)))
+        (cons type-subtype
+              (when (string-match "charset=\\([[:alnum:]-]+\\)" value)
+                (match-string 1 value)))
       (cons nil nil))))
 
 (defun verb--get-handler (content-type)
@@ -1222,23 +1310,23 @@ CONTENT-TYPE must be the value returned by `verb--headers-content-type'."
   (when (car content-type)
     (catch 'end
       (dolist (key-value verb-content-type-handlers)
-	(let ((case-fold-search t)
-	      (regexp (car key-value))
-	      (handler (cdr key-value)))
-	  (when (string-match-p regexp (car content-type))
-	    (throw 'end handler)))))))
+        (let ((case-fold-search t)
+              (regexp (car key-value))
+              (handler (cdr key-value)))
+          (when (string-match-p regexp (car content-type))
+            (throw 'end handler)))))))
 
 (defun verb--maybe-store-response (response)
   "Store RESPONSE depending on its request metadata.
 Check `verb--stored-responses' for more details."
   (when-let ((req (oref response request))
-	     (metadata (oref req metadata))
-	     (val (verb--nonempty-string (cdr (assoc-string
-					       "verb-store"
-					       metadata t)))))
+             (metadata (oref req metadata))
+             (val (verb--nonempty-string (cdr (assoc-string
+                                               "verb-store"
+                                               metadata t)))))
     (setq verb--stored-responses (cl-delete val verb--stored-responses
-					    :key #'car
-					    :test #'equal))
+                                            :key #'car
+                                            :test #'equal))
     (push (cons val response) verb--stored-responses)))
 
 (defun verb-stored-response (key)
@@ -1255,11 +1343,12 @@ get https://gnu.org/test"
   (if-let ((resp (assoc-string key verb--stored-responses)))
       (cdr resp)
     (user-error (concat "No response stored under key \"%s\"\n"
-			"Make sure you've set the \"Verb-Store\" heading property"
-			" and sent the request at least once")
-		key)))
+                        "Make sure you've set the \"Verb-Store\""
+                        " heading property and sent the request at least once")
+                key)))
 
-(defun verb--request-spec-callback (status rs response-buf start timeout-timer where num)
+(defun verb--request-spec-callback (status rs response-buf start timeout-timer
+                                           where num)
   "Callback for `verb--request-spec-send' for request RS.
 More response information can be read from STATUS.
 RESPONSE-BUF points to a buffer where the response should be copied
@@ -1282,44 +1371,44 @@ view the HTTP response in a user-friendly way."
 
   ;; Handle errors first
   (when-let ((http-error (plist-get status :error))
-	     (error-info (cdr http-error))
-	     (url (oref rs url)))
+             (error-info (cdr http-error))
+             (url (oref rs url)))
     ;; If there's an HTTP error code (404, 405, etc.) in the error
     ;; information, continue as normal
     (unless (numberp (and (eq (car error-info) 'http)
-			  (cadr error-info)))
+                          (cadr error-info)))
       (kill-buffer (current-buffer))
       (kill-buffer response-buf)
       (let ((msg (format "Request error: could not connect to %s:%s"
-			 (url-host url) (url-port url))))
-	(verb--log num 'E msg)
-	(verb--log num 'E "Error details: %s" http-error)
-	(user-error "%s" msg))))
+                         (url-host url) (url-port url))))
+        (verb--log num 'E msg)
+        (verb--log num 'E "Error details: %s" http-error)
+        (user-error "%s" msg))))
 
   ;; No errors, continue to read response
   (let ((elapsed (- (time-to-seconds) start))
-	(original-buffer (current-buffer))
-	status-line headers content-type charset coding-system body-bytes
-	binary-handler text-handler)
+        (original-buffer (current-buffer))
+        status-line headers content-type charset coding-system body-bytes
+        binary-handler text-handler)
 
     (widen)
     (goto-char (point-min))
     ;; Skip HTTP/1.X status line
     (setq status-line (verb--nonempty-string
-		       (buffer-substring-no-properties (point)
-						       (line-end-position))))
+                       (buffer-substring-no-properties (point)
+                                                       (line-end-position))))
 
     (verb--log num 'I "%s" status-line)
 
     (forward-line)
     ;; Skip all HTTP headers
     (while (re-search-forward "^\\s-*\\([[:alnum:]-]+\\)\\s-*:\\s-*\\(.*\\)$"
-			      (line-end-position) t)
+                              (line-end-position) t)
       (let ((key (match-string 1))
-	    (value (match-string 2)))
-	;; Save header to alist
-	(push (cons key value) headers)
-	(unless (eobp) (forward-char))))
+            (value (match-string 2)))
+        ;; Save header to alist
+        (push (cons key value) headers)
+        (unless (eobp) (forward-char))))
 
     ;; Read Content-Type and charset
     (setq content-type (verb--headers-content-type headers))
@@ -1328,19 +1417,19 @@ view the HTTP response in a user-friendly way."
     ;; Try to get a buffer handler function for this content type
     (let ((handler (verb--get-handler content-type)))
       (unless handler
-	;; Default handler is fundamental mode (text)
-	(setq handler #'fundamental-mode))
+        ;; Default handler is fundamental mode (text)
+        (setq handler #'fundamental-mode))
 
       (if (= (length handler) 1)
-	  ;; Text handler
-	  (setq text-handler (nth 0 handler))
-	;; Binary handler (maybe)
-	(unless (and (consp handler)
-		     (functionp (nth 0 handler))
-		     (eq (nth 1 handler) t)
-		     (= (length handler) 2))
-	  (user-error "Invalid content handler: %s" handler))
-	(setq binary-handler (nth 0 handler))))
+          ;; Text handler
+          (setq text-handler (nth 0 handler))
+        ;; Binary handler (maybe)
+        (unless (and (consp handler)
+                     (functionp (nth 0 handler))
+                     (eq (nth 1 handler) t)
+                     (= (length handler) 2))
+          (user-error "Invalid content handler: %s" handler))
+        (setq binary-handler (nth 0 handler))))
 
     ;; Remove headers and blank line from buffer
     ;; All left should be the content
@@ -1359,11 +1448,11 @@ view the HTTP response in a user-friendly way."
     ;; `verb-http-response' is a permanent buffer local variable
     (with-current-buffer response-buf
       (setq verb-http-response
-	    (verb-response :headers (nreverse headers)
-			   :request rs
-			   :status status-line
-			   :duration elapsed
-			   :body-bytes body-bytes))
+            (verb-response :headers (nreverse headers)
+                           :request rs
+                           :status status-line
+                           :duration elapsed
+                           :body-bytes body-bytes))
 
       ;; Update global last response variable
       (setq verb-last verb-http-response)
@@ -1373,31 +1462,31 @@ view the HTTP response in a user-friendly way."
       (verb--maybe-store-response verb-http-response))
 
     (if binary-handler
-	;; Response content is a binary format:
+        ;; Response content is a binary format:
 
-	(progn
-	  (verb--log num 'I "Using binary handler: %s" binary-handler)
-	  (with-current-buffer response-buf
-	    (fundamental-mode)
-	    (set-buffer-multibyte nil)
-	    (set-buffer-file-coding-system 'binary)
+        (progn
+          (verb--log num 'I "Using binary handler: %s" binary-handler)
+          (with-current-buffer response-buf
+            (fundamental-mode)
+            (set-buffer-multibyte nil)
+            (set-buffer-file-coding-system 'binary)
 
-	    (buffer-disable-undo)
-	    ;; Copy bytes into RESPONSE-BUF
-	    (insert-buffer-substring original-buffer)
-	    (goto-char (point-min))
-	    (funcall binary-handler)))
+            (buffer-disable-undo)
+            ;; Copy bytes into RESPONSE-BUF
+            (insert-buffer-substring original-buffer)
+            (goto-char (point-min))
+            (funcall binary-handler)))
 
       ;; Response content is text:
 
       ;; Choose corresponding coding system for charset
       (setq coding-system (or (mm-charset-to-coding-system charset)
-			      'utf-8))
+                              'utf-8))
 
       ;; Decode contents into RESPONSE-BUF
       (decode-coding-region (point-min) (point-max)
-			    coding-system
-			    response-buf))
+                            coding-system
+                            response-buf))
 
     ;; Kill original response buffer
     (kill-buffer original-buffer)
@@ -1406,24 +1495,24 @@ view the HTTP response in a user-friendly way."
       ;; Now that the response content has been processed, update
       ;; `verb-http-response's body slot
       (oset verb-http-response
-	    body
-	    (unless (zerop (oref verb-http-response body-bytes))
-	      (verb--buffer-string-no-properties)))
+            body
+            (unless (zerop (oref verb-http-response body-bytes))
+              (verb--buffer-string-no-properties)))
 
       (when text-handler
-	(verb--log num 'I "Using text handler: %s" text-handler)
+        (verb--log num 'I "Using text handler: %s" text-handler)
 
-	(set-buffer-file-coding-system coding-system)
+        (set-buffer-file-coding-system coding-system)
 
-	;; Prepare buffer for editing by user
-	(goto-char (point-min))
-	(funcall text-handler))
+        ;; Prepare buffer for editing by user
+        (goto-char (point-min))
+        (funcall text-handler))
 
       (pcase where
-	('other-window (switch-to-buffer-other-window (current-buffer)))
-	('stay-window (save-selected-window
-			(switch-to-buffer-other-window (current-buffer))))
-	('this-window (switch-to-buffer (current-buffer)))))
+        ('other-window (switch-to-buffer-other-window (current-buffer)))
+        ('stay-window (save-selected-window
+                        (switch-to-buffer-other-window (current-buffer))))
+        ('this-window (switch-to-buffer (current-buffer)))))
 
     (with-current-buffer response-buf
       (verb-response-body-mode)
@@ -1442,17 +1531,17 @@ Accept:
 Uses `verb--to-ascii' to ensure all added text is unibyte.
 Returns a new alist, does not modify HEADERS."
   (let* ((headers (copy-alist headers))
-	 (accept (assoc-string "Accept" headers t)))
+         (accept (assoc-string "Accept" headers t)))
     ;; ;; Accept
     (when accept
       (setq headers (cl-delete "Accept" headers
-    			       :key #'car
-			       :test #'verb--string=)))
+                               :key #'car
+                               :test #'verb--string=)))
     ;; Encode all text to `us-ascii'
     (mapcar (lambda (e)
-	      (cons (verb--to-ascii (car e))
-		    (verb--to-ascii (cdr e))))
-	    headers)))
+              (cons (verb--to-ascii (car e))
+                    (verb--to-ascii (cdr e))))
+            headers)))
 
 
 (defun verb--encode-http-body (body charset)
@@ -1460,14 +1549,14 @@ Returns a new alist, does not modify HEADERS."
 If CHARSET is nil, use `verb-default-request-charset'."
   (when body
     (if-let ((inhibit-message t)
-	     (coding-system (mm-charset-to-coding-system
-			     (or charset verb-default-request-charset))))
-	(encode-coding-string body coding-system)
+             (coding-system (mm-charset-to-coding-system
+                             (or charset verb-default-request-charset))))
+        (encode-coding-string body coding-system)
       (user-error (concat "No coding system found for charset \"%s\"\n"
-			  "Make sure you set the \"Content-Type\" header"
-			  " correctly (e.g. \"application/json;"
-			  " charset=utf-8\")")
-		  charset))))
+                          "Make sure you set the \"Content-Type\" header"
+                          " correctly (e.g. \"application/json;"
+                          " charset=utf-8\")")
+                  charset))))
 
 (defun verb--to-ascii (s)
   "Encode string S to `us-ascii'."
@@ -1488,40 +1577,45 @@ If CHARSET is nil, use `verb-default-request-charset'."
 For more information, see `verb-advice-url'."
   (when verb-advice-url
     (advice-add 'url-http-user-agent-string :override
-		#'verb--http-user-agent-string)
+                #'verb--http-user-agent-string)
     (advice-add 'url-http-handle-authentication :override
-		#'verb--http-handle-authentication)))
+                #'verb--http-handle-authentication)))
 
 (defun verb--unadvice-url ()
   "Undo advice from `verb--advice-url'."
   (when verb-advice-url
     (advice-remove 'url-http-user-agent-string
-		   #'verb--http-user-agent-string)
+                   #'verb--http-user-agent-string)
     (advice-remove 'url-http-handle-authentication
-		   #'verb--http-handle-authentication)))
+                   #'verb--http-handle-authentication)))
 
 (cl-defmethod verb-request-spec-validate ((rs verb-request-spec))
   "Run validations on request spec RS and return it.
 If a validation does not pass, signal with `user-error'."
   (unless (oref rs method)
     (user-error "%s" (concat "No HTTP method specified\n"
-			     "Make sure you specify a concrete HTTP "
-			     "method (not " verb--template-keyword
-			     ") in the heading hierarchy")))
+                             "Make sure you specify a concrete HTTP "
+                             "method (not " verb--template-keyword
+                             ") in the heading hierarchy")))
   (let ((url (oref rs url)))
     (unless url
       (user-error "%s" (concat "No URL specified\nMake sure you specify "
-			       "a nonempty URL in the heading hierarchy")))
+                               "a nonempty URL in the heading hierarchy")))
     (unless (url-host url)
       (user-error "%s" (concat "URL has no schema or host defined\n"
-			       "Make sure you specify a schema and host "
-			       "(e.g. \"https://github.com\") in the "
-			       "heading hierarchy"))))
+                               "Make sure you specify a schema and host "
+                               "(e.g. \"https://github.com\") in the "
+                               "heading hierarchy"))))
   rs)
 
-(defun verb--generate-response-buffer ()
-  "Return a new buffer ready to be used as response buffer."
-  (with-current-buffer (generate-new-buffer "*HTTP Response*")
+(defun verb--generate-response-buffer (num)
+  "Return a new buffer ready to be used as response buffer.
+NUM is the request's identification number."
+  (with-current-buffer (generate-new-buffer
+                        (format "*HTTP Response%s*"
+                                (if verb-auto-kill-response-buffers
+                                    ""
+                                  (format " %s" num))))
     ;; Set `verb-http-response's value to something other than nil
     ;; so that `verb-kill-all-response-buffers' can find it even if
     ;; no response was ever received.
@@ -1530,33 +1624,33 @@ If a validation does not pass, signal with `user-error'."
 
 (cl-defmethod verb--request-spec-send ((rs verb-request-spec) where)
   "Send the HTTP request described by RS.
-Show the results according to parameter WHERE (see
-`verb-send-request-on-point').  Return the buffer the response will
-be loaded into."
+Show the results according to argument WHERE (see
+`verb-send-request-on-point').  Return the buffer the response will be
+loaded into."
   ;; If auto kill buffers is enabled, kill all previous response
   ;; buffers now
   (when verb-auto-kill-response-buffers
     (verb-kill-all-response-buffers t))
 
   (let* ((url (oref rs url))
-	 (accept-header (cdr (assoc-string "Accept"
-					   (oref rs headers) t)))
-	 (url-request-method (verb--to-ascii (oref rs method)))
-	 (url-request-extra-headers (verb--prepare-http-headers
-				     (oref rs headers)))
-	 (content-type (verb--headers-content-type
-			url-request-extra-headers))
-	 (url-request-data (verb--encode-http-body (oref rs body)
-						   (cdr content-type)))
-	 (url-mime-accept-string (or accept-header "*/*"))
-	 (response-buf (verb--generate-response-buffer))
-	 (num (setq verb--requests-count (1+ verb--requests-count)))
-	 timeout-timer)
+         (accept-header (cdr (assoc-string "Accept"
+                                           (oref rs headers) t)))
+         (url-request-method (verb--to-ascii (oref rs method)))
+         (url-request-extra-headers (verb--prepare-http-headers
+                                     (oref rs headers)))
+         (content-type (verb--headers-content-type
+                        url-request-extra-headers))
+         (url-request-data (verb--encode-http-body (oref rs body)
+                                                   (cdr content-type)))
+         (url-mime-accept-string (or accept-header "*/*"))
+         (num (setq verb--requests-count (1+ verb--requests-count)))
+         (response-buf (verb--generate-response-buffer num))
+         timeout-timer)
     ;; Start the timeout warning timer
     (when verb-show-timeout-warning
       (setq timeout-timer (run-with-timer verb-show-timeout-warning nil
-					  #'verb--timeout-warn
-					  response-buf rs num)))
+                                          #'verb--timeout-warn
+                                          response-buf rs num)))
 
     ;; Advice url.el functions
     (verb--advice-url)
@@ -1564,55 +1658,55 @@ be loaded into."
     ;; Look for headers that might get duplicated by url.el
     (dolist (h verb--url-pre-defined-headers)
       (when (assoc-string h url-request-extra-headers t)
-	(verb--log num 'W (concat "Header \"%s\" will appear duplicated "
-				  "in the request, as url.el adds its "
-				  "own version of it")
-		   h)))
+        (verb--log num 'W (concat "Header \"%s\" will appear duplicated "
+                                  "in the request, as url.el adds its "
+                                  "own version of it")
+                   h)))
 
     ;; Maybe log a warning if body is present but method usually
     ;; doesn't take one
     (when (and (member url-request-method verb--bodyless-http-methods)
-	       url-request-data)
+               url-request-data)
       (verb--log num 'W "Body is present but request method is %s"
-		 url-request-method))
+                 url-request-method))
 
     ;; Send the request!
     (condition-case err
-	(funcall verb-url-retrieve-function
-		 url
-		 #'verb--request-spec-callback
-		 (list rs
-		       response-buf
-		       (time-to-seconds)
-		       timeout-timer
-		       where
-		       num)
-		 t verb-inhibit-cookies)
+        (funcall verb-url-retrieve-function
+                 url
+                 #'verb--request-spec-callback
+                 (list rs
+                       response-buf
+                       (time-to-seconds)
+                       timeout-timer
+                       where
+                       num)
+                 t verb-inhibit-cookies)
       (error (progn
-	       ;; Cancel timer
-	       (when timeout-timer
-		 (cancel-timer timeout-timer)
-		 (setq timeout-timer nil))
-	       ;; Kill response buffer
-	       (kill-buffer response-buf)
-	       ;; Undo advice
-	       (verb--unadvice-url)
+               ;; Cancel timer
+               (when timeout-timer
+                 (cancel-timer timeout-timer)
+                 (setq timeout-timer nil))
+               ;; Kill response buffer
+               (kill-buffer response-buf)
+               ;; Undo advice
+               (verb--unadvice-url)
 
-	       (let ((msg (format "Error sending request: %s" (cadr err))))
-		 ;; Log the error
-		 (verb--log num 'E msg)
-		 ;; Signal it
-		 (user-error "%s" msg)))))
+               (let ((msg (format "Error sending request: %s" (cadr err))))
+                 ;; Log the error
+                 (verb--log num 'E msg)
+                 ;; Signal it
+                 (user-error "%s" msg)))))
 
     ;; Show user some quick information
     (message "%s request sent to %s"
-	     (oref rs method)
-	     (verb-request-spec-url-to-string rs))
+             (oref rs method)
+             (verb-request-spec-url-to-string rs))
 
     ;; Log the request
     (verb--log num 'I "%s %s"
-	       (oref rs method)
-	       (verb-request-spec-url-to-string rs))
+               (oref rs method)
+               (verb-request-spec-url-to-string rs))
 
     ;; Return the response buffer
     response-buf))
@@ -1623,7 +1717,7 @@ This string should be able to be used with
 `verb-request-spec-from-string', yielding the same request spec again."
   (with-temp-buffer
     (insert (oref rs method) " "
-	    (url-recreate-url (oref rs url)) "\n")
+            (url-recreate-url (oref rs url)) "\n")
     (dolist (key-value (oref rs headers))
       (insert (car key-value) ": " (cdr key-value) "\n"))
     (when-let ((body (oref rs body)))
@@ -1651,7 +1745,7 @@ buffer BUFFER is live.  NUM is the request's identification number."
   (verb--log num 'W "%s" "Request is taking longer than expected.")
   (when (buffer-live-p buffer)
     (message "Request to %s is taking longer than expected"
-	     (verb-request-spec-url-to-string rs))))
+             (verb-request-spec-url-to-string rs))))
 
 (defun verb--string= (s1 s2)
   "Return non-nil if strings S1 and S2 are equal, ignoring case."
@@ -1663,26 +1757,26 @@ That is; overwrite (KEY . VALUE) pairs present in ORIGINAL with ones
 present in OTHER if KEYs are equal.  Return the results in a new
 alist.  If CASE-FOLD is non-nil, ignore case when comparing KEYs."
   (let ((result (nreverse (copy-alist original)))
-	(processed))
+        (processed))
     (dolist (key-value other)
       (let ((key (car key-value)))
-	(when (and (assoc-string key result case-fold)
-		   (not (funcall (if case-fold
-				     #'member-ignore-case
-				   #'member)
-				 key processed)))
-	  ;; key in OTHER is in ORIGINAL, delete all entries using
-	  ;; this key in ORIGINAL (may be more than one)
-	  (setq result (cl-delete key result
-				  :key #'car
-				  :test (if case-fold
-					    #'verb--string=
-					  #'string=))))
-	(push key-value result)
-	;; Remember we deleted this key from ORIGINAL so that we don't
-	;; do it again accidentally (this can happen if OTHER contains
-	;; multiple values mapped to the same key)
-	(push key processed)))
+        (when (and (assoc-string key result case-fold)
+                   (not (funcall (if case-fold
+                                     #'member-ignore-case
+                                   #'member)
+                                 key processed)))
+          ;; key in OTHER is in ORIGINAL, delete all entries using
+          ;; this key in ORIGINAL (may be more than one)
+          (setq result (cl-delete key result
+                                  :key #'car
+                                  :test (if case-fold
+                                            #'verb--string=
+                                          #'string=))))
+        (push key-value result)
+        ;; Remember we deleted this key from ORIGINAL so that we don't
+        ;; do it again accidentally (this can happen if OTHER contains
+        ;; multiple values mapped to the same key)
+        (push key processed)))
     (nreverse result)))
 
 (defalias 'verb--override-url-queries #'verb--override-alist
@@ -1706,63 +1800,63 @@ as:
   ((\"foo\" . \"bar\") (\"quux\" . nil))"
   (when query
     (let ((parts (split-string query "&"))
-	  result)
+          result)
       (dolist (p parts)
-	(let* ((key-value (split-string p "="))
-	       (key (car key-value))
-	       (value (cdr key-value)))
-	  (unless (string-empty-p key)
-	    (push (cons key
-			(when value
-			  (mapconcat #'identity value "=")))
-		  result))))
+        (let* ((key-value (split-string p "="))
+               (key (car key-value))
+               (value (cdr key-value)))
+          (unless (string-empty-p key)
+            (push (cons key
+                        (when value
+                          (mapconcat #'identity value "=")))
+                  result))))
       (nreverse result))))
 
 (defun verb--url-query-alist-to-string (query)
   "Return alist query string QUERY as a string."
   (when query
     (mapconcat (lambda (kv)
-		 (if (cdr kv)
-		     (concat (car kv) "=" (cdr kv))
-		   (car kv)))
-	       query
-	       "&")))
+                 (if (cdr kv)
+                     (concat (car kv) "=" (cdr kv))
+                   (car kv)))
+               query
+               "&")))
 
 (defun verb--override-url-paths (original other)
   "Override URL path (and query string) ORIGINAL with OTHER.
 ORIGINAL and OTHER have the form (PATH . QUERY).  Work using the rules
 described in `verb-request-spec-override'."
   (let* ((original-path (car original))
-	 (original-query (cdr original))
-	 (other-path (car other))
-	 (other-query (cdr other))
-	 (paths (concat original-path other-path))
-	 (queries (verb--url-query-alist-to-string
-		   (verb--override-url-queries
-		    (verb--url-query-string-to-alist original-query)
-		    (verb--url-query-string-to-alist other-query)))))
+         (original-query (cdr original))
+         (other-path (car other))
+         (other-query (cdr other))
+         (paths (concat original-path other-path))
+         (queries (verb--url-query-alist-to-string
+                   (verb--override-url-queries
+                    (verb--url-query-string-to-alist original-query)
+                    (verb--url-query-string-to-alist other-query)))))
     ;; If after joining two both paths the result path starts with //,
     ;; remove one of the slashes (this may happen often because we
     ;; sometimes add slashes in `verb--clean-url'.)
     (concat (if (string-prefix-p "//" paths)
-		(substring paths 1 nil)
-	      paths)
-	    (unless (string-empty-p (or queries ""))
-	      ;; If query string is present and path is empty,
-	      ;; set / as the path (see `verb--clean-url')
-	      (concat (when (string-empty-p paths) "/")
-		      "?"
-		      queries)))))
+                (substring paths 1 nil)
+              paths)
+            (unless (string-empty-p (or queries ""))
+              ;; If query string is present and path is empty,
+              ;; set / as the path (see `verb--clean-url')
+              (concat (when (string-empty-p paths) "/")
+                      "?"
+                      queries)))))
 
 (defun verb--url-port (url)
   "Return port used by an HTTP URL.
 Return nil if the port can be inferred from the URL's schema."
   (let ((port (url-port url))
-	(schema (url-type url)))
+        (schema (url-type url)))
     (if (and (numberp port)
-	     (or (and (= port 80) (string= schema "http"))
-		 (and (= port 443) (string= schema "https"))))
-	nil
+             (or (and (= port 80) (string= schema "http"))
+                 (and (= port 443) (string= schema "https"))))
+        nil
       port)))
 
 (defun verb--override-url (original other)
@@ -1773,18 +1867,18 @@ Do this using the rules described in `verb-request-spec-override'."
       (or original other)
     ;; Override ORIGINAL with OTHER
     (let ((schema (or (url-type other) (url-type original)))
-	  (user (or (url-user other) (url-user original)))
-	  (password (or (url-password other) (url-password original)))
-	  (host (or (url-host other) (url-host original)))
-	  (port (or (verb--url-port other) (verb--url-port original)))
-	  (path (verb--override-url-paths (url-path-and-query original)
-					  (url-path-and-query other)))
-	  (fragment (or (url-target other) (url-target original)))
-	  (attributes (or (url-attributes other) (url-attributes original)))
-	  (fullness (or (url-fullness other) (url-fullness original))))
+          (user (or (url-user other) (url-user original)))
+          (password (or (url-password other) (url-password original)))
+          (host (or (url-host other) (url-host original)))
+          (port (or (verb--url-port other) (verb--url-port original)))
+          (path (verb--override-url-paths (url-path-and-query original)
+                                          (url-path-and-query other)))
+          (fragment (or (url-target other) (url-target original)))
+          (attributes (or (url-attributes other) (url-attributes original)))
+          (fullness (or (url-fullness other) (url-fullness original))))
       (url-parse-make-urlobj schema user password host
-			     port path fragment
-			     attributes fullness))))
+                             port path fragment
+                             attributes fullness))))
 
 (cl-defmethod verb-request-spec-override ((original verb-request-spec) other)
   "Override request spec ORIGINAL with OTHER, return the result.
@@ -1824,22 +1918,22 @@ Neither request specification is modified, a new one is returned."
   (unless (object-of-class-p other 'verb-request-spec)
     (user-error "%s" "Argument OTHER must be a `verb-request-spec'"))
   (verb-request-spec :method (or (oref other method)
-				 (oref original method))
-		     :url (verb--override-url (oref original url)
-					      (oref other url))
-		     :headers (verb--override-headers (oref original headers)
-						      (oref other headers))
-		     :body (or (oref other body) (oref original body))
-		     :metadata (oref other metadata)))
+                                 (oref original method))
+                     :url (verb--override-url (oref original url)
+                                              (oref other url))
+                     :headers (verb--override-headers (oref original headers)
+                                                      (oref other headers))
+                     :body (or (oref other body) (oref original body))
+                     :metadata (oref other metadata)))
 
 (defun verb--http-methods-regexp ()
   "Return a regexp to match an HTTP method.
 HTTP methods are defined in `verb--http-methods'.
 Additionally, allow matching `verb--template-keyword'."
   (let ((terms (append verb--http-methods
-		       (mapcar #'downcase verb--http-methods)
-		       (list verb--template-keyword
-			     (downcase verb--template-keyword)))))
+                       (mapcar #'downcase verb--http-methods)
+                       (list verb--template-keyword
+                             (downcase verb--template-keyword)))))
     (mapconcat #'identity terms "\\|")))
 
 (defun verb--eval-string (s &optional context)
@@ -1851,31 +1945,32 @@ special case, if S is the empty string, return the empty string."
       ""
     (save-mark-and-excursion
       (save-match-data
-	(with-current-buffer (or context (current-buffer))
-	  (eval (car (read-from-string (format "(progn %s)" s))) t))))))
+        (with-current-buffer (or context (current-buffer))
+          (eval (car (read-from-string (format "(progn %s)" s))) t))))))
 
 (defun verb--eval-code-tags-in-buffer (buf context)
   "Evalue code tags within buffer BUF.
 When evaluating the code, use buffer CONTEXT as the current buffer.
 Replace the code tags with the results of their own evaluations.  Code
 tags are delimited with `verb-code-tag-delimiters'."
-  (with-current-buffer buf
-    (while (re-search-forward (concat (car verb-code-tag-delimiters)
-				      "\\(.*?\\)"
-				      (cdr verb-code-tag-delimiters))
-			      nil t)
-      (let ((result (verb--eval-string (match-string 1) context)))
-	(cond
-	 ((stringp result)
-	  (replace-match result))
-	 ((bufferp result)
-	  (goto-char (match-beginning 0))
-	  (delete-region (match-beginning 0) (match-end 0))
-	  (insert-buffer-substring result)
-	  (when (buffer-local-value 'verb-kill-this-buffer result)
-	    (kill-buffer result)))
-	 (t
-	  (replace-match (format "%s" result))))))))
+  (unless verb--inhibit-code-tags-evaluation
+    (with-current-buffer buf
+      (while (re-search-forward (concat (car verb-code-tag-delimiters)
+                                        "\\(.*?\\)"
+                                        (cdr verb-code-tag-delimiters))
+                                nil t)
+        (let ((result (verb--eval-string (match-string 1) context)))
+          (cond
+           ((stringp result)
+            (replace-match result))
+           ((bufferp result)
+            (goto-char (match-beginning 0))
+            (delete-region (match-beginning 0) (match-end 0))
+            (insert-buffer-substring result)
+            (when (buffer-local-value 'verb-kill-this-buffer result)
+              (kill-buffer result)))
+           (t
+            (replace-match (format "%s" result)))))))))
 
 (defun verb--eval-code-tags-in-string (s &optional context)
   "Like `verb--eval-code-tags-in-buffer', but in a string S.
@@ -1885,7 +1980,7 @@ is nil.  Return a new string with the code tags expanded."
     (insert s)
     (goto-char (point-min))
     (verb--eval-code-tags-in-buffer (current-buffer)
-				    (or context (current-buffer)))
+                                    (or context (current-buffer)))
     (verb--buffer-string-no-properties)))
 
 (defun verb--clean-url (url)
@@ -1897,27 +1992,32 @@ and there are query string arguments present.
 
 If a schema is not present, interpret the URL as a path, query string
 and fragment component of a URL with no host or schema defined."
-  (let* ((url-obj (url-generic-parse-url (url-encode-url url)))
-	 (path (url-filename url-obj))
-	 (schema (url-type url-obj)))
+  ;; If we're not expanding code tags, do not attempt to encode '{',
+  ;; '}', etc., so that we keep the original URL text
+  (let* ((encoded-url (if verb--inhibit-code-tags-evaluation
+                          url
+                        (url-encode-url url)))
+         (url-obj (url-generic-parse-url encoded-url))
+         (path (url-filename url-obj))
+         (schema (url-type url-obj)))
     (if (not schema)
-	;; If no schema defined, interpret everything as path + query
-	;; string + fragment
-	(progn
-	  (setf (url-filename url-obj)
-		(concat (url-host url-obj)
-			(url-filename url-obj)))
-	  (setf (url-host url-obj) nil))
+        ;; If no schema defined, interpret everything as path + query
+        ;; string + fragment
+        (progn
+          (setf (url-filename url-obj)
+                (concat (url-host url-obj)
+                        (url-filename url-obj)))
+          (setf (url-host url-obj) nil))
       ;; Schema is present:
       (unless (member schema '("http" "https"))
-	(user-error (concat "The URL must specify \"http://\" or "
-			    "\"https://\" (got: \"%s\")")
-		    schema))
+        (user-error (concat "The URL must specify \"http://\" or "
+                            "\"https://\" (got: \"%s\")")
+                    schema))
       ;; If path is "" but there are query string arguments, set path
       ;; to "/" (taken from curl)
       ;; Note that `path' here contains path and query string
       (when (string-prefix-p "?" path)
-	(setf (url-filename url-obj) (concat "/" path))))
+        (setf (url-filename url-obj) (concat "/" path))))
     url-obj))
 
 (define-error 'verb-empty-spec
@@ -1967,104 +2067,104 @@ signal an error.
 Before returning the request specification, set its metadata to
 METADATA."
   (let ((context (current-buffer))
-	method url headers body)
+        method url headers body)
     (with-temp-buffer
       (insert text)
       (goto-char (point-min))
 
       ;; Skip initial blank lines, comments and properties
       (while (and (re-search-forward "^\\s-*\\(\\(:\\|#\\).*\\)?$"
-				     (line-end-position) t)
-		  (not (eobp)))
-	(forward-char))
+                                     (line-end-position) t)
+                  (not (eobp)))
+        (forward-char))
       ;; Check if the entire specification was just comments or empty
       (when (string-empty-p (string-trim (buffer-substring (point)
-							   (point-max))))
-	;; Signal `verb-empty-spec' if so
-	(signal 'verb-empty-spec nil))
+                                                           (point-max))))
+        ;; Signal `verb-empty-spec' if so
+        (signal 'verb-empty-spec nil))
 
       ;; Read HTTP method and URL line
       ;; First, expand any code tags on it (if any)
       (let ((case-fold-search t)
-	    (line (verb--eval-code-tags-in-string
-		   (buffer-substring-no-properties (point)
-						   (line-end-position))
-		   context)))
-	(if (string-match (concat "^\\s-*\\("
-				  (verb--http-methods-regexp)
-				  "\\)\\s-+\\(.+\\)$")
-			  line)
-	    ;; Matched method + URL, store them
-	    (setq method (upcase (match-string 1 line))
-		  url (match-string 2 line))
-	  (when (string-match (concat "^\\s-*\\("
-				      (verb--http-methods-regexp)
-				      "\\)\\s-*$")
-			      line)
-	    ;; Matched method only, store it
-	    (setq method (upcase (match-string 1 line))))))
+            (line (verb--eval-code-tags-in-string
+                   (buffer-substring-no-properties (point)
+                                                   (line-end-position))
+                   context)))
+        (if (string-match (concat "^\\s-*\\("
+                                  (verb--http-methods-regexp)
+                                  "\\)\\s-+\\(.+\\)$")
+                          line)
+            ;; Matched method + URL, store them
+            (setq method (upcase (match-string 1 line))
+                  url (match-string 2 line))
+          (when (string-match (concat "^\\s-*\\("
+                                      (verb--http-methods-regexp)
+                                      "\\)\\s-*$")
+                              line)
+            ;; Matched method only, store it
+            (setq method (upcase (match-string 1 line))))))
 
       ;; We've processed the URL line, move to the end of it
       (end-of-line)
 
       (if method
-	  (when (string= method verb--template-keyword)
-	    (setq method nil))
-	(user-error (concat "Could not read a valid HTTP method (%s)\n"
-			    "Additionally, you can also specify %s "
-			    "(matching is case insensitive)")
-		    (mapconcat #'identity verb--http-methods ", ")
-		    verb--template-keyword))
+          (when (string= method verb--template-keyword)
+            (setq method nil))
+        (user-error (concat "Could not read a valid HTTP method (%s)\n"
+                            "Additionally, you can also specify %s "
+                            "(matching is case insensitive)")
+                    (mapconcat #'identity verb--http-methods ", ")
+                    verb--template-keyword))
 
       ;; Skip newline after URL line
       (unless (eobp) (forward-char))
 
       ;; Search for HTTP headers, stop as soon as we find a blank line
       (while (re-search-forward "^\\(.+\\)$" (line-end-position) t)
-	(let ((line (match-string 1)))
-	  ;; Process line if it doesn't start with '#'
-	  (unless (string-prefix-p "#" (string-trim-left line))
-	    ;; Check if line matches KEY: VALUE after evaluating any
-	    ;; present code tags
-	    (setq line (verb--eval-code-tags-in-string line context))
-	    (if (string-match "^\\s-*\\([[:alnum:]-]+\\)\\s-*:\\(.*\\)$"
-			      line)
-		;; Line matches, trim KEY and VALUE and store them
-		(push (cons (string-trim (match-string 1 line))
-			    (string-trim (match-string 2 line)))
-		      headers)
-	      (user-error (concat "Invalid HTTP header: \"%s\"\n"
-				  "Make sure there's a blank line between"
-				  " the headers and the request body")
-			  line))))
-	(unless (eobp) (forward-char)))
+        (let ((line (match-string 1)))
+          ;; Process line if it doesn't start with '#'
+          (unless (string-prefix-p "#" (string-trim-left line))
+            ;; Check if line matches KEY: VALUE after evaluating any
+            ;; present code tags
+            (setq line (verb--eval-code-tags-in-string line context))
+            (if (string-match "^\\s-*\\([[:alnum:]-]+\\)\\s-*:\\(.*\\)$"
+                              line)
+                ;; Line matches, trim KEY and VALUE and store them
+                (push (cons (string-trim (match-string 1 line))
+                            (string-trim (match-string 2 line)))
+                      headers)
+              (user-error (concat "Invalid HTTP header: \"%s\"\n"
+                                  "Make sure there's a blank line between"
+                                  " the headers and the request body")
+                          line))))
+        (unless (eobp) (forward-char)))
       (setq headers (nreverse headers))
 
       ;; Expand code tags in the rest of the buffer (if any)
       (save-excursion
-	(verb--eval-code-tags-in-buffer (current-buffer) context))
+        (verb--eval-code-tags-in-buffer (current-buffer) context))
 
       ;; Skip blank line after headers
       (unless (eobp) (forward-char))
 
       ;; The rest of the buffer is the request body
       (let ((rest (buffer-substring (point) (point-max))))
-	;; Only read body if it isn't comprised entirely of
-	;; whitespace, but if it's not and has leading/trailing
-	;; whitespace, include itP
-	(unless (string-empty-p (string-trim rest))
-	  ;; Now we know body isn't comprised entirely of whitespace,
-	  ;; check if the user wants to delete any trailing characters
-	  (setq body (if verb-trim-body-end
-			 (string-trim-right rest verb-trim-body-end)
-		       rest))))
+        ;; Only read body if it isn't comprised entirely of
+        ;; whitespace, but if it's not and has leading/trailing
+        ;; whitespace, include itP
+        (unless (string-empty-p (string-trim rest))
+          ;; Now we know body isn't comprised entirely of whitespace,
+          ;; check if the user wants to delete any trailing characters
+          (setq body (if verb-trim-body-end
+                         (string-trim-right rest verb-trim-body-end)
+                       rest))))
       ;; Return a `verb-request-spec'
       (verb-request-spec :method method
-			 :url (unless (string-empty-p (or url ""))
-				(verb--clean-url url))
-			 :headers headers
-			 :body body
-			 :metadata metadata))))
+                         :url (unless (string-empty-p (or url ""))
+                                (verb--clean-url url))
+                         :headers headers
+                         :body body
+                         :metadata metadata))))
 
 (provide 'verb)
 ;;; verb.el ends here

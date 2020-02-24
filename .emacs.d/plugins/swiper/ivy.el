@@ -418,7 +418,6 @@ action functions.")
     (define-key map (kbd "TAB") 'ivy-partial-or-done)
     (define-key map [remap next-line] 'ivy-next-line)
     (define-key map [remap previous-line] 'ivy-previous-line)
-    (define-key map (kbd "C-s") 'ivy-next-line-or-history)
     (define-key map (kbd "C-r") 'ivy-reverse-i-search)
     (define-key map (kbd "SPC") 'self-insert-command)
     (define-key map [remap delete-backward-char] 'ivy-backward-delete-char)
@@ -1087,7 +1086,7 @@ contains a single candidate.")
       (setq ivy-last old-ivy-last)
       (when host
         (setq ivy--directory "/")
-        (ivy--cd (concat "/" method ":" host ":"))))))
+        (ivy--cd (concat "/" method ":" host ":/"))))))
 
 (defun ivy--directory-done ()
   "Handle exit from the minibuffer when completing file names."
@@ -2391,7 +2390,7 @@ This is useful for recursive `ivy-read'."
                                                counsel-switch-buffer)))
                          predicate)))
             (dynamic-collection
-             (setq coll (funcall collection (or initial-input ""))))
+             (setq coll (ivy--dynamic-collection-cands (or initial-input ""))))
             ((consp (car-safe collection))
              (setq collection (cl-remove-if-not predicate collection))
              (when (and sort (setq sort-fn (ivy--sort-function caller)))
@@ -3342,6 +3341,10 @@ Should be run via minibuffer `post-command-hook'."
         (ivy--insert-minibuffer new-minibuffer)))
     t))
 
+(defun ivy--dynamic-collection-cands (input)
+  (mapcar (lambda (x) (if (consp x) (car x) x))
+          (funcall (ivy-state-collection ivy-last) input)))
+
 (defun ivy--update-minibuffer ()
   (prog1
       (if (ivy-state-dynamic-collection ivy-last)
@@ -3351,7 +3354,7 @@ Should be run via minibuffer `post-command-hook'."
                 coll in-progress)
             (unless (equal ivy--old-text ivy-text)
               (while-no-input
-                (setq coll (funcall (ivy-state-collection ivy-last) ivy-text))
+                (setq coll (ivy--dynamic-collection-cands ivy-text))
                 (when (eq coll 0)
                   (setq coll nil)
                   (setq ivy--old-re nil)
@@ -4179,7 +4182,7 @@ CANDS is a list of candidates that :display-transformer can turn into strings."
       (setq ivy--virtual-buffers (nreverse virtual-buffers))
       (mapcar #'car ivy--virtual-buffers))))
 
-(defcustom ivy-ignore-buffers '("\\` ")
+(defcustom ivy-ignore-buffers '("\\` " "\\`\\*tramp/")
   "List of regexps or functions matching buffer names to ignore."
   :type '(repeat (choice regexp function)))
 

@@ -19,6 +19,11 @@ C++20 includes the following new language features:
 
 C++20 includes the following new library features:
 - [concepts library](#concepts-library)
+- [synchronized buffered outputstream](#synchronized-buffered-outputstream)
+- [std::span](#stdspan)
+- [bit operations](#bit-operations)
+- [math constants](#math-constants)
+- [std::is_constant_evaluated](#stdis_constant_evaluated)
 
 C++17 includes the following new language features:
 - [template argument deduction for class templates](#template-argument-deduction-for-class-templates)
@@ -124,74 +129,74 @@ where `constraint-expression` evaluates to a constexpr Boolean. _Constraints_ sh
 ```c++
 // `T` is not limited by any constraints.
 template <typename T>
-concept AlwaysSatisfied = true;
+concept always_satisfied = true;
 // Limit `T` to integrals.
 template <typename T>
-concept Integral = std::is_integral_v<T>;
-// Limit `T` to both the `Integral` constraint and signedness.
+concept integral = std::is_integral_v<T>;
+// Limit `T` to both the `integral` constraint and signedness.
 template <typename T>
-concept SignedIntegral = Integral<T> && std::is_signed_v<T>;
-// Limit `T` to both the `Integral` constraint and the negation of the `SignedIntegral` constraint.
+concept signed_integral = integral<T> && std::is_signed_v<T>;
+// Limit `T` to both the `integral` constraint and the negation of the `signed_integral` constraint.
 template <typename T>
-concept UnsignedIntegral = Integral<T> && !SignedIntegral<T>;
+concept unsigned_integral = integral<T> && !signed_integral<T>;
 ```
 There are a variety of syntactic forms for enforcing concepts:
 ```c++
 // Forms for function parameters:
 // `T` is a constrained type template parameter.
-template <MyConcept T>
+template <my_concept T>
 void f(T v);
 
 // `T` is a constrained type template parameter.
 template <typename T>
-  requires MyConcept<T>
+  requires my_concept<T>
 void f(T v);
 
 // `T` is a constrained type template parameter.
 template <typename T>
-void f(T v) requires MyConcept<T>;
+void f(T v) requires my_concept<T>;
 
 // `v` is a constrained deduced parameter.
-void f(MyConcept auto v);
+void f(my_concept auto v);
 
 // `v` is a constrained non-type template parameter.
-template <MyConcept auto v>
+template <my_concept auto v>
 void g();
 
 // Forms for auto-deduced variables:
 // `foo` is a constrained auto-deduced value.
-MyConcept auto foo = ...;
+my_concept auto foo = ...;
 
 // Forms for lambdas:
 // `T` is a constrained type template parameter.
-auto f = []<MyConcept T> (T v) {
+auto f = []<my_concept T> (T v) {
   // ...
 };
 // `T` is a constrained type template parameter.
-auto f = []<typename T> requires MyConcept<T> (T v) {
+auto f = []<typename T> requires my_concept<T> (T v) {
   // ...
 };
 // `T` is a constrained type template parameter.
-auto f = []<typename T> (T v) requires MyConcept<T> {
+auto f = []<typename T> (T v) requires my_concept<T> {
   // ...
 };
 // `v` is a constrained deduced parameter.
-auto f = [](MyConcept auto v) {
+auto f = [](my_concept auto v) {
   // ...
 };
 // `v` is a constrained non-type template parameter.
-auto g = []<MyConcept auto v> () {
+auto g = []<my_concept auto v> () {
   // ...
 };
 ```
 The `requires` keyword is used either to start a requires clause or a requires expression:
 ```c++
 template <typename T>
-  requires MyConcept<T> // `requires` clause.
+  requires my_concept<T> // `requires` clause.
 void f(T);
 
 template <typename T>
-concept Callable = requires (T f) { f(); }; // `requires` expression.
+concept callable = requires (T f) { f(); }; // `requires` expression.
 
 template <typename T>
   requires requires (T x) { x + x; } // `requires` clause and expression on same line.
@@ -205,27 +210,27 @@ Note that the parameter list in a requires expression is optional. Each requirem
 
 ```c++
 template <typename T>
-concept Callable = requires (T f) { f(); };
+concept callable = requires (T f) { f(); };
 ```
 * **Type requirements** - denoted by the `typename` keyword followed by a type name, asserts that the given type name is valid.
 
 ```c++
-struct Foo {
+struct foo {
   int foo;
 };
 
-struct Bar {
+struct bar {
   using value = int;
   value data;
 };
 
-struct Baz {
+struct baz {
   using value = int;
   value data;
 };
 
-// Using SFINAE, enable if `T` is a `Baz`.
-template <typename T, typename = std::enable_if_t<std::is_same_v<T, Baz>>>
+// Using SFINAE, enable if `T` is a `baz`.
+template <typename T, typename = std::enable_if_t<std::is_same_v<T, baz>>>
 struct S {};
 
 template <typename T>
@@ -242,9 +247,9 @@ concept C = requires {
 template <C T>
 void g(T a);
 
-g(Foo{}); // ERROR: Fails requirement A.
-g(Bar{}); // ERROR: Fails requirement B.
-g(Baz{}); // PASS.
+g(foo{}); // ERROR: Fails requirement A.
+g(bar{}); // ERROR: Fails requirement B.
+g(baz{}); // PASS.
 ```
 * **Compound requirements** - an expression in braces followed by a trailing return type or type constraint.
 
@@ -252,7 +257,7 @@ g(Baz{}); // PASS.
 template <typename T>
 concept C = requires(T x) {
   {*x} -> typename T::inner; // the type of the expression `*x` is convertible to `T::inner`
-  {x + 1} -> std::Same<int>; // the expression `x + 1` satisfies `std::Same<decltype((x + 1))>`
+  {x + 1} -> std::same_as<int>; // the expression `x + 1` satisfies `std::same_as<decltype((x + 1))>`
   {x * 1} -> T; // the type of the expression `x * 1` is convertible to `T`
 };
 ```
@@ -261,7 +266,7 @@ concept C = requires(T x) {
 ```c++
 template <typename T>
 concept C = requires(T x) {
-  requires std::Same<sizeof(x), size_t>;
+  requires std::same_as<sizeof(x), size_t>;
 };
 ```
 See also: [concepts library](#concepts-library).
@@ -433,28 +438,97 @@ std::string_view to_string(rgba_color_channel channel) {
 Concepts are also provided by the standard library for building more complicated concepts. Some of these include:
 
 **Core language concepts:**
-- `Same` - specifies two types are the same.
-- `DerivedFrom` - specifies that a type is derived from another type.
-- `ConvertibleTo` - specifies that a type is implicitly convertible to another type.
-- `Common` - specifies that two types share a common type.
-- `Integral` - specifies that a type is an integral type.
-- `DefaultConstructible` - specifies that an object of a type can be default-constructed.
+- `same_as` - specifies two types are the same.
+- `derived_from` - specifies that a type is derived from another type.
+- `convertible_to` - specifies that a type is implicitly convertible to another type.
+- `common_with` - specifies that two types share a common type.
+- `integral` - specifies that a type is an integral type.
+- `default_constructible` - specifies that an object of a type can be default-constructed.
 
  **Comparison concepts:**
-- `Boolean` - specifies that a type can be used in Boolean contexts.
-- `EqualityComparable` - specifies that `operator==` is an equivalence relation.
+- `boolean` - specifies that a type can be used in Boolean contexts.
+- `equality_comparable` - specifies that `operator==` is an equivalence relation.
 
  **Object concepts:**
-- `Movable` - specifies that an object of a type can be moved and swapped.
-- `Copyable` - specifies that an object of a type can be copied, moved, and swapped.
-- `Semiregular` - specifies that an object of a type can be copied, moved, swapped, and default constructed.
-- `Regular` - specifies that a type is _regular_, that is, it is both `Semiregular` and `EqualityComparable`.
+- `movable` - specifies that an object of a type can be moved and swapped.
+- `copyable` - specifies that an object of a type can be copied, moved, and swapped.
+- `semiregular` - specifies that an object of a type can be copied, moved, swapped, and default constructed.
+- `regular` - specifies that a type is _regular_, that is, it is both `semiregular` and `equality_comparable`.
 
  **Callable concepts:**
-- `Invocable` - specifies that a callable type can be invoked with a given set of argument types.
-- `Predicate` - specifies that a callable type is a Boolean predicate.
+- `invocable` - specifies that a callable type can be invoked with a given set of argument types.
+- `predicate` - specifies that a callable type is a Boolean predicate.
 
 See also: [concepts](#concepts).
+
+### Synchronized buffered outputstream
+Buffers output operations for the wrapped output stream ensuring synchronization (i.e. no interleaving of output).
+```c++
+std::osyncstream{std::cout} << "The value of x is:" << x << std::endl;
+```
+
+### std::span
+A span is a view (i.e. non-owning) of a container providing bounds-checked access to a contiguous group of elements. Since views do not own their elements they are cheap to construct and copy -- a simplified way to think about views is they are holding references to their data. Spans can be dynamically-sized or fixed-sized.
+```c++
+void f(std::span<int> ints) {
+    std::for_each(ints.begin(), ints.end(), [](auto i) {
+        // ...
+    });
+}
+
+std::vector<int> v = {1, 2, 3};
+f(v);
+std::array<int, 3> a = {1, 2, 3};
+f(a);
+// etc.
+```
+Example: as opposed to maintaining a pointer and length field, a span wraps both of those up in a single container.
+```c++
+constexpr size_t LENGTH_ELEMENTS = 3;
+int* arr = new int[LENGTH_ELEMENTS]; // arr = {0, 0, 0}
+
+// Fixed-sized span which provides a view of `arr`.
+std::span<int, LENGTH_ELEMENTS> span = arr;
+span[1] = 1; // arr = {0, 1, 0}
+
+// Dynamic-sized span which provides a view of `arr`.
+std::span<int> d_span = arr;
+span[0] = 1; // arr = {1, 1, 0}
+```
+```c++
+constexpr size_t LENGTH_ELEMENTS = 3;
+int* arr = new int[LENGTH_ELEMENTS];
+
+std::span<int, LENGTH_ELEMENTS> span = arr; // OK
+std::span<double, LENGTH_ELEMENTS> span2 = arr; // ERROR
+std::span<int, 1> span3 = arr; // ERROR
+```
+
+### Bit operations
+C++20 provides a new `<bit>` header which provides some bit operations including popcount.
+```c++
+std::popcount(0u); // 0
+std::popcount(1u); // 1
+std::popcount(0b1111'0000u); // 4
+```
+
+### Math constants
+Mathematical constants including PI, Euler's number, etc. defined in the `<numbers>` header.
+```c++
+std::numbers::pi; // 3.14159...
+std::numbers::e; // 2.71828...
+```
+
+### std::is_constant_evaluated
+Predicate function which is truthy when it is called in a compile-time context.
+```c++
+constexpr bool is_compile_time() {
+    return std::is_constant_evaluated();
+}
+
+constexpr bool a = is_compile_time(); // true
+bool b = is_compile_time(); // false
+```
 
 ## C++17 Language Features
 
@@ -1086,16 +1160,16 @@ See the section on [smart pointers](#smart-pointers) for more information on `st
 ## C++11 Language Features
 
 ### Move semantics
-Move semantics is mostly about performance optimization: the ability to move an object without the expensive overhead of copying. The difference between a copy and a move is that a copy leaves the source unchanged, and a move will leave the source either unchanged or radically different -- depending on what the source is. For plain old data, a move is the same as a copy.
+Moving an object means to transfer ownership of some resource it manages to another object.
 
-To move an object means to transfer ownership of some resource it manages to another object. You could think of this as changing pointers held by the source object to be moved, or now held, by the destination object; the resource remains in its location in memory. Such an inexpensive transfer of resources is extremely useful when the source is an `rvalue`, where the potentially dangerous side-effect of changing the source after the move is redundant since the source is a temporary object that won't be accessible later.
+The first benefit of move semantics is performance optimization. When an object is about to reach the end of its lifetime, either because it's a temporary or by explicitly calling `std::move`, a move is often a cheaper way to transfer resources. For example, moving a `std::vector` is just copying some pointers and internal state over to the new vector -- copying would involve having to copy every single contained element in the vector, which is expensive and unnecessary if the old vector will soon be destroyed.
 
-Moves also make it possible to transfer objects such as `std::unique_ptr`s, [smart pointers](#smart-pointers) that are designed to hold a pointer to a unique object, from one scope to another.
+Moves also make it possible for non-copyable types such as `std::unique_ptr`s ([smart pointers](#smart-pointers)) to guarantee at the language level that there is only ever one instance of a resource being managed at a time, while being able to transfer an instance between scopes.
 
-See the sections on: [rvalue references](#rvalue-references), [defining move special member functions](#special-member-functions-for-move-semantics), [`std::move`](#stdmove), [`std::forward`](#stdforward), [`forwarding references`](#forwarding-references).
+See the sections on: [rvalue references](#rvalue-references), [special member functions for move semantics](#special-member-functions-for-move-semantics), [`std::move`](#stdmove), [`std::forward`](#stdforward), [`forwarding references`](#forwarding-references).
 
 ### Rvalue references
-C++11 introduces a new reference termed the _rvalue reference_. An rvalue reference to `A`, which is a non-template type parameter (such as `int`, or a user-defined type), is created with the syntax `A&&`. Rvalue references only bind to rvalues.
+C++11 introduces a new reference termed the _rvalue reference_. An rvalue reference to `T`, which is a non-template type parameter (such as `int`, or a user-defined type), is created with the syntax `T&&`. Rvalue references only bind to rvalues.
 
 Type deduction with lvalues and rvalues:
 ```c++
@@ -1108,7 +1182,7 @@ int&& xr2 = 0; // `xr2` is an lvalue of type `int&&` -- binds to the rvalue temp
 See also: [`std::move`](#stdmove), [`std::forward`](#stdforward), [`forwarding references`](#forwarding-references).
 
 ### Forwarding references
-Also known (unofficially) as _universal references_. A forwarding reference is created with the syntax `T&&` where `T` is a template type parameter, or using `auto&&`. This enables two major features: move semantics; and _perfect forwarding_, the ability to pass arguments that are either lvalues or rvalues.
+Also known (unofficially) as _universal references_. A forwarding reference is created with the syntax `T&&` where `T` is a template type parameter, or using `auto&&`. This enables _perfect forwarding_: the ability to pass arguments while maintaining their value category (e.g. lvalues stay as lvalues, temporaries are forwarded as rvalues).
 
 Forwarding references allow a reference to bind to either an lvalue or rvalue depending on the type. Forwarding references follow the rules of _reference collapsing_:
 * `T& &` becomes `T&`
@@ -1711,9 +1785,9 @@ void g() noexcept {
 ## C++11 Library Features
 
 ### std::move
-`std::move` indicates that the object passed to it may have its resources transferred. Moves can often be more efficient than copies. Using objects that have been moved from should be used with care, as they can be left in an unspecified state (see: [What can I do with a moved-from object?](http://stackoverflow.com/questions/7027523/what-can-i-do-with-a-moved-from-object)).
+`std::move` indicates that the object passed to it may have its resources transferred. Using objects that have been moved from should be used with care, as they can be left in an unspecified state (see: [What can I do with a moved-from object?](http://stackoverflow.com/questions/7027523/what-can-i-do-with-a-moved-from-object)).
 
-A definition of `std::move` (performing a move is nothing more than casting to an rvalue):
+A definition of `std::move` (performing a move is nothing more than casting to an rvalue reference):
 ```c++
 template <typename T>
 typename remove_reference<T>::type&& move(T&& arg) {
@@ -1730,7 +1804,7 @@ std::unique_ptr<int> p3 = std::move(p1); // move `p1` into `p3`
 ```
 
 ### std::forward
-Returns the arguments passed to it as-is, either as an lvalue or rvalue references, and includes cv-qualification. Useful for generic code that need a reference (either lvalue or rvalue) when appropriate, e.g factories. Used in conjunction with [`forwarding references`](#forwarding-references).
+Returns the arguments passed to it while maintaining their value category and cv-qualifiers. Useful for generic code and factories. Used in conjunction with [`forwarding references`](#forwarding-references).
 
 A definition of `std::forward`:
 ```c++
@@ -1793,9 +1867,9 @@ static_assert(std::is_same<std::conditional<true, int, double>::type, int>::valu
 ```
 
 ### Smart pointers
-C++11 introduces new smart(er) pointers: `std::unique_ptr`, `std::shared_ptr`, `std::weak_ptr`. `std::auto_ptr` now becomes deprecated and then eventually removed in C++17.
+C++11 introduces new smart pointers: `std::unique_ptr`, `std::shared_ptr`, `std::weak_ptr`. `std::auto_ptr` now becomes deprecated and then eventually removed in C++17.
 
-`std::unique_ptr` is a non-copyable, movable smart pointer that properly manages arrays and STL containers. **Note: Prefer using the `std::make_X` helper functions as opposed to using constructors. See the sections for [std::make_unique](#stdmake_unique) and [std::make_shared](#stdmake_shared).**
+`std::unique_ptr` is a non-copyable, movable pointer that manages its own heap-allocated memory. **Note: Prefer using the `std::make_X` helper functions as opposed to using constructors. See the sections for [std::make_unique](#stdmake_unique) and [std::make_shared](#stdmake_shared).**
 ```c++
 std::unique_ptr<Foo> p1 {new Foo{}};  // `p1` owns `Foo`
 if (p1) {

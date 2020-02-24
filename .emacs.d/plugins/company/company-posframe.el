@@ -247,7 +247,7 @@ be triggered manually using `company-posframe-quickhelp-show'."
          (lines (company--create-lines company-selection height))
          (backend-names (when company-posframe-show-indicator
                           (funcall company-posframe-backend-format-function company-backends company-posframe-backend-separator)))
-         (width (length (car lines)))
+         (width (max (min (length (car lines)) company-tooltip-maximum-width) company-tooltip-minimum-width))
          (contents (concat (mapconcat #'identity lines "\n")
                            (if meta
                                (concat "\n" (propertize (if (> (length meta) width)
@@ -268,11 +268,11 @@ be triggered manually using `company-posframe-quickhelp-show'."
            :position (- (point) (length company-prefix))
            :min-height (+ height
                           (if company-posframe-show-indicator 1 0))
-           :min-width width
+           :min-width company-tooltip-minimum-width
+           :max-width company-tooltip-maximum-width
            :x-pixel-offset (* -1 company-tooltip-margin (default-font-width))
            :respect-mode-line company-posframe-show-indicator
            :font company-posframe-font
-           :min-width company-tooltip-minimum-width
            :background-color (face-attribute 'company-tooltip :background)
            company-posframe-show-params)))
 
@@ -367,21 +367,24 @@ just grab the first candidate and press forward."
               (buffer-string))))))))
 
 (defun company-posframe-quickhelp-doc (selected)
-  (cl-letf (((symbol-function 'completing-read)
-             #'company-posframe-quickhelp-completing-read))
-    (let* ((header
-            (if company-posframe-quickhelp-show-header
-                (substitute-command-keys
-                 (concat
-                  "## "
-                  "\\<company-posframe-active-map>\\[company-posframe-quickhelp-toggle]:Show/Hide  "
-                  "\\<company-posframe-active-map>\\[company-posframe-quickhelp-scroll-up]:Scroll-Up  "
-                  "\\<company-posframe-active-map>\\[company-posframe-quickhelp-scroll-down]:Scroll-Down "
-                  "##\n")) ""))
-           (body (company-posframe-quickhelp-fetch-docstring selected))
-           (doc (concat (propertize header 'face 'company-posframe-quickhelp-header)
-                        (propertize body 'face 'company-posframe-quickhelp))))
-      doc)))
+  (let* ((body (company-posframe-quickhelp-fetch-docstring selected))
+         (doc
+          (if body
+              (cl-letf (((symbol-function 'completing-read)
+                         #'company-posframe-quickhelp-completing-read))
+                (let* ((header
+                        (if company-posframe-quickhelp-show-header
+                            (substitute-command-keys
+                             (concat
+                              "## "
+                              "\\<company-posframe-active-map>\\[company-posframe-quickhelp-toggle]:Show/Hide  "
+                              "\\<company-posframe-active-map>\\[company-posframe-quickhelp-scroll-up]:Scroll-Up  "
+                              "\\<company-posframe-active-map>\\[company-posframe-quickhelp-scroll-down]:Scroll-Down "
+                              "##\n")) ""))
+                       (doc (concat (propertize header 'face 'company-posframe-quickhelp-header)
+                                    (propertize body 'face 'company-posframe-quickhelp))))
+                  doc)))))
+    doc))
 
 (defun company-posframe-quickhelp-set-timer ()
   (when (null company-posframe-quickhelp-timer)
