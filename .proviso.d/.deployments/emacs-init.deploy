@@ -1,0 +1,4 @@
+((deploy . (
+"rm -f ~/.emacs.d/init.elc"
+(".emacs.d/init.el" . "c:/Users/dan.harms/.emacs.d/init.el")
+)))
