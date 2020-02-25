@@ -2,8 +2,8 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-02-19 09:43:52 dan.harms>
-;; Modified by: Dan Harms
+;; Modified Time-stamp: <2020-02-25 08:54:07 Dan.Harms>
+;; Modified by: Dan.Harms
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -758,6 +758,10 @@ From `manuel-oberti.github.io' on 20190806."
             (lambda ()
               (setq ibuffer-filter-groups (ibuffer-project-generate-filter-groups))
               )))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; sbuffer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package sbuffer
+  :bind ("M-s b" . sbuffer))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; yascroll ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package yascroll :config (global-yascroll-bar-mode 1))
@@ -1803,6 +1807,11 @@ Only one letter is shown, the first that applies."
   :config
   (setq popup-imenu-position 'point)
   )
+
+(use-package imenu-list
+  :bind ("C-x M-i" . imenu-list-smart-toggle)
+  :commands (imenu-list-smart-toggle imenu-list imenu-list-noselect
+                                     imenu-list-show imenu-list-show))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; powerline ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; does not interact with rich-minority mode: try delight.el?
