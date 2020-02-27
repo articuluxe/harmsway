@@ -2,8 +2,8 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-02-25 08:54:07 Dan.Harms>
-;; Modified by: Dan.Harms
+;; Modified Time-stamp: <2020-02-26 11:32:37 dharms>
+;; Modified by: Dan Harms
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -1880,6 +1880,7 @@ Only one letter is shown, the first that applies."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;; all-the-icons-ivy-rich ;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package all-the-icons-ivy-rich
+  :if (display-graphic-p)
   :after all-the-icons
   :config
   (all-the-icons-ivy-rich-mode 1))

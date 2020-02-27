@@ -1,5 +1,7 @@
 #pragma once
 
+#include <type_traits>
+
 template <typename, typename Fallback, typename = void>
 struct type_or_default
 {
@@ -13,4 +15,4 @@ struct type_or_default<Class, Fallback, std::void_t<typename Class::type>>
 };
 
 template <typename T>
-using type = type_or_default<T, int>::type;
+using type = typename type_or_default<T, int>::type;

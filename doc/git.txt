@@ -182,3 +182,10 @@ git bundle create repo.bundle master
 git clone repo.bundle -b master repo
 # archive a remote repo as a tarball, extract in place
 git archive --format=tar --prefix=DEST/ --remote=NAME@git.drupal.org:sandbox/USER/proj.git BRANCH | tar -xf -
+
+######################### Sign Git commits with GPG ##########################
+brew install gnupg gpg-agent pinentry-mac
+in ~/.gnupg/gpg-agent.conf:
+   pinentry-program /usr/local/bin/pinentry-mac
+git config --global user.signingkey <PUB_ID>
+git config --global commit.gpgsign true
