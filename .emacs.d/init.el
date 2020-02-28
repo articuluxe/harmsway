@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-02-26 11:32:37 dharms>
+;; Modified Time-stamp: <2020-02-28 06:18:15 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3132,6 +3132,12 @@ See `https://github.com/company-mode/company-mode/issues/205'."
   (unless (fboundp 'pkg-info-version-info)
     (defun pkg-info-version-info (_) "unknown"))
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; flycheck-relint ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package flycheck-relint
+  :after flycheck
+  :config
+  (flycheck-relint-setup))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; flycheck-popup-tip ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package flycheck-popup-tip
