@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-02-28 06:18:15 dharms>
+;; Modified Time-stamp: <2020-03-03 13:01:17 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -759,9 +759,9 @@ From `manuel-oberti.github.io' on 20190806."
               (setq ibuffer-filter-groups (ibuffer-project-generate-filter-groups))
               )))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; sbuffer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package sbuffer
-  :bind ("M-s b" . sbuffer))
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; bufler ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package bufler
+  :bind ("M-s b" . bufler))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; yascroll ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package yascroll :config (global-yascroll-bar-mode 1))
