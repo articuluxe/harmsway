@@ -321,23 +321,26 @@ ACTIONS that have the same key."
 
 (defun ivy--compute-extra-actions (action caller)
   "Add extra actions to ACTION based on CALLER."
-  (let ((extra-actions (cl-delete-duplicates
-                        (append (plist-get ivy--actions-list t)
-                                (plist-get ivy--actions-list this-command)
-                                (plist-get ivy--actions-list caller))
-                        :key #'car :test #'equal)))
-    (if extra-actions
-        (cond ((functionp action)
-               `(1
-                 ("o" ,action "default")
-                 ,@extra-actions))
-              ((null action)
-               `(1
-                 ("o" identity "default")
-                 ,@extra-actions))
-              (t
-               (delete-dups (append action extra-actions))))
-      action)))
+  (let* ((extra-actions (cl-delete-duplicates
+                         (append (plist-get ivy--actions-list t)
+                                 (plist-get ivy--actions-list this-command)
+                                 (plist-get ivy--actions-list caller))
+                         :key #'car :test #'equal))
+         (override-default (assoc "o" extra-actions)))
+    (cond (override-default
+           (cons 1 (cons override-default (assoc-delete-all "o" extra-actions))))
+          ((not extra-actions)
+           action)
+          ((functionp action)
+           `(1
+             ("o" ,action "default")
+             ,@extra-actions))
+          ((null action)
+           `(1
+             ("o" identity "default")
+             ,@extra-actions))
+          (t
+           (delete-dups (append action extra-actions))))))
 
 (defvar ivy--prompts-list nil)
 
@@ -935,7 +938,8 @@ selection, non-nil otherwise."
   (let ((actions (ivy-state-action ivy-last)))
     (if (not (ivy--actionp actions))
         t
-      (funcall ivy-read-action-function actions))))
+      (let ((ivy--directory ivy--directory))
+        (funcall ivy-read-action-function actions)))))
 
 (defun ivy-read-action-by-key (actions)
   (let* ((hint (funcall ivy-read-action-format-function (cdr actions)))

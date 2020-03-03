@@ -4,7 +4,7 @@
 
 ;; Author: Vincent Zhang <seagle0128@gmail.com>
 ;; Homepage: https://github.com/seagle0128/all-the-icons-ivy-rich
-;; Version: 1.1.0
+;; Version: 1.2.0
 ;; Package-Requires: ((emacs "24.4") (ivy-rich "0.1.0") (all-the-icons "2.2.0"))
 ;; Keywords: convenience, icons, ivy
 
@@ -54,6 +54,11 @@
   :group 'all-the-icons
   :group 'ivy-rich
   :link '(url-link :tag "Homepage" "https://github.com/seagle0128/all-the-icons-ivy-rich"))
+
+(defcustom all-the-icons-ivy-rich-icon-size 1.0
+  "The icon size."
+  :group 'all-the-icons-ivy-rich
+  :type 'numberp)
 
 (defcustom all-the-icons-ivy-rich-display-transformers-list
   '(ivy-switch-buffer
@@ -298,12 +303,19 @@ See `ivy-rich-display-transformers-list' for details."
 
 
 (defun all-the-icons-ivy-rich-align-icons ()
-  "Setting tab size to 1, to insert tabs as delimiters."
+  "Set tab size to 1, to insert tabs as delimiters."
   (setq-local tab-width 1))
 
-(defun all-the-icons-ivy-rich--format-icon (icon &optional format)
-  "Format ICON with FORMAT."
-  (format (or format " %s") icon))
+(defun all-the-icons-ivy-rich--format-icon (icon)
+  "Format ICON'."
+  (format " %s"
+          (propertize
+           icon
+           'face `(:inherit ,(get-text-property 0 'face icon)
+                   :height ,(if (numberp all-the-icons-ivy-rich-icon-size)
+                                all-the-icons-ivy-rich-icon-size
+                              1.0))
+           'display '(raise -0.05))))
 
 (defun all-the-icons-ivy-rich-bookmark-name (candidate)
   "Return bookmark name from CANDIDATE."
@@ -317,7 +329,7 @@ See `ivy-rich-display-transformers-list' for details."
          (icon (with-current-buffer buffer (all-the-icons-icon-for-buffer))))
     (all-the-icons-ivy-rich--format-icon
      (if (symbolp icon)
-         (all-the-icons-faicon "file-o" :face 'all-the-icons-dsilver :height 0.8 :v-adjust 0.0)
+         (all-the-icons-faicon "file-o" :face 'all-the-icons-dsilver :v-adjust 0.0)
        icon))))
 
 (defun all-the-icons-ivy-rich-file-icon (candidate)
@@ -333,7 +345,7 @@ See `ivy-rich-display-transformers-list' for details."
                  (all-the-icons-icon-for-file file :v-adjust -0.05)))))
     (all-the-icons-ivy-rich--format-icon
      (if (symbolp icon)
-         (all-the-icons-faicon "file-o" :face 'all-the-icons-dsilver :height 0.8 :v-adjust 0.0)
+         (all-the-icons-faicon "file-o" :face 'all-the-icons-dsilver :v-adjust 0.0)
        icon))))
 
 (defun all-the-icons-ivy-rich-project-icon (_candidate)
@@ -364,12 +376,12 @@ See `ivy-rich-display-transformers-list' for details."
 (defun all-the-icons-ivy-rich-theme-icon (_candidate)
   "Display the theme icon in `ivy-rich'."
   (all-the-icons-ivy-rich--format-icon
-   (all-the-icons-material "palette" :height 1.0 :v-adjust -0.2)))
+   (all-the-icons-material "palette" :height 1.0 :v-adjust -0.225)))
 
 (defun all-the-icons-ivy-rich-keybinding-icon (_candidate)
   "Display the keybindings icon in `ivy-rich'."
   (all-the-icons-ivy-rich--format-icon
-   (all-the-icons-material "keyboard" :height 0.9 :v-adjust -0.15)))
+   (all-the-icons-faicon "keyboard-o" :height 0.9 :v-adjust -0.05)))
 
 (defun all-the-icons-ivy-rich-library-icon (_candidate)
   "Display the library icon in `ivy-rich'."

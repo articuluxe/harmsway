@@ -230,11 +230,10 @@ buffer where knowing the current project directory is important."
   "Update file icon in mode-line."
   (setq doom-modeline--buffer-file-icon
         (when (and doom-modeline-icon doom-modeline-major-mode-icon)
-          (let* ((icon (all-the-icons-icon-for-buffer)))
+          (let ((icon (all-the-icons-icon-for-buffer)))
             (propertize (if (symbolp icon)
-                            (doom-modeline-icon 'faicon "file-o"
+                            (doom-modeline-icon 'faicon "file-o" nil nil
                                                 :face 'all-the-icons-dsilver
-                                                :height 0.8
                                                 :v-adjust 0.0)
                           icon)
                         'help-echo (format "Major-mode: %s" (format-mode-line mode-name))
@@ -333,18 +332,6 @@ mouse-1: Previous buffer\nmouse-3: Next buffer"
          (when buffer-file-name
            (doom-modeline-update-buffer-file-name)))))))
 
-;; Optimize: just update the face of the buffer name in `after-change-functions', since
-;; `doom-modeline--buffer-file-name' may consume lots of CPU if it's called too frequently.
-(defun doom-modeline-update-buffer-file-name-face (&rest _)
-  "Update the face of buffer file name in mode-line."
-  (when (and buffer-file-name
-             doom-modeline--buffer-file-name
-             (buffer-modified-p))
-    (setq doom-modeline--buffer-file-name
-          (propertize doom-modeline--buffer-file-name
-                      'face 'doom-modeline-buffer-modified))))
-(add-hook 'after-change-functions #'doom-modeline-update-buffer-file-name-face)
-
 (defsubst doom-modeline--buffer-mode-icon ()
   "The icon of the current major mode."
   (when (and doom-modeline-icon doom-modeline-major-mode-icon)
@@ -387,7 +374,10 @@ mouse-1: Previous buffer\nmouse-3: Next buffer"
     (when-let ((name (or doom-modeline--buffer-file-name
                          (doom-modeline-update-buffer-file-name))))
       (if (doom-modeline--active)
-          name
+          ;; Check if the buffer is modified
+          (if (and buffer-file-name (buffer-modified-p))
+              (propertize name 'face 'doom-modeline-buffer-modified)
+            name)
         (propertize name 'face 'mode-line-inactive)))))
 
 (doom-modeline-def-segment buffer-info
@@ -1279,10 +1269,11 @@ of active `multiple-cursors'."
   (let ((width (or width doom-modeline-bar-width))
         (height (max (or height doom-modeline-height)
                      (doom-modeline--font-height))))
-    (setq doom-modeline--bar-active
-          (doom-modeline--make-xpm 'doom-modeline-bar width height)
-          doom-modeline--bar-inactive
-          (doom-modeline--make-xpm 'doom-modeline-bar-inactive width height))))
+    (when (and (numberp width) (numberp height))
+      (setq doom-modeline--bar-active
+            (doom-modeline--make-xpm 'doom-modeline-bar width height)
+            doom-modeline--bar-inactive
+            (doom-modeline--make-xpm 'doom-modeline-bar-inactive width height)))))
 
 (doom-modeline-add-variable-watcher
  'doom-modeline-height
@@ -1882,6 +1873,7 @@ Example:
   "The GitHub notifications."
   (when (and doom-modeline-github
              (doom-modeline--active)
+             (numberp doom-modeline--github-notification-number)
              (> doom-modeline--github-notification-number 0))
     (concat
      (doom-modeline-spc)
@@ -1892,7 +1884,7 @@ Example:
                            :v-adjust -0.0575)
        (doom-modeline-vspc)
        (propertize
-        (if (> doom-modeline--github-notification-number  doom-modeline-number-limit)
+        (if (> doom-modeline--github-notification-number doom-modeline-number-limit)
             (format "%d+" doom-modeline-number-limit)
           (number-to-string doom-modeline--github-notification-number))
         'face '(:inherit (doom-modeline-unread-number doom-modeline-warning))))
@@ -2149,6 +2141,7 @@ mouse-1: Toggle Debug on Quit"
              doom-modeline-gnus
              doom-modeline--gnus-started
              ;; Don't display if the unread mails count is zero
+             (numberp doom-modeline--gnus-unread-mail)
              (> doom-modeline--gnus-unread-mail 0))
     (concat
      (doom-modeline-spc)
@@ -2433,7 +2426,7 @@ mouse-3: Switch to next unread buffer")))
      (when (and doom-modeline-icon doom-modeline-major-mode-icon)
        (concat
         (doom-modeline-spc)
-        (doom-modeline-icon 'faicon "archive"
+        (doom-modeline-icon 'faicon "archive" nil nil
                             :face (if active
                                       (if doom-modeline-major-mode-color-icon
                                           'all-the-icons-silver
@@ -2471,10 +2464,10 @@ The cdr can also be a function that returns a name to use.")
        (doom-modeline-spc)
        (when doom-modeline-icon
          (concat
-          (doom-modeline-icon 'fileicon "elisp"
+          (doom-modeline-icon 'fileicon "elisp" nil nil
                               :face (if active
                                         (if doom-modeline-major-mode-color-icon
-                                            'all-the-icons-purple
+                                            'all-the-icons-blue
                                           'mode-line)
                                       'mode-line-inactive)
                               :height 1.0

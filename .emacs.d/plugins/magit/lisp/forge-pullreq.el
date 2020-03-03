@@ -156,6 +156,8 @@
     (let ((branch head-ref)
           (branch-n (format "pr-%s" number)))
       (when (or (and cross-repo-p (not editable-p))
+                ;; Handle deleted GitHub pull-request branch.
+                (not branch)
                 ;; Such a branch name would be invalid.  If we encounter
                 ;; this, then it means that we are dealing with a Gitlab
                 ;; pull-request whose source branch has been deleted.
@@ -291,6 +293,30 @@ Also see option `forge-topic-list-limit'."
            (vconcat (closql--table-columns (forge-db) 'pullreq t))
            (oref repo id)
            (ghub--username repo))))
+
+(defun forge-insert-requested-reviews ()
+  "Insert a list of pull-requests that are awaiting your review."
+  (when-let ((repo (forge-get-repository nil)))
+    (unless (oref repo sparse-p)
+      (forge-insert-topics "Pull requests awaiting review"
+                           (forge--ls-requested-reviews repo)
+                           (forge--topic-type-prefix repo 'pullreq)))))
+
+(defun forge--ls-requested-reviews (repo)
+  (mapcar
+   (lambda (row)
+     (closql--remake-instance 'forge-pullreq (forge-db) row))
+   (forge-sql
+    [:select $i1 :from pullreq
+     :join pullreq_review_request :on (= pullreq_review_request:pullreq pullreq:id)
+     :join assignee               :on (= pullreq_review_request:id      assignee:id)
+     :where (and (= pullreq:repository $s2)
+                 (= assignee:login     $s3)
+                 (isnull pullreq:closed))
+     :order-by [(desc updated)]]
+    (vconcat (closql--table-columns (forge-db) 'pullreq t))
+    (oref repo id)
+    (ghub--username repo))))
 
 ;;; _
 (provide 'forge-pullreq)

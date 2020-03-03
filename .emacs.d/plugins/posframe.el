@@ -146,7 +146,7 @@
   :group 'lisp
   :prefix "posframe-")
 
-(defcustom posframe-mouse-banish (not (eq system-type 'darwin))
+(defcustom posframe-mouse-banish nil
   "Mouse will be moved to (0 , 0) when it is non-nil."
   :group 'posframe
   :type 'boolean)
@@ -575,8 +575,8 @@ You can use `posframe-delete-all' to delete all posframes."
       ;; Force raise the current posframe.
       (raise-frame posframe--frame)
 
-      ;;Do not return anything.
-      nil)))
+      ;; Return posframe
+      posframe)))
 
 (defun posframe--get-font-height (position)
   "Get the font's height at POSITION."

@@ -181,6 +181,7 @@ attention to case differences."
     dockerfile-hadolint
     emacs-lisp
     emacs-lisp-checkdoc
+    ember-template
     erlang-rebar3
     erlang
     eruby-erubis
@@ -7853,6 +7854,49 @@ The checker runs `checkdoc-current-buffer'."
   (setf (car (flycheck-checker-get checker 'command))
         flycheck-this-emacs-executable))
 
+(defun flycheck-ember-template--check-for-config (&rest _ignored)
+  "Check the required config file is available up the file system."
+  (and buffer-file-name
+       (locate-dominating-file buffer-file-name ".template-lintrc.js")))
+
+(defun flycheck-ember-template--parse-error (output checker buffer)
+  "Parse Ember-template-lint errors/warnings from JSON OUTPUT.
+CHECKER and BUFFER denote the CHECKER that returned OUTPUT and
+the BUFFER that was checked respectively."
+  (mapcar (lambda (err)
+            (let-alist err
+              (flycheck-error-new-at
+               .line
+               .column
+               (pcase .severity
+                 (2 'error)
+                 (1 'warning)
+                 (_ 'warning))
+               .message
+               :id .rule
+               :checker checker
+               :buffer buffer
+               :filename (buffer-file-name buffer))))
+          (cdr (car (car (flycheck-parse-json output))))))
+
+(flycheck-def-config-file-var flycheck-ember-template-lintrc
+    ember-template
+    ".template-lintrc.js"
+  :type 'string
+  :safe #'stringp)
+
+(flycheck-define-checker ember-template
+  "An Ember template checker using ember-template-lint."
+  :command ("ember-template-lint"
+            (config-file "--config-path" flycheck-ember-template-lintrc)
+            "--filename" source-original
+            "--json")
+  :standard-input t
+  :error-parser flycheck-ember-template--parse-error
+  :modes web-mode
+  :enabled flycheck-ember-template--check-for-config
+  :working-directory flycheck-ember-template--check-for-config)
+
 (flycheck-def-option-var flycheck-erlang-include-path nil erlang
   "A list of include directories for Erlang.
 
@@ -9558,7 +9602,9 @@ Requires Flake8 3.0 or newer. See URL
              (or (not (flycheck-python-needs-module-p 'python-flake8))
                  (flycheck-python-find-module 'python-flake8 "flake8")))
   :verify (lambda (_) (flycheck-python-verify-module 'python-flake8 "flake8"))
-  :modes python-mode)
+  :modes python-mode
+  :next-checkers ((warning . python-pylint)
+                  (warning . python-mypy)))
 
 (flycheck-def-config-file-var flycheck-pylintrc python-pylint ".pylintrc"
   :safe #'stringp)
@@ -9613,7 +9659,8 @@ See URL `https://www.pylint.org/'."
              (or (not (flycheck-python-needs-module-p 'python-pylint))
                  (flycheck-python-find-module 'python-pylint "pylint")))
   :verify (lambda (_) (flycheck-python-verify-module 'python-pylint "pylint"))
-  :modes python-mode)
+  :modes python-mode
+  :next-checkers ((warning . python-mypy)))
 
 (flycheck-define-checker python-pycompile
   "A Python syntax checker using Python's builtin compiler.
@@ -9632,7 +9679,8 @@ See URL `https://docs.python.org/3.4/library/py_compile.html'."
    (error line-start "SyntaxError: ('" (message (one-or-more (not (any "'"))))
           "', ('" (file-name (one-or-more (not (any "'")))) "', "
           line ", " column ", " (one-or-more not-newline) line-end))
-  :modes python-mode)
+  :modes python-mode
+  :next-checkers ((warning . python-mypy)))
 
 (flycheck-def-config-file-var flycheck-python-mypy-ini python-mypy
                               "mypy.ini"
@@ -9666,8 +9714,7 @@ See URL `http://mypy-lang.org/'."
   :modes python-mode
   ;; Ensure the file is saved, to work around
   ;; https://github.com/python/mypy/issues/4746.
-  :predicate flycheck-buffer-saved-p
-  :next-checkers (python-flake8))
+  :predicate flycheck-buffer-saved-p)
 
 (flycheck-def-option-var flycheck-lintr-caching t r-lintr
   "Whether to enable caching in lintr.

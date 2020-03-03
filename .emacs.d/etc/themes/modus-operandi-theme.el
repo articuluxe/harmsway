@@ -1,10 +1,10 @@
 ;;; modus-operandi-theme.el --- Accessible light theme (WCAG AAA) -*- lexical-binding:t -*-
 
-;; Copyright (c) 2019-2020 Protesilaos Stavrou <info@protesilaos.com>
+;; Copyright (c) 2019-2020 Free Software Foundation, Inc.
 
 ;; Author: Protesilaos Stavrou <info@protesilaos.com>
 ;; URL: https://gitlab.com/protesilaos/modus-themes
-;; Version: 0.5.0
+;; Version: 0.6.0
 ;; Package-Requires: ((emacs "26.1"))
 ;; Keywords: faces, theme, accessibility
 
@@ -131,6 +131,8 @@
 ;;     git-timemachine
 ;;     gnus
 ;;     helm
+;;     helm-ls-git
+;;     helm-xref
 ;;     highlight-blocks
 ;;     hl-fill-column
 ;;     hl-line-mode
@@ -1282,11 +1284,11 @@ between foreground and background is >= 7:1)."
    `(helm-ff-symlink ((,class (:foreground ,cyan :underline t))))
    `(helm-ff-truename ((,class (:foreground ,blue-alt-other))))
    `(helm-grep-cmd-line ((,class (:foreground ,yellow-alt-other))))
-   `(helm-grep-file ((,class (:foreground ,cyan-alt :weight bold))))
+   `(helm-grep-file ((,class (:foreground ,fg-special-cold :weight bold))))
    `(helm-grep-finish ((,class (:foreground ,green))))
    `(helm-grep-lineno ((,class (:foreground ,fg-special-warm))))
    `(helm-grep-match ((,class (:inherit modus-theme-subtle-blue))))
-   `(helm-header ((,class (:background ,bg-header :foreground ,fg-header :weight bold))))
+   `(helm-header ((,class (:foreground ,fg-special-cold :weight bold))))
    `(helm-header-line-left-margin ((,class (:foreground ,yellow-intense :weight bold))))
    `(helm-history-deleted ((,class (:inherit modus-theme-intense-red :weight bold))))
    `(helm-history-remote ((,class (:foreground ,red-alt-other))))
@@ -1301,14 +1303,32 @@ between foreground and background is >= 7:1)."
    `(helm-non-file-buffer ((,class (:foreground ,fg-alt))))
    `(helm-prefarg ((,class (:foreground ,red-alt))))
    `(helm-resume-need-update ((,class (:inherit modus-theme-intense-red))))
-   `(helm-selection  ((,class (,@(and (>= emacs-major-version 27) '(:extend t))
-                                 :inherit modus-theme-intense-cyan :weight bold))))
+   `(helm-selection ((,class (,@(and (>= emacs-major-version 27) '(:extend t))
+                              :inherit modus-theme-intense-cyan :weight bold))))
+   `(helm-selection-line ((,class (,@(and (>= emacs-major-version 27) '(:extend t))
+                                   :inherit modus-theme-subtle-blue))))
    `(helm-separator ((,class (:foreground ,fg-special-mild))))
-   `(helm-source-header ((,class (:inherit modus-theme-special-cold :weight bold
-                                           ,@(when modus-operandi-theme-scale-headings
-                                               (list :height modus-operandi-theme-scale-4))))))
+   `(helm-time-zone-current ((,class (:foreground ,green))))
+   `(helm-time-zone-home ((,class (:foreground ,magenta))))
+   `(helm-source-header ((,class (:foreground ,red-alt :weight bold
+                                              ,@(when modus-operandi-theme-scale-headings
+                                                  (list :height modus-operandi-theme-scale-4))))))
    `(helm-top-columns ((,class (:inherit helm-header))))
+   `(helm-ucs-char ((,class (:foreground ,yellow-alt-other))))
    `(helm-visible-mark ((,class (:inherit modus-theme-subtle-cyan))))
+   ;;;; helm-ls-git
+   `(helm-ls-git-added-copied-face ((,class (:foreground ,green-intense))))
+   `(helm-ls-git-added-modified-face ((,class (:foreground ,yellow-intense))))
+   `(helm-ls-git-conflict-face ((,class (:foreground ,red-intense :weight bold))))
+   `(helm-ls-git-deleted-and-staged-face ((,class (:foreground ,red-nuanced))))
+   `(helm-ls-git-deleted-not-staged-face ((,class (:foreground ,red))))
+   `(helm-ls-git-modified-and-staged-face ((,class (:foreground ,yellow-nuanced))))
+   `(helm-ls-git-modified-not-staged-face ((,class (:foreground ,yellow))))
+   `(helm-ls-git-renamed-modified-face ((,class (:foreground ,magenta))))
+   `(helm-ls-git-untracked-face ((,class (:foreground ,fg-special-cold))))
+   ;;;; helm-xref
+   `(helm-xref-file-name ((,class (:foreground ,fg-special-cold :weight bold))))
+   `(helm-xref-file-name ((,class (:foreground ,fg-special-warm))))
    ;;;; highlight region or ad-hoc regexp
    `(hi-black-b ((,class ((:background ,fg-main :foreground ,bg-main)))))
    `(hi-blue ((,class (:background ,bg-alt :foreground ,blue :underline t))))
@@ -1806,7 +1826,7 @@ between foreground and background is >= 7:1)."
    `(org-level-8 ((,class (:inherit ,modus-theme-variable-pitch
                            :foreground ,fg-dim :weight bold))))
    `(org-link ((,class (:inherit link))))
-   `(org-list-dt ((,class (:foreground ,fg-dim :weight bold))))
+   `(org-list-dt ((,class (:weight bold))))
    `(org-macro ((,class (:inherit org-latex-and-related))))
    `(org-meta-line ((,class (:foreground ,fg-alt :slant ,modus-theme-slant))))
    `(org-mode-line-clock ((,class (:background ,bg-main :foreground ,fg-main))))

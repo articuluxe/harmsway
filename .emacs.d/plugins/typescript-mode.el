@@ -2280,8 +2280,13 @@ starts the member expression.
   ;; And set an indent relative to that.
   (while (looking-at "\\.")
     (typescript--backward-syntactic-ws)
-    (while (memq (char-before) '(?\] ?} ?\)))
-      (backward-list)
+    (while (eq (char-before) ?\;)
+      (backward-char))
+    (while (memq (char-before) '(?\] ?} ?\) ?>))
+      (if (not (eq (char-before) ?>))
+          (backward-list)
+        (backward-char)
+        (typescript--backward-over-generic-parameter-list))
       (typescript--backward-syntactic-ws))
     (if (looking-back typescript--dotted-name-re nil)
         (back-to-indentation)
@@ -2432,7 +2437,7 @@ moved on success."
                                  (looking-at "\\_<\\(switch\\|if\\|while\\|until\\|for\\)\\_>\\(?:\\s-\\|\n\\)*(")))))
                     (condition-case nil
                         (backward-sexp)
-                      (scan-error nil)))
+                      (scan-error (cl-return-from search-loop nil))))
                    ((looking-back typescript--number-literal-re
                                   ;; We limit the search back to the previous space or end of line (if possible)
                                   ;; to prevent the search from going over the whole buffer.
@@ -2478,7 +2483,9 @@ moved on success."
                        ;; In that case, we want the code that follows to see the indentation
                        ;; that was in effect at the beginning of the function declaration, and thus
                        ;; we want to move back over the list of function parameters.
-                       (backward-list))
+                       (condition-case nil
+                           (backward-list)
+                         (error nil)))
                       ((looking-back "," nil)
                        ;; If we get here, we have a comma, spaces and an opening curly brace. (And
                        ;; (point) is just after the comma.) We don't want to move from the current position

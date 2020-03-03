@@ -55,7 +55,7 @@ for a repository using the command `forge-add-pullreq-refspec'."
     ("l p" "pull-requests" forge-list-pullreqs)
     ("l n" "notifications" forge-list-notifications)
     ("l r" "repositories"  forge-list-repositories)
-    (7 "l a" "awaiting review"     forge-list-requested-pullreqs)
+    (7 "l a" "awaiting review"     forge-list-requested-reviews)
     (7 "o i" "owned issues"        forge-list-owned-issues)
     (7 "o p" "owned pull-requests" forge-list-owned-pullreqs)
     (7 "o r" "owned repositories"  forge-list-owned-repositories)]
@@ -343,7 +343,8 @@ read an issue N to visit instead."
                          (if (magit-remote-branch-p d)
                              d
                            (magit-get-push-branch d t))))))
-         (remote  (oref (forge-get-repository t) remote))
+         (repo    (forge-get-repository t))
+         (remote  (oref repo remote))
          (targets (delete source (magit-list-remote-branch-names remote)))
          (target  (magit-completing-read
                    "Target branch" targets nil t nil 'magit-revision-history
@@ -353,7 +354,9 @@ read an issue N to visit instead."
                           (d (and d (if (magit-remote-branch-p d)
                                         d
                                       (magit-get-upstream-branch d))))
-                          (d (or d (concat remote "/master"))))
+                          (d (or d (concat remote "/"
+                                           (or (oref repo default-branch)
+                                               "master")))))
                      (car (member d targets))))))
     (list source target)))
 
@@ -749,7 +752,7 @@ information."
 (defun forge-fork (fork remote)
   "Fork the current repository to FORK and add it as a REMOTE.
 If the fork already exists, then that isn't an error; the remote
-is added anyway.  Currently this only support Github.com."
+is added anyway.  Currently this only supports Github and Gitlab."
   (interactive
    (let ((fork (magit-completing-read "Fork to"
                                       (mapcar #'car forge-owned-accounts))))
@@ -761,8 +764,8 @@ is added anyway.  Currently this only support Github.com."
   (let ((repo (forge-get-repository 'stub)))
     (forge--fork-repository repo fork)
     (magit-remote-add remote
-                      (magit-clone--name-to-url
-                       (concat fork "/" (oref repo name)))
+                      (magit-clone--format-url (oref repo githost) fork
+                                               (oref repo name))
                       (list "--fetch"))))
 
 ;;; Misc

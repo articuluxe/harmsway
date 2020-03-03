@@ -103,14 +103,17 @@ It is run in the context of the failed process buffer."
   (rx (** 1 3 digit) "%")
   "A regex to extract the % complete from a file.")
 
+(defvar dired-remote-portfwd
+  "ssh -p 50000 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+  "An explicit ssh command for rsync to use port forwarded proxy.")
+
 ;; Helpers
 
 (defun dired-rsync--quote-and-maybe-convert-from-tramp (file-or-path)
   "Reformat a tramp FILE-OR-PATH to one usable for rsync."
   (if (tramp-tramp-file-p file-or-path)
-      ;; tramp format is /method:remote:path
-      (let ((parts (s-split ":" file-or-path)))
-        (format "%s:\"%s\"" (nth 1 parts) (shell-quote-argument (nth 2 parts))))
+      (with-parsed-tramp-file-name file-or-path tfop
+        (format "%s:\"%s\"" tfop-host (shell-quote-argument tfop-localname)))
     (shell-quote-argument file-or-path)))
 
 (defun dired-rsync--extract-host-from-tramp (file-or-path &optional split-user)
@@ -137,8 +140,8 @@ hosts don't need quoting."
 (defun dired-rsync--extract-paths-from-tramp (files)
   "Extract the path part of a tramp FILES and quote it."
   (--map
-   (let ((parts (s-split ":" it)))
-     (shell-quote-argument (nth 2 parts)))
+   (with-parsed-tramp-file-name it tfop
+     (shell-quote-argument tfop-localname))
    files))
 
 
@@ -150,20 +153,19 @@ hosts don't need quoting."
 alternative indication (such as a percentage completion).  If
 neither is set we simply display the current number of jobs."
   (force-mode-line-update)
-  (setq mode-line-process
-        (setq dired-rsync-modeline-status
-              (cond
-               ;; error has occurred
-               (err (propertize
-                     (format " R:%d %s!!" dired-rsync-job-count err)
-                     'font-lock-face '(:foreground "red")))
-               ;; we still have jobs but no error
-               ((> dired-rsync-job-count 1)
-                (format " R:%d" dired-rsync-job-count))
-               ((> dired-rsync-job-count 0)
-                (format " R:%s" (or ind dired-rsync-job-count)))
-               ;; nothing going on
-               (t nil)))))
+  (setq dired-rsync-modeline-status
+        (cond
+         ;; error has occurred
+         (err (propertize
+               (format " R:%d %s!!" dired-rsync-job-count err)
+               'font-lock-face '(:foreground "red")))
+         ;; we still have jobs but no error
+         ((> dired-rsync-job-count 1)
+          (format " R:%d" dired-rsync-job-count))
+         ((> dired-rsync-job-count 0)
+          (format " R:%s" (or ind dired-rsync-job-count)))
+         ;; nothing going on
+         (t nil))))
 
 ;;
 ;; Running rsync: We need to take care of a couple of things here. We
@@ -182,7 +184,8 @@ This gets called whenever the inferior `PROC' changes state as
     (when (s-starts-with-p "finished" desc)
       ;; clean-up finished tasks
       (let ((dired-buf (plist-get details ':dired-buffer)))
-        (when dired-rsync-unmark-on-completion
+        (when (and dired-rsync-unmark-on-completion
+                   (buffer-live-p dired-buf))
           (with-current-buffer dired-buf
             (dired-unmark-all-marks)))
         (kill-buffer proc-buf)))
@@ -215,8 +218,7 @@ dired-buffer modeline."
       (process-send-string proc (concat (read-passwd string) "\n")))
     ;; update if anything to report
     (when (or err indicator)
-      (with-current-buffer (plist-get details ':dired-buffer)
-        (dired-rsync--update-modeline err indicator))))
+      (dired-rsync--update-modeline err indicator)))
 
   ;; update the process buffer (we could just drop?)
   (let ((old-process-mark (process-mark proc)))
@@ -234,7 +236,6 @@ dired-buffer modeline."
 
 (defun dired-rsync--do-run (command details)
   "Run rsync COMMAND in a unique buffer, passing DETAILS to sentinel."
-  (message "cmd:%s" command)
   (let* ((buf (format "*rsync @ %s" (current-time-string)))
          (proc (start-process-shell-command "*rsync*" buf command)))
     (set-process-sentinel
@@ -280,7 +281,7 @@ there."
                       "'%s %s -e \"%s\" %s %s@localhost:%s'"
                       dired-rsync-command
                       dired-rsync-options
-                      "ssh -p 50000 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+                      dired-remote-portfwd
                       (s-join " " sfiles)
                       duser
                       dpath)))))
