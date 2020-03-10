@@ -633,6 +633,8 @@
        ((,(append '((supports :underline (:style wave))) class)
          (:underline (:style wave :color ,red) :inherit unspecified))
         (,class (:foreground ,red :weight bold :underline t))))
+;;;;; fold-this
+     `(fold-this-overlay ((,class (:inherit default :foreground ,violet))))
 ;;;;; form-feed
      `(form-feed-line
        ((,class (:strike-through ,s-line))))
@@ -1926,6 +1928,10 @@
      `(wgrep-reject-face ((,class (:foreground ,red :weight unspecified))))
 ;;;;; which-func-mode
      `(which-func ((,class (:foreground ,green))))
+;;;;; which-key-mode
+     `(which-key-command-description-face ((,class (:foreground ,base0))))
+     `(which-key-group-description-face ((,class (:foreground ,cyan))))
+     `(which-key-key-face ((,class (:bold t))))
 ;;;;; whitespace-mode
      `(whitespace-space ((,class (:background unspecified :foreground ,base01
                                               :inverse-video unspecified :slant italic))))

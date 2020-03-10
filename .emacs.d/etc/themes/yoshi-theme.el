@@ -178,6 +178,10 @@
    `(flycheck-inline-info ((t (:inherit unspecified :foreground ,fgblue :height 0.8))))
    `(flycheck-inline-warning ((t (:inherit unspecified :foreground ,fgorange :height 0.8))))
 
+   ;;; Flycheck posframe
+   `(flycheck-posframe-background-face ((t (:background ,bgdim))))
+   `(flycheck-posframe-border-face ((t (:background ,bgdim))))
+
    ;;; Flymake
    `(flymake-errline ((t (:background unspecified :underline (:color ,fgred :style wave)))))
    `(flymake-infoline ((t (:background unspecified :underline (:color ,fgblue :style wave)))))
@@ -286,6 +290,8 @@
    `(ivy-minibuffer-match-face-2 ((t (:background unspecified :weight bold))))
    `(ivy-minibuffer-match-face-3 ((t (:background unspecified :weight bold))))
    `(ivy-minibuffer-match-face-4 ((t (:background unspecified :weight bold))))
+   `(ivy-posframe ((t (:background ,bgdim :foreground ,fgdefault :inherit unspecified))))
+   `(ivy-posframe-border ((t (:background ,bgdim :inherit unspecified))))
 
    ;;; Jabber
    `(jabber-activity-face ((t (:foreground ,fgred :weight unspecified))))
@@ -520,7 +526,15 @@
    `(fci-rule-color ,bgred)
    '(org-fontify-whole-heading-line t)
    '(window-divider-mode t)
-   '(window-divider-default-right-width 1)))
+   '(window-divider-default-right-width 1)
+   '(ivy-posframe-border-width 15)
+   '(ivy-posframe-style 'frame-bottom-window-center)
+   `(hydra-posframe-show-params
+     '(:poshandler posframe-poshandler-frame-bottom-center
+                   :internal-border-width 15
+                   :internal-border-color ,bgdim
+                   :background-color ,bgdim))
+   '(flycheck-posframe-border-width 5)))
 
 ;;;###autoload
 (and load-file-name

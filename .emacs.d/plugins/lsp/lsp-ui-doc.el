@@ -334,12 +334,12 @@ We don't extract the string that `lps-line' is already displaying."
 
 (defun lsp-ui-doc--webkit-execute-script (script &optional fn)
   "Execute SCRIPT in embedded Xwidget and run optional callback FN."
-  (when-let* ((xw (lsp-ui-doc--webkit-get-xwidget)))
+  (-when-let* ((xw (lsp-ui-doc--webkit-get-xwidget)))
     (xwidget-webkit-execute-script xw script fn)))
 
 (defun lsp-ui-doc--webkit-execute-script-rv (script)
   "Execute SCRIPT in embedded Xwidget synchronously."
-  (when-let* ((xw (lsp-ui-doc--webkit-get-xwidget)))
+  (-when-let* ((xw (lsp-ui-doc--webkit-get-xwidget)))
     (xwidget-webkit-execute-script-rv xw script)))
 
 (defun lsp-ui-doc--hide-frame ()
@@ -665,6 +665,7 @@ HEIGHT is the documentation number of lines."
 (defun lsp-ui-doc--make-request nil
   "Request the documentation to the LS."
   (when (and (not (eq this-command 'lsp-ui-doc-hide))
+             (not (eq this-command 'keyboard-quit))
              (not (bound-and-true-p lsp-ui-peek-mode))
              (lsp--capability "hoverProvider"))
     (-if-let (bounds (or (and (symbol-at-point) (bounds-of-thing-at-point 'symbol))
@@ -678,11 +679,14 @@ HEIGHT is the documentation number of lines."
                  (let ((buf (current-buffer)))
                    (lambda nil
                      (when (equal buf (current-buffer))
-                       (lsp--send-request-async
-                        (lsp--make-request "textDocument/hover" (lsp--text-document-position-params))
+                       (lsp-request-async
+                        "textDocument/hover"
+                        (lsp--text-document-position-params)
                         (lambda (hover)
                           (when (equal buf (current-buffer))
-                            (lsp-ui-doc--callback hover bounds (current-buffer)))))))))))
+                            (lsp-ui-doc--callback hover bounds (current-buffer))))
+                        :mode 'tick
+                        :cancel-token :lsp-ui-doc-hover)))))))
       (lsp-ui-doc--hide-frame))))
 
 (defun lsp-ui-doc--callback (hover bounds buffer)
@@ -734,6 +738,8 @@ before, or if the new window is the minibuffer."
 
 (advice-add 'load-theme :before (lambda (&rest _) (lsp-ui-doc--delete-frame)))
 (add-hook 'window-configuration-change-hook #'lsp-ui-doc--hide-frame)
+
+(advice-add #'keyboard-quit :before #'lsp-ui-doc--hide-frame)
 
 (defun lsp-ui-doc--on-delete (frame)
   "Function called when a FRAME is deleted."

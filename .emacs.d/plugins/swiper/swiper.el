@@ -619,7 +619,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
               (if (eq (ivy-state-caller ivy-last) 'swiper-isearch)
                   (swiper--isearch-occur-cands cands)
                 (mapcar (lambda (s)
-                          (let ((n (get-text-property 0 'swiper-line-number s)))
+                          (let ((n (swiper--line-number s)))
                             (setq s (substring s 1))
                             (add-text-properties 0 1 (list 'swiper-line-number n) s)
                             (cons n s)))
@@ -670,6 +670,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
 (defun swiper-occur (&optional cands)
   "Generate a custom occur buffer for `swiper'.
 When capture groups are present in the input, print them instead of lines."
+  (setq cands (or ivy-marked-candidates cands))
   (let* ((buffer (swiper--occur-buffer))
          (fname (propertize
                  (with-ivy-window
@@ -819,7 +820,7 @@ When non-nil, INITIAL-INPUT is the initial search pattern."
                    (if initial-input
                        (cl-position-if
                         (lambda (x)
-                          (= (1+ preselect) (get-text-property 0 'swiper-line-number x)))
+                          (= (1+ preselect) (swiper--line-number x)))
                         (progn
                           (setq ivy--old-re nil)
                           (ivy--filter initial-input candidates)))
@@ -955,7 +956,7 @@ the face, window and priority of the overlay."
           (let* ((re (replace-regexp-in-string
                       "    " "\t"
                       re))
-                 (num (get-text-property 0 'swiper-line-number (ivy-state-current ivy-last))))
+                 (num (swiper--line-number (ivy-state-current ivy-last))))
             (unless (memq this-command '(ivy-yank-word
                                          ivy-yank-symbol
                                          ivy-yank-char
@@ -1093,9 +1094,25 @@ WND, when specified is the window."
            (recenter))))
   (setq swiper--current-window-start (window-start)))
 
+(defun swiper--line-number (x)
+  (or (get-text-property 0 'swiper-line-number x)
+      (get-text-property 1 'swiper-line-number x)))
+
+(defcustom swiper-verbose t
+  "When non-nil, print more informational messages."
+  :type 'boolean)
+
+(defun swiper--push-mark ()
+  (when (/= (point) swiper--opoint)
+    (unless (and transient-mark-mode mark-active)
+      (when (eq ivy-exit 'done)
+        (push-mark swiper--opoint t)
+        (when swiper-verbose
+          (message "Mark saved where search started"))))))
+
 (defun swiper--action (x)
   "Goto line X."
-  (let ((ln (1- (get-text-property 0 'swiper-line-number x)))
+  (let ((ln (1- (swiper--line-number x)))
         (re (ivy--regex ivy-text))
         (case-fold-search (ivy--case-fold-p ivy-text)))
     (if (null x)
@@ -1116,11 +1133,7 @@ WND, when specified is the window."
           (goto-char (match-beginning 0)))
         (swiper--ensure-visible)
         (swiper--maybe-recenter)
-        (when (/= (point) swiper--opoint)
-          (unless (and transient-mark-mode mark-active)
-            (when (eq ivy-exit 'done)
-              (push-mark swiper--opoint t)
-              (message "Mark saved where search started"))))
+        (swiper--push-mark)
         (swiper--remember-search-history re)))))
 
 (defun swiper--remember-search-history (re)
@@ -1212,7 +1225,7 @@ otherwise continue prompting for buffers."
         (with-ivy-window
           (switch-to-buffer buffer-name)
           (goto-char (point-min))
-          (forward-line (1- (get-text-property 0 'swiper-line-number x)))
+          (forward-line (1- (swiper--line-number x)))
           (re-search-forward
            (ivy--regex ivy-text)
            (line-end-position) t)
@@ -1488,7 +1501,9 @@ that we search only for one character."
         (isearch-range-invisible (point) (1+ (point)))
         (swiper--maybe-recenter)
         (if (eq ivy-exit 'done)
-            (swiper--remember-search-history (ivy--regex ivy-text))
+            (progn
+              (swiper--push-mark)
+              (swiper--remember-search-history (ivy--regex ivy-text)))
           (swiper--cleanup)
           (swiper--delayed-add-overlays)
           (swiper--add-cursor-overlay

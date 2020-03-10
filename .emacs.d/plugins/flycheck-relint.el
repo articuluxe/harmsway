@@ -45,7 +45,11 @@ CHECKER is this checker, and CALLBACK is the flycheck dispatch function."
            (mapcar (pcase-lambda (`(,message ,expr-pos ,error-pos ,str ,str-idx))
                      (if error-pos
                          (flycheck-relint--error-at error-pos message)
-                       (flycheck-relint--error-at expr-pos (format "%s\nin %S" message str))))
+                       (flycheck-relint--error-at expr-pos
+                                                  (mapconcat 'identity
+                                                             (append (list message (relint--quote-string str))
+                                                                     (when str-idx (list (relint--caret-string str str-idx))))
+                                                             "\n"))))
                    (relint-buffer (current-buffer)))))
 
 
@@ -56,7 +60,7 @@ CHECKER is this checker, and CALLBACK is the flycheck dispatch function."
     (move-beginning-of-line 1)
     (let* ((line (line-number-at-pos))
            (col (- pos (point))))
-      (flycheck-error-new-at line col 'error message :checker checker))))
+      (flycheck-error-new-at line (1+ col) 'error message :checker 'flycheck-relint))))
 
 
 

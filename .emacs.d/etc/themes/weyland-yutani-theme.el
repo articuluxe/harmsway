@@ -5,7 +5,7 @@
 ;; Copyright (C) 2014 , Joe Staursky
 
 ;; Author: Joe Staursky
-;; 
+;;
 ;; Version: 0.1
 ;; Package-Requires: ((emacs "24"))
 ;; Created with emacs-theme-generator, https://github.com/mswift42/theme-creator.
@@ -39,28 +39,29 @@
 
  (deftheme weyland-yutani)
  (let ((class '((class color) (min-colors 89)))
-       (fg1        "#D1D9DD")
+       (fg1        "#cbcbcb")
        (fg2        "#b3c1c9")
        (fg3        "#9babb7")
        (fg4        "#8694a5")
-       (bg1        "#212628")            ;
-       (bg2        "#292F35")
-       (bg3        "#313641")
+       (bg1        "#2b2b2b")                  ; #302d2d
+       (bg2        "#363636")
+       (bg3        "#3f3f3f")
        (bg4        "#3c3a50")
-       (key2       "#59c55f")
-       (key3       "#7edc6e")
-       (builtin    "#a1ef78") ; Done. #f38283
-       (err        "#cd2517")
-       (keyword    "#BFEB3A") ; Done.
-       (const      "#D4B0EE") ; Done.
-       (comment    "#7e9fad") ; Done.
-       (comment-bg "#2b2e2f")
-       (region-bg  "#3c3a50")
-       (func       "#bfc0f5") ; Done.
-       (str        "#81d2e7") ; #f5f891
-       (type       "#b87be3") ; Done.
-       (var        "#85b7e5") ; Done.
-       (warning    "#fcbec9")
+       (key2       "#c8ef62")
+       (key3       "#b3f35c")
+
+       (keyword    "#cce671")   ;#dadd6c "#dadd6c"
+       (var        "#aabcf1")   ;#b3b4f3 "#b3b4f3"
+       (const      "#a1d58f")   ;#abc789 "#abc789"
+       (builtin    "#c278f0")   ;#c278f0
+       (type       "#EDAAF3")   ;#EDAAF3  #cd93f3 #d27bb0ff
+       (err        "#cd2517")   ;#cd2517
+       (comment    "#6e8397")   ;#6e8397
+       (comment-bg "#313131")   ;#313131
+       (region-bg  "#3a3a3a")   ;#3a3a3a
+       (func       "#63bfa5")   ;##EDAAF38bc1ad
+       (str        "#d27bb0")   ;#e27470 #e27470
+       (warning    "#76b7a4")   ;#76b7a4
 
        ;; Colors Generic
        (wy-light-blue "#81d2e7")
@@ -98,10 +99,10 @@
 
     `(font-lock-negation-char-face ((,class (:foreground ,wy-yellow))))
     `(font-lock-reference-face ((,class (:foreground ,const))))
-    `(font-lock-constant-face ((,class (:foreground ,const))))
+    `(font-lock-constant-face ((,class (:foreground ,const :background "#312e2e"))))
         `(font-lock-doc-face ((,class (:foreground ,comment))))
-        `(font-lock-function-name-face ((,class (:foreground ,func :bold t))))
-        `(font-lock-keyword-face ((,class (:foreground ,keyword))))
+        `(font-lock-function-name-face ((,class (:foreground ,func))))
+        `(font-lock-keyword-face ((,class (:foreground ,keyword )))) ;:bold t
         `(font-lock-string-face ((,class (:foreground ,str))))
         `(font-lock-type-face ((,class (:foreground ,type ))))
         `(font-lock-variable-name-face ((,class (:foreground ,var))))

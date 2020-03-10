@@ -40,14 +40,8 @@
   :link '(custom-manual "(lsp-ui) Top")
   :link '(info-link "(lsp-ui) Customizing"))
 
-(require 'lsp-ui-sideline)
-(require 'lsp-ui-peek)
-(require 'lsp-ui-imenu)
-(require 'lsp-ui-doc)
+(require 'cl-lib)
 (require 'dash)
-
-(with-eval-after-load 'flycheck
-  (require 'lsp-ui-flycheck))
 
 (with-eval-after-load 'winum
   (when (and (boundp 'winum-ignored-buffers-regexp) lsp-ui-doc-winum-ignore)
@@ -120,9 +114,8 @@ Both should have the form (FILENAME LINE COLUMN)."
 
 (defun lsp-ui--reference-triples (extra)
   "Return references as a list of (FILENAME LINE COLUMN) triples."
-  (let ((refs (lsp--send-request (lsp--make-request
-                                  "textDocument/references"
-                                  (append (lsp--text-document-position-params) extra)))))
+  (let ((refs (lsp-request "textDocument/references"
+                           (append (lsp--text-document-position-params) extra))))
     (sort
      (mapcar
       (lambda (ref)
@@ -166,6 +159,15 @@ Both should have the form (FILENAME LINE COLUMN)."
           (cons idx (length refs)))
       (cons 0 0))))
 
-
 (provide 'lsp-ui)
+
+(cl-eval-when (load eval)
+  (require 'lsp-ui-sideline)
+  (require 'lsp-ui-peek)
+  (require 'lsp-ui-imenu)
+  (require 'lsp-ui-doc)
+
+  (with-eval-after-load 'flycheck
+    (require 'lsp-ui-flycheck)))
+
 ;;; lsp-ui.el ends here

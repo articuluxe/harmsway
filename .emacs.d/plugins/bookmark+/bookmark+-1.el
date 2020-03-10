@@ -7,9 +7,9 @@
 ;; Copyright (C) 2000-2020, Drew Adams, all rights reserved.
 ;; Copyright (C) 2009, Thierry Volpiatto.
 ;; Created: Mon Jul 12 13:43:55 2010 (-0700)
-;; Last-Updated: Fri Jan 24 15:42:39 2020 (-0800)
+;; Last-Updated: Fri Jan 31 07:36:20 2020 (-0800)
 ;;           By: dradams
-;;     Update #: 9042
+;;     Update #: 9055
 ;; URL: https://www.emacswiki.org/emacs/download/bookmark%2b-1.el
 ;; Doc URL: https://www.emacswiki.org/emacs/BookmarkPlus
 ;; Keywords: bookmarks, bookmark+, placeholders, annotations, search, info, url, eww, w3m, gnus
@@ -160,7 +160,9 @@
 ;;    `bmkp-dired-jump-other-window', `bmkp-dired-this-dir-jump',
 ;;    `bmkp-dired-this-dir-jump-other-window',
 ;;    `bmkp-edit-bookmark-name-and-location',
-;;    `bmkp-edit-bookmark-record', `bmkp-edit-bookmark-record-send',
+;;    `bmkp-edit-bookmark-record',
+;;    `bmkp-edit-bookmark-record-file/buffer',
+;;    `bmkp-edit-bookmark-record-send',
 ;;    `bmkp-edit-bookmark-records-send', `bmkp-edit-tags',
 ;;    `bmkp-edit-tags-send', `bmkp-edit-this-annotation',
 ;;    `bmkp-empty-file', `bmkp-eww-jump' (Emacs 25+),
@@ -491,7 +493,7 @@
 ;;    `bmkp-all-exif-data', `bmkp-all-tags-alist-only',
 ;;    `bmkp-all-tags-regexp-alist-only', `bmkp-alpha-cp',
 ;;    `bmkp-alpha-p', `bmkp-annotated-alist-only',
-;;    `bmkp-annotated-bookmark-p',
+;;    `bmkp-annotated-bookmark-p', `bmkp-annotated-cp',
 ;;    `bmkp-annotation-or-bookmark-description',
 ;;    `bmkp-autofile-alist-only', `bmkp-autofile-all-tags-alist-only',
 ;;    `bmkp-autofile-all-tags-regexp-alist-only',
@@ -4537,6 +4539,30 @@ Non-interactively, optional arg MSG-P means display progress messages."
     (unless read-error-msg
       (setq bmkp-edit-bookmark-orig-record  nil)))) ; Reset it, but keep it if error so can try again.
 
+;;;###autoload (autoload 'bmkp-edit-bookmark-record-file/buffer "bookmark+")
+(defun bmkp-edit-bookmark-record-file/buffer (bookmark) ; Not bound
+  "Edit the full record (the Lisp sexp) of a bookmark in this buffer.
+You are prompted for the name of a bookmark here, with completion."
+  (interactive
+   (let ((alist  (bmkp-this-file/buffer-alist-only)))
+     (list (bookmark-completing-read (format "Add or edit annotation for bookmark"
+                                             (if current-prefix-arg "Add or edit" "Edit"))
+                                     (or (and (fboundp 'bmkp-bookmarks-lighted-at-point)
+                                              (bmkp-bookmarks-lighted-at-point))
+                                         (bmkp-default-bookmark-name alist))
+                                     alist
+                                     nil
+                                     nil
+                                     (not current-prefix-arg)))))
+  (bmkp-edit-bookmark-record bookmark))
+
+;;; ;;;###autoload (autoload 'bmkp-edit-all-bookmark-records-this-file/buffer "bookmark+")
+;;; (defun bmkp-edit-all-bookmark-records-this-file/buffer () ; Not bound
+;;;   "Pop up a record-editing buffer for each bookmark in this file/buffer."
+;;;   (interactive)
+;;;   (dolist (bmk  (bmkp-this-file/buffer-alist-only))
+;;;     (bmkp-edit-bookmark-record bmk)))
+
 (define-derived-mode bmkp-edit-tags-mode emacs-lisp-mode
     "Edit Bookmark Tags"
   "Mode for editing bookmark tags.
@@ -7510,6 +7536,24 @@ Similarly, SUFFIX-MSG is appended, after appending \".  \"."
 
 ;;(@* "Sorting - General Predicates")
 ;;  *** Sorting - General Predicates ***
+
+(defun bmkp-annotated-cp (b1 b2)
+  "True if bookmark B1 is annotated and bookmark B2 is not.
+Return nil if incomparable as described.
+
+Reverse the roles of B1 and B2 for a false value.
+A true value is returned as `(t)', a false value as `(nil)'.
+
+B1 and B2 are full bookmarks (records) or bookmark names.
+If either is a record then it need not belong to `bookmark-alist'."
+  (setq b1  (bookmark-get-bookmark b1)
+        b2  (bookmark-get-bookmark b2))
+  (let ((m1  (bmkp-annotated-bookmark-p b1))
+        (m2  (bmkp-annotated-bookmark-p b2)))
+    (cond ((and m1 m2)  nil)
+          (m1           '(t))
+          (m2           '(nil))
+          (t            nil))))
 
 (defun bmkp-flagged-cp (b1 b2)
   "True if bookmark B1 is flagged for deletion and bookmark B2 is not.
@@ -10722,7 +10766,7 @@ BOOKMARK is a bookmark name or a bookmark record."
 (defun bmkp-dired-remember-*-marks (beg end)
   "Return a list of the files and subdirs marked `*' in Dired."
   (if (fboundp 'dired--unhide)          ; Emacs 27+ uses invisible text, not `selective-display'.
-      (dired--unhide (point-min) (point-max))
+      (with-silent-modifications (dired--unhide (point-min) (point-max)))
     (when selective-display (let ((inhibit-read-only  t)) (subst-char-in-region beg end ?\r ?\n))))
   (let ((mfiles  ())
         fil)

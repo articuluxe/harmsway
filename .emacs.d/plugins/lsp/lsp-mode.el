@@ -56,6 +56,7 @@
 (require 'url-util)
 (require 'widget)
 (require 'xref)
+(require 'minibuffer)
 (require 'yasnippet nil t)
 
 (declare-function company-mode "ext:company")
@@ -188,7 +189,7 @@ occasionally break as language servers are updated."
   :package-version '(lsp-mode . "6.1"))
 
 (defcustom lsp-client-packages
-  '(ccls cquery lsp-clients lsp-clojure lsp-csharp lsp-css lsp-dart lsp-elm
+  '(ccls cquery lsp-clients lsp-clojure lsp-csharp lsp-css lsp-dart lsp-dls lsp-elm
     lsp-erlang lsp-eslint lsp-fsharp lsp-gdscript lsp-go lsp-haskell lsp-haxe
     lsp-intelephense lsp-java lsp-json lsp-metals lsp-pwsh lsp-pyls
     lsp-python-ms lsp-rust lsp-solargraph lsp-terraform lsp-verilog lsp-vetur
@@ -610,6 +611,7 @@ Changes take effect only when a new session is started."
                                         (html-mode . "html")
                                         (sgml-mode . "html")
                                         (mhtml-mode . "html")
+                                        (go-dot-mod-mode . "go")
                                         (go-mode . "go")
                                         (haskell-mode . "haskell")
                                         (hack-mode . "hack")
@@ -647,7 +649,8 @@ Changes take effect only when a new session is started."
                                         (nim-mode . "nim")
                                         (dhall-mode . "dhall")
                                         (cmake-mode . "cmake")
-                                        (gdscript-mode . "gdscript"))
+                                        (gdscript-mode . "gdscript")
+                                        (d-mode . "d"))
   "Language id configuration.")
 
 (defvar lsp--last-active-workspaces nil
@@ -741,6 +744,13 @@ Set to nil to disable the warning."
   :type 'number
   :group 'lsp-mode)
 ;;;###autoload(put 'lsp-file-watch-threshold 'safe-local-variable (lambda (i) (or (numberp i) (not i))))
+
+(defcustom lsp-completion-styles (if (version<= "27.0" emacs-version)
+                                     `(flex)
+                                   `(substring))
+  "List of completion styles to use for filtering completion items."
+  :group 'lsp-mode
+  :type completion--styles-type)
 
 (defvar lsp-custom-markup-modes
   '((rust-mode "no_run" "rust,no_run" "rust,ignore" "rust,should_panic"))
@@ -1973,13 +1983,14 @@ BUFFER-MODIFIED? determines whether the buffer is modified or not."
   "Refresh lenses using lenses backend.
 BUFFER-MODIFIED? determines whether the buffer is modified or not."
   (let ((buffer (or buffer (current-buffer))))
-    (with-current-buffer buffer
-      (dolist (backend lsp-lens-backends)
-        (funcall backend buffer-modified?
-                 (lambda (lenses version)
-                   (when (buffer-live-p buffer)
-                     (with-current-buffer buffer
-                       (lsp--process-lenses backend lenses version)))))))))
+    (when (buffer-live-p buffer)
+      (with-current-buffer buffer
+        (dolist (backend lsp-lens-backends)
+          (funcall backend buffer-modified?
+                   (lambda (lenses version)
+                     (when (buffer-live-p buffer)
+                       (with-current-buffer buffer
+                         (lsp--process-lenses backend lenses version))))))))))
 
 (defun lsp--process-lenses (backend lenses version)
   "Process LENSES originated from BACKEND.
@@ -3227,7 +3238,9 @@ in that particular folder."
       (when (and lsp-enable-completion-at-point
                  (lsp-feature? "textDocument/completion"))
         (setq-local completion-at-point-functions nil)
-        (add-hook 'completion-at-point-functions #'lsp-completion-at-point nil t))
+        (add-hook 'completion-at-point-functions #'lsp-completion-at-point nil t)
+        (setq-local completion-category-defaults
+                    (add-to-list 'completion-category-defaults '(lsp-capf (styles basic)))))
       (add-hook 'kill-buffer-hook #'lsp--text-document-did-close nil t)
 
       (lsp--update-on-type-formatting-hook)
@@ -3260,6 +3273,8 @@ in that particular folder."
       (remove-hook 'before-change-functions #'lsp-before-change t)
       (remove-hook 'before-save-hook #'lsp--before-save t)
       (remove-hook 'completion-at-point-functions #'lsp-completion-at-point t)
+      (setq-local completion-category-defaults
+                  (cl-remove 'lsp-capf completion-category-defaults :key #'car))
       (remove-hook 'kill-buffer-hook #'lsp--text-document-did-close t)
 
       (lsp--update-on-type-formatting-hook :cleanup)
@@ -4079,13 +4094,18 @@ Also, additional data to attached to each candidate can be passed via PLIST."
                           (--> (buffer-substring-no-properties (car item) (point))
                                ;; TODO: roll-out our own matcher if needed.
                                ;; https://github.com/rustify-emacs/fuz.el seems to be good candidate.
-                               (completion-all-completions it (cdr item) nil (length it))
+                               (let ((completion-styles lsp-completion-styles)
+                                     completion-regexp-list)
+                                 (completion-all-completions it (cdr item) nil (length it)))
                                ;; completion-all-completions may return a list in form (a b . x)
                                ;; the last cdr is not important and need to be removed
                                (let ((tail (last it)))
                                  (if (consp tail) (setcdr tail nil))
                                  it))))
                   (-flatten-n 1)
+                  (-sort (-on #'> (lambda (o)
+                                    (or (get-text-property 0 'completion-score o)
+                                        0))))
                   ;; TODO: pass additional function to sort the candidates
                   (-map (-partial #'get-text-property 0 'lsp-completion-item)))
            lsp-items)))
@@ -4153,12 +4173,8 @@ Also, additional data to attached to each candidate can be passed via PLIST."
        (lambda (_probe _pred action)
          (cond
           ((eq action 'metadata)
-           `(metadata . ((display-sort-function
-                          . (lambda (candidates)
-                              (--sort (string-lessp
-                                       (get-text-property 0 'lsp-sort-text it)
-                                       (get-text-property 0 'lsp-sort-text other))
-                                      candidates))))))
+           `(metadata (category . lsp-capf)
+                      (display-sort-function . identity)))
           ((eq (car-safe action) 'boundaries) nil)
           ;; retrieve candidates
           (done? result)
@@ -6479,13 +6495,17 @@ When prefix UPDATE? is t force installation even if the server is present."
    update?))
 
 (defun lsp-async-start-process (callback error-callback &rest command)
+  "Start async process COMMAND with CALLBACK and ERROR-CALLBACK."
   (make-process
    :name (cl-first command)
    :command command
    :sentinel (lambda (proc _)
                (when (eq 'exit (process-status proc))
                  (if (zerop (process-exit-status proc))
-                     (funcall callback)
+                     (condition-case err
+                         (funcall callback)
+                       (error
+                        (funcall error-callback (error-message-string err))))
                    (display-buffer " *lsp-install*")
                    (funcall error-callback
                             (format "Async process '%s' failed with exit code %d"
@@ -7134,7 +7154,9 @@ argument ask the user to select which language server to start. "
   (interactive "P")
 
   (when (and lsp-auto-configure)
-    (seq-do (lambda (package) (require package nil t))
+    (seq-do (lambda (package)
+              ;; loading client is slow and `lsp' can be called repeatedly
+              (unless (featurep package) (require package nil t)))
             lsp-client-packages))
 
   (when (buffer-file-name)

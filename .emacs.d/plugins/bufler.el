@@ -102,6 +102,7 @@ See `bufler-cache-related-dirs-p'.")
 (defgroup bufler nil
   "Like Ibuffer, but using Magit-Section sections."
   :link '(url-link "https://github.com/alphapapa/bufler.el")
+  :link '(custom-manual "(Bufler)Top")
   :group 'convenience)
 
 (defcustom bufler-use-cache t
@@ -140,6 +141,15 @@ because `vc-registered' and `vc-refresh-state' must be called to
 get correct results."
   :type 'boolean)
 
+(defcustom bufler-vc-refresh nil
+  "Force refresh of VC state.
+When disabled, VC state is updated when buffers are saved, which
+is usually sufficient.  When enabled, VC state is always
+up-to-date, but with a lot of file-backed buffers open, this
+might be slow, because `vc-registered' and `vc-refresh-state'
+must be called to get up-to-date results."
+  :type 'boolean)
+
 (defcustom bufler-filter-fns (list #'bufler-hidden-buffer-p)
   "Buffers that match these functions are not shown."
   :type '(repeat function))
@@ -162,7 +172,8 @@ May be used to add extra space between groups in `bufler-list'."
   :type '(choice (const :tag "No extra space" nil)
                  (const :tag "Blank line after top-level groups"
                         ((0 . "\n")))
-                 (alist :key-type (integer :tag "Group level") :value-type (string :tag "Suffix string"))))
+                 (alist :key-type (integer :tag "Group level")
+			:value-type (string :tag "Suffix string"))))
 
 (defcustom bufler-cache-related-dirs-p t
   "Whether to cache whether directory pairs are related.
@@ -237,9 +248,13 @@ string, not in group headers.")
   type path elements)
 
 ;;;###autoload
-(defun bufler-list ()
-  "Show Bufler's list."
-  (interactive)
+(defun bufler-list (&optional force-refresh)
+  "Show Bufler's list.
+With prefix argument FORCE-REFRESH, force refreshing of buffers'
+VC state, and clear `bufler-cache' and regenerate buffer
+groups (which can be useful after changing `bufler-groups' if the
+buffer list has not yet changed)."
+  (interactive "P")
   (let (format-table)
     (cl-labels
 	;; This gets a little hairy because we have to wrap `-group-by'
@@ -275,6 +290,8 @@ string, not in group headers.")
 
 				    ;; FIXME: Track down what's causing killed buffers to remain in
 				    ;; `bufler-buffers', even though there don't seem to be any in `buffer-list'.
+
+				    ;; TODO: Return `bufler-group' structs from `bufler-buffers'.
 				    (-tree-map-nodes #'bufferp
 						     (lambda (buffer)
 						       (when (buffer-live-p buffer)
@@ -310,7 +327,10 @@ string, not in group headers.")
 		  (string< (as-string test-dir) (as-string buffer-dir)))
 	 (boring-p (buffer)
 		   (hidden-p buffer)))
+      (when force-refresh
+	(setf bufler-cache nil))
       (pcase-let* ((inhibit-read-only t)
+		   (bufler-vc-refresh force-refresh)
 		   (groups (bufler-buffers))
 		   (`(,*format-table . ,column-sizes) (bufler-format-buffer-groups groups))
 		   (header (concat (format (format " %%-%ss" (cdar column-sizes)) (caar column-sizes))
@@ -655,9 +675,14 @@ buffer's depth in the group tree."
   (ignore depth)
   (file-size-human-readable (buffer-size buffer)))
 
-(bufler-define-column "VC State" nil
+(bufler-define-column "VC" nil
   (ignore depth)
   (when (buffer-file-name buffer)
+    (when (and bufler-vc-refresh
+	       (vc-registered (buffer-file-name buffer)))
+      (with-current-buffer buffer
+	(vc-state-refresh (buffer-file-name buffer)
+			  (vc-backend (buffer-file-name buffer)))))
     (pcase (vc-state (buffer-file-name buffer))
       ('nil nil)
       ((and 'edited it) (propertize (symbol-name it) 'face 'bufler-vc))
@@ -670,7 +695,7 @@ buffer's depth in the group tree."
       ""))
 
 (defcustom bufler-columns
-  '("Name" "Size" "VC State" "Path")
+  '("Name" "Size" "VC" "Path")
   "Columns displayed in `bufler-list'.
 Each string corresponds to a function in
 `bufler-column-format-fns'.  Custom columns must be defined with

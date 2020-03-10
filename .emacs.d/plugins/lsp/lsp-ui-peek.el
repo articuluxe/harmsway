@@ -35,8 +35,8 @@
 ;;; Code:
 
 (require 'lsp-mode)
+(require 'lsp-ui)
 (require 'xref)
-(require 'dash)
 
 (defgroup lsp-ui-peek nil
   "Improve version of xref with peek feature."
@@ -698,12 +698,18 @@ references.  The function returns a list of `ls-xref-item'."
 Returns item(s)."
   (-when-let* ((locs (lsp-request method params))
                (locs (if (listp locs) locs (if (vectorp locs) (append locs nil) (list locs)))))
-    (mapcar #'lsp-ui-peek--get-xrefs-list
-            (if (gethash "uri" (car locs))
-                ;; Location[]
-                (--group-by (lsp--uri-to-path (gethash "uri" it)) locs)
-              ;; LocationLink[]
-              (--group-by (lsp--uri-to-path (gethash "targetUri" it)) locs)))))
+    (-filter
+     (-lambda ((&plist :file))
+       (or (f-file? file)
+           (ignore
+            (lsp-log "The following file %s is missing, ignoring from the results."
+                     file))))
+     (mapcar #'lsp-ui-peek--get-xrefs-list
+             (if (gethash "uri" (car locs))
+                 ;; Location[]
+                 (--group-by (lsp--uri-to-path (gethash "uri" it)) locs)
+               ;; LocationLink[]
+               (--group-by (lsp--uri-to-path (gethash "targetUri" it)) locs))))))
 
 (defvar lsp-ui-mode-map)
 
@@ -711,10 +717,6 @@ Returns item(s)."
   (interactive)
   (unless (bound-and-true-p lsp-ui-mode-map)
     (user-error "Please load lsp-ui before trying to enable lsp-ui-peek")))
-
-;; lsp-ui.el loads lsp-ui-peek.el, so we can’t ‘require’ lsp-ui.
-;; FIXME: Remove this cyclic dependency.
-(declare-function lsp-ui--workspace-path "lsp-ui" (path))
 
 (declare-function evil-set-jump "ext:evil-jumps.el" (&optional pos))
 

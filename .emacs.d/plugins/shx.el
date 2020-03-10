@@ -180,7 +180,7 @@ In normal circumstances this input is additionally filtered by
   (cond ((not (comint-check-proc shx-buffer))
          (shx--restart-shell))
         ((>= (length (shx--current-input)) shx-max-input)
-         (message "Input line exceeds `shx-max-input'."))
+         (user-error "Input line exceeds `shx-max-input'"))
         (t (shx--propertize-prompt)
            (comint-send-input))))
 
@@ -217,7 +217,7 @@ behavior of this function by modifying `shx-directory-tracker-regexp'."
     (add-text-properties
      (point-at-bol)
      (process-mark (get-buffer-process (current-buffer)))
-     `(help-echo ,(format-time-string "At %X") shx-cwd ,default-directory))))
+     `(help-echo ,(format-time-string "%X") shx-cwd ,default-directory))))
 
 
 ;;; output
@@ -355,7 +355,7 @@ If any path is absolute, prepend `comint-file-name-prefix' to it."
              (buffer-substring-no-properties
               (point-at-bol)
               (process-mark (get-buffer-process (current-buffer)))))))
-        (t (message "There is no process.") "")))
+        (t (user-error "There is no process") "")))
 
 (defun shx--current-input ()
   "Return what's written after the prompt."
@@ -422,8 +422,7 @@ If optional NEW-DIRECTORY is set, use that for `default-directory'."
         ;; guess which shell command to run per `shell' convention:
         (cmd (or explicit-shell-file-name (getenv "ESHELL") shell-file-name)))
     (cond ((file-exists-p (concat remote-id cmd)) cmd)
-          ((file-exists-p (concat remote-id "/bin/sh")) "/bin/sh")
-          (t (file-remote-p (read-file-name "Shell: " 'localname))))))
+          (t (read-file-name "Shell: " nil nil t (concat remote-id "/bin/sh"))))))
 
 (defun shx--match-last-line (regexp)
   "Return a form to find REGEXP on the last line of the buffer."
@@ -530,18 +529,20 @@ are sent straight through to the process to handle paging."
   "Prepare a plot of the data in FILENAME.
 Use a gnuplot specific PLOT-COMMAND (for example 'plot') and
 LINE-STYLE (for example 'w lp'); insert the plot in the buffer."
-  (require 'color)
   (let* ((img-name (make-temp-file "tmp" nil ".png"))
+         (color (face-attribute 'default :foreground))
+         (filename (shx--shell-quote-no-quotation-marks filename))
          (status (call-process
                   shx-path-to-gnuplot nil t nil "-e"
-                  (concat
-                   "set term png transparent truecolor;"
-                   "set border lw 3 lc rgb \""
-                   (color-lighten-name (face-attribute 'default :foreground) 5)
-                   "\"; set out \"" img-name "\";"
-                   plot-command " \"" (shell-quote-argument filename) "\" "
-                   line-style))))
+                  (format "set term png transparent truecolor; set border lw 3 \
+                           lc rgb \"%s\"; set out \"%s\"; %s \"%s\" %s"
+                          color img-name plot-command filename line-style))))
     (when (zerop status) (shx-insert-image img-name))))
+
+(defun shx--shell-quote-no-quotation-marks (str)
+  "Shell-quote STR, but strip the \"'s added in some `system-type's."
+  (replace-regexp-in-string  ; NOTE: in Emacs 26+ we can use `string-trim'
+   "\"$" "" (replace-regexp-in-string "^\"" "" (shell-quote-argument str))))
 
 (defun shx--insert-timer (timer-number timer)
   "Insert a line of the form '<TIMER-NUMBER> <TIMER>'."

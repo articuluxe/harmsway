@@ -3,7 +3,7 @@
 ;; Copyright (C) 2019-2020 Free Software Foundation, Inc.
 
 ;; Author: Mattias Engdegård <mattiase@acm.org>
-;; Version: 1.16
+;; Version: 1.18
 ;; Package-Requires: ((emacs "26.1"))
 ;; URL: https://github.com/mattiase/xr
 ;; Keywords: lisp, regexps
@@ -29,6 +29,10 @@
 
 ;;; News:
 
+;; Version 1.18:
+;; - Fix test broken in Emacs 26
+;; Version 1.17:
+;; - Performance improvements
 ;; Version 1.16:
 ;; - Translate [^\n] into nonl
 ;; - Better character class subset/superset analysis
@@ -109,7 +113,7 @@
     (while (not (looking-at "]"))
       (cond
        ;; character class
-       ((looking-at (rx "[:" (group (*? anything)) ":]"))
+       ((looking-at (rx "[:" (group (* (not (any ":")))) ":]"))
         (let ((sym (intern (match-string 1))))
           (unless (memq sym
                         '(ascii alnum alpha blank cntrl digit graph
@@ -123,9 +127,9 @@
             (push sym classes))
           (goto-char (match-end 0))))
        ;; character range
-       ((looking-at (rx (group (not (any "]"))) "-" (group (not (any "]")))))
-        (let ((start (string-to-char (match-string 1)))
-              (end   (string-to-char (match-string 2))))
+       ((looking-at (rx (not (any "]")) "-" (not (any "]"))))
+        (let ((start (char-after))
+              (end   (char-after (+ (point) 2))))
           (cond
            ((<= start end)
             (push (vector start end (point)) intervals))
@@ -272,7 +276,7 @@
           (when (memq ?- chars)
             (setq chars (cons ?- (delq ?- chars))))
           (let* ((set (cons 'any
-                            (append
+                            (nconc
                              (and ranges
                                   (list (apply #'concat (nreverse ranges))))
                              (and chars
@@ -283,14 +287,14 @@
               set))))))))
 
 (defun xr--rev-join-seq (sequence)
-  "Reverse a sequence, flatten any (seq ...) inside, and concatenate
-adjacent strings."
+  "Reverse SEQUENCE, flatten any (seq ...) inside, and concatenate
+adjacent strings. SEQUENCE is used destructively."
   (let ((result nil))
     (while sequence
       (let ((elem (car sequence))
             (rest (cdr sequence)))
         (cond ((and (consp elem) (eq (car elem) 'seq))
-               (setq sequence (append (reverse (cdr elem)) rest)))
+               (setq sequence (nconc (nreverse (cdr elem)) rest)))
               ((and (stringp elem) (stringp (car result)))
                (setq result (cons (concat elem (car result)) (cdr result)))
                (setq sequence rest))
@@ -572,7 +576,7 @@ UPPER may be nil, meaning infinity."
          ;; character alternative
          ((looking-at (rx "[" (opt (group "^"))))
           (goto-char (match-end 0))
-          (let ((negated (match-string 1)))
+          (let ((negated (match-beginning 1)))
             (push (xr--parse-char-alt negated warnings) sequence)))
 
          ;; group
@@ -580,9 +584,9 @@ UPPER may be nil, meaning infinity."
                                      (opt (opt (group (any "1-9")
                                                       (zero-or-more digit)))
                                           (group ":")))))
-          (let ((question (match-string 1))
+          (let ((question (match-beginning 1))
                 (number (match-string 2))
-                (colon (match-string 3)))
+                (colon (match-beginning 3)))
             (when (and question (not colon))
               (error "Invalid \\(? syntax"))
             (goto-char (match-end 0))
@@ -735,14 +739,15 @@ UPPER may be nil, meaning infinity."
 (defun xr--any-arg-to-items (arg)
   "Convert an `any' argument to a list of characters, ranges (as pairs),
 and classes (symbols)."
-  ;; We know (since we built it) that x is either a symbol or
-  ;; a string, and that the string does not mix ranges and chars.
+  ;; We know (since we built it) that x is either a symbol, string or char,
+  ;; and that the string does not mix ranges and chars.
   (cond ((symbolp arg)
          ;; unibyte and multibyte are aliases of ascii and nonascii in
          ;; practice; simplify.
          (list (cond ((eq arg 'unibyte) 'ascii)
                      ((eq arg 'multibyte) 'nonascii)
                      (t arg))))
+        ((characterp arg) (list arg))
         ((and (>= (length arg) 3)
               (eq (aref arg 1) ?-))
          (xr--range-string-to-items arg))
@@ -977,9 +982,8 @@ A-SETS and B-SETS are arguments to `any'."
                      'unibyte 'upper 'word 'xdigit)))
      (and negated
           (xr--char-superset-of-char-set-p (list sym) nil sets)))
-    ((pred stringp)
-     (and (= (length rx) 1)
-          (xr--char-superset-of-char-set-p sets negated (list rx))))))
+    ((pred characterp)
+     (xr--char-superset-of-char-set-p sets negated (list rx)))))
 
 (defun xr--single-non-newline-char-p (rx)
   "Whether RX only matches single characters none of which is newline."
@@ -995,7 +999,7 @@ A-SETS and B-SETS are arguments to `any'."
                  ascii alnum alpha blank cntrl digit graph
                  lower multibyte nonascii print punct space
                  unibyte upper word xdigit))
-      (and (stringp rx) (= (length rx) 1))
+      (characterp rx)
       (and (consp rx)
            (or (memq (car rx) '(any category syntax))
                (and (eq (car rx) 'not)
@@ -1020,24 +1024,21 @@ A-SETS and B-SETS are arguments to `any'."
     (and set
          (xr--char-superset-of-rx-p (cdr set) nil rx))))
 
-(defun xr--string-to-chars (str)
-  (mapcar #'char-to-string (string-to-list str)))
-
 (defun xr--expand-strings (rx)
-  "If RX is a string or a seq of strings, convert them to seqs of
-single-character strings."
+  "Expand strings to characters or seqs of characters.
+`seq' forms are expanded non-recursively."
   (cond ((consp rx)
          (if (eq (car rx) 'seq)
              (cons 'seq (mapcan (lambda (x)
-                                  (if (and (stringp x)
-                                           (> (length x) 1))
-                                      (xr--string-to-chars x)
+                                  (if (stringp x)
+                                      (string-to-list x)
                                     (list x)))
                                 (cdr rx)))
            rx))
-        ((and (stringp rx)
-              (> (length rx) 1))
-         (cons 'seq (xr--string-to-chars rx)))
+        ((stringp rx)
+         (if (= (length rx) 1)
+             (string-to-char rx)
+           (cons 'seq (string-to-list rx))))
         (t rx)))
 
 (defun xr--superset-seq-p (a b)
@@ -1125,8 +1126,8 @@ single-character strings."
 
        ((or `(category ,_) `(not (category ,_)))
         (or (equal a b)
-            (and (stringp b)
-                 (string-match-p (rx-to-string a) b))))
+            (and (characterp b)
+                 (string-match-p (rx-to-string a) (char-to-string b)))))
 
        (_ (equal a b))))))
 
@@ -1152,10 +1153,9 @@ single-character strings."
         (push seq alternatives)))
     (if (cdr alternatives)
         ;; Simplify (or nonl "\n") to anything
-        (if (or (equal alternatives '(nonl "\n"))
-                (equal alternatives '("\n" nonl)))
+        (if (member alternatives '((nonl "\n") ("\n" nonl)))
             'anything
-          (cons 'or (reverse alternatives)))
+          (cons 'or (nreverse alternatives)))
       (car alternatives))))
 
 (defun xr--parse (re-string warnings)

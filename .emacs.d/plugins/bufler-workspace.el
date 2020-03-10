@@ -87,6 +87,7 @@ Return the workspace path."
   (set-frame-parameter nil 'bufler-workspace-path path)
   (set-frame-parameter nil 'bufler-workspace-path-formatted (bufler-format-path path))
   (run-hook-with-args 'bufler-workspace-set-hook path)
+  (force-mode-line-update 'all)
   path)
 
 ;;;###autoload
@@ -143,12 +144,23 @@ appear in a named workspace, the buffer must be matched by an
   :global t
   (let ((lighter '(bufler-workspace-mode (:eval (bufler-workspace-mode-lighter)))))
     (if bufler-workspace-mode
-        (setf mode-line-misc-info
-              (append mode-line-misc-info (list lighter)))
+	;; Avoid adding the lighter multiple times if the mode is activated again.
+	(cl-pushnew (list lighter) mode-line-misc-info :test #'equal)
       (setf mode-line-misc-info
             (delete lighter mode-line-misc-info)))))
 
 ;;;; Functions
+
+(cl-defun bufler-workspace-buffers (&optional (frame (selected-frame)))
+  "Return list of buffers for FRAME's workspace.
+Works as `tab-line-tabs-function'."
+  ;; This is specifically for `bufler-workspace-tabs-mode', but it
+  ;; needn't be only for that, so it probably belongs here.
+  (let (buffers)
+    (--tree-map-nodes (bufferp it)
+                      (push it buffers)
+                      (bufler-buffers :path (frame-parameter frame 'bufler-workspace-path)))
+    (cl-sort buffers #'string< :key #'buffer-name)))
 
 (defun bufler-workspace-mode-lighter ()
   "Return lighter string for mode line."

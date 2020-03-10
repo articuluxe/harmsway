@@ -1,6 +1,6 @@
 ;;; perspective.el --- switch between named "perspectives" of the editor  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2008-2018 Natalie Weizenbaum <nex342@gmail.com>
+;; Copyright (C) 2008-2020 Natalie Weizenbaum <nex342@gmail.com>
 ;;
 ;; Licensed under the same terms as Emacs and under the MIT license.
 
@@ -27,13 +27,16 @@
 ;; configuration, and when in a perspective only its buffers are
 ;; available by default.
 
+;;; Code:
+
 (require 'cl-lib)
 (require 'ido)
 (require 'rx)
 (require 'subr-x)
 (require 'thingatpt)
 
-;;; Code:
+
+;;; --- customization
 
 (defgroup perspective-mode 'nil
   "Customization for Perspective mode"
@@ -102,6 +105,28 @@ makes it easy to use in, e.g., `kill-emacs-hook` to automatically
 save state when exiting Emacs."
   :group 'perspective-mode
   :type 'file)
+
+
+;;; --- implementation
+
+;;; XXX: Nasty kludge to deal with the byte compiler, eager macroexpansion, and
+;;; frame parameters being already set when this file is being compiled during a
+;;; package upgrade. This enumerates all frame-parameters starting with
+;;; persp--*, saves them in persp--kludge-save-frame-params, and then blanks
+;;; them out of the frame parameters. They will be restored in the matching
+;;; eval-when-compile form at the bottom of this source file. See
+;;; https://github.com/nex3/perspective-el/issues/93.
+(eval-when-compile
+  (defvar persp--kludge-save-frame-params)
+  (setq persp--kludge-save-frame-params
+        (cl-loop for kv in (frame-parameters nil)
+                 if (string-prefix-p "persp--" (symbol-name (car kv)))
+                 collect kv))
+  (modify-frame-parameters
+   nil
+   ;; Set persp-- frame parameters to nil. The expression below creates an alist
+   ;; where the keys are the relevant frame parameters and the values are nil.
+   (mapcar (lambda (x) (list (car x))) persp--kludge-save-frame-params)))
 
 (defmacro persp-let-frame-parameters (bindings &rest body)
   "Like `let', but for frame parameters.
@@ -477,6 +502,11 @@ For example, (persp-intersperse '(1 2 3) 'a) gives '(1 a 2 a 3)."
     (define-key map [mode-line down-mouse-1] 'persp-mode-line-click)
     map))
 
+(defconst persp-header-line-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map [header-line down-mouse-1] 'persp-mode-line-click)
+    map))
+
 (defun persp-mode-line-click (event)
   "Select the clicked perspective.
 EVENT is the click event triggering this function call."
@@ -501,13 +531,18 @@ Has no effect when `persp-show-modestring' is nil."
                    close)))))
 
 (defun persp-format-name (name)
-  "Format the perspective name given by NAME for display in the modeline."
+  "Format the perspective name given by NAME for display in the mode line or header line."
   (let ((string-name (format "%s" name)))
     (if (equal name (persp-current-name))
         (propertize string-name 'face 'persp-selected-face)
-      (propertize string-name
-                  'local-map persp-mode-line-map
-                  'mouse-face 'mode-line-highlight))))
+      (cond ((eq persp-show-modestring 'header)
+             (propertize string-name
+                         'local-map persp-header-line-map
+                         'mouse-face 'header-line-highlight))
+            ((eq persp-show-modestring t)
+             (propertize string-name
+                         'local-map persp-mode-line-map
+                         'mouse-face 'mode-line-highlight))))))
 
 (defun persp-get-quick (char &optional prev)
   "Return the name of the first perspective that begins with CHAR.
@@ -877,7 +912,6 @@ See also `persp-add-buffer'."
          (frame (window-frame window))
          (old-buffer (window-buffer window)))
     ad-do-it
-
     (let ((buffer (window-buffer window)))
       (with-selected-frame frame
         (unless (persp-is-current-buffer buffer)
@@ -1131,6 +1165,7 @@ PERSP-SET-IDO-BUFFERS)."
 (defun persp-ivy-switch-buffer (arg)
   "A version of `ivy-switch-buffer' which respects perspectives."
   (interactive "P")
+  (declare-function ivy-switch-buffer "ivy.el")
   (persp--switch-buffer-ivy-counsel-helper arg nil #'ivy-switch-buffer))
 
 ;; Buffer switching integration: Counsel.
@@ -1399,6 +1434,19 @@ restored."
   (run-hooks 'persp-state-after-load-hook))
 
 (defalias 'persp-state-restore 'persp-state-load)
+
+
+;;; --- done
+
+;;; XXX: Undo nasty kludge necessary for cleanly compiling this source file by
+;;; restoring saved frame parameters, and removing the variable used to save
+;;; them.
+(eval-when-compile
+  (when (boundp 'persp--kludge-save-frame-params)
+    (modify-frame-parameters nil persp--kludge-save-frame-params)
+    (makunbound 'persp--kludge-save-frame-params)
+    (fmakunbound 'persp--kludge-save-frame-params)
+    (unintern 'persp--kludge-save-frame-params nil)))
 
 (provide 'perspective)
 

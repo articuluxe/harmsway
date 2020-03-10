@@ -4,6 +4,7 @@
 
 ;; Author: Sod Oscarfono <sod@oscarfono.com>
 ;; URL: http://github.com/techquila/melancholy-theme
+;; Package-Version: 20190620.1001
 ;; Version: 2.0
 ;; Package-requires: emacs
 
@@ -54,7 +55,7 @@
 
     ;;;; default
     ;; ========================================
-    `(default ((t (:inherit nil :stipple nil :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 99 :width normal :foundry "unknown" :family "Monospace Regular" :background ,my-shadow :foreground ,my-hicontrast ))))
+    `(default ((t (:inherit nil :stipple nil :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 99 :width normal :foundry "unknown" :family "Ubuntu Mono " :background ,my-shadow :foreground ,my-hicontrast ))))
 
     ;;;; window and frame settings
     ;; ========================================
@@ -76,10 +77,10 @@
     `(region ((t (:background ,my-deepcontrast))))
     `(query-replace ((t (:inherit isearch))))
     `(match ((t (:background ,my-pop))))
-    `(highlight ((t (:background ,my-active))))
+    `(highlight ((t (:background ,my-active :foreground ,my-hicontrast ))))
     `(lazy-highlight ((t (:foreground ,my-shadow :background ,my-highlight))))
-    `(fixed-pitch ((t (:family "Monospace Regular"))))
-    `(variable-pitch ((t (normal :family "ubuntu" :weight normal :height 99))))
+    `(fixed-pitch ((t (:family "Ubuntu Mono"))))
+    `(variable-pitch ((t (normal :family "Ubuntu" :weight normal :height 99))))
     `(bold ((t (:weight bold))))
     `(italic ((t (:slant italic))))
     `(bold-italic ((t (:weight bold :slant italic))))
@@ -132,12 +133,15 @@
     ;; ========================================
     `(dired-header ((t (:foreground ,my-pop :background ,my-visited))))
 
+    ;; flycheck
+    `(flycheck-error ((t :underline (:colour ,my-active :style wave ))))
+
     ;; helm
     ;; ========================================
     `(helm-buffer-directory ((t (:foreground ,my-shadow :background ,my-hicontrast))))
     `(helm-grep-match ((t (:foreground ,my-highlight))))
     `(helm-header ((t ( :foreground ,my-white))))
-    `(helm-source-header ((t (:foreground ,my-contrast :family "Open-sans" :height 125 :weight bold :underline t) )))
+    `(helm-source-header ((t (:foreground ,my-contrast :family "Ubuntu Condensed" :height 125 :weight bold :underline t) )))
     `(helm-selection ((t (:background ,my-pop :foreground "#161A1F"))))
     `(helm-separator ((t (:background ,my-deepcontrast))))
 
@@ -153,8 +157,10 @@
 
     ;; org-mode
     ;; ========================================
-    `(org-agenda-date-today ((t (:foreground ,my-highlight :weight bold))))
-    `(org-agenda-date-weekend ((t (:foreground ,my-contrast))))
+    `(org-agenda-day-view ((t  :foreground ,my-visited :weight bold )))
+    `(org-agenda-date ((t :foreground ,my-contrast )))
+    `(org-agenda-date-today ((t (:foreground ,my-highlight :weight extra-bold))))
+    `(org-agenda-date-weekend ((t (:foreground ,my-deepcontrast ))))
     `(org-agenda-done ((t (:foreground ,my-contrast :strike-through t))))
     `(org-block-begin-line ((t (:background ,my-contrast :foreground ,my-shadow))))
     `(org-block ((t (:background ,my-deepcontrast :foreground ,my-pop :box nil))))
@@ -172,8 +178,21 @@
     `(org-level-6 ((t  :foreground ,my-contrast )))
     `(org-level-7 ((t  :foreground ,my-hicontrast )))
     `(org-link ((t (:foreground ,my-active :underline t ))))
-    `(org-table ((t :family "Monospace Regular")))
+    `(org-table ((t :family "Ubuntu Mono")))
     
+    ;; Speedbar
+    ;; =======================================
+    `(speedbar-directory-face ((t :family "Ubuntu Mono" :foreground ,my-contrast t)))
+    `(speedbar-file-face ((t :family "Ubuntu Mono" :foreground ,my-contrast )))
+    `(speedbar-selected-face ((t  :foreground ,my-active :weight extra-bold )))
+    `(speedbar-highlight-face ((t :foreground ,my-pop )))
+    `(speedbar- ((t :foreground ,my-active )))
+    `(speedbar-button-face ((t :foreground ,my-highlight )))
+    
+
+
+;; The End
+  ;; =========================================
 
     ) ;; custom-theme-set-faces ends here
 ) ;; let ends here

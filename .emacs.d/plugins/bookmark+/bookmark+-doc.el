@@ -4,11 +4,11 @@
 ;; Description: Documentation for package Bookmark+
 ;; Author: Drew Adams
 ;; Maintainer: Drew Adams (concat "drew.adams" "@" "oracle" ".com")
-;; Copyright (C) 2000-2019, Drew Adams, all rights reserved.
+;; Copyright (C) 2000-2020, Drew Adams, all rights reserved.
 ;; Created: Fri Sep 15 07:58:41 2000
-;; Last-Updated: Tue Aug 13 15:04:47 2019 (-0700)
+;; Last-Updated: Fri Feb 14 09:48:59 2020 (-0800)
 ;;           By: dradams
-;;     Update #: 15334
+;;     Update #: 15339
 ;; URL: https://www.emacswiki.org/emacs/download/bookmark%2b-doc.el
 ;; Doc URL: https://www.emacswiki.org/emacs/BookmarkPlus
 ;; Keywords: bookmarks, bookmark+, placeholders, annotations, search,
@@ -2391,6 +2391,12 @@
 ;;  bookmark file by copying the marked bookmarks.  With a prefix arg,
 ;;  `Y > 0' creates also a bookmark-file bookmark.
 ;;
+;;  In any location (any file or any buffer that can be bookmarked),
+;;  you can switch to a bookmark file that has only bookmarks for the
+;;  current file or buffer, creating such a file on the fly if none
+;;  exists.  To do this, use `C-x p C-l'
+;;  (`bmkp-switch-to-bookmark-file-this-file/buffer').
+;;
 ;;  NOTE:
 ;;
 ;;    Unlike the other ways of organizing bookmarks into sets (tags,
@@ -2802,9 +2808,10 @@
 ;;
 ;;    The commands for this are bound to keys that start with `P' (for
 ;;    "pattern").  For example, `P B' shows only bookmarks whose names
-;;    match the regexp, `P F' shows those whose file names match, and
-;;    `P T' shows those that have one or more tags that match.
-;;    (See (@> "Bookmark Tags"), above, for information about tags.)
+;;    match the regexp, `P F' shows those whose file names match, `P
+;;    A' shows those whose annotations match, and `P T' shows those
+;;    that have one or more tags that match.  (See (@> "Bookmark Tags"),
+;;    above, for information about tags.)
 ;;
 ;;  * Filtering based on marking
 ;;
@@ -2914,6 +2921,25 @@
 ;;  (without cycling) using `s >', `s n', `s f n', etc.  There are
 ;;  many such predefined sort orders bound to keys with the prefix `s'
 ;;  - use `C-h m' or `?'  for more info.
+;;
+;;  `s >'   – Sort marked (`>') before unmarked
+;;  `s *'   – Sort modified (`*') before unmodified
+;;  `s 0'   – Sort by bookmark creation date/time
+;;  `s b'   – Sort by last buffer or file access
+;;  `s a'   – Sort annotated (`a') before unannotated
+;;  `s d'   – Sort by last bookmark access date/time
+;;  `s D'   – Sort flagged (`D') before unflagged
+;;  `s f d' – Sort by last local file access date/time
+;;  `s f k' – Sort by local file kind: file, symlink, dir
+;;  `s f n' – Sort by file name
+;;  `s f s' – Sort by local file size
+;;  `s f u' – Sort by last local file update (edit) date/time
+;;  `s g'   – Sort by Gnus thread: group, article, message.
+;;  `s i'   – Sort by Info manual, node, position
+;;  `s k'   – Sort by bookmark type (kind)
+;;  `s n'   – Sort by bookmark name
+;;  `s t'   – Sort tagged (`t') before untagged
+;;  `s v'   – Sort by visit frequency
 ;;
 ;;  You can reverse the current sort direction (ascending/descending)
 ;;  using `s r'.  Also, repeating any of the main sort-order commands

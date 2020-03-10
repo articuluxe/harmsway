@@ -1,4 +1,4 @@
-;;; page-break-lines.el --- Display ^L page breaks as tidy horizontal lines
+;;; page-break-lines.el --- Display ^L page breaks as tidy horizontal lines  -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2012-2015 Steve Purcell
 
@@ -130,7 +130,8 @@ its display table will be modified as necessary."
               (set-face-attribute 'page-break-lines nil :height default-height)
               (let* ((cwidth (char-width page-break-lines-char))
                      (wwidth-pix (- (window-width nil t)
-                                    (if (bound-and-true-p display-line-numbers)
+                                    (if (and (bound-and-true-p display-line-numbers)
+                                             (fboundp 'line-number-display-width))
                                         (line-number-display-width t)
                                       0)))
                      (width (- (/ wwidth-pix (frame-char-width) cwidth)
