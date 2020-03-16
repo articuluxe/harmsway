@@ -359,6 +359,8 @@ This is the value of `next-error-function' in Compilation buffers."
 (vterm--exclude-keys vterm-keymap-exceptions)
 
 ;; Keybindings
+(define-key vterm-mode-map (kbd "M-<")                 #'vterm--self-insert)
+(define-key vterm-mode-map (kbd "M->")                 #'vterm--self-insert)
 (define-key vterm-mode-map [tab]                       #'vterm-send-tab)
 (define-key vterm-mode-map (kbd "TAB")                 #'vterm-send-tab)
 (define-key vterm-mode-map [backtab]                   #'vterm--self-insert)
@@ -406,6 +408,7 @@ This is the value of `next-error-function' in Compilation buffers."
 (define-key vterm-copy-mode-map [return]               #'vterm-copy-mode-done)
 (define-key vterm-copy-mode-map (kbd "RET")            #'vterm-copy-mode-done)
 (define-key vterm-copy-mode-map (kbd "C-c C-r")        #'vterm-reset-cursor-point)
+(define-key vterm-copy-mode-map (kbd "C-a")            #'vterm-beginning-of-line)
 
 
 (define-minor-mode vterm-copy-mode
@@ -617,6 +620,15 @@ Optional argument PASTE-P paste-p."
     (vterm--delayed-redraw (current-buffer))
     (setq vterm--redraw-immididately nil)))
 
+(defun vterm-check-proc (&optional buffer)
+  "True if there is a process associated w/buffer BUFFER, and it
+is alive.  BUFFER can be either a buffer or the name of one."
+  (let* ((buffer (get-buffer (or buffer (current-buffer))))
+         (proc (get-buffer-process buffer)))
+    (and proc
+         (memq (process-status proc) '(run stop open listen connect))
+         (buffer-local-value 'vterm--term buffer))))
+
 (defun vterm--delayed-redraw(buffer)
   "Redraw the terminal buffer .
 Argument BUFFER the terminal buffer."
@@ -822,6 +834,11 @@ the called functions."
     (save-excursion
       (setq pt (vterm--get-prompt-point-internal
                 vterm--term (line-number-at-pos))))
+    (unless pt
+      (save-excursion
+        (beginning-of-line)
+        (term-skip-prompt)
+        (setq pt (point))))
     pt))
 
 (defun vterm-reset-cursor-point ()
@@ -834,21 +851,30 @@ the called functions."
   (save-excursion
     (vterm-reset-cursor-point)))
 
-
 (defun vterm--at-prompt-p ()
   "Check whether the cursor postion is at shell prompt or not."
   (let ((pt (point))
         (term-cursor-pt (vterm--get-cursor-point))
         (prompt-pt (vterm--get-prompt-point)))
-    (unless prompt-pt
-      (save-excursion
-        (goto-char (point-at-bol))
-        (term-skip-prompt)
-        (setq prompt-pt (point))))
-    (and
-     (= pt term-cursor-pt)
-     (or (= pt prompt-pt)
-         (string-blank-p (buffer-substring-no-properties pt prompt-pt))))))
+    (and (= pt term-cursor-pt)
+         (or (= pt prompt-pt)
+             (string-blank-p (buffer-substring-no-properties pt prompt-pt))))))
+
+(defun vterm-beginning-of-line ()
+"Move point to the beginning of the line.
+
+Move the point to the first character after the shell prompt on this line.
+If the point is already there, move to the beginning of the line.
+Effectively toggle between the two positions."
+  (interactive)
+  (let ((pt (point))
+        (prompt-pt (vterm--get-prompt-point)))
+    (if (= pt prompt-pt)
+        (beginning-of-line)
+      (if (= (line-number-at-pos prompt-pt)
+             (line-number-at-pos pt))
+          (goto-char prompt-pt)
+        (beginning-of-line)))))
 
 (provide 'vterm)
 ;;; vterm.el ends here

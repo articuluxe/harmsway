@@ -37,31 +37,33 @@
 
 
 
- (deftheme weyland-yutani)
- (let ((class '((class color) (min-colors 89)))
-       (fg1        "#cbcbcb")
-       (fg2        "#b3c1c9")
-       (fg3        "#9babb7")
-       (fg4        "#8694a5")
-       (bg1        "#2b2b2b")                  ; #302d2d
-       (bg2        "#363636")
-       (bg3        "#3f3f3f")
-       (bg4        "#3c3a50")
+(deftheme weyland-yutani)
+(let*
+    ((class '((class color) (min-colors 89)))
+     (fg1        "#b0bec5")
+     (fg2        "#b3c1c9")
+     (fg3        "#9babb7")
+     (fg4        "#8694a5")
+     (bg1        "#2b2b2b")
+     (bg2        (color-lighten-name bg1 3))
+     (bg3        "#3f3f3f")
+     (bg4        "#3c3a50")
        (key2       "#c8ef62")
        (key3       "#b3f35c")
 
-       (keyword    "#cce671")   ;#dadd6c "#dadd6c"
-       (var        "#aabcf1")   ;#b3b4f3 "#b3b4f3"
-       (const      "#a1d58f")   ;#abc789 "#abc789"
-       (builtin    "#c278f0")   ;#c278f0
-       (type       "#EDAAF3")   ;#EDAAF3  #cd93f3 #d27bb0ff
-       (err        "#cd2517")   ;#cd2517
-       (comment    "#6e8397")   ;#6e8397
-       (comment-bg "#313131")   ;#313131
-       (region-bg  "#3a3a3a")   ;#3a3a3a
-       (func       "#63bfa5")   ;##EDAAF38bc1ad
-       (str        "#d27bb0")   ;#e27470 #e27470
-       (warning    "#76b7a4")   ;#76b7a4
+       (keyword    "#9ccc65")
+       (type       "#b388ff")
+       (builtin    "#a2a2ff")                  ;#9bb1eb #91b1fd
+       (var        "#7cacf2")                         ;#7cacf2 #5e6cca
+       (const      (color-lighten-name "#b388ff" 4))
+       (err        "#cd2517")
+       (comment    "#6e808b")
+       (comment-bg "#313131")
+       (region-bg  "#3a3a3a")           ;#a2a2ff #A6A6FF
+       (func       "#acacff")           ;#a2a2ff #aeaefc #7a8cff #849aff #59a4ed
+       (str        "#6abdd0")
+       (warning    "#f26ba8")
+
 
        ;; Colors Generic
        (wy-light-blue "#81d2e7")
@@ -69,7 +71,7 @@
        (wy-green         "#a1ef78")
        (wy-red           "#f38283")
        (wy-yellow        "#f5f891")
-       (wy-diff-change        "#ff8820")
+       (wy-diff-change        "#fd7f62")
        (wy-diff-insert        "#b3f35c")
        (wy-diff-delete        "#d85657")
 
@@ -99,14 +101,14 @@
 
     `(font-lock-negation-char-face ((,class (:foreground ,wy-yellow))))
     `(font-lock-reference-face ((,class (:foreground ,const))))
-    `(font-lock-constant-face ((,class (:foreground ,const :background "#312e2e"))))
+    `(font-lock-constant-face ((,class (:foreground ,const ))))
         `(font-lock-doc-face ((,class (:foreground ,comment))))
         `(font-lock-function-name-face ((,class (:foreground ,func))))
         `(font-lock-keyword-face ((,class (:foreground ,keyword )))) ;:bold t
         `(font-lock-string-face ((,class (:foreground ,str))))
         `(font-lock-type-face ((,class (:foreground ,type ))))
         `(font-lock-variable-name-face ((,class (:foreground ,var))))
-        `(font-lock-warning-face ((,class (:foreground ,warning :background ,bg2))))
+        `(font-lock-warning-face ((,class (:foreground ,warning))))
 
 
         `(region ((,class (:background ,region-bg))))

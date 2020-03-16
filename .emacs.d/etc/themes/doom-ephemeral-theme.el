@@ -64,8 +64,8 @@
    (yellow     '("#f1fa8c" "#f1fa8c" "yellow"       ))
    (blue       '("#92b6f4" "#92b6f4" "brightblue"   ))
    (dark-blue  '("#9f92f4" "#9f92f4" "blue"         ))
-   (magenta    '("#c574dd" "#c574dd" "magenta"      ))
-   (violet     '("#8897f4" "#8897f4" "brightmagenta"))
+   (magenta    '("#BD99FF" "#c574dd" "magenta"      ))
+   (violet     '("#985EFF" "#8897f4" "brightmagenta"))
    (cyan       '("#79e6f3" "#87dfeb" "brightcyan"   ))
    (dark-cyan  '("#24d1e7" "#24d1e7" "cyan"         ))
 
@@ -83,7 +83,7 @@
    (builtin        yellow)
    (comments       light-grey)
    (doc-comments   light-grey)
-   (constants      magenta)
+   (constants      violet)
    (functions      alt-blue)
    (keywords       yellow)
    (methods        teal)
@@ -127,14 +127,12 @@
    ((paren-face-mismatch &override) :foreground base3 :background red :weight 'ultra-bold)
    ((vimish-fold-overlay &override) :inherit 'font-lock-comment-face :background base3 :weight 'light)
    ((vimish-fold-fringe &override)  :foreground teal)
+   (shadow               :foreground base6)
 
    (font-lock-comment-face :inherit 'bold :foreground comments :background (if doom-ephemeral-comment-bg (doom-lighten bg 0.05)))
    (font-lock-doc-face :inherit 'font-lock-comment-face :foreground doc-comments)
    (font-lock-builtin-face :inherit 'italic :foreground builtin)
    (font-lock-keyword-face :inherit 'bold :foreground keywords)
-
-
-   (doom-modeline-bar :background (if -modeline-bright modeline-bg highlight))
 
    (mode-line
     :background modeline-bg :foreground modeline-fg
@@ -229,6 +227,8 @@
    (haskell-definition-face :inherit 'bold :foreground functions)
 
    ;; magit
+   (magit-diff-hunk-heading           :foreground bg                    :background (doom-blend magenta bg 0.3) :extend t)
+   (magit-diff-hunk-heading-highlight :foreground bg                    :background magenta :weight 'bold :extend t)
    (magit-section-heading :foreground red)
    (magit-branch-remote   :foreground orange)
 

@@ -3,7 +3,7 @@
 ;; Copyright (C) 2020  Adam Porter
 
 ;; Author: Adam Porter <adam@alphapapa.net>
-;; Keywords: convenience
+;; URL: https://github.com/alphapapa/bufler.el
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -39,6 +39,7 @@
 (defvar tab-bar-tabs-function)
 (defvar tab-bar-close-button)
 (defvar tab-bar-close-button-show)
+(defvar tab-bar-separator)
 (defvar tab-line-tabs-function)
 ;; Because the mode isn't necessarily defined.
 (defvar bufler-workspace-tabs-mode)
@@ -69,13 +70,13 @@
 ;;;; Variables
 
   (defvar bufler-workspace-tabs-mode-saved-settings
-    '((tab-bar-close-button . nil) (tab-bar-close-button-show . nil))
+    '((tab-bar-separator . nil) (tab-bar-close-button-show . nil))
     "Settings saved from before `bufler-workspace-tabs-mode' was activated.
 Used to restore them when the mode is disabled.")
 
 ;;;; Customization
 
-  (defcustom bufler-workspace-tabs-tab-separator " |"
+  (defcustom bufler-workspace-tabs-tab-separator " | "
     "String displayed between tabs.
 Since there is no built-in separator between tabs, it can be
 unclear where one tab ends and the next begins, depending on face
@@ -107,8 +108,8 @@ properties.  See the default value of `tab-bar-close-button'."
           (global-tab-line-mode 1)
 	  ;; NOTE: `tab-bar-mode' adds text properties to `tab-bar-close-button'
 	  ;; when it is activated, so we must set it after the mode is activated.
-	  (setf tab-bar-close-button bufler-workspace-tabs-tab-separator
-		tab-bar-close-button-show t))
+	  (setf tab-bar-separator bufler-workspace-tabs-tab-separator
+		tab-bar-close-button-show nil))
       (advice-remove 'tab-bar-select-tab #'bufler-workspace-tabs--tab-bar-select-tab)
       (setf tab-bar-tabs-function #'tab-bar-tabs
             tab-line-tabs-function #'tab-line-tabs-window-buffers)
@@ -163,45 +164,60 @@ Works as `tab-bar-tabs-function'."
     ;; code.
     (with-selected-frame frame
       (cl-labels ((tab-type
-		   (path) (if (equal path (frame-parameter nil 'bufler-workspace-path))
-			      'current-tab
-			    'tab))
-		  (path-first ;; CAR, or CADR if CAR is nil.
-		   (path) (cl-typecase path
-			    (string (list path))
-			    (list (if (car path)
-				      (list (car path))
-				    (list (cadr path))))))
-		  (workspace-to-tab
-		   (workspace &optional type) (-let* (((&plist :name :path) workspace))
-						(list (or type (tab-type path))
-						      (cons 'name (car name))
-						      (cons 'path path))))
-		  (path-to-workspace
-		   ;; This gets too complicated.  We need to preserve the real path, but
-		   ;; if the first element is nil, we need to ignore that and display
-		   ;; the string after the nil.  We sort-of cheat here by using
-		   ;; `path-first' in this function.
-		   (path) (list :name (path-first path)
-				:path path)))
-	(let* ((bufler-vc-state nil)
-	       (buffer-paths (bufler-group-tree-paths (bufler-buffers)))
-	       (group-paths (mapcar #'butlast buffer-paths))
-	       (top-level-group-paths (mapcar #'path-first group-paths))
-	       (uniq-top-level-group-paths (seq-uniq top-level-group-paths))
-	       (workspaces (mapcar #'path-to-workspace uniq-top-level-group-paths))
-	       (tabs (mapcar #'workspace-to-tab workspaces)))
-	  ;; Add the current workspace if it's not listed (i.e. when the
-	  ;; current workspace is not a top-level workspace).
-	  (unless (cl-loop with current-path = (frame-parameter nil 'bufler-workspace-path)
-			   for tab in tabs
-			   for tab-path = (alist-get 'path tab)
-			   thereis (equal tab-path current-path))
-	    (push (list 'current-tab
-			(cons 'name (bufler-format-path (frame-parameter nil 'bufler-workspace-path)))
-			(cons 'path (frame-parameter nil 'bufler-workspace-path)))
-		  tabs))
-	  tabs)))))
+                   (path) (if (equal path (frame-parameter nil 'bufler-workspace-path))
+                              'current-tab
+                            'tab))
+                  (path-first ;; CAR, or CADR if CAR is nil.
+                   (path) (cl-typecase path
+                            (string (list path))
+                            (list (if (car path)
+                                      (list (car path))
+                                    (list (cadr path))))))
+                  (workspace-to-tab
+                   (workspace &optional type) (-let* (((&plist :name :path) workspace))
+                                                (list (or type (tab-type path))
+                                                      (cons 'name (car name))
+                                                      (cons 'path path))))
+                  (path-top-level
+                   (path) (pcase-exhaustive path
+                            (`(,(and first (guard (not first)))
+                               ,(and second (guard second)) .,_rest)
+                             ;; If I use _ in the variable names, it complains that they are not
+                             ;; unused.  The test in (guard) doesn't count as using them, so it
+                             ;; complains either way.  So use `ignore'.  I hope it compiles out.
+                             (ignore first second)
+                             (cl-subseq path 0 2))
+                            ;; The path should always be a list!
+                            (`(,first . ,_rest)
+                             (list first))))
+                  (path-to-workspace
+                   ;; This gets too complicated.  We need to preserve the real path, but
+                   ;; if the first element is nil, we need to ignore that and display
+                   ;; the string after the nil.  We sort-of cheat here by using
+                   ;; `path-first' in this function.
+                   (path) (list :name (path-first path)
+                                :path path)))
+        ;; We bind all these lists to make understanding and debugging easier.  And because
+        ;; Edebug seems somewhat broken in Emacs 28 in that breakpoints don't seem to work
+        ;; at all, so stepping through to the relevant point is practically impossible.
+        (let* ((bufler-vc-refresh nil)
+               (buffer-paths (bufler-group-tree-paths (bufler-buffers)))
+               (group-paths (mapcar #'butlast buffer-paths))
+               (top-level-paths (mapcar #'path-top-level group-paths))
+               (top-level-workspaces (mapcar #'path-to-workspace top-level-paths))
+               (unique-top-level-workspaces (seq-uniq top-level-workspaces #'equal))
+               (tabs (mapcar #'workspace-to-tab unique-top-level-workspaces)))
+          ;; Add the current workspace if it's not listed (i.e. when the
+          ;; current workspace is not a top-level workspace).
+          (unless (cl-loop with current-path = (frame-parameter nil 'bufler-workspace-path)
+                           for tab in tabs
+                           for tab-path = (alist-get 'path tab)
+                           thereis (equal tab-path current-path))
+            (push (list 'current-tab
+                        (cons 'name (bufler-format-path (frame-parameter nil 'bufler-workspace-path)))
+                        (cons 'path (frame-parameter nil 'bufler-workspace-path)))
+                  tabs))
+          tabs)))))
 
 ;;;; Footer
 

@@ -2412,7 +2412,9 @@ This is useful for recursive `ivy-read'."
                                                counsel-switch-buffer)))
                          predicate)))
             (dynamic-collection
-             (setq coll (ivy--dynamic-collection-cands (or initial-input ""))))
+             (setq coll (if (eq this-command 'ivy-resume)
+                            ivy--all-candidates
+                          (ivy--dynamic-collection-cands (or initial-input "")))))
             ((consp (car-safe collection))
              (setq collection (cl-remove-if-not predicate collection))
              (when (and sort (setq sort-fn (ivy--sort-function caller)))
@@ -3215,8 +3217,8 @@ Possible choices are 'ivy-magic-slash-non-match-cd-selected,
   (let (remote)
     (cond
       ;; Windows
-      ((string-match "\\`[[:alpha:]]:/" ivy--directory)
-       (match-string 0 ivy--directory))
+      ;; ((string-match "\\`[[:alpha:]]:/" ivy--directory)
+      ;;  (match-string 0 ivy--directory))
       ;; Remote root if on remote
       ((setq remote (file-remote-p ivy--directory))
        (concat remote "/"))
@@ -3377,7 +3379,8 @@ Should be run via minibuffer `post-command-hook'."
           ;; "Waiting for process to die...done" message interruptions
           (let ((inhibit-message t)
                 coll in-progress)
-            (unless (equal ivy--old-text ivy-text)
+            (unless (or (equal ivy--old-text ivy-text)
+                        (eq this-command 'ivy-resume))
               (while-no-input
                 (setq coll (ivy--dynamic-collection-cands ivy-text))
                 (when (eq coll 0)

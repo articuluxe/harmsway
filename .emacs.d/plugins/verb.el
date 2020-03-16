@@ -6,7 +6,7 @@
 ;; Maintainer: Federico Tedin <federicotedin@gmail.com>
 ;; Homepage: https://github.com/federicotdn/verb
 ;; Keywords: tools
-;; Package-Version: 2.8.0
+;; Package-Version: 2.8.1
 ;; Package-Requires: ((emacs "26"))
 
 ;; This file is NOT part of GNU Emacs.
@@ -1109,6 +1109,14 @@ WHERE describes where the response should be shown in (see
   ;; that we can rebind C-c C-c freely
   (use-local-map (copy-keymap org-mode-map))
 
+  ;; Unbind keys for verb-send-request-on-point-* commands
+  (dolist (cmd '(verb-send-request-on-point
+                 verb-send-request-on-point-other-window
+                 verb-send-request-on-point-other-window-stay
+                 verb-send-request-on-point-no-window))
+    (when-let ((key (where-is-internal cmd nil t)))
+      (local-unset-key key)))
+
   ;; Rebind C-c C-c to send the request
   (local-set-key (kbd "C-c C-c")
                  (lambda ()
@@ -1429,7 +1437,7 @@ view the HTTP response in a user-friendly way."
     (let ((handler (verb--get-handler content-type)))
       (unless handler
         ;; Default handler is fundamental mode (text)
-        (setq handler #'fundamental-mode))
+        (setq handler '(fundamental-mode)))
 
       (if (= (length handler) 1)
           ;; Text handler
@@ -1654,7 +1662,7 @@ loaded into."
                         url-request-extra-headers))
          (url-request-data (verb--encode-http-body (oref rs body)
                                                    (cdr content-type)))
-         (url-mime-accept-string (or accept-header "*/*"))
+         (url-mime-accept-string (verb--to-ascii (or accept-header "*/*")))
          (num (setq verb--requests-count (1+ verb--requests-count)))
          (response-buf (verb--generate-response-buffer num))
          timeout-timer)
