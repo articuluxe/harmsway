@@ -1,0 +1,5 @@
+mkdir -p release
+curl -L https://github.com/naver/d2codingfont/releases/download/VER1.3.2/D2Coding-Ver1.3.2-20180524.zip -o release/d2codingfont.zip
+cd release
+unzip -jo d2codingfont.zip
+cp -pf D2Coding/*.ttf ../../../../.fonts/d2
