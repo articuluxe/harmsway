@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-03-03 13:01:17 dharms>
+;; Modified Time-stamp: <2020-03-17 17:05:10 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2908,10 +2908,19 @@ completion at point mechanism does not interfere with `completion-at-point-funct
 (use-package company-quickhelp
   :if (display-graphic-p)
   :after company
-  :config
+  :init
   (setq company-quickhelp-delay 0.5)
   (setq company-quickhelp-use-propertized-text t)
+  :config
   (company-quickhelp-mode 1))
+
+;;;;;;;;;;;;;;;;;;;;;;;;; company-quickhelp-terminal ;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package company-quickhelp-terminal
+  :disabled
+  :if (not (display-graphic-p))
+  :after company-quickhelp
+  :config
+  (company-quickhelp-terminal-mode 1))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; company-statistics ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package company-statistics
