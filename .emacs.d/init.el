@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-03-17 17:05:10 dharms>
+;; Modified Time-stamp: <2020-03-18 07:26:27 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -92,7 +92,7 @@
   (concat my/user-directory "settings/user/" user-login-name))
 (load my/user-settings t)
 (defconst my/system-name
-  (car (reverse (split-string (symbol-name system-type) "\\/" t)))
+  (car (reverse (split-string (symbol-name system-type) "\\\\\\|/" t)))
   "A simplified result from uname.")
 (defconst my/os-dir
   (concat my/user-directory "settings/os/" my/system-name "/")
