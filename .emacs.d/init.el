@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-03-18 07:26:27 dharms>
+;; Modified Time-stamp: <2020-03-18 11:25:12 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -339,6 +339,7 @@ not an error if any files do not exist."
          ("C-c pb" . proviso-bookmarks-switch-to-bookmark)
          ("C-c pcc" . proviso-compile-choose-compile-command)
          ("C-c <C-return>" . proviso-choose-recompile)
+         ("M-' m" . proviso-choose-recompile)
          ("C-c pf" . proviso-clang-format-buffer-or-region)
          ("C-c pcf" . proviso-clang-format-toggle-active)
          ("C-c p." . proviso-xref-peek-definition)
