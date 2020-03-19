@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-03-18 11:25:12 dharms>
+;; Modified Time-stamp: <2020-03-19 17:51:01 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3067,6 +3067,7 @@ See `https://github.com/company-mode/company-mode/issues/205'."
 
 (global-set-key [backtab] #'harmsway-yas-at-point)
 (global-set-key [(shift tab)] #'harmsway-yas-at-point)
+(bind-key "M-' <backtab>" #'harmsway-yas-at-point)
 
 (use-package yasnippet
   :init
