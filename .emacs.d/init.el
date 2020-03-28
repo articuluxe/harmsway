@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-03-19 17:51:01 dharms>
+;; Modified Time-stamp: <2020-03-28 10:16:20 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1682,6 +1682,7 @@ Only one letter is shown, the first that applies."
   (setq ivy-use-selectable-prompt t)
   (setq ivy-use-virtual-buffers t)
   :config
+  (ivy-add-actions #'counsel-find-file '(("v" vlf "view large file")))
   (global-set-key "\e\eii" 'ivy-resume)
   (ivy-mode 1))
 
