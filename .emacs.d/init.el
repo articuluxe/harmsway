@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-03-28 10:16:20 dharms>
+;; Modified Time-stamp: <2020-03-31 16:36:57 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -116,6 +116,8 @@
 (set-register ?\C-h (cons 'file "~/src/harmsway"))
 (set-register ?\C-e (cons 'file "~/src/harmsway/.emacs.d"))
 (set-register ?\C-o (cons 'file "~/org"))
+(set-register ?\C-b (cons 'file my/backup-dir))
+(set-register ?\C-a (cons 'file my/autosave-dir))
 (add-hook 'after-init-hook
           (lambda ()
             (set-register ?\C-i (cons 'file user-init-file))))
