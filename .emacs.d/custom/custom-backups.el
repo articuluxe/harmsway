@@ -59,5 +59,8 @@
 
 (setq backup-enable-predicate #'my/backup-predicate)
 
+(set-register ?\C-b (cons 'file my/backup-dir))
+(set-register ?\C-a (cons 'file my/autosave-dir))
+
 (provide 'custom-backups)
 ;;; custom-backups.el ends here

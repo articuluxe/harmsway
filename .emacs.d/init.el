@@ -116,8 +116,6 @@
 (set-register ?\C-h (cons 'file "~/src/harmsway"))
 (set-register ?\C-e (cons 'file "~/src/harmsway/.emacs.d"))
 (set-register ?\C-o (cons 'file "~/org"))
-(set-register ?\C-b (cons 'file my/backup-dir))
-(set-register ?\C-a (cons 'file my/autosave-dir))
 (add-hook 'after-init-hook
           (lambda ()
             (set-register ?\C-i (cons 'file user-init-file))))
