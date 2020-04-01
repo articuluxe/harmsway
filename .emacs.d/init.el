@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-03-31 16:36:57 dharms>
+;; Modified Time-stamp: <2020-04-01 13:44:53 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1052,6 +1052,7 @@ From `manuel-oberti.github.io' on 20190806."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ascii-table ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package ascii-table :commands ascii-table)
+(use-package ascii-table-classic :commands ascii-table-classic)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ascii ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package ascii :bind ("C-c 0aa" . ascii-display))
