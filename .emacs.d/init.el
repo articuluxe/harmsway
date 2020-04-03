@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-04-01 13:44:53 dharms>
+;; Modified Time-stamp: <2020-04-03 07:16:41 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1747,7 +1747,6 @@ Only one letter is shown, the first that applies."
          ("C-c 0cf" . counsel-faces)
          ("C-c 0ce" . counsel-colors-emacs)
          ("C-c 0cw" . counsel-colors-web)
-         ("M-s M-w" . counsel-search)
          ("M-s !" . counsel-flycheck)
          :map ivy-minibuffer-map
          ("M-y" . ivy-next-line-and-call)
@@ -1779,6 +1778,17 @@ Only one letter is shown, the first that applies."
       (ivy-done)))
   (counsel-mode 1)
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; counsel-web ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define-prefix-command 'harmsway-counsel-web-map)
+(use-package counsel-web
+  :bind (("M-s M-w" . harmsway-counsel-web-map)
+         :map harmsway-counsel-web-map
+         ("w" . counsel-web-suggest)
+         ("s" . counsel-web-search)
+         ("." . counsel-web-thing-at-point)
+         ("c" . counsel-search)
+         ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; frog-jump-buffer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package frog-jump-buffer
