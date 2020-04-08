@@ -1,0 +1,1 @@
+find src -maxdepth 1 -name \*.el | grep -v test | grep -v pkg | grep -v helm | xargs -I '{}' cp '{}' ../../../.emacs.d/elisp
