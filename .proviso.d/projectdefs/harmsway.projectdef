@@ -1,0 +1,66 @@
+;;; harmsway.projectdef --- harmsway proviso project definitions
+;; Copyright (C) 2020  Dan Harms (dharms)
+;; Author: Dan Harms <enniomore@icloud.com>
+;; Created: Monday, April 13, 2020
+;; Version: 1.0
+;; Modified Time-stamp: <2020-04-13 09:40:48 dharms>
+;; Modified by: Dan Harms
+;; Keywords: proviso project
+
+;; This program is free software; you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+;;; Commentary:
+;; Contains project definitions.
+;;
+
+;;; Code:
+
+(proviso-define-project
+ "punch" '(("/src/punch/"))
+ :compile-cmds '("make" "genbuild.sh")
+ :build-subdirs '((:name "dbg" :dir "debug" :register ?d)
+                  (:name "rls" :dir "release" :register ?r))
+ :proj-alist '((:name "punch" :dir "src")
+               (:name "asio" :dir "/usr/local/include")
+               (:name "gtest" :dir "ext/googletest/googletest/include")
+               (:name "boost" :dir "/usr/local/include/boost"
+                      :ctags-opts "--exclude=typeof --exclude=fusion --exclude=phoenix --exclude=spirit")
+               (:name "c++lib" :dir "$CSTDLIB_INC"
+                      :ctags-opts "--language-force=c++ -h=\".h.H.hh.hpp.hxx.h++.inc.def.\"")
+               ))
+
+(proviso-define-project
+ "scratch" '(("/src/scratch"))
+ :proj-alist '((:name "scratch")
+               (:name "c++lib" :dir "$CSTDLIB_INC")
+               (:name "clib" :dir "/usr/include"
+                      :ctags-opts "--exclude=c++ --exclude=boost --exclude=X11")
+               ))
+
+(proviso-define-project
+ "ncio" '(("/src/ncio/"))
+ :compile-cmds '("make" "genbuild.sh")
+ :build-subdirs '((:name "dbg" :dir "debug" :register ?d)
+                  (:name "rls" :dir "release" :register ?r))
+ :debug-subdirs '((:name "DEBUG" :dir "debug")
+                  (:name "RELEASE" :dir "release"))
+ :proj-alist '((:name "ncio" :dir "src")
+               (:name "gtest" :dir "ext/googletest/googletest/include")
+               (:name "boost" :dir "/usr/local/include/boost"
+                      :ctags-opts "--exclude=typeof --exclude=fusion --exclude=phoenix --exclude=spirit")
+               (:name "c++lib" :dir "$CSTDLIB_INC"
+                      :ctags-opts "--language-force=c++ -h=.h.H.hh.hpp.hxx.h++.inc.def.")
+               ))
+
+;;; harmsway.projectdef ends here
