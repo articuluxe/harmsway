@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-04-03 07:16:41 dharms>
+;; Modified Time-stamp: <2020-04-13 19:49:13 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -577,6 +577,7 @@ line."
   :init
   ;; may no longer be necessary
   (setq epa-file-cache-passphrase-for-symmetric-encryption t)
+  (setq password-cache-expiry (* 60 30))
   :config
   (setq epa-file-select-keys nil)
   )
