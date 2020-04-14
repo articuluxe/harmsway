@@ -3,7 +3,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2020-03-17 17:30:50 dharms>
+;; Modified Time-stamp: <2020-04-13 19:19:17 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -35,6 +35,7 @@
                             "Meslo LG S 12"
                             "IBM Plex Mono 12"
                             "Menlo 14"
+                            "Aurulent Sans Mono 12"
                             "Fantasque Sans Mono 13"
                             "Luculent 14"
                             "Source Code Pro 12"
@@ -60,6 +61,7 @@
                             "TerminessTTF Nerd Font Mono 16"
                             "BPmono 12"
                             "PT Mono 14"
+                            "Verily Serif Mono 12"
                             "Oxygen Mono 12"
                             "Overpass Mono 13"
                             "Hermit 12"
