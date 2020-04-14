@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2020-02-12 13:27:03 dan.harms>
+;; Modified Time-stamp: <2020-04-12 17:22:33 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -39,8 +39,12 @@
 (use-package osx-plist
   :commands (osx-plist-parse-file osx-plist-parse-buffer))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; gif-screencast ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (with-eval-after-load 'gif-screencast
   (setq gif-screencast-args '("-x"))
   (setq gif-screencast-capture-format "ppm"))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; osx-dictionary ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package osx-dictionary)
 
 ;; darwin.el ends here
