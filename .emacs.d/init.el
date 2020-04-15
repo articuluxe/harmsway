@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-04-13 19:49:13 dharms>
+;; Modified Time-stamp: <2020-04-15 12:52:33 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3467,6 +3467,17 @@ This function's result only has value if it is preceded by any font changes."
 (use-package choose-font
   :demand t
   :bind ("C-c M-o" . choose-font))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; projectdefs ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defun harmsway-load-projectdefs (projects)
+  "Open project files contained in the list PROJECTS."
+  (let ((base (proviso-compute-projectdef-dir)))
+    (mapc (lambda (proj)
+            (let ((file (concat base proj)))
+              (if (file-exists-p file)
+                  (load file t)
+                (message "Could not load project %s" file))))
+          projects)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; site ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun my/load-site-file (name)
