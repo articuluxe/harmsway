@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-04-15 12:52:33 dharms>
+;; Modified Time-stamp: <2020-04-18 12:21:36 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -691,6 +691,9 @@ line."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;; electric-buffer-list ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package ebuff-menu :bind ("C-x M-b" . electric-buffer-list))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; kpm-list ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package kpm-list :bind ("\e\eb" . kpm-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ibuffer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package ibuffer
