@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-04-18 12:21:36 dharms>
+;; Modified Time-stamp: <2020-04-21 16:18:37 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3366,6 +3366,9 @@ See `https://github.com/company-mode/company-mode/issues/205'."
 (use-package zop-to-char
   :bind (("M-z" . zop-to-char)
          ("\e\ez" . zop-up-to-char)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; mark-thing-at ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package mark-thing-at :config (mark-thing-at-mode 1))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; detour ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package detour
