@@ -3,7 +3,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2020-04-19 18:37:07 dharms>
+;; Modified Time-stamp: <2020-04-21 19:16:19 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -82,6 +82,7 @@
                             "Hack 11"
                             "Fairfax HD 16"
                             "Novamono 14"
+                            "ProFontIIx 12"
                             "IBM 3270 16"
                             "M+ 1m 13"
                             "B612 Mono 14"

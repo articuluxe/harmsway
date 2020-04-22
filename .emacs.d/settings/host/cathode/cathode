@@ -3,7 +3,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2020-04-19 18:37:06 dharms>
+;; Modified Time-stamp: <2020-04-21 19:16:18 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -91,6 +91,7 @@
                             "Cutive Mono 12"
                             "saxMono 12"
                             "Akkurat-Mono 12"
+                            "ProFontIIx 12"
                             "Bedstead 12"
                             "Cousine 12"
                             "InputMono 12"
