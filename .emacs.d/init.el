@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-04-21 16:18:37 dharms>
+;; Modified Time-stamp: <2020-04-24 09:27:19 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -61,6 +61,7 @@
                      ,(concat my/plugins-directory "ccls/")
                      ,(concat my/plugins-directory "cquery/")
                      ,(concat my/plugins-directory "diff-hl/")
+                     ,(concat my/plugins-directory "elfeed/")
                      ,(concat my/plugins-directory "elnode/")
                      ,(concat my/plugins-directory "emacs-refactor/")
                      ,(concat my/plugins-directory "expand-region/")
@@ -2098,6 +2099,14 @@ Only one letter is shown, the first that applies."
   (require 'ox-md)                      ;markdown export
   )
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; elfeed ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package elfeed-org
+  :after elfeed
+  :init
+  (setq rmh-elfeed-org-files (expand-file-name "elfeed.org" my/scratch-directory))
+  :config
+  (elfeed-org)
+  )
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; pack ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package pack
   :init

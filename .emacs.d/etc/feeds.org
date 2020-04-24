@@ -1,0 +1,9 @@
+#+TITLE:elfeeds
+
+* blogs
+:elfeed:
+** daily
+:daily:
+** emacs
+:emacs:
+[[http://emacs.stackexchange.com/feeds][SX]]

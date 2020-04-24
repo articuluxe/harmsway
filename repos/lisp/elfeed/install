@@ -1,0 +1,2 @@
+cp src/*.el ../../../.emacs.d/plugins/elfeed
+cp src/web/* ../../../.emacs.d/plugins/elfeed/web
