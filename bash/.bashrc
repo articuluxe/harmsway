@@ -37,9 +37,6 @@ fi
 shopt -s histverify
 # append to history from multiple sessions
 shopt -s histappend
-export HISTCONTROL=ignoredups:erasedups
-export HISTSIZE=100000
-export HISTFILESIZE=100000
 # ensure core dump on SEGV
 ulimit -c unlimited
 source ~/config/git-completion.sh
