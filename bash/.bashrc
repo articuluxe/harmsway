@@ -47,6 +47,12 @@ source ~/config/git-prompt.sh
 
 alias pscores='ps -eL -o user,pid,tid,psr,comm,args'
 alias magit='emax -e "(magit-status \"$(pwd)\")" > /dev/null 2>&1'
+alias bt='echo 0 | gdb -batch-silent -ex "run" -ex "set logging overwrite on" -ex "set logging file gdb.bt" \
+      -ex "set logging on" -ex "set pagination off" -ex "handle SIG33 pass nostop noprint" \
+      -ex "echo backtrace:\n" -ex "backtrace full" -ex "echo \n\nregisters:\n" -ex "info registers" \
+      -ex "echo \n\ncurrent instructions:\n" -ex "x/16i \$pc" -ex "echo \n\nthreads backtrace:\n" \
+      -ex "thread apply all backtrace" -ex "set logging off" -ex "quit" --args'
+
 
 export PROMPT_COMMAND=__prompt_command
 function __prompt_command() {
