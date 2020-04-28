@@ -1,0 +1,7 @@
+#!/bin/sh
+# generate ed25519 (ssh 6.5 or newer)
+ssh-keygen -t ed25519 -C me.cathode.ed25519
+# generate a more secure rsa key
+ssh-keygen -t rsa -b 2048 -C me.cathode.rsa
+# update a key's passphrase
+ssh-keygen -p -f ~/.ssh/me.cathode.rsa

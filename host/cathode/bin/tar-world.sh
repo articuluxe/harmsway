@@ -1,11 +1,11 @@
 #!/usr/bin/env sh
 # -*- Mode: sh -*-
 # tar-world.sh --- tar up important configuration files
-# Copyright (C) 2015-2019  Dan Harms (dharms)
+# Copyright (C) 2015-2020  Dan Harms (dharms)
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Friday, May 29, 2015
 # Version: 1.0
-# Modified Time-stamp: <2019-09-13 08:35:39 dharms>
+# Modified Time-stamp: <2020-04-28 07:36:36 dharms>
 # Modified by: Dan Harms
 # Keywords: configuration
 
@@ -41,7 +41,7 @@ if [ -f "$dest" ] ; then
    rm -f "$dest"
 fi
 
-$tar c"$verbose"f "$dest" config doc src .gnupg .fonts .config .terminfo .proviso.d
+$tar c"$verbose"f "$dest" config doc src .gnupg .fonts .config .terminfo .proviso.d .ssh
 $tar u"$verbose"f "$dest" --exclude=*.elc .emacs.d
 $tar u"$verbose"f "$dest" --transform=s%ext%.emacs.d/ext% ext
 $tar u"$verbose"f "$dest" --transform=s/scripts/bin/ scripts
