@@ -1,4 +1,4 @@
-#! /usr/bin/sh
+#! /bin/sh
 # -*- Mode: sh -*-
 
 #################################### INIT ####################################
@@ -13,6 +13,7 @@ git config --global --add branch.master.mergeoptions --squash
 git config --global merge.tool <tool>
 git config --global diff.tool <tool>
 git config --global difftool.prompt false
+git config --global alias.last 'log -l HEAD'
 # on windows
 git config --system core.autocrlf input
 # this writes to e.g. C:/Program Files/Git/mingw64/etc/gitconfig
@@ -103,6 +104,8 @@ git log -S"string"
 git log -G"regex"
 # group commits by author [sort by number of commits]
 git shortlog [-n]
+# see who has comitted how much [in a time frame]
+git shortlog -sn --all --no-merges [--since='10 weeks' --until='2 weeks']
 # committer name, hash, date
 git log --pretty=format:"%cn committed %h on %cd"
 # other options (incomplete)
