@@ -38,5 +38,10 @@
 [credential]
 	helper = osxkeychain
 [alias]
-#    listbr = "!sh() { git for-each-ref --sort=-committerdate --count=10 refs/heads/ --format='%(HEAD)%(refname:short)|%(objectname:short)|%(contents:subject)|%(authorname)|(%(committerdate:relative))' | column -ts'|' ; }; sh"
-    listbr = "!sh() { git for-each-ref --sort=-committerdate --count=10 refs/heads/ --format='%(HEAD)%(color:yellow)%(refname:short)%(color:reset)|%(color:red)%(objectname:short)%(color:reset)|%(contents:subject)|%(color:blue)%(authorname)%(color:reset)|(%(color:green)%(committerdate:relative)%(color:reset))' | column -ts'|' ; }; sh"
+    recent = "!sh() { git for-each-ref --sort=-committerdate --count=10 refs/heads/ --format='%(HEAD)%(color:yellow)%(refname:short)%(color:reset)|%(color:red)%(objectname:short)%(color:reset)|%(contents:subject)|%(color:blue)%(authorname)%(color:reset)|(%(color:green)%(committerdate:relative)%(color:reset))' | column -ts'|' ; }; sh"
+    overview = log --all --oneline --no-merges
+    recap = log --all --oneline --no-merges --author=danielrharms@gmail.com
+    last = log -1 HEAD
+    unstage = reset HEAD --
+    stats = shortlog -sn --all --no-merges
+    graph = log --graph --all --decorate --stat --date=iso
