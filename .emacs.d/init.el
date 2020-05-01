@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-04-24 09:27:19 dharms>
+;; Modified Time-stamp: <2020-05-01 09:55:32 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2100,13 +2100,21 @@ Only one letter is shown, the first that applies."
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; elfeed ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package elfeed
+  :commands elfeed
+  :init
+  (setq url-queue-timeout 30)
+  )
+
 (use-package elfeed-org
   :after elfeed
   :init
-  (setq rmh-elfeed-org-files (expand-file-name "elfeed.org" my/scratch-directory))
+  (setq rmh-elfeed-org-files
+        (list (expand-file-name "feeds.org" my/scratch-directory)))
   :config
   (elfeed-org)
   )
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; pack ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package pack
   :init
