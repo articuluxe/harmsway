@@ -345,14 +345,22 @@ color codes replaced with string properties."
    (deadgrep--propertize-hits
     (deadgrep--extract-regexp deadgrep--line-contents-regexp line))))
 
+(defun deadgrep--escape-backslash (s)
+  "Escape occurrences of backslashes in S.
+
+This differs from `regexp-quote', which outputs a regexp pattern.
+Instead, we provide a string suitable for REP in
+`replace-regexp-in-string'."
+  (s-replace "\\" "\\\\" s))
+
 (defun deadgrep--propertize-hits (line-contents)
   "Given LINE-CONTENTS from ripgrep, replace ANSI color codes
-with Emacs text properties."
+with a text face property `deadgrep-match-face'."
   (replace-regexp-in-string
    deadgrep--hit-regexp
    (lambda (s)
      (propertize
-      (match-string 1 s)
+      (deadgrep--escape-backslash (match-string 1 s))
       'face 'deadgrep-match-face))
    line-contents))
 
@@ -1479,6 +1487,9 @@ This is intended for use with `next-error-function', which see."
 (defun deadgrep-debug ()
   "Show a buffer with some debug information about the current search."
   (interactive)
+  (unless (eq major-mode 'deadgrep-mode)
+    (user-error "deadgrep-debug should be run in a deadgrep results buffer"))
+
   (let ((command deadgrep--debug-command)
         (output deadgrep--debug-first-output)
         (buf (get-buffer-create "*deadgrep debug*"))

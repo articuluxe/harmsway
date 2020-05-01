@@ -4,7 +4,7 @@
 
 ;; Author: Fabrice Niessen <(concat "fniessen" at-sign "pirilampo.org")>
 ;; URL: https://github.com/fniessen/emacs-leuven-theme
-;; Version: 20200102.2050
+;; Version: 20200425.0956
 ;; Keywords: color theme
 
 ;; This file is part of GNU Emacs.
@@ -20,7 +20,7 @@
 ;; GNU General Public License for more details.
 
 ;; You should have received a copy of the GNU General Public License
-;; along with GNU Emacs.  If not, see <http://www.gnu.org/licenses/>.
+;; along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Commentary:
 
@@ -47,7 +47,8 @@ The theme has to be reloaded after changing anything in this group."
 
 (defcustom leuven-scale-outline-headlines t
   "Scale `outline' (and `org') level-1 headlines.
-This can be nil for unscaled, t for using the theme default, or a scaling number."
+This can be nil for unscaled, t for using the theme default, or a scaling
+number."
   :type '(choice
           (const :tag "Unscaled" nil)
           (const :tag "Default provided by theme" t)
@@ -56,12 +57,12 @@ This can be nil for unscaled, t for using the theme default, or a scaling number
 
 (defcustom leuven-scale-org-agenda-structure t
   "Scale Org agenda structure lines, like dates.
-This can be nil for unscaled, t for using the theme default, or a scaling number."
+This can be nil for unscaled, t for using the theme default, or a scaling
+number."
   :type '(choice
           (const :tag "Unscaled" nil)
           (const :tag "Default provided by theme" t)
-          (number :tag "Set scaling"))
-  :group 'leuven)
+          (number :tag "Set scaling")))
 
 (defun leuven-scale-font (control default-height)
   "Function for splicing optional font heights into face descriptions.
@@ -431,7 +432,7 @@ more...")
    ;; `(completions-common-part ((,class (:foreground "red" :weight bold))))
    ;; `(completions-first-difference ((,class (:foreground "green" :weight bold))))
    `(compilation-error ((,class (:weight bold :foreground "red")))) ; Used for grep error messages.
-   `(compilation-info ((,class ,grep-file-name)))
+   `(compilation-info ((,class (:weight bold :foreground "#6784d7"))))
    `(compilation-line-number ((,class ,grep-line-number)))
    `(compilation-warning ((,class (:weight bold :foreground "orange"))))
    `(compilation-mode-line-exit ((,class (:weight bold :foreground "green")))) ; :exit[matched]
@@ -761,12 +762,12 @@ more...")
    `(org-document-info-keyword ((,class (:foreground "#008ED1" :background "#EAEAFF"))))
    `(org-document-title ((,class (:height 1.8 :weight bold :foreground "black"))))
    `(org-done ((,class (:weight bold :box (:line-width 1 :color "#BBBBBB") :foreground "#BBBBBB" :background "#F0F0F0"))))
-   `(org-drawer ((,class (:foreground "light sky blue"))))
+   `(org-drawer ((,class (:weight bold :foreground "#00BB00" :background "#EAFFEA" :extend nil))))
    `(org-ellipsis ((,class (:underline nil :foreground "#999999")))) ; #FFEE62
    `(org-example ((,class (:foreground "blue" :background "#EAFFEA"))))
    `(org-footnote ((,class (:underline t :foreground "#008ED1"))))
    `(org-formula ((,class (:foreground "chocolate1"))))
-   `(org-headline-done ((,class (:height 1.0 :weight normal :strike-through t :foreground "#ADADAD"))))
+   `(org-headline-done ((,class (:height 1.0 :weight normal :foreground "#ADADAD"))))
    `(org-hide ((,class (:foreground "#E2E2E2"))))
    `(org-inlinetask ((,class (:box (:line-width 1 :color "#EBEBEB") :foreground "#777777" :background "#FFFFD6"))))
    `(org-latex-and-related ((,class (:foreground "#336699" :background "white"))))
@@ -1047,12 +1048,6 @@ more...")
   ;; Add theme folder to `custom-theme-load-path' when installing over MELPA.
   (add-to-list 'custom-theme-load-path
                (file-name-as-directory (file-name-directory load-file-name))))
-
-;;;###autoload
-(when (string-match "/etc/themes/$"
-                    (file-name-directory (or load-file-name (buffer-file-name))))
-  (message "To stay up-to-date, you should better install and use leuven-theme from MELPA.")
-  (sit-for 2))
 
 (provide-theme 'leuven)
 

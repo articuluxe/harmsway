@@ -65,7 +65,8 @@
   :group 'dumb-jump
   :type '(choice (const :tag "Popup" popup)
                  (const :tag "Helm" helm)
-                 (const :tag "Ivy" ivy)))
+                 (const :tag "Ivy" ivy)
+                 (const :tag "Completing Read" completing-read)))
 
 (defcustom dumb-jump-ivy-jump-to-selected-function
   #'dumb-jump-ivy-jump-to-selected
@@ -465,7 +466,7 @@ or most optimal searcher."
            :not ("func testnot(asdf)" "func testnot()"))
 
     (:type "type" :supports ("ag" "grep" "rg" "git-grep") :language "swift"
-           :regex "(class|struct)\\s*JJJ\\b\\s*?"
+           :regex "(class|struct|protocol)\\s*JJJ\\b\\s*?"
            :tests ("class test:" "class test: UIWindow")
            :not ("class testnot:" "class testnot(object):"))
 
@@ -894,6 +895,18 @@ or most optimal searcher."
     (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "javascript"
            :regex "\\bJJJ\\s*=\\s*function\\s*\\\("
            :tests ("test = function()"))
+
+    ;; hcl terraform
+    (:type "block" :supports ("ag" "grep" "rg" "git-grep") :language "hcl"
+           :regex "(variable|output|module)\\s*\"JJJ\"\\s*\\\{"
+           :tests ("variable \"test\" {"
+                   "output \"test\" {"
+                   "module \"test\" {"))
+
+    (:type "block" :supports ("ag" "grep" "rg" "git-grep") :language "hcl"
+           :regex "(data|resource)\\s*\"\\w+\"\\s*\"JJJ\"\\s*\\\{"
+           :tests ("data \"openstack_images_image_v2\" \"test\" {"
+                   "resource \"google_compute_instance\" \"test\" {"))
 
     ;; typescript
     (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "typescript"
@@ -1560,7 +1573,9 @@ or most optimal searcher."
     (:language "fsharp" :ext "fsx" :agtype "fsharp" :rgtype nil)
     (:language "kotlin" :ext "kt" :agtype "kotlin" :rgtype "kotlin")
     (:language "kotlin" :ext "kts" :agtype "kotlin" :rgtype "kotlin")
-    (:language "protobuf" :ext "proto" :agtype "proto" :rgtype "protobuf"))
+    (:language "protobuf" :ext "proto" :agtype "proto" :rgtype "protobuf")
+    (:language "hcl" :ext "tf" :agtype "terraform" :rgtype "tf")
+    (:language "hcl" :ext "tfvars" :agtype "terraform" :rgtype nil))
 
   "Mapping of programming language(s) to file extensions."
   :group 'dumb-jump
@@ -1879,6 +1894,8 @@ This is the persistent action (\\[helm-execute-persistent-action]) for helm."
 for user to select.  Filters PROJ path from files for display."
   (let ((choices (--map (dumb-jump--format-result proj it) results)))
     (cond
+     ((eq dumb-jump-selector 'completing-read)
+      (dumb-jump-to-selected results choices (completing-read "Jump to: " choices)))
      ((and (eq dumb-jump-selector 'ivy) (fboundp 'ivy-read))
       (funcall dumb-jump-ivy-jump-to-selected-function results choices proj))
      ((and (eq dumb-jump-selector 'helm) (fboundp 'helm))
@@ -2192,7 +2209,8 @@ current file."
     (:comment "--" :language "vhdl")
     (:comment "//" :language "scss")
     (:comment "//" :language "pascal")
-    (:comment "//" :language "protobuf"))
+    (:comment "//" :language "protobuf")
+    (:comment "#" :language "hcl"))
   "List of one-line comments organized by language."
   :group 'dumb-jump
   :type

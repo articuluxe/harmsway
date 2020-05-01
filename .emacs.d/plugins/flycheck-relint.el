@@ -1,12 +1,12 @@
-;;; flycheck-relint.el --- A Flycheck checker for elisp regular expressions
+;;; flycheck-relint.el --- A Flycheck checker for elisp regular expressions  -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2020  Steve Purcell
 
 ;; Author: Steve Purcell <steve@sanityinc.com>
 ;; Keywords: lisp
-;; Version: 0
+;; Package-Version: 0-pre
 ;; URL: https://github.com/purcell/flycheck-relint
-;; Package-Requires: ((emacs "26.1") (flycheck "0.22") (relint "1.14"))
+;; Package-Requires: ((emacs "26.1") (flycheck "0.22") (relint "1.15"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -42,25 +42,26 @@
   "Flycheck start function for relint.
 CHECKER is this checker, and CALLBACK is the flycheck dispatch function."
   (funcall callback 'finished
-           (mapcar (pcase-lambda (`(,message ,expr-pos ,error-pos ,str ,str-idx))
+           (mapcar (pcase-lambda (`(,message ,expr-pos ,error-pos ,str ,str-idx ,severity))
                      (if error-pos
-                         (flycheck-relint--error-at error-pos message)
+                         (flycheck-relint--error-at error-pos severity message)
                        (flycheck-relint--error-at expr-pos
+                                                  severity
                                                   (mapconcat 'identity
                                                              (append (list message (relint--quote-string str))
-                                                                     (when str-idx (list (relint--caret-string str str-idx))))
+                                                                     (when str-idx (list (concat " " (relint--caret-string str str-idx)))))
                                                              "\n"))))
                    (relint-buffer (current-buffer)))))
 
 
-(defun flycheck-relint--error-at (pos message)
-  "Create a flycheck error with MESSAGE for POS."
+(defun flycheck-relint--error-at (pos severity message)
+  "Create a flycheck error with MESSAGE and SEVERITY for POS."
   (save-excursion
     (goto-char pos)
     (move-beginning-of-line 1)
     (let* ((line (line-number-at-pos))
            (col (- pos (point))))
-      (flycheck-error-new-at line (1+ col) 'error message :checker 'flycheck-relint))))
+      (flycheck-error-new-at line (1+ col) severity message :checker 'flycheck-relint))))
 
 
 
@@ -69,7 +70,7 @@ CHECKER is this checker, and CALLBACK is the flycheck dispatch function."
 (flycheck-define-generic-checker 'emacs-lisp-relint
   "Report errors detected by `relint'."
   :start #'flycheck-relint--start
-  :modes '(emacs-lisp-mode))
+  :modes '(emacs-lisp-mode lisp-interaction-mode))
 
 
 

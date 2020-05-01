@@ -65,7 +65,8 @@
    (blue       '("#92b6f4" "#92b6f4" "brightblue"   ))
    (dark-blue  '("#9f92f4" "#9f92f4" "blue"         ))
    (magenta    '("#BD99FF" "#c574dd" "magenta"      ))
-   (violet     '("#985EFF" "#8897f4" "brightmagenta"))
+   (violet     '("#8897f4" "#8897f4" "brightmagenta"))
+   (dark-violet     '("#985EFF" "#8897f4" "brightmagenta"))
    (cyan       '("#79e6f3" "#87dfeb" "brightcyan"   ))
    (dark-cyan  '("#24d1e7" "#24d1e7" "cyan"         ))
 
@@ -78,12 +79,12 @@
 
    ;; face categories -- required for all themes
    (highlight      alt-blue)
-   (vertical-bar   base1)
+   (vertical-bar   bg-alt)
    (selection      blue)
    (builtin        yellow)
    (comments       light-grey)
    (doc-comments   light-grey)
-   (constants      violet)
+   (constants      dark-violet)
    (functions      alt-blue)
    (keywords       yellow)
    (methods        teal)
@@ -146,14 +147,14 @@
    ;; modeline
    (doom-modeline-bar :background (if -modeline-bright modeline-bg highlight))
    (doom-modeline-highlight :foreground (doom-lighten base2 0.3))
-   (doom-modeline-project-dir :foreground teal :inherit 'bold )
+   (doom-modeline-project-dir :foreground teal :inherit 'bold)
    (doom-modeline-buffer-path :foreground red)
    (doom-modeline-buffer-file :foreground fg)
-   (doom-modeline-buffer-major-mode :foreground grey)
+   (doom-modeline-buffer-major-mode :foreground teal :weight 'bold)
    (doom-modeline-buffer-modified :foreground violet)
    (doom-modeline-panel :background base0)
    (doom-modeline-urgent :foreground modeline-fg)
-   (doom-modeline-info :inherit 'bold :foreground cyan :background base2)
+   (doom-modeline-info :inherit 'bold :foreground cyan)
 
    (solaire-mode-line-face
     :inherit 'mode-line

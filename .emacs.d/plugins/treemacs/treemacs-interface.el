@@ -36,6 +36,7 @@
 (require 'treemacs-workspaces)
 (require 'treemacs-persistence)
 (require 'treemacs-extensions)
+(require 'treemacs-logging)
 (eval-and-compile
   (require 'cl-lib)
   (require 'treemacs-macros))
@@ -90,9 +91,9 @@ A COUNT argument, moves COUNT lines up."
 
 (defun treemacs-toggle-node (&optional arg)
   "Expand or close the current node.
-If a prefix ARG is provided the open/close process is done recursively. When
-opening directories that means that all sub-directories are opened as well. When
-opening files all their tag sections will be opened.
+If a prefix ARG is provided the open/close process is done recursively.  When
+opening directories that means that all sub-directories are opened as well.
+When opening files all their tag sections will be opened.
 Recursively closing any kind of node means that treemacs will forget about
 everything that was expanded below that node.
 
@@ -141,7 +142,7 @@ The prefix argument ARG is treated the same way as with `treemacs-toggle-node'."
   "Run the appropriate TAB action for the current node.
 
 In the default configuration this usually means to expand or close the content
-of the currently selected node. A potential prefix ARG is passed on to the
+of the currently selected node.  A potential prefix ARG is passed on to the
 executed action, if possible.
 
 This function's exact configuration is stored in `treemacs-TAB-actions-config'."
@@ -284,7 +285,7 @@ A potential prefix ARG is passed on to the executed action, if possible."
   "Run the appropriate RET action for the current button.
 
 In the default configuration this usually means to open the content of the
-currently selected node. A potential prefix ARG is passed on to the executed
+currently selected node.  A potential prefix ARG is passed on to the executed
 action, if possible.
 
 This function's exact configuration is stored in `treemacs-RET-actions-config'."
@@ -355,9 +356,9 @@ With a prefix ARG call `treemacs-kill-buffer' instead."
 
 (defun treemacs-delete (&optional arg)
   "Delete node at point.
-A delete action must always be confirmed. Directories are deleted recursively.
-By default files are deleted by moving them to the trash. With a prefix ARG they
-will instead be wiped irreversibly."
+A delete action must always be confirmed.  Directories are deleted recursively.
+By default files are deleted by moving them to the trash.  With a prefix ARG
+they will instead be wiped irreversibly."
   (interactive "P")
   (treemacs-block
    (treemacs-unless-let (btn (treemacs-current-button))
@@ -371,19 +372,19 @@ will instead be wiped irreversibly."
              (file-name (propertize (treemacs--filename path) 'face 'font-lock-string-face)))
         (cond
          ((f-symlink? path)
-          (when (yes-or-no-p (format "Remove link '%s -> %s' ? "
+          (if (yes-or-no-p (format "Remove link '%s -> %s' ? "
                                      file-name
                                      (propertize (file-symlink-p path) 'face 'font-lock-face)))
-            (delete-file path delete-by-moving-to-trash)
-            t))
+              (delete-file path delete-by-moving-to-trash)
+            (treemacs-return (treemacs-log "Cancelled."))))
          ((f-file? path)
-          (when (yes-or-no-p (format "Delete '%s' ? " file-name))
-            (delete-file path delete-by-moving-to-trash)
-            t))
+          (if (yes-or-no-p (format "Delete '%s' ? " file-name))
+              (delete-file path delete-by-moving-to-trash)
+            (treemacs-return (treemacs-log "Cancelled."))))
          ((f-directory? path)
-          (when (yes-or-no-p (format "Recursively delete '%s' ? " file-name))
-            (delete-directory path t delete-by-moving-to-trash)
-            t))
+          (if (yes-or-no-p (format "Recursively delete '%s' ? " file-name))
+              (delete-directory path t delete-by-moving-to-trash)
+            (treemacs-return (treemacs-log "Cancelled."))))
          (t
           (treemacs-error-return
               (treemacs-pulse-on-failure
@@ -406,12 +407,16 @@ itself, using $HOME when there is no path at or near point to grab."
   (treemacs--create-file/dir t))
 
 (defun treemacs-move-file ()
-  "Move file (or directory) at point."
+  "Move file (or directory) at point.
+Destination may also be a filename, in which case the moved file will also
+be renamed."
   (interactive)
   (treemacs--copy-or-move :move))
 
 (defun treemacs-copy-file ()
-  "Copy file (or directory) at point."
+  "Copy file (or directory) at point.
+Destination may also be a filename, in which case the copied file will also
+be renamed."
   (interactive)
   (treemacs--copy-or-move :copy))
 
@@ -527,9 +532,9 @@ also not be deleted."
 (defun treemacs-temp-resort-root (&optional sort-method)
   "Temporarily resort the entire treemacs buffer.
 SORT-METHOD is a cons of a string describing the method and the actual sort
-value, as returned by `treemacs--sort-value-selection'. SORT-METHOD will be
+value, as returned by `treemacs--sort-value-selection'.  SORT-METHOD will be
 provided when this function is called from `treemacs-resort' and will be
-interactively read otherwise. This way this function can be bound directly,
+interactively read otherwise.  This way this function can be bound directly,
 without the need to call `treemacs-resort' with a prefix arg."
   (interactive)
   (-let* (((sort-name . sort-method) (or sort-method (treemacs--sort-value-selection)))
@@ -541,9 +546,9 @@ without the need to call `treemacs-resort' with a prefix arg."
 (defun treemacs-temp-resort-current-dir (&optional sort-method)
   "Temporarily resort the current directory.
 SORT-METHOD is a cons of a string describing the method and the actual sort
-value, as returned by `treemacs--sort-value-selection'. SORT-METHOD will be
+value, as returned by `treemacs--sort-value-selection'.  SORT-METHOD will be
 provided when this function is called from `treemacs-resort' and will be
-interactively read otherwise. This way this function can be bound directly,
+interactively read otherwise.  This way this function can be bound directly,
 without the need to call `treemacs-resort' with a prefix arg."
   (interactive)
   (-let* (((sort-name . sort-method) (or sort-method (treemacs--sort-value-selection)))
@@ -704,7 +709,7 @@ For slower scrolling see `treemacs-previous-line-other-window'"
 
 (defun treemacs-add-project-to-workspace (path &optional name)
   "Add a project at given PATH to the current workspace.
-The PATH's directory name will be used as a NAME for a project. The NAME can
+The PATH's directory name will be used as a NAME for a project.  The NAME can
 \(or must) be entered manully with either a prefix arg or if a project with the
 auto-selected name already exists."
   (interactive "DProject root: ")
@@ -747,18 +752,20 @@ auto-selected name already exists."
   "Remove the project at point from the current workspace.
 With a prefix ARG select project to remove by name."
   (interactive "P")
-  (let ((project (treemacs-project-at-point))
-        (save-pos))
-    (when (or arg (null project))
-      (setf project (treemacs--select-project-by-name)
-            save-pos (not (equal project (treemacs-project-at-point)))))
-    (if save-pos
-        (treemacs-save-position
-         (treemacs-do-remove-project-from-workspace project))
-      (treemacs-do-remove-project-from-workspace project))
-    (whitespace-cleanup)
-    (treemacs-pulse-on-success "Removed project %s from the workspace."
-      (propertize (treemacs-project->name project) 'face 'font-lock-type-face))))
+  (if (>= 1 (length (treemacs-workspace->projects (treemacs-current-workspace))))
+      (treemacs-pulse-on-failure "Cannot delete the last project.")
+    (let ((project (treemacs-project-at-point))
+          (save-pos))
+      (when (or arg (null project))
+        (setf project (treemacs--select-project-by-name)
+              save-pos (not (equal project (treemacs-project-at-point)))))
+      (if save-pos
+          (treemacs-save-position
+           (treemacs-do-remove-project-from-workspace project))
+        (treemacs-do-remove-project-from-workspace project))
+      (whitespace-cleanup)
+      (treemacs-pulse-on-success "Removed project %s from the workspace."
+        (propertize (treemacs-project->name project) 'face 'font-lock-type-face)))))
 
 (defun treemacs-create-workspace ()
   "Create a new workspace."
@@ -831,7 +838,7 @@ workspaces."
   "Refresh the project at point."
   (interactive)
   (treemacs-unless-let (btn (treemacs-current-button))
-      (treemacs-log "There is nothing to refresh.")
+      (treemacs-log-failure "There is nothing to refresh.")
     (treemacs--do-refresh (current-buffer) (treemacs-project-of-node btn))))
 
 (defun treemacs-collapse-project (&optional arg)
@@ -880,11 +887,11 @@ With a prefix ARG also forget about all the nodes opened in the projects."
 (defun treemacs-peek ()
   "Peek at the content of the node at point.
 This will display the file (or tag) at point in `next-window' much like
-`treemacs-visit-node-no-split' would. The difference that the file is not
+`treemacs-visit-node-no-split' would.  The difference that the file is not
 really (or rather permanently) opened - any command other than `treemacs-peek',
 `treemacs-next-line-other-window', `treemacs-previous-line-other-window',
 `treemacs-next-page-other-window' or `treemacs-previous-page-other-window' will
-cause it to be closed again and the previously shown buffer to be restored. The
+cause it to be closed again and the previously shown buffer to be restored.  The
 buffer visiting the peeked file will also be killed again, unless it was already
 open before being used for peeking."
   (interactive)
@@ -1107,7 +1114,7 @@ absolute path of the project root."
            (kill-buffer buffer))
          :on-error
          (progn
-           (treemacs-log "Shell command failed with exit code %s and output:" (process-exit-status process))
+           (treemacs-log-failure "Shell command failed with exit code %s and output:" (process-exit-status process))
            (message "%s" (pfuture-callback-output))
            (kill-buffer buffer)))))))
 
@@ -1115,8 +1122,8 @@ absolute path of the project root."
   "Run a shell command on the current node.
 Output will only be saved and displayed if prefix ARG is non-nil.
 
-Will use the location of the current node as working directory. If the current
-node is not a file/dir, then the next-closest file node will be used. If all
+Will use the location of the current node as working directory.  If the current
+node is not a file/dir, then the next-closest file node will be used.  If all
 nodes are non-files, or if there is no node at point, $HOME will be set as the
 working directory.
 
@@ -1157,7 +1164,7 @@ absolute path of the node (if it is present)."
         (kill-buffer buffer))
       :on-error
       (progn
-        (treemacs-log "Shell command failed with exit code %s and output:" (process-exit-status process))
+        (treemacs-log-failure "Shell command failed with exit code %s and output:" (process-exit-status process))
         (message "%s" (pfuture-callback-output))
         (kill-buffer buffer)))))
 

@@ -4,7 +4,7 @@
 
 ;; Author: Yevgnen Koh <wherejoystarts@gmail.com>
 ;; Package-Requires: ((emacs "24.5") (ivy "0.8.0"))
-;; Version: 0.1.3
+;; Version: 0.1.6
 ;; Keywords: ivy
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -43,53 +43,10 @@
   "More friendly interface (display transformer) for ivy."
   :group 'ivy)
 
-;;; ivy-switch-buffer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defvar obsolete-message "Please refer to the github page for latest (0.1.0) usage of ivy-rich. ")
-
-;; Obsolete variables and functions
-(defcustom ivy-rich-switch-buffer-name-max-length
-  32
-  "Max length of buffer name.
-
-For better user experience, the max length should be set to loose to
-hold the buffer name."
-  :type 'integer)
-(make-obsolete-variable 'ivy-rich-switch-buffer-name-max-length obsolete-message "0.1.0")
-
-(defcustom ivy-rich-switch-buffer-mode-max-length
-  18
-  "Max length of mode name.
-
-For better user experience, the max length should be set to loose to
-hold the mode name."
-  :type 'integer)
-(make-obsolete-variable 'ivy-rich-switch-buffer-mode-max-length obsolete-message "0.1.0")
-
-(defcustom ivy-rich-switch-buffer-project-max-length
-  15
-  "Max length of project name.
-
-For better user experience, the max length should be set to loose
-to hold the project name."
-  :type 'integer)
-(make-obsolete-variable 'ivy-rich-switch-buffer-project-max-length obsolete-message "0.1.0")
-
-(defcustom ivy-rich-switch-buffer-delimiter
-  ""
-  "Delimiter between columns."
-  :type 'string)
-(make-obsolete-variable 'ivy-rich-switch-buffer-delimiter obsolete-message "0.1.0")
-
-(defcustom ivy-rich-switch-buffer-align-virtual-buffer
-  nil
-  "Whether to align virtual buffers just as true buffers or not."
-  :type 'boolean)
-(make-obsolete-variable 'ivy-rich-switch-buffer-align-virtual-buffer obsolete-message "0.1.0")
-
 (defcustom ivy-rich-display-transformers-list
   '(ivy-switch-buffer
     (:columns
-     ((ivy-rich-candidate (:width 30))
+     ((ivy-switch-buffer-transformer (:width 30))
       (ivy-rich-switch-buffer-size (:width 7))
       (ivy-rich-switch-buffer-indicators (:width 4 :face error :align right))
       (ivy-rich-switch-buffer-major-mode (:width 12 :face warning))
@@ -127,16 +84,22 @@ to hold the project name."
 
 The definitions should be in the following plist format
 
-'(CMD1 (:columns (COLUMN-FN1 (KEY1 VALUE1 KEY2 VALUE2 ...))
-                 (COLUMN-FN2 (KEY1 VALUE1 KEY2 VALUE2 ...))
-        :predicate PREDICATE-FN)
-...
-CMDN (:columns (COLUMN-FN1 (KEY1 VALUE1 KEY2 VALUE2 ...)
-               (COLUMN-FN2 (KEY1 VALUE1 KEY2 VALUE2 ...)))
-      :predicate PREDICATE-FN))
+'(CMD-1 TRANSFORM-PROPS-1
+  ...
+  CMD-N TRANSFORM-PROPS-N)
+
+A transformer named `ivy-rich--CMD-transformer' is built for each
+command CMD.
 
 CMD should be an ivy command, which is typically a return value
 of `ivy-read'.
+
+TRANSFORM-PROPS are properties for defining transformer in plist
+format, i.e.
+
+(:columns (COLUMN-FN1 (KEY1 VALUE1 KEY2 VALUE2 ...))
+                  (COLUMN-FN2 (KEY1 VALUE1 KEY2 VALUE2 ...))
+        :predicate PREDICATE-FN)
 
 COLUMN-FN is a function which takes the completion candidate as
 single argument and it should return a transformed string. This
@@ -164,13 +127,25 @@ If :predicate is provide, it should be a function which takes the
 completion candidate as single argument. A candidate with nil
 predication will not be transformed.
 
+It is possible to set TRANSFORM-PROPS to a pre-defined
+transformer, e.g.
+
+(...
+counsel-M-x
+(:columns
+ ((counsel-M-x-transformer (:width 40))
+  (ivy-rich-counsel-function-docstring (:face font-lock-doc-face))))
+
+execute-extended-command                ; reuse transformer built
+ivy-rich--counsel-M-x-transformer       ; for `counsel-M-x'
+...)
+
+`execute-extended-command' is set to used `counsel-M-x''s
+transformer. This is useful if one want to reuse transformers
+without duplicating definitions.
+
 Note that you may need to disable and enable the `ivy-rich-mode'
 again to make this variable take effect.")
-(define-obsolete-variable-alias
-  'ivy-rich--display-transformers-list
-  'ivy-rich-display-transformers-list
-  "0.1.2"
-  "Used `ivy-rich-display-transformers-list' instead.")
 
 ;; Common Functions ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defalias 'ivy-rich-candidate 'identity)
@@ -519,15 +494,17 @@ or /a/…/f.el."
                    (plist-get ivy-rich--original-display-transformers-list cmd))))
 
 (defun ivy-rich-build-transformer (cmd transformer-props)
-  (defalias (intern (format "ivy-rich--%s-transformer" (symbol-name cmd)))
-    (lambda  (candidate)
-      (let ((columns (plist-get transformer-props :columns))
-            (predicate-fn (or (plist-get transformer-props :predicate) (lambda (x) t)))
-            (delimiter (or (plist-get transformer-props :delimiter) " ")))
-        (if (and predicate-fn
-                 (not (funcall predicate-fn candidate)))
-            candidate
-          (ivy-rich-format candidate columns delimiter))))))
+  (if (functionp transformer-props)
+      transformer-props
+    (defalias (intern (format "ivy-rich--%s-transformer" (symbol-name cmd)))
+      (lambda  (candidate)
+        (let ((columns (plist-get transformer-props :columns))
+              (predicate-fn (or (plist-get transformer-props :predicate) (lambda (x) t)))
+              (delimiter (or (plist-get transformer-props :delimiter) " ")))
+          (if (and predicate-fn
+                   (not (funcall predicate-fn candidate)))
+              candidate
+            (ivy-rich-format candidate columns delimiter)))))))
 
 (defun ivy-rich-set-display-transformer ()
   (cl-loop for (cmd transformer-props) on ivy-rich-display-transformers-list by 'cddr do

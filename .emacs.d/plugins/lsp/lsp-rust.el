@@ -159,7 +159,7 @@ change."
   :package-version '(lsp-mode . "6.1"))
 
 (defcustom lsp-rust-features []
-  "A list of Cargo features to enable."
+  "List of Cargo features to enable."
   :type 'lsp-string-vector
   :group 'lsp-rust
   :package-version '(lsp-mode . "6.1"))
@@ -336,8 +336,20 @@ PARAMS progress report notification data."
   :group 'lsp-rust
   :package-version '(lsp-mode . "6.2.2"))
 
+(defcustom lsp-rust-analyzer-display-parameter-hints nil
+  "Whether to show function parameter name inlay hints at the call site."
+  :type 'boolean
+  :group 'lsp-rust
+  :package-version '(lsp-mode . "6.2.2"))
+
+(defcustom lsp-rust-analyzer-display-chaining-hints nil
+  "Whether to show inlay type hints for method chains."
+  :type 'boolean
+  :group 'lsp-rust
+  :package-version '(lsp-mode . "6.2.2"))
+
 (defcustom lsp-rust-analyzer-lru-capacity nil
-  "LRU capacity."
+  "Number of syntax trees rust-analyzer keeps in memory."
   :type 'integer
   :group 'lsp-rust
   :package-version '(lsp-mode . "6.2.2"))
@@ -360,6 +372,13 @@ PARAMS progress report notification data."
   :group 'lsp-rust
   :package-version '(lsp-mode . "6.2.2"))
 
+(defcustom lsp-rust-analyzer-cargo-override-command []
+  "Advanced option, fully override the command rust-analyzer uses for checking.
+The command should include `--message=format=json` or similar option."
+  :type 'lsp-string-vector
+  :group 'lsp-rust
+  :package-version '(lsp-mode . "6.2.2"))
+
 (defcustom lsp-rust-analyzer-cargo-all-targets nil
   "Cargo watch all targets or not."
   :type 'boolean
@@ -378,10 +397,14 @@ PARAMS progress report notification data."
   :group 'lsp-rust
   :package-version '(lsp-mode . "6.2.2"))
 
-(defcustom lsp-rust-analyzer-enabled-feature-flags ["completion.insertion.add-call-parenthesis"
-                                                    "completion.enable-postfix"
-                                                    "notifications.workspace-loaded"]
-  "Feature flags to set."
+(defcustom lsp-rust-analyzer-enabled-feature-flags []
+  "Feature flags to enable (all feature flags are currently enabled by default)."
+  :type 'lsp-string-vector
+  :group 'lsp-rust
+  :package-version '(lsp-mode . "6.2.2"))
+
+(defcustom lsp-rust-analyzer-disabled-feature-flags []
+  "Feature flags to disable (all feature flags are currently enabled by default)."
   :type 'lsp-string-vector
   :group 'lsp-rust
   :package-version '(lsp-mode . "6.2.2"))
@@ -394,19 +417,25 @@ PARAMS progress report notification data."
 
 (defun lsp-rust-analyzer--make-init-options ()
   "Init options for rust-analyzer"
-  (let ((feature-flags (--map (cons (intern it) t) lsp-rust-analyzer-enabled-feature-flags)))
+  (let ((feature-flags (or (append (--map (cons (intern it) json-false) lsp-rust-analyzer-disabled-feature-flags)
+                                   (--map (cons (intern it) t) lsp-rust-analyzer-enabled-feature-flags))
+                           (make-hash-table))))
     `(:lruCapacity ,lsp-rust-analyzer-lru-capacity
-      :maxInlayHintLength ,lsp-rust-analyzer-max-inlay-hint-length
-      :cargoWatchEnable ,(lsp-json-bool lsp-rust-analyzer-cargo-watch-enable)
-      :cargoWatchCommand ,lsp-rust-analyzer-cargo-watch-command
-      :cargoWatchArgs ,lsp-rust-analyzer-cargo-watch-args
-      :cargoWatchAllTargets ,(lsp-json-bool lsp-rust-analyzer-cargo-all-targets)
+      :checkOnSave (:enable ,(lsp-json-bool lsp-rust-analyzer-cargo-watch-enable)
+                    :command ,lsp-rust-analyzer-cargo-watch-command
+                    :extraArgs ,lsp-rust-analyzer-cargo-watch-args
+                    :allTargets ,(lsp-json-bool lsp-rust-analyzer-cargo-all-targets)
+                    :overrideCommand ,lsp-rust-analyzer-cargo-override-command)
       :excludeGlobs ,lsp-rust-analyzer-exclude-globs
       :useClientWatching ,(lsp-json-bool lsp-rust-analyzer-use-client-watching)
       :featureFlags ,feature-flags
-      :cargoFeatures (:allFeatures ,(lsp-json-bool lsp-rust-all-features)
-                      :noDefaultFeatures ,(lsp-json-bool lsp-rust-no-default-features)
-                      :features ,lsp-rust-features))))
+      :cargo (:allFeatures ,(lsp-json-bool lsp-rust-all-features)
+              :noDefaultFeatures ,(lsp-json-bool lsp-rust-no-default-features)
+              :features ,lsp-rust-features)
+      :inlayHints (:typeHints ,(lsp-json-bool lsp-rust-analyzer-server-display-inlay-hints)
+                   :chainingHints ,(lsp-json-bool lsp-rust-analyzer-display-chaining-hints)
+                   :parameterHints ,(lsp-json-bool lsp-rust-analyzer-display-parameter-hints)
+                   :maxLength ,lsp-rust-analyzer-max-inlay-hint-length))))
 
 (defconst lsp-rust-notification-handlers
   '(("rust-analyzer/publishDecorations" . (lambda (_w _p)))))
@@ -445,7 +474,7 @@ PARAMS progress report notification data."
 (defun lsp-rust-analyzer-syntax-tree ()
   "Display syntax tree for current buffer."
   (interactive)
-  (-if-let* ((workspace (lsp-find-workspace 'rust-analyzer default-directory))
+  (-if-let* ((workspace (lsp-find-workspace 'rust-analyzer))
              (root (lsp-workspace-root default-directory))
              (params (list :textDocument (lsp--text-document-identifier)
                            :range (if (use-region-p)
@@ -471,7 +500,7 @@ PARAMS progress report notification data."
 (defun lsp-rust-analyzer-status ()
   "Displays status information for rust-analyzer."
   (interactive)
-  (-if-let* ((workspace (lsp-find-workspace 'rust-analyzer default-directory))
+  (-if-let* ((workspace (lsp-find-workspace 'rust-analyzer))
              (root (lsp-workspace-root default-directory))
              (results (with-lsp-workspace workspace
                         (lsp-send-request (lsp-make-request
@@ -549,7 +578,7 @@ PARAMS progress report notification data."
   nil)
 
 (defun lsp-rust-analyzer-initialized? ()
-  (when-let ((workspace (lsp-find-workspace 'rust-analyzer (buffer-file-name))))
+  (when-let ((workspace (lsp-find-workspace 'rust-analyzer)))
     (eq 'initialized (lsp--workspace-status workspace))))
 
 (defun lsp-rust-analyzer-inlay-hints-change-handler (&rest _rest)
@@ -580,7 +609,7 @@ PARAMS progress report notification data."
 (defun lsp-rust-analyzer-expand-macro ()
   "Expands the macro call at point recursively."
   (interactive)
-  (-if-let (workspace (lsp-find-workspace 'rust-analyzer default-directory))
+  (-if-let (workspace (lsp-find-workspace 'rust-analyzer))
       (-if-let* ((params (list :textDocument (lsp--text-document-identifier)
                                :position (lsp--cur-position)))
                  (response (with-lsp-workspace workspace

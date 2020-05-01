@@ -5,8 +5,8 @@
 ;; Code licensed under the MIT license
 
 ;; Author: film42
-;; Version: 1.5.1
-;; Package-Requires: ((emacs "24"))
+;; Version: 1.7.0
+;; Package-Requires: ((emacs "24.3"))
 ;; URL: https://github.com/dracula/emacs
 
 ;;; Commentary:
@@ -17,29 +17,89 @@
 (require 'cl-lib)
 (deftheme dracula)
 
-;; Assigment form: VARIABLE COLOR [TTY-COLOR]
+
+;;;; Configuration options:
+
+(defgroup dracula nil
+  "Dracula theme options.
+
+The theme has to be reloaded after changing anything in this group."
+  :group 'faces)
+
+(defcustom dracula-enlarge-headings t
+  "Use different font sizes for some headings and titles."
+  :type 'boolean
+  :group 'dracula)
+
+(defcustom dracula-height-title-1 1.3
+  "Font size 100%."
+  :type 'number
+  :group 'dracula)
+
+(defcustom dracula-height-title-2 1.1
+  "Font size 110%."
+  :type 'number
+  :group 'dracula)
+
+(defcustom dracula-height-title-3 1.0
+  "Font size 130%."
+  :type 'number
+  :group 'dracula)
+
+(defcustom dracula-height-doc-title 1.44
+  "Font size 144%."
+  :type 'number
+  :group 'dracula)
+
+(defcustom dracula-alternate-mode-line-and-minibuffer nil
+  "Use less bold and pink in the minibuffer."
+  :type 'boolean
+  :group 'dracula)
+
+(defvar dracula-use-24-bit-colors-on-256-colors-terms nil
+  "Use true colors even on terminals announcing less capabilities.
+
+Beware the use of this variable.  Using it may lead to unwanted
+behavior, the most common one being an ugly blue background on
+terminals, which don't understand 24 bit colors.  To avoid this
+blue background, when using this variable, one can try to add the
+following lines in their config file after having load the
+Dracula theme:
+
+    (unless (display-graphic-p)
+      (set-face-background 'default \"black\" nil))
+
+There is a lot of discussion behind the 256 colors theme (see URL
+`https://github.com/dracula/emacs/pull/57').  Please take time to
+read it before opening a new issue about your will.")
+
+
+;;;; Theme definition:
+
+;; Assigment form: VARIABLE COLOR [256-COLOR [TTY-COLOR]]
 (let ((colors '(;; Upstream theme color
-                (dracula-bg      "#282a36" "#262626" nil) ; official background
+                (dracula-bg      "#282a36" "unspecified-bg" "unspecified-bg") ; official background
                 (dracula-fg      "#f8f8f2" "#ffffff" "brightwhite") ; official foreground
-                (dracula-current "#44475a" "#262626" "brightblack") ; official current-line/selection
-                (dracula-comment "#6272a4" "#7a7a7a" "blue")        ; official comment
-                (dracula-cyan    "#8be9fd" "#88eeff" "brightcyan")  ; official cyan
-                (dracula-green   "#50fa7b" "#55ff77" "green")       ; official green
-                (dracula-orange  "#ffb86c" "#ffbb66" "brightred")   ; official orange
-                (dracula-pink    "#ff79c6" "#ff77cc" "magenta")     ; official pink
-                (dracula-purple  "#bd93f9" "#bb99ff" "brightmagenta") ; official purple
-                (dracula-red     "#ff5555" "#ff6655" "red")         ; official red
-                (dracula-yellow  "#f1fa8c" "#ffff88" "yellow")      ; official yellow
+                (dracula-current "#44475a" "#303030" "brightblack") ; official current-line/selection
+                (dracula-comment "#6272a4" "#5f5faf" "blue")        ; official comment
+                (dracula-cyan    "#8be9fd" "#87d7ff" "brightcyan")  ; official cyan
+                (dracula-green   "#50fa7b" "#5fff87" "green")       ; official green
+                (dracula-orange  "#ffb86c" "#ffaf5f" "brightred")   ; official orange
+                (dracula-pink    "#ff79c6" "#ff87d7" "magenta")     ; official pink
+                (dracula-purple  "#bd93f9" "#af87ff" "brightmagenta") ; official purple
+                (dracula-red     "#ff5555" "#ff8787" "red")         ; official red
+                (dracula-yellow  "#f1fa8c" "#ffff87" "yellow")      ; official yellow
                 ;; Other colors
-                (bg2             "#373844" "#2e2e2e" "brightblack")
+                (bg2             "#373844" "#121212" "brightblack")
                 (bg3             "#464752" "#262626" "brightblack")
-                (bg4             "#565761" "#3f3f3f" "brightblack")
-                (fg2             "#e2e2dc" "#bfbfbf" "brightwhite")
-                (fg3             "#ccccc7" "#cccccc" "white")
-                (fg4             "#b6b6b2" "#bbbbbb" "white")
-                (other-blue      "#0189cc" "#0088cc" "brightblue")))
+                (bg4             "#565761" "#444444" "brightblack")
+                (fg2             "#e2e2dc" "#e4e4e4" "brightwhite")
+                (fg3             "#ccccc7" "#c6c6c6" "white")
+                (fg4             "#b6b6b2" "#b2b2b2" "white")
+                (other-blue      "#0189cc" "#0087ff" "brightblue")))
       (faces '(;; default
                (cursor :background ,fg3)
+               (completions-first-difference :foreground ,dracula-pink :weight bold)
                (default :background ,dracula-bg :foreground ,dracula-fg)
                (default-italic :slant italic)
                (ffap :foreground ,fg4)
@@ -53,9 +113,13 @@
                (linum :slant italic :foreground ,bg4 :background ,dracula-bg)
                (line-number :slant italic :foreground ,bg4 :background ,dracula-bg)
                (match :background ,dracula-yellow :foreground ,dracula-bg)
-               (minibuffer-prompt :weight bold :foreground ,dracula-pink)
+               (minibuffer-prompt
+                ,@(if dracula-alternate-mode-line-and-minibuffer
+                      (list :weight 'normal :foreground dracula-fg)
+                    (list :weight 'bold :foreground dracula-pink)))
+               (read-multiple-choice-face :inherit completions-first-difference)
                (region :inherit match :extend t)
-               (trailing-whitespace :foreground nil :background ,dracula-orange)
+               (trailing-whitespace :foreground "unspecified-fg" :background ,dracula-orange)
                (vertical-border :foreground ,bg2)
                (success :foreground ,dracula-green)
                (warning :foreground ,dracula-orange)
@@ -83,18 +147,24 @@
                (ac-completion-face :underline t :foreground ,dracula-pink)
                ;; company
                (company-echo-common :foreground ,dracula-bg :background ,dracula-fg)
-               (company-preview :background ,dracula-bg :foreground ,other-blue)
-               (company-preview-common :foreground ,bg2 :foreground ,fg3)
-               (company-preview-search :foreground ,dracula-purple :background ,dracula-bg)
-               (company-scrollbar-bg :background ,bg3)
-               (company-scrollbar-fg :foreground ,dracula-pink)
-               (company-template-field :inherit match)
-               (company-tooltip :foreground ,fg2 :background ,dracula-bg :weight bold)
+               (company-preview :background ,dracula-current :foreground ,other-blue)
+               (company-preview-common :inherit company-preview
+                                       :foreground ,dracula-pink)
+               (company-preview-search :inherit company-preview
+                                       :foreground ,dracula-green)
+               (company-scrollbar-bg :background ,dracula-comment)
+               (company-scrollbar-fg :foreground ,other-blue)
+               (company-tooltip :foreground ,dracula-fg :background ,dracula-current)
+               (company-tooltip-search :foreground ,dracula-green
+                                       :underline t)
+               (company-tooltip-search-selection :background ,dracula-green
+                                                 :foreground ,dracula-bg)
+               (company-tooltip-selection :inherit match)
+               (company-tooltip-mouse :background ,dracula-bg)
+               (company-tooltip-common :foreground ,dracula-pink :weight bold)
+               ;;(company-tooltip-common-selection :inherit company-tooltip-common)
                (company-tooltip-annotation :foreground ,dracula-cyan)
-               (company-tooltip-common :foreground ,fg3)
-               (company-tooltip-common-selection :foreground ,dracula-yellow)
-               (company-tooltip-mouse :inherit highlight)
-               (company-tooltip-selection :background ,bg3 :foreground ,fg3)
+               ;;(company-tooltip-annotation-selection :inherit company-tooltip-annotation)
                ;; diff-hl
                (diff-hl-change :foreground ,dracula-orange :background ,dracula-orange)
                (diff-hl-delete :foreground ,dracula-red :background ,dracula-red)
@@ -212,7 +282,7 @@
                (helm-grep-file :foreground ,dracula-fg :background ,dracula-bg)
                (helm-grep-finish :foreground ,fg2 :background ,dracula-bg)
                (helm-grep-lineno :foreground ,dracula-fg :background ,dracula-bg)
-               (helm-grep-match :foreground nil :background nil :inherit helm-match)
+               (helm-grep-match :foreground "unspecified-fg" :background "unspecified-bg" :inherit helm-match)
                (helm-grep-running :foreground ,dracula-green :background ,dracula-bg)
                (helm-header :foreground ,fg2 :background ,dracula-bg :underline nil :box nil)
                (helm-moccur-buffer :foreground ,dracula-green :background ,dracula-bg)
@@ -266,9 +336,12 @@
                ;; icomplete
                (icompletep-determined :foreground ,dracula-orange)
                ;; ido
-               (ido-first-match :foreground ,dracula-pink :weight bold)
+               (ido-first-match
+                ,@(if dracula-alternate-mode-line-and-minibuffer
+                      (list :weight 'normal :foreground dracula-green)
+                    (list :weight 'bold :foreground dracula-pink)))
                (ido-only-match :foreground ,dracula-orange)
-               (ido-subdir :foreground ,dracula-orange)
+               (ido-subdir :foreground ,dracula-yellow)
                (ido-virtual :foreground ,dracula-cyan)
                (ido-incomplete-regexp :inherit font-lock-warning-face)
                (ido-indicator :foreground ,dracula-fg :background ,dracula-pink)
@@ -338,12 +411,47 @@
                (magit-log-author :foreground ,fg3)
                (magit-process-ng :foreground ,dracula-orange :weight bold)
                (magit-process-ok :foreground ,dracula-green :weight bold)
+               ;; markdown
+               (markdown-blockquote-face :foreground ,dracula-orange)
+               (markdown-code-face :foreground ,dracula-orange)
+               (markdown-footnote-face :foreground ,other-blue)
+               (markdown-header-face :weight normal)
+               (markdown-header-face-1
+                :inherit bold :foreground ,dracula-pink
+                ,@(when dracula-enlarge-headings
+                    (list :height dracula-height-title-1)))
+               (markdown-header-face-2
+                :inherit bold :foreground ,dracula-purple
+                ,@(when dracula-enlarge-headings
+                    (list :height dracula-height-title-2)))
+               (markdown-header-face-3
+                :foreground ,dracula-green
+                ,@(when dracula-enlarge-headings
+                    (list :height dracula-height-title-3)))
+               (markdown-header-face-4 :foreground ,dracula-yellow)
+               (markdown-header-face-5 :foreground ,dracula-cyan)
+               (markdown-header-face-6 :foreground ,dracula-orange)
+               (markdown-header-face-7 :foreground ,other-blue)
+               (markdown-header-face-8 :foreground ,dracula-fg)
+               (markdown-inline-code-face :foreground ,dracula-yellow)
+               (markdown-plain-url-face :inherit link)
+               (markdown-pre-face :foreground ,dracula-orange)
+               (markdown-table-face :foreground ,dracula-purple)
                ;; message
                (message-mml :foreground ,dracula-green :weight normal)
                (message-header-xheader :foreground ,dracula-cyan :weight normal)
                ;; mode-line
-               (mode-line :foreground nil :background ,dracula-current :box ,dracula-current)
-               (mode-line-inactive :foreground ,dracula-fg :background ,bg2 :box ,bg2)
+               (mode-line :background ,dracula-current
+                          :box ,dracula-current :inverse-video nil
+                          ,@(if dracula-alternate-mode-line-and-minibuffer
+                                (list :foreground fg3)
+                              (list :foreground "unspecified-fg")))
+               (mode-line-inactive
+                :inverse-video nil
+                ,@(if dracula-alternate-mode-line-and-minibuffer
+                      (list :foreground dracula-comment :background dracula-bg
+                            :box dracula-bg)
+                    (list :foreground dracula-fg :background bg2 :box bg2)))
                ;; mu4e
                (mu4e-unread-face :foreground ,dracula-pink :weight normal)
                (mu4e-view-url-number-face :foreground ,dracula-purple)
@@ -373,16 +481,25 @@
                (org-date :foreground ,dracula-cyan :underline t)
                (org-document-info :foreground ,other-blue)
                (org-document-info-keyword :foreground ,dracula-comment)
-               (org-document-title :weight bold :foreground ,dracula-orange :height 1.44)
+               (org-document-title :weight bold :foreground ,dracula-orange
+                                   ,@(when dracula-enlarge-headings
+                                       (list :height dracula-height-doc-title)))
                (org-done :foreground ,dracula-green)
                (org-ellipsis :foreground ,dracula-comment)
                (org-footnote :foreground ,other-blue)
                (org-formula :foreground ,dracula-pink)
-               (org-headline-done :foreground ,dracula-comment :weight normal :strike-through t)
+               (org-headline-done :foreground ,dracula-comment
+                                  :weight normal :strike-through t)
                (org-hide :foreground ,dracula-bg :background ,dracula-bg)
-               (org-level-1 :inherit bold :foreground ,dracula-pink :height 1.3)
-               (org-level-2 :inherit bold :foreground ,dracula-purple :height 1.1)
-               (org-level-3 :weight normal :foreground ,dracula-green :height 1.0)
+               (org-level-1 :inherit bold :foreground ,dracula-pink
+                            ,@(when dracula-enlarge-headings
+                                (list :height dracula-height-title-1)))
+               (org-level-2 :inherit bold :foreground ,dracula-purple
+                            ,@(when dracula-enlarge-headings
+                                (list :height dracula-height-title-2)))
+               (org-level-3 :weight normal :foreground ,dracula-green
+                            ,@(when dracula-enlarge-headings
+                                (list :height dracula-height-title-3)))
                (org-level-4 :weight normal :foreground ,dracula-yellow)
                (org-level-5 :weight normal :foreground ,dracula-cyan)
                (org-level-6 :weight normal :foreground ,dracula-orange)
@@ -401,12 +518,12 @@
                (org-upcoming-deadline :foreground ,dracula-yellow)
                (org-warning :weight bold :foreground ,dracula-pink)
                ;; outline
-               (outline-1 :foreground ,dracula-green)
+               (outline-1 :foreground ,dracula-pink)
                (outline-2 :foreground ,dracula-purple)
-               (outline-3 :foreground ,dracula-cyan)
-               (outline-4 :foreground ,dracula-orange)
-               (outline-5 :foreground ,dracula-orange)
-               (outline-6 :foreground ,other-blue)
+               (outline-3 :foreground ,dracula-green)
+               (outline-4 :foreground ,dracula-yellow)
+               (outline-5 :foreground ,dracula-cyan)
+               (outline-6 :foreground ,dracula-orange)
                ;; powerline
                (powerline-evil-base-face :foreground ,bg2)
                (powerline-evil-emacs-face :inherit powerline-evil-base-face :background ,dracula-yellow)
@@ -450,6 +567,16 @@
                ;; spam
                (spam :inherit gnus-summary-normal-read :foreground ,dracula-orange
                      :strike-through t :slant oblique)
+               ;; speedbar (and sr-speedbar)
+               (speedbar-button-face :foreground ,dracula-green)
+               (speedbar-file-face :foreground ,dracula-cyan)
+               (speedbar-directory-face :foreground ,dracula-purple)
+               (speedbar-tag-face :foreground ,dracula-yellow)
+               (speedbar-selected-face :foreground ,dracula-pink)
+               (speedbar-highlight-face :inherit match)
+               (speedbar-separator-face :background ,dracula-bg
+                                        :foreground ,dracula-fg
+                                        :weight bold)
                ;; tab-bar & tab-line (since Emacs 27.1)
                (tab-bar :foreground ,dracula-purple :background ,dracula-current
                         :inherit variable-pitch)
@@ -517,18 +644,23 @@
                (graphic-colors (mapcar #'cadr colors))
                (term-colors (mapcar #'car (mapcar #'cddr colors)))
                (tty-colors (mapcar #'car (mapcar #'last colors)))
-               (expand-for-kind (lambda (kind spec)
-                                  (cl-progv color-names kind
-                                    (eval `(backquote ,spec))))))
+               (expand-for-kind
+                (lambda (kind spec)
+                  (when (and (string= (symbol-name kind) "term-colors")
+                             dracula-use-24-bit-colors-on-256-colors-terms)
+                    (setq kind 'graphic-colors))
+                  (cl-progv color-names (symbol-value kind)
+                    (eval `(backquote ,spec))))))
            (cl-loop for (face . spec) in faces
                     collect `(,face
                               ((((min-colors 16777216)) ; fully graphical envs
-                                ,(funcall expand-for-kind graphic-colors spec))
+                                ,(funcall expand-for-kind 'graphic-colors spec))
                                (((min-colors 256))      ; terminal withs 256 colors
-                                ,(funcall expand-for-kind term-colors spec))
+                                ,(funcall expand-for-kind 'term-colors spec))
                                (t                       ; should be only tty-like envs
-                                ,(funcall expand-for-kind tty-colors spec))))))))
+                                ,(funcall expand-for-kind 'tty-colors spec))))))))
 
+
 ;;;###autoload
 (when load-file-name
   (add-to-list 'custom-theme-load-path

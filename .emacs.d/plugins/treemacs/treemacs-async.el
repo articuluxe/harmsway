@@ -28,6 +28,7 @@
 (require 'treemacs-customization)
 (require 'treemacs-workspaces)
 (require 'treemacs-dom)
+(require 'treemacs-logging)
 (eval-and-compile
   (require 'inline)
   (require 'treemacs-macros))
@@ -146,8 +147,8 @@ Real implementation will be `fset' based on `treemacs-git-mode' value."
 
 (defun treemacs--parse-git-status-extended (git-future)
   "Parse the git status derived from the output of GIT-FUTURE.
-The real parsing and formatting is done by the python process. All that's really
-left to do is pick up the cons list and put it in a hash table.
+The real parsing and formatting is done by the python process.  All that's
+really left to do is pick up the cons list and put it in a hash table.
 
 GIT-FUTURE: Pfuture"
   (or (when git-future
@@ -164,8 +165,8 @@ GIT-FUTURE: Pfuture"
                                       (s-truncate 80 it)
                                       (propertize it 'face 'error))))
               (if (< (length git-stderr) 80)
-                  (treemacs-log "treemacs-git-status.py wrote to stderr: %s" visible-error)
-                (treemacs-log "treemacs-git-status.py wrote to stderr (see full output in *Messages*): %s" visible-error)
+                  (treemacs-log-err "treemacs-git-status.py wrote to stderr: %s" visible-error)
+                (treemacs-log-err "treemacs-git-status.py wrote to stderr (see full output in *Messages*): %s" visible-error)
                 (let ((inhibit-message t))
                   (treemacs-log "treemacs-git-status.py wrote to stderr: %s" git-stderr)))))
           (when (= 0 (process-exit-status git-future))
@@ -173,8 +174,8 @@ GIT-FUTURE: Pfuture"
               (if (hash-table-p parsed-output)
                   parsed-output
                 (let ((inhibit-message t))
-                  (treemacs-log "treemacs-git-status.py output: %s" git-output))
-                (treemacs-log "treemacs-git-status.py did not output a valid hash table. See full output in *Messages*.")
+                  (treemacs-log-err "treemacs-git-status.py output: %s" git-output))
+                (treemacs-log-err "treemacs-git-status.py did not output a valid hash table. See full output in *Messages*.")
                 nil)))))
       (ht)))
 
@@ -223,7 +224,7 @@ GIT-FUTURE: Pfuture"
 ;; TODO(2019/11/06): re-get git status when btn is flattened
 (defun treemacs--apply-deferred-git-state (parent-btn git-future buffer)
   "Apply the git fontification for direct children of PARENT-BTN.
-GIT-FUTURE is parsed the same way as in `treemacs--create-branch'. Additionally
+GIT-FUTURE is parsed the same way as in `treemacs--create-branch'.  Additionally
 since this function is run on an idle timer the BUFFER to work on must be passed
 as well since the user may since select a different buffer, window or frame.
 
@@ -266,15 +267,16 @@ FILE: Filepath"
 (defun treemacs-do-update-single-file-git-state (file &optional exclude-parents override-status)
   "Asynchronously update the given FILE node's git fontification.
 Since an update to a single node can potentially also mean a change to the
-states of all its parents they will likewise be updated by this function. If the
-file's current and new git status are the same this function will do nothing.
-
-When OVERRIDE-STATUS is non-nil the FILE's cached git status will not be used.
+states of all its parents they will likewise be updated by this function.  If
+the file's current and new git status are the same this function will do
+nothing.
 
 When EXCLUDE-PARENTS is non-nil only the given FILE only the file node is
-updated. This is only used in case a file-watch update requires the insertion of
-a new file that, due to being recently created, does not have a git status cache
-entry.
+updated.  This is only used in case a file-watch update requires the insertion
+of a new file that, due to being recently created, does not have a git status
+cache entry.
+
+When OVERRIDE-STATUS is non-nil the FILE's cached git status will not be used.
 
 FILE: Filepath
 EXCLUDE-PARENTS: Boolean
@@ -326,9 +328,9 @@ OVERRIDE-STATUS: Boolean"
             (2 (ignore "No Change, Do Nothing"))
             (_
              (-let [err-str (treemacs--remove-trailing-newline (pfuture-output-from-buffer pfuture-buffer))]
-               (treemacs-log "Update of node \"%s\" failed with status \"%s\" and result"
+               (treemacs-log-err "Update of node \"%s\" failed with status \"%s\" and result"
                  file (treemacs--remove-trailing-newline status))
-               (treemacs-log "\"%s\"" (treemacs--remove-trailing-newline err-str))))))))))
+               (treemacs-log-err "\"%s\"" (treemacs--remove-trailing-newline err-str))))))))))
 
 (defun treemacs--collapsed-dirs-process (path project)
   "Start a new process to determine dirs to collpase under PATH.
@@ -341,7 +343,7 @@ Every string list consists of the following elements:
  3) a series of intermediate steps which are the result of appending the
     collapsed path elements onto the original, ending in
  4) the full path to the
-    directory that the collapsing leads to. For Example:
+    directory that the collapsing leads to.  For Example:
     (\"/26.0/elpa\"
      \"/home/a/Documents/git/treemacs/.cask\"
      \"/home/a/Documents/git/treemacs/.cask/26.0\"
@@ -455,7 +457,7 @@ FUTURE: Pfuture process"
      (setf treemacs-collapse-dirs 3))
 
    (unless (or has-python (boundp 'treemacs-no-load-time-warnings))
-     (treemacs-log "Python3 not found, advanced git-mode and directory flattening features will be disabled."))))
+     (treemacs-log-failure "Python3 not found, advanced git-mode and directory flattening features will be disabled."))))
 
 (provide 'treemacs-async)
 

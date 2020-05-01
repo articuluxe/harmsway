@@ -43,6 +43,17 @@
 (require 'let-alist)
 (require 'rx)
 
+
+(defvar package-lint-main-file nil
+  "For multi-file packages, set this to the main .el or -pkg.el file.
+
+When set, the package prefix and dependencies are obtained from
+that file instead of the buffer being linted.  This allows
+package-lint to operate on secondary files in a package.
+
+The path can be absolute or relative to that of the linted file.")
+(put 'package-lint-main-file 'safe-local-variable #'stringp)
+
 
 ;;; Compatibility
 
@@ -141,6 +152,13 @@ published in ELPA for use by older Emacsen.")
     "pcomplete/"))
   "A regexp matching whitelisted non-standard symbol prefixes.")
 
+(defun package-lint--main-file-p ()
+  "Return non-nil if the current buffer corresponds to the package's main file."
+  (or (null package-lint-main-file)
+      (null (buffer-file-name))
+      (string= (file-truename (expand-file-name package-lint-main-file))
+               (file-truename (buffer-file-name)))))
+
 (defun package-lint--check-all ()
   "Return a list of errors/warnings for the current buffer."
   (let ((package-lint--errors '())
@@ -149,43 +167,75 @@ published in ELPA for use by older Emacsen.")
       (save-excursion
         (save-restriction
           (widen)
-          (package-lint--check-reserved-keybindings)
-          (package-lint--check-keywords-list)
-          (package-lint--check-url-header)
-          (package-lint--check-package-version-present)
-          (package-lint--check-lexical-binding-is-on-first-line)
-          (let ((prefix (package-lint--get-package-prefix)))
+          (let (prefix deps)
+            (if (package-lint--main-file-p)
+                (progn
+                  ;; TODO: handle when the main file is a -pkg.el file
+                  (setq prefix (package-lint--get-package-prefix))
+                  (let ((desc (package-lint--check-package-el-can-parse)))
+                    (when desc
+                      (package-lint--check-package-summary desc)
+                      (package-lint--check-provide-form desc)
+                      (package-lint--check-no-emacs-in-package-name desc)))
+                  (setq deps (package-lint--check-dependency-list))
+
+                  (package-lint--check-url-header)
+                  (package-lint--check-package-version-present)
+                  (package-lint--check-commentary-existence))
+              ;; Need to look at the main file to find prefix and dependencies
+              (setq prefix (replace-regexp-in-string
+                            "\\(-mode\\)?\\(-pkg\\)?\\'" ""
+                            (file-name-sans-extension
+                             (file-name-nondirectory package-lint-main-file))))
+              (let ((main-file package-lint-main-file))
+                (if (string-match-p "-pkg\\.el\\'" main-file)
+                    (let ((expr (with-temp-buffer
+                                  (insert-file-contents (expand-file-name main-file))
+                                  (read (current-buffer)))))
+                      (if (eq (car-safe expr) 'define-package)
+                          (setq deps (package-desc-reqs (apply #'package-desc-from-define (cdr expr))))
+                        (package-lint--error-at-bob 'error (format "Malformed package descriptor file \"%s\"" main-file))))
+                  (when (package-lint--goto-header "Package-Requires")
+                    (package-lint--error-at-bol 'error "Package-Requires outside the main file have no effect."))
+                  (package-lint--check-provide-form-secondary-file)
+                  (condition-case err
+                      (with-temp-buffer
+                        (insert-file-contents (expand-file-name main-file))
+                        (setq deps (package-desc-reqs (package-lint--liberal-package-buffer-info))))
+                    (error
+                     (package-lint--error-at-bob
+                      'error
+                      (format "Error parsing main package file \"%s\": %s" main-file err)))))))
+
+            ;; Source code checks
+            (package-lint--check-keywords-list)
+            (package-lint--check-lexical-binding-is-on-first-line)
+            (package-lint--check-reserved-keybindings)
+            (when prefix
+              (package-lint--check-objects-by-regexp
+               (concat "(" (regexp-opt '("defalias" "defvaralias")) "\\s-")
+               (apply-partially #'package-lint--check-defalias prefix)))
             (package-lint--check-objects-by-regexp
              "(define-minor-mode\\s-"
              #'package-lint--check-minor-mode)
             (package-lint--check-objects-by-regexp
              "(define-global\\(?:ized\\)?-minor-mode\\s-"
              #'package-lint--check-globalized-minor-mode)
-            (when prefix
-              (package-lint--check-objects-by-regexp
-               (concat "(" (regexp-opt '("defalias" "defvaralias")) "\\s-")
-               (apply-partially #'package-lint--check-defalias prefix)))
             (package-lint--check-objects-by-regexp
              "(defgroup\\s-" #'package-lint--check-defgroup)
-            (let ((desc (package-lint--check-package-el-can-parse)))
-              (when desc
-                (package-lint--check-package-summary desc)
-                (package-lint--check-provide-form desc)
-                (package-lint--check-no-emacs-in-package-name desc)))
+
             (package-lint--check-no-use-of-cl)
             (package-lint--check-no-use-of-cl-lib-sublibraries)
             (package-lint--check-eval-after-load)
-            (let ((deps (package-lint--check-dependency-list)))
-              (package-lint--check-lexical-binding-requires-emacs-24 deps)
-              (package-lint--check-libraries-available-in-emacs deps)
-              (package-lint--check-libraries-removed-from-emacs)
-              (package-lint--check-macros-functions-available-in-emacs deps)
-              (package-lint--check-macros-functions-removed-from-emacs deps)
-              (package-lint--check-objects-by-regexp
-               (concat "(" (regexp-opt '("format" "message" "error")) "\\s-")
-               (apply-partially #'package-lint--check-format-string deps)))
+            (package-lint--check-lexical-binding-requires-emacs-24 deps)
+            (package-lint--check-libraries-available-in-emacs deps)
+            (package-lint--check-libraries-removed-from-emacs)
+            (package-lint--check-macros-functions-available-in-emacs deps)
+            (package-lint--check-macros-functions-removed-from-emacs deps)
+            (package-lint--check-objects-by-regexp
+             (concat "(" (regexp-opt '("format" "message" "error")) "\\s-")
+             (apply-partially #'package-lint--check-format-string deps))
             (package-lint--check-for-literal-emacs-path)
-            (package-lint--check-commentary-existence)
             (let ((definitions (package-lint--get-defs)))
               (package-lint--check-autoloads-on-private-functions definitions)
               (when prefix
@@ -674,16 +724,21 @@ Alternatively, depend on (emacs \"24.3\") or greater, in which cl-lib is bundled
        'warning
        "\"Version:\" or \"Package-Version:\" header is missing. MELPA will handle this, but other archives will not."))))
 
+(defun package-lint--liberal-package-buffer-info ()
+  "Like `package-buffer-info', but tolerate missing version header."
+  (let ((orig-buffer (current-buffer)))
+    ;; We've reported version header issues separately, so rule them out here
+    (with-temp-buffer
+      (insert-buffer-substring-no-properties orig-buffer)
+      (goto-char (point-min))
+      (package-lint--update-or-insert-version "0")
+      (package-buffer-info))))
+
 (defun package-lint--check-package-el-can-parse ()
   "Check that `package-buffer-info' can read metadata from this file.
 If it can, return the read metadata."
   (condition-case err
-      (let ((orig-buffer (current-buffer)))
-        ;; We've reported version header issues separately, so rule them out here
-        (with-temp-buffer
-          (insert-buffer-substring-no-properties orig-buffer)
-          (package-lint--update-or-insert-version "0")
-          (package-buffer-info)))
+      (package-lint--liberal-package-buffer-info)
     (error
      (package-lint--error-at-bob
       'error
@@ -732,6 +787,15 @@ DESC is a struct as returned by `package-buffer-info'."
        'error
        (format "There is no (provide '%s) form." name)))))
 
+(defun package-lint--check-provide-form-secondary-file ()
+  "Check there is a provide form."
+  ;; We don't require that the provided feature have a name consistent
+  ;; with the overall package prefix, but this check may later be added.
+  (unless (package-lint--provided-feature)
+    (package-lint--error-at-bob
+     'error
+     "There is no `provide' form.")))
+
 (defun package-lint--check-no-emacs-in-package-name (desc)
   "Check that the package name doesn't contain \"emacs\".
 DESC is a struct as returned by `package-buffer-info'."
@@ -769,7 +833,7 @@ Valid definition names are:
 - a NAME whose POSITION in the buffer denotes a global definition."
   (or (string-prefix-p prefix name)
       (string-match-p package-lint--sane-prefixes name)
-      (string-match-p (rx-to-string `(seq string-start (or "define" "defun" "defvar" "with") "-" ,prefix)) name)
+      (string-match-p (rx-to-string `(seq string-start (or "define" "defun" "defvar" "defface" "with") "-" ,prefix)) name)
       (string-match-p (rx-to-string  `(seq string-start "global-" ,prefix (or "-mode" (seq "-" (* any) "-mode")) string-end)) name)
       (when position
         (goto-char position)
@@ -1005,7 +1069,7 @@ The returned list is of the form (SYMBOL-NAME . POSITION)."
     (nreverse result)))
 
 (defun package-lint--provided-feature ()
-  "Return the first-provided feature name, as a string, or nil if none."
+  "Return the last-provided feature name, as a string, or nil if none."
   (save-excursion
     (goto-char (point-max))
     (cond ((re-search-backward (rx "(provide '" (group (1+ (or (syntax word) (syntax symbol))))) nil t)
@@ -1052,6 +1116,8 @@ where TYPE is either 'warning or 'error.
 
 Current buffer is used if none is specified."
   (with-current-buffer (or buffer (current-buffer))
+    (unless (derived-mode-p 'emacs-lisp-mode)
+      (error "Buffer must be in emacs-lisp-mode"))
     (package-lint--check-all)))
 
 ;;;###autoload
@@ -1125,15 +1191,16 @@ whether or not warnings alone produce a non-zero exit code."
 ;;;###autoload
 (defun package-lint-looks-like-a-package-p ()
   "Return non-nil if the current buffer appears to be intended as a package."
-  (save-match-data
-    (save-excursion
-      (save-restriction
-        (widen)
-        (goto-char (point-min))
-        (re-search-forward
-         (concat lm-header-prefix
-                 (rx (or "Version" "Package-Version" "Package-Requires")))
-         nil t)))))
+  (or package-lint-main-file
+      (save-match-data
+        (save-excursion
+          (save-restriction
+            (widen)
+            (goto-char (point-min))
+            (re-search-forward
+             (concat lm-header-prefix
+                     (rx (or "Version" "Package-Version" "Package-Requires")))
+             nil t))))))
 
 (provide 'package-lint)
 ;; Local Variables:

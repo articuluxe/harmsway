@@ -622,7 +622,7 @@
    `(magit-popup-option-value      ((,class (:foreground ,aqua2   :bold t))))
 
    ;; Git
-   `(git-commit-note                 ((,class (:foreground ,brown1))))
+   `(git-commit-keyword              ((,class (:foreground ,brown2 :bold t))))
    `(git-commit-comment-action       ((,class (:foreground ,orange1))))
    `(git-commit-comment-branch       ((,class (:foreground ,blue1 :bold t))))
    `(git-commit-comment-detached     ((,class (:foreground ,aqua1))))
@@ -700,7 +700,8 @@
    `(org-agenda-filter-regexp      ((,class (:foreground ,bg :background ,red3)))) ;; TODO
    `(org-agenda-filter-tags        ((,class (:foreground ,bg :background ,red3)))) ;; TODO
    `(org-agenda-restriction-lock   ((,class (:foreground ,bg :background ,red3)))) ;; TODO
-   `(org-agenda-structure          ((,class (:foreground ,purple1 :bold t :height 1.3))))
+   `(org-agenda-structure          ((,class (:foreground ,purple1 :bold t :height 1.5))))
+   `(org-super-agenda-header       ((,class (:foreground ,green2 :bold t :height 1.3))))
    `(org-archived                  ((,class (:foreground ,grey1 :bold t))))
    `(org-block                     ((,class (:background ,bg2))))
    `(org-block-begin-line          ((,class (:background ,brown2 :foreground ,bg2 :bold t))))

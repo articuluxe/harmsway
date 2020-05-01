@@ -167,6 +167,10 @@ exits through an error."
   "If non-nil use padding between avy hints and candidates."
   :type 'boolean)
 
+(defcustom frog-menu-posframe-border-width 1
+  "Border width to use for the posframe `frog-menu' creates."
+  :type 'integer)
+
 (defcustom frog-menu-posframe-parameters nil
   "Explicit frame parameters to be used by the posframe `frog-menu' creates."
   :type 'list)
@@ -257,7 +261,7 @@ for this.")
   "Face used for menu action keybindings.")
 
 (defface frog-menu-posframe-background-face
-  '((t (:inherit default)))
+  '((t :background "old lace"))
   "Face used for the background color of the posframe.")
 
 (defvar frog-menu--buffer " *frog-menu-menu*"
@@ -465,7 +469,7 @@ Returns window of displayed buffer."
   (posframe-show buf
                  :poshandler(or display-option
                                 #'posframe-poshandler-point-bottom-left-corner)
-                 :internal-border-width 1
+                 :internal-border-width frog-menu-posframe-border-width
                  :background-color (face-attribute
                                     'frog-menu-posframe-background-face
                                     :background)
@@ -637,25 +641,67 @@ COLLECTION are the arguments from `frog-menu-read'."
            (replace-regexp-in-string "\\(: ?\\)?\\'" ": " prompt))
          collection args))
 
-(defun frog-menu-completing-read-function (prompt collection &rest _)
+(defun frog-menu-completing-read-function (prompt collection predicate &rest _)
   "Can be used as `completing-read-function'.
 
-For now all arguments other than PROMPT and COLLECTION are
-ignored. COLLECTION has to use a format `frog-menu-read' can
-understand."
-  (frog-menu-read prompt collection))
+PROMPT, COLLECTION and PREDICATE are of format as specified by
+`completing-read'."
+  (let ((strings (frog-menu--collection-to-strings collection predicate)))
+    (frog-menu-read prompt strings)))
 
 
 ;;;###autoload
 (defun frog-menu-call (cmds &optional prompt)
   "Read a command from CMDS and execute it.
 
-CMDS is a list of command symbols to choose from.  If PROMPT is
-given it should be a string with prompt information for the
-user."
-  (let ((cmd (intern-soft (frog-menu-read (or prompt "")
-                                          (mapcar #'symbol-name cmds)))))
+CMDS is of format as specified by `completing-read'
+collections. If PROMPT is given it should be a string with prompt
+information for the user."
+  (let ((cmd (intern-soft (frog-menu-read
+                           (or prompt "")
+                           (frog-menu--collection-to-strings cmds)))))
     (command-execute cmd)))
+
+
+(defun frog-menu--collection-to-strings (collection &optional predicate)
+  "Return list of strings representing COLLECTION.
+COLLECTION and PREDICATE should have the format as specified by
+`completing-read'."
+  (cond ((functionp collection)
+         (let ((cands (funcall collection "" predicate t)))
+           (if (stringp (car-safe cands))
+               (copy-sequence cands)
+             (mapcar #'symbol-name cands))))
+        ((listp collection)
+         (let ((strings ()))
+           (dolist (el collection (nreverse strings))
+             (unless (and predicate
+                          (funcall predicate el))
+               (let ((cand (or (car-safe el) el)))
+                 (push (if (symbolp cand)
+                           (symbol-name cand)
+                         cand)
+                       strings))))))
+        ((hash-table-p collection)
+         (let ((strings ()))
+           (maphash
+            (lambda (key val)
+              (unless (and predicate
+                           (funcall predicate key val))
+                (push (if (symbolp key)
+                           (symbol-name key)
+                         key)
+                      strings)))
+            collection)
+           (nreverse strings)))
+        ((vectorp collection)
+         (let ((strings ()))
+           (mapatoms
+            (lambda (el)
+              (unless (and predicate
+                           (funcall predicate el))
+                (push (symbol-name el) strings))))
+           (nreverse strings)))))
 
 
 ;;;###autoload

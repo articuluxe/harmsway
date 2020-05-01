@@ -37,6 +37,7 @@
 (require 'treemacs-tags)
 (require 'treemacs-scope)
 (require 'treemacs-follow-mode)
+(require 'treemacs-logging)
 (eval-and-compile
   (require 'inline)
   (require 'cl-lib)
@@ -126,7 +127,7 @@ PATH: String List"
   "Specialization of `treemacs--flatten-imenu-index' for org mode.
 An index produced in an `org-mode' buffer is special in that tag sections act
 not just as a means of grouping tags (being bags of functions, classes etc).
-Each tag section is instead also a headline which can be moved to. The
+Each tag section is instead also a headline which can be moved to.  The
 flattening algorithm must therefore be slightly adjusted.
 
 INDEX: Org Imenu Tag Index
@@ -164,7 +165,7 @@ P2: Tag-Path"
 (defun treemacs--find-index-pos (point list)
   "Find the tag at POINT within a flat tag-path LIST.
 Returns the tag-path whose tag is the last to be situated before POINT (meaning
-that the next tag is after POINT and thus too far). Accounts for POINT being
+that the next tag is after POINT and thus too far).  Accounts for POINT being
 located either before the first or after the last tag.
 
 POINT: Int
@@ -280,7 +281,7 @@ PROJECT: Project Struct"
               (setq-local treemacs--imenu-cache (copy-sequence index)))
             (treemacs--do-follow-tag index treemacs-window buffer-file project))
         (imenu-unavailable (ignore e))
-        (error (treemacs-log "Encountered error while following tag at point: %s" e))))))
+        (error (treemacs-log-err "Encountered error while following tag at point: %s" e))))))
 
 (defun treemacs--setup-tag-follow-mode ()
   "Setup tag follow mode."

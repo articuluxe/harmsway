@@ -84,8 +84,7 @@ Semantic, and Ansi-Color faces are included.")
    ;; Faces defined in faces.el:
    `(default                        ((,class (:foreground ,black
 					      :background ,white))))
-   `(deemphasized                   ((,class (:foreground ,alum-4
-					      :background ,white))))
+   `(deemphasized                   ((,class (:foreground ,alum-4))))
    `(quote                          ((,class (:foreground ,alum-5
 					      :slant italic))))
    ;; Skipping bold, italic, bold-italic, underline, fixed-pitch,
@@ -160,6 +159,7 @@ Semantic, and Ansi-Color faces are included.")
    `(evil-ex-substitute-matches     ((,class (:background ,red-0
 					      :strike-through ,red-1))))
    `(evil-ex-substitute-replacement ((,class (:inherit lazy-highlight))))
+   `(evil-visual-mark-face          ((,class (:inherit default :foreground ,white :background ,blue-2))))
 
    ;; Gnus faces
    `(gnus-group-news-1              ((,class (:weight bold
@@ -205,6 +205,10 @@ Semantic, and Ansi-Color faces are included.")
    `(message-header-subject         ((,class (:inherit default))))
    `(message-cited-text             ((,class (:inherit deemphasized))))
    `(message-separator              ((,class (:inherit deemphasized))))
+   `(message-cited-text-1           ((,class (:inherit font-lock-comment-face))))
+   `(message-cited-text-2           ((,class (:inherit font-lock-comment-face))))
+   `(message-cited-text-3           ((,class (:inherit font-lock-comment-face))))
+   `(message-cited-text-4           ((,class (:inherit font-lock-comment-face))))
 
    ;; SMerge
    `(smerge-refined-change          ((,class (:background ,plum-1))))
@@ -226,34 +230,51 @@ Semantic, and Ansi-Color faces are included.")
    ;; Wcheck
    `(wcheck-default-face            ((,class (:inherit flyspell-incorrect))))
 
-   ;; Org mode
+   ;; Outline:
+   `(outline-1                      ((,class (:inherit font-lock-keyword-face))))
+   `(outline-2                      ((,class (:inherit font-lock-keyword-face))))
+   `(outline-3                      ((,class (:inherit font-lock-keyword-face))))
+   `(outline-4                      ((,class (:inherit font-lock-keyword-face))))
+   `(outline-5                      ((,class (:inherit font-lock-keyword-face))))
+   `(outline-6                      ((,class (:inherit font-lock-keyword-face))))
+   `(outline-7                      ((,class (:inherit font-lock-keyword-face))))
+   `(outline-8                      ((,class (:inherit font-lock-keyword-face))))
+
+   ;; Org mode:
    `(org-quote                      ((,class (:inherit quote))))
    `(org-verbatim                   ((,class (:inherit quote))))
    `(org-level-1                    ((,class (:inherit font-lock-keyword-face
 					      :height 1.3 :weight bold))))
-   `(org-level-2                    ((,class (:inherit font-lock-keyword-face))))
+   `(org-level-2                    ((,class (:inherit font-lock-keyword-face :weight bold))))
    `(org-level-3                    ((,class (:inherit font-lock-keyword-face))))
    `(org-level-4                    ((,class (:inherit font-lock-keyword-face))))
    `(org-level-5                    ((,class (:inherit font-lock-keyword-face))))
    `(org-level-6                    ((,class (:inherit font-lock-keyword-face))))
    `(org-level-7                    ((,class (:inherit font-lock-keyword-face))))
    `(org-level-8                    ((,class (:inherit font-lock-keyword-face))))
-   `(org-document-title             ((,class (:inherit font-lock-keyword-face :weight bold))))
+   `(org-document-title             ((,class (:inherit font-lock-keyword-face :height 1.5 :weight bold))))
    `(org-document-info              ((,class (:inherit font-lock-keyword-face))))
+   `(org-document-info-keyword      ((,class (:inherit shadow))))
+   `(org-meta-line                  ((,class (:inherit shadow))))
    `(org-todo                       ((,class (:foreground ,red-2 :weight bold))))
    `(org-done                       ((,class (:foreground ,cham-3))))
    `(org-table                      ((,class (:inherit font-lock-keyword-face))))
+   `(org-drawer                     ((,class (:inherit font-lock-keyword-face))))
+   `(org-special-keyword            ((,class (:inherit font-lock-keyword-face))))
    `(org-date                       ((,class (:inherit font-lock-builtin-face))))
    `(org-footnote                   ((,class (:foreground ,alum-5))))
+   `(org-block-begin-line           ((,class (:foreground ,alum-4 :background ,alum-1))))
+   `(org-block                      ((,class (:background ,alum-1))))
+   `(org-block-end-line             ((,class (:foreground ,alum-4 :background ,alum-1))))
    `(org-hide                       ((,class (:foreground ,white))))
-	 `(org-agenda-date                ((,class (:foreground ,black))))
-	 `(org-agenda-date-today          ((,class (:inherit org-agenda-date))))
-	 `(org-agenda-date-weekend        ((,class (:inherit org-agenda-date :foreground ,alum-6 :underline t))))
-	 `(org-sexp-date                  ((,class (:inherit org-date))))
-	 `(org-time-grid                  ((,class (:foreground ,alum-4))))
-	 `(org-agenda-structure           ((,class (:inherit helm-sourcesdlkjsdlgk-header))))
+   `(org-agenda-date                ((,class (:foreground ,black))))
+   `(org-agenda-date-today          ((,class (:inherit org-agenda-date))))
+   `(org-agenda-date-weekend        ((,class (:inherit org-agenda-date :foreground ,alum-6 :underline t))))
+   `(org-sexp-date                  ((,class (:inherit org-date))))
+   `(org-time-grid                  ((,class (:foreground ,alum-4))))
+   `(org-agenda-structure           ((,class (:inherit helm-source-header))))
 
-	 ;; Moinmoin
+   ;; Moinmoin
    `(moinmoin-h1                    ((,class (:inherit org-level-1))))
    `(moinmoin-h2                    ((,class (:inherit org-level-2))))
    `(moinmoin-h3                    ((,class (:inherit org-level-3))))
@@ -292,7 +313,7 @@ Semantic, and Ansi-Color faces are included.")
    `(mu4e-special-header-value-face ((,class (:inherit default))))
    `(mu4e-contact-face              ((,class (:inherit default :weight bold))))
    `(mu4e-highlight-face            ((,class (:inherit default :bold t))))
-   `(mu4e-modeline-face             ((,class (:inherit mode-line))))
+   `(mu4e-modeline-face             ((,class ())))
    `(mu4e-compose-separator-face    ((,class (:inherit deemphasized))))
    `(mu4e-cited-1-face              ((,class (:inherit font-lock-comment-face))))
    `(mu4e-cited-2-face              ((,class (:inherit font-lock-comment-face))))
@@ -368,7 +389,7 @@ Semantic, and Ansi-Color faces are included.")
    `(epresent-bullet-face           ((,class (:weight bold))))
    `(epresent-hidden-face           ((,class (:invisible t))))
 
-  ;; writegood-mode:
+   ;; writegood-mode:
    `(writegood-weasels-face         ((,class (:underline (:color ,red-1 :style wave)))))
    `(writegood-passive-voice-face   ((,class (:inherit writegood-weasels-face))))
    `(writegood-duplicates-face      ((,class (:inherit flyspell-duplicate))))

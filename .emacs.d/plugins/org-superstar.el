@@ -5,7 +5,7 @@
 ;; Author: D. Williams <d.williams@posteo.net>
 ;; Maintainer: D. Williams <d.williams@posteo.net>
 ;; Keywords: faces, outlines
-;; Version: 1.1.0
+;; Version: 1.2.1
 ;; Homepage: https://github.com/integral-dw/org-superstar-mode
 ;; Package-Requires: ((org "9.1.9") (emacs "26.1"))
 
@@ -121,16 +121,34 @@ variable for your changes to take effect."
     ("DONE" . ?☑))
   "Alist of UTF-8 bullets for TODO items.
 
-Each key should be a TODO keyword, and each value should the UTF8
-character to be displayed.  Keywords that are not included in the
-alist are handled like normal headings.
+In the simplest case each key should be a TODO keyword, and each
+value should the UTF8 character to be displayed.  Keywords that
+are not included in the alist are handled like normal headings.
+
+Alternatively, each alist element may be a proper list of the form
+\(KEYWORD COMPOSE-STRING CHARACTER [REST...])
+
+where KEYWORD should be a TODO keyword, and COMPOSE-STRING should
+be a string according to the rules of the third argument of
+‘compose-region’.  It will be used to compose the specific TODO
+item bullet.  CHARACTER is the fallback character used in
+terminal displays, where composing characters cannot be relied
+upon.  See also ‘org-superstar-leading-fallback’.
 
 You should call ‘org-superstar-restart’ after changing this
 variable for your changes to take effect."
   :group 'org-superstar
   :type '(alist :key-type (string :format "TODO keyword: %v")
-                :value-type (character :value ?◉
-                                       :format "Bullet character: %v\n")))
+                :value-type
+                (choice
+                 (character :value ?◉
+                            :format "Bullet character: %v\n"
+                            :tag "Simple bullet character")
+                 (list :tag "Advanced string and fallback"
+                  (string :value "◉"
+                          :format "String of characters to compose: %v")
+                  (character :value ?◉
+                             :format "Fallback character for terminal: %v\n")))))
 
 ;;;###autoload
 (put 'org-superstar-leading-bullet
@@ -382,9 +400,22 @@ If no TODO property is found, return nil."
   "Return the desired TODO item bullet, if defined.
 If no entry can be found in ‘org-superstar-todo-bullet-alist’ for
 the current keyword, return nil."
-  (cdr (assoc-string
-        (org-superstar--get-todo (match-beginning 0))
-        org-superstar-todo-bullet-alist)))
+  (let* ((todo-kw
+          (org-superstar--get-todo (match-beginning 0)))
+         (todo-bullet
+          (assoc-string todo-kw
+                        org-superstar-todo-bullet-alist))
+         (todo-bullet (cdr todo-bullet))
+         (todo-fallback nil))
+      (cond
+       ((characterp todo-bullet)
+        todo-bullet)
+       ((listp todo-bullet)
+        (setq todo-fallback (cadr todo-bullet))
+        (setq todo-bullet (car todo-bullet))
+        (if (org-superstar-graphic-p)
+            todo-bullet
+          todo-fallback)))))
 
 (defun org-superstar--hbullets-length ()
   "Return the length of ‘org-superstar-headline-bullets-list’."
@@ -449,10 +480,10 @@ This function may be expensive for files with very large plain
 lists; consider using ‘org-superstar-toggle-lightweight-lists’ in
 such cases to avoid slowdown."
   (or org-superstar-lightweight-lists
-      (save-match-data
-        (org-element-lineage (org-element-at-point)
-                             '(plain-list) t))
-      t))
+      (and (save-match-data
+	     (org-element-lineage (org-element-at-point)
+				  '(plain-list) t))
+	   t)))
 
 (defun org-superstar-headline-or-inlinetask-p ()
   "Return t if the current match is a proper headline or inlinetask."

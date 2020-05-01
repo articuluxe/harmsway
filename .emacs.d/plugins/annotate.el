@@ -7,7 +7,7 @@
 ;; Maintainer: Bastian Bechtold
 ;; URL: https://github.com/bastibe/annotate.el
 ;; Created: 2015-06-10
-;; Version: 0.6.0
+;; Version: 0.6.2
 
 ;; This file is NOT part of GNU Emacs.
 
@@ -55,7 +55,7 @@
 ;;;###autoload
 (defgroup annotate nil
   "Annotate files without changing them."
-  :version "0.6.0"
+  :version "0.6.2"
   :group 'text)
 
 ;;;###autoload
@@ -385,7 +385,7 @@ modified (for example a newline is inserted)."
                    (annotate-bounds)
                  (let ((annotation-text (read-from-minibuffer annotate-annotation-prompt)))
                    (annotate-create-annotation start end annotation-text nil)))))
-    (let ((overlay (car (overlays-at (point)))))
+    (let ((annotation (annotate-annotation-at (point))))
       (cond
        ((use-region-p)
         (let ((annotations (cl-remove-if-not #'annotationp
@@ -394,7 +394,7 @@ modified (for example a newline is inserted)."
           (if annotations
               (message "Error: the region overlaps with at least an already existings annotation")
             (create-new-annotation))))
-       ((annotationp overlay)
+       (annotation
         (annotate-change-annotation (point))
         (font-lock-fontify-buffer nil))
        (t
@@ -1538,7 +1538,17 @@ The searched interval can be customized setting the variable:
                                all-faces))
                        (setf all-faces-height
                              (mapcar (lambda (face)
-                                       (face-attribute face :height nil 'default))
+                                       (cond
+                                        ((facep face)
+                                         (face-attribute face :height nil 'default))
+                                        ((and (consp face)
+                                              (keywordp (cl-first face))) ; a plist
+                                         (cl-getf face :height
+                                                  (face-attribute 'default :height)))
+                                        ((consp face) ; a list of named face, first wins
+                                         (face-attribute (cl-first face) :height nil 'default))
+                                        (t
+                                         (face-attribute 'default :height))))
                                      (cl-remove-if #'null all-faces)))
                        (setf force-newline-p
                              (cl-find-if (lambda (a) (/= a default-face-height))
@@ -2417,7 +2427,7 @@ Note: this function return the annotation part of the record, see
 
 The argument `query' is a string that respect a simple syntax:
 
-- [file-mask] [(and | or) [not] regex-note (and | or) [not] regexp-note ...]
+- [file-mask] [(and | or) [not] regex-note [(and | or) [not] regexp-note ...]]
 
 where
 

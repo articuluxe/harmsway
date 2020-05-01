@@ -24,10 +24,12 @@
 
 ;;; Code:
 
-(require 'lsp)
+(require 'lsp-mode)
 (require 'dash)
 (require 'dash-functional)
 (require 'rx)
+(require 'cl-lib)
+(require 'em-glob)
 
 ;;; Ada
 (defgroup lsp-ada nil
@@ -93,13 +95,20 @@ See instructions at https://marketplace.visualstudio.com/items?itemName=mads-har
   :group 'lsp-bash
   :package-version '(lsp-mode . "6.2"))
 
+(defcustom lsp-bash-glob-pattern nil
+  "Glob pattern used to find shell script files to parse."
+  :type 'string
+  :group 'lsp-bash
+  :package-version '(lsp-mode . "6.3"))
+
 (lsp-register-client
  (make-lsp-client :new-connection (lsp-stdio-connection '("bash-language-server" "start"))
                   :major-modes '(sh-mode)
                   :priority -1
                   :environment-fn (lambda ()
                                     '(("EXPLAINSHELL_ENDPOINT" . lsp-bash-explainshell-endpoint)
-                                      ("HIGHLIGHT_PARSING_ERRORS" . lsp-bash-highlight-parsing-errors)))
+                                      ("HIGHLIGHT_PARSING_ERRORS" . lsp-bash-highlight-parsing-errors)
+                                      ("GLOB_PATTERN" . lsp-bash-glob-pattern)))
                   :server-id 'bash-ls))
 
 ;;; Groovy
@@ -301,8 +310,8 @@ there is a .flowconfig file in the folder hierarchy."
   "Check if the Flow language server should be enabled for a
 particular FILE-NAME and MODE."
   (and (derived-mode-p 'js-mode 'web-mode 'js2-mode 'flow-js2-mode 'rjsx-mode)
-       (lsp-clients-flow-project-p file-name)
-       (lsp-clients-flow-tag-file-present-p file-name)))
+       (or (lsp-clients-flow-project-p file-name)
+	   (lsp-clients-flow-tag-file-present-p file-name))))
 
 (lsp-register-client
  (make-lsp-client :new-connection (lsp-stdio-connection (lambda ()
@@ -499,11 +508,17 @@ finding the executable with `exec-path'."
   :group 'lsp-mode
   :link '(url-link "https://github.com/fwcd/KotlinLanguageServer"))
 
-(defcustom lsp-kotlin-language-server-path ""
-  "Optionally a custom path to the language server executable."
+(define-obsolete-variable-alias
+  'lsp-kotlin-language-server-path
+  'lsp-clients-kotlin-server-executable
+  "lsp-mode 6.4")
+
+(defcustom lsp-clients-kotlin-server-executable "kotlin-language-server"
+  "The kotlin-language-server executable to use.
+Leave as just the executable name to use the default behavior of finding the
+executable with `exec-path'."
   :type 'string
-  :group 'lsp-kotlin
-  :package-version '(lsp-mode . "6.1"))
+  :group 'lsp-kotlin)
 
 (defcustom lsp-kotlin-trace-server "off"
   "Traces the communication between VSCode and the Kotlin language server."
@@ -561,11 +576,11 @@ responsiveness at the cost of possible stability issues."
    ("kotlin.linting.debounceTime" lsp-kotlin-linting-debounce-time)
    ("kotlin.compiler.jvm.target" lsp-kotlin-compiler-jvm-target)
    ("kotlin.trace.server" lsp-kotlin-trace-server)
-   ("kotlin.languageServer.path" lsp-kotlin-language-server-path)))
+   ("kotlin.languageServer.path" lsp-clients-kotlin-server-executable)))
 
 (lsp-register-client
  (make-lsp-client
-  :new-connection (lsp-stdio-connection '("kotlin-language-server"))
+  :new-connection (lsp-stdio-connection lsp-clients-kotlin-server-executable)
   :major-modes '(kotlin-mode)
   :priority -1
   :server-id 'kotlin-ls
@@ -691,11 +706,11 @@ responsiveness at the cost of possible stability issues."
 
 ;; Vim script
 (defgroup lsp-vim nil
-  "LSP support for TeX and friends, using Digestif."
+  "LSP support for viml using vim-language-server"
   :group 'lsp-mode)
 
 (defcustom lsp-clients-vim-executable '("vim-language-server" "--stdio")
-  "Command to start the Digestif language server."
+  "Command to start the vim language server."
   :group 'lsp-vim
   :risky t
   :type 'file)
@@ -827,6 +842,148 @@ responsiveness at the cost of possible stability issues."
                   :major-modes '(cmake-mode)
                   :priority -1
                   :server-id 'cmakels))
+
+;; PureScript
+(defgroup lsp-purescript nil
+  "LSP support for PureScript, using purescript-language-server."
+  :group 'lsp-mode
+  :link '(url-link "https://github.com/nwolverson/purescript-language-server"))
+
+(defcustom lsp-purescript-server-executable
+  "purescript-language-server"
+  "Arguments to pass to the server."
+  :type 'string
+  :risky t
+  :group 'lsp-purescript)
+
+(defcustom lsp-purescript-server-args
+  '("--stdio")
+  "Arguments to pass to the server."
+  :type '(repeat string)
+  :risky t
+  :group 'lsp-purescript)
+
+(defun lsp-purescript--server-command ()
+  "Generate LSP startup command for purescript-language-server."
+  (cons lsp-purescript-server-executable
+        lsp-purescript-server-args))
+
+(lsp-register-client
+ (make-lsp-client :new-connection (lsp-stdio-connection
+                                   #'lsp-purescript--server-command)
+                  :major-modes '(purescript-mode)
+                  :priority -1
+                  :server-id 'pursls))
+
+;;; Rf
+(defgroup lsp-rf nil
+  "Settings for Robot Framework Language Server."
+  :group 'lsp-mode
+  :tag "Language Server"
+  :link '(url-link "https://github.com/tomi/vscode-rf-language-server.git"))
+
+(defcustom lsp-rf-language-server-start-command '("~/.nvm/versions/node/v9.11.2/bin/node" "~/.vscode/extensions/tomiturtiainen.rf-intellisense-2.8.0/server/server.js")
+  "Path to the server.js file of the rf-intellisense server. Accepts a list of strings (path/to/interpreter path/to/server.js)"
+  :type 'list
+  :group 'lsp-rf)
+
+(defcustom lsp-rf-language-server-include-paths []
+  "An array of files that should be included by the parser. Glob patterns as strings are accepted (eg. *.robot between double quotes)"
+  :type 'lsp-string-vector
+  :group 'lsp-rf)
+
+(defcustom lsp-rf-language-server-exclude-paths []
+  "An array of files that should be ignored by the parser. Glob patterns as strings are accepted (eg. *bad.robot between double quotes)"
+  :type 'lsp-string-vector
+  :group 'lsp-rf)
+
+(defcustom lsp-rf-language-server-dir "~/.vscode/extensions/tomiturtiainen.rf-intellisense-2.8.0/server/library-docs/"
+  "Libraries directory for libraries in lsp-rf-language-server-libraries"
+  :type 'string
+  :group 'lsp-rf)
+
+(defcustom lsp-rf-language-server-libraries ["BuiltIn-3.1.1" "Collections-3.0.4"]
+  "Libraries whose keywords are suggested with auto-complete"
+  :type '(repeat string)
+  ;; :type 'lsp-string-vector
+  :group 'lsp-rf)
+
+(defcustom lsp-rf-language-server-log-level "debug"
+  "What language server log messages are printed"
+  :type 'string
+  ;; :type '(choice (:tag "off" "errors" "info" "debug"))
+  :group 'lsp-rf)
+
+(defcustom lsp-rf-language-server-trace-server "verbose"
+  "Traces the communication between VSCode and the rfLanguageServer service."
+  :type 'string
+  ;; :type '(choice (:tag "off" "messages" "verbose"))
+  :group 'lsp-rf)
+
+(defun parse-rf-language-server-library-dirs (dirs)
+  (vconcat (mapcar
+   (lambda (x)
+     (concat
+      (expand-file-name
+       lsp-rf-language-server-dir)
+      x
+      ".json"))
+   dirs)))
+
+(defun expand-start-command ()
+  (mapcar 'expand-file-name lsp-rf-language-server-start-command))
+
+(defun parse-rf-language-server-globs-to-regex (vector)
+  "Converts vector with globs to regex"
+    (concat "\\("(mapconcat 'eshell-glob-regexp vector "\\|") "\\)"))
+
+(defun parse-rf-language-server-include-path-regex (vector)
+  "Creates regexp to select files from workspace directory"
+  (let ((globs (if (eq vector [])
+                        ["*.robot" "*.resource"]
+                      vector)))
+    (parse-rf-language-server-globs-to-regex globs)))
+
+(defun parse-rf-language-server-exclude-paths (seq)
+  "Creates regexp to select files from workspace directory"
+  (if (eq lsp-rf-language-server-exclude-paths [])
+      seq
+  (cl-delete-if (lambda (x) (string-match-p
+                             (parse-rf-language-server-globs-to-regex
+                              lsp-rf-language-server-exclude-paths)
+                             x))
+                seq)))
+
+(lsp-register-custom-settings
+ '(
+   ("rfLanguageServer.trace.server" lsp-rf-language-server-trace-server)
+   ("rfLanguageServer.logLevel" lsp-rf-language-server-log-level)
+   ("rfLanguageServer.libraries" lsp-rf-language-server-libraries)
+   ("rfLanguageServer.excludePaths" lsp-rf-language-server-exclude-paths)
+   ("rfLanguageServer.includePaths" lsp-rf-language-server-include-paths)))
+
+(lsp-register-client
+ (make-lsp-client :new-connection (lsp-stdio-connection
+                                   (expand-start-command))
+                  :major-modes '(robot-mode)
+                  :server-id 'rf-intellisense
+                  ;; :library-folders-fn (lambda (_workspace)
+                  ;;                        lsp-rf-language-server-libraries)
+                  :library-folders-fn (lambda (_workspace)
+                                         (parse-rf-language-server-library-dirs
+                                         lsp-rf-language-server-libraries))
+                  :initialized-fn (lambda (workspace)
+                                    (with-lsp-workspace workspace
+                                      (lsp--set-configuration
+                                       (lsp-configuration-section "rfLanguageServer"))
+                                      (lsp-request "buildFromFiles"
+                                                   (list :files
+                                                         (vconcat
+                                                          (parse-rf-language-server-exclude-paths
+                                                           (directory-files-recursively
+                                                            (lsp--workspace-root workspace)
+                                                            (parse-rf-language-server-include-path-regex
+                                                             lsp-rf-language-server-include-paths))))))))))
 
 (provide 'lsp-clients)
 ;;; lsp-clients.el ends here

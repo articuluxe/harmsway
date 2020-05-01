@@ -424,13 +424,13 @@ UPPER may be nil, meaning infinity."
 (defun xr--matches-empty-p (rx)
   "Whether RX can match the empty string regardless of context."
   (pcase rx
-    (`(,(or 'seq 'one-or-more 'group) . ,body)
+    (`(,(or 'seq 'one-or-more '+? 'group) . ,body)
      (cl-every #'xr--matches-empty-p body))
     (`(or . ,body)
      (cl-some #'xr--matches-empty-p body))
     (`(group-n ,_ . ,body)
      (cl-every #'xr--matches-empty-p body))
-    (`(,(or 'opt 'zero-or-more) . ,_)
+    (`(,(or 'opt 'zero-or-more ?? '*?) . ,_)
      t)
     (`(repeat ,from ,_ . ,body)
      (or (= from 0)
@@ -438,6 +438,88 @@ UPPER may be nil, meaning infinity."
     (`(,(or '= '>=) ,_ . ,body)
      (cl-every #'xr--matches-empty-p body))
     ("" t)))
+
+(defun xr--matches-nonempty-only-p (rx)
+  "Whether RX matches non-empty strings only."
+  (pcase rx
+    ((pred stringp) (> (length rx) 0))
+    (`(,(or 'seq 'one-or-more '+? 'group) . ,body)
+     (cl-some #'xr--matches-nonempty-only-p body))
+    (`(or . ,body)
+     (cl-every #'xr--matches-nonempty-only-p body))
+    (`(group-n ,_ . ,body)
+     (cl-some #'xr--matches-nonempty-only-p body))
+    (`(repeat ,from ,_ . ,body)
+     (and (> from 0)
+          (cl-some #'xr--matches-nonempty-only-p body)))
+    (`(,(or '= '>=) ,n . ,body)
+     (and (> n 0)
+          (cl-some #'xr--matches-nonempty-only-p body)))
+    (`(,(or 'any 'not 'intersection) . ,_) t)
+    ((or 'ascii 'alnum 'alpha 'blank 'cntrl 'digit 'graph
+         'lower 'multibyte 'nonascii 'print 'punct 'space
+         'unibyte 'upper 'word 'xdigit
+         'nonl 'anything)
+     t)))
+
+(defun xr--adjacent-subsumption (a b)
+  "Check if A subsumes B, or vice versa, or not, assuming they are adjacent.
+Return `a-subsumes-b', `b-subsumes-a' or nil."
+  ;; Check for subsuming repetitions in sequence: (Ra A) (Rb B)
+  ;; where Ra and Rb are repetition operators, and A and B are operands.
+  ;; We conclude that (Ra A) subsumes (Rb B), in the sense that the
+  ;; sequence is equivalent to just (Ra A), if:
+  ;;       A matches a superset of B
+  ;;   and Ra can match infinitely many times
+  ;;   and Rb can match zero times
+  ;;   and Rb is non-greedy if Ra is non-greedy.
+  ;; Example: [cd]+c?
+  (let ((a-expr (and (consp a)
+                     (memq (car a)
+                           '(zero-or-more one-or-more opt *? +? ??))
+                     (xr--make-seq (cdr a)))))
+    (when a-expr
+      (let ((b-expr (and (consp b)
+                         (memq (car b)
+                               '(zero-or-more one-or-more opt *? +? ??))
+                         (xr--make-seq (cdr b)))))
+        (when b-expr
+          (let ((a-op (car a))
+                (b-op (car b)))
+            ;; Test the same condition twice, but mirrored.
+            (cond
+             ((and (memq b-op '(zero-or-more opt *? ??))
+                   (memq a-op '(zero-or-more one-or-more *? +?))
+                   (not (and (memq a-op '(*? +?))
+                             (memq b-op '(zero-or-more opt))))
+                   (xr--superset-p a-expr b-expr))
+              'a-subsumes-b)
+             ((and (memq a-op '(zero-or-more opt *? ??))
+                   (memq b-op '(zero-or-more one-or-more *? +?))
+                   (not (and (memq b-op '(*? +?))
+                             (memq a-op '(zero-or-more opt))))
+                   (xr--superset-p b-expr a-expr))
+              'b-subsumes-a))))))))
+  
+(defun xr--check-wrap-around-repetition (operand pos warnings)
+  "Whether OPERAND has a wrap-around repetition subsumption case,
+like (* (* X) ... (* X))."
+  (when (and (consp operand)
+             (memq (car operand) '(seq group group-n)))
+    (let* ((operands
+            (if (eq (car operand) 'group-n)
+                (cddr operand)
+              (cdr operand))))
+      (when (cddr operands)
+        (let* ((first (car operands))
+               (last (car (last operands)))
+               (subsumption (xr--adjacent-subsumption last first)))
+          (when subsumption
+            (xr--report
+             warnings pos
+             (if (eq subsumption 'b-subsumes-a)
+                 "First item in repetition subsumes last item (wrapped)"
+               "Last item in repetition subsumes first item (wrapped)"))))))))
 
 (defun xr--parse-seq (warnings)
   (let ((sequence nil))                 ; reversed
@@ -502,7 +584,11 @@ UPPER may be nil, meaning infinity."
                          (not (equal operand "")))
                     (xr--report
                      warnings (match-beginning 0)
-                     "Repetition of expression matching an empty string"))))
+                     "Repetition of expression matching an empty string")))
+                  ;; (* (* X) ... (* X)) etc: wrap-around subsumption
+                  (when (member operator '("*" "+" "*?" "+?"))
+                    (xr--check-wrap-around-repetition
+                     operand (match-beginning 0) warnings)))
                 (goto-char (match-end 0))
                 (setq sequence (cons (xr--postfix operator operand)
                                      (cdr sequence))))
@@ -561,6 +647,12 @@ UPPER may be nil, meaning infinity."
                                 (if comma
                                     "Uncounted repetition"
                                   "Implicit zero repetition")))
+                  (when (and warnings
+                             (if comma
+                                 (or (not upper) (>= upper 2))
+                               (>= lower 2)))
+                    (xr--check-wrap-around-repetition
+                     operand (match-beginning 0) warnings))
                   (goto-char (match-end 0))
                   (setq sequence (cons (xr--repeat lower
                                                    (if comma upper lower)
@@ -673,49 +765,53 @@ UPPER may be nil, meaning infinity."
 
          (t (error "Backslash at end of regexp")))
 
-        (when (and warnings (cdr sequence))
-          ;; Check for subsuming repetitions in sequence: (Rx X) (Ry Y)
-          ;; where Rx and Ry are repetition operators, and X and Y are operands.
-          ;; We conclude that (Rx X) subsumes (Ry Y), in the sense that the
-          ;; sequence is equivalent to just (Rx X), if:
-          ;;       X matches a superset of Y
-          ;;   and Rx can match infinitely many times
-          ;;   and Ry can match zero times
-          ;;   and Ry is non-greedy if Rx is non-greedy.
-          ;; Example: [ab]+a?
+        (when (and warnings (cdr sequence)
+                   (not (looking-at (rx (or (any "?*+") "\\{")))))
           (let* ((item (car sequence))
-                 (expr (and (consp item)
-                            (memq (car item)
-                                  '(zero-or-more one-or-more opt *? +? ??))
-                            (xr--make-seq (cdr item)))))
-            (when expr
-              (let* ((prev-item (cadr sequence))
-                     (prev-expr
-                      (and (consp prev-item)
-                           (memq (car prev-item)
-                                 '(zero-or-more one-or-more opt *? +? ??))
-                           (xr--make-seq (cdr prev-item)))))
-                (when prev-expr
-                  (let ((op (car item))
-                        (prev-op (car prev-item)))
-                    ;; Test the same condition twice, but mirrored.
-                    (cond
-                     ((and (memq op '(zero-or-more opt *? ??))
-                           (memq prev-op '(zero-or-more one-or-more *? +?))
-                           (not (and (memq prev-op '(*? +?))
-                                     (memq op '(zero-or-more opt))))
-                           (xr--superset-p prev-expr expr))
-                      (xr--report
-                       warnings item-start
-                       "Repetition subsumed by preceding repetition"))
-                     ((and (memq prev-op '(zero-or-more opt *? ??))
-                           (memq op '(zero-or-more one-or-more *? +?))
-                           (not (and (memq op '(*? +?))
-                                     (memq prev-op '(zero-or-more opt))))
-                           (xr--superset-p expr prev-expr))
-                      (xr--report
-                       warnings item-start
-                       "Repetition subsumes preceding repetition")))))))))))
+                 (prev-item (cadr sequence))
+                 (subsumption (xr--adjacent-subsumption prev-item item)))
+            (when subsumption
+              (xr--report warnings item-start
+                          (if (eq subsumption 'a-subsumes-b)
+                              "Repetition subsumed by preceding repetition"
+                            "Repetition subsumes preceding repetition")))
+
+            ;; Check for anchors conflicting with previous/next character.
+            ;; To avoid false positives, we require that at least one
+            ;; of the items is present in all paths.
+            (let ((prev-eol (xr--ends-with-sym 'eol prev-item)))
+              (when prev-eol
+                (let ((this-nonl (xr--starts-with-nonl item)))
+                  (when (and this-nonl
+                             (or (eq prev-eol 'always)
+                                 (eq this-nonl 'always)))
+                    (xr--report
+                     warnings item-start
+                     "End-of-line anchor followed by non-newline")))))
+            (let ((this-bol (xr--starts-with-sym 'bol item)))
+              (when this-bol
+                (let ((prev-nonl (xr--ends-with-nonl prev-item)))
+                  (when (and prev-nonl
+                             (or (eq prev-nonl 'always)
+                                 (eq this-bol 'always)))
+                    (xr--report
+                     warnings item-start
+                     "Non-newline followed by line-start anchor")))))
+            (let ((prev-eos (xr--ends-with-sym 'eos prev-item)))
+              (when prev-eos
+                (let ((this-nonempty (xr--matches-nonempty item)))
+                  (when (and this-nonempty
+                             (or (eq prev-eos 'always)
+                                 (eq this-nonempty 'always)))
+                    (xr--report
+                     warnings item-start
+                     "End-of-text anchor followed by non-empty pattern")))))
+
+            ;; FIXME: We don't complain about non-empty followed by
+            ;; bos because it may be the start of unmatchable.
+            ;; We should really do these checks in a later pass,
+            ;; and maintain location information.
+            ))))
 
     (let ((item-seq (xr--rev-join-seq sequence)))
       (cond ((null item-seq)
@@ -724,6 +820,130 @@ UPPER may be nil, meaning infinity."
              (car item-seq))
             (t 
              (cons 'seq item-seq))))))
+
+(defun xr--tristate-some (f list)
+  "Whether F is true for some element in LIST.
+Return `always' if F returns `always' for at least one element,
+nil if F returns nil for all elements,
+`sometimes' otherwise."
+  (let ((result (mapcar f list)))
+    (cond ((memq 'always result) 'always)
+          ((memq 'sometimes result) 'sometimes))))
+
+(defun xr--tristate-all (f list)
+  "Whether F is true for all elements in LIST.
+Return `always' if F returns `always' for all elements,
+nil if F returns nil for all elements,
+`sometimes' otherwise."
+  (let ((results (mapcar f list)))
+    (cond ((memq nil results) (and (delq nil results) 'sometimes))
+          ((memq 'sometimes results) 'sometimes)
+          (t 'always))))
+
+(defun xr--matches-nonempty (rx)
+  "Whether RX matches non-empty strings. Return `always', `sometimes' or nil.
+`always' if RX only matches non-empty strings,
+`sometimes' if RX may match a non-empty string,
+nil if RX only matches the empty string."
+  (pcase rx
+    ((pred stringp) (and (> (length rx) 0) 'always))
+    (`(,(or 'seq 'one-or-more '+? 'group) . ,body)
+     (xr--tristate-some #'xr--matches-nonempty body))
+    (`(,(or 'opt 'zero-or-more ?? '*?) . ,body)
+     (and (xr--tristate-some #'xr--matches-nonempty body) 'sometimes))
+    (`(or . ,body)
+     (xr--tristate-all #'xr--matches-nonempty body))
+    (`(group-n ,_ . ,body)
+     (xr--tristate-some #'xr--matches-nonempty body))
+    (`(repeat ,from ,_ . ,body)
+     (if (= from 0)
+         (and (cl-some #'xr--matches-nonempty body) 'sometimes)
+       (xr--tristate-some #'xr--matches-nonempty body)))
+    (`(,(or '= '>=) ,n . ,body)
+     (if (= n 0)
+         (and (cl-some #'xr--matches-nonempty body) 'sometimes)
+       (xr--tristate-some #'xr--matches-nonempty body)))
+    (`(,(or 'any 'not 'intersection) . ,_) 'always)
+    ((or 'ascii 'alnum 'alpha 'blank 'cntrl 'digit 'graph
+         'lower 'multibyte 'nonascii 'print 'punct 'space
+         'unibyte 'upper 'word 'xdigit
+         'nonl 'anything)
+     'always)))
+
+(defun xr--starts-with-sym (symbol item)
+  "Whether ITEM starts with SYMBOL. Return `always', `sometimes' or nil."
+  (cond ((eq item symbol) 'always)
+        ((atom item) nil)
+        ((memq (car item) '(seq one-or-more +? group))
+         (xr--starts-with-sym symbol (cadr item)))
+        ((memq (car item) '(seq opt zero-or-more ?? *?))
+         (and (xr--starts-with-sym symbol (cadr item)) 'sometimes))
+        ((eq (car item) 'group-n)
+         (xr--starts-with-sym symbol (caddr item)))
+        ((eq (car item) 'or)
+         (xr--tristate-all (lambda (x) (xr--starts-with-sym symbol x))
+                           (cdr item)))))
+
+(defun xr--ends-with-sym (symbol item)
+  "Whether ITEM ends with SYMBOL. Return `always', `sometimes' or nil."
+  (cond ((eq item symbol) 'always)
+        ((atom item) nil)
+        ((memq (car item) '(seq one-or-more +? group group-n))
+         (xr--ends-with-sym symbol (car (last item))))
+        ((memq (car item) '(seq opt zero-or-more ?? *?))
+         (and (xr--ends-with-sym symbol (car (last item))) 'sometimes))
+        ((eq (car item) 'or)
+         (xr--tristate-all (lambda (x) (xr--ends-with-sym symbol x))
+                           (cdr item)))))
+
+(defun xr--starts-with-nonl (item)
+  "Whether ITEM starts with a non-newline. Return `always', `maybe' or nil."
+  (pcase item
+    ((pred stringp)
+     (and (> (length item) 0) (not (eq (aref item 0) ?\n)) 'always))
+    (`(,(or 'seq 'one-or-more '+? 'group) ,first . ,_)
+     (xr--starts-with-nonl first))
+    (`(,(or 'opt 'zero-or-more ?? '*?) ,first . ,_)
+     (and (xr--starts-with-nonl first) 'sometimes))
+    (`(or . ,items)
+     (xr--tristate-all #'xr--starts-with-nonl items))
+    (`(group-n ,_ ,first . ,_)
+     (xr--starts-with-nonl first))
+    (`(,(or '= '>=) ,n ,first . ,_)
+     (and (> n 0) (xr--starts-with-nonl first)))
+    (`(repeat ,n ,_ ,first . ,_)
+     (and (> n 0) (xr--starts-with-nonl first)))
+    (`(,(or 'any 'not 'intersection) . ,_)
+     (and (xr--superset-p 'nonl item) 'always))
+    ((or 'alnum 'alpha 'blank 'digit 'graph
+         'lower 'multibyte 'nonascii 'print 'punct
+         'upper 'word 'xdigit
+         'nonl)
+     'always)))
+
+(defun xr--ends-with-nonl (item)
+  "Whether ITEM ends with a non-newline. Return `always', `maybe' or nil."
+  (pcase item
+    ((pred stringp)
+     (and (> (length item) 0) (not (eq (aref item (1- (length item))) ?\n))
+          'always))
+    (`(,(or 'seq 'one-or-more '+? 'group 'group-n) . ,items)
+     (xr--ends-with-nonl (car (last items))))
+    (`(,(or 'opt 'zero-or-more ?? '*?) . ,items)
+     (and (xr--ends-with-nonl (car (last items))) 'sometimes))
+    (`(or . ,items)
+     (xr--tristate-all #'xr--starts-with-nonl items))
+    (`(,(or '= '>=) ,n . ,items)
+     (and (> n 0) (xr--ends-with-nonl (car (last items)))))
+    (`(repeat ,n ,_ . ,items)
+     (and (> n 0) (xr--ends-with-nonl (car (last items)))))
+    (`(,(or 'any 'not 'intersection) . ,_)
+     (and (xr--superset-p 'nonl item) 'always))
+    ((or 'alnum 'alpha 'blank 'digit 'graph
+         'lower 'multibyte 'nonascii 'print 'punct
+         'upper 'word 'xdigit
+         'nonl)
+     'always)))
 
 (defun xr--range-string-to-items (str)
   "Convert a string of ranges to a list of pairs of their endpoints."
@@ -998,7 +1218,8 @@ A-SETS and B-SETS are arguments to `any'."
   (or (memq rx '(nonl anything
                  ascii alnum alpha blank cntrl digit graph
                  lower multibyte nonascii print punct space
-                 unibyte upper word xdigit))
+                 unibyte upper word xdigit
+                 wordchar not-wordchar))
       (characterp rx)
       (and (consp rx)
            (or (memq (car rx) '(any category syntax))
@@ -1007,22 +1228,23 @@ A-SETS and B-SETS are arguments to `any'."
 
 (defun xr--syntax-superset-of-rx-p (syntax negated rx)
   "Whether SYNTAX, possibly NEGATED, is a superset of RX."
-  ;; Syntax tables vary, but we make a (quite conservative) guess.
-  (let* ((always-set
-           ;; Characters we think always will be in the syntax set.
-           '((whitespace " \t")
-             (word "A-Za-z0-9")
-             (open-parenthesis "([")
-             (close-parenthesis "])")))
-         (never-set
-           ;; Characters we think never will be in the syntax set.
-           '((whitespace "!-~")
-             (punctuation "A-Za-z0-9")
-             (open-parenthesis "\x00- A-Za-z0-9")
-             (close-parenthesis "\x00- A-Za-z0-9")))
-         (set (assq syntax (if negated never-set always-set))))
-    (and set
-         (xr--char-superset-of-rx-p (cdr set) nil rx))))
+  (cond
+   ((eq syntax 'whitespace) (xr--char-superset-of-rx-p '(space) negated rx))
+   ((eq syntax 'word)       (xr--char-superset-of-rx-p '(word) negated rx))
+   (t
+    ;; Syntax tables vary, but we make a fairly conservative guess.
+    (let* ((always-set
+            ;; Characters we think always will be in the syntax set.
+            '((open-parenthesis "([")
+              (close-parenthesis "])")))
+           (never-set
+            ;; Characters we think never will be in the syntax set.
+            '((punctuation "A-Za-z0-9")   ; NOT the same as [:punct:]!
+              (open-parenthesis "\000-\037A-Za-z0-9" " \177")
+              (close-parenthesis "\000-\037A-Za-z0-9" " \177")))
+           (set (assq syntax (if negated never-set always-set))))
+      (and set
+           (xr--char-superset-of-rx-p (cdr set) nil rx))))))
 
 (defun xr--expand-strings (rx)
   "Expand strings to characters or seqs of characters.
@@ -1123,6 +1345,9 @@ A-SETS and B-SETS are arguments to `any'."
         (or (equal a b) (xr--syntax-superset-of-rx-p syn nil b)))
        (`(not (syntax ,syn))
         (or (equal a b) (xr--syntax-superset-of-rx-p syn t b)))
+
+       ('wordchar (or (equal a b) (xr--syntax-superset-of-rx-p 'word nil b)))
+       ('not-wordchar (or (equal a b) (xr--syntax-superset-of-rx-p 'word t b)))
 
        ((or `(category ,_) `(not (category ,_)))
         (or (equal a b)

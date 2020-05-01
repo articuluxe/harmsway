@@ -447,6 +447,7 @@ such as `scroll-conservatively' are set to a high value.")
     package-menu-mode
     rcirc-mode
     sauron-mode
+    sieve-mode
     treemacs-mode
     twittering-mode
     vc-dir-mode
@@ -467,6 +468,7 @@ such as `scroll-conservatively' are set to a high value.")
   (unless (swiper-font-lock-ensure-p)
     (unless (or (> (buffer-size) 100000) (null font-lock-mode))
       (if (fboundp 'font-lock-ensure)
+          ;; Added in Emacs 25.1.
           (font-lock-ensure)
         (with-no-warnings (font-lock-fontify-buffer))))))
 
@@ -503,8 +505,6 @@ such as `scroll-conservatively' are set to a high value.")
      " "
      (buffer-substring beg end))))
 
-(declare-function outline-show-all "outline")
-
 (defvar swiper-use-visual-line-p
   (lambda (n-lines)
     (and visual-line-mode
@@ -526,6 +526,7 @@ numbers; replaces calculating the width from buffer line count."
           (when (eq major-mode 'org-mode)
             (require 'outline)
             (if (fboundp 'outline-show-all)
+                ;; Added in Emacs 25.1.
                 (outline-show-all)
               (with-no-warnings
                 (show-all))))
@@ -765,6 +766,7 @@ line numbers.  For the buffer, use `ivy--regex' instead."
                        (setq ivy--subexps 1)))
                     (t
                      (format "^ %s" re)))))
+               ;; Added in Emacs 25.1.
                ((fboundp (bound-and-true-p search-default-mode))
                 (if (string-match "\\`\\\\_<\\(.+\\)\\\\_>\\'" str)
                     (concat
@@ -1606,8 +1608,7 @@ When not running `swiper-isearch' already, start it."
              swiper-faces
            swiper-background-faces)
          (lambda (beg end face _priority)
-           (ivy-add-face-text-property
-            beg end face str)))
+           (add-face-text-property beg end face nil str)))
         (cl-incf i)))
     str))
 
@@ -1659,44 +1660,46 @@ When not running `swiper-isearch' already, start it."
         (cl-incf i))
       (nreverse res))))
 
+(defun swiper--isearch-init ()
+  "Initialize `swiper-isearch'."
+  (swiper--init)
+  (setq swiper--isearch-start-point (point))
+  (swiper-font-lock-ensure))
+
+(defun swiper--isearch-unwind ()
+  (swiper--cleanup)
+  (unless (or (eq ivy-exit 'done) swiper-stay-on-quit)
+    (goto-char swiper--opoint))
+  (isearch-clean-overlays)
+  (swiper--ensure-visible)
+  (unless (or (eq ivy-exit 'done) (string= ivy-text ""))
+    (cl-pushnew ivy-text swiper-history)))
+
 ;;;###autoload
 (defun swiper-isearch (&optional initial-input)
   "A `swiper' that's not line-based."
   (interactive)
-  (swiper--init)
-  (setq swiper--isearch-start-point (point))
-  (swiper-font-lock-ensure)
   (let ((ivy-fixed-height-minibuffer t)
         (cursor-in-non-selected-windows nil)
-        (swiper-min-highlight 1)
-        res)
-    (unwind-protect
-         (and
-          (setq res
-                (ivy-read
-                 "Swiper: "
-                 #'swiper-isearch-function
-                 :initial-input initial-input
-                 :keymap swiper-isearch-map
-                 :dynamic-collection t
-                 :require-match t
-                 :action #'swiper-isearch-action
-                 :re-builder #'swiper--re-builder
-                 :history 'swiper-history
-                 :extra-props (list :fname (buffer-file-name))
-                 :caller 'swiper-isearch))
-          (point))
-      (unless (or res swiper-stay-on-quit)
-        (goto-char swiper--opoint))
-      (isearch-clean-overlays)
-      (swiper--ensure-visible)
-      (unless (or res (string= ivy-text ""))
-        (cl-pushnew ivy-text swiper-history)))))
+        (swiper-min-highlight 1))
+    (ivy-read
+     "Swiper: "
+     #'swiper-isearch-function
+     :initial-input initial-input
+     :keymap swiper-isearch-map
+     :dynamic-collection t
+     :require-match t
+     :action #'swiper-isearch-action
+     :re-builder #'swiper--re-builder
+     :history 'swiper-history
+     :extra-props (list :fname (buffer-file-name))
+     :caller 'swiper-isearch)))
 
 (ivy-configure 'swiper-isearch
   :occur #'swiper-occur
+  :init-fn #'swiper--isearch-init
   :update-fn 'auto
-  :unwind-fn #'swiper--cleanup
+  :unwind-fn #'swiper--isearch-unwind
   :format-fn #'swiper-isearch-format-function)
 
 ;;;###autoload

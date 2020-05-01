@@ -15,11 +15,12 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-;; Author: Sebastian Sturm
+;; Authors: Sebastian Sturm
+;;          Oliver Rausch
 ;; Keywords: languages, debug
 ;; URL: https://github.com/emacs-lsp/lsp-ivy
-;; Package-Requires: ((emacs "25.1") (dash "2.14.1") (lsp-mode "5.0") (ivy "0.13.0"))
-;; Version: 0.1
+;; Package-Requires: ((emacs "25.1") (dash "2.14.1") (lsp-mode "6.2.1") (ivy "0.13.0"))
+;; Version: 0.3
 ;;
 
 ;;; Commentary:
@@ -34,48 +35,132 @@
 (require 'dash)
 (require 'lsp-mode)
 
+(defgroup lsp-ivy nil
+  "LSP support for ivy-based symbol completion"
+  :group 'lsp-mode)
+
+(defcustom lsp-ivy-show-symbol-kind
+  t
+  "Whether to show the symbol's kind when showing lsp symbols"
+  :group 'lsp-ivy
+  :type 'boolean)
+
+(defcustom lsp-ivy-filter-symbol-kind
+  nil
+  "A list of LSP SymbolKind's to filter out"
+  :group 'lsp-ivy
+  :type '(repeat integer))
+
+(defcustom lsp-ivy-symbol-kind-to-face
+  [("    " . nil)                           ;; Unknown - 0
+   ("File" . font-lock-builtin-face)       ;; File - 1
+   ("Modu" . font-lock-keyword-face)       ;; Module - 2
+   ("Nmsp" . font-lock-keyword-face)       ;; Namespace - 3
+   ("Pack" . font-lock-keyword-face)       ;; Package - 4
+   ("Clss" . font-lock-type-face)          ;; Class - 5
+   ("Meth" . font-lock-function-name-face) ;; Method - 6
+   ("Prop" . font-lock-reference-face)     ;; Property - 7
+   ("Fld " . font-lock-reference-face)     ;; Field - 8
+   ("Cons" . font-lock-function-name-face) ;; Constructor - 9
+   ("Enum" . font-lock-type-face)          ;; Enum - 10
+   ("Intf" . font-lock-type-face)          ;; Interface - 11
+   ("Func" . font-lock-function-name-face) ;; Function - 12
+   ("Var " . font-lock-variable-name-face) ;; Variable - 13
+   ("Cnst" . font-lock-constant-face)      ;; Constant - 14
+   ("Str " . font-lock-string-face)        ;; String - 15
+   ("Num " . font-lock-builtin-face)       ;; Number - 16
+   ("Bool " . font-lock-builtin-face)      ;; Boolean - 17
+   ("Arr " . font-lock-builtin-face)       ;; Array - 18
+   ("Obj " . font-lock-builtin-face)       ;; Object - 19
+   ("Key " . font-lock-reference-face)     ;; Key - 20
+   ("Null" . font-lock-builtin-face)       ;; Null - 21
+   ("EmMm" . font-lock-constant-face)      ;; EnumMember - 22
+   ("Srct" . font-lock-type-face)          ;; Struct - 23
+   ("Evnt" . font-lock-builtin-face)       ;; Event - 24
+   ("Op  " . font-lock-function-name-face) ;; Operator - 25
+   ("TPar" . font-lock-type-face)]         ;; TypeParameter - 26
+  "A vector of 26 cons cells, where the ith cons cell contains the string representation and face to use for the i+1th SymbolKind (defined in the LSP)"
+  :group 'lsp-ivy
+  :type '(vector
+          (cons string face)
+          (cons string face)
+          (cons string face)
+          (cons string face)
+          (cons string face)
+          (cons string face)
+          (cons string face)
+          (cons string face)
+          (cons string face)
+          (cons string face)
+          (cons string face)
+          (cons string face)
+          (cons string face)
+          (cons string face)
+          (cons string face)
+          (cons string face)
+          (cons string face)
+          (cons string face)
+          (cons string face)
+          (cons string face)
+          (cons string face)
+          (cons string face)
+          (cons string face)
+          (cons string face)
+          (cons string face)
+          (cons string face)
+          (cons string face)))
+
+
 (defun lsp-ivy--format-symbol-match (match)
-  "Convert the (hash-valued) MATCH returned by `lsp-mode` into a candidate string."
-  (let ((container-name (gethash "containerName" match))
-        (name (gethash "name" match)))
-    (if (or (null container-name) (string-empty-p container-name))
-        name
-      (format "%s.%s" container-name name))))
+  "Convert the MATCH returned by `lsp-mode` into a candidate string.
+MATCH is a cons cell whose cdr is the hash-table from `lsp-mode`."
+  (let* ((match (cdr match))
+         (container-name (gethash "containerName" match))
+         (name (gethash "name" match))
+         (type (elt lsp-ivy-symbol-kind-to-face (gethash "kind" match) ))
+         (typestr (if lsp-ivy-show-symbol-kind
+                      (propertize (format "[%s] " (car type)) 'face (cdr type))
+                    "")))
+    (concat typestr (if (or (null container-name) (string-empty-p container-name))
+                        (format "%s" name)
+                      (format "%s.%s" container-name name)))))
 
 (defun lsp-ivy--workspace-symbol-action (candidate)
-  "Jump to selected CANDIDATE."
-  (-let* (((&hash "uri" "range" (&hash "start" (&hash "line" "character")))
+  "Jump to selected CANDIDATE, a cons cell whose cdr is a hash table."
+  (-let* ((candidate (cdr candidate))
+          ((&hash "uri" "range" (&hash "start" (&hash "line" "character")))
            (gethash "location" candidate)))
     (find-file (lsp--uri-to-path uri))
     (goto-char (point-min))
     (forward-line line)
     (forward-char character)))
 
+(defun lsp-ivy--filter-func (candidate)
+  (member (gethash "kind" candidate) lsp-ivy-filter-symbol-kind))
+
 (defun lsp-ivy--workspace-symbol (workspaces prompt initial-input)
   "Search against WORKSPACES with PROMPT and INITIAL-INPUT."
-  (let ((current-request-id nil))
-    (ivy-read
-     prompt
-     (lambda (user-input)
-       (with-lsp-workspaces workspaces
-         (let ((request (lsp-make-request
-                         "workspace/symbol"
-                         (list :query user-input))))
-           (when current-request-id
-             (lsp--cancel-request
-              current-request-id))
-           (setq current-request-id
-                 (plist-get request :id))
-           (lsp-send-request-async
-            request
-            #'ivy-update-candidates
-            :mode 'detached)))
-       0)
-     :dynamic-collection t
-     :require-match t
-     :initial-input initial-input
-     :action #'lsp-ivy--workspace-symbol-action
-     :caller 'lsp-ivy-workspace-symbol)))
+  (ivy-read
+   prompt
+   (lambda (user-input)
+     (with-lsp-workspaces workspaces
+       (lsp-request-async
+        "workspace/symbol"
+        (list :query user-input)
+        (lambda (result)
+          (ivy-update-candidates
+           (mapcar
+            (lambda (data)
+              (cons (gethash "name" data) data))
+            (-remove 'lsp-ivy--filter-func result))))
+        :mode 'detached
+        :cancel-token :workspace-symbol))
+     0)
+   :dynamic-collection t
+   :require-match t
+   :initial-input initial-input
+   :action #'lsp-ivy--workspace-symbol-action
+   :caller 'lsp-ivy-workspace-symbol))
 
 (ivy-configure 'lsp-ivy-workspace-symbol
   :display-transformer-fn #'lsp-ivy--format-symbol-match)

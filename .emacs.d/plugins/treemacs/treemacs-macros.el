@@ -39,19 +39,10 @@ Creates a list of `declare-function' statements."
   (let ((imports (--map (list 'declare-function it file) functions)))
     `(progn ,@imports)))
 
-(defmacro treemacs-log (msg &rest args)
-  "Write a log statement given format string MSG and ARGS."
-  (declare (indent 1))
-  `(unless treemacs--no-messages
-     (message
-      "%s %s"
-      (propertize "[Treemacs]" 'face 'font-lock-keyword-face)
-      (format ,msg ,@args))))
-
 (defmacro treemacs-static-assert (predicate error-msg &rest error-args)
   "Assert for macros that triggers at expansion time.
 Tests PREDICATE and, if it evaluates to nil, throws an error with ERROR-MSG and
-ERROR-ARGS. Basically the same thing as `cl-assert', but does not (seem to)
+ERROR-ARGS.  Basically the same thing as `cl-assert', but does not (seem to)
 interfere with auto-completion."
   (declare (indent 1))
   `(unless ,predicate
@@ -63,12 +54,6 @@ interfere with auto-completion."
   "Temporarily turn off read-ony mode to execute BODY."
   (declare (debug t))
   `(let (buffer-read-only)
-     ,@body))
-
-(defmacro treemacs-without-messages (&rest body)
-  "Temporarily turn off messages to execute BODY."
-  (declare (debug t))
-  `(let ((treemacs--no-messages t))
      ,@body))
 
 (defmacro treemacs-safe-button-get (button &rest properties)
@@ -254,7 +239,7 @@ the on-delete code will run twice."
 Finally execute FINAL-FORM after the code to restore the position has run.
 
 This macro is meant for cases where a simple `save-excursion' will not do, like
-a refresh, which can potentially change the entire buffer layout. In pratice
+a refresh, which can potentially change the entire buffer layout.  In pratice
 this means attempt first to keep point on the same file/tag, and if that does
 not work keep it on the same line."
   (declare (debug (form body)))
@@ -378,7 +363,7 @@ Specifically only run it when (featurep 'treemacs) returns nil."
      ,@body))
 
 (defmacro treemacs--maphash (table names &rest body)
-  "Iterate over entries of TABLE in BODY.
+  "Iterate over entries of TABLE with NAMES in BODY.
 Entry variables will bound based on NAMES which is a list of two elements."
   (declare (debug (sexp sexp body))
            (indent 2))
@@ -446,15 +431,15 @@ This pattern is oftentimes used in treemacs, see also `treemacs-return-if',
 
 (defmacro treemacs-is-path (left op &optional right)
   "Readable utility macro for various path predicates.
-LEFT is a file path, RIGHT is either a path, project, or workspace while OP can
-take the following forms:
+LEFT is a file path, OP is the operator and RIGHT is either a path, project, or
+workspace.  OP can be one of the following:
 
  * `:same-as' will check for string equality
  * `:in' will check will check whether LEFT is a child or the same as RIGHT.
  * `:parent-of' will check whether LEFT is a parent of, and not equal to, RIGHT
  * `:in-project' will check whether LEFT is part of the project RIGHT
  * `:in-workspace' will check whether LEFT is part of the workspace RIGHT and
-   return the appropriate project when it is. If RIGHT is not given it will
+   return the appropriate project when it is.  If RIGHT is not given it will
    default to calling `treemacs-current-workspace'.
 
 LEFT and RIGHT are expected to be in treemacs canonical file path format (see
@@ -521,7 +506,7 @@ treemacs buffer exists at all, BODY will be executed."
      ,@body))
 
 (defmacro treemacs-with-ignored-errors (ignored-errors &rest body)
-  "Evaluate BODY with specific errors ignored.
+  "Given list of specifically IGNORED-ERRORS evaluate BODY.
 
 IGNORED-ERRORS is a list of errors to ignore.  Each element is a list whose car
 is the error's type, and second item is a regex to match against error messages.
@@ -538,7 +523,7 @@ If any of the IGNORED-ERRORS matches, the error is suppressed and nil returned."
 
 (defmacro treemacs-debounce (guard delay &rest body)
   "Debounce a function call.
-Based on a timer GUARD variable run function BODY with the given DELAY."
+Based on a timer GUARD variable run function with the given DELAY and BODY."
   (declare (indent 2))
   `(unless ,guard
      (setf ,guard

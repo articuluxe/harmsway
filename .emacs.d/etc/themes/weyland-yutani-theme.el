@@ -2,13 +2,14 @@
 
 ;;; weyland-yutani-theme.el --- Emacs theme with a dark background.
 
-;; Copyright (C) 2014 , Joe Staursky
+;; Copyright (C) 2020 , Joe Staursky 
 
 ;; Author: Joe Staursky
 ;;
 ;; Version: 0.1
 ;; Package-Requires: ((emacs "24"))
-;; Created with emacs-theme-generator, https://github.com/mswift42/theme-creator.
+;; Created (with the help of) emacs-theme-generator,
+;; https://github.com/mswift42/theme-creator.
 
 
 ;; This program is free software: you can redistribute it and/or modify
@@ -26,7 +27,8 @@
 
 ;; This file is not part of Emacs.
 
-;;; Commentary:
+;;; Commentary: Vanilla emacs may need first to (require 'color) before loading
+;;; theme.
 
 ;;; Code:
 
@@ -36,91 +38,287 @@
   :group 'weyland-yutani-theme)
 
 
-
 (deftheme weyland-yutani)
 (let*
     ((class '((class color) (min-colors 89)))
-     (fg1        "#b0bec5")
+                                        ;; Alternatives
+     (fg1        "#A9B4C1")             ;#A9B4C1 #acb3bc
      (fg2        "#b3c1c9")
      (fg3        "#9babb7")
-     (fg4        "#8694a5")
-     (bg1        "#2b2b2b")
-     (bg2        (color-lighten-name bg1 3))
-     (bg3        "#3f3f3f")
+     (fg4        "#8694a5")             ;#21262e #22272f #232830
+     (bg1        "#272b30")             ;#222630 #282C34 #282c34 #232830 #252B3C
+     (bg2        (color-lighten-name bg1 3)) ;#4b2332 #222732 #232830
+     (bg3        (color-lighten-name bg2 3))
      (bg4        "#3c3a50")
-       (key2       "#c8ef62")
-       (key3       "#b3f35c")
+     (key2       "#bbe074")             ;#cce40c #c8ef62
+     (key3       "#b3f35c")
 
-       (keyword    "#9ccc65")
-       (type       "#b388ff")
-       (builtin    "#a2a2ff")                  ;#9bb1eb #91b1fd
-       (var        "#7cacf2")                         ;#7cacf2 #5e6cca
-       (const      (color-lighten-name "#b388ff" 4))
-       (err        "#cd2517")
-       (comment    "#6e808b")
-       (comment-bg "#313131")
-       (region-bg  "#3a3a3a")           ;#a2a2ff #A6A6FF
-       (func       "#acacff")           ;#a2a2ff #aeaefc #7a8cff #849aff #59a4ed
-       (str        "#6abdd0")
-       (warning    "#f26ba8")
+     (keyword    "#95bb62")
+     (type       "#9683f2")
+     (func       "#ca95ed")
+     (var        "#c171dd")
+     (builtin    "#9683f2")
+     (const      "#54b2f2")
+     (str        "#29a1ae")
+     (str-bg        bg1)
 
 
-       ;; Colors Generic
-       (wy-light-blue "#81d2e7")
-       (wy-purple        "#b87be3")
-       (wy-green         "#a1ef78")
-       (wy-red           "#f38283")
-       (wy-yellow        "#f5f891")
-       (wy-diff-change        "#fd7f62")
-       (wy-diff-insert        "#b3f35c")
-       (wy-diff-delete        "#d85657")
+     ;; Gold #A4A460
+     ;; Red  #E56399
+     ;; Yellow #F2B880
+     ;; Orange #E08D79
 
-       )
-   (custom-theme-set-faces
-   'weyland-yutani
+;; "#95bb62", "#b6a1ff", "#d19bf4", "#ef88ff", "#5db9fa", "#51c0cd", \
+;; "#9683f2",
+;; "#ca95ed"
+;; "#29a1ae", "#8b929e", "#8fb45c", "#af9aff", , "#e782fb", \
+;; "#55b3f3", "#49b9c6", "#a3aab6", "#779c46", "#9683f2", "#b17dd3", \
+;; "#cd69e1", "#369bd9", "#29a1ae", "#8b929e", "#8eb35b", "#ae99ff", \
+;; "#c994ec", "#e681fa", "#54b2f2", "#48b8c5", "#a2a9b5", "#779c46", \
+;; "#9683f2", "#b17dd3", "#cd69e1", "#369bd9", "#29a1ae", "#8b929e", \
+;; "#a5cb71", "#c7b1ff", "#e1abff", "#ff98ff", "#70c9ff", "#64d0dd", \
+;; "#b9c0cd"}
 
+
+     ;; "#94ba61", "#b59fff", "#cf9af2", "#ed87ff", "#5cb8f8", "#50becb", \
+     ;; "#779c46", "#9683f2", "#b17dd3", "#cd69e1", "#369bd9", "#29a1ae", \
+     ;; "#8fb45c", "#af9aff", "#ca95ed", "#e782fb", "#55b3f3", "#49b9c6", \
+     ;; "#779c46", "#9683f2", "#b17dd3", "#cd69e1", "#369bd9", "#29a1ae", \
+     ;; "#8eb35b", "#ae99ff", "#c994ec", "#e681fa", "#54b2f2", "#48b8c5", \
+     ;; "#779c46", "#9683f2", "#b17dd3", "#cd69e1", "#369bd9", "#29a1ae"}
+
+
+
+     ;; ;; "#90b65d", "#b09cff", "#cb96ee", "#e983fd", "#58b4f4", "#4cbac7", \
+     ;;    "#779d46", "#9683f2", "#b17dd4", "#ce6ae2", "#379bda", "#2aa1ae", \
+     ;;    "#8eb45b", "#af9aff", "#c994ec", "#e781fb", "#55b2f2", "#49b8c5", \
+     ;;    "#779c45", "#9683f2", "#b17dd3", "#cd69e1", "#369ad9", "#29a0ad", \
+     ;;    "#8eb45c", "#af9aff", "#c994ed", "#e781fb", "#56b2f2", "#4ab9c6", \
+     ;;    "#779d46", "#9683f2", "#b17dd4", "#ce6ae2", "#379bd9", "#2aa1ae"}
+
+
+     (err        "#f70108")
+     (comment    "#5e7188")
+     (comment-bg bg1)
+     ;; {"#9c90e1", "#c794e6"}
+     (region-bg  "#30374c")
+     (region-fg  "#a59ef3")
+     (warning    "#ee78e8")             ;#ed73e7
+     ;; #E0C240  ;#c8b46a #c5b159 #c8b46a
+
+     ;; Colors Generic
+     (wy-blue        "#69a#caa64c8d8")
+     (wy-light-blue  "#54c2cf")
+
+
+     (wy-pink        "#ed73e7")
+
+     (wy-purple      "#bf83ff")
+
+     (wy-violet       "#c789ed")
+
+     (wy-light-violet-01 "#bcaeff")
+     (wy-violet-02       "#AC8DE5")
+     (wy-violet-03       "#d196f5")
+     (wy-violet-04       "#bb70e0")
+
+
+     (wy-violet-red   "#f33380")
+     (wy-violet-dark  "#BB6DD1")
+
+
+
+     (wy-green-01    "#9ccc65")
+     (wy-green-02    "#b3f35c")
+
+     (wy-red         "#fe5d62")
+     (wy-yellow      "#f5f891")
+     (wy-orange      "#f2a652")
+
+     (wy-diff-change "#bf83ff")                ;#f29742
+     (wy-diff-insert wy-green-02)                         ;"#bed856"
+     (wy-diff-delete wy-red)                           ;#fe5d62
+
+     (wy-window-border "#9d71ce")
+
+     (ttip             "#9a9aba")
+     (ttip-bg          "#34323e")
+     (red-bg           "#3c2a2c")
+     (red-bg-s         "#512e31")
+     (green-bg         "#293235")
+     (green-bg-s       "#29422d")
+     (blue-bg          "#293239")
+     (blue-bg-s        "#2d4252")
+
+     (Purple-Dimm  "#413a43")
+
+     )
+   (custom-theme-set-faces 'weyland-yutani
    `(default ((,class (:background ,bg1 :foreground ,fg1))))
+
+   `(lsp-face-highlight-read ((,class (:background nil :underline t :bold t))))
+   `(lsp-face-highlight-write ((,class (:background nil :underline t :bold t))))
+   `(lsp-face-highlight-textual ((,class (:background nil :underline t :bold t))))
+
+
+
+
+
+   `(success ((,class (:foreground "#80C617" :bold t))))
+
 
    `(font-lock-comment-face
      ((,class (:foreground ,comment
                :background
                ,(when weyland-yutani-theme-comment-bg comment-bg)))))
 
+   `(which-key-command-description-face ((,class (:foreground ,func :background nil))))
+
+
+   `(font-lock-string-face ((,class (:foreground ,str :background ,str-bg))))
+
+   `(vertical-border ((,class (:foreground ,wy-window-border))))
+
+   `(dired-perm-write ((,class (:foreground ,wy-purple))))
+
+
+
+
+   `(highlight-numbers-number ((,class (:foreground "#e974c7" :bold t)))) ;#e58241 #FA572A
+                                        ;#859B09 #048B5C #859B09 #B3D723 #C9D41E #87b61c
+                                        ;#F35C5A #E66343 #cbd415 #B9CE1B #bbcc56
+
+                                        ; #EE8EF7
 ;;;;; flycheck
+   `(flycheck-warning ((,class (:underline (:color ,wy-orange :style line) ))))
+
+
    `(flycheck-error
      ((,(append '((supports :underline (:style line))) class)
        (:underline (:style line :color ,err)))
       (,class (:foreground ,bg4 :background ,err :inherit bold :underline t))))
-
+   `(flycheck-fringe-error ((,class (:foreground ,wy-red))))
 
 
    `(font-lock-builtin-face ((,class (:foreground ,builtin))))
-   `(company-tooltip-annotation-selection ((,class (:foreground ,func))))
-
-   `(company-tooltip-annotation ((,class (:foreground ,const))))
-
     `(font-lock-negation-char-face ((,class (:foreground ,wy-yellow))))
     `(font-lock-reference-face ((,class (:foreground ,const))))
     `(font-lock-constant-face ((,class (:foreground ,const ))))
         `(font-lock-doc-face ((,class (:foreground ,comment))))
-        `(font-lock-function-name-face ((,class (:foreground ,func))))
+        `(font-lock-function-name-face ((,class (:foreground ,func
+                    ;                                        :italic t
+                                                           ;:bold t
+                                                             ))))                                                   ;:bold t
         `(font-lock-keyword-face ((,class (:foreground ,keyword )))) ;:bold t
-        `(font-lock-string-face ((,class (:foreground ,str))))
         `(font-lock-type-face ((,class (:foreground ,type ))))
-        `(font-lock-variable-name-face ((,class (:foreground ,var))))
-        `(font-lock-warning-face ((,class (:foreground ,warning))))
+        `(font-lock-variable-name-face ((,class (:foreground ,var ;:italic t
+                                                             ))))
+        `(font-lock-warning-face ((,class (:foreground ,warning ))))
 
 
-        `(region ((,class (:background ,region-bg))))
+        `(region ((,class (:background ,region-bg :foreground ,region-fg))))
 
-        `(highlight ((,class (:foreground ,fg3 :background ,bg3))))
+        `(highlight ((,class (:foreground "#a59ef3" :background "#2d324c"))))
     `(hl-line ((,class (:background  ,bg2))))
     `(fringe ((,class (:background ,bg2 :foreground ,fg4))))
-    `(cursor ((,class (:background ,bg3))))
-        `(show-paren-match-face ((,class (:background ,warning))))
-        `(isearch ((,class (:bold t :foreground ,warning :background ,bg3))))
-        `(mode-line ((,class (:box (:line-width 1 :color nil) :bold t :foreground ,fg4 :background ,bg2))))
-        `(mode-line-inactive ((,class (:box (:line-width 1 :color nil :style pressed-button) :foreground ,key3 :background ,bg1 :weight normal))))
+    `(cursor ((,class (:background ,fg1))))
+
+    `(which-func ((,class (:foreground ,wy-green-02))))
+
+
+    `(evil-ex-lazy-highlight ((,class
+                (:foreground "#20242D" :background "Violet"))))
+
+    `(org-document-title ((,class (:inherit font-lock-constant-face))))
+    `(org-document-info ((,class (:inherit font-lock-variable-name-face))))
+    `(org-ref-cite-face ((,class (:inherit font-lock-function-name-face))))
+
+
+;;;;; Company
+    `(tooltip ((,class
+        (:foreground ,fg1 :background ,bg3))))
+
+    `(company-tooltip-annotation-selection ((,class
+        (:foreground ,func))))
+
+    `(company-tooltip-annotation ((,class
+        (:foreground ,const))))
+
+    ;; Colors that fill the body the tooltip (main bg and fg)
+    `(company-tooltip ((,class
+        (:foreground "#a59ef3" :background "#30374c" ))))
+
+    ;; Color that match as you type
+    `(company-tooltip-common ((,class
+        (:foreground "#92b75c"))))
+
+    ;; Color for matching text in the completion selection
+    `(company-tooltip-common-selection ((,class
+        (:foreground "#98be65" :bold t :underline t))))
+
+    ;; hl-line for company popup
+    `(company-tooltip-selection ((,class
+        (:background ,(color-darken-name "#575f8c" 11) :foreground ,fg3)))) ;,bg3
+
+    `(company-tooltip-mouse ((,class
+        (:inherit highlight))))
+
+    `(company-echo ((,class
+        (:foreground ,bg1 :background ,fg1))))
+
+    `(company-preview ((,class
+        (:background ,bg1 :foreground ,key2))))
+
+    `(company-scrollbar-fg ((,class
+        (:background "#bb6dd1"))))
+
+    `(company-scrollbar-bg ((,class
+        (:background "#4e4e4e"))))
+
+    `(company-echo-common ((,class
+        (:foreground ,bg1 :background ,fg1))))
+
+    `(company-preview-common ((,class
+        (:foreground ,bg2 :foreground ,fg3))))
+
+    `(company-template-field ((,class
+        (:inherit region))))
+
+    `(company-tooltop-search ((,class
+        (:inherit region))))
+
+    `(company-preview-search ((,class
+        (:foreground ,type :background ,bg1))))
+
+    `(company-tooltop-annotation ((,class
+        (:foreground ,const))))
+
+    `(company-tooltop-search-selection ((,class
+        (:foreground ,const))))
+
+    `(company-tooltop-annotation-selection ((,class
+        (:foreground ,const))))
+
+
+
+;;;;; merge
+    `(smerge-base ((,class (:background ,wy-yellow :extend t))))
+    `(smerge-markers ((,class (:background ,ttip-bg :foreground ,ttip :extend t))))
+
+;   `(smerge-mine ((,class (:background ,red-bg))))
+;   `(smerge-other ((,class (:background ,green-bg))))
+    `(smerge-refined-added ((,class (:background ,green-bg-s :foreground ,wy-green-01))))
+    `(smerge-refined-changed ((,class (:background ,blue-bg-s :foreground ,wy-blue))))
+    `(smerge-refined-removed ((,class (:background ,red-bg-s :foreground ,wy-red))))
+
+    `(smerge-upper ((,class (:background  ,red-bg)))) ;"#5f2c2e" ,red-bg-s "#331e3b"
+    `(smerge-lower ((,class (:background ,green-bg))))  ;,green-bg-s #26402b "#003812"
+
+
+    `(show-paren-match-face ((,class (:background ,warning))))
+    `(isearch ((,class (:bold t :foreground ,warning :background ,bg3))))
+    `(mode-line ((,class (:box (:line-width 1 :color nil) :bold t :foreground ,fg4 :background ,bg2))))
+    `(mode-line-inactive ((,class (:box (:line-width 1 :color nil :style pressed-button) :foreground ,key3 :background ,bg1 :weight normal))))
         `(mode-line-buffer-id ((,class (:bold t :foreground ,func :background nil))))
     `(mode-line-highlight ((,class (:foreground ,keyword :box nil :weight bold))))
         `(mode-line-emphasis ((,class (:foreground ,fg1))))
@@ -129,11 +327,12 @@
         `(default-italic ((,class (:italic t))))
     `(link ((,class (:foreground ,const :underline t))))
     `(org-code ((,class (:foreground ,fg2))))
+    `(org-verbatim ((,class (:foreground "#96c457"))))
     `(org-hide ((,class (:foreground ,fg4))))
-        `(org-level-1 ((,class (:bold t :foreground ,fg2 :height 1.1))))
-        `(org-level-2 ((,class (:bold nil :foreground ,fg3))))
-        `(org-level-3 ((,class (:bold t :foreground ,fg4))))
-        `(org-level-4 ((,class (:bold nil :foreground ,bg4))))
+    `(org-level-1 ((,class (:bold t :foreground ,wy-light-violet-01 :height 1.3))))
+    `(org-level-2 ((,class (:bold nil :foreground ,wy-violet-02 :height 1.2))))
+        `(org-level-3 ((,class (:bold t :foreground ,wy-violet-03 :height 1.1))))
+        `(org-level-4 ((,class (:bold nil :foreground ,wy-violet-04 :height 1.0))))
         `(org-date ((,class (:underline t :foreground ,var) )))
         `(org-footnote  ((,class (:underline t :foreground ,fg4))))
         `(org-link ((,class (:underline t :foreground ,type ))))
@@ -184,7 +383,7 @@
         `(js3-function-param-face ((,class (:foreground ,key3))))
         `(js3-jsdoc-tag-face ((,class (:foreground ,keyword))))
         `(js3-instance-member-face ((,class (:foreground ,const))))
-    `(warning ((,class (:foreground ,warning)))) 
+    `(warning ((,class (:foreground ,warning :bold t)))) 
     `(ac-completion-face ((,class (:underline t :foreground ,keyword))))
     `(info-quoted-name ((,class (:foreground ,builtin))))
     `(info-string ((,class (:foreground ,str))))
@@ -194,7 +393,7 @@
         `(undo-tree-visualizer-unmodified-face ((,class :foreground ,var)))
         `(undo-tree-visualizer-register-face ((,class :foreground ,type)))
     `(slime-repl-inputed-output-face ((,class (:foreground ,type))))
-        `(trailing-whitespace ((,class :foreground nil :background ,wy-green)))
+        `(trailing-whitespace ((,class :foreground nil :background ,wy-green-01)))
         `(rainbow-delimiters-depth-1-face ((,class :foreground ,fg1)))
         `(rainbow-delimiters-depth-2-face ((,class :foreground ,type)))
         `(rainbow-delimiters-depth-3-face ((,class :foreground ,var)))
@@ -206,24 +405,24 @@
 
 
     ;; MODE SUPPORT: git-gutter
-    `(git-gutter:added               ((,class (:foreground ,wy-green      ))))
+    `(git-gutter:added               ((,class (:foreground ,wy-green-01      ))))
     `(git-gutter:deleted             ((,class (:foreground ,wy-red   ))))
     `(git-gutter:modified            ((,class (:foreground ,wy-yellow       ))))
     ;; `(git-gutter:separator           ((,class (:foreground ,dp_background ))))
     ;; `(git-gutter:unchanged           ((,class (:foreground ,dp_background ))))
     ;; ;; MODE SUPPORT: git-gutter-fr
-    `(git-gutter-fr:added            ((,class (:foreground ,wy-green))))
+    `(git-gutter-fr:added            ((,class (:foreground ,wy-green-01))))
     `(git-gutter-fr:deleted          ((,class (:foreground ,wy-red))))
     `(git-gutter-fr:modified         ((,class (:foreground ,wy-yellow))))
     ;; ;; MODE SUPPORT: git-gutter+
     ;; `(git-gutter+-commit-header-face ((,class (:foreground ,dp_foreground ))))
-    `(git-gutter+-added              ((,class (:foreground ,wy-green      ))))
+    `(git-gutter+-added              ((,class (:foreground ,wy-green-01      ))))
     `(git-gutter+-deleted            ((,class (:foreground ,wy-red   ))))
     `(git-gutter+-modified           ((,class (:foreground ,wy-yellow       ))))
     ;; `(git-gutter+-separator          ((,class (:foreground ,dp_foreground ))))
     ;; `(git-gutter+-unchanged          ((,class (:foreground ,dp_foreground ))))
     ;; ;; MODE SUPPORT: git-gutter-fr+
-    `(git-gutter-fr+-added           ((,class (:foreground ,wy-green      ))))
+    `(git-gutter-fr+-added           ((,class (:foreground ,wy-green-01      ))))
     `(git-gutter-fr+-deleted         ((,class (:foreground ,wy-red   ))))
     `(git-gutter-fr+-modified        ((,class (:foreground ,wy-yellow       ))))
 
@@ -273,7 +472,8 @@
 
 
         ;;; helm
-        `(helm-match ((,class (:foreground ,wy-purple))))
+        `(helm-M-x-key ((,class (:foreground ,wy-purple))))
+        `(helm-match ((,class (:foreground ,wy-violet))))
         `(helm-header ((,class (:foreground ,fg2 :background ,bg1 :underline nil :box nil))))
         `(helm-source-header ((,class (:foreground ,keyword :background ,bg1 :underline nil :weight bold))))
         `(helm-selection ((,class (:background ,bg4 :underline nil))))
@@ -303,25 +503,6 @@
         `(helm-source-go-package-godoc-description ((,class (:foreground ,str))))
         `(helm-bookmark-w3m ((,class (:foreground ,type))))
 
-
-
-        `(company-echo ((,class (:foreground ,bg1 :background ,fg1))))
-        `(company-preview ((,class (:background ,bg1 :foreground ,key2))))
-        `(company-tooltip ((,class (:foreground ,fg2 :background ,bg1 :bold t))))
-        `(company-echo-common ((,class (:foreground ,bg1 :background ,fg1))))
-        `(company-scrollbar-bg ((,class (:background ,bg3))))
-        `(company-scrollbar-fg ((,class (:foreground ,keyword))))
-        `(company-tooltip-mouse ((,class (:inherit highlight))))
-        `(company-preview-common ((,class (:foreground ,bg2 :foreground ,fg3))))
-        `(company-template-field ((,class (:inherit region))))
-        `(company-tooltop-search ((,class (:inherit region))))
-        `(company-tooltip-common ((,class ( :foreground ,fg3))))
-        `(company-preview-search ((,class (:foreground ,type :background ,bg1))))
-        `(company-tooltip-selection ((,class (:background ,bg3 :foreground ,fg3))))
-        `(company-tooltop-annotation ((,class (:foreground ,const))))
-        `(company-tooltip-common-selection ((,class (:foreground ,str))))
-        `(company-tooltop-search-selection ((,class (:foreground ,const))))
-        `(company-tooltop-annotation-selection ((,class (:foreground ,const))))
         `(web-mode-builtin-face ((,class (:inherit ,font-lock-builtin-face))))
         `(web-mode-comment-face ((,class (:inherit ,font-lock-comment-face))))
         `(web-mode-constant-face ((,class (:inherit ,font-lock-constant-face))))

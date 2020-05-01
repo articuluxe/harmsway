@@ -187,6 +187,7 @@ Given ~/Projects/FOSS/emacs/lisp/comint.el
   truncate-except-project => ~/P/F/emacs/l/comint.el
   truncate-upto-root => ~/P/F/e/lisp/comint.el
   truncate-all => ~/P/F/e/l/comint.el
+  truncate-nil => ~/Projects/FOSS/emacs/lisp/comint.el
   relative-from-project => emacs/lisp/comint.el
   relative-to-project => lisp/comint.el
   file-name => comint.el
@@ -199,6 +200,7 @@ Given ~/Projects/FOSS/emacs/lisp/comint.el
                  (const truncate-except-project)
                  (const truncate-upto-root)
                  (const truncate-all)
+                 (const truncate-nil)
                  (const relative-from-project)
                  (const relative-to-project)
                  (const file-name)
@@ -301,6 +303,11 @@ Non-nil to display in the mode-line."
   :type 'boolean
   :group 'doom-modeline)
 
+(defcustom doom-modeline-persp-icon t
+  "If non nil the perspective name is displayed alongside a folder icon."
+  :type 'boolean
+  :group 'doom-modeline)
+
 (defcustom doom-modeline-lsp t
   "Whether display the `lsp' state.
 
@@ -351,6 +358,12 @@ It requires `gnus' to be setup"
 
 If nil, don't set up a hook."
   :type 'integer
+  :group 'doom-modeline)
+
+(defcustom doom-modeline-gnus-excluded-groups nil
+  "A list of groups to be excluded from the unread count."
+
+  :type '(repeat string)
   :group 'doom-modeline)
 
 (defcustom doom-modeline-irc t
@@ -749,6 +762,7 @@ then this function does nothing."
   (doom-modeline--font-width))
 (add-hook 'window-setup-hook #'doom-modeline-refresh-font-width-cache)
 (add-hook 'after-make-frame-functions #'doom-modeline-refresh-font-width-cache)
+(add-hook 'after-setting-font-hook #'doom-modeline-refresh-font-width-cache)
 
 (defun doom-modeline-def-modeline (name lhs &optional rhs)
   "Defines a modeline format and byte-compiles it.
@@ -1009,6 +1023,8 @@ directory too."
              (doom-modeline--buffer-file-name-truncate buffer-file-name buffer-file-truename))
             ('truncate-all
              (doom-modeline--buffer-file-name-truncate buffer-file-name buffer-file-truename t))
+            ('truncate-nil
+             (doom-modeline--buffer-file-name buffer-file-name buffer-file-truename))
             ('relative-to-project
              (doom-modeline--buffer-file-name-relative buffer-file-name buffer-file-truename))
             ('relative-from-project
@@ -1016,9 +1032,8 @@ directory too."
             ('file-name
              (propertize (file-name-nondirectory buffer-file-name)
                          'face 'doom-modeline-buffer-file))
-            ('buffer-name
-             (propertize "%b" 'face 'doom-modeline-buffer-file))
-            (_ (user-error "invalid buffer-file-name-style")))))
+            ((or 'buffer-name _)
+             (propertize "%b" 'face 'doom-modeline-buffer-file)))))
     (propertize (if (string-empty-p file-name)
                     (propertize "%b" 'face 'doom-modeline-buffer-file)
                   file-name)

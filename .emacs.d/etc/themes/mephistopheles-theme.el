@@ -46,10 +46,10 @@
                        "#d7d7af"    ; fg
                        "#87af87"    ; fg+
                        "#87afaf"    ; primary
-                       "#87afaf"    ; red
-                       "#d7d7af"    ; orange
-                       "#d7d7af"    ; yellow
-                       "#d7d7af")   ; green
+                       "#ff00ff"    ; red
+                       "#800000"    ; orange
+                       "#ffff00"    ; yellow
+                       "#00ff00")   ; green
 
 ;;;###autoload
 (when (and (boundp 'custom-theme-load-path) load-file-name)

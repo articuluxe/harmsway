@@ -16,7 +16,7 @@
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Commentary:
-;;; Most of everything related to icons is handled here. Specifically the
+;;; Most of everything related to icons is handled here.  Specifically the
 ;;; definition, instantiation, customization, resizing and resetting of icons.
 
 ;;; Code:
@@ -26,6 +26,7 @@
 (require 's)
 (require 'ht)
 (require 'treemacs-themes)
+(require 'treemacs-logging)
 (eval-and-compile
   (require 'inline)
   (require 'treemacs-macros))
@@ -45,27 +46,29 @@
 ;; Since it is a marker in the treemacs buffer it is important for it to be reset whenever it might
 ;; become invalid.
 
-(defvar treemacs--not-selected-icon-background
-  (pcase (face-attribute 'default :background nil t)
-    ('unspecified
-     (prog1 "#2d2d31"
-       (unless (boundp 'treemacs-no-load-time-warnings)
-         (message "[Treemacs] Warning: coudn't find default background color for icons, falling back on #2d2d31."))))
-    ('unspecified-bg
-     (prog1 "#2d2d31"
-       (unless (boundp 'treemacs-no-load-time-warnings)
-         (message "[Treemacs] Warning: background color is unspecified, icons will likely look wrong. Falling back on #2d2d31."))))
-    (other other))
+(eval-and-compile
+  (defvar treemacs--not-selected-icon-background
+    (pcase (face-attribute 'default :background nil t)
+      ('unspecified
+       (prog1 "#2d2d31"
+         (unless (boundp 'treemacs-no-load-time-warnings)
+           (message "[Treemacs] Warning: coudn't find default background color for icons, falling back on #2d2d31."))))
+      ('unspecified-bg
+       (prog1 "#2d2d31"
+         (unless (boundp 'treemacs-no-load-time-warnings)
+           (message "[Treemacs] Warning: background color is unspecified, icons will likely look wrong. Falling back on #2d2d31."))))
+      (other other)))
   "Background for non-selected icons.")
 
-(defvar treemacs--selected-icon-background
-  (-let [bg (face-attribute 'hl-line :background nil t)]
-    (if (memq bg '(unspecified unspecified-b))
-        (prog1 treemacs--not-selected-icon-background
-          (unless (boundp 'treemacs-no-load-time-warnings)
-            (message "[Treemacs] Warning: couldn't find hl-line-mode's background color for icons, falling back on %s."
-                     treemacs--not-selected-icon-background)))
-      bg))
+(eval-and-compile
+  (defvar treemacs--selected-icon-background
+    (-let [bg (face-attribute 'hl-line :background nil t)]
+      (if (memq bg '(unspecified unspecified-b))
+          (prog1 treemacs--not-selected-icon-background
+            (unless (boundp 'treemacs-no-load-time-warnings)
+              (message "[Treemacs] Warning: couldn't find hl-line-mode's background color for icons, falling back on %s."
+                       treemacs--not-selected-icon-background)))
+        bg)))
   "Background for selected icons.")
 
 (define-inline treemacs--set-img-property (image property value)
@@ -91,7 +94,7 @@
 (defmacro treemacs-get-icon-value (ext &optional tui theme)
   "Get the value of an icon for extension EXT.
 If TUI is non-nil the terminal fallback value is returned.
-THEME is the name of the theme to look in. Will cause an error if the theme
+THEME is the name of the theme to look in.  Will cause an error if the theme
 does not exist."
   `(let* ((theme ,(if theme
                       `(treemacs--find-theme ,theme)
@@ -112,7 +115,7 @@ Also called as advice after `load-theme', hence the ignored argument."
          (icon-background    (treemacs--get-img-property (get-text-property 0 'img-unselected test-icon) :background))
          (icon-hl-background (treemacs--get-img-property (get-text-property 0 'img-selected test-icon) :background)))
     (when (memq default-background '(unspecified-bg unspecified))
-      (treemacs-log "Current theme fails to specify default background color, falling back on #2d2d31")
+      (treemacs-log-failure "Current theme fails to specify default background color, falling back on #2d2d31")
       (setq default-background "#2d2d31"))
     ;; make sure we only change all the icons' colors when we have to
     (unless (and (string= default-background icon-background)
@@ -264,80 +267,152 @@ Necessary since root icons are not rectangular."
     (treemacs-create-icon :file "info.png"            :extensions (info)       :fallback (propertize "• " 'face 'font-lock-string-face))
 
     ;; ;; file icons
-    (treemacs-create-icon :file "txt.png"         :extensions (fallback))
-    (treemacs-create-icon :file "emacs.png"       :extensions ("el" "elc"))
-    (treemacs-create-icon :file "ledger.png"      :extensions ("ledger"))
-    (treemacs-create-icon :file "yaml.png"        :extensions ("yml" "yaml"))
-    (treemacs-create-icon :file "shell.png"       :extensions ("sh" "zsh" "fish"))
-    (treemacs-create-icon :file "pdf.png"         :extensions ("pdf"))
-    (treemacs-create-icon :file "c.png"           :extensions ("c" "h"))
-    (treemacs-create-icon :file "cpp.png"         :extensions ("cpp" "cxx" "hpp" "tpp" "cc" "hh"))
-    (treemacs-create-icon :file "haskell.png"     :extensions ("hs" "lhs"))
-    (treemacs-create-icon :file "cabal.png"       :extensions ("cabal"))
-    (treemacs-create-icon :file "lock.png"        :extensions ("lock"))
-    (treemacs-create-icon :file "python.png"      :extensions ("py" "pyc"))
-    (treemacs-create-icon :file "markdown.png"    :extensions ("md"))
-    (treemacs-create-icon :file "asciidoc.png"    :extensions ("adoc" "asciidoc"))
-    (treemacs-create-icon :file "rust.png"        :extensions ("rs"))
-    (treemacs-create-icon :file "image.png"       :extensions ("jpg" "jpeg" "bmp" "svg" "png" "xpm" "gif"))
-    (treemacs-create-icon :file "emacs.png"       :extensions ("el" "elc"))
-    (treemacs-create-icon :file "clojure.png"     :extensions ("clj" "cljs" "cljc"))
-    (treemacs-create-icon :file "ts.png"          :extensions ("ts" "tsx"))
-    (treemacs-create-icon :file "vue.png"         :extensions ("vue"))
-    (treemacs-create-icon :file "css.png"         :extensions ("css"))
-    (treemacs-create-icon :file "conf.png"        :extensions ("properties" "conf" "config" "cfg" "ini" "xdefaults" "xresources" "terminalrc" "ledgerrc"))
-    (treemacs-create-icon :file "html.png"        :extensions ("html" "htm"))
-    (treemacs-create-icon :file "git.png"         :extensions ("git" "gitignore" "gitconfig" "gitmodules" "gitattributes"))
-    (treemacs-create-icon :file "dart.png"        :extensions ("dart"))
-    (treemacs-create-icon :file "java.png"        :extensions ("java"))
-    (treemacs-create-icon :file "jar.png"         :extensions ("jar"))
-    (treemacs-create-icon :file "kotlin.png"      :extensions ("kt"))
-    (treemacs-create-icon :file "scala.png"       :extensions ("scala"))
-    (treemacs-create-icon :file "sbt.png"         :extensions ("sbt"))
-    (treemacs-create-icon :file "go.png"          :extensions ("go"))
-    (treemacs-create-icon :file "php.png"         :extensions ("php"))
-    (treemacs-create-icon :file "js.png"          :extensions ("js" "jsx"))
-    (treemacs-create-icon :file "babel.png"       :extensions ("babel"))
-    (treemacs-create-icon :file "hy.png"          :extensions ("hy"))
-    (treemacs-create-icon :file "json.png"        :extensions ("json"))
-    (treemacs-create-icon :file "julia.png"       :extensions ("jl"))
-    (treemacs-create-icon :file "elx.png"         :extensions ("ex"))
-    (treemacs-create-icon :file "elx-light.png"   :extensions ("exs" "eex"))
-    (treemacs-create-icon :file "ocaml.png"       :extensions ("ml" "mli"))
-    (treemacs-create-icon :file "direnv.png"      :extensions ("envrc"))
-    (treemacs-create-icon :file "puppet.png"      :extensions ("pp"))
-    (treemacs-create-icon :file "docker.png"      :extensions ("dockerfile"))
-    (treemacs-create-icon :file "vagrant.png"     :extensions ("vagrantfile"))
-    (treemacs-create-icon :file "jinja2.png"      :extensions ("j2" "jinja2"))
-    (treemacs-create-icon :file "video.png"       :extensions ("webm" "mp4" "avi" "mkv" "flv" "mov" "wmv" "mpg" "mpeg" "mpv"))
-    (treemacs-create-icon :file "audio.png"       :extensions ("mp3" "ogg" "oga" "wav" "flac"))
-    (treemacs-create-icon :file "tex.png"         :extensions ("tex"))
-    (treemacs-create-icon :file "racket.png"      :extensions ("racket" "rkt" "rktl" "rktd" "scrbl" "scribble" "plt"))
-    (treemacs-create-icon :file "erlang.png"      :extensions ("erl" "hrl"))
-    (treemacs-create-icon :file "purescript.png"  :extensions ("purs"))
-    (treemacs-create-icon :file "nix.png"         :extensions ("nix"))
-    (treemacs-create-icon :file "project.png"     :extensions ("project"))
-    (treemacs-create-icon :file "scons.png"       :extensions ("sconstruct" "sconstript"))
-    (treemacs-create-icon :file "vsc/make.png"    :extensions ("makefile"))
-    (treemacs-create-icon :file "vsc/license.png" :extensions ("license"))
-    (treemacs-create-icon :file "vsc/zip.png"     :extensions ("zip" "7z" "tar" "gz" "rar"))
-    (treemacs-create-icon :file "vsc/elm.png"     :extensions ("elm"))
-    (treemacs-create-icon :file "vsc/xml.png"     :extensions ("xml" "xsl"))
-    (treemacs-create-icon :file "vsc/binary.png"  :extensions ("exe" "dll" "obj" "so" "o"))
-    (treemacs-create-icon :file "vsc/ruby.png"    :extensions ("rb"))
-    (treemacs-create-icon :file "vsc/scss.png"    :extensions ("scss"))
-    (treemacs-create-icon :file "vsc/lua.png"     :extensions ("lua"))
-    (treemacs-create-icon :file "vsc/log.png"     :extensions ("log"))
-    (treemacs-create-icon :file "vsc/lisp.png"    :extensions ("lisp"))
-    (treemacs-create-icon :file "vsc/sql.png"     :extensions ("sql"))
-    (treemacs-create-icon :file "vsc/toml.png"    :extensions ("toml"))
-    (treemacs-create-icon :file "vsc/nim.png"     :extensions ("nim"))
-    (treemacs-create-icon :file "vsc/org.png"     :extensions ("org"))
-    (treemacs-create-icon :file "vsc/perl.png"    :extensions ("pl" "pm" "perl"))
-    (treemacs-create-icon :file "vsc/vim.png"     :extensions ("vimrc" "tridactylrc" "vimperatorrc" "ideavimrc" "vrapperrc"))
-    (treemacs-create-icon :file "vsc/deps.png"    :extensions ("cask"))
-    (treemacs-create-icon :file "vsc/r.png"       :extensions ("r"))
-    (treemacs-create-icon :file "vsc/reason.png"  :extensions ("re" "rei"))))
+    (treemacs-create-icon :file "txt.png"           :extensions (fallback))
+    (treemacs-create-icon :file "emacs.png"         :extensions ("el" "elc"))
+    (treemacs-create-icon :file "ledger.png"        :extensions ("ledger"))
+    (treemacs-create-icon :file "yaml.png"          :extensions ("yml" "yaml" "travis.yml"))
+    (treemacs-create-icon :file "shell.png"         :extensions ("sh" "zsh" "fish"))
+    (treemacs-create-icon :file "pdf.png"           :extensions ("pdf"))
+    (treemacs-create-icon :file "c.png"             :extensions ("c" "h"))
+    (treemacs-create-icon :file "haskell.png"       :extensions ("hs" "lhs"))
+    (treemacs-create-icon :file "cabal.png"         :extensions ("cabal"))
+    (treemacs-create-icon :file "lock.png"          :extensions ("lock"))
+    (treemacs-create-icon :file "python.png"        :extensions ("py" "pyc"))
+    (treemacs-create-icon :file "markdown.png"      :extensions ("md"))
+    (treemacs-create-icon :file "asciidoc.png"      :extensions ("adoc" "asciidoc"))
+    (treemacs-create-icon :file "rust.png"          :extensions ("rs"))
+    (treemacs-create-icon :file "image.png"         :extensions ("jpg" "jpeg" "bmp" "svg" "png" "xpm" "gif"))
+    (treemacs-create-icon :file "emacs.png"         :extensions ("el" "elc"))
+    (treemacs-create-icon :file "clojure.png"       :extensions ("clj" "cljs" "cljc"))
+    (treemacs-create-icon :file "ts.png"            :extensions ("ts" "tsx"))
+    (treemacs-create-icon :file "vue.png"           :extensions ("vue"))
+    (treemacs-create-icon :file "css.png"           :extensions ("css"))
+    (treemacs-create-icon :file "conf.png"          :extensions ("properties" "conf" "config" "cfg" "ini" "xdefaults" "xresources" "terminalrc" "ledgerrc"))
+    (treemacs-create-icon :file "html.png"          :extensions ("html" "htm"))
+    (treemacs-create-icon :file "git.png"           :extensions ("git" "gitignore" "gitconfig" "gitmodules" "gitattributes"))
+    (treemacs-create-icon :file "dart.png"          :extensions ("dart"))
+    (treemacs-create-icon :file "jar.png"           :extensions ("jar"))
+    (treemacs-create-icon :file "kotlin.png"        :extensions ("kt"))
+    (treemacs-create-icon :file "scala.png"         :extensions ("scala"))
+    (treemacs-create-icon :file "sbt.png"           :extensions ("sbt"))
+    (treemacs-create-icon :file "go.png"            :extensions ("go"))
+    (treemacs-create-icon :file "systemd.png"       :extensions ("service" "timer"))
+    (treemacs-create-icon :file "php.png"           :extensions ("php"))
+    (treemacs-create-icon :file "js.png"            :extensions ("js" "jsx"))
+    (treemacs-create-icon :file "babel.png"         :extensions ("babel"))
+    (treemacs-create-icon :file "hy.png"            :extensions ("hy"))
+    (treemacs-create-icon :file "json.png"          :extensions ("json"))
+    (treemacs-create-icon :file "julia.png"         :extensions ("jl"))
+    (treemacs-create-icon :file "elx.png"           :extensions ("ex"))
+    (treemacs-create-icon :file "elx-light.png"     :extensions ("exs" "eex" "leex"))
+    (treemacs-create-icon :file "ocaml.png"         :extensions ("ml" "mli" "merlin" "ocaml"))
+    (treemacs-create-icon :file "direnv.png"        :extensions ("envrc"))
+    (treemacs-create-icon :file "puppet.png"        :extensions ("pp"))
+    (treemacs-create-icon :file "docker.png"        :extensions ("dockerfile" "docker-compose.yml"))
+    (treemacs-create-icon :file "vagrant.png"       :extensions ("vagrantfile"))
+    (treemacs-create-icon :file "jinja2.png"        :extensions ("j2" "jinja2"))
+    (treemacs-create-icon :file "video.png"         :extensions ("webm" "mp4" "avi" "mkv" "flv" "mov" "wmv" "mpg" "mpeg" "mpv"))
+    (treemacs-create-icon :file "audio.png"         :extensions ("mp3" "ogg" "oga" "wav" "flac"))
+    (treemacs-create-icon :file "tex.png"           :extensions ("tex"))
+    (treemacs-create-icon :file "racket.png"        :extensions ("racket" "rkt" "rktl" "rktd" "scrbl" "scribble" "plt"))
+    (treemacs-create-icon :file "erlang.png"        :extensions ("erl" "hrl"))
+    (treemacs-create-icon :file "purescript.png"    :extensions ("purs"))
+    (treemacs-create-icon :file "nix.png"           :extensions ("nix"))
+    (treemacs-create-icon :file "project.png"       :extensions ("project"))
+    (treemacs-create-icon :file "scons.png"         :extensions ("sconstruct" "sconstript"))
+    (treemacs-create-icon :file "vsc/make.png"      :extensions ("makefile"))
+    (treemacs-create-icon :file "vsc/license.png"   :extensions ("license"))
+    (treemacs-create-icon :file "vsc/zip.png"       :extensions ("zip" "7z" "tar" "gz" "rar" "tar.gz"))
+    (treemacs-create-icon :file "vsc/elm.png"       :extensions ("elm"))
+    (treemacs-create-icon :file "vsc/xml.png"       :extensions ("xml" "xsl"))
+    (treemacs-create-icon :file "vsc/access.png"    :extensions ("accdb" "accdt" "accdt"))
+    (treemacs-create-icon :file "vsc/ascript.png"   :extensions ("actionscript"))
+    (treemacs-create-icon :file "vsc/ai.png"        :extensions ("ai"))
+    (treemacs-create-icon :file "vsc/alaw.png"      :extensions ("al"))
+    (treemacs-create-icon :file "vsc/angular.png"   :extensions ("angular-cli.json" "angular.json"))
+    (treemacs-create-icon :file "vsc/ansible.png"   :extensions ("ansible"))
+    (treemacs-create-icon :file "vsc/antlr.png"     :extensions ("antlr"))
+    (treemacs-create-icon :file "vsc/any.png"       :extensions ("anyscript"))
+    (treemacs-create-icon :file "vsc/apache.png"    :extensions ("apacheconf"))
+    (treemacs-create-icon :file "vsc/apple.png"     :extensions ("applescript"))
+    (treemacs-create-icon :file "vsc/appveyor.png"  :extensions ("appveyor.yml"))
+    (treemacs-create-icon :file "vsc/arduino.png"   :extensions ("ino" "pde"))
+    (treemacs-create-icon :file "vsc/asp.png"       :extensions ("asp"))
+    (treemacs-create-icon :file "vsc/asm.png"       :extensions ("asm" "arm"))
+    (treemacs-create-icon :file "vsc/autohk.png"    :extensions ("ahk"))
+    (treemacs-create-icon :file "vsc/babel.png"     :extensions ("babelrc" "babelignore" "babelrc.js" "babelrc.json" "babel.config.js"))
+    (treemacs-create-icon :file "vsc/bat.png"       :extensions ("bat"))
+    (treemacs-create-icon :file "vsc/binary.png"    :extensions ("exe" "dll" "obj" "so" "o"))
+    (treemacs-create-icon :file "vsc/bazel.png"     :extensions ("bazelrc" "bazel"))
+    (treemacs-create-icon :file "vsc/bower.png"     :extensions ("bowerrc" "bower.json"))
+    (treemacs-create-icon :file "vsc/bundler.png"   :extensions ("gemfile" "gemfile.lock"))
+    (treemacs-create-icon :file "vsc/cargo.png"     :extensions ("cargo.toml" "cargo.lock"))
+    (treemacs-create-icon :file "vsc/cert.png"      :extensions ("csr" "crt" "cer" "der" "pfx" "p12" "p7b" "p7r" "src" "crl" "sst" "stl"))
+    (treemacs-create-icon :file "vsc/class.png"     :extensions ("class"))
+    (treemacs-create-icon :file "vsc/cmake.png"     :extensions ("cmake" "cmake-cache"))
+    (treemacs-create-icon :file "vsc/cobol.png"     :extensions ("cobol"))
+    (treemacs-create-icon :file "vsc/cfscript.png"  :extensions ("coffeescript"))
+    (treemacs-create-icon :file "vsc/cpp.png"       :extensions ("cpp" "cxx" "tpp" "cc"))
+    (treemacs-create-icon :file "vsc/cpph.png"      :extensions ("hpp" "hh"))
+    (treemacs-create-icon :file "vsc/cucumber.png"  :extensions ("feature"))
+    (treemacs-create-icon :file "vsc/cython.png"    :extensions ("cython"))
+    (treemacs-create-icon :file "vsc/delphi.png"    :extensions ("pascal" "objectpascal"))
+    (treemacs-create-icon :file "vsc/django.png"    :extensions ("djt" "django-html" "django-txt"))
+    (treemacs-create-icon :file "vsc/dlang.png"     :extensions ("d" "dscript" "dml" "diet"))
+    (treemacs-create-icon :file "vsc/diff.png"      :extensions ("diff"))
+    (treemacs-create-icon :file "vsc/editorcfg.png" :extensions ("editorconfig"))
+    (treemacs-create-icon :file "vsc/erb.png"       :extensions ("erb"))
+    (treemacs-create-icon :file "vsc/eslint.png"    :extensions ("eslintrc" "eslintignore" "eslintcache"))
+    (treemacs-create-icon :file "vsc/excel.png"     :extensions ("xls" "xlsx" "xlsm" "ods" "fods"))
+    (treemacs-create-icon :file "vsc/font.png"      :extensions ("woff" "woff2" "ttf" "otf" "eot" "pfa" "pfb" "sfd"))
+    (treemacs-create-icon :file "vsc/fortran.png"   :extensions ("fortran" "fortran-modern" "fortranfreeform"))
+    (treemacs-create-icon :file "vsc/fsharp.png"    :extensions ("fsharp"))
+    (treemacs-create-icon :file "vsc/fsproj.png"    :extensions ("fsproj"))
+    (treemacs-create-icon :file "vsc/godot.png"     :extensions ("gdscript"))
+    (treemacs-create-icon :file "vsc/graphql.png"   :extensions ("graphql"))
+    (treemacs-create-icon :file "vsc/helm.png"      :extensions ("helm"))
+    (treemacs-create-icon :file "vsc/java.png"      :extensions ("java"))
+    (treemacs-create-icon :file "vsc/jenkins.png"   :extensions ("jenkins"))
+    (treemacs-create-icon :file "vsc/jupyter.png"   :extensions ("ipynb"))
+    (treemacs-create-icon :file "vsc/key.png"       :extensions ("key" "pem"))
+    (treemacs-create-icon :file "vsc/less.png"      :extensions ("less"))
+    (treemacs-create-icon :file "vsc/locale.png"    :extensions ("locale"))
+    (treemacs-create-icon :file "vsc/manifest.png"  :extensions ("manifest"))
+    (treemacs-create-icon :file "vsc/maven.png"     :extensions ("pom.xml" "maven.config" "extensions.xml" "settings.xml"))
+    (treemacs-create-icon :file "vsc/meson.png"     :extensions ("meson"))
+    (treemacs-create-icon :file "vsc/nginx.png"     :extensions ("nginx.conf" "nginx"))
+    (treemacs-create-icon :file "vsc/npm.png"       :extensions ("npmignore" "npmrc" "package.json" "package-lock.json" "npm-shrinwrap.json"))
+    (treemacs-create-icon :file "vsc/wasm.png"      :extensions ("wasm" "wat"))
+    (treemacs-create-icon :file "vsc/yarn.png"      :extensions ("yarn.lock" "yarnrc" "yarnclean" "yarn-integrity" "yarn-metadata.json" "yarnignore"))
+    (treemacs-create-icon :file "vsc/pkg.png"       :extensions ("pkg"))
+    (treemacs-create-icon :file "vsc/patch.png"     :extensions ("patch"))
+    (treemacs-create-icon :file "vsc/perl6.png"     :extensions ("perl6"))
+    (treemacs-create-icon :file "vsc/pgsql.png"     :extensions ("pgsql"))
+    (treemacs-create-icon :file "vsc/phpunit.png"   :extensions ("phpunit" "phpunit.xml"))
+    (treemacs-create-icon :file "vsc/pip.png"       :extensions ("pipfile" "pipfile.lock" "pip-requirements"))
+    (treemacs-create-icon :file "vsc/plsql.png"     :extensions ("plsql" "orcale"))
+    (treemacs-create-icon :file "vsc/pp.png"        :extensions ("pot" "potx" "potm" "pps" "ppsx" "ppsm" "ppt" "pptx" "pptm" "pa" "ppa" "ppam" "sldm" "sldx"))
+    (treemacs-create-icon :file "vsc/prettier.png"  :extensions ("prettier.config.js" "prettierrc.js" "prettierrc.json" "prettierrc.yml" "prettierrc.yaml"))
+    (treemacs-create-icon :file "vsc/prolog.png"    :extensions ("pro" "prolog"))
+    (treemacs-create-icon :file "vsc/protobuf.png"  :extensions ("proto" "proto3"))
+    (treemacs-create-icon :file "vsc/rake.png"      :extensions ("rake" "rakefile"))
+    (treemacs-create-icon :file "vsc/sqlite.png"    :extensions ("sqlite" "db3" "sqlite3"))
+    (treemacs-create-icon :file "vsc/swagger.png"   :extensions ("swagger"))
+    (treemacs-create-icon :file "vsc/swift.png"     :extensions ("swift"))
+    (treemacs-create-icon :file "vsc/ruby.png"      :extensions ("rb"))
+    (treemacs-create-icon :file "vsc/scss.png"      :extensions ("scss"))
+    (treemacs-create-icon :file "vsc/lua.png"       :extensions ("lua"))
+    (treemacs-create-icon :file "vsc/log.png"       :extensions ("log"))
+    (treemacs-create-icon :file "vsc/lisp.png"      :extensions ("lisp"))
+    (treemacs-create-icon :file "vsc/sql.png"       :extensions ("sql"))
+    (treemacs-create-icon :file "vsc/toml.png"      :extensions ("toml"))
+    (treemacs-create-icon :file "vsc/nim.png"       :extensions ("nim"))
+    (treemacs-create-icon :file "vsc/org.png"       :extensions ("org"))
+    (treemacs-create-icon :file "vsc/perl.png"      :extensions ("pl" "pm" "perl"))
+    (treemacs-create-icon :file "vsc/vim.png"       :extensions ("vimrc" "tridactylrc" "vimperatorrc" "ideavimrc" "vrapperrc"))
+    (treemacs-create-icon :file "vsc/deps.png"      :extensions ("cask"))
+    (treemacs-create-icon :file "vsc/r.png"         :extensions ("r"))
+    (treemacs-create-icon :file "vsc/reason.png"    :extensions ("re" "rei"))))
 
 (define-inline treemacs-icon-for-file (file)
   "Retrieve an icon for FILE from `treemacs-icons' based on its extension.
@@ -362,25 +437,27 @@ If SIZE is 'nil' the icons are not resized and will retain their default size of
 There is only one size, the icons are square and the aspect ratio will be
 preserved when resizing them therefore width and height are the same.
 
-Resizing the icons only works if Emacs was built with ImageMagick support. If
-this is not the case this function will report an error.
+Resizing the icons only works if Emacs was built with ImageMagick support.  If
+this is not the case this function will not have any effect.
 
 Custom icons are not taken into account, only the size of treemacs' own icons
 png are changed."
   (interactive "nIcon size in pixels: ")
-  (setq treemacs--icon-size size)
-  (treemacs--maphash (treemacs-theme->gui-icons treemacs--current-theme) (_ icon)
-    (let ((display        (get-text-property 0 'display icon))
-          (img-selected   (get-text-property 0 'img-selected icon))
-          (img-unselected (get-text-property 0 'img-unselected icon))
-          (width          treemacs--icon-size)
-          (height         treemacs--icon-size))
-      (when (eq 'image (car-safe display))
-        (when (s-ends-with? "root.png" (plist-get (cdr display) :file))
-          (treemacs--root-icon-size-adjust width height))
-        (dolist (property (list display img-selected img-unselected))
-          (plist-put (cdr property) :height height)
-          (plist-put (cdr property) :width width))))))
+  (if (not (image-type-available-p 'imagemagick))
+      (treemacs-log-failure "Icons cannot be resized without imagemagick support.")
+    (setq treemacs--icon-size size)
+    (treemacs--maphash (treemacs-theme->gui-icons treemacs--current-theme) (_ icon)
+      (let ((display        (get-text-property 0 'display icon))
+            (img-selected   (get-text-property 0 'img-selected icon))
+            (img-unselected (get-text-property 0 'img-unselected icon))
+            (width          treemacs--icon-size)
+            (height         treemacs--icon-size))
+        (when (eq 'image (car-safe display))
+          (when (s-ends-with? "root.png" (plist-get (cdr display) :file))
+            (treemacs--root-icon-size-adjust width height))
+          (dolist (property (list display img-selected img-unselected))
+            (plist-put (cdr property) :height height)
+            (plist-put (cdr property) :width width)))))))
 
 (defun treemacs--select-icon-set ()
   "Select the right set of icons for the current buffer.
@@ -399,13 +476,22 @@ TUI icons will be used if
             (value    (ht-get icons icon-symbol)))
         (set (make-local-variable variable) value)))))
 
+(define-inline treemacs-current-icons (&optional tui)
+  "Return the current theme's icons.
+Return the fallback icons if TUI is non-nil."
+  (inline-letevals (tui)
+    (inline-quote
+     (if ,tui
+         (treemacs-theme->tui-icons treemacs--current-theme)
+       (treemacs-theme->gui-icons treemacs--current-theme)))))
+
 ;;;###autoload
 (defun treemacs-define-custom-icon (icon &rest file-extensions)
   "Define a custom ICON for the current theme to use for FILE-EXTENSIONS.
 
 Note that treemacs has a very loose definition of what constitutes a file
 extension - it's either everything past the last period, or just the file's full
-name if there is no period. This makes it possible to match file names like
+name if there is no period.  This makes it possible to match file names like
 '.gitignore' and 'Makefile'.
 
 Additionally FILE-EXTENSIONS are also not case sensitive and will be stored in a

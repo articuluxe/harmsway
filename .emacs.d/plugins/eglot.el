@@ -1,13 +1,13 @@
 ;;; eglot.el --- Client for Language Server Protocol (LSP) servers  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2018 Free Software Foundation, Inc.
+;; Copyright (C) 2018-2020 Free Software Foundation, Inc.
 
-;; Version: 1.5
+;; Version: 1.6
 ;; Author: João Távora <joaotavora@gmail.com>
 ;; Maintainer: João Távora <joaotavora@gmail.com>
 ;; URL: https://github.com/joaotavora/eglot
 ;; Keywords: convenience, languages
-;; Package-Requires: ((emacs "26.1") (jsonrpc "1.0.7") (flymake "1.0.5"))
+;; Package-Requires: ((emacs "26.1") (jsonrpc "1.0.9") (flymake "1.0.8"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -598,9 +598,8 @@ SERVER.  ."
   (unwind-protect
       (progn
         (setf (eglot--shutdown-requested server) t)
-        (jsonrpc-request server :shutdown eglot--{}
-                         :timeout (or timeout 1.5))
-        (jsonrpc-notify server :exit eglot--{}))
+        (jsonrpc-request server :shutdown nil :timeout (or timeout 1.5))
+        (jsonrpc-notify server :exit nil))
     ;; Now ask jsonrpc.el to shut down the server.
     (jsonrpc-shutdown server (not preserve-buffers))
     (unless preserve-buffers (kill-buffer (jsonrpc-events-buffer server)))))
@@ -791,11 +790,19 @@ INTERACTIVE is t if called interactively."
   (interactive (list (eglot--current-server-or-lose)))
   (jsonrpc-forget-pending-continuations server))
 
-(defvar eglot-connect-hook nil "Hook run after connecting in `eglot--connect'.")
+(defvar eglot-connect-hook
+  '(eglot-signal-didChangeConfiguration)
+  "Hook run after connecting in `eglot--connect'.")
 
 (defvar eglot-server-initialized-hook
-  '(eglot-signal-didChangeConfiguration)
-  "Hook run after server is successfully initialized.
+  '()
+  "Hook run after a `eglot-lsp-server' instance is created.
+
+That is before a connection was established. Use
+`eglot-connect-hook' to hook into when a connection was
+successfully established and the server on the other side has
+received the initializing configuration.
+
 Each function is passed the server as an argument")
 
 (defun eglot--connect (managed-major-mode project class contact)
@@ -852,6 +859,7 @@ This docstring appeases checkdoc, that's all."
     (setf (eglot--project-nickname server) nickname)
     (setf (eglot--major-mode server) managed-major-mode)
     (setf (eglot--inferior-process server) autostart-inferior-process)
+    (run-hook-with-args 'eglot-server-initialized-hook server)
     ;; Now start the handshake.  To honour `eglot-sync-connect'
     ;; maybe-sync-maybe-async semantics we use `jsonrpc-async-request'
     ;; and mimic most of `jsonrpc-request'.
@@ -899,8 +907,7 @@ This docstring appeases checkdoc, that's all."
                           (let ((default-directory (car (project-roots project)))
                                 (major-mode managed-major-mode))
                             (hack-dir-local-variables-non-file-buffer)
-                            (run-hook-with-args 'eglot-connect-hook server)
-                            (run-hook-with-args 'eglot-server-initialized-hook server))
+                            (run-hook-with-args 'eglot-connect-hook server))
                           (eglot--message
                            "Connected! Server `%s' now managing `%s' buffers \
 in project `%s'."
@@ -1003,19 +1010,20 @@ CONNECT-ARGS are passed as additional arguments to
 
 (defun eglot-current-column () (- (point) (point-at-bol)))
 
-(defvar eglot-current-column-function #'eglot-current-column
+(defvar eglot-current-column-function #'eglot-lsp-abiding-column
   "Function to calculate the current column.
 
 This is the inverse operation of
 `eglot-move-to-column-function' (which see).  It is a function of
 no arguments returning a column number.  For buffers managed by
 fully LSP-compliant servers, this should be set to
-`eglot-lsp-abiding-column', and `eglot-current-column' (the default)
-for all others.")
+`eglot-lsp-abiding-column' (the default), and
+`eglot-current-column' for all others.")
 
-(defun eglot-lsp-abiding-column ()
-  "Calculate current COLUMN as defined by the LSP spec."
-  (/ (- (length (encode-coding-region (line-beginning-position)
+(defun eglot-lsp-abiding-column (&optional lbp)
+  "Calculate current COLUMN as defined by the LSP spec.
+LBP defaults to `line-beginning-position'."
+  (/ (- (length (encode-coding-region (or lbp (line-beginning-position))
                                       (point) 'utf-16 t))
         2)
      2))
@@ -1027,7 +1035,7 @@ for all others.")
          :character (progn (when pos (goto-char pos))
                            (funcall eglot-current-column-function)))))
 
-(defvar eglot-move-to-column-function #'eglot-move-to-column
+(defvar eglot-move-to-column-function #'eglot-move-to-lsp-abiding-column
   "Function to move to a column reported by the LSP server.
 
 According to the standard, LSP column/character offsets are based
@@ -1037,8 +1045,8 @@ where X is a multi-byte character, it actually means `b', not
 `c'. However, many servers don't follow the spec this closely.
 
 For buffers managed by fully LSP-compliant servers, this should
-be set to `eglot-move-to-lsp-abiding-column', and
-`eglot-move-to-column' (the default) for all others.")
+be set to `eglot-move-to-lsp-abiding-column' (the default), and
+`eglot-move-to-column' for all others.")
 
 (defun eglot-move-to-column (column)
   "Move to COLUMN without closely following the LSP spec."
@@ -1051,15 +1059,18 @@ be set to `eglot-move-to-lsp-abiding-column', and
 
 (defun eglot-move-to-lsp-abiding-column (column)
   "Move to COLUMN abiding by the LSP spec."
-  (cl-loop
-   initially (move-to-column column)
-   with lbp = (line-beginning-position)
-   for diff = (- column
-                 (/ (- (length (encode-coding-region lbp (point) 'utf-16 t))
-                       2)
-                    2))
-   until (zerop diff)
-   do (forward-char (/ (if (> diff 0) (1+ diff) (1- diff)) 2))))
+  (save-restriction
+    (cl-loop
+     with lbp = (line-beginning-position)
+     initially
+     (narrow-to-region lbp (line-end-position))
+     (move-to-column column)
+     for diff = (- column
+                   (eglot-lsp-abiding-column lbp))
+     until (zerop diff)
+     do (condition-case eob-err
+            (forward-char (/ (if (> diff 0) (1+ diff) (1- diff)) 2))
+          (end-of-buffer (cl-return eob-err))))))
 
 (defun eglot--lsp-position-to-point (pos-plist &optional marker)
   "Convert LSP position POS-PLIST to Emacs point.
@@ -1106,6 +1117,7 @@ Doubles as an indicator of snippet support."
                  (list (plist-get markup :value)
                        (pcase (plist-get markup :kind)
                          ("markdown" 'gfm-view-mode)
+                         ("plaintext" 'text-mode)
                          (_ major-mode))))))
     (with-temp-buffer
       (insert string)
@@ -1829,8 +1841,8 @@ Calls REPORT-FN maybe if server publishes diagnostics in time."
        (maphash (lambda (_uri buf) (kill-buffer buf)) eglot--temp-location-buffers)
        (clrhash eglot--temp-location-buffers))))
 
-(defun eglot--xref-make (name uri range)
-  "Like `xref-make' but with LSP's NAME, URI and RANGE.
+(defun eglot--xref-make-match (name uri range)
+  "Like `xref-make-match' but with LSP's NAME, URI and RANGE.
 Try to visit the target file for a richer summary line."
   (pcase-let*
       ((file (eglot--uri-to-path uri))
@@ -1845,8 +1857,9 @@ Try to visit the target file for a richer summary line."
                                 (hi-end (- (min (point-at-eol) end) bol)))
                      (add-face-text-property hi-beg hi-end 'highlight
                                              t substring)
-                     (list substring (1+ (current-line)) (eglot-current-column))))))
-       (`(,summary ,line ,column)
+                     (list substring (1+ (current-line)) (eglot-current-column)
+                           (- end beg))))))
+       (`(,summary ,line ,column ,length)
         (cond
          (visiting (with-current-buffer visiting (funcall collect)))
          ((file-readable-p file) (with-current-buffer
@@ -1855,9 +1868,12 @@ Try to visit the target file for a richer summary line."
                                    (insert-file-contents file)
                                    (funcall collect)))
          (t ;; fall back to the "dumb strategy"
-          (let ((start (cl-getf range :start)))
-            (list name (1+ (cl-getf start :line)) (cl-getf start :character)))))))
-    (xref-make summary (xref-make-file-location file line column))))
+          (let* ((start (cl-getf range :start))
+                 (line (1+ (cl-getf start :line)))
+                 (start-pos (cl-getf start :character))
+                 (end-pos (cl-getf (cl-getf range :end) :character)))
+            (list name line start-pos (- end-pos start-pos)))))))
+    (xref-make-match summary (xref-make-file-location file line column) length)))
 
 (cl-defmethod xref-backend-identifier-completion-table ((_backend (eql eglot)))
   (eglot--error "cannot (yet) provide reliable completion table for LSP symbols"))
@@ -1888,7 +1904,7 @@ Try to visit the target file for a richer summary line."
     (eglot--collecting-xrefs (collect)
       (mapc
        (eglot--lambda ((Location) uri range)
-         (collect (eglot--xref-make (symbol-at-point) uri range)))
+         (collect (eglot--xref-make-match (symbol-at-point) uri range)))
        (if (vectorp response) response (list response))))))
 
 (cl-defun eglot--lsp-xref-helper (method &key extra-params capability )
@@ -1931,7 +1947,7 @@ Try to visit the target file for a richer summary line."
       (mapc
        (eglot--lambda ((SymbolInformation) name location)
          (eglot--dbind ((Location) uri range) location
-           (collect (eglot--xref-make name uri range))))
+           (collect (eglot--xref-make-match name uri range))))
        (jsonrpc-request (eglot--current-server-or-lose)
                         :workspace/symbol
                         `(:query ,pattern))))))
@@ -2227,7 +2243,7 @@ Respects `max-mini-window-height' (which see)."
   #'eglot-doc-too-large-for-echo-area
   "If non-nil, put \"hover\" documentation in separate `*eglot-help*' buffer.
 If nil, use whatever `eldoc-message-function' decides (usually
-the echo area).  If t, use `*eglot-help; unconditionally.  If a
+the echo area).  If t, use `*eglot-help*' unconditionally.  If a
 function, it is called with the docstring to display and should a
 boolean producing one of the two previous values."
   :type '(choice (const :tag "Never use `*eglot-help*'" nil)
@@ -2243,16 +2259,20 @@ Buffer is displayed with `display-buffer', which obeys
 (defun eglot--update-doc (string hint)
   "Put updated documentation STRING where it belongs.
 Honours `eglot-put-doc-in-help-buffer'.  HINT is used to
-potentially rename EGLOT's help buffer."
-  (if (or (eq t eglot-put-doc-in-help-buffer)
-          (and eglot-put-doc-in-help-buffer
-               (funcall eglot-put-doc-in-help-buffer string)))
+potentially rename EGLOT's help buffer.  If STRING is nil, the
+echo area cleared of any previous documentation."
+  (if (and string
+           (or (eq t eglot-put-doc-in-help-buffer)
+               (and eglot-put-doc-in-help-buffer
+                    (funcall eglot-put-doc-in-help-buffer string))))
       (with-current-buffer (eglot--help-buffer)
-        (rename-buffer (format "*eglot-help for %s*" hint))
-        (let ((inhibit-read-only t))
-          (erase-buffer)
-          (insert string)
-          (goto-char (point-min))
+        (let ((inhibit-read-only t)
+              (name (format "*eglot-help for %s*" hint)))
+          (unless (string= name (buffer-name))
+            (rename-buffer (format "*eglot-help for %s*" hint))
+            (erase-buffer)
+            (insert string)
+            (goto-char (point-min)))
           (if eglot-auto-display-help-buffer
               (display-buffer (current-buffer))
             (unless (get-buffer-window (current-buffer))
@@ -2296,10 +2316,10 @@ potentially rename EGLOT's help buffer."
          :success-fn (eglot--lambda ((Hover) contents range)
                        (unless sig-showing
                          (when-buffer-window
-                          (when-let (info (and contents
-                                               (eglot--hover-info contents
-                                                                  range)))
-                            (eglot--update-doc info thing-at-point)))))
+                          (eglot--update-doc (and (not (seq-empty-p contents))
+                                                  (eglot--hover-info contents
+                                                                     range))
+                                             thing-at-point))))
          :deferred :textDocument/hover))
       (when (eglot--server-capable :documentHighlightProvider)
         (jsonrpc-async-request

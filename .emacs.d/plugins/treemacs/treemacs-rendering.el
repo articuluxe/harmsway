@@ -32,6 +32,9 @@
 (require 'treemacs-customization)
 (require 'treemacs-dom)
 (require 'treemacs-workspaces)
+(require 'treemacs-visuals)
+(require 'treemacs-logging)
+
 (eval-and-compile
   (require 'treemacs-macros)
   (require 'inline))
@@ -228,20 +231,26 @@ Gives the button a NEW-STATE, and, optionally, a NEW-ICON. Performs OPEN-ACTION
 and, optionally, POST-OPEN-ACTION. If IMMEDIATE-INSERT is non-nil it will concat
 and apply `insert' on the items returned from OPEN-ACTION. If it is nil either
 OPEN-ACTION or POST-OPEN-ACTION are expected to take over insertion."
-  `(save-excursion
-     (-let [p (point)]
-       (treemacs-with-writable-buffer
-        (treemacs-button-put ,button :state ,new-state)
-        ,@(when new-icon
-            `((beginning-of-line)
-              (treemacs--button-symbol-switch ,new-icon)))
-        (goto-char (treemacs-button-end ,button))
-        ,@(if immediate-insert
-              `((progn
-                  (insert (apply #'concat ,open-action))))
-            `(,open-action))
-        ,post-open-action)
-       (count-lines p (point)))))
+  `(prog1
+     (save-excursion
+       (-let [p (point)]
+         (treemacs-with-writable-buffer
+          (treemacs-button-put ,button :state ,new-state)
+          ,@(when new-icon
+              `((beginning-of-line)
+                (treemacs--button-symbol-switch ,new-icon)))
+          (goto-char (treemacs-button-end ,button))
+          ,@(if immediate-insert
+                `((progn
+                    (insert (apply #'concat ,open-action))))
+              `(,open-action))
+          ,post-open-action)
+         (count-lines p (point))))
+     (when treemacs-move-forward-on-expand
+       (let* ((parent (treemacs-current-button))
+              (child (next-button parent)))
+         (when (equal parent (treemacs-button-get child :parent))
+           (forward-line 1))))))
 
 (cl-defmacro treemacs--create-buttons (&key nodes depth extra-vars node-action node-name)
   "Building block macro for creating buttons from a list of items.
@@ -270,13 +279,13 @@ Go to each dir button, expand its label with the collapsed dirs, set its new
 path and give it a special parent-path property so opening it will add the
 correct cache entries.
 
-DIRS: List of Collapse Paths. Each Collapse Path is a list of
+DIRS: List of Collapse Paths.  Each Collapse Path is a list of
  1) the extra text that must be appended in the view,
  2) The original full and uncollapsed path,
  3) a series of intermediate steps which are the result of appending the
     collapsed path elements onto the original, ending in
  4) the full path to the
-    directory that the collapsing leads to. For Example:
+    directory that the collapsing leads to.  For Example:
     (\"/26.0/elpa\"
      \"/home/a/Documents/git/treemacs/.cask\"
      \"/home/a/Documents/git/treemacs/.cask/26.0\"
@@ -320,27 +329,9 @@ DIRS: List of Collapse Paths. Each Collapse Path is a list of
                    beg (point)
                    '(face treemacs-directory-collapsed-face)))))))))))
 
-(defmacro treemacs--map-when-unrolled (items interval &rest mapper)
-  "Unrolled variant of dash.el's `--map-when'.
-Specialized towards applying MAPPER to ITEMS on a given INTERVAL."
-  (declare (indent 2))
-  `(let* ((ret nil)
-          (--items-- ,items)
-          (reps (/ (length --items--) ,interval))
-          (--loop-- 0))
-     (while (< --loop-- reps)
-       ,@(-repeat
-          (1- interval)
-          '(setq ret (cons (pop --items--) ret)))
-       (setq ret
-             (-let [it (pop --items--)]
-               (cons ,@mapper ret)))
-       (cl-incf --loop--))
-     (nreverse (nconc --items-- ret))))
-
-(defmacro treemacs--inplace-map-when-unrolled (items interval &rest map-body)
+(defmacro treemacs--inplace-map-when-unrolled (items interval &rest mapper)
   "Unrolled in-place mappig operation.
-Applies MAP-BODY to every element in ITEMS at the given INTERVAL."
+Maps ITEMS at given index INTERVAL using MAPPER function."
   (declare (indent 2))
   (let ((l (make-symbol "list"))
         (tail-op (cl-case interval
@@ -352,7 +343,7 @@ Applies MAP-BODY to every element in ITEMS at the given INTERVAL."
        (while ,l
          (setq ,l (,tail-op ,l))
          (let ((it (pop ,l)))
-           ,@map-body)))))
+           ,@mapper)))))
 
 (define-inline treemacs--create-branch (root depth git-future collapse-process &optional parent)
   "Create a new treemacs branch under ROOT.
@@ -665,7 +656,7 @@ FORCE-EXPAND: Boolean"
 
 (defun treemacs-delete-single-node (path &optional project)
   "Delete single node at given PATH and PROJECT.
-Does nothing when the given node is not visible. Must be run in a treemacs
+Does nothing when the given node is not visible.  Must be run in a treemacs
 buffer.
 
 This will also take care of all the necessary house-keeping like making sure
@@ -682,7 +673,7 @@ Project: Project Struct"
 
 (defun treemacs-do-delete-single-node (path &optional project)
   "Actual implementation of single node deletion.
-Will delete node at given PATH and PROJECT. See also
+Will delete node at given PATH and PROJECT.  See also
 `treemacs-delete-single-node'.
 
 PATH: Node Path
@@ -915,7 +906,7 @@ WHEN can take the following values:
   "The recursive descent implementation of `treemacs--recursive-refresh'.
 If NODE under PROJECT is marked for refresh and in an open state (since it could
 have been collapsed in the meantime) it will simply be collapsed and
-re-expanded. If NODE is node marked its children will be recursively
+re-expanded.  If NODE is node marked its children will be recursively
 investigated instead.
 Additionally all the refreshed nodes are collected and returned so their
 parents' git status can be updated."
@@ -943,7 +934,7 @@ parents' git status can be updated."
               (_
                ;; Renaming is handled as a combination of delete+create, so
                ;; this case should never be taken
-               (treemacs-log "Unusual change event: %s" change)
+               (treemacs-log-failure "Unknown change event: %s" change)
                (setf recurse nil)
                (if (null (treemacs-dom-node->parent node))
                    (treemacs-project->refresh! project)

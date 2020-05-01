@@ -31,6 +31,7 @@
 
 (require 'all-the-icons)
 (require 'cl-lib)
+(require 'seq)
 (require 'subr-x)
 (require 'doom-modeline-core)
 (require 'doom-modeline-env)
@@ -85,6 +86,9 @@
 (defvar objed--object)
 (defvar objed-modeline-setup-func)
 (defvar persp-nil-name)
+(defvar phi-replace--mode-line-format)
+(defvar phi-search--selection)
+(defvar phi-search-mode-line-format)
 (defvar rcirc-activity)
 (defvar symbol-overlay-keywords-alist)
 (defvar symbol-overlay-temp-symbol)
@@ -183,12 +187,15 @@
 (declare-function persp-add-buffer 'persp-mode)
 (declare-function persp-contain-buffer-p 'persp-mode)
 (declare-function persp-switch 'persp-mode)
+(declare-function phi-search--initialize 'phi-search)
 (declare-function popup-create 'popup)
 (declare-function popup-delete 'popup)
 (declare-function rcirc-next-active-buffer 'rcirc)
 (declare-function rcirc-short-buffer-name 'rcirc)
 (declare-function rcirc-switch-to-server-buffer 'rcirc)
 (declare-function rcirc-window-configuration-change 'rcirc)
+(declare-function rime--should-enable-p 'rime)
+(declare-function rime--should-inline-ascii-p 'rime)
 (declare-function symbol-overlay-assoc 'symbol-overlay)
 (declare-function symbol-overlay-get-list 'symbol-overlay)
 (declare-function symbol-overlay-get-symbol 'symbol-overlay)
@@ -233,9 +240,10 @@ buffer where knowing the current project directory is important."
   (setq doom-modeline--buffer-file-icon
         (when (and doom-modeline-icon doom-modeline-major-mode-icon)
           (let ((icon (all-the-icons-icon-for-buffer)))
-            (propertize (if (symbolp icon)
+            (propertize (if (or (null icon) (symbolp icon))
                             (doom-modeline-icon 'faicon "file-o" nil nil
                                                 :face 'all-the-icons-dsilver
+                                                :height 0.9
                                                 :v-adjust 0.0)
                           icon)
                         'help-echo (format "Major-mode: %s" (format-mode-line mode-name))
@@ -1165,21 +1173,21 @@ Requires `anzu', also `evil-anzu' if using `evil-mode' for compatibility with
 
 (defsubst doom-modeline--symbol-overlay ()
   "Show the number of matches for symbol overlay."
-  (when (and (doom-modeline--active)
-             (bound-and-true-p symbol-overlay-keywords-alist)
-             (not (bound-and-true-p symbol-overlay-temp-symbol))
-             (not (bound-and-true-p iedit-mode)))
-    (let* ((keyword (symbol-overlay-assoc (symbol-overlay-get-symbol t)))
-           (symbol (car keyword))
-           (before (symbol-overlay-get-list -1 symbol))
-           (after (symbol-overlay-get-list 1 symbol))
-           (count (length before)))
-      (if (symbol-overlay-assoc symbol)
-          (propertize
-           (format (concat  " %d/%d " (and (cadr keyword) "in scope "))
-                   (+ count 1)
-                   (+ count (length after)))
-           'face (if (doom-modeline--active) 'doom-modeline-panel 'mode-line-inactive))))))
+  (when-let ((active (doom-modeline--active)))
+    (when (and (bound-and-true-p symbol-overlay-keywords-alist)
+               (not (bound-and-true-p symbol-overlay-temp-symbol))
+               (not (bound-and-true-p iedit-mode)))
+      (let* ((keyword (symbol-overlay-assoc (symbol-overlay-get-symbol t)))
+             (symbol (car keyword))
+             (before (symbol-overlay-get-list -1 symbol))
+             (after (symbol-overlay-get-list 1 symbol))
+             (count (length before)))
+        (if (symbol-overlay-assoc symbol)
+            (propertize
+             (format (concat  " %d/%d " (and (cadr keyword) "in scope "))
+                     (+ count 1)
+                     (+ count (length after)))
+             'face (if active 'doom-modeline-panel 'mode-line-inactive)))))))
 
 (defsubst doom-modeline--multiple-cursors ()
   "Show the number of multiple cursors."
@@ -1207,6 +1215,24 @@ Requires `anzu', also `evil-anzu' if using `evil-mode' for compatibility with
               (propertize (format "%d " count)
                           'face face)))))
 
+(defsubst doom-modeline--phi-search ()
+  "Show the number of matches for `phi-search' and `phi-replace'."
+  (when-let ((active (doom-modeline--active)))
+    (when (bound-and-true-p phi-search--overlays)
+      (let ((total (length phi-search--overlays))
+            (selection phi-search--selection))
+        (when selection
+          (propertize
+           (format " %d/%d " (1+ selection) total)
+           'face (if active 'doom-modeline-panel 'mode-line-inactive)))))))
+
+(defun doom-modeline--override-phi-search-mode-line (orig-fun &rest args)
+  "Override the mode-line of `phi-search' and `phi-replace'."
+  (if (bound-and-true-p doom-modeline-mode)
+      (apply orig-fun mode-line-format (cdr args))
+    (apply orig-fun args)))
+(advice-add #'phi-search--initialize :around #'doom-modeline--override-phi-search-mode-line)
+
 (defsubst doom-modeline--buffer-size ()
   "Show buffer size."
   (when size-indication-mode
@@ -1227,12 +1253,14 @@ with `evil-ex-substitute', and/or 4. The number of active `iedit' regions,
 of active `multiple-cursors'."
   (let ((meta (concat (doom-modeline--macro-recording)
                       (doom-modeline--anzu)
+                      (doom-modeline--phi-search)
                       (doom-modeline--evil-substitute)
                       (doom-modeline--iedit)
                       (doom-modeline--symbol-overlay)
                       (doom-modeline--multiple-cursors))))
     (or (and (not (equal meta "")) meta)
-        (doom-modeline--buffer-size))))
+        (doom-modeline--buffer-size)))
+  )
 
 (doom-modeline-def-segment buffer-size
   "Display buffer size"
@@ -1337,8 +1365,14 @@ one. The ignored buffers are excluded unless `aw-ignore-on' is nil."
                (window-numbering-get-number-string))
               (t ""))))
     (if (and (< 0 (length num))
-             (< (if (active-minibuffer-window) 2 1)
-                (length (cl-mapcan #'window-list (visible-frame-list)))))
+             (< (if (active-minibuffer-window) 2 1) ; exclude minibuffer
+                (length (cl-mapcan
+                         (lambda (frame)
+                           ;; Exclude child frames
+                           (unless (and (fboundp 'frame-parent)
+                                        (frame-parent frame))
+                             (window-list)))
+                         (visible-frame-list)))))
         (propertize (format " %s " num)
                     'face (if (doom-modeline--active)
                               'doom-modeline-buffer-major-mode
@@ -1400,8 +1434,8 @@ Requires `eyebrowse-mode' or `tab-bar-mode' to be enabled."
             (when (or doom-modeline-display-default-persp-name
                       (not (string-equal persp-nil-name name)))
               (concat (doom-modeline-spc)
-                      (propertize (concat icon
-                                          (doom-modeline-vspc)
+                      (propertize (concat (when doom-modeline-persp-icon
+                                                (concat icon (doom-modeline-vspc)))
                                           (propertize name 'face face))
                                   'help-echo "mouse-1: Switch perspective
 mouse-2: Show help for minor mode"
@@ -1544,7 +1578,7 @@ TEXT is alternative if icon is not available."
   (when (bound-and-true-p evil-local-mode)
     (doom-modeline--modal-icon
      (let ((tag (evil-state-property evil-state :tag t)))
-       (string-trim (if (stringp tag) tag (funcall tag))))
+       (if (stringp tag) tag (funcall tag)))
      (cond
       ((evil-normal-state-p) 'doom-modeline-evil-normal-state)
       ((evil-emacs-state-p) 'doom-modeline-evil-emacs-state)
@@ -1557,15 +1591,15 @@ TEXT is alternative if icon is not available."
      (evil-state-property evil-state :name t))))
 
 (defsubst doom-modeline--overwrite ()
-  "The current overwrite state which is enabled by command `overwrite-mode'."
-  (when (and (bound-and-true-p overwrite-mode)
-             (not (bound-and-true-p evil-local-mode)))
-    (doom-modeline--modal-icon "<O>" 'doom-modeline-urgent "Overwrite mode")))
+"The current overwrite state which is enabled by command `overwrite-mode'."
+(when (and (bound-and-true-p overwrite-mode)
+           (not (bound-and-true-p evil-local-mode)))
+  (doom-modeline--modal-icon " <O> " 'doom-modeline-urgent "Overwrite mode")))
 
 (defsubst doom-modeline--god ()
-  "The current god state which is enabled by the command `god-mode'."
-  (when (bound-and-true-p god-local-mode)
-    (doom-modeline--modal-icon "<G>" 'doom-modeline-evil-normal-state "God mode")))
+"The current god state which is enabled by the command `god-mode'."
+(when (bound-and-true-p god-local-mode)
+  (doom-modeline--modal-icon " <G> " 'doom-modeline-evil-normal-state "God mode")))
 
 (defsubst doom-modeline--ryo ()
   "The current ryo-modal state which is enabled by the command `ryo-modal-mode'."
@@ -1576,10 +1610,10 @@ TEXT is alternative if icon is not available."
   "The current `xah-fly-keys' state."
   (when (bound-and-true-p xah-fly-keys)
     (if xah-fly-insert-state-q
-        (doom-modeline--modal-icon "<I>"
+        (doom-modeline--modal-icon " <I> "
                                    'doom-modeline-evil-insert-state
                                    (format "Xah-fly insert mode"))
-      (doom-modeline--modal-icon "<C>"
+      (doom-modeline--modal-icon " <C> "
                                  'doom-modeline-evil-normal-state
                                  (format "Xah-fly command mode")))))
 
@@ -1645,7 +1679,13 @@ and `xha-fly-kyes', etc."
                       (doom-modeline-spc)))
                     (t ""))
               'face (if (doom-modeline--active)
-                        'doom-modeline-buffer-major-mode
+                        (if (and (bound-and-true-p rime-mode)
+                                 (equal current-input-method "rime"))
+                            (if (and (rime--should-enable-p)
+                                     (not (rime--should-inline-ascii-p)))
+                                'doom-modeline-buffer-major-mode
+                              '(:inherit (doom-modeline-buffer-minor-mode bold)))
+                          'doom-modeline-buffer-major-mode)
                       'mode-line-inactive)
               'help-echo (concat
                           "Current input method: "
@@ -2034,16 +2074,15 @@ mouse-1: Toggle Debug on Quit"
 (defun doom-modeline-update-pdf-pages ()
   "Update PDF pages."
   (setq doom-modeline--pdf-pages
-        (propertize
-         (format "  P%d/%d "
-                 (eval `(pdf-view-current-page))
-                 (pdf-cache-number-of-pages))
-         'face (if (doom-modeline--active) 'mode-line 'mode-line-inactive))))
+        (format "  P%d/%d "
+                (eval `(pdf-view-current-page))
+                (pdf-cache-number-of-pages))))
 (add-hook 'pdf-view-change-page-hook #'doom-modeline-update-pdf-pages)
 
 (doom-modeline-def-segment pdf-pages
   "Display PDF pages."
-  doom-modeline--pdf-pages)
+  (propertize doom-modeline--pdf-pages
+              'face (if (doom-modeline--active) 'mode-line 'mode-line-inactive)))
 
 
 ;;
@@ -2111,7 +2150,8 @@ mouse-1: Toggle Debug on Quit"
                     (let* ((group (car g))
                            ;; `gnus-group-unread' is a macro
                            (unread (car (gethash group gnus-newsrc-hashtb))))
-                      (when (and (numberp unread)
+                      (when (and (not (seq-contains-p doom-modeline-gnus-excluded-groups group))
+                                 (numberp unread)
                                  (> unread 0))
                         (setq total-unread-news-number (+ total-unread-news-number unread)))))
                   gnus-newsrc-alist)

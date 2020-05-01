@@ -4,7 +4,7 @@
 
 ;; Author: Vincent Zhang <seagle0128@gmail.com>
 ;; Homepage: https://github.com/seagle0128/doom-modeline
-;; Version: 3.0.0
+;; Version: 3.0.1
 ;; Package-Requires: ((emacs "25.1") (all-the-icons "2.2.0") (shrink-path "0.2.0") (dash "2.11.0"))
 ;; Keywords: faces mode-line
 
@@ -103,7 +103,7 @@
 
 (doom-modeline-def-modeline 'project
   '(bar window-number buffer-default-directory)
-  '(misc-info battery irc mu4e gnus github debug major-mode process))
+  '(misc-info battery irc mu4e gnus github debug minor-modes input-method major-mode process))
 
 (doom-modeline-def-modeline 'vcs
   '(bar window-number modals matches buffer-info buffer-position parrot selection-info)
@@ -243,6 +243,7 @@ So it can be restored when `doom-modeline-mode' is disabled.")
   (if doom-modeline-mode
       (progn
         (doom-modeline-refresh-bars)        ; Create bars
+        (doom-modeline-set-main-modeline)   ; Set mode-line for current buffer
         (doom-modeline-set-main-modeline t) ; Set default mode-line
 
         ;; These buffers are already created and don't get modelines
@@ -272,6 +273,7 @@ So it can be restored when `doom-modeline-mode' is disabled.")
         (advice-add #'helm-display-mode-line :after #'doom-modeline-set-helm-modeline))
     (progn
       ;; Restore mode-line
+      (setq mode-line-format doom-modeline--default-format)
       (setq-default mode-line-format doom-modeline--default-format)
       (dolist (bname '("*scratch*" "*Messages*"))
         (if (buffer-live-p (get-buffer bname))

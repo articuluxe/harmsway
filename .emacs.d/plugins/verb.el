@@ -6,8 +6,8 @@
 ;; Maintainer: Federico Tedin <federicotedin@gmail.com>
 ;; Homepage: https://github.com/federicotdn/verb
 ;; Keywords: tools
-;; Package-Version: 2.8.1
-;; Package-Requires: ((emacs "26"))
+;; Package-Version: 2.10.0
+;; Package-Requires: ((emacs "25.1"))
 
 ;; This file is NOT part of GNU Emacs.
 
@@ -64,7 +64,7 @@ header value (\"charset=utf-8\")."
     ("text/html" html-mode)
     ("\\(application\\|text\\)/xml" xml-mode)
     ("application/xhtml+xml" xml-mode)
-    ("application/json" verb--handler-json)
+    ("application/json" verb-handler-json)
     ("application/javascript" js-mode)
     ("application/css" css-mode)
     ("text/plain" text-mode)
@@ -106,8 +106,7 @@ will be used."
                                (const :tag "Text" nil)))))
 
 (defcustom verb-export-functions
-  '(("human" . verb--export-to-human)
-    ("verb" . verb--export-to-verb)
+  '(("verb" . verb--export-to-verb)
     ("curl" . verb--export-to-curl))
   "Alist of request specification export functions.
 Each element should have the form (NAME . FN), where NAME should be a
@@ -185,9 +184,16 @@ info node `(url)Retrieving URLs'."
 
 (defcustom verb-json-max-pretty-print-size (* 1 1024 1024)
   "Max JSON file size (bytes) to automatically prettify when received.
-If nil, never prettify JSON files automatically."
+If nil, never prettify JSON files automatically.  This variable only applies
+if `verb-handler-json' is being used to handle JSON responses."
   :type '(choice (integer :tag "Max bytes")
                  (const :tag "Off" nil)))
+
+(defcustom verb-json-use-mode #'js-mode
+  "Mode to enable in response buffers containing JSON data.
+This variable only applies if `verb-handler-json' is being used to
+handle JSON responses."
+  :type 'function)
 
 (defcustom verb-enable-log t
   "When non-nil, log different events in the *Verb Log* buffer."
@@ -236,6 +242,15 @@ These headers will be included by default in requests, but still may
 be overriden by re-specifying them somwhere in the document
 hierarchy."
   :type '(alist :key-type string :value-type string))
+
+(defcustom verb-enable-elisp-completion nil
+  "When set to a non-nil value, enable Lisp completion in code tags.
+Completion is handled by the `verb-elisp-completion-at-point'
+function.
+
+Note the the point must be between the two code tag delimeters
+\(e.g.  \"{{\" and \"}}\") for the completion function to work."
+  :type 'boolean)
 
 (defface verb-http-keyword '((t :inherit font-lock-constant-face
                                 :weight bold))
@@ -341,6 +356,9 @@ here under its value.")
 This variable is used mostly to parse and then copy request specs to
 other buffers without actually expanding the embedded code tags.")
 
+(defvar verb--elisp-completion-buffer nil
+  "Auxiliary buffer for performing completion for Lisp code.")
+
 ;;;###autoload
 (defvar verb-command-map
   (let ((map (make-sparse-keymap)))
@@ -352,7 +370,6 @@ other buffers without actually expanding the embedded code tags.")
     (define-key map (kbd "C-e") #'verb-export-request-on-point)
     (define-key map (kbd "C-u") #'verb-export-request-on-point-curl)
     (define-key map (kbd "C-b") #'verb-export-request-on-point-verb)
-    (define-key map (kbd "C-n") #'verb-export-request-on-point-human)
     (define-key map (kbd "C-v") #'verb-set-var)
     map)
   "Keymap for `verb-mode' commands.
@@ -399,7 +416,6 @@ comfortably.  All commands listed in this keymap automatically enable
         ["Set variable value" verb-set-var]
         "--"
         ["Export request to curl" verb-export-request-on-point-curl]
-        ["Export request to human-readable" verb-export-request-on-point-human]
         ["Export request to Verb" verb-export-request-on-point-verb]
         "--"
         ["Customize Verb" verb-customize-group]
@@ -419,6 +435,8 @@ more details on how to use it."
   :group 'verb
   (when verb-mode
     (verb--setup-font-lock-keywords)
+    (add-hook 'completion-at-point-functions #'verb-elisp-completion-at-point
+              nil 'local)
     (when (buffer-file-name)
       (verb--log nil 'I
                  "Verb mode enabled in buffer: %s"
@@ -482,7 +500,7 @@ message is logged.  To turn off logging, set `verb-enable-log' to nil."
   (member m verb--http-methods))
 
 (defun verb--alist-p (l)
-  "Return on-nil if L is an alist."
+  "Return non-nil if L is an alist."
   (when (consp l)
     (catch 'end
       (dolist (elem l)
@@ -589,6 +607,38 @@ KEY and VALUE must be strings.  KEY must not be the empty string."
   "Show the Customize menu buffer for the Verb package group."
   (interactive)
   (customize-group "verb"))
+
+(defun verb-elisp-completion-at-point ()
+  "Completion at point function for Lisp code tags."
+  (when verb-enable-elisp-completion
+    (when-let (;; Get the contents inside the code tag: {{<content>}}
+               (beg (save-excursion
+                      (when (search-backward (car verb-code-tag-delimiters)
+                                             (line-beginning-position) t)
+                        (match-end 0))))
+               (end (save-excursion
+                      (when (search-forward (cdr verb-code-tag-delimiters)
+                                            (line-end-position) t)
+                        (match-beginning 0)))))
+      ;; Set up the buffer where we'll run `elisp-completion-at-point'
+      (unless verb--elisp-completion-buffer
+        (setq verb--elisp-completion-buffer
+              (get-buffer-create " *verb-elisp-completion*")))
+      ;; Copy the contents of the code tag to the empty buffer, run
+      ;; completion there
+      (let* ((code (buffer-substring-no-properties beg end))
+             (point-offset (1+ (- (point) beg)))
+             (completions (with-current-buffer verb--elisp-completion-buffer
+                            (erase-buffer)
+                            (insert code)
+                            (goto-char point-offset)
+                            (elisp-completion-at-point))))
+        ;; The beginning/end positions will belong to the other buffer, add
+        ;; `beg' so that they make sense on the original one
+        (when completions
+          (append (list (+ (nth 0 completions) beg -1)
+                        (+ (nth 1 completions) beg -1))
+                  (cddr completions)))))))
 
 (defun verb--log (request level &rest args)
   "Log a message in the *Verb Log* buffer.
@@ -725,16 +775,23 @@ Return t if there was a heading to move towards to and nil otherwise."
 (defun verb--heading-tags ()
   "Return all (inherited) tags from current heading."
   (verb--back-to-heading)
-  (when-let ((tags (org-entry-get (point) "ALLTAGS" t)))
-    (split-string (string-trim tags ":" ":") ":")))
+  (when-let ((tags (org-entry-get (point) "ALLTAGS")))
+    (seq-filter (lambda (s) (or org-use-tag-inheritance
+                                (not (get-text-property 0 'inherited s))))
+                (split-string tags ":" t))))
 
 (defun verb--heading-properties (prefix)
   "Return alist of current heading properties starting with PREFIX.
 Does not use property inheritance.  Matching is case-insensitive."
   (verb--back-to-heading)
-  (seq-filter (lambda (e)
-                (string-prefix-p prefix (car e) t))
-              (org-entry-properties (point))))
+  ;; 3) Discard all (key . nil) elements in the list
+  (seq-filter (lambda (e) (stringp (cdr e)))
+              ;; 2) Take the (key . value) for each of those properties here
+              (mapcar (lambda (key) (cons (upcase key)
+                                          (org-entry-get (point) key)))
+                      ;; 1) Get all doc properties and filter them by prefix
+                      (seq-filter (lambda (s) (string-prefix-p prefix s t))
+                                  (org-buffer-property-keys)))))
 
 (defun verb--heading-contents ()
   "Return the current heading's text contents.
@@ -785,7 +842,7 @@ If no Babel source blocks are found, return TEXT."
     (let ((case-fold-search t)
           start result)
       (when (search-forward "#+begin_src" nil t)
-        (unless (looking-at " +verb")
+        (unless (looking-at-p " +verb")
           (user-error "%s" (concat "Found a non-verb Babel source block\n"
                                    "Make sure all source blocks in the "
                                    "hierarchy use \"verb\" as language")))
@@ -1180,42 +1237,11 @@ See `verb--export-to-verb' for more information."
   (verb-export-request-on-point "verb"))
 
 ;;;###autoload
-(defun verb-export-request-on-point-human ()
-  "Export request on point to a human-readable format.
-See `verb--export-to-human' for more information."
-  (interactive)
-  (verb-export-request-on-point "human"))
-
-;;;###autoload
 (defun verb-export-request-on-point-curl ()
   "Export request on point to curl format.
 See `verb--export-to-curl' for more information."
   (interactive)
   (verb-export-request-on-point "curl"))
-
-(defun verb--export-to-human (rs)
-  "Export a request spec RS to a human-readable format.
-Return a new buffer with the export results inserted into it."
-  (with-current-buffer (generate-new-buffer "*HTTP Request Spec*")
-    (text-mode)
-    (insert (propertize "HTTP Method: " 'font-lock-face 'bold)
-            (oref rs method) "\n"
-            (propertize "URL: " 'font-lock-face 'bold)
-            (url-recreate-url (oref rs url)) "\n"
-            (propertize "Headers:\n" 'font-lock-face 'bold))
-    (let ((headers (oref rs headers)))
-      (if headers
-          (dolist (key-value headers)
-            (insert "    " (car key-value) ": " (cdr key-value) "\n"))
-        (insert "    No headers defined.\n")))
-    (insert "\n")
-    (let ((body (oref rs body)))
-      (if body
-          (insert (propertize "Body:" 'font-lock-face 'bold) "\n"
-                  body "\n")
-        (insert "No body defined.")))
-    (switch-to-buffer-other-window (current-buffer))
-    (current-buffer)))
 
 (defun verb--export-to-verb (rs)
   "Export a request spec RS to Verb format.
@@ -1293,9 +1319,10 @@ non-nil, do not add the command to the kill ring."
     (when url
       (url-recreate-url url))))
 
-(defun verb--handler-json ()
-  "Handler for \"application/json\" content type."
-  (js-mode)
+(defun verb-handler-json ()
+  "Standard handler for the \"application/json\" content type."
+  (when verb-json-use-mode
+    (funcall verb-json-use-mode))
   (when (< (oref verb-http-response body-bytes)
            (or verb-json-max-pretty-print-size 0))
     (unwind-protect
@@ -1689,6 +1716,12 @@ loaded into."
                url-request-data)
       (verb--log num 'W "Body is present but request method is %s"
                  url-request-method))
+
+    ;; Workaround for "localhost" not working on Emacs 25
+    (when (and (< emacs-major-version 26)
+               (string= (url-host url) "localhost"))
+      (verb--log num 'W "Replacing localhost with 127.0.0.1")
+      (setf (url-host url) "127.0.0.1"))
 
     ;; Send the request!
     (condition-case err
@@ -2171,12 +2204,13 @@ METADATA."
       (let ((rest (buffer-substring (point) (point-max))))
         ;; Only read body if it isn't comprised entirely of
         ;; whitespace, but if it's not and has leading/trailing
-        ;; whitespace, include itP
+        ;; whitespace, include it
         (unless (string-empty-p (string-trim rest))
           ;; Now we know body isn't comprised entirely of whitespace,
           ;; check if the user wants to delete any trailing characters
           (setq body (if verb-trim-body-end
-                         (string-trim-right rest verb-trim-body-end)
+                         (replace-regexp-in-string
+                          (concat verb-trim-body-end "$") "" rest)
                        rest))))
       ;; Return a `verb-request-spec'
       (verb-request-spec :method method

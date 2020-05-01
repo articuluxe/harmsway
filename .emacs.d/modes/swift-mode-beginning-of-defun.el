@@ -1,10 +1,10 @@
 ;;; swift-mode-beginning-of-defun.el --- Major-mode for Apple's Swift programming language, beginning/end-of-defun. -*- lexical-binding: t -*-
 
-;; Copyright (C) 2014-2018 taku0
+;; Copyright (C) 2014-2019 taku0
 
 ;; Authors: taku0 (http://github.com/taku0)
 ;;
-;; Version: 8.0.1
+;; Version: 8.0.2
 ;; Package-Requires: ((emacs "24.4") (seq "2.3"))
 ;; Keywords: languages swift
 

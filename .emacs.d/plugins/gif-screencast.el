@@ -145,6 +145,19 @@ Note this must be a string."
   :group 'gif-screencast
   :type 'string)
 
+(defcustom gif-screencast-scale-factor 1.0
+  "Scale the resolution when cropping the pictures.
+With HiDPI screens you'll want to set this scale-factor to that of the system.
+
+For instance, in a macOS shell, run
+
+ $ system_profiler SPDisplaysDataType | grep 'Resolution:.*Retina'
+ Resolution: 2880 x 1800 Retina
+
+If your resolution is 1440x900, then the scale factor should be set to 2.0."
+  :group 'gif-screencast
+  :type 'float)
+
 (defvar gif-screencast--frames nil
   "A frame is a plist in the form '(:time :file :offset).")
 (defvar gif-screencast--offset 0
@@ -257,7 +270,9 @@ Return the process."
         (height (+ (frame-pixel-height)
                    (or gif-screencast-title-bar-pixel-height 0)
                    (cdr (alist-get 'tool-bar-size (frame-geometry))))))
-    (format "%dx%d+%d+%d" width height x y)))
+    (apply #'format "%dx%d+%d+%d"
+           (mapcar (lambda (n) (* gif-screencast-scale-factor n))
+                   (list width height x y)) )))
 
 (defun gif-screencast--crop ()
   "Crop the captured images to the active region of selected frame."

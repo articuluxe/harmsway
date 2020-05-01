@@ -7,7 +7,7 @@
 ;; Author: Natalie Weizenbaum <nex342@gmail.com>
 ;; URL: http://github.com/nex3/perspective-el
 ;; Package-Requires: ((emacs "24.4") (cl-lib "0.5"))
-;; Version: 2.5
+;; Version: 2.7
 ;; Created: 2008-03-05
 ;; By: Natalie Weizenbaum <nex342@gmail.com>
 ;; Keywords: workspace, convenience, frames
@@ -149,9 +149,27 @@ After BODY is evaluated, frame parameters are reset to their original values."
   (window-configuration (current-window-configuration))
   (point-marker (point-marker)))
 
+(defun persp--make-ignore-buffer-rx ()
+  (defvar ido-ignore-buffers)
+  (if ido-ignore-buffers
+      ;; convert a list of regexps to one
+      (rx-to-string (append (list 'or)
+                            (mapcar (lambda (rx) `(regexp ,rx))
+                                    ido-ignore-buffers)))
+    ;; return a regex which matches nothing, and therefore should ignore nothing
+    "$^"))
+
 (defmacro persp-current-buffers ()
   "Return a list of all buffers in the current perspective."
   `(persp-buffers (persp-curr)))
+
+(defun persp-current-buffer-names ()
+  "Return a list of names of all living buffers in the current perspective."
+  (let ((ignore-rx (persp--make-ignore-buffer-rx)))
+    (cl-loop for buf in (persp-current-buffers)
+             if (and (buffer-live-p buf)
+                     (not (string-match-p ignore-rx (buffer-name buf))))
+             collect (buffer-name buf))))
 
 (defun persp-is-current-buffer (buf)
   "Return T if BUF is in the current perspective."
@@ -732,7 +750,8 @@ Prefers perspectives in the selected frame."
   "Disassociate BUFFER with the current perspective.
 
 See also `persp-switch' and `persp-add-buffer'."
-  (interactive "bRemove buffer from perspective: \n")
+  (interactive
+   (list (funcall persp-interactive-completion-function "Remove buffer from perspective: " (persp-current-buffer-names))))
   (setq buffer (when buffer (get-buffer buffer)))
   (cond ((not (buffer-live-p buffer)))
         ;; Only kill the buffer if no other perspectives are using it
@@ -1092,6 +1111,56 @@ perspective beginning with the given letter."
       ;; `other-buffer'.
       (get-buffer-create (persp-scratch-buffer)))))
 
+;; Buffer switching integration: useful for frameworks which enhance the
+;; built-in completing-read (e.g., Selectrum).
+;;;###autoload
+(defun persp-switch-to-buffer* (buffer-or-name)
+  "Like `switch-to-buffer', restricted to the current perspective.
+This respects ido-ignore-buffers, since we automatically add
+buffer filtering to ido-mode already (see use of
+PERSP-SET-IDO-BUFFERS)."
+  (interactive
+   (list
+    (if (or current-prefix-arg (not persp-mode))
+        (let ((read-buffer-function nil))
+          (read-buffer-to-switch "Switch to buffer"))
+      (let* ((candidates (persp-current-buffer-names))
+             (other (buffer-name (persp-other-buffer))))
+        ;; NB: This intentionally calls completing-read instead of
+        ;; persp-interactive-completion-function, since it is expected to have
+        ;; been replaced by a completion framework.
+        (completing-read (format "Switch to buffer%s: "
+                                 (if other
+                                     (format " (default %s)" other)
+                                   ""))
+                         candidates
+                         nil nil nil nil
+                         (buffer-name (persp-other-buffer)))))))
+  (let ((buffer (window-normalize-buffer-to-switch-to buffer-or-name)))
+    (switch-to-buffer buffer)))
+
+;; Buffer killing integration: useful for frameworks which enhance the
+;; built-in completing-read (e.g., Selectrum).
+;;;###autoload
+(defun persp-kill-buffer* (buffer-or-name)
+  "Like `kill-buffer', restricted to the current perspective.
+This respects ido-ignore-buffers, since we automatically add
+buffer filtering to ido-mode already (see use of
+PERSP-SET-IDO-BUFFERS)."
+  (interactive
+   (list
+    (if (or current-prefix-arg (not persp-mode))
+        (let ((read-buffer-function nil))
+          (read-buffer "Kill buffer: " (current-buffer)))
+      ;; NB: This intentionally calls completing-read instead of
+      ;; persp-interactive-completion-function, since it is expected to have
+      ;; been replaced by a completion framework.
+      (completing-read (format "Kill buffer (default %s): " (buffer-name (current-buffer)))
+                       (persp-current-buffer-names)
+                       nil nil nil nil
+                       (buffer-name (current-buffer))))))
+  (kill-buffer buffer-or-name))
+
 ;; Buffer switching integration: bs.el.
 ;;;###autoload
 (defun persp-bs-show (arg)
@@ -1103,14 +1172,9 @@ PERSP-SET-IDO-BUFFERS)."
   (interactive "P")
   (unless (featurep 'bs)
     (user-error "bs not loaded"))
-  (defvar ido-ignore-buffers)
   (defvar bs-configurations)
   (declare-function bs--show-with-configuration "bs.el")
-  (let* ((ignore-rx (when ido-ignore-buffers
-                      ;; convert a list of regexps to one
-                      (rx-to-string (append (list 'or)
-                                            (mapcar (lambda (rx) `(regexp ,rx))
-                                                    ido-ignore-buffers)))))
+  (let* ((ignore-rx (persp--make-ignore-buffer-rx))
          (bs-configurations (append bs-configurations
                                     (list `("perspective" nil nil
                                             ,ignore-rx persp-buffer-filter nil))

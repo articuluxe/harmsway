@@ -97,6 +97,11 @@
   :group 'diff-hl
   :type 'boolean)
 
+(defcustom diff-hl-ask-before-revert-hunk t
+  "Non-nil to ask for confirmation before revert a hunk."
+  :group 'diff-hl
+  :type 'boolean)
+
 (defcustom diff-hl-highlight-function 'diff-hl-highlight-on-fringe
   "Function to highlight the current line. Its arguments are
   overlay, change type and position within a hunk."
@@ -151,6 +156,7 @@ the end position as its only argument."
                  spacing)))
          (w (min (frame-parameter nil (intern (format "%s-fringe" diff-hl-side)))
                  16))
+         (_ (when (zerop w) (setq w 16)))
          (middle (make-vector h (expt 2 (1- w))))
          (ones (1- (expt 2 w)))
          (top (copy-sequence middle))
@@ -457,9 +463,10 @@ in the source file, or the last line of the hunk above it."
                     (recenter 1)))
                 (when diff-auto-refine-mode
                   (diff-refine-hunk))
-                (unless (yes-or-no-p (format "Revert current hunk in %s? "
-                                             ,(cl-caadr fileset)))
-                  (user-error "Revert canceled"))
+                (if diff-hl-ask-before-revert-hunk
+                    (unless (yes-or-no-p (format "Revert current hunk in %s? "
+                                                 ,(cl-caadr fileset)))
+                      (user-error "Revert canceled")))
                 (let ((diff-advance-after-apply-hunk nil))
                   (save-window-excursion
                     (diff-apply-hunk t)))
@@ -574,12 +581,22 @@ The value of this variable is a mode line template as in
 (declare-function magit-toplevel "magit-git")
 (declare-function magit-unstaged-files "magit-git")
 
+(defvar diff-hl--magit-unstaged-files nil)
+
+(defun diff-hl-magit-pre-refresh ()
+  (setq diff-hl--magit-unstaged-files (magit-unstaged-files t)))
+
 (defun diff-hl-magit-post-refresh ()
   (let* ((topdir (magit-toplevel))
          (modified-files
           (mapcar (lambda (file) (expand-file-name file topdir))
-                  (magit-unstaged-files t)))
+                  (delete-consecutive-dups
+                   (sort
+                    (nconc (magit-unstaged-files t)
+                           diff-hl--magit-unstaged-files)
+                    #'string<))))
          (unmodified-states '(up-to-date ignored unregistered)))
+    (setq diff-hl--magit-unstaged-files nil)
     (dolist (buf (buffer-list))
       (when (and (buffer-local-value 'diff-hl-mode buf)
                  (not (buffer-modified-p buf))

@@ -127,7 +127,8 @@
 (defcustom org-reveal-root "./reveal.js"
   "The root directory of reveal.js packages. It is the directory
   within which js/reveal.js is."
-  :group 'org-export-reveal)
+  :group 'org-export-reveal
+  :type 'string)
 
 (defcustom org-reveal-hlevel 1
   "The minimum level of headings that should be grouped into
@@ -384,6 +385,13 @@ exporter."
           (format "<aside class=\"notes\">\n%s\n</aside>\n" contents))
       (org-html-special-block special-block contents info))))
 
+(defun org-reveal-is-background-img (info)
+  "Check if a background string is an image format or not."
+  (and info
+       (string-match-p
+	"\\(\\(^\\(http\\|https\\|file\\)://\\)\\|\\(\\\.\\(svg\\|png\\|jpg\\|jpeg\\|gif\\|bmp\\)\\([?#\\\s]\\|$\\)\\)\\)"
+	info)))
+
 (defun org-reveal-slide-section-tag (headline info for-split)
   "Generate the <section> tag for a slide."
   (let* ((preferred-id (or (org-element-property :CUSTOM_ID headline)
@@ -393,30 +401,65 @@ exporter."
          (default-slide-background-position (plist-get info :reveal-default-slide-background-position))
          (default-slide-background-repeat (plist-get info :reveal-default-slide-background-repeat))
          (default-slide-background-transition (plist-get info :reveal-default-slide-background-transition))
-)
-    (format "<section %s%s>\n"
-            (org-html--make-attribute-string
-             `(:id ,(concat org-reveal-slide-id-head
-			    preferred-id
-			    (if for-split "-split" ""))
-                   :class ,(org-element-property :HTML_CONTAINER_CLASS headline)
-                   :data-transition ,(org-element-property :REVEAL_DATA_TRANSITION headline)
-                   :data-state ,(org-element-property :REVEAL_DATA_STATE headline)
-                   :data-background ,(or (org-element-property :REVEAL_BACKGROUND headline)
-					 default-slide-background)
-                   :data-background-size ,(or (org-element-property :REVEAL_BACKGROUND_SIZE headline)
-                                              default-slide-background-size)
-                   :data-background-position ,(or (org-element-property :REVEAL_BACKGROUND_POSITION headline)
-                                                  default-slide-background-position)
-                   :data-background-repeat ,(or (org-element-property :REVEAL_BACKGROUND_REPEAT headline)
-						default-slide-background-repeat)
-                   :data-background-transition ,(or (org-element-property :REVEAL_BACKGROUND_TRANS headline)
-                                                    default-slide-background-transition)
-		   :data-background-opacity
-		   ,(or (org-element-property :REVEAL_BACKGROUND_OPACITY headline)
-			(plist-get info :reveal-default-slide-background-opacity))))
-            (let ((extra-attrs (org-element-property :REVEAL_EXTRA_ATTR headline)))
-              (if-format " %s" extra-attrs)))))
+	 (slide-background-iframe (org-element-property :REVEAL_BACKGROUND_IFRAME headline))
+	 )
+    (if slide-background-iframe
+	;; for iframe, we will wrap the slide in a new div
+	;; all the background configuration of the original slide will be used for this new div
+	(format "<section %s data-background-interactive>\n<div %s>\n"
+		(org-html--make-attribute-string
+		 `(:id ,(concat org-reveal-slide-id-head
+				preferred-id
+				(if for-split "-split" ""))
+		       :class ,(org-element-property :HTML_CONTAINER_CLASS headline)
+		       :data-transition ,(org-element-property :REVEAL_DATA_TRANSITION headline)
+		       :data-state ,(org-element-property :REVEAL_DATA_STATE headline)
+		       :data-background-iframe ,slide-background-iframe))
+		(concat
+		 "style=\""
+		 (let ((attr (or (org-element-property :REVEAL_BACKGROUND headline)
+				 default-slide-background)))
+		   (if (org-reveal-is-background-img attr)
+		       (format "background-image: url('%s'); " attr)
+		     (if-format "background: %s; " attr)))
+		 (let ((attr (or (org-element-property :REVEAL_BACKGROUND_REPEAT headline)
+				 default-slide-background-repeat)))
+		   (if-format "background-repeat: %s; " attr))
+		 (let ((attr (or (org-element-property :REVEAL_BACKGROUND_SIZE headline)
+				 default-slide-background)))
+		   (if-format "background-size: %s; " attr))
+		 (let ((attr (or (org-element-property :REVEAL_BACKGROUND_POSITION headline)
+				 default-slide-background)))
+		   (if-format "position: %s; " attr))
+		 (let ((attr (or (org-element-property :REVEAL_BACKGROUND_OPACITY headline)
+				 default-slide-background)))
+		   (if-format "opacity: %s; " attr))
+		 (let ((extra-attrs (org-element-property :REVEAL_EXTRA_ATTR headline)))
+		   (if-format "%s;" extra-attrs))
+		 "\""))
+      (format "<section %s%s>\n"
+	      (org-html--make-attribute-string
+	       `(:id ,(concat org-reveal-slide-id-head
+			      preferred-id
+			      (if for-split "-split" ""))
+		     :class ,(org-element-property :HTML_CONTAINER_CLASS headline)
+		     :data-transition ,(org-element-property :REVEAL_DATA_TRANSITION headline)
+		     :data-state ,(org-element-property :REVEAL_DATA_STATE headline)
+		     :data-background ,(or (org-element-property :REVEAL_BACKGROUND headline)
+					   default-slide-background)
+		     :data-background-size ,(or (org-element-property :REVEAL_BACKGROUND_SIZE headline)
+						default-slide-background-size)
+		     :data-background-position ,(or (org-element-property :REVEAL_BACKGROUND_POSITION headline)
+						    default-slide-background-position)
+		     :data-background-repeat ,(or (org-element-property :REVEAL_BACKGROUND_REPEAT headline)
+						  default-slide-background-repeat)
+		     :data-background-transition ,(or (org-element-property :REVEAL_BACKGROUND_TRANS headline)
+						      default-slide-background-transition)
+		     :data-background-opacity
+		     ,(or (org-element-property :REVEAL_BACKGROUND_OPACITY headline)
+			  (plist-get info :reveal-default-slide-background-opacity))))
+	      (let ((extra-attrs (org-element-property :REVEAL_EXTRA_ATTR headline)))
+		(if-format " %s" extra-attrs))))))
 
 ;; Copied from org-html-headline and modified to embed org-reveal
 ;; specific attributes.
@@ -482,7 +525,11 @@ holding contextual information."
              (concat
               ;; Slide footer if any
               footer-div
-              "</section>\n</section>\n")))))))
+	      (if (org-element-property :REVEAL_BACKGROUND_IFRAME headline)
+		  "</div>")
+              "</section>\n</section>\n")
+	   (if (org-element-property :REVEAL_BACKGROUND_IFRAME headline)
+		  "</div>")))))))
 
 (defgroup org-export-reveal nil
   "Options for exporting Orgmode files to reveal.js HTML pressentations."
@@ -1007,11 +1054,10 @@ contextual information."
                                ((string= lang "scheme") "selector_eval_scheme")
                                ((string= lang "ruby") "selector_eval_ruby")
                                ((string= lang "html") "selector_eval_html"))
-                         )
-)
+                         ))
       (if (not lang)
-          (format "<pre %s%s%s>\n%s</pre>"
-                  (or (frag-class src-block info) " class=\"example\""))
+          (format "<pre %s%s>\n%s</pre>"
+                  (or (frag-class src-block info) " class=\"example\"")
                   label
                   code)
         (if klipsify
@@ -1040,18 +1086,18 @@ window.klipse_settings = { " langselector  ": \".klipse\" };
 '>
 </iframe>")
           (format
-            "<div class=\"org-src-container\">\n%s%s\n</div>"
-            (if (not caption) ""
-              (format "<label class=\"org-src-name\">%s</label>"
-                      (org-export-data caption info)))
-            (if use-highlight
-                (format "\n<pre%s%s><code class=\"%s\" %s>%s</code></pre>"
-                        (or (frag-class src-block info) "")
-                        label lang code-attribs code)
-              (format "\n<pre %s%s><code trim>%s</code></pre>"
-                      (or (frag-class src-block info)
-                          (format " class=\"src src-%s\"" lang))
-                      label code)))))))
+	   "<div class=\"org-src-container\">\n%s%s\n</div>"
+	   (if (not caption) ""
+	     (format "<label class=\"org-src-name\">%s</label>"
+		     (org-export-data caption info)))
+	   (if use-highlight
+	       (format "\n<pre%s%s><code class=\"%s\" %s>%s</code></pre>"
+		       (or (frag-class src-block info) "")
+		       label lang code-attribs code)
+	     (format "\n<pre %s%s><code trim>%s</code></pre>"
+		     (or (frag-class src-block info)
+			 (format " class=\"src src-%s\"" lang))
+		     label code))))))))
 
 (defun org-reveal-quote-block (quote-block contents info)
   "Transcode a QUOTE-BLOCK element from Org to Reveal.
@@ -1278,11 +1324,13 @@ transformed fragment attribute to ELEM's attr_html plist."
   (interactive)
   (let* ((extension (concat "." org-html-extension))
          (file (org-export-output-file-name extension subtreep))
-         (clientfile (org-export-output-file-name (concat "_client" extension) subtreep)))
+         (clientfile (org-export-output-file-name (concat "_client" extension) subtreep))
+         (retfile))
     ; export filename_client HTML file if multiplexing
     (setq client-multiplex nil)
-    (setq retfile (org-export-to-file 'reveal file
-                    async subtreep visible-only body-only ext-plist))
+    (let ((org-export-exclude-tags (cons "noexport_reveal" org-export-exclude-tags)))
+      (setq retfile (org-export-to-file 'reveal file
+		      async subtreep visible-only body-only ext-plist)))
 
     ; export the client HTML file if client-multiplex is set true
     ; by previous call to org-export-to-file
@@ -1304,7 +1352,6 @@ transformed fragment attribute to ELEM's attr_html plist."
   (org-narrow-to-subtree)
   (let ((ret (org-reveal-export-to-html async subtreep visible-only body-only (plist-put ext-plist :reveal-subtree t))))
     (widen)
-    (message "Obsoleting soon. Use the \"Export scope\" switch instead to utilize parent heading properties.")
     ret))
 
 ;; Generate a heading of ToC for current buffer and write to current
