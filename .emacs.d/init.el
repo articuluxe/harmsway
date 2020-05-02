@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-05-01 09:55:32 dharms>
+;; Modified Time-stamp: <2020-05-02 09:48:54 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1665,10 +1665,23 @@ Only one letter is shown, the first that applies."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; avy ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package avy
   :bind (("\e\ec" . avy-goto-char)
-         ("\e\ev" . avy-goto-char-2)
          ("\e\et" . avy-goto-char-timer)
-         ("\e\ew" . avy-goto-word-1)
-         ("\e\el" . avy-goto-line)
+         ("\e\evv" . avy-goto-char-2)
+         ("\e\ev <up>" . avy-goto-char-2-above)
+         ("\e\ev <down>" . avy-goto-char-2-below)
+         ("\e\eww" . avy-goto-word-1)
+         ("\e\ew <up>" . avy-goto-word-1-above)
+         ("\e\ew <down>" . avy-goto-word-1-below)
+         ("\e\ell" . avy-goto-line)
+         ("\e\el <up>" . avy-goto-line-above)
+         ("\e\el <down>" . avy-goto-line-below)
+         ("\e\ele" . avy-goto-end-of-line)
+         ("\e\elc" . avy-copy-line)
+         ("\e\elw" . avy-move-line)
+         ("\e\elk" . avy-kill-whole-line)
+         ("\e\erc" . avy-copy-region)
+         ("\e\erw" . avy-move-region)
+         ("\e\erk" . avy-kill-region)
          )
   :config
   (global-set-key "\e\eia" 'avy-resume))
