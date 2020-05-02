@@ -3,7 +3,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2020-04-21 19:16:18 dharms>
+;; Modified Time-stamp: <2020-05-02 09:44:18 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -60,7 +60,7 @@
                             "Droid Sans Mono 12"
                             "Ricty Diminished 14"
                             "TerminessTTF Nerd Font Mono 16"
-                            "QuickType Mono 12"
+                            "QuickType Mono 14"
                             "BPmono 12"
                             "PT Mono 14"
                             "Jetbrains Mono 14"
