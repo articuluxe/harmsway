@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-05-02 09:48:54 dharms>
+;; Modified Time-stamp: <2020-05-04 09:59:34 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3516,20 +3516,40 @@ This function's result only has value if it is preceded by any font changes."
           projects)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; site ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defun my/load-site-file (name)
-  "Load a site file associated with site NAME.
-This may perform related customization."
-  (let* ((site-dir
-          (file-name-as-directory
-           (concat my/user-directory "settings/site/" name)))
-         (site-file (concat site-dir name)))
-    (when (file-exists-p site-file)
-      ;; (setq site-name (file-name-base site-file))
-      (load site-file))
-    (setq yas-snippet-dirs (cons (concat site-dir "snippets/")
-                                 yas-snippet-dirs))
-    (when (fboundp 'yas-reload-all) (yas-reload-all))
-    ))
+(defun harmsway-load-site-file-menu ()
+  "Load a site file selected by the user."
+  (interactive)
+  (let ((sites (mapcar (lambda (dir)
+                          (cons (file-name-nondirectory dir)
+                                dir))
+                        (directory-files
+                         (concat my/user-directory "settings/site/")
+                         t directory-files-no-dot-files-regexp)))
+        site)
+    (when (setq site (completing-read "Site: " sites))
+      (harmsway-load-site-file site))))
+
+(defun harmsway-load-site-file (site)
+  "Load site file corresponding to SITE."
+  (harmsway-load-site-file-at
+   (file-name-as-directory
+    (concat my/user-directory "settings/site/"
+            site))))
+
+(defun harmsway-load-site-file-at (site-dir)
+  "Load site file contained in SITE-DIR."
+  (let ((file (concat site-dir
+                      (file-name-nondirectory
+                       (directory-file-name site-dir))))
+        snippet-dir)
+    (when (file-exists-p file)
+      (load file t)
+      (when (file-exists-p
+             (setq snippet-dir (concat site-dir "snippets/")))
+        (setq yas-snippet-dirs
+              (cons snippet-dir yas-snippet-dirs))
+        (when (fboundp 'yas-reload-all)
+          (yas-reload-all))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; host ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (let* ((this-host (harmsway-unqualify-host-name (system-name)))
@@ -3568,7 +3588,7 @@ This may perform related customization."
     (dolist (plist remotehost-connect-hosts)
       (and (string= (plist-get plist :host) this-host)
            (plist-get plist :site)
-           (my/load-site-file (plist-get plist :site)))))
+           (harmsway-load-site-file (plist-get plist :site)))))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; modes ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

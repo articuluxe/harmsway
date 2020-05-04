@@ -3,7 +3,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2020-05-02 09:44:18 dharms>
+;; Modified Time-stamp: <2020-05-04 09:28:47 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -117,7 +117,7 @@
 (add-to-list 'default-frame-alist
              '(width . 80))
 
-(my/load-site-file "talbot")
+(harmsway-load-site-file "talbot")
 
 (setq split-height-threshold 82)
 

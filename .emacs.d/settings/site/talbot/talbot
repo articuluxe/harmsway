@@ -3,7 +3,7 @@
 ;; Copyright (C) 2015-2017, 2019-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-04-13 09:51:31 dharms>
+;; Modified Time-stamp: <2020-05-03 09:11:56 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -26,8 +26,7 @@
 
 ;;; Code:
 
-(setq deft-directory "~/Dropbox/notes")
-
+;; init site
 (with-eval-after-load 'org
   (add-to-list 'org-agenda-files "~/Dropbox"))
 
@@ -45,21 +44,19 @@
                   )) t)
    ) t)
 
-(setq c-default-style '((java-mode . "java") (awk-mode . "awk") (other . "talbot")))
-
-(add-hook
- 'c-mode-common-hook
- (lambda ()
+(defun harmsway-c-mode-common-fn-talbot ()
+  "Function on `c-mode-common-hook'."
    ;; talbot-specific customization
-   ) t)
+  )
 
-(let ((base (proviso-compute-projectdef-dir))
-      (projects '("harmsway.projectdef")))
-  (mapc (lambda (proj)
-          (let ((file (concat base proj)))
-            (if (file-exists-p file)
-                (load file t)
-              (message "Could not load %s" file))))
-        projects))
+(harmsway-load-projectdefs '("harmsway.projectdef"))
+
+
+;; activate site
+(setq deft-directory "~/Dropbox/notes")
+(setq c-default-style '((java-mode . "java") (awk-mode . "awk") (other . "talbot")))
+(add-hook
+ 'c-mode-common-hook #'harmsway-c-mode-common-fn-talbot t)
+
 
 ;; talbot ends here
