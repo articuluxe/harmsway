@@ -12,6 +12,7 @@ alias emacs="\$EDITOR"
 # ssh keys
 eval $(keychain -q --eval rubicon.ssh.rsa)
 eval $(keychain -q --eval rubicon.ssh.ed25519)
+eval $(keychain -q --eval xr.ssh.rsa)
 
 use_clang()
 {

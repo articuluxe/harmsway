@@ -12,6 +12,7 @@ alias emacs="\$EDITOR"
 # ssh keys
 eval $(keychain -q --eval --inhert any cathode.ssh.rsa)
 eval $(keychain -q --eval --inhert any cathode.ssh.ed25519)
+eval $(keychain -q --eval xr.ssh.rsa)
 
 use_clang()
 {
