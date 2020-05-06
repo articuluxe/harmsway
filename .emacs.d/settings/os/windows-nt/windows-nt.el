@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2020-05-06 02:19:04 dharms>
+;; Modified Time-stamp: <2020-05-06 02:25:19 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -30,6 +30,14 @@
   (require 'use-package))
 
 (setq w32-use-visible-system-caret nil)
+
+;; keys
+(setq w32-pass-lwindow-to-system nil)
+(setq w32-lwindow-modifier 'super)
+(setq w32-pass-rwindow-to-system nil)
+(setq w32-rwindow-modifier 'super)
+(setq w32-pass-apps-to-system nil)
+(setq w32-apps-modifier 'hyper)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Process Viewer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package proced :bind ("C-c 0p" . proced))
