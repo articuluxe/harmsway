@@ -1,8 +1,8 @@
 ;; windows-nt.el --- windows os settings file
-;; Copyright (C) 2015-2019  Dan Harms (dharms)
+;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2019-07-19 13:07:23 dan.harms>
+;; Modified Time-stamp: <2020-05-06 02:19:04 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -29,13 +29,7 @@
   (setq use-package-verbose t)
   (require 'use-package))
 
-;; keys
-(setq w32-pass-lwindow-to-system nil)
-(setq w32-lwindow-modifier 'super)
-(setq w32-pass-rwindow-to-system nil)
-(setq w32-rwindow-modifier 'super)
-(setq w32-pass-apps-to-system nil)
-(setq w32-apps-modifier 'hyper)
+(setq w32-use-visible-system-caret nil)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Process Viewer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package proced :bind ("C-c 0p" . proced))
