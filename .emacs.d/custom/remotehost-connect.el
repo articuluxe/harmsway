@@ -2,7 +2,7 @@
 ;; Copyright (C) 2016-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Monday, April 18, 2016
-;; Modified Time-stamp: <2020-05-02 09:08:32 dharms>
+;; Modified Time-stamp: <2020-05-07 07:33:07 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: tools remote hosts
 
@@ -85,13 +85,17 @@ followed by an optional description, separated by whitespace."
   (interactive "FFile: ")
   (let ((lines (read-file-into-lines file 'trim))
         (lst '())
-        host desc elts)
+        host desc elts user)
     (dolist (line (seq-remove 'string-empty-p lines))
       (setq elts (split-string line))
       (setq host (car elts))
       (setq desc (string-join (cdr elts) " "))
       (unless (char-equal ?# (string-to-char host))
-        (push `(:host ,host :description ,desc) lst)))
+        (if (string-equal host ":user")
+            (setq user (car (cdr elts)))
+          (if user
+              (push `(:host ,host :user ,user :description ,desc) lst)
+            (push `(:host ,host :description ,desc) lst)))))
     lst))
 
 (defun remotehost-connect--gather-hosts (method user dir
@@ -107,12 +111,17 @@ A plist is returned that describes the result."
                 (when (setq host (plist-get plist :host))
                   (cons (format "%-18s %s" host
                                 (plist-get plist :description))
-                        (list :method method
-                              :user user
-                              :host host
-                              :dir dir
-                              :hops hops
-                              ))))
+                        (list
+                         :method
+                         (plist-get plist :method)
+                         :user
+                         (plist-get plist :user)
+                         :host
+                         (plist-get plist :host)
+                         :dir
+                         (plist-get plist :dir)
+                         :hops hops
+                         ))))
               remotehost-connect-hosts)
       (lambda (left right) (string-lessp (car left) (car right))))
      :test (lambda (x y) (equal (car x) (car y))))))
@@ -127,14 +136,18 @@ Optional argument ARG allows overriding the default values for
          (user tramp-default-user)
          (dir "~")
          (numhops 1)
-         hosts hop hops)
+         hosts hop hops
+         override-method override-user override-dir)
     (when arg
       (when (>= (prefix-numeric-value arg) 16)
-        (setq method (read-string "Method: " method)))
+        (setq method (read-string "Method: " method))
+        (setq override-method t))
       (when (>= (prefix-numeric-value arg) 4)
-        (setq user (read-string "User: " user)))
+        (setq user (read-string "User: " user))
+        (setq override-user t))
       (when (>= (prefix-numeric-value arg) 16)
-        (setq dir (read-string "Directory: " dir)))
+        (setq dir (read-string "Directory: " dir))
+        (setq override-dir t))
       (when (>= (prefix-numeric-value arg) 64)
         (setq hop (read-string
                    (format "Add hop #%d: " numhops)
@@ -151,9 +164,16 @@ Optional argument ARG allows overriding the default values for
               :action (lambda (x)
                         (if (consp x)
                             (remotehost-connect--find-file
-                             (cdr x) method user dir)
+                             (cdr x)
+                             (if override-method method nil)
+                             (if override-user user nil)
+                             (if override-dir dir nil))
                           (remotehost-connect--find-file
-                           x method user dir)))
+                           x
+                           (if override-method method nil)
+                           (if override-user user nil)
+                           (if override-dir dir nil)
+                           )))
               :caller 'remotehost-connect
               )))
 
