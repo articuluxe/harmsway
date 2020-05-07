@@ -10,4 +10,4 @@
 *** http://planet.emacsen.org/atom.xml
 *** http://hullprogram.com/feed/
 *** http://pragmaticemacs.com/feed/
-*** [[http://emacs.stackexchange.com/feeds][SX]]
+*** [[http://emacs.stackexchange.com/feeds][ESX]]
