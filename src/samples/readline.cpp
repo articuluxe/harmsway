@@ -1,10 +1,10 @@
 // -*- Mode: c++ -*-
 // readline.cpp --- Integrate readline
-// Copyright (C) 2019  Dan Harms (dharms)
+// Copyright (C) 2019-2020  Dan Harms (dharms)
 // Author: Dan Harms <enniomore@icloud.com>
 // Created: Friday, October 11, 2019
 // Version: 1.0
-// Modified Time-stamp: <2019-10-11 22:55:47 dharms>
+// Modified Time-stamp: <2020-05-07 06:48:32 dharms>
 // Modified by: Dan Harms
 // Keywords: readline development
 
@@ -25,15 +25,21 @@
 
 // Code:
 
+#include <cstring>
 #include <readline/readline.h>
 #include <iostream>
 
 /* compile: g++ -o readline.cpp -lreadline */
 int main(int argc, char* argv[])
 {
-   char* line = readline("prompt> ");
-   std::cout << "You entered \"" << line << "\"" << std::endl;
-   free(line);
+   bool running = true;
+   while (running)
+   {
+      char* line = readline("prompt> ");
+      std::cout << "You entered \"" << line << "\"" << std::endl;
+      running = strcmp(line, "quit") != 0;
+      free(line);
+   }
    return 0;
 }
 
