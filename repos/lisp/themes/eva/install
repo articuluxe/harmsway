@@ -1,0 +1,1 @@
+cp src/emacs/build/*.el ../../../../.emacs.d/etc/themes
