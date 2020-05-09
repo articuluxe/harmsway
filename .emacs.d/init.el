@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-05-04 09:59:34 dharms>
+;; Modified Time-stamp: <2020-05-08 13:35:24 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -218,20 +218,21 @@ Cf.  `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (global-unset-key (kbd "<f1>"))
 (global-unset-key (kbd "C-\\"))
 ;; add shortcut for terminals where C-S-DEL doesn't work
-(global-set-key (kbd "M-' DEL") 'kill-whole-line)
-(global-set-key (kbd "C-x M-;") 'comment-line)
-(global-set-key (kbd "C-x M-p") 'transpose-paragraphs)
-(global-set-key (kbd "ESC M-SPC") 'move-to-window-line-top-bottom)
-(global-set-key [(next)] 'scroll-up-line)
-(global-set-key [(prior)] 'scroll-down-line)
-(global-set-key [f5] 'toggle-truncate-lines)
-(global-set-key "\e\e5" 'toggle-truncate-lines)
-(global-set-key "\C-c " 'whitespace-mode)
-(global-set-key "\C-c0fb" 'font-lock-fontify-buffer)
-(global-set-key "\M-sf" 'ff-find-other-file)
-(global-set-key (kbd "M-#") 'sort-lines)
-(global-set-key (kbd "C-#") 'sort-paragraphs)
-(global-set-key "\C-xw" 'write-region)
+(global-set-key (kbd "M-' DEL") #'kill-whole-line)
+(global-set-key (kbd "M-' %") #'query-replace-regexp)
+(global-set-key (kbd "C-x M-;") #'comment-line)
+(global-set-key (kbd "C-x M-p") #'transpose-paragraphs)
+(global-set-key (kbd "ESC M-SPC") #'move-to-window-line-top-bottom)
+(global-set-key [(next)] #'scroll-up-line)
+(global-set-key [(prior)] #'scroll-down-line)
+(global-set-key [f5] #'toggle-truncate-lines)
+(global-set-key "\e\e5" #'toggle-truncate-lines)
+(global-set-key "\C-c " #'whitespace-mode)
+(global-set-key "\C-c0fb" #'font-lock-fontify-buffer)
+(global-set-key "\M-sf" #'ff-find-other-file)
+(global-set-key (kbd "M-#") #'sort-lines)
+(global-set-key (kbd "C-#") #'sort-paragraphs)
+(global-set-key "\C-xw" #'write-region)
 
 ;; This horrible hack gets around a "reference to free variable" warning,
 ;; I believe due to a defadvice referring to `filename' in the original
@@ -975,7 +976,8 @@ From `manuel-oberti.github.io' on 20190806."
 
          ("C-\\ :" . mc/mark-all-in-region)
          ("C-\\ M-;" . mc/mark-all-in-region-regexp)
-         ("C-\\ |" . mc/vertical-align-with-space)
+         ("C-\\ |" . mc/vertical-align)
+         ("C-\\ C-\\ |" . mc/vertical-align-with-space)
 
          ("C-S-h ;" . mc/mark-all-like-this-in-defun)
          ("C-\\ h;" . mc/mark-all-like-this-in-defun)
@@ -1585,19 +1587,23 @@ Only one letter is shown, the first that applies."
   :bind ("\e\e." . source-peek))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; plur ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package
-  plur
+(use-package plur
   :if (not (version< emacs-version "24.4"))
-  :bind (("C-c 0gs" . plur-isearch-forward)
-         ("C-c 0gp" . plur-replace)
-         ("C-c 0g%" . plur-query-replace)
+  :bind (("C-S-p" . plur-isearch-forward)
+         ("C-S-q" . plur-replace)
+         ("C-%" . plur-query-replace)
+         ;; terminal-friendly bindings
+         ("C-\\ p" . plur-isearch-forward)
+         ("C-\\ q" . plur-replace)
+         ("C-\\ %" . plur-query-replace)
          :map isearch-mode-map
          ("C-p" . plur-isearch-forward)
          ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; string-inflection ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package string-inflection
-  :bind ("C--" . string-inflection-all-cycle)
+  :bind (("C--" . string-inflection-all-cycle)
+         ("M-' -" . string-inflection-all-cycle))
   :init
   (setq string-inflection-skip-backward-when-done t))
 
