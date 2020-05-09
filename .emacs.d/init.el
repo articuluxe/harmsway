@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-05-08 13:35:24 dharms>
+;; Modified Time-stamp: <2020-05-09 17:19:45 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1538,12 +1538,20 @@ Only one letter is shown, the first that applies."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; isearch ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq isearch-allow-scroll t)
 ;; allow stopping isearch at opposite end
-(defun my/isearch-exit-other-end ()
+
+(defun harmsway-isearch-exit-other-end ()
   "Exit isearch, at the opposite end of the string."
   (interactive)
   (isearch-exit)
   (goto-char isearch-other-end))
-(define-key isearch-mode-map [(meta return)] #'my/isearch-exit-other-end)
+(define-key isearch-mode-map [(meta return)] #'harmsway-isearch-exit-other-end)
+
+(defun harmsway-isearch-done-mark ()
+  "End search and mark result."
+  (interactive)
+  (isearch-done)
+  (push-mark isearch-other-end 'nomsg 'activate))
+(define-key isearch-mode-map "\M-m" #'harmsway-isearch-done-mark)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dumb-jump ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package dumb-jump
@@ -1706,6 +1714,7 @@ Only one letter is shown, the first that applies."
   (setq ivy-wrap t)
   (setq ivy-use-selectable-prompt t)
   (setq ivy-use-virtual-buffers t)
+  (setq ivy-dynamic-exhibit-delay-ms 20)
   :config
   (ivy-add-actions #'counsel-find-file '(("v" vlf "view large file")))
   (global-set-key "\e\eii" 'ivy-resume)
@@ -1778,6 +1787,7 @@ Only one letter is shown, the first that applies."
   :commands (counsel-M-x counsel-find-file)
   :demand t
   :init
+  (setq counsel-async-filter-update-time 500000)
   (when (eq system-type 'darwin)
     (setq counsel-locate-cmd 'counsel-locate-cmd-mdfind))
   :config
