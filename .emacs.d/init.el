@@ -2,8 +2,8 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-05-09 17:19:45 dharms>
-;; Modified by: Dan Harms
+;; Modified Time-stamp: <2020-05-10 18:43:43 Dan.Harms>
+;; Modified by: Dan.Harms
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -1931,6 +1931,12 @@ Only one letter is shown, the first that applies."
   :after all-the-icons
   :config
   (all-the-icons-ivy-rich-mode 1))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; trashed ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package trashed
+  :bind ("C-c 0 DEL" . trashed)
+  :init
+  (setq trashed-action-confirmer 'y-or-n-p))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; moody ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package moody
