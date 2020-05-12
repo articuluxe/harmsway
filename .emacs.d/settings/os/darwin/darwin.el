@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2020-04-12 17:22:33 dharms>
+;; Modified Time-stamp: <2020-05-12 09:11:46 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -31,6 +31,8 @@
 
 (when (executable-find "gls")
   (setq insert-directory-program "gls"))
+
+(setq mac-system-move-file-to-trash-use-finder t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Process Viewer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package vkill :bind ("C-c 0p" . vkill))
