@@ -2,8 +2,8 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-05-10 18:43:43 Dan.Harms>
-;; Modified by: Dan.Harms
+;; Modified Time-stamp: <2020-05-12 08:47:26 dharms>
+;; Modified by: Dan Harms
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -1442,9 +1442,10 @@ Only one letter is shown, the first that applies."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; savehist ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package savehist
   :config
-  (setq savehist-additional-variables
-        '(search-ring regexp-search-ring kill-ring compile-history
-                      ivy-dired-history-variable))
+  (setq savehist-additional-variables '(search-ring
+        regexp-search-ring kill-ring compile-history
+        ivy-dired-history-variable query-replace-defaults
+        query-replace-history))
   (setq savehist-file (concat my/user-directory "history"))
   (setq savehist-save-minibuffer-history t)
   (setq history-length 50)
