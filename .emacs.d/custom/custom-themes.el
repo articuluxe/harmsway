@@ -2,7 +2,7 @@
 ;; Copyright (C) 2016-2020  Dan Harms (dan.harms)
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Wednesday, December 21, 2016
-;; Modified Time-stamp: <2020-02-19 10:40:19 dan.harms>
+;; Modified Time-stamp: <2020-05-11 10:12:14 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: themes colors
 
@@ -29,6 +29,7 @@
 ;; (set-face-attribute 'default nil :slant 'italic)
 ;; kaolin customization
 (setq kaolin-italic-comments t)
+(setq solarized-use-variable-pitch nil)
 
 (defun harmsway/make-all-font-sizes-the-same-please ()
   "Make all faces use the default height."
