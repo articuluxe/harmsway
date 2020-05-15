@@ -4,7 +4,7 @@
 ;; Author: Mozilla
 ;; Url: https://github.com/rust-lang/rust-mode
 ;; Keywords: languages
-;; Package-Requires: ((emacs "24.0"))
+;; Package-Requires: ((emacs "25.1"))
 
 ;; This file is distributed under the terms of both the MIT license and the
 ;; Apache License (version 2.0).
@@ -27,13 +27,6 @@
 
 (defvar rust-buffer-project)
 (make-variable-buffer-local 'rust-buffer-project)
-
-;; for GNU Emacs < 24.3
-(eval-when-compile
-  (unless (fboundp 'setq-local)
-    (defmacro setq-local (var val)
-      "Set variable VAR to value VAL in current buffer."
-      (list 'set (list 'make-local-variable (list 'quote var)) val))))
 
 (defun rust-re-word (inner) (concat "\\<" inner "\\>"))
 (defun rust-re-grab (inner) (concat "\\(" inner "\\)"))
@@ -113,7 +106,12 @@ symbols."
     (looking-back rust-re-ident beg-of-symbol)))
 
 (defun rust-looking-back-macro ()
-  "Non-nil if looking back at an ident followed by a !"
+  "Non-nil if looking back at an ident followed by a !
+
+This is stricter than rust syntax which allows a space between
+the ident and the ! symbol. If this space is allowed, then we
+would also need a keyword check to avoid `if !(condition)` being
+seen as a macro."
   (if (> (- (point) (point-min)) 1)
       (save-excursion
         (backward-char)
@@ -267,18 +265,90 @@ to the function arguments.  When nil, `->' will be indented one level."
         ;; Rewind until the point no longer moves
         (setq continue (/= starting (point)))))))
 
-(defun rust-in-macro ()
+(defvar-local rust-macro-scopes nil
+  "Cache for the scopes calculated by `rust-macro-scope'.
+
+This variable can be `let' bound directly or indirectly around
+`rust-macro-scope' as an optimization but should not be otherwise
+set.")
+
+(defun rust-macro-scope (start end)
+  "Return the scope of macros in the buffer.
+
+The return value is a list of (START END) positions in the
+buffer.
+
+If set START and END are optimizations which limit the return
+value to scopes which are approximately with this range."
   (save-excursion
-    (when (> (rust-paren-level) 0)
-      (backward-up-list)
-      (rust-rewind-irrelevant)
-      (or (rust-looking-back-macro)
-          (and (rust-looking-back-ident)
-               (save-excursion
-                 (backward-sexp)
-                 (rust-rewind-irrelevant)
-                 (rust-looking-back-str "macro_rules!")))
-          (rust-in-macro)))))
+    ;; need to special case macro_rules which has unique syntax
+    (let ((scope nil)
+          (start (or start (point-min)))
+          (end (or end (point-max))))
+      (goto-char start)
+      ;; if there is a start move back to the previous top level,
+      ;; as any macros before that must have closed by this time.
+      (let ((top (syntax-ppss-toplevel-pos (syntax-ppss))))
+        (when top
+          (goto-char top)))
+      (while
+          (and
+           ;; The movement below may have moved us passed end, in
+           ;; which case search-forward will error
+           (< (point) end)
+           (search-forward "!" end t))
+        (let ((pt (point)))
+          (cond
+           ;; in a string or comment is boring, move straight on
+           ((rust-in-str-or-cmnt))
+           ;; in a normal macro,
+           ((and (skip-chars-forward " \t\n\r")
+                 (memq (char-after)
+                       '(?\[ ?\( ?\{))
+                 ;; Check that we have a macro declaration after.
+                 (rust-looking-back-macro))
+            (let ((start (point)))
+              (ignore-errors (forward-list))
+              (setq scope (cons (list start (point)) scope))))
+           ;; macro_rules, why, why, why did you not use macro syntax??
+           ((save-excursion
+              ;; yuck -- last test moves point, even if it fails
+              (goto-char (- pt 1))
+              (skip-chars-backward " \t\n\r")
+              (rust-looking-back-str "macro_rules"))
+            (save-excursion
+              (when (re-search-forward "[[({]" nil t)
+                (backward-char)
+                (let ((start (point)))
+                  (ignore-errors (forward-list))
+                  (setq scope (cons (list start (point)) scope)))))))))
+      ;; Return 'empty rather than nil, to indicate a buffer with no
+      ;; macros at all.
+      (or scope 'empty))))
+
+(defun rust-in-macro (&optional start end)
+  "Return non-nil when point is within the scope of a macro.
+
+If START and END are set, minimize the buffer analysis to
+approximately this location as an optimization.
+
+Alternatively, if `rust-macro-scopes' is a list use the scope
+information in this variable. This last is an optimization and
+the caller is responsible for ensuring that the data in
+`rust-macro-scopes' is up to date."
+  (when (> (rust-paren-level) 0)
+    (let ((scopes
+           (or
+            rust-macro-scopes
+            (rust-macro-scope start end))))
+      ;; `rust-macro-scope' can return the symbol `empty' if the
+      ;; buffer has no macros at all.
+      (when (listp scopes)
+        (seq-some
+         (lambda (sc)
+           (and (>= (point) (car sc))
+                (< (point) (cadr sc))))
+         scopes)))))
 
 (defun rust-looking-at-where ()
   "Return T when looking at the \"where\" keyword."
@@ -1139,6 +1209,10 @@ should be considered a paired angle bracket."
    ;; If matching is turned off suppress all of them
    ((not rust-match-angle-brackets) t)
 
+   ;; This is a cheap check so we do it early.
+   ;; Don't treat the > in -> or => as an angle bracket
+   ((and (= (following-char) ?>) (memq (preceding-char) '(?- ?=))) t)
+
    ;; We don't take < or > in strings or comments to be angle brackets
    ((rust-in-str-or-cmnt) t)
 
@@ -1148,23 +1222,21 @@ should be considered a paired angle bracket."
    ;; as angle brackets it won't mess up any paren balancing.
    ((rust-in-macro) t)
 
-   ((looking-at "<")
+   ((= (following-char) ?<)
     (rust-is-lt-char-operator))
 
-   ((looking-at ">")
-    (cond
-     ;; Don't treat the > in -> or => as an angle bracket
-     ((member (char-before (point)) '(?- ?=)) t)
+   ;; Since rust-ordinary-lt-gt-p is called only when either < or > are at the point,
+   ;; we know that the following char must be > in the clauses below.
 
-     ;; If we are at top level and not in any list, it can't be a closing
-     ;; angle bracket
-     ((>= 0 (rust-paren-level)) t)
+   ;; If we are at top level and not in any list, it can't be a closing
+   ;; angle bracket
+   ((>= 0 (rust-paren-level)) t)
 
-     ;; Otherwise, treat the > as a closing angle bracket if it would
-     ;; match an opening one
-     ((save-excursion
-        (backward-up-list)
-        (not (looking-at "<"))))))))
+   ;; Otherwise, treat the > as a closing angle bracket if it would
+   ;; match an opening one
+   ((save-excursion
+      (backward-up-list)
+      (/= (following-char) ?<)))))
 
 (defun rust-mode-syntactic-face-function (state)
   "Return face which distinguishes doc and normal comments in the given syntax STATE."
@@ -1213,32 +1285,34 @@ whichever comes first."
 
 (defun rust-syntax-propertize (start end)
   "A `syntax-propertize-function' to apply properties from START to END."
-  (goto-char start)
-  (let ((str-start (rust-in-str-or-cmnt)))
-    (when str-start
-      (rust--syntax-propertize-raw-string str-start end)))
-  (funcall
-   (syntax-propertize-rules
-    ;; Character literals.
-    (rust--char-literal-rx (1 "\"") (2 "\""))
-    ;; Raw strings.
-    ("\\(r\\)#*\""
-     (0 (ignore
-         (goto-char (match-end 0))
-         (unless (save-excursion (nth 8 (syntax-ppss (match-beginning 0))))
-           (put-text-property (match-beginning 1) (match-end 1)
-                              'syntax-table (string-to-syntax "|"))
-           (rust--syntax-propertize-raw-string (match-beginning 0) end)))))
-    ("[<>]"
-     (0 (ignore
-         (when (save-match-data
-                 (save-excursion
-                   (goto-char (match-beginning 0))
-                   (rust-ordinary-lt-gt-p)))
-           (put-text-property (match-beginning 0) (match-end 0)
-                              'syntax-table (string-to-syntax "."))
-           (goto-char (match-end 0)))))))
-   (point) end))
+  ;; Cache all macro scopes as an optimization. See issue #208
+  (let ((rust-macro-scopes (rust-macro-scope start end)))
+    (goto-char start)
+    (let ((str-start (rust-in-str-or-cmnt)))
+      (when str-start
+        (rust--syntax-propertize-raw-string str-start end)))
+    (funcall
+     (syntax-propertize-rules
+      ;; Character literals.
+      (rust--char-literal-rx (1 "\"") (2 "\""))
+      ;; Raw strings.
+      ("\\(r\\)#*\""
+       (0 (ignore
+           (goto-char (match-end 0))
+           (unless (save-excursion (nth 8 (syntax-ppss (match-beginning 0))))
+             (put-text-property (match-beginning 1) (match-end 1)
+                                'syntax-table (string-to-syntax "|"))
+             (rust--syntax-propertize-raw-string (match-beginning 0) end)))))
+      ("[<>]"
+       (0 (ignore
+           (when (save-match-data
+                   (save-excursion
+                     (goto-char (match-beginning 0))
+                     (rust-ordinary-lt-gt-p)))
+             (put-text-property (match-beginning 0) (match-end 0)
+                                'syntax-table (string-to-syntax "."))
+             (goto-char (match-end 0)))))))
+     (point) end)))
 
 (defun rust-fill-prefix-for-comment-start (line-start)
   "Determine what to use for `fill-prefix' based on the text at LINE-START."
@@ -2005,76 +2079,12 @@ visit the new file."
            (goto-char old-point)))
         (t
          (when (rust-in-str)
-           (rust--up-list -1 t t))
+           (up-list -1 t t))
          (insert "(")
          (forward-sexp)
          (insert ")")
          (backward-sexp)))
   (insert "dbg!"))
-
-(defun rust--up-list (&optional arg escape-strings no-syntax-crossing)
-  "Compatibility for emacs 24."
-  (or arg (setq arg 1))
-  (let ((inc (if (> arg 0) 1 -1))
-        (pos nil))
-    (while (/= arg 0)
-      (condition-case err
-          (save-restriction
-            ;; If we've been asked not to cross string boundaries
-            ;; and we're inside a string, narrow to that string so
-            ;; that scan-lists doesn't find a match in a different
-            ;; string.
-            (when no-syntax-crossing
-              (let* ((syntax (syntax-ppss))
-                     (string-comment-start (nth 8 syntax)))
-                (when string-comment-start
-                  (save-excursion
-                    (goto-char string-comment-start)
-                    (narrow-to-region
-                     (point)
-                     (if (nth 3 syntax) ; in string
-                         (condition-case nil
-                             (progn (forward-sexp) (point))
-                           (scan-error (point-max)))
-                       (forward-comment 1)
-                       (point)))))))
-            (if (null forward-sexp-function)
-                (goto-char (or (scan-lists (point) inc 1)
-                               (buffer-end arg)))
-              (condition-case err
-                  (while (progn (setq pos (point))
-                                (forward-sexp inc)
-                                (/= (point) pos)))
-                (scan-error (goto-char (nth (if (> arg 0) 3 2) err))))
-              (if (= (point) pos)
-                  (signal 'scan-error
-                          (list "Unbalanced parentheses" (point) (point))))))
-        (scan-error
-         (let ((syntax nil))
-           (or
-            ;; If we bumped up against the end of a list, see whether
-            ;; we're inside a string: if so, just go to the beginning
-            ;; or end of that string.
-            (and escape-strings
-                 (or syntax (setf syntax (syntax-ppss)))
-                 (nth 3 syntax)
-                 (goto-char (nth 8 syntax))
-                 (progn (when (> inc 0)
-                          (forward-sexp))
-                        t))
-            ;; If we narrowed to a comment above and failed to escape
-            ;; it, the error might be our fault, not an indication
-            ;; that we're out of syntax.  Try again from beginning or
-            ;; end of the comment.
-            (and no-syntax-crossing
-                 (or syntax (setf syntax (syntax-ppss)))
-                 (nth 4 syntax)
-                 (goto-char (nth 8 syntax))
-                 (or (< inc 0)
-                     (forward-comment 1))
-                 (setf arg (+ arg inc)))
-            (signal (car err) (cdr err))))))
-      (setq arg (- arg inc)))))
 
 ;;;###autoload
 (defun rust-dbg-wrap-or-unwrap ()

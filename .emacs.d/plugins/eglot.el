@@ -56,6 +56,7 @@
 ;;; Code:
 
 (require 'json)
+(require 'imenu)
 (require 'cl-lib)
 (require 'project)
 (require 'url-parse)
@@ -71,7 +72,9 @@
 (require 'filenotify)
 (require 'ert)
 (require 'array)
-(defvar company-backends) ; forward-declare, but don't require company
+;; forward-declare, but don't require (Emacs 28 doesn't seem to care)
+(defvar markdown-fontify-code-blocks-natively)
+(defvar company-backends)
 (defvar company-tooltip-align-annotations)
 
 
@@ -119,27 +122,28 @@ of those modes.  CONTACT can be:
   PROGRAM is called with ARGS and is expected to serve LSP requests
   over the standard input/output channels.
 
-* A list (HOST PORT [TCP-ARGS...]) where HOST is a string and PORT is
-  na positive integer number for connecting to a server via TCP.
+* A list (HOST PORT [TCP-ARGS...]) where HOST is a string and
+  PORT is a positive integer for connecting to a server via TCP.
   Remaining ARGS are passed to `open-network-stream' for
   upgrading the connection with encryption or other capabilities.
 
-* A list (PROGRAM [ARGS...] :autoport [MOREARGS...]), whereby a
-  combination of the two previous options is used..  First, an
+* A list (PROGRAM [ARGS...] :autoport [MOREARGS...]), whereupon a
+  combination of the two previous options is used.  First, an
   attempt is made to find an available server port, then PROGRAM
   is launched with ARGS; the `:autoport' keyword substituted for
-  that number; and MOREARGS.  Eglot then attempts to to establish
-  a TCP connection to that port number on the localhost.
+  that number; and MOREARGS.  Eglot then attempts to establish a
+  TCP connection to that port number on the localhost.
 
 * A cons (CLASS-NAME . INITARGS) where CLASS-NAME is a symbol
   designating a subclass of `eglot-lsp-server', for representing
   experimental LSP servers.  INITARGS is a keyword-value plist
-  used to initialize CLASS-NAME, or a plain list interpreted as
-  the previous descriptions of CONTACT, in which case it is
-  converted to produce a plist with a suitable :PROCESS initarg
-  to CLASS-NAME.  The class `eglot-lsp-server' descends
-  `jsonrpc-process-connection', which you should see for the
-  semantics of the mandatory :PROCESS argument.
+  used to initialize the object of CLASS-NAME, or a plain list
+  interpreted as the previous descriptions of CONTACT.  In the
+  latter case that plain list is used to produce a plist with a
+  suitable :PROCESS initarg to CLASS-NAME.  The class
+  `eglot-lsp-server' descends from `jsonrpc-process-connection',
+  which you should see for the semantics of the mandatory
+  :PROCESS argument.
 
 * A function of a single argument producing any of the above
   values for CONTACT.  The argument's value is non-nil if the
@@ -231,7 +235,7 @@ let the buffer grow forever."
     `(
       (CodeAction (:title) (:kind :diagnostics :edit :command))
       (ConfigurationItem () (:scopeUri :section))
-      (Command (:title :command) (:arguments))
+      (Command ((:title . string) (:command . string)) (:arguments))
       (CompletionItem (:label)
                       (:kind :detail :documentation :deprecated :preselect
                              :sortText :filterText :insertText :insertTextFormat
@@ -255,7 +259,12 @@ let the buffer grow forever."
       (ShowMessageRequestParams (:type :message) (:actions))
       (SignatureHelp (:signatures) (:activeSignature :activeParameter))
       (SignatureInformation (:label) (:documentation :parameters))
-      (SymbolInformation (:name :kind :location) (:deprecated :containerName))
+      (SymbolInformation (:name :kind :location)
+                         (:deprecated :containerName))
+      (DocumentSymbol (:name :range :selectionRange :kind)
+                      ;; `:containerName' isn't really allowed , but
+                      ;; it simplifies the impl of `eglot-imenu'.
+                      (:detail :deprecated :children :containerName))
       (TextDocumentEdit (:textDocument :edits) ())
       (TextEdit (:range :newText))
       (VersionedTextDocumentIdentifier (:uri :version) ())
@@ -265,13 +274,15 @@ let the buffer grow forever."
 
 INTERFACE-NAME is a symbol designated by the spec as
 \"interface\".  INTERFACE is a list (REQUIRED OPTIONAL) where
-REQUIRED and OPTIONAL are lists of keyword symbols designating
-field names that must be, or may be, respectively, present in a
-message adhering to that interface.
+REQUIRED and OPTIONAL are lists of KEYWORD designating field
+names that must be, or may be, respectively, present in a message
+adhering to that interface.  KEY can be a keyword or a cons (SYM
+TYPE), where type is used by `cl-typep' to check types at
+runtime.
 
 Here's what an element of this alist might look like:
 
-    (CreateFile . ((:kind :uri) (:options)))"))
+    (Command ((:title . string) (:command . string)) (:arguments))"))
 
 (eval-and-compile
   (defvar eglot-strict-mode (if load-file-name '()
@@ -308,46 +319,69 @@ on unknown notifications and errors on unknown requests.
 (defun eglot--plist-keys (plist)
   (cl-loop for (k _v) on plist by #'cddr collect k))
 
-(defun eglot--call-with-interface (interface object fn)
-  "Call FN, checking that OBJECT conforms to INTERFACE."
-  (when-let ((missing (and (memq 'enforce-required-keys eglot-strict-mode)
-                           (cl-set-difference (car (cdr interface))
-                                              (eglot--plist-keys object)))))
-    (eglot--error "A `%s' must have %s" (car interface) missing))
-  (when-let ((excess (and (memq 'disallow-non-standard-keys eglot-strict-mode)
-                          (cl-set-difference
-                           (eglot--plist-keys object)
-                           (append (car (cdr interface)) (cadr (cdr interface)))))))
-    (eglot--error "A `%s' mustn't have %s" (car interface) excess))
-  (funcall fn))
+(cl-defun eglot--check-object (interface-name
+                               object
+                               &optional
+                               (enforce-required t)
+                               (disallow-non-standard t)
+                               (check-types t))
+  "Check that OBJECT conforms to INTERFACE.  Error otherwise."
+  (cl-destructuring-bind
+      (&key types required-keys optional-keys &allow-other-keys)
+      (eglot--interface interface-name)
+    (when-let ((missing (and enforce-required
+                             (cl-set-difference required-keys
+                                                (eglot--plist-keys object)))))
+      (eglot--error "A `%s' must have %s" interface-name missing))
+    (when-let ((excess (and disallow-non-standard
+                            (cl-set-difference
+                             (eglot--plist-keys object)
+                             (append required-keys optional-keys)))))
+      (eglot--error "A `%s' mustn't have %s" interface-name excess))
+    (when check-types
+      (cl-loop
+       for (k v) on object by #'cddr
+       for type = (or (cdr (assoc k types)) t) ;; FIXME: enforce nil type?
+       unless (cl-typep v type)
+       do (eglot--error "A `%s' must have a %s as %s, but has %s"
+                        interface-name )))
+    t))
 
 (eval-and-compile
   (defun eglot--keywordize-vars (vars)
     (mapcar (lambda (var) (intern (format ":%s" var))) vars))
 
-  (defun eglot--check-interface (interface-name vars)
-    (let ((interface
-           (assoc interface-name eglot--lsp-interface-alist)))
-      (cond (interface
+  (defun eglot--ensure-type (k) (if (consp k) k (cons k t)))
+
+  (defun eglot--interface (interface-name)
+    (let* ((interface (assoc interface-name eglot--lsp-interface-alist))
+           (required (mapcar #'eglot--ensure-type (car (cdr interface))))
+           (optional (mapcar #'eglot--ensure-type (cadr (cdr interface)))))
+      (list :types (append required optional)
+            :required-keys (mapcar #'car required)
+            :optional-keys (mapcar #'car optional))))
+
+  (defun eglot--check-dspec (interface-name dspec)
+    "Check if variables in DSPEC "
+    (cl-destructuring-bind (&key required-keys optional-keys &allow-other-keys)
+        (eglot--interface interface-name)
+      (cond ((or required-keys optional-keys)
              (let ((too-many
                     (and
                      (memq 'disallow-non-standard-keys eglot-strict-mode)
                      (cl-set-difference
-                      (eglot--keywordize-vars vars)
-                      (append (car (cdr interface))
-                              (cadr (cdr interface))))))
+                      (eglot--keywordize-vars dspec)
+                      (append required-keys optional-keys))))
                    (ignored-required
                     (and
                      (memq 'enforce-required-keys eglot-strict-mode)
                      (cl-set-difference
-                      (car (cdr interface))
-                      (eglot--keywordize-vars vars))))
+                      required-keys (eglot--keywordize-vars dspec))))
                    (missing-out
                     (and
                      (memq 'enforce-optional-keys eglot-strict-mode)
                      (cl-set-difference
-                      (cadr (cdr interface))
-                      (eglot--keywordize-vars vars)))))
+                      optional-keys (eglot--keywordize-vars dspec)))))
                (when too-many (byte-compile-warn
                                "Destructuring for %s has extraneous %s"
                                interface-name too-many))
@@ -361,7 +395,7 @@ on unknown notifications and errors on unknown requests.
              (byte-compile-warn "Unknown LSP interface %s" interface-name))))))
 
 (cl-defmacro eglot--dbind (vars object &body body)
-  "Destructure OBJECT of binding VARS in BODY.
+  "Destructure OBJECT, binding VARS in BODY.
 VARS is ([(INTERFACE)] SYMS...)
 Honour `eglot-strict-mode'."
   (declare (indent 2) (debug (sexp sexp &rest form)))
@@ -370,13 +404,14 @@ Honour `eglot-strict-mode'."
         (object-once (make-symbol "object-once"))
         (fn-once (make-symbol "fn-once")))
     (cond (interface-name
-           (eglot--check-interface interface-name vars)
+           (eglot--check-dspec interface-name vars)
            `(let ((,object-once ,object))
               (cl-destructuring-bind (&key ,@vars &allow-other-keys) ,object-once
-                (eglot--call-with-interface (assoc ',interface-name
-                                                   eglot--lsp-interface-alist)
-                                            ,object-once (lambda ()
-                                                           ,@body)))))
+                (eglot--check-object ',interface-name ,object-once
+                                     (memq 'enforce-required-keys eglot-strict-mode)
+                                     (memq 'disallow-non-standard-keys eglot-strict-mode)
+                                     (memq 'check-types eglot-strict-mode))
+                ,@body)))
           (t
            `(let ((,object-once ,object)
                   (,fn-once (lambda (,@vars) ,@body)))
@@ -409,20 +444,12 @@ treated as in `eglot-dbind'."
                                     (car (pop vars)))
            for condition =
            (cond (interface-name
-                  (eglot--check-interface interface-name vars)
+                  (eglot--check-dspec interface-name vars)
                   ;; In this mode, in runtime, we assume
                   ;; `eglot-strict-mode' is fully on, otherwise we
                   ;; can't disambiguate between certain types.
-                  `(let* ((interface
-                           (or (assoc ',interface-name eglot--lsp-interface-alist)
-                               (eglot--error "Unknown LSP interface %s"
-                                             ',interface-name)))
-                          (object-keys (eglot--plist-keys ,obj-once))
-                          (required-keys (car (cdr interface))))
-                     (and (null (cl-set-difference required-keys object-keys))
-                          (null (cl-set-difference
-                                 (cl-set-difference object-keys required-keys)
-                                 (cadr (cdr interface)))))))
+                  `(ignore-errors
+                     (eglot--check-object ',interface-name ,obj-once)))
                  (t
                   ;; In this interface-less mode we don't check
                   ;; `eglot-strict-mode' at all: just check that the object
@@ -435,7 +462,7 @@ treated as in `eglot-dbind'."
                          ,obj-once
                        ,@body)))
         (t
-         (eglot--error "%s didn't match any of %s"
+         (eglot--error "%S didn't match any of %S"
                        ,obj-once
                        ',(mapcar #'car clauses)))))))
 
@@ -502,7 +529,10 @@ treated as in `eglot-dbind'."
                                          :json-false))
                                     :contextSupport t)
              :hover              (list :dynamicRegistration :json-false
-                                       :contentFormat ["markdown" "plaintext"])
+                                       :contentFormat
+                                       (if (fboundp 'gfm-view-mode)
+                                           ["markdown" "plaintext"]
+                                         ["plaintext"]))
              :signatureHelp      (list :dynamicRegistration :json-false
                                        :signatureInformation
                                        `(:parameterInformation
@@ -514,6 +544,7 @@ treated as in `eglot-dbind'."
              :typeDefinition     `(:dynamicRegistration :json-false)
              :documentSymbol     (list
                                   :dynamicRegistration :json-false
+                                  :hierarchicalDocumentSymbolSupport t
                                   :symbolKind `(:valueSet
                                                 [,@(mapcar
                                                     #'car eglot--symbol-kind-names)]))
@@ -672,7 +703,12 @@ be guessed."
          (class (or (and (consp guess) (symbolp (car guess))
                          (prog1 (car guess) (setq guess (cdr guess))))
                     'eglot-lsp-server))
-         (program (and (listp guess) (stringp (car guess)) (car guess)))
+         (program (and (listp guess)
+                       (stringp (car guess))
+                       ;; A second element might be the port of a (host, port)
+                       ;; pair, but in that case it is not a string.
+                       (or (null (cdr guess)) (stringp (cadr guess)))
+                       (car guess)))
          (base-prompt
           (and interactive
                "Enter program to execute (or <host>:<port>): "))
@@ -776,9 +812,15 @@ INTERACTIVE is t if called interactively."
         (add-hook 'post-command-hook #'maybe-connect 'append nil)))))
 
 (defun eglot-events-buffer (server)
-  "Display events buffer for SERVER."
-  (interactive (list (eglot--current-server-or-lose)))
-  (display-buffer (jsonrpc-events-buffer server)))
+  "Display events buffer for SERVER.
+Use current server's or first available Eglot events buffer."
+  (interactive (list (eglot-current-server)))
+  (let ((buffer (if server (jsonrpc-events-buffer server)
+                  (cl-find "\\*EGLOT.*events\\*"
+                           (buffer-list)
+                           :key #'buffer-name :test #'string-match))))
+    (if buffer (display-buffer buffer)
+      (eglot--error "Can't find an Eglot events buffer!"))))
 
 (defun eglot-stderr-buffer (server)
   "Display stderr buffer for SERVER."
@@ -1112,15 +1154,15 @@ Doubles as an indicator of snippet support."
 (defun eglot--format-markup (markup)
   "Format MARKUP according to LSP's spec."
   (pcase-let ((`(,string ,mode)
-               (if (stringp markup) (list (string-trim markup)
-                                          (intern "gfm-view-mode"))
+               (if (stringp markup) (list markup 'gfm-view-mode)
                  (list (plist-get markup :value)
                        (pcase (plist-get markup :kind)
                          ("markdown" 'gfm-view-mode)
                          ("plaintext" 'text-mode)
                          (_ major-mode))))))
     (with-temp-buffer
-      (insert string)
+      (setq-local markdown-fontify-code-blocks-natively t)
+      (insert (string-trim string))
       (ignore-errors (delay-mode-hooks (funcall mode)))
       (font-lock-ensure)
       (buffer-string))))
@@ -1206,7 +1248,10 @@ and just return it.  PROMPT shouldn't end with a question mark."
 
 ;;; Minor modes
 ;;;
-(defvar eglot-mode-map (make-sparse-keymap))
+(defvar eglot-mode-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map [remap display-local-help] 'eglot-help-at-point)
+    map))
 
 (defvar-local eglot--current-flymake-report-fn nil
   "Current flymake report function for this buffer")
@@ -1539,7 +1584,7 @@ COMMAND is a symbol naming the command."
                                              (t          'eglot-note))
                                        message `((eglot-lsp-diag . ,diag-spec)))))
          into diags
-         finally (cond (eglot--current-flymake-report-fn
+         finally (cond ((and flymake-mode eglot--current-flymake-report-fn)
                         (funcall eglot--current-flymake-report-fn diags
                                  ;; If the buffer hasn't changed since last
                                  ;; call to the report function, flymake won't
@@ -2215,19 +2260,21 @@ is not active."
       (setq eglot--help-buffer (generate-new-buffer "*eglot-help*"))))
 
 (defun eglot-help-at-point ()
-  "Request \"hover\" information for the thing at point."
+  "Request documentation for the thing at point."
   (interactive)
   (eglot--dbind ((Hover) contents range)
       (jsonrpc-request (eglot--current-server-or-lose) :textDocument/hover
                        (eglot--TextDocumentPositionParams))
-    (when (seq-empty-p contents) (eglot--error "No hover info here"))
-    (let ((blurb (eglot--hover-info contents range))
-          (sym (thing-at-point 'symbol)))
-      (with-current-buffer (eglot--help-buffer)
-        (with-help-window (current-buffer)
-          (rename-buffer (format "*eglot-help for %s*" sym))
-          (with-current-buffer standard-output (insert blurb))
-          (setq-local nobreak-char-display nil))))))
+    (let ((blurb (and (not (seq-empty-p contents))
+                      (eglot--hover-info contents range))))
+      (if blurb
+          (with-current-buffer (eglot--help-buffer)
+            (with-help-window (current-buffer)
+              (rename-buffer (format "*eglot-help for %s*"
+                                     (thing-at-point 'symbol)))
+              (with-current-buffer standard-output (insert blurb))
+              (setq-local nobreak-char-display nil)))
+        (display-local-help)))))
 
 (defun eglot-doc-too-large-for-echo-area (string)
   "Return non-nil if STRING won't fit in echo area.
@@ -2242,10 +2289,11 @@ Respects `max-mini-window-height' (which see)."
 (defcustom eglot-put-doc-in-help-buffer
   #'eglot-doc-too-large-for-echo-area
   "If non-nil, put \"hover\" documentation in separate `*eglot-help*' buffer.
-If nil, use whatever `eldoc-message-function' decides (usually
-the echo area).  If t, use `*eglot-help*' unconditionally.  If a
-function, it is called with the docstring to display and should a
-boolean producing one of the two previous values."
+If nil, use whatever `eldoc-message-function' decides, honouring
+`eldoc-echo-area-use-multiline-p'.  If t, use `*eglot-help*'
+unconditionally.  If a function, it is called with the docstring
+to display and should a boolean producing one of the two previous
+values."
   :type '(choice (const :tag "Never use `*eglot-help*'" nil)
                  (const :tag "Always use `*eglot-help*'" t)
                  (function :tag "Ask a function")))
@@ -2256,34 +2304,43 @@ Buffer is displayed with `display-buffer', which obeys
 `display-buffer-alist' & friends."
   :type 'boolean)
 
+(defun eglot--first-line-of-doc (string)
+  (truncate-string-to-width
+   (replace-regexp-in-string "\\(.*\\)\n.*" "\\1" string)
+   (frame-width) nil nil "..."))
+
 (defun eglot--update-doc (string hint)
   "Put updated documentation STRING where it belongs.
-Honours `eglot-put-doc-in-help-buffer'.  HINT is used to
-potentially rename EGLOT's help buffer.  If STRING is nil, the
-echo area cleared of any previous documentation."
-  (if (and string
-           (or (eq t eglot-put-doc-in-help-buffer)
-               (and eglot-put-doc-in-help-buffer
-                    (funcall eglot-put-doc-in-help-buffer string))))
-      (with-current-buffer (eglot--help-buffer)
-        (let ((inhibit-read-only t)
-              (name (format "*eglot-help for %s*" hint)))
-          (unless (string= name (buffer-name))
-            (rename-buffer (format "*eglot-help for %s*" hint))
-            (erase-buffer)
-            (insert string)
-            (goto-char (point-min)))
-          (if eglot-auto-display-help-buffer
-              (display-buffer (current-buffer))
-            (unless (get-buffer-window (current-buffer))
-              (eglot--message
-               "%s\n(...truncated. Full help is in `%s')"
-               (truncate-string-to-width
-                (replace-regexp-in-string "\\(.*\\)\n.*" "\\1" string)
-                (frame-width) nil nil "...")
-               (buffer-name eglot--help-buffer))))
-          (help-mode)))
-    (eldoc-message string)))
+HINT is used to potentially rename EGLOT's help buffer.  If
+STRING is nil, the echo area cleared of any previous
+documentation.  Honour `eglot-put-doc-in-help-buffer',
+`eglot-auto-display-help-buffer' and
+`eldoc-echo-area-use-multiline-p'."
+  (cond ((null string) (eldoc-message nil))
+        ((or (eq t eglot-put-doc-in-help-buffer)
+             (and eglot-put-doc-in-help-buffer
+                  (funcall eglot-put-doc-in-help-buffer string)))
+         (with-current-buffer (eglot--help-buffer)
+           (let ((inhibit-read-only t)
+                 (name (format "*eglot-help for %s*" hint)))
+             (unless (string= name (buffer-name))
+               (rename-buffer (format "*eglot-help for %s*" hint))
+               (erase-buffer)
+               (insert string)
+               (goto-char (point-min)))
+             (if eglot-auto-display-help-buffer
+                 (display-buffer (current-buffer))
+               (unless (get-buffer-window (current-buffer))
+                 (eglot--message
+                  "%s\n(...truncated. Full help is in `%s')"
+                  (eglot--first-line-of-doc string)
+                  (buffer-name eglot--help-buffer))))
+             (help-mode))))
+        (eldoc-echo-area-use-multiline-p
+         ;; Can't really honour non-t non-nil values if this var
+         (eldoc-message string))
+        (t
+         (eldoc-message (eglot--first-line-of-doc string)))))
 
 (defun eglot-eldoc-function ()
   "EGLOT's `eldoc-documentation-function' function."
@@ -2343,36 +2400,48 @@ echo area cleared of any previous documentation."
 
 (defun eglot-imenu ()
   "EGLOT's `imenu-create-index-function'."
-  (let ((entries
-         (and
-          (eglot--server-capable :documentSymbolProvider)
-          (mapcar
-           (eglot--lambda
-               ((SymbolInformation) name kind location containerName)
-             (cons (propertize
-                    name
-                    :kind (alist-get kind eglot--symbol-kind-names
-                                     "Unknown")
-                    :containerName (and (stringp containerName)
-                                        (not (string-empty-p containerName))
-                                        containerName))
-                   (eglot--lsp-position-to-point
-                    (plist-get (plist-get location :range) :start))))
-           (jsonrpc-request (eglot--current-server-or-lose)
-                            :textDocument/documentSymbol
-                            `(:textDocument ,(eglot--TextDocumentIdentifier)))))))
+  (cl-labels
+      ((visit (_name one-obj-array)
+              (imenu-default-goto-function
+               nil (car (eglot--range-region
+                         (eglot--dcase (aref one-obj-array 0)
+                           (((SymbolInformation) location)
+                            (plist-get location :range))
+                           (((DocumentSymbol) selectionRange)
+                            selectionRange))))))
+       (unfurl (obj)
+               (eglot--dcase obj
+                 (((SymbolInformation)) (list obj))
+                 (((DocumentSymbol) name children)
+                  (cons obj
+                        (mapcar
+                         (lambda (c)
+                           (plist-put
+                            c :containerName
+                            (let ((existing (plist-get c :containerName)))
+                              (if existing (format "%s::%s" name existing)
+                                name))))
+                         (mapcan #'unfurl children)))))))
     (mapcar
-     (pcase-lambda (`(,kind . ,syms))
-       (let ((syms-by-scope (seq-group-by
-                             (lambda (e)
-                               (get-text-property 0 :containerName (car e)))
-                             syms)))
-         (cons kind (cl-loop for (scope . elems) in syms-by-scope
-                             append (if scope
-                                        (list (cons scope elems))
-                                      elems)))))
-     (seq-group-by (lambda (e) (get-text-property 0 :kind (car e)))
-                   entries))))
+     (pcase-lambda (`(,kind . ,objs))
+       (cons
+        (alist-get kind eglot--symbol-kind-names "Unknown")
+        (mapcan (pcase-lambda (`(,container . ,objs))
+                  (let ((elems (mapcar (lambda (obj)
+                                         (list (plist-get obj :name)
+                                               `[,obj] ;; trick
+                                               #'visit))
+                                       objs)))
+                    (if container (list (cons container elems)) elems)))
+                (seq-group-by
+                 (lambda (e) (plist-get e :containerName)) objs))))
+     (seq-group-by
+      (lambda (obj) (plist-get obj :kind))
+      (mapcan #'unfurl
+              (jsonrpc-request (eglot--current-server-or-lose)
+                               :textDocument/documentSymbol
+                               `(:textDocument
+                                 ,(eglot--TextDocumentIdentifier))))))))
 
 (defun eglot--apply-text-edits (edits &optional version)
   "Apply EDITS for current buffer if at VERSION, or if it's nil."
@@ -2498,13 +2567,13 @@ echo area cleared of any previous documentation."
          (menu `("Eglot code actions:" ("dummy" ,@menu-items)))
          (action (if (listp last-nonmenu-event)
                      (x-popup-menu last-nonmenu-event menu)
-                   (cdr (assoc (completing-read "[eglot] Pick an action: " 
-						menu-items nil t
-						nil nil (car menu-items))
+                   (cdr (assoc (completing-read "[eglot] Pick an action: "
+                                                menu-items nil t
+                                                nil nil (car menu-items))
                                menu-items)))))
     (eglot--dcase action
-        (((Command) command arguments)
-         (eglot-execute-command server (intern command) arguments))
+      (((Command) command arguments)
+       (eglot-execute-command server (intern command) arguments))
       (((CodeAction) edit command)
        (when edit (eglot--apply-workspace-edit edit))
        (when command

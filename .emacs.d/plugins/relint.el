@@ -3,8 +3,8 @@
 ;; Copyright (C) 2019-2020 Free Software Foundation, Inc.
 
 ;; Author: Mattias Engdegård <mattiase@acm.org>
-;; Version: 1.15
-;; Package-Requires: ((xr "1.17") (emacs "26.1"))
+;; Version: 1.17
+;; Package-Requires: ((xr "1.19") (emacs "26.1"))
 ;; URL: https://github.com/mattiase/relint
 ;; Keywords: lisp, regexps
 
@@ -29,6 +29,14 @@
 
 ;;; News:
 
+;; Version 1.17:
+;; - Fixed message display on Emacs 26
+;; Version 1.16:
+;; - Suppression comments now use regexp matching of messages
+;; - New filename-specific checks in calls to `directory-files' etc
+;; - Check some keyword arguments (:regexp and :regex)
+;; - Improved rx checks
+;; - `relint-directory' now displays number of files found
 ;; Version 1.15:
 ;; - Improved position accuracy in various lists of regexps
 ;; - Check for mistake in rx `any' forms
@@ -277,7 +285,8 @@ or nil if no position could be determined."
 
 (defun relint--escape-string (str escape-printable)
   (replace-regexp-in-string
-   (rx (any cntrl "\177-\377" ?\\ ?\"))
+   ;; Use pair notation for raw chars; "\200-\377" is buggy in Emacs 26.
+   (rx (any cntrl ?\177 (#x3fff80 . #x3fffff) ?\\ ?\"))
    (lambda (s)
      (let ((c (logand (string-to-char s) #xff)))
        (or (cdr (assq c '((?\b . "\\b")
@@ -319,6 +328,9 @@ or nil if no position could be determined."
 
 (defun relint--check-re-string (re name file pos path)
   (relint--check-string re #'xr-lint name file pos path))
+  
+(defun relint--check-file-re-string (re name file pos path)
+  (relint--check-string re (lambda (x) (xr-lint x 'file)) name file pos path))
   
 (defun relint--check-syntax-string (syntax name file pos path)
   (relint--check-string syntax #'relint--syntax-string-lint name file pos path))
@@ -1176,59 +1188,20 @@ or in the car of an element."
         file pos (if literal (cons 1 elem-path) elem-path))))
    form path))
 
-(defun relint--extra-file-name-re-checks (string file pos path)
-  "Perform extra checks on STRING assuming it matches file names."
-
-  ;; It would be much easier to do these checks (and more) on the rx
-  ;; representation, but unfortunately xr doesn't return a
-  ;; location-annotated expression right now.
-  (let ((len (length string))
-        (start 0))
-    (while (and (< start len)
-                ;; Skip anything that is NOT one of . ^ $
-                (string-match (rx (* (or (not (any "\\.$^["))
-                                         (seq "\\" anything)
-                                         (seq "[" (opt "^") (opt "]")
-                                              (* (not (any "]")))
-                                              "]"))))
-                              string start))
-      (setq start (match-end 0))
-      (let* ((m (string-match (rx (or "^" "$" (seq "." (opt (any "*+?")))))
-                              string start))
-             (end (match-end 0)))
-        (when (and m (= m start))
-          (pcase (match-string 0 string)
-            ("^" (relint--warn
-                  file pos path
-                  "Use \\` instead of ^ in file-matching regexp"
-                  string start))
-            ("$" (relint--warn
-                  file pos path
-                  "Use \\' instead of $ in file-matching regexp"
-                  string start))
-            ;; We assume that .* etc are intended.
-            ("." (relint--warn
-                  file pos path
-                  (format-message
-                   "Possibly unescaped `.' in file-matching regexp")
-                  string start)))
-          (setq start end))))))
-
 (defun relint--check-file-name-re (form name file pos path)
   (let ((re (relint--get-string form)))
     (when re
-      (relint--check-re re name file pos path)
-      (relint--extra-file-name-re-checks re file pos path))))
+      (relint--check-file-re-string re name file pos path))))
 
 (defun relint--check-auto-mode-alist-expr (form name file pos path)
   "Check a single element added to `auto-mode-alist'."
   (pcase form
     (`(quote (,(and (pred stringp) str) . ,_))
-     (relint--check-file-name-re str name file pos (cons 0 (cons 1 path))))
+     (relint--check-file-re-string str name file pos (cons 0 (cons 1 path))))
     (_
      (let ((val (relint--eval-or-nil form)))
        (when (and (consp val) (stringp (car val)))
-         (relint--check-file-name-re (car val) name file pos path))))))
+         (relint--check-file-re-string (car val) name file pos path))))))
 
 (defun relint--check-auto-mode-alist (form name file pos path)
   (relint--eval-list-iter
@@ -1391,7 +1364,7 @@ character alternative: `[' followed by a regexp-generating expression."
    (if (eq from to)
        (char-to-string from)
      (format "%c-%c" from to))
-   t))
+   nil))
 
 (defun relint--intersecting-range (from to ranges)
   "Return a range in RANGES intersecting [FROM,TO], or nil if none.
@@ -1450,7 +1423,9 @@ than just to a surrounding or producing expression."
            (push (cons arg arg) ranges))
 
           ((stringp arg)
-           (let* ((s (string-to-multibyte arg))
+           ;; `string-to-multibyte' was marked obsolete in Emacs 26,
+           ;; but no longer is.
+           (let* ((s (with-no-warnings (string-to-multibyte arg)))
                   (j 0)
                   (len (length s)))
              (while (< j len)
@@ -1474,7 +1449,7 @@ than just to a surrounding or producing expression."
                           file pos (if exact-path (cons i path) path)
                           (format-message
                            "Single-character range `%s'"
-                           (relint--escape-string (format "%c-%c" from to) t))
+                           (relint--escape-string (format "%c-%c" from to) nil))
                           s j))
                         ((= to (1+ from))
                          (relint--warn

@@ -289,6 +289,9 @@
      `(magit-diff-removed ((,class (:foreground ,red-dark))))
      `(magit-diff-removed-highlight ((,class (:foreground ,red-bright :background "#0e1824"))))
 
+     ;; ledger
+     `(ledger-font-xact-highlight-face ((,class (:background "#0e1824"))))
+
      ;; Monky
      `(monky-diff-add ((,c (:foreground ,green))))
      `(monky-diff-del ((,c (:foreground ,red))))
@@ -356,7 +359,7 @@
 
      ;; comint
      `(comint-highlight-input ((,c (:foreground ,white :bold t))))
-     `(comint-highlight-prompt ((,c (:foreground ,invisible))))
+     `(comint-highlight-prompt ((,c (:foreground ,cyan))))
 
      `(org-habit-clear-face ((,c (:background ,black :foreground ,frost :underline t))))
      `(org-habit-clear-future-face ((,c (:background ,black :underline t :foreground ,frost))))

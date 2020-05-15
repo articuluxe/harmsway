@@ -1885,7 +1885,8 @@ Staging and applying changes is documented in info node
     (magit-buffer-range range)
     (magit-buffer-typearg typearg)
     (magit-buffer-diff-args args)
-    (magit-buffer-diff-files files)))
+    (magit-buffer-diff-files files)
+    (magit-buffer-diff-files-suspended nil)))
 
 (defun magit-diff-refresh-buffer ()
   "Refresh the current `magit-diff-mode' buffer."
@@ -2334,7 +2335,8 @@ Staging and applying changes is documented in info node
     (magit-buffer-revision rev)
     (magit-buffer-range (format "%s^..%s" rev rev))
     (magit-buffer-diff-args args)
-    (magit-buffer-diff-files files)))
+    (magit-buffer-diff-files files)
+    (magit-buffer-diff-files-suspended nil)))
 
 (defun magit-revision-refresh-buffer ()
   (magit-set-header-line-format

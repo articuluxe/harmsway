@@ -97,6 +97,7 @@ Should contain 2 %s constructs to allow for theme name and directory/prefix")
      (secondary-selection                       (:background gruvbox-dark1))
      (minibuffer-prompt                         (:background gruvbox-bg :foreground gruvbox-bright_green :bold t))
      (vertical-border                           (:foreground gruvbox-dark2))
+     (internal-border                           (:background gruvbox-dark2))
      (window-divider                            (:foreground gruvbox-dark2))
      (link                                      (:foreground gruvbox-faded_blue :underline t))
      (shadow                                    (:foreground gruvbox-dark4))
@@ -440,9 +441,9 @@ Should contain 2 %s constructs to allow for theme name and directory/prefix")
      (ivy-minibuffer-match-face-4               (:foreground gruvbox-faded_yellow))
 
      ;; ido
-     (ido-only-match                            (:foreground gruvbox-faded_green))
-     (ido-first-match                           (:foreground gruvbox-faded_green))
-     (ido-subdir                                (:foreground gruvbox-faded_red))
+     (ido-only-match                            (:inherit 'success))
+     (ido-first-match                           (:foreground gruvbox-light0_hard :weight 'bold :underline t))
+     (ido-subdir                                (:inherit 'dired-directory))
 
      ;; magit
      (magit-bisect-bad                          (:foreground gruvbox-faded_red))

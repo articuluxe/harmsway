@@ -223,11 +223,14 @@ respectively."
                   (ivy-set-index 0)
                 (ivy--recompute-index re ivy--all-candidates))
             (ivy-set-index
-             (ivy--preselect-index
-              (if (> (length re) 0)
-                  cur
-                (ivy-state-preselect ivy-last))
-              ivy--all-candidates))))
+             (let ((func (ivy-alist-setting ivy-index-functions-alist)))
+               (if func
+                   (funcall func re ivy--all-candidates)
+                 (ivy--preselect-index
+                  (if (> (length re) 0)
+                      cur
+                    (ivy-state-preselect ivy-last))
+                  ivy--all-candidates))))))
         (setq ivy--old-cands ivy--all-candidates)
         (if ivy--all-candidates
             (ivy--exhibit)
@@ -480,8 +483,8 @@ Update the minibuffer with the amount of lines collected every
 
 (defvar counsel-describe-symbol-history ()
   "History list for variable and function names.
-Used by commands `counsel-describe-variable' and
-`counsel-describe-function'.")
+Used by commands `counsel-describe-symbol',
+`counsel-describe-variable', and `counsel-describe-function'.")
 
 (defun counsel-find-symbol ()
   "Jump to the definition of the current symbol."
@@ -620,6 +623,41 @@ to `ivy-highlight-face'."
   :initial-input "^"
   :display-transformer-fn #'counsel-describe-function-transformer
   :sort-fn #'ivy-string<)
+
+;;** `counsel-describe-symbol'
+(defcustom counsel-describe-symbol-function #'describe-symbol
+  "Function to call to describe a symbol passed as parameter."
+  :type 'function)
+
+;;;###autoload
+(defun counsel-describe-symbol ()
+  "Forward to `describe-symbol'."
+  (interactive)
+  (unless (functionp 'describe-symbol)
+    (user-error "This command requires Emacs 25.1 or later"))
+  (require 'help-mode)
+  (let ((enable-recursive-minibuffers t))
+    (ivy-read "Describe symbol: " obarray
+              :predicate (lambda (sym)
+                           (cl-some (lambda (backend)
+                                      (funcall (cadr backend) sym))
+                                    describe-symbol-backends))
+              :require-match t
+              :history 'counsel-describe-symbol-history
+              :keymap counsel-describe-map
+              :preselect (ivy-thing-at-point)
+              :action (lambda (x)
+                        (funcall counsel-describe-symbol-function (intern x)))
+              :caller 'counsel-describe-symbol)))
+
+(ivy-configure #'counsel-describe-symbol
+  :initial-input "^"
+  :sort-fn #'ivy-string<)
+
+(ivy-set-actions
+ #'counsel-describe-symbol
+ `(("I" ,#'counsel-info-lookup-symbol "info")
+   ("d" ,#'counsel--find-symbol "definition")))
 
 ;;** `counsel-set-variable'
 (defvar counsel-set-variable-history nil
@@ -1528,23 +1566,27 @@ When CMD is non-nil, prompt for a specific \"git grep\" command."
                 :caller 'counsel-git-grep))))
 
 (defun counsel--git-grep-index (_re-str cands)
-  (if (null ivy--old-cands)
-      (let ((ln (with-ivy-window
-                  (line-number-at-pos)))
-            (name (file-name-nondirectory (with-ivy-window (buffer-file-name)))))
-        (or
-         ;; closest to current line going forwards
+  (let (name ln)
+    (cond
+      (ivy--old-cands
+       (ivy-recompute-index-swiper-async nil cands))
+      ((unless (with-ivy-window
+                 (when buffer-file-name
+                   (setq ln (line-number-at-pos))
+                   (setq name (file-name-nondirectory buffer-file-name))))
+         0))
+      ;; Closest to current line going forwards.
+      ((let ((beg (1+ (length name))))
          (cl-position-if (lambda (x)
                            (and (string-prefix-p name x)
-                                (>= (string-to-number
-                                     (substring x (1+ (length name)))) ln)))
-                         cands)
-         ;; closest to current line going backwards
-         (cl-position-if (lambda (x)
-                           (string-prefix-p name x))
-                         cands
-                         :from-end t)))
-    (ivy-recompute-index-swiper-async nil cands)))
+                                (>= (string-to-number (substring x beg)) ln)))
+                         cands)))
+      ;; Closest to current line going backwards.
+      ((cl-position-if (lambda (x)
+                         (string-prefix-p name x))
+                       cands
+                       :from-end t))
+      (t 0))))
 
 (ivy-configure 'counsel-git-grep
   :occur #'counsel-git-grep-occur
@@ -1734,7 +1776,7 @@ TREE is the selected candidate."
     (ivy-read "Select worktree: "
               (or (cl-delete default-directory (counsel-git-worktree-list)
                              :key #'counsel-git-worktree-parse-root :test #'string=)
-                  (error "No other worktrees!"))
+                  (error "No other worktrees"))
               :action (lambda (tree)
                         (counsel-git-change-worktree-action
                          (ivy-state-directory ivy-last) tree))
@@ -1801,6 +1843,7 @@ currently checked out."
     (define-key map (kbd "C-DEL") 'counsel-up-directory)
     (define-key map (kbd "C-<backspace>") 'counsel-up-directory)
     (define-key map (kbd "`") (ivy-make-magic-action 'counsel-find-file "b"))
+    (define-key map [remap undo] 'counsel-find-file-undo)
     map))
 
 (when (executable-find "git")
@@ -2152,6 +2195,15 @@ See variable `counsel-up-directory-level'."
   (interactive)
   (ivy--directory-enter))
 
+(defun counsel-find-file-undo ()
+  (interactive)
+  (if (string= ivy-text "")
+      (progn
+        (ivy-backward-delete-char)
+        (ivy--exhibit)
+        (ivy-insert-current))
+    (undo)))
+
 (defun counsel-at-git-issue-p ()
   "When point is at an issue in a Git-versioned file, return the issue string."
   (and (looking-at "#[0-9]+")
@@ -2279,10 +2331,10 @@ https://www.freedesktop.org/wiki/Specifications/desktop-bookmark-spec"))
 
 (ivy-set-actions
  'counsel-recentf
- '(("j" find-file-other-window "other window")
+ `(("j" find-file-other-window "other window")
    ("f" find-file-other-frame "other frame")
    ("x" counsel-find-file-extern "open externally")
-   ("d" (lambda (file) (setq recentf-list (delete file recentf-list)))
+   ("d" ,(lambda (file) (setq recentf-list (delete file recentf-list)))
     "delete from recentf")))
 
 (defun counsel-recentf-candidates ()
@@ -2471,12 +2523,12 @@ current value of `default-directory'."
             :action #'dired))
 
 (ivy-set-actions 'counsel-bookmarked-directory
-                 '(("j" dired-other-window "other window")
+                 `(("j" dired-other-window "other window")
                    ("x" counsel-find-file-extern "open externally")
                    ("r" counsel-find-file-as-root "open as root")
-                   ("f" (lambda (dir)
-                          (let ((default-directory dir))
-                            (call-interactively #'find-file)))
+                   ("f" ,(lambda (dir)
+                           (let ((default-directory dir))
+                             (call-interactively #'find-file)))
                     "find-file")))
 
 ;;** `counsel-file-register'
@@ -2799,7 +2851,8 @@ FZF-PROMPT, if non-nil, is passed as `ivy-read' prompt argument."
 
 (defun counsel--find-return-list (args)
   (unless (listp args)
-    (user-error "`counsel-file-jump-args' is a list now, please customize accordingly."))
+    (user-error
+     "`counsel-file-jump-args' is a list now; please customize accordingly"))
   (counsel--call
    (cons find-program args)
    (lambda ()
@@ -2903,9 +2956,11 @@ regex string."
   "Split ARGUMENTS into its switches and search-term parts.
 Return pair of corresponding strings (SWITCHES . SEARCH-TERM)."
   (if (string-match counsel--command-args-separator arguments)
-      (cons
-       (substring arguments (match-end 0))
-       (substring arguments 0 (match-beginning 0)))
+      (let ((args (substring arguments (match-end 0)))
+            (search-term (substring arguments 0 (match-beginning 0))))
+        (if (string-prefix-p "-" arguments)
+            (cons search-term args)
+          (cons args search-term)))
     (cons "" arguments)))
 
 (defun counsel--format-ag-command (extra-args needle)
@@ -3070,7 +3125,7 @@ This uses `counsel-ag' with `counsel-pt-base-command' instead of
   (interactive)
   (let ((counsel-ag-base-command counsel-pt-base-command)
         (counsel--grep-tool-look-around nil))
-    (counsel-ag initial-input :caller 'counsel-pt)))
+    (counsel-ag initial-input nil nil nil :caller 'counsel-pt)))
 
 (ivy-configure 'counsel-pt
   :unwind-fn #'counsel--grep-unwind
@@ -4119,7 +4174,7 @@ When ARG is non-nil, display all active evil registers."
         (if candidates
             (counsel-mark--ivy-read candidates 'counsel-evil-marks)
           (message "no evil marks are active")))
-    (user-error "Required feature `evil' not installed or not loaded.")))
+    (user-error "Required feature `evil' not installed or loaded")))
 
 ;;** `counsel-package'
 (defvar package--initialized)
@@ -4407,6 +4462,7 @@ preselected.  Otherwise, the prefix argument defaults to 0, which
 results in the most recent kill being preselected."
   :type 'boolean)
 
+;; Moved to subr.el in Emacs 27.1.
 (autoload 'xor "array")
 
 ;;;###autoload
@@ -4522,7 +4578,7 @@ matching the register's value description against a regexp in
                 :require-match t
                 :action #'counsel-evil-registers-action
                 :caller 'counsel-evil-registers)
-    (user-error "Required feature `evil' not installed.")))
+    (user-error "Required feature `evil' not installed")))
 
 (ivy-configure 'counsel-evil-registers
   :height 5
@@ -5493,7 +5549,7 @@ This is a combination of `kmacro-ring' and, together in a list, `last-kbd-macro'
               (condition-case nil
                   (format-kbd-macro (if (listp kmacro) (car kmacro) kmacro) 1)
                 ;; Recover from error from `edmacro-fix-menu-commands'.
-                (error "Warning: Cannot display macros containing mouse clicks.")))
+                (error "Warning: Cannot display macros containing mouse clicks")))
       kmacro))
    (cons
     (if (listp last-kbd-macro)
@@ -6758,6 +6814,7 @@ We update it in the callback with `ivy-update-candidates'."
                 (describe-bindings . counsel-descbinds)
                 (describe-function . counsel-describe-function)
                 (describe-variable . counsel-describe-variable)
+                (describe-symbol . counsel-describe-symbol)
                 (apropos-command . counsel-apropos)
                 (describe-face . counsel-describe-face)
                 (list-faces-display . counsel-faces)

@@ -7,7 +7,7 @@
 ;; Author: Natalie Weizenbaum <nex342@gmail.com>
 ;; URL: http://github.com/nex3/perspective-el
 ;; Package-Requires: ((emacs "24.4") (cl-lib "0.5"))
-;; Version: 2.7
+;; Version: 2.8
 ;; Created: 2008-03-05
 ;; By: Natalie Weizenbaum <nex342@gmail.com>
 ;; Keywords: workspace, convenience, frames
@@ -809,8 +809,14 @@ perspective and no others are killed."
            (new-scratch-name (persp-scratch-buffer name))
            (scratch-buffer (get-buffer old-scratch-name)))
       (when scratch-buffer
-        (with-current-buffer scratch-buffer
-          (rename-buffer new-scratch-name))))
+        (if (get-buffer new-scratch-name)
+            ;; https://github.com/nex3/perspective-el/issues/128
+            ;; Buffer already exists, probably on another frame. Pull it into
+            ;; the current perspective; they'll be shared.
+            (persp-add-buffer new-scratch-name)
+          ;; Buffer with new-scratch-name does not exist, so just rename it.
+          (with-current-buffer scratch-buffer
+            (rename-buffer new-scratch-name)))))
     ;; rewire the rest of the perspective inside its data structures
     (remhash (persp-current-name) (perspectives-hash))
     (puthash name (persp-curr) (perspectives-hash))

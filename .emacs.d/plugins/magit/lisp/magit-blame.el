@@ -56,7 +56,7 @@
   "List of styles used to visualize blame information.
 
 Each entry has the form (IDENT (KEY . VALUE)...).  IDENT has
-to be a symbol uniquely identifing the style.  The following
+to be a symbol uniquely identifying the style.  The following
 KEYs are recognized:
 
  `show-lines'
@@ -284,6 +284,7 @@ in `magit-blame-read-only-mode-map' instead.")
     (define-key map (kbd   "q") 'magit-blame-quit)
     (define-key map (kbd "M-w") 'magit-blame-copy-hash)
     (define-key map (kbd "SPC") 'magit-diff-show-or-scroll-up)
+    (define-key map (kbd "S-SPC") 'magit-diff-show-or-scroll-down)
     (define-key map (kbd "DEL") 'magit-diff-show-or-scroll-down)
     map)
   "Keymap for `magit-blame-read-only-mode'.")

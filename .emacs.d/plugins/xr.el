@@ -3,7 +3,7 @@
 ;; Copyright (C) 2019-2020 Free Software Foundation, Inc.
 
 ;; Author: Mattias Engdegård <mattiase@acm.org>
-;; Version: 1.18
+;; Version: 1.19
 ;; Package-Requires: ((emacs "26.1"))
 ;; URL: https://github.com/mattiase/xr
 ;; Keywords: lisp, regexps
@@ -29,6 +29,11 @@
 
 ;;; News:
 
+;; Version 1.19:
+;; - Added filename-specific checks; new PURPOSE argument to `xr-lint'
+;; - Warn about wrapped subsumption, like \(A*C[AB]*\)+
+;; - Improved scope and accuracy of all subsumption checks
+;; - Warn about anchors in conflict with other expressions, like \(A$\)B
 ;; Version 1.18:
 ;; - Fix test broken in Emacs 26
 ;; Version 1.17:
@@ -521,7 +526,7 @@ like (* (* X) ... (* X))."
                  "First item in repetition subsumes last item (wrapped)"
                "Last item in repetition subsumes first item (wrapped)"))))))))
 
-(defun xr--parse-seq (warnings)
+(defun xr--parse-seq (warnings purpose)
   (let ((sequence nil))                 ; reversed
     (while (not (looking-at (rx (or "\\|" "\\)" eos))))
       (let ((item-start (point)))
@@ -530,8 +535,12 @@ like (* (* X) ... (* X))."
          ((looking-at (rx "^"))
           (forward-char 1)
           (if (null sequence)
-              (push 'bol sequence)
-            (xr--report warnings (match-beginning 0)
+              (progn
+                (when (eq purpose 'file)
+                  (xr--report warnings item-start
+                              "Use \\` instead of ^ in file-matching regexp"))
+                (push 'bol sequence))
+            (xr--report warnings item-start
                         (format-message "Unescaped literal `^'"))
             (push "^" sequence)))
 
@@ -539,8 +548,13 @@ like (* (* X) ... (* X))."
          ((looking-at (rx "$"))
           (forward-char 1)
           (if (looking-at (rx (or "\\|" "\\)" eos)))
-              (push 'eol sequence)
-            (xr--report warnings (match-beginning 0)
+              (progn
+                (when (eq purpose 'file)
+                  (xr--report warnings item-start
+                              "Use \\' instead of $ in file-matching regexp"))
+                
+                (push 'eol sequence))
+            (xr--report warnings item-start
                         (format-message "Unescaped literal `$'"))
             (push "$" sequence)))
 
@@ -554,37 +568,52 @@ like (* (* X) ... (* X))."
                     (operand (car sequence)))
                 (when warnings
                   (cond
-                   ;; (* (* X)), for any repetitions *
                    ((and (consp operand)
-                         (memq (car operand)
-                               '(opt zero-or-more one-or-more +? *? ??)))
-                    (xr--report warnings (match-beginning 0)
-                                "Repetition of repetition"))
-                   ;; (* (group (* X))), for any repetitions *
-                   ((and (consp operand)
-                         (eq (car operand) 'group)
-                         (null (cddr operand))
-                         (let ((inner (cadr operand)))
-                           (and (consp inner)
-                                (memq (car inner)
-                                      '(opt zero-or-more one-or-more +? *? ??))
-                                ;; Except (? (group (+ X))), since that may
-                                ;; be legitimate.
-                                (not (and (equal operator "?")
-                                          (memq (car inner)
-                                                '(one-or-more +?)))))))
-                    (xr--report warnings (match-beginning 0)
-                                "Repetition of repetition"))
+                         (or
+                          ;; (* (* X)), for any repetitions *
+                          (memq (car operand)
+                                '(opt zero-or-more one-or-more +? *? ??))
+                          ;; (* (group (* X))), for any repetitions *
+                          (and
+                           (eq (car operand) 'group)
+                           (null (cddr operand))
+                           (let ((inner (cadr operand)))
+                             (and (consp inner)
+                                  (memq (car inner)
+                                        '(opt zero-or-more one-or-more
+                                          +? *? ??))
+                                  ;; Except (? (group (+ X))), since that may
+                                  ;; be legitimate.
+                                  (not (and (equal operator "?")
+                                            (memq (car inner)
+                                                  '(one-or-more +?)))))))))
+                    (let ((outer-opt (member operator '("?" "??")))
+                          (inner-opt (or (memq (car operand) '(opt ??))
+                                         (and (eq (car operand) 'group)
+                                              (memq (caadr operand)
+                                                    '(opt ??))))))
+                      (xr--report warnings (match-beginning 0)
+                                  (if outer-opt
+                                      (if inner-opt
+                                          "Optional option"
+                                        "Optional repetition")
+                                    (if inner-opt
+                                        "Repetition of option"
+                                      "Repetition of repetition")))))
                    ((memq operand xr--zero-width-assertions)
                     (xr--report warnings (match-beginning 0)
-                                "Repetition of zero-width assertion"))
+                                (if (member operator '("?" "??"))
+                                    "Optional zero-width assertion"
+                                  "Repetition of zero-width assertion")))
                    ((and (xr--matches-empty-p operand)
                          ;; Rejecting repetition of the empty string
                          ;; suppresses some false positives.
                          (not (equal operand "")))
                     (xr--report
                      warnings (match-beginning 0)
-                     "Repetition of expression matching an empty string")))
+                     (if (member operator '("?" "??"))
+                         "Optional expression matching an empty string"
+                       "Repetition of expression matching an empty string"))))
                   ;; (* (* X) ... (* X)) etc: wrap-around subsumption
                   (when (member operator '("*" "+" "*?" "+?"))
                     (xr--check-wrap-around-repetition
@@ -606,22 +635,27 @@ like (* (* X) ... (* X))."
           (let ((operand (car sequence)))
             (when warnings
               (cond
-               ;; (** N M (* X)), for any repetition *
                ((and (consp operand)
-                     (memq (car operand)
-                           '(opt zero-or-more one-or-more +? *? ??)))
-                (xr--report warnings (match-beginning 0)
-                            "Repetition of repetition"))
-               ;; (** N M (group (* X))), for any repetition *
-               ((and (consp operand)
-                     (eq (car operand) 'group)
-                     (null (cddr operand))
-                     (let ((inner (cadr operand)))
-                       (and (consp inner)
-                            (memq (car inner)
-                                  '(opt zero-or-more one-or-more +? *? ??)))))
-                (xr--report warnings (match-beginning 0)
-                            "Repetition of repetition"))
+                     (or
+                      ;; (** N M (* X)), for any repetition *
+                      (memq (car operand)
+                               '(opt zero-or-more one-or-more +? *? ??))
+                      ;; (** N M (group (* X))), for any repetition *
+                      (and
+                       (eq (car operand) 'group)
+                       (null (cddr operand))
+                       (let ((inner (cadr operand)))
+                         (and (consp inner)
+                              (memq (car inner)
+                                    '(opt zero-or-more one-or-more
+                                      +? *? ??)))))))
+                (let ((inner-opt (or (memq (car operand) '(opt ??))
+                                     (and (eq (car operand) 'group)
+                                          (memq (caadr operand) '(opt ??))))))
+                  (xr--report warnings (match-beginning 0)
+                              (if inner-opt
+                                  "Repetition of option"
+                                "Repetition of repetition"))))
                ((memq operand xr--zero-width-assertions)
                 (xr--report warnings (match-beginning 0)
                             "Repetition of zero-width assertion"))
@@ -682,7 +716,7 @@ like (* (* X) ... (* X))."
             (when (and question (not colon))
               (error "Invalid \\(? syntax"))
             (goto-char (match-end 0))
-            (let* ((group (xr--parse-alt warnings))
+            (let* ((group (xr--parse-alt warnings purpose))
                    ;; simplify - group has an implicit seq
                    (operand (if (and (listp group) (eq (car group) 'seq))
                                 (cdr group)
@@ -706,14 +740,23 @@ like (* (* X) ... (* X))."
           (push (list 'backref (string-to-number (match-string 1)))
                 sequence))
 
+         ;; not-newline
+         ((looking-at (rx "."))
+          (goto-char (match-end 0))
+          ;; Assume that .* etc is intended.
+          (when (and (eq purpose 'file)
+                     (not (looking-at (rx (any "?*+")))))
+            (xr--report warnings (match-beginning 0)
+                        "Possibly unescaped `.' in file-matching regexp"))
+          (push 'nonl sequence))
+
          ;; various simple substitutions
-         ((looking-at (rx (or "." "\\w" "\\W" "\\`" "\\'" "\\="
+         ((looking-at (rx (or "\\w" "\\W" "\\`" "\\'" "\\="
                               "\\b" "\\B" "\\<" "\\>")))
           (goto-char (match-end 0))
           (let ((sym (cdr (assoc
                            (match-string 0)
-                           '(("." . nonl)
-                             ("\\w" . wordchar) ("\\W" . not-wordchar)
+                           '(("\\w" . wordchar) ("\\W" . not-wordchar)
                              ("\\`" . bos) ("\\'" . eos)
                              ("\\=" . point)
                              ("\\b" . word-boundary) ("\\B" . not-word-boundary)
@@ -1356,13 +1399,13 @@ A-SETS and B-SETS are arguments to `any'."
 
        (_ (equal a b))))))
 
-(defun xr--parse-alt (warnings)
+(defun xr--parse-alt (warnings purpose)
   (let ((alternatives nil))             ; reversed
-    (push (xr--parse-seq warnings) alternatives)
+    (push (xr--parse-seq warnings purpose) alternatives)
     (while (not (looking-at (rx (or "\\)" eos))))
       (forward-char 2)                  ; skip \|
       (let ((pos (point))
-            (seq (xr--parse-seq warnings)))
+            (seq (xr--parse-seq warnings purpose)))
         (when warnings
           (cond
            ((member seq alternatives)
@@ -1383,13 +1426,13 @@ A-SETS and B-SETS are arguments to `any'."
           (cons 'or (nreverse alternatives)))
       (car alternatives))))
 
-(defun xr--parse (re-string warnings)
+(defun xr--parse (re-string warnings purpose)
   (with-temp-buffer
     (set-buffer-multibyte t)
     (insert re-string)
     (goto-char (point-min))
     (let* ((case-fold-search nil)
-           (rx (xr--parse-alt warnings)))
+           (rx (xr--parse-alt warnings purpose)))
       (when (looking-at (rx "\\)"))
         (error "Unbalanced \\)"))
       rx)))
@@ -1643,7 +1686,7 @@ and is one of:
 `brief'         -- short keywords
 `terse'         -- very short keywords
 `medium' or nil -- a compromise (the default)"
-  (xr--in-dialect (xr--parse re-string nil) dialect))
+  (xr--in-dialect (xr--parse re-string nil nil) dialect))
 
 ;;;###autoload
 (defun xr-skip-set (skip-set-string &optional dialect)
@@ -1657,14 +1700,16 @@ See `xr' for a description of the DIALECT argument."
   (xr--in-dialect (xr--parse-skip-set skip-set-string nil) dialect))
 
 ;;;###autoload
-(defun xr-lint (re-string)
+(defun xr-lint (re-string &optional purpose)
   "Detect dubious practices and possible mistakes in RE-STRING.
 This includes uses of tolerated but discouraged constructs.
 Outright regexp syntax violations are signalled as errors.
+If PURPOSE is `file', perform additional checks assuming that RE-STRING
+is used to match a file name.
 Return a list of (OFFSET . COMMENT) where COMMENT applies at OFFSET
 in RE-STRING."
   (let ((warnings (list nil)))
-    (xr--parse re-string warnings)
+    (xr--parse re-string warnings purpose)
     (sort (car warnings) #'car-less-than-car)))
 
 ;;;###autoload

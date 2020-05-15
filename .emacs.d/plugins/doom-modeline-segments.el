@@ -1591,15 +1591,15 @@ TEXT is alternative if icon is not available."
      (evil-state-property evil-state :name t))))
 
 (defsubst doom-modeline--overwrite ()
-"The current overwrite state which is enabled by command `overwrite-mode'."
-(when (and (bound-and-true-p overwrite-mode)
-           (not (bound-and-true-p evil-local-mode)))
-  (doom-modeline--modal-icon " <O> " 'doom-modeline-urgent "Overwrite mode")))
+  "The current overwrite state which is enabled by command `overwrite-mode'."
+  (when (and (bound-and-true-p overwrite-mode)
+             (not (bound-and-true-p evil-local-mode)))
+    (doom-modeline--modal-icon " <O> " 'doom-modeline-urgent "Overwrite mode")))
 
 (defsubst doom-modeline--god ()
-"The current god state which is enabled by the command `god-mode'."
-(when (bound-and-true-p god-local-mode)
-  (doom-modeline--modal-icon " <G> " 'doom-modeline-evil-normal-state "God mode")))
+  "The current god state which is enabled by the command `god-mode'."
+  (when (bound-and-true-p god-local-mode)
+    (doom-modeline--modal-icon " <G> " 'doom-modeline-evil-normal-state "God mode")))
 
 (defsubst doom-modeline--ryo ()
   "The current ryo-modal state which is enabled by the command `ryo-modal-mode'."
@@ -1683,9 +1683,9 @@ and `xha-fly-kyes', etc."
                                  (equal current-input-method "rime"))
                             (if (and (rime--should-enable-p)
                                      (not (rime--should-inline-ascii-p)))
-                                'doom-modeline-buffer-major-mode
-                              '(:inherit (doom-modeline-buffer-minor-mode bold)))
-                          'doom-modeline-buffer-major-mode)
+                                'doom-modeline-input-method
+                              'doom-modeline-input-method-alt)
+                          'doom-modeline-input-method)
                       'mode-line-inactive)
               'help-echo (concat
                           "Current input method: "
