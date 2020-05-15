@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-05-12 08:47:26 dharms>
+;; Modified Time-stamp: <2020-05-15 09:27:28 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -121,12 +121,7 @@
           (lambda ()
             (set-register ?\C-i (cons 'file user-init-file))))
 
-(use-package custom-backups
-  :defines my/backup-exclude-regex
-  :init
-  (setq my/backup-exclude-regex
-        "recentf\\|ido-last\\|emacs-bmk-bmenu-state\\|COMMIT_EDITMSG")
-  )
+(use-package harmsway-backup)
 
 ;; Suppress GNU startup message
 (setq inhibit-startup-message t)

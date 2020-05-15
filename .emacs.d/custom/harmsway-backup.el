@@ -1,11 +1,10 @@
-;;; custom-backups.el --- customize backups and autosaves
-;; Copyright (C) 2016  Dan Harms (dharms)
+;;; harmsway-backup.el --- customize backups and autosaves
+;; Copyright (C) 2016, 2020  Dan Harms (dharms)
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Tuesday, November 29, 2016
-;; Version: 1.0
-;; Modified Time-stamp: <2016-11-30 08:48:25 dharms>
+;; Modified Time-stamp: <2020-05-15 09:27:12 dharms>
 ;; Modified by: Dan Harms
-;; Keywords: backup autosave
+;; Keywords: backup autosave tools
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -21,24 +20,24 @@
 ;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 ;;; Commentary:
-
+;; Configure backups and autosaves.
 ;;
 
 ;;; Code:
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-save ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defvar my/autosave-dir (concat my/user-directory "autosaves/"))
-(unless (file-directory-p my/autosave-dir)
-  (make-directory my/autosave-dir t))
+(defvar harmsway-autosave-dir (concat my/user-directory "autosaves/"))
+(unless (file-directory-p harmsway-autosave-dir)
+  (make-directory harmsway-autosave-dir t))
 (setq auto-save-file-name-transforms
-      `((".*" ,(concat my/autosave-dir "\\1") t)))
+      `((".*" ,(concat harmsway-autosave-dir "\\1") t)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; backups ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defvar my/backup-dir
+(defvar harmsway-backup-dir
   (concat my/user-directory "backups/" (format-time-string "%Y-%m-%d")))
-(unless (file-directory-p my/backup-dir)
-  (make-directory my/backup-dir t))
-(setq backup-directory-alist `(("." . ,my/backup-dir)))
+(unless (file-directory-p harmsway-backup-dir)
+  (make-directory harmsway-backup-dir t))
+(setq backup-directory-alist `(("." . ,harmsway-backup-dir)))
 (setq delete-by-moving-to-trash t)
 (setq backup-by-copying t)
 (setq version-control t)
@@ -48,19 +47,20 @@
 (setq auto-save-timeout 60)
 (setq auto-save-interval 0)             ;disable autosaves due to input events
 
-(defvar my/backup-exclude-regex "recentf"
+(defvar harmsway-backup-exclude-regex
+  "recentf\\|ido-last\\|emacs-bmk-bmenu-state\\|COMMIT_EDITMSG"
   "Regexp of filenmae patterns to prevent backup creation.")
 
-(defun my/backup-predicate (path)
+(defun harmsway-backup-predicate (path)
   "Return whether to backup the file given in PATH."
-  (if (string-match-p my/backup-exclude-regex path)
+  (if (string-match-p harmsway-backup-exclude-regex path)
       nil
     (normal-backup-enable-predicate path)))
 
-(setq backup-enable-predicate #'my/backup-predicate)
+(setq backup-enable-predicate #'harmsway-backup-predicate)
 
-(set-register ?\C-b (cons 'file my/backup-dir))
-(set-register ?\C-a (cons 'file my/autosave-dir))
+(set-register ?\C-b (cons 'file harmsway-backup-dir))
+(set-register ?\C-a (cons 'file harmsway-autosave-dir))
 
-(provide 'custom-backups)
-;;; custom-backups.el ends here
+(provide 'harmsway-backup)
+;;; harmsway-backup.el ends here
