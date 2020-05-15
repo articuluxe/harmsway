@@ -2,8 +2,8 @@
 ;; Copyright (C) 2016, 2020  Dan Harms (dharms)
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Tuesday, November 29, 2016
-;; Modified Time-stamp: <2020-05-15 09:27:12 dharms>
-;; Modified by: Dan Harms
+;; Modified Time-stamp: <2020-05-15 12:24:35 Dan.Harms>
+;; Modified by: Dan.Harms
 ;; Keywords: backup autosave tools
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -31,6 +31,7 @@
   (make-directory harmsway-autosave-dir t))
 (setq auto-save-file-name-transforms
       `((".*" ,(concat harmsway-autosave-dir "\\1") t)))
+(setq tramp-auto-save-directory harmsway-autosave-dir)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; backups ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defvar harmsway-backup-dir

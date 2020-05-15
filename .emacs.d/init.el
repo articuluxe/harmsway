@@ -2,8 +2,8 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-05-15 09:27:28 dharms>
-;; Modified by: Dan Harms
+;; Modified Time-stamp: <2020-05-15 12:24:26 Dan.Harms>
+;; Modified by: Dan.Harms
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -1975,8 +1975,6 @@ Only one letter is shown, the first that applies."
   (setq tramp-verbose 1)
   (when (boundp 'my/user-name)
     (setq tramp-default-user my/user-name))
-  ;; my/autosave-dir defined in custom-backups.el
-  (setq tramp-auto-save-directory my/autosave-dir)
   (add-to-list 'tramp-remote-path 'tramp-own-remote-path)
   (setq remote-file-name-inhibit-cache 10)
   (setq tramp-completion-reread-directory-timeout 10)
