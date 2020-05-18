@@ -1,9 +1,9 @@
 ;; ns.el --- mac gui settings
-;; Copyright (C) 2015-2016, 2018  Dan Harms (dharms)
+;; Copyright (C) 2015-2016, 2018, 2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2018-08-08 17:42:22 dharms>
+;; Modified Time-stamp: <2020-05-18 11:27:09 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -36,7 +36,9 @@
 ;; (setq mouse-wheel-follow-mouse nil)
 
 ;; toggle full-screen
-(defun ns-toggle-full-screen() (interactive)
+(defun ns-toggle-full-screen()
+  "Toggle full-screen on darwin."
+  (interactive)
   (set-frame-parameter nil 'fullscreen
                        (if (frame-parameter nil 'fullscreen)
                            nil 'fullboth)))
