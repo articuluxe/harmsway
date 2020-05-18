@@ -1,8 +1,8 @@
 ;; coding.el --- coding utilities
-;; Copyright (C) 2015-2019  Dan Harms (dharms)
+;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2019-09-04 10:11:53 dan.harms>
+;; Modified Time-stamp: <2020-05-18 10:08:30 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -135,33 +135,36 @@
   )
 (add-hook 'c-initialization-hook 'harmsway-c-init-hook)
 
-(add-hook
- 'c-mode-common-hook
- (lambda ()
-   (require 'compile)
-   (setq-local indent-tabs-mode nil)
-   (setq c-tab-always-indent nil)
-   (setq c-insert-tab-function 'indent-for-tab-command)
-   ;; handle CamelCase
-   (if (version< emacs-version "24.3")
-       (c-subword-mode 1)
-     (subword-mode 1))
-   (c-toggle-hungry-state t)
-   (setq comment-start "/*") (setq comment-end "*/")
-   ;; (setq comment-column 40)
-   (setq hide-ifdef-inititially t)
-   ;; (setq hide-ifdef-lines t)
-   (setq hide-ifdef-shadow t)
-   (hide-ifdef-mode 1)
-   (make-local-variable 'company-backends)
-   (setq company-backends
-         (list
-          (append
-           (list 'company-c-headers 'company-c-preprocessor)
-           (copy-tree
-            (car company-backends)))))
-   (setq-local company-smart-backend 'company-clang)
-   ))
+(defun harmsway-c-mode-common-fn-harmsway ()
+  "Common initialization for `c-mode-common-hook'."
+  (require 'compile)
+  (setq-local indent-tabs-mode nil)
+  (setq c-tab-always-indent nil)
+  (setq c-insert-tab-function 'indent-for-tab-command)
+  ;; handle CamelCase
+  (if (version< emacs-version "24.3")
+      (c-subword-mode 1)
+    (subword-mode 1))
+  (c-toggle-hungry-state t)
+  (setq comment-start "/*") (setq comment-end "*/")
+  ;; (setq comment-column 40)
+  (setq hide-ifdef-inititially t)
+  ;; (setq hide-ifdef-lines t)
+  (setq hide-ifdef-shadow t)
+  (hide-ifdef-mode 1)
+  (make-local-variable 'company-backends)
+  (setq company-backends
+        (list
+         (append
+          (list 'company-c-headers 'company-c-preprocessor)
+          (copy-tree
+           (car company-backends)))))
+  (setq-local company-smart-backend 'company-clang)
+  )
+
+(setq harmsway-c-mode-common-fn #'harmsway-c-mode-common-fn-harmsway)
+(add-hook 'c-mode-common-hook
+          (lambda () (funcall harmsway-c-mode-common-fn)))
 
 (add-hook 'prog-mode-hook
           (lambda()

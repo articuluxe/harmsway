@@ -3,7 +3,7 @@
 ;; Copyright (C) 2015-2017, 2019-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-05-03 09:11:56 dharms>
+;; Modified Time-stamp: <2020-05-18 10:16:02 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -30,24 +30,20 @@
 (with-eval-after-load 'org
   (add-to-list 'org-agenda-files "~/Dropbox"))
 
-(add-hook
- 'c-initialization-hook
- (lambda ()
-   (c-add-style "talbot"
-                (quote
-                 ("harmsway"            ;parent style
-                  (c-offsets-alist
-                   . (
-                      ;; talbot style customizations
-                      (innamespace . 0)
-                      ))
-                  )) t)
-   ) t)
+(c-add-style "talbot"
+             (quote
+              ("harmsway"               ;parent style
+               (c-offsets-alist
+                . (
+                   ;; talbot style customizations
+                   (innamespace . 0)
+                   ))
+               )))
 
 (defun harmsway-c-mode-common-fn-talbot ()
   "Function on `c-mode-common-hook'."
-   ;; talbot-specific customization
-  )
+  ;; talbot-specific customization
+  (harmsway-c-mode-common-fn-harmsway))
 
 (harmsway-load-projectdefs '("harmsway.projectdef"))
 
@@ -55,8 +51,7 @@
 ;; activate site
 (setq deft-directory "~/Dropbox/notes")
 (setq c-default-style '((java-mode . "java") (awk-mode . "awk") (other . "talbot")))
-(add-hook
- 'c-mode-common-hook #'harmsway-c-mode-common-fn-talbot t)
+(setq harmsway-c-mode-common-fn #'harmsway-c-mode-common-fn-talbot)
 
 
 ;; talbot ends here
