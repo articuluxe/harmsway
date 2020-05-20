@@ -41,6 +41,8 @@ brew install ripgrep
 brew install wget
 brew install duti
 brew install keychain
+brew install xz
+brew install cppcheck
 
 brew install coreutils
 (setq insert-directory-program "gls")
