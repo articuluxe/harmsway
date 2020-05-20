@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-05-20 08:59:24 dharms>
+;; Modified Time-stamp: <2020-05-20 14:33:53 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1231,10 +1231,28 @@ Only one letter is shown, the first that applies."
 (setq comint-buffer-maximum-size 1024)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; vterm ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defun vterm-counsel-yank-pop-action (orig-fun &rest args)
+  "Fix counsel's yank command using ORIG-FUN in vterm buffers.
+ARGS are the additional arguments."
+  (if (eq major-mode 'vterm-mode)
+      (let ((inhibit-read-only t)
+            (yank-undo-function (lambda (_start _end) (vterm-undo))))
+        (cl-letf (((symbol-function 'insert-for-yank)
+               (lambda (str) (vterm-send-string str t))))
+            (apply orig-fun args)))
+    (apply orig-fun args)))
+
+(advice-add 'counsel-yank-pop-action :around #'vterm-counsel-yank-pop-action)
+
 (use-package vterm
   :if (version<= "25.1" emacs-version)
   :commands vterm
-  :bind ("C-c 0vv" . vterm))
+  :bind ("C-c 0vv" . vterm)
+  :init
+  (setq vterm-kill-buffer-on-exit t)
+  (setq vterm-copy-exclude-prompt t)
+  (setq vterm-buffer-name-string "VTERM %s")
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; vterm-toggle ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package vterm-toggle

@@ -1,11 +1,11 @@
 #!/usr/bin/env sh
 # -*- Mode: sh -*-
 # .emacs_bash --- bashrc for emacs
-# Copyright (C) 2017-2019  Dan Harms (dharms)
+# Copyright (C) 2017-2020  Dan Harms (dharms)
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Saturday, September 23, 2017
 # Version: 1.0
-# Modified Time-stamp: <2019-09-03 10:39:13 dan.harms>
+# Modified Time-stamp: <2020-05-19 12:22:35 dharms>
 # Modified by: Dan Harms
 # Keywords: bash shell in emacs
 
@@ -20,5 +20,26 @@ if [ ! -z "$(command -v dircolors)" ]; then
 else
     export TERM=xterm-256color
 fi
+
+vterm_printf(){
+    if [ -n "$TMUX" ]; then
+        # Tell tmux to pass the escape sequences through
+        # (Source: http://permalink.gmane.org/gmane.comp.terminal-emulators.tmux.user/1324)
+        printf "\ePtmux;\e\e]%s\007\e\\" "$1"
+    elif [ "${TERM%%-*}" = "screen" ]; then
+        # GNU screen (screen, screen-256color, screen-256color-bce)
+        printf "\eP\e]%s\007\e\\" "$1"
+    else
+        printf "\e]%s\e\\" "$1"
+    fi
+}
+
+if [ "$INSIDE_EMACS" = 'vterm' ]; then
+    clear(){
+        vterm_printf "51;Evterm-clear-scrollback";
+        tput clear;
+    }
+fi
+
 
 # code ends here
