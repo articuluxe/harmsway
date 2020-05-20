@@ -141,7 +141,7 @@
 
 ;;;; line-numbers
    (line-number                                  :foreground fg-2)
-   (line-number-current-line                     :foreground bg+2 :inverse-video t :inherit line-number)
+   (line-number-current-line                     :foreground fg :background bg+2)
 
 ;;;; linum-mode
    (linum                                        :foreground fg-3 :inherit fringe)
@@ -167,7 +167,7 @@
    (company-tooltip-annotation                   :foreground red)
    (company-tooltip-common                       :foreground yellow)
    (company-tooltip-selection                    :background bg+1)
-   (company-preview-common                       :foreground fg-1 :background blue)
+   (company-preview-common                       :foreground blue :background bg+2)
 
 ;;;; diff-hl-mode
    (diff-hl-change                               :foreground blue)
@@ -201,6 +201,9 @@
 ;;;; hl-line-mode
    (hl-line                                      :background bg+1)
 
+;;;; hl-todo-mode
+   (hl-todo                                      :slant italic :weight bold)
+
 ;;;; ido-mode
    ;; TODO: These don't feel quite right
    (ido-subdir                                   :foreground fg-2)
@@ -215,6 +218,10 @@
 ;;;; show-paren-mode
    (show-paren-match                             :foreground fg :background blue)
    (show-paren-mismatch                          :background red :inverse-video t)
+
+;;;; selectrum
+   (selectrum-current-candidate                  :foreground orange)
+   (selectrum-completion-annotation              :foreground blue)
 
    ))
 

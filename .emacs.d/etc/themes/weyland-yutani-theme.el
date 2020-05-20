@@ -41,35 +41,66 @@
 (deftheme weyland-yutani)
 (let*
     ((class '((class color) (min-colors 89)))
-
-     (fg1        "#a9b9c9")                    ;#A9B4C1
+     ;; #969ecb
+     (fg1        "#949bc7")                    ;#A9B4C1 #a8b8c8 #a6b1c4
      (fg2        (color-lighten-name fg1 3))
      (fg3        (color-darken-name  fg1 3))
      (fg4        (color-darken-name  fg1 6))
 
-     (bg1        "#232830")             ;#232830
+     (bg1        "#1D2333")             ;#232830 #222534 #1D2332 #1D2332 #1C2235
      (bg2        (color-lighten-name bg1 3))
      (bg3        (color-lighten-name bg2 2))
      (bg4        "#3c3a50")
      (key2       "#bbe074")
      (key3       "#b3f35c")
-
-     (keyword    "#91b562")             ;#90b55f
-     (func       "#d490e9")             ;#d18ff6
-
-     (type       "#aa9fee")             ;#a898ff
-
-     (var        "#bfa681")
-     (builtin    "#aa9fee")             ;#C278FF
-     (const      "#5ea9e0")
+     (keyword    "#9cbb71")             ;#9ebe68 #92b662 #98be65 #97BC64
+     (type       "#927efb")
+     (func       "#c691e9")             ;#d590ef
+     ;;  #c678dd
+     (var        "#B666E6")             ;#B666E2 #B766E5
+     (builtin    "#927efb")
+     (const      "#67a7d2")
      (negate     "#c5b159")
-     (str        "#55b1bd")
+     (str        "#55b0bb")
      (num        "#e974c7")
      (err        "#f70108")
      (comment    "#5e7188")
      (region-bg  "#30374c")
      (region-fg  "#a59ef3")
      (warning    "#ee78e8")
+
+     ;; #B666E6
+     ;; [#9cbb71, #927efb, #c691e9, #b665e5, #67a7d2, #55b0bb, #969ecb]
+     ;; [#9cbb71, #927efb, #c691e9, #b665e5, #67a7d2, #55b0bb]
+
+     ;; #d393ef #ba5577
+     ;; ["#b368e1", "#dc95fc", "#9ebe68", "#958ae6", "#1d2333", "#a6b1c4"]
+
+     ;; [#9ebe68, #dc95fc, #b368e1, #958ae6, #6bb8b3]
+
+     ;; [#9ebe68, #dc95fc, #b368e1, #958ae6, #a6b1c4]
+     ;; #B8B8FF #c585e2
+
+     ;; #6B60BC #BA6FD9
+     ;; #b46ed9 #c567ce
+
+     ;; #b76dd6 #de91fd
+
+     ;; [#9abc63, #c585e2, #8f89e5, #30b6f3, #1fc468]
+
+     ;; #fe74fe
+
+     ;; #c585e3,#9fb978,#9189e5
+
+     ;; #9abb63
+
+     ;; #c072de #B35CD9
+
+     ;; #b667e1 #c996eb #b96bde
+
+     ;; #d48ae9 #dd93eb #da90e5 #dd91e6
+
+     ;; #b96fe3 {"#d69ae8", "#968ae6"}
 
      ;; Gold #A4A460 "#cab2fe" #a1c97f
      ;; Red  #E56399
@@ -127,7 +158,7 @@
    `(default                       ((,class  (:background  ,bg1 :foreground ,fg1))))
    `(cursor                        ((,class  (:background  ,fg1))))
    `(font-lock-warning-face        ((,class  (:foreground  ,warning))))
-   `(font-lock-function-name-face  ((,class  (:foreground  ,func))))
+   `(font-lock-function-name-face  ((,class  (:foreground  ,func :italic t))))
    `(font-lock-variable-name-face  ((,class  (:foreground  ,var))))
    `(font-lock-keyword-face        ((,class  (:foreground  ,keyword))))
    `(font-lock-comment-face        ((,class  (:foreground  ,comment))))

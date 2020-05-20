@@ -175,6 +175,7 @@
 ;;     hl-line-mode
 ;;     hl-todo
 ;;     hydra
+;;     hyperlist
 ;;     ibuffer
 ;;     icomplete
 ;;     ido-mode
@@ -205,6 +206,7 @@
 ;;     markup-faces (`adoc-mode')
 ;;     mentor
 ;;     messages
+;;     minimap
 ;;     modeline
 ;;     mood-line
 ;;     mu4e
@@ -837,7 +839,7 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(italic ((,class (:foreground ,fg-special-cold :slant italic))))
    `(nobreak-hyphen ((,class (:foreground ,fg-escape-char-construct))))
    `(nobreak-space ((,class (:foreground ,fg-escape-char-construct :underline t))))
-   `(minibuffer-prompt ((,class (:foreground ,cyan-alt))))
+   `(minibuffer-prompt ((,class (:foreground ,cyan-alt-other))))
    `(mm-command-output ((,class (:foreground ,red-alt-other))))
    `(mm-uu-extract ((,class (:background ,bg-dim :foreground ,fg-special-mild))))
    `(next-error ((,class (:inherit modus-theme-subtle-red))))
@@ -1590,8 +1592,8 @@ Also bind `class' to ((class color) (min-colors 89))."
    ;;;; flycheck
    `(flycheck-error
      ((,(append '((supports :underline (:style wave))) class)
-       (:foreground ,red-nuanced :underline (:color ,fg-lang-error :style wave)))
-      (,class (:foreground ,red-nuanced :underline (:color ,fg-lang-error :style line)))))
+       (:underline (:color ,fg-lang-error :style wave)))
+      (,class (:foreground ,fg-lang-error :underline t))))
    `(flycheck-error-list-checker-name ((,class (:foreground ,magenta-active))))
    `(flycheck-error-list-column-number ((,class (:foreground ,fg-special-cold))))
    `(flycheck-error-list-error ((,class (:foreground ,red :weight ,modus-theme-bold))))
@@ -1607,13 +1609,13 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(flycheck-fringe-warning ((,class (:inherit modus-theme-fringe-yellow))))
    `(flycheck-info
      ((,(append '((supports :underline (:style wave))) class)
-       (:foreground ,blue-nuanced :underline (:color ,fg-lang-note :style wave)))
-      (,class (:foreground ,blue-nuanced :underline (:color ,fg-lang-note :style line)))))
+       (:underline (:color ,fg-lang-note :style wave)))
+      (,class (:foreground ,fg-lang-note :underline t))))
    `(flycheck-verify-select-checker ((,class (:box (:line-width 1 :color nil :style released-button)))))
    `(flycheck-warning
      ((,(append '((supports :underline (:style wave))) class)
-       (:foreground ,yellow-nuanced :underline (:color ,fg-lang-warning :style wave)))
-      (,class (:foreground ,yellow-nuanced :underline (:color ,fg-lang-warning :style line)))))
+       (:underline (:color ,fg-lang-warning :style wave)))
+      (,class (:foreground ,fg-lang-warning :underline t))))
    ;;;; flycheck-indicator
    `(flycheck-indicator-disabled ((,class (:foreground ,fg-inactive :slant ,modus-theme-slant))))
    `(flycheck-indicator-error ((,class (:foreground ,red-active :weight ,modus-theme-bold))))
@@ -1631,24 +1633,24 @@ Also bind `class' to ((class color) (min-colors 89))."
    ;;;; flymake
    `(flymake-error
      ((,(append '((supports :underline (:style wave))) class)
-       (:foreground ,red-nuanced :underline (:color ,fg-lang-error :style wave)))
-      (,class (:foreground ,red-nuanced :underline (:color ,fg-lang-error :style line)))))
+       (:underline (:color ,fg-lang-error :style wave)))
+      (,class (:foreground ,fg-lang-error :underline t))))
    `(flymake-note
      ((,(append '((supports :underline (:style wave))) class)
-       (:foreground ,blue-nuanced :underline (:color ,fg-lang-note :style wave)))
-      (,class (:foreground ,blue-nuanced :underline (:color ,fg-lang-note :style line)))))
+       (:underline (:color ,fg-lang-note :style wave)))
+      (,class (:foreground ,fg-lang-note :underline t))))
    `(flymake-warning
      ((,(append '((supports :underline (:style wave))) class)
-       (:foreground ,yellow-nuanced :underline (:color ,fg-lang-warning :style wave)))
-      (,class (:foreground ,yellow-nuanced :underline (:color ,fg-lang-warning :style line)))))
+       (:underline (:color ,fg-lang-warning :style wave)))
+      (,class (:foreground ,fg-lang-warning :underline t))))
    ;;;; flyspell
    `(flyspell-duplicate
      ((,(append '((supports :underline (:style wave))) class)
-       (:foreground ,fg-lang-warning :underline (:style wave)))
+       (:underline (:color ,fg-lang-warning :style wave)))
       (,class (:foreground ,fg-lang-warning :underline t))))
    `(flyspell-incorrect
      ((,(append '((supports :underline (:style wave))) class)
-       (:foreground ,fg-lang-error :underline (:style wave)))
+       (:underline (:color ,fg-lang-error :style wave)))
       (,class (:foreground ,fg-lang-error :underline t))))
    ;;;; flyspell-correct
    `(flyspell-correct-highlight-face ((,class (:inherit modus-theme-refine-green))))
@@ -1989,6 +1991,16 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(hydra-face-pink ((,class (:foreground ,magenta-alt :weight bold))))
    `(hydra-face-red ((,class (:foreground ,red :weight bold))))
    `(hydra-face-teal ((,class (:foreground ,cyan :weight bold))))
+   ;;;; hyperlist
+   `(hyperlist-condition ((,class (:foreground ,green))))
+   `(hyperlist-hashtag ((,class (:foreground ,yellow))))
+   `(hyperlist-operator ((,class (:foreground ,blue-alt))))
+   `(hyperlist-paren ((,class (:foreground ,cyan-alt-other))))
+   `(hyperlist-quote ((,class (:foreground ,cyan-alt))))
+   `(hyperlist-ref ((,class (:foreground ,magenta-alt-other))))
+   `(hyperlist-stars ((,class (:foreground ,fg-alt))))
+   `(hyperlist-tag ((,class (:foreground ,red))))
+   `(hyperlist-toplevel ((,class (:foreground ,fg-main :weight bold))))
    ;;;; icomplete
    `(icomplete-first-match ((,class (:foreground ,magenta :weight bold))))
    ;;;; icomplete-vertical
@@ -2241,7 +2253,7 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(magit-hash ((,class (:foreground ,fg-special-warm))))
    `(magit-head ((,class (:inherit magit-branch-local))))
    `(magit-header-line ((,class (:foreground ,cyan-active :weight bold))))
-   `(magit-header-line-key ((,class (:foreground ,blue-active :weight bold))))
+   `(magit-header-line-key ((,class (:foreground ,red-active :weight bold))))
    `(magit-header-line-log-select ((,class (:foreground ,fg-main :weight bold))))
    `(magit-keyword ((,class (:foreground ,magenta))))
    `(magit-keyword-squash ((,class (:foreground ,yellow-alt-other :weight bold))))
@@ -2388,6 +2400,9 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(message-header-xheader ((,class (:foreground ,blue-alt-other))))
    `(message-mml ((,class (:foreground ,green-alt-other))))
    `(message-separator ((,class (:background ,bg-alt :foreground ,fg-special-warm))))
+   ;;;; minimap
+   `(minimap-active-region-background ((,class (:background ,bg-active))))
+   `(minimap-current-line-face ((,class (:background ,cyan-intense-bg :foreground ,fg-main))))
    ;;;; modeline
    `(mode-line ((,class (:box ,(modus-vivendi-theme-modeline-box bg-inactive fg-inactive t)
                               ,@(modus-vivendi-theme-modeline-props

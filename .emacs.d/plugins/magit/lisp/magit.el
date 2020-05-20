@@ -222,7 +222,7 @@ and/or `magit-branch-remote-head'."
 ;;; Dispatch Popup
 
 ;;;###autoload (autoload 'magit-dispatch "magit" nil t)
-(define-transient-command magit-dispatch ()
+(transient-define-prefix magit-dispatch ()
   "Invoke a Magit command from a list of available commands."
   ["Transient and dwim commands"
    [("A" "Apply"          magit-cherry-pick)
@@ -284,7 +284,7 @@ This affects `magit-git-command', `magit-git-command-topdir',
 (defvar magit-git-command-history nil)
 
 ;;;###autoload (autoload 'magit-run "magit" nil t)
-(define-transient-command magit-run ()
+(transient-define-prefix magit-run ()
   "Run git or another command, or launch a graphical utility."
   [["Run git subcommand"
     ("!" "in repository root"   magit-git-command-topdir)
@@ -445,7 +445,19 @@ and Emacs to it."
                               (directory-file-name topdir))))
                 (when (string-match "\\`magit-\\([0-9]\\{8\\}\\.[0-9]*\\)"
                                     dirname)
-                  (setq magit-version (match-string 1 dirname))))))))
+                  (setq magit-version (match-string 1 dirname)))))
+            ;; If all else fails, just report the commit hash. It's
+            ;; better than nothing and we cannot do better in the case
+            ;; of e.g. a shallow clone.
+            (progn
+              (push 'hash debug)
+              ;; Same check as above to see if it's really the Magit repo.
+              (when (and (file-exists-p gitdir)
+                         (file-exists-p
+                          (expand-file-name "../lisp/magit.el" gitdir)))
+                (setq magit-version
+                      (let ((default-directory topdir))
+                        (magit-git-string "rev-parse" "HEAD"))))))))
     (if (stringp magit-version)
         (when print-dest
           (princ (format "Magit %s, Git %s, Emacs %s, %s"

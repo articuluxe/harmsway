@@ -44,7 +44,7 @@
                        "#444444"    ; current-line
                        "#282828"    ; fade
                        "#d7d7af"    ; fg
-                       "#87af87"    ; fg+
+                       "#ffffbc"    ; fg+
                        "#87afaf"    ; primary
                        "#ff00ff"    ; red
                        "#800000"    ; orange

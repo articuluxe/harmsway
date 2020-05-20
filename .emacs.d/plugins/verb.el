@@ -243,7 +243,7 @@ be overriden by re-specifying them somwhere in the headings
 hierarchy."
   :type '(alist :key-type string :value-type string))
 
-(defcustom verb-enable-elisp-completion nil
+(defcustom verb-enable-elisp-completion t
   "When set to a non-nil value, enable Lisp completion in code tags.
 Completion is handled by the `verb-elisp-completion-at-point'
 function.
@@ -435,8 +435,9 @@ more details on how to use it."
   :group 'verb
   (when verb-mode
     (verb--setup-font-lock-keywords)
-    (add-hook 'completion-at-point-functions #'verb-elisp-completion-at-point
-              nil 'local)
+    (when verb-enable-elisp-completion
+      (add-hook 'completion-at-point-functions #'verb-elisp-completion-at-point
+                nil 'local))
     (when (buffer-file-name)
       (verb--log nil 'I
                  "Verb mode enabled in buffer: %s"
@@ -610,35 +611,34 @@ KEY and VALUE must be strings.  KEY must not be the empty string."
 
 (defun verb-elisp-completion-at-point ()
   "Completion at point function for Lisp code tags."
-  (when verb-enable-elisp-completion
-    (when-let (;; Get the contents inside the code tag: {{<content>}}
-               (beg (save-excursion
-                      (when (search-backward (car verb-code-tag-delimiters)
-                                             (line-beginning-position) t)
-                        (match-end 0))))
-               (end (save-excursion
-                      (when (search-forward (cdr verb-code-tag-delimiters)
-                                            (line-end-position) t)
-                        (match-beginning 0)))))
-      ;; Set up the buffer where we'll run `elisp-completion-at-point'
-      (unless verb--elisp-completion-buffer
-        (setq verb--elisp-completion-buffer
-              (get-buffer-create " *verb-elisp-completion*")))
-      ;; Copy the contents of the code tag to the empty buffer, run
-      ;; completion there
-      (let* ((code (buffer-substring-no-properties beg end))
-             (point-offset (1+ (- (point) beg)))
-             (completions (with-current-buffer verb--elisp-completion-buffer
-                            (erase-buffer)
-                            (insert code)
-                            (goto-char point-offset)
-                            (elisp-completion-at-point))))
-        ;; The beginning/end positions will belong to the other buffer, add
-        ;; `beg' so that they make sense on the original one
-        (when completions
-          (append (list (+ (nth 0 completions) beg -1)
-                        (+ (nth 1 completions) beg -1))
-                  (cddr completions)))))))
+  (when-let (;; Get the contents inside the code tag: {{<content>}}
+             (beg (save-excursion
+                    (when (search-backward (car verb-code-tag-delimiters)
+                                           (line-beginning-position) t)
+                      (match-end 0))))
+             (end (save-excursion
+                    (when (search-forward (cdr verb-code-tag-delimiters)
+                                          (line-end-position) t)
+                      (match-beginning 0)))))
+    ;; Set up the buffer where we'll run `elisp-completion-at-point'
+    (unless verb--elisp-completion-buffer
+      (setq verb--elisp-completion-buffer
+            (get-buffer-create " *verb-elisp-completion*")))
+    ;; Copy the contents of the code tag to the empty buffer, run
+    ;; completion there
+    (let* ((code (buffer-substring-no-properties beg end))
+           (point-offset (1+ (- (point) beg)))
+           (completions (with-current-buffer verb--elisp-completion-buffer
+                          (erase-buffer)
+                          (insert code)
+                          (goto-char point-offset)
+                          (elisp-completion-at-point))))
+      ;; The beginning/end positions will belong to the other buffer, add
+      ;; `beg' so that they make sense on the original one
+      (when completions
+        (append (list (+ (nth 0 completions) beg -1)
+                      (+ (nth 1 completions) beg -1))
+                (cddr completions))))))
 
 (defun verb--log (request level &rest args)
   "Log a message in the *Verb Log* buffer.
@@ -882,8 +882,9 @@ spec, not only the section contained by the source block."
   "Validate and prepare request spec RS to be used.
 
 The following checks/preparations are run:
-- Check if `verb-base-headers' needs to be applied.
-- Run validations with `verb-request-spec-validate'.
+1) Check if `verb-base-headers' needs to be applied.
+2) Apply request mapping function, if one was specified.
+3) Run validations with `verb-request-spec-validate'.
 
 After that, return RS."
   ;; Use `verb-base-headers' if necessary
@@ -891,6 +892,19 @@ After that, return RS."
     (setq rs (verb-request-spec-override
               (verb-request-spec :headers verb-base-headers)
               rs)))
+  ;; Apply the request mapping function, if present
+  (when-let ((fn-name (cdr (assoc-string "verb-map-request"
+                                         (oref rs metadata) t)))
+             (fn-sym (intern fn-name)))
+    (if (fboundp fn-sym)
+        (setq rs (funcall (symbol-function fn-sym) rs))
+      (user-error "No request mapping function with name \"%s\" exists"
+                  fn-name))
+    (unless (equal (type-of rs)
+                   (if (< emacs-major-version 26) 'vector 'verb-request-spec))
+      (user-error (concat "Request mapping function \"%s\" must return a "
+                          "`verb-request-spec' value")
+                  fn-name)))
   ;; Validate and return
   (verb-request-spec-validate rs))
 
@@ -1561,9 +1575,8 @@ NUM is this request's identification number."
         ('stay-window (save-selected-window
                         (switch-to-buffer-other-window (current-buffer))))
         ('this-window (switch-to-buffer (current-buffer)))
-        ('minibuffer (message "%s" (oref verb-http-response status)))))
+        ('minibuffer (message "%s" (oref verb-http-response status))))
 
-    (with-current-buffer response-buf
       (verb-response-body-mode)
 
       ;; Run post response hook
