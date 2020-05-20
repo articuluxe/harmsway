@@ -2,8 +2,8 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-05-15 12:24:26 Dan.Harms>
-;; Modified by: Dan.Harms
+;; Modified Time-stamp: <2020-05-20 08:59:24 dharms>
+;; Modified by: Dan Harms
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -640,7 +640,9 @@ line."
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; sudo-edit ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package sudo-edit :bind ("C-c M-r" . sudo-edit))
+(use-package sudo-edit
+  :bind (("C-c M-r" . sudo-edit)
+         ("C-c \e\er" . sudo-edit-find-file)))
 
 ;; work around bug in cc-mode in emacs 24.4
 ;; see debbugs.gnu.org/db/18/18845.html
