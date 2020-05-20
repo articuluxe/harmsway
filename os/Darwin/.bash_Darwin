@@ -1,2 +1,4 @@
 # -*- Mode: sh -*-
 # .bash_Darwin
+
+alias settitlepwd='set-terminal-title.sh $(basename `pwd`)'
