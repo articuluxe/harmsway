@@ -17,6 +17,7 @@
   - mingw
   - llvm
   - make
+  - jq
   - python
   - zip, unzip, gzip
 
