@@ -37,8 +37,8 @@
 ;;; Commentary:
 ;;
 ;; Translate ANSI control sequences into text properties through state machine
-;; emulation. This provides a far more accurate, comprehensive and performant
-;; result than `ansi-color.el' which is built-into Emacs.
+;; emulation. This provides a far more accurate, comprehensive result than
+;; `ansi-color.el' that is built-into Emacs, without compromising on performance.
 ;;
 ;; Please see README.org for documentation including example configurations.
 ;;
@@ -262,7 +262,7 @@ BODY must contain rules with each rule being a list of form:
  (:match (condition &key (skip 1)) rule-body-form..)
 
 CONDITION must be a Lisp form which is evaluated as part of a COND
-condition clause. If it is an atom, it is rewritten to (= CONDITION ATTRIB).
+condition clause. If it is an atom, it is rewritten to (eq CONDITION ATTRIB).
 Otherwise it is used as is. As per COND statement, if CONDITION evaluates
 to non-nil, rule body forms are evaluated as part of the body of the COND clause.
 
@@ -312,7 +312,7 @@ going down SGR-LIST one element at a time."
             (when (or (null skip) (cddr rest))
               (error "Rule (%s (%s..)..) has malformed arguments: %s" tag c rest))
             ;; Condition part of COND
-            collect `(,(if (atom c) `(= ,c ,attrib) c)
+            collect `(,(if (atom c) `(eq ,c ,attrib) c)
                       ;; Body of COND
                       ,@rule-body
                       (setq ,SGR-list
@@ -326,23 +326,13 @@ going down SGR-LIST one element at a time."
   "Update state machine based on SGR-LIST (list of SGR attributes /integers)."
   (xterm-color--create-SGR-table (elem SGR-list)
     (:match (0)  (reset!))                              ; RESET everything
-
     (:match ((<= 30 elem 37)) (set-f! (- elem 30)))     ; ANSI FG color
     (:match ((<= 40 elem 47)) (set-b! (- elem 40)))     ; ANSI BG color
-
     (:match (39) (set-f!   nil))                        ; RESET FG color (switch to default)
     (:match (49) (set-b!   nil))                        ; RESET BG color (switch to default)
     (:match (1)  (set-a!   +bright+))
     (:match (2)  (unset-a! +bright+))
-    (:match (3)  (set-a!   +italic+))
-    (:match (4)  (set-a!   +underline+))
-    (:match (7)  (set-a!   +negative+))
-    (:match (9)  (set-a!   +strike-through+))
     (:match (22) (unset-a! +bright+))
-    (:match (23) (unset-a! +italic+))
-    (:match (24) (unset-a! +underline+))
-    (:match (27) (unset-a! +negative+))
-    (:match (29) (unset-a! +strike-through+))
 
     (:match ((and (eq 38 (cl-first SGR-list))
                   (eq 2 (cl-second SGR-list)))          ; Truecolor (24-bit) FG color
@@ -401,7 +391,16 @@ going down SGR-LIST one element at a time."
             ;; mapped to xterm-color-names-bright by xterm-color-256
             (set-f! (- elem 82)))
     ;; Same for BG, rescale to 8-15
-    (:match ((<= 100 elem 107)) (set-b! (- elem 92))))) ; AIXTERM hi-intensity BG
+    (:match ((<= 100 elem 107)) (set-b! (- elem 92)))   ; AIXTERM hi-intensity BG
+
+    (:match (4)  (set-a!   +underline+))
+    (:match (24) (unset-a! +underline+))
+    (:match (3)  (set-a!   +italic+))
+    (:match (23) (unset-a! +italic+))
+    (:match (9)  (set-a!   +strike-through+))
+    (:match (29) (unset-a! +strike-through+))
+    (:match (7)  (set-a!   +negative+))
+    (:match (27) (unset-a! +negative+))))
 
 (defsubst xterm-color--SGR-attributes (list)
   "Convert LIFO list of SGR characters to FIFO list of SGR attributes (integers).
@@ -444,11 +443,11 @@ Given (48 49 50 59 50 50 59 48 49) return (10 22 210)"
   "Update state machine based on CSI parameters collected so far.
 Parameters are taken from `xterm-color--CSI-list' which stores them
 in LIFO order."
-  (let* ((csi xterm-color--CSI-list)
-         (term (car csi))               ; final parameter, terminator
-         (params (cdr csi)))            ; rest of parameters, LIFO order
+  (let* ((csi    xterm-color--CSI-list)
+         (term   (car csi))               ; final parameter, terminator
+         (params (cdr csi)))              ; rest of parameters, LIFO order
     (setq xterm-color--CSI-list nil)
-    (cond ((= ?m term)
+    (cond ((eq ?m term)
            ;; SGR
            (let ((SGR-list (if (null params) '(0)
                              (xterm-color--SGR-attributes params))))
@@ -592,51 +591,51 @@ if they are present in STRING."
     (cl-loop
      with state = xterm-color--state and result
      for char across string do
-     (cl-case state
-       (:char
+     (cond
+       ((eq state :char)
         (cond
-         ((= char 27)                    ; ESC
+         ((eq char 27)                    ; ESC
           (maybe-fontify)
           (state! :ansi-esc))
          (t
           (if (graphics?)
               (push-char! char)
-            (out! (string char))))))
-       (:ansi-esc
-        (cond ((= char ?\[)
+            (out! (list char))))))
+       ((eq state :ansi-esc)
+        (cond ((eq char ?\[)
                (state! :ansi-csi))
-              ((= char ?\])
+              ((eq char ?\])
                (state! :ansi-osc))
-              ((or (= char ?\()
-                   (= char ?\)))
+              ((or (eq char ?\()
+                   (eq char ?\)))
                (state! :set-char))
               (t
                (push-char! char)
                (state! :char))))
-       (:ansi-csi
+       ((eq state :ansi-csi)
         (push-csi! char)
         (when (and (>= char #x40)
                    (<= char #x7e))
           (xterm-color--dispatch-CSI)
           (state! :char)))
-       (:ansi-osc
+       ((eq state :ansi-osc)
         ;; OSC sequences are skipped
-        (cond ((= char 7)
+        (cond ((eq char 7)
                (state! :char))
-              ((= char 27)
+              ((eq char 27)
                ;; ESC
                (state! :ansi-osc-esc))))
-       (:ansi-osc-esc
-        (cond ((= char ?\\)
+       ((eq state :ansi-osc-esc)
+        (cond ((eq char ?\\)
                (state! :char))
               (t (state! :ansi-osc))))
-       (:set-char
+       ((eq state :set-char)
         (xterm-color--message "%s SET-CHAR not implemented" char)
         (state! :char)))
      finally return
      (progn (when (eq state :char) (maybe-fontify))
             (setq xterm-color--state state)
-            (mapconcat #'identity (nreverse result) "")))))
+            (apply 'concat (nreverse result))))))
 
 ;;;###autoload
 (defun xterm-color-filter (string)
@@ -660,7 +659,7 @@ This can be inserted into `comint-preoutput-filter-functions'."
      for (_ props substring) in (xterm-color--string-properties string) do
      (push (if props substring (xterm-color-filter-strip substring))
            result)
-     finally return (mapconcat #'identity (nreverse result) ""))))
+     finally return (apply 'concat (nreverse result)))))
 
 ;;;###autoload
 (defun xterm-color-256 (color)

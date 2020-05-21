@@ -3,7 +3,7 @@
 ;; Copyright (C) 2016 Yevgnen Koh
 
 ;; Author: Yevgnen Koh <wherejoystarts@gmail.com>
-;; Package-Requires: ((emacs "24.5") (ivy "0.8.0"))
+;; Package-Requires: ((emacs "24.5") (ivy "0.13.0"))
 ;; Version: 0.1.6
 ;; Keywords: ivy
 
@@ -485,11 +485,11 @@ or /a/…/f.el."
   (setq ivy-rich--original-display-transformers-list
         (plist-put ivy-rich--original-display-transformers-list
                    cmd
-                   (plist-get ivy--display-transformers-list cmd))))
+                   (plist-get ivy--display-transformers-alist cmd))))
 
 (defun ivy-rich-restore-transformer (cmd)
-  (setq ivy--display-transformers-list
-        (plist-put ivy--display-transformers-list
+  (setq ivy--display-transformers-alist
+        (plist-put ivy--display-transformers-alist
                    cmd
                    (plist-get ivy-rich--original-display-transformers-list cmd))))
 

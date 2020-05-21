@@ -337,113 +337,10 @@ Update the minibuffer with the amount of lines collected every
       (delete-process process))))
 
 ;;* Completion at point
-;;** `counsel-el'
-;;;###autoload
-(defun counsel-el ()
-  "Elisp completion at point."
-  (interactive)
-  (let* ((bnd (unless (and (looking-at ")")
-                           (eq (char-before) ?\())
-                (bounds-of-thing-at-point 'symbol)))
-         (str (if bnd
-                  (buffer-substring-no-properties
-                   (car bnd)
-                   (cdr bnd))
-                ""))
-         (pred (and (eq (char-before (car bnd)) ?\()
-                    #'fboundp))
-         symbol-names)
-    (setq ivy-completion-beg (car bnd))
-    (setq ivy-completion-end (cdr bnd))
-    (if (string= str "")
-        (mapatoms
-         (lambda (x)
-           (when (and (symbolp x) (funcall pred x))
-             (push (symbol-name x) symbol-names))))
-      (setq symbol-names (all-completions str obarray pred)))
-    (ivy-read "Symbol name: " symbol-names
-              :initial-input str
-              :action #'ivy-completion-in-region-action
-              :caller 'counsel-el)))
-
-(ivy-configure 'counsel-el
-  :height 7)
-
-;;** `counsel-cl'
-(declare-function slime-symbol-start-pos "ext:slime")
-(declare-function slime-symbol-end-pos "ext:slime")
-(declare-function slime-contextual-completions "ext:slime-c-p-c")
-
-;;;###autoload
-(defun counsel-cl ()
-  "Common Lisp completion at point."
-  (interactive)
-  (setq ivy-completion-beg (slime-symbol-start-pos))
-  (setq ivy-completion-end (slime-symbol-end-pos))
-  (ivy-read "Symbol name: "
-            (car (slime-contextual-completions
-                  ivy-completion-beg
-                  ivy-completion-end))
-            :action #'ivy-completion-in-region-action))
-
-;;** `counsel-jedi'
-(declare-function deferred:sync! "ext:deferred")
-(declare-function jedi:complete-request "ext:jedi-core")
-(declare-function jedi:ac-direct-matches "ext:jedi")
-
-;;;###autoload
-(defun counsel-jedi ()
-  "Python completion at point."
-  (interactive)
-  (let ((bnd (bounds-of-thing-at-point 'symbol)))
-    (setq ivy-completion-beg (car bnd))
-    (setq ivy-completion-end (cdr bnd)))
-  (deferred:sync!
-      (jedi:complete-request))
-  (ivy-read "Symbol name: " (jedi:ac-direct-matches)
-            :action #'counsel--py-action))
-
-(defun counsel--py-action (symbol-name)
-  "Insert SYMBOL-NAME, erasing the previous one."
-  (when (stringp symbol-name)
-    (with-ivy-window
-      (when ivy-completion-beg
-        (delete-region
-         ivy-completion-beg
-         ivy-completion-end))
-      (setq ivy-completion-beg (point))
-      (insert symbol-name)
-      (setq ivy-completion-end (point)))))
-
-;;** `counsel-clj'
-(declare-function cider-sync-request:complete "ext:cider-client")
-(defun counsel--generic (completion-fn)
-  "Complete thing at point with COMPLETION-FN."
-  (let* ((bnd (or (bounds-of-thing-at-point 'symbol)
-                  (cons (point) (point))))
-         (str (buffer-substring-no-properties
-               (car bnd) (cdr bnd)))
-         (candidates (funcall completion-fn str))
-         (res (ivy-read (format "pattern (%s): " str)
-                        candidates
-                        :caller 'counsel--generic)))
-    (when (stringp res)
-      (when bnd
-        (delete-region (car bnd) (cdr bnd)))
-      (insert res))))
-
-(ivy-configure 'counsel--generic
-  :height 7)
-
-;;;###autoload
-(defun counsel-clj ()
-  "Clojure completion at point."
-  (interactive)
-  (counsel--generic
-   (lambda (str)
-     (mapcar
-      #'cl-caddr
-      (cider-sync-request:complete str ":same")))))
+(define-obsolete-function-alias 'counsel-el 'complete-symbol "<2020-05-20 Wed>")
+(define-obsolete-function-alias 'counsel-cl 'complete-symbol "<2020-05-20 Wed>")
+(define-obsolete-function-alias 'counsel-jedi 'complete-symbol "<2020-05-20 Wed>")
+(define-obsolete-function-alias 'counsel-clj 'complete-symbol "<2020-05-20 Wed>")
 
 ;;** `counsel-company'
 (defvar company-candidates)
@@ -621,9 +518,8 @@ Variables declared using `defcustom' are highlighted according to
               :caller 'counsel-describe-variable)))
 
 (ivy-configure 'counsel-describe-variable
-  :initial-input "^"
-  :display-transformer-fn #'counsel-describe-variable-transformer
-  :sort-fn #'ivy-string<)
+  :parent 'counsel-describe-symbol
+  :display-transformer-fn #'counsel-describe-variable-transformer)
 
 ;;** `counsel-describe-function'
 (ivy-set-actions
@@ -672,9 +568,8 @@ to `ivy-highlight-face'."
               :caller 'counsel-describe-function)))
 
 (ivy-configure 'counsel-describe-function
-  :initial-input "^"
-  :display-transformer-fn #'counsel-describe-function-transformer
-  :sort-fn #'ivy-string<)
+  :parent 'counsel-describe-symbol
+  :display-transformer-fn #'counsel-describe-function-transformer)
 
 ;;** `counsel-describe-symbol'
 (defcustom counsel-describe-symbol-function #'describe-symbol
@@ -702,12 +597,12 @@ to `ivy-highlight-face'."
                         (funcall counsel-describe-symbol-function (intern x)))
               :caller 'counsel-describe-symbol)))
 
-(ivy-configure #'counsel-describe-symbol
+(ivy-configure 'counsel-describe-symbol
   :initial-input "^"
   :sort-fn #'ivy-string<)
 
 (ivy-set-actions
- #'counsel-describe-symbol
+ 'counsel-describe-symbol
  `(("I" ,#'counsel-info-lookup-symbol "info")
    ("d" ,#'counsel--find-symbol "definition")))
 
@@ -1329,7 +1224,7 @@ selected face."
               :caller 'counsel-faces)))
 
 (ivy-configure 'counsel-faces
-  :sort-fn #'ivy-string<
+  :parent 'counsel-describe-face
   :format-fn #'counsel--faces-format-function)
 
 (ivy-set-actions
@@ -2117,8 +2012,8 @@ When INITIAL-INPUT is non-nil, use it in the minibuffer during completion."
    'counsel-find-file))
 
 (ivy-configure 'counsel-find-file
-  :occur #'counsel-find-file-occur
-  :display-transformer-fn #'ivy-read-file-transformer)
+  :parent 'read-file-name-internal
+  :occur #'counsel-find-file-occur)
 
 (defvar counsel-find-file-occur-cmd "ls -a | %s | xargs -d '\\n' ls -d --group-directories-first"
   "Format string for `counsel-find-file-occur'.")
@@ -2354,7 +2249,7 @@ When INITIAL-INPUT is non-nil, use it in the minibuffer during completion."
      'counsel-dired)))
 
 (ivy-configure 'counsel-dired
-  :display-transformer-fn #'ivy-read-file-transformer)
+  :parent 'read-file-name-internal)
 
 ;;** `counsel-recentf'
 (defvar recentf-list)
@@ -2782,7 +2677,8 @@ INITIAL-INPUT can be given as the initial minibuffer input."
             :caller 'counsel-tracker))
 
 (ivy-configure 'counsel-tracker
-  :display-transformer-fn #'counsel-tracker-transformer)
+  :display-transformer-fn #'counsel-tracker-transformer
+  :unwind-fn #'counsel-delete-process)
 
 ;;** `counsel-fzf'
 (defvar counsel-fzf-cmd "fzf -f \"%s\""
@@ -3122,7 +3018,7 @@ CALLER is passed to `ivy-read'."
               :caller 'counsel-read-directory-name)))
 
 (ivy-configure 'counsel-read-directory-name
-  :display-transformer-fn #'ivy-read-file-transformer)
+  :parent 'read-file-name-internal)
 
 (defun counsel-cd ()
   "Change the directory for the currently running Ivy grep-like command.

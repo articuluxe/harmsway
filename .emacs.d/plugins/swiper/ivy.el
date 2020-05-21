@@ -1,6 +1,6 @@
 ;;; ivy.el --- Incremental Vertical completYon -*- lexical-binding: t -*-
 
-;; Copyright (C) 2015-2019  Free Software Foundation, Inc.
+;; Copyright (C) 2015-2020  Free Software Foundation, Inc.
 
 ;; Author: Oleh Krehel <ohwoeowho@gmail.com>
 ;; URL: https://github.com/abo-abo/swiper
@@ -40,6 +40,7 @@
 
 (require 'colir)
 (require 'ivy-overlay)
+(require 'ivy-faces)
 
 (require 'cl-lib)
 (require 'ring)
@@ -51,120 +52,6 @@
 (defgroup ivy nil
   "Incremental vertical completion."
   :group 'convenience)
-
-(defgroup ivy-faces nil
-  "Font-lock faces for `ivy'."
-  :group 'ivy
-  :group 'faces)
-
-(defface ivy-current-match
-  '((((class color) (background light))
-     :background "#1a4b77" :foreground "white" :extend t)
-    (((class color) (background dark))
-     :background "#65a7e2" :foreground "black" :extend t))
-  "Face used by Ivy for highlighting the current match.")
-
-(defface ivy-minibuffer-match-highlight
-  '((t :inherit highlight))
-  "Face used by Ivy for highlighting the match under the cursor.")
-
-(defface ivy-minibuffer-match-face-1
-  '((((class color) (background light))
-     :background "#d3d3d3")
-    (((class color) (background dark))
-     :background "#555555"))
-  "The background face for `ivy' minibuffer matches.")
-
-(defface ivy-minibuffer-match-face-2
-  '((((class color) (background light))
-     :background "#e99ce8" :weight bold)
-    (((class color) (background dark))
-     :background "#777777" :weight bold))
-  "Face for `ivy' minibuffer matches numbered 1 modulo 3.")
-
-(defface ivy-minibuffer-match-face-3
-  '((((class color) (background light))
-     :background "#bbbbff" :weight bold)
-    (((class color) (background dark))
-     :background "#7777ff" :weight bold))
-  "Face for `ivy' minibuffer matches numbered 2 modulo 3.")
-
-(defface ivy-minibuffer-match-face-4
-  '((((class color) (background light))
-     :background "#ffbbff" :weight bold)
-    (((class color) (background dark))
-     :background "#8a498a" :weight bold))
-  "Face for `ivy' minibuffer matches numbered 3 modulo 3.")
-
-(defface ivy-confirm-face
-  '((t :foreground "ForestGreen" :inherit minibuffer-prompt))
-  "Face used by Ivy for a confirmation prompt.")
-
-(defface ivy-match-required-face
-  '((t :foreground "red" :inherit minibuffer-prompt))
-  "Face used by Ivy for a match required prompt.")
-
-(defface ivy-subdir
-  '((t :inherit dired-directory))
-  "Face used by Ivy for highlighting subdirs in the alternatives.")
-
-(defface ivy-org
-  '((t :inherit org-level-4))
-  "Face used by Ivy for highlighting Org buffers in the alternatives.")
-
-(defface ivy-modified-buffer
-  '((t :inherit default))
-  "Face used by Ivy for highlighting modified file visiting buffers.")
-
-(defface ivy-modified-outside-buffer
-  '((t :inherit default))
-  "Face used by Ivy for highlighting file visiting buffers modified outside Emacs.")
-
-(defface ivy-remote
-  '((((class color) (background light))
-     :foreground "#110099")
-    (((class color) (background dark))
-     :foreground "#7B6BFF"))
-  "Face used by Ivy for highlighting remotes in the alternatives.")
-
-(defface ivy-virtual
-  '((t :inherit font-lock-builtin-face))
-  "Face used by Ivy for matching virtual buffer names.")
-
-(defface ivy-action
-  '((t :inherit font-lock-builtin-face))
-  "Face used by Ivy for displaying keys in `ivy-read-action'.")
-
-(defface ivy-highlight-face
-  '((t :inherit highlight))
-  "Face used by Ivy to highlight certain candidates.")
-
-(defface ivy-prompt-match
-  '((t :inherit ivy-current-match))
-  "Face used by Ivy for highlighting the selected prompt line.")
-
-(defface ivy-separator
-  '((t :inherit font-lock-doc-face))
-  "Face for multiline source separator.")
-
-(defface ivy-grep-info
-  '((t :inherit compilation-info))
-  "Face for highlighting grep information such as file names.")
-
-(defface ivy-grep-line-number
-  '((t :inherit compilation-line-number))
-  "Face for displaying line numbers in grep messages.")
-
-(defface ivy-completions-annotations
-  '((t :inherit completions-annotations))
-  "Face for displaying completion annotations.")
-
-(defface ivy-yanked-word
-  '((t :inherit highlight))
-  "Face used to highlight yanked word.")
-
-;; Set default customization `:group' to `ivy' for the rest of the file.
-(setcdr (assoc load-file-name custom-current-group-alist) 'ivy)
 
 (defcustom ivy-height 10
   "Number of lines for the minibuffer window.
@@ -195,17 +82,6 @@ Set this to \"(%d/%d) \" to display both the index and the count."
 (defcustom ivy-wrap nil
   "When non-nil, wrap around after the first and the last candidate."
   :type 'boolean)
-
-(defcustom ivy-display-style 'fancy
-  "The style for formatting the minibuffer.
-
-By default, the matched strings are copied as is.
-
-The fancy display style highlights matching parts of the regexp,
-a behavior similar to `swiper'."
-  :type '(choice
-          (const :tag "Plain" nil)
-          (const :tag "Fancy" fancy)))
 
 (defcustom ivy-on-del-error-function #'abort-recursive-edit
   "Function to call when deletion fails during completion.
@@ -352,7 +228,7 @@ PROMPT-FN is a function of no arguments that returns a prompt string."
   (setq ivy--prompts-list
         (plist-put ivy--prompts-list caller prompt-fn)))
 
-(defvar ivy--display-transformers-list nil
+(defvar ivy--display-transformers-alist nil
   "A list of str->str transformers per command.")
 
 (defun ivy-set-display-transformer (cmd transformer)
@@ -364,8 +240,8 @@ plus some extra information.
 
 This lambda is called only on the `ivy-height' candidates that
 are about to be displayed, not on the whole collection."
-  (setq ivy--display-transformers-list
-        (plist-put ivy--display-transformers-list cmd transformer)))
+  (declare (obsolete "Use `ivy-configure' :display-transformer-fn" "<2020-05-20 Wed>"))
+  (ivy--alist-set 'ivy--display-transformers-alist cmd transformer))
 
 (defvar ivy--sources-list nil
   "A list of extra sources per command.")
@@ -457,7 +333,6 @@ action functions.")
     (define-key map [remap kill-whole-line] 'ivy-kill-whole-line)
     (define-key map (kbd "S-SPC") 'ivy-restrict-to-matches)
     (define-key map [remap kill-ring-save] 'ivy-kill-ring-save)
-    (define-key map (kbd "C-'") 'ivy-avy)
     (define-key map (kbd "C-M-a") 'ivy-read-action)
     (define-key map (kbd "C-c C-o") 'ivy-occur)
     (define-key map (kbd "C-c C-a") 'ivy-toggle-ignore)
@@ -1033,6 +908,12 @@ Is is a cons cell, related to `tramp-get-completion-function'."
 (declare-function Info-read-node-name-1 "info")
 (declare-function tramp-get-completion-function "tramp")
 
+(defcustom ivy-alt-done-functions-alist nil
+  "Customize what `ivy-alt-done' does per-collection."
+  :type '(alist
+          :key-type symbol
+          :value-type function))
+
 (defun ivy-alt-done (&optional arg)
   "Exit the minibuffer with the selected candidate.
 When ARG is t, exit with current text, ignoring the candidates.
@@ -1041,22 +922,23 @@ directory, continue completion from within that directory instead
 of exiting.  This function is otherwise like `ivy-done'."
   (interactive "P")
   (setq ivy-current-prefix-arg current-prefix-arg)
-  (cond ((or arg
-             (ivy--prompt-selected-p))
-         (ivy-immediate-done))
-        (ivy--directory
-         (ivy--directory-done))
-        ((eq (ivy-state-collection ivy-last) #'Info-read-node-name-1)
-         (if (member (ivy-state-current ivy-last) '("(./)" "(../)"))
-             (ivy-quit-and-run
-               (ivy-read "Go to file: " #'read-file-name-internal
-                         :action (lambda (x)
-                                   (Info-find-node
-                                    (expand-file-name x ivy--directory)
-                                    "Top"))))
-           (ivy-done)))
-        (t
-         (ivy-done))))
+  (let (alt-done-fn)
+    (cond ((or arg (ivy--prompt-selected-p))
+           (ivy-immediate-done))
+          ((setq alt-done-fn (ivy-alist-setting ivy-alt-done-functions-alist))
+           (funcall alt-done-fn))
+          (t
+           (ivy-done)))))
+
+(defun ivy--info-alt-done ()
+  (if (member (ivy-state-current ivy-last) '("(./)" "(../)"))
+      (ivy-quit-and-run
+        (ivy-read "Go to file: " #'read-file-name-internal
+                  :action (lambda (x)
+                            (Info-find-node
+                             (expand-file-name x ivy--directory)
+                             "Top"))))
+    (ivy-done)))
 
 (defvar ivy-auto-select-single-candidate nil
   "When non-nil, auto-select the candidate if it is the only one.
@@ -1358,20 +1240,6 @@ if one exists."
   (interactive)
   (ivy-set-index (max (1+ (- ivy--index ivy-height))
                       0)))
-
-(defun ivy-minibuffer-grow ()
-  "Grow the minibuffer window by 1 line."
-  (interactive)
-  (setq-local max-mini-window-height
-              (cl-incf ivy-height)))
-
-(defun ivy-minibuffer-shrink ()
-  "Shrink the minibuffer window by 1 line."
-  (interactive)
-  (when (> ivy-height 2)
-    (setq-local max-mini-window-height
-                (cl-decf ivy-height))
-    (window-resize nil -1)))
 
 (defun ivy-next-line (&optional arg)
   "Move cursor vertically down ARG candidates."
@@ -1808,15 +1676,6 @@ minibuffer."
   (cl-rotatef ivy--regex-function ivy--regexp-quote)
   (setq ivy-regex (funcall ivy--regex-function ivy-text)))
 
-(defvar avy-all-windows)
-(defvar avy-action)
-(defvar avy-keys)
-(defvar avy-keys-alist)
-(defvar avy-style)
-(defvar avy-styles-alist)
-(declare-function avy-process "ext:avy")
-(declare-function avy--style-fn "ext:avy")
-
 (defcustom ivy-format-functions-alist
   '((t . ivy-format-function-default))
   "An alist of functions that transform the list of candidates into a string.
@@ -1829,83 +1688,6 @@ This string is inserted into the minibuffer."
            (const :tag "Arrow prefix" ivy-format-function-arrow)
            (const :tag "Full line" ivy-format-function-line)
            (function :tag "Custom function"))))
-
-(defcustom ivy-avy-style 'pre
-  "The `avy-style' setting for `ivy-avy'."
-  :type '(choice
-          (const :tag "Pre" pre)
-          (const :tag "At" at)
-          (const :tag "At Full" at-full)
-          (const :tag "Post" post)
-          (const :tag "De Bruijn" de-bruijn)
-          (const :tag "Words" words)))
-
-(with-eval-after-load 'avy
-  (add-to-list 'avy-styles-alist `(ivy-avy . ,ivy-avy-style)))
-
-(defun ivy--avy-candidates ()
-  (let (candidates)
-    (save-excursion
-      (save-restriction
-        (narrow-to-region
-         (window-start)
-         (window-end))
-        (goto-char (point-min))
-        (forward-line)
-        (while (< (point) (point-max))
-          (push
-           (cons (point)
-                 (selected-window))
-           candidates)
-          (forward-line))))
-    (nreverse candidates)))
-
-(defun ivy--avy-action (pt)
-  (when (number-or-marker-p pt)
-    (let ((bnd (ivy--minibuffer-index-bounds
-                ivy--index ivy--length ivy-height)))
-      (ivy--done
-       (substring-no-properties
-        (nth (+ (car bnd) (- (line-number-at-pos pt) 2)) ivy--old-cands))))))
-
-(defun ivy--avy-handler-function (char)
-  (let (cmd)
-    (cond ((memq char '(?\C-\[ ?\C-g))
-           ;; exit silently
-           (throw 'done 'abort))
-          ((memq (setq cmd (lookup-key ivy-minibuffer-map (vector char)))
-                 '(ivy-scroll-up-command
-                   ivy-scroll-down-command))
-           (funcall cmd)
-           (ivy--exhibit)
-           (throw 'done 'exit))
-          ;; ignore wrong key
-          (t
-           (throw 'done 'restart)))))
-
-(defvar avy-handler-function)
-
-(defun ivy-avy ()
-  "Jump to one of the current ivy candidates."
-  (interactive)
-  (cond ((not (require 'avy nil 'noerror))
-         (error "Package avy isn't installed"))
-        ((= (minibuffer-depth) 0)
-         (user-error
-          "This command is intended to be called from within `ivy-read'"))
-        (t
-         (let* ((avy-all-windows nil)
-                (avy-keys (or (cdr (assq 'ivy-avy avy-keys-alist))
-                              avy-keys))
-                (avy-style (or (cdr (assq 'ivy-avy avy-styles-alist))
-                               avy-style))
-                (avy-action #'identity)
-                (avy-handler-function #'ivy--avy-handler-function)
-                res)
-           (while (eq (setq res (avy-process (ivy--avy-candidates))) t))
-           (when res
-             (ivy--avy-action res))))))
-(put 'ivy-avy 'no-counsel-M-x t)
 
 (defun ivy-sort-file-function-default (x y)
   "Compare two files X and Y.
@@ -2066,8 +1848,13 @@ An :init is a function with no arguments.
 
 (declare-function counsel-set-async-exit-code "counsel")
 
+(defvar ivy--parents-alist nil
+  "Configure parent caller for child caller.
+The child caller inherits and can override the settings of the parent.")
+
 (cl-defun ivy-configure (caller
                          &key
+                         parent
                          initial-input
                          height
                          occur
@@ -2079,11 +1866,14 @@ An :init is a function with no arguments.
                          format-fn
                          display-fn
                          display-transformer-fn
+                         alt-done-fn
                          more-chars
                          grep-p
                          exit-codes)
   "Configure `ivy-read' params for CALLER."
   (declare (indent 1))
+  (when parent
+    (ivy--alist-set 'ivy--parents-alist caller parent))
   (when initial-input
     (ivy--alist-set 'ivy-initial-inputs-alist caller initial-input))
   (when height
@@ -2105,7 +1895,9 @@ An :init is a function with no arguments.
   (when display-fn
     (ivy--alist-set 'ivy-display-functions-alist caller display-fn))
   (when display-transformer-fn
-    (ivy-set-display-transformer caller display-transformer-fn))
+    (ivy--alist-set 'ivy--display-transformers-alist caller display-transformer-fn))
+  (when alt-done-fn
+    (ivy--alist-set 'ivy-alt-done-functions-alist caller alt-done-fn))
   (when more-chars
     (ivy--alist-set 'ivy-more-chars-alist caller more-chars))
   (when grep-p
@@ -2157,9 +1949,13 @@ Directories come first."
   "Return the value associated with KEY in ALIST, using `assq'.
 KEY defaults to the last caller of `ivy-read'; if no entry is
 found, it falls back to the key t."
-  (cdr (or (let ((caller (or key (ivy-state-caller ivy-last))))
-             (and caller (assq caller alist)))
-           (assq t alist))))
+  (let ((caller (or key (ivy-state-caller ivy-last))))
+    (or
+     (and caller (cdr (assq caller alist)))
+     (let ((parent (cdr (assq caller ivy--parents-alist))))
+       (when parent
+         (ivy-alist-setting alist parent)))
+     (cdr (assq t alist)))))
 
 (defun ivy--height (caller)
   (let ((v (or (ivy-alist-setting ivy-height-alist caller)
@@ -2303,7 +2099,7 @@ customizations apply to the current completion session."
            :re-builder re-builder
            :matcher matcher
            :dynamic-collection dynamic-collection
-           :display-transformer-fn (plist-get ivy--display-transformers-list caller)
+           :display-transformer-fn (ivy-alist-setting ivy--display-transformers-alist caller)
            :directory default-directory
            :extra-props extra-props
            :caller caller
@@ -2772,12 +2568,13 @@ See `completion-in-region' for further information."
                  (setq initial nil)
                  (setq predicate nil)
                  (setq collection comps))
-               (ivy-read (format "(%s): " str)
-                         (if (functionp collection) comps collection)
+               (if (memq major-mode '(lisp-interaction-mode emacs-lisp-mode))
+                   (setq initial (concat "^" initial))
+                 (setq collection comps)
+                 (setq predicate nil))
+               (ivy-read (format "(%s): " str) collection
                          :predicate predicate
-                         :initial-input (concat (unless (functionp collection)
-                                                  "^")
-                                                initial)
+                         :initial-input initial
                          :action #'ivy-completion-in-region-action
                          :unwind (lambda ()
                                    (unless (eq ivy-exit 'done)
@@ -4174,16 +3971,14 @@ in this case."
 (defun ivy--format-minibuffer-line (str)
   "Format line STR for use in minibuffer."
   (let* ((str (ivy-cleanup-string (copy-sequence str)))
-         (str (if (eq ivy-display-style 'fancy)
-                  (if (memq (ivy-state-caller ivy-last)
-                            ivy-highlight-grep-commands)
-                      (let* ((start (if (string-match "\\`[^:]+:\\(?:[^:]+:\\)?" str)
-                                        (match-end 0) 0))
-                             (file (substring str 0 start))
-                             (match (substring str start)))
-                        (concat file (funcall ivy--highlight-function match)))
-                    (funcall ivy--highlight-function str))
-                str))
+         (str (if (memq (ivy-state-caller ivy-last)
+                        ivy-highlight-grep-commands)
+                  (let* ((start (if (string-match "\\`[^:]+:\\(?:[^:]+:\\)?" str)
+                                    (match-end 0) 0))
+                         (file (substring str 0 start))
+                         (match (substring str start)))
+                    (concat file (funcall ivy--highlight-function match)))
+                (funcall ivy--highlight-function str)))
          (olen (length str))
          (annot (plist-get completion-extra-properties :annotation-function)))
     (add-text-properties
@@ -4724,8 +4519,8 @@ CANDS are the candidates to be displayed."
             :caller 'ivy-switch-buffer))
 
 (ivy-configure 'ivy-switch-buffer
-  :occur #'ivy-switch-buffer-occur
-  :display-transformer-fn #'ivy-switch-buffer-transformer)
+  :parent 'internal-complete-buffer
+  :occur #'ivy-switch-buffer-occur)
 
 ;;;###autoload
 (defun ivy-switch-view ()
@@ -4747,7 +4542,7 @@ CANDS are the candidates to be displayed."
             :caller 'ivy-switch-buffer-other-window))
 
 (ivy-configure 'ivy-switch-buffer-other-window
-  :occur #'ivy-switch-buffer-occur)
+  :parent 'ivy-switch-buffer)
 
 (defun ivy--yank-handle-case-fold (text)
   (if (and (> (length ivy-text) 0)
@@ -5434,10 +5229,14 @@ make decisions based on the whole marked list."
 
 (ivy-configure 'read-file-name-internal
   :sort-fn #'ivy-sort-file-function-default
-  :display-transformer-fn #'ivy-read-file-transformer)
+  :display-transformer-fn #'ivy-read-file-transformer
+  :alt-done-fn #'ivy--directory-done)
 
 (ivy-configure 'internal-complete-buffer
   :display-transformer-fn #'ivy-switch-buffer-transformer)
+
+(ivy-configure 'Info-read-node-name-1
+  :alt-done-fn #'ivy--info-alt-done)
 
 (provide 'ivy)
 
