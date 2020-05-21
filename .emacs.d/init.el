@@ -2,8 +2,8 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-05-20 14:33:53 dharms>
-;; Modified by: Dan Harms
+;; Modified Time-stamp: <2020-05-21 09:19:56 Dan.Harms>
+;; Modified by: Dan.Harms
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -1944,6 +1944,7 @@ ARGS are the additional arguments."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;; all-the-icons-ivy-rich ;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package all-the-icons-ivy-rich
   :if (display-graphic-p)
+  :disabled
   :after all-the-icons
   :config
   (all-the-icons-ivy-rich-mode 1))
