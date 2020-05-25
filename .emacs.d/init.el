@@ -2,8 +2,8 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-05-21 09:19:56 Dan.Harms>
-;; Modified by: Dan.Harms
+;; Modified Time-stamp: <2020-05-25 10:36:37 dharms>
+;; Modified by: Dan Harms
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -1732,7 +1732,6 @@ ARGS are the additional arguments."
   (setq ivy-use-virtual-buffers t)
   (setq ivy-dynamic-exhibit-delay-ms 20)
   :config
-  (ivy-add-actions #'counsel-find-file '(("v" vlf "view large file")))
   (global-set-key "\e\eii" 'ivy-resume)
   (ivy-mode 1))
 
@@ -1803,10 +1802,12 @@ ARGS are the additional arguments."
   :commands (counsel-M-x counsel-find-file)
   :demand t
   :init
+  (setq counsel-async-command-delay 0.1)
   (setq counsel-async-filter-update-time 500000)
   (when (eq system-type 'darwin)
     (setq counsel-locate-cmd 'counsel-locate-cmd-mdfind))
   :config
+  (ivy-add-actions #'counsel-find-file '(("v" vlf "view large file")))
   (setq counsel-find-file-at-point t)
   (setq counsel-find-file-ignore-regexp
         (concat

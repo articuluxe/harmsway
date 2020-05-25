@@ -131,6 +131,7 @@
 ;;     epa
 ;;     equake
 ;;     erc
+;;     eros
 ;;     ert
 ;;     eshell
 ;;     evil (evil-mode)
@@ -1533,6 +1534,8 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(erc-prompt-face ((,class (:foreground ,cyan-alt-other :weight bold))))
    `(erc-timestamp-face ((,class (:foreground ,blue-nuanced))))
    `(erc-underline-face ((,class (:underline t))))
+   ;;;; eros
+   `(eros-result-overlay-face ((,class (:inherit modus-theme-refine-blue))))
    ;;;; ert
    `(ert-test-result-expected ((,class (:inherit modus-theme-intense-green))))
    `(ert-test-result-unexpected ((,class (:inherit modus-theme-intense-red))))
@@ -1837,7 +1840,7 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(gnus-summary-cancelled ((,class (:background ,bg-mark-other :foreground ,fg-mark-other :weight bold))))
    `(gnus-summary-high-ancient ((,class (:foreground ,fg-alt :weight bold))))
    `(gnus-summary-high-read ((,class (:foreground ,fg-special-cold :weight bold))))
-   `(gnus-summary-high-ticked ((,class (:foreground ,red-alt :weight bold))))
+   `(gnus-summary-high-ticked ((,class (:foreground ,red-alt-other :weight bold))))
    `(gnus-summary-high-undownloaded ((,class (:foreground ,yellow :weight bold))))
    `(gnus-summary-high-unread ((,class (:foreground ,fg-main :weight bold))))
    `(gnus-summary-low-ancient ((,class (:foreground ,fg-alt :slant italic))))
@@ -1847,10 +1850,10 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(gnus-summary-low-unread ((,class (:foreground ,fg-special-cold :weight bold))))
    `(gnus-summary-normal-ancient ((,class (:foreground ,fg-special-calm))))
    `(gnus-summary-normal-read ((,class (:foreground ,fg-special-cold))))
-   `(gnus-summary-normal-ticked ((,class (:foreground ,red-alt))))
+   `(gnus-summary-normal-ticked ((,class (:foreground ,red-alt-other))))
    `(gnus-summary-normal-undownloaded ((,class (:foreground ,yellow))))
    `(gnus-summary-normal-unread ((,class (:foreground ,fg-main))))
-   `(gnus-summary-selected ((,class (:inherit modus-theme-subtle-cyan))))
+   `(gnus-summary-selected ((,class (:inherit modus-theme-subtle-blue))))
    ;;;; helm
    `(helm-M-x-key ((,class (:foreground ,magenta-alt-other :weight bold))))
    `(helm-action ((,class (:underline t))))
