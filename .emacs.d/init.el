@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-05-25 10:36:37 dharms>
+;; Modified Time-stamp: <2020-05-25 10:40:08 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1776,7 +1776,6 @@ ARGS are the additional arguments."
          ("M-s M-i" . counsel-imenu)
          ("M-s M-l" . counsel-git-log)
          ("M-s M-e" . counsel-find-file-extern)
-         ("C-c 0ei" . counsel-read-env)
          ("M-s M-d" . counsel-dired-jump)
          ("M-s M-v" . counsel-file-jump)
          ("M-s M-y" . counsel-yank-pop)
