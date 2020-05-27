@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-05-25 10:40:08 dharms>
+;; Modified Time-stamp: <2020-05-27 11:06:04 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3338,6 +3338,8 @@ See `https://github.com/company-mode/company-mode/issues/205'."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; verb ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package verb
   :after org
+  :init
+  (setq verb-show-timeout-warning 20.0)
   :config
   (define-key org-mode-map "\C-cv" verb-command-map))
 
