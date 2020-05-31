@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-05-27 11:06:04 dharms>
+;; Modified Time-stamp: <2020-05-31 10:09:52 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1944,7 +1944,6 @@ ARGS are the additional arguments."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;; all-the-icons-ivy-rich ;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package all-the-icons-ivy-rich
   :if (display-graphic-p)
-  :disabled
   :after all-the-icons
   :config
   (all-the-icons-ivy-rich-mode 1))
@@ -3875,7 +3874,7 @@ This function's result only has value if it is preceded by any font changes."
             ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; jinja-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package jinja2-mode :mode "\\.jinja$")
+(use-package jinja2-mode :mode ("\\.jinja$" "\\.j2$"))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; jq-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package jq-mode
@@ -3944,12 +3943,21 @@ This function's result only has value if it is preceded by any font changes."
   :config
   (use-package json-navigator
     :if (< 24 emacs-major-version)
-    :demand t
+    :after json-mode
     :config
-    (define-key json-mode-map "\C-c\C-f" #'json-navigator-navigate-after-point)
+    (define-key json-mode-map "\C-c\C-f" nil) ;use this for jq-format
+    (define-key json-mode-map "\C-c\C-b" #'json-mode-beautify)
+    (define-key json-mode-map [?\C-c?\C-\.] #'json-navigator-navigate-after-point)
     (define-key json-mode-map "\C-c\C-n" #'json-navigator-navigate-region))
   (use-package json-pointer)
-  (use-package jq-format)
+  (use-package jq-format
+    :after json-mode
+    :config
+    (define-key json-mode-map "\C-c\C-f\C-b" #'jq-format-json-buffer)
+    (define-key json-mode-map "\C-c\C-f\C-r" #'jq-format-json-region)
+    (define-key json-mode-map "\C-c\C-fb" #'jq-format-jsonlines-buffer)
+    (define-key json-mode-map "\C-c\C-fr" #'jq-format-jsonlines-region)
+    )
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; logview-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
