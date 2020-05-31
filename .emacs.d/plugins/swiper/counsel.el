@@ -3035,7 +3035,8 @@ Works for `counsel-git-grep', `counsel-ag', etc."
 (defun counsel--grep-smart-case-flag ()
   (if (ivy--case-fold-p ivy-text)
       "-i"
-    (if (string-match-p "\\`pt" counsel-ag-base-command)
+    (if (and (stringp counsel-ag-base-command)
+             (string-match-p "\\`pt" counsel-ag-base-command))
         "-S"
       "-s")))
 
@@ -3063,8 +3064,8 @@ Works for `counsel-git-grep', `counsel-ag', etc."
                    cmd-template
                    (mapconcat #'shell-quote-argument all-args " "))
                 (cl-mapcan
-                 (lambda (x) (if (string= x "%s") all-args (list x)))
-                 (copy-sequence cmd-template))))))
+                 (lambda (x) (if (string= x "%s") (copy-sequence all-args) (list x)))
+                 cmd-template)))))
          (cands (counsel--split-string
                  (if (stringp cmd-template)
                      (shell-command-to-string cmd)

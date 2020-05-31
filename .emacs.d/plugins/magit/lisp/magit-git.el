@@ -133,7 +133,7 @@ successfully.")
 (defcustom magit-git-executable
   ;; Git might be installed in a different location on a remote, so
   ;; it is better not to use the full path to the executable, except
-  ;; on Window were we would otherwise end up using one one of the
+  ;; on Window where we would otherwise end up using one of the
   ;; wrappers "cmd/git.exe" or "cmd/git.cmd", which are much slower
   ;; than using "bin/git.exe" directly.
   (or (and (eq system-type 'windows-nt)
@@ -1778,15 +1778,26 @@ Return a list of two integers: (A>B B>A)."
                         "\t")))
 
 (defun magit-abbrev-length ()
-  (--if-let (magit-get "core.abbrev")
-      (string-to-number it)
-    ;; Guess the length git will be using based on an example
-    ;; abbreviation.  Actually HEAD's abbreviation might be an
-    ;; outlier, so use the shorter of the abbreviations for two
-    ;; commits.  When a commit does not exist, then fall back
-    ;; to the default of 7.  See #3034.
-    (min (--if-let (magit-rev-parse "--short" "HEAD")  (length it) 7)
-         (--if-let (magit-rev-parse "--short" "HEAD~") (length it) 7))))
+  (let ((abbrev (magit-get "core.abbrev")))
+    (if (and abbrev (not (equal abbrev "auto")))
+        (string-to-number abbrev)
+      ;; Guess the length git will be using based on an example
+      ;; abbreviation.  Actually HEAD's abbreviation might be an
+      ;; outlier, so use the shorter of the abbreviations for two
+      ;; commits.  See #3034.
+      (if-let ((head (magit-rev-parse "--short" "HEAD"))
+               (head-len (length head)))
+          (min head-len
+               (--if-let (magit-rev-parse "--short" "HEAD~")
+                   (length it)
+                 head-len))
+        ;; We're on an unborn branch, but perhaps the repository has
+        ;; other commits.  See #4123.
+        (if-let ((commits (magit-git-lines "rev-list" "-n2" "--all"
+                                           "--abbrev-commit")))
+            (apply #'min (mapcar #'length commits))
+          ;; A commit does not exist.  Fall back to the default of 7.
+          7)))))
 
 (defun magit-abbrev-arg (&optional arg)
   (format "--%s=%d" (or arg "abbrev") (magit-abbrev-length)))

@@ -206,6 +206,7 @@
     ("\\.hrl$"          all-the-icons-alltheicon "erlang"               :face all-the-icons-dred :v-adjust -0.1 :height 0.9)
 
     ("\\.eex$"          all-the-icons-alltheicon "elixir"               :face all-the-icons-lorange :v-adjust -0.1 :height 0.9)
+    ("\\.leex$"         all-the-icons-alltheicon "elixir"               :face all-the-icons-lorange :v-adjust -0.1 :height 0.9)
     ("\\.ex$"           all-the-icons-alltheicon "elixir"               :face all-the-icons-lpurple :v-adjust -0.1 :height 0.9)
     ("\\.exs$"          all-the-icons-alltheicon "elixir"               :face all-the-icons-lred :v-adjust -0.1 :height 0.9)
     ("^mix.lock$"       all-the-icons-alltheicon "elixir"               :face all-the-icons-lyellow :v-adjust -0.1 :height 0.9)
@@ -391,6 +392,9 @@
     ("\\.jsx$"          all-the-icons-fileicon "jsx-2"                  :height 1.0 :v-adjust -0.1 :face all-the-icons-cyan-alt)
     ("\\.njs$"          all-the-icons-alltheicon "nodejs"               :height 1.2  :face all-the-icons-lgreen)
     ("\\.vue$"          all-the-icons-fileicon "vue"                    :face all-the-icons-lgreen)
+
+    ;; F#
+    ("\\.fs[ix]?$"      all-the-icons-fileicon "fsharp"                 :face all-the-icons-blue-alt)
 
     ;; File Types
     ("\\.ico$"          all-the-icons-octicon "file-media"              :v-adjust 0.0 :face all-the-icons-blue)
@@ -619,6 +623,7 @@
     (tex-mode                           all-the-icons-fileicon "tex"              :face all-the-icons-lred)
     (latex-mode                         all-the-icons-fileicon "tex"              :face all-the-icons-lred)
     (dart-mode                          all-the-icons-fileicon "dart"             :height 1.0  :face all-the-icons-blue)
+    (fsharp-mode                        all-the-icons-fileicon "fsharp"           :height 1.0  :face all-the-icons-blue)
     ))
 
 (defvar all-the-icons-url-alist

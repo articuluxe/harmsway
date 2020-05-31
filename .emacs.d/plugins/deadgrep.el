@@ -5,7 +5,7 @@
 ;; Author: Wilfred Hughes <me@wilfred.me.uk>
 ;; URL: https://github.com/Wilfred/deadgrep
 ;; Keywords: tools
-;; Version: 0.9
+;; Version: 0.10
 ;; Package-Requires: ((emacs "25.1") (dash "2.12.0") (s "1.11.0") (spinner "1.7.3"))
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -119,16 +119,25 @@ overflow on our regexp matchers if we don't apply this.")
   :group 'deadgrep)
 
 (defvar-local deadgrep--search-term nil)
+;; Ensure this variable is ignored by `kill-all-local-variables' when
+;; switching between `deadgrep-mode' and `deadgrep-edit-mode'.
+(put 'deadgrep--search-term 'permanent-local t)
+
 (defvar-local deadgrep--search-type 'string)
+(put 'deadgrep--search-type 'permanent-local t)
 (defvar-local deadgrep--search-case 'smart)
+(put 'deadgrep--search-case 'permanent-local t)
 (defvar-local deadgrep--file-type 'all)
+(put 'deadgrep--file-type 'permanent-local t)
 
 (defvar-local deadgrep--context nil
   "When set, also show context of results.
 This is stored as a cons cell of integers (lines-before . lines-after).")
+(put 'deadgrep--context 'permanent-local t)
 (defvar-local deadgrep--initial-filename nil
   "The filename of the buffer that deadgrep was started from.
 Used to offer better default values for file options.")
+(put 'deadgrep--initial-filename 'permanent-local t)
 
 (defvar-local deadgrep--current-file nil
   "The file we're currently inserting results for.")
@@ -142,7 +151,9 @@ We save the last line here, in case we need to append more text to it.")
   "If non-nil, a search is still running.")
 
 (defvar-local deadgrep--debug-command nil)
+(put 'deadgrep--debug-command 'permanent-local t)
 (defvar-local deadgrep--debug-first-output nil)
+(put 'deadgrep--debug-first-output 'permanent-local t)
 
 (defvar-local deadgrep--imenu-alist nil
   "Alist that stores filename and position for each matched files.
@@ -897,28 +908,29 @@ Returns a list ordered by the most recently accessed."
   "Open PATH in a buffer, and return a cons cell
 \(BUF . OPENED). OPENED is nil if there was aleady a buffer for
 this path."
-  (let* ((initial-buffers (buffer-list))
-         (opened nil)
-         ;; Skip running find-file-hook since it may prompt the user.
-         (find-file-hook nil)
-         ;; If we end up opening a buffer, don't bother with file
-         ;; variables. It prompts the user, and we discard the buffer
-         ;; afterwards anyway.
-         (enable-local-variables nil)
-         ;; Bind `auto-mode-alist' to nil, so we open the buffer in
-         ;; `fundamental-mode' if it isn't already open.
-         (auto-mode-alist nil)
-         ;; Use `find-file-noselect' so we still decode bytes from the
-         ;; underlying file.
-         (buf (find-file-noselect path)))
-    (unless (-contains-p initial-buffers buf)
-      (setq opened t))
-    (cons buf opened)))
+  (save-match-data
+    (let* ((initial-buffers (buffer-list))
+           (opened nil)
+           ;; Skip running find-file-hook since it may prompt the user.
+           (find-file-hook nil)
+           ;; If we end up opening a buffer, don't bother with file
+           ;; variables. It prompts the user, and we discard the buffer
+           ;; afterwards anyway.
+           (enable-local-variables nil)
+           ;; Bind `auto-mode-alist' to nil, so we open the buffer in
+           ;; `fundamental-mode' if it isn't already open.
+           (auto-mode-alist nil)
+           ;; Use `find-file-noselect' so we still decode bytes from the
+           ;; underlying file.
+           (buf (save-match-data (find-file-noselect path))))
+      (unless (-contains-p initial-buffers buf)
+        (setq opened t))
+      (cons buf opened))))
 
 (defun deadgrep--propagate-change (beg end length)
   "Repeat the last modification to the results buffer in the
 underlying file."
-  ;; We should never be called outside a edit buffer, but be
+  ;; We should never be called outside an edit buffer, but be
   ;; defensive. Buggy functions in change hooks are painful.
   (when (eq major-mode 'deadgrep-edit-mode)
     (save-excursion
@@ -953,19 +965,26 @@ deadgrep results buffer.
 
 \\{deadgrep-edit-mode-map}"
   (interactive)
+  (unless (eq major-mode 'deadgrep-mode)
+    (user-error "deadgrep-edit-mode only works in deadgrep result buffers"))
   (when deadgrep--running
     (user-error "Can't edit a results buffer until the search is finished"))
   ;; We deliberately don't use `define-derived-mode' here because we
-  ;; don't want to call `kill-all-local-variables'. Initialise the
+  ;; want to check the previous value of `major-mode'. Initialise the
   ;; major mode manually.
-  (run-hooks 'change-major-mode-hook)
-  (setq major-mode 'deadgrep-edit-mode)
-  (setq mode-name
-        '(:propertize "Deadgrep:Edit" face mode-line-emphasis))
-  (use-local-map deadgrep-edit-mode-map)
+  (delay-mode-hooks
+    (kill-all-local-variables)
+    (setq major-mode 'deadgrep-edit-mode)
+    (setq mode-name
+          '(:propertize "Deadgrep:Edit" face mode-line-emphasis))
+    (use-local-map deadgrep-edit-mode-map)
+    ;; Done major mode manual initialise (copied from `define-derived-mode').
 
-  (setq buffer-read-only nil)
-  (add-hook 'after-change-functions #'deadgrep--propagate-change nil t)
+    ;; Allow editing, and propagate changes.
+    (setq buffer-read-only nil)
+    (add-hook 'after-change-functions #'deadgrep--propagate-change nil t)
+
+    (message "Now editing, use `M-x deadgrep-mode' when finished"))
 
   (run-mode-hooks 'deadgrep-edit-mode-hook))
 
@@ -1036,13 +1055,14 @@ buffer."
 (defun deadgrep--buffer-position (line-number column-offset)
   "Return the position equivalent to LINE-NUMBER at COLUMN-OFFSET
 in the current buffer."
-  (save-restriction
-    (widen)
-    (goto-char (point-min))
-    (forward-line (1- line-number))
-    (forward-char column-offset)
+  (save-excursion
+    (save-restriction
+      (widen)
+      (goto-char (point-min))
+      (forward-line (1- line-number))
+      (forward-char column-offset)
 
-    (point)))
+      (point))))
 
 (defun deadgrep--filename (&optional pos)
   "Get the filename of the result at point POS.

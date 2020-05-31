@@ -6,7 +6,7 @@
 ;; Maintainer: Federico Tedin <federicotedin@gmail.com>
 ;; Homepage: https://github.com/federicotdn/verb
 ;; Keywords: tools
-;; Package-Version: 2.10.0
+;; Package-Version: 2.11.0
 ;; Package-Requires: ((emacs "25.1"))
 
 ;; This file is NOT part of GNU Emacs.
@@ -377,9 +377,12 @@ Bind this to an easy-to-reach key in Org mode in order to use Verb
 comfortably.  All commands listed in this keymap automatically enable
 `verb-mode' in the current buffer when used.")
 
-(defun verb--setup-font-lock-keywords ()
-  "Configure font lock keywords for `verb-mode'."
-  (font-lock-add-keywords
+(defun verb--setup-font-lock-keywords (&optional remove)
+  "Configure font lock keywords for `verb-mode'.
+If REMOVE is nil, add the necessary keywords to
+`font-lock-keywords'.  Otherwise, remove them."
+  (funcall
+   (if remove #'font-lock-remove-keywords #'font-lock-add-keywords)
    nil
    `(;; GET
      (,(concat "^\\(" (verb--http-methods-regexp) "\\)$")
@@ -410,6 +413,8 @@ comfortably.  All commands listed in this keymap automatically enable
          verb-send-request-on-point-other-window]
         ["Send request on other window"
          verb-send-request-on-point-other-window-stay]
+        ["Send request without showing response"
+         verb-send-request-on-point-no-window]
         "--"
         ["Kill response buffers" verb-kill-all-response-buffers]
         "--"
@@ -433,18 +438,26 @@ See the documentation in URL `https://github.com/federicotdn/verb' for
 more details on how to use it."
   :lighter " Verb"
   :group 'verb
-  (when verb-mode
-    (verb--setup-font-lock-keywords)
-    (when verb-enable-elisp-completion
-      (add-hook 'completion-at-point-functions #'verb-elisp-completion-at-point
-                nil 'local))
-    (when (buffer-file-name)
-      (verb--log nil 'I
-                 "Verb mode enabled in buffer: %s"
-                 (buffer-name))
-      (verb--log nil 'I "Org version: %s, GNU Emacs version: %s"
-                 (org-version)
-                 emacs-version))))
+  (if verb-mode
+      ;; Enable verb-mode
+      (progn
+        (verb--setup-font-lock-keywords)
+        (when verb-enable-elisp-completion
+          (add-hook 'completion-at-point-functions
+                    #'verb-elisp-completion-at-point
+                    nil 'local))
+        (when (buffer-file-name)
+          (verb--log nil 'I
+                     "Verb mode enabled in buffer: %s"
+                     (buffer-name))
+          (verb--log nil 'I "Org version: %s, GNU Emacs version: %s"
+                     (org-version)
+                     emacs-version)))
+    ;; Disable verb-mode
+    (verb--setup-font-lock-keywords t)
+    (remove-hook 'completion-at-point-functions
+                 #'verb-elisp-completion-at-point
+                 'local)))
 
 (defvar verb-response-headers-mode-map
   (let ((map (make-sparse-keymap)))

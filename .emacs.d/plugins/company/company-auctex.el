@@ -180,6 +180,31 @@
 ;; Symbols
 ;;
 
+(defcustom company-auctex-symbol-math-symbol '("$" . "$")
+  "If non-nil, on insertion of a candidate of the
+`company-auctex-symbol' backend, when outside math mode,
+`company-auctex' will insert symbols for opening and closing
+inline equation and leave point inside them.
+
+If nil, the insertion of math symbols is disabled.
+
+If equal to the symbol 'TeX-electric-math `company-auctex' will
+use the same pair `TeX-insert-dollar' does.
+
+Otherwise, this variable should be a cons cell whose CAR is the
+string to insert before point, the CDR is the string to insert
+after point.  You can choose between \"$...$\" and
+\"\\(...\\)\"."
+  :group 'company-auctex
+  :type '(choice (const :tag "No math symbol added" nil)
+                 (const :tag "Use TeX-electric-math" TeX-electric-math)
+                 (const :tag "$...$" ("$" . "$"))
+                 (const :tag "\\(...\\)" ("\\(" . "\\)"))
+                 (cons :tag "Other"
+                       (string :tag "Insert before symbol")
+                       (string :tag "Insert after symbol"))))
+
+
 (defun company-auctex-math-all ()
   (append LaTeX-math-list LaTeX-math-default))
 
@@ -190,10 +215,19 @@
 (defun company-auctex-symbol-post-completion (candidate)
   (search-backward candidate)
   (delete-region (1- (match-beginning 0)) (match-end 0))
-  (if (texmathp)
-      (insert "\\" candidate)
-    (insert "$\\" candidate "$")
-    (backward-char))
+  (let ((math-symb (cond
+                    ((or (not company-auctex-symbol-math-symbol)
+                         (consp company-auctex-symbol-math-symbol))
+                     company-auctex-symbol-math-symbol)
+                    ((equal company-auctex-symbol-math-symbol
+                            'TeX-electric-math)
+                     TeX-electric-math)
+                    (t ; fallback value, equal to default
+                     '("$" . "$")))))
+    (if (texmathp)
+        (insert "\\" candidate)
+      (insert (or (car math-symb) "") "\\" candidate)
+      (save-excursion (insert (or (cdr math-symb) "")))))
   (company-auctex-expand-args
    candidate
    (append (TeX-symbol-list) (company-auctex-get-LaTeX-font-list t))))

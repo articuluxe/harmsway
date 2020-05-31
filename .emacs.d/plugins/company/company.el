@@ -94,6 +94,8 @@ attention to case differences."
     (((class color) (min-colors 88) (background light))
      (:background "cornsilk"))
     (((class color) (min-colors 88) (background dark))
+     (:background "yellow"))
+    (t
      (:background "yellow")))
   "Face used for the tooltip.")
 

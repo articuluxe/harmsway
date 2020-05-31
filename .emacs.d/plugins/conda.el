@@ -4,6 +4,7 @@
 ;; Author: Rami Chowdhury <rami.chowdhury@gmail.com>
 ;; URL: http://github.com/necaris/conda.el
 ;; Version: 0.4
+;; Package-Version: 0.4
 ;; Keywords: python, environment, conda
 ;; Package-Requires: ((emacs "24.4") (pythonic "0.1.0") (dash "2.13.0") (s "1.11.0") (f "0.18.2"))
 
@@ -188,17 +189,18 @@ It's platform specific in that it uses the platform's native path separator."
    (with-output-to-string
      (with-current-buffer standard-output
        (let* ((conda-executable-path
-               (concat (file-name-as-directory conda-anaconda-home) (file-name-as-directory "bin") "conda"))
-              (command "%s ..activate \"%s\" %s")
-              (formatted-command (format command
-                                         conda-executable-path
-                                         (if (eq system-type 'windows-nt)
-                                             "cmd.exe"
-                                           "bash")
-                                         env-dir))
-              (return-code (process-file shell-file-name nil '(t nil) nil shell-command-switch formatted-command)))
+               (concat (file-name-as-directory conda-anaconda-home)
+                       (file-name-as-directory conda-env-executables-dir)
+                       "conda"))
+              (command-format-string "\"%s\" ..activate \"%s\" \"%s\"")
+              (executor (if (eq system-type 'windows-nt) "cmd.exe" "bash"))
+              (command (format command-format-string
+                               conda-executable-path
+                               executor
+                               env-dir))
+              (return-code (process-file shell-file-name nil '(t nil) nil shell-command-switch command)))
          (unless (= 0 return-code)
-           (error (format "Error: executing command \"%s\" produced error code %d" formatted-command return-code))))))))
+           (error (format "Error: executing command \"%s\" produced error code %d" command return-code))))))))
 
 ;; "public" functions
 

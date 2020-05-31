@@ -467,7 +467,7 @@ returned to avoid that the echo area grows uncomfortably."
 (defgroup lsp-elixir nil
   "LSP support for Elixir, using elixir-ls."
   :group 'lsp-mode
-  :link '(url-link "https://github.com/JakeBecker/elixir-ls"))
+  :link '(url-link "https://github.com/elixir-lsp/elixir-ls"))
 
 (defcustom lsp-clients-elixir-server-executable
   (if (equal system-type 'windows-nt)
@@ -678,7 +678,7 @@ responsiveness at the cost of possible stability issues."
  (make-lsp-client :new-connection (lsp-stdio-connection
                                    (lambda () lsp-clients-angular-language-server-command))
                   :activation-fn (lambda (&rest _args)
-                                   (and (string-match-p ".*\.html$" (buffer-file-name))
+                                   (and (string-match-p "\\.html\\'" (buffer-file-name))
                                         (lsp-workspace-root)
                                         (file-exists-p (f-join (lsp-workspace-root) "angular.json"))))
                   :priority -1

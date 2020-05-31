@@ -35,9 +35,9 @@
 (require 'ivy)
 (require 'subr-x)
 
-(declare-function projectile-project-name "projectile")
-(declare-function projectile-project-p "projectile")
-(declare-function projectile-project-root "projectile")
+(declare-function projectile-project-name "ext:projectile")
+(declare-function projectile-project-p "ext:projectile")
+(declare-function projectile-project-root "ext:projectile")
 
 (defgroup ivy-rich nil
   "More friendly interface (display transformer) for ivy."
@@ -485,13 +485,13 @@ or /a/…/f.el."
   (setq ivy-rich--original-display-transformers-list
         (plist-put ivy-rich--original-display-transformers-list
                    cmd
-                   (plist-get ivy--display-transformers-alist cmd))))
+                   (alist-get cmd ivy--display-transformers-alist))))
 
 (defun ivy-rich-restore-transformer (cmd)
   (setq ivy--display-transformers-alist
-        (plist-put ivy--display-transformers-alist
-                   cmd
-                   (plist-get ivy-rich--original-display-transformers-list cmd))))
+        (ivy--alist-set 'ivy--display-transformers-alist
+                        cmd
+                        (plist-get ivy-rich--original-display-transformers-list cmd))))
 
 (defun ivy-rich-build-transformer (cmd transformer-props)
   (if (functionp transformer-props)
