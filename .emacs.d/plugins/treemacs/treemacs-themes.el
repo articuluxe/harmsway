@@ -23,16 +23,23 @@
 (require 'f)
 (require 'dash)
 (require 'ht)
-(require 'cl-lib)
-(require 'inline)
-(require 'treemacs-macros)
 (require 'treemacs-core-utils)
 (require 'treemacs-logging)
+
+(eval-when-compile
+  (require 'inline)
+  (require 'treemacs-macros)
+  (require 'cl-lib))
+
+(cl-declaim (optimize (speed 3) (safety 0)))
 
 (treemacs-import-functions-from "treemacs-icons"
   treemacs--select-icon-set)
 
-(treemacs--defstruct treemacs-theme
+(cl-defstruct (treemacs-theme
+               (:conc-name treemacs-theme->)
+               (:constructor treemacs-theme->create!)
+               (:named t))
   name path gui-icons tui-icons)
 
 (defvar treemacs--current-theme nil "The currently used theme.")
@@ -60,7 +67,7 @@
   (declare (indent 1))
   `(let* ((gui-icons (make-hash-table :size 300 :test 'equal))
           (tui-icons (make-hash-table :size 300 :test 'equal))
-          (theme (make-treemacs-theme
+          (theme (treemacs-theme->create!
                   :name ,name
                   :path ,icon-directory
                   :gui-icons gui-icons

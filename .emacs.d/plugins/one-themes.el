@@ -289,6 +289,16 @@
      `(isearch ((,class (:foreground ,background :background ,red1 :weight normal))))
      `(isearch-fail ((,class (:foreground ,orange2 :background ,background :bold t))))
 
+     ;; Ivy
+     `(ivy-confirm-face ((,class (:foreground ,green))))
+     `(ivy-current-match ((,class (:inherit match))))
+     `(ivy-match-required-face ((,class (:foreground ,red1))))
+     `(ivy-minibuffer-match-face-1 ((,class (:foreground ,comment))))
+     `(ivy-minibuffer-match-face-2 ((,class (:foreground ,orange1))))
+     `(ivy-minibuffer-match-face-3 ((,class (:foreground ,orange1))))
+     `(ivy-minibuffer-match-face-4 ((,class (:foreground ,orange1))))
+     `(ivy-remote ((,class (:foreground ,blue))))
+
      ;; Ledger
      `(ledger-font-comment-face ((,class (:inherit font-lock-comment-face))))
      `(ledger-font-occur-narrowed-face ((,class (:inherit font-lock-comment-face :invisible t))))
@@ -486,6 +496,10 @@
      `(rainbow-delimiters-depth-11-face ((,class (:foreground ,green))))
      `(rainbow-delimiters-depth-12-face ((,class (:foreground ,red1))))
      `(rainbow-delimiters-depth-unmatched-face ((,class (:foreground ,foreground :inverse-video t))))
+
+     ;; Rust Mode
+     `(rust-builtin-formatting-macro-face ((,class (:foreground ,violet))))
+     `(rust-question-mark-face ((,class (:foreground ,blue))))
 
      ;; Spaceline
      `(spaceline-evil-emacs ((,class (:background ,accent :foreground ,background))))

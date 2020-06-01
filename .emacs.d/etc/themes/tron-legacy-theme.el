@@ -1,4 +1,4 @@
-;;; tron-legacy-theme.el --- An orginal retro-futuristic theme inspired by Tron: Legacy -*- lexical-binding: t; -*-
+;;; tron-legacy-theme.el --- An original retro-futuristic theme inspired by Tron: Legacy -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2018-2020 Ian Y.E. Pan
 
@@ -108,6 +108,7 @@
    'tron-legacy
    `(default                                  ((,class (:background ,bg1 :foreground ,fg1))))
 
+   ;;;;; Font lock basics
    `(font-lock-builtin-face                   ((,class (:foreground ,builtin))))
    `(font-lock-comment-face                   ((,class (:foreground ,comment :italic t))))
    `(font-lock-negation-char-face             ((,class (:foreground ,const))))
@@ -121,6 +122,7 @@
    `(font-lock-variable-name-face             ((,class (:foreground ,var))))
    `(font-lock-warning-face                   ((,class (:foreground ,warning :background ,bg2))))
 
+   ;;;;; More built-in UI
    `(region                                   ((,class (:background ,bg-hl :distant-foreground ,fg0))))
    `(highlight                                ((,class (:foreground ,bg3 :background ,fg3))))
    `(hl-line                                  ((,class (:background ,hl-line))))
@@ -137,16 +139,23 @@
    `(error                                    ((,class (:foreground ,tron-orange))))
    `(warning                                  ((,class (:foreground ,tron-magenta))))
    `(success                                  ((,class (:foreground ,tron-bluegreen))))
-   `(dired-directory                          ((t (:inherit (font-lock-keyword-face)))))
+   `(dired-directory                          ((t (:inherit font-lock-keyword-face))))
    `(line-number                              ((,class (:foreground ,line-num :background nil))))
    `(line-number-current-line                 ((,class (:foreground ,fg1 :background nil))))
+   `(trailing-whitespace                      ((,class :foreground nil :background ,warning)))
+   `(lazy-highlight                           ((,class (:foreground ,fg2 :background ,bg3))))
 
+   ;;;;; which-func
+   `(which-func                               ((t (:foreground ,tron-orange))))
+
+   ;;;;; mode-line tweaks
    `(mode-line                                ((,class (:bold nil :foreground ,fg4 :background ,mode-line-bg))))
    `(mode-line-inactive                       ((,class (:bold nil :foreground ,fg0 :background ,mode-line-bg-dark))))
    `(mode-line-buffer-id                      ((,class (:bold nil :foreground ,fg4 :background nil))))
    `(mode-line-highlight                      ((,class (:foreground ,keyword :box nil :weight normal))))
    `(mode-line-emphasis                       ((,class (:foreground ,fg1))))
 
+   ;;;;; Company
    `(company-preview-common                   ((t (:foreground unspecified :background ,bg2))))
    `(company-scrollbar-bg                     ((t (:background ,bg2))))
    `(company-scrollbar-fg                     ((t (:background ,bg3))))
@@ -156,6 +165,7 @@
    `(company-tooltip-annotation               ((t (:foreground ,doc)))) ; parameter hints etc.
    `(company-template-field                   ((t (:foreground ,fg1 :background ,bg-hl))))
 
+   ;;;;; Org mode
    `(org-document-title                       ((,class (:foreground ,type :height 1.2 :bold t))))
    `(org-level-1                              ((,class (:bold nil :foreground ,tron-bluegreen :height 1.1))))
    `(org-level-2                              ((,class (:bold nil :foreground ,tron-yellow))))
@@ -170,8 +180,10 @@
    `(org-block                                ((,class (:foreground ,fg2 :background ,bg0 :extend t))))
    `(org-quote                                ((,class (:inherit org-block :slant italic))))
    `(org-verse                                ((,class (:inherit org-block :slant italic))))
-   `(org-todo                                 ((,class (:box (:line-width 1 :color ,fg3) :foreground ,keyword :bold nil))))
-   `(org-done                                 ((,class (:box (:line-width 1 :color ,bg3) :bold nil :foreground ,bg4))))
+   `(org-todo                                 ((,class (:box (:line-width 1 :color ,tron-lightred)
+                                                        :foreground ,tron-lightred))))
+   `(org-done                                 ((,class (:box (:line-width 1 :color ,tron-lightgreen)
+                                                        :foreground ,tron-lightgreen))))
    `(org-warning                              ((,class (:underline t :foreground ,warning))))
    `(org-agenda-structure                     ((,class (:weight normal :foreground ,fg3 :box (:color ,fg4) :background ,bg3))))
    `(org-agenda-date                          ((,class (:foreground ,var :height 1.1 ))))
@@ -185,28 +197,34 @@
    `(org-document-info-keyword                ((,class (:foreground ,tron-green))))
    `(org-sexp-date                            ((,class (:foreground ,fg4))))
 
+   ;;;;; LaTeX
    `(font-latex-bold-face                     ((,class (:foreground ,type))))
    `(font-latex-italic-face                   ((,class (:foreground ,key3 :italic t))))
    `(font-latex-string-face                   ((,class (:foreground ,str))))
    `(font-latex-match-reference-keywords      ((,class (:foreground ,const))))
    `(font-latex-match-variable-keywords       ((,class (:foreground ,var))))
 
+   ;;;;; Ido mode
    `(ido-only-match                           ((,class (:foreground ,keyword))))
    `(ido-subdir                               ((,class (:weight normal :foreground ,fg0))))
    `(ido-first-match                          ((,class (:foreground ,keyword :bold nil))))
 
+   ;;;;; Gnus
    `(gnus-header-content                      ((,class (:foreground ,keyword))))
    `(gnus-header-from                         ((,class (:foreground ,var))))
    `(gnus-header-name                         ((,class (:foreground ,type))))
    `(gnus-header-subject                      ((,class (:foreground ,func :bold nil))))
 
+   ;;;;; Mu4e
    `(mu4e-view-url-number-face                ((,class (:foreground ,type))))
    `(mu4e-cited-1-face                        ((,class (:foreground ,fg2))))
    `(mu4e-cited-7-face                        ((,class (:foreground ,fg3))))
    `(mu4e-header-marks-face                   ((,class (:foreground ,type))))
 
+   ;;;;; FFAP
    `(ffap                                     ((,class (:foreground ,fg4))))
 
+   ;;;;; js2 & js3
    `(js2-private-function-call                ((,class (:foreground ,const))))
    `(js2-jsdoc-html-tag-delimiter             ((,class (:foreground ,str))))
    `(js2-jsdoc-html-tag-name                  ((,class (:foreground ,key2))))
@@ -230,20 +248,24 @@
    `(js3-jsdoc-tag-face                       ((,class (:foreground ,keyword))))
    `(js3-instance-member-face                 ((,class (:foreground ,const))))
 
+   ;;;;; Auto-complete
    `(ac-completion-face                       ((,class (:underline t :foreground ,keyword))))
+
+   ;;;;; Misc
    `(info-quoted-name                         ((,class (:foreground ,builtin))))
    `(info-string                              ((,class (:foreground ,str))))
    `(icompletep-determined                    ((,class :foreground ,builtin)))
 
+   ;;;;; Slime
    `(slime-repl-inputed-output-face           ((,class (:foreground ,type))))
-   `(trailing-whitespace                      ((,class :foreground nil :background ,warning)))
-   `(lazy-highlight                           ((,class (:foreground ,fg2 :background ,bg3))))
 
+   ;;;;; Undo tree
    `(undo-tree-visualizer-current-face        ((,class :foreground ,builtin)))
    `(undo-tree-visualizer-default-face        ((,class :foreground ,fg2)))
    `(undo-tree-visualizer-unmodified-face     ((,class :foreground ,var)))
    `(undo-tree-visualizer-register-face       ((,class :foreground ,type)))
 
+   ;;;;; Rainbow delimiters
    `(rainbow-delimiters-depth-1-face          ((,class :foreground "#BBECEF")))
    `(rainbow-delimiters-depth-2-face          ((,class :foreground "#BBCCDD")))
    `(rainbow-delimiters-depth-3-face          ((,class :foreground "#8Fd4FF")))
@@ -255,6 +277,7 @@
    `(rainbow-delimiters-depth-9-face          ((,class :foreground "#8Fd4FF")))
    `(rainbow-delimiters-unmatched-face        ((,class :foreground ,warning)))
 
+   ;;;;; Magit
    `(magit-item-highlight                     ((,class (:background ,bg3))))
    `(magit-hunk-heading                       ((,class (:background ,bg3))))
    `(magit-hunk-heading-highlight             ((,class (:background ,bg3))))
@@ -322,6 +345,7 @@
    `(magit-signature-untrusted                ((t (:foreground ,tron-bluegreen))))
    `(magit-tag                                ((t (:foreground ,tron-yellow))))
 
+   ;;;; term-mode (vterm too)
    `(term                                     ((,class (:foreground ,fg1 :background ,bg1))))
    `(term-color-black                         ((,class (:foreground ,bg3 :background ,bg3))))
    `(term-color-blue                          ((,class (:foreground ,tron-blue :background ,tron-blue))))
@@ -332,6 +356,7 @@
    `(term-color-cyan                          ((,class (:foreground ,tron-bluegreen :background ,tron-bluegreen))))
    `(term-color-white                         ((,class (:foreground ,fg2 :background ,fg2))))
 
+   ;;;;; diredfl
    `(diredfl-autofile-name                    ((t (:foreground ,fg0))))
    `(diredfl-compressed-file-name             ((t (:foreground ,tron-yellow))))
    `(diredfl-compressed-file-suffix           ((t (:foreground ,doc))))
@@ -357,6 +382,7 @@
    `(diredfl-tagged-autofile-name             ((t (:foreground ,fg0))))
    `(diredfl-write-priv                       ((t (:foreground ,tron-red))))
 
+   ;;;;; Helm
    `(helm-header                              ((,class (:foreground ,fg2 :background ,bg1 :underline nil :box nil))))
    `(helm-source-header                       ((,class (:foreground ,keyword :background ,bg1 :underline nil :weight normal))))
    `(helm-selection                           ((,class (:background ,bg2 :underline nil))))
@@ -386,6 +412,7 @@
    `(helm-source-go-package-godoc-description ((,class (:foreground ,str))))
    `(helm-bookmark-w3m                        ((,class (:foreground ,type))))
 
+   ;;;;; web-mode
    `(web-mode-html-tag-bracket-face           ((,class (:foreground ,doc))))
    `(web-mode-html-tag-face                   ((,class (:foreground ,type))))
    `(web-mode-html-attr-name-face             ((,class (:foreground ,var))))
@@ -399,7 +426,10 @@
    `(web-mode-string-face                     ((,class (:foreground ,str))))
    `(web-mode-type-face                       ((,class (:inherit ,font-lock-type-face))))
    `(web-mode-warning-face                    ((,class (:inherit ,font-lock-warning-face))))
+   `(web-mode-json-key-face                   ((,class (:foreground ,tron-green))))
+   `(web-mode-json-context-face               ((,class (:foreground ,tron-blue))))
 
+   ;;;;; Diff
    `(diff-header                              ((t (:foreground ,tron-bluegreen :background nil))))
    `(diff-file-header                         ((t (:foreground ,fg3 :background nil))))
    `(diff-hunk-header                         ((t (:foreground ,fg4 :background ,bg4))))
@@ -410,6 +440,7 @@
    `(diff-refine-removed                      ((t (:foreground ,tron-lightred :background ,tron-red-bghl))))
    `(diff-refine-changed                      ((t (:foreground ,tron-lightblue :background ,tron-blue-bghl))))
 
+   ;;;;; Ediff
    `(ediff-current-diff-Ancestor              ((t (:foreground ,tron-red :background ,tron-red-bg))))
    `(ediff-current-diff-A                     ((t (:foreground ,tron-red :background ,tron-red-bg))))
    `(ediff-current-diff-B                     ((t (:foreground ,tron-green :background ,tron-green-bg))))
@@ -427,6 +458,7 @@
    `(ediff-odd-diff-B                         ((t (:background ,bg2))))
    `(ediff-odd-diff-C                         ((t (:background ,bg2))))
 
+   ;;;;; Java/JDE
    `(jde-java-font-lock-package-face          ((t (:foreground ,var))))
    `(jde-java-font-lock-public-face           ((t (:foreground ,keyword))))
    `(jde-java-font-lock-private-face          ((t (:foreground ,keyword))))
@@ -435,6 +467,7 @@
    `(jde-jave-font-lock-protected-face        ((t (:foreground ,keyword))))
    `(jde-java-font-lock-number-face           ((t (:foreground ,numeric))))
 
+   ;;;;; centaur-tabs
    `(centaur-tabs-default                     ((t (:background ,bg1 :foreground ,fg1))))
    `(centaur-tabs-selected                    ((t (:background ,bg1 :foreground ,fg3 :box nil))))
    `(centaur-tabs-unselected                  ((t (:background ,bg2 :foreground ,fg0 :box nil))))
@@ -444,11 +477,13 @@
    `(centaur-tabs-modified-marker-selected    ((t (:inherit 'centaur-tabs-selected-modified :foreground ,accent :box nil))))
    `(centaur-tabs-modified-marker-unselected  ((t (:inherit 'centaur-tabs-unselected-modified :foreground ,accent :box nil))))
 
+   ;;;;; solaire-mode
    `(solaire-default-face                     ((t (:inherit default :background ,bg2))))
    `(solaire-minibuffer-face                  ((t (:inherit default :background ,bg2))))
    `(solaire-hl-line-face                     ((t (:inherit hl-line :background ,bg3))))
    `(solaire-org-hide-face                    ((t (:inherit org-hide :background ,bg2))))
 
+   ;;;;; Ivy
    `(ivy-confirm-face                         ((t (:inherit minibuffer-prompt :foreground ,keyword))))
    `(ivy-current-match                        ((t (:background ,bg-hl :extend t))))
    `(ivy-highlight-face                       ((t (:inherit font-lock-builtin-face))))
@@ -462,14 +497,17 @@
    `(ivy-virtual                              ((t (:inherit default :foreground ,doc))))
    `(ivy-posframe                             ((t (:background ,bg3))))
 
+   ;;;;; Counsel
    `(counsel-key-binding                      ((t (:foreground ,var))))
 
+   ;;;;; Swiper
    `(swiper-match-face-1                      ((t (:inherit ivy-minibuffer-match-face-1))))
    `(swiper-match-face-2                      ((t (:inherit ivy-minibuffer-match-face-2))))
    `(swiper-match-face-3                      ((t (:inherit ivy-minibuffer-match-face-3))))
    `(swiper-match-face-4                      ((t (:inherit ivy-minibuffer-match-face-4))))
    `(swiper-line-face                         ((t (:foreground ,fg3 :background ,bg-hl :extend t))))
 
+   ;;;;; Git gutter & git gutter fringe
    `(git-gutter:added                         ((t (:background ,vc-g :foreground ,vc-g :weight normal))))
    `(git-gutter:deleted                       ((t (:background ,vc-r :foreground ,vc-r :weight normal))))
    `(git-gutter:modified                      ((t (:background ,vc-b :foreground ,vc-b :weight normal))))
@@ -477,10 +515,12 @@
    `(git-gutter-fr:deleted                    ((t (:background ,vc-r :foreground ,vc-r :weight normal))))
    `(git-gutter-fr:modified                   ((t (:background ,vc-b :foreground ,vc-b :weight normal))))
 
+   ;;;;; diff-hl (git gutter)
    `(diff-hl-insert                           ((t (:background ,vc-g :foreground ,vc-g))))
    `(diff-hl-delete                           ((t (:background ,vc-r :foreground ,vc-r))))
    `(diff-hl-change                           ((t (:background ,vc-b :foreground ,vc-b))))
 
+   ;;;;; Neo tree
    `(neo-dir-link-face                        ((t (:foreground "#cccccc" :family "Sans Serif"))))
    `(neo-header-face                          ((t (:foreground "#cccccc" :family "Sans Serif"))))
    `(neo-banner-face                          ((t (:foreground "#cccccc" :family "Sans Serif"))))
@@ -488,6 +528,7 @@
    `(neo-file-link-face                       ((t (:foreground "#aaaaaa" :family "Sans Serif"))))
    `(neo-expand-btn-face                      ((t (:foreground "#aaaaaa"))))
 
+   ;;;;; smart mode line
    `(sml/line-number                          ((t (:foreground ,fg4 :bold nil))))
    `(sml/modified                             ((t (:foreground ,tron-lightred :background ,tron-red-bghl :bold t))))
    `(sml/outside-modified                     ((t (:foreground ,tron-lightred :background ,tron-red-bghl :bold nil))))
@@ -499,13 +540,30 @@
    `(sml/charging                             ((t (:foreground ,tron-green :bold nil))))
    `(sml/discharging                          ((t (:foreground ,tron-lightred :background ,tron-red-bghl :bold nil))))
 
+   ;;;;; evil search and replace
    `(evil-ex-substitute-matches               ((t (:foreground ,warning :weight normal :strike-through t))))
    `(evil-ex-substitute-replacement           ((t (:foreground ,tron-bluegreen :weight normal))))
 
+   ;;;;; highlight todo
    `(hl-todo                                  ((t (:inverse-video t))))
+
+   ;;;;; highlight numbers
    `(highlight-numbers-number                 ((t (:foreground ,numeric))))
+
+   ;;;;; highlight operators
    `(highlight-operators-face                 ((t (:inherit default))))
-   `(highlight-symbol-face                    ((t (:background ,bg3 :distant-foreground ,fg0))))))
+
+   ;;;;; highlight symbol
+   `(highlight-symbol-face                    ((t (:background ,bg3 :distant-foreground ,fg0))))
+
+   ;;;;; highlight thing
+   `(highlight-thing                          ((t (:inherit highlight-symbol-face))))
+
+   ;;;;; flycheck
+   `(flycheck-info                            ((t (:underline (:style wave :color ,tron-green)))))
+   `(flycheck-error                           ((t (:underline (:style wave :color ,tron-yellow)))))
+   `(flycheck-warning                         ((t (:underline (:style wave :color ,tron-yellow)))))
+   ))
 
 ;;;###autoload
 (when (and (boundp 'custom-theme-load-path) load-file-name)

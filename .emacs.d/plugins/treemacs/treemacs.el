@@ -27,8 +27,7 @@
 ;;; Code:
 
 (require 'dash)
-(require 's)
-(require 'f)
+(require 'treemacs-macros)
 (require 'treemacs-customization)
 (require 'treemacs-logging)
 (require 'treemacs-themes)
@@ -52,8 +51,8 @@
 (require 'treemacs-fringe-indicator)
 (require 'treemacs-header-line)
 (require 'treemacs-extensions)
-(eval-and-compile
-  (require 'cl-lib)
+
+(eval-when-compile
   (require 'treemacs-macros))
 
 (defconst treemacs-version
@@ -206,14 +205,19 @@ only project, all other projects *will be removed* from the current workspace."
              (treemacs-do-add-project-to-workspace path name)
              (treemacs-select-window)
              (treemacs-pulse-on-success))
-         (setf (treemacs-workspace->projects (treemacs-current-workspace)) nil)
-         (let ((treemacs--no-messages t)
-               (treemacs-pulse-on-success nil))
-           (treemacs-add-project-to-workspace path name))
+         (setf (treemacs-workspace->projects ws)
+               (--filter (string= path (treemacs-project->path it))
+                         (treemacs-workspace->projects ws)))
+         (unless (treemacs-workspace->projects ws)
+           (let ((treemacs--no-messages t)
+                 (treemacs-pulse-on-success nil))
+             (treemacs-add-project-to-workspace path name)))
          (treemacs-select-window)
          (treemacs--consolidate-projects)
          (goto-char 2)
-         (treemacs--expand-root-node (treemacs-current-button))
+         (-let [btn (treemacs-current-button)]
+           (unless (treemacs-is-node-expanded? btn)
+             (treemacs--expand-root-node btn)))
          (treemacs-pulse-on-success))))))
 
 ;;;###autoload

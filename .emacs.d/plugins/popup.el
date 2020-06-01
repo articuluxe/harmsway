@@ -4,8 +4,8 @@
 
 ;; Author: Tomohiro Matsuyama <m2ym.pub@gmail.com>
 ;; Keywords: lisp
-;; Version: 0.5.4
-;; Package-Requires: ((cl-lib "0.5"))
+;; Version: 0.5.7
+;; Package-Requires: ((emacs "26.1") (cl-lib "0.5"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -30,8 +30,9 @@
 ;;; Code:
 
 (require 'cl-lib)
+(require 'display-line-numbers)
 
-(defconst popup-version "0.5.4")
+(defconst popup-version "0.5.7")
 
 
 
@@ -150,6 +151,8 @@ untouched."
 
 (defun popup-vertical-motion (column direction)
   "A portable version of `vertical-motion'."
+  (when display-line-numbers-mode
+    (setq column (- column (line-number-display-width 'columns))))
   (if (>= emacs-major-version 23)
       (vertical-motion (cons column direction))
     (vertical-motion direction)
@@ -436,7 +439,7 @@ usual."
   "Return a proper direction when displaying a popup on this
 window. HEIGHT is the a height of the popup, and ROW is a line
 number at the point."
-  (let* ((remaining-rows (- (max 1 (- (window-height)
+  (let* ((remaining-rows (- (max 1 (- (window-text-height)
                                       (if mode-line-format 1 0)
                                       (if header-line-format 1 0)))
                             (count-lines (window-start) (point))))
@@ -876,7 +879,7 @@ Pages up through POPUP."
 
 (defvar popup-isearch-keymap
   (let ((map (make-sparse-keymap)))
-    ;(define-key map "\r"        'popup-isearch-done)
+    ;;(define-key map "\r"        'popup-isearch-done)
     (define-key map "\C-g"      'popup-isearch-cancel)
     (define-key map "\C-b"      'popup-isearch-close)
     (define-key map [left]      'popup-isearch-close)

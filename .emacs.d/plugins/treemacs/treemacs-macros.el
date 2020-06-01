@@ -26,8 +26,9 @@
 (require 'f)
 (require 's)
 (require 'pcase)
-(require 'cl-lib)
+
 (eval-when-compile
+  (require 'cl-lib)
   (require 'gv))
 
 (declare-function treemacs--scope-store "treemacs-scope")
@@ -332,29 +333,6 @@ Inluceds *all* treemacs-mode-derived buffers, including extensions."
        (with-current-buffer buffer
          ,@body))))
 
-(defmacro treemacs--defstruct (name &rest properties)
-  "Define a struct with NAME and PROPERTIES.
-Delegates to `cl-defstruct', creating a struct with a 'NAME->' `:conc-name' and
-foregoing typechecking for its properties for the hope of improved performance."
-  (declare (indent 1))
-  (-let [prefix (concat (symbol-name name) "->")]
-    `(progn
-       (cl-defstruct (,name (:conc-name ,(intern prefix)))
-         ,@properties)
-       ,@(--map
-          (let* ((prop-name (symbol-name (nth it properties)))
-                 (func-name (intern (concat prefix prop-name))))
-            `(progn
-               ;; ignore warnings since the accessors are defined twice
-               (with-no-warnings
-                 ;; redefine the accessors without the type checking
-                 (define-inline ,func-name (self)
-                   ,(format "Get the '%s' property of `%s' SELF." prop-name name)
-                   (declare (side-effect-free t))
-                   (inline-letevals (self)
-                     (inline-quote (aref ,',self ,(1+ it))))))))
-          (number-sequence 0 (1- (length properties)))))))
-
 (defmacro treemacs-only-during-init (&rest body)
   "Run BODY only when treemacs has not yet been loaded.
 Specifically only run it when (featurep 'treemacs) returns nil."
@@ -367,8 +345,8 @@ Specifically only run it when (featurep 'treemacs) returns nil."
 Entry variables will bound based on NAMES which is a list of two elements."
   (declare (debug (sexp sexp body))
            (indent 2))
-  (let ((key-name (cl-first names))
-        (val-name (cl-second names)))
+  (let ((key-name (car names))
+        (val-name (cadr names)))
     `(maphash
       (lambda (,key-name ,val-name) ,@body)
       ,table)))
@@ -447,7 +425,7 @@ also `treemacs--canonical-path').
 
 Even if LEFT or RIGHT should be a form and not a variable it is guaranteed that
 they will be evaluated only once."
-  (declare (debug (form form form)))
+  (declare (debug (&rest form)))
   (treemacs-static-assert (memq op '(:same-as :in :parent-of :in-project :in-workspace))
     "Invalid treemacs-is-path operator: `%s'" op)
   (treemacs-static-assert (or (eq op :in-workspace) right)

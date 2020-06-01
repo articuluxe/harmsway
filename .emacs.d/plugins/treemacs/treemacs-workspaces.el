@@ -27,9 +27,12 @@
 (require 'treemacs-dom)
 (require 'treemacs-scope)
 
-(eval-and-compile
+(eval-when-compile
+  (require 'cl-lib)
   (require 'inline)
   (require 'treemacs-macros))
+
+(cl-declaim (optimize (speed 3) (safety 0)))
 
 (treemacs-import-functions-from "treemacs"
   treemacs-select-window)
@@ -55,11 +58,20 @@
   treemacs--forget-last-highlight
   treemacs-pulse-on-failure)
 
-(treemacs--defstruct treemacs-project name path path-status)
+(cl-defstruct (treemacs-project
+               (:conc-name treemacs-project->)
+               (:constructor treemacs-project->create!))
+  name
+  path
+  path-status)
 
-(treemacs--defstruct treemacs-workspace name projects)
+(cl-defstruct (treemacs-workspace
+               (:conc-name treemacs-workspace->)
+               (:constructor treemacs-workspace->create!))
+  name
+  projects)
 
-(defvar treemacs--workspaces (list (make-treemacs-workspace :name "Default")))
+(defvar treemacs--workspaces (list (treemacs-workspace->create! :name "Default")))
 
 (defvar treemacs--find-user-project-functions (list #'treemacs--default-current-user-project-function)
   "List of functions to find the user project for the current buffer.")
@@ -105,13 +117,12 @@ If no workspace is assigned to the current scope the persisted workspaces will
 be loaded and a workspace will be found based on the `currebt-buffer'.
 
 This function can be used with `setf'."
-  (declare (side-effect-free t))
   (or treemacs-override-workspace
       (-if-let (shelf (treemacs-current-scope-shelf))
           (treemacs-scope-shelf->workspace shelf)
         (treemacs--maybe-load-workspaces)
         (let* ((workspace (treemacs--find-workspace (buffer-file-name (current-buffer))))
-               (new-shelf (make-treemacs-scope-shelf :workspace workspace)))
+               (new-shelf (treemacs-scope-shelf->create! :workspace workspace)))
           (setf (treemacs-current-scope-shelf) new-shelf)
           (run-hook-with-args treemacs-workspace-first-found-functions
                               workspace (treemacs-current-scope))
@@ -120,7 +131,7 @@ This function can be used with `setf'."
 (gv-define-setter treemacs-current-workspace (val)
   `(let ((shelf (treemacs-current-scope-shelf)))
      (unless shelf
-       (setf shelf (make-treemacs-scope-shelf))
+       (setf shelf (treemacs-scope-shelf->create!))
        (push (cons (treemacs-current-scope) shelf) treemacs--scope-storage))
      (setf (treemacs-scope-shelf->workspace shelf) ,val)))
 
@@ -297,7 +308,7 @@ Return values may be as follows:
      (-when-let (ws (--first (string= name (treemacs-workspace->name it))
                              treemacs--workspaces))
        (treemacs-return `(duplicate-name ,ws)))
-     (-let [workspace (make-treemacs-workspace :name name)]
+     (-let [workspace (treemacs-workspace->create! :name name)]
        (add-to-list 'treemacs--workspaces workspace :append)
        (treemacs--persist)
        (run-hook-with-args 'treemacs-create-workspace-functions workspace)
@@ -452,7 +463,7 @@ NAME: String"
      (-when-let (project (--first (treemacs-is-path (treemacs-project->path it) :in path)
                                   (treemacs-workspace->projects (treemacs-current-workspace))))
        (treemacs-return `(includes-project ,project)))
-     (let ((project (make-treemacs-project :name name :path path :path-status path-status)))
+     (let ((project (treemacs-project->create! :name name :path path :path-status path-status)))
        (-when-let (double (--first (string= name (treemacs-project->name it))
                                    (treemacs-workspace->projects (treemacs-current-workspace))))
          (treemacs-return `(duplicate-name ,double)))
@@ -477,7 +488,7 @@ NAME: String"
            (treemacs--insert-root-separator)))
          (treemacs--add-root-element project)
          (treemacs-dom-node->insert-into-dom!
-          (make-treemacs-dom-node :key path :position (treemacs-project->position project)))))
+          (treemacs-dom-node->create! :key path :position (treemacs-project->position project)))))
        (treemacs--persist)
        (run-hook-with-args 'treemacs-create-project-functions project)
        `(success ,project)))))
@@ -543,6 +554,7 @@ Return values may be as follows:
 * If everything went well:
   - the symbol `success'
   - the selected workspace"
+  (treemacs--maybe-load-workspaces)
   (treemacs-block
    (treemacs-return-if (= 1 (length treemacs--workspaces))
      'only-one-workspace)
@@ -622,7 +634,7 @@ PROJECT: Project Struct"
    (let* ((current-file (--when-let (treemacs-current-button) (treemacs--nearest-path it)))
           (current-workspace (treemacs-current-workspace))
           ;; gather both the projects actually in the workspace ...
-          (projects-in-workspace (-> current-workspace (treemacs-workspace->projects)))
+          (projects-in-workspace (treemacs-workspace->projects current-workspace))
           (projects-in-buffer)
           (expanded-projects-in-buffer))
      (goto-char 0)
@@ -643,11 +655,9 @@ PROJECT: Project Struct"
            (treemacs--collapse-root-node project-btn))))
      ;; figure out which ones have been deleted and and remove them from the dom
      (dolist (project-in-buffer projects-in-buffer)
-       (unless (--first (treemacs-is-path (treemacs-project->path project-in-buffer)
-                                          :same-as
-                                          (treemacs-project->path it))
-                        projects-in-workspace)
+       (unless (treemacs-is-path (treemacs-project->path project-in-buffer) :in-workspace current-workspace)
          (treemacs-on-collapse (treemacs-project->path project-in-buffer) :purge)
+         (ht-remove! treemacs-dom (treemacs-project->path project-in-buffer))
          (setf projects-in-buffer (delete project-in-buffer projects-in-buffer))))
      (treemacs-with-writable-buffer
       (treemacs--forget-last-highlight)

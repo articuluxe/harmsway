@@ -68,6 +68,7 @@
 (defvar company-backends)
 (defvar c-basic-offset)
 (defvar yas-inhibit-overlay-modification-protection)
+(defvar yas-indent-line)
 
 (defconst lsp--message-type-face
   `((1 . ,compilation-error-face)
@@ -217,10 +218,10 @@ modifiers into account. Only applies if
 
 (defcustom lsp-client-packages
   '(ccls cquery lsp-clients lsp-clojure lsp-csharp lsp-css lsp-dart lsp-elm
-    lsp-erlang lsp-eslint lsp-fsharp lsp-gdscript lsp-go lsp-haskell lsp-haxe
-    lsp-intelephense lsp-java lsp-json lsp-metals lsp-perl lsp-pwsh lsp-pyls
-    lsp-python-ms lsp-rust lsp-serenata lsp-solargraph lsp-terraform lsp-verilog lsp-vetur
-    lsp-vhdl lsp-xml lsp-yaml)
+         lsp-erlang lsp-eslint lsp-fsharp lsp-gdscript lsp-go lsp-haskell lsp-haxe
+         lsp-intelephense lsp-java lsp-json lsp-metals lsp-perl lsp-pwsh lsp-pyls
+         lsp-python-ms lsp-rust lsp-serenata lsp-solargraph lsp-terraform lsp-verilog lsp-vetur
+         lsp-vhdl lsp-xml lsp-yaml)
   "List of the clients to be automatically required."
   :group 'lsp-mode
   :type '(repeat symbol))
@@ -1558,50 +1559,50 @@ interface ProgressParams<T> {
 }
 PARAMS contains the progress data.
 WORKSPACE is the workspace that contains the progress token."
-   (let* ((token (gethash "token" params))
-          (value (gethash "value" params))
-          (kind (gethash "kind" value)))
-     (pcase kind
+  (let* ((token (gethash "token" params))
+         (value (gethash "value" params))
+         (kind (gethash "kind" value)))
+    (pcase kind
 
-       ("begin"
-        (let* ((message (gethash "title" value))
-               (cur (gethash "percentage" value nil))
-               (reporter
-                (if lsp-progress-via-spinner
-                    (let* ((spinner-strings (alist-get 'progress-bar spinner-types))
-                           ;; Set message as a tooltip for the spinner strings
-                           (propertized-strings
-                            (seq-map (lambda (string) (propertize string 'help-echo message))
-                                     spinner-strings))
-                           (spinner-type (vconcat propertized-strings)))
-                      ;; The progress relates to the server as a whole,
-                      ;; display it on all buffers.
-                      (mapcar (lambda (buffer)
-                                (with-current-buffer buffer
-                                  (spinner-start spinner-type))
-                                buffer)
-                              (lsp--workspace-buffers workspace)))
-                  (if cur
-                      (make-progress-reporter message 0 100 cur)
-                    ;; No percentage, just progress
-                    (make-progress-reporter message nil nil)))))
-          (lsp-workspace-set-work-done-token token reporter workspace)))
+      ("begin"
+       (let* ((message (gethash "title" value))
+              (cur (gethash "percentage" value nil))
+              (reporter
+               (if lsp-progress-via-spinner
+                   (let* ((spinner-strings (alist-get 'progress-bar spinner-types))
+                          ;; Set message as a tooltip for the spinner strings
+                          (propertized-strings
+                           (seq-map (lambda (string) (propertize string 'help-echo message))
+                                    spinner-strings))
+                          (spinner-type (vconcat propertized-strings)))
+                     ;; The progress relates to the server as a whole,
+                     ;; display it on all buffers.
+                     (mapcar (lambda (buffer)
+                               (with-current-buffer buffer
+                                 (spinner-start spinner-type))
+                               buffer)
+                             (lsp--workspace-buffers workspace)))
+                 (if cur
+                     (make-progress-reporter message 0 100 cur)
+                   ;; No percentage, just progress
+                   (make-progress-reporter message nil nil)))))
+         (lsp-workspace-set-work-done-token token reporter workspace)))
 
-       ("report"
-        (when-let ((reporter (lsp-workspace-get-work-done-token token workspace)))
-          (when (not lsp-progress-via-spinner)
-            (progress-reporter-update reporter (gethash "percentage" value nil)))))
+      ("report"
+       (when-let ((reporter (lsp-workspace-get-work-done-token token workspace)))
+         (when (not lsp-progress-via-spinner)
+           (progress-reporter-update reporter (gethash "percentage" value nil)))))
 
-       ("end"
-        (when-let ((reporter (lsp-workspace-get-work-done-token token workspace)))
-          (if lsp-progress-via-spinner
-              (mapc (lambda (buffer)
-                      (when (buffer-live-p buffer)
-                        (with-current-buffer buffer
-                          (spinner-stop))))
-                    reporter)
-            (progress-reporter-done reporter))
-            (lsp-workspace-rem-work-done-token token workspace))))))
+      ("end"
+       (when-let ((reporter (lsp-workspace-get-work-done-token token workspace)))
+         (if lsp-progress-via-spinner
+             (mapc (lambda (buffer)
+                     (when (buffer-live-p buffer)
+                       (with-current-buffer buffer
+                         (spinner-stop))))
+                   reporter)
+           (progress-reporter-done reporter))
+         (lsp-workspace-rem-work-done-token token workspace))))))
 
 (defun lsp-diagnostics (&optional current-workspace?)
   "Return the diagnostics from all workspaces."
@@ -3465,7 +3466,7 @@ in that particular folder."
 
       (when (and (eq lsp-semantic-highlighting :semantic-tokens)
                  (lsp-feature? "textDocument/semanticTokens"))
-              (lsp--semantic-tokens-initialize-buffer))
+        (lsp--semantic-tokens-initialize-buffer))
       (add-hook 'post-command-hook #'lsp--post-command nil t)
       (when lsp-enable-xref
         (add-hook 'xref-backend-functions #'lsp--xref-backend nil t))
@@ -4431,7 +4432,7 @@ Also, additional data to attached to each candidate can be passed via PLIST."
     (ht<-alist
      (append
       `(("triggerKind" . ,(alist-get trigger-kind lsp--completion-trigger-kinds)))
-       (when trigger-char `(("triggerCharacter" . ,trigger-char)))))))
+      (when trigger-char `(("triggerCharacter" . ,trigger-char)))))))
 
 (defun lsp-completion-at-point ()
   "Get lsp completions."
@@ -4454,65 +4455,65 @@ Also, additional data to attached to each candidate can be passed via PLIST."
            (all-completions
             (lambda ()
               (cond
-                (done? result)
-                ((and lsp--capf-cache
-                      (listp lsp--capf-cache)
-                      (s-prefix? (car lsp--capf-cache)
-                                 (buffer-substring-no-properties bounds-start (point)))
-                      (< (caar (cadr lsp--capf-cache)) (point)))
-                 (apply #'lsp--capf-filter-candidates (cdr lsp--capf-cache)))
-                (t
-                 (-let* ((resp (lsp-request-while-no-input
-                                "textDocument/completion"
-                                (plist-put (lsp--text-document-position-params)
-                                           :context (lsp--capf-get-context trigger-chars))))
-                         (completed (or (seqp resp)
-                                        (not (gethash "isIncomplete" resp))))
-                         (items (--> (cond
-                                       ((seqp resp) resp)
-                                       ((hash-table-p resp) (gethash "items" resp)))
-                                     (if (or completed
-                                             (seq-some (-rpartial #'lsp--ht-get "sortText") it))
-                                         (lsp--sort-completions it)
-                                       it)
-                                     (-map (lambda (item)
-                                             (puthash "_emacsStartPoint"
-                                                      (lsp--capf-guess-prefix item bounds-start)
-                                                      item)
-                                             item)
-                                           it)))
-                         (markers (list bounds-start (copy-marker (point) t)))
-                         (prefix (buffer-substring-no-properties bounds-start (point))))
-                   (setf done? completed
-                         lsp--capf-cache (cond
-                                           ((and done? (not (seq-empty-p items)))
-                                            (list (buffer-substring-no-properties bounds-start (point))
-                                                  (lsp--capf-cached-items items)
-                                                  :lsp-items nil
-                                                  :markers markers
-                                                  :prefix prefix))
-                                           ((not done?) 'incomplete))
-                         result (lsp--capf-filter-candidates (if done? (cadr lsp--capf-cache))
-                                                             :lsp-items items
-                                                             :markers markers
-                                                             :prefix prefix))))))))
+               (done? result)
+               ((and lsp--capf-cache
+                     (listp lsp--capf-cache)
+                     (s-prefix? (car lsp--capf-cache)
+                                (buffer-substring-no-properties bounds-start (point)))
+                     (< (caar (cadr lsp--capf-cache)) (point)))
+                (apply #'lsp--capf-filter-candidates (cdr lsp--capf-cache)))
+               (t
+                (-let* ((resp (lsp-request-while-no-input
+                               "textDocument/completion"
+                               (plist-put (lsp--text-document-position-params)
+                                          :context (lsp--capf-get-context trigger-chars))))
+                        (completed (or (seqp resp)
+                                       (not (gethash "isIncomplete" resp))))
+                        (items (--> (cond
+                                     ((seqp resp) resp)
+                                     ((hash-table-p resp) (gethash "items" resp)))
+                                    (if (or completed
+                                            (seq-some (-rpartial #'lsp--ht-get "sortText") it))
+                                        (lsp--sort-completions it)
+                                      it)
+                                    (-map (lambda (item)
+                                            (puthash "_emacsStartPoint"
+                                                     (lsp--capf-guess-prefix item bounds-start)
+                                                     item)
+                                            item)
+                                          it)))
+                        (markers (list bounds-start (copy-marker (point) t)))
+                        (prefix (buffer-substring-no-properties bounds-start (point))))
+                  (setf done? completed
+                        lsp--capf-cache (cond
+                                         ((and done? (not (seq-empty-p items)))
+                                          (list (buffer-substring-no-properties bounds-start (point))
+                                                (lsp--capf-cached-items items)
+                                                :lsp-items nil
+                                                :markers markers
+                                                :prefix prefix))
+                                         ((not done?) 'incomplete))
+                        result (lsp--capf-filter-candidates (if done? (cadr lsp--capf-cache))
+                                                            :lsp-items items
+                                                            :markers markers
+                                                            :prefix prefix))))))))
       (list
        bounds-start
        (point)
        (lambda (probe _pred action)
          (cond
-           ;; metadata
-           ((equal action 'metadata)
-            `(metadata (category . lsp-capf)
-                       (display-sort-function . identity)))
-           ;; boundaries
-           ((equal (car-safe action) 'boundaries) nil)
-           ;; try-completion
-           ((null action) (and (member probe (funcall all-completions)) t))
-           ;; test-completion
-           ((equal action 'lambda) (member probe (funcall all-completions)))
-           ;; retrieve candidates
-           (t (funcall all-completions))))
+          ;; metadata
+          ((equal action 'metadata)
+           `(metadata (category . lsp-capf)
+                      (display-sort-function . identity)))
+          ;; boundaries
+          ((equal (car-safe action) 'boundaries) nil)
+          ;; try-completion
+          ((null action) (and (member probe (funcall all-completions)) t))
+          ;; test-completion
+          ((equal action 'lambda) (member probe (funcall all-completions)))
+          ;; retrieve candidates
+          (t (funcall all-completions))))
        :annotation-function #'lsp--annotate
        :company-require-match 'never
        :company-prefix-length
@@ -4541,21 +4542,22 @@ Others: TRIGGER-CHARS"
                   "additionalTextEdits" additional-text-edits)
            (or item lsp--empty-ht)))
     (cond
-      (text-edit
-       (apply #'delete-region markers)
-       (insert prefix)
-       (lsp--apply-text-edit text-edit))
-      ((or insert-text label)
-       (apply #'delete-region markers)
-       (insert prefix)
-       (delete-region start-point (point))
-       (insert (or insert-text label))))
+     (text-edit
+      (apply #'delete-region markers)
+      (insert prefix)
+      (lsp--apply-text-edit text-edit))
+     ((or insert-text label)
+      (apply #'delete-region markers)
+      (insert prefix)
+      (delete-region start-point (point))
+      (insert (or insert-text label))))
 
     (when (eq insert-text-format 2)
-      (yas-expand-snippet
-       (lsp--to-yasnippet-snippet (buffer-substring start-point (point)))
-       start-point
-       (point)))
+      (let (yas-indent-line)
+        (yas-expand-snippet
+         (lsp--to-yasnippet-snippet (buffer-substring start-point (point)))
+         start-point
+         (point))))
 
     (when (and lsp-completion-enable-additional-text-edit additional-text-edits)
       (lsp--apply-text-edits additional-text-edits)))
@@ -8165,13 +8167,13 @@ This avoids overloading the server with many files when starting Emacs."
         (lsp--flycheck-level level tags)
       level)))
 
-(defvar-local lsp--diagnostics-modified? nil)
-
 (defun lsp--flycheck-start (checker callback)
   "Start an LSP syntax check with CHECKER.
 
 CALLBACK is the status callback passed by Flycheck."
-  (setq lsp--diagnostics-modified? nil)
+  ;; avoid double diag check
+  (remove-hook 'lsp-on-idle-hook #'lsp--flycheck-buffer t)
+
   (->> (lsp--get-buffer-diagnostics)
        (-map (-lambda (diag)
                (flycheck-error-new
@@ -8197,8 +8199,7 @@ CALLBACK is the status callback passed by Flycheck."
 
 (defun lsp--flycheck-buffer ()
   (remove-hook 'lsp-on-idle-hook #'lsp--flycheck-buffer t)
-  (when lsp--diagnostics-modified?
-    (flycheck-buffer)))
+  (flycheck-buffer))
 
 (defun lsp--buffer-visible? ()
   (or (get-buffer-window (current-buffer))
@@ -8208,12 +8209,16 @@ CALLBACK is the status callback passed by Flycheck."
 (defun lsp--flycheck-report ()
   "This callback is invoked when new diagnostics are received
 from the language server."
-  (when (not lsp--diagnostics-modified?)
-    (setq lsp--diagnostics-modified? t)
-    (when (memq 'idle-change flycheck-check-syntax-automatically)
-      ;; make sure diagnostics are published even if the diagnostics
-      ;; have been received after idle-change has been triggered
-      (add-hook 'lsp-on-idle-hook #'lsp--flycheck-buffer nil t))))
+  (when (and (memq 'idle-change flycheck-check-syntax-automatically)
+             lsp--cur-workspace)
+    ;; make sure diagnostics are published even if the diagnostics
+    ;; have been received after idle-change has been triggered
+    (-some->> lsp--cur-workspace
+      (lsp--workspace-buffers)
+      (mapc (lambda (buffer)
+              (when (buffer-live-p buffer)
+                (with-current-buffer buffer
+                  (add-hook 'lsp-on-idle-hook #'lsp--flycheck-buffer nil t))))))))
 
 (declare-function lsp-cpp-flycheck-clang-tidy-error-explainer "lsp-cpp")
 
@@ -8248,12 +8253,12 @@ g. `error', `warning') and list of LSP TAGS."
                (bitmap (or (get flycheck-level 'flycheck-fringe-bitmaps)
                            (get flycheck-level 'flycheck-fringe-bitmap-double-arrow))))
           (flycheck-define-error-level new-level
-                                       :severity (get flycheck-level 'flycheck-error-severity)
-                                       :compilation-level (get flycheck-level 'flycheck-compilation-level)
-                                       :overlay-category category
-                                       :fringe-bitmap bitmap
-                                       :fringe-face (get flycheck-level 'flycheck-fringe-face)
-                                       :error-list-face face)
+            :severity (get flycheck-level 'flycheck-error-severity)
+            :compilation-level (get flycheck-level 'flycheck-compilation-level)
+            :overlay-category category
+            :fringe-bitmap bitmap
+            :fringe-face (get flycheck-level 'flycheck-fringe-face)
+            :error-list-face face)
           new-level))))
 
 (with-eval-after-load 'flycheck
