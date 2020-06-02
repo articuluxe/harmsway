@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-05-31 10:09:52 dharms>
+;; Modified Time-stamp: <2020-06-01 13:02:29 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1068,7 +1068,7 @@ From `manuel-oberti.github.io' on 20190806."
 (use-package elnode)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; vc ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(setq vc-follow-symlinks nil)
+(setq vc-follow-symlinks t)
 (setq vc-handled-backends '(Git SVN))
 (when (< emacs-major-version 26)
   (bind-key "C-x vh" #'vc-region-history))
