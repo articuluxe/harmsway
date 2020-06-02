@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-06-01 13:02:29 dharms>
+;; Modified Time-stamp: <2020-06-02 12:16:13 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3631,23 +3631,24 @@ This function's result only has value if it is preceded by any font changes."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; modes ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq auto-mode-alist
-      (append '(("\\.C$"        . c++-mode)
-                ("\\.cc$"       . c++-mode)
-                ("\\.cpp$"      . c++-mode)
-                ("\\.inl$"      . c++-mode)
-                ("\\.c$"        . c++-mode)
-                ("\\.H$"        . c++-mode)
-                ("\\.hh$"       . c++-mode)
-                ("\\.hpp$"      . c++-mode)
-                ("\\.h$"        . c++-mode)
-                ("\\.java$"     . java-mode)
-                ("\\.pl$"       . perl-mode)
-                ("\\.pm$"       . perl-mode)
-                ("SConstruct"   . python-mode)
-                ("SConscript"   . python-mode)
-                ("\\.otq$"      . conf-mode) ;one-tick-query files
-                ("\\.bmk$"      . emacs-lisp-mode)
-                ("\\.gdb$"      . gdb-script-mode)
+      (append '(("\\.C$"          . c++-mode)
+                ("\\.cc$"         . c++-mode)
+                ("\\.cpp$"        . c++-mode)
+                ("\\.inl$"        . c++-mode)
+                ("\\.c$"          . c++-mode)
+                ("\\.H$"          . c++-mode)
+                ("\\.hh$"         . c++-mode)
+                ("\\.hpp$"        . c++-mode)
+                ("\\.h$"          . c++-mode)
+                ("\\.java$"       . java-mode)
+                ("\\.pl$"         . perl-mode)
+                ("\\.pm$"         . perl-mode)
+                ("SConstruct"     . python-mode)
+                ("SConscript"     . python-mode)
+                ("\\.otq$"        . conf-mode) ;one-tick-query files
+                ("\\.bmk$"        . emacs-lisp-mode)
+                ("\\.gdb$"        . gdb-script-mode)
+                ("\\.projectdef$" . emacs-lisp-mode)
                 )
               auto-mode-alist))
 
