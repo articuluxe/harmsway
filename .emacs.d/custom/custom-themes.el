@@ -2,7 +2,7 @@
 ;; Copyright (C) 2016-2020  Dan Harms (dan.harms)
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Wednesday, December 21, 2016
-;; Modified Time-stamp: <2020-05-15 08:52:07 dharms>
+;; Modified Time-stamp: <2020-06-05 11:06:18 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: themes colors
 
@@ -150,7 +150,7 @@
                                    kaolin-valley-light
                                    kaolin-bubblegum kaolin-fusion
                                    kaolin-breeze kaolin-temple
-                                   kaolin-blossom))
+                                   kaolin-blossom kaolin-mono-light))
            (custom-theme-set-faces sym `(show-paren-match-face
                                          ((t (:bold t :background
                                                     ,(cadr (assoc 'teal1 kaolin-palette))))))))

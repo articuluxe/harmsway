@@ -587,6 +587,14 @@ requires Emacs to be built with ImageMagick support."
                 (choice (sexp :tag "Maximum height in pixels")
                         (const :tag "No maximum height" nil)))))
 
+(defcustom markdown-mouse-follow-link t
+  "Non-nil means mouse on a link will follow the link.
+This variable must be set before loading markdown-mode."
+  :group 'markdown
+  :type 'bool
+  :safe 'booleanp
+  :package-version '(markdown-mode . "2.5"))
+
 
 ;;; Markdown-Specific `rx' Macro ==============================================
 
@@ -2134,21 +2142,23 @@ Depending on your font, some reasonable choices are:
 Used for `flyspell-generic-check-word-predicate'."
   (save-excursion
     (goto-char (1- (point)))
-    (not (or (markdown-code-block-at-point-p)
-             (markdown-inline-code-at-point-p)
-             (markdown-in-comment-p)
-             (let ((faces (get-text-property (point) 'face)))
-               (if (listp faces)
-                   (or (memq 'markdown-reference-face faces)
-                       (memq 'markdown-markup-face faces)
-                       (memq 'markdown-plain-url-face faces)
-                       (memq 'markdown-inline-code-face faces)
-                       (memq 'markdown-url-face faces))
-                 (memq faces '(markdown-reference-face
-                               markdown-markup-face
-                               markdown-plain-url-face
-                               markdown-inline-code-face
-                               markdown-url-face))))))))
+    (if (or (markdown-code-block-at-point-p)
+            (markdown-inline-code-at-point-p)
+            (markdown-in-comment-p)
+            (markdown--face-p (point) '(markdown-reference-face
+                                        markdown-markup-face
+                                        markdown-plain-url-face
+                                        markdown-inline-code-face
+                                        markdown-url-face)))
+        (prog1 nil
+          ;; If flyspell overlay is put, then remove it
+          (let ((bounds (bounds-of-thing-at-point 'word)))
+            (when bounds
+              (cl-loop for ov in (overlays-in (car bounds) (cdr bounds))
+                       when (overlay-get ov 'flyspell-overlay)
+                       do
+                       (delete-overlay ov)))))
+      t)))
 
 
 ;;; Markdown Parsing Functions ================================================
@@ -5257,10 +5267,11 @@ Assumes match data is available for `markdown-regex-italic'."
   "Keymap for Markdown major mode.")
 
 (defvar markdown-mode-mouse-map
-  (let ((map (make-sparse-keymap)))
-    (define-key map [follow-link] 'mouse-face)
-    (define-key map [mouse-2] #'markdown-follow-thing-at-point)
-    map)
+  (when markdown-mouse-follow-link
+    (let ((map (make-sparse-keymap)))
+      (define-key map [follow-link] 'mouse-face)
+      (define-key map [mouse-2] #'markdown-follow-thing-at-point)
+      map))
   "Keymap for following links with mouse.")
 
 (defvar gfm-mode-map

@@ -58,6 +58,7 @@
 (require 'xref)
 (require 'minibuffer)
 (require 'yasnippet nil t)
+(require 'lsp-protocol)
 
 (declare-function company-mode "ext:company")
 (declare-function company-doc-buffer "ext:company")
@@ -604,19 +605,10 @@ ignored."
   :group 'lsp-mode
   :package-version '(lsp-mode . "6.3.2"))
 
-(defcustom lsp-completion-styles (if (version<= "27.0" emacs-version)
-                                     `(flex)
-                                   `(substring))
-  "List of completion styles to use for filtering completion items."
-  :type completion--styles-type
-  :group 'lsp-mode
-  :package-version '(lsp-mode . "6.3.2"))
-
 (defcustom lsp-completion-show-detail t
   "Whether or not to show detail of completion candidates."
   :type 'boolean
   :group 'lsp-mode)
-
 
 (defcustom lsp-server-trace nil
   "Request tracing on the server side.
@@ -749,6 +741,12 @@ directory")
     ("textDocument/references" :capability "referencesProvider")
     ("textDocument/selectionRange" :capability "selectionRangeProvider")
     ("textDocument/semanticTokens" :capability "semanticTokensProvider")
+    ("textDocument/semanticTokensRangeProvider"
+     :check-command (lambda (workspace)
+                      (with-lsp-workspace workspace
+                        (let ((table (lsp--capability "semanticTokensProvider")))
+                          (and (hash-table-p table)
+                               (gethash "rangeProvider" table))))))
     ("textDocument/signatureHelp" :capability "signatureHelpProvider")
     ("textDocument/typeDefinition" :capability "typeDefinitionProvider")
     ("workspace/executeCommand" :capability "executeCommandProvider")
@@ -1235,28 +1233,15 @@ INHERIT-INPUT-METHOD will be proxied to `completing-read' without changes."
             (forward-char character)
             (point)))))))
 
-(defun lsp--position-to-point (params)
-  "Convert Position object in PARAMS to a point."
-  (lsp--line-character-to-point (gethash "line" params)
-                                (gethash "character" params)))
+(lsp-defun lsp--position-to-point ((&Position :line :character))
+  "Convert `Position' object in PARAMS to a point."
+  (lsp--line-character-to-point line character))
 
-(defun lsp--range-to-region (range)
-  (cons (lsp--position-to-point (gethash "start" range))
-        (lsp--position-to-point (gethash "end" range))))
+(lsp-defun lsp--range-to-region ((&Range :start :end))
+  (cons (lsp--position-to-point start) (lsp--position-to-point end)))
 
-(pcase-defmacro lsp-range (region)
-  "Build a `pcase' pattern that matches a LSP Range object.
-Elements should be of the form (START . END), where START and END are bound
-to the beginning and ending points in the range correspondingly."
-  `(and (pred hash-table-p)
-        (app (lambda (range) (lsp--position-to-point (gethash "start" range)))
-             ,(car region))
-        (app (lambda (range) (lsp--position-to-point (gethash "end" range)))
-             ,(cdr region))))
-
-(defun lsp--find-wrapping-range (current-selection-range)
-  (-let* (((&hash "parent" "range") current-selection-range)
-          ((start . end) (lsp--range-to-region range)))
+(lsp-defun lsp--find-wrapping-range ((&SelectionRange :parent? :range))
+  (-let* (((start . end) (lsp--range-to-region range)))
     (cond
      ((and
        (region-active-p)
@@ -1268,7 +1253,7 @@ to the beginning and ending points in the range correspondingly."
      ((and (<= start (point) end)
            (not (region-active-p)))
       (cons start end))
-     (parent (lsp--find-wrapping-range parent)))))
+     (parent? (lsp--find-wrapping-range parent?)))))
 
 (defun lsp--get-selection-range ()
   (or
@@ -1644,8 +1629,8 @@ WORKSPACE is the workspace that contains the progress token."
   "The scope "
   :group 'lsp-mode
   :type '(choice (const :tag "File" :file)
-                 (const :tag "Current workspace" :workspace)
-                 (const :tag "All" :global))
+                 (const :tag "Project" :workspace)
+                 (const :tag "All Projects" :global))
   :package-version '(lsp-mode . "6.3"))
 
 (defun lsp--diagnostics-modeline-statistics ()
@@ -3466,7 +3451,8 @@ in that particular folder."
 
       (when (and (eq lsp-semantic-highlighting :semantic-tokens)
                  (lsp-feature? "textDocument/semanticTokens"))
-        (lsp--semantic-tokens-initialize-buffer))
+        (lsp--semantic-tokens-initialize-buffer
+         (lsp-feature? "textDocument/semanticTokensRangeProvider")))
       (add-hook 'post-command-hook #'lsp--post-command nil t)
       (when lsp-enable-xref
         (add-hook 'xref-backend-functions #'lsp--xref-backend nil t))
@@ -4197,9 +4183,11 @@ if it's closing the last buffer in the workspace."
         (lsp-notify "textDocument/willSave" params))
       (when (and (lsp--send-will-save-wait-until-p) lsp-before-save-edits)
         (let ((lsp-response-timeout 0.1))
-          (lsp--apply-text-edits
-           (lsp-request "textDocument/willSaveWaitUntil"
-                        params)))))))
+          (condition-case nil
+              (lsp--apply-text-edits
+               (lsp-request "textDocument/willSaveWaitUntil"
+                            params))
+            (error)))))))
 
 (defun lsp--on-auto-save ()
   "Handler for auto-save."
@@ -4326,37 +4314,39 @@ When the heuristic fails to find the prefix start point, return DEFAULT value."
                              "filterText" filter-text
                              "_emacsStartPoint" start-point
                              "score"))
-               (propertize (or filter-text label)
-                           'lsp-completion-item item
-                           'lsp-completion-start-point start-point
-                           'lsp-completion-score score))
+                 (propertize (or filter-text label)
+                  'lsp-completion-item item
+                  'lsp-completion-start-point start-point
+                  'lsp-completion-score score))
              it)
-       (seq-into it 'list)
        (-group-by (-partial #'get-text-property 0 'lsp-completion-start-point) it)
        (sort it (-on #'< (lambda (o) (or (car o) most-positive-fixnum))))))
 
 (cl-defun lsp--capf-filter-candidates (items
                                        &rest plist
                                        &key lsp-items
-                                       &allow-other-keys)
+                                         &allow-other-keys)
   "List all possible completions in cached ITEMS with their prefixes.
 We can pass LSP-ITEMS, which will be used when there's no cache.
 Also, additional data to attached to each candidate can be passed via PLIST."
   (let ((filtered-items
          (if items
              (->> items
-                  (-map (lambda (item)
-                          (--> (buffer-substring-no-properties (car item) (point))
-                               ;; TODO: roll-out our own matcher if needed.
-                               ;; https://github.com/rustify-emacs/fuz.el seems to be good candidate.
-                               (let ((completion-styles lsp-completion-styles)
-                                     completion-regexp-list)
-                                 (completion-all-completions it (cdr item) nil (length it)))
-                               ;; completion-all-completions may return a list in form (a b . x)
-                               ;; the last cdr is not important and need to be removed
-                               (let ((tail (last it)))
-                                 (if (consp tail) (setcdr tail nil))
-                                 it))))
+                  (-map (-lambda ((start-point . candidates))
+                          (let ((query (buffer-substring-no-properties start-point (point))))
+                            (--> (lsp--regex-fuzzy query)
+                                 (-keep (lambda (cand)
+                                          (when (string-match it cand)
+                                            (setq cand (copy-sequence cand))
+                                            (put-text-property 0 1 'match-data (match-data) cand)
+                                            cand))
+                                  candidates)
+                                 (-map (lambda (cand)
+                                         (put-text-property
+                                          0 1
+                                          'completion-score (lsp--fuzzy-score query cand) cand)
+                                         cand)
+                                       it)))))
                   (-flatten-n 1)
                   (-sort (-on #'> (lambda (o)
                                     (or (get-text-property 0 'sort-score o)
@@ -4582,6 +4572,92 @@ Others: TRIGGER-CHARS"
                             (rx "\\" (backref 1))
                             text
                             nil nil 1))
+
+(defun lsp--regex-fuzzy (str)
+  "Build a regex sequence from STR. Insert .* between each char."
+  (apply #'concat
+         (cl-mapcar
+          #'concat
+          (cons "" (cdr (seq-map (lambda (c) (format "[^%c]*" c)) str)))
+          (seq-map (lambda (c)
+                     (format "\\(%s\\)" (regexp-quote (char-to-string c))))
+                   str))))
+
+(defvar lsp--fuzzy-score-case-sensitiveness 20
+  "Case sensitiveness, can be in range of [0, inf).")
+
+(defun lsp--fuzzy-score (query str)
+  "Calculate fuzzy score for STR with query QUERY."
+  (-when-let* ((md (cddr (or (get-text-property 0 'match-data str)
+                             (let ((re (lsp--regex-fuzzy query)))
+                               (when (string-match re str)
+                                 (match-data))))))
+               (start (pop md))
+               (len (length str))
+               ;; To understand how this works, consider these bad
+               ;; ascii(tm) diagrams showing how the pattern "foo"
+               ;; flex-matches "fabrobazo", "fbarbazoo" and
+               ;; "barfoobaz":
+
+               ;;      f abr o baz o
+               ;;      + --- + --- +
+
+               ;;      f barbaz oo
+               ;;      + ------ ++
+
+               ;;      bar foo baz
+               ;;          +++
+
+               ;; "+" indicates parts where the pattern matched.  A
+               ;; "hole" in the middle of the string is indicated by
+               ;; "-".  Note that there are no "holes" near the edges
+               ;; of the string.  The completion score is a number
+               ;; bound by ]0..1]: the higher the better and only a
+               ;; perfect match (pattern equals string) will have
+               ;; score 1.  The formula takes the form of a quotient.
+               ;; For the numerator, we use the number of +, i.e. the
+               ;; length of the pattern.  For the denominator, it
+               ;; first computes
+               ;;
+               ;;     hole_i_contrib = 1 + (Li-1)^(1/tightness)
+               ;;
+               ;; , for each hole "i" of length "Li", where tightness
+               ;; is given by `flex-score-match-tightness'.  The
+               ;; final value for the denominator is then given by:
+               ;;
+               ;;    (SUM_across_i(hole_i_contrib) + 1) * len
+               ;;
+               ;; , where "len" is the string's length.
+               (score-numerator 0)
+               (score-denominator 0)
+               (last-b 0)
+               (q-ind 0)
+               (update-score
+                (lambda (a b)
+                  "Update score variables given match range (A B)."
+                  (setq score-numerator (+ score-numerator (- b a)))
+                  (unless (= a len)
+                    (setq score-denominator
+                          (+ score-denominator
+                             (if (= a last-b) 0
+                               (+ 1
+                                  (if (zerop last-b)
+                                      (- 0 (expt 0.8 (- a last-b)))
+                                    (expt (- a last-b 1)
+                                          0.25))))
+                             (if (equal (aref query q-ind) (aref str a))
+                                 0
+                               lsp--fuzzy-score-case-sensitiveness))))
+                  (setq last-b b))))
+    (funcall update-score start start)
+    (while md
+      (funcall update-score start (car md))
+      (pop md)
+      (setq start (pop md))
+      (cl-incf q-ind))
+    (funcall update-score len len)
+    (unless (zerop len)
+      (/ score-numerator (* len (1+ score-denominator)) 1.0))))
 
 (defun lsp--sort-completions (completions)
   "Sort COMPLETIONS."
@@ -5600,11 +5676,6 @@ unless overridden by a more specific face association."
   "Face used for types."
   :group 'lsp-faces)
 
-(defface lsp-face-semhl-type
-  '((t (:inherit font-lock-type-face)))
-  "Face used for types."
-  :group 'lsp-faces)
-
 (defface lsp-face-semhl-struct
   '((t (:inherit font-lock-type-face)))
   "Face used for structs."
@@ -5888,7 +5959,13 @@ or `(point)' lies outside `lsp--semantic-highlighting-region'.")
 
 (defvar-local lsp--semantic-tokens-teardown nil)
 
-(defun lsp--semantic-tokens-initialize-buffer ()
+(defvar-local lsp--semantic-tokens-use-ranged-requests nil)
+
+(defun lsp--semantic-tokens-request-update ()
+  (lsp--semantic-tokens-request
+   (when lsp--semantic-tokens-use-ranged-requests (cons (window-start) (window-end))) t))
+
+(defun lsp--semantic-tokens-initialize-buffer (is-range-provider)
   (let* ((old-extend-region-functions font-lock-extend-region-functions)
          ;; make sure font-lock always fontifies entire lines (TODO: do we also have
          ;; to change some jit-lock-...-region functions/variables?)
@@ -5896,15 +5973,17 @@ or `(point)' lies outside `lsp--semantic-highlighting-region'.")
           (if (memq 'font-lock-extend-region-wholelines old-extend-region-functions)
               old-extend-region-functions
             (cons 'font-lock-extend-region-wholelines old-extend-region-functions))))
+    (setq lsp--semantic-tokens-use-ranged-requests is-range-provider)
     (setq font-lock-extend-region-functions new-extend-region-functions)
     (add-function :around (local 'font-lock-fontify-region-function) #'lsp--semantic-tokens-fontify)
-    (add-hook 'lsp-on-change-hook #'lsp--semantic-tokens-request nil t)
-    (lsp--semantic-tokens-request)
+    (add-hook 'lsp-on-change-hook #'lsp--semantic-tokens-request-update nil t)
+    (lsp--semantic-tokens-request-update)
     (setq lsp--semantic-tokens-teardown
           (lambda ()
             (setq font-lock-extend-region-functions old-extend-region-functions)
             (remove-function (local 'font-lock-fontify-region-function)
-                             #'lsp--semantic-tokens-fontify)))))
+                             #'lsp--semantic-tokens-fontify)
+            (remove-hook 'lsp-on-change-hook #'lsp--semantic-tokens-request-update t)))))
 
 (defun lsp--semantic-tokens-fontify (old-fontify-region beg end &optional loudly)
   ;; TODO: support multiple language servers per buffer?
@@ -5968,17 +6047,37 @@ or `(point)' lies outside `lsp--semantic-highlighting-region'.")
                           (add-face-text-property text-property-beg text-property-end
                                                   (aref modifier-faces i))))
                when (> current-line line-max-inclusive) return nil)))))
-      `(jit-lock-bounds ,beg . ,end))))
+      (let ((token-region (gethash "region" lsp--semantic-tokens-cache)))
+        (if token-region
+            `(jit-lock-bounds ,(max beg (car token-region)) . ,(min end (cdr token-region)))
+          `(jit-lock-bounds ,beg . ,end))))))
 
-(defun lsp--semantic-tokens-request ()
-  (let ((cur-version lsp--cur-version))
+(defun lsp--semantic-tokens-request (region fontify-immediately)
+  (let ((request-full-token-set
+         (lambda (fontify-immediately)
+           ;; TODO: rename to lsp--semantic-tokens-idle-timer when we remove Theia
+           ;; highlighting support
+           (when lsp--semantic-highlighting-idle-timer
+             (cancel-timer lsp--semantic-highlighting-idle-timer))
+           (setq lsp--semantic-highlighting-idle-timer
+                 (run-with-idle-timer
+                  lsp-idle-delay
+                  nil
+                  (lambda () (lsp--semantic-tokens-request nil fontify-immediately)))))))
+    (when lsp--semantic-highlighting-idle-timer
+      (cancel-timer lsp--semantic-highlighting-idle-timer))
     (lsp-request-async
-     "textDocument/semanticTokens"
-     `(:textDocument ,(lsp--text-document-identifier))
+     (if region "textDocument/semanticTokens/range" "textDocument/semanticTokens")
+     `(:textDocument ,(lsp--text-document-identifier)
+       ,@(if region (list :range (lsp--region-to-range (car region) (cdr region))) '()))
      (lambda (response)
        (setq lsp--semantic-tokens-cache response)
-       (puthash "documentVersion" cur-version lsp--semantic-tokens-cache)
-       (font-lock-flush))
+       (puthash "documentVersion" lsp--cur-version lsp--semantic-tokens-cache)
+       (puthash "region" region lsp--semantic-tokens-cache)
+       (when fontify-immediately (font-lock-flush))
+       ;; request full token set to improve fontification speed when scrolling
+       (when region (funcall request-full-token-set nil)))
+     :error-handler (lambda (&rest _) (funcall request-full-token-set t))
      :mode 'tick
      :cancel-token (format "semantic-tokens-%s" (lsp--buffer-uri)))))
 
