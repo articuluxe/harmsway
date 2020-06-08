@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-06-02 12:16:13 dharms>
+;; Modified Time-stamp: <2020-06-08 06:19:21 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1989,6 +1989,14 @@ ARGS are the additional arguments."
          ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; tramp ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defun tramp-abort ()
+  "Try to clean up tramp connections."
+  (interactive)
+  (recentf-cleanup)
+  (tramp-cleanup-all-buffers)
+  (tramp-cleanup-all-connections))
+(global-set-key "\C-cxq" #'tramp-abort)
+
 (use-package tramp
   :defer t
   :init
