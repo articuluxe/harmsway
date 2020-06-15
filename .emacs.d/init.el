@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-06-08 06:19:21 dharms>
+;; Modified Time-stamp: <2020-06-15 08:11:30 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -4120,6 +4120,8 @@ Requires Flake8 2.0 or newer. See URL
     (add-to-list 'flycheck-checkers 'python-pyflakes)
     (use-package flycheck-pyflakes)
     )
+  (flycheck-add-next-checker 'python-flake8 'python-pycompile)
+  (flycheck-add-next-checker 'python-pyflakes 'python-pycompile)
   )
 
 (define-prefix-command 'harmsway-python-prefix)
@@ -4298,20 +4300,21 @@ Requires Flake8 2.0 or newer. See URL
                             (car company-backends))))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; xml-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(add-hook 'nxml-mode-hook
-          (lambda()
-            (setq-default indent-tabs-mode nil)
-            ;; (idle-highlight-mode 1)
-            (define-key nxml-mode-map "\r" 'reindent-then-newline-and-indent)
-            (make-local-variable 'electric-pair-pairs)
-            (push (cons ?< ?>) electric-pair-pairs)
-            (make-local-variable 'company-backends)
-            (setq company-backends
-                  (list
-                   (cons 'company-nxml
-                         (copy-tree
-                          (car company-backends)))))
-            ))
+(defun harmsway-nxml-hook ()
+  "Hook for `nxml-mode'."
+  (setq-default indent-tabs-mode nil)
+  ;; (idle-highlight-mode 1)
+  (define-key nxml-mode-map "\r" 'reindent-then-newline-and-indent)
+  (make-local-variable 'electric-pair-pairs)
+  (push (cons ?< ?>) electric-pair-pairs)
+  (make-local-variable 'company-backends)
+  (setq company-backends
+        (list
+         (cons 'company-nxml
+               (copy-tree
+                (car company-backends))))))
+(add-hook 'nxml-mode-hook #'harmsway-nxml-hook)
+
 (use-package mz-comment-fix
   :if (< emacs-major-version 25)
   :defines comment-strip-start-length
