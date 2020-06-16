@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-06-16 09:35:22 dharms>
+;; Modified Time-stamp: <2020-06-16 10:12:58 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -4100,40 +4100,42 @@ This function's result only has value if it is preceded by any font changes."
     (lambda()(interactive)
       (compile (concat "python " (buffer-file-name)))))
   (if (executable-find "flake8")
-      (unless (xfer-util-test-exe-versions '("flake8 --version" .
-                                             (("^\\([[:digit:].]+\\)" . "3.0"))))
-        (flycheck-define-checker python-flake8
-          "A Python syntax and style checker using Flake8.
+      (progn
+        (unless (xfer-util-test-exe-versions '("flake8 --version" .
+                                               (("^\\([[:digit:].]+\\)" . "3.0"))))
+          (flycheck-define-checker python-flake8
+            "A Python syntax and style checker using Flake8.
 
 Requires Flake8 2.0 or newer. See URL
 `https://flake8.readthedocs.io/'."
-          :command ("flake8"
-                    "--format=default"
-                    (config-file "--config" flycheck-flake8rc)
-                    (option "--max-complexity" flycheck-flake8-maximum-complexity nil
-                            flycheck-option-int)
-                    (option "--max-line-length" flycheck-flake8-maximum-line-length nil
-                            flycheck-option-int)
-                    "-")
-          :standard-input t
-          :error-filter (lambda (errors)
-                          (let ((errors (flycheck-sanitize-errors errors)))
-                            (seq-do #'flycheck-flake8-fix-error-level errors)
-                            errors))
-          :error-patterns
-          ((warning line-start
-                    "stdin:" line ":" (optional column ":") " "
-                    (id (one-or-more (any alpha)) (one-or-more digit)) " "
-                    (message (one-or-more not-newline))
-                    line-end))
-          :modes python-mode))
+            :command ("flake8"
+                      "--format=default"
+                      (config-file "--config" flycheck-flake8rc)
+                      (option "--max-complexity" flycheck-flake8-maximum-complexity nil
+                              flycheck-option-int)
+                      (option "--max-line-length" flycheck-flake8-maximum-line-length nil
+                              flycheck-option-int)
+                      "-")
+            :standard-input t
+            :error-filter (lambda (errors)
+                            (let ((errors (flycheck-sanitize-errors errors)))
+                              (seq-do #'flycheck-flake8-fix-error-level errors)
+                              errors))
+            :error-patterns
+            ((warning line-start
+                      "stdin:" line ":" (optional column ":") " "
+                      (id (one-or-more (any alpha)) (one-or-more digit)) " "
+                      (message (one-or-more not-newline))
+                      line-end))
+            :modes python-mode))
+        (flycheck-add-next-checker 'python-flake8 'python-pycompile)
+        )
+    (use-package flycheck-pyflakes
+     :config
+     (add-to-list 'flycheck-checkers 'python-pyflakes)
+     (flycheck-add-next-checker 'python-pyflakes 'python-pycompile))
     (add-to-list 'flycheck-disabled-checkers 'python-flake8)
-    (add-to-list 'flycheck-checkers 'python-pyflakes)
-    (use-package flycheck-pyflakes)
-    )
-  (flycheck-add-next-checker 'python-flake8 'python-pycompile)
-  (flycheck-add-next-checker 'python-pyflakes 'python-pycompile)
-  )
+    ))
 
 (define-prefix-command 'harmsway-python-prefix)
 (global-set-key "\C-c\M-p" 'harmsway-python-prefix)
