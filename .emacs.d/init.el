@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-06-15 08:11:30 dharms>
+;; Modified Time-stamp: <2020-06-16 09:35:22 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -797,6 +797,7 @@ From `manuel-oberti.github.io' on 20190806."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; centaur-tabs ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package centaur-tabs
+  :disabled
   :bind (("C-<prior>" . centaur-tabs-backward)
          ("C-<next>" . centaur-tabs-forward))
   :init
@@ -1109,6 +1110,9 @@ From `manuel-oberti.github.io' on 20190806."
   (setq magit-prefer-remote-upstream t)
   (setq magit-section-visibility-indicator '("…" . t))
   (setq magit-clone-always-transient t)
+  (setq magit-status-initial-section '(((unstaged)(status))
+                                       ((staged)(status))
+                                       1))
   ;; git commands
   :bind (:map harmsway-git-keymap
               ("g" . magit-status)
@@ -3869,6 +3873,10 @@ This function's result only has value if it is preceded by any font changes."
   ;; for 'run-groovy, need to set $GROOVY_HOME, or groovysh needs to exist or
   ;; be in $PATH
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ham-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package ham-mode
+  :commands ham-mode)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; haskell-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package haskell-mode
