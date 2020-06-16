@@ -3322,6 +3322,9 @@ See `https://github.com/company-mode/company-mode/issues/205'."
   (register-file-header-action "^[ \t]*.+ *\\([^ ]+\\) +\\-\\-" 'my/update-file-name)
   )
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; sysctl ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package sysctl :commands sysctl)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; request-deferred ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package request-deferred :commands request-deferred)
 
