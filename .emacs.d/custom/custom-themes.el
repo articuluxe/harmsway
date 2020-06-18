@@ -2,7 +2,7 @@
 ;; Copyright (C) 2016-2020  Dan Harms (dan.harms)
 ;; Author: Dan Harms <dan.harms@xrtrading.com>
 ;; Created: Wednesday, December 21, 2016
-;; Modified Time-stamp: <2020-06-05 11:06:18 dharms>
+;; Modified Time-stamp: <2020-06-18 13:53:53 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: themes colors
 
@@ -95,15 +95,15 @@
           ((eq sym 'busybee)
            (custom-theme-set-faces sym '(cursor ((t (:background "LightYellow"))))))
           ((eq sym 'deep-blue)
-           (custom-theme-set-faces sym '(show-paren-match-face ((t (:bold t :background "coral")))))
-           (custom-theme-set-faces sym '(show-paren-mismatch-face ((t (:bold t :background "VioletRed4"))))))
+           (custom-theme-set-faces sym '(show-paren-match ((t (:bold t :background "coral")))))
+           (custom-theme-set-faces sym '(show-paren-mismatch ((t (:bold t :background "VioletRed4"))))))
           ((eq sym 'desert)
-           (custom-theme-set-faces sym '(show-paren-match-face ((t (:bold t
-                                                                          :foreground "khaki"
-                                                                          :background "OliveDrab")))))
-           (custom-theme-set-faces sym '(show-paren-mismatch-face ((t (:bold t
-                                                                             :foreground "yellow2"
-                                                                             :background "IndianRed3")))))
+           (custom-theme-set-faces sym '(show-paren-match ((t (:bold t
+                                                                     :foreground "khaki"
+                                                                     :background "OliveDrab")))))
+           (custom-theme-set-faces sym '(show-paren-mismatch ((t (:bold t
+                                                                        :foreground "yellow2"
+                                                                        :background "IndianRed3")))))
            (custom-theme-set-faces sym '(mode-line-inactive ((t (:inherit header-line
                                                                           :foreground "gray14"
                                                                           :background "gray6")))))
@@ -151,7 +151,7 @@
                                    kaolin-bubblegum kaolin-fusion
                                    kaolin-breeze kaolin-temple
                                    kaolin-blossom kaolin-mono-light))
-           (custom-theme-set-faces sym `(show-paren-match-face
+           (custom-theme-set-faces sym `(show-paren-match
                                          ((t (:bold t :background
                                                     ,(cadr (assoc 'teal1 kaolin-palette))))))))
           ((eq sym 'klere)
@@ -175,7 +175,7 @@
            (custom-theme-set-faces sym '(region ((t (:background "#555753"))))))
           ((eq sym 'obsidian)
            (custom-theme-set-faces sym '(cursor ((t (:background "#e8e2b7")))))
-           (custom-theme-set-faces sym '(show-paren-match-face ((t (:background "#678cb1"))))))
+           (custom-theme-set-faces sym '(show-paren-match ((t (:background "#678cb1"))))))
           ((eq sym 'phoenix-dark-pink)
            (harmsway/make-comment-delimiter-face-same-as-comment-face sym))
           ((eq sym 'railscast)
@@ -233,15 +233,15 @@
                                                                       :background "LightGoldenrod")))))
            (custom-theme-set-faces sym '(magit-section-highlight ((t (:background "PaleGoldenrod"))))))
           ((memq sym '(nordless lavenderless broceliande chocolateless seagreenless nofrils-darkless
-                               hydrangealess einkless darkless))
-                (custom-theme-set-faces
-                 sym
-                 `(show-paren-match ((t (:foreground ,(face-attribute 'cursor :foreground nil t)
-                                                     :background ,(face-attribute 'cursor :background nil t))))))
-                (custom-theme-set-faces
-                 sym
-                 `(show-paren-mismatch ((t (:background ,(face-attribute 'show-paren-mismatch :foreground nil t)
-                                                        :foreground ,(face-attribute 'cursor :background nil t)))))))
+                                hydrangealess einkless darkless))
+           (custom-theme-set-faces
+            sym
+            `(show-paren-match ((t (:foreground ,(face-attribute 'cursor :foreground nil t)
+                                                :background ,(face-attribute 'cursor :background nil t))))))
+           (custom-theme-set-faces
+            sym
+            `(show-paren-mismatch ((t (:background ,(face-attribute 'show-paren-mismatch :foreground nil t)
+                                                   :foreground ,(face-attribute 'cursor :background nil t)))))))
           )
     ;; (cond ((memq sym harmsway/sml-dark-themes)
     ;;        (load-theme 'smart-mode-line-dark t))
