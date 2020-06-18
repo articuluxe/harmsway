@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-06-17 08:53:33 dharms>
+;; Modified Time-stamp: <2020-06-18 12:22:22 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3254,7 +3254,7 @@ See `https://github.com/company-mode/company-mode/issues/205'."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; flycheck-popup-tip ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package flycheck-popup-tip
   :after flycheck
-  :disabled
+  :if (not (display-graphic-p))
   :config
   (add-hook 'flycheck-mode-hook #'flycheck-popup-tip-mode))
 
