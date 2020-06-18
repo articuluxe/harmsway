@@ -1,3 +1,2 @@
 # Extract audio
--x
--o ~/Movies/youtube-dl/%(title)s.%(ext)s
+-o ~/Movies/youtube-dl/%(release_date)s-%(title)s.%(ext)s

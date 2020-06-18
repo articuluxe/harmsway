@@ -48,6 +48,9 @@ brew install coreutils
 (setq insert-directory-program "gls")
 (setq dired-use-ls-dired t)
 
+brew install youtube-dl
+brew install ffmpeg
+
 # cask
 brew install cask
 # or

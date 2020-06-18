@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-06-16 10:12:58 dharms>
+;; Modified Time-stamp: <2020-06-17 08:53:33 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -788,8 +788,11 @@ From `manuel-oberti.github.io' on 20190806."
          )
   :init
   (setq nswbuff-recent-buffers-first t)
-  (setq nswbuff-delay-switch nil)
-  (setq nswbuff-display-intermediate-buffers nil)
+  (setq nswbuff-delay-switch t)
+  (setq nswbuff-clear-delay 2)
+  (setq nswbuff-display-intermediate-buffers t)
+  (setq nswbuff-exclude-buffer-regexps '("^ .*"
+                                         "^\\*.*\\*"))
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; mission-control ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -871,8 +874,12 @@ From `manuel-oberti.github.io' on 20190806."
 (use-package annotate
   :bind (:map annotate-mode-map
               ("C-c C-e" . annotate-export-annotations)
-              ("C-c M-e" . annotate-integrate-annotations))
-  :config (annotate-mode 1))
+              ("C-c M-a" . annotate-integrate-annotations))
+  :commands (annotate-annotate)
+  :init
+  (setq annotate-file (concat my/user-directory "annotations"))
+  :config
+  (annotate-mode 1))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; annot ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package annot
