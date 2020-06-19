@@ -3,7 +3,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2020-05-04 09:28:48 dharms>
+;; Modified Time-stamp: <2020-06-19 10:24:37 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -55,10 +55,10 @@
                             "Aurulent Sans Mono 12"
                             "M+ 2m regular 14"
                             "Droid Sans Mono 12"
-                            "Ricty Diminished 14"
+                            "Ricty Diminished 15"
                             "QuickType Mono 14"
                             "BPmono 14"
-                            "Verily Serif Mono 12"
+                            "Verily Serif Mono 14"
                             "Sometype Mono 14"
                             "Oxygen Mono 12"
                             "PT Mono 14"
