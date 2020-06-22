@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-06-18 12:22:22 dharms>
+;; Modified Time-stamp: <2020-06-22 13:05:41 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1069,8 +1069,8 @@ From `manuel-oberti.github.io' on 20190806."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 0xc ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package 0xc
-  :bind (("C-c 0ac" . 0xc-convert)
-         ("C-c 0a." . 0xc-convert-point)))
+  :bind (("C-c 0cc" . 0xc-convert)
+         ("C-c 0c." . 0xc-convert-point)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; elnode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package elnode)
@@ -3363,6 +3363,9 @@ See `https://github.com/company-mode/company-mode/issues/205'."
   (setq verb-show-timeout-warning 20.0)
   :config
   (define-key org-mode-map "\C-cv" verb-command-map))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; currency-convert ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package currency-convert :bind ("C-c0cu" . currency-convert))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-insert ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package auto-insert-choose+
