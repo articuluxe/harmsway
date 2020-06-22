@@ -705,7 +705,13 @@
     `(ivy-minibuffer-match-face-2 ((,class (:background ,nord7 :foreground ,nord0))))
     `(ivy-minibuffer-match-face-3 ((,class (:background ,nord8 :foreground ,nord0))))
     `(ivy-minibuffer-match-face-4 ((,class (:background ,nord9 :foreground ,nord0))))
-    `(ivy-remote ((,class (:foreground ,nord14))))))
+    `(ivy-remote ((,class (:foreground ,nord14))))
+    `(ivy-posframe ((,class (:background ,nord1))))
+    `(ivy-posframe-border ((,class (:background ,nord1))))
+    `(ivy-remote ((,class (:foreground ,nord14))))
+
+    ;; > perspective
+    `(persp-selected-face ((,class (:foreground ,nord8 :weight bold))))))
 
 ;;;###autoload
 (when (and (boundp 'custom-theme-load-path) load-file-name)

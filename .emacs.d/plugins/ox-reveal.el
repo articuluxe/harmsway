@@ -102,6 +102,7 @@
     (:reveal-init-script "REVEAL_INIT_SCRIPT" nil org-reveal-init-script space)
     (:reveal-init-options "REVEAL_INIT_OPTIONS" nil org-reveal-init-options newline)
     (:reveal-highlight-css "REVEAL_HIGHLIGHT_CSS" nil org-reveal-highlight-css nil)
+    (:reveal-reveal-js-version "REVEAL_REVEAL_JS_VERSION" nil nil t)
     )
 
   :translate-alist
@@ -350,6 +351,15 @@ BEFORE the plugins that depend on them."
                 (const :tag "Reveal.js 3.x and before" 3)
                 (const :tag "Automatic" nil)))
 
+(defun org-reveal--get-reveal-js-version (info)
+  "Get reveal.js version value safely.
+If option \"REVEAL_REVEAL_JS_VERSION\" is set, retrieve integer
+value from it, else get value from custom variable
+`org-reveal-reveal-js-version'."
+  (let ((version-str (plist-get info :reveal-reveal-js-version)))
+    (if version-str (string-to-number version-str)
+      org-reveal-reveal-js-version)))
+
 (defun if-format (fmt val)
   (if val (format fmt val) ""))
 
@@ -574,24 +584,30 @@ holding contextual information."
               (if style-id  (format " id=\"%s\"" style-id))
               "/>\n"))))
 
-(defun org-reveal--choose-path (root-path file-path-0 file-path-1)
-  (if (or (eq org-reveal-reveal-js-version 4) ;; Explict reveal.js 4.0
-          (and (not org-reveal-reveal-js-version)
+;; Choose path by reveal.js version
+;;
+;; Side-effect: When org-reveal-reveal-js-version is nil, updated it
+;; to determined version if possible
+(defun org-reveal--choose-path (root-path version file-path-0 file-path-1)
+  (if (or (eq version 4) ;; Explict reveal.js 4.0
+          (and (not version)
                ;; Automatic location. Choose an existing path
-                (let ((root-file-path
-                       ;; root-path could be a local file path or a URL. Try to
-                       ;; extract the local root path from root-path
-                       (cond ((string-prefix-p "file://" root-path)
-                              ;; A local file URL
-                              (substring root-path 7))
-                             ((or (string-prefix-p "http://" root-path)
-                                  (string-prefix-p "https://" root-path))
-                              ;; A remote URL
-                              nil)
-                             ;; Otherwise, assuming it is a local file path
-                             (t root-path))))
-                  (or (not root-file-path) ;; Not a local URL, assuming file-path-0 exists
-                      (file-exists-p (concat root-file-path file-path-0))))))
+               (let ((root-file-path
+                      ;; root-path could be a local file path or a URL. Try to
+                      ;; extract the local root path from root-path
+                      (cond ((string-prefix-p "file://" root-path)
+                             ;; A local file URL
+                             (substring root-path 7))
+                            ((or (string-prefix-p "http://" root-path)
+                                 (string-prefix-p "https://" root-path))
+                             ;; A remote URL
+                             nil)
+                            ;; Otherwise, assuming it is a local file path
+                            (t root-path))))
+                 (or (not root-file-path) ;; Not a local URL, assuming file-path-0 exists
+                     (when (file-exists-p (concat root-file-path file-path-0))
+                       (setq org-reveal-reveal-js-version 4)
+                       t)))))
       (concat root-path file-path-0)
     (concat root-path file-path-1)))
 
@@ -599,9 +615,11 @@ holding contextual information."
   "Return the HTML contents for declaring reveal stylesheets
 using custom variable `org-reveal-root'."
   (let* ((root-path (file-name-as-directory (plist-get info :reveal-root)))
-         (reveal-css (org-reveal--choose-path root-path "dist/reveal.css" "css/reveal.css"))
+         (version (org-reveal--get-reveal-js-version info))
+         (reveal-css (org-reveal--choose-path root-path version "dist/reveal.css" "css/reveal.css"))
          (theme (plist-get info :reveal-theme))
          (theme-css (org-reveal--choose-path root-path
+                                             version
                                              (concat "dist/theme/" theme ".css")
                                              (concat "css/theme/" theme ".css")))
          (extra-css (plist-get info :reveal-extra-css))
@@ -648,14 +666,26 @@ using custom variable `org-reveal-root'."
       (format "<script type=\"text/javascript\" src=\"%s\"></script>\n"
               (plist-get info :reveal-mathjax-url))))
 
+(defun org-reveal--get-plugins (info)
+  (let ((buffer-plugins (condition-case e
+                            (car (read-from-string (plist-get info :reveal-plugins)))
+                          (end-of-file nil)
+                          (wrong-type-argument nil))))
+    (or (and buffer-plugins (listp buffer-plugins) buffer-plugins)
+        org-reveal-plugins)))
+
 (defun org-reveal-scripts (info)
   "Return the necessary scripts for initializing reveal.js using
 custom variable `org-reveal-root'."
   (let* ((root-path (file-name-as-directory (plist-get info :reveal-root)))
-         (reveal-js (org-reveal--choose-path root-path  "dist/reveal.js" "js/reveal.js"))
+         (version (org-reveal--get-reveal-js-version info))
+         (reveal-js (org-reveal--choose-path root-path version "dist/reveal.js" "js/reveal.js"))
          ;; Local files
          (local-root-path (org-reveal--file-url-to-path root-path))
-         (local-reveal-js (org-reveal--choose-path local-root-path "dist/reveal.js" "js/reveal.js"))
+         (local-reveal-js (org-reveal--choose-path local-root-path version "dist/reveal.js" "js/reveal.js"))
+         (reveal-4-plugin (if (eq 4 (org-reveal--get-reveal-js-version info))
+                              (org-reveal-plugin-scripts-4 info)
+                            (cons "" "")))
          (in-single-file (plist-get info :reveal-single-file)))
     (concat
      ;; reveal.js/js/reveal.js
@@ -676,12 +706,14 @@ custom variable `org-reveal-root'."
        (concat
         "<script src=\"" reveal-js "\"></script>\n"))
      ;; plugin headings
+     (if-format "%s\n" (car reveal-4-plugin))
      "
 <script>
 // Full list of configuration options available here:
 // https://github.com/hakimel/reveal.js#configuration
 Reveal.initialize({
 "
+     (if-format "%s,\n" (cdr reveal-4-plugin))
  
      (let ((options (plist-get info :reveal-init-options)))
        (and (string< "" options)
@@ -732,15 +764,15 @@ dependencies: [
                                           (format " { src: '%splugin/multiplex/master.js', async: true }" root-path))
                                       (format " { src: '%splugin/multiplex/client.js', async: true }" root-path)))))
                (builtin-codes
-                (mapcar
-                 (lambda (p)
-                   (eval (plist-get builtins p)))
-                 (let ((buffer-plugins (condition-case e
-                                           (car (read-from-string (plist-get info :reveal-plugins)))
-                                         (end-of-file nil)
-                                         (wrong-type-argument nil))))
-                   (or (and buffer-plugins (listp buffer-plugins) buffer-plugins)
-                       org-reveal-plugins))))
+                (if (eq version 4)
+                    '() ;; For reveal.js 4.x, skip the builtin plug-in
+                        ;; codes as they are for 3.x. The 4.x builtin
+                        ;; plug-ins are specified by separate <script>
+                        ;; blocks
+                  (mapcar
+                   (lambda (p)
+                     (eval (plist-get builtins p)))
+                   (org-reveal--get-plugins info))))
                (external-plugins
 		(append
 		 ;; Global setting
@@ -762,6 +794,39 @@ dependencies: [
           (if init-script (concat (if in-single-file "" ",") init-script)))
      "});\n</script>\n")))
 
+(defun org-reveal-plugin-scripts-4 (info)
+  "Return scripts for initializing reveal.js 4.x builtin scripts"
+  (let ((plugins (org-reveal--get-plugins info)))
+    (if (not (null plugins))
+        ;; Generate plugin scripts
+        (let* ((available-plugins
+                '(highlight ("RevealHighlight" . "highlight/highlight.js")
+                  markdown ("RevealMarkdown" . "markdown/markdown.js")
+                  search ("RevealSearch" . "search/search.js")
+                  notes ("RevealNotes" . "notes/notes.js")
+                  math ("RevealMath" . "math/math.js")
+                  zoom ("RevealZoom" . "zoom/zoom.js")))
+               (plugin-info (seq-filter 'identity
+                                        (seq-map (lambda (p)
+                                                   (plist-get available-plugins p))
+                                                 plugins))))
+          (if (not (null plugin-info))
+              (cons
+               ;; Plugin initialization script
+               (let ((root-path (file-name-as-directory (plist-get info :reveal-root))))
+                 (mapconcat
+                  (lambda (p)
+                    (format "<script src=\"%splugin/%s\"></script>\n" root-path (cdr p)))
+                  plugin-info
+                  ""))
+               ;; Reveal initialization for plugins
+               (format "plugins: [%s]"
+                       (mapconcat #'car plugin-info ",")))
+            ;; No available plugin info found. Perhaps wrong plugin
+            ;; names are given
+            (cons nil nil)))
+        ;; No plugins, return empty string
+      (cons nil nil))))
 (defun org-reveal-toc (depth info)
   "Build a slide of table of contents."
   (let ((toc (org-html-toc depth info)))

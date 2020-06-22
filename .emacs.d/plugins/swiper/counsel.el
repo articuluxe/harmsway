@@ -884,7 +884,8 @@ packages are, in order of precedence, `amx' and `smex'."
 
 (defun counsel-M-x-action (cmd)
   "Execute CMD."
-  (setq cmd (intern (string-remove-prefix "^" cmd)))
+  (setq cmd (intern
+             (subst-char-in-string ?\s ?- (string-remove-prefix "^" cmd))))
   (cond ((bound-and-true-p amx-initialized)
          (amx-rank cmd))
         ((bound-and-true-p smex-initialized-p)
@@ -3068,7 +3069,7 @@ Works for `counsel-git-grep', `counsel-ag', etc."
                  (lambda (x) (if (string= x "%s") (copy-sequence all-args) (list x)))
                  cmd-template)))))
          (cands (counsel--split-string
-                 (if (stringp cmd-template)
+                 (if (stringp cmd)
                      (shell-command-to-string cmd)
                    (counsel--call cmd)))))
     (swiper--occur-insert-lines (mapcar #'counsel--normalize-grep-match cands))))
@@ -4738,7 +4739,7 @@ An extra action allows to switch to the process buffer."
              counsel-slime-repl-history--index-last snd)))
     (ivy-completion-in-region-action (car pair))))
 
-(defun counsel--browse-history (ring &key caller)
+(cl-defun counsel--browse-history (ring &key caller)
   "Use Ivy to navigate through RING."
   (let* ((proc (get-buffer-process (current-buffer)))
          (end (point))
@@ -4979,11 +4980,12 @@ Intended as a value for the `:outline-title' setting in
   "Return title of current outline heading.
 Like `counsel-outline-title' (which see), but for `org-mode'
 buffers."
-  (let ((statistics-re "\\[[0-9]*\\(?:%\\|/[0-9]*\\)\\]")
+  (let ((statistics-re "\\[[0-9]*\\(?:%\\|/[0-9]*\\)]")
         (heading (apply #'org-get-heading (counsel--org-get-heading-args))))
-    (if counsel-org-headline-display-statistics
-        heading
-      (org-trim (replace-regexp-in-string statistics-re " " heading)))))
+    (cond (counsel-org-headline-display-statistics
+           heading)
+          (heading
+           (org-trim (replace-regexp-in-string statistics-re " " heading))))))
 
 (defun counsel-outline-title-markdown ()
   "Return title of current outline heading.

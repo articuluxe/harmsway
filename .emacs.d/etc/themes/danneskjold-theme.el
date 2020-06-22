@@ -136,7 +136,7 @@
      `(font-lock-function-name-face ((,c (:foreground ,yellow))))
      `(font-lock-type-face ((,c (:foreground ,orange))))
      `(font-lock-constant-face ((,c (:foreground ,yellow))))
-     `(font-lock-warning-face ((,c (:underline (:color "orange" :style wave)))))
+     `(font-lock-warning-face ((,c (:foreground ,yellow))))
 
      `(mmm-default-submode-face ((,c (:background ,ada-midnight))))
 
@@ -153,7 +153,7 @@
      `(compilation-error ((,c (:foreground ,red))))
      `(compilation-line-number ((,c (:foreground ,yellow))))
      `(compilation-column-number ((,c (:foreground ,green))))
-     `(compilation-warning ((,c (:underline (:color "orange" :style wave)))))
+     `(compilation-warning ((,c :foreground "systemOrangeColor")))
      `(compilation-info ((,c (:foreground ,diredcl))))
 
      ;; Linum
@@ -171,7 +171,7 @@
      `(highlight-symbol-face ((,c (:foreground ,black :background ,diredcl))))
 
      ;; Hl-line
-     `(hl-line ((,c (:background "#284D80"))))
+     `(hl-line ((,c (:background "keyboardFocusIndicatorColor"))))
 
      ;; search
      `(isearch ((,c (:foreground ,black :background ,invisible))))
@@ -256,6 +256,12 @@
      ;; `(magit-diff-lines-heading ((,c (:foreground ,orange :background ,sbt-midnight))))
      ;; `(magit-diff-lines-boundary ((,c (:foreground ,white :background ,sbt-midnight))))
      ;; `(magit-diff-hunk-heading-highlight ((,c (:foreground ,white :background ,sbt-midnight))))
+
+     ;; ein
+     `(ein:cell-input-area ((,class (:background ,ada-midnight))))
+     `(ein:cell-output-area ((,class (:background ,black))))
+     `(ein:cell-input-prompt ((,class (:foreground ,yellow))))
+     `(ein:cell-output-prompt ((,class (:foreground ,orange))))
 
      ;; magit
      `(magit-branch ((,class (:foreground ,green-dark))))

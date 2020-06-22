@@ -85,6 +85,7 @@
    (ivy-remote              (:foreground red1))
    (ivy-confirm-face        (:background nil :foreground amber3)))
 
+
   (when kaolin-themes-git-gutter-solid
     (custom-theme-set-faces
      'kaolin-dark

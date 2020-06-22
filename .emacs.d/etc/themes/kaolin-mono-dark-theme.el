@@ -20,6 +20,15 @@
    (fg3 "#cfd2cb")
    (fg4 "#c5c9c0")
 
+   (kaolin-black   bg1)
+   (kaolin-red     red3)
+   (kaolin-green   aquamarine2)
+   (kaolin-yellow  orange1)
+   (kaolin-blue    azure4)
+   (kaolin-magenta purple4)
+   (kaolin-cyan    teal4)
+   (kaolin-white   fg1)
+
    ;; Accent color
    (hl aquamarine3)
    ;; (keyword spring-green8)
@@ -117,7 +126,8 @@
    (org-date            (:foreground warning :underline underline))
    ;; (org-code            (:foreground warning))
    (org-verbatim        (:foreground orange1))
-   (org-quote           (:foreground fg4)))
+   (org-quote           (:foreground fg4))
+   )
 
   (when kaolin-themes-git-gutter-solid
     (custom-theme-set-faces

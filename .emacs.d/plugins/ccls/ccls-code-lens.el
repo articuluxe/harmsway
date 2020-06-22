@@ -1,7 +1,7 @@
 ;;; -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2017 Tobias Pisani
-;; Copyright (C) 2018 Fangrui Song
+;; Copyright (C) 2018-2020 Fangrui Song
 
 ;; Permission is hereby granted, free of charge, to any person obtaining a copy
 ;; of this software and associated documentation files (the "Software"), to deal
@@ -61,15 +61,16 @@
 ;;   - Add a global option to request code lenses on automatically
 ;; ---------------------------------------------------------------------
 
-(defun ccls--make-code-lens-string (lpad command &optional rpad)
+(defun ccls--make-code-lens-string (lpad command0 &optional rpad)
   "."
-  (let ((map (make-sparse-keymap)))
+  (-let ((map (make-sparse-keymap))
+         ((&Command :title :command :arguments?) command0))
     (define-key map [mouse-1]
       (lambda () (interactive)
-        (when-let ((xrefs (lsp--locations-to-xref-items
-                           (lsp--send-execute-command (gethash "command" command) (gethash "arguments" command)))))
-          (xref--show-xrefs xrefs nil))))
-    (propertize (concat lpad (gethash "title" command) rpad)
+        (xref--show-xrefs
+         (lambda () (lsp--locations-to-xref-items
+                     (lsp--send-execute-command command arguments?))) nil)))
+    (propertize (concat lpad title rpad)
                 'face 'ccls-code-lens-face
                 'mouse-face 'ccls-code-lens-mouse-face
                 'local-map map)))
@@ -85,17 +86,17 @@
       (let ((xl (aref x 2)) (yl (aref y 2)))
         (if (/= xl yl) (< xl yl) (< (aref x 3) (aref y 3)))))
     (seq-map (lambda (lens)
-               (-let* (((&hash "command" command "range" range) lens)
-                       ((&hash "start" start "end" end) range))
-                 (vector (gethash "line" start) (gethash "character" start)
-                         (gethash "line" end) (gethash "character" end) command)
+               (-let* (((&CodeLens :command? :range) lens)
+                       ((&Range :start :end) range))
+                 (vector (lsp:position-line start) (lsp:position-character start)
+                         (lsp:position-line end) (lsp:position-character end) command?)
                  )) result)))
   (save-excursion
     (widen)
     (goto-char 1)
     (let ((line 0) (col 0) ov)
       (seq-doseq (lens result)
-        (-let (([l0 c0 l1 c1 command] lens) (pad " "))
+        (-let (([l0 c0 l1 c1 command?] lens) (pad " "))
           (pcase ccls-code-lens-position
             ('end
              (forward-line (- l0 line))
@@ -108,7 +109,7 @@
                (let ((p (point-at-eol)))
                  (setq ov (make-overlay p (1+ p) nil 'front-advance))
                  (overlay-put ov 'ccls-code-lens t)
-                 (overlay-put ov 'display (ccls--make-code-lens-string " " command))))
+                 (overlay-put ov 'display (ccls--make-code-lens-string " " command?))))
              (setq line l0 col c0))
             ('inplace
              (forward-line (- l1 line))
@@ -116,7 +117,7 @@
              (setq line l1)
              (setq ov (make-overlay (point) (point)))
              (overlay-put ov 'ccls-code-lens t)
-             (overlay-put ov 'after-string (ccls--make-code-lens-string " " command)))))
+             (overlay-put ov 'after-string (ccls--make-code-lens-string " " command?)))))
         )
       (when (and (eq ccls-code-lens-position 'end) ov)
         (overlay-put ov 'display (concat (overlay-get ov 'display) "\n"))))))
@@ -149,9 +150,9 @@
    (ccls-code-lens-mode
     (when (lsp-workspaces)
       (ccls-request-code-lens)
-      (add-hook 'lsp-after-diagnostics-hook 'ccls-code-lens--request-when-idle t t)))
+      (add-hook 'lsp-diagnostics-updated-hook 'ccls-code-lens--request-when-idle t t)))
    (t
-    (remove-hook 'lsp-after-diagnostics-hook 'ccls-code-lens--request-when-idle t)
+    (remove-hook 'lsp-diagnostics-updated-hook 'ccls-code-lens--request-when-idle t)
     (ccls-clear-code-lens))))
 
 (provide 'ccls-code-lens)

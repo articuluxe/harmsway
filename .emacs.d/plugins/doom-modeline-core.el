@@ -98,6 +98,9 @@ It returns a file name which can be used directly as argument of
           ;; Preview
           ?\xe8a0                      ; pageview
 
+          ;; REPL
+          ?\xf155                      ; dollar-sign
+
           ;; LSP
           ?\xf135                      ; rocket
 
@@ -210,7 +213,6 @@ Given ~/Projects/FOSS/emacs/lisp/comint.el
 (defcustom doom-modeline-icon (display-graphic-p)
   "Whether display the icons in the mode-line.
 
-It respects `all-the-icons-color-icons'.
 While using the server mode in GUI, should set the value explicitly."
   :type 'boolean
   :group 'doom-modeline)
@@ -225,7 +227,7 @@ It respects `doom-modeline-icon'."
 (defcustom doom-modeline-major-mode-color-icon t
   "Whether display the colorful icon for `major-mode'.
 
-It respects `doom-modeline-major-mode-icon'."
+It respects `all-the-icons-color-icons'."
   :type 'boolean
   :group'doom-modeline)
 
@@ -305,6 +307,13 @@ Non-nil to display in the mode-line."
 
 (defcustom doom-modeline-persp-icon t
   "If non nil the perspective name is displayed alongside a folder icon."
+  :type 'boolean
+  :group 'doom-modeline)
+
+(defcustom doom-modeline-repl t
+  "Whether display the `repl' state.
+
+Non-nil to display in the mode-line."
   :type 'boolean
   :group 'doom-modeline)
 
@@ -393,6 +402,16 @@ It requires `circe' or `erc' package."
   :group 'doom-modeline
   :group 'faces
   :link '(url-link :tag "Homepage" "https://github.com/seagle0128/doom-modeline"))
+
+(defface doom-modeline-spc-face
+  '((t (:inherit mode-line)))
+  "Face used for the white space."
+  :group 'doom-modeline-faces)
+
+(defface doom-modeline-vspc-face
+  '((t (:inherit variable-pitch)))
+  "Face used for the variable white space."
+  :group 'doom-modeline-faces)
 
 (defface doom-modeline-buffer-path
   '((t (:inherit (mode-line-emphasis bold))))
@@ -542,6 +561,16 @@ It requires `circe' or `erc' package."
 (defface doom-modeline-persp-buffer-not-in-persp
   '((t (:inherit (font-lock-doc-face bold italic))))
   "Face for the buffers which are not in the persp."
+  :group 'doom-modeline-faces)
+
+(defface doom-modeline-repl-success
+  '((t (:inherit success :weight normal)))
+  "Face for REPL success state."
+  :group 'doom-modeline-faces)
+
+(defface doom-modeline-repl-warning
+  '((t (:inherit warning :weight normal)))
+  "Face for REPL warning state."
   :group 'doom-modeline-faces)
 
 (defface doom-modeline-lsp-success
@@ -773,6 +802,7 @@ then this function does nothing."
 (add-hook 'window-setup-hook #'doom-modeline-refresh-font-width-cache)
 (add-hook 'after-make-frame-functions #'doom-modeline-refresh-font-width-cache)
 (add-hook 'after-setting-font-hook #'doom-modeline-refresh-font-width-cache)
+(add-hook 'server-after-make-frame-hook #'doom-modeline-refresh-font-width-cache)
 
 (defun doom-modeline-def-modeline (name lhs &optional rhs)
   "Defines a modeline format and byte-compiles it.
@@ -833,14 +863,14 @@ If DEFAULT is non-nil, set the default mode-line for all buffers."
 (defsubst doom-modeline-spc ()
   "Text style with whitespace."
   (propertize " " 'face (if (doom-modeline--active)
-                            'mode-line
-                          'mode-line-inactive)))
+                            'doom-modeline-spc-face
+                          '(:inherit mode-line-inactive))))
 
 (defsubst doom-modeline-vspc ()
   "Text style with icons in mode-line."
   (propertize " " 'face (if (doom-modeline--active)
-                            'variable-pitch
-                          '(:inherit (variable-pitch mode-line-inactive)))))
+                            'doom-modeline-vspc-face
+                          '(:inherit (doom-modeline-vspc-face mode-line-inactive)))))
 
 (defun doom-modeline--font-height ()
   "Calculate the actual char height of the mode-line."
@@ -873,10 +903,10 @@ See https://github.com/seagle0128/doom-modeline/issues/301."
   (when-let* ((props (and icon (get-text-property 0 'face icon)))
               (family (plist-get props :family))
               (height (plist-get props :height))
-              (face (or face (plist-get props :inherit)))
-              (new-face (append `(:inherit ,face)
-                                `(:family ,family)
-                                `(:height ,height))))
+              (face (or face (plist-get props :inherit) props))
+              (new-face `(:inherit ,face
+                          :family ,family
+                          :height ,height)))
     (propertize icon 'face new-face)))
 
 (defun doom-modeline-icon (icon-set icon-name unicode text &rest args)

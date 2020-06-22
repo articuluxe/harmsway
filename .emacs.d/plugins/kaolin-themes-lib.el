@@ -455,7 +455,7 @@
     (bg4  black4)
     (pane bg0)
 
-    (dim-buffer bg0)
+    (dim-buffer  bg0)
     (comment     gray3)
     (comment-alt teal2)
 
@@ -511,7 +511,7 @@
     (str-alt     spring-green4)
     (doc         str-alt)
     (type        vermilion4)
-    (var         blue4)
+    (var         ultramarine4)
     (const       purple4)
     (num         red1)
     (bool        num)
@@ -538,8 +538,7 @@
     (line-border       (if kaolin-themes-modeline-border bg4 line-bg1))
     (line-color1       fg1)
     (line-color2       builtin)
-    ; TODO:
-    (segment-active    gray3)
+    (segment-active    gray8)
     (segment-inactive  gray3)
 
     (evil-normal       keyword)
@@ -563,7 +562,19 @@
     (ivy1     fg1)
     (search1  azure3)
     (search2  amber3)
-    (search3  violet3)))
+    (search3  violet3)
+
+    ;; Easy to use colors
+    (kaolin-navy    blue3)
+    (kaolin-black   bg1)
+    (kaolin-red     err)
+    (kaolin-green   done)
+    (kaolin-yellow  warning)
+    (kaolin-blue    capri3)
+    (kaolin-magenta magenta3)
+    (kaolin-cyan    cyan3)
+    (kaolin-white   fg1))
+  )
 
 ;; Predefined Kaolin face specifications
 (defconst kaolin-faces
@@ -743,7 +754,7 @@
     (jabber-roster-user-offline    (:foreground comment))
     (jabber-roster-user-online     (:foreground done :weight 'bold))
     (jabber-roster-user-xa         (:foreground num))
-        
+
     ;; Highlighting
     (highlight                (:background hl-bg :foreground fg1))
     (lazy-highlight           (:background bg4 :foreground hl))
@@ -859,13 +870,21 @@
     (notmuch-wash-cited-text             (:foreground comment))
     (notmuch-wash-toggle-button          (:background bg2))
 
-    ;; TODO: Elfeed
-    (elfeed-search-tag-face          (:foreground amber3))
-    (elfeed-search-feed-face         (:foreground teal1))
+    ;; Elfeed
+    (elfeed-search-tag-face          (:foreground type))
+    (elfeed-search-feed-face         (:foreground builtin))
     (elfeed-search-date-face         (:foreground var))
+    (elfeed-search-filter-face       (:foreground keyword))
     (elfeed-search-unread-title-face (:foreground fg1))
-    (elfeed-search-unread-count-face (:foreground orange1))
+    (elfeed-search-unread-count-face (:foreground str))
+    ;; (elfeed-search-last-update-face  (:foreground num))
     (elfeed-search-title-face        (:foreground comment))
+    (elfeed-log-date-face            (:foreground num))
+    (elfeed-log-date-fil             (:foreground num))
+    (elfeed-log-info-level-face      (:foreground functions))
+    (elfeed-log-warn-level-face      (:foreground warning))
+    (elfeed-log-debug-level-face     (:foreground kaolin-blue))
+    (elfeed-log-error-level-face     (:foreground err))
 
     ;; Modeline
     (mode-line           (:background line-bg1 :foreground line-fg :bold nil
@@ -1159,13 +1178,6 @@
     (js3-warning-face             (:underline keyword))
     (js3-error-face               (:underline err))
 
-    ;; Latex
-    (font-latex-bold-face                (:foreground type))
-    (font-latex-italic-face              (:foreground keyword :italic italic))
-    (font-latex-string-face              (:foreground str))
-    (font-latex-match-reference-keywords (:foreground const))
-    (font-latex-match-variable-keywords  (:foreground var))
-
     ;; Rst-mode
     (rst-adornment (:foreground comment))
     (rst-block     (:foreground functions))
@@ -1177,18 +1189,28 @@
     (rst-level-6   (:foreground keyword))
 
     ;; Latex/Auctex
-    (font-latex-warning-face      (:inherit 'warning))
-    (font-latex-string-face       (:inherit 'font-lock-string-face))
-    ;; TODO: change colors to vars
-    (font-latex-math-face         (:foreground purple4))
-    (font-latex-sedate-face       (:foreground capri4))
-    (font-latex-script-char-face  (:foreground purple4))
-    (font-latex-sectioning-0-face (:foreground amber3 :bold bold))
-    (font-latex-sectioning-1-face (:inherit 'font-latex-sectioning-0-face))
-    (font-latex-sectioning-2-face (:inherit 'font-latex-sectioning-0-face))
-    (font-latex-sectioning-3-face (:inherit 'font-latex-sectioning-0-face))
-    (font-latex-sectioning-4-face (:inherit 'font-latex-sectioning-0-face))
-    (font-latex-sectioning-5-face (:inherit 'font-latex-sectioning-0-face))
+    (font-latex-bold-face                (:inherit 'bold))
+    (font-latex-italic-face              (:inherit 'italic))
+    (font-latex-string-face              (:inherit 'font-lock-string-face))
+    (font-latex-match-reference-keywords (:foreground const))
+    (font-latex-match-variable-keywords  (:foreground var))
+
+    (font-latex-warning-face             (:inherit 'warning))
+    (font-latex-string-face              (:inherit 'font-lock-string-face))
+    (font-latex-math-face                (:foreground functions))
+    (font-latex-sedate-face              (:foreground comment))
+    (font-latex-script-char-face         (:foreground builtin))
+    (font-latex-sectioning-0-face        (:foreground header :bold bold))
+    (font-latex-sectioning-1-face        (:foreground keyword))
+    (font-latex-sectioning-2-face        (:foreground builtin))
+    (font-latex-sectioning-3-face        (:foreground str))
+    (font-latex-sectioning-4-face        (:foreground const))
+    (font-latex-sectioning-5-face        (:foreground var))
+    (font-latex-verbatim-face         (:inherit 'fixed-pitch :foreground kaolin-blue))
+
+    (TeX-error-description-tex-said (:inherit 'success :weight 'bold))
+    (TeX-error-description-warning  (:inherit 'warning :weight 'bold))
+    (TeX-error-description-error    (:inherit 'error   :weight 'bold))
 
     ;; Undo-tree
     (undo-tree-visualizer-active-branch-face (:foreground functions :bold bold))
@@ -1343,32 +1365,32 @@
     (popup-menu-selection-face (:background tooltip-hl-bg :foreground tooltip-hl-fg :bold bold))
     (popup-tip-face            (:background tooltip-hl-bg :foreground fg1 :bold bold))
 
-    ;; TODO: mb add term0-16 vars
     ;; Terminal
     (term               (:background bg1 :foreground fg1))
-    (term-color-black   (:foreground black1))
-    (term-color-blue    (:foreground azure3))
-    (term-color-red     (:foreground red3))
-    (term-color-green   (:foreground teal0))
-    (term-color-yellow  (:foreground yellow3))
-    (term-color-magenta (:foreground magenta3))
-    (term-color-cyan    (:foreground cyan3))
-    (term-color-white   (:foreground white2))
+    (term-color-black   (:foreground kaolin-black))
+    (term-color-red     (:foreground kaolin-red))
+    (term-color-green   (:foreground kaolin-green))
+    (term-color-yellow  (:foreground kaolin-yellow))
+    (term-color-blue    (:foreground kaolin-blue))
+    (term-color-magenta (:foreground kaolin-magenta))
+    (term-color-cyan    (:foreground kaolin-cyan))
+    (term-color-white   (:foreground kaolin-white))
     (term-underline     (:inherit 'underline))
 
     ;; EShell
-    (eshell-prompt        (:foreground teal0 :bold bold))
-    (eshell-ls-directory  (:foreground blue1 :bold bold))
-    (eshell-ls-symlink    (:foreground azure3 :bold bold))
-    (eshell-ls-executable (:foreground chartreuse1 :bold bold))
-    (eshell-ls-archive    (:foreground red3))
-    (eshell-ls-backup     (:foreground magenta3))
-    (eshell-ls-clutter    (:foreground pink1))
-    (eshell-ls-missing    (:background bg3 :foreground red3))
-    (eshell-ls-product    (:foreground yellow3))
-    (eshell-ls-readonly   (:foreground fg2))
-    (eshell-ls-special    (:foreground spring-green3))
-    (eshell-ls-unreadable (:foreground var))
+    (eshell-prompt        (:foreground prompt :bold bold))
+    (eshell-ls-directory  (:foreground kaolin-blue :bold bold))
+    (eshell-ls-symlink    (:foreground kaolin-cyan :bold bold))
+    ;; (eshell-ls-executable (:foreground chartreuse1 :bold bold))
+    (eshell-ls-executable (:foreground kaolin-green :bold bold))
+    (eshell-ls-archive    (:foreground prep))
+    (eshell-ls-backup     (:foreground kaolin-magenta))
+    (eshell-ls-clutter    (:foreground doc))
+    (eshell-ls-missing    (:background bg3 :foreground kaolin-red))
+    (eshell-ls-product    (:foreground kaolin-yellow))
+    (eshell-ls-readonly   (:foreground vermilion3))
+    (eshell-ls-special    (:foreground kaolin-navy))
+    (eshell-ls-unreadable (:inherit' shadow))
 
     ;; Whitespace mode
     (whitespace-empty            (:background bg4))
@@ -1392,8 +1414,9 @@
     (org-date-selected             (:background bg4 :foreground hl :weight 'bold))
     (org-link                      (:inherit 'link))
     (org-code                      (:foreground amber3))
-    (org-verbatim                  (:foreground azure3))
+    (org-verbatim                  (:foreground kaolin-blue))
     (org-hide                      (:foreground bg1))
+    (org-drawer                    (:foreground functions))
     (org-special-keyword           (:foreground prep))
     (org-table                     (:background bg2 :foreground fg3))
     (org-formula                   (:background nil :foreground type))

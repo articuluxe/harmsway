@@ -34,6 +34,16 @@
 
    (fg1 orange9)
 
+   ;; Root faces
+   (kaolin-black   bg1)
+   (kaolin-red     crimson3)
+   (kaolin-green   aquamarine1)
+   (kaolin-yellow  amber3)
+   (kaolin-blue    cyan1)
+   (kaolin-magenta pink3)
+   (kaolin-cyan    teal3)
+   (kaolin-white   fg1)
+
    (keyword     cyan1)
    (builtin     capri4)
    (functions   capri4)
@@ -126,7 +136,9 @@
    (org-level-2            (:foreground functions  :bold nil))
    (org-level-3            (:foreground str :bold nil))
    (org-level-4            (:foreground keyword :bold nil))
-   (org-level-5            (:foreground prep :bold nil)))
+   (org-level-5            (:foreground prep :bold nil))
+
+   )
 
   (when kaolin-themes-git-gutter-solid
     (custom-theme-set-faces

@@ -1,4 +1,4 @@
-;; Copyright (C) 2015-2016, 2019 Free Software Foundation, Inc
+;; Copyright (C) 2015-2016, 2019-2020 Free Software Foundation, Inc
 
 ;; Author: Rocky Bernstein <rocky@gnu.org>
 
@@ -21,6 +21,9 @@
 			 "../../common/helper"
 			 "../../common/utils")
 		       "realgud-")
+
+(require-relative-list '("../../common/run")
+                       "realgud:")
 
 (require-relative-list '("../../common/buffer/command"
 			 "../../common/buffer/source")
@@ -55,7 +58,7 @@ This should be an executable on your path, or an absolute file name."
 (declare-function realgud-command            'realgud:cmds)
 (declare-function realgud:gdb-parse-cmd-args 'realgud:gdb-core)
 (declare-function realgud:gdb-query-cmdline  'realgud:gdb-core)
-(declare-function realgud:run-process        'realgud-core)
+(declare-function realgud:run-process        'realgud:run)
 (declare-function realgud:flatten            'realgud-utils)
 
 ;; -------------------------------------------------------------------

@@ -48,12 +48,15 @@
    (closql-database      :initform nil :initarg :closql-database))
   :abstract t)
 
+(defun closql--closql-object-p (obj)
+  (cl-letf (((symbol-function #'eieio--full-class-object)
+             #'eieio--class-object))
+    (closql-object--eieio-childp obj)))
+
 ;;;; Oref
 
 (defun eieio-oref--closql-oref (fn obj slot)
-  (if (cl-letf (((symbol-function #'eieio--full-class-object)
-                 #'eieio--class-object))
-        (closql-object--eieio-childp obj))
+  (if (closql--closql-object-p obj)
       (closql-oref obj slot)
     (funcall fn obj slot)))
 
@@ -123,9 +126,7 @@
 ;;;; Oset
 
 (defun eieio-oset--closql-oset (fn obj slot value)
-  (if (cl-letf (((symbol-function #'eieio--full-class-object)
-                 #'eieio--class-object))
-        (closql-object--eieio-childp obj))
+  (if (closql--closql-object-p obj)
       (closql-oset obj slot value)
     (funcall fn obj slot value)))
 
@@ -274,19 +275,22 @@
 (cl-defmethod closql-db ((class (subclass closql-database))
                          &optional variable file debug)
   (or (let ((db (and variable (symbol-value variable))))
-        (and db (emacsql-live-p db) db))
+        (and db (emacsql-live-p db)
+             (prog1 db (emacsql db [:pragma (= foreign-keys on)]))))
       (let ((db-init (not (and file (file-exists-p file))))
             (db (make-instance class :file file)))
         (set-process-query-on-exit-flag (oref db process) nil)
         (when debug
           (emacsql-enable-debugging db))
+        (emacsql db (emacsql db [:pragma (= foreign-keys on)]))
         (when db-init
           (closql--db-init db))
         (when variable
           (set variable db))
         db)))
 
-(cl-defgeneric closql--db-init (db))
+(cl-defgeneric closql--db-init (db)
+  db)
 
 (cl-defmethod emacsql ((connection closql-database) sql &rest args)
   (mapcar #'closql--extern-unbound
@@ -385,6 +389,13 @@
               (lambda (col) (intern (format "%s:%s" table (cadr col))))
             #'cadr)
           (emacsql db (format "PRAGMA table_info(%s)" table))))
+
+(defun closql--db-get-version (db)
+  (caar (emacsql db [:pragma user-version])))
+
+(defun closql--db-set-version (db version)
+  (cl-assert (integerp version))
+  (emacsql db [:pragma (= user-version $s1)] version))
 
 ;;; Object/Row Conversion
 

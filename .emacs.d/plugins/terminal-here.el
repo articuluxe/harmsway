@@ -4,7 +4,7 @@
 
 ;; Author: David Shepherd <davidshepherd7@gmail.com>
 ;; Version: 1.0
-;; Package-Requires: ((emacs "24") (cl-lib "0.5"))
+;; Package-Requires: ((emacs "24.3") (cl-lib "0.5"))
 ;; Keywords: tools, frames
 ;; URL: https://github.com/davidshepherd7/terminal-here
 
@@ -41,7 +41,9 @@
     (list "cmd.exe" "/C" "start" "cmd.exe"))
 
    ;; Probably X11!
-   (t '("x-terminal-emulator"))))
+   ((executable-find "x-terminal-emulator") '("x-terminal-emulator"))
+
+   (t (user-error  "No default terminal detected, please set `terminal-here-terminal-command'"))))
 
 
 (defcustom terminal-here-terminal-command
@@ -78,10 +80,11 @@ Typically this is -e, gnome-terminal uses -x."
 
 (defun terminal-here--parse-ssh-dir (dir)
   (when (string-prefix-p "/ssh:" dir)
-    (cdr (split-string dir ":"))))
+    (with-parsed-tramp-file-name dir nil
+      (list (if user (concat user "@" host) host) localname))))
 
 (defun terminal-here--ssh-command (remote dir)
-  (append (terminal-here--term-command "") (list terminal-here-command-flag "ssh" "-t" remote "cd" dir "&&" "exec" "$SHELL" "-")))
+  (append (terminal-here--term-command "") (list terminal-here-command-flag "ssh" "-t" remote "cd" (shell-quote-argument dir) "&&" "exec" "$SHELL" "-")))
 
 (defun terminal-here--term-command (dir)
   (let ((ssh-data (terminal-here--parse-ssh-dir dir)))

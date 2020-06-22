@@ -1,6 +1,6 @@
 ;;; package-lint.el --- A linting library for elisp package authors -*- lexical-binding: t -*-
 
-;; Copyright (C) 2014-2019  Steve Purcell, Fanael Linithien
+;; Copyright (C) 2014-2020  Steve Purcell, Fanael Linithien
 
 ;; Author: Steve Purcell <steve@sanityinc.com>
 ;;         Fanael Linithien <fanael4@gmail.com>
@@ -66,6 +66,18 @@ The path can be absolute or relative to that of the linted file.")
   (if (fboundp 'package-desc-name)
       'package-desc-name
     (lambda (desc) (intern (elt desc 0)))))
+
+(defalias 'package-lint--package-desc-from-define
+  (if (fboundp 'package-desc-from-define)
+      'package-desc-from-define
+    (lambda (_name-string version-string &optional docstring requirements &rest _args)
+      (vector
+       (version-to-list version-string)
+       (mapcar
+        (lambda (x)
+          (list (nth 0 x) (version-to-list (nth 1 x))))
+        (nth 1 requirements))
+       docstring))))
 
 
 ;;; Machinery
@@ -152,6 +164,11 @@ published in ELPA for use by older Emacsen.")
     "pcomplete/"))
   "A regexp matching whitelisted non-standard symbol prefixes.")
 
+(defvar package-lint--allowed-prefix-mappings
+  '(("ox-" . ("org-"))
+    ("ob-" . ("org-")))
+  "Alist containing mappings of package prefixes to symbol prefixes.")
+
 (defun package-lint--main-file-p ()
   "Return non-nil if the current buffer corresponds to the package's main file."
   (or (null package-lint-main-file)
@@ -193,7 +210,7 @@ published in ELPA for use by older Emacsen.")
                                   (insert-file-contents (expand-file-name main-file))
                                   (read (current-buffer)))))
                       (if (eq (car-safe expr) 'define-package)
-                          (setq deps (package-desc-reqs (apply #'package-desc-from-define (cdr expr))))
+                          (setq deps (package-desc-reqs (apply #'package-lint--package-desc-from-define (cdr expr))))
                         (package-lint--error-at-bob 'error (format "Malformed package descriptor file \"%s\"" main-file))))
                   (when (package-lint--goto-header "Package-Requires")
                     (package-lint--error-at-bol 'error "Package-Requires outside the main file have no effect."))
@@ -371,10 +388,11 @@ Return a list of well-formed dependencies, same as
                'error
                "More than one expression provided."))
             (let ((deps (package-lint--check-well-formed-dependencies position parsed-deps)))
+              (package-lint--check-emacs-version deps)
               (package-lint--check-packages-installable deps)
               (package-lint--check-deps-use-non-snapshot-version deps)
               (package-lint--check-deps-do-not-use-zero-versions deps)
-              (package-lint--check-do-not-depend-on-cl-lib-1.0 deps)
+              (package-lint--check-cl-lib-version deps)
               deps))
         (error
          (package-lint--error-at-bol
@@ -434,16 +452,26 @@ required version PACKAGE-VERSION.  If not, raise an error for DEP-POS."
                (package-version-join best-version))
        dep-pos))))
 
+(defun package-lint--check-emacs-version (valid-deps)
+  "Check that all VALID-DEPS are available for installation."
+  (pcase-dolist (`(,package-name ,package-version ,dep-pos) valid-deps)
+    (when (eq 'emacs package-name)
+      (cond
+       ((version-list-< package-version '(24))
+        (package-lint--error-at-point
+         'error
+         "You can only depend on Emacs version 24 or greater: package.el for Emacs 23 does not support the \"emacs\" pseudopackage."
+         dep-pos))
+       ((version-list-<= '(27) package-version)
+        (package-lint--error-at-point
+         'warning
+         "This makes the package uninstallable in all released Emacs versions."
+         dep-pos))))))
+
 (defun package-lint--check-packages-installable (valid-deps)
   "Check that all VALID-DEPS are available for installation."
   (pcase-dolist (`(,package-name ,package-version ,dep-pos) valid-deps)
-    (if (eq 'emacs package-name)
-        (unless (version-list-<= '(24) package-version)
-          (package-lint--error-at-point
-           'error
-           "You can only depend on Emacs version 24 or greater: package.el for Emacs 23 does not support the \"emacs\" pseudopackage."
-           dep-pos))
-      ;; Not 'emacs
+    (unless (eq 'emacs package-name)
       (let ((archive-entry (assq package-name package-archive-contents)))
         (if archive-entry
             (package-lint--check-package-installable archive-entry package-version dep-pos)
@@ -473,13 +501,13 @@ required version PACKAGE-VERSION.  If not, raise an error for DEP-POS."
        dep-pos))))
 
 (defun package-lint--check-lexical-binding-requires-emacs-24 (valid-deps)
-  "Warn about use of `lexical-binding' when Emacs 24 is not among VALID-DEPS."
+  "Warn about use of `lexical-binding' when Emacs 24.1 is not among VALID-DEPS."
   (goto-char (point-min))
   (when (package-lint--lexical-binding-declared-in-header-line-p)
     (unless (assq 'emacs valid-deps)
       (package-lint--error-at-point
        'warning
-       "You should depend on (emacs \"24\") if you need lexical-binding."
+       "You should depend on (emacs \"24.1\") if you need lexical-binding."
        (match-beginning 1)))))
 
 (defun package-lint--inside-comment-or-string-p ()
@@ -698,18 +726,25 @@ the Emacs dependency matches the re-addition."
              'error
              "`lexical-binding' must be set in the first line.")))))))
 
-(defun package-lint--check-do-not-depend-on-cl-lib-1.0 (valid-deps)
+(defun package-lint--check-cl-lib-version (valid-deps)
   "Check that any dependency in VALID-DEPS on \"cl-lib\" is on a remotely-installable version."
-  (let ((cl-lib-dep (assq 'cl-lib valid-deps)))
+  (let ((emacs-version-dep (or (nth 1 (assq 'emacs valid-deps)) '(0)))
+        (cl-lib-dep (assq 'cl-lib valid-deps)))
     (when cl-lib-dep
       (let ((cl-lib-version (nth 1 cl-lib-dep)))
-        (when (version-list-<= '(1) cl-lib-version)
-          (package-lint--error-at-point
-           'error
-           (format "Depend on the latest 0.x version of cl-lib rather than on version \"%S\".
+        (cond ((and emacs-version-dep
+                    (version-list-<= '(24 3) emacs-version-dep)
+                    (version-list-<= cl-lib-version '(1 0)))
+               (package-lint--error-at-point
+                'warning
+                "An explicit dependency on cl-lib <= 1.0 is not needed on Emacs >= 24.3."))
+              ((version-list-<= '(1) cl-lib-version)
+               (package-lint--error-at-point
+                'error
+                (format "Depend on the latest 0.x version of cl-lib rather than on version \"%S\".
 Alternatively, depend on (emacs \"24.3\") or greater, in which cl-lib is bundled."
-                   cl-lib-version)
-           (nth 2 cl-lib-dep)))))))
+                        cl-lib-version)
+                (nth 2 cl-lib-dep))))))))
 
 (defun package-lint--check-package-version-present ()
   "Check that a valid \"Version\" header is present."
@@ -820,6 +855,14 @@ DESC is a struct as returned by `package-buffer-info'."
            (format "`%s' contains a non-standard separator `%s', use hyphens instead (see Elisp Coding Conventions)."
                    name (substring-no-properties name match-pos (1+ match-pos)))))))))
 
+(defun package-lint--valid-prefix-mapping-p (short-prefix prefix name)
+  "Check if NAME corresponds to a valid mappings for PREFIX.
+Check is done according to the definitions in
+`package-lint--allowed-prefix-mappings' for SHORT-PREFIX."
+  (let ((regexp (concat "^" (regexp-opt
+                             (cdr (assoc short-prefix package-lint--allowed-prefix-mappings))))))
+    (string-prefix-p prefix (replace-regexp-in-string regexp short-prefix name))))
+
 (defun package-lint--valid-definition-name-p (name prefix &optional position)
   "Return non-nil if NAME denotes a valid definition name.
 
@@ -835,6 +878,10 @@ Valid definition names are:
       (string-match-p package-lint--sane-prefixes name)
       (string-match-p (rx-to-string `(seq string-start (or "define" "defun" "defvar" "defface" "with") "-" ,prefix)) name)
       (string-match-p (rx-to-string  `(seq string-start "global-" ,prefix (or "-mode" (seq "-" (* any) "-mode")) string-end)) name)
+      (let ((short-prefix (car (cl-remove-if-not (lambda (e) (string-prefix-p e prefix))
+                                             (mapcar #'car package-lint--allowed-prefix-mappings)))))
+        (when short-prefix
+          (package-lint--valid-prefix-mapping-p short-prefix prefix name)))
       (when position
         (goto-char position)
         (looking-at-p (rx (*? space) "(" (*? space)

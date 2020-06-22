@@ -39,28 +39,43 @@
 
    ;; Color vars
    (bg0 "#f5f6f5")
-   (bg1 (if kaolin-mono-light-alt-bg "#FBFBFB" "#E9F3F3"))
-   (bg2 (if kaolin-mono-light-alt-bg white0 "#DEE6E6"))
-   (bg3 (if kaolin-mono-light-alt-bg white1 "#D1DEDE"))
+   ;; (bg1 (if kaolin-mono-light-alt-bg "#FBFBFB" "#E9F3F3"))
+   (bg1 (if kaolin-mono-light-alt-bg "#FBFBFB" "#F1F3E9"))
+   (bg2 (if kaolin-mono-light-alt-bg white0 "#E5E6DE"))
+   (bg3 (if kaolin-mono-light-alt-bg white1 "#DCDED1"))
    (bg4 (if kaolin-mono-light-alt-bg white2 "#C4CCBA"))
 
-   (fg1 gray1)
+   ;; (fg1 gray1)
+   ;; (fg1 "#3D4647")
+   (fg1 "#4E4757")
    (fg2 gray2)
    (fg3 gray3)
    (fg4 gray4)
 
+   ;; Root colors
+   (kaolin-black   fg1)
+   (kaolin-red     red1)
+   (kaolin-green   spring-green2)
+   (kaolin-yellow  orange0)
+   (kaolin-blue    azure1)
+   (kaolin-magenta magenta1)
+   (kaolin-cyan    cyan1)
+   (kaolin-white   bg4)
+
    (comment     lime7)
    (comment-alt gray7)
 
-   (keyword     aquamarine2)
-   (keyword     spring-green2)
+   ;; (keyword     aquamarine2)
+   ;; (keyword     spring-green2)
+   ;; (keyword     "#537804")
+   (keyword     "#5E7801")
    (metakey     (if kaolin-themes-distinct-metakeys spring-green2 comment))
    ;; (var         chartreuse2)
    ;; (const       chartreuse2)
    (var         erin2)
    (const       erin2)
-   (builtin     aquamarine4)
-   (functions   aquamarine4)
+   (builtin     aquamarine2)
+   (functions   aquamarine2)
    ;; (builtin     cyan2)
    ;; (functions   cyan2)
    ;; ;; (str         brown1)
@@ -142,14 +157,15 @@
 
    (org-level-1             (:foreground spring-green2 :bold bold :height 1.1))
    (org-level-2             (:foreground functions :bold nil))
-   (org-level-3             (:foreground vermilion3 :bold nil))
-   (org-level-4             (:foreground cerise4 :bold nil))
+   (org-level-3             (:foreground keyword :bold nil))
+   (org-level-4             (:foreground warning :bold nil))
    (org-code                (:foreground orange0))
    (org-date                (:foreground azure4))
    (org-verbatim            (:foreground azure1))
 
    (js2-object-property     (:foreground brown1))
-   (evil-ex-info            (:foreground crimson4)))
+   (evil-ex-info            (:foreground crimson4))
+   )
 
   (when kaolin-themes-git-gutter-solid
     (custom-theme-set-faces

@@ -40,35 +40,35 @@
 (deftheme weyland-yutani)
 (let*
     ((class '((class color) (min-colors 89)))
-     (fg1        "#969cbc")             ;#949dc1 #9ea5ce #9aa2cc #949cc1
+     (fg1        "#a9b7ca")
      (fg2        (color-lighten-name fg1 3))
      (fg3        (color-darken-name  fg1 3))
      (fg4        (color-darken-name  fg1 6))
-     ;; #1f242c #1b2027 #1f242c #20252D
-     (bg1        "#1f242c")             ;#1d212d #20252D
+
+     (bg1        "#202226")             ;#23262b
      (bg2        (color-lighten-name bg1 3))
      (bg3        (color-lighten-name bg2 2))
      (bg4        "#3c3a50")
-     (key2       "#bbe074")             ;         WHITE             MUNSELL  WHITE
-     (key3       "#b3f35c")             ;ORIGINAL BALANCED MUNSELL  TWEAKS   BALANCED
-     (keyword    "#699f45")             ;#95bb62  #89ac5a  #75A24C           #7baa50
-                                        ;                          *redesign*
-     (type       "#8a7ced")             ;#9683f2  #a48fff  #9787ED  #8a7cda  #8d7fdf
-     (func       "#b27cd4")             ;#ca95ed  #c08ee1  #CD9CF0 *redesign*
-     (var        "#999262")             ;#a59d71  #a8a073  #9E9666  #a69e6b *rebalance*
-     (builtin    "#8a7ced")
-     (const      "#5591bd")             ;#54b2f2  #50aae7  #6BB7EE  #62a8db  #5693c0
-     (negate     "#c5b159")
-     (str        "#41969c")             ;#29a1ae  #2dafbe  #46A2AA  #39858b  #41979d
+     (key2       "#bbe074")
+     (key3       "#b3f35c")
+     (keyword    "#77ba5e")
+
+     (type       "#8c8ad7")             ;#908edc 
+     (func       "#c291eb")
+     (var        "#C264C6")             ;#b6af74 #d06985
+     (builtin    "#8c8ad7")             ;#908edc #cc69cf #df73e3
+     (const      "#6faed4")
+     (negate     "#e372dd")
+     (str        "#54babf")
      (num        "#e974c7")
      (err        "#f70108")
-     (comment    "#4d5b71")             ;#595d75 #686c81 #555970
-     (doc-comments   "#62779a")         ;#686c81 #9C9C9C
+     (comment    "#4a5059")
+     (doc-comments   "#7d8896")
      (region-bg  "#30374c")
      (region-fg  "#a59ef3")
      (warning    "#ee78e8")
 
-     ;; #7c9fd4
+
      ;; Colors Generic
      (wy-Blue      const)
      (wy-Purple    func)
@@ -130,6 +130,9 @@
    `(whitespace-space ((,class ( :foreground ,(color-lighten-name bg1 10)))))
    `(whitespace-trailing ((,class ( :foreground ,keyword))))
 
+
+   `(vertical-border        ((,class (:foreground ,type))))
+   `(fringe        ((,class (:foreground ,fg2))))
 
 
    ;; Magit

@@ -23,6 +23,12 @@
 (require 'json)
 (require 'url)
 
+(defvar currency-convert-amount-history '()
+  "History for amounts typed into currency-convert.")
+
+(defvar currency-convert-currency-history '()
+  "History for currency names typed into currency-convert.")
+
 (defvar currency-convert--rates nil
   "Exchange rates for all known currencies.")
 
@@ -77,9 +83,7 @@ up-to-the-minute rates are only offered by paid services."
   (if (equal currency (cdr (assoc 'base currency-convert--rates))) 1
     (cdr (or (assoc currency (cdr (assoc 'rates currency-convert--rates))
                     (lambda (a b) (equal (symbol-name a) b)))
-             (if (equal currency "")
-                 (error "No currency given")
-               (error "No such currency: %s" currency))))))
+             (error "No such currency: %S" currency)))))
 
 (defun currency-convert--display-alist (alist)
   "Internal helper to display ALIST of currency-amount pairs."
@@ -100,29 +104,53 @@ up-to-the-minute rates are only offered by paid services."
       (error "Amount should be of the form [-]123.45"))))
 
 ;;;###autoload
-(defun currency-convert (amount from-currency)
-  "Convert AMOUNT from FROM-CURRENCY to other known currencies.
+(defun currency-convert (amount from-currency to-currencies)
+  "Convert AMOUNT from FROM-CURRENCY to one or more other currencies.
 
 Due to inaccuracies in exchange rate data and floating point
 arithmetic, the conversion is only suitable for everyday
-purposes.  Do not use it for business or investment decisions.
+purposes. Do not use it for business or investment decisions.
 
-When used as an interactive command, AMOUNT and FROM-CURRENCY are
-input into the minibuffer.  The conversion is displayed in the
-*Currency* buffer.  If that buffer already exists, its contents
-are replaced with the new conversion.
+When used as an interactive command, AMOUNT, FROM-CURRENCY and
+TO-CURRENCIES are input into the minibuffer.  If blank input is
+given for TO-CURRENCIES, the conversion is done to all known
+currencies.  The conversion is displayed in the *Currency* buffer.
+If that buffer already exists, its contents are replaced with the
+new conversion.
 
 When called from Lisp, AMOUNT is an integer or floating point
 number.  FROM-CURRENCY is the uppercase three-letter currency as a
-string.  The return value is a list of (CURRENCY . AMOUNT) pairs."
+string.  TO-CURRENCIES is either a currency string or a list of
+one or more currency strings.
+
+The return value is a list of (CURRENCY . AMOUNT) pairs."
   (interactive
    (progn (currency-convert--ensure-rates)
-          (let* ((amount (currency-convert--parse-amount
-                          (read-string "Amount: ")))
+          (let* ((currencies (currency-convert--currency-names))
+                 (amount
+                  (currency-convert--parse-amount
+                   (read-string "Amount: "
+                                nil
+                                'currency-convert-amount-history)))
                  (from-currency
-                  (completing-read
-                   "Currency: " (currency-convert--currency-names) nil t)))
-            (list amount from-currency))))
+                  (let ((currency
+                         (completing-read
+                          "From currency: "
+                          currencies nil t nil
+                          'currency-convert-currency-history)))
+                    (if (equal currency "")
+                        (error "No currency given")
+                      currency)))
+                 (to-currencies
+                  (let ((currency
+                         (completing-read
+                          "To currency (blank for all): "
+                          currencies nil t nil
+                          'currency-convert-currency-history)))
+                    (if (equal currency "")
+                        currencies
+                      currency))))
+            (list amount from-currency to-currencies))))
   (let* ((from-rate (currency-convert--currency-rate from-currency))
          (base-amount (/ amount from-rate))
          (alist
@@ -131,7 +159,9 @@ string.  The return value is a list of (CURRENCY . AMOUNT) pairs."
              (let* ((to-rate (currency-convert--currency-rate to-currency))
                     (to-amount (* base-amount to-rate)))
                (cons to-currency to-amount)))
-           (currency-convert--currency-names))))
+           (if (stringp to-currencies)
+               (list from-currency to-currencies)
+             to-currencies))))
     (when (called-interactively-p 'interactive)
       (currency-convert--display-alist alist))
     alist))

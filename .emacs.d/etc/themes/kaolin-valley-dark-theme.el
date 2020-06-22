@@ -40,6 +40,16 @@
 
    (fg1 amber9)
 
+   (kaolin-black   bg1)
+   (kaolin-red     red3)
+   (kaolin-green   harlequin3)
+   (kaolin-yellow  amber3)
+   (kaolin-blue    capri3)
+   (kaolin-magenta magenta3)
+   (kaolin-cyan    cyan3)
+   (kaolin-white   fg1)
+
+
    ;; (keyword     teal0)
    (keyword     teal3)
    (builtin     aquamarine3)
@@ -137,7 +147,10 @@
    (org-level-4            (:foreground builtin :bold nil))
    (org-date               (:foreground aquamarine3 :underline underline))
    (org-code               (:foreground num))
-   (org-verbatim           (:foreground orange3)))
+   (org-verbatim           (:foreground orange3))
+
+   ;; Terminal
+   )
 
   (when kaolin-themes-git-gutter-solid
     (custom-theme-set-faces

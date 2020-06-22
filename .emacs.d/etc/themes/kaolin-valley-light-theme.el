@@ -53,6 +53,17 @@
    (fg3 "#79716c")
    (fg4 "#867e78")
 
+   ;; Root colors
+   (kaolin-black   fg1)
+   (kaolin-red     crimson0)
+   (kaolin-green   teal0)
+   (kaolin-yellow  orange0)
+   (kaolin-blue    blue3)
+   (kaolin-magenta cerise1)
+   (kaolin-cyan    cyan0)
+   (kaolin-white   bg4)
+
+
    (keyword     teal0)
    (builtin     erin2)
 
@@ -137,7 +148,8 @@
    ;; (org-level-4            (:foreground vermilion4 :bold nil))
    (org-code               (:foreground keyword))
    (org-verbatim           (:foreground orange2))
-   (org-date               (:foreground erin2 :underline kaolin-themes-underline)))
+   (org-date               (:foreground erin2 :underline kaolin-themes-underline))
+   )
 
   (when kaolin-themes-git-gutter-solid
     (custom-theme-set-faces

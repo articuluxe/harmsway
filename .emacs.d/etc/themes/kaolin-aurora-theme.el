@@ -18,6 +18,16 @@
    (bg3 "#1F272E" black3)
    (bg4 "#252D35" black4)
 
+   ;; Root colors
+   (kaolin-black   bg1)
+   (kaolin-red     crimson1)
+   (kaolin-green   spring-green0)
+   (kaolin-yellow  orange3)
+   (kaolin-blue    azure3)
+   (kaolin-magenta violet4)
+   (kaolin-cyan    teal3)
+   (kaolin-white   fg1)
+
    ;; TODO: mb yellow3
    (hl magenta3)
 
@@ -120,7 +130,8 @@
    (org-table           (:foreground capri4))
    (org-code            (:foreground yellow3))
    (org-verbatim        (:inherit    'org-code))
-   (org-quote           (:foreground blue4)))
+   (org-quote           (:foreground blue4))
+   )
 
   (when kaolin-themes-git-gutter-solid
     (custom-theme-set-faces

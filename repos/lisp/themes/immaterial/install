@@ -1,1 +1,2 @@
-cp src/*-theme.el ../../../../.emacs.d/etc/themes
+cp src/immaterial-theme.el ../../../../.emacs.d/plugins
+cp src/immaterial-*-theme.el ../../../../.emacs.d/etc/themes

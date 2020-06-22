@@ -419,6 +419,8 @@ If REMOVE is nil, add the necessary keywords to
         ["Kill response buffers" verb-kill-all-response-buffers]
         "--"
         ["Set variable value" verb-set-var]
+        ["Show all variable values" verb-show-vars]
+        ["Unset all variables" verb-unset-vars]
         "--"
         ["Export request to curl" verb-export-request-on-point-curl]
         ["Export request to Verb" verb-export-request-on-point-verb]
@@ -891,6 +893,12 @@ spec, not only the section contained by the source block."
         (setq rs (verb--request-spec-from-hierarchy rs)))
       (verb--request-spec-post-process rs))))
 
+(defun verb--object-of-class-p (obj class)
+  "Return non-nil if OBJ is an instance of CLASS.
+CLASS must be an EIEIO class."
+  (ignore-errors
+    (object-of-class-p obj class)))
+
 (defun verb--request-spec-post-process (rs)
   "Validate and prepare request spec RS to be used.
 
@@ -913,8 +921,7 @@ After that, return RS."
         (setq rs (funcall (symbol-function fn-sym) rs))
       (user-error "No request mapping function with name \"%s\" exists"
                   fn-name))
-    (unless (equal (type-of rs)
-                   (if (< emacs-major-version 26) 'vector 'verb-request-spec))
+    (unless (verb--object-of-class-p rs 'verb-request-spec)
       (user-error (concat "Request mapping function \"%s\" must return a "
                           "`verb-request-spec' value")
                   fn-name)))
@@ -986,6 +993,9 @@ If you use this command frequently, consider setting
 `verb-auto-kill-response-buffers' to t.  This will help avoiding
 having many response buffers open."
   (interactive)
+  (unless (verb--object-of-class-p verb-http-response 'verb-response)
+    (user-error "%s" (concat "Can't re-send request as current buffer is not "
+                             "a response buffer")))
   (verb--request-spec-send (oref verb-http-response request)
                            'this-window))
 
@@ -1023,9 +1033,44 @@ use string VAR and value VALUE."
                                                      verb--vars))))
          (val (or value (read-string (format "Set value for %s: " v))))
          (elem (assoc-string v verb--vars)))
+    (when (string-empty-p v)
+      (user-error "%s" "Variable name can't be empty"))
     (if elem
         (setcdr elem val)
       (push (cons (intern v) val) verb--vars))))
+
+(defun verb-unset-vars ()
+  "Unset all variables set with `verb-var' or `verb-set-var'.
+This affects only the current buffer."
+  (interactive)
+  (verb--ensure-verb-mode)
+  (when (or (not (called-interactively-p 'any))
+            (yes-or-no-p "Unset all Verb variables for current buffer? "))
+    (setq verb--vars nil)))
+
+(defun verb-show-vars ()
+  "Show values of variables set with `verb-var' or `verb-set-var'.
+Values correspond to variables set in the current buffer.  Return the
+buffer used to show the values."
+  (interactive)
+  (unless verb--vars
+    (user-error "%s" "No variables are currently defined"))
+  (let ((buf (current-buffer))
+        (inhibit-read-only t))
+    (with-current-buffer-window
+     (get-buffer-create "*Verb Variables*")
+     (cons 'display-buffer-below-selected
+           '((window-height . fit-window-to-buffer)))
+     nil
+     (unless (derived-mode-p 'special-mode)
+       (special-mode))
+     (dolist (elem (buffer-local-value 'verb--vars buf))
+       (insert (propertize (format "%s: " (car elem)) 'face 'verb-header)
+               (format "%s" (cdr elem)))
+       (newline))
+     (unless (zerop (buffer-size))
+       (backward-delete-char 1))
+     (current-buffer))))
 
 (defun verb-read-file (file &optional coding-system)
   "Return a buffer with the contents of FILE.
@@ -2232,7 +2277,7 @@ METADATA."
       ;; features that depend on specific content types (e.g JSON,
       ;; XML, etc.). Here we delete the source block delimiters so
       ;; that they are not included in the actual request.
-      (delete-matching-lines "^#\\+\\(begin\\|end\\)_src")
+      (delete-matching-lines "^[[:blank:]]*#\\+\\(begin\\|end\\)_src")
 
       ;; Expand code tags in the rest of the buffer (if any)
       (save-excursion

@@ -48,6 +48,16 @@
    (fg3 gray3)
    (fg4 gray4)
 
+   ;; Root colors
+   (kaolin-black   fg1)
+   (kaolin-red     red3)
+   (kaolin-green   teal2)
+   (kaolin-yellow  vermilion3)
+   (kaolin-blue    azure1)
+   (kaolin-magenta cerise4)
+   (kaolin-cyan    cyan3)
+   (kaolin-white   bg4)
+
    (comment     gray7)
    (comment-alt lime7)
    (keyword     teal2)
@@ -132,7 +142,8 @@
    (org-verbatim            (:foreground azure1))
 
    (js2-object-property     (:foreground brown1))
-   (evil-ex-info            (:foreground crimson4)))
+   (evil-ex-info            (:foreground crimson4))
+   )
 
   (when kaolin-themes-git-gutter-solid
     (custom-theme-set-faces

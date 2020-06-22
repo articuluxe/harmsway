@@ -4,8 +4,8 @@
 
 ;; Author: Vincent Zhang <seagle0128@gmail.com>
 ;; Homepage: https://github.com/seagle0128/all-the-icons-ivy-rich
-;; Version: 1.3.0
-;; Package-Requires: ((emacs "24.5") (ivy-rich "0.1.0") (all-the-icons "2.2.0"))
+;; Version: 1.4.0
+;; Package-Requires: ((emacs "25.1") (ivy-rich "0.1.0") (all-the-icons "2.2.0"))
 ;; Keywords: convenience, icons, ivy
 
 ;; This file is not part of GNU Emacs.
@@ -42,18 +42,32 @@
 
 ;;; Code:
 
-(eval-when-compile
-  (require 'bookmark))
-
 (require 'subr-x)
 (require 'ivy-rich)
 (require 'all-the-icons)
+
+(eval-when-compile
+  (require 'package)
+  (require 'bookmark)
+  (require 'project))
 
 (defgroup all-the-icons-ivy-rich nil
   "Better experience with icons for ivy."
   :group 'all-the-icons
   :group 'ivy-rich
   :link '(url-link :tag "Homepage" "https://github.com/seagle0128/all-the-icons-ivy-rich"))
+
+(defface all-the-icons-ivy-rich-icon-face
+  '((t (:inherit default)))
+  "Face used for the icons while `all-the-icons-ivy-rich-color-icon' is nil."
+  :group 'all-the-icons-ivy-rich)
+
+(defcustom all-the-icons-ivy-rich-color-icon t
+  "Whether display the colorful icons.
+
+It respects `all-the-icons-color-icons'."
+  :group 'all-the-icons-ivy-rich
+  :type 'boolean)
 
 (defcustom all-the-icons-ivy-rich-icon-size 1.0
   "The default icon size in ivy."
@@ -124,22 +138,22 @@
     counsel-M-x
     (:columns
      ((all-the-icons-ivy-rich-function-icon)
-      (counsel-M-x-transformer (:width 50))
+      (counsel-M-x-transformer (:width 40))
       (ivy-rich-counsel-function-docstring (:face font-lock-doc-face))))
     counsel-describe-function
     (:columns
      ((all-the-icons-ivy-rich-function-icon)
-      (counsel-describe-function-transformer (:width 50))
+      (counsel-describe-function-transformer (:width 40))
       (ivy-rich-counsel-function-docstring (:face font-lock-doc-face))))
     counsel-describe-variable
     (:columns
      ((all-the-icons-ivy-rich-variable-icon)
-      (counsel-describe-variable-transformer (:width 50))
+      (counsel-describe-variable-transformer (:width 40))
       (ivy-rich-counsel-variable-docstring (:face font-lock-doc-face))))
     counsel-set-variable
     (:columns
      ((all-the-icons-ivy-rich-variable-icon)
-      (counsel-describe-variable-transformer (:width 50))
+      (counsel-describe-variable-transformer (:width 40))
       (ivy-rich-counsel-variable-docstring (:face font-lock-doc-face))))
     counsel-apropos
     (:columns
@@ -205,9 +219,9 @@
      :delimiter "\t")
     counsel-bookmark
     (:columns
-     ((ivy-rich-bookmark-type)
+     ((all-the-icons-ivy-rich-bookmark-type)
       (all-the-icons-ivy-rich-bookmark-name (:width 40))
-      (ivy-rich-bookmark-info))
+      (all-the-icons-ivy-rich-bookmark-info))
      :delimiter "\t")
     counsel-bookmarked-directory
     (:columns
@@ -217,7 +231,10 @@
     counsel-package
     (:columns
      ((all-the-icons-ivy-rich-package-icon)
-      (ivy-rich-candidate))
+      (ivy-rich-candidate (:width 30))
+      (all-the-icons-ivy-rich-package-version (:width 16 :face font-lock-comment-face))
+      (all-the-icons-ivy-rich-package-archive-summary (:width 7 :face font-lock-builtin-face))
+      (all-the-icons-ivy-rich-package-install-summary (:face font-lock-doc-face)))
      :delimiter "\t")
     counsel-fonts
     (:columns
@@ -289,6 +306,27 @@
      ((all-the-icons-ivy-rich-imenu-icon)
       (ivy-rich-candidate))
      :delimiter "\t")
+    package-install
+    (:columns
+     ((all-the-icons-ivy-rich-package-icon)
+      (ivy-rich-candidate (:width 30))
+      (ivy-rich-package-version (:width 16 :face font-lock-comment-face))
+      (ivy-rich-package-archive-summary (:width 7 :face font-lock-builtin-face))
+      (ivy-rich-package-install-summary (:face font-lock-doc-face)))
+     :delimiter "\t")
+    package-reinstall
+    (:columns
+     ((all-the-icons-ivy-rich-package-icon)
+      (ivy-rich-candidate (:width 30))
+      (ivy-rich-package-version (:width 16 :face font-lock-comment-face))
+      (ivy-rich-package-archive-summary (:width 7 :face font-lock-builtin-face))
+      (ivy-rich-package-install-summary (:face font-lock-doc-face)))
+     :delimiter "\t")
+    package-delete
+    (:columns
+     ((all-the-icons-ivy-rich-package-icon)
+      (ivy-rich-candidate))
+     :delimiter "\t")
     treemacs-projectile
     (:columns
      ((all-the-icons-ivy-rich-file-icon)
@@ -302,6 +340,34 @@ See `ivy-rich-display-transformers-list' for details."
 
 
 
+(defun all-the-icons-ivy-rich-bookmark-name (candidate)
+  "Return bookmark name from CANDIDATE."
+  (car (assoc candidate bookmark-alist)))
+
+(defun all-the-icons-ivy-rich-bookmark-info (candidate)
+  "Return bookmark name from CANDIDATE."
+  (let ((filename (ivy-rich-bookmark-filename candidate)))
+    (cond (filename
+           (cond ((null filename)
+                  "")
+                 ((file-remote-p filename)
+                  filename)
+                 ((file-exists-p filename)
+                  (file-truename filename))
+                 (t filename))))))
+
+(defun all-the-icons-ivy-rich-package-install-summary (candidate)
+  "Return package install summary from CANDIDATE. Used for `counsel-package'."
+  (ivy-rich-package-install-summary (substring candidate 1)))
+
+(defun all-the-icons-ivy-rich-package-archive-summary (candidate)
+  "Return package archive summary from CANDIDATE. Used for `counsel-package'."
+  (ivy-rich-package-archive-summary (substring candidate 1)))
+
+(defun all-the-icons-ivy-rich-package-version (candidate)
+  "Return package version from CANDIDATE. Used for `counsel-package'."
+  (ivy-rich-package-version (substring candidate 1)))
+
 (defun all-the-icons-ivy-rich-align-icons ()
   "Set tab size to 1, to insert tabs as delimiters."
   (setq-local tab-width 1))
@@ -310,13 +376,15 @@ See `ivy-rich-display-transformers-list' for details."
   "Format ICON'."
   (when icon
     (format " %s"
-            (propertize icon
-                        'face `(:inherit ,(get-text-property 0 'face icon)
-                                :height ,all-the-icons-ivy-rich-icon-size)))))
-
-(defun all-the-icons-ivy-rich-bookmark-name (candidate)
-  "Return bookmark name from CANDIDATE."
-  (car (assoc candidate bookmark-alist)))
+            (let* ((props (get-text-property 0 'face icon))
+                   (family (plist-get props :family))
+                   (face (if all-the-icons-ivy-rich-color-icon
+                             (or (plist-get props :inherit) props)
+                           'all-the-icons-ivy-rich-icon-face))
+                   (new-face `(:inherit ,face
+                               :family ,family
+                               :height ,all-the-icons-ivy-rich-icon-size)))
+              (propertize icon 'face new-face)))))
 
 (defun all-the-icons-ivy-rich-buffer-icon (candidate)
   "Display buffer icon from CANDIDATE in `ivy-rich'."
@@ -468,11 +536,9 @@ See `ivy-rich-display-transformers-list' for details."
   (if all-the-icons-ivy-rich-mode
       (progn
         (add-hook 'minibuffer-setup-hook #'all-the-icons-ivy-rich-align-icons)
-        (advice-add #'ivy-rich-bookmark-type :override #'all-the-icons-ivy-rich-bookmark-type)
         (setq ivy-rich-display-transformers-list all-the-icons-ivy-rich-display-transformers-list))
     (progn
       (remove-hook 'minibuffer-setup-hook #'all-the-icons-ivy-rich-align-icons)
-      (advice-remove #'ivy-rich-bookmark-type #'all-the-icons-ivy-rich-bookmark-type)
       (setq ivy-rich-display-transformers-list all-the-icons-ivy-rich-display-transformers-old-list)))
   (ivy-rich-reload))
 

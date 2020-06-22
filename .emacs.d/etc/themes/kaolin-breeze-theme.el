@@ -31,6 +31,16 @@
    (fg3 gray3)
    (fg4 gray4)
 
+   ;; Root colors
+   (kaolin-black   fg1)
+   (kaolin-red     red1)
+   (kaolin-green   spring-green2)
+   (kaolin-yellow  orange2)
+   (kaolin-blue    capri1)
+   (kaolin-magenta magenta4)
+   (kaolin-cyan    cyan1)
+   (kaolin-white   bg4)
+
    (keyword     blue4)
    (builtin     cerulean4)
 
@@ -119,8 +129,8 @@
    (org-date               (:foreground vermilion3))
 
    (js2-object-property          (:foreground functions))
-   (evil-ex-info                 (:foreground crimson4)))
-
+   (evil-ex-info                 (:foreground crimson4))
+   )
 
   (when kaolin-git-gutter-solid
     (custom-theme-set-faces

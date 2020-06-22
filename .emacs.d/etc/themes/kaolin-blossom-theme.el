@@ -37,6 +37,16 @@
 
    (fg1 yellow9)
 
+   ;; Root colors
+   (kaolin-black   bg2)
+   (kaolin-red     red3)
+   (kaolin-green   spring-green3)
+   (kaolin-yellow  yellow3)
+   (kaolin-blue    azure3)
+   (kaolin-magenta magenta3)
+   (kaolin-cyan    cyan3)
+   (kaolin-white   fg1)
+
    (keyword     orange4)
    (builtin     amber3)
 

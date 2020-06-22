@@ -29,6 +29,16 @@
    ;; TODO: add other fg vars
    ;; (fg1 blue9)
 
+   ;; Root colors
+   (kaolin-black   bg1)
+   (kaolin-red     crimson3)
+   (kaolin-green   teal3)
+   (kaolin-yellow  amber3)
+   (kaolin-blue    capri3)
+   (kaolin-magenta magenta3)
+   (kaolin-cyan    cyan3)
+   (kaolin-white   fg1)
+
    (keyword     cyan3)
    (builtin     teal3)
    (functions   magenta3)
@@ -113,7 +123,8 @@
    (org-date            (:foreground spring-green3 :underline underline))
    (org-code            (:foreground erin3))
    (org-verbatim        (:foreground aquamarine3))
-   (org-quote           (:foreground blue9)))
+   (org-quote           (:foreground blue9))
+   )
 
   ;; Set custom vars
   (when kaolin-themes-git-gutter-solid
