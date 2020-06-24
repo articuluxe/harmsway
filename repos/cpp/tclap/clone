@@ -1,0 +1,7 @@
+rm -rf src
+mkdir -p src
+curl -L -o src/tclap.tar.gz https://sourceforge.net/projects/tclap/files/latest/download
+cd src
+gunzip tclap.tar.gz
+tar xvf tclap.tar
+rm -f tclap.tar

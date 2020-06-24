@@ -1,0 +1,6 @@
+cd src/tclap-1.2.2
+./configure --prefix=$HOME/opt/stow/tclap
+make
+make install
+cd $HOME/opt/stow
+stow -R tclap
