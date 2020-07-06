@@ -1,11 +1,11 @@
 #!/usr/bin/env sh
 # -*- Mode: sh -*-
 # cron.txt --- help on cron and cron-like utilities
-# Copyright (C) 2016  Dan Harms (dan.harms)
+# Copyright (C) 2016, 2020  Dan Harms (dan.harms)
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Tuesday, December 20, 2016
 # Version: 1.0
-# Modified Time-stamp: <2016-12-20 12:47:43 dan.harms>
+# Modified Time-stamp: <2020-07-05 22:28:20 dharms>
 # Modified by: Dan Harms
 # Keywords: cron
 
@@ -21,8 +21,9 @@ at now + 1 minutes/hours/days/weeks
 # view pending jobs for current user
 atq
 
-# repeat a command every n seconds
-watch -n 5 who
+# repeat a command every n seconds (highlight differences)
+watch -d -n 5 who
+while true ; do echo "$(date '+%H:%M:%S') $( who )" | tee -a out ; sleep 1; done
 # repeat a command in a loop
 while sleep 1; do who; done
 
