@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-06-30 15:03:35 dharms>
+;; Modified Time-stamp: <2020-07-05 23:09:02 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -513,7 +513,6 @@ not an error if any files do not exist."
   (define-key annotate-mode-map (kbd "C-c C-s") nil)
   (define-key annotate-mode-map (kbd "C-c ]") nil)
   (define-key annotate-mode-map (kbd "C-c [") nil)
-  (require 'info)
   (annotate-mode 1))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; annot ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

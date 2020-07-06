@@ -67,9 +67,10 @@
          ((&Command :title :command :arguments?) command0))
     (define-key map [mouse-1]
       (lambda () (interactive)
-        (xref--show-xrefs
-         (lambda () (lsp--locations-to-xref-items
-                     (lsp--send-execute-command command arguments?))) nil)))
+        (when-let ((xrefs (lsp--locations-to-xref-items
+                           (lsp--send-execute-command command arguments?))))
+          ;; xref--show-xrefs takes a function since Emacs 27.
+          (xref--show-xrefs (if (functionp 'xref--create-fetcher) (lambda () xrefs) xrefs) nil))))
     (propertize (concat lpad title rpad)
                 'face 'ccls-code-lens-face
                 'mouse-face 'ccls-code-lens-mouse-face
@@ -103,7 +104,7 @@
              (if (and ov (= l0 line))
                  (overlay-put ov 'display
                               (concat (overlay-get ov 'display)
-                                      (ccls--make-code-lens-string (if (/= c0 col) "|" " ") command)))
+                                      (ccls--make-code-lens-string (if (/= c0 col) "|" " ") command?)))
                (when ov
                  (overlay-put ov 'display (concat (overlay-get ov 'display) "\n")))
                (let ((p (point-at-eol)))

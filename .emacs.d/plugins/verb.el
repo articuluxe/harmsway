@@ -314,6 +314,9 @@ E = Error.")
   "Prefix for Verb metadata keys in heading properties.
 Matching is case insensitive.")
 
+(defconst verb-version "2.11.0"
+  "Verb package version.")
+
 (defvar-local verb-http-response nil
   "HTTP response for this response buffer (`verb-response' object).
 The decoded body contents of the response are included in the buffer
@@ -426,7 +429,7 @@ If REMOVE is nil, add the necessary keywords to
         ["Export request to Verb" verb-export-request-on-point-verb]
         "--"
         ["Customize Verb" verb-customize-group]
-        ["View log" verb-view-log]))
+        ["Show log" verb-show-log]))
     map)
   "Keymap for `verb-mode'.")
 
@@ -590,12 +593,15 @@ KEY and VALUE must be strings.  KEY must not be the empty string."
     (define-key map (kbd "C-c C-r C-r") #'verb-toggle-show-headers)
     (define-key map (kbd "C-c C-r C-k") #'verb-kill-response-buffer-and-window)
     (define-key map (kbd "C-c C-r C-f") #'verb-re-send-request)
+    (define-key map (kbd "C-c C-r C-s") #'verb-show-request)
     (easy-menu-define verb-response-body-mode-menu map
       "Menu for Verb response body mode"
       '("Verb[Body]"
         ["Toggle show response headers" verb-toggle-show-headers]
         ["Kill buffer and window" verb-kill-response-buffer-and-window]
-        ["Re-send request" verb-re-send-request]))
+        "--"
+        ["Re-send request" verb-re-send-request]
+        ["Show corresponding request" verb-show-request]))
     map)
   "Keymap for `verb-response-body-mode'.")
 
@@ -614,10 +620,13 @@ KEY and VALUE must be strings.  KEY must not be the empty string."
             (verb-toggle-show-headers))))
     (setq header-line-format nil)))
 
-(defun verb-view-log ()
+(defun verb-show-log ()
   "Switch to the *Verb Log* buffer."
   (interactive)
   (switch-to-buffer (get-buffer-create verb--log-buffer-name)))
+
+;; Old function name (<2.11.0)
+(defalias 'verb-view-log 'verb-show-log)
 
 (defun verb-customize-group ()
   "Show the Customize menu buffer for the Verb package group."
@@ -1093,6 +1102,34 @@ Set the buffer's `verb-kill-this-buffer' variable locally to t."
         (insert key ": " value "\n")))
     (unless (zerop (buffer-size))
       (backward-delete-char 1))))
+
+(defun verb-show-request ()
+  "Show the corresponding HTTP request for a received response.
+The request will be displayed in a format very similar in which it was
+written originally, on a separate buffer.  Note that code tags will be
+shown with their values already evaluated.  Some of the headers sent
+by url.el may also differ from the headers shown with this function,
+see the project's README.md file for more information.  Return the
+buffer used to show the request."
+  (interactive)
+  (unless verb-response-body-mode
+    (user-error "%s" "This buffer is not showing an HTTP response"))
+
+  (let ((rs (oref verb-http-response request))
+        (name (buffer-name)))
+    (with-current-buffer (get-buffer-create "*Show HTTP Request*")
+      ;; Set up buffer
+      (unless (derived-mode-p 'org-mode)
+        (org-mode))
+      (verb--ensure-verb-mode)
+      (erase-buffer)
+
+      ;; Insert the request contents and show the buffer
+      (insert "* Corresponding HTTP request for response in "
+              name)
+      (newline)
+      (insert (verb-request-spec-to-string rs))
+      (switch-to-buffer-other-window (current-buffer)))))
 
 (defun verb-toggle-show-headers ()
   "Show or hide the HTTP response's headers on a separate buffer."
@@ -1581,64 +1618,61 @@ NUM is this request's identification number."
       ;; metadata
       (verb--maybe-store-response verb-http-response))
 
+    ;; Make RESPONSE-BUF the current buffer, as we'll need to change
+    ;; its major mode, coding system, etc.
+    (set-buffer response-buf)
+
+    ;; Copy bytes from `original-buffer' into it
+    (insert-buffer-substring original-buffer)
+
     (if binary-handler
-        ;; Response content is a binary format:
-
         (progn
+          ;; Response content is a binary format:
           (verb--log num 'I "Using binary handler: %s" binary-handler)
-          (with-current-buffer response-buf
-            (fundamental-mode)
-            (set-buffer-multibyte nil)
-            (set-buffer-file-coding-system 'binary)
 
-            (buffer-disable-undo)
-            ;; Copy bytes into RESPONSE-BUF
-            (insert-buffer-substring original-buffer)
-            (goto-char (point-min))
-            (funcall binary-handler)))
+          (set-buffer-multibyte nil)
+          (set-buffer-file-coding-system 'binary)
+          (buffer-disable-undo)
+          (funcall binary-handler))
 
-      ;; Response content is text:
+      ;; else: Response content is text:
+      (verb--log num 'I "Using text handler: %s" text-handler)
 
       ;; Choose corresponding coding system for charset
       (setq coding-system (or (mm-charset-to-coding-system charset)
                               'utf-8))
 
-      ;; Decode contents into RESPONSE-BUF
-      (decode-coding-region (point-min) (point-max)
-                            coding-system
-                            response-buf))
+      ;; Decode contents using coding system
+      (decode-coding-region (point-min) (point-max) coding-system)
+
+      (set-buffer-file-coding-system coding-system)
+
+      ;; Prepare buffer for editing by user
+      (funcall text-handler))
+
+    (goto-char (point-min))
 
     ;; Kill original response buffer
     (kill-buffer original-buffer)
 
-    (with-current-buffer response-buf
-      ;; Now that the response content has been processed, update
-      ;; `verb-http-response's body slot
-      (oset verb-http-response
-            body
-            (unless (zerop (oref verb-http-response body-bytes))
-              (verb--buffer-string-no-properties)))
+    ;; Now that the response content has been processed, update
+    ;; `verb-http-response's body slot
+    (oset verb-http-response
+          body
+          (unless (zerop (oref verb-http-response body-bytes))
+            (verb--buffer-string-no-properties)))
 
-      (when text-handler
-        (verb--log num 'I "Using text handler: %s" text-handler)
+    (pcase where
+      ('other-window (switch-to-buffer-other-window (current-buffer)))
+      ('stay-window (save-selected-window
+                      (switch-to-buffer-other-window (current-buffer))))
+      ('this-window (switch-to-buffer (current-buffer)))
+      ('minibuffer (message "%s" (oref verb-http-response status))))
 
-        (set-buffer-file-coding-system coding-system)
+    (verb-response-body-mode)
 
-        ;; Prepare buffer for editing by user
-        (goto-char (point-min))
-        (funcall text-handler))
-
-      (pcase where
-        ('other-window (switch-to-buffer-other-window (current-buffer)))
-        ('stay-window (save-selected-window
-                        (switch-to-buffer-other-window (current-buffer))))
-        ('this-window (switch-to-buffer (current-buffer)))
-        ('minibuffer (message "%s" (oref verb-http-response status))))
-
-      (verb-response-body-mode)
-
-      ;; Run post response hook
-      (run-hooks 'verb-post-response-hook))))
+    ;; Run post response hook
+    (run-hooks 'verb-post-response-hook)))
 
 (defun verb--prepare-http-headers (headers)
   "Prepare alist HEADERS of HTTP headers to be used on a request.

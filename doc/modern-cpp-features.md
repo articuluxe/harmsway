@@ -13,9 +13,9 @@ C++20 includes the following new language features:
 - [class types in non-type template parameters](#class-types-in-non-type-template-parameters)
 - [constexpr virtual functions](#constexpr-virtual-functions)
 - [explicit(bool)](#explicitbool)
-- [char8_t](#char8_t)
 - [immediate functions](#immediate-functions)
 - [using enum](#using-enum)
+- [lambda capture of parameter pack](#lambda-capture-of-parameter-pack)
 
 C++20 includes the following new library features:
 - [concepts library](#concepts-library)
@@ -24,6 +24,13 @@ C++20 includes the following new library features:
 - [bit operations](#bit-operations)
 - [math constants](#math-constants)
 - [std::is_constant_evaluated](#stdis_constant_evaluated)
+- [std::make_shared supports arrays](#stdmake_shared-supports-arrays)
+- [starts_with and ends_with on strings](#starts_with-and-ends_with-on-strings)
+- [check if associative container has element](#check-if-associative-container-has-element)
+- [std::bit_cast](#stdbit_cast)
+- [std::midpoint](#stdmidpoint)
+- [std::to_array](#stdto_array)
+- [char8_t](#char8_t)
 
 C++17 includes the following new language features:
 - [template argument deduction for class templates](#template-argument-deduction-for-class-templates)
@@ -385,12 +392,6 @@ foo b = "123"; // ERROR: explicit constructor is not a candidate (explicit speci
 foo c {"123"}; // OK
 ```
 
-### char8_t
-Provides a standard type for representing UTF-8 strings.
-```c++
-char8_t utf8_str[] = u8"\u0123";
-```
-
 ### Immediate functions
 Similar to `constexpr` functions, but functions with a `consteval` specifier must produce a constant. These are called `immediate functions`.
 ```c++
@@ -430,6 +431,28 @@ std::string_view to_string(rgba_color_channel my_channel) {
     case blue:  return "blue";
     case alpha: return "alpha";
   }
+}
+```
+
+### Lambda capture of parameter pack
+Capture parameter packs by value:
+```c++
+template <typename... Args>
+auto f(Args&&... args){
+    // BY VALUE:
+    return [...args = std::forward<Args>(args)] {
+        // ...
+    };
+}
+```
+Capture parameter packs by reference:
+```c++
+template <typename... Args>
+auto f(Args&&... args){
+    // BY REFERENCE:
+    return [&...args = std::forward<Args>(args)] {
+        // ...
+    };
 }
 ```
 
@@ -529,6 +552,61 @@ constexpr bool is_compile_time() {
 
 constexpr bool a = is_compile_time(); // true
 bool b = is_compile_time(); // false
+```
+
+### std::make_shared supports arrays
+```c++
+auto p = std::make_shared<int[]>(5); // pointer to `int[5]`
+// OR
+auto p = std::make_shared<int[5]>(); // pointer to `int[5]`
+```
+
+### starts_with and ends_with on strings
+Strings (and string views) now have the `starts_with` and `ends_with` member functions to check if a string starts or ends with the given string.
+```c++
+std::string str = "foobar";
+str.starts_with("foo"); // true
+str.ends_with("baz"); // false
+```
+
+### Check if associative container has element
+Associative containers such as sets and maps have a `contains` member function, which can be used instead of the "find and check end of iterator" idiom.
+```c++
+std::map<int, char> map {{1, 'a'}, {2, 'b'}};
+map.contains(2); // true
+map.contains(123); // false
+
+std::set<int> set {1, 2, 3};
+set.contains(2); // true
+```
+
+### std::bit_cast
+A safer way to reinterpret an object from one type to another.
+```c++
+float f = 123.0;
+int i = std::bit_cast<int>(f);
+```
+
+### std::midpoint
+Calculate the midpoint of two integers safely (without overflow).
+```c++
+std::midpoint(1, 3); // == 2
+```
+
+### std::to_array
+Converts the given array/"array-like" object to a `std::array`.
+```c++
+std::to_array("foo"); // returns `std::array<char, 4>`
+std::to_array<int>({1, 2, 3}); // returns `std::array<int, 3>`
+
+int a[] = {1, 2, 3};
+std::to_array(a); // returns `std::array<int, 3>`
+```
+
+### char8_t
+Provides a standard type for representing UTF-8 strings.
+```c++
+char8_t utf8_str[] = u8"\u0123";
 ```
 
 ## C++17 Language Features
@@ -1316,7 +1394,7 @@ A `lambda` is an unnamed function object capable of capturing variables in scope
 * `[]` - captures nothing.
 * `[=]` - capture local objects (local variables, parameters) in scope by value.
 * `[&]` - capture local objects (local variables, parameters) in scope by reference.
-* `[this]` - capture `this` pointer by value.
+* `[this]` - capture `this` by reference.
 * `[a, &b]` - capture objects `a` by value, `b` by reference.
 
 ```c++

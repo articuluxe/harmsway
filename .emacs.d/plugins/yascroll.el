@@ -4,7 +4,7 @@
 
 ;; Author: Tomohiro Matsuyama <m2ym.pub@gmail.com>
 ;; Keywords: convenience
-;; Version: 0.1.8
+;; Version: 0.1.9
 ;; Package-Requires: ((emacs "26.1") (cl-lib "0.3"))
 ;; URL: https://github.com/emacsorphanage/yascroll
 
@@ -127,7 +127,7 @@ not be displayed."
   :group 'yascroll)
 
 (defcustom yascroll:disabled-modes
-  nil
+  '(image-mode)
   "A list of major-modes where yascroll can't work."
   :type '(repeat symbol)
   :group 'yascroll)

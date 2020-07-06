@@ -193,7 +193,9 @@ The theme needs to be reloaded after changing anything in this group."
    ;;; js2-mode
    `(js2-external-variable ((t (:foreground ,organic-blue-2))))
    `(js2-function-param ((t (:foreground ,organic-teal))))
-   `(js2-jsdoc-value ((t (:foreground ,organic-yellow-5))))
+   `(js2-jsdoc-type ((t (:foreground ,organic-blue-2))))
+   `(js2-jsdoc-tag ((t (:foreground ,organic-blue-5))))
+   `(js2-jsdoc-value ((t (:foreground ,organic-teal))))
 
    ;; clojure/CIDER
    `(cider-result-overlay-face ((t (:background ,organic-bg :box (:line-width -1 :color ,organic-yellow-1)))))
@@ -339,6 +341,8 @@ The theme needs to be reloaded after changing anything in this group."
    `(company-tooltip ((t :foreground ,organic-gray-6 :background ,organic-gray-0)))
    `(company-tooltip-annotation ((t :foreground ,organic-fg)))
    `(company-tooltip-common ((t :foreground ,organic-blue-4)))
+   `(company-tooltip-search ((t :background ,organic-yellow-1)))
+   `(company-tooltip-search-selection ((t :background ,organic-yellow-1)))
    `(company-echo-common ((t :foreground ,organic-cornflower)))
    `(company-scrollbar-fg ((t :background ,organic-gray-4)))
    `(company-scrollbar-bg ((t :background ,organic-gray-3)))
@@ -346,7 +350,7 @@ The theme needs to be reloaded after changing anything in this group."
    ;;; Web-Mode
    `(web-mode-current-element-highlight-face ((,class (:background ,organic-green-0))))
    `(web-mode-html-tag-face ((t (:foreground ,organic-gray-6))) t)
-   `(web-mode-html-attr-name-face ((t (:foreground ,organic-cornflower))) t)
+   `(web-mode-html-attr-name-face ((t (:foreground ,organic-blue-4))) t)
    `(web-mode-doctype-face ((t (:foreground ,organic-blue-5))) t)
    `(web-mode-comment-face ((t (:foreground ,organic-gray-4)) t))
    `(web-mode-css-selector-face ((t (:foreground ,organic-teal))) t)

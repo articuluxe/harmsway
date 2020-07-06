@@ -7,7 +7,7 @@
 ;; Version: 3.0.0
 ;; Keywords: shell bash bash-completion
 ;; URL: http://github.com/szermatt/emacs-bash-completion
-;; Package-Requires: ((emacs "24.1"))
+;; Package-Requires: ((emacs "24.3"))
 
 ;; This program is free software: you can redistribute it and/or
 ;; modify it under the terms of the GNU General Public License as
@@ -54,7 +54,6 @@
 ;;
 ;; 1. copy bash-completion.el into a directory that's on Emacs load-path
 ;; 2. add this into your .emacs file:
-;;   (setq bash-completion-use-separate-processes nil)
 ;;   (autoload 'bash-completion-dynamic-complete \"bash-completion\"
 ;;     \"BASH completion hook\")
 ;;   (add-hook 'shell-dynamic-complete-functions
@@ -63,15 +62,8 @@
 ;;   or simpler, but forces you to load this file at startup:
 ;;
 ;;   (require 'bash-completion)
-;;   (setq bash-completion-use-separate-processes nil)
 ;;   (bash-completion-setup)
 ;; 
-;;   NOTE: Setting `bash-completion-use-separate-processes` to nil on new
-;;   installations is recommended. It might become the default in future
-;;   versions of `bash-completion.el. See the section
-;;   [bash-completion-use-separate-processes](#bash-completion-use-separate-processes)
-;;   for more details.
-;;
 ;; 3. reload your .emacs (M-x `eval-buffer') or restart
 ;;
 ;; Once this is done, use <TAB> as usual to do dynamic completion from
@@ -79,68 +71,31 @@
 ;; for M-x `compile'. Note that the first completion is slow, as emacs
 ;; launches a new bash process.
 ;;
-;; You'll get better results if you turn on programmable bash completion.
-;; On Ubuntu, this means running:
-;;   sudo apt-get install bash-completion
-;; and then adding this to your .bashrc:
+;; Naturally, you'll get better results if you turn on programmable
+;; bash completion in your shell. Depending on how your system is set
+;; up, this might requires calling:
 ;;   . /etc/bash_completion
+;; from your ~/.bashrc.
 ;;
-;; CAVEAT
-;; 
-;; TL;DR Set `bash-completion-use-separate-processes` to `nil` and avoid
-;; the issues and complications described in this section.
-;; 
-;; When `bash-completion-use-separate-processes` is `t`, completion runs
-;; in a separate process from the shell process. 
-;; 
-;; This might be useful in some cases, as it allows interrupting slow
-;; completions, when necessary.
-;; 
-;; However using a separate process for doing the completion has several
-;; important disadvantages:
-;; 
-;; - bash completion is slower than standard emacs completion
-;; - it relies on directory tracking working correctly on Emacs
-;; - the first completion can take a long time, since a new bash process
-;;   needs to be started and initialized
-;; - the separate process is not aware of any changes made to bash
-;;   in the current buffer.
-;;   In a standard terminal, you could do:
-;; 
-;;         $ alias myalias=ls
-;;         $ myal<TAB>
-;; 
-;;   and bash would propose the new alias.
-;;   Bash-completion.el cannot do that, as it is not aware of anything
-;;   configured in the current shell. To make bash-completion.el aware
-;;   of a new alias, you need to add it to .bashrc and restart the
-;;   completion process using `bash-completion-reset'.
-;; 
-;; When using separate processes, right after enabling programmable bash
-;; completion, and whenever you make changes to you .bashrc, call
-;; `bash-completion-reset' to make sure bash completion takes your new
-;; settings into account.
-;; 
-;; Loading /etc/bash_completion often takes time, and is not necessary
-;; in shell mode, since completion is done by a separate process, not
-;; the process shell-mode process.
-;; 
-;; To turn off bash completion when running from emacs but keep it on
-;; for processes started by bash-completion.el, add this to your .bashrc:
-;; 
-;;     if [[ ( -z "$INSIDE_EMACS" || "$EMACS_BASH_COMPLETE" = "t" ) &&\
-;;          -f /etc/bash_completion ]]; then
-;;       . /etc/bash_completion
-;;     fi
-;; 
-;; Emacs sets the environment variable INSIDE_EMACS to the processes
-;; started from it. Processes started by bash-completion.el have
-;; the environment variable EMACS_BASH_COMPLETE set to t.
+;; When called from a bash shell buffer,
+;; `bash-completion-dynamic-complete' communicates with the current shell
+;; to reproduce, as closely as possible the normal bash auto-completion,
+;; available on full terminals.
+;;
+;; When called from non-shell buffers, such as the prompt of M-x
+;; compile, `bash-completion-dynamic-complete' creates a separate bash
+;; process just for doing completion. Such processes have the
+;; environment variable EMACS_BASH_COMPLETE set to t, to help
+;; distinguish them from normal shell processes.
+;;
+;; See the documentation of the function
+;; `bash-completion-dynamic-complete-nocomint' to do bash completion
+;; from other buffers or completion engines.
 ;;
 ;; COMPATIBILITY
 ;;
-;; bash-completion.el is known to work with Bash 3 and 4, on Emacs,
-;; starting with version 24.1, under Linux and OSX. It does not work
+;; bash-completion.el is known to work with Bash 3, 4 and 5, on Emacs,
+;; starting with version 24.3, under Linux and OSX. It does not work
 ;; on XEmacs.
 ;;
 
@@ -174,17 +129,14 @@ BASH completion is only available in the environment for which
   :type '(boolean)
   :group 'bash-completion)
 
-(defcustom bash-completion-use-separate-processes t
+(defcustom bash-completion-use-separate-processes nil
   "Enable/disable the use of separate processes to perform completion.
 
-When set to a non-nil value, separate processes will be used to
-perform completion. If nil, the process associated with the
-current buffer is used to perform completion. Even when this
-variable is set to nil, a separate process can be used to perform
-completion when:
-- the current buffer is not a comint buffer
-- no bash process is associated with the current buffer
-- an error occurred while trying to get completions"
+When set to a non-nil value, separate processes will always be
+used to perform completion. If nil, process associated with the
+current buffer will be used to perform completion from a shell
+buffer associated to a bash shell, and otherwise a separate process
+will be started to do completion."
   :type 'boolean
   :group 'bash-completion)
 
@@ -288,8 +240,10 @@ explanation.")
 (defvar bash-completion-output-buffer " *bash-completion*"
   "Buffer storing completion results.
 
-This variable is not used when
-`bash-completion-use-separate-processes' is non-nil.")
+This buffer is only used when creating separate processes for
+performing completion. See
+`bash-completion-use-separate-processes' for further
+explanation.")
 
 ;;; ---------- Internal variables and constants
 
@@ -299,15 +253,18 @@ This variable is not used when
 Mapping between remote paths as returned by `file-remote-p' and
 Bash processes.")
 
-(defconst bash-completion-special-chars "[^-0-9a-zA-Z_./\n=]"
+(defconst bash-completion-special-chars "[ -$&-*,:-<>?[-^`{-}]"
   "Regexp of characters that must be escaped or quoted.")
 
+(defconst bash-completion--ps1 "'\t$?\v'"
+  "Value for the special PS1 prompt set for completions, quoted.")
+
 (eval-when-compile
-  (unless (or (and (= emacs-major-version 24) (>= emacs-minor-version 1))
+  (unless (or (and (= emacs-major-version 24) (>= emacs-minor-version 3))
               (>= emacs-major-version 25))
     (error
      (concat
-      "Emacs version 24.1 or later is required to run emacs-bash-completion.\n"
+      "Emacs version 24.3 or later is required to run emacs-bash-completion.\n"
       "Download emacs-bash-completion version 2.1 to run on older Emacs "
       "versions, from 22 to 24."))))
 
@@ -319,7 +276,6 @@ Bash processes.")
                           (:conc-name bash-completion--)
                           (:copier nil))
   line           ; the relevant command (string)
-  point          ; 0-based position of the cursor in line (number)
   words          ; line split into words, unescaped (list of strings)
   cword          ; 0-based index of the word to be completed in words (number)
   unparsed-stub  ; unparsed version of the thing we are completing,
@@ -379,7 +335,6 @@ returned."
 (defun bash-completion--setup-bash-common (process)
   "Setup PROCESS to be ready for completion."
   (let (bash-major-version)
-    (bash-completion-send "set +o vi" process)
     (bash-completion-send "complete -p" process)
     (process-put process 'complete-p
                  (bash-completion-build-alist (bash-completion--get-buffer process)))
@@ -389,22 +344,21 @@ returned."
             (string-to-number (buffer-substring-no-properties
                                (point-min) (point-max)))))
     (bash-completion-send
-     (concat "function __bash_complete_wrapper {"
+     (concat "function __emacs_complete_wrapper {"
              (if (>= bash-major-version 4)
                  " COMP_TYPE=9; COMP_KEY=9; _EMACS_COMPOPT=\"\";"
                "")
-             " eval $__BASH_COMPLETE_WRAPPER;"
+             " eval $__EMACS_COMPLETE_WRAPPER;"
              " n=$?;"
              " if [[ $n = 124 ]]; then"
-             (bash-completion--side-channel-data
-              "wrapped-status" "124")
+             (bash-completion--side-channel-data "wrapped-status" "124")
              "  return 1; "
              " fi; "
              (when (>= bash-major-version 4)
-               (concat " if [[ -n \"${_EMACS_COMPOPT}\" ]]; then"
-                       (bash-completion--side-channel-data
-                        "compopt" "${_EMACS_COMPOPT}")
-                       " fi;"))
+               (concat
+                " if [[ -n \"${_EMACS_COMPOPT}\" ]]; then"
+                (bash-completion--side-channel-data "compopt" "${_EMACS_COMPOPT}")
+                " fi;"))
              " return $n;"
              "}")
      process)
@@ -441,6 +395,12 @@ returned."
     (process-put process 'bash-major-version bash-major-version)
 
     (bash-completion-send "bind -v 2>/dev/null" process)
+    (process-put process 'completion-ignore-case 
+                 (with-current-buffer (bash-completion--get-buffer process)
+                   (save-excursion
+                     (goto-char (point-min))
+                     (and (search-forward "completion-ignore-case on" nil 'noerror) t))))
+
     (process-put process 'setup-done t)))
 
 ;;; ---------- Inline functions
@@ -516,17 +476,6 @@ When doing completion outside of a comint buffer, call
         (if message-timer
             (cancel-timer message-timer)))))
 
-(defun bash-completion--complete (comp process)
-  (condition-case err
-      (bash-completion-comm comp process)
-    (error (if (not bash-completion-use-separate-processes)
-               ;; try again with a separate process
-               (let* ((bash-completion-use-separate-processes t)
-                      (process (bash-completion--get-process)))
-                 (bash-completion-comm comp process))
-             ;; re-throw the error
-             (signal (car err) (cdr err))))))
-
 ;;;###autoload
 (defun bash-completion-dynamic-complete-nocomint
     (comp-start &optional comp-pos dynamic-table)
@@ -589,7 +538,7 @@ Returns (list stub-start stub-end completions) with
          (if dynamic-table
              (bash-completion--completion-table-with-cache
               comp process)
-           (bash-completion--complete comp process)))))))
+           (bash-completion-comm comp process)))))))
 
 (defun bash-completion--find-last (elt array)
   "Return the position of the last instance of ELT in array or nil."
@@ -679,7 +628,6 @@ Returns a completion struct."
                           (cdr (assq 'str (car (last line-tokens)))))))
     (bash-completion--make
      :line rebuilt-line
-     :point (length rebuilt-line)
      :cword (- (length words) 1)
      :words words
      :stub-start stub-start
@@ -930,8 +878,9 @@ for directory name detection to work.
 Post-processing includes escaping special characters, adding a /
 to directory names, replacing STUB with UNPARSED-STUB in the
 result. See `bash-completion-fix' for more details."
-  (let ((output) (candidates))
+  (let ((output) (candidates) (pwd))
     (with-current-buffer buffer
+      (setq pwd (bash-completion--parse-side-channel-data "pwd"))
       (let ((compopt (bash-completion--parse-side-channel-data "compopt")))
         (cond
          ((string= "-o nospace" compopt)
@@ -940,13 +889,16 @@ result. See `bash-completion-fix' for more details."
           (setf (bash-completion--compopt comp) '((nospace . nil))))))
       (setq output (buffer-string)))
     (setq candidates (delete-dups (split-string output "\n" t)))
-    (if (eq 1 (length candidates))
-        (list (bash-completion-fix (car candidates) comp t))
-      ;; multiple candidates
-      (let ((result (list)))
-        (dolist (completion candidates)
-          (push (bash-completion-fix completion comp nil) result))
-        (delete-dups (nreverse result))))))
+    (let ((default-directory (if pwd
+                                 (concat (file-remote-p default-directory) pwd)
+                               default-directory)))
+      (if (eq 1 (length candidates))
+          (list (bash-completion-fix (car candidates) comp t))
+        ;; multiple candidates
+        (let ((result (list)))
+          (dolist (completion candidates)
+            (push (bash-completion-fix completion comp nil) result))
+          (delete-dups (nreverse result)))))))
 
 (defun bash-completion-fix (str comp single)
   "Fix completion candidate in STR for COMP
@@ -1178,18 +1130,20 @@ is set to t."
                 ;; bash if the current version of bash does not
                 ;; support these options, the commands will fail
                 ;; silently and be ignored.
-                "shopt -u checkjobs\n"
-                "shopt -u mailwarn\n"
-                "export MAILCHECK=-1\n"
-                "export -n MAIL\n"
-                "export -n MAILPATH\n"
-                "unset HISTFILE\n"
+                "shopt -u checkjobs;"
+                "shopt -u mailwarn;"
+                "export MAILCHECK=-1;"
+                "export -n MAIL;"
+                "export -n MAILPATH;"
+                "unset HISTFILE;"
                 ;; User's profiles can turn line editing back on,
                 ;; so make sure it's off
-                "set +o emacs\n"
+                "set +o emacs;"
                 "set +o vi\n"))
 
-              (bash-completion-send "PROMPT_COMMAND='';PS1='\t$?\v'" process bash-completion-initial-timeout)
+              (bash-completion-send
+               (concat "PROMPT_COMMAND='' PS1=" bash-completion--ps1) 
+               process bash-completion-initial-timeout)
               (bash-completion--setup-bash-common process)
               (push (cons remote process) bash-completion-processes)
               (setq cleanup nil)
@@ -1228,6 +1182,50 @@ completion in these cases."
            (shell (if process (bash-completion--current-shell))))
       (when (and shell (bash-completion-starts-with shell "bash"))
         (unless (process-get process 'setup-done)
+          ;; The following disables the emacs and vi options. This
+          ;; cannot be done by bash-completion-send as these options
+          ;; interfere with bash-completion-send detecting the end
+          ;; of a command. It disables prompt to avoid interference
+          ;; from commands run by prompts.
+          (comint-send-string
+           process
+           (concat
+            "set +o emacs;"
+            "set +o vi;"
+            "if [[ -z \"$__emacs_complete_ps1\" ]]; then"
+            "  __emacs_complete_ps1=\"$PS1\";"
+            "  __emacs_complete_pc=\"$PROMPT_COMMAND\";"
+            "fi;"
+            "PS1='' PROMPT_COMMAND='';"
+            "history &>/dev/null -d $((HISTCMD - 1)) || true\n"))
+          
+          ;; The following is a bootstrap command for
+          ;; bash-completion-send itself.
+          (bash-completion-send
+           (concat
+            "function __emacs_complete_pre_command {"
+            "  if [[ -z \"$__emacs_complete_ps1\" ]]; then"
+            "    __emacs_complete_ps1=\"$PS1\";"
+            "    __emacs_complete_pc=\"$PROMPT_COMMAND\";"
+            "  fi;"
+            "  PROMPT_COMMAND=__emacs_complete_prompt;"
+            "  history &>/dev/null -d $((HISTCMD - 1)) || true;"
+            "} &&"
+            "function __emacs_complete_prompt {"
+            "  PS1=" bash-completion--ps1 ";"
+            "  PROMPT_COMMAND=__emacs_complete_recover_prompt;"
+            "} &&"
+            "function __emacs_complete_recover_prompt {"
+            "  local r=$?;"
+            "  PS1=\"${__emacs_complete_ps1}\";"
+            "  PROMPT_COMMAND=\"${__emacs_complete_pc}\";"
+            "  unset __emacs_complete_ps1 __emacs_complete_pc;"
+            "  if [[ -n \"$PROMPT_COMMAND\" ]]; then"
+            "    (exit $r); eval \"$PROMPT_COMMAND\";"
+            "  fi;"
+            "} &&"
+            "__emacs_complete_pre_command")
+           process)
           (bash-completion--setup-bash-common process))
         process))))
 
@@ -1251,7 +1249,7 @@ Return a bash command-line for going to default-directory or \"\"."
     (if dir
         (concat "cd >/dev/null 2>&1 "
                 (bash-completion-quote (bash-completion--expand-file-name dir t))
-                " ; ")
+                " && ")
       "")))
 
 (defun bash-completion-build-alist (buffer)
@@ -1318,7 +1316,7 @@ completion candidates."
     (concat
      (if bash-completion-use-separate-processes
          (bash-completion-cd-command-prefix)
-       "")
+       (bash-completion--side-channel-data "pwd" "${PWD}"))
      (cond
       ((eq 'command completion-type)
        (concat "compgen -b -c -a -A function -- " quoted-stub))
@@ -1333,12 +1331,11 @@ completion candidates."
               (function (or (member "-F" args) (member "-C" args)))
               (function-name (car (cdr function))))
          (setcar function "-F")
-         (setcar (cdr function) "__bash_complete_wrapper")
-         (format "__BASH_COMPLETE_WRAPPER=%s compgen %s -- %s"
+         (setcar (cdr function) "__emacs_complete_wrapper")
+         (format "__EMACS_COMPLETE_WRAPPER=%s compgen %s -- %s"
                  (bash-completion-quote
-                  (format "COMP_LINE=%s; COMP_POINT=%s; COMP_CWORD=%s; COMP_WORDS=( %s ); %s %s %s %s"
+                  (format "COMP_LINE=%s; COMP_POINT=$(( 1 + ${#COMP_LINE} )); COMP_CWORD=%s; COMP_WORDS=( %s ); %s %s %s %s"
                           (bash-completion-quote (bash-completion--line comp))
-                          (bash-completion--point comp)
                           (bash-completion--cword comp)
                           (bash-completion-join (bash-completion--words comp))
                           (bash-completion-quote function-name)
@@ -1367,10 +1364,11 @@ or after starting a new BASH job.
 This is only useful when `bash-completion-use-separate-processes'
 is t."
   (interactive)
-  (let* ((process (bash-completion--get-process)))
+  (let* ((process (get-buffer-process (current-buffer))))
     (unless process
-      (error "Bash completion not available on current buffer."))
-    (bash-completion--setup-bash-common process)))
+      (error "No process is available in this buffer."))
+    (process-put process 'setup-done nil)
+    (bash-completion--get-process)))
   
 ;;;###autoload
 (defun bash-completion-reset ()
@@ -1458,49 +1456,28 @@ result of the command in the bash completion process buffer or in
 Return the status code of the command, as a number."
   (let ((process (or process (bash-completion--get-process)))
         (timeout (or timeout bash-completion-process-timeout))
-        (prompt-regexp comint-prompt-regexp)
         (comint-preoutput-filter-functions
          (if bash-completion-use-separate-processes
              comint-preoutput-filter-functions
            '(bash-completion--output-filter)))
         (send-string (if bash-completion-use-separate-processes
                          #'process-send-string
-                       #'comint-send-string)))
+                       #'comint-send-string))
+        (pre-command (unless bash-completion-use-separate-processes
+                        "__emacs_complete_pre_command; ")))
     (with-current-buffer (bash-completion--get-buffer process)
       (erase-buffer)
-      (funcall send-string process
-               (concat
-                commandline
-                (unless bash-completion-use-separate-processes
-                  "; echo -e \"--\\v$?\"; history -d $((HISTCMD - 1))")
-                "\n"))
-      (if bash-completion-use-separate-processes
-          (unless (bash-completion--wait-for-regexp process "\t-?[[:digit:]]+\v" timeout)
-            (error (concat
-                    "Timeout while waiting for an answer from "
-                    "bash-completion process with regexp %s.\nProcess output: <<<EOF\n%sEOF")
-                   prompt-regexp
-                   (buffer-string)))
-        (unless (bash-completion--wait-for-regexp process "--\v" timeout)
-          (error (concat
-                  "Timeout while waiting for process status\n"
-                  "Process output: <<<EOF\n%sEOF")
-                 (buffer-string)))
-        (let ((search-limit (point)))
-          (goto-char (point-max))
-          (unless (bash-completion--wait-for-regexp process prompt-regexp timeout search-limit)
-            (error (concat
-                    "Timeout while waiting for an answer from "
-                    "bash-completion process with regexp %s.\nProcess output: <<<EOF\n%sEOF")
-                   prompt-regexp
-                   (buffer-string)))
-          (goto-char search-limit)))
+      (funcall send-string process (concat pre-command commandline "\n"))
+      (unless (bash-completion--wait-for-regexp process "\t-?[[:digit:]]+\v" timeout)
+        (error (concat
+                "Timeout while waiting for an answer from "
+                "%s bash-completion process.\nProcess output: <<<EOF\n%sEOF")
+               (if bash-completion-use-separate-processes "separate" "single")
+               (buffer-string)))
       (let ((status-code (string-to-number
                           (buffer-substring-no-properties
                            (1+ (point))
-                           (if bash-completion-use-separate-processes
-                               (1- (line-end-position))
-                             (line-end-position))))))
+                           (1- (line-end-position))))))
         (delete-region (point) (point-max))
         (if (string=
              "124"
@@ -1562,37 +1539,31 @@ Return the parsed value, as a string or nil."
 
 The result is a function that works like one built by
 `completion-table-with-cache' with the difference that the
-completions, built by `bash-completion--complete' are complete
-and that completion style doesn't necessarily use substring
-completion."
-  (let ((last-str) (last-result)
+completions, built by `bash-completion-comm' are not filtered
+using the current Emacs completion style."
+  (let ((last-result)
         (calling-buffer (current-buffer))
         (dir default-directory)
         (use-separate-process bash-completion-use-separate-processes)
         (nospace bash-completion-nospace))
-    (lambda (str predicate action)
+    (lambda (_str predicate action)
       (if (or (eq (car-safe action) 'boundaries)
               (eq action 'metadata))
           nil
         (let ((result
-               (if (equal str last-str)
-                   last-result
-                 (let ((bash-completion-use-separate-processes use-separate-process)
-                       (bash-completion-nospace nospace)
-                       (default-directory dir))
-                   (with-current-buffer calling-buffer
-                     (bash-completion--complete comp process))))))
-          (setq last-str str
-                last-result result)
-          ;; The below passes an empty string to try-completion,
-          ;; all-completions and test-completion to not let them do
-          ;; any further filtering.
-          (funcall
-           (cond
-            ((null action) 'try-completion)
-            ((eq action t) 'all-completions)
-            (t 'test-completion))
-           "" result predicate))))))
+               (or last-result
+                   (let ((bash-completion-use-separate-processes use-separate-process)
+                         (bash-completion-nospace nospace)
+                         (default-directory dir))
+                     (with-current-buffer calling-buffer
+                       (bash-completion-comm comp process))))))
+          (setq last-result result)
+          (let ((filtered-result (if predicate (mapcar predicate result) result))
+                (completion-ignore-case (process-get process 'completion-ignore-case)))
+            (cond
+             ((null action) (try-completion "" filtered-result))
+             ((eq action t) filtered-result)
+             (t (test-completion "" filtered-result)))))))))
 
 (provide 'bash-completion)
 

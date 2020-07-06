@@ -141,6 +141,26 @@ the end position as its only argument."
                  (const :tag "Highlight the first column"
                         diff-hl-revert-highlight-first-column)))
 
+(defcustom diff-hl-global-modes '(not image-mode)
+  "Modes for which `diff-hl-mode' is automagically turned on.
+This affects the behavior of `global-diff-hl-mode'.
+If nil, no modes have `diff-hl-mode' automatically turned on.
+If t, all modes have `diff-hl-mode' enabled.
+If a list, it should be a list of `major-mode' symbol names for
+which it should be automatically turned on. The sense of the list
+is negated if it begins with `not'. As such, the default value
+ (not image-mode)
+means that `diff-hl-mode' is turned on in all modes except for
+`image-mode' buffers. Previously, `diff-hl-mode' caused worse
+performance when viewing such files in certain conditions."
+  :type '(choice (const :tag "none" nil)
+                 (const :tag "all" t)
+                 (set :menu-tag "mode specific" :tag "modes"
+                      :value (not)
+                      (const :tag "Except" not)
+                      (repeat :inline t (symbol :tag "mode"))))
+  :group 'diff-hl)
+
 (defvar diff-hl-reference-revision nil
   "Revision to diff against.  nil means the most recent one.")
 
@@ -654,8 +674,18 @@ The value of this variable is a mode line template as in
     (diff-hl-dir-mode 1))))
 
 ;;;###autoload
+(defun diff-hl--global-turn-on ()
+  "Call `turn-on-diff-hl-mode' if the current major mode is applicable."
+  (when (cond ((eq diff-hl-global-modes t)
+               t)
+              ((eq (car-safe diff-hl-global-modes) 'not)
+               (not (memq major-mode (cdr diff-hl-global-modes))))
+              (t (memq major-mode diff-hl-global-modes)))
+    (turn-on-diff-hl-mode)))
+
+;;;###autoload
 (define-globalized-minor-mode global-diff-hl-mode diff-hl-mode
-  turn-on-diff-hl-mode :after-hook (diff-hl-global-mode-change))
+  diff-hl--global-turn-on :after-hook (diff-hl-global-mode-change))
 
 (defun diff-hl-global-mode-change ()
   (unless global-diff-hl-mode

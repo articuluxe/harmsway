@@ -265,7 +265,7 @@ It respects `doom-modeline-icon' and `doom-modeline-buffer-state-icon'."
   "Major modes in which to display word count continuously.
 
 It respects `doom-modeline-enable-word-count'."
-  :type 'list
+  :type '(repeat (symbol :tag "Major-Mode") )
   :group 'doom-modeline)
 
 (defcustom doom-modeline-buffer-encoding t
@@ -514,7 +514,10 @@ It requires `circe' or `erc' package."
   :group 'doom-modeline-faces)
 
 (defface doom-modeline-debug-visual
-  `((t (:background ,(face-foreground 'all-the-icons-orange))))
+  `((((class color) (background light))
+     (:background ,(face-foreground 'all-the-icons-orange)))
+    (((class color) (background dark))
+     (:background ,(face-foreground 'all-the-icons-dorange))))
   "Face to use for the mode-line while debugging."
   :group 'doom-modeline)
 
@@ -689,7 +692,8 @@ then this function does nothing."
 (defun doom-modeline-set-selected-window (&rest _)
   "Set `doom-modeline-current-window' appropriately."
   (when-let ((win (doom-modeline--get-current-window)))
-    (unless (minibuffer-window-active-p win)
+    (unless (or (minibuffer-window-active-p win)
+                (and (bound-and-true-p lv-wnd) (eq lv-wnd win)))
       (setq doom-modeline-current-window win))))
 
 (defun doom-modeline-unset-selected-window ()

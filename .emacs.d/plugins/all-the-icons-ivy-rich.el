@@ -4,7 +4,7 @@
 
 ;; Author: Vincent Zhang <seagle0128@gmail.com>
 ;; Homepage: https://github.com/seagle0128/all-the-icons-ivy-rich
-;; Version: 1.4.0
+;; Version: 1.4.1
 ;; Package-Requires: ((emacs "25.1") (ivy-rich "0.1.0") (all-the-icons "2.2.0"))
 ;; Keywords: convenience, icons, ivy
 
@@ -99,6 +99,8 @@ It respects `all-the-icons-color-icons'."
      :predicate
      (lambda (cand) (get-buffer cand))
      :delimiter "\t")
+
+    ;; counsel
     counsel-switch-buffer
     (:columns
      ((all-the-icons-ivy-rich-buffer-icon)
@@ -112,18 +114,6 @@ It respects `all-the-icons-color-icons'."
      (lambda (cand) (get-buffer cand))
      :delimiter "\t")
     counsel-switch-buffer-other-window
-    (:columns
-     ((all-the-icons-ivy-rich-buffer-icon)
-      (ivy-rich-candidate (:width 30))
-      (ivy-rich-switch-buffer-size (:width 7))
-      (ivy-rich-switch-buffer-indicators (:width 4 :face error :align right))
-      (ivy-rich-switch-buffer-major-mode (:width 12 :face warning))
-      (ivy-rich-switch-buffer-project (:width 15 :face success))
-      (ivy-rich-switch-buffer-path (:width (lambda (x) (ivy-rich-switch-buffer-shorten-path x (ivy-rich-minibuffer-width 0.3))))))
-     :predicate
-     (lambda (cand) (get-buffer cand))
-     :delimiter "\t")
-    persp-switch-to-buffer
     (:columns
      ((all-the-icons-ivy-rich-buffer-icon)
       (ivy-rich-candidate (:width 30))
@@ -150,6 +140,11 @@ It respects `all-the-icons-color-icons'."
      ((all-the-icons-ivy-rich-variable-icon)
       (counsel-describe-variable-transformer (:width 40))
       (ivy-rich-counsel-variable-docstring (:face font-lock-doc-face))))
+    counsel-describe-symbol
+    (:columns
+     ((all-the-icons-ivy-rich-symbol-icon)
+      (ivy-rich-candidate))
+     :delimiter "\t")
     counsel-set-variable
     (:columns
      ((all-the-icons-ivy-rich-variable-icon)
@@ -306,6 +301,18 @@ It respects `all-the-icons-color-icons'."
      ((all-the-icons-ivy-rich-imenu-icon)
       (ivy-rich-candidate))
      :delimiter "\t")
+    counsel-cd
+    (:columns
+     ((all-the-icons-ivy-rich-file-icon)
+      (ivy-rich-candidate))
+     :delimiter "\t")
+    counsel-company
+    (:columns
+     ((all-the-icons-ivy-rich-company-icon)
+      (ivy-rich-candidate))
+     :delimiter "\t")
+
+    ;; pkacage
     package-install
     (:columns
      ((all-the-icons-ivy-rich-package-icon)
@@ -327,6 +334,76 @@ It respects `all-the-icons-color-icons'."
      ((all-the-icons-ivy-rich-package-icon)
       (ivy-rich-candidate))
      :delimiter "\t")
+
+    persp-switch-to-buffer
+    (:columns
+     ((all-the-icons-ivy-rich-buffer-icon)
+      (ivy-rich-candidate (:width 30))
+      (ivy-rich-switch-buffer-size (:width 7))
+      (ivy-rich-switch-buffer-indicators (:width 4 :face error :align right))
+      (ivy-rich-switch-buffer-major-mode (:width 12 :face warning))
+      (ivy-rich-switch-buffer-project (:width 15 :face success))
+      (ivy-rich-switch-buffer-path (:width (lambda (x) (ivy-rich-switch-buffer-shorten-path x (ivy-rich-minibuffer-width 0.3))))))
+     :predicate
+     (lambda (cand) (get-buffer cand))
+     :delimiter "\t")
+    persp-switch
+    (:columns
+     ((all-the-icons-ivy-rich-project-icon)
+      (ivy-rich-candidate))
+     :delimiter "\t")
+    persp-frame-switch
+    (:columns
+     ((all-the-icons-ivy-rich-project-icon)
+      (ivy-rich-candidate))
+     :delimiter "\t")
+    persp-window-switch
+    (:columns
+     ((all-the-icons-ivy-rich-project-icon)
+      (ivy-rich-candidate))
+     :delimiter "\t")
+    persp-kill
+    (:columns
+     ((all-the-icons-ivy-rich-project-icon)
+      (ivy-rich-candidate))
+     :delimiter "\t")
+    persp-save-and-kill
+    (:columns
+     ((all-the-icons-ivy-rich-project-icon)
+      (ivy-rich-candidate))
+     :delimiter "\t")
+    persp-import-buffers
+    (:columns
+     ((all-the-icons-ivy-rich-project-icon)
+      (ivy-rich-candidate))
+     :delimiter "\t")
+    persp-import-win-conf
+    (:columns
+     ((all-the-icons-ivy-rich-project-icon)
+      (ivy-rich-candidate))
+     :delimiter "\t")
+    persp-kill-buffer
+    (:columns
+     ((all-the-icons-ivy-rich-buffer-icon)
+      (ivy-rich-candidate))
+     :delimiter "\t")
+    persp-remove-buffer
+    (:columns
+     ((all-the-icons-ivy-rich-buffer-icon)
+      (ivy-rich-candidate))
+     :delimiter "\t")
+    persp-add-buffer
+    (:columns
+     ((all-the-icons-ivy-rich-buffer-icon)
+      (ivy-rich-candidate))
+     :delimiter "\t")
+
+    all-the-icons-ivy-rich-kill-buffer
+    (:columns
+     ((all-the-icons-ivy-rich-buffer-icon)
+      (ivy-rich-candidate))
+     :delimiter "\t")
+
     treemacs-projectile
     (:columns
      ((all-the-icons-ivy-rich-file-icon)
@@ -339,6 +416,17 @@ See `ivy-rich-display-transformers-list' for details."
   :type '(repeat sexp))
 
 
+
+(defun all-the-icons-ivy-rich-kill-buffer (&optional buffer-or-name)
+  "Kill the buffer specified by BUFFER-OR-NAME."
+  (interactive
+   (list (completing-read (format "Kill buffer (default %s): " (buffer-name))
+                          (mapcar (lambda (b)
+                                    (buffer-name b))
+                                  (buffer-list))
+                          nil t nil nil
+                          (buffer-name))))
+  (kill-buffer buffer-or-name))
 
 (defun all-the-icons-ivy-rich-bookmark-name (candidate)
   "Return bookmark name from CANDIDATE."
@@ -416,7 +504,7 @@ See `ivy-rich-display-transformers-list' for details."
 (defun all-the-icons-ivy-rich-project-icon (_candidate)
   "Display project icon in `ivy-rich'."
   (all-the-icons-ivy-rich--format-icon
-   (all-the-icons-octicon "file-directory" :height 1.0 :v-adjust 0.01)))
+   (all-the-icons-octicon "file-directory" :height 1.0 :v-adjust 0.01 :face 'all-the-icons-silver)))
 
 (defun all-the-icons-ivy-rich-mode-icon (_candidate)
   "Display mode icon in `ivy-rich'."
@@ -433,10 +521,22 @@ See `ivy-rich-display-transformers-list' for details."
   (all-the-icons-ivy-rich--format-icon
    (all-the-icons-octicon "tag" :height 0.95 :v-adjust 0 :face 'all-the-icons-lblue)))
 
-(defun all-the-icons-ivy-rich-symbol-icon (_candidate)
+(defun all-the-icons-ivy-rich-symbol-icon (candidate)
   "Display the symbol icon in `ivy-rich'."
+  (let ((sym (intern candidate)))
+    (cond ((functionp sym)
+           (all-the-icons-ivy-rich-function-icon candidate))
+          ((symbolp sym)
+           (all-the-icons-ivy-rich-variable-icon candidate))
+          (t (all-the-icons-ivy-rich--format-icon
+              (all-the-icons-octicon "gear" :height 0.9 :v-adjust -0.05 :face 'all-the-icons-silver))))))
+
+(defun all-the-icons-ivy-rich-company-icon (candidate)
+  "Display the symbol icon of company in `ivy-rich'."
   (all-the-icons-ivy-rich--format-icon
-   (all-the-icons-octicon "gear" :height 0.9 :v-adjust -0.05)))
+   (if (fboundp 'company-box--get-icon)
+       (company-box--get-icon candidate)
+     (all-the-icons-octicon "gear" :height 0.9 :v-adjust -0.05 :face 'all-the-icons-silver))))
 
 (defun all-the-icons-ivy-rich-theme-icon (_candidate)
   "Display the theme icon in `ivy-rich'."
@@ -536,11 +636,22 @@ See `ivy-rich-display-transformers-list' for details."
   (if all-the-icons-ivy-rich-mode
       (progn
         (add-hook 'minibuffer-setup-hook #'all-the-icons-ivy-rich-align-icons)
+        (global-set-key [remap kill-buffer] #'all-the-icons-ivy-rich-kill-buffer)
         (setq ivy-rich-display-transformers-list all-the-icons-ivy-rich-display-transformers-list))
     (progn
       (remove-hook 'minibuffer-setup-hook #'all-the-icons-ivy-rich-align-icons)
+      (global-unset-key [remap kill-buffer])
       (setq ivy-rich-display-transformers-list all-the-icons-ivy-rich-display-transformers-old-list)))
   (ivy-rich-reload))
+
+;;;###autoload
+(defun all-the-icons-ivy-rich-reload ()
+  "Reload `all-the-icons-ivy-rich'."
+  (interactive)
+  (when all-the-icons-ivy-rich-mode
+    (all-the-icons-ivy-rich-mode -1)
+    (all-the-icons-ivy-rich-mode 1)
+    (message "Reload all-the-icons-ivy-rich")))
 
 (provide 'all-the-icons-ivy-rich)
 

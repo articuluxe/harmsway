@@ -174,12 +174,13 @@ If nil, disable semantic highlight."
 (defvar-local ccls--skipped-ranges-overlays nil "Skipped ranges overlays.")
 (defvar-local ccls--sem-overlays nil "Semantic highlight overlays.")
 
-(eval-when-compile
+(eval-and-compile
   (lsp-interface
    (CclsLR (:L :R) nil)
-   (CclsSemanticHighlightSymbol (:id :parentKind :kind :storage :ranges) nil)
    (CclsSemanticHighlight (:uri :symbols) nil)
-   (CclsSkippedRanges (:uri :skippedRanges) nil)))
+   (CclsSkippedRanges (:uri :skippedRanges) nil))
+  (lsp-interface
+   (CclsSemanticHighlightSymbol (:id :parentKind :kind :storage :ranges) nil)))
 
 (defun ccls--clear-sem-highlights ()
   "."
