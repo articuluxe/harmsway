@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-06-22 13:05:41 dharms>
+;; Modified Time-stamp: <2020-06-30 15:03:35 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -487,6 +487,40 @@ not an error if any files do not exist."
          ("C-c c" . insert-cast)
          ))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; annotate ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defvar harmsway-annotate-keymap)
+(define-prefix-command 'harmsway-annotate-keymap)
+(global-set-key "\C-ca" 'harmsway-annotate-keymap)
+(defun harmsway-enable-annotate () "Enable `annotate-mode'." (interactive)
+       (annotate-mode 1))
+(use-package annotate
+  :bind (:map harmsway-annotate-keymap
+              ("a" . annotate-annotate)
+              ("e" . annotate-export-annotations)
+              ("i" . annotate-integrate-annotations)
+              ("u" . annotate-show-annotation-summary)
+              ("[" . annotate-goto-previous-annotation)
+              ("]" . annotate-goto-next-annotation)
+              ("c" . annotate-clear-annotations)
+              ("s" . annotate-save-annotations)
+              ("p" . annotate-db-purge))
+  :commands (annotate-annotate)
+  :demand t
+  :init
+  (setq annotate-file (concat my/user-directory "annotations"))
+  :config
+  (define-key annotate-mode-map (kbd "C-c C-a") nil)
+  (define-key annotate-mode-map (kbd "C-c C-s") nil)
+  (define-key annotate-mode-map (kbd "C-c ]") nil)
+  (define-key annotate-mode-map (kbd "C-c [") nil)
+  (require 'info)
+  (annotate-mode 1))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; annot ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package annot
+  :disabled
+  )
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; align ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun align-values (start end)
   "Vertically align region from START to END.
@@ -496,16 +530,17 @@ line."
   (align-regexp start end
                 "\\S-+\\(\\s-+\\)"
                 1 2 nil))
-(global-set-key "\C-caa" 'align)
-(global-set-key "\C-car" 'align-regexp)
-(global-set-key "\C-cav" 'align-values)
+
+(define-key harmsway-annotate-keymap "la" #'align)
+(define-key harmsway-annotate-keymap "lr" #'align-regexp)
+(define-key harmsway-annotate-keymap "lv" #'align-values)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; delimit-columns ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package delim-cols+)
-(global-set-key "\C-cac" 'delimit-columns-region)
+(global-set-key "\C-cald" 'delimit-columns-region)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ialign ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package ialign :bind ("C-c ai" . ialign))
+(use-package ialign :bind ("C-c ali" . ialign))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; emacs-new-buffer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package emacs-new-buffer
@@ -869,22 +904,6 @@ From `manuel-oberti.github.io' on 20190806."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; discover-my-major ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package discover-my-major :bind ("C-h C-m" . discover-my-major))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; annotate ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package annotate
-  :bind (:map annotate-mode-map
-              ("C-c C-e" . annotate-export-annotations)
-              ("C-c M-a" . annotate-integrate-annotations))
-  :commands (annotate-annotate)
-  :init
-  (setq annotate-file (concat my/user-directory "annotations"))
-  :config
-  (annotate-mode 1))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; annot ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package annot
-  :disabled
-  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; fancy-narrow ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package fancy-narrow
@@ -3365,7 +3384,7 @@ See `https://github.com/company-mode/company-mode/issues/205'."
   (define-key org-mode-map "\C-cv" verb-command-map))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; currency-convert ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(use-package currency-convert :bind ("C-c0cu" . currency-convert))
+(use-package currency-convert :bind ("C-c 0cu" . currency-convert))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-insert ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package auto-insert-choose+
@@ -3476,10 +3495,10 @@ See `https://github.com/company-mode/company-mode/issues/205'."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; awk-it ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package awk-it
-  :bind (("C-c 0aw" . awk-it)
-         ("C-c 0ap" . awk-it-with-separator)
-         ("C-c 0as" . awk-it-single)
-         ("C-c 0ag" . awk-it-single-with-separator)
+  :bind (("C-c aww" . awk-it)
+         ("C-c awp" . awk-it-with-separator)
+         ("C-c aws" . awk-it-single)
+         ("C-c awg" . awk-it-single-with-separator)
          ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; list-environment ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
