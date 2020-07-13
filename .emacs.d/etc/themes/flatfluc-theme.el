@@ -64,7 +64,6 @@
      (fui-bg fui-clouds)
      (fui-fg fui-asphalt))
 
-  (set-face-font 'default "Inconsolata-11")
   (custom-theme-set-faces
    'flatfluc
 

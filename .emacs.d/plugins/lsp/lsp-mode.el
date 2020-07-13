@@ -800,10 +800,22 @@ ignored."
   :group 'lsp-mode
   :package-version '(lsp-mode . "6.3.2"))
 
+(defcustom lsp-completion-show-kind t
+  "Whether or not to show kind of completion candidates."
+  :type 'boolean
+  :group 'lsp-mode
+  :package-version '(lsp-mode . "7.0.1"))
+
 (defcustom lsp-completion-show-detail t
   "Whether or not to show detail of completion candidates."
   :type 'boolean
   :group 'lsp-mode)
+
+(defcustom lsp-completion-no-cache nil
+  "Whether or not caching the returned completions from server."
+  :type 'boolean
+  :group 'lsp-mode
+  :package-version '(lsp-mode . "7.0.1"))
 
 (defcustom lsp-server-trace nil
   "Request tracing on the server side.
@@ -1238,6 +1250,16 @@ Symlinks are not followed."
     (equal
      (lsp-f-canonical (directory-file-name (f-expand path-a)))
      (lsp-f-canonical (directory-file-name (f-expand path-b))))))
+
+(defun lsp-f-parent (path)
+  "Return the parent directory to PATH.
+Symlinks are not followed"
+  (let ((parent (file-name-directory
+                 (directory-file-name (f-expand path default-directory)))))
+    (unless (lsp-f-same? path parent)
+      (if (f-relative? path)
+          (f-relative parent)
+        (directory-file-name parent)))))
 
 (defun lsp-f-ancestor-of? (path-a path-b)
   "Return t if PATH-A is ancestor of PATH-B.
@@ -2026,12 +2048,13 @@ The `:global' workspace is global one.")
 
 (defun lsp--modeline-check-code-actions (&rest _)
   "Request code actions to update modeline for given BUFFER."
-  (lsp-request-async
-   "textDocument/codeAction"
-   (lsp--text-document-code-action-params)
-   #'lsp-modeline--update-code-actions
-   :mode 'tick
-   :cancel-token :lsp-modeline-code-actions))
+  (when (lsp-feature? "textDocument/codeAction")
+    (lsp-request-async
+     "textDocument/codeAction"
+     (lsp--text-document-code-action-params)
+     #'lsp-modeline--update-code-actions
+     :mode 'unchanged
+     :cancel-token :lsp-modeline-code-actions)))
 
 (define-minor-mode lsp-modeline-code-actions-mode
   "Toggle code actions on modeline."
@@ -2053,39 +2076,93 @@ The `:global' workspace is global one.")
   "Holds the current breadcrumb string on headerline.")
 
 (declare-function all-the-icons-material "ext:all-the-icons" t t)
-(declare-function treemacs-get-icon-value "ext:treemacs-icons" t t)
-(declare-function lsp-treemacs-symbol-kind->icon "ext:lsp-treemacs" t)
-(defvar lsp-treemacs-theme)
+(declare-function lsp-treemacs-symbol-icon "ext:lsp-treemacs" (kind))
 
 (defun lsp--headerline-breadcrumb-arrow-icon ()
   "Build the arrow icon for headerline breadcrumb."
   (if (require 'all-the-icons nil t)
       (all-the-icons-material "chevron_right"
-                             :face lsp-headerline-breadcrumb-face)
+                              :face lsp-headerline-breadcrumb-face)
     (propertize "›" 'face lsp-headerline-breadcrumb-face)))
 
 (lsp-defun lsp--headerline-breadcrumb-symbol-icon ((&DocumentSymbol :kind))
   "Build the SYMBOL icon for headerline breadcrumb."
   (when (require 'lsp-treemacs nil t)
-    (treemacs-get-icon-value (lsp-treemacs-symbol-kind->icon kind) nil lsp-treemacs-theme)))
+    (concat (propertize " " 'display
+                        (cl-list* 'image
+                                  (plist-put
+                                   (cl-copy-list
+                                    (cl-rest (get-text-property
+                                              0 'display
+                                              (lsp-treemacs-symbol-icon kind))))
+                                   :background (face-attribute 'header-line :background))))
+            " ")))
 
-(defun lsp--headerline-build-string (symbols-hierarchy)
-  "Build the header-line from SYMBOLS-HIERARCHY."
+(lsp-defun lsp--headerline-breadcrumb-go-to-symbol ((&DocumentSymbol :selection-range (&RangeToPoint :start)))
+  "Go to breadcrumb symbol."
+  (->> start
+       goto-char))
+
+(lsp-defun lsp--headerline-breadcrumb-narrow-to-symbol ((&DocumentSymbol :range (&RangeToPoint :start :end)))
+  "Narrow to breadcrumb symbol range."
+  (narrow-to-region start end))
+
+(lsp-defun lsp--headerline-with-action ((symbol &as &DocumentSymbol :name) symbol-string)
+  "Build action for SYMBOL and SYMBOL-STRING."
+  (propertize symbol-string
+              'mouse-face 'header-line-highlight
+              'help-echo (format "mouse-1: go to '%s' symbol\nmouse-2: narrow to '%s' range" name name)
+              'local-map (let ((map (make-sparse-keymap)))
+                           (define-key map [header-line mouse-1]
+                             (lambda ()
+                               (interactive)
+                               (lsp--headerline-breadcrumb-go-to-symbol symbol)))
+                           (define-key map [header-line mouse-2]
+                             (lambda ()
+                               (interactive)
+                               (lsp--headerline-breadcrumb-narrow-to-symbol symbol)))
+                           map)))
+
+(defun lsp--headerline-build-symbols-string (symbols-hierarchy)
+  "Build the symbols breadcrumb from SYMBOLS-HIERARCHY."
   (seq-reduce (lambda (last-symbol-name symbol-to-append)
-                (let ((symbol2-name (if (lsp:document-symbol-deprecated? symbol-to-append)
-                                        (propertize (lsp:document-symbol-name symbol-to-append)
-                                                    'font-lock-face 'lsp-headerline-breadcrumb-deprecated-face)
-                                      (propertize (lsp:document-symbol-name symbol-to-append)
-                                                  'font-lock-face lsp-headerline-breadcrumb-face)))
-                      (symbol2-icon (lsp--headerline-breadcrumb-symbol-icon symbol-to-append))
-                      (arrow-icon (lsp--headerline-breadcrumb-arrow-icon)))
+                (let* ((symbol2-name (if (lsp:document-symbol-deprecated? symbol-to-append)
+                                         (propertize (lsp:document-symbol-name symbol-to-append)
+                                                     'font-lock-face 'lsp-headerline-breadcrumb-deprecated-face)
+                                       (propertize (lsp:document-symbol-name symbol-to-append)
+                                                   'font-lock-face lsp-headerline-breadcrumb-face)))
+                       (symbol2-icon (lsp--headerline-breadcrumb-symbol-icon symbol-to-append))
+                       (arrow-icon (lsp--headerline-breadcrumb-arrow-icon))
+                       (full-symbol-2 (if symbol2-icon
+                                          (concat symbol2-icon symbol2-name)
+                                        symbol2-name)))
                   (format "%s %s %s"
                           last-symbol-name
                           arrow-icon
-                          (if symbol2-icon
-                              (concat symbol2-icon symbol2-name)
-                            symbol2-name))))
+                          (lsp--headerline-with-action symbol-to-append full-symbol-2))))
               symbols-hierarchy ""))
+
+(defun lsp--headerline-dirs-until-root (root-path path)
+  "Find recursively the folders until the project ROOT-PATH.
+PATH is the current folder to be checked."
+  (let ((cur-path (list (f-filename path))))
+    (if (lsp-f-same? root-path (lsp-f-parent path))
+        cur-path
+      (append (lsp--headerline-dirs-until-root root-path (lsp-f-parent path)) cur-path))))
+
+(defun lsp--headerline-breadcrumb-build-prefix-string ()
+  "Build the prefix for breadcrumb."
+  (seq-reduce (lambda (last-dirs next-dir)
+                (format "%s %s %s"
+                        last-dirs
+                        (lsp--headerline-breadcrumb-arrow-icon)
+                        (propertize next-dir 'font-lock-face lsp-headerline-breadcrumb-face)))
+              (lsp--headerline-dirs-until-root (lsp-workspace-root) (buffer-file-name)) ""))
+
+(defun lsp--headerline-build-string (symbols-hierarchy)
+  "Build the header-line from SYMBOLS-HIERARCHY."
+  (concat (lsp--headerline-breadcrumb-build-prefix-string)
+          (lsp--headerline-build-symbols-string symbols-hierarchy)))
 
 (defun lsp--document-symbols->symbols-hierarchy (document-symbols)
   "Convert DOCUMENT-SYMBOLS to symbols hierarchy."
@@ -2100,7 +2177,7 @@ The `:global' workspace is global one.")
         (list symbol)))))
 
 (defun lsp--symbols-informations->symbols-hierarchy (symbols-informations)
-  "Convert SYMBOL-INFORMATIONS to symbols hierarchy."
+  "Convert SYMBOLS-INFORMATIONS to symbols hierarchy."
   (seq-filter (-lambda ((symbol &as &SymbolInformation :location (&Location :range (&RangeToPoint :start :end))))
                 (when (<= start (point) end)
                   symbol))
@@ -2134,6 +2211,34 @@ The `:global' workspace is global one.")
    (t
     (remove-hook 'lsp-on-idle-hook 'lsp--headerline-check-breadcrumb t)
     (setq header-line-format (remove '(t (:eval lsp--headerline-breadcrumb-string)) header-line-format)))))
+
+;;;###autoload
+(defun lsp-breadcrumb-go-to-symbol (symbol-position)
+  "Go to the symbol on breadcrumb at SYMBOL-POSITION."
+  (interactive "P")
+  (if (numberp symbol-position)
+      (if (lsp-feature? "textDocument/documentSymbol")
+          (-if-let* ((lsp--document-symbols-request-async t)
+                     (symbols (lsp--get-document-symbols))
+                     (symbols-hierarchy (lsp-symbols->symbols-hierarchy symbols)))
+              (lsp--headerline-breadcrumb-go-to-symbol (nth (1- symbol-position) symbols-hierarchy))
+            (lsp--info "Symbol not found for position %s" symbol-position))
+        (lsp--info "Server does not support breadcrumb."))
+    (lsp--info "Call this function with a number representing the symbol position on breadcrumb")))
+
+;;;###autoload
+(defun lsp-breadcrumb-narrow-to-symbol (symbol-position)
+  "Narrow to the symbol range on breadcrumb at SYMBOL-POSITION."
+  (interactive "P")
+  (if (numberp symbol-position)
+      (if (lsp-feature? "textDocument/documentSymbol")
+          (-if-let* ((lsp--document-symbols-request-async t)
+                     (symbols (lsp--get-document-symbols))
+                     (symbols-hierarchy (lsp-symbols->symbols-hierarchy symbols)))
+              (lsp--headerline-breadcrumb-narrow-to-symbol (nth (1- symbol-position) symbols-hierarchy))
+            (lsp--info "Symbol not found for position %s" symbol-position))
+        (lsp--info "Server does not support breadcrumb."))
+    (lsp--info "Call this function with a number representing the symbol position on breadcrumb")))
 
 
 
@@ -3961,23 +4066,23 @@ in that particular folder."
         (lsp--clean-company))))))
 
 (defun lsp-configure-buffer ()
-  (when (and lsp-modeline-code-actions-enable
-             (lsp-feature? "textDocument/codeAction"))
-    (lsp-modeline-code-actions-mode 1))
-
-  (when (and lsp-headerline-breadcrumb-enable
-             (lsp-feature? "textDocument/documentSymbol"))
-    (lsp-headerline-breadcrumb-mode 1))
-
-  (when (and lsp-lens-auto-enable
-             (lsp-feature? "textDocument/codeLens"))
-    (lsp-lens-mode 1))
-
-  (when (and lsp-enable-text-document-color
-             (lsp-feature? "textDocument/documentColor"))
-    (add-hook 'lsp-on-change-hook #'lsp--document-color nil t))
-
   (when lsp-auto-configure
+    (when (and lsp-modeline-code-actions-enable
+               (lsp-feature? "textDocument/codeAction"))
+      (lsp-modeline-code-actions-mode 1))
+
+    (when (and lsp-headerline-breadcrumb-enable
+               (lsp-feature? "textDocument/documentSymbol"))
+      (lsp-headerline-breadcrumb-mode 1))
+
+    (when (and lsp-lens-auto-enable
+               (lsp-feature? "textDocument/codeLens"))
+      (lsp-lens-mode 1))
+
+    (when (and lsp-enable-text-document-color
+               (lsp-feature? "textDocument/documentColor"))
+      (add-hook 'lsp-on-change-hook #'lsp--document-color nil t))
+
     (when (and lsp-enable-imenu
                (lsp-feature? "textDocument/documentSymbol"))
       (lsp-enable-imenu))
@@ -4579,24 +4684,25 @@ Applies on type formatting."
 
 ;; links
 (defun lsp--document-links ()
-  (lsp-request-async
-   "textDocument/documentLink"
-   `(:textDocument ,(lsp--text-document-identifier))
-   (lambda (links)
-     (lsp--remove-overlays 'lsp-link)
-     (seq-do
-      (-lambda ((link &as &DocumentLink :range (&Range :start :end)))
-        (-doto (make-button (lsp--position-to-point start)
-                            (lsp--position-to-point end)
-                            'action (lsp--document-link-keymap link)
-                            'keymap (let ((map (make-sparse-keymap)))
-                                      (define-key map [M-return] 'push-button)
-                                      (define-key map [mouse-2] 'push-button)
-                                      map)
-                            'help-echo "mouse-2, M-RET: Visit this link")
-          (overlay-put 'lsp-link t)))
-      links))
-   :mode 'tick))
+  (when (lsp-feature? "textDocument/documentLink")
+    (lsp-request-async
+     "textDocument/documentLink"
+     `(:textDocument ,(lsp--text-document-identifier))
+     (lambda (links)
+       (lsp--remove-overlays 'lsp-link)
+       (seq-do
+        (-lambda ((link &as &DocumentLink :range (&Range :start :end)))
+          (-doto (make-button (lsp--position-to-point start)
+                              (lsp--position-to-point end)
+                              'action (lsp--document-link-keymap link)
+                              'keymap (let ((map (make-sparse-keymap)))
+                                        (define-key map [M-return] 'push-button)
+                                        (define-key map [mouse-2] 'push-button)
+                                        map)
+                              'help-echo "mouse-2, M-RET: Visit this link")
+            (overlay-put 'lsp-link t)))
+        links))
+     :mode 'unchanged)))
 
 (defun lsp--document-link-handle-target (url)
   (let* ((parsed-url (url-generic-parse-url (url-unhex-string url)))
@@ -4746,8 +4852,9 @@ and the position respectively."
                                                        'lsp-completion-item)))
     (concat (when (and lsp-completion-show-detail detail?)
               (concat " " (s-replace "\r" "" detail?)))
-            (when-let (kind-name (and kind? (aref lsp--completion-item-kind kind?)))
-              (format " (%s)" kind-name)))))
+            (when lsp-completion-show-kind
+              (when-let (kind-name (and kind? (aref lsp--completion-item-kind kind?)))
+                (format " (%s)" kind-name))))))
 
 (defun lsp--looking-back-trigger-characterp (trigger-characters)
   "Return trigger character if text before point matches any of the TRIGGER-CHARACTERS."
@@ -4814,6 +4921,9 @@ Return `nil' when fails to guess prefix."
                            'lsp-completion-score score?))
              it)))
 
+(defvar lsp--capf-no-reordering nil
+  "Dont do client-side reordering completion items when set.")
+
 (cl-defun lsp--capf-filter-candidates (items
                                        &rest plist
                                        &key lsp-items
@@ -4824,7 +4934,7 @@ Also, additional data to attached to each candidate can be passed via PLIST."
   (lsp--while-no-input
    (->>
     (if items
-        (->>
+        (-->
          (let (queries fuz-queries)
            (-keep (lambda (cand)
                     (let* ((start-point (get-text-property 0 'lsp-completion-start-point cand))
@@ -4847,11 +4957,13 @@ Also, additional data to attached to each candidate can be passed via PLIST."
                                            cand)
                         cand)))
                   items))
-         (-sort (lambda (o1 o2)
-                  (> (get-text-property 0 'sort-score o1)
-                     (get-text-property 0 'sort-score o2))))
+         (if lsp--capf-no-reordering
+             it
+           (sort it (lambda (o1 o2)
+                      (> (get-text-property 0 'sort-score o1)
+                         (get-text-property 0 'sort-score o2)))))
          ;; TODO: pass additional function to sort the candidates
-         (-map (-partial #'get-text-property 0 'lsp-completion-item)))
+         (-map (-partial #'get-text-property 0 'lsp-completion-item) it))
       lsp-items)
     (-map (lambda (item) (apply #'lsp--make-completion-item item plist))))))
 
@@ -4942,11 +5054,12 @@ Also, additional data to attached to each candidate can be passed via PLIST."
             (lambda ()
               (cond
                (done? result)
-               ((and lsp--capf-cache
+               ((and (not lsp-completion-no-cache)
+                     lsp--capf-cache
                      (listp lsp--capf-cache)
+                     (equal (cl-second lsp--capf-cache) bounds-start)
                      (s-prefix? (car lsp--capf-cache)
-                                (buffer-substring-no-properties bounds-start (point)))
-                     (< (cl-second lsp--capf-cache) (point)))
+                                (buffer-substring-no-properties bounds-start (point))))
                 (apply #'lsp--capf-filter-candidates (cddr lsp--capf-cache)))
                (t
                 (-let* ((resp (lsp-request-while-no-input
@@ -4970,7 +5083,9 @@ Also, additional data to attached to each candidate can be passed via PLIST."
                                                           bounds-start)))
                                            it))))
                         (markers (list bounds-start (copy-marker (point) t)))
-                        (prefix (buffer-substring-no-properties bounds-start (point))))
+                        (prefix (buffer-substring-no-properties bounds-start (point)))
+                        (lsp--capf-no-reordering t))
+                  (lsp--capf-clear-cache)
                   (setf done? completed
                         lsp--capf-cache (cond
                                          ((and done? (not (seq-empty-p items)))
@@ -5056,9 +5171,6 @@ Others: TRIGGER-CHARS"
          (when (lsp--looking-back-trigger-characterp trigger-chars)
            (setq this-command 'self-insert-command)))
     (lsp--capf-clear-cache)))
-
-(advice-add #'completion-at-point :before #'lsp--capf-clear-cache)
-
 
 (defun lsp--to-yasnippet-snippet (text)
   "Convert LSP snippet TEXT to yasnippet snippet."
@@ -5741,34 +5853,35 @@ It will show up only if current point has signature help."
 
 (defun lsp--document-color ()
   "Document color handler."
-  (lsp-request-async
-   "textDocument/documentColor"
-   `(:textDocument ,(lsp--text-document-identifier))
-   (lambda (result)
-     (lsp--remove-overlays 'lsp-color)
-     (seq-do
-      (-lambda ((&ColorInformation :color (color &as &Color :red :green :blue)
-                                   :range))
-        (-let* (((beg . end) (lsp--range-to-region range))
-                (overlay (make-overlay beg end))
-                (command (lsp--color-create-interactive-command color range)))
-          (overlay-put overlay 'lsp-color t)
-          (overlay-put overlay 'evaporate t)
-          (overlay-put overlay
-                       'before-string
-                       (propertize
-                        lsp-overlay-document-color-char
-                        'face `((:foreground ,(format "#%s%s%s"
-                                                      (lsp--number->color red)
-                                                      (lsp--number->color green)
-                                                      (lsp--number->color blue))))
-                        'action command
-                        'mouse-face 'lsp-lens-mouse-face
-                        'local-map (-doto (make-sparse-keymap)
-                                     (define-key [mouse-1] command))))))
-      result))
-   :mode 'tick
-   :cancel-token :document-color-token))
+  (when (lsp-feature? "textDocument/documentColor")
+    (lsp-request-async
+     "textDocument/documentColor"
+     `(:textDocument ,(lsp--text-document-identifier))
+     (lambda (result)
+       (lsp--remove-overlays 'lsp-color)
+       (seq-do
+        (-lambda ((&ColorInformation :color (color &as &Color :red :green :blue)
+                                     :range))
+          (-let* (((beg . end) (lsp--range-to-region range))
+                  (overlay (make-overlay beg end))
+                  (command (lsp--color-create-interactive-command color range)))
+            (overlay-put overlay 'lsp-color t)
+            (overlay-put overlay 'evaporate t)
+            (overlay-put overlay
+                         'before-string
+                         (propertize
+                          lsp-overlay-document-color-char
+                          'face `((:foreground ,(format "#%s%s%s"
+                                                        (lsp--number->color red)
+                                                        (lsp--number->color green)
+                                                        (lsp--number->color blue))))
+                          'action command
+                          'mouse-face 'lsp-lens-mouse-face
+                          'local-map (-doto (make-sparse-keymap)
+                                       (define-key [mouse-1] command))))))
+        result))
+     :mode 'unchanged
+     :cancel-token :document-color-token)))
 
 
 ;; hover

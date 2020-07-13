@@ -3,7 +3,7 @@
 ;; Copyright (C) 2007-2020 Joel Rosdahl
 ;;
 ;; Author: Joel Rosdahl <joel@rosdahl.net>
-;; Version: 1.4
+;; Version: 1.5
 ;; License: BSD-3-clause
 ;; URL: https://github.com/jrosdahl/iflipb
 ;;
@@ -208,7 +208,7 @@ place in the buffer list."
   "String template for displaying other buffers.
 
 This is the template string that will be applied to a non-current
-buffer name. Use string `%s' to refer to the buffer name."
+buffer name. Use `%s' to refer to the buffer name."
   :group 'iflipb)
 
 (defcustom iflipb-current-buffer-template
@@ -216,7 +216,7 @@ buffer name. Use string `%s' to refer to the buffer name."
   "String template for displaying the current buffer.
 
 This is the template string that will be applied to the current
-buffer name. Use string `%s' to refer to the buffer name."
+buffer name. Use `%s' to refer to the buffer name."
   :group 'iflipb)
 
 (defcustom iflipb-buffer-list-function
@@ -226,6 +226,33 @@ buffer name. Use string `%s' to refer to the buffer name."
 Current options are `iflipb-buffer-list' and
 `iflipb-ido-buffer-list'."
   :type 'function
+  :group 'iflipb)
+
+(defcustom iflipb-format-buffers-function
+  #'iflipb-format-buffers-horizontally
+  "The function to be used to format buffers.
+
+The function will get the current buffer and a buffer list as
+arguments. A return value is a string to be displayed. Predefined
+functions are `iflipb-format-buffers-horizontally' for a
+horizontal list and `iflipb-format-buffers-vertically' for a
+vertical list. See also `iflipb-format-buffers-height'."
+  :type '(choice
+          (function-item
+           :tag "Horizontally" iflipb-format-buffers-horizontally)
+          (function-item
+           :tag "Vertically" iflipb-format-buffers-vertically)
+          (function :tag "Other function"))
+  :group 'iflipb)
+
+(defcustom iflipb-format-buffers-height 5
+  "Minibuffer height for displaying buffers.
+
+This variable determines the height of displaying buffers by
+`iflipb-format-buffers-vertically'. If this value is larger than
+the height indicated by `max-mini-window-height', the height of
+`max-mini-window-height' is used."
+  :type 'integer
   :group 'iflipb)
 
 (defvar iflipb-current-buffer-index 0
@@ -319,6 +346,10 @@ This is the original order of buffers to the left of
 
 (defun iflipb-format-buffers (current-buffer buffers)
   "Format buffer names for displaying them in the minibuffer."
+  (funcall iflipb-format-buffers-function current-buffer buffers))
+
+(defun iflipb-format-buffers-horizontally (current-buffer buffers)
+  "Format buffer names for displaying them horizontally."
   (truncate-string-to-width
    (mapconcat
     (lambda (buffer)
@@ -326,6 +357,34 @@ This is the original order of buffers to the left of
     buffers
     " ")
    (1- (window-width (minibuffer-window)))))
+
+(defun iflipb-format-buffers-vertically (current-buffer buffers)
+  "Format buffer names for displaying them vertically."
+  (let ((height
+         (min iflipb-format-buffers-height
+              (cond ((integerp max-mini-window-height)
+                     max-mini-window-height)
+                    ((floatp max-mini-window-height)
+                     (floor (* (frame-height)
+                               max-mini-window-height)))
+                    (t (error "Invalid value of `max-mini-window-height': %s"
+                              max-mini-window-height)))))
+        (rest buffers)
+        (n 0)
+        nrest buffs)
+    (while (and rest (or (null nrest) (> nrest 0)))
+      (let ((b (car rest)))
+        (setq buffs (cons b buffs)
+              rest (cdr rest)
+              n (1+ n))
+        (cond ((eq current-buffer b)
+               (setq nrest (- height (min n (ceiling height 2)))))
+              ((numberp nrest)
+               (setq nrest (1- nrest))))))
+    (mapconcat
+     (lambda (b) (iflipb-format-buffer current-buffer b))
+     (nreverse (iflipb-first-n height buffs))
+     "\n")))
 
 (defun iflipb-message (text)
   (let (message-log-max)

@@ -220,7 +220,7 @@
      `(diredp-exec-priv ((,class (:foreground ,green-bright :background nil))))
      `(diredp-executable-tag ((,class (:foreground ,green-bright :background nil))))
      `(diredp-file-name ((,class (:foreground ,grey-bright1))))
-     `(diredp-file-suffix ((,class (:foreground ,magenta-dark))))
+     `(diredp-file-suffix ((,class (:foreground "coral"))))
      `(diredp-flag-mark ((,class (:foreground ,red-bright :weight bold))))
      `(diredp-flag-mark-line ((,class (:inherit highlight))))
      `(diredp-ignored-file-name ((,class (:foreground ,grey-dark1))))
@@ -234,7 +234,15 @@
      `(diredp-read-priv ((,class (:foreground ,blue-dark :background nil))))
      `(diredp-symlink ((,class (:foreground ,orange-bright))))
      `(diredp-write-priv ((,class (:foreground ,magenta-bright :background nil))))
-
+     `(diredp-date-time ((,c (:foreground ,diredcl))))
+     `(diredp-dir-heading ((,c (:foreground ,red))))
+     `(diredp-dir-name ((,c (:foreground "DeepSkyBlue1"))))
+     `(diredp-file-name ((,c (:foreground ,white))))
+     `(diredp-ignored-file-name ((,c ())))
+     `(diredp-compressed-file-suffix ((,c (:foreground ,orange))))
+     `(diredp-rainbow-media-face ((,c (:foreground ,yellow))))
+     `(diredp-symlink ((,c (:foreground ,yellow))))
+     `(diredp-number ((,c (:foreground ,yellow))))
 
      ;; Magit
      ;; `(git-commit-summary ((,c (:foreground ,white))))
@@ -559,18 +567,6 @@
 
      ;; dired-rainbow
      `(dired-rainbow-executable-unix-face ((,c (:foreground ,green))))
-
-   ;;; dired+
-     `(diredp-date-time ((,c (:foreground ,diredcl))))
-     `(diredp-dir-heading ((,c (:foreground ,red))))
-     `(diredp-dir-name ((,c (:foreground ,blue))))
-     `(diredp-file-name ((,c (:foreground ,white))))
-     `(diredp-file-suffix ((,c (:foreground ,invisible))))
-     `(diredp-ignored-file-name ((,c ())))
-     `(diredp-compressed-file-suffix ((,c (:foreground ,orange))))
-     `(diredp-rainbow-media-face ((,c (:foreground ,yellow))))
-     `(diredp-symlink ((,c (:foreground ,yellow))))
-     `(diredp-number ((,c (:foreground ,yellow))))
 
      `(diredp-dir-priv ((,c (:foreground ,blue))))
      `(diredp-read-priv ((,c (:foreground ,red))))
