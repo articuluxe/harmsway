@@ -1,0 +1,1 @@
+cp src/bm.el ../../../.emacs.d/plugins

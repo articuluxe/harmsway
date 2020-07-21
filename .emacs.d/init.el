@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-07-05 23:09:02 dharms>
+;; Modified Time-stamp: <2020-07-20 14:30:08 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1482,6 +1482,15 @@ ARGS are the additional arguments."
                 (bookmark-bmenu-list)
                 (switch-to-buffer "*Bookmark List*"))))
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; bm ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package bm
+ :bind (("M-s t" . bm-toggle)
+        ("M-s n" . bm-next)
+        ("M-s p" . bm-previous))
+ :init
+ (setq bm-restore-repository-on-load t)
+ (setq bm-cycle-all-buffers t))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; savehist ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package savehist
