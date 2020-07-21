@@ -1,0 +1,8 @@
+# -*- mode: snippet -*-
+# name: gtesttestprivate
+# key: gtesttestprivate
+# --
+TEST_PRIVATE($1, $2)
+{
+$0
+}
