@@ -225,20 +225,6 @@
 ;; Buffer information
 ;;
 
-(doom-modeline-def-segment buffer-default-directory
-  "Displays `default-directory'. This is for special buffers like the scratch
-buffer where knowing the current project directory is important."
-  (let* ((active (doom-modeline--active))
-         (face (if active 'doom-modeline-buffer-path 'mode-line-inactive)))
-    (concat (doom-modeline-spc)
-            (and doom-modeline-major-mode-icon
-                 (concat (doom-modeline-icon
-                          'octicon "file-directory" "🖿" ""
-                          :face face :v-adjust -0.05 :height 1.25)
-                         (doom-modeline-vspc)))
-            (propertize (abbreviate-file-name default-directory) 'face face))))
-
-;;
 (defvar-local doom-modeline--buffer-file-icon nil)
 (defun doom-modeline-update-buffer-file-icon (&rest _)
   "Update file icon in mode-line."
@@ -302,7 +288,8 @@ Uses `all-the-icons-material' to fetch the icon."
                    (t ""))
              (when (or (buffer-narrowed-p)
                        (and (bound-and-true-p fancy-narrow-mode)
-                            (fancy-narrow-active-p)))
+                            (fancy-narrow-active-p))
+                       (bound-and-true-p dired-narrow-mode))
                (doom-modeline-buffer-file-state-icon
                 "vertical_align_center" "↕" "><" 'doom-modeline-warning)))))))
 
@@ -420,6 +407,22 @@ directory, the file name, and its state (modified, read-only or non-existent)."
 mouse-1: Previous buffer\nmouse-3: Next buffer"
                'local-map mode-line-buffer-identification-keymap)))
 
+(doom-modeline-def-segment buffer-default-directory
+  "Displays `default-directory'. This is for special buffers like the scratch
+buffer where knowing the current project directory is important."
+  (let ((face (cond ((buffer-modified-p)
+                     'doom-modeline-buffer-modified)
+                    ((doom-modeline--active) 'doom-modeline-buffer-path)
+                    (t 'mode-line-inactive))))
+    (concat (doom-modeline-spc)
+            (doom-modeline--buffer-state-icon)
+            (and doom-modeline-major-mode-icon
+                 (concat (doom-modeline-icon
+                          'octicon "file-directory" "🖿" ""
+                          :face face :v-adjust -0.05 :height 1.25)
+                         (doom-modeline-vspc)))
+            (propertize (abbreviate-file-name default-directory) 'face face))))
+
 
 ;;
 ;; Encoding
@@ -475,9 +478,21 @@ mouse-1: Previous buffer\nmouse-3: Next buffer"
 (doom-modeline-def-segment indent-info
   "Displays the indentation information."
   (when doom-modeline-indent-info
-    (propertize (format " %s %d "
-                        (if indent-tabs-mode "TAB" "SPC") tab-width)
-                'face (if (doom-modeline--active) 'mode-line 'mode-line-inactive))))
+    (let ((do-propertize
+           (lambda (mode size)
+             (propertize
+              (format " %s %d " mode size)
+              'face (if (doom-modeline--active) 'mode-line 'mode-line-inactive)))))
+      (if indent-tabs-mode
+          (funcall do-propertize "TAB" tab-width)
+        (let ((lookup-var
+               (seq-find (lambda (var)
+                           (and var (boundp var) (symbol-value var)))
+                         (cdr (assoc major-mode doom-modeline-indent-alist)) nil)))
+          (funcall do-propertize "SPC"
+                   (if lookup-var
+                       (symbol-value lookup-var)
+                     tab-width)))))))
 
 ;;
 ;; Remote host

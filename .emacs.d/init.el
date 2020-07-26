@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-07-20 14:30:08 dharms>
+;; Modified Time-stamp: <2020-07-26 09:39:37 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -129,6 +129,7 @@
 (setq line-number-mode t)
 (setq column-number-mode t)
 (setq use-dialog-box nil)
+(setq confirm-kill-processes nil)
 (setq gc-cons-threshold 20000000)
 (setq kill-do-not-save-duplicates t)
 (file-name-shadow-mode 1)
@@ -1278,6 +1279,7 @@ ARGS are the additional arguments."
   :commands vterm
   :bind ("C-c 0vv" . vterm)
   :init
+  (setq vterm-max-scrollback 20000)
   (setq vterm-kill-buffer-on-exit t)
   (setq vterm-copy-exclude-prompt t)
   (setq vterm-buffer-name-string "VTERM %s")
@@ -1490,7 +1492,8 @@ ARGS are the additional arguments."
         ("M-s p" . bm-previous))
  :init
  (setq bm-restore-repository-on-load t)
- (setq bm-cycle-all-buffers t))
+ (setq bm-cycle-all-buffers t)
+ (setq bm-highlight-style 'bm-highlight-only-line))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; savehist ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package savehist
@@ -3081,7 +3084,7 @@ completion at point mechanism does not interfere with `completion-at-point-funct
                    python-mode bat-mode gud-mode sh-mode text-mode
                    makefile-mode makefile-automake-mode makefile-gmake-mode
                    autoconf-mode gdb-script-mode awk-mode csv-mode
-                   mock-mode org-mode html-mode text-mode sql-mode
+                   mock-mode org-mode html-mode sql-mode
                    sql-interactive-mode conf-mode markdown-mode
                    git-commit-mode mock-mode dart-mode plantuml-mode
                    ))

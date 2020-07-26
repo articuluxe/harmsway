@@ -550,6 +550,7 @@ With a prefix argument, cache is updated when reverting the buffer.
 
 Also see `disk-usage-by-types-mode'."
   ;; TODO: Option to display extra attributes and default column to sort.
+  (hl-line-mode)
   (setq tabulated-list-padding 2)
   (setq tabulated-list-sort-key (cons "Size" 'flip))
   (setq tabulated-list-printer #'disk-usage--print-entry)
@@ -785,6 +786,7 @@ TYPE is the file extension (lower case)."
 (define-derived-mode disk-usage-by-types-mode tabulated-list-mode "Disk Usage By Types"
   "Mode to display disk usage by file types.
 Also see `disk-usage-mode'."
+  (hl-line-mode)
   (setq tabulated-list-sort-key (cons "Total size" 'flip))
   (add-hook 'tabulated-list-revert-hook 'disk-usage-by-types--refresh nil t))
 

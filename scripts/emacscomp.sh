@@ -1,11 +1,11 @@
-#!/usr/bin/env bash
+#!/bin/sh
 # -*- Mode: sh -*-
 # emacscomp.sh --- byte-compile emacs lisp files
-# Copyright (C) 2015-2017  Dan Harms (dan.harms)
+# Copyright (C) 2015-2017, 2020  Dan Harms (dan.harms)
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Tuesday, June 16, 2015
 # Version: 1.0
-# Modified Time-stamp: <2017-06-14 17:52:00 dharms>
+# Modified Time-stamp: <2020-07-23 11:54:31 dharms>
 # Keywords: emacs configuration
 
 emacs=$EDITOR

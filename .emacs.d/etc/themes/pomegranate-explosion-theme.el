@@ -42,20 +42,20 @@
  '(underline ((t (:underline t))))
  '(css-selector ((t (:foreground "#F92672"))))
  '(css-property ((t (:foreground "#66D9EF"))))
- '(diff-added ((t (:foreground "#A6E22E" :weight bold))))
+ '(diff-added ((t (:foreground "#A6E22E"))))
  '(diff-context ((t (:foreground "#F8F8F2"))))
  '(diff-file-header ((t (:foreground "#66D9EF" :background nil))))
  '(diff-indicator-added ((t (:foreground "#A6E22E"))))
  '(diff-indicator-removed ((t (:foreground "#F92672"))))
  '(diff-header ((t (:foreground "#F8F8F2" :background "#232526"))))
  '(diff-hunk-header ((t (:foreground "#AE81FF" :background "#232526"))))
- '(diff-removed ((t (:foreground "#F92672" :weight bold))))
+ '(diff-removed ((t (:foreground "#F92672"))))
  '(escape-glyph ((t (:foreground "#E6DB74"))))
  '(minibuffer-prompt ((t (:foreground "#66D9EF"))))
  '(mode-line ((t (:foreground "#F8F8F2" :background "#000000"
                               :box (:line-width 1 :color "#000000" :style released-button)))))
  '(mode-line-buffer-id ((t (:foreground nil :background "#000000" :weight semi-bold))))
- '(mode-line-inactive ((t (:foreground "#BCBCBC" :background "#000000"
+ '(mode-line-inactive ((t (:foreground "#BCBCBC" :background "SlateGray4"
                                        ':box (:line-width 1 :color "#232526")))))
  '(mode-line-mousable ((t (:foreground "#BCBCBC" :background "#000000"))))
  '(mode-line-mousable-minor-mode ((t (:foreground "#BCBCBC" :background "#000000"))))
@@ -86,7 +86,7 @@
  '(icompletep-determined ((t (:foreground "#A6E22E"))))
  '(icompletep-keys ((t (:foreground "#F92672"))))
  '(icompletep-nb-candidates ((t (:foreground "#AE81FF"))))
- '(isearch ((t (:foreground "#dddddd" :background "#C4BE89"))))
+ '(isearch ((t (:foreground "IndianRed4" :background "#C4BE89"))))
  '(isearch-fail ((t (:foreground "#FFFFFF" :background "#CD2C24"))))
  '(markdown-italic-face ((t (:slant italic))))
  '(markdown-bold-face ((t (:weight bold))))
@@ -162,5 +162,4 @@
                (file-name-as-directory (file-name-directory load-file-name))))
 
 (provide-theme 'pomegranate-explosion)
-
-;;; molokai-theme.el ends here
+;;; pomegranate-explosion-theme.el ends here

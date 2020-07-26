@@ -641,7 +641,7 @@ This variant of `rx' supports common Markdown named REGEXPS."
   "Regular expression matches HTML comment closing.")
 
 (defconst markdown-regex-link-inline
-  "\\(?1:!\\)?\\(?2:\\[\\)\\(?3:\\^?\\(?:\\\\\\]\\|[^]]\\)*\\|\\)\\(?4:\\]\\)\\(?5:(\\)\\(?6:[^)]*?\\)\\(?:\\s-+\\(?7:\"[^\"]*\"\\)\\)?\\(?8:)\\)"
+  "\\(?1:!\\)?\\(?2:\\[\\)\\(?3:\\^?\\(?:\\\\\\]\\|[^]]\\)*\\|\\)\\(?4:\\]\\)\\(?5:(\\)\\s-*\\(?6:[^)]*?\\)\\(?:\\s-+\\(?7:\"[^\"]*\"\\)\\)?\\s-*\\(?8:)\\)"
   "Regular expression for a [text](file) or an image link ![text](file).
 Group 1 matches the leading exclamation point (optional).
 Group 2 matches the opening square bracket.
@@ -9392,6 +9392,8 @@ rows and columns and the column alignment."
   (setq-local comment-column 0)
   (setq-local comment-auto-fill-only-comments nil)
   (setq-local comment-use-syntax t)
+  ;; Sentence
+  (setq-local sentence-end-base "[.?!…‽][]\"'”’)}»›*_`~]*")
   ;; Syntax
   (add-hook 'syntax-propertize-extend-region-functions
             #'markdown-syntax-propertize-extend-region)

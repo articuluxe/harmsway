@@ -41,7 +41,7 @@ Encloses each list element inside list 'L' with the appropriate
 boilerplate to achieve the standard '(face (( (class
 color) (min-colors 89)) . plist))' face specification without all
 the parenthetical noise."
-  (let (res '())
+  (let (res)
     (dolist (item L res)
       (push `(,(car item)
               (( ((class color)
@@ -51,10 +51,12 @@ the parenthetical noise."
 
 (let (
       (fg              "#a9b7ca")
-      (fg-alt          "#4a5059")
+      (fg-alt          "#606873")
       (hl              "#26282c")
+
       (White           "#C3D0DF")
-      (base0           "#95a1b2")
+
+      (base0           "#9ca4b7")
       (base1           "#8c97a7")
       (base2           "#717ea5")
       (base3           "#8f8e9a")
@@ -64,57 +66,70 @@ the parenthetical noise."
       (bg              "#202226")
       (bg-alt          "#26282c")
       (bg-Black        "#2b2f37")
-      (very-dark-bg    "#18191c")
+      (bg-darker       "#1c1f1a")
 
-      (bg-light-Black  "#2E2F2F")
-
-      (bg-Grey         "#434157")
-      (bg-Grey-alt     "#343a4f")
+      (_bg-light-Black  "#2E2F2F")
 
       (bg-Blue         "#272c3b")
-      (bg-ArcticBlue   "#1b2526")
-      (bg-Green        "#354238")
       (bg-CharlesGreen "#272D2D")
+      (bg-Green        "#3a4f34")
+      (bg-Grey         "#434157")
+      (bg-Grey-alt     "#343a4f")
+      (bg-Orchid       "#3b3559")
       (bg-Red          "#4f343a")
       (bg-Violet       "#504361")
-      (bg-Orchid       "#3b3559")
 
-      (key2            "#93cd6d")
+      (very-dark-bg    "#020202")
+
+      (key2            "#7ABE5B")
       (key3            "#6aa454")
 
       ;; Main Palette
-      (Indigo          "#877CEB")
-      (HarlequinGreen  "#77ba5e")
-      (IcebergBlue     "#4F9FD2")
+      (HarlequinGreen        "#77ba5e")
+      (Indigo                "#877CEB")
+      (Violet                "#c291eb")
+      (Magenta               "#C264C6")
+      (IcebergBlue           "#4F9FD2")
+      (ArcticBlue            "#31a5ae")
+      (Gold                  "#bab171")
+      (Orchid                "#e372dd")
 
-      (Violet          "#c291eb")
-      (ArcticBlue      "#31a5ae")
-      (lightarcticblue "#60bec6")
-      (Magenta         "#C264C6")
-      (Crimson         "#d06985")
-      (lightCrimson    "#f78a7a")
-      (dimmCrimson     "#cc5655")
+      ;; ACCENT COLORS
+      (Crimson               "#d06985")
+      (Mustard               "#90b55b")
+      (Purple                "#AD83EB")
 
-      (IcebergBlue-alt "#4FAED9")
-      (Mustard         "#90b55b")
-      (lightIndigo     "#A28BE7")
-      (paleIndigo      "#9497d3")
-      (Purple          "#AD83EB")
-      (lightPurple     "#ba86f4")
-      (darkPurple      "#7a628f")
-      (Gold            "#bab171")
-      (Gold-alt        "#ada56b")
+      ;; DIMM VARIANTS
+      (dimm-Crimson          "#cc5655")
 
-      (Orchid          "#e372dd")
-      (lightOrchid     "#ee78e8")
+      ;; PALE VARIANTS
+      (pale-Indigo           "#9497d3")
 
-      (VibrantGreen    "#86dc2f")
-      (VibrantRed      "#ff6c6b")
-      (VibrantPurple   "#AD83EB")
+      ;; LIGHT VARIANTS
+      (_light-ArcticBlue     "#60bec6")
+      (light-Crimson         "#f78a7a")
+      (light-IcebergBlue     "#4FAED9")
+      (light-Indigo          "#A28BE7")
+      (light-Orchid          "#ee78e8")
+      (light-Purple          "#ba86f4")
+      (light-Blue            "#63A4FF")
 
-      (wylnyut-diff-changed    "#ca84ff")
-      (wylnyut-diff-deleted    "#FF6135")
-      (wylnyut-diff-added      "#3ABC56"))
+      ;; DARK VARIANTS
+      (dark-Slate            "#3c4666")
+      (dark-Gold             "#7e784c")
+      (dark-Purple           "#7c73cc")
+      (very-dark-Purple      "#443f63")
+      (bg-dark-Black         "#242733")
+
+      ;; VIBRANT VARIANTS
+      (vibrant-Green         "#86dc2f")
+      (vibrant-Red           "#ff6c6b")
+      (vibrant-Purple        "#AD83EB")
+
+      ;; VERSION CONTROL
+      (wylnyut-diff-changed  "#8A60C3")
+      (wylnyut-diff-deleted  "#D74040")
+      (wylnyut-diff-added    "#46932d"))
 
   (apply
    'custom-theme-set-faces
@@ -124,15 +139,17 @@ the parenthetical noise."
     `(default                                  :foreground ,fg                   :background ,bg)
     `(default-italic
        :italic t)
-    `(header-line                              :foreground ,fg                   :background ,bg
+    `(header-line                              :foreground ,HarlequinGreen       :background ,bg-Grey-alt
+      :height 1.2
+      :underline ,very-dark-bg
       :distant-foreground ,bg)
 
     `(cursor                                                                     :background ,White)
     `(fringe                                   :foreground ,Purple               :background ,bg)
     `(hl-line                                                                    :background ,hl)
-    `(region                                   :foreground ,lightIndigo          :background ,bg-Blue)
-    `(vertical-border                          :foreground ,Purple)
-    `(highlight                                :foreground ,bg                   :background ,VibrantGreen)
+    `(region                                   :foreground ,light-Indigo         :background ,bg-Blue)
+    `(vertical-border                          :foreground ,dark-Slate)
+    `(highlight                                :foreground ,bg                   :background ,vibrant-Green)
     `(minibuffer-prompt                        :foreground ,HarlequinGreen
       :bold t)
 
@@ -151,28 +168,42 @@ the parenthetical noise."
 
     `(highlight-numbers-number                 :foreground ,Orchid)
 
-    `(mode-line                                :foreground ,base3                :background ,bg-alt
-      :overline ,very-dark-bg
-      :underline ,very-dark-bg)
-
-    `(mode-line-buffer-id                      :foreground ,Violet               :background ,nil)
-
-    `(mode-line-emphasis                       :foreground ,fg
+    ;; MODELINE
+    `(mode-line                                :foreground ,fg                   :background ,very-dark-Purple
+      :box (:color ,dark-Slate :line-width 1))
+    `(mode-line-buffer-id                      :foreground ,Gold                 :background nil
+      :bold nil)
+    `(mode-line-inactive                       :foreground ,fg-alt               :background ,bg
+      :box (:color ,dark-Slate :line-width 1))
+    `(mode-line-buffer-id-inactive             :foreground ,dark-Gold)
+    `(mode-line-emphasis                       :foreground ,fg                   :background nil
       :bold nil)
     `(mode-line-highlight                      :foreground ,HarlequinGreen
       :bold t)
-    `(mode-line-inactive                       :foreground ,base3
-      :inherit mode-line)
-    `(which-func                               :foreground ,IcebergBlue-alt
-                                               :italic t)
 
-    `(header-line                              :foreground ,HarlequinGreen       :background ,bg-Grey-alt
-      :height 1.2
-      :underline ,very-dark-bg
-     ;:italic t
-      )
+
+    ;; MODE SUPPORT: powerline
+    `(powerline-active0
+      :inherit mode-line)
+    `(powerline-active1                                                          :background ,bg-alt)
+    `(powerline-active2                                                          :background ,bg-alt
+      :inherit mode-line)
+
+    `(powerline-inactive0
+      :inherit mode-line-inactive)
+    `(powerline-inactive1
+      :inherit mode-line-inactive)
+    `(powerline-inactive2
+      :inherit mode-line-inactive)
+
+    `(which-func                               :foreground ,light-IcebergBlue
+      :italic t)
 
     ;; MISC BUILTIN
+    `(custom-group-tag                         :foreground ,HarlequinGreen
+      :height 1.2)
+    `(custom-variable-tag                      :foreground ,Gold)
+
     `(link                                     :foreground ,IcebergBlue
       :underline t)
     `(show-paren-match                         :foreground ,Violet               :background ,bg-Violet
@@ -180,31 +211,24 @@ the parenthetical noise."
     `(shadow                                   :foreground ,base5)
     `(isearch                                  :foreground ,Crimson              :background ,base4
       :bold t)
+    ;; NOTE emacs built with gtk cannot customize this.
+    `(scroll-bar                               :foreground ,Orchid               :background ,dark-Purple)
 
     `(completions-first-difference             :foreground ,Magenta)
     `(completions-common-part                  :foreground ,Violet)
 
-    `(spacemacs-micro-state-binding-face 
+    `(spacemacs-micro-state-binding-face
       :inherit modeline)
 
-    ;; MODE SUPPORT: powerline
-    `(powerline-active0                 :foreground ,base3                   :background ,bg
-      :inherit mode-line)
-    `(powerline-active1                 :foreground ,base3                   :background ,bg)
-    `(powerline-active2                 :foreground ,base3                   :background ,bg-alt)
-    ;; TODO
-    `(powerline-inactive0)
-    `(powerline-inactive1)
-    `(powerline-inactive2)
-
+    `(spacemacs-transient-state-title-face     :foreground ,vibrant-Green)
 
     ;; MODE SUPPORT: Ebrowse
     `(ebrowse-root-class                       :foreground ,HarlequinGreen)
     `(ebrowse-default                          :foreground ,Indigo)
     `(ebrowse-member-class                     :foreground ,IcebergBlue
       :height 1.2)
-    `(ebrowse-member-attribute                 :foreground ,VibrantPurple)
-    `(ebrowse-progress                                                           :background ,VibrantGreen)
+    `(ebrowse-member-attribute                 :foreground ,vibrant-Purple)
+    `(ebrowse-progress                                                           :background ,vibrant-Green)
 
     ;; MODE SUPPORT: git-gutter
     `(git-gutter:added                         :foreground ,wylnyut-diff-added)
@@ -232,11 +256,22 @@ the parenthetical noise."
     `(diff-hl-insert                           :foreground ,wylnyut-diff-added   :background ,wylnyut-diff-added)
     `(diff-hl-delete                           :foreground ,wylnyut-diff-deleted :background ,wylnyut-diff-deleted)
 
+    ;; MODE SUPPORT auto-dimm-other-buffers
+    `(auto-dim-other-buffers-face                                                :background ,bg-darker)
+
     ;; MODE SUPPORT: lsp
     `(lsp-face-highlight-textual :bolt t)
 
+    ;; MODE SUPPORT: rtags
+    `(rtags-errline                             :foreground ,vibrant-Red         :background nil
+      :underline (:color ,vibrant-Red :style line))
+    `(rtags-warnline                            :foreground ,vibrant-Red :background nil
+      :bold t
+      :underline (:color ,vibrant-Red :style wave))
+
     ;; MODE SUPPORT: org-mode
     ;; TODO
+    `(org-time-grid                            :foreground ,dark-Gold)
     `(org-hide                                 :foreground ,base3)
     `(org-footnote
       :underline t
@@ -263,18 +298,26 @@ the parenthetical noise."
     ;; DONE
     `(org-level-1                              :foreground ,HarlequinGreen
       :bold t
-      :height 1.1)
+      :height 1.5)
     `(org-level-2                              :foreground ,IcebergBlue
       :bold t
-      :height 1.05)
+      :height 1.4)
     `(org-level-3                              :foreground ,ArcticBlue
-      :bold nil)
+      :bold t
+      :height 1.3)
     `(org-level-4                              :foreground ,Violet
-      :bold nil)
+      :bold t
+      :height 1.1)
     `(org-level-5                              :foreground ,Indigo
-      :bold nil)
+      :bold t
+      :height 1.0)
     `(org-level-6                              :foreground ,Magenta
-      :bold nil)
+      :bold t
+      :height 1.0)
+    `(org-level-7                              :foreground ,Gold
+      :bold t
+      :height 1.0)
+
 
     `(org-block                                                                  :background ,bg-Black
      :extend t)
@@ -289,7 +332,7 @@ the parenthetical noise."
       :inherit org-block
       :slant italic)
 
-    `(org-code                                 :foreground ,lightCrimson)
+    `(org-code                                 :foreground ,light-Crimson)
     `(org-verbatim                             :foreground ,HarlequinGreen)
     `(org-link
       :inherit link)
@@ -302,12 +345,20 @@ the parenthetical noise."
     `(org-ellipsis                             :foreground ,Indigo)
     `(org-warning :underline t                 :foreground ,Crimson)
 
+    ;; MOVE SUPPORT: avy, ace
+    `(avy-lead-face                            :foreground ,vibrant-Green        :background ,bg
+      :bold t)
+    `(avy-lead-face-0                          :foreground ,White                :background ,bg)
+
+    `(avy-lead-face-2                          :foreground ,dimm-Crimson         :background ,bg)
+    `(avy-background-face                      :foreground ,fg-alt)
+
     ;; MODE SUPPORT: rainbow-delimiters
     `(rainbow-delimiters-unmatched-face        :foreground ,Crimson)
-    `(rainbow-delimiters-depth-1-face          :foreground ,fg)
+    `(rainbow-delimiters-depth-1-face          :foreground ,Purple)
     `(rainbow-delimiters-depth-2-face          :foreground ,Indigo)
     `(rainbow-delimiters-depth-3-face          :foreground ,Magenta)
-    `(rainbow-delimiters-depth-4-face          :foreground ,IcebergBlue)
+    `(rainbow-delimiters-depth-4-face          :foreground ,ArcticBlue)
     `(rainbow-delimiters-depth-5-face          :foreground ,HarlequinGreen)
     `(rainbow-delimiters-depth-6-face          :foreground ,fg)
     `(rainbow-delimiters-depth-7-face          :foreground ,Indigo)
@@ -317,13 +368,13 @@ the parenthetical noise."
     `(company-tooltip-annotation-selection     :foreground ,bg :italic t)
     `(company-tooltip-annotation               :foreground ,ArcticBlue)
     ; Colors that fill the body the toolti      (main bg and fg)
-    `(company-tooltip                          :foreground ,paleIndigo           :background ,bg-alt)
+    `(company-tooltip                          :foreground ,base0                :background ,bg-alt)
     ; Color that match as you type
     `(company-tooltip-common                   :foreground ,key2)
     ; Color for matching text in the completion selection
     `(company-tooltip-common-selection         :foreground ,bg :bold t)
     ; hl-line for company popup
-    `(company-tooltip-selection                :foreground ,bg                   :background ,lightIndigo)
+    `(company-tooltip-selection                :foreground ,bg                   :background ,light-Indigo)
     `(company-echo                             :foreground ,bg                   :background ,fg)
     `(company-scrollbar-fg                                                       :background ,Magenta)
     `(company-scrollbar-bg                                                       :background ,base4)
@@ -341,6 +392,7 @@ the parenthetical noise."
     `(font-latex-string-face                   :foreground ,ArcticBlue)
     `(font-latex-match-reference-keywords      :foreground ,IcebergBlue)
     `(font-latex-match-variable-keywords       :foreground ,Magenta)
+    `(font-latex-warning-face                  :foreground ,light-Crimson)
     `(ido-only-match                           :foreground ,Crimson)
     `(ido-first-match                          :foreground ,HarlequinGreen
       :bold t)
@@ -382,15 +434,20 @@ the parenthetical noise."
     `(trailing-whitespace                      :foreground nil                   :background ,fg-alt)
 
 
-    `(smerge-markers                           :background ,bg-Black
-      :underline ,VibrantPurple
-      :overline ,VibrantPurple)
+    `(smerge-markers                                                             :background ,bg-Black
+      :underline ,vibrant-Purple
+      :overline ,vibrant-Purple)
+    `(git-commit-comment-file                  :foreground ,Crimson)
 
-
-
+    `(magit-filename                           :foreground ,Violet)
+    `(magit-diff-file-heading                  :foreground ,Crimson
+      :bold t
+      :italic t
+      :height 1.15)
     `(magit-item-highlight                                                       :background ,base4)
-    `(magit-section-heading                    :foreground ,HarlequinGreen
-      :weight bold)
+    `(magit-section-heading                    :foreground ,key2
+      :weight bold
+      :height 1.3)
     `(magit-hunk-heading                                                         :background ,base4)
     `(magit-section-highlight                                                    :background ,bg-alt)
 
@@ -400,17 +457,17 @@ the parenthetical noise."
     `(magit-section-highlight                                                    :background ,bg-Blue)
     `(magit-diff-added                         :foreground ,key3                 :background ,bg-Green)
     `(magit-diff-added-highlight               :foreground ,Mustard              :background ,bg-Green)
-    `(magit-diff-removed-highlight             :foreground ,VibrantRed           :background ,bg-Red)
-    `(magit-diff-removed                       :foreground ,dimmCrimson          :background ,bg-Red)
+    `(magit-diff-removed-highlight             :foreground ,vibrant-Red          :background ,bg-Red)
+    `(magit-diff-removed                       :foreground ,dimm-Crimson         :background ,bg-Red)
     `(magit-dimmed                             :foreground ,base5)
 
 
-    `(magit-diff-our                           :foreground ,VibrantRed           :background ,bg-Red)
-    `(magit-diff-our-highlight                 :foreground ,VibrantRed           :background ,bg-Red)
-    `(magit-diff-context-highlight                                               :background ,bg-Blue)
+    `(magit-diff-our                           :foreground ,vibrant-Red          :background ,bg-Red)
+    `(magit-diff-our-highlight                 :foreground ,vibrant-Red          :background ,bg-Red)
+    `(magit-diff-context-highlight             :foreground ,base0                :background ,bg-dark-Black)
     `(magit-diff-context
       :inherit magit-dimmed)
-    `(magit-diff-base-highlight                :foreground ,lightCrimson         :background ,bg-Red)
+    `(magit-diff-base-highlight                :foreground ,light-Crimson        :background ,bg-Red)
     `(magit-diffstat-added                     :foreground ,Indigo)
     `(magit-diffstat-removed                   :foreground ,Magenta)
     `(magit-process-ok                         :foreground ,Violet
@@ -419,8 +476,8 @@ the parenthetical noise."
       :weight bold)
     `(magit-branch                             :foreground ,IcebergBlue
       :weight bold)
-    `(magit-branch-remote                      :foreground ,ArcticBlue)
-    `(magit-branch-local                       :foreground ,lightIndigo)
+    `(magit-branch-remote                      :foreground ,light-Blue)
+    `(magit-branch-local                       :foreground ,Purple)
     `(magit-log-author                         :foreground ,base1)
     `(magit-hash                               :foreground ,base0)
     `(magit-diff-file-header                   :foreground ,base0                :background ,base4)
@@ -437,24 +494,24 @@ the parenthetical noise."
     `(term-color-cyan                          :foreground ,ArcticBlue           :background ,ArcticBlue)
     `(term-color-white                         :foreground ,base0                :background ,base0)
 
+    `(xref-file-header                         :foreground ,Gold)
 
-
-
+    `(ggtags-highlight                         :underline nil)
     `(helm-buffer-modified                     :foreground ,Crimson :italic t)
     `(helm-buffer-directory                    :foreground ,Gold)
     `(helm-header                              :foreground ,base0                :background ,bg
       :underline nil
       :box nil)
     `(helm-header-line-left-margin             :foreground ,bg                   :background ,ArcticBlue)
-    `(helm-match                               :foreground ,lightPurple)
+    `(helm-match                               :foreground ,light-Purple)
     `(helm-source-header                       :foreground ,HarlequinGreen       :background ,bg
       :underline nil
       :weight bold)
-    `(helm-selection                           :foreground ,lightOrchid          :background ,bg-Orchid
+    `(helm-selection                           :foreground ,light-Orchid         :background ,bg-Orchid
       :underline nil
       :extend t)
     `(helm-selection-line                                                        :background ,bg-alt)
-    `(helm-M-x-key                             :foreground ,lightPurple)
+    `(helm-M-x-key                             :foreground ,light-Purple)
     `(helm-candidate-number                    :foreground ,bg                   :background ,fg)
     `(helm-separator                           :foreground ,Indigo               :background ,bg)
     `(helm-time-zone-current                   :foreground ,Indigo               :background ,bg)
@@ -490,9 +547,10 @@ the parenthetical noise."
     `(helm-bookmark-w3m                        :foreground ,Indigo)
     `(helm-visible-mark                        :foreground ,ArcticBlue           :background ,bg-Blue
       :extend t)
-    `(helm-swoop-target-line-face              :foreground ,VibrantGreen         :background ,bg-CharlesGreen
+    `(helm-swoop-target-line-face              :foreground ,vibrant-Green        :background ,bg-CharlesGreen
       :extend t)
-    `(helm-swoop-target-word-face              :inherit highlight)
+    `(helm-swoop-target-word-face
+      :inherit highlight)
 
     `(web-mode-builtin-face
       :inherit ,font-lock-builtin-face)

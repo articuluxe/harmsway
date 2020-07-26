@@ -372,9 +372,9 @@
    `(flx-highlight-face ((,class (:foreground ,yellow :weight bold :underline nil))))
 
    ;; flycheck
-   `(flycheck-error ((,class (:underline (:style wave :color ,red)))))
-   `(flycheck-warning ((,class (:underline (:style wave :color ,yellow)))))
-   `(flycheck-info ((,class (:underline (:style wave :color ,green)))))
+   `(flycheck-error ((,class (:underline (:color ,red)))))
+   `(flycheck-warning ((,class (:underline (:color ,yellow)))))
+   `(flycheck-info ((,class (:underline (:color ,green)))))
    `(flycheck-error-list-highlight ((,class (:inherit hl-line :weight bold))))
 
    ;; flycheck-posframe
@@ -385,12 +385,12 @@
    `(flycheck-posframe-warning-face ((,class (:inherit 'flycheck-posframe-face :foreground ,yellow))))
 
    ;; flymake
-   `(flymake-error ((,class (:underline (:style wave :color ,red)))))
-   `(flymake-note ((,class (:underline (:style wave :color ,green)))))
-   `(flymake-warning ((,class (:underline (:style wave :color ,orange)))))
+   `(flymake-error ((,class (:underline (:color ,red)))))
+   `(flymake-note ((,class (:underline (:color ,green)))))
+   `(flymake-warning ((,class (:underline (:color ,orange)))))
 
    ;; flyspell
-   `(flyspell-incorrect ((,class (:inherit 'unspecified :underline (:style wave :color ,red)))))
+   `(flyspell-incorrect ((,class (:inherit 'unspecified :underline (:color ,red)))))
 
    ;; git-gutter
    `(git-gutter:modified ((,class (:foreground ,orange))))
@@ -749,9 +749,7 @@
 ;;;###autoload
 (defun mood-one-theme-flycheck-fringe-bmp-enable ()
   "Enable custom mood-one fringe bitmaps for use with flycheck."
-  (dolist (level '(warning error info))
-    (setf (get level 'flycheck-fringe-bitmap-double-arrow)
-          'mood-one-theme--arrow-bmp)))
+  (flycheck-redefine-standard-error-levels nil 'mood-one-theme--arrow-bmp))
 
 ;;;###autoload
 (defun mood-one-theme-flymake-fringe-bmp-enable ()
