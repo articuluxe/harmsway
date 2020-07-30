@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2020-05-06 02:25:19 dharms>
+;; Modified Time-stamp: <2020-07-30 10:47:16 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -41,6 +41,10 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Process Viewer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package proced :bind ("C-c 0p" . proced))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; sharper ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package sharper
+  :bind ("C-c 0vs" . sharper-main-transient))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ssh-agency ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;(require 'ssh-agency)
