@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-07-26 09:39:37 dharms>
+;; Modified Time-stamp: <2020-07-30 16:10:35 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2178,7 +2178,8 @@ ARGS are the additional arguments."
   (setq org-archive-location "~/org/archive.org::* From %s")
   (org-babel-do-load-languages
    'org-babel-load-languages
-   '((C . t)
+   '((awk . t)
+     (C . t)
      (ditaa . t)
      (dot . t)
      (emacs-lisp . t)

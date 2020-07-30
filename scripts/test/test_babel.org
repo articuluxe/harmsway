@@ -1,0 +1,5 @@
+#+TITLE:Testing
+
+#+BEGIN_SRC awk :results output code :in-file ./sample-tab-list
+ /ppl/ { print $0 }
+#+END_SRC
