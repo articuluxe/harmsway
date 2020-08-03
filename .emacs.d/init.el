@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-07-30 16:10:35 dharms>
+;; Modified Time-stamp: <2020-08-03 10:39:48 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3397,6 +3397,10 @@ See `https://github.com/company-mode/company-mode/issues/205'."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; currency-convert ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package currency-convert :bind ("C-c 0cu" . currency-convert))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ytdl ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package ytdl
+  :commands (ytdl-download ytdl-show-list))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auto-insert ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package auto-insert-choose+
