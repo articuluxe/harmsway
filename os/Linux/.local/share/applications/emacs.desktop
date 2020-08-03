@@ -1,0 +1,15 @@
+#!/usr/bin/env xdg-open
+
+[Desktop Entry]
+Name=EmacsX
+GenericName=Test Editor
+Comment=Launch EmacsX
+Type=Application
+Terminal=false
+Icon=emacs
+Path=
+Exec=sh -c "emacsclient -a emacs -n \"\$@\" || command emacs" dummy %F
+#Exec=/usr/bin/emacs26
+Categories=Development;TextEditor;Utility;
+StartupWMClass=Emacs
+MimeType=text/english;text/plain;text/x-makefile;text/x-c++hdr;text/x-c++src;text/x-chdr;text/x-csrc;text/x-java;text/x-moc;text/x-pascal;text/x-tcl;text/x-tex;application/x-shellscript;text/x-c;text/x-c++;
