@@ -1,4 +1,4 @@
-cd src/emacs-26.2
+cd src/emacs-26.3
 mkdir -p bld
 cd bld
 ../configure --with-modules --with-imagemagick --prefix=$HOME/opt/stow/emacs
