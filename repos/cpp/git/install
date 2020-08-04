@@ -4,5 +4,6 @@ autoconf
 CC= CXX= ./configure --prefix=$HOME/opt/stow/git
 make
 make install
+mkdir -p $HOME/opt/stow
 cd $HOME/opt/stow
 stow -R git

@@ -4,5 +4,6 @@ cd bld
 ../configure --with-ns --without-dbus --with-imagemagick --disable-ns-self-contained --prefix=$HOME/opt/stow/emacs
 make
 make install
+mkdir -p $HOME/opt/stow
 cd $HOME/opt/stow
 stow -R emacs

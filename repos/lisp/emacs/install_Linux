@@ -4,5 +4,6 @@ cd bld
 ../configure --with-modules --with-imagemagick --prefix=$HOME/opt/stow/emacs
 make
 make install
+mkdir -p $HOME/opt/stow
 cd $HOME/opt/stow
 stow -R emacs

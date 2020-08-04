@@ -6,5 +6,6 @@ autoconf
 make
 make install
 # TODO validate this
+mkdir -p $HOME/opt/stow
 cd $HOME/opt/stow
 ls

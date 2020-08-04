@@ -6,5 +6,6 @@ cd bld
 ../configure --prefix=$HOME/opt/stow/ctags --program-prefix=ex --disable-xml
 make
 make install
+mkdir -p $HOME/opt/stow
 cd $HOME/opt/stow
 stow -R ctags
