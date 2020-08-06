@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-08-03 10:39:48 dharms>
+;; Modified Time-stamp: <2020-08-05 13:06:44 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3908,16 +3908,16 @@ This function's result only has value if it is preceded by any font changes."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; groovy ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package groovy-mode :interpreter "groovy"
-  :mode ("\\.groovy$"
-         "\\.gradle$"
-         "Jenkinsfile"
-         )
+  :mode ("\\.groovy$" "\\.gradle$")
   :config
   (use-package inf-groovy)
   (add-hook 'groovy-mode-hook 'inf-groovy-keys)
   ;; for 'run-groovy, need to set $GROOVY_HOME, or groovysh needs to exist or
   ;; be in $PATH
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; jenkinsfile-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package jenkinsfile-mode :mode "Jenkinsfile")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ham-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package ham-mode
