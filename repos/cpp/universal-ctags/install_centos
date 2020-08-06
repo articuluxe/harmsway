@@ -1,5 +1,5 @@
 cd src
-git apply ../centos.patch
+# git apply ../centos.patch
 ./autogen.sh
 mkdir -p bld
 cd bld
