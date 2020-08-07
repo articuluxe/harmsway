@@ -1,0 +1,7 @@
+# -*- Mode: sh -*-
+# .bash_talbot
+
+snapssh()
+{
+    sshpass -e ssh snaptrader@"$1"
+}
