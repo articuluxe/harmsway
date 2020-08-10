@@ -1,5 +1,5 @@
 cd src
-# git apply ../centos.patch
+export PATH=/bin:/sbin:/usr/bin:/usr/local/bin:/usr/local/sbin:/usr/sbin:.
 ./autogen.sh
 mkdir -p bld
 cd bld
