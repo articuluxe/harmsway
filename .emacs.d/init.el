@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-08-05 13:06:44 dharms>
+;; Modified Time-stamp: <2020-08-10 08:33:02 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3626,6 +3626,8 @@ This function's result only has value if it is preceded by any font changes."
         site)
     (when (setq site (completing-read "Site: " sites))
       (harmsway-load-site-file site))))
+
+(global-set-key "\C-cxx" #'harmsway-load-site-file-menu)
 
 (defun harmsway-load-site-file (site)
   "Load site file corresponding to SITE."
