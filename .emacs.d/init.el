@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-08-10 08:33:02 dharms>
+;; Modified Time-stamp: <2020-08-25 17:58:49 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -678,6 +678,11 @@ line."
 (use-package sudo-edit
   :bind (("C-c M-r" . sudo-edit)
          ("C-c \e\er" . sudo-edit-find-file)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; su ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package su
+  :config
+  (su-mode +1))
 
 ;; work around bug in cc-mode in emacs 24.4
 ;; see debbugs.gnu.org/db/18/18845.html
