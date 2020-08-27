@@ -10,9 +10,9 @@ alias emacs="\$EDITOR"
 [ -r ~/.bash_"$SITE" ] && . ~/.bash_"$SITE"
 
 # ssh keys
-eval $(keychain -q --eval --inherit any rubicon.ssh.rsa)
-eval $(keychain -q --eval --inherit any rubicon.ssh.ed25519)
-eval $(keychain -q --eval --inherit any xr.ssh.rsa)
+# eval $(keychain -q --eval --inherit any rubicon.ssh.rsa)
+# eval $(keychain -q --eval --inherit any rubicon.ssh.ed25519)
+# eval $(keychain -q --eval --inherit any xr.ssh.rsa)
 
 use_clang()
 {
