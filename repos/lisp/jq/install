@@ -1,0 +1,9 @@
+mkdir -p src/build
+cd src/build
+export PATH=/usr/local/opt/bison/bin:$PATH
+cmake ..
+cmake --build .
+cd ../..
+cp src/jq.el ../../../.emacs.d/plugins
+mkdir -p ../../../.emacs.d/etc/modules/$(uname)
+cp src/build/jq-impl.so ../../../.emacs.d/etc/modules/$(uname)
