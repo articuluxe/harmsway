@@ -1,7 +1,4 @@
-CXXFLAGS=-std=c++14 $(CXX_FLAGS) -Wno-unused-parameter -c -g
-# -std=c++0x
-# -std=c++14
-# -std=c++17
+CXXFLAGS=-std=c++17 $(CXX_FLAGS) -Wno-unused-parameter -c -g
 LDFLAGS=-g
 SOURCES=scratch.cpp
 OBJECTS=$(SOURCES:.cpp=.o)
