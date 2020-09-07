@@ -1,0 +1,1 @@
+cp src/toml.el ../../../.emacs.d/plugins
