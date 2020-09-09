@@ -1,12 +1,12 @@
 @echo off
 rem -*- Mode: bat -*-
-rem install-emacs.bat --- install emacs (xr style)
-rem Copyright (C) 2015-2019  Dan Harms (dan.harms)
+rem install-emacs.bat --- install emacs (win32 style)
+rem Copyright (C) 2015-2020  Dan Harms (dan.harms)
 rem Author: Dan Harms <dan.harms@xrtrading.com>
 rem Created: Thursday, May 21, 2015
 rem Version: 1.0
-rem Modified Time-stamp: <2019-12-06 11:37:23 Dan.Harms>
-rem Modified by: Dan.Harms
+rem Modified Time-stamp: <2020-09-08 23:37:24 dharms>
+rem Modified by: Dan Harms
 rem Keywords: install perfect editor
 
 setlocal
@@ -114,4 +114,4 @@ exit /b 0
 
 endlocal
 
-rem xr-install-emacs.bat ends here
+rem install-emacs.bat ends here

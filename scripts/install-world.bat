@@ -1,11 +1,11 @@
 @echo off
 rem -*- Mode: bat -*-
-rem install-world.bat --- install emacs (xr style)
-rem Copyright (C) 2017, 2019  Dan Harms (dan.harms)
+rem install-world.bat --- install the world (win32 style)
+rem Copyright (C) 2017, 2019-2020  Dan Harms (dan.harms)
 rem Author: Dan Harms <dan.harms@xrtrading.com>
 rem Created: Thursday, December 21, 2017
 rem Version: 1.0
-rem Modified Time-stamp: <2019-12-05 10:21:02 Dan.Harms>
+rem Modified Time-stamp: <2020-09-08 23:39:38 dharms>
 rem Modified by: Dan Harms
 rem Keywords: install perfect editor
 setlocal
