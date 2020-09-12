@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-09-17 11:01:38 dharms>
+;; Modified Time-stamp: <2020-09-18 17:46:52 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3703,11 +3703,9 @@ This function's result only has value if it is preceded by any font changes."
                 ("\\.cc$"         . c++-mode)
                 ("\\.cpp$"        . c++-mode)
                 ("\\.inl$"        . c++-mode)
-                ("\\.c$"          . c++-mode)
                 ("\\.H$"          . c++-mode)
                 ("\\.hh$"         . c++-mode)
                 ("\\.hpp$"        . c++-mode)
-                ("\\.h$"          . c++-mode)
                 ("\\.java$"       . java-mode)
                 ("\\.pl$"         . perl-mode)
                 ("\\.pm$"         . perl-mode)
