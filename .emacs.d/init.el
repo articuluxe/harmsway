@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-09-07 00:21:43 dharms>
+;; Modified Time-stamp: <2020-09-17 11:01:38 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1032,6 +1032,7 @@ From `manuel-oberti.github.io' on 20190806."
   :init
   (setq mc/list-file (concat my/user-directory "mc-lists.el"))
   (setq mc/edit-lines-empty-lines 'ignore)
+  (setq mc/insert-numbers-default 1)
   :config
   (define-key mc/keymap (kbd "RET") 'multiple-cursors-mode)
   (add-to-list 'mc/cursor-specific-vars 'iy-go-to-char-start-pos)
