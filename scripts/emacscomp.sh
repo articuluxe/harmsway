@@ -5,7 +5,7 @@
 # Author: Dan Harms <dan.harms@xrtrading.com>
 # Created: Tuesday, June 16, 2015
 # Version: 1.0
-# Modified Time-stamp: <2020-08-13 09:12:26 dharms>
+# Modified Time-stamp: <2020-09-17 13:36:56 dharms>
 # Keywords: emacs configuration
 
 emacs=$EDITOR
@@ -24,7 +24,7 @@ fi
 mkdir -p "$logdir"
 
 cmd="(byte-recompile-directory \"$dir\" 0 t)"
-echo "Compiling emacs files in directory $dir..."
+echo "Using $emacs to compile files in directory $dir..."
 echo -e
 
 $emacs --batch -u "$user" --eval "$cmd" > "$log" 2>&1
