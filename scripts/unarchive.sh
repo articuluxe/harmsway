@@ -2,7 +2,7 @@
 # -*- Mode: sh -*-
 # unarchive.sh --- unarchive a world archive
 # Copyright (C) 2016-2017  Dan Harms (dan.harms)
-# Author: Dan Harms <dan.harms@xrtrading.com>
+# Author: Dan Harms <enniomore@icloud.com>
 # Created: Tuesday, August  9, 2016
 # Version: 1.0
 # Modified Time-stamp: <2017-03-16 17:39:12 dharms>

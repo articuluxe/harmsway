@@ -2,7 +2,7 @@
 # -*- Mode: sh -*-
 # kitty-gen.sh --- generate a kitty config file
 # Copyright (C) 2018  Dan Harms (dan.harms)
-# Author: Dan Harms <dan.harms@xrtrading.com>
+# Author: Dan Harms <enniomore@icloud.com>
 # Created: Tuesday, November  6, 2018
 # Version: 1.0
 # Modified Time-stamp: <2018-11-06 12:49:04 dan.harms>

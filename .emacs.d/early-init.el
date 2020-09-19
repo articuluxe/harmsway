@@ -1,6 +1,6 @@
 ;;; early-init.el --- Early initialization options for Emacs
 ;; Copyright (C) 2020  Dan.Harms (Dan.Harms)
-;; Author: Dan.Harms <dan.harms@xrtrading.com>
+;; Author: Dan.Harms <enniomore@icloud.com>
 ;; Created: Tuesday, January 14, 2020
 ;; Modified Time-stamp: <2020-02-14 11:12:04 dharms>
 ;; Modified by: Dan Harms

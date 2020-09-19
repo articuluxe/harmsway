@@ -1,6 +1,6 @@
 ;;; insert-with-completion.el --- Insert with completion
 ;; Copyright (C) 2020  Dan Harms (dan.harms)
-;; Author: Dan Harms <dan.harms@xrtrading.com>
+;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Wednesday, February 12, 2020
 ;; Version: 1.0
 ;; Modified Time-stamp: <2020-02-12 14:38:12 dan.harms>

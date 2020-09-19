@@ -2,7 +2,7 @@
 rem -*- Mode: bat -*-
 rem install-emacs.bat --- install emacs (win32 style)
 rem Copyright (C) 2015-2020  Dan Harms (dan.harms)
-rem Author: Dan Harms <dan.harms@xrtrading.com>
+rem Author: Dan Harms <enniomore@icloud.com>
 rem Created: Thursday, May 21, 2015
 rem Version: 1.0
 rem Modified Time-stamp: <2020-09-08 23:37:24 dharms>

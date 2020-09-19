@@ -2,10 +2,10 @@
 rem -*- Mode: bat -*-
 rem start-pageant.bat --- start pageant on start up
 rem Copyright (C) 2015-2020   (dan.harms)
-rem Author:  <dan.harms@xrtrading.com>
+rem Author:  <enniomore@icloud.com>
 rem Created: Friday, April 10, 2015
 rem Version: 1.0
-rem Modified Time-stamp: <2020-02-17 13:24:31 dan.harms>
+rem Modified Time-stamp: <2020-09-19 16:37:44 dharms>
 rem Keywords: pageant ssh
 
 setlocal

@@ -2,7 +2,7 @@
 # -*- Mode: sh -*-
 # emacscomp.sh --- byte-compile emacs lisp files
 # Copyright (C) 2015-2017, 2020  Dan Harms (dan.harms)
-# Author: Dan Harms <dan.harms@xrtrading.com>
+# Author: Dan Harms <enniomore@icloud.com>
 # Created: Tuesday, June 16, 2015
 # Version: 1.0
 # Modified Time-stamp: <2020-09-17 13:36:56 dharms>

@@ -2,7 +2,7 @@
 # -*- Mode: sh -*-
 # unrootify.sh --- remove rootness from a file
 # Copyright (C) 2018  Dan Harms (dan.harms)
-# Author: Dan Harms <dan.harms@xrtrading.com>
+# Author: Dan Harms <enniomore@icloud.com>
 # Created: Friday, August 17, 2018
 # Version: 1.0
 # Modified Time-stamp: <2018-08-17 04:11:32 dan.harms>

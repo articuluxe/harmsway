@@ -2,7 +2,7 @@
 rem -*- Mode: bat -*-
 rem untar-world.bat --- untar the world (xr style)
 rem Copyright (C) 2017-2019  Dan Harms (dan.harms)
-rem Author: Dan Harms <dan.harms@xrtrading.com>
+rem Author: Dan Harms <enniomore@icloud.com>
 rem Created: Thursday, December 21, 2017
 rem Version: 1.0
 rem Modified Time-stamp: <2019-12-06 11:19:19 Dan.Harms>

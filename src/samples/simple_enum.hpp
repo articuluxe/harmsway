@@ -1,7 +1,7 @@
 // -*- Mode: c++ -*-
 // simple_enum.hpp --- a simple enum
 // Copyright (C) 2018  Dan Harms (dan.harms)
-// Author: Dan Harms <dan.harms@xrtrading.com>
+// Author: Dan Harms <enniomore@icloud.com>
 // Created: Wednesday, September 26, 2018
 // Version: 1.0
 // Modified Time-stamp: <2018-09-26 10:13:42 dan.harms>

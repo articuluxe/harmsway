@@ -2,7 +2,7 @@
 # -*- Mode: python -*-
 # test_umask.py --- test umask settings in python
 # Copyright (C) 2019  Dan Harms (dan.harms)
-# Author: Dan Harms <dan.harms@xrtrading.com>
+# Author: Dan Harms <enniomore@icloud.com>
 # Created: Friday, September 27, 2019
 # Version: 1.0
 # Modified Time-stamp: <2019-10-15 10:46:31 dan.harms>

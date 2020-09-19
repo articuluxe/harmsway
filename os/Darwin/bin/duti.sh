@@ -2,7 +2,7 @@
 # -*- Mode: sh -*-
 # duti.sh --- duti script for os x file associations
 # Copyright (C) 2020  Dan Harms (dan.harms)
-# Author: Dan Harms <dan.harms@xrtrading.com>
+# Author: Dan Harms <enniomore@icloud.com>
 # Created: Wednesday, February 12, 2020
 # Version: 1.0
 # Modified Time-stamp: <2020-02-12 13:35:43 dan.harms>

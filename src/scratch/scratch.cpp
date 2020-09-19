@@ -1,5 +1,5 @@
 // scratch.cpp --- misc. testing
-// Author: Dan Harms <dan.harms@xrtrading.com>
+// Author: Dan Harms <enniomore@icloud.com>
 // Created: Thursday, July  2, 2015
 // Modified Time-stamp: <2015-11-11 15:18:45 dan.harms>
 // Modified by: Dan Harms

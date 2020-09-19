@@ -2,7 +2,7 @@
 rem -*- Mode: bat -*-
 rem setenv.bat --- set environment variables
 rem Copyright (C) 2019  Dan Harms (Dan.Harms)
-rem Author: Dan Harms <dan.harms@xrtrading.com>
+rem Author: Dan Harms <enniomore@icloud.com>
 rem Created: Thursday, December  5, 2019
 rem Version: 1.0
 rem Modified Time-stamp: <2019-12-19 16:15:18 Dan.Harms>

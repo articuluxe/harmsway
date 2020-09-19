@@ -2,7 +2,7 @@
 # -*- Mode: sh -*-
 # test_tar.sh --- test tar archiving
 # Copyright (C) 2016  Dan Harms (dan.harms)
-# Author: Dan Harms <dan.harms@xrtrading.com>
+# Author: Dan Harms <enniomore@icloud.com>
 # Created: Tuesday, August  9, 2016
 # Version: 1.0
 # Modified Time-stamp: <2016-08-20 08:01:32 dharms>

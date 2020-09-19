@@ -1,6 +1,6 @@
 ;; difftool.el --- use emacs as a diff tool for git
 ;; Copyright (C) 2015, 2016  Dan Harms (dan.harms)
-;; Author: Dan Harms <dan.harms@xrtrading.com>
+;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Tuesday, August 18, 2015
 ;; Version: 1.0
 ;; Modified Time-stamp: <2016-03-30 18:27:18 dharms>

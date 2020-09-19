@@ -1,6 +1,6 @@
 ;;; fira-mode.el --- enable ligatures for fira code font
 ;; Copyright (C) 2018  Dan Harms (dan.harms)
-;; Author: Dan Harms <dan.harms@xrtrading.com>
+;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Thursday, December 20, 2018
 ;; Modified Time-stamp: <2018-12-20 10:15:15 dan.harms>
 ;; Modified by: Dan Harms

@@ -2,7 +2,7 @@
 # -*- Mode: sh -*-
 # untar-world.sh --- untar important files
 # Copyright (C) 2015-2018  Dan Harms (dan.harms)
-# Author: Dan Harms <dan.harms@xrtrading.com>
+# Author: Dan Harms <enniomore@icloud.com>
 # Created: Monday, May 18, 2015
 # Version: 1.0
 # Modified Time-stamp: <2018-07-12 22:49:00 dharms>

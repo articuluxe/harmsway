@@ -2,7 +2,7 @@
 rem -*- Mode: bat -*-
 rem install-world.bat --- install the world (win32 style)
 rem Copyright (C) 2017, 2019-2020  Dan Harms (dan.harms)
-rem Author: Dan Harms <dan.harms@xrtrading.com>
+rem Author: Dan Harms <enniomore@icloud.com>
 rem Created: Thursday, December 21, 2017
 rem Version: 1.0
 rem Modified Time-stamp: <2020-09-08 23:39:38 dharms>

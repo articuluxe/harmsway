@@ -2,7 +2,7 @@
 # -*- Mode: sh -*-
 # _repo-init-common.sh --- init a src repo
 # Copyright (C) 2016-2018  Dan Harms (dan.harms)
-# Author: Dan Harms <dan.harms@xrtrading.com>
+# Author: Dan Harms <enniomore@icloud.com>
 # Created: Tuesday, May  3, 2016
 # Version: 1.0
 # Modified Time-stamp: <2018-02-28 13:11:12 dan.harms>
