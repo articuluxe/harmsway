@@ -684,7 +684,7 @@ hidden."
       (cond ((and (--any-p (oref it hidden)   children)
                   (--any-p (oref it children) children))
              (magit-section-show-headings section))
-            ((-any-p 'magit-section-hidden-body children)
+            ((seq-some 'magit-section-hidden-body children)
              (magit-section-show-children section))
             (t
              (magit-section-hide section))))))
@@ -696,7 +696,7 @@ hidden."
     (cond ((and (--any-p (oref it hidden)   children)
                 (--any-p (oref it children) children))
            (magit-section-show-headings magit-root-section))
-          ((-any-p 'magit-section-hidden-body children)
+          ((seq-some 'magit-section-hidden-body children)
            (magit-section-show-children magit-root-section))
           (t
            (mapc 'magit-section-hide children)))))
@@ -971,9 +971,9 @@ at point."
 
 (defun magit-section-match-assoc (section alist)
   "Return the value associated with SECTION's type or lineage in ALIST."
-  (-some (pcase-lambda (`(,key . ,val))
-           (and (magit-section-match-1 key section) val))
-         alist))
+  (seq-some (pcase-lambda (`(,key . ,val))
+              (and (magit-section-match-1 key section) val))
+            alist))
 
 ;;; Create
 
@@ -1052,21 +1052,24 @@ form `(eval FORM)' in which case FORM is evaluated at runtime.
                          :start (point-marker)
                          :parent magit-insert-section--parent)))
        (oset ,s hidden
-             (if-let ((value (run-hook-with-args-until-success
-                              'magit-section-set-visibility-hook ,s)))
-                 (eq value 'hide)
-               (if-let ((incarnation (and magit-insert-section--oldroot
-                                          (magit-get-section
-                                           (magit-section-ident ,s)
-                                           magit-insert-section--oldroot))))
-                   (oref incarnation hidden)
-                 (if-let ((value (magit-section-match-assoc
-                                  ,s magit-section-initial-visibility-alist)))
-                     (progn
-                       (when (functionp value)
-                         (setq value (funcall value ,s)))
-                       (eq value 'hide))
-                   ,(nth 2 (car args))))))
+             (let ((value (run-hook-with-args-until-success
+                           'magit-section-set-visibility-hook ,s)))
+               (if value
+                   (eq value 'hide)
+                 (let ((incarnation (and magit-insert-section--oldroot
+                                         (magit-get-section
+                                          (magit-section-ident ,s)
+                                          magit-insert-section--oldroot))))
+                   (if incarnation
+                       (oref incarnation hidden)
+                     (let ((value (magit-section-match-assoc
+                                   ,s magit-section-initial-visibility-alist)))
+                       (if value
+                           (progn
+                             (when (functionp value)
+                               (setq value (funcall value ,s)))
+                             (eq value 'hide))
+                         ,(nth 2 (car args)))))))))
        (let ((magit-insert-section--current ,s)
              (magit-insert-section--parent  ,s)
              (magit-insert-section--oldroot
@@ -1433,7 +1436,7 @@ invisible."
                                  (if (oref section hidden)
                                      (car magit-section-visibility-indicator)
                                    (cdr magit-section-visibility-indicator))
-                                 (face-foreground 'fringe))))))
+                                 'fringe)))))
            ((stringp (car-safe magit-section-visibility-indicator))
             (let ((ov (magit--overlay-at (1- eoh) 'magit-vis-indicator 'eoh)))
               (cond ((oref section hidden)

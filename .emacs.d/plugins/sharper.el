@@ -4,7 +4,7 @@
 ;;
 ;; Author: Sebastian Monia <smonia@outlook.com>
 ;; URL: https://github.com/sebasmonia/sharper
-;; Package-Requires: ((emacs "26.3") (transient "20200601"))
+;; Package-Requires: ((emacs "27.1") (transient "0.2.0"))
 ;; Version: 1.0
 ;; Keywords: maint tool
 
@@ -14,7 +14,7 @@
 
 ;;; Commentary:
 
-;; This package aims to be a complete package for dotnet tasks that aren't part
+;; This aims to be a complete package for dotnet tasks that aren't part
 ;; of the languages but needed for any project: Solution management, nuget, etc.
 ;;
 ;; Steps to setup:
@@ -35,6 +35,7 @@
 (require 'cl-lib)
 (require 'cl-extra) ;; for cl-some
 (require 'json)
+(require 'thingatpt)
 (require 'project)
 
 ;;------------------Customization options-----------------------------------------
@@ -63,8 +64,10 @@
 ;; %a = RUN SETTINGS (dotnet test) or APPLICATION ARGUMENTS (dotnet run)
 ;; %p = PROJECT (when project != target)
 ;; %k = PACKAGE NAME
+;; %e = TEST NAME
 (defvar sharper--build-template "dotnet build %t %o %m" "Template for \"dotnet build\" invocations.")
 (defvar sharper--test-template "dotnet test %t %o %a" "Template for \"dotnet test\" invocations.")
+(defvar sharper--test-methodfunc-template "dotnet test --filter %e" "Template for \"dotnet test\" invocations to run the \"current test\".")
 (defvar sharper--clean-template "dotnet clean %t %o" "Template for \"dotnet clean\" invocations.")
 (defvar sharper--publish-template "dotnet publish %t %o" "Template for \"dotnet publish\" invocations.")
 (defvar sharper--pack-template "dotnet pack %t %o %m" "Template for \"dotnet pack\" invocations.")
@@ -73,6 +76,7 @@
 (defvar sharper--sln-add-template "dotnet sln %t add %p" "Template for \"dotnet sln add\" invocations.")
 (defvar sharper--sln-remove-template "dotnet sln %t remove %p" "Template for \"dotnet sln remove\" invocations.")
 (defvar sharper--reference-list-template "dotnet list %t reference" "Template for \"dotnet list reference\" invocations.")
+
 (defvar sharper--reference-add-template "dotnet add %t reference %p" "Template for \"dotnet add reference\" invocations.")
 (defvar sharper--reference-remove-template "dotnet remove %t reference %p" "Template for \"dotnet remove reference\" invocations.")
 (defvar sharper--package-list-template "dotnet list %t package" "Template for \"dotnet list package\" invocations.")
@@ -87,7 +91,9 @@
 (defvar sharper--last-test nil "A cons cell (directory . last command used to run tests).")
 (defvar sharper--last-publish nil "A cons cell (directory . last command used to run a publish).")
 (defvar sharper--last-pack nil "A cons cell (directory . last command used to create a NuGet package).")
-(defvar sharper--last-run nil "A cons cell (directory . last command used for \"dotnet run\").")
+(defvar sharper--last-run nil "A three item list (directory last . command used for \"dotnet run\" . project name).")
+(defvar sharper--current-test nil  "A cons cell (directory . test-name) used when running tests using the method/function at point as parameter.")
+(defvar sharper--current-build nil  "A string with the directory used when building the nearest project.")
 
 (defvar sharper--cached-RIDs nil "The list of Runtime IDs used for completion.")
 
@@ -103,7 +109,11 @@
 
 (defun sharper--log-command (title command)
   "Log a COMMAND, using TITLE as header, using the predefined format."
-  (sharper--log "[command]" title "\n" command "\n"))
+  (sharper--log
+   (concat "[command] " title
+           "\n " command
+           "\n in directory: " default-directory
+           "\n")))
 
 (defun sharper--log (&rest to-log)
   "Append TO-LOG to the log buffer.  Intended for internal use only."
@@ -152,13 +162,16 @@
   "dotnet Menu"
   ["Build"
    ("B" "new build" sharper-transient-build)
-   ("b" (lambda () (sharper--repeat-description sharper--last-build)) sharper--run-last-build)]
+   ("b" (lambda () (sharper--repeat-description sharper--last-build)) sharper--run-last-build)
+   ("sb" (lambda () (sharper--build-nearest-setup)) sharper--run-nearest-build)]
   ["Run test"
    ("T" "new test run" sharper-transient-test)
-   ("t" (lambda () (sharper--repeat-description sharper--last-test)) sharper--run-last-test)]
+   ("t" (lambda () (sharper--repeat-description sharper--last-test)) sharper--run-last-test)
+   ("st" (lambda () (sharper--test-point-setup)) sharper--run-test-at-point)]
   ["Run application"
    ("R" "new application run" sharper-transient-run)
-   ("r" (lambda () (sharper--repeat-description sharper--last-run)) sharper--run-last-run)]
+   ;; As an exception, last run as a different structure than the other commands
+   ("r" (lambda () (sharper--repeat-description-run sharper--last-run)) sharper--run-last-run)]
   ["Publish app"
    ("P" "new publish" sharper-transient-publish)
    ("p" (lambda () (sharper--repeat-description sharper--last-publish)) sharper--run-last-publish)]
@@ -182,7 +195,7 @@
 
 (defun sharper--repeat-description (the-var)
   "Format the command in THE-VAR for display in the main transient.
-THE-VAR is one of the sharper--last-* variables."
+THE-VAR is one of the sharper--last-* variables, except `sharper--last-run'."
   (if (not the-var)
       (propertize "[No previous invocation]"
                   'face
@@ -192,7 +205,91 @@ THE-VAR is one of the sharper--last-* variables."
                         'face
                         font-lock-doc-face))))
 
-(defun sharper--run-last-build (&optional transient-params)
+(defun sharper--repeat-description-run (the-var)
+  "Format the command in THE-VAR for display in the main transient.
+THE-VAR is `sharper--last-run' but the plan is for all of them to change format."
+  (if (not the-var)
+      (propertize "[No previous invocation]"
+                  'face
+                  font-lock-doc-face)
+    (concat "repeast last: "
+            (propertize (cl-second the-var)
+                        'face
+                        font-lock-doc-face))))
+
+(defun sharper--test-point-setup ()
+  "Setup the state to run the test at point.
+Updates `sharper--current-test' using `sharper--current-method-function-name'
+and `sharper--nearest-project-dir', then returns the description to show in
+the main transient."
+  (let ((the-thing (sharper--current-method-function-name))
+        (proj-dir (sharper--nearest-project-dir)))
+    ;; update the variable, will have a value only if
+    ;; we could find the dir and a function name
+    (setq sharper--current-test
+          (when (and the-thing proj-dir)
+            (cons proj-dir the-thing)))
+    (if sharper--current-test
+        (concat "test method: "
+                (propertize the-thing
+                            'face
+                            font-lock-type-face)
+                (propertize (concat " (project " proj-dir ")")
+                            'face
+                            font-lock-doc-face))
+      (propertize "[Can't identify test & project to run]"
+                  'face
+                  font-lock-doc-face))))
+
+(defun sharper--build-nearest-setup ()
+  "Setup the state to build the nearest project.
+Updates `sharper--current-build' using `sharper--nearest-project-dir',
+then returns the description to show in the main transient."
+  (let ((proj-dir (sharper--nearest-project-dir)))
+    ;; update the variable, will have a value only if
+    ;; we could find the nearest project
+    (setq sharper--current-build proj-dir)
+    (if sharper--current-build
+        (concat "build nearest"
+                (propertize (concat " (project " proj-dir ")")
+                            'face
+                            font-lock-doc-face))
+      (propertize "[Can't identify project to build]"
+                  'face
+                  font-lock-doc-face))))
+
+(defun sharper--current-method-function-name ()
+  "Return the name of the current method/function.
+As last resort it uses the word at point.
+The current implementation is C# only, we need to make accomodations for F#."
+  ;; c-defun-name-and-limits is an undocumentd cc-mode function.
+  ;; It works, but, who knows?
+  ;; In case if fails, we resort to the word at point, however
+  ;; 'word is not valid when subword-mode is enabled, using
+  ;; instead 'sexp makes it work in both cases
+  (let ((c-name (ignore-errors
+                  (c-defun-name-and-limits nil)))
+        (fallback (thing-at-point 'sexp t)))
+    (if c-name
+        (car c-name) ;; nothing else to do!
+      (if (> (length fallback) 49) ;; make sure the fallback is not too long
+          (concat (substring fallback 0 45) "(...)")
+        fallback))))
+
+(defun sharper--nearest-project-dir ()
+  "Return the first directory that has a project from the current path."
+  ;; TODO: I think this would be more useful if it returned the full project path.
+  ;; TODO: Modes other than dired where this would be logical???
+  (let ((start-from (or (buffer-file-name)
+                        (when (eq major-mode
+                                  'dired-mode)
+                          default-directory))))
+    (when start-from
+      (locate-dominating-file
+       start-from
+       #'sharper--directory-has-proj-p))))
+
+(defun sharper--run-last-build (&optional _transient-params)
   "Run \"dotnet build\", ignore TRANSIENT-PARAMS, repeat last call via `sharper--last-build'."
   (interactive
    (list (transient-args 'sharper-transient-build)))
@@ -204,7 +301,23 @@ THE-VAR is one of the sharper--last-* variables."
         (compile command))
     (sharper-transient-build)))
 
-(defun sharper--run-last-test (&optional transient-params)
+(defun sharper--run-nearest-build (&optional _transient-params)
+  "Run \"dotnet build\", ignore TRANSIENT-PARAMS, setup call via `sharper--current-build'."
+  (interactive
+   (list (transient-args 'sharper-transient-build)))
+  (transient-set)
+  (if sharper--current-build
+      (let ((default-directory sharper--current-build)
+            (command (sharper--strformat sharper--build-template
+                                         ?t ""
+                                         ?o ""
+                                         ?m "")))
+        (sharper--log-command "Build nearest project" command)
+        (compile command))
+    ;; go back to the main menu if sharper--current-build is not set
+    (sharper-main-transient)))
+
+(defun sharper--run-last-test (&optional _transient-params)
   "Run \"dotnet test\", ignore TRANSIENT-PARAMS, repeat last call via `sharper--last-test'."
   (interactive
    (list (transient-args 'sharper-transient-test)))
@@ -216,7 +329,21 @@ THE-VAR is one of the sharper--last-* variables."
         (compile command))
     (sharper-transient-test)))
 
-(defun sharper--run-last-publish (&optional transient-params)
+(defun sharper--run-test-at-point (&optional _transient-params)
+  "Run \"dotnet test\", ignore TRANSIENT-PARAMS, setup call via `sharper--current-test'."
+  (interactive
+   (list (transient-args 'sharper-transient-test)))
+  (transient-set)
+  (if sharper--current-test
+      (let ((default-directory (car sharper--current-test))
+            (command (sharper--strformat sharper--test-methodfunc-template
+                                         ?e (shell-quote-argument (cdr sharper--current-test)))))
+        (sharper--log-command "Testing method/function at point" command)
+        (compile command))
+    ;; go back to the main menu if sharper--current-test is not set
+    (sharper-main-transient)))
+
+(defun sharper--run-last-publish (&optional _transient-params)
   "Run \"dotnet publish\", ignore TRANSIENT-PARAMS, repeat last call via `sharper--last-publish'."
   (interactive
    (list (transient-args 'sharper-transient-publish)))
@@ -225,11 +352,10 @@ THE-VAR is one of the sharper--last-* variables."
       (let ((default-directory (car sharper--last-publish))
             (command (cdr sharper--last-publish)))
         (sharper--log-command "Publish" command)
-        (sharper--run-async-shell command "*dotnet publish*")
-        (pop-to-buffer "*dotnet publish*"))
+        (pop-to-buffer (sharper--run-async-shell command "*dotnet publish*")))
     (sharper-transient-publish)))
 
-(defun sharper--run-last-pack (&optional transient-params)
+(defun sharper--run-last-pack (&optional _transient-params)
   "Run \"dotnet build\", ignore TRANSIENT-PARAMS, repeat last call via `sharper--last-pack'."
   (interactive
    (list (transient-args 'sharper-transient-pack)))
@@ -241,42 +367,33 @@ THE-VAR is one of the sharper--last-* variables."
         (compile command))
     (sharper-transient-pack)))
 
-(defun sharper--run-last-run (&optional transient-params)
+(defun sharper--run-last-run (&optional _transient-params)
   "Run \"dotnet run\", ignore TRANSIENT-PARAMS, repeat last call via `sharper--last-run'."
   (interactive
    (list (transient-args 'sharper-transient-run)))
   (transient-set)
   (if sharper--last-run
-      (let ((default-directory (car sharper--last-run))
-            (command (cdr sharper--last-run)))
+      (cl-destructuring-bind (default-directory command proj-name) sharper--last-run
         (sharper--log-command "Run" command)
-        (sharper--run-async-shell command "*dotnet run*")
-        (pop-to-buffer "*dotnet run*"))
+        (pop-to-buffer (sharper--run-async-shell command
+                                                 (format "*dotnet run - %s*" proj-name))))
     (sharper-transient-run)))
 
 (defun sharper--version-info ()
-  "Run version info for SDKs, runtime, etc."
+  "Display version info for SDKs, runtimes, etc."
   (interactive)
-  (message "Compiling \"dotnet\" information...")
-  (let ((dotnet-path (shell-command-to-string (if (string= system-type "windows-nt")
-                                                  "where dotnet"
-                                                "which dotnet")))
-        (dotnet-version (shell-command-to-string "dotnet --version"))
-        (dotnet-sdks (shell-command-to-string "dotnet --list-sdks"))
-        (dotnet-runtimes (shell-command-to-string "dotnet --list-runtimes"))
+  (sharper--message "Compiling \"dotnet\" information...")
+  (let ((dotnet-path (file-chase-links (executable-find "dotnet")))
+        (dotnet-info (shell-command-to-string "dotnet --info"))
         (buf (get-buffer-create "*dotnet info*")))
     (with-current-buffer buf
       (erase-buffer)
       (insert "dotnet path: "
-              dotnet-path)
-      (insert "dotnet version: "
-              dotnet-version)
-      (insert "\nInstalled SDKs:\n"
-              dotnet-sdks)
-      (insert "\nInstalled runtimes:\n"
-              dotnet-runtimes)
-      (goto-char (point-min)))
-    (pop-to-buffer buf)))
+              dotnet-path
+              "\n")
+      (insert "\ndotnet --info output:\n\n"
+              dotnet-info)
+      (pop-to-buffer buf))))
 
 ;;------------------Argument parsing----------------------------------------------
 
@@ -346,9 +463,14 @@ Just a facility to make these invocations shorter."
 
 (defun sharper--project-root (&optional path)
   "Get the project root from optional PATH or `default-directory'."
-  (project-root (project-current nil
-                                 (or path
-                                     default-directory))))
+  ;; TODO: hello future self. This used to call `project-root', but it
+  ;; wasn't available in Emacs < 28. I tried to do something smart about
+  ;; this, but since it wasn't easy, it probably wasn't _that_ smart.
+  ;; Decided instead to take advantage of the internals of project.el,
+  ;; so if this breaks in the future, you know...fix it.
+  (cdr (project-current nil
+                        (or path
+                            default-directory))))
 
 (defun sharper--filename-proj-or-sln-p (filename)
   "Return non-nil if FILENAME is a project or solution."
@@ -361,6 +483,16 @@ Just a facility to make these invocations shorter."
   "Return non-nil if FILENAME is a project."
   (let ((extension (file-name-extension filename)))
     (member extension sharper-project-extensions)))
+
+(defun sharper--directory-has-proj-p (directory)
+  "Return non-nil if DIRECTORY has a project."
+  ;; It is tempting to use a regex to filter the project names
+  ;; but for now let's rely on the existing function, for consistency
+  (when (file-directory-p directory)
+    ;; Strangely enough, in Windows directory-files ignores a path
+    ;; that is a file, but under Linux it fails. Adding a guard...
+    (let ((files (directory-files directory t)))
+      (cl-some #'sharper--filename-proj-p files))))
 
 (defun sharper--filename-sln-p (filename)
   "Return non-nil if FILENAME is a solution."
@@ -535,7 +667,7 @@ After the first call, the list is cached in `sharper--cached-RIDs'."
                                        ?t (sharper--shell-quote-or-empty target)
                                        ?o (sharper--option-alist-to-string options)
                                        ?a (if run-settings
-                                              (concat "-- " runtime-settings)
+                                              (concat "-- " run-settings)
                                             ""))))
       (setq sharper--last-test (cons directory command))
       (sharper--run-last-test))))
@@ -716,8 +848,13 @@ After the first call, the list is cached in `sharper--cached-RIDs'."
          (app-args (sharper--get-argument "<ApplicationArguments>=" transient-params))
          ;; For run we want this to execute in the same directory
          ;; that the project is, where the .settings file is
-         (directory (file-name-directory target)))
-    (unless target ;; it is possible to run without a target :shrug:
+         (directory (file-name-directory (or target "")))
+         ;; Default value, overriden if there's a target project
+         (proj-name (file-name-directory default-directory)))
+    (if target
+        ;; when there is a target, extract the project name
+        (setq proj-name (file-name-sans-extension (file-name-nondirectory target)))
+      ;; it is possible to run without a target :shrug:
       (sharper--message "No TARGET provided, will run in default directory."))
     (let ((command (sharper--strformat sharper--run-template
                                        ?t (sharper--shell-quote-or-empty target)
@@ -725,7 +862,9 @@ After the first call, the list is cached in `sharper--cached-RIDs'."
                                        ?a (if app-args
                                               (concat "-- " app-args)
                                             ""))))
-      (setq sharper--last-run (cons directory command))
+      (setq sharper--last-run (list (or directory default-directory)
+                                    command
+                                    proj-name))
       (sharper--run-last-run))))
 
 (define-infix-argument sharper--option-run-application-arguments ()
@@ -883,7 +1022,7 @@ After the first call, the list is cached in `sharper--cached-RIDs'."
                                 project-filename)))))
 
 (defun sharper--format-project-references (path)
-  "Get and format the project reference for the proejct in PATH for `sharper--project-references-mode'."
+  "Get and format the project reference for the project in PATH for `sharper--project-references-mode'."
   (cl-labels ((convert-to-entry (reference)
                                 (list reference (vector reference))))
     (let ((command (sharper--strformat sharper--reference-list-template
@@ -938,7 +1077,7 @@ After the first call, the list is cached in `sharper--cached-RIDs'."
   (interactive)
   (let ((default-directory (file-name-directory sharper--project-path))
         (command (sharper--strformat sharper--reference-remove-template
-                                     ?t (shell-quote-argument sharper--project-path-path)
+                                     ?t (shell-quote-argument sharper--project-path)
                                      ?p (shell-quote-argument (tabulated-list-get-id)))))
     (sharper--log-command "Remove project reference" command)
     (sharper--message (string-trim (shell-command-to-string command)))
@@ -1078,7 +1217,6 @@ After the first call, the list is cached in `sharper--cached-RIDs'."
 Format of the returned data is (PackageId . [PackageId Verified Tags Versions-List])"
   (let* ((search-url (format sharper--nuget-search-URL (url-hexify-string term)))
          (packages-found (sharper--json-request search-url)))
-    (setq meh packages-found)
     (mapcar #'sharper--format-nuget-entry (alist-get 'data packages-found))))
 
 (defun sharper--format-nuget-entry (element)
@@ -1132,9 +1270,10 @@ Format of the returned data is (PackageId . [PackageId Verified Tags Versions-Li
                                             nil
                                             t
                                             last-ver))
-         (y-n-prompt (format "Add package %s to project %s?"
-                             name
-                             sharper--project-path))
+         (prompt-text (format "Install %s\nVersion %s\nto %s?"
+                              name
+                              version
+                              sharper--project-path))
          (command (sharper--strformat sharper--package-add-template
                                       ?t (shell-quote-argument sharper--project-path)
                                       ?k (shell-quote-argument name)
@@ -1142,15 +1281,15 @@ Format of the returned data is (PackageId . [PackageId Verified Tags Versions-Li
          ;; Wanna keep around this buffer's name to close
          ;; it after adding the package
          (nuget-buffer-name (buffer-name)))
-    (when (yes-or-no-p y-n-prompt)
+    (when (yes-or-no-p prompt-text)
       ;; TODO: project-path should be prompted it nil
       (sharper--log-command "Add project package" command)
       (sharper--shell-command-to-log command)
-      ;; this will either open or refresh the existing buffer for project packages
-      (sharper--manage-project-packages sharper--project-path)
       ;; since there's no way to start another search, after adding a package
       ;; this buffer's purpose in life has been fulfilled. Farewell, dear buffer!
-      (kill-buffer nuget-buffer-name))))
+      (kill-buffer nuget-buffer-name)
+      ;; this will either open or refresh the existing buffer for project packages
+      (sharper--manage-project-packages sharper--project-path))))
 
 (provide 'sharper)
 ;;; sharper.el ends here

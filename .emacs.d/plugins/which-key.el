@@ -5,7 +5,7 @@
 ;; Author: Justin Burkett <justin@burkett.cc>
 ;; Maintainer: Justin Burkett <justin@burkett.cc>
 ;; URL: https://github.com/justbur/emacs-which-key
-;; Version: 3.3.2
+;; Version: 3.5.0
 ;; Keywords:
 ;; Package-Requires: ((emacs "24.4"))
 
@@ -815,8 +815,6 @@ problems at github. If DISABLE is non-nil disable support."
         (when which-key-show-remaining-keys
           (add-hook 'pre-command-hook #'which-key--lighter-restore))
         (add-hook 'pre-command-hook #'which-key--hide-popup)
-        (add-hook 'focus-out-hook #'which-key--stop-timer)
-        (add-hook 'focus-in-hook #'which-key--start-timer)
         (add-hook 'window-size-change-functions
                   'which-key--hide-popup-on-frame-size-change)
         (which-key--start-timer))
@@ -826,8 +824,6 @@ problems at github. If DISABLE is non-nil disable support."
     (when which-key-show-remaining-keys
       (remove-hook 'pre-command-hook #'which-key--lighter-restore))
     (remove-hook 'pre-command-hook #'which-key--hide-popup)
-    (remove-hook 'focus-out-hook #'which-key--stop-timer)
-    (remove-hook 'focus-in-hook #'which-key--start-timer)
     (remove-hook 'window-size-change-functions
                  'which-key--hide-popup-on-frame-size-change)
     (which-key--stop-timer)))
@@ -911,6 +907,41 @@ but more functional."
         which-key-show-prefix 'left))
 
 ;;; Helper functions to modify replacement lists.
+
+;;;###autoload
+(defun which-key-add-keymap-based-replacements (keymap key replacement &rest more)
+  "Replace the description of KEY using REPLACEMENT in KEYMAP.
+KEY should take a format suitable for use in
+`kbd'. REPLACEMENT is the string to use to describe the
+command associated with KEY in the KEYMAP. You may also use a
+cons cell of the form \(STRING . COMMAND\) for each REPLACEMENT,
+where STRING is the replacement string and COMMAND is a symbol
+corresponding to the intended command to be replaced. In the
+latter case, which-key will verify the intended command before
+performing the replacement. COMMAND should be nil if the binding
+corresponds to a key prefix. For example,
+
+\(which-key-add-keymap-based-replacements global-map
+  \"C-x w\" \"Save as\"\)
+
+and
+
+\(which-key-add-keymap-based-replacements global-map
+  \"C-x w\" '\(\"Save as\" . write-file\)\)
+
+both have the same effect for the \"C-x C-w\" key binding, but
+the latter causes which-key to verify that the key sequence is
+actually bound to write-file before performing the replacement."
+  (while key
+    (let ((string (if (stringp replacement)
+                      replacement
+                    (car-safe replacement)))
+          (command (cdr-safe replacement)))
+      (define-key keymap (which-key--pseudo-key (kbd key))
+        `(which-key ,(cons string command))))
+    (setq key (pop more)
+          replacement (pop more))))
+(put 'which-key-add-keymap-based-replacements 'lisp-indent-function 'defun)
 
 ;;;###autoload
 (defun which-key-add-key-based-replacements
@@ -1462,19 +1493,18 @@ local bindings coming first. Within these categories order using
                                (cdr key-binding)))))))
 
 (defun which-key--get-pseudo-binding (key-binding &optional prefix)
-  (let* ((pseudo-binding
-          (key-binding (which-key--pseudo-key (kbd (car key-binding)) prefix)))
-         (pseudo-binding (when pseudo-binding (cadr pseudo-binding)))
-         (pseudo-desc (when pseudo-binding (car pseudo-binding)))
-         (pseudo-def (when pseudo-binding (cdr pseudo-binding)))
-         (real-def (key-binding (kbd (car key-binding))))
-         ;; treat keymaps as if they're nil bindings. This creates the
-         ;; possibility that we rename the wrong binding but this seems
-         ;; unlikely.
-         (real-def (unless (keymapp real-def) real-def)))
-    (when (and pseudo-binding
-               (eq pseudo-def real-def))
-      (cons (car key-binding) pseudo-desc))))
+  (let* ((key (kbd (car key-binding)))
+         (pseudo-binding (key-binding (which-key--pseudo-key key prefix))))
+    (when pseudo-binding
+      (let* ((command-replacement (cadr pseudo-binding))
+             (pseudo-desc (car command-replacement))
+             (pseudo-def (cdr command-replacement)))
+        (when (and (stringp pseudo-desc)
+                   (or (null pseudo-def)
+                       ;; don't verify keymaps
+                       (keymapp pseudo-def)
+                       (eq pseudo-def (key-binding key))))
+          (cons (car key-binding) pseudo-desc))))))
 
 (defsubst which-key--replace-in-binding (key-binding repl)
   (cond ((or (not (consp repl)) (null (cdr repl)))
@@ -1497,33 +1527,40 @@ local bindings coming first. Within these categories order using
 (defun which-key--replace-in-repl-list-once (key-binding repls)
   (cl-dolist (repl repls)
     (when (which-key--match-replacement key-binding repl)
-      (cl-return (which-key--replace-in-binding key-binding repl)))))
+      (cl-return `(replaced . ,(which-key--replace-in-binding key-binding repl))))))
 
 (defun which-key--replace-in-repl-list-many (key-binding repls)
-  (dolist (repl repls key-binding)
-    (when (which-key--match-replacement key-binding repl)
-      (setq key-binding (which-key--replace-in-binding key-binding repl)))))
+  (let (found)
+    (dolist (repl repls)
+      (when (which-key--match-replacement key-binding repl)
+        (setq found 't)
+        (setq key-binding (which-key--replace-in-binding key-binding repl))))
+    (when found `(replaced . ,key-binding))))
 
 (defun which-key--maybe-replace (key-binding &optional prefix)
   "Use `which-key--replacement-alist' to maybe replace KEY-BINDING.
 KEY-BINDING is a cons cell of the form \(KEY . BINDING\) each of
 which are strings. KEY is of the form produced by `key-binding'."
-  (let* ((pseudo-binding (which-key--get-pseudo-binding key-binding prefix))
-         replaced-key-binding)
+  (let* ((pseudo-binding (which-key--get-pseudo-binding key-binding prefix)))
     (if pseudo-binding
         pseudo-binding
       (let* ((replacer (if which-key-allow-multiple-replacements
                            #'which-key--replace-in-repl-list-many
                          #'which-key--replace-in-repl-list-once)))
-        (setq replaced-key-binding
-              (apply replacer
-                     (list key-binding
-                           (cdr-safe (assq major-mode which-key-replacement-alist)))))
-        ;; terminate early if we're only looking for one replacement and we found it
-        (if (and replaced-key-binding (not which-key-allow-multiple-replacements))
-            replaced-key-binding
-          (setq key-binding (or replaced-key-binding key-binding))
-          (or (apply replacer (list key-binding which-key-replacement-alist)) key-binding))))))
+        (pcase
+            (apply replacer
+                   (list key-binding
+                         (cdr-safe (assq major-mode which-key-replacement-alist))))
+          (`(replaced . ,repl)
+           (if which-key-allow-multiple-replacements
+               (pcase (apply replacer (list repl which-key-replacement-alist))
+                 (`(replaced . ,repl) repl)
+                 ('() repl))
+             repl))
+          ('()
+           (pcase (apply replacer (list key-binding which-key-replacement-alist))
+             (`(replaced . ,repl) repl)
+             ('() key-binding))))))))
 
 (defsubst which-key--current-key-list (&optional key-str)
   (append (listify-key-sequence (which-key--current-prefix))
@@ -2088,7 +2125,10 @@ max-lines max-width avl-lines avl-width (which-key--pages-height result))
          (key (if paging-key-bound
                   (concat key " or " which-key-paging-key)
                 key)))
-    (when which-key-use-C-h-commands
+    (when (and which-key-use-C-h-commands
+               (or (not (stringp (kbd prefix-keys)))
+                   (not (string-equal (char-to-string help-char)
+                                      (kbd prefix-keys)))))
       (which-key--propertize (format "[%s paging/help]" key)
                              'face 'which-key-note-face))))
 

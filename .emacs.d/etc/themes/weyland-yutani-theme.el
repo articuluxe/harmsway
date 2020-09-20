@@ -58,15 +58,18 @@ the parenthetical noise."
 
       (base0           "#9ca4b7")
       (base1           "#8c97a7")
-      (base2           "#717ea5")
+      (base2           "#6e788c")       ;
       (base3           "#8f8e9a")
       (base4           "#3e4044")
       (base5           "#4e5054")
+      (base6           "#717ea5")
+      (base6.1         "#8c9dc4")
+      (base7           "#505a76")
 
       (bg              "#202226")
       (bg-alt          "#26282c")
       (bg-Black        "#2b2f37")
-      (bg-darker       "#1c1f1a")
+      (bg-darker       "#1f2024")
 
       (_bg-light-Black  "#2E2F2F")
 
@@ -85,51 +88,59 @@ the parenthetical noise."
       (key3            "#6aa454")
 
       ;; Main Palette
-      (HarlequinGreen        "#77ba5e")
+      (HarlequinGreen        "#79c151")
       (Indigo                "#877CEB")
       (Violet                "#c291eb")
       (Magenta               "#C264C6")
       (IcebergBlue           "#4F9FD2")
-      (ArcticBlue            "#31a5ae")
-      (Gold                  "#bab171")
+      (ArcticBlue            "#59b9b4")
+      (Gold                  "#b9b174")
       (Orchid                "#e372dd")
 
       ;; ACCENT COLORS
       (Crimson               "#d06985")
       (Mustard               "#90b55b")
+      (Yellow                "#b9b65e")
       (Purple                "#AD83EB")
 
       ;; DIMM VARIANTS
       (dimm-Crimson          "#cc5655")
 
+
       ;; PALE VARIANTS
-      (pale-Indigo           "#9497d3")
+      (pale-Crimson          "#b95e76")
 
       ;; LIGHT VARIANTS
-      (_light-ArcticBlue     "#60bec6")
-      (light-Crimson         "#f78a7a")
+      (_light-Crimson        "#FF6066")
+      (Orange                "#fb8a69")
       (light-IcebergBlue     "#4FAED9")
       (light-Indigo          "#A28BE7")
       (light-Orchid          "#ee78e8")
       (light-Purple          "#ba86f4")
       (light-Blue            "#63A4FF")
+      (light-Finch           "#ebff5f")
 
       ;; DARK VARIANTS
+      (dark-Crimson          "#ba464a")
       (dark-Slate            "#3c4666")
       (dark-Gold             "#7e784c")
       (dark-Purple           "#7c73cc")
-      (very-dark-Purple      "#443f63")
       (bg-dark-Black         "#242733")
+      (dark-Red              "#d2344c")
 
       ;; VIBRANT VARIANTS
       (vibrant-Green         "#86dc2f")
       (vibrant-Red           "#ff6c6b")
+      (vibrant-Crimson       "#df5155")
+
       (vibrant-Purple        "#AD83EB")
+      (vibrant-Finch         "#F4ED1A")
+      (vibrant-Yellow        "#ffbb1c")
 
       ;; VERSION CONTROL
-      (wylnyut-diff-changed  "#8A60C3")
-      (wylnyut-diff-deleted  "#D74040")
-      (wylnyut-diff-added    "#46932d"))
+      (wylnyut-diff-changed  "#9965ba")
+      (wylnyut-diff-deleted  "#df3e36")
+      (wylnyut-diff-added    "#4f8920"))
 
   (apply
    'custom-theme-set-faces
@@ -150,8 +161,7 @@ the parenthetical noise."
     `(region                                   :foreground ,light-Indigo         :background ,bg-Blue)
     `(vertical-border                          :foreground ,dark-Slate)
     `(highlight                                :foreground ,bg                   :background ,vibrant-Green)
-    `(minibuffer-prompt                        :foreground ,HarlequinGreen
-      :bold t)
+    `(minibuffer-prompt                        :foreground ,HarlequinGreen)
 
     `(font-lock-builtin-face                   :foreground ,Indigo)
     `(font-lock-comment-face                   :foreground ,fg-alt)
@@ -167,9 +177,10 @@ the parenthetical noise."
     `(font-lock-warning-face                   :foreground ,Crimson)
 
     `(highlight-numbers-number                 :foreground ,Orchid)
+    `(match                                    :foreground ,pale-Crimson         :background ,bg-darker)
 
     ;; MODELINE
-    `(mode-line                                :foreground ,fg                   :background ,very-dark-Purple
+    `(mode-line                                :foreground ,fg                   :background ,bg-Black
       :box (:color ,dark-Slate :line-width 1))
     `(mode-line-buffer-id                      :foreground ,Gold                 :background nil
       :bold nil)
@@ -180,6 +191,18 @@ the parenthetical noise."
       :bold nil)
     `(mode-line-highlight                      :foreground ,HarlequinGreen
       :bold t)
+
+    `(hi-yellow
+      :foreground ,bg
+      :background ,Mustard) ; cannot think of any reason I would want a bright Yellow face.
+
+    ;; MODE SUPPORT: lsp
+    `(lsp-face-highlight-read                  :foreground ,vibrant-Finch)
+    `(lsp-face-highlight-write                 :foreground ,vibrant-Crimson)
+    ;; MODE SUPPORT: tree-sitter
+    `(tree-sitter-hl-face:number               :foreground ,Orange)
+    `(tree-sitter-hl-face:constant
+      :inherit tree-sitter-hl-face:number)
 
 
     ;; MODE SUPPORT: powerline
@@ -256,68 +279,107 @@ the parenthetical noise."
     `(diff-hl-insert                           :foreground ,wylnyut-diff-added   :background ,wylnyut-diff-added)
     `(diff-hl-delete                           :foreground ,wylnyut-diff-deleted :background ,wylnyut-diff-deleted)
 
-    ;; MODE SUPPORT auto-dimm-other-buffers
-    `(auto-dim-other-buffers-face                                                :background ,bg-darker)
-
     ;; MODE SUPPORT: lsp
     `(lsp-face-highlight-textual :bolt t)
 
     ;; MODE SUPPORT: rtags
-    `(rtags-errline                             :foreground ,vibrant-Red         :background nil
-      :underline (:color ,vibrant-Red :style line))
-    `(rtags-warnline                            :foreground ,vibrant-Red :background nil
+    `(rtags-errline                            :foreground ,vibrant-Red          :background nil
+      :underline
+      (:color ,vibrant-Red :style line))
+
+    `(rtags-warnline                           :foreground ,vibrant-Red          :background nil
       :bold t
-      :underline (:color ,vibrant-Red :style wave))
+      :underline
+      (:color ,vibrant-Red :style wave))
+
+
+    ;; MODE SUPPORT: info-documentation
+    `(info-function-ref-item                   :foreground ,HarlequinGreen       :background ,bg-Grey-alt
+      :underline ,very-dark-bg)
+    `(info-reference-item                      :foreground ,vibrant-Purple       :background ,bg-dark-Black
+      :box (:color ,bg-dark-Black :line-width -1))
 
     ;; MODE SUPPORT: org-mode
-    ;; TODO
-    `(org-time-grid                            :foreground ,dark-Gold)
-    `(org-hide                                 :foreground ,base3)
-    `(org-footnote
+
+    `(org-document-title                       :foreground ,HarlequinGreen
       :underline t
-                                               :foreground ,base3)
+      :height 1.5)
+    `(org-agenda-calendar-event                :foreground ,White)
+    `(org-time-grid                            :foreground ,base6)
+    `(org-hide                                 :foreground ,base3)
+    `(org-footnote                             :foreground ,base3
+      :underline t)
+
+    `(org-agenda-current-time
+      :inherit org-time-grid)
+
+    `(org-warning                              :foreground ,vibrant-Crimson
+      :bold t)
+
+    `(org-upcoming-deadline
+      :inherit org-warning
+      :italic t)
+
+    `(org-upcoming-distant-deadline            :foreground  ,dark-Crimson)
+
     `(org-special-keyword                      :foreground ,Violet)
     `(org-date                                 :foreground ,Magenta
       :underline t)
     `(org-agenda-structure                     :foreground ,base1
       :weight bold
       :box (:color ,base3))
-    `(org-agenda-date :height 1.1              :foreground ,Magenta)
+    `(org-agenda-date                          :foreground ,HarlequinGreen       :background ,bg-Grey-alt
+      :underline ,very-dark-bg
+      :distant-foreground ,bg)
+
     `(org-agenda-date-weekend                  :foreground ,base3
       :bold nil
       :weight normal)
     `(org-agenda-date-today                    :foreground ,HarlequinGreen
+      :underline t
       :weight bold
       :height 1.4)
     `(org-scheduled                            :foreground ,Indigo)
-    `(org-scheduled-today                      :foreground ,Violet
-      :weight bold
-      :height 1.2)
+    `(org-scheduled-today                      :foreground ,IcebergBlue)
     `(org-document-info-keyword                :foreground ,Violet)
     `(org-sexp-date                            :foreground ,base3)
     ;; DONE
     `(org-level-1                              :foreground ,HarlequinGreen
       :bold t
-      :height 1.5)
+      :height 1.3)
     `(org-level-2                              :foreground ,IcebergBlue
       :bold t
-      :height 1.4)
+      :height 1.2)
     `(org-level-3                              :foreground ,ArcticBlue
       :bold t
-      :height 1.3)
-    `(org-level-4                              :foreground ,Violet
-      :bold t
       :height 1.1)
-    `(org-level-5                              :foreground ,Indigo
-      :bold t
-      :height 1.0)
-    `(org-level-6                              :foreground ,Magenta
-      :bold t
-      :height 1.0)
-    `(org-level-7                              :foreground ,Gold
-      :bold t
-      :height 1.0)
+    `(org-level-4                              :foreground ,Violet)
+    `(org-level-5                              :foreground ,Indigo)
+    `(org-level-6                              :foreground ,Magenta)
+    `(org-level-7                              :foreground ,Gold)
 
+    ;; Face for days on which a task should start to be done.
+    `(org-habit-ready-face                     :foreground "black"               :background ,vibrant-Yellow
+      :underline t
+      :overline t)
+
+    ;; Face for days on which a task is due.
+    `(org-habit-alert-face
+      :inherit org-habit-ready-face
+      :bold t)
+
+    `(org-habit-alert-future-face                                                :background ,bg)
+    `(org-habit-overdue-face
+      :bold t
+      :inherit org-habit-ready-face)
+    `(org-habit-clear-face                     :foreground ,vibrant-Yellow       :background ,bg-Grey-alt)
+
+    ;; Face for future days on which a task shouldn’t be done yet.
+    `(org-habit-clear-future-face              :foreground ,bg                   :background ,bg-Grey-alt)
+
+    `(org-habit-overdue-future-face            :foreground ,bg                   :background ,dark-Red
+      :underline t
+      :overline t)
 
     `(org-block                                                                  :background ,bg-Black
      :extend t)
@@ -332,19 +394,24 @@ the parenthetical noise."
       :inherit org-block
       :slant italic)
 
-    `(org-code                                 :foreground ,light-Crimson)
+    `(org-code                                 :foreground ,Orange)
     `(org-verbatim                             :foreground ,HarlequinGreen)
+    `(org-agenda-calendar-event
+      :inherit default)
     `(org-link
       :inherit link)
-    `(org-todo
-      :box (:line-width 1 :color ,Crimson))
+    `(org-todo                                 :foreground ,Yellow
+      :underline t
+      :bold t
+      :italic t
+      :height 1.1)
     `(org-done
-      :box (:line-width 1 :color ,base4))
-    `(org-agenda-done
-      :inherit org-done)
+      :foreground "#7cc742" ; <= VERY slight difference to HarlequinGreen—but noticable, however not enough to warrant new color variable.
+      :bold t)
+    `(org-agenda-done                          :foreground ,base7
+      :bold t
+      :strike-through ,base7)
     `(org-ellipsis                             :foreground ,Indigo)
-    `(org-warning :underline t                 :foreground ,Crimson)
-
     ;; MOVE SUPPORT: avy, ace
     `(avy-lead-face                            :foreground ,vibrant-Green        :background ,bg
       :bold t)
@@ -365,12 +432,13 @@ the parenthetical noise."
     `(rainbow-delimiters-depth-8-face          :foreground ,Magenta)
 
     ;; MODE SUPPORT: company
-    `(company-tooltip-annotation-selection     :foreground ,bg :italic t)
+    `(company-tooltip-annotation-selection     :foreground ,bg
+      :italic t)
     `(company-tooltip-annotation               :foreground ,ArcticBlue)
     ; Colors that fill the body the toolti      (main bg and fg)
-    `(company-tooltip                          :foreground ,base0                :background ,bg-alt)
+    `(company-tooltip                          :foreground ,base0                :background ,bg-darker)
     ; Color that match as you type
-    `(company-tooltip-common                   :foreground ,key2)
+    `(company-tooltip-common                   :foreground ,light-Indigo)
     ; Color for matching text in the completion selection
     `(company-tooltip-common-selection         :foreground ,bg :bold t)
     ; hl-line for company popup
@@ -382,8 +450,10 @@ the parenthetical noise."
     `(company-preview                          :foreground ,key2                 :background ,bg)
     `(company-preview-common                   :foreground ,base1                :background ,bg-alt)
     `(company-preview-search                   :foreground ,Indigo               :background ,bg)
-    `(company-tooltip-mouse :inherit highlight)
-    `(company-template-field :inherit region)
+    `(company-tooltip-mouse 
+     :inherit highlight)
+    `(company-template-field
+      :inherit region)
 
 
     `(font-latex-bold-face                     :foreground ,Indigo)
@@ -392,10 +462,22 @@ the parenthetical noise."
     `(font-latex-string-face                   :foreground ,ArcticBlue)
     `(font-latex-match-reference-keywords      :foreground ,IcebergBlue)
     `(font-latex-match-variable-keywords       :foreground ,Magenta)
-    `(font-latex-warning-face                  :foreground ,light-Crimson)
+    `(font-latex-warning-face                  :foreground ,Orange)
+
+    ;; MODE SUPPORT: ido
     `(ido-only-match                           :foreground ,Crimson)
     `(ido-first-match                          :foreground ,HarlequinGreen
       :bold t)
+    `(ido-subdir                               :foreground ,Gold)
+    `(ido-first-match                          :foreground ,vibrant-Green)
+    `(ido-only-match                           :foreground ,vibrant-Green
+      :italic t
+      :bold t)
+
+    `(aw-leading-char-face                     :foreground ,vibrant-Green
+      :height 1.9
+      :bold t
+      :box (:color ,dark-Slate :line-width -2))
     `(gnus-header-content                      :foreground ,HarlequinGreen)
     `(gnus-header-from                         :foreground ,Magenta)
     `(gnus-header-name                         :foreground ,Indigo)
@@ -433,6 +515,11 @@ the parenthetical noise."
     `(slime-repl-inputed-output-face           :foreground ,Indigo)
     `(trailing-whitespace                      :foreground nil                   :background ,fg-alt)
 
+    ;; MODE SUPPORT: org-rifle
+    `(helm-org-rifle-separator
+      :height .3
+      :box (:line-width -1 :color ,base7)
+      :extend t)
 
     `(smerge-markers                                                             :background ,bg-Black
       :underline ,vibrant-Purple
@@ -467,7 +554,7 @@ the parenthetical noise."
     `(magit-diff-context-highlight             :foreground ,base0                :background ,bg-dark-Black)
     `(magit-diff-context
       :inherit magit-dimmed)
-    `(magit-diff-base-highlight                :foreground ,light-Crimson        :background ,bg-Red)
+    `(magit-diff-base-highlight                :foreground ,Orange               :background ,bg-Red)
     `(magit-diffstat-added                     :foreground ,Indigo)
     `(magit-diffstat-removed                   :foreground ,Magenta)
     `(magit-process-ok                         :foreground ,Violet
@@ -484,6 +571,7 @@ the parenthetical noise."
 
     `(lazy-highlight
       :inherit highlight)
+
     `(term                                     :foreground ,fg                   :background ,bg)
     `(term-color-black                         :foreground ,base4                :background ,base4)
     `(term-color-blue                          :foreground ,Violet               :background ,Violet)
@@ -504,9 +592,12 @@ the parenthetical noise."
       :box nil)
     `(helm-header-line-left-margin             :foreground ,bg                   :background ,ArcticBlue)
     `(helm-match                               :foreground ,light-Purple)
+
     `(helm-source-header                       :foreground ,HarlequinGreen       :background ,bg
       :underline nil
-      :weight bold)
+      :weight bold
+      :overline t)
+
     `(helm-selection                           :foreground ,light-Orchid         :background ,bg-Orchid
       :underline nil
       :extend t)
@@ -583,6 +674,7 @@ the parenthetical noise."
 (when load-file-name
   (add-to-list 'custom-theme-load-path
                (file-name-as-directory (file-name-directory load-file-name))))
+
 
 (provide-theme 'weyland-yutani)
 

@@ -45,9 +45,9 @@
 (defun treemacs-magit--schedule-update ()
   "Schedule an update to potentially run after 3 seconds of idle time.
 In order for the update to fully run several conditions must be met:
- * A timer for an update for the given dir must not already exist
+ * A timer for an update for the given directory must not already exist
    (see `treemacs-magit--timers')
- * The dir must be part of a treemacs workspace, and
+ * The directory must be part of a treemacs workspace, and
  * The project must not be set for refresh already."
   (when treemacs-git-mode
     (let ((magit-root (treemacs--canonical-path (magit-toplevel))))
@@ -117,6 +117,8 @@ Will update nodes under MAGIT-ROOT with output in PFUTURE-BUFFER."
                                        (treemacs-workspace->projects (treemacs-current-workspace)))))
                            (treemacs-find-in-dom (treemacs-project->path project))))))
        (when (and dom-node
+                  (treemacs-dom-node->position dom-node)
+                  (treemacs-is-node-expanded? (treemacs-dom-node->position dom-node))
                   (null (treemacs-dom-node->refresh-flag dom-node)))
          (save-excursion
            (goto-char (treemacs-dom-node->position dom-node))

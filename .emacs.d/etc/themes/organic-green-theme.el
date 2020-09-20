@@ -191,7 +191,7 @@ The theme needs to be reloaded after changing anything in this group."
    `(quack-pltish-keyword-face ((t (:foreground ,organic-purple :weight bold))))
 
    ;;; js2-mode
-   `(js2-external-variable ((t (:foreground ,organic-blue-2))))
+   `(js2-external-variable ((t (:inherit warning))))
    `(js2-function-param ((t (:foreground ,organic-teal))))
    `(js2-jsdoc-type ((t (:foreground ,organic-blue-2))))
    `(js2-jsdoc-tag ((t (:foreground ,organic-blue-5))))
@@ -397,8 +397,15 @@ The theme needs to be reloaded after changing anything in this group."
 
    ;; marker
    `(highlight-symbol-colors
-     '("#FFF68F" "#ADFF2F" "#83DDFF" "#AB82FF" "#66CDAA"
-       "#FF8C00" "#FF6EB4" "#809FFF" "#9AFF9A"))
+     '("#FFF68F"
+       "#B7EB8F"
+       "#76DDBA"
+       "#91D5FF"
+       "#ADC6FF"
+       "#D3ADF7"
+       "#FFADD2"
+       "#FFA39E"
+       "#FFD591"))
 
    ;; org-mode code blocks
    `(org-src-block-faces '(("emacs-lisp" (:background ,organic-bg))

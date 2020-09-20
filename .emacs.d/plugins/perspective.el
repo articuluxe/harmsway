@@ -7,7 +7,7 @@
 ;; Author: Natalie Weizenbaum <nex342@gmail.com>
 ;; URL: http://github.com/nex3/perspective-el
 ;; Package-Requires: ((emacs "24.4") (cl-lib "0.5"))
-;; Version: 2.9
+;; Version: 2.11
 ;; Created: 2008-03-05
 ;; By: Natalie Weizenbaum <nex342@gmail.com>
 ;; Keywords: workspace, convenience, frames
@@ -211,6 +211,21 @@ filtering in buffer display modes like ibuffer."
 
 (defalias 'persp-killed-p 'persp-killed
   "Return whether the perspective CL-X has been killed.")
+
+(defvar persp-started-after-server-mode nil
+  "XXX: A nasty workaround for a strange timing bug which occurs
+  if the Emacs server was started before Perspective initialized.
+  For some reason, persp-delete-frame gets called multiple times
+  in unexpected ways. To reproduce: (0) make sure server-start is
+  called before persp-mode is turned on and comment out the use
+  of persp-started-after-server-mode, (1) get a session going
+  with a main frame, (2) switch perspectives a couple of
+  times, (3) use emacsclient -c to edit a file in a new
+  frame, (4) C-x 5 0 to kill that frame. This will cause an
+  unintended perspective switch in the primary frame, and mark
+  the previous perspective as deleted. There is also a note in
+  the *Messages* buffer. TODO: It would be good to get to the
+  bottom of this problem, rather than just paper over it.")
 
 (defvar persp-before-switch-hook nil
   "A hook that's run before `persp-switch'.
@@ -990,6 +1005,8 @@ named collections of buffers and window configurations."
   :keymap persp-mode-map
   (if persp-mode
       (persp-protect
+        (when (bound-and-true-p server-process)
+          (setq persp-started-after-server-mode t))
         ;; TODO: Convert to nadvice, which has been available since 24.4 and is
         ;; the earliest Emacs version Perspective supports.
         (ad-activate 'switch-to-buffer)
@@ -1026,11 +1043,9 @@ By default, this uses the current frame."
     (modify-frame-parameters
      frame
      '((persp--hash) (persp--curr) (persp--last) (persp--recursive) (persp--modestring)))
-
     ;; Don't set these variables in modify-frame-parameters
     ;; because that won't do anything if they've already been accessed
     (set-frame-parameter frame 'persp--hash (make-hash-table :test 'equal :size 10))
-
     (when persp-show-modestring
       (if (eq persp-show-modestring 'header)
           (let ((val (or (default-value 'header-line-format) '(""))))
@@ -1040,7 +1055,16 @@ By default, this uses the current frame."
         (unless (member '(:eval (persp-mode-line)) global-mode-string)
           (setq global-mode-string (append global-mode-string '((:eval (persp-mode-line)))))))
       (persp-update-modestring))
-
+    ;; A frame must open with a reasonable initial buffer in its main
+    ;; perspective. This behaves differently from an emacsclient invocation, but
+    ;; should respect `initial-buffer-choice'.
+    (when (frame-parameter frame 'client)
+      (let* ((scratch-buf (persp-scratch-buffer persp-initial-frame-name))
+             (init-buf (cond ((stringp initial-buffer-choice) initial-buffer-choice)
+                             ((functionp initial-buffer-choice) (or (funcall initial-buffer-choice)
+                                                                    scratch-buf))
+                             (t scratch-buf))))
+        (switch-to-buffer init-buf t)))
     (persp-activate
      (make-persp :name persp-initial-frame-name :buffers (list (current-buffer))
        :window-configuration (current-window-configuration)
@@ -1050,7 +1074,8 @@ By default, this uses the current frame."
   "Clean up perspectives in FRAME.
 By default this uses the current frame."
   (with-selected-frame frame
-    (mapcar #'persp-kill (persp-names))))
+    (unless persp-started-after-server-mode
+      (mapcar #'persp-kill (persp-names)))))
 
 (defun persp-make-variable-persp-local (variable)
   "Make VARIABLE become perspective-local.

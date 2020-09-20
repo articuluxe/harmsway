@@ -98,6 +98,7 @@
 
 (require 'all-the-icons-faces)
 
+(defvar web-mode-content-type) ;silence byte-compiler warning
 ;;; Custom Variables
 (defgroup all-the-icons nil
   "Manage how All The Icons formats icons."
@@ -218,6 +219,11 @@
     ("\\.mp3$"          all-the-icons-faicon "volume-up"                :face all-the-icons-dred)
     ("\\.wav$"          all-the-icons-faicon "volume-up"                :face all-the-icons-dred)
     ("\\.m4a$"          all-the-icons-faicon "volume-up"                :face all-the-icons-dred)
+    ("\\.ogg$"          all-the-icons-faicon "volume-up"                :face all-the-icons-dred)
+    ("\\.flac$"         all-the-icons-faicon "volume-up"                :face all-the-icons-dred)
+    ("\\.opus$"         all-the-icons-faicon "volume-up"                :face all-the-icons-dred)
+    ("\\.au$"           all-the-icons-faicon "volume-up"                :face all-the-icons-dred)
+    ("\\.aif[fc]?$"     all-the-icons-faicon "volume-up"                :face all-the-icons-dred)
 
     ("\\.jl$"           all-the-icons-fileicon "julia"                  :v-adjust 0.0 :face all-the-icons-purple)
     ("\\.matlab$"       all-the-icons-fileicon "matlab"                 :face all-the-icons-orange)

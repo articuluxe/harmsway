@@ -176,7 +176,7 @@ where both are strings.  NEW-FILE-NAME is relative to
   :type '(repeat (string :tag "Jira state name:")))
 
 (defcustom org-jira-users
-  '(("Full Name" . "username"))
+  '(("Full Name" . "account-id"))
   "A list of displayName and key pairs."
   :group 'org-jira
   :type 'list)
@@ -609,7 +609,7 @@ Entry to this mode calls the value of `org-jira-mode-hook'."
    org-jira-users
    (mapcar (lambda (user)
              (cons (org-jira-decode (cdr (assoc 'displayName user)))
-                   (org-jira-decode (cdr (assoc 'name user)))))
+                   (org-jira-decode (cdr (assoc 'accountId user)))))
            (jiralib-get-users project-key))))
 
 (defun org-jira-get-reporter-candidates (project-key)
@@ -618,7 +618,7 @@ Entry to this mode calls the value of `org-jira-mode-hook'."
    org-jira-users
    (mapcar (lambda (user)
              (cons (org-jira-decode (cdr (assoc 'displayName user)))
-                   (org-jira-decode (cdr (assoc 'name user)))))
+                   (org-jira-decode (cdr (assoc 'accountId user)))))
            (jiralib-get-users project-key))))
 
 (defun org-jira-entry-put (pom property value)
@@ -963,7 +963,6 @@ With a prefix argument, allow you to customize the jql.  See
     (when issue-pos
       (goto-char issue-pos)
       (recenter 0))))
-
 ;;;###autoload
 (defun org-jira-get-issues-by-fixversion (fixversion)
   "Get list of issues by FIXVERSION."
@@ -1079,8 +1078,8 @@ ORG-JIRA-PROJ-KEY-OVERRIDE being set before and after running."
 
 (defun org-jira--render-issue (Issue)
   "Render single ISSUE."
-  ;; (org-jira-log "Rendering issue from issue list")
-  ;; (org-jira-log (org-jira-sdk-dump Issue))
+;;  (org-jira-log "Rendering issue from issue list")
+;;  (org-jira-log (org-jira-sdk-dump Issue))
   (with-slots (filename proj-key issue-id summary status priority headline id) Issue
     (let (p)
       (with-current-buffer (org-jira--get-project-buffer Issue)
@@ -1116,7 +1115,7 @@ ORG-JIRA-PROJ-KEY-OVERRIDE being set before and after running."
                       (when (or (and val (not (string= val "")))
                                 (eq entry 'assignee)) ;; Always show assignee
                         (org-jira-entry-put (point) (symbol-name entry) val))))
-                  '(assignee filename reporter type priority labels resolution status components created updated))
+                  '(assignee filename reporter type type-id priority labels resolution status components created updated))
 
             (org-jira-entry-put (point) "ID" issue-id)
             (org-jira-entry-put (point) "CUSTOM_ID" issue-id)
@@ -1580,7 +1579,7 @@ purpose of wiping an old subtree."
                           (cdr (rassoc user jira-users)))))
           (when (null reporter)
             (error "No reporter found, this should probably never happen."))
-          (org-jira-update-issue-details issue-id filename :reporter reporter))
+          (org-jira-update-issue-details issue-id filename :reporter (jiralib-get-user-account-id reporter)))
       (error "Not on an issue"))))
 
 ;;;###autoload
@@ -1601,7 +1600,7 @@ purpose of wiping an old subtree."
                           (cdr (rassoc user jira-users)))))
           (when (null assignee)
             (error "No assignee found, use org-jira-unassign-issue to make the issue unassigned"))
-          (org-jira-update-issue-details issue-id filename :assignee assignee))
+          (org-jira-update-issue-details issue-id filename :assignee (jiralib-get-user-account-id assignee)))
       (error "Not on an issue"))))
 
 ;;;###autoload
@@ -1749,7 +1748,7 @@ that should be bound to an issue."
                                    "")))
              (description . ,description)
              (priority (id . ,priority))
-             (assignee (name . ,(or (cdr (assoc user jira-users)) user)))))))
+             (assignee (accountId . ,(or (cdr (assoc user jira-users)) user)))))))
     ticket-struct))
 
 ;;;###autoload
@@ -2096,6 +2095,7 @@ otherwise it should return:
            (org-issue-description (org-trim (org-jira-get-issue-val-from-org 'description)))
            (org-issue-priority (org-jira-get-issue-val-from-org 'priority))
            (org-issue-type (org-jira-get-issue-val-from-org 'type))
+           (org-issue-type-id (org-jira-get-issue-val-from-org 'type-id))
            (org-issue-assignee (cl-getf rest :assignee (org-jira-get-issue-val-from-org 'assignee)))
            (org-issue-reporter (cl-getf rest :reporter (org-jira-get-issue-val-from-org 'reporter)))
            (project (replace-regexp-in-string "-[0-9]+" "" issue-id))
@@ -2120,11 +2120,11 @@ otherwise it should return:
                    (cons 'priority (org-jira-get-id-name-alist org-issue-priority
                                                        (jiralib-get-priorities)))
                    (cons 'description org-issue-description)
-                   (cons 'assignee (jiralib-get-user org-issue-assignee))
-                   (cons 'reporter (jiralib-get-user org-issue-reporter))
+                   (cons 'assignee (list (cons 'id (jiralib-get-user-account-id org-issue-assignee))))
+                   (cons 'reporter (list (cons 'id (jiralib-get-user-account-id org-issue-reporter))))
                    (cons 'summary (org-jira-strip-priority-tags (org-jira-get-issue-val-from-org 'summary)))
-                   (cons 'issuetype (org-jira-get-id-name-alist org-issue-type
-                                                        (jiralib-get-issue-types))))))
+                   (cons 'issuetype `((id . ,org-issue-type-id)
+      (name . ,org-issue-type))))))
 
 
         ;; If we enable duedate sync and we have a deadline present
@@ -2149,6 +2149,8 @@ otherwise it should return:
               (-> cb-data list org-jira-get-issues))))
          ))
       )))
+
+       
 
 (defun org-jira-parse-issue-id ()
   "Get issue id from org text."

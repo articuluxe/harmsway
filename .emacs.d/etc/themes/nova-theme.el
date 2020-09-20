@@ -1,6 +1,6 @@
 ;;; nova-theme.el --- A dark, pastel color theme
 ;;
-;; Copyright (C) 2018 Muir Manders
+;; Copyright (C) 2020 Muir Manders
 ;;
 ;; Author: Muir Manders <muir+emacs@mnd.rs>
 ;; Version: 0.1.0
@@ -138,11 +138,14 @@ FACES is a list of faces of the form (name :attr value) such as:
   (mode-line-buffer-id :weight 'unspecified :foreground white)
   (mode-line-highlight :inherit 'highlight)
   (link :foreground cyan :underline t)
+  (link-visited :foreground trivial :underline t)
   (vertical-border :foreground trivial)
   (window-divider :inherit 'vertical-border)
   (window-divider-first-pixel :inherit 'vertical-border)
   (window-divider-last-pixel :inherit 'vertical-border)
   (shadow :foreground trivial)
+  (homoglyph :foreground cyan)
+  (tooltip :background yellow :foreground black)
 
   ;; doom-modeline faces
   (doom-modeline-buffer-path :foreground trivial)
@@ -292,14 +295,16 @@ FACES is a list of faces of the form (name :attr value) such as:
 
   ;; vc faces
   (diff-context :inherit 'magit-diff-context)
-  (diff-added :inherit 'magit-diff-added-highlight)
-  (diff-removed :inherit 'magit-diff-removed-highlight)
+  (diff-added :inherit 'magit-diff-added)
+  (diff-removed :inherit 'magit-diff-removed)
   (diff-file-header :inherit 'magit-diff-file-heading)
   (diff-header :inherit 'magit-section)
   (diff-function :foreground identifier)
   (diff-hunk-header :foreground purple)
   (diff-refine-added :foreground added :background (nova-blend added bg 0.4))
   (diff-refine-removed :foreground removed :background (nova-blend removed bg 0.4))
+  (diff-indicator-added :inherit 'magit-diff-added)
+  (diff-indicator-removed :inherit 'magit-diff-removed)
 
   ;; ediff faces
   (ediff-current-diff-A :background (nova-blend removed bg 0.3))
@@ -544,6 +549,10 @@ FACES is a list of faces of the form (name :attr value) such as:
   ;; lsp-mode
   (lsp-face-highlight-read :inherit 'highlight)
   (lsp-face-highlight-write :inherit 'highlight)
+  (lsp-lsp-flycheck-error-unnecessary-face :inherit 'flycheck-error)
+  (lsp-lsp-flycheck-warning-unnecessary-face :inherit 'flycheck-warning)
+  (lsp-lsp-flycheck-error-deprecated-face :inherit 'flycheck-error)
+  (lsp-lsp-flycheck-warning-deprecated-face :inherit 'flycheck-warning)
 
   ;; regexp-builder
   (reb-match-0 :background user-current-state :foreground bg)
@@ -597,6 +606,7 @@ FACES is a list of faces of the form (name :attr value) such as:
    `(vc-annotate-background ,bg)
    `(vc-annotate-very-old-color ,(nova-darken purple 0.2))
    `(ansi-color-names-vector [,bg ,red ,green ,yellow ,blue ,purple ,cyan ,fg])
+   `(lsp-ui-imenu-colors '(,cyan ,green))
    `(vc-annotate-color-map
      `((20 . ,,red)
        (40 . ,,(nova-blend red orange 0.8))

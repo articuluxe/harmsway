@@ -1,11 +1,11 @@
 ;;; kaolin-themes.el --- A set of eye pleasing themes  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2017-2019 ogdenwebb
+;; Copyright (C) 2017-2020 ogdenwebb
 
 ;; Author: Ogden Webb <ogdenwebb@gmail.com>
 ;; URL: https://github.com/ogdenwebb/emacs-kaolin-themes
 ;; Package-Requires: ((emacs "25.1") (autothemer "0.2.2") (cl-lib "0.6"))
-;; Version: 1.6.0
+;; Version: 1.6.1
 ;; Keywords: dark light teal blue violet purple brown theme faces
 
 ;; This program is free software: you can redistribute it and/or modify
@@ -165,7 +165,7 @@ Otherwise inherit from comments."
   "Add elements to BASE-LIST from ADD-LIST without dublicates. Returns a new list as result."
   (let ((res (copy-alist base-alist)))
     (cl-loop for el in add-alist
-             do (map-put res (car el) (cdr el)))
+                    do (setf (map-elt res (car el)) (cdr el)))
     res))
 
 ;; (defun kaolin-themes-palette-get (name)

@@ -49,7 +49,7 @@
 (defvar-local lsp-lens--last-count nil
   "The number of lenses the last time they were rendered.")
 
-(defvar lsp-lens--backends '(lsp-lens--backend)
+(defvar lsp-lens-backends '(lsp-lens--backend)
   "Backends providing lenses.")
 
 (defvar-local lsp-lens--refresh-timer nil
@@ -92,8 +92,10 @@ Results are meaningful only if FROM and TO are on the same line."
         ov)
       (let* ((ov (save-excursion
                    (goto-char pos)
-                   (make-overlay (point-at-bol) (1+ (point-at-eol))))))
+                   (make-overlay (point-at-bol) (1+ (point-at-eol)) nil t t))))
         (overlay-put ov 'lsp-lens t)
+        (overlay-put ov 'evaporate t)
+        (overlay-put ov 'lsp-lens-position pos)
         ov)))
 
 (defun lsp-lens--show (str pos metadata)
@@ -115,6 +117,7 @@ Results are meaningful only if FROM and TO are on the same line."
 (defun lsp-lens--overlay-matches-pos (ov pos)
   "Check if OV is a lens covering POS."
   (and (overlay-get ov 'lsp-lens)
+       (overlay-start ov)
        (<= (overlay-start ov) pos)
        (< pos (overlay-end ov))))
 
@@ -131,7 +134,7 @@ BUFFER-MODIFIED? determines whether the buffer is modified or not."
   (setq lsp-lens--refresh-timer
         (run-with-timer lsp-lens-debounce-interval
                         nil
-                        #'lsp-lens--refresh
+                        #'lsp-lens-refresh
                         (or lsp-lens--modified? buffer-modified?)
                         (current-buffer))))
 
@@ -147,8 +150,8 @@ BUFFER-MODIFIED? determines whether the buffer is modified or not."
                         (or lsp--cur-workspace)
                         (lsp--workspace-client)
                         (lsp--client-server-id))))
-    (if (functionp command?)
-        command?
+    (if (functionp (lsp:command-command command?))
+        (lsp:command-command command?)
       (lambda ()
         (interactive)
         (lsp-execute-command server-id
@@ -185,6 +188,7 @@ BUFFER-MODIFIED? determines whether the buffer is modified or not."
                                     title
                                     'face (or face 'lsp-lens-face)
                                     'action (lsp-lens--create-interactive-command command)
+                                    'point 'hand
                                     'mouse-face 'lsp-lens-mouse-face
                                     'local-map (lsp-lens--keymap command)))
                                  sorted)))
@@ -192,18 +196,24 @@ BUFFER-MODIFIED? determines whether the buffer is modified or not."
                       (s-join (propertize "|" 'face 'lsp-lens-face) data)
                       (-> sorted cl-first lsp:code-lens-range lsp:range-start lsp--position-to-point)
                       data)))))))
-      (--each lsp-lens--overlays
-        (unless (-contains? overlays it)
-          (delete-overlay it)))
+      (mapc (lambda (overlay)
+              (unless (and (-contains? overlays overlay)
+                           (overlay-start overlay)
+                           ;; buffer narrowed, overlay outside of it
+                           (<= (point-min)
+                               (overlay-get overlay 'lsp-lens-position )
+                               (point-max)))
+                (delete-overlay overlay)))
+            lsp-lens--overlays)
       (setq lsp-lens--overlays overlays))))
 
-(defun lsp-lens--refresh (buffer-modified? &optional buffer)
+(defun lsp-lens-refresh (buffer-modified? &optional buffer)
   "Refresh lenses using lenses backend.
 BUFFER-MODIFIED? determines whether the BUFFER is modified or not."
   (let ((buffer (or buffer (current-buffer))))
     (when (buffer-live-p buffer)
       (with-current-buffer buffer
-        (dolist (backend lsp-lens--backends)
+        (dolist (backend lsp-lens-backends)
           (funcall backend buffer-modified?
                    (lambda (lenses version)
                      (when (buffer-live-p buffer)
@@ -220,7 +230,7 @@ version."
 
   (-let [backend-data (->> lsp-lens--data ht-values (-filter #'cl-rest))]
     (when (and
-           (= (length lsp-lens--backends) (ht-size lsp-lens--data))
+           (= (length lsp-lens-backends) (ht-size lsp-lens--data))
            (seq-every-p (-lambda ((version))
                           (or (not version) (eq version lsp--cur-version)))
                         backend-data))
@@ -340,7 +350,7 @@ CALLBACK - callback for the lenses."
     (add-hook 'lsp-on-change-hook (lambda () (lsp-lens--schedule-refresh t)) nil t)
     (add-hook 'after-save-hook (lambda () (lsp-lens--schedule-refresh t)) nil t)
     (add-hook 'before-revert-hook #'lsp-lens-hide nil t)
-    (lsp-lens--refresh t))
+    (lsp-lens-refresh t))
    (t
     (lsp-lens-hide)
     (remove-hook 'lsp-configure-hook #'lsp-lens--enable t)

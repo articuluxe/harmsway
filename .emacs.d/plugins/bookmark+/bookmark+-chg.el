@@ -6,9 +6,9 @@
 ;; Maintainer: Drew Adams (concat "drew.adams" "@" "oracle" ".com")
 ;; Copyright (C) 2000-2020, Drew Adams, all rights reserved.
 ;; Created: Fri Sep 15 07:58:41 2000
-;; Last-Updated: Sat Jun 20 10:14:14 2020 (-0700)
+;; Last-Updated: Sat Jul  4 13:34:21 2020 (-0700)
 ;;           By: dradams
-;;     Update #: 16640
+;;     Update #: 16695
 ;; URL: https://www.emacswiki.org/emacs/download/bookmark%2b-chg.el
 ;; Doc URL: https://www.emacswiki.org/emacs/BookmarkPlus
 ;; Keywords: bookmarks, bookmark+
@@ -139,6 +139,7 @@
 ;;
 ;;  (@> "CHANGE LOG FOR `bookmark+-1.el'")
 ;;  (@> "CHANGE LOG FOR `bookmark+-bmu.el'")
+;;  (@> "CHANGE LOG FOR `bookmark+-doc.el'")
 ;;  (@> "CHANGE LOG FOR `bookmark+-key.el'")
 ;;  (@> "CHANGE LOG FOR `bookmark+-lit.el'")
 ;;  (@> "CHANGE LOG FOR `bookmark+-mac.el'")
@@ -146,6 +147,27 @@
  
 ;;;(@* "CHANGE LOG FOR `bookmark+-1.el'")
 ;;
+;; 2020/07/04 dadams
+;;     Same commands as 7/03: Remove bmkp-propertize-*-flag as part of test for getting full bmk.
+;;     Changed all references to `C-x p' to `C-x x'.
+;;     Replaced string *Bookmark List* with bookmark-bmenu-buffer (for Emacs 28).
+;;     bookmark-(edit|show)-annotation, bmkp-annotate-bookmark,
+;;       bmkp-(edit|show)-this-annotation(-read-only):
+;;         Replaced set make-local-variable bookmark-annotation-name by setq (auto-local in Emacs 28).
+;; 2020/07/03 dadams
+;;     bmkp-read-bookmark-for-type:
+;;       Use bmkp-bookmark-record-from-name to return full bookmark from ALIST.
+;;     bmkp-(choose-navlist-from-bookmark-list|bookmark-file(-load|-switch)-jump|
+;;       snippet-to-kill-ring|desktop-delete|
+;;       (autonamed(-*)|dired(-*)|eww|(local|remote(-*)-|non-dir-)file(-*)|gnus|image|info|man|
+;;       non-file|specific-(buffers|files)|temporary|this-buffer|url|w3m|autofile)-jump*|
+;;       (bookmark-list|desktop|variable-list|w32-browser)-jump):
+;;         Use bmkp-get-bookmark-in-alist to get full bmk.
+;;     bmkp-jump-to-type*: Raise error if bookmark name, not record.
+;; 2020/07/02 dadams
+;;     bmkp-specific-files-alist-only: Don't use member, use bmkp-same-file-p as equality test.
+;; 2020/06/20 dadams
+;;     Added: bmkp-set-grep-command-bookmark.
 ;; 2020/01/31 dadams
 ;;     bmkp-dired-remember-*-marks:
 ;;       Wrap dired--unhide with with-silent-modifications.  Thx to Tino Calancha. 
@@ -1438,6 +1460,9 @@
  
 ;;;(@* "CHANGE LOG FOR `bookmark+-bmu.el'")
 ;;
+;; 2020/07/04 dadams
+;;     Changed all references to `C-x p' to `C-x x'.
+;;     Replaced string *Bookmark List* with bookmark-bmenu-buffer (for Emacs 28).
 ;; 2020/01/26 dadams
 ;;     Added: bmkp-bmenu-sort-annotated-before-unannotated (bound to s a).
 ;; 2020/01/22 dadams
@@ -2113,8 +2138,16 @@
 ;; 2010/07/14 dadams
 ;;     Created from bookmark+.el code.
  
+;;;(@* "CHANGE LOG FOR `bookmark+-doc.el'")
+;;
+;; 2020/07/04 dadams
+;;     Changed all references to `C-x p' to `C-x x'.
+ 
 ;;;(@* "CHANGE LOG FOR `bookmark+-key.el'")
 ;;
+;; 2020/07/04 dadams
+;;     Changed all `C-x p' to `C-x x'.
+;;     Replaced string *Bookmark List* with bookmark-bmenu-buffer (for Emacs 28).
 ;; 2020/06/20 dadams
 ;;     Correctly added bmkp-compilation-target-set(-all) to compilation and grep maps.
 ;; 2020/01/27 dadams
@@ -2299,6 +2332,8 @@
  
 ;;;(@* "CHANGE LOG FOR `bookmark+-lit.el'")
 ;;
+;; 2020/07/04 dadams
+;;     Replaced string *Bookmark List* with bookmark-bmenu-buffer (for Emacs 28).
 ;; 2020/01/12 dadams
 ;;     bmkp-lighted-jump-to-list: Raise error if no highlighted bookmarks at point.
 ;;     bmkp-(un)light-bookmark-this-buffer: Pass non-nil USE-NIL-ALIST-P to bookmark-completing-read.
@@ -2445,6 +2480,12 @@
  
 ;;;(@* "CHANGE LOG FOR `bookmark+.el'")
 ;;
+;; 2020/07/04 dadams
+;;     Version 2020.07.04
+;;     Added defconst for bookmark-bmenu-buffer (Emacs 28).
+;;     Added defvar, make-variable-buffer-local declaration for bookmark-annotation-name (Emacs 28).
+;; 2020/07/03 dadams
+;;     Version 2020.07.03
 ;; 2020/01/22 dadams
 ;;     Version 2020.01.22
 ;; 2020/01/12 dadams

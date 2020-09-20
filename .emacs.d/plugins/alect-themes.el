@@ -1,6 +1,6 @@
 ;;; alect-themes.el --- Configurable light, dark and black themes for Emacs 24 or later   -*- lexical-binding: t -*-
 
-;; Copyright © 2013–2019 Alex Kost
+;; Copyright © 2013–2020 Alex Kost
 
 ;; Author: Alex Kost <alezost@gmail.com>
 ;; Created: 10 Jul 2013
@@ -1117,6 +1117,7 @@ For INVERT, see `alect-get-color'."
          (magit-section-heading             ((,c :inherit alect-title)))
          (magit-section-highlight           ((,c :background ,(gc 'bg))))
          (magit-section-heading-selection   ((,c :foreground ,(gc 'blue-2))))
+         (magit-header-line-key             ((,c :inherit alect-key)))
          (magit-head                        ((,c :background ,(gc 'bg-2)
                                                  :foreground ,(gc 'fg+2)
                                                  :box (:line-width 2
@@ -1784,28 +1785,7 @@ For INVERT, see `alect-get-color'."
            ,(gc 'cyan)
            ,(gc 'fg+1)])
 
-         ;; emms icon at mode line (is taken from emms source)
-         (emms-mode-line-icon-image-cache
-          '(image :type xpm :ascent center :data ,(concat "/* XPM */
-static char *note[] = {
-/* width height num_colors chars_per_pixel */
-\"    10   11        2            1\",
-/* colors */
-\". c " (gc 'cyan)  "\",
-\"# c None s None\",
-/* pixels */
-\"###...####\",
-\"###.#...##\",
-\"###.###...\",
-\"###.#####.\",
-\"###.#####.\",
-\"#...#####.\",
-\"....#####.\",
-\"#..######.\",
-\"#######...\",
-\"######....\",
-\"#######..#\" };"))
-          t)
+         (emms-mode-line-icon-color ,(gc 'cyan))
 
          ;; gnus icon at mode line (is taken from gnus source)
          (gnus-mode-line-image-cache

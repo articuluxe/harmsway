@@ -1,12 +1,12 @@
 ;;; flycheck-posframe.el --- Show flycheck error messages using posframe.el
 
-;; Copyright (C) 2018 Alex Murray
+;; Copyright (C) 2020 Alex Murray
 
 ;; Author: Alex Murray <murray.alex@gmail.com>
 ;; Maintainer: Alex Murray <murray.alex@gmail.com>
 ;; URL: https://github.com/alexmurray/flycheck-posframe
-;; Version: 0.6
-;; Package-Requires: ((flycheck "0.24") (emacs "26") (posframe "0.3.0"))
+;; Version: 0.8
+;; Package-Requires: ((flycheck "0.24") (emacs "26") (posframe "0.7.0"))
 
 ;; This file is not part of GNU Emacs.
 
@@ -136,9 +136,22 @@ Only the `foreground' is used in this face."
 (defvar flycheck-posframe-old-display-function nil
   "The former value of `flycheck-display-errors-function'.")
 
-(defvar flycheck-posframe-hide-posframe-hooks
+(defvar flycheck-posframe-maybe-hide-posframe-hooks
   '(pre-command-hook post-command-hook focus-out-hook)
-  "The hooks which should trigger automatic removal of the posframe.")
+  "The hooks which should maybe trigger automatic removal of the posframe.")
+
+(defvar flycheck-posframe-hide-posframe-hooks
+  '(window-configuration-change-hook)
+  "The hooks which should always trigger automatic removal of the posframe.")
+
+(defvar flycheck-posframe-last-position nil
+  "Last position for which a flycheck posframe was displayed.")
+
+(defun flycheck-posframe-check-position ()
+  "Update flycheck-posframe-last-position, returning t if there was no change."
+  (equal flycheck-posframe-last-position
+         (setq flycheck-posframe-last-position
+               (list (current-buffer) (buffer-modified-tick) (point)))))
 
 (defcustom flycheck-posframe-inhibit-functions nil
   "Functions to inhibit display of flycheck posframe."
@@ -151,7 +164,14 @@ Only the `foreground' is used in this face."
   ;; on MacOS (see https://github.com/alexmurray/flycheck-posframe/issues/8)
   (posframe-hide flycheck-posframe-buffer)
   (dolist (hook flycheck-posframe-hide-posframe-hooks)
-    (remove-hook hook #'flycheck-posframe-hide-posframe t)))
+    (remove-hook hook #'flycheck-posframe-hide-posframe t))
+  (dolist (hook flycheck-posframe-maybe-hide-posframe-hooks)
+    (remove-hook hook #'flycheck-posframe-maybe-hide-posframe t)))
+
+(defun flycheck-posframe-maybe-hide-posframe ()
+  "Maybe hide messages currently being shown if any."
+  (unless (flycheck-posframe-check-position)
+    (flycheck-posframe-hide-posframe)))
 
 (defun flycheck-posframe-get-prefix-for-error (err)
   "Return the prefix which should be used to display ERR."
@@ -193,6 +213,7 @@ Only the `foreground' is used in this face."
     (let ((poshandler (intern (format "posframe-poshandler-%s" flycheck-posframe-position))))
       (unless (functionp poshandler)
         (setq poshandler nil))
+      (flycheck-posframe-check-position)
       (posframe-show
        flycheck-posframe-buffer
        :string (flycheck-posframe-format-errors errors)
@@ -200,7 +221,10 @@ Only the `foreground' is used in this face."
        :position (point)
        :internal-border-width flycheck-posframe-border-width
        :internal-border-color (face-foreground 'flycheck-posframe-border-face nil t)
-       :poshandler poshandler))
+       :poshandler poshandler
+       :hidehandler #'posframe-hide))
+    (dolist (hook flycheck-posframe-maybe-hide-posframe-hooks)
+      (add-hook hook #'flycheck-posframe-maybe-hide-posframe nil t))
     (dolist (hook flycheck-posframe-hide-posframe-hooks)
       (add-hook hook #'flycheck-posframe-hide-posframe nil t))))
 

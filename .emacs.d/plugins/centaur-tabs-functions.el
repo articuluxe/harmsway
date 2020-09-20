@@ -134,6 +134,11 @@ tab(B), move A to the left of B" t)
 		 (const :tag "Move the currently selected tab to the left of the the last visited tab." left)
 		 (const :tag "Move the currently selected tab to the right of the the last visited tab." right)))
 
+(defcustom centaur-tabs-enable-key-bindings nil
+  "Enable a selection of default key bindings for centaur-tabs."
+  :group 'centaur-tabs
+  :type 'boolean)
+
 (defun centaur-tabs-headline-match ()
   "Make headline use centaur-tabs-default-face."
   (set-face-attribute centaur-tabs-display-line nil :background (face-background 'centaur-tabs-unselected)
@@ -188,20 +193,27 @@ When not specified, ELLIPSIS defaults to ‘...’."
     (define-key km [(control up)]    'centaur-tabs-backward-group)
     (define-key km [(control down)]  'centaur-tabs-forward-group)
     (define-key km [(control f10)]   'centaur-tabs-local-mode)
+    (define-key km [(control 5)]   'centaur-tabs-extract-window-to-new-frame)
+    (define-key km [(control k)]   'centaur-tabs-kill-other-buffers-in-current-group)
+    (define-key km [(control o)]   'centaur-tabs-open-in-external-application)
+    (define-key km [(control d)]   'centaur-tabs-open-directory-in-external-application)
     km)
   "The key bindings provided in Centaur-Tabs mode.")
 
 (defvar centaur-tabs-mode-map
   (let ((map (make-sparse-keymap)))
-    (define-key map centaur-tabs-prefix-key centaur-tabs-prefix-map)
-
+    ;; Optional keybord bindings
+    (when centaur-tabs-enable-key-bindings
+      (define-key map centaur-tabs-prefix-key centaur-tabs-prefix-map))
     ;;; Use mouse wheel to switch between buffers of same group
     (define-key map (vector centaur-tabs-display-line 'mouse-5) 'centaur-tabs-forward )
     (define-key map (vector centaur-tabs-display-line 'mouse-4) 'centaur-tabs-backward )
 
     ;;; Use right click to show the rest of groups
-    (define-key map (vector centaur-tabs-display-line 'mouse-3) 'centaur-tabs--groups-menu )
+    (define-key map (vector centaur-tabs-display-line 'mouse-3) 'centaur-tabs--tab-menu )
 
+    ;;; Use double click to maximize window
+    (define-key map (vector centaur-tabs-display-line 'double-mouse-1) 'delete-other-windows)
 
     map)
   "Keymap to use in  Centaur-Tabs mode.")

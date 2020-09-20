@@ -2,7 +2,7 @@
 
 ;; Author: Alex Griffin <a@ajgrf.com>
 ;; URL: https://github.com/ajgrf/parchment
-;; Version: 0.4.0-pre
+;; Version: 0.4.0
 ;; Package-Requires: ((autothemer "0.2"))
 
 ;; Copyright © 2019, 2020 Alex Griffin <a@ajgrf.com>
@@ -103,6 +103,7 @@ switch themes often.")
    (mode-line-highlight        (:foreground black :background yellow))
    (mode-line-buffer-id        (:inherit 'mode-line-emphasis))
    (mode-line-emphasis         (:weight 'bold))
+   (popup-tip-face             (:foreground black :background yellow))
    (sml/charging               (:foreground pale-green :distant-foreground green))
    (sml/discharging            (:foreground pale-red :distant-foreground red))
    (sml/filename               (:inherit 'mode-line-buffer-id))
@@ -638,7 +639,8 @@ switch themes often.")
    `(org-drill-done-count-color ,brown)
    `(org-drill-failed-count-color ,red)
    `(org-drill-mature-count-color ,green)
-   `(org-drill-new-count-color ,blue))
+   `(org-drill-new-count-color ,blue)
+   `(pdf-view-midnight-colors '(,black . ,pale-yellow)))
 
   (defun parchment-modify-tty-colors ()
     (tty-color-define "black"          0 (tty-color-standard-values black))

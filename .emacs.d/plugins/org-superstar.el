@@ -5,7 +5,7 @@
 ;; Author: D. Williams <d.williams@posteo.net>
 ;; Maintainer: D. Williams <d.williams@posteo.net>
 ;; Keywords: faces, outlines
-;; Version: 1.2.1
+;; Version: 1.4.0
 ;; Homepage: https://github.com/integral-dw/org-superstar-mode
 ;; Package-Requires: ((org "9.1.9") (emacs "26.1"))
 
@@ -37,7 +37,11 @@
 ;;     from vision
 ;;   + applying a custom face to the header bullet
 ;;   + applying a custom face to the leading bullets
-;;   + using double-bullets for inline tasks (see org-inlinetask.el)
+;;   + making inline tasks (see org-inlinetask.el) more fancy by:
+;;     - using double-bullets for inline tasks
+;;     - applying a custom face to the marker star of inline tasks
+;;     - using a special bullet for the marker star
+;;     - introducing an independent face for marker stars
 ;;   + (optional) using special bullets for TODO keywords
 ;; * Prettifying org plain list bullets by:
 ;;   + replacing each bullet type (*, + and -) with UTF-8 bullets
@@ -49,7 +53,7 @@
 ;; the goal of inheriting features the author liked about org-bullets
 ;; while being able to introduce compatibility-breaking changes to it.
 ;; It is largely rewritten, to the point of almost no function being
-;; identical to it's org-bullets counterpart.
+;; identical to its org-bullets counterpart.
 
 ;; This package is versioned using (the author's understanding of)
 ;; semantic versioning: "<major>.<minor>.<patch>".
@@ -78,6 +82,11 @@
 (require 'org-element)
 (require 'wid-edit)
 
+(declare-function org-indent-mode "org-indent" (arg))
+(defvar org-indent-mode)
+(defvar org-inlinetask-show-first-star)
+(defvar org-indent-inlinetask-first-star)
+
 (defgroup org-superstar nil
   "Use UTF8 bullets for headlines and plain lists."
   :group 'org-appearance)
@@ -86,20 +95,44 @@
 
 (defcustom org-superstar-headline-bullets-list
   '(;; Original ones nicked from org-bullets
-    "◉"
-    "○"
-    "✸"
-    "✿") ;; "◉" "🞛" "○" "▷"
+    ?◉
+    ?○
+    ?✸
+    ?✿) ;; My default: ?◉ ?🞛 ?○ ?▷
   "List of bullets used in Org headings.
 It can contain any number of bullets, the Nth entry usually
 corresponding to the bullet used for level N.  The way this list
 is cycled through can use fine-tuned by customizing
 ‘org-superstar-cycle-headline-bullets’.
 
+Every entry in this list can either be a string, a character, or
+a cons cell.  Characters and strings are used as simple, verbatim
+replacements of the asterisk for every display (be it graphical
+or terminal).  In the case of strings, everything past the first
+character is ignored.  If the list element is a cons cell, it
+should be a proper list of the form
+\(COMPOSE-STRING CHARACTER [REST...])
+
+where COMPOSE-STRING should be a string according to the rules of
+the third argument of ‘compose-region’.  It will be used to
+compose the specific headline bullet.  CHARACTER is the fallback
+character used in terminal displays, where composing characters
+cannot be relied upon.
+
 You should call ‘org-superstar-restart’ after changing this
 variable for your changes to take effect."
   :group 'org-superstar
-  :type '(repeat (string :tag "Bullet character")))
+  :type '(repeat (choice
+                  (character :value ?◉
+                             :format "Bullet character: %v\n"
+                             :tag "Simple bullet character")
+                  (string :value "◉"
+                          :tag "Bullet character (legacy method)")
+                  (list :tag "Advanced string and fallback"
+                        (string :value "◉"
+                                :format "String of characters to compose: %v")
+                        (character :value ?◉
+                                   :format "Fallback character for terminal: %v\n")))))
 
 (defcustom org-superstar-item-bullet-alist
   '((?* . ?•)
@@ -149,6 +182,58 @@ variable for your changes to take effect."
                           :format "String of characters to compose: %v")
                   (character :value ?◉
                              :format "Fallback character for terminal: %v\n")))))
+
+(defun org-superstar--set-fbullet (symbol value)
+  "Set SYMBOL ‘org-superstar-first-inlinetask-bullet’ to VALUE.
+If set to a character, also set ‘org-superstar-first-inlinetask-fallback’."
+  (set-default symbol value)
+  (when (characterp value)
+    (set-default 'org-superstar-first-inlinetask-fallback value)))
+
+(defcustom org-superstar-first-inlinetask-bullet ?▶
+  "A special bullet used for the first star of an inline task.
+Normally, this variable is a character replacing the default
+star.  If it’s a string, compose the replacement according to the
+rules of ‘compose-region’ for the COMPONENTS argument.
+
+This bullet is displayed using the dedicated face
+‘org-superstar-first’.
+
+This variable is only used for graphical displays.
+‘org-superstar-first-inlinetask-fallback’ is used for terminal
+displays instead.
+
+You should call ‘org-superstar-restart’ after changing this
+variable for your changes to take effect."
+  :group 'org-superstar
+  :type '(choice
+          (character :tag "Single character to display"
+                     :format "\n%t: %v\n"
+                     :value ?▶)
+          (string :tag "String of characters to compose replacement from"
+                  :format "\n%t:\n%v"
+                  :value "*"))
+  :set #'org-superstar--set-fbullet)
+
+(defcustom org-superstar-first-inlinetask-fallback
+  (cond ((characterp org-superstar-first-inlinetask-bullet)
+         org-superstar-first-inlinetask-bullet)
+        (t ?*))
+  "A special bullet used for the first star of an inline task.
+This variable is a character replacing the default star in
+terminal displays instead of ‘org-superstar-first-inlinetask-bullet’.
+
+If the leading bullet is set to a character before the package is
+loaded, this variable’s default value is set to that character as
+well.  Setting the leading bullet to a character using the custom
+interface also automatically sets this variable.
+
+You should call ‘org-superstar-restart’ after changing this
+variable for your changes to take effect."
+  :group 'org-superstar
+  :type '(character :tag "Single character to display"
+                    :format "\n%t: %v\n"
+                    :value ?*))
 
 ;;;###autoload
 (put 'org-superstar-leading-bullet
@@ -296,6 +381,26 @@ keyword)."
 There is usually no need to use this variable directly; instead,
 use the command ‘org-superstar-toggle-lightweight-lists’.")
 
+(defcustom org-superstar-remove-leading-stars nil
+  "Non-nil means font-lock should hide leading star characters.
+
+A more radical version of ‘org-hide-leading-stars’, where the
+indentation caused by leading stars is completely removed.  It
+works similar to ‘org-hide-emphasis-markers’.
+
+If Non-nil, this variable takes precedence over
+‘org-hide-leading-stars’.
+
+This variable only eliminates indentation caused directly by
+leading stars, meaning additional indentation should be
+preserved.  For an example of this, see the minor-mode command
+‘org-indent-mode’.
+
+You should call ‘org-superstar-restart’ after changing this
+variable for your changes to take effect."
+  :group 'org-superstar
+  :type 'boolean)
+
 
 ;;; Faces
 
@@ -323,25 +428,12 @@ unspecified inherits the org-level-X faces for header bullets."
   "Face used to display prettified item bullets."
   :group 'org-superstar)
 
-(defcustom org-superstar-remove-leading-stars nil
-  "Non-nil means font-lock should hide leading star characters.
-
-A more radical version of ‘org-hide-leading-stars’, where the
-indentation caused by leading stars is completely removed.  It
-works similar to ‘org-hide-emphasis-markers’.
-
-If Non-nil, this variable takes precedence over
-‘org-hide-leading-stars’.
-
-This variable only eliminates indentation caused directly by
-leading stars, meaning additional indentation should be
-preserved.  For an example of this, see the minor-mode command
-‘org-indent-mode’.
-
-You should call ‘org-superstar-restart’ after changing this
-variable for your changes to take effect."
-  :group 'org-superstar
-  :type 'boolean)
+(defface org-superstar-first
+  '((default . (:inherit org-warning)))
+  "Face used to display the first bullet of an inline task.
+This face is only used when ‘org-inlinetask-show-first-star’ is
+non-nil."
+  :group 'org-superstar)
 
 
 ;;; Functions intended for users
@@ -426,27 +518,52 @@ the current keyword, return nil."
 
 If the headline is also a TODO item, you can override the usually
 displayed bullet depending on the TODO keyword by setting
-‘org-superstar-special-todo-items’ to t and adding relevant
-TODO keyword entries to ‘org-superstar-todo-bullet-alist’.
+‘org-superstar-special-todo-items’ to t and adding relevant TODO
+keyword entries to ‘org-superstar-todo-bullet-alist’.
+
+For more information on how to customize headline bullets, see
+‘org-superstar-headline-bullets-list’.
 
 See also ‘org-superstar-cycle-headline-bullets’."
+  ;; string-to-char no longer makes sense here.
+  ;; If you want to support strings properly, return the string.
+  ;; However, allowing for fallback means the list may contain
+  ;; strings, chars or conses.  The cons must be resolved.
+  ;; Hence, a new funtion is needed to keep the complexity to a minimum.
   (let ((max-bullets org-superstar-cycle-headline-bullets)
         (n (if org-odd-levels-only (/ (1- level) 2) (1- level)))
         (todo-bullet (when org-superstar-special-todo-items
                        (org-superstar--todo-bullet))))
     (cond (todo-bullet)
           ((integerp max-bullets)
-           (string-to-char
-            (elt org-superstar-headline-bullets-list
-                 (% n max-bullets))))
+           (org-superstar--nth-headline-bullet (% n max-bullets)))
           (max-bullets
-           (string-to-char
-            (elt org-superstar-headline-bullets-list
-                 (% n (org-superstar--hbullets-length)))))
+           (org-superstar--nth-headline-bullet
+            (% n (org-superstar--hbullets-length))))
           (t
-           (string-to-char
-            (elt org-superstar-headline-bullets-list
-                 (min n (1- (org-superstar--hbullets-length)))))))))
+           (org-superstar--nth-headline-bullet
+            (min n (1- (org-superstar--hbullets-length))))))))
+
+(defun org-superstar--nth-headline-bullet (n)
+  "Return the Nth specified headline bullet or its corresponding fallback.
+N counts from zero.  Headline bullets are specified in
+‘org-superstar-headline-bullets-list’."
+  (let ((bullet-entry
+         (elt org-superstar-headline-bullets-list n)))
+    (cond
+     ((characterp bullet-entry)
+      bullet-entry)
+     ;; Strip bullets provided as strings down to their first char.
+     ;; The main reason hbullets can be defined using strings is
+     ;; because org-bullets did it.
+     ((stringp bullet-entry)
+      (string-to-char bullet-entry))
+     ;; If the element is a cons, assume the user knows what they are
+     ;; doing.
+     ((org-superstar-graphic-p)
+      (elt bullet-entry 0))
+     (t
+      (elt bullet-entry 1)))))
 
 (defun org-superstar--ibullet (bullet-string)
   "Return BULLET-STRINGs desired UTF-8 replacement.
@@ -462,6 +579,12 @@ replaced by their corresponding entry in ‘org-superstar-item-bullet-alist’."
   (if (org-superstar-graphic-p)
       org-superstar-leading-bullet
     org-superstar-leading-fallback))
+
+(defun org-superstar--fbullet ()
+  "Return the correct first inline task star for the current display."
+  (if (org-superstar-graphic-p)
+      org-superstar-first-inlinetask-bullet
+    org-superstar-first-inlinetask-fallback))
 
 (defun org-superstar--heading-level ()
   "Return the heading level of the currently matched headline."
@@ -555,7 +678,9 @@ prettifying bullets in (for example) source blocks."
 (defun org-superstar--prettify-other-lbullet ()
   "Prettify the first leading bullet after the headline bullet.
 This function serves as an extension of
-‘org-superstar--prettify-leading-hbullets’.
+‘org-superstar--prettify-leading-hbullets’, only providing the
+correct face for the bullet, without doing any composing.
+
 This function uses ‘org-superstar-headline-p’ to avoid
 prettifying bullets in (for example) source blocks."
   (cond ((org-superstar-headline-p)
@@ -566,8 +691,8 @@ prettifying bullets in (for example) source blocks."
 (defun org-superstar--prettify-leading-hbullets ()
   "Prettify the leading bullets of a header line.
 Unless ‘org-hide-leading-stars’ is non-nil, each leading star is
-visually replaced by ‘org-superstar-leading-bullet’ and inherits
-face properties from ‘org-superstar-leading’.
+rendered as ‘org-superstar-leading-bullet’ and inherits face
+properties from ‘org-superstar-leading’.
 
 If viewed from a terminal, ‘org-superstar-leading-fallback’ is
 used instead of the regular leading bullet to avoid errors.
@@ -582,6 +707,64 @@ prettifying bullets in (for example) source blocks."
         (compose-region star-beg (setq star-beg (1+ star-beg))
                         (org-superstar--lbullet)))
       'org-superstar-leading)))
+
+(defun org-superstar--prettify-first-bullet ()
+  "Prettify the first bullet of an inline task.
+If ‘org-inlinetask-show-first-star’ is non-nil, the first star of
+an inlinetask is rendered as ‘org-superstar-first-inlinetask-bullet’
+and inherits face properties from ‘org-superstar-first’.
+
+If viewed from a terminal, ‘org-superstar-first-inlinetask-fallback’
+is used instead of the regular bullet to avoid errors.
+
+This function uses ‘org-superstar-inlinetask-p’ to avoid
+prettifying bullets in (for example) source blocks."
+  (cond
+   ((and (featurep 'org-indent) org-indent-mode)
+    'org-hide)
+   ((org-superstar-inlinetask-p)
+    (let ((star-beg (match-beginning 4)))
+      (compose-region star-beg (1+ star-beg)
+                      (org-superstar--fbullet))
+      'org-superstar-first))
+   (org-hide-leading-stars 'org-hide)
+   (t 'org-superstar-leading)))
+
+(defun org-superstar--prettify-indent ()
+  "Set up ‘org-indent-inlinetask-first-star’ buffer-locally.
+Restart Org Indent Mode to enforce the change to take effect, if
+enabled.  This way, ‘org-indent-mode’ uses the correct bullet
+instead of a star.  If Org Indent is not loaded, this function
+does nothing.
+
+See also ‘org-superstar-first-inlinetask-bullet’."
+  (when (featurep 'org-indent)
+    (let ((bullet-components (org-superstar--fbullet))
+          (bullet "*"))
+      (cond
+       ((characterp bullet-components)
+        (setq bullet (string bullet-components)))
+       ;; bullet-components must be a string => compsoe!
+       (t
+        (setq bullet
+              (compose-string bullet nil nil
+                              bullet-components))))
+      (setq-local org-indent-inlinetask-first-star
+                  (org-add-props bullet '(face org-superstar-first))))
+    (when (and org-indent-mode
+               (featurep 'org-inlinetask))
+      (org-indent-mode 0)
+      (org-indent-mode 1))))
+
+(defun org-superstar--unprettify-indent ()
+  "Revert ‘org-indent-inlinetask-first-star’ to default value.
+If Org Indent Mode is enabled, also restart it if necessary."
+  (when (featurep 'org-indent)
+    (kill-local-variable 'org-indent-inlinetask-first-star)
+    (when (and org-indent-mode
+               (featurep 'org-inlinetask))
+      (org-indent-mode 0)
+      (org-indent-mode 1))))
 
 (defun org-superstar--make-invisible (subexp)
   "Make part of the text matched by the last search invisible.
@@ -631,10 +814,13 @@ cleanup routines."
                  (2 (org-superstar--make-invisible 2))))
            ,@(when (featurep 'org-inlinetask)
                '((2 (org-superstar--prettify-other-hbullet)
-                    prepend)))
-           ;; If requested, put another function here that formats the
-           ;; first star of an inlinetask as a bullet.
-           ))))
+                    prepend))))
+          ("^\\(?4:\\*\\)\\(?:\\*\\{2,\\}\\) "
+           ,@(when (and (featurep 'org-inlinetask)
+                        org-inlinetask-show-first-star
+                        (not org-superstar-remove-leading-stars))
+               '((4 (org-superstar--prettify-first-bullet)
+                    t)))))))
 
 (defun org-superstar--fontify-buffer ()
   "Fontify the buffer."
@@ -664,8 +850,9 @@ cleanup routines."
     (font-lock-add-keywords nil org-superstar--font-lock-keywords
                             'append)
     (org-superstar--fontify-buffer)
-    (add-to-invisibility-spec '(org-superstar-hide)))
-   ;; Clean up nd exit.
+    (add-to-invisibility-spec '(org-superstar-hide))
+    (org-superstar--prettify-indent))
+   ;; Clean up and exit.
    (t
     (remove-from-invisibility-spec '(org-superstar-hide))
     (font-lock-remove-keywords nil org-superstar--font-lock-keywords)
@@ -673,7 +860,8 @@ cleanup routines."
           (default-value 'org-superstar--font-lock-keywords))
     (org-superstar--unprettify-ibullets)
     (org-superstar--unprettify-hbullets)
-    (org-superstar--fontify-buffer))))
+    (org-superstar--fontify-buffer)
+    (org-superstar--unprettify-indent))))
 
 (defun org-superstar-restart ()
   "Re-enable Org Superstar mode, if the mode is enabled."

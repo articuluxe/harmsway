@@ -100,7 +100,7 @@
                                   typescript-mode)
                                  . ("javascript-typescript-stdio"))
                                 (sh-mode . ("bash-language-server" "start"))
-				(php-mode . ("php" "vendor/felixfbecker/\
+				                        (php-mode . ("php" "vendor/felixfbecker/\
 language-server/bin/php-language-server.php"))
                                 ((c++-mode c-mode) . ("ccls"))
                                 ((caml-mode tuareg-mode reason-mode)
@@ -108,7 +108,7 @@ language-server/bin/php-language-server.php"))
                                 (ruby-mode
                                  . ("solargraph" "socket" "--port"
                                     :autoport))
-                                (haskell-mode . ("hie-wrapper"))
+                                (haskell-mode . ("hie-wrapper" "--lsp"))
                                 (elm-mode . ("elm-language-server"))
                                 (kotlin-mode . ("kotlin-language-server"))
                                 (go-mode . ("gopls"))
@@ -121,7 +121,8 @@ language-server/bin/php-language-server.php"))
                                 (scala-mode . ("metals-emacs"))
                                 ((tex-mode context-mode texinfo-mode bibtex-mode)
                                  . ("digestif"))
-                                (erlang-mode . ("erlang_ls" "--transport" "stdio")))
+                                (erlang-mode . ("erlang_ls" "--transport" "stdio"))
+                                (gdscript-mode . ("localhost" 6008)))
   "How the command `eglot' guesses the server to start.
 An association list of (MAJOR-MODE . CONTACT) pairs.  MAJOR-MODE
 is a mode symbol, or a list of mode symbols.  The associated
@@ -2175,45 +2176,53 @@ is not active."
             (line-beginning-position))))
        :exit-function
        (lambda (proxy _status)
-         (eglot--dbind ((CompletionItem) insertTextFormat
-                        insertText textEdit additionalTextEdits label)
-             (funcall
-              resolve-maybe
-              (or (get-text-property 0 'eglot--lsp-item proxy)
-                        ;; When selecting from the *Completions*
-                        ;; buffer, `proxy' won't have any properties.
-                        ;; A lookup should fix that (github#148)
-                        (get-text-property
-                         0 'eglot--lsp-item
-                         (cl-find proxy (funcall proxies) :test #'string=))))
-           (let ((snippet-fn (and (eql insertTextFormat 2)
-                                  (eglot--snippet-expansion-fn))))
-             (cond (textEdit
-                    ;; Undo (yes, undo) the newly inserted completion.
-                    ;; If before completion the buffer was "foo.b" and
-                    ;; now is "foo.bar", `proxy' will be "bar".  We
-                    ;; want to delete only "ar" (`proxy' minus the
-                    ;; symbol whose bounds we've calculated before)
-                    ;; (github#160).
-                    (delete-region (+ (- (point) (length proxy))
-                                      (if bounds (- (cdr bounds) (car bounds)) 0))
-                                   (point))
-                    (eglot--dbind ((TextEdit) range newText) textEdit
-                      (pcase-let ((`(,beg . ,end) (eglot--range-region range)))
-                        (delete-region beg end)
-                        (goto-char beg)
-                        (funcall (or snippet-fn #'insert) newText)))
-                    (when (cl-plusp (length additionalTextEdits))
-                      (eglot--apply-text-edits additionalTextEdits)))
-                   (snippet-fn
-                    ;; A snippet should be inserted, but using plain
-                    ;; `insertText'.  This requires us to delete the
-                    ;; whole completion, since `insertText' is the full
-                    ;; completion's text.
-                    (delete-region (- (point) (length proxy)) (point))
-                    (funcall snippet-fn (or insertText label)))))
-           (eglot--signal-textDocument/didChange)
-           (eldoc)))))))
+         ;; To assist in using this whole `completion-at-point'
+         ;; function inside `completion-in-region', ensure the exit
+         ;; function runs in the buffer where the completion was
+         ;; triggered from.  This should probably be in Emacs itself.
+         ;; (github#505)
+         (with-current-buffer (if (minibufferp)
+                                  (window-buffer (minibuffer-selected-window))
+                                (current-buffer))
+           (eglot--dbind ((CompletionItem) insertTextFormat
+                          insertText textEdit additionalTextEdits label)
+               (funcall
+                resolve-maybe
+                (or (get-text-property 0 'eglot--lsp-item proxy)
+                    ;; When selecting from the *Completions*
+                    ;; buffer, `proxy' won't have any properties.
+                    ;; A lookup should fix that (github#148)
+                    (get-text-property
+                     0 'eglot--lsp-item
+                     (cl-find proxy (funcall proxies) :test #'string=))))
+             (let ((snippet-fn (and (eql insertTextFormat 2)
+                                    (eglot--snippet-expansion-fn))))
+               (cond (textEdit
+                      ;; Undo (yes, undo) the newly inserted completion.
+                      ;; If before completion the buffer was "foo.b" and
+                      ;; now is "foo.bar", `proxy' will be "bar".  We
+                      ;; want to delete only "ar" (`proxy' minus the
+                      ;; symbol whose bounds we've calculated before)
+                      ;; (github#160).
+                      (delete-region (+ (- (point) (length proxy))
+                                        (if bounds (- (cdr bounds) (car bounds)) 0))
+                                     (point))
+                      (eglot--dbind ((TextEdit) range newText) textEdit
+                        (pcase-let ((`(,beg . ,end) (eglot--range-region range)))
+                          (delete-region beg end)
+                          (goto-char beg)
+                          (funcall (or snippet-fn #'insert) newText)))
+                      (when (cl-plusp (length additionalTextEdits))
+                        (eglot--apply-text-edits additionalTextEdits)))
+                     (snippet-fn
+                      ;; A snippet should be inserted, but using plain
+                      ;; `insertText'.  This requires us to delete the
+                      ;; whole completion, since `insertText' is the full
+                      ;; completion's text.
+                      (delete-region (- (point) (length proxy)) (point))
+                      (funcall snippet-fn (or insertText label)))))
+             (eglot--signal-textDocument/didChange)
+             (eldoc))))))))
 
 (defun eglot--hover-info (contents &optional range)
   (let ((heading (and range (pcase-let ((`(,beg . ,end) (eglot--range-region range)))
@@ -2468,7 +2477,9 @@ is not active."
 (defun eglot-rename (newname)
   "Rename the current symbol to NEWNAME."
   (interactive
-   (list (read-from-minibuffer (format "Rename `%s' to: " (symbol-at-point)))))
+   (list (read-from-minibuffer (format "Rename `%s' to: " (symbol-at-point))
+                               nil nil nil nil
+                               (symbol-name (symbol-at-point)))))
   (unless (eglot--server-capable :renameProvider)
     (eglot--error "Server can't rename!"))
   (eglot--apply-workspace-edit

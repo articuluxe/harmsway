@@ -79,7 +79,7 @@ Will be set by `treemacs--post-command'.")
 (cl-defun treemacs--find-keybind (func &optional (pad 8))
   "Find the keybind for FUNC in treemacs.
 Return of cons of the key formatted for inclusion in the hydra string, including
-a minimum width for alignment, and the key itself for the hydra heads.
+a minimum PAD width for alignment, and the key itself for the hydra heads.
 Prefer evil keybinds, otherwise pick the first result."
   (-if-let (keys (where-is-internal func))
     (let ((key
@@ -431,6 +431,7 @@ Will simply return `treemacs--eldoc-msg'."
   ;; and make a switch to visual state
   (setq-local double-click-fuzz 15)
   (setq-local show-paren-mode nil)
+  (setq-local tab-width 1)
   (setq-local eldoc-documentation-function #'treemacs--eldoc-function)
   (setq-local eldoc-message-commands treemacs--eldoc-obarray)
   ;; integrate with bookmark.el

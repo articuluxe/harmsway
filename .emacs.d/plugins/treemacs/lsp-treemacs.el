@@ -4,9 +4,9 @@
 
 ;; Author: Ivan Yonchovski
 ;; Keywords: languages
-;; Package-Requires: ((emacs "25.1") (dash "2.14.1") (dash-functional "2.14.1") (f "0.20.0") (ht "2.0") (treemacs "2.5") (lsp-mode "6.0"))
+;; Package-Requires: ((emacs "26.1") (dash "2.14.1") (dash-functional "2.14.1") (f "0.20.0") (ht "2.0") (treemacs "2.5") (lsp-mode "6.0"))
 ;; Homepage: https://github.com/emacs-lsp/lsp-treemacs
-;; Version: 0.2
+;; Version: 0.3
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -34,6 +34,7 @@
 
 (require 'lsp-treemacs-themes)
 (require 'lsp-mode)
+(require 'lsp-lens)
 
 (defconst lsp-treemacs-deps-buffer-name "*Java Dependency List*")
 
@@ -138,13 +139,12 @@
   "Select the element under cursor."
   (interactive)
   (let ((key (button-get (treemacs-node-at-point) :data)))
-    (if (and (consp key) (ht? (cdr key)))
-        (-let (((file . _diagnostic) key))
-          (with-current-buffer (find-file-noselect file)
-            (with-lsp-workspaces (lsp--try-project-root-workspaces nil nil)
-              (save-excursion
-                (goto-char (lsp--position-to-point :start))
-                (lsp-execute-code-action-by-kind "quickfix")))))
+    (if (and (consp key) (lsp-diagnostic? (cl-rest key)))
+        (progn
+          (lsp-treemacs--open-file-in-mru (cl-first key))
+          (-let [(&Diagnostic :range (&RangeToPoint :start)) (cl-rest key)]
+            (goto-char start)
+            (call-interactively #'lsp-execute-code-action)))
       (user-error "Not on a diagnostic"))))
 
 (defun lsp-treemacs-cycle-severity ()
@@ -380,7 +380,8 @@
     (23 'structure)
     (24 'event)
     (25 'operator)
-    (26 'template)))
+    (26 'template)
+    (t 'misc)))
 
 (defun lsp-treemacs-get-icon (icon-name)
   "Get the treemacs ICON using current theme."
@@ -808,23 +809,15 @@
     (let ((treemacs-create-project-functions (remove #'lsp-treemacs--on-folder-added
                                                      treemacs-create-project-functions))
           (treemacs-delete-project-functions (remove #'lsp-treemacs--on-folder-remove
-                                                     treemacs-delete-project-functions)))
-      (seq-do (lambda (folder)
-                (when (->> treemacs-workspace
-                           (treemacs-workspace->projects)
-                           (-none? (lambda (project)
-                                     (f-same? (treemacs-project->path project)
-                                              folder))))
-                  (treemacs-add-project-to-workspace folder)))
-              added)
-      (seq-do (lambda (folder)
-                (when-let (project (->> treemacs-workspace
-                                        (treemacs-workspace->projects)
-                                        (-first (lambda (project)
-                                                  (f-same? (treemacs-project->path project)
-                                                           folder)))))
-                  (treemacs-do-remove-project-from-workspace project)))
-              removed))))
+                                                     treemacs-delete-project-functions))
+          (added (seq-map #'treemacs--canonical-path added))
+          (removed (seq-map #'treemacs--canonical-path removed)))
+      (dolist (added-path added)
+        (unless (treemacs-is-path added-path :in-workspace treemacs-workspace)
+          (treemacs-add-project-to-workspace added-path)))
+      (dolist (removed-path removed)
+        (when (treemacs-is-path removed-path :in-workspace treemacs-workspace)
+          (treemacs-do-remove-project-from-workspace removed-path))))))
 
 ;;;###autoload
 (define-minor-mode lsp-treemacs-sync-mode
@@ -870,7 +863,7 @@
      (with-current-buffer ,buffer
        ,@body)))
 
-(defvar lsp-treemacs-use-cache nil)
+(defvar-local lsp-treemacs-use-cache nil)
 (defvar-local lsp-treemacs--generic-cache nil)
 
 (defun lsp-treemacs--node-key (node)
@@ -896,9 +889,11 @@
                                  item
                                  (lambda (result)
                                    (lsp-treemacs-wcb-unless-killed buffer
-                                     (puthash node-key (cons t result) lsp-treemacs--generic-cache)
-                                     (let ((lsp-treemacs-use-cache t))
-                                       (lsp-treemacs-generic-refresh))))))
+                                     (unless (equal (gethash node-key  lsp-treemacs--generic-cache)
+                                                    (cons t result))
+                                       (puthash node-key (cons t result) lsp-treemacs--generic-cache)
+                                       (let ((lsp-treemacs-use-cache t))
+                                         (treemacs-update-node (cons :custom node-key) t)))))))
                       (or (cl-rest (gethash node-key lsp-treemacs--generic-cache))
                           `((:label ,(propertize "Loading..." 'face 'shadow)
                                     :icon-literal " "
@@ -1006,7 +1001,7 @@
                                             'face 'lsp-lens-face)))
           :key line
           :point start-point
-          :icon-literal " "
+          :icon-literal ""
           :ret-action (lambda (&rest _)
                         (interactive)
                         (lsp-treemacs--open-file-in-mru filename)
@@ -1020,10 +1015,11 @@
     (treemacs-GENERIC-extension)))
 
 (defun lsp-treemacs-generic-refresh ()
-  (condition-case _err
-      (let ((inhibit-read-only t))
-        (treemacs-update-node '(:custom LSP-Generic) t))
-    (error)))
+  (let (lsp-treemacs-use-cache)
+    (condition-case _err
+        (let ((inhibit-read-only t))
+          (treemacs-update-node '(:custom LSP-Generic) t))
+      (error))))
 
 (defun lsp-treemacs-generic-right-click (event)
   (interactive "e")
@@ -1102,8 +1098,19 @@
       (setq-local face-remapping-alist '((button . default)))
       (lsp-treemacs--set-mode-line-format search-buffer title)
       (lsp-treemacs-generic-refresh)
-      (lsp-treemacs--expand 'LSP-Generic expand-depth)
+      (when expand-depth (lsp-treemacs--expand 'LSP-Generic expand-depth))
       (current-buffer))))
+
+(defmacro lsp-treemacs-define-action (name keys &rest body)
+  (declare (doc-string 3) (indent 2))
+  `(defun ,name (&rest args)
+     ,(format "Code action %s" name)
+     (interactive)
+     (ignore args)
+     (if-let (node (treemacs-node-at-point))
+         (-let [,(cons '&plist keys) (button-get node :item)]
+           ,@body)
+       (treemacs-pulse-on-failure "No node at point"))))
 
 (defalias 'lsp-treemacs--show-references 'lsp-treemacs-render)
 

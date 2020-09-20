@@ -87,7 +87,7 @@ using each subquery in turn. This variable affects how that
 filtering takes place.
 
 Value `literal' means the subquery must be a substring of the
-candidate.
+candidate. Supports char folding.
 
 Value `regexp' means the subquery is interpreted directly as a
 regular expression.
@@ -99,6 +99,12 @@ Value `fuzzy' means the characters of the subquery must match
 some subset of those of the candidate, in the correct order but
 not necessarily contiguous.
 
+Value `prefix' means the words (substrings of only word
+characters) match the beginning of words found in the candidate,
+in order, separated by the same non-word characters that separate
+words in the query. This is similar to the completion style
+`partial'.
+
 Value can also be a list of any of the above methods, in which
 case each method will be applied in order until one matches.
 
@@ -109,7 +115,8 @@ be `literal+initialism', which equivalent to the list (`literal'
           (const :tag "Literal" literal)
           (const :tag "Regexp" regexp)
           (const :tag "Initialism" initialism)
-          (const :tag "Fuzzy" fuzzy)))
+          (const :tag "Fuzzy" fuzzy)
+          (const :tag "Prefix" prefix)))
 
 (defcustom prescient-sort-length-enable t
   "Whether to sort candidates by length.
@@ -338,6 +345,28 @@ data can be used to highlight the matched substrings."
                  with-groups)))
       (cdr chars) ""))))
 
+(defun prescient--prefix-regexp (query &optional with-groups)
+  "Return a regexp for matching the beginnings of words in QUERY.
+This is similar to the `partial-completion' completion style provided
+by Emacs, except that non-word characters are taken literally
+\(i.e., one can't glob using \"*\").  Prescient already covers
+that case by separating queries with a space.
+
+If WITH-GROUPS is non-nil, enclose the parts of the regexp that
+match the QUERY characters in capture groups, so that the match
+data can be used to highlight the matched substrings."
+  (when (string-match-p "[[:word:]][^[:word:]]" query)
+      (prescient--with-group
+       (concat "\\<"
+               (replace-regexp-in-string
+                "[^[:word:]]"
+                (lambda (s) (concat "[[:word:]]*" (regexp-quote s)))
+                query
+                ;; Since quoting the non-word character,
+                ;; must replace literally.
+                'fixed-case 'literal))
+       with-groups)))
+
 ;;;; Sorting and filtering
 
 (defun prescient-filter-regexps (query &optional with-groups)
@@ -358,7 +387,7 @@ enclose literal substrings with capture groups."
           (pcase method
             (`literal
              (prescient--with-group
-              (regexp-quote subquery)
+              (char-fold-to-regexp subquery)
               (eq with-groups 'all)))
             (`initialism
              (prescient--initials-regexp subquery with-groups))
@@ -368,7 +397,9 @@ enclose literal substrings with capture groups."
                (string-match-p subquery "")
                subquery))
             (`fuzzy
-             (prescient--fuzzy-regexp subquery with-groups))))
+             (prescient--fuzzy-regexp subquery with-groups))
+            (`prefix
+             (prescient--prefix-regexp subquery with-groups))))
         (pcase prescient-filter-method
           ;; We support `literal+initialism' for backwards
           ;; compatibility.

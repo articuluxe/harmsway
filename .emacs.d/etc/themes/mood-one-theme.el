@@ -3,7 +3,7 @@
 ;; Author: Jessie Hildebrandt <jessieh.net>
 ;; Homepage: https://gitlab.com/jessieh/mood-one-theme
 ;; Keywords: mode-line faces
-;; Version: 1.0.5
+;; Version: 1.1.0
 ;; Package-Requires: ((emacs "24.4"))
 
 ;; This file is not part of GNU Emacs.
@@ -15,9 +15,12 @@
 ;;
 ;; Features offered:
 ;; * Beautiful dark color scheme inspired by the Doom One theme
-;; * Custom fringe bitmaps for diff-hl, flycheck, and flymake
+;; * Custom fringe bitmaps for line continuations, visual-line-mode, diff-hl, flycheck, and flymake
 ;; * Custom configuration for neotree
 ;; * Lightweight with no dependencies
+;;
+;; To replace default line continuation/line wrap fringe bitmaps:
+;; (mood-one-theme-arrow-fringe-bmp-enable)
 ;;
 ;; To enable custom configuration for `neotree':
 ;; (eval-after-load 'neotree #'mood-one-theme-neotree-configuration-enable)
@@ -138,7 +141,7 @@
    `(font-lock-doc-face ((,class (:inherit 'font-lock-comment-face :foreground ,base-6))))
    `(font-lock-constant-face ((,class (:foreground ,violet))))
    `(font-lock-function-name-face ((,class (:foreground ,magenta))))
-   `(font-lock-keyword-face ((,class (:foreground ,blue))))
+   `(font-lock-keyword-face ((,class (:inherit 'bold :foreground ,blue))))
    `(font-lock-string-face ((,class (:foreground ,green))))
    `(font-lock-type-face ((,class (:foreground ,yellow))))
    `(font-lock-variable-name-face ((,class (:foreground ,pink))))
@@ -267,7 +270,7 @@
    `(breakpoint-disabled ((, class (:foreground ,base-5))))
 
    ;; hl-line
-   `(hl-line ((,class (:background ,bg-alt))))
+   `(hl-line ((,class (:background ,bg-alt :extend t))))
 
    ;; ido
    `(ido-first-match ((,class (:foreground ,orange))))
@@ -472,13 +475,23 @@
    `(lsp-face-highlight-textual ((,class (:background ,dark-blue :foreground ,base-8 :distant-foreground ,base-0 :weight bold))))
    `(lsp-face-highlight-read ((,class (:background ,dark-blue :foreground ,base-8 :distant-foreground ,base-0 :weight bold))))
    `(lsp-face-highlight-write ((,class (:background ,dark-blue :foreground ,base-8 :distant-foreground ,base-0 :weight bold))))
+
+   ;; lsp-ui-doc
+   `(lsp-ui-doc-background ((,class (:background ,base-3))))
+   `(lsp-ui-doc-header ((,class (:background ,base-0 :bold bold :box (:line-width 5 :color ,base-0)))))
+
+   ;; lsp-ui-peek
    `(lsp-ui-peek-filename ((,class (:inherit 'mode-line-buffer-id))))
-   `(lsp-ui-peek-header ((,class (:background ,base-4 :foreground ,fg :bold bold))))
+   `(lsp-ui-peek-header ((,class (:background ,base-0 :foreground ,fg :bold bold :box (:line-width 5 :color ,base-0)))))
+   `(lsp-ui-peek-footer ((,class (:background ,base-3))))
    `(lsp-ui-peek-selection ((,class (:background ,blue :foreground ,bg :bold bold))))
    `(lsp-ui-peek-list ((,class (:background ,base-3))))
    `(lsp-ui-peek-peek ((,class (:background ,base-3))))
-   `(lsp-ui-peek-highlight ((,class (:inherit `lsp-ui-peek-header :background ,base-4 :foreground ,bg :box t))))
-   `(lsp-ui-peek-line-number ((,class (:foreground ,green))))
+   `(lsp-ui-peek-highlight ((,class (:background ,orange :foreground ,base-0))))
+   `(lsp-ui-peek-line-number ((,class (:foreground ,base-5))))
+
+   ;; lsp-ui-sideline
+   `(lsp-ui-sideline ((,class (:foreground ,yellow))))
 
    ;; magit
    `(magit-bisect-bad ((,class (:foreground ,red))))
@@ -553,9 +566,9 @@
    `(nav-flash-face ((,class (:background ,dark-blue :foreground ,base-8 :weight bold))))
 
    ;; neotree
-   `(neo-root-dir-face ((,class (:background ,bg :foreground ,yellow :weight bold)))) ;;:box (:line-width 7 :color ,bg)))))
+   `(neo-root-dir-face ((,class (:inherit 'bold :foreground ,yellow)))) ;;:box (:line-width 7 :color ,bg)))))
    `(neo-file-link-face ((,class (:foreground ,fg))))
-   `(neo-dir-link-face ((,class (:foreground ,blue :weight bold))))
+   `(neo-dir-link-face ((,class (:inherit 'bold :foreground ,blue))))
    `(neo-expand-btn-face ((,class (:foreground ,blue))))
    `(neo-vc-edited-face ((,class (:foreground ,yellow))))
    `(neo-vc-added-face ((,class (:foreground ,green))))
@@ -597,7 +610,6 @@
    ;; solaire-mode
    `(solaire-default-face ((,class (:inherit 'default :background ,bg-alt))))
    `(solaire-hl-line-face ((,class (:inherit 'hl-line :background ,bg))))
-   `(solaire-org-hide-face ((,class (:foreground ,bg-alt))))
 
    ;; swiper
    `(swiper-line-face ((,class (:background ,blue :foreground ,base-0))))
@@ -723,6 +735,49 @@
 ;; Fringe bitmap functions
 ;;
 
+;; arrow fringe bitmaps
+(defconst mood-one-theme--right-arrow-bmp
+  (vector #b00000000
+          #b00000000
+          #b00110000
+          #b00111000
+          #b00111100
+          #b00111000
+          #b00110000
+          #b00000000)
+  "Bitmap used to overwrite Emacs's right line-continuation fringe bitmap.")
+(defconst mood-one-theme--left-arrow-bmp
+  (vector #b00000000
+          #b00000000
+          #b00001100
+          #b00011100
+          #b00111100
+          #b00011100
+          #b00001100
+          #b00000000)
+  "Bitmap used to overwrite Emacs's left line-continuation fringe bitmap.")
+(defconst mood-one-theme--down-arrow-bmp
+  (vector #b00000000
+          #b00000000
+          #b00000000
+          #b00000000
+          #b00000000
+          #b01111110
+          #b00111100
+          #b00011000)
+  "Bitmap used to overwrite Emac's right line-wrapping fringe bitmap.")
+(defconst mood-one-theme--empty-bmp
+  (vector #b0)
+  "Bitmap used to overwrite Emac's left line-wrapping fringe bitmap.")
+
+;;;###autoload
+(defun mood-one-theme-arrow-fringe-bmp-enable ()
+  "Enable custom mood-one fringe bitmaps to replace the default line continuation and line wrap arrows."
+  (define-fringe-bitmap 'right-arrow mood-one-theme--right-arrow-bmp)
+  (define-fringe-bitmap 'left-arrow mood-one-theme--left-arrow-bmp)
+  (define-fringe-bitmap 'right-curly-arrow mood-one-theme--down-arrow-bmp)
+  (define-fringe-bitmap 'left-curly-arrow mood-one-theme--empty-bmp))
+
 ;; diff-hl fringe bitmap
 (defvar mood-one-theme--diff-hl-bmp
   (define-fringe-bitmap 'mood-one-theme--diff-hl-bmp
@@ -736,8 +791,8 @@
   "Fringe bitmap function for use as `diff-hl-fringe-bmp-function'."
   mood-one-theme--diff-hl-bmp)
 
-;; flycheck/flymake fringe bitmap
-(define-fringe-bitmap 'mood-one-theme--arrow-bmp
+;; flycheck/flymake fringe bitmaps
+(define-fringe-bitmap 'mood-one-theme--marker-bmp
   (vector #b11100000
           #b11110000
           #b11111000
@@ -745,19 +800,24 @@
           #b11111000
           #b11110000
           #b11100000))
+(defconst mood-one-theme--dot-bmp
+  (vector #b01100000
+          #b01100000)
+  "Bitmap used to overwrite flycheck's continuation fringe bitmap.")
 
 ;;;###autoload
 (defun mood-one-theme-flycheck-fringe-bmp-enable ()
   "Enable custom mood-one fringe bitmaps for use with flycheck."
-  (flycheck-redefine-standard-error-levels nil 'mood-one-theme--arrow-bmp))
+  (flycheck-redefine-standard-error-levels nil 'mood-one-theme--marker-bmp)
+  (define-fringe-bitmap 'flycheck-fringe-bitmap-continuation mood-one-theme--dot-bmp))
 
 ;;;###autoload
 (defun mood-one-theme-flymake-fringe-bmp-enable ()
   "Enable custom mood-one fringe bitmaps for use with flymake."
   (progn
-    (setq-default flymake-error-bitmap '(mood-one-theme--arrow-bmp compilation-error))
-    (setq-default flymake-warning-bitmap '(mood-one-theme--arrow-bmp compilation-warning))
-    (setq-default flymake-note-bitmap '(mood-one-theme--arrow-bmp compilation-info))))
+    (setq-default flymake-error-bitmap '(mood-one-theme--marker-bmp compilation-error))
+    (setq-default flymake-warning-bitmap '(mood-one-theme--marker-bmp compilation-warning))
+    (setq-default flymake-note-bitmap '(mood-one-theme--marker-bmp compilation-info))))
 
 ;;
 ;; Register theme folder location

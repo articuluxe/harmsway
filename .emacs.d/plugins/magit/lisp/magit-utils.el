@@ -402,6 +402,7 @@ and delay of your graphical environment or operating system."
 ;;; User Input
 
 (defvar helm-completion-in-region-default-sort-fn)
+(defvar helm-crm-default-separator)
 (defvar ivy-sort-functions-alist)
 
 (defvar magit-completing-read--silent-default nil)
@@ -476,7 +477,8 @@ acts similarly to `completing-read', except for the following:
                           predicate
                           require-match initial-input hist def)))
       (setq this-command command)
-      (if (string= reply "")
+      ;; Note: Avoid `string=' to support `helm-comp-read-use-marked'.
+      (if (equal reply "")
           (if require-match
               (user-error "Nothing selected")
             nil)
@@ -523,6 +525,7 @@ into a list."
          (minibuffer-completion-table #'crm--collection-fn)
          (minibuffer-completion-confirm t)
          (helm-completion-in-region-default-sort-fn nil)
+         (helm-crm-default-separator nil)
          (input
           (cl-letf (((symbol-function 'completion-pcm--all-completions)
                      #'magit-completion-pcm--all-completions))
@@ -815,21 +818,11 @@ Unless optional argument KEEP-EMPTY-LINES is t, trim all empty lines."
   "Set the header-line using STRING.
 Propertize STRING with the `magit-header-line'.  If the `face'
 property of any part of STRING is already set, then that takes
-precedence.  Also pad the left and right sides of STRING so that
-it aligns with the text area."
+precedence.  Also pad the left side of STRING so that it aligns
+with the text area."
   (setq header-line-format
-        (concat
-         (propertize " " 'display '(space :align-to 0))
-         string
-         (propertize " " 'display
-                     `(space :width
-                             (+ left-fringe
-                                left-margin
-                                ,@(and (eq (car (window-current-scroll-bars))
-                                           'left)
-                                       '(scroll-bar)))))))
-  (magit--add-face-text-property 0 (1- (length header-line-format))
-                                 'magit-header-line t header-line-format))
+        (concat (propertize " " 'display '(space :align-to 0))
+                string)))
 
 (defun magit-face-property-all (face string)
   "Return non-nil if FACE is present in all of STRING."

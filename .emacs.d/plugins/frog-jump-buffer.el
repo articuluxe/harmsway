@@ -51,7 +51,7 @@
   :prefix "frog-jump-buffer-")
 
 (defcustom frog-jump-buffer-sort '(lambda(one two) nil)
-  "User defined sorting function" 
+  "User defined sorting function"
   :type 'function)
 
 (defcustom frog-jump-buffer-ignore-buffers '("\\` ")
@@ -225,10 +225,14 @@ Each action is a list of the form: (KEY DESCRIPTION FILTER-FUNCTION)."
   (let ((target-window-option (frog-jump-buffer-target-window-action)))
     (append (frog-jump-buffer-filter-actions) target-window-option)))
 
+(defun frog-jump-buffer-find-or-create-recentf-buffer (res)
+  "Visit the file in the `recentf' list."
+  (find-file-noselect (assoc-default res (frog-jump-buffer-recentf-buffers))))
+
 (defun frog-jump-buffer-find-or-create-buffer (res)
   "Switch to buffer, or if closed, find and create it first."
   (let ((buffer (if frog-jump-buffer-include-virtual-buffers
-                    (find-file (assoc-default res (frog-jump-buffer-recentf-buffers)))
+                    (frog-jump-buffer-find-or-create-recentf-buffer res)
                   res)))
     (if frog-jump-buffer-target-other-window
         (switch-to-buffer-other-window buffer)
@@ -279,6 +283,8 @@ If FILTER-FUNCTION is present, filter the `buffer-list' with it."
          (frog-jump-buffer-current-ignore-buffers (frog-jump-buffer-current-ignore-buffers))
          (buffer-names (-take frog-jump-buffer-max-buffers (frog-jump-buffer-buffer-names)))
          (actions (frog-jump-buffer-actions))
+         (filter-keys (-map #'string-to-char (-map #'car actions)))
+         (frog-menu-avy-keys (-difference frog-menu-avy-keys filter-keys))
          (prompt (frog-jump-buffer-prompt))
          (res (frog-menu-read prompt (cl-sort buffer-names frog-jump-buffer-sort) actions)))
     (unless res

@@ -47,10 +47,10 @@
 (defun ccls-member-hierarchy--read-node (data &optional parent)
   "Construct a call tree node from hashmap DATA and give it the parent PARENT"
   (-let* (((&CclsMember :id :name :field-name :location :num-children :children) data)
-          (filename (lsp--uri-to-path (lsp:location-uir location)))
+          (filename (lsp--uri-to-path (lsp:location-uri location)))
           (node
            (make-ccls-tree-node
-            :location (cons filename (lsp:range-start (lsp:location-range "range" location)))
+            :location (cons filename (lsp:range-start (lsp:location-range location)))
             ;; With a little bit of luck, this only filters out enums
             :has-children (not (or (>= 0 num-children)
                                    (null parent)

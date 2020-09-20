@@ -6,7 +6,7 @@
 ;; Maintainer: Federico Tedin <federicotedin@gmail.com>
 ;; Homepage: https://github.com/federicotdn/verb
 ;; Keywords: tools
-;; Package-Version: 2.11.0
+;; Package-Version: 2.12.0
 ;; Package-Requires: ((emacs "25.1"))
 
 ;; This file is NOT part of GNU Emacs.
@@ -63,7 +63,7 @@ header value (\"charset=utf-8\")."
   '(;; Text handlers
     ("text/html" html-mode)
     ("\\(application\\|text\\)/xml" xml-mode)
-    ("application/xhtml+xml" xml-mode)
+    ("application/xhtml\\+xml" xml-mode)
     ("application/json" verb-handler-json)
     ("application/javascript" js-mode)
     ("application/css" css-mode)
@@ -71,7 +71,7 @@ header value (\"charset=utf-8\")."
     ;; Binary handlers
     ("application/pdf" doc-view-mode t)
     ("image/png" image-mode t)
-    ("image/svg+xml" image-mode t)
+    ("image/svg\\+xml" image-mode t)
     ("image/x-windows-bmp" image-mode t)
     ("image/gif" image-mode t)
     ("image/jpe?g" image-mode t))
@@ -104,6 +104,13 @@ will be used."
   :type '(repeat (list regexp function
                        (choice (const :tag "Binary" t)
                                (const :tag "Text" nil)))))
+
+(defcustom verb-default-content-type-handler '(fundamental-mode)
+  "Default content type handler.
+This handler is used when no appropriate handler was found in
+`verb-content-type-handlers'."
+  :type '(list function (choice (const :tag "Binary" t)
+                                (const :tag "Text" nil))))
 
 (defcustom verb-export-functions
   '(("verb" . verb--export-to-verb)
@@ -202,7 +209,7 @@ handle JSON responses."
 (defcustom verb-post-response-hook nil
   "Hook run after receiving an HTTP response.
 The hook is run with the response body buffer as the current buffer.
-The appropiate major mode will have already been activated, and
+The appropriate major mode will have already been activated, and
 `verb-response-body-mode' as well.  The buffer will contain the
 response's decoded contents.  The buffer-local `verb-http-response'
 variable will be set to the corresponding class `verb-response'
@@ -314,7 +321,7 @@ E = Error.")
   "Prefix for Verb metadata keys in heading properties.
 Matching is case insensitive.")
 
-(defconst verb-version "2.11.0"
+(defconst verb-version "2.12.0"
   "Verb package version.")
 
 (defvar-local verb-http-response nil
@@ -1574,8 +1581,8 @@ NUM is this request's identification number."
     ;; Try to get a buffer handler function for this content type
     (let ((handler (verb--get-handler content-type)))
       (unless handler
-        ;; Default handler is fundamental mode (text)
-        (setq handler '(fundamental-mode)))
+        ;; Use default content type handler instead
+        (setq handler verb-default-content-type-handler))
 
       (if (= (length handler) 1)
           ;; Text handler

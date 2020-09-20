@@ -512,10 +512,9 @@ which visits the thing at point using `browse-url'."
 Magit is documented in info node `(magit)'."
   :group 'magit
   (hack-dir-local-variables-non-file-buffer)
+  (face-remap-add-relative 'header-line 'magit-header-line)
   (setq mode-line-process (magit-repository-local-get 'mode-line-process))
   (setq-local bookmark-make-record-function 'magit--make-bookmark))
-
-;;; Highlighting
 
 ;;; Local Variables
 
@@ -848,13 +847,13 @@ If a frame, then only consider buffers on that frame."
                  (w (window)
                     (b (window-buffer window)))
                  (f (frame)
-                    (-some #'w (window-list frame 'no-minibuf))))
+                    (seq-some #'w (window-list frame 'no-minibuf))))
         (pcase-exhaustive frame
-          (`nil                   (-some #'b (buffer-list)))
-          (`all                   (-some #'f (frame-list)))
-          (`visible               (-some #'f (visible-frame-list)))
-          ((or `selected `t)      (-some #'w (window-list (selected-frame))))
-          ((guard (framep frame)) (-some #'w (window-list frame)))))
+          (`nil                   (seq-some #'b (buffer-list)))
+          (`all                   (seq-some #'f (frame-list)))
+          (`visible               (seq-some #'f (visible-frame-list)))
+          ((or `selected `t)      (seq-some #'w (window-list (selected-frame))))
+          ((guard (framep frame)) (seq-some #'w (window-list frame)))))
     (magit--not-inside-repository-error)))
 
 (defun magit-mode-get-buffer (mode &optional create frame value)

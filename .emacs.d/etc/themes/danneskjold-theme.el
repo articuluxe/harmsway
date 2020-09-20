@@ -271,6 +271,9 @@
      `(ein:cell-input-prompt ((,class (:foreground ,yellow))))
      `(ein:cell-output-prompt ((,class (:foreground ,orange))))
 
+     ;; lsp
+     `(lsp-face-highlight-read ((,class (:underline ,blue))))
+
      ;; magit
      `(magit-branch ((,class (:foreground ,green-dark))))
      `(magit-header ((,class (:inherit nil :weight bold))))
@@ -352,6 +355,9 @@
      `(org-property-value          ((,c (:foreground ,white))))
      `(org-checkbox-statistics-todo ((,c (:inherit org-todo))))
      `(org-checkbox-statistics-done ((,c (:inherit org-done))))
+
+     ;; jupyter
+     `(jupyter-repl-traceback ((,c (:foreground ,orange))))
 
      ;; packages
      `(package-name                 ((,c (:inherit org-link))))

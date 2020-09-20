@@ -61,17 +61,25 @@
   :safe #'listp
   :group 'proxy-mode)
 
+(defun proxy-mode-lighter-func ()
+  (format " Proxy[%s]" proxy-mode-proxy-type))
+
 ;;; ------------------------------ HTTP Proxy ---------------------------------------------------
 
 (defun proxy-mode-http-enable ()
   "Enable HTTP proxy."
-  (make-local-variable 'process-environment)
-  ;; TODO: how to `setenv' buffer locally?
-  ;; ( "HTTP_PROXY" process-environment)
+  ;; `setenv' works by modifying ‘process-environment’.
   (setenv "HTTP_PROXY"  proxy-mode-http-proxy)
   (setenv "HTTPS_PROXY" proxy-mode-http-proxy)
   (setq-local proxy-mode-proxy-type "http")
-  (getenv "HTTP_PROXY"))
+  (getenv "HTTP_PROXY")
+
+  ;; TODO: how to `setenv' buffer locally?
+  ;; this will make `proxy-mode-http-enable' invalid.
+  ;; (make-local-variable 'process-environment)
+  ;; (add-to-list 'process-environment (format "HTTP_PROXY=%s" ))
+  ;; (add-to-list 'process-environment (format "HTTPS_PROXY=%s" ))
+  )
 
 (defun proxy-mode-http-disable ()
   "Disable HTTP proxy."
@@ -136,13 +144,12 @@
   "A minor mode to toggle `proxy-mode'."
   :require 'proxy-mode
   :init-value nil
-  :lighter " Proxy"
+  :lighter (:eval (proxy-mode-lighter-func))
   :group 'proxy-mode
   :keymap proxy-mode-map
-  :global nil
   (if proxy-mode
-      (proxy-mode-disable)
-    (proxy-mode-enable)))
+      (proxy-mode-enable)
+    (proxy-mode-disable)))
 
 ;; ;;;###autoload
 ;; (define-globalized-minor-mode global-proxy-mode proxy-mode proxy-mode)

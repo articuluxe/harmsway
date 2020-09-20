@@ -403,6 +403,13 @@ It respects `doom-modeline-enable-word-count'."
   :type 'integer
   :group 'doom-modeline)
 
+(defcustom doom-modeline-workspace-name t
+  "Whether display the workspace name.
+
+Non-nil to display in the mode-line."
+  :type 'boolean
+  :group 'doom-modeline)
+
 (defcustom doom-modeline-persp-name t
   "Whether display the perspective name.
 
@@ -814,6 +821,7 @@ then this function does nothing."
 (add-hook 'buffer-list-update-hook #'doom-modeline-set-selected-window)
 (add-hook 'after-make-frame-functions #'doom-modeline-set-selected-window)
 (add-hook 'delete-frame-functions #'doom-modeline-set-selected-window)
+(add-hook 'exwm-workspace-switch-hook #'doom-modeline-set-selected-window)
 (advice-add #'handle-switch-frame :after #'doom-modeline-set-selected-window)
 (with-no-warnings
   (if (boundp 'after-focus-change-function)
@@ -1014,11 +1022,13 @@ The face should be the first attribute, or the font family may be overridden.
 So convert the face \":family XXX :height XXX :inherit XXX\" to
 \":inherit XXX :family XXX :height XXX\".
 See https://github.com/seagle0128/doom-modeline/issues/301."
-  (when-let ((props (get-text-property 0 'face icon)))
-    (cl-destructuring-bind (&key family height inherit &allow-other-keys) props
-      (propertize icon 'face `( :inherit ,(or face inherit props)
-                                :family  ,family
-                                :height  ,height)))))
+  (if doom-modeline-icon
+      (when-let ((props (get-text-property 0 'face icon)))
+        (cl-destructuring-bind (&key family height inherit &allow-other-keys) props
+          (propertize icon 'face `(:inherit ,(or face inherit props)
+                                   :family  ,family
+                                   :height  ,height))))
+    (propertize icon 'face face)))
 
 (defun doom-modeline-icon (icon-set icon-name unicode text &rest args)
   "Display icon of ICON-NAME with ARGS in mode-line.
@@ -1079,7 +1089,7 @@ ARGS is same as `all-the-icons-octicon' and others."
                                      if (= d 0) collect (string-to-char " ")
                                      else collect (string-to-char "."))
                             (if (eq idx len) "\"};" "\",\n")))))
-          'xpm t :ascent 'center))))))
+  'xpm t :ascent 'center))))))
 
 ;; Check whether `window-width' is smaller than the limit
 (defvar-local doom-modeline--limited-width-p nil)

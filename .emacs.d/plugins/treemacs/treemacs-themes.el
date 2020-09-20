@@ -31,7 +31,8 @@
   (require 'treemacs-macros)
   (require 'cl-lib))
 
-(cl-declaim (optimize (speed 3) (safety 0)))
+(eval-when-compile
+  (cl-declaim (optimize (speed 3) (safety 0))))
 
 (treemacs-import-functions-from "treemacs-icons"
   treemacs--select-icon-set)
@@ -61,6 +62,7 @@
 (cl-defmacro treemacs-create-theme (name &key icon-directory extends config)
   "Create a new (bare) theme with the given NAME.
 - ICON-DIRECTORY is the (mandatory) theme's location.
+- EXTENDS is the theme to be extended.
 - BASED-ON is the name of a theme whose icons this one should start with.
 - CONFIG is a code block to fill the created theme with icons via
   `treemacs-create-icon'."
@@ -87,16 +89,16 @@
 
 (cl-defmacro treemacs-modify-theme (theme &key icon-directory config)
   "Modify an existing THEME.
-- CONFIG will be applied to the THEME in the same manner as in
-  `treemacs-create-theme'.
 - THEME can either be a treemacs-theme object or the name of a theme.
 - For the scope of the modification an alternative ICON-DIRECTORY can also be
-  used."
+  used.
+- CONFIG will be applied to the THEME in the same manner as in
+  `treemacs-create-theme'."
   (declare (indent 1))
   (treemacs-static-assert (not (null theme))
     "Theme may not be null.")
   `(treemacs-unless-let (theme (if (stringp ,theme) (treemacs--find-theme ,theme) ,theme))
-       (user-error "Theme %s does not exist" ,theme)
+       (user-error "Theme '%s' does not exist" ,theme)
      (let* ((treemacs--current-theme theme)
             (original-icon-dir (treemacs-theme->path theme))
             (new-icon-dir (if ,icon-directory ,icon-directory original-icon-dir)))

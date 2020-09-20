@@ -1399,6 +1399,12 @@ This regexp is assumed to not match any non-operator identifier."
 (c-lang-defconst c-other-block-decl-kwds
   csharp '("namespace"))
 
+(c-lang-defconst c-ref-list-kwds
+  csharp nil)
+
+(c-lang-defconst c-other-decl-kwds
+  csharp nil)
+
 (c-lang-defconst c-other-kwds
   csharp '("sizeof" "typeof" "is" "as" "yield"
            "where" "select" "in" "from" "let" "orderby" "ascending" "descending"
@@ -2455,6 +2461,17 @@ are the string substitutions (see `format')."
                                      csharp-mode-advice-2
                                      compile activate)
   "Make `c-forward-objc-directive' a no-op in `csharp-mode'."
+  (if (c-major-mode-is 'csharp-mode)
+      nil
+    ad-do-it)
+  )
+
+(defadvice c-clear-string-fences (around
+                                  csharp-disable-clear-string-fences
+                                  compile activate)
+  "This turns off `c-clear-string-fences' for `csharp-mode'. When
+on for `csharp-mode' font lock breaks after an interpolated
+string or terminating simple string."
   (if (c-major-mode-is 'csharp-mode)
       nil
     ad-do-it)

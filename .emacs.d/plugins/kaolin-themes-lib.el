@@ -463,6 +463,8 @@
         ('color  comment-alt)
         ('bright comment)))
 
+    (kaolin-org-height (if kaolin-themes-org-scale-headings 1.1 1.0))
+
     (hl         aquamarine3)
     (hl-bg      comment)
     (hl-line    (if kaolin-themes-hl-line-colored capri5 bg2))
@@ -474,7 +476,6 @@
     (done spring-green3)
 
     (adaptive-fg (if (color-dark-p bg1) white0 bg1))
-    ;; TODO: add pos-tip in custom-theme-set-variables
     (tooltip-bg bg2)
     (tooltip-fg fg2)
     (tooltip-hl-bg brown2)
@@ -619,7 +620,6 @@
     (trailing-whitespace (:background err))
 
     (menu        (:background bg2 :foreground fg2))
-    ;; TODO: default bg
     (header-line (:background nil :foreground num))
     (tool-bar    (:inherit 'header-line))
 
@@ -1433,13 +1433,13 @@
     (org-block-begin-line          (:background bg2 :foreground comment :height 0.9))
     (org-block-end-line            (:inherit 'org-block-begin-line))
     (org-list-dt                   (:inherit 'org-checkbox))
-    (org-document-title            (:foreground builtin :bold bold :height 1.2))
+    (org-document-title            (:foreground builtin :bold bold :height 1.1))
     (org-document-info             (:foreground builtin))
     (org-footnote                  (:foreground fg4 :underline underline))
     (org-quote                     (:background bg2 :foreground fg2 :italic italic))
     (org-verse                     (:foreground fg3 :italic italic))
 
-    (org-level-1            (:foreground keyword :bold bold :height 1.1))
+    (org-level-1            (:foreground keyword :bold bold :height kaolin-org-height))
     (org-level-2            (:foreground builtin  :bold nil))
     (org-level-3            (:foreground num :bold nil))
     (org-level-4            (:foreground const :bold nil))
@@ -1675,6 +1675,16 @@
     (swiper-background-match-face-4 (:inherit 'swiper-match-face-4 :bold nil :background bg1))
     (swiper-line-face    (:inherit 'hl-line))
 
+
+    ;; Default completion
+    (completions-common-part (:foreground functions))
+    (completions-annotations (:foreground doc))
+
+    ;; Selectrum
+    (selectrum-current-candidate   (:background hl-line :foreground hl :bold t))
+    (selectrum-primary-highlight   (:foreground search1))
+    (selectrum-secondary-highlight (:foreground search2))
+
     ;; tabbar
     (tabbar-default             (:background bg1 :foreground bg1 :height 1.0))
     (tabbar-highlight           (:background hl-bg :foreground fg1 :distant-foreground bg1))
@@ -1685,6 +1695,12 @@
     (tabbar-unselected-modified (:inherit 'tabbar-modified))
     (tabbar-selected            (:inherit 'tabbar-default :foreground fg1 :background bg2 :weight 'bold))
     (tabbar-selected-modified   (:inherit 'tabbar-selected :foreground diff-add))
+
+    ;; built-in tab-bar mode
+    (tab-bar (:background bg0 :foreground fg1))
+    (tab-line (:background bg0 :foreground fg1))
+    (tab-bar-tab (:background bg1 :foreground fg1))
+    (tab-bar-tab-inactive (:background bg1 :foreground comment))
 
     ;; Awesome-tabs
     (awesome-tab-default    (:background bg1 :foreground bg1))

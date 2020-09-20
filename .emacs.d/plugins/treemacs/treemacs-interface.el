@@ -60,7 +60,7 @@
   "List of all valid values for treemacs buttons' :state property.")
 
 (defun treemacs-next-line (&optional count)
-  "Goto next line.
+  "Go to next line.
 A COUNT argument, moves COUNT lines down."
   (interactive "p")
   ;; Move to EOL - if point is in the middle of a button, forward-button
@@ -75,7 +75,7 @@ A COUNT argument, moves COUNT lines down."
   (treemacs--evade-image))
 
 (defun treemacs-previous-line (&optional count)
-  "Goto previous line.
+  "Go to previous line.
 A COUNT argument, moves COUNT lines up."
   (interactive "p")
   ;; Move to the start of line - if point is in the middle of a button,
@@ -401,7 +401,7 @@ they will instead be wiped irreversibly."
 (defun treemacs-create-file ()
   "Create a new file.
 Enter first the directory to create the new file in, then the new file's name.
-The preselection for what directory to create in is based on the \"nearest\"
+The pre-selection for what directory to create in is based on the \"nearest\"
 path to point - the containing directory for tags and files or the directory
 itself, using $HOME when there is no path at or near point to grab."
   (interactive)
@@ -424,7 +424,7 @@ be renamed."
 (cl-defun treemacs-rename ()
   "Rename the currently selected node.
 Buffers visiting the renamed file or visiting a file inside a renamed directory
-and windows showing them will be reloaded. The list of recent files will
+and windows showing them will be reloaded.  The list of recent files will
 likewise be updated."
   (interactive)
   (treemacs-block
@@ -461,9 +461,9 @@ likewise be updated."
 (defun treemacs-create-dir ()
   "Create a new directory.
 Enter first the directory to create the new dir in, then the new dir's name.
-The preselection for what directory to create in is based on the \"nearest\"
+The pre-selection for what directory to create in is based on the \"nearest\"
 path to point - the containing directory for tags and files or the directory
-itself, using $HOME when there is no path at or near pooint to grab."
+itself, using $HOME when there is no path at or near point to grab."
   (interactive)
   (treemacs--create-file/dir nil))
 
@@ -600,7 +600,7 @@ entire treemacs view.
 Temporary sorting will only stick around until the next refresh, either manual
 or automatic via `treemacs-filewatch-mode'.
 
-Instead of calling this with a prefix arg you can also direcrly call
+Instead of calling this with a prefix arg you can also directly call
 `treemacs-temp-resort-current-dir' and `treemacs-temp-resort-root'."
   (interactive "P")
   (pcase arg
@@ -645,7 +645,7 @@ For slower scrolling see `treemacs-next-line-other-window'"
        (end-of-buffer (goto-char (point-max)))))))
 
 (defun treemacs-previous-page-other-window (&optional count)
-  "Scroll baclward COUNT pages in `next-window'.
+  "Scroll backward COUNT pages in `next-window'.
 For slower scrolling see `treemacs-previous-line-other-window'"
   (interactive "p")
   (treemacs-without-following
@@ -711,7 +711,7 @@ For slower scrolling see `treemacs-previous-line-other-window'"
 (defun treemacs-add-project-to-workspace (path &optional name)
   "Add a project at given PATH to the current workspace.
 The PATH's directory name will be used as a NAME for a project.  The NAME can
-\(or must) be entered manully with either a prefix arg or if a project with the
+\(or must) be entered manually with either a prefix arg or if a project with the
 auto-selected name already exists."
   (interactive "DProject root: ")
   (let* ((default-name (treemacs--filename path))
@@ -753,20 +753,24 @@ auto-selected name already exists."
   "Remove the project at point from the current workspace.
 With a prefix ARG select project to remove by name."
   (interactive "P")
-  (if (>= 1 (length (treemacs-workspace->projects (treemacs-current-workspace))))
-      (treemacs-pulse-on-failure "Cannot delete the last project.")
-    (let ((project (treemacs-project-at-point))
-          (save-pos))
-      (when (or arg (null project))
-        (setf project (treemacs--select-project-by-name)
-              save-pos (not (equal project (treemacs-project-at-point)))))
-      (if save-pos
-          (treemacs-save-position
-           (treemacs-do-remove-project-from-workspace project))
-        (treemacs-do-remove-project-from-workspace project))
-      (whitespace-cleanup)
-      (treemacs-pulse-on-success "Removed project %s from the workspace."
-        (propertize (treemacs-project->name project) 'face 'font-lock-type-face)))))
+  (let ((project (treemacs-project-at-point))
+        (save-pos))
+    (when (or arg (null project))
+      (setf project (treemacs--select-project-by-name)
+            save-pos (not (equal project (treemacs-project-at-point)))))
+    (pcase (if save-pos
+               (treemacs-save-position
+                (treemacs-do-remove-project-from-workspace project))
+             (treemacs-do-remove-project-from-workspace project))
+      (`success
+       (whitespace-cleanup)
+       (treemacs-pulse-on-success "Removed project %s from the workspace."
+         (propertize (treemacs-project->name project) 'face 'font-lock-type-face)))
+      (`cannot-delete-last-project
+       (treemacs-pulse-on-failure "Cannot delete the last project."))
+      (`(invalid-project ,reason)
+       (treemacs-pulse-on-failure "Cannot delete project: %s"
+         (propertize reason 'face 'font-lock-string-face))))))
 
 (defun treemacs-create-workspace ()
   "Create a new workspace."
@@ -936,7 +940,7 @@ Only works with a single project in the workspace."
             (treemacs--no-messages t)
             (treemacs-pulse-on-success nil))
        (unless (treemacs-is-path old-root :same-as new-root)
-         (treemacs-do-remove-project-from-workspace project)
+         (treemacs-do-remove-project-from-workspace project :ignore-last-project-restriction)
          (treemacs--reset-dom) ;; remove also the previous root's dom entry
          (treemacs-do-add-project-to-workspace new-root new-name)
          (treemacs-goto-file-node old-root))))))
@@ -956,7 +960,7 @@ Only works with a single project in the workspace."
         (let ((new-root (treemacs-button-get btn :path))
               (treemacs--no-messages t)
               (treemacs-pulse-on-success nil))
-          (treemacs-do-remove-project-from-workspace (treemacs-project-at-point))
+          (treemacs-do-remove-project-from-workspace (treemacs-project-at-point) :ignore-last-project-restriction)
           (treemacs--reset-dom) ;; remove also the previous root's dom entry
           (treemacs-do-add-project-to-workspace new-root (file-name-nondirectory new-root))
           (treemacs-goto-file-node new-root)
@@ -1185,7 +1189,7 @@ absolute path of the node (if it is present)."
   "Select the scope for treemacs buffers.
 The default (and only) option is scoping by frame, which means that every Emacs
 frame (and only an Emacs frame) will have its own unique treemacs buffer.
-Additional scope types can be enbaled by installing the appropriate package.
+Additional scope types can be enabled by installing the appropriate package.
 
 The following packages offer additional scope types:
  * treemacs-persp
@@ -1211,7 +1215,7 @@ To programmatically set the scope type see `treemacs-set-scope-type'."
   (interactive)
   (switch-to-buffer (get-buffer-create "*Treemacs Icons*"))
   (erase-buffer)
-  (dolist (theme treemacs--themes)
+  (dolist (theme (nreverse treemacs--themes))
     (insert (format "* Theme %s\n\n" (treemacs-theme->name theme)))
     (insert " |------+------------|\n")
     (insert " | Icon | Extensions |\n")
@@ -1235,8 +1239,8 @@ To programmatically set the scope type see `treemacs-set-scope-type'."
       (insert (apply #'concat (nreverse txt)))
       (with-no-warnings
         (org-mode)
-        (org-table-align))
-      (goto-char 0))))
+        (org-table-align))))
+  (goto-char 0))
 
 (provide 'treemacs-interface)
 

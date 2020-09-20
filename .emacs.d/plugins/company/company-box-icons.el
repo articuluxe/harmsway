@@ -47,9 +47,7 @@
                             (member extension imagemagick-enabled-types))))
       `(image :type ,(if use-magick 'imagemagick 'png)
               :file ,(concat company-box-icons-dir file)
-              :ascent center
-              :width 14
-              :height 14))))
+              :ascent center))))
 
 (defvar company-box-icons-icons-in-terminal
   '((Unknown fa_question_circle)
@@ -81,6 +79,66 @@
     (Template . fa_bookmark)) ;; TypeParameter
   )
 
+(defvar company-box-icons-eclipse
+  (eval-when-compile
+    `((Unknown . ,(company-box-icons-image "Namespace.png"))
+      (Text . ,(company-box-icons-image "eclipse/text.png"))
+      (Method . ,(company-box-icons-image "eclipse/method.png"))
+      (Function . ,(company-box-icons-image "eclipse/function.png"))
+      (Constructor . ,(company-box-icons-image "eclipse/constructor.png"))
+      (Field . ,(company-box-icons-image "eclipse/field.png"))
+      (Variable . ,(company-box-icons-image "eclipse/variable.png"))
+      (Class . ,(company-box-icons-image "eclipse/class.png"))
+      (Interface . ,(company-box-icons-image "eclipse/interface.png"))
+      (Module . ,(company-box-icons-image "eclipse/module.png"))
+      (Property . ,(company-box-icons-image "eclipse/property.png"))
+      (Unit . ,(company-box-icons-image "eclipse/unit.png"))
+      (Value . ,(company-box-icons-image "eclipse/value.png"))
+      (Enum . ,(company-box-icons-image "eclipse/enum.png"))
+      (Keyword . ,(company-box-icons-image "eclipse/keyword.png"))
+      (Snippet . ,(company-box-icons-image "eclipse/snippet.png"))
+      (Color . ,(company-box-icons-image "eclipse/color.png"))
+      (File . ,(company-box-icons-image "eclipse/file.png"))
+      (Reference . ,(company-box-icons-image "eclipse/reference.png"))
+      (Folder . ,(company-box-icons-image "eclipse/folder.png"))
+      (EnumMember . ,(company-box-icons-image "eclipse/enummember.png"))
+      (Constant . ,(company-box-icons-image "eclipse/constant.png"))
+      (Struct . ,(company-box-icons-image "eclipse/struct.png"))
+      (Event . ,(company-box-icons-image "eclipse/event.png"))
+      (Operator . ,(company-box-icons-image "eclipse/operator.png"))
+      (TypeParameter . ,(company-box-icons-image "eclipse/typeparameter.png"))
+      (Template . ,(company-box-icons-image "eclipse/template.png")))))
+
+(defvar company-box-icons-netbeans
+  (eval-when-compile
+    `((Unknown . ,(company-box-icons-image "Namespace.png"))
+      (Text . ,(company-box-icons-image "netbeans/text.png"))
+      (Method . ,(company-box-icons-image "netbeans/method.png"))
+      (Function . ,(company-box-icons-image "netbeans/function.png"))
+      (Constructor . ,(company-box-icons-image "netbeans/constructor.png"))
+      (Field . ,(company-box-icons-image "netbeans/field.png"))
+      (Variable . ,(company-box-icons-image "netbeans/variable.gif"))
+      (Class . ,(company-box-icons-image "netbeans/class.png"))
+      (Interface . ,(company-box-icons-image "netbeans/interface.png"))
+      (Module . ,(company-box-icons-image "netbeans/module.png"))
+      (Property . ,(company-box-icons-image "netbeans/property.png"))
+      (Unit . ,(company-box-icons-image "netbeans/unit.png"))
+      (Value . ,(company-box-icons-image "netbeans/value.png"))
+      (Enum . ,(company-box-icons-image "netbeans/enum.png"))
+      (Keyword . ,(company-box-icons-image "netbeans/keyword.png"))
+      (Snippet . ,(company-box-icons-image "netbeans/snippet.png"))
+      (Color . ,(company-box-icons-image "netbeans/color.png"))
+      (File . ,(company-box-icons-image "netbeans/file.png"))
+      (Reference . ,(company-box-icons-image "netbeans/reference.png"))
+      (Folder . ,(company-box-icons-image "netbeans/folder.png"))
+      (EnumMember . ,(company-box-icons-image "netbeans/enummember.png"))
+      (Constant . ,(company-box-icons-image "netbeans/constant.png"))
+      (Struct . ,(company-box-icons-image "netbeans/struct.png"))
+      (Event . ,(company-box-icons-image "netbeans/event.png"))
+      (Operator . ,(company-box-icons-image "netbeans/operator.png"))
+      (TypeParameter . ,(company-box-icons-image "netbeans/typeparameter.png"))
+      (Template . ,(company-box-icons-image "netbeans/template.png")))))
+
 (defvar company-box-icons-images
   (eval-when-compile
     `((Unknown . ,(company-box-icons-image "Namespace.png"))
@@ -111,7 +169,41 @@
       (TypeParameter . ,(company-box-icons-image "Class.png"))
       (Template . ,(company-box-icons-image "Template.png")))))
 
-(with-eval-after-load 'all-the-icons
+(defvar company-box-icons-idea
+  (eval-when-compile
+    `((Unknown . ,(company-box-icons-image "idea/package.png"))
+      ;; (Text . ,(company-box-icons-image "idea/misc.png"))
+      (Method . ,(company-box-icons-image "idea/method.png"))
+      (Function . ,(company-box-icons-image "idea/method.png"))
+      (Constructor . ,(company-box-icons-image "idea/method.png"))
+      (Field . ,(company-box-icons-image "idea/field.png"))
+      (Variable . ,(company-box-icons-image "idea/field.png"))
+      (Class . ,(company-box-icons-image "idea/class.png"))
+      (Interface . ,(company-box-icons-image "idea/interface.png"))
+      (Module . ,(company-box-icons-image "idea/package.png"))
+      (Property . ,(company-box-icons-image "idea/property.png"))
+      ;; (Unit . ,(company-box-icons-image "idea/misc.png"))
+      (Value . ,(company-box-icons-image "idea/field.png"))
+      (Enum . ,(company-box-icons-image "idea/enum.png"))
+      ;; (Keyword . ,(company-box-icons-image "idea/misc.png"))
+      (Snippet . ,(company-box-icons-image "idea/snippet.png"))
+      ;; (Color . ,(company-box-icons-image "idea/misc.png"))
+      (File . ,(company-box-icons-image "idea/ppFile.png"))
+      (Reference . ,(company-box-icons-image "idea/misc.png"))
+      (Folder . ,(company-box-icons-image "idea/ppFile.png"))
+      (EnumMember . ,(company-box-icons-image "idea/enum.png"))
+      (Constant . ,(company-box-icons-image "idea/field.png"))
+      (Struct . ,(company-box-icons-image "idea/class.png"))
+      (Event . ,(company-box-icons-image "Event.png"))
+      ;; (Operator . ,(company-box-icons-image "Misc.png"))
+      (TypeParameter . ,(company-box-icons-image "Class.png"))
+      (Template . ,(company-box-icons-image "Template.png")))))
+
+(when (and (require 'all-the-icons nil t)
+           (fboundp 'all-the-icons-faicon)
+           (fboundp 'all-the-icons-alltheicon)
+           (fboundp 'all-the-icons-material)
+           (fboundp 'all-the-icons-octicon))
   ;; TODO: fix the rest
   (defvar company-box-icons-all-the-icons
     `((Unknown . ,(all-the-icons-faicon "cog"))
@@ -145,16 +237,25 @@
 
 (defcustom company-box-icons-alist 'company-box-icons-images
   "Rendering method for icons.
-With images, you can't change colors of icons.
 
 - Images
+- idea, from idea editors
+- netbeans, from netbeans editor
+- eclipse, from eclipse editor
 - all-the-icons [1]
 - icons-in-terminal [2]
+
+Changing colors of icons only works with `all-the-icons' and
+`icons-in-terminal'.  Colors with others methods are taken from
+the image.
 
 [1] https://github.com/domtronn/all-the-icons.el
 [2] https://github.com/sebastiencs/icons-in-terminal
 ."
   :type '(choice (const :tag "images" company-box-icons-images)
+                 (const :tag "idea" company-box-icons-idea)
+                 (const :tag "netbeans" company-box-icons-netbeans)
+                 (const :tag "eclipse" company-box-icons-eclipse)
                  (const :tag "all-the-icons" company-box-icons-all-the-icons)
                  (const :tag "icons-in-terminal" company-box-icons-icons-in-terminal))
   :group 'company-box)
@@ -197,10 +298,18 @@ See `company-box-icons-images' or `company-box-icons-all-the-icons' for the ICON
 [1] https://github.com/Microsoft/language-server-protocol/blob/gh-pages/\
 specification.md#completion-request-leftwards_arrow_with_hook.")
 
+(defconst company-box-icons--eglot-alist
+  company-box-icons--lsp-alist)
+
 (defun company-box-icons--lsp (candidate)
   (-when-let* ((lsp-item (get-text-property 0 'lsp-completion-item candidate))
-               (kind-num (gethash "kind" lsp-item)))
+               (kind-num (and (fboundp 'lsp-get) (lsp-get lsp-item :kind))))
     (alist-get kind-num company-box-icons--lsp-alist)))
+
+(defun company-box-icons--eglot (candidate)
+  (-when-let* ((eglot-item (get-text-property 0 'eglot--lsp-item candidate))
+               (kind-num (plist-get eglot-item :kind)))
+    (alist-get kind-num company-box-icons--eglot-alist)))
 
 (defconst company-box-icons--php-alist
   '(("t" . Interface)
@@ -220,6 +329,32 @@ specification.md#completion-request-leftwards_arrow_with_hook.")
     (-> (get-text-property 0 'ac-php-tag-type candidate)
         (alist-get company-box-icons--php-alist))))
 
+(defconst company-box-icons--cider-alist
+  '(("special-form" . Operator)
+    ("function" . Function)
+    ("method" . Method)
+    ("macro" . Template)
+    ("class" . Class)
+    ("import" . Module)
+    ("field" . Field)
+    ("keyword" . Keyword)
+    ("local" . Variable)
+    ("var" . Variable)
+    ("namespace" . Unit)
+    ("protocol" . Interface)
+    ("protocol-function" . Property)
+    ("record" . Constructor)
+    ("static-field" . Field)
+    ("static-method" . Method)
+    ("type" . TypeParameter))
+  "List of icon types to use with CIDER candidates.
+Check out `cider-completion-annotations-alist'.")
+
+(defun company-box-icons--cider (candidate)
+  (when (or (derived-mode-p 'clojure-mode) (derived-mode-p 'cider-repl-mode))
+    (-> (get-text-property 0 'type candidate)
+        (alist-get company-box-icons--cider-alist nil nil 'equal))))
+
 (defun company-box-icons--elisp (candidate)
   (when (derived-mode-p 'emacs-lisp-mode)
     (let ((sym (intern candidate)))
@@ -227,21 +362,20 @@ specification.md#completion-request-leftwards_arrow_with_hook.")
       (cond ((fboundp sym) 'Function)
             ((featurep sym) 'Module)
             ((facep sym) 'Color)
-            ((boundp sym) 'Variable)
-            (t . nil)))))
+            ((boundp sym) 'Variable)))))
 
 (defun company-box-icons--yasnippet (candidate)
   (when (get-text-property 0 'yas-annotation candidate)
     'Template))
 
-(defun company-box-icons-resize (size)
+(defun company-box-icons-resize (size &optional icons-images)
   "Set icons size in pixels."
   (interactive "nIcon size in pixels: ")
   (mapc (lambda (icon)
           (-> icon
               (plist-put :height size)
               (plist-put :width size)))
-        company-box-icons-images))
+        (or icons-images company-box-icons-images)))
 
 (provide 'company-box-icons)
 ;;; company-box-icons.el ends here

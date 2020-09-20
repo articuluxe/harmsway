@@ -114,7 +114,7 @@
    `(highlight                  ((,class (:background ,black1 :foreground ,fg))))
    `(hl-line                    ((,class (:background ,grey2))))
    `(highlight-indentation-face ((,class (:background ,grey2))))
-   `(header-line                ((,class (:background ,bg))))
+   `(header-line                ((,class (:box (:color ,black2) :background ,black1))))
    `(fringe                     ((,class (:background ,bg))))
    `(cursor                     ((,class (:background ,red1))))
    `(minibuffer-prompt          ((,class (:foreground ,purple1))))
@@ -128,10 +128,22 @@
    `(match                      ((,class (:background ,red3 :foreground ,fg))))
    `(tooltip                    ((,class (:background ,bg2  :foreground ,brown1))))
 
+   ;; Tabs
+   `(tab-line                   ((,class (:background ,black1 :foreground ,fg :box (:line-width 3 :color ,black1) :overline ,black1))))
+   `(tab-line-tab               ((,class (:background ,black1 :foreground ,fg :box (:line-width 3 :color ,black1) :overline ,black1))))
+   `(tab-line-tab-current       ((,class (:background ,bg2    :foreground ,fg :box (:line-width 3 :color ,bg2)    :overline ,blue1))))
+   `(tab-line-tab-inactive      ((,class (:background ,black1 :foreground ,fg :box (:line-width 3 :color ,black1) :overline ,black1))))
+   `(tab-line-highlight         ((,class (:background ,bg     :foreground ,fg :box (:line-width 3 :color ,bg)     :overline ,blue1))))
+
    ;; Anzu
    `(anzu-mode-line         ((,class (:foreground ,yellow2 :background ,bg2))))
    `(anzu-replace-highlight ((,class (:foreground ,yellow2 :background ,red3))))
    `(anzu-replace-to        ((,class (:foreground ,black1  :background ,blue1))))
+
+   ;; Xref
+   `(xref-file-header ((,class (:foreground ,brown1))))
+   `(xref-line-number ((,class (:foreground ,green1))))
+   `(xref-match       ((,class (:background ,black1))))
 
    ;; Evil
    `(evil-search-highlight-persist-highlight-face ((,class (:foreground ,black1 :background ,red1))))
@@ -204,6 +216,9 @@
    `(ediff-odd-diff-B            ((,class (:foreground ,black2 :background ,blue2))))
    `(ediff-odd-diff-C            ((,class (:foreground ,aqua1   :background ,aqua2))));;TODO
    `(ediff-odd-diff-Ancestor     ((,class (:foreground ,brown1  :background ,aqua2))));;TODO
+
+   ;; Macrostep
+   `(macrostep-expansion-highlight-face ((,class (:inherit region))))
 
    ;; Spacemacs states
    `(spacemacs-transient-state-title-face ((,class (:foreground ,black2 :background ,green2 :bold t :box (:color ,bg2 :line-width -1)))))
@@ -522,10 +537,10 @@
    `(helm-M-x-key                     ((,class (:foreground ,yellow1 :bold t))))
    `(helm-prefarg                     ((,class (:foreground ,aqua1   :bold t))))
    `(helm-resume-need-update          ((,class (:height 2.0 :background ,fg :foreground ,aqua2)))) ;; TODO
-   `(helm-selection                   ((,class (:background ,black1))))
+   `(helm-selection                   ((,class (:background ,black1 :extend t))))
    `(helm-selection-line              ((,class (:background ,grey3))))
    `(helm-separator                   ((,class (:foreground ,green1 :bold t))))
-   `(helm-source-header               ((,class (:background ,aqua2  :foreground ,black2 :underline t))))
+   `(helm-source-header               ((,class (:background ,aqua2  :foreground ,black2 :underline t :extend t))))
    `(helm-visible-mark                ((,class (:foreground ,fg     :bold t))))
 
    ;;Helm swoop
@@ -614,12 +629,10 @@
    `(magit-signature-untrusted         ((,class (:foreground ,red1    :italic t :underline (:style wave)))))
    `(magit-tag                         ((,class (:foreground ,aqua1   :bold t))))
 
-   ;; Magit Popup
-   `(magit-popup-argument          ((,class (:foreground ,aqua1))))
-   `(magit-popup-disabled-argument ((,class (:foreground ,grey1))))
-   `(magit-popup-heading           ((,class (:foreground ,purple1 :bold t))))
-   `(magit-popup-key               ((,class (:foreground ,blue1   :bold t))))
-   `(magit-popup-option-value      ((,class (:foreground ,aqua2   :bold t))))
+   ;; Diff
+   `(diff-refine-added   ((,class (:foreground ,green2 :background ,black1 :bold t))))
+   `(diff-refine-removed ((,class (:foreground ,red2   :background ,black1 :bold t))))
+   `(diff-refine-changed ((,class (:foreground ,blue1  :background ,black1 :bold t))))
 
    ;; Git
    `(git-commit-keyword              ((,class (:foreground ,brown2 :bold t))))
@@ -655,6 +668,24 @@
    `(git-gutter-fr+-added             ((,class (:inherit    git-gutter:added))))
    `(git-gutter-fr+deleted            ((,class (:inherit    git-gutter:deleted))))
    `(git-gutter-fr+modified           ((,class (:inherit    git-gutter:modified))))
+
+   ;; Transient
+   `(transient-heading           ((,class (:foreground ,purple1 :bold t))))
+   `(transient-key               ((,class (:foreground ,blue1   :bold t))))
+   `(transient-value             ((,class (:foreground ,aqua1   :bold t))))
+   `(transient-argument          ((,class (:foreground ,orange1 :bold t))))
+   `(transient-unreachable-key   ((,class (:foreground ,grey1   :bold t))))
+   `(transient-unreachable       ((,class (:foreground ,grey1))))
+   `(transient-active-infix      ((,class (:foreground ,green2  :bold t))))
+
+   `(transient-inacitve-argument ((,class (:foreground ,brown1  :background ,black2))))
+   `(transient-inacitve-value    ((,class (:foreground ,orange1  :background ,black2))))
+   `(transient-disabled-suffix   ((,class (:foreground ,purple1 :background ,black2))))
+   `(transient-enabled-suffix    ((,class (:foreground ,red3    :background ,black2))))
+   `(transient-inapt-suffix      ((,class (:foreground ,aqua1 :background ,black2))))
+   `(transient-mismatched-key    ((,class (:foreground ,blue2 :background ,black2))))
+   `(transient-nonstandard-key   ((,class (:foreground ,brown2 :background ,black2))))
+   `(transient-separator         ((,class (:foreground ,orange2 :background ,black2))))
 
    ;; Diff hl
    `(diff-hl-change ((,class (:background ,blue2  :foreground ,black1))))
@@ -703,9 +734,9 @@
    `(org-agenda-structure          ((,class (:foreground ,purple1 :bold t :height 1.5))))
    `(org-super-agenda-header       ((,class (:foreground ,green2 :bold t :height 1.3))))
    `(org-archived                  ((,class (:foreground ,grey1 :bold t))))
-   `(org-block                     ((,class (:background ,bg2))))
-   `(org-block-begin-line          ((,class (:background ,brown2 :foreground ,bg2 :bold t))))
-   `(org-block-end-line            ((,class (:background ,brown2 :foreground ,bg2 :bold t))))
+   `(org-block                     ((,class (:background ,bg2 :extend t))))
+   `(org-block-begin-line          ((,class (:background ,brown2 :foreground ,bg2 :bold t :extend t))))
+   `(org-block-end-line            ((,class (:background ,brown2 :foreground ,bg2 :bold t :extend t))))
    `(org-checkbox                  ((,class (:background ,bg2 :foreground ,brown2  :bold t :box (:color ,brown2 :line-width -1)))))
    `(org-checkbox-statistics-done  ((,class (:background ,green1 :foreground ,black1 :box (:color ,black1 :line-width -1) :bold t))))
    `(org-checkbox-statistics-todo  ((,class (:background ,red2   :foreground ,black1 :box (:color ,black1 :line-width -1) :bold t))))
