@@ -5,7 +5,7 @@
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Friday, May 29, 2015
 # Version: 1.0
-# Modified Time-stamp: <2020-06-01 12:01:19 dharms>
+# Modified Time-stamp: <2020-09-24 10:10:47 dharms>
 # Modified by: Dan Harms
 # Keywords: configuration
 
@@ -52,14 +52,14 @@ $tar u"$verbose"f "$dest" --transform=s%user/"$user"\\/%% user/"$user"
 $tar u"$verbose"f "$dest" --transform=s%os/"$os"\\/%% os/"$os"
 $tar u"$verbose"f "$dest" --transform=s%host/"$host"\\/%% host/"$host"
 $tar u"$verbose"f "$dest" --transform=s%site/"$site"\\/%% site/"$site"
-if [ -d site/xr ]; then
-    echo "Also transferring select settings from site xr"
-    $tar u"$verbose"f "$dest" --transform=s%site/xr\\/%% site/xr/.emacs.d/custom
-    $tar u"$verbose"f "$dest" --transform=s%site/xr\\/%% site/xr/.emacs.d/settings/host/hosts
-    $tar u"$verbose"f "$dest" --transform=s%site/xr\\/%% site/xr/.emacs.d/settings/site/xr
-    $tar u"$verbose"f "$dest" --transform=s%site/xr\\/%% site/xr/.emacs.d/xr.bmk
-    $tar u"$verbose"f "$dest" --transform=s%site/xr\\/%% site/xr/.proviso.d
-fi
+# if [ -d site/xr ]; then
+#     echo "Also transferring select settings from site xr"
+#     $tar u"$verbose"f "$dest" --transform=s%site/xr\\/%% site/xr/.emacs.d/custom
+#     $tar u"$verbose"f "$dest" --transform=s%site/xr\\/%% site/xr/.emacs.d/settings/host/hosts
+#     $tar u"$verbose"f "$dest" --transform=s%site/xr\\/%% site/xr/.emacs.d/settings/site/xr
+#     $tar u"$verbose"f "$dest" --transform=s%site/xr\\/%% site/xr/.emacs.d/xr.bmk
+#     $tar u"$verbose"f "$dest" --transform=s%site/xr\\/%% site/xr/.proviso.d
+# fi
 
 echo ...done generating "$dest"
 

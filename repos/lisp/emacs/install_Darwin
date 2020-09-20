@@ -1,7 +1,7 @@
-cd src/emacs-26.3
+cd src/emacs-27.1
 mkdir -p bld
 cd bld
-../configure --with-ns --without-dbus --with-imagemagick --disable-ns-self-contained --prefix=$HOME/opt/stow/emacs
+../configure --with-ns --disable-ns-self-contained --prefix=$HOME/opt/stow/emacs
 make
 make install
 mkdir -p $HOME/opt/stow

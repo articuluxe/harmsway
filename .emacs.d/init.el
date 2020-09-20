@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-09-18 17:46:52 dharms>
+;; Modified Time-stamp: <2020-09-25 11:09:11 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1103,6 +1103,7 @@ From `manuel-oberti.github.io' on 20190806."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; vc ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq vc-follow-symlinks t)
 (setq vc-handled-backends '(Git SVN))
+(setq diff-font-lock-prettify t)
 (when (< emacs-major-version 26)
   (bind-key "C-x vh" #'vc-region-history))
 (global-set-key "\C-xve" #'vc-ediff)
@@ -1472,9 +1473,9 @@ ARGS are the additional arguments."
          ("<S-f8>" . bmkp-next-bookmark-this-file/buffer)
          ("\e\e*" . bmkp-next-bookmark)
          ("C-c M-8" . bmkp-next-bookmark-this-file/buffer)
-         ("C-x p%l" . bmkp-set-autonamed-bookmark-at-line)
-         ("C-x p%b" . bmkp-set-autonamed-regexp-buffer)
-         ("C-x p%r" . bmkp-set-autonamed-regexp-region)
+         ("C-x x%l" . bmkp-set-autonamed-bookmark-at-line)
+         ("C-x x%b" . bmkp-set-autonamed-regexp-buffer)
+         ("C-x x%r" . bmkp-set-autonamed-regexp-region)
          )
   :demand t
   :config
@@ -1991,7 +1992,7 @@ ARGS are the additional arguments."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;; all-the-icons-ivy-rich ;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package all-the-icons-ivy-rich
   :if (display-graphic-p)
-  :after all-the-icons
+  :after (ivy all-the-icons)
   :config
   (all-the-icons-ivy-rich-mode 1))
 
@@ -2301,6 +2302,7 @@ ARGS are the additional arguments."
     ;; the alternative to this is to unbind the key like so:
     ;; (define-key dired-mode-map [(meta shift ?o)] nil)
     (setq diredp-bind-problematic-terminal-keys nil)
+    (setq dired-create-destination-dirs t)
     :config
     ;; make a prefix
     (define-key dired-mode-map [(meta shift ?m)] nil)
@@ -2926,7 +2928,7 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; flyspell-correct ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package flyspell-correct-ivy
-  :after flyspell
+  :after (ivy flyspell)
   :bind (:map flyspell-mode-map ("C-c \\\\" . flyspell-correct-wrapper)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; company-ispell ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3969,6 +3971,7 @@ This function's result only has value if it is preceded by any font changes."
               (define-key js-mode-map "\C-c\C-r" 'nodejs-repl-send-region)
               (define-key js-mode-map "\C-c\C-l" 'nodejs-repl-load-file)
               (define-key js-mode-map "\C-c\C-z" 'nodejs-repl-switch-to-repl)
+              (define-key js-mode-map "\C-c\C-p" 'nodejs-repl-send-buffer)
               )))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; js2-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
