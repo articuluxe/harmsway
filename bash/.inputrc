@@ -6,6 +6,7 @@ $include /etc/inputrc
 Control-p: "\C-a$(\C-e)"
 
 $if Bash
+    set colored-stats on
     # auto-expand !-key-chords on <space> (breaks gdb)
     Space:magic-space
 $endif
@@ -13,7 +14,6 @@ $endif
 set editing-mode emacs
 set keymap emacs
 set bell-style none
-set colored-stats on
 set completion-ignore-case on
 set completion-prefix-display-length 3
 set colored-completion-prefix on
