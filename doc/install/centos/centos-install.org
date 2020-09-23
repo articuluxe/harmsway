@@ -1,6 +1,6 @@
 # centos-install.org --- centos-centric installation help
 # Copyright (C) 2017  Dan Harms (dan.harms)
-# Author: Dan Harms <dan.harms@xrtrading.com>
+# Author: Dan Harms <enniomore@icloud.com>
 # Created: Wednesday, March 15, 2017
 # Version: 1.0
 # Modified Time-stamp: <2017-03-15 12:31:45 dan.harms>

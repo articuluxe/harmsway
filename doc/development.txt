@@ -1,11 +1,11 @@
 #!/usr/bin/env sh
 # -*- Mode: sh -*-
 # development.txt --- tips when developing
-# Copyright (C) 2017-2019  Dan Harms (dan.harms)
-# Author: Dan Harms <dan.harms@xrtrading.com>
+# Copyright (C) 2017-2020  Dan Harms (dan.harms)
+# Author: Dan Harms <enniomore@icloud.com>
 # Created: Tuesday, February  7, 2017
 # Version: 1.0
-# Modified Time-stamp: <2019-09-12 11:36:46 dan.harms>
+# Modified Time-stamp: <2020-09-23 12:27:29 dharms>
 # Modified by: Dan Harms
 # Keywords: gnu elf development
 
