@@ -66,6 +66,12 @@ brew tap universal-ctags/universal-ctags
 brew install --HEAD universal-ctags
 ln -s /usr/local/bin/ctags ~/bin/exctags
 
+# emacs from source
+git clone https://git.savannah.gnu.org/git/emacs.git
+cd emacs
+brew install pkg-config automake texinfo jpeg giflib libtiff jansson libpng librsvg gnutls
+make -j4
+
 # railwaycat emacs port
 brew tap railwaycat/emacsmacport
 brew install emacs-mac
