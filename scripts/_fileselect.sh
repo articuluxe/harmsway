@@ -1,11 +1,11 @@
 #!/bin/bash
 # -*- Mode: sh -*-
 # _fileselect.sh --- select a file from disk
-# Copyright (C) 2016-2017  Dan Harms (dharms)
+# Copyright (C) 2016-2017, 2020  Dan Harms (dharms)
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Thursday, May  5, 2016
 # Version: 1.0
-# Modified Time-stamp: <2017-04-14 07:05:36 dharms>
+# Modified Time-stamp: <2020-09-28 12:07:15 dharms>
 # Modified by: Dan Harms
 # Keywords: bash script
 
@@ -15,8 +15,8 @@ prompt=${2:-"Select a file: "}
 dirs=("$dir"/*)
 # loop through, replace with basename
 for e in "${dirs[@]}" ; do
-    if [ ! -d $e -a -f $e ]; then
-        dirsbase=( ${dirsbase[@]} $(basename $e) )
+    if [ ! -d "$e" ] && [ -f "$e" ]; then
+        dirsbase=( "${dirsbase[@]}" $(basename "$e") )
     fi
 done
 # concatenate into space-separated string
@@ -27,8 +27,8 @@ select opt in $opts "Quit"; do
     if [ "$opt" == "Quit" ]; then
         exit
     elif ((REPLY > 0)); then
-        if [ ! -z $opt ]; then
-            echo $opt
+        if [ -n "$opt" ]; then
+            echo "$opt"
             exit
         fi
     fi
