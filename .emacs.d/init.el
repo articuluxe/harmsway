@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-12-18 11:34:46 dharms>
+;; Modified Time-stamp: <2020-12-21 12:36:32 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -55,6 +55,7 @@
                      ,(concat my/user-directory "ext/parsenv/")
                      ,(concat my/user-directory "ext/proviso/")
                      ,(concat my/user-directory "ext/xfer/")
+                     ,(concat my/plugins-directory "auctex/")
                      ,(concat my/plugins-directory "auto-complete/")
                      ,(concat my/plugins-directory "bookmark+/")
                      ,(concat my/plugins-directory "company/")
@@ -3731,6 +3732,38 @@ This function's result only has value if it is preceded by any font changes."
   ;; remap 'as-execute-buffer
   (define-key as-mode-map "\C-c\C-c" nil)
   (define-key as-mode-map "\C-c\C-ce" #'as-execute-buffer)
+  )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; auctex ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package latex
+  :defer t
+  :config
+  (use-package preview)
+  (use-package font-latex)
+  (use-package reftex)
+  )
+
+(use-package tex-site
+             :mode ("\\.tex$" . TeX-latex-mode)
+  :init
+  (setq TeX-auto-save t)
+  (setq TeX-parse-self t)
+  ;; (setq-default TeX-master nil)
+  (setq reftex-plug-into-AUCTeX t)
+  :config
+  (add-hook 'LaTeX-mode-hook
+            (lambda()
+              (LaTeX-math-mode 1)
+              ;; (visual-line-mode 1)
+              ;; (flyspell-mode 1)
+              (turn-on-reftex)
+              (make-local-variable 'company-backends)
+              (setq company-backends
+                    (list (cons 'company-auctex
+                                (copy-tree (car company-backends)))))
+              ))
+  (use-package preview)
+  (use-package font-latex)
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; awk-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

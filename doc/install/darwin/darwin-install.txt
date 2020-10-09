@@ -25,6 +25,7 @@ sudo -H pip install virtualenv
 # gnupg
 brew install homebrew/versions/gnupg21
 
+brew install make
 brew install pandoc
 brew install dos2unix
 brew install readline
@@ -60,6 +61,10 @@ brew install cask
 curl -fsSL https://raw.githubusercontent.com/cask/cask/master/go | python
 
 brew cask install wireshark
+
+brew cask install mactex
+brew tap caskroom/cask
+brew cask install skim
 
 # development version of universal-ctags
 brew tap universal-ctags/universal-ctags
