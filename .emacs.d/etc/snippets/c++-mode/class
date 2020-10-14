@@ -1,0 +1,16 @@
+# -*- mode: snippet; require-final-newline: nil -*-
+# name: class
+# key: class
+# binding: direct-keybinding
+# --
+class $1
+{
+ public:
+    $1()
+	{}
+	~$1()
+	{}
+
+ private:
+    $0
+};
