@@ -1,5 +1,5 @@
 #+TITLE:elfeeds
-#+TAGS: elfeed daily(d) emacs(e)
+#+TAGS: elfeed daily(d) emacs(e) cpp(c)
 
 * blogs                                                             :elfeed:
 ** daily                                                             :daily:
@@ -11,3 +11,7 @@
 *** http://hullprogram.com/feed/
 *** http://pragmaticemacs.com/feed/
 *** [[http://emacs.stackexchange.com/feeds][ESX]]
+** programming                                                          :cpp:
+*** https://www.modernescpp.com/index.php
+*** https://www.bfilipek.com
+*** https://marcofoco.com/topics/c/
