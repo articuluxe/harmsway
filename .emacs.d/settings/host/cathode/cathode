@@ -3,7 +3,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2020-05-14 08:05:06 dharms>
+;; Modified Time-stamp: <2020-11-17 11:13:42 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -124,8 +124,8 @@
 (setq epa-pinentry-mode 'loopback)      ;for gpg v2.1+
 (setq epg-gpg-program "gpg")
 
-(setq-default flycheck-gcc-language-standard "c++1z")
-(setq-default flycheck-clang-language-standard "c++1z")
+(setq-default flycheck-gcc-language-standard "c++17")
+(setq-default flycheck-clang-language-standard "c++17")
 (setq flycheck-c/c++-gcc-executable "g++-8")
 
 ;;; rubicon ends here
