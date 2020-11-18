@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Monday, April 13, 2020
 ;; Version: 1.0
-;; Modified Time-stamp: <2020-04-13 09:40:48 dharms>
+;; Modified Time-stamp: <2020-11-13 11:03:25 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: proviso project
 
@@ -32,6 +32,7 @@
  :build-subdirs '((:name "dbg" :dir "debug" :register ?d)
                   (:name "rls" :dir "release" :register ?r))
  :proj-alist '((:name "punch" :dir "src")
+               (:name "tests" :dir "tests")
                (:name "asio" :dir "/usr/local/include")
                (:name "gtest" :dir "ext/googletest/googletest/include")
                (:name "boost" :dir "/usr/local/include/boost"

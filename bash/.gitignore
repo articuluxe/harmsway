@@ -26,6 +26,7 @@ x64/
 build/
 [Bb]in/
 [Oo]bj/
+*.dSYM/
 
 # Visual Studio files
 
