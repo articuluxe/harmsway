@@ -18,7 +18,7 @@ use_clang()
 
 use_gcc()
 {
-    export CC=${CSTDLIB_BIN}/gcc-7
-    export CXX=${CSTDLIB_BIN}/g++-7
+    export CC=${CSTDLIB_BIN}/gcc-9
+    export CXX=${CSTDLIB_BIN}/g++-9
     export CXX_FLAGS="-Wall -Wextra -pedantic -Wno-unused-local-typedefs"
 }
