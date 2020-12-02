@@ -2,7 +2,7 @@
 ;; Copyright (C) 2016-2020  Dan Harms (dan.harms)
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Wednesday, December 21, 2016
-;; Modified Time-stamp: <2020-09-08 23:51:11 dharms>
+;; Modified Time-stamp: <2020-12-02 17:32:20 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: themes colors
 
@@ -173,6 +173,8 @@
           ((eq sym 'manoj-dark)
            (harmsway/make-comment-delimiter-face-same-as-comment-face sym)
            (harmsway/make-all-font-sizes-the-same-please))
+          ((eq sym 'metalheart)
+           (custom-theme-set-faces sym '(cursor ((t (:background "yellow2"))))))
           ((eq sym 'misterioso)
            (custom-theme-set-faces sym '(cursor ((t (:background "#cae682"))))))
           ((eq sym 'naquadah)
