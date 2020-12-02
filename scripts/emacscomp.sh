@@ -5,10 +5,10 @@
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Tuesday, June 16, 2015
 # Version: 1.0
-# Modified Time-stamp: <2020-09-17 13:36:56 dharms>
+# Modified Time-stamp: <2020-12-02 11:32:44 dharms>
 # Keywords: emacs configuration
 
-emacs=$EDITOR
+exe=$EDITOR
 dir=$(pwd)
 user=$USER
 date=$(date '+%F_%T' | tr ':' '-')
@@ -24,10 +24,10 @@ fi
 mkdir -p "$logdir"
 
 cmd="(byte-recompile-directory \"$dir\" 0 t)"
-echo "Using $emacs to compile files in directory $dir..."
+echo "Using $exe to compile files in directory $dir..."
 echo -e
 
-$emacs --batch -u "$user" --eval "$cmd" > "$log" 2>&1
+$exe --batch -u "$user" --eval "$cmd" > "$log" 2>&1
 #Done (Total of 292 files compiled, 2 failed in 33 directories)
 grep -i 'error' "$log"
 grep -e '^Done' "$log"

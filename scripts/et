@@ -1,14 +1,14 @@
 #!/usr/bin/env sh
 # -*- Mode: sh -*-
 # et --- open emacs client in terminal
-# Copyright (C) 2018-2019  Dan Harms (dharms)
+# Copyright (C) 2018-2020  Dan Harms (dharms)
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Wednesday, August  1, 2018
 # Version: 1.0
-# Modified Time-stamp: <2019-09-23 06:37:25 dharms>
+# Modified Time-stamp: <2020-12-02 10:54:39 dharms>
 # Modified by: Dan Harms
 # Keywords: emacs tools
 
-exec "$EMACS_CLIENT"/emacsclient -a "" -t "$@"
+exec "$EMACS_CLIENT" -a "" -t "$@"
 
 # code ends here

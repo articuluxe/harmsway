@@ -1,15 +1,15 @@
 #!/usr/bin/env sh
 # -*- Mode: sh -*-
 # ek --- kill emacs daemon
-# Copyright (C) 2018-2019  Dan Harms (dharms)
+# Copyright (C) 2018-2020  Dan Harms (dharms)
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Thursday, August  9, 2018
 # Version: 1.0
-# Modified Time-stamp: <2019-09-23 06:37:45 dharms>
+# Modified Time-stamp: <2020-12-02 10:54:41 dharms>
 # Modified by: Dan Harms
 # Keywords: emacs tools
 
-exe="$EMACS_CLIENT"/emacsclient
+exe="$EMACS_CLIENT"
 
 server_ok()
 {

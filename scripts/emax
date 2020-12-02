@@ -5,13 +5,13 @@
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Tuesday, July 31, 2018
 # Version: 1.0
-# Modified Time-stamp: <2020-02-27 15:45:25 dan.harms>
+# Modified Time-stamp: <2020-12-02 10:54:40 dharms>
 # Modified by: Dan Harms
 # Keywords: emacs tools
 
 exe=emacsclient
 if [ -n "$EMACS_CLIENT" ]; then
-    exe="$EMACS_CLIENT"/emacsclient
+    exe="$EMACS_CLIENT"
 elif [ -n "$EMACS_ROOT" ]; then
     exe="$EMACS_ROOT"/bin/emacsclient
 fi

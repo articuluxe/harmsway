@@ -8,7 +8,7 @@ Type=simple
 ExecStart=${EMACS_ROOT}/bin/emacs --fg-daemon --chdir %h
 # change above to --daemon=<name>, then you can use
 # --server-file=<name> to run separate instances
-ExecStop=${EMACS_CLIENT}/emacsclient --eval "(progn (setq kill-emacs-hook 'nil) (kill-emacs))"
+ExecStop=${EMACS_CLIENT} --eval "(progn (setq kill-emacs-hook 'nil) (kill-emacs))"
 Environment=SSH_AUTH_SOCK=%t/keyring/ssh
 Restart=on-failure
 
