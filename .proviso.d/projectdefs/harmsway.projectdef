@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Monday, April 13, 2020
 ;; Version: 1.0
-;; Modified Time-stamp: <2020-11-13 11:03:25 dharms>
+;; Modified Time-stamp: <2020-12-03 11:11:41 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: proviso project
 
@@ -47,6 +47,17 @@
                (:name "c++lib" :dir "$CSTDLIB_INC")
                (:name "clib" :dir "/usr/include"
                       :ctags-opts "--exclude=c++ --exclude=boost --exclude=X11")
+               ))
+
+(proviso-define-project
+ "intervista" '(("/src/intervista"))
+ :compile-cmds '("make" "genbuild.sh")
+ :build-subdirs '((:name "dbg" :dir "debug" :register ?d)
+                  (:name "rls" :dir "release" :register ?r))
+ :proj-alist '((:name "tests" :dir "samples")
+               (:name "gtest" :dir "ext/googletest/googletest/include")
+               (:name "c++lib" :dir "$CSTDLIB_INC"
+                      :ctags-opts "--language-force=c++ -h=\".h.H.hh.hpp.hxx.h++.inc.def.\"")
                ))
 
 (proviso-define-project
