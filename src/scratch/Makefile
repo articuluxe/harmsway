@@ -1,6 +1,6 @@
 CXXFLAGS=-std=c++17 $(CXX_FLAGS) -Wno-unused-parameter -c -g
 LDFLAGS=-g
-SOURCES=scratch.cpp
+SOURCES=$(wildcard *.cpp)
 OBJECTS=$(SOURCES:.cpp=.o)
 EXE=scratch
 INC=
