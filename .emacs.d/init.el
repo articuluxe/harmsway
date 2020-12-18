@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-09-25 11:09:11 dharms>
+;; Modified Time-stamp: <2020-12-18 11:34:46 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1862,6 +1862,7 @@ ARGS are the additional arguments."
          "\\|\\(?:^\\.[^.]\\)"          ; or a single .
          "\\|\\(?:[#~]$\\)"             ;end with # or ~
          "\\|\\(?:\\.elc$\\)"           ;byte-compiled
+         "\\|\\(?:\\.d$\\)"             ;ignore .d files
          ))                             ;toggle with C-c C-a
   (let ((elt (assoc 'counsel-M-x ivy-initial-inputs-alist)))
     (when elt (setf (cdr elt) "")))
