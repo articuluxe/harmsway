@@ -3,7 +3,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2020-11-17 11:13:42 dharms>
+;; Modified Time-stamp: <2020-12-21 17:02:48 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -42,7 +42,7 @@
                             "Inconsolata 14"
                             "NanumGothicCoding 14"
                             "Edlo 12"
-                            "mononoki 12"
+                            "mononoki 14"
                             "D2Coding 14"
                             "Essential PragmataPro 14"
                             "Victor Mono 12"
@@ -121,7 +121,7 @@
 
 (setq split-height-threshold 82)
 
-(setq epa-pinentry-mode 'loopback)      ;for gpg v2.1+
+(setq epg-pinentry-mode 'loopback)      ;for gpg v2.1+
 (setq epg-gpg-program "gpg")
 
 (setq-default flycheck-gcc-language-standard "c++17")
