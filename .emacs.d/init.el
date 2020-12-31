@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2020  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-12-21 12:36:32 dharms>
+;; Modified Time-stamp: <2020-12-31 13:24:35 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3750,17 +3750,33 @@ This function's result only has value if it is preceded by any font changes."
   (setq TeX-parse-self t)
   ;; (setq-default TeX-master nil)
   (setq reftex-plug-into-AUCTeX t)
+  (setq TeX-PDF-mode t)
+  ;; use Skim as default pdf viewer
+  ;; Skim's displayline is used for forward search (from .tex to .pdf)
+  ;; option -b highlights the current line; option -g opens Skim in the background
+  (setq TeX-view-program-selection '((output-pdf "PDF Viewer")))
+  (setq TeX-view-program-list
+     '(("PDF Viewer" "/Applications/Skim.app/Contents/SharedSupport/displayline -b -g %n %o %b")))
   :config
   (add-hook 'LaTeX-mode-hook
             (lambda()
               (LaTeX-math-mode 1)
-              ;; (visual-line-mode 1)
-              ;; (flyspell-mode 1)
+              (visual-line-mode 1)
+              (flyspell-mode 1)
               (turn-on-reftex)
               (make-local-variable 'company-backends)
               (setq company-backends
-                    (list (cons 'company-auctex
-                                (copy-tree (car company-backends)))))
+                    (append (list 'company-math-symbols-latex
+                                  'company-math-symbols-unicode
+                                  'company-auctex-macros
+                                  'company-auctex-environments
+                                  'company-latex-commands)
+                            (copy-tree (car company-backends))))
+              (push
+               '("latexmk" "latexmk -pdf %s" TeX-run-TeX nil t
+                 :help "Run latexmk on file")
+               TeX-command-list)
+              (setq TeX-command-default "latexmk")
               ))
   (use-package preview)
   (use-package font-latex)
