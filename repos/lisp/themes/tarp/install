@@ -1,0 +1,2 @@
+cp src/tarps.el ../../../../.emacs.d/plugins
+cp src/tarp-*-theme.el ../../../../.emacs.d/etc/themes
