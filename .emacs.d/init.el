@@ -1,8 +1,8 @@
 ;; init.el --- Initialization file
-;; Copyright (C) 2015-2020  Dan Harms (dharms)
+;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2020-12-31 13:24:35 dharms>
+;; Modified Time-stamp: <2021-01-01 12:21:31 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -74,6 +74,7 @@
                      ,(concat my/plugins-directory "magit/lisp/")
                      ,(concat my/plugins-directory "multi-line/")
                      ,(concat my/plugins-directory "multiple-cursors/")
+                     ,(concat my/plugins-directory "org-chef/")
                      ,(concat my/plugins-directory "realgud/")
                      ,(concat my/plugins-directory "smart-jump/")
                      ,(concat my/plugins-directory "sunrise/")
@@ -2206,6 +2207,23 @@ ARGS are the additional arguments."
     (require 'ob-shell))
   (require 'ox-md)                      ;markdown export
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; org-chef ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package org-chef
+  :after org
+  :init
+  (setq org-capture-templates
+        (cons
+         '("c" "Cookbook" entry (file "~/Dropbox/notes/recipes.org")
+           "%(org-chef-get-recipe-from-url)"
+           :empty-lines 1)
+         org-capture-templates))
+  (setq org-capture-templates
+        (cons
+         '("m" "Manual Cookbook" entry (file "~/Dropbox/notes/recipes.org")
+           "* %^{Recipe title: }\n :PROPERTIES:\n :source-url:\n :servings:\n :prep-time:\n :cook-time:\n :ready-in:\n :END:\n** Ingredients\n %?\n** Directions\n\n")
+         org-capture-templates))
+  :defer t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; elfeed ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package elfeed
