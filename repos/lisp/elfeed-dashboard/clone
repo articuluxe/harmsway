@@ -1,0 +1,2 @@
+git clone https://github.com/Manoj321/elfeed-dashboard.git src
+curl https://raw.githubusercontent.com/Manoj321/elfeed-dashboard/main/elfeed-dashboard.org -o ../../../.emacs.d/etc/elfeed-dashboard.org

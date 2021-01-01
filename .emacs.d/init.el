@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-01-01 12:21:31 dharms>
+;; Modified Time-stamp: <2021-01-01 12:31:24 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2239,6 +2239,15 @@ ARGS are the additional arguments."
         (list (expand-file-name "feeds.org" my/scratch-directory)))
   :config
   (elfeed-org)
+  )
+
+(use-package elfeed-dashboard
+  :after elfeed
+  :init
+  (setq elfeed-dashboard-file
+        (expand-file-name "feeds-dashboard.org" my/scratch-directory))
+  :config
+  (advice-add 'elfeed-search-quit-window :after #'elfeed-dashboard-update-links)
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; pack ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

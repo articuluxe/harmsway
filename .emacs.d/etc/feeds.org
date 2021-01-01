@@ -11,6 +11,7 @@
 *** http://hullprogram.com/feed/
 *** http://pragmaticemacs.com/feed/
 *** [[http://emacs.stackexchange.com/feeds][ESX]]
+*** https://sachachua.com/blog/
 ** programming                                                          :cpp:
 *** https://www.modernescpp.com/index.php
 *** https://www.bfilipek.com
