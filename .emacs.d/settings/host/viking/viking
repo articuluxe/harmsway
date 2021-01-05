@@ -1,9 +1,9 @@
 ;; -*- Mode: Emacs-Lisp -*-
 ;; viking --- host file
-;; Copyright (C) 2015-2020  Dan Harms (dharms)
+;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2020-12-02 10:48:04 dharms>
+;; Modified Time-stamp: <2021-01-04 11:08:29 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -29,6 +29,7 @@
 (with-eval-after-load 'choose-font
   (setq choose-font-list '( "Office Code Pro 12"
                             "CamingoCode 12"
+                            "AurulentSansMono 12"
                             "FantasqueSansMono 13"
                             "Luculent 12"
                             "Cascadia Code 12"

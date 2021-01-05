@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-01-01 12:31:24 dharms>
+;; Modified Time-stamp: <2021-01-05 15:38:47 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -127,7 +127,13 @@
 
 ;; Suppress GNU startup message
 (setq inhibit-startup-message t)
+(setq inhibit-startup-echo-area-message my/user-name)
 (setq inhibit-default-init t)
+(setq initial-major-mode 'fundamental-mode)
+(setq initial-scratch-message nil)
+(add-hook 'after-init-hook
+          (lambda ()
+            (message (concat "Emacs started in " (emacs-init-time)))))
 (setq line-number-mode t)
 (setq column-number-mode t)
 (setq use-dialog-box nil)
@@ -2211,7 +2217,7 @@ ARGS are the additional arguments."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; org-chef ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package org-chef
   :after org
-  :init
+  :config
   (setq org-capture-templates
         (cons
          '("c" "Cookbook" entry (file "~/Dropbox/notes/recipes.org")

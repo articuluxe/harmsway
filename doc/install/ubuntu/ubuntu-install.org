@@ -146,6 +146,8 @@ sudo apt-get install silversearcher-ag
 sudo apt install xsel
 sudo apt install snapd
 snap install rg
+# for perf
+sudo apt install linux-tools-common
 
 * fonts
 #+BEGIN_SRC sh

@@ -1,8 +1,8 @@
 ;;; custom-themes.el --- customize themes
-;; Copyright (C) 2016-2020  Dan Harms (dan.harms)
+;; Copyright (C) 2016-2021  Dan Harms (dan.harms)
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Wednesday, December 21, 2016
-;; Modified Time-stamp: <2020-12-29 14:55:03 dharms>
+;; Modified Time-stamp: <2021-01-05 16:33:57 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: themes colors
 
@@ -241,6 +241,8 @@
            (custom-theme-set-faces sym '(header-line ((t (:foreground "grey20"
                                                                       :background "LightGoldenrod")))))
            (custom-theme-set-faces sym '(magit-section-highlight ((t (:background "PaleGoldenrod"))))))
+          ((eq sym 'yoshi)
+           (harmsway/make-comment-delimiter-face-same-as-comment-face))
           ((memq sym '(nordless lavenderless broceliande chocolateless seagreenless nofrils-darkless
                                 hydrangealess einkless darkless))
            (custom-theme-set-faces
