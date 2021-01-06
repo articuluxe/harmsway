@@ -10,9 +10,12 @@
 *** http://planet.emacsen.org/atom.xml
 *** http://hullprogram.com/feed/
 *** http://pragmaticemacs.com/feed/
-*** [[http://emacs.stackexchange.com/feeds][ESX]]
+*** http://emacs.stackexchange.com/feeds
 *** https://sachachua.com/blog/
 ** programming                                                          :cpp:
 *** https://www.modernescpp.com/index.php
 *** https://www.bfilipek.com
 *** https://marcofoco.com/topics/c/
+*** https://rigtorp.se
+
+

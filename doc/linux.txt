@@ -1,11 +1,11 @@
-#! /usr/bin/sh
+#! //bin/sh
 # -*- Mode: sh -*-
 # linux.txt --- linux administration hints
-# Copyright (C) 2016, 2019-2020  Dan Harms (dharms)
+# Copyright (C) 2016, 2019-2021  Dan Harms (dharms)
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Monday, January 18, 2016
 # Version: 1.0
-# Modified Time-stamp: <2020-11-13 13:17:27 dharms>
+# Modified Time-stamp: <2021-01-04 12:47:54 dharms>
 # Modified by: Dan Harms
 # Keywords: linux docs
 
@@ -25,9 +25,6 @@ rpm -ivh epel-release-6-8.noarch.rpm
 sudo rpm -ivh epel-release-6-8.noarch.rpm
 sudo yum install aspell-en
 ls
-
-# clear out swap space
-swapoff -a; swapon -a
 
 # change default runlevel in /etc/inittab:
 id:5:initdefault:
@@ -60,6 +57,9 @@ systemctl disable --user emacs
 # does sudo require a tty? Comment out /etc/sudoers:
 #Defaults    requiretty
 
+cat /proc/cpuinfo
+cat /proc/meminfo
+
 # map cpu core to numa node
 cat /sys/devices/system/node/node0/cpulist
 cat /sys/devices/system/node/node0/cpumap
@@ -67,5 +67,14 @@ cat /sys/devices/system/node/node0/cpumap
 taskset -p <pid>
 taskset -cp 0-13 <pid>
 taskset -c 0-13 <app>
+# disable automatic numa memory balancing
+echo 0 > /proc/sys/kernel/numa_balancing
+
+# monitor page faults
+ps -eo min_flt,maj_flt,cmd
+perf stat -e faults,minor-faults,major-faults exe
+
+# turn on Transparent Huge Pages
+echo always > /sys/kernel/mm/transparent_hugepage/enabled
 
 # code ends here
