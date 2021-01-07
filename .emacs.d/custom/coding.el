@@ -1,8 +1,8 @@
 ;; coding.el --- coding utilities
-;; Copyright (C) 2015-2020  Dan Harms (dharms)
+;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2020-05-18 10:08:30 dharms>
+;; Modified Time-stamp: <2021-01-07 16:05:38 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -148,9 +148,9 @@
   (c-toggle-hungry-state t)
   (setq comment-start "/*") (setq comment-end "*/")
   ;; (setq comment-column 40)
-  (setq hide-ifdef-inititially t)
-  ;; (setq hide-ifdef-lines t)
-  (setq hide-ifdef-shadow t)
+  (setq hide-ifdef-initially t)
+  (setq hide-ifdef-lines nil)
+  (setq hide-ifdef-shadow nil)
   (hide-ifdef-mode 1)
   (make-local-variable 'company-backends)
   (setq company-backends
