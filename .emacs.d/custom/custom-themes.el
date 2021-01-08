@@ -2,7 +2,7 @@
 ;; Copyright (C) 2016-2021  Dan Harms (dan.harms)
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Wednesday, December 21, 2016
-;; Modified Time-stamp: <2021-01-05 16:33:57 dharms>
+;; Modified Time-stamp: <2021-01-08 11:34:51 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: themes colors
 
@@ -26,6 +26,7 @@
 ;;; Code:
 
 (setq custom-safe-themes t)
+(setq custom--inhibit-theme-enable nil)
 ;; (set-face-attribute 'default nil :slant 'italic)
 ;; kaolin customization
 (setq kaolin-italic-comments t)
