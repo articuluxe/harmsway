@@ -12,6 +12,7 @@
 *** http://pragmaticemacs.com/feed/
 *** http://emacs.stackexchange.com/feeds
 *** https://sachachua.com/blog/
+*** https://protesilaos/codelog/
 ** programming                                                          :cpp:
 *** https://www.modernescpp.com/index.php
 *** https://www.bfilipek.com
