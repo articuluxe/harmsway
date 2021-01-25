@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-01-05 15:38:47 dharms>
+;; Modified Time-stamp: <2021-01-25 15:25:25 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -129,7 +129,6 @@
 (setq inhibit-startup-message t)
 (setq inhibit-startup-echo-area-message my/user-name)
 (setq inhibit-default-init t)
-(setq initial-major-mode 'fundamental-mode)
 (setq initial-scratch-message nil)
 (add-hook 'after-init-hook
           (lambda ()
