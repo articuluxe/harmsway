@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-01-25 15:25:25 dharms>
+;; Modified Time-stamp: <2021-01-29 12:44:42 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3571,7 +3571,7 @@ See `https://github.com/company-mode/company-mode/issues/205'."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;; highlight-indentation ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package highlight-indentation
-  :bind ("C-c 0h" . highlight-indentation-mode)
+  :bind ("C-c C-h" . highlight-indentation-mode)
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; rotate-text ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

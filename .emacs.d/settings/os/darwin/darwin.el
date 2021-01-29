@@ -1,8 +1,8 @@
 ;; darwin.el --- os settings file
-;; Copyright (C) 2015-2020  Dan Harms (dharms)
+;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2020-05-12 09:11:46 dharms>
+;; Modified Time-stamp: <2021-01-29 12:53:30 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -40,6 +40,19 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; osx-plist ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package osx-plist
   :commands (osx-plist-parse-file osx-plist-parse-buffer))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; homebrew ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(define-prefix-command 'harmsway-homebrew-map)
+(use-package homebrew
+  :bind (("C-c 0h" . harmsway-homebrew-map)
+         :map harmsway-homebrew-map
+         ("i" . homebrew-install)
+         ("u" . homebrew-upgrade)
+         ("d" . homebrew-update)
+         ("e" . homebrew-edit)
+         ("i" . homebrew-info)
+         ("p" . homebrew-package-info)
+         ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; gif-screencast ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (with-eval-after-load 'gif-screencast
