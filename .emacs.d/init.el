@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-01-29 12:44:42 dharms>
+;; Modified Time-stamp: <2021-01-29 13:16:40 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -4202,6 +4202,7 @@ This function's result only has value if it is preceded by any font changes."
   (add-hook 'python-mode-hook
             (lambda()
               (subword-mode 1)
+              (highlight-indentation-mode 1)
               (setq-default indent-tabs-mode nil)
               (setq python-indent-guess-indent-offset nil)
               (setq python-indent-offset 4)
