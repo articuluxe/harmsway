@@ -5,7 +5,7 @@
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Monday, January 18, 2016
 # Version: 1.0
-# Modified Time-stamp: <2021-01-04 12:47:54 dharms>
+# Modified Time-stamp: <2021-01-27 17:31:42 dharms>
 # Modified by: Dan Harms
 # Keywords: linux docs
 
@@ -59,6 +59,9 @@ systemctl disable --user emacs
 
 cat /proc/cpuinfo
 cat /proc/meminfo
+/sys/devices/system/cpu/cpu*/topology
+# find last level cache (highest numeric value inside level file)
+/sys/devices/system/cpu/cpu*/cache
 
 # map cpu core to numa node
 cat /sys/devices/system/node/node0/cpulist
@@ -67,12 +70,16 @@ cat /sys/devices/system/node/node0/cpumap
 taskset -p <pid>
 taskset -cp 0-13 <pid>
 taskset -c 0-13 <app>
+# see how memory is distributed over nodes for running process
+/proc/<PID>/numa_maps
 # disable automatic numa memory balancing
 echo 0 > /proc/sys/kernel/numa_balancing
 
 # monitor page faults
 ps -eo min_flt,maj_flt,cmd
 perf stat -e faults,minor-faults,major-faults exe
+# monitor thread context switches per core
+perf stat -e 'sched:sched_switch' -a -A --timeout 10000
 
 # turn on Transparent Huge Pages
 echo always > /sys/kernel/mm/transparent_hugepage/enabled

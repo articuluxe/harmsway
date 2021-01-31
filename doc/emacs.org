@@ -437,6 +437,8 @@ C-c C-c    [ ] toggle a checkbox in a plain list
 
 
 ** Blocks
+C-c C-,    inserts blocks
+
 < e TAB inserts an example block:
 #+BEGIN_EXAMPLE
 Text inside here will not be interpreted.
