@@ -5,7 +5,7 @@
 ;; Author: Feng Shu <tumashu@163.com>
 ;; Maintainer: Feng Shu <tumashu@163.com>
 ;; URL: https://github.com/tumashu/posframe
-;; Version: 0.8.0
+;; Version: 0.8.4
 ;; Keywords: convenience, tooltip
 ;; Package-Requires: ((emacs "26"))
 
@@ -141,7 +141,8 @@
 ;; 3. [[https://github.com/tumashu/pyim][pyim]]
 ;; 4. [[https://github.com/tumashu/ivy-posframe][ivy-posframe]]
 ;; 5. [[https://github.com/tumashu/company-posframe][company-posframe]]
-;; 6. ...
+;; 6. [[https://github.com/randomwangran/org-marginalia-posframe][org-marginalia-posframe]]
+;; 7. ...
 
 ;;; Code:
 ;; * posframe's code                         :CODE:
@@ -217,7 +218,7 @@ frame.")
   (when (and
          (> emacs-major-version 26)
          (string-match-p "GTK3" system-configuration-features)
-         (let ((value (getenv "XDG_CURRENT_DESKTOP")))
+         (let ((value (or (getenv "XDG_CURRENT_DESKTOP") (getenv "DESKTOP_SESSION"))))
            (and (stringp value)
                 ;; It can be "ubuntu:GNOME".
                 (string-match-p "GNOME" value))))
@@ -252,7 +253,6 @@ effect.")
                                      override-parameters
                                      respect-header-line
                                      respect-mode-line
-                                     respect-tab-line
                                      accept-focus)
   "Create and return a posframe child frame.
 This posframe's buffer is BUFFER-OR-NAME."
@@ -273,7 +273,6 @@ This posframe's buffer is BUFFER-OR-NAME."
                     override-parameters
                     respect-header-line
                     respect-mode-line
-                    respect-tab-line
                     accept-focus)))
     (with-current-buffer buffer
       ;; Many variables take effect after call `set-window-buffer'
@@ -295,8 +294,6 @@ This posframe's buffer is BUFFER-OR-NAME."
         (setq-local mode-line-format nil))
       (unless respect-header-line
         (setq-local header-line-format nil))
-      (unless respect-tab-line
-        (setq-local tab-line-format nil))
 
       (add-hook 'kill-buffer-hook #'posframe-auto-delete nil t)
 
@@ -336,6 +333,7 @@ This posframe's buffer is BUFFER-OR-NAME."
                        (right-fringe . ,right-fringe)
                        (menu-bar-lines . 0)
                        (tool-bar-lines . 0)
+                       (tab-bar-lines . 0)
                        (line-spacing . 0)
                        (unsplittable . t)
                        (no-other-frame . t)
@@ -358,8 +356,6 @@ This posframe's buffer is BUFFER-OR-NAME."
             (set-window-parameter posframe-window 'mode-line-format 'none))
           (unless respect-header-line
             (set-window-parameter posframe-window 'header-line-format 'none))
-          (unless respect-tab-line
-            (set-window-parameter posframe-window 'tab-line-format 'none))
           (set-window-buffer posframe-window buffer)
           (set-window-dedicated-p posframe-window t)))
       posframe--frame)))
@@ -389,7 +385,6 @@ This posframe's buffer is BUFFER-OR-NAME."
                          background-color
                          respect-header-line
                          respect-mode-line
-                         respect-tab-line
                          initialize
                          no-properties
                          keep-ratio
@@ -428,10 +423,10 @@ position.  Its argument is a plist of the following form:
    :parent-window xxx
    :parent-window-width  xxx
    :parent-window-height xxx
-   :minibuffer-height
-   :mode-line-height
-   :header-line-height
-   :tab-line-height
+   :minibuffer-height xxx
+   :mode-line-height  xxx
+   :header-line-height xxx
+   :tab-line-height xxx
    :x-pixel-offset xxx
    :y-pixel-offset xxx)
 
@@ -456,6 +451,7 @@ The builtin poshandler functions are listed below:
 15. `posframe-poshandler-point-top-left-corner'
 16. `posframe-poshandler-point-bottom-left-corner'
 17. `posframe-poshandler-point-bottom-left-corner-upward'
+18. `posframe-poshandler-point-window-center'
 
 This posframe's buffer is BUFFER-OR-NAME, which can be a buffer
 or a name of a (possibly nonexistent) buffer.
@@ -484,15 +480,12 @@ respectively.
 
 By default, posframe will display no header-line, mode-line and
 tab-line.  In case a header-line, mode-line or tab-line is
-desired, users can set RESPECT-HEADER-LINE, RESPECT-MODE-LINE or
-RESPECT-TAB-LINE to t.
+desired, users can set RESPECT-HEADER-LINE and RESPECT-MODE-LINE
+to t.
 
 INITIALIZE is a function with no argument.  It will run when
 posframe buffer is first selected with `with-current-buffer'
 in `posframe-show', and only run once (for performance reasons).
-If INITIALIZE is nil, `posframe-default-initialize-function' will
-be used as fallback; this variable can be used to set posframe
-buffer gobally.
 
 If LINES-TRUNCATE is non-nil, then lines will truncate in the
 posframe instead of wrap.
@@ -539,7 +532,6 @@ You can use `posframe-delete-all' to delete all posframes."
          (background-color (funcall posframe-arghandler buffer-or-name :background-color background-color))
          (respect-header-line (funcall posframe-arghandler buffer-or-name :respect-header-line respect-header-line))
          (respect-mode-line (funcall posframe-arghandler buffer-or-name :respect-mode-line respect-mode-line))
-         (respect-tab-line (funcall posframe-arghandler buffer-or-name :respect-tab-line respect-tab-line))
          (initialize (funcall posframe-arghandler buffer-or-name :initialize initialize))
          (no-properties (funcall posframe-arghandler buffer-or-name :no-properties no-properties))
          (keep-ratio (funcall posframe-arghandler buffer-or-name :keep-ratio keep-ratio))
@@ -600,9 +592,11 @@ You can use `posframe-delete-all' to delete all posframes."
              :lines-truncate lines-truncate
              :respect-header-line respect-header-line
              :respect-mode-line respect-mode-line
-             :respect-tab-line respect-tab-line
              :override-parameters override-parameters
              :accept-focus accept-focus))
+
+      ;; Remove tab-bar always.
+      (set-frame-parameter posframe 'tab-bar-lines 0)
 
       ;; Move mouse to (0 . 0)
       (posframe--mouse-banish parent-frame posframe)
@@ -693,7 +687,9 @@ posframe from catching keyboard input if the window manager selects it."
              (frame-parameter (selected-frame) 'no-accept-focus))
     (redirect-frame-focus posframe--frame (frame-parent))))
 
-(add-hook 'focus-in-hook #'posframe--redirect-posframe-focus)
+(if (version< emacs-version "27.1")
+    (add-hook 'focus-in-hook #'posframe--redirect-posframe-focus)
+  (add-function :after after-focus-change-function #'posframe--redirect-posframe-focus))
 
 (defun posframe--mouse-banish (parent-frame &optional posframe)
   "Banish mouse to the (0 . 0) of PARENT-FRAME.
@@ -725,8 +721,13 @@ will be removed."
 (defun posframe--fit-frame-to-buffer (posframe height min-height width min-width)
   ;; This only has effect if the user set the latter var to `hide'.
   (let ((x-gtk-resize-child-frames posframe-gtk-resize-child-frames))
-    (fit-frame-to-buffer
-     posframe height min-height width min-width)))
+    ;; More info: Don't skip empty lines when fitting mini frame to buffer (Bug#44080)
+    ;; http://git.savannah.gnu.org/cgit/emacs.git/commit/?id=e0de9f3295b4c46cb7198ec0b9634809d7b7a36d
+    (if (functionp 'fit-frame-to-buffer-1)
+        (fit-frame-to-buffer-1
+         posframe height min-height width min-width nil nil nil)
+      (fit-frame-to-buffer
+       posframe height min-height width min-width))))
 
 (defun posframe--set-frame-size (posframe height min-height width min-width)
   "Set POSFRAME's size.
@@ -965,19 +966,21 @@ of `posframe-show'."
     (cons (+ (car position) x-pixel-offset)
           (+ (cdr position) y-pixel-offset))))
 
-(defun posframe-poshandler-point-bottom-left-corner (info &optional font-height upward)
+(defun posframe-poshandler-point-bottom-left-corner (info &optional font-height upward centering)
   "Posframe's position hanlder.
 
 Get bottom-left-corner pixel position of a point,
 the structure of INFO can be found in docstring
 of `posframe-show'.
 
-Optional argument FONT-HEIGHT ."
+Optional argument FONT-HEIGHT, UPWARD, CENTERING ."
   (let* ((x-pixel-offset (plist-get info :x-pixel-offset))
          (y-pixel-offset (plist-get info :y-pixel-offset))
          (posframe-width (plist-get info :posframe-width))
          (posframe-height (plist-get info :posframe-height))
          (window (plist-get info :parent-window))
+         (window-left (plist-get info :parent-window-left))
+         (window-width (plist-get info :parent-window-width))
          (xmax (plist-get info :parent-frame-width))
          (ymax (plist-get info :parent-frame-height))
          (position-info (plist-get info :position-info))
@@ -997,12 +1000,23 @@ Optional argument FONT-HEIGHT ."
                    y-pixel-offset))
          (font-height (or font-height (plist-get info :font-height)))
          (y-bottom (+ y-top font-height)))
-    (cons (max 0 (min x (- xmax (or posframe-width 0))))
+    (cons (if centering
+              (+ window-left (/ (- window-width posframe-width) 2))
+            (max 0 (min x (- xmax (or posframe-width 0)))))
           (max 0 (if (if upward
                          (> (- y-bottom (or posframe-height 0)) 0)
                        (> (+ y-bottom (or posframe-height 0)) ymax))
                      (- y-top (or posframe-height 0))
                    y-bottom)))))
+
+(defun posframe-poshandler-point-window-center (info)
+  "Posframe's position hanlder.
+
+Get a position of a point, by which a window-centered posframe
+can be put below it, the structure of INFO can be found in
+docstring of `posframe-show'. "
+
+  (posframe-poshandler-point-bottom-left-corner info nil nil t))
 
 (defun posframe-poshandler-point-bottom-left-corner-upward (info)
   "Posframe's position hanlder.
@@ -1093,7 +1107,8 @@ bottom center.  The structure of INFO can be found in docstring of
   (cons (/ (- (plist-get info :parent-frame-width)
               (plist-get info :posframe-width))
            2)
-        (- 0
+        (- (plist-get info :parent-frame-height)
+           (plist-get info :posframe-height)
            (plist-get info :mode-line-height)
            (plist-get info :minibuffer-height))))
 

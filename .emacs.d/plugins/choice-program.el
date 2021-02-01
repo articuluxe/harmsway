@@ -1,13 +1,13 @@
-;;; choice-program.el --- parameter based program
+;;; choice-program.el --- Parameter based program  -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2015 - 2019 Paul Landes
+;; Copyright (C) 2015 - 2020 Paul Landes
 
-;; Version: 0.9
+;; Version: 0.10
 ;; Author: Paul Landes
 ;; Maintainer: Paul Landes
-;; Keywords: exec execution parameter option
+;; Keywords: execution processes unix lisp
 ;; URL: https://github.com/plandes/choice-program
-;; Package-Requires: ((emacs "26"))
+;; Package-Requires: ((emacs "26") (dash "2.17.0"))
 
 ;; This file is not part of GNU Emacs.
 
@@ -33,28 +33,26 @@
 
 ;;; Code:
 
+(require 'dash)
 (require 'eieio)
+(require 'eieio-base)
 (require 'choice-program-complete)
 
-(defvar choice-prog-exec-debug-p nil
+(defvar choice-program-exec-debug-p nil
   "*If non-nil, output debuging to buffer *Option Prog Debug*.")
 
-(defvar choice-prog-instance-syms nil
-  "A list of choice-prog instance variables.")
+(defvar choice-program-instance-syms nil
+  "A list of choice-program instance variables.")
 
-(defgroup choice-prog nil
+(defgroup choice-program nil
   "Parameter choice driven program execution."
-  :group 'choice-prog
-  :prefix "choice-prog-")
+  :group 'choice-program
+  :prefix "choice-program-")
 
-(defclass choice-prog ()
-  ((name :initarg :name
-	 :initform nil
-	 :type (or null string)
-	 :documentation "Name of the choice program launcher.")
-   (program :initarg :program
-	       :type string
-	       :documentation "The conduit program to run.")
+(defclass choice-program (eieio-named)
+  ((program :initarg :program
+	    :type string
+	    :documentation "The conduit program to run.")
    (interpreter :initarg :interpreter
 		:type (or null string)
 		:documentation "The interpreter (i.e. /bin/sh) or nil.")
@@ -104,72 +102,97 @@ documentation.")
 Whether or not to display the buffer on execution."))
   :documentation "Represents a single `actionable' program instance.")
 
-(cl-defmethod initialize-instance ((this choice-prog) &optional args)
-  (if (null (plist-get args :buffer-name))
-      (setq args
-	    (plist-put args :buffer-name
-		       (format "*%s Output*"
-			       (capitalize (slot-value this 'program))))))
-  (cl-call-next-method this args))
+(cl-defmethod initialize-instance ((this choice-program) &optional slots)
+  "Initialize instance THIS with arguments SLOTS."
+  (setq slots (plist-put slots :buffer-name
+			 (or (plist-get slots :buffer-name)
+			     (format "*%s Output*"
+				     (capitalize (slot-value this 'program)))))
+	slots (plist-put slots :object-name
+			 (or (plist-get slots :object-name)
+			     (plist-get slots :program))))
+  (cl-call-next-method this slots))
 
-(cl-defmethod object-print ((this choice-prog) &optional strings)
-  "Return a string as a representation of the in memory instance of THIS."
-  (apply #'cl-call-next-method this
-	 (format " %s (%s)"
-		 (slot-value this 'program)
-		 (mapconcat #'identity (slot-value this 'selection-args) " "))
-	 strings))
+(cl-defmethod choice-program-name ((this choice-program))
+  "Return the name of THIS choice program launcher."
+  (slot-value this 'object-name))
 
-(cl-defmethod choice-prog-name ((this choice-prog))
-  "Return the name of the choice program launcher."
-  (with-slots (name program) this
-    (or name program)))
-
-(cl-defmethod choice-prog-debug ((this choice-prog) object)
+(cl-defmethod choice-program-debug ((_ choice-program) object)
+  "Add a debugging message with debug parameter OBJECT."
   (with-current-buffer
       (get-buffer-create "*Option Prog Debug*")
     (goto-char (point-max))
     (insert (format (if (stringp object) "%s" "%S") object))
     (newline)))
 
-(cl-defmethod choice-prog-exec-prog ((this choice-prog) args &optional no-trim-p)
+(cl-defmethod eieio-object-value-string ((this choice-program) val)
+  "Return a string representation of VAL overriden for THIS.
+This is used for prettyprinting by `eieio-object-name-string'."
+  (cond ((stringp val) val)
+	((consp val) (->> (mapconcat #'(lambda (val)
+					 (eieio-object-value-string this val))
+				     val " ")
+			  (format "(%s)")))
+	(t (prin1-to-string val))))
+
+(cl-defmethod eieio-object-value-slots ((_ choice-program))
+  "Return a list of slot names used in `eieio-object-name-string'."
+  '(selection-args buffer-name))
+
+(cl-defmethod eieio-object-name-string ((this choice-program))
+  "Return a string as a representation of the in memory instance of THIS."
+  (->> (mapconcat #'(lambda (slot)
+		      (let ((val (slot-value this slot)))
+			(eieio-object-value-string this val)))
+		  (eieio-object-value-slots this)
+		  " ")
+       (concat (cl-call-next-method this) " ")))
+
+(cl-defmethod choice-program-exec-prog ((this choice-program) args
+					&optional no-trim-p)
+  "Execute the program defined in THIS with ARGS and return the output.
+NO-TRIM-P, if non-nil, don't remove the terminating from the program's output."
   (with-output-to-string
     (with-current-buffer
 	standard-output
-      (let ((prg (executable-find (slot-value this 'program)))
-	    (inter (and (slot-value this 'interpreter)
-			(executable-find (slot-value this 'interpreter)))))
+      (let* ((exec-name (slot-value this 'program))
+	     (prg (or (executable-find exec-name)
+		      (error "No such executable found: %s" exec-name)))
+	     (inter (and (slot-value this 'interpreter)
+			 (executable-find (slot-value this 'interpreter)))))
 	(when inter
 	  (setq args (append (list prg) args))
 	  (setq prg inter))
-	(if choice-prog-exec-debug-p
-	    (choice-prog-debug this (format "execution: %s %s"
-					    (slot-value this 'program)
-					    (mapconcat 'identity args " "))))
+	(if choice-program-exec-debug-p
+	    (choice-program-debug this (format "execution: %s %s"
+					       (slot-value this 'program)
+					       (mapconcat 'identity args " "))))
 	(apply 'call-process prg nil t nil args)
-	(if choice-prog-exec-debug-p
-	    (choice-prog-debug this
-			       (format "execution output: <%s>" (buffer-string))))
+	(if choice-program-exec-debug-p
+	    (choice-program-debug this
+				  (format "execution output: <%s>" (buffer-string))))
 	(when (not no-trim-p)
 	  (goto-char (point-max))
 	  (if (and (not (bobp)) (looking-at "^$"))
 	      (delete-char -1)))))))
 
-(cl-defmethod choice-prog-selections ((this choice-prog))
-  "Return a list of possibilities for mnemonics for this program."
-  (let ((output (choice-prog-exec-prog this (slot-value this 'selection-args))))
+(cl-defmethod choice-program-selections ((this choice-program))
+  "Return a list of possibilities for mnemonics for this program.
+THIS is the instance"
+  (let ((output (choice-program-exec-prog this (slot-value this 'selection-args))))
     (split-string output "\n")))
 
-(cl-defmethod choice-prog-read-option ((this choice-prog)
-				       &optional default history)
+(cl-defmethod choice-program-read-option ((this choice-program)
+					  &optional default history)
   "Read one of the possible options from the list generated by the program.
+THIS is the instance.
 DEFAULT is used as the default input for the user input.
 HISTORY is the history variable used for the user input."
   (let* ((prompt-history (or history (slot-value this 'prompt-history)))
 	 (default (or default (and (boundp prompt-history)
 				   (car (symbol-value prompt-history))))))
     (choice-program-complete (slot-value this 'choice-prompt)
-			     (choice-prog-selections this)
+			     (choice-program-selections this)
 			     t t	    ; return-as-string require-match
 			     nil	    ; initial
 			     prompt-history ; history
@@ -178,8 +201,12 @@ HISTORY is the history variable used for the user input."
 			     nil	; no-initial
 			     t)))       ; add-prompt-default
 
-(cl-defmethod choice-prog-command ((this choice-prog)
-				   choice &optional dryrun-p)
+(cl-defmethod choice-program-command ((this choice-program)
+				      choice &optional dryrun-p)
+  "Create the command used to execute the command.
+THIS is the instance.
+CHOICE is the mnemonic choice, usually called the `action'.
+DRYRUN-P logs like its doing something, but doesn't."
   (let ((cmd-lst (remove nil
 			 (list
 			  (and (slot-value this 'interpreter)
@@ -189,20 +216,22 @@ HISTORY is the history variable used for the user input."
 			  (if dryrun-p (slot-value this 'dryrun-switch-name))
 			  (slot-value this 'verbose-switch-form)
 			  (slot-value this 'choice-switch-name)
-			  choice)))
-	cmd)
+			  choice))))
     (mapconcat #'identity cmd-lst " ")))
 
-(cl-defmethod choice-prog-exec ((this choice-prog)
-				choice &optional dryrun-p)
+(cl-defmethod choice-program-exec ((this choice-program) choice
+				   &optional dryrun-p)
   "Run the program with a particular choice, which is prompted by the user.
 This should be called by an interactive function, or by the function created by
-the `choice-prog-create-exec-function' method."
-  (let ((cmd (choice-prog-command this choice dryrun-p))
+the `choice-program-create-exec-function' method.
+THIS is the instance.
+CHOICE is the choice to use for the execution.
+DRYRUN-P logs like its doing something, but doesn't."
+  (let ((cmd (choice-program-command this choice dryrun-p))
 	buf)
     (cl-flet ((prog-exec
 	       ()
-	       (compilation-start cmd t #'(lambda (mode)
+	       (compilation-start cmd t #'(lambda (_)
 					    (slot-value this 'buffer-name)))))
       (if (slot-value this 'display-buffer)
 	  (setq buf (prog-exec))
@@ -211,17 +240,17 @@ the `choice-prog-create-exec-function' method."
     (message "Started: %s" cmd)
     buf))
 
-(defun choice-prog-instances ()
-  "Return all `choice-prog' instances."
+(defun choice-program-instances ()
+  "Return all `choice-program' instances."
   (mapcar #'symbol-value
-	  choice-prog-instance-syms))
+	  choice-program-instance-syms))
 
-(defun choice-prog-create-exec-function (instance-var)
-  "Create functions for a `choice-prog' instance.
-INSTANCE-VAR is an instance of the `choice-prog' eieio class.
+(defun choice-program-create-exec-function (instance-var)
+  "Create functions for a `choice-program' instance.
+INSTANCE-VAR is an instance of the `choice-program' eieio class.
 NAME overrides the `:program' slot if given."
   (let* ((this (symbol-value instance-var))
-	 (name (intern (choice-prog-name this)))
+	 (name (intern (choice-program-name this)))
 	 (option-doc (format "\
 CHOICE is given to the `%s' program with the `%s' option.
 DRYRUN-P, if non-`nil' doesn't execute the command, but instead shows what it
@@ -233,11 +262,11 @@ would do if it were to be run.  This adds the `%s' option to the command line."
 	   `(defun ,name (choice dryrun-p)
 	      ,(if (slot-value this 'documentation)
 		   (concat (slot-value this 'documentation) "\n\n" option-doc))
-	      (interactive (list (choice-prog-read-option ,instance-var)
+	      (interactive (list (choice-program-read-option ,instance-var)
 				 current-prefix-arg))
-	      (choice-prog-exec ,instance-var choice dryrun-p))))
+	      (choice-program-exec ,instance-var choice dryrun-p))))
       (eval def))
-    (add-to-list 'choice-prog-instance-syms instance-var)))
+    (add-to-list 'choice-program-instance-syms instance-var)))
 
 (provide 'choice-program)
 

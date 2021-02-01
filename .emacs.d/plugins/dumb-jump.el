@@ -1724,6 +1724,11 @@ inaccurate jump).  If nil, jump without confirmation but print a warning."
   :group 'dumb-jump
   :type 'boolean)
 
+(defcustom dumb-jump-disable-obsolete-warnings nil
+  "If non-nil, don't warn about using the legacy interface."
+  :group 'dumb-jump
+  :type 'boolean)
+
 (defun dumb-jump-message-prin1 (str &rest args)
   "Helper function when debugging apply STR 'prin1-to-string' to all ARGS."
   (apply 'message str (-map 'prin1-to-string args)))
@@ -2986,31 +2991,34 @@ Using ag to search only the files found via git-grep literal symbol search."
 
 ;;; Xref Backend
 (when (featurep 'xref)
-  (dolist (obsolete
-           '(dumb-jump-mode
-             dumb-jump-go
-             dumb-jump-go-prefer-external-other-window
-             dumb-jump-go-prompt
-             dumb-jump-quick-look
-             dumb-jump-go-other-window
-             dumb-jump-go-current-window
-             dumb-jump-go-prefer-external
-             dumb-jump-go-current-window))
-    (make-obsolete
-     obsolete
-     (format "`%s' has been obsoleted by the xref interface."
-             obsolete)
-     "2020-06-26"))
-  (make-obsolete 'dumb-jump-back
-                 "`dumb-jump-back' has been obsoleted by `xref-pop-marker-stack'."
-                 "2020-06-26")
+  (unless dumb-jump-disable-obsolete-warnings
+    (dolist (obsolete
+             '(dumb-jump-mode
+               dumb-jump-go
+               dumb-jump-go-prefer-external-other-window
+               dumb-jump-go-prompt
+               dumb-jump-quick-look
+               dumb-jump-go-other-window
+               dumb-jump-go-current-window
+               dumb-jump-go-prefer-external
+               dumb-jump-go-current-window))
+      (make-obsolete
+       obsolete
+       (format "`%s' has been obsoleted by the xref interface."
+               obsolete)
+       "2020-06-26"))
+    (make-obsolete 'dumb-jump-back
+                   "`dumb-jump-back' has been obsoleted by `xref-pop-marker-stack'."
+                   "2020-06-26"))
 
   (cl-defmethod xref-backend-identifier-at-point ((_backend (eql dumb-jump)))
-    (let ((start (dumb-jump--get-symbol-start)))
-      (and start (let* ((ident (dumb-jump-get-point-symbol))
-                        (line (dumb-jump-get-point-line))
-                        (ctx (dumb-jump-get-point-context line ident start)))
-                   (propertize ident :dumb-jump-ctx ctx)))))
+    (let ((bounds (bounds-of-thing-at-point 'symbol)))
+      (and bounds (let* ((ident (dumb-jump-get-point-symbol))
+			             (start (car bounds))
+			             (col (- start (point-at-bol)))
+			             (line (dumb-jump-get-point-line))
+			             (ctx (dumb-jump-get-point-context line ident col)))
+		            (propertize ident :dumb-jump-ctx ctx)))))
 
   (cl-defmethod xref-backend-definitions ((_backend (eql dumb-jump)) prompt)
     (let* ((info (dumb-jump-get-results prompt))
@@ -3053,7 +3061,7 @@ Using ag to search only the files found via git-grep literal symbol search."
                          (xref-make
                           (plist-get res :context)
                           (xref-make-file-location
-                           (plist-get res :path)
+                           (expand-file-name (plist-get res :path))
                            (plist-get res :line)
                            0)))
                        (if do-var-jump
@@ -3061,7 +3069,10 @@ Using ag to search only the files found via git-grep literal symbol search."
                          match-cur-file-front))))))
 
   (cl-defmethod xref-backend-apropos ((_backend (eql dumb-jump)) pattern)
-    (xref-backend-definitions 'dumb-jump pattern)))
+    (xref-backend-definitions 'dumb-jump pattern))
+
+  (cl-defmethod xref-backend-identifier-completion-table ((_backend (eql dumb-jump)))
+    nil))
 
 ;;;###autoload
 (defun dumb-jump-xref-activate ()

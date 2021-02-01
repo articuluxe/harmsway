@@ -1,6 +1,6 @@
 ;;; magit-apply.el --- apply Git diffs  -*- lexical-binding: t -*-
 
-;; Copyright (C) 2010-2020  The Magit Project Contributors
+;; Copyright (C) 2010-2021  The Magit Project Contributors
 ;;
 ;; You should have received a copy of the AUTHORS.md file which
 ;; lists all contributors.  If not, see http://magit.vc/authors.
@@ -30,9 +30,6 @@
 
 ;;; Code:
 
-(eval-when-compile
-  (require 'subr-x))
-
 (require 'magit-core)
 (require 'magit-diff)
 (require 'magit-wip)
@@ -53,6 +50,7 @@
                   (path &optional prefer-short))
 (declare-function borg--maybe-absorb-gitdir "borg" (pkg))
 (declare-function borg--sort-submodule-sections "borg" (file))
+(declare-function borg-assimilate "borg" (package url &optional partially))
 (defvar borg-user-emacs-directory)
 
 ;;; Options
@@ -362,28 +360,24 @@ ignored) files."
                           `((file . ,repo) (untracked) (status)))
                          start))
         (let* ((topdir (magit-toplevel))
+               (url (let ((default-directory
+                            (file-name-as-directory (expand-file-name repo))))
+                      (or (magit-get "remote" (magit-get-some-remote) "url")
+                          (concat (file-name-as-directory ".") repo))))
                (package
                 (and (equal (bound-and-true-p borg-user-emacs-directory)
                             topdir)
                      (file-name-nondirectory (directory-file-name repo)))))
-          (magit-submodule-add-1
-           (let ((default-directory
-                   (file-name-as-directory (expand-file-name repo))))
-             (or (magit-get "remote" (magit-get-some-remote) "url")
-                 (concat (file-name-as-directory ".") repo)))
-           repo
-           (magit-submodule-read-name-for-path repo package))
-          (when package
-            (borg--sort-submodule-sections
-             (expand-file-name ".gitmodules" topdir))
-            (let ((default-directory borg-user-emacs-directory))
-              (borg--maybe-absorb-gitdir package))
-            (when (and (y-or-n-p
-                        (format "Also build and activate `%s' drone?" package))
-                       (fboundp 'borg-build)
-                       (fboundp 'borg-activate))
-              (borg-build package)
-              (borg-activate package))))))
+          (if (and package
+                   (y-or-n-p (format "Also assimilate `%s' drone?" package)))
+              (borg-assimilate package url)
+            (magit-submodule-add-1
+             url repo (magit-submodule-read-name-for-path repo package))
+            (when package
+              (borg--sort-submodule-sections
+               (expand-file-name ".gitmodules" topdir))
+              (let ((default-directory borg-user-emacs-directory))
+                (borg--maybe-absorb-gitdir package)))))))
     (magit-wip-commit-after-apply files " after stage")))
 
 ;;;; Unstage

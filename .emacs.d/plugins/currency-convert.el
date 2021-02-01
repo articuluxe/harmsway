@@ -4,7 +4,7 @@
 ;; Author: Lassi Kortela <lassi@lassi.io>
 ;; URL: https://github.com/lassik/emacs-currency-convert
 ;; Package-Requires: ((emacs "24.4"))
-;; Package-Version: 0.1.0
+;; Version: 0.1.0
 ;; Keywords: comm convenience i18n
 ;;
 ;; This file is not part of GNU Emacs.

@@ -1,11 +1,11 @@
 ;;; pandoc-mode.el --- Minor mode for interacting with Pandoc  -*- lexical-binding: t -*-
 
-;; Copyright (c) 2009-2019 Joost Kremers
+;; Copyright (c) 2009-2020 Joost Kremers
 
 ;; Author: Joost Kremers <joostkremers@fastmail.fm>
 ;; Maintainer: Joost Kremers <joostkremers@fastmail.fm>
 ;; Created: 31 Oct 2009
-;; Version: 2.29
+;; Version: 2.30
 ;; Keywords: text, pandoc
 ;; URL: http://joostkremers.github.io/pandoc-mode/
 ;; Package-Requires: ((hydra "0.10.0") (dash "2.10.0"))
@@ -1312,7 +1312,8 @@ File options
 
 _o_: Output file           [%s(pandoc--pp-option 'output)]
 _O_: Output directory      [%s(pandoc--pp-option 'output-dir)]
-_d_: Data directory        [%s(pandoc--pp-option 'data-dir)]
+_D_: Data directory        [%s(pandoc--pp-option 'data-dir)]
+_d_: Defaults file         [%s(pandoc--pp-option 'defaults)]
 _e_: Extract media files   [%s(pandoc--pp-option 'extract-media)]
 _f_: File Scope            [%s(pandoc--pp-option 'file-scope)]
 _m_: Master file           [%s(pandoc--pp-option 'master-file)]

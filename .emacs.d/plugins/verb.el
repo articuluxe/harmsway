@@ -1,12 +1,12 @@
 ;;; verb.el --- Organize and send HTTP requests  -*- lexical-binding: t -*-
 
-;; Copyright (C) 2020  Federico Tedin
+;; Copyright (C) 2021  Federico Tedin
 
 ;; Author: Federico Tedin <federicotedin@gmail.com>
 ;; Maintainer: Federico Tedin <federicotedin@gmail.com>
 ;; Homepage: https://github.com/federicotdn/verb
 ;; Keywords: tools
-;; Package-Version: 2.12.0
+;; Package-Version: 2.13.1
 ;; Package-Requires: ((emacs "25.1"))
 
 ;; This file is NOT part of GNU Emacs.
@@ -135,13 +135,13 @@ request."
 
 (defcustom verb-advice-url t
   "Whether to advice url.el functions or not.
-If non-nil, the following url.el functions will be adviced in order to
+If non-nil, the following url.el functions will be advised in order to
 make Verb more flexible and user-friendly:
-- `url-http-user-agent-string': Adviced to allow the user to set their
+- `url-http-user-agent-string': Advised to allow the user to set their
   own \"User-Agent\" headers.
-- `url-http-handle-authentication': Adviced to disable annoying user
+- `url-http-handle-authentication': Advised to disable annoying user
   prompt on 401 responses.
-Note that the functions will be adviced only during the duration of
+Note that the functions will be advised only during the duration of
 the HTTP requests made."
   :type 'boolean)
 
@@ -166,7 +166,7 @@ don't show any warnings."
 (defcustom verb-babel-timeout 10.0
   "Timeout (s) for HTTP requests made from a Babel source blocks.
 Note that Emacs will be blocked while the response hasn't been
-receieved."
+received."
   :type 'float)
 
 (defcustom verb-code-tag-delimiters '("{{" . "}}")
@@ -246,7 +246,7 @@ next heading (or buffer end), it will be included in the body."
 (defcustom verb-base-headers nil
   "Set of HTTP headers used as base when reading request specs.
 These headers will be included by default in requests, but still may
-be overriden by re-specifying them somwhere in the headings
+be overridden by re-specifying them somewhere in the headings
 hierarchy."
   :type '(alist :key-type string :value-type string))
 
@@ -255,7 +255,7 @@ hierarchy."
 Completion is handled by the `verb-elisp-completion-at-point'
 function.
 
-Note the the point must be between the two code tag delimeters
+Note the the point must be between the two code tag delimiters
 \(e.g.  \"{{\" and \"}}\") for the completion function to work."
   :type 'boolean)
 
@@ -321,7 +321,7 @@ E = Error.")
   "Prefix for Verb metadata keys in heading properties.
 Matching is case insensitive.")
 
-(defconst verb-version "2.12.0"
+(defconst verb-version "2.13.1"
   "Verb package version.")
 
 (defvar-local verb-http-response nil
@@ -787,8 +787,8 @@ Do not include text properties."
 
 (defun verb--back-to-heading ()
   "Move to the previous heading.
-Or, move to beggining of this line if it's a heading.  If there are no
-headings, move to the beggining of buffer.  Return t if a heading was
+Or, move to beginning of this line if it's a heading.  If there are no
+headings, move to the beginning of buffer.  Return t if a heading was
 found."
   (if (ignore-errors (org-back-to-heading t))
       t
@@ -819,7 +819,8 @@ Does not use property inheritance.  Matching is case-insensitive."
   (seq-filter (lambda (e) (stringp (cdr e)))
               ;; 2) Take the (key . value) for each of those properties here
               (mapcar (lambda (key) (cons (upcase key)
-                                          (org-entry-get (point) key)))
+                                          (org-entry-get (point) key
+                                                         'selective)))
                       ;; 1) Get all doc properties and filter them by prefix
                       (seq-filter (lambda (s) (string-prefix-p prefix s t))
                                   (org-buffer-property-keys)))))
@@ -1210,15 +1211,20 @@ see `verb--request-spec-from-hierarchy' to see how this is done.
 The buffer containing the response is shown (or not shown) in
 different ways, depending on the value of WHERE:
 
-- `other-window': Show the results of the request (the response
-  buffer) on another window and select it.
-- `stay-window': Show the results of the request on another window,
-  but keep the current one selected.
-- `this-window': Show the results of the request in the current
-  window.
+- `other-window': Show the response buffer on another window and
+  select it.
+- `stay-window': Show the response buffer on another window, but
+  keep the current one selected.
+- `this-window': Show the response buffer in the current window.
 - `minibuffer': Show the response status on the minibuffer, but don't
-  show the response contents themselves anywhere.
-- Other values: Send the request but do not show the results anywhere.
+  show the response buffer anywhere.
+- nil: Send the request but do not show the response buffer nor the
+  response status anywhere.
+
+The response buffer won't have any contents until the HTTP response
+has been received.  For all valid values of WHERE except nil, the
+response status will be shown on the minibuffer when the response is
+received.
 
 If prefix argument ARG is non-nil, allow the user to quickly edit the
 request before it is sent.  The changes made will not affect the
@@ -1229,6 +1235,10 @@ The `verb-post-response-hook' hook is called after a response has been
 received."
   (interactive (list 'this-window current-prefix-arg))
   (verb--ensure-verb-mode)
+  (when (and where
+             (not (member where
+                          '(other-window stay-window this-window minibuffer))))
+    (user-error "Invalid value for WHERE: %s" where))
   (let* ((verb--inhibit-code-tags-evaluation arg)
          (rs (verb--request-spec-from-hierarchy)))
     (if arg
@@ -1305,7 +1315,7 @@ After the user has finished modifying the buffer, they can press
   "Send the request specified in the current temporary buffer.
 SOURCE-BUFFER and SOURCE-WINDOW specify what buffer and window must be
 selected/active when the request is actually sent.  WHERE specifies
-where the result shoud be shown in."
+where the result should be shown in."
   (unwind-protect
       (let ((new-rs (verb--request-spec-from-hierarchy)))
         (with-selected-window source-window
@@ -1669,14 +1679,12 @@ NUM is this request's identification number."
           (unless (zerop (oref verb-http-response body-bytes))
             (verb--buffer-string-no-properties)))
 
-    (pcase where
-      ('other-window (switch-to-buffer-other-window (current-buffer)))
-      ('stay-window (save-selected-window
-                      (switch-to-buffer-other-window (current-buffer))))
-      ('this-window (switch-to-buffer (current-buffer)))
-      ('minibuffer (message "%s" (oref verb-http-response status))))
-
     (verb-response-body-mode)
+
+    (when where
+      (message "%s | %s"
+               (oref verb-http-response status)
+               (verb-request-spec-url-to-string rs)))
 
     ;; Run post response hook
     (run-hooks 'verb-post-response-hook)))
@@ -1781,6 +1789,7 @@ NUM is the request's identification number."
     ;; so that `verb-kill-all-response-buffers' can find it even if
     ;; no response was ever received.
     (setq verb-http-response t)
+    (setq header-line-format "Waiting for HTTP response...")
     (current-buffer)))
 
 (cl-defmethod verb--request-spec-send ((rs verb-request-spec) where)
@@ -1805,6 +1814,7 @@ loaded into."
                                                    (cdr content-type)))
          (url-mime-accept-string (verb--to-ascii (or accept-header "*/*")))
          (num (setq verb--requests-count (1+ verb--requests-count)))
+         (start-time (time-to-seconds))
          (response-buf (verb--generate-response-buffer num))
          timeout-timer)
     ;; Start the timeout warning timer
@@ -1844,7 +1854,7 @@ loaded into."
                  #'verb--request-spec-callback
                  (list rs
                        response-buf
-                       (time-to-seconds)
+                       start-time
                        timeout-timer
                        where
                        num)
@@ -1874,6 +1884,12 @@ loaded into."
     (verb--log num 'I "%s %s"
                (oref rs method)
                (verb-request-spec-url-to-string rs))
+
+    (pcase where
+      ('other-window (switch-to-buffer-other-window response-buf))
+      ('stay-window (save-selected-window
+                      (switch-to-buffer-other-window response-buf)))
+      ('this-window (switch-to-buffer response-buf)))
 
     ;; Return the response buffer
     response-buf))
@@ -2114,7 +2130,7 @@ special case, if S is the empty string, return the empty string."
           (eval (car (read-from-string (format "(progn %s)" s))) t))))))
 
 (defun verb--eval-code-tags-in-buffer (buf context)
-  "Evalue code tags within buffer BUF.
+  "Eval code tags within buffer BUF.
 When evaluating the code, use buffer CONTEXT as the current buffer.
 Replace the code tags with the results of their own evaluations.  Code
 tags are delimited with `verb-code-tag-delimiters'."

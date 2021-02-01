@@ -1,10 +1,10 @@
 ;;; zenburn-theme.el --- A low contrast color theme for Emacs.
 
-;; Copyright (C) 2011-2018 Bozhidar Batsov
+;; Copyright (C) 2011-2020 Bozhidar Batsov
 
 ;; Author: Bozhidar Batsov <bozhidar@batsov.com>
 ;; URL: http://github.com/bbatsov/zenburn-emacs
-;; Version: 2.7-snapshot
+;; Version: 2.8.0-snapshot
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -1171,6 +1171,24 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(neo-vc-conflict-face ((t (:foreground ,zenburn-red+1))))
    `(neo-vc-missing-face ((t (:foreground ,zenburn-red+1))))
    `(neo-vc-ignored-face ((t (:foreground ,zenburn-fg-1))))
+;;;;; notmuch
+   `(notmuch-crypto-decryption ((t (:foreground ,zenburn-bg :background ,zenburn-magenta))))
+   `(notmuch-crypto-part-header ((t (:foreground ,zenburn-blue+1))))
+   `(notmuch-crypto-signature-bad ((t (:foreground ,zenburn-bg :background ,zenburn-red))))
+   `(notmuch-crypto-signature-good ((t (:foreground ,zenburn-bg :background ,zenburn-green+1))))
+   `(notmuch-crypto-signature-good-key ((t (:foreground ,zenburn-bg :background ,zenburn-orange))))
+   `(notmuch-crypto-signature-unknown ((t (:foreground ,zenburn-bg :background ,zenburn-red))))
+   `(notmuch-hello-logo-background ((t (:background ,zenburn-bg+2))))
+   `(notmuch-message-summary-face ((t (:background ,zenburn-bg-08))))
+   `(notmuch-search-flagged-face ((t (:foreground ,zenburn-blue+1))))
+   `(notmuch-search-non-matching-authors ((t (:foreground ,zenburn-fg-1))))
+   `(notmuch-tag-added ((t (:underline ,zenburn-green+1))))
+   `(notmuch-tag-deleted ((t (:strike-through ,zenburn-red))))
+   `(notmuch-tag-face ((t (:foreground ,zenburn-green+1))))
+   `(notmuch-tag-flagged ((t (:foreground ,zenburn-blue+1))))
+   `(notmuch-tag-unread ((t (:foreground ,zenburn-red))))
+   `(notmuch-tree-match-author-face ((t (:foreground ,zenburn-green+1))))
+   `(notmuch-tree-match-tag-face ((t (:foreground ,zenburn-green+1))))
 ;;;;; org-mode
    `(org-agenda-date-today
      ((t (:foreground ,zenburn-fg+1 :slant italic :weight bold))) t)

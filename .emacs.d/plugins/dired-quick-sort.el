@@ -1,11 +1,11 @@
 ;;; dired-quick-sort.el --- Persistent quick sorting of dired buffers in various ways. -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2016  Hong Xu <hong@topbug.net>
+;; Copyright (C) 2016 -- 2020 Hong Xu <hong@topbug.net>
 
 ;; Author: Hong Xu <hong@topbug.net>
 ;; URL: https://gitlab.com/xuhdev/dired-quick-sort#dired-quick-sort
-;; Version: 0.1+
-;; Package-Requires: ((hydra "0.13.0"))
+;; Version: 0.2+
+;; Package-Requires: ((hydra "0.13.0") (emacs "24"))
 ;; Keywords: convenience, files
 
 ;; This file is not part of GNU Emacs
@@ -46,13 +46,11 @@
 ;; To make full use of this extensions, please make sure that the variable
 ;; `insert-directory-program' points to the GNU version of ls.
 ;;
-;; To report bugs and make feature requests, please open a new ticket at the
-;; issue tracker <https://gitlab.com/xuhdev/dired-quick-sort/issues>. To
-;; contribute, please create a merge request at
+;; To comment, ask questions, report bugs or make feature requests, please open
+;; a new ticket at the issue tracker
+;; <https://gitlab.com/xuhdev/dired-quick-sort/issues>. To contribute, please
+;; create a merge request at
 ;; <https://gitlab.com/xuhdev/dired-quick-sort/merge_requests>.
-;;
-;; For any other questions and comments, please send them to
-;; <https://www.topbug.net/blog/2016/08/17/dired-quick-sort-sort-dired-buffers-quickly-in-emacs/>.
 
 ;;; Code:
 
@@ -61,10 +59,17 @@
 (require 'savehist)
 (require 'hydra)
 
-(defvar dired-quick-sort-sort-by-last "version"
-  "The main sort criteria used last time.
+(defcustom dired-quick-sort-suppress-setup-warning nil
+  "How to handle the warning in `dired-quick-sort-setup'."
+  :type '(choice (const :tag "Display" nil)
+                 (const :tag "Suppress" t)
+                 (const :tag "Display as a message" 'message))
+  :group 'dired-quick-sort)
 
-The value should be one of none, time, size, version (natural, an improved
+(defvar dired-quick-sort-sort-by-last "version"
+  "The main sort criterion used last time.
+
+The value should be one of none, time, size, version (i.e., natural, an improved
 version of name and extension).
 
 See the documentation of the \"--sort\" option of GNU ls for details.")
@@ -107,15 +112,23 @@ enabled.  When invoked interactively, nil's are passed to all arguments."
         dired-quick-sort-group-directories-last
         (or group-directories dired-quick-sort-group-directories-last)
         dired-quick-sort-time-last (or time dired-quick-sort-time-last))
-  (dired-sort-other
-   (format "%s --sort=%s %s %s %s" dired-listing-switches
-           dired-quick-sort-sort-by-last
-           (if (char-equal dired-quick-sort-reverse-last ?y)
-               "-r" "")
-           (if (char-equal dired-quick-sort-group-directories-last ?y)
-               "--group-directories-first" "")
-           (if (not (string= dired-quick-sort-time-last "default"))
-               (concat "--time=" dired-quick-sort-time-last) ""))))
+  (dired-sort-other (dired-quick-sort--format-switches)))
+
+(defun dired-quick-sort-set-switches ()
+  "Set switches according to variables. For use in `dired-mode-hook'."
+  (dired-sort-other (dired-quick-sort--format-switches) t))
+
+(defun dired-quick-sort--format-switches ()
+  "Return a dired-listing-switches string according to
+`dired-quick-sort' settings."
+  (format "%s --sort=%s %s %s %s" dired-listing-switches
+          dired-quick-sort-sort-by-last
+          (if (char-equal dired-quick-sort-reverse-last ?y)
+              "-r" "")
+          (if (char-equal dired-quick-sort-group-directories-last ?y)
+              "--group-directories-first" "")
+          (if (not (string= dired-quick-sort-time-last "default"))
+              (concat "--time=" dired-quick-sort-time-last) "")))
 
 (defun dired-quick-sort--sort-by-last (field)
   (if (string= dired-quick-sort-sort-by-last field) "[X]" "[ ]"))
@@ -131,23 +144,23 @@ _v_: ?v? version (natural)  ^ ^                     ^ ^                         
 _e_: ?e? extension          ^ ^                     ^ ^                            _c_: ?c? ctime
 _q_: quit                   ^ ^                     ^ ^                            _S_: ?S? status
 "
-  ("n" (dired-quick-sort "none" nil nil nil)
+  ("n" (dired-quick-sort "none")
        (dired-quick-sort--sort-by-last "none"))
-  ("t" (dired-quick-sort "time" nil nil nil)
+  ("t" (dired-quick-sort "time")
        (dired-quick-sort--sort-by-last "time"))
-  ("s" (dired-quick-sort "size" nil nil nil)
+  ("s" (dired-quick-sort "size")
        (dired-quick-sort--sort-by-last "size"))
-  ("v" (dired-quick-sort "version" nil nil nil)
+  ("v" (dired-quick-sort "version")
        (dired-quick-sort--sort-by-last "version"))
-  ("e" (dired-quick-sort "extension" nil nil nil)
+  ("e" (dired-quick-sort "extension")
        (if (string= dired-quick-sort-sort-by-last "extension") "[X]" "[ ]"))
-  ("r" (dired-quick-sort nil ?y nil nil)
+  ("r" (dired-quick-sort nil ?y)
        (if (char-equal dired-quick-sort-reverse-last ?y) "[X]" "[ ]"))
-  ("R" (dired-quick-sort nil ?n nil nil)
+  ("R" (dired-quick-sort nil ?n)
        (if (char-equal dired-quick-sort-reverse-last ?n) "[X]" "[ ]"))
-  ("g" (dired-quick-sort nil nil ?y nil)
+  ("g" (dired-quick-sort nil nil ?y)
        (if (char-equal dired-quick-sort-group-directories-last ?y) "[X]" "[ ]"))
-  ("G" (dired-quick-sort nil nil ?n nil)
+  ("G" (dired-quick-sort nil nil ?n)
        (if (char-equal dired-quick-sort-group-directories-last ?n) "[X]" "[ ]"))
   ("d" (dired-quick-sort nil nil nil "default")
        (if (string= dired-quick-sort-time-last "default") "[X]" "[ ]"))
@@ -162,6 +175,17 @@ _q_: quit                   ^ ^                     ^ ^                         
   ("S" (dired-quick-sort nil nil nil "status")
        (if (string= dired-quick-sort-time-last "status") "[X]" "[ ]"))
   ("q" nil "quit" :hint t :color blue))
+
+(defun dired-quick-sort--display-setup-warning (msg)
+  "Display setup warning according to
+`dired-quick-sort-suppress-setup-warning'."
+  (let ((display-func
+         (cond
+          ((null dired-quick-sort-suppress-setup-warning)
+           (lambda (m) (display-warning 'dired-quick-sort m)))
+          ((eq dired-quick-sort-suppress-setup-warning 'message) #'message)
+          ((eq dired-quick-sort-suppress-setup-warning t) #'ignore))))
+    (funcall display-func msg)))
 
 ;;;###autoload
 (defun dired-quick-sort-setup ()
@@ -179,11 +203,25 @@ to use your own preferred setup:
   (add-hook 'dired-mode-hook 'dired-quick-sort)"
 
   (if (not ls-lisp-use-insert-directory-program)
-      (display-warning 'dired-quick-sort "`ls-lisp-use-insert-directory-program'
-is nil. The package `dired-quick-sort' will not work and thus is not set up by
-`dired-quick-sort-setup'." :warning)
-    (define-key dired-mode-map "S" 'hydra-dired-quick-sort/body)
-    (add-hook 'dired-mode-hook 'dired-quick-sort)))
+      (dired-quick-sort--display-setup-warning
+"`ls-lisp-use-insert-directory-program' is nil. The package `dired-quick-sort'
+will not work and thus is not set up by `dired-quick-sort-setup'. Set it to t to
+suppress this warning. Alternatively, set
+`dired-quick-sort-suppress-setup-warning' to suppress warning and skip setup
+silently.")
+    (if (not
+         (with-temp-buffer
+           (call-process insert-directory-program nil t nil "--version")
+           (string-match-p "GNU" (buffer-string))))
+        (dired-quick-sort--display-setup-warning
+"`insert-directory-program' does
+not point to GNU ls.  Please set `insert-directory-program' to GNU ls.  The
+package `dired-quick-sort' will not work and thus is not set up by
+`dired-quick-sort-setup'. Alternatively, set
+`dired-quick-sort-suppress-setup-warning' to suppress warning and skip setup
+silently.")
+      (define-key dired-mode-map "S" 'hydra-dired-quick-sort/body)
+      (add-hook 'dired-mode-hook #'dired-quick-sort-set-switches))))
 
 (provide 'dired-quick-sort)
 

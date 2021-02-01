@@ -63,7 +63,7 @@
   version status headers body)
 
 (cl-defstruct plz-error
-  curl-error response)
+  curl-error response message)
 
 ;;;; Constants
 
@@ -161,6 +161,10 @@
 (defvar-local plz-then nil
   "Callback function for successful completion of request in current curl process buffer.")
 
+(defvar-local plz-finally nil
+  "Function called unconditionally after completion of request, after the then/else function.
+It is called without arguments outside the curl process buffer.")
+
 ;;;; Customization
 
 (defgroup plz nil
@@ -226,6 +230,87 @@ the initial connection attempt."
              :decode (if (and decode-s (not decode)) nil decode)
              :as as :then then :else else))
 
+(cl-defun plz-put (url body &key headers as then else
+                       (connect-timeout plz-connect-timeout)
+                       (decode t decode-s))
+  "PUT BODY to URL with curl.
+
+AS selects the kind of result to pass to the callback function
+THEN.  It may be:
+
+- `buffer' to pass the response buffer.
+- `binary' to pass the response body as an undecoded string.
+- `string' to pass the response body as a decoded string.
+- `response' to pass a `plz-response' struct.
+- A function, which is called in the response buffer with it
+  narrowed to the response body (suitable for, e.g. `json-read').
+
+If DECODE is non-nil, the response body is decoded automatically.
+For binary content, it should be nil.  When AS is `binary',
+DECODE is automatically set to nil.
+
+THEN is a callback function, whose sole argument is selected
+above with AS.
+
+ELSE is an optional callback function called when the request
+fails with one argument, a `plz-error' struct.  If ELSE is nil,
+an error is signaled when the request fails, either
+`plz-curl-error' or `plz-http-error' as appropriate, with a
+`plz-error' struct as the error data.
+
+HEADERS may be an alist of extra headers to send with the
+request.  CONNECT-TIMEOUT may be a number of seconds to timeout
+the initial connection attempt."
+  (declare (indent defun))
+  (plz--curl 'put url
+             :body body
+             :headers headers
+             :connect-timeout connect-timeout
+             :decode (if (and decode-s (not decode)) nil decode)
+             :as as :then then :else else))
+
+(cl-defun plz (method url &key headers body as then else finally
+                      (connect-timeout plz-connect-timeout)
+                      (decode t decode-s))
+  "Request BODY with METHOD to URL with curl.
+
+AS selects the kind of result to pass to the callback function
+THEN.  It may be:
+
+- `buffer' to pass the response buffer.
+- `binary' to pass the response body as an undecoded string.
+- `string' to pass the response body as a decoded string.
+- `response' to pass a `plz-response' struct.
+- A function, which is called in the response buffer with it
+  narrowed to the response body (suitable for, e.g. `json-read').
+
+If DECODE is non-nil, the response body is decoded automatically.
+For binary content, it should be nil.  When AS is `binary',
+DECODE is automatically set to nil.
+
+THEN is a callback function, whose sole argument is selected
+above with AS.
+
+ELSE is an optional callback function called when the request
+fails with one argument, a `plz-error' struct.  If ELSE is nil,
+an error is signaled when the request fails, either
+`plz-curl-error' or `plz-http-error' as appropriate, with a
+`plz-error' struct as the error data.
+
+FINALLY is an optional function called without argument after
+THEN or ELSE, as appropriate.
+
+HEADERS may be an alist of extra headers to send with the
+request.  CONNECT-TIMEOUT may be a number of seconds to timeout
+the initial connection attempt."
+  (declare (indent defun))
+  (plz--curl method url
+             :body body
+             :headers headers
+             :connect-timeout connect-timeout
+             :decode (if (and decode-s (not decode)) nil decode)
+             :as as :then then :else else :finally finally))
+
 (cl-defun plz-get-sync (url &key headers as
                             (connect-timeout plz-connect-timeout)
                             (decode t decode-s))
@@ -263,9 +348,9 @@ the initial connection attempt."
 
 ;; Functions for calling and handling curl processes.
 
-(cl-defun plz--curl (_method url &key headers connect-timeout
-                             decode as then else)
-  "Get HTTP URL with curl.
+(cl-defun plz--curl (method url &key body headers connect-timeout
+                            decode as then else finally)
+  "Make HTTP METHOD request to URL with curl.
 
 AS selects the kind of result to pass to the callback function
 THEN.  It may be:
@@ -288,15 +373,24 @@ an error is signaled when the request fails, either
 `plz-curl-error' or `plz-http-error' as appropriate, with a
 `plz-error' struct as the error data.
 
+FINALLY is an optional function called without argument after
+THEN or ELSE, as appropriate.
+
+BODY may be a string or buffer to send as the request body.
+
 HEADERS may be an alist of extra headers to send with the
 request.  CONNECT-TIMEOUT may be a number of seconds to timeout
 the initial connection attempt."
   ;; Inspired by and copied from `elfeed-curl-retrieve'.
   (let* ((header-args (cl-loop for (key . value) in headers
-                               collect (format "--header %s: %s" key value)))
+                               append (list "--header" (format "%s: %s" key value))))
          (curl-args (append plz-curl-default-args header-args
                             (when connect-timeout
                               (list "--connect-timeout" (number-to-string connect-timeout)))
+                            (pcase method
+                              ((or 'put 'post)
+                               (cl-assert body)
+                               (list "--data" "@-" "--request" (upcase (symbol-name method)))))
                             (list url)))
          (decode (pcase as
                    ('binary nil)
@@ -329,7 +423,15 @@ the initial connection attempt."
                                             (decode-coding-region (point) (point-max) coding-system))
                                           (funcall then (funcall as))))))))
         (setf plz-then then
-              plz-else else)
+              plz-else else
+              plz-finally finally)
+        (when body
+          (cl-typecase body
+            (string (process-send-string process body)
+                    (process-send-eof process))
+            (buffer (with-current-buffer body
+                      (process-send-region process (point-min) (point-max))
+                      (process-send-eof process)))))
         process))))
 
 (cl-defun plz--curl-sync (_method url &key headers connect-timeout
@@ -395,12 +497,13 @@ If PROCESS-OR-BUFFER if a process, uses its buffer; if a buffer,
 uses it.  STATUS should be the process's event string (see info
 node `(elisp) Sentinels').  Kills the buffer before returning."
   ;; Inspired by and some code copied from `elfeed-curl--sentinel'.
-  (let ((buffer (cl-etypecase process-or-buffer
-                  (process (process-buffer process-or-buffer))
-                  (buffer process-or-buffer))))
+  (let* ((buffer (cl-etypecase process-or-buffer
+                   (process (process-buffer process-or-buffer))
+                   (buffer process-or-buffer)))
+         (finally (buffer-local-value 'plz-finally buffer)))
     (unwind-protect
         (with-current-buffer buffer
-          (pcase status
+          (pcase-exhaustive status
             ((or 0 "finished\n")
              ;; Curl exited normally: check HTTP status code.
              (pcase (plz--http-status)
@@ -420,7 +523,16 @@ node `(elisp) Sentinels').  Kills the buffer before returning."
                     (err (make-plz-error :curl-error (cons curl-exit-code curl-error-message))))
                (pcase-exhaustive plz-else
                  (`nil (signal 'plz-curl-error err))
+                 ((pred functionp) (funcall plz-else err)))))
+
+            ("killed\n"
+             ;; Curl process killed.
+             (let ((err (make-plz-error :message "curl process killed")))
+               (pcase-exhaustive plz-else
+                 (`nil (signal 'plz-curl-error err))
                  ((pred functionp) (funcall plz-else err)))))))
+      (when finally
+        (funcall finally))
       (kill-buffer buffer))))
 
 ;;;;;; HTTP Responses

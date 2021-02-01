@@ -546,7 +546,7 @@
 
 ;;; Code:
 
-(require 'cl)
+(require 'cl-lib)
 (require 'widget)
 (require 'wid-edit)
 
@@ -1365,7 +1365,7 @@ name."
          (fmt (concat slug "_%d"))
          (counter 1)
          (file (deft-absolute-filename slug)))
-    (while (or (file-exists-p file) (get-file-buffer file))
+    (while (or (file-exists-p file) (get-file-buffer (file-truename file)))
       (setq counter (1+ counter))
       (setq slug (format fmt counter))
       (setq file (deft-absolute-filename slug)))
@@ -1373,9 +1373,9 @@ name."
 
 (defun deft-update-visiting-buffers (old new)
   "Rename visited file of buffers visiting file OLD to NEW."
-  (let ((buffer (get-file-buffer old)))
+  (let ((buffer (get-file-buffer (file-truename old))))
     (when buffer
-      (with-current-buffer (get-file-buffer old)
+      (with-current-buffer (get-file-buffer (file-truename old))
         (set-visited-file-name new nil t)
         (hack-local-variables)))))
 
@@ -1384,7 +1384,7 @@ name."
 When OTHER is non-nil, open the file in another window.  When
 OTHER and SWITCH are both non-nil, switch to the other window.
 FILE must be a relative or absolute path, with extension."
-  (let ((buffer (find-file-noselect file)))
+  (let ((buffer (find-file-noselect (file-truename file))))
     (with-current-buffer buffer
       (hack-local-variables)
       (when deft-filter-regexp
@@ -1454,7 +1454,7 @@ SLUG is the short file name, without a path or a file extension."
       (deft-cache-update-file file)
       (deft-refresh-filter)
       (deft-open-file file)
-      (with-current-buffer (get-file-buffer file)
+      (with-current-buffer (get-file-buffer (file-truename file))
         (goto-char (point-max))))))
 
 ;;;###autoload
@@ -1496,7 +1496,7 @@ proceeding."
     (when filename
       (when (y-or-n-p
              (concat "Delete file " (file-name-nondirectory filename) "? "))
-        (let ((buffer (get-file-buffer filename)))
+        (let ((buffer (get-file-buffer (file-truename filename))))
           (when buffer (kill-buffer buffer)))
         (delete-file filename)
         (delq filename deft-current-files)
@@ -1574,7 +1574,7 @@ all elements."
       (when title (insert title))
       (when contents (insert contents)))
     (if batch
-        (if (every (lambda (filter)
+        (if (cl-every (lambda (filter)
                      (goto-char (point-min))
                      (deft-search-forward filter))
                    deft-filter-regexp)
@@ -1857,7 +1857,6 @@ Turning on `deft-mode' runs the hook `deft-mode-hook'.
 (provide 'deft)
 
 ;; Local Variables:
-;; byte-compile-warnings: (not cl-functions)
 ;; indent-tabs-mode: nil
 ;; End:
 

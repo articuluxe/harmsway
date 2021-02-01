@@ -64,7 +64,7 @@
     `(vertical-border ((t (:foreground ,my-contrast))))
     `(scroll-bar ((t (:background ,my-visited :foreground ,my-shadow))))
     `(hl-line ((t (:background ,my-contrast))))
-    
+
     ;; line numbers
     ;; ========================================
     `(linum ((t (:foreground ,my-deepcontrast))))
@@ -109,7 +109,7 @@
 
     ;; parens / smart-parens
     ;; ========================================
-    `(show-paren-match ((t (:background ,my-shadow :weight bold))))
+    `(show-paren-match ((t (:background ,my-shadow :foreground ,my-pop :weight bold))))
     `(show-paren-mismatch ((t (:background ,my-warning :weight bold))))
     `(sp-show-pair-match-face ((t (:background ,my-shadow :weight bold))))
     `(sp-show-pair-mismatch-face ((t (:background ,my-warning :weight bold))))
@@ -179,7 +179,7 @@
     `(org-level-7 ((t  :foreground ,my-hicontrast )))
     `(org-link ((t (:foreground ,my-active :underline t ))))
     `(org-table ((t :family "Ubuntu Mono")))
-    
+
     ;; Speedbar
     ;; =======================================
     `(speedbar-directory-face ((t :family "Ubuntu Mono" :foreground ,my-contrast t)))
@@ -188,7 +188,7 @@
     `(speedbar-highlight-face ((t :foreground ,my-pop )))
     `(speedbar- ((t :foreground ,my-active )))
     `(speedbar-button-face ((t :foreground ,my-highlight )))
-    
+
 
 
 ;; The End

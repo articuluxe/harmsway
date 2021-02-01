@@ -52,7 +52,7 @@
       (bg0               "#111111")
       (bg1               "#1e1e1e") ; default bg
       (bg2               "#252526")
-      (bg3               "#313131")
+      (bg3               "#333333")
       (bg4               "#4b474c")
       (bg-hl             "#264f78")
       (vc-r              "#a41511")
@@ -115,19 +115,20 @@
    `(font-lock-regexp-grouping-backslash      ((,class (:foreground ,ms-lightorange))))
    `(font-lock-regexp-grouping-construct      ((,class (:foreground ,ms-lightorange))))
 
-   `(region                                   ((,class (:background ,bg-hl :extend nil))))
-   `(highlight                                ((,class (:foreground ,fg3 :background ,bg3))))
+   `(region                                   ((,class (:background ,bg-hl :distant-foreground ,fg0 :extend nil))))
+   `(secondary-selection                      ((,class (:inherit region))))
+   `(highlight                                ((,class (:foreground "#4db2ff" :underline t)))) ; link hover
    `(hl-line                                  ((,class (:background ,bg3))))
    `(fringe                                   ((,class (:background ,bg1 :foreground ,fg4))))
    `(cursor                                   ((,class (:background ,fg1))))
    `(show-paren-match-face                    ((,class (:background ,warning))))
    `(show-paren-match                         ((t (:foreground ,fg3 :background ,bg4 :bold t))))
    `(show-paren-mismatch                      ((t (:background ,warning))))
-   `(isearch                                  ((,class (:bold nil :foreground ,accent :background ,bg4))))
+   `(isearch                                  ((,class (:background "#613214"))))
    `(vertical-border                          ((,class (:foreground ,bg3))))
    `(minibuffer-prompt                        ((,class (:foreground ,ms-bluegreen :weight normal))))
    `(default-italic                           ((,class (:italic t))))
-   `(link                                     ((,class (:foreground ,ms-blue :underline t))))
+   `(link                                     ((,class (:foreground "#3794ff"))))
    `(error                                    ((,class (:foreground ,ms-orange))))
    `(warning                                  ((,class (:foreground ,ms-magenta))))
    `(success                                  ((,class (:foreground ,ms-bluegreen))))
@@ -149,8 +150,8 @@
    `(company-tooltip-common                   ((t (:foreground ,ms-blue :bold t))))
    `(company-tooltip-selection                ((t (:background ,bg-hl))))
    `(company-tooltip-annotation               ((t (:foreground ,doc-alt)))) ; parameter hints etc.
+   `(company-template-field                   ((t (:inherit region))))
 
-   `(org-document-title                       ((,class (:foreground ,type :height 1.2 :bold t))))
    `(org-level-1                              ((,class (:bold nil :foreground ,ms-bluegreen :height 1.1))))
    `(org-level-2                              ((,class (:bold nil :foreground ,ms-lightblue))))
    `(org-level-3                              ((,class (:bold nil :foreground ,ms-blue))))
@@ -176,7 +177,9 @@
    `(org-scheduled-today                      ((,class (:foreground ,func :weight normal :height 1.2))))
    `(org-ellipsis                             ((,class (:foreground ,builtin))))
    `(org-verbatim                             ((,class (:foreground ,fg4))))
-   `(org-document-info-keyword                ((,class (:foreground ,ms-green))))
+   `(org-document-title                       ((,class (:foreground ,type :height 1.2 :bold t)))) ; title
+   `(org-document-info                        ((,class (:foreground ,ms-yellow)))) ; author, date etc.
+   `(org-document-info-keyword                ((,class (:foreground ,ms-green))))  ; "#+Title", "#+Date" etc.
    `(org-sexp-date                            ((,class (:foreground ,fg4))))
    `(org-table                                ((,class (:foreground ,fg2 :background ,bg3))))
 
@@ -232,7 +235,7 @@
 
    `(slime-repl-inputed-output-face           ((,class (:foreground ,type))))
    `(trailing-whitespace                      ((,class :foreground nil :background ,warning)))
-   `(lazy-highlight                           ((,class (:foreground ,fg2 :background ,bg3))))
+   `(lazy-highlight                           ((,class (:background "#613214"))))
 
    `(undo-tree-visualizer-current-face        ((,class :foreground ,builtin)))
    `(undo-tree-visualizer-default-face        ((,class :foreground ,fg2)))
@@ -316,6 +319,8 @@
    `(magit-signature-revoked                  ((t (:foreground ,ms-magenta))))
    `(magit-signature-untrusted                ((t (:foreground ,ms-bluegreen))))
    `(magit-tag                                ((t (:foreground ,ms-yellow))))
+
+   `(git-commit-summary                       ((t (:inherit default)))) ; magit commit message face
 
    `(term                                     ((,class (:foreground ,fg1 :background ,bg1))))
    `(term-color-black                         ((,class (:foreground ,bg3 :background ,bg3))))

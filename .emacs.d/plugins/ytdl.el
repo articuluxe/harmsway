@@ -5,7 +5,7 @@
 ;; Author: Arnaud Hoffmann <tuedachu@gmail.com>
 ;; Maintainer: Arnaud Hoffmann <tuedachu@gmail.com>
 ;; URL: https://gitlab.com/tuedachu/ytdl
-;; Version: 1.3.4
+;; Version: 1.3.5
 ;; Package-Requires: ((emacs "26.1") (async "1.9.4") (transient "0.2.0") (dash "2.17.0"))
 ;; Keywords: comm, emulations, multimedia
 
@@ -59,8 +59,12 @@
   :group 'external)
 
 (defvar ytdl-version
-  "1.3.4"
+  "1.3.5"
   "Version of ytdl.")
+
+(defcustom ytdl-command "youtube-dl"
+  "The youtube-dl program."
+  :type 'string)
 
 (defcustom ytdl-music-folder
   nil
@@ -82,11 +86,11 @@
 
 (defcustom ytdl-always-query-default-filename
   'never
-  "Whether to always query default-filename to ytdl.
+  "Whether to always query default filename.
 
- Values can be:
-- 'never: never query default filename
-- 'yes-confirm: always query but ask confirmation to user
+Values can be:
+- 'never: never query default filename,
+- 'yes-confirm: always query but ask confirmation to user,
 - 'yes: always query and use the default filename without confirmation."
   :group 'ytdl
   :type 'boolean)
@@ -96,21 +100,13 @@
   "mpv"
   "Media player to use to open videos.
 
-Default is 'mpv'.
 Used by `ytdl-download-open'."
-  :group 'ytdl
-  :type '(string))
-
-(defcustom ytdl-message-start
-  "[ytdl] "
-  "String that starts all mini-buffer messages from `ytdl'.
-Default value is '[ytdl] '."
   :group 'ytdl
   :type '(string))
 
 (defcustom ytdl-mode-line
   t
-  "Show `ytdl' information in EMACS mode line."
+  "Show `ytdl' information in Emacs mode line."
   :group 'ytdl
   :type 'boolean)
 
@@ -239,20 +235,22 @@ Keys are UUID.
   "List of marked items.")
 
 ;; Functions
-(defun ytdl--message (msg)
-  "Diplay MSG starting with `ytdl-message-start'."
-  (message (concat ytdl-message-start
-                   msg)))
+(defun ytdl--concat (&rest sequences)
+  "Like `concat' but prefix the result with this package name."
+  (apply 'concat "[ytdl] " sequences))
 
+(defun ytdl--message (&rest sequences)
+  "Like `message' but prefixed with this package name."
+  (message (apply 'ytdl--concat sequences)))
 
 (defun ytdl--youtube-dl-missing-p ()
   "Test whether youtube-dl is installed.
 
 Returns nil if youtube-dl is missing. Else, returns t."
-  (not (executable-find "youtube-dl")))
+  (not (executable-find ytdl-command)))
 
 
-(defun ytdl--eval-mode-line-string(increment)
+(defun ytdl--eval-mode-line-string (increment)
   "Evaluate `ytdl' global mode string.
 
 - Increment (or decrement) `ytdl--download-in-progress' based on
@@ -286,13 +284,13 @@ INCREMENT value.
   "Add new field in the list of download types `ytdl-download-types'.
 
 Add element '(FIELD-NAME KEYBOARD-SHORTCUT PATH-TO-FOLDER
-                           EXTRA-ARGS) to list ofdownload types.
+                           EXTRA-ARGS) to list of download types.
 
-NOTE that the PATH-TO-FOLDER and EXTRA-ARGS can be symbols."
+Note that the PATH-TO-FOLDER and EXTRA-ARGS can be symbols."
   (add-to-list 'ytdl-download-types `(,field-name ,keyboard-shortcut ,path-to-folder ,extra-args)))
 
 
-(defun ytdl--run-ytdl-eshell(url destination-folder filename &optional extra-ytdl-args)
+(defun ytdl--run-ytdl-eshell (url destination-folder filename &optional extra-ytdl-args)
   "Run ytdl in a new eshell buffer.
 
 URL is the url of the video to download.  DESTINATION-FOLDER is
@@ -311,7 +309,7 @@ This opration is asynchronous."
     (eshell-interrupt-process)
     (insert (concat "cd "
                     (shell-quote-argument destination-folder)
-                    " && youtube-dl "
+                    " && " ytdl-command " "
                     (shell-quote-argument url)
                     " -o "
                     (shell-quote-argument filename)
@@ -325,7 +323,7 @@ This opration is asynchronous."
 
 
 (defun ytdl--get-default-filename (url)
-  "Get default filename from webserver.
+  "Get default filename from web server.
 
 Query the default-filename of URL using '--get-filename' argument
 of ytdl."
@@ -333,7 +331,7 @@ of ytdl."
              'never)
       nil
     (with-temp-buffer
-      (call-process "youtube-dl" nil t nil
+      (call-process ytdl-command nil t nil
                     "--get-filename"
                     "--restrict-filenames"
                     "--" url )
@@ -350,7 +348,7 @@ of ytdl."
                                                                   (1- (point))))))))
 
 
-(defun ytdl--get-download-type()
+(defun ytdl--get-download-type ()
   "Query download type in mini-buffer.
 
 User can choose candidates from the elements of
@@ -368,7 +366,7 @@ Returns (download-type destination-folder extra-args)."
                                                       ""))
                                                   ytdl-download-types))
                        (read-char-choice (concat (propertize "Destination folder:" 'face 'default)
-                                                 (mapconcat (lambda(x)
+                                                 (mapconcat (lambda (x)
                                                               (when (ytdl--eval-field (nth 2 x))
                                                                 (let ((destination (nth 0 x))
                                                                       (letter-shortcut (ytdl--eval-field (nth 1 x))))
@@ -379,12 +377,12 @@ Returns (download-type destination-folder extra-args)."
                                                                           "]"))))
                                                             ytdl-download-types
                                                             ""))
-                                         (mapcar (lambda(x)
+                                         (mapcar (lambda (x)
                                                    (when (ytdl--eval-field (nth 2 x))
-                                                     (aref (ytdl--eval-field(nth 1 x)) 0)))
+                                                     (aref (ytdl--eval-field (nth 1 x)) 0)))
                                                  ytdl-download-types)))))
 
-    (mapcan (lambda(x)
+    (mapcan (lambda (x)
               (when (if use-completing-read?
                         (string= (nth 0 x) user-input)
                       (= (aref (ytdl--eval-field (nth 1 x)) 0) user-input))
@@ -407,7 +405,7 @@ value of the symbol."
 
 Test whether each element is a symbol.  If it is a symbol,
 returns the value of the symbol."
-  (mapcar (lambda(arg)
+  (mapcar (lambda (arg)
             (ytdl--eval-field arg))
           list))
 
@@ -423,8 +421,7 @@ Returns a valid string:
 - no '/' in the filename
 - The filename does not exist yet in DESTINATION-FOLDER."
 
-  (let* ((prompt (concat ytdl-message-start
-                         "Filename [no extension]: "))
+  (let* ((prompt (ytdl--concat "Filename [no extension]: "))
          (default-filename (ytdl--get-default-filename url))
          (filename (or (when (equal ytdl-always-query-default-filename
                                     'yes)
@@ -441,10 +438,10 @@ Returns a valid string:
                                             0
                                             (cl-search "."
                                                        filename-completed)))))))
-      (minibuffer-message (concat ytdl-message-start
-                                  (if (cl-search "/" filename)
-                                      "Filename cannot contain '/'!"
-                                    "Filename already exist in the destination folder (eventually with a different extension)!")))
+      (minibuffer-message (ytdl--concat
+                           (if (cl-search "/" filename)
+                               "Filename cannot contain '/'!"
+                             "Filename already exist in the destination folder (eventually with a different extension)!")))
       (setq filename (read-from-minibuffer prompt
                                            default-filename)))
     (setq filename (concat destination-folder
@@ -467,8 +464,7 @@ creates DESTINATION-FOLDER and returns t. Else, returns nil."
         (progn
           (make-directory destination-folder)
           t)
-      (minibuffer-message (concat ytdl-message-start
-                                  "Operation aborted...")))))
+      (minibuffer-message (ytdl--concat "Operation aborted...")))))
 
 
 (defun ytdl--open-file-in-media-player (filename)
@@ -482,19 +478,15 @@ FILENAME can be a string (i.e. a single file) or a list of strings."
                                            (shell-quote-argument file))
                                          filename
                                          " ")))
-    (if (not ytdl-media-player)
-        (minibuffer-message (concat ytdl-message-start
-                                    "ERROR: No media player is set up. See `ytdl-media-player'."))
-      (if (not (executable-find ytdl-media-player))
-          (minibuffer-message (concat ytdl-message-start
-                                      "ERROR: Program "
-                                      ytdl-media-player
-                                      " cannot be found. Operation aborted."))
-        (start-process-shell-command ytdl-media-player
-                                     nil
-                                     (concat ytdl-media-player
-                                             " "
-                                             media-player-args))))))
+    (unless ytdl-media-player
+      (error "No media player is set up. See `ytdl-media-player'."))
+    (unless (executable-find ytdl-media-player)
+      (error "Program %S cannot be found." ytdl-media-player))
+    (start-process-shell-command ytdl-media-player
+                                 nil
+                                 (concat ytdl-media-player
+                                         " "
+                                         media-player-args))))
 
 
 (defun ytdl--download-async (url filename extra-ytdl-args &optional finish-function dl-type)
@@ -584,8 +576,7 @@ UUID is the key of the list item in `ytdl--download-list'."
                                    (file-attributes
                                     filename))))
   (ytdl--eval-mode-line-string -1)
-  (ytdl--message (concat "Video downloaded: "
-                         filename)))
+  (ytdl--message "Video downloaded: " filename))
 
 
 (defun ytdl--get-args (&optional no-filename)
@@ -593,8 +584,7 @@ UUID is the key of the list item in `ytdl--download-list'."
 
 NO-FILENAME is non-nil, then don't query the user for the
 filename."
-  (let* ((url (read-from-minibuffer (concat ytdl-message-start
-                                            "URL: ")
+  (let* ((url (read-from-minibuffer (ytdl--concat "URL: ")
                                     (or (thing-at-point 'url t)
                                         (current-kill 0))))
          (dl-type (ytdl--get-download-type))
@@ -620,70 +610,67 @@ folder location.  Query the download type and use the associated
 destination folder and extra arguments, see
 `ytdl-add-field-in-download-type-list'."
   (interactive)
-  (if (ytdl--youtube-dl-missing-p)
-      (minibuffer-message (concat ytdl-message-start
-                                  "ERROR: youtube-dl is not installed."))
-    (let* ((out (ytdl--get-args))
-           (url (nth 0 out))
-           (filename (nth 1 out))
-           (extra-ytdl-args (nth 2 out)))
-      (ytdl--run-ytdl-eshell url
-                             (file-name-directory filename)
-                             (file-name-nondirectory filename)
-                             extra-ytdl-args))))
+  (when (ytdl--youtube-dl-missing-p)
+    (error "youtube-dl is not installed."))
+  (let* ((out (ytdl--get-args))
+         (url (nth 0 out))
+         (filename (nth 1 out))
+         (extra-ytdl-args (nth 2 out)))
+    (ytdl--run-ytdl-eshell url
+                           (file-name-directory filename)
+                           (file-name-nondirectory filename)
+                           extra-ytdl-args)))
 
 
 ;;;###autoload
 (defun ytdl-download ()
   "Download asynchronously file from a web server."
   (interactive)
-  (if (ytdl--youtube-dl-missing-p)
-      (minibuffer-message (concat ytdl-message-start
-                                  "ERROR: youtube-dl is not installed."))
-    (let* ((out (ytdl--get-args))
-           (url (nth 0 out))
-           (filename (nth 1 out))
-           (extra-ytdl-args (nth 2 out))
-           (dl-type-name (nth 3 out)))
-      (ytdl--download-async url
-                            filename
-                            extra-ytdl-args
-                            nil
-                            dl-type-name))))
+  (when (ytdl--youtube-dl-missing-p)
+    (error "youtube-dl is not installed."))
+  (let* ((out (ytdl--get-args))
+         (url (nth 0 out))
+         (filename (nth 1 out))
+         (extra-ytdl-args (nth 2 out))
+         (dl-type-name (nth 3 out)))
+    (ytdl--download-async url
+                          filename
+                          extra-ytdl-args
+                          nil
+                          dl-type-name)))
 
 
 ;;;###autoload
 (defun ytdl-download-playlist ()
   "Download asynchronously playlist from a web server."
   (interactive)
-  (if (ytdl--youtube-dl-missing-p)
-      (minibuffer-message (concat ytdl-message-start
-                                  "ERROR: youtube-dl is not installed."))
-    (let* ( (out (ytdl--get-args t))
-            (url (nth 0 out))
-            (folder-path (nth 1 out))
-            (extra-ytdl-args (nth 2 out))
-            (dl-type-name (nth 3 out)))
-      (with-temp-buffer
-        (call-process "youtube-dl" nil t nil
-                      "--dump-json" "--flat-playlist"
-                      url)
-        (goto-char (point-min))
-        (if (search-forward-regexp "^ERROR" nil t)
-            (progn
-              (beginning-of-line)
-              (error (buffer-substring-no-properties (line-beginning-position)
-                                                     (line-end-position))))
-          (cl-loop with json-object-type = 'plist
-                   for index upfrom 1
-                   for video = (ignore-errors (json-read))
-                   while video
-                   collect (ytdl--download-async (plist-get video :id)
-                                                 (concat folder-path
-                                                         (replace-regexp-in-string "/\\|\\." "-" (plist-get video :title)))
-                                                 extra-ytdl-args
-                                                 nil
-                                                 dl-type-name)))))))
+  (when (ytdl--youtube-dl-missing-p)
+    (error "youtube-dl is not installed."))
+  (let* ((out (ytdl--get-args t))
+         (url (nth 0 out))
+         (folder-path (nth 1 out))
+         (extra-ytdl-args (nth 2 out))
+         (dl-type-name (nth 3 out)))
+    (with-temp-buffer
+      (call-process ytdl-command nil t nil
+                    "--dump-json" "--flat-playlist"
+                    url)
+      (goto-char (point-min))
+      (if (search-forward-regexp "^ERROR" nil t)
+          (progn
+            (beginning-of-line)
+            (error (buffer-substring-no-properties (line-beginning-position)
+                                                   (line-end-position))))
+        (cl-loop with json-object-type = 'plist
+                 for index upfrom 1
+                 for video = (ignore-errors (json-read))
+                 while video
+                 collect (ytdl--download-async (plist-get video :id)
+                                               (concat folder-path
+                                                       (replace-regexp-in-string "/\\|\\." "-" (plist-get video :title)))
+                                               extra-ytdl-args
+                                               nil
+                                               dl-type-name))))))
 
 
 ;;;###autoload
@@ -691,23 +678,22 @@ destination folder and extra arguments, see
   "Download file from a web server using and open it.
 
 If URL is given as argument, then download file from URL.  Else
-download the file from the url stored in `current-ring'.
+download the file from the URL stored in `current-ring'.
 
 The file is opened with `ytdl-media-player'."
   (interactive)
-  (if (ytdl--youtube-dl-missing-p)
-      (minibuffer-message (concat ytdl-message-start
-                                  "ERROR: youtube-dl is not installed."))
-    (let* ((out (ytdl--get-args))
-           (url (nth 0 out))
-           (filename (nth 1 out))
-           (extra-ytdl-args (nth 2 out))
-           (dl-type (nth 3 out)))
-      (ytdl--download-async url
-                            filename
-                            extra-ytdl-args
-                            'ytdl--open-file-in-media-player
-                            dl-type))))
+  (when (ytdl--youtube-dl-missing-p)
+    (error "youtube-dl is not installed."))
+  (let* ((out (ytdl--get-args))
+         (url (nth 0 out))
+         (filename (nth 1 out))
+         (extra-ytdl-args (nth 2 out))
+         (dl-type (nth 3 out)))
+    (ytdl--download-async url
+                          filename
+                          extra-ytdl-args
+                          'ytdl--open-file-in-media-player
+                          dl-type)))
 
 
 ;;;###autoload
@@ -747,7 +733,7 @@ The last downloaded file is stored in
 (defun ytdl--uuid (url)
   "Generate a UUID using URL.
 
-UUID consist of URL and a time stamp '%Y-%m-%d-%T'."
+UUID consist of URL and a timestamp '%Y-%m-%d-%T'."
   (concat url
           (url-encode-url (format-time-string "%Y-%m-%d-%T"))))
 
@@ -770,7 +756,7 @@ UUID consist of URL and a time stamp '%Y-%m-%d-%T'."
   (add-hook 'tabulated-list-revert-hook #'ytdl--refresh-list nil t))
 
 
-(defun ytdl--format-item-list()
+(defun ytdl--format-item-list ()
   "Format the download list for `tabulated-list-mode'."
   (let ((item-list '()))
     (maphash (lambda (key item)
@@ -816,7 +802,7 @@ UUID consist of URL and a time stamp '%Y-%m-%d-%T'."
           (forward-line))))))
 
 
-(defun ytdl--get-item-object(&optional key)
+(defun ytdl--get-item-object (&optional key)
   "Get object of item at point.
 
 If KEY is provided then get the object with that key in
@@ -832,22 +818,22 @@ If KEY is provided then get the object with that key in
   "Delete KEY from `ytdl--download-list'.
 
 If DELETE-FILE? is non-nil then delete associated file on the
-disk. Else delete item from the download list only.
+disk.  Else delete item from the download list only.
 
 If NO-CONFIRMATION is nil, then ask user for
-confirmation. Else perform the operation directly."
+confirmation.  Else perform the operation directly."
 
   (let* ((item (ytdl--get-item-object key))
          (status (ytdl--list-entry-status item)))
     (when (or no-confirmation
-              (y-or-n-p (concat ytdl-message-start
-                                (if (string= status "downloading")
-                                    "Interrupt this download"
-                                  "Delete this item")
-                                "?"
-                                (when (and delete-file?
-                                           (string= status "downloaded"))
-                                  " The associated file will be deleted."))))
+              (y-or-n-p (ytdl--concat
+                         (if (string= status "downloading")
+                             "Interrupt this download"
+                           "Delete this item")
+                         "?"
+                         (when (and delete-file?
+                                    (string= status "downloaded"))
+                           " The associated file will be deleted."))))
       (when (string= status "downloading")
         (interrupt-process (ytdl--list-entry-process-id item))
         (ytdl--eval-mode-line-string -1))
@@ -872,10 +858,10 @@ disk.  See `ytdl--delete-item-and-file-at-point' for that feature."
       (let ((count (count-lines
                     (region-beginning)
                     (region-end))))
-        (when (y-or-n-p (concat ytdl-message-start
-                                "Remove those "
-                                (int-to-string count)
-                                " items?"))
+        (when (y-or-n-p (ytdl--concat
+                         "Remove those "
+                         (int-to-string count)
+                         " items?"))
           (save-mark-and-excursion
             (goto-char (region-beginning))
             (dotimes (_ count)
@@ -894,11 +880,11 @@ the process."
       (let ((count (count-lines
                     (region-beginning)
                     (region-end))))
-        (when (y-or-n-p (concat ytdl-message-start
-                                "Remove those "
-                                (int-to-string count)
-                                " items?"
-                                " The associated files will be deleted as well."))
+        (when (y-or-n-p (ytdl--concat
+                         "Remove those "
+                         (int-to-string count)
+                         " items?"
+                         " The associated files will be deleted as well."))
           (save-mark-and-excursion
             (goto-char (region-beginning))
             (dotimes (_ count)
@@ -911,10 +897,10 @@ the process."
   "Delete marked item(s) from download list."
   (interactive)
   (if  ytdl--marked-items
-      (when (y-or-n-p (concat ytdl-message-start
-                              "Remove those "
-                              (int-to-string (length ytdl--marked-items))
-                              " item(s)?"))
+      (when (y-or-n-p (ytdl--concat
+                       "Remove those "
+                       (int-to-string (length ytdl--marked-items))
+                       " item(s)?"))
         (dolist (key ytdl--marked-items)
           (ytdl--delete-item-from-dl-list key nil t))
         (ytdl--reset-marked-item-list))
@@ -925,18 +911,18 @@ the process."
   "Delete marked item(s) from download list and associated file(s)."
   (interactive)
   (if ytdl--marked-items
-      (when (y-or-n-p (concat ytdl-message-start
-                              "Remove those "
-                              (int-to-string (length ytdl--marked-items))
-                              " item(s)?"
-                              " The associated files will be deleted as well."))
+      (when (y-or-n-p (ytdl--concat
+                       "Remove those "
+                       (int-to-string (length ytdl--marked-items))
+                       " item(s)?"
+                       " The associated files will be deleted as well."))
         (dolist (key ytdl--marked-items)
           (ytdl--delete-item-from-dl-list key t t))
         (ytdl--reset-marked-item-list))
     (ytdl--message "No marked item.")))
 
 
-(defun ytdl--open-item-at-point()
+(defun ytdl--open-item-at-point ()
   "Open item at point in media player.
 
 To configure the media player for `ytdl', see
@@ -950,7 +936,7 @@ To configure the media player for `ytdl', see
       (ytdl--open-file-in-media-player (ytdl--list-entry-path item)))))
 
 
-(defun ytdl--open-marked-items()
+(defun ytdl--open-marked-items ()
   "Open marked items.
 
 To configure the media player for `ytdl', see
@@ -977,11 +963,11 @@ To configure the media player for `ytdl', see
                       "downloaded"))
         (ytdl--message "File is not downloaded yet...")
       (let ((path (ytdl--list-entry-path item)))
-        (ytdl--message (concat "File path is: " path ". Added to kill-ring."))
+        (ytdl--message "File path is: " path ". Added to kill-ring.")
         (kill-new path)))))
 
 
-(defun ytdl--show-error()
+(defun ytdl--show-error ()
   "Show eventual errors for item at point."
   (interactive)
   (let ((item (ytdl--get-item-object)))
@@ -1004,9 +990,8 @@ If KEY is non-nil, then re-launch the download of KEY."
          (item (ytdl--get-item-object key))
          (status (ytdl--list-entry-status item)))
     (if (not (string= status "error"))
-        (ytdl--message (concat "Item at point is "
-                               status))
-      (let ((dl-type (mapcan (lambda(x)
+        (ytdl--message "Item at point is " status)
+      (let ((dl-type (mapcan (lambda (x)
                                (when (string= (nth 0 x)
                                               (ytdl--list-entry-type item))
                                  `(,(nth 0 x) ,(nth 2 x) ,(nth 3 x))))
@@ -1021,7 +1006,7 @@ If KEY is non-nil, then re-launch the download of KEY."
       (ytdl--delete-item-from-dl-list key nil t))))
 
 
-(defun ytdl--relaunch-all-errors()
+(defun ytdl--relaunch-all-errors ()
   "Relaunch all downloads with error."
   (interactive)
   (maphash (lambda (key item)
@@ -1109,9 +1094,9 @@ When region is active, mark all entries in region."
   "Mark all items matching a regular expression."
   (interactive)
   (ytdl--reset-marked-item-list)
-  (let ((regexp  (read-from-minibuffer (concat ytdl-message-start
-                                               "Regexp to match "
-                                               "(titles and download types will be matched): "))))
+  (let ((regexp  (read-from-minibuffer (ytdl--concat
+                                        "Regexp to match "
+                                        "(titles and download types will be matched): "))))
     (maphash (lambda (key item)
                (with-temp-buffer
                  (insert (concat (ytdl--list-entry-title item)
@@ -1127,8 +1112,7 @@ When region is active, mark all entries in region."
 (defun ytdl--clear-downloaded ()
   "Delete downloaded items from list."
   (interactive)
-  (when (y-or-n-p (concat ytdl-message-start
-                          "Clear the list of downloaded items?"))
+  (when (y-or-n-p (ytdl--concat "Clear the list of downloaded items?"))
     (maphash (lambda (key item)
                (when (string= (ytdl--list-entry-status item)
                               "downloaded")
@@ -1140,8 +1124,7 @@ When region is active, mark all entries in region."
 (defun ytdl--clear-list ()
   "Clear ytdl download list."
   (interactive)
-  (when (y-or-n-p (concat ytdl-message-start
-                          "Stop current downloads and clear the whole list?"))
+  (when (y-or-n-p (ytdl--concat "Stop current downloads and clear the whole list?"))
     (maphash (lambda (key _)
                (ytdl--delete-item-from-dl-list key nil t))
              ytdl--download-list)

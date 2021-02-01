@@ -30,6 +30,7 @@
 
 ;;; Code:
 
+(require 'lsp-ui-util)
 (require 'lsp-protocol)
 (require 'lsp-mode)
 (require 'flycheck nil 'noerror)
@@ -37,6 +38,11 @@
 (require 'seq)
 (require 'subr-x)
 (require 'face-remap)
+
+(defvar flycheck-display-errors-function)
+(declare-function flycheck-overlay-errors-in "ext:flycheck.el")
+(declare-function flycheck-error-format-message-and-id "ext:flycheck.el")
+(declare-function flycheck-error-level "ext:flycheck.el")
 
 (defgroup lsp-ui-sideline nil
   "Display information for the current line."
@@ -152,14 +158,15 @@ It is used to know when the window has changed of width.")
   :group 'lsp-ui-sideline)
 
 (defface lsp-ui-sideline-current-symbol
-  '((default
-      :foreground "white"
-      :weight ultra-bold
-      :box (:line-width -1 :color "white")
-      :height 0.99)
-    (((background light))
-     :foreground "dim gray"
-     :box (:line-width -1 :color "dim gray")))
+  '((((background light))
+     :foreground "black"
+     :weight ultra-bold
+     :box (:line-width -1 :color "black")
+     :height 0.99)
+    (t :foreground "white"
+       :weight ultra-bold
+       :box (:line-width -1 :color "white")
+       :height 0.99))
   "Face used to highlight the symbol on point."
   :group 'lsp-ui-sideline)
 
@@ -313,11 +320,10 @@ is set to t."
                (equal (cadr win-fringes) 0))
            2
          0))
-     (if (and (bound-and-true-p display-line-numbers-mode)
-              (< emacs-major-version 27))
+     (if (< emacs-major-version 27)
          ;; This was necessary with emacs < 27, recent versions take
          ;; into account the display-line width with :align-to
-         (+ 2 (line-number-display-width))
+         (lsp-ui-util-line-number-display-width)
        0)
      (if (or
           (bound-and-true-p whitespace-mode)
@@ -328,11 +334,10 @@ is set to t."
 (defun lsp-ui-sideline--window-width ()
   (- (min (window-text-width) (window-body-width))
      (lsp-ui-sideline--margin-width)
-     (or (and (bound-and-true-p display-line-numbers-mode)
-              (>= emacs-major-version 27)
+     (or (and (>= emacs-major-version 27)
               ;; We still need this number when calculating available space
               ;; even with emacs >= 27
-              (+ (line-number-display-width) 2))
+              (lsp-ui-util-line-number-display-width))
          0)))
 
 (defun lsp-ui-sideline--display-all-info (buffer list-infos tag bol eol)
@@ -364,6 +369,7 @@ is set to t."
           (overlay-put ov 'bounds bounds)
           (overlay-put ov 'current current)
           (overlay-put ov 'after-string final-string)
+          (overlay-put ov 'before-string " ")
           (overlay-put ov 'window (get-buffer-window))
           (overlay-put ov 'kind 'info)
           (overlay-put ov 'position (car pos-ov))
@@ -434,6 +440,7 @@ Push sideline overlays on `lsp-ui-sideline--ovs'."
               (setq offset (1+ (car (cdr pos-ov))))
               (overlay-put ov 'after-string string)
               (overlay-put ov 'kind 'diagnostics)
+              (overlay-put ov 'before-string " ")
               (overlay-put ov 'position (car pos-ov))
               (push ov lsp-ui-sideline--ovs))))))))
 
@@ -497,6 +504,7 @@ Push sideline overlays on `lsp-ui-sideline--ovs'."
               (ov (and pos-ov (make-overlay (car pos-ov) (car pos-ov)))))
         (when pos-ov
           (overlay-put ov 'after-string string)
+          (overlay-put ov 'before-string " ")
           (overlay-put ov 'kind 'actions)
           (overlay-put ov 'position (car pos-ov))
           (push ov lsp-ui-sideline--ovs))))))
@@ -595,13 +603,13 @@ from the language server."
                    "textDocument/hover"
                    (lsp-make-hover-params :text-document doc-id :position position)
                    (lambda (info)
-                     (setq current-index (1+ current-index))
+                     (cl-incf current-index)
                      (and info (push (list symbol bounds info) list-infos))
                      (when (or (= current-index length-symbols) (not lsp-ui-sideline-wait-for-all-symbols))
                        (lsp-ui-sideline--display-all-info buffer list-infos tag bol eol)))
                    :error-handler
                    (lambda (&rest _)
-                     (setq current-index (1+ current-index))
+                     (cl-incf current-index)
                      (when (or (= current-index length-symbols) (not lsp-ui-sideline-wait-for-all-symbols))
                        (lsp-ui-sideline--display-all-info buffer list-infos tag bol eol)))
                    :mode 'tick))))))))))
@@ -652,8 +660,7 @@ COMMAND is `company-pseudo-tooltip-frontend' parameter."
 This does not toggle display of flycheck diagnostics or code actions."
   (interactive)
   (when (bound-and-true-p lsp-ui-sideline-mode)
-    (setq lsp-ui-sideline-show-hover
-          (not lsp-ui-sideline-show-hover))
+    (setq lsp-ui-sideline-show-hover (not lsp-ui-sideline-show-hover))
     (lsp-ui-sideline--run (current-buffer))))
 
 (defun lsp-ui-sideline--diagnostics-changed ()
@@ -667,8 +674,7 @@ This does not toggle display of flycheck diagnostics or code actions."
 (defun lsp-ui-sideline--erase (&rest _)
   "Remove all sideline overlays and delete last tag."
   (when (bound-and-true-p lsp-ui-sideline-mode)
-    (ignore-errors
-      (lsp-ui-sideline--delete-ov))))
+    (ignore-errors (lsp-ui-sideline--delete-ov))))
 
 (define-minor-mode lsp-ui-sideline-mode
   "Minor mode for showing information for current line."

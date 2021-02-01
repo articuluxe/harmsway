@@ -41,8 +41,10 @@
       (red1    "#f2777a")
       (red2    "#bb6666")
       (red3    "#ab3737")
+      (red4    "#221111")
       (green1  "#66aa66")
       (green2  "#559955")
+      (green3  "#112211")
       (aqua1   "#55a9a9")
       (aqua2   "#1e8f8f")
       (purple1 "#997799")
@@ -247,6 +249,10 @@
    `(which-key-highlighted-command-face   ((,class (:foreground ,red1 :bold t))))
    `(which-key-local-map-description-face ((,class (:foreground ,blue1))))
 
+   ;; Flyspell
+   `(flyspell-incorrect ((,class (:underline (:color ,red3 :style wave)))))
+   `(flyspell-duplicate ((,class (:underline (:color ,orange2 :style wave)))))
+
    ;; Flycheck
    `(flycheck-info                     ((,class (:underline  ,green2))))
    `(flycheck-warning                  ((,class (:underline  ,yellow2))))
@@ -347,7 +353,8 @@
    `(neo-root-dir-face   ((,class (:foreground ,purple1 :bold t :underline t))))
 
    ;; treemacs
-   `(treemacs-root-face   ((,class (:foreground ,purple2 :bold t :underline t :overline t :height 1.2))))
+   `(treemacs-root-face       ((,class (:foreground ,purple2 :bold t :underline t :overline t :height 1.2))))
+   `(treemacs-help-title-face ((,class (:inherit font-lock-doc-face))))
 
    ;; Rust & Racer
    `(cargo-process--standard-face ((,class (:foreground ,blue1))))
@@ -520,6 +527,7 @@
    `(helm-ff-invalid-symlink          ((,class (:foreground ,aqua1   :underline (:style wave :color ,red1)))))
    `(helm-ff-prefix                   ((,class (:foreground ,purple1))))
    `(helm-ff-symlink                  ((,class (:foreground ,aqua1))))
+   `(helm-ff-file-extension           ((,class (:foreground ,green1))))
    `(helm-grep-cmd-line               ((,class (:foreground ,aqua1))))
    `(helm-grep-file                   ((,class (:foreground ,blue1))))
    `(helm-grep-finish                 ((,class (:foreground ,yellow2 :background ,bg2 :box (:color ,black2 :line-width -1) :bold t))))
@@ -630,8 +638,8 @@
    `(magit-tag                         ((,class (:foreground ,aqua1   :bold t))))
 
    ;; Diff
-   `(diff-refine-added   ((,class (:foreground ,green2 :background ,black1 :bold t))))
-   `(diff-refine-removed ((,class (:foreground ,red2   :background ,black1 :bold t))))
+   `(diff-refine-added   ((,class (:foreground ,green2 :background ,green3 :bold t))))
+   `(diff-refine-removed ((,class (:foreground ,red2   :background ,red4   :bold t))))
    `(diff-refine-changed ((,class (:foreground ,blue1  :background ,black1 :bold t))))
 
    ;; Git
@@ -675,8 +683,13 @@
    `(transient-value             ((,class (:foreground ,aqua1   :bold t))))
    `(transient-argument          ((,class (:foreground ,orange1 :bold t))))
    `(transient-unreachable-key   ((,class (:foreground ,grey1   :bold t))))
-   `(transient-unreachable       ((,class (:foreground ,grey1))))
    `(transient-active-infix      ((,class (:foreground ,green2  :bold t))))
+   `(transient-unreachable       ((,class (:foreground ,grey1))))
+   `(transient-teal              ((,class (:inherit hydra-face-teal))))
+   `(transient-pink              ((,class (:inherit hydra-face-pink))))
+   `(transient-amaranth          ((,class (:inherit hydra-face-amaranth))))
+   `(transient-blue              ((,class (:inherit hydra-face-blue))))
+   `(transient-red               ((,class (:inherit hydra-face-red))))
 
    `(transient-inacitve-argument ((,class (:foreground ,brown1  :background ,black2))))
    `(transient-inacitve-value    ((,class (:foreground ,orange1  :background ,black2))))
@@ -874,6 +887,13 @@
    `(gnus-header-content ((,class (:foreground ,brown1))))
    `(gnus-header-subject ((,class (:foreground ,green1))))
    `(gnus-button         ((,class (:foreground ,aqua2))))
+
+   ;; frog-menu
+   `(frog-menu-prompt-face              ((,class (:foreground ,green1 :bold t))))
+   `(frog-menu-candidates-face          ((,class (:foreground ,fg))))
+   `(frog-menu-actions-face             ((,class (:foreground ,purple1))))
+   `(frog-menu-action-keybinding-face   ((,class (:foreground ,blue1 :bold t))))
+   `(frog-menu-posframe-background-face ((,class (:background ,bg))))
 
    ;; mu4e
    `(mu4e-unread-face                     ((,class (:foreground ,blue1 :bold t))))

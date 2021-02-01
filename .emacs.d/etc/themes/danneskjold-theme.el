@@ -13,7 +13,8 @@
 (deftheme danneskjold
   "Amazing. Beautiful. Contrast.")
 
-(let ((c '((class color) (min-colors 89)))
+(let (;; (custom--inhibit-theme-enable nil)
+      (c '((class color) (min-colors 89)))
       (class '((class color) (min-colors 89)))
       (background     "#000000")
       (fg             "#ffffff")
@@ -119,6 +120,7 @@
      `(button ((,c (:foreground ,frost :underline t :weight normal))))
      `(link ((,c (:foreground ,frost :underline t))))
      `(menu ((,c (:foreground ,white :background ,ada-midnight))))
+     `(shadow ((,c (:foreground ,comment))))
 
      `(secondary-selection ((,c ())))
 
@@ -146,14 +148,16 @@
                          :weight normal))))
 
      ;; Mode-line
-     `(mode-line ((,c (:background ,black :foreground ,invisible))))
+     `(mode-line ((,c (:background ,black :foreground ,comment))))
      `(mode-line-inactive ((,c (:background ,black :foreground ,invisible))))
      `(mode-line-buffer-id ((,c (:foreground ,white))))
+     `(org-mode-line-clock ((,c (:foreground ,yellow))))
+     `(org-mode-line-clock-overrun ((,c (:foreground ,red))))
 
      `(compilation-error ((,c (:foreground ,red))))
-     `(compilation-line-number ((,c (:foreground ,yellow))))
-     `(compilation-column-number ((,c (:foreground ,green))))
-     `(compilation-warning ((,c :foreground "systemOrangeColor")))
+     `(compilation-line-number ((,c (:foreground ,green))))
+     `(compilation-column-number ((,c (:foreground ,blue))))
+     `(compilation-warning ((,c :foreground ,yellow)))
      `(compilation-info ((,c (:foreground ,diredcl))))
 
      ;; Linum
@@ -176,18 +180,6 @@
      ;; search
      `(isearch ((,c (:foreground ,black :background ,invisible))))
      `(lazy-highlight ((,c (:foreground ,black :background ,yellow))))
-
-     ;; Diff
-     ;; `(diff-header ((,c (:foreground ,yellow))))
-     ;; `(diff-file-header ((,c (:foreground ,yellow))))
-     ;; `(diff-indicator-removed ((,c (:foreground ,black))))
-     ;; `(diff-removed ((,c (:foreground ,red))))
-     ;; `(diff-added ((,c (:foreground ,green))))
-     ;; `(diff-indicator-added ((,c (:foreground ,black))))
-     ;; `(diff-refine-removed ((,c (:foreground ,red-forest))))
-     ;; `(diff-refine-added ((,c (:foreground ,summer-flower))))
-
-     ;; `(diff-context ((,c (:foreground ,comment))))
 
      ;; diff
      `(diff-added ((,class (:foreground ,green-dark))))
@@ -215,11 +207,11 @@
      `(diredp-date-time ((,class (:foreground ,yellow-bright))))
      `(diredp-deletion ((,class (:foreground ,red-bright :weight bold :slant italic))))
      `(diredp-deletion-file-name ((,class (:foreground ,red-bright :underline t))))
-     `(diredp-dir-heading ((,class (:foreground ,orange-bright :underline t :weight bold))))
+     `(diredp-dir-heading ((,class (:foreground ,red-bright))))
      `(diredp-dir-priv ((,class (:foreground ,magenta-bright :background nil))))
      `(diredp-exec-priv ((,class (:foreground ,green-bright :background nil))))
      `(diredp-executable-tag ((,class (:foreground ,green-bright :background nil))))
-     `(diredp-file-name ((,class (:foreground ,grey-bright1))))
+     `(diredp-file-name ((,class (:foreground ,white))))
      `(diredp-file-suffix ((,class (:foreground "coral"))))
      `(diredp-flag-mark ((,class (:foreground ,red-bright :weight bold))))
      `(diredp-flag-mark-line ((,class (:inherit highlight))))
@@ -235,9 +227,7 @@
      `(diredp-symlink ((,class (:foreground ,orange-bright))))
      `(diredp-write-priv ((,class (:foreground ,magenta-bright :background nil))))
      `(diredp-date-time ((,c (:foreground ,diredcl))))
-     `(diredp-dir-heading ((,c (:foreground ,red))))
      `(diredp-dir-name ((,c (:foreground "DeepSkyBlue1"))))
-     `(diredp-file-name ((,c (:foreground ,white))))
      `(diredp-ignored-file-name ((,c ())))
      `(diredp-compressed-file-suffix ((,c (:foreground ,orange))))
      `(diredp-rainbow-media-face ((,c (:foreground ,yellow))))
@@ -339,22 +329,22 @@
      `(org-code                     ((,c (:foreground ,orange))))
      `(org-column                   ((,c (:background ,black))))
      `(org-column-title             ((,c (:background ,black :foreground ,comment))))
-     `(org-verbatim                 ((,c (:foreground "#ffc" :family "Inconsolata LGC"))))
      `(org-formula                  ((,c (:foreground ,orange))))
      `(org-latex-and-related        ((,c (:foreground "#FAF9FF"))))
      `(org-list-dt                  ((,c (:foreground ,yellow))))
      `(org-footnote                 ((,c (:foreground ,orange))))
-     `(org-priority                 ((,c (:foreground ,red))))
-     `(org-drawer                 ((,c (:foreground ,orange))))
+     `(org-priority                 ((,c (:foreground ,white))))
+     `(org-drawer                   ((,c (:foreground ,orange))))
 
      `(org-date                     ((,c (:foreground "LightSteelBlue2" :underline "LightSteelBlue4"))))
      `(org-todo                     ((,c (:foreground ,yellow))))
      `(org-done                     ((,c (:foreground ,green))))
-     `(org-headline-done            ((,c (:foreground ,grey-.5 :strike-through t :bold nil))))
      `(org-special-keyword          ((,c (:foreground "#ffcc00"))))
      `(org-property-value          ((,c (:foreground ,white))))
      `(org-checkbox-statistics-todo ((,c (:inherit org-todo))))
      `(org-checkbox-statistics-done ((,c (:inherit org-done))))
+
+     `(org-headline-done ((,c (:foreground ,comment))))
 
      ;; jupyter
      `(jupyter-repl-traceback ((,c (:foreground ,orange))))
@@ -450,6 +440,7 @@
 
      ;; Popup
      `(popup-face ((,c (:foreground ,white :background ,ada-midnight))))
+     `(popup-tip-face ((,c (:foreground ,black :background ,yellow))))
      `(popup-menu-mouse-face ((,c (:foreground ,white :background ,sbt-midnight))))
      `(popup-menu-selection-face ((,c (:foreground ,white :background ,sbt-midnight))))
      `(flx-highlight-face ((,c (:underline ,red :background ,sbt-midnight :foreground ,white))))

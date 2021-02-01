@@ -1,9 +1,9 @@
 ;;; treemacs-icons-dired.el --- Treemacs icons for dired -*- lexical-binding: t -*-
 
-;; Copyright (C) 2020 Alexander Miller
+;; Copyright (C) 2021 Alexander Miller
 
 ;; Author: Alexander Miller <alexanderm@web.de>
-;; Package-Requires: ((treemacs "0.0") (emacs "25.2"))
+;; Package-Requires: ((treemacs "0.0") (emacs "26.1"))
 ;; Version: 0
 ;; Homepage: https://github.com/Alexander-Miller/treemacs
 
@@ -33,6 +33,9 @@
 (eval-when-compile
   (require 'treemacs-macros))
 
+(defvar treemacs-icons-dired--ranger-adjust nil)
+(with-eval-after-load 'ranger (setf treemacs-icons-dired--ranger-adjust t))
+
 (defvar-local treemacs-icons-dired-displayed nil
   "Flags whether icons have been added.")
 
@@ -56,7 +59,7 @@
     (treemacs-with-writable-buffer
      (save-excursion
        (goto-char pos)
-       (forward-line 2)
+       (forward-line (if treemacs-icons-dired--ranger-adjust 1 2))
        (treemacs-block
         (while (not (eobp))
           (if (dired-move-to-filename nil)
@@ -96,7 +99,8 @@ Will remove the killed subdir from `treemacs-icons-dired--covered-subdirs'."
 (defun treemacs-icons-dired--update-icon-selection ()
   "Highlight current icon, un-highlight `treemacs--last-highlight'.
 This will make sure the icons' background colours will align with hl-line mode."
-  (when (and hl-line-mode (eq major-mode 'dired-mode))
+  (when (or treemacs-icons-dired--ranger-adjust
+            (and (or hl-line-mode global-hl-line-mode) (eq major-mode 'dired-mode)))
     (condition-case e
         (progn
           (treemacs--evade-image)
@@ -124,9 +128,10 @@ This will make sure the icons' background colours will align with hl-line mode."
 ;;;###autoload
 (define-minor-mode treemacs-icons-dired-mode
   "Display treemacs icons for each file in a dired buffer."
-  :require 'treemacs-icons-dired
+  :require    'treemacs-icons-dired
   :init-value nil
   :global     t
+  :group      'treemacs
   (if treemacs-icons-dired-mode
       (progn
         (treemacs--setup-icon-background-colors)

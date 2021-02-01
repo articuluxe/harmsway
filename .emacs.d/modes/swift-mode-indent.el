@@ -1,15 +1,12 @@
 ;;; swift-mode-indent.el --- Major-mode for Apple's Swift programming language, indentation. -*- lexical-binding: t -*-
 
-;; Copyright (C) 2014-2020 taku0, Chris Barrett, Bozhidar Batsov, Arthur Evstifeev
+;; Copyright (C) 2014-2020 taku0, Chris Barrett, Bozhidar Batsov,
+;;                         Arthur Evstifeev
 
 ;; Authors: taku0 (http://github.com/taku0)
 ;;       Chris Barrett <chris.d.barrett@me.com>
 ;;       Bozhidar Batsov <bozhidar@batsov.com>
 ;;       Arthur Evstifeev <lod@pisem.net>
-;;
-;; Version: 8.0.2
-;; Package-Requires: ((emacs "24.4") (seq "2.3"))
-;; Keywords: languages swift
 
 ;; This file is not part of GNU Emacs.
 
@@ -689,7 +686,11 @@ declaration and its offset is `swift-mode:basic-offset'."
       (goto-char (swift-mode:token:start previous-token))
       (swift-mode:find-parent-and-align-with-next
        swift-mode:statement-parent-tokens
-       (- swift-mode:basic-offset swift-mode:switch-case-offset)))
+       (let ((relative-case-offset
+              (- swift-mode:basic-offset swift-mode:switch-case-offset)))
+         (if (<= relative-case-offset 0)
+             swift-mode:basic-offset
+           relative-case-offset))))
 
      ;; Before ; on the current line
      ((and next-is-on-current-line (eq next-type '\;))
@@ -920,7 +921,7 @@ This function is also used for close-curly-brace."
       (save-excursion
         (goto-char (swift-mode:token:end
                     (swift-mode:backward-sexps-until
-                     swift-mode:statement-parent-tokens)))
+                     (append swift-mode:statement-parent-tokens '(\( \[)))))
         (setq next-token (swift-mode:forward-token-or-list))
         (while (<= (point) pos)
           (cond
@@ -1811,7 +1812,7 @@ See `indent-new-comment-line' for SOFT."
      electric-indent-mode
      (= last-command-event ?\))
      (save-excursion (backward-char) (skip-syntax-backward " ") (bolp))
-     (= (swift-mode:chunk:start (swift-mode:chunk-after)) (1- (point))))
+     (eq (swift-mode:chunk:start (swift-mode:chunk-after)) (1- (point))))
     (indent-according-to-mode))
 
    ;; Indents electrically after newline inside strings and comments.

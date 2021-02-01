@@ -1,6 +1,6 @@
 ;;; treemacs.el --- A tree style file viewer package -*- lexical-binding: t -*-
 
-;; Copyright (C) 2020 Alexander Miller
+;; Copyright (C) 2021 Alexander Miller
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -51,6 +51,16 @@
 (with-eval-after-load 'indent-guide
   (when (boundp 'indent-guide-inhibit-modes)
     (push 'treemacs-mode indent-guide-inhibit-modes)))
+
+(with-eval-after-load 'ediff
+  (add-hook
+   'ediff-before-setup-hook
+   (defun treemacs--dont-diff-in-treemacs-window ()
+     "Select `next-window' before ediff's window setup.
+Treemacs is by default a side-window, meaning it'll throw an error if ediff trys
+to split it."
+     (when treemacs--in-this-buffer
+       (select-window (next-window))))))
 
 (with-eval-after-load 'persp-mode
   (defun treemacs--remove-treemacs-window-in-new-frames (persp-activated-for)

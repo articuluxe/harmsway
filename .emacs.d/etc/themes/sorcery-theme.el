@@ -47,7 +47,8 @@
   (c5 "#5f5f87")
   (c6 "#5Fafaf")
   (c7 "#666666")
-  (c8 "#222222")) (
+  (c8 "#222222")
+  (c9 "#999999")) (
 
   ;;; Face weights
   (bold                       (:weight 'bold))
@@ -133,7 +134,7 @@
   (font-lock-preprocessor-face               (:foreground fg))
   (font-lock-regexp-grouping-backslash       (:foreground fg))
   (font-lock-regexp-grouping-construct-face  (:foreground fg))
-  (font-lock-string-face                     (:foreground c7))
+  (font-lock-string-face                     (:foreground c9))
   (font-lock-reference-face                  (:foreground fg))
   (font-lock-type-face                       (:foreground fg))
   (font-lock-variable-name-face              (:foreground fg))
@@ -466,10 +467,10 @@
   (smerge-refined-removed (:foreground c1 :background c8))
   (smerge-upper           (:foreground c1 :background bg))
 
-  ;; ;; TODO Tab bar
-  ;; (tab-bar              (:foreground fg :background c8))
-  ;; (tab-bar-tab          (:foreground fg :background c8))
-  ;; (tab-bar-tab-inactive (:foreground c7 :background c8))
+  ;; TODO Tab bar
+  (tab-bar              (:foreground fg :background c8))
+  (tab-bar-tab          (:foreground fg :background c8))
+  (tab-bar-tab-inactive (:foreground c7 :background c8))
 
   ;; Terminal
   (term                (:foreground fg :background bg))
@@ -501,12 +502,12 @@
   (whitespace-empty             (:foreground c8 :background c8))
   (whitespace-hspace            (:foreground c8 :background c8))
   (whitespace-indentation       (:foreground c8 :background c8))
-  (whitespace-line              (:foreground c8 :background c8))
+  (whitespace-line              (:foreground c8 :background bg))
   (whitespace-newline           (:foreground c8 :background c8))
   (whitespace-space             (:foreground c8 :background c8))
   (whitespace-space-after-tab   (:foreground c8 :background c8))
   (whitespace-space-before-tab  (:foreground c8 :background c8))
-  (whitespace-tab               (:foreground c8 :background c8))
+  (whitespace-tab               (:foreground c8 :background bg))
   (whitespace-trailing          (:foreground c8 :background c8))
 
   ;; widget
@@ -763,9 +764,9 @@
   (org-agenda-restriction-lock    (:foreground c3))
   (org-agenda-structure           (:foreground c7))
   (org-archived                   (:foreground c7))
-  (org-block                      (:foreground fg :background c0))
-  (org-block-begin-line           (:foreground fg :background bg :weight 'bold))
-  (org-block-end-line             (:foreground fg :background bg :weight 'bold))
+  (org-block                      (:foreground fg :background c0 :extend t))
+  (org-block-begin-line           (:foreground c7 :background c0 :slant 'italic :extend t))
+  (org-block-end-line             (:foreground c7 :background c0 :slant 'italic :extend t))
   (org-checkbox                   (:foreground fg))
   (org-checkbox-statistics-done   (:foreground c2))
   (org-checkbox-statistics-todo   (:foreground c1))
@@ -776,8 +777,8 @@
   (org-date                       (:foreground c7))
   (org-date-selected              (:foreground c4 :slant 'italic))
   (org-default                    (:foreground fg :background bg))
-  (org-document-info              (:foreground c7))
-  (org-document-info-keyword      (:foreground c7))
+  (org-document-info              (:foreground c7 :slant 'italic))
+  (org-document-info-keyword      (:foreground c7 :slant 'italic))
   (org-document-title             (:foreground fg :weight 'bold))
   (org-done                       (:foreground c2 :slant 'italic))
   (org-drawer                     (:foreground c7))
@@ -808,7 +809,7 @@
   (org-link                       (:foreground c4 :underline t))
   (org-list-dt                    (:foreground fg :weight 'bold))
   (org-macro                      (:foreground fg))
-  (org-meta-line                  (:foreground c7))
+  (org-meta-line                  (:foreground c7 :background bg :slant 'italic))
   (org-mode-line-clock            (:foreground fg))
   (org-mode-line-clock-overrun    (:foreground c1 :weight 'bold))
   (org-priority                   (:foreground c5))
@@ -863,6 +864,22 @@
   (vterm-color-cyan     (:foreground c6))
   (vterm-color-white    (:foreground fg))
 
+  ;; git-gutter
+  (git-gutter:added       (:background c2))
+  (git-gutter:deleted     (:background c1))
+  (git-gutter:modified    (:background c3))
+  (git-gutter:unchanged   (:background bg))
+  (git-gutter:separator   (:background c0))
+  (git-gutter-fr:added    (:background c2))
+  (git-gutter-fr:deleted  (:background c1))
+  (git-gutter-fr:modified (:background c3))
+
+  ;; company
+  (company-tooltip-selection (:foreground fg :background c7))
+  (company-tooltip-common (:foreground fg))
+  (company-tooltip (:foreground fg :background c0))
+  (company-scrollbar-bg (:background bg))
+  (company-scrollbar-fg (:background c8))
 
 
   ;;; Language-specific

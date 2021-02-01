@@ -90,6 +90,13 @@ results buffers.
 In extreme cases (100KiB+ single-line files), we can get a stack
 overflow on our regexp matchers if we don't apply this.")
 
+(defvar deadgrep-display-buffer-function
+  'switch-to-buffer-other-window
+  "Function used to show the deadgrep result buffer.
+
+This function is called with one argument, the results buffer to
+display.")
+
 (defface deadgrep-meta-face
   '((t :inherit font-lock-comment-face))
   "Face used for deadgrep UI text."
@@ -612,6 +619,7 @@ to obtain ripgrep results."
     (push "--color=ansi" args)
     (push "--line-number" args)
     (push "--no-heading" args)
+    (push "--no-column" args)
     (push "--with-filename" args)
 
     (cond
@@ -908,24 +916,23 @@ Returns a list ordered by the most recently accessed."
   "Open PATH in a buffer, and return a cons cell
 \(BUF . OPENED). OPENED is nil if there was aleady a buffer for
 this path."
-  (save-match-data
-    (let* ((initial-buffers (buffer-list))
-           (opened nil)
-           ;; Skip running find-file-hook since it may prompt the user.
-           (find-file-hook nil)
-           ;; If we end up opening a buffer, don't bother with file
-           ;; variables. It prompts the user, and we discard the buffer
-           ;; afterwards anyway.
-           (enable-local-variables nil)
-           ;; Bind `auto-mode-alist' to nil, so we open the buffer in
-           ;; `fundamental-mode' if it isn't already open.
-           (auto-mode-alist nil)
-           ;; Use `find-file-noselect' so we still decode bytes from the
-           ;; underlying file.
-           (buf (save-match-data (find-file-noselect path))))
-      (unless (-contains-p initial-buffers buf)
-        (setq opened t))
-      (cons buf opened))))
+  (let* ((initial-buffers (buffer-list))
+         (opened nil)
+         ;; Skip running find-file-hook since it may prompt the user.
+         (find-file-hook nil)
+         ;; If we end up opening a buffer, don't bother with file
+         ;; variables. It prompts the user, and we discard the buffer
+         ;; afterwards anyway.
+         (enable-local-variables nil)
+         ;; Bind `auto-mode-alist' to nil, so we open the buffer in
+         ;; `fundamental-mode' if it isn't already open.
+         (auto-mode-alist nil)
+         ;; Use `find-file-noselect' so we still decode bytes from the
+         ;; underlying file.
+         (buf (find-file-noselect path)))
+    (unless (-contains-p initial-buffers buf)
+      (setq opened t))
+    (cons buf opened)))
 
 (defun deadgrep--propagate-change (beg end length)
   "Repeat the last modification to the results buffer in the
@@ -1453,30 +1460,31 @@ don't actually start the search."
         (setq prev-search-type deadgrep--search-type)
         (setq prev-search-case deadgrep--search-case)))
 
-    (switch-to-buffer-other-window buf)
+    (funcall deadgrep-display-buffer-function buf)
 
-    (setq imenu-create-index-function #'deadgrep--create-imenu-index)
-    (setq next-error-function #'deadgrep-next-error)
+    (with-current-buffer buf
+      (setq imenu-create-index-function #'deadgrep--create-imenu-index)
+      (setq next-error-function #'deadgrep-next-error)
 
-    ;; If we have previous search settings, apply them to our new
-    ;; search results buffer.
-    (when last-results-buf
-      (setq deadgrep--search-type prev-search-type)
-      (setq deadgrep--search-case prev-search-case))
+      ;; If we have previous search settings, apply them to our new
+      ;; search results buffer.
+      (when last-results-buf
+        (setq deadgrep--search-type prev-search-type)
+        (setq deadgrep--search-case prev-search-case))
 
-    (deadgrep--write-heading)
+      (deadgrep--write-heading)
 
-    (if current-prefix-arg
-        ;; Don't start the search, just create the buffer and inform
-        ;; the user how to start when they're ready.
-        (progn
-          (setq deadgrep--postpone-start t)
-          (deadgrep--write-postponed))
-      ;; Start the search immediately.
-      (deadgrep--start
-       search-term
-       deadgrep--search-type
-       deadgrep--search-case))))
+      (if current-prefix-arg
+          ;; Don't start the search, just create the buffer and inform
+          ;; the user how to start when they're ready.
+          (progn
+            (setq deadgrep--postpone-start t)
+            (deadgrep--write-postponed))
+        ;; Start the search immediately.
+        (deadgrep--start
+         search-term
+         deadgrep--search-type
+         deadgrep--search-case)))))
 
 (defun deadgrep-next-error (arg reset)
   "Move to the next error.

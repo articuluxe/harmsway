@@ -34,9 +34,10 @@
 
 (require 'lsp-treemacs-themes)
 (require 'lsp-mode)
-(require 'lsp-lens)
 
 (defconst lsp-treemacs-deps-buffer-name "*Java Dependency List*")
+(defconst lsp-treemacs-symbols-buffer-name "*LSP Symbols List*")
+(defconst lsp-treemacs-errors-buffer-name "*LSP Error List*")
 
 (defgroup lsp-treemacs nil
   "Language Server Protocol client."
@@ -74,8 +75,12 @@
   "Face used for highlighting symbols being read."
   :group 'lsp-faces)
 
-
 (defface lsp-treemacs-file-info
+  '((t :inherit success))
+  "Face used for highlighting symbols being read."
+  :group 'lsp-faces)
+
+(defface lsp-treemacs-file-hint
   '((t :inherit success))
   "Face used for highlighting symbols being read."
   :group 'lsp-faces)
@@ -95,7 +100,8 @@
 (defcustom lsp-treemacs-file-face-map
   '((1 . lsp-treemacs-file-error)
     (2 . lsp-treemacs-file-warn)
-    (3 . lsp-treemacs-file-info))
+    (3 . lsp-treemacs-file-info)
+    (4 . lsp-treemacs-file-hint))
   "Alist diagnostics to face."
   :type 'alist)
 
@@ -103,255 +109,9 @@
   "Severity level for `lsp-treemacs-error-list-mode'. 1 (highest) to 3 (lowest)"
   :type 'number)
 
-(defun lsp-treemacs--match-diagnostic-severity (diagnostic)
-  (<= (lsp:diagnostic-severity? diagnostic)
-      (prefix-numeric-value lsp-treemacs-error-list-severity)))
-
-(defun lsp-treemacs--diagnostics-match-selected-severity (diagnostics)
-  (-some #'lsp-treemacs--match-diagnostic-severity diagnostics))
-
-(defun lsp-treemacs--root-folders ()
-  "Get root folders containing errors."
-
-  (let ((diagnostics (lsp-diagnostics)))
-    (->> (lsp-session)
-         lsp-session-folders
-         (-filter (lambda (folder-name)
-                    (-some (-lambda ((file-name . file-diagnostics))
-                             (and
-                              (s-starts-with? folder-name file-name)
-                              (lsp-treemacs--diagnostics-match-selected-severity file-diagnostics)))
-                           (ht->alist diagnostics))))
-         (-map
-          (lambda (root-folder)
-            (cons
-             (format (propertize "%s %s %s" 'face 'default)
-                     (propertize (f-filename root-folder)
-                                 'face (lsp-treemacs--face root-folder diagnostics))
-                     (lsp-treemacs--diag-statistics (lsp-treemacs--project-diagnostics
-                                                     root-folder
-                                                     diagnostics))
-                     (propertize (f-dirname root-folder)
-                                 'face 'lsp-lens-face))
-             root-folder))))))
-
-(defun lsp-treemacs-quick-fix ()
-  "Select the element under cursor."
-  (interactive)
-  (let ((key (button-get (treemacs-node-at-point) :data)))
-    (if (and (consp key) (lsp-diagnostic? (cl-rest key)))
-        (progn
-          (lsp-treemacs--open-file-in-mru (cl-first key))
-          (-let [(&Diagnostic :range (&RangeToPoint :start)) (cl-rest key)]
-            (goto-char start)
-            (call-interactively #'lsp-execute-code-action)))
-      (user-error "Not on a diagnostic"))))
-
-(defun lsp-treemacs-cycle-severity ()
-  "Cycle through the severity levels shown in the errors list"
-  (interactive)
-  (setq lsp-treemacs-error-list-severity
-        (if (= lsp-treemacs-error-list-severity 1)
-            3
-          (1- lsp-treemacs-error-list-severity)))
-  (lsp-treemacs--after-diagnostics))
-
 (defun lsp-treemacs--open-file-in-mru (file)
   (select-window (get-mru-window (selected-frame) nil :not-selected))
   (find-file file))
-
-(defun lsp-treemacs-open-file (&rest _)
-  "Open file."
-  (interactive)
-  (let ((file (button-get (treemacs-node-at-point) :key)))
-    (lsp-treemacs--open-file-in-mru file)))
-
-(defun lsp-treemacs-open-error (&rest _)
-  "Open error."
-  (interactive)
-  (-let [(file . (&Diagnostic :range (&Range :start))) (button-get (treemacs-node-at-point) :data)]
-    (find-file-other-window file)
-    (goto-char (lsp--position-to-point start))))
-
-(defun lsp-treemacs--face (root-folder diagnostics)
-  "Calculate ROOT-FOLDER face based on DIAGNOSTICS."
-  (--> diagnostics
-       ht->alist
-       (-keep (-lambda ((file-name . file-diagnostics))
-                (when (s-starts-with? root-folder file-name)
-                  (lsp:diagnostic-severity?
-                   (-min-by (-lambda ((&Diagnostic :severity? left?)
-                                      (&Diagnostic :severity? right?))
-                              (> (or left? 0) (or right? 0)))
-                            file-diagnostics))))
-              it)
-       -min
-       (assoc it lsp-treemacs-face-map)
-       cl-rest))
-
-(defun lsp-treemacs--project-diagnostics (root-folder diagnostics)
-  "Calculate ROOT-FOLDER face based on DIAGNOSTICS."
-  (->> diagnostics
-       (ht-map (lambda (file-name file-diags)
-                 (when (and (s-starts-with? root-folder file-name)
-                            (lsp-treemacs--diagnostics-match-selected-severity file-diags))
-                   file-diags)))
-       (apply #'append)))
-
-(defun lsp-treemacs--diag-statistics (file-diagnostics)
-  "Calculate FILE-DIAGNOSTICS statistics."
-  (->> file-diagnostics
-       (-filter #'lsp-treemacs--match-diagnostic-severity)
-       (-group-by 'lsp:diagnostic-severity?)
-       (-sort (-lambda ((left) (right)) (< left right)))
-       (-map (-lambda ((severity . diagnostics))
-               (propertize (f-filename (number-to-string (length diagnostics)))
-                           'face (cl-rest (assoc severity lsp-treemacs-file-face-map)))))
-       (s-join "/")))
-
-(defun lsp-treemacs--get-files (project-root)
-  "Get files with errors in PROJECT-ROOT."
-  (--> (lsp-diagnostics)
-       ht->alist
-       (-keep (-lambda ((file-name . file-diagnostics))
-                (when (and (s-starts-with? project-root file-name)
-                           (lsp-treemacs--diagnostics-match-selected-severity file-diagnostics))
-                  (cons file-name
-                        (format (propertize "%s %s %s" 'face 'default)
-                                (propertize (f-filename file-name)
-                                            'face 'default)
-                                (lsp-treemacs--diag-statistics file-diagnostics)
-                                (propertize (f-dirname (f-relative file-name project-root))
-                                            'face 'lsp-lens-face)))))
-              it)))
-
-(defun lsp-treemacs--errors (file-name)
-  "Get errors for FILE-NAME."
-  (->> (lsp-diagnostics)
-       (gethash file-name)
-       (-filter #'lsp-treemacs--match-diagnostic-severity)
-       (-sort (-lambda ((&Diagnostic :range (&Range :start (&Position :character char-a
-                                                                      :line line-a)))
-                        (&Diagnostic :range (&Range :start (&Position :character char-b
-                                                                      :line line-b))))
-                (if (= line-a line-b)
-                    (< char-a char-b)
-                  (< line-a line-b))))
-       (--map (cons file-name it))))
-
-(defun lsp-treemacs--diagnostic-icon (diagnostic)
-  "Get the icon for DIAGNOSTIC."
-  (cl-case (lsp:diagnostic-severity? diagnostic)
-    (1 treemacs-icon-error)
-    (2 treemacs-icon-warning)
-    (t treemacs-icon-info)))
-
-(treemacs-define-expandable-node lsp-error
-  :icon-open-form (lsp-treemacs--diagnostic-icon (cl-rest (treemacs-button-get node :data)))
-  :icon-closed-form (lsp-treemacs--diagnostic-icon (cl-rest (treemacs-button-get node :data)))
-  :query-function (lsp-treemacs--errors (treemacs-button-get node :data))
-  :ret-action 'lsp-treemacs-open-error
-  :render-action
-  (treemacs-render-node
-   :icon (treemacs-as-icon ". " 'face 'font-lock-string-face)
-   :label-form (propertize (lsp:diagnostic-message item) 'face 'default)
-   :state treemacs-lsp-error-open-state
-   :key-form item))
-
-(treemacs-define-expandable-node lsp-files
-  :icon-open-form (treemacs-icon-for-file (treemacs-button-get node :key))
-  :icon-closed-form (treemacs-icon-for-file (treemacs-button-get node :key))
-  :query-function (lsp-treemacs--errors (treemacs-button-get node :key))
-  :ret-action 'lsp-treemacs-open-file
-  :render-action
-  (-let* (((&Diagnostic :source?
-                        :message
-                        :range (&Range :start (&Position :line :character))) (cl-rest item))
-          (label (format (propertize "%s %s %s" 'face 'default)
-                         (if source?
-                             (propertize (format "[%s]" source?)
-                                         'face 'shadow)
-                           "")
-                         message
-                         (propertize (format "(%s:%s)" line character)
-                                     'face 'lsp-lens-face))))
-    (treemacs-render-node
-     :icon (lsp-treemacs--diagnostic-icon (cl-rest item))
-     :label-form label
-     :state treemacs-lsp-error-open-state
-     :key-form label
-     :more-properties (:data item))))
-
-(treemacs-define-expandable-node lsp-projects
-  :icon-open (treemacs-get-icon-value 'root nil lsp-treemacs-theme)
-  :icon-closed (treemacs-get-icon-value 'root nil lsp-treemacs-theme)
-  :query-function (lsp-treemacs--get-files (treemacs-button-get node :key))
-  :ret-action 'lsp-treemacs-open-file
-  :render-action
-  (treemacs-render-node
-   :icon (treemacs-icon-for-file (cl-first item))
-   :label-form (cl-rest item)
-   :state treemacs-lsp-files-closed-state
-   :key-form (cl-first item)))
-
-(treemacs-define-variadic-node lsp-error-list
-  :query-function (lsp-treemacs--root-folders)
-  :render-action
-  (treemacs-render-node
-   :icon (treemacs-get-icon-value 'root nil lsp-treemacs-theme)
-   :label-form (cl-first item)
-   :state treemacs-lsp-projects-closed-state
-   :key-form (cl-rest item))
-  :root-key-form 'LSP-Errors)
-
-(defun lsp-treemacs--after-diagnostics ()
-  "After diagnostics handler."
-  (save-excursion
-    (condition-case _err
-        (with-current-buffer (get-buffer-create "*LSP Error List*")
-          (treemacs-update-node '(:custom LSP-Errors) t))
-      (error))))
-
-(defun lsp-treemacs--kill-buffer ()
-  "Kill buffer hook."
-  (remove-hook 'lsp-diagnostics-updated-hook #'lsp-treemacs--after-diagnostics))
-
-(defvar lsp-treemacs-error-list-mode-map
-  (let ((m (make-sparse-keymap)))
-    (define-key m (kbd "x") #'lsp-treemacs-quick-fix)
-    (define-key m (kbd "=") #'lsp-treemacs-cycle-severity)
-    m)
-  "Keymap for `lsp-treemacs-error-list-mode'.")
-
-(define-minor-mode lsp-treemacs-error-list-mode ""
-  nil nil nil
-  :keymap lsp-treemacs-error-list-mode-map
-  :group 'lsp-treeemacs)
-
-;;;###autoload
-(defun lsp-treemacs-errors-list ()
-  "Display error list."
-  (interactive)
-
-  (-if-let (buffer (get-buffer "*LSP Error List*"))
-      (progn
-        (select-window (display-buffer-in-side-window buffer '((side . bottom))))
-        (lsp-treemacs--after-diagnostics))
-    (let* ((buffer (get-buffer-create "*LSP Error List*"))
-           (window (display-buffer-in-side-window buffer '((side . bottom)))))
-      (select-window window)
-      (set-window-dedicated-p window t)
-      (treemacs-initialize)
-      (lsp-treemacs--set-mode-line-format buffer " LSP Errors View ")
-      (lsp-treemacs-error-list-mode 1)
-
-      (setq-local treemacs-default-visit-action 'treemacs-RET-action)
-      (setq-local treemacs-space-between-root-nodes nil)
-
-      (treemacs-LSP-ERROR-LIST-extension)
-
-      (add-hook 'lsp-diagnostics-updated-hook #'lsp-treemacs--after-diagnostics)
-      (add-hook 'kill-buffer-hook 'lsp-treemacs--kill-buffer nil t))))
 
 (defun lsp-treemacs-symbol-kind->icon (kind)
   (cl-case kind
@@ -398,8 +158,8 @@
   (-let [(&DocumentSymbol :kind :children?) symbol]
     (concat
      (if (seq-empty-p children?)
-         "   "
-       (if expanded  " ▾ " " ▸ "))
+         "  "
+       (if expanded  "▾ " "▸ "))
      (lsp-treemacs-symbol-icon kind))))
 
 (treemacs-define-expandable-node lsp-symbol
@@ -447,6 +207,41 @@
            (const :tag "Kind"  lsp-treemacs-sort-by-kind)
            (const :tag "Position" lsp-treemacs-sort-by-position))))
 
+(defcustom lsp-treemacs-detailed-outline t
+  "Whether `lsp-treemacs-symbols' should include signatures.
+For this to work, the language server must support
+DocumentSymbols."
+  :group 'lsp-treemacs
+  :type 'boolean)
+
+(defcustom lsp-treemacs-after-jump-hook
+  (list (lambda () (run-hooks 'xref-after-jump-hook)))
+  "List of functions to call after jumping to a symbol.
+When pressing RET on a symbol in the `lsp-treemacs-symbols' view,
+this hook will be run after having jumped to the target."
+  :group 'lsp-treemacs
+  :type '(list function))
+
+(defmacro lsp-treemacs-define-action (name keys &rest body)
+  (declare (doc-string 3) (indent 2) (debug (&define name sexp lambda-doc def-body)))
+  (let* ((docstring (car body)))
+    (when (stringp docstring)
+      (pop body))
+    `(defun ,name (&rest args)
+       ,(if (stringp docstring) docstring (format "Code action %s." name))
+       (interactive)
+       (ignore args)
+       (if-let (node (treemacs-node-at-point))
+           (-let [,(cons '&plist keys) (button-get node :item)]
+             ,@body)
+         (treemacs-pulse-on-failure "No node at point")))))
+
+(lsp-treemacs-define-action lsp-treemacs-symbols-goto-symbol (:location)
+  "Goto the symbol node at `point'."
+  (pop-to-buffer lsp-treemacs--symbols-last-buffer)
+  (goto-char (lsp--position-to-point location))
+  (run-hooks 'lsp-treemacs-after-jump-hook))
+
 (defun lsp-treemacs--symbols->tree (items parent-key)
   "Convert ITEMS and PARENT-KEY to a treemacs tree."
   (-sort (lambda (left right)
@@ -461,38 +256,28 @@
                                                       :location (location &as &Location :range (&Range :start start-range))))
                           (when (string= parent-key container-name?)
                             `(:label ,name
-                                     :key ,name
-                                     :icon ,(lsp-treemacs-symbol-kind->icon kind)
-                                     ,@(when (-first (-lambda ((&SymbolInformation :container-name? parent))
-                                                       (string= name parent))
-                                                     rest)
-                                         (list :children (lsp-treemacs--symbols->tree rest name)))
-                                     :kind ,kind
-                                     :location ,start-range
-                                     :ret-action ,(lambda (&rest _)
-                                                    (pop-to-buffer lsp-treemacs--symbols-last-buffer)
-                                                    (->> start-range
-                                                         lsp--position-to-point
-                                                         goto-char)
-                                                    (run-hooks 'xref-after-jump-hook)))))
+                              :key ,name
+                              :icon ,(lsp-treemacs-symbol-kind->icon kind)
+                              ,@(when (-first (-lambda ((&SymbolInformation :container-name? parent))
+                                                (string= name parent))
+                                              rest)
+                                  (list :children (lsp-treemacs--symbols->tree rest name)))
+                              :kind ,kind
+                              :location ,start-range
+                              :ret-action lsp-treemacs-symbols-goto-symbol)))
                         current))
-           (seq-map (-lambda ((&DocumentSymbol :name :kind :selection-range (&Range :start start-range) :children? :deprecated?))
-                      `(:label ,(if deprecated?
-                                    (propertize name 'face 'lsp-face-semhl-deprecated)
-                                  name)
-                               :key ,name
-                               :icon ,(lsp-treemacs-symbol-kind->icon kind)
-                               :kind ,kind
-                               :location start-range
-                               ,@(unless (seq-empty-p children?)
-                                   (list :children (lsp-treemacs--symbols->tree children? name)))
-                               :ret-action ,(lambda (&rest _)
-                                              (pop-to-buffer lsp-treemacs--symbols-last-buffer)
-                                              (->> start-range
-                                                   lsp--position-to-point
-                                                   goto-char)
-                                              (run-hooks 'xref-after-jump-hook))))
-                    items))))
+           (seq-map
+            (-lambda ((sym &as &DocumentSymbol :name :kind :selection-range
+                           (&Range :start start-range) :children?))
+              `(:label ,(lsp-render-symbol sym lsp-treemacs-detailed-outline)
+                :key ,name
+                :icon ,(lsp-treemacs-symbol-kind->icon kind)
+                :kind ,kind
+                :location ,start-range
+                ,@(unless (seq-empty-p children?)
+                    (list :children (lsp-treemacs--symbols->tree children? name)))
+                :ret-action lsp-treemacs-symbols-goto-symbol))
+            items))))
 
 (defun lsp-treemacs--update-symbols ()
   "After diagnostics handler."
@@ -505,11 +290,11 @@
     nil)
    " LSP Symbols "
    (and lsp-treemacs--symbols (> 30 (length lsp-treemacs--symbols)))
-   "*LSP Symbols List*" ))
+   lsp-treemacs-symbols-buffer-name ))
 
 (defun lsp-treemacs--update ()
   (unless (eq (current-buffer) (get-buffer "*scratch*"))
-    (when (with-current-buffer "*LSP Symbols List*" (get-buffer-window))
+    (when (with-current-buffer lsp-treemacs-symbols-buffer-name (get-buffer-window))
       (if (lsp--find-workspaces-for "textDocument/documentSymbol")
           (when (or (not lsp-treemacs--symbols-tick)
                     (not (eq lsp-treemacs--symbols-tick (buffer-modified-tick)))
@@ -518,14 +303,14 @@
                                (lsp-make-document-symbol-params :text-document (lsp--text-document-identifier))
                                (lambda (document-symbols)
                                  (save-excursion
-                                   (with-current-buffer "*LSP Symbols List*"
+                                   (with-current-buffer lsp-treemacs-symbols-buffer-name
                                      (setq-local lsp-treemacs--symbols document-symbols)
                                      (lsp-treemacs--update-symbols))))
                                :mode 'alive)
             (setq-local lsp-treemacs--symbols-tick (buffer-modified-tick))
             (setq lsp-treemacs--symbols-last-buffer (current-buffer)))
         (when (buffer-file-name)
-          (with-current-buffer "*LSP Symbols List*"
+          (with-current-buffer lsp-treemacs-symbols-buffer-name
             (setq-local lsp-treemacs--symbols nil)
             (lsp-treemacs--update-symbols)))))
     (setq lsp-treemacs--symbols-current-buffer (current-buffer))))
@@ -551,8 +336,8 @@
 
 (with-eval-after-load 'winum
   (when (boundp 'winum-ignored-buffers)
-    (add-to-list 'winum-ignored-buffers "*LSP Symbols List*")
-    (add-to-list 'winum-ignored-buffers "*LSP Error List*")
+    (add-to-list 'winum-ignored-buffers lsp-treemacs-symbols-buffer-name)
+    (add-to-list 'winum-ignored-buffers lsp-treemacs-errors-buffer-name)
     (add-to-list 'winum-ignored-buffers  lsp-treemacs-deps-buffer-name)))
 
 (defun lsp-treemacs--expand (root-key depth)
@@ -563,19 +348,33 @@
 (defun lsp-treemacs--kill-symbols-buffer ()
   (and lsp-treemacs--symbols-timer (cancel-timer lsp-treemacs--symbols-timer)))
 
+(defcustom lsp-treemacs-symbols-space-between-root-nodes nil
+  "Whether there should be empty lines between symbols.
+If this is set to t, top-level symbols in `lsp-treemacs-symbols'
+will be rendered an empty line between them."
+  :group 'lsp-treemacs
+  :type 'boolean)
+
 ;;;###autoload
 (defun lsp-treemacs-symbols ()
   "Show symbols view."
   (interactive)
   (let ((original-buffer (current-buffer)))
-    (if-let (buf (get-buffer "*LSP Symbols List*"))
+    (if-let (buf (get-buffer lsp-treemacs-symbols-buffer-name))
         (select-window (display-buffer-in-side-window buf lsp-treemacs-symbols-position-params))
-      (let* ((buf (get-buffer-create "*LSP Symbols List*"))
+      (let* ((buf (get-buffer-create lsp-treemacs-symbols-buffer-name))
              (window (display-buffer-in-side-window buf lsp-treemacs-symbols-position-params)))
         (select-window window)
         (set-window-dedicated-p window t)
+        ;; Initialize now, as otherwise all buffer local variables are killed
+        ;; and as such `treemacs-space-between-root-nodes' will be reset to its
+        ;; global value. `lsp-treemacs--update' -> `lsp-treemacs-render' ->
+        ;; `lsp-treemacs-initialize' -> `treemacs-mode' (because we haven't
+        ;; enabled it already) -> `kill-all-local-variables'.
+        (lsp-treemacs-initialize)
         (setq-local treemacs-default-visit-action 'treemacs-RET-action)
-        (setq-local treemacs-space-between-root-nodes nil)
+        (setq-local treemacs-space-between-root-nodes
+                    lsp-treemacs-symbols-space-between-root-nodes)
         (setq lsp-treemacs--symbols-timer (run-at-time 0 1.0 #'lsp-treemacs--update))
         (add-hook 'kill-buffer-hook 'lsp-treemacs--kill-symbols-buffer nil t)))
     (with-current-buffer original-buffer (lsp-treemacs--update))))
@@ -615,7 +414,7 @@
   "Get the symbol for the the kind."
   (-let (((&hash "uri" "kind" "entryKind" entry-kind) dep))
     (concat
-     (if expanded  " ▾ " " ▸ ")
+     (if expanded  "▾ " "▸ ")
      (if (or (= kind 8)
              (= kind 6))
          (treemacs-icon-for-file uri)
@@ -814,10 +613,15 @@
           (removed (seq-map #'treemacs--canonical-path removed)))
       (dolist (added-path added)
         (unless (treemacs-is-path added-path :in-workspace treemacs-workspace)
-          (treemacs-add-project-to-workspace added-path)))
+          (let* ((name (file-name-nondirectory (directory-file-name added-path)))
+                 (result (treemacs-do-add-project-to-workspace added-path name)))
+            (unless (eq 'success result)
+              (lsp-log "Failed to add path '%s' to treemacs' workspace: %s" added-path result)))))
       (dolist (removed-path removed)
         (when (treemacs-is-path removed-path :in-workspace treemacs-workspace)
-          (treemacs-do-remove-project-from-workspace removed-path))))))
+          (let ((result (treemacs-do-remove-project-from-workspace removed-path)))
+            (unless (eq 'success result)
+              (lsp-log "Failed to remove path '%s' from treemacs' workspace: %s" removed-path result))))))))
 
 ;;;###autoload
 (define-minor-mode lsp-treemacs-sync-mode
@@ -864,6 +668,7 @@
        ,@body)))
 
 (defvar-local lsp-treemacs-use-cache nil)
+(defvar-local lsp-treemacs-generic-filter nil)
 (defvar-local lsp-treemacs--generic-cache nil)
 
 (defun lsp-treemacs--node-key (node)
@@ -876,29 +681,34 @@
 (treemacs-define-expandable-node node
   :icon-open-form (lsp-treemacs--generic-icon (treemacs-button-get node :item) t)
   :icon-closed-form (lsp-treemacs--generic-icon (treemacs-button-get node :item) nil)
-  :query-function (-let (((item &as &plist :children :children-async) (treemacs-button-get node :item))
-                         (node-key (lsp-treemacs--node-key node)))
-                    (cond
-                     ((functionp children) (funcall children item))
-                     ((and (gethash node-key lsp-treemacs--generic-cache)
-                           lsp-treemacs-use-cache)
-                      (cl-rest (gethash node-key lsp-treemacs--generic-cache)))
-                     (children-async
-                      (-let [buffer (current-buffer)]
-                        (funcall children-async
-                                 item
-                                 (lambda (result)
-                                   (lsp-treemacs-wcb-unless-killed buffer
-                                     (unless (equal (gethash node-key  lsp-treemacs--generic-cache)
-                                                    (cons t result))
-                                       (puthash node-key (cons t result) lsp-treemacs--generic-cache)
-                                       (let ((lsp-treemacs-use-cache t))
-                                         (treemacs-update-node (cons :custom node-key) t)))))))
-                      (or (cl-rest (gethash node-key lsp-treemacs--generic-cache))
-                          `((:label ,(propertize "Loading..." 'face 'shadow)
-                                    :icon-literal " "
-                                    :key "Loading..."))))
-                     (t children)))
+  :query-function
+  (-let* (((item &as &plist :children :children-async) (treemacs-button-get node :item))
+          (node-key (lsp-treemacs--node-key node))
+          (result (cond
+                   ((functionp children) (funcall children item))
+                   ((and (gethash node-key lsp-treemacs--generic-cache)
+                         lsp-treemacs-use-cache)
+                    (cl-rest (gethash node-key lsp-treemacs--generic-cache)))
+                   (children-async
+                    (-let [buffer (current-buffer)]
+                      (funcall children-async
+                               item
+                               (lambda (result)
+                                 (lsp-treemacs-wcb-unless-killed buffer
+                                   (unless (equal (gethash node-key  lsp-treemacs--generic-cache)
+                                                  (cons t result))
+                                     (puthash node-key (cons t result) lsp-treemacs--generic-cache)
+                                     (let ((lsp-treemacs-use-cache t))
+                                       (treemacs-update-node (cons :custom node-key) t)))))))
+                    (if-let ((cache (gethash node-key lsp-treemacs--generic-cache)))
+                        (cl-rest cache)
+                      `((:label ,(propertize "Loading..." 'face 'shadow)
+                                :icon-literal " "
+                                :key "Loading..."))))
+                   (t children))))
+    (if lsp-treemacs-generic-filter
+        (funcall lsp-treemacs-generic-filter result)
+      result))
   :ret-action #'lsp-treemacs-perform-ret-action
   :render-action
   (-let [(&plist :children :label :key :children-async) item]
@@ -927,8 +737,8 @@
   (concat
    (if (or (plist-get item :children)
            (plist-get item :children-async))
-       (if expanded?  " ▾ " " ▸ ")
-     "   ")
+       (if expanded?  "▾ " "▸ ")
+     "  ")
    (or (plist-get item :icon-literal)
        (if-let ((icon (plist-get item :icon)))
            (treemacs-get-icon-value
@@ -942,7 +752,7 @@
     (list :key filename
           :label (format (propertize "%s %s" 'face 'default)
                          (propertize (f-filename filename) 'face 'default)
-                         (propertize (format "%s references" (length links)) 'face 'lsp-lens-face))
+                         (propertize (format "%s references" (length links)) 'face 'lsp-details-face))
           :icon (f-ext filename)
           :children (lambda (_item)
                       (condition-case err
@@ -998,7 +808,7 @@
                                  line
                                  (propertize(format "%s line"
                                                     (1+ start-line))
-                                            'face 'lsp-lens-face)))
+                                            'face 'lsp-details-face)))
           :key line
           :point start-point
           :icon-literal ""
@@ -1014,8 +824,8 @@
     (lsp-treemacs-generic-mode t)
     (treemacs-GENERIC-extension)))
 
-(defun lsp-treemacs-generic-refresh ()
-  (let (lsp-treemacs-use-cache)
+(defun lsp-treemacs-generic-refresh (&optional cache)
+  (let ((lsp-treemacs-use-cache cache))
     (condition-case _err
         (let ((inhibit-read-only t))
           (treemacs-update-node '(:custom LSP-Generic) t))
@@ -1063,7 +873,7 @@
                      :label (format
                              "%s %s"
                              (f-filename path)
-                             (propertize (format "%s references" (length rst)) 'face 'lsp-lens-face))
+                             (propertize (format "%s references" (length rst)) 'face 'lsp-details-face))
                      :icon (if (f-file? path)
                                (f-ext path)
                              'dir-open)
@@ -1077,40 +887,22 @@
                                    (interactive)
                                    (lsp-treemacs--open-file-in-mru path)))))))
 
-(defmacro lsp-treemacs-define-action (name keys &rest body)
-  (declare (doc-string 3) (indent 2))
-  `(defun ,name (&rest args)
-     ,(format "Code action %s" name)
-     (interactive)
-     (if-let (node (treemacs-node-at-point))
-         (-let [,(cons '&plist keys) (button-get node :item)]
-           ,@body)
-       (treemacs-pulse-on-failure "No node at point"))))
-
-(defun lsp-treemacs-render (tree title expand-depth &optional buffer-name right-click-actions)
+(defun lsp-treemacs-render (tree title expand-depth &optional buffer-name right-click-actions clear-cache?)
   (let ((search-buffer (get-buffer-create (or buffer-name "*LSP Lookup*"))))
     (with-current-buffer search-buffer
       (lsp-treemacs-initialize)
       (setq-local treemacs-default-visit-action 'treemacs-RET-action)
       (setq-local lsp-treemacs--right-click-actions right-click-actions)
-      (setq-local lsp-treemacs--generic-cache (or lsp-treemacs--generic-cache (ht)))
+      (setq-local lsp-treemacs--generic-cache (if (and lsp-treemacs--generic-cache
+                                                       (not clear-cache?))
+                                                  lsp-treemacs--generic-cache
+                                                (ht)))
       (setq-local lsp-treemacs-tree tree)
       (setq-local face-remapping-alist '((button . default)))
       (lsp-treemacs--set-mode-line-format search-buffer title)
       (lsp-treemacs-generic-refresh)
       (when expand-depth (lsp-treemacs--expand 'LSP-Generic expand-depth))
       (current-buffer))))
-
-(defmacro lsp-treemacs-define-action (name keys &rest body)
-  (declare (doc-string 3) (indent 2))
-  `(defun ,name (&rest args)
-     ,(format "Code action %s" name)
-     (interactive)
-     (ignore args)
-     (if-let (node (treemacs-node-at-point))
-         (-let [,(cons '&plist keys) (button-get node :item)]
-           ,@body)
-       (treemacs-pulse-on-failure "No node at point"))))
 
 (defalias 'lsp-treemacs--show-references 'lsp-treemacs-render)
 
@@ -1179,6 +971,12 @@ With a prefix argument, select the new window expand the tree of implementations
 
 ;; Call hierarchy.
 
+(lsp-defun lsp-treemacs--call-hierarchy-ret-action ((&CallHierarchyItem :uri :selection-range (&Range :start)))
+  "Build the ret action for a call hierarchy item using URI and START range."
+  (lsp-treemacs--open-file-in-mru (lsp--uri-to-path uri))
+  (goto-char (lsp--position-to-point start))
+  (run-hooks 'xref-after-jump-hook))
+
 (defun lsp-treemacs--call-hierarchy-children (buffer method outgoing node callback)
   (-let [item (plist-get node :item)]
     (with-current-buffer buffer
@@ -1190,21 +988,18 @@ With a prefix argument, select the new window expand the tree of implementations
           callback
           (seq-map
            (-lambda (node)
-             (-let* (((child-item &as &CallHierarchyItem :name :kind :detail? :uri :selection-range (&Range :start))
+             (-let* (((child-item &as &CallHierarchyItem :_name :kind :_detail? :_uri :selection-range (&Range :_start))
                       (if outgoing
                           (lsp:call-hierarchy-outgoing-call-to node)
                         (lsp:call-hierarchy-incoming-call-from node)))
-                     (label (concat name (when detail?
-                                           (propertize (concat " - " detail?) 'face 'lsp-lens-face)))))
+                     (label (lsp-render-symbol child-item t)))
                (list :label label
                      :key label
                      :icon (lsp-treemacs-symbol-kind->icon kind)
                      :children-async (-partial #'lsp-treemacs--call-hierarchy-children buffer method outgoing)
                      :ret-action (lambda (&rest _)
                                    (interactive)
-                                   (lsp-treemacs--open-file-in-mru (lsp--uri-to-path uri))
-                                   (goto-char (lsp--position-to-point start))
-                                   (run-hooks 'xref-after-jump-hook))
+                                   (lsp-treemacs--call-hierarchy-ret-action child-item))
                      :item child-item)))
            result)))
        :mode 'detached))))
@@ -1214,7 +1009,7 @@ With a prefix argument, select the new window expand the tree of implementations
   "Show the incoming call hierarchy for the symbol at point.
 With a prefix argument, show the outgoing call hierarchy."
   (interactive "P")
-  (unless (lsp--find-workspaces-for "textDocument/prepareCallHierarchy")
+  (unless (lsp-feature? "textDocument/prepareCallHierarchy")
     (user-error "Call hierarchy not supported by the current servers: %s"
                 (-map #'lsp--workspace-print (lsp-workspaces))))
   (let ((buffer (current-buffer)))
@@ -1222,9 +1017,8 @@ With a prefix argument, show the outgoing call hierarchy."
      (display-buffer-in-side-window
       (lsp-treemacs-render
        (seq-map
-        (-lambda ((item &as &CallHierarchyItem :name :kind :detail?))
-          (list :label (concat name (when detail?
-                                      (propertize (concat " - " detail?) 'face 'lsp-lens-face)))
+        (-lambda ((item &as &CallHierarchyItem :kind :name))
+          (list :label (lsp-render-symbol item t)
                 :key name
                 :icon (lsp-treemacs-symbol-kind->icon kind)
                 :children-async (-partial
@@ -1234,12 +1028,14 @@ With a prefix argument, show the outgoing call hierarchy."
                                      "callHierarchy/outgoingCalls"
                                    "callHierarchy/incomingCalls")
                                  outgoing)
+                :ret-action (lambda (&rest _)
+                              (interactive)
+                              (lsp-treemacs--call-hierarchy-ret-action item))
                 :item item))
         (lsp-request "textDocument/prepareCallHierarchy"
                      (lsp--text-document-position-params)))
        (concat (if outgoing "Outgoing" "Incoming") " Call Hierarchy")
-       nil
-       "*Call Hierarchy*") nil))))
+       nil "*Call Hierarchy*" nil t) nil))))
 
 
 
@@ -1315,7 +1111,179 @@ With prefix 2 show both."
     (setq lsp--buffer-workspaces workspaces)))
 
 
+;; errors
 
+(defun lsp-treeemacs--error-list-diags (_folder file &rest _)
+  (->> (lsp-diagnostics)
+       (gethash file)
+       (-filter #'lsp-treemacs--match-diagnostic-severity)
+       (-sort (-lambda ((&Diagnostic :range (&Range :start (&Position :character char-a
+                                                                      :line line-a)))
+                        (&Diagnostic :range (&Range :start (&Position :character char-b
+                                                                      :line line-b))))
+                (if (= line-a line-b)
+                    (< char-a char-b)
+                  (< line-a line-b))))
+       (-map (-lambda ((diag &as &Diagnostic
+                             :severity?
+                             :message
+                             :range (&Range :start (start &as &Position :line :character))
+                             :source?))
+               (list :id message
+                     :label (format (propertize "%s %s %s" 'face 'default)
+                                    (if source?
+                                        (propertize (format "[%s]" source?)
+                                                    'face 'shadow)
+                                      "")
+                                    message
+                                    (propertize (format "(%s:%s)" line character)
+                                                'face 'lsp-details-face))
+                     :icon-literal (lsp-treemacs--diagnostic-icon severity?)
+                     :ret-action (lambda (&rest _)
+                                   (lsp-treemacs--open-file-in-mru file)
+                                   (->> start
+                                        lsp--position-to-point
+                                        goto-char)
+                                   (run-hooks 'xref-after-jump-hook))
+                     :file file
+                     :diag diag
+                     :actions `(["Quick fix..." lsp-treemacs-list-errors-quick-fix ]
+                                ["Go to..." lsp-treemacs-list-errors-quick-fix ]))))))
+
+(defun lsp-treemacs-errors--list-files (folder &rest _)
+  (->> (lsp-diagnostics)
+       (ht-keys)
+       (-keep
+        (lambda (file)
+          (when (and (lsp-f-ancestor-of? folder file)
+                     (lsp-treemacs-errors--diags? (lsp-diagnostics-stats-for file)))
+            (list :id file
+                  :label (format "%s %s %s"
+                                 (f-filename file)
+                                 (->> (append (lsp-diagnostics-stats-for file) ())
+                                      (-map-indexed
+                                       (lambda (index count)
+                                         (unless (zerop count)
+                                           (propertize
+                                            (number-to-string count)
+                                            'face (alist-get index lsp-treemacs-file-face-map)))))
+                                      (-filter #'identity)
+                                      (s-join "/"))
+                                 (propertize (f-dirname (f-relative file folder))
+                                             'face 'lsp-details-face))
+                  :icon (if (f-directory? file) 'dir-closed (f-ext file))
+                  :children (-partial #'lsp-treeemacs--error-list-diags folder file)
+                  :ret-action (lambda (&rest _)
+                                (interactive)
+                                (lsp-treemacs--open-file-in-mru file))))))))
+
+(lsp-treemacs-define-action lsp-treemacs-quick-fix (:file :diag)
+  "Select the element under cursor."
+  (lsp-treemacs--open-file-in-mru file)
+  (-let [(&Diagnostic :range (&RangeToPoint :start)) diag]
+    (goto-char start)
+    (call-interactively #'lsp-execute-code-action)))
+
+(defun lsp-treemacs-cycle-severity  ()
+  "Cycle through the severity levels shown in the errors list"
+  (interactive)
+  (setq lsp-treemacs-error-list-severity
+        (if (= lsp-treemacs-error-list-severity lsp/diagnostic-severity-error)
+            lsp/diagnostic-severity-hint
+          (1- lsp-treemacs-error-list-severity)))
+  (lsp-treemacs-errors-list--refresh))
+
+(defun lsp-treemacs-errors--diags? (diags)
+  (->> diags
+       (seq-map-indexed (lambda (count index)
+                          (when (and (not (zerop count))
+                                     (<= index lsp-treemacs-error-list-severity))
+                            count)))
+       (seq-some #'identity)))
+
+(defun lsp-treemacs-errors-list--refresh ()
+  (lsp-treemacs-render
+   (->> (lsp-session)
+        (lsp-session-folders)
+        (-keep
+         (lambda (folder)
+           (when-let ((diags (append (lsp-diagnostics-stats-for folder) ())))
+             (when (lsp-treemacs-errors--diags? diags)
+               (list :label (format
+                             (propertize "%s %s %s" 'face 'default)
+                             (f-filename folder)
+                             (->> diags
+                                  (-map-indexed
+                                   (lambda (index count)
+                                     (when (and (not (zerop count))
+                                                (<= index lsp-treemacs-error-list-severity))
+                                       (propertize
+                                        (number-to-string count)
+                                        'face (alist-get index lsp-treemacs-file-face-map)))))
+                                  (-filter #'identity)
+                                  (s-join "/"))
+                             (propertize (f-dirname folder)
+                                         'face 'lsp-lens-face))
+                     :id folder
+                     :icon 'root
+                     :children (-partial #'lsp-treemacs-errors--list-files folder)
+                     :ret-action (lambda (&rest _)
+                                   (interactive)
+                                   (lsp-treemacs--open-file-in-mru folder))))))))
+   "Errors List"
+   nil
+   lsp-treemacs-errors-buffer-name
+   `(["Cycle Severity" lsp-treemacs-cycle-severity])))
+
+;;;###autoload
+(defun lsp-treemacs-errors-list ()
+  (interactive)
+  (-if-let (buffer (get-buffer lsp-treemacs-errors-buffer-name))
+      (progn
+        (select-window (display-buffer-in-side-window buffer '((side . bottom))))
+        (lsp-treemacs-errors-list--refresh))
+    (let* ((buffer (lsp-treemacs-errors-list--refresh))
+           (window (display-buffer-in-side-window buffer '((side . bottom)))))
+      (select-window window)
+      (set-window-dedicated-p window t)
+      (lsp-treemacs-error-list-mode 1)
+
+      (add-hook 'lsp-diagnostics-updated-hook #'lsp-treemacs-errors-list--refresh)
+      (add-hook 'kill-buffer-hook 'lsp-treemacs--kill-buffer nil t)))
+
+  (let ((buf (lsp-treemacs-errors-list--refresh)))
+    (pop-to-buffer buf)
+    (with-current-buffer buf
+      (lsp-treemacs-error-list-mode 1))))
+
+(defun lsp-treemacs--diagnostic-icon (severity)
+  "Get the icon for DIAGNOSTIC."
+  (cl-case severity
+    (1 treemacs-icon-error)
+    (2 treemacs-icon-warning)
+    (t treemacs-icon-info)))
+
+(defun lsp-treemacs--kill-buffer ()
+  "Kill buffer hook."
+  (remove-hook 'lsp-diagnostics-updated-hook #'lsp-treemacs-errors-list--refresh))
+
+(defvar lsp-treemacs-error-list-mode-map
+  (let ((m (make-sparse-keymap)))
+    (define-key m (kbd "x") #'lsp-treemacs-quick-fix)
+    (define-key m (kbd "=") #'lsp-treemacs-cycle-severity)
+    m)
+  "Keymap for `lsp-treemacs-error-list-mode'.")
+
+(define-minor-mode lsp-treemacs-error-list-mode ""
+  nil nil nil
+  :keymap lsp-treemacs-error-list-mode-map
+  :group 'lsp-treeemacs)
+
+(defun lsp-treemacs--match-diagnostic-severity (diagnostic)
+  (<= (lsp:diagnostic-severity? diagnostic)
+      (prefix-numeric-value lsp-treemacs-error-list-severity)))
+
+
 (provide 'lsp-treemacs)
 ;;; lsp-treemacs.el ends here
 

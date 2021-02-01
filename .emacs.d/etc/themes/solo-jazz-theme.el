@@ -1,8 +1,11 @@
-;;; solo-jazz-theme.el --- The Solo-Jazz color theme for Emacs.
+;;; solo-jazz-theme.el --- The Solo-Jazz color theme -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2020, Carl Steib
 
 ;; Author: Carl Steib
+;; URL: https://github.com/cstby/solo-jazz-emacs-theme
+;; Version: 0.6.0
+;; Package-Requires: ((emacs "24.1"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -15,7 +18,7 @@
 ;; GNU General Public License for more details.
 
 ;; You should have received a copy of the GNU General Public License
-;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ;; This file is not part of emacs.
 
@@ -36,61 +39,52 @@
 
 ;;; Color Palette
 
-(defvar solo-jazz-default-colors-alist
-  '(("solo-jazz-white+1"                . "#ffffff")
-    ("solo-jazz-white"                  . "#fafafa")
-    ("solo-jazz-white-1"                . "#efefef")
-    ("solo-jazz-lavender"               . "#eaeafa")
-    ("solo-jazz-azure"                  . "#eafafa")
-    ("solo-jazz-grey"                   . "#d0d0d0")
-    ("solo-jazz-slate"                  . "#778ca3")
-    ("solo-jazz-black"                  . "#24292e")
+(eval-and-compile
+  (defvar solo-jazz-theme-default-colors-alist
+    '(("_solo-jazz-white+1"               . "#ffffff")
+      ("solo-jazz-white"                  . "#fafafa")
+      ("solo-jazz-white-1"                . "#efefef")
+      ("solo-jazz-lavender"               . "#eaeafa")
+      ("solo-jazz-azure"                  . "#eafafa")
+      ("solo-jazz-grey"                   . "#d0d0d0")
+      ("solo-jazz-slate"                  . "#778ca3")
+      ("solo-jazz-black"                  . "#24292e")
 
-    ("solo-jazz-orange"                 . "#ff5200")
-    ("solo-jazz-red"                    . "#fe2500")
-    ("solo-jazz-pink"                   . "#fa1090")
-    ("solo-jazz-violet"                 . "#c71585")
-    ("solo-jazz-purple+1"               . "#9d2dab")
-    ("solo-jazz-purple"                 . "#3b2685")
-    ("solo-jazz-blue"                   . "#005cc5")
-    ("solo-jazz-blue+1"                 . "#00afef")
-    ("solo-jazz-teal"                   . "#009c9f")
-    ("solo-jazz-teal+1"                 . "#04c4c7")
-    ("solo-jazz-green"                  . "#10d7ae")
+      ("solo-jazz-orange"                 . "#ff5200")
+      ("solo-jazz-red"                    . "#fe2500")
+      ("solo-jazz-pink"                   . "#fa1090")
+      ("solo-jazz-violet"                 . "#c71585")
+      ("solo-jazz-purple+1"               . "#9d2dab")
+      ("solo-jazz-purple"                 . "#3b2685")
+      ("solo-jazz-blue"                   . "#005cc5")
+      ("solo-jazz-blue+1"                 . "#00afef")
+      ("solo-jazz-teal"                   . "#009c9f")
+      ("solo-jazz-teal+1"                 . "#04c4c7")
+      ("solo-jazz-green"                  . "#10d7ae")
 
-    ;; diff
-    ("solo-jazz-diff-added"             . "#e6ffed")
-    ("solo-jazz-diff-added-highlight"   . "#acf2bd")
-    ("solo-jazz-diff-changed"           . "#ffe1b9")
-    ("solo-jazz-diff-changed-highlight" . "#ffc86f")
-    ("solo-jazz-diff-removed"           . "#ffeef0")
-    ("solo-jazz-diff-removed-highlight" . "#fdb8c0"))
+      ;; diff
+      ("solo-jazz-diff-added"             . "#e6ffed")
+      ("solo-jazz-diff-added-highlight"   . "#acf2bd")
+      ("solo-jazz-diff-changed"           . "#ffe1b9")
+      ("solo-jazz-diff-changed-highlight" . "#ffc86f")
+      ("solo-jazz-diff-removed"           . "#ffeef0")
+      ("solo-jazz-diff-removed-highlight" . "#fdb8c0"))
 
-  "Solo-Jazz color palette.Each element has the form (NAME . HEX).")
+    "Solo-Jazz color palette.Each element has the form (NAME . HEX)."))
 
-(defvar solo-jazz-override-colors-alist
-  '()
-  "Place to override default theme colors.
-
-You can override a subset of the theme's default colors by
-defining them in this alist before loading the theme.")
-
-(defvar solo-jazz-colors-alist
-  (append solo-jazz-default-colors-alist solo-jazz-override-colors-alist))
-
-(defmacro solo-jazz-with-color-variables (&rest body)
+(defmacro solo-jazz-theme-with-color-variables (&rest body)
   "`let' bind all colors defined in `solo-jazz-colors-alist' around BODY.
 Also bind `class' to ((class color) (min-colors 89))."
   (declare (indent 0))
   `(let ((class '((class color) (min-colors 89)))
          ,@(mapcar (lambda (cons)
                      (list (intern (car cons)) (cdr cons)))
-                   solo-jazz-colors-alist))
+                   solo-jazz-theme-default-colors-alist))
      ,@body))
 
 ;;; Theme Faces
 
-(solo-jazz-with-color-variables
+(solo-jazz-theme-with-color-variables
   (custom-theme-set-faces
    'solo-jazz
 
@@ -113,8 +107,8 @@ Also bind `class' to ((class color) (min-colors 89))."
 
    ;; basic
    `(default                                 ((t (:foreground ,solo-jazz-purple :background ,solo-jazz-white))))
-   `(link                                    ((t (:foreground ,solo-jazz-teal :underline t))))
-   `(link-visited                            ((t (:inherit link :underline nil))))
+   `(link                                    ((t (:foreground ,solo-jazz-blue+1 :underline t))))
+   `(link-visited                            ((t (:foreground ,solo-jazz-blue+1 :underline nil))))
    '(button                                  ((t (:inherit link))))
    `(cursor                                  ((t (:background ,solo-jazz-teal+1))))
    `(escape-glyph                            ((t (:foreground ,solo-jazz-teal))))
@@ -170,7 +164,7 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(company-preview-common                  ((t (:foreground ,solo-jazz-slate :background ,solo-jazz-teal+1))))
 
    ;; cider
-   `(cider-result-overlay-face               ((t (:forground ,solo-jazz-purple :box (:color ,solo-jazz-purple :line-width -1)))))
+   `(cider-result-overlay-face               ((t (:foreground ,solo-jazz-purple :box (:color ,solo-jazz-purple :line-width -1)))))
    `(cider-enlightened-face                  ((t (:box (:color ,solo-jazz-purple :line-width -1)))))
    `(cider-enlightened-local-face            ((t (:weight bold :foreground ,solo-jazz-purple))))
    `(cider-deprecated-face                   ((t (:background ,solo-jazz-purple))))
@@ -232,20 +226,20 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(linum                                   ((t (:foreground ,solo-jazz-slate :background ,solo-jazz-white))))
 
    ;; line-number
-   `(line-number                             ((,class (:foreground ,solo-jazz-slate :background ,solo-jazz-white :inherit default))))
-   `(line-number-current-line                ((,class (:foreground ,solo-jazz-purple :weight bold :background ,solo-jazz-white :inherit line-number))))
+   `(line-number                             ((,class (:inherit fixed-pitch :foreground ,solo-jazz-slate :background ,solo-jazz-white))))
+   `(line-number-current-line                ((,class (:inherit fixed-pitch :foreground ,solo-jazz-purple :weight bold :background ,solo-jazz-white))))
 
    ;; lispy
-   `(lispy-command-name-face                 ((t (:background ,solo-jazz-lavender :inherit font-lock-function-name-face))))
+   `(lispy-command-name-face                 ((t (:background ,solo-jazz-lavender :foreground ,solo-jazz-pink))))
    `(lispy-cursor-face                       ((t (:foreground ,solo-jazz-white :background ,solo-jazz-purple))))
-   `(lispy-face-hint                         ((t (:inherit highlight :foreground ,solo-jazz-teal))))
+   `(lispy-face-hint                         ((t (:background ,solo-jazz-lavender :foreground ,solo-jazz-purple))))
 
    ;; magit
    `(magit-bisect-good                       ((t (:foreground ,solo-jazz-slate))))
    `(magit-bisect-skip                       ((t (:foreground ,solo-jazz-teal))))
    `(magit-bisect-bad                        ((t (:foreground ,solo-jazz-blue+1))))
 
-   `(magit-blame-heading                     ((t (:background ,solo-jazz-teal+1 :foreground ,solo-jazz-purple))))
+   `(magit-blame-heading                     ((t (:background ,solo-jazz-lavender :foreground ,solo-jazz-purple))))
    `(magit-blame-hash                        ((t (:background ,solo-jazz-teal+1 :foreground ,solo-jazz-purple))))
    `(magit-blame-name                        ((t (:background ,solo-jazz-teal+1 :foreground ,solo-jazz-purple))))
    `(magit-blame-date                        ((t (:background ,solo-jazz-teal+1 :foreground ,solo-jazz-purple))))
@@ -378,6 +372,69 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(neo-vc-missing-face                     ((t (:foreground ,solo-jazz-purple))))
    `(neo-vc-ignored-face                     ((t (:foreground ,solo-jazz-purple))))
 
+   ;; org
+   `(org-agenda-clocking                     ((t (:bold t :background ,solo-jazz-white))))
+   `(org-agenda-date-today                   ((t (:foreground ,solo-jazz-purple :slant italic :weight bold))))
+   `(org-agenda-done                         ((t (:foreground ,solo-jazz-teal+1 :strike-through t))))
+   `(org-agenda-structure                    ((t (:foreground ,solo-jazz-slate))))
+
+   `(org-archived                            ((t (:foreground ,solo-jazz-purple :weight bold))))
+   `(org-block                               ((t (:inherit 'fixed-pitch :foreground ,solo-jazz-black :background ,solo-jazz-white-1 :extend t))))
+   `(org-checkbox                            ((t (:background ,solo-jazz-white :foreground ,solo-jazz-purple :box (:line-width 1 :style released-button)))))
+   `(org-code                                ((t (:inherit 'fixed-pitch :foreground ,solo-jazz-slate))))
+   `(org-column                              ((t (:background ,solo-jazz-teal+1))))
+   `(org-column-title                        ((t (:background ,solo-jazz-teal+1 :underline t :weight bold))))
+   `(org-date                                ((t (:foreground ,solo-jazz-purple :underline t))))
+   `(org-deadline-announce                   ((t (:foreground ,solo-jazz-purple))))
+   `(org-document-info                       ((t (:foreground ,solo-jazz-teal))))
+   `(org-document-info-keyword               ((t (:inherit font-lock-comment-face))))
+   `(org-document-title                      ((t (:foreground ,solo-jazz-blue :weight bold))))
+   `(org-done                                ((t (:weight bold :foreground ,solo-jazz-teal+1 :strike-through t))))
+   `(org-ellipsis                            ((t (:foreground ,solo-jazz-purple :underline t))))
+   `(org-footnote                            ((t (:foreground ,solo-jazz-blue :underline t))))
+   `(org-formula                             ((t (:foreground ,solo-jazz-purple))))
+
+   `(org-habit-ready-face                    ((t :background ,solo-jazz-teal+1)))
+   `(org-habit-alert-face                    ((t :background ,solo-jazz-pink :foreground ,solo-jazz-white)))
+   `(org-habit-clear-face                    ((t :background ,solo-jazz-blue)))
+   `(org-habit-overdue-face                  ((t :background ,solo-jazz-red)))
+   `(org-habit-clear-future-face             ((t :background ,solo-jazz-blue+1)))
+   `(org-habit-ready-future-face             ((t :background ,solo-jazz-green)))
+   `(org-habit-alert-future-face             ((t :background ,solo-jazz-violet :foreground ,solo-jazz-white)))
+   `(org-habit-overdue-future-face           ((t :background ,solo-jazz-orange)))
+
+   `(org-headline-done                       ((t (:foreground ,solo-jazz-teal+1 :strike-through t))))
+   `(org-hide                                ((t (:inherit 'fixed-pitch :foreground ,solo-jazz-white))))
+   `(org-indent                              ((t (:inherit 'fixed-pitch :foreground ,solo-jazz-white))))
+
+   `(org-level-1                             ((t (:foreground ,solo-jazz-teal))))
+   `(org-level-2                             ((t (:foreground ,solo-jazz-blue))))
+   `(org-level-3                             ((t (:foreground ,solo-jazz-pink))))
+   `(org-level-4                             ((t (:foreground ,solo-jazz-violet))))
+   `(org-level-5                             ((t (:foreground ,solo-jazz-red))))
+   `(org-level-6                             ((t (:foreground ,solo-jazz-orange))))
+   `(org-level-7                             ((t (:foreground ,solo-jazz-purple+1))))
+   `(org-level-8                             ((t (:foreground ,solo-jazz-black))))
+
+   `(org-link                                ((t (:foreground ,solo-jazz-blue+1 :underline t))))
+   `(org-meta-line                           ((t (:inherit font-lock-comment-face))))
+   `(org-mode-line-clock                     ((t (:foreground ,solo-jazz-teal+1 :background ,solo-jazz-purple))))
+   `(org-mode-line-clock-overrun             ((t (:foreground ,solo-jazz-white :background ,solo-jazz-purple))))
+
+   `(org-scheduled                           ((t (:foreground ,solo-jazz-blue))))
+   `(org-scheduled-previously                ((t (:foreground ,solo-jazz-blue+1))))
+   `(org-scheduled-today                     ((t (:foreground ,solo-jazz-teal))))
+
+   `(org-sexp-date                           ((t (:foreground ,solo-jazz-teal :underline t))))
+   `(org-special-keyword                     ((t (:inherit font-lock-comment-face))))
+   `(org-table                               ((t (:foreground ,solo-jazz-grey))))
+   `(org-tag                                 ((t (:bold t :weight bold))))
+   `(org-time-grid                           ((t (:foreground ,solo-jazz-purple))))
+   `(org-todo                                ((t (:bold t :foreground ,solo-jazz-pink :weight bold))))
+   `(org-upcoming-deadline                   ((t (:foreground ,solo-jazz-pink))))
+   `(org-verbatim                            ((t (:foreground ,solo-jazz-slate :weight bold))))
+   `(org-warning                             ((t (:bold t :foreground ,solo-jazz-orange :weight bold :underline nil))))
+
    ;; pos-tip
    `(pos-tip-foreground-color                ((t (:foreground ,solo-jazz-purple :background ,solo-jazz-white))))
    `(pos-tip-background-color                ((t (:foreground ,solo-jazz-purple :background ,solo-jazz-white))))
@@ -405,6 +462,8 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(web-mode-css-at-rule-face               ((t (:foreground ,solo-jazz-orange ))))
    `(web-mode-css-prop-face                  ((t (:foreground ,solo-jazz-orange))))
    `(web-mode-css-pseudo-class-face          ((t (:foreground ,solo-jazz-teal :weight bold))))
+   `(web-mode-current-column-highlight-face  ((t (:background ,solo-jazz-lavender))))
+   `(web-mode-current-element-highlight-face ((t (:background ,solo-jazz-azure))))
    `(web-mode-css-rule-face                  ((t (:foreground ,solo-jazz-teal))))
    `(web-mode-doctype-face                   ((t (:inherit ,font-lock-comment-face))))
    `(web-mode-folded-face                    ((t (:underline t))))
@@ -434,10 +493,9 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(whitespace-tab                          ((t (:background ,solo-jazz-red :foreground ,solo-jazz-white))))
    `(whitespace-indentation                  ((t (:background ,solo-jazz-pink :foreground ,solo-jazz-white))))
    `(whitespace-empty                        ((t (:background ,solo-jazz-pink :foreground ,solo-jazz-white))))
-   `(whitespace-line                         ((t (:background ,solo-jazz-white-1 :extend t :foreground ,solo-jazz-violet :weight bold))))))
+   `(whitespace-line                         ((t (:background ,solo-jazz-white-1 :extend t :foreground ,solo-jazz-violet :weight bold)))))
 
 ;;; Theme Variables
-(solo-jazz-with-color-variables
   (custom-theme-set-variables
    'solo-jazz
 
@@ -479,10 +537,10 @@ Also bind `class' to ((class color) (min-colors 89))."
 
 ;;; Rainbow Support
 
-(declare-function rainbow-mode 'rainbow-mode)
-(declare-function rainbow-colorize-by-assoc 'rainbow-mode)
+(declare-function rainbow-mode "rainbow-mode")
+(declare-function rainbow-colorize-by-assoc "rainbow-mode")
 
-(defvar solo-jazz-add-font-lock-keywords nil
+(defvar solo-jazz-theme-add-font-lock-keywords nil
   "Whether to add font-lock keywords for solo-jazz color names.
 
 In buffers visiting library `solo-jazz-theme.el' the solo-jazz
@@ -495,28 +553,24 @@ solo-jazz-specific font-lock keywords to be used.
 In all other Emacs-Lisp buffers this variable controls whether
 this should be done.  This requires library `rainbow-mode'.")
 
-(defvar solo-jazz-colors-font-lock-keywords nil)
+(defvar solo-jazz-theme-colors-font-lock-keywords nil)
 
-(defun solo-jazz--rainbow-turn-on ()
+(defun solo-jazz-theme-rainbow-turn-on ()
   "Maybe also add font-lock keywords for solo-jazz colors."
   (when (and (derived-mode-p 'emacs-lisp-mode)
-             (or solo-jazz-add-font-lock-keywords
+             (or solo-jazz-theme-add-font-lock-keywords
                  (and (buffer-file-name)
                       (equal (file-name-nondirectory (buffer-file-name))
                              "solo-jazz-theme.el"))))
-    (unless solo-jazz-colors-font-lock-keywords
-      (setq solo-jazz-colors-font-lock-keywords
-            `((,(regexp-opt (mapcar 'car solo-jazz-default-colors-alist) 'words)
-               (0 (rainbow-colorize-by-assoc solo-jazz-default-colors-alist))))))
-    (font-lock-add-keywords nil solo-jazz-colors-font-lock-keywords 'end)))
+    (unless solo-jazz-theme-colors-font-lock-keywords
+      (setq solo-jazz-theme-colors-font-lock-keywords
+            `((,(regexp-opt (mapcar #'car solo-jazz-theme-default-colors-alist) 'words)
+               (0 (rainbow-colorize-by-assoc solo-jazz-theme-default-colors-alist))))))
+    (font-lock-add-keywords nil solo-jazz-theme-colors-font-lock-keywords 'end)))
 
-(defun solo-jazz--rainbow-turn-off ()
+(defun solo-jazz-theme-rainbow-turn-off ()
   "Also remove font-lock keywords for solo-jazz colors."
-  (font-lock-remove-keywords nil solo-jazz-colors-font-lock-keywords))
-
-(when (fboundp 'advice-add)
-  (advice-add 'rainbow-turn-on :after  #'solo-jazz--rainbow-turn-on)
-  (advice-add 'rainbow-turn-off :after #'solo-jazz--rainbow-turn-off))
+  (font-lock-remove-keywords nil solo-jazz-theme-colors-font-lock-keywords))
 
 ;;; Footer
 
@@ -528,5 +582,6 @@ this should be done.  This requires library `rainbow-mode'.")
                    (file-name-directory load-file-name))))
 
 (provide-theme 'solo-jazz)
+(provide 'solo-jazz-theme)
 
 ;;; solo-jazz-theme.el ends here

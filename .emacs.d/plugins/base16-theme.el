@@ -353,6 +353,9 @@ return the actual color value.  Otherwise return the value unchanged."
      (diff-file-header                             :background base02)
      (diff-hunk-header                             :foreground base0E :background base01)
 
+;;;; dired
+     (dired-filetype-plain                         :foreground base05 :background base00)
+     
 ;;;; dired+
      (diredp-compressed-file-suffix                :foreground base0D)
      (diredp-dir-heading                           :foreground nil :background nil :inherit heading)
@@ -533,12 +536,23 @@ return the actual color value.  Otherwise return the value unchanged."
      (helm-buffer-saved-out                        :foreground base0F)
      (helm-buffer-size                             :foreground base09)
      (helm-candidate-number                        :foreground base00 :background base09)
-     (helm-ff-directory                            :foreground base04 :background nil :weight bold)
+     (helm-ff-directory                            :inherit dired-directory)
+     (helm-ff-dotted-directory                     :inherit dired-ignored)
      (helm-ff-executable                           :foreground base0B)
-     (helm-ff-file                                 :foreground base0C)
-     (helm-ff-invalid-symlink                      :foreground base00 :background base08)
+     (helm-ff-file                                 :inherit default)
+     (helm-ff-invalid-symlink                      :inherit dired-warning)
      (helm-ff-prefix                               :foreground nil :background nil)
-     (helm-ff-symlink                              :foreground base00 :background base0C)
+     (helm-ff-symlink                              :inherit dired-symlink)
+     (helm-ff-suid                                 :foreground base08)
+     (helm-ff-dotted-symlink-directory             :foreground base09 :background base03)
+     (helm-ff-denied                               :foreground base08 :background base03)
+;     (helm-ff-truename) ;; already inherited
+;     (helm-ff-dirs) ;; already inherited
+     (helm-ff-socket                               :foreground base0E)
+     (helm-ff-pipe                                 :foreground base0A :background base03)
+     (helm-ff-file-extension                       :foreground base03)
+     (helm-ff-backup-file                          :inherit dired-ignored)
+
      (helm-grep-cmd-line                           :foreground base0B)
      (helm-grep-file                               :foreground base0C)
      (helm-grep-finish                             :foreground base00 :background base09)

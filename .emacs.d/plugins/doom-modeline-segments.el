@@ -56,6 +56,10 @@
 (defvar battery-mode-line-format)
 (defvar battery-mode-line-limit)
 (defvar battery-status-function)
+(defvar boon-command-state)
+(defvar boon-insert-state)
+(defvar boon-off-state)
+(defvar boon-special-state)
 (defvar edebug-execution-mode)
 (defvar eglot--managed-mode)
 (defvar erc-modified-channels-alist)
@@ -97,6 +101,7 @@
 (defvar tracking-buffers)
 (defvar winum-auto-setup-mode-line)
 (defvar xah-fly-insert-state-q)
+(defvar meow--indicator)
 
 (declare-function anzu--reset-status 'anzu)
 (declare-function anzu--where-is-here 'anzu)
@@ -108,6 +113,8 @@
 (declare-function aw-window-list 'ace-window)
 (declare-function battery-format 'battery)
 (declare-function battery-update 'battery)
+(declare-function boon-modeline-string 'boon)
+(declare-function boon-state-string 'boon)
 (declare-function cider--connection-info 'cider)
 (declare-function cider-connected-p 'cider)
 (declare-function cider-current-repl 'cider)
@@ -184,6 +191,7 @@
 (declare-function lsp-workspace-restart 'lsp-mode)
 (declare-function lsp-workspace-shutdown 'lsp-mode)
 (declare-function lsp-workspaces 'lsp-mode)
+(declare-function lv-message 'lv)
 (declare-function mc/num-cursors 'multiple-cursors-core)
 (declare-function mu4e-alert-default-mode-line-formatter 'mu4e-alert)
 (declare-function mu4e-alert-enable-mode-line-display 'mu4e-alert)
@@ -1467,7 +1475,6 @@ Requires `eyebrowse-mode' or `tab-bar-mode' to be enabled."
   (setq doom-modeline--persp-name
         ;; Support `persp-mode', while not support `perspective'
         (when (and doom-modeline-persp-name
-                   (not doom-modeline--limited-width-p)
                    (bound-and-true-p persp-mode)
                    (fboundp 'safe-persp-name)
                    (fboundp 'get-current-persp))
@@ -1484,8 +1491,8 @@ Requires `eyebrowse-mode' or `tab-bar-mode' to be enabled."
             (when (or doom-modeline-display-default-persp-name
                       (not (string-equal persp-nil-name name)))
               (concat (doom-modeline-spc)
-                      (propertize (concat (when doom-modeline-persp-icon
-                                                (concat icon (doom-modeline-vspc)))
+                      (propertize (concat (and doom-modeline-persp-icon
+                                               (concat icon (doom-modeline-vspc)))
                                           (propertize name 'face face))
                                   'help-echo "mouse-1: Switch perspective
 mouse-2: Show help for minor mode"
@@ -1500,15 +1507,17 @@ mouse-2: Show help for minor mode"
                                                map))
                       (doom-modeline-spc)))))))
 
+(add-hook 'buffer-list-update-hook #'doom-modeline-update-persp-name)
 (add-hook 'find-file-hook #'doom-modeline-update-persp-name)
 (add-hook 'persp-activated-functions #'doom-modeline-update-persp-name)
 (add-hook 'persp-renamed-functions #'doom-modeline-update-persp-name)
-(advice-add #'select-window :after #'doom-modeline-update-persp-name)
+(advice-add #'lv-message :after #'doom-modeline-update-persp-name)
 
 (doom-modeline-def-segment persp-name
   "The current perspective name."
-  (if (doom-modeline--active)
-      doom-modeline--persp-name))
+  (when (and (doom-modeline--active)
+             (not doom-modeline--limited-width-p))
+    doom-modeline--persp-name))
 
 
 ;;
@@ -1518,8 +1527,9 @@ mouse-2: Show help for minor mode"
 (doom-modeline-def-segment misc-info
   "Mode line construct for miscellaneous information.
 By default, this shows the information specified by `global-mode-string'."
-  (if (doom-modeline--active)
-      '("" mode-line-misc-info)))
+  (when (and (doom-modeline--active)
+             (not doom-modeline--limited-width-p))
+    '("" mode-line-misc-info)))
 
 
 ;;
@@ -1608,6 +1618,7 @@ mouse-1: Display Line and Column Mode Menu"
 (doom-modeline-def-segment parrot
   "The party parrot animated icon. Requires `parrot-mode' to be enabled."
   (when (and (doom-modeline--active)
+             (not doom-modeline--limited-width-p)
              (bound-and-true-p parrot-mode))
     (concat (doom-modeline-spc)
             (doom-modeline-spc)
@@ -1674,6 +1685,24 @@ TEXT is alternative if icon is not available."
                                  'doom-modeline-evil-normal-state
                                  (format "Xah-fly command mode")))))
 
+(defsubst doom-modeline--boon ()
+  "The current Boon state. Requires `boon-mode' to be enabled."
+  (when (bound-and-true-p boon-local-mode)
+    (doom-modeline--modal-icon
+     (boon-state-string)
+     (cond
+      (boon-command-state 'doom-modeline-evil-normal-state)
+      (boon-insert-state 'doom-modeline-evil-insert-state)
+      (boon-special-state 'doom-modeline-evil-emacs-state)
+      (boon-off-state 'doom-modeline-evil-operator-state)
+      (t 'doom-modeline-evil-operator-state))
+     (boon-modeline-string))))
+
+(defsubst doom-modeline--meow ()
+  "The current Meow state. Requires `meow-mode' to be enabled."
+  (when (bound-and-true-p meow-mode)
+    meow--indicator))
+
 (doom-modeline-def-segment modals
   "Displays modal editing states, including `evil', `overwrite', `god', `ryo'
 and `xha-fly-kyes', etc."
@@ -1682,16 +1711,19 @@ and `xha-fly-kyes', etc."
          (god (doom-modeline--god))
          (ryo (doom-modeline--ryo))
          (xf (doom-modeline--xah-fly-keys))
+         (boon (doom-modeline--boon))
          (vsep (doom-modeline-vspc))
-         (sep (and (or evil ow god ryo xf) (doom-modeline-spc))))
+         (meow (doom-modeline--meow))
+         (sep (and (or evil ow god ryo xf boon) (doom-modeline-spc))))
     (concat sep
-            (and evil (concat evil (and (or ow god ryo xf) vsep)))
-            (and ow (concat ow (and (or god ryo xf) vsep)))
-            (and god (concat god (and (or ryo xf) vsep)))
-            (and ryo (concat ryo (and xf vsep)))
-            xf
+            (and evil (concat evil (and (or ow god ryo xf boon meow) vsep)))
+            (and ow (concat ow (and (or god ryo xf boon meow) vsep)))
+            (and god (concat god (and (or ryo xf boon meow) vsep)))
+            (and ryo (concat ryo (and (or xf boon meow) vsep)))
+            (and xf (concat xf (and (or boon meow) vsep)))
+            (and boon (concat boon (and meow vsep)))
+            meow
             sep)))
-
 
 ;;
 ;; Objed state
@@ -1945,7 +1977,8 @@ mouse-1: Start server"))
 
 (doom-modeline-def-segment lsp
   "The LSP server state."
-  (when doom-modeline-lsp
+  (when (and doom-modeline-lsp
+             (not doom-modeline--limited-width-p))
     (let ((active (doom-modeline--active))
           (icon (cond ((bound-and-true-p lsp-mode)
                        doom-modeline--lsp)
@@ -1978,7 +2011,8 @@ mouse-1: Start server"))
 (defvar doom-modeline-before-github-fetch-notification-hook nil
   "Hooks before fetching GitHub notifications.
 Example:
-  (add-hook 'doom-modeline-before-github-fetch-notification-hook #'auth-source-pass-enable)")
+  (add-hook 'doom-modeline-before-github-fetch-notification-hook
+            #'auth-source-pass-enable)")
 (defun doom-modeline--github-fetch-notifications ()
   "Fetch GitHub notifications."
   (when (and doom-modeline-github
@@ -2026,6 +2060,7 @@ Example:
   "The GitHub notifications."
   (when (and doom-modeline-github
              (doom-modeline--active)
+             (not doom-modeline--limited-width-p)
              (numberp doom-modeline--github-notification-number)
              (> doom-modeline--github-notification-number 0))
     (concat
@@ -2165,7 +2200,8 @@ mouse-1: Toggle Debug on Quit"
 
 (doom-modeline-def-segment debug
   "The current debug state."
-  (when (doom-modeline--active)
+  (when (and (doom-modeline--active)
+             (not doom-modeline--limited-width-p))
     (let* ((dap doom-modeline--debug-dap)
            (edebug (doom-modeline--debug-edebug))
            (on-error (doom-modeline--debug-on-error))
@@ -2207,6 +2243,7 @@ mouse-1: Toggle Debug on Quit"
   "Show notifications of any unread emails in `mu4e'."
   (when (and doom-modeline-mu4e
              (doom-modeline--active)
+             (not doom-modeline--limited-width-p)
              (bound-and-true-p mu4e-alert-mode-line)
              (numberp mu4e-alert-mode-line)
              ;; don't display if the unread mails count is zero
@@ -2225,9 +2262,15 @@ mouse-1: Toggle Debug on Quit"
           (number-to-string mu4e-alert-mode-line))
         'face '(:inherit (doom-modeline-unread-number doom-modeline-warning))))
       'mouse-face 'mode-line-highlight
-      'help-echo (if (= mu4e-alert-mode-line 1)
-                     "You have an unread email"
-                   (format "You have %s unread emails" mu4e-alert-mode-line)))
+      'keymap '(mode-line keymap
+                          (mouse-1 . mu4e-alert-view-unread-mails)
+                          (mouse-2 . mu4e-alert-view-unread-mails)
+                          (mouse-3 . mu4e-alert-view-unread-mails))
+      'help-echo (concat (if (= mu4e-alert-mode-line 1)
+                             "You have an unread email"
+                           (format "You have %s unread emails" mu4e-alert-mode-line))
+                         "\nClick here to view "
+                         (if (= mu4e-alert-mode-line 1) "it" "them")))
      (doom-modeline-spc))))
 
 (defun doom-modeline-override-mu4e-alert-modeline (&rest _)
@@ -2297,6 +2340,7 @@ mouse-1: Toggle Debug on Quit"
 (doom-modeline-def-segment gnus
   "Show notifications of any unread emails in `gnus'."
   (when (and (doom-modeline--active)
+             (not doom-modeline--limited-width-p)
              doom-modeline-gnus
              doom-modeline--gnus-started
              ;; Don't display if the unread mails count is zero
@@ -2389,7 +2433,8 @@ to be an icon and we don't want to remove that so we just return the original."
 (doom-modeline-def-segment irc-buffers
   "The list of shortened, unread irc buffers."
   (when (and doom-modeline-irc
-             (doom-modeline--active))
+             (doom-modeline--active)
+             (not doom-modeline--limited-width-p))
     (let* ((buffers (doom-modeline--get-buffers))
            (number (length buffers)))
       (when (> number 0)
@@ -2401,7 +2446,8 @@ to be an icon and we don't want to remove that so we just return the original."
 (doom-modeline-def-segment irc
   "A notification icon for any unread irc buffer."
   (when (and doom-modeline-irc
-             (doom-modeline--active))
+             (doom-modeline--active)
+             (not doom-modeline--limited-width-p))
     (let* ((buffers (doom-modeline--get-buffers))
            (number (length buffers)))
       (when (> number 0)
@@ -2481,7 +2527,8 @@ mouse-3: Switch to next unread buffer")))
   "Update battery status."
   (setq doom-modeline--battery-status
         (when (bound-and-true-p display-battery-mode)
-          (let* ((data (and (bound-and-true-p battery-status-function)
+          (let* ((data (and battery-status-function
+                            (functionp battery-status-function)
                             (funcall battery-status-function)))
                  (charging? (string-equal "AC" (cdr (assoc ?L data))))
                  (percentage (car (read-from-string (or (cdr (assq ?p data)) "ERR"))))
@@ -2543,6 +2590,7 @@ mouse-3: Switch to next unread buffer")))
 (doom-modeline-def-segment battery
   "Display battery status."
   (when (and (doom-modeline--active)
+             (not doom-modeline--limited-width-p)
              (bound-and-true-p display-battery-mode))
     (concat (doom-modeline-spc)
             (concat

@@ -10,13 +10,19 @@
 
 (require 'swiper)
 
+(defcustom counsel-jq-json-buffer-mode 'js-mode
+  "Major mode for the resulting *jq-json* buffer."
+  :type '(function)
+  :require 'counsel-jq
+  :group 'counsel-jq)
+
 (defun counsel-jq-json (&optional query)
   "Call 'jq' with the QUERY with a default of '.'."
   (with-current-buffer
       ;; The user entered the `counsel-jq` query in the minibuffer.
-      ;; This expression uses the most recent other buffer (see
-      ;; https://www.gnu.org/software/emacs/manual/html_node/eintr/Switching-Buffers.html#fnd-2).
-      (other-buffer (current-buffer) t)
+      ;; This expression uses the most recent buffer ivy-read was
+      ;; invoked from.
+      (ivy-state-buffer ivy-last)
     (call-process-region
      (point-min)
      (point-max)
@@ -31,6 +37,7 @@
   "Wrapper function passing INPUT over to `counsel-jq-json'."
   (when (get-buffer "*jq-json*")
       (with-current-buffer "*jq-json*"
+        (funcall counsel-jq-json-buffer-mode)
         (erase-buffer)))
   (counsel-jq-json input)
   (split-string

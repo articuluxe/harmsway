@@ -29,6 +29,9 @@
 ;; and updates them whenever another command is invoked.
 
 ;;; Code:
+
+(require 'format-spec)
+
 ;;; Options
 
 (defgroup keycast nil
@@ -63,7 +66,7 @@ removes all elements to the right of where that was inserted."
 This predicate is used while updating the mode line of a window
 to determine whether the current command and its key binding
 should be displayed in its mode line.  The function is called
-with no argument and act on `selected-window'.
+with no argument and acts on `selected-window'.
 
 `moody-window-active-p'
   Return non-nil if the temporarily selected window is the
@@ -93,8 +96,8 @@ with no argument and act on `selected-window'.
   "The format spec used by `mode-line-keycast'.
 
 %s `keycast-separator-width' spaces.
-%k The key using the `keycast-key' face.
-%K The key with no styling.
+%k The key using the `keycast-key' face and padding.
+%K The key with no styling without any padding.
 %c The command using the `keycast-command' face.
 %C The command with-no styling.
 %r The times the command was repeated."
@@ -116,7 +119,7 @@ care about your weird key bindings), or to hide certain commands
 \(such as `self-insert-command').  This option allows doing that
 and more.
 
-Each element has the form (MATCH EVENT COMMAND).  MATH is an
+Each element has the form (MATCH EVENT COMMAND).  MATCH is an
 event or a command.  When a command is invoked then this package
 looks for a MATCH for that.  If there is a match, then that the
 respective EVENT and COMMAND are used.  If not, then it looks
@@ -143,6 +146,38 @@ instead."
                         (const   :tag "Use actual command" t)
                         (symbol  :tag "Substitute command")))))
 
+(defcustom keycast-log-format "%-20K%C\n"
+  "The format spec used by `keycast-log-mode'.
+
+%s `keycast-separator-width' spaces.
+%k The key using the `keycast-key' face and padding.
+%K The key with no styling without any padding.
+%c The command using the `keycast-command' face.
+%C The command with-no styling.
+%r The times the command was repeated."
+  :package-version '(keycast . "2.0.0")
+  :group 'keycast
+  :type 'string)
+
+(defcustom keycast-log-frame-alist
+  '((minibuffer . nil))
+  "Alist of frame parameters used by `keycast-log-mode's frame."
+  :package-version '(keycast . "2.0.0")
+  :group 'keycast
+  :type 'string)
+
+(defcustom keycast-log-newest-first t
+  "Whether `keycast-log-mode' inserts events at beginning of buffer."
+  :package-version '(keycast . "2.0.0")
+  :group 'keycast
+  :type 'boolean)
+
+(defcustom keycast-log-buffer-name "*keycast*"
+  "The name of the buffer used by `keycast-log-mode'."
+  :package-version '(keycast . "2.0.0")
+  :group 'keycast
+  :type 'string)
+
 (defface keycast-key
   '((t (:weight bold
         :height 1.2
@@ -156,24 +191,70 @@ instead."
   "When Keycast mode is enabled, face used for the command in the mode line."
   :group 'keycast)
 
-;;; Core
+;;; Common
+
+(defvar keycast-mode)
+(defvar keycast-log-mode)
 
 (defvar keycast--this-command nil)
 (defvar keycast--this-command-keys nil)
 (defvar keycast--command-repetitions 0)
 (defvar keycast--reading-passwd nil)
 
-(defun keycast-mode-line-update ()
-  "Update mode line with current `this-command' and `this-command-keys'."
+(defun keycast--update ()
   (if (eq last-command this-command)
       (cl-incf keycast--command-repetitions)
     (setq keycast--command-repetitions 0))
   ;; Remember these values because the mode line update won't actually
   ;; happen until we return to the command loop and by that time these
   ;; values have been reset to nil.
-  (setq keycast--this-command-keys (this-command-keys))
-  (setq keycast--this-command this-command)
-  (force-mode-line-update))
+  (setq keycast--this-command-keys (this-single-command-keys))
+  (setq keycast--this-command
+        (cond ((symbolp this-command) this-command)
+              ((eq (car-safe this-command) 'lambda) "<lambda>")
+              (t (format "<%s>" (type-of this-command)))))
+  (when keycast-log-mode
+    (keycast-log-update-buffer))
+  (when keycast-mode
+    (force-mode-line-update)))
+
+(defun keycast--format (format)
+  (and (not keycast--reading-passwd)
+       (let* ((key (ignore-errors
+                     (key-description keycast--this-command-keys)))
+              (cmd keycast--this-command)
+              (elt (or (assoc cmd keycast-substitute-alist)
+                       (assoc key keycast-substitute-alist))))
+         (when elt
+           (pcase-let ((`(,_ ,k ,c) elt))
+             (unless (eq k t) (setq key k))
+             (unless (eq c t) (setq cmd c))))
+         (and key cmd
+              (let ((k (if (and (bound-and-true-p mode-line-compact)
+                                (eq format mode-line-keycast-format))
+                           key
+                         (let ((pad (max 2 (- 5 (length key)))))
+                           (concat (make-string (ceiling pad 2) ?\s) key
+                                   (make-string (floor   pad 2) ?\s)))))
+                    (c (format " %s" cmd)))
+                (format-spec
+                 format
+                 `((?s . ,(make-string keycast-separator-width ?\s))
+                   (?k . ,(propertize k 'face 'keycast-key))
+                   (?K . ,key)
+                   (?c . ,(propertize c 'face 'keycast-command))
+                   (?C . ,c)
+                   (?r . ,(if (> keycast--command-repetitions 0)
+                              (format " x%s" (1+ keycast--command-repetitions))
+                            "")))))))))
+
+(defun keycast--read-passwd (fn prompt &optional confirm default)
+  (let ((keycast--reading-passwd t))
+    (funcall fn prompt confirm default)))
+
+(advice-add 'read-passwd :around #'keycast--read-passwd)
+
+;;; Mode-Line
 
 (defvar keycast--removed-tail nil)
 
@@ -194,7 +275,7 @@ instead."
                (setcdr cons (list 'mode-line-keycast)))
               (t
                (setcdr cons (cons 'mode-line-keycast (cdr cons)))))
-        (add-hook 'pre-command-hook 'keycast-mode-line-update t))
+        (add-hook 'pre-command-hook 'keycast--update t))
     (let ((cons (memq 'mode-line-keycast mode-line-format)))
       (cond (keycast--removed-tail
              (setcar cons (car keycast--removed-tail))
@@ -203,7 +284,8 @@ instead."
              (setcar cons (cadr cons))
              (setcdr cons (cddr cons)))))
     (setq keycast--removed-tail nil)
-    (remove-hook 'pre-command-hook 'keycast-mode-line-update)))
+    (unless keycast-log-mode
+      (remove-hook 'pre-command-hook 'keycast--update))))
 
 (defun keycast--tree-member (elt tree)
   (or (member elt tree)
@@ -231,40 +313,48 @@ instead."
 (defvar mode-line-keycast
   '(:eval
     (and (funcall keycast-window-predicate)
-         (not keycast--reading-passwd)
-         (let* ((key (ignore-errors
-                       (key-description keycast--this-command-keys)))
-                (cmd keycast--this-command)
-                (elt (or (assoc cmd keycast-substitute-alist)
-                         (assoc key keycast-substitute-alist))))
-           (when elt
-             (pcase-let ((`(,_ ,k ,c) elt))
-               (unless (eq k t) (setq key k))
-               (unless (eq c t) (setq cmd c))))
-           (and key cmd
-                (let ((k (let ((pad (max 2 (- 5 (length key)))))
-                           (concat (make-string (ceiling pad 2) ?\s) key
-                                   (make-string (floor   pad 2) ?\s))))
-                      (c (format " %s" cmd)))
-                  (format-spec
-                   mode-line-keycast-format
-                   `((?s . ,(make-string keycast-separator-width ?\s))
-                     (?k . ,(propertize k 'face 'keycast-key))
-                     (?K . ,k)
-                     (?c . ,(propertize c 'face 'keycast-command))
-                     (?C . ,c)
-                     (?r . ,(if (> keycast--command-repetitions 0)
-                                (format " x%s" (1+ keycast--command-repetitions))
-                              ""))))))))))
+         (keycast--format mode-line-keycast-format))))
 
 (put 'mode-line-keycast 'risky-local-variable t)
 (make-variable-buffer-local 'mode-line-keycast)
 
-(defun keycast--read-passwd (fn prompt &optional confirm default)
-  (let ((keycast--reading-passwd t))
-    (funcall fn prompt confirm default)))
+;;; Log-Buffer
 
-(advice-add 'read-passwd :around #'keycast--read-passwd)
+;;;###autoload
+(define-minor-mode keycast-log-mode
+  "Log invoked commands and their key bindings in a buffer."
+  :global t
+  (cond
+   (keycast-log-mode
+    (add-hook 'pre-command-hook 'keycast--update t)
+    (keycast-log-update-buffer))
+   ((not keycast-mode)
+    (remove-hook 'pre-command-hook 'keycast--update))))
+
+(defun keycast-log-update-buffer ()
+  (when keycast--this-command
+    (let ((buf (get-buffer keycast-log-buffer-name)))
+      (unless (buffer-live-p buf)
+        (setq buf (get-buffer-create keycast-log-buffer-name))
+        (with-current-buffer buf
+          (setq buffer-read-only t)
+          (setq mode-line-format nil)
+          (let ((default-frame-alist keycast-log-frame-alist))
+            (switch-to-buffer-other-frame (current-buffer)))))
+      (with-current-buffer buf
+        (goto-char (if keycast-log-newest-first (point-min) (point-max)))
+        (let ((inhibit-read-only t))
+          (insert (keycast--format keycast-log-format)))
+        (goto-char (if keycast-log-newest-first (point-min) (point-max)))))))
+
+(defun keycast-log-erase-buffer ()
+  "Erase the contents of `keycast-log-mode's buffer."
+  (interactive)
+  (let ((buf (get-buffer keycast-log-buffer-name)))
+    (when (buffer-live-p buf)
+      (with-current-buffer buf
+        (let ((inhibit-read-only t))
+          (erase-buffer))))))
 
 ;;; _
 (provide 'keycast)

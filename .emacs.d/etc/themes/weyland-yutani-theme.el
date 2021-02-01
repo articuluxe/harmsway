@@ -63,10 +63,10 @@ the parenthetical noise."
       (base4           "#3e4044")
       (base5           "#4e5054")
       (base6           "#717ea5")
-      (base6.1         "#8c9dc4")
+      (base6.1         "#94a5d0")
       (base7           "#505a76")
 
-      (bg              "#202226")
+      (bg              "#24272B")       ;#1f2226 <- previous
       (bg-alt          "#26282c")
       (bg-Black        "#2b2f37")
       (bg-darker       "#1f2024")
@@ -76,7 +76,7 @@ the parenthetical noise."
       (bg-Blue         "#272c3b")
       (bg-CharlesGreen "#272D2D")
       (bg-Green        "#3a4f34")
-      (bg-Grey         "#434157")
+      (_bg-Grey         "#434157")
       (bg-Grey-alt     "#343a4f")
       (bg-Orchid       "#3b3559")
       (bg-Red          "#4f343a")
@@ -94,6 +94,7 @@ the parenthetical noise."
       (Magenta               "#C264C6")
       (IcebergBlue           "#4F9FD2")
       (ArcticBlue            "#59b9b4")
+      (ArcticBlue-alt        "#67bfba")
       (Gold                  "#b9b174")
       (Orchid                "#e372dd")
 
@@ -118,7 +119,6 @@ the parenthetical noise."
       (light-Orchid          "#ee78e8")
       (light-Purple          "#ba86f4")
       (light-Blue            "#63A4FF")
-      (light-Finch           "#ebff5f")
 
       ;; DARK VARIANTS
       (dark-Crimson          "#ba464a")
@@ -126,6 +126,7 @@ the parenthetical noise."
       (dark-Gold             "#7e784c")
       (dark-Purple           "#7c73cc")
       (bg-dark-Black         "#242733")
+      (bg-Arctic-Blue        "#26303d")
       (dark-Red              "#d2344c")
 
       ;; VIBRANT VARIANTS
@@ -147,11 +148,11 @@ the parenthetical noise."
    'weyland-yutani
    (weyland-yutani-theme-face-specifier
     ;; FACE                                    :foreground                       :background  :MISC
-    `(default                                  :foreground ,fg                   :background ,bg)
+    `(default                                  :foreground ,fg
+       :background ,bg :distant-foreground ,bg)
     `(default-italic
        :italic t)
     `(header-line                              :foreground ,HarlequinGreen       :background ,bg-Grey-alt
-      :height 1.2
       :underline ,very-dark-bg
       :distant-foreground ,bg)
 
@@ -159,19 +160,19 @@ the parenthetical noise."
     `(fringe                                   :foreground ,Purple               :background ,bg)
     `(hl-line                                                                    :background ,hl)
     `(region                                   :foreground ,light-Indigo         :background ,bg-Blue)
-    `(vertical-border                          :foreground ,dark-Slate)
+    `(vertical-border                          :foreground "#4a5677")
     `(highlight                                :foreground ,bg                   :background ,vibrant-Green)
     `(minibuffer-prompt                        :foreground ,HarlequinGreen)
 
     `(font-lock-builtin-face                   :foreground ,Indigo)
-    `(font-lock-comment-face                   :foreground ,fg-alt)
+    `(font-lock-comment-face                   :foreground ,fg-alt :distant-foreground ,base2)
     `(font-lock-constant-face                  :foreground ,IcebergBlue)
     `(font-lock-doc-face                       :foreground ,base2)
     `(font-lock-function-name-face             :foreground ,Violet)
     `(font-lock-keyword-face                   :foreground ,HarlequinGreen)
     `(font-lock-negation-char-face             :foreground ,IcebergBlue)
     `(font-lock-reference-face                 :foreground ,IcebergBlue)
-    `(font-lock-string-face                    :foreground ,ArcticBlue)
+    `(font-lock-string-face                    :foreground ,ArcticBlue-alt       :background ,bg-Arctic-Blue)
     `(font-lock-type-face                      :foreground ,Indigo)
     `(font-lock-variable-name-face             :foreground ,Magenta)
     `(font-lock-warning-face                   :foreground ,Crimson)
@@ -203,7 +204,9 @@ the parenthetical noise."
     `(tree-sitter-hl-face:number               :foreground ,Orange)
     `(tree-sitter-hl-face:constant
       :inherit tree-sitter-hl-face:number)
-
+    `(tree-sitter-hl-face:function.macro
+      :inherit tree-sitter-hl-face:number)
+    `(tree-sitter-hl-face:punctuation nil)
 
     ;; MODE SUPPORT: powerline
     `(powerline-active0
@@ -231,7 +234,7 @@ the parenthetical noise."
       :underline t)
     `(show-paren-match                         :foreground ,Violet               :background ,bg-Violet
       :bold t)
-    `(shadow                                   :foreground ,base5)
+    `(shadow                                   :foreground ,base6)
     `(isearch                                  :foreground ,Crimson              :background ,base4
       :bold t)
     ;; NOTE emacs built with gtk cannot customize this.
@@ -300,6 +303,12 @@ the parenthetical noise."
       :box (:color ,bg-dark-Black :line-width -1))
 
     ;; MODE SUPPORT: org-mode
+    `(org-headline-done :foreground "#606873" :strike-through t)
+    `(org-indent
+      :inherit (org-hide fixed-pitch))
+
+    `(org-ref-cite-face                        :foreground ,light-Orchid
+      :underline t)
 
     `(org-document-title                       :foreground ,HarlequinGreen
       :underline t
@@ -325,9 +334,12 @@ the parenthetical noise."
     `(org-special-keyword                      :foreground ,Violet)
     `(org-date                                 :foreground ,Magenta
       :underline t)
-    `(org-agenda-structure                     :foreground ,base1
-      :weight bold
-      :box (:color ,base3))
+    `(org-agenda-structure                     :foreground "#4e94c2"
+                                               :background "#212a31"
+      :extend t
+      :height 1.3
+      :italic t
+      :weight bold)
     `(org-agenda-date                          :foreground ,HarlequinGreen       :background ,bg-Grey-alt
       :underline ,very-dark-bg
       :distant-foreground ,bg)
@@ -342,7 +354,8 @@ the parenthetical noise."
     `(org-scheduled                            :foreground ,Indigo)
     `(org-scheduled-today                      :foreground ,IcebergBlue)
     `(org-document-info-keyword                :foreground ,Violet)
-    `(org-sexp-date                            :foreground ,base3)
+    `(org-sexp-date                            :foreground ,base3
+      :inherit fixed-pitch)
     ;; DONE
     `(org-level-1                              :foreground ,HarlequinGreen
       :bold t
@@ -383,16 +396,19 @@ the parenthetical noise."
 
     `(org-block                                                                  :background ,bg-Black
      :extend t)
-    `(org-block-begin-line                                                       :background ,bg-Grey
+    `(org-block-begin-line                     :foreground ,base6.1              :background ,bg-Grey-alt
+      :underline ,bg-dark-Black
       :extend t)
     `(org-block-end-line
+      :overline ,bg-dark-Black
       :inherit org-block-begin-line)
+
     `(org-quote
-      :inherit org-block
-      :slant italic)
-    `(org-verse
-      :inherit org-block
-      :slant italic)
+      :foreground ,White
+      :background ,bg-darker
+      :slant normal
+      :extend t
+      )
 
     `(org-code                                 :foreground ,Orange)
     `(org-verbatim                             :foreground ,HarlequinGreen)
@@ -642,6 +658,37 @@ the parenthetical noise."
       :extend t)
     `(helm-swoop-target-word-face
       :inherit highlight)
+
+    ;; Face for highlighting odd-numbered non-current differences in buffer A.
+    `(ediff-odd-diff-A
+      :foreground "#cfd6e0"
+      :background "#3b3f57")
+
+    `(ediff-odd-diff-B
+      :foreground "#cfd6e0"
+      :background "#3b3f57")
+
+    `(ediff-even-diff-A
+      :foreground "#cfd6e0"
+      :background "#3b3f57")
+
+    `(ediff-even-diff-B
+      :foreground "#cfd6e0"
+      :background "#3b3f57")
+
+    `(ediff-fine-diff-B
+      :foreground ,bg-darker
+      :background "#7daa22")
+
+    `(ediff-current-diff-A
+      :foreground "#c7d0db"
+      :background "#553333"
+      )                                 ;
+
+    `(ediff-current-diff-B
+      :foreground "#e7ebef"
+      :background "#335533"
+      )
 
     `(web-mode-builtin-face
       :inherit ,font-lock-builtin-face)

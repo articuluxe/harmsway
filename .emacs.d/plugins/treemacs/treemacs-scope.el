@@ -1,6 +1,6 @@
 ;;; treemacs.el --- A tree style file viewer package -*- lexical-binding: t -*-
 
-;; Copyright (C) 2020 Alexander Miller
+;; Copyright (C) 2021 Alexander Miller
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -223,7 +223,7 @@ NEW-SCOPE-TYPE: T: treemacs-scope"
             (treemacs-scope-shelf->buffer)
             (get-buffer-window)
             (select-window))
-  (run-hooks 'treemacs-select-hook))
+  (run-hook-with-args 'treemacs-select-functions 'visible))
 
 (defun treemacs-get-local-buffer ()
   "Return the treemacs buffer local to the current scope-type.

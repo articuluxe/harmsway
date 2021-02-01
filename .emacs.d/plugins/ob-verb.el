@@ -1,12 +1,12 @@
 ;;; ob-verb.el --- Babel integration for Verb  -*- lexical-binding: t -*-
 
-;; Copyright (C) 2020  Federico Tedin
+;; Copyright (C) 2021  Federico Tedin
 
 ;; Author: Federico Tedin <federicotedin@gmail.com>
 ;; Maintainer: Federico Tedin <federicotedin@gmail.com>
 ;; Homepage: https://github.com/federicotdn/verb
 ;; Keywords: tools
-;; Package-Version: 2.12.0
+;; Package-Version: 2.13.1
 ;; Package-Requires: ((emacs "25.1"))
 
 ;; This file is NOT part of GNU Emacs.
@@ -33,7 +33,7 @@
 (require 'verb)
 
 (defun org-babel-execute:verb (body params)
-  "Exeucute an action on the selected Babel source block.
+  "Execute an action on the selected Babel source block.
 BODY should contain the body of the source block, and PARAMS any
 header arguments passed to it.  This function is called by
 `org-babel-execute-src-block'.

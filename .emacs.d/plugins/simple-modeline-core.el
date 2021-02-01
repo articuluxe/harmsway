@@ -30,20 +30,45 @@
   "The former value of `mode-line-format'.")
 
 ;;
+;; Options
+;;
+
+(defcustom simple-modeline-segments
+  '((simple-modeline-segment-modified
+     simple-modeline-segment-buffer-name
+     simple-modeline-segment-position)
+    (simple-modeline-segment-minor-modes
+     simple-modeline-segment-input-method
+     simple-modeline-segment-eol
+     simple-modeline-segment-encoding
+     simple-modeline-segment-vc
+     simple-modeline-segment-misc-info
+     simple-modeline-segment-process
+     simple-modeline-segment-major-mode))
+  "Simple modeline segments."
+  :type '(list (repeat :tag "Left aligned" function)
+               (repeat :tag "Right aligned" function))
+  :package-version '(simple-modeline . "1.2"))
+
+;;
 ;; Faces
 ;;
 
+(defface simple-modeline-space
+  '((t))
+  "Face for space used to alight the right segments in the mode-line.")
+
 (defface simple-modeline-unimportant
   '((t (:inherit (shadow))))
-  "Face used for less important mode-line elements.")
+  "Face for less important mode-line elements.")
 
 (defface simple-modeline-status-modified
   '((t (:inherit (font-lock-variable-name-face))))
-  "Face used for the 'modified' indicator symbol in the mode-line.")
+  "Face for the 'modified' indicator symbol in the mode-line.")
 
 (defface simple-modeline-status-info
   '((t (:inherit (font-lock-string-face))))
-  "Face used for generic status indicators in the mode-line.")
+  "Face for generic status indicators in the mode-line.")
 
 (defface simple-modeline-status-success
   '((t (:inherit (success))))
@@ -55,32 +80,11 @@
 
 (defface simple-modeline-status-error
   '((t (:inherit (error))))
-  "Face for error stauts indicators in the mode-line.")
+  "Face for error status indicators in the mode-line.")
 
 ;;
 ;; Helpers
 ;;
-
-(defmacro simple-modeline-create-segment (name doc &rest body)
-  "Create a new segment with NAME, DOC and BODY function for `simple-modeline-mode'."
-  (let ((segment (intern (format "simple-modeline-segment-%s" name)))
-        (toggle (intern (format "simple-modeline-toggle-%s" name)))
-        (show (intern (format "simple-modeline-show-%s" name))))
-    `(progn
-       (defcustom ,show t
-         ,(format "Visibility of the %s segment of the mode-line." name)
-         :group 'simple-modeline
-         :type 'boolean)
-       (defun ,toggle ()
-         ,(format "Toggle visibility of %s segment of the mode-line." name)
-         (interactive)
-         (customize-save-variable (quote ,show) (not ,show)))
-       (defalias
-         (quote ,segment)
-         (lambda ()
-           (when ,show
-             ,@body))
-         ,doc))))
 
 (defun simple-modeline--format (left-segments right-segments)
   "Return a string of `window-width' length containing LEFT-SEGMENTS and RIGHT-SEGMENTS, aligned respectively."
@@ -89,7 +93,9 @@
          (reserve (length right)))
     (concat
      left
-     (propertize " " 'display `((space :align-to (- right ,reserve))))
+     (propertize " "
+                 'display `((space :align-to (- right ,reserve)))
+                 'face '(:inherit simple-modeline-space))
      right)))
 
 (defun simple-modeline--format-segments (segments)

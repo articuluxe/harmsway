@@ -1,6 +1,6 @@
 ;;; magit-git.el --- Git functionality  -*- lexical-binding: t -*-
 
-;; Copyright (C) 2010-2020  The Magit Project Contributors
+;; Copyright (C) 2010-2021  The Magit Project Contributors
 ;;
 ;; You should have received a copy of the AUTHORS.md file which
 ;; lists all contributors.  If not, see http://magit.vc/authors.
@@ -26,12 +26,6 @@
 ;; This library implements wrappers for various Git plumbing commands.
 
 ;;; Code:
-
-(require 'cl-lib)
-(require 'dash)
-
-(eval-when-compile
-  (require 'subr-x))
 
 (require 'magit-utils)
 (require 'magit-section)
@@ -1386,12 +1380,13 @@ configured remote is an url, or the named branch does not exist,
 then return nil.  I.e.  return the name of an existing local or
 remote-tracking branch.  The returned string is colorized
 according to the branch type."
-  (when-let ((branch (or branch (magit-get-current-branch)))
-             (upstream (magit-ref-abbrev (concat branch "@{upstream}"))))
-    (magit--propertize-face
-     upstream (if (equal (magit-get "branch" branch "remote") ".")
-                  'magit-branch-local
-                'magit-branch-remote))))
+  (magit--with-refresh-cache (list 'magit-get-upstream-branch branch)
+    (when-let ((branch (or branch (magit-get-current-branch)))
+               (upstream (magit-ref-abbrev (concat branch "@{upstream}"))))
+      (magit--propertize-face
+       upstream (if (equal (magit-get "branch" branch "remote") ".")
+                    'magit-branch-local
+                  'magit-branch-remote)))))
 
 (defun magit-get-indirect-upstream-branch (branch &optional force)
   (let ((remote (magit-get "branch" branch "remote")))
@@ -1455,12 +1450,13 @@ according to the branch type."
     (magit--propertize-face remote 'magit-branch-remote)))
 
 (defun magit-get-push-branch (&optional branch verify)
-  (when-let ((branch (or branch (setq branch (magit-get-current-branch))))
-             (remote (magit-get-push-remote branch))
-             (target (concat remote "/" branch)))
-    (and (or (not verify)
-             (magit-rev-verify target))
-         (magit--propertize-face target 'magit-branch-remote))))
+  (magit--with-refresh-cache (list 'magit-get-push-branch branch verify)
+    (when-let ((branch (or branch (setq branch (magit-get-current-branch))))
+               (remote (magit-get-push-remote branch))
+               (target (concat remote "/" branch)))
+      (and (or (not verify)
+               (magit-rev-verify target))
+           (magit--propertize-face target 'magit-branch-remote)))))
 
 (defun magit-get-@{push}-branch (&optional branch)
   (let ((ref (magit-rev-parse "--symbolic-full-name"
@@ -1476,8 +1472,8 @@ according to the branch type."
 
 (defun magit-get-some-remote (&optional branch)
   (or (magit-get-remote branch)
-      (and (magit-branch-p "master")
-           (magit-get-remote "master"))
+      (when-let ((main (magit-main-branch)))
+        (magit-get-remote main))
       (let ((remotes (magit-list-remotes)))
         (or (car (member "origin" remotes))
             (car remotes)))))
@@ -1711,6 +1707,11 @@ SORTBY is a key or list of keys to pass to the `--sort' flag of
                (substring it 41))
           (magit-git-lines "ls-remote" remote)))
 
+(defun magit-list-modified-modules ()
+  (--keep (and (string-match "\\`\\+\\([^ ]+\\) \\(.+\\) (.+)\\'" it)
+               (match-string 2 it))
+          (magit-git-lines "submodule" "status")))
+
 (defun magit-list-module-paths ()
   (--mapcat (and (string-match "^160000 [0-9a-z]\\{40\\} 0\t\\(.+\\)$" it)
                  (list (match-string 1 it)))
@@ -1778,6 +1779,27 @@ PATH has to be relative to the super-repository."
 
 (defun magit-remote-p (string)
   (car (member string (magit-list-remotes))))
+
+(defvar magit-main-branch-names
+  ;; These are the names that Git suggests
+  ;; if `init.defaultBranch' is undefined.
+  '("main" "master" "trunk" "development"))
+
+(defun magit-main-branch ()
+  "Return the main branch.
+
+If a branch exists whose name that matches `init.defaultBranch'
+then that is considered the main branch.  If no branch by that
+name exists, then the branch names in `magit-main-branch-names'
+are tried in order.  The first matching branch that actually
+exists in the current repository is considered its main branch."
+  (let ((branches (magit-list-local-branch-names)))
+    (seq-find (lambda (name)
+                (member name branches))
+              (delete-dups
+               (delq nil
+                     (cons (magit-get "init.defaultBranch")
+                           magit-main-branch-names))))))
 
 (defun magit-rev-diff-count (a b)
   "Return the commits in A but not B and vice versa.
@@ -2241,9 +2263,10 @@ out.  Only existing branches can be selected."
      (or (let ((r (car (member (magit-remote-branch-at-point) branches)))
                (l (car (member (magit-local-branch-at-point) branches))))
            (if magit-prefer-remote-upstream (or r l) (or l r)))
-         (let ((r (car (member "origin/master" branches)))
-               (l (car (member "master" branches))))
-           (if magit-prefer-remote-upstream (or r l) (or l r)))
+         (when-let ((main (magit-main-branch)))
+           (let ((r (car (member (concat "origin/" main) branches)))
+                 (l (car (member main branches))))
+             (if magit-prefer-remote-upstream (or r l) (or l r))))
          (car (member (magit-get-previous-branch) branches))))))
 
 (defun magit-read-starting-point (prompt &optional branch default)
@@ -2277,10 +2300,21 @@ out.  Only existing branches can be selected."
                          (magit-tag-at-point)))
 
 (defun magit-read-stash (prompt)
-  (let ((stashes (magit-list-stashes)))
-    (magit-completing-read prompt stashes nil t nil nil
-                           (magit-stash-at-point)
-                           (car stashes))))
+  (let* ((atpoint (magit-stash-at-point))
+         (default (and atpoint
+                       (concat atpoint (magit-rev-format " %s" atpoint))))
+         (choices (mapcar (lambda (c)
+                            (pcase-let ((`(,rev ,msg) (split-string c "\0")))
+                              (concat (propertize rev 'face 'magit-hash)
+                                      " " msg)))
+                          (magit-list-stashes "%gd%x00%s")))
+         (choice  (magit-completing-read prompt choices
+                                         nil t nil nil
+                                         default
+                                         (car choices))))
+    (and choice
+         (string-match "^\\([^ ]+\\) \\(.+\\)" choice)
+         (substring-no-properties (match-string 1 choice)))))
 
 (defun magit-read-remote (prompt &optional default use-only)
   (let ((remotes (magit-list-remotes)))

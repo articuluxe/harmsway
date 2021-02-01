@@ -1,11 +1,11 @@
-;;; immaterial-theme.el --- A flexible theme based on material design principles
+;;; immaterial-theme.el --- A flexible theme based on material design principles -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2019-2020 Peter Gardfjäll
 
 ;; Author: Peter Gardfjäll
 ;; Keywords: themes
 ;; URL: https://github.com/petergardfjall/emacs-immaterial-theme
-;; Version: 0.5.5
+;; Version: 0.7.0
 ;; Package-Requires: ((emacs "25"))
 
 ;; Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -63,33 +63,37 @@ VARIANT can either be 'dark of 'light.  Values can be overridden
 via immaterial-color-override-alist).  The palette was created
 using the https://material.io/resources/color/ tool."
   `(("background-primary"    . ,(if (eq variant 'dark) "#012027" "#fdfdfa"))
-    ("background-off"        . ,(if (eq variant 'dark) "#001b21" "#fbfbf8"))
+    ("background-off"        . ,(if (eq variant 'dark) "#001b21" "#f8f8f4"))
     ("background-on"         . ,(if (eq variant 'dark) "#01343f" "#f5f5e7"))
-    ("foreground-primary"    . ,(if (eq variant 'dark) "#dddddd" "#24292e"))
-    ("foreground-secondary"  . ,(if (eq variant 'dark) "#c8c8c8" "#505055"))
-    ("foreground-tertiary"   . ,(if (eq variant 'dark) "#b0b0b0" "#8e8e8e"))
-    ("primary"               . ,(if (eq variant 'dark) "#9fa8da" "#7e57c2"))
-    ("primary-light"         . ,(if (eq variant 'dark) "#d1d9ff" "#b085f5"))
-    ("primary-dark"          . ,(if (eq variant 'dark) "#6f79a8" "#4d2c91"))
-    ("secondary"             . ,(if (eq variant 'dark) "#c5e1a5" "#558b2f"))
+    ("foreground-primary"    . ,(if (eq variant 'dark) "#dddddd" "#333333"))
+    ("foreground-secondary"  . ,(if (eq variant 'dark) "#c8c8c8" "#444444"))
+    ("foreground-tertiary"   . ,(if (eq variant 'dark) "#aaaaaa" "#555555"))
+    ("primary"               . ,(if (eq variant 'dark) "#b39ddb" "#4527a0"))
+    ("primary-light"         . ,(if (eq variant 'dark) "#e6ceff" "#7953d2"))
+    ("primary-dark"          . ,(if (eq variant 'dark) "#836fa9" "#000070"))
+    ("secondary"             . ,(if (eq variant 'dark) "#c5e1a5" "#33691e"))
     ("secondary-light"       . ,(if (eq variant 'dark) "#f8ffd7" "#85bb5c"))
     ("secondary-dark"        . ,(if (eq variant 'dark) "#94af76" "#255d00"))
-    ("error"                 . ,(if (eq variant 'dark) "#ff5555" "#b0003a"))
-    ("warning"               . ,(if (eq variant 'dark) "#ff9800" "#ff9800"))
-    ("discrete"              . ,(if (eq variant 'dark) "#777777" "#888888"))
-    ("vertical-border"       . ,(if (eq variant 'dark) "#012830" "#dddddd"))
+    ("tertiary"              . ,(if (eq variant 'dark) "#90caf9" "#0d47a1"))
+    ("tertiary-light"        . ,(if (eq variant 'dark) "#c3fdff" "#5472d3"))
+    ("tertiary-dark"         . ,(if (eq variant 'dark) "#5d99c6" "#002171"))
+
+    ("error"                 . ,(if (eq variant 'dark) "#ef9a9a" "#b00202"))
+    ("warning"               . ,(if (eq variant 'dark) "#ff9800" "#bf360c"))
+    ("discrete"              . ,(if (eq variant 'dark) "#848484" "#757575"))
+    ("vertical-border"       . ,(if (eq variant 'dark) "#001b21" "#f8f8f4"))
     ("cursor"                . ,(if (eq variant 'dark) "#64d8cb" "#64d8cb"))
     ("modeline-active-fg"    . ,(if (eq variant 'dark) "#ffffff" "#ffffff"))
     ("modeline-active-bg"    . ,(if (eq variant 'dark) "#005662" "#9575cd"))
     ("modeline-inactive-fg"  . ,(if (eq variant 'dark) "#777777" "#9e9e9e"))
     ("modeline-inactive-bg"  . ,(if (eq variant 'dark) "#001017" "#ede7f6"))
     ;; various task-specific colors
-    ("diff-added"            . ,(if (eq variant 'dark) "#0e3a19" "#e6ffed"))
-    ("diff-added-refined"    . ,(if (eq variant 'dark) "#1a8736" "#acf2bd"))
-    ("diff-removed"          . ,(if (eq variant 'dark) "#460b0e" "#ffeef0"))
-    ("diff-removed-refined"  . ,(if (eq variant 'dark) "#b51a22" "#fdb8c0"))
+    ("diff-added"            . ,(if (eq variant 'dark) "#063314" "#e6ffed"))
+    ("diff-added-refined"    . ,(if (eq variant 'dark) "#115c24" "#acf2bd"))
+    ("diff-removed"          . ,(if (eq variant 'dark) "#450a0d" "#ffeef0"))
+    ("diff-removed-refined"  . ,(if (eq variant 'dark) "#7f1217" "#fdb8c0"))
     ("diff-changed"          . ,(if (eq variant 'dark) "#07275a" "#e1f0fe"))
-    ("diff-changed-refined"  . ,(if (eq variant 'dark) "#2674ed" "#a8d3ff"))
+    ("diff-changed-refined"  . ,(if (eq variant 'dark) "#0c4296" "#a8d3ff"))
     ))
 
 
@@ -141,15 +145,19 @@ NAME and VARIANT should be symbols."
 	  (sec                  (immaterial-color "secondary"))
 	  (sec-light            (immaterial-color "secondary-light"))
 	  (sec-dark             (immaterial-color "secondary-dark"))
+	  (tert                 (immaterial-color "tertiary"))
+	  (tert-light           (immaterial-color "tertiary-light"))
+	  (tert-dark            (immaterial-color "tertiary-dark"))
 	  (discrete             (immaterial-color "discrete"))
 
 	  (keyword              (immaterial-color "primary"))
-	  (builtin              (immaterial-color "primary-light"))
-	  (const                (immaterial-color "primary-dark"))
-	  (str                  (immaterial-color "primary"))
-	  (type                 (immaterial-color "secondary"))
-	  (var                  (immaterial-color "secondary-dark"))
-	  (func                 (immaterial-color "secondary-dark"))
+	  (builtin              (immaterial-color "primary"))
+	  (const                (immaterial-color "primary"))
+	  (type                 (immaterial-color "foreground-primary"))
+	  (var                  (immaterial-color "secondary"))
+	  (func                 (immaterial-color "foreground-primary"))
+	  (str                  (immaterial-color "tertiary"))
+	  (comment              (immaterial-color "discrete"))
 	  (negation             (immaterial-color "warning"))
 	  (warning              (immaterial-color "warning"))
 	  (error                (immaterial-color "error"))
@@ -159,7 +167,14 @@ NAME and VARIANT should be symbols."
 	  (modeline-active-bg   (immaterial-color "modeline-active-bg"))
 	  (modeline-active-fg   (immaterial-color "modeline-active-fg"))
 	  (modeline-inactive-bg (immaterial-color "modeline-inactive-bg"))
-	  (modeline-inactive-fg (immaterial-color "modeline-inactive-fg")))
+	  (modeline-inactive-fg (immaterial-color "modeline-inactive-fg"))
+
+	  (diff-added           (immaterial-color "diff-added"))
+	  (diff-added-refined   (immaterial-color "diff-added-refined"))
+	  (diff-changed         (immaterial-color "diff-changed"))
+	  (diff-changed-refined (immaterial-color "diff-changed-refined"))
+	  (diff-removed         (immaterial-color "diff-removed"))
+	  (diff-removed-refined (immaterial-color "diff-removed-refined")))
 
       (custom-theme-set-faces
        name
@@ -170,7 +185,7 @@ NAME and VARIANT should be symbols."
        ;;
 
        ;; for a keyword with special syntactic significance, like ‘if’.
-       `(font-lock-keyword-face ((,class (:bold t :foreground ,keyword))))
+       `(font-lock-keyword-face ((,class (:foreground ,keyword))))
        ;; for the names of built-in functions.
        `(font-lock-builtin-face ((,class (:foreground ,builtin))))
        ;; for the names of constants, like ‘NULL’ in C.
@@ -186,11 +201,11 @@ NAME and VARIANT should be symbols."
        `(font-lock-function-name-face ((,class (:foreground ,func ))))
 
        ;; for comments
-       `(font-lock-comment-face ((,class (:foreground ,discrete, :italic t))))
+       `(font-lock-comment-face ((,class (:foreground ,comment :slant italic))))
        ;; for comment delimiters, like ‘/*’ and ‘*/’ in C.
-       `(font-lock-comment-delimiter-face ((,class (:foreground ,discrete :italic t))))
+       `(font-lock-comment-delimiter-face ((,class (:foreground ,comment :slant italic))))
        ;; for documentation strings in the code.
-       `(font-lock-doc-face ((,class (:foreground ,discrete :italic t))))
+       `(font-lock-doc-face ((,class (:foreground ,comment :slant italic))))
 
        ;; for easily-overlooked negation characters.
        `(font-lock-negation-char-face ((,class (:foreground ,negation))))
@@ -201,14 +216,15 @@ NAME and VARIANT should be symbols."
        ;;
        ;; Buttons and links
        ;;
-       `(button ((,class (:foreground ,str :weight bold :underline t))))
-       `(link ((,class (:foreground ,str :weight bold :underline t))))
-       `(link-visited ((,class (:foreground ,str :weight bold :underline t))))
+       `(button ((,class (:foreground ,tert))))
+       ;; face for unvisited links
+       `(link ((,class (:foreground ,tert))))
+       `(link-visited ((,class (:foreground ,tert))))
 
        ;;
        ;; region selection
        ;;
-       `(region ((,class (:background ,bg-on :foreground ,fg2))))
+       `(region ((,class (:background ,bg-on))))
        ;; used for secondary selections and selected date/time in org-mode
        `(secondary-selection ((,class (:background ,bg-on :foreground ,sec-dark))))
        ;; face used for text highlighting in various contexts (e.g. ivy search)
@@ -216,19 +232,19 @@ NAME and VARIANT should be symbols."
        ;; hl-line-mode background
        `(hl-line ((,class (:background ,bg-on :extend t))))
        ;; linum-mode column
-       `(linum ((t (:foreground ,discrete :background ,bg-prim :height 1.0 :weight normal))))
+       `(linum ((t (:foreground ,discrete :background ,bg-prim :height 0.8 :weight normal))))
        ;; display-line-numbers-mode (emacs26+)
-       `(line-number ((t (:foreground ,discrete :background ,bg-prim :height 1.0 :weight normal))))
-       `(line-number-current-line ((t (:foreground ,fg1 :background ,bg-prim :height 1.0 :weight normal))))
-       `(fringe ((,class (:background ,bg-prim))))
+       `(line-number ((t (:foreground ,discrete :background ,bg-off :height 0.8 :weight normal))))
+       `(line-number-current-line ((t (:foreground ,fg1 :background ,bg-off :height 0.8 :weight normal))))
+       `(fringe ((,class (:background ,bg-off))))
        `(cursor ((,class (:background ,cursor))))
        ;; show-paren-mode: how to highlight matching/mismatching parenthesis
        `(show-paren-match ((,class (:weight bold :background ,bg-on :foreground ,warning))))
        `(show-paren-mismatch ((,class (:background ,error))))
        ;; current match of an on-going incremental search (isearch-forward)
-       `(isearch ((,class (:weight bold :foreground ,warning))))
+       `(isearch ((,class (:foreground ,warning :weight semi-bold))))
        ;; other matches for the search string that are visible on display
-       `(lazy-highlight ((,class (:weight bold :background ,bg-on :foreground ,warning))))
+       `(lazy-highlight ((,class (:background ,bg-on :foreground ,warning))))
        ;;
        ;; mode-line
        ;;
@@ -249,10 +265,9 @@ NAME and VARIANT should be symbols."
        `(powerline-inactive2 ((,class (:background ,modeline-inactive-bg :foreground ,modeline-inactive-fg))))
 
        ;; the vertical line that separates windows in a frame
-       `(vertical-border ((,class (:foreground ,v-border))))
-       `(minibuffer-prompt ((,class (:bold t :foreground ,prim))))
+       `(vertical-border ((,class (:foreground ,bg-off))))
+       `(minibuffer-prompt ((,class (:foreground ,warning :weight semi-bold))))
        `(default-italic ((,class (:italic t))))
-       `(link ((,class (:foreground ,prim-dark :underline t))))
 
        `(gnus-header-content ((,class (:foreground ,prim))))
        `(gnus-header-from ((,class (:foreground ,sec-dark))))
@@ -296,22 +311,21 @@ NAME and VARIANT should be symbols."
        `(company-preview-common ((,class (:background ,bg-on :foreground ,fg1))))
        `(company-preview-search ((,class (:foreground ,bg-on :background ,fg1))))
        ;; scrollbar style in company tooltip
-       `(company-scrollbar-bg ((,class (:background ,bg-off))))
-       `(company-scrollbar-fg ((,class (:background ,bg-on))))
+       `(company-scrollbar-bg ((,class (:background ,diff-changed))))
+       `(company-scrollbar-fg ((,class (:background ,diff-changed-refined))))
        ;; general style of tooltip popup
-       `(company-tooltip ((,class (:foreground ,fg1 :background ,bg-on :bold t))))
+       `(company-tooltip ((,class (:foreground ,fg1 :background ,diff-changed :bold t :box (:line-width -1 :color ,diff-changed-refined :style nil)))))
        ;; annotation appearance (could be the return-type of a function)
-       `(company-tooltip-annotation ((,class (:weight normal :foreground ,fg1 :background ,bg-on))))
+       `(company-tooltip-annotation ((,class (:weight normal :foreground ,fg1))))
        ;; annotation appearance for the selected item in the completion list
        `(company-tooltip-annotation-selection ((,class (:weight normal :inherit company-tooltip-selection))))
        `(company-tooltip-search ((,class (:weight normal :inherit company-tooltip-selection))))
        ;; the highlight style to use when typing and showing common search prefix
-       `(company-tooltip-common ((,class (:foreground ,prim))))
-       `(company-tooltip-common-selection ((,class (:foreground ,prim))))
+       `(company-tooltip-common ((,class (:foreground ,warning))))
+       `(company-tooltip-common-selection ((,class (:foreground ,warning))))
        ;; style for item mouse is hovering over
+       `(company-tooltip-selection ((,class (:weight bold :foreground ,fg1 :background ,diff-changed-refined))))
        `(company-tooltip-mouse ((,class (:inherit company-tooltip-selection))))
-       `(company-tooltip-selection ((,class (:background ,bg-off :foreground ,fg3))))
-       `(company-tooltip-selection ((,class (:weight bold :foreground ,fg3 :background ,bg-off))))
        ;;
        ;; sh-mode
        ;;
@@ -327,16 +341,24 @@ NAME and VARIANT should be symbols."
        ;;
        ;; markdown-mode
        ;;
-       `(markdown-header-face-1 ((,class (:foreground ,sec-dark :weight bold))))
-       `(markdown-header-face-2 ((,class (:foreground ,sec-dark :weight bold))))
-       `(markdown-header-face-3 ((,class (:foreground ,sec-dark :weight bold))))
-       `(markdown-header-face-4 ((,class (:foreground ,sec-dark :weight bold))))
-       `(markdown-header-face-5 ((,class (:foreground ,sec-dark :weight bold))))
-       `(markdown-header-face-6 ((,class (:foreground ,sec-dark :weight bold))))
-       `(markdown-code-face ((,class (:foreground ,prim))))
-       `(markdown-link-face ((,class (:foreground ,sec))))
-       `(markdown-url-face ((,class (:foreground ,sec))))
-       `(markdown-plain-url-face ((,class (:foreground ,sec))))
+       ;; face to use for leading #:s
+       `(markdown-header-delimiter-face ((,class (:foreground ,prim :weight bold))))
+       `(markdown-header-face-1 ((,class (:foreground ,prim :weight bold))))
+       `(markdown-header-face-2 ((,class (:foreground ,prim :weight bold))))
+       `(markdown-header-face-3 ((,class (:foreground ,prim :weight bold))))
+       `(markdown-header-face-4 ((,class (:foreground ,prim :weight bold))))
+       `(markdown-header-face-5 ((,class (:foreground ,prim :weight bold))))
+       `(markdown-header-face-6 ((,class (:foreground ,prim :weight bold))))
+       `(markdown-code-face ((,class (:foreground ,sec))))
+       `(markdown-table-face ((,class (:foreground ,sec))))
+       `(markdown-list-face ((,class (:foreground ,sec))))
+       `(markdown-link-face ((,class (:foreground ,fg1))))
+       `(markdown-reference-face ((,class (:foreground ,tert))))
+       `(markdown-blockquote-face ((,class (:inherit font-lock-doc-face))))
+       `(markdown-html-tag-face ((,class (:foreground ,sec))))
+       `(markdown-url-face ((,class (:foreground ,tert))))
+       `(markdown-plain-url-face ((,class (:foreground ,tert))))
+
        ;;
        ;; treemacs
        ;;
@@ -344,12 +366,13 @@ NAME and VARIANT should be symbols."
        `(treemacs-directory-face ((,class (:foreground ,sec-dark))))
        `(treemacs-file-face ((,class (:inherit immaterial-small-face))))
        `(treemacs-term-node-face ((,class (:foreground ,sec-dark :weight bold))))
-       `(treemacs-git-modified-face ((,class (:foreground ,prim :weight bold))))
-       `(treemacs-git-added-face ((,class (:foreground ,prim-dark :weight bold))))
-       `(treemacs-git-renamed-face ((,class (:foreground ,prim-dark :italic t))))
+       `(treemacs-git-modified-face ((,class (:background ,diff-changed :box (:line-width 1 :color ,diff-changed-refined :style nil)))))
+       `(treemacs-git-added-face ((,class (:background ,diff-added :box (:line-width 1 :color ,diff-added-refined :style nil)))))
+       `(treemacs-git-renamed-face ((,class (:background ,diff-changed :box (:line-width 1 :color ,diff-changed-refined :style nil) :italic t))))
        `(treemacs-git-ignored-face ((,class (:foreground ,discrete))))
        `(treemacs-git-untracked-face ((,class (:foreground ,discrete))))
-       `(treemacs-git-conflict-face ((,class (:foreground ,error :weight bold))))
+       `(treemacs-git-conflict-face ((,class (:background ,diff-removed :box (:line-width 1 :color ,diff-removed-refined :style nil) :italic t))))
+
        ;;
        ;; lsp-ui
        ;;
@@ -386,7 +409,7 @@ NAME and VARIANT should be symbols."
        ;;
        ;; ivy/swiper
        ;;
-       `(ivy-current-match ((,class (:background ,bg-on :extend t))))
+       `(ivy-current-match ((,class (:background ,diff-changed :box (:line-width -1 :color ,diff-changed-refined)))))
        ;; how to highlight the matching part of the search expression on presented
        ;; search candidates in the minibuffer.
        `(ivy-minibuffer-match-face-1 ((,class (:inherit isearch))))
@@ -413,49 +436,51 @@ NAME and VARIANT should be symbols."
        ;; org-mode
        ;;
        ;; face to use for #+TITLE: document info keyword
-       `(org-document-title ((,class (:foreground ,prim-light :weight bold))))
+       `(org-document-title ((,class (:foreground ,prim :weight bold))))
        ;; face to use for value following #+DATE:, #+AUTHOR:, #+EMAIL:
-       `(org-document-info ((,class (:foreground ,prim-light))))
+       `(org-document-info ((,class (:foreground ,prim))))
        ;; face to use for keywords #+DATE:, #+AUTHOR:, #+EMAIL:
-       `(org-document-info-keyword ((,class (:foreground ,prim-dark))))
+       `(org-document-info-keyword ((,class (:foreground ,prim))))
        ;; face for lines starting with "#+"
        `(org-meta-line ((,class (:foreground ,discrete))))
        ;; face used for headlines at different levels
-       `(org-level-1 ((,class (:foreground ,sec-dark))))
-       `(org-level-2 ((,class (:foreground ,sec-dark))))
-       `(org-level-3 ((,class (:foreground ,sec-dark))))
-       `(org-level-4 ((,class (:foreground ,sec-dark))))
-       `(org-level-5 ((,class (:foreground ,sec-dark))))
-       `(org-level-6 ((,class (:foreground ,sec-dark))))
-       `(org-level-7 ((,class (:foreground ,sec-dark))))
-       `(org-level-8 ((,class (:foreground ,sec-dark))))
+       `(org-level-1 ((,class (:weight semi-bold :foreground ,prim))))
+       `(org-level-2 ((,class (:weight semi-bold :foreground ,prim))))
+       `(org-level-3 ((,class (:weight semi-bold :foreground ,prim))))
+       `(org-level-4 ((,class (:weight semi-bold :foreground ,prim))))
+       `(org-level-5 ((,class (:weight semi-bold :foreground ,prim))))
+       `(org-level-6 ((,class (:weight semi-bold :foreground ,prim))))
+       `(org-level-7 ((,class (:weight semi-bold :foreground ,prim))))
+       `(org-level-8 ((,class (:weight semi-bold :foreground ,prim))))
        ;; face for the ellipsis in folded text
-       `(org-ellipsis ((,class (:foreground ,prim-light))))
+       `(org-ellipsis ((,class (:foreground ,tert))))
        ;; face to use for TODO keyword
-       `(org-todo ((,class (:weight bold :foreground ,warning))))
+       `(org-todo ((,class (:weight bold :foreground ,prim-dark :box (:line-width -1 :color ,bg-on)))))
        ;; face to use for DONE keyword
-       `(org-done ((,class (:weight bold :foreground ,sec-dark))))
+       `(org-done ((,class (:weight bold :foreground ,discrete :box (:line-width -1 :color ,bg-on)))))
        ;; face to use for :tag: markers
        `(org-tag ((,class (:foreground ,prim-light))))
        ;; face used for priority cookies `[#A]`
-       `(org-priority ((,class (:foreground ,warning :weight bold))))
-       ;; face for special keywords such as SCHEDULED, DEADLINE
-       `(org-special-keyword ((,class (:foreground ,prim-dark))))
+       `(org-priority ((,class (:foreground ,prim-light :weight bold))))
+       ;; face for special keywords such as SCHEDULED, DEADLINE and properties.
+       `(org-special-keyword ((,class (:foreground ,discrete))))
+       ;; face used for outline metadata :DRAWER: and :END: markers
+       `(org-drawer ((,class (:foreground ,discrete))))
        ;; face for org-mode tables
-       `(org-table ((,class (:foreground ,prim))))
+       `(org-table ((,class (:foreground ,sec))))
        ;; face used for [[links][description]]
-       `(org-link ((,class (:underline t :foreground ,prim-light))))
-       ;; face used for footnodes: [fn:1]
-       `(org-footnote  ((,class (:underline t :foreground ,prim-light))))
+       `(org-link ((,class (:foreground ,tert))))
+       ;; face used for footnotes: [fn:1]
+       `(org-footnote  ((,class (:foreground ,tert))))
        ;; face for =verbatim= items
-       `(org-verbatim ((,class (:foreground ,prim-light))))
+       `(org-verbatim ((,class (:foreground ,sec))))
        ;; face for ~code~ text
-       `(org-code ((,class (:foreground ,prim))))
+       `(org-code ((,class (:foreground ,sec))))
        ;; diary-like sexp date specifications like `%%(org-calendar-holiday)`
        `(org-sexp-date ((,class (:foreground ,prim-light))))
        ;; face to use for content between #+BEGIN_SRC and #+END_SRC (unless a
        ;; language syntax is specified via e.g. `#BEGIN_SRC emacs_lisp`)
-       `(org-block ((,class (:background ,bg-prim :foreground ,prim-light :extend t))))
+       `(org-block ((,class (:background ,bg-prim :foreground ,sec :extend t))))
        ;; source code block #+BEGIN_SRC line
        `(org-block-begin-line ((,class (:background ,bg-prim :foreground ,sec :extend t))))
        ;; source code block #+END_SRC line
@@ -465,30 +490,34 @@ NAME and VARIANT should be symbols."
        ;; face for #+BEGIN_QUOTE blocks when `org-fontify-quote-and-verse-blocks` is set.
        `(org-quote ((,class (:slant italic))))
        ;; face to use for <date> occurences
-       `(org-date ((,class (:underline t :foreground ,prim-light))))
+       `(org-date ((,class (:foreground ,sec-dark))))
        ;; face for highlighting date under cursor in calendar selections
-       `(org-date-selected ((,class (:underline t :weight bold :foreground ,sec-dark))))
+       `(org-date-selected ((,class (:foreground ,fg1 :background ,diff-added :box (:line-width -1 :color ,diff-added-refined)))))
+
        ;; face for Monday-Friday entries in agenda view
-       `(org-agenda-date ((,class (:foreground ,prim))))
+       `(org-agenda-date ((,class (:foreground ,sec-dark))))
        ;; face for today in agenda view
-       `(org-agenda-date-today ((,class (:foreground ,prim-light :weight bold))))
+       `(org-agenda-date-today ((,class (:foreground ,sec :weight bold :extend t :background ,bg-on))))
        ;; face for Saturday and Sunday entries in agenda view
        `(org-agenda-date-weekend ((,class (:foreground ,discrete))))
        ;; face used in agenda to indicate lines switched to DONE
-       `(org-agenda-done ((,class (:weight bold :foreground ,sec-dark))))
+       `(org-agenda-done ((,class (:foreground ,discrete))))
        ;; face used in agenda for captions and dates
        `(org-agenda-structure ((,class (:inherit bold :foreground ,sec-dark))))
        ;; face used for time grid shown in agenda
-       `(org-time-grid ((,class (:foreground ,sec-light))))
+       `(org-time-grid ((,class (:foreground ,sec))))
        ;; agenda face for items scheduled for a certain day
-       `(org-scheduled ((,class (:foreground ,prim))))
+       `(org-scheduled ((,class (:foreground ,fg1))))
        ;; agenda face for items scheduled today
-       `(org-scheduled-today ((,class (:foreground ,sec))))
+       `(org-scheduled-today ((,class (:foreground ,fg1))))
        ;; agenda face for items scheduled previously, and not yet done.
-       `(org-scheduled-previously ((,class (:foreground ,error))))
-       `(org-upcoming-deadline ((,class (:foreground ,error))))
-       `(org-upcoming-distant-deadline ((,class (:foreground ,warning))))
+       `(org-scheduled-previously ((,class (:foreground ,fg1))))
+       ;; face used for org-agenda deadlines
        `(org-warning ((,class (:foreground ,error))))
+       ;; upcoming deadlines
+       `(org-upcoming-deadline ((,class (:foreground ,warning))))
+       ;; distant deadlines
+       `(org-upcoming-distant-deadline ((,class (:foreground ,warning))))
        ;; face when header-line is used
        `(header-line ((,class (:background ,bg-on :foreground ,prim :weight bold))))
        ;; face to use for column view columns
@@ -538,14 +567,54 @@ NAME and VARIANT should be symbols."
        ;; face for conflict markers
        `(smerge-markers ((,class (:foreground ,error :weight bold))))
        ;; face for upper version in conflict
-       `(smerge-upper ((,class (:background ,bg-on))))
+       `(smerge-upper ((,class (:background ,diff-changed))))
        ;; face for lower version in conflict
-       `(smerge-lower ((,class (:background ,bg-on))))
+       `(smerge-lower ((,class (:background ,diff-changed))))
        ;; face for added characters shown by smerge-refine
        `(smerge-refined-added ((,class (:background ,(immaterial-color "diff-added-refined")))))
        ;; face for removed characters shown by smerge-refine
        `(smerge-refined-removed ((,class (:background ,(immaterial-color "diff-removed-refined")))))
+
+       ;;
+       ;; xref
+       ;;
+       `(xref-file-header ((,class (:foreground ,prim))))
+       `(xref-line-number ((,class (:foreground ,discrete))))
        ))))
+
+
+(defun immaterial-linear-rgb-component (col)
+  "Calculates the linear RGB value for an sRGB color component COL.
+COL must be a real value in the range [0.0, 1.0]."
+  (when (or (< col 0) (> col 1))
+    (error "Color value must be in range [0.0, 1.0]"))
+  (if (> col 0.03928)
+      (expt (/ (+ col 0.055) 1.055) 2.4)
+    (/ col 12.92)))
+
+(defun immaterial-relative-luminance (hex-color)
+  "Calculates the relative luminance of color HEX-COLOR.
+The relative luminance is the relative brightness of any point in
+a colorspace, normalized to 0 for darkest black and 1 for
+lightest white."
+  (let* ((srgb (color-name-to-rgb hex-color))
+	 (r (immaterial-linear-rgb-component (nth 0 srgb)))
+	 (g (immaterial-linear-rgb-component (nth 1 srgb)))
+	 (b (immaterial-linear-rgb-component (nth 2 srgb))))
+    (+ (* 0.2126 r) (* 0.7152 g) (* 0.0722 b))))
+
+(defun immaterial-contrast-ratio (hex-color1 hex-color2)
+  "Calculates the contrast ratio between two colors HEX-COLOR1 and HEX-COLOR2.
+The contrast ratio gives an indication of how easily a foreground
+text in HEX-COLOR1 is perceived on a background in HEX-COLOR2.
+To be easily readable, the contrast must be 7:1 according to the
+Web Content Accessibility Guidelines.  The contrast ratio is a
+value between 1 and 21."
+  (let ((c1-lum (immaterial-relative-luminance hex-color1))
+	(c2-lum (immaterial-relative-luminance hex-color2)))
+    (if (> c1-lum c2-lum)
+	(/ (+ c1-lum 0.05) (+ c2-lum 0.05))
+      (/ (+ c2-lum 0.05) (+ c1-lum 0.05)))))
 
 
 ;;;###autoload

@@ -1,6 +1,6 @@
 ;;; magit-submodule.el --- submodule support for Magit  -*- lexical-binding: t -*-
 
-;; Copyright (C) 2011-2020  The Magit Project Contributors
+;; Copyright (C) 2011-2021  The Magit Project Contributors
 ;;
 ;; You should have received a copy of the AUTHORS.md file which
 ;; lists all contributors.  If not, see http://magit.vc/authors.
@@ -23,12 +23,10 @@
 
 ;;; Code:
 
-(eval-when-compile
-  (require 'subr-x))
-
 (require 'magit)
 
 (defvar x-stretch-cursor)
+
 ;;; Options
 
 (defcustom magit-module-sections-hook

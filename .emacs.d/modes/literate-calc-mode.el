@@ -26,12 +26,13 @@
 
 ;;; Commentary:
 
-;; Major mode for literate calculations.
+;; Major/minor mode for literate calculations.
 
 ;;; Code:
 
 (require 'calc)
 (require 'cl-lib)
+(require 'org-element)
 (require 'rx)
 (require 's)
 (require 'subr-x)
@@ -41,15 +42,53 @@
 ;; TODO org-babel-execute
 ;; TODO org export
 
+(defgroup literate-calc-mode nil
+  "Display inline results from calc."
+  :group 'editing
+  :prefix "literate-calc-mode-")
+
+(defcustom literate-calc-mode-inhibit-line-functions '(literate-calc-mode-inhibit-in-src-blocks)
+  "Hook functions called for each line to test whether to inhibit calculation.
+
+If any of these functions returns non-nil, overlays will not be displayed."
+  :group 'literate-calc-mode
+  :type 'hook)
+
+(defun literate-calc-mode-inhibit-in-src-blocks ()
+  "Return non-nil if point is in a source block."
+  (and (derived-mode-p #'org-mode)
+       (memq (org-element-type (org-element-context))
+             '(inline-src-block src-block))))
+
 (defvar-local literate-calc-minor-mode nil)
 (defvar-local literate-calc--scope (list))
 
-(defconst literate-calc--expression (rx string-start
-                                        (opt (1+ (or letter
-                                                     blank)))
-                                        "="
-                                        (1+ (not (any ?=)))
-                                        string-end))
+(defconst literate-calc--expression
+  (rx string-start
+      (opt (1+ (or alphanumeric
+                   blank
+                   (any "-_"))))
+      "="
+      (1+ (not (any ?=)))
+      string-end))
+
+(defconst literate-calc--result
+  (rx " => "
+      (opt (+ (any alphanumeric blank "-_")) ": ")
+      (opt "-")
+      (+ (any digit blank "._[,]"))
+      line-end))
+
+(defmacro literate-calc--without-hooks (&rest body)
+  "Run BODY with deactivated edit hooks."
+  `(let ((hooks-active (or (equal major-mode #'literate-calc-mode)
+                           literate-calc-minor-mode)))
+     (when hooks-active
+       ;; Temporarily disable the edit hooks while we edit the buffer.
+       (literate-calc--exit))
+     ,@body
+     (when hooks-active
+       (literate-calc--setup-hooks))))
 
 (defun literate-calc--format-result (name result)
   "Return the output format for RESULT with the optional NAME.
@@ -157,9 +196,10 @@ shadowing."
       (let ((buffer-line-count (count-lines (point-min) (point-max)))
             (line-number 1))
         (while (<= line-number buffer-line-count)
-          (let ((binding (literate-calc--process-line (thing-at-point 'line)
-                                                      literate-calc--scope)))
-            (literate-calc--add-binding binding))
+          (unless (run-hook-with-args-until-success 'literate-calc-mode-inhibit-line-functions)
+            (let ((binding (literate-calc--process-line (thing-at-point 'line)
+                                                        literate-calc--scope)))
+              (literate-calc--add-binding binding)))
           (setq line-number (1+ line-number))
           (forward-line 1))))))
 
@@ -168,24 +208,52 @@ shadowing."
   "Insert results into buffer instead of creating overlays."
   (interactive)
   (unless (string-empty-p (buffer-string))
-    (let ((hooks-active (or (equal major-mode #'literate-calc-mode)
-                            literate-calc-minor-mode)))
-      (when hooks-active
-        ;; Temporarily disable the edit hooks while we edit the buffer.
-        (literate-calc--exit))
-      (save-excursion
-        (goto-char (point-min))
-        (let ((buffer-line-count (count-lines (point-min) (point-max)))
-              (line-number 1))
-          (while (<= line-number buffer-line-count)
-            (let ((binding (literate-calc--process-line (thing-at-point 'line)
-                                                        literate-calc--scope
-                                                        t)))
-              (literate-calc--add-binding binding))
-            (setq line-number (1+ line-number))
-            (forward-line 1))))
-      (when hooks-active
-        (literate-calc--setup-hooks)))))
+    (literate-calc--without-hooks
+     (save-excursion
+       (goto-char (point-min))
+       (let ((buffer-line-count (count-lines (point-min) (point-max)))
+             (line-number 1))
+         (while (<= line-number buffer-line-count)
+           (unless (run-hook-with-args-until-success 'literate-calc-mode-inhibit-line-functions)
+             (let ((binding (literate-calc--process-line (thing-at-point 'line)
+                                                         literate-calc--scope
+                                                         t)))
+               (literate-calc--add-binding binding)))
+           (setq line-number (1+ line-number))
+           (forward-line 1)))))))
+
+;;;###autoload
+(defun literate-calc-remove-results (start end)
+  "Remove inserted results from buffer between START and END."
+  (interactive "r")
+  (unless (string-empty-p (buffer-string))
+    (literate-calc--without-hooks
+     (save-excursion
+       (let* ((start (if (region-active-p)
+                         start
+                       (point-min)))
+              (end (if (region-active-p)
+                       end
+                     (point-max)))
+              ;; NOTE We are shortening the buffer while looping, so
+              ;; `end' actually creeps further towards the end with
+              ;; every deletion. We can assume that we don't alter the
+              ;; number of lines, so we just bound the search on the
+              ;; line number instead of the position. Because marking
+              ;; a whole line also technically places `point' in the
+              ;; next line, we have to walk back one char to make sure
+              ;; we don't overreach by one line. This effectively
+              ;; removes an empty line off the end, but doesn't affect
+              ;; non-empty lines at the end.
+              (end-line (line-number-at-pos (- end 1))))
+         (goto-char start)
+         (while (re-search-forward literate-calc--result
+                                   (save-excursion
+                                     (goto-char 1)
+                                     (line-end-position end-line))
+                                   t)
+           (replace-match "" nil nil))))
+     (setq-local literate-calc--scope (list)))))
 
 (defun literate-calc--eval-buffer (beg _end pre-change-length)
   "Re-eval the buffer on deletions or if we are near a calc line.

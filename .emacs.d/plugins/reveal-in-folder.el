@@ -6,7 +6,7 @@
 ;; Author: Shen, Jen-Chieh <jcs090218@gmail.com>
 ;; Description: Reveal current file in folder.
 ;; Keyword: folder finder reveal file explorer
-;; Version: 0.0.5
+;; Version: 0.1.2
 ;; Package-Requires: ((emacs "24.3") (f "0.20.0") (s "1.12.0"))
 ;; URL: https://github.com/jcs-elpa/reveal-in-folder
 
@@ -56,22 +56,27 @@
   "Send the shell command by PATH."
   (let ((default-directory
           (if path (f-dirname (expand-file-name path)) default-directory))
-        (buf-name (if (and reveal-in-folder-select-file (buffer-file-name))
-                      (shell-quote-argument (expand-file-name (buffer-file-name)))
+        (buf-name (if (and reveal-in-folder-select-file path)
+                      (shell-quote-argument (expand-file-name path))
                     nil))
-        (cmd nil))
+        cmd)
     (cond
      ;; Windows
      ((memq system-type '(cygwin windows-nt ms-dos))
-      (setq cmd "explorer .")
-      (when buf-name
-        (setq buf-name (s-replace "/" "\\" buf-name))
-        (setq cmd (format "explorer /select,%s" buf-name))))
+      (cond (buf-name
+             (setq buf-name (s-replace "/" "\\" buf-name))
+             (setq cmd (format "explorer /select,%s" buf-name)))
+            ((ignore-errors (file-directory-p path))
+             (setq path (s-replace "/" "\\" path))
+             (setq cmd (format "explorer /select,%s" path)))
+            (t (setq cmd "explorer ."))))
      ;; macOS
      ((eq system-type 'darwin)
-      (setq cmd "open .")
-      (when buf-name
-        (setq cmd (format "open -R %s" buf-name))))
+      (cond (buf-name
+             (setq cmd (format "open -R %s" buf-name)))
+            ((ignore-errors (file-directory-p path))
+             (setq cmd (format "open -R %s" path)))
+            (t (setq cmd "open ."))))
      ;; Linux
      ((eq system-type 'gnu/linux)
       (setq cmd "xdg-open .")
@@ -81,8 +86,11 @@
      ((eq system-type 'berkeley-unix)
       ;; TODO: Not sure what else command do I need to make it work in BSD.
       (setq cmd "open .")
-      (when buf-name
-        (setq cmd (format "open -R %s" buf-name))))
+      (cond (buf-name
+             (setq cmd (format "open -R %s" buf-name)))
+            ((ignore-errors (file-directory-p path))
+             (setq cmd (format "open -R %s" path)))
+            (t (setq cmd "open ."))))
      (t (error "[ERROR] Unknown Operating System type")))
     (when cmd (reveal-in-folder--safe-execute-p cmd))))
 
@@ -90,7 +98,7 @@
 (defun reveal-in-folder-at-point ()
   "Reveal the current file in folder at point."
   (interactive)
-  (reveal-in-folder--signal-shell (ffap-file-at-point)))
+  (reveal-in-folder--signal-shell (ffap-guesser)))
 
 ;;;###autoload
 (defun reveal-in-folder-this-buffer ()

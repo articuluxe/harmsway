@@ -60,9 +60,14 @@
 
     ;; tab-line/tab-bar (Emacs 27+)
     (tab-line :background bg-alt :foreground bg-alt)
+    (tab-line-tab :background bg :foreground fg)
+    (tab-line-tab-inactive :background bg-alt :foreground fg-alt)
+    (tab-line-tab-current :background bg :foreground fg)
+    (tab-line-highlight :inherit 'tab-line-tab)
+    (tab-line-close-highlight :foreground highlight)
     ((tab-bar &inherit tab-line))
-    (tab-bar-tab :background bg :foreground fg)
-    (tab-bar-tab-inactive :background bg-alt :foreground fg-alt)
+    ((tab-bar-tab &inherit tab-line-tab))
+    ((tab-bar-tab-inactive &inherit tab-line-tab-inactive))
 
     ;; 1. Line number faces must explicitly disable its text style attributes
     ;;    because nearby faces may "bleed" into the line numbers otherwise.
@@ -196,6 +201,9 @@
     (hi-blue-b   :foreground blue :weight 'bold)
     ;; (hi-black-b  :weight 'bold)
     ;; (hi-black-hb :inherit 'variable-pitch :weight 'bold :height 1.67)
+
+    ;; hl-fill-column-face
+    (hl-fill-column-face :inherit '(hl-line shadow))
 
     ;; hl-line
     (hl-line :background bg-alt :extend t)
@@ -632,6 +640,11 @@
     (gnus-cite-11                :foreground yellow)
     (gnus-signature              :foreground yellow)
     (gnus-x-face                 :background base5 :foreground fg)
+
+    ;; goggles
+    (goggles-changed :inherit 'region)
+    (goggles-removed :background (doom-blend red bg-alt 0.25) :extend t)
+    (goggles-added   :background (doom-blend green bg-alt 0.25))
 
     ;; helm
     (helm-selection
@@ -1333,7 +1346,7 @@
     (org-ref-cite-face       :foreground yellow :weight 'light :underline t)
     (org-ref-glossary-face   :foreground magenta)
     (org-ref-label-face      :foreground blue)
-    (org-ref-ref-face        :inherit 'link :foreground red)
+    (org-ref-ref-face        :inherit 'link :foreground teal)
 
     ;; pkgbuild-mode
     (pkgbuild-error-face :underline `(:style wave :color ,red))

@@ -1,6 +1,6 @@
 ;;; magit.el --- A Git porcelain inside Emacs  -*- lexical-binding: t; coding: utf-8 -*-
 
-;; Copyright (C) 2008-2020  The Magit Project Contributors
+;; Copyright (C) 2008-2021  The Magit Project Contributors
 ;;
 ;; You should have received a copy of the AUTHORS.md file which
 ;; lists all contributors.  If not, see http://magit.vc/authors.
@@ -47,22 +47,17 @@
 
 ;;; Code:
 
-(require 'cl-lib)
-(require 'dash)
-
-(require 'subr-x)
-
-(require 'with-editor)
-(require 'git-commit)
 (require 'magit-core)
 (require 'magit-diff)
 (require 'magit-log)
 (require 'magit-wip)
 (require 'magit-apply)
 (require 'magit-repos)
+(require 'git-commit)
 
 (require 'format-spec)
 (require 'package nil t) ; used in `magit-version'
+(require 'with-editor)
 
 (defconst magit--minimal-git "2.2.0")
 (defconst magit--minimal-emacs "25.1")
@@ -219,11 +214,75 @@ and/or `magit-branch-remote-head'."
   "Face for filenames."
   :group 'magit-faces)
 
+;;; Global Bindings
+
+;;;###autoload
+(define-obsolete-variable-alias 'global-magit-file-mode
+  'magit-define-global-key-bindings "Magit 3.0.0")
+
+;;;###autoload
+(defcustom magit-define-global-key-bindings t
+  "Whether to bind some Magit commands in the global keymap.
+
+If this variable is non-nil, then the following bindings may
+be added to the global keymap.  The default is t.
+
+key             binding
+---             -------
+C-x g           magit-status
+C-x M-g         magit-dispatch
+C-c M-g         magit-file-dispatch
+
+These bindings may be added when `after-init-hook' is called.
+Each binding is added if and only if at that time no other key
+is bound to the same command and no other command is bound to
+the same key.  In other words we try to avoid adding bindings
+that are unnecessary, as well as bindings that conflict with
+other bindings.
+
+Adding the above bindings is delayed until `after-init-hook'
+is called to allow users to set the variable anywhere in their
+init file (without having to make sure to do so before `magit'
+is loaded or autoloaded) and to increase the likelihood that
+all the potentially conflicting user bindings have already
+been added.
+
+Setting this variable after the hook has already been called
+has no effect.
+
+We recommend that you bind \"C-c g\" instead of \"C-c M-g\" to
+`magit-file-dispatch'.  The former is a much better binding
+but the \"C-c <letter>\" namespace is strictly reserved for
+users; preventing Magit from using it by default.
+
+Also see info node `(magit)Commands for Buffers Visiting Files'."
+  :package-version '(magit . "3.0.0")
+  :group 'magit-essentials
+  :type 'boolean)
+
+;;;###autoload
+(progn
+  (defun magit-maybe-define-global-key-bindings ()
+    (when magit-define-global-key-bindings
+      (let ((map (current-global-map)))
+        (dolist (elt '(("C-x g"   . magit-status)
+                       ("C-x M-g" . magit-dispatch)
+                       ("C-c M-g" . magit-file-dispatch)))
+          (let ((key (kbd (car elt)))
+                (def (cdr elt)))
+            (unless (or (lookup-key map key)
+                        (where-is-internal def (make-sparse-keymap) t))
+              (define-key map key def)))))))
+  (if after-init-time
+      (magit-maybe-define-global-key-bindings)
+    (add-hook 'after-init-hook 'magit-maybe-define-global-key-bindings t)))
+
 ;;; Dispatch Popup
 
 ;;;###autoload (autoload 'magit-dispatch "magit" nil t)
 (transient-define-prefix magit-dispatch ()
   "Invoke a Magit command from a list of available commands."
+  :info-manual "(magit)Top"
   ["Transient and dwim commands"
    [("A" "Apply"          magit-cherry-pick)
     ("b" "Branch"         magit-branch)
@@ -425,7 +484,8 @@ and Emacs to it."
                   (ignore-errors (delete-file static)))
                 (setq magit-version
                       (let ((default-directory topdir))
-                        (magit-git-string "describe" "--tags" "--dirty")))))
+                        (magit-git-string "describe"
+                                          "--tags" "--dirty" "--always")))))
             (progn
               (push 'static debug)
               (when (and static (file-exists-p static))
@@ -476,7 +536,7 @@ and Emacs to it."
       (setq magit-version 'error)
       (when magit-version
         (push magit-version debug))
-      (unless (equal (getenv "TRAVIS") "true")
+      (unless (equal (getenv "CI") "true")
         ;; The repository is a sparse clone.
         (message "Cannot determine Magit's version %S" debug)))
     magit-version))
@@ -531,7 +591,7 @@ https://github.com/magit/magit/wiki/Don't-set-$GIT_DIR-and-alike" val))
   (let ((version (magit-git-version)))
     (when (and version
                (version< version magit--minimal-git)
-               (not (equal (getenv "TRAVIS") "true")))
+               (not (equal (getenv "CI") "true")))
       (display-warning 'magit (format "\
 Magit requires Git >= %s, you are using %s.
 

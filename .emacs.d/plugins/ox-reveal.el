@@ -32,7 +32,7 @@
 ;;; Code:
 
 (require 'ox-html)
-(require 'cl)
+(require 'cl-lib)
 
 (org-export-define-derived-backend 'reveal 'html
 
@@ -754,6 +754,7 @@ dependencies: [
                   notes (format " { src: '%splugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } }" root-path)
                   search (format " { src: '%splugin/search/search.js', async: true, condition: function() { return !!document.body.classList; } }" root-path)
                   remotes (format " { src: '%splugin/remotes/remotes.js', async: true, condition: function() { return !!document.body.classList; } }" root-path)
+                  ;; multiplex setup for reveal.js 3.x
                   multiplex (format " { src: '%s', async: true },\n%s"
                                     (plist-get info :reveal-multiplex-socketio-url)
                                         ; following ensures that either client.js or master.js is included depending on defva client-multiplex value state
@@ -764,15 +765,24 @@ dependencies: [
                                           (format " { src: '%splugin/multiplex/master.js', async: true }" root-path))
                                       (format " { src: '%splugin/multiplex/client.js', async: true }" root-path)))))
                (builtin-codes
-                (if (eq version 4)
-                    '() ;; For reveal.js 4.x, skip the builtin plug-in
-                        ;; codes as they are for 3.x. The 4.x builtin
-                        ;; plug-ins are specified by separate <script>
-                        ;; blocks
-                  (mapcar
-                   (lambda (p)
-                     (eval (plist-get builtins p)))
-                   (org-reveal--get-plugins info))))
+                (let ((plugins (org-reveal--get-plugins info)))
+                  (if (eq version 4)
+                      ;; For reveal.js 4.x, skip the builtin plug-in
+                      ;; codes except multiplex as all other plug-ins
+                      ;; in 4.x are specified by separate <script>
+                      ;; blocks
+                      (let ((url (plist-get info :reveal-multiplex-url)))
+                        (if (memq 'multiplex plugins)
+                            (list (format " { src: '%s/socket.io/socket.io.js', async: true }, { src: '%s/%s', async: true } "
+                                          url url
+                                          (if client-multiplex "client.js"
+                                            (progn
+                                              (setq client-multiplex t)
+                                              "master.js"))))
+                          '()))
+                    (mapcar (lambda (p)
+                              (eval (plist-get builtins p)))
+                            plugins))))
                (external-plugins
 		(append
 		 ;; Global setting
@@ -878,7 +888,7 @@ holding export options."
 (defun org-reveal-parse-token (keyword info key &optional value)
   "Return HTML tags or perform SIDE EFFECT according to key.
 Use the previous section tag as the tag of the split section. "
-  (case (intern key)
+  (cl-case (intern key)
     (split
      (let ((headline (org-element-property
 		      :parent
@@ -933,7 +943,7 @@ Use the previous section tag as the tag of the split section. "
 			  (and checkbox " ")))
 	(br (org-html-close-tag "br" nil info)))
     (concat
-     (case type
+     (cl-case type
        (ordered
 	(let* ((counter term-counter-id)
 	       (extra (if counter (format " value=\"%s\"" counter) "")))
@@ -952,10 +962,10 @@ Use the previous section tag as the tag of the split section. "
 	  ;; Check-boxes in descriptive lists are associated to tag.
 	  (concat (format "<dt%s>%s</dt>"
 			  attr-html (concat checkbox term))
-		 (format "<dd%s>" attr-html)))))
+		  (format "<dd%s>" attr-html)))))
      (unless (eq type 'descriptive) checkbox)
      (and contents (org-trim contents))
-     (case type
+     (cl-case type
        (ordered "</li>")
        (unordered "</li>")
        (descriptive "</dd>")))))
@@ -983,7 +993,7 @@ and may change custom variables as SIDE EFFECT.
 CONTENTS is nil. INFO is a plist holding contextual information."
   (let ((key (org-element-property :key keyword))
         (value (org-element-property :value keyword)))
-    (case (intern key)
+    (cl-case (intern key)
       (REVEAL (org-reveal-parse-keyword-value keyword value info))
       (REVEAL_HTML value)
       (HTML value))))
@@ -1064,7 +1074,7 @@ CONTENTS is the contents of the list. INFO is a plist holding
 contextual information.
 
 Extract and set `attr_html' to plain-list tag attributes."
-  (let ((tag (case (org-element-property :type plain-list)
+  (let ((tag (cl-case (org-element-property :type plain-list)
                (ordered "ol")
                (unordered "ul")
                (descriptive "dl")))
@@ -1396,22 +1406,19 @@ transformed fragment attribute to ELEM's attr_html plist."
                                    frag-list))
                       (items (org-element-contents elem))
 		      (default-style-list
-                            (mapcar (lambda (a) default-style)
-                                    (number-sequence 1 (length items)))))
+                        (mapcar (lambda (a) default-style)
+                                (number-sequence 1 (length items)))))
                  (if frag-index
-                     (mapcar* 'org-reveal--update-attr-html
-                              items frag-list default-style-list (car (read-from-string frag-index)))
+                     (cl-mapcar 'org-reveal--update-attr-html
+                                items frag-list default-style-list (car (read-from-string frag-index)))
                    (let* ((last-frag (car (last frag-list)))
                           (tail-list (mapcar (lambda (a) last-frag)
                                              (number-sequence (+ (length frag-list) 1)
                                                               (length items)))))
                      (nconc frag-list tail-list)
-                     (mapcar* 'org-reveal--update-attr-html items frag-list default-style-list)))))
+                     (cl-mapcar 'org-reveal--update-attr-html items frag-list default-style-list)))))
               (t (org-reveal--update-attr-html elem frag default-style frag-index)))
       elem)))
-
-(defvar client-multiplex nil
-  "used to cause generation of client html file for multiplex")
 
 (defun org-reveal-export-to-html
   (&optional async subtreep visible-only body-only ext-plist)
@@ -1420,19 +1427,18 @@ transformed fragment attribute to ELEM's attr_html plist."
   (let* ((extension (concat "." org-html-extension))
          (file (org-export-output-file-name extension subtreep))
          (clientfile (org-export-output-file-name (concat "_client" extension) subtreep))
-         (retfile))
+         (org-export-exclude-tags (cons "noexport_reveal" org-export-exclude-tags))
+         (client-multiplex nil))
     ; export filename_client HTML file if multiplexing
-    (setq client-multiplex nil)
-    (let ((org-export-exclude-tags (cons "noexport_reveal" org-export-exclude-tags)))
-      (setq retfile (org-export-to-file 'reveal file
-		      async subtreep visible-only body-only ext-plist)))
+    (let ((retfile (org-export-to-file 'reveal file
+                     async subtreep visible-only body-only ext-plist)))
 
-    ; export the client HTML file if client-multiplex is set true
-    ; by previous call to org-export-to-file
-    (if (eq client-multiplex t)
+       ; export the client HTML file if client-multiplex is set true
+       ; by previous call to org-export-to-file
+      (when client-multiplex
         (org-export-to-file 'reveal clientfile
           async subtreep visible-only body-only ext-plist))
-    retfile))
+      retfile)))
 
 (defun org-reveal-export-to-html-and-browse
   (&optional async subtreep visible-only body-only ext-plist)
@@ -1493,7 +1499,10 @@ is the property list for the given project.  PUB-DIR is the
 publishing directory.
 
 Return output file name."
-  (org-publish-org-to 'reveal filename ".html" plist pub-dir))
+  (let ((client-multiplex nil))
+    (org-publish-org-to 'reveal filename ".html" plist pub-dir)
+    (when client-multiplex
+      (org-publish-org-to 'reveal filename "_client.html" plist pub-dir))))
 
 ;; Register auto-completion for speaker notes.
 (when org-reveal-note-key-char

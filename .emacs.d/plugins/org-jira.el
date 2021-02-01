@@ -364,7 +364,7 @@ See `org-default-priority' for more info."
 
 (defvar org-jira-verbosity 'debug)
 
-(defun org-jira-log (s) (when (eq 'debug org-jira-verbosity) (message (format "%s" s))))
+(defun org-jira-log (s) (when (eq 'debug org-jira-verbosity) (message "%s" s)))
 
 (defmacro ensure-on-issue (&rest body)
   "Make sure we are on an issue heading, before executing BODY."
@@ -1579,7 +1579,7 @@ purpose of wiping an old subtree."
                           (cdr (rassoc user jira-users)))))
           (when (null reporter)
             (error "No reporter found, this should probably never happen."))
-          (org-jira-update-issue-details issue-id filename :reporter (jiralib-get-user-account-id reporter)))
+          (org-jira-update-issue-details issue-id filename :reporter (jiralib-get-user-account-id project reporter)))
       (error "Not on an issue"))))
 
 ;;;###autoload
@@ -1600,7 +1600,7 @@ purpose of wiping an old subtree."
                           (cdr (rassoc user jira-users)))))
           (when (null assignee)
             (error "No assignee found, use org-jira-unassign-issue to make the issue unassigned"))
-          (org-jira-update-issue-details issue-id filename :assignee (jiralib-get-user-account-id assignee)))
+          (org-jira-update-issue-details issue-id filename :assignee (jiralib-get-user-account-id project assignee)))
       (error "Not on an issue"))))
 
 ;;;###autoload
@@ -1711,7 +1711,7 @@ that should be bound to an issue."
      nil
      t
      nil
-     'initial-input
+     initial-input
      (car initial-input))))
 
 (defun org-jira-read-subtask-type ()
@@ -1889,8 +1889,12 @@ Where issue-id will be something such as \"EX-22\"."
       (outline-show-all)
       (outline-hide-sublevels 2)
       (goto-char (point-min))
+      (while (and (looking-at "^ *$")
+                  (not (eobp)))
+        (forward-line))
       (outline-next-visible-heading 1)
-      (while (not (org-next-line-empty-p))
+      (while (and (not (org-next-line-empty-p))
+                  (not (eobp)))
         (when (outline-on-heading-p t)
           ;; It's possible we could be on a non-org-jira headline, but
           ;; that should be an exceptional case and not necessitating a
@@ -2120,8 +2124,8 @@ otherwise it should return:
                    (cons 'priority (org-jira-get-id-name-alist org-issue-priority
                                                        (jiralib-get-priorities)))
                    (cons 'description org-issue-description)
-                   (cons 'assignee (list (cons 'id (jiralib-get-user-account-id org-issue-assignee))))
-                   (cons 'reporter (list (cons 'id (jiralib-get-user-account-id org-issue-reporter))))
+                   (cons 'assignee (list (cons 'id (jiralib-get-user-account-id project org-issue-assignee))))
+                   (cons 'reporter (list (cons 'id (jiralib-get-user-account-id project org-issue-reporter))))
                    (cons 'summary (org-jira-strip-priority-tags (org-jira-get-issue-val-from-org 'summary)))
                    (cons 'issuetype `((id . ,org-issue-type-id)
       (name . ,org-issue-type))))))
@@ -2150,7 +2154,7 @@ otherwise it should return:
          ))
       )))
 
-       
+
 
 (defun org-jira-parse-issue-id ()
   "Get issue id from org text."
@@ -2430,7 +2434,7 @@ boards -  list of `org-jira-sdk-board' records."
             (progn
               (goto-char pos)
               (apply 'org-jira-sdk-board
-                     (reduce
+                     (cl-reduce
                       #'(lambda (acc entry)
                           (let* ((pname   (car entry))
                                  (pval (cdr entry))

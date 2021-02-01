@@ -127,6 +127,102 @@ Allowed params: %s" interface (reverse (-map #'cl-first params)))
                                             $$result))
                                  (-partition 2 plist))
                            $$result)))
+                  `(pcase-defmacro ,interface (&rest property-bindings)
+                     ,(if lsp-use-plists
+                          ``(and
+                             (pred listp)
+                             ;; Check if all the types required by the
+                             ;; interface exist in the expr-val.
+                             ,@(-map
+                                (lambda (key)
+                                  `(pred
+                                    (lambda (plist)
+                                      (plist-member plist ,key))))
+                                ',required)
+                             ;; Recursively generate the bindings.
+                             ,@(let ((current-list property-bindings)
+                                     (output-bindings nil))
+                                 ;; Invariant: while current-list is
+                                 ;; non-nil, the car of current-list is
+                                 ;; always of the form :key, while the
+                                 ;; cadr of current-list is either a)
+                                 ;; nil, b) of the form :key-next or c)
+                                 ;; a pcase pattern that can
+                                 ;; recursively match an expression.
+                                 (while current-list
+                                   (-let* (((curr-binding-as-keyword next-entry . _) current-list)
+                                           (curr-binding-as-camelcased-symbol
+                                            (or (alist-get curr-binding-as-keyword ',params)
+                                                (error "Unknown key: %s.  Available keys: %s"
+                                                       (symbol-name curr-binding-as-keyword)
+                                                       ',(-map #'cl-first params))))
+                                           (bound-name (lsp-keyword->symbol curr-binding-as-keyword))
+                                           (next-entry-is-key-or-nil
+                                            (and (symbolp next-entry)
+                                                 (or (null next-entry)
+                                                     (s-starts-with? ":" (symbol-name next-entry))))))
+                                     (cond
+                                      ;; If the next-entry is either a
+                                      ;; plist-key or nil, then bind to
+                                      ;; bound-name the value corresponding
+                                      ;; to the camelcased symbol.  Pop
+                                      ;; current-list once.
+                                      (next-entry-is-key-or-nil
+                                       (push `(app (lambda (plist)
+                                                     (plist-get plist ,curr-binding-as-camelcased-symbol))
+                                                   ,bound-name)
+                                             output-bindings)
+                                       (setf current-list (cdr current-list)))
+                                      ;; Otherwise, next-entry is a pcase
+                                      ;; pattern we recursively match to the
+                                      ;; expression. This can in general
+                                      ;; create additional bindings that we
+                                      ;; persist in the top level of
+                                      ;; bindings.  We pop current-list
+                                      ;; twice.
+                                      (t
+                                       (push `(app (lambda (plist)
+                                                     (plist-get plist ,curr-binding-as-camelcased-symbol))
+                                                   ,next-entry)
+                                             output-bindings)
+                                       (setf current-list (cddr current-list))))))
+                                 output-bindings))
+                        ``(and
+                           (pred ht?)
+                           ,@(-map
+                              (lambda (key)
+                                `(pred
+                                  (lambda (hash-table)
+                                    (ht-contains? hash-table ,(lsp-keyword->string key)))))
+                              ',required)
+                           ,@(let ((current-list property-bindings)
+                                   (output-bindings nil))
+                               (while current-list
+                                 (-let* (((curr-binding-as-keyword next-entry . _) current-list)
+                                         (curr-binding-as-camelcased-string
+                                          (lsp-keyword->string (or (alist-get curr-binding-as-keyword ',params)
+                                                                   (error "Unknown key: %s.  Available keys: %s"
+                                                                          (symbol-name curr-binding-as-keyword)
+                                                                          ',(-map #'cl-first params)))))
+                                         (bound-name (lsp-keyword->symbol curr-binding-as-keyword))
+                                         (next-entry-is-key-or-nil
+                                          (and (symbolp next-entry)
+                                               (or (null next-entry)
+                                                   (s-starts-with? ":" (symbol-name next-entry))))))
+                                   (cond
+                                    (next-entry-is-key-or-nil
+                                     (push `(app (lambda (hash-table)
+                                                   (ht-get hash-table ,curr-binding-as-camelcased-string))
+                                                 ,bound-name)
+                                           output-bindings)
+                                     (setf current-list (cdr current-list)))
+                                    (t
+                                     (push `(app (lambda (hash-table)
+                                                   (ht-get hash-table ,curr-binding-as-camelcased-string))
+                                                 ,next-entry)
+                                           output-bindings)
+                                     (setf current-list (cddr current-list))))))
+                               output-bindings))))
                   (-mapcat (-lambda ((label . name))
                              (list
                               `(defun ,(intern (format "lsp:%s-%s"
@@ -261,18 +357,22 @@ See `-let' for a description of the destructuring mechanism."
     (lsp-get ,source ,key)))
 
 (lsp-interface (eslint:StatusParams  (:state) nil)
-               (eslint:OpenESLintDocParams (:url) nil))
+               (eslint:OpenESLintDocParams (:url) nil)
+               (eslint:ConfirmExecutionParams (:scope :file :libraryPath) nil))
 
 (lsp-interface (haxe:ProcessStartNotification (:title) nil))
 
 (lsp-interface (pwsh:ScriptRegion (:StartLineNumber :EndLineNumber :StartColumnNumber :EndColumnNumber :Text) nil))
+
+(lsp-interface (omnisharp:ErrorMessage (:Text :FileName :Line :Column)))
 
 (lsp-interface (rls:Cmd (:args :binary :env :cwd) nil))
 
 (defconst lsp/rust-analyzer-inlay-hint-kind-type-hint "TypeHint")
 (defconst lsp/rust-analyzer-inlay-hint-kind-param-hint "ParameterHint")
 (defconst lsp/rust-analyzer-inlay-hint-kind-chaining-hint "ChainingHint")
-(lsp-interface (rust-analyzer:SyntaxTreeParams (:textDocument) (:range))
+(lsp-interface (rust-analyzer:AnalyzerStatusParams (:textDocument))
+               (rust-analyzer:SyntaxTreeParams (:textDocument) (:range))
                (rust-analyzer:ExpandMacroParams (:textDocument :position) nil)
                (rust-analyzer:ExpandedMacro (:name :expansion) nil)
                (rust-analyzer:MatchingBraceParams (:textDocument :positions) nil)
@@ -420,11 +520,11 @@ See `-let' for a description of the destructuring mechanism."
  (CallHierarchyItem (:kind :name :range :selectionRange :uri) (:detail :tags))
  (ClientCapabilities nil (:experimental :textDocument :workspace))
  (ClientInfo (:name) (:version))
- (CodeActionCapabilities nil (:codeActionLiteralSupport :dynamicRegistration :isPreferredSupport))
+ (CodeActionCapabilities nil (:codeActionLiteralSupport :dynamicRegistration :isPreferredSupport :dataSupport :resolveSupport))
  (CodeActionContext (:diagnostics) (:only))
  (CodeActionKindCapabilities (:valueSet) nil)
  (CodeActionLiteralSupportCapabilities nil (:codeActionKind))
- (CodeActionOptions nil (:codeActionKinds))
+ (CodeActionOptions nil (:codeActionKinds :resolveProvider))
  (CodeLensCapabilities nil (:dynamicRegistration))
  (CodeLensOptions (:resolveProvider) nil)
  (Color (:red :green :blue :alpha) nil)
@@ -530,7 +630,7 @@ See `-let' for a description of the destructuring mechanism."
  (CallHierarchyOutgoingCall (:to :fromRanges) nil)
  (CallHierarchyOutgoingCallsParams (:item) nil)
  (CallHierarchyPrepareParams (:textDocument :position) (:uri))
- (CodeAction (:title) (:command :diagnostics :edit :isPreferred :kind))
+ (CodeAction (:title) (:command :diagnostics :edit :isPreferred :kind :data))
  (CodeActionKind nil nil)
  (CodeActionParams (:textDocument :context :range) nil)
  (CodeLens (:range) (:command :data))

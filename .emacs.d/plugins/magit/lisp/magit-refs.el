@@ -1,6 +1,6 @@
 ;;; magit-refs.el --- listing references  -*- lexical-binding: t -*-
 
-;; Copyright (C) 2010-2020  The Magit Project Contributors
+;; Copyright (C) 2010-2021  The Magit Project Contributors
 ;;
 ;; You should have received a copy of the AUTHORS.md file which
 ;; lists all contributors.  If not, see http://magit.vc/authors.
@@ -26,9 +26,6 @@
 ;; This library implements support for listing references in a buffer.
 
 ;;; Code:
-
-(eval-when-compile
-  (require 'subr-x))
 
 (require 'magit)
 
@@ -334,12 +331,10 @@ Type \\[magit-reset] to reset `HEAD' to the commit at point.
            (magit-show-refs-arguments magit-prefix-use-buffer-arguments))
   ["Arguments"
    (magit-for-each-ref:--contains)
-   ("=m" "Merged"               "--merged=" magit-transient-read-revision)
+   ("-M" "Merged"               "--merged=" magit-transient-read-revision)
    ("-m" "Merged to HEAD"       "--merged")
-   ("-M" "Merged to master"     "--merged=master")
-   ("=n" "Not merged"           "--no-merged=" magit-transient-read-revision)
+   ("-N" "Not merged"           "--no-merged=" magit-transient-read-revision)
    ("-n" "Not merged to HEAD"   "--no-merged")
-   ("-N" "Not merged to master" "--no-merged=master")
    (magit-for-each-ref:--sort)]
   ["Actions"
    ("y" "Show refs, comparing them with HEAD"           magit-show-refs-head)

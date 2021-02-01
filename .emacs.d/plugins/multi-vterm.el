@@ -4,7 +4,7 @@
 ;; URL: https://github.com/suonlight/multi-libvterm
 ;; Keywords: terminals, processes
 ;; Version: 1.0
-;; Package-Requires: ((emacs "26.3") (vterm "0.0") (projectile "1.2.0"))
+;; Package-Requires: ((emacs "26.3") (vterm "0.0") (project "0.3.0"))
 ;;
 ;;; Commentary:
 ;; Managing multiple vterm buffers in Emacs
@@ -28,11 +28,11 @@
 ;; Features that might be required by this library:
 ;;
 ;;  `vterm'
-;;  `projectile'
+;;  `project'
 ;;; Code:
 (require 'cl-lib)
 (require 'vterm)
-(require 'projectile)
+(require 'project)
 
 (defgroup multi-vterm nil
   "Multi term manager"
@@ -55,7 +55,7 @@ If nil, this defaults to the SHELL environment variable."
   :group 'multi-vterm)
 
 ;; Contants
-(defconst multi-vterm-dedicated-buffer-name "vterm-dedicated"
+(defconst multi-vterm-dedicated-buffer-name "dedicated"
   "The dedicated vterm buffer name.")
 
 ;; Variables
@@ -80,15 +80,15 @@ If nil, this defaults to the SHELL environment variable."
     (switch-to-buffer vterm-buffer)))
 
 ;;;###autoload
-(defun multi-vterm-projectile ()
+(defun multi-vterm-project ()
   "Create new vterm buffer."
   (interactive)
-  (if (projectile-project-p)
-      (if (buffer-live-p (get-buffer (multi-vterm-projectile-get-buffer-name)))
-          (if (string-equal (buffer-name (current-buffer)) (multi-vterm-projectile-get-buffer-name))
+  (if (project-current)
+      (if (buffer-live-p (get-buffer (multi-vterm-project-get-buffer-name)))
+          (if (string-equal (buffer-name (current-buffer)) (multi-vterm-project-get-buffer-name))
               (delete-window (selected-window))
-            (switch-to-buffer-other-window (multi-vterm-projectile-get-buffer-name)))
-        (let* ((vterm-buffer (multi-vterm-get-buffer 'projectile))
+            (switch-to-buffer-other-window (multi-vterm-project-get-buffer-name)))
+        (let* ((vterm-buffer (multi-vterm-get-buffer 'project))
                (multi-vterm-buffer-list (nconc multi-vterm-buffer-list (list vterm-buffer))))
           (set-buffer vterm-buffer)
           (multi-vterm-internal)
@@ -142,18 +142,20 @@ If nil, this defaults to the SHELL environment variable."
 
 (defun multi-vterm-get-buffer (&optional dedicated-window)
   "Get vterm buffer name based on DEDICATED-WINDOW.
-Optional argument DEDICATED-WINDOW: There are three types of DEDICATED-WINDOW: dedicated, projectile, default."
+Optional argument DEDICATED-WINDOW: There are three types of DEDICATED-WINDOW: dedicated, project, default."
   (with-temp-buffer
     (let ((index 1)
           vterm-name)
       (cond ((eq dedicated-window 'dedicated) (setq vterm-name (multi-vterm-dedicated-get-buffer-name)))
-            ((eq dedicated-window 'projectile) (progn
-                                                 (setq vterm-name (multi-vterm-projectile-get-buffer-name))
-                                                 (setq default-directory (projectile-project-root))))
+            ((eq dedicated-window 'project) (progn
+                                              (setq vterm-name (multi-vterm-project-get-buffer-name))
+                                              (setq default-directory
+                                                    (project-root
+                                                     (or (project-current) `(transient . ,default-directory))))))
             (t (progn
-                 (while (buffer-live-p (get-buffer (format "*%s<%s>*" multi-vterm-buffer-name index)))
+                 (while (buffer-live-p (get-buffer (multi-vterm-format-buffer-index index)))
                    (setq index (1+ index)))
-                 (setq vterm-name (format "*%s<%s>*" multi-vterm-buffer-name index)))))
+                 (setq vterm-name (multi-vterm-format-buffer-index index)))))
       (let ((buffer (get-buffer vterm-name)))
         (if buffer
             buffer
@@ -162,9 +164,23 @@ Optional argument DEDICATED-WINDOW: There are three types of DEDICATED-WINDOW: d
             (vterm-mode)
             buffer))))))
 
-(defun multi-vterm-projectile-get-buffer-name ()
-  "Get projectile buffer name."
-  (format "*vterm - %s*" (projectile-project-root)))
+(defun multi-vterm-project-get-buffer-name ()
+  "Get project buffer name."
+  (multi-vterm-format-buffer-name
+   (project-root (or (project-current) `(transient . ,default-directory)))))
+
+(defun multi-vterm-rename-buffer (name)
+  "Rename vterm buffer to NAME."
+  (interactive "MRename vterm buffer: ")
+  (rename-buffer (multi-vterm-format-buffer-name name)))
+
+(defun multi-vterm-format-buffer-name (name)
+  "Format vterm buffer NAME."
+  (format "*%s - %s*" multi-vterm-buffer-name name))
+
+(defun multi-vterm-format-buffer-index (index)
+  "Format vterm buffer name with INDEX."
+  (format "*%s<%s>*" multi-vterm-buffer-name index))
 
 (defun multi-vterm-handle-close ()
   "Close current vterm buffer when `exit' from vterm buffer."
@@ -230,7 +246,7 @@ If `window' is nil, get current window."
 
 (defun multi-vterm-dedicated-get-buffer-name ()
   "Get the buffer name of `multi-vterm' dedicated window."
-  (format "*%s*" multi-vterm-dedicated-buffer-name))
+  (multi-vterm-format-buffer-name multi-vterm-dedicated-buffer-name))
 
 (defun multi-vterm-dedicated-exist-p ()
   "Return non-nil if `multi-vterm' dedicated window exists."

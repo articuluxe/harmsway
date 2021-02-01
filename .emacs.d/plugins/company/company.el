@@ -22,7 +22,7 @@
 ;; GNU General Public License for more details.
 
 ;; You should have received a copy of the GNU General Public License
-;; along with GNU Emacs.  If not, see <http://www.gnu.org/licenses/>.
+;; along with GNU Emacs.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Commentary:
 ;;
@@ -543,6 +543,16 @@ prefix it was started from."
   :type 'boolean
   :package-version '(company . "0.8.0"))
 
+(defcustom company-abort-on-unique-match t
+  "If non-nil, typing a full unique match aborts completion.
+
+You can still invoke `company-complete' manually to run the
+`post-completion' handler, though.
+
+If it's nil, completion will remain active until you type a prefix that
+doesn't match anything or finish it manually, e.g. with RET."
+  :type 'boolean)
+
 (defcustom company-require-match 'company-explicit-action-p
   "If enabled, disallow non-matching input.
 This can be a function do determine if a match is required.
@@ -1023,6 +1033,9 @@ matches IDLE-BEGIN-AFTER-RE, return it wrapped in a cons."
          (cl-dolist (backend backends)
            (when (setq value (company--force-sync
                               backend (cons command args) backend))
+             (when (and (eq command 'ignore-case)
+                        (eq value 'keep-prefix))
+               (setq value t))
              (cl-return value)))))
       (_
        (let ((arg (car args)))
@@ -1188,11 +1201,11 @@ can retrieve meta-data for them."
                  (string-match-p "\\`company-" (symbol-name this-command)))))))
 
 (defun company-call-frontends (command)
-  (dolist (frontend company-frontends)
-    (condition-case-unless-debug err
-        (funcall frontend command)
-      (error (error "Company: frontend %s error \"%s\" on command %s"
-                    frontend (error-message-string err) command)))))
+  (cl-loop for frontend in company-frontends collect
+           (condition-case-unless-debug err
+               (funcall frontend command)
+             (error (error "Company: frontend %s error \"%s\" on command %s"
+                           frontend (error-message-string err) command)))))
 
 (defun company-set-selection (selection &optional force-update)
   "Set SELECTION for company candidates.
@@ -1203,6 +1216,7 @@ update if FORCE-UPDATE."
     (let* ((offset (if company-selection-default 0 1))
            (company-candidates-length
             (+ company-candidates-length offset)))
+      (setq selection (+ selection offset))
       (setq selection
             (if company-selection-wrap-around
                 (mod selection company-candidates-length)
@@ -1595,7 +1609,8 @@ prefix match (same case) will be prioritized."
                           (- company-point (length company-prefix))))
               (company-calculate-candidates new-prefix ignore-case))))
     (cond
-     ((company--unique-match-p c new-prefix ignore-case)
+     ((and company-abort-on-unique-match
+           (company--unique-match-p c new-prefix ignore-case))
       ;; Handle it like completion was aborted, to differentiate from user
       ;; calling one of Company's commands to insert the candidate,
       ;; not to trigger template expansion, etc.
@@ -1636,7 +1651,8 @@ prefix match (same case) will be prioritized."
                   company-backend backend
                   c (company-calculate-candidates company-prefix ignore-case))
             (cond
-             ((and (company--unique-match-p c company-prefix ignore-case)
+             ((and company-abort-on-unique-match
+                   (company--unique-match-p c company-prefix ignore-case)
                    (if company--manual-action
                        ;; If `company-manual-begin' was called, the user
                        ;; really wants something to happen.  Otherwise...
@@ -2065,8 +2081,7 @@ meant for no selection."
     (let ((selection (+ (or arg 1)
                         (or company-selection
                             company-selection-default
-                            -1)
-                        (if company-selection-default 0 1))))
+                            -1))))
       (company-set-selection selection))))
 
 (defun company-select-previous (&optional arg)
@@ -2097,6 +2112,16 @@ With ARG, move by that many elements."
       (company-select-previous arg)
     (company-abort)
     (company--unread-this-command-keys)))
+
+(defun company-select-first ()
+  "Select the first completion candidate."
+  (interactive)
+  (company-set-selection 0))
+
+(defun company-select-last ()
+  "Select the last completion candidate."
+  (interactive)
+  (company-set-selection (1- company-candidates-length)))
 
 (defun company-next-page ()
   "Select the candidate one page further."
@@ -2141,31 +2166,19 @@ With ARG, move by that many elements."
 (defun company--event-col-row (event)
   (company--posn-col-row (event-start event)))
 
+(defvar company-mouse-event nil
+  "Holds the mouse event from `company-select-mouse'.
+For use in the `select-mouse' frontend action.  `let'-bound.")
+
 (defun company-select-mouse (event)
   "Select the candidate picked by the mouse."
   (interactive "e")
-  (let ((event-col-row (company--event-col-row event))
-        (ovl-row (company--row))
-        (ovl-height (and company-pseudo-tooltip-overlay
-                         (min (overlay-get company-pseudo-tooltip-overlay
-                                           'company-height)
-                              company-candidates-length))))
-    (if (and ovl-height
-             (company--inside-tooltip-p event-col-row ovl-row ovl-height))
-        (progn
-          (company-set-selection (+ (cdr event-col-row)
-                                    (1- company-tooltip-offset)
-                                    (if (and (eq company-tooltip-offset-display 'lines)
-                                             (not (zerop company-tooltip-offset)))
-                                        -1 0)
-                                    (- ovl-row)
-                                    (if (< ovl-height 0)
-                                        (- 1 ovl-height)
-                                      0)))
-          t)
-      (company-abort)
-      (company--unread-this-command-keys)
-      nil)))
+  (or (let ((company-mouse-event event))
+        (cl-some #'identity (company-call-frontends 'select-mouse)))
+      (progn
+        (company-abort)
+        (company--unread-this-command-keys)
+        nil)))
 
 (defun company-complete-mouse (event)
   "Insert the candidate picked by the mouse."
@@ -2426,7 +2439,7 @@ It defaults to 0.
 CALLBACK is a function called with the selected result if the user
 successfully completes the input.
 
-Example: \(company-begin-with '\(\"foo\" \"foobar\" \"foobarbaz\"\)\)"
+Example: \(company-begin-with \\='\(\"foo\" \"foobar\" \"foobarbaz\"\)\)"
   (let ((begin-marker (copy-marker (point) t)))
     (company-begin-backend
      (lambda (command &optional arg &rest ignored)
@@ -2546,7 +2559,7 @@ If SHOW-VERSION is non-nil, show the version in the echo area."
 
 ;;; propertize
 
-(defsubst company-round-tab (arg)
+(defun company-round-tab (arg)
   (* (/ (+ arg tab-width) tab-width) tab-width))
 
 (defun company-plainify (str)
@@ -2746,6 +2759,27 @@ If SHOW-VERSION is non-nil, show the version in the echo area."
       (cl-decf ww (1- (length (aref buffer-display-table ?\n)))))
     ww))
 
+(defun company--face-attribute (face attr)
+  ;; Like `face-attribute', but accounts for faces that have been remapped to
+  ;; another face, a list of faces, or a face spec.
+  (cond ((null face) nil)
+        ((symbolp face)
+         (let ((remap (cdr (assq face face-remapping-alist))))
+           (if remap
+               (company--face-attribute
+                ;; Faces can be remapped to their unremapped selves, but that
+                ;; would cause us infinite recursion.
+                (if (listp remap) (remq face remap) remap)
+                attr)
+             (face-attribute face attr nil t))))
+        ((keywordp (car-safe face))
+         (or (plist-get face attr)
+             (company--face-attribute (plist-get face :inherit) attr)))
+        ((listp face)
+         (cl-find-if #'stringp
+                     (mapcar (lambda (f) (company--face-attribute f attr))
+                             face)))))
+
 (defun company--replacement-string (lines old column nl &optional align-top)
   (cl-decf column company-tooltip-margin)
 
@@ -2782,7 +2816,8 @@ If SHOW-VERSION is non-nil, show the version in the echo area."
     (let* ((nl-face (list
                      :extend t
                      :inverse-video nil
-                     :background (face-attribute 'default :background)))
+                     :background (or (company--face-attribute 'default :background)
+                                     (face-attribute 'default :background nil t))))
            (str (apply #'concat
                        (when nl " \n")
                        (cl-mapcan
@@ -3034,14 +3069,14 @@ Returns a negative number if the tooltip should be displayed above point."
     (pre-command (company-pseudo-tooltip-hide-temporarily))
     (post-command
      (unless (when (overlayp company-pseudo-tooltip-overlay)
-              (let* ((ov company-pseudo-tooltip-overlay)
-                     (old-height (overlay-get ov 'company-height))
-                     (new-height (company--pseudo-tooltip-height)))
-                (and
-                 (>= (* old-height new-height) 0)
-                 (>= (abs old-height) (abs new-height))
-                 (equal (company-pseudo-tooltip-guard)
-                        (overlay-get ov 'company-guard)))))
+               (let* ((ov company-pseudo-tooltip-overlay)
+                      (old-height (overlay-get ov 'company-height))
+                      (new-height (company--pseudo-tooltip-height)))
+                 (and
+                  (>= (* old-height new-height) 0)
+                  (>= (abs old-height) (abs new-height))
+                  (equal (company-pseudo-tooltip-guard)
+                         (overlay-get ov 'company-guard)))))
        ;; Redraw needed.
        (company-pseudo-tooltip-show-at-point (point) (length company-prefix))
        (overlay-put company-pseudo-tooltip-overlay
@@ -3051,7 +3086,26 @@ Returns a negative number if the tooltip should be displayed above point."
     (hide (company-pseudo-tooltip-hide)
           (setq company-tooltip-offset 0))
     (update (when (overlayp company-pseudo-tooltip-overlay)
-              (company-pseudo-tooltip-edit company-selection)))))
+              (company-pseudo-tooltip-edit company-selection)))
+    (select-mouse
+     (let ((event-col-row (company--event-col-row company-mouse-event))
+           (ovl-row (company--row))
+           (ovl-height (and company-pseudo-tooltip-overlay
+                            (min (overlay-get company-pseudo-tooltip-overlay
+                                              'company-height)
+                                 company-candidates-length))))
+       (cond ((and ovl-height
+                   (company--inside-tooltip-p event-col-row ovl-row ovl-height))
+              (company-set-selection (+ (cdr event-col-row)
+                                        (1- company-tooltip-offset)
+                                        (if (and (eq company-tooltip-offset-display 'lines)
+                                                 (not (zerop company-tooltip-offset)))
+                                            -1 0)
+                                        (- ovl-row)
+                                        (if (< ovl-height 0)
+                                            (- 1 ovl-height)
+                                          0)))
+              t))))))
 
 (defun company-pseudo-tooltip-unless-just-one-frontend (command)
   "`company-pseudo-tooltip-frontend', but not shown for single candidates."
@@ -3238,10 +3292,12 @@ Delay is determined by `company-tooltip-idle-delay'."
                                      'face 'company-echo))
               (cl-incf len 3)
               (cl-incf i)
-              (add-text-properties 3 (+ 3 (string-width company-common))
+              ;; FIXME: Add support for the `match' backend action, and thus,
+              ;; non-prefix matches.
+              (add-text-properties 3 (+ 3 (string-width (or company-common "")))
                                    '(face company-echo-common) comp))
           (setq comp (propertize comp 'face 'company-echo))
-          (add-text-properties 0 (string-width company-common)
+          (add-text-properties 0 (string-width (or company-common ""))
                                '(face company-echo-common) comp))
         (if (>= len limit)
             (setq candidates nil)

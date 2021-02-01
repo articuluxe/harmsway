@@ -184,6 +184,9 @@
   (ivy-current-match (:weight 'bold :background chocolate-mono-3))
   (ivy-cursor (:foreground chocolate-hue-2 :background chocolate-syntax-bg-dark))
 
+  ;; MODE SUPPORT: selectrum
+  (selectrum-current-candidate (:background chocolate-syntax-light))
+
   ;; MODE support: js2
   (js2-function-param (:foreground chocolate-hue-1))
   (js2-external-variable (:weight 'bold :foreground chocolate-hue-7))
@@ -210,6 +213,11 @@
   (ediff-odd-diff-Ancestor (:inherit 'ediff-odd-diff-A))
   (ediff-odd-diff-B (:inherit 'ediff-even-diff-B))
   (ediff-odd-diff-C (:inherit 'ediff-even-diff-C))
+
+  ;; MODE SUPPORT: diff-hl
+  (diff-hl-change (:background chocolate-dark-yellow :foreground chocolate-syntax-modified))
+  (diff-hl-insert (:background chocolate-dark-green :foreground chocolate-syntax-added))
+  (diff-hl-delete (:background chocolate-dark-red :foreground chocolate-syntax-removed))
 
   ;; MODE SUPPORT: org
   (org-table (:foreground chocolate-hue-1-5))
@@ -245,6 +253,14 @@
   (powerline-inactive1 (:background chocolate-syntax-bg-dark :inherit 'mode-line-inactive))
   (powerline-inactive2 (:background chocolate-syntax-bg-dark :inherit 'mode-line-inactive))
   (spaceline-highlight-face (:background chocolate-hue-6 :foreground chocolate-syntax-bg-dark))
+  
+    ;; MODE SUPPORT tab-bar-mode
+  (tab-bar (:foreground chocolate-hue-4 :background chocolate-syntax-bg-dark))
+  (tab-bar-tab (:foreground chocolate-hue-4 :background chocolate-syntax-bg-dark))
+
+  ;; MODE SUPPORT tab-line-mode
+  (tab-line (:foreground chocolate-hue-4 :background chocolate-syntax-bg-dark))
+  (tab-bar-tab-inactive (:foreground chocolate-hue-4 :background chocolate-syntax-bg-dark))
 
   ;; MODE SUPPORT: centaur tabs
   (centaur-tabs-default (:background chocolate-syntax-bg-dark :foreground chocolate-hue-4))

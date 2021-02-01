@@ -1,6 +1,6 @@
 ;;; yaml-imenu.el --- Enhancement of the imenu support in yaml-mode.
 
-;; Copyright (c) 2018 Akinori MUSHA
+;; Copyright (c) 2018-2020 Akinori MUSHA
 ;;
 ;; All rights reserved.
 ;;
@@ -28,7 +28,7 @@
 ;; Author: Akinori MUSHA <knu@iDaemons.org>
 ;; URL: https://github.com/knu/yaml-imenu.el
 ;; Created: 25 Sep 2018
-;; Version: 1.0.1
+;; Version: 1.0.2
 ;; Package-Requires: ((emacs "24.4") (yaml-mode "0"))
 ;; Keywords: outlining, convenience, imenu
 
@@ -83,16 +83,18 @@
          (json-array-type 'list))
      (json-read-from-string
       (with-output-to-string
-        (shell-command-on-region
-         (point-min)
-         (point-max)
-         (mapconcat
-          'shell-quote-argument
-          (list
-           "ruby"
-           (expand-file-name "parse_yaml.rb" (yaml-imenu-source-directory)))
-          " ")
-         standard-output))))))
+        (with-current-buffer
+            standard-output
+          (shell-command-on-region
+           (point-min)
+           (point-max)
+           (mapconcat
+            'shell-quote-argument
+            (list
+             "ruby"
+             (expand-file-name "parse_yaml.rb" (yaml-imenu-source-directory)))
+            " ")
+           t)))))))
 
 (defun yaml-imenu--json-to-index (alist)
   "Reformat the JSON representation ALIST into an imenu index."

@@ -20,14 +20,11 @@
 
 ;;; Commentary:
 
-;; Flycheck integration for lsp-mode.  To enable, put this in your config:
-;; (require 'lsp-ui-flycheck)
-;; (with-eval-after-load 'lsp-mode
-;;   (add-hook 'lsp-after-open-hook (lambda () (lsp-ui-flycheck-enable 1))))
+;; Flycheck integration for lsp-mode.
 
 ;;; Code:
 
-(require 'flycheck)
+(require 'flycheck nil 'noerror)  ; Temporary solution, see #514
 (require 'pcase)
 (require 'dash)
 
@@ -43,7 +40,8 @@
   :link '(info-link "(lsp-ui-flycheck) Customizing"))
 
 (defcustom lsp-ui-flycheck-list-position 'bottom
-  "Position where `lsp-ui-flycheck-list' will show diagnostics for the whole workspace."
+  "Position where `lsp-ui-flycheck-list' will show diagnostics for the
+whole workspace."
   :type '(choice (const :tag "Bottom" bottom)
                  (const :tag "Right" right))
   :group 'lsp-ui-flycheck)

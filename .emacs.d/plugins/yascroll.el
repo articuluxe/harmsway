@@ -1,11 +1,13 @@
 ;;; yascroll.el --- Yet Another Scroll Bar Mode
 
-;; Copyright (C) 2011-2015  Tomohiro Matsuyama
+;; Copyright (C) 2011-2015 Tomohiro Matsuyama <m2ym.pub@gmail.com>
+;; Copyright (C) 2020-2021 Shen, Jen-Chieh <jcs090218@gmail.com>
 
 ;; Author: Tomohiro Matsuyama <m2ym.pub@gmail.com>
+;; Maintainer: Shen, Jen-Chieh <jcs090218@gmail.com>
 ;; Keywords: convenience
-;; Version: 0.1.9
-;; Package-Requires: ((emacs "26.1") (cl-lib "0.3"))
+;; Version: 0.2.0
+;; Package-Requires: ((emacs "26.1"))
 ;; URL: https://github.com/emacsorphanage/yascroll
 
 ;; This program is free software; you can redistribute it and/or modify

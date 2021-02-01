@@ -1,6 +1,6 @@
 ;;; magit-reflog.el --- inspect ref history  -*- lexical-binding: t -*-
 
-;; Copyright (C) 2010-2020  The Magit Project Contributors
+;; Copyright (C) 2010-2021  The Magit Project Contributors
 ;;
 ;; You should have received a copy of the AUTHORS.md file which
 ;; lists all contributors.  If not, see http://magit.vc/authors.
@@ -29,9 +29,6 @@
 
 (require 'magit-core)
 (require 'magit-log)
-
-(eval-when-compile
-  (require 'subr-x))
 
 ;;; Options
 

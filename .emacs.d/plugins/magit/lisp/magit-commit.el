@@ -1,6 +1,6 @@
 ;;; magit-commit.el --- create Git commits  -*- lexical-binding: t -*-
 
-;; Copyright (C) 2008-2020  The Magit Project Contributors
+;; Copyright (C) 2008-2021  The Magit Project Contributors
 ;;
 ;; You should have received a copy of the AUTHORS.md file which
 ;; lists all contributors.  If not, see http://magit.vc/authors.
@@ -34,12 +34,11 @@
 
 (eval-when-compile (require 'epa)) ; for `epa-protocol'
 (eval-when-compile (require 'epg))
-(eval-when-compile (require 'subr-x))
 
 ;;; Options
 
 (defcustom magit-commit-ask-to-stage 'verbose
-  "Whether to ask to stage all unstaged changes when committing and nothing is staged."
+  "Whether to ask to stage everything when committing and nothing is staged."
   :package-version '(magit . "2.3.0")
   :group 'magit-commands
   :type '(choice (const :tag "Ask" t)
@@ -126,7 +125,8 @@ Also see `git-commit-post-finish-hook'."
     ("f" "Fixup"          magit-commit-fixup)
     ("s" "Squash"         magit-commit-squash)
     ("A" "Augment"        magit-commit-augment)
-    (6 "x" "Absorb changes" magit-commit-autofixup)]
+    (6 "x" "Absorb changes" magit-commit-autofixup)
+    (6 "X" "Absorb modules" magit-commit-absorb-modules)]
    [""
     ("F" "Instant fixup"  magit-commit-instant-fixup)
     ("S" "Instant squash" magit-commit-instant-squash)]]
@@ -217,7 +217,7 @@ to inverse the meaning of the prefix argument.  \n(git commit
                      (if current-prefix-arg
                          (not magit-commit-extend-override-date)
                        magit-commit-extend-override-date)))
-  (when (setq args (magit-commit-assert args (not override-date)))
+  (when (setq args (magit-commit-assert args))
     (magit-commit-amend-assert)
     (let ((process-environment process-environment))
       (unless override-date
@@ -357,7 +357,11 @@ depending on the value of option `magit-commit-squash-confirm'."
         (and (not strict)
              ;; ^ For amend variants that don't make sense otherwise.
              (or (member "--amend" args)
-                 (member "--allow-empty" args))))
+                 (member "--allow-empty" args)
+                 (member "--reset-author" args)
+                 (member "--author" args)
+                 (member "--signoff" args)
+                 (cl-find-if (lambda (a) (string-match-p "\\`--date=" a)) args))))
     (or args (list "--")))
    ((and (magit-rebase-in-progress-p)
          (not (magit-anything-unstaged-p))
@@ -410,6 +414,30 @@ history element."
                    (and (magit-rev-author-p "HEAD")
                         (concat "--date=" date)))))
 
+;;;###autoload
+(defun magit-commit-absorb-modules (phase commit)
+  "Spread modified modules across recent commits."
+  (interactive (list 'select (magit-get-upstream-branch)))
+  (let ((modules (magit-list-modified-modules)))
+    (unless modules
+      (user-error "There are no modified modules that could be absorbed"))
+    (when commit
+      (setq commit (magit-rebase-interactive-assert commit t)))
+    (if (and commit (eq phase 'run))
+        (progn
+          (dolist (module modules)
+            (when-let ((msg (magit-git-string
+                             "log" "-1" "--format=%s"
+                             (concat commit "..") "--" module)))
+              (magit-git "commit" "-m" (concat "fixup! " msg)
+                         "--only" "--" module)))
+          (magit-refresh)
+          t)
+      (magit-log-select
+        (lambda (commit)
+          (magit-commit-absorb-modules 'run commit))
+        nil nil nil nil commit))))
+
 ;;;###autoload (autoload 'magit-commit-absorb "magit-commit" nil t)
 (transient-define-prefix magit-commit-absorb (phase commit args)
   "Spread staged changes across recent commits.
@@ -451,10 +479,14 @@ See `magit-commit-autofixup' for an alternative implementation."
 
 ;;;###autoload (autoload 'magit-commit-autofixup "magit-commit" nil t)
 (transient-define-prefix magit-commit-autofixup (phase commit args)
-  "Spread unstaged changes across recent commits.
-With a prefix argument use a transient command to select infix
-arguments.  This command requires the git-autofixup script, which
-is available from https://github.com/torbiak/git-autofixup.
+  "Spread staged or unstaged changes across recent commits.
+
+If there are any staged then spread only those, otherwise
+spread all unstaged changes. With a prefix argument use a
+transient command to select infix arguments.
+
+This command requires the git-autofixup script, which is
+available from https://github.com/torbiak/git-autofixup.
 See `magit-commit-absorb' for an alternative implementation."
   ["Arguments"
    (magit-autofixup:--context)
@@ -471,10 +503,8 @@ See `magit-commit-absorb' for an alternative implementation."
     (unless (executable-find "git-autofixup")
       (user-error "This command requires the git-autofixup script, which %s"
                   "is available from https://github.com/torbiak/git-autofixup"))
-    (when (magit-anything-staged-p)
-      (user-error "Cannot absorb when there are staged changes"))
-    (unless (magit-anything-unstaged-p)
-      (user-error "There are no unstaged changes that could be absorbed"))
+    (unless (magit-anything-modified-p)
+      (user-error "There are no changes that could be absorbed"))
     (when commit
       (setq commit (magit-rebase-interactive-assert commit t)))
     (if (and commit (eq phase 'run))

@@ -467,7 +467,10 @@ symbol at point, to not obstruct the view of the code that follows.
 If there's no space above in the current window, it places
 FRAME just below the symbol at point."
   (-let* (((x . y) (--> (or lsp-ui-doc--bounds (bounds-of-thing-at-point 'symbol))
-                        (posn-x-y (posn-at-point (car it)))))
+                        (or (posn-x-y (posn-at-point (car it)))
+                            (if (< (car it) (window-start))
+                                (cons 0 0)
+                              (posn-x-y (posn-at-point (1- (window-end))))))))
           (frame-relative-symbol-x (+ start-x x))
           (frame-relative-symbol-y (+ start-y y))
           (char-height (frame-char-height))
@@ -601,7 +604,8 @@ FN is the function to call on click."
   (insert (propertize "\n" 'face '(:height 0.2)))
   (while (not (eobp))
     (when (and (eolp) (not (bobp)))
-      (kill-whole-line)
+      (save-excursion
+        (delete-region (point) (progn (forward-visible-line 1) (point))))
       (when (or (and (not (get-text-property (point) 'markdown-heading))
                      (not (get-text-property (max (- (point) 2) 1) 'markdown-heading)))
                 (get-text-property (point) 'markdown-hr))
@@ -629,7 +633,9 @@ FN is the function to call on click."
         (goto-char next)
         (setq bolp (bolp)
               before (char-before))
-        (kill-line 1)
+        (delete-region (point) (save-excursion
+                                 (forward-visible-line 1)
+                                 (point)))
         (setq after (char-after (1+ (point))))
         (insert
          (concat
@@ -667,6 +673,7 @@ FN is the function to call on click."
           line-prefix '(space :height (1) :width 1))
     (setq-local face-remapping-alist `((header-line lsp-ui-doc-header)))
     (setq-local window-min-height 1)
+    (setq-local show-trailing-whitespace nil)
     (setq-local window-configuration-change-hook nil)
     (add-hook 'pre-command-hook 'lsp-ui-doc--buffer-pre-command nil t)
     (when (boundp 'window-state-change-functions)
@@ -972,20 +979,27 @@ before, or if the new window is the minibuffer."
     (and (buffer-live-p it) it)
     (kill-buffer it)))
 
-(defun lsp-ui-doc--handle-scroll (_win _new-start)
+(defun lsp-ui-doc--handle-scroll (win _new-start)
+  "Handle scrolling to the document frame.
+
+This function is apply to hook `window-scroll-functions'.
+
+Argument WIN is current applying window."
   (let ((frame (lsp-ui-doc--get-frame)))
-    (and frame
-         (eq lsp-ui-doc-position 'at-point)
-         (frame-visible-p frame)
-         (if (and lsp-ui-doc--bounds
-                  (eq (window-buffer) (frame-parameter frame 'lsp-ui-doc--buffer-origin))
-                  (not (minibufferp (window-buffer)))
-                  (>= (point) (car lsp-ui-doc--bounds))
-                  (<= (point) (cdr lsp-ui-doc--bounds)))
-             (lsp-ui-doc--move-frame frame)
-           ;; The point might have changed if the window was scrolled
-           ;; too far
-           (lsp-ui-doc--hide-frame)))))
+    (if (minibufferp (window-buffer))
+        (lsp-ui-doc--hide-frame)
+      (when (and frame
+                 (eq lsp-ui-doc-position 'at-point)
+                 (frame-visible-p frame)
+                 (eq win (selected-window)))  ; This resolved #524
+        (if (and lsp-ui-doc--bounds
+                 (eq (window-buffer) (frame-parameter frame 'lsp-ui-doc--buffer-origin))
+                 (>= (point) (car lsp-ui-doc--bounds))
+                 (<= (point) (cdr lsp-ui-doc--bounds)))
+            (lsp-ui-doc--move-frame frame)
+          ;; The point might have changed if the window was scrolled
+          ;; too far
+          (lsp-ui-doc--hide-frame))))))
 
 (defvar-local lsp-ui-doc--timer-mouse-movement nil)
 (defvar-local lsp-ui-doc--last-event nil)

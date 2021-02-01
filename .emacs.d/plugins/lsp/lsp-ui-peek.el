@@ -70,10 +70,10 @@
 
 (defcustom lsp-ui-peek-fontify 'on-demand
   "Whether to fontify chunks of code (use semantics colors).
-WARNING: 'always can heavily slow the processing when `lsp-ui-peek-expand-function'
-expands more than 1 file.
-It is recommended to keep the default value of `lsp-ui-peek-expand-function' when
-this variable is set to 'always."
+WARNING: 'always can heavily slow the processing when
+`lsp-ui-peek-expand-function' expands more than 1 file.
+It is recommended to keep the default value of `lsp-ui-peek-expand-function'
+when this variable is set to 'always."
   :type '(choice (const :tag "Never" never)
                  (const :tag "On demand" on-demand)
                  (const :tag "Always" always))
@@ -109,13 +109,12 @@ By default, the peek view isn't shown if there is 1 xref."
   :group 'lsp-ui-peek)
 
 (defface lsp-ui-peek-highlight
-  '((((background light)) :background "dim gray"
-     :foreground "white"
-     :distant-foreground "black")
+  '((((background light)) :background "yellow"
+     :box (:line-width -1 :color "red"))
     (t :background "white"
        :foreground "black"
        :distant-foreground "white"
-       :box (:line-width -1 :color "white")))
+       :box (:line-width -1 :color "red")))
   "Face used to highlight the reference/definition.
 Do not use box, underline or overline prop.  If you want to use
 box, use a negative value for its width.  Those properties deform
@@ -477,7 +476,8 @@ XREFS is a list of references/definitions."
     (delete-overlay lsp-ui-peek--overlay))
   (setq lsp-ui-peek--overlay nil
         lsp-ui-peek--last-xref nil)
-  (set-window-start (get-buffer-window) lsp-ui-peek--win-start))
+  (when lsp-ui-peek--win-start
+    (set-window-start (get-buffer-window) lsp-ui-peek--win-start)))
 
 (defun lsp-ui-peek--deactivate-keymap ()
   "Deactivate keymap."

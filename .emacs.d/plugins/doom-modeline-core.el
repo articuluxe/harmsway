@@ -124,11 +124,12 @@ It returns a file name which can be used directly as argument of
           ?\xf243                      ; battery-quarter
           ?\xf241                      ; battery-three-quarters
           ))))
-(doom-modeline--set-char-widths doom-modeline-rhs-icons-alist)
+(when (display-graphic-p)
+  (doom-modeline--set-char-widths doom-modeline-rhs-icons-alist))
 
 
 ;;
-;; Customizations
+;; Customization
 ;;
 
 (defgroup doom-modeline nil
@@ -154,7 +155,8 @@ If the actual char height is larger, it respects the actual char height."
 (defcustom doom-modeline-window-width-limit fill-column
   "The limit of the window width.
 
-If `window-width' is smaller than the limit, some information won't be displayed."
+If `window-width' is smaller than the limit, some information won't be
+displayed."
   :type '(choice integer
                  (const :tag "Disable" nil))
   :group 'doom-modeline)
@@ -487,8 +489,8 @@ If nil, don't set up a hook."
   :group 'doom-modeline)
 
 (defcustom doom-modeline-gnus-excluded-groups nil
-  "A list of groups to be excluded from the unread count. Groups' names list in `gnus-newsrc-alist'`"
-
+  "A list of groups to be excluded from the unread count.
+Groups' names list in `gnus-newsrc-alist'`"
   :type '(repeat string)
   :group 'doom-modeline)
 
@@ -818,11 +820,8 @@ then this function does nothing."
   (setq doom-modeline-current-window nil))
 
 (add-hook 'window-configuration-change-hook #'doom-modeline-set-selected-window)
-(add-hook 'buffer-list-update-hook #'doom-modeline-set-selected-window)
-(add-hook 'after-make-frame-functions #'doom-modeline-set-selected-window)
-(add-hook 'delete-frame-functions #'doom-modeline-set-selected-window)
+(add-hook 'window-selection-change-functions #'doom-modeline-set-selected-window)
 (add-hook 'exwm-workspace-switch-hook #'doom-modeline-set-selected-window)
-(advice-add #'handle-switch-frame :after #'doom-modeline-set-selected-window)
 (with-no-warnings
   (if (boundp 'after-focus-change-function)
       (progn

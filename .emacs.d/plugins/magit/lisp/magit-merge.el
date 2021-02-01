@@ -1,6 +1,6 @@
 ;;; magit-merge.el --- merge functionality  -*- lexical-binding: t -*-
 
-;; Copyright (C) 2010-2020  The Magit Project Contributors
+;; Copyright (C) 2010-2021  The Magit Project Contributors
 ;;
 ;; You should have received a copy of the AUTHORS.md file which
 ;; lists all contributors.  If not, see http://magit.vc/authors.
@@ -27,9 +27,6 @@
 
 ;;; Code:
 
-(eval-when-compile
-  (require 'subr-x))
-
 (require 'magit)
 (require 'magit-diff)
 
@@ -47,6 +44,7 @@
    ("-f" "Fast-forward only" "--ff-only")
    ("-n" "No fast-forward"   "--no-ff")
    (magit-merge:--strategy)
+   (5 magit-merge:--strategy-option)
    (5 magit-diff:--diff-algorithm :argument "-Xdiff-algorithm=")
    (5 magit:--gpg-sign)]
   ["Actions"
@@ -77,6 +75,13 @@
   :key "-s"
   :argument "--strategy="
   :choices '("resolve" "recursive" "octopus" "ours" "subtree"))
+
+(transient-define-argument magit-merge:--strategy-option ()
+  :description "Strategy Option"
+  :class 'transient-option
+  :key "-X"
+  :argument "--strategy-option="
+  :choices '("ours" "theirs" "patience"))
 
 ;;;###autoload
 (defun magit-merge-plain (rev &optional args nocommit)
@@ -163,9 +168,10 @@ then also remove the respective remote branch."
   (magit--merge-absorb branch args))
 
 (defun magit--merge-absorb (branch args)
-  (when (equal branch "master")
+  (when (equal branch (magit-main-branch))
     (unless (yes-or-no-p
-             "Do you really want to merge `master' into another branch? ")
+             (format "Do you really want to merge `%s' into another branch? "
+                     branch))
       (user-error "Abort")))
   (if-let ((target (magit-get-push-branch branch t)))
       (progn
@@ -188,7 +194,9 @@ then also remove the respective remote branch."
        (format "Merge branch '%s'%s [#%s]"
                branch
                (let ((current (magit-get-current-branch)))
-                 (if (equal current "master") "" (format " into %s" current)))
+                 (if (equal current (magit-main-branch))
+                     ""
+                   (format " into %s" current)))
                pr)
        branch)
     (magit-run-git-async "merge" args "--no-edit" branch))

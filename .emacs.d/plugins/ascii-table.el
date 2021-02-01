@@ -4,7 +4,7 @@
 ;; Author: Lassi Kortela <lassi@lassi.io>
 ;; URL: https://github.com/lassik/emacs-ascii-table
 ;; Package-Requires: ((emacs "24.3") (cl-lib "0.5"))
-;; Package-Version: 0.1.0
+;; Version: 0.1.0
 ;; Keywords: help tools
 ;;
 ;; This file is not part of GNU Emacs.
@@ -19,6 +19,8 @@
 ;; Press TAB to change the way control characters are shown.
 ;;
 ;;; Code:
+
+(require 'cl-lib)
 
 (defvar ascii-table-base 16
   "Number base used for character codes in the ASCII table.

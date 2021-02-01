@@ -1,6 +1,6 @@
 ;;; treemacs-bookmarks.el --- A tree style file viewer package -*- lexical-binding: t -*-
 
-;; Copyright (C) 2020 Alexander Miller
+;; Copyright (C) 2021 Alexander Miller
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -17,6 +17,7 @@
 
 ;;; Commentary:
 ;;; Integrates treemacs with bookmark.el.
+;;; NOTE: This module is lazy-loaded.
 
 ;;; Code:
 
@@ -80,7 +81,13 @@ With a prefix argument ARG treemacs will also open the bookmarked location."
       ;; error must be handled in bookmark.el.
       (user-error "Treemacs--bookmark-handler invoked for a non-Treemacs bookmark"))
     (treemacs-select-window)
-    (treemacs-goto-node path)
+    ;; XXX temporary workaround for incorrect move to a saved tag node
+    ;; must be fixed after tags were rewritten in new extension api
+    (if (and (listp path)
+             (stringp (car path))
+             (file-regular-p (car path)))
+        (treemacs-goto-node (car path))
+      (treemacs-goto-node path))
     ;; If the user has bookmarked a directory, they probably want to operate on
     ;; its contents. Expand it, and select the first child.
     (treemacs-with-current-button
@@ -186,13 +193,14 @@ treemacs node is pointing to a valid buffer position."
    "There is nothing to bookmark here."
    (pcase (treemacs-button-get current-btn :state)
      ((or 'file-node-open 'file-node-closed 'dir-node-open 'dir-node-closed)
-      (-let [name (read-string "Bookmark name: ")]
+      (-let [name (treemacs--read-string "Bookmark name: ")]
         (bookmark-store name `((filename . ,(treemacs-button-get current-btn :path))) nil)))
      ('tag-node
-      (-let [(tag-buffer . tag-pos) (treemacs--extract-position (treemacs-button-get current-btn :marker))]
+      (-let [(tag-buffer . tag-pos)
+             (treemacs--extract-position (treemacs-button-get current-btn :marker) nil)]
         (if (buffer-live-p tag-buffer)
             (bookmark-store
-             (read-string "Bookmark name: ")
+             (treemacs--read-string "Bookmark name: ")
              `((filename . ,(buffer-file-name tag-buffer))
                (position . ,tag-pos))
              nil)

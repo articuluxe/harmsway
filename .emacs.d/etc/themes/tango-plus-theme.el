@@ -82,8 +82,7 @@ Semantic, and Ansi-Color faces are included.")
    ;; Base faces from which other faces inherit:
 
    ;; Faces defined in faces.el:
-   `(default                        ((,class (:foreground ,black
-					      :background ,white))))
+   `(default                        ((,class (:foreground ,black))))
    `(deemphasized                   ((,class (:foreground ,alum-4))))
    `(quote                          ((,class (:foreground ,alum-5
 					      :slant italic))))
@@ -258,6 +257,7 @@ Semantic, and Ansi-Color faces are included.")
    `(org-meta-line                  ((,class (:inherit shadow))))
    `(org-todo                       ((,class (:foreground ,red-2 :weight bold))))
    `(org-done                       ((,class (:foreground ,cham-3))))
+   `(org-headline-done              ((,class (:inherit font-lock-keyword-face))))
    `(org-table                      ((,class (:inherit font-lock-keyword-face))))
    `(org-drawer                     ((,class (:inherit font-lock-keyword-face))))
    `(org-special-keyword            ((,class (:inherit font-lock-keyword-face))))
@@ -272,6 +272,7 @@ Semantic, and Ansi-Color faces are included.")
    `(org-agenda-date-weekend        ((,class (:inherit org-agenda-date :foreground ,alum-6 :underline t))))
    `(org-sexp-date                  ((,class (:inherit org-date))))
    `(org-time-grid                  ((,class (:foreground ,alum-4))))
+   `(org-dispatcher-highlight       ((,class (:inherit lazy-highlight))))
    `(org-agenda-structure           ((,class (:inherit helm-source-header))))
 
    ;; Moinmoin

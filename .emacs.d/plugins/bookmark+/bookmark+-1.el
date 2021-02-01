@@ -4,12 +4,12 @@
 ;; Description: First part of package Bookmark+.
 ;; Author: Drew Adams, Thierry Volpiatto
 ;; Maintainer: Drew Adams (concat "drew.adams" "@" "oracle" ".com")
-;; Copyright (C) 2000-2020, Drew Adams, all rights reserved.
+;; Copyright (C) 2000-2021, Drew Adams, all rights reserved.
 ;; Copyright (C) 2009, Thierry Volpiatto.
 ;; Created: Mon Jul 12 13:43:55 2010 (-0700)
-;; Last-Updated: Sat Jul  4 13:34:01 2020 (-0700)
+;; Last-Updated: Tue Dec 29 12:36:09 2020 (-0800)
 ;;           By: dradams
-;;     Update #: 9162
+;;     Update #: 9224
 ;; URL: https://www.emacswiki.org/emacs/download/bookmark%2b-1.el
 ;; Doc URL: https://www.emacswiki.org/emacs/BookmarkPlus
 ;; Keywords: bookmarks, bookmark+, placeholders, annotations, search, info, url, eww, w3m, gnus
@@ -513,10 +513,10 @@
 ;;    `bmkp-bookmark-file-bookmark-p',
 ;;    `bmkp-bookmark-list-alist-only',
 ;;    `bmkp-bookmark-list-bookmark-p', `bmkp-bookmark-name-member',
-;;    `bmkp-bookmark-record-from-name', `bmkp-bookmark-type-valid-p',
-;;    `bmkp-buffer-alist-only', `bmkp-buffer-last-access-cp',
-;;    `bmkp-buffer-names', `bmkp-compilation-file+line-at',
-;;    `bmkp-completing-read-1', `bmkp-completing-read-bookmarks',
+;;    `bmkp-bookmark-record-from-name', `bmkp-buffer-alist-only',
+;;    `bmkp-buffer-last-access-cp', `bmkp-buffer-names',
+;;    `bmkp-compilation-file+line-at', `bmkp-completing-read-1',
+;;    `bmkp-completing-read-bookmarks',
 ;;    `bmkp-completing-read-buffer-name',
 ;;    `bmkp-completing-read-file-name', `bmkp-completing-read-lax',
 ;;    `bmkp-cp-not', `bmkp-create-variable-list-bookmark',
@@ -717,9 +717,9 @@
 ;;    `bmkp-sorted-alist', `bmkp-specific-buffers-history',
 ;;    `bmkp-specific-files-history', `bmkp-store-org-link-checking-p',
 ;;    `bmkp-tag-history', `bmkp-tags-alist', `bmkp-temporary-history',
-;;    `bmkp-types-alist', `bmkp-url-history',
-;;    `bmkp-use-w32-browser-p', `bmkp-variable-list-history',
-;;    `bmkp-version-number', `bmkp-w3m-history'.
+;;    `bmkp-url-history', `bmkp-use-w32-browser-p',
+;;    `bmkp-variable-list-history', `bmkp-version-number',
+;;    `bmkp-w3m-history'.
 ;;
 ;;
 ;;  ***** NOTE: The following commands defined in `bookmark.el'
@@ -770,11 +770,10 @@
 ;;    `bookmarks-already-loaded' (doc string only).
 ;;
 ;;
-;;  ***** NOTE: The following functions defined in `info.el'
-;;              have been REDEFINED HERE:
+;;  ***** NOTE: The following function defined in `info.el'
+;;              has been REDEFINED HERE:
 ;;
-;;    `Info-bookmark-jump' (Emacs 20-22), `Info-bookmark-make-record'
-;;    (Emacs 20-22).
+;;    `Info-bookmark-make-record' (Emacs 20-22).
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -1639,7 +1638,8 @@ is enabled.  Set this to nil or \"\" if you do not want any lighter."
 ;;;###autoload (autoload 'bmkp-w3m-allow-multiple-buffers-flag "bookmark+")
 (when (fboundp 'defvaralias)            ; Emacs 22+
   (defvaralias 'bmkp-w3m-allow-multi-tabs-flag 'bmkp-w3m-allow-multiple-buffers-flag))
-(bmkp-make-obsolete-variable 'bmkp-w3m-allow-multi-tabs-flag 'bmkp-w3m-allow-multiple-buffers-flag "2017-01-10")
+(bmkp-make-obsolete-variable 'bmkp-w3m-allow-multi-tabs-flag 'bmkp-w3m-allow-multiple-buffers-flag
+                             "2017-01-10")
 
 (defcustom bmkp-w3m-allow-multiple-buffers-flag t
   "*Non-nil means jump to a W3M bookmark in a new buffer."
@@ -1651,66 +1651,32 @@ is enabled.  Set this to nil or \"\" if you do not want any lighter."
 Each function should accept the bookmark file name as first argument.
 Used after `after-save-hook'."
   :type 'hook :group 'bookmark-plus)
+
+;; This and the version of function `Info-bookmark-jump' defined here are also defined in `info+.el',
+;; so that their feature is available if you use either `Info+' or `Bookmark+'.
+;;
+;;;###autoload
+(defcustom Info-bookmark-use-only-node-not-file-flag t
+  "Non-nil means an Info bookmark uses only the node name.
+The recorded Info file name is ignored.  This means use only manuals
+corresponding to the current Emacs session, regardless of the Emacs
+version or platform used to record the bookmark.
+
+A nil value means use the manuals whose absolute file names are
+recorded in the bookmarks.  (But if the file doesn't exist or is
+unreadable, then act as if the value is non-nil.)
+
+A non-nil value means you can use the same bookmark with different
+Emacs installations, including on different platforms.  A nil value
+means that you can use a bookmark to consult the Info manual for a
+different Emacs version from that of the current session."
+  :type 'boolean :group 'bookmark-plus)
  
 ;;(@* "Internal Variables")
 ;;; Internal Variables -----------------------------------------------
 
 (defconst bmkp-non-file-filename "   - no file -"
   "Name to use for `filename' entry, for non-file bookmarks.")
-
-(defconst bmkp-types-alist (delq nil `(("autofile"         . bmkp-autofile-history)
-                                       ("autonamed"        . bmkp-autonamed-history)
-                                       ("bookmark-file"    . bmkp-bookmark-file-history)
-                                       ("bookmark-list"    . bmkp-bookmark-list-history)
-                                       ("desktop"          . bmkp-desktop-history)
-                                       ("dired"            . bmkp-dired-history)
-                                       ("dired-this-dir"   . bmkp-dired-history)
-                                       ,@(and (> emacs-major-version 24)
-                                              `(("eww"     . bmkp-eww-history)))
-                                       ("file"             . bmkp-file-history)
-                                       ("file-this-dir"    . bmkp-file-history)
-                                       ("gnus"             . bmkp-gnus-history)
-                                       ("image"            . bmkp-image-history)
-                                       ("info"             . bmkp-info-history)
-                                       ("local-file"       . bmkp-local-file-history)
-                                       ("man"              . bmkp-man-history)
-                                       ("non-file"         . bmkp-non-file-history)
-                                       ("region"           . bmkp-region-history)
-                                       ("remote-file"      . bmkp-remote-file-history)
-                                       ("snippet"          . bmkp-snippet-history)
-                                       ("specific-buffers" . bmkp-specific-buffers-history)
-                                       ("specific-files"   . bmkp-specific-files-history)
-                                       ("temporary"        . bmkp-temporary-history)
-                                       ("url"              . bmkp-url-history)
-                                       ("variable-list"    . bmkp-variable-list-history)))
-  "Alist of bookmark types used by `bmkp-jump-to-type'.
-Keys are bookmark type names.  Values are corresponding history variables.")
-
-(defvar bmkp-autofile-history ()         "History for autofile bookmarks.")
-(defvar bmkp-autonamed-history ()        "History for autonamed bookmarks.")
-(defvar bmkp-bookmark-file-history ()    "History for bookmark-file bookmarks.")
-(defvar bmkp-bookmark-list-history ()    "History for bookmark-list bookmarks.")
-(defvar bmkp-desktop-history ()          "History for desktop bookmarks.")
-(defvar bmkp-dired-history ()            "History for Dired bookmarks.")
-(when (> emacs-major-version 24)
-  (defvar bmkp-eww-history ()            "History for EWW bookmarks."))
-(defvar bmkp-file-history ()             "History for file bookmarks.")
-(defvar bmkp-gnus-history ()             "History for Gnus bookmarks.")
-(defvar bmkp-image-history ()            "History for image-file bookmarks.")
-(defvar bmkp-info-history ()             "History for Info bookmarks.")
-(defvar bmkp-last-bmenu-state-file nil   "Last value of option `bmkp-bmenu-state-file'.")
-(defvar bmkp-local-file-history ()       "History for local-file bookmarks.")
-(defvar bmkp-man-history ()              "History for `man'-page bookmarks.")
-(defvar bmkp-non-file-history ()         "History for buffer (non-file) bookmarks.")
-(defvar bmkp-region-history ()           "History for bookmarks that activate the region.")
-(defvar bmkp-remote-file-history ()      "History for remote-file bookmarks.")
-(defvar bmkp-snippet-history ()          "History for snippet bookmarks.")
-(defvar bmkp-specific-buffers-history () "History for specific-buffers bookmarks.")
-(defvar bmkp-specific-files-history ()   "History for specific-files bookmarks.")
-(defvar bmkp-temporary-history ()        "History for temporary bookmarks.")
-(defvar bmkp-url-history ()              "History for URL bookmarks.")
-(defvar bmkp-variable-list-history ()    "History for variable-list bookmarks.")
-(defvar bmkp-w3m-history ()              "History for W3M bookmarks.")
 
 (defvar bmkp-after-set-hook nil "Hook run after `bookmark-set' sets a bookmark.")
 
@@ -1787,6 +1753,8 @@ This is used to determine `bmkp-file-bookmark-p'.")
 (defvar bmkp-icicles-search-hits-retrieve-more nil
   "Non-nil means add hits recorded in bookmark to current search hits.
 Otherwise, replace current with bookmark hits.")
+
+(defvar bmkp-last-bmenu-state-file nil "Last value of option `bmkp-bmenu-state-file'.")
 
 (defvar bmkp-last-bookmark-file bookmark-default-file
   "Last bookmark file used in this session (or default bookmark file).
@@ -2025,23 +1993,8 @@ Implements `bookmark-make-record-function' for Info nodes."
         (handler . Info-bookmark-jump)
         (defaults . ,defaults))))
 
-  ;; Requires `info.el' explicitly (not autoloaded for `Info-find-node'.
-  (defun Info-bookmark-jump (bookmark)
-    "Jump to Info bookmark BOOKMARK.
-BOOKMARK is a bookmark name or a bookmark record."
-    (require 'info)
-    ;; Implements the `handler' for the record type returned by `Info-bookmark-make-record'.
-    (let* ((file       (bookmark-prop-get bookmark 'filename))
-           (info-node  (bookmark-prop-get bookmark 'info-node))
-           (buf        (save-window-excursion ; VANILLA EMACS FIXME: doesn't work with frames!
-                         (Info-find-node file info-node)
-                         (current-buffer))))
-      ;; Use `bookmark-default-handler' to move to appropriate location within Info node.
-      (bookmark-default-handler
-       `("" (buffer . ,buf) . ,(bmkp-bookmark-data-from-record bookmark)))))
-
   (add-hook 'Info-mode-hook (lambda () (set (make-local-variable 'bookmark-make-record-function)
-                                            'Info-bookmark-make-record)))
+                                       'Info-bookmark-make-record)))
 
   (defvar bookmark-make-record-function 'bookmark-make-record-default
     "Function called with no arguments, to create a bookmark record.
@@ -3843,6 +3796,588 @@ that option is non-nil."
 ;;(@* "Bookmark+ Functions (`bmkp-*')")
 ;;; Bookmark+ Functions (`bmkp-*') -----------------------------------
 
+
+;;(@* "Filter Functions")
+;;  *** Filter Functions ***
+
+(defun bmkp-all-tags-alist-only (tags)
+  "`bookmark-alist', but with only bookmarks having all their tags in TAGS.
+Does not include bookmarks that have no tags.
+A new list is returned (no side effects)."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not
+   (lambda (bmk)
+     (lexical-let* ((tgs       tags)
+                    (bmk-tags  (bmkp-get-tags bmk)))
+       (and bmk-tags  (bmkp-every (lambda (tag) (member (bmkp-tag-name tag) tgs)) bmk-tags))))
+   bookmark-alist))
+
+(defun bmkp-all-tags-regexp-alist-only (regexp)
+  "`bookmark-alist', but with only bookmarks having all tags match REGEXP.
+Does not include bookmarks that have no tags.
+A new list is returned (no side effects)."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not
+   (lexical-let ((rg  regexp))
+     (lambda (bmk)
+       (let ((bmk-tags  (bmkp-get-tags bmk)))
+         (and bmk-tags
+              (bmkp-every (lambda (tag) (bmkp-string-match-p rg (bmkp-tag-name tag))) bmk-tags)))))
+   bookmark-alist))
+
+(defun bmkp-annotated-alist-only ()
+  "`bookmark-alist', but only for bookmarks with non-empty annotations.
+A new list is returned (no side effects)."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not #'bmkp-annotated-bookmark-p bookmark-alist))
+
+(defun bmkp-autofile-alist-only (&optional prefix)
+  "`bookmark-alist', filtered to retain only autofile bookmarks.
+With non-nil arg PREFIX, the bookmark names must all have that PREFIX."
+  (bookmark-maybe-load-default-file)
+  (if (not prefix)
+      (bmkp-remove-if-not #'bmkp-autofile-bookmark-p bookmark-alist)
+    (bmkp-remove-if-not (lexical-let ((pref  prefix)) (lambda (bmk) (bmkp-autofile-bookmark-p bmk pref)))
+                        bookmark-alist)))
+
+(defun bmkp-autofile-all-tags-alist-only (tags)
+  "`bookmark-alist', with only autofiles having all tags in TAGS.
+A new list is returned (no side effects)."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not
+   (lexical-let ((tgs  tags))
+     (lambda (bmk)
+       (and (bmkp-autofile-bookmark-p bmk)  (bmkp-get-tags bmk)
+            (bmkp-every (lexical-let ((bk  bmk)) (lambda (tag) (bmkp-has-tag-p bk tag))) tgs))))
+   bookmark-alist))
+
+(defun bmkp-autofile-all-tags-regexp-alist-only (regexp)
+  "`bookmark-alist', with only autofiles having all tags match REGEXP.
+A new list is returned (no side effects)."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not
+   (lexical-let ((rg  regexp))
+     (lambda (bmk)
+       (and (bmkp-autofile-bookmark-p bmk)
+            (let ((bmk-tags  (bmkp-get-tags bmk)))
+              (and bmk-tags
+                   (bmkp-every (lambda (tag) (bmkp-string-match-p rg (bmkp-tag-name tag))) bmk-tags))))))
+   bookmark-alist))
+
+(defun bmkp-autofile-some-tags-alist-only (tags)
+  "`bookmark-alist', with only autofiles having some tags in TAGS.
+A new list is returned (no side effects)."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not
+   (lambda (bmk) (and (bmkp-autofile-bookmark-p bmk)
+                      (bmkp-some (lexical-let ((bk  bmk)) (lambda (tag) (bmkp-has-tag-p bk tag)))  tags)))
+   bookmark-alist))
+
+(defun bmkp-autofile-some-tags-regexp-alist-only (regexp)
+  "`bookmark-alist', with only autofiles having some tags match REGEXP.
+A new list is returned (no side effects)."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not
+   (lexical-let ((rg  regexp))
+     (lambda (bmk) (and (bmkp-autofile-bookmark-p bmk)
+                        (bmkp-some (lambda (tag) (bmkp-string-match-p rg (bmkp-tag-name tag)))
+                                   (bmkp-get-tags bmk)))))
+   bookmark-alist))
+(defun bmkp-autonamed-alist-only ()
+  "`bookmark-alist', with only autonamed bookmarks (from any buffers).
+A new list is returned (no side effects)."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not #'bmkp-autonamed-bookmark-p bookmark-alist))
+
+(defun bmkp-autonamed-this-buffer-alist-only ()
+  "`bookmark-alist', with only autonamed bookmarks for the current buffer.
+A new list is returned (no side effects)."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not (lambda (bmk) (bmkp-autonamed-this-buffer-bookmark-p bmk)) bookmark-alist))
+
+(defun bmkp-bookmark-file-alist-only ()
+  "`bookmark-alist', filtered to retain only bookmark-file bookmarks.
+A new list is returned (no side effects)."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not #'bmkp-bookmark-file-bookmark-p bookmark-alist))
+
+(defun bmkp-bookmark-list-alist-only ()
+  "`bookmark-alist', filtered to retain only bookmark-list bookmarks.
+A new list is returned (no side effects)."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not #'bmkp-bookmark-list-bookmark-p bookmark-alist))
+
+(defun bmkp-buffer-alist-only ()
+  "`bookmark-alist', filtered to retain only non-file buffer bookmarks.
+A new list is returned (no side effects)."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not #'bmkp-buffer-bookmark-p bookmark-alist))
+
+(defun bmkp-desktop-alist-only ()
+  "`bookmark-alist', filtered to retain only desktop bookmarks.
+A new list is returned (no side effects)."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not #'bmkp-desktop-bookmark-p bookmark-alist))
+
+(defun bmkp-dired-alist-only ()
+  "`bookmark-alist', filtered to retain only Dired bookmarks.
+A new list is returned (no side effects)."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not #'bmkp-dired-bookmark-p bookmark-alist))
+
+(defun bmkp-dired-this-dir-alist-only ()
+  "`bookmark-alist', with only Dired bookmarks for the current directory.
+A new list is returned (no side effects)."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not #'bmkp-dired-this-dir-bookmark-p bookmark-alist))
+
+(defun bmkp-dired-wildcards-alist-only ()
+  "`bookmark-alist', with only bookmarks for a Dired buffer with wildcards.
+A new list is returned (no side effects)."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not #'bmkp-dired-wildcards-bookmark-p bookmark-alist))
+
+(when (fboundp 'bmkp-eww-bookmark-p)    ; Emacs 25+
+
+  (defun bmkp-eww-alist-only ()
+    "`bookmark-alist', filtered to retain only EWW bookmarks.
+A new list is returned (no side effects)."
+    (bookmark-maybe-load-default-file)
+    (bmkp-remove-if-not #'bmkp-eww-bookmark-p bookmark-alist))
+
+  )
+
+(defun bmkp-file-alist-only ()
+  "`bookmark-alist', filtered to retain only file and directory bookmarks.
+This excludes bookmarks that might contain file information but are
+particular in some way - for example, Info bookmarks or Gnus bookmarks.
+A new list is returned (no side effects)."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not #'bmkp-file-bookmark-p bookmark-alist))
+
+(defun bmkp-file-all-tags-alist-only (tags)
+  "`bookmark-alist', with only file bookmarks having all tags in TAGS.
+A new list is returned (no side effects)."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not
+   (lexical-let ((tgs  tags))
+     (lambda (bmk)
+       (and (bmkp-file-bookmark-p bmk)  (bmkp-get-tags bmk)
+            (bmkp-every (lexical-let ((bk  bmk)) (lambda (tag) (bmkp-has-tag-p bk tag)))  tgs))))
+   bookmark-alist))
+
+(defun bmkp-file-all-tags-regexp-alist-only (regexp)
+  "`bookmark-alist', with only file bookmarks having all tags match REGEXP.
+A new list is returned (no side effects)."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not
+   (lexical-let ((rg  regexp))
+     (lambda (bmk)
+       (and (bmkp-file-bookmark-p bmk)
+            (let ((bmk-tags  (bmkp-get-tags bmk)))
+              (and bmk-tags
+                   (bmkp-every (lambda (tag) (bmkp-string-match-p rg (bmkp-tag-name tag))) bmk-tags))))))
+   bookmark-alist))
+
+(defun bmkp-file-some-tags-alist-only (tags)
+  "`bookmark-alist', with only file bookmarks having some tags in TAGS.
+A new list is returned (no side effects)."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not
+   (lexical-let ((tgs  tags))
+     (lambda (bmk) (and (bmkp-file-bookmark-p bmk)
+                        (bmkp-some (lexical-let ((bk  bmk)) (lambda (tag) (bmkp-has-tag-p bk tag)))  tgs))))
+   bookmark-alist))
+
+(defun bmkp-file-some-tags-regexp-alist-only (regexp)
+  "`bookmark-alist', with only file bookmarks having some tags match REGEXP.
+A new list is returned (no side effects)."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not
+   (lexical-let ((rg  regexp))
+     (lambda (bmk) (and (bmkp-file-bookmark-p bmk)
+                        (bmkp-some (lambda (tag) (bmkp-string-match-p rg (bmkp-tag-name tag)))
+                                   (bmkp-get-tags bmk)))))
+   bookmark-alist))
+
+(defun bmkp-file-this-dir-alist-only ()
+  "`bookmark-alist', filtered with `bmkp-file-this-dir-bookmark-p'.
+Include only files and subdir that are in `default-directory'.
+This excludes bookmarks that might contain file information but are
+particular in some way - for example, Info bookmarks or Gnus bookmarks.
+A new list is returned (no side effects)."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not #'bmkp-file-this-dir-bookmark-p bookmark-alist))
+
+(defun bmkp-file-this-dir-all-tags-alist-only (tags)
+  "`bookmark-alist', for files in this dir having all tags in TAGS.
+Include only files and subdir that are in `default-directory'.
+A new list is returned (no side effects)."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not
+   (lexical-let ((tgs  tags))
+     (lambda (bmk)
+       (and (bmkp-file-this-dir-bookmark-p bmk)  (bmkp-get-tags bmk)
+            (bmkp-every (lexical-let ((bk  bmk)) (lambda (tag) (bmkp-has-tag-p bk tag)))  tgs))))
+   bookmark-alist))
+
+(defun bmkp-file-this-dir-all-tags-regexp-alist-only (regexp)
+  "`bookmark-alist', for files in this dir having all tags match REGEXP.
+Include only files and subdir that are in `default-directory'.
+A new list is returned (no side effects)."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not
+   (lexical-let ((rg  regexp))
+     (lambda (bmk)
+       (and (bmkp-file-this-dir-bookmark-p bmk)
+            (let ((bmk-tags  (bmkp-get-tags bmk)))
+              (and bmk-tags
+                   (bmkp-every (lambda (tag) (bmkp-string-match-p rg (bmkp-tag-name tag)))  bmk-tags))))))
+   bookmark-alist))
+
+(defun bmkp-file-this-dir-some-tags-alist-only (tags)
+  "`bookmark-alist', for files in this dir having some tags in TAGS.
+Include only files and subdir that are in `default-directory'.
+A new list is returned (no side effects)."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not
+   (lexical-let ((tgs  tags))
+     (lambda (bmk) (and (bmkp-file-this-dir-bookmark-p bmk)
+                        (bmkp-some (lexical-let ((bk  bmk)) (lambda (tag) (bmkp-has-tag-p bk tag)))  tgs))))
+   bookmark-alist))
+
+(defun bmkp-file-this-dir-some-tags-regexp-alist-only (regexp)
+  "`bookmark-alist', for files in this dir having some tags match REGEXP.
+Include only files and subdir that are in `default-directory'.
+A new list is returned (no side effects)."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not
+   (lexical-let ((rg  regexp))
+     (lambda (bmk) (and (bmkp-file-this-dir-bookmark-p bmk)
+                        (bmkp-some (lambda (tag) (bmkp-string-match-p rg (bmkp-tag-name tag)))
+                                   (bmkp-get-tags bmk)))))
+   bookmark-alist))
+
+(defun bmkp-function-alist-only ()
+  "`bookmark-alist', filtered to retain only function bookmarks.
+A new list is returned (no side effects)."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not #'bmkp-function-bookmark-p bookmark-alist))
+
+(defun bmkp-gnus-alist-only ()
+  "`bookmark-alist', filtered to retain only Gnus bookmarks.
+A new list is returned (no side effects)."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not #'bmkp-gnus-bookmark-p bookmark-alist))
+
+(defun bmkp-icicles-search-hits-alist-only ()
+  "`bookmark-alist', but only for Icicles search hits bookmarks.
+A new list is returned (no side effects)."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not #'bmkp-icicles-search-hits-bookmark-p bookmark-alist))
+
+(defun bmkp-image-alist-only ()
+  "`bookmark-alist', filtered to retain only image-file bookmarks.
+A new list is returned (no side effects)."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not #'bmkp-image-bookmark-p bookmark-alist))
+
+(defun bmkp-info-alist-only ()
+  "`bookmark-alist', filtered to retain only Info bookmarks.
+A new list is returned (no side effects)."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not #'bmkp-info-bookmark-p bookmark-alist))
+
+(defun bmkp-last-specific-buffer-alist-only ()
+  "`bookmark-alist', but only for `bmkp-last-specific-buffer'.
+A new list is returned (no side effects)."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not #'bmkp-last-specific-buffer-p bookmark-alist))
+
+(defun bmkp-last-specific-file-alist-only ()
+  "`bookmark-alist', but only for `bmkp-last-specific-file'.
+A new list is returned (no side effects)."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not #'bmkp-last-specific-file-p bookmark-alist))
+
+(defun bmkp-man-alist-only ()
+  "`bookmark-alist', filtered to retain only `man' page bookmarks.
+A new list is returned (no side effects)."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not #'bmkp-man-bookmark-p bookmark-alist))
+
+(defun bmkp-local-file-alist-only ()
+  "`bookmark-alist', filtered to retain only local-file bookmarks.
+A new list is returned (no side effects)."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not #'bmkp-local-file-bookmark-p bookmark-alist))
+
+(defun bmkp-local-non-dir-file-alist-only ()
+  "`bookmark-alist', filtered to retain only local non-dir file bookmarks.
+A new list is returned (no side effects)."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not #'bmkp-local-non-dir-file-bookmark-p bookmark-alist))
+
+(defun bmkp-marked-bookmarks-only ()
+  "Return the list of marked bookmarks."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not #'bmkp-marked-bookmark-p bookmark-alist))
+
+(defun bmkp-non-autonamed-alist-only ()
+  "`bookmark-alist', with only non-autonamed bookmarks (from any buffers).
+A new list is returned (no side effects)."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not (lambda (bmk) (not (bmkp-autonamed-bookmark-p bmk))) bookmark-alist))
+
+(defun bmkp-non-dir-file-alist-only ()
+  "`bookmark-alist', filtered to retain only nondirectory file bookmarks.
+A new list is returned (no side effects)."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not #'bmkp-non-dir-file-bookmark-p bookmark-alist))
+
+(defun bmkp-non-file-alist-only ()
+  "`bookmark-alist', filtered to retain only non-file bookmarks.
+A new list is returned (no side effects)."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not #'bmkp-non-file-bookmark-p bookmark-alist))
+
+(defun bmkp-non-invokable-alist-only ()
+  "`bookmark-alist', filtered to retain only non-invokable bookmarks.
+A new list is returned (no side effects)."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not #'bmkp-non-invokable-bookmark-p bookmark-alist))
+
+(defun bmkp-omitted-alist-only ()
+  "`bookmark-alist', filtered to retain only the omitted bookmarks.
+A new list is returned (no side effects)."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not #'bmkp-omitted-bookmark-p bookmark-alist))
+
+(defun bmkp-omitted-bookmark-p (bookmark)
+  "Return non-nil if BOOKMARK is an omitted bookmark.
+BOOKMARK is a bookmark name or a bookmark record."
+  (unless (stringp bookmark) (setq bookmark  (bmkp-bookmark-name-from-record bookmark)))
+  (bmkp-bookmark-name-member bookmark bmkp-bmenu-omitted-bookmarks))
+
+(defun bmkp-orphaned-file-alist-only ()
+  "`bookmark-alist', filtered to retain only orphaned file bookmarks."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not #'bmkp-orphaned-file-bookmark-p bookmark-alist))
+
+(defun bmkp-orphaned-local-file-alist-only ()
+  "`bookmark-alist', but retaining only orphaned local-file bookmarks."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not #'bmkp-orphaned-local-file-bookmark-p bookmark-alist))
+
+(defun bmkp-orphaned-remote-file-alist-only ()
+  "`bookmark-alist', but retaining only orphaned remote-file bookmarks."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not #'bmkp-orphaned-remote-file-bookmark-p bookmark-alist))
+
+(defun bmkp-regexp-filtered-annotation-alist-only ()
+  "`bookmark-alist' for annotations matching `bmkp-bmenu-filter-pattern'."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not
+   (lambda (bmk)
+     (let ((annot  (bookmark-get-annotation bmk)))
+       (and (stringp annot)  (not (string= "" annot))
+            (bmkp-string-match-p bmkp-bmenu-filter-pattern annot))))
+   bookmark-alist))                     ; (Could use `bmkp-annotated-alist-only' here instead.)
+
+(defun bmkp-regexp-filtered-bookmark-name-alist-only ()
+  "`bookmark-alist' for bookmarks matching `bmkp-bmenu-filter-pattern'."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not (lambda (bmk)
+                        (bmkp-string-match-p bmkp-bmenu-filter-pattern (bookmark-name-from-full-record bmk)))
+                      bookmark-alist))
+
+(defun bmkp-regexp-filtered-file-name-alist-only ()
+  "`bookmark-alist' for files matching `bmkp-bmenu-filter-pattern'."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not (lambda (bmk) (let ((fname  (bookmark-get-filename bmk)))
+                                      (and fname  (bmkp-string-match-p bmkp-bmenu-filter-pattern fname))))
+                      bookmark-alist))
+
+(defun bmkp-regexp-filtered-tags-alist-only ()
+  "`bookmark-alist' for tags matching `bmkp-bmenu-filter-pattern'."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not (lambda (bmk)
+                        (let ((bmk-tags  (bmkp-get-tags bmk)))
+                          (and bmk-tags  (bmkp-some (lambda (tag)
+                                                      (bmkp-string-match-p bmkp-bmenu-filter-pattern
+                                                                           (bmkp-tag-name tag)))
+                                                    bmk-tags))))
+                      bookmark-alist))
+
+(defun bmkp-region-alist-only ()
+  "`bookmark-alist', filtered to retain only bookmarks that have regions.
+A new list is returned (no side effects)."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not #'bmkp-region-bookmark-p bookmark-alist))
+
+(defun bmkp-remote-file-alist-only ()
+  "`bookmark-alist', filtered to retain only remote-file bookmarks.
+A new list is returned (no side effects)."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not #'bmkp-remote-file-bookmark-p bookmark-alist))
+
+(defun bmkp-remote-non-dir-file-alist-only ()
+  "`bookmark-alist', filtered to retain only remote non-dir file bookmarks.
+A new list is returned (no side effects)."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not #'bmkp-remote-non-dir-file-bookmark-p bookmark-alist))
+
+(defun bmkp-sequence-alist-only ()
+  "`bookmark-alist', filtered to retain only sequence bookmarks.
+A new list is returned (no side effects)."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not #'bmkp-sequence-bookmark-p bookmark-alist))  
+
+(defun bmkp-snippet-alist-only ()
+  "`bookmark-alist', filtered to retain only snippet bookmarks.
+A new list is returned (no side effects)."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not #'bmkp-snippet-bookmark-p bookmark-alist))
+
+(defun bmkp-some-tags-alist-only (tags)
+  "`bookmark-alist', but with only bookmarks having some tags in TAGS.
+A new list is returned (no side effects)."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not (lexical-let ((tgs  tags))
+                        (lambda (bmk)
+                          (bmkp-some (lexical-let ((bk  bmk)) (lambda (tag) (bmkp-has-tag-p bk tag)))
+                                     tgs)))
+                      bookmark-alist))
+
+(defun bmkp-some-tags-regexp-alist-only (regexp)
+  "`bookmark-alist', but with only bookmarks having some tags match REGEXP.
+A new list is returned (no side effects)."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not (lexical-let ((rg  regexp))
+                        (lambda (bmk)
+                          (bmkp-some (lambda (tag) (bmkp-string-match-p rg (bmkp-tag-name tag)))
+                                     (bmkp-get-tags bmk))))
+                      bookmark-alist))
+
+(defun bmkp-specific-buffers-alist-only (&optional buffers)
+  "`bookmark-alist', filtered to retain only bookmarks to buffers BUFFERS.
+BUFFERS is a list of buffer names.
+It defaults to a singleton list with the current buffer's name.
+A new list is returned (no side effects).
+
+Note: Bookmarks created by vanilla Emacs do not record the buffer
+name.  They are therefore excluded from the returned alist."
+  (unless buffers  (setq buffers  (list (buffer-name))))
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not (lexical-let ((bufs  buffers))
+                        (lambda (bmk)
+                          (and (not (bmkp-desktop-bookmark-p       bmk)) ; Exclude these
+                               (not (bmkp-bookmark-file-bookmark-p bmk))
+                               (not (bmkp-sequence-bookmark-p      bmk))
+                               (not (bmkp-function-bookmark-p      bmk))
+                               (not (bmkp-variable-list-bookmark-p bmk))
+                               (member (bmkp-get-buffer-name bmk) bufs))))
+                      bookmark-alist))
+
+(defun bmkp-specific-files-alist-only (&optional files)
+  "`bookmark-alist', filtered to retain only bookmarks to files FILES.
+FILES is a list of absolute file names.
+It defaults to a singleton list with the current buffer's file name,
+ or to the empty list if the buffer is not visiting a file.
+A new list is returned (no side effects)."
+  (unless files  (setq files  (and (buffer-file-name)  (list (buffer-file-name)))))
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not (lexical-let ((ff  files))
+                        (lambda (bmk)
+                          (let ((bf  (bookmark-get-filename bmk))) 
+                            (and bf
+                                 ;; If we loaded `cl-seq.el': (cl-member bf ff :test #'bmkp-same-file-p)
+                                 (catch 'bmkp-specific-files-alist-only
+                                   (dolist (f  ff)
+                                     (or (bmkp-same-file-p f bf)  (throw 'bmkp-specific-files-alist-only nil)))
+                                   t)))))
+                      bookmark-alist))
+
+(defun bmkp-tagged-alist-only ()
+  "`bookmark-alist', with only bookmarks that have tags.
+A new list is returned (no side effects)."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not #'bmkp-get-tags bookmark-alist))
+
+(defun bmkp-temporary-alist-only ()
+  "`bookmark-alist', filtered to retain only temporary bookmarks.
+A new list is returned (no side effects)."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not #'bmkp-temporary-bookmark-p bookmark-alist))
+
+(defun bmkp-this-file/buffer-alist-only ()
+  "`bookmark-alist', with only bookmarks for the current file/buffer.
+A new list is returned (no side effects).
+If visiting a file, this is `bmkp-this-file-alist-only'.
+Otherwise, this is `bmkp-this-buffer-alist-only'."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not (if (buffer-file-name) #'bmkp-this-file-p #'bmkp-this-buffer-p) bookmark-alist))
+
+(defun bmkp-this-buffer-alist-only ()
+  "`bookmark-alist', with only bookmarks for the current buffer.
+A new list is returned (no side effects).
+See `bmkp-this-buffer-p'."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not #'bmkp-this-buffer-p bookmark-alist))
+
+(defun bmkp-this-file-alist-only ()
+  "`bookmark-alist', with only bookmarks for the current file.
+A new list is returned (no side effects).
+See `bmkp-this-file-p'."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not #'bmkp-this-file-p bookmark-alist))
+
+(defun bmkp-unmarked-bookmarks-only ()
+  "Return the list of unmarked bookmarks."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if #'bmkp-marked-bookmark-p bookmark-alist))
+
+(defun bmkp-untagged-alist-only ()
+  "`bookmark-alist', with only bookmarks that do not have tags.
+A new list is returned (no side effects)."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if #'bmkp-get-tags bookmark-alist))
+
+(defun bmkp-url-alist-only ()
+  "`bookmark-alist', filtered to retain only URL bookmarks.
+A new list is returned (no side effects)."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not #'bmkp-url-bookmark-p bookmark-alist))
+
+(defun bmkp-url-browse-alist-only ()
+  "`bookmark-alist', but with only URL bookmarks that are non-W3M, non-EWW.
+\(The bookmarks satisfy `bmkp-url-browse-bookmark-p'.)
+A new list is returned (no side effects)."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not #'bmkp-url-browse-bookmark-p bookmark-alist))
+
+(defun bmkp-variable-list-alist-only ()
+  "`bookmark-alist', filtered to retain only variable-list bookmarks.
+A new list is returned (no side effects)."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not #'bmkp-variable-list-bookmark-p bookmark-alist))
+
+(defun bmkp-w3m-alist-only ()
+  "`bookmark-alist', filtered to retain only W3M bookmarks.
+A new list is returned (no side effects)."
+  (bookmark-maybe-load-default-file)
+  (bmkp-remove-if-not #'bmkp-w3m-bookmark-p bookmark-alist))
+
+;; This provides the `defvar's for all Bookmark+ history variables.
+;; Use this again, after you define any of your own filter functions
+;; `bmkp-*-alist-only', for new kinds of bookmarks.
+;;
+(bmkp-define-history-variables) ; Macro defined in `bookmark+-mac.el'.
+
+
+;;(@* "Miscellaneous Bookmark+ Functions")
+;;  *** Miscellaneous Bookmark+ Functions ***
+
 (if (fboundp 'find-tag-default-as-regexp)
     (defalias 'bmkp-read-regexp 'read-regexp) ; Emacs 24.3+
 
@@ -4619,8 +5154,6 @@ DO NOT MODIFY the header comment lines, which begin with `;;'."
              (error "Bad bookmark name in edit-buffer header"))
            (unless (setq bmk  (bmkp-get-bookmark-in-alist bname 'NOERROR))
              (error "No such bookmark: `%s'" bname))
-           (unless (bmkp-bookmark-type-valid-p bmk)
-             (error "Invalid bookmark: `%s'" bname))
            (goto-char (point-min))
            (setq tags  (read (current-buffer)))
            (unless (listp tags) (error "Tags sexp is not a list of strings or an alist with string keys"))
@@ -4635,49 +5168,6 @@ DO NOT MODIFY the header comment lines, which begin with `;;'."
       (pop-to-buffer bmkp-return-buffer)
       (when (equal (buffer-name (current-buffer)) bookmark-bmenu-buffer)
         (bmkp-bmenu-goto-bookmark-named bname)))))
-
-(defalias 'bmkp-bookmark-type 'bmkp-bookmark-type-valid-p)
-(bmkp-make-obsolete 'bmkp-bookmark-type 'bmkp-bookmark-type-valid-p "2018-12-23")
-
-(defun bmkp-bookmark-type-valid-p (bookmark)
-  "Return the type of BOOKMARK or nil if no type is recognized.
-Return nil if the bookmark record is not recognized (invalid).
-See the code for the possible non-nil return values.
-BOOKMARK is a bookmark name or a bookmark record.
-If it is a record then it need not belong to `bookmark-alist'."
-  (condition-case nil
-      (progn
-        ;; If BOOKMARK is already a bookmark record, not a bookmark name, then we must use it.
-        ;; If we used the name instead, then tests such as `bookmark-get-filename' would fail,
-        ;; because they call `bookmark-get-bookmark', which, for a string, checks whether the
-        ;; bookmark exists in `bookmark-alist'.  But we want to be able to use `bmkp-bookmark-type-valid-p'
-        ;; to get the type of any bookmark record, not necessarily one that is in `bookmark-alist'.
-        (when (stringp bookmark) (setq bookmark  (bookmark-get-bookmark bookmark)))
-        (let ((filep  (bookmark-get-filename bookmark)))
-          (cond ((bmkp-buffer-bookmark-p bookmark)               'bmkp-buffer-bookmark-p)
-                ((bmkp-sequence-bookmark-p bookmark)             'bmkp-sequence-bookmark-p)
-                ((bmkp-function-bookmark-p bookmark)             'bmkp-function-bookmark-p)
-                ((bmkp-variable-list-bookmark-p bookmark)        'bmkp-variable-list-bookmark-p)
-                ((bmkp-url-bookmark-p bookmark)                  'bmkp-url-bookmark-p)
-                ((bmkp-gnus-bookmark-p bookmark)                 'bmkp-gnus-bookmark-p)
-                ((bmkp-desktop-bookmark-p bookmark)              'bmkp-desktop-bookmark-p)
-                ((bmkp-bookmark-file-bookmark-p bookmark)        'bmkp-bookmark-file-bookmark-p)
-                ((bmkp-bookmark-list-bookmark-p bookmark)        'bmkp-bookmark-list-bookmark-p)
-                ((bmkp-snippet-bookmark-p bookmark)              'bmkp-snippet-bookmark-p)
-                ((bmkp-man-bookmark-p bookmark)                  'bmkp-man-bookmark-p)
-                ((bmkp-info-bookmark-p bookmark)                 'bmkp-info-bookmark-p)
-                ((bookmark-get-handler bookmark)                 'bookmark-get-handler)
-                ((bmkp-region-bookmark-p bookmark)               'bmkp-region-bookmark-p)
-                ;; Make sure we test for remoteness before any other tests of the file itself
-                ;; (e.g. `file-exists-p'). We do not want to prompt for a password etc.
-                ((and filep  (bmkp-file-remote-p filep))         'remote-file)
-                ((and filep  (file-directory-p filep))           'local-directory)
-                (filep                                           'local-file)
-                ((and (bmkp-get-buffer-name bookmark)
-                      (or (not filep)  (equal filep bmkp-non-file-filename)))
-                 'buffer)
-                (t                                               nil))))
-    (error nil)))
 
 (defun bmkp-record-visit (bookmark &optional batchp)
   "Update the data recording a visit to BOOKMARK.
@@ -5307,7 +5797,7 @@ This sets variable `bmkp-nav-alist'."
           (icicle-unpropertize-completion-result-flag  t)
           (type                                        (completing-read "Type: "
                                                                         (cons '("any" . bookmark-history)
-                                                                              bmkp-types-alist)
+                                                                              (bmkp-types-alist))
                                                                         nil t nil nil "any")))
      (list type)))
   (setq bmkp-nav-alist  (if (equal "any" type)
@@ -5597,18 +6087,6 @@ message."
   (when (equal (buffer-name (current-buffer)) bookmark-bmenu-buffer) (bmkp-bmenu-show-all))
   (when (and (fboundp 'fit-frame-if-one-window)  (equal (buffer-name (current-buffer)) bookmark-bmenu-buffer))
     (fit-frame-if-one-window)))
-
-(defun bmkp-omitted-alist-only ()
-  "`bookmark-alist', filtered to retain only the omitted bookmarks.
-A new list is returned (no side effects)."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not #'bmkp-omitted-bookmark-p bookmark-alist))
-
-(defun bmkp-omitted-bookmark-p (bookmark)
-  "Return non-nil if BOOKMARK is an omitted bookmark.
-BOOKMARK is a bookmark name or a bookmark record."
-  (unless (stringp bookmark) (setq bookmark  (bmkp-bookmark-name-from-record bookmark)))
-  (bmkp-bookmark-name-member bookmark bmkp-bmenu-omitted-bookmarks))
 
 
 ;;(@* "Search-and-Replace Locations of Marked Bookmarks")
@@ -6505,6 +6983,14 @@ BOOKMARK is a bookmark name or a bookmark record.
 If it is a record then it need not belong to `bookmark-alist'."
   (eq (bookmark-get-handler bookmark) 'bmkp-jump-sequence))
 
+(defun bmkp-some-marked-p (alist)
+  "Return non-nil if ALIST is nonempty and includes a marked bookmark."
+  (catch 'break (dolist (i  alist)  (and (bmkp-marked-bookmark-p i)  (throw 'break t)))))
+
+(defun bmkp-some-unmarked-p (alist)
+  "Return non-nil if ALIST is nonempty and includes an unmarked bookmark."
+  (catch 'break (dolist (i  alist)  (and (not (bmkp-marked-bookmark-p i))  (throw 'break t)))))
+
 (defun bmkp-url-bookmark-p (bookmark)
   "Return non-nil if BOOKMARK is a URL bookmark.
 This means that it satifies `bmkp-eww-bookmark-p' (Emacs 25+),
@@ -6535,575 +7021,7 @@ If it is a record then it need not belong to `bookmark-alist'."
   (memq (bookmark-get-handler bookmark) '(bmkp-jump-w3m bmkext-jump-w3m)))
 
 
-;;(@* "Filter Functions")
-;;  *** Filter Functions ***
 
-(defun bmkp-all-tags-alist-only (tags)
-  "`bookmark-alist', but with only bookmarks having all their tags in TAGS.
-Does not include bookmarks that have no tags.
-A new list is returned (no side effects)."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not
-   (lambda (bmk)
-     (lexical-let* ((tgs       tags)
-                    (bmk-tags  (bmkp-get-tags bmk)))
-       (and bmk-tags  (bmkp-every (lambda (tag) (member (bmkp-tag-name tag) tgs)) bmk-tags))))
-   bookmark-alist))
-
-(defun bmkp-all-tags-regexp-alist-only (regexp)
-  "`bookmark-alist', but with only bookmarks having all tags match REGEXP.
-Does not include bookmarks that have no tags.
-A new list is returned (no side effects)."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not
-   (lexical-let ((rg  regexp))
-     (lambda (bmk)
-       (let ((bmk-tags  (bmkp-get-tags bmk)))
-         (and bmk-tags
-              (bmkp-every (lambda (tag) (bmkp-string-match-p rg (bmkp-tag-name tag))) bmk-tags)))))
-   bookmark-alist))
-
-(defun bmkp-annotated-alist-only ()
-  "`bookmark-alist', but only for bookmarks with non-empty annotations.
-A new list is returned (no side effects)."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not #'bmkp-annotated-bookmark-p bookmark-alist))
-
-(defun bmkp-autofile-alist-only (&optional prefix)
-  "`bookmark-alist', filtered to retain only autofile bookmarks.
-With non-nil arg PREFIX, the bookmark names must all have that PREFIX."
-  (bookmark-maybe-load-default-file)
-  (if (not prefix)
-      (bmkp-remove-if-not #'bmkp-autofile-bookmark-p bookmark-alist)
-    (bmkp-remove-if-not (lexical-let ((pref  prefix)) (lambda (bmk) (bmkp-autofile-bookmark-p bmk pref)))
-                        bookmark-alist)))
-
-(defun bmkp-autofile-all-tags-alist-only (tags)
-  "`bookmark-alist', with only autofiles having all tags in TAGS.
-A new list is returned (no side effects)."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not
-   (lexical-let ((tgs  tags))
-     (lambda (bmk)
-       (and (bmkp-autofile-bookmark-p bmk)  (bmkp-get-tags bmk)
-            (bmkp-every (lexical-let ((bk  bmk)) (lambda (tag) (bmkp-has-tag-p bk tag))) tgs))))
-   bookmark-alist))
-
-(defun bmkp-autofile-all-tags-regexp-alist-only (regexp)
-  "`bookmark-alist', with only autofiles having all tags match REGEXP.
-A new list is returned (no side effects)."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not
-   (lexical-let ((rg  regexp))
-     (lambda (bmk)
-       (and (bmkp-autofile-bookmark-p bmk)
-            (let ((bmk-tags  (bmkp-get-tags bmk)))
-              (and bmk-tags
-                   (bmkp-every (lambda (tag) (bmkp-string-match-p rg (bmkp-tag-name tag))) bmk-tags))))))
-   bookmark-alist))
-
-(defun bmkp-autofile-some-tags-alist-only (tags)
-  "`bookmark-alist', with only autofiles having some tags in TAGS.
-A new list is returned (no side effects)."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not
-   (lambda (bmk) (and (bmkp-autofile-bookmark-p bmk)
-                      (bmkp-some (lexical-let ((bk  bmk)) (lambda (tag) (bmkp-has-tag-p bk tag)))  tags)))
-   bookmark-alist))
-
-(defun bmkp-autofile-some-tags-regexp-alist-only (regexp)
-  "`bookmark-alist', with only autofiles having some tags match REGEXP.
-A new list is returned (no side effects)."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not
-   (lexical-let ((rg  regexp))
-     (lambda (bmk) (and (bmkp-autofile-bookmark-p bmk)
-                        (bmkp-some (lambda (tag) (bmkp-string-match-p rg (bmkp-tag-name tag)))
-                                   (bmkp-get-tags bmk)))))
-   bookmark-alist))
-(defun bmkp-autonamed-alist-only ()
-  "`bookmark-alist', with only autonamed bookmarks (from any buffers).
-A new list is returned (no side effects)."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not #'bmkp-autonamed-bookmark-p bookmark-alist))
-
-(defun bmkp-autonamed-this-buffer-alist-only ()
-  "`bookmark-alist', with only autonamed bookmarks for the current buffer.
-A new list is returned (no side effects)."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not (lambda (bmk) (bmkp-autonamed-this-buffer-bookmark-p bmk)) bookmark-alist))
-
-(defun bmkp-bookmark-file-alist-only ()
-  "`bookmark-alist', filtered to retain only bookmark-file bookmarks.
-A new list is returned (no side effects)."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not #'bmkp-bookmark-file-bookmark-p bookmark-alist))
-
-(defun bmkp-bookmark-list-alist-only ()
-  "`bookmark-alist', filtered to retain only bookmark-list bookmarks.
-A new list is returned (no side effects)."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not #'bmkp-bookmark-list-bookmark-p bookmark-alist))
-
-(defun bmkp-buffer-alist-only ()
-  "`bookmark-alist', filtered to retain only non-file buffer bookmarks.
-A new list is returned (no side effects)."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not #'bmkp-buffer-bookmark-p bookmark-alist))
-
-(defun bmkp-desktop-alist-only ()
-  "`bookmark-alist', filtered to retain only desktop bookmarks.
-A new list is returned (no side effects)."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not #'bmkp-desktop-bookmark-p bookmark-alist))
-
-(defun bmkp-dired-alist-only ()
-  "`bookmark-alist', filtered to retain only Dired bookmarks.
-A new list is returned (no side effects)."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not #'bmkp-dired-bookmark-p bookmark-alist))
-
-(defun bmkp-dired-this-dir-alist-only ()
-  "`bookmark-alist', with only Dired bookmarks for the current directory.
-A new list is returned (no side effects)."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not #'bmkp-dired-this-dir-bookmark-p bookmark-alist))
-
-(defun bmkp-dired-wildcards-alist-only ()
-  "`bookmark-alist', with only bookmarks for a Dired buffer with wildcards.
-A new list is returned (no side effects)."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not #'bmkp-dired-wildcards-bookmark-p bookmark-alist))
-
-(when (fboundp 'bmkp-eww-bookmark-p)    ; Emacs 25+
-
-  (defun bmkp-eww-alist-only ()
-    "`bookmark-alist', filtered to retain only EWW bookmarks.
-A new list is returned (no side effects)."
-    (bookmark-maybe-load-default-file)
-    (bmkp-remove-if-not #'bmkp-eww-bookmark-p bookmark-alist))
-
-  )
-
-(defun bmkp-file-alist-only ()
-  "`bookmark-alist', filtered to retain only file and directory bookmarks.
-This excludes bookmarks that might contain file information but are
-particular in some way - for example, Info bookmarks or Gnus bookmarks.
-A new list is returned (no side effects)."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not #'bmkp-file-bookmark-p bookmark-alist))
-
-(defun bmkp-file-all-tags-alist-only (tags)
-  "`bookmark-alist', with only file bookmarks having all tags in TAGS.
-A new list is returned (no side effects)."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not
-   (lexical-let ((tgs  tags))
-     (lambda (bmk)
-       (and (bmkp-file-bookmark-p bmk)  (bmkp-get-tags bmk)
-            (bmkp-every (lexical-let ((bk  bmk)) (lambda (tag) (bmkp-has-tag-p bk tag)))  tgs))))
-   bookmark-alist))
-
-(defun bmkp-file-all-tags-regexp-alist-only (regexp)
-  "`bookmark-alist', with only file bookmarks having all tags match REGEXP.
-A new list is returned (no side effects)."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not
-   (lexical-let ((rg  regexp))
-     (lambda (bmk)
-       (and (bmkp-file-bookmark-p bmk)
-            (let ((bmk-tags  (bmkp-get-tags bmk)))
-              (and bmk-tags
-                   (bmkp-every (lambda (tag) (bmkp-string-match-p rg (bmkp-tag-name tag))) bmk-tags))))))
-   bookmark-alist))
-
-(defun bmkp-file-some-tags-alist-only (tags)
-  "`bookmark-alist', with only file bookmarks having some tags in TAGS.
-A new list is returned (no side effects)."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not
-   (lexical-let ((tgs  tags))
-     (lambda (bmk) (and (bmkp-file-bookmark-p bmk)
-                        (bmkp-some (lexical-let ((bk  bmk)) (lambda (tag) (bmkp-has-tag-p bk tag)))  tgs))))
-   bookmark-alist))
-
-(defun bmkp-file-some-tags-regexp-alist-only (regexp)
-  "`bookmark-alist', with only file bookmarks having some tags match REGEXP.
-A new list is returned (no side effects)."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not
-   (lexical-let ((rg  regexp))
-     (lambda (bmk) (and (bmkp-file-bookmark-p bmk)
-                        (bmkp-some (lambda (tag) (bmkp-string-match-p rg (bmkp-tag-name tag)))
-                                   (bmkp-get-tags bmk)))))
-   bookmark-alist))
-
-(defun bmkp-file-this-dir-alist-only ()
-  "`bookmark-alist', filtered with `bmkp-file-this-dir-bookmark-p'.
-Include only files and subdir that are in `default-directory'.
-This excludes bookmarks that might contain file information but are
-particular in some way - for example, Info bookmarks or Gnus bookmarks.
-A new list is returned (no side effects)."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not #'bmkp-file-this-dir-bookmark-p bookmark-alist))
-
-(defun bmkp-file-this-dir-all-tags-alist-only (tags)
-  "`bookmark-alist', for files in this dir having all tags in TAGS.
-Include only files and subdir that are in `default-directory'.
-A new list is returned (no side effects)."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not
-   (lexical-let ((tgs  tags))
-     (lambda (bmk)
-       (and (bmkp-file-this-dir-bookmark-p bmk)  (bmkp-get-tags bmk)
-            (bmkp-every (lexical-let ((bk  bmk)) (lambda (tag) (bmkp-has-tag-p bk tag)))  tgs))))
-   bookmark-alist))
-
-(defun bmkp-file-this-dir-all-tags-regexp-alist-only (regexp)
-  "`bookmark-alist', for files in this dir having all tags match REGEXP.
-Include only files and subdir that are in `default-directory'.
-A new list is returned (no side effects)."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not
-   (lexical-let ((rg  regexp))
-     (lambda (bmk)
-       (and (bmkp-file-this-dir-bookmark-p bmk)
-            (let ((bmk-tags  (bmkp-get-tags bmk)))
-              (and bmk-tags
-                   (bmkp-every (lambda (tag) (bmkp-string-match-p rg (bmkp-tag-name tag)))  bmk-tags))))))
-   bookmark-alist))
-
-(defun bmkp-file-this-dir-some-tags-alist-only (tags)
-  "`bookmark-alist', for files in this dir having some tags in TAGS.
-Include only files and subdir that are in `default-directory'.
-A new list is returned (no side effects)."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not
-   (lexical-let ((tgs  tags))
-     (lambda (bmk) (and (bmkp-file-this-dir-bookmark-p bmk)
-                        (bmkp-some (lexical-let ((bk  bmk)) (lambda (tag) (bmkp-has-tag-p bk tag)))  tgs))))
-   bookmark-alist))
-
-(defun bmkp-file-this-dir-some-tags-regexp-alist-only (regexp)
-  "`bookmark-alist', for files in this dir having some tags match REGEXP.
-Include only files and subdir that are in `default-directory'.
-A new list is returned (no side effects)."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not
-   (lexical-let ((rg  regexp))
-     (lambda (bmk) (and (bmkp-file-this-dir-bookmark-p bmk)
-                        (bmkp-some (lambda (tag) (bmkp-string-match-p rg (bmkp-tag-name tag)))
-                                   (bmkp-get-tags bmk)))))
-   bookmark-alist))
-
-(defun bmkp-function-alist-only ()
-  "`bookmark-alist', filtered to retain only function bookmarks.
-A new list is returned (no side effects)."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not #'bmkp-function-bookmark-p bookmark-alist))
-
-(defun bmkp-gnus-alist-only ()
-  "`bookmark-alist', filtered to retain only Gnus bookmarks.
-A new list is returned (no side effects)."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not #'bmkp-gnus-bookmark-p bookmark-alist))
-
-(defun bmkp-icicles-search-hits-alist-only ()
-  "`bookmark-alist', but only for Icicles search hits bookmarks.
-A new list is returned (no side effects)."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not #'bmkp-icicles-search-hits-bookmark-p bookmark-alist))
-
-(defun bmkp-image-alist-only ()
-  "`bookmark-alist', filtered to retain only image-file bookmarks.
-A new list is returned (no side effects)."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not #'bmkp-image-bookmark-p bookmark-alist))
-
-(defun bmkp-info-alist-only ()
-  "`bookmark-alist', filtered to retain only Info bookmarks.
-A new list is returned (no side effects)."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not #'bmkp-info-bookmark-p bookmark-alist))
-
-(defun bmkp-last-specific-buffer-alist-only ()
-  "`bookmark-alist', but only for `bmkp-last-specific-buffer'.
-A new list is returned (no side effects)."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not #'bmkp-last-specific-buffer-p bookmark-alist))
-
-(defun bmkp-last-specific-file-alist-only ()
-  "`bookmark-alist', but only for `bmkp-last-specific-file'.
-A new list is returned (no side effects)."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not #'bmkp-last-specific-file-p bookmark-alist))
-
-(defun bmkp-man-alist-only ()
-  "`bookmark-alist', filtered to retain only `man' page bookmarks.
-A new list is returned (no side effects)."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not #'bmkp-man-bookmark-p bookmark-alist))
-
-(defun bmkp-local-file-alist-only ()
-  "`bookmark-alist', filtered to retain only local-file bookmarks.
-A new list is returned (no side effects)."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not #'bmkp-local-file-bookmark-p bookmark-alist))
-
-(defun bmkp-local-non-dir-file-alist-only ()
-  "`bookmark-alist', filtered to retain only local non-dir file bookmarks.
-A new list is returned (no side effects)."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not #'bmkp-local-non-dir-file-bookmark-p bookmark-alist))
-
-(defun bmkp-non-autonamed-alist-only ()
-  "`bookmark-alist', with only non-autonamed bookmarks (from any buffers).
-A new list is returned (no side effects)."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not (lambda (bmk) (not (bmkp-autonamed-bookmark-p bmk))) bookmark-alist))
-
-(defun bmkp-non-dir-file-alist-only ()
-  "`bookmark-alist', filtered to retain only nondirectory file bookmarks.
-A new list is returned (no side effects)."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not #'bmkp-non-dir-file-bookmark-p bookmark-alist))
-
-(defun bmkp-non-file-alist-only ()
-  "`bookmark-alist', filtered to retain only non-file bookmarks.
-A new list is returned (no side effects)."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not #'bmkp-non-file-bookmark-p bookmark-alist))
-
-(defun bmkp-non-invokable-alist-only ()
-  "`bookmark-alist', filtered to retain only non-invokable bookmarks.
-A new list is returned (no side effects)."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not #'bmkp-non-invokable-bookmark-p bookmark-alist))
-
-(defun bmkp-orphaned-file-alist-only ()
-  "`bookmark-alist', filtered to retain only orphaned file bookmarks."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not #'bmkp-orphaned-file-bookmark-p bookmark-alist))
-
-(defun bmkp-orphaned-local-file-alist-only ()
-  "`bookmark-alist', but retaining only orphaned local-file bookmarks."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not #'bmkp-orphaned-local-file-bookmark-p bookmark-alist))
-
-(defun bmkp-orphaned-remote-file-alist-only ()
-  "`bookmark-alist', but retaining only orphaned remote-file bookmarks."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not #'bmkp-orphaned-remote-file-bookmark-p bookmark-alist))
-
-(defun bmkp-regexp-filtered-annotation-alist-only ()
-  "`bookmark-alist' for annotations matching `bmkp-bmenu-filter-pattern'."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not
-   (lambda (bmk)
-     (let ((annot  (bookmark-get-annotation bmk)))
-       (and (stringp annot)  (not (string= "" annot))
-            (bmkp-string-match-p bmkp-bmenu-filter-pattern annot))))
-   bookmark-alist))                     ; (Could use `bmkp-annotated-alist-only' here instead.)
-
-(defun bmkp-regexp-filtered-bookmark-name-alist-only ()
-  "`bookmark-alist' for bookmarks matching `bmkp-bmenu-filter-pattern'."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not (lambda (bmk)
-                        (bmkp-string-match-p bmkp-bmenu-filter-pattern (bookmark-name-from-full-record bmk)))
-                      bookmark-alist))
-
-(defun bmkp-regexp-filtered-file-name-alist-only ()
-  "`bookmark-alist' for files matching `bmkp-bmenu-filter-pattern'."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not (lambda (bmk) (let ((fname  (bookmark-get-filename bmk)))
-                                      (and fname  (bmkp-string-match-p bmkp-bmenu-filter-pattern fname))))
-                      bookmark-alist))
-
-(defun bmkp-regexp-filtered-tags-alist-only ()
-  "`bookmark-alist' for tags matching `bmkp-bmenu-filter-pattern'."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not (lambda (bmk)
-                        (let ((bmk-tags  (bmkp-get-tags bmk)))
-                          (and bmk-tags  (bmkp-some (lambda (tag)
-                                                      (bmkp-string-match-p bmkp-bmenu-filter-pattern
-                                                                           (bmkp-tag-name tag)))
-                                                    bmk-tags))))
-                      bookmark-alist))
-
-(defun bmkp-region-alist-only ()
-  "`bookmark-alist', filtered to retain only bookmarks that have regions.
-A new list is returned (no side effects)."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not #'bmkp-region-bookmark-p bookmark-alist))
-
-(defun bmkp-remote-file-alist-only ()
-  "`bookmark-alist', filtered to retain only remote-file bookmarks.
-A new list is returned (no side effects)."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not #'bmkp-remote-file-bookmark-p bookmark-alist))
-
-(defun bmkp-remote-non-dir-file-alist-only ()
-  "`bookmark-alist', filtered to retain only remote non-dir file bookmarks.
-A new list is returned (no side effects)."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not #'bmkp-remote-non-dir-file-bookmark-p bookmark-alist))
-
-(defun bmkp-sequence-alist-only ()
-  "`bookmark-alist', filtered to retain only sequence bookmarks.
-A new list is returned (no side effects)."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not #'bmkp-sequence-bookmark-p bookmark-alist))  
-
-(defun bmkp-snippet-alist-only ()
-  "`bookmark-alist', filtered to retain only snippet bookmarks.
-A new list is returned (no side effects)."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not #'bmkp-snippet-bookmark-p bookmark-alist))
-
-(defun bmkp-some-tags-alist-only (tags)
-  "`bookmark-alist', but with only bookmarks having some tags in TAGS.
-A new list is returned (no side effects)."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not (lexical-let ((tgs  tags))
-                        (lambda (bmk)
-                          (bmkp-some (lexical-let ((bk  bmk)) (lambda (tag) (bmkp-has-tag-p bk tag)))
-                                     tgs)))
-                      bookmark-alist))
-
-(defun bmkp-some-tags-regexp-alist-only (regexp)
-  "`bookmark-alist', but with only bookmarks having some tags match REGEXP.
-A new list is returned (no side effects)."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not (lexical-let ((rg  regexp))
-                        (lambda (bmk)
-                          (bmkp-some (lambda (tag) (bmkp-string-match-p rg (bmkp-tag-name tag)))
-                                     (bmkp-get-tags bmk))))
-                      bookmark-alist))
-
-(defun bmkp-specific-buffers-alist-only (&optional buffers)
-  "`bookmark-alist', filtered to retain only bookmarks to buffers BUFFERS.
-BUFFERS is a list of buffer names.
-It defaults to a singleton list with the current buffer's name.
-A new list is returned (no side effects).
-
-Note: Bookmarks created by vanilla Emacs do not record the buffer
-name.  They are therefore excluded from the returned alist."
-  (unless buffers  (setq buffers  (list (buffer-name))))
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not (lexical-let ((bufs  buffers))
-                        (lambda (bmk)
-                          (and (not (bmkp-desktop-bookmark-p       bmk)) ; Exclude these
-                               (not (bmkp-bookmark-file-bookmark-p bmk))
-                               (not (bmkp-sequence-bookmark-p      bmk))
-                               (not (bmkp-function-bookmark-p      bmk))
-                               (not (bmkp-variable-list-bookmark-p bmk))
-                               (member (bmkp-get-buffer-name bmk) bufs))))
-                      bookmark-alist))
-
-(defun bmkp-specific-files-alist-only (&optional files)
-  "`bookmark-alist', filtered to retain only bookmarks to files FILES.
-FILES is a list of absolute file names.
-It defaults to a singleton list with the current buffer's file name,
- or to the empty list if the buffer is not visiting a file.
-A new list is returned (no side effects)."
-  (unless files  (setq files  (and (buffer-file-name)  (list (buffer-file-name)))))
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not (lexical-let ((ff  files))
-                        (lambda (bmk)
-                          (let ((bf  (bookmark-get-filename bmk))) 
-                            (and bf
-                                 ;; If we loaded `cl-seq.el': (cl-member bf ff :test #'bmkp-same-file-p)
-                                 (catch 'bmkp-specific-files-alist-only
-                                   (dolist (f  ff)
-                                     (or (bmkp-same-file-p f bf)  (throw 'bmkp-specific-files-alist-only nil)))
-                                   t)))))
-                      bookmark-alist))
-
-(defun bmkp-tagged-alist-only ()
-  "`bookmark-alist', with only bookmarks that have tags.
-A new list is returned (no side effects)."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not #'bmkp-get-tags bookmark-alist))
-
-(defun bmkp-temporary-alist-only ()
-  "`bookmark-alist', filtered to retain only temporary bookmarks.
-A new list is returned (no side effects)."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not #'bmkp-temporary-bookmark-p bookmark-alist))
-
-(defun bmkp-this-file/buffer-alist-only ()
-  "`bookmark-alist', with only bookmarks for the current file/buffer.
-A new list is returned (no side effects).
-If visiting a file, this is `bmkp-this-file-alist-only'.
-Otherwise, this is `bmkp-this-buffer-alist-only'."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not (if (buffer-file-name) #'bmkp-this-file-p #'bmkp-this-buffer-p) bookmark-alist))
-
-(defun bmkp-this-buffer-alist-only ()
-  "`bookmark-alist', with only bookmarks for the current buffer.
-A new list is returned (no side effects).
-See `bmkp-this-buffer-p'."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not #'bmkp-this-buffer-p bookmark-alist))
-
-(defun bmkp-this-file-alist-only ()
-  "`bookmark-alist', with only bookmarks for the current file.
-A new list is returned (no side effects).
-See `bmkp-this-file-p'."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not #'bmkp-this-file-p bookmark-alist))
-
-(defun bmkp-untagged-alist-only ()
-  "`bookmark-alist', with only bookmarks that do not have tags.
-A new list is returned (no side effects)."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if #'bmkp-get-tags bookmark-alist))
-
-(defun bmkp-url-alist-only ()
-  "`bookmark-alist', filtered to retain only URL bookmarks.
-A new list is returned (no side effects)."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not #'bmkp-url-bookmark-p bookmark-alist))
-
-(defun bmkp-url-browse-alist-only ()
-  "`bookmark-alist', but with only URL bookmarks that are non-W3M, non-EWW.
-\(The bookmarks satisfy `bmkp-url-browse-bookmark-p'.)
-A new list is returned (no side effects)."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not #'bmkp-url-browse-bookmark-p bookmark-alist))
-
-(defun bmkp-variable-list-alist-only ()
-  "`bookmark-alist', filtered to retain only variable-list bookmarks.
-A new list is returned (no side effects)."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not #'bmkp-variable-list-bookmark-p bookmark-alist))
-
-(defun bmkp-w3m-alist-only ()
-  "`bookmark-alist', filtered to retain only W3M bookmarks.
-A new list is returned (no side effects)."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not #'bmkp-w3m-bookmark-p bookmark-alist))
-
-
-;;; Marked bookmarks
-
-(defun bmkp-marked-bookmarks-only ()
-  "Return the list of marked bookmarks."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if-not #'bmkp-marked-bookmark-p bookmark-alist))
-
-(defun bmkp-unmarked-bookmarks-only ()
-  "Return the list of unmarked bookmarks."
-  (bookmark-maybe-load-default-file)
-  (bmkp-remove-if #'bmkp-marked-bookmark-p bookmark-alist))
-
-(defun bmkp-some-marked-p (alist)
-  "Return non-nil if ALIST is nonempty and includes a marked bookmark."
-  (catch 'break (dolist (i  alist)  (and (bmkp-marked-bookmark-p i)  (throw 'break t)))))
-
-(defun bmkp-some-unmarked-p (alist)
-  "Return non-nil if ALIST is nonempty and includes an unmarked bookmark."
-  (catch 'break (dolist (i  alist)  (and (not (bmkp-marked-bookmark-p i))  (throw 'break t)))))
 
 
 ;;(@* "General Utility Functions")
@@ -8282,13 +8200,15 @@ Non-interactively:
    (let* ((icicle-unpropertize-completion-result-flag  t)
           (default-url                                 (or (bmkp-thing-at-point 'url)
                                                            (and (fboundp 'url-get-url-at-point)
-                                                                (url-get-url-at-point))))
+                                                                (url-get-url-at-point))
+                                                           ;; TEMPORARY hack to work around Emacs bug #44822.
+                                                           "https://example.com"))
           (parg                                        current-prefix-arg)
           (prefix-only                                 (and parg  (natnump (prefix-numeric-value parg))))
           (no-overw                                    (and parg  (atom current-prefix-arg))))
      (list (if (require 'ffap nil t)
                (ffap-read-file-or-url "URL: " default-url)
-             (read-file-name "URL: " nil default-url))
+             (read-from-minibuffer "URL: " nil nil nil nil default-url))
            prefix-only
            (if prefix-only
                (read-string "Prefix for bookmark name: ")
@@ -10368,6 +10288,35 @@ BOOKMARK is a bookmark name or a bookmark record."
 
   )
 
+
+;; REPLACES ORIGINAL in `info.el':
+;;
+;; Respect `Info-bookmark-use-only-node-not-file-flag'.
+;;
+;; This code and the definition of `Info-bookmark-use-only-node-not-file-flag' are also in `info+.el',
+;; so that their feature is available if you use either `Info+' or `Bookmark+'.
+;;
+;; Note: This function name doesn't respect the naming convention for bookmark handler functions.
+;;       This name gives the impression that this is a jump command.
+;;
+;;;###autoload (autoload 'Info-bookmark-jump "bookmark+")
+(defun Info-bookmark-jump (bookmark)
+  "Handler function for record returned by `Info-bookmark-make-record'.
+BOOKMARK is a bookmark name or a bookmark record.
+
+If `Info-bookmark-use-only-node-not-file-flag' is nil, and the
+recorded Info file is readable, then use it.  If not, then go to the
+recorded Info node in the manual for the current Emacs version."
+  (require 'info) ; Needed only for Emacs 20-22: not autoloaded for `Info-find-node'.
+  (let* ((absfile    (bookmark-prop-get bookmark 'filename))
+         (file       (if (or Info-bookmark-use-only-node-not-file-flag  (not (file-readable-p absfile)))
+                         (file-name-nondirectory absfile)
+                       absfile))
+         (info-node  (bookmark-prop-get bookmark 'info-node))
+         (buf        (save-window-excursion ; Vanilla FIXME: doesn't work with frames!
+                       (Info-find-node file info-node) (current-buffer))))
+    (bookmark-default-handler `("" (buffer . ,buf) . ,(bookmark-get-bookmark-record bookmark)))))
+
 (defun bmkp-jump-variable-list (bookmark)
   "Jump to variable-list bookmark BOOKMARK, restoring the recorded values.
 Handler function for record returned by
@@ -10901,7 +10850,7 @@ Otherwise, this is the same as `bookmark-jump' - see that, in
 particular, for info about using a prefix argument.
 
 When prompted for the type, you can use completion against the known
-bookmark types (see `bmkp-types-alist').
+bookmark types (see function `bmkp-types-alist').
 
 Completion is lax, so you can also enter the name of a bookmark
 `handler' or `file-handler' function, without completion.  Bookmarks
@@ -10911,7 +10860,7 @@ When called from Lisp, BOOKMARK must be a bookmark record, not a
 bookmark name, or else an error is raised."
   (interactive
    (let* ((completion-ignore-case                      t)
-          (type-cands                                  bmkp-types-alist)
+          (type-cands                                  (bmkp-types-alist))
           (icicle-unpropertize-completion-result-flag  t)
           (type                                        (completing-read "Type of bookmark: " type-cands))
           (history                                     (assoc-default type type-cands))
@@ -10934,7 +10883,7 @@ bookmark name, or else an error is raised."
   "`bmkp-jump-to-type', but in another window."
   (interactive
    (let* ((completion-ignore-case                      t)
-          (type-cands                                  bmkp-types-alist)
+          (type-cands                                  (bmkp-types-alist))
           (icicle-unpropertize-completion-result-flag  t)
           (type                                        (completing-read "Type of bookmark: " type-cands))
           (history                                     (assoc-default type type-cands))

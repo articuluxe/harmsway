@@ -158,6 +158,11 @@ If your resolution is 1440x900, then the scale factor should be set to 2.0."
   :group 'gif-screencast
   :type 'float)
 
+(defcustom gif-screencast-capture-prefer-internal nil
+  "Prefer capture screenshots by Emacs itself instead of external process."
+  :group 'gif-screencast
+  :type 'boolean)
+
 (defvar gif-screencast--frames nil
   "A frame is a plist in the form '(:time :file :offset).")
 (defvar gif-screencast--offset 0
@@ -302,17 +307,28 @@ Return the process."
                         "."
                         gif-screencast-capture-format)
                 gif-screencast-screenshot-directory)))
-    (setq gif-screencast--counter (+ gif-screencast--counter 1))
-    (let ((p (gif-screencast--start-process
-              gif-screencast-program
-              (append
-               gif-screencast-args
-               (list file)))))
-      (set-process-sentinel p 'gif-screencast-capture-sentinel))
+    (if (and (fboundp 'x-export-frames)
+	     (string= gif-screencast-capture-format "png")
+	     gif-screencast-capture-prefer-internal)
+	(gif-screencast-capture--internal file)
+      (setq gif-screencast--counter (+ gif-screencast--counter 1))
+      (let ((p (gif-screencast--start-process
+		gif-screencast-program
+		(append
+		 gif-screencast-args
+		 (list file)))))
+	(set-process-sentinel p 'gif-screencast-capture-sentinel)))
     (push (make-gif-screencast-frame
            :timestamp (time-subtract time gif-screencast--offset)
            :filename file)
           gif-screencast--frames)))
+
+(defun gif-screencast-capture--internal (filename)
+  "Save screenshot captured by Emacs itself to `filename'."
+  (with-temp-file filename
+    (insert (x-export-frames nil 'png)))
+  (kill-new filename)
+  (gif-screencast--finish))
 
 ;;;###autoload
 (defun gif-screencast ()

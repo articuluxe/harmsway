@@ -7,7 +7,7 @@
 ;; Maintainer: Bastian Bechtold
 ;; URL: https://github.com/bastibe/annotate.el
 ;; Created: 2015-06-10
-;; Version: 0.8.3
+;; Version: 1.1.3
 
 ;; This file is NOT part of GNU Emacs.
 
@@ -58,7 +58,7 @@
 ;;;###autoload
 (defgroup annotate nil
   "Annotate files without changing them."
-  :version "0.8.3"
+  :version "1.1.3"
   :group 'text)
 
 ;;;###autoload
@@ -115,9 +115,11 @@ text lines and annotation text)."
   :type 'number
   :group 'annotate)
 
-(defcustom annotate-diff-export-context 8
-  "How many lines of context to include in diff export."
-  :type 'number
+(defcustom annotate-diff-export-options ""
+ "Other options for diffing between a buffer with and without integrated annotations.
+Note that there is an implicit -u at the end of default options
+that Emacs passes to the diff program"
+  :type 'string
   :group 'annotate)
 
 (defcustom annotate-use-messages t
@@ -175,6 +177,25 @@ database is not filtered at all."
     otherwise.
 "
   :type  'symbol
+  :group 'annotate)
+
+(defcustom annotate-use-echo-area nil
+ "Whether annotation text should appear in the echo area only when mouse
+id positioned over the annotated text instead of positioning them in
+the the buffer (the default)."
+  :type 'boolean
+  :group 'annotate)
+
+(defcustom annotate-warn-if-hash-mismatch t
+ "Whether a warning message should be printed if a mismatch
+occurs, for an annotated file, between the hash stored in the
+database annotations and the hash calculated from the actual
+file.
+
+This usually happens if an annotated file (a file with an entry in the
+database) is saved with annotated-mode *not* active or the file
+has been modified outside Emacs."
+  :type 'boolean
   :group 'annotate)
 
 (defconst annotate-prop-chain-position
@@ -302,7 +323,7 @@ annotation as defined in the database."
          (setf inhibit-modification-hooks ,old-mode)))))
 
 (cl-defmacro annotate-with-restore-modified-bit (&rest body)
-  "Save the value of `buffer-modified-p' before `body' is exectuted
+  "Save the value of `buffer-modified-p' before `body' is executed
   and restore the saved value just after the end of `body'."
   (let ((modifiedp (gensym)))
     `(let ((,modifiedp (buffer-modified-p)))
@@ -329,10 +350,54 @@ position (so that it is unchanged after this function is called)."
      (overlay-end   annotation)))
 
 (defun annotate-annotation-force-newline-policy (annotation)
+  "Force annotate to place `annotation' on the line after the annotated text.
+
+See: `annotate-annotation-position-policy'
+"
   (overlay-put annotation 'force-newline-policy t))
 
 (defun annotate-annotation-newline-policy-forced-p (annotation)
+  "Is `annotation' forced  to place annotation on the  line after the
+annotated text?
+
+See: `annotate-annotation-position-policy'"
   (overlay-get annotation 'force-newline-policy))
+
+(defun annotate--remap-chain-pos (annotations)
+  "Remap an annotation 'chain'
+
+An annotation is a collection of one or more overlays that
+contains the property `annotate-prop-chain-position'.
+
+The value of `annotate-prop-chain-position' in each chain is an
+integer starting from:
+
+`annotate-prop-chain-pos-marker-first' and *always* ending with
+
+`annotate-prop-chain-pos-marker-last'
+
+This means that a value of said property for a chain that
+contains only an element is equal to
+`annotate-prop-chain-pos-marker-last'.
+
+This function ensure this constrains for the chain `annotation'
+belong."
+  (cond
+   ((< (length annotations)
+       1)
+    annotations)
+   ((= (length annotations)
+       1)
+    (annotate-annotation-set-chain-last (cl-first annotations)))
+   (t
+    (let ((all-but-last (butlast annotations))
+          (last-element (car (last annotations))))
+      (cl-loop for annotation in all-but-last
+               for i from annotate-prop-chain-pos-marker-first
+               do
+               (annotate-annotation-chain-position annotation i))
+      (when last-element
+        (annotate-annotation-set-chain-last last-element))))))
 
 (defun annotate-before-change-fn (a b)
   "This function is added to 'before-change-functions' hook and
@@ -349,24 +414,17 @@ modified (for example a newline is inserted)."
        (dolist (overlay ov)
          (annotate--remove-annotation-property (overlay-start overlay)
                                                (overlay-end   overlay))
-         ;; move the overlay if we are breaking it
+         ;; check if we are breaking the overlay
          (when (<= (overlay-start overlay)
                    a
                    (overlay-end overlay))
-           (move-overlay overlay (overlay-start overlay) a)
-           ;; delete overlay if there is no more annotated text
-           (when (annotate-annotated-text-empty-p overlay)
-             ;; we  are  deleting  the  last element  of  a  chain  (a
-             ;; stopper)...
-             (when (annotate-chain-last-p overlay)
-               ;; move 'stopper' to the previous chain element
-               (let ((annot-before (annotate-previous-annotation-ends (overlay-start overlay))))
-                 ;; ...if such element exists
-                 (when annot-before
-                   (annotate-annotation-chain-position annot-before
-                                                       annotate-prop-chain-pos-marker-last))))
-             (delete-overlay overlay)
-             (font-lock-fontify-buffer))))))))
+           (let ((start-overlay (overlay-start overlay)))
+             ;; delete overlay if there is no more annotated text
+             (when (<= a start-overlay)
+               (let ((chain (cl-remove overlay (annotate-find-chain overlay))))
+                 (delete-overlay overlay)
+                 (annotate--remap-chain-pos chain)
+                 (font-lock-fontify-buffer))))))))))
 
 (defun annotate-info-select-fn ()
   "The function to be called when an info buffer is updated"
@@ -381,10 +439,14 @@ modified (for example a newline is inserted)."
   (add-hook 'window-configuration-change-hook 'font-lock-fontify-buffer  t t)
   (add-hook 'before-change-functions          'annotate-before-change-fn t t)
   (add-hook 'Info-selection-hook              'annotate-info-select-fn   t t)
-  (font-lock-add-keywords
-   nil
-   '((annotate--font-lock-matcher (2 (annotate--annotation-builder))
-                                  (1 (annotate--change-guard))))))
+  (if annotate-use-echo-area
+      (font-lock-add-keywords
+       nil
+       '((annotate--font-lock-matcher (2 (annotate--annotation-builder)))))
+    (font-lock-add-keywords
+     nil
+     '((annotate--font-lock-matcher (2 (annotate--annotation-builder))
+                                    (1 (annotate--change-guard)))))))
 
 (defun annotate-shutdown ()
   "Clear annotations and remove save and display hooks."
@@ -393,10 +455,14 @@ modified (for example a newline is inserted)."
   (remove-hook 'window-configuration-change-hook 'font-lock-fontify-buffer  t)
   (remove-hook 'before-change-functions          'annotate-before-change-fn t)
   (remove-hook 'Info-selection-hook              'annotate-info-select-fn   t)
-  (font-lock-remove-keywords
-   nil
-   '((annotate--font-lock-matcher (2 (annotate--annotation-builder))
-                                  (1 (annotate--change-guard))))))
+  (if annotate-use-echo-area
+      (font-lock-remove-keywords
+       nil
+       '((annotate--font-lock-matcher (2 (annotate--annotation-builder)))))
+    (font-lock-remove-keywords
+     nil
+     '((annotate--font-lock-matcher (2 (annotate--annotation-builder))
+                                    (1 (annotate--change-guard)))))))
 
 (defun annotate-overlay-filled-p (overlay)
   "Does this overlay contains an 'annotation' property?"
@@ -408,6 +474,73 @@ modified (for example a newline is inserted)."
   "Is 'overlay' an annotation?"
   (annotate-overlay-filled-p overlay))
 
+(defun annotate--position-on-annotated-text-p (pos)
+  "Does `pos' (as buffer position) corresponds to a character
+that belong to some annotated text?"
+  (let ((annotation (annotate-annotation-at pos)))
+    (if annotation
+        t
+      ;; there is a chance that a point do not belong text rendered as
+      ;; annotated but belong to a chain anyway
+      ;; example:
+      ;;
+      ;; legend:
+      ;; a = annotated text
+      ;; * = non annotated text
+      ;; # = annotation
+      ;;
+      ;; Create a multiline annotation using region.
+      ;;
+      ;; aaaa
+      ;; aaaa
+      ;; aaaa
+      ;;
+      ;;
+      ;; aaaa
+      ;; aaaa
+      ;; aaaa    ####
+      ;;
+      ;; place the cursor here:
+      ;;
+      ;; aaaa
+      ;; aaaa
+      ;; ^ cursor
+      ;; aaaa    ####
+      ;;
+      ;; type some text
+      ;;
+      ;; aaaa
+      ;; *****
+      ;; aaaa    ####
+      ;;
+      ;; the text (the asterisks) is not rendered as annotated but as
+      ;; annotations can not have gaps so we enforce this limitation
+      ;; and consider it still parts of a chain formed by the
+      ;; surrounding annotated text.
+      (let* ((previous-annotation (annotate-previous-annotation-ends pos))
+             (next-annotation     (annotate-next-annotation-starts   pos))
+             (previous-chain      (annotate-chain-first previous-annotation))
+             (next-chain          (annotate-chain-first next-annotation)))
+        (if (and previous-chain
+                 next-chain
+                 (eq previous-chain
+                     next-chain))
+            t
+          nil)))))
+
+(defun annotate-delete-chains-in-region (from to)
+  "Deletes all the chains enclosed in the range specified by
+positions `from' and `to'."
+  (let* ((enclosed-chains (annotate-annotations-chain-in-range from to)))
+    (dolist (chain enclosed-chains)
+      (annotate--delete-annotation-chain (cl-first chain)))))
+
+(defun annotate-count-newline-in-region (from to)
+ "Counts the number of newlines character (?\n) in range
+specified by `from' and `to'."
+  (cl-count-if (lambda (a) (char-equal a ?\n))
+               (buffer-substring-no-properties from to)))
+
 (defun annotate-annotate ()
   "Create, modify, or delete annotation."
   (interactive)
@@ -418,21 +551,81 @@ modified (for example a newline is inserted)."
                    (condition-case error-message
                        (annotate-create-annotation start end annotation-text nil)
                      (annotate-empty-annotation-text-error
-                      (user-error "Annotation text is empty.")))))))
+                      (user-error "Annotation text is empty."))))))
+              (cut-right (region-beg region-stop &optional delete-enclosed)
+                (let* ((last-of-chain-to-cut  (annotate-chain-last-at region-beg))
+                       (first-of-chain-to-cut (annotate-chain-first-at region-beg))
+                       (chain-start           (overlay-start first-of-chain-to-cut))
+                       (chain-end             (overlay-end   last-of-chain-to-cut))
+                       (newlines-count        (annotate-count-newline-in-region region-beg
+                                                                                chain-end))
+                       (cut-count             (- chain-end
+                                                 region-beg
+                                                 newlines-count)))
+                  (cl-loop repeat cut-count do
+                    (when (annotate-annotation-at chain-start)
+                      (annotate--cut-right-annotation first-of-chain-to-cut t)))
+                  (when delete-enclosed
+                    (annotate-delete-chains-in-region chain-end region-stop))))
+              (cut-left (region-beg region-stop &optional delete-enclosed)
+                (let* ((last-of-chain-to-cut  (annotate-chain-last-at region-stop))
+                       (first-of-chain-to-cut (annotate-chain-first-at region-stop))
+                       (chain-start           (overlay-start first-of-chain-to-cut))
+                       (chain-end             (overlay-end   last-of-chain-to-cut))
+                       (newlines-count        (annotate-count-newline-in-region chain-start
+                                                                                region-stop))
+                       (cut-count             (- region-stop
+                                                 chain-start
+                                                 newlines-count)))
+                  (cl-loop repeat cut-count do
+                    (when (annotate-annotation-at (1- chain-end))
+                      (annotate--cut-left-annotation last-of-chain-to-cut)))
+                  (when delete-enclosed
+                    (annotate-delete-chains-in-region chain-end region-stop)))))
     (let ((annotation (annotate-annotation-at (point))))
       (cond
        ((use-region-p)
-        (let ((annotations (cl-remove-if-not #'annotationp
-                                             (overlays-in (region-beginning)
-                                                          (region-end)))))
-          (if annotations
-              (signal 'annotate-annotate-region-overlaps annotations)
-            (create-new-annotation))))
+        (let* ((region-beg      (region-beginning))
+               (region-stop     (region-end))
+               (enclosed-chains (annotate-annotations-chain-in-range region-beg region-stop)))
+          (cond
+           ((and (annotate--position-on-annotated-text-p region-beg)
+                 (annotate--position-on-annotated-text-p region-stop))
+            ;; aaaaaaaaaaaaaaaaaa
+            ;;   ^-----------^
+            (let ((starting-chain-at-start (annotate-chain-first-at region-beg))
+                  (starting-chain-at-end   (annotate-chain-first-at region-stop)))
+              (if (eq starting-chain-at-start
+                      starting-chain-at-end)
+                  (signal 'annotate-annotate-region-overlaps nil)
+                (let ((start-pos-last-annotation (overlay-start starting-chain-at-end)))
+                  (cut-left start-pos-last-annotation region-stop nil)
+                  (cut-right region-beg region-stop t)
+                  (create-new-annotation)))))
+           ((annotate--position-on-annotated-text-p region-beg)
+            ;; aaaabbcc**********
+            ;;   ^------------^
+            (cut-right region-beg region-stop t)
+            (create-new-annotation))
+           ((annotate--position-on-annotated-text-p region-stop)
+            ;; **********cccaaaa
+            ;;   ^------------^
+            (cut-left region-beg region-stop t)
+            (create-new-annotation))
+           (enclosed-chains
+            ;; ****aaaaaaaaaaaaaaa****
+            ;;  ^------------------^
+            (annotate-delete-chains-in-region region-beg region-stop)
+            (create-new-annotation))
+           (t
+            (create-new-annotation)))))
        (annotation
         (annotate-change-annotation (point))
         (font-lock-fontify-buffer nil))
        (t
-        (create-new-annotation)))
+        (if (annotate--position-on-annotated-text-p (point))
+            (signal 'annotate-annotate-region-overlaps nil)
+          (create-new-annotation))))
       (set-buffer-modified-p t))))
 
 (cl-defun annotate-goto-next-annotation (&key (startingp t))
@@ -504,91 +697,104 @@ annotate-actual-comment-end"
                           strings
                           (list (annotate-actual-comment-end)))))
 
+(cl-defstruct annotate-overlay-lines
+  overlay
+  line
+  relative-start
+  relative-end)
+
+(cl-defun annotate--integrate-annotations (&key (use-annotation-marker t)
+                                                (as-new-buffer         t)
+                                                (switch-to-new-buffer  t))
+  "Export all annotations, This function is not part of the public API"
+  (cl-labels ((build-input-text-line ()
+               (save-excursion
+                 (annotate--split-lines (buffer-substring-no-properties (point-min)
+                                                                        (point-max))))))
+
+    (let* ((filename               (annotate-actual-file-name))
+           (export-buffer          (generate-new-buffer (concat filename ".annotated.diff")))
+           (annotations-overlays   (sort (annotate-all-annotations)
+                                         (lambda (a b)
+                                           (< (overlay-start a)
+                                              (overlay-start b)))))
+           (lines-count            (count-lines (point-min) (point-max)))
+           (buffer-lines           (build-input-text-line))
+           (ov-line-pos            (mapcar (lambda (ov)
+                                             (line-number-at-pos (overlay-start ov)))
+                                           annotations-overlays))
+           (ov-start-pos-in-line   (mapcar (lambda (ov)
+                                             (save-excursion
+                                               (goto-char (overlay-start ov))
+                                               (let ((bol (annotate-beginning-of-line-pos)))
+                                                 (- (overlay-start ov) bol))))
+                                           annotations-overlays))
+           (ov-end-pos-in-line     (mapcar (lambda (ov)
+                                             (save-excursion
+                                               (goto-char (overlay-start ov))
+                                               (let ((bol (annotate-beginning-of-line-pos)))
+                                                 (- (overlay-end ov) bol))))
+                                           annotations-overlays))
+           (overlay-relative-pos   (cl-mapcar (lambda (ov line start end)
+                                                (make-annotate-overlay-lines :overlay        ov
+                                                                             :line           line
+                                                                             :relative-start start
+                                                                             :relative-end   end))
+                                              annotations-overlays
+                                              ov-line-pos
+                                              ov-start-pos-in-line
+                                              ov-end-pos-in-line))
+           (parent-buffer-mode     major-mode)
+           (output-buffer          (if as-new-buffer
+                                       export-buffer
+                                     (current-buffer))))
+      (with-current-buffer output-buffer
+        (when as-new-buffer
+          (erase-buffer)
+          (funcall parent-buffer-mode))
+        (cl-loop
+         for buffer-line in buffer-lines
+         for line-number from 1  do
+         (let ((overlays-in-line (remove-if-not (lambda (a) (= (annotate-overlay-lines-line a)
+                                                               line-number))
+                                                overlay-relative-pos)))
+           (when (or (/= (1- line-number)
+                         lines-count)
+                     (not (annotate-string-empty-p buffer-line)))
+             (insert buffer-line "\n")
+             (cl-loop for ov-line-pos in overlays-in-line do
+                      (let* ((overlay         (annotate-overlay-lines-overlay ov-line-pos))
+                             (relative-start  (annotate-overlay-lines-relative-start ov-line-pos))
+                             (relative-end    (annotate-overlay-lines-relative-end ov-line-pos))
+                             (padding         (if (<= (1- relative-start) 0)
+                                                  ""
+                                                (make-string (1- relative-start) ? )))
+                             (annotated-lines (annotate--split-lines (overlay-get overlay
+                                                                                  'annotation)))
+                             (ov-length       (- relative-end relative-start))
+                             (underline       (make-string (1- ov-length)
+                                                           annotate-integrate-higlight)))
+                        (insert (annotate-wrap-in-comment padding underline) "\n")
+                        (when (annotate-chain-last-p overlay)
+                          (when use-annotation-marker
+                            (insert (annotate-wrap-in-comment annotate-integrate-marker) "\n"))
+                          (cl-loop for line in annotated-lines do
+                                   (insert (annotate-wrap-in-comment line) "\n")))))))))
+      (when (and as-new-buffer
+                 switch-to-new-buffer)
+        (switch-to-buffer output-buffer))
+      (when (not as-new-buffer)
+        (delete-region (point) (point-max)))
+      output-buffer)))
+
 (defun annotate-integrate-annotations ()
   "Write all annotations into the file as comments below the annotated line.
 An example might look like this:"
   (interactive)
-  (save-excursion
-    (dolist (ov (sort (annotate-all-annotations)
-                      (lambda (o1 o2)
-                        (< (overlay-start o1)
-                           (overlay-start o2)))))
-      (goto-char (overlay-start ov))
-      (cond
-       ;; overlay spans more than one line
-       ((string-match "\n" (buffer-substring (overlay-start ov)
-                                             (overlay-end ov)))
-        ;; partially underline first line
-        (let ((ov-start (point))
-              (bol (progn (beginning-of-line)
-                          (point)))
-              (eol (progn (end-of-line)
-                          (point))))
-          (end-of-line)
-          (insert "\n"
-                  (annotate-wrap-in-comment (make-string (max 0
-                                                              (- ov-start
-                                                                 bol
-                                                                 (annotate-comments-length)))
-                                                         ? )
-                                            (make-string (max 0 (- eol ov-start))
-                                                         annotate-integrate-higlight))))
-        ;; fully underline second to second-to-last line
-        (while (< (progn (forward-line)
-                         (end-of-line)
-                         (point))
-                  (overlay-end ov))
-          (let ((bol (progn (beginning-of-line)
-                            (point)))
-                (eol (progn (end-of-line)
-                            (point))))
-            (end-of-line)
-            (insert "\n"
-                    (annotate-wrap-in-comment (make-string (max 0
-                                                                (- eol
-                                                                   bol
-                                                                   (annotate-comments-length)))
-                                                           annotate-integrate-higlight)))))
-        ;; partially underline last line
-        (let ((bol (progn (beginning-of-line)
-                          (point)))
-              (ov-end (overlay-end ov)))
-          (end-of-line)
-          (insert "\n"
-                  (annotate-wrap-in-comment (make-string (max 0
-                                                              (- ov-end
-                                                                 bol
-                                                                 (annotate-comments-length)))
-                                                         annotate-integrate-higlight))))
-        ;; insert actual annotation text
-        (insert "\n"
-                (annotate-wrap-in-comment annotate-integrate-marker
-                                          (overlay-get ov 'annotation))))
-       ;; overlay is within one line
-       (t
-        (let* ((ov-start         (overlay-start ov))
-               (ov-end           (overlay-end ov))
-               (bol              (progn (beginning-of-line)
-                                        (point)))
-               (underline-marker (if (= bol ov-start)
-                                     (make-string (max 0 (- ov-end ov-start 1))
-                                                  annotate-integrate-higlight)
-                                   (make-string (max 0 (- ov-end ov-start))
-                                                annotate-integrate-higlight))))
-          (end-of-line)
-          (insert "\n"
-                  (annotate-wrap-in-comment (make-string (max 0
-                                                              (- ov-start
-                                                                 bol
-                                                                 (annotate-comments-length)))
-                                                         ? )
-                                            underline-marker)
-                  "\n")
-          (when (annotate-chain-last-p ov)
-            (let ((annotation-integrated-text (annotate-wrap-in-comment annotate-integrate-marker
-                                                                        (overlay-get ov 'annotation))))
-              (insert annotation-integrated-text)))))))
-    (annotate-clear-annotations)))
+  (annotate--integrate-annotations :use-annotation-marker t
+                                   :as-new-buffer         nil
+                                   :switch-to-new-buffer  nil)
+  (annotate-clear-annotations))
 
 (defun annotate-export-annotations ()
   "Export all annotations as a unified diff file.
@@ -609,75 +815,8 @@ An example might look like this:
 This diff does not contain any changes, but highlights the
 annotation, and can be conveniently viewed in diff-mode."
   (interactive)
-  (let* ((filename      (annotate-actual-file-name))
-         (export-buffer (generate-new-buffer (concat filename
-                                                     ".annotations.diff")))
-         (annotations   (sort (annotate-all-annotations)
-                              (lambda (a b)
-                                (< (overlay-start a)
-                                   (overlay-start b)))))
-         (parent-buffer-mode major-mode))
-    ;; write the diff file description
-    (with-current-buffer export-buffer
-      (funcall parent-buffer-mode)
-      (let ((time-string
-             (format-time-string "%F %H:%M:%S.%N %z"
-                                 (nth 5 (file-attributes filename 'integer)))))
-        (insert "--- " filename "\t" time-string "\n")
-        (insert "+++ " filename "\t" time-string "\n")))
-    ;; write diff, highlight, and comment for each annotation
-    (save-excursion
-      ;; sort annotations by location in the file
-      (dolist (ann annotations)
-        (let* ((start (overlay-start ann))
-               (end   (overlay-end ann))
-               (text  (overlay-get ann 'annotation))
-               ;; beginning of first annotated line
-               (bol (progn (goto-char start)
-                           (beginning-of-line)
-                           (point)))
-               ;; end of last annotated line
-               (eol (progn (goto-char end)
-                           (end-of-line)
-                           (point)))
-               ;; all lines that contain annotations
-               (annotated-lines (buffer-substring bol eol))
-               ;; context lines before the annotation
-               (previous-lines  (annotate-context-before start))
-               ;; context lines after the annotation
-               (following-lines (annotate-context-after end))
-               (chain-last-p    (annotate-chain-last-p ann))
-               ;; line header for diff chunk
-               (diff-range      (annotate-diff-line-range start end chain-last-p)))
-          (with-current-buffer export-buffer
-            (insert "@@ " diff-range " @@\n")
-            (when previous-lines
-              (insert (annotate-prefix-lines " " previous-lines)))
-            (insert (annotate-prefix-lines "-" annotated-lines))
-            ;; loop over annotation lines and insert with highlight
-            ;; and annotation text
-            (let ((annotation-line-list (butlast (split-string
-                                                  (annotate-prefix-lines "+" annotated-lines)
-                                                  "\n")))
-                  (integration-padding   (if (and (> (1- start) 0)
-                                                  (> (1- start) bol))
-                                             (make-string (- (1- start) bol) ? )
-                                           "")))
-                (insert (car annotation-line-list) "\n")
-                (unless (string= (car annotation-line-list) "+")
-                  (insert "+"
-                          (annotate-wrap-in-comment integration-padding
-                                                    (make-string (- end start)
-                                                                 annotate-integrate-higlight))
-                          "\n"))
-                (when (annotate-chain-last-p ann)
-                  (insert "+"
-                          (annotate-wrap-in-comment integration-padding text)
-                          "\n")))
-            (insert (annotate-prefix-lines " " following-lines))))))
-          (switch-to-buffer export-buffer)
-          (diff-mode)
-          (view-mode)))
+  (let ((buffer (annotate--integrate-annotations :switch-to-new-buffer nil)))
+    (diff-buffers (current-buffer) buffer annotate-diff-export-options)))
 
 (defun annotate--font-lock-matcher (limit)
   "Finds the next annotation. Matches two areas:
@@ -781,15 +920,17 @@ to 'maximum-width'."
                           (%group (append (list suffix)
                                           (cl-rest rest-words))
                                   (append (list prefix)
-                                          so-far)))))))
+                                          so-far))))))
+              (%split-words (text)
+                (save-match-data (split-string text "[[:space:]]" t))))
     (if (< maximum-width 1)
         nil
-      (let* ((words   (split-string text " " t))
+      (let* ((words   (%split-words text))
              (grouped (reverse (%group words '()))))
         grouped))))
 
 (cl-defun annotate-safe-subseq (seq from to &optional (value-if-limits-invalid seq))
-  "This return 'value-if-limits-invalid' sequence if 'from' or 'to' are invalids"
+  "Returns 'value-if-limits-invalid' sequence if 'from' or 'to' are invalids"
   (cond
    ((< to from)
     value-if-limits-invalid)
@@ -838,6 +979,60 @@ to 'maximum-width'."
              (append lineated
                      (list (pad last-line max-width nil)))))))
 
+(cl-defun annotate--split-lines (text &optional (separator "\n"))
+  "Returns text splitted by `separator' (default: \"\n\")"
+  (save-match-data
+    (split-string text separator)))
+
+(defun annotate--join-with-string (strings junction)
+  (cl-reduce (lambda (a b) (concat a junction b))
+             strings))
+
+(defun annotate-wrap-annotation-in-box (annotation-overlay
+                                        begin-of-line
+                                        end-of-line
+                                        annotation-on-is-own-line-p)
+  "Pads   or    breaks   annotation   text   (as    property   of
+   `annotation-overlay' so that all lines have the same width.
+
+If annotation is a  placed on the margin of a window (that is  `annotation-on-is-own-line-p' is
+nil) the text is broken (regardless  of words) to fit on the side
+of the window using `begin-of-line' `end-of-line'.
+
+If annotation is a note that is placed in its own line the text is padded with spaces so that
+a 'box' surround the text without seams, e.g:
+
+aaa      aaa
+aa   ->  aa*
+a        a**
+"
+  (let ((annotation-text (overlay-get annotation-overlay 'annotation)))
+    (cl-labels ((boxify-multiline (raw-annotation-text &optional add-space-at-end)
+                  (let* ((lines         (annotate--split-lines raw-annotation-text))
+                         (lines-widths  (mapcar 'string-width lines))
+                         (max-width     (cl-reduce (lambda (a b) (if (> a b)
+                                                                     a
+                                                                   b))
+                                                   lines-widths
+                                                   :initial-value -1))
+                         (padding-sizes (mapcar (lambda (a) (- max-width
+                                                               (string-width a)))
+                                                lines))
+                         (paddings      (mapcar (lambda (a) (make-string a ? ))
+                                                padding-sizes))
+                         (box-lines     (cl-mapcar (lambda (a b) (concat a b))
+                                                   lines paddings))
+                         (almost-boxed  (annotate--join-with-string box-lines "\n")))
+                    (if add-space-at-end
+                        (concat almost-boxed " ")
+                      almost-boxed))))
+      (if annotation-on-is-own-line-p
+          (list (boxify-multiline annotation-text t))
+        (let* ((lineated         (annotate-lineate annotation-text
+                                                   (- end-of-line begin-of-line)))
+               (boxed            (boxify-multiline lineated nil)))
+          (annotate--split-lines boxed))))))
+
 (defun annotate--annotation-builder ()
   "Searches the line before point for annotations, and returns a
 `facespec` with the annotation in its `display` property."
@@ -869,15 +1064,22 @@ to 'maximum-width'."
         ;; variable: `annotate-annotation-position-policy'.
         (dolist (ov overlays)
           (let* ((face                (cond
+                                       ((annotate-previous-annotation ov)
+                                        (let* ((previous (annotate-previous-annotation ov))
+                                               (prev-face (overlay-get previous
+                                                                       'annotation-face)))
+                                          (if (eq prev-face
+                                                  'annotate-annotation)
+                                              'annotate-annotation-secondary
+                                            'annotate-annotation)))
                                        ((not (annotate-chain-first-p ov))
                                         (let ((first-in-chain (annotate-chain-first ov)))
                                           (overlay-get first-in-chain
                                                        'annotation-face)))
-                                       ((= (cl-rem annotation-counter 2) 0)
-                                        'annotate-annotation)
                                        (t
-                                        'annotate-annotation-secondary)))
-                 (face-highlight      (if (= (cl-rem annotation-counter 2) 0)
+                                        'annotate-annotation)))
+                 (face-highlight      (if (eq face
+                                              'annotate-annotation)
                                           'annotate-highlight
                                         'annotate-highlight-secondary))
                  (annotation-long-p   (> (string-width (overlay-get ov 'annotation))
@@ -890,13 +1092,10 @@ to 'maximum-width'."
                                              annotation-long-p))
                                         (otherwise
                                          nil)))
-                 (multiline-annotation (if position-new-line-p
-                                           (list (overlay-get ov 'annotation))
-                                         (save-match-data
-                                           (split-string (annotate-lineate (overlay-get ov
-                                                                                        'annotation)
-                                                                           (- eol bol))
-                                                         "\n"))))
+                 (multiline-annotation (annotate-wrap-annotation-in-box ov
+                                                                        bol
+                                                                        eol
+                                                                        position-new-line-p))
                  (annotation-stopper   (if position-new-line-p
                                            (if (= annotation-counter
                                                   (length overlays))
@@ -905,31 +1104,33 @@ to 'maximum-width'."
                                          "\n")))
             (cl-incf annotation-counter)
             (overlay-put ov 'face face-highlight)
-            (if (annotate-chain-first-p ov)
-                (overlay-put ov 'annotation-face face)
-                (let ((first-in-chain (annotate-chain-first ov)))
-                  (overlay-put ov
-                               'face
-                               (overlay-get first-in-chain 'face))))
-            (when (annotate-chain-last-p ov)
-              (when position-new-line-p
-                (setf prefix-first " \n"))
-              (dolist (l multiline-annotation)
-                (setq annotation-text
-                      (concat annotation-text
-                              prefix-first
-                              (propertize l 'face face)
-                              annotation-stopper))
-                ;; white space before for all but the first annotation line
-                (if position-new-line-p
-                    (setq prefix-first (concat prefix-first prefix-rest))
-                  (setq prefix-first prefix-rest))))))
-        ;; build facespec with the annotation text as display property
-        (if (string= annotation-text "")
-          ;; annotation has been removed: remove display prop
-          (list 'face 'default 'display nil)
-        ;; annotation has been changed/added: change/add display prop
-        (list 'face 'default 'display annotation-text))))))
+            (overlay-put ov 'annotation-face face)
+            (when (not (annotate-chain-first-p ov))
+              (let ((first-in-chain (annotate-chain-first ov)))
+                (overlay-put ov
+                             'face
+                             (overlay-get first-in-chain 'face))))
+            (when (and (not annotate-use-echo-area)
+                       (annotate-chain-last-p ov))
+                (when position-new-line-p
+                  (setf prefix-first " \n"))
+                (dolist (l multiline-annotation)
+                  (setq annotation-text
+                        (concat annotation-text
+                                prefix-first
+                                (propertize l 'face face)
+                                annotation-stopper))
+                  ;; white space before for all but the first annotation line
+                  (if position-new-line-p
+                      (setq prefix-first (concat prefix-first prefix-rest))
+                    (setq prefix-first prefix-rest))))))
+        (when (not annotate-use-echo-area)
+          ;; build facespec with the annotation text as display property
+          (if (string= annotation-text "")
+              ;; annotation has been removed: remove display prop
+              (list 'face 'default 'display nil)
+            ;; annotation has been changed/added: change/add display prop
+            (list 'face 'default 'display annotation-text)))))))
 
 (defun annotate--remove-annotation-property (begin end)
   "Cleans up annotation properties associated with a region."
@@ -952,6 +1153,33 @@ to 'maximum-width'."
        (setf buffer-undo-list saved-undo-list)
        (buffer-enable-undo)))))
 
+(defun annotate-annotations-overlay-in-range (from-position to-position)
+  "Returns the annotations overlays that are enclosed in the range
+defined by `from-position' and `to-position'."
+  (let ((annotations ()))
+    (cl-loop for  i
+             from (max 0 (1- from-position))
+             to   to-position
+             do
+      (let ((annotation (annotate-next-annotation-starts i)))
+        (annotate-ensure-annotation (annotation)
+          (let ((chain-end   (overlay-end   (annotate-chain-last  annotation)))
+                (chain-start (overlay-start (annotate-chain-first annotation))))
+            (when (and (>= chain-start from-position)
+                       (<= chain-end   to-position))
+              (cl-pushnew annotation annotations))))))
+    (reverse annotations)))
+
+(defun annotate-annotations-chain-in-range (from-position to-position)
+  "Returns the annotations (chains) that are enclosed in the range
+defined by `from-position' and `to-position'."
+  (let ((annotations (annotate-annotations-overlay-in-range from-position to-position))
+        (chains      ()))
+    (cl-loop for annotation in annotations do
+      (let ((chain (annotate-find-chain annotation)))
+        (cl-pushnew chain chains :test (lambda (a b) (eq (cl-first a) (cl-first b))))))
+    (reverse chains)))
+
 (defun annotate--change-guard ()
   "Returns a `facespec` with an `insert-behind-hooks` property
 that strips dangling `display` properties of text insertions if
@@ -963,7 +1191,7 @@ an overlay and it's annotation."
         '(annotate--remove-annotation-property)))
 
 (defun annotate-context-before (pos)
- "Context lines before POS. Return nil if we reach a line before
+ "Context lines before POS. Returns nil if we reach a line before
 first line of the buffer"
   (save-excursion
     (goto-char pos)
@@ -982,32 +1210,39 @@ first line of the buffer"
       (end-of-line (1+ annotate-diff-export-context))
       (buffer-substring-no-properties (1+ eol) (point)))))
 
-(defun annotate-prefix-lines (prefix text)
+(defun annotate-prefix-lines (prefix text &optional omit-trailing-null)
   "Prepend PREFIX to each line in TEXT."
-  (let ((lines (split-string text "\n")))
+  (let ((lines (annotate--split-lines text "\n")))
+    (when omit-trailing-null
+      (let ((last-not-empty (cl-position-if-not 'annotate-string-empty-p
+                                                lines
+                                                :from-end t)))
+        (setf lines (subseq lines 0 (1+ last-not-empty)))))
     (apply 'concat (mapcar (lambda (l) (concat prefix l "\n")) lines))))
 
-(defun annotate-diff-line-range (start end chain-last-p)
+(defun annotate-diff-line-range (start end lines-annotation-text chain-last-p)
   "Calculate diff-like line range for annotation."
   (save-excursion
-    (let* ((lines-before      (- (- annotate-diff-export-context)
-                                 (forward-line (- annotate-diff-export-context)))) ; this move point, too!
+    (let* ((lines-count       (count-lines (point-min) (point-max)))
+           ;; forward-line move the point, too!
+           (lines-before      (- (- annotate-diff-export-context)
+                                 (forward-line (- annotate-diff-export-context))))
+           ;; because  of  forward-line  above point  has  been  moved
+           ;; 'annotate-diff-export-context'  lines  or at  the  first
+           ;; line of the buffer
            (start-line        (line-number-at-pos (point)))
-           (diff-offset-start (+ 1
-                                 (- lines-before)
-                                 annotate-diff-export-context))
+           (diff-offset-start (- (line-number-at-pos start)
+                                 start-line))
+           (diff-offset-end   (min annotate-diff-export-context
+                                   (- lines-count (line-number-at-pos start))))
            (end-increment     (if chain-last-p
-                                  2
-                                1))
-           (diff-offset-end   (+ diff-offset-start
-                                 end-increment
-                                 (- (line-number-at-pos end)
-                                    (line-number-at-pos start)))))
+                                  (+ 2 (length (annotate--split-lines lines-annotation-text)))
+                                2)))
       (format "-%i,%i +%i,%i"
               start-line
-              diff-offset-start
+              (+ diff-offset-start diff-offset-end 1)
               start-line
-              diff-offset-end))))
+              (+ diff-offset-start diff-offset-end end-increment)))))
 
 ;;; database related procedures
 
@@ -1149,7 +1384,7 @@ essentially what you get from:
         (message "Annotations loaded."))))
 
 (defun annotate-load-annotations ()
-  "Load all annotations from disk.
+  "Load all annotations from disk and redraw the buffer to render the annotations.
 
 The format of the database is:
 
@@ -1197,7 +1432,8 @@ example:
            (modified-p           (buffer-modified-p)))
       (if (old-format-p annotation-dump)
           (annotate-load-annotation-old-format)
-        (when (and (not (old-format-p annotation-dump))
+        (when (and annotate-warn-if-hash-mismatch
+                   (not (old-format-p annotation-dump))
                    old-checksum
                    new-checksum
                    (not (string= old-checksum new-checksum)))
@@ -1246,19 +1482,35 @@ annotation."
   (let ((db (annotate-db-clean-records (annotate-load-annotation-data t))))
     (annotate-dump-annotation-data db)))
 
+(defun annotate--expand-record-path (record)
+  (let* ((short-filename  (annotate-filename-from-dump    record))
+         (annotations     (annotate-annotations-from-dump record))
+         (file-checksum   (annotate-checksum-from-dump    record))
+         (expand-p        (not (eq (ignore-errors (annotate-guess-file-format short-filename))
+                                   :info)))
+         (actual-filename (if expand-p
+                              (expand-file-name short-filename)
+                            short-filename)))
+    (annotate-make-record actual-filename
+                          annotations
+                          file-checksum)))
+
 (defun annotate-load-annotation-data (&optional ignore-errors)
-  "Read and return saved annotations."
-  (cl-flet ((%load-annotation-data ()
-              (with-temp-buffer
-                (if (file-exists-p annotate-file)
-                    (insert-file-contents annotate-file)
-                  (signal 'annotate-db-file-not-found (list annotate-file)))
-                (goto-char (point-max))
-                (cond ((= (point) 1)
-                       nil)
-                      (t
-                       (goto-char (point-min))
-                       (read (current-buffer)))))))
+  "Read and returns saved annotations."
+  (cl-labels ((%load-annotation-data ()
+                (let ((annotations-file annotate-file))
+                  (with-temp-buffer
+                    (let* ((annotate-file annotations-file)
+                           (attributes    (file-attributes annotate-file)))
+                      (cond
+                       ((not (file-exists-p annotate-file))
+                        (signal 'annotate-db-file-not-found (list annotate-file)))
+                       ((= (file-attribute-size attributes)
+                           0)
+                        nil)
+                       (t
+                        (insert-file-contents annotate-file)
+                        (mapcar 'annotate--expand-record-path (read (current-buffer))))))))))
     (if ignore-errors
         (ignore-errors (%load-annotation-data))
       (%load-annotation-data))))
@@ -1266,8 +1518,16 @@ annotation."
 (defun annotate-dump-annotation-data (data)
   "Save `data` into annotation file."
   (with-temp-file annotate-file
-    (let ((print-length nil))
-      (prin1 data (current-buffer)))))
+    (let* ((print-length nil)
+           (%abbreviate-filename (lambda (record)
+                                   (let ((full-filename (annotate-filename-from-dump    record))
+                                         (annotations   (annotate-annotations-from-dump record))
+                                         (file-checksum (annotate-checksum-from-dump    record)))
+                                     (annotate-make-record (abbreviate-file-name full-filename)
+                                                           annotations
+                                                           file-checksum))))
+           (actual-data (mapcar %abbreviate-filename data)))
+      (prin1 actual-data (current-buffer)))))
 
 (cl-defmacro with-matching-annotation-fns ((filename
                                             beginning
@@ -1342,6 +1602,17 @@ annotation."
                        rest-of-db))
              db-records))
        db-records))))
+
+(defun annotate-db-annotations-starts-before-p (a b)
+  "Non nil if  annotation `a' starts before `b'.
+
+In this context annotation means annotation loaded from local
+database not the annotation shown in the buffer (therefore these
+arguments are 'record' as called in the other database-related
+functions).
+"
+  (< (annotate-beginning-of-annotation a)
+     (annotate-beginning-of-annotation b)))
 
 ;;;; database related procedures ends here
 
@@ -1444,6 +1715,22 @@ of a chain of annotations"
     (annotate-ensure-annotation (annotation)
       (annotate-chain-last annotation))))
 
+(defun annotate-chain-at (pos)
+  "Find the chain of overlays where point `pos' belongs."
+  (let ((annotation (annotate-annotation-at pos)))
+    (annotate-ensure-annotation (annotation)
+      (annotate-find-chain annotation))))
+
+(defun annotate-annotation-set-chain-first (annotation)
+  "Set property's value that  define position of this annotation
+in a chain of annotations as first"
+  (annotate-annotation-chain-position annotation annotate-prop-chain-pos-marker-first))
+
+(defun annotate-annotation-set-chain-last (annotation)
+  "Set property's value that  define position of this annotation
+in a chain of annotations as last"
+  (annotate-annotation-chain-position annotation annotate-prop-chain-pos-marker-last))
+
 (defun annotate-find-chain (annotation)
   "Find all annotation that are parts of the chain where `annotation' belongs"
   (annotate-ensure-annotation (annotation)
@@ -1496,16 +1783,7 @@ interval and, if found, the buffer is annotated right there.
 The searched interval can be customized setting the variable:
 'annotate-search-region-lines-delta'.
 "
-  (cl-labels ((remap-chain-pos (annotations)
-               (if (<= (length annotations)
-                       1)
-                   annotations
-                 (let* ((all-but-last (butlast annotations)))
-                     (cl-loop for annotation in all-but-last
-                              for i from annotate-prop-chain-pos-marker-first
-                              do
-                              (annotate-annotation-chain-position annotation i)))))
-              (create-annotation (start end annotation-text)
+  (cl-labels ((create-annotation (start end annotation-text)
                (save-excursion
                  (let ((chain-pos 0)
                        (all-overlays ()))
@@ -1523,12 +1801,14 @@ The searched interval can be customized setting the variable:
                                     (highlight (make-overlay start end-overlay)))
                                (overlay-put highlight 'face 'annotate-highlight)
                                (overlay-put highlight 'annotation annotation-text)
+                               (annotate-overlay-maybe-set-help-echo highlight
+                                                                     annotation-text)
                                (annotate-annotation-chain-position highlight
                                                                    annotate-prop-chain-pos-marker-last)
                                (push highlight all-overlays))))))
                      (setf start (point)))
-                   (remap-chain-pos (reverse (mapcar #'maybe-force-newline-policy
-                                                     all-overlays))))))
+                   (annotate--remap-chain-pos (reverse (mapcar #'maybe-force-newline-policy
+                                                               all-overlays))))))
               (beginning-of-nth-line (start line-count)
                  (save-excursion
                    (goto-char start)
@@ -1629,34 +1909,127 @@ The searched interval can be customized setting the variable:
           (goto-char end)
           (font-lock-fontify-block 1))))))
 
+(defun annotate-overlay-put-echo-help (overlay text)
+  "Set the property `help-echo' to `text' in overlay `overlay'."
+  (overlay-put overlay 'help-echo text))
+
+(defun annotate-overlay-get-echo-help (overlay)
+  "Set the property `help-echo' from overlay `overlay'."
+  (overlay-get overlay 'help-echo))
+
+(defun annotate-overlay-maybe-set-help-echo (overlay annotation-text)
+  "Set the property `help-echo' to `text' in overlay `overlay' if
+the annotations should be shown in a popup fashion.
+
+See the variable: `annotate-use-echo-area'."
+  (when annotate-use-echo-area
+    (annotate-overlay-put-echo-help overlay annotation-text)))
+
+(defun annotate--delete-annotation-chain (annotation)
+  "Delete `annotation' from a buffer and the chain it belongs to.
+
+This function is not part of the public API."
+  (annotate-ensure-annotation (annotation)
+    (save-excursion
+      (let ((chain (annotate-find-chain annotation)))
+        (dolist (single-element chain)
+          (goto-char (overlay-end single-element))
+          (move-end-of-line nil)
+          (annotate--remove-annotation-property (overlay-start single-element)
+                                                (overlay-end   single-element))
+          (delete-overlay single-element))))))
+
+(defun annotate--delete-annotation-chain-ring (annotation-ring)
+  "Delete overlay of `annotation-ring' from a buffer.
+
+This function is not part of the public API."
+  (annotate-ensure-annotation (annotation-ring)
+    (save-excursion
+      (goto-char (overlay-end annotation-ring))
+      (move-end-of-line nil)
+      (annotate--remove-annotation-property (overlay-start annotation-ring)
+                                            (overlay-end   annotation-ring))
+      (delete-overlay annotation-ring))))
+
+(defun annotate-delete-chain-element (annotation)
+  "Delete a ring from a chain where `annotation' belong"
+  (annotate-ensure-annotation (annotation)
+    (let* ((chain                   (annotate-find-chain    annotation))
+           (first-of-chain-p        (annotate-chain-first-p annotation))
+           (last-of-chain-p         (annotate-chain-last-p  annotation))
+           (only-element-in-chain-p (= (length chain) 1)))
+      (annotate--delete-annotation-chain-ring annotation)
+      (when (not only-element-in-chain-p)
+        (cond
+         (first-of-chain-p
+          (let ((second-annotation (cl-second chain)))
+            (when (not (annotate-chain-last-p second-annotation))
+              (annotate-annotation-set-chain-first second-annotation))))
+         (last-of-chain-p
+          (let ((annotation-before (elt chain (- (length chain) 2))))
+            (annotate-annotation-set-chain-last annotation-before))))))))
+
+(defun annotate--cut-left-annotation (annotation)
+  "Trims `annotation' exactly one character from the start."
+  (annotate-ensure-annotation (annotation)
+    (let* ((chain                       (annotate-find-chain annotation))
+           (first-annotation            (annotate-chain-first annotation))
+           (chain-start-pos             (overlay-start first-annotation))
+           (first-annotation-ending-pos (overlay-end   first-annotation))
+           (new-starting-pos            (1+ chain-start-pos)))
+      (cond
+       ((>= new-starting-pos
+            first-annotation-ending-pos) ; delete chain element or entire annotation
+        (if (= (length chain)
+               1)                        ; the chain is formed by just one element, delete entirely
+            (annotate--delete-annotation-chain first-annotation)
+          (annotate-delete-chain-element first-annotation))) ; delete just the first element of the chain
+       (t
+        (move-overlay first-annotation new-starting-pos first-annotation-ending-pos))))))
+
+(defun annotate--cut-right-annotation (annotation &optional refontify-buffer)
+  "Trims `annotation' exactly one character from the end."
+  (annotate-ensure-annotation (annotation)
+    (let* ((chain                        (annotate-find-chain annotation))
+           (last-annotation              (annotate-chain-last annotation))
+           (last-annotation-ending-pos   (overlay-end last-annotation))
+           (last-annotation-starting-pos (overlay-start last-annotation))
+           (new-ending-pos               (1- last-annotation-ending-pos)))
+      (cond
+       ((<= new-ending-pos
+            last-annotation-starting-pos) ; delete chain element or entire annotation
+        (if (= (length chain) 1)          ; the chain is formed by just one element, delete entirely
+            (annotate--delete-annotation-chain last-annotation)
+          (progn ; delete just the last element of the chain
+            (annotate-delete-chain-element last-annotation)
+            (when refontify-buffer
+              (font-lock-fontify-buffer)))))
+       (t
+        (move-overlay last-annotation last-annotation-starting-pos new-ending-pos))))))
+
 (defun annotate-change-annotation (pos)
   "Change annotation at point. If empty, delete annotation."
   (let* ((highlight       (annotate-annotation-at pos))
          (annotation-text (read-from-minibuffer annotate-annotation-prompt
                                                 (overlay-get highlight 'annotation))))
     (cl-labels ((delete (annotation)
-                 (let ((chain      (annotate-find-chain annotation)))
-                   (annotate-with-restore-modified-bit
-                    (dolist (single-element chain)
-                      (goto-char (overlay-end single-element))
-                      (move-end-of-line nil)
-                      (annotate--remove-annotation-property (overlay-start single-element)
-                                                            (overlay-end   single-element))
-                      (delete-overlay single-element)))))
+                  (annotate-with-restore-modified-bit
+                    (annotate--delete-annotation-chain annotation)))
                 (change (annotation)
                   (let ((chain (annotate-find-chain annotation)))
                     (dolist (single-element chain)
-                        (overlay-put single-element 'annotation annotation-text)))))
-    (save-excursion
-      (cond
-       ;; annotation was cancelled:
-       ((null annotation-text))
-       ;; annotation was erased:
-       ((string= "" annotation-text)
-        (delete highlight))
-       ;; annotation was changed:
-       (t
-        (change highlight)))))))
+                      (annotate-overlay-maybe-set-help-echo single-element annotation-text)
+                      (overlay-put single-element 'annotation annotation-text)))))
+      (save-excursion
+        (cond
+         ;; annotation was cancelled:
+         ((null annotation-text))
+         ;; annotation was erased:
+         ((string= "" annotation-text)
+          (delete highlight))
+         ;; annotation was changed:
+         (t
+          (change highlight)))))))
 
 (defun annotate-make-prefix ()
   "An empty string from the end of the line upto the annotation."
@@ -1696,6 +2069,11 @@ NOTE this assumes that annotations never overlaps"
           (previous-annotation-ends (1- (overlay-start annotation)))
         (previous-annotation-ends pos)))))
 
+(defun annotate-previous-annotation (annotation)
+ "Returns the annotation before `annotations' or nil if no such
+annotation exists."
+ (annotate-previous-annotation-ends (overlay-start (annotate-chain-first annotation))))
+
 (defun annotate-next-annotation-starts (pos)
   "Returns the previous annotation that ends before pos or nil if no annotation
 was found.
@@ -1713,8 +2091,13 @@ NOTE this assumes that annotations never overlaps"
           (next-annotation-ends (overlay-end annotation))
         (next-annotation-ends pos)))))
 
+(defun annotate-next-annotation (annotation)
+ "Returns the annotation after `annotations' or nil if no such
+annotation exists."
+ (annotate-next-annotation-starts (overlay-end (annotate-chain-last annotation))))
+
 (defun annotate-symbol-strictly-at-point ()
- "Return non nil if a symbol is at char immediately following
+ "Returns non nil if a symbol is at char immediately following
  the point. This is needed as `thing-at-point' family of
  functions returns non nil if the thing (a symbol in this case)
  is around the point, according to the documentation."
@@ -1769,14 +2152,17 @@ NOTE this assumes that annotations never overlaps"
           (right-ends))))
 
 (defun annotate-make-annotation (beginning ending annotation annotated-text)
+ "Make an annotation record that represent an annotation
+starting at `beginning', terminate at `ending' with annotation
+content `annotation' and annotated text `annotated-text'."
   (list beginning ending annotation annotated-text))
 
 (defun annotate-all-annotations ()
-  "Return a list of all annotations in the current buffer."
+  "Returns a list of all annotations in the current buffer."
   (cl-remove-if-not #'annotationp (overlays-in 0 (buffer-size))))
 
 (defun annotate-describe-annotations ()
-  "Return a list, suitable for database dump, of all annotations in the current buffer."
+  "Returns a list, suitable for database dump, of all annotations in the current buffer."
   (let ((all-annotations (cl-remove-if-not #'annotationp (overlays-in 0 (buffer-size))))
         (chain-visited   ()))
     (cl-remove-if #'null
@@ -1826,8 +2212,31 @@ sophisticated way than plain text"
                                          (and has-separator-p
                                               has-info-p))
                                      :info
-                                   nil))))))
-    (info-format-p)))
+                                   nil)))))
+              (gpg-format-p ()
+                            (with-temp-buffer
+                              (let* ((magic-0    #x8c)
+                                     (magic-1    #x0d)
+                                     (magic-4    #x03)
+                                     (magic-5    #x02)
+                                     (attributes (file-attributes filename))
+                                     (file-size  (file-attribute-size attributes)))
+                                (when (> file-size 6)
+                                  (let* ((bytes      (insert-file-contents-literally filename
+                                                                                     nil
+                                                                                     0
+                                                                                     7)))
+                                    (setf bytes
+                                          (cl-loop for i from 1 to 6 collect
+                                                   (elt (buffer-substring-no-properties i (1+ i))
+                                                        0)))
+                                    (when (and (= (logand (elt bytes 0) #x0000ff) magic-0)
+                                               (= (logand (elt bytes 1) #x0000ff) magic-1)
+                                               (= (logand (elt bytes 4) #x0000ff) magic-4)
+                                               (= (logand (elt bytes 5) #x0000ff) magic-5))
+                                      :encrypted-symmetric)))))))
+    (or (gpg-format-p)
+        (info-format-p)))) ;; keep this one for last as it is the slowest
 
 ;;;; summary window procedures
 
@@ -1861,6 +2270,8 @@ sophisticated way than plain text"
           (goto-char (button-get button 'go-to))))))))
 
 (defun annotate-summary-delete-annotation-button-pressed (button)
+ "Callback for summary window fired when a 'delete' button is
+pressed."
   (let* ((filename        (button-get button 'file))
          (beginning       (button-get button 'beginning))
          (ending          (button-get button 'ending))
@@ -1891,6 +2302,8 @@ sophisticated way than plain text"
       (update-visited-buffer-maybe))))
 
 (defun annotate-summary-replace-annotation-button-pressed (button)
+   "Callback for summary window fired when a 'replace' button is
+pressed."
   (let* ((filename             (button-get button 'file))
          (annotation-beginning (button-get button 'beginning))
          (annotation-ending    (button-get button 'ending))
@@ -1907,7 +2320,7 @@ sophisticated way than plain text"
         (annotate-dump-annotation-data replaced-annotation-db)
         (annotate-show-annotation-summary query)))))
 
-(defun annotate-show-annotation-summary (&optional arg-query)
+(defun annotate-show-annotation-summary (&optional arg-query cut-above-point)
  "Show a summary of all the annotations in a temp buffer, the
 results can be filtered with a simple query language: see
 `annotate-summary-filter-db'."
@@ -2023,7 +2436,8 @@ results can be filtered with a simple query language: see
                                ".*"))))
     (let* ((filter-query (get-query))
            (dump         (annotate-summary-filter-db (annotate-load-annotation-data t)
-                                                     filter-query)))
+                                                     filter-query
+                                                     cut-above-point)))
       (if (db-empty-p dump)
           (when annotate-use-messages
             (message "The annotation database is empty"))
@@ -2380,7 +2794,7 @@ OR         := 'or'
 NOT        := 'not'
 DELIMITER  := \" ; ASCII 34 (dec) 22 (hex)
 
-Note: this function return the annotation part of the record, see
+Note: this function returns the annotation part of the record, see
 `annotate-load-annotations'.
 
 "
@@ -2467,7 +2881,7 @@ Note: this function return the annotation part of the record, see
                           (list (format "Unknown operator: %s is not in '(and, or)"
                                         (annotate-summary-query-lexer-string operator-token))))))))))))))
 
-(defun annotate-summary-filter-db (annotations-dump query)
+(defun annotate-summary-filter-db (annotations-dump query remove-annotations-cutoff-point)
   "Filter an annotation database with a query.
 
 The argument `query' is a string that respect a simple syntax:
@@ -2502,7 +2916,12 @@ annotation, like this:
 
 - .* and \"not\"
  the \" can be used to escape strings
-"
+
+If you want to remove from summary the annotations that appears
+before a position in buffer set `remove-annotations-cutoff-point' to said
+position.
+
+The annotations in each record are sorted by starting point in ascending order."
   (let* ((parser             (annotate-summary-query-parse-expression))
          (filter-file        (lambda (file-mask annotation-dump)
                                (let ((filename
@@ -2514,27 +2933,48 @@ annotation, like this:
                                                     (annotate-annotation-string annotation-dump-2))
                                     annotation-dump-2)))
          (filter             (lambda (single-annotation)
-                                (let ((filtered-annotations (funcall parser
-                                                                     single-annotation
-                                                                     query
-                                                                     filter-file
-                                                                     filter-annotations)))
-                                  (setf filtered-annotations
-                                        (cl-remove-if 'null filtered-annotations))
-                                  (when filtered-annotations
-                                    (let ((filename (annotate-filename-from-dump
-                                                     single-annotation))
-                                          (checksum (annotate-checksum-from-dump
-                                                     single-annotation)))
-                                      (annotate-make-annotation-dump-entry filename
-                                                                           filtered-annotations
-                                                                           checksum))))))
-         (filtered           (mapcar filter annotations-dump)))
-    (cl-remove-if 'null filtered)))
+                               (let ((filtered-annotations (funcall parser
+                                                                    single-annotation
+                                                                    query
+                                                                    filter-file
+                                                                    filter-annotations)))
+                                 (setf filtered-annotations
+                                       (cl-remove-if 'null filtered-annotations))
+                                 (when filtered-annotations
+                                   (let ((filename (annotate-filename-from-dump
+                                                    single-annotation))
+                                         (checksum (annotate-checksum-from-dump
+                                                    single-annotation)))
+                                     (setf filtered-annotations
+                                           (sort filtered-annotations
+                                                 'annotate-db-annotations-starts-before-p))
+                                     (when remove-annotations-cutoff-point
+                                       (setf filtered-annotations
+                                             (cl-remove-if (lambda (a)
+                                                             (< (annotate-ending-of-annotation a)
+                                                                remove-annotations-cutoff-point))
+                                                           filtered-annotations)))
+                                     (annotate-make-annotation-dump-entry filename
+                                                                          filtered-annotations
+                                                                          checksum))))))
+         (filtered           (cl-remove-if 'null (mapcar filter annotations-dump))))
+    filtered))
 
 ;;;; end of filtering: parser, lexer, etc.
 
-;;;; switching database
+;;;; misc commands
+
+(defun annotate-summary-of-file-from-current-pos ()
+ "Shows a summary window that contains only the annotations in
+the current buffer and that starts after the current cursor's
+position."
+  (interactive)
+  (with-current-buffer (current-buffer)
+    (when buffer-file-name
+      (annotate-show-annotation-summary buffer-file-name (point)))))
+
+
+;;; switching database
 
 (defun annotate-buffers-annotate-mode ()
  "Returns a list of all the buffers that have

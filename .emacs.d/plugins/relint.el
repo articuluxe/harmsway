@@ -3,8 +3,8 @@
 ;; Copyright (C) 2019-2020 Free Software Foundation, Inc.
 
 ;; Author: Mattias Engdegård <mattiase@acm.org>
-;; Version: 1.18
-;; Package-Requires: ((xr "1.19") (emacs "26.1"))
+;; Version: 1.19
+;; Package-Requires: ((xr "1.20") (emacs "26.1"))
 ;; URL: https://github.com/mattiase/relint
 ;; Keywords: lisp, regexps
 
@@ -29,6 +29,12 @@
 
 ;;; News:
 
+;; Version 1.19
+;; - Progress indicator in `relint-directory'
+;; - Some performance improvements
+;; - Fix some false positives in the regexp provenance detector
+;; - Scan assignments to `font-lock-defaults' correctly
+;; - Recognise regexp arguments to functions in the s.el package
 ;; Version 1.18:
 ;; - New check for ineffective backslashes in all strings (not just regexps)
 ;; - Warnings emitted in order of their position in file or buffer
@@ -444,6 +450,7 @@ or (NAME val VAL), for values.")
     string-join string-trim-left string-trim-right string-trim
     string-prefix-p string-suffix-p
     string-blank-p string-remove-prefix string-remove-suffix
+    string-search string-replace
     vector aref elt vconcat
     char-to-string string-to-char
     number-to-string string-to-number int-to-string
@@ -942,7 +949,7 @@ not be evaluated safely."
        ((eq head 'featurep)
         (let ((arg (relint--eval (car body))))
           (cond ((eq arg 'xemacs) nil)
-                ((memq arg '(emacs mule)) t)
+                ((memq arg '(emacs mule font-lock lisp-float-type)) t)
                 (t (throw 'relint-eval 'no-value)))))
 
        ;; Locally defined functions: try evaluating.
@@ -1153,6 +1160,22 @@ source."
                                 (if literal (cons 1 elem-path) elem-path))))
    form path))
 
+(defun relint--check-font-lock-defaults (form name pos path)
+  "Check a value for `font-lock-defaults'."
+  (let ((val (relint--eval-or-nil form)))
+    (when (consp val)
+     (cond
+      ((symbolp (car val))
+       (unless (memq (car val) relint--checked-variables)
+         (relint--check-font-lock-keywords (car val) name pos path)))
+      ((consp (car val))
+       (let ((keywords (car val)))
+         (while keywords
+           (when (and (symbolp (car keywords))
+                      (not (memq (car keywords) relint--checked-variables)))
+             (relint--check-font-lock-keywords (car keywords) name pos path))
+           (setq keywords (cdr keywords)))))))))
+
 (defun relint--check-font-lock-keywords (form name pos path)
   "Check a font-lock-keywords list.  A regexp can be found in an element,
 or in the car of an element."
@@ -1267,12 +1290,36 @@ EXPANDED is a list of expanded functions, to prevent recursion."
    ((atom expr) nil)
    ((memq (car expr) relint--regexp-returning-functions)
     (list (car expr)))
-   ((memq (car expr) '(looking-at re-search-forward re-search-backward
-                       string-match string-match-p looking-back looking-at-p))
+   ((memq (car expr)
+          ;; These forms never produce regexps at all, but are listed here
+          ;; to prevent false positives since their bodies often do.
+          '(while
+            looking-at re-search-forward re-search-backward
+            string-match string-match-p looking-back looking-at-p
+            replace-regexp
+            query-replace-regexp
+            posix-looking-at posix-search-backward
+            posix-search-forward
+            posix-string-match
+            search-forward-regexp search-backward-regexp
+            kill-matching-buffers
+            keep-lines flush-lines how-many
+            delete-matching-lines delete-non-matching-lines
+            count-matches
+            s-matches? s-matches-p s-matched-positions-all
+            s-count-matches s-count-matches-all))
     nil)
    ((null (cdr (last expr)))
     (let* ((head (car expr))
-           (args (if (memq head '(if when unless while))
+           (args
+            (if (memq head
+                      ;; These forms may generate regexps but the provenance
+                      ;; of their first argument is irrelevant.
+                      ;; This list, too, could be expanded vastly.
+                      '(if when unless
+                        replace-regexp-in-string
+                        s-match-strings-all s-match s-slice-at
+                        s-split s-split-up-to))
                      (cddr expr)
                    (cdr expr)))
            (alias (assq head relint--alias-defs)))
@@ -1760,8 +1807,11 @@ directly."
            (cond
             ((memq name relint--known-regexp-variables)
              (relint--check-re expr name pos (cons i path)))
-            ((memq name '(font-lock-defaults font-lock-keywords))
+            ((and (symbolp name) (string-match-p (rx "font-lock-keywords")
+                                                 (symbol-name name)))
              (relint--check-font-lock-keywords expr name pos (cons i path)))
+            ((eq name 'font-lock-defaults)
+             (relint--check-font-lock-defaults expr name pos (cons i path)))
             ((eq name 'imenu-generic-expression)
              (relint--check-imenu-generic-expression
               expr name pos (cons i path)))
@@ -1861,7 +1911,11 @@ directly."
                'search-forward-regexp 'search-backward-regexp
                'kill-matching-buffers
                'keep-lines 'flush-lines 'how-many
-               'delete-matching-lines 'delete-non-matching-lines 'count-matches)
+               'delete-matching-lines 'delete-non-matching-lines 'count-matches
+               ;; From s.el
+               's-matches? 's-matches-p 's-match-strings-all
+               's-matched-positions-all 's-match 's-slice-at
+               's-count-matches 's-count-matches-all 's-split 's-split-up-to)
           ,re-arg . ,_)
         (unless (and (symbolp re-arg)
                      (memq re-arg relint--checked-variables))
@@ -1964,8 +2018,8 @@ directly."
                                   (symbol-name name)))
               (relint--check-list re-arg name pos (cons 2 path) nil)
               (push name relint--checked-variables))
-             ((string-match-p (rx "font-lock-keywords")
-                              (symbol-name name))
+             ((and (symbolp name) (string-match-p (rx "font-lock-keywords")
+                                                  (symbol-name name)))
               (relint--check-font-lock-keywords re-arg name pos (cons 2 path))
               (push name relint--checked-variables))
              ((eq name 'compilation-error-regexp-alist-alist)
@@ -2035,7 +2089,10 @@ directly."
        (`(set (make-local-variable ',name) ,expr)
         (cond ((memq name relint--known-regexp-variables)
                (relint--check-re expr name pos (cons 2 path)))
-              ((memq name '(font-lock-defaults font-lock-keywords))
+              ((eq name 'font-lock-defaults)
+               (relint--check-font-lock-defaults expr name pos (cons 2 path)))
+              ((and (symbolp name) (string-match-p (rx "font-lock-keywords")
+                                                   (symbol-name name)))
                (relint--check-font-lock-keywords expr name pos (cons 2 path)))
               ((eq name 'imenu-generic-expression)
                (relint--check-imenu-generic-expression
@@ -2200,9 +2257,9 @@ STRING-START is the start of the string literal (first double quote)."
                                   (seq ";" (0+ nonl))
                                   (not (any ?\" ?\; ?? ?\\))))))
       (goto-char (match-end 0)))
-    (when (looking-at (rx ?\"))
+    (when (eq (following-char) ?\")
       (let ((string-start (point)))
-        (goto-char (match-end 0))
+        (forward-char)
         (while (not (looking-at (rx (or ?\" eot))))
           (when (looking-at
                  (rx (1+ (or (seq ?\\ (any "0-9" "xuUN" "abfnrtv"
@@ -2305,8 +2362,15 @@ STRING-START is the start of the string literal (first double quote)."
 TARGET is the file or directory to use for a repeated run."
   (relint--prepare-error-buffer target base-dir error-buffer nil)
   (let ((total-errors 0)
-        (total-suppressed 0))
+        (total-suppressed 0)
+        (nfiles (length files))
+        (count 0))
     (dolist (file files)
+      (when (and (not noninteractive)
+                 (zerop (% count 50)))
+        (message "Scanned %d/%d file%s..."
+                 count nfiles (if (= nfiles 1) "" "s")))
+      (setq count (1+ count))
       (with-temp-buffer
         (emacs-lisp-mode)
         (insert-file-contents file)
@@ -2327,8 +2391,13 @@ TARGET is the file or directory to use for a repeated run."
     (cons total-errors total-suppressed)))
 
 (defun relint--tree-files (dir)
-  (directory-files-recursively
-   dir (rx bos (not (any ".")) (* anything) ".el" eos)))
+  (let ((re (rx bos (not (any ".")) (* anything) ".el" eos)))
+    (if (eval-when-compile (>= emacs-major-version 27))
+        (directory-files-recursively
+         dir re nil
+         ;; Save time by not pointlessly descending into huge .git directories.
+         (lambda (s) (not (string-suffix-p "/.git" s))))
+      (directory-files-recursively dir re))))
 
 (defun relint--scan-buffer (buffer)
   "Scan BUFFER; return (COMPLAINTS . SUPPRESSED) where
@@ -2366,12 +2435,10 @@ and SUPPRESSED is the number of suppressed diagnostics."
   "Scan all *.el files in DIR for regexp-related errors."
   (interactive "DRelint directory: ")
   (message "Finding .el files in %s..." dir)
-  (let* ((files (relint--tree-files dir))
-         (n (length files)))
-    (if (not files)
-        (message "No .el files found.")
-      (message "Scanning %d file%s..." n (if (= n 1) "" "s"))
-      (relint--scan-files files dir dir (relint--get-error-buffer)))))
+  (let ((files (relint--tree-files dir)))
+    (if files
+        (relint--scan-files files dir dir (relint--get-error-buffer))
+      (message "No .el files found."))))
 
 ;;;###autoload
 (defun relint-current-buffer ()

@@ -1,6 +1,6 @@
 ;;; hl-todo.el --- highlight TODO and similar keywords  -*- lexical-binding: t -*-
 
-;; Copyright (C) 2013-2020  Jonas Bernoulli
+;; Copyright (C) 2013-2021  Jonas Bernoulli
 
 ;; Author: Jonas Bernoulli <jonas@bernoul.li>
 ;; Homepage: https://github.com/tarsius/hl-todo
@@ -172,6 +172,12 @@ including alphanumeric characters, cannot be used here."
   :group 'hl-todo
   :type 'string)
 
+(defcustom hl-todo-require-punctuation nil
+  "Whether to require punctuation after keywords."
+  :package-version '(hl-todo . "3.3.0")
+  :group 'hl-todo
+  :type 'boolean)
+
 (defvar-local hl-todo--regexp nil)
 (defvar-local hl-todo--keywords nil)
 
@@ -190,7 +196,8 @@ including alphanumeric characters, cannot be used here."
                 "\\(" (mapconcat #'car hl-todo-keyword-faces "\\|") "\\)"
                 "\\>"
                 (and (not (equal hl-todo-highlight-punctuation ""))
-                     (concat "[" hl-todo-highlight-punctuation "]*"))
+                     (concat "[" hl-todo-highlight-punctuation "]"
+                             (if hl-todo-require-punctuation "+" "*")))
                 "\\)")))
 
 (defun hl-todo--setup ()
@@ -202,11 +209,14 @@ including alphanumeric characters, cannot be used here."
 
 (defvar hl-todo--syntax-table (copy-syntax-table text-mode-syntax-table))
 
+(defvar syntax-ppss-table) ; Silence Emacs 25's byte-compiler.
+
 (defun hl-todo--search (&optional regexp bound backward)
   (unless regexp
     (setq regexp hl-todo--regexp))
   (cl-block nil
-    (while (let ((case-fold-search nil))
+    (while (let ((case-fold-search nil)
+                 (syntax-ppss-table (syntax-table)))
              (with-syntax-table hl-todo--syntax-table
                (funcall (if backward #'re-search-backward #'re-search-forward)
                         regexp bound t)))

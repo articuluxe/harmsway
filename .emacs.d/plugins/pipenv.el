@@ -1,11 +1,11 @@
-;;; pipenv.el --- A Pipenv porcelain.  -*- lexical-binding: t; -*-
+;;; pipenv.el --- A Pipenv porcelain  -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2017-2018 by Paul Walsh
 
 ;; Author: Paul Walsh <paulywalsh@gmail.com>
 ;; URL: https://github.com/pwalsh/pipenv.el
 ;; Version: 0.0.1-beta
-;; Package-Requires: ((emacs "25.1")(f "0.19.0")(s "1.12.0")(pyvenv "1.20"))
+;; Package-Requires: ((emacs "25.1") (s "1.12.0") (pyvenv "1.20"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -26,7 +26,6 @@
 
 ;;; Code:
 
-(require 'f)
 (require 'python)
 (require 's)
 (require 'subr-x)
@@ -117,6 +116,9 @@
 
 (defun pipenv--force-wait (process)
   "Block until PROCESS exits successfully."
+  ;; Adding a sit-for in a sentinel seems to give the process time to update its
+  ;; status which can help process-live-p from ever returning true
+  (set-process-sentinel process (lambda (proc event) (sit-for 0.1)))
   (while (process-live-p process)
     (sit-for 0.1 t)))
 
@@ -135,13 +137,12 @@
       ;; Interpret ANSI escape sequences from Pipenv
       (ansi-color-apply-on-region (point-min) (point-max)))))
 
-(defun pipenv--process-filter-variable-insert(process response)
+(defun pipenv--process-filter-variable-insert (process response)
   "Filter for PROCESS, which sets several global variables based on RESPONSE."
   (when (and
          (s-equals? (nth 0 (last (process-command process))) "--venv")
-         (f-directory? response))
-    (setq python-shell-virtualenv-root response))
-  (setq pipenv-process-response response))
+         (file-directory-p response))
+    (setq python-shell-virtualenv-root response)))
 
 (defun pipenv--process-filter (process response)
   "Pipenv default filter stack PROCESS and RESPONSE handling."
@@ -152,7 +153,7 @@
 (defun pipenv--get-executables-dir ()
   "Get the directory of executables in an active virtual environment, or nil."
   (when (and python-shell-virtualenv-root
-             (f-directory? python-shell-virtualenv-root))
+             (file-directory-p python-shell-virtualenv-root))
     (concat
      (file-name-as-directory python-shell-virtualenv-root)
      (if (eq system-type 'windows-nt) "Scripts" "bin"))))
@@ -166,24 +167,26 @@
    :coding 'utf-8-unix
    :filter filter
    :sentinel sentinel
-   :connection-type 'pipe
-  ))
+   :connection-type 'pipe))
 
 (defun pipenv--command (args)
   "Call Pipenv with ARGS and the default filter stack."
   (let ((command (cons pipenv-executable args))
         (filter 'pipenv--process-filter)
-	(sentinel 'pipenv--messaging-sentinel))
+        (sentinel 'pipenv--messaging-sentinel))
     (pipenv--make-pipenv-process command filter sentinel)))
+
+(defun pipenv--f-parent (path)
+  "Return the parent directory to PATH.  see `f-parent'."
+  (let ((parent (file-name-directory
+                 (directory-file-name (f-expand path default-directory)))))
+    (if (file-name-absolute-p path)
+        (directory-file-name parent)
+      (file-relative-name parent))))
 
 ;;
 ;; Interactive commands that implement the Pipenv interface in Emacs.
 ;;
-
-(defun pipenv-update ()
-  "Update Pipenv and pip to latest."
-  (interactive)
-  (pipenv--command (list "--update")))
 
 (defun pipenv-where ()
   "Return path to project home directory, or a message if not in a Pipenv project."
@@ -257,7 +260,7 @@ markers provided in Pipfile."
   (pipenv--command (list "graph")))
 
 (defun pipenv-install(packages)
-  "Installs PACKAGES and adds them to Pipfile, \
+  "Installs PACKAGES and adds them to Pipfile,
 or (if none is given), installs all packages."
   (interactive "sWhich Python packages should be installed (separate with space)? ")
   (pipenv--command (cons "install" (pipenv--force-list packages))))
@@ -280,7 +283,7 @@ or (if none is given), installs all packages."
                       (s-trim)
                       (s-replace-all replacements)))
          (ideal-path (if (s-contains? suffix real-path)
-                         (f-dirname real-path)
+                         (pipenv--f-parent real-path)
                        real-path)))
     (find-file ideal-path)))
 
@@ -320,7 +323,7 @@ A poor-man's equivalent of subprocess.check_output in Python."
     (comint-clear-buffer)))
 
 (defun pipenv-uninstall (packages)
-  "Uninstalls PACKAGES and removes from Pipfile."
+  "Uninstall PACKAGES and remove from Pipfile."
   (interactive "sWhich Python packages should be uninstalled (separate with space)? ")
   (pipenv--command (cons "uninstall" (pipenv--force-list packages))))
 
@@ -335,7 +338,7 @@ to latest compatible versions."
 ;;
 
 (defun pipenv-activate ()
-  "Activate the Python version from Pipenv. Return nil if no project."
+  "Activate the Python version from Pipenv.  Return nil if no project."
   (interactive)
   (when (pipenv-project?)
     (pipenv--force-wait (pipenv-venv))
@@ -379,16 +382,20 @@ to latest compatible versions."
 ;; Integration with 3rd party packages.
 ;;
 
+(defvar flycheck-disabled-checkers)
+(defvar flycheck-enabled-checkers)
+(defvar flycheck-executable-find)
+
 (defun pipenv--verify-python-checkers ()
-  "Manually verify checkers for python-mode"
-  (setq checkers (flycheck-defined-checkers 'modes))
-  (while checkers
-    (setq checker (car checkers))
-    (when (memq 'python-mode (flycheck-checker-get checker 'modes))
-      (setq flycheck-disabled-checkers (remq checker flycheck-disabled-checkers))
-      (setq flycheck-enabled-checkers (remq checker flycheck-enabled-checkers))
-      (flycheck-may-use-checker checker))
-    (setq checkers (cdr checkers))))
+  "Manually verify checkers for `python-mode'."
+  (let ((checkers (flycheck-defined-checkers 'modes)))
+    (while checkers
+      (let ((checker (car checkers)))
+        (when (memq 'python-mode (flycheck-checker-get checker 'modes))
+          (setq flycheck-disabled-checkers (remq checker flycheck-disabled-checkers))
+          (setq flycheck-enabled-checkers (remq checker flycheck-enabled-checkers))
+          (flycheck-may-use-checker checker)))
+      (setq checkers (cdr checkers)))))
 
 (defun pipenv-activate-flycheck ()
   "Activate integration of Pipenv with Flycheck."

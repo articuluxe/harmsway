@@ -220,6 +220,18 @@ read it before opening a new issue about your will.")
                (elfeed-log-warn-level-face :foreground ,dracula-orange)
                (elfeed-log-info-level-face :foreground ,dracula-cyan)
                (elfeed-log-debug-level-face :foreground ,dracula-comment)
+               ;; elpher
+               (elpher-gemini-heading1 :inherit bold :foreground ,dracula-pink
+                                       ,@(when dracula-enlarge-headings
+                                           (list :height dracula-height-title-1)))
+               (elpher-gemini-heading2 :inherit bold :foreground ,dracula-purple
+                                       ,@(when dracula-enlarge-headings
+                                           (list :height dracula-height-title-2)))
+               (elpher-gemini-heading3 :weight normal :foreground ,dracula-green
+                                       ,@(when dracula-enlarge-headings
+                                           (list :height dracula-height-title-3)))
+               (elpher-gemini-preformatted :inherit fixed-pitch
+                                           :foreground ,dracula-orange)
                ;; enh-ruby
                (enh-ruby-heredoc-delimiter-face :foreground ,dracula-yellow)
                (enh-ruby-op-face :foreground ,dracula-pink)
@@ -234,6 +246,18 @@ read it before opening a new issue about your will.")
                (font-latex-match-reference-keywords :foreground ,dracula-cyan)
                (font-latex-match-variable-keywords :foreground ,dracula-fg)
                (font-latex-string-face :foreground ,dracula-yellow)
+               ;; gemini
+               (gemini-heading-face-1 :inherit bold :foreground ,dracula-pink
+                                      ,@(when dracula-enlarge-headings
+                                          (list :height dracula-height-title-1)))
+               (gemini-heading-face-2 :inherit bold :foreground ,dracula-purple
+                                      ,@(when dracula-enlarge-headings
+                                          (list :height dracula-height-title-2)))
+               (gemini-heading-face-3 :weight normal :foreground ,dracula-green
+                                      ,@(when dracula-enlarge-headings
+                                          (list :height dracula-height-title-3)))
+               (gemini-heading-face-rest :weight normal :foreground ,dracula-yellow)
+               (gemini-quote-face :foreground ,dracula-purple)
                ;; gnus-group
                (gnus-group-mail-1 :foreground ,dracula-pink :weight bold)
                (gnus-group-mail-1-empty :inherit gnus-group-mail-1 :weight normal)
@@ -442,7 +466,7 @@ read it before opening a new issue about your will.")
                (magit-process-ng :foreground ,dracula-orange :weight bold)
                (magit-process-ok :foreground ,dracula-green :weight bold)
                ;; markdown
-               (markdown-blockquote-face :foreground ,dracula-orange)
+               (markdown-blockquote-face :foreground ,dracula-purple)
                (markdown-code-face :foreground ,dracula-orange)
                (markdown-footnote-face :foreground ,other-blue)
                (markdown-header-face :weight normal)
@@ -591,6 +615,10 @@ read it before opening a new issue about your will.")
                (outline-5 :foreground ,dracula-cyan)
                (outline-6 :foreground ,dracula-orange)
                ;; powerline
+               (powerline-active1 :background ,dracula-bg :foreground ,dracula-pink)
+               (powerline-active2 :background ,dracula-bg :foreground ,dracula-pink)
+               (powerline-inactive1 :background ,bg2 :foreground ,dracula-purple)
+               (powerline-inactive2 :background ,bg2 :foreground ,dracula-purple)
                (powerline-evil-base-face :foreground ,bg2)
                (powerline-evil-emacs-face :inherit powerline-evil-base-face :background ,dracula-yellow)
                (powerline-evil-insert-face :inherit powerline-evil-base-face :background ,dracula-cyan)
@@ -619,6 +647,10 @@ read it before opening a new issue about your will.")
                (rpm-spec-section-face :foreground ,dracula-yellow)
                (rpm-spec-tag-face :foreground ,dracula-cyan)
                (rpm-spec-var-face :foreground ,dracula-orange)
+               ;; selectrum-mode
+               (selectrum-current-candidate :foreground ,dracula-pink)
+               (selectrum-primary-highlight :foreground ,dracula-orange)
+               (selectrum-secondary-highlight :foreground ,dracula-green)
                ;; show-paren
                (show-paren-match-face :background unspecified
                                       :foreground ,dracula-cyan

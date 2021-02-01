@@ -1,57 +1,8 @@
-;;; kaolin-themes-lib.el --- Kaolin-themes library, provides common parts for the package  -*- lexical-binding: t; -*-
+;;; kaolin-themes-lib.el --- Kaolin-themes library, provides common parts for the package.  -*- lexical-binding: t; -*-
 ;;; Commentary:
 ;;
-;;; Color order
-;; TODO: add color close to color5 but satured
-;;
-;; color0 - almost pure/contrast >= 70 sat & > 70 val
-;; color1 - regular
-;; color2 - dark
-;; color3 - light/soft
-;; color4 - desaturated/faded/muted
-;;
-;; color5 - midnight <= 50 sat & < 30 value
-;; color6 - very dark color 20-30 sat & val; see spring-green
-;; color7 - dark grayish sat ~20 & val 50+; adjust with gray3; see erin7
-;; color8 - light grayish; sat ~10-15 & val ~ 65+
-;; color9 - very light color hue 8-17 value ~90-95
-;;
-;;; Color list
-;;
-;; Color name - color hex - Kaolin hue
-;;
-;; Black #020203 - 240
-;; Gray #CED8D9 - 189
-;; White #FDFDFF - 240
-;;
-;; Colors:
-;; Red #FF0000 - 358-360
-;; Brown #A33C28 - 6
-;; Vermilion #FF3F00 - 17
-;; Orange #FF7F00 - 36
-;; Amber #FFBF00 - 43
-;; Yellow #FFFF00 - 60
-;; Lime #BFFF00 - 75
-;; Chartreuse #7FFF00 - 86
-;; Harlequin #3FFF00 - 104
-;; Green #00FF00 - 120
-;; Erin #00FF3F - 135
-;; Spring-green #00FF7F - 150
-;; Aquamarine #00FFBF - 163
-;; Teal #00A89D - 178
-;; Cyan #00FFFF - 182
-;; Capri/Deep Sky Blue #00BFFF - 201
-;; Azure/Sky Blue #007FFF - 210
-;; Cerulean #003FFF - 221
-;; Blue #0000FF - 238
-;; Ultramarine #3F00FF - 254
-;; Violet #7F00FF - 270
-;; Purple #BF00FF - 279
-;; Magenta/Fuchsia #FF00FF - 300
-;; Cerise #FF00BF - 315
-;; Pink/rose #FF007F - 335
-;; Crimson #FF003F - 347
-;;
+
+;; TODO: change :bold and :italic to :weight and :slant
 
 (defun color-lab-luminance (color)
   "Return the luminance through LAB color space of a color string (e.g. \"#ffaa00\", \"blue\")."
@@ -463,7 +414,7 @@
         ('color  comment-alt)
         ('bright comment)))
 
-    (kaolin-org-height (if kaolin-themes-org-scale-headings 1.1 1.0))
+    (kaolin-org-heading-size (if kaolin-themes-org-scale-headings 1.1 1.0))
 
     (hl         aquamarine3)
     (hl-bg      comment)
@@ -475,7 +426,7 @@
     (todo red1)
     (done spring-green3)
 
-    (adaptive-fg (if (color-dark-p bg1) white0 bg1))
+    (adaptive-fg (if (color-dark-p bg1) fg1 bg1))
     (tooltip-bg bg2)
     (tooltip-fg fg2)
     (tooltip-hl-bg brown2)
@@ -524,7 +475,7 @@
 
     ;; Custom buttons
     (button amber6)
-    (button-bg doc)
+    (button-color keyword)
     (button-border (if (color-dark-p bg1) gray3 white4))
     (button-hl amber3)
 
@@ -632,9 +583,9 @@
     ;; Interface
     (package-name                   (:inherit 'link :underline nil))
     (button                         (:inherit 'link))
-    (custom-button                  (:background button-bg :foreground adaptive-fg :box (:line-width 2 :color button-bg :style 'none) :height 0.9))
-    (custom-button-mouse            (:inherit 'custom-button :foreground button-hl :box (:line-width 2 :color button-hl :style 'none)))
-    (custom-button-pressed          (:inherit 'custom-button :foreground button-hl :box (:line-width 2 :color button-border :style 'none)))
+    (custom-button                  (:background nil :foreground button-color :box (:line-width 1 :color button-color :style 'none) :height 0.9))
+    (custom-button-mouse            (:inherit 'custom-button :foreground button-hl :box (:line-width 1 :color button-hl :style 'none)))
+    (custom-button-pressed          (:inherit 'custom-button :foreground button-hl :box (:line-width 1 :color button-border :style 'none)))
     (custom-button-unraised         (:inherit 'custom-button))
     (custom-button-pressed-unraised (:inherit 'custom-button-pressed))
     (custom-group-tag               (:foreground header :height 1.2 :weight 'bold))
@@ -643,7 +594,7 @@
     (custom-comment                 (:background hl-bg :foreground fg1))
     (custom-comment-tag             (:foreground comment))
     (custom-documentation           (:foreground fg1))
-    (custom-visibility              (:background nil :foreground cyan1 :height 0.9 :underline underline))
+    (custom-visibility              (:background nil :foreground functions :underline underline))
     (custom-state                   (:background nil :foreground str))
     (custom-changed                 (:background nil :foreground diff-mod))
     (custom-set                     (:background nil :foreground done))
@@ -654,7 +605,7 @@
     (widget-documentation           (:background nil :foreground var))
     ;; (widget-button                  (:background nil :foreground keyword))
     (widget-button-pressed          (:background nil :foreground builtin))
-    (widget-field                   (:background bg2 :foreground fg2 :box (:line-width 2 :color bg4 :style nil)))
+    (widget-field                   (:background bg3 :foreground fg2 :box (:line-width 2 :color bg4 :style nil)))
     (widget-single-line-field       (:inherit 'widget-field))
 
     ;; Dashboard
@@ -1380,6 +1331,18 @@
     (term-color-white   (:foreground kaolin-white))
     (term-underline     (:inherit 'underline))
 
+    ;; vterm
+    ;; TODO: add support for all 16 colors, use functions for background
+    (vterm               (:foreground fg1))
+    (vterm-color-black   (:background kaolin-black :foreground kaolin-black))
+    (vterm-color-red     (:background kaolin-red :foreground kaolin-red))
+    (vterm-color-green   (:background kaolin-green :foreground kaolin-green))
+    (vterm-color-yellow  (:background kaolin-yellow :foreground kaolin-yellow))
+    (vterm-color-blue    (:background kaolin-blue :foreground kaolin-blue))
+    (vterm-color-magenta (:background kaolin-magenta :foreground kaolin-magenta))
+    (vterm-color-cyan    (:background kaolin-cyan :foreground kaolin-cyan))
+    (vterm-color-white   (:background kaolin-white :foreground kaolin-white))
+
     ;; EShell
     (eshell-prompt        (:foreground prompt :bold bold))
     (eshell-ls-directory  (:foreground kaolin-blue :bold bold))
@@ -1439,7 +1402,7 @@
     (org-quote                     (:background bg2 :foreground fg2 :italic italic))
     (org-verse                     (:foreground fg3 :italic italic))
 
-    (org-level-1            (:foreground keyword :bold bold :height kaolin-org-height))
+    (org-level-1            (:foreground keyword :bold bold :height kaolin-org-heading-size))
     (org-level-2            (:foreground builtin  :bold nil))
     (org-level-3            (:foreground num :bold nil))
     (org-level-4            (:foreground const :bold nil))
@@ -1457,6 +1420,18 @@
     (org-scheduled-today         (:foreground functions :bold bold))
     (org-sexp-date               (:foreground fg4))
     (org-time-grid               (:foreground comment))
+
+    ;; org-habit
+    ;; TODO: bg blend
+    (org-habit-clear-face (:background kaolin-blue))
+    (org-habit-clear-future-face (:background bg4))
+    (org-habit-ready-face (:background diff-add))
+    (org-habit-ready-future-face (:background diff-bg-add))
+    (org-habit-alert-face (:background diff-mod))
+    (org-habit-alert-future-face (:background diff-bg-mod))
+    (org-habit-overdue-face (:background diff-rem))
+    (org-habit-overdue-future-face (:background diff-bg-rem))
+
 
     ;; Emmet
     (emmet-preview-input   (:foreground nil :background nil))

@@ -1023,6 +1023,15 @@
    `(spaceline-read-only ((t (:foreground ,bg :background ,purple))))
    `(spaceline-unmodified ((t (:foreground ,bg :background ,orange))))
 
+   ;; speedbar
+   `(speedbar-button-face ((t (:inherit button))))
+   `(speedbar-directory-face ((t (:inherit dired-directory))))
+   `(speedbar-file-face ((t (:foreground ,file))))
+   `(speedbar-highlight-face ((t (:inherit highlight))))
+   `(speedbar-selected-face ((t (:foreground ,selection))))
+   `(speedbar-separator-face ((t (:foreground ,separator))))
+   `(speedbar-tag-face ((t (:foreground ,tag))))
+
    ;; term
    `(term-color-black ((t (:foreground ,darkest-gray :background ,darkest-gray))))
    `(term-color-blue ((t (:foreground ,blue :background ,blue))))
@@ -1076,7 +1085,7 @@
    `(web-mode-css-pseudo-class-face ((t (:foreground ,blue))))
    `(web-mode-css-selector-face ((t (:foreground ,blue))))
    `(web-mode-css-string-face ((t (:foreground ,yellow))))
-   `(web-mode-current-element-highlight-face ((t (:background ,black))))
+   `(web-mode-current-element-highlight-face ((t (:inherit highlight))))
    `(web-mode-doctype-face ((t (:inherit font-lock-doc-face))))
    `(web-mode-error-face ((t (:inherit error))))
    `(web-mode-folded-face ((t (:underline t))))

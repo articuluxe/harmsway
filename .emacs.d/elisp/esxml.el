@@ -4,7 +4,7 @@
 ;; Author: Evan Izaksonas-Smith <izak0002 at umn dot edu>
 ;; Maintainer: Evan Izaksonas-Smith
 ;; Created: 15th August 2012
-;; Version: 0.3.4
+;; Version: 0.3.5
 ;; Keywords: tools, lisp, comm
 ;; Description: A library for easily generating XML/XHTML in elisp
 ;;
@@ -117,16 +117,20 @@ it suitable for hindsight testing."
 ;; represented as a string, non dynamic portions of the page may be
 ;; precached quite easily.
 (defun esxml--to-xml-recursive (esxml)
-  (if (stringp esxml) esxml
-    (pcase-let ((`(,tag ,attrs . ,body) esxml))
-      ;; code goes here to catch invalid data.
-      (concat "<" (symbol-name tag)
-              (when attrs
-                (concat " " (mapconcat 'esxml--convert-pair attrs " ")))
-              (if body
-                  (concat ">" (mapconcat 'esxml--to-xml-recursive body "")
-                          "</" (symbol-name tag) ">")
-                "/>")))))
+  (pcase esxml
+    ((pred stringp)
+     esxml)
+    (`(comment nil ,body)
+     (concat "<!--" body "-->"))
+    (`(,tag ,attrs . ,body)
+     ;; code goes here to catch invalid data.
+     (concat "<" (symbol-name tag)
+             (when attrs
+               (concat " " (mapconcat 'esxml--convert-pair attrs " ")))
+             (if body
+                 (concat ">" (mapconcat 'esxml--to-xml-recursive body "")
+                         "</" (symbol-name tag) ">")
+               "/>")))))
 
 (defun esxml-to-xml (esxml)
   "This translates an esxml expression, i.e. that which is
@@ -163,26 +167,29 @@ STRING: if the esxml expression is a string it is returned
   "This translates an esxml expresion as `esxml-to-xml' but
 indents it for ease of human readability, it is neccesarrily
 slower and will produce longer output."
-  (cond ((stringp esxml) esxml)
-        ((and (listp esxml)
-              (> (length esxml) 1))
-         (pcase-let ((`(,tag ,attrs . ,body) esxml))
-           (check-type tag symbol)
-           (check-type attrs attrs)
-           (concat "<" (symbol-name tag)
-                   (when attrs
-                     (concat " " (mapconcat 'esxml--convert-pair attrs " ")))
-                   (if body
-                       (concat ">" (if (every 'stringp body)
-                                       (mapconcat 'identity body " ")
-                                     (concat "\n"
-                                             (replace-regexp-in-string
-                                              "^" "  "
-                                              (mapconcat 'pp-esxml-to-xml body "\n"))
-                                             "\n"))
-                               "</" (symbol-name tag) ">")
-                     "/>"))))
-        (t (error "%s is not a valid esxml expression" esxml))))
+  (pcase esxml
+    ((pred stringp)
+     esxml)
+    (`(comment nil ,body)
+     (concat "<!--" body "-->"))
+    (`(,tag ,attrs . ,body)
+     (check-type tag symbol)
+     (check-type attrs attrs)
+     (concat "<" (symbol-name tag)
+             (when attrs
+               (concat " " (mapconcat 'esxml--convert-pair attrs " ")))
+             (if body
+                 (concat ">" (if (every 'stringp body)
+                                 (mapconcat 'identity body " ")
+                               (concat "\n"
+                                       (replace-regexp-in-string
+                                        "^" "  "
+                                        (mapconcat 'pp-esxml-to-xml body "\n"))
+                                       "\n"))
+                         "</" (symbol-name tag) ">")
+               "/>")))
+    (_
+     (error "%s is not a valid esxml expression" esxml))))
 
 (defun sxml-to-esxml (sxml)
   "Translates sxml to esxml so the common standard can be used.
@@ -250,7 +257,7 @@ recurse below a match."
 ;; taken from kv
 (defmacro esxml-destructuring-mapcar (args sexp seq)
   (declare (indent 2))
-  (let ((entry (make-symbol)))
+  (let ((entry (make-symbol "entry")))
     `(mapcar (lambda (,entry)
                (destructuring-bind ,args ,entry ,sexp))
              ,seq)))

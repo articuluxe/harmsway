@@ -6,14 +6,13 @@
 ;; Maintainer: Drew Adams (concat "drew.adams" "@" "oracle" ".com")
 ;; Copyright (C) 2000-2020, Drew Adams, all rights reserved.
 ;; Created: Fri Sep 15 07:58:41 2000
-;; Last-Updated: Sat Jul  4 13:34:21 2020 (-0700)
+;; Last-Updated: Tue Dec 29 12:32:22 2020 (-0800)
 ;;           By: dradams
-;;     Update #: 16695
+;;     Update #: 16730
 ;; URL: https://www.emacswiki.org/emacs/download/bookmark%2b-chg.el
 ;; Doc URL: https://www.emacswiki.org/emacs/BookmarkPlus
 ;; Keywords: bookmarks, bookmark+
-;; Compatibility: GNU Emacs: 20.x, 21.x, 22.x, 23.x, 24.x, 25.x, 26.x
-;;
+;; Compatibility: GNU Emacs: 20.x, 21.x, 22.x, 23.x, 24.x, 25.x, 26.
 ;; Features that might be required by this library:
 ;;
 ;;   None
@@ -147,6 +146,18 @@
  
 ;;;(@* "CHANGE LOG FOR `bookmark+-1.el'")
 ;;
+;; 2020/11/28 dadams
+;;     Removed:
+;;       bmkp-bookmark-type-valid-p, variable (defconst) bmkp-types-alist, and all history variables.
+;;     Replaced all occurrences of variable bmkp-types-alist with function bmkp-types-alist.
+;;     Invoke macro bmkp-define-history-variables to define history vars, after defining filter fns.
+;;     Moved filter-function definitions to beginning of Bookmark+ functions section.
+;;     bmkp-edit-tags-send: Don't use bmkp-bookmark-type-valid-p - needs to work with unknown types.
+;; 2020/11/23 dadams
+;;     bmkp-url-target-set: Use read-from-minibuffer, not read-file-name, as fallback if no ffap.
+;;                          TEMPORARILY work around Emacs bug #44822 with phony default URL.
+;; 2020/08/30 dadams
+;;     Added: Info-bookmark-use-only-node-not-file-flag, redefinition of Info-bookmark-jump.
 ;; 2020/07/04 dadams
 ;;     Same commands as 7/03: Remove bmkp-propertize-*-flag as part of test for getting full bmk.
 ;;     Changed all references to `C-x p' to `C-x x'.
@@ -1460,6 +1471,20 @@
  
 ;;;(@* "CHANGE LOG FOR `bookmark+-bmu.el'")
 ;;
+;; 2020/12/29 dadams
+;;     Wrap soft-require of menu-bar+.el in null condition-case, because it soft-requires Bookmark+.
+;; 2020/11/27 dadams
+;;     bmkp-bmenu-define-command, bmkp-bmenu-define-full-snapshot-command:
+;;       Use copy-sequence for lists, because some code modifies the list structure.
+;;       If command already defined then prompt to overwrite its definition (replace all existing).
+;;     bmkp-bmenu-define-full-snapshot-command:
+;;       Bind bookmark-alist to non-nil bmkp-latest-bookmark-alist. NB: Contradicts 2015-02-22 change.
+;; 2020/11/26 dadams
+;;     bmkp-bmenu-read-filter-input:
+;;       Set, don't bind, bmkp-bmenu-filter-(title|function).  Restore them and the pattern, if C-g.
+;; 2020/11/06 dadams
+;;     bmkp-bmenu-read-filter-input:
+;;       Bind prefix-command-echo-keystrokes-functions to nil.  See Emacs bug #44500.
 ;; 2020/07/04 dadams
 ;;     Changed all references to `C-x p' to `C-x x'.
 ;;     Replaced string *Bookmark List* with bookmark-bmenu-buffer (for Emacs 28).
@@ -2434,6 +2459,8 @@
 ;;       that depends on macros needs to be byte-compiled anew after loading the updated macros.
 ;; **************************************************************************************************
 ;;
+;; 2020/11/28 dadams
+;;     Added: bmkp-define-history-variables, funtion bmkp-types-alist.
 ;; 2017/03/31 dadams
 ;;     bmkp-define-next+prev-cycle-commands: Added optional arg OTHERP.
 ;; 2015/04/03 dadams

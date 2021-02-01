@@ -160,14 +160,16 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(minibuffer-prompt ((t (:background ,sunburn-bg-05 :foreground ,sunburn-yellow))))
    `(mode-line
      ((,class (:foreground ,sunburn-fg+1
-                           :background ,sunburn-bg-05
-                           :box (:line-width -1 :style released-button)))
+                           :background ,sunburn-bg-2
+                          ; :box (:line-width -1 :style released-button)
+                           ))
       (t :inverse-video t)))
    `(mode-line-buffer-id ((t (:foreground ,sunburn-fg-1 :weight bold))))
    `(mode-line-inactive
      ((t (:foreground ,sunburn-blue-1
                       :background ,sunburn-bg-05
-                      :box (:line-width -1 :style released-button)))))
+                     ; :box (:line-width -1 :style released-button)
+                      ))))
    ;; `(region ((,class (:background ,sunburn-gold))
    ;;           (t :inverse-video t)))
    `(region ((t (:foreground ,sunburn-bg-05  :background ,sunburn-gold :reverse-video t))))
@@ -1063,9 +1065,12 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(org-habit-ready-future-face ((t :background ,sunburn-green-1)))
    `(org-habit-alert-future-face ((t :background ,sunburn-yellow-2 :foreground ,sunburn-bg)))
    `(org-habit-overdue-future-face ((t :background ,sunburn-red-4)))
-   `(org-block-begin-line ((t :background ,sunburn-bg-1 :foreground ,sunburn-yellow)))
-   `(org-block-end-line ((t :background ,sunburn-bg-1 :foreground ,sunburn-yellow)))
-   `(org-block ((t :background ,sunburn-bg :foreground ,sunburn-fg+1)))
+   ;; `(org-block-begin-line ((t :background ,sunburn-bg-1 :foreground ,sunburn-yellow)))
+   ;; `(org-block-end-line ((t :background ,sunburn-bg-1 :foreground ,sunburn-yellow)))
+   ;; `(org-block ((t :background ,sunburn-bg :foreground ,sunburn-fg+1)))
+   `(org-block-begin-line ((t :background ,sunburn-bg :foreground ,sunburn-bg+2)))
+   `(org-block-end-line ((t :background ,sunburn-bg :foreground ,sunburn-bg+2)))
+   `(org-block ((t :background ,sunburn-bg :foreground ,sunburn-fg)))
 ;;;;; ein
    `(ein:cell-input-prompt ((t (:foreground ,sunburn-cyan))))
    `(ein:cell-input-area ((t :background ,sunburn-bg-1)))

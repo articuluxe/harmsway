@@ -10,7 +10,7 @@
 
 ;; This file is not part of GNU Emacs.
 
-;;; License: MIT
+;;; SPDX-License-Identifier: MIT
 
 ;;; Commentary:
 
@@ -37,6 +37,11 @@
 (require 'json)
 (require 'thingatpt)
 (require 'project)
+(require 'url-http)
+
+;; This var is defined in url-http, added here to silence compiler warnings,
+;; see https://github.com/melpa/melpa/pull/7141 for more details
+(defvar url-http-end-of-headers)
 
 ;;------------------Customization options-----------------------------------------
 
@@ -52,9 +57,13 @@
   "URL to fetch the list of Runtime Identifiers for dotnet.  See https://docs.microsoft.com/en-us/dotnet/core/rid-catalog for more info."
   :type 'string)
 
-(defcustom sharper--nuget-search-URL "https://azuresearch-usnc.nuget.org/query?q=%s&prerelease=true&semVerLevel=2.0.0&take=250"
+(defcustom sharper-nuget-search-URL "https://azuresearch-usnc.nuget.org/query?q=%s&prerelease=true&semVerLevel=2.0.0&take=250"
   "URL to run a NuGet search.  Must contain a %s to replace with the search string the user will input."
   :type 'string)
+
+(defcustom sharper-run-only-one nil
+  "When calling \"dotnet run\", don't allow more than a single process per project."
+  :type 'boolean)
 
 ;; Legend for the templates below:
 ;; %t = TARGET
@@ -268,7 +277,8 @@ The current implementation is C# only, we need to make accomodations for F#."
   ;; 'word is not valid when subword-mode is enabled, using
   ;; instead 'sexp makes it work in both cases
   (let ((c-name (ignore-errors
-                  (c-defun-name-and-limits nil)))
+                  (when (fboundp 'c-defun-name-and-limits)
+                    (c-defun-name-and-limits nil))))
         (fallback (thing-at-point 'sexp t)))
     (if c-name
         (car c-name) ;; nothing else to do!
@@ -376,7 +386,9 @@ The current implementation is C# only, we need to make accomodations for F#."
       (cl-destructuring-bind (default-directory command proj-name) sharper--last-run
         (sharper--log-command "Run" command)
         (pop-to-buffer (sharper--run-async-shell command
-                                                 (format "*dotnet run - %s*" proj-name))))
+                                                 (format "*dotnet run - %s*" proj-name)
+                                                 (when sharper-run-only-one
+                                                   'confirm-kill-process))))
     (sharper-transient-run)))
 
 (defun sharper--version-info ()
@@ -555,11 +567,19 @@ Just a facility to make these invocations shorter."
   :reader (lambda (_prompt _initial-input _history)
             (sharper--read-msbuild-properties)))
 
-(defun sharper--run-async-shell (command buffer-name)
+(defun sharper--run-async-shell (command buffer-name &optional buffer-reuse-behaviour)
   "Call `async-shell-command' to run COMMAND using a buffer BUFFER-NAME.
-Returns a reference to the output buffer."
-  (let ((le-buffer (generate-new-buffer (generate-new-buffer-name
-                                         buffer-name))))
+Returns a reference to the output buffer.
+The optional parameter BUFFER-REUSE-BEHAVIOUR allows for let-binding
+`async-shell-command-buffer'.  When not specified, a new buffer is created on
+each call."
+  (let ((le-buffer (get-buffer-create
+                    ;; unless the caller assumes control via the optional parameter, we
+                    ;; will create a unique buffer name for them - the default.
+                    (if buffer-reuse-behaviour
+                        buffer-name
+                      (generate-new-buffer-name buffer-name))))
+        (async-shell-command-buffer (or buffer-reuse-behaviour 'confirm-new-buffer)))
     (async-shell-command command le-buffer le-buffer)
     le-buffer))
 
@@ -924,6 +944,13 @@ After the first call, the list is cached in `sharper--cached-RIDs'."
       (pop-to-buffer buffer-name)
       (sharper--message (concat "Listing projects in " solution-filename)))))
 
+(defvar sharper--solution-management-mode-map
+  (let ((km (make-sparse-keymap)))
+    (define-key km (kbd "RET") 'sharper-transient-solution)
+    (define-key km (kbd "g") 'sharper--solution-management-refresh)
+    km)
+  "Keymap for `sharper--solution-management-mode'.")
+
 (define-derived-mode sharper--solution-management-mode tabulated-list-mode "Sharper solution management" "Major mode to manage a dotnet solution."
   (setq tabulated-list-format [("Projects" 200 nil)])
   (setq tabulated-list-padding 1)
@@ -940,8 +967,6 @@ After the first call, the list is cached in `sharper--cached-RIDs'."
    ("L" "list packages for all projects in the solution (including transitive packages)" sharper--list-solproj-all-packages)
    ("q" "quit" transient-quit-all)])
 
-(define-key sharper--solution-management-mode-map (kbd "RET") 'sharper-transient-solution)
-(define-key sharper--solution-management-mode-map (kbd "g") 'sharper--solution-management-refresh)
 
 (defun sharper--solution-management-refresh ()
   "Update the tablist view in `sharper--solution-management-mode'."
@@ -1033,6 +1058,13 @@ After the first call, the list is cached in `sharper--cached-RIDs'."
                          (shell-command-to-string command)
                          "\n" t))))))
 
+(defvar sharper--project-references-mode-map
+  (let ((km (make-sparse-keymap)))
+    (define-key km (kbd "RET") 'sharper-transient-project-references)
+    (define-key km (kbd "g") 'sharper--project-references-refresh)
+    km)
+    "Keymap for `sharper--project-references-mode'.")
+
 (define-derived-mode sharper--project-references-mode tabulated-list-mode "Sharper project references" "Major mode to manage project references."
   (setq tabulated-list-format [("Reference" 200 nil)])
   (setq tabulated-list-padding 1)
@@ -1045,9 +1077,6 @@ After the first call, the list is cached in `sharper--cached-RIDs'."
    ("r" "remove reference at point" sharper--project-reference-remove)
    ("s" "switch to packages view" sharper--project-reference-switch-to-packages)
    ("q" "quit" transient-quit-all)])
-
-(define-key sharper--project-references-mode-map (kbd "RET") 'sharper-transient-project-references)
-(define-key sharper--project-references-mode-map (kbd "g") 'sharper--project-references-refresh)
 
 (defun sharper--project-references-refresh ()
   "Update the tablist view in `sharper--project-references-mode'."
@@ -1119,6 +1148,13 @@ After the first call, the list is cached in `sharper--cached-RIDs'."
               (nthcdr 2 (split-string (shell-command-to-string command)
                                       "\n" t))))))
 
+(defvar sharper--project-packages-mode-map
+  (let ((km (make-sparse-keymap)))
+    (define-key km (kbd "RET") 'sharper-transient-project-packages)
+    (define-key km (kbd "g") 'sharper--project-packages-refresh)
+    km)
+  "Keymap for `sharper--project-packages-mode'.")
+
 (define-derived-mode sharper--project-packages-mode tabulated-list-mode "Sharper project packages" "Major mode to manage project packages."
   (setq tabulated-list-format [("Packages info" 300 nil)])
   (setq tabulated-list-padding 1)
@@ -1138,9 +1174,6 @@ After the first call, the list is cached in `sharper--cached-RIDs'."
 ;; HOWEVER, picking up versions with completion depends on nuget search and other unfinished features.
 ;; so the time being, we can leave this disabled
 ;; ("v" "change package at point to specific (or latest version)" sharper--project-reference-remove)
-
-(define-key sharper--project-packages-mode-map (kbd "RET") 'sharper-transient-project-packages)
-(define-key sharper--project-packages-mode-map (kbd "g") 'sharper--project-packages-refresh)
 
 (defun sharper--project-package-nuget ()
   "Start a NuGet search to add a package to the current project."
@@ -1215,7 +1248,7 @@ After the first call, the list is cached in `sharper--cached-RIDs'."
 (defun sharper--nuget-search-request (term)
   "Return the results of a search for TERM in NuGet.
 Format of the returned data is (PackageId . [PackageId Verified Tags Versions-List])"
-  (let* ((search-url (format sharper--nuget-search-URL (url-hexify-string term)))
+  (let* ((search-url (format sharper-nuget-search-URL (url-hexify-string term)))
          (packages-found (sharper--json-request search-url)))
     (mapcar #'sharper--format-nuget-entry (alist-get 'data packages-found))))
 
@@ -1233,6 +1266,12 @@ Format of the returned data is (PackageId . [PackageId Verified Tags Versions-Li
                   .version
                   (nreverse (mapcar (lambda (v) (cdr (car v))) .versions))))))
 
+(defvar sharper--nuget-results-mode-map
+  (let ((km (make-sparse-keymap)))
+    (define-key km (kbd "RET") 'sharper--nuget-search-install)
+    km)
+  "Keymap for `sharper--nuget-results-mode'.")
+
 (define-derived-mode sharper--nuget-results-mode tabulated-list-mode "Sharper nuget search results" "Major mode to install NuGet packages based on search results."
   (setq tabulated-list-format [("Package" 40 nil)
                                ("Verified" 8 nil)
@@ -1241,8 +1280,6 @@ Format of the returned data is (PackageId . [PackageId Verified Tags Versions-Li
                                ("Description" 0 nil)])
   (setq tabulated-list-padding 1)
   (tabulated-list-init-header))
-
-(define-key sharper--nuget-results-mode-map (kbd "RET") 'sharper--nuget-search-install)
 
 (defun sharper--nuget-search (&optional project-path)
   "Search and add NuGet packages to PROJECT-PATH."

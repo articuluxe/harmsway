@@ -6,7 +6,7 @@
 ;; Maintainer: James Nguyen <james@jojojames.com>
 ;; URL: https://github.com/jojojames/smart-jump
 ;; Version: 0.0.1
-;; Package-Requires: ((emacs "25.1") (dumb-jump "0.5.1"))
+;; Package-Requires: ((emacs "25.1"))
 ;; Keywords: tools
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -27,7 +27,6 @@
 
 ;;; Code:
 (eval-when-compile (require 'subr-x))
-(require 'dumb-jump)
 (require 'seq)
 
 ;; Compatibility
@@ -55,25 +54,16 @@ multiple fallbacks."
   '(cc-mode ;; `java-mode', `c-mode', `c++-mode', `objc-mode'
     csharp-mode
     clojure-mode
-    eglot
     elisp-mode
     elixir-mode
-    elm-mode
-    erlang-mode
     go-mode
-    haskell-mode
-    (js2-mode rjsx-mode)
     lisp-mode
     lispy
-    lua-mode
-    lsp-mode
     python
     ruby-mode
     rust-mode
     scheme
-    swift-mode
-    typescript-mode
-    web-mode)
+    typescript-mode)
   "The list of modes `smart-jump-setup-default-registers' uses to
 register `smart-jump's."
   :type '(repeat (choice symbol sexp))
@@ -123,32 +113,16 @@ first."
   :type 'string
   :group 'smart-jump)
 
-;; FIXME: Finalize a good default key.
-;; This key may or may not be final.
-(defcustom smart-jump-peek-key "M-P"
-  "Key used for peeping at definitions."
-  :type 'string
-  :group 'smart-jump)
-
 (defcustom smart-jump-find-references-fallback-function
   'smart-jump-find-references-with-ag
   "The fallback function used by `smart-jump-simple-find-references'."
   :type 'function
   :group 'smart-jump)
 
-(defvar smart-jump-stack '() "Stack used to navigate tags.")
+(defvar smart-jump-registered-p nil
+  "Variable to track if `smart-jump' has registered its jumps.")
 
-(defvar smart-jump-simple-fallback
-  '(
-    :jump-fn dumb-jump-go
-    :pop-fn dumb-jump-back
-    :refs-fn smart-jump-simple-find-references
-    :should-jump t
-    :heuristic point
-    :async nil
-    :order 1000
-    )
-  "Fallback settings to use when no other :jump-fn mechanism succeeded.")
+(defvar smart-jump-stack '() "Stack used to navigate tags.")
 
 (defvar smart-jump-xref-fallback
   '(
@@ -162,7 +136,7 @@ first."
     )
   "Xref fallback to use when no other :jump-fn mechanism succeeded.")
 
-(defvar-local smart-jump-list `(,smart-jump-simple-fallback)
+(defvar-local smart-jump-list `(,smart-jump-xref-fallback)
   "List of plists that contain metadata to trigger jump to definition
 or find references.
 
@@ -176,18 +150,20 @@ See `smart-jump-register' for more details.")
 (defun smart-jump-setup-default-registers ()
   "Register a default set of modes for `smart-jump'."
   (interactive)
-  (dolist (mode smart-jump-default-mode-list)
-    (let ((m mode)
-          (reqs (list mode)))
-      (when (listp mode)
-        (setq m (car mode)
-              reqs (cdr mode)))
-      (dolist (req reqs)
-        (with-eval-after-load req
-          (require
-           (intern (concat "smart-jump-" (symbol-name m))))
-          (funcall
-           (intern (concat "smart-jump-" (symbol-name m) "-register"))))))))
+  (unless smart-jump-registered-p
+    (setq smart-jump-registered-p :registered)
+    (dolist (mode smart-jump-default-mode-list)
+      (let ((m mode)
+            (reqs (list mode)))
+        (when (listp mode)
+          (setq m (car mode)
+                reqs (cdr mode)))
+        (dolist (req reqs)
+          (with-eval-after-load req
+            (require
+             (intern (concat "smart-jump-" (symbol-name m))))
+            (funcall
+             (intern (concat "smart-jump-" (symbol-name m) "-register")))))))))
 
 ;;;###autoload
 (defun smart-jump-diag ()
@@ -225,12 +201,6 @@ See `smart-jump-register' for more details.")
     (goto-char 0)))
 
 ;;;###autoload
-(defun smart-jump-peek ()
-  "Peek at definition."
-  (interactive)
-  (smart-jump-make-peek-frame 'smart-jump-go))
-
-;;;###autoload
 (defun smart-jump-go (&optional smart-list continue)
   "Go to the function/variable declartion for thing at point.
 
@@ -238,6 +208,8 @@ SMART-LIST will be set (or nil) if this is a continuation of a previous jump.
 
 CONTINUE will be non nil if this is a continuation of a previous jump."
   (interactive)
+  (unless smart-jump-registered-p
+    (smart-jump-setup-default-registers))
   (smart-jump-when-let*
       ((sj-list (or smart-list (and (not continue) smart-jump-list))))
     (smart-jump-run
@@ -249,6 +221,8 @@ CONTINUE will be non nil if this is a continuation of a previous jump."
 (defun smart-jump-back ()
   "Jump back to where the last jump was done."
   (interactive)
+  (unless smart-jump-registered-p
+    (smart-jump-setup-default-registers))
   (call-interactively (if (> (length smart-jump-stack) 0)
                           (pop smart-jump-stack)
                         'xref-pop-marker-stack)))
@@ -262,6 +236,8 @@ call to `smart-jump-references'.
 CONTINUE will be set if this is a continuation of a previous call to
 `smart-jump-references'."
   (interactive)
+  (unless smart-jump-registered-p
+    (smart-jump-setup-default-registers))
   (smart-jump-when-let*
       ((sj-list (or smart-list (and (not continue) smart-jump-list))))
     (push-mark nil t nil)
@@ -329,63 +305,6 @@ provided, `pop-tag-mark' will be used as the default."
             (error
              (funcall self-command sj-list :continue))))
       (funcall self-command sj-list :continue))))
-
-(defun smart-jump-make-peek-frame (find-definition-function &rest args)
-  "Make a new frame for peeking definition.
-
-Credits to @tuhdo.
-
-http://tuhdo.github.io/emacs-frame-peek.html"
-  (let (doc-frame
-        x y
-        ;; 1. Find the absolute position of the current beginning of the
-        ;; symbol at point, in pixels.
-        (abs-pixel-pos (save-excursion
-                         ;; (beginning-of-thing 'symbol)
-                         (beginning-of-line)
-                         (window-absolute-pixel-position))))
-    (setq x (car abs-pixel-pos))
-
-    ;; FIXME: We might want to recenter the original view first before getting
-    ;; y so that the new popup frame never goes beneath our screen.
-    (setq y (+ (cdr abs-pixel-pos)
-               (frame-char-height)))
-
-    ;; 2. Create a new invisible frame, with the current buffer in it.
-    (setq doc-frame (make-frame '((name . "*SmartJump Peek*")
-                                  (width . 80)
-                                  (visibility . nil)
-                                  (height . 20)
-                                  (min-width  . t)
-                                  (min-height . t)
-                                  (border-width . 0)
-                                  (internal-border-width . 0)
-                                  (vertical-scroll-bars . nil)
-                                  (horizontal-scroll-bars . nil)
-                                  (left-fringe . 0)
-                                  (right-fringe . 0)
-                                  (tool-bar-lines . 0)
-                                  (line-spacing . 0)
-                                  (unsplittable . t)
-                                  (no-other-frame . t)
-                                  (no-special-glyphs . t))))
-
-    ;; 3. Position the new frame right under the beginning of the
-    ;; symbol at point.
-    (set-frame-position doc-frame x y)
-
-    ;; 4. Jump to the symbol at point.
-    (with-selected-frame doc-frame
-      (apply find-definition-function args)
-      ;; FIXME: If we make this read-only, we need to be able to revert its
-      ;; readonly status after the frame is killed.
-      ;; FIXME: If we make this readonly, it'd be nice to bind q to quit the
-      ;; frame and buffer quickly.
-      ;; (read-only-mode)
-      (recenter-top-bottom 0))
-
-    ;; 5. Make frame visible again.
-    (make-frame-visible doc-frame)))
 
 (cl-defun smart-jump-register (&key
                                modes
@@ -542,12 +461,10 @@ MODE is mode to bind keys to."
               (evil-define-key* 'normal map
                                 (kbd smart-jump-jump-key) #'smart-jump-go
                                 (kbd smart-jump-pop-key) #'smart-jump-back
-                                (kbd smart-jump-refs-key) #'smart-jump-references
-                                (kbd smart-jump-peek-key) #'smart-jump-peek))))
+                                (kbd smart-jump-refs-key) #'smart-jump-references))))
         (define-key map (kbd smart-jump-jump-key) #'smart-jump-go)
         (define-key map (kbd smart-jump-pop-key) #'smart-jump-back)
-        (define-key map (kbd smart-jump-refs-key) #'smart-jump-references)
-        (define-key map (kbd smart-jump-peek-key) #'smart-jump-peek)))))
+        (define-key map (kbd smart-jump-refs-key) #'smart-jump-references)))))
 
 (defun smart-jump-simple-find-references ()
   "Fallback method for `smart-jump-references'.
@@ -570,6 +487,21 @@ to use xref as the fallback."
     (message
      "Install the emacs package ag to use\
  `smart-jump-simple-find-references-with-ag'.")))
+
+(defun smart-jump-find-references-with-rg ()
+  "Use `rg' to find references."
+  (interactive)
+  (if (fboundp 'rg-project)
+      (rg-project (cond ((use-region-p)
+                         (buffer-substring-no-properties (region-beginning)
+                                                         (region-end)))
+                        ((symbol-at-point)
+                         (substring-no-properties
+                          (symbol-name (symbol-at-point)))))
+                  ".*")
+    (message
+     "Install the emacs package rg to use\
+ `smart-jump-simple-find-references-with-rg'.")))
 
 (defun smart-jump-get-async-wait-time (async)
   "Return the time in seconds for use with waiting for an async jump.

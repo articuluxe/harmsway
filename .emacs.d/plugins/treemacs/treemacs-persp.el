@@ -1,9 +1,9 @@
 ;;; treemacs-persp.el --- Persp-mode integration for treemacs -*- lexical-binding: t -*-
 
-;; Copyright (C) 2020 Alexander Miller
+;; Copyright (C) 2021 Alexander Miller
 
 ;; Author: Alexander Miller <alexanderm@web.de>
-;; Package-Requires: ((emacs "25.2") (treemacs "0.0") (persp-mode "2.9.7") (dash "2.11.0"))
+;; Package-Requires: ((emacs "26.1") (treemacs "0.0") (persp-mode "2.9.7") (dash "2.11.0"))
 ;; Version: 0
 ;; Homepage: https://github.com/Alexander-Miller/treemacs
 
@@ -116,7 +116,7 @@ does not return anything the projects of the fallback workspace will be copied."
                   :path (treemacs-project->path project)
                   :path-status (treemacs-project->path-status project))
                  project-list))))
-     (setf (treemacs-workspace->projects ws) project-list)
+     (setf (treemacs-workspace->projects ws) (nreverse project-list))
      (treemacs-return ws))))
 
 (provide 'treemacs-persp)

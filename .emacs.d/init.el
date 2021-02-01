@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-01-29 13:16:40 dharms>
+;; Modified Time-stamp: <2021-02-01 15:35:14 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1182,7 +1182,6 @@ From `manuel-oberti.github.io' on 20190806."
   :config
   (put 'magit-clean 'disabled nil)
   (use-package with-editor)
-  (global-magit-file-mode 1)
   (magit-auto-revert-mode 0)
   (setq magit-repository-directories
         `(,(cons (expand-file-name "~/src") 2)))
@@ -1634,6 +1633,8 @@ ARGS are the additional arguments."
          ("M-o n" . dumb-jump-go-prefer-external)
          ("M-o m" . dumb-jump-go-prefer-external-other-window)
          )
+  :init
+  (setq dump-jump-disable-obsolete-warnings t)
   :config
   (setq dumb-jump-selector 'ivy)
   (cond ((executable-find "rg")
@@ -3051,6 +3052,7 @@ completion at point mechanism does not interfere with `completion-at-point-funct
   (setq company-dabbrev-downcase nil)
   (setq company-dabbrev-ignore-case t)
   (setq company-etags-ignore-case t)
+  (setq company-abort-on-unique-match nil)
   ;; (setq company-begin-commands '(self-insert-command))
   (setq company-show-numbers t)
   (setq company-tooltip-align-annotations t)

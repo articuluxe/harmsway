@@ -1,6 +1,6 @@
 ;;; treemacs.el --- A tree style file viewer package -*- lexical-binding: t -*-
 
-;; Copyright (C) 2020 Alexander Miller
+;; Copyright (C) 2021 Alexander Miller
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
 ;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 ;;; Commentary:
-;;; Varations of header-line-format treemacs can use.
+;;; Variations of header-line-format treemacs can use.
 
 ;;; Code:
 
@@ -67,12 +67,12 @@
       (let* ((menu
               (easy-menu-create-menu
                nil
-               `(["Edit Workspaces"       treemacs-edit-workspaces]
-                 ["Create Workspace"      treemacs-create-workspace]
-                 ["Remove Worspace"       treemacs-remove-workspace]
-                 ["Rename Workspace"      treemacs-rename-workspace]
-                 ["Switch Worspaces"      treemacs-switch-workspace]
-                 ["Set Fallback Worspace" treemacs-set-fallback-workspace])))
+               `(["Edit Workspaces"        treemacs-edit-workspaces]
+                 ["Create Workspace"       treemacs-create-workspace]
+                 ["Remove Workspace"       treemacs-remove-workspace]
+                 ["Rename Workspace"       treemacs-rename-workspace]
+                 ["Switch Workspace"       treemacs-switch-workspace]
+                 ["Set Fallback Workspace" treemacs-set-fallback-workspace])))
              (choice (x-popup-menu event menu)))
         (when choice (call-interactively (lookup-key menu (apply 'vector choice))))) )
      'face 'treemacs-header-button-face)

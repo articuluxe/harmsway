@@ -172,7 +172,7 @@ pass additional flags to `ghc'."
 
 (defcustom haskell-process-do-cabal-format-string
   ":!cd %s && %s"
-  "The way to run cabal comands. It takes two arguments -- the directory and the command.
+  "The way to run cabal commands. It takes two arguments -- the directory and the command.
 See `haskell-process-do-cabal' for more details."
   :group 'haskell-interactive
   :type 'string)
@@ -212,18 +212,6 @@ Flycheck users might like to disable this."
   nil
   "Suggest to add import statements using Hoogle as a backend."
   :type 'boolean
-  :group 'haskell-interactive)
-
-(defcustom haskell-process-suggest-hayoo-imports
-  nil
-  "Suggest to add import statements using Hayoo as a backend."
-  :type 'boolean
-  :group 'haskell-interactive)
-
-(defcustom haskell-process-hayoo-query-url
-  "http://hayoo.fh-wedel.de/json/?query=%s"
-  "Query url for json hayoo results."
-  :type 'string
   :group 'haskell-interactive)
 
 (defcustom haskell-process-suggest-haskell-docs-imports
@@ -421,9 +409,9 @@ imports."
 presence of a *.cabal file or stack.yaml file or something similar.")
 
 (defun haskell-build-type ()
-  "Looks for cabal and stack spec files. 
-   When found, returns a pair (TAG . DIR) 
-   where TAG is 'cabal-project, 'cabal-sandbox. 'cabal, or 'stack; 
+  "Looks for cabal and stack spec files.
+   When found, returns a pair (TAG . DIR)
+   where TAG is 'cabal-project, 'cabal-sandbox. 'cabal, or 'stack;
    and DIR is the directory containing cabal or stack file.
    When none found, DIR is nil, and TAG is 'ghc"
   ;; REVIEW maybe just 'cabal is enough.

@@ -193,7 +193,7 @@ When not specified, ELLIPSIS defaults to ‘...’."
     (define-key km [(control up)]    'centaur-tabs-backward-group)
     (define-key km [(control down)]  'centaur-tabs-forward-group)
     (define-key km [(control f10)]   'centaur-tabs-local-mode)
-    (define-key km [(control 5)]   'centaur-tabs-extract-window-to-new-frame)
+    (define-key km (kbd "C-5")     'centaur-tabs-extract-window-to-new-frame)
     (define-key km [(control k)]   'centaur-tabs-kill-other-buffers-in-current-group)
     (define-key km [(control o)]   'centaur-tabs-open-in-external-application)
     (define-key km [(control d)]   'centaur-tabs-open-directory-in-external-application)
@@ -278,7 +278,20 @@ When not specified, ELLIPSIS defaults to ‘...’."
 (defun centaur-tabs-do-close (event)
   "Given a mouse EVENT, close the tab at the mouse point."
   (interactive "e")
-  (centaur-tabs-buffer-close-tab `,(centaur-tabs-get-tab-from-event event)))
+  (let ((window (posn-window (event-start event))))
+    (with-selected-window window
+      (select-window window)
+      (let ((foreground-buffer-name (buffer-name)))
+	(centaur-tabs-buffer-select-tab `,(centaur-tabs-get-tab-from-event event))
+
+	(let* ((buffer             (window-buffer window))
+	       (target-buffer-name (buffer-name))
+	       (same-target-check  (string-equal foreground-buffer-name target-buffer-name))
+	       (window-num         (- (length (get-buffer-window-list buffer))
+				      (if same-target-check 0 1))))
+          (if (> window-num 1)
+              (delete-window window)
+            (centaur-tabs-buffer-close-tab `,(centaur-tabs-get-tab-from-event event))))))))
 
 (defun centaur-tabs-backward--button (event)
   "Same as centaur-tabs-backward, but changing window to EVENT source."
@@ -1233,6 +1246,7 @@ Other buffer group by `centaur-tabs-get-group-name' with project name."
      (string-prefix-p "*Helm" name)
      (string-prefix-p "*Compile-Log*" name)
      (string-prefix-p "*lsp" name)
+     (string-prefix-p "*LSP" name)
      (string-prefix-p "*company" name)
      (string-prefix-p "*Flycheck" name)
      (string-prefix-p "*tramp" name)

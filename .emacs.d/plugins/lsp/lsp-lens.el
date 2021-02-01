@@ -34,7 +34,7 @@
   :group 'lsp-faces)
 
 (defface lsp-lens-face
-  '((t :height 0.8 :inherit shadow))
+  '((t :inherit lsp-details-face))
   "The face used for code lens overlays."
   :group 'lsp-faces)
 
@@ -125,9 +125,10 @@ Results are meaningful only if FROM and TO are on the same line."
   "Handler for `after-save-hook' for lens mode."
   (lsp-lens--schedule-refresh t))
 
-(defun lsp-lens--schedule-refresh (buffer-modified?)
+(defun lsp-lens--schedule-refresh (&optional buffer-modified?)
   "Call each of the backend.
-BUFFER-MODIFIED? determines whether the buffer is modified or not."
+BUFFER-MODIFIED? determines whether the buffer was modified or
+not."
   (-some-> lsp-lens--refresh-timer cancel-timer)
 
   (setq lsp-lens--page (cons (window-start) (window-end)))
@@ -137,6 +138,11 @@ BUFFER-MODIFIED? determines whether the buffer is modified or not."
                         #'lsp-lens-refresh
                         (or lsp-lens--modified? buffer-modified?)
                         (current-buffer))))
+
+(defun lsp-lens--schedule-refresh-modified ()
+  "Schedule a lens refresh due to a buffer-modification.
+See `lsp-lens--schedule-refresh' for details."
+  (lsp-lens--schedule-refresh t))
 
 (defun lsp-lens--keymap (command)
   "Build the lens keymap for COMMAND."
@@ -304,6 +310,7 @@ CALLBACK - callback for the lenses."
           (funcall callback lsp-lens--backend-cache lsp--cur-version)
         (lsp-lens--backend-fetch-missing lsp-lens--backend-cache callback lsp--cur-version)))))
 
+;;;###autoload
 (defun lsp-lens--enable ()
   "Enable lens mode."
   (when (and lsp-lens-enable
@@ -341,26 +348,29 @@ CALLBACK - callback for the lenses."
   :group 'lsp-mode
   :global nil
   :init-value nil
-  :lighter "Lens"
+  :lighter " Lens"
   (cond
    (lsp-lens-mode
-    (add-hook 'lsp-configure-hook #'lsp-lens--enable nil t)
     (add-hook 'lsp-unconfigure-hook #'lsp-lens--disable nil t)
+    (add-hook 'lsp-configure-hook #'lsp-lens--enable nil t)
     (add-hook 'lsp-on-idle-hook #'lsp-lens--idle-function nil t)
-    (add-hook 'lsp-on-change-hook (lambda () (lsp-lens--schedule-refresh t)) nil t)
-    (add-hook 'after-save-hook (lambda () (lsp-lens--schedule-refresh t)) nil t)
+    (add-hook 'lsp-on-change-hook #'lsp-lens--schedule-refresh-modified nil t)
+    (add-hook 'after-save-hook #'lsp-lens--schedule-refresh nil t)
     (add-hook 'before-revert-hook #'lsp-lens-hide nil t)
     (lsp-lens-refresh t))
    (t
-    (lsp-lens-hide)
-    (remove-hook 'lsp-configure-hook #'lsp-lens--enable t)
-    (remove-hook 'lsp-unconfigure-hook #'lsp-lens--disable t)
     (remove-hook 'lsp-on-idle-hook #'lsp-lens--idle-function t)
-    (remove-hook 'lsp-on-change-hook (lambda () (lsp-lens--schedule-refresh nil)) t)
-    (remove-hook 'after-save-hook (lambda () (lsp-lens--schedule-refresh t)) t)
+    (remove-hook 'lsp-on-change-hook #'lsp-lens--schedule-refresh-modified t)
+    (remove-hook 'after-save-hook #'lsp-lens--schedule-refresh t)
     (remove-hook 'before-revert-hook #'lsp-lens-hide t)
+    (when lsp-lens--refresh-timer
+      (cancel-timer lsp-lens--refresh-timer))
+    (setq lsp-lens--refresh-timer nil)
+    (lsp-lens-hide)
     (setq lsp-lens--last-count nil)
-    (setq lsp-lens--backend-cache nil))))
+    (setq lsp-lens--backend-cache nil)
+    (remove-hook 'lsp-configure-hook #'lsp-lens--enable t)
+    (remove-hook 'lsp-unconfigure-hook #'lsp-lens--disable t))))
 
 
 ;; avy integration
@@ -373,42 +383,42 @@ CALLBACK - callback for the lenses."
 (defun lsp-avy-lens ()
   "Click lsp lens using `avy' package."
   (interactive)
-  (if (not lsp-lens-mode)
-      (user-error "`lsp-lens-mode' not active")
-    (let* ((avy-action 'identity)
-           (action (cl-third
-                    (avy-process
-                     (-mapcat
-                      (lambda (overlay)
-                        (-map-indexed
-                         (lambda (index lens-token)
-                           (list overlay index
-                                 (get-text-property 0 'action lens-token)))
-                         (overlay-get overlay 'lsp--metadata)))
-                      lsp-lens--overlays)
-                     (-lambda (path ((ov index) . _win))
-                       (let* ((path (mapcar #'avy--key-to-char path))
-                              (str (propertize (string (car (last path)))
-                                               'face 'avy-lead-face))
-                              (old-str (overlay-get ov 'before-string))
-                              (old-str-tokens (s-split "\|" old-str))
-                              (old-token (seq-elt old-str-tokens index))
-                              (tokens `(,@(-take index old-str-tokens)
-                                        ,(-if-let ((_ prefix suffix)
-                                                   (s-match "\\(^[[:space:]]+\\)\\(.*\\)" old-token))
-                                             (concat prefix str suffix)
-                                           (concat str old-token))
-                                        ,@(-drop (1+ index) old-str-tokens)))
-                              (new-str (s-join (propertize "|" 'face 'lsp-lens-face) tokens))
-                              (new-str (if (s-ends-with? "\n" new-str)
-                                           new-str
-                                         (concat new-str "\n"))))
-                         (overlay-put ov 'before-string new-str)))
-                     (lambda ()
-                       (--map (overlay-put it 'before-string
-                                           (overlay-get it 'lsp-original))
-                              lsp-lens--overlays))))))
-      (funcall-interactively action))))
+  (unless lsp-lens--overlays
+    (user-error "No lenses in current buffer"))
+  (let* ((avy-action 'identity)
+         (action (cl-third
+                  (avy-process
+                   (-mapcat
+                    (lambda (overlay)
+                      (-map-indexed
+                       (lambda (index lens-token)
+                         (list overlay index
+                               (get-text-property 0 'action lens-token)))
+                       (overlay-get overlay 'lsp--metadata)))
+                    lsp-lens--overlays)
+                   (-lambda (path ((ov index) . _win))
+                     (let* ((path (mapcar #'avy--key-to-char path))
+                            (str (propertize (string (car (last path)))
+                                             'face 'avy-lead-face))
+                            (old-str (overlay-get ov 'before-string))
+                            (old-str-tokens (s-split "|" old-str))
+                            (old-token (seq-elt old-str-tokens index))
+                            (tokens `(,@(-take index old-str-tokens)
+                                      ,(-if-let ((_ prefix suffix)
+                                                 (s-match "\\(^[[:space:]]+\\)\\(.*\\)" old-token))
+                                           (concat prefix str suffix)
+                                         (concat str old-token))
+                                      ,@(-drop (1+ index) old-str-tokens)))
+                            (new-str (s-join (propertize "|" 'face 'lsp-lens-face) tokens))
+                            (new-str (if (s-ends-with? "\n" new-str)
+                                         new-str
+                                       (concat new-str "\n"))))
+                       (overlay-put ov 'before-string new-str)))
+                   (lambda ()
+                     (--map (overlay-put it 'before-string
+                                         (overlay-get it 'lsp-original))
+                            lsp-lens--overlays))))))
+    (when action (funcall-interactively action))))
 
 (provide 'lsp-lens)
 ;;; lsp-lens.el ends here

@@ -1,6 +1,6 @@
 ;;; magit-extras.el --- additional functionality for Magit  -*- lexical-binding: t -*-
 
-;; Copyright (C) 2008-2020  The Magit Project Contributors
+;; Copyright (C) 2008-2021  The Magit Project Contributors
 ;;
 ;; You should have received a copy of the AUTHORS.md file which
 ;; lists all contributors.  If not, see http://magit.vc/authors.
@@ -24,14 +24,14 @@
 
 ;;; Code:
 
-(eval-when-compile
-  (require 'subr-x))
-
 (require 'magit)
 
+(declare-function change-log-insert-entries "add-log" (changelogs))
+(declare-function diff-add-log-current-defuns "diff-mode" ())
 (declare-function dired-read-shell-command "dired-aux" (prompt arg files))
 ;; For `magit-project-status'.
 (declare-function project-root "project" (project))
+(declare-function vc-git-command "vc-git" (buffer okstatus file-or-list &rest flags))
 
 (defvar ido-exit)
 (defvar ido-fallback)
@@ -267,6 +267,44 @@ with two prefix arguments remove ignored files only.
 (put 'magit-clean 'disabled t)
 
 ;;; ChangeLog
+
+(defun magit-generate-changelog (&optional amending)
+  "Insert ChangeLog entries into the current buffer.
+
+The entries are generated from the diff being committed.
+If prefix argument, AMENDING, is non-nil, include changes
+in HEAD as well as staged changes in the diff to check."
+  (interactive "P")
+  (unless (magit-commit-message-buffer)
+    (user-error "No commit in progress"))
+  (require 'diff-mode) ; `diff-add-log-current-defuns'.
+  (require 'vc-git)    ; `vc-git-diff'.
+  (require 'add-log)   ; `change-log-insert-entries'.
+  (unless (and (fboundp 'change-log-insert-entries)
+               (fboundp 'diff-add-log-current-defuns))
+    (user-error "`magit-generate-changelog' requires Emacs 27 or better"))
+  (setq default-directory
+        (if (and (file-regular-p "gitdir")
+                 (not (magit-git-true "rev-parse" "--is-inside-work-tree"))
+                 (magit-git-true "rev-parse" "--is-inside-git-dir"))
+            (file-name-directory (magit-file-line "gitdir"))
+          (magit-toplevel)))
+  (let ((rev1 (if amending "HEAD^1" "HEAD"))
+        (rev2 nil))
+    ;; Magit may have updated the files without notifying vc, but
+    ;; `diff-add-log-current-defuns' relies on vc being up-to-date.
+    (mapc #'vc-file-clearprops (magit-staged-files))
+    (change-log-insert-entries
+     (with-temp-buffer
+       (vc-git-command (current-buffer) 1 nil
+                       "diff-index" "--exit-code" "--patch"
+                       (and (magit-anything-staged-p) "--cached")
+                       rev1 "--")
+       ;; `diff-find-source-location' consults these vars.
+       (defvar diff-vc-revisions)
+       (setq-local diff-vc-revisions (list rev1 rev2))
+       (setq-local diff-vc-backend 'Git)
+       (diff-add-log-current-defuns)))))
 
 ;;;###autoload
 (defun magit-add-change-log-entry (&optional whoami file-name other-window)
@@ -583,7 +621,7 @@ the minibuffer too."
   (kbd "C-c C-w") 'magit-pop-revision-stack)
 
 ;;;###autoload
-(defun magit-copy-section-value ()
+(defun magit-copy-section-value (arg)
   "Save the value of the current section for later use.
 
 Save the section value to the `kill-ring', and, provided that
@@ -601,17 +639,23 @@ argument is used, then save the revision at its tip to the
 
 When the region is active, then save that to the `kill-ring',
 like `kill-ring-save' would, instead of behaving as described
-above.  If a prefix argument is used and the region is within a
-hunk, strip the outer diff marker column."
-  (interactive)
+above.  If a prefix argument is used and the region is within
+a hunk, then strip the diff marker column and keep only either
+the added or removed lines, depending on the sign of the prefix
+argument."
+  (interactive "P")
   (cond
-   ((and current-prefix-arg
+   ((and arg
          (magit-section-internal-region-p)
          (magit-section-match 'hunk))
-    (kill-new (replace-regexp-in-string
-               "^[ \\+\\-]" ""
-               (buffer-substring-no-properties
-                (region-beginning) (region-end))))
+    (kill-new
+     (thread-last (buffer-substring-no-properties
+                   (region-beginning)
+                   (region-end))
+       (replace-regexp-in-string
+        (format "^\\%c.*\n?" (if (< (prefix-numeric-value arg) 0) ?+ ?-))
+        "")
+       (replace-regexp-in-string "^[ \\+\\-]" "")))
     (deactivate-mark))
    ((use-region-p)
     (call-interactively #'copy-region-as-kill))

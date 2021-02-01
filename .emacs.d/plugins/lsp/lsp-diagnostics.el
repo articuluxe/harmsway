@@ -78,12 +78,19 @@ on top the flycheck face for that error level."
 (declare-function flycheck-define-error-level "ext:flycheck" (level &rest properties))
 (declare-function flycheck-buffer "ext:flycheck")
 (declare-function flycheck-valid-checker-p "ext:flycheck")
+(declare-function flycheck-stop "ext:flycheck")
 
-(declare-function lsp-cpp-flycheck-clang-tidy-error-explainer "lsp-cpp")
-
+(defvar flycheck-mode)
 (defvar flycheck-check-syntax-automatically)
 (defvar flycheck-checker)
 (defvar flycheck-checkers)
+
+
+(defvar-local lsp-diagnostics--flycheck-enabled nil
+  "True when lsp diagnostics flycheck integration has been enabled in this buffer.")
+
+(defvar-local lsp-diagnostics--flycheck-checker nil
+  "The value of flycheck-checker before lsp diagnostics was activated.")
 
 (defun lsp-diagnostics--flycheck-level (flycheck-level tags)
   "Generate flycheck level from the original FLYCHECK-LEVEL (e.
@@ -142,7 +149,7 @@ CALLBACK is the status callback passed by Flycheck."
   (remove-hook 'lsp-on-idle-hook #'lsp-diagnostics--flycheck-buffer t)
 
   (->> (lsp--get-buffer-diagnostics)
-       (-map (-lambda ((&Diagnostic :message :severity? :tags? :code?
+       (-map (-lambda ((&Diagnostic :message :severity? :tags? :code? :source?
                                     :range (&Range :start (&Position :line      start-line
                                                                      :character start-character)
                                                    :end   (&Position :line      end-line
@@ -154,6 +161,7 @@ CALLBACK is the status callback passed by Flycheck."
                 :message message
                 :level (lsp-diagnostics--flycheck-calculate-level severity? tags?)
                 :id code?
+                :group source?
                 :line (lsp-translate-line (1+ start-line))
                 :column (1+ (lsp-translate-column start-character))
                 :end-line (lsp-translate-line (1+ end-line))
@@ -178,11 +186,21 @@ from the language server."
     (->> lsp--cur-workspace
          (lsp--workspace-buffers)
          (mapc (lambda (buffer)
-                 (when (lsp-buffer-live-p buffer)
+                 (when (and (lsp-buffer-live-p buffer)
+                            (or
+                             (not (bufferp buffer))
+                             (and (get-buffer-window buffer)
+                                  (not (-contains? (buffer-local-value 'lsp-on-idle-hook buffer)
+                                                   'lsp-diagnostics--flycheck-buffer)))))
                    (lsp-with-current-buffer buffer
                      (add-hook 'lsp-on-idle-hook #'lsp-diagnostics--flycheck-buffer nil t)
                      (lsp--idle-reschedule (current-buffer)))))))))
 
+(cl-defgeneric lsp-diagnostics-flycheck-error-explainer (e _server-id)
+  "Explain a `flycheck-error' E in a generic way depending on the SERVER-ID."
+  (flycheck-error-message e))
+
+(defvar lsp-diagnostics-mode) ;; properly defined by define-minor-mode below
 
 (defun lsp-diagnostics-flycheck-enable (&rest _)
   "Enable flycheck integration for the current buffer."
@@ -194,18 +212,32 @@ provided by lsp-mode.
 See https://github.com/emacs-lsp/lsp-mode."
       :start #'lsp-diagnostics--flycheck-start
       :modes '(lsp-placeholder-mode) ;; placeholder
-      :predicate (lambda () lsp-mode)
+      :predicate (lambda () lsp-diagnostics-mode)
       :error-explainer (lambda (e)
-                         (cond ((string-prefix-p "clang-tidy" (flycheck-error-message e))
-                                (lsp-cpp-flycheck-clang-tidy-error-explainer e))
-                               (t (flycheck-error-message e))))))
+                         (lsp-diagnostics-flycheck-error-explainer
+                          e (lsp--workspace-server-id (car-safe (lsp-workspaces)))))))
+  (and (not lsp-diagnostics--flycheck-enabled)
+     (not (eq flycheck-checker 'lsp))
+     (setq lsp-diagnostics--flycheck-checker flycheck-checker))
+  (setq-local lsp-diagnostics--flycheck-enabled t)
   (flycheck-mode 1)
+  (flycheck-stop)
   (setq-local flycheck-checker 'lsp)
   (lsp-flycheck-add-mode major-mode)
   (add-to-list 'flycheck-checkers 'lsp)
   (add-hook 'lsp-diagnostics-updated-hook #'lsp-diagnostics--flycheck-report nil t)
   (add-hook 'lsp-managed-mode-hook #'lsp-diagnostics--flycheck-report nil t))
 
+(defun lsp-diagnostics-flycheck-disable ()
+  "Disable flycheck integration for the current buffer is it was enabled."
+  (when lsp-diagnostics--flycheck-enabled
+    (flycheck-stop)
+    (when (eq flycheck-checker 'lsp)
+      (setq-local flycheck-checker lsp-diagnostics--flycheck-checker))
+    (setq lsp-diagnostics--flycheck-checker nil)
+    (setq-local lsp-diagnostics--flycheck-enabled nil)
+    (when flycheck-mode
+      (flycheck-mode 1))))
 
 ;; Flymake integration
 
@@ -313,8 +345,8 @@ See https://github.com/emacs-lsp/lsp-mode."
       (lsp--warn "Unable to autoconfigure flycheck/flymake. The diagnostics won't be rendered.")))
 
     (add-hook 'lsp-unconfigure-hook #'lsp-diagnostics--disable nil t))
-   (t
-    (remove-hook 'lsp-unconfigure-hook #'lsp-diagnostics--disable t))))
+   (t (lsp-diagnostics-flycheck-disable)
+      (remove-hook 'lsp-unconfigure-hook #'lsp-diagnostics--disable t))))
 
 ;;;###autoload
 (add-hook 'lsp-configure-hook (lambda ()

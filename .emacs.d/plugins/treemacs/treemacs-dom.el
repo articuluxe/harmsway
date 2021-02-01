@@ -1,6 +1,6 @@
 ;;; treemacs.el --- A tree style file viewer package -*- lexical-binding: t -*-
 
-;; Copyright (C) 2020 Alexander Miller
+;; Copyright (C) 2021 Alexander Miller
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -91,6 +91,9 @@ SELF: Dom Node Struct"
     (inline-quote
      (progn
        (ht-remove! treemacs-dom (treemacs-dom-node->key ,self))
+       (let ((parent (treemacs-dom-node->parent ,self)))
+         (setf (treemacs-dom-node->children parent)
+               (delete ,self (treemacs-dom-node->children parent))))
        (dolist (key (treemacs-dom-node->collapse-keys ,self))
          (ht-remove! treemacs-dom key))))))
 
@@ -240,9 +243,9 @@ levels the one currently visiting.
 NODE: Dom Node Struct
 FN: (Dom Node) -> Any"
   (declare (indent 1))
+  (funcall fn node)
   (dolist (it (treemacs-dom-node->children node))
-    (treemacs-walk-dom it fn))
-  (funcall fn node))
+    (treemacs-walk-dom it fn)))
 
 (defun treemacs-walk-dom-exclusive (node fn)
   "Same as `treemacs-walk-dom', but start NODE will not be passed to FN.
@@ -264,9 +267,9 @@ levels the one currently visiting.
 NODE: Dom Node Struct
 FN: (Dom Node) -> Any"
   (declare (indent 1))
+  (funcall fn node)
   (dolist (it (treemacs-dom-node->reentry-nodes node))
-    (treemacs-walk-reentry-dom it fn))
-  (funcall fn node))
+    (treemacs-walk-reentry-dom it fn)))
 
 (defun treemacs-walk-reentry-dom-exclusive (node fn)
   "Same as `treemacs-walk-reentry-dom', but start NODE will not be passed to FN.

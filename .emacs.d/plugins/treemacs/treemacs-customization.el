@@ -1,6 +1,6 @@
 ;;; treemacs.el --- A tree style file viewer package -*- lexical-binding: t -*-
 
-;; Copyright (C) 2020 Alexander Miller
+;; Copyright (C) 2021 Alexander Miller
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -31,18 +31,20 @@
   "Determine the location of python 3."
   (--if-let (executable-find "python3") it
     (when (eq system-type 'windows-nt)
-      (->> "where python"
-           (shell-command-to-string)
-           (s-trim)
-           (s-lines)
-           (--first
-            (when (file-exists-p it)
-              (->> (concat (shell-quote-argument it) " --version")
-                   (shell-command-to-string)
-                   (s-trim)
-                   (s-replace "Python " "")
-                   (s-left 1)
-                   (version<= "3"))))))))
+      (condition-case _
+          (->> "where python"
+               (shell-command-to-string)
+               (s-trim)
+               (s-lines)
+               (--first
+                (when (file-exists-p it)
+                  (->> (concat (shell-quote-argument it) " --version")
+                       (shell-command-to-string)
+                       (s-trim)
+                       (s-replace "Python " "")
+                       (s-left 1)
+                       (version<= "3")))))
+        (error nil)))))
 
 (cl-macrolet
     ((define-action-widget (name include-default include-tab include-ret)
@@ -114,6 +116,21 @@ indentation will be a space INTEGER pixels wide."
                  (list :tag "Pixels"
                        (integer :tag "Pixels" :value 16)
                        (const :tag "" px)))
+  :group 'treemacs)
+
+(defcustom treemacs-read-string-input 'from-child-frame
+  "The function treemacs uses to read user input.
+Only applies to plaintext input, like when renaming a project, file or
+workspace.
+
+There are 2 options:
+ - `from-child-frame': will use the `cfrs' package to read input from a small
+   child frame pop-up.  Only available in GUI frames, otherwise the default
+   minibuffer input is used.
+ - `from-minibuffer': will read input from the minibuffer, same as baseline
+   Emacs."
+  :type '(choice (const :tag "With Child Frame Popup" 'from-child-frame)
+                 (const :tag "From the Minibuffer (Emacs Default)" 'from-minibuffer))
   :group 'treemacs)
 
 (defcustom treemacs-move-forward-on-expand nil
@@ -244,10 +261,10 @@ In plaintext: some sort settings are much slower than others.  Alphabetic
 sorting \(the default) is fastest and causes no additional overhead (even when
 compared against foregoing sorting altogether).
 
-Modification time sorting takes the middle, being ca.  4x slower than alphabetic.
-Sorting by size is slowest, being ca.  5-6x slower than alphabetic.  It also
-produces the most garbage, making it more like for you to run into a garbage
-collection pause.
+Modification time sorting takes the middle, being ca.  4x slower than
+alphabetic.  Sorting by size is slowest, being ca.  5-6x slower than alphabetic.
+It also produces the most garbage, making it more like for you to run into a
+garbage collection pause.
 
 Lest these numbers scare you off keep in mind that they will likely have little
 to no effect on your usage of treemacs until you begin frequently refreshing
@@ -292,9 +309,9 @@ rendered, when the files' git status information is now available.  This for
 example allows to make files ignored by git invisible.
 The functions in this list are therefore expected to have a different signature:
 They must take two arguments - a file's absolute path and a hash table that maps
-files to their git status.  The files' paths are the table's keys, its values are
-characters (and not strings) indicating the file's git condition.  The chars map
-map as follows: (the pattern is derived from 'git status --porcelain')
+files to their git status.  The files' paths are the table's keys, its values
+are characters (and not strings) indicating the file's git condition.  The chars
+map map as follows: (the pattern is derived from 'git status --porcelain')
 
  * M - file is modified
  * U - file is in conflict
@@ -335,7 +352,7 @@ Its possible values are:
  * refetch-index
    Call up the file's imenu index again and use its information to jump.
  * call-xref
-   Call `xref-find-definitions' to find the tag.  Only available since Emacs 25.
+   Call `xref-find-definitions' to find the tag.
  * issue-warning
    Just issue a warning that the tag's position pointer is invalid."
   :type 'integer
@@ -376,6 +393,11 @@ The change will apply the next time a treemacs buffer is created."
   :type 'boolean
   :group 'treemacs)
 
+(defcustom treemacs-expand-added-projects t
+  "When non-nil newly added projects will be expanded."
+  :type 'boolean
+  :group 'treemacs)
+
 (defcustom treemacs-recenter-after-project-jump 'always
   "Decides when to recenter view after moving between projects.
 Specifically applies to calling `treemacs-next-project' and
@@ -407,7 +429,7 @@ Possible values are:
 
 (defcustom treemacs-pulse-on-success t
   "When non-nil treemacs will pulse the current line as a success indicator.
-This applies to actions like `treemacs-copy-path-at-point'."
+This applies to actions like `treemacs-copy-relative-path-at-point'."
   :type 'boolean
   :group 'treemacs)
 
@@ -483,7 +505,9 @@ Note that this does *not* take `scroll-margin' into account."
        2)))
   "The value for `imenu-generic-expression' treemacs uses in elisp buffers.
 More discriminating than the default as it distinguishes between functions,
-inline functions, macros, faces, variables, customisations and types."
+inline functions, macros, faces, variables, customisations and types.
+
+Can be set to nil to use the default value."
   :type 'alist
   :group 'treemacs)
 
@@ -540,12 +564,12 @@ missing project will not appear in the project list next time Emacs is started."
   :group 'treemacs)
 
 (defcustom treemacs-directory-name-transformer #'identity
-  "Transformer function that is applied to directory names before rendering for any sort of cosmetic effect."
+  "Transformer to apply to directory names before rendering for cosmetic effect."
   :type 'function
   :group 'treemacs)
 
 (defcustom treemacs-file-name-transformer #'identity
-  "Transformer function that is applied to file names before rendering for any sort of cosmetic effect."
+  "Transformer to apply to file names before rendering for cosmetic effect."
   :type 'function
   :group 'treemacs)
 
@@ -618,8 +642,9 @@ Possible values are:
 This means that treemacs will make sure that only the currently followed project
 is expanded while all others will remain collapsed.
 
-Setting this to t might lead to noticeable slowdowns, at least when `treemacs-git-mode'
-is enabled, since constantly expanding an entire project is fairly expensive."
+Setting this to t might lead to noticeable slowdowns, at least when
+`treemacs-git-mode' is enabled, since constantly expanding an entire project is
+fairly expensive."
   :type 'boolean
   :group 'treemacs-follow)
 
@@ -667,6 +692,14 @@ used to reduce the size of the output to a manageable volume for treemacs."
 In practice means that treemacs will become invisible to commands like
 `other-window' or `evil-window-left'."
   :type 'boolean
+  :group 'treemacs-window)
+
+(defcustom treemacs-window-background-color nil
+  "Custom background colours for the treemacs window.
+Value must be a cons cell consisting of two colours: first the background of the
+treemacs window proper, then a second colour for treemacs' `hl-line' overlay
+marking the selected line."
+  :type '(cons color color)
   :group 'treemacs-window)
 
 (defcustom treemacs-width 35
@@ -723,6 +756,37 @@ Will be called with the new project as the sole argument."
   "Hooks to run whenever a file or directory is created.
 Applies only when using `treemacs-create-file' or `treemacs-create-dir'.
 Will be called with the created file's or dir's path as the sole argument."
+  :type 'hook
+  :group 'treemacs-hooks)
+
+(defcustom treemacs-delete-file-functions nil
+  "Hooks to run whenever a file or directory is deleted.
+Applies only when using `treemacs-delete'.  Will be called with the created
+file's or dir's path as the sole argument."
+  :type 'hook
+  :group 'treemacs-hooks)
+
+(defcustom treemacs-rename-file-functions nil
+  "Hooks to run whenever a file or directory is renamed.
+
+Applies only when using `treemacs-rename'.  Will be called with 2 arguments: the
+file's old name, and the file's new name, both as absolute paths."
+  :type 'hook
+  :group 'treemacs-hooks)
+
+(defcustom treemacs-move-file-functions nil
+  "Hooks to run whenever a file or directory is moved.
+
+Applies only when using `treemacs-move-file'.  Will be called with 2 arguments:
+the file's old location, and the file's new location, both as absolute paths."
+  :type 'hook
+  :group 'treemacs-hooks)
+
+(defcustom treemacs-copy-file-functions nil
+  "Hooks to run whenever a file or directory is copied.
+
+Applies only when using `treemacs-copy-file'.  Will be called with 2 arguments:
+the original file's location, and the copy's location, both as absolute paths."
   :type 'hook
   :group 'treemacs-hooks)
 
@@ -838,10 +902,16 @@ The hooks will be run *after* the treemacs buffer was destroyed."
   :type 'hook
   :group 'treemacs-hooks)
 
-(defcustom treemacs-select-hook nil
+(define-obsolete-variable-alias 'treemacs-select-hook 'treemacs-select-functions "2.9")
+
+(defcustom treemacs-select-functions nil
   "Hooks to run when the treemacs window is selected.
-This only applies to commands like `treemacs' or `treemacs-select-window', not
-general window selection commands like `other-window'."
+The hook should accept one argument which is a symbol describing treemacs'
+visibility before the select was invoked, as it would have been returned by
+`treemacs-current-visibility'.
+
+This hook only applies to commands like `treemacs' or `treemacs-select-window',
+not general window selection commands like `other-window'."
   :type 'hook
   :group 'treemacs-hooks)
 
@@ -874,7 +944,8 @@ available \"Treemacs\" text will be displayed.
 
 Setting this to `none' will disable the modeline.
 
-For more specific information about formatting mode line check `mode-line-format'."
+For more specific information about formatting mode line check
+`mode-line-format'."
   :type 'sexp
   :group 'treemacs)
 
@@ -892,6 +963,15 @@ unaffected."
   :type '(choice (const :tag "All Buffers" all)
                  (const :tag "Only File Buffers" files)
                  (const :tag "None" nil))
+  :group 'treemacs)
+
+(defcustom treemacs-imenu-scope 'everything
+  "Determines which items treemacs' imenu function will collect.
+There are 2 options:
+ - `everything' will collect entries from every project in the workspace.
+ - `current-project' will only gather the index for the project at point."
+  :type '(choice (const :tag "Everything" everything)
+                 (const :tag "Current Project Only" current-project))
   :group 'treemacs)
 
 (provide 'treemacs-customization)

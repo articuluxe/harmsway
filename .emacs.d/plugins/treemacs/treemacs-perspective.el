@@ -1,10 +1,10 @@
 ;;; treemacs-perspective.el --- Perspective integration for treemacs -*- lexical-binding: t -*-
 
-;; Copyright (C) 2020 Alexander Miller
+;; Copyright (C) 2021 Alexander Miller
 
 ;; Author: Alexander Miller <alexanderm@web.de>
 ;;   Jason Dufair <jase@dufair.org>
-;; Package-Requires: ((emacs "25.2") (treemacs "0.0") (perspective "2.8") (dash "2.11.0"))
+;; Package-Requires: ((emacs "26.1") (treemacs "0.0") (perspective "2.8") (dash "2.11.0"))
 ;; Version: 0
 ;; Homepage: https://github.com/Alexander-Miller/treemacs
 
@@ -53,16 +53,20 @@ Will return \"No Perspective\" if no perspective is active."
       "No Perspective"
     (format "Perspective %s" (persp-name perspective))))
 
+(defun treemacs-perspective--on-scope-kill ()
+  "Cleanup hook to run when a perspective is killed."
+  (treemacs--on-scope-kill (persp-current-name)))
+
 (cl-defmethod treemacs-scope->setup ((_ (subclass treemacs-perspective-scope)))
   "Perspective-scope setup."
   (add-hook 'persp-switch-hook #'treemacs-perspective--on-perspective-switch)
-  (add-hook 'persp-killed-hook #'treemacs--on-scope-kill)
+  (add-hook 'persp-killed-hook #'treemacs-perspective--on-scope-kill)
   (treemacs-perspective--ensure-workspace-exists))
 
 (cl-defmethod treemacs-scope->cleanup ((_ (subclass treemacs-perspective-scope)))
   "Perspective-scope tear-down."
   (remove-hook 'persp-switch-hook #'treemacs-perspective--on-perspective-switch)
-  (remove-hook 'persp-killed-hook #'treemacs--on-scope-kill))
+  (remove-hook 'persp-killed-hook #'treemacs-perspective--on-scope-kill))
 
 (defun treemacs-perspective--on-perspective-switch (&rest _)
   "Hook running after the perspective was switched.
@@ -117,7 +121,7 @@ does not return anything the projects of the fallback workspace will be copied."
                   :path (treemacs-project->path project)
                   :path-status (treemacs-project->path-status project))
                  project-list))))
-     (setf (treemacs-workspace->projects ws) project-list)
+     (setf (treemacs-workspace->projects ws) (nreverse project-list))
      (treemacs-return ws))))
 
 (provide 'treemacs-perspective)

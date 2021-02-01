@@ -1,6 +1,6 @@
 ;;; forge-issue.el --- Issue support               -*- lexical-binding: t -*-
 
-;; Copyright (C) 2018-2020  Jonas Bernoulli
+;; Copyright (C) 2018-2021  Jonas Bernoulli
 
 ;; Author: Jonas Bernoulli <jonas@bernoul.li>
 ;; Maintainer: Jonas Bernoulli <jonas@bernoul.li>
@@ -161,13 +161,14 @@
 (defun forge-insert-issues ()
   "Insert a list of mostly recent and/or open issues.
 Also see option `forge-topic-list-limit'."
-  (when-let ((repo (forge-get-repository nil)))
-    (when (and (not (oref repo sparse-p))
-               (or (not (slot-boundp repo 'issues-p)) ; temporary KLUDGE
-                   (oref repo issues-p)))
-      (forge-insert-topics "Issues"
-                           (forge-ls-recent-topics repo 'issue)
-                           (forge--topic-type-prefix repo 'issue)))))
+  (when forge-display-in-status-buffer
+    (when-let ((repo (forge-get-repository nil)))
+      (when (and (not (oref repo sparse-p))
+                 (or (not (slot-boundp repo 'issues-p)) ; temporary KLUDGE
+                     (oref repo issues-p)))
+        (forge-insert-topics "Issues"
+                             (forge-ls-recent-topics repo 'issue)
+                             (forge--topic-type-prefix repo 'issue))))))
 
 (defun forge-insert-assigned-issues ()
   "Insert a list of open issues that are assigned to you."
@@ -186,6 +187,27 @@ Also see option `forge-topic-list-limit'."
                         (= issue_assignee:id    assignee:id)
                         (= issue:repository     $s2)
                         (= assignee:login       $s3)
+                        (isnull issue:closed))
+            :order-by [(desc updated)]]
+           (vconcat (closql--table-columns (forge-db) 'issue t))
+           (oref repo id)
+           (ghub--username repo))))
+
+(defun forge-insert-authored-issues ()
+  "Insert a list of open issues that are authored to you."
+  (when-let ((repo (forge-get-repository nil)))
+    (unless (oref repo sparse-p)
+      (forge-insert-topics "Authored issues"
+                           (forge--ls-authored-issues repo)
+                           (forge--topic-type-prefix repo 'issue)))))
+
+(defun forge--ls-authored-issues (repo)
+  (mapcar (lambda (row)
+            (closql--remake-instance 'forge-issue (forge-db) row))
+          (forge-sql
+           [:select $i1 :from [issue]
+            :where (and (= issue:repository $s2)
+                        (= issue:author     $s3)
                         (isnull issue:closed))
             :order-by [(desc updated)]]
            (vconcat (closql--table-columns (forge-db) 'issue t))

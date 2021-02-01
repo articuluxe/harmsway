@@ -36,6 +36,7 @@
 ;; - elfeed
 ;; - evil
 ;; - flycheck
+;; - hydra
 ;; - ido-vertical-mode
 ;; - linum-relative
 ;; - lsp-ui
@@ -214,7 +215,7 @@ Also bind `class' to ((class color) (min-colors 89))."
 ;;;;; UI
    `(border                                   ((,class :foreground ,hr-white+5)))
    `(fill-column-indicator                    ((,class :foreground ,hr-black-3)))
-   `(fringe                                   ((,class :foreground ,hr-fg        :background ,hr-bg)))
+   `(fringe                                   ((,class :foreground ,hr-fg        :background ,hr-black-2)))
    `(highlight                                ((,class :foreground ,hr-yellow    :background ,hr-bg)))
    `(highlight-changes                        ((,class :foreground ,hr-red       :background ,hr-bg)))
    `(hl-line                                  ((,class                           :background ,hr-black-3   :extend t)))
@@ -226,6 +227,7 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(tooltip                                  ((,class                           :background ,hr-black-3)))
    `(tool-bar                                 ((,class                           :background ,hr-black-3)))
    `(vertical-border                          ((,class :foreground ,hr-white+5)))
+   `(widget-button                            ((,class                                                     :weight normal)))
    `(widget-button-pressed                    ((,class :foreground ,hr-orange)))
    `(widget-field                             ((,class :background ,hr-black-6)))
    `(window-divider                           ((,class :foreground ,hr-white+5)))
@@ -524,7 +526,9 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(dashboard-banner-logo-title              ((,class :foreground ,hr-fg)))
    `(dashboard-footer                         ((,class :foreground ,hr-white+6)))
    `(dashboard-heading                        ((,class :foreground ,hr-blue)))
+   `(dashboard-items-face                     ((,class                                                     :inherit widget-button)))
    `(dashboard-navigator                      ((,class :foreground ,hr-blue)))
+   `(dashboard-no-items-face                  ((,class                                                     :inherit widget-button)))
    `(dashboard-text-banner                    ((,class :foreground ,hr-blue)))
 
 ;;;;; deft
@@ -604,6 +608,13 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(flycheck-fringe-error                    ((,class :foreground ,hr-red)))
    `(flycheck-fringe-info                     ((,class :foreground ,hr-cyan)))
    `(flycheck-fringe-warning                  ((,class :foreground ,hr-orange)))
+
+;;;;; hydra
+   `(hydra-face-amaranth                      ((,class :foreground ,hr-orange                              :weight bold)))
+   `(hydra-face-blue                          ((,class :foreground ,hr-blue :weight bold)))
+   `(hydra-face-pink                          ((,class :foreground ,hr-yellow :weight bold)))
+   `(hydra-face-red                           ((,class :foreground ,hr-red                                 :weight bold)))
+   `(hydra-face-teal                          ((,class :foreground ,hr-cyan                                :weight bold)))
 
 ;;;;; ido-vertical-mode
    `(ido-vertical-match-face                  ((,class :foreground ,hr-yellow                              :weight bold :underline t)))

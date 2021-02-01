@@ -90,8 +90,10 @@ This is bound dynamically while the checks run.")
   (list (cons 'cl-lib "\\`cl-")
         (cons 'cl-generic "\\`cl-\\(?:def\\)?generic")
         (cons 'cl-print "\\`cl-print")
+        (cons 'jsonrpc "\\`jsonrpc-")
         (cons 'map "\\`map-")
         (cons 'nadvice "\\`advice-")
+        (cons 'org "\\`org-link-")
         (cons 'seq "\\`seq-")
         (cons 'let-alist "\\`let-alist"))
   "A sequence of (FEATURE . SYMBOL-NAME-MATCH) for backport libraries.
@@ -528,7 +530,7 @@ required version PACKAGE-VERSION.  If not, raise an error for DEP-POS."
   (save-excursion
     (save-match-data
       (and (re-search-backward
-            (concat "(fboundp\\s-+'" (regexp-quote sym) "\\_>") (point-min) t)
+            (concat "(" (regexp-opt '("fboundp" "macrop")) "\\s-+#?'" (regexp-quote sym) "\\_>") (point-min) t)
            (not (package-lint--inside-comment-or-string-p))))))
 
 (defun package-lint--map-regexp-match (regexp callback)

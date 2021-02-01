@@ -1,0 +1,61 @@
+This is pdfTeX, Version 3.14159265-2.6-1.40.21 (TeX Live 2020) (preloaded format=prv_math 2020.12.30)  30 DEC 2020 12:36
+entering extended mode
+ restricted \write18 enabled.
+ file:line:error style messages enabled.
+ %&-line parsing enabled.
+**&prv_math /AUCTEXINPUT{ _region_.tex }
+(./_region_.tex (/usr/local/texlive/2020/texmf-dist/tex/latex/l3backend/l3backend-pdfmode.def
+File: l3backend-pdfmode.def 2020-03-12 L3 backend support: PDF mode
+\l__kernel_color_stack_int=\count175
+\l__pdf_internal_box=\box45
+)
+No file _region_.aux.
+LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 2.
+LaTeX Font Info:    ... okay on input line 2.
+LaTeX Font Info:    Checking defaults for OMS/cmsy/m/n on input line 2.
+LaTeX Font Info:    ... okay on input line 2.
+LaTeX Font Info:    Checking defaults for OT1/cmr/m/n on input line 2.
+LaTeX Font Info:    ... okay on input line 2.
+LaTeX Font Info:    Checking defaults for T1/cmr/m/n on input line 2.
+LaTeX Font Info:    ... okay on input line 2.
+LaTeX Font Info:    Checking defaults for TS1/cmr/m/n on input line 2.
+LaTeX Font Info:    ... okay on input line 2.
+LaTeX Font Info:    Checking defaults for OMX/cmex/m/n on input line 2.
+LaTeX Font Info:    ... okay on input line 2.
+LaTeX Font Info:    Checking defaults for U/cmr/m/n on input line 2.
+LaTeX Font Info:    ... okay on input line 2.
+(/usr/local/texlive/2020/texmf-dist/tex/latex/preview/preview.sty
+Package: preview 2017/04/24 12.2 (AUCTeX/preview-latex)
+ (/usr/local/texlive/2020/texmf-dist/tex/generic/luatex85/luatex85.sty
+Package: luatex85 2016/06/15 v1.4 pdftex aliases for luatex
+) (/usr/local/texlive/2020/texmf-dist/tex/latex/preview/prtightpage.def
+\PreviewBorder=\dimen135
+) (/usr/local/texlive/2020/texmf-dist/tex/latex/preview/prauctex.def
+No auxiliary output files.
+
+
+\hbadness=\count176
+\hfuzz=\dimen136
+(/usr/local/texlive/2020/texmf-dist/tex/latex/preview/prauctex.cfg)) (/usr/local/texlive/2020/texmf-dist/tex/latex/preview/prfootnotes.def)
+\pr@snippet=\count177
+\pr@box=\box46
+\pr@output=\toks15
+
+Preview: Fontsize 10pt
+Preview: PDFoutput 1
+)  !name(math.tex) !offset(-3)   !name(math.tex) !offset(-5)  ) 
+Here is how much of TeX's memory you used:
+ 328 strings out of 480358
+ 6563 string characters out of 5900467
+ 240824 words of memory out of 5000000
+ 16516 multiletter control sequences out of 15000+600000
+ 534421 words of font info for 31 fonts, out of 8000000 for 9000
+ 1141 hyphenation exceptions out of 8191
+ 29i,4n,29p,179b,106s stack positions out of 5000i,500n,10000p,200000b,80000s
+
+No pages of output.
+PDF statistics:
+ 0 PDF objects out of 1000 (max. 8388607)
+ 0 named destinations out of 1000 (max. 500000)
+ 1 words of extra memory for PDF output out of 10000 (max. 10000000)
+
