@@ -1,3 +1,2 @@
-git clone https://git.savannah.gnu.org/git/emacs/elpa.git src
-cd src
-git checkout externals/queue
+echo "Cloning queue from _elpa"
+mkdir -p src

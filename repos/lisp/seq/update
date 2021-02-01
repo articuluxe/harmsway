@@ -1,0 +1,2 @@
+cd ../_elpa/src
+git checkout externals/seq

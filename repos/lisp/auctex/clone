@@ -1,3 +1,2 @@
-git clone https://git.savannah.gnu.org/git/emacs/elpa.git src
-cd src
-git checkout externals/auctex
+echo "Cloning auctex from _elpa"
+mkdir -p src
