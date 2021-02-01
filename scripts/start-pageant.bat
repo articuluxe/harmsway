@@ -1,11 +1,11 @@
 @echo off
 rem -*- Mode: bat -*-
 rem start-pageant.bat --- start pageant on start up
-rem Copyright (C) 2015-2020   (dan.harms)
+rem Copyright (C) 2015-2021   (dan.harms)
 rem Author:  <enniomore@icloud.com>
 rem Created: Friday, April 10, 2015
 rem Version: 1.0
-rem Modified Time-stamp: <2020-09-19 16:37:44 dharms>
+rem Modified Time-stamp: <2021-01-29 15:03:56 dharms>
 rem Keywords: pageant ssh
 
 setlocal
@@ -21,7 +21,7 @@ if "%PUTTY_DIR%". == . (
 )
 
 set "exe=%PUTTY_DIR%\pageant.exe"
-set "key_file=%HOME%\.ssh\Dan.Harms.ppk"
+set "key_file=%HOME%\.ssh\%NAME%.ppk"
 
 start "Pageant" "%exe%" "%key_file%"
 
