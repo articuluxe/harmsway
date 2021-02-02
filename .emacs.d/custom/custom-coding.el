@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Tuesday, April 12, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2021-02-01 18:12:12 dharms>
+;; Modified Time-stamp: <2021-02-02 14:48:20 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: coding
 
@@ -69,7 +69,8 @@ name.  Otherwise, the base file name is used."
 
 ;; class header
 (defun insert-class-header (&optional arg)
-  "Insert a formatted class header given the current selection or position."
+  "Insert a formatted class header given the current selection or position.
+ARG, if non-nil, allows customizing the header used."
   (interactive "P")
   (let ((str
          (if (region-active-p)
@@ -97,7 +98,7 @@ name.  Otherwise, the base file name is used."
 ;; casting
 (defvar my/cast-history-list nil)
 (defun insert-cast (start end)
-  "Insert code for a cast around a region."
+  "Insert code for a cast around a region delimited by START and END."
   (interactive "r")
   (let ((initial (if my/cast-history-list
                      (car my/cast-history-list)

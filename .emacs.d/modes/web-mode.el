@@ -2350,7 +2350,7 @@ shouldn't be moved back.)")
 (defvar web-mode-php-font-lock-keywords
   (list
    (cons (concat "\\_<\\(" web-mode-php-keywords "\\)\\_>") '(0 'web-mode-keyword-face))
-   (cons (concat "(\\_<\\(" web-mode-php-types "\\)\\_>") '(1 'web-mode-type-face))
+   (cons (concat "\\_<\\(" web-mode-php-types "\\)\\_>") '(1 'web-mode-type-face))
    (cons (concat "\\_<\\(" web-mode-php-constants "\\)\\_>") '(0 'web-mode-constant-face))
    '("function[ ]+\\([[:alnum:]_]+\\)" 1 'web-mode-function-name-face)
    '("\\_<\\([[:alnum:]_]+\\)[ ]?(" 1 'web-mode-function-call-face)
@@ -5516,7 +5516,7 @@ Also return non-nil if it is the command `self-insert-command' is remapped to."
               val-beg nil)
         )
 
-       ((and (= state 6) (member char '(?\s ?\n ?\/)))
+       ((and (= state 6) (member char '(?\s ?\n))) ;#1150
         (setq attrs (+ attrs (web-mode-attr-scan state char name-beg name-end val-beg attr-flags equal-offset)))
         (setq state 1
               attr-flags 0
@@ -5633,9 +5633,17 @@ Also return non-nil if it is the command `self-insert-command' is remapped to."
       (if (null val-beg)
           (setq val-end name-end)
         (setq val-end (point))
-        (when (or (null char) (member char '(?\s ?\n ?\> ?\/)))
-          (setq val-end (1- val-end))
+        (cond
+         ((null char)
+          (setq val-end (1- val-end)))
+         ((member char '(?\s ?\n ?\/))
+          (setq val-end (1- val-end)))
+         ((eq char ?\>)
+          (if (logior flags 8)
+              (setq val-end (- val-end 2))
+            (setq val-end (- val-end 1)))
           )
+         )
         ) ;if
       (put-text-property name-beg (1+ name-beg) 'tag-attr-beg flags)
       (put-text-property name-beg (1+ val-end) 'tag-attr t)
@@ -8750,6 +8758,8 @@ Also return non-nil if it is the command `self-insert-command' is remapped to."
                    (string-match-p "^[&|?:+-]" curr-line))
                (not (and (string= language "php")
                          (string-match-p "^->" curr-line)))
+               (not (and (string= language "php")
+                         (string-match-p "^?[a-zA-z]*" curr-line)))
                (not (and (string= language "php")
                          (string-match-p "\\(else[ ]?:\\|if[ ]?([^)]*)[ ]?:\\)" prev-line)))
                (not (string-match-p "^\\(++\\|--\\)" curr-line))
