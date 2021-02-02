@@ -1,9 +1,9 @@
 ;;; custom-coding.el --- custom coding utilities
-;; Copyright (C) 2016-2017  Dan Harms (dharms)
+;; Copyright (C) 2016-2017, 2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Tuesday, April 12, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-06-20 08:40:25 dharms>
+;; Modified Time-stamp: <2021-02-01 18:12:12 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: coding
 
@@ -105,13 +105,26 @@ name.  Otherwise, the base file name is used."
         type str)
     (setq type (read-string "Enter the data type to cast to: "))
     (setq str (completing-read "Enter the type of cast: "
-                               '("static" "dynamic" "reinterpret" "const")
+                               '("static" "dynamic" "reinterpret" "const" "bit")
                                nil t nil my/cast-history-list))
     (if (= 0 (length str))
         (setq str initial))
     (save-excursion
       (goto-char end)(insert ")")
       (goto-char start)(insert str "_cast<" type ">("))))
+
+;; insert todo
+(defun insert-todo ()
+  "Insert a TODO on the next line."
+  (interactive)
+  (move-end-of-line nil)
+  (newline)
+  (indent-for-tab-command)
+  (insert "TODO: ")
+  (back-to-indentation)
+  (set-mark-command nil)
+  (move-end-of-line nil)
+  (comment-dwim nil))
 
 (provide 'custom-coding)
 ;;; custom-coding.el ends here

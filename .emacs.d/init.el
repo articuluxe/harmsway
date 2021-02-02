@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-02-01 15:35:14 dharms>
+;; Modified Time-stamp: <2021-02-01 18:09:48 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -493,6 +493,7 @@ not an error if any files do not exist."
          ("C-c ii" . add-header-include-ifdefs)
          ("C-c h" . insert-class-header)
          ("C-c c" . insert-cast)
+         ("C-c it" . insert-todo)
          ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; annotate ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -645,7 +646,7 @@ line."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; c-includer ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package c-includer
-  :bind ("C-c it" . makey-key-mode-popup-c-includer-brackets))
+  :bind ("C-c il" . makey-key-mode-popup-c-includer-brackets))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; cleanup-funcs ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package cleanup-funcs
