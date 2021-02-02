@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-02-01 18:09:48 dharms>
+;; Modified Time-stamp: <2021-02-02 15:31:58 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2028,11 +2028,20 @@ ARGS are the additional arguments."
 (push '(undo discard-info) warning-suppress-types)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; undo-tree ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defvar harmsway-undotree-dir (concat my/user-directory "undotree/"))
+(unless (file-directory-p harmsway-undotree-dir)
+  (make-directory harmsway-undotree-dir t))
 (use-package undo-tree
   :init
   (setq undo-tree-visualizer-diff t)
   (setq undo-tree-visualizer-timestamps t)
+  (setq undo-tree-visualizer-relative-timestamps nil)
   (setq undo-tree-enable-undo-in-region nil)
+  (setq undo-tree-auto-save-history t)
+  (setq undo-tree-history-directory-alist
+        `((".*" . ,harmsway-undotree-dir)))
+  (setq undo-tree-incompatible-major-modes
+        '(bookmark-bmenu-mode term-mode shell-mode vterm-mode))
   :config
   ;; unset this key for use in other packages
   (define-key undo-tree-map "\C-_" nil)
