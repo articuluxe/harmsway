@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-02-09 13:57:03 dharms>
+;; Modified Time-stamp: <2021-02-09 13:57:29 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -831,11 +831,11 @@ From `manuel-oberti.github.io' on 20190806."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ctrlxo ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package ctrlxo
-  :bind (("C-x o" . #'ctrlxo-current-frame)
-         ("<C-tab>" . #'ctrlxo)
+  :bind (("C-x o" . ctrlxo-current-frame)
+         ("<C-tab>" . ctrlxo)
          (:map ctrlxo-map
-               ("<tab>" . #'ctrlxo-forward)
-               ("<S-tab>" . #'ctrlxo-backward))))
+               ("<tab>" . ctrlxo-forward)
+               ("<S-tab>" . ctrlxo-backward))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; nswbuff ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package nswbuff
@@ -1119,6 +1119,17 @@ From `manuel-oberti.github.io' on 20190806."
 (use-package baff
   :commands baff
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; go-translate ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package go-translate
+  :bind (("C-c 0TT" . go-translate)
+         ("C-c 0TP" . go-translate-popup)
+         ("C-c 0T." . go-translate-popup-current)
+         )
+  :init
+  (setq go-translate-local-language "en")
+  (setq go-translate-target-language "it")
+  (setq go-translate-extra-directions '(("en" . "fr"))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; elnode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package elnode)
