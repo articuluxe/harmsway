@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-02-03 10:22:55 dharms>
+;; Modified Time-stamp: <2021-02-03 14:34:58 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -828,8 +828,18 @@ From `manuel-oberti.github.io' on 20190806."
          ("M-' <backtab>" . iflipb-previous-buffer)
          ))
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ctrlxo ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package ctrlxo
+  :bind (("C-x o" . #'ctrlxo-current-frame)
+         ("<C-tab>" . #'ctrlxo)
+         (:map ctrlxo-map
+               ("<tab>" . #'ctrlxo-forward)
+               ("<S-tab>" . #'ctrlxo-backward))))
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; nswbuff ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package nswbuff
+  :disabled
   :bind (("<C-tab>" . nswbuff-switch-to-next-buffer)
          ("<C-S-tab>" . nswbuff-switch-to-previous-buffer)
          ("<C-S-iso-lefttab>" . nswbuff-switch-to-previous-buffer)
