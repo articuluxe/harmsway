@@ -3,7 +3,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2021-01-04 11:08:29 dharms>
+;; Modified Time-stamp: <2021-02-03 14:18:00 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -93,8 +93,8 @@
                             ))
   (choose-font-init))
 
-(add-to-list 'default-frame-alist
-             (cons 'height (my/get-ideal-frame-height 75)))
+;; (add-to-list 'default-frame-alist
+;;              (cons 'height (my/get-ideal-frame-height 75)))
 (add-to-list 'default-frame-alist
              '(width . 90))
 

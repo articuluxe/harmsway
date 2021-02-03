@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2021-01-27 17:48:32 dharms>
+;; Modified Time-stamp: <2021-02-03 13:50:12 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -49,13 +49,12 @@
 (setq default-frame-alist
       '((cursor-type . bar)
         (ns-transparent-titlebar . t)
-        (ns-appearance . dark))
+        (ns-appearance . dark)
         (fullscreen . fullheight)
-      )
+        ))
 
 (setq initial-frame-alist
-      '(
-        (top . 25) (left . 50)
+      '((top . 25) (left . 50)
         (fullscreen . fullheight)
         ))
 

@@ -1,9 +1,9 @@
 ;; x.el --- x-windows gui settings file
-;; Copyright (C) 2015-2016, 2018  Dan Harms (dharms)
+;; Copyright (C) 2015-2016, 2018, 2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2018-08-09 14:48:03 dharms>
+;; Modified Time-stamp: <2021-02-03 14:23:58 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -35,11 +35,15 @@
 (setq mouse-wheel-progressive-speed nil)
 (setq mouse-wheel-follow-mouse nil)
 
-(setq default-frame-alist '((cursor-type . bar)))
+(setq default-frame-alist
+      '((cursor-type . bar)
+        (fullscreen . fullheight)
+        ))
 
 (setq initial-frame-alist
       '(
         (top . 5) (left . 5)
+        (fullscreen . fullheight)
         ))
 
 ;; x.el ends here

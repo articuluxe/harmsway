@@ -1,9 +1,9 @@
 ;; ns.el --- mac gui settings
-;; Copyright (C) 2015-2016, 2018, 2020  Dan Harms (dharms)
+;; Copyright (C) 2015-2016, 2018, 2020-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2020-05-18 11:27:09 dharms>
+;; Modified Time-stamp: <2021-02-03 13:50:13 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -45,13 +45,16 @@
 (global-set-key [f11] 'ns-toggle-full-screen)
 (global-set-key "\C-c0q11" 'ns-toggle-full-screen)
 
-(setq default-frame-alist '((cursor-type . bar)
-                            (ns-transparent-titlebar . t)
-                            (ns-appearance . dark)))
+(setq default-frame-alist
+      '((cursor-type . bar)
+        (ns-transparent-titlebar . t)
+        (ns-appearance . dark)
+        (fullscreen . fullheight)
+        ))
 
 (setq initial-frame-alist
-      '(
-        (top . 25) (left . 50)
+      '((top . 25) (left . 50)
+        (fullscreen . fullheight)
         ))
 
 ;; ns.el ends here
