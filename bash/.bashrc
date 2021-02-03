@@ -6,28 +6,6 @@ if [ -f /etc/bashrc ]; then
 fi
 
 #echo "Loading .bashrc..."
-
-function ahead_behind {
-    curr_branch=$(git rev-parse --abbrev-ref HEAD);
-    curr_remote=$(git config branch.$curr_branch.remote);
-    curr_merge_branch=$(git config branch.$curr_branch.merge | cut -d / -f 3);
-    git rev-list --left-right --count $curr_branch...$curr_remote/$curr_merge_branch | tr -s '\t' '|';
-}
-
-function git-list-branches {
-    git for-each-ref --format='%(authorname) %09 %(refname)'
-}
-
-# pip bash completion start
-_pip_completion()
-{
-    COMPREPLY=( $( COMP_WORDS="${COMP_WORDS[*]}" \
-                   COMP_CWORD=$COMP_CWORD \
-                   PIP_AUTO_COMPLETE=1 $1 ) )
-}
-complete -o default -F _pip_completion pip
-# pip bash completion end
-
 set -o emacs
 shopt -s cdspell
 if [[ $BASH_VERSINFO -ge 4 ]]; then
@@ -49,7 +27,6 @@ alias bt='echo 0 | gdb -batch-silent -ex "run" -ex "set logging overwrite on" -e
       -ex "echo backtrace:\n" -ex "backtrace full" -ex "echo \n\nregisters:\n" -ex "info registers" \
       -ex "echo \n\ncurrent instructions:\n" -ex "x/16i \$pc" -ex "echo \n\nthreads backtrace:\n" \
       -ex "thread apply all backtrace" -ex "set logging off" -ex "quit" --args'
-
 
 export PROMPT_COMMAND=__prompt_command
 function __prompt_command() {
@@ -74,6 +51,56 @@ function __prompt_command() {
         PS1+="${blue}>${rst} "
     fi
 }
+
+# marks
+export MARKPATH=$HOME/.marks
+function mark {
+    mkdir -p "$MARKPATH"; ln -s "$(pwd)" "$MARKPATH/$1"
+}
+function unmark {
+    rm -i "$MARKPATH/$1"
+}
+function marks {
+    ls -l "$MARKPATH" | sed 's/  / /g' | cut -d' ' -f9- | sed 's/ -/\t-/g' && echo
+}
+function jump {
+    cd -P "$MARKPATH/$1" 2>/dev/null || echo "No such mark: $1"
+}
+_completemarks() {
+    local curw=${COMP_WORDS[COMP_CWORD]}
+    local wordlist=$(find "$MARKPATH" -type l -printf "%f\\n")
+    COMPREPLY=($(compgen -W "${wordlist[@]}" -- "$curw"))
+    return 0
+}
+complete -F _completemarks jump unmark
+# alternate
+export CDPATH=.:~/.marks/
+function bookmark {
+    ln -sr "$(pwd)" ~/.marks/"$1"
+}
+# end marks
+
+# git helpers
+function ahead_behind {
+    curr_branch=$(git rev-parse --abbrev-ref HEAD);
+    curr_remote=$(git config branch.$curr_branch.remote);
+    curr_merge_branch=$(git config branch.$curr_branch.merge | cut -d / -f 3);
+    git rev-list --left-right --count $curr_branch...$curr_remote/$curr_merge_branch | tr -s '\t' '|';
+}
+
+function git-list-branches {
+    git for-each-ref --format='%(authorname) %09 %(refname)'
+}
+
+# pip bash completion start
+_pip_completion()
+{
+    COMPREPLY=( $( COMP_WORDS="${COMP_WORDS[*]}" \
+                   COMP_CWORD=$COMP_CWORD \
+                   PIP_AUTO_COMPLETE=1 $1 ) )
+}
+complete -o default -F _pip_completion pip
+# pip bash completion end
 
 user=$(id -nu)
 os=$(uname)
