@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-02-08 14:52:50 dharms>
+;; Modified Time-stamp: <2021-02-09 13:57:03 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1114,6 +1114,11 @@ From `manuel-oberti.github.io' on 20190806."
 (use-package 0xc
   :bind (("C-c 0cc" . 0xc-convert)
          ("C-c 0c." . 0xc-convert-point)))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; baff ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package baff
+  :commands baff
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; elnode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package elnode)
