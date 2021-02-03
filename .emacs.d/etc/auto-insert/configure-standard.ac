@@ -8,7 +8,7 @@ dnl Modified Time-stamp: <2015-02-26 13:20:30 dharms>
 dnl Modified by: Dan Harms
 dnl Keywords: $4
 
-AC_INIT([${1:project}],[${2:version}],[${3:dan.harms@xrtrading.com}])
+AC_INIT([${1:project}],[${2:version}],[${3:`user-mail-address`}])
 # Check if source folder is available
 AC_CONFIG_SRCDIR([${4:source_file}])
 # c++ preprocessor
