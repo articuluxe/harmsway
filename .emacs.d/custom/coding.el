@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2021-01-07 16:05:38 dharms>
+;; Modified Time-stamp: <2021-02-03 14:58:59 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -199,6 +199,7 @@
    ;; (make-local-variable 'electric-pair-pairs)
    ;; (push (cons ?< ?>) electric-pair-pairs)
    ;; add some c++-specific rotate-text keywords
+   (add-to-list 'c-noise-macro-names "constexpr")
    (setq rotate-text-local-symbols '(("class" "struct")
                                      ("true" "false")
                                      ("public" "protected" "private")
