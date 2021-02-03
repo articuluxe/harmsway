@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-02-03 14:34:58 dharms>
+;; Modified Time-stamp: <2021-02-03 14:48:25 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -4045,6 +4045,7 @@ This function's result only has value if it is preceded by any font changes."
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; html-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package validate-html :commands validate-html)
 (add-hook 'html-mode-hook
           (lambda()
             (if (featurep 'rainbow-mode)
