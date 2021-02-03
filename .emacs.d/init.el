@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-02-02 15:31:58 dharms>
+;; Modified Time-stamp: <2021-02-03 10:22:55 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3055,6 +3055,7 @@ completion at point mechanism does not interfere with `completion-at-point-funct
 (use-package company
   :init
   (setq company-idle-delay nil)
+  (setq company-tooltip-limit 20)
   (setq company-tooltip-idle-delay 1)
   (setq company-require-match nil)
   (setq company-minimum-prefix-length 1)
@@ -3083,6 +3084,7 @@ completion at point mechanism does not interfere with `completion-at-point-funct
   (define-key company-active-map "\C-p" #'company-select-previous)
   (define-key company-active-map "\M-n" nil)
   (define-key company-active-map "\M-p" nil)
+  (define-key company-active-map "\M-." #'company-show-location)
   ;; cycle back and forth with TAB and S-TAB
   (define-key company-active-map [tab] #'company-complete-common-or-cycle)
   (define-key company-active-map (kbd "TAB") #'company-complete-common-or-cycle)
@@ -3096,7 +3098,7 @@ completion at point mechanism does not interfere with `completion-at-point-funct
   :if (display-graphic-p)
   :after company
   :init
-  (setq company-quickhelp-delay 0.5)
+  (setq company-quickhelp-delay 0.4)
   (setq company-quickhelp-use-propertized-text t)
   :config
   (company-quickhelp-mode 1))
