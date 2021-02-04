@@ -5,7 +5,7 @@ Documentation=info:emacs man:emacs(1) https://gnu.org/software/emacs/
 
 [Service]
 Type=simple
-ExecStart=${EMACS_ROOT}/bin/emacs --fg-daemon --chdir %h
+ExecStart=${EMACS_BIN} --fg-daemon --chdir %h
 # change above to --daemon=<name>, then you can use
 # --server-file=<name> to run separate instances
 ExecStop=${EMACS_CLIENT} --eval "(progn (setq kill-emacs-hook 'nil) (kill-emacs))"
