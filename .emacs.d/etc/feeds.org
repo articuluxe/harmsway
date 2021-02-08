@@ -13,10 +13,16 @@
 *** http://emacs.stackexchange.com/feeds
 *** https://sachachua.com/blog/
 *** https://protesilaos/codelog/
+*** [[https://tech.toryanderson.com]]
 ** programming                                                          :cpp:
 *** https://www.modernescpp.com/index.php
 *** https://www.bfilipek.com
 *** https://marcofoco.com/topics/c/
 *** https://rigtorp.se
+*** [[https://preshing.com/feed]]
+
+
+
+
 
 

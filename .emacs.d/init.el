@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-02-03 14:48:25 dharms>
+;; Modified Time-stamp: <2021-02-08 14:52:50 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2275,6 +2275,13 @@ ARGS are the additional arguments."
   :config
   (advice-add 'elfeed-search-quit-window :after #'elfeed-dashboard-update-links)
   )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; org-web-tools ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package org-web-tools
+  :commands (org-web-tools-insert-link-for-url
+             org-web-tools-insert-web-page-as-entry
+             org-web-tools-read-url-as-org
+             org-web-tools-convert-links-to-page-entries))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; pack ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package pack

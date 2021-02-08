@@ -1,11 +1,11 @@
 #! /usr/bin/sh
 # darwin.txt --- helpful notes for mac os x
-# Copyright (C) 2016-2020  Dan Harms (dharms)
+# Copyright (C) 2016-2021  Dan Harms (dharms)
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Monday, May  2, 2016
 # Version: 1.0
-# Modified Time-stamp: <2020-02-24 08:56:01 Dan.Harms>
-# Modified by: Dan.Harms
+# Modified Time-stamp: <2021-02-08 10:57:56 dharms>
+# Modified by: Dan Harms
 # Keywords: mac help docs
 
 # show hidden files in finder
@@ -14,6 +14,12 @@ defaults write com.apple.finder AppleShowAllFiles TRUE
 killall Finder
 # kill a process
 pkill -SIGUSR2 Emacs
+
+# turn off system hibernation
+sudo pmset standby 0
+sudo pmset autopoweroff 0
+# remove system hibernation file
+sudo rm /var/vm/sleepimage
 
 # reclaim unused space in sparse disk images
 hdiutil compact <name>.sparseimage
@@ -27,7 +33,13 @@ chflags nouchg <file/dir>
 export COPYFILE_DISABLE
 
 # convert documents
-textutil -convert <txt|html|rtf|rtfd|doc|wordml|webarhive> file
+textutil -convert <txt|html|rtf|rtfd|doc|wordml|webarchive> file
+
+# burn .iso image to USB
+diskutil list
+diskutil unmount /dev/disk4s1
+sudo dd if=<input.iso> of=/dev/disk4 bs=1m
+diskutil eject /dev/disk4
 
 # ldd
 otool -L
