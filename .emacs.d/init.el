@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-02-09 13:57:29 dharms>
+;; Modified Time-stamp: <2021-02-09 14:22:58 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1118,6 +1118,7 @@ From `manuel-oberti.github.io' on 20190806."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; baff ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package baff
   :commands baff
+  :bind ("C-c 0cb" . baff)
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; go-translate ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
