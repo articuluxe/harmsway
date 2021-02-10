@@ -1,0 +1,23 @@
+#+TITLE:Partitions
+
+* Mount partition
+#+begin_src sh
+  sudo mkdir /mnt/data
+  ls /mnt/data
+  sudo  mount /dev/sda5 /mnt/data
+  sudo chown -R dharms /mnt/data
+  ls -lh /mnt/data
+  cd /mnt/data/
+  mkdir Documents Downloads Music Pictures Videos 
+  sudo blkid
+#+end_src
+
+* Add to /ec/fstab:
+UUID=7e74b886-f874-43c0-b393-22ec650429cc /mnt/data ext4 defaults 0 2
+
+* Add to /etc/rc.local:
+mount --bind /mnt/data/Documents /home/dharms/Documents
+mount --bind /mnt/data/Downloads /home/dharms/Downloads
+mount --bind /mnt/data/Music /home/dharms/Music
+mount --bind /mnt/data/Pictures /home/dharms/Pictures
+mount --bind /mnt/data/Videos /home/dharms/Videos

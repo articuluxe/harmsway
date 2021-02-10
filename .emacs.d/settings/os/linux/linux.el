@@ -1,9 +1,8 @@
 ;; linux.el --- linux os settings file
-;; Copyright (C) 2015-2017, 2019  Dan Harms (dharms)
+;; Copyright (C) 2015-2017, 2019, 2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Version: 1.0
-;; Modified Time-stamp: <2019-11-27 08:56:46 dharms>
+;; Modified Time-stamp: <2021-02-10 14:01:58 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -41,7 +40,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; trashed ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package trashed
-  :bind ("C-c 0 DEL")
+  :bind ("C-c 0 DEL" . trashed)
   :init
   (setq trashed-action-confirmer 'y-or-n-p)
   )
