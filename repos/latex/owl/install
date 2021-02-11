@@ -1,0 +1,5 @@
+cd src
+make sty
+TEX=$(kpsewhich -var-value=TEXMFHOME)
+mkdir -p $TEX/tex/latex/beamer-owl
+cp *.sty $TEX/tex/latex/beamer-owl
