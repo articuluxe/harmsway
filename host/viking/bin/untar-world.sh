@@ -5,7 +5,7 @@
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Monday, May 18, 2015
 # Version: 1.0
-# Modified Time-stamp: <2021-02-10 14:10:58 dharms>
+# Modified Time-stamp: <2021-02-11 14:25:33 dharms>
 # Modified by: Dan Harms
 # Keywords: configuration
 
@@ -89,7 +89,7 @@ cp .emacs.d/etc/user-dict "$user_dict"
 
 # remove intermediate directories, if empty
 for i in bash tcsh dotfiles user/$user os/$os site/$site host/$host; do
-    if [ -d "$i" ] ; then
+    if [ -d "$i" ]; then
         rmdir --ignore-fail-on-non-empty -p "$i"
     fi
 done

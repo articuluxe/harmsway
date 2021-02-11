@@ -1,11 +1,11 @@
-#!/bin/sh
+#!/bin/bash
 # -*- Mode: sh -*-
 # install-world.sh --- install the world
-# Copyright (C) 2016-2018  Dan Harms (dharms)
+# Copyright (C) 2016-2018, 2021  Dan Harms (dharms)
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Thursday, August 18, 2016
 # Version: 1.0
-# Modified Time-stamp: <2018-02-16 16:49:28 dan.harms>
+# Modified Time-stamp: <2021-02-11 14:24:49 dharms>
 # Modified by: Dan Harms
 # Keywords: install
 
