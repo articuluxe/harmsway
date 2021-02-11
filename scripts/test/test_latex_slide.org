@@ -1,0 +1,18 @@
+#+options: H:3 email:nil tex:t toc:t
+#+title: My Presentation
+#+date: \today
+#+author: Dan Harms
+#+language: en
+#+creator: Emacs 27.1
+#+startup: beamer
+#+LaTeX_CLASS: beamer
+#+LaTeX_CLASS_OPTIONS: [bigger]
+#+beamer_theme: Copenhagen
+
+
+* Graph Theory
+** Nodes and Vertices
+*** 
+** BFS
+*** 
+** DFS 

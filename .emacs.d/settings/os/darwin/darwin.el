@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2021-01-29 12:53:30 dharms>
+;; Modified Time-stamp: <2021-02-11 13:55:55 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -28,6 +28,8 @@
 (eval-when-compile
   (setq use-package-verbose t)
   (require 'use-package))
+
+(set-register ?\C-i (cons 'file "~/Library/Mobile Documents/com~apple~CloudDocs"))
 
 (when (executable-find "gls")
   (setq insert-directory-program "gls"))
