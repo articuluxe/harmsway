@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 # -*- Mode: sh -*-
 # untar-world.sh --- untar important files
-# Copyright (C) 2015-2018  Dan Harms (dan.harms)
+# Copyright (C) 2015-2018, 2021  Dan Harms (dan.harms)
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Monday, May 18, 2015
 # Version: 1.0
-# Modified Time-stamp: <2018-07-12 22:48:53 dharms>
+# Modified Time-stamp: <2021-02-10 14:11:28 dharms>
 # Keywords: configuration
 
 tar=$TAR
@@ -87,7 +87,7 @@ fi
 cp .emacs.d/etc/user-dict "$user_dict"
 
 # remove intermediate directories, if empty
-for i in bash tcsh user/$user os/$os site/$site host/$host; do
+for i in bash tcsh dotfiles user/$user os/$os site/$site host/$host; do
     rmdir -p "$i"
 done
 # and byte-compile emacs
