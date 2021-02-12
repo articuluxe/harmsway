@@ -1,0 +1,1 @@
+cp src/site-lisp/iimg.el ../../../.emacs.d/plugins

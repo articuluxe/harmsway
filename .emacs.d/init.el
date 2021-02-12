@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-02-09 14:22:58 dharms>
+;; Modified Time-stamp: <2021-02-12 12:21:46 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -228,8 +228,8 @@ Cf.  `http://ergoemacs.org/emacs/emacs_CSS_colors.html'."
 (global-set-key (kbd "ESC M-SPC") #'move-to-window-line-top-bottom)
 (global-set-key [(next)] #'scroll-up-line)
 (global-set-key [(prior)] #'scroll-down-line)
-(global-set-key [f5] #'toggle-truncate-lines)
-(global-set-key "\e\e5" #'toggle-truncate-lines)
+(when (< emacs-major-version 28)
+  (global-set-key "\C-xx\C-t" #'toggle-truncate-lines))
 (global-set-key "\C-c " #'whitespace-mode)
 (global-set-key "\C-c0fb" #'font-lock-fontify-buffer)
 (global-set-key "\M-sf" #'ff-find-other-file)
@@ -3598,6 +3598,15 @@ See `https://github.com/company-mode/company-mode/issues/205'."
   :commands
   (htmlize-buffer htmlize-region htmlize-file htmlize-many-files
                   htmlize-many-files-dired))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; iimg ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package iimg
+  :bind (("C-c 0ii" . iimg-insert)
+         ("C-c 0it" . iimg-toggle-thumbnail)
+         ("C-c 0ie" . iimg-export)
+         ("C-c 0ir" . iimg-resize)
+         ("C-c 0id" . iimg-delete-image-at-point)
+         ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; awk-it ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package awk-it
