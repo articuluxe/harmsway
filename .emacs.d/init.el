@@ -4412,6 +4412,9 @@ Requires Flake8 2.0 or newer. See URL
             (lambda ()
               (sphinx-doc-mode 1))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; rtf-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package rtf-mode :mode "\\.rtf$")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; rust-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package rust-mode :mode "\\.rs$")
 
