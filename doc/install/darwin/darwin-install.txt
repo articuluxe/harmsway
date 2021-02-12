@@ -50,6 +50,8 @@ brew install coreutils
 (setq insert-directory-program "gls")
 (setq dired-use-ls-dired t)
 
+# for org-download
+brew install pngpaste
 brew install youtube-dl
 brew install ffmpeg
 

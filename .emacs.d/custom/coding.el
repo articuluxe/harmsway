@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2021-02-03 14:58:59 dharms>
+;; Modified Time-stamp: <2021-02-12 12:29:24 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -68,6 +68,7 @@
     (c-offsets-alist . (
                         (case-label . +)
                         (arglist-cont-nonempty . +)
+                        ;; TODO add c-lineup-ternary-bodies
                         ))
     (c-electric-pound-behavior . (alignleft))
     (c-cleanup-list . (

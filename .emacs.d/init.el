@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-02-12 12:21:46 dharms>
+;; Modified Time-stamp: <2021-02-12 14:52:44 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2176,7 +2176,7 @@ ARGS are the additional arguments."
             org-archive-location
             )
   :init
-  (setq org-agenda-files '("~/org"))
+  (setq org-agenda-files '("~/Documents/org"))
   (setq org-startup-folded nil)
   (setq org-replace-disputed-keys t)
   (setq org-catch-invisible-edits 'show-and-error)
@@ -2184,6 +2184,7 @@ ARGS are the additional arguments."
   (setq org-use-tag-inheritance t)
   (setq org-return-follows-link t)
   (setq org-M-RET-may-split-line '((default . nil)))
+  (setq org-startup-with-inline-images t)
   ;; (setq org-use-speed-commands t)
   ;; (setq org-startup-indented t)
   ;; todos
@@ -2299,6 +2300,33 @@ ARGS are the additional arguments."
              org-web-tools-insert-web-page-as-entry
              org-web-tools-read-url-as-org
              org-web-tools-convert-links-to-page-entries))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; org-download ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defvar harmsway-org-download-keymap)
+(define-prefix-command 'harmsway-org-download-keymap)
+(global-set-key "\e\eod" 'harmsway-org-download-keymap)
+(use-package org-download
+  :after org
+  :bind (:map harmsway-org-download-keymap
+              ("c" . org-download-clipboard)
+              ("i" . org-download-image)
+              ("y" . org-download-yank)
+              ("s" . org-download-screenshot)
+              ("r" . org-download-rename-at-point)
+              ("R" . org-download-rename-last-file)
+              ("d" . org-download-delete)
+              ("e" . org-download-edit)
+              )
+  :init
+  (setq org-download-method 'download)
+  (setq-default org-download-image-dir "./img")
+  (setq org-download-timestamp "%Y%m%d-%H%M%S-")
+  (setq org-download-heading-lvl nil)
+  (setq org-download-backend t)         ;or wget or curl
+  (add-hook 'dired-mode-hook
+            (lambda ()
+              (require 'org)
+              (org-download-enable))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; pack ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package pack
