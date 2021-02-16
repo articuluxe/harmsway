@@ -1,1 +1,1 @@
-find src -maxdepth 1 -name \*.el | xargs -I '{}' cp '{}' ../../../.emacs.d/plugins/org-chef
+find src -maxdepth 1 -name \*.el | xargs -I '{}' cp '{}' ../../../.emacs.d/plugins/org

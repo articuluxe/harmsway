@@ -1,0 +1,2 @@
+cp src/*.el ../../../.emacs.d/plugins/org
+cp -rf src/styles ../../../.emacs.d/plugins/org

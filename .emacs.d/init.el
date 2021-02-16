@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-02-12 14:52:44 dharms>
+;; Modified Time-stamp: <2021-02-16 00:47:17 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -74,7 +74,7 @@
                      ,(concat my/plugins-directory "magit/lisp/")
                      ,(concat my/plugins-directory "multi-line/")
                      ,(concat my/plugins-directory "multiple-cursors/")
-                     ,(concat my/plugins-directory "org-chef/")
+                     ,(concat my/plugins-directory "org/")
                      ,(concat my/plugins-directory "realgud/")
                      ,(concat my/plugins-directory "smart-jump/")
                      ,(concat my/plugins-directory "sunrise/")
@@ -2320,13 +2320,15 @@ ARGS are the additional arguments."
   :init
   (setq org-download-method 'download)
   (setq-default org-download-image-dir "./img")
-  (setq org-download-timestamp "%Y%m%d-%H%M%S-")
+  (setq org-download-timestamp "%Y%m%d-")
   (setq org-download-heading-lvl nil)
   (setq org-download-backend t)         ;or wget or curl
-  (add-hook 'dired-mode-hook
-            (lambda ()
-              (require 'org)
-              (org-download-enable))))
+  ;; (add-hook 'dired-mode-hook
+  ;;           (lambda ()
+  ;;             (require 'org)
+  ;;             (require 'org-download)
+  ;;             (org-download-enable)))
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; pack ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package pack
