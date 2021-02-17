@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2021-02-16 01:06:45 dharms>
+;; Modified Time-stamp: <2021-02-17 13:42:20 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -57,6 +57,9 @@
       (ns-raise-emacs))))
 
 (add-hook 'after-make-frame-functions 'ns-raise-emacs-with-frame)
+
+(when (display-graphic-p)
+  (ns-raise-emacs))
 
 (setq default-frame-alist
       '((cursor-type . bar)

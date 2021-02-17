@@ -68,6 +68,10 @@ brew cask install mactex
 brew tap caskroom/cask
 brew cask install skim
 
+brew install veracrypt
+brew install syncthing
+brew services start syncthing
+
 # development version of universal-ctags
 brew tap universal-ctags/universal-ctags
 brew install --HEAD universal-ctags

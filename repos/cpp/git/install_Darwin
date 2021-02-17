@@ -1,3 +1,4 @@
+set -e
 dir=$PWD
 ./install
 cd $dir

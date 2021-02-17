@@ -1,11 +1,11 @@
-#!/usr/bin/env sh
+#!/bin/sh
 # -*- Mode: sh -*-
 # edit --- open a graphical emacs session
-# Copyright (C) 2015, 2017  Dan Harms (dharms)
+# Copyright (C) 2015, 2017, 2021  Dan Harms (dharms)
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Friday, September  4, 2015
 # Version: 1.0
-# Modified Time-stamp: <2017-12-20 09:13:17 dharms>
+# Modified Time-stamp: <2021-02-17 12:50:35 dharms>
 # Modified by: Dan Harms
 # Keywords: emacs gui
 

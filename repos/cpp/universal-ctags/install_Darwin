@@ -1,3 +1,4 @@
+set -e
 cd src
 ./autogen.sh
 mkdir -p bld/$(uname -s)

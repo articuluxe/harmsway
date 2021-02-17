@@ -1,3 +1,4 @@
+set -e
 cd src
 git checkout v2.20.1
 autoconf
