@@ -1,8 +1,8 @@
 ;; dharms.el --- user settings file
-;; Copyright (C) 2015-2018, 2020  Dan Harms (dharms)
+;; Copyright (C) 2015-2018, 2020-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2020-04-13 19:46:17 dharms>
+;; Modified Time-stamp: <2021-02-17 16:12:54 dharms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -24,7 +24,6 @@
 
 ;;; Code:
 
-(defconst my/user-name user-login-name)
 (setq user-mail-address "enniomore@icloud.com")
 (setq copyright-names-regexp "[Hh]arms")
 (setq epa-file-encrypt-to "enniomore@icloud.com")

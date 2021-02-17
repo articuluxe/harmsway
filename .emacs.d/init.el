@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-02-16 00:47:17 dharms>
+;; Modified Time-stamp: <2021-02-17 16:12:21 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -127,7 +127,7 @@
 
 ;; Suppress GNU startup message
 (setq inhibit-startup-message t)
-(setq inhibit-startup-echo-area-message my/user-name)
+(setq inhibit-startup-echo-area-message user-login-name)
 (setq inhibit-default-init t)
 (setq initial-scratch-message nil)
 (add-hook 'after-init-hook
@@ -292,7 +292,7 @@ not an error if any files do not exist."
         file)
     (setenv "GPG_AGENT_INFO" nil)
     ;; user
-    (parsenv-load-env (expand-file-name (concat "~/." my/user-name ".env")))
+    (parsenv-load-env (expand-file-name (concat "~/." user-login-name ".env")))
     ;; os
     (parsenv-load-env (expand-file-name (concat "~/." os ".env")))
     ;; host
@@ -2095,8 +2095,7 @@ ARGS are the additional arguments."
   :defer t
   :init
   (setq tramp-verbose 1)
-  (when (boundp 'my/user-name)
-    (setq tramp-default-user my/user-name))
+  (setq tramp-default-user user-login-name)
   (add-to-list 'tramp-remote-path 'tramp-own-remote-path)
   (setq remote-file-name-inhibit-cache 10)
   (setq tramp-completion-reread-directory-timeout 10)

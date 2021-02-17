@@ -1,8 +1,8 @@
 ;; dan.harms.el --- user settings file
-;; Copyright (C) 2015-2018  Dan Harms (dharms)
+;; Copyright (C) 2015-2018, 2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2018-01-04 15:48:53 dan.harms>
+;; Modified Time-stamp: <2021-02-17 16:12:55 dharms>
 ;; Keywords:
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -24,7 +24,6 @@
 
 ;;; Code:
 
-(defconst my/user-name user-login-name)
 (setq user-mail-address "dan.harms@xrtrading.com")
 (setq copyright-names-regexp "[Hh]arms")
 
