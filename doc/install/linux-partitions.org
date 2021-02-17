@@ -12,7 +12,7 @@
   sudo blkid
 #+end_src
 
-* Add to /ec/fstab:
+* Add to /etc/fstab:
 UUID=7e74b886-f874-43c0-b393-22ec650429cc /mnt/data ext4 defaults 0 2
 
 * Add to /etc/rc.local:

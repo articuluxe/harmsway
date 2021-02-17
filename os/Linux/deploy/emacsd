@@ -1,0 +1,22 @@
+#!/usr/bin/env /lib/init/init-d-script
+### BEGIN INIT INFO
+# Provides:          emacsd
+# Required-Start:    $syslog $time $remote_fs
+# Required-Stop:     $syslog $time $remote_fs
+# Default-Start:     2 3 4 5
+# Default-Stop:      0 1 6
+# Short-Description: run emacs daemon
+# Description:       Debian init script to start the emacs daemon.
+### END INIT INFO
+USERNAME=`id 1000 -un`
+NAME=emacsd
+DAEMON=/home/dharms/opt/bin/emacs
+DAEMON_ARGS="--daemon --user=$USERNAME"
+START_ARGS="-c dharms -d /home/dharms/.emacs.d"
+#start daemon manually:
+# > sudo /etc/init.d/emacsd start
+# install daemon:
+# > sudo update-rc.d emacs.d defaults
+#must start client as:
+# > emacsclient -c -s /tmp/emacs1000/server
+#NB. `user-login-name' may be "root" in the server
