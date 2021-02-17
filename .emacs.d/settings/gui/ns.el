@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2021-02-03 13:50:13 dharms>
+;; Modified Time-stamp: <2021-02-16 01:06:45 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -44,6 +44,19 @@
                            nil 'fullboth)))
 (global-set-key [f11] 'ns-toggle-full-screen)
 (global-set-key "\C-c0q11" 'ns-toggle-full-screen)
+
+;; frame manipulation
+(defun ns-raise-emacs ()
+  "Raise Emacs."
+  (ns-do-applescript "tell application \"Emacs\" to activate"))
+
+(defun ns-raise-emacs-with-frame (frame)
+  "Raise Emacs and select FRAME."
+  (with-selected-frame frame
+    (when (display-graphic-p)
+      (ns-raise-emacs))))
+
+(add-hook 'after-make-frame-functions 'ns-raise-emacs-with-frame)
 
 (setq default-frame-alist
       '((cursor-type . bar)
