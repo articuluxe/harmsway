@@ -20,3 +20,4 @@ START_ARGS="-c dharms -d /home/dharms/.emacs.d"
 #must start client as:
 # > emacsclient -c -s /tmp/emacs1000/server
 #NB. `user-login-name' may be "root" in the server
+#    Could set env. var. EMACS_SERVER_FILE
