@@ -1,6 +1,16 @@
 # -*- Mode: sh -*-
 # .bash_talbot
 
+mount-secure()
+{
+    "$VERACRYPT_BIN" -t -k "" --protect-hidden=no --pim=0 ~/Sync/secure.volume ~/Secure
+}
+
+unmount-secure()
+{
+    "$VERACRYPT_BIN" -t -d ~/Sync/secure.volume
+}
+
 snapssh()
 {
     sshpass -e ssh snaptrader@"$1"
