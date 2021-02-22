@@ -1,0 +1,449 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xml:lang="en" xmlns="http://www.w3.org/1999/xhtml" lang="en"><head>
+<meta http-equiv="content-type" content="text/html; charset=ISO-8859-1">
+
+
+  <title>Win32 Debug CRT Heap Internals</title>
+
+  <style type="text/css">
+    .thetable { font-family: monospace; text-align: center; }
+
+    .nt-bookkeeping { background-color: #888888 }
+    .nt-uninit { background-color: #bbbbff }
+    .nt-freed  { background-color: #6666ff }
+
+    .crt-bookkeeping { background-color: #ff5555 }
+    .crt-uninit { background-color: #ff8888 }
+    .crt-freed { background-color: #ffbbbb }
+    .crt-guard { background-color: #ffbb99 }
+
+    .bold { font-weight: bold }
+    .aside { font-style: italic }
+  </style>
+</head><body>
+
+<div>
+<script type="text/javascript"><!--
+google_ad_client = "pub-3651876624305976";
+/* Debugcrt */
+google_ad_slot = "9999948252";
+google_ad_width = 728;
+google_ad_height = 90;
+//-->
+</script>
+<script type="text/javascript" src="debug_crt_heap_files/show_ads.js">
+</script><script src="debug_crt_heap_files/expansion_embed.js"></script><script src="debug_crt_heap_files/test_domain.js"></script><script>google_protectAndRun("ads_core.google_render_ad", google_handleError, google_render_ad);</script><ins style="border: medium none ; margin: 0pt; padding: 0pt; display: inline-table; height: 90px; position: relative; visibility: visible; width: 728px;"><ins style="border: medium none ; margin: 0pt; padding: 0pt; display: block; height: 90px; position: relative; visibility: visible; width: 728px;"><iframe allowtransparency="true" hspace="0" id="google_ads_frame1" marginheight="0" marginwidth="0" name="google_ads_frame" src="debug_crt_heap_files/ads.htm" style="left: 0pt; position: absolute; top: 0pt;" vspace="0" width="728" frameborder="0" height="90" scrolling="no"></iframe></ins></ins>
+</div>
+<h1>Win32 Debug CRT Heap Internals</h1>
+
+<p>
+... by Andrew Birkett <a href="mailto:andy@nobugs.org">(andy@nobugs.org)</a>
+</p>
+
+<p>
+<b>If you are lazy, skip the explanation and <a href="#table">jump to
+the table</a> at the bottom of the page</b>
+</p>
+
+
+<p>
+When you compile programs with DevStudio in debug mode, all of your
+calls to malloc() and free() use a special "debug" implementation.
+
+Rather than being blazingly fast, the debug heap concerns itself with
+spotting heap errors.  It achieves this by surrounding your memory
+blocks with guard bytes (aka "no mans land", 0xFD) so that it can
+detect buffer overruns and underruns.  It also initialises newly
+
+allocated memory to a fixed value (0xCD) to aid reproducability.
+Finally, it sets free()d blocks to a known value (0xDD) so that it can
+detect that people are writing through dangling pointers.
+</p>
+
+<p>
+Mnemonics for remembering what each fill-pattern means:
+</p>
+
+<ul>
+  <li>The newly allocated memory (0x<b>C</b>D) is <b>C</b>lean memory.</li>
+  <li>The free()d memory (0x<b>D</b>D) is <b>D</b>ead memory.</li>
+  <li>The guard bytes (0x<b>F</b>D) are like <b>F</b>ences around your memory.</li>
+</ul>
+
+<p>
+The debug CRT heap defers most of the heavy work to the Win32 heap
+functions HeapAlloc() and HeapFree().  Therefore, you won't see any
+first-fit or "buddy system" code in the debug CRT.  The 4Gb
+virtual memory space which you process has is sliced up and managed
+by the Win32 heap inside kernel32.dll.
+
+</p>
+
+<p>
+If you call malloc(8), the debug CRT will request a 48 byte block from
+HeapAlloc().  It needs the extra 40 bytes to store information about
+the memory blocks - such as the file/line where malloc() was called,
+and space for links to the next/prev heap block.  In the <a href="#table">table below</a>, all of the debug CRT information is
+colored in shades of red.
+</p>
+
+<p>
+HeapAlloc() itself needs bookkeeping information.  The HeapAlloc(40)
+
+call will, in turn, reserve a total of 80 bytes from your process's
+address space.  Eight bytes of bookkeeping appear below the requested
+40 bytes, and the other 32 bytes appear above it.  In the <a href="#table">table below</a>, the Win32 heap bookkeeping is colored
+
+grey.  The memory which you get back from HeapAlloc() is always
+initialised to the 4 byte pattern 0xBAADF00D. 
+</p>
+
+<p class="aside">
+(As an aside, when you request pages from the VM manager via
+VirtualAlloc, they are initialized to zero, so HeapAlloc is actually
+
+doing additional work to re-initialize them to this pattern).
+</p>
+
+<p>
+Once the debug CRT has got it's 40 byte block, it will fill in it's
+book-keeping information.  The first 2 words are links to the previous
+and next blocks on the CRT heap.  The choice of names is confusing,
+because the "next" pointer actually takes you the block which was
+allocated <i>before</i> this one chronologically, while the "previous"
+pointer takes you to the one allocated <i>subsequently</i>.  The
+reason for the naming is that the linked list starts at the
+last-allocated block, and progresses back in time as you follow "next"
+
+links.  The debug CRT heap also internally maintains pointers to the
+first and last blocks (_pFirstBlock and _pLastBlock) to allow
+heap-checking code to traverse all the blocks.
+</p>
+
+<p>
+If the filename and line number of the malloc() call are known, they
+are stored in the next 2 words.  Following that, the next word tells
+you how many bytes were requested.  The next word gives a type field.
+Usually this is "1" which means a normal block, allocated by
+malloc/new.  It will be "2" for blocks allocate by the CRT for its own
+internal purposes, and "0" for blocks which have been freed but not
+
+released back to the win32 heap (see below for more info).  The final
+word is a simple counter which increases everytime an allocation is made.
+</p>
+
+<p>
+Surrounding the 8-byte malloc()'d memory there are areas of "no mans
+land".  These are filled with a known value (0xFD), and when the block
+is free()d, the CRT will check that they still have the right value.
+If they've changed, then your program contains an error.
+Unfortunately, the corruption may have happened a long time ago.  You
+can use Purify or Boundschecker to stop at the corruption point, or if
+you don't fancy spending any money, you can wait a few days until I
+write an article telling you how to do it using only a bit of
+
+ingenuity!
+</p>
+
+<p>
+The eight bytes which were originally requested are initialised with
+0xCD.  If you see this pattern appearing in your variables, you have
+forgotten to initialise something.
+</p>
+
+<p>
+When you call free() on the 8-byte block, the CRT sets the whole
+48-byte block (including its bookkeeping) to 0xDDDDDDDD.  This means
+that it can tell if the block gets subsequently altered (ie. via a
+dangling pointer) by checking that the pattern is still there.
+</p>
+
+<p>
+At this point, two things can happen.  Normally, HeapFree() will be
+called to return the block to the win32 heap.  This causes the block
+to be overwritten with the win32 heap's "freed memory" pattern, which
+is 0xFEEEFEEE.  Note that the debug CRT does not maintain any "free
+lists" - all of that is done within the black box of HeapFree().
+</p>
+
+
+<p>
+However, you can also tell the debug heap to keep hold of free()d
+blocks.  You do this by passing the _CRTDBG_DELAY_FREE_MEM_DF flag to
+_CrtSetDbgFlag().  In this case, the debug CRT will keep hold of the
+block.  This is useful if you are trying to track down a dangling
+pointer error, since memory blocks will not be reused and you should
+expect them to remain filled with 0xDDDDDDDD unless someone is writing
+to the free()d block.  You can call _CrtCheckMemory() and it will
+tell you if any of these values have been tampered with.
+</p>
+
+<h2>Here's an allocation I prepared earlier ...</h2>
+
+<p>
+I called malloc(8) followed by free() and stepped through the CRT
+calls to see how the memory was changed.  Read the columns from left
+to right, and you will see what values appear in memory at various
+stages during malloc() and free().  The call to malloc(8) returned a
+block at address 0x00321000, and I've included offsets from that
+address so that you can find out the information for one of your
+allocations.
+</p>
+
+<a name="table"></a>
+<table class="thetable" border="1" cellpadding="2" cellspacing="2">
+  <tbody>
+    <tr>
+      <td>Address</td>
+      <td>Offset</td>
+      <td>After HeapAlloc()</td>
+      <td>After malloc()</td>
+      <td>During free()</td>
+      <td>After HeapFree()</td>
+      <td>Comments</td>
+    </tr>
+
+    <tr>
+      <td>0x00320FD8</td>
+      <td>-40</td>
+      <td class="nt-bookkeeping">0x01090009</td>
+      <td class="nt-bookkeeping">0x01090009</td>
+      <td class="nt-bookkeeping">0x01090009</td>
+      <td class="nt-bookkeeping">0x0109005A</td>
+      <td>Win32 heap info</td>
+    </tr>
+    <tr>
+
+      <td>0x00320FDC</td>
+      <td>-36</td>
+      <td class="nt-bookkeeping">0x01090009</td>
+      <td class="nt-bookkeeping">0x00180700</td>
+      <td class="nt-bookkeeping">0x01090009</td>
+      <td class="nt-bookkeeping">0x00180400</td>
+      <td>Win32 heap info</td>
+    </tr>
+    <tr>
+      <td>0x00320FE0</td>
+      <td>-32</td>
+      <td class="nt-uninit">0xBAADF00D</td>
+      <td class="crt-bookkeeping">0x00320798</td>
+      <td class="crt-freed">0xDDDDDDDD</td>
+      <td class="nt-freed">0x00320448</td>
+      <td>Ptr to next CRT heap block (allocated earlier in time)</td>
+    </tr>
+    <tr>
+
+      <td>0x00320FE4</td>
+      <td>-28</td>
+      <td class="nt-uninit">0xBAADF00D</td>
+      <td class="crt-bookkeeping">0x00000000</td>
+      <td class="crt-freed">0xDDDDDDDD</td>
+      <td class="nt-freed">0x00320448</td>
+      <td>Ptr to prev CRT heap block (allocated later in time)</td>
+    </tr>
+    <tr>
+      <td>0x00320FE8</td>
+      <td>-24</td>
+      <td class="nt-uninit">0xBAADF00D</td>
+      <td class="crt-bookkeeping">0x00000000</td>
+      <td class="crt-freed">0xDDDDDDDD</td>
+      <td class="nt-freed">0xFEEEFEEE</td>
+      <td>Filename of malloc() call</td>
+    </tr>
+    <tr>
+      <td>0x00320FEC</td>
+      <td>-20</td>
+      <td class="nt-uninit">0xBAADF00D</td>
+      <td class="crt-bookkeeping">0x00000000</td>
+      <td class="crt-freed">0xDDDDDDDD</td>
+      <td class="nt-freed">0xFEEEFEEE</td>
+      <td>Line number of malloc() call</td>
+    </tr>
+    <tr>
+      <td>0x00320FF0</td>
+      <td>-16</td>
+      <td class="nt-uninit">0xBAADF00D</td>
+      <td class="crt-bookkeeping">0x00000008</td>
+      <td class="crt-freed">0xDDDDDDDD</td>
+      <td class="nt-freed">0xFEEEFEEE</td>
+      <td>Number of bytes to malloc()</td>
+    </tr>
+    <tr>
+      <td>0x00320FF4</td>
+      <td>-12</td>
+      <td class="nt-uninit">0xBAADF00D</td>
+      <td class="crt-bookkeeping">0x00000001</td>
+      <td class="crt-freed">0xDDDDDDDD</td>
+      <td class="nt-freed">0xFEEEFEEE</td>
+      <td>Type (0=Freed, 1=Normal, 2=CRT use, etc)</td>
+    </tr>
+    <tr>
+      <td>0x00320FF8</td>
+      <td>-8</td>
+      <td class="nt-uninit">0xBAADF00D</td>
+      <td class="crt-bookkeeping">0x00000031</td>
+
+      <td class="crt-freed">0xDDDDDDDD</td>
+      <td class="nt-freed">0xFEEEFEEE</td>
+      <td>Request #, increases from 0</td>
+    </tr>
+    <tr>
+      <td>0x00320FFC</td>
+      <td>-4</td>
+      <td class="nt-uninit">0xBAADF00D</td>
+      <td class="crt-guard">0xFDFDFDFD</td>
+      <td class="crt-freed">0xDDDDDDDD</td>
+      <td class="nt-freed">0xFEEEFEEE</td>
+      <td class="crt-guard">No mans land</td>
+    </tr>
+    <tr class="bold">
+      <td>0x00321000</td>
+      <td>+0</td>
+      <td class="nt-uninit">0xBAADF00D</td>
+      <td class="crt-uninit">0xCDCDCDCD</td>
+      <td class="crt-freed">0xDDDDDDDD</td>
+      <td class="nt-freed">0xFEEEFEEE</td>
+      <td class="crt-uninit">The 8 bytes you wanted</td>
+    </tr>
+    <tr class="bold">
+      <td>0x00321004</td>
+      <td>+4</td>
+      <td class="nt-uninit">0xBAADF00D</td>
+      <td class="crt-uninit">0xCDCDCDCD</td>
+      <td class="crt-freed">0xDDDDDDDD</td>
+
+      <td class="nt-freed">0xFEEEFEEE</td>
+      <td class="crt-uninit">The 8 bytes you wanted</td>
+    </tr>
+    <tr>
+      <td>0x00321008</td>
+      <td>+8</td>
+      <td class="nt-uninit">0xBAADF00D</td>
+      <td class="crt-guard">0xFDFDFDFD</td>
+      <td class="crt-freed">0xDDDDDDDD</td>
+      <td class="nt-freed">0xFEEEFEEE</td>
+      <td class="crt-guard">No mans land</td>
+    </tr>
+    <tr>
+
+      <td>0x0032100C</td>
+      <td>+12</td>
+      <td class="nt-uninit">0xBAADF00D</td>
+      <td class="nt-uninit">0xBAADF00D</td>
+      <td class="crt-freed">0xDDDDDDDD</td>
+      <td class="nt-freed">0xFEEEFEEE</td>
+      <td>Win32 heap allocations are rounded up to 16 bytes</td>
+    </tr>
+    <tr>
+      <td>0x00321010</td>
+      <td>+16</td>
+      <td class="nt-bookkeeping">0xABABABAB</td>
+      <td class="nt-bookkeeping">0xABABABAB</td>
+      <td class="nt-bookkeeping">0xABABABAB</td>
+      <td class="nt-freed">0xFEEEFEEE</td>
+      <td>Win32 heap bookkeeping</td>
+    </tr>
+    <tr>
+      <td>0x00321014</td>
+      <td>+20</td>
+      <td class="nt-bookkeeping">0xABABABAB</td>
+      <td class="nt-bookkeeping">0xABABABAB</td>
+      <td class="nt-bookkeeping">0xABABABAB</td>
+      <td class="nt-freed">0xFEEEFEEE</td>
+      <td>Win32 heap bookkeeping</td>
+    </tr>
+    <tr>
+      <td>0x00321018</td>
+      <td>+24</td>
+      <td class="nt-bookkeeping">0x00000010</td>
+      <td class="nt-bookkeeping">0x00000010</td>
+      <td class="nt-bookkeeping">0x00000010</td>
+      <td class="nt-freed">0xFEEEFEEE</td>
+      <td>Win32 heap bookkeeping</td>
+    </tr>
+    <tr>
+
+      <td>0x0032101C</td>
+      <td>+28</td>
+      <td class="nt-bookkeeping">0x00000000</td>
+      <td class="nt-bookkeeping">0x00000000</td>
+      <td class="nt-bookkeeping">0x00000000</td>
+      <td class="nt-freed">0xFEEEFEEE</td>
+      <td>Win32 heap bookkeeping</td>
+    </tr>
+    <tr>
+      <td>0x00321020</td>
+      <td>+32</td>
+      <td class="nt-bookkeeping">0x00090051</td>
+      <td class="nt-bookkeeping">0x00090051</td>
+
+      <td class="nt-bookkeeping">0x00090051</td>
+      <td class="nt-freed">0xFEEEFEEE</td>
+      <td>Win32 heap bookkeeping</td>
+    </tr>
+    <tr>
+      <td>0x00321024</td>
+      <td>+36</td>
+      <td class="nt-bookkeeping">0xFEEE0400</td>
+      <td class="nt-bookkeeping">0xFEEE0400</td>
+      <td class="nt-bookkeeping">0xFEEE0400</td>
+      <td class="nt-freed">0xFEEEFEEE</td>
+      <td>Win32 heap bookkeeping</td>
+    </tr>
+    <tr>
+      <td>0x00321028</td>
+      <td>+40</td>
+      <td class="nt-bookkeeping">0x00320400</td>
+      <td class="nt-bookkeeping">0x00320400</td>
+      <td class="nt-bookkeeping">0x00320400</td>
+      <td class="nt-freed">0xFEEEFEEE</td>
+      <td>Win32 heap bookkeeping</td>
+    </tr>
+    <tr>
+      <td>0x0032102C</td>
+      <td>+44</td>
+      <td class="nt-bookkeeping">0x00320400</td>
+      <td class="nt-bookkeeping">0x00320400</td>
+      <td class="nt-bookkeeping">0x00320400</td>
+      <td class="nt-freed">0xFEEEFEEE</td>
+      <td>Win32 heap bookkeeping</td>
+    </tr>
+  </tbody>
+</table>
+
+<p>
+(I've tried to helpfully color-code things.  Blue and grey is for
+Win32 heap stuff, and reds are for the debug crt heap stuff.  If you
+hate the color scheme, the colors are set up using CSS at the top of
+this .html file - go edit them yourself!)
+</p>
+
+<form action="https://www.paypal.com/cgi-bin/webscr" method="post">
+<input name="cmd" value="_xclick" type="hidden">
+<input name="business" value="andy@nobugs.org" type="hidden">
+<input name="item_name" value="nobugs.org website" type="hidden">
+<input name="no_shipping" value="0" type="hidden">
+<input name="no_note" value="1" type="hidden">
+<input name="currency_code" value="USD" type="hidden">
+<input name="tax" value="0" type="hidden">
+<input name="lc" value="GB" type="hidden">
+<input name="bn" value="PP-DonationsBF" type="hidden">
+
+
+If this page just saved your life, you could always buy me a beer:
+
+<input src="debug_crt_heap_files/x-click-but04.gif" name="submit" alt="Make payments with PayPal - it's fast, free and secure!" border="0" type="image">
+
+<img alt="" src="debug_crt_heap_files/pixel.gif" width="1" border="0" height="1">
+</form>
+
+<p>
+If you want to read more, check out <a href="http://www.amazon.com/gp/product/020170238X?ie=UTF8&amp;tag=nobugs-20&amp;linkCode=as2&amp;camp=1789&amp;creative=9325&amp;creativeASIN=020170238X">Debugging Windows Programs</a>, part of the DevelopMentor series.
+<img src="debug_crt_heap_files/ir.gif" alt="" style="border: medium none  ! important; margin: 0px ! important;" width="1" border="0" height="1">
+</p>
+
+
+<p>
+Any comments or feedback?  Please <a href="mailto:andy@nobugs.org">email me</a>.  
+</p>
+</body></html>

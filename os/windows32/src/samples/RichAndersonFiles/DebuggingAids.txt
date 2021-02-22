@@ -1,0 +1,34 @@
+You may have these already… This is a set of tools that can be used in Debug mode (compiled out in release mode) to aid in debugging with VS C++.
+
+Some of the more useful one are:
+
+•	TYPE_DEBUG_AID(_DATATYPE_) – Used in the debugger to give you an “eye catcher” when reviewing objects defined by C++ templates
+Example:
+
+template<class T>
+Class myclass
+{
+        TYPE_DEBUG_AID(T);
+
+public:
+
+       T m_myfieldvalue;
+}
+•	COMILER_ERROR(_reason_), COMPILER_ERROR_COND(_cond_, _reason_), COMPILER_DEFINE_INTERFACE_CHECK(_className_), COMPILER_ERROR_COND_INTERFACE(_className_) – Used to signal an compile time error with reason from your code base.
+Example:
+
+class myInterface
+{
+         COMPILER_DEFINE_INTERFACE_CHECK(myInterface);
+}
+
+template<class T>
+class myClass : public T
+{
+         COMPILER_ERROR_COND_INTERFACE(myInterface); //T must be derived from the myInterface class, if not an compiler error is signaled.
+}
+•	DisplayDebugString – Displays the Debug String with or without MFC
+•	SetThreadName – Set the name of the thread for easier debugging
+•	Whole set of Debug Macros, TRACE, and ASERT macros…
+
+
