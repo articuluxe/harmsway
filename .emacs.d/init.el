@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-02-17 16:12:21 dharms>
+;; Modified Time-stamp: <2021-02-23 10:49:04 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2222,7 +2222,7 @@ ARGS are the additional arguments."
                         ("verb" . ?v)
                         ))
   ;; capture
-  (setq org-default-notes-file "~/Dropbox/notes/capture.org")
+  (setq org-default-notes-file "~/org/capture.org")
   ;; refiling
   (setq org-log-refile 'time)
   (setq org-refile-targets '((nil :maxlevel . 9)
@@ -2254,19 +2254,19 @@ ARGS are the additional arguments."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; org-chef ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package org-chef
   :after org
-  :config
+  :commands (org-chef-insert-recipe)
+  :init
   (setq org-capture-templates
         (cons
-         '("c" "Cookbook" entry (file "~/Dropbox/notes/recipes.org")
+         '("c" "Cookbook" entry (file "~/Documents/notes/recipes.org")
            "%(org-chef-get-recipe-from-url)"
            :empty-lines 1)
          org-capture-templates))
   (setq org-capture-templates
         (cons
-         '("m" "Manual Cookbook" entry (file "~/Dropbox/notes/recipes.org")
+         '("m" "Manual Cookbook" entry (file "~/Documents/notes/recipes.org")
            "* %^{Recipe title: }\n :PROPERTIES:\n :source-url:\n :servings:\n :prep-time:\n :cook-time:\n :ready-in:\n :END:\n** Ingredients\n %?\n** Directions\n\n")
-         org-capture-templates))
-  :defer t)
+         org-capture-templates)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; elfeed ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package elfeed
