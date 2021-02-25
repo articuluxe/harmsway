@@ -3,7 +3,7 @@
 ;; Copyright (C) 2015-2017, 2019-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-02-23 11:20:48 dharms>
+;; Modified Time-stamp: <2021-03-01 05:51:39 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -28,7 +28,7 @@
 
 ;; init site
 (with-eval-after-load 'org
-  (add-to-list 'org-agenda-files "~/Documents/org"))
+  (add-to-list 'org-agenda-files "~/org"))
 
 (c-add-style "talbot"
              (quote

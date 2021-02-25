@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-02-23 10:49:04 dharms>
+;; Modified Time-stamp: <2021-03-01 05:54:36 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2175,7 +2175,8 @@ ARGS are the additional arguments."
             org-archive-location
             )
   :init
-  (setq org-agenda-files '("~/Documents/org"))
+  (setq org-directory (expand-file-name "~/org/"))
+  (setq org-agenda-files '("~/org"))
   (setq org-startup-folded nil)
   (setq org-replace-disputed-keys t)
   (setq org-catch-invisible-edits 'show-and-error)
@@ -2222,9 +2223,23 @@ ARGS are the additional arguments."
                         ("verb" . ?v)
                         ))
   ;; capture
-  (setq org-default-notes-file "~/org/capture.org")
-  ;; refiling
+  (setq org-default-notes-file "~/org/inbox.org")
+  (setq org-capture-templates
+        '(("t" "Todo [inbox]" entry
+           (file+headline "~/org/inbox.org" "Tasks")
+           "* TODO %i%?\n%a")
+          ("n" "Todo [inbox, no link]" entry
+           (file+headline "~/org/inbox.org" "Tasks")
+           "* TODO %i%?\n")
+          ("c" "Cookbook" entry (file "~/Documents/notes/recipes.org")
+           "%(org-chef-get-recipe-from-url)"
+           :empty-lines 1)
+          ("m" "Manual Cookbook" entry (file "~/Documents/notes/recipes.org")
+           "* %^{Recipe title: }\n :PROPERTIES:\n :source-url:\n :servings:\n :prep-time:\n :cook-time:\n :ready-in:\n :END:\n** Ingredients\n %?\n** Directions\n\n"
+           )))
   (setq org-log-refile 'time)
+  (setq org-refile-use-outline-path 'file)
+  (setq org-outline-path-complete-in-steps nil)
   (setq org-refile-targets '((nil :maxlevel . 9)
                              (org-agenda-files :maxlevel . 9)))
   ;; archiving
@@ -2255,18 +2270,7 @@ ARGS are the additional arguments."
 (use-package org-chef
   :after org
   :commands (org-chef-insert-recipe)
-  :init
-  (setq org-capture-templates
-        (cons
-         '("c" "Cookbook" entry (file "~/Documents/notes/recipes.org")
-           "%(org-chef-get-recipe-from-url)"
-           :empty-lines 1)
-         org-capture-templates))
-  (setq org-capture-templates
-        (cons
-         '("m" "Manual Cookbook" entry (file "~/Documents/notes/recipes.org")
-           "* %^{Recipe title: }\n :PROPERTIES:\n :source-url:\n :servings:\n :prep-time:\n :cook-time:\n :ready-in:\n :END:\n** Ingredients\n %?\n** Directions\n\n")
-         org-capture-templates)))
+)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; elfeed ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package elfeed
