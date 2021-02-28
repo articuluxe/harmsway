@@ -4,12 +4,12 @@
 mount-secure()
 {
     "$VERACRYPT_BIN" -t -k "" --protect-hidden=no --pim=0 ~/Sync/secure.volume ~/Secure
-    test -d ~/Secure && date > ~/Secure/last.mounted
+    test -d ~/Secure && date > ~/Secure/.secure.last-mounted
 }
 
 unmount-secure()
 {
-    test -d ~/Secure && date > ~/Secure/last.unmounted
+    test -d ~/Secure && date > ~/Secure/.secure.last-unmounted
     "$VERACRYPT_BIN" -t -d ~/Sync/secure.volume
 }
 

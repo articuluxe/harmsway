@@ -5,7 +5,7 @@
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Thursday, August 18, 2016
 # Version: 1.0
-# Modified Time-stamp: <2021-02-11 14:24:49 dharms>
+# Modified Time-stamp: <2021-02-28 11:05:33 dharms>
 # Modified by: Dan Harms
 # Keywords: install
 
@@ -17,7 +17,7 @@ if [ ! -d "$dir" ]; then
 fi
 
 cd "$dir" || exit 1
-
+date > .harmsway.last-tarred
 tar-world.sh
 
 if [ "$?" != 0 ]; then
@@ -26,6 +26,7 @@ if [ "$?" != 0 ]; then
 fi
 
 mv world.tar ~ && cd ~ && untar-world.sh world.tar
+date > .harmsway.last-installed
 
 echo "install-world.sh done; press any key to continue..."
 read -n1 -t5 key
