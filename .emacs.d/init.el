@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-03-01 05:54:36 dharms>
+;; Modified Time-stamp: <2021-03-01 05:55:00 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -100,7 +100,7 @@
 (defconst my/os-dir
   (concat my/user-directory "settings/os/" my/system-name "/")
   "Directory in which os-specific settings reside.")
-(defconst my/gui-dir
+(defconst harmsway-gui-dir
   (concat my/user-directory "settings/gui/")
   "A path to a directory containing window-system-specific settings.")
 
@@ -3727,7 +3727,7 @@ This function's result only has value if it is preceded by any font changes."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; gui ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package harmsway-gui
   :config
-  (harmsway-gui-load))
+  (harmsway-gui-load (selected-frame)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; choose-font ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package choose-font

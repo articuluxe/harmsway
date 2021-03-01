@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
 ;; Version: 1.0
-;; Modified Time-stamp: <2021-02-17 13:42:20 dharms>
+;; Modified Time-stamp: <2021-03-01 05:47:43 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -61,16 +61,11 @@
 (when (display-graphic-p)
   (ns-raise-emacs))
 
-(setq default-frame-alist
-      '((cursor-type . bar)
-        (ns-transparent-titlebar . t)
-        (ns-appearance . dark)
-        (fullscreen . fullheight)
-        ))
+(add-to-list 'initial-frame-alist '(ns-transparent-titlebar . t))
+(add-to-list 'initial-frame-alist '(ns-appearance . dark))
+(add-to-list 'initial-frame-alist '(left . 50))
 
-(setq initial-frame-alist
-      '((top . 25) (left . 50)
-        (fullscreen . fullheight)
-        ))
+(add-to-list 'default-frame-alist '(ns-transparent-titlebar . t))
+(add-to-list 'default-frame-alist '(ns-appearance . dark))
 
 ;; ns.el ends here

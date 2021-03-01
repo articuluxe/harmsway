@@ -1,10 +1,10 @@
 ;;; harmsway-gui.el --- gui settings
-;; Copyright (C) 2018, 2020  Dan Harms (dharms)
+;; Copyright (C) 2018, 2020-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Wednesday, August  8, 2018
 ;; Version: 1.0
-;; Modified Time-stamp: <2020-01-14 08:48:39 Dan.Harms>
-;; Modified by: Dan.Harms
+;; Modified Time-stamp: <2021-03-01 05:48:45 dharms>
+;; Modified by: Dan Harms
 ;; Keywords: emacs gui tools
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -26,10 +26,18 @@
 
 ;;; Code:
 
-(defvar harmsway-gui-post-frame '()
-  "Hook of functions to run in `after-make-frame-functions'.")
+(add-to-list 'initial-frame-alist '(cursor-type . bar))
+(add-to-list 'initial-frame-alist '(fullscreen . fullheight))
 
-(defun harmsway-gui-disable-scroll-bars (frame)
+(add-to-list 'default-frame-alist '(cursor-type . bar))
+(add-to-list 'default-frame-alist '(fullscreen . fullheight))
+
+(defun harmsway-gui-disable-toolbar (frame)
+  "Disable toolbar on frame FRAME."
+  (modify-frame-parameters frame
+                           '((tool-bar-lines . 0))))
+
+(defun harmsway-gui-disable-scrollbar (frame)
   "Disable scroll bars from frame FRAME."
   (modify-frame-parameters frame
                            '((vertical-scroll-bars . nil)
@@ -37,16 +45,16 @@
 
 (defun harmsway-gui-load (&optional frame)
   "Load GUI settings for frame FRAME."
-  (let ((guifile (concat my/gui-dir
-                         (if (null window-system) "tty"
-                           (symbol-name window-system)))))
-    (load guifile)
-    (run-hook-with-args 'harmsway-gui-post-frame
-                        (or frame (selected-frame)))
-    ))
+  (when window-system
+    (let ((file (concat harmsway-gui-dir (symbol-name window-system))))
+      (load file t)))
+  (harmsway-gui-disable-scrollbar frame)
+  (harmsway-gui-disable-toolbar frame))
 
-(add-hook 'after-make-frame-functions #'harmsway-gui-load)
-(add-hook 'harmsway-gui-post-frame #'harmsway-gui-disable-scroll-bars)
+(add-hook 'after-init-hook #'harmsway-gui-load)
+
+(add-hook 'after-make-frame-functions #'harmsway-gui-disable-scrollbar)
+(add-hook 'after-make-frame-functions #'harmsway-gui-disable-toolbar)
 
 (provide 'harmsway-gui)
 ;;; harmsway-gui.el ends here
