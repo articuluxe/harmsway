@@ -2,8 +2,7 @@
 ;; Copyright (C) 2018, 2020-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Wednesday, August  8, 2018
-;; Version: 1.0
-;; Modified Time-stamp: <2021-03-01 05:48:45 dharms>
+;; Modified Time-stamp: <2021-03-01 10:50:25 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: emacs gui tools
 
@@ -42,6 +41,9 @@
   (modify-frame-parameters frame
                            '((vertical-scroll-bars . nil)
                              (horizontal-scroll-bars . nil))))
+
+(tab-bar-mode 1)
+(global-set-key "\C-xtu" #'tab-bar-undo-close-tab)
 
 (defun harmsway-gui-load (&optional frame)
   "Load GUI settings for frame FRAME."
