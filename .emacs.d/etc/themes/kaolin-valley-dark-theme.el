@@ -13,6 +13,11 @@
   :type 'boolean
   :group 'kaolin-valley-dark)
 
+(defcustom kaolin-valley-dark-alt-syntax nil
+  "Change keyword and builtin colors. Number/quoted parts will display as amber."
+  :type 'boolean
+  :group 'kaolin-valley-dark)
+
 (define-kaolin-theme valley-dark  "Colorful Kaolin theme with dark brown background."
   ;; Palette modification
   (
@@ -51,8 +56,8 @@
 
 
    ;; (keyword     teal0)
-   (keyword     teal3)
-   (builtin     aquamarine3)
+   (keyword     (if kaolin-valley-dark-alt-syntax green3 teal3))
+   (builtin     (if kaolin-valley-dark-alt-syntax chartreuse3 aquamarine3))
    (header      orange3)
 
    (var         crimson3)
@@ -73,7 +78,7 @@
    (doc         str-alt)
 
    (prep        ultramarine3)
-   (num         harlequin3)
+   (num         (if kaolin-valley-dark-alt-syntax amber3 harlequin3))
    (bool        num)
    (warning     amber0)
    ;; (warning     yellow3)
@@ -95,15 +100,15 @@
    (tooltip-hl-bg bg3)
    (tooltip-hl-fg hl)
 
-   (rb1 teal1)
-   (rb2 aquamarine1)
-   (rb3 violet4)
-   (rb4 cyan1)
-   (rb5 spring-green1)
-   (rb6 amber3)
-   (rb7 magenta3)
-   (rb8 brown3)
-   (rb9 crimson3)
+   (rb1 (if kaolin-themes-distinct-parentheses teal0 teal1))
+   (rb2 (if kaolin-themes-distinct-parentheses ultramarine3 aquamarine1))
+   (rb3 (if kaolin-themes-distinct-parentheses aquamarine3 violet4))
+   (rb4 (if kaolin-themes-distinct-parentheses cyan1))
+   (rb5 (if kaolin-themes-distinct-parentheses cyan3 spring-green1))
+   (rb6 (if kaolin-themes-distinct-parentheses lime3 amber3))
+   (rb7 (if kaolin-themes-distinct-parentheses magenta3 magenta3))
+   (rb8 (if kaolin-themes-distinct-parentheses orange3 brown3))
+   (rb9 (if kaolin-themes-distinct-parentheses vermilion3 crimson3))
 
    (diff-add spring-green1)
    (diff-mod vermilion3)

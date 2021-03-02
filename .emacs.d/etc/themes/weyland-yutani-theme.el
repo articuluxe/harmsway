@@ -307,6 +307,8 @@ the parenthetical noise."
     `(org-indent
       :inherit (org-hide fixed-pitch))
 
+    `(org-ref-ref-face :foreground ,Yellow)
+
     `(org-ref-cite-face                        :foreground ,light-Orchid
       :underline t)
 
@@ -466,15 +468,24 @@ the parenthetical noise."
     `(company-preview                          :foreground ,key2                 :background ,bg)
     `(company-preview-common                   :foreground ,base1                :background ,bg-alt)
     `(company-preview-search                   :foreground ,Indigo               :background ,bg)
-    `(company-tooltip-mouse 
+    `(company-tooltip-mouse
      :inherit highlight)
     `(company-template-field
       :inherit region)
 
-
+    `(font-latex-sectioning-5-face             :foreground "#C77AE1"
+      :inherit variable-pitch
+      :bold t
+      :height 1.1)
     `(font-latex-bold-face                     :foreground ,Indigo)
     `(font-latex-italic-face                   :foreground ,key3
       :italic t)
+    `(font-latex-script-char-face              :foreground ,Orange)
+    `(font-latex-subscript-face
+      :underline "#876444"
+      :height .7)
+    `(font-latex-superscript-face
+      :height .7)
     `(font-latex-string-face                   :foreground ,ArcticBlue)
     `(font-latex-match-reference-keywords      :foreground ,IcebergBlue)
     `(font-latex-match-variable-keywords       :foreground ,Magenta)

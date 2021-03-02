@@ -4,7 +4,7 @@
 ;; Maintainer: Omar Antolín Camarena, Daniel Mendler
 ;; Created: 2020
 ;; License: GPL-3.0-or-later
-;; Version: 0.2
+;; Version: 0.3
 ;; Package-Requires: ((emacs "26.1"))
 ;; Homepage: https://github.com/minad/marginalia
 
@@ -132,7 +132,7 @@ determine it."
   :type 'hook)
 
 (defcustom marginalia-prompt-categories
-  '(("\\<group\\>" . customize-group)
+  '(("\\<customize group\\>" . customize-group)
     ("\\<M-x\\>" . command)
     ("\\<package\\>" . package)
     ("\\<bookmark\\>" . bookmark)
@@ -152,9 +152,9 @@ determine it."
   :type '(alist :key-type symbol :value-type symbol))
 
 (defcustom marginalia-bookmark-type-transformers
-  `(("^bookmark-\\(.*?\\)-handler$" . "\\1")
+  `(("\\`bookmark-\\(.*?\\)-handler\\'" . "\\1")
     ("default" . "File")
-    ("^\\(.*?\\)-bookmark-jump\\(?:-handler\\)?$" . "\\1")
+    ("\\`\\(.*?\\)-bookmark-jump\\(?:-handler\\)?\\'" . "\\1")
     (".*" . ,#'capitalize))
   "List of bookmark type transformers."
   :type 'alist)
@@ -267,8 +267,8 @@ determine it."
 (defvar marginalia--this-command nil
   "Last command symbol saved in order to allow annotations.")
 
-(defvar marginalia--original-category nil
-  "Original category reported by completion metadata.")
+(defvar marginalia--metadata nil
+  "Completion metadata from the current completion.")
 
 (defun marginalia--truncate (str width)
   "Truncate string STR to WIDTH."
@@ -342,9 +342,15 @@ This hash table is needed to speed up `marginalia-annotate-binding'.")
 ;; This annotator is consult-specific, it will annotate commands with `consult-multi' category
 (defun marginalia-annotate-consult-multi (cand)
   "Annotate consult-multi CAND with the buffer class."
-  (when-let* ((multi (get-text-property 0 'consult-multi cand))
-              (annotate (alist-get (car multi) (symbol-value (car marginalia-annotators)))))
-    (funcall annotate (cdr multi))))
+  (if-let* ((multi (get-text-property 0 'consult-multi cand))
+            (annotate (alist-get (car multi) (symbol-value (car marginalia-annotators)))))
+      ;; Use the Marginalia annotator corresponding to the consult-multi category.
+      (funcall annotate (cdr multi))
+    ;; Apply the original annotation function on the original candidate, if there is one.
+    ;; NOTE: Use `alist-get' instead of `completion-metadata-get' to bypass our
+    ;; `marginalia--completion-metadata-get' advice!
+    (when-let (annotate (alist-get 'annotation-function marginalia--metadata))
+      (funcall annotate cand))))
 
 (defconst marginalia--advice-regexp
   (rx bos
@@ -389,20 +395,20 @@ t cl-type"
    (concat
     (when (fboundp s)
       (concat
-       (when (get s 'byte-obsolete-info) "o")
+       (and (get s 'byte-obsolete-info) "o")
        (cond
         ((commandp s) "c")
         ((eq (car-safe (symbol-function s)) 'macro) "m")
         (t "f"))
-       (when (marginalia--advised s) "!")))
+       (and (marginalia--advised s) "!")))
     (when (boundp s)
       (concat
-       (when (get s 'byte-obsolete-variable) "o")
-       (when (local-variable-if-set-p s) "l")
+       (and (get s 'byte-obsolete-variable) "o")
+       (and (local-variable-if-set-p s) "l")
        (if (custom-variable-p s) "u" "v")
-       (when (and (boundp s) (default-boundp s) (not (equal (symbol-value s) (default-value s)))) "*")))
-    (when (facep s) "a")
-    (when (and (fboundp 'cl-find-class) (cl-find-class s)) "t"))))
+       (and (ignore-errors (not (equal (symbol-value s) (default-value s)))) "*")))
+    (and (facep s) "a")
+    (and (fboundp 'cl-find-class) (cl-find-class s) "t"))))
 
 (defun marginalia--function-doc (sym)
   "Documentation string of function SYM."
@@ -492,14 +498,14 @@ Similar to `marginalia-annotate-symbol', but does not show symbol class."
            (propertize "On" 'face 'marginalia-on)
          (propertize "Off" 'face 'marginalia-off)) :width 3)
       ((if (local-variable-if-set-p mode) "Local" "Global") :width 6 :face 'marginalia-type)
-      (lighter-str :width 14 :face 'marginalia-lighter)
+      (lighter-str :width 20 :face 'marginalia-lighter)
       ((marginalia--function-doc mode)
        :truncate marginalia-truncate-width :face 'marginalia-documentation)))))
 
 (defun marginalia-annotate-package (cand)
   "Annotate package CAND with its description summary."
   (when-let* ((pkg-alist (and (bound-and-true-p package-alist) package-alist))
-              (pkg (intern-soft (replace-regexp-in-string "-[[:digit:]\\.-]+$" "" cand)))
+              (pkg (intern-soft (replace-regexp-in-string "-[[:digit:]\\.-]+\\'" "" cand)))
               ;; taken from `describe-package-1'
               (desc (or (car (alist-get pkg pkg-alist))
                         (if-let (built-in (assq pkg package--builtins))
@@ -516,14 +522,18 @@ Similar to `marginalia-annotate-symbol', but does not show symbol class."
   "Return bookmark type string of BM.
 
 The string is transformed according to `marginalia-bookmark-type-transformers'."
-  (let ((str (symbol-name (or (alist-get 'handler bm)
-                              'bookmark-default-handler))))
-    (dolist (transformer marginalia-bookmark-type-transformers str)
-      (when (string-match-p (car transformer) str)
-        (setq str
-              (if (stringp (cdr transformer))
-                  (replace-regexp-in-string (car transformer) (cdr transformer) str)
-                (funcall (cdr transformer) str)))))))
+  (let ((handler (or (alist-get 'handler bm) 'bookmark-default-handler)))
+    ;; Some libraries use lambda handlers instead of symbols. For
+    ;; example the function `xwidget-webkit-bookmark-make-record' is
+    ;; affected. I consider this bad style since then the lambda is
+    ;; persisted.
+    (when-let (str (and (symbolp handler) (symbol-name handler)))
+      (dolist (transformer marginalia-bookmark-type-transformers str)
+        (when (string-match-p (car transformer) str)
+          (setq str
+                (if (stringp (cdr transformer))
+                    (replace-regexp-in-string (car transformer) (cdr transformer) str)
+                  (funcall (cdr transformer) str))))))))
 
 (defun marginalia-annotate-bookmark (cand)
   "Annotate bookmark CAND with its file name and front context string."
@@ -640,7 +650,9 @@ using `minibuffer-force-complete' on the candidate CAND."
 
 (defun marginalia-classify-original-category ()
   "Return original category reported by completion metadata."
-  marginalia--original-category)
+  ;; NOTE: Use `alist-get' instead of `completion-metadata-get' to bypass our
+  ;; `marginalia--completion-metadata-get' advice!
+  (alist-get 'category marginalia--metadata))
 
 (defun marginalia-classify-symbol ()
   "Determine if currently completing symbols."
@@ -661,12 +673,14 @@ looking for a regexp that matches the prompt."
              when (string-match-p regexp prompt)
              return category)))
 
-(defmacro marginalia--context (&rest body)
-  "Setup annotator context around BODY."
+(defmacro marginalia--context (metadata &rest body)
+  "Setup annotator context with completion METADATA around BODY."
+  (declare (indent 1))
   (let ((w (make-symbol "w"))
         (o (make-symbol "o")))
     ;; Take the window width of the current window (minibuffer window!)
-    `(let ((,w (window-width))
+    `(let ((marginalia--metadata ,metadata)
+           (,w (window-width))
            ;; Compute marginalia-align-offset. If the right-fringe-width is
            ;; zero, use an additional offset of 1 by default! See
            ;; https://github.com/minad/marginalia/issues/42 for the discussion
@@ -694,20 +708,20 @@ PROP is the property which is looked up."
      (when-let* ((cat (completion-metadata-get metadata 'category))
                  (annotate (alist-get cat (symbol-value (car marginalia-annotators)))))
        (lambda (cand)
-         (marginalia--context
-          (funcall annotate cand)))))
+         (marginalia--context metadata
+           (funcall annotate cand)))))
     ('affixation-function
      ;; We do want the advice triggered for `completion-metadata-get'.
      ;; Return wrapper around `annotation-function'.
      (when-let* ((cat (completion-metadata-get metadata 'category))
                  (annotate (alist-get cat (symbol-value (car marginalia-annotators)))))
        (lambda (cands)
-         (marginalia--context
-          (mapcar (lambda (x) (list x (funcall annotate x))) cands)))))
+         (marginalia--context metadata
+           (mapcar (lambda (x) (list x (funcall annotate x))) cands)))))
     ('category
-     ;; using alist-get bypasses any advice on completion-metadata-get
-     ;; to avoid infinite recursion
-     (let ((marginalia--original-category (alist-get 'category metadata)))
+     ;; Find the completion category by trying each of our classifiers.
+     ;; Store the metadata for `marginalia-classify-original-category'.
+     (let ((marginalia--metadata metadata))
        (run-hook-with-args-until-success 'marginalia-classifiers)))))
 
 (defun marginalia--minibuffer-setup ()

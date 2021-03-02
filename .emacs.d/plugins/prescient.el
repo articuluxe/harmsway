@@ -8,7 +8,7 @@
 ;; Created: 7 Aug 2017
 ;; Package-Requires: ((emacs "25.1"))
 ;; SPDX-License-Identifier: MIT
-;; Version: 5.0
+;; Version: 5.1
 
 ;;; Commentary:
 
@@ -184,6 +184,25 @@ after the cache data is updated by `prescient-remember' when
 `prescient-persist-mode' is activated."
   :type 'boolean)
 
+(defcustom prescient-sort-full-matches-first nil
+  "Whether to sort fully matched candidates before others.
+
+Prescient can sort by recency, frequency, and candidate length.
+With this option, fully matched candidates will be sorted before
+partially matched candidates, but candidates in each group will
+still be sorted like normal."
+  :type 'boolean)
+
+(defcustom prescient-use-char-folding t
+  "Whether certain literal filtering methods use character folding.
+
+This affects the `literal' and `literal-prefix' filtering methods.
+
+In Emacs versions 27 or greater, see also the customizable
+variables `char-fold-include', `char-fold-exclude', and
+`char-fold-symmetric'."
+  :type 'boolean)
+
 ;;;; Caches
 
 (defvar prescient--history (make-hash-table :test 'equal)
@@ -349,19 +368,27 @@ as a sub-query delimiter."
 
 (cl-defun prescient-literal-regexp (query &key with-group
                                           &allow-other-keys)
-  "Return a regexp matching QUERY with character folding.
-If WITH-GROUP is `all', enclose the match in a capture group."
+  "Return a regexp matching QUERY with optional character folding.
+
+If WITH-GROUP is `all', enclose the match in a capture group.
+
+See also the customizable variable `prescient-use-char-folding'."
   (prescient-with-group
-   (char-fold-to-regexp query)
+   (if prescient-use-char-folding
+       (char-fold-to-regexp query)
+     query)
    (eq with-group 'all)))
 
 (cl-defun prescient-literal-prefix-regexp
     (query &key with-group subquery-number
            &allow-other-keys)
-  "Return a regexp matching QUERY with character folding.
+  "Return a regexp matching QUERY with optional character folding.
+
 If WITH-GROUP is `all', enclose the match in a capture group.
 Anchor the QUERY at the beginning of the candidate if
-SUBQUERY-NUMBER equals 0."
+SUBQUERY-NUMBER equals 0.
+
+See also the customizable variable `prescient-use-char-folding'."
   (prescient-with-group
    (concat (if (= subquery-number 0)
                ;; 1. subquery => anchor at the beginning of candidate.
@@ -369,7 +396,9 @@ SUBQUERY-NUMBER equals 0."
              ;; Otherwise, just anchor at the beginning of some word
              ;; in the candidate.
              "\\b")
-           (char-fold-to-regexp query))
+           (if prescient-use-char-folding
+               (char-fold-to-regexp query)
+             query))
    (eq with-group 'all)))
 
 (cl-defun prescient-initials-regexp (query &key with-group
@@ -525,18 +554,27 @@ must match each subquery, either using substring or initialism
 matching. Discard any that do not, and return the resulting list.
 Do not modify CANDIDATES; always make a new copy of the list."
   (let ((regexps (prescient-filter-regexps query))
-        (results nil))
+        (results nil)
+        (prioritized-results nil))
     (save-match-data
       ;; Use named block in case somebody loads `cl' accidentally
-      ;; which causes `dolist' to turn into `cl-dolist' which creates
-      ;; a nil block implicitly.
+      ;; which causes `dolist' to turn into `cl-dolist' which
+      ;; creates a nil block implicitly.
       (dolist (candidate candidates)
         (cl-block done
-          (dolist (regexp regexps)
-            (unless (string-match regexp candidate)
-              (cl-return-from done)))
-          (push candidate results)))
-      (nreverse results))))
+          (let ((fully-matched nil))
+            (dolist (regexp regexps)
+              (unless (string-match regexp candidate)
+                (cl-return-from done))
+              (when (and
+                     prescient-sort-full-matches-first
+                     (equal (length candidate)
+                            (length (match-string 0 candidate))))
+                (setq fully-matched t)))
+            (if fully-matched
+                (push candidate prioritized-results)
+              (push candidate results)))))
+      (nconc (nreverse prioritized-results) (nreverse results)))))
 
 (defmacro prescient--sort-compare ()
   "Hack used to cause the byte-compiler to produce faster code.
@@ -643,7 +681,3 @@ Return the sorted list. The original is modified destructively."
 (provide 'prescient)
 
 ;;; prescient.el ends here
-
-;; Local Variables:
-;; outline-regexp: ";;;;* "
-;; End:

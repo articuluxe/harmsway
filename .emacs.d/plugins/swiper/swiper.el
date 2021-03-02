@@ -1,11 +1,11 @@
 ;;; swiper.el --- Isearch with an overview. Oh, man! -*- lexical-binding: t -*-
 
-;; Copyright (C) 2015-2020  Free Software Foundation, Inc.
+;; Copyright (C) 2015-2021 Free Software Foundation, Inc.
 
 ;; Author: Oleh Krehel <ohwoeowho@gmail.com>
 ;; URL: https://github.com/abo-abo/swiper
-;; Version: 0.13.0
-;; Package-Requires: ((emacs "24.5") (ivy "0.13.0"))
+;; Version: 0.13.2
+;; Package-Requires: ((emacs "24.5") (ivy "0.13.2"))
 ;; Keywords: matching
 
 ;; This file is part of GNU Emacs.
@@ -1141,11 +1141,11 @@ WND, when specified is the window."
 (defun swiper-from-isearch ()
   "Invoke `swiper' from isearch."
   (interactive)
-  (let ((query (if isearch-regexp
-                   isearch-string
-                 (regexp-quote isearch-string))))
-    (isearch-exit)
-    (swiper query)))
+  (swiper (prog1 (if isearch-regexp
+                     isearch-string
+                   (regexp-quote isearch-string))
+            (let ((search-nonincremental-instead nil))
+              (isearch-exit)))))
 
 (defvar swiper-multi-buffers nil
   "Store the current list of buffers.")

@@ -805,8 +805,11 @@ then this function does nothing."
 
 (defun doom-modeline--active ()
   "Whether is an active window."
-  (and doom-modeline-current-window
-       (eq (doom-modeline--get-current-window) doom-modeline-current-window)))
+  (unless (and (bound-and-true-p mini-frame-frame)
+               (and (frame-live-p mini-frame-frame)
+                    (frame-visible-p mini-frame-frame)))
+    (and doom-modeline-current-window
+         (eq (doom-modeline--get-current-window) doom-modeline-current-window))))
 
 (defun doom-modeline-set-selected-window (&rest _)
   "Set `doom-modeline-current-window' appropriately."
@@ -819,6 +822,8 @@ then this function does nothing."
   "Unset `doom-modeline-current-window' appropriately."
   (setq doom-modeline-current-window nil))
 
+(add-hook 'after-make-frame-functions #'doom-modeline-set-selected-window)
+(add-hook 'buffer-list-update-hook #'doom-modeline-set-selected-window)
 (add-hook 'window-configuration-change-hook #'doom-modeline-set-selected-window)
 (add-hook 'window-selection-change-functions #'doom-modeline-set-selected-window)
 (add-hook 'exwm-workspace-switch-hook #'doom-modeline-set-selected-window)

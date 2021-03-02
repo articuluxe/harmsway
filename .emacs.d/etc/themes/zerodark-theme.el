@@ -1,6 +1,6 @@
 ;;; zerodark-theme.el --- A dark, medium contrast theme for Emacs -*- lexical-binding: t -*-
 
-;; Copyright (C) 2015-2018  Nicolas Petton
+;; Copyright (C) 2015-2021  Nicolas Petton
 
 ;; Author: Nicolas Petton <nicolas@petton.fr>
 ;; Keywords: themes
@@ -200,11 +200,9 @@ The result is cached for one second to avoid hiccups."
       (default (if (true-color-p) "#abb2bf" "#afafaf"))
       (light (if (true-color-p) "#ccd4e3" "#d7d7d7"))
       (background (if (true-color-p) "#282c34" "#333333"))
-      (background-dark (if (true-color-p) "#24282f" "#222222"))
       (background-darker (if (true-color-p) "#22252c" "#222222"))
-      (mode-line-inactive (if "#1c2129" "#222222"))
-      (mode-line-active (if (true-color-p) "#6f337e" "#875f87"))
       (background-lighter (if (true-color-p) "#3a3f4b" "#5f5f5f"))
+      (mode-line (if (true-color-p) "#1c2129" "#222222"))
       (background-red (if (true-color-p) "#4c3840" "#5f5f5f"))
       (bright-background-red (if (true-color-p) "#744a5b" "#744a5b"))
       (background-purple (if (true-color-p) "#48384c" "#5f5f5f"))
@@ -240,7 +238,7 @@ The result is cached for one second to avoid hiccups."
    `(cursor ((,class (:background ,default))))
 
    ;; Highlighting faces
-   `(fringe ((,class (:background ,background-dark :foreground ,comment))))
+   `(fringe ((,class (:background ,background :foreground ,comment))))
    `(border ((,class (:foreground ,background-lighter))))
    `(vertical-border ((,class (:foreground ,background-lighter))))
    `(highlight ((,class (:background ,highlight :foreground ,default :underline nil))))
@@ -266,12 +264,12 @@ The result is cached for one second to avoid hiccups."
    `(font-lock-warning-face ((,class (:foreground ,red :weight bold :background ,background-red))))
 
    ;; Mode line faces
-   `(mode-line ((,class (:background ,background-blue :height 0.9 :foreground ,blue
+   `(mode-line ((,class (:background ,mode-line :height 0.9 :foreground ,light
                                      :box ,(when zerodark-use-paddings-in-mode-line
-                                             (list :line-width 6 :color background-blue))))))
-   `(mode-line-inactive ((,class (:background ,background-darker :height 0.9 :foreground ,default
+                                             (list :line-width 6 :color mode-line))))))
+   `(mode-line-inactive ((,class (:background ,mode-line :height 0.9 :foreground ,comment
                                               :box ,(when zerodark-use-paddings-in-mode-line
-                                                      (list :line-width 6 :color background-darker))))))
+                                                      (list :line-width 6 :color mode-line))))))
    `(header-line ((,class (:inherit mode-line-inactive))))
 
    ;; error & success
@@ -492,19 +490,20 @@ The result is cached for one second to avoid hiccups."
    ;; org-mode todo
    `(org-hide ((,class (:foreground ,background))))
    `(org-todo ((,class (:foreground ,red :background ,background-red :weight bold))))
-   `(org-done ((,class (:foreground ,blue :background ,background-blue :weight bold))))
-   `(org-date ((,class (:background ,background-lighter))))
+   `(org-done ((,class (:foreground ,green :background ,background-green :weight bold))))
+   `(org-date ((,class (:foreground ,purple :background ,background-purple :weight bold))))
    `(org-scheduled-previously ((,class (:foreground ,red))))
    `(org-scheduled ((,class (:foreground ,default))))
    `(org-upcoming-deadline ((,class (:foreground ,orange))))
    `(org-headline-done ((,class (:foreground ,comment))))
-   `(outline-1 ((,class (:foreground ,blue :weight bold))))
-   `(outline-2 ((,class (:foreground ,purple :weight bold))))
-   `(outline-3 ((,class (:foreground ,peach :weight bold))))
+   `(org-document-title ((,class (:foreground ,orange :height 1.5))))
+   `(outline-1 ((,class (:foreground ,peach :weight bold :height 1.3))))
+   `(outline-2 ((,class (:foreground ,purple :weight bold :height 1.2))))
+   `(outline-3 ((,class (:foreground ,blue :weight bold :height 1.1))))
    `(outline-4 ((,class (:foreground ,green-light :weight bold))))
-   `(outline-5 ((,class (:foreground ,blue :weight bold))))
+   `(outline-5 ((,class (:foreground ,peach :weight bold))))
    `(outline-6 ((,class (:foreground ,purple :weight bold))))
-   `(outline-7 ((,class (:foreground ,peach :weight bold))))
+   `(outline-7 ((,class (:foreground ,blue :weight bold))))
    `(outline-8 ((,class (:foreground ,green-light :weight bold))))
    `(org-column-title ((,class (:foreground unspecified :background unspecified))))
    `(org-agenda-date ((,class (:foreground ,purple :weight bold))))
@@ -513,19 +512,24 @@ The result is cached for one second to avoid hiccups."
    `(org-scheduled-today ((,class (:foreground ,default :weight bold))))
    `(org-agenda-done ((,class (:foreground ,comment))))
    `(org-time-grid ((,class (:foreground ,comment))))
+   `(org-drawer ((,class (:inherit shadow))))
 
    ;; org columns
    `(org-column ((,class (:background ,background-darker))))
    `(org-column-title ((,class (:background ,background-blue :foreground ,blue :weight bold))))
 
    ;; org blocks
-   `(org-block-begin-line ((,class (:background ,background-green :foreground ,green-light :height 0.9))))
-   `(org-block-end-line ((,class (:background ,background-green :foreground ,green-light :height 0.9))))
+   `(org-block-begin-line ((,class (:background ,bright-background-blue :foreground ,default :height 0.9 :extend t))))
+   `(org-block-end-line ((,class (:background ,bright-background-blue :foreground ,default :height 0.9 :extend t))))
+   `(org-block ((,class (:background ,background-blue :foreground ,default :extend t))))
 
    ;; org-drill
    `(org-drill-hidden-cloze-face ((,class (:background ,red :foreground ,background))))
    `(org-drill-visible-cloze-face ((,class (:background ,blue :foreground ,background-blue))))
    `(org-drill-visible-cloze-hint-face ((,class (:background ,green :foreground ,background-green))))
+
+   ;; org-Roam
+   `(org-roam-link ((,class (:background ,background-blue :foreground ,blue :weight bold))))
 
    ;; Gnus faces -- from wombat, feel free to improve :)
    `(gnus-group-news-1 ((,class (:weight bold :foreground "#95e454"))))
@@ -812,28 +816,6 @@ The result is cached for one second to avoid hiccups."
   (require 'flycheck)
   (require 'magit)
   (require 'all-the-icons)
-  (let ((class '((class color) (min-colors 89)))
-        (light (if (true-color-p) "#ccd4e3" "#d7d7d7"))
-        (comment (if (true-color-p) "#687080" "#707070"))
-        (purple "#c678dd")
-        (mode-line (if "#1c2129" "#222222")))
-    (custom-theme-set-faces
-     'zerodark
-
-     ;; Mode line faces
-     `(mode-line ((,class (:background ,mode-line
-                                       :height 0.9
-                                       :foreground ,light
-                                       :box ,(when zerodark-use-paddings-in-mode-line
-                                               (list :line-width 6 :color mode-line))))))
-     `(mode-line-inactive ((,class (:background ,mode-line
-                                                :height 0.9
-                                                :foreground ,comment
-                                                :box ,(when zerodark-use-paddings-in-mode-line
-                                                        (list :line-width 6 :color mode-line))))))
-     `(anzu-mode-line ((,class :inherit mode-line :foreground ,purple :weight bold)))
-     ))
-
   (setq-default mode-line-format
                 `("%e"
                   " "

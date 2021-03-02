@@ -201,6 +201,10 @@ has to be used to view and change branch related variables."
 (transient-define-prefix magit-branch (branch)
   "Add, configure or remove a branch."
   :man-page "git-branch"
+  ["Arguments"
+   (7 "-r" "Recurse submodules when checking out an existing branch"
+      "--recurse-submodules"
+      :if (lambda () (version<= "2.13" (magit-git-version))))]
   ["Variables"
    :if (lambda ()
          (and magit-branch-direct-configure
@@ -232,18 +236,22 @@ has to be used to view and change branch related variables."
   (interactive (list (magit-get-current-branch)))
   (transient-setup 'magit-branch nil nil :scope branch))
 
+(defun magit-branch-arguments ()
+  (transient-args 'magit-branch))
+
 ;;;###autoload
-(defun magit-checkout (revision)
+(defun magit-checkout (revision &optional args)
   "Checkout REVISION, updating the index and the working tree.
 If REVISION is a local branch, then that becomes the current
 branch.  If it is something else, then `HEAD' becomes detached.
 Checkout fails if the working tree or the staging area contain
 changes.
 \n(git checkout REVISION)."
-  (interactive (list (magit-read-other-branch-or-commit "Checkout")))
+  (interactive (list (magit-read-other-branch-or-commit "Checkout")
+                     (magit-branch-arguments)))
   (when (string-match "\\`heads/\\(.+\\)" revision)
     (setq revision (match-string 1 revision)))
-  (magit-run-git "checkout" revision))
+  (magit-run-git "checkout" args revision))
 
 ;;;###autoload
 (defun magit-branch-create (branch start-point)
@@ -254,12 +262,13 @@ changes.
   (magit-refresh))
 
 ;;;###autoload
-(defun magit-branch-and-checkout (branch start-point)
+(defun magit-branch-and-checkout (branch start-point &optional args)
   "Create and checkout BRANCH at branch or revision START-POINT."
-  (interactive (magit-branch-read-args "Create and checkout branch"))
+  (interactive (append (magit-branch-read-args "Create and checkout branch")
+                       (list (magit-branch-arguments))))
   (if (string-match-p "^stash@{[0-9]+}$" start-point)
       (magit-run-git "stash" "branch" branch start-point)
-    (magit-call-git "checkout" "-b" branch start-point)
+    (magit-call-git "checkout" args "-b" branch start-point)
     (magit-branch-maybe-adjust-upstream branch start-point)
     (magit-refresh)))
 
@@ -336,7 +345,7 @@ when using `magit-branch-and-checkout'."
            (t
             (list choice (magit-read-starting-point "Create" choice))))))
   (if (not start-point)
-      (magit-checkout branch)
+      (magit-checkout branch (magit-branch-arguments))
     (when (magit-anything-modified-p t)
       (user-error "Cannot checkout when there are uncommitted changes"))
     (magit-branch-and-checkout branch start-point)
@@ -495,7 +504,7 @@ that is being reset."
                                   (or (and (not (equal branch atpoint)) atpoint)
                                       (magit-get-upstream-branch branch)))
            current-prefix-arg)))
-  (let ((inhibit-magit-refresh t))
+  (let ((magit-inhibit-refresh t))
     (if (equal branch (magit-get-current-branch))
         (if (and (magit-anything-modified-p)
                  (not (yes-or-no-p
@@ -684,15 +693,15 @@ the remote."
   (magit-call-git "branch" (if force "-M" "-m") old new)
   (when magit-branch-rename-push-target
     (let ((remote (magit-get-push-remote old))
-          (old-specific (magit-get "branch" old "pushRemote"))
-          (new-specific (magit-get "branch" new "pushRemote")))
-      (when (and old-specific (or force (not new-specific)))
-        ;; Keep the target setting branch specific, even if that is
+          (old-specified (magit-get "branch" old "pushRemote"))
+          (new-specified (magit-get "branch" new "pushRemote")))
+      (when (and old-specified (or force (not new-specified)))
+        ;; Keep the target setting branch specified, even if that is
         ;; redundant.  But if a branch by the same name existed before
         ;; and the rename isn't forced, then do not change a leftover
         ;; setting.  Such a leftover setting may or may not conform to
         ;; what we expect here...
-        (magit-set old-specific "branch" new "pushRemote"))
+        (magit-set old-specified "branch" new "pushRemote"))
       (when (and (equal (magit-get-push-remote new) remote)
                  ;; ...and if it does not, then we must abort.
                  (not (eq magit-branch-rename-push-target 'local-only))

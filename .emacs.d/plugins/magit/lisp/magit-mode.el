@@ -468,8 +468,8 @@ which visits the thing at point using `browse-url'."
     ["Cherry pick" magit-cherry-pick t]
     ["Revert commit" magit-revert t]
     "---"
-    ["Ignore globally" magit-gitignore-globally t]
-    ["Ignore locally" magit-gitignore-locally t]
+    ["Ignore at toplevel" magit-gitignore-in-topdir t]
+    ["Ignore in subdirectory" magit-gitignore-in-subdir t]
     ["Discard" magit-discard t]
     ["Reset head and index" magit-reset-mixed t]
     ["Stash" magit-stash-both t]
@@ -824,7 +824,7 @@ exist that hasn't been looked to its value.  Return that buffer
 \(or nil if there is no such buffer) unless VALUE is non-nil, in
 which case return the buffer that has been looked to that value.
 
-If FRAME nil or omitted, then consider all buffers.  Otherwise
+If FRAME is nil or omitted, then consider all buffers.  Otherwise
   only consider buffers that are displayed in some live window
   on some frame.
 If `all', then consider all buffers on all frames.
@@ -992,7 +992,7 @@ window."
 
 ;;; Refresh Buffers
 
-(defvar inhibit-magit-refresh nil)
+(defvar magit-inhibit-refresh nil)
 
 (defun magit-refresh ()
   "Refresh some buffers belonging to the current repository.
@@ -1002,7 +1002,7 @@ Refresh the current buffer if its major mode derives from
 
 Run hooks `magit-pre-refresh-hook' and `magit-post-refresh-hook'."
   (interactive)
-  (unless inhibit-magit-refresh
+  (unless magit-inhibit-refresh
     (unwind-protect
         (let ((start (current-time))
               (magit--refresh-cache (or magit--refresh-cache

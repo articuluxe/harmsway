@@ -5,7 +5,7 @@
 ;; Author: D. Williams <d.williams@posteo.net>
 ;; Maintainer: D. Williams <d.williams@posteo.net>
 ;; Keywords: faces, outlines
-;; Version: 1.4.0
+;; Version: 1.5.0
 ;; Homepage: https://github.com/integral-dw/org-superstar-mode
 ;; Package-Requires: ((org "9.1.9") (emacs "26.1"))
 
@@ -54,13 +54,6 @@
 ;; while being able to introduce compatibility-breaking changes to it.
 ;; It is largely rewritten, to the point of almost no function being
 ;; identical to its org-bullets counterpart.
-
-;; This package is versioned using (the author's understanding of)
-;; semantic versioning: "<major>.<minor>.<patch>".
-;; <major> version increments signify backward incompatible changes.
-;; <minor> version increments signify backward compatible but
-;;         significant changes.
-;; <patch> version increments signify changes not affecting the API.
 
 ;; Here are some Unicode blocks which are generally nifty resources
 ;; for this package:
@@ -161,27 +154,37 @@ are not included in the alist are handled like normal headings.
 Alternatively, each alist element may be a proper list of the form
 \(KEYWORD COMPOSE-STRING CHARACTER [REST...])
 
-where KEYWORD should be a TODO keyword, and COMPOSE-STRING should
-be a string according to the rules of the third argument of
-‘compose-region’.  It will be used to compose the specific TODO
-item bullet.  CHARACTER is the fallback character used in
-terminal displays, where composing characters cannot be relied
-upon.  See also ‘org-superstar-leading-fallback’.
+where KEYWORD should be a TODO keyword (a string), and
+COMPOSE-STRING should be a string according to the rules of the
+third argument of ‘compose-region’.  It will be used to compose
+the specific TODO item bullet.  CHARACTER is the fallback
+character used in terminal displays, where composing characters
+cannot be relied upon.  See also
+‘org-superstar-leading-fallback’.
+
+KEYWORD may also be the symbol ‘default’ instead of a string.  In
+this case, this bullet is used for all TODO unspecified keywords.
 
 You should call ‘org-superstar-restart’ after changing this
 variable for your changes to take effect."
   :group 'org-superstar
-  :type '(alist :key-type (string :format "TODO keyword: %v")
+  :type '(alist :key-type
+                (choice :format "%[Toggle%] %v\n"
+                        (string :tag "Bullet for (custom) TODO keyword"
+                                :format "TODO keyword: %v")
+                        (const :tag "Default TODO keyword"
+                               :format "Default TODO keyword: %v"
+                               default))
                 :value-type
                 (choice
                  (character :value ?◉
                             :format "Bullet character: %v\n"
                             :tag "Simple bullet character")
                  (list :tag "Advanced string and fallback"
-                  (string :value "◉"
-                          :format "String of characters to compose: %v")
-                  (character :value ?◉
-                             :format "Fallback character for terminal: %v\n")))))
+                       (string :value "◉"
+                               :format "String of characters to compose: %v")
+                       (character :value ?◉
+                                  :format "Fallback character for terminal: %v\n")))))
 
 (defun org-superstar--set-fbullet (symbol value)
   "Set SYMBOL ‘org-superstar-first-inlinetask-bullet’ to VALUE.
@@ -256,8 +259,9 @@ COMPONENTS argument.
 
 If ‘org-hide-leading-stars’ is nil, leading stars in a headline
 are represented as a sequence of this bullet using the face
-‘org-superstar-leading’.  Otherwise, this variable has no effect and
-‘org-mode’ covers leading stars using ‘org-hide’.
+‘org-superstar-leading’.  Otherwise, this variable has no effect
+and ‘org-mode’ covers leading stars using ‘org-hide’.  See also
+‘org-indent-mode-turns-on-hiding-stars’.
 
 This variable is only used for graphical displays.
 ‘org-superstar-leading-fallback’ is used for terminal displays
@@ -312,7 +316,7 @@ variable for your changes to take effect."
 ;;; Other Custom Variables
 
 (defcustom org-superstar-cycle-headline-bullets t
-  "Non-nil means cycle through all available headline bullets.
+  "Non-nil means cycle through available headline bullets.
 
 The following values are meaningful:
 
@@ -371,9 +375,15 @@ Instead of displaying bullets corresponding to TODO items
 according to ‘org-superstar-headline-bullets-list’ (dependent on
 the headline’s level), display a bullet according to
 ‘org-superstar-todo-bullet-alist’ (dependent on the TODO
-keyword)."
+keyword).
+
+If set to the symbol ‘hide’, hide the leading bullet entirely
+instead."
   :group 'org-superstar
-  :type 'boolean)
+  :type '(choice
+          (const :tag "Enable special TODO item bullets" t)
+          (const :tag "Disable special TODO item bullets" nil)
+          (const :tag "Hide TODO item bullets altogether" hide)))
 
 (defvar-local org-superstar-lightweight-lists nil
   "Non-nil means circumvent expensive calls to ‘org-superstar-plain-list-p’.
@@ -488,26 +498,48 @@ If no TODO property is found, return nil."
       (when (stringp todo-property)
         todo-property))))
 
+(defun org-superstar--todo-assoc (todo-kw)
+  "Obtain alist entry for the string keyword TODO-KW.
+
+If TODO-KW has no explicit entry in the alist
+‘org-superstar-todo-bullet-alist’, but there is an entry for the
+symbol ‘default’, return it instead.  Otherwise, return nil."
+  (or
+   (assoc todo-kw
+          org-superstar-todo-bullet-alist
+          ;; I would use assoc-string, but then I'd have to deal with
+          ;; what to do should the user create a TODO keyword
+          ;; "default" for some forsaken reason.
+          (lambda (x y) (and (stringp x)
+                             (string= x y))))
+   (assq 'default
+         org-superstar-todo-bullet-alist)))
+
 (defun org-superstar--todo-bullet ()
   "Return the desired TODO item bullet, if defined.
+
 If no entry can be found in ‘org-superstar-todo-bullet-alist’ for
-the current keyword, return nil."
+the current keyword, return nil.
+
+If ‘org-superstar-special-todo-items’ is set to the symbol
+‘hide’, return that instead."
   (let* ((todo-kw
           (org-superstar--get-todo (match-beginning 0)))
          (todo-bullet
-          (assoc-string todo-kw
-                        org-superstar-todo-bullet-alist))
-         (todo-bullet (cdr todo-bullet))
-         (todo-fallback nil))
-      (cond
-       ((characterp todo-bullet)
-        todo-bullet)
-       ((listp todo-bullet)
-        (setq todo-fallback (cadr todo-bullet))
-        (setq todo-bullet (car todo-bullet))
+          (cdr (org-superstar--todo-assoc todo-kw))))
+    (cond
+     ((not todo-kw)
+      nil)
+     ((eq org-superstar-special-todo-items 'hide)
+      'hide)
+     ((characterp todo-bullet)
+      todo-bullet)
+     ((listp todo-bullet)
+      (when-let ((todo-fallback (cadr todo-bullet))
+                 (todo-bullet (car todo-bullet)))
         (if (org-superstar-graphic-p)
             todo-bullet
-          todo-fallback)))))
+          todo-fallback))))))
 
 (defun org-superstar--hbullets-length ()
   "Return the length of ‘org-superstar-headline-bullets-list’."
@@ -534,7 +566,9 @@ See also ‘org-superstar-cycle-headline-bullets’."
         (n (if org-odd-levels-only (/ (1- level) 2) (1- level)))
         (todo-bullet (when org-superstar-special-todo-items
                        (org-superstar--todo-bullet))))
-    (cond (todo-bullet)
+    (cond (todo-bullet
+           (unless (eq todo-bullet 'hide)
+             todo-bullet))
           ((integerp max-bullets)
            (org-superstar--nth-headline-bullet (% n max-bullets)))
           (max-bullets
@@ -657,10 +691,12 @@ prettifying bullets in (for example) source blocks."
 This function uses ‘org-superstar-headline-or-inlinetask-p’ to avoid
 prettifying bullets in (for example) source blocks."
   (when (org-superstar-headline-or-inlinetask-p)
-    (let ((level (org-superstar--heading-level)))
-      (compose-region (match-beginning 1) (match-end 1)
-                      (org-superstar--hbullet level))))
-  'org-superstar-header-bullet)
+    (let ((bullet (org-superstar--hbullet (org-superstar--heading-level))))
+      (if bullet
+          (compose-region (match-beginning 1) (match-end 1)
+                          bullet)
+        (org-superstar--make-invisible 1)))
+    'org-superstar-header-bullet))
 
 (defun org-superstar--prettify-other-hbullet ()
   "Prettify the second last star in a headline.

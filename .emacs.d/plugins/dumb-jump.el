@@ -846,6 +846,21 @@ or most optimal searcher."
            :regex "\\bJJJ\(\\\(.+\\\)\)*\\s*="
            :tests ("test = osc + 0.5;" "test(freq) = osc(freq) + 0.5;"))
 
+    ;; fennel
+    (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "fennel"
+           :regex "\\((local|var)\\s+JJJ\\j"
+           :tests ("(local test (foo)"
+                   "(var test (foo)"))
+
+    (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "fennel"
+           :regex "\\(fn\\s+JJJ\\j"
+           :tests ("(fn test [foo]")
+           :not ("(fn test? [foo]"))
+
+    (:type "function" :supports ("ag" "grep" "rg" "git-grep") :language "fennel"
+           :regex "\\(macro\\s+JJJ\\j"
+           :tests ("(macro test [foo]"))
+
     ;; fortran
     (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "fortran"
            :regex "\\s*\\bJJJ\\s*=[^=\\n]+"
@@ -1477,7 +1492,23 @@ or most optimal searcher."
 
     (:type "enum" :supports ("ag" "grep" "rg" "git-grep") :language "protobuf"
            :regex "enum\\s+JJJ\\s*\\\{"
-           :tests ("enum test{" "enum test {")))
+           :tests ("enum test{" "enum test {"))
+
+    ;; apex (literally the same regexes as java)
+    (:type "function" :supports ("ag" "rg") :language "apex"
+           :regex "^\\s*(?:[\\w\\[\\]]+\\s+){1,3}JJJ\\s*\\\("
+           :tests ("int test()" "int test(param)" "static int test()" "static int test(param)"
+                   "public static MyType test()" "private virtual SomeType test(param)" "static int test()"
+                   "private foo[] test()")
+           :not ("test()" "testnot()" "blah = new test()" "foo bar = test()"))
+
+    (:type "variable" :supports ("ag" "grep" "rg" "git-grep") :language "apex"
+           :regex "\\s*\\bJJJ\\s*=[^=\\n)]+" :tests ("int test = 1234") :not ("if test == 1234:" "int nottest = 44"))
+
+    (:type "type" :supports ("ag" "grep" "rg" "git-grep") :language "apex"
+           :regex "(class|interface)\\s*JJJ\\b"
+           :tests ("class test:" "public class test implements Something")
+           :not ("class testnot:" "public class testnot implements Something")))
 
 
   "List of regex patttern templates organized by language and type to use for generating the grep command."
@@ -1536,6 +1567,7 @@ or most optimal searcher."
     (:language "coffeescript" :ext "coffee" :agtype "coffee" :rgtype "coffeescript")
     (:language "faust" :ext "dsp" :agtype nil :rgtype nil)
     (:language "faust" :ext "lib" :agtype nil :rgtype nil)
+    (:language "fennel" :ext "fnl" :agtype nil :rgtype nil)
     (:language "fortran" :ext "F" :agtype "fortran" :rgtype "fortran")
     (:language "fortran" :ext "f" :agtype "fortran" :rgtype "fortran")
     (:language "fortran" :ext "f77" :agtype "fortran" :rgtype "fortran")
@@ -1630,7 +1662,9 @@ or most optimal searcher."
     (:language "kotlin" :ext "kts" :agtype "kotlin" :rgtype "kotlin")
     (:language "protobuf" :ext "proto" :agtype "proto" :rgtype "protobuf")
     (:language "hcl" :ext "tf" :agtype "terraform" :rgtype "tf")
-    (:language "hcl" :ext "tfvars" :agtype "terraform" :rgtype nil))
+    (:language "hcl" :ext "tfvars" :agtype "terraform" :rgtype nil)
+    (:language "apex" :ext "cls" :agtype nil :rgtype nil)
+    (:language "apex" :ext "trigger" :agtype nil :rgtype nil))
 
   "Mapping of programming language(s) to file extensions."
   :group 'dumb-jump
@@ -2093,6 +2127,8 @@ to keep looking for another root."
   (cond
    ((and (string= lang "clojure") (s-contains? "/" look-for))
     (nth 1 (s-split "/" look-for)))
+   ((and (string= lang "fennel") (s-contains? "." look-for))
+    (-last-item (s-split "\\." look-for)))
    ((and (string= lang "ruby") (s-contains? "::" look-for))
     (-last-item (s-split "::" look-for)))
    ((and (or (string= lang "ruby") (string= lang "crystal")) (s-starts-with? ":" look-for))
@@ -2279,6 +2315,7 @@ current file."
     (:comment ";" :language "clojure")
     (:comment "#" :language "coffeescript")
     (:comment "//" :language "faust")
+    (:comment ";" :language "fennel")
     (:comment "!" :language "fortran")
     (:comment "//" :language "go")
     (:comment "//" :language "zig")
@@ -2305,7 +2342,8 @@ current file."
     (:comment "//" :language "scss")
     (:comment "//" :language "pascal")
     (:comment "//" :language "protobuf")
-    (:comment "#" :language "hcl"))
+    (:comment "#" :language "hcl")
+    (:comment "//" :language "apex"))
   "List of one-line comments organized by language."
   :group 'dumb-jump
   :type

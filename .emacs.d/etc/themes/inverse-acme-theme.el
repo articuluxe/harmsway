@@ -3,7 +3,7 @@
 ;; Author: Dylan Johnson
 ;; (current maintainer)
 ;;
-;; URL: http://github.com/djohnson/inverse-acme-theme
+;; URL: http://github.com/dcjohnson/inverse-acme-theme
 ;; Version: 1.0
 ;; Package-Requires: ((autothemer "0.2") (cl-lib "0.5"))
 

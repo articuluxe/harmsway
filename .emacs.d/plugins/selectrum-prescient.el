@@ -6,9 +6,9 @@
 ;; Homepage: https://github.com/raxod502/prescient.el
 ;; Keywords: extensions
 ;; Created: 8 Dec 2019
-;; Package-Requires: ((emacs "25.1") (prescient "5.0") (selectrum "1.0"))
+;; Package-Requires: ((emacs "25.1") (prescient "5.1") (selectrum "1.0"))
 ;; SPDX-License-Identifier: MIT
-;; Version: 5.0
+;; Version: 5.1
 
 ;;; Commentary:
 
@@ -27,6 +27,36 @@
 (require 'selectrum)
 
 (require 'subr-x)
+
+;;;; Customization
+
+(defgroup selectrum-prescient nil
+  "Prescient adapter for Selectrum."
+  :group 'convenience
+  :prefix "selectrum-prescient"
+  :link '(url-link "https://github.com/raxod502/prescient.el"))
+
+(define-obsolete-face-alias
+  'selectrum-primary-highlight
+  'selectrum-prescient-primary-highlight
+  t)
+
+(define-obsolete-face-alias
+  'selectrum-secondary-highlight
+  'selectrum-prescient-secondary-highlight
+  t)
+
+(defface selectrum-prescient-primary-highlight
+  '((t :weight bold))
+  "Face used to highlight the parts of candidates that match the input."
+  :group 'selectrum-prescient)
+
+(defface selectrum-prescient-secondary-highlight
+  '((t :inherit selectrum-prescient-primary-highlight :underline t))
+  "Additional face used to highlight parts of candidates.
+May be used to highlight parts of candidates that match specific
+parts of the input."
+  :group 'selectrum-prescient)
 
 ;;;; Minor mode
 
@@ -59,7 +89,7 @@ For use on `selectrum-candidate-selected-hook'."
              (when (string-match regexp candidate)
                (put-text-property
                 (match-beginning 0) (match-end 0)
-                'face 'selectrum-primary-highlight candidate)
+                'face 'selectrum-prescient-primary-highlight candidate)
                (cl-loop
                 for (start end)
                 on (cddr (match-data))
@@ -67,7 +97,8 @@ For use on `selectrum-candidate-selected-hook'."
                 do (when (and start end)
                      (put-text-property
                       start end
-                      'face 'selectrum-secondary-highlight candidate)))))))
+                      'face 'selectrum-prescient-secondary-highlight
+                      candidate)))))))
        candidates))))
 
 (defvar selectrum-prescient--old-highlight-function nil
@@ -143,8 +174,22 @@ buffer. It does not affect the default behavior (determined by
 (selectrum-prescient-create-and-bind-toggle-command fuzzy "f")
 (selectrum-prescient-create-and-bind-toggle-command initialism "i")
 (selectrum-prescient-create-and-bind-toggle-command literal "l")
+(selectrum-prescient-create-and-bind-toggle-command literal-prefix "P")
 (selectrum-prescient-create-and-bind-toggle-command prefix "p")
 (selectrum-prescient-create-and-bind-toggle-command regexp "r")
+
+;; This is the same binding used by `isearch-toggle-char-fold'.
+(define-key selectrum-prescient-toggle-map (kbd "'")
+  (defun selectrum-prescient-toggle-char-fold ()
+    "Toggle character folding in the current Selectrum buffer.
+
+See the customizable variable `prescient-use-char-folding'."
+    (interactive)
+    (setq-local prescient-use-char-folding
+                (not prescient-use-char-folding))
+    (message "Character folding toggled %s"
+             (if prescient-use-char-folding "on" "off"))
+    (selectrum-exhibit)))
 
 ;;;###autoload
 (define-minor-mode selectrum-prescient-mode

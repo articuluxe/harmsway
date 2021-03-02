@@ -2,6 +2,7 @@
 *.proviso
 .*.env
 repo-setup.sh
+.deployments/
 
 # TAGS files
 TAGS

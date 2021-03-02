@@ -134,27 +134,25 @@ associated to an active minibuffer for a Consult command."
 
 ;;; Support for consult-location
 
-(defun embark-consult--strip-prefix (string)
-  "Remove the unicode prefix from a consult-location STRING."
-  (let ((i 0) (l (length string)))
-    (while (and (< i l) (<= #x100000 (aref string i) #x10fffd))
-      (setq i (1+ i)))
-    (substring-no-properties string i)))
+(defun embark-consult--strip-prefix (string property)
+  "Remove the initial characters of STRING with the given PROPERTY.
+The prefix is stored as the `embark-consult-prefix' property of
+the first remaining character."
+  (when (get-text-property 0 property string)
+    (let* ((i (next-single-property-change 0 property string))
+           (stripped (substring string i)))
+      (put-text-property 0 1
+                         'embark-consult-prefix (substring string 0 i)
+                         stripped)
+      stripped)))
 
-(defun embark-consult-insert-line (line)
-  "Insert LINE at point."
-  (interactive "sInsert line: ")
-  (insert (embark-consult--strip-prefix line)))
+(defun embark-consult-location-strip-prefix (target)
+  "Remove the unicode prefix character from a `consult-location' TARGET."
+  (cons 'consult-location
+        (embark-consult--strip-prefix target 'consult-location)))
 
-(defun embark-consult-save-line (line)
-  "Save LINE in the kill ring."
-  (interactive "sSave line: ")
-  (kill-new (embark-consult--strip-prefix line)))
-
-(embark-define-keymap embark-consult-location-map
-  "Keymap of Embark actions for Consult's consult-location category."
-  ("i" embark-consult-insert-line) ; shadow the ones from general map
-  ("w" embark-consult-save-line))
+(setf (alist-get 'consult-location embark-transformer-alist)
+      #'embark-consult-location-strip-prefix)
 
 (defun embark-consult-export-occur (lines)
   "Create an occur mode buffer listing LINES.
@@ -195,51 +193,99 @@ The elements of LINES are assumed to be values of category `consult-line'."
       (occur-mode))
     (switch-to-buffer buf)))
 
-
-(setf (alist-get 'consult-location embark-keymap-alist)
-      'embark-consult-location-map)
 (setf (alist-get 'consult-location embark-collect-initial-view-alist)
       'list)
 (setf (alist-get 'consult-location embark-exporters-alist)
-      'embark-consult-export-occur)
+      #'embark-consult-export-occur)
 
-;;; support for consult-multi
+;;; Support for consult-grep
+
+(defvar wgrep-header/footer-parser)
+(declare-function wgrep-setup "wgrep")
+
+(defun embark-consult-export-grep (lines)
+  "Create a grep mode buffer listing LINES."
+  (let ((buf (generate-new-buffer "*Embark Export Grep*")))
+    (with-current-buffer buf
+      (insert (propertize "Exported grep results:\n\n" 'wgrep-header t))
+      (dolist (line lines) (insert line "\n"))
+      (goto-char (point-min))
+      (grep-mode)
+      (setq-local wgrep-header/footer-parser #'ignore)
+      (when (fboundp 'wgrep-setup) (wgrep-setup)))
+    (switch-to-buffer buf)))
+
+(autoload 'compile-goto-error "compile")
+
+(defun embark-consult-goto-location (location)
+  "Go to LOCATION, which should be a string with a grep match."
+  (interactive "sLocation: ")
+  ;; Actions are run in the target window, so in this case whatever
+  ;; window was selected when the command that produced the
+  ;; xref-location candidates ran.  In particular, we inherit the
+  ;; default-directory of the buffer in that window, but we really
+  ;; want the default-directory of the minibuffer or collect window we
+  ;; call the action from, which is the previous window, since the
+  ;; location is given relative to that directory.
+  (with-temp-buffer
+    (setq default-directory (with-selected-window (previous-window)
+                              default-directory))
+    (insert location "\n")
+    (grep-mode)
+    (goto-char (point-min))
+    (let ((display-buffer-overriding-action '(display-buffer-same-window)))
+      (compile-goto-error))))
+
+(setf (alist-get 'consult-grep embark-default-action-overrides)
+      #'embark-consult-goto-location)
+(setf (alist-get 'consult-grep embark-exporters-alist)
+      #'embark-consult-export-grep)
+(setf (alist-get 'consult-grep embark-collect-initial-view-alist)
+      'list)
+
+;;; Support for consult-multi
 
 (defun embark-consult-refine-multi-type (target)
   "Refine `consult-multi' TARGET to its real type.
-
 This function takes a target of type `consult-multi' (from
 Consult's `consult-multi' category) and transforms it to its
 actual type."
-  (or (get-text-property 0 'consult-multi target) (cons 'general target)))
+  (pcase (get-text-property 0 'consult-multi target)
+    (`(,category . ,stripped)
+     (put-text-property 0 1 'embark-consult-prefix (substring target 0 1)
+                        stripped)
+     (cons category stripped))
+    ('nil (cons 'general target))))
 
 (setf (alist-get 'consult-multi embark-transformer-alist)
-      'embark-consult-refine-multi-type)
+      #'embark-consult-refine-multi-type)
 
-;;; support for consult-isearch
+;;; Support for consult-isearch
 
 (defun embark-consult-isearch-strip-prefix (target)
   "Remove the unicode prefix character from a `consult-isearch' TARGET."
-  (cons 'consult-isearch (embark-consult--strip-prefix target)))
+  (cons 'consult-isearch (embark-consult--strip-prefix target 'invisible)))
 
 (setf (alist-get 'consult-isearch embark-transformer-alist)
-      'embark-consult-isearch-strip-prefix)
+      #'embark-consult-isearch-strip-prefix)
 
-;;; support for consult-register
+;;; Support for consult-register
 
 (setf (alist-get 'consult-register embark-collect-initial-view-alist)
       'zebra)
 
-;;; support for consult-yank*
+;;; Support for consult-yank*
 
 (setf (alist-get 'consult-yank embark-collect-initial-view-alist)
       'zebra)
 
-;;; bindings for consult commands in embark keymaps
+;;; Bindings for consult commands in embark keymaps
 
 (define-key embark-file-map "x" #'consult-file-externally)
 
-;;; support for Consult search commands
+(define-key embark-become-file+buffer-map "Cb" #'consult-buffer)
+
+;;; Support for Consult search commands
 
 (embark-define-keymap embark-consult-non-async-search-map
   "Keymap for Consult non-async search commands"
@@ -260,7 +306,7 @@ actual type."
   (keymap-canonicalize
    (make-composed-keymap embark-consult-non-async-search-map
                          embark-consult-async-search-map))
-  "Keymap for Consult async search commands")
+  "Keymap for Consult async search commands.")
 
 (define-key embark-become-match-map "C" embark-consult-non-async-search-map)
 
@@ -273,7 +319,7 @@ actual type."
 
 (defun embark-consult-unique-match ()
   "If there is a unique matching candidate, accept it.
-This is intended to be used in `embark-setup-hook' for some
+This is intended to be used in `embark-setup-overrides' for some
 actions that are on `embark-allow-edit-commands'."
   ;; I couldn't quickly get this to work for ivy, so just skip ivy
   (unless (eq mwheel-scroll-up-function 'ivy-next-line)
@@ -287,19 +333,49 @@ actions that are on `embark-allow-edit-commands'."
   (cl-pushnew #'embark-consult-unique-match
               (alist-get cmd embark-setup-overrides)))
 
+(defun embark-consult-accept-tofu ()
+  "Accept input if it already has the unicode prefix.
+This is intended to be used in `embark-setup-overrides' for the
+`consult-line' and `consult-outline' actions."
+  (let ((input (minibuffer-contents)))
+    (when (and (> (length input) 0)
+               (<= consult--tofu-char
+                   (aref input 0)
+                   (+ consult--tofu-char consult--tofu-range -1)))
+      (add-hook 'post-command-hook #'exit-minibuffer nil t))))
+
+(dolist (cmd '(consult-line consult-outline))
+  (cl-pushnew #'embark-consult-accept-tofu
+              (alist-get cmd embark-setup-overrides)))
+
 (defun embark-consult-add-async-separator ()
   "Add Consult's async separator at the beginning.
 This is intended to be used in `embark-setup-hook' for any action
 that is a Consult async command."
   (when consult-async-default-split
-    (beginning-of-line)
+    (goto-char (minibuffer-prompt-end))
     (insert consult-async-default-split)
-    (end-of-line)))
+    (goto-char (point-max))))
 
 (dolist (bind (cdr embark-consult-async-search-map))
   (cl-pushnew #'embark-consult-add-async-separator
               (alist-get (cdr bind) embark-setup-overrides)))
 
+;; fix default action for tofu-prefixing commands
+
+(defun embark-consult-restore-prefix ()
+  "Replace the minibuffer contents with the untransformed target.
+This is used for default actions for types that have a
+transformer that removes a unicode prefix from the target."
+  (when-let ((pos (minibuffer-prompt-end))
+             (prefix (get-text-property pos 'embark-consult-prefix)))
+    (goto-char pos)
+    (insert prefix)))
+
+(dolist (cmd '(consult-line consult-buffer consult-isearch
+               consult-outline consult-mark consult-global-mark))
+  (cl-pushnew #'embark-consult-restore-prefix
+              (alist-get cmd embark-setup-overrides)))
 
 (provide 'embark-consult)
 ;;; embark-consult.el ends here

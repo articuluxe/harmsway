@@ -235,7 +235,7 @@ words of the candidate, respectively."
   (orderless--separated-by
    '(seq (zero-or-more word) word-end (zero-or-more (not alpha)))
    (cl-loop for char across component collect `(seq word-start ,char))
-   (when anchored '(seq buffer-start (zero-or-more (not alpha))))
+   (when anchored '(seq (group buffer-start) (zero-or-more (not alpha))))
    (when (eq anchored 'both)
      '(seq (zero-or-more word) word-end (zero-or-more (not alpha)) eol))))
 
@@ -444,7 +444,7 @@ This function is part of the `orderless' completion style."
          (length prefix))))))
 
 ;;;###autoload
-(defun orderless-try-completion (string table pred point &optional _metadata)
+(defun orderless-try-completion (string table pred point)
   "Complete STRING to unique matching entry in TABLE.
 This uses `orderless-all-completions' to find matches for STRING
 in TABLE among entries satisfying PRED.  If there is only one

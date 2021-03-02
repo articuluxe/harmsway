@@ -1168,14 +1168,16 @@ If optional MARKER, return a marker instead"
 (defun eglot--path-to-uri (path)
   "URIfy PATH."
   (url-hexify-string
-   (concat "file://" (if (eq system-type 'windows-nt) "/") (file-truename path))
+   (concat "file://" (if (eq system-type 'windows-nt) "/")
+           (directory-file-name (file-truename path)))
    url-path-allowed-chars))
 
 (defun eglot--uri-to-path (uri)
   "Convert URI to a file path."
   (when (keywordp uri) (setq uri (substring (symbol-name uri) 1)))
   (let ((retval (url-filename (url-generic-parse-url (url-unhex-string uri)))))
-    (if (eq system-type 'windows-nt) (substring retval 1) retval)))
+    (if (and (eq system-type 'windows-nt) (cl-plusp (length retval)))
+        (substring retval 1) retval)))
 
 (defun eglot--snippet-expansion-fn ()
   "Compute a function to expand snippets.
@@ -1196,7 +1198,9 @@ Doubles as an indicator of snippet support."
     (with-temp-buffer
       (setq-local markdown-fontify-code-blocks-natively t)
       (insert string)
-      (ignore-errors (delay-mode-hooks (funcall mode)))
+      (let ((inhibit-message t)
+	    (message-log-max nil))
+        (ignore-errors (delay-mode-hooks (funcall mode))))
       (font-lock-ensure)
       (string-trim (filter-buffer-substring (point-min) (point-max))))))
 
@@ -1570,15 +1574,16 @@ COMMAND is a symbol naming the command."
 (cl-defmethod eglot-handle-request
   (_server (_method (eql window/showMessageRequest)) &key type message actions)
   "Handle server request window/showMessageRequest"
-  (let ((label (completing-read
-                (concat
-                 (format (propertize "[eglot] Server reports (type=%s): %s"
-                                     'face (if (<= type 1) 'error))
-                         type message)
-                 "\nChoose an option: ")
-                (or (mapcar (lambda (obj) (plist-get obj :title)) actions)
-                    '("OK"))
-                nil t (plist-get (elt actions 0) :title))))
+  (let* ((actions (append actions nil)) ;; gh#627
+         (label (completing-read
+                 (concat
+                  (format (propertize "[eglot] Server reports (type=%s): %s"
+                                      'face (if (<= type 1) 'error))
+                          type message)
+                  "\nChoose an option: ")
+                 (or (mapcar (lambda (obj) (plist-get obj :title)) actions)
+                     '("OK"))
+                 nil t (plist-get (elt actions 0) :title))))
     (if label `(:title ,label) :null)))
 
 (cl-defmethod eglot-handle-notification
@@ -2006,7 +2011,7 @@ Try to visit the target file for a richer summary line."
        (eglot--lambda ((Location) uri range)
          (collect (eglot--xref-make-match (symbol-name (symbol-at-point))
                                           uri range)))
-       (if (vectorp response) response (list response))))))
+       (if (vectorp response) response (and response (list response)))))))
 
 (cl-defun eglot--lsp-xref-helper (method &key extra-params capability )
   "Helper for `eglot-find-declaration' & friends."
@@ -2612,25 +2617,20 @@ at point.  With prefix argument, prompt for ACTION-KIND."
   (let* (success
          (globs (mapcar
                  (eglot--lambda ((FileSystemWatcher) globPattern)
-                   (cons
-                    (eglot--glob-compile globPattern t t)
-                    (eglot--glob-compile
-                     (replace-regexp-in-string "/[^/]*$" "/" globPattern) t t)))
+                   (eglot--glob-compile globPattern t t))
                  watchers))
          (dirs-to-watch
-          (cl-loop for dir in (eglot--directories-recursively)
-                   when (cl-loop for g in globs
-                                 thereis (ignore-errors (funcall (cdr g) dir)))
-                   collect dir)))
+          (cl-loop for f in (eglot--files-recursively)
+                   when (cl-loop for g in globs thereis (funcall g f))
+                   collect (file-name-directory f) into dirs
+                   finally (cl-return (delete-dups dirs)))))
     (cl-labels
         ((handle-event
           (event)
           (pcase-let ((`(,desc ,action ,file ,file1) event))
             (cond
              ((and (memq action '(created changed deleted))
-                   (cl-find file (mapcar #'car globs)
-                            :test (lambda (f glob)
-                                    (funcall glob f))))
+                   (cl-find file globs :test (lambda (f g) (funcall g f))))
               (jsonrpc-notify
                server :workspace/didChangeWatchedFiles
                `(:changes ,(vector `(:uri ,(eglot--path-to-uri file)
@@ -2671,7 +2671,7 @@ at point.  With prefix argument, prompt for ACTION-KIND."
      with grammar = '((:**      "\\*\\*/?"              eglot--glob-emit-**)
                       (:*       "\\*"                   eglot--glob-emit-*)
                       (:?       "\\?"                   eglot--glob-emit-?)
-                      (:{}      "{[^][/*{}]+}"          eglot--glob-emit-{})
+                      (:{}      "{[^][*{}]+}"           eglot--glob-emit-{})
                       (:range   "\\[\\^?[^][/,*{}]+\\]" eglot--glob-emit-range)
                       (:literal "[^][,*?{}]+"           eglot--glob-emit-self))
      until (eobp)
@@ -2724,14 +2724,14 @@ If NOERROR, return predicate, else erroring function."
   (when (eq ?! (aref arg 1)) (aset arg 1 ?^))
   `(,self () (re-search-forward ,(concat "\\=" arg)) (,next)))
 
-(defun eglot--directories-recursively (&optional dir)
+(defun eglot--files-recursively (&optional dir)
   "Because `directory-files-recursively' isn't complete in 26.3."
   (cons (setq dir (expand-file-name (or dir default-directory)))
-        (cl-loop
-         with default-directory = dir
-         with completion-regexp-list = '("^[^.]")
-         for f in (file-name-all-completions "" dir)
-         when (file-directory-p f) append (eglot--directories-recursively f))))
+        (cl-loop with default-directory = dir
+                 with completion-regexp-list = '("^[^.]")
+                 for f in (file-name-all-completions "" dir)
+                 if (file-name-directory f) append (eglot--files-recursively f)
+                 else collect (expand-file-name f))))
 
 
 ;;; Rust-specific

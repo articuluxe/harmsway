@@ -5,7 +5,7 @@
 ;; Author: Feng Shu <tumashu@163.com>
 ;; Maintainer: Feng Shu <tumashu@163.com>
 ;; URL: https://github.com/tumashu/posframe
-;; Version: 0.8.4
+;; Version: 0.8.6
 ;; Keywords: convenience, tooltip
 ;; Package-Requires: ((emacs "26"))
 
@@ -245,6 +245,8 @@ effect.")
                                      background-color
                                      left-fringe
                                      right-fringe
+                                     border-width
+                                     border-color
                                      internal-border-width
                                      internal-border-color
                                      font
@@ -258,7 +260,10 @@ effect.")
 This posframe's buffer is BUFFER-OR-NAME."
   (let ((left-fringe (or left-fringe 0))
         (right-fringe (or right-fringe 0))
-        (internal-border-width (or internal-border-width 0))
+        ;; See emacs.git:  Add distinct controls for child frames' borders (Bug#45620)
+        ;; http://git.savannah.gnu.org/cgit/emacs.git/commit/?id=ff7b1a133bfa7f2614650f8551824ffaef13fadc
+        (border-width (or border-width internal-border-width 0))
+        (border-color (or border-color internal-border-color))
         (buffer (get-buffer-create buffer-or-name))
         (after-make-frame-functions nil)
         (x-gtk-resize-child-frames posframe-gtk-resize-child-frames)
@@ -267,6 +272,7 @@ This posframe's buffer is BUFFER-OR-NAME."
                     background-color
                     right-fringe
                     left-fringe
+                    border-width
                     internal-border-width
                     font
                     keep-ratio
@@ -326,7 +332,8 @@ This posframe's buffer is BUFFER-OR-NAME."
                        (min-width  . 0)
                        (min-height . 0)
                        (border-width . 0)
-                       (internal-border-width . ,internal-border-width)
+                       (internal-border-width . ,border-width)
+                       (child-frame-border-width . ,border-width)
                        (vertical-scroll-bars . nil)
                        (horizontal-scroll-bars . nil)
                        (left-fringe . ,left-fringe)
@@ -347,9 +354,13 @@ This posframe's buffer is BUFFER-OR-NAME."
                        (inhibit-double-buffering . ,posframe-inhibit-double-buffering)
                        ;; Do not save child-frame when use desktop.el
                        (desktop-dont-save . t))))
-        (when internal-border-color
-          (set-face-background 'internal-border
-                               internal-border-color posframe--frame))
+        (when border-color
+          (set-face-background 'internal-border border-color posframe--frame)
+          ;; FIXME: ignore errors on emacs version which
+          ;; have no child-frame-border face.
+          ;; maybe have other better way to do this job.
+          (ignore-errors
+            (set-face-background 'child-frame-border border-color posframe--frame)))
         (let ((posframe-window (frame-root-window posframe--frame)))
           ;; This method is more stable than 'setq mode/header-line-format nil'
           (unless respect-mode-line
@@ -378,6 +389,8 @@ This posframe's buffer is BUFFER-OR-NAME."
                          y-pixel-offset
                          left-fringe
                          right-fringe
+                         border-width
+                         border-color
                          internal-border-width
                          internal-border-color
                          font
@@ -453,6 +466,15 @@ The builtin poshandler functions are listed below:
 17. `posframe-poshandler-point-bottom-left-corner-upward'
 18. `posframe-poshandler-point-window-center'
 
+by the way, poshandler can be used by other packages easily
+(for example: mini-frame) with the help of function
+`posframe-poshandler-argbuilder'. like:
+
+   (let* ((info (posframe-poshandler-argbuilder child-frame))
+          (posn (posframe-poshandler-window-center info)))
+     `((left . ,(car posn))
+       (top . ,(cdr posn))))
+
 This posframe's buffer is BUFFER-OR-NAME, which can be a buffer
 or a name of a (possibly nonexistent) buffer.
 
@@ -469,9 +491,15 @@ If LEFT-FRINGE or RIGHT-FRINGE is a number, left fringe or
 right fringe with be shown with the specified width.
 
 By default, posframe shows no borders, but users can specify
-borders by setting INTERNAL-BORDER-WIDTH to a positive number.
-Border color can be specified by INTERNAL-BORDER-COLOR
-or via the ‘internal-border’ face.
+borders by setting BORDER-WIDTH to a positive number.  Border
+color can be specified by BORDER-COLOR.
+
+INTERNAL-BORDER-WIDTH and INTERNAL-BORDER-COLOR are same as
+BORDER-WIDTH and INTERNAL-BORDER-COLOR, but do not suggest to use
+for the reason:
+
+   Add distinct controls for child frames' borders (Bug#45620)
+   http://git.savannah.gnu.org/cgit/emacs.git/commit/?id=ff7b1a133bfa7f2614650f8551824ffaef13fadc
 
 Posframe's font as well as foreground and background colors are
 derived from the current frame by default, but can be overridden
@@ -525,6 +553,8 @@ You can use `posframe-delete-all' to delete all posframes."
          (y-pixel-offset (or (funcall posframe-arghandler buffer-or-name :y-pixel-offset y-pixel-offset) 0))
          (left-fringe (funcall posframe-arghandler buffer-or-name :left-fringe left-fringe))
          (right-fringe (funcall posframe-arghandler buffer-or-name :right-fringe right-fringe))
+         (border-width (funcall posframe-arghandler buffer-or-name :border-width border-width))
+         (border-color (funcall posframe-arghandler buffer-or-name :border-color border-color))
          (internal-border-width (funcall posframe-arghandler buffer-or-name :internal-border-width internal-border-width))
          (internal-border-color (funcall posframe-arghandler buffer-or-name :internal-border-color internal-border-color))
          (font (funcall posframe-arghandler buffer-or-name :font font))
@@ -584,6 +614,8 @@ You can use `posframe-delete-all' to delete all posframes."
              :parent-frame parent-frame
              :left-fringe left-fringe
              :right-fringe right-fringe
+             :border-width border-width
+             :border-color border-color
              :internal-border-width internal-border-width
              :internal-border-color internal-border-color
              :foreground-color foreground-color
@@ -953,6 +985,75 @@ of `posframe-show'."
                   #'posframe-poshandler-absolute-x-y)
                  (t (error "Posframe: have no valid poshandler")))))
      info)))
+
+(cl-defun posframe-poshandler-argbuilder (&optional
+                                          child-frame
+                                          &key
+                                          position
+                                          poshandler
+                                          x-pixel-offset
+                                          y-pixel-offset)
+  "Return a info list of CHILD-FRAME, which can be used as poshandler's info argument.
+
+if CHILD-FRAME is nil, parent frame will use selected frame.  The
+documents of POSITION, POSHANDLER, X-PIXEL-OFFSET and
+Y-PIXEL-OFFSET can be found in dostring of `posframe-show'.
+
+NOTE: this function is not used by posframe itself, it just let
+poshandler easily used for other purposes."
+  (let* ((position (or position (point)))
+         (frame-width (or (and child-frame (frame-pixel-width child-frame)) 0))
+         (frame-height (or (and child-frame (frame-pixel-height child-frame)) 0))
+         (frame-buffer (and child-frame (window-buffer (frame-root-window child-frame))))
+         (parent-frame (if child-frame
+                           (frame-parent child-frame)
+                         (selected-frame)))
+         (parent-frame-width (frame-pixel-width parent-frame))
+         (parent-frame-height (frame-pixel-height parent-frame))
+         (parent-window
+          (if child-frame
+              (frame-root-window parent-frame)
+            (selected-window)))
+         (parent-window-top (window-pixel-top parent-window))
+         (parent-window-left (window-pixel-left parent-window))
+         (parent-window-width (window-pixel-width parent-window))
+         (parent-window-height (window-pixel-height parent-window))
+         (position-info
+          (if (integerp position)
+              (posn-at-point position parent-window)
+            position))
+         (font-width (default-font-width))
+         (font-height (with-current-buffer (window-buffer parent-window)
+                        (posframe--get-font-height position)))
+         (mode-line-height (window-mode-line-height parent-window))
+         (minibuffer-height (window-pixel-height (minibuffer-window)))
+         (header-line-height (window-header-line-height parent-window))
+         (tab-line-height (if (functionp 'window-tab-line-height)
+                              (window-tab-line-height parent-window)
+                            0)))
+    (list :position position
+          :position-info position-info
+          :poshandler poshandler
+          :font-height font-height
+          :font-width font-width
+          :posframe child-frame
+          :posframe-width frame-width
+          :posframe-height frame-height
+          :posframe-buffer frame-buffer
+          :parent-frame parent-frame
+          :parent-frame-width parent-frame-width
+          :parent-frame-height parent-frame-height
+          :parent-window parent-window
+          :parent-window-top parent-window-top
+          :parent-window-left parent-window-left
+          :parent-window-width parent-window-width
+          :parent-window-height parent-window-height
+          :mode-line-height mode-line-height
+          :minibuffer-height minibuffer-height
+          :header-line-height header-line-height
+          :tab-line-height tab-line-height
+          :x-pixel-offset (or x-pixel-offset 0)
+          :y-pixel-offset (or y-pixel-offset 0))))
 
 (defun posframe-poshandler-absolute-x-y (info)
   "Posframe's position hanlder.

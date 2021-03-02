@@ -1,6 +1,6 @@
 ;;; ztree-view.el --- Text mode tree view (buffer) -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2013-2016  Free Software Foundation, Inc.
+;; Copyright (C) 2013-2021  Free Software Foundation, Inc.
 ;;
 ;; Author: Alexey Veretennikov <alexey.veretennikov@gmail.com>
 ;;
@@ -42,10 +42,10 @@
 ;;
 ;;; Code:
 
-(eval-when-compile (require 'cl))
+(eval-when-compile (require 'cl-lib))
 (require 'subr-x)
 (require 'ztree-util)
-
+(require 'ztree-protocol)
 ;;
 ;; Globals
 ;;
@@ -89,37 +89,15 @@ or both sides
   "The cons pair of the previous line and column. Used
 to restore cursor position after refresh")
 
-(defvar-local ztree-tree-header-fun nil
+(defvar-local ztree-last-window-width nil
+  "The window width at the last refresh")
+
+(defvar-local ztree-two-sided-p nil
+  "If the tree is 2 sided, 2 trees shall be drawn side by side")
+
+(def-ztree-local-fun ztree-tree-header
   "Function inserting the header into the tree buffer.
 MUST inster newline at the end!")
-
-(defvar-local ztree-node-short-name-fun nil
-  "Function which creates a pretty-printable short string from the node.")
-
-(defvar-local ztree-node-is-expandable-fun nil
-  "Function which determines if the node is expandable.
-For example if the node is a directory")
-
-(defvar-local ztree-node-equal-fun nil
-  "Function which determines if the 2 nodes are equal.")
-
-(defvar-local ztree-node-contents-fun nil
-  "Function returning list of node contents.")
-
-(defvar-local ztree-node-side-fun nil
-  "Function returning position of the node: `left', `right' or `both'.
-If not defined (by default) - using single screen tree, otherwise
-the buffer is split to 2 trees")
-
-(defvar-local ztree-node-face-fun nil
-  "Function returning face for the node.")
-
-(defvar-local ztree-node-action-fun nil
-  "Function called when Enter/Space pressed on the node.")
-
-(defvar-local ztree-node-showp-fun nil
-  "Function called to decide if the node should be visible.")
-
 
 ;;
 ;; Major mode definitions
@@ -201,9 +179,9 @@ the buffer is split to 2 trees")
                          (gethash (line-number-at-pos)
                                   ztree-line-tree-properties)
                          'offset))
-        (when (and ztree-node-side-fun
+        (when (and ztree-two-sided-p
                    (>= (current-column) center))
-          (incf offset (1+ center)))
+          (cl-incf offset (1+ center)))
         (beginning-of-line)
         (goto-char (+ (point) offset))))))
 
@@ -226,7 +204,7 @@ or nil if there is no node"
 (defun ztree-is-expanded-node (node)
   "Find if the NODE is in the list of expanded nodes."
   (ztree-find ztree-expanded-nodes-list
-              #'(lambda (x) (funcall ztree-node-equal-fun x node))))
+              #'(lambda (x) (ztree-node-equal x node))))
 
 
 (defun ztree-set-parent-for-line (line parent)
@@ -245,8 +223,8 @@ or nil if there is no node"
   "Iteration in expanding subtree.
 Argument NODE current node.
 Argument STATE node state."
-  (when (funcall ztree-node-is-expandable-fun node)
-    (let ((children (funcall ztree-node-contents-fun node)))
+  (when (ztree-node-expandable-p node)
+    (let ((children (ztree-node-children node)))
       (ztree-do-toggle-expand-state node state)
       (dolist (child children)
         (ztree-do-toggle-expand-subtree-iter child state)))))
@@ -259,7 +237,7 @@ Argument STATE node state."
          ;; save the current window start position
          (current-pos (window-start)))
     ;; only for expandable nodes
-    (when (funcall ztree-node-is-expandable-fun node)
+    (when (ztree-node-expandable-p node)
       ;; get the current expand state and invert it
       (let ((do-expand (not (ztree-is-expanded-node node))))
         (ztree-do-toggle-expand-subtree-iter node do-expand))
@@ -276,12 +254,11 @@ should be performed on node."
   (let* ((line (line-number-at-pos))
          (node (ztree-find-node-in-line line)))
     (when node
-      (if (funcall ztree-node-is-expandable-fun node)
+      (if (ztree-node-expandable-p node)
           ;; only for expandable nodes
           (ztree-toggle-expand-state node)
         ;; perform action
-        (when ztree-node-action-fun
-          (funcall ztree-node-action-fun node hard)))
+        (ztree-node-action node hard))
       ;; save the current window start position
       (let ((current-pos (window-start)))
         ;; refresh buffer and scroll back to the saved line
@@ -313,7 +290,7 @@ Performs the soft action, binded on Space, on node."
   (if (not do-expand)
       (setq ztree-expanded-nodes-list
             (ztree-filter
-             #'(lambda (x) (not (funcall ztree-node-equal-fun node x)))
+             #'(lambda (x) (not (ztree-node-equal node x)))
              ztree-expanded-nodes-list))
     (push node ztree-expanded-nodes-list)))
 
@@ -346,16 +323,16 @@ then close the node."
 (defun ztree-get-splitted-node-contens (node)
   "Return pair of 2 elements: list of expandable nodes and list of leafs.
 Argument NODE node which contents will be returned."
-  (let ((nodes (funcall ztree-node-contents-fun node))
+  (let ((nodes (ztree-node-children node))
         (comp  #'(lambda (x y)
-                   (string< (funcall ztree-node-short-name-fun x)
-                            (funcall ztree-node-short-name-fun y)))))
+                   (string< (ztree-node-short-name x)
+                            (ztree-node-short-name y)))))
     (cons (sort (ztree-filter
-                 #'(lambda (f) (funcall ztree-node-is-expandable-fun f))
+                 #'(lambda (f) (ztree-node-expandable-p f))
                  nodes)
                 comp)
           (sort (ztree-filter
-                 #'(lambda (f) (not (funcall ztree-node-is-expandable-fun f)))
+                 #'(lambda (f) (not (ztree-node-expandable-p f)))
                  nodes)
                 comp))))
 
@@ -452,7 +429,7 @@ Argument START-OFFSET column to start drawing from."
            ;; and which tree (left with offset 0 or right with offset > 0
            ;; we are drawing
            (visible #'(lambda (line) ()
-                        (if (not ztree-node-side-fun) t
+                        (if (not ztree-two-sided-p) t
                           (let ((side
                                  (plist-get (gethash line ztree-line-tree-properties) 'side)))
                             (cond ((eq side 'left) (= start-offset 0))
@@ -518,7 +495,7 @@ Argument PATH start node."
     (ztree-draw-tree tree 0 0)
     ;; for the 2-sided tree we need to draw the vertical line
     ;; and an additional tree
-    (if ztree-node-side-fun             ; 2-sided tree
+    (if ztree-two-sided-p             ; 2-sided tree
         (let ((width (window-width)))
           ;; draw the vertical line in the middle of the window
           (ztree-draw-vertical-line ztree-start-line
@@ -544,7 +521,7 @@ Argument PATH start node."
         ;; iterate through all expandable entries to insert them first
         (dolist (node nodes)
           ;; if it is not in the filter list
-          (when (funcall ztree-node-showp-fun node)
+          (when (ztree-node-visible-p node)
             ;; insert node on the next depth level
             ;; and push the returning result (in form (root children))
             ;; to the children list
@@ -553,7 +530,7 @@ Argument PATH start node."
         ;; now iterate through all the leafs
         (dolist (leaf leafs)
           ;; if not in filter list
-          (when (funcall ztree-node-showp-fun leaf)
+          (when (ztree-node-visible-p leaf)
             ;; insert the leaf and add it to children
             (push (ztree-insert-entry leaf (1+ depth) nil)
                   children)))))
@@ -567,29 +544,29 @@ Argument PATH start node."
          ;; the properties of the line. they will be updated
          ;; with the offset of the text and relevant side information
          (line-properties (gethash line ztree-line-tree-properties))
-         (expandable (funcall ztree-node-is-expandable-fun node))
-         (short-name (funcall ztree-node-short-name-fun node))
+         (expandable (ztree-node-expandable-p node))
+         (short-name (ztree-node-short-name node))
          (count-children-left 
           (when (and expandable ztree-show-number-of-children)
             (ignore-errors
               (length (cl-remove-if (lambda (n)
-                                      (and ztree-node-side-fun
+                                      (and ztree-two-sided-p
                                            (eql 
-                                            (funcall ztree-node-side-fun n)
+                                            (ztree-node-side n)
                                             'right)))
-                                    (funcall ztree-node-contents-fun node))))))
+                                    (ztree-node-children node))))))
          (count-children-right
           (when (and expandable ztree-show-number-of-children)
             (ignore-errors
               (length (cl-remove-if (lambda (n)
-                                      (and ztree-node-side-fun
+                                      (and ztree-two-sided-p
                                            (eql
-                                            (funcall ztree-node-side-fun n)
+                                            (ztree-node-side n)
                                             'left)))
-                                    (funcall ztree-node-contents-fun node)))))))
-    (if ztree-node-side-fun           ; 2-sided tree
-        (let ((right-short-name (funcall ztree-node-short-name-fun node t))
-              (side (funcall ztree-node-side-fun node))
+                                    (ztree-node-children node)))))))
+    (if ztree-two-sided-p           ; 2-sided tree
+        (let ((right-short-name (ztree-node-right-short-name node))
+              (side (ztree-node-side node))
               (width (window-width)))
           (when (eq side 'left)  (setq right-short-name ""))
           (when (eq side 'right) (setq short-name ""))
@@ -599,14 +576,14 @@ Argument PATH start node."
                            (ztree-insert-single-entry short-name depth
                                                       expandable expanded 0
                                                       count-children-left
-                                                      (when ztree-node-face-fun
-                                                        (funcall ztree-node-face-fun node)))))
+                                                      (when ztree-two-sided-p
+                                                        (ztree-node-face node)))))
           ;; right side
           (ztree-insert-single-entry right-short-name depth
                                      expandable expanded (1+ (/ width 2))
                                      count-children-right
-                                     (when ztree-node-face-fun
-                                       (funcall ztree-node-face-fun node)))
+                                     (when ztree-two-sided-p
+                                       (ztree-node-face node)))
           (setq line-properties (plist-put line-properties 'side side)))
       ;; one sided view
       (setq line-properties (plist-put line-properties 'offset
@@ -674,7 +651,7 @@ Returns the position where the text starts."
 (defun ztree-jump-side ()
   "Jump to another side for 2-sided trees."
   (interactive)
-  (when ztree-node-side-fun             ; 2-sided tree
+  (when ztree-two-sided-p             ; 2-sided tree
     (let ((center (/ (window-width) 2)))
       (if (< (current-column) center)
           (move-to-column (1+ center))
@@ -702,7 +679,7 @@ Optional argument LINE scroll to the line given."
       (let ((inhibit-read-only t))
         (ztree-save-current-position)
         (erase-buffer)
-        (funcall ztree-tree-header-fun)
+        (ztree-tree-header)
         (setq ztree-start-line (line-number-at-pos (point)))
         (ztree-insert-node-contents ztree-start-node)
         (cond (line ;; local refresh, scroll to line
@@ -717,7 +694,8 @@ Optional argument LINE scroll to the line given."
                ;; restore cursor position if possible
                (ztree-scroll-to-line (car ztree-prev-position))
                (beginning-of-line)
-               (goto-char (+ (cdr ztree-prev-position) (point)))))))))
+               (goto-char (+ (cdr ztree-prev-position) (point)))))))
+    (setq ztree-last-window-width (window-width))))
 
              
 
@@ -756,54 +734,34 @@ change the root node to the node specified."
   (walk-windows (lambda (win) 
                   (with-current-buffer (window-buffer win)
                     (when (derived-mode-p 'ztree-mode)
-                      (ztree-refresh-buffer))))
+                      (when (and ztree-last-window-width
+                                 (/= ztree-last-window-width (window-width)))
+                        (ztree-refresh-buffer)))))
                 nil 'visible))
 
-(defun ztree-view (
-                   buffer-name
-                   start-node
-                   filter-fun
-                   header-fun
-                   short-name-fun
-                   expandable-p
-                   equal-fun
-                   children-fun
-                   face-fun
-                   action-fun
-                   &optional
-                   node-side-fun
-                   )
+(defun ztree-view (buffer-name header-fun start-node init-function &optional two-sided-p)
   "Create a ztree view buffer configured with parameters given.
 Argument BUFFER-NAME Name of the buffer created.
-Argument START-NODE Starting node - the root of the tree.
-Argument FILTER-FUN Function which will define if the node should not be
-visible.
 Argument HEADER-FUN Function which inserts the header into the buffer
 before drawing the tree.
-Argument SHORT-NAME-FUN Function which return the short name for a node given.
-Argument EXPANDABLE-P Function to determine if the node is expandable.
-Argument EQUAL-FUN An equality function for nodes.
-Argument CHILDREN-FUN Function to get children from the node.
-Argument FACE-FUN Function to determine face of the node.
-Argument ACTION-FUN an action to perform when the Return is pressed.
-Optional argument NODE-SIDE-FUN Determines the side of the node."
+Argument START-NODE Starting node - the root of the tree.
+Argument INIT-FUNCTION Function to call just before refreshing the buffer and
+setting all variables and mode. Could be nil.
+It could be used to set up a minor mode or build a tree. Function should not
+expect any arguments. Example: #'ztreedir-mode
+Optional argument TWO-SIDED-P Determines if the tree is 2-sided (nil by default)"
   (let ((buf (get-buffer-create buffer-name)))
     (switch-to-buffer buf)
     (ztree-mode)
     ;; configure ztree-view
     (setq ztree-start-node start-node)
     (setq ztree-expanded-nodes-list (list ztree-start-node))
-    (setq ztree-node-showp-fun filter-fun)
     (setq ztree-tree-header-fun header-fun)
-    (setq ztree-node-short-name-fun short-name-fun)
-    (setq ztree-node-is-expandable-fun expandable-p)
-    (setq ztree-node-equal-fun equal-fun)
-    (setq ztree-node-contents-fun children-fun)
-    (setq ztree-node-face-fun face-fun)
-    (setq ztree-node-action-fun action-fun)
-    (setq ztree-node-side-fun node-side-fun)
-    (add-hook 'window-configuration-change-hook #'ztree-view-on-window-configuration-changed)
-    (ztree-refresh-buffer)))
+    (setq ztree-two-sided-p two-sided-p)
+    (when init-function
+      (funcall init-function))
+    (ztree-refresh-buffer)
+    (add-hook 'window-configuration-change-hook #'ztree-view-on-window-configuration-changed)))
 
 
 (provide 'ztree-view)

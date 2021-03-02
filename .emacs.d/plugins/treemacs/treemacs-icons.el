@@ -242,7 +242,7 @@ Necessary since root icons are not rectangular."
   (treemacs-static-assert (or (null icon) (null file))
     "FILE and ICON arguments are mutually exclusive")
   `(let* ((icons-dir ,(if icons-dir icons-dir `(treemacs-theme->path treemacs--current-theme)))
-          (icon-path ,(if file `(f-join icons-dir ,file) nil))
+          (icon-path ,(if file `(treemacs-join-path icons-dir ,file) nil))
           (icon-pair ,(if file `(treemacs--create-icon-strings icon-path ,fallback)
                         `(cons ,(treemacs--splice-icon icon) ,fallback)))
           (gui-icons (treemacs-theme->gui-icons treemacs--current-theme))
@@ -265,7 +265,7 @@ Necessary since root icons are not rectangular."
        (ht-set! tui-icons it tui-icon))))
 
 (treemacs-create-theme "Default"
-  :icon-directory (f-join treemacs-dir "icons/default")
+  :icon-directory (treemacs-join-path treemacs-dir "icons/default")
   :config
   (progn
     ;; directory and other icons
@@ -320,6 +320,7 @@ Necessary since root icons are not rectangular."
     (treemacs-create-icon :file "jar.png"           :extensions ("jar"))
     (treemacs-create-icon :file "kotlin.png"        :extensions ("kt"))
     (treemacs-create-icon :file "scala.png"         :extensions ("scala"))
+    (treemacs-create-icon :file "gradle.png"        :extensions ("gradle"))
     (treemacs-create-icon :file "sbt.png"           :extensions ("sbt"))
     (treemacs-create-icon :file "go.png"            :extensions ("go"))
     (treemacs-create-icon :file "systemd.png"       :extensions ("service" "timer"))

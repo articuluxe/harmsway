@@ -80,7 +80,7 @@ You may want to set this to window's border color.")
    `(fringe                         ((t (:background ,bg+2))))
    `(window-divider                 ((t (:foreground ,bg+4))))
    `(show-paren-match               ((t (:underline ,green))))
-   `(highlight                      ((t (:underline ,green))))
+   `(highlight                      ((t (:background ,bg+2))))
    `(button                         ((t (:foreground "#2299CC" :underline t))))
    `(vertical-border                ((t (:inherit default))))
    `(window-divider                 ((t ())))
@@ -90,9 +90,11 @@ You may want to set this to window's border color.")
    `(parenthesis                    ((t (:foreground ,fg-1))))
    `(completions-common-part        ((t ())))
    `(minibuffer-prompt              ((t ())))
-   `(lazy-highlight                 ((t (:foreground "white"))))
+   `(lazy-highlight                 ((t (:background ,bg+2))))
    `(compilation-info               ((t (:inherit font-lock-function-name-face))))
-   `(match                          ((t (:inherit font-lock-doc-face))))
+   `(compilation-warning            ((t (:inherit font-lock-warning-face))))
+   `(warning                        ((t (:inherit font-lock-warning-face))))
+   `(match                          ((t (:background ,bg+2))))
 
 
    ;; ISearch
@@ -153,6 +155,8 @@ You may want to set this to window's border color.")
    ;; Cider
    ;;
    `(cider-result-overlay-face      ((t (:background "black"))))
+   `(cider-repl-stderr-face         ((t (:foreground ,blue))))
+   `(cider-repl-stdout-face         ((t (:foreground ,fg-1))))
 
    ;; Clojure
    ;;
@@ -177,6 +181,9 @@ You may want to set this to window's border color.")
    `(swiper-match-face-2            ((t (:foreground "white"))))
    `(swiper-match-face-3            ((t (:foreground "white"))))
    `(swiper-match-face-4            ((t (:foreground "white"))))
+
+   ;; Selectrum
+   `(selectrum-current-candidate    ((t (:foreground ,main :inverse-video t))))
 
    ;; Magit
    `(magit-diff-file-heading-highlight ((t (:background ,bg+1))))

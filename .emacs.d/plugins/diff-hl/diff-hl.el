@@ -1,12 +1,12 @@
 ;;; diff-hl.el --- Highlight uncommitted changes using VC -*- lexical-binding: t -*-
 
-;; Copyright (C) 2012-2020  Free Software Foundation, Inc.
+;; Copyright (C) 2012-2021  Free Software Foundation, Inc.
 
 ;; Author:   Dmitry Gutov <dgutov@yandex.ru>
 ;; URL:      https://github.com/dgutov/diff-hl
 ;; Keywords: vc, diff
 ;; Version:  1.8.8
-;; Package-Requires: ((cl-lib "0.2") (emacs "24.3"))
+;; Package-Requires: ((cl-lib "0.2") (emacs "25.1"))
 
 ;; This file is part of GNU Emacs.
 
@@ -35,6 +35,7 @@
 ;; `diff-hl-revert-hunk'     C-x v n
 ;; `diff-hl-previous-hunk'   C-x v [
 ;; `diff-hl-next-hunk'       C-x v ]
+;; `diff-hl-show-hunk'       C-x v *
 ;; `diff-hl-set-reference-rev'
 ;; `diff-hl-reset-reference-rev'
 ;;
@@ -358,6 +359,7 @@ performance when viewing such files in certain conditions."
                     (hook '(diff-hl-overlay-modified)))
                 (overlay-put h 'diff-hl t)
                 (overlay-put h 'diff-hl-hunk t)
+                (overlay-put h 'diff-hl-hunk-type type)
                 (overlay-put h 'modification-hooks hook)
                 (overlay-put h 'insert-in-front-hooks hook)
                 (overlay-put h 'insert-behind-hooks hook)))))))))
@@ -562,20 +564,26 @@ in the source file, or the last line of the hunk above it."
            when (overlay-get o 'diff-hl-hunk)
            return o))
 
+(defun diff-hl-search-next-hunk (&optional backward point)
+  "Search the next hunk in the current buffer, or previous if BACKWARD."
+  (save-excursion
+    (when point
+      (goto-char point))
+    (catch 'found
+      (while (not (if backward (bobp) (eobp)))
+        (goto-char (if backward
+                       (previous-overlay-change (point))
+                     (next-overlay-change (point))))
+        (let ((o (diff-hl-hunk-overlay-at (point))))
+          (when (and o (= (overlay-start o) (point)))
+            (throw 'found o)))))))
+
 (defun diff-hl-next-hunk (&optional backward)
   "Go to the beginning of the next hunk in the current buffer."
   (interactive)
-  (let ((pos (save-excursion
-               (catch 'found
-                 (while (not (if backward (bobp) (eobp)))
-                   (goto-char (if backward
-                                  (previous-overlay-change (point))
-                                (next-overlay-change (point))))
-                   (let ((o (diff-hl-hunk-overlay-at (point))))
-                     (when (and o (= (overlay-start o) (point)))
-                       (throw 'found (overlay-start o)))))))))
-    (if pos
-        (goto-char pos)
+  (let ((overlay (diff-hl-search-next-hunk backward)))
+    (if overlay
+        (goto-char (overlay-start overlay))
       (user-error "No further hunks found"))))
 
 (defun diff-hl-previous-hunk ()
@@ -596,6 +604,9 @@ in the source file, or the last line of the hunk above it."
     (define-key map "n" 'diff-hl-revert-hunk)
     (define-key map "[" 'diff-hl-previous-hunk)
     (define-key map "]" 'diff-hl-next-hunk)
+    (define-key map "*" 'diff-hl-show-hunk)
+    (define-key map "{" 'diff-hl-show-hunk-previous)
+    (define-key map "}" 'diff-hl-show-hunk-next)
     map))
 (fset 'diff-hl-command-map diff-hl-command-map)
 
@@ -718,6 +729,76 @@ The value of this variable is a mode line template as in
       (add-hook 'vc-checkin-hook 'diff-hl-dir-update t t)
     (remove-hook 'vc-checkin-hook 'diff-hl-dir-update t)))
 
+(defun diff-hl-make-temp-file-name (buffer rev &optional manual)
+  "Return a backup file name for REV or the current version of BUFFER.
+If MANUAL is non-nil it means that a name for backups created by
+the user should be returned."
+  (let* ((auto-save-file-name-transforms
+          `((".*" ,temporary-file-directory t))))
+    (expand-file-name
+     (concat (make-auto-save-file-name)
+             ".~" (subst-char-in-string
+                   ?/ ?_ rev)
+             (unless manual ".") "~")
+     temporary-file-directory)))
+
+(defun diff-hl-create-revision (file revision)
+  "Read REVISION of BUFFER into a buffer and return the buffer."
+  (let ((automatic-backup (diff-hl-make-temp-file-name file revision))
+        (filebuf (get-file-buffer file))
+        (filename (diff-hl-make-temp-file-name file revision 'manual)))
+    (unless (file-exists-p filename)
+      (if (file-exists-p automatic-backup)
+          (rename-file automatic-backup filename nil)
+        (with-current-buffer filebuf
+          (let ((coding-system-for-read 'no-conversion)
+                (coding-system-for-write 'no-conversion))
+            (condition-case nil
+                (with-temp-file filename
+                  (let ((outbuf (current-buffer)))
+                    ;; Change buffer to get local value of
+                    ;; vc-checkout-switches.
+                    (with-current-buffer filebuf
+                      (vc-call find-revision file revision outbuf))))
+              (error
+               (when (file-exists-p filename)
+                 (delete-file filename))))))))
+    filename))
+
+(defun diff-hl-working-revision (file &optional backend)
+  "Like vc-working-revision, but always up-to-date"
+  (vc-file-setprop file 'vc-working-revision
+                   (vc-call-backend (or backend (vc-backend file))
+                                    'working-revision file)))
+
+(declare-function diff-no-select "diff")
+
+(defun diff-hl-diff-buffer-with-head (file &optional dest-buffer backend)
+  "Compute the differences between FILE and its associated file
+in head revision. The diffs are computed in the buffer
+DEST-BUFFER. This requires the external program `diff' to be in
+your `exec-path'."
+  (require 'diff)
+  (vc-ensure-vc-buffer)
+  (save-current-buffer
+    (let* ((dest-buffer (or dest-buffer "*diff-hl-diff-bufer-with-head*"))
+           (temporary-file-directory
+            (if (file-directory-p "/dev/shm/")
+                "/dev/shm/"
+              temporary-file-directory))
+           (rev (diff-hl-create-revision
+                 file
+                 (or diff-hl-reference-revision
+                     (diff-hl-working-revision file backend)))))
+      ;; FIXME: When against staging, do it differently!
+      (diff-no-select rev (current-buffer) "-U 0 --strip-trailing-cr" 'noasync
+                      (get-buffer-create dest-buffer))
+      (with-current-buffer dest-buffer
+        (let ((inhibit-read-only t))
+          ;; Function `diff-sentinel' adds a final line, so remove it
+          (delete-matching-lines "^Diff finished.*")))
+      (get-buffer-create dest-buffer))))
+
 ;;;###autoload
 (defun turn-on-diff-hl-mode ()
   "Turn on `diff-hl-mode' or `diff-hl-dir-mode' in a buffer if appropriate."
@@ -738,15 +819,17 @@ The value of this variable is a mode line template as in
     (turn-on-diff-hl-mode)))
 
 ;;;###autoload
-(defun diff-hl-set-reference-rev (&optional rev)
+(defun diff-hl-set-reference-rev (rev)
   "Set the reference revision globally to REV.
-When called interactively, REV is get from contexts:
+When called interactively, REV read with completion.
+
+The default value chosen using one of methods below:
 
 - In a log view buffer, it uses the revision of current entry.
 Call `vc-print-log' or `vc-print-root-log' first to open a log
 view buffer.
 - In a VC annotate buffer, it uses the revision of current line.
-- In other situations, get the revision name at point.
+- In other situations, it uses the symbol at point.
 
 Notice that this sets the reference revision globally, so in
 files from other repositories, `diff-hl-mode' will not highlight
@@ -755,16 +838,19 @@ changes correctly, until you run `diff-hl-reset-reference-rev'.
 Also notice that this will disable `diff-hl-amend-mode' in
 buffers that enables it, since `diff-hl-amend-mode' overrides its
 effect."
-  (interactive)
-  (let* ((rev (or rev
-                  (and (equal major-mode 'vc-annotate-mode)
-                       (car (vc-annotate-extract-revision-at-line)))
-                  (log-view-current-tag)
-                  (thing-at-point 'symbol t))))
-    (if rev
-        (message "Set reference rev to %s" rev)
-      (user-error "Can't find a revision around point"))
-    (setq diff-hl-reference-revision rev))
+  (interactive
+   (let* ((def (or (and (equal major-mode 'vc-annotate-mode)
+                        (car (vc-annotate-extract-revision-at-line)))
+                   (log-view-current-tag)
+                   (thing-at-point 'symbol t)))
+          (prompt (if def
+                      (format "Reference revision (default %s): " def)
+                    "Reference revision: ")))
+     (list (vc-read-revision prompt nil nil def))))
+  (if rev
+      (message "Set reference revision to %s" rev)
+    (user-error "No reference revision specified"))
+  (setq diff-hl-reference-revision rev)
   (dolist (buf (buffer-list))
     (with-current-buffer buf
       (when diff-hl-mode

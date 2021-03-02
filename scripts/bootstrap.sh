@@ -5,14 +5,14 @@
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Wednesday, February 24, 2021
 # Version: 1.0
-# Modified Time-stamp: <2021-02-24 09:56:42 dharms>
+# Modified Time-stamp: <2021-03-01 13:31:58 dharms>
 # Modified by: Dan Harms
 # Keywords: tools
 
 cd ~
 mkdir -p src
 cd src
-git clone https://github.com/articuluxe/harmsway.git
+git clone --recurse-submodules https://github.com/articuluxe/harmsway.git
 git clone https://github.com/articuluxe/gridlock.git
 git clone https://github.com/articuluxe/ncio.git
 git clone https://github.com/articuluxe/outrespace.git

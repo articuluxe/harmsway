@@ -40,7 +40,14 @@
 (require 'cl-lib)
 (require 'tramp)
 (require 'tramp-sh)
-(require 'vterm)
+
+(declare-function vterm "vterm")
+(declare-function vterm-send-C-a "vterm")
+(declare-function vterm-send-C-k "vterm")
+(declare-function vterm-cursor-in-command-buffer-p "vterm")
+(declare-function vterm-send-string "vterm")
+(declare-function vterm-send-return "vterm")
+(declare-function vterm-other-window "vterm")
 
 (defcustom vterm-toggle-show-hook nil
   "Hooks when swith to vterm buffer."
@@ -91,8 +98,10 @@ it only work  when `vterm-toggle-scope' is `project'. "
   "How to hide the vterm buffer"
   :group 'vterm-toggle
   :type '(choice
-          (const :tag "Toggle without closing the vterm window" nil)
+          (const :tag "Toggle without closing the vterm window(focus other window)" nil)
           (const :tag "Reset Window configration" reset-window-configration)
+          (const :tag "Bury All vterm buffer" bury-all-vterm-buffer)
+          (const :tag "Quit window" quit-window)
           (const :tag "Delete window" delete-window)))
 
 (defcustom vterm-toggle-after-remote-login-function nil
@@ -156,16 +165,27 @@ Optional argument ARGS ."
    ((eq vterm-toggle-hide-method 'reset-window-configration)
     (when vterm-toggle--window-configration
       (set-window-configuration vterm-toggle--window-configration)))
+   ((eq vterm-toggle-hide-method 'bury-all-vterm-buffer)
+    (vterm-toggle--bury-all-vterm))
+   ((eq vterm-toggle-hide-method 'quit-window)
+    (quit-window))
    ((eq vterm-toggle-hide-method 'delete-window)
     (if (window-deletable-p)
         (delete-window)
-      (quit-window)))
+      (vterm-toggle--bury-all-vterm)))
    ((not vterm-toggle-hide-method)
     (let ((buf (vterm-toggle--recent-other-buffer)))
       (when buf
         (if (get-buffer-window buf)
             (select-window (get-buffer-window buf))
           (switch-to-buffer-other-window buf)))))))
+
+(defun vterm-toggle--bury-all-vterm ()
+  "Bury all vterm buffer in order."
+  (dolist (buf (buffer-list))
+      (when (eq (buffer-local-value 'major-mode buf) 'vterm-mode)
+        (with-current-buffer buf
+          (bury-buffer)))))
 
 (defun vterm-toggle-tramp-get-method-parameter (method param)
   "Return the method parameter PARAM.
@@ -461,6 +481,8 @@ If OFFSET is `non-nil', will goto next term buffer with OFFSET."
   (vterm-toggle--switch 'backward (or offset 1)))
 
 (provide 'vterm-toggle)
+
+(require 'vterm nil t)                  ; https://github.com/jixiuf/vterm-toggle/issues/24
 
 ;; Local Variables:
 ;; coding: utf-8

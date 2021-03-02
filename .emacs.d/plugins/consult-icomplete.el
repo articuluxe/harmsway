@@ -1,4 +1,4 @@
-;;; consult-icomplete.el --- Icomplete integration for Consult -*- lexical-binding: t; -*-
+;;; consult-icomplete.el --- Icomplete integration for Consult -*- lexical-binding: t -*-
 
 ;; This file is not part of GNU Emacs.
 
@@ -17,16 +17,13 @@
 
 ;;; Commentary:
 
-;; Integration code for Icomplete.
+;; Integration code for the Icomplete completion system. This package
+;; is automatically loaded by Consult.
 
 ;;; Code:
 
 (require 'consult)
 (require 'icomplete)
-
-(defun consult-icomplete--candidate ()
-  "Return current icomplete candidate."
-  (and icomplete-mode (car completion-all-sorted-completions)))
 
 (defun consult-icomplete--refresh ()
   "Refresh icomplete view, keep current candidate selected if possible."
@@ -50,7 +47,6 @@
               (setq completions (cdr completions)))))))
     (icomplete-exhibit)))
 
-(add-hook 'consult--completion-candidate-hook #'consult-icomplete--candidate)
 (add-hook 'consult--completion-refresh-hook #'consult-icomplete--refresh)
 
 (provide 'consult-icomplete)

@@ -175,7 +175,7 @@ and/or `magit-branch-remote-head'."
   :group 'magit-faces)
 
 (defface magit-signature-untrusted
-  '((t :foreground "cyan"))
+  '((t :foreground "medium aquamarine"))
   "Face for good untrusted signatures."
   :group 'magit-faces)
 
@@ -195,7 +195,7 @@ and/or `magit-branch-remote-head'."
   :group 'magit-faces)
 
 (defface magit-signature-error
-  '((t :foreground "firebrick3"))
+  '((t :foreground "light blue"))
   "Face for signatures that cannot be checked (e.g. missing key)."
   :group 'magit-faces)
 
@@ -295,6 +295,7 @@ Also see info node `(magit)Commands for Buffers Visiting Files'."
     ("E" "Ediff"          magit-ediff)]
    [("f" "Fetch"          magit-fetch)
     ("F" "Pull"           magit-pull)
+    ("I" "Init"           magit-init)
     ("l" "Log"            magit-log)
     ("L" "Log (change)"   magit-log-refresh)
     ("m" "Merge"          magit-merge)

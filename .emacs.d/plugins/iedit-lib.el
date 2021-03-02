@@ -353,7 +353,7 @@ Return the number of occurrences."
              ((text-property-not-all beginning ending 'read-only nil)
               (push (iedit-make-read-only-occurrence-overlay beginning ending)
                     iedit-read-only-occurrences-overlays))
-			 ((and (not search-invisible)
+			 ((and (not (eq search-invisible t))
 				   (isearch-range-invisible beginning ending))
 			  (setq iedit-lib-skip-invisible-count (1+ iedit-lib-skip-invisible-count)))
 			 ((not (funcall isearch-filter-predicate beginning ending))

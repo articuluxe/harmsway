@@ -12,11 +12,12 @@
                   (ct-make-hsluv 265 60 40) 60)
                 (-map (fn (tarp/nth <> it))
                   '(1 -1 2 3))
+                (-map (fn (ct-transform-hsluv-l <> 80)) it)
                 (-map
-                  (fn (ct-tint-ratio <> background 4.5 ))
+                  (fn (ct-tint-ratio <> background 4.3))
                   it)))
 
-      (foreground (ct-tint-ratio background background 8.5))
+      (foreground (ct-tint-ratio background background 7))
 
       (faded
         (ct-tint-ratio
@@ -24,8 +25,7 @@
             (ct-tint-ratio background background 5.5)
             ;; (nth 2 colors)
             (lambda (h s l) (list h 80 70)))
-          background 4.5)
-        ))
+          background 4.3)))
 
     (ht
       (:background background)
@@ -35,7 +35,11 @@
       (:primary (nth 0 colors))
       (:assumed (nth 1 colors))
       (:alt (nth 2 colors))
-      (:strings (ct-transform-lch-c (nth 3 colors) 100)))))
+      (:strings
+        (-> (nth 3 colors)
+          (ct-transform-lch-l (-partial '+ 10))
+          (ct-transform-lch-c 100)
+          (ct-tint-ratio background 4.3))))))
 
 (let*
   (
@@ -44,26 +48,29 @@
 
     (alt (ht-get normal-parts :alt))
     (assumed (ht-get normal-parts :assumed))
+    (primary (ht-get normal-parts :primary))
     (faded (ht-get normal-parts :faded))
     (foreground (ht-get normal-parts :foreground))
 
-    (background+
-      (ct-iterate
-        (ct-transform-lch-c alt 33)
-        'ct-lab-lighten
-        (fn (> (ct-contrast-ratio <> faded) 3.5))))
-
     (background>
       (-> background
-        (ct-transform-lch-h (ct-get-lch-h alt))
-        (ct-transform-lch-l (ct-get-lch-l foreground))
-        ((lambda (c) (ct-tint-ratio foreground c 7)))))
+        (ct-iterate
+          'ct-lab-darken
+          (fn (> (ct-name-distance <> background) 4)))
+        (ct-transform-hsluv-h (ct-get-hsluv-h alt))))
 
     (background>>
       (-> background
-        (ct-transform-lch-h (ct-get-lch-h alt))
-        (ct-transform-lch-l (ct-get-lch-l foreground))
-        ((lambda (c) (ct-tint-ratio foreground c 6))))))
+        (ct-iterate
+          'ct-lab-darken
+          (fn (> (ct-name-distance <> background) 7)))
+        (ct-transform-hsluv-h (ct-get-hsluv-h primary))))
+
+    (background+
+      (-> alt
+        (ct-transform-lch-c 25)
+        (ct-transform-hsluv-l
+          (ct-get-hsluv-l background>>)))))
 
   (setq tarp/theme*
     (ht
