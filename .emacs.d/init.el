@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-03-02 14:35:16 dharms>
+;; Modified Time-stamp: <2021-03-04 14:08:25 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -114,12 +114,10 @@
 (set-register ?\C-d (cons 'file "~/Documents"))
 (set-register ?\C-k (cons 'file "~/Desktop"))
 (set-register ?\C-w (cons 'file "~/Downloads"))
-(set-register ?\C-p (cons 'file "~/Dropbox"))
 (set-register ?\C-s (cons 'file "~/src"))
 (set-register ?\C-h (cons 'file "~/src/harmsway"))
 (set-register ?\C-e (cons 'file "~/src/harmsway/.emacs.d"))
 (set-register ?\C-o (cons 'file "~/org"))
-(set-register ?\C-r (cons 'file "~/Secure"))
 (add-hook 'after-init-hook
           (lambda ()
             (set-register ?\C-i (cons 'file user-init-file))))

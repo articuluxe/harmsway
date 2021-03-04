@@ -3,7 +3,7 @@
 ;; Copyright (C) 2015-2017, 2019-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-03-01 05:51:39 dharms>
+;; Modified Time-stamp: <2021-03-04 14:08:50 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -27,6 +27,10 @@
 ;;; Code:
 
 ;; init site
+(set-register ?\C-p (cons 'file "~/Dropbox"))
+(set-register ?\C-r (cons 'file "~/Secure"))
+(set-register ?\C-y (cons 'file "~/Sync"))
+
 (with-eval-after-load 'org
   (add-to-list 'org-agenda-files "~/org"))
 
