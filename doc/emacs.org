@@ -565,6 +565,7 @@ C-c C-w     refile
 ** Archive
 C-c C-x C-a     archive subtree
 C-c C-x C-s     archive subtree at point
+C-c $           same
 C-c C-x a       toggle archiving the current headline
 
 ** Tables
