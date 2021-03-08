@@ -1,9 +1,8 @@
-xr/
+site/*
+!site/talbot
 test*
 repos/**/src/
 *world.tar
 *.so
-scripts/woff*
-scripts/ttf*
 .harmsway.*
 .emacs.d/plugins/sqlite/emacsql-sqlite
