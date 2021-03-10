@@ -10,6 +10,7 @@ alias emacs="\$EDITOR"
 [ -r ~/.bash_"$SITE" ] && . ~/.bash_"$SITE"
 
 # ssh keys
+ssh-add ~/.ssh/cathode.ssh.ed25519
 # eval $(keychain -q --eval --inherit any cathode.ssh.rsa)
 # eval $(keychain -q --eval --inherit any cathode.ssh.ed25519)
 # eval $(keychain -q --eval --inherit any xr.ssh.rsa)
