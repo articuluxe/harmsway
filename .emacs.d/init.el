@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-03-04 14:08:25 dharms>
+;; Modified Time-stamp: <2021-03-10 09:18:36 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -4012,6 +4012,15 @@ This function's result only has value if it is preceded by any font changes."
             (lambda()
               ;; (flycheck-mode 1)
               )))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; docker-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package dockerfile-mode
+  :mode ("\\.dockerfile$" "Dockerfile$")
+  :init
+  (setq dockerfile-mode-command "docker")
+  :config
+  (define-key dockerfile-mode-map "\C-c\C-c" nil)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; dotenv-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package dotenv-mode :mode ("\\.env$" "\\.env\\.example$"))
