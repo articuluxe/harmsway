@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-03-10 09:18:36 dharms>
+;; Modified Time-stamp: <2021-03-10 09:23:15 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -62,6 +62,7 @@
                      ,(concat my/plugins-directory "ccls/")
                      ,(concat my/plugins-directory "cquery/")
                      ,(concat my/plugins-directory "diff-hl/")
+                     ,(concat my/plugins-directory "docker/")
                      ,(concat my/plugins-directory "elfeed/")
                      ,(concat my/plugins-directory "elnode/")
                      ,(concat my/plugins-directory "emacs-refactor/")
@@ -4013,7 +4014,11 @@ This function's result only has value if it is preceded by any font changes."
               ;; (flycheck-mode 1)
               )))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; docker-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; docker ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package docker
+  :bind ("C-c 0dd" . docker)
+  )
+
 (use-package dockerfile-mode
   :mode ("\\.dockerfile$" "Dockerfile$")
   :init
