@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-03-10 09:23:15 dharms>
+;; Modified Time-stamp: <2021-03-10 09:33:37 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2175,8 +2175,8 @@ ARGS are the additional arguments."
             org-archive-location
             )
   :init
-  (setq org-directory (expand-file-name "~/org/"))
-  (setq org-agenda-files '("~/org"))
+  (setq org-directory (expand-file-name "~/Documents/org/"))
+  (setq org-agenda-files '("~/Documents/org"))
   (setq org-startup-folded nil)
   (setq org-replace-disputed-keys t)
   (setq org-catch-invisible-edits 'show-and-error)
@@ -2223,13 +2223,13 @@ ARGS are the additional arguments."
                         ("verb" . ?v)
                         ))
   ;; capture
-  (setq org-default-notes-file "~/org/inbox.org")
+  (setq org-default-notes-file "~/Documents/org/inbox.org")
   (setq org-capture-templates
         '(("t" "Todo [inbox]" entry
-           (file+headline "~/org/inbox.org" "Tasks")
+           (file+headline "~/Documents/org/inbox.org" "Tasks")
            "* TODO %i%?\n%a")
           ("n" "Todo [inbox, no link]" entry
-           (file+headline "~/org/inbox.org" "Tasks")
+           (file+headline "~/Documents/org/inbox.org" "Tasks")
            "* TODO %i%?\n")
           ("c" "Cookbook" entry (file "~/Documents/notes/recipes.org")
            "%(org-chef-get-recipe-from-url)"
@@ -2243,7 +2243,7 @@ ARGS are the additional arguments."
   (setq org-refile-targets '((nil :maxlevel . 9)
                              (org-agenda-files :maxlevel . 9)))
   ;; archiving
-  (setq org-archive-location "~/org/archive.org::* From %s")
+  (setq org-archive-location "~/Documents/org/archive.org::* From %s")
   (org-babel-do-load-languages
    'org-babel-load-languages
    '((awk . t)
