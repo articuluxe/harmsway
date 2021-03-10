@@ -1,8 +1,8 @@
 ;; windows-nt.el --- windows os settings file
-;; Copyright (C) 2015-2020  Dan Harms (dharms)
+;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2020-07-30 10:47:16 dharms>
+;; Modified Time-stamp: <2021-03-10 15:43:06 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -45,9 +45,6 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; sharper ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package sharper
   :bind ("C-c 0vs" . sharper-main-transient))
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; ssh-agency ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;(require 'ssh-agency)
 
 ;; explicit-shell-file-name is used to create a shell
 (setq explicit-shell-file-name (executable-find "cmdproxy.exe"))

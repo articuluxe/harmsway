@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-03-10 09:33:37 dharms>
+;; Modified Time-stamp: <2021-03-10 15:50:05 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -118,7 +118,7 @@
 (set-register ?\C-s (cons 'file "~/src"))
 (set-register ?\C-h (cons 'file "~/src/harmsway"))
 (set-register ?\C-e (cons 'file "~/src/harmsway/.emacs.d"))
-(set-register ?\C-o (cons 'file "~/org"))
+(set-register ?\C-o (cons 'file "~/Documents/org"))
 (add-hook 'after-init-hook
           (lambda ()
             (set-register ?\C-i (cons 'file user-init-file))))
@@ -1210,6 +1210,7 @@ From `manuel-oberti.github.io' on 20190806."
   :config
   (put 'magit-clean 'disabled nil)
   (use-package with-editor)
+  (use-package ssh-agency)
   (magit-auto-revert-mode 0)
   (setq magit-repository-directories
         `(,(cons (expand-file-name "~/src") 2)))

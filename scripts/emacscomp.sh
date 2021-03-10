@@ -1,14 +1,14 @@
 #!/bin/bash
 # -*- Mode: sh -*-
 # emacscomp.sh --- byte-compile emacs lisp files
-# Copyright (C) 2015-2017, 2020  Dan Harms (dan.harms)
+# Copyright (C) 2015-2017, 2020-2021  Dan Harms (dan.harms)
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Tuesday, June 16, 2015
 # Version: 1.0
-# Modified Time-stamp: <2020-12-02 11:32:44 dharms>
+# Modified Time-stamp: <2021-03-10 14:43:20 dharms>
 # Keywords: emacs configuration
 
-exe=$EDITOR
+exe=$EMACS_BIN
 dir=$(pwd)
 user=$USER
 date=$(date '+%F_%T' | tr ':' '-')
