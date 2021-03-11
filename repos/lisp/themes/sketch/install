@@ -1,0 +1,2 @@
+cp src/sketch-themes.el ../../../../.emacs.d/plugins
+cp src/sketch-*-theme.el ../../../../.emacs.d/etc/themes
