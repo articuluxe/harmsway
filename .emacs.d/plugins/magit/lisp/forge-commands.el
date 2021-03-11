@@ -61,7 +61,11 @@ for a repository using the command `forge-add-pullreq-refspec'."
     (7 "o i" "owned issues"           forge-list-owned-issues)
     (7 "o p" "owned pull-requests"    forge-list-owned-pullreqs)
     (7 "o r" "owned repositories"     forge-list-owned-repositories)]
-   ["Create"
+   ["Visit"
+    ("v t" "topic"         forge-visit-topic)
+    ("v i" "issue"         forge-visit-issue)
+    ("v p" "pull-request"  forge-visit-pullreq)
+    """Create"
     ("c i" "issue"         forge-create-issue)
     ("c p" "pull-request"  forge-create-pullreq)
     ("c u" "pull-request from issue" forge-create-pullreq-from-issue
@@ -286,12 +290,12 @@ read an issue N to visit."
 ;;; Visit
 
 ;;;###autoload
-(defun forge-visit-topic ()
-  "View the current topic in a separate buffer."
-  (interactive)
-  (if-let ((topic (forge-current-topic)))
-      (forge-visit topic)
-    (user-error "There is no current topic")))
+(defun forge-visit-topic (n)
+  "View the current topic in a separate buffer.
+If there is no current topic or with a prefix argument
+read topic N to visit instead."
+  (interactive (list (forge-read-pullreq "View topic" t)))
+  (forge-visit (forge-get-topic n)))
 
 ;;;###autoload
 (defun forge-visit-pullreq (n)

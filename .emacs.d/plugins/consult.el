@@ -193,7 +193,7 @@ type specified by :toplevel."
   :type '(repeat (cons symbol plist)))
 
 (defcustom consult-buffer-filter
-  '("\\` " "\\`\\*Completions\\*\\'")
+  '("\\` " "\\`\\*Completions\\*\\'" "\\`\\*tramp/.*\\*\\'")
   "Filter regexps for `consult-buffer'.
 
 The default setting is to filter only ephemeral buffer names beginning
@@ -3280,7 +3280,11 @@ The command supports previewing the currently selected theme."
   "Buffer preview function."
   (let ((orig-buf (current-buffer)))
     (lambda (cand restore)
-      (unless (or restore (eq consult--buffer-display #'switch-to-buffer-other-frame))
+      (when (and (not restore)
+                 ;; Only preview in current window and other window.
+                 ;; Preview in frames and tabs is not possible since these don't get cleaned up.
+                 (or (eq consult--buffer-display #'switch-to-buffer)
+                     (eq consult--buffer-display #'switch-to-buffer-other-window)))
         (cond
          ((and cand (get-buffer cand)) (funcall consult--buffer-display cand 'norecord))
          ((buffer-live-p orig-buf) (funcall consult--buffer-display orig-buf 'norecord)))))))
@@ -3295,10 +3299,7 @@ The command supports previewing the currently selected theme."
 
 (defun consult--file-action (file)
   "Open FILE via `consult--buffer-display' function."
-  (pcase-exhaustive consult--buffer-display
-    ('switch-to-buffer (find-file file))
-    ('switch-to-buffer-other-window (find-file-other-window file))
-    ('switch-to-buffer-other-frame (find-file-other-frame file))))
+  (funcall consult--buffer-display (find-file-noselect file)))
 
 (defun consult--bookmark-action (bm)
   "Open BM via `consult--buffer-display' function."

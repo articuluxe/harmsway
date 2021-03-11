@@ -43,6 +43,7 @@
 
 You may want to set this to window's border color.")
 
+
 (let ((fg "#AFAFAF")
       (fg+1 "#CCCCCC")
       (fg-1 "#909090")
@@ -77,13 +78,14 @@ You may want to set this to window's border color.")
    `(region                         ((t (:background ,region))))
    `(hl-line                        ((((type graphic)) :background ,bg+1)
                                      (((type tty)))))
-   `(fringe                         ((t (:background ,bg+2))))
-   `(window-divider                 ((t (:foreground ,bg+4))))
+   `(fringe                         ((t (:background ,bg))))
    `(show-paren-match               ((t (:underline ,green))))
    `(highlight                      ((t (:background ,bg+2))))
    `(button                         ((t (:foreground "#2299CC" :underline t))))
-   `(vertical-border                ((t (:inherit default))))
-   `(window-divider                 ((t ())))
+   `(vertical-border                ((t ())))
+   `(window-divider                 ((t (:foreground ,bg+3))))
+   `(window-divider-first-pixel     ((t (:foreground ,bg+1))))
+   `(window-divider-last-pixel      ((t (:foreground ,bg+1))))
    `(line-number                    ((t (:foreground ,bg+3 :inherit default))))
    `(line-number-current-line       ((((type tty)) :foreground ,yellow)
                                      (((type graphic)) :inherit default :foreground ,yellow :background ,bg+1)))
@@ -95,7 +97,7 @@ You may want to set this to window's border color.")
    `(compilation-warning            ((t (:inherit font-lock-warning-face))))
    `(warning                        ((t (:inherit font-lock-warning-face))))
    `(match                          ((t (:background ,bg+2))))
-
+   `(secondary-selection            ((t (:background ,region2 :extend t))))
 
    ;; ISearch
    `(isearch                        ((t (:background ,green :foreground "black"))))
@@ -150,7 +152,6 @@ You may want to set this to window's border color.")
    `(meow-insert-cursor             ((t ())))
    `(meow-normal-cursor             ((t ())))
    `(meow-motion-cursor             ((t ())))
-   `(meow-grab                      ((t (:background ,region2))))
 
    ;; Cider
    ;;

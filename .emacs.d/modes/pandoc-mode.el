@@ -1,11 +1,11 @@
 ;;; pandoc-mode.el --- Minor mode for interacting with Pandoc  -*- lexical-binding: t -*-
 
-;; Copyright (c) 2009-2020 Joost Kremers
+;; Copyright (c) 2009-2021 Joost Kremers
 
 ;; Author: Joost Kremers <joostkremers@fastmail.fm>
 ;; Maintainer: Joost Kremers <joostkremers@fastmail.fm>
 ;; Created: 31 Oct 2009
-;; Version: 2.30
+;; Version: 2.31
 ;; Keywords: text, pandoc
 ;; URL: http://joostkremers.github.io/pandoc-mode/
 ;; Package-Requires: ((hydra "0.10.0") (dash "2.10.0"))
@@ -278,15 +278,18 @@ is specified, one will be created."
                  (format "--write=%s%s%s" (pandoc--get 'write) (if (pandoc--get 'write-lhs) "+lhs" "")
                          (pandoc--format-extensions (pandoc--get 'write-extensions)))))
         (output (when output-file (format "--output=%s" output-file)))
+        ;; Filters are handled separately, because they sometimes need to be
+        ;; passed to `pandoc' before other options.
+        (filters (pandoc--format-list-options 'filter (pandoc--get 'filter)))
         (list-options (mapcar (lambda (option)
                                 (pandoc--format-list-options option (pandoc--get option)))
-                              pandoc--list-options))
+                              (remove 'filter pandoc--list-options)))
         (alist-options (mapcar (lambda (option)
                                  (pandoc--format-alist-options option (pandoc--get option)))
                                pandoc--alist-options))
         (cli-options (pandoc--format-cli-options)))
     ;; Note: list-options and alist-options are both lists of lists, so we need to flatten them first.
-    (delq nil (append (list read write output) cli-options (apply #'append list-options) (apply #'append alist-options)))))
+    (delq nil (append (list read write output) filters cli-options (apply #'append list-options) (apply #'append alist-options)))))
 
 (defun pandoc--format-extensions (extensions)
   "Create a string of extensions to be added to the Pandoc command line.

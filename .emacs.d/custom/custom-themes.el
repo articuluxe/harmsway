@@ -2,7 +2,7 @@
 ;; Copyright (C) 2016-2021  Dan Harms (dan.harms)
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Wednesday, December 21, 2016
-;; Modified Time-stamp: <2021-03-02 11:42:24 dharms>
+;; Modified Time-stamp: <2021-03-11 10:44:27 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: themes colors
 
@@ -192,6 +192,8 @@
            (harmsway/make-comment-delimiter-face-same-as-comment-face sym))
           ((eq sym 'railscast)
            (custom-theme-set-faces sym '(cursor ((t (:background "#FFC66D"))))))
+          ((eq sym 'reykjavik)
+           (custom-theme-set-faces sym '(cursor ((t (:background "yellow2"))))))
           ((eq sym 'silkworm)
            (custom-theme-set-faces sym '(cursor ((t :background "DeepPink")))))
           ((eq sym 'soft-charcoal)

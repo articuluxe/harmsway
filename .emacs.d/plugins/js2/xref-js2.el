@@ -1,13 +1,13 @@
 ;;; xref-js2.el --- Jump to references/definitions using ag & js2-mode's AST -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2016 Nicolas Petton
+;; Copyright (C) 2016-2021 Nicolas Petton
 
 ;; Author: Nicolas Petton <nicolas@petton.fr>
 ;; URL: https://github.com/NicolasPetton/xref-js2
 ;; Keywords: javascript, convenience, tools
 ;; Version: 1.0
 ;; Package: xref-js2
-;; Package-Requires: ((emacs "25") (js2-mode "20150909"))
+;; Package-Requires: ((emacs "25.1") (js2-mode "20150909"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -56,16 +56,9 @@
   :type 'list
   :group 'xref-js2)
 
-(defcustom xref-js2-js-extensions '("js" "mjs" "jsx" "ts" "tsx")
-  "Extensions for file types xref-js2 is expected to search.
-warning, this is currently only supported by ripgrep, not ag.
-
-if an empty-list/nil no filtering based on file extension will
-take place."
-  :type 'list
-  :group 'xref-js2)
-
 (defcustom xref-js2-rg-arguments '("--no-heading"
+                                   "--type" "js"
+                                   "--type" "ts"
                                    "--line-number"    ; not activated by default on comint
                                    "--pcre2"          ; provides regexp backtracking
                                    "--ignore-case"    ; ag is case insensitive by default
@@ -123,7 +116,7 @@ In each regexp string, '%s' is expanded with the searched symbol."
            (xref-js2--find-definitions symbol)))
 
 (cl-defmethod xref-backend-identifier-completion-table ((_backend (eql xref-js2)))
-  "Return a list of terms for completions taken from the symbols in the current buffer.
+  "Return a list of terms for completions from symbols in the current buffer.
 
 The current implementation returns all the words in the buffer,
 which is really sub optimal."
@@ -208,11 +201,6 @@ concatenated together into one regexp, expanding occurrences of
 (defun xref-js2--search-rg-get-args (regexp)
   "Aggregate command line arguments to search for REGEXP using ripgrep."
   `(,@xref-js2-rg-arguments
-    ,@(if (not xref-js2-js-extensions)
-          nil ;; no filtering based on extension
-        (seq-mapcat (lambda (ext)
-                      (list "-g" (concat "*." ext)))
-                    xref-js2-js-extensions))
     ,@(seq-mapcat (lambda (dir)
                     (list "-g" (concat "!"                               ; exclude not include
                                        dir                               ; directory string
@@ -227,8 +215,7 @@ concatenated together into one regexp, expanding occurrences of
 (defun xref-js2--false-positive (candidate)
   "Return non-nil if CANDIDATE is a false positive.
 Filtering is done using the AST from js2-mode."
-  (let* ((file (map-elt candidate 'file))
-         (buffer-open (get-file-buffer file)))
+  (let ((file (map-elt candidate 'file)))
     (prog1
         (with-current-buffer (find-file-noselect file t)
           (save-excursion

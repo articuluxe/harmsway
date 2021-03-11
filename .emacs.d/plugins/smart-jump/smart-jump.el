@@ -28,6 +28,7 @@
 ;;; Code:
 (eval-when-compile (require 'subr-x))
 (require 'seq)
+(require 'xref)
 
 ;; Compatibility
 
@@ -306,6 +307,7 @@ provided, `pop-tag-mark' will be used as the default."
              (funcall self-command sj-list :continue))))
       (funcall self-command sj-list :continue))))
 
+;;;###autoload
 (cl-defun smart-jump-register (&key
                                modes
                                (jump-fn 'xref-find-definitions)
@@ -355,8 +357,7 @@ fallback strategy is used first. Lower numbers give more precedence."
     (unless (memq 'smart-jump-go xref-prompt-for-identifier)
       (setq xref-prompt-for-identifier
             (append xref-prompt-for-identifier (list 'smart-jump-go
-                                                     'smart-jump-references
-                                                     'smart-jump-peek)))))
+                                                     'smart-jump-references)))))
   (if (listp modes)
       (when (atom (cdr modes))
         ;; ~association list.
