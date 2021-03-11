@@ -2,7 +2,7 @@
 ;; Copyright (C) 2018, 2020-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Wednesday, August  8, 2018
-;; Modified Time-stamp: <2021-03-01 10:50:25 dharms>
+;; Modified Time-stamp: <2021-03-10 19:16:45 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: emacs gui tools
 
@@ -42,6 +42,7 @@
                            '((vertical-scroll-bars . nil)
                              (horizontal-scroll-bars . nil))))
 
+(setq tab-bar-show nil)
 (tab-bar-mode 1)
 (global-set-key "\C-xtu" #'tab-bar-undo-close-tab)
 
