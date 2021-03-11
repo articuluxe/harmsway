@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-03-11 14:25:11 dharms>
+;; Modified Time-stamp: <2021-03-11 15:45:11 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3410,13 +3410,13 @@ See `https://github.com/company-mode/company-mode/issues/205'."
 (use-package flycheck-popup-tip
   :after flycheck
   :if (not (display-graphic-p))
+  :disabled
   :config
   (add-hook 'flycheck-mode-hook #'flycheck-popup-tip-mode))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; flycheck-pos-tip ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package flycheck-pos-tip
   :after flycheck
-  :disabled
   :config
   (setq flycheck-display-errors-function #'flycheck-pos-tip-error-messages)
   (setq flycheck-pos-tip-display-errors-tty-function
@@ -3435,6 +3435,7 @@ See `https://github.com/company-mode/company-mode/issues/205'."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; flycheck-posframe ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package flycheck-posframe
   :after flycheck
+  :disabled
   :if (display-graphic-p)
   :init
   (defface flycheck-posframe-background-face
