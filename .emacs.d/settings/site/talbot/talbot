@@ -3,7 +3,7 @@
 ;; Copyright (C) 2015-2017, 2019-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-03-10 09:32:28 dharms>
+;; Modified Time-stamp: <2021-03-11 14:24:10 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -46,8 +46,9 @@
 
 (defun harmsway-c-mode-common-fn-talbot ()
   "Function on `c-mode-common-hook'."
+  (harmsway-c-mode-common-fn-harmsway)
   ;; talbot-specific customization
-  (harmsway-c-mode-common-fn-harmsway))
+  )
 
 (harmsway-load-projectdefs '("harmsway.projectdef"))
 

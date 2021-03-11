@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2021-02-12 12:29:24 dharms>
+;; Modified Time-stamp: <2021-03-11 14:24:51 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -139,7 +139,6 @@
 (defun harmsway-c-mode-common-fn-harmsway ()
   "Common initialization for `c-mode-common-hook'."
   (require 'compile)
-  (setq-local indent-tabs-mode nil)
   (setq c-tab-always-indent nil)
   (setq c-insert-tab-function 'indent-for-tab-command)
   ;; handle CamelCase

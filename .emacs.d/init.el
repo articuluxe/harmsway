@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-03-10 15:50:05 dharms>
+;; Modified Time-stamp: <2021-03-11 14:25:11 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -146,7 +146,7 @@
 (setq-default truncate-lines t)
 (bind-key "M-o c" 'canonically-space-region)
 (bind-key "C-x c" 'capitalize-region)
-;; default tab width
+(setq-default indent-tabs-mode nil)
 (setq-default tab-width 4)
 ;; enable repeatedly popping mark without prefix
 (setq set-mark-command-repeat-pop t)
@@ -870,7 +870,7 @@ From `manuel-oberti.github.io' on 20190806."
 (use-package copyright
   :defines (copyright-query copyright-year-ranges)
   :init
-  ;; copyright-update is added to my/before-save-hook below
+  ;; copyright-update is added to harmsway-before-save-hook below
   (setq copyright-query nil)
   (setq copyright-year-ranges t)
   )
@@ -3672,8 +3672,8 @@ See `https://github.com/company-mode/company-mode/issues/205'."
          ))
 
 
-(add-hook 'before-save-hook 'my/before-save-hook)
-(defun my/before-save-hook() "Presave hook."
+(add-hook 'before-save-hook #'harmsway-before-save-hook)
+(defun harmsway-before-save-hook() "Presave hook."
        (when (memq major-mode
                    '(
                      awk-mode
@@ -3699,7 +3699,8 @@ See `https://github.com/company-mode/company-mode/issues/205'."
                      sed-mode
                      sh-mode
                      ))
-         (delete-trailing-whitespace)
+         (unless indent-tabs-mode
+           (delete-trailing-whitespace))
          (save-excursion
            (let ((inhibit-message t))
              (copyright-update nil t)
@@ -3924,7 +3925,6 @@ This function's result only has value if it is preceded by any font changes."
               #'harmsway-company-cmd-fix-shell)
   (add-hook 'bat-mode-hook
             (lambda()
-              (setq-default indent-tabs-mode nil)
               (dos-indent)
               (setq-local company-smart-backend 'company-cmd)
               ))
@@ -3948,7 +3948,6 @@ This function's result only has value if it is preceded by any font changes."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; conf-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (add-hook 'conf-mode-hook
           (lambda()
-            (setq indent-tabs-mode nil)
             (subword-mode 1)
             (setq comment-start "#") (setq comment-end "")
             ;; (idle-highlight-mode 1)
@@ -4054,7 +4053,6 @@ This function's result only has value if it is preceded by any font changes."
 
 (add-hook 'emacs-lisp-mode-hook
           (lambda()
-            (setq indent-tabs-mode nil)
             (add-hook 'completion-at-point-functions 'harmsway-company-at-point nil t)
             (define-key emacs-lisp-mode-map "\r" 'reindent-then-newline-and-indent)
             (define-key emacs-lisp-mode-map (kbd "\C-c RET")
@@ -4308,7 +4306,6 @@ This function's result only has value if it is preceded by any font changes."
             (lambda()
               (subword-mode 1)
               (highlight-indentation-mode 1)
-              (setq-default indent-tabs-mode nil)
               (setq python-indent-guess-indent-offset nil)
               (setq python-indent-offset 4)
               (setq-local electric-indent-chars
@@ -4477,7 +4474,6 @@ Requires Flake8 2.0 or newer. See URL
   :init
   (add-hook 'sh-mode-hook
             (lambda()
-              (setq indent-tabs-mode nil)
               (add-to-list 'flycheck-disabled-checkers 'sh-posix-dash)
               ;; set completion
               (make-local-variable 'company-backends)
@@ -4560,7 +4556,6 @@ Requires Flake8 2.0 or newer. See URL
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; xml-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defun harmsway-nxml-hook ()
   "Hook for `nxml-mode'."
-  (setq-default indent-tabs-mode nil)
   ;; (idle-highlight-mode 1)
   (define-key nxml-mode-map "\r" 'reindent-then-newline-and-indent)
   (make-local-variable 'electric-pair-pairs)
