@@ -1,9 +1,9 @@
 # -*- Mode: sh -*-
 # .bash_rubicon
 
-export VISUAL="$EMACS_BIN"
-export EDITOR="$VISUAL -nw"
-alias emacs="\$EDITOR"
+export VISUAL="ec"
+export EDITOR="et"
+# alias emacs="\$EDITOR"
 
 # source the host files
 [ -r ~/."$SITE".env ] && . ~/."$SITE".env

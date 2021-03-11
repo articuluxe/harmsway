@@ -2,7 +2,7 @@
 ;; Copyright (C) 2018, 2020-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Wednesday, August  8, 2018
-;; Modified Time-stamp: <2021-03-10 19:16:45 dharms>
+;; Modified Time-stamp: <2021-03-11 09:24:53 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: emacs gui tools
 
@@ -50,6 +50,7 @@
   "Load GUI settings for frame FRAME."
   (when window-system
     (let ((file (concat harmsway-gui-dir (symbol-name window-system))))
+      (message "harmsway-gui loading %s" file)
       (load file t)))
   (harmsway-gui-disable-scrollbar frame)
   (harmsway-gui-disable-toolbar frame))
