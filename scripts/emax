@@ -1,41 +1,34 @@
-#!/usr/bin/env sh
+#!/bin/sh
 # -*- Mode: sh -*-
 # emax --- open emacs client in gui frame
-# Copyright (C) 2018-2020  Dan Harms (dharms)
+# Copyright (C) 2018-2021  Dan Harms (dharms)
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Tuesday, July 31, 2018
 # Version: 1.0
-# Modified Time-stamp: <2020-12-02 10:54:40 dharms>
+# Modified Time-stamp: <2021-03-10 22:12:47 dharms>
 # Modified by: Dan Harms
 # Keywords: emacs tools
 
-exe=emacsclient
-if [ -n "$EMACS_CLIENT" ]; then
-    exe="$EMACS_CLIENT"
-elif [ -n "$EMACS_ROOT" ]; then
-    exe="$EMACS_ROOT"/bin/emacsclient
-fi
-
 visible_frames()
 {
-    "$exe" -a "" -e '(length (visible-frame-list))'
+    "$EMACS_CLIENT" -a "" -e '(length (visible-frame-list))'
 }
 
 change_focus()
 {
-    "$exe" -n -e "(select-frame-set-input-focus (selected-frame))" > /dev/null 2>&1
+    "$EMACS_CLIENT" -n -e "(select-frame-set-input-focus (selected-frame))" > /dev/null 2>&1
 }
 
 test "$(visible_frames)" -eq "1" && change_focus
 
 if [ "$(visible_frames)" -lt "2" ]; then
     # need to create a frame
-    "$exe" -n -c "$@" && change_focus
+    "$EMACS_CLIENT" -n -c "$@" && change_focus
 else
     # already a visible frame besides daemon
     change_focus
     # -n $@ errors when no args
-    test "$#" -ne "0" && "$exe" -n "$@"
+    test "$#" -ne "0" && "$EMACS_CLIENT" -n "$@"
 fi
 
 # code ends here

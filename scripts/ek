@@ -1,24 +1,22 @@
-#!/usr/bin/env sh
+#!/bin/sh
 # -*- Mode: sh -*-
 # ek --- kill emacs daemon
-# Copyright (C) 2018-2020  Dan Harms (dharms)
+# Copyright (C) 2018-2021  Dan Harms (dharms)
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Thursday, August  9, 2018
 # Version: 1.0
-# Modified Time-stamp: <2020-12-02 10:54:41 dharms>
+# Modified Time-stamp: <2021-03-10 22:15:39 dharms>
 # Modified by: Dan Harms
 # Keywords: emacs tools
 
-exe="$EMACS_CLIENT"
-
 server_ok()
 {
-    "$exe" -a "false" -e "(boundp 'server-process)"
+    "$EMACS_CLIENT" -a "false" -e "(boundp 'server-process)"
 }
 
 if [ "t" = "$(server_ok)" ]; then
     echo "Shutting down Emacs server"
-    "$exe" -e '(kill-emacs)'
+    "$EMACS_CLIENT" -e '(kill-emacs)'
 else
     echo "Emacs server not running"
 fi

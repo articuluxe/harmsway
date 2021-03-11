@@ -1,0 +1,16 @@
+#!/bin/sh
+# -*- Mode: sh -*-
+# ed --- start emacs daemon
+# Copyright (C) 2021  Dan Harms (dharms)
+# Author: Dan Harms <enniomore@icloud.com>
+# Created: Wednesday, March 10, 2021
+# Version: 1.0
+# Modified Time-stamp: <2021-03-10 21:56:12 dharms>
+# Modified by: Dan Harms
+# Keywords: emacs tools
+
+exe="$EMACS_BIN"
+
+"$exe" --daemon
+
+# code ends here
