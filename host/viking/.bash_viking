@@ -10,7 +10,12 @@ export EDITOR="et"
 [ -r ~/.bash_"$SITE" ] && . ~/.bash_"$SITE"
 
 # ssh keys
-ssh-add ~/.ssh/viking.ssh.ed25519
+if [ ! -S ~/.ssh/ssh_auth_sock ]; then
+    eval `ssh-agent`
+    ln -sf "$SSH_AUTH_SOCK" ~/.ssh/ssh_auth_sock
+fi
+export SSH_AUTH_SOCK=~/.ssh/ssh_auth_sock
+ssh-add -l > /dev/null || ssh-add ~/.ssh/viking.ssh.ed25519
 
 use_clang()
 {
@@ -20,7 +25,7 @@ use_clang()
 
 use_gcc()
 {
-    export CC=${CSTDLIB_BIN}/gcc-9
-    export CXX=${CSTDLIB_BIN}/g++-9
+    export CC=${CSTDLIB_BIN}/gcc
+    export CXX=${CSTDLIB_BIN}/g++
     export CXX_FLAGS="-Wall -Wextra -pedantic -Wno-unused-local-typedefs"
 }

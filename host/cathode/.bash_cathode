@@ -17,7 +17,6 @@ fi
 export SSH_AUTH_SOCK=~/.ssh/ssh_auth_sock
 ssh-add -l > /dev/null || ssh-add ~/.ssh/cathode.ssh.ed25519
 
-#ssh-add ~/.ssh/cathode.ssh.ed25519
 # keychain
 # eval $(keychain -q --eval --inherit any cathode.ssh.rsa)
 # eval $(keychain -q --eval --inherit any cathode.ssh.ed25519)
