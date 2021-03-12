@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-03-12 10:02:01 dharms>
+;; Modified Time-stamp: <2021-03-12 13:38:35 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3457,15 +3457,15 @@ See `https://github.com/company-mode/company-mode/issues/205'."
   (add-hook 'flycheck-mode-hook #'flycheck-posframe-mode))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; semantic ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(setq semantic-default-submodes
-      (append '(global-semantic-stickyfunc-mode
-                global-semantic-decoration-mode
-                ) semantic-default-submodes))
-(add-hook 'semantic-init-hooks
-          (lambda()
-            (when (cedet-ectag-version-check t)
-              (semantic-load-enable-primary-exuberant-ctags-support))
-            ))
+;; (setq semantic-default-submodes
+;;       (append '(global-semantic-stickyfunc-mode
+;;                 global-semantic-decoration-mode
+;;                 ) semantic-default-submodes))
+;; (add-hook 'semantic-init-hooks
+;;           (lambda()
+;;             (when (cedet-ectag-version-check t)
+;;               (semantic-load-enable-primary-exuberant-ctags-support))
+;;             ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; headers ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; last modification time
