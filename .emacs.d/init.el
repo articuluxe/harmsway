@@ -2138,6 +2138,9 @@ ARGS are the additional arguments."
 ;;   (require 'async)
 ;;   )
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; emacs-everywhere ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package emacs-everywhere)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; outshine ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package outshine
   :demand t
