@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-03-11 15:45:11 dharms>
+;; Modified Time-stamp: <2021-03-12 10:02:01 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1513,6 +1513,10 @@ ARGS are the additional arguments."
          ("C-x x%r" . bmkp-set-autonamed-regexp-region)
          )
   :demand t
+  :init
+  ;; (setq initial-buffer-choice (lambda ()
+  ;;                               (bookmark-bmenu-list)
+  ;;                               "*Bookmark List*"))
   :config
   (setq bookmark-default-file (concat my/user-directory "bookmarks"))
   (setq bmkp-bmenu-state-file (concat my/user-directory "emacs-bmk-bmenu-state"))
