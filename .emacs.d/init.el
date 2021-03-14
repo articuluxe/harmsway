@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-03-14 09:11:33 dharms>
+;; Modified Time-stamp: <2021-03-14 12:32:08 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -348,7 +348,7 @@ not an error if any files do not exist."
          ("C-c pf" . proviso-clang-format-buffer-or-region)
          ("C-c pcf" . proviso-clang-format-toggle-active)
          ("C-c p." . proviso-xref-peek-definition)
-         ("C-c px" . proviso-xref-toggle-smart-jump)
+         ("C-c px" . proviso-xref-toggle-dumb-jump)
          :map proviso-deploy-keymode-map
          ("o" . proviso-deploy-open-file)
          ("s" . proviso-deploy-save-file)
@@ -4027,7 +4027,7 @@ This function's result only has value if it is preceded by any font changes."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; docker ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package docker
-  :bind ("C-c 0dd" . docker)
+  :bind ("C-c dd" . docker)
   )
 
 (use-package dockerfile-mode
