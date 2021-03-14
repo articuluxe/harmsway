@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-03-12 23:48:18 dharms>
+;; Modified Time-stamp: <2021-03-14 09:11:33 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -480,6 +480,8 @@ not an error if any files do not exist."
   :commands
   (move-buffer-file move-buffer-to-new-frame harmsway-revert-buffer)
   )
+
+(use-package custom-org :after org)
 
 (use-package underline-text
   :bind ("C-c /" . underline-text))
