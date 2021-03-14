@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2021-03-11 14:24:51 dharms>
+;; Modified Time-stamp: <2021-03-14 12:49:41 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -121,6 +121,7 @@
 
 (defun harmsway-c-init-hook ()
   "Initialization common to all c-modes, run once when loaded."
+  (require 'compile)
   (c-add-style "harmsway" harmsway-c-style)
   (setq-default c-auto-newline t)
   (define-key c++-mode-map "\C-c\C-c" nil)
@@ -134,11 +135,11 @@
   ;; `http://stackoverflow.com/questions/15489319/how-can-i-skip-in-file-included-from-in-emacs-c-compilation-mode'
   (setf (nth 5 (assoc 'gcc-include compilation-error-regexp-alist-alist)) 0)
   )
-(add-hook 'c-initialization-hook 'harmsway-c-init-hook)
+(setq harmsway-c-init-fn #'harmsway-c-init-hook)
+(add-hook 'c-initialization-hook (lambda () (funcall harmsway-c-init-fn)))
 
 (defun harmsway-c-mode-common-fn-harmsway ()
   "Common initialization for `c-mode-common-hook'."
-  (require 'compile)
   (setq c-tab-always-indent nil)
   (setq c-insert-tab-function 'indent-for-tab-command)
   ;; handle CamelCase
