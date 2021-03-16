@@ -5,10 +5,10 @@
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Friday, September  4, 2015
 # Version: 1.0
-# Modified Time-stamp: <2021-02-17 12:50:35 dharms>
+# Modified Time-stamp: <2021-03-15 17:03:33 dharms>
 # Modified by: Dan Harms
 # Keywords: emacs gui
 
-$($VISUAL "$@") &
+$("$EMACS_BIN" "$@") &
 
 # edit ends here

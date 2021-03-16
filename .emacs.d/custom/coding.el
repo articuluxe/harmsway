@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2021-03-14 12:49:41 dharms>
+;; Modified Time-stamp: <2021-03-16 10:34:40 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -29,6 +29,11 @@
   (setq use-package-verbose t)
   (require 'use-package))
 
+(defvar harmsway-c-mode-init-hooks '()
+  "Hooks run once as c-mode-common is initialized.")
+(defvar harmsway-c-mode-common-hooks '()
+  "Hooks run per c-mode-common buffer.")
+
 (global-set-key "\C-c\C-c\C-c" #'comment-region)
 (global-set-key "\C-c\C-c\C-u" #'uncomment-region)
 
@@ -42,6 +47,7 @@
   (require 'preproc-font-lock)
   (preproc-font-lock-mode
    (if preproc-font-lock-mode 0 1)))
+
 (use-package preproc-font-lock
   :bind ("C-c #" . my/preproc-font-lock)
   :commands preproc-font-lock-mode)
@@ -62,12 +68,23 @@
       (message "// Using comments like this"))))
 
 (defconst harmsway-c-style
-  (quote
-   ("bsd"                               ;parent style
-    (c-basic-offset . 3)
+  '((c-basic-offset . 3)
     (c-offsets-alist . (
                         (case-label . +)
                         (arglist-cont-nonempty . +)
+                        (innamespace           . 0)
+                        (substatement-open     . 0)
+                        (inline-open           . 0)
+                        (statement-case-intro  . +)
+                        (statement-case-open   . +)
+                                       ;(statement-cont . c-lineup-math)
+                        (access-label          . -2)
+                        (comment-intro         . c-lineup-comment)
+                        (member-init-intro     . +)
+                        (arglist-cont-nonempty . +)
+                        (comment-intro         . 0)
+                                       ;(arglist-intro . c-lineup-arglist-intro-after-paren)
+                                       ;(arglist-close . c-lineup-arglist)
                         ;; TODO add c-lineup-ternary-bodies
                         ))
     (c-electric-pound-behavior . (alignleft))
@@ -93,36 +110,23 @@
                                (inexpr-class-close before)
                                (arglist-cont-nonempty)
                                (inline-close)))
+    (c-hanging-colons-alist . ((member-init-intro before)
+                               (inher-intro)
+                               (case-label after)
+                               (label after)
+                               (access-label after)))
     (c-hanging-semi&comma-criteria . (c-semi&comma-no-newlines-before-nonblanks
                                       c-semi&comma-no-newlines-for-oneline-inliners
                                       c-semi&comma-inside-parenlist))
-    ))
+    )
   "The default harmsway c style.")
 
-;; Original c-offsets-alist settings, probably redundant since we started
-;; deriving "harmsway" style from "bsd":
-  ;;    (c-offsets-alist . (
-  ;;                        (innamespace           . 0)
-  ;;                        (substatement-open     . 0)
-  ;;                        (inline-open           . 0)
-  ;;                        (statement-case-intro  . +)
-  ;;                        (statement-case-open   . +)
-  ;;                                       ;(statement-cont . c-lineup-math)
-  ;;                        (access-label          . -2)
-  ;;                        (comment-intro         . c-lineup-comment)
-  ;;                        (member-init-intro     . +)
-  ;;                        (arglist-cont-nonempty . +)
-  ;;                                       ;(comment-intro . 0)
-  ;;                                       ;(arglist-intro . c-lineup-arglist-intro-after-paren)
-  ;;                                       ;(arglist-close . c-lineup-arglist)
-  ;;                        ))
-
-(setq c-default-style '((java-mode . "java") (awk-mode . "awk") (other . "harmsway")))
-
-(defun harmsway-c-init-hook ()
+;; Init hook
+(defun harmsway-c-init-fn ()
   "Initialization common to all c-modes, run once when loaded."
-  (require 'compile)
   (c-add-style "harmsway" harmsway-c-style)
+  (setq c-default-style '((java-mode . "java") (awk-mode . "awk") (other . "harmsway")))
+  (require 'compile)
   (setq-default c-auto-newline t)
   (define-key c++-mode-map "\C-c\C-c" nil)
   (define-key c++-mode-map "\C-c/" 'toggle-c-comment-delimiters)
@@ -133,12 +137,13 @@
   ;; skips the final included file, ending in `:', when traversing compile
   ;; errors.  See
   ;; `http://stackoverflow.com/questions/15489319/how-can-i-skip-in-file-included-from-in-emacs-c-compilation-mode'
-  (setf (nth 5 (assoc 'gcc-include compilation-error-regexp-alist-alist)) 0)
+  ;; (setf (nth 5 (assoc 'gcc-include compilation-error-regexp-alist-alist)) 0)
   )
-(setq harmsway-c-init-fn #'harmsway-c-init-hook)
-(add-hook 'c-initialization-hook (lambda () (funcall harmsway-c-init-fn)))
 
-(defun harmsway-c-mode-common-fn-harmsway ()
+(add-hook 'c-initialization-hook #'harmsway-c-init-fn -50)
+
+;; C-Mode common hook
+(defun harmsway-c-mode-common-fn ()
   "Common initialization for `c-mode-common-hook'."
   (setq c-tab-always-indent nil)
   (setq c-insert-tab-function 'indent-for-tab-command)
@@ -163,10 +168,9 @@
   (setq-local company-smart-backend 'company-clang)
   )
 
-(setq harmsway-c-mode-common-fn #'harmsway-c-mode-common-fn-harmsway)
-(add-hook 'c-mode-common-hook
-          (lambda () (funcall harmsway-c-mode-common-fn)))
+(add-hook 'c-mode-common-hook #'harmsway-c-mode-common-fn -50)
 
+;; Prog mode hook
 (add-hook 'prog-mode-hook
           (lambda()
             (font-lock-add-keywords
@@ -176,51 +180,41 @@
                    ;; FIXME
                    ("\\_<[fF][iI][xX][mM][eE]\\_>" 0 font-lock-warning-face t)
                    ) t)
-            ) t)
+            ))
 
 (when (< emacs-major-version 25)
   (with-eval-after-load 'cc-mode (require 'modern-cpp-font-lock)))
 
-(add-hook
- 'c++-mode-hook
- (lambda()
-   (when (< emacs-major-version 25)
-     (modern-c++-font-lock-mode 1))
-   (font-lock-add-keywords
-    nil '(;; complete some fundamental keywords (+ Qt)
-          ;; add C++11 keywords still missing from the defaults for emacs 25
-          ("\\<\\(alignas\\|static_assert\\)\\>" . font-lock-keyword-face)
-          ;; Qt fontification
-          ("\\<\\(Q_OBJECT\\|SIGNAL\\|SLOT\\|slots\\|signals\\)\\>" . font-lock-keyword-face)
-          ("\\<QT?\\(_\\sw+\\)+\\>" . font-lock-keyword-face)
-          ;; This is fairly aggressive; can reenable if desired
-          ;; ("\\<Q[A-Z][A-Za-z0-9]*\\>" . font-lock-type-face)
-          ) t)
-   ;; disable <> electricity for now.  Need to be smarter.
-   ;; (make-local-variable 'electric-pair-pairs)
-   ;; (push (cons ?< ?>) electric-pair-pairs)
-   ;; add some c++-specific rotate-text keywords
-   (add-to-list 'c-noise-macro-names "constexpr")
-   (setq rotate-text-local-symbols '(("class" "struct")
-                                     ("true" "false")
-                                     ("public" "protected" "private")
-                                     ))
-   ) t)
+;; C++ mode hook
+(defun harmsway-c++-mode-fn ()
+  (when (< emacs-major-version 25)
+    (modern-c++-font-lock-mode 1))
+  (font-lock-add-keywords
+   nil '(;; complete some fundamental keywords (+ Qt)
+         ;; add C++11 keywords still missing from the defaults for emacs 25
+         ("\\<\\(alignas\\|static_assert\\)\\>" . font-lock-keyword-face)
+         ;; Qt fontification
+         ("\\<\\(Q_OBJECT\\|SIGNAL\\|SLOT\\|slots\\|signals\\)\\>" . font-lock-keyword-face)
+         ("\\<QT?\\(_\\sw+\\)+\\>" . font-lock-keyword-face)
+         ;; This is fairly aggressive; can reenable if desired
+         ;; ("\\<Q[A-Z][A-Za-z0-9]*\\>" . font-lock-type-face)
+         ) t)
+  ;; disable <> electricity for now.  Need to be smarter.
+  ;; (make-local-variable 'electric-pair-pairs)
+  ;; (push (cons ?< ?>) electric-pair-pairs)
+  ;; add some c++-specific rotate-text keywords
+  (add-to-list 'c-noise-macro-names "constexpr")
+  (setq rotate-text-local-symbols '(("class" "struct")
+                                    ("true" "false")
+                                    ("public" "protected" "private")
+                                    )))
+(add-hook 'c++-mode-hook #'harmsway-c++-mode-fn -50)
+
 
 (with-eval-after-load 'compile
   (add-to-list 'compilation-error-regexp-alist 'boost-test)
   (add-to-list 'compilation-error-regexp-alist-alist
                '(boost-test
                  "^[[:digit:]]+:\\s-*\\(.*\\):\\([[:digit:]]+\\):\\s-+\\(fatal\\s-\\)?error" 1 2)))
-
-(defun find-my-tags-file() "Find tags file"
-  (interactive)
-  (let ((my-tags-file (find-file-upwards nil "TAGS")))
-    (if my-tags-file
-        (progn
-          (message "Loading tags file: %s" my-tags-file)
-          (run-with-timer 1 nil 'visit-tags-table my-tags-file))
-      (message "Did not find tags file")
-      )))
 
 ;;; coding.el ends here
