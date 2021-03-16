@@ -1,9 +1,9 @@
 ;;; custom-text-utils.el --- custom text manipulation utilities
-;; Copyright (C) 2016-2017  Dan Harms (dharms)
+;; Copyright (C) 2016-2017, 2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Thursday, April 14, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2017-06-21 17:37:55 dharms>
+;; Modified Time-stamp: <2021-03-16 10:59:58 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: text
 
@@ -151,7 +151,9 @@ shortened to 2."
                       (or end (point-max)))
     (delete-trailing-whitespace)
     (indent-region (point-min) (point-max) nil)
-    (untabify (point-min) (point-max))
+    (if indent-tabs-mode
+        (tabify (point-min) (point-max))
+      (untabify (point-min) (point-max)))
     (when arg
       (save-excursion
         (goto-char (point-min))
