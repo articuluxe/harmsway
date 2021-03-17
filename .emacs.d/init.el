@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-03-17 12:39:29 dharms>
+;; Modified Time-stamp: <2021-03-17 18:06:02 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -1566,7 +1566,8 @@ ARGS are the additional arguments."
   (setq recentf-max-saved-items 200)
   (setq recentf-max-menu-items 12)
   (setq recentf-save-file (concat my/user-directory "recentf"))
-  (setq recentf-exclude '( "-tags\\'" "ido\\.last\\'" "emacs-bmk-bmenu-state"))
+  (setq recentf-exclude '( "-tags\\'" "ido\\.last\\'" "emacs-bmk-bmenu-state"
+                           "/docker:"))
   (recentf-mode 1)
   )
 
@@ -4527,7 +4528,7 @@ Requires Flake8 2.0 or newer. See URL
 (use-package sqlup-mode
   :init
   (add-hook 'sql-mode-hook 'sqlup-mode)
-  (add-hook 'sql-interactive-mode 'sqlup-mode)
+  (add-hook 'sql-interactive-mode-hook 'sqlup-mode)
   (global-set-key "\C-c\M-u" 'sqlup-capitalize-keywords-in-region)
   )
 
