@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-03-14 12:32:08 dharms>
+;; Modified Time-stamp: <2021-03-17 12:39:29 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -4523,7 +4523,14 @@ Requires Flake8 2.0 or newer. See URL
   :mode "\\.sln$"
   )
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; sql-indent ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; sql ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package sqlup-mode
+  :init
+  (add-hook 'sql-mode-hook 'sqlup-mode)
+  (add-hook 'sql-interactive-mode 'sqlup-mode)
+  (global-set-key "\C-c\M-u" 'sqlup-capitalize-keywords-in-region)
+  )
+
 (use-package sql-indent
   :init
   (add-hook 'sql-mode-hook #'sqlind-minor-mode))
