@@ -5,10 +5,10 @@
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Wednesday, March 10, 2021
 # Version: 1.0
-# Modified Time-stamp: <2021-03-10 22:31:39 dharms>
+# Modified Time-stamp: <2021-03-18 12:34:18 dharms>
 # Modified by: Dan Harms
 # Keywords: emacs tools
 
-"$EMACS_CLIENT" -q -a "" -n -c "$@"
+exec "$EMACS_CLIENT" -q -a "" -n -c "$@"
 
 # code ends here

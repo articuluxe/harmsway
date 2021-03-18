@@ -5,12 +5,10 @@
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Wednesday, March 10, 2021
 # Version: 1.0
-# Modified Time-stamp: <2021-03-10 21:56:12 dharms>
+# Modified Time-stamp: <2021-03-18 12:35:18 dharms>
 # Modified by: Dan Harms
 # Keywords: emacs tools
 
-exe="$EMACS_BIN"
-
-"$exe" --daemon
+"$EMACS_BIN" --daemon
 
 # code ends here
