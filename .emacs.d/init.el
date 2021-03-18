@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-03-18 10:06:25 dharms>
+;; Modified Time-stamp: <2021-03-18 14:27:43 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -497,6 +497,7 @@ not an error if any files do not exist."
          ("C-c h" . insert-class-header)
          ("C-c c" . insert-cast)
          ("C-c it" . insert-todo)
+         ("C-c id" . insert-debug-statement)
          ))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; annotate ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

@@ -3,7 +3,7 @@
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Tuesday, April 12, 2016
 ;; Version: 1.0
-;; Modified Time-stamp: <2021-02-02 14:48:20 dharms>
+;; Modified Time-stamp: <2021-03-18 14:30:55 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: coding
 
@@ -126,6 +126,39 @@ ARG, if non-nil, allows customizing the header used."
   (set-mark-command nil)
   (move-end-of-line nil)
   (comment-dwim nil))
+
+;; insert debug statement
+(defun insert-debug-statement ()
+  "Insert a debug statement on the next line."
+  (interactive)
+  (if (eq major-mode 'c++-mode)
+      (insert-debug-statement-cpp)
+    (user-error "Cannot insert debug statement in %s" major-mode)))
+
+(defun insert-debug-statement-cpp ()
+  "Insert a debug statement on the next line in `c++-mode'.
+If point is on a symbol, optionally print that out."
+  (interactive)
+  (let ((sym (thing-at-point 'symbol))
+        (func (or (car (c-defun-name-and-limits nil))
+                  buffer-file-name))
+        (line (line-number-at-pos (c-point 'bol)))
+        (site (and (boundp 'site-name)
+                   site-name
+                   (not (string-empty-p site-name))
+                   site-name)))
+    (move-end-of-line nil)
+    (newline)
+    (indent-for-tab-command)
+    (insert "std::cout << \"" user-login-name)
+    (if site (insert "@" site))
+    (insert " " func)
+    (insert (format "::%d" (1+ line)))
+    (if (and sym (not (string-empty-p sym)))
+        (insert " " sym "=\" << " sym)
+      (insert "\""))
+    (insert " << std::endl;")
+    (forward-line)))
 
 (provide 'custom-coding)
 ;;; custom-coding.el ends here
