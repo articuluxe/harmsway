@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-03-17 18:06:02 dharms>
+;; Modified Time-stamp: <2021-03-18 10:06:25 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2954,8 +2954,8 @@ _p_rev       _u_pper              _=_: upper/lower       _r_esolve
          ("M-' 3" . multi-term-next)
          ("C-4" . multi-term-dedicated-toggle)
          ("M-' 4" . multi-term-dedicated-toggle)
-         ("C-5" . multi-term-dedicated-select)
-         ("M-' 5" . multi-term-dedicated-select)
+         ;; ("C-5" . multi-term-dedicated-select)
+         ;; ("M-' 5" . multi-term-dedicated-select)
          )
   :init
   (setq multi-term-dedicated-select-after-open-p t)

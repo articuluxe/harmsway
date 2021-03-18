@@ -2,7 +2,7 @@
 ;; Copyright (C) 2018, 2020-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Wednesday, August  8, 2018
-;; Modified Time-stamp: <2021-03-11 09:24:53 dharms>
+;; Modified Time-stamp: <2021-03-18 10:07:41 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: emacs gui tools
 
@@ -45,6 +45,12 @@
 (setq tab-bar-show nil)
 (tab-bar-mode 1)
 (global-set-key "\C-xtu" #'tab-bar-undo-close-tab)
+(global-set-key (kbd "C-5") #'tab-switcher)
+(global-set-key (kbd "M-' 5") #'tab-switcher)
+(global-set-key (kbd "C-7") #'tab-next)
+(global-set-key (kbd "M-' 7") #'tab-next)
+(global-set-key (kbd "C-6") (lambda () (interactive) (tab-next -1)))
+(global-set-key (kbd "M-' 6") (lambda () (interactive) (tab-next -1)))
 
 (defun harmsway-gui-load (&optional frame)
   "Load GUI settings for frame FRAME."
