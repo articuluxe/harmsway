@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-03-18 14:27:43 dharms>
+;; Modified Time-stamp: <2021-03-19 10:09:54 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -726,7 +726,14 @@ line."
   (use-package sln-mode :mode "\\.sln$")
   )
 
-(use-package pos-tip :defer t)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; pos-tip ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package pos-tip
+  :defer t
+  :init
+  (setq x-gtk-use-system-tooltips nil)
+  (setq pos-tip-border-width 1)
+  (pos-tip-internal-border-width 2))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; rotate ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package rotate
@@ -3175,7 +3182,7 @@ completion at point mechanism does not interfere with `completion-at-point-funct
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;; company-quickhelp ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package company-quickhelp
-  :if (display-graphic-p)
+  ;; :if (display-graphic-p)
   :after company
   :init
   (setq company-quickhelp-delay 0.4)
@@ -3743,6 +3750,7 @@ This function's result only has value if it is preceded by any font changes."
 (use-package harmsway-gui
   :config
   (harmsway-gui-load (selected-frame)))
+(use-package harmsway-tabs)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; choose-font ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package choose-font
