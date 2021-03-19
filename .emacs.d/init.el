@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-03-19 10:09:54 dharms>
+;; Modified Time-stamp: <2021-03-19 14:51:00 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -4496,6 +4496,7 @@ Requires Flake8 2.0 or newer. See URL
   (add-hook 'sh-mode-hook
             (lambda()
               (add-to-list 'flycheck-disabled-checkers 'sh-posix-dash)
+              (setq-local dabbrev-abbrev-skip-leading-regexp "\\$")
               ;; set completion
               (make-local-variable 'company-backends)
               (setq company-backends
