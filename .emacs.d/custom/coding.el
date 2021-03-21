@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2021-03-16 10:34:40 dharms>
+;; Modified Time-stamp: <2021-03-21 14:21:18 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -67,36 +67,35 @@
       (setq comment-end "")
       (message "// Using comments like this"))))
 
+;; default offsets
+(c-set-offset 'case-label            '+)
+(c-set-offset 'arglist-cont-nonempty '+)
+(c-set-offset 'innamespace           '0)
+(c-set-offset 'substatement-open     '0)
+(c-set-offset 'inline-open           '0)
+(c-set-offset 'statement-case-intro  '+)
+(c-set-offset 'statement-case-open   '+)
+(c-set-offset 'access-label          '-2)
+(c-set-offset 'comment-intro         'c-lineup-comment)
+(c-set-offset 'member-init-intro     '+)
+(c-set-offset 'arglist-cont-nonempty '+)
+(c-set-offset 'comment-intro         '0)
+;; TODO add c-lineup-ternary-bodies
+
+;; default cleanups
+(setq c-cleanup-list
+      '(empty-defun-braces
+        defun-close-semi
+        one-liner-defun
+        scope-operator
+        list-close-comma
+        compact-empty-funcall
+        comment-close-slash
+        ))
+
 (defconst harmsway-c-style
   '((c-basic-offset . 3)
-    (c-offsets-alist . (
-                        (case-label . +)
-                        (arglist-cont-nonempty . +)
-                        (innamespace           . 0)
-                        (substatement-open     . 0)
-                        (inline-open           . 0)
-                        (statement-case-intro  . +)
-                        (statement-case-open   . +)
-                                       ;(statement-cont . c-lineup-math)
-                        (access-label          . -2)
-                        (comment-intro         . c-lineup-comment)
-                        (member-init-intro     . +)
-                        (arglist-cont-nonempty . +)
-                        (comment-intro         . 0)
-                                       ;(arglist-intro . c-lineup-arglist-intro-after-paren)
-                                       ;(arglist-close . c-lineup-arglist)
-                        ;; TODO add c-lineup-ternary-bodies
-                        ))
     (c-electric-pound-behavior . (alignleft))
-    (c-cleanup-list . (
-                       empty-defun-braces
-                       defun-close-semi
-                       one-liner-defun
-                       scope-operator
-                       list-close-comma
-                       compact-empty-funcall
-                       comment-close-slash
-                       ))
     (c-hanging-braces-alist . ((brace-list-open)
                                (brace-entry-open)
                                (statement-cont)

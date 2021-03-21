@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-03-19 14:51:00 dharms>
+;; Modified Time-stamp: <2021-03-21 14:26:28 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -732,7 +732,7 @@ line."
   :init
   (setq x-gtk-use-system-tooltips nil)
   (setq pos-tip-border-width 1)
-  (pos-tip-internal-border-width 2))
+  (setq pos-tip-internal-border-width 2))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; rotate ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
