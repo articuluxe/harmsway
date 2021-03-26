@@ -1,11 +1,11 @@
 #!/bin/bash
 # -*- Mode: sh -*-
 # _repo-init-common.sh --- init a src repo
-# Copyright (C) 2016-2018  Dan Harms (dan.harms)
+# Copyright (C) 2016-2018, 2021  Dan Harms (dan.harms)
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Tuesday, May  3, 2016
 # Version: 1.0
-# Modified Time-stamp: <2018-02-28 13:11:12 dan.harms>
+# Modified Time-stamp: <2021-03-25 18:02:35 dharms>
 # Modified by: Dan Harms
 # Keywords: src repo
 
@@ -48,6 +48,7 @@ echo "Installing files from $repo..."
 find "$repo" -maxdepth 1 -name \*.sh -print | grep -v "$proj"-init.sh | xargs -I '{}' cp -pfv '{}' .
 find "$repo" -maxdepth 1 -name \*.env -print0 | xargs -0I '{}' cp -pfv '{}' .
 find "$repo" -maxdepth 1 -name \*.proviso -print0 | xargs -0I '{}' cp -pfv '{}' .
+find "$repo" -maxdepth 1 -name \*.tar -print0 | xargs -0I '{}' cp -pfv '{}' .
 echo "Installing files done."
 echo -e
 

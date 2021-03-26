@@ -1,11 +1,11 @@
-#!/usr/bin/env sh
+#!/bin/sh
 # -*- Mode: sh -*-
 # repo-init.sh --- select a repo to initialize
-# Copyright (C) 2016, 2018  Dan Harms (dharms)
+# Copyright (C) 2016, 2018, 2021  Dan Harms (dharms)
 # Author: Dan Harms <danielrharms@gmail.com>
 # Created: Thursday, September 15, 2016
 # Version: 1.0
-# Modified Time-stamp: <2018-02-01 12:32:30 dan.harms>
+# Modified Time-stamp: <2021-03-25 17:10:42 dharms>
 # Modified by: Dan Harms
 # Keywords: repo src
 
