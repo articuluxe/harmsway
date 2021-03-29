@@ -5,18 +5,21 @@
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Thursday, August  9, 2018
 # Version: 1.0
-# Modified Time-stamp: <2021-03-10 22:15:39 dharms>
+# Modified Time-stamp: <2021-03-29 00:18:15 dharms>
 # Modified by: Dan Harms
 # Keywords: emacs tools
 
+srv=${1:-$ESRV}
+srv=${srv:-$(hostname -s)}
+
 server_ok()
 {
-    "$EMACS_CLIENT" -a "false" -e "(boundp 'server-process)"
+    "$EMACS_CLIENT" -a "none" -s $srv -e "(boundp 'server-process)"
 }
 
 if [ "t" = "$(server_ok)" ]; then
     echo "Shutting down Emacs server"
-    "$EMACS_CLIENT" -e '(kill-emacs)'
+    "$EMACS_CLIENT" -s $srv -e '(kill-emacs)'
 else
     echo "Emacs server not running"
 fi

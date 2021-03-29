@@ -5,10 +5,12 @@
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Wednesday, March 10, 2021
 # Version: 1.0
-# Modified Time-stamp: <2021-03-18 12:35:18 dharms>
+# Modified Time-stamp: <2021-03-29 00:17:07 dharms>
 # Modified by: Dan Harms
 # Keywords: emacs tools
 
-"$EMACS_BIN" --daemon
+srv=${1:-$ESRV}
+srv=${srv:-$(hostname -s)}
+"$EMACS_BIN" --daemon=$srv
 
 # code ends here

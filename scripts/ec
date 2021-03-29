@@ -5,10 +5,11 @@
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Wednesday, March 10, 2021
 # Version: 1.0
-# Modified Time-stamp: <2021-03-18 12:34:18 dharms>
+# Modified Time-stamp: <2021-03-28 12:04:23 dharms>
 # Modified by: Dan Harms
 # Keywords: emacs tools
 
-exec "$EMACS_CLIENT" -q -a "" -n -c "$@"
+srv=${ESRV:-$(hostname -s)}
+exec "$EMACS_CLIENT" -q -a "" -s $srv -n -c "$@"
 
 # code ends here
