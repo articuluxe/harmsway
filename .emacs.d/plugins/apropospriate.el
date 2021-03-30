@@ -259,11 +259,14 @@ Set to `1.0' or nil to prevent font size manipulation."
      `(ivy-posframe ((,class :background ,base00-2 :foreground ,base03)))
      `(which-key-posframe ((,class :background ,base00-2 :foreground ,base03)))
      `(which-key-posframe-border ((,class :background ,base00-2)))
+     `(company-posframe-quickhelp ((,class :background ,base00-2 :foreground ,base03)))
      `(frog-menu-prompt-face ((,class :foreground ,base03-1)))
      `(frog-menu-actions-face ((,class :foreground ,base03-1)))
      `(frog-menu-posframe-background-face ((,class :background ,base00-2)))
      `(frog-menu-action-keybinding-face ((,class :inherit avy-lead-face)))
      `(ivy-posframe-border ((,class :background ,base00-2)))
+     `(eldoc-box-body ((,class :background ,base00-2)))
+     `(eldoc-box-border ((,class :background ,base00-2)))
      `(solaire-default-face ((,class :background ,base00-1)))
      `(solaire-line-number-face ((,class :background ,base00-2)))
      `(company-tooltip ((,class (:background ,base00-2 :foreground ,base02))))
@@ -580,6 +583,9 @@ Set to `1.0' or nil to prevent font size manipulation."
      `(web-mode-current-column-highlight-face ((,class (:inherit hl-line))))
      `(pulse-highlight-face ((,class (:background ,pink))))
      `(pulse-highlight-start-face ((,class (:background ,pink))))
+     `(goggles-changed ((,class (:background ,flashing-color))))
+     `(goggles-removed ((,class (:background ,flashing-color))))
+     `(goggles-added ((,class (:background ,flashing-color))))
      `(eshell-prompt ((,class (:foreground ,green :weight bold))))
      `(eshell-ls-archive ((,class (:foreground ,teal))))
      `(eshell-ls-backup ((,class (:inherit font-lock-comment-face))))
@@ -663,6 +669,7 @@ Set to `1.0' or nil to prevent font size manipulation."
 
     (custom-theme-set-variables
      theme-name
+     `(diff-hl-show-hunk-posframe-internal-border-color ,base00-2)
      `(evil-emacs-state-cursor '(,red hbar))
      `(evil-insert-state-cursor '(,red bar))
      `(evil-normal-state-cursor '(,yellow box))

@@ -54,7 +54,7 @@
 ;; and those keymaps containing binds for the actions.  For example,
 ;; in the default configuration the type `file' is associated with the
 ;; symbol `embark-file-keymap'.  That symbol names a keymap with
-;; single-letter keybindings for common Emacs file commands, for
+;; single-letter key bindings for common Emacs file commands, for
 ;; instance `c' is bound to `copy-file'.  This means that if while you
 ;; are in the minibuffer after running a command that prompts for a
 ;; file, such as `find-file' or `rename-file', you can copy a file by
@@ -64,7 +64,7 @@
 ;; when using `embark-act': you can use any command that reads from the
 ;; minibuffer as an action and the target of the action will be inserted
 ;; at the first minibuffer prompt.  After running `embark-act' all of your
-;; keybindings and even `execute-extended-command' can be used to run a
+;; key bindings and even `execute-extended-command' can be used to run a
 ;; command.  The action keymaps are normal Emacs keymaps and you should
 ;; feel free to bind in them whatever commands you find useful as actions.
 
@@ -154,7 +154,8 @@ a string, or nil to indicate it found no target."
 
 (defcustom embark-transformer-alist
   '((minor-mode . embark-lookup-lighter-minor-mode)
-    (symbol . embark-refine-symbol-type))
+    (symbol . embark-refine-symbol-type)
+    (embark-keybinding . embark-keybinding-command))
   "Alist associating type to functions for transforming targets.
 Each function should take a target string and return a pair of
 the form a `cons' of the new type and the new target."
@@ -182,6 +183,13 @@ prompts for an action with completion."
                  (const :tag "Read action with completion"
                         embark-completing-read-prompter)
                  (function :tag "Other")))
+
+(defcustom embark-keymap-prompter-key "@"
+  "Key to switch to the keymap prompter from `embark-completing-read-prompter'.
+
+The key must be either a string or a vector.
+This is the key representation accepted by `define-key'."
+  :type '(choice key-sequence (const nil)))
 
 (defface embark-keybinding '((t :inherit success))
   "Face used to display key bindings.
@@ -382,6 +390,9 @@ This function is meant to be added to `minibuffer-setup-hook'."
   (add-hook 'minibuffer-setup-hook #'embark--record-this-command))
 
 ;;; Internal variables
+
+(defvar embark--prompter-history nil
+  "History used by the `embark-completing-read-prompter'.")
 
 (defvar-local embark-collect--kind nil
   "Kind of current collect buffer.
@@ -602,7 +613,7 @@ the keymap and target as arguments")
 (defun embark-keymap-prompter (keymap)
   "Let the user choose an action using the bindings in KEYMAP.
 Besides the bindings in KEYMAP, the user is free to use all their
-keybindings and even \\[execute-extended-command] to select a command."
+key bindings and even \\[execute-extended-command] to select a command."
   (let* ((key (let ((overriding-terminal-local-map keymap))
                 (read-key-sequence nil)))
          (cmd (let ((overriding-terminal-local-map keymap))
@@ -631,53 +642,111 @@ If CMD is a symbol, use its symbol name; for lambdas, use the
 first line of the documentation string; otherwise use the word
 'unnamed'."
   (concat ; fresh copy, so we can freely add text properties
-   (or
-    (when (symbolp cmd) (symbol-name cmd))
-    (when-let ((doc (documentation cmd)))
-      (save-match-data
-        (when (string-match "^\\(.*\\)$" doc)
-          (match-string 1 doc))))
-    "<unnamed>")))
+   (cond
+    ((stringp (car-safe cmd)) (car cmd))
+    ((symbolp cmd) (symbol-name cmd))
+    ((when-let (doc (and (functionp cmd) (documentation cmd)))
+       (save-match-data
+         (when (string-match "^\\(.*\\)$" doc)
+           (match-string 1 doc)))))
+    (t "<unnamed>"))))
 
-(defun embark-completing-read-prompter (keymap)
-  "Prompt via completion for a command bound in KEYMAP."
+(defun embark-completing-read-prompter (keymap &optional no-default)
+  "Prompt via completion for a command bound in KEYMAP.
+If NO-DEFAULT is t, no default value is passed to `completing-read'."
   (let* ((commands
           (cl-loop for (key . cmd) in (embark--all-bindings keymap)
                    for name = (embark--command-name cmd)
-                   do (add-text-properties
-                       0 1
-                       `(display
-                         ,(format "%-3s %s"
-                                  (propertize key 'face 'embark-keybinding)
-                                  (substring name 0 1)))
-                       name)
-                   unless (eq cmd 'embark-keymap-help)
-                   collect (cons name cmd))))
-    (cdr
-     (assoc
-      (minibuffer-with-setup-hook
-          (lambda ()
-            (use-local-map
-             (make-composed-keymap
-              (let ((map (make-sparse-keymap)))
-                (define-key map "@"
-                  (lambda ()
-                    (interactive)
-                    (message "Action key:")
-                    (when-let ((cmd (embark-keymap-prompter keymap)))
-                      (delete-minibuffer-contents)
-                      (insert (symbol-name cmd))
-                      (add-hook 'post-command-hook #'exit-minibuffer nil t))))
-                map)
-              (current-local-map))))
-        (completing-read
-         "Command: "
-         (lambda (string predicate action)
-           (if (eq action 'metadata)
-               `(metadata (category . command))
-             (complete-with-action action commands string predicate)))
-         nil t))
-      commands))))
+                   unless (or
+                           ;; skip which-key pseudo keys and other invalid pairs
+                           (and (consp cmd) (not (stringp (car cmd))))
+                           (eq cmd #'embark-keymap-help))
+                   collect (list name
+                                 (if (and (consp cmd) (stringp (car cmd)))
+                                     (cdr cmd)
+                                   cmd)
+                                 key
+                                 (concat (key-description key)))))
+         (width (cl-loop for (_name _cmd _key desc) in commands
+                         maximize (length desc)))
+         (def)
+         (candidates
+          (cl-loop for item in commands
+                   for (name cmd key desc) = item
+                   for formatted =
+                   (propertize
+                    (concat (propertize desc 'face 'embark-keybinding)
+                            (make-string (- width (length desc) -1) ? )
+                            name)
+                    'embark-command cmd)
+                   when (and (not no-default) (equal key [13]))
+                     do (setq def formatted)
+                   collect (cons formatted item))))
+    (pcase (assoc
+            (minibuffer-with-setup-hook
+                (lambda ()
+                  (when embark-keymap-prompter-key
+                    (use-local-map
+                     (make-composed-keymap
+                      (let ((map (make-sparse-keymap)))
+                        (define-key map embark-keymap-prompter-key
+                          (lambda ()
+                            (interactive)
+                            (let*
+                                ((desc
+                                  (let ((overriding-terminal-local-map keymap))
+                                    (key-description
+                                     (read-key-sequence "Key:"))))
+                                 (cand
+                                  (cl-loop
+                                   for (cand _n _c _k desc1) in candidates
+                                   when (equal desc desc1) return cand)))
+                              (if (null cand)
+                                  (user-error "Unknown key")
+                                (delete-minibuffer-contents)
+                                (insert cand)
+                                (add-hook 'post-command-hook
+                                          #'exit-minibuffer nil t)))))
+                        map)
+                      (current-local-map)))))
+              (completing-read
+               "Command: "
+               (lambda (string predicate action)
+                 (if (eq action 'metadata)
+                     `(metadata (category . embark-keybinding))
+                   (complete-with-action action candidates string predicate)))
+               nil 'require-match nil 'embark--prompter-history def))
+            candidates)
+      (`(,_formatted ,_name ,cmd ,key ,_desc)
+       (setq last-command-event (seq-elt key (1- (length key))))
+       cmd))))
+
+;;;###autoload
+(defun embark-prefix-help-command ()
+  "Prompt for and run a command bound in the prefix used to reach this command.
+The prefix described consists of all but the last event of the
+key sequence that ran this command.  This function is intended to
+be used as a value for `prefix-help-command'.
+
+In addition to using completion to select a command, you can also
+type @ and the key binding (without the prefix)."
+  (interactive)
+  (let ((keys (this-command-keys-vector)))
+    (embark-bindings (seq-take keys (1- (length keys))))))
+
+;;;###autoload
+(defun embark-bindings (&optional prefix)
+  "Explore all current command key bindings with `completing-read'.
+The selected command will be executed.  The set of key bindings can
+be restricted by passing a PREFIX key."
+  (interactive)
+  (let ((keymap (if prefix
+                    (key-binding prefix)
+                  (make-composed-keymap (current-active-maps t)))))
+    (unless (keymapp keymap)
+      (user-error "No key bindings found"))
+    (when-let (command (embark-completing-read-prompter keymap 'no-default))
+      (call-interactively command))))
 
 (defun embark--with-indicator (indicator prompter keymap &optional target)
   "Display INDICATOR while calling PROMPTER with KEYMAP.
@@ -789,6 +858,11 @@ minibuffer before executing the action."
                ((boundp symbol) 'variable)))
             'symbol)
         target))
+
+(defun embark-keybinding-command (target)
+  "Treat an `embark-keybinding' TARGET as a command."
+  (when-let ((cmd (get-text-property 0 'embark-command target)))
+    (cons 'command cmd)))
 
 (defun embark-lookup-lighter-minor-mode (target)
   "If TARGET is a lighter, look up its minor mode.
@@ -914,7 +988,7 @@ keymap for the target's type."
 (defun embark-become (&optional full)
   "Make current command become a different command.
 Take the current minibuffer input as initial input for new
-command.  The new command can be run normally using keybindings or
+command.  The new command can be run normally using key bindings or
 \\[execute-extended-command], but if the current command is found in a keymap in
 `embark-become-keymaps', that keymap is activated to provide
 convenient access to the other commands in it.
@@ -1201,15 +1275,14 @@ Returns the name of the command."
     (cl-labels ((gather (keymap)
                    (map-keymap
                     (lambda (key def)
-                      (let ((desc (single-key-description key)))
-                        (cond
-                         ((null def))
-                         ((keymapp def)
-                          (dolist (bind (embark--all-bindings def))
-                            (push (cons (concat desc " " (car bind))
-                                        (cdr bind))
-                                  bindings)))
-                         (t (push (cons desc def) bindings)))))
+                      (cond
+                       ((null def))
+                       ((keymapp def)
+                        (dolist (bind (embark--all-bindings def))
+                          (push (cons (vconcat (vector key) (car bind))
+                                      (cdr bind))
+                                bindings)))
+                       (t (push (cons (vector key) def) bindings))))
                     keymap)))
       (gather (keymap-canonicalize keymap)))
     (nreverse bindings)))
@@ -1239,7 +1312,7 @@ Returns the name of the command."
       (cl-loop for (key . cmd) in (embark--all-bindings
                                    (embark--action-keymap embark--type))
                unless (eq cmd 'embark-keymap-help)
-               do (define-key map (kbd key) (embark--action-command cmd))))))
+               do (define-key map key (embark--action-command cmd))))))
 
 (define-button-type 'embark-collect-entry
   'face 'embark-collect-candidate
@@ -1312,8 +1385,8 @@ For other Embark Collect buffers, run the default action on ENTRY."
 (define-derived-mode embark-collect-mode tabulated-list-mode "Embark Collect"
   "List of candidates to be acted on.
 The command `embark-act' is bound `embark-collect-mode-map', but
-you might prefer to change the keybinding to match your other
-keybinding for it.  Or alternatively you might want to enable
+you might prefer to change the key binding to match your other
+key binding for it.  Or alternatively you might want to enable
 `embark-collect-direct-action-minor-mode' in
 `embark-collect-mode-hook'.")
 
@@ -1453,18 +1526,15 @@ This is specially useful to tell where multi-line entries begin and end."
             (with-current-buffer embark-collect-from
               (embark--default-directory)))))
   (setq embark-collect-annotator
-        (or
-         ;; for the active minibuffer, get annotation-function metadatum
-         (when-let ((miniwin (active-minibuffer-window)))
-           (when (eq (window-buffer miniwin) embark-collect-from)
-             (or (completion-metadata-get (embark--metadata)
-                                          'annotation-function)
-                 (plist-get completion-extra-properties
-                            :annotation-function))))
-         ;; fallback on Marginalia if loaded
-         (when (boundp 'marginalia-annotators)
-           (alist-get embark--type (symbol-value
-                                    (car marginalia-annotators))))))
+        (if-let ((miniwin (active-minibuffer-window)))
+            (when (eq (window-buffer miniwin) embark-collect-from)
+              ;; for the active minibuffer, get annotation-function metadatum
+              (or
+               (completion-metadata-get (embark--metadata) 'annotation-function)
+               (plist-get completion-extra-properties :annotation-function)))
+          ;; otherwise fake some metadata for Marginalia users's benefit
+          (completion-metadata-get `((category . ,embark--type))
+                                   'annotation-function)))
   (if (eq embark-collect-view 'list)
       (embark-collect--list-view)
     (embark-collect--grid-view)))
@@ -1832,21 +1902,23 @@ buffer for each type of completion."
 
 ;; selectrum
 
-(declare-function selectrum--get-meta "selectrum")
-(declare-function selectrum-get-current-candidate "selectrum")
-(declare-function selectrum-get-current-candidates "selectrum")
+(declare-function selectrum--get-meta "ext:selectrum")
+(declare-function selectrum-get-current-candidate "ext:selectrum")
+(declare-function selectrum-get-current-candidates "ext:selectrum")
+
+(defvar selectrum-is-active)
 
 (defun embark-target-selectrum-selection ()
   "Target the currently selected item in Selectrum.
 Return the category metadatum as the type of the target."
-  (when (bound-and-true-p selectrum-active-p)
+  (when (bound-and-true-p selectrum-is-active)
     (cons (selectrum--get-meta 'category)
 	  (selectrum-get-current-candidate))))
 
 (defun embark-selectrum-candidates ()
   "Collect the current Selectrum candidates.
 Return the category metadatum as the type of the candidates."
-  (when (bound-and-true-p selectrum-active-p)
+  (when (bound-and-true-p selectrum-is-active)
     (cons (selectrum--get-meta 'category)
 	  (selectrum-get-current-candidates
 	   ;; Pass relative file names for dired.
@@ -1858,8 +1930,8 @@ Return the category metadatum as the type of the candidates."
 
 ;; ivy
 
-(declare-function ivy--expand-file-name "ivy")
-(declare-function ivy-state-current "ivy")
+(declare-function ivy--expand-file-name "ext:ivy")
+(declare-function ivy-state-current "ext:ivy")
 (defvar ivy-text)
 (defvar ivy-last)
 (defvar ivy--old-cands) ; this stores the current candidates :)
@@ -1929,9 +2001,14 @@ Return the category metadatum as the type of the target."
             (substitute-in-file-name file)))))
     (eshell '(4))))
 
+;; For Emacs 28 dired-jump will be moved to dired.el, but it seems
+;; that since it already has an autoload in Emacs 28, this next
+;; autoload is ignored.
+(autoload 'dired-jump "dired-x")
+
 (defun embark-dired-jump (file &optional other-window)
   "Open dired buffer in directory containg FILE and move to its line.
-When called with a prefix argument, open dired in another window."
+When called with a prefix argument OTHER-WINDOW, open dired in other window."
   (interactive "fJump to Dired file: \nP")
   (dired-jump other-window file))
 

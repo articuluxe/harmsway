@@ -2,7 +2,7 @@
 ;; Copyright (C) 2020-2021  Dan.Harms (Dan.Harms)
 ;; Author: Dan.Harms <enniomore@icloud.com>
 ;; Created: Tuesday, January 14, 2020
-;; Modified Time-stamp: <2021-02-17 17:45:35 dharms>
+;; Modified Time-stamp: <2021-03-30 09:40:30 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -32,5 +32,12 @@
   (tool-bar-mode -1)
   (scroll-bar-mode -1))
 (menu-bar-mode -1)
+
+(add-to-list 'initial-frame-alist '(cursor-type . bar))
+(add-to-list 'initial-frame-alist '(fullscreen . fullheight))
+
+(add-to-list 'default-frame-alist '(cursor-type . bar))
+(add-to-list 'default-frame-alist '(fullscreen . fullheight))
+
 
 ;;; early-init.el ends here

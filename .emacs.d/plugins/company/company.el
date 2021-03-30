@@ -1,13 +1,13 @@
 ;;; company.el --- Modular text completion framework  -*- lexical-binding: t -*-
 
-;; Copyright (C) 2009-2020  Free Software Foundation, Inc.
+;; Copyright (C) 2009-2021  Free Software Foundation, Inc.
 
 ;; Author: Nikolaj Schumacher
 ;; Maintainer: Dmitry Gutov <dgutov@yandex.ru>
 ;; URL: http://company-mode.github.io/
 ;; Version: 0.9.13
 ;; Keywords: abbrev, convenience, matching
-;; Package-Requires: ((emacs "24.3"))
+;; Package-Requires: ((emacs "25.1"))
 
 ;; This file is part of GNU Emacs.
 
@@ -62,21 +62,8 @@
 ;;; Code:
 
 (require 'cl-lib)
-(require 'newcomment)
+(require 'subr-x)
 (require 'pcase)
-
-;;; Compatibility
-(eval-and-compile
-  ;; Defined in Emacs 24.4
-  (unless (fboundp 'string-suffix-p)
-    (defun string-suffix-p (suffix string  &optional ignore-case)
-      "Return non-nil if SUFFIX is a suffix of STRING.
-If IGNORE-CASE is non-nil, the comparison is done without paying
-attention to case differences."
-      (let ((start-pos (- (length string) (length suffix))))
-        (and (>= start-pos 0)
-             (eq t (compare-strings suffix nil nil
-                                    string start-pos nil ignore-case)))))))
 
 (defgroup company nil
   "Extensible inline text completion mechanism."
@@ -335,9 +322,7 @@ This doesn't include the margins and the scroll bar."
                         (assq backend company-safe-backends))
                 (cl-return t))))))
 
-(defcustom company-backends `(,@(unless (version< "24.3.51" emacs-version)
-                                  (list 'company-elisp))
-                              company-bbdb
+(defcustom company-backends `(company-bbdb
                               ,@(unless (version<= "26" emacs-version)
                                   (list 'company-nxml))
                               ,@(unless (version<= "26" emacs-version)
@@ -441,6 +426,10 @@ completion.
 `post-completion': Called after a completion candidate has been inserted
 into the buffer.  The second argument is the candidate.  Can be used to
 modify it, e.g. to expand a snippet.
+
+`kind': The second argument is a completion candidate.  Return a symbol
+describing the kind of the candidate.  Refer to `company-vscode-icons-mapping'
+for the possible values.
 
 The backend should return nil for all commands it does not support or
 does not know about.  It should also be callable interactively and use
@@ -884,20 +873,6 @@ means that `company-mode' is always turned on except in `message-mode' buffers."
   (or (equal [company-dummy-event] keys)
       (commandp (lookup-key company-my-keymap keys))))
 
-;; Hack:
-;; Emacs calculates the active keymaps before reading the event.  That means we
-;; cannot change the keymap from a timer.  So we send a bogus command.
-;; XXX: Seems not to be needed anymore in Emacs 24.4
-;; Apparently, starting with emacs-mirror/emacs@99d0d6dc23.
-(defun company-ignore ()
-  (interactive)
-  (setq this-command last-command))
-
-(global-set-key '[company-dummy-event] 'company-ignore)
-
-(defun company-input-noop ()
-  (push 'company-dummy-event unread-command-events))
-
 ;; To avoid warnings in Emacs < 26.
 (declare-function line-number-display-width "indent.c")
 
@@ -908,9 +883,6 @@ means that `company-mode' is always turned on except in `message-mode' buffers."
         (row (cdr (or (posn-actual-col-row posn)
                       ;; When position is non-visible for some reason.
                       (posn-col-row posn)))))
-    (when (and header-line-format (version< emacs-version "24.3.93.3"))
-      ;; http://debbugs.gnu.org/18384
-      (cl-decf row))
     (when (bound-and-true-p display-line-numbers)
       (cl-decf col (+ 2 (line-number-display-width))))
     (cons (+ col (window-hscroll)) row)))
@@ -1390,6 +1362,108 @@ end of the match."
           (const :tag "Prefer closest in any direction"
                  company-occurrence-prefer-any-closest)))
 
+(defvar company-vscode-icons-mapping
+  '((array . "symbol-array.svg")
+    (boolean . "symbol-boolean.svg")
+    (class . "symbol-class.svg")
+    (color . "symbol-color.svg")
+    (constant . "symbol-constant.svg")
+    (constructor . "symbol-method.svg")
+    (enum-member . "symbol-enumerator-member.svg")
+    (enum . "symbol-enumerator.svg")
+    (event . "symbol-event.svg")
+    (field . "symbol-field.svg")
+    (file . "symbol-file.svg")
+    (folder . "folder.svg")
+    (interface . "symbol-interface.svg")
+    (keyword . "symbol-keyword.svg")
+    (method . "symbol-method.svg")
+    (function . "symbol-method.svg")
+    (misc . "symbol-misc.svg")
+    (module . "symbol-namespace.svg")
+    (numeric . "symbol-numeric.svg")
+    (operator . "symbol-operator.svg")
+    (parameter . "symbol-parameter.svg")
+    (property . "symbol-property.svg")
+    (ruler . "symbol-ruler.svg")
+    (snippet . "symbol-snippet.svg")
+    (string . "symbol-string.svg")
+    (struct . "symbol-structure.svg")
+    (text . "symbol-key.svg")
+    (value . "symbol-enumerator.svg")
+    (variable . "symbol-variable.svg")))
+
+(defconst company-icons-root
+  (file-name-as-directory
+   (expand-file-name "icons"
+                     (file-name-directory (or load-file-name buffer-file-name)))))
+
+(defcustom company-icon-size '(auto-scale . 15)
+  "Size of icons indicating completion kind in the popup."
+  :type '(choice (integer :tag "Size in pixels" :value 15)
+                 (cons :tag "Size in pixels, scaled 2x on HiDPI screens"
+                       (const auto-scale)
+                       (integer :value 15))))
+
+(defun company--render-icons-margin (icon-mapping root-dir candidate selected)
+  (if-let ((ws (window-system))
+           (candidate candidate)
+           (kind (company-call-backend 'kind candidate))
+           (icon-file (alist-get kind icon-mapping)))
+      (let* ((bkg (face-attribute (if selected
+                                      'company-tooltip-selection
+                                    'company-tooltip)
+                                  :background))
+             (icon-size (cond
+                         ((integerp company-icon-size)
+                          company-icon-size)
+                         ((and (consp company-icon-size)
+                               (eq 'auto-scale (car company-icon-size)))
+                          (let ((base-size (cdr company-icon-size)))
+                            (if (> (frame-char-height)
+                                   (* 2 base-size))
+                                (* 2 base-size)
+                              base-size)))))
+             (spec (list 'image
+                         :file (expand-file-name icon-file root-dir)
+                         :type 'svg
+                         :width icon-size
+                         :height icon-size
+                         :ascent 'center
+                         :background (unless (eq bkg 'unspecified)
+                                       bkg))))
+        (concat
+         (propertize " " 'display spec)
+         (propertize " " 'display `(space . (:width ,(- 2 (car (image-size spec))))))))
+    nil))
+
+(defun company-vscode-dark-icons-margin (candidate selected)
+  "Margin function which returns icons from vscode's dark theme."
+  (company--render-icons-margin company-vscode-icons-mapping
+                                (expand-file-name "vscode-dark" company-icons-root)
+                                candidate
+                                selected))
+
+(defun company-vscode-light-icons-margin (candidate selected)
+  "Margin function which returns icons from vscode's light theme."
+  (company--render-icons-margin company-vscode-icons-mapping
+                                (expand-file-name "vscode-light" company-icons-root)
+                                candidate
+                                selected))
+
+(defcustom company-format-margin-function nil
+  "Function to format the margin.
+It accepts 2 params `candidate' and `selected' and can be used for
+inserting prefix/image before the completion items. Typically, the
+functions call the backends with `kind' and then insert the appropriate
+image for the returned kind image. Function is called with (nil nil) to get
+the default margin."
+  :type '(choice
+          (const :tag "Disabled" nil)
+          (const :tag "VScode dark icons theme" company-vscode-dark-icons-margin)
+          (const :tag "VScode light icons theme" company-vscode-light-icons-margin)
+          (function :tag "Custom icon function.")))
+
 (defun company-occurrence-prefer-closest-above (pos match-beg match-end)
   "Give priority to the matches above point, then those below point."
   (if (< match-beg pos)
@@ -1489,8 +1563,6 @@ prefix match (same case) will be prioritized."
        (eq tick (buffer-chars-modified-tick))
        (eq pos (point))
        (when (company-auto-begin)
-         (when (version< emacs-version "24.3.50")
-           (company-input-noop))
          (let ((this-command 'company-idle-begin))
            (company-post-command)))))
 
@@ -2608,27 +2680,26 @@ If SHOW-VERSION is non-nil, show the version in the echo area."
                        right)))
     (setq width (+ width margin (length right)))
 
-    ;; TODO: Use add-face-text-property in Emacs 24.4
     (font-lock-append-text-property 0 width 'mouse-face
                                     'company-tooltip-mouse
                                     line)
     (when (< ann-start ann-end)
-      (font-lock-append-text-property ann-start ann-end 'face
-                                      (if selected
-                                          'company-tooltip-annotation-selection
-                                        'company-tooltip-annotation)
-                                      line))
+      (add-face-text-property ann-start ann-end
+                              (if selected
+                                  'company-tooltip-annotation-selection
+                                'company-tooltip-annotation)
+                              t line))
     (cl-loop
      with width = (- width (length right))
      for (comp-beg . comp-end) in (if (integerp common) `((0 . ,common)) common)
      for inline-beg = (+ margin comp-beg)
      for inline-end = (min (+ margin comp-end) width)
      when (< inline-beg width)
-     do (font-lock-prepend-text-property inline-beg inline-end 'face
-                                         (if selected
-                                             'company-tooltip-common-selection
-                                           'company-tooltip-common)
-                                         line))
+     do (add-face-text-property inline-beg inline-end
+                                (if selected
+                                    'company-tooltip-common-selection
+                                  'company-tooltip-common)
+                                nil line))
     (when (let ((re (funcall company-search-regexp-function
                              company-search-string)))
             (and (not (string= re ""))
@@ -2638,18 +2709,14 @@ If SHOW-VERSION is non-nil, show the version in the echo area."
               (end (+ margin mend))
               (width (- width (length right))))
           (when (< beg width)
-            (font-lock-prepend-text-property beg (min end width) 'face
-                                             (if selected
-                                                 'company-tooltip-search-selection
-                                               'company-tooltip-search)
-                                             line)))))
+            (add-face-text-property beg (min end width)
+                                    (if selected
+                                        'company-tooltip-search-selection
+                                      'company-tooltip-search)
+                                    nil line)))))
     (when selected
-      (font-lock-append-text-property 0 width 'face
-                                      'company-tooltip-selection
-                                      line))
-    (font-lock-append-text-property 0 width 'face
-                                    'company-tooltip
-                                    line)
+      (add-face-text-property 0 width 'company-tooltip-selection t line))
+    (add-face-text-property 0 width 'company-tooltip t line)
     line))
 
 (defun company--search-chunks ()
@@ -2741,18 +2808,6 @@ If SHOW-VERSION is non-nil, show the version in the echo area."
       (cl-decf ww))
     (when (bound-and-true-p display-line-numbers)
       (cl-decf ww (+ 2 (line-number-display-width))))
-    (unless (or (display-graphic-p)
-                (version< "24.3.1" emacs-version))
-      ;; Emacs 24.3 and earlier included margins
-      ;; in window-width when in TTY.
-      (cl-decf ww
-               (let ((margins (window-margins)))
-                 (+ (or (car margins) 0)
-                    (or (cdr margins) 0)))))
-    (when (and word-wrap
-               (version< emacs-version "24.4.51.5"))
-      ;; http://debbugs.gnu.org/19300
-      (cl-decf ww))
     ;; whitespace-mode with newline-mark
     (when (and buffer-display-table
                (aref buffer-display-table ?\n))
@@ -2780,8 +2835,10 @@ If SHOW-VERSION is non-nil, show the version in the echo area."
                      (mapcar (lambda (f) (company--face-attribute f attr))
                              face)))))
 
-(defun company--replacement-string (lines old column nl &optional align-top)
-  (cl-decf column company-tooltip-margin)
+(defun company--replacement-string (lines column-offset old column nl &optional align-top)
+  (cl-decf column column-offset)
+
+  (when (< column 0) (setq column 0))
 
   (when (and align-top company-tooltip-flip-when-above)
     (setq lines (reverse lines)))
@@ -2792,24 +2849,18 @@ If SHOW-VERSION is non-nil, show the version in the echo area."
     (when (> width remaining-cols)
       (cl-decf column (- width remaining-cols))))
 
-  (let ((offset (and (< column 0) (- column)))
-        new)
-    (when offset
-      (setq column 0))
+  (let (new)
     (when align-top
       ;; untouched lines first
       (dotimes (_ (- (length old) (length lines)))
         (push (pop old) new)))
     ;; length into old lines.
     (while old
-      (push (company-modify-line (pop old)
-                                 (company--offset-line (pop lines) offset)
-                                 column)
+      (push (company-modify-line (pop old) (pop lines) column)
             new))
     ;; Append whole new lines.
     (while lines
-      (push (concat (company-space-string column)
-                    (company--offset-line (pop lines) offset))
+      (push (concat (company-space-string column) (pop lines))
             new))
 
     ;; XXX: Also see branch 'more-precise-extend'.
@@ -2824,20 +2875,16 @@ If SHOW-VERSION is non-nil, show the version in the echo area."
                         ;; https://debbugs.gnu.org/cgi/bugreport.cgi?bug=42552#23
                         (lambda (line) (list line (propertize "\n" 'face nl-face)))
                         (nreverse new)))))
-      ;; Use add-face-text-property in Emacs 24.4
       ;; https://debbugs.gnu.org/38563
-      (font-lock-append-text-property 0 (length str) 'face 'default str)
+      (add-face-text-property 0 (length str) 'default t str)
       (when nl (put-text-property 0 1 'cursor t str))
       str)))
-
-(defun company--offset-line (line offset)
-  (if (and offset line)
-      (substring line offset)
-    line))
 
 (defun company--create-lines (selection limit)
   (let ((len company-candidates-length)
         (window-width (company--window-width))
+        left-margins
+        left-margin-size
         lines
         width
         lines-copy
@@ -2875,20 +2922,38 @@ If SHOW-VERSION is non-nil, show the version in the echo area."
           len (min limit len)
           lines-copy lines)
 
-    (cl-decf window-width (* 2 company-tooltip-margin))
     (when scrollbar-bounds (cl-decf window-width))
+
+    (when company-format-margin-function
+      (let ((lines-copy lines-copy)
+            res)
+        (dotimes (i len)
+          (push (funcall company-format-margin-function
+                         (pop lines-copy)
+                         (equal selection i))
+                res))
+        (setq left-margins (nreverse res))))
+
+    ;; XXX: format-function outputting shorter strings than the
+    ;; default margin is not supported (yet?).
+    (setq left-margin-size (apply #'max company-tooltip-margin
+                                  (mapcar #'length left-margins)))
+
+    (cl-decf window-width company-tooltip-margin)
+    (cl-decf window-width left-margin-size)
 
     (dotimes (_ len)
       (let* ((value (pop lines-copy))
-             (annotation (company-call-backend 'annotation value)))
+             (annotation (company-call-backend 'annotation value))
+             (left (or (pop left-margins)
+                       (company-space-string left-margin-size))))
         (setq value (company--clean-string value))
         (when annotation
           (setq annotation (company--clean-string annotation))
           (when company-tooltip-align-annotations
             ;; `lisp-completion-at-point' adds a space.
-            ;; FIXME: Use `string-trim' in Emacs 24.4
-            (setq annotation (comment-string-strip annotation t nil))))
-        (push (cons value annotation) items)
+            (setq annotation (string-trim-left annotation))))
+        (push (list value annotation left) items)
         (setq width (max (+ (length value)
                             (if (and annotation company-tooltip-align-annotations)
                                 (1+ (length annotation))
@@ -2915,17 +2980,16 @@ If SHOW-VERSION is non-nil, show the version in the echo area."
       (dotimes (i len)
         (let* ((item (pop items))
                (str (car item))
-               (annotation (cdr item))
-               (margin (company-space-string company-tooltip-margin))
-               (left margin)
-               (right margin)
+               (annotation (cadr item))
+               (left (nth 2 item))
+               (right (company-space-string company-tooltip-margin))
                (width width))
           (when (< numbered 10)
             (cl-decf width 2)
             (cl-incf numbered)
             (setf (if (eq company-show-numbers 'left) left right)
                   (concat (funcall company-show-numbers-function numbered)
-                          margin)))
+                          (if (eq company-show-numbers 'left) left right))))
           (push (concat
                  (company-fill-propertize str annotation
                                           width (equal i selection)
@@ -2938,7 +3002,9 @@ If SHOW-VERSION is non-nil, show the version in the echo area."
       (when remainder
         (push (company--scrollpos-line remainder width) new))
 
-      (nreverse new))))
+      (cons
+       left-margin-size
+       (nreverse new)))))
 
 (defun company--scrollbar-bounds (offset limit length)
   (when (> length limit)
@@ -2996,9 +3062,12 @@ Returns a negative number if the tooltip should be displayed above point."
         (setq company-pseudo-tooltip-overlay ov)
         (overlay-put ov 'company-replacement-args args)
 
-        (let ((lines (company--create-lines selection (abs height))))
+        (let* ((lines-and-offset (company--create-lines selection (abs height)))
+               (lines (cdr lines-and-offset))
+               (column-offset (car lines-and-offset)))
           (overlay-put ov 'company-display
-                       (apply 'company--replacement-string lines args))
+                       (apply 'company--replacement-string
+                              lines column-offset args))
           (overlay-put ov 'company-width (string-width (car lines))))
 
         (overlay-put ov 'company-column column)
@@ -3012,12 +3081,14 @@ Returns a negative number if the tooltip should be displayed above point."
 
 (defun company-pseudo-tooltip-edit (selection)
   (let* ((height (overlay-get company-pseudo-tooltip-overlay 'company-height))
-         (lines  (company--create-lines selection (abs height))))
+         (lines-and-offset  (company--create-lines selection (abs height)))
+         (lines (cdr lines-and-offset))
+         (column-offset (car lines-and-offset)))
     (overlay-put company-pseudo-tooltip-overlay 'company-width
                  (string-width (car lines)))
     (overlay-put company-pseudo-tooltip-overlay 'company-display
                  (apply 'company--replacement-string
-                        lines
+                        lines column-offset
                         (overlay-get company-pseudo-tooltip-overlay
                                      'company-replacement-args)))))
 
@@ -3145,21 +3216,18 @@ Delay is determined by `company-tooltip-idle-delay'."
   (company-preview-hide)
 
   (setq completion (copy-sequence (company--pre-render completion)))
-  (font-lock-append-text-property 0 (length completion)
-                                  'face 'company-preview
-                                  completion)
-    (font-lock-prepend-text-property 0 (length company-common)
-                                     'face 'company-preview-common
-                                     completion)
+  (add-face-text-property 0 (length completion) 'company-preview
+                          nil completion)
+  (add-face-text-property 0 (length company-common) 'company-preview-common
+                          nil completion)
 
     ;; Add search string
     (and (string-match (funcall company-search-regexp-function
                                 company-search-string)
                        completion)
          (pcase-dolist (`(,mbeg . ,mend) (company--search-chunks))
-           (font-lock-prepend-text-property mbeg mend
-                                            'face 'company-preview-search
-                                            completion)))
+           (add-face-text-property mbeg mend 'company-preview-search
+                                   nil completion)))
 
     (setq completion (company-strip-prefix completion))
 

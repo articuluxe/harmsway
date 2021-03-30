@@ -165,6 +165,16 @@
         (message nil) ;; clear echo area
         parsed-json))))
 
+(defun sharper--set-static-output-buffer (buffer-or-name)
+  "Set BUFFER-OR-NAME as read-only and add a local \"q\" binding to kill it.
+Return the buffer."
+  (with-current-buffer buffer-or-name
+      (setq buffer-read-only t)
+      (local-set-key "q" (lambda ()
+                           (interactive)
+                           (kill-buffer)))
+      (get-buffer buffer-or-name)))
+
 ;;------------------Main transient------------------------------------------------
 
 (define-transient-command sharper-main-transient ()
@@ -282,8 +292,13 @@ The current implementation is C# only, we need to make accomodations for F#."
         (fallback (thing-at-point 'sexp t)))
     (if c-name
         (car c-name) ;; nothing else to do!
-      (if (> (length fallback) 49) ;; make sure the fallback is not too long
-          (concat (substring fallback 0 45) "(...)")
+      (if (> (length fallback) 125) ;; make sure the fallback is not too long
+          ;; See issue #24. Before we would take only 50 chars and add "(...)" but
+          ;; that broke the --filter parameter. I only added this because one time I
+          ;; had a giant block of text under point and it made the transient look
+          ;; horrible. Using a 125 char limit is realistic, and not adding ellipsis
+          ;; will keep --filter working.
+          (substring fallback 0 125)
         fallback))))
 
 (defun sharper--nearest-project-dir ()
@@ -362,7 +377,7 @@ The current implementation is C# only, we need to make accomodations for F#."
       (let ((default-directory (car sharper--last-publish))
             (command (cdr sharper--last-publish)))
         (sharper--log-command "Publish" command)
-        (pop-to-buffer (sharper--run-async-shell command "*dotnet publish*")))
+        (pop-to-buffer (sharper--set-static-output-buffer (sharper--run-async-shell command "*dotnet publish*"))))
     (sharper-transient-publish)))
 
 (defun sharper--run-last-pack (&optional _transient-params)
@@ -405,7 +420,7 @@ The current implementation is C# only, we need to make accomodations for F#."
               "\n")
       (insert "\ndotnet --info output:\n\n"
               dotnet-info)
-      (pop-to-buffer buf))))
+      (pop-to-buffer (sharper--set-static-output-buffer buf)))))
 
 ;;------------------Argument parsing----------------------------------------------
 
@@ -601,10 +616,10 @@ The solution or project is determined via the buffer local variables.
          (command (sharper--strformat sharper--package-list-transitive-template
                                       ?t (shell-quote-argument slnproj))))
     (sharper--log-command "List solution/project packages (incl. transitive)" command)
-    (sharper--run-async-shell command
-                              (concat "*packages (full) "
-                                      (file-name-nondirectory slnproj)
-                                      "*"))))
+    (sharper--set-static-output-buffer (sharper--run-async-shell command
+                                                                 (concat "*packages (full) "
+                                                                         (file-name-nondirectory slnproj)
+                                                                         "*")))))
 
 (defun sharper--get-RIDs ()
   "Obtain the list of Runtimes IDs, format and return it.
@@ -747,7 +762,7 @@ After the first call, the list is cached in `sharper--cached-RIDs'."
                                        ?t (sharper--shell-quote-or-empty target)
                                        ?o (sharper--option-alist-to-string options))))
       (sharper--log "Clean command\n" command "\n")
-      (sharper--run-async-shell command "*dotnet clean*"))))
+      (pop-to-buffer (sharper--set-static-output-buffer (sharper--run-async-shell command "*dotnet clean*"))))))
 
 (define-transient-command sharper-transient-clean ()
   "dotnet clean menu"

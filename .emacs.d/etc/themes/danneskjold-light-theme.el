@@ -57,11 +57,16 @@
    `(diredp-symlink ((,class (:foreground "#ffcc00"))))
    `(diredp-number ((,class (:foreground "#ffcc00"))))
 
+   `(cursor ((,class (:foreground "#D0E1F9"))))
+
+   ;; hl-line
+   `(hl-line ((,class (:background "#f50af50af50a"))))
+
    ;; org
    ;; `(org-link ((,class (:foreground "#D0E1F9" :underline "#2b4b6e"))))
    `(org-meta-line ((,class (:foreground "#9b59b6"))))
-   `(org-block-begin-line ((,class (:background "#f50af50af50a"))))
-   `(org-block-end-line ((,class (:background "#f50af50af50a"))))
+   `(org-block-begin-line ((,class (:foreground "#2b4b6e"))))
+   `(org-block-end-line ((,class (:foreground "#2b4b6e"))))
    `(org-block ((,class (:foreground "black" :background "#f50af50af50a"))))
    `(org-verbatim ((,class
                     (:background "#f50af708f906"

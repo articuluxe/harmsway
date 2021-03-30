@@ -27,14 +27,13 @@
 ;; This is a set of convenience functions for generating esxml for
 ;; certain HTML elements.
 ;;
-;; NOTICE: Code base will be trasnitioning to using pcase instead of
+;; NOTICE: Code base will be transitioning to using pcase instead of
 ;; destructuring bind wherever possible.  If this leads to hard to
 ;; debug code, please let me know, and I will do whatever I can to
 ;; resolve these issues.
 ;;
 ;;; Code:
-(eval-when-compile
-  (require 'cl))
+(require 'cl-lib)
 (require 'esxml)
 (require 'xml)
 (require 'kv)
@@ -182,14 +181,14 @@ e.g.
    (meta 'content-type \"text/html\" t)
    (script \"example-script.js\"))"
   (declare (indent 1))
-  `(letf ,(kvmap-bind (symbol value)
-              `((symbol-function ',symbol) ,value)
-            '((base 'esxml-head-base)
-              (link 'esxml-head-link)
-              (css-link 'esxml-head-css-link)
-              (meta 'esxml-head-meta)
-              (script 'esxml-head-script)
-              (style 'esxml-head-style)))
+  `(cl-letf ,(kvmap-bind (symbol value)
+                 `((symbol-function ',symbol) ,value)
+               '((base 'esxml-head-base)
+                 (link 'esxml-head-link)
+                 (css-link 'esxml-head-css-link)
+                 (meta 'esxml-head-meta)
+                 (script 'esxml-head-script)
+                 (style 'esxml-head-style)))
      (esxml--head ,title ,@body)))
 
 ;;; Some generators for common problems
@@ -205,27 +204,27 @@ e.g.
 ;;                                       ,name))))))))
 ;; we should instead define this cleanly.
 
-(defun esxml-create-bookmark-list (bookmark-list seperator &optional ordered-p)
-"Example:
-  (setq bookmark-list
-        '((\"http://www.emacswiki.org\" \"Emacs Wiki\" \"Accept no substitutes\")
-          (\"http://www.github.com/\" \"Github\")
-          (\"http://www.google.com\" \"Google\" \"Everyones favorite search engine\")))
-
-  (esxml-to-xml (esxml-create-bookmark-list bookmark-list \": \"))"
-  (esxml-listify (kvmap-bind (url name &optional description)
-                           `(,(esxml-link url name)
-                             ,@(when description
-                                 `(,seperator ,description)))
-                           bookmark-list)
-                 ordered-p))
-Example
-(setq bookmark-list
-      '(("http://www.emacswiki.org" "Emacs Wiki" "Accept no substitutes")
-        ("http://www.github.com/" "Github")
-        ("http://www.google.com" "Google" "Everyones favorite search engine")))
-
-(esxml-to-xml (esxml-create-bookmark-list bookmark-list ": "))
+;; (defun esxml-create-bookmark-list (bookmark-list seperator &optional ordered-p)
+;; "Example:
+;;   (setq bookmark-list
+;;         '((\"http://www.emacswiki.org\" \"Emacs Wiki\" \"Accept no substitutes\")
+;;           (\"http://www.github.com/\" \"Github\")
+;;           (\"http://www.google.com\" \"Google\" \"Everyones favorite search engine\")))
+;; 
+;;   (esxml-to-xml (esxml-create-bookmark-list bookmark-list \": \"))"
+;;   (esxml-listify (kvmap-bind (url name &optional description)
+;;                            `(,(esxml-link url name)
+;;                              ,@(when description
+;;                                  `(,seperator ,description)))
+;;                            bookmark-list)
+;;                  ordered-p))
+;; Example
+;; (setq bookmark-list
+;;       '(("http://www.emacswiki.org" "Emacs Wiki" "Accept no substitutes")
+;;         ("http://www.github.com/" "Github")
+;;         ("http://www.google.com" "Google" "Everyones favorite search engine")))
+;; 
+;; (esxml-to-xml (esxml-create-bookmark-list bookmark-list ": "))
 
 ;; hint, at this point it may be wise to consider breaking this out as
 ;; a seperate web library.

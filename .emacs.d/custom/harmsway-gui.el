@@ -2,7 +2,7 @@
 ;; Copyright (C) 2018, 2020-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <enniomore@icloud.com>
 ;; Created: Wednesday, August  8, 2018
-;; Modified Time-stamp: <2021-03-19 09:34:17 dharms>
+;; Modified Time-stamp: <2021-03-30 09:40:32 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: emacs gui tools
 
@@ -24,12 +24,6 @@
 ;;
 
 ;;; Code:
-
-(add-to-list 'initial-frame-alist '(cursor-type . bar))
-(add-to-list 'initial-frame-alist '(fullscreen . fullheight))
-
-(add-to-list 'default-frame-alist '(cursor-type . bar))
-(add-to-list 'default-frame-alist '(fullscreen . fullheight))
 
 (defun harmsway-gui-disable-toolbar (frame)
   "Disable toolbar on frame FRAME."

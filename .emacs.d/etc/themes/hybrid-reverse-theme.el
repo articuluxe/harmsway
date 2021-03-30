@@ -1,5 +1,7 @@
 ;;; hybrid-reverse-theme.el --- Emacs theme with material color scheme -*- lexical-binding: t; -*-
 
+;; Copyright (C) 2020-2021 Riyyi
+
 ;; Author: Riyyi
 ;; URL: https://github.com/riyyi/emacs-hybrid-reverse
 ;; Version: 0.1.0

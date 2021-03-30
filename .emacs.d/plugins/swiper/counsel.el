@@ -894,9 +894,12 @@ CAND is a string returned by `counsel--M-x-externs'."
       (and (commandp sym)
            (not (get sym 'byte-obsolete-info))
            (not (get sym 'no-counsel-M-x))
-           (or (not (bound-and-true-p read-extended-command-predicate))
-               (and (functionp read-extended-command-predicate)
-                    (funcall read-extended-command-predicate sym buf)))))))
+           (cond ((not (bound-and-true-p read-extended-command-predicate)))
+                 ((functionp read-extended-command-predicate)
+                  (condition-case-unless-debug err
+                      (funcall read-extended-command-predicate sym buf)
+                    (error (message "read-extended-command-predicate: %s: %s"
+                                    sym (error-message-string err))))))))))
 
 (defun counsel--M-x-prompt ()
   "String for `M-x' plus the string representation of `current-prefix-arg'."
@@ -4570,6 +4573,8 @@ Note: Duplicate elements of `kill-ring' are always deleted."
               :action #'counsel-yank-pop-action
               :caller 'counsel-yank-pop)))
 
+(put #'counsel-yank-pop 'delete-selection 'yank)
+
 (ivy-configure 'counsel-yank-pop
   :height 5
   :format-fn #'counsel--yank-pop-format-function)
@@ -5445,6 +5450,9 @@ Return nil if NAME does not designate a valid color."
          (propertize (funcall formatter color)
                      'face (list :foreground fg :background hex))))
      formatter colors "\n")))
+
+;; No longer preloaded in Emacs 28.
+(autoload 'list-colors-duplicates "facemenu")
 
 ;;;###autoload
 (defun counsel-colors-emacs ()

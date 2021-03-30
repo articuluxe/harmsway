@@ -7,7 +7,7 @@
 ;; Package-Requires: ((wgrep "2.1.1"))
 ;; URL: http://github.com/mhayashi1120/Emacs-wgrep/raw/master/wgrep-helm.el
 ;; Emacs: GNU Emacs 25 or later
-;; Version: 2.3.2
+;; Version: 2.3.3
 
 ;; This program is free software; you can redistribute it and/or
 ;; modify it under the terms of the GNU General Public License as
@@ -75,7 +75,8 @@
         (let* ((value (get-text-property (point) 'helm-realvalue))
                (data  (when (eq major-mode 'helm-grep-mode)
                         (helm-grep-split-line value)))
-               (fn    (or (get-text-property (point) 'buffer-name)
+               (bufname (get-text-property (point) 'buffer-name))
+               (fn    (or (and bufname (buffer-file-name (get-buffer bufname)))
                           (get-text-property (point) 'helm-grep-fname)))
                (line  (if data
                           (string-to-number (nth 1 data))

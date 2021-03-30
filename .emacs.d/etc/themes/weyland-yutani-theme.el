@@ -51,14 +51,14 @@ the parenthetical noise."
 
 (let (
       (fg              "#a9b7ca")
-      (fg-alt          "#606873")
+      (fg-alt          "#2b2c2e")       ;#606873
       (hl              "#26282c")
 
       (White           "#C3D0DF")
 
       (base0           "#9ca4b7")
       (base1           "#8c97a7")
-      (base2           "#6e788c")       ;
+      (base2           "#6e788c")
       (base3           "#8f8e9a")
       (base4           "#3e4044")
       (base5           "#4e5054")
@@ -66,7 +66,7 @@ the parenthetical noise."
       (base6.1         "#94a5d0")
       (base7           "#505a76")
 
-      (bg              "#24272B")       ;#1f2226 <- previous
+      (bg              "#1f2226")
       (bg-alt          "#26282c")
       (bg-Black        "#2b2f37")
       (bg-darker       "#1f2024")
@@ -88,7 +88,7 @@ the parenthetical noise."
       (key3            "#6aa454")
 
       ;; Main Palette
-      (HarlequinGreen        "#79c151")
+      (HarlequinGreen        "#83CB55") ;#79c151 #a2e960 #8ED559
       (Indigo                "#877CEB")
       (Violet                "#c291eb")
       (Magenta               "#C264C6")
@@ -113,7 +113,7 @@ the parenthetical noise."
 
       ;; LIGHT VARIANTS
       (_light-Crimson        "#FF6066")
-      (Orange                "#fb8a69")
+      (Orange                "#e98061")
       (light-IcebergBlue     "#4FAED9")
       (light-Indigo          "#A28BE7")
       (light-Orchid          "#ee78e8")
@@ -153,7 +153,6 @@ the parenthetical noise."
     `(default-italic
        :italic t)
     `(header-line                              :foreground ,HarlequinGreen       :background ,bg-Grey-alt
-      :underline ,very-dark-bg
       :distant-foreground ,bg)
 
     `(cursor                                                                     :background ,White)
@@ -200,6 +199,10 @@ the parenthetical noise."
     ;; MODE SUPPORT: lsp
     `(lsp-face-highlight-read                  :foreground ,vibrant-Finch)
     `(lsp-face-highlight-write                 :foreground ,vibrant-Crimson)
+    `(lsp-headerline-breadcrumb-path-error-face
+      :underline (:color ,dark-Red :style line))
+    `(lsp-face-highlight-textual :bolt t)
+
     ;; MODE SUPPORT: tree-sitter
     `(tree-sitter-hl-face:number               :foreground ,Orange)
     `(tree-sitter-hl-face:constant
@@ -207,6 +210,11 @@ the parenthetical noise."
     `(tree-sitter-hl-face:function.macro
       :inherit tree-sitter-hl-face:number)
     `(tree-sitter-hl-face:punctuation nil)
+    `(tree-sitter-hl-face:operator :foreground "#73b34b"
+       :bold t)
+    `(tree-sitter-hl-face:property :inherit default :bold t)
+    `(tree-sitter-hl-face:method.call :inherit tree-sitter-hl-face:function.call
+                                      :weight normal)
 
     ;; MODE SUPPORT: powerline
     `(powerline-active0
@@ -282,8 +290,8 @@ the parenthetical noise."
     `(diff-hl-insert                           :foreground ,wylnyut-diff-added   :background ,wylnyut-diff-added)
     `(diff-hl-delete                           :foreground ,wylnyut-diff-deleted :background ,wylnyut-diff-deleted)
 
-    ;; MODE SUPPORT: lsp
-    `(lsp-face-highlight-textual :bolt t)
+    ;; MODE SUPPORT: scala
+    `(scala-font-lock:var-face :inherit font-lock-variable-name-face)
 
     ;; MODE SUPPORT: rtags
     `(rtags-errline                            :foreground ,vibrant-Red          :background nil

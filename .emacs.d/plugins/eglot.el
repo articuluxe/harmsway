@@ -125,7 +125,8 @@ language-server/bin/php-language-server.php"))
                                 (erlang-mode . ("erlang_ls" "--transport" "stdio"))
                                 (nix-mode . ("rnix-lsp"))
                                 (gdscript-mode . ("localhost" 6008))
-                                (f90-mode . ("fortls")))
+                                (f90-mode . ("fortls"))
+                                (zig-mode . ("zls")))
   "How the command `eglot' guesses the server to start.
 An association list of (MAJOR-MODE . CONTACT) pairs.  MAJOR-MODE
 is a mode symbol, or a list of mode symbols.  The associated
@@ -652,11 +653,12 @@ Interactively, read SERVER from the minibuffer unless there is
 only one and it's managing the current buffer.
 
 Forcefully quit it if it doesn't respond within TIMEOUT seconds.
-Don't leave this function with the server still running.
+TIMEOUT defaults to 1.5 seconds.  Don't leave this function with
+the server still running.
 
 If PRESERVE-BUFFERS is non-nil (interactively, when called with a
 prefix argument), do not kill events and output buffers of
-SERVER.  ."
+SERVER."
   (interactive (list (eglot--read-server "Shutdown which server"
                                          (eglot-current-server))
                      t nil current-prefix-arg))
@@ -669,6 +671,13 @@ SERVER.  ."
     ;; Now ask jsonrpc.el to shut down the server.
     (jsonrpc-shutdown server (not preserve-buffers))
     (unless preserve-buffers (kill-buffer (jsonrpc-events-buffer server)))))
+
+(defun eglot-shutdown-all (&optional preserve-buffers)
+  "Politely ask all language servers to quit, in order.
+PRESERVE-BUFFERS as in `eglot-shutdown', which see."
+  (interactive (list current-prefix-arg))
+  (cl-loop for ss being the hash-values of eglot--servers-by-project
+           do (cl-loop for s in ss do (eglot-shutdown s nil preserve-buffers))))
 
 (defun eglot--on-shutdown (server)
   "Called by jsonrpc.el when SERVER is already dead."
@@ -1732,9 +1741,11 @@ THINGS are either registrations or unregisterations (sic)."
   (append
    (eglot--VersionedTextDocumentIdentifier)
    (list :languageId
-         (if (string-match "\\(.*\\)-mode" (symbol-name major-mode))
-             (match-string 1 (symbol-name major-mode))
-           "unknown")
+	 (cond
+           ((get major-mode 'eglot-language-id))
+           ((string-match "\\(.*\\)-mode" (symbol-name major-mode))
+            (match-string 1 (symbol-name major-mode)))
+           (t "unknown"))
          :text
          (eglot--widening
           (buffer-substring-no-properties (point-min) (point-max))))))

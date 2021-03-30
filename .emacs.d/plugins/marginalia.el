@@ -4,7 +4,7 @@
 ;; Maintainer: Omar Antolín Camarena, Daniel Mendler
 ;; Created: 2020
 ;; License: GPL-3.0-or-later
-;; Version: 0.3
+;; Version: 0.4
 ;; Package-Requires: ((emacs "26.1"))
 ;; Homepage: https://github.com/minad/marginalia
 
@@ -42,7 +42,8 @@
 (defcustom marginalia-truncate-width 80
   "Maximum truncation width of annotation fields.
 
-This value is adjusted in the `minibuffer-setup-hook' depending on the `window-width'."
+This value is adjusted in the `minibuffer-setup-hook' depending
+on the `window-width'."
   :type 'integer)
 
 (defcustom marginalia-separator-threshold 120
@@ -62,7 +63,7 @@ It can also be set to an integer value of 1 or larger to force an offset."
   "Minimum whitespace margin at the right side."
   :type 'integer)
 
-(defcustom marginalia-margin-threshold 160
+(defcustom marginalia-margin-threshold 200
   "Use whitespace margin for window widths larger than this value."
   :type 'integer)
 
@@ -86,6 +87,7 @@ only with the annotations that come with Emacs) without disabling
     (customize-group . marginalia-annotate-customize-group)
     (variable . marginalia-annotate-variable)
     (face . marginalia-annotate-face)
+    (color . marginalia-annotate-color)
     (unicode-name . marginalia-annotate-char)
     (minor-mode . marginalia-annotate-minor-mode)
     (symbol . marginalia-annotate-symbol)
@@ -110,6 +112,7 @@ See also `marginalia-annotators-heavy'."
      (project-file . marginalia-annotate-project-file)
      (buffer . marginalia-annotate-buffer)
      (command . marginalia-annotate-command)
+     (embark-keybinding . marginalia-annotate-embark-keybinding)
      (consult-multi . marginalia-annotate-consult-multi))
    marginalia-annotators-light)
   "Heavy annotator functions.
@@ -137,6 +140,7 @@ determine it."
     ("\\<package\\>" . package)
     ("\\<bookmark\\>" . bookmark)
     ("\\<face\\>" . face)
+    ("\\<color\\>" . color)
     ("\\<environment variable\\>" . environment-variable)
     ("\\<variable\\>" . variable)
     ("\\<input method\\>" . input-method)
@@ -255,6 +259,10 @@ determine it."
 (declare-function package-version-join "package")
 (declare-function project-current "project")
 (declare-function project-roots "project")
+
+(declare-function color-rgb-to-hex "color")
+(declare-function color-rgb-to-hsl "color")
+(declare-function color-hsl-to-rgb "color")
 
 ;;;; Marginalia mode
 
@@ -439,6 +447,13 @@ Similar to `marginalia-annotate-symbol', but does not show symbol class."
      (marginalia-annotate-binding cand)
      (marginalia--documentation (marginalia--function-doc sym)))))
 
+(defun marginalia-annotate-embark-keybinding (cand)
+  "Annotate Embark keybinding CAND with its documentation string.
+Similar to `marginalia-annotate-command', but does not show the
+keybinding since CAND includes it."
+  (when-let (cmd (get-text-property 0 'embark-command cand))
+    (marginalia--documentation (marginalia--function-doc cmd))))
+
 (defun marginalia-annotate-imenu (cand)
   "Annotate imenu CAND with its documentation string."
   (when (derived-mode-p 'emacs-lisp-mode)
@@ -471,6 +486,32 @@ Similar to `marginalia-annotate-symbol', but does not show symbol class."
      ("abcdefghijklmNOPQRSTUVWXYZ" :face sym)
      ((documentation-property sym 'face-documentation)
       :truncate marginalia-truncate-width :face 'marginalia-documentation))))
+
+(defun marginalia-annotate-color (cand)
+  "Annotate face CAND with its documentation string and face example."
+  (when-let (rgb (color-name-to-rgb cand))
+    (pcase-let* ((`(,r ,g ,b) rgb)
+                 (`(,h ,s ,l) (apply #'color-rgb-to-hsl rgb))
+                 (cr (color-rgb-to-hex r 0 0))
+                 (cg (color-rgb-to-hex 0 g 0))
+                 (cb (color-rgb-to-hex 0 0 b))
+                 (ch (apply #'color-rgb-to-hex (color-hsl-to-rgb h 1 0.5)))
+                 (cs (apply #'color-rgb-to-hex (color-hsl-to-rgb h s 0.5)))
+                 (cl (apply #'color-rgb-to-hex (color-hsl-to-rgb 0 0 l))))
+      (marginalia--fields
+       ("      " :face `(:background ,(apply #'color-rgb-to-hex rgb)))
+       ((format "%s%s%s %s"
+                (propertize "r" 'face `(:background ,cr :foreground ,(readable-foreground-color cr)))
+                (propertize "g" 'face `(:background ,cg :foreground ,(readable-foreground-color cg)))
+                (propertize "b" 'face `(:background ,cb :foreground ,(readable-foreground-color cb)))
+                (color-rgb-to-hex r g b 2)))
+       ((format "%s%s%s %3s° %3s%% %3s%%"
+                (propertize "h" 'face `(:background ,ch :foreground ,(readable-foreground-color ch)))
+                (propertize "s" 'face `(:background ,cs :foreground ,(readable-foreground-color cs)))
+                (propertize "l" 'face `(:background ,cl :foreground ,(readable-foreground-color cl)))
+                (round (* 360 h))
+                (round (* 100 s))
+                (round (* 100 l))))))))
 
 (defun marginalia-annotate-char (cand)
   "Annotate character CAND with its general character category and character code."
@@ -571,8 +612,10 @@ The string is transformed according to `marginalia-bookmark-type-transformers'."
                           marginalia--separator
                           (7 (:propertize "%I" face marginalia-size))
                           marginalia--separator
-                          ;; InactiveMinibuffer has 18 letters
-                          (18 (:propertize mode-name face marginalia-mode)))
+                          ;; InactiveMinibuffer has 18 letters, but there are longer names.
+                          ;; For example Org-Agenda produces very long mode names.
+                          ;; Therefore we have to truncate.
+                          (20 (-20 (:propertize mode-name face marginalia-mode))))
                         nil nil buffer))
      ((if-let (proc (get-buffer-process buffer))
           (format "(%s %s) %s"

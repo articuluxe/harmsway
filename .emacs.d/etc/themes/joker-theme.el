@@ -92,7 +92,7 @@ You may want to set this to window's border color.")
    `(parenthesis                    ((t (:foreground ,fg-1))))
    `(completions-common-part        ((t ())))
    `(minibuffer-prompt              ((t ())))
-   `(lazy-highlight                 ((t (:background ,bg+2))))
+   `(lazy-highlight                 ((t (:background ,bg+3))))
    `(compilation-info               ((t (:inherit font-lock-function-name-face))))
    `(compilation-warning            ((t (:inherit font-lock-warning-face))))
    `(warning                        ((t (:inherit font-lock-warning-face))))
@@ -201,9 +201,9 @@ You may want to set this to window's border color.")
    `(smerge-lower                   ((t (:background "#173017"))))
 
    ;; Diff-hl
-   `(diff-hl-insert                 ((t (:foreground ,green))))
-   `(diff-hl-change                 ((t (:foreground ,blue))))
-   `(diff-hl-delete                 ((t (:foreground ,red))))
+   `(diff-hl-insert                 ((t (:foreground ,green :background ,green))))
+   `(diff-hl-change                 ((t (:foreground ,blue :background ,blue))))
+   `(diff-hl-delete                 ((t (:foreground ,red :background ,red))))
 
    ;; Term
    `(term-color-blue                ((t (:foreground ,blue :background ,blue))))

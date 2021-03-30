@@ -77,7 +77,7 @@ This is the key representation accepted by `define-key'."
 (defcustom consult-widen-key nil
   "Key used for widening during completion.
 
-If this key is unset, defaults to 'consult-narrow-key SPC'.
+If this key is unset, defaults to twice the `consult-narrow-key'.
 
 The key must be either a string or a vector.
 This is the key representation accepted by `define-key'."
@@ -685,13 +685,17 @@ Otherwise the `default-directory' is returned."
   (cond
    ((stringp dir) (consult--format-directory-prompt prompt dir))
    (dir (consult--format-directory-prompt prompt (read-directory-name "Directory: " nil nil t)))
-   ((when-let (root (and consult-project-root-function
-                         (funcall consult-project-root-function)))
+   ((when-let (root (consult--project-root))
       (save-match-data
         (if (string-match "/\\([^/]+\\)/\\'" root)
             (cons (format "%s in project %s: " prompt (match-string 1 root)) root)
           (consult--format-directory-prompt prompt root)))))
    (t (consult--format-directory-prompt prompt default-directory))))
+
+(defun consult--project-root ()
+  "Return project root as absolute path."
+  (when-let (root (and consult-project-root-function (funcall consult-project-root-function)))
+    (expand-file-name root)))
 
 (defun consult--format-location (file line &optional str)
   "Format location string 'FILE:LINE:STR'."
@@ -794,8 +798,9 @@ KEY is the key function."
     (jit-lock-fontify-now start end)))
 
 (defun consult--define-key (map key cmd desc)
-  "Bind CMD to KEY in MAP and add which-key description DESC."
-  (define-key map key cmd)
+  "Bind CMD to KEY with DESC in MAP.
+Also create a which-key pseudo key to show the description."
+  (define-key map key (cons desc cmd))
   ;; The which-key description is potentially fragile if something is changed on the side
   ;; of which-key. Keep an eye on that. An alternative more standard-compliant method
   ;; would be to use `menu-item', but this is unfortunately not yet supported by which-key
@@ -1111,8 +1116,8 @@ candidate argument can be nil if the selection has been aborted."
 ;;;; Narrowing support
 
 (defun consult--widen-key ()
-  "Return widening key, if `consult-widen-key' is not set, default to 'consult-narrow-key SPC'."
-  (or consult-widen-key (and consult-narrow-key (vconcat consult-narrow-key " "))))
+  "Return widening key, if `consult-widen-key' is not set, defaults to twice `consult-narrow-key'."
+  (or consult-widen-key (and consult-narrow-key (vconcat consult-narrow-key consult-narrow-key))))
 
 (defun consult-narrow (key)
   "Narrow current completion with KEY.
@@ -1184,10 +1189,9 @@ to make it available for commands with narrowing."
           consult--narrow-prefixes settings))
   (when consult-narrow-key
     (dolist (pair consult--narrow-prefixes)
-      (when (/= (car pair) 32)
-        (consult--define-key map
-                             (vconcat consult-narrow-key (vector (car pair)))
-                             #'consult-narrow (cdr pair)))))
+      (consult--define-key map
+                           (vconcat consult-narrow-key (vector (car pair)))
+                           #'consult-narrow (cdr pair))))
   (when-let (widen (consult--widen-key))
     (consult--define-key map widen #'consult-narrow "All")))
 
@@ -1734,13 +1738,15 @@ KEYMAP is a command-specific keymap."
 
 (defun consult--multi-narrow ()
   "Return narrow list used by `consult--multi'."
-  (delq nil (mapcar (lambda (src)
-                      (let ((narrow (plist-get src :narrow))
-                            (name (plist-get src :name)))
-                        (cond
-                         ((consp narrow) narrow)
-                         ((and narrow name) (cons narrow name)))))
-                    consult--multi-sources)))
+  (thread-last consult--multi-sources
+    (mapcar (lambda (src)
+              (when-let (narrow (plist-get src :narrow))
+                (if (consp narrow)
+                    narrow
+                  (when-let (name (plist-get src :name))
+                    (cons narrow name))))))
+    (delq nil)
+    (consult--remove-dups)))
 
 (defun consult--multi-annotate (cand)
   "Annotate candidate CAND, used by `consult--multi'."
@@ -2239,8 +2245,12 @@ The symbol at point and the last `isearch-string' is added to the future history
 (defun consult-keep-lines (&optional filter initial)
   "Select a subset of the lines in the current buffer with live preview.
 
-The lines selected are those that match the minibuffer input.
-This command obeys narrowing.
+The selected lines are kept and the other lines are deleted. When called
+interactively, the lines selected are those that match the minibuffer input. In
+order to match the inverse of the input, prefix the input with `! '. When
+called from elisp, the filtering is performed by a FILTER function. This
+command obeys narrowing.
+
 FILTER is the filter function.
 INITIAL is the initial input."
   ;; Use consult-location completion category when filtering lines
@@ -2311,10 +2321,16 @@ INITIAL is the initial input."
 
 ;;;###autoload
 (defun consult-focus-lines (&optional show filter initial)
-  "Hide or show lines according to FILTER function.
+  "Hide or show lines using overlays.
 
-With optional prefix argument SHOW reveal the hidden lines.
-Optional INITIAL input can be provided when called from Lisp."
+The selected lines are shown and the other lines hidden. When called
+interactively, the lines selected are those that match the minibuffer input. In
+order to match the inverse of the input, prefix the input with `! '. With
+optional prefix argument SHOW reveal the hidden lines. When called from elisp,
+the filtering is performed by a FILTER function. This command obeys narrowing.
+
+FILTER is the filter function.
+INITIAL is the initial input."
   (interactive
    ;; Use consult-location completion category when filtering lines
    (list current-prefix-arg (consult--completion-filter 'consult-location nil)))
@@ -3326,7 +3342,7 @@ The command supports previewing the currently selected theme."
     :enabled   ,(lambda () consult-project-root-function)
     :items
     ,(lambda ()
-       (when-let (root (funcall consult-project-root-function))
+       (when-let (root (consult--project-root))
          (mapcar #'buffer-name
                  (seq-filter (lambda (x)
                                (when-let (file (buffer-file-name x))
@@ -3346,7 +3362,7 @@ The command supports previewing the currently selected theme."
                                 recentf-mode))
     :items
     ,(lambda ()
-      (when-let (root (funcall consult-project-root-function))
+      (when-let (root (consult--project-root))
         (let ((len (length root))
               (inv-root (propertize root 'invisible t))
               (ht (consult--cached-buffer-file-hash)))
@@ -3415,6 +3431,8 @@ order to determine the project-specific files and buffers, the
 `consult--multi' for the configuration of the virtual buffer sources."
   (interactive)
   (when-let (buffer (consult--multi consult-buffer-sources
+                                    :require-match
+                                    (confirm-nonexistent-file-or-buffer)
                                     :prompt "Switch to: "
                                     :history 'consult--buffer-history
                                     :sort nil))
@@ -3591,7 +3609,7 @@ TYPES is the mode-specific types configuration."
 
 (defun consult--imenu-project-buffers ()
   "Return project buffers with the same `major-mode' as the current buffer."
-  (if-let (root (and consult-project-root-function (funcall consult-project-root-function)))
+  (if-let (root (consult--project-root))
       (seq-filter (lambda (buf)
                     (when-let (file (buffer-file-name buf))
                       (and (eq (buffer-local-value 'major-mode buf) major-mode)

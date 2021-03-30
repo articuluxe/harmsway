@@ -314,8 +314,12 @@ I = Information.
 W = Warning.
 E = Error.")
 
-(defconst verb--http-header-regexp "^\\([[:alnum:]-]+:\\).*$"
+(defconst verb--http-header-regexp "^\\([[:alnum:]_-]+:\\).*$"
   "Regexp for font locking HTTP headers.")
+
+(defconst verb--http-header-parse-regexp
+  "^\\s-*\\([[:alnum:]_-]+\\)\\s-*:\\(.*\\)$"
+  "Regexp for parsing HTTP headers.")
 
 (defconst verb--metadata-prefix "verb-"
   "Prefix for Verb metadata keys in heading properties.
@@ -894,7 +898,9 @@ BODY should contain the body of the source block.  POS should be a
 position of the buffer that lies inside the source block.
 
 Note that the entire buffer is considered when generating the request
-spec, not only the section contained by the source block."
+spec, not only the section contained by the source block.
+
+This function is called from ob-verb.el (`org-babel-execute:verb')."
   (save-excursion
     (goto-char pos)
     (let* ((metadata (verb--heading-properties verb--metadata-prefix))
@@ -1577,10 +1583,10 @@ NUM is this request's identification number."
 
     (forward-line)
     ;; Skip all HTTP headers
-    (while (re-search-forward "^\\s-*\\([[:alnum:]-]+\\)\\s-*:\\s-*\\(.*\\)$"
+    (while (re-search-forward verb--http-header-parse-regexp
                               (line-end-position) t)
-      (let ((key (match-string 1))
-            (value (match-string 2)))
+      (let ((key (string-trim (match-string 1)))
+            (value (string-trim (match-string 2))))
         ;; Save header to alist
         (push (cons key value) headers)
         (unless (eobp) (forward-char))))
@@ -2315,8 +2321,7 @@ METADATA."
             ;; Check if line matches KEY: VALUE after evaluating any
             ;; present code tags
             (setq line (verb--eval-code-tags-in-string line context))
-            (if (string-match "^\\s-*\\([[:alnum:]-]+\\)\\s-*:\\(.*\\)$"
-                              line)
+            (if (string-match verb--http-header-parse-regexp line)
                 ;; Line matches, trim KEY and VALUE and store them
                 (push (cons (string-trim (match-string 1 line))
                             (string-trim (match-string 2 line)))

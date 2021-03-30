@@ -93,6 +93,7 @@ VARIANT is bound."
       (default-italic (:italic t))
       (line-number (:background ,bg :foreground ,weaker))
       (line-number-current-line (:background ,bg :foreground ,fg))
+      (fixed-pitch (:background ,weakest))
 
       ;; mode line
       (mode-line (:foreground ,fg :background ,weakest))
@@ -103,7 +104,7 @@ VARIANT is bound."
       (font-lock-comment-face (:inherit font-lock-string-face))
       (font-lock-negation-char-face (:foreground ,fg))
       (font-lock-reference-face (:foreground ,fg))
-      (font-lock-constant-face (:foreground ,fg :bold t))
+      (font-lock-constant-face (:bold t))
       (font-lock-doc-face (:inherit font-lock-comment-face))
       (font-lock-function-name-face (:foreground ,fg :bold t))
       (font-lock-keyword-face (:foreground ,fg))

@@ -117,7 +117,7 @@ the executable."
              "cd " vterm-directory "; \
              mkdir -p build; \
              cd build; \
-             cmake "
+             cmake -G 'Unix Makefiles'"
              vterm-module-cmake-args
              " ..; \
              make; \
@@ -1228,7 +1228,7 @@ Then triggers a redraw from the module."
         (buf (process-buffer process))
         (i 0)
         (str-length (length input))
-        decoded-str
+        decoded-substring
         funny)
     (when (buffer-live-p buf)
       (with-current-buffer buf
