@@ -94,6 +94,10 @@ brew install emacs-mac
 # to disable
 brew untap railwaycat/emacsmacport
 
+# emacs head
+brew tap daviderestivo/emacs-head
+brew install emacs-head --with-cocoa --with-modern-icon-sjrmanning
+
 # Avoid malformed load-history entry ((defun . jump-to-cpp))
 # in Emacs 27.1, leading to (wrong-type-argument stringp)
 # Comment out
