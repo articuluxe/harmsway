@@ -3,7 +3,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2021-03-03 16:51:38 dharms>
+;; Modified Time-stamp: <2021-04-02 10:35:23 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -28,7 +28,7 @@
 
 (with-eval-after-load 'choose-font
   (setq choose-font-list '( "Office Code Pro 12"
-                            "CamingoCode 12"
+                            "CamingoCode 14"
                             "Fantasque Sans Mono 13"
                             "Luculent 12"
                             "Cascadia Code 14"
