@@ -1,0 +1,11 @@
+set -e
+cd src
+rm -rf ./bld
+mkdir -p bld
+cd bld
+CC= CXX= ../configure --prefix=$HOME/opt/stow/sparsehash
+make
+make install
+mkdir -p $HOME/opt/stow
+cd $HOME/opt/stow
+stow -R sparsehash
