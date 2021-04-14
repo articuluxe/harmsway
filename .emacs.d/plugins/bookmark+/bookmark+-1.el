@@ -7,9 +7,9 @@
 ;; Copyright (C) 2000-2021, Drew Adams, all rights reserved.
 ;; Copyright (C) 2009, Thierry Volpiatto.
 ;; Created: Mon Jul 12 13:43:55 2010 (-0700)
-;; Last-Updated: Tue Dec 29 12:36:09 2020 (-0800)
+;; Last-Updated: Wed Mar 17 13:28:21 2021 (-0700)
 ;;           By: dradams
-;;     Update #: 9224
+;;     Update #: 9247
 ;; URL: https://www.emacswiki.org/emacs/download/bookmark%2b-1.el
 ;; Doc URL: https://www.emacswiki.org/emacs/BookmarkPlus
 ;; Keywords: bookmarks, bookmark+, placeholders, annotations, search, info, url, eww, w3m, gnus
@@ -442,11 +442,12 @@
 ;;    `bmkp-toggle-saving-menu-list-state',
 ;;    `bmkp-toggle-temporary-bookmark',
 ;;    `bmkp-turn-on-auto-idle-bookmark-mode' (Emacs 21+),
-;;    `bmkp-unomit-all', `bmkp-untag-a-file', `bmkp-url-target-set',
-;;    `bmkp-url-jump', `bmkp-url-jump-other-window',
-;;    `bmkp-variable-list-jump', `bmkp-version',
-;;    `bmkp-visit-external-annotation', `bmkp-w32-browser-jump',
-;;    `bmkp-w3m-jump', `bmkp-w3m-jump-other-window',
+;;    `bmkp-types-alist', `bmkp-unomit-all', `bmkp-untag-a-file',
+;;    `bmkp-url-target-set', `bmkp-url-jump',
+;;    `bmkp-url-jump-other-window', `bmkp-variable-list-jump',
+;;    `bmkp-version', `bmkp-visit-external-annotation',
+;;    `bmkp-w32-browser-jump', `bmkp-w3m-jump',
+;;    `bmkp-w3m-jump-other-window',
 ;;    `bmkp-wrap-bookmark-with-last-kbd-macro'.
 ;;
 ;;  User options defined here:
@@ -636,7 +637,8 @@
 ;;    `bmkp-position-pre-context', `bmkp-position-pre-context-region',
 ;;    `bmkp-printable-vars+vals', `bmkp-propertize',
 ;;    `bmkp-readable-p', `bmkp-read-bookmark-file-default',
-;;    `bmkp-read-bookmark-file-name', `bmkp-read-from-whole-string',
+;;    `bmkp-read-bookmark-file-name', `bmkp-read-buffers',
+;;    `bmkp-read-files', `bmkp-read-from-whole-string',
 ;;    `bmkp-read-regexp', `bmkp-read-tag-completing',
 ;;    `bmkp-read-tags', `bmkp-read-tags-completing',
 ;;    `bmkp-read-variable', `bmkp-read-variables-completing',
@@ -3800,6 +3802,7 @@ that option is non-nil."
 ;;(@* "Filter Functions")
 ;;  *** Filter Functions ***
 
+(put 'bmkp-all-tags-alist-only 'bmkp-read-arg 'bmkp-read-tags-completing)
 (defun bmkp-all-tags-alist-only (tags)
   "`bookmark-alist', but with only bookmarks having all their tags in TAGS.
 Does not include bookmarks that have no tags.
@@ -3812,6 +3815,7 @@ A new list is returned (no side effects)."
        (and bmk-tags  (bmkp-every (lambda (tag) (member (bmkp-tag-name tag) tgs)) bmk-tags))))
    bookmark-alist))
 
+(put 'bmkp-all-tags-regexp-alist-only 'bmkp-read-arg 'bmkp-read-regexp)
 (defun bmkp-all-tags-regexp-alist-only (regexp)
   "`bookmark-alist', but with only bookmarks having all tags match REGEXP.
 Does not include bookmarks that have no tags.
@@ -3840,6 +3844,7 @@ With non-nil arg PREFIX, the bookmark names must all have that PREFIX."
     (bmkp-remove-if-not (lexical-let ((pref  prefix)) (lambda (bmk) (bmkp-autofile-bookmark-p bmk pref)))
                         bookmark-alist)))
 
+(put 'bmkp-autofile-all-tags-alist-only 'bmkp-read-arg 'bmkp-read-tags-completing)
 (defun bmkp-autofile-all-tags-alist-only (tags)
   "`bookmark-alist', with only autofiles having all tags in TAGS.
 A new list is returned (no side effects)."
@@ -3851,6 +3856,7 @@ A new list is returned (no side effects)."
             (bmkp-every (lexical-let ((bk  bmk)) (lambda (tag) (bmkp-has-tag-p bk tag))) tgs))))
    bookmark-alist))
 
+(put 'bmkp-autofile-all-tags-regexp-alist-only 'bmkp-read-arg 'bmkp-read-regexp)
 (defun bmkp-autofile-all-tags-regexp-alist-only (regexp)
   "`bookmark-alist', with only autofiles having all tags match REGEXP.
 A new list is returned (no side effects)."
@@ -3864,6 +3870,7 @@ A new list is returned (no side effects)."
                    (bmkp-every (lambda (tag) (bmkp-string-match-p rg (bmkp-tag-name tag))) bmk-tags))))))
    bookmark-alist))
 
+(put 'bmkp-autofile-some-tags-alist-only 'bmkp-read-arg 'bmkp-read-tags-completing)
 (defun bmkp-autofile-some-tags-alist-only (tags)
   "`bookmark-alist', with only autofiles having some tags in TAGS.
 A new list is returned (no side effects)."
@@ -3873,6 +3880,7 @@ A new list is returned (no side effects)."
                       (bmkp-some (lexical-let ((bk  bmk)) (lambda (tag) (bmkp-has-tag-p bk tag)))  tags)))
    bookmark-alist))
 
+(put 'bmkp-autofile-some-tags-regexp-alist-only 'bmkp-read-arg 'bmkp-read-regexp)
 (defun bmkp-autofile-some-tags-regexp-alist-only (regexp)
   "`bookmark-alist', with only autofiles having some tags match REGEXP.
 A new list is returned (no side effects)."
@@ -3955,6 +3963,7 @@ A new list is returned (no side effects)."
   (bookmark-maybe-load-default-file)
   (bmkp-remove-if-not #'bmkp-file-bookmark-p bookmark-alist))
 
+(put 'bmkp-file-all-tags-alist-only 'bmkp-read-arg 'bmkp-read-tags-completing)
 (defun bmkp-file-all-tags-alist-only (tags)
   "`bookmark-alist', with only file bookmarks having all tags in TAGS.
 A new list is returned (no side effects)."
@@ -3966,6 +3975,7 @@ A new list is returned (no side effects)."
             (bmkp-every (lexical-let ((bk  bmk)) (lambda (tag) (bmkp-has-tag-p bk tag)))  tgs))))
    bookmark-alist))
 
+(put 'bmkp-file-all-tags-regexp-alist-only 'bmkp-read-arg 'bmkp-read-regexp)
 (defun bmkp-file-all-tags-regexp-alist-only (regexp)
   "`bookmark-alist', with only file bookmarks having all tags match REGEXP.
 A new list is returned (no side effects)."
@@ -3979,6 +3989,7 @@ A new list is returned (no side effects)."
                    (bmkp-every (lambda (tag) (bmkp-string-match-p rg (bmkp-tag-name tag))) bmk-tags))))))
    bookmark-alist))
 
+(put 'bmkp-file-some-tags-alist-only 'bmkp-read-arg 'bmkp-read-tags-completing)
 (defun bmkp-file-some-tags-alist-only (tags)
   "`bookmark-alist', with only file bookmarks having some tags in TAGS.
 A new list is returned (no side effects)."
@@ -3989,6 +4000,7 @@ A new list is returned (no side effects)."
                         (bmkp-some (lexical-let ((bk  bmk)) (lambda (tag) (bmkp-has-tag-p bk tag)))  tgs))))
    bookmark-alist))
 
+(put 'bmkp-file-some-tags-regexp-alist-only 'bmkp-read-arg 'bmkp-read-regexp)
 (defun bmkp-file-some-tags-regexp-alist-only (regexp)
   "`bookmark-alist', with only file bookmarks having some tags match REGEXP.
 A new list is returned (no side effects)."
@@ -4009,6 +4021,7 @@ A new list is returned (no side effects)."
   (bookmark-maybe-load-default-file)
   (bmkp-remove-if-not #'bmkp-file-this-dir-bookmark-p bookmark-alist))
 
+(put 'bmkp-file-this-dir-all-tags-alist-only 'bmkp-read-arg 'bmkp-read-tags-completing)
 (defun bmkp-file-this-dir-all-tags-alist-only (tags)
   "`bookmark-alist', for files in this dir having all tags in TAGS.
 Include only files and subdir that are in `default-directory'.
@@ -4021,6 +4034,7 @@ A new list is returned (no side effects)."
             (bmkp-every (lexical-let ((bk  bmk)) (lambda (tag) (bmkp-has-tag-p bk tag)))  tgs))))
    bookmark-alist))
 
+(put 'bmkp-file-this-dir-all-tags-regexp-alist-only 'bmkp-read-arg 'bmkp-read-regexp)
 (defun bmkp-file-this-dir-all-tags-regexp-alist-only (regexp)
   "`bookmark-alist', for files in this dir having all tags match REGEXP.
 Include only files and subdir that are in `default-directory'.
@@ -4035,6 +4049,7 @@ A new list is returned (no side effects)."
                    (bmkp-every (lambda (tag) (bmkp-string-match-p rg (bmkp-tag-name tag)))  bmk-tags))))))
    bookmark-alist))
 
+(put 'bmkp-file-this-dir-some-tags-alist-only 'bmkp-read-arg 'bmkp-read-tags-completing)
 (defun bmkp-file-this-dir-some-tags-alist-only (tags)
   "`bookmark-alist', for files in this dir having some tags in TAGS.
 Include only files and subdir that are in `default-directory'.
@@ -4046,6 +4061,7 @@ A new list is returned (no side effects)."
                         (bmkp-some (lexical-let ((bk  bmk)) (lambda (tag) (bmkp-has-tag-p bk tag)))  tgs))))
    bookmark-alist))
 
+(put 'bmkp-file-this-dir-some-tags-regexp-alist-only 'bmkp-read-arg 'bmkp-read-regexp)
 (defun bmkp-file-this-dir-some-tags-regexp-alist-only (regexp)
   "`bookmark-alist', for files in this dir having some tags match REGEXP.
 Include only files and subdir that are in `default-directory'.
@@ -4239,6 +4255,7 @@ A new list is returned (no side effects)."
   (bookmark-maybe-load-default-file)
   (bmkp-remove-if-not #'bmkp-snippet-bookmark-p bookmark-alist))
 
+(put 'bmkp-some-tags-alist-only 'bmkp-read-arg 'bmkp-read-tags-completing)
 (defun bmkp-some-tags-alist-only (tags)
   "`bookmark-alist', but with only bookmarks having some tags in TAGS.
 A new list is returned (no side effects)."
@@ -4249,6 +4266,7 @@ A new list is returned (no side effects)."
                                      tgs)))
                       bookmark-alist))
 
+(put 'bmkp-some-tags-regexp-alist-only 'bmkp-read-arg 'bmkp-read-regexp)
 (defun bmkp-some-tags-regexp-alist-only (regexp)
   "`bookmark-alist', but with only bookmarks having some tags match REGEXP.
 A new list is returned (no side effects)."
@@ -4259,6 +4277,7 @@ A new list is returned (no side effects)."
                                      (bmkp-get-tags bmk))))
                       bookmark-alist))
 
+(put 'bmkp-specific-buffers-alist-only 'bmkp-read-arg 'bmkp-read-buffers)
 (defun bmkp-specific-buffers-alist-only (&optional buffers)
   "`bookmark-alist', filtered to retain only bookmarks to buffers BUFFERS.
 BUFFERS is a list of buffer names.
@@ -4279,6 +4298,7 @@ name.  They are therefore excluded from the returned alist."
                                (member (bmkp-get-buffer-name bmk) bufs))))
                       bookmark-alist))
 
+(put 'bmkp-specific-files-alist-only 'bmkp-read-arg 'bmkp-read-files)
 (defun bmkp-specific-files-alist-only (&optional files)
   "`bookmark-alist', filtered to retain only bookmarks to files FILES.
 FILES is a list of absolute file names.
@@ -4379,7 +4399,11 @@ A new list is returned (no side effects)."
 ;;  *** Miscellaneous Bookmark+ Functions ***
 
 (if (fboundp 'find-tag-default-as-regexp)
-    (defalias 'bmkp-read-regexp 'read-regexp) ; Emacs 24.3+
+    (defun bmkp-read-regexp (&optional prompt defaults history)
+      "Same as `read-regexp', except argument PROMPT is optional.
+PROMPT defaults to \"Regexp: \"."
+      (unless prompt (setq prompt  "Regexp: "))
+      (read-regexp prompt defaults history))
 
   ;; Same as `icicle-find-tag-default-as-regexp' in `icicles-fn.el'.
   (defun bmkp-find-tag-default-as-regexp () ; Emacs < 24.3
@@ -4399,10 +4423,12 @@ symbol at point exactly."
 
   ;; Same as `icicle-read-regexp' in `icicles-fn.el'.
   (if (fboundp 'find-tag-default)
-      (defun bmkp-read-regexp (prompt &optional default history) ; Emacs 22-24.2
+      (defun bmkp-read-regexp (&optional prompt default history) ; Emacs 22-24.2
         "Read and return a regular expression as a string.
 If PROMPT does not end with a colon and possibly whitespace then
 append \": \" to it.
+
+PROMPT defaults to \"Regexp: \".
 
 Optional argument DEFAULT is a string or a list of the form
 \(DEFLT . SUGGESTIONS), where DEFLT is a string or nil.
@@ -4419,6 +4445,7 @@ regexp, the last isearch string, and the last replacement regexp.
 
 Optional argument HISTORY is a symbol to use for the history list.
 If nil then use `regexp-history'."
+        (unless prompt (setq prompt  "Regexp: "))
         (let* ((deflt                  (if (consp default) (car default) default))
                (suggestions            (and (> emacs-major-version 22)
                                             (if (listp default) default (list default))))
@@ -4443,13 +4470,15 @@ If nil then use `regexp-history'."
             (prog1 input                ; Add non-empty input to the history and return input.
               (add-to-history (or history  'regexp-history) input)))))
 
-    (defun bmkp-read-regexp (prompt &optional default history) ; Emacs 20-21
+    (defun bmkp-read-regexp (&optional prompt default history) ; Emacs 20-21
       "Read and return a string.
+PROMPT defaults to \"Regexp: \".
 Optional arg DEFAULT is a string that is returned when the user enters
 empty input.  It can also be a list of strings, of which only the
 first is used.
 Optional arg HISTORY is a symbol to use for the history list.  If nil,
 use `regexp-history'."
+      (unless prompt (setq prompt  "Regexp: "))
       (when (consp default) (setq default  (car default)))
       (read-string (cond ((bmkp-string-match-p ":[ \t]*\\'" prompt) prompt)
                          (default (format "%s (default %s): " prompt
@@ -4716,7 +4745,7 @@ Non-interactively, BOOKMARK is a bookmark name or a bookmark record."
 You are prompted for the name of a bookmark here, with completion."
   (interactive
    (let ((alist  (bmkp-this-file/buffer-alist-only)))
-     (list (bookmark-completing-read (format "Add or edit annotation for bookmark"
+     (list (bookmark-completing-read (format "%s annotation for bookmark"
                                              (if current-prefix-arg "Add or edit" "Edit"))
                                      (or (and (fboundp 'bmkp-bookmarks-lighted-at-point)
                                               (bmkp-bookmarks-lighted-at-point))
@@ -5081,7 +5110,7 @@ Non-interactively, optional arg MSG-P means display progress messages."
 You are prompted for the name of a bookmark here, with completion."
   (interactive
    (let ((alist  (bmkp-this-file/buffer-alist-only)))
-     (list (bookmark-completing-read (format "Add or edit annotation for bookmark"
+     (list (bookmark-completing-read (format "%s annotation for bookmark"
                                              (if current-prefix-arg "Add or edit" "Edit"))
                                      (or (and (fboundp 'bmkp-bookmarks-lighted-at-point)
                                               (bmkp-bookmarks-lighted-at-point))
@@ -5786,6 +5815,23 @@ Optional arg ALIST is an alternative alist of bookmarks to use."
   "Pseudo-bookmark for the current `*Bookmark List*' state."
   (bookmark-bmenu-surreptitiously-rebuild-list 'NO-MSG-P)
   (cons "CURRENT *Bookmark List*" (bmkp-make-bookmark-list-record)))
+
+;;; This function is used in macro `bmkp-define-history-variables', so
+;;; its definition is also in `bookmark+-mac.el'.
+;;;
+(defun bmkp-types-alist ()
+  "Alist of bookmark types used by `bmkp-jump-to-type'.
+Keys are bookmark type names.  Values are corresponding history variables.
+The alist is used in commands such as `bmkp-jump-to-type'."
+  (let ((entries  ()))
+    (mapatoms
+     (lambda (sym)
+       (let ((name  (symbol-name sym)))
+         (when (string-match "\\`bmkp-\\(.+\\)-alist-only\\'" name)
+           (push (cons (match-string 1 name)
+                       (intern (format "bmkp-%s-history" (match-string 1 name))))
+                 entries)))))
+    entries))
 
 ;;;###autoload (autoload 'bmkp-choose-navlist-of-type "bookmark+")
 (defun bmkp-choose-navlist-of-type (type) ; Bound to `C-x x :'
@@ -7115,6 +7161,25 @@ for the first character are `equal'."
   (and (string= name1 name2)
        (equal (get-text-property 0 'bmkp-full-record name1)
               (get-text-property 0 'bmkp-full-record name2))))
+
+(defun bmkp-read-buffers ()
+"Read names of buffers associated with bookmarks.
+Invoke `bmkp-completing-read-buffer-name' repeatedly till input is empty."
+  (let ((buffs  ())
+        buff)
+    (while (and (setq buff  (bmkp-completing-read-buffer-name 'ALLOW-EMPTY))  (not (string= "" buff)))
+      (add-to-list 'buffs buff))
+    buffs))
+
+(defun bmkp-read-files ()
+  "Read names of files associated with bookmarks.
+Invoke `bmkp-completing-read-file-name' repeatedly till input is empty."
+  (let ((use-file-dialog  nil)
+        (files            ())
+        file)
+    (while (and (setq file  (bmkp-completing-read-file-name 'ALLOW-EMPTY))  (not (string= "" file)))
+      (add-to-list 'files file))
+    files))
 
 (defun bmkp-remove-if (pred xs)
   "A copy of list XS with no elements that satisfy predicate PRED."
@@ -9140,7 +9205,7 @@ Inserted subdirs:\t%s\nHidden subdirs:\t\t%s\n"
     (unless (eq 0 (call-process shell-file-name nil t nil shell-command-switch
                                 (format "exiftool -All \"%s\"" file)))
       (error "Could not get EXIF data"))
-    (buffer-substring (point-min) (point-max))))
+    (buffer-string)))
 
 
 ;;;###autoload (autoload 'bmkp-describe-bookmark-internals "bookmark+")
@@ -9341,7 +9406,6 @@ If region was relocated, save it if user confirms saving."
     (cond (reg-retrieved-p
            (when pos (goto-char pos))
            (when end-pos (push-mark end-pos 'nomsg 'activate))
-           (setq deactivate-mark  nil)
            (when bmkp-show-end-of-region-flag
              (let ((end-win  (save-excursion (forward-line (window-height)) (line-end-position))))
                ;; Bounce point and mark.
@@ -9353,8 +9417,12 @@ If region was relocated, save it if user confirms saving."
                (message "Saved relocated region%s" (if (and pos  end-pos)
                                                        (format " (from %d to %d)" pos end-pos)
                                                      ""))
-             (when (and pos  end-pos) (message "Region is from %d to %d" pos end-pos))))
-          ((and pos  end-pos)           ; No region.  Go to old start.  Don't push-mark.
+             (when (and pos  end-pos) (message "Region is from %d to %d" pos end-pos)))
+           (when (and pos  end-pos)
+             (goto-char pos)
+             (push-mark end-pos 'nomsg 'activate)
+             (setq deactivate-mark  nil)))
+          ((and pos  end-pos) ; No region.  Go to old start.  Don't push-mark.
            (goto-char pos) (forward-line 0)
            (message "No region from %d to %d" pos end-pos)))))
 
@@ -11399,29 +11467,23 @@ Interactively, read buffer names and bookmark name, with completion.
 This is a specialization of `bookmark-jump' - see that, in particular
 for info about using a prefix argument."
   (interactive
-   (let ((buffs  ())
-         buff)
-     (while (and (setq buff  (bmkp-completing-read-buffer-name 'ALLOW-EMPTY))  (not (string= "" buff)))
-       (add-to-list 'buffs buff))
-     (let ((alist  (bmkp-specific-buffers-alist-only buffs)))
-       (list buffs (bmkp-read-bookmark-for-type "specific-buffers" alist nil nil 'specific-buffers-history)
-             current-prefix-arg))))
+   (let* ((buffs  (bmkp-read-buffers))
+          (alist  (bmkp-specific-buffers-alist-only buffs)))
+     (list buffs (bmkp-read-bookmark-for-type "specific-buffers" alist nil nil 'specific-buffers-history)
+           current-prefix-arg)))
   (when (stringp bookmark)
     (setq bookmark  (bmkp-get-bookmark-in-alist bookmark 'NOERROR (bmkp-specific-buffers-alist-only buffers))))
   (bmkp-jump-1 bookmark 'bmkp--pop-to-buffer-same-window flip-use-region-p))
 
 ;;;###autoload (autoload 'bmkp-specific-buffers-jump-other-window "bookmark+")
 (defun bmkp-specific-buffers-jump-other-window (buffers bookmark
-                                                &optional flip-use-region-p) ; `C-x 4 j = b'
+                                                        &optional flip-use-region-p) ; `C-x 4 j = b'
   "`bmkp-specific-buffers-jump', but in another window."
   (interactive
-   (let ((buffs  ())
-         buff)
-     (while (and (setq buff  (bmkp-completing-read-buffer-name 'ALLOW-EMPTY))  (not (string= "" buff)))
-       (add-to-list 'buffs buff))
-     (let ((alist  (bmkp-specific-buffers-alist-only buffs)))
-       (list buffs (bmkp-read-bookmark-for-type "specific-buffers" alist t nil 'specific-buffers-history)
-             current-prefix-arg))))
+   (let* ((buffs  (bmkp-read-buffers))
+          (alist  (bmkp-specific-buffers-alist-only buffs)))
+     (list buffs (bmkp-read-bookmark-for-type "specific-buffers" alist t nil 'specific-buffers-history)
+           current-prefix-arg)))
   (when (stringp bookmark)
     (setq bookmark  (bmkp-get-bookmark-in-alist bookmark 'NOERROR (bmkp-specific-buffers-alist-only buffers))))
   (bmkp-jump-1 bookmark 'bmkp-select-buffer-other-window flip-use-region-p))
@@ -11434,33 +11496,25 @@ Interactively, read file names and bookmark name, with completion.
 This is a specialization of `bookmark-jump' - see that, in particular
 for info about using a prefix argument."
   (interactive
-   (let ((use-file-dialog  nil)
-         (fils             ())
-         file)
-     (while (and (setq file  (bmkp-completing-read-file-name 'ALLOW-EMPTY))  (not (string= "" file)))
-       (add-to-list 'fils file))
-     (let ((alist  (bmkp-specific-files-alist-only fils)))
-       (list fils
-             (bmkp-read-bookmark-for-type "specific-files" alist nil nil 'specific-files-history)
-             current-prefix-arg))))
+   (let* ((fils   (bmkp-read-files))
+          (alist  (bmkp-specific-files-alist-only fils)))
+     (list fils
+           (bmkp-read-bookmark-for-type "specific-files" alist nil nil 'specific-files-history)
+           current-prefix-arg)))
   (when (stringp bookmark)
     (setq bookmark  (bmkp-get-bookmark-in-alist bookmark 'NOERROR (bmkp-specific-files-alist-only files))))
   (bmkp-jump-1 bookmark 'bmkp--pop-to-buffer-same-window flip-use-region-p))
 
 ;;;###autoload (autoload 'bmkp-specific-files-jump-other-window "bookmark+")
 (defun bmkp-specific-files-jump-other-window (files bookmark
-                                              &optional flip-use-region-p) ; `C-x 4 j = f'
+                                                    &optional flip-use-region-p) ; `C-x 4 j = f'
   "`bmkp-specific-files-jump', but in another window."
   (interactive
-   (let ((use-file-dialog  nil)
-         (fils             ())
-         file)
-     (while (and (setq file  (bmkp-completing-read-file-name 'ALLOW-EMPTY))  (not (string= "" file)))
-       (add-to-list 'fils file))
-     (let ((alist  (bmkp-specific-files-alist-only fils)))
-       (list fils
-             (bmkp-read-bookmark-for-type "specific-files" alist t nil 'specific-files-history)
-             current-prefix-arg))))
+   (let* ((fils   (bmkp-read-files))
+          (alist  (bmkp-specific-files-alist-only fils)))
+     (list fils
+           (bmkp-read-bookmark-for-type "specific-files" alist t nil 'specific-files-history)
+           current-prefix-arg)))
   (when (stringp bookmark)
     (setq bookmark  (bmkp-get-bookmark-in-alist bookmark 'NOERROR (bmkp-specific-files-alist-only files))))
   (bmkp-jump-1 bookmark 'bmkp-select-buffer-other-window flip-use-region-p))
@@ -13057,14 +13111,14 @@ Non-interactively, non-nil MSG-P means display a status message."
 (defun bmkp-set-autonamed-regexp-buffer (regexp &optional msg-p)
   "Set autonamed bookmarks at matches for REGEXP in the buffer.
 Non-interactively, non-nil MSG-P means display a status message."
-  (interactive (list (bmkp-read-regexp "Regexp: ") 'MSG))
+  (interactive (list (bmkp-read-regexp) 'MSG))
   (bmkp-set-autonamed-regexp-region regexp (point-min) (point-max) msg-p))
 
 ;;;###autoload (autoload 'bmkp-set-autonamed-regexp-region "bookmark+")
 (defun bmkp-set-autonamed-regexp-region (regexp beg end &optional msg-p)
   "Set autonamed bookmarks at matches for REGEXP in the region.
 Non-interactively, non-nil MSG-P means display a status message."
-  (interactive (list (bmkp-read-regexp "Regexp: ") (region-beginning) (region-end) 'MSG))
+  (interactive (list (bmkp-read-regexp) (region-beginning) (region-end) 'MSG))
   (let ((count  0))
     (save-excursion
       (goto-char beg)

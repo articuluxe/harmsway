@@ -5,7 +5,7 @@
 ;; Author: Ogden Webb <ogdenwebb@gmail.com>
 ;; URL: https://github.com/ogdenwebb/emacs-kaolin-themes
 ;; Package-Requires: ((emacs "25.1") (autothemer "0.2.2") (cl-lib "0.6"))
-;; Version: 1.6.2
+;; Version: 1.6.3
 ;; Keywords: dark light teal blue violet purple brown theme faces
 
 ;; This program is free software: you can redistribute it and/or modify
@@ -34,12 +34,14 @@
 ;;  * kaolin-aurora - Kaolin meets polar lights.
 ;;  * kaolin-bubblegum - Kaolin colorful theme with dark blue background.
 ;;  * kaolin-eclipse - a dark purple variant.
-;;  * kaolin-temple - dark brown background with syntax highlighting based on orange and cyan shades.
 ;;  * kaolin-galaxy - bright theme based on one of the Sebastian Andaur arts.
+;;  * kaolin-mono-dark - almost monochrome dark green Kaolin theme.
+;;  * kaolin-mono-light - light variant of monochrome theme.
 ;;  * kaolin-ocean - dark blue variant.
+;;  * kaolin-shiva - theme with autumn colors and melanzane background.
+;;  * kaolin-temple - dark brown background with syntax highlighting based on orange and cyan shades.
 ;;  * kaolin-valley-dark - colorful Kaolin theme with brown background.
 ;;  * kaolin-valley-light - light version of kaolin-valley-dark theme.
-;;  * kaolin-mono-dark - almost monochrome dark green Kaolin theme.
 ;;
 ;;
 ;; -------  Configuration example  -------

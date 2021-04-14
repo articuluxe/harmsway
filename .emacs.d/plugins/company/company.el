@@ -605,7 +605,7 @@ A character that is part of a valid completion never triggers auto-commit."
                  (function :tag "Predicate function"))
   :package-version '(company . "0.9.14"))
 
-(defcustom company-idle-delay .5
+(defcustom company-idle-delay .2
   "The idle delay in seconds until completion starts automatically.
 The prefix still has to satisfy `company-minimum-prefix-length' before that
 happens.  The value of nil means no idle completion."
@@ -1324,23 +1324,27 @@ update if FORCE-UPDATE."
 
 (defun company--strip-duplicates (candidates)
   (let ((c2 candidates)
-        (annos 'unk))
+        (extras 'unk))
     (while c2
       (setcdr c2
               (let ((str (pop c2)))
                 (while (let ((str2 (car c2)))
                          (if (not (equal str str2))
                              (progn
-                               (setq annos 'unk)
+                               (setq extras 'unk)
                                nil)
-                           (when (eq annos 'unk)
-                             (setq annos (list (company-call-backend
-                                                'annotation str))))
-                           (let ((anno2 (company-call-backend
-                                         'annotation str2)))
-                             (if (member anno2 annos)
+                           (when (eq extras 'unk)
+                             (setq extras (list (cons (company-call-backend
+                                                       'annotation str)
+                                                      (company-call-backend
+                                                       'kind str)))))
+                           (let ((extra2 (cons (company-call-backend
+                                                'annotation str2)
+                                               (company-call-backend
+                                                'kind str2))))
+                             (if (member extra2 extras)
                                  t
-                               (push anno2 annos)
+                               (push extra2 extras)
                                nil))))
                   (pop c2))
                 c2)))))
@@ -1379,7 +1383,6 @@ end of the match."
     (keyword . "symbol-keyword.svg")
     (method . "symbol-method.svg")
     (function . "symbol-method.svg")
-    (misc . "symbol-misc.svg")
     (module . "symbol-namespace.svg")
     (numeric . "symbol-numeric.svg")
     (operator . "symbol-operator.svg")
@@ -1391,25 +1394,27 @@ end of the match."
     (struct . "symbol-structure.svg")
     (text . "symbol-key.svg")
     (value . "symbol-enumerator.svg")
-    (variable . "symbol-variable.svg")))
+    (variable . "symbol-variable.svg")
+    (t . "symbol-misc.svg")))
 
 (defconst company-icons-root
   (file-name-as-directory
    (expand-file-name "icons"
                      (file-name-directory (or load-file-name buffer-file-name)))))
 
-(defcustom company-icon-size '(auto-scale . 15)
+(defcustom company-icon-size '(auto-scale . 16)
   "Size of icons indicating completion kind in the popup."
-  :type '(choice (integer :tag "Size in pixels" :value 15)
+  :type '(choice (integer :tag "Size in pixels" :value 16)
                  (cons :tag "Size in pixels, scaled 2x on HiDPI screens"
                        (const auto-scale)
-                       (integer :value 15))))
+                       (integer :value 16))))
 
 (defun company--render-icons-margin (icon-mapping root-dir candidate selected)
   (if-let ((ws (window-system))
            (candidate candidate)
            (kind (company-call-backend 'kind candidate))
-           (icon-file (alist-get kind icon-mapping)))
+           (icon-file (or (alist-get kind icon-mapping)
+                          (alist-get t icon-mapping))))
       (let* ((bkg (face-attribute (if selected
                                       'company-tooltip-selection
                                     'company-tooltip)
@@ -1417,10 +1422,12 @@ end of the match."
              (icon-size (cond
                          ((integerp company-icon-size)
                           company-icon-size)
+                         ;; XXX: Also consider smooth scaling, e.g. using
+                         ;; (aref (font-info (face-font 'default)) 2)
                          ((and (consp company-icon-size)
                                (eq 'auto-scale (car company-icon-size)))
                           (let ((base-size (cdr company-icon-size)))
-                            (if (> (frame-char-height)
+                            (if (> (default-font-height)
                                    (* 2 base-size))
                                 (* 2 base-size)
                               base-size)))))
@@ -1451,6 +1458,105 @@ end of the match."
                                 candidate
                                 selected))
 
+(defcustom company-text-icons-mapping
+  '((array . "Α")
+    (boolean . "β")
+    (class . "γ")
+    (color . "Δ")
+    (constant . "ε")
+    (enum-member . "ζ")
+    (enum . "Ζ")
+    (event . "η")
+    (field . "θ")
+    (file . "Ɩ")
+    (folder . "⍳")
+    (interface . "ϰ")
+    (keyword . "ν")
+    (method . "λ")
+    (function . "ƒ")
+    (module . "Ο")
+    (numeric . "π")
+    (operator . "⊙")
+    (parameter . "ρ")
+    (property . "σ")
+    (ruler . "τ")
+    (snippet . "υ")
+    (string . "φ")
+    (struct . "Χ")
+    (text . "μ")
+    (value . "Ζ")
+    (variable . "ѱ")
+    (t . "ξ"))
+  "Mapping of the text icons."
+  :type 'list)
+
+(defcustom company-text-icons-format "%s "
+  "Format string for printing the text icons."
+  :type 'string)
+
+(defun company-text-icons-margin (candidate _selected)
+  "Margin function which returns unicode icons."
+  (when-let ((candidate candidate)
+             (kind (company-call-backend 'kind candidate))
+             (icon (or (alist-get kind company-text-icons-mapping)
+                       (alist-get t company-text-icons-mapping))))
+    (format company-text-icons-format icon)))
+
+(defcustom company-dot-icons-format "●"
+  "Format string for `company-dot-icons-margin'."
+  :type 'string)
+
+(defcustom company-dot-icons-face-mapping
+  '((array . font-lock-type-face)
+    (boolean . font-lock-builtin-face)
+    (class . font-lock-type-face)
+    (color . success)
+    (constant . font-lock-constant-face)
+    (enum-member . font-lock-builtin-face)
+    (enum . font-lock-builtin-face)
+    (field . font-lock-variable-name-face)
+    (file . font-lock-string-face)
+    (folder . font-lock-doc-face)
+    (interface . font-lock-type-face)
+    (keyword . font-lock-keyword-face)
+    (method . font-lock-function-name-face)
+    (function . font-lock-function-name-face)
+    (module . font-lock-type-face)
+    (numeric . font-lock-builtin-face)
+    (operator . font-lock-comment-delimiter-face)
+    (parameter . font-lock-builtin-face)
+    (property . font-lock-variable-name-face)
+    ; (ruler . nil)
+    (snippet . font-lock-string-face)
+    (string . font-lock-string-face)
+    (struct . font-lock-variable-name-face)
+    ; (text . nil)
+    (value . font-lock-builtin-face)
+    (variable . font-lock-variable-name-face)
+    (t . deemphasized))
+  "Faces mapping for `company-dot-icons-margin'."
+  :type '(repeat
+          (cons (symbol :tag "Kind name")
+                (face :tag "Face to use for it"))))
+
+(defun company-dot-icons-margin (candidate _selected)
+  "Margin function that uses a colored dot to display completion kind."
+  (when-let ((kind (company-call-backend 'kind candidate))
+             (face (or (assoc-default kind
+                                      company-dot-icons-face-mapping)
+                       (assoc-default t company-dot-icons-face-mapping))))
+    (propertize company-dot-icons-format 'face face)))
+
+(defun company-detect-icons-margin (candidate selected)
+  "Margin function which picks from vscodes icons or unicode icons
+based on `display-graphic-p'."
+  (if (display-graphic-p)
+      ;; Default to dark because who in their right mind uses light 😜
+      (cl-case (frame-parameter nil 'background-mode)
+        ('light (company-vscode-light-icons-margin candidate selected))
+        (t (company-vscode-dark-icons-margin candidate selected)))
+    (company-text-icons-margin candidate selected)))
+
 (defcustom company-format-margin-function nil
   "Function to format the margin.
 It accepts 2 params `candidate' and `selected' and can be used for
@@ -1460,6 +1566,9 @@ image for the returned kind image. Function is called with (nil nil) to get
 the default margin."
   :type '(choice
           (const :tag "Disabled" nil)
+          (const :tag "Detect icons theme base on conditions" company-detect-icons-margin)
+          (const :tag "Text characters as icons" company-text-icons-margin)
+          (const :tag "Colored dots as icons" company-dot-icons-margin)
           (const :tag "VScode dark icons theme" company-vscode-dark-icons-margin)
           (const :tag "VScode light icons theme" company-vscode-light-icons-margin)
           (function :tag "Custom icon function.")))
@@ -2864,10 +2973,10 @@ If SHOW-VERSION is non-nil, show the version in the echo area."
             new))
 
     ;; XXX: Also see branch 'more-precise-extend'.
-    (let* ((nl-face (list
-                     :extend t
+    (let* ((nl-face `(,@(when (version<= "27" emacs-version)
+                          '(:extend t))
                      :inverse-video nil
-                     :background (or (company--face-attribute 'default :background)
+                     :background ,(or (company--face-attribute 'default :background)
                                      (face-attribute 'default :background nil t))))
            (str (apply #'concat
                        (when nl " \n")

@@ -38,6 +38,7 @@
 ;;
 
 (require 'cl-lib)
+(require 'seq)
 
 ;;;; Userland
 ;;;;; Variable
@@ -53,18 +54,21 @@
 (defface eldoc-box-body '((t . (:background nil)))
   "Body face used in eglot doc childframe.")
 
-(defvar eldoc-box-only-multi-line nil
-  "If non-nil, only use childframe when there are more than one line.")
+(defcustom eldoc-box-only-multi-line nil
+  "If non-nil, only use childframe when there are more than one line."
+  :type 'boolean)
 
-(defvar eldoc-box-cleanup-interval 1
+(defcustom eldoc-box-cleanup-interval 1
   "After this amount of seconds will eldoc-box attempt to cleanup the childframe.
 E.g. if it is set to 1, the childframe is cleared 1 second after
 you moved the point to somewhere else (that doesn't have a doc to show).
 This doesn't apply to `eldoc-box-hover-at-point-mode',
-in that mode the childframe is cleared as soon as point moves.")
+in that mode the childframe is cleared as soon as point moves."
+  :type 'number)
 
-(defvar eldoc-box-clear-with-C-g nil
-  "If set to non-nil, eldoc-box clears childframe when you hit \C-g.")
+(defcustom eldoc-box-clear-with-C-g nil
+  "If set to non-nil, eldoc-box clears childframe when you hit \C-g."
+  :type 'boolean)
 
 (defvar eldoc-box-frame-parameters
   '(;; make the childframe unseen when first created
@@ -97,25 +101,28 @@ in that mode the childframe is cleared as soon as point moves.")
     (desktop-dont-save . t))
   "Frame parameters used to create the frame.")
 
-(defvar eldoc-box-max-pixel-width 800
+(defcustom eldoc-box-max-pixel-width 800
   "Maximum width of doc childframe in pixel.
 Consider your machine's screen's resolution when setting this variable.
 Set it to a function with no argument
-if you want to dynamically change the maximum width.")
+if you want to dynamically change the maximum width."
+  :type 'number)
 
-(defvar eldoc-box-max-pixel-height 700
+(defcustom eldoc-box-max-pixel-height 700
   "Maximum height of doc childframe in pixel.
 Consider your machine's screen's resolution when setting this variable.
 Set it to a function with no argument
-if you want to dynamically change the maximum height.")
+if you want to dynamically change the maximum height."
+  :type 'number)
 
 (defvar eldoc-box-position-function #'eldoc-box--default-upper-corner-position-function
   "Eldoc-box uses this function to set childframe's position.
 This should be a function that returns a (X . Y) cons cell.
 It will be passes with two arguments: WIDTH and HEIGHT of the childframe.")
 
-(defvar eldoc-box-fringe-use-same-bg t
-  "T means fringe's background color is set to as same as that of default.")
+(defcustom eldoc-box-fringe-use-same-bg t
+  "T means fringe's background color is set to as same as that of default."
+  :type 'boolean)
 
 (defvar eldoc-box-buffer-hook nil
   "Hook run after buffer for doc is setup.
@@ -125,9 +132,10 @@ Run inside the new buffer.")
   "Hook run after doc frame is setup but just before it is made visible.
 Each function runs inside the new frame and receives the main frame as argument.")
 
-(defvar eldoc-box-self-insert-command-list '(self-insert-command outshine-self-insert-command)
+(defcustom eldoc-box-self-insert-command-list '(self-insert-command outshine-self-insert-command)
   "Commands in this list are considered self-insert-command by eldoc-box.
-See `eldoc-box-inhibit-display-when-moving'.")
+See `eldoc-box-inhibit-display-when-moving'."
+  :type '(repeat symbol))
 
 ;;;;; Function
 (defvar eldoc-box--inhibit-childframe nil
@@ -160,41 +168,6 @@ Intended for internal use."
   (when eldoc-box--frame
     (delete-frame eldoc-box--frame)
     (setq eldoc-box--frame nil)))
-
-;; please compiler
-(defvar eldoc-box-hover-at-point-mode)
-(declare-function eldoc-box-hover-at-point-mode "eldoc-box.el")
-
-;;;###autoload
-(define-minor-mode eldoc-box-hover-mode
-  "Displays hover documentations in a childframe.
-The default position of childframe is upper corner."
-  :lighter " ELDOC-BOX"
-  (if eldoc-box-hover-mode
-      (progn (when eldoc-box-hover-at-point-mode
-               (eldoc-box-hover-at-point-mode -1))
-             (eldoc-box--enable))
-    (eldoc-box--disable)))
-
-;;;###autoload
-(define-minor-mode eldoc-box-hover-at-point-mode
-  "A convenient minor mode to display doc at point.
-You can use C-g to hide the doc."
-  :lighter " ELDOC-BOX"
-  (if eldoc-box-hover-at-point-mode
-      (progn (when eldoc-box-hover-mode
-               (eldoc-box-hover-mode -1))
-             (setq-local eldoc-box-position-function
-                         #'eldoc-box--default-at-point-position-function)
-             (setq-local  eldoc-box-clear-with-C-g t)
-             (remove-hook 'pre-command-hook #'eldoc-pre-command-refresh-echo-area t)
-             (add-hook 'post-command-hook #'eldoc-box--follow-cursor t t)
-             (eldoc-box--enable))
-    (eldoc-box--disable)
-    (add-hook 'pre-command-hook #'eldoc-pre-command-refresh-echo-area t)
-    (remove-hook 'post-command-hook #'eldoc-box--follow-cursor t)
-    (kill-local-variable 'eldoc-box-position-function)
-    (kill-local-variable 'eldoc-box-clear-with-C-g)))
 
 ;;;; Backstage
 ;;;;; Variable
@@ -405,10 +378,10 @@ Checkout `lsp-ui-doc--make-frame', `lsp-ui-doc--move-frame'."
 (defun eldoc-box--eldoc-message-function (str &rest args)
   "Front-end for eldoc. Display STR in childframe and ARGS works like `message'."
   (when (and (stringp str) (not (equal str "")))
-    (let* ((doc (apply #'format str args))
-	   (multi-line-p (and eldoc-box-only-multi-line
-			      (eq (cl-count ?\n doc) 0))))
-      (unless multi-line-p
+    (let* ((doc (string-trim-right (apply #'format str args)))
+           (single-line-p (and eldoc-box-only-multi-line
+                               (eq (cl-count ?\n doc) 0))))
+      (unless single-line-p
         (eldoc-box--display doc)
         (setq eldoc-box--last-point (point))
         ;; Why a timer? ElDoc is mainly used in minibuffer,
@@ -420,7 +393,38 @@ Checkout `lsp-ui-doc--make-frame', `lsp-ui-doc--move-frame'."
         ;; command if `eldoc-box-hover-mode' is on and `eldoc-last-message' is not nil.
         (setq eldoc-box--cleanup-timer
               (run-with-timer eldoc-box-cleanup-interval nil #'eldoc-box--maybe-cleanup)))
-      multi-line-p)))
+      single-line-p)))
+
+;;;###autoload
+(define-minor-mode eldoc-box-hover-mode
+  "Displays hover documentations in a childframe.
+The default position of childframe is upper corner."
+  :lighter " ELDOC-BOX"
+  (if eldoc-box-hover-mode
+      (progn (when eldoc-box-hover-at-point-mode
+               (eldoc-box-hover-at-point-mode -1))
+             (eldoc-box--enable))
+    (eldoc-box--disable)))
+
+;;;###autoload
+(define-minor-mode eldoc-box-hover-at-point-mode
+  "A convenient minor mode to display doc at point.
+You can use C-g to hide the doc."
+  :lighter " ELDOC-BOX"
+  (if eldoc-box-hover-at-point-mode
+      (progn (when eldoc-box-hover-mode
+               (eldoc-box-hover-mode -1))
+             (setq-local eldoc-box-position-function
+                         #'eldoc-box--default-at-point-position-function)
+             (setq-local  eldoc-box-clear-with-C-g t)
+             (remove-hook 'pre-command-hook #'eldoc-pre-command-refresh-echo-area t)
+             (add-hook 'post-command-hook #'eldoc-box--follow-cursor t t)
+             (eldoc-box--enable))
+    (eldoc-box--disable)
+    (add-hook 'pre-command-hook #'eldoc-pre-command-refresh-echo-area t)
+    (remove-hook 'post-command-hook #'eldoc-box--follow-cursor t)
+    (kill-local-variable 'eldoc-box-position-function)
+    (kill-local-variable 'eldoc-box-clear-with-C-g)))
 
 ;;;; Eglot helper
 
@@ -438,6 +442,11 @@ If (point) != last point, cleanup frame.")
 
 (defvar eglot--managed-mode)
 (declare-function eglot--dbind "eglot.el")
+(declare-function eglot--hover-info "eglot.el")
+(declare-function eglot--current-server-or-lose "eglot.el")
+(declare-function eglot--TextDocumentPositionParams "eglot.el")
+(declare-function eglot--error "eglot.el")
+(declare-function jsonrpc-request "jsonrpc")
 
 
 (defun eldoc-box-eglot-help-at-point ()

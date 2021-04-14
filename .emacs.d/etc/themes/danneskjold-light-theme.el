@@ -25,6 +25,8 @@
 
    `(font-lock-comment-face ((,class (:foreground "#7f8c8d"))))
 
+   `(highlight ((,class (:background "honeydew"))))
+
    ;; dired+
    `(diredp-compressed-file-suffix ((,class (:foreground "#f39c12"))))
    `(diredp-date-time ((,class (:foreground "goldenrod1"))))
@@ -65,16 +67,29 @@
    ;; org
    ;; `(org-link ((,class (:foreground "#D0E1F9" :underline "#2b4b6e"))))
    `(org-meta-line ((,class (:foreground "#9b59b6"))))
-   `(org-block-begin-line ((,class (:foreground "#2b4b6e"))))
-   `(org-block-end-line ((,class (:foreground "#2b4b6e"))))
-   `(org-block ((,class (:foreground "black" :background "#f50af50af50a"))))
+
+   `(org-block-begin-line ((,class (:foreground "white" :background "#2b4b6e"))))
+   `(org-block-end-line ((,class (:foreground "white" :background "#2b4b6e"))))
+
+   ;; '(org-block ((t (:inherit fixed-pitch))))
+   ;; '(org-code ((t (:inherit (shadow fixed-pitch)))))
+
    `(org-verbatim ((,class
                     (:background "#f50af708f906"
                                  :box (:line-width 2 :color "#f50af708f906")))))
-   `(org-code ((,class
-                (:foreground "black"
-                             :background "#f50af50af50a"
-                             :box (:line-width 2 :color "#f50af50af50a")))))
+
+   ;; '(org-block ((t (:inherit fixed-pitch))))
+   ;; '(org-code ((t (:inherit (shadow fixed-pitch)))))
+   ;; '(org-document-info ((t (:foreground "dark orange"))))
+   ;; '(org-document-info-keyword ((t (:inherit (shadow fixed-pitch)))))
+   ;; '(org-indent ((t (:inherit (org-hide fixed-pitch)))))
+   ;; '(org-link ((t (:foreground "royal blue" :underline t))))
+   ;; '(org-meta-line ((t (:inherit (font-lock-comment-face fixed-pitch)))))
+   ;; '(org-property-value ((t (:inherit fixed-pitch))) t)
+   ;; '(org-special-keyword ((t (:inherit (font-lock-comment-face fixed-pitch)))))
+   ;; '(org-table ((t (:inherit fixed-pitch :foreground "#83a598"))))
+   ;; '(org-tag ((t (:inherit (shadow fixed-pitch) :weight bold :height 0.8))))
+   ;; '(org-verbatim ((t (:inherit (shadow fixed-pitch)))))
    ))
 
 (provide-theme 'danneskjold-light)

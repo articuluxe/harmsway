@@ -318,12 +318,27 @@ window should only be used if it displays `embark--target-buffer'.")
 (defvar-local embark--command nil
   "Command that started the completion session.")
 
+(defun embark--minibuffer-point ()
+  "Return length of minibuffer contents."
+  (max 0 (- (point) (minibuffer-prompt-end))))
+
 (defun embark--default-directory ()
   "Guess a reasonable default directory for the current candidates."
   (if (and (minibufferp) minibuffer-completing-file-name)
-      (file-name-directory
-       (expand-file-name
-        (buffer-substring (minibuffer-prompt-end) (point))))
+      (let ((end (minibuffer-prompt-end))
+            (idx (embark--minibuffer-point)))
+        (expand-file-name
+         (buffer-substring
+          end
+          (+ end
+             (or (cdr
+                  (last
+                   (completion-all-completions
+                    (minibuffer-contents)
+                    minibuffer-completion-table
+                    minibuffer-completion-predicate
+                    idx)))
+                 idx)))))
     default-directory))
 
 (defun embark--target-buffer ()
@@ -450,7 +465,9 @@ There are three kinds:
 (defun embark--metadata ()
   "Return current minibuffer completion metadata."
   (completion-metadata
-   (buffer-substring-no-properties (field-beginning) (point))
+   (buffer-substring-no-properties
+    (minibuffer-prompt-end)
+    (max (minibuffer-prompt-end) (point)))
    minibuffer-completion-table
    minibuffer-completion-predicate))
 
@@ -518,11 +535,9 @@ Return the category metadatum as the type of the target."
 
 (defun embark-target-collect-candidate ()
   "Target the collect candidate at point."
-  (when (derived-mode-p 'embark-collect-mode)
-    (when-let ((button (button-at (point)))
-               (label (buffer-substring
-                       (button-start button)
-                       (button-end button))))
+  (when (and (derived-mode-p 'embark-collect-mode)
+             (button-at (point)))
+    (let ((label (button-label (point))))
       (cons embark--type
             (if (eq embark--type 'file)
                 (abbreviate-file-name (expand-file-name label))
@@ -1009,7 +1024,7 @@ point."
                       (minibuffer-contents)
                     (pcase-let ((`(,beg . ,end) (embark--boundaries)))
                       (substring (minibuffer-contents) beg
-                                 (+ end (- (point) (minibuffer-prompt-end)))))))
+                                 (+ end (embark--minibuffer-point))))))
           (become (embark--with-indicator embark-become-indicator
                                           embark-prompter
                                           (embark--become-keymap))))
@@ -1077,10 +1092,11 @@ This is an alist associating completion types to either `list',
 `grid' or `zebra' (which means list view the Embark Collect Zebra
 minor mode activated).  Additionally you can associate t to a
 default initial view for types not mentioned separately."
-  :type '(alist :key-type symbol
-                :value-type (choice (const :tag "List view" list)
-                                    (const :tag "Grid view" grid)
-                                    (const :tag "List with Zebra stripes" zebra))))
+  :type '(alist
+          :key-type symbol
+          :value-type (choice (const :tag "List view" list)
+                              (const :tag "Grid view" grid)
+                              (const :tag "List with Zebra stripes" zebra))))
 
 (defcustom embark-exporters-alist
   '((buffer . embark-export-ibuffer)
@@ -1191,7 +1207,7 @@ This function is used as :after advice for `tabulated-list-revert'."
                  (minibuffer-contents)
                  minibuffer-completion-table
                  minibuffer-completion-predicate
-                 (- (point) (minibuffer-prompt-end))))
+                 (embark--minibuffer-point)))
            (last (last all)))
       (when last (setcdr last nil))
       (cons
@@ -1321,7 +1337,7 @@ Returns the name of the command."
 (defun embark--boundaries ()
   "Get current minibuffer completion boundaries."
   (let ((contents (minibuffer-contents))
-        (pt (- (point) (minibuffer-prompt-end))))
+        (pt (embark--minibuffer-point)))
     (completion-boundaries
      (substring contents 0 pt)
      minibuffer-completion-table
@@ -1344,6 +1360,8 @@ exit the minibuffer.
 
 For other Embark Collect buffers, run the default action on ENTRY."
   (let ((text (button-label entry)))
+    (when (eq embark--type 'file)
+      (setq text (abbreviate-file-name (expand-file-name text))))
     (if (and (eq embark-collect--kind :completions))
         (progn
           (select-window (active-minibuffer-window))
@@ -1354,10 +1372,10 @@ For other Embark Collect buffers, run the default action on ENTRY."
             (insert text))
           ;; If the boundaries changed after insertion there are new
           ;; completion candidates (like when entering a directory in
-          ;; find-file). If so, don't exit; otherwise revert.
+          ;; find-file). If so, don't exit.
           (unless (or current-prefix-arg
                       (= (car (embark--boundaries))
-                         (- (point) (minibuffer-prompt-end))))
+                         (embark--minibuffer-point)))
             (exit-minibuffer)))
       (embark--act (embark--default-action embark--type) text))))
 
@@ -1495,8 +1513,9 @@ This is specially useful to tell where multi-line entries begin and end."
 
 (defun embark-collect--grid-view ()
   "Grid view of candidates for Embark Collect buffer."
-  (let* ((width (min (+ (embark-collect--max-width) 2) (floor (window-width) 2)))
-         (columns (/ (window-width) width)))
+  (let* ((width (min (1+ (embark-collect--max-width))
+                     (1- (floor (window-width) 2))))
+         (columns (/ (window-width) (1+ width))))
     (setq tabulated-list-format
           (make-vector columns `("Candidate" ,width nil)))
     (if tabulated-list-use-header-line
@@ -1526,15 +1545,15 @@ This is specially useful to tell where multi-line entries begin and end."
             (with-current-buffer embark-collect-from
               (embark--default-directory)))))
   (setq embark-collect-annotator
-        (if-let ((miniwin (active-minibuffer-window)))
-            (when (eq (window-buffer miniwin) embark-collect-from)
+        (let ((miniwin (active-minibuffer-window)))
+          (if (and miniwin (eq (window-buffer miniwin) embark-collect-from))
               ;; for the active minibuffer, get annotation-function metadatum
               (or
                (completion-metadata-get (embark--metadata) 'annotation-function)
-               (plist-get completion-extra-properties :annotation-function)))
-          ;; otherwise fake some metadata for Marginalia users's benefit
-          (completion-metadata-get `((category . ,embark--type))
-                                   'annotation-function)))
+               (plist-get completion-extra-properties :annotation-function))
+            ;; otherwise fake some metadata for Marginalia users's benefit
+            (completion-metadata-get `((category . ,embark--type))
+                                     'annotation-function))))
   (if (eq embark-collect-view 'list)
       (embark-collect--list-view)
     (embark-collect--grid-view)))
@@ -1683,7 +1702,7 @@ the minibuffer is exited."
              (:completions
               (lambda ()
                 ;; Killing a buffer shown in a selected dedicated window will
-                ;; set-buffer to a random buffer for some reason, so preserve it.
+                ;; set-buffer to a random buffer for some reason, so preserve it
                 (save-current-buffer
                   (kill-buffer buffer))))
              (:live
@@ -1900,33 +1919,56 @@ buffer for each type of completion."
 
 ;;; Integration with external completion UIs
 
+;; vertico
+
+(declare-function vertico--candidate "ext:vertico")
+(defvar vertico--input)
+(defvar vertico--candidates)
+
+(defun embark--vertico-selected ()
+  "Target the currently selected item in Vertico.
+Return the category metadatum as the type of the target."
+  (when vertico--input
+    (cons (completion-metadata-get (embark--metadata) 'category)
+          (vertico--candidate))))
+
+(defun embark--vertico-candidates ()
+  "Collect the current Vertico candidates.
+Return the category metadatum as the type of the candidates."
+  (when vertico--input
+    (cons (completion-metadata-get (embark--metadata) 'category)
+          vertico--candidates)))
+
+(with-eval-after-load 'vertico
+  (add-hook 'embark-target-finders #'embark--vertico-selected)
+  (add-hook 'embark-candidate-collectors #'embark--vertico-candidates))
+
 ;; selectrum
 
 (declare-function selectrum--get-meta "ext:selectrum")
 (declare-function selectrum-get-current-candidate "ext:selectrum")
 (declare-function selectrum-get-current-candidates "ext:selectrum")
-
 (defvar selectrum-is-active)
 
-(defun embark-target-selectrum-selection ()
+(defun embark--selectrum-selected ()
   "Target the currently selected item in Selectrum.
 Return the category metadatum as the type of the target."
-  (when (bound-and-true-p selectrum-is-active)
+  (when selectrum-is-active
     (cons (selectrum--get-meta 'category)
 	  (selectrum-get-current-candidate))))
 
-(defun embark-selectrum-candidates ()
+(defun embark--selectrum-candidates ()
   "Collect the current Selectrum candidates.
 Return the category metadatum as the type of the candidates."
-  (when (bound-and-true-p selectrum-is-active)
+  (when selectrum-is-active
     (cons (selectrum--get-meta 'category)
 	  (selectrum-get-current-candidates
 	   ;; Pass relative file names for dired.
 	   minibuffer-completing-file-name))))
 
 (with-eval-after-load 'selectrum
-  (add-hook 'embark-target-finders #'embark-target-selectrum-selection)
-  (add-hook 'embark-candidate-collectors #'embark-selectrum-candidates))
+  (add-hook 'embark-target-finders #'embark--selectrum-selected)
+  (add-hook 'embark-candidate-collectors #'embark--selectrum-candidates))
 
 ;; ivy
 
@@ -1937,7 +1979,7 @@ Return the category metadatum as the type of the candidates."
 (defvar ivy--old-cands) ; this stores the current candidates :)
 (defvar ivy--length)
 
-(defun embark-target-ivy-selection ()
+(defun embark--ivy-selected ()
   "Target the currently selected item in Ivy.
 Return the category metadatum as the type of the target."
   ;; my favorite way of detecting Ivy
@@ -1950,7 +1992,7 @@ Return the category metadatum as the type of the target."
           (ivy-state-current ivy-last)
         ivy-text)))))
 
-(defun embark-ivy-candidates ()
+(defun embark--ivy-candidates ()
   "Return all current Ivy candidates."
   ;; my favorite way of detecting Ivy
   (when (eq mwheel-scroll-up-function 'ivy-next-line)
@@ -1962,8 +2004,8 @@ Return the category metadatum as the type of the target."
      ivy--old-cands)))
 
 (with-eval-after-load 'ivy
-  (add-hook 'embark-target-finders #'embark-target-ivy-selection)
-  (add-hook 'embark-candidate-collectors #'embark-ivy-candidates))
+  (add-hook 'embark-target-finders #'embark--ivy-selected)
+  (add-hook 'embark-candidate-collectors #'embark--ivy-candidates))
 
 ;;; Custom actions
 
@@ -1981,10 +2023,9 @@ Return the category metadatum as the type of the target."
 (defun embark-insert (string)
   "Insert STRING at point."
   (interactive "sInsert: ")
-  (with-selected-window
-      (if buffer-read-only
-          (other-window-for-scrolling)
-        (selected-window))
+  (if buffer-read-only
+      (with-selected-window (other-window-for-scrolling)
+        (insert string))
     (insert string)))
 
 (defun embark-save (string)
@@ -2090,7 +2131,8 @@ with command output.  For replacement behaviour see
 
 (defun embark-save-unicode-character (char)
   "Save unicode character CHAR to kill ring."
-  (interactive (list (read-char-by-name "Insert character  (Unicode name or hex): ")))
+  (interactive
+   (list (read-char-by-name "Insert character  (Unicode name or hex): ")))
   (kill-new (format "%c" char)))
 
 (defun embark-isearch ()

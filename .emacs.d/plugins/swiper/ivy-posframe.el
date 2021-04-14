@@ -6,9 +6,9 @@
 ;;         Naoya Yamashita <conao3@gmail.com>
 ;; Maintainer: Feng Shu <tumashu@163.com>
 ;; URL: https://github.com/tumashu/ivy-posframe
-;; Version: 0.5.5
+;; Version: 0.6.0
 ;; Keywords: abbrev, convenience, matching, ivy
-;; Package-Requires: ((emacs "26.0") (posframe "0.8.0") (ivy "0.13.0"))
+;; Package-Requires: ((emacs "26.0") (posframe "1.0.0") (ivy "0.13.0"))
 
 ;; This file is part of GNU Emacs.
 
@@ -177,6 +177,12 @@ When nil, Using current frame's font as fallback."
   "The height of ivy-min-posframe."
   :type 'number)
 
+(defcustom ivy-posframe-refposhandler #'ivy-posframe-refposhandler-default
+  "The refposhandler use by ivy-posframe.
+
+NOTE: This variable is very useful to EXWM users."
+  :type 'function)
+
 (defcustom ivy-posframe-size-function #'ivy-posframe-get-size
   "The function which is used to deal with posframe's size."
   :type 'function)
@@ -239,6 +245,28 @@ This variable is useful for `ivy-posframe-read-action' .")
 (defvar emacs-basic-display)
 (defvar ivy--display-function)
 
+(defvar exwm--connection)
+(defvar exwm-workspace--workareas)
+(defvar exwm-workspace-current-index)
+
+(defun ivy-posframe-refposhandler-default (&optional frame)
+  "The default posframe refposhandler used by ivy-posframe."
+  (cond
+   ;; EXWM environment
+   ((bound-and-true-p exwm--connection)
+    (or (ignore-errors
+          (let ((info (elt exwm-workspace--workareas
+                           exwm-workspace-current-index)))
+            (cons (elt info 0)
+                  (elt info 1))))
+        ;; Need user install xwininfo.
+        (ignore-errors
+          (posframe-refposhandler-xwininfo frame))
+        ;; Fallback, this value will incorrect sometime, for example: user
+        ;; have panel.
+        (cons 0 0)))
+   (t nil)))
+
 (defun ivy-posframe--display (str &optional poshandler)
   "Show STR in ivy's posframe with POSHANDLER."
   (if (not (posframe-workable-p))
@@ -255,6 +283,7 @@ This variable is useful for `ivy-posframe-read-action' .")
              :internal-border-width ivy-posframe-border-width
              :internal-border-color (face-attribute 'ivy-posframe-border :background nil t)
              :override-parameters ivy-posframe-parameters
+             :refposhandler ivy-posframe-refposhandler
              (funcall ivy-posframe-size-function))
       (ivy-posframe--add-prompt 'ignore)))
   (with-current-buffer ivy-posframe-buffer

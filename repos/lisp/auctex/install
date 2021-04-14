@@ -1,8 +1,9 @@
 set -e
 cd ../_elpa/src
 autoconf
+autoupdate
 ./configure \
-    --with-emacs=$EMACS_ROOT/Emacs \
+    --with-emacs=$EMACS_BIN \
     --with-lispdir=$PWD/../../../../.emacs.d/plugins/auctex \
     --with-texmf-dir=/usr/local/texlive/texmf-local
 gmake

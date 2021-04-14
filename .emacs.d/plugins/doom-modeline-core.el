@@ -617,6 +617,12 @@ It requires `circe' or `erc' package."
   "Face for errors in the mode-line. Used by vcs, checker, etc."
   :group 'doom-modeline-faces)
 
+(defface doom-modeline-notification
+  '((t (:inherit doom-modeline-warning)))
+  "Face for notifications in the mode-line. Used by GitHub, mu4e,
+etc. (also see the face `doom-modeline-unread-number')."
+  :group 'doom-modeline-faces)
+
 (defface doom-modeline-unread-number
   '((t (:slant italic :weight normal)))
   "Face for unread number in the mode-line. Used by GitHub, mu4e, etc."
@@ -765,7 +771,7 @@ It requires `circe' or `erc' package."
 ;; Core helpers
 ;;
 
-;; FIXME #183: Force to caculate mode-line height
+;; FIXME #183: Force to calculate mode-line height
 ;; @see https://github.com/seagle0128/doom-modeline/issues/183
 (defvar-local doom-modeline--size-hacked-p nil)
 (defun doom-modeline-redisplay (&rest _)
@@ -784,7 +790,7 @@ is to make it easier to do so.
 This function is like `redisplay' with non-nil FORCE argument.
 It accepts an arbitrary number of arguments making it suitable
 as a `:before' advice for any function.  If the current buffer
-has no mode-line or this function has already been calle in it,
+has no mode-line or this function has already been called in it,
 then this function does nothing."
   (when (and (bound-and-true-p doom-modeline-mode)
              mode-line-format

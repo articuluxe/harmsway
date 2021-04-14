@@ -51,6 +51,26 @@ and FLIP is a boolean to specify the sort order."
                (choice (const :tag "Ascending" nil)
                        (const :tag "Descending" t))))
 
+(defcustom docker-run-default-args
+  '("-i" "-t" "--rm")
+  "Default infix args used when docker run is invoked.
+
+Note this can be overriden for specific images using
+`docker-image-run-custom-args'."
+  :group 'docker-run
+  :type '(repeat string))
+
+(defcustom docker-image-run-custom-args
+  nil
+  "List which can be used to customize the default arguments for docker run.
+
+Its elements should be of the form (REGEX ARGS) where
+REGEX is a (string) regular expression and ARGS is a list of strings
+corresponding to arguments.
+
+Also note if you do not specify `docker-run-default-args', they will be ignored."
+  :type '(repeat (list string (repeat string))))
+
 (defun docker-image-parse (line)
   "Convert a LINE from \"docker image ls\" to a `tabulated-list-entries' entry."
   (condition-case nil
@@ -149,10 +169,22 @@ and FLIP is a boolean to specify the sort order."
   [:description docker-utils-generic-actions-heading
    ("D" "Remove" docker-utils-generic-action)])
 
+(defclass docker-run-prefix (transient-prefix) nil)
+
+(cl-defmethod transient-init-value ((obj docker-run-prefix))
+  (oset obj value
+        (if-let* ((images (tablist-get-marked-items))
+                  (_ (not (cdr images)))
+                  (repo-name (caar images))
+                  (matched-args (--first (string-match (car it) repo-name)
+                                         docker-image-run-custom-args)))
+            (cadr matched-args)
+          docker-run-default-args)))
+
 (docker-utils-transient-define-prefix docker-image-run ()
   "Transient for running images."
   :man-page "docker-image-run"
-  :value '("-i" "-t" "--rm")
+  :class 'docker-run-prefix
   ["Arguments"
    ("D" "With display" "-v /tmp/.X11-unix:/tmp/.X11-unix -e DISPLAY")
    ("M" "Mount volume" "--mount=" read-string)

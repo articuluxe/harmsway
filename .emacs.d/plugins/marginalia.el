@@ -272,8 +272,11 @@ determine it."
 (defvar marginalia--margin nil
   "Right margin.")
 
-(defvar marginalia--this-command nil
+(defvar-local marginalia--this-command nil
   "Last command symbol saved in order to allow annotations.")
+
+(defvar-local marginalia--base-position 0
+  "Last completion base position saved to get full file paths.")
 
 (defvar marginalia--metadata nil
   "Completion metadata from the current completion.")
@@ -635,32 +638,17 @@ The string is transformed according to `marginalia-bookmark-type-transformers'."
       :truncate (/ marginalia-truncate-width 2)
       :face 'marginalia-file-name))))
 
-;; At some point we might want to revisit how this function is implemented. Maybe we come up with a
-;; more direct way to implement it. While Emacs does not use the notion of "full candidate", there
-;; is a function `completion-boundaries' to compute them, and in (info "(elisp)Programmed
-;; Completion") it is documented how a completion table should respond to boundaries requests.
-;; See the discussion at https://github.com/minad/marginalia/commit/4ba98045dd33bcf1396a888dbbae2dc801dce7c5
 (defun marginalia--full-candidate (cand)
   "Return completion candidate CAND in full.
 For some completion tables, the completion candidates offered are
 meant to be only a part of the full minibuffer contents. For
 example, during file name completion the candidates are one path
-component of a full file path.
-
-This function returns what would be the minibuffer contents after
-using `minibuffer-force-complete' on the candidate CAND."
+component of a full file path."
   (if-let (win (active-minibuffer-window))
       (with-current-buffer (window-buffer win)
-        (let* ((contents (minibuffer-contents-no-properties))
-               (pt (- (point) (minibuffer-prompt-end)))
-               (bounds (completion-boundaries
-                        (substring contents 0 pt)
-                        minibuffer-completion-table
-                        minibuffer-completion-predicate
-                        (substring contents pt))))
-          (concat (substring contents 0 (car bounds))
-                  cand
-                  (substring contents (+ pt (cdr bounds))))))
+        (concat (substring (minibuffer-contents-no-properties)
+                           0 marginalia--base-position)
+                cand))
     ;; no minibuffer is active, trust that cand already conveys all
     ;; necessary information (there's not much else we can do)
     cand))
@@ -780,24 +768,31 @@ PROP is the property which is looked up."
 (defun marginalia--minibuffer-setup ()
   "Setup minibuffer for `marginalia-mode'.
 Remember `this-command' for `marginalia-classify-by-command-name'."
-  (setq-local marginalia--this-command this-command))
+  (setq marginalia--this-command this-command))
+
+(defun marginalia--base-position (completions)
+  "Record the base position of COMPLETIONS."
+  ;; NOTE: As a small optimization track the base position only for file completions,
+  ;; since `marginalia--full-candidate' is only used for files as of now.
+  (when minibuffer-completing-file-name
+    (setq marginalia--base-position (cdr (last completions))))
+  completions)
 
 ;;;###autoload
 (define-minor-mode marginalia-mode
   "Annotate completion candidates with richer information."
   :global t
-
-  ;; Reset first to get a clean slate.
-  (advice-remove #'completion-metadata-get #'marginalia--completion-metadata-get)
-  (remove-hook 'minibuffer-setup-hook #'marginalia--minibuffer-setup)
-
-  ;; Now add our tweaks.
-  (when marginalia-mode
-    ;; Ensure that we remember this-command in order to select the annotation function.
-    (add-hook 'minibuffer-setup-hook #'marginalia--minibuffer-setup)
-
-    ;; Replace the metadata function.
-    (advice-add #'completion-metadata-get :before-until #'marginalia--completion-metadata-get)))
+  (if marginalia-mode
+      (progn
+        ;; Ensure that we remember this-command in order to select the annotation function.
+        (add-hook 'minibuffer-setup-hook #'marginalia--minibuffer-setup)
+        ;; Replace the metadata function.
+        (advice-add #'completion-metadata-get :before-until #'marginalia--completion-metadata-get)
+        ;; Record completion base position, for marginalia--full-candidate
+        (advice-add #'completion-all-completions :filter-return #'marginalia--base-position))
+    (advice-remove #'completion-all-completions #'marginalia--base-position)
+    (advice-remove #'completion-metadata-get #'marginalia--completion-metadata-get)
+    (remove-hook 'minibuffer-setup-hook #'marginalia--minibuffer-setup)))
 
 ;; If you want to cycle between annotators while being in the minibuffer, the completion-system
 ;; should refresh the candidate list. Currently there is no support for this in marginalia, but it

@@ -56,7 +56,7 @@
 
 (defface swift-mode:constant-keyword-face
   '((t . (:inherit font-lock-constant-face)))
-  "Face for highlighting constant keywords
+  "Face for highlighting constant keywords.
 
 That is, true, false, and nil."
   :group 'swift-mode:faces)
@@ -361,8 +361,8 @@ The predicate MATCH-P is called with two arguments:
   (let ((result nil))
     (while (and
             (< (point) limit)
-            (re-search-forward "\\<\\(\\sw\\|\\s_\\)+\\>" limit t)
-            (not result))
+            (not result)
+            (re-search-forward "\\<\\(\\sw\\|\\s_\\)+\\>" limit t))
       (when (save-excursion
               (save-match-data
                 (funcall match-p (match-beginning 0) limit)))

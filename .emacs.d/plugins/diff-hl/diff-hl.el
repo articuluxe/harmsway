@@ -40,6 +40,8 @@
 ;; `diff-hl-reset-reference-rev'
 ;;
 ;; The mode takes advantage of `smartrep' if it is installed.
+;;
+;; Alternatively, it integrates with `repeat-mode' (Emacs 28+).
 
 ;; Add either of the following to your init file.
 ;;
@@ -167,6 +169,11 @@ performance when viewing such files in certain conditions."
                       (repeat :inline t (symbol :tag "mode"))))
   :group 'diff-hl)
 
+(defcustom diff-hl-show-staged-changes t
+  "Whether to include staged changes in the indicators.
+Only affects Git, it's the only backend that has staging area."
+  :type 'boolean)
+
 (defvar diff-hl-reference-revision nil
   "Revision to diff against.  nil means the most recent one.")
 
@@ -279,22 +286,31 @@ performance when viewing such files in certain conditions."
                ;; Diffing against an older revision.
                diff-hl-reference-revision))))
 
+(declare-function vc-git-command "vc-git")
+
 (defun diff-hl-changes-buffer (file backend)
-  ;; FIXME: To diff against the staging area, call 'git diff-files -p'.
   (let ((buf-name " *diff-hl* "))
-    (condition-case err
+    (if (and (eq backend 'Git)
+             (not diff-hl-reference-revision)
+             (not diff-hl-show-staged-changes))
         (diff-hl-with-diff-switches
-         (vc-call-backend backend 'diff (list file)
-                          diff-hl-reference-revision nil
-                          buf-name))
-      (error
-       ;; https://github.com/dgutov/diff-hl/issues/117
-       (when (string-match-p "\\`Failed (status 128)" (error-message-string err))
-         (diff-hl-with-diff-switches
-          (vc-call-backend backend 'diff (list file)
-                           "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
-                           nil
-                           buf-name)))))
+         (apply #'vc-git-command buf-name 1
+                (list file)
+                "diff-files"
+                (cons "-p" (vc-switches 'git 'diff))))
+      (condition-case err
+          (diff-hl-with-diff-switches
+           (vc-call-backend backend 'diff (list file)
+                            diff-hl-reference-revision nil
+                            buf-name))
+        (error
+         ;; https://github.com/dgutov/diff-hl/issues/117
+         (when (string-match-p "\\`Failed (status 128)" (error-message-string err))
+           (diff-hl-with-diff-switches
+            (vc-call-backend backend 'diff (list file)
+                             "4b825dc642cb6eb9a060e54bf8d69288fbee4904"
+                             nil
+                             buf-name))))))
     buf-name))
 
 (defun diff-hl-changes ()
@@ -304,32 +320,36 @@ performance when viewing such files in certain conditions."
       (let ((state (vc-state file backend)))
         (cond
          ((diff-hl-modified-p state)
-          (let* (diff-auto-refine-mode res)
-            (with-current-buffer (diff-hl-changes-buffer file backend)
-              (goto-char (point-min))
-              (unless (eobp)
-                (ignore-errors
-                  (diff-beginning-of-hunk t))
-                (while (looking-at diff-hunk-header-re-unified)
-                  (let ((line (string-to-number (match-string 3)))
-                        (len (let ((m (match-string 4)))
-                               (if m (string-to-number m) 1)))
-                        (beg (point)))
-                    (diff-end-of-hunk)
-                    (let* ((inserts (diff-count-matches "^\\+" beg (point)))
-                           (deletes (diff-count-matches "^-" beg (point)))
-                           (type (cond ((zerop deletes) 'insert)
-                                       ((zerop inserts) 'delete)
-                                       (t 'change))))
-                      (when (eq type 'delete)
-                        (setq len 1)
-                        (cl-incf line))
-                      (push (list line len type) res))))))
-            (nreverse res)))
+          (diff-hl-changes-from-buffer
+           (diff-hl-changes-buffer file backend)))
          ((eq state 'added)
           `((1 ,(line-number-at-pos (point-max)) insert)))
          ((eq state 'removed)
           `((1 ,(line-number-at-pos (point-max)) delete))))))))
+
+(defun diff-hl-changes-from-buffer (buf)
+  (with-current-buffer buf
+    (let* (diff-auto-refine-mode res)
+      (goto-char (point-min))
+      (unless (eobp)
+        (ignore-errors
+          (diff-beginning-of-hunk t))
+        (while (looking-at diff-hunk-header-re-unified)
+          (let ((line (string-to-number (match-string 3)))
+                (len (let ((m (match-string 4)))
+                       (if m (string-to-number m) 1)))
+                (beg (point)))
+            (diff-end-of-hunk)
+            (let* ((inserts (diff-count-matches "^\\+" beg (point)))
+                   (deletes (diff-count-matches "^-" beg (point)))
+                   (type (cond ((zerop deletes) 'insert)
+                               ((zerop inserts) 'delete)
+                               (t 'change))))
+              (when (eq type 'delete)
+                (setq len 1)
+                (cl-incf line))
+              (push (list line len type) res)))))
+      (nreverse res))))
 
 (defun diff-hl-update ()
   (let ((changes (diff-hl-changes))
@@ -672,6 +692,15 @@ The value of this variable is a mode line template as in
       (scan diff-hl-command-map)
       (smartrep-define-key diff-hl-mode-map diff-hl-command-prefix smart-keys))))
 
+;; Integrate with `repeat-mode' in Emacs 28 (https://debbugs.gnu.org/47566)
+;;
+;; While smartrep feels solid, it looks kinda abandoned.  And the
+;; chances of it being put into GNU ELPA are slim too.
+(map-keymap
+ (lambda (_key cmd)
+   (put cmd 'repeat-map 'diff-hl-command-map))
+ diff-hl-command-map)
+
 (declare-function magit-toplevel "magit-git")
 (declare-function magit-unstaged-files "magit-git")
 
@@ -775,24 +804,30 @@ the user should be returned."
 
 (declare-function diff-no-select "diff")
 
-;; TODO: Consider simplifying given FILE always = buffer-file-name.
-(defun diff-hl-diff-buffer-with-head (file &optional dest-buffer backend)
-  "Compute the differences between FILE and its revision.
- The diffs are computed in the buffer DEST-BUFFER. This requires
+(defun diff-hl-diff-buffer-with-reference (file &optional dest-buffer backend)
+  "Compute the diff between the current buffer contents and reference.
+The diffs are computed in the buffer DEST-BUFFER. This requires
 the `diff-program' to be in your `exec-path'."
   (require 'diff)
   (vc-ensure-vc-buffer)
   (save-current-buffer
-    (let* ((dest-buffer (or dest-buffer "*diff-hl-diff-bufer-with-head*"))
+    (let* ((dest-buffer (or dest-buffer "*diff-hl-diff-buffer-with-reference*"))
+           (backend (or backend (vc-backend file)))
            (temporary-file-directory
             (if (file-directory-p "/dev/shm/")
                 "/dev/shm/"
               temporary-file-directory))
-           (rev (diff-hl-create-revision
+           (rev
+            (if (and (eq backend 'Git)
+                     (not diff-hl-reference-revision)
+                     (not diff-hl-show-staged-changes))
+                (diff-hl-git-index-revision
                  file
-                 (or diff-hl-reference-revision
-                     (diff-hl-working-revision file backend)))))
-      ;; FIXME: When against staging, do it differently!
+                 (diff-hl-git-index-object-name file))
+              (diff-hl-create-revision
+               file
+               (or diff-hl-reference-revision
+                   (diff-hl-working-revision file backend))))))
       (diff-no-select rev (current-buffer) "-U 0 --strip-trailing-cr" 'noasync
                       (get-buffer-create dest-buffer))
       (with-current-buffer dest-buffer
@@ -800,6 +835,36 @@ the `diff-program' to be in your `exec-path'."
           ;; Function `diff-sentinel' adds a final line, so remove it
           (delete-matching-lines "^Diff finished.*")))
       (get-buffer-create dest-buffer))))
+
+;; TODO: Cache based on .git/index's mtime, maybe.
+(defun diff-hl-git-index-object-name (file)
+  (with-temp-buffer
+    (vc-git-command (current-buffer) 0 file "ls-files" "-s")
+    (and
+     (goto-char (point-min))
+     (re-search-forward "^[0-9]+ \\([0-9a-f]+\\)")
+     (match-string-no-properties 1))))
+
+(defun diff-hl-git-index-revision (file object-name)
+  (let ((filename (diff-hl-make-temp-file-name file
+                                               (concat ":" object-name)
+                                               'manual))
+        (filebuf (get-file-buffer file)))
+    (unless (file-exists-p filename)
+      (with-current-buffer filebuf
+        (let ((coding-system-for-read 'no-conversion)
+              (coding-system-for-write 'no-conversion))
+          (condition-case nil
+              (with-temp-file filename
+                (let ((outbuf (current-buffer)))
+                  ;; Change buffer to be inside the repo.
+                  (with-current-buffer filebuf
+                    (vc-git-command outbuf 0 nil
+                                    "cat-file" "blob" object-name))))
+            (error
+             (when (file-exists-p filename)
+               (delete-file filename)))))))
+    filename))
 
 ;;;###autoload
 (defun turn-on-diff-hl-mode ()

@@ -4,11 +4,11 @@
 ;; Description: Change logs for Bookmark+ libraries.
 ;; Author: Drew Adams
 ;; Maintainer: Drew Adams (concat "drew.adams" "@" "oracle" ".com")
-;; Copyright (C) 2000-2020, Drew Adams, all rights reserved.
+;; Copyright (C) 2000-2021, Drew Adams, all rights reserved.
 ;; Created: Fri Sep 15 07:58:41 2000
-;; Last-Updated: Tue Dec 29 12:32:22 2020 (-0800)
+;; Last-Updated: Wed Mar 17 14:04:47 2021 (-0700)
 ;;           By: dradams
-;;     Update #: 16730
+;;     Update #: 16755
 ;; URL: https://www.emacswiki.org/emacs/download/bookmark%2b-chg.el
 ;; Doc URL: https://www.emacswiki.org/emacs/BookmarkPlus
 ;; Keywords: bookmarks, bookmark+
@@ -146,6 +146,21 @@
  
 ;;;(@* "CHANGE LOG FOR `bookmark+-1.el'")
 ;;
+;; 2021/03/17 dadams
+;;      Use buffer-string, not buffer-substring, for whole buffer.
+;; 2021/03/09 dadams
+;;     bmkp-handle-region-default: Set region and activate it at the end.
+;; 2021/03/05 dadams
+;;     Added: bmkp-read-buffers, bmkp-read-files.
+;;     bmkp(autofile|file(-this-dir))-(all|some)-tags(-regexp)-alist-only,
+;;       bmkp-specific-(buffers|files)-alist-only: Put property bmkp-read-arg with read-fn value.
+;;     bmkp-read-regexp: Made PROMPT arg optional.
+;;     bmkp-specific-(buffers|files)-jump(-other-window): Use bmkp-read-(buffers|files).
+;;     bmkp-set-autonamed-regexp-(buffer|region): Removed prompt from call to bmkp-read-regexp.
+;;     bmkp-annotate-bookmark-this-file/buffer, bmkp-edit-bookmark-record-file/buffer:
+;;       Fixed format spec.
+;; 2021/03/04 dadams
+;;     Added bmkp-types-alist.  The def is also in bookmark+-mac.el.
 ;; 2020/11/28 dadams
 ;;     Removed:
 ;;       bmkp-bookmark-type-valid-p, variable (defconst) bmkp-types-alist, and all history variables.
@@ -1471,6 +1486,10 @@
  
 ;;;(@* "CHANGE LOG FOR `bookmark+-bmu.el'")
 ;;
+;; 2021/03/05 dadams
+;;     Face bmkp-no-local: changed default to orange background, from yellow foreground.
+;; 2021/03/04 dadams
+;;     bmkp-bmenu-describe-marked: Typo - bmkp-describe-bookmark-marked -> bmkp-bmenu-describe-marked.
 ;; 2020/12/29 dadams
 ;;     Wrap soft-require of menu-bar+.el in null condition-case, because it soft-requires Bookmark+.
 ;; 2020/11/27 dadams
@@ -2170,6 +2189,8 @@
  
 ;;;(@* "CHANGE LOG FOR `bookmark+-key.el'")
 ;;
+;; 2021/02/12 dadams
+;;     Typo in eval-after-load for EWW: previous -> next.
 ;; 2020/07/04 dadams
 ;;     Changed all `C-x p' to `C-x x'.
 ;;     Replaced string *Bookmark List* with bookmark-bmenu-buffer (for Emacs 28).
@@ -2459,6 +2480,8 @@
 ;;       that depends on macros needs to be byte-compiled anew after loading the updated macros.
 ;; **************************************************************************************************
 ;;
+;; 2021/03/04 dadams
+;;     Removed autoload cookie for bmkp-types-alist.  Its def is also in bookmark+-1.el now.
 ;; 2020/11/28 dadams
 ;;     Added: bmkp-define-history-variables, funtion bmkp-types-alist.
 ;; 2017/03/31 dadams
@@ -2507,6 +2530,10 @@
  
 ;;;(@* "CHANGE LOG FOR `bookmark+.el'")
 ;;
+;; 2021/03/04 dadams
+;;     Version 2021.03.04
+;; 2021/02/12 dadams
+;;     Version 2021.02.12
 ;; 2020/07/04 dadams
 ;;     Version 2020.07.04
 ;;     Added defconst for bookmark-bmenu-buffer (Emacs 28).

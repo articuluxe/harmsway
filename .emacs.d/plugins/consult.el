@@ -61,10 +61,6 @@
 
 ;;;; Customization
 
-(defcustom consult-completion-in-region-styles nil
-  "The `completion-styles' used by `consult-completion-in-region'."
-  :type completion--styles-type)
-
 (defcustom consult-narrow-key nil
   "Prefix key for narrowing during completion.
 
@@ -600,6 +596,8 @@ The line beginning/ending BEG/END is bound in BODY."
            ,@body
            (setq ,beg (1+ ,end)))))))
 
+;; `substring-width'/`string-display-width', upstream bug,
+;; see http://debbugs.gnu.org/cgi/bugreport.cgi?bug=47712
 (defun consult--display-width (string)
   "Compute width of STRING taking display and invisible properties into account."
   (let ((pos 0) (width 0) (end (length string)))
@@ -616,8 +614,7 @@ The line beginning/ending BEG/END is bound in BODY."
                                (string-width
                                 ;; Avoid allocation for the full string.
                                 ;; There should be a `substring-width' provided by Emacs.
-                                ;; TODO: Propose upstream? Alternatively propose
-                                ;; this whole `display-width' function to upstream.
+                                ;; see http://debbugs.gnu.org/cgi/bugreport.cgi?bug=47712
                                 (if (and (= pos 0) (= nexti end))
                                     string
                                   (substring-no-properties string pos nexti))))))
@@ -842,75 +839,49 @@ Also create a which-key pseudo key to show the description."
             (forward-char column))
           (point-marker))))))
 
-;; We must disambiguate the lines by adding a prefix such that two lines with
-;; the same text can be distinguished. In order to avoid matching the line
-;; number, such that the user can search for numbers with `consult-line', we
-;; encode the line number as unicode characters in the supplementary private use
-;; plane b. By doing that, it is unlikely that accidential matching occurs.
-(defun consult--encode-location (marker)
-  "Generate unique string for MARKER.
-DISPLAY is the string to display instead of the unique string."
-  (let ((str "") (n marker))
-    (while (progn
-             (setq str (concat (char-to-string (+ consult--tofu-char
-                                                  (% n consult--tofu-range)))
-                               str))
-             (and (>= n consult--tofu-range) (setq n (/ n consult--tofu-range)))))
-    str))
+(defun consult--line-prefix ()
+  "Annotate `consult-location' candidates with line numbers."
+  (let* ((width (length (number-to-string (line-number-at-pos
+                                          (point-max)
+                                          consult-line-numbers-widen))))
+         (fmt (propertize (format "%%%dd " width) 'face 'consult-line-number-prefix)))
+  (lambda (cand)
+    (list cand (format fmt (cdr (get-text-property 0 'consult-location cand))) ""))))
 
-(defun consult--line-number-prefix (marker line width)
-  "Format LINE number prefix number with padding.
+(defun consult--location-candidate (cand marker line)
+  "Add MARKER and LINE as 'consult-location text property to CAND.
+Furthermore append tofu-encoded MARKER suffix for disambiguation."
+  (setq cand (concat cand (consult--tofu-encode marker)))
+  (put-text-property 0 1 'consult-location (cons marker line) cand)
+  cand)
 
-MARKER and LINE are added as 'consult-location text property.
-WIDTH is the line number width."
-  (let* ((unique-str (consult--encode-location marker))
-         (line-str (number-to-string line))
-         (prefix-str (concat
-                      (make-string (- width (length line-str)) 32)
-                      line-str
-                      " ")))
-    (put-text-property 0 (length prefix-str) 'face 'consult-line-number-prefix prefix-str)
-    (add-text-properties 0 (length unique-str)
-                         `(display ,prefix-str consult-location (,marker . ,line))
-                         unique-str)
-    unique-str))
-
-(defun consult--add-line-number (max-line candidates)
-  "Add line numbers to unformatted CANDIDATES as prefix.
-The MAX-LINE is needed to determine the width.
-Since the line number is part of the candidate it will be matched-on during completion."
-  (let ((width (length (number-to-string max-line))))
-    (mapcar (pcase-lambda (`(,marker ,line ,str))
-              (concat
-               (consult--line-number-prefix marker line width)
-               str))
-            candidates)))
-
-(defsubst consult--buffer-substring (beg end)
-  "Return buffer substring between BEG and END."
+(defsubst consult--buffer-substring (beg end &optional fontify)
+  "Return buffer substring between BEG and END.
+If FONTIFY and `consult-fontify-preserve' are non-nil, first ensure that the
+region has been fontified."
   (if consult-fontify-preserve
-      (buffer-substring beg end)
+      (progn
+        (when fontify
+          (consult--fontify-region beg end))
+        (buffer-substring beg end))
     (buffer-substring-no-properties beg end)))
 
-(defun consult--region-with-cursor (begin end marker)
+(defun consult--region-with-cursor (beg end marker)
   "Return region string with a marking at the cursor position.
 
-BEGIN is the begin position.
+BEG is the begin position.
 END is the end position.
 MARKER is the cursor position."
-  (let ((str (consult--buffer-substring begin end)))
+  (let ((str (consult--buffer-substring beg end 'fontify)))
     (if (>= marker end)
         (concat str #(" " 0 1 (face consult-preview-cursor)))
-      (put-text-property (- marker begin) (- (1+ marker) begin)
+      (put-text-property (- marker beg) (- (1+ marker) beg)
                          'face 'consult-preview-cursor str)
       str)))
 
 (defun consult--line-with-cursor (marker)
   "Return current line where the cursor MARKER is highlighted."
-  (let ((beg (line-beginning-position))
-        (end (line-end-position)))
-    (consult--fontify-region beg end)
-    (consult--region-with-cursor beg end marker)))
+  (consult--region-with-cursor (line-beginning-position) (line-end-position) marker))
 
 (defun consult--merge-config (args)
   "Merge `consult-config' plists into the keyword arguments of ARGS."
@@ -957,28 +928,28 @@ MARKER is the cursor position."
         (when restore-recentf
           (setq recentf-list saved-recentf))))))
 
-;; Derived from ctrlf, originally isearch
-(defun consult--invisible-show (&optional permanently)
-  "Disable any overlays that are currently hiding point.
-PERMANENTLY non-nil means the overlays will not be restored later."
-  (let ((opened))
-    (dolist (ov (overlays-in (line-beginning-position) (line-end-position)) opened)
-      (when (and (invisible-p (overlay-get ov 'invisible))
-                 (overlay-get ov 'isearch-open-invisible))
-        (if permanently
-            (funcall (overlay-get ov 'isearch-open-invisible) ov)
-          (push (cons ov (overlay-get ov 'invisible)) opened)
-          (if-let (func (overlay-get ov 'isearch-open-invisible-temporary))
-              (funcall func nil)
-            (overlay-put ov 'invisible nil)))))))
+(defun consult--invisible-open-permanently ()
+  "Open overlays which hide the current line.
+See `isearch-open-necessary-overlays' and `isearch-open-overlay-temporary'."
+  (dolist (ov (overlays-in (line-beginning-position) (line-end-position)))
+    (when-let (fun (overlay-get ov 'isearch-open-invisible))
+      (when (invisible-p (overlay-get ov 'invisible))
+        (funcall fun ov)))))
 
-;; Derived from ctrlf, originally isearch
-(defun consult--invisible-restore (overlays)
-  "Restore any opened OVERLAYS that were previously disabled."
-  (dolist (ov overlays)
-    (if-let (func (overlay-get (car ov) 'isearch-open-invisible-temporary))
-        (funcall func t)
-      (overlay-put (car ov) 'invisible (cdr ov)))))
+(defun consult--invisible-open-temporarily ()
+  "Temporarily open overlays which hide the current line.
+See `isearch-open-necessary-overlays' and `isearch-open-overlay-temporary'."
+  (let ((restore))
+    (dolist (ov (overlays-in (line-beginning-position) (line-end-position)) restore)
+      (let ((inv (overlay-get ov 'invisible)))
+        (when (and (invisible-p inv) (overlay-get ov 'isearch-open-invisible))
+          (push (if-let (fun (overlay-get ov 'isearch-open-invisible-temporary))
+                    (progn
+                      (funcall fun nil)
+                      (lambda () (funcall fun t)))
+                  (overlay-put ov 'invisible nil)
+                  (lambda () (overlay-put ov 'invisible inv)))
+                restore))))))
 
 (defun consult--jump-nomark (pos)
   "Go to POS and recenter."
@@ -1005,7 +976,7 @@ PERMANENTLY non-nil means the overlays will not be restored later."
     (unless (and (markerp pos) (not (eq (current-buffer) (marker-buffer pos))))
       (push-mark (point) t))
     (consult--jump-nomark pos)
-    (consult--invisible-show t))
+    (consult--invisible-open-permanently))
   nil)
 
 ;; Matched strings are not highlighted as of now.
@@ -1020,9 +991,11 @@ FACE is the cursor face."
         (saved-min (point-min-marker))
         (saved-max (point-max-marker))
         (saved-pos (point-marker)))
+    (set-marker-insertion-type saved-max t) ;; Grow when text is inserted
     (lambda (cand restore)
-      (consult--invisible-restore invisible)
+      (mapc #'funcall invisible)
       (mapc #'delete-overlay overlays)
+      (setq invisible nil overlays nil)
       (cond
        (restore
         (let ((saved-buffer (marker-buffer saved-pos)))
@@ -1034,13 +1007,12 @@ FACE is the cursor face."
        ;; Jump to position
        (cand
         (consult--jump-nomark cand)
-        (setq invisible (consult--invisible-show))
-        (let ((pos (point)))
-          (setq overlays
-                (list (consult--overlay (line-beginning-position)
-                                        (1+ (line-end-position))
-                                        'face 'consult-preview-line)
-                      (consult--overlay pos (1+ pos) 'face face)))))
+        (setq invisible (consult--invisible-open-temporarily)
+              overlays
+              (list (consult--overlay (line-beginning-position)
+                                      (1+ (line-end-position))
+                                      'face 'consult-preview-line)
+                    (consult--overlay (point) (1+ (point)) 'face face))))
        ;; If position cannot be previewed, return to saved position
        (t (consult--jump-nomark saved-pos))))))
 
@@ -1210,7 +1182,7 @@ Examples: \"/async/filter\", \"#async#filter\"."
           (string-match (concat "^" q "\\([^" q "]*\\)" q "?") str)
           (list (match-string 1 str)
                 (substring str (match-end 0))
-                (- point (match-end 0)))))
+                (max 0 (- point (match-end 0))))))
     (list str "" 0)))
 
 (defun consult--split-wrap (fun split styles)
@@ -1591,13 +1563,38 @@ PREVIEW-KEY is the preview key."
   "Fry the tofus in the minibuffer."
   (let* ((min (minibuffer-prompt-end))
          (max (point-max))
-         (pos min)
+         (pos max)
          (high (+ consult--tofu-char consult--tofu-range -1)))
-    (while (and (< pos max) (<= consult--tofu-char (char-after pos) high))
-      (setq pos (1+ pos)))
-    (when (> pos min)
-      (remove-list-of-text-properties min pos '(display))
-      (add-text-properties min pos (list 'invisible t 'rear-nonsticky t)))))
+    (while (and (> pos min) (<= consult--tofu-char (char-before pos) high))
+      (setq pos (- pos 1)))
+    (when (< pos max)
+      (add-text-properties pos max '(invisible t rear-nonsticky t cursor-intangible t)))))
+
+(defsubst consult--tofu-append (cand id)
+  "Append tofu-encoded ID to CAND."
+  (setq id (char-to-string (+ consult--tofu-char id)))
+  (add-text-properties 0 1 '(invisible t consult-strip t) id)
+  (concat cand id))
+
+(defsubst consult--tofu-get (cand)
+  "Extract tofu-encoded ID from CAND."
+  (- (aref cand (- (length cand) 1)) consult--tofu-char))
+
+;; We must disambiguate the lines by adding a prefix such that two lines with
+;; the same text can be distinguished. In order to avoid matching the line
+;; number, such that the user can search for numbers with `consult-line', we
+;; encode the line number as unicode characters in the supplementary private use
+;; plane b. By doing that, it is unlikely that accidential matching occurs.
+(defun consult--tofu-encode (n)
+  "Return tofu-encoded number N."
+  (let ((str ""))
+    (while (progn
+             (setq str (concat (char-to-string (+ consult--tofu-char
+                                                  (% n consult--tofu-range)))
+                               str))
+             (and (>= n consult--tofu-range) (setq n (/ n consult--tofu-range)))))
+    (add-text-properties 0 (length str) '(invisible t consult-strip t) str)
+    str))
 
 (cl-defun consult--read-setup (candidates &key keymap add-history narrow preview-key &allow-other-keys)
   "Minibuffer setup for `consult--read'.
@@ -1616,7 +1613,7 @@ See `consult--read' for the CANDIDATES, KEYMAP, ADD-HISTORY, NARROW and PREVIEW-
          (setq options (plist-put options ,(intern (format ":%s" key)) (setq ,key ,val)))))
     default)))
 
-(defun consult--group-candidates (title candidates)
+(defun consult--read-group (title candidates)
   "Group CANDIDATES according to TITLE function."
   (let ((groups))
     (dolist (cand candidates)
@@ -1626,6 +1623,20 @@ See `consult--read' for the CANDIDATES, KEYMAP, ADD-HISTORY, NARROW and PREVIEW-
             (setcdr group (cons cand (cdr group)))
           (push (list title cand) groups))))
     (mapc (lambda (x) (setcdr x (nreverse (cdr x)))) (nreverse groups))))
+
+(defun consult--read-annotate (fun cand)
+  "Annotate CAND with annotation function FUN."
+  (pcase (funcall fun cand)
+    (`(,_ ,suffix) suffix)
+    (`(,_ ,_ ,suffix) suffix)
+    (ann ann)))
+
+(defun consult--read-affixate (fun cands)
+  "Affixate CANDS with annotation function FUN."
+  (mapcar (lambda (cand)
+            (let ((ann (funcall fun cand)))
+              (if (consp ann) ann (list cand (or ann "")))))
+          cands))
 
 (cl-defun consult--read (candidates &rest options &key
                                     prompt predicate require-match history default
@@ -1677,9 +1688,14 @@ KEYMAP is a command-specific keymap."
       ;; Fortunately the overcapturing problem does not affect the bytecode
       ;; interpreter which does a proper scope analyis.
       (let* ((metadata `(metadata
-                         ,@(when title `((x-group-function
-                                          . ,(apply-partially #'consult--group-candidates title))))
-                         ,@(when annotate `((annotation-function . ,annotate)))
+                         ,@(when title
+                             `((x-group-function
+                                . ,(apply-partially #'consult--read-group title))))
+                         ,@(when annotate
+                             `((affixation-function
+                                . ,(apply-partially #'consult--read-affixate annotate))
+                               (annotation-function
+                                . ,(apply-partially #'consult--read-annotate annotate))))
                          ,@(when category `((category . ,category)))
                          ,@(unless sort '((cycle-sort-function . identity)
                                           (display-sort-function . identity)))))
@@ -1726,7 +1742,7 @@ KEYMAP is a command-specific keymap."
 
 (defsubst consult--multi-source (cand)
   "Lookup source for CAND from `consult--multi-sources' list."
-  (aref consult--multi-sources (- (aref cand 0) consult--tofu-char)))
+  (aref consult--multi-sources (consult--tofu-get cand)))
 
 (defun consult--multi-predicate (cand)
   "Predicate function called for each candidate CAND by `consult--multi'."
@@ -1779,15 +1795,11 @@ KEYMAP is a command-specific keymap."
              (items (plist-get src :items))
              (items (if (functionp items) (funcall items) items)))
         (when (and (not def) (plist-get src :default) items)
-          (setq def (concat (propertize (char-to-string (+ consult--tofu-char idx))
-                                        'invisible t)
-                            (car items))))
+          (setq def (consult--tofu-append (car items) idx)))
         (dolist (item items)
-          (let ((cand (concat (char-to-string (+ consult--tofu-char idx)) item))
+          (let ((cand (consult--tofu-append item idx))
                 (width (consult--display-width item)))
-            (add-text-properties 0 1 (list 'invisible t 'consult-multi (cons cat item))
-                                 cand)
-            (put-text-property 1 (length cand) 'face face cand)
+            (add-text-properties 0 (length item) `(face ,face consult-multi (,cat . ,item)) cand)
             (when (> width max-width) (setq max-width width))
             (push cand candidates))))
       (setq idx (1+ idx)))
@@ -1927,7 +1939,6 @@ See `multi-occur' for the meaning of the arguments BUFS, REGEXP and NLINES."
 (defun consult--outline-candidates ()
   "Return alist of outline headings and positions."
   (consult--forbid-minibuffer)
-  (consult--fontify-all)
   (let* ((line (line-number-at-pos (point-min) consult-line-numbers-widen))
          (heading-regexp (concat "^\\(?:"
                                  (if (boundp 'outline-regexp)
@@ -1939,13 +1950,16 @@ See `multi-occur' for the meaning of the arguments BUFS, REGEXP and NLINES."
       (goto-char (point-min))
       (while (save-excursion (re-search-forward heading-regexp nil t))
         (setq line (+ line (consult--count-lines (match-beginning 0))))
-        (push (list (point-marker) line
-                    (consult--buffer-substring (line-beginning-position) (line-end-position)))
+        (push (consult--location-candidate
+               (consult--buffer-substring (line-beginning-position)
+                                          (line-end-position)
+                                          'fontify)
+               (point-marker) line)
               candidates)
         (unless (eobp) (forward-char 1))))
     (unless candidates
       (user-error "No headings"))
-    (consult--add-line-number line (nreverse candidates))))
+    (nreverse candidates)))
 
 ;;;###autoload
 (defun consult-outline ()
@@ -1957,6 +1971,7 @@ The symbol at point is added to the future history."
   (consult--read
    (consult--with-increased-gc (consult--outline-candidates))
    :prompt "Go to heading: "
+   :annotate (consult--line-prefix)
    :category 'consult-location
    :sort nil
    :require-match t
@@ -1973,8 +1988,7 @@ The alist contains (string . position) pairs."
   (consult--forbid-minibuffer)
   (unless (marker-position (mark-marker))
     (user-error "No marks"))
-  (let* ((max-line 0)
-         (candidates))
+  (let ((candidates))
     (save-excursion
       (dolist (marker (cons (mark-marker) mark-ring))
         (let ((pos (marker-position marker)))
@@ -1983,11 +1997,11 @@ The alist contains (string . position) pairs."
             ;; `line-number-at-pos' is a very slow function, which should be replaced everywhere.
             ;; However in this case the slow line-number-at-pos does not hurt much, since
             ;; the mark ring is usually small since it is limited by `mark-ring-max'.
-            (let ((line (line-number-at-pos pos consult-line-numbers-widen)))
-              (setq max-line (max line max-line))
-              (push (list marker line (consult--line-with-cursor marker))
-                    candidates))))))
-    (nreverse (consult--remove-dups (consult--add-line-number max-line candidates)))))
+            (push (consult--location-candidate
+                   (consult--line-with-cursor marker) marker
+                   (line-number-at-pos pos consult-line-numbers-widen))
+                  candidates)))))
+    (nreverse (consult--remove-dups candidates))))
 
 ;;;###autoload
 (defun consult-mark ()
@@ -1999,6 +2013,7 @@ The symbol at point is added to the future history."
   (consult--read
    (consult--with-increased-gc (consult--mark-candidates))
    :prompt "Go to mark: "
+   :annotate (consult--line-prefix)
    :category 'consult-location
    :sort nil
    :require-match t
@@ -2026,11 +2041,11 @@ The alist contains (string . position) pairs."
                 ;; `line-number-at-pos' is slow, see comment in `consult--mark-candidates'.
                 (let ((line (line-number-at-pos pos consult-line-numbers-widen)))
                   (push (concat
-                         (propertize
-                          (concat (propertize (consult--encode-location marker) 'invisible t)
-                                  (consult--format-location (buffer-name buf) line))
-                          'consult-location (cons marker line))
-                         (consult--line-with-cursor marker))
+                         (propertize (consult--format-location (buffer-name buf) line)
+                                     'consult-location (cons marker line)
+                                     'consult-strip t)
+                         (consult--line-with-cursor marker)
+                         (consult--tofu-encode marker))
                         candidates))))))))
     (unless candidates
       (user-error "No global marks"))
@@ -2067,20 +2082,15 @@ The symbol at point is added to the future history."
          (candidates)
          (line (line-number-at-pos (point-min) consult-line-numbers-widen))
          (curr-line (line-number-at-pos (point) consult-line-numbers-widen))
-         (line-width (length (number-to-string (line-number-at-pos
-                                                (point-max)
-                                                consult-line-numbers-widen))))
-         (default-cand-dist most-positive-fixnum))
+         (default-delta most-positive-fixnum))
     (consult--each-line beg end
       (let ((str (consult--buffer-substring beg end)))
         (unless (string-blank-p str)
-          (let ((cand (concat
-                       (consult--line-number-prefix (point-marker) line line-width)
-                       str))
-                (dist (abs (- curr-line line))))
-            (when (< dist default-cand-dist)
+          (let ((cand (consult--location-candidate str (point-marker) line))
+                (delta (abs (- curr-line line))))
+            (when (< delta default-delta)
               (setq default-cand cand
-                    default-cand-dist dist))
+                    default-delta delta))
             (push cand candidates)))
         (setq line (1+ line))))
     (unless candidates
@@ -2097,18 +2107,14 @@ CAND is the currently selected candidate."
     (if (or (string-blank-p input)
             (eq consult-line-point-placement 'line-beginning))
         pos
-      ;; Strip unique line number prefix
-      (let ((i 0)
-            (n (length cand))
-            (high (+ consult--tofu-char consult--tofu-range -1)))
-        (while (and (< i n) (<= consult--tofu-char (aref cand i) high))
-          (setq i (1+ i)))
-        (when (> i 0)
-          (setq cand (substring cand i))))
       (let ((beg 0)
             (end (length cand))
             ;; Use consult-location completion category when filtering lines
-            (filter (consult--completion-filter 'consult-location nil)))
+            (filter (consult--completion-filter 'consult-location nil))
+            (high (+ consult--tofu-char consult--tofu-range -1)))
+        ;; Ignore tofu-encoded unique line number suffix
+        (while (and (> end 0) (<= consult--tofu-char (aref cand (- end 1)) high))
+          (setq end (- end 1)))
         ;; Find match end position, remove characters from line end until
         ;; matching fails
         (let ((step 16))
@@ -2142,6 +2148,7 @@ The symbol at point and the last `isearch-string' is added to the future history
     (consult--read
      (cdr candidates)
      :prompt "Go to line: "
+     :annotate (consult--line-prefix)
      :category 'consult-location
      :sort nil
      :default-top nil
@@ -2461,14 +2468,33 @@ functions and in `consult-completion-in-region'."
 
 The function is called with 4 arguments: START END COLLECTION PREDICATE.
 The arguments and expected return value are as specified for
-`completion-in-region'. Use as a value for `completion-in-region-function'."
-  (let* ((completion-styles (or consult-completion-in-region-styles completion-styles))
+`completion-in-region'. Use as a value for `completion-in-region-function'.
+
+The function can be configured via `consult-config'.
+
+    (setf (alist-get #'consult-completion-in-region consult-config)
+      '(:completion-styles (basic)))
+
+These configuration options are supported:
+
+    * :cycle-threshold - Cycling threshold (def: `completion-cycle-threshold')
+    * :completion-styles - Use completion styles (def: `completion-styles')
+    * :require-match - Require matches when completing (def: nil)
+    * :prompt - The prompt string shown in the minibuffer"
+  (let* ((config (alist-get #'consult-completion-in-region consult-config))
+         (prompt (or (plist-get config :prompt) "Completion: "))
+         (completion-styles (or (plist-get config :completion-styles) completion-styles))
+         (require-match (plist-get config :require-match))
+         (preview-key (if (plist-member config :preview-key)
+                          (plist-get config :preview-key)
+                        consult-preview-key))
          (initial (buffer-substring-no-properties start end))
          (metadata (completion-metadata initial collection predicate))
-         (threshold (completion--cycle-threshold metadata))
+         (threshold (or (plist-get config :cycle-threshold) (completion--cycle-threshold metadata)))
          (all (completion-all-completions initial collection predicate (length initial))))
     ;; error if `threshold' is t or the improper list `all' is too short
-    (if (not (ignore-errors (nthcdr threshold all)))
+    (if (or (not (consp (ignore-errors (nthcdr threshold all))))
+            (and completion-cycling completion-all-sorted-completions))
         (completion--in-region start end collection predicate)
       (let* ((limit (car (completion-boundaries initial collection predicate "")))
              (category (completion-metadata-get metadata 'category))
@@ -2481,15 +2507,9 @@ The arguments and expected return value are as specified for
                 (concat (substring initial 0 limit) (car all)))
                (t (car
                    (consult--with-preview
-                       ;; preview key
-                       (unless (minibufferp)
-                         (let ((config (alist-get #'consult-completion-in-region consult-config)))
-                           (if (plist-member config :preview-key)
-                               (plist-get config :preview-key)
-                             consult-preview-key)))
+                       preview-key
                        ;; preview state
-                       (consult--region-preview
-                        start end 'consult-preview-region)
+                       (consult--region-preview start end 'consult-preview-region)
                        ;; transformation function
                        (if (eq category 'file)
                            (if (file-name-absolute-p initial)
@@ -2507,10 +2527,8 @@ The arguments and expected return value are as specified for
                            ;; starts at the end of minibuffer contents, as for other types of completion.
                            ;; However this is undefined behavior since initial does not only contain the
                            ;; directory, but also the filename.
-                           (read-file-name
-                            "Completion: " initial initial t nil predicate)
-                         (completing-read
-                          "Completion: " collection predicate t initial)))))))))
+                           (read-file-name prompt initial initial require-match nil predicate)
+                         (completing-read prompt collection predicate require-match initial)))))))))
         (if completion
             (progn
               (delete-region start end)
@@ -2626,19 +2644,25 @@ If no MODES are specified, use currently active major and minor modes."
 
 (defun consult--yank-read ()
   "Open kill ring menu and return selected text."
-  (consult--read
-   (consult--remove-dups kill-ring)
-   :prompt "Yank text: "
-   :history t ;; disable history
-   :sort nil
-   :category 'consult-yank
-   :require-match t
-   :lookup #'consult--lookup-member
-   :state
-   (consult--region-preview (point)
-                          ;; If previous command is yank, hide previously yanked text
-                          (or (and (eq last-command 'yank) (mark t)) (point))
-                          'consult-preview-yank)))
+  ;; Do not specify a :lookup function in order to preserve completion-styles
+  ;; highlighting of the current candidate. We have to perform a final lookup
+  ;; to obtain the original candidate which may be propertized with
+  ;; yank-specific properties, like 'yank-handler.
+  (consult--lookup-member
+   nil kill-ring
+   (consult--read
+    (consult--remove-dups kill-ring)
+    :prompt "Yank text: "
+    :history t ;; disable history
+    :sort nil
+    :category 'consult-yank
+    :require-match t
+    :state
+    (consult--region-preview
+     (point)
+     ;; If previous command is yank, hide previously yanked text
+     (or (and (eq last-command 'yank) (mark t)) (point))
+     'consult-preview-yank))))
 
 ;; Insert selected text.
 ;; Adapted from the Emacs yank function.
@@ -2646,7 +2670,7 @@ If no MODES are specified, use currently active major and minor modes."
 (defun consult-yank ()
   "Select text from the kill ring and insert it."
   (interactive)
-  (let ((text (consult--yank-read)))
+  (when-let (text (consult--yank-read))
     (setq yank-window-start (window-start))
     (push-mark)
     (insert-for-yank text)
@@ -2675,19 +2699,19 @@ Otherwise replace the just-yanked text with the selected text."
   (interactive)
   (if (not (eq last-command 'yank))
       (consult-yank)
-    (let ((text (consult--yank-read))
-          (inhibit-read-only t)
-          (pt (point))
-          (mk (mark t)))
-      (setq this-command 'yank)
-      (funcall (or yank-undo-function 'delete-region) (min pt mk) (max pt mk))
-      (setq yank-undo-function nil)
-      (set-marker (mark-marker) pt (current-buffer))
-      (insert-for-yank text)
-      (set-window-start (selected-window) yank-window-start t)
-      (if (< pt mk)
-          (goto-char (prog1 (mark t)
-                       (set-marker (mark-marker) (point) (current-buffer)))))))
+    (when-let (text (consult--yank-read))
+      (let ((inhibit-read-only t)
+            (pt (point))
+            (mk (mark t)))
+        (setq this-command 'yank)
+        (funcall (or yank-undo-function 'delete-region) (min pt mk) (max pt mk))
+        (setq yank-undo-function nil)
+        (set-marker (mark-marker) pt (current-buffer))
+        (insert-for-yank text)
+        (set-window-start (selected-window) yank-window-start t)
+        (if (< pt mk)
+            (goto-char (prog1 (mark t)
+                         (set-marker (mark-marker) (point) (current-buffer))))))))
   nil)
 
 ;;;;; Command: consult-register
@@ -3122,9 +3146,7 @@ In order to select from a specific HISTORY, pass the history variable as argumen
                         (_                              ?u))))
            ;; Disambiguate history items. The same string could
            ;; occur with different search types.
-           (concat (propertize (char-to-string (+ consult--tofu-char type))
-                               'invisible t)
-                   cand)))
+           (consult--tofu-append cand type)))
        history))
      (if history
          (+ 4 (apply #'max (mapcar #'length history)))
@@ -3162,14 +3184,12 @@ starts a new Isearch session otherwise."
             :initial isearch-string
             :keymap consult-isearch-map
             :annotate
-            (lambda (cand) (concat align (alist-get (- (aref cand 0) consult--tofu-char)
-                                                    consult--isearch-narrow)))
+            (lambda (cand) (concat align (alist-get (consult--tofu-get cand) consult--isearch-narrow)))
             :title
-            (lambda (cand) (alist-get (- (aref cand 0) consult--tofu-char)
-                                      consult--isearch-narrow))
+            (lambda (cand) (alist-get (consult--tofu-get cand) consult--isearch-narrow))
             :lookup
             (lambda (_ candidates str)
-              (if-let (found (member str candidates)) (substring (car found) 1) str))
+              (if-let (found (member str candidates)) (substring (car found) 0 -1) str))
             :state
             (lambda (cand restore)
               (unless restore
@@ -3180,7 +3200,7 @@ starts a new Isearch session otherwise."
                 (isearch-update)))
             :narrow
             (cons
-             (lambda (cand) (= (- (aref cand 0) consult--tofu-char) consult--narrow))
+             (lambda (cand) (= (consult--tofu-get cand) consult--narrow))
              consult--isearch-narrow))
            isearch-new-message
            (mapconcat 'isearch-text-char-description isearch-new-string "")))
@@ -3902,6 +3922,7 @@ The completion category is used to find the completion style via
 
 (with-eval-after-load 'icomplete (require 'consult-icomplete))
 (with-eval-after-load 'selectrum (require 'consult-selectrum))
+(with-eval-after-load 'vertico (require 'consult-vertico))
 
 ;; Local Variables:
 ;; outline-regexp: ";;;;* \\|(def\\(un\\|custom\\|var\\) consult-[a-z]"
