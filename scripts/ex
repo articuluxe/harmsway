@@ -1,15 +1,15 @@
 #!/bin/sh
 # -*- Mode: sh -*-
-# ec --- launch emacs client
+# ex --- launch emacs client + server if needed
 # Copyright (C) 2021  Dan Harms (dharms)
 # Author: Dan Harms <enniomore@icloud.com>
 # Created: Wednesday, March 10, 2021
 # Version: 1.0
-# Modified Time-stamp: <2021-04-14 10:43:24 dharms>
+# Modified Time-stamp: <2021-04-14 10:43:06 dharms>
 # Modified by: Dan Harms
 # Keywords: emacs tools
 
 srv=${ESRV:-$(hostname -s)}
-exec "$EMACS_CLIENT" -q -s $srv -n -c "$@"
+exec "$EMACS_CLIENT" -q -a "" -s $srv -n -c "$@"
 
 # code ends here
