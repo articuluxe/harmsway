@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-03-30 09:44:09 dharms>
+;; Modified Time-stamp: <2021-04-14 09:37:39 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3683,7 +3683,16 @@ See `https://github.com/company-mode/company-mode/issues/205'."
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;; highlight-indentation ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package highlight-indentation
+  :disabled
   :bind ("C-c C-h" . highlight-indentation-mode)
+  )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;; highlight-indent-guides ;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package highlight-indent-guides
+  :bind ("C-c C-h" . highlight-indent-guides-mode)
+  :init
+  (setq highlight-indent-guides-method 'column)
+  (setq highlight-indent-guides-responsive 'top)
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; rotate-text ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -4327,7 +4336,8 @@ This function's result only has value if it is preceded by any font changes."
   (add-hook 'python-mode-hook
             (lambda()
               (subword-mode 1)
-              (highlight-indentation-mode 1)
+              ;; (highlight-indentation-mode 1)
+              (highlight-indent-guides-mode 1)
               (setq python-indent-guess-indent-offset nil)
               (setq python-indent-offset 4)
               (setq-local electric-indent-chars
