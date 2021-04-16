@@ -1,1 +1,3 @@
 cp src/*.el ../../../.emacs.d/elisp/emacs-jedi
+cp src/*.py ../../../.emacs.d/elisp/emacs-jedi
+
