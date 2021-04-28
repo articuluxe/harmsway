@@ -1,4 +1,4 @@
-;;; embark.el --- Conveniently act on minibuffer completions   -*- lexical-binding: t; -*-
+;;; Embark.el --- Conveniently act on minibuffer completions   -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2020  Omar Antolín Camarena
 
@@ -535,9 +535,12 @@ Return the category metadatum as the type of the target."
 
 (defun embark-target-collect-candidate ()
   "Target the collect candidate at point."
-  (when (and (derived-mode-p 'embark-collect-mode)
-             (button-at (point)))
-    (let ((label (button-label (point))))
+  (when (derived-mode-p 'embark-collect-mode)
+    ;; do not use button-label since it strips text properties
+    (when-let ((button (button-at (point)))
+               (label (buffer-substring
+                       (button-start button)
+                       (button-end button))))
       (cons embark--type
             (if (eq embark--type 'file)
                 (abbreviate-file-name (expand-file-name label))
@@ -846,10 +849,10 @@ minibuffer before executing the action."
                             (let ((enable-recursive-minibuffers t)
                                   (embark--command command)
                                   (this-command action)
-                                  (prefix-arg prefix)
                                   ;; the next two avoid mouse dialogs
                                   (use-dialog-box nil)
                                   (last-nonmenu-event 13))
+                              (setq prefix-arg prefix)
                               (command-execute action))
                             (setq final-window (selected-window))
                             (run-hooks 'embark-post-action-hook))
@@ -1408,6 +1411,11 @@ key binding for it.  Or alternatively you might want to enable
 `embark-collect-direct-action-minor-mode' in
 `embark-collect-mode-hook'.")
 
+(defmacro embark--static-if (cond then &rest else)
+  "If COND yields non-nil at compile time, do THEN, else do ELSE."
+  (declare (indent 2))
+  (if (eval cond) then (macroexp-progn else)))
+
 (defun embark--display-width (string)
   "Return width of STRING taking display and invisible properties into account."
   (let ((len (length string)) (pos 0) (width 0))
@@ -1420,11 +1428,14 @@ key binding for it.  Or alternatively you might want to enable
             (let ((inv (next-single-property-change pos 'invisible string dis)))
               (unless (get-text-property pos 'invisible string)
                 (setq width (+ width
-                               (string-width
-                                ;; avoid allocating a substring if possible
-                                (if (and (= pos 0) (= inv len))
-                                    string
-                                  (substring string pos inv))))))
+                               ;; bug#47712: Emacs 28 can compute `string-width' of substrings
+                               (embark--static-if (= 3 (cdr (func-arity #'string-width)))
+                                   (string-width string pos inv)
+                                 (string-width
+                                  ;; Avoid allocation for the full string.
+                                  (if (and (= pos 0) (= inv len))
+                                      string
+                                    (substring-no-properties string pos inv)))))))
               (setq pos inv))))))
     width))
 
@@ -1474,7 +1485,7 @@ key binding for it.  Or alternatively you might want to enable
   (remove-overlays nil nil 'face 'embark-collect-zebra-highlight))
 
 (defun embark-collect--add-zebra-stripes ()
-  "Highlight alternate rows with the `embark-collect-highlight-row' face."
+  "Highlight alternate rows with the `embark-collect-zebra-highlight' face."
   (embark-collect--remove-zebra-stripes)
   (save-excursion
     (goto-char (point-min))

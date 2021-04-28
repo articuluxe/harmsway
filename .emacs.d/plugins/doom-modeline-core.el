@@ -272,7 +272,21 @@ It respects `doom-modeline-enable-word-count'."
 
 (defcustom doom-modeline-buffer-encoding t
   "Whether display the buffer encoding."
-  :type 'boolean
+  :type '(choice (const :tag "Always" t)
+                 (const :tag "When non-default" nondefault)
+                 (const :tag "Never" nil))
+  :group 'doom-modeline)
+
+(defcustom doom-modeline-default-coding-system 'utf-8
+  "Default coding system for `doom-modeline-buffer-encoding' `nondefault'."
+  :type 'coding-system
+  :group 'doom-modeline)
+
+(defcustom doom-modeline-default-eol-type 0
+  "Default EOL type for `doom-modeline-buffer-encoding' `nondefault'."
+  :type '(choice (const :tag "Unix-style LF" 0)
+                 (const :tag "DOS-style CRLF" 1)
+                 (const :tag "Mac-style CR" 2))
   :group 'doom-modeline)
 
 (defcustom doom-modeline-indent-info nil
@@ -1073,33 +1087,19 @@ ARGS is same as `all-the-icons-octicon' and others."
      ;; ASCII text
      (and text (propertize text 'face face)))))
 
-(defun doom-modeline--make-xpm (face width height)
-  "Create an XPM bitmap via FACE, WIDTH and HEIGHT. Inspired by `powerline''s `pl/make-xpm'."
+(defun doom-modeline--make-image (face width height)
+  "Create a PBM bitmap via FACE, WIDTH and HEIGHT."
   (when (and (display-graphic-p)
-             (image-type-available-p 'xpm))
+             (image-type-available-p 'pbm))
     (propertize
      " " 'display
-     (let ((data (make-list height (make-list width 1)))
-           (color (or (face-background face nil t) "None")))
+     (let ((color (or (face-background face nil t) "None")))
        (ignore-errors
          (create-image
-          (concat
-           (format
-            "/* XPM */\nstatic char * percent[] = {\n\"%i %i 2 1\",\n\". c %s\",\n\"  c %s\","
-            (length (car data)) (length data) color color)
-           (apply #'concat
-                  (cl-loop with idx = 0
-                           with len = (length data)
-                           for dl in data
-                           do (cl-incf idx)
-                           collect
-                           (concat
-                            "\""
-                            (cl-loop for d in dl
-                                     if (= d 0) collect (string-to-char " ")
-                                     else collect (string-to-char "."))
-                            (if (eq idx len) "\"};" "\",\n")))))
-  'xpm t :ascent 'center))))))
+          (concat (format "P1\n%i %i\n" width height)
+                  (make-string (* width height) ?1)
+                  "\n")
+          'pbm t :foreground color :ascent 'center))))))
 
 ;; Check whether `window-width' is smaller than the limit
 (defvar-local doom-modeline--limited-width-p nil)

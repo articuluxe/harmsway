@@ -23,11 +23,22 @@
 (require 'json)
 (require 'url)
 
+;;;###autoload
+(defgroup currency-convert nil
+  "Currency converter."
+  :group 'convenience)
+
+;;;###autoload
+(defcustom currency-convert-exchangeratesapi-key ""
+  "API key for exchangeratesapi.io. Leave blank to not use it."
+  :type 'string
+  :group 'currency-convert)
+
 (defvar currency-convert-amount-history '()
-  "History for amounts typed into currency-convert.")
+  "History for amounts typed into `currency-convert'.")
 
 (defvar currency-convert-currency-history '()
-  "History for currency names typed into currency-convert.")
+  "History for currency names typed into `currency-convert'.")
 
 (defvar currency-convert--rates nil
   "Exchange rates for all known currencies.")
@@ -51,6 +62,17 @@
   (unless currency-convert--rates
     (currency-convert--load-rates)))
 
+(defun currency-convert--update-from-exchangeratesapi ()
+  "Internal helper to download exchange rates from `exchangeratesapi.io'."
+  (unless (string-blank-p currency-convert-exchangeratesapi-key)
+    (with-temp-buffer
+      (let ((url-show-status nil)
+            (url-mime-accept-string "application/json"))
+        (url-insert-file-contents
+         (concat "https://api.exchangeratesapi.io/v1/latest?access_key="
+                 (url-hexify-string currency-convert-exchangeratesapi-key))))
+      (write-region nil nil (currency-convert--rates-file)))))
+
 (defun currency-convert-update-rates ()
   "Get the latest exchange rates from the internet.
 
@@ -62,10 +84,7 @@ The rates are downloaded from the free site exchangeratesapi.io.
 They may lag a few days behind the latest rates.  Downloads of
 up-to-the-minute rates are only offered by paid services."
   (interactive)
-  (let* ((url-show-status nil) (url-mime-accept-string "application/json"))
-    (with-temp-buffer
-      (url-insert-file-contents "https://api.exchangeratesapi.io/latest")
-      (write-region nil nil (currency-convert--rates-file))))
+  (currency-convert--update-from-exchangeratesapi)
   (currency-convert--load-rates)
   (let ((date (cdr (assoc 'date currency-convert--rates))))
     (message "Now using exchange rates from %s" date)

@@ -797,7 +797,7 @@ regular keymap (`company-mode-map'):
 keymap during active completions (`company-active-map'):
 
 \\{company-active-map}"
-  nil company-lighter company-mode-map
+  :lighter company-lighter
   (if company-mode
       (progn
         (add-hook 'pre-command-hook 'company-pre-command nil t)
@@ -2198,7 +2198,7 @@ each one wraps a part of the input string."
   "Search mode for completion candidates.
 Don't start this directly, use `company-search-candidates' or
 `company-filter-candidates'."
-  nil company-search-lighter nil
+  :lighter company-search-lighter
   (if company-search-mode
       (if (company-manual-begin)
           (progn
@@ -3155,6 +3155,11 @@ Returns a negative number if the tooltip should be displayed above point."
       (when (< height 0)
         (setq row (+ row height -1)
               above t))
+
+      ;; This can happen in Emacs versions which allow arbitrary scrolling,
+      ;; such as Yamamoto's Mac Port.
+      (unless (pos-visible-in-window-p (window-start))
+        (cl-decf row))
 
       (let (nl beg end ov args)
         (save-excursion

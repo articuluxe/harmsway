@@ -159,6 +159,9 @@
     ("apache"           all-the-icons-alltheicon "apache"               :height 0.9  :face all-the-icons-dgreen)
     ("^Makefile$"       all-the-icons-fileicon "gnu"                    :face all-the-icons-dorange)
     ("\\.mk$"           all-the-icons-fileicon "gnu"                    :face all-the-icons-dorange)
+    ("^CMakeLists.txt$" all-the-icons-fileicon "cmake"                  :face all-the-icons-red)
+    ("^CMakeCache.txt$" all-the-icons-fileicon "cmake"                  :face all-the-icons-blue)
+    ("\\.cmake$"        all-the-icons-fileicon "cmake"                  :face all-the-icons-red)
 
     ("\\.dockerignore$" all-the-icons-fileicon "dockerfile"             :height 1.2  :face all-the-icons-dblue)
     ("^\\.?Dockerfile"  all-the-icons-fileicon "dockerfile"             :face all-the-icons-blue)
@@ -417,6 +420,9 @@
     ;; F#
     ("\\.fs[ix]?$"      all-the-icons-fileicon "fsharp"                 :face all-the-icons-blue-alt)
 
+    ;; zig
+    ("\\.zig$"          all-the-icons-fileicon "zig"                    :face all-the-icons-orange)
+
     ;; File Types
     ("\\.ico$"          all-the-icons-octicon "file-media"              :v-adjust 0.0 :face all-the-icons-blue)
     ("\\.png$"          all-the-icons-octicon "file-media"              :v-adjust 0.0 :face all-the-icons-orange)
@@ -451,6 +457,12 @@
     ("\\.pp[st]$"       all-the-icons-fileicon "powerpoint"             :face all-the-icons-orange)
     ("\\.pp[st]x$"      all-the-icons-fileicon "powerpoint"             :face all-the-icons-red)
     ("\\.knt$"          all-the-icons-fileicon "powerpoint"             :face all-the-icons-cyan)
+
+    ("\\.xlsx$"         all-the-icons-fileicon "excel"                  :face all-the-icons-dgreen)
+    ("\\.xlsm$"         all-the-icons-fileicon "excel"                  :face all-the-icons-dgreen)
+    ("\\.xlsb$"         all-the-icons-fileicon "excel"                  :face all-the-icons-dgreen)
+    ("\\.xltx$"         all-the-icons-fileicon "excel"                  :face all-the-icons-dgreen)
+    ("\\.xltm$"         all-the-icons-fileicon "excel"                  :face all-the-icons-dgreen)
 
     ("bookmark"         all-the-icons-octicon "bookmark"                :height 1.1 :v-adjust 0.0 :face all-the-icons-lpink)
     ("\\.cache$"        all-the-icons-octicon "database"                :height 1.0 :v-adjust 0.0 :face all-the-icons-green)
@@ -579,6 +591,7 @@
     (nginx-mode                         all-the-icons-fileicon "nginx"            :height 0.9  :face all-the-icons-dgreen)
     (apache-mode                        all-the-icons-alltheicon "apache"         :height 0.9  :face all-the-icons-dgreen)
     (makefile-mode                      all-the-icons-fileicon "gnu"              :face all-the-icons-dorange)
+    (cmake-mode                         all-the-icons-fileicon "cmake"            :face all-the-icons-red)
     (dockerfile-mode                    all-the-icons-fileicon "dockerfile"       :face all-the-icons-blue)
     (docker-compose-mode                all-the-icons-fileicon "dockerfile"       :face all-the-icons-lblue)
     (nxml-mode                          all-the-icons-faicon "file-code-o"        :height 0.95 :face all-the-icons-lorange)
@@ -656,7 +669,8 @@
     (nasm-mode                          all-the-icons-fileicon "assembly"         :height 1.0  :face all-the-icons-blue)
     (tcl-mode                           all-the-icons-fileicon "tcl"              :height 1.0  :face all-the-icons-dred)
     (cuda-mode                          all-the-icons-fileicon "nvidia"           :face all-the-icons-green)
-    (glsl-mode                          all-the-icons-fileicon "vertex-shader"    :face all-the-icons-green)))
+    (glsl-mode                          all-the-icons-fileicon "vertex-shader"    :face all-the-icons-green)
+    (zig-mode                           all-the-icons-fileicon "zig"              :face all-the-icons-orange)))
 
 (defvar all-the-icons-url-alist
   '(

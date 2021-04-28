@@ -84,6 +84,7 @@ You have to re-load the theme for these changes to take effect."
    `(default             ((t (:foreground ,fg :background ,bg1))))
    `(fringe              ((t (:foreground ,fg :background ,bg1))))
    `(match               ((t (:foreground ,ok :bold t))))
+   `(scroll-bar          ((t (:foreground ,fg2))))
 
    `(link                ((t (:underline t))))
    `(link-visited        ((t (:underline t :italic t))))
@@ -309,6 +310,9 @@ You have to re-load the theme for these changes to take effect."
    `(diff-hl-margin-ignore  ((t (:foreground ,fg  :background ,bg1 :bold nil :italic nil))))
    `(diff-hl-margin-unknown ((t (:foreground ,fg  :background ,bg1 :bold nil :italic nil))))
    
+   ;; help
+   `(help-key-binding ((t (:foreground ,fg :background ,bg5 :box (:line-width (1 . -1) :color ,fg2)))))
+
    ;; outline, extends org-outline
    `(outline-1 ((t (:foreground ,fg :bold t :extend t))))
    `(outline-2 ((t (:foreground ,fg :bold t :extend t))))
@@ -322,8 +326,7 @@ You have to re-load the theme for these changes to take effect."
    ;; TODO org-agenda
    
    ;; org
-   `(org-code                  ((t (:background ,str :distant-foreground ,bg1 :background ,stimmung-themes-dark-highlight-color))))
-   `(org-date                  ((t (:background ,stimmung-themes-dark-highlight-color :bold t))))
+   `(org-code                  ((t (:background ,str :distant-foreground ,bg1 :background ,stimmung-themes-light-highlight-color))))
    `(org-link                  ((t (:underline t))))
    `(org-block                 ((t (:foreground ,fg :background ,bg3 :extend t))))
    `(org-block-begin-line      ((t (:foreground ,fg :background ,bg3 :bold t :extend t))))
@@ -332,26 +335,27 @@ You have to re-load the theme for these changes to take effect."
    `(org-document-info         ((t (:foreground ,fg :background ,bg1 :italic t))))
    `(org-document-info-keyword ((t (:foreground ,fg :background ,bg1))))
    `(org-document-title        ((t (:foreground ,fg :weight bold))))
-   `(org-done                  ((t (:foreground ,ok  :bold t :strike-through t))))
+   `(org-done                  ((t (:foreground ,ok :bold t :strike-through t))))
    `(org-ellipsis              ((t (:foreground ,fg))))
-   `(org-footnote              ((t (:background ,stimmung-themes-dark-highlight-color))))
    `(org-meta-line             ((t (:background ,bg1))))
    `(org-formula               ((t (:foreground ,fg))))
    `(org-headline-done         ((t (:foreground ,fg :weight normal :strike-through t))))
    `(org-hide                  ((t (:foreground ,bg1 :background ,bg1))))
    `(org-list-dt               ((t (:foreground ,fg :bold t))))
-   `(org-priority              ((t (:background ,stimmung-themes-dark-highlight-color))))
    `(org-scheduled             ((t (:foreground ,red))))
-   `(org-scheduled-previously  ((t (:background ,stimmung-themes-dark-highlight-color))))
    `(org-scheduled-today       ((t (:foreground ,ok))))
-   `(org-sexp-date             ((t (:background ,stimmung-themes-dark-highlight-color))))
-   `(org-special-keyword       ((t (:background ,stimmung-themes-dark-highlight-color))))
    `(org-table                 ((t (:foreground ,fg))))
    `(org-tag                   ((t (:foreground ,fg  :background ,bg1 :bold t))))
    `(org-todo                  ((t (:foreground ,red :bold t))))
-   `(org-warning               ((t (:foreground ,red :bold t))))
+   `(org-warning               ((t (:inherit 'warning))))
    `(org-upcoming-deadline     ((t (:foreground ,red))))
-   
+   `(org-priority              ((t (:background ,stimmung-themes-light-highlight-color))))
+   `(org-footnote              ((t (:background ,stimmung-themes-light-highlight-color))))
+   `(org-scheduled-previously  ((t (:background ,stimmung-themes-light-highlight-color))))
+   `(org-sexp-date             ((t (:background ,stimmung-themes-light-highlight-color))))
+   `(org-special-keyword       ((t (:background ,stimmung-themes-light-highlight-color))))
+   `(org-date                  ((t (:background ,bg1 :bold t))))
+
    ;; markdown mode
    `(markdown-header-face             ((t (:foreground ,fg :bold t))))
    `(markdown-list-face               ((t (:foreground ,fg :bold t))))

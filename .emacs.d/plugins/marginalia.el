@@ -1,7 +1,7 @@
 ;;; marginalia.el --- Enrich existing commands with completion annotations -*- lexical-binding: t -*-
 
-;; Author: Omar Antolín Camarena, Daniel Mendler
-;; Maintainer: Omar Antolín Camarena, Daniel Mendler
+;; Author: Omar Antolín Camarena <omar@matem.unam.mx>, Daniel Mendler <mail@daniel-mendler.de>
+;; Maintainer: Omar Antolín Camarena <omar@matem.unam.mx>, Daniel Mendler <mail@daniel-mendler.de>
 ;; Created: 2020
 ;; License: GPL-3.0-or-later
 ;; Version: 0.4
@@ -263,6 +263,8 @@ determine it."
 (declare-function color-rgb-to-hex "color")
 (declare-function color-rgb-to-hsl "color")
 (declare-function color-hsl-to-rgb "color")
+
+(declare-function selectrum--get-full "ext:selectrum")
 
 ;;;; Marginalia mode
 
@@ -585,11 +587,14 @@ The string is transformed according to `marginalia-bookmark-type-transformers'."
     (let ((front (alist-get 'front-context-string bm)))
       (marginalia--fields
        ((marginalia--bookmark-type bm) :width 10 :face 'marginalia-type)
-       ((alist-get 'filename bm) :width 40 :face 'marginalia-file-name)
+       ((alist-get 'filename bm) :truncate 40 :face 'marginalia-file-name)
        ((if (or (not front) (string= front ""))
             ""
-          (concat (replace-regexp-in-string "\n" "\\\\n" front) "…"))
-        :width 20 :face 'marginalia-documentation)))))
+          (concat (string-trim
+                   (replace-regexp-in-string
+                    "[ \t]+" " "
+                    (replace-regexp-in-string "\n" "\\\\n" front))) "…"))
+        :truncate 20 :face 'marginalia-documentation)))))
 
 (defun marginalia-annotate-customize-group (cand)
   "Annotate customization group CAND with its documentation string."
@@ -644,14 +649,16 @@ For some completion tables, the completion candidates offered are
 meant to be only a part of the full minibuffer contents. For
 example, during file name completion the candidates are one path
 component of a full file path."
-  (if-let (win (active-minibuffer-window))
-      (with-current-buffer (window-buffer win)
-        (concat (substring (minibuffer-contents-no-properties)
-                           0 marginalia--base-position)
-                cand))
-    ;; no minibuffer is active, trust that cand already conveys all
-    ;; necessary information (there's not much else we can do)
-    cand))
+    (if-let (win (active-minibuffer-window))
+        (with-current-buffer (window-buffer win)
+          (if (bound-and-true-p selectrum-is-active)
+              (selectrum--get-full cand)
+            (concat (substring (minibuffer-contents-no-properties)
+                               0 marginalia--base-position)
+                    cand)))
+      ;; no minibuffer is active, trust that cand already conveys all
+      ;; necessary information (there's not much else we can do)
+      cand))
 
 (defun marginalia--remote-p (path)
   "Return t if PATH is a remote path."
@@ -758,7 +765,7 @@ PROP is the property which is looked up."
                  (annotate (alist-get cat (symbol-value (car marginalia-annotators)))))
        (lambda (cands)
          (marginalia--context metadata
-           (mapcar (lambda (x) (list x (or (funcall annotate x) ""))) cands)))))
+           (mapcar (lambda (x) (list x "" (or (funcall annotate x) ""))) cands)))))
     ('category
      ;; Find the completion category by trying each of our classifiers.
      ;; Store the metadata for `marginalia-classify-original-category'.
@@ -775,7 +782,7 @@ Remember `this-command' for `marginalia-classify-by-command-name'."
   ;; NOTE: As a small optimization track the base position only for file completions,
   ;; since `marginalia--full-candidate' is only used for files as of now.
   (when minibuffer-completing-file-name
-    (setq marginalia--base-position (cdr (last completions))))
+    (setq marginalia--base-position (or (cdr (last completions)) 0)))
   completions)
 
 ;;;###autoload

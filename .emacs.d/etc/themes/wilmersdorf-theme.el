@@ -1,6 +1,6 @@
 ;;; wilmersdorf-theme.el --- Emacs theme with dark subtle syntax highlighting
 
-;; Copyright (C) 2019-2020, Ian Y.E. Pan
+;; Copyright (C) 2019-2021, Ian Y.E. Pan
 
 ;; Author: Ian Y.E. Pan
 
@@ -26,19 +26,20 @@
 (deftheme wilmersdorf)
 (let ((class '((class color) (min-colors 89)))
       (fg0     "#d3d3d3")
-      (fg1     "#c6c6c6")
+      (fg1     "#c6c6c6") ; default fg
       (fg2     "#ababab")
       (fg3     "#929292")
       (fg4     "#888395")
       (bg00    "#18191f")
       (bg0     "#1f2024")
-      (bg1     "#282b33")
+      (bg1     "#282b33") ; default bg
       (bg2     "#34373e")
       (bg3     "#41454b")
       (bg4     "#515462")
       (key2    "#90a6db")
       (key3    "#7289bc")
       (accent  "#c9d9ff")
+      (numeric "#a6c1e0")
       (builtin "#7ebebd")
       (keyword "#819cd6")
       (const   "#a6c1e0")
@@ -47,7 +48,16 @@
       (str     "#5b94ab")
       (type    "#b0a2e7")
       (var     "#a6c1e0")
-      (warning "#e1c1ee"))
+      (warning "#e1c1ee")
+
+      ;; standardized palette
+      (wm-yellow         "#c9d9ff")
+      (wm-bluegreen      "#7ebebd")
+      (wm-magenta        "#e1c1ee")
+      (wm-orange         "#cccccc")
+      (wm-red            "#e1c1ee")
+      (wm-green          "#7ebebd")
+      (wm-blue           "#a6c1e0"))
   (custom-theme-set-faces
    'wilmersdorf
    `(default                                  ((,class (:background ,bg1 :foreground ,fg1))))
@@ -72,10 +82,10 @@
    `(font-lock-variable-name-face             ((,class (:foreground ,var))))
    `(font-lock-warning-face                   ((,class (:foreground ,warning :background ,bg2))))
 
-   `(region                                   ((,class (:background ,bg2 :foreground ,fg0))))
+   `(region                                   ((,class (:background ,bg2 :distant-foreground ,fg2 :extend nil))))
    `(highlight                                ((,class (:foreground ,bg3 :background ,fg3))))
    `(hl-line                                  ((,class (:background  ,bg2))))
-   `(fringe                                   ((,class (:background ,bg1 :foreground ,fg4))))
+   `(fringe                                   ((,class (:background nil :foreground ,fg4))))
    `(cursor                                   ((,class (:background ,fg1))))
    `(show-paren-match-face                    ((,class (:background ,warning))))
    `(show-paren-match                         ((t (:background ,bg4))))
@@ -87,6 +97,9 @@
    `(link                                     ((,class (:foreground ,const :underline t))))
    `(warning                                  ((,class (:foreground ,warning))))
    `(dired-directory                          ((t (:inherit (font-lock-keyword-face)))))
+   `(line-number                              ((,class (:inherit default :foreground ,fg3))))
+   `(line-number-current-line                 ((,class (:inherit line-number))))
+
 
    `(mode-line                                ((,class (:bold nil :foreground ,fg1 :background ,bg4))))
    `(mode-line-inactive                       ((,class (:bold nil :foreground ,fg2 :background ,bg3))))
@@ -302,8 +315,56 @@
    `(swiper-match-face-4                      ((t (:inherit ivy-minibuffer-match-face-4))))
    `(swiper-line-face                         ((t (:foreground ,fg0 :background ,bg4))))
 
-   `(evil-ex-substitute-matches               ((t :foreground "#ff0000" :weight bold :strike-through t)))
-   `(evil-ex-substitute-replacement           ((t :foreground "#0ff000" :weight bold)))
+   `(evil-ex-substitute-matches               ((t :foreground "#ee8888" :weight bold :strike-through t)))
+   `(evil-ex-substitute-replacement           ((t :foreground "#88dd88" :weight bold)))
+
+   `(diff-hl-insert                           ((t (:background ,wm-green :foreground ,wm-green))))
+   `(diff-hl-delete                           ((t (:background ,wm-red :foreground ,wm-red))))
+   `(diff-hl-change                           ((t (:background ,wm-blue :foreground ,wm-blue))))
+
+   `(sml/global                               ((t (:foreground ,fg1 :weight normal))))
+   `(sml/filename                             ((t (:foreground ,fg1 :weight normal))))
+   `(sml/line-number                          ((t (:foreground ,fg1 :weight normal))))
+   `(sml/prefix                               ((t (:foreground ,fg1 :weight normal))))
+   `(sml/read-only                            ((t (:foreground ,fg1 :weight normal))))
+   `(sml/modes                                ((t (:foreground ,fg1 :weight normal))))
+   `(sml/modified                             ((t (:foreground ,accent :weight bold))))
+   `(sml/charging                             ((t (:foreground "#88dd88" :weight normal))))
+
+   `(highlight-numbers-number                 ((t (:foreground ,numeric))))
+
+   `(highlight-symbol-face                    ((t (:background "#343a40"))))
+
+   `(tree-sitter-hl-face:method.call          ((t (:inherit font-lock-function-name-face))))
+   `(tree-sitter-hl-face:function.call        ((t (:inherit font-lock-function-name-face))))
+   `(tree-sitter-hl-face:operator             ((t (:inherit default))))
+   `(tree-sitter-hl-face:number               ((t (:inherit highlight-numbers-number))))
+
+   `(font-latex-bold-face                     ((t (:inherit bold))))
+   `(font-latex-italic-face                   ((t (:inherit italic))))
+   `(font-latex-math-face                     ((t (:foreground ,wm-blue))))
+   `(font-latex-sectioning-0-face             ((t (:foreground ,wm-blue))))
+   `(font-latex-sectioning-1-face             ((t (:foreground ,wm-magenta))))
+   `(font-latex-sectioning-2-face             ((t (:foreground ,wm-orange))))
+   `(font-latex-sectioning-3-face             ((t (:foreground ,wm-blue))))
+   `(font-latex-sectioning-4-face             ((t (:foreground ,wm-red))))
+   `(font-latex-sectioning-5-face             ((t (:foreground ,wm-green))))
+   `(font-latex-script-char-face              ((t (:foreground ,wm-blue))))
+   `(font-latex-string-face                   ((t (:inherit font-lock-string-face))))
+   `(font-latex-warning-face                  ((t (:inherit font-lock-warning-face))))
+   `(font-latex-verbatim-face                 ((t (:inherit org-verbatim))))
+   `(TeX-error-description-error              ((t (:inherit error :bold t))))
+   `(TeX-error-description-warning            ((t (:inherit warning :bold t))))
+   `(TeX-error-description-tex-said           ((t (:inherit success :bold t))))
+
+   `(neo-dir-link-face                        ((t (:foreground "#dddddd"))))
+   `(neo-header-face                          ((t (:foreground "#dddddd"))))
+   `(neo-banner-face                          ((t (:foreground "#dddddd"))))
+   `(neo-root-dir-face                        ((t (:foreground "#dddddd"))))
+   `(neo-file-link-face                       ((t (:foreground "#dddddd"))))
+   `(neo-expand-btn-face                      ((t (:foreground "#dddddd"))))
+
+
    ))
 
 (provide-theme 'wilmersdorf)

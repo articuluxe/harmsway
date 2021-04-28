@@ -105,7 +105,7 @@
 language-server/bin/php-language-server.php"))
                                 ((c++-mode c-mode) . ("ccls"))
                                 ((caml-mode tuareg-mode reason-mode)
-                                 . ("ocaml-language-server" "--stdio"))
+                                 . ("ocamllsp"))
                                 (ruby-mode
                                  . ("solargraph" "socket" "--port" :autoport))
                                 (haskell-mode
@@ -221,6 +221,10 @@ let the buffer grow forever."
   "Non-nil if server-initiated edits should be confirmed with user."
   :type '(choice (const :tag "Don't show confirmation prompt" nil)
                  (symbol :tag "Show confirmation prompt" 'confirm)))
+
+;; Customizable via `completion-category-overrides'.
+(when (assoc 'flex completion-styles-alist)
+  (add-to-list 'completion-category-defaults '(eglot (styles flex basic))))
 
 
 ;;; Constants
@@ -907,6 +911,9 @@ Each function is passed the server as an argument")
              " "))
     contact))
 
+(defvar-local eglot--cached-server nil
+  "A cached reference to the current EGLOT server.")
+
 (defun eglot--connect (managed-major-mode project class contact)
   "Connect to MANAGED-MAJOR-MODE, PROJECT, CLASS and CONTACT.
 This docstring appeases checkdoc, that's all."
@@ -945,7 +952,8 @@ This docstring appeases checkdoc, that's all."
                                   (format "*%s stderr*" readable-name))
                          :file-handler t)))))))
          (spread (lambda (fn) (lambda (server method params)
-                                (apply fn server method (append params nil)))))
+                                (let ((eglot--cached-server server))
+                                 (apply fn server method (append params nil))))))
          (server
           (apply
            #'make-instance class
@@ -1377,9 +1385,6 @@ For example, to keep your Company customization use
      (push (cons ',symbol (symbol-value ',symbol)) eglot--saved-bindings)
      (setq-local ,symbol ,binding)))
 
-(defvar-local eglot--cached-server nil
-  "A cached reference to the current EGLOT server.")
-
 (defun eglot-managed-p ()
   "Tell if current buffer is managed by EGLOT."
   eglot--managed-mode)
@@ -1420,8 +1425,6 @@ Use `eglot-managed-p' to determine if current buffer is managed.")
     (eglot--setq-saving flymake-diagnostic-functions '(eglot-flymake-backend))
     (eglot--setq-saving company-backends '(company-capf))
     (eglot--setq-saving company-tooltip-align-annotations t)
-    (when (assoc 'flex completion-styles-alist)
-      (eglot--setq-saving completion-styles '(flex basic)))
     (unless (eglot--stay-out-of-p 'imenu)
       (add-function :before-until (local 'imenu-create-index-function)
                     #'eglot-imenu))
@@ -2165,7 +2168,8 @@ is not active."
                                    (get-text-property 0 'eglot--lsp-item c)
                                    :sortText)
                                   "")))))
-           (metadata `(metadata . ((display-sort-function . ,sort-completions))))
+           (metadata `(metadata (category . eglot)
+                                (display-sort-function . ,sort-completions)))
            resp items (cached-proxies :none)
            (proxies
             (lambda ()

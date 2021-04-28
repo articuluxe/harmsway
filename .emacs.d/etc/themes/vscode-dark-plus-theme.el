@@ -508,8 +508,8 @@
    `(neo-header-face                          ((t (:foreground "#cccccc"))))
    `(neo-banner-face                          ((t (:foreground "#cccccc"))))
    `(neo-root-dir-face                        ((t (:foreground "#cccccc"))))
-   `(neo-file-link-face                       ((t (:foreground "#aaaaaa"))))
-   `(neo-expand-btn-face                      ((t (:foreground "#aaaaaa"))))
+   `(neo-file-link-face                       ((t (:foreground "#cccccc"))))
+   `(neo-expand-btn-face                      ((t (:foreground "#cccccc"))))
 
    `(sml/global                               ((t (:foreground ,fg2 :weight normal))))
    `(sml/filename                             ((t (:foreground ,fg2 :weight normal))))
@@ -538,6 +538,9 @@
    `(tree-sitter-hl-face:type.builtin         ((t (:inherit font-lock-keyword-face))))
    `(tree-sitter-hl-face:number               ((t (:inherit highlight-numbers-number))))
    `(tree-sitter-hl-face:variable.special     ((t (:inherit font-lock-keyword-face))))
+   `(tree-sitter-hl-face:keyword              ((t (:foreground ,ms-magenta))))
+
+   `(lsp-ui-doc-background                    ((t (:background ,bg2))))
 
    `(font-latex-bold-face                     ((t (:inherit bold))))
    `(font-latex-italic-face                   ((t (:inherit italic))))

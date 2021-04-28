@@ -1,6 +1,6 @@
 ;;; vs-dark-theme.el --- Visual Studio IDE dark theme
 
-;; Copyright (C) 2019 , Jen-Chieh Shen
+;; Copyright (C) 2019-2021 , Jen-Chieh Shen
 
 ;; Author: Jen-Chieh Shen
 ;; URL: https://github.com/jcs090218/vs-dark-theme
@@ -35,7 +35,7 @@
 
 (let ((class '((class color) (min-colors 89)))
       (fg1 "#D2D2D2")
-      (bg1 "#161616")
+      (bg1 "#1E1E1E")
       (builtin "#B0C4DE")
       (keyword "#17A0FB")
       (const "#38EFCA")
@@ -46,7 +46,7 @@
       (var "#D2D2D2")
       (prep "#8D9B99")
       (ln-color-fg "#2B9181")
-      (ln-color-bg "#212121"))
+      (ln-color-bg "#252525"))
   (custom-theme-set-faces
    'vs-dark
    `(default ((,class (:background ,bg1 :foreground ,fg1))))
