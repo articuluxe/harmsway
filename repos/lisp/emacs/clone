@@ -1,4 +1,4 @@
-VERSION=27.1
+VERSION=27.2
 mkdir -p src
 cd src
 wget https://ftp.gnu.org/gnu/emacs/emacs-$VERSION.tar.xz

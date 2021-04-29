@@ -1,4 +1,5 @@
-cd src/emacs-27.1
+test -e
+cd src/emacs-27.2
 mkdir -p bld
 cd bld
 ../configure --with-ns --disable-ns-self-contained --prefix=$HOME/opt/stow/emacs
