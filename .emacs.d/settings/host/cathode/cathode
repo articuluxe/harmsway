@@ -3,7 +3,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2021-03-05 14:47:30 dharms>
+;; Modified Time-stamp: <2021-05-05 13:57:55 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -48,6 +48,7 @@
                             "Victor Mono 12"
                             "Iosevka 14"
                             "Hasklig 12"
+                            "Segoe Mono Boot 12"
                             "Anka/Coder 12"
                             "Ubuntu Mono 14"
                             "League Mono Variable 12"
@@ -56,6 +57,7 @@
                             "NotoMono Nerd Font Mono 12"
                             "LiterationMono Nerd Font Mono 12"
                             "Go Mono 14"
+                            "JuliaMono 12"
                             "M+ 2m regular 14"
                             "Droid Sans Mono 12"
                             "Ricty Diminished 14"
@@ -66,6 +68,7 @@
                             "Jetbrains Mono 14"
                             "Verily Serif Mono 12"
                             "Oxygen Mono 12"
+                            "Excalibur Monospace 12"
                             "Overpass Mono 13"
                             "Hermit 12"
                             "agave 14"
