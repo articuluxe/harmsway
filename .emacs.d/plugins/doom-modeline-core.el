@@ -34,7 +34,7 @@
 (require 'all-the-icons)
 (require 'shrink-path)
 
-
+
 ;;
 ;; Compatibilities
 ;;
@@ -127,7 +127,7 @@ It returns a file name which can be used directly as argument of
 (when (display-graphic-p)
   (doom-modeline--set-char-widths doom-modeline-rhs-icons-alist))
 
-
+
 ;;
 ;; Customization
 ;;
@@ -145,11 +145,16 @@ If the actual char height is larger, it respects the actual char height."
          (set sym (if (> val 0) val 1)))
   :group 'doom-modeline)
 
-(defcustom doom-modeline-bar-width (if (eq system-type 'darwin) 3 6)
+(defcustom doom-modeline-bar-width 4
   "How wide the mode-line bar should be. It's only respected in GUI."
   :type 'integer
   :set (lambda (sym val)
          (set sym (if (> val 0) val 1)))
+  :group 'doom-modeline)
+
+(defcustom doom-modeline-hud nil
+  "Whether to use hud instead of default bar. It's only respected in GUI."
+  :type 'boolean
   :group 'doom-modeline)
 
 (defcustom doom-modeline-window-width-limit fill-column
@@ -525,7 +530,7 @@ It requires `circe' or `erc' package."
   :type 'function
   :group 'doom-modeline)
 
-
+
 ;;
 ;; Faces
 ;;
@@ -770,7 +775,7 @@ etc. (also see the face `doom-modeline-unread-number')."
   "Face for timemachine status."
   :group 'doom-modeline-faces)
 
-
+
 ;;
 ;; Externals
 ;;
@@ -780,7 +785,7 @@ etc. (also see the face `doom-modeline-unread-number')."
 (declare-function project-roots 'project)
 (declare-function projectile-project-root 'projectile)
 
-
+
 ;;
 ;; Core helpers
 ;;
@@ -887,7 +892,7 @@ then this function does nothing."
       (add-hook 'focus-in-hook #'doom-modeline-focus)
       (add-hook 'focus-out-hook #'doom-modeline-unfocus))))
 
-
+
 ;;
 ;; Core
 ;;
@@ -1101,13 +1106,13 @@ ARGS is same as `all-the-icons-octicon' and others."
                   "\n")
           'pbm t :foreground color :ascent 'center))))))
 
-;; Check whether `window-width' is smaller than the limit
+;; Check whether `window-total-width' is smaller than the limit
 (defvar-local doom-modeline--limited-width-p nil)
 (defun doom-modeline-window-size-change-function (&rest _)
   "Function for `window-size-change-functions'."
   (setq doom-modeline--limited-width-p
         (and (numberp doom-modeline-window-width-limit)
-             (<= (+ (window-width)
+             (<= (+ (window-total-width)
                     (or scroll-bar-width 0)
                     (or left-fringe-width 0)
                     (or right-fringe-width 0)

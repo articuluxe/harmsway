@@ -74,7 +74,8 @@
 
 ;;;;; basic coloring
    `(button                                       ((t (:underline t))))
-   `(link                                         ((t (:foreground ,acme-blue :underline t :weight normal))))
+   `(link                                         ((t (:foreground "#0066cc":weight normal))))
+   `(highlight                                    ((t (:inherit link :underline t)))) ; link hover
    `(link-visited                                 ((t (:foreground ,acme-purple :underline t :weight normal))))
    `(default                                      ((t (:foreground ,fg :background ,bg))))
    `(cursor                                       ((t (:foreground ,bg :background ,fg))))
@@ -83,7 +84,6 @@
    `(line-number                                  ((t (:foreground ,fg :background ,bg-alt))))
    `(line-number-current-line                     ((t (:foreground ,fg :background ,bg-alt))))
    `(header-line                                  ((t (:foreground ,fg :background ,acme-blue-light :box t))))
-   `(highlight                                    ((t (:background ,highlight))))
    `(success                                      ((t (:foreground ,acme-green :weight normal))))
    `(warning                                      ((t (:foreground ,acme-red :weight normal))))
    `(error                                        ((t (:foreground ,acme-red :bold t))))
@@ -121,7 +121,7 @@
 
    `(menu                                         ((t (:foreground ,bg :background ,fg))))
    `(minibuffer-prompt                            ((t (:foreground ,fg :weight normal))))
-   `(region                                       ((,class (:foreground ,fg :background ,highlight))))
+   `(region                                       ((,class (:foreground ,fg :background ,highlight :extend nil))))
    `(secondary-selection                          ((t (:background ,acme-green-light))))
    `(trailing-whitespace                          ((t (:background ,acme-red-light))))
    `(vertical-border                              ((t (:foreground ,acme-cyan))))
@@ -260,15 +260,10 @@
 ;;;;; company
    `(company-tooltip                              ((t (:background ,acme-blue-light))))
    `(company-tooltip-selection                    ((t (:background ,acme-cyan-light))))
-   `(company-tooltip-common-selection             ((t (:foreground ,acme-blue :background ,acme-cyan-light :bold t))))
-   `(company-tooltip-mouse                        ((t (:background ,acme-blue-light))))
-   `(company-tooltip-search                       ((t (:foreground ,acme-red))))
    `(company-tooltip-common                       ((t (:foreground ,acme-blue :bold t))))
    `(company-tooltip-annotation                   ((t (:foreground ,acme-yellow :italic t)))) ; parameter hints etc.
-   `(company-tooltip-annotation-selection         ((t (:foreground ,acme-yellow :italic t))))
    `(company-scrollbar-fg                         ((t (:background ,acme-cyan))))
    `(company-scrollbar-bg                         ((t (:background ,acme-cyan-light))))
-   `(company-preview                              ((t (:foreground ,fg :background ,acme-cyan-light))))
    `(company-preview-common                       ((t (:foreground ,fg :background ,acme-cyan-light))))
 
 ;;;;; highlight-symbol

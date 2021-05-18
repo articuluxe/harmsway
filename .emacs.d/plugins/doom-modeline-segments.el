@@ -36,7 +36,7 @@
 (require 'doom-modeline-core)
 (require 'doom-modeline-env)
 
-
+
 ;;
 ;; Externals
 ;;
@@ -231,6 +231,7 @@
 (declare-function winum--install-mode-line 'winum)
 (declare-function winum-get-number-string 'winum)
 
+
 
 ;;
 ;; Buffer information
@@ -1357,20 +1358,22 @@ of active `multiple-cursors'."
 (defvar doom-modeline--bar-inactive nil)
 (doom-modeline-def-segment bar
   "The bar regulates the height of the mode-line in GUI."
-  (if (doom-modeline--active)
-      doom-modeline--bar-active
-    doom-modeline--bar-inactive))
+  (unless doom-modeline-hud
+    (if (doom-modeline--active)
+        doom-modeline--bar-active
+      doom-modeline--bar-inactive)))
 
 (defun doom-modeline-refresh-bars (&optional width height)
   "Refresh mode-line bars with `WIDTH' and `HEIGHT'."
-  (let ((width (or width doom-modeline-bar-width))
-        (height (max (or height doom-modeline-height)
-                     (doom-modeline--font-height))))
-    (when (and (numberp width) (numberp height))
-      (setq doom-modeline--bar-active
-            (doom-modeline--make-image 'doom-modeline-bar width height)
-            doom-modeline--bar-inactive
-            (doom-modeline--make-image 'doom-modeline-bar-inactive width height)))))
+  (unless doom-modeline-hud
+    (let ((width (or width doom-modeline-bar-width))
+          (height (max (or height doom-modeline-height)
+                       (doom-modeline--font-height))))
+      (when (and (numberp width) (numberp height))
+        (setq doom-modeline--bar-active
+              (doom-modeline--make-image 'doom-modeline-bar width height)
+              doom-modeline--bar-inactive
+              (doom-modeline--make-image 'doom-modeline-bar-inactive width height))))))
 
 (doom-modeline-add-variable-watcher
  'doom-modeline-height
@@ -1386,6 +1389,88 @@ of active `multiple-cursors'."
 
 (add-hook 'after-setting-font-hook #'doom-modeline-refresh-bars)
 (add-hook 'window-configuration-change-hook #'doom-modeline-refresh-bars)
+
+
+(cl-defstruct doom-modeline--hud-cache active inactive top-margin bottom-margin)
+
+(doom-modeline-def-segment hud
+  "Powerline's hud segment reimplemented in the style of Doom's bar segment."
+  (when doom-modeline-hud
+    (let* ((ws (window-start))
+           (we (window-end))
+           (bs (buffer-size))
+           (height (max doom-modeline-height
+                        (doom-modeline--font-height)))
+           (top-margin (if (zerop bs)
+                           0
+                         (/ (* height (1- ws)) bs)))
+           (bottom-margin (if (zerop bs)
+                              0
+                            (max 0 (/ (* height (- bs we 1)) bs))))
+           (cache (or (window-parameter nil 'doom-modeline--hud-cache)
+                      (set-window-parameter nil 'doom-modeline--hud-cache
+                                            (make-doom-modeline--hud-cache)))))
+      (unless (and (doom-modeline--hud-cache-active cache)
+                   (doom-modeline--hud-cache-inactive cache)
+                   (= top-margin (doom-modeline--hud-cache-top-margin cache))
+                   (= bottom-margin
+                      (doom-modeline--hud-cache-bottom-margin cache)))
+        (setf (doom-modeline--hud-cache-active cache)
+              (doom-modeline--create-hud-image
+               'doom-modeline-bar 'default doom-modeline-bar-width
+               height top-margin bottom-margin)
+              (doom-modeline--hud-cache-inactive cache)
+              (doom-modeline--create-hud-image
+               'doom-modeline-bar-inactive 'default doom-modeline-bar-width
+               height top-margin bottom-margin)
+              (doom-modeline--hud-cache-top-margin cache) top-margin
+              (doom-modeline--hud-cache-bottom-margin cache) bottom-margin))
+      (if (doom-modeline--active)
+          (doom-modeline--hud-cache-active cache)
+        (doom-modeline--hud-cache-inactive cache)))))
+
+(defun doom-modeline-invalidate-huds ()
+  "Invalidate all cached hud images."
+  (dolist (frame (frame-list))
+    (dolist (window (window-list frame))
+      (set-window-parameter window 'doom-modeline--hud-cache nil))))
+
+(doom-modeline-add-variable-watcher
+ 'doom-modeline-height
+ (lambda (_sym val op _where)
+   (when (and (eq op 'set) (integerp val))
+     (doom-modeline-invalidate-huds))))
+
+(doom-modeline-add-variable-watcher
+ 'doom-modeline-bar-width
+ (lambda (_sym val op _where)
+   (when (and (eq op 'set) (integerp val))
+     (doom-modeline-invalidate-huds))))
+
+(add-hook 'after-setting-font-hook #'doom-modeline-invalidate-huds)
+(add-hook 'window-configuration-change-hook #'doom-modeline-invalidate-huds)
+
+(defun doom-modeline--create-hud-image
+    (face1 face2 width height top-margin bottom-margin)
+  "Create the hud image.
+Use FACE1 for the bar, FACE2 for the background.
+WIDTH and HEIGHT are the image size in pixels.
+TOP-MARGIN and BOTTOM-MARGIN are the size of the margin above and below the bar,
+respectively."
+  (when (and (display-graphic-p)
+             (image-type-available-p 'pbm))
+    (propertize
+     " " 'display
+     (let ((color1 (or (face-background face1 nil t) "None"))
+           (color2 (or (face-background face2 nil t) "None")))
+       (create-image
+          (concat
+           (format "P1\n%i %i\n" width height)
+           (make-string (* top-margin width) ?0)
+           (make-string (* (- height top-margin bottom-margin) width) ?1)
+           (make-string (* bottom-margin width) ?0)
+           "\n")
+          'pbm t :foreground color1 :background color2 :ascent 'center)))))
 
 
 ;;
@@ -1452,7 +1537,7 @@ one. The ignored buffers are excluded unless `aw-ignore-on' is nil."
 
 (doom-modeline-def-segment workspace-name
   "The current workspace name or number.
-Requires `eyebrowse-mode' or `tab-bar-mode' to be enabled."
+Requires `eyebrowse-mode' to be enabled or `tab-bar-mode' tabs to be created."
   (when doom-modeline-workspace-name
     (when-let
         ((name (cond
@@ -1463,7 +1548,8 @@ Requires `eyebrowse-mode' or `tab-bar-mode' to be enabled."
                      ((num (eyebrowse--get 'current-slot))
                       (tag (nth 2 (assoc num (eyebrowse--get 'window-configs)))))
                    (if (< 0 (length tag)) tag (int-to-string num))))
-                ((bound-and-true-p tab-bar-mode)
+                ((and (fboundp 'tab-bar-mode)
+                      (< 1 (length (frame-parameter nil 'tabs))))
                  (let* ((current-tab (tab-bar--current-tab))
                         (tab-index (tab-bar--current-tab-index))
                         (explicit-name (alist-get 'explicit-name current-tab))

@@ -6,9 +6,9 @@
 ;; Maintainer: Drew Adams (concat "drew.adams" "@" "oracle" ".com")
 ;; Copyright (C) 2000-2021, Drew Adams, all rights reserved.
 ;; Created: Fri Sep 15 07:58:41 2000
-;; Last-Updated: Wed Mar 17 14:04:47 2021 (-0700)
+;; Last-Updated: Sun Apr 18 11:27:47 2021 (-0700)
 ;;           By: dradams
-;;     Update #: 16755
+;;     Update #: 16815
 ;; URL: https://www.emacswiki.org/emacs/download/bookmark%2b-chg.el
 ;; Doc URL: https://www.emacswiki.org/emacs/BookmarkPlus
 ;; Keywords: bookmarks, bookmark+
@@ -146,6 +146,27 @@
  
 ;;;(@* "CHANGE LOG FOR `bookmark+-1.el'")
 ;;
+;; 2021/04/18 dadams
+;;     Added back a redefinition of bookmark-get-bookmark, as bmkp-get-bookmark with NO-NAME-CHECK-P.
+;;     bookmark-set-name, bookmark-location:
+;;       Replaced (bmkp-get-bookmark BMK nil 'NO-NAME-CHECK-P) with (bookmark-get-bookmark BMK).
+;;     Doc string and comment improvements, vis a vis uses of bookmark|bmkp-get-bookmark.
+;; 2021/04/16 dadams
+;;     bookmark-get-bookmark-record, bookmark-set-name, bookmark-prop-set, bookmark-location,
+;;       bookmark-delete, bookmark-show-annotation:
+;;         Use bmkp-get-bookmark, not bookmark-get-bookmark, but in vanilla-compatible way.
+;; 2021/04/13 dadams
+;;     Added: bmkp-get-bookmark.  Removed redefinition of vanilla bookmark-get-bookmark.
+;;       Problem was that some 3rd-party code uses bookmark-prop-set with unfinished bookmark record
+;;       that has no name.  Thx to Daniel Fleischer.
+;;     bookmark-prop-set: Added optional arg REQUIRE-NAME-P.  Pass it to bmkp-get-bookmark.
+;;     bookmark-handle-bookmark, bookmark-default-handler, bmkp-jump-1,
+;;      bmkp-show-this-annotation-read-only, bmkp-edit-this-annotation, bmkp-clone-bookmark,
+;;      bmkp-update-autonamed-bookmark, bmkp-*-bookmark-p, bmkp-*-(c)p, bmkp-insert-bookmark-link,
+;;      bmkp-describe-bookmark(-internals), bmkp-bookmark-description, bmkp-handle-region-default,
+;;      bmkp-set-sequence-bookmark, bmkp-set-eww-bookmark-here, bmkp-jump-man,
+;;      bmkp-cycle(-1|-this-(file|buffer)):
+;;        Use bmkp-get-bookmark, not bookmark-get-bookmark.
 ;; 2021/03/17 dadams
 ;;      Use buffer-string, not buffer-substring, for whole buffer.
 ;; 2021/03/09 dadams
@@ -1486,6 +1507,12 @@
  
 ;;;(@* "CHANGE LOG FOR `bookmark+-bmu.el'")
 ;;
+;; 2021/04/16 dadams
+;;     bookmark-bmenu-execute-deletions:
+;;       Use bmkp-get-bookmark, not bookmark-get-bookmark, but in vanilla-compatible way.
+;;     bmkp-bmenu-make-sequence-from-marked, bmkp-bmenu-remove-tags-from-marked,
+;;       bmkp-bmenu-propertize-item, bmkp-bmenu-marked-or-this-or-all:
+;;         Use bmkp-get-bookmark, not bookmark-get-bookmark.
 ;; 2021/03/05 dadams
 ;;     Face bmkp-no-local: changed default to orange background, from yellow foreground.
 ;; 2021/03/04 dadams
@@ -2378,6 +2405,12 @@
  
 ;;;(@* "CHANGE LOG FOR `bookmark+-lit.el'")
 ;;
+;; 2021/04/16 dadams
+;;     bmkp-unlight-bookmark, bmkp-light-bookmarks, bmkp-cycle-lighted-this-buffer, bmkp-light-face,
+;;       bmkp-light-style, bmkp-light-when, bmkp-lighting-attribute, bmkp-overlay-of-bookmark:
+;;         Use bmkp-get-bookmark, not bookmark-get-bookmark, but in vanilla-compatible way.
+;;     bmkp-bookmarks-lighted-at-point, bmkp-light-bookmark, bmkp-a-bookmark-lighted-on-this-line:
+;;       Use bmkp-get-bookmark, not bookmark-get-bookmark.
 ;; 2020/07/04 dadams
 ;;     Replaced string *Bookmark List* with bookmark-bmenu-buffer (for Emacs 28).
 ;; 2020/01/12 dadams
@@ -2480,6 +2513,8 @@
 ;;       that depends on macros needs to be byte-compiled anew after loading the updated macros.
 ;; **************************************************************************************************
 ;;
+;; 2021/04/16 dadams
+;;     bmkp-define-file-sort-predicate: Use bmkp-get-bookmark, not bookmark-get-bookmark.
 ;; 2021/03/04 dadams
 ;;     Removed autoload cookie for bmkp-types-alist.  Its def is also in bookmark+-1.el now.
 ;; 2020/11/28 dadams
@@ -2530,6 +2565,8 @@
  
 ;;;(@* "CHANGE LOG FOR `bookmark+.el'")
 ;;
+;; 2021/04/18 dadams
+;;     Version 2021.04.18
 ;; 2021/03/04 dadams
 ;;     Version 2021.03.04
 ;; 2021/02/12 dadams

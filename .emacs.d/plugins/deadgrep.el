@@ -5,7 +5,7 @@
 ;; Author: Wilfred Hughes <me@wilfred.me.uk>
 ;; URL: https://github.com/Wilfred/deadgrep
 ;; Keywords: tools
-;; Version: 0.10
+;; Version: 0.11
 ;; Package-Requires: ((emacs "25.1") (dash "2.12.0") (s "1.11.0") (spinner "1.7.3"))
 
 ;; This program is free software; you can redistribute it and/or modify
@@ -387,7 +387,7 @@ with a text face property `deadgrep-match-face'."
   'help-echo "Change search term")
 
 (defun deadgrep--search-prompt (&optional default)
-  "."
+  "The prompt shown to the user when starting a deadgrep search."
   (let ((kind (if (eq deadgrep--search-type 'regexp)
                   "by regexp" "for text")))
     (if default
@@ -509,7 +509,7 @@ with a text face property `deadgrep-match-face'."
             (cl-incf j)
             (setq result (concat result
                                  (substring glob i j)))
-            (setq i (1+ j))))
+            (setq i j)))
          (t
           (setq result (concat result (char-to-string char)))
           (cl-incf i)))))

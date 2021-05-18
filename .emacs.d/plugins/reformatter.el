@@ -4,7 +4,7 @@
 
 ;; Author: Steve Purcell <steve@sanityinc.com>
 ;; Keywords: convenience, tools
-;; Homepage: https://github.com/purcell/reformatter.el
+;; Homepage: https://github.com/purcell/emacs-reformatter
 ;; Package-Requires: ((emacs "24.3"))
 ;; Package-Version: 0
 
@@ -250,7 +250,7 @@ might use:
 
      ((some-major-mode
         (mode . %s-on-save)))
- " buffer-fn-name name) nil
+ " buffer-fn-name name)
                    :global nil
                    :lighter ,lighter-name
                    :keymap ,keymap

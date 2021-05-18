@@ -4,7 +4,7 @@
 ;; Maintainer: Daniel Mendler <mail@daniel-mendler.de>
 ;; Created: 2020
 ;; License: GPL-3.0-or-later
-;; Version: 0.6
+;; Version: 0.7
 ;; Package-Requires: ((emacs "26.1"))
 ;; Homepage: https://github.com/minad/consult
 
@@ -177,11 +177,15 @@ for navigation commands like `consult-line'."
   :type 'integer)
 
 (defcustom consult-buffer-filter
-  '("\\` " "\\`\\*Completions\\*\\'" "\\`\\*tramp/.*\\*\\'")
+  '("\\` "
+    "\\`\\*Completions\\*\\'"
+    "\\`\\*Flymake log\\*\\'"
+    "\\`\\*Semantic SymRef\\*\\'"
+    "\\`\\*tramp/.*\\*\\'")
   "Filter regexps for `consult-buffer'.
 
-The default setting is to filter only ephemeral buffer names beginning
-with a space character."
+The default setting is to filter ephemeral buffer names beginning with a space
+character, the *Completions* buffer and a few log buffers."
   :type '(repeat regexp))
 
 (defcustom consult-buffer-sources
@@ -426,7 +430,8 @@ Used by `consult-completion-in-region', `consult-yank' and `consult-history'.")
   "Obtain match function from completion system.")
 
 (defvar consult--completion-candidate-hook
-  (list #'consult--default-completion-candidate)
+  (list #'consult--default-completion-mb-candidate
+        #'consult--default-completion-list-candidate)
   "Get candidate from completion system.")
 
 (defvar consult--completion-refresh-hook nil
@@ -967,8 +972,11 @@ FACE is the cursor face."
                             (vend (progn (end-of-visual-line) (point)))
                             (end (line-end-position)))
                         (consult--overlay vbeg (if (= vend end) (1+ end) vend)
-                                          'face 'consult-preview-line)))
-                    (consult--overlay (point) (1+ (point)) 'face face))))
+                                          'face 'consult-preview-line
+                                          'window (selected-window))))
+                    (consult--overlay (point) (1+ (point))
+                                      'face face
+                                      'window (selected-window)))))
        ;; If position cannot be previewed, return to saved position
        (t (consult--jump-nomark saved-pos))))))
 
@@ -985,7 +993,7 @@ FACE is the cursor face."
 (defun consult--with-preview-1 (preview-key state transform candidate fun)
   "Add preview support for FUN.
 
-See consult--with-preview for the arguments PREVIEW-KEY, STATE, TRANSFORM and CANDIDATE."
+See `consult--with-preview' for the arguments PREVIEW-KEY, STATE, TRANSFORM and CANDIDATE."
   (let ((input "") (selected))
     (consult--minibuffer-with-setup-hook
         (if (and state preview-key)
@@ -1191,19 +1199,17 @@ BIND is the asynchronous function binding."
 (defun consult--async-sink ()
   "Create ASYNC sink function.
 
-The async function should accept a single action argument.
-Only for the 'setup action, it is guaranteed that the call
-originates from the minibuffer. For the other actions no
-assumptions can be made.
-Depending on the argument, the caller context differ.
+An async function must accept a single action argument. For the 'setup action
+it is guaranteed that the call originates from the minibuffer. For the other
+actions no assumption about the context can be made.
 
-'setup   Setup the internal state.
-'destroy Destroy the internal state.
+'setup   Setup the internal closure state.
+'destroy Destroy the internal closure state.
 'flush   Flush the list of candidates.
 'refresh Request UI refresh.
-nil      Get the list of candidates.
-List     Append the list to the list of candidates.
-String   The input string, called when the user enters something."
+nil      Return the current list of candidates.
+list     Append the list to the already existing list of candidates.
+string   The input string. Called when the user enters something."
   (let ((candidates)
         (buffer))
     (lambda (action)
@@ -1257,7 +1263,7 @@ the comma is passed to ASYNC, the second part is used for filtering."
       (_ (funcall async action)))))
 
 (defun consult--async-log (formatted &rest args)
-  "Log FORMATTED ARGS to `consult--async-log'."
+  "Log FORMATTED ARGS to `v/consult--async-log'."
   (with-current-buffer (get-buffer-create consult--async-log)
     (goto-char (point-max))
     (insert (apply #'format formatted args))))
@@ -2268,7 +2274,7 @@ INITIAL is the initial input."
 
 (defun consult--focus-lines-state (filter)
   "State function for `consult-focus-lines' with FILTER function."
-  (let ((lines) (overlays) (last-input))
+  (let ((lines) (overlays) (last-input) (point-orig (point)))
     (save-excursion
       (save-restriction
         (if (not (use-region-p))
@@ -2286,6 +2292,8 @@ INITIAL is the initial input."
         (consult--each-line beg end
           (push (buffer-substring-no-properties beg end) lines)
           (push (make-overlay beg (1+ end)) overlays))))
+    (unless (use-region-p)
+      (goto-char (point-min)))
     (lambda (input restore)
       ;; New input provided -> Update
       (when (and input (not (equal input last-input)))
@@ -2308,15 +2316,16 @@ INITIAL is the initial input."
                   (overlay-put (car ov) 'invisible (eq not (gethash (car li) ht)))
                   (setq li (cdr li) ov (cdr ov))))
               (setq last-input input)))))
-      ;; Sucessfully terminated -> Remember invisible overlays
-      (when (and input restore)
-        (dolist (ov overlays)
-          (if (overlay-get ov 'invisible)
-              (push ov consult--focus-lines-overlays)
-            (delete-overlay ov)))
-        (setq overlays nil))
-      ;; When terminating -> Destroy remaining overlays
       (when restore
+        (if (not input)
+            (goto-char point-orig)
+          ;; Sucessfully terminated -> Remember invisible overlays
+          (dolist (ov overlays)
+            (if (overlay-get ov 'invisible)
+                (push ov consult--focus-lines-overlays)
+              (delete-overlay ov)))
+          (setq overlays nil))
+        ;; Destroy remaining overlays
         (mapc #'delete-overlay overlays)))))
 
 ;;;###autoload
@@ -2450,7 +2459,9 @@ of functions and in `consult-completion-in-region'."
       (lambda (cand restore)
         (if restore
             (when ov (delete-overlay ov))
-          (unless ov (setq ov (consult--overlay start end 'invisible t)))
+          (unless ov (setq ov (consult--overlay start end
+                                                'invisible t
+                                                'window (selected-window))))
           ;; Use `add-face-text-property' on a copy of "cand in order to merge face properties
           (setq cand (copy-sequence cand))
           (add-face-text-property 0 (length cand) 'consult-preview-insertion t cand)
@@ -2645,8 +2656,8 @@ If no MODES are specified, use currently active major and minor modes."
 
 ;;;;; Command: consult-yank
 
-(defun consult--yank-read ()
-  "Open kill ring menu and return selected text."
+(defun consult--read-from-kill-ring ()
+  "Open kill ring menu and return selected string."
   ;; Do not specify a :lookup function in order to preserve completion-styles
   ;; highlighting of the current candidate. We have to perform a final lookup
   ;; to obtain the original candidate which may be propertized with
@@ -2655,7 +2666,7 @@ If no MODES are specified, use currently active major and minor modes."
    nil kill-ring
    (consult--read
     (consult--remove-dups kill-ring)
-    :prompt "Yank text: "
+    :prompt "Yank from kill-ring: "
     :history t ;; disable history
     :sort nil
     :category 'consult-yank
@@ -2663,45 +2674,67 @@ If no MODES are specified, use currently active major and minor modes."
     :state
     (consult--insertion-preview
      (point)
-     ;; If previous command is yank, hide previously yanked text
+     ;; If previous command is yank, hide previously yanked string
      (or (and (eq last-command 'yank) (mark t)) (point))))))
 
-;; Insert selected text.
-;; Adapted from the Emacs yank function.
+;; Adapted from the Emacs `yank-from-kill-ring' function.
 ;;;###autoload
-(defun consult-yank ()
-  "Select text from the kill ring and insert it."
-  (interactive)
-  (when-let (text (consult--yank-read))
+(defun consult-yank-from-kill-ring (string &optional arg)
+  "Select STRING from the kill ring and insert it.
+With prefix ARG, put point at beginning, and mark at end, like `yank' does.
+
+This command behaves like `yank-from-kill-ring' in Emacs 28, which also offers
+a `completing-read' interface to the `kill-ring'. Additionally the Consult
+version supports preview of the selected string."
+  (interactive (list (consult--read-from-kill-ring) current-prefix-arg))
+  (when string
     (setq yank-window-start (window-start))
     (push-mark)
-    (insert-for-yank text)
+    (insert-for-yank string)
     (setq this-command 'yank)
-    nil))
+    (when (consp arg)
+      ;; Swap point and mark like in `yank'.
+      (goto-char (prog1 (mark t)
+                   (set-marker (mark-marker) (point) (current-buffer)))))))
+
+(define-obsolete-function-alias
+  'consult-yank
+  'consult-yank-from-kill-ring
+  "0.7")
+
+(put 'consult-yank-replace 'delete-selection 'yank)
+(put 'consult-yank-pop 'delete-selection 'yank)
+(put 'consult-yank 'delete-selection 'yank)
+(put 'consult-yank-from-kill-ring 'delete-selection 'yank)
 
 ;;;###autoload
 (defun consult-yank-pop (&optional arg)
   "If there is a recent yank act like `yank-pop'.
 
-Otherwise select text from the kill ring and insert it.
-See `yank-pop' for the meaning of ARG."
+Otherwise select string from the kill ring and insert it.
+See `yank-pop' for the meaning of ARG.
+
+This command behaves like `yank-pop' in Emacs 28, which also offers a
+`completing-read' interface to the `kill-ring'. Additionally the Consult
+version supports preview of the selected string."
   (interactive "*p")
   (if (eq last-command 'yank)
       (yank-pop (or arg 1))
-    (consult-yank)))
+    (call-interactively #'consult-yank-from-kill-ring)))
 
-;; Replace just-yanked text with selected text.
 ;; Adapted from the Emacs yank-pop function.
 ;;;###autoload
-(defun consult-yank-replace ()
-  "Select text from the kill ring.
+(defun consult-yank-replace (string)
+  "Select STRING from the kill ring.
 
-If there was no recent yank, insert the text.
-Otherwise replace the just-yanked text with the selected text."
-  (interactive)
-  (if (not (eq last-command 'yank))
-      (consult-yank)
-    (when-let (text (consult--yank-read))
+If there was no recent yank, insert the string.
+Otherwise replace the just-yanked string with the selected string.
+
+There exists no equivalent of this command in Emacs 28."
+  (interactive (list (consult--read-from-kill-ring)))
+  (when string
+    (if (not (eq last-command 'yank))
+        (consult-yank-from-kill-ring string)
       (let ((inhibit-read-only t)
             (pt (point))
             (mk (mark t)))
@@ -2709,12 +2742,11 @@ Otherwise replace the just-yanked text with the selected text."
         (funcall (or yank-undo-function 'delete-region) (min pt mk) (max pt mk))
         (setq yank-undo-function nil)
         (set-marker (mark-marker) pt (current-buffer))
-        (insert-for-yank text)
+        (insert-for-yank string)
         (set-window-start (selected-window) yank-window-start t)
         (if (< pt mk)
             (goto-char (prog1 (mark t)
-                         (set-marker (mark-marker) (point) (current-buffer))))))))
-  nil)
+                         (set-marker (mark-marker) (point) (current-buffer)))))))))
 
 ;;;;; Command: consult-bookmark
 
@@ -3455,21 +3487,22 @@ See `consult-grep' for more details."
 (defun consult--find (prompt cmd initial)
   "Run find CMD in current directory with INITIAL input.
 
+The function returns the selected file.
+The filename at point is added to the future history.
+
 PROMPT is the prompt.
-CMD is the find argument string.
-The filename at point is added to the future history."
-  (find-file
-   (consult--read
-    (consult--async-command cmd
-      (consult--async-map (lambda (x) (string-remove-prefix "./" x)))
-      :file-handler t) ;; allow tramp
-    :prompt prompt
-    :sort nil
-    :require-match t
-    :initial (concat consult-async-default-split initial)
-    :add-history (concat consult-async-default-split (thing-at-point 'filename))
-    :category 'file
-    :history '(:input consult--find-history))))
+CMD is the find argument string."
+  (consult--read
+   (consult--async-command cmd
+     (consult--async-map (lambda (x) (string-remove-prefix "./" x)))
+     :file-handler t) ;; allow tramp
+   :prompt prompt
+   :sort nil
+   :require-match t
+   :initial (concat consult-async-default-split initial)
+   :add-history (concat consult-async-default-split (thing-at-point 'filename))
+   :category 'file
+   :history '(:input consult--find-history)))
 
 ;;;###autoload
 (defun consult-find (&optional dir initial)
@@ -3480,7 +3513,7 @@ See `consult-grep' for more details regarding the asynchronous search."
   (interactive "P")
   (let* ((prompt-dir (consult--directory-prompt "Find" dir))
          (default-directory (cdr prompt-dir)))
-    (consult--find (car prompt-dir) consult-find-command initial)))
+    (find-file (consult--find (car prompt-dir) consult-find-command initial))))
 
 ;;;###autoload
 (defun consult-locate (&optional initial)
@@ -3489,7 +3522,7 @@ See `consult-grep' for more details regarding the asynchronous search."
 The locate process is started asynchronously, similar to `consult-grep'.
 See `consult-grep' for more details regarding the asynchronous search."
   (interactive)
-  (consult--find "Locate: " consult-locate-command initial))
+  (find-file (consult--find "Locate: " consult-locate-command initial)))
 
 ;;;;; Command: consult-man
 
@@ -3528,11 +3561,32 @@ See `consult-grep' for more details regarding the asynchronous search."
         :add-history (concat consult-async-default-split (thing-at-point 'symbol))
         :history '(:input consult--man-history))))
 
+;;;; Preview at point in completions buffers
+
+(define-minor-mode consult-preview-at-point-mode
+  "Preview minor mode for *Completions* buffers.
+When moving around in the *Completions* buffer, the candidate at point is automatically previewed."
+  :init-value nil
+  (if consult-preview-at-point-mode
+      (add-hook 'post-command-hook #'consult-preview-at-point nil 'local)
+    (remove-hook 'post-command-hook #'consult-preview-at-point 'local)))
+
+(defun consult-preview-at-point ()
+  "Preview candidate at point in *Completions* buffer."
+  (interactive)
+  (when-let* ((cand (run-hook-with-args-until-success 'consult--completion-candidate-hook))
+              (win (active-minibuffer-window))
+              (buf (window-buffer win))
+              (fun (buffer-local-value 'consult--preview-function buf)))
+    (with-selected-window win
+      (funcall fun (minibuffer-contents-no-properties) cand))))
+
 ;;;; Integration with the default completion system
 
-(defun consult--default-completion-candidate ()
-  "Return current candidate from default completion system or icomplete."
-  (when (eq completing-read-function #'completing-read-default)
+(defun consult--default-completion-mb-candidate ()
+  "Return current minibuffer candidate from default completion system or Icomplete."
+  (when (and (minibufferp)
+             (eq completing-read-function #'completing-read-default))
     (let ((content (minibuffer-contents-no-properties)))
       ;; When the current minibuffer content matches a candidate, return it!
       (if (test-completion content
@@ -3544,6 +3598,22 @@ See `consult-grep' for more details regarding the asynchronous search."
           (concat
            (substring content 0 (or (cdr (last completions)) 0))
            (car completions)))))))
+
+(defun consult--default-completion-list-candidate ()
+  "Return current candidate at point from completions buffer."
+  (let (beg end)
+    (when (and
+           (derived-mode-p 'completion-list-mode)
+           ;; Logic taken from `choose-completion'.
+           ;; TODO Upstream a `completion-list-get-candidate' function.
+           (cond
+            ((and (not (eobp)) (get-text-property (point) 'mouse-face))
+             (setq end (point) beg (1+ (point))))
+            ((and (not (bobp)) (get-text-property (1- (point)) 'mouse-face))
+             (setq end (1- (point)) beg (point)))))
+        (setq beg (previous-single-property-change beg 'mouse-face))
+        (setq end (or (next-single-property-change end 'mouse-face) (point-max)))
+        (buffer-substring-no-properties beg end))))
 
 (defun consult--default-completion-filter (category _highlight)
   "Return default filter function given the completion CATEGORY.
@@ -3567,7 +3637,4 @@ The completion category is used to find the completion style via
 (with-eval-after-load 'selectrum (require 'consult-selectrum))
 (with-eval-after-load 'vertico (require 'consult-vertico))
 
-;; Local Variables:
-;; outline-regexp: ";;;;* \\|(def\\(un\\|custom\\|var\\) consult-[a-z]"
-;; End:
 ;;; consult.el ends here

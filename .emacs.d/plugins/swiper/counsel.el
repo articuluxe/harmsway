@@ -2617,18 +2617,27 @@ string - the full shell command to run."
   "Use `dired-jump' on X."
   (dired-jump nil x))
 
+(defvar locate-command)
+
 (defun counsel-locate-cmd-default (input)
-  "Return a `locate' shell command based on regexp INPUT."
-  (counsel-require-program "locate")
-  (format "locate -i --regex %s"
+  "Return a `locate' shell command based on regexp INPUT.
+This uses the user option `locate-command' from the `locate'
+library, which see."
+  (counsel-require-program locate-command)
+  (format "%s -i --regex %s"
+          locate-command
           (shell-quote-argument
            (counsel--elisp-to-pcre
             (ivy--regex input)))))
 
 (defun counsel-locate-cmd-noregex (input)
-  "Return a `locate' shell command based on INPUT."
-  (counsel-require-program "locate")
-  (format "locate -i %s" (shell-quote-argument input)))
+  "Return a `locate' shell command based on INPUT.
+This uses the user option `locate-command' from the `locate'
+library, which see."
+  (counsel-require-program locate-command)
+  (format "%s -i %s"
+          locate-command
+          (shell-quote-argument input)))
 
 (defun counsel-locate-cmd-mdfind (input)
   "Return a `mdfind' shell command based on INPUT."
@@ -2684,6 +2693,8 @@ string - the full shell command to run."
   "Call a \"locate\" style shell command.
 INITIAL-INPUT can be given as the initial minibuffer input."
   (interactive)
+  ;; For `locate-command', which is honored in some options of `counsel-locate-cmd'.
+  (require 'locate)
   (counsel--locate-updatedb)
   (ivy-read "Locate: " #'counsel-locate-function
             :initial-input initial-input

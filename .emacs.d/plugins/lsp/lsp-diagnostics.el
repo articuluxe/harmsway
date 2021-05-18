@@ -208,6 +208,7 @@ from the language server."
 
 (defvar lsp-diagnostics-mode) ;; properly defined by define-minor-mode below
 
+;;;###autoload
 (defun lsp-diagnostics-lsp-checker-if-needed ()
   (unless (flycheck-valid-checker-p 'lsp)
     (flycheck-define-generic-checker 'lsp
@@ -261,9 +262,9 @@ See https://github.com/emacs-lsp/lsp-mode."
 (defun lsp-diagnostics--flymake-setup ()
   "Setup flymake."
   (setq lsp-diagnostics--flymake-report-fn nil)
-  (flymake-mode 1)
   (add-hook 'flymake-diagnostic-functions 'lsp-diagnostics--flymake-backend nil t)
-  (add-hook 'lsp-diagnostics-updated-hook 'lsp-diagnostics--flymake-after-diagnostics nil t))
+  (add-hook 'lsp-diagnostics-updated-hook 'lsp-diagnostics--flymake-after-diagnostics nil t)
+  (flymake-mode 1))
 
 (defun lsp-diagnostics--flymake-after-diagnostics ()
   "Handler for `lsp-diagnostics-updated-hook'."

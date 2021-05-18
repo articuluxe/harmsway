@@ -5,9 +5,9 @@
 ;; Author: Arnaud Hoffmann <tuedachu@gmail.com>
 ;; Maintainer: Arnaud Hoffmann <tuedachu@gmail.com>
 ;; URL: https://gitlab.com/tuedachu/ytdl
-;; Version: 1.3.5
+;; Version: 1.3.6
 ;; Package-Requires: ((emacs "26.1") (async "1.9.4") (transient "0.2.0") (dash "2.17.0"))
-;; Keywords: comm, emulations, multimedia
+;; Keywords: comm, multimedia
 
 ;; This file is not part of GNU Emacs.
 
@@ -59,7 +59,7 @@
   :group 'external)
 
 (defvar ytdl-version
-  "1.3.5"
+  "1.3.6"
   "Version of ytdl.")
 
 (defcustom ytdl-command "youtube-dl"
@@ -233,6 +233,11 @@ Keys are UUID.
 (defvar ytdl--marked-items
   '()
   "List of marked items.")
+
+(defcustom ytdl-download-finished-hook nil
+  "Hook run when a file has finished downloading."
+  :type 'hook
+  :group 'ytdl)
 
 ;; Functions
 (defun ytdl--concat (&rest sequences)
@@ -552,7 +557,8 @@ DL-TYPE is the download type, see `ytdl-download-types'."
                                          :url url
                                          :process-id process-id)
              ytdl--download-list))
-  (ytdl--refresh-list))
+  (ytdl--refresh-list)
+  (ytdl-show-list))
 
 
 (defun ytdl--async-download-finished (filename uuid)
@@ -576,7 +582,8 @@ UUID is the key of the list item in `ytdl--download-list'."
                                    (file-attributes
                                     filename))))
   (ytdl--eval-mode-line-string -1)
-  (ytdl--message "Video downloaded: " filename))
+  (ytdl--message "Video downloaded: " filename)
+  (run-hooks 'ytdl-download-finished-hook))
 
 
 (defun ytdl--get-args (&optional no-filename)

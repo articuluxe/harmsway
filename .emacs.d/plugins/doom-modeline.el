@@ -4,7 +4,7 @@
 
 ;; Author: Vincent Zhang <seagle0128@gmail.com>
 ;; Homepage: https://github.com/seagle0128/doom-modeline
-;; Version: 3.1.0
+;; Version: 3.2.0
 ;; Package-Requires: ((emacs "25.1") (all-the-icons "2.2.0") (shrink-path "0.2.0") (dash "2.11.0"))
 ;; Keywords: faces mode-line
 
@@ -84,68 +84,68 @@
 (require 'doom-modeline-core)
 (require 'doom-modeline-segments)
 
-
+
 ;;
 ;; Mode lines
 ;;
 
 (doom-modeline-def-modeline 'main
-  '(bar workspace-name window-number modals matches buffer-info remote-host buffer-position word-count parrot selection-info)
+  '(bar hud workspace-name window-number modals matches buffer-info remote-host buffer-position word-count parrot selection-info)
   '(objed-state misc-info persp-name battery grip irc mu4e gnus github debug repl lsp minor-modes input-method indent-info buffer-encoding major-mode process vcs checker))
 
 (doom-modeline-def-modeline 'minimal
-  '(bar matches buffer-info-simple)
+  '(bar hud matches buffer-info-simple)
   '(media-info major-mode))
 
 (doom-modeline-def-modeline 'special
-  '(bar window-number modals matches buffer-info buffer-position word-count parrot selection-info)
+  '(bar hud window-number modals matches buffer-info buffer-position word-count parrot selection-info)
   '(objed-state misc-info battery irc-buffers debug minor-modes input-method indent-info buffer-encoding major-mode process))
 
 (doom-modeline-def-modeline 'project
-  '(bar window-number buffer-default-directory)
+  '(bar hud window-number buffer-default-directory)
   '(misc-info battery irc mu4e gnus github debug minor-modes input-method major-mode process))
 
 (doom-modeline-def-modeline 'dashboard
-  '(bar window-number buffer-default-directory-simple)
+  '(bar hud window-number buffer-default-directory-simple)
   '(misc-info battery irc mu4e gnus github debug minor-modes input-method major-mode process))
 
 (doom-modeline-def-modeline 'vcs
-  '(bar window-number modals matches buffer-info buffer-position parrot selection-info)
+  '(bar hud window-number modals matches buffer-info buffer-position parrot selection-info)
   '(misc-info battery irc mu4e gnus github debug minor-modes buffer-encoding major-mode process))
 
 (doom-modeline-def-modeline 'package
-  '(bar window-number package)
+  '(bar hud window-number package)
   '(misc-info major-mode process))
 
 (doom-modeline-def-modeline 'info
-  '(bar window-number buffer-info info-nodes buffer-position parrot selection-info)
+  '(bar hud window-number buffer-info info-nodes buffer-position parrot selection-info)
   '(misc-info buffer-encoding major-mode))
 
 (doom-modeline-def-modeline 'media
-  '(bar window-number buffer-size buffer-info)
+  '(bar hud window-number buffer-size buffer-info)
   '(misc-info media-info major-mode process vcs))
 
 (doom-modeline-def-modeline 'message
-  '(bar window-number modals matches buffer-info-simple buffer-position word-count parrot selection-info)
+  '(bar hud window-number modals matches buffer-info-simple buffer-position word-count parrot selection-info)
   '(objed-state misc-info battery debug minor-modes input-method indent-info buffer-encoding major-mode))
 
 (doom-modeline-def-modeline 'pdf
-  '(bar window-number matches buffer-info pdf-pages)
+  '(bar hud window-number matches buffer-info pdf-pages)
   '(misc-info major-mode process vcs))
 
 (doom-modeline-def-modeline 'org-src
-  '(bar window-number modals matches buffer-info-simple buffer-position word-count parrot selection-info)
+  '(bar hud window-number modals matches buffer-info-simple buffer-position word-count parrot selection-info)
   '(objed-state misc-info debug lsp minor-modes input-method indent-info buffer-encoding major-mode process checker))
 
 (doom-modeline-def-modeline 'helm
-  '(bar helm-buffer-id helm-number helm-follow helm-prefix-argument)
+  '(bar hud helm-buffer-id helm-number helm-follow helm-prefix-argument)
   '(helm-help))
 
 (doom-modeline-def-modeline 'timemachine
-  '(bar window-number matches git-timemachine buffer-position word-count parrot selection-info)
+  '(bar hud window-number matches git-timemachine buffer-position word-count parrot selection-info)
   '(misc-info minor-modes indent-info buffer-encoding major-mode))
 
-
+
 ;;
 ;; Interfaces
 ;;
@@ -227,7 +227,7 @@ If DEFAULT is non-nil, set the default mode-line for all buffers."
   "Set timemachine mode-line."
   (doom-modeline-set-modeline 'timemachine))
 
-
+
 ;;
 ;; Minor mode
 ;;

@@ -180,8 +180,9 @@ symbol such as 'variable-added.")
   "A regexp matching whitelisted non-standard symbol prefixes.")
 
 (defvar package-lint--allowed-prefix-mappings
-  '(("ox-" . ("org-"))
-    ("ob-" . ("org-")))
+  '(("ob-" . ("org-"))
+    ("ol-" . ("org-"))
+    ("ox-" . ("org-")))
   "Alist containing mappings of package prefixes to symbol prefixes.")
 
 (defun package-lint--main-file-p ()
@@ -1281,8 +1282,7 @@ whether or not warnings alone produce a non-zero exit code."
             (widen)
             (goto-char (point-min))
             (re-search-forward
-             (concat lm-header-prefix
-                     (rx (or "Version" "Package-Version" "Package-Requires")))
+             (lm-get-header-re (rx (or "Version" "Package-Version" "Package-Requires")))
              nil t))))))
 
 (provide 'package-lint)

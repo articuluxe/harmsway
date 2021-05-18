@@ -4,7 +4,7 @@
 ;; org-fragtog Copyright (C) 2020 Benjamin Levy - MIT/X11 License
 ;; org-appear Copyright (C) 2021 Alice Istleyeva - MIT License
 ;; Author: Alice Istleyeva <awth13@gmail.com>
-;; Version: 0.0.2
+;; Version: 0.0.3
 ;; Description: Toggle Org mode element visibility upon entering and leaving
 ;; Homepage: https://github.com/awth13/org-appear
 ;; Package-Requires: ((emacs "25.1") (org "9.3"))
@@ -152,8 +152,12 @@ It handles toggling elements depending on whether the cursor entered or exited t
 (defun org-appear--current-elem ()
   "Return element at point.
 Return nil if element is not supported by `org-appear-mode'."
-  (let ((elem (org-element-context)))
-    (if (memq (car elem) org-appear-elements)
+  (let* ((elem (org-element-context))
+	 (elem-type (car elem))
+	 (elem-end (- (org-element-property :end elem)
+		      (1- (org-element-property :post-blank elem)))))
+    (if (and (memq elem-type org-appear-elements)
+	     (< (point) elem-end))	; Ignore post-element whitespace
 	elem
       nil)))
 
@@ -218,37 +222,35 @@ Return nil if element cannot be parsed."
 
 (defun org-appear--show-invisible (elem)
   "Silently remove invisible property from invisible parts of element ELEM."
-  ;; Skip illegal elements
-  (when-let ((elem-at-point (org-appear--parse-elem elem)))
-    (let ((elem-type (car elem))
-	  (start (plist-get elem-at-point :start))
-	  (end (plist-get elem-at-point :end))
-	  (visible-start (plist-get elem-at-point :visible-start))
-	  (visible-end (plist-get elem-at-point :visible-end))
-	  (parent (plist-get elem-at-point :parent)))
-      (with-silent-modifications
-	(if (eq elem-type 'entity)
-	    (remove-text-properties start end '(composition))
-	  (remove-text-properties start visible-start '(invisible org-link))
-	  (remove-text-properties visible-end end '(invisible org-link))))
-      ;; To minimise distraction from moving text,
-      ;; always keep parent emphasis markers visible
-      (when parent
-	(org-appear--show-invisible parent)))))
+  (let* ((elem-at-point (org-appear--parse-elem elem))
+	 (elem-type (car elem))
+	 (start (plist-get elem-at-point :start))
+	 (end (plist-get elem-at-point :end))
+	 (visible-start (plist-get elem-at-point :visible-start))
+	 (visible-end (plist-get elem-at-point :visible-end))
+	 (parent (plist-get elem-at-point :parent)))
+    (with-silent-modifications
+      (if (eq elem-type 'entity)
+	  (remove-text-properties start end '(composition))
+	(remove-text-properties start visible-start '(invisible org-link))
+	(remove-text-properties visible-end end '(invisible org-link))))
+    ;; To minimise distraction from moving text,
+    ;; always keep parent emphasis markers visible
+    (when parent
+      (org-appear--show-invisible parent))))
 
 (defun org-appear--hide-invisible (elem)
   "Flush fontification of element ELEM."
-  ;; Skip illegal elements
-  (when-let ((elem-at-point (org-appear--parse-elem elem)))
-    (let ((elem-type (car elem))
-	  (start (plist-get elem-at-point :start))
-	  (end (plist-get elem-at-point :end)))
-      (font-lock-flush start end)
-      ;; Call `font-lock-ensure' after flushing to prevent `jit-lock-mode'
-      ;; from refontifying the next element entered
-      (font-lock-ensure start end)
-      (when (eq elem-type 'entity)
-	(goto-char start)))))
+  (let* ((elem-at-point (org-appear--parse-elem elem))
+	 (elem-type (car elem))
+	 (start (plist-get elem-at-point :start))
+	 (end (plist-get elem-at-point :end)))
+    (font-lock-flush start end)
+    ;; Call `font-lock-ensure' after flushing to prevent `jit-lock-mode'
+    ;; from refontifying the next element entered
+    (font-lock-ensure start end)
+    (when (eq elem-type 'entity)
+      (goto-char start))))
 
 (provide 'org-appear)
 ;;; org-appear.el ends here

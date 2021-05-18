@@ -370,10 +370,12 @@ The MARKERS and PREFIX value will be attached to each candidate."
 
 (defun lsp-completion--get-context (trigger-characters)
   "Get completion context with provided TRIGGER-CHARACTERS."
-  (let* (trigger-char
+  (let* ((triggered-by-char (equal last-command 'self-insert-command))
+         (trigger-char (when triggered-by-char
+                           (lsp-completion--looking-back-trigger-characterp
+                            trigger-characters)))
          (trigger-kind (cond
-                        ((setq trigger-char (lsp-completion--looking-back-trigger-characterp
-                                             trigger-characters))
+                        (trigger-char
                          lsp/completion-trigger-kind-trigger-character)
                         ((equal (cl-second lsp-completion--cache) :incomplete)
                          lsp/completion-trigger-kind-trigger-for-incomplete-completions)
@@ -740,7 +742,7 @@ The CLEANUP-FN will be called to cleanup."
              (fboundp 'company-mode))
         (setq-local company-abort-on-unique-match nil)
         (company-mode 1)
-        (add-to-list 'company-backends 'company-capf))
+        (setq-local company-backends (cl-adjoin 'company-capf company-backends :test #'equal)))
        (t
         (lsp--warn "Unable to autoconfigure company-mode.")))
 

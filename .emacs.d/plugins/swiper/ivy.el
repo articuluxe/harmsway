@@ -1894,6 +1894,7 @@ The child caller inherits and can override the settings of the parent.")
                          unwind-fn
                          index-fn
                          sort-fn
+                         sort-matches-fn
                          format-fn
                          display-fn
                          display-transformer-fn
@@ -1921,6 +1922,8 @@ The child caller inherits and can override the settings of the parent.")
     (ivy--alist-set 'ivy-index-functions-alist caller index-fn))
   (when sort-fn
     (ivy--alist-set 'ivy-sort-functions-alist caller sort-fn))
+  (when sort-matches-fn
+    (ivy--alist-set 'ivy-sort-matches-functions-alist caller sort-matches-fn))
   (when format-fn
     (ivy--alist-set 'ivy-format-functions-alist caller format-fn))
   (when display-fn
@@ -2509,6 +2512,12 @@ behavior."
 
 (declare-function mc/all-fake-cursors "ext:multiple-cursors-core")
 
+;; Kludge: Try to retain original minibuffer completion data.
+(defvar ivy--minibuffer-table)
+(defvar ivy--minibuffer-pred)
+(defvar ivy--minibuffer-try nil
+  "Store original `try-completion' result for sole completions.")
+
 (defun ivy-completion-in-region-action (str)
   "Insert STR, erasing the previous one.
 The previous string is between `ivy-completion-beg' and `ivy-completion-end'."
@@ -2524,9 +2533,15 @@ The previous string is between `ivy-completion-beg' and `ivy-completion-end'."
         (delete-region beg end))
       (setq ivy-completion-beg (point))
       (insert (substring-no-properties str))
-      (completion--done str (if (eq ivy-exit 'done)
-                                'finished
-                              'exact))
+      (let ((minibuffer-completion-table (if (boundp 'ivy--minibuffer-table)
+                                             ivy--minibuffer-table
+                                           (ivy-state-collection ivy-last)))
+            (minibuffer-completion-predicate (if (boundp 'ivy--minibuffer-pred)
+                                                 ivy--minibuffer-pred
+                                               (ivy-state-predicate ivy-last))))
+        (completion--done str (cond ((eq ivy--minibuffer-try t) 'finished)
+                                    ((eq ivy-exit 'done) 'unknown)
+                                    ('exact))))
       (setq ivy-completion-end (point))
       (save-excursion
         (dolist (cursor fake-cursors)
@@ -2566,8 +2581,12 @@ See `completion-in-region' for further information."
   (let* ((enable-recursive-minibuffers t)
          (str (buffer-substring-no-properties start end))
          (completion-ignore-case (ivy--case-fold-p str))
-         (comps
-          (completion-all-completions str collection predicate (- end start))))
+         (md (completion-metadata str collection predicate))
+         (reg (- end start))
+         (comps (completion-all-completions str collection predicate reg md))
+         (try (completion-try-completion str collection predicate reg md))
+         (ivy--minibuffer-table collection)
+         (ivy--minibuffer-pred predicate))
     (cond ((null comps)
            (message "No matches"))
           ((progn
@@ -2594,8 +2613,9 @@ See `completion-in-region' for further information."
                  (progn
                    (unless (minibuffer-window-active-p (selected-window))
                      (setf (ivy-state-window ivy-last) (selected-window)))
-                   (ivy-completion-in-region-action
-                    (substring-no-properties (car comps))))
+                   (let ((ivy--minibuffer-try try))
+                     (ivy-completion-in-region-action
+                      (substring-no-properties (car comps)))))
                (dolist (s comps)
                  ;; Remove face `completions-first-difference'.
                  (ivy--remove-props s 'face))
@@ -3088,13 +3108,13 @@ parts beyond their respective faces `ivy-confirm-face' and
         (save-excursion
           (goto-char (point-min))
           (delete-region (point-min) (minibuffer-prompt-end))
-          (let ((len-n (length n-str))
-                (len-d (length d-str))
+          (let ((wid-n (string-width n-str))
+                (wid-d (string-width d-str))
                 (ww (window-width)))
             (setq n-str
-                  (cond ((> (+ len-n len-d) ww)
+                  (cond ((> (+ wid-n wid-d) ww)
                          (concat n-str "\n" d-str "\n"))
-                        ((> (+ len-n len-d (length ivy-text)) ww)
+                        ((> (+ wid-n wid-d (string-width ivy-text)) ww)
                          (concat n-str d-str "\n"))
                         (t
                          (concat n-str d-str)))))
@@ -3102,6 +3122,9 @@ parts beyond their respective faces `ivy-confirm-face' and
             (setq n-str (concat (funcall ivy-pre-prompt-function) n-str)))
           (when ivy-add-newline-after-prompt
             (setq n-str (concat n-str "\n")))
+          ;; FIXME: This does not take character widths into account!
+          ;; Should ideally let the display engine wrap text, otherwise
+          ;; use `window-text-pixel-size'.  See e.g. #2869.
           (let ((regex (format "\\([^\n]\\{%d\\}\\)[^\n]" (window-width))))
             (while (string-match regex n-str)
               (setq n-str (replace-match

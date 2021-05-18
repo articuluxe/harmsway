@@ -172,7 +172,7 @@ As defined by the Language Server Protocol 3.16."
          lsp-elixir lsp-erlang lsp-eslint lsp-fortran lsp-fsharp lsp-gdscript lsp-go
          lsp-hack lsp-grammarly lsp-groovy lsp-haskell lsp-haxe lsp-java lsp-javascript lsp-json
          lsp-kotlin lsp-lua lsp-markdown lsp-nim lsp-nix lsp-metals lsp-ocaml lsp-perl lsp-php lsp-pwsh
-         lsp-pyls lsp-python-ms lsp-purescript lsp-r lsp-rf lsp-rust lsp-solargraph lsp-sorbet
+         lsp-pyls lsp-pylsp lsp-python-ms lsp-purescript lsp-r lsp-rf lsp-rust lsp-solargraph lsp-sorbet
          lsp-tex lsp-terraform lsp-vala lsp-verilog lsp-vetur lsp-vhdl lsp-vimscript lsp-xml
          lsp-yaml lsp-sqls lsp-svelte lsp-steep lsp-zig)
   "List of the clients to be automatically required."
@@ -305,6 +305,8 @@ the server has requested that."
 (defcustom lsp-file-watch-ignored-directories
   '(; SCM tools
     "[/\\\\]\\.git\\'"
+    "[/\\\\]\\.github\\'"
+    "[/\\\\]\\.circleci\\'"
     "[/\\\\]\\.hg\\'"
     "[/\\\\]\\.bzr\\'"
     "[/\\\\]_darcs\\'"
@@ -340,8 +342,10 @@ the server has requested that."
     "[/\\\\]bin/Debug\\'"
     "[/\\\\]obj\\'"
     ;; OCaml and Dune
-     "[/\\\\]_opam\\'"
-     "[/\\\\]_build\\'")
+    "[/\\\\]_opam\\'"
+    "[/\\\\]_build\\'"
+    ;; nix-direnv
+    "[/\\\\]\\.direnv\\'")
   "List of regexps matching directory paths which won't be monitored when
 creating file watches. Customization of this variable is only honored at
 the global level or at a root of an lsp workspace."
@@ -695,6 +699,7 @@ Changes take effect only when a new session is started."
                                         (clojurec-mode . "clojure")
                                         (clojurescript-mode . "clojurescript")
                                         (java-mode . "java")
+                                        (jdee-mode . "java")
                                         (groovy-mode . "groovy")
                                         (python-mode . "python")
                                         (cython-mode . "python")
@@ -786,7 +791,10 @@ directory")
      :check-command (lambda (workspace)
                       (with-lsp-workspace workspace
                         (lsp:code-action-options-resolve-provider?
-                         (lsp--capability :codeActionProvider)))))
+                         (or (lsp--capability :codeActionProvider)
+                             (when-let ((maybe-capability (lsp--registered-capability "textDocument/codeAction"))
+                                        (capability-options (lsp--registered-capability-options maybe-capability)))
+                               capability-options))))))
     ("textDocument/codeLens" :capability :codeLensProvider)
     ("textDocument/completion" :capability :completionProvider)
     ("completionItem/resolve"
@@ -895,10 +903,11 @@ They are added to `markdown-code-lang-modes'")
   :group 'lsp-mode
   :package-version '(lsp-mode . "6.2"))
 
-(defcustom lsp-signature-auto-activate '(:on-trigger-char)
+(defcustom lsp-signature-auto-activate '(:on-trigger-char :on-server-request)
   "Auto activate signature conditions."
   :type '(repeat (choice (const :tag "On trigger chars pressed." :on-trigger-char)
-                         (const :tag "After selected completion." :after-completion)))
+                         (const :tag "After selected completion." :after-completion)
+                         (const :tag "When the server has sent show signature help." :on-server-request)))
   :group 'lsp-mode
   :package-version '(lsp-mode . "6.2"))
 
@@ -1413,6 +1422,8 @@ return value of `body' or nil if interrupted."
   multi-root
   ;; Initialization options or a function that returns initialization options.
   initialization-options
+  ;; Overrides semantic tokens faces for specific clients
+  semantic-tokens-faces-overrides
   ;; Provides support for registering LSP Server specific capabilities.
   custom-capabilities
   ;; Function which returns the folders that are considered to be not projects but library files.
@@ -2271,12 +2282,12 @@ BINDINGS is a list of (key def desc cond)."
 (defvar lsp-command-map
   (-doto (make-sparse-keymap)
     (lsp-define-conditional-key
-      ;; sessions
-      "sD" lsp-disconnect "disconnect" (lsp-workspaces)
-      "sd" lsp-describe-session "describe session" t
-      "sq" lsp-workspace-shutdown "shutdown server" (lsp-workspaces)
-      "sr" lsp-workspace-restart "restart server" (lsp-workspaces)
-      "ss" lsp "start server" t
+      ;; workspaces
+      "wD" lsp-disconnect "disconnect" (lsp-workspaces)
+      "wd" lsp-describe-session "describe session" t
+      "wq" lsp-workspace-shutdown "shutdown server" (lsp-workspaces)
+      "wr" lsp-workspace-restart "restart server" (lsp-workspaces)
+      "ws" lsp "start server" t
 
       ;; formatting
       "==" lsp-format-buffer "format buffer" (or (lsp-feature? "textDocument/rangeFormatting")
@@ -2360,7 +2371,7 @@ active `major-mode', or for all major modes when ALL-MODES is t."
      (lsp--prepend-prefix
       (cl-list*
        ""    "lsp"
-       "s"   "sessions"
+       "w"   "workspaces"
        "F"   "folders"
        "="   "formatting"
        "T"   "toggle"
@@ -2586,23 +2597,31 @@ and end-of-string meta-characters."
   (easy-menu-create-menu
    nil
    `(["Go to definition" lsp-find-definition
-      :active (lsp--find-workspaces-for "textDocument/definition")]
+      :active (lsp-feature? "textDocument/definition")]
      ["Find references" lsp-find-references
-      :active (lsp--find-workspaces-for "textDocument/references")]
+      :active (lsp-feature? "textDocument/references")]
      ["Find implementations" lsp-find-implementation
-      :active (lsp--find-workspaces-for "textDocument/implementation")]
+      :active (lsp-feature? "textDocument/implementation")]
      ["Find declarations" lsp-find-declaration
-      :active (lsp--find-workspaces-for "textDocument/declaration")]
+      :active (lsp-feature? "textDocument/declaration")]
      ["Go to type declaration" lsp-find-type-definition
-      :active (lsp--find-workspaces-for "textDocument/typeDefinition")]
+      :active (lsp-feature? "textDocument/typeDefinition")]
      "--"
      ["Describe" lsp-describe-thing-at-point]
      ["Code action" lsp-execute-code-action]
      ["Format" lsp-format-buffer]
      ["Highlight references" lsp-document-highlight]
+     ["Type Hierarchy" lsp-java-type-hierarchy
+      :visible (lsp-can-execute-command? "java.navigate.resolveTypeHierarchy")]
+     ["Type Hierarchy" lsp-treemacs-type-hierarchy
+      :visible (and (not (lsp-can-execute-command? "java.navigate.resolveTypeHierarchy"))
+                    (functionp 'lsp-treemacs-type-hierarchy)
+                    (lsp-feature? "textDocument/typeHierarchy"))]
+     ["Call Hierarchy" lsp-treemacs-call-hierarchy
+      :visible (and (functionp 'lsp-treemacs-call-hierarchy)
+                    (lsp-feature? "textDocument/callHierarchy"))]
      ["Rename" lsp-rename
-      :active (or (lsp--capability :renameProvider)
-                  (lsp--registered-capability "textDocument/rename"))]
+      :active (lsp-feature? "textDocument/rename")]
      "--"
      ("Session"
       ["View logs" lsp-workspace-show-log]
@@ -4740,6 +4759,8 @@ Stolen from `org-copy-visible'."
   "Holds the major mode when fontification function is running.
 See #2588")
 
+(defvar view-inhibit-help-message)
+
 (defun lsp--render-markdown ()
   "Render markdown."
 
@@ -4754,7 +4775,8 @@ See #2588")
 
     ;; markdown-mode v2.3 does not yet provide gfm-view-mode
     (if (fboundp 'gfm-view-mode)
-        (gfm-view-mode)
+        (let ((view-inhibit-help-message t))
+          (gfm-view-mode))
       (gfm-mode))
 
     (lsp--setup-markdown lsp-buffer-major-mode)))
@@ -5205,7 +5227,8 @@ It will show up only if current point has signature help."
 
 (defun lsp--action-trigger-parameter-hints (_command)
   "Handler for editor.action.triggerParameterHints."
-  (lsp-signature-activate))
+  (when (member :on-server-request lsp-signature-auto-activate)
+    (lsp-signature-activate)))
 
 (defun lsp--action-trigger-suggest (_command)
   "Handler for editor.action.triggerSuggest."
@@ -5330,6 +5353,7 @@ Request codeAction/resolve for more info if server supports."
     (scala-mode         . scala-indent:step)         ; Scala
     (powershell-mode    . powershell-indent)         ; PowerShell
     (ess-mode           . ess-indent-offset)         ; ESS (R)
+    (yaml-mode          . yaml-indent-offset)        ; YAML
 
     (default            . standard-indent))          ; default fallback
   "A mapping from `major-mode' to its indent variable.")
@@ -5405,7 +5429,10 @@ execute a CODE-ACTION-KIND action."
   "Highlight all relevant references to the symbol under point."
   (interactive)
   (lsp--remove-overlays 'lsp-highlight) ;; clear any previous highlights
-  (lsp--document-highlight))
+  (setq lsp--have-document-highlights nil
+        lsp--symbol-bounds-of-last-highlight-invocation nil)
+  (let ((lsp-enable-symbol-highlighting t))
+    (lsp--document-highlight)))
 
 (defun lsp--document-highlight-callback (highlights)
   "Create a callback to process the reply of a
@@ -5787,6 +5814,16 @@ REFERENCES? t when METHOD returns references."
            (lsp-workspaces)))
       (lsp-workspaces))))
 
+(defun lsp-can-execute-command? (command-name)
+  "Returns non-nil if current language server(s) can execute COMMAND-NAME.
+The command is executed via `workspace/executeCommand'"
+  (cl-position
+   command-name
+   (lsp:execute-command-options-commands
+    (lsp:server-capabilities-execute-command-provider?
+     (lsp--server-capabilities)))
+   :test #'equal))
+
 (defalias 'lsp-feature? 'lsp--find-workspaces-for)
 
 (cl-defmethod lsp-execute-command (_server _command _arguments)
@@ -6059,6 +6096,23 @@ WORKSPACE is the active workspace."
            (json-false nil))
        (json-read-from-string ,str))))
 
+(defmacro lsp-json-read-buffer ()
+  "Read json from the current buffer."
+  (if (progn
+        (require 'json)
+        (fboundp 'json-parse-string))
+      `(json-parse-buffer :object-type (if lsp-use-plists
+                                           'plist
+                                         'hash-table)
+                          :null-object nil
+                          :false-object nil)
+    `(let ((json-array-type 'vector)
+           (json-object-type (if lsp-use-plists
+                                 'plist
+                               'hash-table))
+           (json-false nil))
+       (json-read))))
+
 (defun lsp--read-json-file (file-path)
   "Read json file."
   (-> file-path
@@ -6111,8 +6165,10 @@ deserialization.")
   (let ((body-received 0)
         leftovers body-length body chunk)
     (lambda (_proc input)
-      (setf chunk (concat leftovers (encode-coding-string input 'utf-8 'nocopy)))
-      (while (not (equal chunk ""))
+      (setf chunk (if (s-blank? leftovers)
+                      input
+                    (concat leftovers input)))
+      (while (not (s-blank? chunk))
         (if (not body-length)
             ;; Read headers
             (if-let ((body-sep-pos (string-match-p "\r\n\r\n" chunk)))
@@ -6120,46 +6176,51 @@ deserialization.")
                 (setf body-length (lsp--get-body-length
                                    (mapcar #'lsp--parse-header
                                            (split-string
-                                            (substring chunk
+                                            (substring-no-properties chunk
                                                        (or (string-match-p "Content-Length" chunk)
                                                            (error "Unable to find Content-Length header."))
                                                        body-sep-pos)
                                             "\r\n")))
                       body-received 0
                       leftovers nil
-                      chunk (substring chunk (+ body-sep-pos 4)))
+                      chunk (substring-no-properties chunk (+ body-sep-pos 4)))
 
               ;; Haven't found the end of the headers yet. Save everything
               ;; for when the next chunk arrives and await further input.
               (setf leftovers chunk
-                    chunk ""))
+                    chunk nil))
           (let* ((chunk-length (string-bytes chunk))
                  (left-to-receive (- body-length body-received))
                  (this-body (if (< left-to-receive chunk-length)
-                                (prog1 (substring chunk 0 left-to-receive)
-                                  (setf chunk (substring chunk left-to-receive)))
+                                (prog1 (substring-no-properties chunk 0 left-to-receive)
+                                  (setf chunk (substring-no-properties chunk left-to-receive)))
                               (prog1 chunk
-                                (setf chunk ""))))
+                                (setf chunk nil))))
                  (body-bytes (string-bytes this-body)))
             (push this-body body)
             (setf body-received (+ body-received body-bytes))
             (when (>= chunk-length left-to-receive)
-              (let ((lsp-parsed-message (decode-coding-string
-                                         (apply #'concat
-                                                (nreverse
-                                                 (prog1 body
-                                                   (setf leftovers nil
-                                                         body-length nil
-                                                         body-received nil
-                                                         body nil)))) 'utf-8)))
-                (lsp--parser-on-message
-                 (condition-case err
-                     (lsp--read-json lsp-parsed-message)
-                   (error
-                    (lsp-warn "Failed to parse the following chunk:\n'''\n%s\n'''\nwith message %s"
-                              (concat leftovers input)
-                              err)))
-                 workspace)))))))))
+              (lsp--parser-on-message
+               (condition-case err
+                   (with-temp-buffer
+                     (apply #'insert
+                            (nreverse
+                             (prog1 body
+                               (setf leftovers nil
+                                     body-length nil
+                                     body-received nil
+                                     body nil))))
+                     (decode-coding-region (point-min)
+                                           (point-max)
+                                           'utf-8)
+                     (goto-char (point-min))
+                     (lsp-json-read-buffer))
+
+                 (error
+                  (lsp-warn "Failed to parse the following chunk:\n'''\n%s\n'''\nwith message %s"
+                            (concat leftovers input)
+                            err)))
+               workspace))))))))
 
 (defvar-local lsp--line-col-to-point-hash-table nil
   "Hash table with keys (line . col) and values that are either point positions
@@ -6743,18 +6804,21 @@ returns the command to execute."
                    (let* ((final-command (lsp-resolve-final-function local-command))
                           ;; wrap with stty to disable converting \r to \n
                           (process-name (generate-new-buffer-name name))
-                          (wrapped-command (append '("stty" "raw" ";")
-                                                   final-command
-                                                   (list
-                                                    (concat "2>"
-                                                            (or (when generate-error-file-fn
-                                                                  (funcall generate-error-file-fn name))
-                                                                (format "/tmp/%s-%s-stderr" name
-                                                                        (cl-incf lsp--stderr-index)))))))
+                          (wrapped-command (s-join
+                                            " "
+                                            (append '("stty" "raw" ";")
+                                                    final-command
+                                                    (list
+                                                     (concat "2>"
+                                                             (or (when generate-error-file-fn
+                                                                   (funcall generate-error-file-fn name))
+                                                                 (format "/tmp/%s-%s-stderr" name
+                                                                         (cl-incf lsp--stderr-index))))))))
                           (process-environment
                            (lsp--compute-process-environment environment-fn)))
-                     (let ((proc (apply 'start-file-process-shell-command process-name
-                                        (format "*%s*" process-name) wrapped-command)))
+                     (let ((proc (start-file-process-shell-command process-name
+                                                                   (format "*%s*" process-name)
+                                                                   wrapped-command)))
                        (set-process-sentinel proc sentinel)
                        (set-process-filter proc filter)
                        (set-process-query-on-exit-flag proc nil)
@@ -7146,25 +7210,26 @@ Check `*lsp-install*' and `*lsp-log*' buffer."
             lsp-client-packages)
     (setq lsp--client-packages-required t)))
 
-(defun lsp-install-server (update?)
+(defun lsp-install-server (update? &optional server-id)
   "Interactively install server.
 When prefix UPDATE? is t force installation even if the server is present."
   (interactive "P")
   (lsp--require-packages)
   (lsp--install-server-internal
-   (lsp--completing-read
-    "Select server to install: "
-    (or (->> lsp-clients
-             (ht-values)
-             (-filter (-andfn
-                       (-orfn (-not #'lsp--server-binary-present?)
-                              (-const update?))
-                       (-not #'lsp--client-download-in-progress?)
-                       #'lsp--client-download-server-fn)))
-        (user-error "There are no servers with automatic installation"))
-    (-compose #'symbol-name #'lsp--client-server-id)
-    nil
-    t)
+   (or (gethash server-id lsp-clients)
+       (lsp--completing-read
+        "Select server to install: "
+        (or (->> lsp-clients
+                 (ht-values)
+                 (-filter (-andfn
+                           (-orfn (-not #'lsp--server-binary-present?)
+                                  (-const update?))
+                           (-not #'lsp--client-download-in-progress?)
+                           #'lsp--client-download-server-fn)))
+            (user-error "There are no servers with automatic installation"))
+        (-compose #'symbol-name #'lsp--client-server-id)
+        nil
+        t))
    update?))
 
 (defun lsp-async-start-process (callback error-callback &rest command)
@@ -7258,14 +7323,20 @@ nil."
 
 (cl-defun lsp--npm-dependency-install (callback error-callback &key package &allow-other-keys)
   (if-let ((npm-binary (executable-find "npm")))
-      (lsp-async-start-process callback
-                               error-callback
-                               npm-binary
-                               "-g"
-                               "--prefix"
-                               (f-join lsp-server-install-dir "npm" package)
-                               "install"
-                               package)
+      (progn
+        ;; Explicitly `make-directory' to work around NPM bug in
+        ;; versions 7.0.0 through 7.4.1. See
+        ;; https://github.com/emacs-lsp/lsp-mode/issues/2364 for
+        ;; discussion.
+        (make-directory (f-join lsp-server-install-dir "npm" package "lib") 'parents)
+        (lsp-async-start-process callback
+                                 error-callback
+                                 npm-binary
+                                 "-g"
+                                 "--prefix"
+                                 (f-join lsp-server-install-dir "npm" package)
+                                 "install"
+                                 package))
     (lsp-log "Unable to install %s via `npm' because it is not present" package)
     nil))
 

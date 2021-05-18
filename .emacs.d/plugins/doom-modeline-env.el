@@ -30,12 +30,12 @@
 (require 'subr-x)
 (require 'doom-modeline-core)
 
+
 ;; Externals
 (defvar python-shell-interpreter)
 
-;;
+
 ;; Customizations
-;;
 
 (defgroup doom-modeline-env nil
   "The environment parser for doom-modeline."
@@ -57,19 +57,28 @@
   :type 'hook
   :group 'doom-modeline-env)
 
+
+;; Variables
+
 ;; Show version string for multi-version managers like rvm, rbenv, pyenv, etc.
 (defvar-local doom-modeline-env--version nil
   "The version to display with major-mode in mode-line.
 Example: \"2.6.0\"")
+
 (defvar-local doom-modeline-env--command nil
   "A program that we're looking to extract version information from.
 Example: \"ruby\"")
+
 (defvar-local doom-modeline-env--command-args nil
-  "A list of arguments to pass to `doom-modeline-env--command` to extract the version from.
+  "A list of arguments for the command to extract the version from.
 Example: '(\"--version\") ")
+
 (defvar-local doom-modeline-env--parser nil
-  "A function that returns version number from a programs --version (or similar) command.
+  "A function that returns version number from a command --version (or similar).
 Example: 'doom-modeline-env--ruby")
+
+
+;; Functions & Macros
 
 (defun doom-modeline-update-env ()
   "Update environment info on mode-line."
@@ -152,7 +161,7 @@ PARSER should be a function for parsing COMMAND's output line-by-line, to
          ,(concat "A function that returns the shell command and arguments (as a list) to\n"
                   "produce a version string."))
        (defvar ,parser-var ',parse-fn
-         ,(format "The function for parsing each line of `%s's output." command-var))
+         ,(format "The function to parse each line of `%s'\'s output." command-var))
        (defcustom ,exe-var nil
          ,(format (concat "What executable to use for the version indicator in %s buffers.\n\n"
                           "If nil, the default binary for this language is used.")
@@ -186,18 +195,20 @@ PARSER should be a function for parsing COMMAND's output line-by-line, to
          (dolist (hook (if (listp hooks) hooks (list hooks)))
            (add-hook hook #',setup-fn)))))))
 
-
-;;
+
 ;; Bootstrap
 ;; Versions, support Python, Ruby, Perl and Golang, etc.
-;;
 
 ;;;###autoload (autoload 'doom-modeline-env-setup-python "doom-modeline-env")
 (doom-modeline-def-env python
   :hooks   'python-mode-hook
   :command (lambda () (cond ((and (fboundp 'pipenv-project-p)
                              (pipenv-project-p))
-                        (list "pipenv" "run"))
+                        (list "pipenv" "run"
+                              (or doom-modeline-env-python-executable
+                                  python-shell-interpreter
+                                  "python")
+                              "--version"))
                        ((executable-find "pyenv") (list "pyenv" "version-name"))
                        ((list (or doom-modeline-env-python-executable
                                   python-shell-interpreter

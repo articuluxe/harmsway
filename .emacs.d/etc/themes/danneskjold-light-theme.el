@@ -24,7 +24,7 @@
 
    `(font-lock-comment-face ((t (:foreground "#7f8c8d"))))
 
-   `(highlight ((t (:background "honeydew"))))
+   `(highlight ((t (:background "honeydew" :extend t))))
 
    ;; dired+
    `(diredp-compressed-file-suffix ((t (:foreground "#f39c12"))))
