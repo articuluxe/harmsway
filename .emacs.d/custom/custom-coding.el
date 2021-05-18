@@ -2,8 +2,7 @@
 ;; Copyright (C) 2016-2017, 2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Tuesday, April 12, 2016
-;; Version: 1.0
-;; Modified Time-stamp: <2021-03-18 14:30:55 dharms>
+;; Modified Time-stamp: <2021-05-18 16:48:11 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords: coding
 
@@ -139,7 +138,9 @@ ARG, if non-nil, allows customizing the header used."
   "Insert a debug statement on the next line in `c++-mode'.
 If point is on a symbol, optionally print that out."
   (interactive)
-  (let ((sym (thing-at-point 'symbol))
+  (let ((sym (if (region-active-p)
+                 (buffer-substring-no-properties (region-beginning) (region-end))
+               (thing-at-point 'symbol)))
         (func (or (car (c-defun-name-and-limits nil))
                   buffer-file-name))
         (line (line-number-at-pos (c-point 'bol)))
