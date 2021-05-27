@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Saturday, February 28, 2015
-;; Modified Time-stamp: <2021-02-12 14:49:30 dharms>
+;; Modified Time-stamp: <2021-05-27 11:26:25 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -52,7 +52,7 @@
          ("u" . homebrew-upgrade)
          ("d" . homebrew-update)
          ("e" . homebrew-edit)
-         ("i" . homebrew-info)
+         ("I" . homebrew-info)
          ("p" . homebrew-package-info)
          ))
 
