@@ -1,0 +1,2 @@
+cp src/sculpture-themes.el ../../../../.emacs.d/plugins
+cp src/sculpture-themes-*-theme.el ../../../../.emacs.d/etc/themes
