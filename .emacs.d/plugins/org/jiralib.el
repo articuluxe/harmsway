@@ -198,8 +198,29 @@ This is maintained by `jiralib-login'.")
 
 (defcustom jiralib-worklog-import--filters-alist
   (list
-   '(nil "WorklogUpdatedByCurrentUser" (lambda (wl) (let-alist wl (when (and wl (string-equal (downcase (or jiralib-user-login-name user-login-name)) (downcase .updateAuthor.name))) wl))))
-   '(nil "WorklogAuthoredByCurrentUser" (lambda (wl) (let-alist wl (when (and wl (string-equal (downcase (or jiralib-user-login-name user-login-name)) (downcase .author.name))) wl)))))
+   '(nil "WorklogUpdatedByCurrentUser"
+         (lambda (wl)
+           (let-alist wl
+             (when
+                 (and wl
+                      (string-equal
+                       (downcase
+                        (or jiralib-user-login-name user-login-name ""))
+                       (downcase (or .updateAuthor.name
+                                     (car (split-string (or .updateAuthor.emailAddress "") "@"))
+                                     ""))))
+               wl))))
+   '(nil "WorklogAuthoredByCurrentUser"
+         (lambda (wl)
+           (let-alist wl
+             (when
+                 (and wl
+                      (string-equal
+                       (downcase
+                        (or jiralib-user-login-name user-login-name))
+                       (downcase (or .author.name
+                                     (car (split-string (or .author.emailAddress "") "@"))))))
+               wl)))))
   "A list of triplets: ('Global-Enable 'Descriptive-Label 'Function-Definition)
 that apply worklog predicate filters during import.
 
@@ -439,6 +460,7 @@ Pass ARGS to jiralib-call."
 Invoking COMPLETE-CALLBACK when the
 JIRALIB-COMPLETE-CALLBACK is non-nil, request finishes, and
 passing ARGS to REQUEST."
+  (unless api (error "jiralib--rest-call-it was called with a NIL api value."))
   (setq args
         (mapcar
          (lambda (arg)
@@ -454,6 +476,21 @@ passing ARGS to REQUEST."
                   :headers `(,jiralib-token ("Content-Type" . "application/json"))
                   :parser 'jiralib--json-read
                   :complete jiralib-complete-callback
+                  ;; Ensure we have useful errors
+                  :error
+                  (lexical-let
+                      ((my-api api)
+                       (my-args args))
+                    (cl-function
+                       (lambda (&key data &allow-other-keys)
+                         (print "JIRA_ERROR - see your *Messages* buffer for more details.")
+                         (print "JIRA_ERROR REQUEST: ")
+                         (print my-api)
+                         (print my-args)
+                         (print "JIRA_ERROR RESPONSE: ")
+                         (print data)
+                         (error "JIRA_ERROR - see your *Messages* buffer for more details.")
+                         )))
                   args))
           nil))
 
@@ -861,7 +898,7 @@ Return nil if the field is not found"
   ;;       (cdr (assoc 'fullname user))))))
 
 (defun jiralib-get-user-fullname (account-id)
-  "Return the full name (displaName) of the user with accountId."
+  "Return the full name (displayName) of the user with ACCOUNT-ID."
   (cl-loop for user in (jiralib-get-users nil)
         when (rassoc account-id user)
         return (cdr (assoc 'displayName user))))

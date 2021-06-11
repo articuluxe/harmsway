@@ -572,6 +572,12 @@ Entry to this mode calls the value of `org-jira-mode-hook'."
   (if org-jira-mode
       (run-mode-hooks 'org-jira-mode-hook)))
 
+(defun org-jira-maybe-activate-mode ()
+  "Having hooks can be an expensive operation, and they are invoked each
+time the mode is started - we should only ever re-activate the mode if
+it isn't already on."
+  (unless (bound-and-true-p org-jira-mode) (org-jira-mode t)))
+
 (defun org-jira-get-project-name (proj)
   (org-jira-find-value proj 'key))
 
@@ -602,10 +608,11 @@ Entry to this mode calls the value of `org-jira-mode-hook'."
 (defun org-jira-get-project-lead (proj)
   (org-jira-find-value proj 'lead 'name))
 
+;; This is mapped to accountId and not username, so we need nil not blank string.
 (defun org-jira-get-assignable-users (project-key)
   "Get the list of assignable users for PROJECT-KEY, adding user set jira-users first."
   (append
-   '(("Unassigned" . ""))
+   '(("Unassigned" . nil))
    org-jira-users
    (mapcar (lambda (user)
              (cons (org-jira-decode (cdr (assoc 'displayName user)))
@@ -665,7 +672,7 @@ to change the property names this sets."
   (let ((projects-file (expand-file-name "projects-list.org" (org-jira--ensure-working-dir))))
     (or (find-buffer-visiting projects-file)
         (find-file projects-file))
-    (org-jira-mode t)
+    (org-jira-maybe-activate-mode)
     (save-excursion
       (let* ((oj-projs (jiralib-get-projects)))
         (mapc (lambda (proj)
@@ -915,9 +922,10 @@ jql."
   "Get issue summary from point and place next to issue id from jira"
   (interactive)
   (let ((jira-id (thing-at-point 'symbol)))
+    (unless jira-id (error "ORG_JIRA_ERROR: JIRA-ID missing in org-jira-get-summary!"))
     (forward-symbol 1)
     (insert (format " - %s"
-                    (cdr (assoc 'summary (car (org-jira-get-issue-by-id jira-id))))))))
+                    (cdr (assoc 'summary (assoc 'fields (car (org-jira-get-issue-by-id jira-id)))))))))
 
 ;;;###autoload
 (defun org-jira-get-summary-url ()
@@ -1084,7 +1092,7 @@ ORG-JIRA-PROJ-KEY-OVERRIDE being set before and after running."
     (let (p)
       (with-current-buffer (org-jira--get-project-buffer Issue)
         (org-jira-freeze-ui
-          (org-jira-mode t)
+          (org-jira-maybe-activate-mode)
           (org-jira--maybe-render-top-heading proj-key)
           (setq p (org-find-entry-with-id issue-id))
           (save-restriction
@@ -1129,30 +1137,30 @@ ORG-JIRA-PROJ-KEY-OVERRIDE being set before and after running."
             (mapc
              (lambda (heading-entry)
                (ensure-on-issue-id-with-filename issue-id filename
-                 (let* ((entry-heading
-                         (concat (symbol-name heading-entry)
-                                 (format ": [[%s][%s]]"
-                                         (concat jiralib-url "/browse/" issue-id) issue-id))))
-                   (setq p (org-find-exact-headline-in-buffer entry-heading))
-                   (if (and p (>= p (point-min))
-                            (<= p (point-max)))
-                       (progn
-                         (goto-char p)
-                         (org-narrow-to-subtree)
-                         (goto-char (point-min))
-                         (forward-line 1)
-                         (delete-region (point) (point-max)))
-                     (if (org-goto-first-child)
-                         (org-insert-heading)
-                       (goto-char (point-max))
-                       (org-insert-subheading t))
-                     (org-jira-insert entry-heading "\n"))
+                                                 (let* ((entry-heading
+                                                         (concat (symbol-name heading-entry)
+                                                                 (format ": [[%s][%s]]"
+                                                                         (concat jiralib-url "/browse/" issue-id) issue-id))))
+                                                   (setq p (org-find-exact-headline-in-buffer entry-heading))
+                                                   (if (and p (>= p (point-min))
+                                                            (<= p (point-max)))
+                                                       (progn
+                                                         (goto-char p)
+                                                         (org-narrow-to-subtree)
+                                                         (goto-char (point-min))
+                                                         (forward-line 1)
+                                                         (delete-region (point) (point-max)))
+                                                     (if (org-goto-first-child)
+                                                         (org-insert-heading)
+                                                       (goto-char (point-max))
+                                                       (org-insert-subheading t))
+                                                     (org-jira-insert entry-heading "\n"))
 
-                   ;;  Insert 2 spaces of indentation so Jira markup won't cause org-markup
-                   (org-jira-insert
-                    (replace-regexp-in-string
-                     "^" "  "
-                     (format "%s" (slot-value Issue heading-entry)))))))
+                                                   ;;  Insert 2 spaces of indentation so Jira markup won't cause org-markup
+                                                   (org-jira-insert
+                                                    (replace-regexp-in-string
+                                                     "^" "  "
+                                                     (format "%s" (slot-value Issue heading-entry)))))))
              '(description))
 
             (when org-jira-download-comments
@@ -1768,7 +1776,8 @@ that should be bound to an issue."
                                    "")))
              (description . ,description)
              (priority (id . ,priority))
-             (assignee (accountId . ,(or (cdr (assoc user jira-users)) user)))))))
+             ;; accountId should be nil if Unassigned, not the key slot.
+             (assignee (accountId . ,(or (cdr (assoc user jira-users)) nil)))))))
     ticket-struct))
 
 ;;;###autoload
@@ -1909,7 +1918,9 @@ Where issue-id will be something such as \"EX-22\"."
       (outline-show-all)
       (outline-hide-sublevels 2)
       (goto-char (point-min))
-      (while (and (looking-at "^ *$")
+      (while (and (or (looking-at "^ *$")
+                      (looking-at "^#.*$")
+                      (looking-at "^\\* .*"))
                   (not (eobp)))
         (forward-line))
       (outline-next-visible-heading 1)
@@ -2390,7 +2401,7 @@ boards -  list of `org-jira-sdk-board' records."
   ;;(org-jira-sdk-dump board)
   (with-slots (id name url board-type jql limit) board
     (with-current-buffer (org-jira--get-boards-buffer)
-      (org-jira-mode t)
+      (org-jira-maybe-activate-mode)
       (org-jira-freeze-ui
         (org-save-outline-visibility t
           (save-restriction

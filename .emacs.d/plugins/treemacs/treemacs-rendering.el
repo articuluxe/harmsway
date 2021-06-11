@@ -488,8 +488,12 @@ Run POST-CLOSE-ACTION after everything else is done."
             (delete-region pos-start pos-end))))
       ,post-close-action)))
 
-(defun treemacs--expand-root-node (btn)
-  "Expand the given root BTN."
+(defun treemacs--expand-root-node (btn &optional recursive)
+  "Expand the given root BTN.
+Open every child-directory as well when RECURSIVE is non-nil.
+
+BTN: Button
+RECURSIVE: Bool"
   (let ((project (treemacs-button-get btn :project)))
     (treemacs-with-writable-buffer
      (treemacs-project->refresh-path-status! project))
@@ -506,8 +510,7 @@ Run POST-CLOSE-ACTION after everything else is done."
            :immediate-insert nil
            :button btn
            :new-state 'root-node-open
-           ;; TODO(2020/12/30): temporary workaround for issues like #752, to be removed in 2 months
-           :new-icon (or treemacs-icon-root-open treemacs-icon-root)
+           :new-icon treemacs-icon-root-open
            :open-action
            (progn
              ;; TODO(2019/10/14): go back to post open
@@ -520,7 +523,12 @@ Run POST-CLOSE-ACTION after everything else is done."
              ;; Performing FS ops on a disconnected Tramp project
              ;; might have changed the state to connected.
              (treemacs-with-writable-buffer
-              (treemacs-project->refresh-path-status! project)))))))))
+              (treemacs-project->refresh-path-status! project))
+             (when (and recursive (treemacs-project->is-readable? project))
+               (--each (treemacs-collect-child-nodes btn)
+                 (when (eq 'dir-node-closed (treemacs-button-get it :state))
+                   (goto-char (treemacs-button-start it))
+                   (treemacs--expand-dir-node it :git-future git-future :recursive t)))))))))))
 
 (defun treemacs--collapse-root-node (btn &optional recursive)
   "Collapse the given root BTN.
@@ -528,8 +536,7 @@ Remove all open entries below BTN when RECURSIVE is non-nil."
   (treemacs--button-close
    :button btn
    :new-state 'root-node-closed
-   ;; TODO(2020/12/30): temporary workaround for issues like #752, to be removed in 2 months
-   :new-icon (or treemacs-icon-root-closed treemacs-icon-root)
+   :new-icon treemacs-icon-root-closed
    :post-close-action
    (-let [path (treemacs-button-get btn :path)]
      (treemacs--stop-watching path)
@@ -594,8 +601,7 @@ Remove all open dir and tag entries under BTN when RECURSIVE."
   "Insert a new root node for the given PROJECT node.
 
 PROJECT: Project Struct"
-  ;; TODO(2020/12/30): temporary workaround for issues like #752, to be removed in 2 months
-  (insert (or treemacs-icon-root-closed treemacs-icon-root))
+  (insert treemacs-icon-root-closed)
   (let* ((pos (point-marker))
          (path (treemacs-project->path project))
          (dom-node (treemacs-dom-node->create! :key path :position pos)))

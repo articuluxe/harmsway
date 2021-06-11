@@ -332,19 +332,28 @@ If the input is empty, select the previous history element instead."
            (avy-push-mark))
       (avy--done))))
 
+(defun swiper--avy-index (pos)
+  "Return `ivy--index' for `avy' candidate at minibuffer POS."
+  ;; Position in original buffer.
+  (let ((opos (get-text-property pos 'point)))
+    (or
+     ;; Find `swiper-isearch' index based on buffer position.
+     (and opos (cl-position opos ivy--all-candidates))
+     ;; Find `swiper' index based on line number.
+     (let ((nlines (count-lines (point-min) (point-max))))
+       (+ (car (ivy--minibuffer-index-bounds
+                ivy--index ivy--length ivy-height))
+          (line-number-at-pos pos)
+          (if (or (= nlines (1+ ivy-height))
+                  (< ivy--length ivy-height))
+              0
+            (- ivy-height nlines))
+          -2)))))
+
 (defun swiper--avy-goto (candidate)
   (cond ((let ((win (cdr-safe candidate)))
            (and win (window-minibuffer-p win)))
-         (let ((nlines (count-lines (point-min) (point-max))))
-           (ivy-set-index
-            (+ (car (ivy--minibuffer-index-bounds
-                     ivy--index ivy--length ivy-height))
-               (line-number-at-pos (car candidate))
-               (if (or (= nlines (1+ ivy-height))
-                       (< ivy--length ivy-height))
-                   0
-                 (- ivy-height nlines))
-               -2)))
+         (setq ivy--index (swiper--avy-index (car candidate)))
          (ivy--exhibit)
          (ivy-done)
          (ivy-call))
@@ -355,16 +364,19 @@ If the input is empty, select the previous history element instead."
 
 ;;;###autoload
 (defun swiper-avy ()
-  "Jump to one of the current swiper candidates."
+  "Jump to one of the current swiper candidates with `avy'."
   (interactive)
   (unless (require 'avy nil 'noerror)
-    (error "Package avy isn't installed"))
+    (user-error "Package avy isn't installed"))
   (cl-case (length ivy-text)
     (0
      (user-error "Need at least one char of input"))
     (1
-     (let ((swiper-min-highlight 1))
-       (swiper--update-input-ivy))))
+     ;; FIXME: `swiper--update-input-ivy' expects string candidates,
+     ;; but `swiper-isearch' now uses buffer positions.
+     (when (stringp (ivy-state-current ivy-last))
+       (let ((swiper-min-highlight 1))
+         (swiper--update-input-ivy)))))
   (swiper--avy-goto (swiper--avy-candidate)))
 
 (declare-function mc/create-fake-cursor-at-point "ext:multiple-cursors-core")

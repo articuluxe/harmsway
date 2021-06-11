@@ -108,8 +108,7 @@
    `(lazy-highlight             ((,class (:background ,red1   :foreground ,black1))))
    `(link                       ((,class (:foreground ,aqua1  :underline  (:color ,aqua1)))))
    `(link-visited               ((,class (:foreground ,aqua2  :underline  (:color ,aqua2)))))
-   `(button                     ((,class (:foreground ,blue1  :background ,bg :bold t :box (:line-width -1 :color ,black2 :style released-button)))))
-   `(custom-button              ((,class (:inherit    button))))
+   `(button                     ((,class (:background ,bg2  :foreground ,blue1 :box (:color ,grey3 :line-width 2 :style released-button) :bold t))))
    `(linum                      ((,class (:background ,bg :foreground ,grey1  :bold nil :box nil :overline nil :underline nil :italic nil))))
    `(line-number                ((,class (:background ,bg :foreground ,grey1  :bold t))))
    `(line-number-current-line   ((,class (:background ,bg :foreground ,green1 :bold t))))
@@ -130,6 +129,11 @@
    `(secondary-selection        ((,class (nil))))
    `(match                      ((,class (:background ,red3 :foreground ,fg))))
    `(tooltip                    ((,class (:background ,bg2  :foreground ,brown1))))
+   `(help-key-binding           ((,class (:foreground ,orange2 :bold t))))
+   `(variable-pitch             ((,class (:family "Iosevka Aile"))))
+
+   ;; Widgets
+   `(widget-field ((,class (:foreground ,brown1 :background ,grey3 :bold t :box (:line-width -1 :color ,grey1)))))
 
    ;; Tabs
    `(tab-line                   ((,class (:background ,black1 :foreground ,fg :box (:line-width 3 :color ,black1) :overline ,black1))))
@@ -190,14 +194,14 @@
    `(ido-vertical-only-match   ((,class (:inherit ido-only-match))))
 
    ;; Group Customization
-   `(custom-button              ((,class (:foreground ,black2  :background ,blue1 :box (:line-width -1 :color ,black1 :style released-button)))))
+   `(custom-button              ((,class (:inherit button))))
    `(custom-button-mouse        ((,class (:background ,blue1   :inherit custom-button))))
    `(custom-button-pressed      ((,class (:foreground ,black1  :background ,blue1 :box (:line-width -1 :color ,black1 :style pressed-button)))))
    `(custom-comment             ((,class (:inherit    font-lock-comment-face))))
    `(custom-comment-tag         ((,class (:inherit    font-lock-comment-face))))
    `(custom-documentation       ((,class (:foreground ,fg))))
    `(custom-group-subtitle      ((,class (:foreground ,purple1 :bold t :underline t))))
-   `(custom-group-tag           ((,class (:foreground ,aqua1   :bold t :underline nil :height 1.25))))
+   `(custom-group-tag           ((,class (:foreground ,purple1 :bold t :underline nil :height 1.25))))
    `(custom-group-tag-1         ((,class (:foreground ,aqua1   :bold t :underline t   :height 1.5))))
    `(custom-state               ((,class (:foreground ,green2))))
    `(custom-variable-tag        ((,class (:foreground ,purple1 :bold t :underline t))))
@@ -571,9 +575,10 @@
    `(magit-blame-heading               ((,class (:background ,bg2   :bold t))))
    `(magit-blame-name                  ((,class (:background ,bg2   :foreground ,blue2   :bold t))))
    `(magit-blame-summary               ((,class (:background ,bg2   :foreground ,brown1 :bold t))))
-   `(magit-branch-current              ((,class (:background ,bg    :foreground ,blue2   :bold t))))
-   `(magit-branch-local                ((,class (:background ,bg    :foreground ,orange1 :bold t))))
-   `(magit-branch-remote               ((,class (:background ,bg    :foreground ,green1  :bold t))))
+   `(magit-branch-current              ((,class (:foreground ,blue2   :bold t))))
+   `(magit-branch-remote-head          ((,class (:foreground ,purple2 :bold t))))
+   `(magit-branch-remote               ((,class (:foreground ,aqua1   :bold t))))
+   `(magit-branch-local                ((,class (:foreground ,brown2  :bold t))))
    `(magit-cherry-equivalent           ((,class (:foreground ,blue1))))
    `(magit-cherry-unmatched            ((,class (:foreground ,red1))))
    `(magit-diff-added                  ((,class (:foreground ,green1))))
@@ -636,7 +641,7 @@
    `(magit-signature-bad               ((,class (:foreground ,yellow1 :italic t :underline (:style wave)))))
    `(magit-signature-good              ((,class (:foreground ,green1  :italic t :underline t))))
    `(magit-signature-untrusted         ((,class (:foreground ,red1    :italic t :underline (:style wave)))))
-   `(magit-tag                         ((,class (:foreground ,aqua1   :bold t))))
+   `(magit-tag                         ((,class (:foreground ,yellow1 :bold t))))
 
    ;; Diff
    `(diff-refine-added   ((,class (:foreground ,green2 :background ,green3 :bold t))))
@@ -922,6 +927,24 @@
    `(markup-title-3-face                ((,class (:foreground ,purple1 :underline t :height 1.05))))
    `(markup-title-4-face                ((,class (:foreground ,purple1 :underline t))))
    `(markup-title-5-face                ((,class (:foreground ,purple1 :underline t))))
+
+   ;; selectrum
+   `(selectrum-current-candidate ((,class (:background ,black1 :extend t))))
+
+   ;; orderless
+   `(orderless-match-face-0 ((,class (:background ,red3   :foreground ,yellow2))))
+   `(orderless-match-face-1 ((,class (:background ,green2 :foreground ,black2))))
+   `(orderless-match-face-2 ((,class (:background ,blue2  :foreground ,black2))))
+   `(orderless-match-face-3 ((,class (:background ,brown2 :foreground ,black2))))
+
+   ;; marginalia
+   `(marginalia-documentation ((,class (:inherit font-lock-doc-face))))
+   `(marginalia-key           ((,class (:foreground ,purple1))))
+   `(marginalia-number        ((,class (:background ,blue2 :foreground ,red3 :bold t))))
+   `(marginalia-size          ((,class (:foreground ,purple1))))
+   `(marginalia-mode          ((,class (:foreground ,orange2 :bold t))))
+   `(marginalia-version       ((,class (:background ,blue2 :foreground ,red3 :bold t))))
+   `(marginalia-ligher        ((,class (:foreground ,green3))))
 
    ;; mu4e
    `(mu4e-unread-face                     ((,class (:foreground ,blue1 :bold t))))

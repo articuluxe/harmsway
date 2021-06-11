@@ -4,9 +4,9 @@
 
 ;; Author: Omar Antolín Camarena <omar@matem.unam.mx>
 ;; Keywords: extensions
-;; Version: 0.5
+;; Version: 0.6
 ;; Homepage: https://github.com/oantolin/orderless
-;; Package-Requires: ((emacs "24.4"))
+;; Package-Requires: ((emacs "26.1"))
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -278,10 +278,10 @@ at a word boundary in the candidate.  This is similar to the
            (cl-loop
             for (x y) on (or (cddr (match-data)) (match-data)) by #'cddr
             when x do
-            (font-lock-prepend-text-property
+            (add-face-text-property
              x y
-             'face (aref orderless-match-faces (mod i n))
-             string)))
+             (aref orderless-match-faces (mod i n))
+             nil string)))
   string)
 
 (defun orderless-highlight-matches (regexps strings)
@@ -367,7 +367,7 @@ as the value of DISPATCHERS."
   (cl-loop
    with components = (if (functionp orderless-component-separator)
                          (funcall orderless-component-separator pattern)
-                       (split-string pattern orderless-component-separator))
+                       (split-string pattern orderless-component-separator t))
    with total = (length components)
    for component in components and index from 0
    for (newstyles . newcomp) = (orderless-dispatch

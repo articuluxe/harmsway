@@ -190,6 +190,7 @@ unless overridden by a more specific face association."
     ("enum" . lsp-face-semhl-enum)
     ("typeParameter" . lsp-face-semhl-type-parameter)
     ("function" . lsp-face-semhl-function)
+    ("method" . lsp-face-semhl-method)
     ("member" . lsp-face-semhl-member)
     ("property" . lsp-face-semhl-property)
     ("macro" . lsp-face-semhl-macro)
@@ -230,15 +231,19 @@ If REGION is non-nil, it will request tokens only for given region
 otherwise it will request for whole document.
 If FONTIFY-IMMEDIATELY is non-nil, it will fontify when receive the response
 ignoring the timer."
-  (let ((request-full-token-set
-         (lambda (fontify-immediately)
-           (when lsp--semantic-tokens-idle-timer
-             (cancel-timer lsp--semantic-tokens-idle-timer))
-           (setq lsp--semantic-tokens-idle-timer
-                 (run-with-idle-timer
-                  lsp-idle-delay
-                  nil
-                  (lambda () (lsp--semantic-tokens-request nil fontify-immediately)))))))
+  (let* ((semantic-tokenizing-buffer (current-buffer))
+         (request-full-token-set
+          (lambda (fontify-immediately)
+            (when lsp--semantic-tokens-idle-timer
+              (cancel-timer lsp--semantic-tokens-idle-timer))
+            (setq lsp--semantic-tokens-idle-timer
+                  (run-with-idle-timer
+                   lsp-idle-delay
+                   nil
+                   (lambda ()
+                     (when (buffer-live-p semantic-tokenizing-buffer)
+                       (with-current-buffer semantic-tokenizing-buffer
+                         (lsp--semantic-tokens-request nil fontify-immediately)))))))))
     (when lsp--semantic-tokens-idle-timer
       (cancel-timer lsp--semantic-tokens-idle-timer))
     (lsp-request-async
@@ -471,6 +476,8 @@ IS-RANGE-PROVIDER is non-nil when server supports range requests."
           lsp--semantic-tokens-cache nil
           lsp--semantic-tokens-teardown nil
           lsp--semantic-tokens-use-ranged-requests nil))))
+
+(lsp-consistency-check lsp-semantic-tokens)
 
 (provide 'lsp-semantic-tokens)
 ;;; lsp-semantic-tokens.el ends here

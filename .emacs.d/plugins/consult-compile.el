@@ -1,6 +1,8 @@
 ;;; consult-compile.el --- Provides the command `consult-compile-error' -*- lexical-binding: t -*-
 
-;; This file is not part of GNU Emacs.
+;; Copyright (C) 2021  Free Software Foundation, Inc.
+
+;; This file is part of GNU Emacs.
 
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -25,6 +27,8 @@
 
 (require 'consult)
 (require 'compile)
+
+(defvar consult-compile--history nil)
 
 (defconst consult-compile--narrow
   '((?e . "Error")
@@ -107,9 +111,9 @@ preview of the currently selected error."
    :require-match t
    :history t ;; disable history
    :lookup #'consult-compile--error-lookup
-   :title (consult--type-title consult-compile--narrow)
+   :group (consult--type-group consult-compile--narrow)
    :narrow (consult--type-narrow consult-compile--narrow)
-   :history '(:input consult--error-history)
+   :history '(:input consult-compile--history)
    :state (consult--jump-state 'consult-preview-error)))
 
 (provide 'consult-compile)

@@ -1,6 +1,8 @@
 ;;; consult-org.el --- Consult commands for org-mode -*- lexical-binding: t -*-
 
-;; This file is not part of GNU Emacs.
+;; Copyright (C) 2021  Free Software Foundation, Inc.
+
+;; This file is part of GNU Emacs.
 
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -36,13 +38,15 @@
                     (pcase-let ((`(,a ,b) (split-string s "(")))
                       (cons (downcase (string-to-char (or b a))) a)))
                   (apply #'append (mapcar #'cdr org-todo-keywords))))))
-    (cons (lambda (cand)
+    (list :predicate
+          (lambda (cand)
             (pcase-let ((`(_ ,level ,todo ,prio)
                          (get-text-property 0 'consult-org--heading cand)))
               (cond
                ((<= ?1 consult--narrow ?9) (<= level (- consult--narrow ?0)))
                ((<= ?A consult--narrow ?Z) (eq prio consult--narrow))
                (t (equal todo (alist-get consult--narrow todo-kws))))))
+          :keys
           (nconc (mapcar (lambda (c) (cons c (format "Level %c" c)))
                          (number-sequence ?1 ?9))
                  (mapcar (lambda (c) (cons c (format "Priority %c" c)))
@@ -93,7 +97,7 @@ buffer are offered."
      :history '(:input consult-org--history)
      :narrow (consult-org--narrow)
      :state (consult--jump-state)
-     :title
+     :group
      (when prefix
        (lambda (cand transform)
          (let ((name (buffer-name

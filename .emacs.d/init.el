@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-05-17 15:55:27 dharms>
+;; Modified Time-stamp: <2021-06-11 17:30:24 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3169,7 +3169,7 @@ completion at point mechanism does not interfere with `completion-at-point-funct
   (global-company-mode 1)
   (add-hook 'completion-at-point-functions 'harmsway-company-at-point)
   ;; Use Ctrl-[N,P] rather than Meta to cycle
-  (define-key company-active-map "\C-n" #'company-select-next)
+  (define-key company-active-map "\C-n" #'company-select-next-if-tooltip-visible-or-complete-selection)
   (define-key company-active-map "\C-p" #'company-select-previous)
   (define-key company-active-map "\M-n" nil)
   (define-key company-active-map "\M-p" nil)

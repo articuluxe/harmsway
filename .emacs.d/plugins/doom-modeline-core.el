@@ -157,6 +157,14 @@ If the actual char height is larger, it respects the actual char height."
   :type 'boolean
   :group 'doom-modeline)
 
+(defcustom doom-modeline-hud-min-height 2
+  "Minimum height in pixels of the \"thumb\" of the hud.
+Only respected in GUI."
+  :type 'integer
+  :set (lambda (sym val)
+         (set sym (if (> val 1) val 1)))
+  :group 'doom-modeline)
+
 (defcustom doom-modeline-window-width-limit fill-column
   "The limit of the window width.
 
@@ -1037,6 +1045,17 @@ If DEFAULT is non-nil, set the default mode-line for all buffers."
               ((floatp height) (* height (frame-char-height)))
               (t (frame-char-height)))))))
 
+(defun doom-modeline--original-value (sym)
+  "Return the original value for SYM, if any.
+
+If SYM has an original value, return it in a list. Return nil
+otherwise."
+  (let* ((orig-val-expr (get sym 'standard-value)))
+    (when (consp orig-val-expr)
+      (ignore-errors
+        (list
+         (eval (car orig-val-expr)))))))
+
 (defun doom-modeline-add-variable-watcher (symbol watch-function)
   "Cause WATCH-FUNCTION to be called when SYMBOL is set if possible.
 
@@ -1092,8 +1111,10 @@ ARGS is same as `all-the-icons-octicon' and others."
      ;; ASCII text
      (and text (propertize text 'face face)))))
 
-(defun doom-modeline--make-image (face width height)
-  "Create a PBM bitmap via FACE, WIDTH and HEIGHT."
+(defun doom-modeline--create-bar-image (face width height)
+  "Create the bar image.
+Use FACE1 for the bar, FACE2 for the background.
+WIDTH and HEIGHT are the image size in pixels."
   (when (and (display-graphic-p)
              (image-type-available-p 'pbm))
     (propertize
@@ -1105,6 +1126,33 @@ ARGS is same as `all-the-icons-octicon' and others."
                   (make-string (* width height) ?1)
                   "\n")
           'pbm t :foreground color :ascent 'center))))))
+
+(defun doom-modeline--create-hud-image
+    (face1 face2 width height top-margin bottom-margin)
+  "Create the hud image.
+Use FACE1 for the bar, FACE2 for the background.
+WIDTH and HEIGHT are the image size in pixels.
+TOP-MARGIN and BOTTOM-MARGIN are the size of the margin above and below the bar,
+respectively."
+  (when (and (display-graphic-p)
+             (image-type-available-p 'pbm))
+    (let ((min-height (min height doom-modeline-hud-min-height)))
+      (unless (> (- height top-margin bottom-margin) min-height)
+        (let ((margin (- height min-height)))
+          (setq top-margin (/ (* margin top-margin) (+ top-margin bottom-margin))
+                bottom-margin (- margin top-margin)))))
+    (propertize
+     " " 'display
+     (let ((color1 (or (face-background face1 nil t) "None"))
+           (color2 (or (face-background face2 nil t) "None")))
+       (create-image
+        (concat
+         (format "P1\n%i %i\n" width height)
+         (make-string (* top-margin width) ?0)
+         (make-string (* (- height top-margin bottom-margin) width) ?1)
+         (make-string (* bottom-margin width) ?0)
+         "\n")
+        'pbm t :foreground color1 :background color2 :ascent 'center)))))
 
 ;; Check whether `window-total-width' is smaller than the limit
 (defvar-local doom-modeline--limited-width-p nil)

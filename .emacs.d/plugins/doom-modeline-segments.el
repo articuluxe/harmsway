@@ -81,8 +81,11 @@
 (defvar grip--process)
 (defvar helm--mode-line-display-prefarg)
 (defvar iedit-occurrences-overlays)
+(defvar meow--indicator)
 (defvar minions-direct)
 (defvar minions-mode-line-minor-modes-map)
+(defvar mlscroll-minimum-current-width)
+(defvar mlscroll-right-align)
 (defvar mu4e-alert-mode-line)
 (defvar mu4e-alert-modeline-formatter)
 (defvar nyan-minimum-window-width)
@@ -101,7 +104,6 @@
 (defvar tracking-buffers)
 (defvar winum-auto-setup-mode-line)
 (defvar xah-fly-insert-state-q)
-(defvar meow--indicator)
 
 (declare-function anzu--reset-status 'anzu)
 (declare-function anzu--where-is-here 'anzu)
@@ -193,6 +195,7 @@
 (declare-function lsp-workspaces 'lsp-mode)
 (declare-function lv-message 'lv)
 (declare-function mc/num-cursors 'multiple-cursors-core)
+(declare-function mlscroll-mode-line 'mlscroll)
 (declare-function mu4e-alert-default-mode-line-formatter 'mu4e-alert)
 (declare-function mu4e-alert-enable-mode-line-display 'mu4e-alert)
 (declare-function nyan-create 'nyan-mode)
@@ -1356,78 +1359,64 @@ of active `multiple-cursors'."
 
 (defvar doom-modeline--bar-active nil)
 (defvar doom-modeline--bar-inactive nil)
-(doom-modeline-def-segment bar
-  "The bar regulates the height of the mode-line in GUI."
-  (unless doom-modeline-hud
-    (if (doom-modeline--active)
-        doom-modeline--bar-active
-      doom-modeline--bar-inactive)))
 
-(defun doom-modeline-refresh-bars (&optional width height)
-  "Refresh mode-line bars with `WIDTH' and `HEIGHT'."
-  (unless doom-modeline-hud
-    (let ((width (or width doom-modeline-bar-width))
-          (height (max (or height doom-modeline-height)
+(defsubst doom-modeline--bar ()
+  "The default bar regulates the height of the mode-line in GUI."
+  (unless (and doom-modeline--bar-active doom-modeline--bar-inactive)
+    (let ((width doom-modeline-bar-width)
+          (height (max doom-modeline-height
                        (doom-modeline--font-height))))
       (when (and (numberp width) (numberp height))
         (setq doom-modeline--bar-active
-              (doom-modeline--make-image 'doom-modeline-bar width height)
+              (doom-modeline--create-bar-image 'doom-modeline-bar width height)
               doom-modeline--bar-inactive
-              (doom-modeline--make-image 'doom-modeline-bar-inactive width height))))))
+              (doom-modeline--create-bar-image
+               'doom-modeline-bar-inactive width height)))))
+  (if (doom-modeline--active)
+      doom-modeline--bar-active
+    doom-modeline--bar-inactive))
 
-(doom-modeline-add-variable-watcher
- 'doom-modeline-height
- (lambda (_sym val op _where)
-   (when (and (eq op 'set) (integerp val))
-     (doom-modeline-refresh-bars doom-modeline-bar-width val))))
-
-(doom-modeline-add-variable-watcher
- 'doom-modeline-bar-width
- (lambda (_sym val op _where)
-   (when (and (eq op 'set) (integerp val))
-     (doom-modeline-refresh-bars val doom-modeline-height))))
-
-(add-hook 'after-setting-font-hook #'doom-modeline-refresh-bars)
-(add-hook 'window-configuration-change-hook #'doom-modeline-refresh-bars)
-
+(defun doom-modeline-refresh-bars ()
+  "Refresh mode-line bars on next redraw."
+  (setq doom-modeline--bar-active nil
+        doom-modeline--bar-inactive nil))
 
 (cl-defstruct doom-modeline--hud-cache active inactive top-margin bottom-margin)
 
-(doom-modeline-def-segment hud
+(defsubst doom-modeline--hud ()
   "Powerline's hud segment reimplemented in the style of Doom's bar segment."
-  (when doom-modeline-hud
-    (let* ((ws (window-start))
-           (we (window-end))
-           (bs (buffer-size))
-           (height (max doom-modeline-height
-                        (doom-modeline--font-height)))
-           (top-margin (if (zerop bs)
-                           0
-                         (/ (* height (1- ws)) bs)))
-           (bottom-margin (if (zerop bs)
-                              0
-                            (max 0 (/ (* height (- bs we 1)) bs))))
-           (cache (or (window-parameter nil 'doom-modeline--hud-cache)
-                      (set-window-parameter nil 'doom-modeline--hud-cache
-                                            (make-doom-modeline--hud-cache)))))
-      (unless (and (doom-modeline--hud-cache-active cache)
-                   (doom-modeline--hud-cache-inactive cache)
-                   (= top-margin (doom-modeline--hud-cache-top-margin cache))
-                   (= bottom-margin
-                      (doom-modeline--hud-cache-bottom-margin cache)))
-        (setf (doom-modeline--hud-cache-active cache)
-              (doom-modeline--create-hud-image
-               'doom-modeline-bar 'default doom-modeline-bar-width
-               height top-margin bottom-margin)
-              (doom-modeline--hud-cache-inactive cache)
-              (doom-modeline--create-hud-image
-               'doom-modeline-bar-inactive 'default doom-modeline-bar-width
-               height top-margin bottom-margin)
-              (doom-modeline--hud-cache-top-margin cache) top-margin
-              (doom-modeline--hud-cache-bottom-margin cache) bottom-margin))
-      (if (doom-modeline--active)
-          (doom-modeline--hud-cache-active cache)
-        (doom-modeline--hud-cache-inactive cache)))))
+  (let* ((ws (window-start))
+         (we (window-end))
+         (bs (buffer-size))
+         (height (max doom-modeline-height
+                      (doom-modeline--font-height)))
+         (top-margin (if (zerop bs)
+                         0
+                       (/ (* height (1- ws)) bs)))
+         (bottom-margin (if (zerop bs)
+                            0
+                          (max 0 (/ (* height (- bs we 1)) bs))))
+         (cache (or (window-parameter nil 'doom-modeline--hud-cache)
+                    (set-window-parameter nil 'doom-modeline--hud-cache
+                                          (make-doom-modeline--hud-cache)))))
+    (unless (and (doom-modeline--hud-cache-active cache)
+                 (doom-modeline--hud-cache-inactive cache)
+                 (= top-margin (doom-modeline--hud-cache-top-margin cache))
+                 (= bottom-margin
+                    (doom-modeline--hud-cache-bottom-margin cache)))
+      (setf (doom-modeline--hud-cache-active cache)
+            (doom-modeline--create-hud-image
+             'doom-modeline-bar 'default doom-modeline-bar-width
+             height top-margin bottom-margin)
+            (doom-modeline--hud-cache-inactive cache)
+            (doom-modeline--create-hud-image
+             'doom-modeline-bar-inactive 'default doom-modeline-bar-width
+             height top-margin bottom-margin)
+            (doom-modeline--hud-cache-top-margin cache) top-margin
+            (doom-modeline--hud-cache-bottom-margin cache) bottom-margin))
+    (if (doom-modeline--active)
+        (doom-modeline--hud-cache-active cache)
+      (doom-modeline--hud-cache-inactive cache))))
 
 (defun doom-modeline-invalidate-huds ()
   "Invalidate all cached hud images."
@@ -1439,38 +1428,28 @@ of active `multiple-cursors'."
  'doom-modeline-height
  (lambda (_sym val op _where)
    (when (and (eq op 'set) (integerp val))
+     (doom-modeline-refresh-bars)
      (doom-modeline-invalidate-huds))))
 
 (doom-modeline-add-variable-watcher
  'doom-modeline-bar-width
  (lambda (_sym val op _where)
    (when (and (eq op 'set) (integerp val))
+     (doom-modeline-refresh-bars)
      (doom-modeline-invalidate-huds))))
 
+(add-hook 'after-setting-font-hook #'doom-modeline-refresh-bars)
 (add-hook 'after-setting-font-hook #'doom-modeline-invalidate-huds)
-(add-hook 'window-configuration-change-hook #'doom-modeline-invalidate-huds)
 
-(defun doom-modeline--create-hud-image
-    (face1 face2 width height top-margin bottom-margin)
-  "Create the hud image.
-Use FACE1 for the bar, FACE2 for the background.
-WIDTH and HEIGHT are the image size in pixels.
-TOP-MARGIN and BOTTOM-MARGIN are the size of the margin above and below the bar,
-respectively."
-  (when (and (display-graphic-p)
-             (image-type-available-p 'pbm))
-    (propertize
-     " " 'display
-     (let ((color1 (or (face-background face1 nil t) "None"))
-           (color2 (or (face-background face2 nil t) "None")))
-       (create-image
-          (concat
-           (format "P1\n%i %i\n" width height)
-           (make-string (* top-margin width) ?0)
-           (make-string (* (- height top-margin bottom-margin) width) ?1)
-           (make-string (* bottom-margin width) ?0)
-           "\n")
-          'pbm t :foreground color1 :background color2 :ascent 'center)))))
+(doom-modeline-def-segment bar
+  "The bar regulates the height of the mode-line in GUI."
+  (if doom-modeline-hud
+      (doom-modeline--hud)
+    (doom-modeline--bar)))
+
+(doom-modeline-def-segment hud
+  "Powerline's hud segment reimplemented in the style of Doom's bar segment."
+  (doom-modeline--hud))
 
 
 ;;
@@ -1506,6 +1485,7 @@ one. The ignored buffers are excluded unless `aw-ignore-on' is nil."
 (advice-add #'winum--clear-mode-line :override #'ignore)
 
 (doom-modeline-def-segment window-number
+  "The current window number."
   (let ((num (cond
               ((bound-and-true-p ace-window-display-mode)
                (aw-update)
@@ -1517,14 +1497,13 @@ one. The ignored buffers are excluded unless `aw-ignore-on' is nil."
                (window-numbering-get-number-string))
               (t ""))))
     (if (and (< 0 (length num))
-             (< (if (active-minibuffer-window) 2 1) ; exclude minibuffer
-                (length (cl-mapcan
-                         (lambda (frame)
-                           ;; Exclude child frames
-                           (unless (and (fboundp 'frame-parent)
-                                        (frame-parent frame))
-                             (window-list)))
-                         (visible-frame-list)))))
+             (< 1 (length (cl-mapcan
+                           (lambda (frame)
+                             ;; Exclude minibuffer and child frames
+                             (unless (and (fboundp 'frame-parent)
+                                          (frame-parent frame))
+                               (window-list frame 'never)))
+                           (visible-frame-list)))))
         (propertize (format " %s " num)
                     'face (if (doom-modeline--active)
                               'doom-modeline-buffer-major-mode
@@ -1683,6 +1662,7 @@ mouse-1: Display Line and Column Mode Menu"
 
      (cond ((and active
                  (bound-and-true-p nyan-mode)
+                 (not doom-modeline--limited-width-p)
                  (>= (window-width) nyan-minimum-window-width))
             (concat
              (doom-modeline-spc)
@@ -1690,11 +1670,21 @@ mouse-1: Display Line and Column Mode Menu"
              (propertize (nyan-create) 'mouse-face mouse-face)))
            ((and active
                  (bound-and-true-p poke-line-mode)
+                 (not doom-modeline--limited-width-p)
                  (>= (window-width) poke-line-minimum-window-width))
             (concat
              (doom-modeline-spc)
              (doom-modeline-spc)
              (propertize (poke-line-create) 'mouse-face mouse-face)))
+           ((and active
+                 (bound-and-true-p mlscroll-mode)
+                 (not doom-modeline--limited-width-p)
+                 (>= (window-width) mlscroll-minimum-current-width))
+            (concat
+             (doom-modeline-spc)
+             (doom-modeline-spc)
+             (let ((mlscroll-right-align nil))
+               (format-mode-line (mlscroll-mode-line)))))
            (t
             (when doom-modeline-percent-position
               (concat

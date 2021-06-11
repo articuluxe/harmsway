@@ -877,8 +877,11 @@ Also bind `class' to ((class color) (min-colors 89))."
 
 ;;;;; selectrum
    `(selectrum-current-candidate              ((,class :foreground ,hr-orange                              :weight bold)))
-   `(selectrum-primary-highlight              ((,class :foreground ,hr-blue)))
-   `(selectrum-secondary-highlight            ((,class :foreground ,hr-red)))
+   `(selectrum-mouse-highlight                ((,class :foreground ,hr-yellow)))
+
+;;;;; selectrum-prescient
+   `(selectrum-prescient-primary-highlight    ((,class :foreground ,hr-blue)))
+   `(selectrum-prescient-secondary-highlight  ((,class :foreground ,hr-red)))
 
 ;;;;; smart-mode-line
    `(sml/charging                             ((,class :foreground ,hr-fg)))

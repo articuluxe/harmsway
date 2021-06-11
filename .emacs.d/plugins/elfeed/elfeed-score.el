@@ -3,7 +3,7 @@
 ;; Copyright (C) 2019-2021 Michael Herstine <sp1ff@pobox.com>
 
 ;; Author: Michael Herstine <sp1ff@pobox.com>
-;; Version: 0.7.8
+;; Version: 0.7.9
 ;; Package-Requires: ((emacs "26.1") (elfeed "3.3.0"))
 ;; Keywords: news
 ;; URL: https://github.com/sp1ff/elfeed-score
@@ -43,7 +43,7 @@
 (require 'elfeed-score-scoring)
 (require 'elfeed-score-maint)
 
-(defconst elfeed-score-version "0.7.8")
+(defconst elfeed-score-version "0.7.9")
 
 (defgroup elfeed-score nil
   "Gnus-style scoring for Elfeed entries."
@@ -77,7 +77,7 @@ for (format width alignment).  Possible alignments are :left and
 (define-obsolete-function-alias 'elfeed-score/set-score
   #'elfeed-score-set-score "0.2.0" "Move to standard-compliant naming.")
 
-(defun elfeed-score-set-score (&optional score ignore-region)
+(defun elfeed-score-set-score (score &optional ignore-region)
   "Set the score of one or more Elfeed entries to SCORE.
 
 Their scores will be set to `elfeed-score-default-score' by
@@ -100,7 +100,10 @@ region's state."
     (dolist (entry entries)
       (elfeed-score-log 'info "entry %s ('%s') was directly set to %d"
                         (elfeed-entry-id entry ) (elfeed-entry-title entry) score)
-      (elfeed-score-scoring-set-score-on-entry entry score))))
+      ;; Set the score, marking it as "sticky"...
+      (elfeed-score-scoring-set-score-on-entry entry score t)
+      ;; & update the entry.
+      (elfeed-search-update-entry entry))))
 
 (define-obsolete-function-alias 'elfeed-score/get-score
   #'elfeed-score-get-score "0.2.0" "Move to standard-compliant naming.")
@@ -181,9 +184,7 @@ region is not active, only the entry under point will be scored."
 
   (let ((entries (elfeed-search-selected ignore-region)))
     (dolist (entry entries)
-      (let ((score (elfeed-score-scoring-score-entry entry)))
-        (elfeed-score-log 'info "entry %s('%s') has been given a score of %d"
-                          (elfeed-entry-id entry) (elfeed-entry-title entry) score)))
+      (elfeed-score-scoring-score-entry entry))
     (if elfeed-score-serde-score-file
        (elfeed-score-serde-write-score-file elfeed-score-serde-score-file))
     (elfeed-search-update t)))
@@ -197,9 +198,7 @@ region is not active, only the entry under point will be scored."
   (interactive)
 
   (dolist (entry elfeed-search-entries)
-    (let ((score (elfeed-score-scoring-score-entry entry)))
-      (elfeed-score-log 'info "entry %s('%s') has been given a score of %d"
-                        (elfeed-entry-id entry) (elfeed-entry-title entry) score)))
+    (elfeed-score-scoring-score-entry entry))
   (if elfeed-score-serde-score-file
 	    (elfeed-score-serde-write-score-file elfeed-score-serde-score-file))
   (elfeed-search-update t))

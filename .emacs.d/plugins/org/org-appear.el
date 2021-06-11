@@ -80,13 +80,15 @@ Does not have an effect if `org-link-descriptive' is nil."
   (cond
    (org-appear-mode
     (org-appear--set-elements)
-    (add-hook 'post-command-hook #'org-appear--post-cmd nil t))
+    (add-hook 'post-command-hook #'org-appear--post-cmd nil t)
+    (add-hook 'pre-command-hook #'org-appear--pre-cmd nil t))
    (t
     ;; Clean up current element when disabling the mode
     (let ((current-elem (org-appear--current-elem)))
       (when current-elem
 	(org-appear--hide-invisible current-elem)))
-    (remove-hook 'post-command-hook #'org-appear--post-cmd t))))
+    (remove-hook 'post-command-hook #'org-appear--post-cmd t)
+    (remove-hook 'pre-command-hook #'org-appear--pre-cmd t))))
 
 (defvar org-appear-elements nil
   "List of Org elements to toggle.")
@@ -149,17 +151,27 @@ It handles toggling elements depending on whether the cursor entered or exited t
       (font-lock-ensure current-elem-start current-elem-end)
       (org-appear--show-invisible current-elem))))
 
+(defun org-appear--pre-cmd ()
+  "This function is executed by `pre-command-hook' in `org-appear-mode'.
+It hides elements before commands that modify the buffer based on column width."
+  (when (memq this-command '(org-fill-paragraph
+			     org-ctrl-c-ctrl-c))
+    (when-let ((current-elem (org-appear--current-elem)))
+      (org-appear--hide-invisible current-elem))))
+
 (defun org-appear--current-elem ()
   "Return element at point.
 Return nil if element is not supported by `org-appear-mode'."
-  (let* ((elem (org-element-context))
-	 (elem-type (car elem))
-	 (elem-end (- (org-element-property :end elem)
-		      (1- (org-element-property :post-blank elem)))))
-    (if (and (memq elem-type org-appear-elements)
-	     (< (point) elem-end))	; Ignore post-element whitespace
-	elem
-      nil)))
+  (when-let ((elem (org-element-context)))
+    (let ((elem-type (car elem))
+	  (elem-end (- (org-element-property :end elem)
+		       (1- (org-element-property :post-blank elem))))
+	  (elem-ignorep (string= (org-element-property :type elem) "cite")))
+      (if (and (memq elem-type org-appear-elements)
+	       (< (point) elem-end)     ; Ignore post-element whitespace
+	       (not elem-ignorep))      ; Ignore specific elements
+	  elem
+	nil))))
 
 (defun org-appear--get-parent (elem)
   "Return parent element if ELEM is nested inside another valid element."
@@ -191,9 +203,7 @@ Return nil if element cannot be parsed."
 			  'script)
 			 ((eq elem-type 'entity)
 			  'entity)
-			 ;; Nothing to hide in cite links
-			 ((and (eq elem-type 'link)
-			       (not (string= link-subtype "cite")))
+			 ((eq elem-type 'link)
 			  'link)
 			 (t nil)))
 	 (elem-start (org-element-property :begin elem))

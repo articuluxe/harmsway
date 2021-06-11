@@ -95,15 +95,37 @@
   :prefix "eglot-"
   :group 'applications)
 
-(defvar eglot-server-programs '((rust-mode . (eglot-rls "rls"))
-                                (python-mode . ("pyls"))
+(defun eglot-alternatives (alternatives)
+  "Compute server-choosing function for `eglot-server-programs'.
+Each element of ALTERNATIVES is a string PROGRAM or a list of
+strings (PROGRAM ARGS...) where program names an LSP server
+program to start with ARGS.  Returns a function of one
+argument."
+  (lambda (&optional interactive)
+    (let* ((listified (cl-loop for a in alternatives
+                               collect (if (listp a) a (list a))))
+           (available (cl-remove-if-not #'executable-find listified :key #'car)))
+      (cond ((and interactive (cdr available))
+             (let ((chosen (completing-read
+                            "[eglot] More than one server executable available:"
+                            (mapcar #'car available)
+                            nil t nil nil (car (car available)))))
+               (assoc chosen available #'equal)))
+            ((car available))
+            (t
+             (car listified))))))
+
+(defvar eglot-server-programs `((rust-mode . (eglot-rls "rls"))
+                                (python-mode
+                                 . ,(eglot-alternatives '("pyls" "pylsp")))
                                 ((js-mode typescript-mode)
                                  . ("typescript-language-server" "--stdio"))
                                 (sh-mode . ("bash-language-server" "start"))
                                 ((php-mode phps-mode)
                                  . ("php" "vendor/felixfbecker/\
 language-server/bin/php-language-server.php"))
-                                ((c++-mode c-mode) . ("ccls"))
+                                ((c++-mode c-mode) . ,(eglot-alternatives
+                                                       '("clangd" "ccls")))
                                 (((caml-mode :language-id "ocaml")
                                   (tuareg-mode :language-id "ocaml") reason-mode)
                                  . ("ocamllsp"))
@@ -1500,8 +1522,8 @@ Use `eglot-managed-p' to determine if current buffer is managed.")
     (unless (eglot--stay-out-of-p 'imenu)
       (add-function :before-until (local 'imenu-create-index-function)
                     #'eglot-imenu))
-    (flymake-mode 1)
-    (eldoc-mode 1)
+    (unless (eglot--stay-out-of-p 'flymake) (flymake-mode 1))
+    (unless (eglot--stay-out-of-p 'eldoc) (eldoc-mode 1))
     (cl-pushnew (current-buffer) (eglot--managed-buffers (eglot-current-server))))
    (t
     (remove-hook 'after-change-functions 'eglot--after-change t)
@@ -2755,7 +2777,9 @@ at point.  With prefix argument, prompt for ACTION-KIND."
                    (eglot--glob-compile globPattern t t))
                  watchers))
          (dirs-to-watch
-          (eglot--directories-matched-by-globs default-directory globs)))
+          (delete-dups (mapcar #'file-name-directory
+                               (project-files
+                                (eglot--project server))))))
     (cl-labels
         ((handle-event
           (event)
@@ -2855,38 +2879,6 @@ If NOERROR, return predicate, else erroring function."
 (defun eglot--glob-emit-range (arg self next)
   (when (eq ?! (aref arg 1)) (aset arg 1 ?^))
   `(,self () (re-search-forward ,(concat "\\=" arg)) (,next)))
-
-(defun eglot--files-recursively (&optional dir)
-  "Because `directory-files-recursively' isn't complete in 26.3."
-  (cons (setq dir (expand-file-name (or dir default-directory)))
-        (cl-loop with default-directory = dir
-                 with completion-regexp-list = '("^[^.]")
-                 for f in (file-name-all-completions "" dir)
-                 if (file-directory-p f) append (eglot--files-recursively f)
-                 else collect (expand-file-name f))))
-
-(defun eglot--directories-recursively (&optional dir)
-  "Because `directory-files-recursively' isn't complete in 26.3."
-  (cons (setq dir (expand-file-name (or dir default-directory)))
-        (cl-loop with default-directory = dir
-                 with completion-regexp-list = '("^[^.]")
-                 for f in (file-name-all-completions "" dir)
-                 if (file-directory-p f) append (eglot--files-recursively f)
-                 else collect (expand-file-name f))))
-
-(defun eglot--directories-matched-by-globs (dir globs)
-  "Discover subdirectories of DIR with files matched by one of GLOBS.
-Each element of GLOBS is either an uncompiled glob-string or a
-compiled glob."
-  (setq globs (cl-loop for g in globs
-                       collect (if (stringp g) (eglot--glob-compile g t t) g)))
-  (cl-loop for f in (eglot--files-recursively dir)
-           for fdir = (file-name-directory f)
-           when (and
-                 (not (member fdir dirs))
-                 (cl-loop for g in globs thereis (funcall g f)))
-           collect fdir into dirs
-           finally (cl-return (delete-dups dirs))))
 
 
 ;;; Rust-specific

@@ -1,9 +1,9 @@
-;;; doom-material-theme.el --- inspired by Material Theme by equinusocio -*- no-byte-compile: t; -*-
+;;; doom-material-theme.el --- inspired by Material Theme by equinusocio -*- lexical-binding: t; no-byte-compile: t; -*-
 (require 'doom-themes)
 
 ;;
 (defgroup doom-material-theme nil
-  "Options for doom-themes"
+  "Options for the `material' theme."
   :group 'doom-themes)
 
 (defcustom doom-material-padded-modeline doom-themes-padded-modeline
@@ -79,71 +79,52 @@ Can be an integer to determine the exact padding."
     (when doom-material-padded-modeline
       (if (integerp doom-material-padded-modeline) doom-material-padded-modeline 4))))
 
-  ;; --- base faces ------------------------
-  (((lazy-highlight &override) :background base4 :foreground fg :distant-foreground fg :bold bold)
-   (doom-modeline-buffer-path       :foreground green :weight 'bold)
-   (doom-modeline-buffer-major-mode :inherit 'doom-modeline-buffer-path)
-
-   ;; highlight-thing highlight-symbol
-   (highlight-symbol-face :background region :distant-foreground fg-alt)
-
-   ;; highlight-thing
-   (highlight-thing :background region :distant-foreground fg-alt)
-
+  ;;;; Base theme face overrides
+  (;;;; emacs
+   (lazy-highlight :background base4 :foreground fg :weight 'bold)
    (mode-line
     :background modeline-bg :foreground modeline-fg
     :box (if -modeline-pad `(:line-width ,-modeline-pad :color ,modeline-bg)))
-
    (mode-line-inactive
     :background modeline-bg-alt :foreground modeline-fg-alt
     :box (if -modeline-pad `(:line-width ,-modeline-pad :color ,modeline-bg-alt)))
+   (tooltip :background (doom-darken bg-alt 0.2) :foreground fg)
 
-   (solaire-mode-line-face
-    :background modeline-bg :foreground modeline-fg
-    :box (if -modeline-pad `(:line-width ,-modeline-pad :color ,modeline-bg)))
-   (solaire-mode-line-inactive-face
-    :background modeline-bg-alt :foreground modeline-fg-alt
-    :box (if -modeline-pad `(:line-width ,-modeline-pad :color ,modeline-bg-alt)))
-
-   (fringe :background base2)
-
-   ;; --- major-mode faces ------------------------
-   ;; man-mode
+   ;;;; doom-modeline
+   (doom-modeline-buffer-path       :foreground green :weight 'bold)
+   (doom-modeline-buffer-major-mode :inherit 'doom-modeline-buffer-path)
+   ;;;; highlight-thing highlight-symbol
+   (highlight-symbol-face :background region :distant-foreground fg-alt)
+   ;;;; highlight-thing
+   (highlight-thing :background region :distant-foreground fg-alt)
+   ;;;; man <built-in>
    (Man-overstrike :inherit 'bold :foreground magenta)
    (Man-underline :inherit 'underline :foreground blue)
-
-   ;; org-mode
+   ;;;; org <built-in>
    ((org-block &override) :background base2)
    ((org-block-background &override) :background base2)
    ((org-block-begin-line &override) :background base2)
-
-   ;; --- plugin faces -------------------
-   ;; css-mode / scss-mode
+   ;;;; css-mode <built-in> / scss-mode
    (css-proprietary-property :foreground orange)
    (css-property             :foreground green)
    (css-selector             :foreground blue)
-
-   ;; dired-k
+   ;;;; dired-k
    (dired-k-commited :foreground base4)
    (dired-k-modified :foreground vc-modified)
    (dired-k-ignored :foreground cyan)
    (dired-k-added    :foreground vc-added)
-
-   ;; ivy
+   ;;;; ivy
    (ivy-current-match :background base5)
-
-   ;; js2-mode
+   ;;;; js2-mode
    (js2-jsdoc-tag              :foreground magenta)
    (js2-object-property        :foreground yellow)
    (js2-object-property-access :foreground cyan)
    (js2-function-param         :foreground violet)
    (js2-jsdoc-type             :foreground base8)
    (js2-jsdoc-value            :foreground cyan)
-
-   ;; lsp
+   ;;;; lsp
    (lsp-headerline-breadcrumb-symbols-face :foreground base7)
-
-   ;; rainbow-delimiters
+   ;;;; rainbow-delimiters
    (rainbow-delimiters-depth-1-face :foreground magenta)
    (rainbow-delimiters-depth-2-face :foreground orange)
    (rainbow-delimiters-depth-3-face :foreground green)
@@ -153,12 +134,8 @@ Can be an integer to determine the exact padding."
    (rainbow-delimiters-depth-7-face :foreground blue)
    (rainbow-delimiters-depth-8-face :foreground teal)
    (rainbow-delimiters-depth-9-face :foreground dark-cyan)
-
-   ;; rjsx-mode
+   ;;;; rjsx-mode
    (rjsx-tag :foreground red)
-   (rjsx-attr :foreground yellow :slant 'italic :weight 'medium)
+   (rjsx-attr :foreground yellow :slant 'italic :weight 'medium)))
 
-   ;; tooltip
-   (tooltip              :background (doom-darken bg-alt 0.2) :foreground fg)))
-
-(provide 'doom-material-theme)
+;;; doom-material-theme.el ends here

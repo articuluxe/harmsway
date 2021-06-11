@@ -1,7 +1,7 @@
-;; doom-monokai-spectrum-theme.el --- Spectrum filter of Monokai Pro -*- no-byte-compile: t; -*-
+;; doom-monokai-spectrum-theme.el --- Spectrum filter of Monokai Pro -*- lexical-binding: t; no-byte-compile: t; -*-
 (require 'doom-themes)
 
-;;
+;;; Code:
 (defgroup doom-monokai-spectrum-theme nil
   "Options for doom-molokai."
   :group 'doom-themes)
@@ -12,14 +12,14 @@
   :type 'boolean)
 
 (defcustom doom-monokai-spectrum-comment-bg doom-monokai-spectrum-brighter-comments
-  "If non-nil, comments will have a subtle, darker background. Enhancing their
-legibility."
+  "If non-nil, comments will have a subtle, darker background.
+Enhancing their legibility."
   :group 'doom-monokai-spectrum-theme
   :type 'boolean)
 
 (defcustom doom-monokai-spectrum-padded-modeline doom-themes-padded-modeline
-  "If non-nil, adds a 4px padding to the mode-line. Can be an integer to
-determine the exact padding."
+  "If non-nil, adds a 4px padding to the mode-line.
+Can be an integer to determine the exact padding."
   :group 'doom-monokai-spectrum-theme
   :type '(choice integer boolean))
 
@@ -32,13 +32,13 @@ determine the exact padding."
    (bg-alt     '("#191919" nil       nil            ))
    (base0      '("#131313" "#121212" "black"        ))
    (base1      '("#191919" "#1c1c1c" "black"        ))
-   (base2      '("#2d2c2d" "#262626" "brightblack"  ))
+   (base2      '("#2c2c2d" "#262626" "brightblack"  ))
    (base3      '("#363537" "#3a3a3a" "brightblack"  ))
    (base4      '("#525053" "#585858" "brightblack"  ))
-   (base5      '("#585858" "#585858" "brightblack"  ))
+   (base5      '("#585659" "#585858" "brightblack"  ))
    (base6      '("#69676c" "#6c6c6c" "brightblack"  ))
    (base7      '("#8b888f" "#8a8a8a" "brightblack"  ))
-   (base8      '("#bab6c0" "#bcbcbc" "white"        ))
+   (base8      '("#b6b2bc" "#bcbcbc" "white"        ))
    (fg         '("#f7f1ff" "#ffffff" "brightwhite"  ))
    (fg-alt     '("#c6c6c6" "#c6c6c6" "white"        ))
 
@@ -71,7 +71,7 @@ determine the exact padding."
    (strings        yellow)
    (variables      fg)
    (numbers        violet)
-   (region         base2)
+   (region         base3)
    (error          red)
    (warning        orange)
    (success        green)
@@ -318,6 +318,16 @@ determine the exact padding."
    (lsp-ui-peek-peek                            :inherit 'lsp-ui-peek-list)
    (lsp-ui-peek-highlight                       :inherit 'isearch)
    (lsp-ui-peek-filename                        :foreground base8 :bold bold)
+
+   ;; treemacs
+   (treemacs-git-added-face                     :foreground green)
+   (treemacs-git-conflict-face                  :foreground red)
+   (treemacs-git-ignored-face                   :foreground base6)
+   (treemacs-git-modified-face                  :foreground violet)
+   (treemacs-git-renamed-face                   :foreground orange)
+   (treemacs-git-untracked-face                 :inherit 'treemacs-git-renamed-face)
+   (treemacs-on-failure-pulse-face              :foreground base0 :background red)
+   (treemacs-on-success-pulse-face              :foreground base0 :background green)
 
    ;;; web-mode
    ;;; html

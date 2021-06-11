@@ -90,59 +90,59 @@
 ;;
 
 (doom-modeline-def-modeline 'main
-  '(bar hud workspace-name window-number modals matches buffer-info remote-host buffer-position word-count parrot selection-info)
+  '(bar workspace-name window-number modals matches buffer-info remote-host buffer-position word-count parrot selection-info)
   '(objed-state misc-info persp-name battery grip irc mu4e gnus github debug repl lsp minor-modes input-method indent-info buffer-encoding major-mode process vcs checker))
 
 (doom-modeline-def-modeline 'minimal
-  '(bar hud matches buffer-info-simple)
+  '(bar matches buffer-info-simple)
   '(media-info major-mode))
 
 (doom-modeline-def-modeline 'special
-  '(bar hud window-number modals matches buffer-info buffer-position word-count parrot selection-info)
+  '(bar window-number modals matches buffer-info buffer-position word-count parrot selection-info)
   '(objed-state misc-info battery irc-buffers debug minor-modes input-method indent-info buffer-encoding major-mode process))
 
 (doom-modeline-def-modeline 'project
-  '(bar hud window-number buffer-default-directory)
+  '(bar window-number buffer-default-directory)
   '(misc-info battery irc mu4e gnus github debug minor-modes input-method major-mode process))
 
 (doom-modeline-def-modeline 'dashboard
-  '(bar hud window-number buffer-default-directory-simple)
+  '(bar window-number buffer-default-directory-simple)
   '(misc-info battery irc mu4e gnus github debug minor-modes input-method major-mode process))
 
 (doom-modeline-def-modeline 'vcs
-  '(bar hud window-number modals matches buffer-info buffer-position parrot selection-info)
+  '(bar window-number modals matches buffer-info buffer-position parrot selection-info)
   '(misc-info battery irc mu4e gnus github debug minor-modes buffer-encoding major-mode process))
 
 (doom-modeline-def-modeline 'package
-  '(bar hud window-number package)
+  '(bar window-number package)
   '(misc-info major-mode process))
 
 (doom-modeline-def-modeline 'info
-  '(bar hud window-number buffer-info info-nodes buffer-position parrot selection-info)
+  '(bar window-number buffer-info info-nodes buffer-position parrot selection-info)
   '(misc-info buffer-encoding major-mode))
 
 (doom-modeline-def-modeline 'media
-  '(bar hud window-number buffer-size buffer-info)
+  '(bar window-number buffer-size buffer-info)
   '(misc-info media-info major-mode process vcs))
 
 (doom-modeline-def-modeline 'message
-  '(bar hud window-number modals matches buffer-info-simple buffer-position word-count parrot selection-info)
+  '(bar window-number modals matches buffer-info-simple buffer-position word-count parrot selection-info)
   '(objed-state misc-info battery debug minor-modes input-method indent-info buffer-encoding major-mode))
 
 (doom-modeline-def-modeline 'pdf
-  '(bar hud window-number matches buffer-info pdf-pages)
+  '(bar window-number matches buffer-info pdf-pages)
   '(misc-info major-mode process vcs))
 
 (doom-modeline-def-modeline 'org-src
-  '(bar hud window-number modals matches buffer-info-simple buffer-position word-count parrot selection-info)
+  '(bar window-number modals matches buffer-info-simple buffer-position word-count parrot selection-info)
   '(objed-state misc-info debug lsp minor-modes input-method indent-info buffer-encoding major-mode process checker))
 
 (doom-modeline-def-modeline 'helm
-  '(bar hud helm-buffer-id helm-number helm-follow helm-prefix-argument)
+  '(bar helm-buffer-id helm-number helm-follow helm-prefix-argument)
   '(helm-help))
 
 (doom-modeline-def-modeline 'timemachine
-  '(bar hud window-number matches git-timemachine buffer-position word-count parrot selection-info)
+  '(bar window-number matches git-timemachine buffer-position word-count parrot selection-info)
   '(misc-info minor-modes indent-info buffer-encoding major-mode))
 
 
@@ -232,11 +232,6 @@ If DEFAULT is non-nil, set the default mode-line for all buffers."
 ;; Minor mode
 ;;
 
-(defvar doom-modeline--default-format mode-line-format
-  "Storage for the default `mode-line-format'.
-
-So it can be restored when `doom-modeline-mode' is disabled.")
-
 (defvar doom-modeline-mode-map (make-sparse-keymap))
 
 ;; Suppress warnings
@@ -253,14 +248,12 @@ So it can be restored when `doom-modeline-mode' is disabled.")
   (if doom-modeline-mode
       (progn
         (doom-modeline-refresh-bars)        ; Create bars
-        (doom-modeline-set-main-modeline)   ; Set mode-line for current buffer
         (doom-modeline-set-main-modeline t) ; Set default mode-line
 
-        ;; These buffers are already created and don't get modelines
-        (dolist (bname '("*scratch*" "*Messages*"))
-          (if (buffer-live-p (get-buffer bname))
-              (with-current-buffer bname
-                (doom-modeline-set-main-modeline))))
+        ;; Apply to all existing buffers.
+        (dolist (buf (buffer-list))
+          (with-current-buffer buf
+            (doom-modeline-set-main-modeline)))
 
         ;; For two-column editing
         (setq 2C-mode-line-format (doom-modeline 'special))
@@ -286,17 +279,14 @@ So it can be restored when `doom-modeline-mode' is disabled.")
         (advice-add #'helm-display-mode-line :after #'doom-modeline-set-helm-modeline))
     (progn
       ;; Restore mode-line
-      (setq mode-line-format doom-modeline--default-format)
-      (setq-default mode-line-format doom-modeline--default-format)
-      (dolist (bname '("*scratch*" "*Messages*"))
-        (if (buffer-live-p (get-buffer bname))
-            (with-current-buffer bname
-              (setq mode-line-format doom-modeline--default-format))))
+      (let ((original-format (doom-modeline--original-value 'mode-line-format)))
+        (setq-default mode-line-format original-format)
+        (dolist (buf (buffer-list))
+          (with-current-buffer buf
+            (setq mode-line-format original-format))))
 
       ;; For two-column editing
-      (setq 2C-mode-line-format
-            '("-%*- %15b --"  (-3 . "%p")  "--%[("  mode-name
-	          minor-mode-alist  "%n"  mode-line-process  ")%]%-"))
+      (setq 2C-mode-line-format (doom-modeline--original-value '2C-mode-line-format))
 
       ;; Remove hooks
       (remove-hook 'Info-mode-hook #'doom-modeline-set-info-modeline)

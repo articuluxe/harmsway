@@ -51,22 +51,15 @@
 ;; for a Consult command. For information on Consult preview, see
 ;; Consult's info manual or its readme on GitHub.
 
-;; - `embark-consult-preview-at-point', a command to trigger Consult's
-;; preview for the entry at point.
-
-;; - `embark-consult-preview-minor-mode', a minor mode for Embark
-;; Collect buffers that automatically previews the entry at point as
-;; you move around.
-
 ;; If you always want the minor mode enabled whenever it possible use:
 
-;; (add-hook 'embark-collect-mode-hook #'embark-consult-preview-minor-mode)
+;; (add-hook 'embark-collect-mode-hook #'consult-preview-at-point-mode)
 
 ;; If you don't want the minor mode automatically on and prefer to
 ;; trigger the consult previews manually use this instead:
 
 ;; (define-key embark-collect-mode-map (kbd "C-j")
-;;   #'embark-consult-preview-at-point)
+;;   #'consult-preview-at-point)
 
 ;;; Code:
 
@@ -78,50 +71,24 @@
 
 ;;; Consult preview from Embark Collect buffers
 
-(defun embark-consult-preview--preconditions ()
-  "Check if Consult preview for Embark can be used in current buffer.
-Signal an error unless current buffer is an auto-updating Embark
-Collect buffer that is associated to an active minibuffer for a
-Consult command."
-  (unless (derived-mode-p 'embark-collect-mode)
-    (user-error "Not in an Embark Collect buffer"))
-  (unless (and (active-minibuffer-window)
-               (eq (window-buffer (active-minibuffer-window))
-                   embark-collect-from))
-    (user-error
-     "This Embark Collect buffer is not associated to an active minibuffer"))
-  (unless (buffer-local-value 'consult--preview-function embark-collect-from)
-    (user-error "No Consult preview function found")))
+(defun embark-consult--collect-candidate ()
+  "Return candidate at point in collect buffer."
+  (and (derived-mode-p 'embark-collect-mode)
+       (active-minibuffer-window)
+       (eq (window-buffer (active-minibuffer-window)) embark-collect-from)
+       (ignore-errors (button-label (point)))))
 
-(defun embark-consult-preview-at-point ()
-  "Trigger Consult preview for Embark Collect entry at point.
-Must be run from an auto-updating Embark Collect buffer that is
-associated to an active minibuffer for a Consult command."
-  (interactive)
-  (condition-case err
-      (progn
-        (embark-consult-preview--preconditions)
-        (let ((entry (ignore-errors (button-label (point))))) ; error at eob
-          (with-selected-window (active-minibuffer-window)
-            (funcall consult--preview-function (minibuffer-contents) entry))))
-    (user-error
-     (embark-consult-preview-minor-mode -1)
-     (message "Turning off preview: %s" (cadr err)))))
+(add-hook 'consult--completion-candidate-hook #'embark-consult--collect-candidate)
 
-(define-minor-mode embark-consult-preview-minor-mode
-  "Minor mode to use Consult preview as you move around.
-Must be used in an auto-updating Embark Collect buffer that is
-associated to an active minibuffer for a Consult command."
-  :init-value nil
-  :lighter " Preview"
-  (remove-hook 'post-command-hook #'embark-consult-preview-at-point t)
-  (condition-case nil
-      (progn
-        (embark-consult-preview--preconditions)
-        (when embark-consult-preview-minor-mode
-          (add-hook 'post-command-hook
-                    #'embark-consult-preview-at-point nil t)))
-    (user-error (setq embark-consult-preview-minor-mode nil))))
+(define-obsolete-function-alias
+  'embark-consult-preview-minor-mode
+  'consult-preview-at-point-mode
+  "0.11")
+
+(define-obsolete-function-alias
+  'embark-consult-preview-at-point
+  'consult-preview-at-point
+  "0.11")
 
 ;;; Support for consult-location
 
@@ -158,18 +125,18 @@ The elements of LINES are assumed to be values of category `consult-line'."
              ;; taken from occur-engine
              (lineno (propertize (format "%7d:" num)
                                  'occur-prefix t
-				 ;; Allow insertion of text at the end
+                                 ;; Allow insertion of text at the end
                                  ;; of the prefix (for Occur Edit mode).
-				 'front-sticky t
-				 'rear-nonsticky t
-				 'occur-target loc
-				 'follow-link t
-				 'help-echo mouse-msg))
+                                 'front-sticky t
+                                 'rear-nonsticky t
+                                 'occur-target loc
+                                 'follow-link t
+                                 'help-echo mouse-msg))
              (contents (propertize (embark-consult--strip line)
-				   'occur-target loc
+                                   'occur-target loc
                                    'occur-match t
-				   'follow-link t
-				   'help-echo mouse-msg))
+                                   'follow-link t
+                                   'help-echo mouse-msg))
              (nl (propertize "\n" 'occur-target loc))
              (this-buf (marker-buffer loc)))
           (unless (eq this-buf last-buf)
@@ -180,7 +147,7 @@ The elements of LINES are assumed to be values of category `consult-line'."
           (insert (concat lineno contents nl))))
       (goto-char (point-min))
       (occur-mode))
-    (switch-to-buffer buf)))
+    (pop-to-buffer buf)))
 
 (setf (alist-get 'consult-location embark-collect-initial-view-alist)
       'list)
@@ -202,7 +169,7 @@ The elements of LINES are assumed to be values of category `consult-line'."
       (grep-mode)
       (setq-local wgrep-header/footer-parser #'ignore)
       (when (fboundp 'wgrep-setup) (wgrep-setup)))
-    (switch-to-buffer buf)))
+    (pop-to-buffer buf)))
 
 (autoload 'compile-goto-error "compile")
 
@@ -338,10 +305,18 @@ This is intended to be used in `embark-setup-overrides' for the
   "Add Consult's async separator at the beginning.
 This is intended to be used in `embark-setup-hook' for any action
 that is a Consult async command."
-  (when consult-async-default-split
-    (goto-char (minibuffer-prompt-end))
-    (insert consult-async-default-split)
-    (goto-char (point-max))))
+  (let* ((style (alist-get consult-async-split-style
+                           consult-async-split-styles-alist))
+         (initial (plist-get style :initial))
+         (separator (plist-get style :separator)))
+    (cond
+     (initial
+      (goto-char (minibuffer-prompt-end))
+      (insert initial)
+      (goto-char (point-max)))
+     (separator
+      (goto-char (point-max))
+      (insert separator)))))
 
 (dolist (bind (cdr embark-consult-async-search-map))
   (cl-pushnew #'embark-consult-add-async-separator

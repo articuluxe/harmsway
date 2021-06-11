@@ -1,6 +1,8 @@
 ;;; consult-flymake.el --- Provides the command `consult-flymake' -*- lexical-binding: t -*-
 
-;; This file is not part of GNU Emacs.
+;; Copyright (C) 2021  Free Software Foundation, Inc.
+
+;; This file is part of GNU Emacs.
 
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -36,7 +38,9 @@
   (consult--forbid-minibuffer)
   (let* ((raw-diags (or (flymake-diagnostics)
                         (user-error "No flymake errors (Status: %s)"
-                                    (if (flymake-is-running) 'running 'finished))))
+                                    (if (seq-difference (flymake-running-backends)
+                                                        (flymake-reporting-backends))
+                                        'running 'finished))))
          (diags
           (mapcar
            (lambda (diag)
@@ -83,7 +87,7 @@
    :history t ;; disable history
    :require-match t
    :sort nil
-   :title (consult--type-title consult-flymake--narrow)
+   :group (consult--type-group consult-flymake--narrow)
    :narrow (consult--type-narrow consult-flymake--narrow)
    :lookup #'consult--lookup-candidate
    :state (consult--jump-state 'consult-preview-error)))

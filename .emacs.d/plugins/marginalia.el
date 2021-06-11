@@ -1,14 +1,15 @@
 ;;; marginalia.el --- Enrich existing commands with completion annotations -*- lexical-binding: t -*-
 
+;; Copyright (C) 2021  Free Software Foundation, Inc.
+
 ;; Author: Omar Antolín Camarena <omar@matem.unam.mx>, Daniel Mendler <mail@daniel-mendler.de>
 ;; Maintainer: Omar Antolín Camarena <omar@matem.unam.mx>, Daniel Mendler <mail@daniel-mendler.de>
 ;; Created: 2020
-;; License: GPL-3.0-or-later
-;; Version: 0.5
+;; Version: 0.6
 ;; Package-Requires: ((emacs "26.1"))
 ;; Homepage: https://github.com/minad/marginalia
 
-;; This file is not part of GNU Emacs.
+;; This file is part of GNU Emacs.
 
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -29,8 +30,9 @@
 
 ;;; Code:
 
-(require 'subr-x)
-(eval-when-compile (require 'cl-lib))
+(eval-when-compile
+  (require 'subr-x)
+  (require 'cl-lib))
 
 ;;;; Customization
 
@@ -239,7 +241,6 @@ determine it."
 (declare-function package-desc-version "package")
 (declare-function package-version-join "package")
 (declare-function project-current "project")
-(declare-function project-roots "project")
 
 (declare-function color-rgb-to-hex "color")
 (declare-function color-rgb-to-hsl "color")
@@ -314,24 +315,11 @@ WIDTH is the format width. This can be specified as alternative to FORMAT."
     (marginalia--fields
      (str :truncate marginalia-truncate-width :face 'marginalia-documentation))))
 
-(defvar-local marginalia--annotate-binding-hash nil
-  "Hash table storing the keybinding of every command.
-This hash table is needed to speed up `marginalia-annotate-binding'.")
-
 (defun marginalia-annotate-binding (cand)
   "Annotate command CAND with keybinding."
-  ;; Precomputing the keybinding of every command is faster than looking it up every time using
-  ;; `where-is-internal'. `where-is-internal' generates a lot of garbage, leading to garbage
-  ;; collecting pauses when interacting with the minibuffer. See
-  ;; https://github.com/minad/marginalia/issues/16.
-  (unless marginalia--annotate-binding-hash
-    (setq marginalia--annotate-binding-hash (make-hash-table :size 1025))
-    (mapatoms (lambda (sym)
-                (when-let (key (and (commandp sym) (where-is-internal sym nil t)))
-                  (puthash sym key marginalia--annotate-binding-hash)))))
   (when-let* ((sym (intern-soft cand))
-              (binding (gethash sym marginalia--annotate-binding-hash)))
-    (propertize (format " (%s)" (key-description binding)) 'face 'marginalia-key)))
+              (key (and (commandp sym) (where-is-internal sym nil 'first-only))))
+    (propertize (format " (%s)" (key-description key)) 'face 'marginalia-key)))
 
 (defun marginalia--annotator (cat)
   "Return annotation function for category CAT."
@@ -458,10 +446,13 @@ keybinding since CAND includes it."
   (when-let (sym (intern-soft cand))
     (marginalia--fields
      ((marginalia--symbol-class sym) :face 'marginalia-type)
-     ((let ((print-escape-newlines t)
+     ((let ((val (if (boundp sym) (symbol-value sym) 'unbound))
+            (print-escape-newlines t)
             (print-escape-control-characters t)
-            (print-escape-multibyte t))
-        (prin1-to-string (if (boundp sym) (symbol-value sym) 'unbound)))
+            (print-escape-multibyte t)
+            (print-level 10)
+            (print-length marginalia-truncate-width))
+        (prin1-to-string val))
       :truncate (/ marginalia-truncate-width 3) :face 'marginalia-variable)
      ((documentation-property sym 'variable-documentation)
       :truncate marginalia-truncate-width :face 'marginalia-documentation))))
@@ -650,7 +641,7 @@ component of a full file path."
 
 (defun marginalia--remote-p (path)
   "Return t if PATH is a remote path."
-  (string-match-p "\\`/[^:]+:" (substitute-in-file-name path)))
+  (string-match-p "\\`/[^/|:]+:" (substitute-in-file-name path)))
 
 (defun marginalia-annotate-file (cand)
   "Annotate file CAND with its size, modification time and other attributes.
@@ -672,15 +663,21 @@ These annotations are skipped for remote paths."
          "%b %d %H:%M"
          (file-attribute-modification-time attributes)) :face 'marginalia-date)))))
 
+(defmacro marginalia--project-root ()
+  "Return project root."
+  (require 'project)
+  `(when-let (proj (project-current))
+     ,(if (fboundp 'project-root)
+          '(project-root proj)
+        '(car (project-roots proj)))))
+
 (defun marginalia-annotate-project-file (cand)
   "Annotate file CAND with its size, modification time and other attributes."
   ;; TODO project-find-file can be called from outside all projects in
   ;; which case it prompts for a project first; we don't support that
   ;; case yet, since there is no current project.
-  (when-let ((project (project-current))
-             (root (car (project-roots project)))
-             (file (expand-file-name cand root)))
-    (marginalia-annotate-file file)))
+  (when-let (root (marginalia--project-root))
+    (marginalia-annotate-file (expand-file-name cand root))))
 
 (defun marginalia-classify-by-command-name ()
   "Lookup category for current command."

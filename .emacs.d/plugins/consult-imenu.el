@@ -1,6 +1,8 @@
 ;;; consult-imenu.el --- Consult commands for imenu -*- lexical-binding: t -*-
 
-;; This file is not part of GNU Emacs.
+;; Copyright (C) 2021  Free Software Foundation, Inc.
+
+;; This file is part of GNU Emacs.
 
 ;; This program is free software: you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -182,7 +184,7 @@ The symbol at point is added to the future history."
           ;; in order to avoid any bad side effects.
           (funcall preview (and (markerp (cdr cand)) (cdr cand)) restore)))
       :require-match t
-      :title
+      :group
       (when narrow
         (lambda (cand transform)
           (when-let (type (get-text-property 0 'consult--type cand))
@@ -191,10 +193,10 @@ The symbol at point is added to the future history."
               (alist-get type narrow)))))
       :narrow
       (when narrow
-        (cons
-         (lambda (cand)
-           (eq (get-text-property 0 'consult--type (car cand)) consult--narrow))
-         narrow))
+        (list :predicate
+              (lambda (cand)
+                (eq (get-text-property 0 'consult--type (car cand)) consult--narrow))
+              :keys narrow))
       :category 'imenu
       :lookup #'consult--lookup-cons
       :history 'consult-imenu--history

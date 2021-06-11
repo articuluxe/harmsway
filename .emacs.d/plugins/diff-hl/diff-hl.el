@@ -329,17 +329,27 @@ Only affects Git, it's the only backend that has staging area."
 
 (defun diff-hl-changes-from-buffer (buf)
   (with-current-buffer buf
-    (let* (diff-auto-refine-mode res)
+    (let (res)
       (goto-char (point-min))
       (unless (eobp)
+        ;; TODO: When 27.1 is the minimum requirement, we can drop
+        ;; these bindings: that version, in addition to switching over
+        ;; to the diff-refine var, also added the
+        ;; called-interactively-p check, so refinement can't be
+        ;; triggered by code calling the navigation functions, only by
+        ;; direct interactive invocations.
         (ignore-errors
-          (diff-beginning-of-hunk t))
+          (with-no-warnings
+            (let (diff-auto-refine-mode)
+              (diff-beginning-of-hunk t))))
         (while (looking-at diff-hunk-header-re-unified)
           (let ((line (string-to-number (match-string 3)))
                 (len (let ((m (match-string 4)))
                        (if m (string-to-number m) 1)))
                 (beg (point)))
-            (diff-end-of-hunk)
+            (with-no-warnings
+              (let (diff-auto-refine-mode)
+                (diff-end-of-hunk)))
             (let* ((inserts (diff-count-matches "^\\+" beg (point)))
                    (deletes (diff-count-matches "^-" beg (point)))
                    (type (cond ((zerop deletes) 'insert)
@@ -438,6 +448,7 @@ Only affects Git, it's the only backend that has staging area."
     (diff-hl-update)))
 
 (defun diff-hl-diff-goto-hunk-1 (historic)
+  (defvar vc-sentinel-movepoint)
   (vc-buffer-sync)
   (let* ((line (line-number-at-pos))
          (buffer (current-buffer))
@@ -448,10 +459,10 @@ Only affects Git, it's the only backend that has staging area."
         (setq rev1 (car revs)
               rev2 (cdr revs))))
     (vc-diff-internal t (vc-deduce-fileset) rev1 rev2 t)
-    (vc-exec-after `(if (< (line-number-at-pos (point-max)) 3)
-                        (with-current-buffer ,buffer (diff-hl-remove-overlays))
-                      (unless ,rev2
-                        (diff-hl-diff-skip-to ,line))
+    (vc-run-delayed (if (< (line-number-at-pos (point-max)) 3)
+                        (with-current-buffer buffer (diff-hl-remove-overlays))
+                      (unless rev2
+                        (diff-hl-diff-skip-to line))
                       (setq vc-sentinel-movepoint (point))))))
 
 (defun diff-hl-diff-goto-hunk (&optional historic)
@@ -537,13 +548,14 @@ in the source file, or the last line of the hunk above it."
           (progn
             (vc-diff-internal nil fileset diff-hl-reference-revision nil
                               nil diff-buffer)
-            (vc-exec-after
-             `(let (beg-line end-line m-end)
+            (vc-run-delayed
+              (let (beg-line end-line m-end)
                 (when (eobp)
-                  (with-current-buffer ,buffer (diff-hl-remove-overlays))
+                  (with-current-buffer buffer (diff-hl-remove-overlays))
                   (user-error "Buffer is up-to-date"))
-                (let (diff-auto-refine-mode)
-                  (diff-hl-diff-skip-to ,line))
+                (with-no-warnings
+                  (let (diff-auto-refine-mode)
+                    (diff-hl-diff-skip-to line)))
                 (save-excursion
                   (while (looking-at "[-+]") (forward-line 1))
                   (setq end-line (line-number-at-pos (point)))
@@ -560,16 +572,17 @@ in the source file, or the last line of the hunk above it."
                   (if (>= wbh (- end-line beg-line))
                       (recenter (/ (+ wbh (- beg-line end-line) 2) 2))
                     (recenter 1)))
-                (when diff-auto-refine-mode
-                  (diff-refine-hunk))
+                (with-no-warnings
+                  (when diff-auto-refine-mode
+                    (diff-refine-hunk)))
                 (if diff-hl-ask-before-revert-hunk
                     (unless (yes-or-no-p (format "Revert current hunk in %s? "
-                                                 ,(cl-caadr fileset)))
+                                                 (cl-caadr fileset)))
                       (user-error "Revert canceled")))
                 (let ((diff-advance-after-apply-hunk nil))
                   (save-window-excursion
                     (diff-apply-hunk t)))
-                (with-current-buffer ,buffer
+                (with-current-buffer buffer
                   (save-buffer))
                 (message "Hunk reverted"))))
         (quit-windows-on diff-buffer t)))))
@@ -884,6 +897,8 @@ the `diff-program' to be in your `exec-path'."
                (not (memq major-mode (cdr diff-hl-global-modes))))
               (t (memq major-mode diff-hl-global-modes)))
     (turn-on-diff-hl-mode)))
+
+(declare-function vc-annotate-extract-revision-at-line "vc-annotate")
 
 ;;;###autoload
 (defun diff-hl-set-reference-rev (rev)
