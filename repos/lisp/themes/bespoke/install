@@ -1,0 +1,3 @@
+cp src/bespoke-modeline.el ../../../../.emacs.d/plugins
+cp src/bespoke-theme.el ../../../../.emacs.d/etc/themes
+cp src/bespoke-themes.el ../../../../.emacs.d/plugins
