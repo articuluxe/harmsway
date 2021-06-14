@@ -1,6 +1,6 @@
 ;;; swift-mode-beginning-of-defun.el --- Major-mode for Apple's Swift programming language, beginning/end-of-defun. -*- lexical-binding: t -*-
 
-;; Copyright (C) 2014-2019 taku0
+;; Copyright (C) 2014-2021 taku0
 
 ;; Authors: taku0 (http://github.com/taku0)
 
@@ -168,7 +168,7 @@ The cursor must be at the beginning of a statement."
   (let ((token (swift-mode:forward-token-or-list))
         (defun-keywords
           '("import" "typealias" "associatedtype"
-            "enum" "struct" "protocol" "extension"
+            "enum" "struct" "actor" "protocol" "extension"
             "func" "init" "deinit" "subscript" "get" "set" "willSet" "didSet"
             "prefix" "postfix" "infix" "precedencegroup"
             "var" "let"
@@ -207,7 +207,7 @@ Return nil otherwise."
      (swift-mode:beginning-of-statement)
      (member
       (swift-mode:token:text (swift-mode:find-defun-keyword-simple))
-      '("enum" "struct" "class" "protocol" "extension")))))
+      '("enum" "struct" "actor" "class" "protocol" "extension")))))
 
 (defun swift-mode:beginning-of-statement ()
   "Move backward to the beginning of a statement.
@@ -1418,7 +1418,7 @@ of ancestors."
        (cond
         ((member keyword-text
                  '("typealias" "associatedtype" "precedencegroup" "func"
-                   "class" "enum" "struct" "protocol" "extension"))
+                   "class" "enum" "struct" "actor" "protocol" "extension"))
          (swift-mode:forward-token))
 
         ((member keyword-text '("init" "deinit" "subscript"))

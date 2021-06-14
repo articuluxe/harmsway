@@ -1,6 +1,6 @@
 ;;; swift-mode-lexer.el --- Major-mode for Apple's Swift programming language, lexer. -*- lexical-binding: t -*-
 
-;; Copyright (C) 2014-2020 taku0, Chris Barrett, Bozhidar Batsov,
+;; Copyright (C) 2014-2021 taku0, Chris Barrett, Bozhidar Batsov,
 ;;                         Arthur Evstifeev
 
 ;; Authors: taku0 (http://github.com/taku0)
@@ -99,7 +99,7 @@ END is the point after the token."
 
 ;; Token types is one of the following symbols:
 ;;
-;; - prefix-operator (including try, try?, and try!)
+;; - prefix-operator (including try, try?, try!, and await)
 ;; - postfix-operator
 ;; - binary-operator (including as, as?, as!, is, =, ., and ->)
 ;; - attribute (e.g. @objc, @abc(def))
@@ -402,9 +402,9 @@ Return nil otherwise."
        (memq (swift-mode:token:type next-token)
              '(binary-operator \; \, :))
 
-       ;; Suppresses implicit semicolon after try, try?, and try!.
+       ;; Suppresses implicit semicolon after try, try?, try!, and await.
        (member (swift-mode:token:text previous-token)
-               '("try" "try?" "try!"))
+               '("try" "try?" "try!" "await"))
 
        ;; Suppress implicit semicolon after open brackets or before close
        ;; brackets.
@@ -433,7 +433,7 @@ Return nil otherwise."
        (member (swift-mode:token:text previous-token)
                '("some" "inout" "in" "where"))
        (member (swift-mode:token:text next-token)
-               '("some" "inout" "throws" "rethrows" "in" "where")))
+               '("some" "inout" "throws" "rethrows" "async" "in" "where")))
       nil)
 
      ;; Inserts semicolon before open curly bracket.
@@ -480,7 +480,7 @@ Return nil otherwise."
 
      ;; Suppress implicit semicolon after declaration starters.
      ((member (swift-mode:token:text previous-token)
-              '("class" "struct" "protocol" "enum" "extension" "func"
+              '("class" "struct" "actor" "protocol" "enum" "extension" "func"
                 "typealias" "associatedtype" "precedencegroup" "operator"))
       nil)
 
@@ -556,7 +556,7 @@ Return nil otherwise."
      ;;
      ;; `protocol' is handled by the next rule
      ((member (swift-mode:token:text next-token)
-              '("class" "struct" "enum" "extension" "func" "typealias"
+              '("class" "struct" "actor" "enum" "extension" "func" "typealias"
                 "associatedtype" "precedencegroup"))
       t)
 
@@ -687,8 +687,8 @@ That is supertype declaration or type declaration of let or var."
        (member (swift-mode:token:text
                 (swift-mode:backquote-identifier-if-after-dot
                  (swift-mode:backward-token-simple)))
-               '("class" "extension" "enum" "struct" "protocol" "typealias"
-                 "associatedtype"))))))
+               '("class" "extension" "enum" "struct" "actor" "protocol"
+                 "typealias" "associatedtype"))))))
 
 (defvar swift-mode:in-recursive-call-of-case-colon-p nil
   "Non-nil if `case-colon-p' is being evaluated.")
@@ -740,7 +740,7 @@ Return nil otherwise."
     (or (member (swift-mode:token:text (swift-mode:backward-token-simple))
                 '("init" "subscript"))
         (member (swift-mode:token:text (swift-mode:backward-token-simple))
-                '("typealias" "func" "enum" "struct" "class" "init")))))
+                '("typealias" "func" "enum" "struct" "actor" "class" "init")))))
 
 (defun swift-mode:fix-operator-type (token)
   "Return new operator token with proper token type.
@@ -779,7 +779,7 @@ Other properties are the same as the TOKEN."
        (type
         (cond
          (is-declaration 'identifier)
-         ((member text '("try" "try?" "try!")) 'prefix-operator)
+         ((member text '("try" "try?" "try!" "await")) 'prefix-operator)
          ((equal text ".") 'binary-operator)
          ((and has-preceding-space has-following-space) 'binary-operator)
          (has-preceding-space 'prefix-operator)
@@ -925,7 +925,7 @@ This function does not return `implicit-;' or `type-:'."
     (forward-char)
     (swift-mode:token '> ">" (1- (point)) (point)))
 
-   ;; Operator (other than as, try, or is)
+   ;; Operator (other than as, try, is, or await)
    ;;
    ;; Operators starts with a dot can contains dots. Other operators cannot
    ;; contain dots.
@@ -1016,6 +1016,11 @@ This function does not return `implicit-;' or `type-:'."
                           (point)))
        ((equal text "is")
         (swift-mode:token 'binary-operator
+                          text
+                          (- (point) (length text))
+                          (point)))
+       ((equal text "await")
+        (swift-mode:token 'prefix-operator
                           text
                           (- (point) (length text))
                           (point)))
@@ -1173,7 +1178,7 @@ This function does not return `implicit-;' or `type-:'."
     (backward-char)
     (swift-mode:token '> ">" (point) (1+ (point))))
 
-   ;; Operator (other than as, try, or is)
+   ;; Operator (other than as, try, is, or await)
    ;;
    ;; Operators which starts with a dot can contain other dots. Other
    ;; operators cannot contain dots.
@@ -1254,7 +1259,7 @@ This function does not return `implicit-;' or `type-:'."
                           text
                           (point)
                           (+ (point) (length text))))
-       ((equal text "try")
+       ((member text '("try" "await"))
         (swift-mode:token 'prefix-operator
                           text
                           (point)

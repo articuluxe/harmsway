@@ -1,6 +1,6 @@
 ;;; swift-mode-font-lock.el --- Major-mode for Apple's Swift programming language, Font Locks. -*- lexical-binding: t -*-
 
-;; Copyright (C) 2014-2020 taku0, Chris Barrett, Bozhidar Batsov,
+;; Copyright (C) 2014-2021 taku0, Chris Barrett, Bozhidar Batsov,
 ;;                         Arthur Evstifeev, Michael Sanders
 
 ;; Authors: taku0 (http://github.com/taku0)
@@ -212,7 +212,7 @@ This function does not search beyond LIMIT."
   (skip-syntax-backward "w_")
   (and (< (point) limit)
        (looking-at
-        "\\<\\(func\\|enum\\|struct\\|class\\|protocol\\|extension\\)\\>")))
+        "\\<\\(func\\|enum\\|struct\\|class\\|protocol\\|extension\\|actor\\)\\>")))
 
 (defun swift-mode:property-access-pos-p (pos limit)
   "Return t if POS is just before the property name of a member expression.
@@ -540,7 +540,8 @@ Return nil otherwise."
 (defconst swift-mode:declaration-keywords
   '("associatedtype" "class" "deinit" "enum" "extension" "fileprivate" "func"
     "import" "init" "inout" "internal" "let" "open" "operator" "private"
-    "protocol" "public" "some" "static" "struct" "subscript" "typealias" "var")
+    "protocol" "public" "some" "static" "struct" "subscript" "typealias" "var"
+    "actor")
   "Keywords used in declarations.")
 
 (defconst swift-mode:statement-keywords
@@ -550,7 +551,7 @@ Return nil otherwise."
 
 (defconst swift-mode:expression-keywords
   '("as" "catch" "dynamicType" "is" "rethrows" "super" "self" "Self" "throws"
-    "throw" "try")
+    "throw" "try" "async" "await")
   "Keywords used in expressions and types.
 
 Excludes true, false, and keywords begin with a number sign.")

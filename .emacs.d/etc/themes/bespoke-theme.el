@@ -228,8 +228,7 @@ subtlety stand out from the mode line and other adjacent faces."
 (defalias '--l/d #'bespoke-theme--light-dark)
 
 ;; Set colors according to variant so they can be used outside the theme declaration
-(defun bespoke/set-theme-variant ()
-  (interactive)
+(defun bespoke--set-theme-variant ()
   (setq bespoke-foreground (--l/d "#282b35" "#eceff4"))
   (setq bespoke-background (--l/d "#fffef9" "#282b35"))
 
@@ -253,7 +252,7 @@ subtlety stand out from the mode line and other adjacent faces."
 ;;; Customize Faces
 
 ;; Call color settings
-(bespoke/set-theme-variant)
+(bespoke--set-theme-variant)
 
 ;; Declare class and set faces
 (let ((class '((class color) (min-colors 89))))
@@ -614,7 +613,7 @@ subtlety stand out from the mode line and other adjacent faces."
    (when (eq bespoke-set-mode-line 'header)
      `(header-line ((,class :foreground ,bespoke-foreground
                             :background ,bespoke-modeline
-                            :box (:line-width ,bespoke-set-modeline-height
+                            :box (:line-width ,bespoke-set-mode-line-height
                                   :color ,bespoke-modeline
                                   :style nil)
                             :overline nil
@@ -635,7 +634,7 @@ subtlety stand out from the mode line and other adjacent faces."
    (when (eq bespoke-set-mode-line 'footer)
      `(mode-line ((,class :foreground ,bespoke-foreground
                           :background ,bespoke-modeline
-                          :box (:line-width ,bespoke-set-modeline-height
+                          :box (:line-width ,bespoke-set-mode-line-height
                                 :color ,bespoke-modeline
                                 :style nil)
                           :overline nil
@@ -644,7 +643,7 @@ subtlety stand out from the mode line and other adjacent faces."
    (when (eq bespoke-set-mode-line 'footer)
      `(mode-line-inactive ((,class :foreground ,bespoke-subtle
                                    :background ,bespoke-modeline
-                                   :box (:line-width ,bespoke-set-modeline-height
+                                   :box (:line-width ,bespoke-set-mode-line-height
                                          :color ,bespoke-modeline
                                          :style nil)
                                    :overline nil
@@ -663,7 +662,7 @@ subtlety stand out from the mode line and other adjacent faces."
    (when (eq bespoke-set-mode-line nil)
      `(mode-line ((,class :foreground ,bespoke-foreground
                           :background ,bespoke-modeline
-                          :box (:line-width ,bespoke-set-modeline-height
+                          :box (:line-width ,bespoke-set-mode-line-height
                                 :color ,bespoke-modeline
                                 :style nil)
                           :overline nil
@@ -672,7 +671,7 @@ subtlety stand out from the mode line and other adjacent faces."
    (when (eq bespoke-set-mode-line nil)
      `(mode-line-inactive ((,class :foreground ,bespoke-foreground
                                    :background ,bespoke-modeline
-                                   :box (:line-width ,bespoke-set-modeline-height
+                                   :box (:line-width ,bespoke-set-mode-line-height
                                          :color ,bespoke-modeline
                                          :style nil)
                                    :overline nil

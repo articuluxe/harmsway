@@ -1,6 +1,6 @@
 ;;; swift-mode-imenu.el --- Major-mode for Apple's Swift programming language, , Imenu -*- lexical-binding: t -*-
 
-;; Copyright (C) 2019 taku0
+;; Copyright (C) 2019-2021 taku0
 
 ;; Authors: taku0 (http://github.com/taku0)
 
@@ -159,7 +159,7 @@ Return found declarations in reverse order."
          ;; Ignores the token otherwise.
          ))
 
-       ((member next-text '("struct" "protocol" "extension" "enum"))
+       ((member next-text '("struct" "protocol" "extension" "enum" "actor"))
         (setq last-class-token nil)
         (let ((declaration
                (swift-mode:scan-declarations:handle-struct-like next-token)))

@@ -1,6 +1,6 @@
 ;;; swift-mode-indent.el --- Major-mode for Apple's Swift programming language, indentation. -*- lexical-binding: t -*-
 
-;; Copyright (C) 2014-2020 taku0, Chris Barrett, Bozhidar Batsov,
+;; Copyright (C) 2014-2021 taku0, Chris Barrett, Bozhidar Batsov,
 ;;                         Arthur Evstifeev
 
 ;; Authors: taku0 (http://github.com/taku0)
@@ -929,8 +929,8 @@ This function is also used for close-curly-brace."
              '("for" "while" "repeat" "switch" "if" "else" "guard"
                "defer" "do" "catch"
                "get" "set" "willSet" "didSet" "func" "init" "subscript"
-               "enum" "struct" "class" "extension" "prefix" "postfix" "infix"
-               "precedencegroup"))
+               "enum" "struct" "actor" "class" "extension"
+               "prefix" "postfix" "infix" "precedencegroup"))
             (setq is-declaration-or-control-statement-body t)
             (goto-char (1+ pos)))
 
@@ -1497,10 +1497,11 @@ It is a Generic parameter list if:
     \;
     { } \( \) \[ \]
     "true" "false"
-    "class" "struct" "enum" "extension" "func" "operator"
+    "class" "struct" "actor" "enum" "extension" "func" "operator"
     "try" "try?" "try!"
     "as" "as?" "as!"
     "is"
+    "await"
     "in"
     "init" "deinit" "get" "set" "willSet" "didSet" "subscript"
     "for" "case" "default" "while" "let" "var" "repeat" "if" "else"
