@@ -17,6 +17,7 @@
 (require 'indent-tools-indentation-of)
 
 (require 'hydra)
+(require 's)
 (require 'yafolding)
 
 (defvar indent-tools-node-regexp "\"?[a-zA-Z0-9(\"'-.{]" "A regexp to match the beginning of a yaml node.  Should skip comments.") ;; Should be mode specific: skip comments, etc
@@ -41,10 +42,16 @@
   "Return true if we are on the buffer's last line."
   (equal (line-number-at-pos) (count-lines (point-min) (point-max))))
 
+(defun indent-tools--next-line-same-column ()
+  "Move next line on the same column."
+  (let ((column (current-column)))
+    (forward-line 1)
+    (move-to-column column)))
+
 (defun indent-tools-goto-end-of-tree ()
   "Go to the end of the indented tree."
   (interactive)
-  (let ((goal-column (length (indent-tools-current-line-indentation)))  ;; see next-line doc
+  (let ((goal-column (length (indent-tools-current-line-indentation))) ;; see next-line doc
         (last-line-reached nil))
     (beginning-of-line-text)
     (forward-line)
@@ -54,7 +61,7 @@
                  (string-equal (char-to-string (following-char)) " ")))
       (if (indent-tools--on-last-line)
           (setq last-line-reached t)
-        (next-line)))
+        (indent-tools--next-line-same-column)))
     (unless last-line-reached (forward-line -1))
     (end-of-line)
     ))

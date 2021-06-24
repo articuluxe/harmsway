@@ -5,7 +5,7 @@
 ;; Author: Omar Antolín Camarena <omar@matem.unam.mx>, Daniel Mendler <mail@daniel-mendler.de>
 ;; Maintainer: Omar Antolín Camarena <omar@matem.unam.mx>, Daniel Mendler <mail@daniel-mendler.de>
 ;; Created: 2020
-;; Version: 0.6
+;; Version: 0.7
 ;; Package-Requires: ((emacs "26.1"))
 ;; Homepage: https://github.com/minad/marginalia
 
@@ -88,7 +88,6 @@ It can also be set to an integer value of 1 or larger to force an offset."
      (unicode-name marginalia-annotate-char)
      (minor-mode marginalia-annotate-minor-mode)
      (symbol marginalia-annotate-symbol)
-     (variable marginalia-annotate-variable)
      (environment-variable marginalia-annotate-environment-variable)
      (input-method marginalia-annotate-input-method)
      (coding-system marginalia-annotate-coding-system)
@@ -132,6 +131,11 @@ determine it."
     ("\\<minor mode\\>" . minor-mode))
   "Associates regexps to match against minibuffer prompts with categories."
   :type '(alist :key-type regexp :value-type symbol))
+
+(defcustom marginalia-censor-variables
+  '("pass")
+  "The values of variables matching any of these regular expressions is not shown."
+  :type '(repeat regexp))
 
 (defcustom marginalia-command-categories
   '((imenu . imenu))
@@ -367,14 +371,14 @@ f function
 c command
 m macro
 ! advised
-o obsolete
+- obsolete
 
 Variable:
 u custom
 v variable
 l local
 * modified
-o obsolete
+- obsolete
 
 Other:
 a face
@@ -384,18 +388,18 @@ t cl-type"
    (concat
     (when (fboundp s)
       (concat
-       (and (get s 'byte-obsolete-info) "o")
        (cond
         ((commandp s) "c")
         ((eq (car-safe (symbol-function s)) 'macro) "m")
         (t "f"))
-       (and (marginalia--advised s) "!")))
+       (and (marginalia--advised s) "!")
+       (and (get s 'byte-obsolete-info) "-")))
     (when (boundp s)
       (concat
-       (and (get s 'byte-obsolete-variable) "o")
        (and (local-variable-if-set-p s) "l")
        (if (custom-variable-p s) "u" "v")
-       (and (ignore-errors (not (equal (symbol-value s) (default-value s)))) "*")))
+       (and (ignore-errors (not (equal (symbol-value s) (default-value s)))) "*")
+       (and (get s 'byte-obsolete-variable) "-")))
     (and (facep s) "a")
     (and (fboundp 'cl-find-class) (cl-find-class s) "t"))))
 
@@ -446,13 +450,16 @@ keybinding since CAND includes it."
   (when-let (sym (intern-soft cand))
     (marginalia--fields
      ((marginalia--symbol-class sym) :face 'marginalia-type)
-     ((let ((val (if (boundp sym) (symbol-value sym) 'unbound))
-            (print-escape-newlines t)
-            (print-escape-control-characters t)
-            (print-escape-multibyte t)
-            (print-level 10)
-            (print-length marginalia-truncate-width))
-        (prin1-to-string val))
+     ((if (seq-find (lambda (r) (string-match-p r cand))
+                    marginalia-censor-variables)
+          "*****"
+        (let ((val (if (boundp sym) (symbol-value sym) 'unbound))
+              (print-escape-newlines t)
+              (print-escape-control-characters t)
+              (print-escape-multibyte t)
+              (print-level 10)
+              (print-length marginalia-truncate-width))
+          (prin1-to-string val)))
       :truncate (/ marginalia-truncate-width 3) :face 'marginalia-variable)
      ((documentation-property sym 'variable-documentation)
       :truncate marginalia-truncate-width :face 'marginalia-documentation))))

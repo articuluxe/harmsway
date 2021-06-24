@@ -124,8 +124,15 @@ It returns a file name which can be used directly as argument of
           ?\xf243                      ; battery-quarter
           ?\xf241                      ; battery-three-quarters
           ))))
-(when (display-graphic-p)
+
+(defun doom-modeline-set-char-widths (&rest _)
+  "Set char widths for the unicode icons."
   (doom-modeline--set-char-widths doom-modeline-rhs-icons-alist))
+
+(if (and (daemonp)
+         (not (frame-parameter nil 'client)))
+    (add-hook 'after-make-frame-functions #'doom-modeline-set-char-widths)
+  (and (display-graphic-p) (doom-modeline-set-char-widths)))
 
 
 ;;
@@ -946,11 +953,13 @@ then this function does nothing."
 (defvar doom-modeline--font-width-cache nil)
 (defun doom-modeline--font-width ()
   "Cache the font width."
-  (let ((attributes (face-all-attributes 'mode-line)))
-    (or (cdr (assoc attributes doom-modeline--font-width-cache))
-        (let ((width (window-font-width nil 'mode-line)))
-          (push (cons attributes width) doom-modeline--font-width-cache)
-          width))))
+  (if (display-graphic-p)
+      (let ((attributes (face-all-attributes 'mode-line)))
+        (or (cdr (assoc attributes doom-modeline--font-width-cache))
+            (let ((width (window-font-width nil 'mode-line)))
+              (push (cons attributes width) doom-modeline--font-width-cache)
+              width)))
+    1))
 
 ;; Refresh the font width after setting frame parameters
 ;; to ensure the font width is correct.
@@ -1081,7 +1090,7 @@ See https://github.com/seagle0128/doom-modeline/issues/301."
 (defun doom-modeline-icon (icon-set icon-name unicode text &rest args)
   "Display icon of ICON-NAME with ARGS in mode-line.
 
-ICON-SET includes `octicon', `faicon', `material', `alltheicons' and `fileicon'.
+ICON-SET includes `octicon', `faicon', `material', `alltheicons' and `fileicon', etc.
 UNICODE is the unicode char fallback. TEXT is the ASCII char fallback.
 ARGS is same as `all-the-icons-octicon' and others."
   (let ((face (or (plist-get args :face) 'mode-line)))
@@ -1090,17 +1099,8 @@ ARGS is same as `all-the-icons-octicon' and others."
      (when (and doom-modeline-icon
                 icon-name
                 (not (string-empty-p icon-name)))
-       (let ((icon (pcase icon-set
-                     ('octicon
-                      (apply #'all-the-icons-octicon icon-name args))
-                     ('faicon
-                      (apply #'all-the-icons-faicon icon-name args))
-                     ('material
-                      (apply #'all-the-icons-material icon-name args))
-                     ('alltheicon
-                      (apply #'all-the-icons-alltheicon icon-name args))
-                     ('fileicon
-                      (apply #'all-the-icons-fileicon icon-name args)))))
+       (when-let* ((func (all-the-icons--function-name icon-set))
+                   (icon (and (fboundp func) (apply func icon-name args))))
          (doom-modeline-propertize-icon icon face)))
      ;; Unicode fallback
      (and doom-modeline-unicode-fallback

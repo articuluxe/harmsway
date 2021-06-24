@@ -439,7 +439,7 @@
             [(login $login String!)]
             (repositories
              [(:edges t)
-	      (ownerAffiliations . (OWNER))]
+              (ownerAffiliations . (OWNER))]
              name)))
    `((login . ,user))
    (lambda (d)
@@ -452,8 +452,8 @@
   ((_ (subclass forge-github-repository)) host org callback)
   (ghub--graphql-vacuum
    '(query (organization
-	    [(login $login String!)]
-	    (repositories [(:edges t)] name)))
+            [(login $login String!)]
+            (repositories [(:edges t)] name)))
    `((login . ,org))
    (lambda (d)
      (funcall callback
@@ -626,9 +626,16 @@
 \\`\\(\\|docs/\\|\\.github/\\)issue_template\\(\\.[a-zA-Z0-9]+\\)?\\'" it)
                               files)))
           (list file)
-        (--filter (and (string-match-p "\\`\\.github/ISSUE_TEMPLATE/[^/]*" it)
-                       (not (equal (file-name-nondirectory it) "config.yml")))
-                  files)))))
+        (setq files
+              (--filter (string-match-p "\\`\\.github/ISSUE_TEMPLATE/[^/]*" it)
+                        files))
+        (if-let ((conf (cl-find-if
+                        (lambda (f)
+                          (equal (file-name-nondirectory f) "config.yml"))
+                        files)))
+            (nconc (delete conf files)
+                   (list conf))
+          files)))))
 
 (cl-defmethod forge--topic-templates ((repo forge-github-repository)
                                       (_ (subclass forge-pullreq)))
@@ -651,6 +658,13 @@
       (and (not (equal fork (ghub--username (ghub--host nil))))
            `((organization . ,fork))))
     (ghub-wait (format "/repos/%s/%s" fork name) nil :auth 'forge)))
+
+(cl-defmethod forge--merge-pullreq ((_repo forge-github-repository)
+                                    topic hash method)
+  (forge--ghub-put topic
+    "/repos/:owner/:repo/pulls/:number/merge"
+    `((merge_method . ,(symbol-name method))
+      ,@(and hash `((sha . ,hash))))))
 
 ;;; Utilities
 

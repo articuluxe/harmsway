@@ -46,10 +46,10 @@
                       5)))
    `(:line-width ,line-width :color ,border-color)))
 
-(let ((yoshi-0 "#111414")
-      (yoshi-1 "#2c3434")
-      (yoshi-2 "#475454")
-      (yoshi-3 "#627373")
+(let ((yoshi-0 "#222424")
+      (yoshi-1 "#3f4242")
+      (yoshi-2 "#5b6161")
+      (yoshi-3 "#787f7f")
       (yoshi-4 "#848484")
       (yoshi-5 "#a2a2a2")
       (yoshi-6 "#bfbfbf")
@@ -196,7 +196,7 @@
    `(eshell-ls-unreadable ((t (:foreground ,fgred))))
    `(eshell-prompt ((t (:foreground ,yoshi-5 :weight unspecified))))
 
-   `(fill-column-indicator ((t (:foreground ,bgred :inherit unspecified))))
+   `(fill-column-indicator ((t (:foreground ,yoshi-2 :inherit unspecified))))
 
    ;; Flycheck
    `(flycheck-error ((t (:inherit unspecified :underline (:color ,fgred :style wave)))))

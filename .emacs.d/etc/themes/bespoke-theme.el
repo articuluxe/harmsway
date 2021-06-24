@@ -363,7 +363,7 @@ subtlety stand out from the mode line and other adjacent faces."
    `(ido-subdir                                    ((,class :foreground ,bespoke-strong)))
 
 ;;;;; Selectrum
-   `(selectrum-current-candidate                   ((,class :slant  italic :weight bold :background ,bespoke-highlight)))
+   `(selectrum-current-candidate                   ((,class :weight bold :background ,bespoke-highlight)))
    `(selectrum-prescient-secondary-highlight       ((,class :weight bold :foreground ,bespoke-blue)))
    `(selectrum-prescient-primary-highlight         ((,class :weight bold :foreground ,bespoke-salient)))
    `(selectrum-completion-docsig                   ((,class :slant  italic :inherit selectrum-completion-annotation)))
@@ -594,6 +594,29 @@ subtlety stand out from the mode line and other adjacent faces."
    `(markdown-strike-through-face                  ((,class :foreground ,bespoke-faded)))
    `(markdown-table-face                           ((,class :inherit    default)))
    `(markdown-url-face                             ((,class :foreground ,bespoke-salient)))
+
+;;;; Magit
+   `(magit-branch-current      ((,class :foreground ,bespoke-salient :box t)))
+   `(magit-branch-local        ((,class :foreground ,bespoke-salient)))
+   `(magit-branch-remote       ((,class :foreground ,bespoke-green)))
+   `(magit-branch-remote-head  ((,class :foreground ,bespoke-popout :box t)))
+   `(magit-branch-upstream     ((,class :inherit italic)))
+   `(magit-cherry-equivalent   ((,class :background ,bespoke-background :foreground ,bespoke-popout)))
+   `(magit-cherry-unmatched ((,class :background ,bespoke-background :foreground ,bespoke-salient)))
+   `(magit-head                ((,class :inherit magit-branch-local)))
+   `(magit-header-line ((,class :inherit bold :foreground ,bespoke-foreground)))
+   `(magit-header-line-key ((,class :foregrond ,bespoke-green)))
+   `(magit-header-line-log-select ((,class :inherit bold :foreground ,bespoke-foreground)))
+   `(magit-keyword ((,class :foreground ,bespoke-popout)))
+   `(magit-keyword-squash ((,class :inherit bold :foreground ,bespoke-yellow)))
+   `(magit-section ((,class :background ,bespoke-subtle :foreground ,bespoke-foreground)))
+   `(magit-section-heading     ((,class :weight semi-bold :foreground ,bespoke-yellow)))
+   `(magit-section-heading-selection ((,class :foreground ,bespoke-salient)))
+   `(magit-section-highlight ((,class :background ,bespoke-highlight)))
+   `(magit-tag                 ((,class :foreground ,bespoke-yellow)))
+
+
+
 
 ;;;; Message
    `(message-cited-text                            ((,class :foreground ,bespoke-faded)))
@@ -872,6 +895,8 @@ subtlety stand out from the mode line and other adjacent faces."
 
    `(which-key-posframe                           ((,class :background ,bespoke-subtle)))
    `(which-key-posframe-border                    ((,class :background ,bespoke-subtle)))
+   `(transient-posframe-border                    ((,class :background ,bespoke-subtle)))
+   `(transient-posframe                           ((,class :foreground ,bespoke-strong :background ,bespoke-subtle)))
 
 ;;;; Window Divs
    ;; divide windows more attractively
@@ -915,12 +940,9 @@ subtlety stand out from the mode line and other adjacent faces."
 ;;; Provide theme
 
 ;;;###autoload
-(and load-file-name
-     (boundp 'custom-theme-load-path)
-     (add-to-list 'custom-theme-load-path
-                  (file-name-as-directory
-                   (file-name-directory load-file-name))))
-
+(when (and (boundp 'custom-theme-load-path) load-file-name)
+  (add-to-list 'custom-theme-load-path
+               (file-name-as-directory (file-name-directory load-file-name))))
 
 (provide-theme 'bespoke)
 (provide 'bespoke-theme)

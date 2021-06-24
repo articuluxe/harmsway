@@ -6,8 +6,8 @@
 ;; Maintainer: Aimé Bertrand <aime.bertrand@macowners.club>
 ;; Created: 06 Jun 2021
 ;; Keywords: faces themes
-;; Version: 1.3
-;; Package-Requires: ((emacs "27.1"))
+;; Version: 1.4
+;; Package-Requires: ((emacs "25.1"))
 ;; Homepage: https://gitlab.com/aimebertrand/timu-spacegrey-theme
 
 ;; This file is not part of GNU Emacs.
@@ -367,6 +367,9 @@ Possinle values: `dark' or `light'.")
      `(circe-prompt-face ((,class (:weight bold :foreground ,orange))))
      `(circe-server-face ((,class (:foreground ,spacegrey5))))
      `(circe-my-message-face ((,class (:weight bold))))
+
+;;;; counsel - dark
+     `(counsel-variable-documentation ((,class (:foreground ,blue))))
 
 ;;;; cperl - dark
      `(cperl-array-face ((,class (:weight bold :inherit font-lock-variable-name-face))))
@@ -828,6 +831,12 @@ Possinle values: `dark' or `light'.")
      `(ivy-posframe ((,class (:background ,bg-other))))
      `(ivy-posframe-border ((,class (:inherit internal-border))))
 
+;;;; all-the-icons-ivy-rich - dark
+     `(all-the-icons-ivy-rich-doc-face ((,class (:foreground ,blue))))
+     `(all-the-icons-ivy-rich-path-face ((,class (:foreground ,blue))))
+     `(all-the-icons-ivy-rich-time-face ((,class (:foreground ,blue))))
+     `(all-the-icons-ivy-rich-size-face ((,class (:foreground ,blue))))
+
 ;;;; selectrum - dark
      `(selectrum-current-candidate ((,class (:background ,grey :distant-foreground nil :extend t))))
 
@@ -954,6 +963,10 @@ Possinle values: `dark' or `light'.")
      `(magit-filename ((,class (:foreground ,magenta))))
      `(magit-section-secondary-heading ((,class (:foreground ,magenta :weight bold :extend t))))
 
+;;;; marginalia-dark
+     `(marginalia-documentation ((,class (:foreground ,blue))))
+     `(marginalia-file-name ((,class (:foreground ,blue))))
+
 ;;;; mu4e - dark
      `(mu4e-header-key-face ((,class (:foreground ,darkcyan))))
      `(mu4e-highlight-face ((,class (:foreground ,bg :background ,orange))))
@@ -979,8 +992,8 @@ Possinle values: `dark' or `light'.")
      `(markdown-bold-face ((,class (:inherit bold :foreground ,orange))))
      `(markdown-markup-face ((,class (:foreground ,fg))))
      `(markdown-blockquote-face ((,class (:inherit italic :foreground ,spacegrey5))))
-     `(markdown-pre-face ((,class (:foreground ,green))))
-     `(markdown-code-face ((,class (:background ,spacegrey3 :extend t))))
+     `(markdown-pre-face ((,class (:background ,bg-org :foreground ,green))))
+     `(markdown-code-face ((,class (:background ,bg-org :extend t))))
      `(markdown-reference-face ((,class (:foreground ,spacegrey5))))
      `(markdown-inline-code-face ((,class (:inherit (markdown-code-face markdown-pre-face) :extend nil))))
      `(markdown-html-attr-name-face ((,class (:inherit font-lock-variable-name-face))))
@@ -1779,6 +1792,9 @@ Possinle values: `dark' or `light'.")
      `(circe-server-face ((,class (:foreground ,spacegrey5))))
      `(circe-my-message-face ((,class (:weight bold))))
 
+;;;; counsel - light
+     `(counsel-variable-documentation ((,class (:foreground ,blue))))
+
 ;;;; cperl - light
      `(cperl-array-face ((,class (:weight bold :inherit font-lock-variable-name-face))))
      `(cperl-hash-face ((,class (:weight bold :slant italic :inherit font-lock-variable-name-face))))
@@ -2239,6 +2255,12 @@ Possinle values: `dark' or `light'.")
      `(ivy-posframe ((,class (:background ,bg-other))))
      `(ivy-posframe-border ((,class (:inherit internal-border))))
 
+;;;; all-the-icons-ivy-rich - light
+     `(all-the-icons-ivy-rich-doc-face ((,class (:foreground ,blue))))
+     `(all-the-icons-ivy-rich-path-face ((,class (:foreground ,blue))))
+     `(all-the-icons-ivy-rich-time-face ((,class (:foreground ,blue))))
+     `(all-the-icons-ivy-rich-size-face ((,class (:foreground ,blue))))
+
 ;;;; selectrum - light
      `(selectrum-current-candidate ((,class (:background ,grey :distant-foreground nil :extend t))))
 
@@ -2365,6 +2387,10 @@ Possinle values: `dark' or `light'.")
      `(magit-filename ((,class (:foreground ,magenta))))
      `(magit-section-secondary-heading ((,class (:foreground ,magenta :weight bold :extend t))))
 
+;;;; marginalia-light
+     `(marginalia-documentation ((,class (:foreground ,blue))))
+     `(marginalia-file-name ((,class (:foreground ,blue))))
+
 ;;;; mu4e - light
      `(mu4e-header-key-face ((,class (:foreground ,darkcyan))))
      `(mu4e-highlight-face ((,class (:foreground ,bg :background ,orange))))
@@ -2390,8 +2416,8 @@ Possinle values: `dark' or `light'.")
      `(markdown-bold-face ((,class (:inherit bold :foreground ,orange))))
      `(markdown-markup-face ((,class (:foreground ,fg))))
      `(markdown-blockquote-face ((,class (:inherit italic :foreground ,spacegrey5))))
-     `(markdown-pre-face ((,class (:foreground ,green))))
-     `(markdown-code-face ((,class (:background ,spacegrey3 :extend t))))
+     `(markdown-pre-face ((,class (:background ,bg-org :foreground ,green))))
+     `(markdown-code-face ((,class (:background ,bg-org :extend t))))
      `(markdown-reference-face ((,class (:foreground ,spacegrey5))))
      `(markdown-inline-code-face ((,class (:inherit (markdown-code-face markdown-pre-face) :extend nil))))
      `(markdown-html-attr-name-face ((,class (:inherit font-lock-variable-name-face))))

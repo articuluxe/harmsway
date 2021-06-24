@@ -457,10 +457,27 @@ There are three kinds:
 (autoload 'dired-get-filename "dired")
 
 (defun embark-target-file-at-point ()
-  "Target file at point."
-  (when-let ((file (if (derived-mode-p 'dired-mode)
-                       (dired-get-filename t 'no-error-if-not-filep)
-                     (ffap-file-at-point))))
+  "Target file at point.
+This function mostly relies on `ffap-file-at-point', with two exceptions:
+
+1. In `dired-mode', it uses `dired-get-filename' instead.
+
+2. In `emacs-lisp-mode', it only calls `ffap-file-at-point' if
+   point is in a string or comment, or if it is on symbol
+   preceded by `require' or `use-package'."
+  (when-let ((file (cond
+                    ((derived-mode-p 'dired-mode)
+                     (dired-get-filename t 'no-error-if-not-filep))
+                    ((derived-mode-p 'emacs-lisp-mode)
+                     (when (or (nth 3 (syntax-ppss)) ; in a string
+                               (nth 4 (syntax-ppss)) ; or comment
+                               (save-excursion
+                                 (unless (looking-at "\\_<")
+                                   (forward-symbol -1))
+                                 (forward-symbol -1)
+                                 (looking-at "use-package\\|require")))
+                       (ffap-file-at-point)))
+                     (t (ffap-file-at-point)))))
     (cons 'file (abbreviate-file-name file))))
 
 (defun embark-target-bug-reference-at-point ()
@@ -2149,6 +2166,7 @@ and leaves the point to the left of it."
   ("c" capitalize-region)
   ("|" shell-command-on-region)
   ("e" eval-region)
+  ("a" align)
   ("i" indent-rigidly)
   ("TAB" indent-region)
   ("f" fill-region)
@@ -2210,6 +2228,7 @@ and leaves the point to the left of it."
   ("h" display-local-help)
   ("H" embark-toggle-highlight)
   ("d" xref-find-definitions)
+  ("r" xref-find-references)
   ("a" xref-find-apropos))
 
 (embark-define-keymap embark-symbol-map
@@ -2219,6 +2238,7 @@ and leaves the point to the left of it."
   ("H" embark-toggle-highlight)
   ("s" embark-info-lookup-symbol)
   ("d" embark-find-definition)
+  ("r" xref-find-references)
   ("b" where-is)
   ("e" eval-expression)
   ("a" apropos))

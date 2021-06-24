@@ -215,44 +215,44 @@ This variable has to be customized before `forge' is loaded."
 
 (cl-defmethod forge-ls-recent-topics ((repo forge-repository) table)
   (magit--with-repository-local-cache (list 'forge-ls-recent-topics table)
-  (let* ((id (oref repo id))
-         (limit forge-topic-list-limit)
-         (open-limit   (if (consp limit) (car limit) limit))
-         (closed-limit (if (consp limit) (cdr limit) limit))
-         (topics (forge-sql [:select * :from $s1
-                             :where (and (= repository $s2)
-                                         (notnull unread-p))]
-                            table id)))
-    (mapc (lambda (row)
-            (cl-pushnew row topics :test #'equal))
-          (if (consp limit)
-              (forge-sql [:select * :from $s1
-                          :where (and (= repository $s2)
-                                      (isnull closed))
-                          :order-by [(desc updated)]
-                          :limit $s3]
-                         table id open-limit)
-            (forge-sql [:select * :from $s1
-                        :where (and (= repository $s2)
-                                    (isnull closed))]
-                       table id)))
-    (when (> closed-limit 0)
+    (let* ((id (oref repo id))
+           (limit forge-topic-list-limit)
+           (open-limit   (if (consp limit) (car limit) limit))
+           (closed-limit (if (consp limit) (cdr limit) limit))
+           (topics (forge-sql [:select * :from $s1
+                               :where (and (= repository $s2)
+                                           (notnull unread-p))]
+                              table id)))
       (mapc (lambda (row)
               (cl-pushnew row topics :test #'equal))
-            (forge-sql [:select * :from $s1
-                        :where (and (= repository $s2)
-                                    (notnull closed))
-                        :order-by [(desc updated)]
-                        :limit $s3]
-                       table id closed-limit)))
-    (cl-sort (mapcar (let ((class (if (eq table 'pullreq)
-                                      'forge-pullreq
-                                    'forge-issue)))
-                       (lambda (row)
-                         (closql--remake-instance class (forge-db) row)))
-                     topics)
-             (cdr forge-topic-list-order)
-             :key (lambda (it) (eieio-oref it (car forge-topic-list-order)))))))
+            (if (consp limit)
+                (forge-sql [:select * :from $s1
+                            :where (and (= repository $s2)
+                                        (isnull closed))
+                            :order-by [(desc updated)]
+                            :limit $s3]
+                           table id open-limit)
+              (forge-sql [:select * :from $s1
+                          :where (and (= repository $s2)
+                                      (isnull closed))]
+                         table id)))
+      (when (> closed-limit 0)
+        (mapc (lambda (row)
+                (cl-pushnew row topics :test #'equal))
+              (forge-sql [:select * :from $s1
+                          :where (and (= repository $s2)
+                                      (notnull closed))
+                          :order-by [(desc updated)]
+                          :limit $s3]
+                         table id closed-limit)))
+      (cl-sort (mapcar (let ((class (if (eq table 'pullreq)
+                                        'forge-pullreq
+                                      'forge-issue)))
+                         (lambda (row)
+                           (closql--remake-instance class (forge-db) row)))
+                       topics)
+               (cdr forge-topic-list-order)
+               :key (lambda (it) (eieio-oref it (car forge-topic-list-order)))))))
 
 (cl-defmethod forge-ls-topics ((repo forge-repository) class &optional type)
   (mapcar (lambda (row)
@@ -550,7 +550,7 @@ identifier."
 
 (defun forge--insert-topic-marks (topic &optional skip-separator marks)
   (pcase-dolist (`(,name ,face ,description)
-                  (or marks (closql--iref topic 'marks)))
+                 (or marks (closql--iref topic 'marks)))
     (if skip-separator
         (setq skip-separator nil)
       (insert " "))
@@ -703,7 +703,7 @@ Return a value between 0 and 1."
         repo)
     (and (looking-back "[!#][0-9]*" bol)
          (or (not bug-reference-prog-mode)
-	     (nth 8 (syntax-ppss))) ; inside comment or string
+             (nth 8 (syntax-ppss))) ; inside comment or string
          (setq repo (forge-get-repository t))
          (looking-back (if (forge--childp repo 'forge-gitlab-repository)
                            "\\(?3:[!#]\\)\\(?2:[0-9]*\\)"
@@ -806,6 +806,33 @@ Return a value between 0 and 1."
     `((title . ,(string-trim title))
       (body  . ,(string-trim body)))))
 
+(defun forge--topic-parse-link-buffer ()
+  (save-match-data
+    (save-excursion
+      (goto-char (point-min))
+      (mapcar (lambda (alist)
+                (cons (cons 'prompt (concat (alist-get 'name alist) " -- "
+                                            (alist-get 'about alist)))
+                      alist))
+              (forge--topic-parse-yaml-links)))))
+
+(defun forge--topic-parse-yaml-links ()
+  (when (re-search-forward "^contact_links:" nil t)
+    (let (link links)
+      (forward-line)
+      (while (looking-at "^  \\(.\\) \\([^:]*\\):[\s\t]*\\(.*\\)")
+        (let ((next (equal (match-string-no-properties 1) "-"))
+              (key (intern (match-string-no-properties 2)))
+              (val (match-string-no-properties 3)))
+          (when (string-match-p "\\`\".+\"\\'" val)
+            (setq val (substring val 1 -1)))
+          (when (and next link)
+            (push link links)
+            (setq link nil))
+          (setf (alist-get key link) val))
+        (forward-line))
+      (nreverse (mapcar #'nreverse links)))))
+
 ;;; Templates
 
 (cl-defgeneric forge--topic-templates (repo class)
@@ -817,15 +844,19 @@ If there are multiple templates, then the user is asked to select
 one of them.  It there are no templates, then return a very basic
 alist, containing just `text' and `position'.")
 
+(defun forge--topic-templates-data (repo class)
+  (let ((branch (oref repo default-branch)))
+    (mapcan (lambda (f)
+              (with-temp-buffer
+                (magit-git-insert "cat-file" "-p" (concat branch ":" f))
+                (if (equal (file-name-nondirectory f) "config.yml")
+                    (forge--topic-parse-link-buffer)
+                  (list (forge--topic-parse-buffer f)))))
+            (forge--topic-templates repo class))))
+
 (cl-defmethod forge--topic-template ((repo forge-repository)
                                      (class (subclass forge-topic)))
-  (let* ((branch  (oref repo default-branch))
-         (choices (mapcar (lambda (f)
-                            (with-temp-buffer
-                              (magit-git-insert "cat-file" "-p"
-                                                (concat branch ":" f))
-                              (forge--topic-parse-buffer f)))
-                          (forge--topic-templates repo class))))
+  (let ((choices (forge--topic-templates-data repo class)))
     (if (cdr choices)
         (let ((c (magit-completing-read
                   (if (eq class 'forge-pullreq)
