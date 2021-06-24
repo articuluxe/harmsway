@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-06-11 17:30:24 dharms>
+;; Modified Time-stamp: <2021-06-24 17:00:47 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3410,7 +3410,7 @@ See `https://github.com/company-mode/company-mode/issues/205'."
   (setq flycheck-indication-mode nil)
   (setq flycheck-global-modes
         '(emacs-lisp-mode python-mode dart-mode sh-mode c++-mode json-mode
-                          js2-mode go-mode))
+                          js2-mode go-mode php-mode))
   (setq-default flycheck-emacs-lisp-load-path 'inherit)
   (setq-default flycheck-shellcheck-follow-sources nil)
   (use-package flycheck-package :config (flycheck-package-setup))
@@ -4303,6 +4303,13 @@ This function's result only has value if it is preceded by any font changes."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; pcap-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package pcap-mode
   :mode ("\\.pcap$" . pcap-mode)
+  )
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; php-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(use-package php-mode
+  :mode ("\\.php$" "\\.inc$")
+  :config
+  (define-key php-mode-map "\C-c\C-c" nil)
   )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; pip-requirements ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
