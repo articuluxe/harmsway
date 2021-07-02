@@ -39,6 +39,7 @@
 ;; - elfeed
 ;; - evil
 ;; - flycheck
+;; - flyspell-correct
 ;; - hydra
 ;; - ido-vertical-mode
 ;; - linum-relative
@@ -69,6 +70,7 @@
 ;; - diff-mode
 ;; - dired
 ;; - display-line-numbers-mode
+;; - flyspell
 ;; - font-lock-mode
 ;; - ido-mode
 ;; - info
@@ -292,6 +294,10 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(dired-perm-write                         ((,class                                                     :inherit font-lock-comment-delimiter-face)))
    `(dired-symlink                            ((,class :foreground ,hr-cyan)))
    `(dired-warning                            ((,class                                                     :inherit warning)))
+
+;;;;; flyspell
+   `(flyspell-duplicate                       ((,class                                                     :underline (:color ,hr-orange :style wave))))
+   `(flyspell-incorrect                       ((,class                                                     :underline (:color ,hr-red    :style wave))))
 
 ;;;;; font-lock-mode
    `(font-lock-builtin-face                   ((,class :foreground ,hr-blue)))
@@ -641,6 +647,9 @@ Also bind `class' to ((class color) (min-colors 89))."
    `(flycheck-fringe-error                    ((,class :foreground ,hr-red)))
    `(flycheck-fringe-info                     ((,class :foreground ,hr-cyan)))
    `(flycheck-fringe-warning                  ((,class :foreground ,hr-orange)))
+
+;;;;; flyspell-correct
+   `(flyspell-correct-highlight-face          ((,class                                                     :inherit isearch)))
 
 ;;;;; hydra
    `(hydra-face-amaranth                      ((,class :foreground ,hr-orange                              :weight bold)))

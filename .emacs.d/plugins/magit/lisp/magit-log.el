@@ -595,16 +595,17 @@ the upstream isn't ahead of the current branch) show."
 
 (defun magit-log-read-revs (&optional use-current)
   (or (and use-current (--when-let (magit-get-current-branch) (list it)))
-      (let ((collection (magit-list-refnames nil t)))
-        (split-string
-         (magit-completing-read-multiple "Log rev,s" collection
-                                         "\\(\\.\\.\\.?\\|[, ]\\)"
-                                         (or (magit-branch-or-commit-at-point)
-                                             (unless use-current
-                                               (magit-get-previous-branch)))
-                                         'magit-revision-history
-                                         magit-log-read-revs-map)
-         "[, ]" t))))
+      (let ((crm-separator "\\(\\.\\.\\.?\\|[, ]\\)")
+            (crm-local-completion-map magit-log-read-revs-map))
+        (split-string (magit-completing-read-multiple*
+                       "Log rev,s: "
+                       (magit-list-refnames nil t)
+                       nil nil nil 'magit-revision-history
+                       (or (magit-branch-or-commit-at-point)
+                           (unless use-current
+                             (magit-get-previous-branch)))
+                       nil t)
+                      "[, ]" t))))
 
 (defun magit-log-read-pattern (option)
   "Read a string from the user to pass as parameter to OPTION."
@@ -877,6 +878,26 @@ is displayed in the current frame."
                         "\\[magit-log-double-commit-limit] first"))))
           (user-error "Parent %s does not exist" parent-rev))))))
 
+(defun magit-log-move-to-revision (rev)
+  "Read a revision and move to it in current log buffer.
+
+If the chosen reference or revision isn't being displayed in
+the current log buffer, then inform the user about that and do
+nothing else.
+
+If invoked outside any log buffer, then display the log buffer
+of the current repository first; creating it if necessary."
+  (interactive (list (magit-read-branch-or-commit "In log, jump to")))
+  (with-current-buffer
+      (cond ((derived-mode-p 'magit-log-mode)
+             (current-buffer))
+            ((when-let ((buf (magit-get-mode-buffer 'magit-log-mode)))
+               (pop-to-buffer-same-window buf)))
+            (t
+             (apply #'magit-log-all-branches (magit-log-arguments))))
+    (unless (magit-log-goto-commit-section (magit-rev-abbrev rev))
+      (user-error "%s isn't visible in the current log buffer" rev))))
+
 ;;;; Shortlog Commands
 
 ;;;###autoload (autoload 'magit-shortlog "magit-log" nil t)
@@ -931,6 +952,7 @@ is displayed in the current frame."
     (define-key map "\C-c\C-b" 'magit-go-backward)
     (define-key map "\C-c\C-f" 'magit-go-forward)
     (define-key map "\C-c\C-n" 'magit-log-move-to-parent)
+    (define-key map "j" 'magit-log-move-to-revision)
     (define-key map "=" 'magit-log-toggle-commit-limit)
     (define-key map "+" 'magit-log-double-commit-limit)
     (define-key map "-" 'magit-log-half-commit-limit)
@@ -1603,11 +1625,12 @@ commit as argument."
     (funcall fun rev)))
 
 (defun magit-log-select-quit ()
-  "Abort selecting a commit, don't act on any commit."
+  "Abort selecting a commit, don't act on any commit.
+Call `magit-log-select-quit-function' if set."
   (interactive)
-  (magit-mode-bury-buffer 'kill)
-  (when magit-log-select-quit-function
-    (funcall magit-log-select-quit-function)))
+  (let ((fun magit-log-select-quit-function))
+    (magit-mode-bury-buffer 'kill)
+    (when fun (funcall fun))))
 
 ;;; Cherry Mode
 

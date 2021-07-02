@@ -6,7 +6,7 @@
 ;; URL: https://github.com/mclear-tools/bespoke-themes
 ;; -------------------------------------------------------------------
 ;; Created: 2021-03-16
-;; Version: 0.5
+;; Version: 0.6
 ;; Package-Requires: ((emacs "26.1"))
 ;; -------------------------------------------------------------------
 ;; This file is not part of GNU Emacs.
@@ -24,7 +24,7 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this program. If not, see <http://www.gnu.org/licenses/>
 ;; -------------------------------------------------------------------
-;; Commentary:
+;;; Commentary:
 ;; A custom mode line for bespoke-theme
 ;; This mode line originated as a fork of nano-emacs modeline.
 ;; See https://github.com/rougier/nano-emacs
@@ -81,35 +81,33 @@
 ;; https://github.com/rougier/nano-modeline
 ;; Set variable to define inactive faces
 (defvar bespoke-modeline--selected-window nil
-  "Currently selected window")
+  "Currently selected window.")
 
 ;;; Clean mode line
-;; https://www.masteringemacs.org/article/hiding-replacing-modeline-strings
-;; NOTE: this is only for minor and major modes
-(defvar mode-line-cleaner-alist
-  `((auto-complete-mode . " α")
-    (yas/minor-mode . " υ")
-    (paredit-mode . " π")
-    (eldoc-mode . "")
-    (abbrev-mode . "")
-    ;; Major modes
-    (dired-mode . "Dir")
-    (lisp-interaction-mode . "λ")
-    (hi-lock-mode . "")
-    (python-mode . "Py")
+;; Source: https://www.masteringemacs.org/article/hiding-replacing-modeline-strings
+(defvar bespoke-mode-line-cleaner-alist
+  `((dired-mode . "Dir")
     (emacs-lisp-mode . "EL")
-    (nxhtml-mode . "nx")
+    (fundamental-mode . "FL")
+    (helpful-mode . "")
+    (help-mode . "")
+    (lisp-interaction-mode . "λ")
     (markdown-mode . "MD")
-    (fundamental-mode . "FL"))
-  "Alist for `clean-mode-line'.
+    (magit-mode . "MG")
+    (nxhtml-mode . "NX")
+    (prog-mode . "PR")
+    (python-mode . "PY")
+    (text-mode . "TX")
+    )
+  "Alist for `bespoke-clean-mode-line'.
 
 When you add a new element to the alist, keep in mind that you
 must pass the correct minor/major mode symbol and a string you
-want to use in the modeline *in lieu of* the original.")
+want to use in the modeline *as substitute for* the original.")
 
-(defun clean-mode-line ()
+(defun bespoke-clean-mode-line ()
   (interactive)
-  (cl-loop for cleaner in mode-line-cleaner-alist
+  (cl-loop for cleaner in bespoke-mode-line-cleaner-alist
            do (let* ((mode (car cleaner))
                      (mode-str (cdr cleaner))
                      (old-mode-str (cdr (assq mode minor-mode-alist))))
@@ -119,35 +117,56 @@ want to use in the modeline *in lieu of* the original.")
                 (when (eq mode major-mode)
                   (setq mode-name mode-str)))))
 
-(add-hook 'after-change-major-mode-hook 'clean-mode-line)
+(when bespoke-set-mode-line-cleaner
+  (add-hook 'after-change-major-mode-hook #'bespoke-clean-mode-line))
 
 
 ;;; Mode line functions
 ;;;; Branch display
 ;; -------------------------------------------------------------------
 (defun vc-project-branch ()
-  ;; Show project name
-  (when buffer-file-name
-    (concat
-     ;; Divider
-     (when (vc-registered (buffer-file-name))
-       (propertize " •" 'face `(:inherit fringe)))
-     (when (bound-and-true-p projectile-mode)
-       (let ((project-name (projectile-project-name)))
-         (unless (string= "-" project-name)
-           (format " %s" project-name))))
-     ;; Show branch
-     (if vc-mode
-         (let ((backend (vc-backend buffer-file-name)))
-           (concat "" (substring-no-properties vc-mode
-                                                (+ (if (eq backend 'Hg) 2 3) 2))))  nil))))
+  "Show project and branch name"
+  (let ((backend (vc-backend buffer-file-name)))
+    (when buffer-file-name
+      (concat
+       (if (bound-and-true-p projectile-mode)
+           (let ((project-name (projectile-project-name)))
+             ;; Project name
+             (unless (string= "-" project-name)
+               (concat
+                ;; Divider
+                (propertize " •" 'face `(:inherit fringe))
+                (format " %s" project-name))))
+         " ")
+       ;; Show branch
+       (if vc-mode
+           (concat
+            "" (substring-no-properties vc-mode
+                                         (+ (if (eq backend 'Hg) 2 3) 2)))  nil)))))
+
+;; Git diff in modeline
+;; https://cocktailmake.github.io/posts/emacs-modeline-enhancement-for-git-diff/
+(when bespoke-set-git-diff-mode-line
+  (defadvice vc-git-mode-line-string (after plus-minus (file) compile activate)
+    "Show the information of git diff on modeline."
+    (setq ad-return-value
+	      (concat ad-return-value
+		          (let ((plus-minus (vc-git--run-command-string
+				                     file "diff" "--numstat" "--")))
+		            (if (and plus-minus
+		                     (string-match "^\\([0-9]+\\)\t\\([0-9]+\\)\t" plus-minus))
+		                (concat
+                         " "
+			             (format "+%s" (match-string 1 plus-minus))
+			             (format "-%s" (match-string 2 plus-minus)))
+		              (propertize "" 'face '(:weight bold))))))))
 
 
 ;;;; Dir display
 ;; From https://amitp.blogspot.com/2011/08/emacs-custom-mode-line.html
 ;; ---------------------------------------------------------------------
 (defun shorten-directory (dir max-length)
-  "Show up to `max-length' characters of a directory name `dir'."
+  "Show up to `max-length' characters of a directory name DIR."
   (let ((path (reverse (split-string (abbreviate-file-name dir) "/")))
         (output ""))
     (when (and path (equal "" (car path)))
@@ -177,14 +196,14 @@ want to use in the modeline *in lieu of* the original.")
 			                         (propertize (if (window-dedicated-p)" –– " " ⨀ ") 'face (if active 'bespoke-modeline-mod-face 'bespoke-modeline-inactive-face)))
                                     ((string= status  "◯")
 		                             (propertize (if (window-dedicated-p)" –– " " ◯ ") 'face (if active 'bespoke-modeline-default-face 'bespoke-modeline-inactive-face)))
-                                    (t (propertize status 'face 'bespoke-modeline-ro-face)))
+                                    (t (propertize status 'face (if active 'bespoke-modeline-ro-face 'bespoke-modeline-inactive-face))))
                             (cond ((string= status "RO")
 			                       (propertize (if (window-dedicated-p)" -- " " RO ") 'face (if active 'bespoke-modeline-ro-face 'bespoke-modeline-inactive-face)))
                                   ((string= status  "**")
 			                       (propertize (if (window-dedicated-p)" -- " " ** ") 'face (if active 'bespoke-modeline-mod-face 'bespoke-modeline-inactive-face)))
                                   ((string= status  "RW")
 		                           (propertize (if (window-dedicated-p)" -- " " RW ") 'face (if active 'bespoke-modeline-default-face 'bespoke-modeline-inactive-face)))
-                                  (t (propertize status 'face 'bespoke-modeline-ro-face)))))
+                                  (t (propertize status 'face (if active 'bespoke-modeline-ro-face 'bespoke-modeline-inactive-face))))))
          (left (concat
                 (propertize " "  'face (if active (cond ((eq bespoke-set-mode-line 'header)
                                                          'header-line)
@@ -238,7 +257,7 @@ want to use in the modeline *in lieu of* the original.")
 ;;;; Mode line status
   ;; ---------------------------------------------------------------------
   (defun bespoke-modeline-status ()
-    "Return buffer status: read-only (⨂), modified (⨀) or read-write (◯)"
+    "Return buffer status: read-only (⨂)/(RO), modified (⨀)/(**), or read-write (◯)/(RW)"
     (let ((read-only   buffer-read-only)
           (modified    (and buffer-file-name (buffer-modified-p))))
       ;; Use status letters for TTY display
@@ -529,76 +548,97 @@ want to use in the modeline *in lieu of* the original.")
 
 ;;; Set Mode line
 ;;;; Set content for mode/header line
-(setq-default bespoke--mode-line
-              '((:eval
-                 (cond ((bespoke-modeline-prog-mode-p)            (bespoke-modeline-default-mode))
-                       ((bespoke-modeline-deft-mode-p)            (bespoke-modeline-deft-mode))
-                       ((bespoke-modeline-info-mode-p)            (bespoke-modeline-info-mode))
-                       ((bespoke-modeline-term-mode-p)            (bespoke-modeline-term-mode))
-                       ((bespoke-modeline-vterm-mode-p)           (bespoke-modeline-vterm-mode))
-                       ((bespoke-modeline-text-mode-p)            (bespoke-modeline-default-mode))
-                       ((bespoke-modeline-pdf-view-mode-p)        (bespoke-modeline-pdf-view-mode))
-	                   ((bespoke-modeline-docview-mode-p)         (bespoke-modeline-docview-mode))
-	                   ((bespoke-modeline-completion-list-mode-p) (bespoke-modeline-completion-list-mode))
-                       ((bespoke-modeline-calendar-mode-p)        (bespoke-modeline-calendar-mode))
-                       ((bespoke-modeline-org-capture-mode-p)     (bespoke-modeline-org-capture-mode))
-                       ((bespoke-modeline-org-agenda-mode-p)      (bespoke-modeline-org-agenda-mode))
-                       ((bespoke-modeline-org-clock-mode-p)       (bespoke-modeline-org-clock-mode))
-                       ((bespoke-modeline-elisp-mode-p)           (bespoke-modeline-default-mode))
-                       ((bespoke-modeline-message-mode-p)         (bespoke-modeline-message-mode))
-                       (t                                      (bespoke-modeline-default-mode))))))
+(defvar bespoke--mode-line
+  '((:eval
+     (cond ((bespoke-modeline-prog-mode-p)            (bespoke-modeline-default-mode))
+           ((bespoke-modeline-deft-mode-p)            (bespoke-modeline-deft-mode))
+           ((bespoke-modeline-info-mode-p)            (bespoke-modeline-info-mode))
+           ((bespoke-modeline-term-mode-p)            (bespoke-modeline-term-mode))
+           ((bespoke-modeline-vterm-mode-p)           (bespoke-modeline-vterm-mode))
+           ((bespoke-modeline-text-mode-p)            (bespoke-modeline-default-mode))
+           ((bespoke-modeline-pdf-view-mode-p)        (bespoke-modeline-pdf-view-mode))
+	       ((bespoke-modeline-docview-mode-p)         (bespoke-modeline-docview-mode))
+	       ((bespoke-modeline-completion-list-mode-p) (bespoke-modeline-completion-list-mode))
+           ((bespoke-modeline-calendar-mode-p)        (bespoke-modeline-calendar-mode))
+           ((bespoke-modeline-org-capture-mode-p)     (bespoke-modeline-org-capture-mode))
+           ((bespoke-modeline-org-agenda-mode-p)      (bespoke-modeline-org-agenda-mode))
+           ((bespoke-modeline-org-clock-mode-p)       (bespoke-modeline-org-clock-mode))
+           ((bespoke-modeline-elisp-mode-p)           (bespoke-modeline-default-mode))
+           ((bespoke-modeline-message-mode-p)         (bespoke-modeline-message-mode))
+           (t                                      (bespoke-modeline-default-mode))))))
 
 ;;;; Mode line header function
 ;; ---------------------------------------------------------------------
-
-(defun bespoke/header-line ()
-  "Install a mode line in header whose content depends on the major mode"
-  (interactive)
+(defun bespoke--header-line ()
+  "Install a mode line in header whose content depends on the major mode."
   ;; Update selected window
   (setq bespoke-modeline--selected-window (selected-window))
   (setq-default header-line-format bespoke--mode-line)
-  (setq-default mode-line-format (list "%-"))
+  (setq-default mode-line-format (list (propertize "%-" 'face `(:inherit fringe))))
   (force-mode-line-update))
 
-(defun bespoke/footer-line ()
-  "Install mode line whose content depends on the major mode"
-  (interactive)
+(defun bespoke--footer-line ()
+  "Install mode line whose content depends on the major mode."
   ;; Update selected window
   (setq bespoke-modeline--selected-window (selected-window))
   (setq-default header-line-format nil)
   (setq-default mode-line-format bespoke--mode-line)
   (force-mode-line-update))
 
-;;;; Update Window Display
-;; ---------------------------------------------------------------------
-(defun bespoke-modeline-update-windows ()
-  "Modify the mode line depending on the presence of a window below. Use this only with the mode line set to header line."
-  (dolist (window (window-list))
-    (with-selected-window window
-      (if (or (one-window-p t)
-	          (eq (window-in-direction 'below) (minibuffer-window))
-	          (not (window-in-direction 'below)))
-	      (with-current-buffer (window-buffer window)
-	        (setq mode-line-format (list "")))
-        ;; (setq mode-line-format (list "")))
-	    (with-current-buffer (window-buffer window)
- 	      (setq mode-line-format nil)))
-      ;;      (if (window-in-direction 'above)
-      ;;	      (face-remap-add-relative 'header-line '(:overline "#777777"))
-      ;;	    (face-remap-add-relative 'header-line '(:overline nil)))
-      )))
+(defun bespoke/toggle-mode-line ()
+  "Toggle betwee a modeline in header and one at footer whose content depends on the
+major mode.
+
+Note that you may need to revert buffers to see the modeline properly."
+  (interactive)
+  (bespoke--disable-all-themes)
+  (if (eq bespoke-set-mode-line 'header)
+      (progn
+        (setq bespoke-set-mode-line 'footer)
+        (setq header-line-format nil)
+        (setq-default mode-line-format bespoke--mode-line)
+        (setq mode-line-format bespoke--mode-line)
+        (setq-default header-line-format nil))
+    (progn
+      (setq bespoke-set-mode-line 'header)
+      (setq-default header-line-format bespoke--mode-line)
+      (setq-default mode-line-format (list (propertize "%-" 'face `(:inherit fringe))))
+      (set-face-attribute 'header-line nil :inherit 'header-line)
+      (set-face-attribute 'mode-line nil :inherit 'mode-line)
+	  (set-face-attribute 'mode-line-inactive nil :inherit 'mode-line-inactive-face)))
+  (load-theme 'bespoke)
+  (force-mode-line-update)
+  (revert-buffer))
+
+(defun bespoke/disable-custom-mode-line ()
+  "Use the Emacs default mode line with bespoke colors
+
+Note that you may need to revert buffers to see the modeline properly"
+  (interactive)
+  (bespoke--disable-all-themes)
+  (progn
+    (setq bespoke-set-mode-line nil)
+    (setq header-line-format nil)
+    (setq-default header-line-format nil)
+    (set-face-attribute 'mode-line nil :inherit 'mode-line)
+    (set-face-attribute 'mode-line-inactive nil :inherit 'mode-line-inactive)
+    (let ((format (set 'mode-line-format (eval (car (get 'mode-line-format 'standard-value))))))
+      (setq mode-line-format format)
+      (setq-default mode-line-format format)))
+  (load-theme 'bespoke)
+  (force-mode-line-update 'ALL)
+  (revert-buffer))
 
 ;;;; Load Mode or Header line
 (cond ((eq bespoke-set-mode-line 'header)
        (progn
          (setq eshell-status-in-modeline nil)
-         (bespoke/header-line)
-         (add-hook 'window-configuration-change-hook 'bespoke-modeline-update-windows)
+         (bespoke--header-line)
          ))
       ((eq bespoke-set-mode-line 'footer)
        (progn
          (setq eshell-status-in-modeline nil)
-         (bespoke/footer-line)
+         (bespoke--footer-line)
          ))
       ((eq bespoke-set-mode-line nil)))
 
