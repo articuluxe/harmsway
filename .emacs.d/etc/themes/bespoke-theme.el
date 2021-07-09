@@ -516,13 +516,13 @@ subtlety stand out from the mode line and other adjacent faces."
 
 ;;;;; Git
 ;;;;;; Git-gutter
-   `(git-gutter:added        ((,class :foreground ,bespoke-salient)))
+   `(git-gutter:added        ((,class :foreground ,bespoke-green)))
    `(git-gutter:deleted      ((,class :foreground ,bespoke-red)))
    `(git-gutter:modified     ((,class :foreground ,bespoke-popout)))
    `(git-gutter:separator    ((,class :foreground ,bespoke-subtle)))
    `(git-gutter:unchanged    ((,class :foreground ,bespoke-background)))
 ;;;;;; Git-gutter-fr
-   `(git-gutter-fr:added        ((,class :foreground ,bespoke-salient)))
+   `(git-gutter-fr:added        ((,class :foreground ,bespoke-green)))
    `(git-gutter-fr:deleted      ((,class :foreground ,bespoke-red)))
    `(git-gutter-fr:modified     ((,class :foreground ,bespoke-popout)))
 
@@ -665,7 +665,7 @@ subtlety stand out from the mode line and other adjacent faces."
    (when (eq bespoke-set-mode-line 'header)
      `(header-line ((,class :foreground ,bespoke-foreground
                             :background ,bespoke-modeline
-                            :box (:line-width ,bespoke-set-mode-line-height
+                            :box (:line-width ,bespoke-set-mode-line-size
                                   :color ,bespoke-modeline
                                   :style nil)
                             :overline nil
@@ -686,7 +686,7 @@ subtlety stand out from the mode line and other adjacent faces."
    (when (eq bespoke-set-mode-line 'footer)
      `(mode-line ((,class :foreground ,bespoke-foreground
                           :background ,bespoke-modeline
-                          :box (:line-width ,bespoke-set-mode-line-height
+                          :box (:line-width ,bespoke-set-mode-line-size
                                 :color ,bespoke-modeline
                                 :style nil)
                           :overline nil
@@ -695,7 +695,7 @@ subtlety stand out from the mode line and other adjacent faces."
    (when (eq bespoke-set-mode-line 'footer)
      `(mode-line-inactive ((,class :foreground ,bespoke-subtle
                                    :background ,bespoke-modeline
-                                   :box (:line-width ,bespoke-set-mode-line-height
+                                   :box (:line-width ,bespoke-set-mode-line-size
                                          :color ,bespoke-modeline
                                          :style nil)
                                    :overline nil
@@ -714,7 +714,7 @@ subtlety stand out from the mode line and other adjacent faces."
    (when (eq bespoke-set-mode-line nil)
      `(mode-line ((,class :foreground ,bespoke-foreground
                           :background ,bespoke-modeline
-                          :box (:line-width ,bespoke-set-mode-line-height
+                          :box (:line-width ,bespoke-set-mode-line-size
                                 :color ,bespoke-modeline
                                 :style nil)
                           :overline nil
@@ -723,7 +723,7 @@ subtlety stand out from the mode line and other adjacent faces."
    (when (eq bespoke-set-mode-line nil)
      `(mode-line-inactive ((,class :foreground ,bespoke-faded
                                    :background ,bespoke-modeline
-                                   :box (:line-width ,bespoke-set-mode-line-height
+                                   :box (:line-width ,bespoke-set-mode-line-size
                                          :color ,bespoke-modeline
                                          :style nil)
                                    :overline nil
@@ -879,11 +879,9 @@ subtlety stand out from the mode line and other adjacent faces."
    `(outline-7            ((,class :inherit outline-1)))
    `(outline-8            ((,class :inherit outline-2)))
 
-
-
 ;;;;; Search
    `(evil-ex-search                               ((,class :background ,bespoke-popout)))
-   `(isearch                                      ((,class :foreground ,bespoke-popout :weight bold)))
+   `(isearch                                      ((,class :background ,bespoke-popout :foreground ,bespoke-highlight :weight bold)))
    `(isearch-fail                                 ((,class :background ,bespoke-critical)))
    `(isearch-group-1                              ((,class :background ,bespoke-blue)))
    `(isearch-group-2                              ((,class :background ,bespoke-red)))
@@ -910,15 +908,15 @@ subtlety stand out from the mode line and other adjacent faces."
    `(speedbar-tag-face                            ((,class :foreground ,bespoke-faded)))
 
 ;;;;; Term
-   `(term-bold                                    ((,class :foreground ,bespoke-strong)))
-   `(term-color-black                             ((,class :inherit    default)))
-   `(term-color-white                             ((,class :foreground "white" :background "white")))
-   `(term-color-blue                              ((,class :foreground "#42A5F5" :background "#BBDEFB")))
-   `(term-color-cyan                              ((,class :foreground "#26C6DA" :background "#B2EBF2")))
-   `(term-color-green                             ((,class :foreground "#66BB6A" :background "#C8E6C9")))
-   `(term-color-magenta                           ((,class :foreground "#AB47BC" :background "#E1BEE7")))
-   `(term-color-red                               ((,class :foreground "#EF5350" :background "#FFCDD2")))
-   `(term-color-yellow                            ((,class :foreground "#a67c00" :background "#FFEE58")))
+   `(term-bold                                    ((,class :foreground ,bespoke-strong :weight semi-bold)))
+   `(term-color-black                             ((,class :foregroud  ,bespoke-background)))
+   `(term-color-white                             ((,class :foreground ,bespoke-foreground)))
+   `(term-color-blue                              ((,class :foreground ,bespoke-blue)))
+   `(term-color-cyan                              ((,class :foreground ,bespoke-salient)))
+   `(term-color-green                             ((,class :foreground ,bespoke-green)))
+   `(term-color-magenta                           ((,class :foreground ,bespoke-popout)))
+   `(term-color-red                               ((,class :foreground ,bespoke-critical)))
+   `(term-color-yellow                            ((,class :foreground ,bespoke-yellow)))
 
 ;;;;; Posframe
 
@@ -954,6 +952,26 @@ subtlety stand out from the mode line and other adjacent faces."
 
 (when bespoke-set-evil-cursors
   (add-hook 'bespoke-after-load-theme-hook #'bespoke--evil-load-cursors))
+
+;;;; Set Hl-Todo
+;; inherit faces
+(setq hl-todo-keyword-faces
+      '(("HOLD" .       query-replace)
+        ("TODO" .       warning)
+        ("NEXT" .       highlight)
+        ("OKAY" .       success)
+        ("DONT" .       error)
+        ("FAIL" .       error)
+        ("DONE" .       shadow)
+        ("NOTE" .       warning)
+        ("KLUDGE" .     warning)
+        ("HACK" .       warning)
+        ("TEMP" .       warning)
+        ("FIXME" .      error)
+        ("XXX+" .       error)
+        ("BUG" .        error)
+        ("REVIEW" .     shadow)
+        ("DEPRECATED" . shadow)))
 
 ;;;; Set Minibuffer & Echo Area
 (defun bespoke-theme--minibuffer ()

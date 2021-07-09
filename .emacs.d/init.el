@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-06-24 17:00:47 dharms>
+;; Modified Time-stamp: <2021-07-09 15:39:33 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -3154,7 +3154,7 @@ completion at point mechanism does not interfere with `completion-at-point-funct
   (setq company-abort-on-unique-match nil)
   (setq company-format-margin-function nil) ;disable icons for now
   ;; (setq company-begin-commands '(self-insert-command))
-  (setq company-show-numbers t)
+  (setq company-show-quick-access t)
   (setq company-tooltip-align-annotations t)
   (setq company-backends
         '((

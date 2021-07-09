@@ -77,11 +77,11 @@
   :options '("--follow" "--grep" "-G" "-S" "-L"))
 
 (defcustom magit-log-revision-headers-format "\
-%+b
+%+b%+N
 Author:    %aN <%aE>
 Committer: %cN <%cE>"
   "Additional format string used with the `++header' argument."
-  :package-version '(magit . "2.3.0")
+  :package-version '(magit . "3.2.0")
   :group 'magit-log
   :type 'string)
 
@@ -918,11 +918,15 @@ of the current repository first; creating it if necessary."
    ("r" "range" magit-shortlog-range)])
 
 (defun magit-git-shortlog (rev args)
-  (with-current-buffer (get-buffer-create "*magit-shortlog*")
-    (erase-buffer)
-    (save-excursion
-      (magit-git-insert "shortlog" args rev))
-    (switch-to-buffer-other-window (current-buffer))))
+  (let ((dir default-directory))
+    (with-current-buffer (get-buffer-create "*magit-shortlog*")
+      (setq default-directory dir)
+      (setq buffer-read-only t)
+      (let ((inhibit-read-only t))
+        (erase-buffer)
+        (save-excursion
+          (magit-git-insert "shortlog" args rev))
+        (switch-to-buffer-other-window (current-buffer))))))
 
 ;;;###autoload
 (defun magit-shortlog-since (rev args)

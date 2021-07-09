@@ -691,6 +691,7 @@ Changes take effect only when a new session is started."
                                         (".*\\.json$" . "json")
                                         (".*\\.jsonc$" . "jsonc")
                                         (".*\\.php$" . "php")
+                                        (".*\\.svelte$" . "svelte")
                                         (ada-mode . "ada")
                                         (nxml-mode . "xml")
                                         (sql-mode . "sql")
@@ -4964,7 +4965,11 @@ In addition, each can have property:
           (insert str)
           (delay-mode-hooks (funcall mode))
           (cl-flet ((window-body-width () lsp-window-body-width))
-            (font-lock-ensure)
+            ;; This can go wrong in some cases, and the fontification would
+            ;; not work as expected.
+            ;;
+            ;; See #2984
+            (ignore-errors (font-lock-ensure))
             (lsp--display-inline-image mode))
           (lsp--buffer-string-visible))
       (error str))))
@@ -5919,7 +5924,7 @@ REFERENCES? t when METHOD returns references."
   (evil-set-command-property 'lsp-find-type-definition :jump t))
 
 (defun lsp--find-workspaces-for (msg-or-method)
-  "Find all workspaces in the current that can handle MSG."
+  "Find all workspaces in the current project that can handle MSG."
   (let ((method (if (stringp msg-or-method)
                     msg-or-method
                   (plist-get msg-or-method :method))))

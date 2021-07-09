@@ -30,13 +30,17 @@
 
 ;;; Code:
 
+(require 'lsp-ui-util)
+
 (require 'lsp-protocol)
 (require 'lsp-mode)
 (require 'dash)
 (require 'goto-addr)
 (require 'markdown-mode)
+
 (require 'cl-lib)
-(require 'lsp-ui-util)
+(require 'face-remap)
+(require 'subr-x)
 
 (when (featurep 'xwidget-internal)
   (require 'xwidget))
@@ -135,6 +139,11 @@ option."
 (defcustom lsp-ui-doc-winum-ignore t
   "Whether to ignore lsp-ui-doc buffers in winum."
   :type 'boolean
+  :group 'lsp-ui-doc)
+
+(defcustom lsp-ui-doc-text-scale-level 0
+  "Text scale amount for doc buffer."
+  :type 'integer
   :group 'lsp-ui-doc)
 
 (defface lsp-ui-doc-background
@@ -237,7 +246,9 @@ Because some variables are buffer local.")
                     (inhibit-point-motion-hooks t)
                     (inhibit-redisplay t))
                 ,@body)
-         (setq buffer-read-only t)))))
+         (setq buffer-read-only t)
+         (let ((text-scale-mode-step 1.1))
+           (text-scale-set lsp-ui-doc-text-scale-level))))))
 
 (defmacro lsp-ui-doc--get-parent (var)
   "Return VAR in `lsp-ui-doc--parent-vars'."
@@ -265,19 +276,13 @@ Because some variables are buffer local.")
           "*"))
 
 ;; ‘markdown-fontify-code-block-default-mode’ isn’t yet available in
-;; Markdown 2.3.
+;; Markdown 2.3.
 (defvar markdown-fontify-code-block-default-mode)
 
 (defun lsp-ui-doc--inline-wrapped-line (string)
   "Wraps a line of text (STRING) for inline display."
-  (let ((doc-max-width (lsp-ui-doc--inline-window-width)))
-    (cond ((string-empty-p string) "")
-          ((< (length string) doc-max-width) string)
-          (t (concat (substring string 0 (- doc-max-width 4))
-                     "\n"
-                     (string-trim-left
-                      (lsp-ui-doc--inline-wrapped-line
-                       (substring string (- doc-max-width 4)))))))))
+  (cond ((string-empty-p string) "")
+        (t string)))
 
 (defun lsp-ui-doc--inline-formatted-string (string)
   "Formats STRING for inline rendering."
@@ -395,15 +400,13 @@ We don't extract the string that `lps-line' is already displaying."
   "Hide the frame."
   (setq lsp-ui-doc--bounds nil
         lsp-ui-doc--from-mouse nil)
-  (when (overlayp lsp-ui-doc--inline-ov)
-    (delete-overlay lsp-ui-doc--inline-ov))
-  (when (overlayp lsp-ui-doc--highlight-ov)
-    (delete-overlay lsp-ui-doc--highlight-ov))
-  (when (lsp-ui-doc--get-frame)
+  (lsp-ui-util-safe-delete-overlay lsp-ui-doc--inline-ov)
+  (lsp-ui-util-safe-delete-overlay lsp-ui-doc--highlight-ov)
+  (when-let ((frame (lsp-ui-doc--get-frame)))
     (unless lsp-ui-doc-use-webkit
-      (lsp-ui-doc--with-buffer
-        (erase-buffer)))
-    (make-frame-invisible (lsp-ui-doc--get-frame))))
+      (lsp-ui-doc--with-buffer (erase-buffer)))
+    (when (frame-visible-p frame)
+      (make-frame-invisible frame))))
 
 (defun lsp-ui-doc--buffer-width ()
   "Calcul the max width of the buffer."
@@ -430,8 +433,8 @@ We don't extract the string that `lps-line' is already displaying."
   "Mark as unused function."
   (-> (when (bound-and-true-p lsp-ui-sideline--occupied-lines)
         (-min lsp-ui-sideline--occupied-lines))
-    (line-number-at-pos)
-    (lsp-ui-doc--line-height)))
+      (line-number-at-pos)
+      (lsp-ui-doc--line-height)))
 
 (defun lsp-ui-doc--webkit-resize-callback (size)
   "Callback when resizing using webkit depends on the SIZE."
@@ -464,10 +467,10 @@ symbol at point, to not obstruct the view of the code that follows.
 If there's no space above in the current window, it places
 FRAME just below the symbol at point."
   (-let* (((x . y) (--> (or lsp-ui-doc--bounds (bounds-of-thing-at-point 'symbol))
-                     (or (posn-x-y (posn-at-point (car it)))
-                         (if (< (car it) (window-start))
-                             (cons 0 0)
-                           (posn-x-y (posn-at-point (1- (window-end))))))))
+                        (or (posn-x-y (posn-at-point (car it)))
+                            (if (< (car it) (window-start))
+                                (cons 0 0)
+                              (posn-x-y (posn-at-point (1- (window-end))))))))
           (frame-relative-symbol-x (+ start-x x (* (frame-char-width) 2)))
           (frame-relative-symbol-y (+ start-y y))
           (char-height (frame-char-height))
@@ -661,6 +664,8 @@ FN is the function to call on click."
            'lsp-ui-doc--webkit-resize-callback))
       (erase-buffer)
       (insert (s-trim string))
+      (let ((fill-column (- lsp-ui-doc-max-width 5)))
+        (fill-region (point-min) (point-max)))
       (unless (lsp-ui-doc--inline-p)
         (lsp-ui-doc--make-smaller-empty-lines)
         (lsp-ui-doc--handle-hr-lines))
@@ -729,16 +734,16 @@ FN is the function to call on click."
 
 (defun lsp-ui-doc--inline-merge (strings)
   (let* ((buffer-strings (-> (lsp-ui-doc--inline-untab strings)
-                           (lsp-ui-doc--remove-invisibles)
-                           (split-string "\n")))
+                             (lsp-ui-doc--remove-invisibles)
+                             (split-string "\n")))
          (doc-strings (-> (lsp-ui-doc--with-buffer (buffer-string))
-                        (lsp-ui-doc--inline-untab)
-                        (lsp-ui-doc--remove-invisibles)
-                        (split-string "\n")))
+                          (lsp-ui-doc--inline-untab)
+                          (lsp-ui-doc--remove-invisibles)
+                          (split-string "\n")))
          (merged (--> (lsp-ui-doc--inline-faking-frame doc-strings)
-                   (-zip-with 'lsp-ui-doc--inline-zip buffer-strings it)
-                   (string-join it "\n")
-                   (concat it "\n"))))
+                      (-zip-with 'lsp-ui-doc--inline-zip buffer-strings it)
+                      (string-join it "\n")
+                      (concat it "\n"))))
     merged))
 
 (defun lsp-ui-doc--inline-pos-at (start lines)
@@ -874,7 +879,7 @@ HEIGHT is the documentation number of lines."
                          (and (looking-at "[[:graph:]]") (cons (point) (1+ (point))))))
         (unless (equal lsp-ui-doc--bounds bounds)
           (lsp-ui-doc--hide-frame)
-          (and lsp-ui-doc--timer (cancel-timer lsp-ui-doc--timer))
+          (lsp-ui-util-safe-kill-timer lsp-ui-doc--timer)
           (setq lsp-ui-doc--timer
                 (run-with-idle-timer
                  lsp-ui-doc-delay nil
@@ -890,19 +895,6 @@ HEIGHT is the documentation number of lines."
                         :mode 'tick
                         :cancel-token :lsp-ui-doc-hover)))))))
       (lsp-ui-doc--hide-frame))))
-
-(defcustom lsp-ui-doc-post-delay 0.2
-  "Seconds to wait before making post request."
-  :type 'number
-  :group 'lsp-ui-doc)
-
-(defvar-local lsp-ui-doc--post-timer nil
-  "Timer for post command.")
-
-(defun lsp-ui-doc--post-command ()
-  "Post command hook for UI doc."
-  (lsp-ui-util-safe-kill-timer lsp-ui-doc--post-timer)
-  (setq lsp-ui-doc--post-timer (run-with-timer lsp-ui-doc-post-delay nil #'lsp-ui-doc--make-request)))
 
 (defun lsp-ui-doc--extract-bounds (hover)
   (-when-let* ((hover hover)
@@ -1103,7 +1095,7 @@ If nil, do not prevent mouse on prefix keys.")
       (add-hook 'window-state-change-functions 'lsp-ui-doc--on-state-changed))
     (lsp-ui-doc--setup-mouse)
     (advice-add 'handle-switch-frame :before-while 'lsp-ui-doc--prevent-focus-doc)
-    (add-hook 'post-command-hook 'lsp-ui-doc--post-command nil t)
+    (add-hook 'post-command-hook 'lsp-ui-doc--make-request nil t)
     (add-hook 'window-scroll-functions 'lsp-ui-doc--handle-scroll nil t)
     (add-hook 'delete-frame-functions 'lsp-ui-doc--on-delete nil t))
    (t
@@ -1111,7 +1103,7 @@ If nil, do not prevent mouse on prefix keys.")
     (when (boundp 'window-state-change-functions)
       (remove-hook 'window-state-change-functions 'lsp-ui-doc--on-state-changed))
     (remove-hook 'window-scroll-functions 'lsp-ui-doc--handle-scroll t)
-    (remove-hook 'post-command-hook 'lsp-ui-doc--post-command t)
+    (remove-hook 'post-command-hook 'lsp-ui-doc--make-request t)
     (remove-hook 'delete-frame-functions 'lsp-ui-doc--on-delete t))))
 
 (defun lsp-ui-doc-enable (enable)
