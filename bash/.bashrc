@@ -21,7 +21,7 @@ source ~/config/git-completion.sh
 source ~/config/git-prompt.sh
 
 alias pscores='ps -eL -o user,pid,tid,psr,comm,args'
-alias magit='emax -e "(magit-status \"$(pwd)\")" > /dev/null 2>&1'
+alias magit='ex -e "(magit-status \"$(pwd)\")" > /dev/null 2>&1'
 alias bt='echo 0 | gdb -batch-silent -ex "run" -ex "set logging overwrite on" -ex "set logging file gdb.bt" \
       -ex "set logging on" -ex "set pagination off" -ex "handle SIG33 pass nostop noprint" \
       -ex "echo backtrace:\n" -ex "backtrace full" -ex "echo \n\nregisters:\n" -ex "info registers" \
