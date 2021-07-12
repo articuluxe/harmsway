@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-08-12 09:38:16 dharms>
+;; Modified Time-stamp: <2021-08-12 10:09:16 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -2205,6 +2205,7 @@ ARGS are the additional arguments."
   (setq org-agenda-files '("~/Documents/org"))
   (setq org-startup-folded nil)
   (setq org-replace-disputed-keys t)
+  (setq org-list-allow-alphabetical t)
   (setq org-catch-invisible-edits 'show-and-error)
   (setq org-use-property-inheritance t)
   (setq org-use-tag-inheritance t)
