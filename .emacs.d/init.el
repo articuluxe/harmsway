@@ -2,7 +2,7 @@
 ;; Copyright (C) 2015-2021  Dan Harms (dharms)
 ;; Author: Dan Harms <danielrharms@gmail.com>
 ;; Created: Friday, February 27, 2015
-;; Modified Time-stamp: <2021-07-09 15:39:33 dharms>
+;; Modified Time-stamp: <2021-07-22 11:48:35 dharms>
 ;; Modified by: Dan Harms
 ;; Keywords:
 
@@ -4308,6 +4308,11 @@ This function's result only has value if it is preceded by any font changes."
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; php-mode ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (use-package php-mode
   :mode ("\\.php$" "\\.inc$")
+  :init
+  (add-hook 'php-mode-hook
+            (lambda()
+              (require 'semantic/symref/grep)
+              (add-to-list 'semantic-symref-filepattern-alist '(php-mode "*.php" "*.inc"))))
   :config
   (define-key php-mode-map "\C-c\C-c" nil)
   )
